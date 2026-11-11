@@ -11,7 +11,7 @@ import originalMotionLibrary from "@/data/video-catalog/original-motion-scenes-v
 import extraFreeFilmPresets from "@/data/video-catalog/free-film-presets-v2.json";
 import { MandalaHypnoCompact } from "./mandala-hypno-compact";
 import { MandalaVideoIdeas } from "./mandala-video-ideas";
-import {MandalaVideoPersonalization,DEFAULT_VIDEO_GOAL_PROFILE,type VideoGoalProfile} from "./mandala-video-personalization";
+import {MandalaVideoPersonalization,DEFAULT_VIDEO_GOAL_PROFILE,summarizeVideoGoalProfile,type VideoGoalProfile} from "./mandala-video-personalization";
 import { MandalaVideoConcept, type ApprovedVideoConcept } from "./mandala-video-concept";
 
 import type { HypnoLightSettings } from "./mandala-hypnocorrection-mobile";
@@ -1954,6 +1954,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [montagePanel,setMontagePanel] = useState<"settings"|"effects"|"text"|"concept"|"audio">("effects");
   const [hypnoEntryGroup,setHypnoEntryGroup] = useState<"visual"|"effects">("visual");
   const [approvedVideoConcept,setApprovedVideoConcept] = useState<ApprovedVideoConcept|null>(null);
+  const [appliedStoryKey,setAppliedStoryKey]=useState<string|null>(null);
   const [audioLibraryOpen,setAudioLibraryOpen] = useState(false);
   const audioLibraryCloseRef=useRef<HTMLButtonElement>(null);
   const audioLibraryTriggerRef=useRef<HTMLButtonElement>(null);
@@ -2242,7 +2243,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [audioPlaybackError,setAudioPlaybackError] = useState(false);
   const [audioRights,setAudioRights] = useState(false);
   // Temporary user-owned voice transcript: never place it in browser storage.
-  const [sttConsent,setSttConsent]=useState(false);
   const [sttBusy,setSttBusy]=useState(false);
   const [sttError,setSttError]=useState("");
   const [voiceTranscript,setVoiceTranscript]=useState<TimedSpeechTranscript|null>(null);
@@ -4054,7 +4054,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   }
   function clearUploadedAudio(){
     sttAbortRef.current?.abort();sttAbortRef.current=null;
-    setSttBusy(false);setSttConsent(false);setSttError("");
+    setSttBusy(false);setSttError("");
     setVoiceTranscript(null);setVoiceVisualPlan(null);setAudioPlanApplied(false);
     stopSoundPreview();
     if(uploadedAudioRef.current)URL.revokeObjectURL(uploadedAudioRef.current.url);
@@ -4078,6 +4078,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setMusic("none");
     setSoundVolume(80);
     setMusicWarning("");
+    // In the recipient mode, choosing or recording audio is the explicit use action.
+    // Other Studio modes retain their existing rights gate.
+    if(recipientAudioSelected)setAudioRights(true);
     return entry;
   }
   // React StrictMode can replay effects: reuse ONE promise so its first
@@ -4326,7 +4329,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       const mime=formats.find(format=>MediaRecorder.isTypeSupported(format));
       const recorder=new MediaRecorder(stream,mime?{mimeType:mime}:undefined);
       const chunks:Blob[]=[];
-      const session={recorder,stream,chunks,timeout:setTimeout(stopMicRecording,180000)};
+      const session={recorder,stream,chunks,timeout:setTimeout(stopMicRecording,recipientAudioSelected?59000:180000)};
       micRef.current=session;
       recorder.ondataavailable=event=>{if(event.data.size)chunks.push(event.data);};
       recorder.onerror=()=>{setMusicWarning(audioUi.recordFailed);};
@@ -4341,7 +4344,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         const ext=kind.includes("webm")?"webm":"m4a";
         const file=new File(chunks,"my-voice."+ext,{type:kind});
         if(!isSupportedLocalAudio(file)){setMusicWarning(audioUi.recordTooLarge);return;}
-        chooseAudioFile(file);
+        if(recipientAudioSelected&&file.size>4*1024*1024){
+          setSttError(locale==="ru"?"Запись превышает 4 МБ. Запишите короткое сообщение.":
+            locale==="es"?"La grabación supera 4 MB. Graba un mensaje más corto.":
+              "Recording exceeds 4 MB. Please record a shorter message.");
+          return;
+        }
+        const selected=chooseAudioFile(file);
+        if(!selected&&recipientAudioSelected){
+          setSttError(locale==="ru"?"Формат записи не поддерживается.":
+            locale==="es"?"Formato de audio no compatible.":"Unsupported recording format.");
+          return;
+        }
         setMusicWarning(audioUi.fileReady);
       };
       recorder.start(250);
@@ -4729,11 +4743,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   async function transcribeVideoVoice(){
     const entry=uploadedAudioRef.current;
     if(!entry||recording||preparing||micRecording||sttBusy)return;
-    if(!sttConsent){
-      setSttError(locale==="ru"?"Сначала разрешите передать запись сервису распознавания.":
-        locale==="es"?"Autoriza primero enviar el audio al reconocimiento.":"Allow one-time transcription first.");
-      return;
-    }
     if(entry.file.size>4*1024*1024){
       setSttError(locale==="ru"?"Файл больше 4 МБ. Сожмите запись в M4A/MP3 и загрузите снова.":
         locale==="es"?"El archivo supera 4 MB. Comprímelo a M4A/MP3.":"Audio exceeds 4 MB. Compress it to M4A/MP3.");
@@ -4744,7 +4753,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     sttAbortRef.current=controller;setSttBusy(true);setSttError("");
     setVoiceTranscript(null);setVoiceVisualPlan(null);setAudioPlanApplied(false);
     try{
-      const transcript=await requestConsentedTimedTranscript(entry.file,locale,sttConsent,controller.signal);
+      const transcript=await requestConsentedTimedTranscript(entry.file,locale,true,controller.signal);
       if(sttAbortRef.current!==controller||
         uploadedAudioRef.current?.file!==entry.file)return;
       setVoiceTranscript(transcript);
@@ -5428,17 +5437,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               style={{display:"grid",gap:10,padding:"12px 0"}}>
               <strong>{locale==="ru"?"Аудио → текст → визуальный сценарий":
                 locale==="es"?"Audio → texto → escenas":"Audio → transcript → visuals"}</strong>
-              <label className={videoStyles.audioRights}>
-                <input type="checkbox" data-video-audio-stt-consent checked={sttConsent}
-                  disabled={sttBusy||recording||preparing}
-                  onChange={event=>setSttConsent(event.currentTarget.checked)}/>
-                {locale==="ru"?"Разрешаю один раз отправить эту запись внешнему сервису распознавания; сайт не сохраняет аудио и текст.":
-                  locale==="es"?"Autorizo enviar este audio una vez al servicio externo de transcripción. El sitio no guarda el audio ni el texto.":
-                    "I consent to send this audio once to an external transcription service. This site does not store the audio or text."}
-              </label>
+              <small data-video-audio-stt-notice>
+                {locale==="ru"?"Нажатие «Расшифровать» один раз отправит запись внешнему сервису распознавания. Сайт не сохраняет аудио или текст.":
+                  locale==="es"?"Al pulsar Transcribir, el audio se enviará una vez al servicio externo. El sitio no guarda audio ni texto.":
+                    "Pressing Transcribe sends the audio once to an external speech recognition service. This site stores neither audio nor text."}
+              </small>
               <button type="button" className={videoStyles.audioMicButton}
                 data-video-audio-transcribe
-                disabled={!studioHydrated||!sttConsent||sttBusy||recording||preparing||micRecording}
+                disabled={!studioHydrated||sttBusy||recording||preparing||micRecording}
                 onClick={()=>void transcribeVideoVoice()}>
                 <AudioLines size={16} aria-hidden="true"/>
                 {sttBusy?(locale==="ru"?"Расшифровываем…":locale==="es"?"Transcribiendo…":"Transcribing…"):
@@ -5450,6 +5456,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 <p>{locale==="ru"?"Текст распознан по временны́м фрагментам":
                   locale==="es"?"Texto y segmentos temporales verificados":"Timed text segments verified"}
                   {" · "}{voiceTranscript.durationSeconds.toFixed(1)} s</p>
+                <p data-video-audio-transcribed-text style={{whiteSpace:"pre-wrap",overflowWrap:"anywhere"}}>{voiceTranscript.text}</p>
                 <details><summary>{locale==="ru"?"Посмотреть расшифровку":
                   locale==="es"?"Ver transcripción":"Review transcript"}</summary>
                   <ol>{voiceTranscript.segments.map((segment,index)=>
@@ -5949,7 +5956,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           onChange={e=>{const file=e.currentTarget.files?.[0];e.currentTarget.value="";
             if(!file)return;
             if(file.size>4*1024*1024){setSttError(locale==="ru"?"Нужен файл до 4 МБ.":locale==="es"?"Archivo máximo 4 MB.":"Maximum 4 MB audio.");return;}
-            chooseAudioFile(file);}}/>
+            if(!chooseAudioFile(file))setSttError(locale==="ru"?"Аудиоформат не поддерживается.":
+              locale==="es"?"Formato de audio no compatible.":"Unsupported audio format.");}}/>
         <button type="button" data-video-recipient-audio-record disabled={sttBusy||recording||preparing}
           aria-pressed={micRecording} onClick={()=>{if(micRecording)stopMicRecording();else void startMicRecording();}}>
           <Mic size={17}/>{micRecording?(locale==="ru"?"Стоп":locale==="es"?"Parar":"Stop"):
@@ -5960,23 +5968,22 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <small>{locale==="ru"?"Запись готова. Прослушивание доступно в исходном аудиоредакторе.":
           locale==="es"?"Audio listo. Puedes escucharlo en el editor de audio.":
           "Audio ready. Listen to it in the original audio editor."}</small></div>:null}
-      <label className={videoStyles.recipientAudioConsent}><input type="checkbox" checked={audioRights}
-        data-video-recipient-audio-rights disabled={!uploadedAudio}
-        onChange={e=>setAudioRights(e.currentTarget.checked)}/>
-        {locale==="ru"?"Я имею право использовать запись.":locale==="es"?"Tengo permiso de uso.":"I have permission to use this audio."}</label>
+      <small data-video-recipient-audio-rights-notice>
+        {locale==="ru"?"Используйте только свою запись или аудио, на которое у вас есть разрешение.":
+          locale==="es"?"Usa solo tu grabación o audio para el que tienes permiso.":
+            "Use only your own recording or audio you have permission to use."}
+      </small>
       </div>
     </div>
     <div className={videoStyles.recipientAudioStep}>
       <b>2</b><div><strong>{locale==="ru"?"Расшифровка и анализ":locale==="es"?"Transcripción":"Transcribe and analyze"}</strong>
-      <small>{locale==="ru"?"Только с вашего согласия передадим запись внешнему сервису один раз, без хранения.":
-        locale==="es"?"Solo con tu permiso enviamos una vez el audio para transcribirlo.":
-        "Explicit consent required for one external transcription request. No storage."}</small>
-      <label className={videoStyles.recipientAudioConsent}><input type="checkbox"
-        data-video-recipient-audio-stt-consent checked={sttConsent} disabled={!uploadedAudio||sttBusy}
-        onChange={e=>setSttConsent(e.currentTarget.checked)}/>
-        {locale==="ru"?"Согласен(на) на разовую передачу аудио.":locale==="es"?"Autorizo enviar este audio una vez.":"I consent to send the audio once."}</label>
+      <small data-video-recipient-audio-stt-notice>
+        {locale==="ru"?"Нажмите «Расшифровать», чтобы один раз передать запись внешнему сервису распознавания. Сайт не сохраняет аудио и текст.":
+          locale==="es"?"Pulsa Transcribir para enviar el audio una sola vez al servicio externo. El sitio no guarda audio ni texto.":
+            "Press Transcribe to send this audio once to an external speech recognition service. This site stores neither audio nor text."}
+      </small>
       <button type="button" data-video-recipient-audio-transcribe
-        disabled={!uploadedAudio||!studioHydrated||!sttConsent||!audioRights||sttBusy||recording||preparing||micRecording}
+        disabled={!uploadedAudio||!studioHydrated||!audioRights||sttBusy||recording||preparing||micRecording}
         onClick={()=>void transcribeVideoVoice()}><AudioLines size={17}/>
         {sttBusy?(locale==="ru"?"Расшифровываем…":locale==="es"?"Transcribiendo…":"Transcribing…"):
           locale==="ru"?"Расшифровать":locale==="es"?"Transcribir":"Transcribe"}</button>
@@ -5988,8 +5995,16 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <Film size={17}/>{locale==="ru"?"В монтаж без расшифровки":
           locale==="es"?"Editar sin transcripción":"Edit without transcription"}
       </button>:null}
-      {voiceTranscript?<details><summary>{locale==="ru"?"Просмотреть текст":locale==="es"?"Ver texto":"Review transcript"}
-        · {voiceTranscript.durationSeconds.toFixed(1)} s</summary><p>{voiceTranscript.text}</p></details>:null}
+      {voiceTranscript?<div className={videoStyles.recipientAudioConcept} data-video-recipient-audio-transcript>
+        <strong>{locale==="ru"?"Распознанный текст":locale==="es"?"Texto reconocido":"Transcribed text"}</strong>
+        <p style={{whiteSpace:"pre-wrap",overflowWrap:"anywhere"}}>{voiceTranscript.text}</p>
+        <details><summary>{locale==="ru"?"Фрагменты с таймкодами":locale==="es"?"Fragmentos con tiempos":"Timed segments"}
+          {" · "}{voiceTranscript.durationSeconds.toFixed(1)} s</summary>
+          <ol>{voiceTranscript.segments.map((segment,index)=><li key={index}>
+            {segment.startSeconds.toFixed(1)}–{segment.endSeconds.toFixed(1)} s · {segment.text}
+          </li>)}</ol>
+        </details>
+      </div>:null}
       </div>
     </div>
     <div className={videoStyles.recipientAudioStep}>
@@ -7895,7 +7910,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             </div>
             <MandalaAutomaticStoryboard
               locale={locale} goal={wish} theme={theme} durationSeconds={duration}
-              aspect={aspect} styleIndex={quickStyleIndex} phrases={affirmationLines}
+              aspect={aspect} styleIndex={quickStyleIndex} pace={speed}
+              personalization={ideasProfileConfirmed?summarizeVideoGoalProfile(ideasProfile,locale):null}
+              appliedStoryKey={appliedStoryKey} phrases={affirmationLines}
               transcript={voiceTranscript} approvedConcept={approvedVideoConcept}
               scenes={FREE_FILM_CATALOG}
               appliedShots={cinematicPlan?.shots.map(shot=>({
@@ -7915,16 +7932,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   behavior:"smooth",block:"start"
                 });
               }}
-              onApply={(shots,concept)=>{
+              onApply={(shots,concept,key,captions)=>{
                 const preset=aspectFilmPresets.find(option=>option.theme===theme);
                 if(!preset)return;
                 const edit:FreeFilmCompilationEdit={
                   clipIds:shots.map(shot=>shot.sceneId),
                   durationSecondsByStage:shots.map(shot=>shot.durationMs/1000),
-                  captionTexts:shots.map(()=>""),
+                  captionTexts:shots.map((_,index)=>captions[index]||""),
                 };
                 if(applyAutoFilm(preset.id,duration,edit,"portrait",true)){
-                  setMontageScriptText(concept.sceneOutline.join("\n"));
+                  setAppliedStoryKey(key);
+                  setMontageScriptText(captions.filter(Boolean).join("\n")||
+                    concept.sceneOutline.join("\n"));
                   setNotice(locale==="ru"
                     ?"Раскадровка применена. Проверьте сцены и нажмите «Создать видео»."
                     :locale==="es"
