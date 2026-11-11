@@ -189,6 +189,10 @@ async function handle(request, { params }) {
       auth.apply(NextResponse.json(data, { status, headers: PRIVATE_HEADERS }))
     if (joined === 'auth/providers' && method === 'GET')
       return json({ google: true, telegram: telegramLoginEnabled() })
+    if (joined === 'auth/status' && method === 'GET') {
+      await auth.verified()
+      return json({ authenticated: true })
+    }
     if (joined === 'auth/start' && method === 'POST') {
       const body = await readBody(request)
       onlyKeys(body, ['locale', 'intentId', 'serviceId', 'continueTo', 'program', 'requestId', 'native', 'returnPath', 'profi', 'coachingMode', 'coachingLang', 'recipientSlug', 'provider'])
@@ -197,7 +201,7 @@ async function handle(request, { params }) {
         throw new AppError('INVALID_AUTH_PROVIDER', 400)
       const selectedProvider = oauthProvider(authChoice)
       if (!selectedProvider) throw new AppError('TELEGRAM_LOGIN_UNAVAILABLE', 503)
-      const locale = body.locale === 'ru' ? 'ru' : body.locale === 'es' && ['enquiry','coaching-intake','practice-preview','direct-messages','video-studio','cabinet','course','tests','my-tests','my-courses','business'].includes(body.continueTo) ? 'es' : 'en'
+      const locale = body.locale === 'ru' ? 'ru' : body.locale === 'es' && ['enquiry','coaching-intake','practice-preview','direct-messages','video-studio','cabinet','course','tests','my-tests','my-courses','business','my-coach-mira'].includes(body.continueTo) ? 'es' : 'en'
       const intentId = body.intentId || null,
         serviceId = body.serviceId || null,
         continueTo = body.continueTo || null,
@@ -210,7 +214,7 @@ async function handle(request, { params }) {
         coachingLang = body.coachingLang ?? null,
         recipientSlug = body.recipientSlug ?? null
       if (body.native !== undefined && body.native !== true) throw new AppError('INVALID_CONTINUATION',400)
-      if (continueTo !== null && !['tests', 'course', 'consultations', 'business', 'coaching', 'coaching-intake', 'enquiry'].includes(continueTo) &&
+      if (continueTo !== null && !['tests', 'course', 'consultations', 'business', 'coaching', 'coaching-intake', 'enquiry', 'my-coach-mira'].includes(continueTo) &&
         !['commander-monitor','cabinet','my-practice','practice-preview','direct-messages','video-studio','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','practitioner-youtubeConnect','energywork','practitioner'].includes(continueTo)) throw new AppError('INVALID_CONTINUATION', 400)
       if (coachingMode !== null && (continueTo !== 'coaching' || !['egyptian','greek'].includes(coachingMode))) throw new AppError('INVALID_CONTINUATION', 400)
       if (coachingLang !== null && (continueTo !== 'coaching' || coachingLang !== 'es' || coachingMode === null)) throw new AppError('INVALID_CONTINUATION', 400)
@@ -251,7 +255,7 @@ async function handle(request, { params }) {
     }
     if (joined === 'auth/callback' && method === 'GET') {
       const url = new URL(request.url),
-        locale = url.searchParams.get('locale') === 'ru' ? 'ru' : url.searchParams.get('locale') === 'es' && ['enquiry','coaching-intake','practice-preview','direct-messages','video-studio','cabinet','course','tests','my-tests','my-courses','business'].includes(url.searchParams.get('continue')) ? 'es' : 'en',
+        locale = url.searchParams.get('locale') === 'ru' ? 'ru' : url.searchParams.get('locale') === 'es' && ['enquiry','coaching-intake','practice-preview','direct-messages','video-studio','cabinet','course','tests','my-tests','my-courses','business','my-coach-mira'].includes(url.searchParams.get('continue')) ? 'es' : 'en',
         code = url.searchParams.get('code'),
         intentId = url.searchParams.get('intent'),
         serviceId = url.searchParams.get('service'),
@@ -295,7 +299,7 @@ async function handle(request, { params }) {
       if (serviceId) requireUUID(serviceId)
       if (requestId !== null) requireUUID(requestId)
       if ((continueTo === 'consultations') !== Boolean(requestId)) throw new AppError('INVALID_CONTINUATION', 400)
-      if ((intentId && serviceId) || (continueTo && (!['commander-monitor','tests','course','consultations','business','coaching','cabinet','my-practice','practice-preview','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','practitioner-youtubeConnect','energywork','practitioner','enquiry','coaching-intake','direct-messages','video-studio'].includes(continueTo) || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
+      if ((intentId && serviceId) || (continueTo && (!['commander-monitor','tests','course','consultations','business','coaching','cabinet','my-practice','practice-preview','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','practitioner-youtubeConnect','energywork','practitioner','enquiry','coaching-intake','direct-messages','video-studio','my-coach-mira'].includes(continueTo) || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
       // Native OAuth runs Google in the system browser. This HTTPS callback
       // merely returns the single-use PKCE authorization code to the app;
       // the WebView's existing HttpOnly PKCE cookie then exchanges it through
@@ -327,6 +331,8 @@ async function handle(request, { params }) {
             ? `${origin}${directMessengerReturnPath(locale,recipientSlug)}`
           : continueTo === 'video-studio'
             ? `${origin}/${locale}/holistic-support/mandala`
+          : continueTo === 'my-coach-mira'
+            ? `${origin}/${locale}/coaching/sessions?coach=mira`
           : continueTo === 'tests'
             ? `${origin}/${locale}/app/tests?selection=pending`
             : continueTo === 'course'
@@ -373,7 +379,8 @@ async function handle(request, { params }) {
       // Failed Google login returns to the guest-visible approved design,
       // not a private editor that can only show an old sign-in shell.
       const failedPracticeDestination = continueTo === 'practice-preview'
-        ? `${origin}/${locale}/practice` : destination
+        ? `${origin}/${locale}/practice`
+        : continueTo === 'my-coach-mira' ? `${origin}/${locale}/my-coach` : destination
       if (url.searchParams.has('error') || !code || code.length > 4096)
         return finishAuth(
           NextResponse.redirect((value => { const url = new URL(failedPracticeDestination); if(linkedAccount) { url.pathname=`/${locale}/app/settings`; url.search=''; url.hash=''; } url.searchParams.set('auth', value); return url.href; })('cancelled'), {

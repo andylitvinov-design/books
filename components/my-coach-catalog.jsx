@@ -8,6 +8,7 @@ import {
   localCoachText, normalizeCoachSettings,
 } from '@/lib/coaching/persona-registry.mjs'
 import styles from './my-coach-catalog.module.css'
+import MyCoachExpressStart from './my-coach-express-start'
 
 const words = {
   en: {
@@ -212,6 +213,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
           <span className={styles.eyebrow}>HOLISTIC HOUSE · MY COACH</span>
           <h1 id="my-coach-heading">My Coach</h1>
           <p className={styles.heroLead}>{d.lead}</p>
+          <MyCoachExpressStart locale={lang} />
         </div>
         <div className={styles.heroWave} aria-hidden="true" />
         <div className={styles.quickTopics} role="group" aria-label={t.topics}>
