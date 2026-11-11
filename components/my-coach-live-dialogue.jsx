@@ -3,7 +3,7 @@
 import {useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
 import {ArrowLeft,ArrowRight,Check,LockKeyhole,Send,ShieldCheck,Sparkles} from 'lucide-react'
-import {getCoachPersona,localCoachText} from '@/lib/coaching/persona-registry.mjs'
+import {getCoachPersona,localCoachText,coachStagePrompt} from '@/lib/coaching/persona-registry.mjs'
 import styles from './my-coach-live-dialogue.module.css'
 import MyCoachSpeechLoop from './my-coach-speech-loop'
 
@@ -106,7 +106,24 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   }
   async function sendMessage(raw){
     const message=String(raw||'').trim()
-    if(!message||!consent||busy||paused||authRequired||readiness.status!=='verified')return
+    if(!message||!consent||busy||paused||authRequired||readiness.status==='checking')return
+    if(readiness.status!=='verified'){
+      // Local-only authored fallback. NEVER send private text to an unverified model.
+      // Same editorial persona prompts, same browser-only conversation history.
+      const stages=['goal','reality','resources','options','action']
+      const userCount=turns.filter(item=>item.role==='user').length
+      const stage=stages[Math.min(userCount,stages.length-1)]
+      const answer=String(coachStagePrompt(personaId,stage,lang,settings)||t.goal).slice(0,900)
+      setTurns(previous=>{
+        const updated=[...previous,{role:'user',content:message},{
+          role:'assistant',content:answer,reflection:'',question:answer,
+          mode:'offline',reason:'model_unavailable',stage,
+        }]
+        return updated.length>24?[updated[0],...updated.slice(-23)]:updated
+      })
+      setDraft('')
+      return {reply:answer,mode:'offline'}
+    }
     const controller=new AbortController()
     pending.current?.abort()
     pending.current=controller
@@ -197,19 +214,19 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     {!paused&&<form className={styles.composer} onSubmit={send}>
       <label htmlFor="hh-my-coach-live-input">{t.field}</label>
       <textarea id="hh-my-coach-live-input" value={draft} maxLength={1200} rows={2}
-        placeholder={t.placeholder} disabled={busy||authRequired||readiness.status!=='verified'}
+        placeholder={t.placeholder} disabled={busy||authRequired||readiness.status==='checking'}
         onChange={event=>{setDraft(event.target.value);setError('')}}/>
       <label className={styles.consent}>
-        <input type="checkbox" checked={consent} disabled={busy||readiness.status!=='verified'}
+        <input type="checkbox" checked={consent} disabled={busy||readiness.status==='checking'}
           onChange={event=>{setConsent(event.target.checked);if(!event.target.checked)pending.current?.abort()}}/>
         <span>{t.consent}</span>
       </label>
-      <button className={styles.send} type="submit" disabled={!consent||busy||!draft.trim()||authRequired||readiness.status!=='verified'}>
+      <button className={styles.send} type="submit" disabled={!consent||busy||!draft.trim()||authRequired||readiness.status==='checking'}>
         {busy?t.sending:t.send}<Send size={18} aria-hidden="true"/>
       </button>
     </form>}
     <MyCoachSpeechLoop locale={lang}
-      enabled={consent&&readiness.status==='verified'&&!authRequired}
+      enabled={consent&&readiness.status!=='checking'&&!authRequired}
       canStart={!busy&&!paused} onTurn={sendMessage}
       onCancelTurn={()=>pending.current?.abort()}/>
     {error&&<p className={styles.error} role="alert">{error}</p>}

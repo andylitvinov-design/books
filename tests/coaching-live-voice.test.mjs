@@ -162,7 +162,11 @@ test('My Coach persona dialogue speaks and listens on exactly the consented sess
   assert.match(ui,/MyCoachSpeechLoop/)
   assert.match(ui,/return sendMessage\(draft.trim\(\)\)/)
   assert.match(ui,/onTurn=\{sendMessage\}/)
-  assert.match(ui,/enabled=\{consent&&readiness.status==='verified'&&!authRequired\}/)
+  assert.match(ui,/enabled=\{consent&&readiness.status!=='checking'&&!authRequired\}/)
+  assert.match(ui,/Local-only authored fallback/)
+  assert.match(ui,/coachStagePrompt\(personaId,stage,lang,settings\)/)
+  const sendFunction=ui.slice(ui.indexOf('async function sendMessage(raw){'))
+  assert.ok(sendFunction.indexOf("if(readiness.status!=='verified'){") < sendFunction.indexOf("fetch('/api/app/my-coach/turn'"), 'offline turn never reaches external provider')
   assert.match(ui,/Browser speech recognition may send microphone audio/)
   assert.match(ui,/Браузер может отправлять звук поставщику распознавания речи/)
   for(const phrase of ['window.SpeechRecognition||window.webkitSpeechRecognition',
