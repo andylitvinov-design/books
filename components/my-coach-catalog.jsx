@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, BookOpen, Heart, RotateCcw, Search, ShieldCheck, SlidersHorizontal, Sparkles, Users, MoreHorizontal, Zap, Leaf, Flower2, MessageCircle, ChevronDown, ChevronUp } from 'lucide-react'
+import { ArrowRight, BookOpen, Heart, RotateCcw, Search, ShieldCheck, SlidersHorizontal, Sparkles, Users, MoreHorizontal, Zap, Leaf, Flower2, MessageCircle } from 'lucide-react'
 import {
   COACH_PERSONAS, COACH_TOPICS, coachSessionHref, coachStagePrompt, getCoachPersona,
   localCoachText, normalizeCoachSettings,
@@ -82,7 +82,7 @@ const topicText = {
 
 const designCopy = {
   en: {
-    heroSubtitle: 'Your AI coach for clarity, balance and growth', heroBadge: 'Meet your AI coach', heroHello: 'Hi! I'm', heroTalk: 'Start a session with',
+    heroSubtitle: 'Your AI coach for clarity, balance and growth', heroBadge: 'Meet your AI coach', heroHello: "Hi! I'm", heroTalk: 'Start a session with',
     heroNote: 'Your private session opens next. Sign-in may be required; live voice is available only when enabled.', heroTopic: 'Or start with a topic:', chooseOther: 'Choose another coach', explore: 'Explore coaches',
     lead: 'Choose your coach for a personal guided session',
     filters: 'Filters', allTopics: 'All topics', recommended: 'Suggested', favorites: 'Favorites',
@@ -140,14 +140,13 @@ export default function MyCoachCatalog({ locale = 'en' }) {
   const [onlyFavorites, setOnlyFavorites] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
-  const [expandedId, setExpandedId] = useState(null)
   const [sortBy, setSortBy] = useState('all')
   const [paceFilter, setPaceFilter] = useState('any')
   const [favorites, setFavorites] = useState([])
   const [favoritesReady, setFavoritesReady] = useState(false)
   const [selectedId, setSelectedId] = useState('mira')
+  const [expandedId, setExpandedId] = useState(null)
   const [settings, setSettings] = useState(() => normalizeCoachSettings('mira'))
-  const profileRef = useRef(null)
   useEffect(() => {
     try {
       const ids = JSON.parse(window.localStorage.getItem(FAVORITES_KEY) || '[]')
@@ -180,12 +179,15 @@ export default function MyCoachCatalog({ locale = 'en' }) {
   const safeSettings = normalizeCoachSettings(selected.id, settings)
   const updateSettings = (field, value) => setSettings(previous =>
     normalizeCoachSettings(selected.id, { ...previous, [field]: value }))
-  const startHref = coachSessionHref(lang, selected.id, safeSettings)?.replace('/coaching/sessions?', '/app/coaching?').replace('/es/app/coaching?', '/en/app/coaching?lang=es&')
+  const startHref = coachSessionHref(lang, selected.id, safeSettings)
   const selectedName = localCoachText(selected.name, lang)
   const followupPreview = coachStagePrompt(selected.id, 'goal', lang, safeSettings)
-  const choose = id => {
-    setSelectedId(id)
-    setSettings(normalizeCoachSettings(id))
+  const choose = (id) => {
+    setExpandedId(open => open === id ? null : id)
+    if (id !== selectedId) {
+      setSelectedId(id)
+      setSettings(normalizeCoachSettings(id))
+    }
   }
   const toggleFavorite = id => setFavorites(current =>
     current.includes(id) ? current.filter(value => value !== id) : [...current, id].slice(-8))
@@ -211,7 +213,6 @@ export default function MyCoachCatalog({ locale = 'en' }) {
           </div> : null}
         </nav>
       </header>
-
 
       <div className={styles.welcome}>
         <h1 id="my-coach-heading">My Coach</h1>
@@ -263,7 +264,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
           {COACH_PERSONAS.map(persona => <button type="button" key={persona.id}
             className={selected.id === persona.id ? styles.railCoachActive : styles.railCoach}
             aria-pressed={selected.id === persona.id}
-            onClick={() => { choose(persona.id); document.getElementById('my-coach-video')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}>
+            onClick={() => { setSelectedId(persona.id); setSettings(normalizeCoachSettings(persona.id)); setExpandedId(null); document.getElementById('my-coach-video')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}>
             <span className={styles.railPortrait} data-persona={persona.id} aria-hidden="true"><span>{persona.symbol}</span></span>
             <strong>{localCoachText(persona.name, lang)}</strong><small>{localCoachText(persona.role, lang)}</small>
           </button>)}
@@ -331,6 +332,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
         {visibleList.length ? <div className={styles.cardGrid}>
           {visibleList.map(persona => {
             const isSelected = selected.id === persona.id
+            const isExpanded = expandedId === persona.id
             const isFavorite = favorites.includes(persona.id)
             return <article key={persona.id} className={isSelected ? styles.cardSelected : styles.card}
               data-my-coach-card={persona.id}>
@@ -346,13 +348,10 @@ export default function MyCoachCatalog({ locale = 'en' }) {
                 </div>
                 <p className={styles.cardMeta}><Sparkles size={13} aria-hidden="true" /> {d.aiPersona} <span aria-hidden="true">·</span> {d.language}</p>
                 <div className={styles.cardFooter}>
-                  <button type="button" className={styles.viewProfile}
-                    onClick={() => { choose(persona.id); setExpandedId(old => old === persona.id ? null : persona.id) }}
-                    aria-expanded={expandedId === persona.id} aria-controls={'my-coach-about-' + persona.id}>
-                    {d.showProfile}{expandedId === persona.id ? <ChevronUp size={14} aria-hidden="true"/> : <ChevronDown size={14} aria-hidden="true"/>}
-                  </button>
+                  <button type="button" className={styles.viewProfile} onClick={() => choose(persona.id)}
+                    aria-expanded={isExpanded} aria-controls={'my-coach-profile-' + persona.id}>{d.showProfile}</button>
                   <Link className={styles.cardButton}
-                    href={coachSessionHref(lang, persona.id, normalizeCoachSettings(persona.id))?.replace('/coaching/sessions?', '/app/coaching?').replace('/es/app/coaching?', '/en/app/coaching?lang=es&')}
+                    href={coachSessionHref(lang, persona.id, normalizeCoachSettings(persona.id))}
                     prefetch={false}>{d.startNow}<ArrowRight size={16} aria-hidden="true" /></Link>
                 </div>
               </div>
@@ -362,21 +361,8 @@ export default function MyCoachCatalog({ locale = 'en' }) {
                 aria-pressed={isFavorite}>
                 <Heart size={21} fill={isFavorite ? 'currentColor' : 'none'} aria-hidden="true" />
               </button>
-              <div id={'my-coach-about-' + persona.id} className={styles.cardDetails} hidden={expandedId !== persona.id}>
-                <strong>{t.about}</strong>
-                <p>{localCoachText(persona.description, lang)}</p>
-                <p>{localCoachText(persona.approach, lang)}</p>
-                <p><b>{t.suited}:</b> {localCoachText(persona.suitable, lang)}</p>
-              </div>
-            </article>
-          })}
-        </div> : <div className={styles.empty}>
-          <p>{t.noResults}</p>
-          <button type="button" onClick={() => { setSearch(''); setTopic('all'); setOnlyFavorites(false); setPaceFilter('any') }}>{t.all}</button>
-        </div>}
-        <p className={styles.disclosure} role="note"><ShieldCheck size={15} aria-hidden="true" />{t.aiNotice}</p>
-      </section>
-      <section ref={profileRef} className={styles.profile} aria-label={t.profile}
+              {isExpanded && (
+                <section id={'my-coach-profile-' + persona.id} className={styles.profile} aria-label={t.profile}
         data-my-coach-selected={selected.id}>
         <div className={styles.profileHead}>
           <div className={styles.avatarLarge} data-persona={selected.id} data-palette={selected.palette} aria-hidden="true">{selected.symbol}</div>
@@ -426,6 +412,16 @@ export default function MyCoachCatalog({ locale = 'en' }) {
         <p className={styles.sessionNote}>{t.sessionNote}</p>
         <p className={styles.privacy}>{t.privacy}</p>
       </section>
+              )}
+            </article>
+          })}
+        </div> : <div className={styles.empty}>
+          <p>{t.noResults}</p>
+          <button type="button" onClick={() => { setSearch(''); setTopic('all'); setOnlyFavorites(false); setPaceFilter('any') }}>{t.all}</button>
+        </div>}
+        <p className={styles.disclosure} role="note"><ShieldCheck size={15} aria-hidden="true" />{t.aiNotice}</p>
+      </section>
+      
       <nav className={styles.secondaryNav} aria-label={t.change}>
         <Link href={'/' + lang + '/coaching'}><BookOpen size={17} aria-hidden="true" /> {t.back}</Link>
         <Link href={'/' + lang + '/masters'}><Users size={17} aria-hidden="true" /> {t.human}</Link>
