@@ -19,9 +19,15 @@ export async function requestConsentedTimedTranscript(
   const extension=file.name.slice(file.name.lastIndexOf(".")+1).toLowerCase();
   const mime=formats[extension];
   if(!mime)throw Error("AUDIO_STT_INVALID_FILE");
-  const normalized=file.type===""||file.type==="application/octet-stream"
-    ?new File([file],file.name,{type:mime,lastModified:file.lastModified})
-    :file;
+  // Safari MediaRecorder can produce audio/mp4;codecs=mp4a.40.2.
+  // Canonicalize only explicitly supported MIME types, preserving recorded bytes.
+  const declaredType=file.type.toLowerCase().split(";")[0].trim();
+  if(!new Set(["","application/octet-stream","audio/mpeg","audio/mp3",
+    "audio/mp4","video/mp4","audio/x-m4a","audio/wav","audio/x-wav",
+    "audio/aac","audio/webm"]).has(declaredType))
+    throw Error("AUDIO_STT_INVALID_FILE");
+  const normalized=file.type===mime?file
+    :new File([file],file.name,{type:mime,lastModified:file.lastModified});
   const form=new FormData();
   form.append("file",normalized,normalized.name);
   form.append("locale",locale);
