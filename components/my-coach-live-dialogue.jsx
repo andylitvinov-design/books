@@ -4,6 +4,10 @@ import {useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
 import {ArrowLeft,ArrowRight,Check,LockKeyhole,Send,ShieldCheck,Sparkles} from 'lucide-react'
 import {getCoachPersona,localCoachText} from '@/lib/coaching/persona-registry.mjs'
+import {appendSpokenAnswer} from '@/lib/personal-coaching/speech-text'
+import {normalizeAvatarSpeechEvent} from '@/lib/personal-coaching/coaching-avatar-state.mjs'
+import CoachingAvatar from '@/components/app/coaching-avatar'
+import CoachingQuestionVoice from '@/components/app/coaching-question-voice'
 import styles from './my-coach-live-dialogue.module.css'
 
 const copy={
@@ -53,6 +57,15 @@ const copy={
     failed:'La respuesta IA no pasó la validación.',retry:'El servicio IA está temporalmente inaccesible.',goal:'Comienza por tu objetivo.',
   },
 }
+const avatarVisuals={
+  mira:'warm',max:'clear',sofia:'calm',alex:'clear',
+  lea:'calm',noah:'warm',iris:'warm',ray:'clear',
+}
+const avatarNotice={
+  en:'Moving 2D illustration · your device voice, not a video call.',
+  ru:'Живая 2D-иллюстрация · голос устройства, не видеозвонок.',
+  es:'Ilustración 2D animada · voz del dispositivo, no videollamada.',
+}
 const reasons={
   feature_disabled:'disabled',server_not_configured:'config',rate_limited:'limit',
   privacy_model_unavailable:'protected',cost_unverified:'cost',
@@ -72,6 +85,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [authRequired,setAuthRequired]=useState(false)
   const [readiness,setReadiness]=useState({status:'checking',reason:''})
   const [paused,setPaused]=useState(false)
+  const [speech,setSpeech]=useState({phase:'idle',beat:0})
+  const [dictating,setDictating]=useState(false)
+  const [dictationInterim,setDictationInterim]=useState('')
   const [editablePlan,setEditablePlan]=useState('')
   const pending=useRef(null),end=useRef(null)
   useEffect(()=>()=>pending.current?.abort(),[])
@@ -98,6 +114,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   useEffect(()=>{if(turns.length)end.current?.scrollIntoView({block:'nearest',behavior:'auto'})},[turns])
   const name=persona?localCoachText(persona.name,lang):t.coach
   const opening=persona?localCoachText(persona.opening,lang):t.goal
+  const spokenText=[...turns].reverse().find(item=>item.role==='assistant')?.content||opening
 
   async function send(event){
     event.preventDefault()
@@ -146,6 +163,21 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       <span className={styles.badge}><Sparkles size={15} aria-hidden="true"/>{t.badge}</span>
       <h2>{t.title}</h2>
       <p>{t.disclosure}</p>
+      <div className={styles.livingPanel} data-my-coach-living-dialogue="true">
+        <CoachingAvatar locale={lang} avatarId={avatarVisuals[personaId]||'warm'}
+          displayName={name} showPicker={false} size="large"
+          phase={dictating?'listening':busy?'thinking':speech.phase} beat={speech.beat}/>
+        <div className={styles.livingActions}>
+          <span>{avatarNotice[lang]}</span>
+          <CoachingQuestionVoice text={spokenText} locale={lang} mode="answer" compact
+            fictionalPersona disabled={busy||paused}
+            allowDictation={!authRequired&&readiness.status==='verified'&&consent&&!paused}
+            onTranscript={value=>setDraft(previous=>appendSpokenAnswer(previous,value,1200))}
+            onInterim={setDictationInterim} onListeningChange={setDictating}
+            onSpeechChange={event=>setSpeech(normalizeAvatarSpeechEvent(event))}/>
+          {dictationInterim&&<small className={styles.dictationInterim} aria-live="polite">{dictationInterim}</small>}
+        </div>
+      </div>
     </header>
     <div className={styles.messages} role="log" aria-live="polite" aria-relevant="additions text">
       <div className={styles.coachMessage}>

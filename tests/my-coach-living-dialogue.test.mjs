@@ -1,0 +1,35 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import {readFileSync} from 'node:fs'
+import {COACH_PERSONAS} from '../lib/coaching/persona-registry.mjs'
+const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
+test('all eight fictional My Coach profiles map to a living original SVG face',()=>{
+  const dialog=source('components/my-coach-live-dialogue.jsx')
+  const avatar=source('components/app/coaching-avatar.jsx')
+  const css=source('components/app/coaching-avatar.module.css')
+  for(const p of COACH_PERSONAS)assert.match(dialog,new RegExp('\\b'+p.id+":'"))
+  assert.match(dialog,/data-my-coach-living-dialogue="true"/)
+  assert.match(dialog,/<CoachingAvatar/)
+  assert.match(avatar,/showPicker=true,displayName='',size='compact'/)
+  assert.match(avatar,/className=\{styles\.mouthTalk\}/)
+  assert.match(avatar,/className=\{styles\.eyes\}/)
+  assert.match(css,/\[data-phase='speaking'\] \.mouthTalk/)
+  assert.match(css,/hh-coach-blink/)
+  assert.match(css,/prefers-reduced-motion:reduce/)
+})
+test('the real device TTS events drive speech phases; dictation is consent-gated',()=>{
+  const dialog=source('components/my-coach-live-dialogue.jsx')
+  const voice=source('components/app/coaching-question-voice.jsx')
+  assert.match(dialog,/<CoachingQuestionVoice/)
+  assert.match(dialog,/normalizeAvatarSpeechEvent\(event\)/)
+  assert.match(dialog,/appendSpokenAnswer\(previous,value,1200\)/)
+  assert.match(dialog,/allowDictation=\{!authRequired&&readiness.status==='verified'&&consent&&!paused\}/)
+  assert.match(dialog,/phase=\{dictating\?'listening':busy\?'thinking':speech.phase\}/)
+  assert.match(voice,/item\.onstart=/)
+  assert.match(voice,/item\.onboundary=/)
+  assert.match(voice,/item\.onend=/)
+  assert.match(voice,/allowDictation=true/)
+  assert.match(voice,/support\.stt&&allowDictation&&/)
+  assert.match(voice,/window\.confirm\(t\.notice\)/)
+  assert.doesNotMatch(dialog,/localStorage|sessionStorage|MediaRecorder/)
+})
