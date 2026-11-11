@@ -85,3 +85,17 @@
 .compactThread .userBubble{display:flex;align-items:center;gap:3px;overflow:hidden;max-width:100%;min-width:0}
 .compactThread .userLabel{flex:none;white-space:nowrap}
 .compactThread .userBubble p{flex:1;display:block;min-width:0;max-width:none}
+
+/* Public fictional AI coach portrait; human-coaching sessions retain Andrey's real photo. */
+.personaAvatar{display:flex;flex:none;align-items:center;justify-content:center;width:40px;height:40px;
+ border:2px solid #fff;border-radius:50%;background:#e7f3e9;box-shadow:0 2px 9px #35453e2d;font-size:20px}
+.personaAvatar[data-persona=mira],.personaAvatar[data-persona=max],
+.personaAvatar[data-persona=sofia],.personaAvatar[data-persona=alex]{
+ background:url('/images/holistic-house/my-coach-portraits.avif') no-repeat;background-size:400% 100%;font-size:0}
+.personaAvatar[data-persona=mira]{background-position:0% center}
+.personaAvatar[data-persona=max]{background-position:33.333% center}
+.personaAvatar[data-persona=sofia]{background-position:66.667% center}
+.personaAvatar[data-persona=alex]{background-position:100% center}
+@media(max-width:430px){.personaAvatar{width:34px;height:34px}}
+@media(max-width:350px){.personaAvatar{width:30px;height:30px}}
+.compactThread .personaAvatar{width:28px;height:28px;font-size:16px}
