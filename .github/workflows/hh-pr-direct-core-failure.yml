@@ -290,7 +290,12 @@ jobs:
     permissions:
       contents: read
       actions: write
-      pull-requests: read
+      # A PR Conversation receipt is a PR-scoped issue comment. Real Core
+      # #42958812466 reached independently verified GREEN, but the job's
+      # issues:write + pull-requests:read token was denied HTTP 403 on
+      # POST /issues/4306/comments. Keep contents:read and grant only this
+      # trusted success/terminal-receipt job PR write scope.
+      pull-requests: write
       issues: write
       checks: read
     steps:
