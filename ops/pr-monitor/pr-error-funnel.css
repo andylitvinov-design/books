@@ -8,6 +8,7 @@
 .hh-error-controls select:focus-visible,.hh-error-controls button:focus-visible,.hh-error-details a:focus-visible,.hh-error-details summary:focus-visible{outline:2px solid #64e6d1;outline-offset:3px}
 .hh-error-controls button{background:#205e71;font-weight:720}
 .hh-error-controls button:disabled{opacity:.55;cursor:progress}
+.hh-error-insight{margin:0 0 12px;color:#cfebf5;font-size:12px;line-height:1.5;font-weight:650;overflow-wrap:anywhere}
 .hh-error-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
 .hh-error-stage{min-height:101px;background:#132b43;border:1px solid #31516d;border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px;box-sizing:border-box;min-width:0}
 .hh-error-stage-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
@@ -45,3 +46,5 @@
 .hh-error-reason-prs{display:flex;flex-wrap:wrap;gap:6px 10px}
 .hh-error-reason-prs a{font-size:11px;color:#86e2f4;text-decoration:underline;text-underline-offset:2px}
 @media(max-width:600px){.hh-error-blockers{padding:9px}.hh-error-reasons{grid-template-columns:1fr}.hh-error-reason{padding:10px}}
+
+@media(max-width:600px){.hh-error-insight{font-size:12px;line-height:1.45;margin:0 0 10px}}

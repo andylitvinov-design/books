@@ -37,9 +37,8 @@
     c.reason_code.length>0&&typeof c.responsible_role==='string'&&
     c.responsible_role.length>0);}
   function taskLinked(e){return classified(e)&&ASSOCIATIONS.has(e.association_status);}
-  // Potentially repairable TEST_FAILURE is an exact, authenticated Core
-  // source-owned contract, not an unrelated specialist/browser test.
-  // The trusted Worker and publication receipts remain independent proof.
+  // Only a signed Core source-owned test may join ordinary code repair.
+  // Specialist/browser tests remain review-only.
   function sourceRepairCandidate(e){
     return ['TYPESCRIPT','SOURCE_CODE'].includes(e?.category)||
       (e?.category==='TEST_FAILURE'&&
@@ -150,9 +149,63 @@
     }
     return false;
   }
+  // Fixed-vocabulary failure taxonomy: the user can see WHY a verified
+  // Worker outcome did not become a GitHub commit. Never render provider
+  // messages, source text, token contents or untrusted PR descriptions.
+  // These are historical outcomes, not an instruction to retry a held HEAD.
+  var FAILURE_REASONS=[
+    ['publish','GitHub не опубликовал коммит',
+      'Проверить права издателя и совпадение SHA; не выполнять обходной force-push.'],
+    ['coverage','Нет доказанного теста или воспроизведения',
+      'Уточнить конкретный тест и ошибку TypeScript; проверку не отключать.'],
+    ['provider','Бесплатная модель недоступна',
+      'Квота/запрос бесплатной модели; платный fallback не запускать.'],
+    ['patch','Патч отклонён проверкой',
+      'Нужна новая безопасная правка и независимая верификация.'],
+    ['scope','Область исходников требует владельца',
+      'Чувствительные или неподдерживаемые файлы нельзя передавать свободному агенту.'],
+    ['other','Другая подтверждённая причина',
+      'Открыть подписанный результат Worker и назначенную задачу для точного разбора.'],
+    ['unverified','Есть кандидат, но запись SHA не проверена',
+      'Не считать коммитом до независимого чтения GitHub commit и его родителя.']
+  ];
+  var SOURCE_CATEGORIES=new Set(['TYPESCRIPT','SOURCE_CODE']);
+  function workerFailureReason(item){
+    if(!item||typeof item!=='object'||item.state==='PUBLISHED')return null;
+    var reason=typeof item.reason_code==='string'?item.reason_code:'';
+    var detail=typeof item.detail_code==='string'?item.detail_code:'';
+    if(reason==='SOURCE_PUBLISH_JOB_FAILURE'||
+       reason==='FREE_AI_JOB_NOT_STARTED_NO_SOURCE_COMMIT'||
+       /^HH_REPAIR_(?:GIT_DATA|GRAPHQL|PUBLISH)/.test(detail))return 'publish';
+    if(['FREE_AI_NO_BOUNDED_TEST_COVERAGE',
+      'FREE_AI_NO_REPRODUCED_BOUNDED_FAILURE',
+      'FREE_AI_TYPECHECK_FAILURE_OUTSIDE_REPAIR_SCOPE',
+      'FREE_AI_TYPECHECK_LINE_NOT_IN_SOURCE',
+      'SCOPED_TESTS_NOT_GREEN'].includes(detail))return 'coverage';
+    if(['FREE_AI_UNSAFE_SOURCE_SCOPE','SOURCE_SCOPE_UNSAFE_FOR_FREE_AI',
+      'SOURCE_SCOPE_NOT_ACTIONABLE'].includes(detail))return 'scope';
+    if(['FREE_AI_PATCH_APPLY_CHECK_FAILED','FREE_AI_PATCH_RESPONSE_INVALID',
+      'FREE_AI_OPENROUTER_PATCH_RESPONSE_TRUNCATED',
+      'FREE_AI_PATCH_APPLY_RECOUNT_UNVERIFIED'].includes(detail))return 'patch';
+    if(detail==='FREE_AI_FREE_TIER_QUOTA_EXHAUSTED'||
+       /^FREE_AI_OPENROUTER_(?:HTTP_|REQUEST_|RATE_|MODEL_|QUOTA_)/.test(detail)||
+       detail==='FREE_AI_OPENROUTER_PATCH_RESPONSE_INVALID')return 'provider';
+    return 'other';
+  }
+  function verifiedFollowUp(item,e,taskKey,runId){
+    var f=item?.follow_up_task;
+    return !!(f&&f.schema==='HH_CI_ERROR_TASK_V1'&&
+      f.event_kind==='REPAIR_WORKER_FAILED'&&
+      f.pr_number===e.pr_number&&f.head_sha===e.head_sha&&
+      f.parent_task_key===taskKey&&String(f.owner_run_id)===runId&&
+      f.executor_kind==='owner_review'&&f.assignment_status==='OWNER_REVIEW_REQUIRED'&&
+      f.source_write_authorized===false&&f.execution_authorized===false&&
+      TASK.test(f.task_id||''));
+  }
   function taskEvidence(comments,e){
     var route=routeFor(e,comments),empty={claimed:false,runner:false,responded:false,
       candidate_sha:null,ai_response:false,links:{},worker_status:null,
+      failure_reason:null,follow_up_verified:false,
       verified_route:route||null};
     if(!route||!Array.isArray(comments))return empty;
     var events=[],seen=new Set();
@@ -194,6 +247,8 @@
     if(!answer)return empty;
     empty.responded=true;empty.links.responded=commentUrl(answer.comment);
     empty.worker_status=answer.item.state;
+    empty.failure_reason=workerFailureReason(answer.item);
+    empty.follow_up_verified=verifiedFollowUp(answer.item,e,route.workerTaskKey,runId);
     var ai=answer.item.model_run;
     empty.ai_response=!!(ai&&ai.schema==='HH_FREE_AI_MODEL_RUN_V1'&&
       ai.prompt_delivery_status==='RESPONSE_OBSERVED'&&
@@ -223,10 +278,15 @@
     var prs=new Map(),uniqueEvents=new Set(),counts={},links={};
     // These diagnostic cohorts overlap. No missing receipt is fabricated.
     var BLOCKERS=[
+      ['diagnostic_only','Ошибка не требует кодового Worker',
+        'Маршрут CI, диагностика, конфликт или иной тип — нужен профильный исполнитель.'],
+      ['source_not_dispatched','Кодовая задача ещё не дошла до Worker',
+        'Ошибка исходников подтверждена, но нет проверенного dispatch для конкретного HEAD.'],
       ['unclassified','Диагностика не завершена','Нет проверенной классификации или причина UNKNOWN'],
-      ['unrouted','Нет результата маршрутизации','Задача есть, но нет сохранённой квитанции маршрута'],
-      ['needs_review','Нужен другой исполнитель','Сохранён маршрут на диагностику/ручной разбор, но не на кодовый Worker'],
-      ['worker_without_commit','Ответ без коммита','Worker завершил попытку, исходный код не опубликован']
+      ['unrouted','Нет результата маршрутизации','Нет ни сохранённого маршрута, ни подписанного подтверждения GitHub.'],
+      ['needs_review','Нужен другой исполнитель','Задача направлена на диагностику/ручной разбор, а не кодовому Worker.'],
+      ['worker_without_commit','Ответ без коммита','Worker завершил попытку, исходный код не опубликован.'],
+      ...FAILURE_REASONS.map(function(r){return ['why_'+r[0],r[1],r[2]];})
     ];
     var blockers={};
     for(var item of BLOCKERS)blockers[item[0]]={prs:new Set(),events:new Set(),label:item[1],note:item[2]};
@@ -242,12 +302,19 @@
       var proof=byEvent&&byEvent[id]||{};
       var route=routeFor(e)||proof.verified_route||null;
       if(!classified(e)||e.category==='UNKNOWN')mark('unclassified',e);
-      if(taskLinked(e)&&!e.route_receipt)mark('unrouted',e);
+      if(taskLinked(e)&&!e.route_receipt&&!route)mark('unrouted',e);
+      if(taskLinked(e)&&!SOURCE_CATEGORIES.has(e.category))
+        mark('diagnostic_only',e);
+      if(taskLinked(e)&&SOURCE_CATEGORIES.has(e.category)&&!route)
+        mark('source_not_dispatched',e);
       if(['TASK_REQUIRES_REVIEW','TASK_ROUTED_TO_REVIEW',
         'TASK_AWAITING_EXISTING_RECOVERY'].includes(e.route_receipt?.state))
         mark('needs_review',e);
-      if(route&&proof.responded===true&&proof.commit_verified!==true)
+      if(route&&proof.responded===true&&proof.commit_verified!==true){
         mark('worker_without_commit',e);
+        var failureKey=proof.candidate_sha?'unverified':proof.failure_reason||'other';
+        mark('why_'+failureKey,e);
+      }
       var states={failed:true,classified:classified(e),task:taskLinked(e),
         assigned:diagnosticAssignment(e)||!!route,
         source_assigned:!!route,dispatched:!!route,
@@ -272,10 +339,19 @@
       }
     }
     for(var key of Object.keys(links))links[key].sort(function(a,b){return b.pr-a.pr;});
+    // Differences of lower bounds are NOT lower bounds. Never render 15-3
+    // as an exact number when the 100-event/PR proof window is incomplete.
+    var diagnosticAssignments=complete===true?
+      Math.max(0,counts.assigned-counts.source_assigned):null;
+    var workerRepliesWithoutCommit=complete===true?
+      Math.max(0,counts.responded-counts.committed):null;
     return {schema:'HH_PR_ERROR_FUNNEL_V1',period_hours:hours,from:new Date(start).toISOString(),
       to:new Date(now).toISOString(),counts:counts,links:links,
       unique_prs:prs.size,unique_events:uniqueEvents.size,
       ai_responded_prs:[...prs.values()].filter(function(p){return p.ai_response;}).length,
+      breakdown:{assigned_diagnostic_not_source:diagnosticAssignments,
+        worker_replies_without_commit:workerRepliesWithoutCommit,
+        note:'Когорта содержит исторические и закрытые PR; категории могут пересекаться.'},
       blockers:BLOCKERS.map(function(item){
         var row=blockers[item[0]];
         return {key:item[0],label:row.label,note:row.note,
@@ -292,7 +368,7 @@
   if(typeof document==='undefined'||typeof window==='undefined')return;
   if(root.__hhPrErrorFunnelMounted)return;
   root.__hhPrErrorFunnelMounted=true;
-  var panel,select,refreshButton,message,grid,drill,blockerPanel,loading=false;
+  var panel,select,refreshButton,message,insight,grid,drill,blockerPanel,loading=false;
   var commentsCache=new Map(),commitCache=new Map();
   var formatter=new Intl.NumberFormat('ru-RU');
   function el(tag,css,label){var n=document.createElement(tag);
@@ -323,6 +399,7 @@
     refreshButton.type='button';
     controls.append(label,refreshButton);
     header.append(titles,controls);
+    insight=el('p','hh-error-insight','Разбираю назначения и публикации по подтверждениям GitHub…');
     grid=el('div','hh-error-grid');
     message=el('p','hh-error-message','Загружаю подтверждённые события…');
     message.setAttribute('role','status');
@@ -330,7 +407,7 @@
     blockerPanel=el('details','hh-error-blockers');
     blockerPanel.append(el('summary','','Почему задачи останавливаются · причины и PR'),
       el('p','','После входа здесь появится разбивка по типу блокировки.'));
-    panel.append(header,grid,message,blockerPanel,drill);
+    panel.append(header,insight,grid,message,blockerPanel,drill);
     main.insertBefore(panel,main.firstChild);
     renderSkeleton();
     select.addEventListener('change',load);
@@ -380,6 +457,15 @@
   }
   function display(data,note){
     grid.replaceChildren();drill.replaceChildren();
+    insight.textContent=data.complete?
+      'Назначено: '+data.counts.source_assigned+' Repair Worker и '+
+      data.breakdown.assigned_diagnostic_not_source+' диагностических исполнителей. '+
+      'Подтверждённых коммитов: '+data.counts.committed+' из '+
+      data.counts.responded+' ответов Worker; без SHA — '+
+      data.breakdown.worker_replies_without_commit+'.':
+      'Неполные данные: подтверждено не менее '+
+      data.counts.source_assigned+' кодовых назначений и '+
+      data.counts.committed+' GitHub-коммитов. Причины ниже, точная доля недоступна.';
     for(var stage of STAGES){
       var key=stage[0],n=data.counts[key],card=el('article','hh-error-stage');
       var top=el('div','hh-error-stage-head');
@@ -406,9 +492,10 @@
       d.append(list);drill.append(d);
     }
     blockerPanel.replaceChildren();
-    blockerPanel.append(el('summary','','Почему задачи останавливаются · причины и PR'));
+    blockerPanel.append(el('summary','','Почему назначений и коммитов меньше · причины по PR'));
     var reasons=el('div','hh-error-reasons');
     for(var b of data.blockers||[]){
+      if(b.pr_count===0)continue;
       var box=el('article','hh-error-reason');
       var head=el('div','hh-error-reason-head');
       head.append(el('strong','',b.label),el('span','',b.event_count+' событий · '+b.pr_count+' PR'));
@@ -421,14 +508,19 @@
       }
       box.append(prs);reasons.append(box);
     }
+    if(!reasons.children.length)reasons.append(el('p','',
+      'В выбранном периоде нет подтверждённых причин остановки.'));
     blockerPanel.append(reasons);
     message.replaceChildren();
     var time=new Intl.DateTimeFormat('ru-RU',{timeZone:'America/Toronto',
       day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});
     message.append('Период: '+time.format(new Date(data.from))+' — '+time.format(new Date(data.to))+
       ' (Торонто). Ошибок Core CI: '+data.unique_events+' событий в '+
-      data.unique_prs+' PR. Ответов модели OpenRouter: '+data.ai_responded_prs+
-      ' PR (это не равно коммиту). '+(note||'')+
+      data.unique_prs+' PR. Назначений: '+data.counts.assigned+
+      ', кодовому Worker: '+data.counts.source_assigned+
+      ', коммитов: '+data.counts.committed+
+      '. Ответов модели OpenRouter: '+data.ai_responded_prs+
+      ' PR (это не равно коммиту). В выборке есть закрытые и тестовые PR. '+(note||'')+
       (data.complete?'':' Неполное покрытие: показаны минимально подтверждённые значения, не все события.'));
   }
   async function load(){

@@ -118,6 +118,36 @@ function findTypeScriptFailureTarget(output,allowed){
  if(!targets.length||new Set(targets.map(t=>t.file)).size!==1)return null;
  return targets.sort((a,b)=>a.line-b.line||a.column-b.column)[0];
 }
+// Select an exact failed ESLint source only after focused tests and the
+// TypeScript compiler do not provide a source target. Never authorize edits
+// from an ambiguous, out-of-scope, malformed, or warning-only diagnostic.
+function findEslintFailureTarget(raw,allowed,root){
+ if(typeof raw!=='string'||raw.length>300000||!Array.isArray(allowed)||
+    !allowed.length||allowed.length>MAX_FILES||typeof root!=='string')return null;
+ let data,dir;
+ try{data=JSON.parse(raw);dir=fs.realpathSync(root);}catch{return null;}
+ if(!Array.isArray(data)||data.length<1||data.length>MAX_FILES)return null;
+ const found=[];
+ for(const entry of data){
+  if(!entry||typeof entry.filePath!=='string'||!path.isAbsolute(entry.filePath)||
+     !Array.isArray(entry.messages)||!Number.isSafeInteger(entry.errorCount)||
+     entry.errorCount<0)return null;
+  const full=path.resolve(entry.filePath);
+  const file=path.relative(dir,full).split(path.sep).join('/');
+  if(file.startsWith('../')||file==='..'||path.resolve(dir,file)!==full||
+     !allowed.includes(file)||!safeSourcePath(file))return null;
+  for(const m of entry.messages){
+   if(!m||m.severity!==2)continue;
+   if(typeof m.ruleId!=='string'||!/^[A-Za-z0-9_/@.-]{2,100}$/.test(m.ruleId)||
+      !Number.isSafeInteger(m.line)||m.line<1||m.line>50000||
+      !Number.isSafeInteger(m.column)||m.column<1||m.column>5000)return null;
+   found.push({file,line:m.line,column:m.column,code:m.ruleId,source:'eslint_diagnostic'});
+   if(found.length>80)return null;
+  }
+ }
+ if(!found.length||new Set(found.map(x=>x.file)).size!==1)return null;
+ return found.sort((a,b)=>a.line-b.line||a.column-b.column)[0];
+}
 function narrowFailedSourceScope(root,scope){
  const listing=run('git',['ls-files','-z','--','tests'],{cwd:root,timeout:10000});
  if(!listing.ok)throw Error('FREE_AI_TEST_INDEX_UNAVAILABLE');
@@ -168,6 +198,27 @@ function narrowFailedSourceScope(root,scope){
        evidence:'CURRENT_HEAD_COMPILER_DIAGNOSTIC'}));
    }
  }
+ if(!ranked.size){
+  // Only a locally reproduced severity-2 ESLint diagnostic on a tested
+  // allowlisted changed file permits the free model to propose a patch.
+  const lint=run(path.join(root,'node_modules/.bin/eslint'),
+    ['--format','json',...scope.files],
+    {cwd:root,env:noSecretEnv(),timeout:75000});
+  if(!lint.ok&&!lint.error){
+   const target=findEslintFailureTarget(lint.stdout,scope.files,root);
+   if(target){
+    const lines=fs.readFileSync(path.resolve(root,target.file),'utf8').split(/\r?\n/);
+    if(target.line<=lines.length){
+     target.assertion=String(lines[target.line-1]||'').trim().slice(0,240);
+     ranked.set(target.file,90);
+     evidence.set(target.file,target);
+     console.log('HH_FREE_AI_ESLINT_REPRODUCED '+JSON.stringify({
+       file:target.file,line:target.line,code:target.code,
+       evidence:'CURRENT_HEAD_BOUNDED_ESLINT_DIAGNOSTIC'}));
+    }
+   }
+  }
+ }
  if(!ranked.size)throw Error('FREE_AI_NO_REPRODUCED_BOUNDED_FAILURE');
  const selected=[...ranked].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]))[0][0];
  const focused={sha:scope.sha,files:[selected],evidence:evidence.get(selected)||null};
@@ -182,7 +233,7 @@ function boundedSource(content,evidence=null){
  if(Buffer.byteLength(content,'utf8')<=MAX_SOURCE)return {content,bounded:false};
  // The compiler points to a precise safe file/line. Include the surrounding
  // source (not arbitrary unrelated body) when the complete file is oversized.
- if(evidence?.source==='typescript_compiler'&&
+ if(['typescript_compiler','eslint_diagnostic'].includes(evidence?.source)&&
     Number.isSafeInteger(evidence.line)&&evidence.line>0){
    const lines=content.split(/\r?\n/),center=evidence.line-1;
    if(center<lines.length){
@@ -291,6 +342,39 @@ function collectDiagnostics(root,scope){
  return {tests:{ok:tests.ok,detail:safeDiagnostic(tests.output,4800)},
    lint:{ok:lint.ok,detail:safeDiagnostic(lint.output,4800)},
    types:{ok:types.ok,detail:safeDiagnostic(types.output,7000)}};
+}
+// One $0-capped retry only when a verified free completion was truncated.
+// Restrict the second prompt to a real compiler/ESLint error line plus local
+// context; source/HEAD authorization and independent verification are unchanged.
+function boundedTruncationRetryPrompt(scope,root){
+ if(!scope||!Array.isArray(scope.files)||scope.files.length!==1||
+    !safeSourcePath(scope.files[0])||
+    !['typescript_compiler','eslint_diagnostic'].includes(scope.evidence?.source)||
+    !Number.isSafeInteger(scope.evidence.line)||scope.evidence.line<1||
+    scope.evidence.line>50000)return null;
+ const file=scope.files[0];
+ let source;
+ try{source=fs.readFileSync(path.resolve(root,file),'utf8');}catch{return null;}
+ const lines=source.split(/\r?\n/),pos=scope.evidence.line-1;
+ if(pos>=lines.length||source.length>MAX_DISK_SOURCE||!source.endsWith('\n')||
+    source.includes('\0')||lines[pos].length>1800||!lines[pos].trim())return null;
+ const first=Math.max(0,pos-5),last=Math.min(lines.length,pos+6);
+ const excerpt=lines.slice(first,last).map((line,i)=>String(first+i+1)+': '+line).join('\n');
+ const prompt=[
+  'Second and FINAL zero-price attempt for one exact-HEAD source error.',
+  'Previous free completion was truncated. Output ONLY compact JSON with exactly keys file,old,new.',
+  'Copy one complete original source line into old, including indentation.',
+  'Provide only a single complete replacement source line in new.',
+  'No reasoning, prose, markdown, or multiple edits. If unsafe, output NO_SAFE_PATCH.',
+  'Never change tests, private data, credentials, permissions or security checks.',
+  'Exact HEAD: '+scope.sha,
+  'Only source file: '+file,
+  'Verified '+scope.evidence.source+' error: '+String(scope.evidence.code||'').slice(0,90)+
+    ' at line '+scope.evidence.line,
+  'Exact old source line: '+JSON.stringify(lines[pos]),
+  'Adjacent code with original line numbers:\n'+excerpt
+ ].join('\n');
+ return prompt.length<=8500?prompt:null;
 }
 function promptFor(scope,sources,signals){
  return [
@@ -620,12 +704,24 @@ async function propose(){
   let reply,modelUsed=MODEL;
   if(router){
    const openrouter=require('./ci-pr-repair-openrouter-free.cjs');
-   reply=await openrouter.requestFreePatch({prompt,key,model:process.env.HH_OPENROUTER_FREE_MODEL||'auto',role:'repair',
+   const invoke=async(nextPrompt,retry=false)=>openrouter.requestFreePatch({
+    prompt:nextPrompt,key,model:process.env.HH_OPENROUTER_FREE_MODEL||'auto',role:'repair',
     onVerifiedModel:r=>{modelUsed=r.model;audit.provider='openrouter';audit.model=r.model;
      audit.model_version=r.model_version||null;audit.catalog_model_created=r.catalog_created||null;
-     audit.model_call_started_at=new Date().toISOString();audit.attempt_count=1;
-      audit.prompt_delivery_status='ATTEMPTED_UNCONFIRMED';audit.result='MODEL_CALL_STARTED';persist();},
+     audit.model_call_started_at=new Date().toISOString();audit.attempt_count=retry?2:1;
+     audit.prompt_delivery_status='ATTEMPTED_UNCONFIRMED';audit.result='MODEL_CALL_STARTED';persist();},
     onResponseShape:shape=>{audit.response_shape=shape;persist();}});
+   try{reply=await invoke(prompt);}
+   catch(error){
+    const focused=error?.message==='FREE_AI_OPENROUTER_PATCH_RESPONSE_TRUNCATED'&&
+      audit.attempt_count===1?boundedTruncationRetryPrompt(scope,root):null;
+    if(!focused)throw error; // Never retry quota, denial, billing or bad patches.
+    audit.retry_prompt_receipt=promptReceipt(scope,focused,signals,{
+      taskKey:process.env.REPAIR_TASK_KEY,runId:audit.run_id,runAttempt:audit.run_attempt});
+    audit.retry_reason='TRUNCATED_EXACT_SOURCE_SINGLE_LINE';
+    audit.result='BOUNDED_ZERO_PRICE_RETRY';persist();
+    reply=await invoke(focused,true); // One final free catalog+request; no paid fallback.
+   }
   }else{
    const price=await verifyFreeModelPrice();audit.provider='opencode';audit.model=MODEL;
    console.log('HH_FREE_AI_ZERO_COST_MODEL_VERIFIED '+JSON.stringify(price));
@@ -697,4 +793,4 @@ async function main(){
 if(require.main===module)main();
 module.exports={MODEL,safeSourcePath,assessCompleteFreeRepairScope,sourceScope,findTypeScriptFailureTarget,validateAgentAcl,extractTextEvents,
  validatePatch,exactJsonSingleLinePatch,promptFor,safeDiagnostic,isolatedEnvironment,verifyFreeModelMetadata,verifyFreeModelPrice,
- noSecretEnv,findFailureTarget,boundedSource,narrowFailedSourceScope,promptReceipt,reanchorSingleHunkPatch,exactSingleLineReplacementPatch};
+ noSecretEnv,findFailureTarget,findEslintFailureTarget,boundedTruncationRetryPrompt,boundedSource,narrowFailedSourceScope,promptReceipt,reanchorSingleHunkPatch,exactSingleLineReplacementPatch};
