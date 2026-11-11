@@ -15,7 +15,8 @@
     ['failed','PR с ошибкой','Подтверждённая ошибка Core CI'],
     ['classified','Классифицировано','Сохранён тип ошибки и стратегия'],
     ['task','Задача создана','Задача связана с конкретным PR и HEAD'],
-    ['assigned','Исполнитель назначен','Сохранён конкретный executor_id'],
+    ['assigned','Исполнитель назначен','Назначен реальный диагност или ремонтный агент; не означает исправление'],
+    ['source_assigned','Repair Worker назначен','Назначен конкретный кодовый исполнитель на проверенный HEAD'],
     ['dispatched','Задача отправлена','GitHub принял запрос на запуск Worker'],
     ['claimed','Задача получена','Worker подтвердил CLAIMED на том же HEAD'],
     ['runner','Исполнитель запущен','Подтверждён реальный GitHub Actions runner'],
@@ -36,9 +37,9 @@
     c.reason_code.length>0&&typeof c.responsible_role==='string'&&
     c.responsible_role.length>0);}
   function taskLinked(e){return classified(e)&&ASSOCIATIONS.has(e.association_status);}
-  function routeFor(e){
+  function routeFor(e,comments){
     var r=e.route_receipt;
-    return taskLinked(e)&&r&&r.schema==='HH_COMMANDER_CI_ROUTE_RECEIPT_V1'&&
+    var stored=taskLinked(e)&&r&&r.schema==='HH_COMMANDER_CI_ROUTE_RECEIPT_V1'&&
       r.prNumber===e.pr_number&&r.headSha===e.head_sha&&
       String(r.runId)===String(e.workflow_run_id)&&
       r.category===e.category&&
@@ -47,6 +48,7 @@
       TASK.test(r.workerTaskKey||'')&&TASK.test(r.errorTaskId||'')&&
       r.dispatchAccepted===1&&r.dispatchAcknowledged===true&&
       r.state==='DISPATCH_ACCEPTED_NOT_WORKER_STARTED'?r:null;
+    return stored||signedClaimRoute(comments,e);
   }
   function trustedComment(c){return !!(c&&Number.isSafeInteger(c.id)&&c.id>0&&
     c.user?.login==='github-actions[bot]'&&
@@ -67,6 +69,65 @@
     }
     return found;
   }
+  function diagnosticAssignment(e){
+    var a=e.assignment_receipt;
+    return !!(taskLinked(e)&&a&&a.schema==='HH_CI_EXECUTOR_ASSIGNMENT_V1'&&
+      a.ciEventId===e.ci_event_id&&a.prNumber===e.pr_number&&
+      a.headSha===e.head_sha&&a.category===e.category&&
+      a.executor==='openrouter'&&
+      a.executorId==='agent-commander-openrouter-worker'&&
+      typeof a.strategy==='string'&&a.strategy.length>0&&
+      typeof a.runId==='string'&&a.runId.length>0);
+  }
+  // GitHub's signed, immutable CLAIMED receipt is stronger than an early
+  // Supabase cron-backstop snapshot. Reconstruct an accepted source route
+  // only when a separate trusted Core error-task comment binds the same
+  // PR, original HEAD, Core run and error task id. An edited dispatch comment
+  // or an arbitrary model answer is NOT accepted as evidence.
+  function signedClaimRoute(comments,e){
+    if(!taskLinked(e)||!Array.isArray(comments)||
+      !['TYPESCRIPT','SOURCE_CODE'].includes(e.category))return null;
+    var errors=new Set();
+    for(var c of comments){
+      if(!trustedComment(c))continue;
+      var match=c.body.match(/<!-- HH_CI_ERROR_TASK_V1 ([a-f0-9]{32}) -->[\s\S]{0,1800}?\x60\x60\x60json\s*\n([^\n]{1,45000})\n\x60\x60\x60/);
+      if(!match)continue;
+      try{
+        var er=JSON.parse(match[2]);
+        if(er.schema==='HH_CI_ERROR_TASK_V1'&&er.task_id===match[1]&&
+          er.pr_number===e.pr_number&&er.head_sha===e.head_sha&&
+          String(er.run_id)===String(e.workflow_run_id)&&
+          er.category===e.category&&er.executor_id==='github-actions:hh-pr-repair-worker.yml'&&
+          er.strategy_code==='GUARDED_SOURCE_REPAIR'&&
+          er.source_write_authorized===false&&er.execution_authorized===false)
+          errors.add(er.task_id);
+      }catch(_){/* unverified source is never a route */}
+    }
+    if(!errors.size)return null;
+    for(var comment of comments){
+      if(!trustedComment(comment)||
+        !comment.body.includes('<!-- HH_PR_REPAIR_WORKER_V1 '+e.head_sha+' -->'))continue;
+      for(var item of taskRecords(comment)){
+        if(item.state!=='CLAIMED'||item.worker_started!==true||
+          item.assignment_status!=='WORKER_CLAIMED'||
+          item.pr_number!==e.pr_number||item.head_sha!==e.head_sha||
+          item.head_ref===undefined||item.base_ref!=='codex/public-book-library'||
+          item.assigned_executor_id!=='github-actions:hh-pr-repair-worker.yml'||
+          !TASK.test(item.task_key||'')||!errors.has(item.error_task_id)||
+          !/^[1-9][0-9]{0,18}$/.test(String(item.owner_run_id||'')))continue;
+        return {schema:'HH_COMMANDER_CI_ROUTE_RECEIPT_V1',
+          prNumber:e.pr_number,headSha:e.head_sha,runId:e.workflow_run_id,
+          category:e.category,inboxId:e.ci_event_id,
+          executorId:'github-actions:hh-pr-repair-worker.yml',
+          workerTaskKey:item.task_key,errorTaskId:item.error_task_id,
+          dispatchAccepted:1,dispatchAcknowledged:true,
+          state:'DISPATCH_ACCEPTED_NOT_WORKER_STARTED',
+          evidenceSource:'GITHUB_SIGNED_EXACT_HEAD_WORKER_CLAIM',
+          proofUrl:commentUrl(comment)};
+      }
+    }
+    return null;
+  }
   function stagePublished(c,e,taskKey,runId,newSha){
     var match,expr=/<!-- HH_PR_STAGE_V1 (\{[^\r\n]{1,680}\}) -->/g;
     while((match=expr.exec(c.body))!==null){
@@ -81,8 +142,9 @@
     return false;
   }
   function taskEvidence(comments,e){
-    var route=routeFor(e),empty={claimed:false,runner:false,responded:false,
-      candidate_sha:null,ai_response:false,links:{},worker_status:null};
+    var route=routeFor(e,comments),empty={claimed:false,runner:false,responded:false,
+      candidate_sha:null,ai_response:false,links:{},worker_status:null,
+      verified_route:route||null};
     if(!route||!Array.isArray(comments))return empty;
     var events=[],seen=new Set();
     for(var c of comments){
@@ -167,8 +229,9 @@
     for(var e of selected){
       uniqueEvents.add([e.pr_number,e.head_sha,e.workflow_run_id,e.run_attempt].join(':'));
       var pr=prs.get(e.pr_number)||{number:e.pr_number,steps:{},proof:{},ai_response:false};
-      var route=routeFor(e),id=String(e.ci_event_id||'');
+      var id=String(e.ci_event_id||'');
       var proof=byEvent&&byEvent[id]||{};
+      var route=routeFor(e)||proof.verified_route||null;
       if(!classified(e)||e.category==='UNKNOWN')mark('unclassified',e);
       if(taskLinked(e)&&!e.route_receipt)mark('unrouted',e);
       if(['TASK_REQUIRES_REVIEW','TASK_ROUTED_TO_REVIEW',
@@ -177,7 +240,9 @@
       if(route&&proof.responded===true&&proof.commit_verified!==true)
         mark('worker_without_commit',e);
       var states={failed:true,classified:classified(e),task:taskLinked(e),
-        assigned:!!route,dispatched:!!route,claimed:!!route&&proof.claimed===true,
+        assigned:diagnosticAssignment(e)||!!route,
+        source_assigned:!!route,dispatched:!!route,
+        claimed:!!route&&proof.claimed===true,
         runner:!!route&&proof.runner===true,
         responded:!!route&&proof.responded===true,
         committed:!!route&&proof.responded===true&&proof.commit_verified===true};
@@ -188,6 +253,7 @@
             proof.links?.[key]||e.run_url||'https://github.com/'+REPO+'/pull/'+e.pr_number;}
       }
       if(proof.ai_response===true)pr.ai_response=true;
+      if(proof.worker_status)pr.worker_status=proof.worker_status;
       prs.set(e.pr_number,pr);
     }
     for(var pr of prs.values()){
@@ -211,6 +277,7 @@
   }
   var model={STAGES:STAGES,validEvent:validEvent,classified:classified,
     taskLinked:taskLinked,routeFor:routeFor,trustedComment:trustedComment,
+    diagnosticAssignment:diagnosticAssignment,signedClaimRoute:signedClaimRoute,
     taskEvidence:taskEvidence,summarize:summarize};
   if(typeof module!=='undefined'&&module.exports)module.exports=model;
   if(typeof document==='undefined'||typeof window==='undefined')return;
@@ -377,7 +444,11 @@
         return validEvent(e)&&goodTime(e.created_at)>=cutoff&&goodTime(e.created_at)<=now+60000;});
       var oldest=all.reduce(function(low,e){var t=goodTime(e.created_at);return t!==null&&t<low?t:low;},Infinity);
       var complete=all.length<100||oldest<cutoff;
-      var candidates=eligible.filter(routeFor);
+      // Review and non-source diagnoses do not have a code Worker. For
+      // historical incidents, a genuine Worker CLAIMED comment may be the
+      // only durable dispatch proof if Supabase saved an earlier backstop.
+      var candidates=eligible.filter(function(e){return taskLinked(e)&&
+        ['TYPESCRIPT','SOURCE_CODE'].includes(e.category);});
       var prs=[...new Set(candidates.map(function(e){return e.pr_number;}))];
       // Bound public unauthenticated GitHub reads and surface truncation.
       if(prs.length>18){prs=prs.slice(0,18);complete=false;}
