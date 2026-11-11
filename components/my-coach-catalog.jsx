@@ -237,7 +237,12 @@ export default function MyCoachCatalog({ locale = 'en' }) {
               <option value="en">EN</option><option value="ru">RU</option><option value="es">ES</option>
             </select>
           </label>
-          <Link className={heroStyles.helpPill} href={'/' + lang + '/contact'}><span aria-hidden="true">ⓘ</span> iHelp</Link>
+          <button type="button" className={heroStyles.helpPill}
+            onClick={() => {
+              const nativeHelp = document.querySelector('[data-hh-ihelp-trigger]')
+              if (nativeHelp instanceof HTMLElement) nativeHelp.click()
+              else window.location.assign('/' + lang + '/contact')
+            }}><span aria-hidden="true">ⓘ</span> iHelp</button>
         </nav>
       </header>
 

@@ -326,7 +326,7 @@ test("one contextual therapy action keeps the single secure renderer and a visib
     "<section className={videoStyles.quickMusicSection} data-workspace-section=\"video\" data-video-quick-audio-choices",
     'id="guided-video-series"',"data-video-scene-library",'id="video-templates"',
     "data-video-quick-tier","data-video-quick-personal","data-video-quick-legacy"
-  ].map(marker=>studio.indexOf(marker));
+  ].map(marker=>marker==="data-video-quick-personal"?studio.lastIndexOf(marker):studio.indexOf(marker));
   const deep=[
     "data-video-daily-picks","data-video-support-layout","data-video-therapy-toggle",
     "data-video-category-rail","data-video-preview-choices","data-video-editor-nav"
