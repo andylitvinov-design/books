@@ -8,10 +8,10 @@ import styles from './my-coach-live-dialogue.module.css'
 
 const copy={
   en:{
-    badge:'Generative AI dialogue · when available',title:'What would make our conversation useful today?',
-    disclosure:'I am a fictional AI coach, not a therapist. I ask one question at a time and you decide what to do.',
+    badge:'Generative AI dialogue · when available',title:'Let’s talk',
+    disclosure:'I’m a fictional AI coach, not a therapist. No questionnaires here — just a conversation. You choose the pace and direction.',
     consent:'I agree to send the messages I type in this conversation to OpenRouter and an eligible free model. Nothing is sent until I press Send. Do not share passwords or document numbers.',
-    field:'Your message',placeholder:'Tell me what you would like to clarify…',
+    field:'Your message',placeholder:'What’s on your mind?…',
     send:'Send',sending:'Thinking…',verifying:'Checking the free model before sending any personal text…',verified:'Free privacy-checked AI is ready.',user:'You',coach:'AI coach',ai:'Model response',offline:'Offline coaching question',crisis:'Safety pause',
     plan:'Possible next step — your choice',evidence:'Based on your words',back:'Back to coach',guided:'Use the guided session instead',
     privacy:'This dialogue stays in this tab. It is not saved to your Cabinet. Only a confirmed action in a separate private session can be saved.',
@@ -23,10 +23,10 @@ const copy={
     failed:'The model reply could not be validated.',retry:'AI service temporarily unavailable.',goal:'Start by telling me your goal.',
   },
   ru:{
-    badge:'Генеративный AI-диалог · при доступности модели',title:'Что вы хотели бы прояснить сегодня?',
-    disclosure:'Я вымышленный AI-коуч, а не психотерапевт. Буду задавать по одному вопросу, решение остаётся за вами.',
+    badge:'Генеративный AI-диалог · при доступности модели',title:'Давай поговорим',
+    disclosure:'Я AI-персонаж, не психотерапевт. Здесь нет анкеты — просто разговор в вашем темпе, а направление выбираете вы.',
     consent:'Я согласен(на) отправлять сообщения этого диалога в OpenRouter и подходящую бесплатную модель. До нажатия «Отправить» ничего не передаётся. Не вводите пароли и номера документов.',
-    field:'Ваш ответ',placeholder:'Расскажите, с чем хотите разобраться…',
+    field:'Ваше сообщение',placeholder:'Что сейчас у вас на уме?…',
     send:'Отправить',sending:'Думаю…',verifying:'Проверяем бесплатную модель без передачи ваших сообщений…',verified:'Бесплатная AI-модель проверена и готова.',user:'Вы',coach:'AI-коуч',ai:'Ответ модели',offline:'Офлайн-вопрос коуча',crisis:'Пауза для безопасности',
     plan:'Возможный следующий шаг — решаете вы',evidence:'Основание — ваши слова',back:'Назад к коучу',guided:'Пройти пошаговую программу',
     privacy:'Диалог остаётся только в этой вкладке и не сохраняется в кабинете. Сохранить можно лишь ваш отдельно подтверждённый шаг в личной сессии.',
@@ -38,10 +38,10 @@ const copy={
     failed:'Ответ AI не прошёл проверку.',retry:'AI временно недоступен.',goal:'Начните с цели разговора.',
   },
   es:{
-    badge:'Diálogo generativo de IA · sujeto a disponibilidad',title:'¿Qué te gustaría aclarar hoy?',
-    disclosure:'Soy un personaje ficticio de IA, no un terapeuta. Haré una pregunta por turno; tú decides.',
+    badge:'Diálogo generativo de IA · sujeto a disponibilidad',title:'Hablemos',
+    disclosure:'Soy un personaje ficticio de IA, no terapeuta. Sin cuestionarios: podemos charlar con naturalidad, a tu ritmo.',
     consent:'Acepto enviar los mensajes que escriba en este diálogo a OpenRouter y un modelo gratuito apto. No se envía nada antes de pulsar Enviar. No incluyas contraseñas ni números de documentos.',
-    field:'Tu mensaje',placeholder:'Cuéntame lo que te gustaría aclarar…',
+    field:'Tu mensaje',placeholder:'¿Qué tienes en mente?…',
     send:'Enviar',sending:'Pensando…',verifying:'Verificando el modelo gratuito sin enviar tus mensajes…',verified:'El modelo gratuito con privacidad verificada está listo.',user:'Tú',coach:'Coach IA',ai:'Respuesta del modelo',offline:'Pregunta preparada',crisis:'Pausa de seguridad',
     plan:'Posible siguiente paso — tú decides',evidence:'Basado en tus palabras',back:'Volver al coach',guided:'Usar sesión guiada',
     privacy:'El diálogo permanece solo en esta pestaña. No se guarda en tu cuenta. Solo se guarda una acción confirmada en una sesión privada aparte.',
@@ -58,7 +58,8 @@ const reasons={
   privacy_model_unavailable:'protected',cost_unverified:'cost',
   response_unverified:'failed',model_unavailable:'retry',
 }
-const assistantText=(result)=>[result.reflection,result.hypothesis,result.question].filter(Boolean).join('\n\n')
+const assistantText=(result)=>result.mode==='ai' && typeof result.message==='string'
+  ? result.message : [result.reflection,result.hypothesis,result.question].filter(Boolean).join('\n\n')
 
 export default function MyCoachLiveDialogue({locale='en',personaId='mira',settings={},onClose,onGuided}){
   const lang=copy[locale]?locale:'en',t=copy[lang]
@@ -154,13 +155,15 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       {turns.map((turn,index)=><div key={index}
         className={turn.role==='user'?styles.userMessage:styles.coachMessage}>
         <strong>{turn.role==='user'?t.user:name}</strong>
-        {turn.role==='assistant'&&<small className={styles.meta}>
-          {turn.mode==='ai'?t.ai:turn.mode==='safety'?t.crisis:t.offline}
+        {turn.role==='assistant'&&turn.mode!=='ai'&&<small className={styles.meta}>
+          {turn.mode==='safety'?t.crisis:t.offline}
         </small>}
         {turn.role==='assistant'?<>
-          <p>{turn.reflection}</p>
-          {turn.hypothesis&&<p className={styles.hypothesis}>{turn.hypothesis}</p>}
-          <p className={styles.question}>{turn.question}</p>
+          {turn.mode==='ai'?<p>{turn.content}</p>:<>
+            {turn.reflection&&<p>{turn.reflection}</p>}
+            {turn.hypothesis&&<p className={styles.hypothesis}>{turn.hypothesis}</p>}
+            {turn.question&&<p className={styles.question}>{turn.question}</p>}
+          </>}
           {turn.mode==='offline'&&<p className={styles.offline} role="status">
             {t.unavailable} {t[reasons[turn.reason]]||t.retry}
           </p>}

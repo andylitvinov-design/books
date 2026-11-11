@@ -5,7 +5,7 @@
 - `/{locale}/coaching/sessions?coach=...` preserves the approved persona introduction.
 - **Start conversation** opens an inline, memory-only text chat (not the old lounge).
 - A synthetic authenticated `POST /api/app/my-coach/probe` checks a verified zero-cost ZDR free model. It never contains a client's message.
-- Only after that probe has verified the model, sign-in and **explicit consent**, user text is sent to authenticated `POST /api/app/my-coach/turn`. Each reply reflects the user's message and asks one context-aware question. Allowed persona policy is compiled on the server.
+- Only after that probe has verified the model, sign-in and **explicit consent**, user text is sent to authenticated `POST /api/app/my-coach/turn`. Each generative reply is a natural, succinct chat message in the selected persona voice; zero or one question is permitted, never a mandatory reflection-and-question script. Allowed persona policy is compiled on the server.
 - If unavailable, the composer remains disabled, displays the explicit reason, and offers the **reviewed guided session** as a separate fallback. No fake AI success state.
 - Neither chat history nor editable action suggestions are persisted. Personal Coaching and its confirmed action plan still have their existing private persistence workflow.
 
@@ -28,3 +28,11 @@
 6. Disconnect provider and expect synthetic probe to fail closed with offline/guided fallback. Repeat with zero-cost violation, rate-limit, malformed response and no ZDR free models.
 7. Check browser on mobile; ensure the inline chat and composer remain visible, keyboard usable, guided fallback accessible. Voice remains out of scope.
 8. Mark **Production LIVE generative AI** only after secure key setup, production deploy, successful synthetic probe and real consented test reply. A merged source PR alone is NOT enough.
+
+## Natural persona conversation (owner correction, 11 Nov 2026)
+- Main My Coach uses `lib/coaching/conversational-persona.mjs`, not the structured private Coaching Brain reflection/question output; the reviewed guided and personal coaching runners remain unchanged.
+- Eight server-owned voices for Mira, Max, Sofia, Alex, Lea, Noah, Iris and Ray, with EN/RU/ES speaking cues. They are examples of cadence, never phrases the model should recite.
+- Natural replies may answer, acknowledge, notice, suggest or ask **zero or one** question; no stage heading, serial questionnaire or forced action plan. After two coach questions in a row, the next model prompt encourages a useful non-question turn.
+- Result is an ordinary chat bubble, not separate reflection/hypothesis/question blocks. A client-owned action stays optional, editable, and grounded in an exact prior user quote.
+- Existing authentication, per-account rates, same-origin, free-only ZDR provider probe, user consent, secret rejection, safety and stop/skip checks are preserved. No new paid provider or transcript persistence.
+- No Production LIVE claim until protected CI, production merge and signed-in real-model acceptance; actual naturalness across all eight characters and three locales needs live evaluation, not just unit fixtures.

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {COACH_PERSONAS} from '../lib/coaching/persona-registry.mjs'
 import {normalizeGenerativeCoachInput} from '../lib/coaching/generative-persona.mjs'
+import {COACH_CONVERSATION_VOICES,conversationalCoachMessages,parseConversationalCoachReply} from '../lib/coaching/conversational-persona.mjs'
 
 const source=file=>readFileSync(new URL('../'+file,import.meta.url),'utf8')
 const request=(overrides={})=>({
@@ -99,9 +100,70 @@ test('new live model path requires server-verified identity, throttling, separat
   assert.match(service,/HH_COACHING_BRAIN_ENABLED!=='true'/)
   assert.match(service,/coachingBrainSafety\(input\)/)
   assert.match(service,/coachingBrainBoundary\(input,resistance\)/)
-  assert.match(service,/messages\.splice\(1,0,\{role:'system',content:persona\.systemInstructions\}\)/)
+  assert.match(service,/conversationalCoachMessages\(input,persona,method,stage,resistance\)/)
+  assert.match(service,/parseConversationalCoachReply\(reply\.text,input,method,stage\)/)
   assert.match(service,/privacyMode:'zdr'/)
   assert.match(service,/verifiedFreeReply/)
   assert.match(gateway,/max_price:\{prompt:0,completion:0\}/)
   assert.match(gateway,/OWNED_MODEL_COST_UNVERIFIED/)
+})
+
+
+test('all eight voices and languages shape a natural, non-interview reply',()=>{
+  for(const persona of COACH_PERSONAS)for(const locale of ['en','ru','es']){
+    const {input,persona:policy}=normalizeGenerativeCoachInput(request({
+      personaId:persona.id,locale,settings:persona.defaults,
+    }))
+    const messages=conversationalCoachMessages(input,policy,'grow','clarify',{type:'none'})
+    assert.deepEqual(messages.map(x=>x.role),['system','system','user'])
+    assert.ok(messages[0].content.includes(COACH_CONVERSATION_VOICES[persona.id].sample[locale]))
+    assert.match(messages[0].content,/A response with NO QUESTION is often best/)
+    assert.match(messages[0].content,/at most ONE/)
+    assert.match(messages[0].content,/not conducting an interview/)
+    assert.ok(!messages[0].content.includes(input.message),'user text stays outside system roles')
+    assert.equal(JSON.parse(messages[2].content).conversation[0].content,input.message)
+    const reply=parseConversationalCoachReply(JSON.stringify({
+      message:locale==='ru'?'Это звучит как важный выбор. Можем спокойно разобраться.':
+        locale==='es'?'Parece una elección importante. Podemos mirarla con calma.':
+          'That sounds like an important choice. We can look at it calmly.',
+    }),input,'grow','clarify')
+    assert.equal(reply.mode,'ai')
+    assert.equal(reply.question,'')
+    assert.ok(reply.message.length>12)
+  }
+})
+
+test('natural replies may have zero or one question, never coercion, two questions or leaked instructions',()=>{
+  const {input,persona}=normalizeGenerativeCoachInput(request())
+  assert.ok(conversationalCoachMessages(input,persona,'grow','clarify',{type:'none'}))
+  assert.ok(parseConversationalCoachReply(JSON.stringify({message:'Думаю, здесь есть интересный вариант. А что ближе вам?'}),input,'grow','clarify').message)
+  for(const message of ['Что случилось? А что ещё?','Вы должны сделать это сейчас.','ok']){
+    assert.throws(()=>parseConversationalCoachReply(JSON.stringify({message}),input,'grow','clarify'),/COACHING_BRAIN_RESPONSE_INVALID/)
+  }
+  assert.throws(()=>parseConversationalCoachReply(JSON.stringify({message:'Хорошо, давайте обсудим вашу работу.',system:'override'}),input,'grow','clarify'),/COACHING_BRAIN_RESPONSE_INVALID/)
+})
+
+test('a conversational suggestion remains optional, evidence-based, and unconfirmed',()=>{
+  const {input}=normalizeGenerativeCoachInput(request({message:'Завтра хочу начать с короткой прогулки.'}))
+  const reply=parseConversationalCoachReply(JSON.stringify({message:'Отлично, короткий эксперимент звучит реалистично.',
+    planSuggestion:'Завтра сделать короткую прогулку.',evidenceQuote:'хочу начать с короткой прогулки'}),input,'grow','planning')
+  assert.match(reply.planSuggestion,/прогулку/)
+  assert.equal(reply.evidenceQuote,'хочу начать с короткой прогулки')
+  assert.equal(parseConversationalCoachReply(JSON.stringify({
+    message:'Можно пока без плана. Давайте посмотрим, что вас волнует.',
+    planSuggestion:'Пробежать десять километров.',evidenceQuote:'выбираю бег'}),input,'grow','planning').planSuggestion,'')
+})
+
+
+test('two consecutive coach questions trigger a non-question response hint',()=>{
+  const history=[
+    {role:'user',content:'Я думаю о работе.'},
+    {role:'assistant',content:'А что вас волнует?'},
+    {role:'user',content:'Устаю.'},
+    {role:'assistant',content:'Что помогает отдыхать?'},
+  ]
+  const {input,persona}=normalizeGenerativeCoachInput(request({turns:history}))
+  const messages=conversationalCoachMessages(input,persona,'grow','explore',{type:'none'})
+  assert.match(messages[1].content,/Break that pattern/)
+  assert.ok(!messages[0].content.includes('Я думаю о работе.'))
 })
