@@ -11,6 +11,7 @@ import { coachingQuickChoicesAllowed, coachingConversationTurn } from '@/lib/per
 import CoachingActionPlan from '@/components/coaching-action-plan'
 import CoachingChatThread from '@/components/coaching-chat-thread'
 import CoachingQuestionVoice from '@/components/app/coaching-question-voice'
+import {normalizeAvatarSpeechEvent} from '@/lib/personal-coaching/coaching-avatar-state.mjs'
 import { appendSpokenAnswer } from '@/lib/personal-coaching/speech-text'
 import { CoachingSessionIntroduction, CoachingSessionTopic } from '@/components/coaching-session-onboarding'
 import { coachingRequestTopicLabel, isCoachingRequestTopic } from '@/lib/coaching/session-onboarding'
@@ -343,6 +344,9 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null,person
   const [draft,setDraft]=useState('')
   const [dictating,setDictating]=useState(false)
   const [speechConsent,setSpeechConsent]=useState(false)
+  const [avatarSpeech,setAvatarSpeech]=useState({phase:'idle',beat:0})
+  const avatarPhase=dictating?'listening':avatarSpeech.phase
+  const updateCoachSpeech=event=>setAvatarSpeech(normalizeAvatarSpeechEvent(event))
   const [finished,setFinished]=useState(false)
   const [finishedAt,setFinishedAt]=useState(null)
   const [pdfError,setPdfError]=useState('')
@@ -481,12 +485,14 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null,person
   function start(scheme,direct=false){
     if(!scheme||recommendation.blocked)return
     setDictating(false)
+    setAvatarSpeech({phase:'idle',beat:0})
     setAdultAcknowledged(false)
     setSession(scheme);setEntryStep(direct?'questions':'intro');setCheckin('');setSessionTopic(isCoachingRequestTopic(topicGroup)?topicGroup:'');setIndex(0);setAnswers({});setDraft('');setFinished(false);setFinishedAt(null);setPdfError('');setCopied(false);setCopyError(false);setError('')
     setPendingFollowup(null);setReflectionDraft('');setReflections({});setApprovedPlan(null)
   }
   function backToModels(){
     if(dictating){setError(t.stopMic);return}
+    setAvatarSpeech({phase:'idle',beat:0})
     if(!finished&&(Object.keys(answers).length>0||draft.trim())&&!window.confirm(t.discard))return
     setSession(null);setEntryStep('intro');setCheckin('');setSessionTopic('');setAdultAcknowledged(false);setIndex(0);setAnswers({});setDraft('');setFinished(false);setFinishedAt(null);setPdfError('');setError('')
     setPendingFollowup(null);setReflectionDraft('');setReflections({});setApprovedPlan(null)
@@ -837,7 +843,8 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null,person
             <p className={styles.disclaimer}><LockKeyhole size={14}/>{t.memory}</p>
           </div>:pendingFollowup?<div className={styles.questionScreen} data-public-coaching-followup>
             <p className={styles.stage}>{t.clarify}</p>
-            <CoachingChatThread turn={followupTurn} locale={lang} coachPersona={selectedPersona} compact>
+            <CoachingChatThread turn={followupTurn} locale={lang} coachPersona={selectedPersona}
+              speechPhase={avatarPhase} speechBeat={avatarSpeech.beat} compact>
               <h1 ref={titleRef} tabIndex={-1}>{personaFollowupText||tr(pendingFollowup.prompt,lang)}</h1>
             </CoachingChatThread>
             <p className={styles.hint}>{t.clarifyWhy}</p>
@@ -845,7 +852,8 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null,person
           </div>:<div className={styles.questionScreen} data-public-coaching-slide={current.id}>
             <p className={styles.stage}>{tr(current.stageTitle,lang)}</p>
             <div data-public-coaching-gentle-guide>
-              <CoachingChatThread turn={conversationTurn} locale={lang} coachPersona={selectedPersona} compact>
+              <CoachingChatThread turn={conversationTurn} locale={lang} coachPersona={selectedPersona}
+                speechPhase={avatarPhase} speechBeat={avatarSpeech.beat} compact>
                 <h1 ref={titleRef} tabIndex={-1}>{tr(current.prompt,lang)}</h1>
               </CoachingChatThread>
             </div>
@@ -885,7 +893,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null,person
               <CoachingQuestionVoice key={(pendingFollowup?'guest-followup-':'guest-question-')+current.id+'-'+lang}
                 compact text={pendingFollowup?[followupTurn?.speech,tr(pendingFollowup.prompt,lang)].filter(Boolean).join(' '):[conversationTurn?.speech,tr(current.prompt,lang)].filter(Boolean).join(' ')}
                 locale={lang} mode="answer" fictionalPersona={Boolean(selectedPersona)} speechConsent={speechConsent} onConsent={()=>setSpeechConsent(true)}
-                onListeningChange={setDictating}
+                onListeningChange={setDictating} onSpeechChange={updateCoachSpeech}
                 onTranscript={words=>{
                   if(pendingFollowup)setReflectionDraft(old=>appendSpokenAnswer(old,words,500))
                   else setDraft(old=>appendSpokenAnswer(old.startsWith('choice:')?'':old,words))
