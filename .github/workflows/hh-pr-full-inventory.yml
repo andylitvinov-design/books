@@ -49,6 +49,7 @@ jobs:
         env:
           HH_HAS_AUTOMERGE_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN != '' }}
           GH_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN || github.token }}
+          HH_CORE_BASE_TOKEN: ${{ github.token }}
         with:
           github-token: ${{ github.token }}
           script: |
@@ -202,8 +203,9 @@ jobs:
                   if(sensitive&&!namedSafety){skip("SENSITIVE_SPECIALIST_QA_MISSING");continue;}
                 }
                 const freshness=await baseEvidence.assessBaseFreshness({github,owner,repo,pr:live,...classifier,
-                  verifiedRunBase:()=>baseEvidence.coreRunBaseForCheck({github,owner,repo,pr:live,
-                    check:checks.get(unifiedRequired?"hh-merge-check":"hh-core-verified")})});
+                  verifiedRunBase:rows=>baseEvidence.coreRunBaseForCheck({github,owner,repo,pr:live,
+                    check:checks.get(unifiedRequired?"hh-merge-check":"hh-core-verified"),
+                    rows,token:process.env.HH_CORE_BASE_TOKEN})});
                 if(!freshness.ok){skip(freshness.reason);continue;}
                 const children=all.filter(other=>other.number!==pr.number&&other.base?.ref===live.head.ref);
                 const method=children.length?"merge":"squash";
@@ -300,8 +302,9 @@ jobs:
                  skip("ACTIVE_OR_AMBIGUOUS_LEASE");continue;
                }
                const freshness=await baseEvidence.assessBaseFreshness({github,owner,repo,pr:live,...classifier,
-                 verifiedRunBase:()=>baseEvidence.coreRunBaseForCheck({github,owner,repo,pr:live,
-                   check:freshChecks.get(unifiedRequired?"hh-merge-check":"hh-core-verified")})});
+                 verifiedRunBase:rows=>baseEvidence.coreRunBaseForCheck({github,owner,repo,pr:live,
+                   check:freshChecks.get(unifiedRequired?"hh-merge-check":"hh-core-verified"),
+                   rows,token:process.env.HH_CORE_BASE_TOKEN})});
                if(!freshness.ok){skip(freshness.reason);continue;}
                // Shared review/thread and exact-HEAD owner-lease safety is
                // mandatory for the hourly fallback, too. The read-only guard
