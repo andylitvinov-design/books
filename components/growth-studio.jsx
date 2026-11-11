@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import {useEffect, useMemo, useState} from 'react'
 import {CalendarClock, CalendarDays, Check, CheckCheck, CircleAlert, Copy, Download, Edit3, FileText, Megaphone, Plus, RefreshCcw, Send, ShieldCheck, Trash2} from 'lucide-react'
-import {listGrowthStudioPostsAction,updateGrowthStudioPostAction,publishGrowthTelegramNowAction,publishGrowthInstagramNowAction,getGrowthInstagramInsightsAction} from '@/app/admin/growth-studio/actions'
+import {listGrowthStudioPostsAction,updateGrowthStudioPostAction,publishGrowthTelegramNowAction,publishGrowthInstagramNowAction,publishGrowthFacebookNowAction,getGrowthInstagramInsightsAction} from '@/app/admin/growth-studio/actions'
 import GrowthStudioBulk from './growth-studio-bulk'
 import GrowthStudioManualInbox from './growth-studio-manual-inbox'
 import GrowthStudioEvergreen from './growth-studio-evergreen'
@@ -12,7 +12,7 @@ import {nextManualSlot,findManualTimeConflicts,buildManualCalendarIcs} from '@/l
 import GrowthStudioConnections from './growth-studio-connections'
 import {CHANNEL_CAPABILITIES,reviewGrowthPublication,publicationStatusLabel} from '@/lib/growth-studio/channel-capabilities.mjs'
 import {GROWTH_INSTAGRAM_ACCOUNT_TARGETS} from '@/lib/growth-studio/instagram-accounts.mjs'
-import {instagramPublishReadiness} from '@/lib/growth-studio/instagram-publish-readiness.mjs'
+import {instagramPublishReadiness,facebookPagePublishReadiness} from '@/lib/growth-studio/instagram-publish-readiness.mjs'
 import {GROWTH_BRANDS,GROWTH_CHANNELS,GROWTH_LANGUAGES,publicCampaignLink,orderGrowthPosts} from '@/lib/growth-studio/model.mjs'
 import {analyzeGrowthSocialSeo} from '@/lib/growth-studio/social-seo.mjs'
 import styles from './growth-studio.module.css'
@@ -34,6 +34,13 @@ const COPY={
     draft:'Draft',approved:'Approved',planned_manual:'Manual plan',archived:'Archived',manual_done:'Manually marked done · unverified',
     sending:'Sending — do not retry',published:'Published (provider confirmed)',delivery_unknown:'Delivery uncertain — verify the social account before any retry',
     instagramPublish:'Publish now to Instagram',instagramStoryPublish:'Publish this Story now',instagramStoryResume:'Check Story processing and continue',instagramConfirm:'Publish this exact JPEG post to the selected Instagram account now?',instagramStoryConfirm:'Publish this exact Story to the selected Instagram Business account? Text and links must already be rendered into the photo/video.',instagramSent:'Instagram confirmed publication and returned a post link.',instagram_delivery_unknown:'Instagram delivery is uncertain. Do not retry; inspect the account before taking further action.',instagram_publishing_disabled:'Instagram publishing is disabled until its protected server flag is enabled after commissioning.',instagram_account_not_connected:'Connect and verify this Instagram account in Connections first.',instagram_media_preflight_failed:'Instagram needs a public JPEG (Feed) or JPEG/MP4 (Story), with descriptive alt text.',meta_story_business_required:'Stories require an Instagram Business profile linked to a Facebook Page; a Creator profile cannot publish Stories through this Meta API.',instagram_invalid_approved_post:'Approve this exact Instagram post and select its destination first.',meta_not_configured:'Meta App ID and App Secret are not configured in Vercel Production yet.',meta_account_not_connected:'The selected Meta/Page/Instagram account is not verified. Reconnect it in Connections.',meta_page_publish_access_missing:'The selected Facebook Page has no verified content-creation permission.',meta_token_invalid:'Meta authorization expired. Reconnect this Instagram account.',meta_graph_error:'Meta rejected the publish request. Review the post and connection before retrying.',
+    facebookPublish:'Publish to Facebook Page',facebookConfirm:'Publish this exact text and link to the verified Facebook Page now?',
+    facebookSent:'Meta confirmed the Facebook Page publication.',facebook_delivery_unknown:'Facebook delivery is uncertain. Check the Page before any retry.',
+    facebook_publishing_disabled:'Facebook Page publishing is disabled until its protected server flag is enabled.',
+    facebook_account_not_connected:'Verify and authorize the exact Meta/Facebook Page first.',
+    facebook_invalid_approved_post:'Save and approve a text-only Facebook Page post first.',
+    facebook_media_not_supported:'Facebook image/video publishing is not yet supported by this text-only adapter. Remove media or use assisted posting.',
+    meta_page_publish_access_missing:'Meta pages_manage_posts permission or Page content-creation role is missing.',
     manualInbox:'To publish',manualDoneConfirm:'Have you actually posted this exact content in your chosen account? This only records your manual statement; Growth Studio CANNOT verify the social post.',manualDoneNotice:'Marked done manually — not verified by a social platform.',manualDoneButton:'Mark done (manual)',manualUndoConfirm:'Restore this item to the manual publishing queue? It will be counted as pending again.',manualUndoNotice:'Restored to manual posting queue.',manualUndo:'Restore manual task',manualDoneTime:'Owner marked done (not provider verified)',pending:'For review',planned:'Planned for manual posting',noAuto:'No posts are published automatically. Telegram requires a separate confirmed send.',
     telegramReady:'Telegram channel ready',telegramDisabled:'Telegram is not connected. Add the dedicated bot settings.',
     telegramSend:'Publish now to Telegram',telegramConfirm:'Publish this exact post now to the configured public Telegram channel?',
@@ -47,18 +54,19 @@ const COPY={
     preview:'Post preview',tracking:'Tracked public link',copy:'Copy link',copyPost:'Copy post',copyPostOk:'Post text copied.',save:'Save draft',approve:'Approve saved draft',
     plan:'Add to manual calendar',edit:'Edit',archive:'Archive',reopen:'Reopen draft',
     sourceLabel:'Source',noPosts:'No posts here yet. Create your first draft.',
-    notes:'Planning does not publish. Post manually or use the verified YouTube/Metricool workflow.',
+    notes:'Planning does not publish. Use authorized native Publisher connections or the existing YouTube uploader.',
     selected:'Editing',newDraft:'New draft',clear:'Clear editor',saved:'Draft saved.',
     approvedNotice:'Approved for preparation — not published.',plannedNotice:'Added to the manual calendar, not sent to a social platform.',
     archivedNotice:'Archived.',reopened:'Back in draft.',tryAgain:'Could not save. Refresh and try again.',
     unauthorized:'Admin session expired. Sign in again.',conflict:'This post changed. Refresh before editing again.',
     invalid_transition:'Save and approve the post first; the planned date must be in the future.',
     instagram_account_required:'Choose an Instagram account before saving, approving or planning this draft.',
+     facebook_account_required:'Choose the Facebook Page linked to an authorized Meta profile.',
     invalid_post:'Check the required fields, URL, text length and campaign code.',
     storage_unavailable:'Storage is unavailable. No changes were saved.',
     capacity_reached:'The editorial calendar has reached its record limit.',
     not_found:'This post was not found.',invalid_action:'Unsupported action.',
-    filter:'Filter',all:'All statuses',allBrands:'All brands',allAccounts:'All accounts',instagramAccount:'Instagram account',today:'Today',
+    filter:'Filter',all:'All statuses',allBrands:'All brands',allAccounts:'All accounts',instagramAccount:'Meta account / Page',today:'Today',
     next:'Next month',previous:'Previous month',monthItems:'manual plans',
     other:'Unscheduled / drafts',draftCount:'Drafts',approvedCount:'Approved',
     planCount:'Manual plans',publishedCount:'Confirmed online',notMeasured:'Not integrated',
@@ -77,6 +85,13 @@ const COPY={
     draft:'Черновик',approved:'Одобрено',planned_manual:'Ручной план',archived:'Архив',manual_done:'Отмечено вручную · не проверено',
     sending:'Отправка — не повторять',published:'Опубликовано (подтверждено)',delivery_unknown:'Доставка неясна — проверьте соцсеть перед повтором',
     instagramPublish:'Опубликовать сейчас в Instagram',instagramStoryPublish:'Опубликовать Story сейчас',instagramStoryResume:'Проверить обработку Story и продолжить',instagramConfirm:'Опубликовать этот точный JPEG-пост в выбранный Instagram-аккаунт сейчас?',instagramStoryConfirm:'Опубликовать эту Story в выбранный Instagram Business? Текст и ссылки должны быть уже встроены в фото/видео.',instagramSent:'Instagram подтвердил публикацию и вернул ссылку.',instagram_delivery_unknown:'Результат публикации неясен. Не повторяйте отправку; сначала проверьте аккаунт вручную.',instagram_publishing_disabled:'Автопубликация Instagram выключена до завершения настройки и проверки сервера.',instagram_account_not_connected:'Сначала подключите и проверьте этот Instagram-аккаунт в разделе Connections.',instagram_media_preflight_failed:'Для ленты нужен публичный JPEG; для Story — JPEG или MP4 и описание.',meta_story_business_required:'Для Story через Meta нужен Instagram Business, связанный со страницей Facebook. Creator для Stories не подходит.',instagram_invalid_approved_post:'Сначала согласуйте точный Instagram-пост и выберите аккаунт.',meta_not_configured:'В Vercel Production ещё не настроены Meta App ID и App Secret.',meta_account_not_connected:'Аккаунт Meta/Page/Instagram не подтверждён. Подключите его заново в Connections.',meta_page_publish_access_missing:'У выбранной Facebook Page нет подтверждённого права создавать публикации.',meta_token_invalid:'Авторизация Meta истекла. Подключите Instagram-аккаунт заново.',meta_graph_error:'Meta отклонила запрос. Проверьте публикацию и подключение перед повтором.',
+    facebookPublish:'Опубликовать в Facebook Page',facebookConfirm:'Опубликовать этот текст и ссылку на точно проверенной странице Facebook?',
+    facebookSent:'Meta подтвердила публикацию Facebook Page.',facebook_delivery_unknown:'Результат доставки Facebook неизвестен. Проверьте страницу до повторной отправки.',
+    facebook_publishing_disabled:'Публикация Facebook Page выключена до разрешения защищённой серверной настройки.',
+    facebook_account_not_connected:'Сначала авторизуйте и проверьте точную Facebook Page через Meta.',
+    facebook_invalid_approved_post:'Сохраните и одобрите текстовую публикацию Facebook Page.',
+    facebook_media_not_supported:'Публикация фото и видео в этом текстовом адаптере Facebook пока недоступна. Уберите медиа или используйте ручное размещение.',
+    meta_page_publish_access_missing:'Нет разрешения pages_manage_posts или прав создавать контент на Facebook Page.',
     manualInbox:'К публикации',manualDoneConfirm:'Вы действительно разместили этот точный материал в нужном аккаунте? Это только ваша отметка; Growth Studio НЕ проверил пост в соцсети.',manualDoneNotice:'Отмечено вручную. Доставка в соцсеть не подтверждена.',manualDoneButton:'Отметить вручную',manualUndoConfirm:'Вернуть задачу в очередь ручных публикаций? Она снова будет считаться ожидающей.',manualUndoNotice:'Возвращено в очередь ручных публикаций.',manualUndo:'Вернуть задачу',manualDoneTime:'Отмечено вами; провайдер не проверялся',pending:'На согласование',planned:'Запланировано вручную',noAuto:'Автопубликация отключена. Для Telegram требуется отдельное подтверждение отправки.',
     telegramReady:'Канал Telegram подключён',telegramDisabled:'Telegram не подключён — настройте отдельного бота.',
     telegramSend:'Опубликовать сейчас в Telegram',telegramConfirm:'Опубликовать этот точный текст сейчас в настроенном публичном Telegram-канале?',
@@ -90,7 +105,7 @@ const COPY={
     preview:'Предпросмотр',tracking:'Ссылка с UTM',copy:'Копировать ссылку',copyPost:'Копировать пост',copyPostOk:'Текст публикации скопирован.',save:'Сохранить черновик',approve:'Одобрить сохранённый',
     plan:'В ручной календарь',edit:'Редактировать',archive:'В архив',reopen:'Вернуть в черновики',
     sourceLabel:'Источник',noPosts:'Публикаций пока нет. Создайте первый черновик.',
-    notes:'Календарь не публикует посты. Размещайте вручную или через подтверждённую интеграцию YouTube/Metricool.',
+    notes:'Календарь не публикует посты. Используйте подтверждённые подключения Publisher или загрузчик YouTube.',
     selected:'Редактирование',newDraft:'Новый черновик',clear:'Очистить форму',saved:'Черновик сохранён.',
     approvedNotice:'Одобрено для подготовки, но ещё не опубликовано.',
     plannedNotice:'Добавлено в ручной календарь. В соцсети ничего не отправлено.',
@@ -98,10 +113,11 @@ const COPY={
     unauthorized:'Сессия администратора истекла. Войдите ещё раз.',conflict:'Публикация изменилась. Обновите список перед редактированием.',
     invalid_transition:'Сначала сохраните и одобрите текст; дата должна быть в будущем.',
     instagram_account_required:'Выберите Instagram-аккаунт перед сохранением, одобрением или планированием.',
+     facebook_account_required:'Выберите Facebook Page, связанную с проверенным профилем Meta.',
     invalid_post:'Проверьте поля, ссылку, длину текста и код кампании.',
     storage_unavailable:'Хранилище недоступно. Изменения не сохранены.',
     capacity_reached:'Достигнут лимит записей календаря.',not_found:'Запись не найдена.',invalid_action:'Недоступное действие.',
-    filter:'Фильтр',all:'Все статусы',allBrands:'Все проекты',allAccounts:'Все аккаунты',instagramAccount:'Аккаунт Instagram',today:'Сегодня',
+    filter:'Фильтр',all:'Все статусы',allBrands:'Все проекты',allAccounts:'Все аккаунты',instagramAccount:'Meta-аккаунт / Page',today:'Сегодня',
     next:'Следующий месяц',previous:'Предыдущий месяц',monthItems:'планов вручную',
     other:'Без даты / черновики',draftCount:'Черновики',approvedCount:'Одобрено',
     planCount:'Ручной план',publishedCount:'Подтверждено онлайн',notMeasured:'Не подключено',
@@ -114,10 +130,10 @@ const COPY={
 }
 
 const CHANNEL_WARNINGS={
-  en:{media_required:'Attach a public photo or video.',video_required:'This platform requires MP4 video.',text_too_long:'Text plus tracked link exceeds the supported single-post limit.',pinterest_board_not_configured:'Select a Pinterest board in an authorized publisher.',business_location_not_configured:'A verified business location is needed.',event_details_required:'Real event date, venue and organizer must be verified.',media_type_unsupported:'Unsupported media format.',telegram_media_unsupported:'Telegram supports JPG/PNG photo or MP4 video in this adapter.',telegram_brand_not_configured:'Telegram is configured only for Holistic House.',telegram_not_configured:'Telegram bot environment settings are missing.',telegram_channel_not_verified:'Verify posting rights in Connections.',instagram_image_conversion_required:'Instagram photo requires reviewed JPEG conversion; this editor cannot convert images.',instagram_story_media_unsupported:'Instagram Story requires a public JPEG or MP4.',google_business_video_unsupported:'Video posting is unavailable for Google Business here; use a verified photo.',image_alt_required:'Add an image description (alt text) before saving the media draft.'},
-  ru:{media_required:'Добавьте публичное фото или видео.',video_required:'Для этого канала требуется MP4-видео.',text_too_long:'Текст вместе с UTM-ссылкой превышает ограничение площадки.',pinterest_board_not_configured:'Выберите доску в авторизованном Pinterest.',business_location_not_configured:'Нужен подтверждённый адрес организации.',event_details_required:'Нужна проверенная дата события, место и организатор.',media_type_unsupported:'Неподдерживаемый формат медиа.',telegram_media_unsupported:'Для Telegram разрешены JPG/PNG фото или MP4 видео.',telegram_brand_not_configured:'Бот Telegram настроен только на Holistic House.',telegram_not_configured:'Серверные настройки бота не заданы.',telegram_channel_not_verified:'Проверьте права в разделе подключений.',instagram_image_conversion_required:'Для фото Instagram нужна проверенная конвертация в JPEG; этот редактор не конвертирует изображения.',instagram_story_media_unsupported:'Для Story требуется публичный JPEG или MP4.',google_business_video_unsupported:'Публикация видео в Google Business здесь недоступна; используйте проверенное фото.',image_alt_required:'Добавьте описание изображения (alt) перед сохранением медиа-черновика.'},
+  en:{media_required:'Attach a public photo or video.',video_required:'This platform requires MP4 video.',text_too_long:'Text plus tracked link exceeds the supported single-post limit.',pinterest_board_not_configured:'Select a Pinterest board in an authorized publisher.',business_location_not_configured:'A verified business location is needed.',event_details_required:'Real event date, venue and organizer must be verified.',media_type_unsupported:'Unsupported media format.',telegram_media_unsupported:'Telegram supports JPG/PNG photo or MP4 video in this adapter.',telegram_brand_not_configured:'Telegram is configured only for Holistic House.',telegram_not_configured:'Telegram bot environment settings are missing.',telegram_channel_not_verified:'Verify posting rights in Connections.',instagram_image_conversion_required:'Instagram photo requires reviewed JPEG conversion; this editor cannot convert images.',facebook_media_not_supported:'Facebook Page text/link adapter does not support uploaded images or video.',instagram_story_media_unsupported:'Instagram Story requires a public JPEG or MP4.',google_business_video_unsupported:'Video posting is unavailable for Google Business here; use a verified photo.',image_alt_required:'Add an image description (alt text) before saving the media draft.'},
+  ru:{media_required:'Добавьте публичное фото или видео.',video_required:'Для этого канала требуется MP4-видео.',text_too_long:'Текст вместе с UTM-ссылкой превышает ограничение площадки.',pinterest_board_not_configured:'Выберите доску в авторизованном Pinterest.',business_location_not_configured:'Нужен подтверждённый адрес организации.',event_details_required:'Нужна проверенная дата события, место и организатор.',media_type_unsupported:'Неподдерживаемый формат медиа.',telegram_media_unsupported:'Для Telegram разрешены JPG/PNG фото или MP4 видео.',telegram_brand_not_configured:'Бот Telegram настроен только на Holistic House.',telegram_not_configured:'Серверные настройки бота не заданы.',telegram_channel_not_verified:'Проверьте права в разделе подключений.',instagram_image_conversion_required:'Для фото Instagram нужна проверенная конвертация в JPEG; этот редактор не конвертирует изображения.',facebook_media_not_supported:'Для Facebook Page в этом адаптере разрешены только текст и ссылка, не фото/видео.',instagram_story_media_unsupported:'Для Story требуется публичный JPEG или MP4.',google_business_video_unsupported:'Публикация видео в Google Business здесь недоступна; используйте проверенное фото.',image_alt_required:'Добавьте описание изображения (alt) перед сохранением медиа-черновика.'},
 }
-const METHOD_LABELS={en:{telegram_opt_in:'Telegram · separate owner approval',existing_uploader:'Separate YouTube uploader, OAuth not verified',manual:'Manual posting; no API connected',event_adapter:'Event publisher / manual event listing'},ru:{telegram_opt_in:'Telegram · отдельное подтверждение',existing_uploader:'Загрузчик YouTube, OAuth ещё не подтверждён',manual:'Ручное размещение; API не подключён',event_adapter:'Модуль событий / ручное размещение'}}
+const METHOD_LABELS={en:{meta_page_opt_in:'Facebook Pages API · owner approval',telegram_opt_in:'Telegram · separate owner approval',existing_uploader:'Separate YouTube uploader, OAuth not verified',manual:'Manual posting; no API connected',event_adapter:'Event publisher / manual event listing'},ru:{meta_page_opt_in:'Facebook Pages API · согласие владельца',telegram_opt_in:'Telegram · отдельное подтверждение',existing_uploader:'Загрузчик YouTube, OAuth ещё не подтверждён',manual:'Ручное размещение; API не подключён',event_adapter:'Модуль событий / ручное размещение'}}
 const empty = () => ({
   brand:'holistic_house',channel:'manual',socialAccountId:'',locale:'en',title:'',caption:'',
   sourceUrl:'',campaign:'',scheduledAt:'',mediaUrl:'',mediaAlt:'',placement:'feed',
@@ -176,6 +192,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
   const [telegramVerified,setTelegramVerified]=useState(false)
   const [metaStatus,setMetaStatus]=useState(null)
   const instagramReady=(accountId,placement)=>instagramPublishReadiness(metaStatus,accountId,placement).ready
+  const facebookReady=accountId=>facebookPagePublishReadiness(metaStatus,accountId).ready
   const [busy,setBusy]=useState(false)
   const [notice,setNotice]=useState('')
   const [editing,setEditing]=useState(null)
@@ -262,7 +279,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
   }
   const set=field=>event=>setForm(old=>{
     const value=event.target.value
-    if(field==='channel'&&value!=='instagram')return {...old,channel:value,socialAccountId:'',placement:'feed'}
+    if(field==='channel')return {...old,channel:value,socialAccountId:'',placement:'feed'}
     return {...old,[field]:value}
   })
   const reset=()=>{setEditing(null);setForm({...empty(),locale});setNotice('');setTab('compose')}
@@ -287,9 +304,9 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
   }
   async function execute(action,post){
     if (!ready||!storageVerified||busy) return
-    if(action==='save'&&form.channel==='instagram'&&
+    if(action==='save'&&['instagram','facebook'].includes(form.channel)&&
        !GROWTH_INSTAGRAM_ACCOUNT_TARGETS.some(account=>account.id===form.socialAccountId)){
-      setNotice(t.instagram_account_required);return
+      setNotice(form.channel==='facebook'?t.facebook_account_required:t.instagram_account_required);return
     }
     setBusy(true);setNotice('')
     try {
@@ -356,6 +373,41 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
       if(result.ok)setNotice(t.instagramSent)
       else setNotice(t[result.error]||t.instagram_delivery_unknown)
     }catch{setNotice(t.instagram_delivery_unknown)}
+    finally{setBusy(false)}
+  }
+  async function sendFacebook(post){
+    if(busy)return
+    const account=GROWTH_INSTAGRAM_ACCOUNT_TARGETS.find(item=>item.id===post.socialAccountId)
+    if(!account)return setNotice(t.facebook_account_not_connected)
+    if(post.mediaUrl)return setNotice(t.facebook_media_not_supported)
+    const prior=facebookPagePublishReadiness(metaStatus,post.socialAccountId)
+    if(!prior.ready)return setNotice(t[prior.reason]||t.facebook_account_not_connected)
+    setBusy(true);setNotice('')
+    let fresh
+    try{
+      const response=await fetch('/api/admin/growth-studio/meta/status',
+        {credentials:'same-origin',cache:'no-store'})
+      if(!response.ok){setNotice(response.status===401?t.unauthorized:t.facebook_account_not_connected);return}
+      const result=await response.json()
+      if(result?.ok!==true){setNotice(t.facebook_account_not_connected);return}
+      fresh={configuration:result.configuration,accounts:result.accounts}
+      setMetaStatus(fresh)
+      const verified=facebookPagePublishReadiness(fresh,post.socialAccountId)
+      if(!verified.ready){setNotice(t[verified.reason]||t.facebook_account_not_connected);return}
+    }catch{setNotice(t.facebook_account_not_connected);return}
+    finally{setBusy(false)}
+    const page=fresh.accounts.find(item=>item.targetId===post.socialAccountId)
+    const confirmation=[t.facebookConfirm,page.pageName,'Page ID: '+page.pageId,
+      account.label,post.title,post.caption,publicCampaignLink(post)].filter(Boolean).join('\n\n')
+    if(!window.confirm(confirmation))return
+    setBusy(true);setNotice('')
+    try{
+      const result=await publishGrowthFacebookNowAction({
+        id:post.id,expectedRevision:post.revision,confirmed:true,
+      })
+      if(result.record)onCreated([result.record])
+      setNotice(result.ok?t.facebookSent:(t[result.error]||t.facebook_delivery_unknown))
+    }catch{setNotice(t.facebook_delivery_unknown)}
     finally{setBusy(false)}
   }
   async function sendTelegram(post){
@@ -505,14 +557,20 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
         <div className={styles.quickComposerFields}>
           <label>{t.channel}<select disabled={!ready||!storageVerified||busy} value={form.channel} onChange={set('channel')}>
             {GROWTH_CHANNELS.map(channel=><option key={channel} value={channel}>{CHANNELS[channel]}</option>)}</select></label>
-          {form.channel==='instagram'&&<label>{locale==='ru'?'Аккаунт Instagram':'Instagram account'}
+          {['instagram','facebook'].includes(form.channel)&&<label>{form.channel==='facebook'
+              ?(locale==='ru'?'Facebook Page, связанная с профилем':'Facebook Page linked to profile')
+              :(locale==='ru'?'Аккаунт Instagram':'Instagram account')}
             <select required disabled={!ready||!storageVerified||busy} value={form.socialAccountId||''} onChange={set('socialAccountId')}>
               <option value="">{locale==='ru'?'Выберите аккаунт':'Select an account'}</option>
               {GROWTH_INSTAGRAM_ACCOUNT_TARGETS.map(account=><option key={account.id} value={account.id}>{account.label}</option>)}
             </select>
             <small>{locale==='ru'
-              ?'Оба аккаунта пока ожидают Meta OAuth. Выбор задаёт назначение черновика, но не включает публикацию.'
-              :'Both accounts are awaiting Meta OAuth. Selection sets the draft destination; it does not enable publishing.'}</small>
+              ?form.channel==='facebook'
+                ?'Используется только Facebook Page, проверенная через связь с выбранным Instagram. Требуется pages_manage_posts.'
+                :'Профиль выбирается для черновика. Публикация требует реального Meta OAuth.'
+              :form.channel==='facebook'
+                ?'Only the Facebook Page verified as linked to this Instagram profile is eligible. Requires pages_manage_posts.'
+                :'Selection sets the draft destination. Publishing requires verified Meta OAuth.'}</small>
           </label>}
           <label>{t.title}<input disabled={!ready||!storageVerified||busy} type="text" maxLength={120} required
             placeholder={locale==='ru'?'Название публикации':'Post title'}
@@ -676,10 +734,10 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
         <p className={styles.postExcerpt}>{post.caption||'—'}</p>
         {post.status==='published'&&post.delivery?.provider==='meta_graph_api'&&
           <p className={styles.verifiedText}>
-            {post.delivery.mediaProductType==='STORY'?(locale==='ru'?'Story подтверждена Meta':'Story confirmed by Meta'):(locale==='ru'?'Пост подтверждён Meta':'Post confirmed by Meta')}
+            {post.channel==='facebook'?(locale==='ru'?'Публикация Facebook Page подтверждена Meta':'Facebook Page post confirmed by Meta'):post.delivery.mediaProductType==='STORY'?(locale==='ru'?'Story подтверждена Meta':'Story confirmed by Meta'):(locale==='ru'?'Пост подтверждён Meta':'Post confirmed by Meta')}
             {' · ID: '+post.delivery.providerPostId}
             {post.delivery.url&&<> · <a href={post.delivery.url} target="_blank" rel="noopener noreferrer">
-              {locale==='ru'?'Открыть в Instagram':'Open in Instagram'} ↗
+              {post.channel==='facebook'?(locale==='ru'?'Открыть в Facebook':'Open on Facebook'):(locale==='ru'?'Открыть в Instagram':'Open in Instagram')} ↗
             </a></>}
           </p>}
         <div className={styles.postButtons}>
@@ -702,6 +760,20 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
             !instagramReady(post.socialAccountId,post.placement)&&<p className={styles.hint} role="status">
               {t[instagramPublishReadiness(metaStatus,post.socialAccountId,post.placement).reason]||t.instagram_account_not_connected}
               {' · '}{locale==='ru'?'Откройте «Подключения» и обновите статус Meta.':'Open Connections and refresh the Meta account status.'}
+            </p>}
+          {post.channel==='facebook'&&post.status==='approved'&&post.socialAccountId&&
+            <button type="button"
+              disabled={busy||!ready||!storageVerified||!facebookReady(post.socialAccountId)||Boolean(post.mediaUrl)}
+              title={facebookReady(post.socialAccountId)?t.facebookPublish:
+                (t[facebookPagePublishReadiness(metaStatus,post.socialAccountId).reason]||t.facebook_account_not_connected)}
+              onClick={()=>sendFacebook(post)}>
+              <Send size={15}/>{t.facebookPublish}</button>}
+          {post.channel==='facebook'&&post.status==='approved'&&
+            (!facebookReady(post.socialAccountId)||Boolean(post.mediaUrl))&&
+            <p className={styles.hint} role="status">
+              {post.mediaUrl?t.facebook_media_not_supported:
+                (t[facebookPagePublishReadiness(metaStatus,post.socialAccountId).reason]||t.facebook_account_not_connected)}
+              {' · '}{locale==='ru'?'Откройте «Подключения» и обновите статус Meta.':'Open Connections and refresh Meta.'}
             </p>}
           {post.channel==='telegram'&&post.brand==='holistic_house'&&['approved','planned_manual'].includes(post.status)&&
             <button type="button" disabled={busy||!ready||!storageVerified||!telegramVerified}
