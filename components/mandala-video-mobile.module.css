@@ -5463,3 +5463,15 @@
 .storyboardFooterActions button{display:inline-flex;align-items:center;gap:6px;min-height:42px;padding:8px 11px;border:1px solid #c8d9ce;border-radius:10px;background:#f7faf5;color:#315645;font-weight:750}
 .montagePreferences [data-video-stories-paid-gate]{padding:9px 11px;border:1px solid #e3d3ac;border-radius:10px;background:#fff9e9;color:#705b31;font-size:12px;line-height:1.45}
 @media(min-width:760px){.storyboardSceneList{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Compact verified credit balance; do not crowd the one-screen iPhone studio. */
+@media(max-width:759px){
+ .studio[data-active-workspace] .quickBuilder>.quickBrandBar{gap:4px!important}
+ .studio[data-active-workspace] .quickBrandIdentity{flex:1 1 0!important;min-width:0!important}
+ .studio[data-active-workspace] .quickBrandPhoto{min-width:37px!important;min-height:38px!important;padding:3px!important}
+ .studio[data-active-workspace] .quickBrandIHelp{min-width:37px!important;width:37px!important;padding:4px!important}
+ .studio[data-active-workspace] .quickBrandIHelp span{display:none!important}
+}
+@media(max-width:359px){
+ .studio[data-active-workspace] .quickBrandIdentity{display:none!important}
+}
