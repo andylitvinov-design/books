@@ -43,6 +43,51 @@ test('accepts literal repository-root source reads but not dynamic or spoofed he
  }finally{f.cleanup()}
 });
 
+test('direct static node:fs URL test counts as source coverage only for an exact literal path',()=>{
+ const f=fixture();try{
+  f.put('components/acquisition-event-link.tsx','export const consent=true;\n');
+  f.put('tests/acquisition-event-link-owner-wake-canary.test.mjs',
+   "import test from 'node:test';\n"+
+   "import {readFileSync} from 'node:fs';\n"+
+   "const source=readFileSync(new URL('../components/acquisition-event-link.tsx',import.meta.url),'utf8');\n"+
+   "test('direct source',()=>{if(!source)throw Error('missing')});\n");
+  const target=['components/acquisition-event-link.tsx'];
+  const testFiles=['tests/acquisition-event-link-owner-wake-canary.test.mjs'];
+  assert.deepEqual(selectTests(f.root,target,testFiles),testFiles);
+  for(const invalid of [
+   // A claimed path in a comment is never a genuine direct source read.
+   "import test from 'node:test';\nimport {readFileSync} from 'node:fs';\n"+
+    "// const source=readFileSync(new URL('../components/acquisition-event-link.tsx',import.meta.url),'utf8');\n"+
+    "test('fake',()=>{});\n",
+   // No imported native readFileSync means a test may have stubbed the reader.
+   "import test from 'node:test';\n"+
+    "const source=readFileSync(new URL('../components/acquisition-event-link.tsx',import.meta.url),'utf8');\n"+
+    "test('fake',()=>{});\n",
+   "import test from 'node:test';\nimport {readFileSync as read} from 'node:fs';\n"+
+    "const source=readFileSync(new URL('../components/acquisition-event-link.tsx',import.meta.url),'utf8');\n"+
+    "test('fake',()=>{});\n",
+   // A variable URL does not prove the test actually reads this source path.
+   "import test from 'node:test';\nimport {readFileSync} from 'node:fs';\n"+
+    "const file='../components/acquisition-event-link.tsx';\n"+
+    "const source=readFileSync(new URL(file,import.meta.url),'utf8');\n"+
+    "test('fake',()=>{});\n",
+   // Traversal, interpolation and path trickery never become trusted.
+   "import test from 'node:test';\nimport {readFileSync} from 'node:fs';\n"+
+    "const source=readFileSync(new URL('../components/../components/acquisition-event-link.tsx',import.meta.url),'utf8');\n"+
+    "test('fake',()=>{});\n",
+   "import test from 'node:test';\nimport {readFileSync} from 'node:fs';\n"+
+    "const source=readFileSync(new URL('../components/acquisition-event-link.tsx',import.meta.url),'latin1');\n"+
+    "test('fake',()=>{});\n",
+   "import test from 'node:test';\nimport {readFileSync} from 'node:fs';\n"+
+    "const source=readFileSync(new URL('../components/other.tsx',import.meta.url),'utf8');\n"+
+    "test('fake',()=>{});\n"
+  ]){
+   f.put(testFiles[0],invalid);
+   assert.equal(selectTests(f.root,target,testFiles),null,'unsafe test must not satisfy source coverage');
+  }
+ }finally{f.cleanup()}
+});
+
 test('safe Next locale and route-group source paths receive literal test coverage',()=>{
  const f=fixture();try{
   for(const p of ['app/[locale]/about/page.tsx','app/(public)/about/page.tsx'])
