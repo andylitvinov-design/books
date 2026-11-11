@@ -30,3 +30,25 @@
 .privacy{color:#5a7267;border-top:1px solid #cfddd5;margin:14px 0 0;padding-top:10px}
 @media(max-width:380px){.root{padding:13px;margin:12px 0}.rating{grid-template-columns:repeat(6,minmax(0,1fr));gap:5px}.header h3{font-size:19px}}
 @media(prefers-reduced-motion:reduce){.track span{transition:none}}
+
+/* Design Bible §10.13: the existing post-video reflection is part of Ready.
+   Preserve meaningful progress and selected/rating state colors. */
+:global([data-mandala-mode="video"]) .root{
+  background:var(--hh-studio-surface,#FFFCFA);
+  border-color:var(--hh-studio-border,#EADFD9);
+  color:var(--hh-studio-ink,#142B3D);
+  box-shadow:var(--hh-studio-shadow,0 5px 18px rgb(66 42 31 / 7%))
+}
+:global([data-mandala-mode="video"]) .rating button:not(.selected),
+:global([data-mandala-mode="video"]) .choices button:not(.selected){
+  background:var(--hh-studio-surface,#FFFCFA);
+  border-color:var(--hh-studio-border,#EADFD9);
+  color:var(--hh-studio-ink,#142B3D)
+}
+:global([data-mandala-mode="video"]) .rating button.selected,
+:global([data-mandala-mode="video"]) .choices button.selected,
+:global([data-mandala-mode="video"]) .primary{
+  background:var(--hh-studio-primary,#087E61);
+  border-color:var(--hh-studio-deep,#006B4B);
+  color:#FFFFFF
+}

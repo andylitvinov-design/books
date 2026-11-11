@@ -42,6 +42,7 @@ const setupText={
     instructions:'Connect an account',missing:'Missing server settings',configured:'Credentials present — verify the provider first',
     disabled:'Channel activation is off',approval:'Public sending is off until the test is approved',
     pilot:'Pilot mode: only the allowlisted Telegram chat can send or receive messages',
+    waPilotRegistered:'WhatsApp verified for identity-link pilot · sending still disabled',
     testHint:'Do one controlled test conversation before enabling live client replies.',
     channelKeys:'Server settings in Vercel Production',copyUrl:'Copy webhook URL',
     copied:'Webhook URL copied',copyError:'Copy failed; use the URL shown below.',
@@ -57,6 +58,7 @@ const setupText={
     instructions:'Как подключить',missing:'Не хватает настроек сервера',configured:'Ключи добавлены — проверьте доступ провайдера',
     disabled:'Активация канала выключена',approval:'Отправка клиентам отключена до подтверждённого теста',
     pilot:'Пилот: Telegram доступен только одному разрешённому тестовому аккаунту',
+    waPilotRegistered:'WhatsApp подключён для подтверждения личности · отправка выключена',
     testHint:'Сначала проведите одну тестовую переписку и проверьте получение ответа.',
     channelKeys:'Переменные в Vercel Production',copyUrl:'Копировать адрес webhook',
     copied:'Адрес webhook скопирован',copyError:'Не удалось скопировать. Адрес указан ниже.',
@@ -72,6 +74,7 @@ const setupText={
     instructions:'Cómo conectar',missing:'Falta configuración del servidor',configured:'Credenciales cargadas; verifica el proveedor',
     disabled:'La activación del canal está deshabilitada',approval:'El envío público está desactivado hasta completar la prueba',
     pilot:'Piloto: solo una cuenta de prueba autorizada puede usar Telegram',
+    waPilotRegistered:'WhatsApp conectado para verificar identidad · envío desactivado',
     testHint:'Realiza una conversación de prueba controlada antes de activar respuestas reales.',
     channelKeys:'Variables del servidor en Vercel Production',copyUrl:'Copiar URL del webhook',
     copied:'URL copiada',copyError:'No se pudo copiar. Usa la URL mostrada.',
@@ -564,7 +567,8 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
           const ok=registered?.connected===true
           const missing=channel.missingKeys||[]
           const isPilot=channel.channel==='telegram'&&channel.pilot
-          const statusLabel=ok?t.connected:missing.length?guide.missing:isPilot?guide.pilot:
+          const waRegistered=channel.channel==='whatsapp'&&channel.pilotConnectReady&&registered?.registered===true
+          const statusLabel=ok?t.connected:waRegistered?guide.waPilotRegistered:missing.length?guide.missing:isPilot?guide.pilot:
             !channel.enabled?guide.disabled:
             !channel.liveApproved?guide.approval:guide.configured
           return <div className={styles.channel} key={channel.channel}>
@@ -606,7 +610,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
               {' '}{t.botStates[botCheck.webhookState]||t.botStates.unknown}
               {botCheck.webhookDeliveryError?' · '+t.botStates.unknown:''}
             </p>}
-            {!ok&&<button type="button" disabled={busy||!channel.providerConfigured}
+            {!ok&&!waRegistered&&<button type="button" disabled={busy||!channel.providerConfigured}
               onClick={()=>action('connect',{channel:channel.channel})}>{t.connect}</button>}
             <details className={styles.channelGuide}>
               <summary>{guide.instructions}</summary>
@@ -737,7 +741,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
               className={m.direction==='note'?styles.internalNote:m.direction==='out'?styles.outbound:styles.inbound}>
               {m.direction==='note'&&<strong className={styles.noteBadge}>{w.notesBadge}</strong>}
               {(!m.photo||!photoOnlyMessage.test(String(m.text||'').trim()))&&<p>{m.text}</p>}
-              {m.photo&&selected.channel==='telegram'&&<CrmTelegramPhoto
+              {m.photo&&['telegram','whatsapp'].includes(selected.channel)&&<CrmTelegramPhoto
                 accountId={accountId} threadId={selected.id} messageId={m.id} locale={lang}
                 purpose={m.photoPurpose==='drawing'?'drawing':'portrait'}/>}
               <small>{new Intl.DateTimeFormat(lang,{dateStyle:'short',timeStyle:'short',timeZone:'America/Toronto'}).format(new Date(m.createdAt))}

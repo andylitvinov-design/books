@@ -58,9 +58,12 @@ for (const engine of [chromium, webkit]) {
           assert.ok(await panels.count()>=2,label+" Alchemy stages remain visible");
           const request=page.locator('[data-alchemy-panel="request"]');
           assert.equal(await request.count(),1,label+" one Alchemy request");
-          const consent=request.locator('input[type="checkbox"][required]');
-          assert.equal(await consent.count(),1,label+" explicit reply consent");
-          assert.equal(await consent.isChecked(),false,label+" consent unchecked by default");
+          const messenger=request.locator('[data-messenger-only-contact]');
+          await messenger.waitFor({state:"visible",timeout:15000});
+          assert.equal(await messenger.locator('a[data-messenger-only-channel]').count(),2,
+            label+" two customer-initiated messenger choices");
+          assert.equal(await messenger.locator('form,input[type="email"],input[type="tel"]').count(),0,
+            label+" no standalone CRM request");
           assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth)<=width+2,label+" no horizontal overflow");
           assert.deepEqual(errors,[],label+" unexpected page errors");
           results.push({label,redirect:"alchemy-of-soul",form:true,errors:[]});
@@ -96,97 +99,36 @@ for (const engine of [chromium, webkit]) {
         const docWidth = await page.evaluate(() => document.documentElement.scrollWidth);
         assert.ok(docWidth <= width + 2, label + " document must not overflow horizontally");
         const capture = screens.last();
-        const form=capture.locator("form[data-compact-lead-form]");
-        await form.waitFor({state:"visible",timeout:20000});
-        await page.waitForFunction(()=>document.querySelector(
-          '[data-service-visual-screen="final-capture"] [data-compact-lead-form], [data-core-visual-screen="final-capture"] [data-compact-lead-form]')?.getAttribute(
-          "data-compact-hydrated")==="true",null,{timeout:15000});
-        assert.equal(await form.locator('input[name="contact"][required]').count(),1,
-          label+" real contact input");
-        const consent=form.locator('input[type="checkbox"][required]');
-        assert.equal(await consent.count(),1,label+" explicit reply consent");
-        assert.equal(await consent.isChecked(),false,label+" consent unchecked by default");
-        assert.ok(await form.locator('[data-enquiry-attribution-choice] input[type="checkbox"]').count()<=1,
-          label+" attribution is optional and separate");
-        // The current CRM-first form offers a deliberate request-only submit
-        // alongside messenger choices. Neither may write before consent.
-        const requestOnly=form.locator('button[type="submit"][data-compact-request-only]');
-        assert.equal(await requestOnly.count(),1,label+" one explicit CRM request");
-        assert.ok(await requestOnly.isDisabled(),label+" contact and consent gate request");
-        await form.locator('input[name="contact"][required]').fill('synthetic@example.invalid');
-        assert.ok(await requestOnly.isDisabled(),label+" no CRM submit before consent");
-        const action=form.locator('button[data-compact-channel="whatsapp"]');
-        await action.waitFor({state:"visible"});
-        const originalPageUrl=page.url();
-        const requests=[];
-        let resolveInterceptedPost, rejectInterceptedPost;
-        // The route handler itself is the authoritative proof that the
-        // synthetic POST was blocked; WebKit need not emit requestfailed.
-        const interceptedPost=new Promise((resolve,reject)=>{
-          resolveInterceptedPost=resolve;
-          rejectInterceptedPost=reject;
-        });
-        await page.context().route("**/api/service-enquiries",async route=>{
-          // Real CRM is NEVER contacted by synthetic CI; every POST is
-          // aborted before it can reach any server.
-          if(route.request().method()==="POST"){
-            const interceptedBody=route.request().postDataJSON();
-            requests.push(interceptedBody);
-            try{
-              await route.abort("blockedbyclient");
-              resolveInterceptedPost(interceptedBody);
-            }catch(error){
-              rejectInterceptedPost(error);
-              throw error;
-            }
-            return;
-          }
-          return route.continue();
-        });
-        await action.click();
-        await page.waitForTimeout(200); // permit browser event processing without consent
-        assert.equal(requests.length,0,label+" no CRM request without consent");
-        assert.equal(await consent.isChecked(),false,label+" channel does not auto-consent");
-        assert.ok(await consent.isVisible(),label+" personal-reply consent stays visible");
-        assert.ok(await requestOnly.isDisabled(),label+" request-only button remains gated");
-        assert.equal(page.url(),originalPageUrl,label+" unconsented action stays on page");
-        // A valid synthetic opt-in must activate the real handler. Intercept
-        // the resulting POST rather than risking a real enquiry or trusting
-        // an error-message animation whose timing depends on hydration.
-        await consent.check();
-        assert.ok(await requestOnly.isEnabled(),label+" request activates after opt-in");
-        const post=page.waitForRequest(req=>
-          req.method()==="POST" && new URL(req.url()).pathname==="/api/service-enquiries",
-          {timeout:10000});
-        // waitForRequest precedes routing on WebKit. Await the awaited
-        // route.abort() completion itself, bounded without network writes.
-        let acknowledgementTimeout;
-        const abortAcknowledgement=Promise.race([
-          interceptedPost,
-          new Promise((_,reject)=>{
-            acknowledgementTimeout=setTimeout(
-              ()=>reject(new Error(label+" synthetic POST interception timed out (intercepted="+requests.length+")")),10000);
-          }),
-        ]);
-        let consentedRequest, acknowledgedPayload;
-        try{
-          await requestOnly.click();
-          [consentedRequest,acknowledgedPayload]=await Promise.all([post,abortAcknowledgement]);
-        }finally{
-          clearTimeout(acknowledgementTimeout);
+        const messengerBlocks=capture.locator('[data-messenger-only-contact]');
+        const messengerCount=await messengerBlocks.count();
+        assert.ok(messengerCount>=1&&messengerCount<=2,
+          label+" one primary card and at most one optional user-opened request; got "+messengerCount);
+        const messenger=messengerBlocks.first();
+        if(messengerCount===2){
+          const secondaryMessenger=messengerBlocks.nth(1);
+          assert.equal(await secondaryMessenger.evaluate(node=>{
+            const details=node.closest("details");
+            return Boolean(details && !details.open);
+          }),true,label+" optional contact remains behind its deliberate disclosure");
         }
-        const payload=consentedRequest.postDataJSON();
-        assert.deepEqual(acknowledgedPayload,payload,
-          label+" exactly the consented POST was aborted before network");
-        assert.equal(payload.contactConsent,true,label+" recorded contact consent");
-        assert.equal(payload.contact.email,"synthetic@example.invalid",label+" synthetic email only");
-        assert.equal(requests.length,1,label+" exactly one synthetic request is intercepted");
-        assert.equal(await page.locator("[data-lead-saved]").count(),0,
-          label+" intercepted request cannot claim a saved CRM receipt");
-        assert.equal(page.url(),originalPageUrl,label+" no thank-you redirect without server receipt");
-        assert.equal(await page.locator("[data-sitewide-capture]:visible").count(), 0,
-          label + " no duplicate generic form");
-        assert.deepEqual(errors, [], label + " unexpected page errors");
+        await messenger.waitFor({state:"visible",timeout:20000});
+        const details=messenger.locator('details');
+        if(await details.count()&&await details.getAttribute('open')===null)
+          await details.locator(':scope > summary').click();
+        const whatsapp=messenger.locator('a[data-messenger-only-channel="whatsapp"]');
+        const telegram=messenger.locator('a[data-messenger-only-channel="telegram"]');
+        await whatsapp.waitFor({state:"visible",timeout:15000});
+        await telegram.waitFor({state:"visible",timeout:15000});
+        const draft=new URL(await whatsapp.getAttribute('href'));
+        assert.equal(draft.origin,'https://wa.me',label+" official manual messaging endpoint");
+        assert.ok((draft.searchParams.get('text')||'').length>24,label+" published service in draft");
+        assert.equal(await messenger.locator('form,input[type="email"],input[type="tel"]').count(),0,
+          label+" no unverified contact-only form");
+        assert.equal(await capture.locator('[data-lead-saved]').count(),0,
+          label+" no fake saved receipt");
+        assert.equal(await page.locator("[data-sitewide-capture]:visible").count(),0,
+          label+" no duplicate generic form");
+        assert.deepEqual(errors,[],label+" no unexpected page errors");
         if (slug === "imagery-therapy" && width === 320 && locale === "en") {
           await capture.scrollIntoViewIfNeeded();
           await page.screenshot({ path: output + "/imagery-en-final-capture-320-" + engine.name() + ".png" });
@@ -196,7 +138,7 @@ for (const engine of [chromium, webkit]) {
           await capture.scrollIntoViewIfNeeded();
           await page.screenshot({ path: output + "/imagery-en-final-form-webkit.png" });
         }
-        results.push({ label, screens: rows, horizontalOverflow: false, form: true, errors: [] });
+        results.push({ label, screens: rows, horizontalOverflow: false, messengerChannels: 2, errors: [] });
         console.log("PASS visual service route: "+label);
       } finally {
         await page.close();

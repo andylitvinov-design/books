@@ -5,6 +5,7 @@ import { AppError } from '@/lib/assessments/contracts'
 import { PRIVATE_HEADERS, readBody, safeError } from '@/lib/app/http'
 import { buildCoachingDiagnosticEnquiry } from '@/lib/coaching/diagnostic-enquiry.mjs'
 import { verifyTelegramCoachingHandoff } from '@/lib/coaching/telegram-handoff.mjs'
+import { websiteMessengerOnly } from '@/lib/crm/website-messenger-only.mjs'
 import { createPublicServiceEnquiry } from '@/lib/practitioners/public-service-enquiry'
 import { dispatchPublicServiceEnquiryTelegram } from '@/lib/app/public-enquiry-telegram'
 import { readPublicEnquiryAttribution } from '@/lib/analytics/enquiry-attribution.mjs'
@@ -26,6 +27,7 @@ export async function POST(request) {
     // Only the opaque authenticated V2 Telegram continuation can reuse a CRM thread.
     const handoff=raw?.handoff===undefined?null:verifyTelegramCoachingHandoff(raw.handoff,config)
     if(raw?.handoff!==undefined&&!handoff)throw new AppError('INVALID_TELEGRAM_HANDOFF',409)
+    if (websiteMessengerOnly() && !handoff) throw new AppError('MESSENGER_VERIFICATION_REQUIRED',428)
     const form=raw&&typeof raw==='object'&&!Array.isArray(raw)?{...raw}:{}
     delete form.handoff
     let input

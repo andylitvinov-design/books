@@ -282,3 +282,39 @@
 .focusNote textarea:focus-visible{outline:3px solid #88d1b3;outline-offset:1px}
 @media(min-width:650px){.focusCard .stateGrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:355px){.focusCard .stateGrid{gap:7px}.focusCard .stateGrid button{min-height:62px;padding:8px 7px;font-size:12px;gap:6px}}
+
+/* Design Bible §10.13 — Video Studio Course/Practice nested panel.
+   Inherit neutral warm surfaces, preserve real course progress and meaning. */
+:global([data-mandala-mode="video"]) .panel{
+  color:var(--hh-studio-ink,#142B3D);
+  background:var(--hh-studio-surface,#FFFCFA);
+  border-color:var(--hh-studio-border,#EADFD9);
+  box-shadow:var(--hh-studio-shadow,0 5px 18px rgb(66 42 31 / 7%))
+}
+:global([data-mandala-mode="video"]) :is(
+  .goalsPanel,.sessionCard,.package,.consent
+){
+  background:var(--hh-studio-inset,#FFF9F5);
+  border-color:var(--hh-studio-border,#EADFD9)
+}
+:global([data-mandala-mode="video"]) :is(
+  .actions button:not(.primary),.profileActions button,
+  .goalChips button:not([aria-pressed="true"]),.secondaryActions button
+){
+  background:var(--hh-studio-surface,#FFFCFA);
+  border-color:var(--hh-studio-border,#EADFD9);
+  color:var(--hh-studio-forest,#14523F)
+}
+:global([data-mandala-mode="video"]) .heading h3{
+  color:var(--hh-studio-forest,#14523F)
+}
+:global([data-mandala-mode="video"]) .intro{
+  color:var(--hh-studio-muted,#5D6A71)
+}
+:global([data-mandala-mode="video"]) :is(
+  .actions .primary,.planButton,.apply
+){
+  background:var(--hh-studio-primary,#087E61);
+  border-color:var(--hh-studio-primary,#087E61);
+  color:#FFFFFF
+}

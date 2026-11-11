@@ -13,6 +13,8 @@ import { MarketplaceMasterFinder } from "@/components/master-network-explorer";
 import { ArticleDirectory } from "@/components/practitioner-article-directory";
 import { MentorCommunitySwitch } from "@/components/mentor-community-switch";
 import { CommunityServiceHighlights } from "@/components/community-service-highlights";
+import { MasterModeSwitch } from "@/components/master-mode-switch";
+import masterStyles from "./masters-page.module.css";
 
 type PageProps = { params: Promise<{ locale: string }>; searchParams?: Promise<{ view?: string | string[] }> };
 type PublishedCourseRow = {
@@ -60,20 +62,43 @@ export default async function MastersPage({ params, searchParams }: PageProps) {
   const { locale } = await params;
   const requestedView = (await searchParams)?.view;
   if (!isPublicLocale(locale)) notFound();
-  const ru = locale === "ru", es = locale === "es";
   let practitioners: PublicPractitioner[] = [];
   let articles: PublicArticle[] = [];
-  const config = getAppConfig();
-  const [mastersResult, articlesResult, coursesResult] = await Promise.allSettled([
-    createPractitionerRepository(config).listPublicPractitioners(locale),
-    createArticleRepository(config).publicList(locale),
-    createPractitionerCourseRepository(config).catalog(),
-  ]);
-  if (mastersResult.status === "fulfilled") practitioners = mastersResult.value as PublicPractitioner[];
-  if (articlesResult.status === "fulfilled") articles = (articlesResult.value as PublicArticle[]).slice(0, 24);
+  let config: ReturnType<typeof getAppConfig> | null = null;
+  let mastersUnavailable = false;
+  let articlesUnavailable = false;
+  let coursesUnavailable = false;
+  let publishedCourseRows: PublishedCourseRow[] = [];
+  try {
+    config = getAppConfig();
+  } catch {
+    // A public route must still render a truthful unavailable state when the
+    // private app backend is disabled or unconfigured. Never query the DB
+    // with partial configuration or turn this into a fake empty directory.
+    mastersUnavailable = true;
+    articlesUnavailable = true;
+    coursesUnavailable = true;
+  }
+  if (config) {
+    const [mastersResult, articlesResult, coursesResult] = await Promise.allSettled([
+      createPractitionerRepository(config).listPublicPractitioners(locale),
+      createArticleRepository(config).publicList(locale),
+      createPractitionerCourseRepository(config).catalog(),
+    ]);
+    if (mastersResult.status === "fulfilled") practitioners = mastersResult.value as PublicPractitioner[];
+    else mastersUnavailable = true;
+    if (articlesResult.status === "fulfilled") articles = (articlesResult.value as PublicArticle[]).slice(0, 24);
+    else articlesUnavailable = true;
+    coursesUnavailable = coursesResult.status === "rejected";
+    // Keep only published courses from the same successful public master read.
+    // The value is used below, after the single source has been resolved.
+    publishedCourseRows = coursesResult.status === "fulfilled"
+      ? coursesResult.value as PublishedCourseRow[]
+      : [];
+  }
   // Derived only from published reviews of public services; no private client data.
   // A database error must not be shown as an apparent zero rating.
-  if (practitioners.length) {
+  if (config && practitioners.length) {
     try {
       const summaries: {practitionerId: string;count: number;average: number}[] =
         await createServiceReviewRepository(config)
@@ -91,29 +116,29 @@ export default async function MastersPage({ params, searchParams }: PageProps) {
   // The separate course repository returns only published courses from active, approved masters.
   // Send title/locale/slug only; course slides, draft data and private media stay server-side.
   const masterSlugs = new Set(practitioners.map((master) => master.slug));
-  const courses: PublicMentorCourse[] = coursesResult.status === "fulfilled"
-    ? (coursesResult.value as PublishedCourseRow[])
-      .filter((row) => masterSlugs.has(row.practitionerSlug) &&
-        ["en", "ru", "es"].includes(row.course?.locale) && Boolean(row.course?.title))
-      .map((row) => ({
-        slug: row.slug,
-        practitionerSlug: row.practitionerSlug,
-        title: row.course.title,
-        description: row.course.description || "",
-        locale: row.course.locale as PublicMentorCourse["locale"],
-      }))
-    : [];
+  const courses: PublicMentorCourse[] = publishedCourseRows
+    .filter((row) => masterSlugs.has(row.practitionerSlug) &&
+      ["en", "ru", "es"].includes(row.course?.locale) && Boolean(row.course?.title))
+    .map((row) => ({
+      slug: row.slug,
+      practitionerSlug: row.practitionerSlug,
+      title: row.course.title,
+      description: row.course.description || "",
+      locale: row.course.locale as PublicMentorCourse["locale"],
+    }));
   // The existing repository returns approved public service snapshots for these practitioners.
   const services = practitioners.flatMap((practitioner) => practitioner.services || []);
 
   return (
-    <main className="services-shell services-shell--studio" lang={locale}>
-      <PublicSiteHeader locale={locale} />
+    <main className={`services-shell services-shell--studio ${masterStyles.directory}`} lang={locale} data-master-directory>
+      <PublicSiteHeader locale={locale} showAssessmentStrip={false} />
+      <MasterModeSwitch locale={locale} active="find" />
       <MentorCommunitySwitch locale={locale} initialView={requestedView === "articles" ? "articles" : "mentors"} hasArticles={articles.length > 0} hasServices={services.length > 0}
-        mastersUnavailable={mastersResult.status === "rejected"}
-        articlesUnavailable={articlesResult.status === "rejected"}
-        mentors={<MarketplaceMasterFinder practitioners={practitioners} courses={courses} coursesUnavailable={coursesResult.status === "rejected"} locale={locale} />}
+        mastersUnavailable={mastersUnavailable}
+        articlesUnavailable={articlesUnavailable}
+        mentors={<MarketplaceMasterFinder practitioners={practitioners} courses={courses} coursesUnavailable={coursesUnavailable} locale={locale} />}
         articles={<>
+          <CommunityServiceHighlights locale={locale} services={services} articlesAvailable={articles.length > 0 || articlesUnavailable} />
           {articles.length > 0 && <ArticleDirectory locale={locale} preview articles={articles.map((a) => ({
           id: a.id,
           slug: a.slug,
@@ -125,7 +150,7 @@ export default async function MastersPage({ params, searchParams }: PageProps) {
           coverPath: a.published.coverPath || "",
           tags: Array.isArray(a.published.tags) ? a.published.tags : [],
         }))} />}
-          <CommunityServiceHighlights locale={locale} services={services} articlesAvailable={articles.length > 0 || articlesResult.status === "rejected"} />
+          
         </>}
       />
     </main>

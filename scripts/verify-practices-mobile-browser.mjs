@@ -49,7 +49,10 @@ for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]].filt
         assert.equal(await studio.getAttribute("data-active-workspace"),"practices",
           "deep link must activate the existing Practices workspace");
         assert.equal(await studio.getAttribute("data-video-studio-mode"),"therapy");
-        assert.equal(await page.locator('[data-video-quick-control="practices"]').getAttribute("aria-pressed"),"true");
+        assert.equal(await page.locator('[data-video-quick-controls] button').count(),6,
+          "the current six workspaces are visible without fabricating an obsolete Course tab");
+        assert.equal(await page.locator('[data-video-quick-control="ready"]').getAttribute("aria-pressed"),"true",
+          "Ready is the visible tab alias while the existing guided course is active");
         const primary=course.locator("[data-guided-generate-meditation]");
         const programmeButton=course.locator("[data-guided-create-plan]");
         assert.equal(await primary.isDisabled(),true,"require an explicit focus");
@@ -96,23 +99,85 @@ for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]].filt
         await audio.locator("[data-meditation-script]").waitFor({state:"visible",timeout:20000});
         const seeded=await audio.locator("[data-meditation-script]").inputValue();
         assert.ok(seeded.length>100,"actual generated text transferred to existing editor");
-        await course.locator("[data-guided-skip-meditation]").click();
-        await page.waitForFunction(()=>{
-          const skip=document.querySelector("[data-guided-skip-meditation]");
-          const audio=document.querySelector("[data-video-therapy-meditation-audio]");
-          return skip?.getAttribute("aria-pressed")==="true" && audio?.open===false;
-        },null,{timeout:15000});
+        const skipButton=course.locator("[data-guided-skip-meditation]");
+        await skipButton.click();
+        // WebKit may suspend requestAnimationFrame polling in backgrounded
+        // windows. Assert BOTH actual user-visible states independently using
+        // Playwright's native locator polling, then the native details.open
+        // property through a Node-side expect.poll (not browser RAF).
+        // Neither outcome is assumed, forced, retried or written by this test.
+        try {
+          await expect(skipButton).toHaveAttribute("aria-pressed","true",{timeout:15000});
+          await expect(audio).not.toHaveAttribute("open","",{timeout:15000});
+          await expect.poll(
+            ()=>audio.evaluate(node=>node instanceof HTMLDetailsElement ? node.open : null),
+            {timeout:15000,message:"opt-out must close the real narration details"}
+          ).toBe(false);
+        } catch(error) {
+          // Synthetic-only state diagnostics, no private script or contact data.
+          const observed=await page.evaluate(()=>({
+            skipped:document.querySelector("[data-guided-skip-meditation]")?.getAttribute("aria-pressed"),
+            detailsOpen:document.querySelector("[data-video-therapy-meditation-audio]")?.open,
+            detailElement:document.querySelector("[data-video-therapy-meditation-audio]")?.tagName,
+          }));
+          throw new Error("Real meditation opt-out did not fully commit: "+JSON.stringify(observed),{cause:error});
+        }
         assert.equal(await audio.getAttribute("open"),null,"skip closes the existing audio editor");
-        assert.equal(await course.locator("[data-guided-skip-meditation]").getAttribute("aria-pressed"),"true");
+        assert.equal(await skipButton.getAttribute("aria-pressed"),"true");
         await programmeButton.click();
         assert.equal(await course.locator("[data-guided-session]").count(),8);
         assert.equal(await course.locator("[data-guided-free-video]").count(),1);
+        const messengerOnly=course.locator("[data-messenger-only-contact]");
         const order=course.locator("[data-meditation-course-order]");
-        assert.equal(await order.count(),1,"eight-session offer uses one real CRM form");
-        await order.click();
         const form=course.locator("[data-meditation-course-contact]");
-        await form.waitFor({state:"visible"});
         const send=form.locator("[data-meditation-course-submit]");
+        const consentBox=form.locator('input[name="contactConsent"][type="checkbox"]');
+        if(await messengerOnly.count()===1){
+          // In messenger-only mode the product deliberately does NOT create a
+          // direct CRM form or treat a link open as a submitted lead. The
+          // handoff is collapsed by default; open it with one real visitor click.
+          assert.equal(await course.locator("[data-meditation-course-order]").count(),0);
+          assert.equal(await form.count(),0);
+          const disclosure=messengerOnly.locator("details");
+          assert.equal(await disclosure.count(),1);
+          await disclosure.locator("summary").click();
+          const whatsapp=messengerOnly.locator('[data-messenger-only-channel="whatsapp"]');
+          const telegram=messengerOnly.locator('[data-messenger-only-channel="telegram"]');
+          await expect(whatsapp).toBeVisible();
+          await expect(telegram).toBeVisible();
+          const note=(await messengerOnly.innerText()).toLowerCase();
+          assert.ok(/opening a link|открытие ссылки|abrir el enlace/.test(note),
+            "messenger handoff must explain that opening a link is not a submitted enquiry");
+          assert.ok(/send|отправ|enviar/.test(note),
+            "visitor must explicitly send the message inside the messenger");
+        }else{
+          assert.equal(await order.count(),1,"eight-session offer uses one real CRM form when messenger-only mode is off");
+          await order.click();
+        try{
+          // A completed Playwright click alone does not prove React committed
+          // the form. Verify the real button state and its visible consent form.
+          await expect(order).toHaveAttribute("aria-expanded","true",{timeout:8000});
+          await form.waitFor({state:"visible",timeout:12000});
+        }catch(error){
+          const diagnostic=await page.evaluate(()=>{
+            const course=document.querySelector("[data-video-guided-course]");
+            const button=course?.querySelector("[data-meditation-course-order]");
+            const form=course?.querySelector("[data-meditation-course-contact]");
+            const rect=button?.getBoundingClientRect();
+            const hit=rect?document.elementFromPoint(rect.left+rect.width/2,rect.top+rect.height/2):null;
+            return {planCurrent:course?.getAttribute("data-guided-plan-current"),
+              programmeSignature:course?.getAttribute("data-guided-programme-signature-match"),
+              planClicks:course?.getAttribute("data-guided-plan-click-count"),
+              buttonCount:course?.querySelectorAll("[data-meditation-course-order]").length??0,
+              expanded:button?.getAttribute("aria-expanded")??null,
+              formCount:course?.querySelectorAll("[data-meditation-course-contact]").length??0,
+              formVisible:Boolean(form&&form.getBoundingClientRect().height>0),
+              hitTag:hit?.tagName??null,hitDock:Boolean(hit?.closest(".mobile-bottom-navigation,[data-hh-unified-dock]")),
+              viewportWidth:innerWidth};
+          });
+          throw new Error(engine+" "+locale+" "+width+"px course form not opened by one genuine click: "+
+            JSON.stringify(diagnostic),{cause:error});
+        }
         assert.equal(await send.isDisabled(),true,"one-off reply consent is not prechecked");
         await form.locator('input[type="email"]').fill("synthetic@example.invalid");
         assert.equal(await send.isDisabled(),true);
@@ -132,7 +197,6 @@ for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]].filt
           for(const type of ["pointerdown","pointerup","click","change"])document.addEventListener(type,record,true);
           window.__hhConsentClickDiagnostic={events,record};
         });
-        const consentBox=form.locator('input[name="contactConsent"][type="checkbox"]');
         try{
           await consentLabel.click();
           // Await the actual checkbox AND submit state; no forced click or retry.
@@ -186,6 +250,7 @@ for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]].filt
           "label tap must actually update the user-controlled consent");
         assert.equal(await send.isEnabled(),true,"explicit consent enables the real request");
         // Deliberately do not submit: no database test account, lead or external delivery.
+        }
         await course.screenshot({
           path:"artifacts/practices-mobile/"+engine+"-"+locale+"-"+width+".png",
           animations:"disabled",timeout:30000

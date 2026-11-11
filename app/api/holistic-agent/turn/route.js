@@ -16,6 +16,7 @@ import { AXIS_REFS, publishedAxisOffers } from "@/lib/holistic-support/axis-offe
 import { interpretSupportUtterance, explainUserQuestion } from "@/lib/holistic-support/guide-dialogue.mjs";
 import { ruleConversationReply } from "@/lib/holistic-support/rule-conversation.mjs";
 import { resolveConversationFocus } from "@/lib/holistic-support/conversation-context.mjs";
+import { detectConversationLocale } from "@/lib/holistic-support/conversation-locale.mjs";
 import { planJudgmentTurn } from "@/lib/holistic-support/judgment-mind.mjs";
 import { signJudgmentChoice, verifyJudgmentChoice } from "@/lib/holistic-support/judgment-token.mjs";
 import { buildHolisticGuidedTurn } from "@/lib/holistic-support/holistic-guide-adapter.mjs";
@@ -120,6 +121,7 @@ export async function POST(request) {
     const repository = createAppRepository(config);
     await repository.ensureAccount(actor);
     const body = inputOf(await readBody(request,32000));
+    if(body.judgmentChoice==null)body.locale=detectConversationLocale(body.message,body.locale);
     const experimentalEnabled=process.env.HH_AGENT_CHAT_ENABLED==="true" &&
       (process.env.VERCEL_ENV!=="production" ||
         process.env.HH_AGENT_PRODUCTION_APPROVED==="true");
@@ -156,7 +158,7 @@ export async function POST(request) {
         : null;
       if(body.judgmentContext && !context)throw new AppError("INVALID_JUDGMENT_CONTEXT",400);
       const judgment=planJudgmentTurn({
-        message:body.message,locale:body.locale,safety,
+        message:body.message,locale:body.locale,safety,history:body.history,
         pending:context?.pending||null,choiceId:body.judgmentChoice||null,
       });
       if(judgment.status!=="abstain") {
@@ -318,7 +320,7 @@ export async function POST(request) {
       usedSavedTestEvidence:useMeasurements && measurements.length>0,
       usedSavedVideoHistory:useHistory && completedIds.length>0,
       // Browser presentation may use a local model AFTER separate on-device opt-in.
-      browserModelAllowed:body.mode==="device" && safety.status==="clear",
+      browserModelAllowed:experimentalEnabled && body.mode!=="owned" && safety.status==="clear" && !recentUnsafe,
     },{headers:PRIVATE_HEADERS}));
   } catch (error) {
     const e=safeError(error);

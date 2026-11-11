@@ -47,7 +47,7 @@ test("order requires successful consented backend save before displaying the pay
   assert.doesNotMatch(cart, /localStorage|autoDebit|paymentIntent/);
 });
 
-test("order allows phone or existing Google OAuth, without claiming that phone is an authenticated account", () => {
+test("messenger-first cart offers a real chat; legacy phone/Google cannot substitute for verified identity", () => {
   const cart = source("components/commerce/personal-cart.tsx");
   const chooser = source("components/contact-channel-chooser.tsx");
   assert.match(chooser, /cartContact\?: boolean/);
@@ -60,7 +60,9 @@ test("order allows phone or existing Google OAuth, without claiming that phone i
   for (const locale of ["en", "ru", "es"]) assert.match(cart, new RegExp("  " + locale + ": \\{"));
   assert.match(cart, /orderTitle: "Оформление заказа/);
   assert.match(cart, /paymentTitle: "Оплата"/);
-  assert.match(cart, /orderAction: "Заказать"/);
+  assert.match(cart, /orderAction: "Написать в мессенджере"/);
+  assert.match(chooser, /if \(websiteMessengerOnlyUi\(\)\) return <div data-contact-channel-chooser/);
+  assert.match(chooser, /MandatoryMessengerActions/);
   assert.match(cart, /payment:|data-cart-payment-step/);
 });
 

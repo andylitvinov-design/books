@@ -67,7 +67,7 @@ test("macOS WebKit hydration follows visible Goals → Ideas → Montage without
  const refinement=flow.indexOf('const refinement=page.locator',ideas);
  const open=flow.indexOf('await refinement.locator(":scope > summary").click()',refinement);
  const verify=flow.indexOf('await expect(refinement).toHaveAttribute("open","")',open);
- const montage=flow.indexOf("await montage.click()",verify);
+ const montage=flow.indexOf("await montage.tap()",verify);
  assert.ok(first>=0&&last>first&&click>=0&&ideas>click&&refinement>ideas&&open>refinement&&verify>open&&montage>verify,
    "one real visitor click reaches Ideas, native topic disclosure, then Montage");
  assert.match(flow,/data-video-continue-scenarios/);
@@ -76,6 +76,14 @@ test("macOS WebKit hydration follows visible Goals → Ideas → Montage without
  assert.match(studio,/data-video-scenario-open=\{videoScenarioOpen\?"true":"false"\}/);
  assert.match(studio,/onClick=\{continueToIdeas\}/);
  assert.match(style,/\[data-video-scenario-open="false"\]/);
+ // The live Style controls are direct buttons, not the removed legacy wrapper.
+ assert.ok(flow.includes('const styleTab=page.locator(\'[data-video-montage-tab="effects"]\')'));
+ assert.ok(flow.includes('await styleTab.tap()'));
+ assert.ok(flow.includes('const styles=page.locator("[data-video-montage-style]")'));
+ assert.ok(flow.includes('await expect(styles).toHaveCount(6)'));
+ assert.ok(flow.includes('await minimal.tap()'));
+ assert.ok(flow.includes('await expect(minimal).toHaveAttribute("aria-pressed","true")'));
+ assert.ok(flow.includes('toBeHidden()'),"legacy Director filter is not the active style picker");
 });
 
 test("macOS WebKit exercises explicit accessible adult consent and revocation",()=>{
@@ -116,19 +124,43 @@ test("macOS WebKit exercises explicit accessible adult consent and revocation",(
   "no original-tab interaction should depend on restoring focus after another tab");
 });
 
-test("Ideas advanced voice stays opt-in and is exercised through a real WebKit click",()=>{
+test("Ideas Personalization and Concept retain a single opt-in Voice/My Voice WebKit path",()=>{
  const studio=read("components/mandala-free-video-studio.tsx");
  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
  assert.match(studio,/data-video-ideas-advanced-voice open=\{ideasVoiceAdvancedOpen\}/);
- assert.ok(studio.includes('setIdeasVoiceAdvancedOpen(true)'),"the visible Ideas audio shortcut opens the editor");
- assert.ok(studio.includes('hidden={activeWorkspace!=="phrases"}'),"voice editor is visible only within Ideas");
- assert.ok(studio.includes('{deepHypnoPane}'),"existing voice and approval controls are retained");
- assert.ok(browser.includes("await advancedVoice.locator(\":scope > summary\").click()"),
-  "Mac WebKit must open the real disclosure, not force hidden controls");
- assert.ok(browser.includes("await expect(advancedVoice.locator('[data-hypno-select-tone]')).toBeVisible()"));
- assert.ok(!browser.includes("advancedVoice.click({force:true})"),"never force hidden voice controls");
+ assert.match(studio,/hidden=\{activeWorkspace!=="phrases"\|\|ideasSubtab!=="personalization"\}/);
+ assert.equal((studio.match(/data-video-ideas-tab="/g)||[]).length,2);
+ for(const marker of ['data-video-ideas-tab="personalization"','data-video-ideas-tab="concept"',
+  'data-video-ideas-voice-mode="voice"','data-video-ideas-voice-mode="my-voice"',
+  'data-video-phrase-audio-shortcut','data-video-ideas-own-upload'])
+  assert.ok(studio.includes(marker),marker);
+ assert.equal((studio.match(/<MandalaAffirmationVoice locale/g)||[]).length,1);
+ const modes=browser.indexOf('const ideasModes=phrases.locator("[data-video-ideas-tabs]")');
+ const personal=browser.indexOf('const personalTab=ideasModes.locator',modes);
+ const concept=browser.indexOf('await conceptTab.click()',personal);
+ const back=browser.indexOf('await personalTab.click()',concept);
+ const disclosure=browser.indexOf('await advancedText.click()',back);
+ const voice=browser.indexOf('await voiceModeButton.click()',disclosure);
+ const my=browser.indexOf('await myVoiceModeButton.click()',voice);
+ const consent=browser.indexOf('await narrationConsent.check()',my);
+ assert.ok(modes>=0&&personal>modes&&concept>personal&&back>concept&&
+   disclosure>back&&voice>disclosure&&my>voice&&consent>my,
+   "actual user opens Personalization and the protected voice editor before consenting");
+ assert.match(browser,/data-video-affirmation-transcript-review/);
+ assert.match(browser,/spawnSync\("ffprobe"/);
+ assert.doesNotMatch(browser,/advancedVoice\.click\(\{force:true\}\)/);
  const css=read("components/mandala-video-mobile.module.css");
- assert.ok(css.includes('[data-video-legacy-phrase-editor]:not([hidden])'),"opt-in advanced editor not hidden by retired CSS");
- assert.ok(css.includes('[data-video-phrase-audio-shortcut]'),"audio shortcut remains visible");
- assert.ok(css.includes('data-active-workspace="phrases"'),"visibility exception scoped to Ideas");
+ assert.ok(css.includes('[data-ideas-subtab="voice"] [data-video-legacy-phrase-editor][data-video-ideas-recording-open="true"]{display:block!important}'), "the voice editor is exposed only inside its selected Voice/My Voice submode");
+ assert.match(css,/data-video-phrase-audio-shortcut\]:not\(\[hidden\]\)/);
+});
+
+
+test("guided meditation include/omit commits native narration disclosure after React state",()=>{
+ const studio=read("components/mandala-free-video-studio.tsx");
+ assert.match(studio,/const \[courseMeditationIncluded,setCourseMeditationIncluded\]=useState\(false\)/);
+ assert.match(studio,/else if\(courseMeditationIncluded&&courseMeditationDraft\)details\.open=true/);
+ assert.match(studio,/if\(courseMeditationOmitted\)details\.open=false/);
+ assert.match(studio,/setCourseMeditationIncluded\(true\);\s*setCourseMeditationDraft\(script\);/);
+ assert.match(studio,/onOmitMeditation=\{\(\)=>\{\s*setCourseMeditationIncluded\(false\);/);
+ assert.doesNotMatch(studio,/onAddMeditation=\{script=>\{[\s\S]{0,500}requestAnimationFrame/);
 });

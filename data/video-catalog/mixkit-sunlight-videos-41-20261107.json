@@ -1,0 +1,2038 @@
+{
+  "schemaVersion": "hh-mixkit-sunlight-video-sourcing-v1",
+  "createdOn": "2026-11-07",
+  "intent": "Expand owner-facing curated source VIDEO catalog with visually diverse warm sunlight videos, not still images",
+  "publisher": "Mixkit",
+  "sourceType": "individual_video_pages_not_downloaded_media",
+  "sourceBase": "https://mixkit.co/free-stock-video/",
+  "rightsSource": "https://mixkit.co/license/modal/videoFree/",
+  "coverage": {
+    "newUniqueVideoPages": 41,
+    "portraitVideoPages": 13,
+    "landscapeVideoPages": 28,
+    "storyArcs": [
+      "new_beginning",
+      "self_discovery",
+      "connection",
+      "warmth",
+      "hope",
+      "calm",
+      "confidence",
+      "renewal",
+      "journey",
+      "inner_peace",
+      "freedom",
+      "discovery",
+      "grounding",
+      "gratitude",
+      "acceptance",
+      "joy",
+      "vitality"
+    ],
+    "originalMp4FilesDownloaded": 0,
+    "readyToRender": 0,
+    "newPlayableCatalogAssets": 0,
+    "newPhotoSources": 0
+  },
+  "licenseSafety": "Individual pages advertised Mixkit Stock Video Free commercial/personal terms on review date; license and person/brand/derivative rights must be rechecked before physical import; restricted items excluded.",
+  "nextProcessing": [
+    "Re-open each official video page and verify current per-clip Free vs Restricted terms",
+    "Obtain original MP4 via permitted manual provider download and preserve source URL",
+    "Probe actual video codec, resolution, fps, length and SHA256; validate non-static motion and frames",
+    "Review faces/brands/subjects and artistic sunlight/framing across 9- and 16-9 shots",
+    "Review crop to 1:1 and opposite aspect; do not mislabel a crop as native footage",
+    "Use existing local licensed-MP4 or cost-gated private R2 ingest, then confirm generator playback/export",
+    "Only after rights, human approval, technical readback and LIVE checks move records out of CANDIDATE_RESEARCH_ONLY"
+  ],
+  "excludedPersonalOnlyVideoPages": [
+    "https://mixkit.co/free-stock-video/yellow-sun-rising-at-the-sea-behind-the-mountains-6734/",
+    "https://mixkit.co/free-stock-video/sunrise-shining-through-thick-clouds-26532/",
+    "https://mixkit.co/free-stock-video/red-sun-rising-in-the-warm-morning-6850/",
+    "https://mixkit.co/free-stock-video/autumn-forest-trees-with-sunshine-14911/",
+    "https://mixkit.co/free-stock-video/sun-reflections-and-gentle-waves-in-the-beach-25163/",
+    "https://mixkit.co/free-stock-video/sun-beams-through-the-forest-trees-25158/",
+    "https://mixkit.co/free-stock-video/young-family-with-kite-at-sunset-18273/",
+    "https://mixkit.co/free-stock-video/sunlight-through-a-tree-16399/",
+    "https://mixkit.co/free-stock-video/bright-orange-sky-at-sunrise-20425/",
+    "https://mixkit.co/free-stock-video/golden-sunrise-in-the-autumn-21168/"
+  ],
+  "sources": [
+    {
+      "id": "mixkit-3133",
+      "sourceAssetId": "mixkit-3133",
+      "provider": "mixkit",
+      "sourcePage": "https://mixkit.co/free-stock-video/the-sun-hiding-on-the-horizon-3133/",
+      "mediaType": "video",
+      "stillImage": false,
+      "label": {
+        "ru": "Солнце уходит за горизонт",
+        "en": "the sun hiding on the horizon",
+        "es": "El sol se oculta en el horizonte"
+      },
+      "sourceTitleRu": "Солнце уходит за горизонт",
+      "visualTags": [
+        "sunlight",
+        "sunset",
+        "horizon",
+        "clouds",
+        "mountains"
+      ],
+      "storytelling": {
+        "arc": "new_beginning",
+        "shotType": "timelapse",
+        "beatSuggestion": "opening"
+      },
+      "sourceAdvertisedAspect": "portrait",
+      "nativeAspectVerified": false,
+      "formatTargets": [
+        "9:16 native candidate",
+        "1:1 crop review"
+      ],
+      "durationSeconds": 11,
+      "license": {
+        "id": "mixkit_stock_video_free",
+        "url": "https://mixkit.co/license/modal/videoFree/",
+        "commercialUseClaimOnIndividualPage": true,
+        "checkedOn": "2026-11-07",
+        "furtherTermsAndSubjectRightsReviewRequired": true
+      },
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "sourcePageVideoVerified": true,
+      "sourceMediaDownloaded": false,
+      "physicallyImported": false,
+      "ownerApproved": false,
+      "individualVisualReviewCompleted": false,
+      "generatorEligible": false,
+      "countsAsPlayableVideo": false
+    },
+    {
+      "id": "mixkit-1214",
+      "sourceAssetId": "mixkit-1214",
+      "provider": "mixkit",
+      "sourcePage": "https://mixkit.co/free-stock-video/womans-silhouette-walking-on-the-beach-at-sunset-1214/",
+      "mediaType": "video",
+      "stillImage": false,
+      "label": {
+        "ru": "Прогулка вдоль моря на закате",
+        "en": "womans silhouette walking on the beach at sunset",
+        "es": "Paseo por la playa al atardecer"
+      },
+      "sourceTitleRu": "Прогулка вдоль моря на закате",
+      "visualTags": [
+        "sunlight",
+        "sunset",
+        "beach",
+        "person",
+        "silhouette"
+      ],
+      "storytelling": {
+        "arc": "self_discovery",
+        "shotType": "walking",
+        "beatSuggestion": "transition"
+      },
+      "sourceAdvertisedAspect": "portrait",
+      "nativeAspectVerified": false,
+      "formatTargets": [
+        "9:16 native candidate",
+        "1:1 crop review"
+      ],
+      "durationSeconds": 12,
+      "license": {
+        "id": "mixkit_stock_video_free",
+        "url": "https://mixkit.co/license/modal/videoFree/",
+        "commercialUseClaimOnIndividualPage": true,
+        "checkedOn": "2026-11-07",
+        "furtherTermsAndSubjectRightsReviewRequired": true
+      },
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "sourcePageVideoVerified": true,
+      "sourceMediaDownloaded": false,
+      "physicallyImported": false,
+      "ownerApproved": false,
+      "individualVisualReviewCompleted": false,
+      "generatorEligible": false,
+      "countsAsPlayableVideo": false
+    },
+    {
+      "id": "mixkit-1224",
+      "sourceAssetId": "mixkit-1224",
+      "provider": "mixkit",
+      "sourcePage": "https://mixkit.co/free-stock-video/a-couples-silhouette-on-the-beach-at-sunset-1224/",
+      "mediaType": "video",
+      "stillImage": false,
+      "label": {
+        "ru": "Влюблённые на закатном берегу",
+        "en": "a couples silhouette on the beach at sunset",
+        "es": "Pareja en la playa al atardecer"
+      },
+      "sourceTitleRu": "Влюблённые на закатном берегу",
+      "visualTags": [
+        "sunlight",
+        "sunset",
+        "beach",
+        "couple",
+        "ocean"
+      ],
+      "storytelling": {
+        "arc": "connection",
+        "shotType": "silhouette",
+        "beatSuggestion": "emotional_peak"
+      },
+      "sourceAdvertisedAspect": "portrait",
+      "nativeAspectVerified": false,
+      "formatTargets": [
+        "9:16 native candidate",
+        "1:1 crop review"
+      ],
+      "durationSeconds": 19,
+      "license": {
+        "id": "mixkit_stock_video_free",
+        "url": "https://mixkit.co/license/modal/videoFree/",
+        "commercialUseClaimOnIndividualPage": true,
+        "checkedOn": "2026-11-07",
+        "furtherTermsAndSubjectRightsReviewRequired": true
+      },
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "sourcePageVideoVerified": true,
+      "sourceMediaDownloaded": false,
+      "physicallyImported": false,
+      "ownerApproved": false,
+      "individualVisualReviewCompleted": false,
+      "generatorEligible": false,
+      "countsAsPlayableVideo": false
+    },
+    {
+      "id": "mixkit-1191",
+      "sourceAssetId": "mixkit-1191",
+      "provider": "mixkit",
+      "sourcePage": "https://mixkit.co/free-stock-video/palm-tree-in-front-of-the-sun-1191/",
+      "mediaType": "video",
+      "stillImage": false,
+      "label": {
+        "ru": "Пальма в лучах солнца",
+        "en": "palm tree in front of the sun",
+        "es": "Palmera frente al sol"
+      },
+      "sourceTitleRu": "Пальма в лучах солнца",
+      "visualTags": [
+        "sunlight",
+        "sunset",
+        "palm",
+        "tropical",
+        "ocean"
+      ],
+      "storytelling": {
+        "arc": "warmth",
+        "shotType": "static",
+        "beatSuggestion": "transition"
+      },
+      "sourceAdvertisedAspect": "portrait",
+      "nativeAspectVerified": false,
+      "formatTargets": [
+        "9:16 native candidate",
+        "1:1 crop review"
+      ],
+      "durationSeconds": 23,
+      "license": {
+        "id": "mixkit_stock_video_free",
+        "url": "https://mixkit.co/license/modal/videoFree/",
+        "commercialUseClaimOnIndividualPage": true,
+        "checkedOn": "2026-11-07",
+        "furtherTermsAndSubjectRightsReviewRequired": true
+      },
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "sourcePageVideoVerified": true,
+      "sourceMediaDownloaded": false,
+      "physicallyImported": false,
+      "ownerApproved": false,
+      "individualVisualReviewCompleted": false,
+      "generatorEligible": false,
+      "countsAsPlayableVideo": false
+    },
+    {
+      "id": "mixkit-1170",
+      "sourceAssetId": "mixkit-1170",
+      "provider": "mixkit",
+      "sourcePage": "https://mixkit.co/free-stock-video/sun-setting-or-rising-over-palm-trees-1170/",
+      "mediaType": "video",
+      "stillImage": false,
+      "label": {
+        "ru": "Солнце за пальмами над морем",
+        "en": "sun setting or rising over palm trees",
+        "es": "Sol entre palmeras sobre el mar"
+      },
+      "sourceTitleRu": "Солнце за пальмами над морем",
+      "visualTags": [
+        "sunlight",
+        "sunrise",
+        "sunset",
+        "palm",
+        "ocean"
+      ],
+      "storytelling": {
+        "arc": "warmth",
+        "shotType": "slow_motion",
+        "beatSuggestion": "transition"
+      },
+      "sourceAdvertisedAspect": "portrait",
+      "nativeAspectVerified": false,
+      "formatTargets": [
+        "9:16 native candidate",
+        "1:1 crop review"
+      ],
+      "durationSeconds": 34,
+      "license": {
+        "id": "mixkit_stock_video_free",
+        "url": "https://mixkit.co/license/modal/videoFree/",
+        "commercialUseClaimOnIndividualPage": true,
+        "checkedOn": "2026-11-07",
+        "furtherTermsAndSubjectRightsReviewRequired": true
+      },
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "sourcePageVideoVerified": true,
+      "sourceMediaDownloaded": false,
+      "physicallyImported": false,
+      "ownerApproved": false,
+      "individualVisualReviewCompleted": false,
+      "generatorEligible": false,
+      "countsAsPlayableVideo": false
+    },
+    {
+      "id": "mixkit-1183",
+      "sourceAssetId": "mixkit-1183",
+      "provider": "mixkit",
+      "sourcePage": "https://mixkit.co/free-stock-video/sun-over-hills-1183/",
+      "mediaType": "video",
+      "stillImage": false,
+      "label": {
+        "ru": "Солнце над холмами",
+        "en": "sun over hills",
+        "es": "Sol sobre las colinas"
+      },
+      "sourceTitleRu": "Солнце над холмами",
+      "visualTags": [
+        "sunlight",
+        "sunrise",
+        "sunset",
+        "hills",
+        "water"
+      ],
+      "storytelling": {
+        "arc": "hope",
+        "shotType": "slow_motion",
+        "beatSuggestion": "opening"
+      },
+      "sourceAdvertisedAspect": "portrait",
+      "nativeAspectVerified": false,
+      "formatTargets": [
+        "9:16 native candidate",
+        "1:1 crop review"
+      ],
+      "durationSeconds": 11,
+      "license": {
+        "id": "mixkit_stock_video_free",
+        "url": "https://mixkit.co/license/modal/videoFree/",
+        "commercialUseClaimOnIndividualPage": true,
+        "checkedOn": "2026-11-07",
+        "furtherTermsAndSubjectRightsReviewRequired": true
+      },
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "sourcePageVideoVerified": true,
+      "sourceMediaDownloaded": false,
+      "physicallyImported": false,
+      "ownerApproved": false,
+      "individualVisualReviewCompleted": false,
+      "generatorEligible": false,
+      "countsAsPlayableVideo": false
+    },
+    {
+      "id": "mixkit-3979",
+      "sourceAssetId": "mixkit-3979",
+      "provider": "mixkit",
+      "sourcePage": "https://mixkit.co/free-stock-video/glowing-sun-through-a-tree-3979/",
+      "mediaType": "video",
+      "stillImage": false,
+      "label": {
+        "ru": "Солнечный свет сквозь крону",
+        "en": "glowing sun through a tree",
+        "es": "Sol brillante entre las ramas"
+      },
+      "sourceTitleRu": "Солнечный свет сквозь крону",
+      "visualTags": [
+        "sunlight",
+        "forest",
+        "leaves",
+        "lens_flare"
+      ],
+      "storytelling": {
+        "arc": "calm",
+        "shotType": "natural_motion",
+        "beatSuggestion": "transition"
+      },
+      "sourceAdvertisedAspect": "portrait",
+      "nativeAspectVerified": false,
+      "formatTargets": [
+        "9:16 native candidate",
+        "1:1 crop review"
+      ],
+      "durationSeconds": 11,
+      "license": {
+        "id": "mixkit_stock_video_free",
+        "url": "https://mixkit.co/license/modal/videoFree/",
+        "commercialUseClaimOnIndividualPage": true,
+        "checkedOn": "2026-11-07",
+        "furtherTermsAndSubjectRightsReviewRequired": true
+      },
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "sourcePageVideoVerified": true,
+      "sourceMediaDownloaded": false,
+      "physicallyImported": false,
+      "ownerApproved": false,
+      "individualVisualReviewCompleted": false,
+      "generatorEligible": false,
+      "countsAsPlayableVideo": false
+    },
+    {
+      "id": "mixkit-40901",
+      "sourceAssetId": "mixkit-40901",
+      "provider": "mixkit",
+      "sourcePage": "https://mixkit.co/free-stock-video/silhouette-in-front-of-the-sun-of-a-cyclist-outdoors-40901/",
+      "mediaType": "video",
+      "stillImage": false,
+      "label": {
+        "ru": "Велосипедист навстречу солнцу",
+        "en": "silhouette in front of the sun of a cyclist outdoors",
+        "es": "Ciclista frente al sol"
+      },
+      "sourceTitleRu": "Велосипедист навстречу солнцу",
+      "visualTags": [
+        "sunlight",
+        "cyclist",
+        "sport",
+        "person"
+      ],
+      "storytelling": {
+        "arc": "confidence",
+        "shotType": "silhouette",
+        "beatSuggestion": "transition"
+      },
+      "sourceAdvertisedAspect": "portrait",
+      "nativeAspectVerified": false,
+      "formatTargets": [
+        "9:16 native candidate",
+        "1:1 crop review"
+      ],
+      "durationSeconds": 10,
+      "license": {
+        "id": "mixkit_stock_video_free",
+        "url": "https://mixkit.co/license/modal/videoFree/",
+        "commercialUseClaimOnIndividualPage": true,
+        "checkedOn": "2026-11-07",
+        "furtherTermsAndSubjectRightsReviewRequired": true
+      },
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "sourcePageVideoVerified": true,
+      "sourceMediaDownloaded": false,
+      "physicallyImported": false,
+      "ownerApproved": false,
+      "individualVisualReviewCompleted": false,
+      "generatorEligible": false,
+      "countsAsPlayableVideo": false
+    },
+    {
+      "id": "mixkit-1173",
+      "sourceAssetId": "mixkit-1173",
+      "provider": "mixkit",
+      "sourcePage": "https://mixkit.co/free-stock-video/tree-with-yellow-flowers-1173/",
+      "mediaType": "video",
+      "stillImage": false,
+      "label": {
+        "ru": "Жёлтые цветы в солнечном свете",
+        "en": "tree with yellow flowers",
+        "es": "Flores amarillas al sol"
+      },
+      "sourceTitleRu": "Жёлтые цветы в солнечном свете",
+      "visualTags": [
+        "sunlight",
+        "flowers",
+        "leaves",
+        "breeze"
+      ],
+      "storytelling": {
+        "arc": "renewal",
+        "shotType": "slow_motion",
+        "beatSuggestion": "transition"
+      },
+      "sourceAdvertisedAspect": "portrait",
+      "nativeAspectVerified": false,
+      "formatTargets": [
+        "9:16 native candidate",
+        "1:1 crop review"
+      ],
+      "durationSeconds": 28,
+      "license": {
+        "id": "mixkit_stock_video_free",
+        "url": "https://mixkit.co/license/modal/videoFree/",
+        "commercialUseClaimOnIndividualPage": true,
+        "checkedOn": "2026-11-07",
+        "furtherTermsAndSubjectRightsReviewRequired": true
+      },
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "sourcePageVideoVerified": true,
+      "sourceMediaDownloaded": false,
+      "physicallyImported": false,
+      "ownerApproved": false,
+      "individualVisualReviewCompleted": false,
+      "generatorEligible": false,
+      "countsAsPlayableVideo": false
+    },
+    {
+      "id": "mixkit-1594",
+      "sourceAssetId": "mixkit-1594",
+      "provider": "mixkit",
+      "sourcePage": "https://mixkit.co/free-stock-video/sunset-over-train-tracks-1594/",
+      "mediaType": "video",
+      "stillImage": false,
+      "label": {
+        "ru": "Солнце над железной дорогой",
+        "en": "sunset over train tracks",
+        "es": "Atardecer sobre las vías"
+      },
+      "sourceTitleRu": "Солнце над железной дорогой",
+      "visualTags": [
+        "sunlight",
+        "sunset",
+        "city",
+        "train",
+        "travel"
+      ],
+      "storytelling": {
+        "arc": "journey",
+        "shotType": "timelapse",
+        "beatSuggestion": "transition"
+      },
+      "sourceAdvertisedAspect": "portrait",
+      "nativeAspectVerified": false,
+      "formatTargets": [
+        "9:16 native candidate",
+        "1:1 crop review"
+      ],
+      "durationSeconds": 27,
+      "license": {
+        "id": "mixkit_stock_video_free",
+        "url": "https://mixkit.co/license/modal/videoFree/",
+        "commercialUseClaimOnIndividualPage": true,
+        "checkedOn": "2026-11-07",
+        "furtherTermsAndSubjectRightsReviewRequired": true
+      },
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "sourcePageVideoVerified": true,
+      "sourceMediaDownloaded": false,
+      "physicallyImported": false,
+      "ownerApproved": false,
+      "individualVisualReviewCompleted": false,
+      "generatorEligible": false,
+      "countsAsPlayableVideo": false
+    },
+    {
+      "id": "mixkit-32765",
+      "sourceAssetId": "mixkit-32765",
+      "provider": "mixkit",
+      "sourcePage": "https://mixkit.co/free-stock-video/profile-face-of-a-woman-meditating-in-a-desert-32765/",
+      "mediaType": "video",
+      "stillImage": false,
+      "label": {
+        "ru": "Медитация под солнцем пустыни",
+        "en": "profile face of a woman meditating in a desert",
+        "es": "Meditación bajo el sol del desierto"
+      },
+      "sourceTitleRu": "Медитация под солнцем пустыни",
+      "visualTags": [
+        "sunlight",
+        "sunset",
+        "desert",
+        "meditation",
+        "person"
+      ],
+      "storytelling": {
+        "arc": "inner_peace",
+        "shotType": "portrait",
+        "beatSuggestion": "transition"
+      },
+      "sourceAdvertisedAspect": "portrait",
+      "nativeAspectVerified": false,
+      "formatTargets": [
+        "9:16 native candidate",
+        "1:1 crop review"
+      ],
+      "durationSeconds": 10,
+      "license": {
+        "id": "mixkit_stock_video_free",
+        "url": "https://mixkit.co/license/modal/videoFree/",
+        "commercialUseClaimOnIndividualPage": true,
+        "checkedOn": "2026-11-07",
+        "furtherTermsAndSubjectRightsReviewRequired": true
+      },
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "sourcePageVideoVerified": true,
+      "sourceMediaDownloaded": false,
+      "physicallyImported": false,
+      "ownerApproved": false,
+      "individualVisualReviewCompleted": false,
+      "generatorEligible": false,
+      "countsAsPlayableVideo": false
+    },
+    {
+      "id": "mixkit-34547",
+      "sourceAssetId": "mixkit-34547",
+      "provider": "mixkit",
+      "sourcePage": "https://mixkit.co/free-stock-video/rolling-slowly-on-roller-skates-during-sunset-34547/",
+      "mediaType": "video",
+      "stillImage": false,
+      "label": {
+        "ru": "Ролики в лучах заката",
+        "en": "rolling slowly on roller skates during sunset",
+        "es": "Patinaje a la luz del atardecer"
+      },
+      "sourceTitleRu": "Ролики в лучах заката",
+      "visualTags": [
+        "sunlight",
+        "sunset",
+        "skating",
+        "movement",
+        "person"
+      ],
+      "storytelling": {
+        "arc": "freedom",
+        "shotType": "close_up",
+        "beatSuggestion": "transition"
+      },
+      "sourceAdvertisedAspect": "portrait",
+      "nativeAspectVerified": false,
+      "formatTargets": [
+        "9:16 native candidate",
+        "1:1 crop review"
+      ],
+      "durationSeconds": 7,
+      "license": {
+        "id": "mixkit_stock_video_free",
+        "url": "https://mixkit.co/license/modal/videoFree/",
+        "commercialUseClaimOnIndividualPage": true,
+        "checkedOn": "2026-11-07",
+        "furtherTermsAndSubjectRightsReviewRequired": true
+      },
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "sourcePageVideoVerified": true,
+      "sourceMediaDownloaded": false,
+      "physicallyImported": false,
+      "ownerApproved": false,
+      "individualVisualReviewCompleted": false,
+      "generatorEligible": false,
+      "countsAsPlayableVideo": false
+    },
+    {
+      "id": "mixkit-51106",
+      "sourceAssetId": "mixkit-51106",
+      "provider": "mixkit",
+      "sourcePage": "https://mixkit.co/free-stock-video/rays-of-the-sun-passing-through-the-branches-of-a-51106/",
+      "mediaType": "video",
+      "stillImage": false,
+      "label": {
+        "ru": "Солнечные лучи среди ветвей",
+        "en": "rays of the sun passing through the branches of a",
+        "es": "Rayos de sol entre las ramas"
+      },
+      "sourceTitleRu": "Солнечные лучи среди ветвей",
+      "visualTags": [
+        "sunlight",
+        "trees",
+        "forest"
+      ],
+      "storytelling": {
+        "arc": "renewal",
+        "shotType": "nature",
+        "beatSuggestion": "transition"
+      },
+      "sourceAdvertisedAspect": "landscape",
+      "nativeAspectVerified": false,
+      "formatTargets": [
+        "16:9 native candidate",
+        "1:1 crop review",
+        "9:16 crop review"
+      ],
+      "durationSeconds": null,
+      "license": {
+        "id": "mixkit_stock_video_free",
+        "url": "https://mixkit.co/license/modal/videoFree/",
+        "commercialUseClaimOnIndividualPage": true,
+        "checkedOn": "2026-11-07",
+        "furtherTermsAndSubjectRightsReviewRequired": true
+      },
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "sourcePageVideoVerified": true,
+      "sourceMediaDownloaded": false,
+      "physicallyImported": false,
+      "ownerApproved": false,
+      "individualVisualReviewCompleted": false,
+      "generatorEligible": false,
+      "countsAsPlayableVideo": false
+    },
+    {
+      "id": "mixkit-1709",
+      "sourceAssetId": "mixkit-1709",
+      "provider": "mixkit",
+      "sourcePage": "https://mixkit.co/free-stock-video/sunlight-crossing-the-branches-of-trees-1709/",
+      "mediaType": "video",
+      "stillImage": false,
+      "label": {
+        "ru": "Солнце после дождя в лесу",
+        "en": "sunlight crossing the branches of trees",
+        "es": "Sol tras la lluvia en el bosque"
+      },
+      "sourceTitleRu": "Солнце после дождя в лесу",
+      "visualTags": [
+        "sunlight",
+        "rain",
+        "branches",
+        "forest"
+      ],
+      "storytelling": {
+        "arc": "calm",
+        "shotType": "nature",
+        "beatSuggestion": "transition"
+      },
+      "sourceAdvertisedAspect": "landscape",
+      "nativeAspectVerified": false,
+      "formatTargets": [
+        "16:9 native candidate",
+        "1:1 crop review",
+        "9:16 crop review"
+      ],
+      "durationSeconds": null,
+      "license": {
+        "id": "mixkit_stock_video_free",
+        "url": "https://mixkit.co/license/modal/videoFree/",
+        "commercialUseClaimOnIndividualPage": true,
+        "checkedOn": "2026-11-07",
+        "furtherTermsAndSubjectRightsReviewRequired": true
+      },
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "sourcePageVideoVerified": true,
+      "sourceMediaDownloaded": false,
+      "physicallyImported": false,
+      "ownerApproved": false,
+      "individualVisualReviewCompleted": false,
+      "generatorEligible": false,
+      "countsAsPlayableVideo": false
+    },
+    {
+      "id": "mixkit-34371",
+      "sourceAssetId": "mixkit-34371",
+      "provider": "mixkit",
+      "sourcePage": "https://mixkit.co/free-stock-video/sunlight-passing-through-the-leaves-of-a-tree-34371/",
+      "mediaType": "video",
+      "stillImage": false,
+      "label": {
+        "ru": "Солнечный свет сквозь листву",
+        "en": "sunlight passing through the leaves of a tree",
+        "es": "Sol a través de las hojas"
+      },
+      "sourceTitleRu": "Солнечный свет сквозь листву",
+      "visualTags": [
+        "sunlight",
+        "tree",
+        "leaves"
+      ],
+      "storytelling": {
+        "arc": "warmth",
+        "shotType": "close_up",
+        "beatSuggestion": "transition"
+      },
+      "sourceAdvertisedAspect": "landscape",
+      "nativeAspectVerified": false,
+      "formatTargets": [
+        "16:9 native candidate",
+        "1:1 crop review",
+        "9:16 crop review"
+      ],
+      "durationSeconds": null,
+      "license": {
+        "id": "mixkit_stock_video_free",
+        "url": "https://mixkit.co/license/modal/videoFree/",
+        "commercialUseClaimOnIndividualPage": true,
+        "checkedOn": "2026-11-07",
+        "furtherTermsAndSubjectRightsReviewRequired": true
+      },
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "sourcePageVideoVerified": true,
+      "sourceMediaDownloaded": false,
+      "physicallyImported": false,
+      "ownerApproved": false,
+      "individualVisualReviewCompleted": false,
+      "generatorEligible": false,
+      "countsAsPlayableVideo": false
+    },
+    {
+      "id": "mixkit-101206",
+      "sourceAssetId": "mixkit-101206",
+      "provider": "mixkit",
+      "sourcePage": "https://mixkit.co/free-stock-video/aerial-zoom-from-sun-to-lagoon-101206/",
+      "mediaType": "video",
+      "stillImage": false,
+      "label": {
+        "ru": "Полёт от солнца к лагуне",
+        "en": "aerial zoom from sun to lagoon",
+        "es": "Vuelo aéreo del sol a la laguna"
+      },
+      "sourceTitleRu": "Полёт от солнца к лагуне",
+      "visualTags": [
+        "sunlight",
+        "aerial",
+        "water",
+        "lagoon"
+      ],
+      "storytelling": {
+        "arc": "discovery",
+        "shotType": "aerial",
+        "beatSuggestion": "transition"
+      },
+      "sourceAdvertisedAspect": "landscape",
+      "nativeAspectVerified": false,
+      "formatTargets": [
+        "16:9 native candidate",
+        "1:1 crop review",
+        "9:16 crop review"
+      ],
+      "durationSeconds": null,
+      "license": {
+        "id": "mixkit_stock_video_free",
+        "url": "https://mixkit.co/license/modal/videoFree/",
+        "commercialUseClaimOnIndividualPage": true,
+        "checkedOn": "2026-11-07",
+        "furtherTermsAndSubjectRightsReviewRequired": true
+      },
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "sourcePageVideoVerified": true,
+      "sourceMediaDownloaded": false,
+      "physicallyImported": false,
+      "ownerApproved": false,
+      "individualVisualReviewCompleted": false,
+      "generatorEligible": false,
+      "countsAsPlayableVideo": false
+    },
+    {
+      "id": "mixkit-101497",
+      "sourceAssetId": "mixkit-101497",
+      "provider": "mixkit",
+      "sourcePage": "https://mixkit.co/free-stock-video/sunlit-waves-with-leafy-frame-101497/",
+      "mediaType": "video",
+      "stillImage": false,
+      "label": {
+        "ru": "Солнечные волны в обрамлении листвы",
+        "en": "sunlit waves with leafy frame",
+        "es": "Olas soleadas enmarcadas por hojas"
+      },
+      "sourceTitleRu": "Солнечные волны в обрамлении листвы",
+      "visualTags": [
+        "sunlight",
+        "ocean",
+        "waves",
+        "leaves"
+      ],
+      "storytelling": {
+        "arc": "calm",
+        "shotType": "water",
+        "beatSuggestion": "transition"
+      },
+      "sourceAdvertisedAspect": "landscape",
+      "nativeAspectVerified": false,
+      "formatTargets": [
+        "16:9 native candidate",
+        "1:1 crop review",
+        "9:16 crop review"
+      ],
+      "durationSeconds": null,
+      "license": {
+        "id": "mixkit_stock_video_free",
+        "url": "https://mixkit.co/license/modal/videoFree/",
+        "commercialUseClaimOnIndividualPage": true,
+        "checkedOn": "2026-11-07",
+        "furtherTermsAndSubjectRightsReviewRequired": true
+      },
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "sourcePageVideoVerified": true,
+      "sourceMediaDownloaded": false,
+      "physicallyImported": false,
+      "ownerApproved": false,
+      "individualVisualReviewCompleted": false,
+      "generatorEligible": false,
+      "countsAsPlayableVideo": false
+    },
+    {
+      "id": "mixkit-2385",
+      "sourceAssetId": "mixkit-2385",
+      "provider": "mixkit",
+      "sourcePage": "https://mixkit.co/free-stock-video/man-enjoying-the-wind-2385/",
+      "mediaType": "video",
+      "stillImage": false,
+      "label": {
+        "ru": "Навстречу солнечному ветру в горах",
+        "en": "man enjoying the wind",
+        "es": "Disfrutando del viento y el sol"
+      },
+      "sourceTitleRu": "Навстречу солнечному ветру в горах",
+      "visualTags": [
+        "sunlight",
+        "mountains",
+        "person",
+        "freedom"
+      ],
+      "storytelling": {
+        "arc": "freedom",
+        "shotType": "wide_shot",
+        "beatSuggestion": "transition"
+      },
+      "sourceAdvertisedAspect": "landscape",
+      "nativeAspectVerified": false,
+      "formatTargets": [
+        "16:9 native candidate",
+        "1:1 crop review",
+        "9:16 crop review"
+      ],
+      "durationSeconds": null,
+      "license": {
+        "id": "mixkit_stock_video_free",
+        "url": "https://mixkit.co/license/modal/videoFree/",
+        "commercialUseClaimOnIndividualPage": true,
+        "checkedOn": "2026-11-07",
+        "furtherTermsAndSubjectRightsReviewRequired": true
+      },
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "sourcePageVideoVerified": true,
+      "sourceMediaDownloaded": false,
+      "physicallyImported": false,
+      "ownerApproved": false,
+      "individualVisualReviewCompleted": false,
+      "generatorEligible": false,
+      "countsAsPlayableVideo": false
+    },
+    {
+      "id": "mixkit-101527",
+      "sourceAssetId": "mixkit-101527",
+      "provider": "mixkit",
+      "sourcePage": "https://mixkit.co/free-stock-video/sunlight-through-tree-branches-101527/",
+      "mediaType": "video",
+      "stillImage": false,
+      "label": {
+        "ru": "Мягкий солнечный свет между ветвей",
+        "en": "sunlight through tree branches",
+        "es": "Luz del sol entre ramas"
+      },
+      "sourceTitleRu": "Мягкий солнечный свет между ветвей",
+      "visualTags": [
+        "sunlight",
+        "forest",
+        "branches"
+      ],
+      "storytelling": {
+        "arc": "inner_peace",
+        "shotType": "nature",
+        "beatSuggestion": "transition"
+      },
+      "sourceAdvertisedAspect": "landscape",
+      "nativeAspectVerified": false,
+      "formatTargets": [
+        "16:9 native candidate",
+        "1:1 crop review",
+        "9:16 crop review"
+      ],
+      "durationSeconds": null,
+      "license": {
+        "id": "mixkit_stock_video_free",
+        "url": "https://mixkit.co/license/modal/videoFree/",
+        "commercialUseClaimOnIndividualPage": true,
+        "checkedOn": "2026-11-07",
+        "furtherTermsAndSubjectRightsReviewRequired": true
+      },
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "sourcePageVideoVerified": true,
+      "sourceMediaDownloaded": false,
+      "physicallyImported": false,
+      "ownerApproved": false,
+      "individualVisualReviewCompleted": false,
+      "generatorEligible": false,
+      "countsAsPlayableVideo": false
+    },
+    {
+      "id": "mixkit-50840",
+      "sourceAssetId": "mixkit-50840",
+      "provider": "mixkit",
+      "sourcePage": "https://mixkit.co/free-stock-video/the-sun-beams-shines-trough-the-tall-tree-banches-in-50840/",
+      "mediaType": "video",
+      "stillImage": false,
+      "label": {
+        "ru": "Солнечные лучи в высоком лесу",
+        "en": "the sun beams shines trough the tall tree banches in",
+        "es": "Rayos de sol en un bosque alto"
+      },
+      "sourceTitleRu": "Солнечные лучи в высоком лесу",
+      "visualTags": [
+        "sunlight",
+        "forest",
+        "trees"
+      ],
+      "storytelling": {
+        "arc": "renewal",
+        "shotType": "nature",
+        "beatSuggestion": "transition"
+      },
+      "sourceAdvertisedAspect": "landscape",
+      "nativeAspectVerified": false,
+      "formatTargets": [
+        "16:9 native candidate",
+        "1:1 crop review",
+        "9:16 crop review"
+      ],
+      "durationSeconds": null,
+      "license": {
+        "id": "mixkit_stock_video_free",
+        "url": "https://mixkit.co/license/modal/videoFree/",
+        "commercialUseClaimOnIndividualPage": true,
+        "checkedOn": "2026-11-07",
+        "furtherTermsAndSubjectRightsReviewRequired": true
+      },
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "sourcePageVideoVerified": true,
+      "sourceMediaDownloaded": false,
+      "physicallyImported": false,
+      "ownerApproved": false,
+      "individualVisualReviewCompleted": false,
+      "generatorEligible": false,
+      "countsAsPlayableVideo": false
+    },
+    {
+      "id": "mixkit-100825",
+      "sourceAssetId": "mixkit-100825",
+      "provider": "mixkit",
+      "sourcePage": "https://mixkit.co/free-stock-video/sky-on-a-night-to-sunrise-transition-100825/",
+      "mediaType": "video",
+      "stillImage": false,
+      "label": {
+        "ru": "От звёздного неба к солнцу",
+        "en": "sky on a night to sunrise transition",
+        "es": "Del cielo estrellado al amanecer"
+      },
+      "sourceTitleRu": "От звёздного неба к солнцу",
+      "visualTags": [
+        "sunlight",
+        "sunrise",
+        "stars",
+        "sky",
+        "transition"
+      ],
+      "storytelling": {
+        "arc": "new_beginning",
+        "shotType": "timelapse",
+        "beatSuggestion": "opening"
+      },
+      "sourceAdvertisedAspect": "landscape",
+      "nativeAspectVerified": false,
+      "formatTargets": [
+        "16:9 native candidate",
+        "1:1 crop review",
+        "9:16 crop review"
+      ],
+      "durationSeconds": null,
+      "license": {
+        "id": "mixkit_stock_video_free",
+        "url": "https://mixkit.co/license/modal/videoFree/",
+        "commercialUseClaimOnIndividualPage": true,
+        "checkedOn": "2026-11-07",
+        "furtherTermsAndSubjectRightsReviewRequired": true
+      },
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "sourcePageVideoVerified": true,
+      "sourceMediaDownloaded": false,
+      "physicallyImported": false,
+      "ownerApproved": false,
+      "individualVisualReviewCompleted": false,
+      "generatorEligible": false,
+      "countsAsPlayableVideo": false
+    },
+    {
+      "id": "mixkit-101504",
+      "sourceAssetId": "mixkit-101504",
+      "provider": "mixkit",
+      "sourcePage": "https://mixkit.co/free-stock-video/sunset-reflections-on-lake-101504/",
+      "mediaType": "video",
+      "stillImage": false,
+      "label": {
+        "ru": "Отражение заката на озере",
+        "en": "sunset reflections on lake",
+        "es": "Reflejo del atardecer en el lago"
+      },
+      "sourceTitleRu": "Отражение заката на озере",
+      "visualTags": [
+        "sunlight",
+        "sunset",
+        "lake",
+        "reflection",
+        "aerial"
+      ],
+      "storytelling": {
+        "arc": "calm",
+        "shotType": "aerial",
+        "beatSuggestion": "transition"
+      },
+      "sourceAdvertisedAspect": "landscape",
+      "nativeAspectVerified": false,
+      "formatTargets": [
+        "16:9 native candidate",
+        "1:1 crop review",
+        "9:16 crop review"
+      ],
+      "durationSeconds": null,
+      "license": {
+        "id": "mixkit_stock_video_free",
+        "url": "https://mixkit.co/license/modal/videoFree/",
+        "commercialUseClaimOnIndividualPage": true,
+        "checkedOn": "2026-11-07",
+        "furtherTermsAndSubjectRightsReviewRequired": true
+      },
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "sourcePageVideoVerified": true,
+      "sourceMediaDownloaded": false,
+      "physicallyImported": false,
+      "ownerApproved": false,
+      "individualVisualReviewCompleted": false,
+      "generatorEligible": false,
+      "countsAsPlayableVideo": false
+    },
+    {
+      "id": "mixkit-101192",
+      "sourceAssetId": "mixkit-101192",
+      "provider": "mixkit",
+      "sourcePage": "https://mixkit.co/free-stock-video/close-up-of-sunlit-water-ripple-101192/",
+      "mediaType": "video",
+      "stillImage": false,
+      "label": {
+        "ru": "Солнечная рябь на воде",
+        "en": "close up of sunlit water ripple",
+        "es": "Ondas de agua iluminadas por el sol"
+      },
+      "sourceTitleRu": "Солнечная рябь на воде",
+      "visualTags": [
+        "sunlight",
+        "water",
+        "ripples",
+        "close_up"
+      ],
+      "storytelling": {
+        "arc": "grounding",
+        "shotType": "macro",
+        "beatSuggestion": "transition"
+      },
+      "sourceAdvertisedAspect": "landscape",
+      "nativeAspectVerified": false,
+      "formatTargets": [
+        "16:9 native candidate",
+        "1:1 crop review",
+        "9:16 crop review"
+      ],
+      "durationSeconds": null,
+      "license": {
+        "id": "mixkit_stock_video_free",
+        "url": "https://mixkit.co/license/modal/videoFree/",
+        "commercialUseClaimOnIndividualPage": true,
+        "checkedOn": "2026-11-07",
+        "furtherTermsAndSubjectRightsReviewRequired": true
+      },
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "sourcePageVideoVerified": true,
+      "sourceMediaDownloaded": false,
+      "physicallyImported": false,
+      "ownerApproved": false,
+      "individualVisualReviewCompleted": false,
+      "generatorEligible": false,
+      "countsAsPlayableVideo": false
+    },
+    {
+      "id": "mixkit-101501",
+      "sourceAssetId": "mixkit-101501",
+      "provider": "mixkit",
+      "sourcePage": "https://mixkit.co/free-stock-video/sunset-glowing-over-lakeside-hills-101501/",
+      "mediaType": "video",
+      "stillImage": false,
+      "label": {
+        "ru": "Закатное сияние над холмами",
+        "en": "sunset glowing over lakeside hills",
+        "es": "Atardecer brillante sobre colinas"
+      },
+      "sourceTitleRu": "Закатное сияние над холмами",
+      "visualTags": [
+        "sunlight",
+        "sunset",
+        "hills",
+        "lake",
+        "golden_hour"
+      ],
+      "storytelling": {
+        "arc": "gratitude",
+        "shotType": "wide_shot",
+        "beatSuggestion": "transition"
+      },
+      "sourceAdvertisedAspect": "landscape",
+      "nativeAspectVerified": false,
+      "formatTargets": [
+        "16:9 native candidate",
+        "1:1 crop review",
+        "9:16 crop review"
+      ],
+      "durationSeconds": null,
+      "license": {
+        "id": "mixkit_stock_video_free",
+        "url": "https://mixkit.co/license/modal/videoFree/",
+        "commercialUseClaimOnIndividualPage": true,
+        "checkedOn": "2026-11-07",
+        "furtherTermsAndSubjectRightsReviewRequired": true
+      },
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "sourcePageVideoVerified": true,
+      "sourceMediaDownloaded": false,
+      "physicallyImported": false,
+      "ownerApproved": false,
+      "individualVisualReviewCompleted": false,
+      "generatorEligible": false,
+      "countsAsPlayableVideo": false
+    },
+    {
+      "id": "mixkit-100926",
+      "sourceAssetId": "mixkit-100926",
+      "provider": "mixkit",
+      "sourcePage": "https://mixkit.co/free-stock-video/sunset-silhouette-of-a-couple-100926/",
+      "mediaType": "video",
+      "stillImage": false,
+      "label": {
+        "ru": "Влюблённые в золотой час",
+        "en": "sunset silhouette of a couple",
+        "es": "Pareja a contraluz al atardecer"
+      },
+      "sourceTitleRu": "Влюблённые в золотой час",
+      "visualTags": [
+        "sunlight",
+        "sunset",
+        "couple",
+        "golden_hour"
+      ],
+      "storytelling": {
+        "arc": "connection",
+        "shotType": "silhouette",
+        "beatSuggestion": "emotional_peak"
+      },
+      "sourceAdvertisedAspect": "landscape",
+      "nativeAspectVerified": false,
+      "formatTargets": [
+        "16:9 native candidate",
+        "1:1 crop review",
+        "9:16 crop review"
+      ],
+      "durationSeconds": 6,
+      "license": {
+        "id": "mixkit_stock_video_free",
+        "url": "https://mixkit.co/license/modal/videoFree/",
+        "commercialUseClaimOnIndividualPage": true,
+        "checkedOn": "2026-11-07",
+        "furtherTermsAndSubjectRightsReviewRequired": true
+      },
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "sourcePageVideoVerified": true,
+      "sourceMediaDownloaded": false,
+      "physicallyImported": false,
+      "ownerApproved": false,
+      "individualVisualReviewCompleted": false,
+      "generatorEligible": false,
+      "countsAsPlayableVideo": false
+    },
+    {
+      "id": "mixkit-101193",
+      "sourceAssetId": "mixkit-101193",
+      "provider": "mixkit",
+      "sourcePage": "https://mixkit.co/free-stock-video/sunset-lagoon-with-boats-and-hills-101193/",
+      "mediaType": "video",
+      "stillImage": false,
+      "label": {
+        "ru": "Лодки в вечерней лагуне",
+        "en": "sunset lagoon with boats and hills",
+        "es": "Barcas en la laguna al atardecer"
+      },
+      "sourceTitleRu": "Лодки в вечерней лагуне",
+      "visualTags": [
+        "sunlight",
+        "sunset",
+        "lagoon",
+        "boats",
+        "hills"
+      ],
+      "storytelling": {
+        "arc": "calm",
+        "shotType": "wide_shot",
+        "beatSuggestion": "transition"
+      },
+      "sourceAdvertisedAspect": "landscape",
+      "nativeAspectVerified": false,
+      "formatTargets": [
+        "16:9 native candidate",
+        "1:1 crop review",
+        "9:16 crop review"
+      ],
+      "durationSeconds": 12,
+      "license": {
+        "id": "mixkit_stock_video_free",
+        "url": "https://mixkit.co/license/modal/videoFree/",
+        "commercialUseClaimOnIndividualPage": true,
+        "checkedOn": "2026-11-07",
+        "furtherTermsAndSubjectRightsReviewRequired": true
+      },
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "sourcePageVideoVerified": true,
+      "sourceMediaDownloaded": false,
+      "physicallyImported": false,
+      "ownerApproved": false,
+      "individualVisualReviewCompleted": false,
+      "generatorEligible": false,
+      "countsAsPlayableVideo": false
+    },
+    {
+      "id": "mixkit-101190",
+      "sourceAssetId": "mixkit-101190",
+      "provider": "mixkit",
+      "sourcePage": "https://mixkit.co/free-stock-video/sunset-reflection-on-lagoon-with-boats-101190/",
+      "mediaType": "video",
+      "stillImage": false,
+      "label": {
+        "ru": "Золотой закат над лодками",
+        "en": "sunset reflection on lagoon with boats",
+        "es": "Reflejos dorados y barcas"
+      },
+      "sourceTitleRu": "Золотой закат над лодками",
+      "visualTags": [
+        "sunlight",
+        "sunset",
+        "lagoon",
+        "boats",
+        "reflection"
+      ],
+      "storytelling": {
+        "arc": "gratitude",
+        "shotType": "wide_shot",
+        "beatSuggestion": "transition"
+      },
+      "sourceAdvertisedAspect": "landscape",
+      "nativeAspectVerified": false,
+      "formatTargets": [
+        "16:9 native candidate",
+        "1:1 crop review",
+        "9:16 crop review"
+      ],
+      "durationSeconds": 14,
+      "license": {
+        "id": "mixkit_stock_video_free",
+        "url": "https://mixkit.co/license/modal/videoFree/",
+        "commercialUseClaimOnIndividualPage": true,
+        "checkedOn": "2026-11-07",
+        "furtherTermsAndSubjectRightsReviewRequired": true
+      },
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "sourcePageVideoVerified": true,
+      "sourceMediaDownloaded": false,
+      "physicallyImported": false,
+      "ownerApproved": false,
+      "individualVisualReviewCompleted": false,
+      "generatorEligible": false,
+      "countsAsPlayableVideo": false
+    },
+    {
+      "id": "mixkit-100947",
+      "sourceAssetId": "mixkit-100947",
+      "provider": "mixkit",
+      "sourcePage": "https://mixkit.co/free-stock-video/silhouettes-of-flirting-couple-at-sunset-100947/",
+      "mediaType": "video",
+      "stillImage": false,
+      "label": {
+        "ru": "Нежность двоих на фоне заката",
+        "en": "silhouettes of flirting couple at sunset",
+        "es": "Cariño de pareja al atardecer"
+      },
+      "sourceTitleRu": "Нежность двоих на фоне заката",
+      "visualTags": [
+        "sunlight",
+        "sunset",
+        "couple",
+        "city",
+        "golden_hour"
+      ],
+      "storytelling": {
+        "arc": "connection",
+        "shotType": "silhouette",
+        "beatSuggestion": "emotional_peak"
+      },
+      "sourceAdvertisedAspect": "portrait",
+      "nativeAspectVerified": false,
+      "formatTargets": [
+        "9:16 native candidate",
+        "1:1 crop review"
+      ],
+      "durationSeconds": 10,
+      "license": {
+        "id": "mixkit_stock_video_free",
+        "url": "https://mixkit.co/license/modal/videoFree/",
+        "commercialUseClaimOnIndividualPage": true,
+        "checkedOn": "2026-11-07",
+        "furtherTermsAndSubjectRightsReviewRequired": true
+      },
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "sourcePageVideoVerified": true,
+      "sourceMediaDownloaded": false,
+      "physicallyImported": false,
+      "ownerApproved": false,
+      "individualVisualReviewCompleted": false,
+      "generatorEligible": false,
+      "countsAsPlayableVideo": false
+    },
+    {
+      "id": "mixkit-100932",
+      "sourceAssetId": "mixkit-100932",
+      "provider": "mixkit",
+      "sourcePage": "https://mixkit.co/free-stock-video/silhouettes-of-women-holding-hands-100932/",
+      "mediaType": "video",
+      "stillImage": false,
+      "label": {
+        "ru": "Две женщины встречают закат",
+        "en": "silhouettes of women holding hands",
+        "es": "Dos mujeres juntas al atardecer"
+      },
+      "sourceTitleRu": "Две женщины встречают закат",
+      "visualTags": [
+        "sunlight",
+        "sunset",
+        "couple",
+        "friendship",
+        "golden_hour"
+      ],
+      "storytelling": {
+        "arc": "connection",
+        "shotType": "silhouette",
+        "beatSuggestion": "emotional_peak"
+      },
+      "sourceAdvertisedAspect": "landscape",
+      "nativeAspectVerified": false,
+      "formatTargets": [
+        "16:9 native candidate",
+        "1:1 crop review",
+        "9:16 crop review"
+      ],
+      "durationSeconds": 14,
+      "license": {
+        "id": "mixkit_stock_video_free",
+        "url": "https://mixkit.co/license/modal/videoFree/",
+        "commercialUseClaimOnIndividualPage": true,
+        "checkedOn": "2026-11-07",
+        "furtherTermsAndSubjectRightsReviewRequired": true
+      },
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "sourcePageVideoVerified": true,
+      "sourceMediaDownloaded": false,
+      "physicallyImported": false,
+      "ownerApproved": false,
+      "individualVisualReviewCompleted": false,
+      "generatorEligible": false,
+      "countsAsPlayableVideo": false
+    },
+    {
+      "id": "mixkit-100931",
+      "sourceAssetId": "mixkit-100931",
+      "provider": "mixkit",
+      "sourcePage": "https://mixkit.co/free-stock-video/couple-silhouettes-holding-hands-at-sunset-100931/",
+      "mediaType": "video",
+      "stillImage": false,
+      "label": {
+        "ru": "Руки вместе на фоне заката",
+        "en": "couple silhouettes holding hands at sunset",
+        "es": "Manos juntas al atardecer"
+      },
+      "sourceTitleRu": "Руки вместе на фоне заката",
+      "visualTags": [
+        "sunlight",
+        "sunset",
+        "couple",
+        "holding_hands",
+        "golden_hour"
+      ],
+      "storytelling": {
+        "arc": "connection",
+        "shotType": "silhouette",
+        "beatSuggestion": "emotional_peak"
+      },
+      "sourceAdvertisedAspect": "landscape",
+      "nativeAspectVerified": false,
+      "formatTargets": [
+        "16:9 native candidate",
+        "1:1 crop review",
+        "9:16 crop review"
+      ],
+      "durationSeconds": 13,
+      "license": {
+        "id": "mixkit_stock_video_free",
+        "url": "https://mixkit.co/license/modal/videoFree/",
+        "commercialUseClaimOnIndividualPage": true,
+        "checkedOn": "2026-11-07",
+        "furtherTermsAndSubjectRightsReviewRequired": true
+      },
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "sourcePageVideoVerified": true,
+      "sourceMediaDownloaded": false,
+      "physicallyImported": false,
+      "ownerApproved": false,
+      "individualVisualReviewCompleted": false,
+      "generatorEligible": false,
+      "countsAsPlayableVideo": false
+    },
+    {
+      "id": "mixkit-100927",
+      "sourceAssetId": "mixkit-100927",
+      "provider": "mixkit",
+      "sourcePage": "https://mixkit.co/free-stock-video/silhouettes-at-sunset-100927/",
+      "mediaType": "video",
+      "stillImage": false,
+      "label": {
+        "ru": "Объятие в закатном свете",
+        "en": "silhouettes at sunset",
+        "es": "Abrazo a la luz del atardecer"
+      },
+      "sourceTitleRu": "Объятие в закатном свете",
+      "visualTags": [
+        "sunlight",
+        "sunset",
+        "couple",
+        "embrace",
+        "golden_hour"
+      ],
+      "storytelling": {
+        "arc": "acceptance",
+        "shotType": "silhouette",
+        "beatSuggestion": "transition"
+      },
+      "sourceAdvertisedAspect": "landscape",
+      "nativeAspectVerified": false,
+      "formatTargets": [
+        "16:9 native candidate",
+        "1:1 crop review",
+        "9:16 crop review"
+      ],
+      "durationSeconds": 6,
+      "license": {
+        "id": "mixkit_stock_video_free",
+        "url": "https://mixkit.co/license/modal/videoFree/",
+        "commercialUseClaimOnIndividualPage": true,
+        "checkedOn": "2026-11-07",
+        "furtherTermsAndSubjectRightsReviewRequired": true
+      },
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "sourcePageVideoVerified": true,
+      "sourceMediaDownloaded": false,
+      "physicallyImported": false,
+      "ownerApproved": false,
+      "individualVisualReviewCompleted": false,
+      "generatorEligible": false,
+      "countsAsPlayableVideo": false
+    },
+    {
+      "id": "mixkit-100930",
+      "sourceAssetId": "mixkit-100930",
+      "provider": "mixkit",
+      "sourcePage": "https://mixkit.co/free-stock-video/two-silhouettes-against-sunset-100930/",
+      "mediaType": "video",
+      "stillImage": false,
+      "label": {
+        "ru": "Смех вдвоём на закате",
+        "en": "two silhouettes against sunset",
+        "es": "Risas juntos al atardecer"
+      },
+      "sourceTitleRu": "Смех вдвоём на закате",
+      "visualTags": [
+        "sunlight",
+        "sunset",
+        "couple",
+        "laughter",
+        "golden_hour"
+      ],
+      "storytelling": {
+        "arc": "joy",
+        "shotType": "silhouette",
+        "beatSuggestion": "transition"
+      },
+      "sourceAdvertisedAspect": "landscape",
+      "nativeAspectVerified": false,
+      "formatTargets": [
+        "16:9 native candidate",
+        "1:1 crop review",
+        "9:16 crop review"
+      ],
+      "durationSeconds": 9,
+      "license": {
+        "id": "mixkit_stock_video_free",
+        "url": "https://mixkit.co/license/modal/videoFree/",
+        "commercialUseClaimOnIndividualPage": true,
+        "checkedOn": "2026-11-07",
+        "furtherTermsAndSubjectRightsReviewRequired": true
+      },
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "sourcePageVideoVerified": true,
+      "sourceMediaDownloaded": false,
+      "physicallyImported": false,
+      "ownerApproved": false,
+      "individualVisualReviewCompleted": false,
+      "generatorEligible": false,
+      "countsAsPlayableVideo": false
+    },
+    {
+      "id": "mixkit-101205",
+      "sourceAssetId": "mixkit-101205",
+      "provider": "mixkit",
+      "sourcePage": "https://mixkit.co/free-stock-video/sunset-reflections-on-rippling-water-101205/",
+      "mediaType": "video",
+      "stillImage": false,
+      "label": {
+        "ru": "Тихие блики заката на воде",
+        "en": "sunset reflections on rippling water",
+        "es": "Reflejos del atardecer en el agua"
+      },
+      "sourceTitleRu": "Тихие блики заката на воде",
+      "visualTags": [
+        "sunlight",
+        "sunset",
+        "water",
+        "ripples",
+        "golden_hour"
+      ],
+      "storytelling": {
+        "arc": "grounding",
+        "shotType": "macro",
+        "beatSuggestion": "transition"
+      },
+      "sourceAdvertisedAspect": "landscape",
+      "nativeAspectVerified": false,
+      "formatTargets": [
+        "16:9 native candidate",
+        "1:1 crop review",
+        "9:16 crop review"
+      ],
+      "durationSeconds": 19,
+      "license": {
+        "id": "mixkit_stock_video_free",
+        "url": "https://mixkit.co/license/modal/videoFree/",
+        "commercialUseClaimOnIndividualPage": true,
+        "checkedOn": "2026-11-07",
+        "furtherTermsAndSubjectRightsReviewRequired": true
+      },
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "sourcePageVideoVerified": true,
+      "sourceMediaDownloaded": false,
+      "physicallyImported": false,
+      "ownerApproved": false,
+      "individualVisualReviewCompleted": false,
+      "generatorEligible": false,
+      "countsAsPlayableVideo": false
+    },
+    {
+      "id": "mixkit-101194",
+      "sourceAssetId": "mixkit-101194",
+      "provider": "mixkit",
+      "sourcePage": "https://mixkit.co/free-stock-video/sunlight-reflections-near-the-docks-101194/",
+      "mediaType": "video",
+      "stillImage": false,
+      "label": {
+        "ru": "Золотые отражения у причала",
+        "en": "sunlight reflections near the docks",
+        "es": "Reflejos solares junto al muelle"
+      },
+      "sourceTitleRu": "Золотые отражения у причала",
+      "visualTags": [
+        "sunlight",
+        "lagoon",
+        "docks",
+        "golden_hour"
+      ],
+      "storytelling": {
+        "arc": "gratitude",
+        "shotType": "aerial",
+        "beatSuggestion": "transition"
+      },
+      "sourceAdvertisedAspect": "landscape",
+      "nativeAspectVerified": false,
+      "formatTargets": [
+        "16:9 native candidate",
+        "1:1 crop review",
+        "9:16 crop review"
+      ],
+      "durationSeconds": 11,
+      "license": {
+        "id": "mixkit_stock_video_free",
+        "url": "https://mixkit.co/license/modal/videoFree/",
+        "commercialUseClaimOnIndividualPage": true,
+        "checkedOn": "2026-11-07",
+        "furtherTermsAndSubjectRightsReviewRequired": true
+      },
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "sourcePageVideoVerified": true,
+      "sourceMediaDownloaded": false,
+      "physicallyImported": false,
+      "ownerApproved": false,
+      "individualVisualReviewCompleted": false,
+      "generatorEligible": false,
+      "countsAsPlayableVideo": false
+    },
+    {
+      "id": "mixkit-4831",
+      "sourceAssetId": "mixkit-4831",
+      "provider": "mixkit",
+      "sourcePage": "https://mixkit.co/free-stock-video/view-of-a-park-while-a-girl-runs-across-4831/",
+      "mediaType": "video",
+      "stillImage": false,
+      "label": {
+        "ru": "Солнечная пробежка в парке",
+        "en": "view of a park while a girl runs across",
+        "es": "Corriendo en un parque soleado"
+      },
+      "sourceTitleRu": "Солнечная пробежка в парке",
+      "visualTags": [
+        "sunlight",
+        "park",
+        "running",
+        "person"
+      ],
+      "storytelling": {
+        "arc": "vitality",
+        "shotType": "tracking",
+        "beatSuggestion": "transition"
+      },
+      "sourceAdvertisedAspect": "landscape",
+      "nativeAspectVerified": false,
+      "formatTargets": [
+        "16:9 native candidate",
+        "1:1 crop review",
+        "9:16 crop review"
+      ],
+      "durationSeconds": null,
+      "license": {
+        "id": "mixkit_stock_video_free",
+        "url": "https://mixkit.co/license/modal/videoFree/",
+        "commercialUseClaimOnIndividualPage": true,
+        "checkedOn": "2026-11-07",
+        "furtherTermsAndSubjectRightsReviewRequired": true
+      },
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "sourcePageVideoVerified": true,
+      "sourceMediaDownloaded": false,
+      "physicallyImported": false,
+      "ownerApproved": false,
+      "individualVisualReviewCompleted": false,
+      "generatorEligible": false,
+      "countsAsPlayableVideo": false
+    },
+    {
+      "id": "mixkit-1599",
+      "sourceAssetId": "mixkit-1599",
+      "provider": "mixkit",
+      "sourcePage": "https://mixkit.co/free-stock-video/cars-on-the-street-1599/",
+      "mediaType": "video",
+      "stillImage": false,
+      "label": {
+        "ru": "Город в лучах вечернего солнца",
+        "en": "cars on the street",
+        "es": "Tráfico bajo el sol del atardecer"
+      },
+      "sourceTitleRu": "Город в лучах вечернего солнца",
+      "visualTags": [
+        "sunlight",
+        "sunrise",
+        "sunset",
+        "city",
+        "cars"
+      ],
+      "storytelling": {
+        "arc": "journey",
+        "shotType": "urban",
+        "beatSuggestion": "transition"
+      },
+      "sourceAdvertisedAspect": "landscape",
+      "nativeAspectVerified": false,
+      "formatTargets": [
+        "16:9 native candidate",
+        "1:1 crop review",
+        "9:16 crop review"
+      ],
+      "durationSeconds": null,
+      "license": {
+        "id": "mixkit_stock_video_free",
+        "url": "https://mixkit.co/license/modal/videoFree/",
+        "commercialUseClaimOnIndividualPage": true,
+        "checkedOn": "2026-11-07",
+        "furtherTermsAndSubjectRightsReviewRequired": true
+      },
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "sourcePageVideoVerified": true,
+      "sourceMediaDownloaded": false,
+      "physicallyImported": false,
+      "ownerApproved": false,
+      "individualVisualReviewCompleted": false,
+      "generatorEligible": false,
+      "countsAsPlayableVideo": false
+    },
+    {
+      "id": "mixkit-50267",
+      "sourceAssetId": "mixkit-50267",
+      "provider": "mixkit",
+      "sourcePage": "https://mixkit.co/free-stock-video/natural-landscape-with-a-road-at-sunset-50267/",
+      "mediaType": "video",
+      "stillImage": false,
+      "label": {
+        "ru": "Солнечная дорога через равнину",
+        "en": "natural landscape with a road at sunset",
+        "es": "Carretera al atardecer"
+      },
+      "sourceTitleRu": "Солнечная дорога через равнину",
+      "visualTags": [
+        "sunlight",
+        "sunset",
+        "road",
+        "landscape",
+        "hills"
+      ],
+      "storytelling": {
+        "arc": "journey",
+        "shotType": "aerial",
+        "beatSuggestion": "transition"
+      },
+      "sourceAdvertisedAspect": "landscape",
+      "nativeAspectVerified": false,
+      "formatTargets": [
+        "16:9 native candidate",
+        "1:1 crop review",
+        "9:16 crop review"
+      ],
+      "durationSeconds": null,
+      "license": {
+        "id": "mixkit_stock_video_free",
+        "url": "https://mixkit.co/license/modal/videoFree/",
+        "commercialUseClaimOnIndividualPage": true,
+        "checkedOn": "2026-11-07",
+        "furtherTermsAndSubjectRightsReviewRequired": true
+      },
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "sourcePageVideoVerified": true,
+      "sourceMediaDownloaded": false,
+      "physicallyImported": false,
+      "ownerApproved": false,
+      "individualVisualReviewCompleted": false,
+      "generatorEligible": false,
+      "countsAsPlayableVideo": false
+    },
+    {
+      "id": "mixkit-4397",
+      "sourceAssetId": "mixkit-4397",
+      "provider": "mixkit",
+      "sourcePage": "https://mixkit.co/free-stock-video/the-silhouette-of-a-woman-at-sunrise-4397/",
+      "mediaType": "video",
+      "stillImage": false,
+      "label": {
+        "ru": "Дыхание на берегу рассветного моря",
+        "en": "the silhouette of a woman at sunrise",
+        "es": "Respiración al amanecer en la playa"
+      },
+      "sourceTitleRu": "Дыхание на берегу рассветного моря",
+      "visualTags": [
+        "sunlight",
+        "sunrise",
+        "beach",
+        "meditation",
+        "person"
+      ],
+      "storytelling": {
+        "arc": "inner_peace",
+        "shotType": "close_up",
+        "beatSuggestion": "transition"
+      },
+      "sourceAdvertisedAspect": "landscape",
+      "nativeAspectVerified": false,
+      "formatTargets": [
+        "16:9 native candidate",
+        "1:1 crop review",
+        "9:16 crop review"
+      ],
+      "durationSeconds": null,
+      "license": {
+        "id": "mixkit_stock_video_free",
+        "url": "https://mixkit.co/license/modal/videoFree/",
+        "commercialUseClaimOnIndividualPage": true,
+        "checkedOn": "2026-11-07",
+        "furtherTermsAndSubjectRightsReviewRequired": true
+      },
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "sourcePageVideoVerified": true,
+      "sourceMediaDownloaded": false,
+      "physicallyImported": false,
+      "ownerApproved": false,
+      "individualVisualReviewCompleted": false,
+      "generatorEligible": false,
+      "countsAsPlayableVideo": false
+    },
+    {
+      "id": "mixkit-100824",
+      "sourceAssetId": "mixkit-100824",
+      "provider": "mixkit",
+      "sourcePage": "https://mixkit.co/free-stock-video/starry-sky-framed-by-trees-100824/",
+      "mediaType": "video",
+      "stillImage": false,
+      "label": {
+        "ru": "Звёзды уступают место рассвету",
+        "en": "starry sky framed by trees",
+        "es": "El cielo estrellado da paso al alba"
+      },
+      "sourceTitleRu": "Звёзды уступают место рассвету",
+      "visualTags": [
+        "sunlight",
+        "sunrise",
+        "stars",
+        "trees",
+        "sky"
+      ],
+      "storytelling": {
+        "arc": "new_beginning",
+        "shotType": "timelapse",
+        "beatSuggestion": "opening"
+      },
+      "sourceAdvertisedAspect": "landscape",
+      "nativeAspectVerified": false,
+      "formatTargets": [
+        "16:9 native candidate",
+        "1:1 crop review",
+        "9:16 crop review"
+      ],
+      "durationSeconds": null,
+      "license": {
+        "id": "mixkit_stock_video_free",
+        "url": "https://mixkit.co/license/modal/videoFree/",
+        "commercialUseClaimOnIndividualPage": true,
+        "checkedOn": "2026-11-07",
+        "furtherTermsAndSubjectRightsReviewRequired": true
+      },
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "sourcePageVideoVerified": true,
+      "sourceMediaDownloaded": false,
+      "physicallyImported": false,
+      "ownerApproved": false,
+      "individualVisualReviewCompleted": false,
+      "generatorEligible": false,
+      "countsAsPlayableVideo": false
+    },
+    {
+      "id": "mixkit-100831",
+      "sourceAssetId": "mixkit-100831",
+      "provider": "mixkit",
+      "sourcePage": "https://mixkit.co/free-stock-video/sky-transitioning-from-night-to-sunrise-100831/",
+      "mediaType": "video",
+      "stillImage": false,
+      "label": {
+        "ru": "Ночь превращается в солнечное утро",
+        "en": "sky transitioning from night to sunrise",
+        "es": "La noche se vuelve amanecer"
+      },
+      "sourceTitleRu": "Ночь превращается в солнечное утро",
+      "visualTags": [
+        "sunlight",
+        "sunrise",
+        "night",
+        "sky",
+        "stars"
+      ],
+      "storytelling": {
+        "arc": "hope",
+        "shotType": "timelapse",
+        "beatSuggestion": "opening"
+      },
+      "sourceAdvertisedAspect": "landscape",
+      "nativeAspectVerified": false,
+      "formatTargets": [
+        "16:9 native candidate",
+        "1:1 crop review",
+        "9:16 crop review"
+      ],
+      "durationSeconds": null,
+      "license": {
+        "id": "mixkit_stock_video_free",
+        "url": "https://mixkit.co/license/modal/videoFree/",
+        "commercialUseClaimOnIndividualPage": true,
+        "checkedOn": "2026-11-07",
+        "furtherTermsAndSubjectRightsReviewRequired": true
+      },
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "sourcePageVideoVerified": true,
+      "sourceMediaDownloaded": false,
+      "physicallyImported": false,
+      "ownerApproved": false,
+      "individualVisualReviewCompleted": false,
+      "generatorEligible": false,
+      "countsAsPlayableVideo": false
+    },
+    {
+      "id": "mixkit-4878",
+      "sourceAssetId": "mixkit-4878",
+      "provider": "mixkit",
+      "sourcePage": "https://mixkit.co/free-stock-video/woman-doing-yoga-outdoors-4878/",
+      "mediaType": "video",
+      "stillImage": false,
+      "label": {
+        "ru": "Йога в тёплых лучах солнца",
+        "en": "woman doing yoga outdoors",
+        "es": "Yoga al aire libre con sol"
+      },
+      "sourceTitleRu": "Йога в тёплых лучах солнца",
+      "visualTags": [
+        "sunlight",
+        "sunset",
+        "yoga",
+        "grass",
+        "person"
+      ],
+      "storytelling": {
+        "arc": "inner_peace",
+        "shotType": "movement",
+        "beatSuggestion": "transition"
+      },
+      "sourceAdvertisedAspect": "landscape",
+      "nativeAspectVerified": false,
+      "formatTargets": [
+        "16:9 native candidate",
+        "1:1 crop review",
+        "9:16 crop review"
+      ],
+      "durationSeconds": null,
+      "license": {
+        "id": "mixkit_stock_video_free",
+        "url": "https://mixkit.co/license/modal/videoFree/",
+        "commercialUseClaimOnIndividualPage": true,
+        "checkedOn": "2026-11-07",
+        "furtherTermsAndSubjectRightsReviewRequired": true
+      },
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "sourcePageVideoVerified": true,
+      "sourceMediaDownloaded": false,
+      "physicallyImported": false,
+      "ownerApproved": false,
+      "individualVisualReviewCompleted": false,
+      "generatorEligible": false,
+      "countsAsPlayableVideo": false
+    }
+  ]
+}

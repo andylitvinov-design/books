@@ -61,6 +61,10 @@ test("real button uses selected runtime affirmations and attaches WAV to existin
   assert.match(voiceEditor,/onAttach\(\{file,speechFile,/);
   assert.match(page,/setAttachedAudio\(\{kind:"file",file:entry\.file,id:entry\.url,narration:true/);
   assert.match(page,/narrationInvalid/);
+  assert.match(page,/const narrationPhraseMismatch=attachedAudio\?\.kind==="file"&&attachedAudio\.narration&&[\s\S]*!isApprovedAffirmationNarration\(affirmationLines,attachedAudio\.spokenText,affirmations\.enabled\)/,
+    "removing an actually spoken phrase invalidates its WAV immediately, even during pending edits");
+  assert.match(page,/narrationPhraseMismatch \|\| \(!phrasePending&&/,
+    "only unrelated duration and voice-setting changes wait for phrase approval");
   assert.match(page,/narrationDurationMismatch[\s\S]*Math\.abs\(\(attachedAudio\.mixSeconds\?\?0\)-duration\)>0\.35/,
     "sub-frame WAV duration rounding is not misclassified as stale narration");
   assert.match(page,/attachedAudio\.voiceId!==voicePreferences\.voiceId/);
@@ -162,7 +166,7 @@ test("voice browser opens Ideas and applies six visible Montage styles with deco
  const tap=flow.indexOf('await refinement.locator(":scope > summary").click()',refinement);
  const open=flow.indexOf('await expect(refinement).toHaveAttribute("open","")',tap);
  const topic=flow.indexOf('data-auto-video-topic-panel',open);
- const montage=flow.indexOf('await montage.click()',topic);
+ const montage=flow.indexOf('await montage.tap()',topic);
  const style=flow.indexOf('const styles=page.locator("[data-video-montage-style]")',montage);
  const six=flow.indexOf('await expect(styles).toHaveCount(6)',style);
  const selected=flow.indexOf('await minimal.tap()',six);
@@ -326,12 +330,17 @@ test("mobile one-phrase selection uses approved lines only, revokes consent and 
   assert.ok(ui.includes('data-video-affirmation-phrase'));
   assert.ok(ui.includes('affirmationNarrationForSelection(lines,phraseChoice==="all"?"all":selectedIndex??0)'));
   assert.ok(ui.includes('setConsent(false)'));
-  assert.ok(ui.includes('if(voiceDataRef.current)onInvalidateRef.current?.()'));
+  assert.ok(ui.includes('onInvalidateRef.current?.();'));
   const speechChangeEffect=ui.slice(
-    ui.indexOf('    const textChanged=originRef.current.speechText!==speechText;'),
-    ui.indexOf('  },[speechText,voiceId,language]);'));
-  assert.match(speechChangeEffect,/if\(voiceDataRef\.current\)onInvalidateRef\.current\?\.\(\)/,
-    "changing the spoken phrase must detach its previous WAV");
+    ui.indexOf('    const textChanged=previous.speechText!==speechText;'),
+    ui.indexOf('  },[speechText,voiceId,language,busy,mixing,locale]);'));
+  assert.match(speechChangeEffect,/onInvalidateRef\.current\?\.\(\);/,
+    "changing the spoken phrase must detach its previous WAV even after the voice panel remounts");
+  assert.doesNotMatch(speechChangeEffect,/if\(voiceDataRef\.current\)/,
+    "parent-attached WAV invalidation cannot depend on a child-local Blob ref");
+  assert.match(ui,/useLayoutEffect\(\(\)=>\{/,"detach stale audio before the next paint");
+  assert.match(ui,/previous\.speechText===speechText && previous\.voiceId===voiceId/,
+    "identical approved input must never abort valid narration");
   assert.doesNotMatch(speechChangeEffect,/voiceDataRef\.current&&!textChanged/,
     "do not leave the removed spoken line attached merely because its text changed");
   assert.ok(ui.includes('body:JSON.stringify({mode:"affirmations",voiceId,language,text:speechText,consent:true})'));
@@ -402,22 +411,25 @@ test("post-effect browser acceptance checks the actual mixed WAV after an unrela
   assert.match(afterEffect,/data-video-live-audio[^\n]*toContainText\("holistic-house-hypno-audio\.wav"\)/);
 });
 
-test("browser stale-audio check removes the spoken phrase by text after selection reordering",()=>{
-  assert.match(source,/const spokenPhrase=[^\n]*data-hypno-phrase[^\n]*filter\(\{hasText:approved\}\)/);
-  assert.match(source,/expect\(spokenPhrase\)\.toHaveCount\(1\)/);
-  assert.match(source,/await spokenPhrase\.click\(\)/);
-  assert.match(source,/removed spoken phrase must block stale WAV reuse or detach it/);
+test("browser stale-audio check removes the spoken phrase through the visible Montage Text selection",()=>{
+  assert.match(source,/const spokenPhrase=phraseRows\.filter\(\{hasText:approved\}\)/);
+  assert.match(source,/const spokenToggle=spokenPhrase\.locator\('\[data-video-idea-select\]'\)/);
+  assert.match(source,/await spokenToggle\.click\(\)/);
+  assert.match(source,/data-video-narration-reapproval/);
+  assert.match(source,/data-video-quick-generate/);
+  assert.match(source,/the old WAV may remain attached, but must be unusable until narration is regenerated/);
 });
 
-test('browser checks phrase consent before switching to the separate montage workspace',()=>{
-  const start=source.indexOf('removed spoken phrase must block stale WAV reuse or detach it');
-  const consent=source.indexOf('await expect(page.locator("[data-video-affirmation-voice-consent]")).not.toBeChecked',start);
-  const montage=source.indexOf('data-video-quick-control="editor"',start);
-  assert.ok(start>=0&&consent>start&&montage>consent,'the phrase consent control must be checked while its workspace is mounted');
+test('dedicated Voice workspace keeps explicit consent opt-in and separate from Montage',()=>{
+  const voice=read("components/mandala-affirmation-voice.tsx");
+  assert.match(voice,/const \[consent,setConsent\]=useState\(false\)/);
+  assert.match(voice,/data-video-affirmation-voice-consent type="checkbox" checked=\{consent\}/);
+  assert.match(source,/data-video-narration-reapproval/);
+  assert.match(source,/await expect\(page\.locator\('\[data-video-quick-generate\]'\)\)\.toBeDisabled/);
 });
 
 test('stale narration safety remains checked after the phrase warning unmounts',()=>{
-  const start=source.indexOf('removed spoken phrase must block stale WAV reuse or detach it');
+  const start=source.indexOf('the old WAV may remain attached, but must be unusable until narration is regenerated');
   const after=source.slice(start,source.indexOf('const voicePanel=',start));
   assert.match(after,/const stillHasOldVoice=/);
   assert.match(after,/stillHasOldVoice[\s\S]*?toBeDisabled\(\)/);
@@ -433,7 +445,7 @@ test("real WebKit selects Settings duration, then Audio and real voice before re
  const duration=browser.indexOf("const durationSelect=page.locator",settings);
  const audio=browser.indexOf("const montageAudio=page.locator",duration);
  const click=browser.indexOf("await montageAudio.click()",audio);
- const selected=browser.indexOf('await expect(montageAudio).toHaveAttribute("aria-pressed","true")',click);
+ const selected=browser.indexOf("await expect(page.locator('[data-video-montage-audio]')).toBeVisible()",click);
  assert.ok(entry>=0&&settings>entry&&duration>settings&&audio>duration&&click>audio&&selected>click,
    "actual visitor must set duration in Settings then open Audio");
  assert.ok(studio.includes("data-video-montage-tab={item.id}"));
@@ -443,10 +455,10 @@ test("real WebKit selects Settings duration, then Audio and real voice before re
 });
 
 test("post-export stale narration refusal reopens mounted Audio and consented Voice",()=>{
- const start=source.indexOf("removed spoken phrase must block stale WAV reuse or detach it");
+ const start=source.indexOf('the old WAV may remain attached, but must be unusable until narration is regenerated');
  const audio=source.indexOf("const montageAudioAfterExport=page.locator",start);
  const tap=source.indexOf("await montageAudioAfterExport.click()",audio);
- const selected=source.indexOf('await expect(montageAudioAfterExport).toHaveAttribute("aria-pressed","true")',tap);
+ const selected=source.indexOf("await expect(page.locator('[data-video-montage-audio]')).toBeVisible()",tap);
  const disabled=source.indexOf("const stillHasOldVoice=",selected);
  const voice=source.indexOf('const voicePanel=page.locator("[data-video-voice-studio]")',disabled);
  const expand=source.indexOf('await voicePanel.locator(":scope > summary").click()',voice);
@@ -522,9 +534,20 @@ test("voice export uses visible Audio-stage Generate, never the hidden Style-sta
   const effects=source.indexOf('phase(engine,"hypno-audio-effects-rendered")');
   const audio=source.indexOf('const montageAudioTab=page.locator',effects);
   const click=source.indexOf('await montageAudioTab.click()',audio);
-  const pressed=source.indexOf('await expect(montageAudioTab).toHaveAttribute("aria-pressed","true")',click);
+  const pressed=source.indexOf("await expect(page.locator('[data-video-montage-audio]')).toBeVisible()",click);
   const generate=source.indexOf('const generate=page.locator("[data-video-quick-generate]")',pressed);
   assert.ok(effects>=0&&audio>effects&&click>audio&&pressed>click&&generate>pressed,
     "video with consented narration must use a real visible Audio-tab export button");
   assert.doesNotMatch(source.slice(effects,generate),/click\(\{force:true\}\)/);
+});
+
+test("WebKit cached voice replay invokes one native play() per real tap, never a second TTS request",()=>{
+  const voice=read("components/mandala-affirmation-voice.tsx");
+  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+  assert.ok(voice.includes('const lastAutoPlayedSampleUrlRef=useRef("")'));
+  assert.match(voice,/lastAutoPlayedSampleUrlRef\.current=sampleUrl;\s*try\{player\.currentTime=0;await player\.play\(\)/);
+  assert.match(voice,/if\(!sampleUrl\|\|lastAutoPlayedSampleUrlRef\.current===sampleUrl\)return/);
+  assert.match(voice,/lastAutoPlayedSampleUrlRef\.current=sampleUrl;\s*void sampleAudioRef\.current\?\.play\(\)/);
+  assert.match(browser,/await expect\.poll\(\(\)=>page\.evaluate\(\(\)=>window\.__hhPreviewReplayCount\)\)\.toBe\(1\)/);
+  assert.match(browser,/replay must not spend a second free TTS request/);
 });

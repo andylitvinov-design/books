@@ -1509,3 +1509,10 @@
   :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact)
     :global(.hh-portrait-quick-actions) > :global(a) > :global(svg){display:none}
 }
+
+/* Direct catalog → single-thread conversational testing, no second test engine. */
+.chatStart{display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  width:fit-content;min-height:44px;margin:8px 0;padding:9px 12px;
+  border-radius:11px;border:1px solid #c8e2d2;background:#edf9f0;color:#176048;
+  font-size:.83rem;font-weight:700;text-decoration:none}
+.chatStart:focus-visible{outline:3px solid #0b896c;outline-offset:2px}

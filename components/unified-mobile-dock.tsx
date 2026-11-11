@@ -3,20 +3,20 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { BriefcaseBusiness, Clapperboard, Film, Leaf, MessageCircle, Sparkles, UserRound } from "lucide-react";
+import { BriefcaseBusiness, Clapperboard, Film, Leaf, MessageCircle, UserRound } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import { UNIFIED_DOCK_IDS, isUnifiedMobileDockHomePath, isUnifiedMobileDockPath, unifiedMobileDockActive, unifiedMobileDockHref } from "@/lib/unified-mobile-dock.mjs";
 import styles from "./unified-mobile-dock.module.css";
-import { visualKeyboardOpen } from "@/lib/mobile-visual-bottom.mjs";
+import { visualDockBottomOffset, visualKeyboardOpen } from "@/lib/mobile-visual-bottom.mjs";
 
 const icons = {
   mytube: Clapperboard, video: Film, ai: MessageCircle,
-  practice: Leaf, master: BriefcaseBusiness, profile: UserRound, analysis: Sparkles,
+  practice: Leaf, coach: UserRound, services: BriefcaseBusiness, profile: UserRound,
 } as const;
 const labels = {
-  ru: { mytube: "MyTube", video: "Видео", ai: "ИИ/Чат", practice: "Практика", master: "Мастер", profile: "Профиль", analysis: "Разбор" },
-  en: { mytube: "MyTube", video: "Video", ai: "AI/Chat", practice: "Practice", master: "Master", profile: "Profile", analysis: "Analysis" },
-  es: { mytube: "MyTube", video: "Vídeo", ai: "IA/Chat", practice: "Práctica", master: "Master", profile: "Perfil", analysis: "Análisis" },
+  ru: { mytube: "MyTube", video: "MyVideo", ai: "ИИ/Чат", practice: "Обучение", coach: "Мой коуч", services: "Услуги", profile: "Профиль" },
+  en: { mytube: "MyTube", video: "MyVideo", ai: "AI/Chat", practice: "Study", coach: "My Coach", services: "Services", profile: "Profile" },
+  es: { mytube: "MyTube", video: "MyVideo", ai: "IA/Chat", practice: "Estudiar", coach: "Mi coach", services: "Servicios", profile: "Perfil" },
 } as const;
 
 /** Exactly one screenshot-1 inspired fixed dock on app journeys, for guests and accounts.
@@ -36,10 +36,9 @@ export function UnifiedMobileDock({ initialLocale = "en" }: { initialLocale?: Pu
     let frame = 0;
     const viewport = window.visualViewport;
     let lastUnfocusedVisualHeight = viewport?.height ?? window.innerHeight;
-    // Let CSS position:fixed own the bottom anchor. Safari browser chrome
-    // changes visualViewport while scrolling; writing a new bottom offset on
-    // every scroll causes the user's observed up/down feedback oscillation.
-    // Only measure the dock's height and detect a real focused keyboard here.
+    // Safari can anchor fixed layers to the layout OR visual viewport as its
+    // toolbar changes. Correct only the measured gap, never blindly add a
+    // toolbar-sized inset on every scroll (which previously caused jumps).
     const update = () => {
       if (frame) return;
       frame = requestAnimationFrame(() => {
@@ -59,6 +58,20 @@ export function UnifiedMobileDock({ initialLocale = "en" }: { initialLocale?: Pu
         });
         if (!editing && visualHeight > lastUnfocusedVisualHeight - 140)
           lastUnfocusedVisualHeight = visualHeight;
+        // The signed offset also corrects the reported iPhone case where the
+        // dock is stranded ABOVE the screen edge after the browser bar moves.
+        // Re-measure on scroll; an aligned dock causes no further style write.
+        if (viewport && rect.height > 0 && window.innerWidth < 760 && !hideForKeyboard) {
+          const currentOffset = Number.parseFloat(node.style.bottom) || 0;
+          const visualBottom = viewport.offsetTop + viewport.height;
+          const nextOffset = visualDockBottomOffset({
+            dockBottom: rect.bottom, visualBottom, currentOffset,
+          });
+          if (Math.abs(nextOffset - currentOffset) > 1)
+            node.style.bottom = nextOffset + "px";
+        } else if (node.style.bottom) {
+          node.style.removeProperty("bottom");
+        }
         setKeyboardOpen(previous => previous === hideForKeyboard ? previous : hideForKeyboard);
         // Share measured iOS keyboard visibility with the single Messenger page.
         // Retained focus after keyboard dismissal must not hide the composer.
@@ -70,6 +83,7 @@ export function UnifiedMobileDock({ initialLocale = "en" }: { initialLocale?: Pu
     const observer = navRef.current ? new ResizeObserver(update) : null;
     if (observer && navRef.current) observer.observe(navRef.current);
     window.addEventListener("resize", update, { passive: true });
+    window.addEventListener("scroll", update, { passive: true });
     window.addEventListener("pageshow", update);
     const onOrientationChange = () => {
       lastUnfocusedVisualHeight = viewport?.height ?? window.innerHeight;
@@ -79,15 +93,18 @@ export function UnifiedMobileDock({ initialLocale = "en" }: { initialLocale?: Pu
     document.addEventListener("focusin", update);
     document.addEventListener("focusout", update);
     viewport?.addEventListener("resize", update, { passive: true });
+    viewport?.addEventListener("scroll", update, { passive: true });
     return () => {
       observer?.disconnect();
       if (frame) cancelAnimationFrame(frame);
       window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update);
       window.removeEventListener("pageshow", update);
       window.removeEventListener("orientationchange", onOrientationChange);
       document.removeEventListener("focusin", update);
       document.removeEventListener("focusout", update);
       viewport?.removeEventListener("resize", update);
+      viewport?.removeEventListener("scroll", update);
       document.body.style.removeProperty("--hh-unified-nav-height");
     };
   }, [visible, pathname]);
@@ -140,8 +157,8 @@ export function UnifiedMobileDock({ initialLocale = "en" }: { initialLocale?: Pu
       if (!href) return null;
       const Icon = icons[id];
       const label = labels[locale][id];
-      const ariaLabel = id === "analysis"
-        ? (locale === "ru" ? "Бесплатный экспресс-разбор" : locale === "es" ? "Revisión personal exprés gratuita" : "Free personal express review")
+      const ariaLabel = id === "coach"
+        ? `${label}: ${locale === "ru" ? "Выбор коуча" : locale === "es" ? "Elegir coach" : "Choose a coach"}`
         : label;
       return <Link href={href} key={id} prefetch={false}
         className={styles.item} data-unified-dock-item={id}
@@ -150,7 +167,7 @@ export function UnifiedMobileDock({ initialLocale = "en" }: { initialLocale?: Pu
           if (id === "video") setHash("");
           // Keep public tabs in an installed iPhone app's current document.
           // AI and Profile retain their separate private CSP reload.
-          if (!["mytube", "video", "practice", "master", "analysis"].includes(id) ||
+          if (!["mytube", "video", "practice", "coach", "services"].includes(id) ||
               event.defaultPrevented || event.button !== 0 || event.metaKey ||
               event.ctrlKey || event.shiftKey || event.altKey) return;
           const standalone = window.matchMedia?.("(display-mode: standalone)")?.matches ||

@@ -1,0 +1,40 @@
+.wizard{display:grid;gap:16px;min-width:0;width:100%;padding:7px 0 20px;color:#143d3a;background:#fff8f0}
+.wizard *{box-sizing:border-box}.intro{padding:1px 4px 2px;min-width:0}
+.step{display:block;margin:0 0 6px;color:#078667;font:750 12px/1.25 system-ui,sans-serif}
+.intro h2{margin:0 0 6px!important;color:#143d3a;font:750 clamp(25px,6.8vw,33px)/1.08 Georgia,serif!important}
+.intro p{margin:0!important;color:#5d6a71;font:400 clamp(14px,3.65vw,16px)/1.4 system-ui,sans-serif}
+.card{position:relative;isolation:isolate;min-width:0;padding:18px 15px 13px;border:1px solid #e9dfd1;border-radius:27px;background:#fffcf7;box-shadow:0 6px 22px #60462d14;overflow:hidden}
+.card:before{content:"";position:absolute;z-index:0;top:0;right:0;width:56%;height:120px;background-position:center;background-size:cover;border-radius:0 26px 0 45px;pointer-events:none}
+.card[data-personalization-kind="current"]:before{background-image:linear-gradient(90deg,#fffcf7 3%,#fffcf7aa 40%,#ffffff14 100%),linear-gradient(0deg,#fffcf7 0%,transparent 65%),url("/videos/holistic-house/film-collection-v2/morning-dew.jpg")}
+.card[data-personalization-kind="desired"]:before{background-image:linear-gradient(90deg,#fffcf7 3%,#fffcf7ae 40%,#ffffff14 100%),linear-gradient(0deg,#fffcf7 0%,transparent 65%),url("/videos/holistic-house/film-collection-v2/wealth-sunrise.jpg")}
+.card[data-personalization-kind="strength"]:before{background-image:linear-gradient(90deg,#fffcf7 3%,#fffcf7a8 40%,#ffffff14 100%),linear-gradient(0deg,#fffcf7 0%,transparent 65%),url("/videos/holistic-house/film-collection-v2/mountain-air.jpg")}
+.cardHead{display:flex;align-items:flex-start;justify-content:space-between;gap:6px;min-width:0;margin-bottom:13px}
+.cardName{display:flex;align-items:flex-start;gap:7px;min-width:0;flex:1}.cardName>svg{flex:none;margin-top:1px;color:#078f68}.cardName>div{min-width:0}
+.cardName h3{margin:0 0 4px!important;font:750 clamp(20px,5.25vw,25px)/1.13 Georgia,serif!important;color:#143d3a;overflow-wrap:break-word}
+.cardName p{margin:0!important;font:400 13px/1.3 system-ui,sans-serif;color:#5d6a71}
+.moodFilter{display:flex;align-items:center;justify-content:center;gap:2px;flex:none;padding:3px;border:1px solid #e8dfd2;border-radius:999px;background:#fffcf7eb;box-shadow:0 2px 9px #48352618}
+.moodFilter button{display:grid;place-items:center;min-width:35px;min-height:35px;padding:0;border:0;border-radius:50%;background:transparent;color:#235747;cursor:pointer;font:600 27px/1 Arial,sans-serif}
+.moodFilter button[aria-pressed="true"]{background:#c9eedb;color:#056844}.moodFilter button:disabled{opacity:.55;cursor:not-allowed}
+.choiceScroll{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:minmax(54px,auto);align-content:start;gap:7px;height:118px;min-width:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-color:#b8b9ac #f5f0e7;scrollbar-width:thin;padding:1px 7px 1px 0}
+.choiceScroll::-webkit-scrollbar{width:5px}.choiceScroll::-webkit-scrollbar-thumb{background:#b8b9ac;border-radius:12px}.choiceScroll::-webkit-scrollbar-track{background:#f4f0e9;border-radius:12px}
+.choice{display:flex;align-items:center;justify-content:center;gap:3px;min-width:0;min-height:54px;padding:6px 3px;border:1px solid #d1dcd3;border-radius:15px;background:#fffdfaed;color:#164739;cursor:pointer;text-align:center;font:750 clamp(12px,3.25vw,15px)/1.2 system-ui,sans-serif;overflow-wrap:anywhere}
+.choice[aria-pressed="true"],.axisGrid button[aria-pressed="true"]{background:#e5f6ed;border-color:#49b78b;color:#066849;box-shadow:inset 0 0 0 1px #8fdbbb}.choice svg,.axisGrid svg{flex:none}
+.scrollHint{margin:5px 0 10px!important;text-align:center;color:#667870;font:500 11px/1.3 system-ui,sans-serif}
+.scale{display:grid;grid-template-columns:minmax(0,1fr) minmax(78px,1.45fr) auto;align-items:center;gap:10px;border-top:1px solid #e8dfd3;padding:13px 1px 0;min-width:0}
+.scaleLabel{display:flex;align-items:center;gap:5px;font:750 clamp(12px,3.3vw,15px)/1.25 system-ui,sans-serif;color:#14523f;min-width:0}
+.scaleLabel svg{flex:none;color:#078d65}.scale input{width:100%;min-width:0;min-height:30px;accent-color:#078a64;cursor:pointer}
+.scale output{min-width:53px;padding:7px 8px;background:#e1f5e9;border-radius:999px;color:#087552;text-align:center;font:800 15px/1 system-ui,sans-serif}
+.axisGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.axisGrid button{display:flex;align-items:center;justify-content:center;gap:4px;min-width:0;min-height:53px;padding:7px 4px;border:1px solid #d3dfd6;border-radius:14px;background:#fffdfaee;color:#174e3e;text-align:center;font:750 clamp(11px,2.95vw,14px)/1.17 system-ui,sans-serif;overflow-wrap:anywhere;cursor:pointer}
+.next{display:flex;align-items:center;justify-content:center;gap:12px;min-height:58px;width:100%;margin-top:5px;padding:11px 15px;border:0;border-radius:999px;background:linear-gradient(105deg,#087a60,#109a76);color:white;box-shadow:0 8px 19px #087a6027;cursor:pointer;font:800 clamp(15px,4.1vw,19px)/1.22 system-ui,sans-serif}.next span{flex:1}.next svg{flex:none}.next:disabled{opacity:.57;cursor:not-allowed}
+.back{display:flex;align-items:center;justify-content:center;gap:7px;min-height:44px;margin:-8px auto 0;padding:5px 14px;color:#276c57;border:0;background:transparent;font:750 13px/1.25 system-ui,sans-serif;cursor:pointer}
+.wizard button:focus-visible,.wizard input:focus-visible,.choiceScroll:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+@media(max-width:370px){.wizard{gap:12px}.card{padding:14px 10px 11px;border-radius:22px}.cardName>svg{width:20px}.cardName{gap:5px}.cardName h3{font-size:19px!important}.cardName p{font-size:11px}.moodFilter button{min-width:31px;min-height:33px;font-size:24px}.choiceScroll{gap:5px;padding-right:5px}.choice{border-radius:11px;font-size:12px}.scale{gap:6px}.scale output{min-width:49px;padding:7px 5px}.axisGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.axisGrid button{font-size:14px}}
+@media(min-width:760px){.wizard{max-width:850px;margin-inline:auto;gap:20px}.card{padding:22px 25px 18px}.choiceScroll{height:138px;grid-auto-rows:minmax(63px,auto)}.choice{font-size:15px}.card:before{height:145px}}
+
+/* Approved natural scenery is above the cream surface, never above controls. */
+.card>*{position:relative;z-index:1}
+.cardHead{flex-wrap:wrap}
+.moodFilter{margin-left:auto}
+.moodFilter button{min-width:44px;min-height:44px}
+@media(max-width:370px){.moodFilter button{min-width:44px;min-height:44px}.cardName{flex:1 1 135px}.cardHead{gap:5px}}

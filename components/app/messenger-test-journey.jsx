@@ -1,9 +1,13 @@
 'use client'
 
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { MONITORING_CATALOG } from '@/data/assessments/catalog'
 import { ASSESSMENT_DEFINITIONS, getDefinitionById } from '@/lib/assessments/definitions'
 import { chatAnswerLabel, chatPermittedOptions, chatChoosePayload, chatProgress } from '@/lib/assessments/test-chat-flow.mjs'
+import { testControlFromText, proposedTestAnswer, previousTestAnswerPayload } from '@/lib/assessments/conversational-test-protocol.mjs'
+import { buildAssessmentResultReport } from '@/lib/assessments/result-report'
+import { buildTestResultDiscussion } from '@/lib/assessments/test-result-discussion.mjs'
+import { buildMotivatorMessage } from '@/lib/assessments/motivator-mind.mjs'
 import { hasTraumaAdministration } from '@/lib/assessments/trauma-administration'
 import { safetySignal, SAFETY_COPY } from '@/lib/assessments/safety'
 import { Asrs6SourceNotice, Asrs6ChoiceMarker, asrs6ChoiceClass } from '@/components/app/asrs6-source-notice'
@@ -60,6 +64,56 @@ const COPY = {
   },
 }
 
+const EXTRA = {
+  ru: {
+    resume:'Продолжить сохранённый тест', pause:'Продолжить позже', paused:'Тест приостановлен. Ответы сохранены в защищённой гостевой сессии.',
+    continue:'Продолжить тест', cancel:'Отменить тест', confirmCancel:'Удалить незавершённые ответы?', confirmDiscard:'Да, удалить черновик',
+    keep:'Нет, сохранить черновик', confirm:'Подтвердить распознанный ответ', reject:'Выбрать кнопкой', exact:'Это исходные инструкции методики.',
+    select:'Выберите проверенный тест или вариант ответа кнопкой.', unclear:'Я не буду угадывать ответ. Нажмите исходный вариант или продиктуйте его точно и подтвердите.',
+    repeated:'Повторяю исходный вопрос.', back:'Предыдущий ответ открыт для изменения.',
+    conflict:'Данные изменились в другой вкладке. Показан актуальный сохранённый вопрос.',
+    recovered:'Найден незавершённый тест.', language:'Вопросы этой методики доступны на языке: ',
+    preview:'Предлагаемый ответ, пока не сохранён:', resultTitle:'Ваш результат в чате',
+    originalScore:'Значения исходных шкал', report:'Полный отчёт',
+    save:'Войти и сохранить в «Мой дом»', optional:'Необязательный следующий шаг',
+    cannotInterpret:'Интерпретация недоступна: проверьте исходный отчёт.', version:'Версия методики'
+  },
+  en: {
+    resume:'Resume saved test', pause:'Continue later', paused:'Test paused. Answers remain in the protected guest session.',
+    continue:'Resume test', cancel:'Cancel test', confirmCancel:'Delete unfinished answers?', confirmDiscard:'Yes, discard draft',
+    keep:'No, keep draft', confirm:'Confirm recognized answer', reject:'Choose a button instead', exact:'These are the original instrument instructions.',
+    select:'Choose an eligible test or an original answer button.', unclear:'I will not guess your answer. Choose an original option or confirm an exact dictation.',
+    repeated:'Repeating the exact original question.', back:'Previous answer is ready to edit.',
+    conflict:'Another tab changed this run. Showing the latest saved question.',
+    recovered:'An unfinished test is available.', language:'This instrument is available in: ',
+    preview:'Proposed answer, not yet saved:', resultTitle:'Your result in chat',
+    originalScore:'Original scale scores', report:'Full report',
+    save:'Sign in and save to My Home', optional:'Optional next step',
+    cannotInterpret:'Interpretation unavailable; review the original report.', version:'Instrument version'
+  },
+  es: {
+    resume:'Continuar prueba guardada', pause:'Continuar más tarde', paused:'Prueba en pausa. Tus respuestas siguen protegidas en la sesión.',
+    continue:'Continuar prueba', cancel:'Cancelar prueba', confirmCancel:'¿Eliminar respuestas incompletas?', confirmDiscard:'Sí, eliminar borrador',
+    keep:'No, conservar', confirm:'Confirmar respuesta reconocida', reject:'Elegir con botón', exact:'Estas son las instrucciones originales.',
+    select:'Elige una prueba disponible o una opción original.', unclear:'No adivinaré tu respuesta. Elige una opción original o confirma un dictado exacto.',
+    repeated:'Repito la pregunta original sin cambios.', back:'Puedes modificar la respuesta anterior.',
+    conflict:'Otra pestaña cambió la sesión. Se muestra la pregunta guardada más reciente.',
+    recovered:'Hay una prueba pendiente.', language:'La prueba está disponible en: ',
+    preview:'Respuesta propuesta, todavía sin guardar:', resultTitle:'Tu resultado en el chat',
+    originalScore:'Puntuaciones originales', report:'Informe completo',
+    save:'Entrar y guardar en Mi Casa', optional:'Siguiente paso opcional',
+    cannotInterpret:'Interpretación no disponible; revisa el informe original.', version:'Versión de la prueba'
+  },
+}
+// Editorial topic matches for the assistant's six-project test entry.
+// Rights, startability and guest eligibility stay enforced by the canonical catalogue.
+const FOCUS_TERMS = {
+  personality: ['personality', 'strength', 'identity', 'big-five', 'ipip'],
+  stress: ['stress', 'anxiety', 'mood', 'wellbeing', 'body', 'health'],
+  relationships: ['relationship', 'attachment', 'intimacy', 'love', 'compassion'],
+  work: ['work', 'career', 'professional', 'financial', 'resource', 'burnout'],
+}
+
 const ALL_TESTS = MONITORING_CATALOG.filter(item =>
   item.startable === true && item.rightsStatus === 'cleared' && item.guestEligible === true && item.key !== 'phq-9'
 ).map(item => {
@@ -94,9 +148,10 @@ function timezone() {
   try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC' } catch { return 'UTC' }
 }
 
-/** @param {{ locale?: 'en'|'ru'|'es', onAdvance?: (() => void)|null, onClose?: (() => void)|null }} props */
-export default function MessengerTestJourney({ locale = 'en', onAdvance = null, onClose = null }) {
+/** @param {{ locale?: 'en'|'ru'|'es', focus?: keyof typeof FOCUS_TERMS|null, onAdvance?: (() => void)|null, onClose?: (() => void)|null, incomingTurn?: { seq: number, text: string }|null, suggestedKey?: string }} props */
+export default function MessengerTestJourney({ locale = 'en', focus = null, onAdvance = null, onClose = null, incomingTurn = null, suggestedKey = '' }) {
   const t = COPY[locale] || COPY.en
+  const extra = EXTRA[locale] || EXTRA.en
   const [selectedKey, setSelectedKey] = useState('')
   const [adult, setAdult] = useState(false)
   const [search, setSearch] = useState('')
@@ -106,6 +161,12 @@ export default function MessengerTestJourney({ locale = 'en', onAdvance = null, 
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [acknowledgedSafety, setAcknowledgedSafety] = useState(null)
+  const [restorable, setRestorable] = useState(null)
+  const [paused, setPaused] = useState(false)
+  const [cancelPending, setCancelPending] = useState(false)
+  const [notice, setNotice] = useState('')
+  const [pendingAnswer, setPendingAnswer] = useState(null)
+  const seenTurn = useRef(incomingTurn?.seq || 0)
   const operation = useRef(null)
   const startId = useRef(null)
   const completion = useRef(null)
@@ -120,18 +181,49 @@ export default function MessengerTestJourney({ locale = 'en', onAdvance = null, 
   const question = definition?.questions[state.index]
   const choices = chatPermittedOptions(definition, question, run?.answers || {})
   const signal = run && safetySignal(definition, run.answers || {})
+  const report = useMemo(() => result ? buildAssessmentResultReport(result, locale === 'es' ? 'en' : locale) : null, [result, locale])
+  const discussion = useMemo(() => result && report ? buildTestResultDiscussion({ result, report, locale }) : null, [result, report, locale])
+  const motivator = useMemo(() => result && report?.verified && !discussion?.needsProfessional
+    ? buildMotivatorMessage({ result, report, locale, tone: 'gentle' }) : null, [result, report, locale, discussion?.needsProfessional])
   const signalKey = signal ? signal.questionId + ':' + signal.value : null
   const transcript = definition && run ? definition.questions.slice(Math.max(0, state.index - 3), state.index)
     .filter(item => Object.prototype.hasOwnProperty.call(run.answers || {}, item.id)) : []
-  const filtered = ALL_TESTS.filter(entry => {
+  const focusMatches = focus && FOCUS_TERMS[focus] ? ALL_TESTS.filter(entry => {
+    const info = [
+      entry.item.key, entry.item.title?.en, ...(entry.item.topics || []),
+      ...(entry.item.categoryAffinities || []),
+      ...(entry.item.analysisAxes || []).map(axis => axis.key),
+    ].filter(Boolean).join(' ').toLowerCase()
+    return FOCUS_TERMS[focus].some(term => info.includes(term))
+  }) : []
+  // Suggestions shape the first screen; search still covers the full cleared catalogue.
+  const source = !search.trim() && !expanded && focusMatches.length ? focusMatches : ALL_TESTS
+  const filtered = source.filter(entry => {
     const label = entry.item.title?.[locale] || entry.item.title?.en || entry.item.key
     return !search.trim() || (label + ' ' + entry.item.key).toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())
-  }).slice(0, search.trim() || expanded ? 200 : 6)
+  }).slice(0, search.trim() || expanded ? 200 : 4)
 
+  useEffect(() => {
+    let live = true
+    // Recover exclusively from the server's HttpOnly guest identity. Nothing
+    // sensitive goes into localStorage, query strings or AI telemetry.
+    request('guest/bootstrap').then(bootstrap => {
+      if (!live) return
+      const eligible = (bootstrap.runs || []).filter(item =>
+        ALL_TESTS.some(entry => entry.definitions.some(def => def.id === item.definitionId && !hasTraumaAdministration(def))))
+      if (eligible.length) setRestorable(eligible.at(-1))
+    }).catch(() => { /* No consented guest session. Never create one implicitly. */ })
+    return () => { live = false }
+  }, [])
+  useEffect(() => {
+    if (!run && suggestedKey && ALL_TESTS.some(entry => entry.item.key === suggestedKey))
+      setSelectedKey(current => current || suggestedKey)
+  }, [suggestedKey, run])
   function notify() { onAdvance?.() }
   function changeTest(key) {
     if (busy) return
     setSelectedKey(key);setRun(null);setResult(null);setError('');setAdult(false);setAcknowledgedSafety(null)
+    setPaused(false);setCancelPending(false);setPendingAnswer(null);setNotice('')
     operation.current = null;completion.current = null;startId.current = null
     notify()
   }
@@ -154,42 +246,50 @@ export default function MessengerTestJourney({ locale = 'en', onAdvance = null, 
         instrumentLocale: definition.instrumentLocale, operationId: startId.current,
       })
       setRun(next);setResult(null);setAcknowledgedSafety(null);startId.current = null
+      setPaused(false);setPendingAnswer(null);setRestorable(null)
       notify()
     } catch { setError(t.sessionError) }
     finally { setBusy(false) }
   }
   async function saveAnswer(value) {
-    if (!run || !definition || busy || result) return
+    if (!run || !definition || busy || paused || result) return
     setBusy(true);setError('')
     try {
       if (!operation.current) operation.current = chatChoosePayload(definition, run, value, crypto.randomUUID())
       const next = await request('guest/runs/' + run.id + '/save', operation.current)
-      setRun(next);operation.current = null;notify()
-    } catch {
-      setError(t.error)
+      setRun(next);operation.current = null;setPendingAnswer(null);notify()
+    } catch (reason) {
+      await reconcileSaveError(reason)
     } finally { setBusy(false) }
+  }
+  // Optimistic concurrency is resolved from the owned server run, never
+  // from a local stale copy. Unknown transport outcomes keep operationId.
+  async function reconcileSaveError(reason) {
+    if (reason?.status !== 409) { setError(t.error); return }
+    try {
+      const fresh = await request('guest/runs/' + run.id)
+      setRun(fresh);operation.current = null;setPendingAnswer(null)
+      setError(extra.conflict);notify()
+    } catch { setError(t.sessionError) }
   }
   async function retrySave() {
     if (!operation.current || busy || !run) return
     setBusy(true);setError('')
     try {
       const next = await request('guest/runs/' + run.id + '/save', operation.current)
-      setRun(next);operation.current = null;notify()
-    } catch { setError(t.error) }
+      setRun(next);operation.current = null;setPendingAnswer(null);notify()
+    } catch (reason) { await reconcileSaveError(reason) }
     finally { setBusy(false) }
   }
   async function previous() {
     if (!run || busy || operation.current || state.index <= 0) return
     setBusy(true);setError('')
-    const payload = {
-      answers: {}, context: run.context || {}, progress: state.index - 1,
-      expectedRevision: run.revision, operationId: crypto.randomUUID(),
-    }
+    const payload = previousTestAnswerPayload(definition, run, crypto.randomUUID())
     operation.current = payload
     try {
       const next = await request('guest/runs/' + run.id + '/save', payload)
-      setRun(next);operation.current = null;notify()
-    } catch { setError(t.error) }
+      setRun(next);operation.current = null;setPendingAnswer(null);notify()
+    } catch (reason) { await reconcileSaveError(reason) }
     finally { setBusy(false) }
   }
   async function finish() {
@@ -198,16 +298,61 @@ export default function MessengerTestJourney({ locale = 'en', onAdvance = null, 
     try {
       if (!completion.current) completion.current = { expectedRevision: run.revision }
       const value = await request('guest/runs/' + run.id + '/submit', completion.current)
-      setResult(value);completion.current = null;notify()
+      setResult(value);completion.current = null;setPendingAnswer(null);setPaused(false);notify()
     } catch { setError(t.error) }
     finally { setBusy(false) }
   }
 
+  async function resumeSaved() {
+    if (!restorable || busy) return
+    setBusy(true);setError('')
+    try {
+      const fresh = await request('guest/runs/' + restorable.id)
+      if (!ALL_TESTS.some(entry => entry.definitions.some(def =>
+        def.id === fresh.definitionId && !hasTraumaAdministration(def)))) throw Error('NOT_ELIGIBLE')
+      setRun(fresh);setSelectedKey(fresh.definitionKey);setResult(null);setPaused(false)
+      setCancelPending(false);setPendingAnswer(null);setRestorable(null);notify()
+    } catch { setError(t.sessionError) }
+    finally { setBusy(false) }
+  }
+  async function discardDraft() {
+    if (!run || busy) return
+    setBusy(true);setError('')
+    try {
+      await request('guest/runs/' + run.id + '/discard', { expectedRevision: run.revision })
+      operation.current = null;completion.current = null;setRestorable(null)
+      setSelectedKey('');setRun(null);setResult(null);setCancelPending(false);setPendingAnswer(null);notify()
+    } catch { setError(t.error) }
+    finally { setBusy(false) }
+  }
+  // Incoming composer text (including OS dictation) stays in the same chat.
+  // It never becomes an assessment answer until confirmed on-screen.
+  useEffect(() => {
+    if (!incomingTurn || seenTurn.current >= incomingTurn.seq) return
+    seenTurn.current = incomingTurn.seq
+    const action = testControlFromText(incomingTurn.text)
+    setPendingAnswer(null);setNotice('')
+    if (action === 'resume') {setPaused(false);setCancelPending(false);return}
+    if (action === 'pause') {setPaused(true);setCancelPending(false);return}
+    if (action === 'cancel' && run && !result) {setCancelPending(true);return}
+    if (action === 'repeat') {setNotice(extra.repeated);return}
+    if (action === 'explain') {setNotice(definition?.instructions || extra.exact);return}
+    if (action === 'previous') {if (run && !paused) void previous(); else setNotice(extra.select);return}
+    if (action === 'finish') {if (run && state.complete) void finish(); else setNotice(extra.select);return}
+    if (!run || result || paused || cancelPending || !question || signal) {setNotice(extra.select);return}
+    const candidate = proposedTestAnswer(definition, question, run.answers || {}, incomingTurn.text)
+    if (!candidate) {setNotice(extra.unclear);return}
+    setPendingAnswer({ ...candidate, questionId: question.id, revision: run.revision })
+  }, [incomingTurn, run, definition, question, paused, cancelPending, result, state.complete, signal])
   return <section className={css.panel} aria-label={t.title} data-hh-messenger-test-chat>
     <div className={css.header}><strong>{t.title}</strong>
       {onClose && <button type="button" className={css.plain} onClick={onClose}>{t.backToChat}</button>}
     </div>
     {!run && <>
+      {restorable && <div className={css.recover} data-hh-test-block="test_resume">
+        <p className={css.assistant}>{extra.recovered}</p>
+        <button className={css.primary} type="button" disabled={busy} onClick={resumeSaved}>{extra.resume}</button>
+      </div>}
       <p className={css.assistant}>{t.select}</p>
       {!selectedKey && <>
         <label className={css.search}><span className={css.srOnly}>{t.find}</span>
@@ -228,6 +373,7 @@ export default function MessengerTestJourney({ locale = 'en', onAdvance = null, 
         <p className={css.assistant} lang={definition.instrumentLocale}>
           {active.item.title?.[locale] || definition.title} · {definition.questions.length} {t.question.toLowerCase()}
         </p>
+        {definition.instrumentLocale !== locale && <p className={css.note} role="note">{extra.language}<b>{definition.instrumentLocale.toUpperCase()}</b>. {locale === 'es' ? 'No es una traducción validada al español.' : locale === 'ru' ? 'Это не перевод и не русская версия методики.' : 'This is not a translated version.'}</p>}
         {hasTraumaAdministration(definition) ? <>
           <p className={css.note}>{t.special}</p>
           <a className={css.primary} href={`/${locale === 'es' ? 'en' : locale}/client?startTests=${encodeURIComponent(definition.key)}`}>{t.openSpecial}</a>
@@ -240,6 +386,19 @@ export default function MessengerTestJourney({ locale = 'en', onAdvance = null, 
       </>}
     </>}
     {run && !result && definition && <>
+      <div className={css.controls} role="group" aria-label={t.title}>
+        {paused ? <button type="button" className={css.plain} onClick={()=>setPaused(false)}>{extra.continue}</button> :
+          <button type="button" className={css.plain} onClick={()=>{setPaused(true);setPendingAnswer(null)}}>{extra.pause}</button>}
+        <button type="button" className={css.plain} onClick={()=>setCancelPending(true)}>{extra.cancel}</button>
+      </div>
+      {cancelPending && <div className={css.confirmation} role="alertdialog" aria-label={extra.confirmCancel}>
+        <p>{extra.confirmCancel}</p>
+        <div className={css.controls}>
+          <button type="button" className={css.plain} disabled={busy} onClick={()=>setCancelPending(false)}>{extra.keep}</button>
+          <button type="button" className={css.plain} disabled={busy} onClick={discardDraft}>{extra.confirmDiscard}</button>
+        </div>
+      </div>}
+      {paused && <p className={css.assistant} data-hh-test-block="test_pause">{extra.paused}</p>}
       <div className={css.progress} role="progressbar" aria-valuenow={state.answeredCount} aria-valuemin={0} aria-valuemax={state.total} aria-label={t.question}>
         <span style={{width:(state.total?state.answeredCount / state.total * 100:0)+'%'}} />
       </div>
@@ -251,13 +410,13 @@ export default function MessengerTestJourney({ locale = 'en', onAdvance = null, 
           <p className={css.user} lang={definition.instrumentLocale}>{chatAnswerLabel(definition, item, run.answers[item.id])}</p>
         </div>)}
       </div>}
-      {signal && acknowledgedSafety !== signalKey ? <div className={css.safety} role="alert">
+      {!paused && !cancelPending && signal && acknowledgedSafety !== signalKey ? <div className={css.safety} role="alert">
         <strong>{(SAFETY_COPY[locale] || SAFETY_COPY.en).title}</strong>
         <p>{(SAFETY_COPY[locale] || SAFETY_COPY.en).text}</p>
         <p>{(SAFETY_COPY[locale] || SAFETY_COPY.en).urgent}</p>
         <p>{(SAFETY_COPY[locale] || SAFETY_COPY.en).support}</p>
         <button type="button" onClick={()=>setAcknowledgedSafety(signalKey)}>{(SAFETY_COPY[locale] || SAFETY_COPY.en).continue}</button>
-      </div> : question && !state.complete ? <>
+      </div> : !paused && !cancelPending && question && !state.complete ? <>
         <fieldset className={css.question} disabled={busy || !!operation.current}>
           <legend className={css.assistant} lang={definition.instrumentLocale}>{question.text}</legend>
           {question.section && <small>{question.section}</small>}
@@ -281,17 +440,42 @@ export default function MessengerTestJourney({ locale = 'en', onAdvance = null, 
             {question.anchors[0]} — {question.anchors.at(-1)}
           </small>}
         </fieldset>
-      </> : <>
+      </> : !paused && !cancelPending ? <>
         <p className={css.assistant}>{t.complete}</p>
         <button type="button" className={css.primary} disabled={busy} onClick={finish}>{busy ? t.loading : t.finish}</button>
-      </>}
-      {state.index > 0 && <button className={css.plain} type="button" disabled={busy || !!operation.current} onClick={previous}>{t.previous}</button>}
+      </> : null}
+      {notice && <p className={css.assistant} data-hh-test-block="test_clarification">{notice}</p>}
+      {pendingAnswer && !busy && !paused && pendingAnswer.questionId === question?.id &&
+        pendingAnswer.revision === run.revision && <div className={css.confirmation} data-hh-test-block="test_confirmed_answer">
+          <p>{extra.preview} <strong>{pendingAnswer.label}</strong></p>
+          <div className={css.controls}>
+            <button type="button" className={css.primary} onClick={()=>saveAnswer(pendingAnswer.value)}>{extra.confirm}</button>
+            <button type="button" className={css.plain} onClick={()=>setPendingAnswer(null)}>{extra.reject}</button>
+          </div>
+        </div>}
+      {state.index > 0 && !paused && !cancelPending && <button className={css.plain} type="button" disabled={busy || !!operation.current} onClick={previous}>{t.previous}</button>}
       {busy && <p className={css.note} role="status">{t.saving}</p>}
       <p className={css.note}>{t.notDiagnostic}</p>
     </>}
     {result && <>
       <p className={css.assistant} role="status">{t.result}</p>
-      <a className={css.primary} href={`/${locale === 'es' ? 'en' : locale}/client?result=${encodeURIComponent(result.id)}`}>{t.view}</a>
+      <div className={css.resultCard} data-hh-test-block="test_result" aria-label={extra.resultTitle}>
+        <strong>{extra.resultTitle}</strong>
+        <p>{active?.item.title?.[locale] || definition?.title || result.definitionKey} · {extra.version}: {result.definitionVersion}</p>
+        {result.measurementAt && <small>{new Intl.DateTimeFormat(locale, {dateStyle:'medium'}).format(new Date(result.measurementAt))}</small>}
+        <strong>{extra.originalScore}</strong>
+        <ul>{(result.dimensions || []).slice(0,3).filter(item=>Number.isFinite(item?.value)).map(item=>
+          <li key={item.key}><span>{item.sourceConstruct || item.key}</span><b>{item.value} {item.unit === 'points' ? '' : item.unit || ''}</b></li>
+        )}</ul>
+        {discussion?.verified && !discussion.needsProfessional ? <>
+          {discussion.highlights?.[0]?.summary && <p>{discussion.highlights[0].summary}</p>}
+          {discussion.highlights?.[0]?.optionalStep && <p><b>{extra.optional}:</b> {discussion.highlights[0].optionalStep}</p>}
+          {motivator?.paragraph && <p>{motivator.paragraph}</p>}
+        </> : <p>{discussion?.reviewNote || extra.cannotInterpret}</p>}
+        <p className={css.note}>{t.notDiagnostic}</p>
+      </div>
+      <a className={css.primary} href={`/${locale === 'es' ? 'en' : locale}/client?result=${encodeURIComponent(result.id)}`}>{extra.report}</a>
+      <a className={css.plain} href={`/${locale === 'es' ? 'en' : locale}/client?result=${encodeURIComponent(result.id)}`}>{extra.save}</a>
       <button className={css.plain} type="button" onClick={()=>changeTest('')}>{t.again}</button>
       <p className={css.note}>{t.notDiagnostic}</p>
     </>}

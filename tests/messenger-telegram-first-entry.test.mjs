@@ -1,8 +1,10 @@
 import test from 'node:test'
+import './telegram-entry-url.test.mjs'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 const component=read('components/app/messenger-sign-in.jsx')
+const entry=read('lib/app/telegram-entry-url.mjs')
 const hub=read('components/app/messages-hub.jsx')
 const inbox=read('components/app/direct-message-inbox.jsx')
 
@@ -10,11 +12,14 @@ test('new owner guest starts messaging through the real verified Telegram bot, n
  assert.match(component,/continueTo==='direct-messages'/)
  assert.match(component,/recipientSlug==='andy-litvinov'/)
  assert.match(component,/fetch\('\/api\/public\/telegram-diagnostic'/)
- assert.match(component,/data\?\.directAvailable===true/)
- assert.match(component,/target.origin==='https:\/\/t.me'/)
- assert.match(component,/target.searchParams.get\('start'\)==='hhtalk_'\+locale/)
+ assert.match(entry,/payload\.directAvailable===true/)
+ assert.match(entry,/url.origin!=='https:\/\/t.me'/)
+ assert.match(entry,/\(direct\?'hhtalk_':'hhreview_'\)\+locale/)
  assert.match(component,/data-hh-messenger-telegram-first/)
  assert.match(component,/telegramLink/)
+ assert.match(component,/telegramRoute==='review'\?c.telegramReview:c.telegram/)
+ assert.match(component,/resolveTelegramFirstEntry\(data,locale\)/)
+ assert.match(component,/data-telegram-route=\{telegramRoute\}/)
  assert.match(component,/setTelegramChecked\(true\)/)
  assert.doesNotMatch(component,/href=['"]https:\/\/t\.me|setIsVerified\(true\)/)
 })

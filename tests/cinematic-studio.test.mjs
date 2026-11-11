@@ -60,7 +60,8 @@ test("brief audio and caption choices reuse existing local controls without rend
   assert.match(directorUI,/onMusicPreference/);
   assert.match(directorUI,/onCaptionPreference/);
   assert.match(studio,/onMusicPreference=\{choice=>/);
-  assert.match(studio,/choice==="calm"\?"meditation":choice==="energetic"\?"energy":"none"/);
+  assert.match(studio,/const track=recommendCuratedAudio\(\{theme:audioTheme,kind:"melody",mood\}\)\[0\]/);
+  assert.doesNotMatch(studio,/choice==="calm"\?"meditation":choice==="energetic"\?"energy":"none"/);
   assert.match(studio,/onCaptionPreference=\{choice=>setCaptionMode\(choice==="none"\?"none":"theme"\)\}/);
   assert.doesNotMatch(directorUI,/fetch\(["']https?:\/\/|sendBeacon/);
 });
@@ -79,7 +80,7 @@ test("long-running cinematic preview loops actual scene times and synchronized a
   assert.equal(findCinematicShot(film.shots,cinematicPreviewSeconds(film,28))?.number,2);
   assert.match(studio,/const filmSecond=storyboard\?cinematicPreviewSeconds\(storyboard,time\):time/);
   assert.match(studio,/const frameSecond=cinematicPlan\?cinematicPreviewSeconds\(cinematicPlan,elapsed\):elapsed/);
-  assert.match(studio,/paintVideoAffirmations\(ctx,activeWorkspace==="phrases"\?elapsed:frameSecond,affirmationLines,affirmations,duration\)/,
+  assert.match(studio,/paintSingleVideoTextOverlay\(ctx,frameSecond,singleTextSource,affirmationLines,affirmations,duration,cinematicPlan,timelineTextClips\)/,
     "looping visual stage and timed affirmations must share one clock");
   assert.match(studio,/paintCinematicFrame\(ctx,image,effect,frameTime/,
     "final encoded video still uses the original bounded timeline");
@@ -87,9 +88,9 @@ test("long-running cinematic preview loops actual scene times and synchronized a
     "encoded frame clock must be bounded by the requested movie duration");
   assert.match(studio,/const stockFrame=freeFilmVideoAt\(frameTime,true\)/,
     "the selected stock shot advances on the very same export timeline");
-  assert.match(studio,/if\(usingFreeFilmCompilation&&!stockFrame\)[\s\S]*?stockGapSince>500[\s\S]*?stopJob\(job,true\)/,
+  assert.match(studio,/if\(usingFreeFilmCompilation&&!stockFrame&&!hasStoryboardPhotoAt\(frameTime\)\)[\s\S]*?stockGapSince>500[\s\S]*?stopJob\(job,true\)/,
     "brief buffering keeps the real frame; a missing shot cancels rather than substituting procedural footage");
-  assert.match(studio,/paintVideoAffirmations\(ctx,frameTime,affirmationLines,affirmations,duration\)/,
+  assert.match(studio,/paintSingleVideoTextOverlay\(ctx,frameTime,singleTextSource,affirmationLines,affirmations,duration,cinematicPlan,timelineTextClips\)/,
     "encoded captions must use the same clock as the real video frame");
 });
 

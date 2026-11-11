@@ -27,28 +27,31 @@ test("all approved MP4s have conservative multi-facet tags",()=>{
  assert.ok(audit.records.every(x=>x.evidence.doesNotGrantPublicationRights));
  assert.ok(audit.records.every(x=>["portrait","landscape","square"].includes(x.physicalAspect)));
 });
-test("all 44 legacy licensed MP4s are portrait despite absent allowedAspects",()=>{
- const geo=[...money.scenes,...film.scenes,...stock];
- assert.equal(geo.length,48);
- assert.equal(master.scenes.filter(x=>x.allowedAspects===undefined).length,44);
- const byId=new Map(geo.map(x=>[x.id,x]));
- for(const scene of master.scenes.filter(x=>!byId.has(x.id))){
-  assert.ok(Number.isInteger(scene.width)&&Number.isInteger(scene.height)&&
-    scene.width>0&&scene.height>0,scene.id);
-  const expected=scene.width===scene.height?"square":scene.width>scene.height?"landscape":"portrait";
-  const other=expected==="portrait"?"landscape":"portrait";
-  assert.equal(physicalSceneAspect(scene),expected,scene.id);
-  assert.equal(sceneSupportsPhysicalAspect(scene,expected),true,scene.id);
-  assert.equal(sceneSupportsPhysicalAspect(scene,other),false,scene.id);
+test("licensed MP4 aspect eligibility strictly follows physical source geometry",()=>{
+ const physical=[...money.scenes,...film.scenes,...stock];
+ // All current approved masters must be independently backed by physical manifests.
+ assert.equal(physical.length,master.scenes.length);
+ const byId=new Map(physical.map(scene=>[scene.id,scene]));
+ assert.equal(byId.size,physical.length,"no duplicate physical master identifiers");
+ const aspectCounts={portrait:0,landscape:0,square:0};
+ for(const scene of master.scenes){
+  const source=byId.get(scene.id);
+  assert.ok(source,"missing physical source: "+scene.id);
+  assert.ok(Number.isInteger(source.width)&&Number.isInteger(source.height)&&
+    source.width>0&&source.height>0,scene.id);
+  const physicalAspect=source.width===source.height?"square":
+    source.width>source.height?"landscape":"portrait";
+  aspectCounts[physicalAspect]++;
+  assert.equal(scene.width,source.width,scene.id+" width differs from physical manifest");
+  assert.equal(scene.height,source.height,scene.id+" height differs from physical manifest");
+  assert.equal(physicalSceneAspect(scene),physicalAspect,scene.id);
+  assert.equal(sceneSupportsPhysicalAspect(scene,physicalAspect),true,scene.id);
+  for(const other of ["portrait","landscape","square"]){
+   if(other!==physicalAspect)assert.equal(sceneSupportsPhysicalAspect(scene,other),false,scene.id+" must not crop-label a different aspect as native");
+  }
  }
- for(const scene of master.scenes.filter(x=>byId.has(x.id))){
-  const physical=byId.get(scene.id);
-  assert.ok(physical&&physical.width<physical.height,scene.id);
-  assert.equal(physicalSceneAspect(scene),"portrait");
-  assert.equal(sceneSupportsPhysicalAspect(scene,"portrait"),true);
-  assert.equal(sceneSupportsPhysicalAspect(scene,"landscape"),false);
-  assert.equal(sceneSupportsPhysicalAspect(scene,"square"),false);
- }
+ assert.ok(aspectCounts.portrait>0,"retains actual portrait footage");
+ assert.ok(aspectCounts.landscape>0,"retains separately approved true landscape footage");
  for(const scene of original.scenes){
   assert.equal(scene.width,432);
   assert.equal(scene.height,768);

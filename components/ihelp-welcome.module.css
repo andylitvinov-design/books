@@ -1,0 +1,66 @@
+/* Shared warm photo-first iHelp presentation for the sitewide dialog and
+   the existing Messages AI workspace. No duplicate chat, API or state engine. */
+.root{flex:none;min-width:0;background:var(--hh-light-canvas,#fbf5e9);color:var(--hh-light-ink,#143d3a)}
+.identity{display:flex;align-items:center;gap:12px;min-height:64px;padding:9px 14px;
+ background:linear-gradient(105deg,#dff6f1 0%,#f4eeff 73%,#fff3ef 100%);
+ border-top:1px solid #e8eee5;border-bottom:1px solid #e7e2e5}
+.avatar{flex:none;width:47px;height:47px;display:grid;place-items:center;border-radius:50%;
+ background:linear-gradient(130deg,#28b5a3,#6374e8);color:#fff;
+ box-shadow:0 4px 12px #1c6c7630}
+.identityText{display:flex;flex-direction:column;gap:3px;min-width:0}
+.identityText strong{color:#143d3a;font:800 clamp(17px,4.6vw,22px)/1.14 system-ui,sans-serif;
+ letter-spacing:-.035em;overflow-wrap:anywhere}
+.identityText small{color:#5d6a71;font:560 12px/1.3 system-ui,sans-serif}
+.hero{isolation:isolate;position:relative;display:flex;flex-direction:column;
+ justify-content:center;align-items:flex-start;min-height:196px;padding:15px 16px 24px;
+ background-image:linear-gradient(90deg,#fffaeffc 0%,#fff9ece8 28%,#fff8ec8a 51%,#fff7ea08 79%),
+ url("/images/holistic-house/reiki-approved-sunrise-v3.webp");
+ background-size:cover;background-position:center 43%;
+ border-radius:0 0 24px 24px;overflow:hidden}
+.hero h2{display:flex;flex-direction:column;max-width:62%;margin:0;
+ color:#143d3a;font:840 clamp(25px,6.7vw,34px)/1.06 system-ui,sans-serif;
+ letter-spacing:-.042em;text-wrap:balance}
+.hero h2 em{display:block;margin-bottom:8px;font:italic 840 clamp(33px,8.5vw,44px)/1 system-ui,sans-serif}
+.hero p{max-width:61%;margin:10px 0 0;color:#425451;
+ font:580 clamp(13px,3.7vw,16px)/1.35 system-ui,sans-serif}
+.compact .identity{min-height:53px;padding:7px 11px}
+.compact .avatar{height:40px;width:40px}
+.compact .identityText strong{font-size:17px}
+.compact .identityText small{font-size:11px}
+.compact .hero{min-height:124px;padding:11px 13px 16px}
+.compact .hero h2{font-size:24px}
+.compact .hero h2 em{font-size:30px;margin-bottom:5px}
+.compact .hero p{font-size:12px;margin-top:7px}
+.topics{flex:none;min-width:0;padding:9px 13px 12px;background:var(--hh-light-canvas,#fbf5e9)}
+.topics p{margin:0 0 8px;color:#586873;font:650 13px/1.3 system-ui,sans-serif}
+.topicRail{display:flex;align-items:center;gap:7px;min-width:0;overflow-x:auto;
+ overscroll-behavior-inline:contain;-webkit-overflow-scrolling:touch;
+ scrollbar-width:thin;scrollbar-color:#cbd7d0 transparent;padding:1px 1px 5px}
+.topicRail button{display:inline-flex;flex:none;align-items:center;justify-content:center;gap:6px;
+ min-height:44px;min-width:0;padding:8px 12px;white-space:nowrap;cursor:pointer;
+ border:1px solid #d0e5d9;border-radius:15px;background:#eaf7ef;color:#176c57}
+.topicRail button strong{font:760 13px/1.2 system-ui,sans-serif}
+.topicRail button[data-hh-ihelp-topic="energy"]{background:#fbf1d8;border-color:#efe2c7;color:#936515}
+.topicRail button[data-hh-ihelp-topic="love"]{background:#fcecf2;border-color:#efdae5;color:#a63f6b}
+.topicRail button[data-hh-ihelp-topic="work"]{background:#eaf2f8;border-color:#d6e4ed;color:#2c7393}
+.topicRail button:focus-visible{outline:3px solid var(--hh-light-focus,#176e6e);outline-offset:2px}
+@media(max-width:355px){
+ .identity{gap:8px;min-height:55px;padding:7px 9px}
+ .avatar{width:41px;height:41px}
+ .identityText strong{font-size:17px}
+ .identityText small{font-size:11px}
+ .hero{min-height:171px;padding:12px 11px 18px}
+ .hero h2{max-width:66%;font-size:24px}
+ .hero h2 em{font-size:34px;margin-bottom:5px}
+ .hero p{max-width:66%;font-size:12px}
+ .topicRail{gap:5px}
+ .topicRail button{padding:8px 9px}
+ .topicRail button strong{font-size:12px}
+}
+@media(max-height:680px){
+ .hero{min-height:130px;padding:10px 13px 15px}
+ .hero h2{font-size:25px}
+ .hero h2 em{font-size:31px;margin-bottom:4px}
+ .hero p{font-size:12px;margin-top:5px}
+}
+@media(prefers-reduced-motion:reduce){.topicRail{scroll-behavior:auto}}

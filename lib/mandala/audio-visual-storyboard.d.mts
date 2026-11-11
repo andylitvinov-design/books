@@ -12,7 +12,7 @@ export type TimedVisualShot={
 export type AudioVisualPlan={
   version:string;status:string;canExport:boolean;durationSeconds:number;
   audioSeconds?:number;shots:TimedVisualShot[];prompt:string;
-  excludedMotifs?:string[];needsReview?:boolean;
+  excludedMotifs?:string[];needsReview?:boolean;conceptAware?:boolean;
   edit:{clipIds:string[];durationSecondsByStage:number[];
     captionTexts:string[];excludedMotifs:string[]}|null;
 };
@@ -21,4 +21,7 @@ export declare function normalizeTimedTranscript(wire:unknown):TimedSpeechTransc
 export declare function planAudioVisualStoryboard(options?:{
   transcript:TimedSpeechTranscript;scenes:readonly unknown[];
   aspect?:"landscape"|"portrait"|"square";theme?:string;locale?:"ru"|"en"|"es";
+  // Runtime validates every optional semantic field against canonical registries.
+  // Editorial proposals may be intentionally partial; do not force inferred fields.
+  concept?:object|null;
 }):AudioVisualPlan;

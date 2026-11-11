@@ -51,7 +51,11 @@ test('automatic video delivery is explicit opt-in, owner scoped and private',()=
  assert.match(migration,/hh_app_backend/)
  assert.match(upload,/action:"automatic",enabled,consent:true/)
  assert.match(upload,/consent:!automatic/)
- assert.match(upload,/uploadToSignedUrl/)
+ assert.match(upload,/savePrivateMp4/);
+ const uploader=source('lib/mandala/signed-private-video-upload.mjs')
+ assert.match(uploader,/uploadToSignedUrl/)
+ assert.match(uploader,/uploadSignedPrivateVideoChunks/)
+ assert.match(uploader,/request\("personal-videos"/)
  assert.match(upload,/navigator.share/)
  assert.match(upload,/data-video-delivery-status/)
  const archive=source('components/app/my-personal-videos.jsx')

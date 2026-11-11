@@ -1,0 +1,7 @@
+# Holistic House Telegram native Menu — only RU/EN offered
+
+Owner-approved client onboarding uses six full-width RU/EN message-attached buttons (merged #3928) and consented text assistant (#3950). The native Telegram blue Menu still advertised /lang_es because the old first-party 15-command catalogue was append-only. This release removes the old **bot-owned** Spanish language choice from its four private-chat command scopes, keeping 14 native commands and RU/EN language choices.
+
+Security: preserve the full existing owner/third-party BotFather catalogue, order and custom descriptions; remove `lang_es` ONLY when its description exactly matches one of our known previous first-party descriptions (Español / Spanish language / Idioma español). Reject duplicate provider commands before removal. Do not touch group, owner-specific, or external Mini App menu scopes. The manually typed /lang_es and historical hhreview_es flows remain functional for old users, but no Spanish choice is presented in new RU/EN onboarding or the native command Menu.
+
+Existing verified `getMe` / signed webhook / `getMyCommands` / `setMyCommands` reconciliation reuses the 09:00 Toronto cron or a first signed /menu command; no new provider, bot, token, DB, privacy consent, paid API, schedule or broadcast. Acceptance: required exact-head Core/CRM/Specialist; protected merge; Vercel READY exact ancestry; real signed Telegram command-menu readback and client screenshot. Server source merge alone does not prove provider command update until a real first-home or existing daily cron.
