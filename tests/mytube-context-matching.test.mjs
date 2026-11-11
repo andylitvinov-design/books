@@ -61,3 +61,35 @@ test("Match presents clickable existing taxonomy topics, no second video system"
  assert.match(ui,/setSelectedCategoryId\(classification.categoryId as CanonicalCategoryId\)/);
  assert.doesNotMatch(ui,/fetch\(/);
 });
+
+test("unresolved Match clears stale selected category and provisional intents do not auto-confirm",()=>{
+ const ui=readFileSync(new URL("../components/mandala-auto-video-director.tsx",import.meta.url),"utf8");
+ assert.match(ui,/const broad=matchLevel==="context"\|\|matchLevel==="category"/);
+ assert.match(ui,/if\(broad\)setSelectedTopicId\(""\)/);
+ assert.match(ui,/setRequestNeedsChoice\(!classification\)/);
+ assert.match(ui,/if\(!classification\|\|broad\)\{/);
+ assert.match(ui,/setProposal\(null\);setTimelineEdits\(null\);return/);
+ assert.match(ui,/aria-pressed=\{selectedCategoryId===item\.id&&!requestNeedsChoice\}/);
+ assert.match(ui,/\{selectedCategoryId===item\.id&&!requestNeedsChoice\?<span/);
+ assert.match(ui,/subcategoriesOpen&&!requestNeedsChoice/);
+ assert.match(ui,/const visibleQuickTopicIds=requestNeedsChoice\?\[\]:/);
+ for(const action of ["chooseCategory","chooseTaxonomySubcategory","chooseTaxonomyTopic"]){
+  const begin=ui.indexOf(" const "+action+"=");
+  assert.ok(begin>0,action);
+  assert.match(ui.slice(begin,begin+220),/setRequestNeedsChoice\(false\)/,action);
+ }
+ assert.match(ui,/data-video-context-options/);
+ assert.match(ui,/onClick=\{\(\)=>chooseTaxonomyTopic\(id\)\}/);
+});
+
+test("explicit category, popular goal, profile and audience change re-enable manual choices",()=>{
+ const ui=readFileSync(new URL("../components/mandala-auto-video-director.tsx",import.meta.url),"utf8");
+ for(const action of ["choose","chooseReadyGoal","applyProfile","resetAudienceStory"]){
+  const begin=ui.indexOf(" const "+action+"=");
+  assert.ok(begin>0,action);
+  assert.match(ui.slice(begin,begin+150),/setRequestNeedsChoice\(false\)/,action);
+ }
+ assert.match(ui,/if\(broad\)setSelectedSubcategoryId\(""\)/);
+ assert.match(ui,/else setSelectedSubcategoryId\(classification\?\.subcategoryId\|\|""\)/);
+ assert.match(ui,/if\(broad\)setSelectedTopicId\(""\)/);
+});
