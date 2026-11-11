@@ -83,7 +83,7 @@ test('server chat refresh is retryable and never silently switches to a local ar
  assert.match(js,/else if\(authorized\)\{await authenticated\(\)/);
  assert.match(js,/A transient API failure must not silently replace server chats/);
  assert.match(js,/Серверное хранилище временно недоступно/);
- assert.ok(html.includes('commander-chats.js?v=20261110-openrouter-status-v3'));
+ assert.ok(html.includes('commander-chats.js?v=20261111-free-quota-v1'));
  assert.match(js,/Проверка защищённого серверного хранилища временно не завершилась/);
  assert.match(js,/if\(statusError\)/);
 });
@@ -126,7 +126,7 @@ test('Council routes through owner-authenticated free worker and exposes a persi
  assert.match(js,/request\(SERVER\+'\?action=run','POST'/);
  assert.match(js,/lastQuestion\(\)/);
  assert.match(css,/\.cc-run-status/);
- assert.match(html,/20261110-openrouter-status-v3/);
+ assert.match(html,/20261111-free-quota-v1/);
 });
 
 test('Commander Hermes adapter exposes only owner-authenticated free models and consented writes',()=>{
@@ -226,7 +226,10 @@ test('question-first chat completes owner-scoped create, reply, save and reopen 
   append(...children){this.children.push(...children)}
   replaceChildren(...children){this.children=[...children]}
   querySelector(){return new Element()}
-  querySelectorAll(){return []}
+  querySelectorAll(selector){
+   if(selector==="option"&&["cc-mode","cc-new-mode"].includes(this.id))return this._options||[];
+   return [];
+  }
   scrollIntoView(){}
   focus(){}
   reset(){
@@ -244,6 +247,12 @@ test('question-first chat completes owner-scoped create, reply, save and reopen 
  elements['cc-mode'].value='local';
  elements['cc-filter'].value='all';
  elements['cc-create-send'].textContent='Отправить';
+ const menuChoices=["local","director","openrouter","council-free","codex"];
+ const menuOptions={};
+ for(const scope of ["cc-mode","cc-new-mode"]){
+  menuOptions[scope]=menuChoices.map(value=>Object.assign(new Element(),{value}));
+  elements[scope]._options=menuOptions[scope];
+ }
  elements['cc-create'].hidden=true;
  elements['cc-thread'].hidden=true;
  let created=null,createdCount=0,eventRows=[],seq=0,queuedRun=null;
@@ -276,6 +285,9 @@ test('question-first chat completes owner-scoped create, reply, save and reopen 
    }
    if(target.pathname==='/api/commander-chats'){
     if(action==='status')return response({authenticated:true,privateStoreConfigured:true});
+    if(action==='free_quota')return response({schema:"HH_COMMANDER_QUOTA_MENU_V1",
+     worker:{schema:"HH_COMMANDER_FREE_QUOTA_V1",status:"VERIFIED",remaining:7,limit:50,used:43},
+     monitor:{schema:"HH_COMMANDER_FREE_QUOTA_V1",status:"UNAVAILABLE"}});
     if(action==='list')return response({chats:created?[created]:[]});
     if(action==='create'){
      createdCount++;
@@ -303,6 +315,15 @@ test('question-first chat completes owner-scoped create, reply, save and reopen 
  new Function('window','document',source)(win,doc);
  for(let i=0;i<30;i++)await Promise.resolve();
  assert.equal(elements['cc-board'].hidden,false,'verified owner sees the workspace');
+ assert.ok(network.some(x=>x.action==="free_quota"&&x.method==="GET"));
+ for(const scope of ["cc-mode","cc-new-mode"]){
+  const byId=Object.fromEntries(menuOptions[scope].map(o=>[o.value,o.textContent]));
+  assert.match(byId.director,/ — 7 осталось$/);
+  assert.match(byId["council-free"],/ — 7 осталось$/,"Council shares Director account counter");
+  assert.match(byId.openrouter,/ — нет данных$/,"legacy Vercel key has independent unknown quota");
+  assert.match(byId.local,/ — без лимита$/);
+  assert.match(byId.codex,/ — лимит неизвестен$/);
+ }
  elements['cc-new-question'].value='Проверь работу сохранения рабочего чата';
  await elements['cc-create-form'].fire('submit');
  assert.equal(createdCount,1);
@@ -438,7 +459,7 @@ test('free Hermes model catalogue authenticates owner before its read-only publi
  const request=api.indexOf("const response=await fetch('https://openrouter.ai/api/v1/models");
  assert.ok(owner>=0&&request>owner);
  assert.ok(api.includes("m.id.endsWith(':free')"));
- assert.doesNotMatch(api,/Authorization:\s*'Bearer '|OPENROUTER_API_KEY/);
+ assert.doesNotMatch(api.slice(0,api.indexOf('async function readMonitorFreeQuota()')),/Authorization:\s*'Bearer '|OPENROUTER_API_KEY/);
 });
 test('verified GitHub CI reports carry the top-level source URL consumed by the chat renderer',()=>{
  const edge=src('../../supabase/functions/agent-commander-private-store-v1/index.ts');
@@ -533,7 +554,7 @@ test('legacy external Hermes code executor is disabled in UI and rejected before
 
 test('CI Inbox displays the shared diagnostic recommendation and retry policy without granting execution authority',()=>{
  const html=src('chats.html'),js=src('commander-chats.js'),css=src('commander-chats.css');
- assert.match(html,/commander-chats\.js\?v=20261110-openrouter-status-v3/);
+ assert.match(html,/commander-chats\.js\?v=20261111-free-quota-v1/);
  assert.match(html,/commander-chats\.css\?v=20261110-openrouter-status-v3/);
  assert.match(js,/event\.classification&&typeof event\.classification==='object'/);
  for(const field of ['recommended_action','recommended_status','reason_code','responsible_role','retry','requires_human','ruleset_version','confidence'])
@@ -545,7 +566,7 @@ test('CI Inbox displays the shared diagnostic recommendation and retry policy wi
 test('owner chat accurately labels first-party OpenRouter Free and translates every fail-closed provider reason',()=>{
  const html=src('chats.html'),js=src('commander-chats.js');
  assert.equal((html.match(/Agents Director · OpenRouter Free \(анализ\)/g)||[]).length,2);
- assert.match(html,/commander-chats\.js\?v=20261110-openrouter-status-v3/);
+ assert.match(html,/commander-chats\.js\?v=20261111-free-quota-v1/);
  assert.match(js,/director:'Agents Director · OpenRouter Free'/);
  for(const code of ['OWNED_MODEL_RUNTIME_NOT_CONFIGURED','OWNED_MODEL_FREE_RATE_LIMIT',
    'OWNED_MODEL_NO_VERIFIED_FREE_MODELS','OWNED_MODEL_COST_UNVERIFIED',
@@ -579,4 +600,73 @@ test('first question defaults to the authenticated cloud Director and its real f
  assert.match(js,/startExecutionPolling\(\)/);
  assert.match(html,/id="cc-run-status"/);
  assert.match(css,/\.cc-run-status/);
+});
+
+// Free-model menu quota is owner-scoped, read-only and never tests an allowance with billable inference.
+test("free-model quota is derived from provider key daily request counter, not credit balance",async()=>{
+ const edge=src("../../supabase/functions/agent-commander-private-store-v1/index.ts");
+ const apiSource=src("api/commander-chats.js");
+ const ui=src("commander-chats.js");
+ const html=src("chats.html");
+ for(const server of [edge,apiSource]){
+  assert.match(server,/https:\/\/openrouter\.ai\/api\/v1\/key/);
+  assert.match(server,/free_model_daily_requests/);
+  assert.match(server,/Number\.isSafeInteger/);
+  assert.doesNotMatch(server,/limit_remaining/);
+  assert.match(server,/KEY_NOT_CONFIGURED/);
+  assert.match(server,/QUOTA_NOT_REPORTED/);
+ }
+ assert.match(edge,/if\(action==="commander_free_model_quota"\)/);
+ assert.match(apiSource,/name==='free_quota'/);
+ assert.match(apiSource,/callStore\(req,"commander_free_model_quota",\{\}, \{method:"GET"\}\)/);
+ assert.match(apiSource,/HH_COMMANDER_QUOTA_MENU_V1/);
+ assert.match(ui,/remainingLabel/);
+ assert.match(ui,/QUOTA_OPTION_LABELS/);
+ assert.match(ui,/SERVER\+"\?action=free_quota"/);
+ assert.match(ui,/refreshFreeQuota\(true\)/);
+ assert.match(html,/commander-chats\.js\?v=20261111-free-quota-v1/);
+ const unauth=response();
+ await api({method:"GET",url:"/api/commander-chats?action=free_quota",
+  headers:{host:"holistic-house-pr-monitor.vercel.app"}},unauth);
+ assert.equal(unauth.statusCode,401);
+ assert.equal(unauth.body.error,"OWNER_SESSION_REQUIRED");
+ assert.match(unauth.headers["Cache-Control"],/no-store/);
+});
+
+test("provider daily free quota contract is parsed safely without inference or leaking the API key",async()=>{
+ const server=src("api/commander-chats.js");
+ const match=server.match(/async function readMonitorFreeQuota\(\)\{[\s\S]*?\n\}\nasync function freeQuota/);
+ assert.ok(match,"read-only OpenRouter key helper");
+ const source=match[0].replace(/\nasync function freeQuota$/,"");
+ const secret="synthetic-test-only-key";
+ const observed=[];
+ const helper=(impl,key=secret)=>new Function("fetch","process","AbortController","setTimeout","clearTimeout",
+  source+"\nreturn readMonitorFreeQuota;")(
+  async(url,options)=>{observed.push({url,options});return impl();},
+  {env:{HH_PM_OPENROUTER_API_KEY:key}},AbortController,setTimeout,clearTimeout);
+ const readOk=helper(()=>({ok:true,text:async()=>JSON.stringify({
+  data:{free_model_daily_requests:{used:37,limit:50,remaining:13},
+   limit_remaining:9999,usage_daily:12.5,label:"private-account-label"}
+ })}));
+ const valid=await readOk();
+ assert.equal(valid.remaining,13);
+ assert.equal(valid.status,"VERIFIED");
+ assert.equal(valid.limit,50);
+ assert.equal(valid.sharedAcrossFreeModels,true);
+ assert.ok(!JSON.stringify(valid).includes(secret));
+ assert.ok(!JSON.stringify(valid).includes("private-account-label"));
+ assert.equal(observed.length,1);
+ assert.equal(observed[0].url,"https://openrouter.ai/api/v1/key");
+ assert.equal(observed[0].options.method,"GET");
+ assert.equal(observed[0].options.headers.Authorization,"Bearer "+secret);
+ assert.equal(observed[0].options.cache,"no-store");
+ const bad=await helper(()=>({ok:true,text:async()=>JSON.stringify({data:{limit_remaining:99}})}))();
+ assert.equal(bad.status,"UNAVAILABLE");
+ assert.equal(bad.reason,"QUOTA_NOT_REPORTED");
+ const blocked=await helper(()=>({ok:false,status:429}))();
+ assert.equal(blocked.status,"UNAVAILABLE");
+ assert.equal(blocked.reason,"PROVIDER_UNAVAILABLE");
+ const missing=await helper(()=>{throw Error("should not fetch")},"")();
+ assert.equal(missing.status,"UNAVAILABLE");
+ assert.equal(missing.reason,"KEY_NOT_CONFIGURED");
 });
