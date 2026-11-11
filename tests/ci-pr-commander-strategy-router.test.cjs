@@ -186,3 +186,35 @@ test('existing or auto-created private incident task can be routed, but not clai
   assert.ok(receiptProof({...receipt(),association},context()));
  }
 });
+
+
+test('only exact signed mobile Core source test may reach existing guarded worker',async()=>{
+ const start=receipt('TEST_FAILURE');
+ const valid={...start,classification:{...start.classification,
+  reason_code:'FAILED_TEST_STEP_REQUIRES_TRIAGE',
+  evidence_code:'FAILED_TEST_STEP_REQUIRES_TRIAGE',
+  failed_job:'core-lint-types-build',
+  failed_step:'Mobile Dock Core geometry and iPhone keyboard contracts'}};
+ let dispatched=0;
+ const r=await route({receipt:valid,context:context(),existingCoreHandoff:async()=>{
+  dispatched++;return acceptedHandoff();
+ }});
+ assert.equal(r.state,'DISPATCH_ACCEPTED_NOT_WORKER_STARTED');
+ assert.equal(r.strategy,'GUARDED_SOURCE_REPAIR');
+ assert.equal(dispatched,1);
+ assert.equal(r.workerStarted,false);
+ assert.equal(r.sourceWriteVerified,false);
+ const changed=[
+  {failed_step:'Unrelated browser E2E'},
+  {failed_job:'hh-specialist'},
+  {evidence_code:'UNVERIFIED'},
+  {reason_code:'UNCLASSIFIED_FAILURE'}
+ ];
+ for(const mutation of changed){
+  let calls=0;
+  const denied=await route({receipt:{...valid,classification:{...valid.classification,...mutation}},
+   context:context(),existingCoreHandoff:async()=>{calls++;return acceptedHandoff();}});
+  assert.equal(denied.state,'TASK_ROUTED_TO_REVIEW');
+  assert.equal(calls,0);
+ }
+});

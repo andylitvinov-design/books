@@ -37,6 +37,21 @@
     c.reason_code.length>0&&typeof c.responsible_role==='string'&&
     c.responsible_role.length>0);}
   function taskLinked(e){return classified(e)&&ASSOCIATIONS.has(e.association_status);}
+  // Only a signed Core source-owned test may join ordinary code repair.
+  // Specialist/browser tests remain review-only.
+  function sourceRepairCandidate(e){
+    if(['TYPESCRIPT','SOURCE_CODE'].includes(e?.category))return true;
+    if(e?.category!=='TEST_FAILURE'||!classified(e)||
+       e.classification?.reason_code!=='FAILED_TEST_STEP_REQUIRES_TRIAGE'||
+       e.classification?.evidence_code!=='FAILED_TEST_STEP_REQUIRES_TRIAGE')return false;
+    var job='core-lint-types-build',
+      step='Mobile Dock Core geometry and iPhone keyboard contracts';
+    // The private OIDC inbox retains failed_jobs/failed_steps separately;
+    // it deliberately does not persist unrestricted classifier fields.
+    return (e.classification.failed_job===job&&e.classification.failed_step===step)||
+      (Array.isArray(e.failed_jobs)&&e.failed_jobs.includes(job)&&
+       Array.isArray(e.failed_steps)&&e.failed_steps.includes(job+' / '+step));
+  }
   function routeFor(e,comments){
     var r=e.route_receipt;
     var stored=taskLinked(e)&&r&&r.schema==='HH_COMMANDER_CI_ROUTE_RECEIPT_V1'&&
@@ -86,7 +101,7 @@
   // or an arbitrary model answer is NOT accepted as evidence.
   function signedClaimRoute(comments,e){
     if(!taskLinked(e)||!Array.isArray(comments)||
-      !['TYPESCRIPT','SOURCE_CODE'].includes(e.category))return null;
+      !sourceRepairCandidate(e))return null;
     var errors=new Set();
     for(var c of comments){
       if(!trustedComment(c))continue;
@@ -354,7 +369,7 @@
   }
   var model={STAGES:STAGES,validEvent:validEvent,classified:classified,
     taskLinked:taskLinked,routeFor:routeFor,trustedComment:trustedComment,
-    diagnosticAssignment:diagnosticAssignment,signedClaimRoute:signedClaimRoute,
+    diagnosticAssignment:diagnosticAssignment,sourceRepairCandidate:sourceRepairCandidate,signedClaimRoute:signedClaimRoute,
     taskEvidence:taskEvidence,summarize:summarize};
   if(typeof module!=='undefined'&&module.exports)module.exports=model;
   if(typeof document==='undefined'||typeof window==='undefined')return;
@@ -541,7 +556,7 @@
       // historical incidents, a genuine Worker CLAIMED comment may be the
       // only durable dispatch proof if Supabase saved an earlier backstop.
       var candidates=eligible.filter(function(e){return taskLinked(e)&&
-        ['TYPESCRIPT','SOURCE_CODE'].includes(e.category);});
+        sourceRepairCandidate(e);});
       var prs=[...new Set(candidates.map(function(e){return e.pr_number;}))];
       // Bound public unauthenticated GitHub reads and surface truncation.
       if(prs.length>24){prs=prs.slice(0,24);complete=false;}

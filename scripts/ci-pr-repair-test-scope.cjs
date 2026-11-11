@@ -34,8 +34,26 @@ function selectTests(root,changed,candidates){
   // repository-root helper. Accept the exact node:fs import and the full
   // literal file path only. No alias, interpolation, dynamic URL, symlink or
   // source outside the preauthorized changed-file inventory.
-  const staticFsRead=lines.some(line=>
-    /^\s*import\s*\{\s*readFileSync\s*\}\s*from\s*['"]node:fs['"]\s*;?\s*$/.test(line));
+  const staticFsRead=lines.some(line=>{
+    // Genuine source tests often import readFileSync alongside other fs
+    // functions. Require a literal node:fs named import with an unaliased
+    // readFileSync binding; comments, dynamic bindings and forged aliases
+    // never establish code-repair test coverage.
+    const match=/^\s*import\s*\{\s*([^{}\r\n]+)\s*\}\s*from\s*(['"])node:fs\2\s*;?\s*$/.exec(line);
+    if(!match)return false;
+    const names=match[1].split(',').map(name=>name.trim());
+    if(!names.length||names.some(name=>!name))return false;
+    let hasRead=false;
+    for(const name of names){
+      const binding=/^([A-Za-z_$][\w$]*)(?:\s+as\s+([A-Za-z_$][\w$]*))?$/.exec(name);
+      if(!binding)return false;
+      if(binding[1]==='readFileSync'){
+        if(binding[2])return false;
+        hasRead=true;
+      }
+    }
+    return hasRead;
+  });
   if(!hasNodeTest||!hasTestCall)continue;
   let hit=false;
   for(const line of lines){

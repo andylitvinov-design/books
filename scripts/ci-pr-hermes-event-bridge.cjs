@@ -87,6 +87,13 @@ function buildDiagnostics(jobs, pr) {
       strategy_code:strategy.code,
       next_action:strategy.action,
       evidence_code: decision.evidence_code,
+      // Preserve the exact authenticated Core job/step for the already
+      // existing guarded source-test route. The private inbox persists
+      // these separately as failed_jobs/failed_steps.
+      failed_job: typeof decision.failed_job === 'string' ?
+        decision.failed_job.slice(0, 90) : null,
+      failed_step: typeof decision.failed_step === 'string' ?
+        decision.failed_step.slice(0, 90) : null,
       recommended_action: decision.recommended_action,
       recommended_status: decision.recommended_status,
       responsible_role: decision.responsible_role,

@@ -342,3 +342,40 @@ test('all reason links are public GitHub PR ids and no private/source data rende
  assert.doesNotMatch(src,/localStorage|sessionStorage|document\.cookie|innerHTML\s*=/);
  assert.match(src,/link\.href='https:\/\/github\.com\/'\+REPO\+'\/pull\/'\+number/);
 });
+
+test('source-owned Core test repair has verified funnel proof; generic test failure does not',()=>{
+ const base=event();
+ const scoped=event({category:'TEST_FAILURE',route_receipt:{
+  ...base.route_receipt,category:'TEST_FAILURE',state:'TASK_WAITING_FOR_DISPATCH',
+  executorId:null,workerTaskKey:null,errorTaskId:null,
+  dispatchAccepted:0,dispatchAcknowledged:false},
+  classification:{...base.classification,category:'TEST_FAILURE',
+   reason_code:'FAILED_TEST_STEP_REQUIRES_TRIAGE',
+   evidence_code:'FAILED_TEST_STEP_REQUIRES_TRIAGE',
+   failed_job:'core-lint-types-build',
+   failed_step:'Mobile Dock Core geometry and iPhone keyboard contracts'}});
+ assert.equal(m.sourceRepairCandidate(scoped),true);
+ const persisted={...scoped,classification:{...scoped.classification,
+   failed_job:undefined,failed_step:undefined},
+   failed_jobs:['core-lint-types-build'],
+   failed_steps:['core-lint-types-build / Mobile Dock Core geometry and iPhone keyboard contracts']};
+ assert.equal(m.sourceRepairCandidate(persisted),true,
+  'OIDC inbox retains bounded failed job/step lists after classifier sanitization');
+ const signed=signedErrorTask();
+ signed.body=signed.body.replace('"category":"TYPESCRIPT"','"category":"TEST_FAILURE"');
+ const evidence=withClaimIdentity([signed,...records()]);
+ assert.equal(m.signedClaimRoute(evidence,scoped)?.workerTaskKey,TASK);
+ const proof=m.taskEvidence(evidence,scoped);
+ assert.equal(proof.claimed,true);
+ assert.equal(proof.candidate_sha,NEXT);
+ assert.equal(m.summarize([scoped],{[INBOX]:{...proof,commit_verified:true}},24,NOW,true).counts.committed,1);
+ const ordinary={...persisted,failed_steps:['hh-specialist / WebKit unrelated browser acceptance']};
+ assert.equal(m.sourceRepairCandidate(ordinary),false);
+ assert.equal(m.signedClaimRoute(evidence,ordinary),null);
+ const wrongReason={...persisted,classification:{...persisted.classification,
+  reason_code:'UNCLASSIFIED_FAILURE'}};
+ assert.equal(m.sourceRepairCandidate(wrongReason),false);
+ const forged=evidence.slice();forged[0]={...signed,
+  body:signed.body.replace('"strategy_code":"GUARDED_SOURCE_REPAIR"','"strategy_code":"TEST_FAILURE_TRIAGE"')};
+ assert.equal(m.signedClaimRoute(forged,scoped),null);
+});

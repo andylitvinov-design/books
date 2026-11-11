@@ -13,8 +13,21 @@ const OWNER_EXECUTOR='github-owner:andylitvinov-design';
 // A deterministic executor candidate is not an execution authorization.
 // Only a signed exact-HEAD reservation, accepted workflow dispatch and
 // subsequent worker CLAIMED receipt can advance this state.
+// This one named Core test step is also an independently verified SOURCE
+// gate (see classifyCoreFailureJobs). Other TEST_FAILURE specialists/browser
+// checks remain diagnostic-only, without a code-writer reservation.
+function repairableCoreTestFailure(c){
+  return !!(c&&c.category==='TEST_FAILURE'&&
+    c.failed_job==='core-lint-types-build'&&
+    c.failed_step==='Mobile Dock Core geometry and iPhone keyboard contracts'&&
+    c.reason_code==='FAILED_TEST_STEP_REQUIRES_TRIAGE'&&
+    c.evidence_code==='FAILED_TEST_STEP_REQUIRES_TRIAGE'&&
+    c.status==='DIAGNOSTIC_ONLY'&&
+    c.source_write_authorized===false&&c.execution_authorized===false);
+}
 function executorPlan(category,root,classification){
-  const eligible=['SOURCE_CODE','TYPESCRIPT'].includes(category)&&
+  const eligible=(['SOURCE_CODE','TYPESCRIPT'].includes(category)||
+    repairableCoreTestFailure(classification))&&
     root==='SOURCE_OR_PREFLIGHT'&&classification?.requires_human===false&&
     classification?.retry?.allowed===true&&
     classification?.recommended_status==='REROUTED';
@@ -82,7 +95,9 @@ function makeCoreTask({pr,run,classification,root='UNVERIFIED',now=Date.now()}={
       classification.source_write_authorized!==false||
       classification.execution_authorized!==false||!CODE.test(classification.reason_code||'')||
       !Number.isFinite(now)||now<=0)throw Error('UNVERIFIED_CORE_ERROR_TASK');
-  const st=strategyFor(classification.category,root,classification.retry?.allowed===true);
+  const st=root==='SOURCE_OR_PREFLIGHT'&&repairableCoreTestFailure(classification)?
+    {code:'GUARDED_SOURCE_REPAIR',action:'VERIFY_SOURCE_SCOPE_AND_CI',minutes:15}:
+    strategyFor(classification.category,root,classification.retry?.allowed===true);
   return Object.freeze({
     schema:SCHEMA,event_kind:'CORE_CI_FAILED',
     task_id:coreErrorTaskId(pr.number,pr.head.sha,run.id,run.run_attempt),
@@ -337,4 +352,4 @@ function taskLifecycle(comments,task,now=Date.now()){
   return {state:'CLASSIFIED_NOT_DELIVERED',next_action:'RECONCILE_EXISTING_DISPATCHER'};
 }
 
-module.exports={makeCoreTask,makeWorkerFollowUp,strategyFor,taskBody,taskStatus,taskLifecycle,latestErrorTaskId,validTask,executorPlan,coreErrorTaskId,dispatchAcceptance,dispatchAcceptanceBody,validDispatchAcceptance,REPAIR_EXECUTOR,CI_EXECUTOR};
+module.exports={makeCoreTask,makeWorkerFollowUp,strategyFor,taskBody,taskStatus,taskLifecycle,latestErrorTaskId,validTask,executorPlan,repairableCoreTestFailure,coreErrorTaskId,dispatchAcceptance,dispatchAcceptanceBody,validDispatchAcceptance,REPAIR_EXECUTOR,CI_EXECUTOR};
