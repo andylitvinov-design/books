@@ -82,10 +82,18 @@ try {
           "/" + locale + "/practice", label + ": existing practitioner workspace");
         await assertTouchSize(modes.locator('[data-master-mode="find"]'), label + " find switch");
         await assertTouchSize(modes.locator('[data-master-mode="share"]'), label + " share switch");
-        const masterDock = page.locator('[data-hh-unified-dock] [data-unified-dock-item="master"]');
-        await masterDock.waitFor({ state: "visible" });
-        assert.equal(await masterDock.getAttribute("aria-current"), "page",
-          label + ": Master stays active in both modes");
+        // Human /masters remains a distinct reviewed directory. The shared
+        // seven-tab dock links to AI My Coach, which must NOT be selected here.
+        const dock = page.locator('[data-hh-unified-dock]');
+        await dock.waitFor({ state: "visible" });
+        assert.equal(await dock.locator('[data-unified-dock-item]').count(), 7,
+          label + ": canonical seven-item navigation");
+        const coachDock = dock.locator('[data-unified-dock-item="coach"]');
+        await coachDock.waitFor({ state: "visible" });
+        assert.equal(await coachDock.getAttribute("href"), "/" + locale + "/my-coach",
+          label + ": AI coach link remains separate from human directory");
+        assert.equal(await coachDock.getAttribute("aria-current"), null,
+          label + ": human practitioner directory never impersonates AI coach selection");
         const mentorTab = page.locator("#mentor-community-tab-mentors");
         const articleTab = page.locator("#mentor-community-tab-articles");
         const mentorPanel = page.locator("#mentor-community-panel-mentors");
