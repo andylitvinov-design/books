@@ -60,7 +60,8 @@ test("brief audio and caption choices reuse existing local controls without rend
   assert.match(directorUI,/onMusicPreference/);
   assert.match(directorUI,/onCaptionPreference/);
   assert.match(studio,/onMusicPreference=\{choice=>/);
-  assert.match(studio,/choice==="calm"\?"meditation":choice==="energetic"\?"energy":"none"/);
+  assert.match(studio,/const track=recommendCuratedAudio\(\{theme:audioTheme,kind:"melody",mood\}\)\[0\]/);
+  assert.doesNotMatch(studio,/choice==="calm"\?"meditation":choice==="energetic"\?"energy":"none"/);
   assert.match(studio,/onCaptionPreference=\{choice=>setCaptionMode\(choice==="none"\?"none":"theme"\)\}/);
   assert.doesNotMatch(directorUI,/fetch\(["']https?:\/\/|sendBeacon/);
 });

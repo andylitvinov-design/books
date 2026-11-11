@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync, existsSync } from "node:fs";
 import ts from "typescript";
 import { runInNewContext } from "node:vm";
+import {curatedAudioTracks} from "../lib/mandala/curated-audio-recommendations.mjs";
 
 const read = path => readFileSync(new URL("../"+path,import.meta.url),"utf8");
 const studio=read("components/mandala-free-video-studio.tsx");
@@ -181,32 +182,37 @@ test("quick music checkboxes attach at most three unique first-party melodies wh
   const transpiled=ts.transpileModule(handler.getText(ast),{
     fileName:"mandala.tsx",compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}
   }).outputText;
+  const [first,second,third,fourth]=curatedAudioTracks.slice(0,4).map(track=>track.id);
+  assert.ok(first&&second&&third&&fourth,"four real approved recordings required");
   let attached=null,selected="none",mutations=0,played=0;
   const invoke=choice=>{
     const attachedPresetIds=attached?.kind==="presets"?attached.ids:
       attached?.kind==="preset"?[attached.id]:[];
     runInNewContext(transpiled+";toggleQuickMusic(choice)",{
-      choice,attachedAudio:attached,locale:"en",attachedPresetIds,recording:false,preparing:false,micRecording:false,
+      choice,curatedAudioTracks,attachedAudio:attached,locale:"en",attachedPresetIds,recording:false,preparing:false,micRecording:false,
       clearUploadedAudio:()=>{},setSamplePreviewId:()=>{},setAudioAuto:()=>{},
       setMusic:id=>{selected=id;},setAttachedAudio:next=>{attached=next;mutations++;},
       setMusicWarning:()=>{},previewPlaying:false,startMovieSound:()=>{played++;}
     },{timeout:1000});
   };
   invoke("warm-morning");
-  assert.equal(attached.kind,"preset");assert.equal(attached.id,"warm-morning");
-  invoke("wings-of-light");
-  assert.deepEqual(Array.from(attached.ids),["warm-morning","wings-of-light"]);
-  invoke("heart-harmony");
+  assert.equal(attached,null,"old synthetic IDs cannot be attached to new videos");
+  assert.equal(mutations,0);
+  invoke(first);
+  assert.equal(attached.kind,"preset");assert.equal(attached.id,first);
+  invoke(second);
+  assert.deepEqual(Array.from(attached.ids),[first,second]);
+  invoke(third);
   assert.equal(attached.ids.length,3);
-  invoke("quiet-stars");
-  assert.deepEqual(Array.from(attached.ids),["wings-of-light","heart-harmony","quiet-stars"],"FIFO bound of 3");
-  invoke("heart-harmony");
-  assert.deepEqual(Array.from(attached.ids),["wings-of-light","quiet-stars"],"toggle off selected layer");
-  assert.equal(selected,"wings-of-light");
+  invoke(fourth);
+  assert.deepEqual(Array.from(attached.ids),[second,third,fourth],"FIFO bound of three");
+  invoke(third);
+  assert.deepEqual(Array.from(attached.ids),[second,fourth],"toggle off selected layer");
+  assert.equal(selected,second);
   assert.equal(mutations,5);assert.equal(played,0,"inactive film does not autoplay");
-  // A pre-existing mastered voice must never be replaced by standalone music.
+  // An already attached mastered voice must never be replaced by music.
   attached={kind:"file",narration:true,file:{name:"voice.wav"},id:"blob:voice"};
-  invoke("warm-morning");
+  invoke(first);
   assert.equal(attached.kind,"file");
   assert.equal(attached.narration,true);
   assert.equal(mutations,5,"no audio mutation when narration is attached");
