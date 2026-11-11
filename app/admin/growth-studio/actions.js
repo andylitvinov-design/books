@@ -8,6 +8,8 @@ import {prepareEvergreenGrowthDrafts} from '@/lib/growth-studio/evergreen.mjs'
 import {getGrowthStudioStore} from '@/lib/growth-studio/store'
 import {readGrowthStudioProviderReadiness} from '@/lib/growth-studio/provider-readiness.mjs'
 import {isInstagramPublisherEnabled,publishApprovedInstagramImage,publishApprovedInstagramStory} from '@/lib/growth-studio/instagram-publisher.mjs'
+import {isFacebookPublisherEnabled,publishApprovedFacebookPagePost,facebookPagePostPayload} from '@/lib/growth-studio/facebook-publisher.mjs'
+import {createMetaFacebookPagePublisherClient} from '@/lib/growth-studio/meta-instagram.mjs'
 import {createMetaInstagramPublisherClient} from '@/lib/growth-studio/meta-instagram.mjs'
 import {GROWTH_INSTAGRAM_ACCOUNT_TARGETS} from '@/lib/growth-studio/instagram-accounts.mjs'
 import {isValidInstagramInsightDate,isValidInstagramInsightRange,normalizeInstagramInsightMetrics} from '@/lib/growth-studio/instagram-insights.mjs'
@@ -111,12 +113,13 @@ export async function updateGrowthStudioPostAction(input) {
     if ((current?.revision ?? 0) !== input.expectedRevision || (!current && !newRecord))
       return {ok:false,error:current ? 'conflict' : 'not_found'}
     const isRegisteredInstagramAccount=id=>GROWTH_INSTAGRAM_ACCOUNT_TARGETS.some(account=>account.id===id)
-    if(input.action==='save' && input.fields?.channel==='instagram' &&
+    if(input.action==='save' && ['instagram','facebook'].includes(input.fields?.channel) &&
        !isRegisteredInstagramAccount(input.fields.socialAccountId))
-      return {ok:false,error:'instagram_account_required'}
-    if((input.action==='approve'||input.action==='plan') && current?.channel==='instagram' &&
+      return {ok:false,error:input.fields.channel==='facebook'?'facebook_account_required':'instagram_account_required'}
+    if((input.action==='approve'||input.action==='plan') &&
+       ['instagram','facebook'].includes(current?.channel) &&
        !isRegisteredInstagramAccount(current.socialAccountId))
-      return {ok:false,error:'instagram_account_required'}
+      return {ok:false,error:current.channel==='facebook'?'facebook_account_required':'instagram_account_required'}
     const post = nextGrowthPost({current,fields:input.fields,action:input.action,id})
     await store.save(post,input.expectedRevision)
     return {ok:true,record:post}
@@ -335,4 +338,67 @@ export async function publishGrowthInstagramNowAction(input){
     await store.save(uncertain,claimed.revision)
   }catch{}
   return {ok:false,error:'instagram_delivery_unknown',record:uncertain}
+}
+
+
+// One expressly owner-confirmed native Facebook Page text/link post.
+// All provider-token operations reuse existing encrypted Meta OAuth storage;
+// the Page is verified against the selected Instagram destination, never guessed.
+export async function publishGrowthFacebookNowAction(input){
+  if(!await requireAdminRequest())return {ok:false,error:'unauthorized'}
+  if(!input||typeof input!=='object'||Array.isArray(input)||
+     Object.keys(input).some(key=>!['id','expectedRevision','confirmed'].includes(key))||
+     input.confirmed!==true||typeof input.id!=='string'||
+     !/^[0-9a-f-]{36}$/i.test(input.id)||
+     !Number.isSafeInteger(input.expectedRevision)||input.expectedRevision<1)
+    return {ok:false,error:'invalid_post'}
+  if(!isFacebookPublisherEnabled())return {ok:false,error:'facebook_publishing_disabled'}
+  const store=getGrowthStudioStore()
+  if(!store)return {ok:false,error:'storage_unavailable'}
+  let source,client
+  try{
+    source=await store.get(input.id)
+    if(!source)return {ok:false,error:'not_found'}
+    if(source.revision!==input.expectedRevision)return {ok:false,error:'conflict'}
+    // Deterministic no-media check happens BEFORE claiming the irreversible send.
+    facebookPagePostPayload(source)
+    client=await createMetaFacebookPagePublisherClient(source.socialAccountId)
+  }catch(error){
+    const allowed=new Set(['facebook_invalid_approved_post','facebook_media_not_supported',
+      'meta_not_configured','meta_page_publish_access_missing','meta_account_not_connected',
+      'meta_token_invalid','meta_identity_mismatch'])
+    return {ok:false,error:allowed.has(error?.code)?error.code:'facebook_account_not_connected'}
+  }
+  const claim={...source,status:'sending',revision:source.revision+1,
+    attemptId:randomUUID(),updatedAt:new Date().toISOString()}
+  try{await store.save(claim,source.revision)}
+  catch{return {ok:false,error:'conflict'}}
+  let outcome
+  try{
+    outcome=await publishApprovedFacebookPagePost({post:source,
+      expectedRevision:source.revision,confirmed:true,providerClient:client})
+  }catch{
+    outcome={state:'delivery_unknown'}
+  }
+  if(outcome.state==='published'){
+    const delivered={...claim,status:'published',revision:claim.revision+1,
+      updatedAt:new Date().toISOString(),delivery:{
+        provider:'meta_graph_api',mediaProductType:'PAGE_POST',
+        accountId:outcome.accountId,pageId:outcome.pageId,
+        providerPostId:outcome.providerPostId,publishedAt:outcome.publishedAt,
+        url:outcome.permalink,
+      }}
+    try{await store.save(delivered,claim.revision);return {ok:true,record:delivered}}
+    catch{return {ok:false,error:'facebook_delivery_unknown'}}
+  }
+  // A POST may have reached Meta despite a timeout: never automatically retry.
+  const uncertain={...claim,status:'delivery_unknown',revision:claim.revision+1,
+    updatedAt:new Date().toISOString(),delivery:{
+      provider:'meta_graph_api',accountId:source.socialAccountId,
+      mediaProductType:'PAGE_POST',providerPostId:outcome?.providerPostId||null,
+      providerState:'unknown',
+    }}
+  try{await store.save(uncertain,claim.revision)}
+  catch{}
+  return {ok:false,error:'facebook_delivery_unknown',record:uncertain}
 }

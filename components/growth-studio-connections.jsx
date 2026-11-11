@@ -12,7 +12,7 @@ const messages={
     summary:'Подключения и способы публикации',
     explanation:'Наличие соцсети в редакторе означает только возможность подготовить черновик. Автопубликация в неё не считается подключённой без OAuth, разрешений и подтверждённого поста.',
     channel:'Канал',mode:'Доставка',connection:'Доступ',what:'Требуется',
-    telegramOptIn:'Только явное подтверждение владельца',existingUploader:'Отдельный YouTube-загрузчик',
+    metaPageOptIn:'Facebook Page · Meta OAuth + согласие владельца',telegramOptIn:'Только явное подтверждение владельца',existingUploader:'Отдельный YouTube-загрузчик',
     eventAdapter:'Модуль мероприятий',manual:'Ручное размещение',
     unconfigured:'Не подключён',configured:'Настройки есть, проверка не пройдена',
     verified:'Проверены канал и права бота', external:'Отдельный инструмент — OAuth ещё не подтверждён',
@@ -69,7 +69,7 @@ const messages={
     summary:'Connections and publishing methods',
     explanation:'Selecting a social network in the editor prepares a draft only. It does not mean publishing access is connected until OAuth, account permissions and provider delivery are verified.',
     channel:'Channel',mode:'Delivery',connection:'Access',what:'Requirements',
-    telegramOptIn:'Explicit owner-confirmed send only',existingUploader:'Separate YouTube uploader',
+    metaPageOptIn:'Facebook Page · Meta OAuth + owner confirmation',telegramOptIn:'Explicit owner-confirmed send only',existingUploader:'Separate YouTube uploader',
     eventAdapter:'Event publisher workflow',manual:'Manual handoff',
     unconfigured:'Not connected',configured:'Settings present; access not verified',
     verified:'Bot channel and posting rights verified',external:'Separate tool — OAuth not verified here',
@@ -141,7 +141,7 @@ const RU_REQUIREMENTS={
   meetup:'Нужны права организатора и доступное официальное подключение Meetup.',
   manual:'Готовый контент копируется владельцем вручную, без автоматической отправки.',
 }
-const modes={telegram_opt_in:'telegramOptIn',existing_uploader:'existingUploader',event_adapter:'eventAdapter',manual:'manual'}
+const modes={meta_page_opt_in:'metaPageOptIn',telegram_opt_in:'telegramOptIn',existing_uploader:'existingUploader',event_adapter:'eventAdapter',manual:'manual'}
 // A stable no-op prevents the owner-only Redis probe effect from looping if this
 // component is ever mounted without a parent readiness callback.
 const NOOP_STORAGE_VERIFICATION=()=>{}
@@ -402,6 +402,16 @@ export default function GrowthStudioConnections({locale='en',telegram={ready:fal
                 ?(locale==='ru'?'Не настроено приложение Meta':'Meta app not configured')
                 :(locale==='ru'?'Ожидает авторизации владельца через Meta':'Waiting for owner authorization through Meta'))}</p>
             {connected&&<small>{locale==='ru'?'Instagram ID: ':'Instagram ID: '}{status.instagramAccountId} · {status.scopes?.length||0} {locale==='ru'?'разрешений':'permissions'}</small>}
+            {connected&&<p className={styles.hint}>
+              {locale==='ru'?'Facebook Page: ':'Facebook Page: '}
+              <strong>{status.pageName||'Page'} (ID {status.pageId})</strong>
+              {' · '}{status.scopes?.includes('pages_manage_posts')
+                ?(locale==='ru'?'pages_manage_posts получено':'pages_manage_posts granted')
+                :(locale==='ru'?'Нет разрешения pages_manage_posts':'Missing pages_manage_posts permission')}
+              {' · '}{metaSetup?.facebookPublishFlagEnabled
+                ?(locale==='ru'?'Серверный флаг Facebook включён':'Facebook server flag enabled')
+                :(locale==='ru'?'Серверная публикация Facebook выключена':'Facebook publishing disabled on server')}
+            </p>}
             <div className={styles.connectionNav}>
               {metaSetup?.authorizationReady
                 ?<a href={'/api/admin/growth-studio/meta/connect?account='+encodeURIComponent(account.id)}>
