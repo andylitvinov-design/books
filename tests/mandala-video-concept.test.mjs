@@ -164,8 +164,10 @@ test("Concept shows editable story first, followed by all parameters in one colu
  assert.match(css,/safe-area-inset-bottom/);
  assert.match(css,/display-mode:standalone/);
  assert.match(css,/safe-area-inset-top/);
- assert.match(semantic,/const raw=audio\|\|clean\(creativeBrief,800\)\|\|plainGoal\|\|clean\(phraseText/);
- assert.match(semantic,/const topicChoice=selected\?/,"explicit taxonomy must outrank optional prose");
+ assert.match(semantic,/const raw=audio\|\|clean\(creativeBrief,800\)\|\|plainGoal\|\|clean\(phraseText,1200\)/);
+ assert.match(semantic,/const selected=getMyTubeTopic\(selectedTopicId\)/);
+ assert.match(semantic,/const topicChoice=selected\?\{id:selectedTopicId,confidence:"explicit",reason:"user_selection"\}/);
+ assert.match(semantic,/const dynamic=energizing&&!explicitSlow/);
  assert.match(semantic,/const audience=matched\(low,AUDIENCES\)/);
  assert.match(semantic,/const anxiety=ANXIETY_CONTEXT\.test\(low\)/);
  assert.match(panel,/if\(signedIn\)setEditing\(true\);else setLoginOpen\(true\)/);

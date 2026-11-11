@@ -227,18 +227,12 @@ async function verifyWorkspaceHydration(browser,locale){
       name:"sample.wav",mimeType:"audio/wav",buffer:wav(2)
     });
     await expect(audioFlow).toContainText("sample.wav");
-    const rights=page.locator('[data-video-recipient-audio-rights]');
-    const sttConsent=page.locator('[data-video-recipient-audio-stt-consent]');
-    await expect(rights).not.toBeChecked();
-    await expect(sttConsent).not.toBeChecked();
-    await expect(transcribe).toBeDisabled();
-    await rights.check();
-    await sttConsent.check();
+    await expect(page.locator('[data-video-recipient-audio-rights-notice]')).toBeVisible();
+    await expect(page.locator('[data-video-recipient-audio-stt-notice]')).toBeVisible();
+    await expect(audioFlow.locator('input[type="checkbox"]')).toHaveCount(0);
     await expect(transcribe).toBeEnabled();
     await expect(nextAudio).toBeDisabled();
-    await sttConsent.uncheck();
-    await expect(transcribe).toBeDisabled();
-    assert.equal(outboundStt.length,0,"no STT call without explicit action");
+    assert.equal(outboundStt.length,0,"no STT request before clicking Transcribe");
     // Moving to a different recipient must discard this local private audio.
     const greeting=page.locator('[data-auto-video-recipient-kind="greeting"]');
     await greeting.click();
@@ -650,7 +644,10 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await advancedText.click();
       await expect(advancedVoice).toBeVisible({timeout:15000});
       await expect(advancedVoice).toHaveAttribute("open","");
-      await voiceModeButton.click();
+      await expect(voiceModeButton).toBeVisible();
+      // Exercise the real iPhone/WebKit touch event; keep selected-state assertion.
+      if(engine==="webkit")await voiceModeButton.tap();
+      else await voiceModeButton.click();
       await expect(voiceModeButton).toHaveAttribute("aria-pressed","true");
       await expect(personalTab).toHaveAttribute("aria-pressed","true");
             // Voice mode intentionally hides the separate personal-intention editor;
@@ -1286,7 +1283,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const optionCountBeforeAddition=await phraseRows.count();
       assert.ok(countBeforeAddition>=5,"approved phrase selection remains above the five-phrase minimum");
       assert.ok(countBeforeAddition<10,"an additional phrase can be selected below the hard maximum");
-      await unselectedToggle.click();
+      if(engine==="webkit")await unselectedToggle.tap();
+      else await unselectedToggle.click();
       await expect(phraseEditor.locator(`[data-video-idea-select="${unselectedIndex}"]`)).toHaveAttribute('aria-pressed','true');
       await expect(montageCountLabel).toContainText(`${countBeforeAddition+1} / ${optionCountBeforeAddition}`);
       assert.ok(countBeforeAddition+1<=10,"adding a phrase never exceeds the ten-phrase export limit");

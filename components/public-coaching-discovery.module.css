@@ -1191,3 +1191,52 @@
   padding:6px 0;text-decoration:underline;text-underline-offset:3px;color:#0d716c;font-weight:750}
 .personaBridge>a:focus-visible{outline:3px solid #16857f;outline-offset:3px}
 @media(max-width:600px){.personaBridge{padding:10px 12px;margin:8px 0 13px}.personaBridge>strong{font-size:15px}}
+
+/* A selected persona opens a direct, welcoming session entry; the lounge stays exclusive to generic discovery. */
+.personaWelcome{max-width:910px;margin:9px auto;display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);
+  gap:clamp(16px,4vw,35px);padding:clamp(18px,3vw,30px);border:1px solid #e6dccc;border-radius:28px;
+  background:linear-gradient(142deg,#fffdf8,#fbf5e9);box-shadow:0 10px 35px #234b3a14}
+.personaWelcomeChange{grid-column:1/-1;display:inline-flex;align-items:center;gap:8px;justify-self:start;
+  min-height:44px;color:#276b55;font-size:13px;font-weight:750;text-decoration:none}
+.personaWelcomeArt{position:relative;display:flex;align-items:center;justify-content:center;min-height:340px;
+  overflow:hidden;border-radius:24px;background:radial-gradient(circle at 50% 38%,#fefdf2 0%,#e6f2e5 48%,#e9e6d9 100%)}
+.personaWelcomeGlow{position:absolute;width:82%;aspect-ratio:1;border-radius:50%;background:#ffffff91;filter:blur(23px)}
+.personaWelcomeFace{position:relative;display:flex;align-items:center;justify-content:center;width:min(79%,285px);
+  aspect-ratio:1;border:7px solid #fffdf9;border-radius:36%;background:linear-gradient(145deg,#e6eee6,#f7edd9);
+  box-shadow:0 18px 45px #1b59422a;font-size:90px;animation:persona-breathe 5s ease-in-out infinite}
+.personaWelcomeFace[data-persona=mira],.personaWelcomeFace[data-persona=max],
+.personaWelcomeFace[data-persona=sofia],.personaWelcomeFace[data-persona=alex]{
+  background-image:url('/images/holistic-house/my-coach-portraits.avif');background-repeat:no-repeat;background-size:400% 100%;font-size:0}
+.personaWelcomeFace[data-persona=mira]{background-position:0% center}
+.personaWelcomeFace[data-persona=max]{background-position:33.333% center}
+.personaWelcomeFace[data-persona=sofia]{background-position:66.667% center}
+.personaWelcomeFace[data-persona=alex]{background-position:100% center}
+.personaWelcomeStatus{position:absolute;bottom:15px;display:flex;align-items:center;gap:7px;padding:8px 12px;
+  border:1px solid #dbeadf;border-radius:999px;background:#fffdf9e8;color:#176b51;font-size:12px;font-weight:700}
+.personaWelcomeBody{display:flex;flex-direction:column;justify-content:center;min-width:0}
+.personaWelcomeEyebrow{font-size:11px;letter-spacing:.13em;font-weight:800;color:#48766a;margin:0 0 10px}
+.personaWelcomeBody h1{font:650 clamp(34px,4vw,49px)/1.05 Georgia,'Times New Roman',serif;color:#143d3a;margin:0 0 6px}
+.personaWelcomeRole{font-size:18px;font-weight:750;color:#287456;margin:0 0 12px}
+.personaWelcomeDescription{font-size:15px;line-height:1.5;color:#485e57;margin:0 0 12px}
+.personaWelcomeGreeting{margin:0 0 18px;border-left:3px solid #46a782;border-radius:0 14px 14px 0;
+  padding:13px 15px;background:#ecf7ef;color:#214d40;font-size:17px;font-weight:650;line-height:1.5}
+.personaWelcomeStart{display:flex;align-items:center;justify-content:center;gap:12px;min-height:54px;width:100%;
+  border:0;border-radius:16px;padding:13px 20px;background:linear-gradient(120deg,#209f76,#006c49);
+  box-shadow:0 6px 17px #0a754429;color:white;font:800 17px/1.2 system-ui;cursor:pointer}
+.personaWelcomeStart:disabled{opacity:.55;cursor:not-allowed}
+.personaWelcomeNote{display:flex;gap:7px;align-items:flex-start;margin:12px 0 0;
+  color:#60746d;font-size:12px;line-height:1.45}
+.personaWelcomeNote svg{flex-shrink:0;margin-top:1px}
+.sessionPersonaMark{display:flex;align-items:center;justify-content:center;flex:none;width:44px;height:44px;
+  border-radius:50%;background:#e6f2e5;border:2px solid #fff;box-shadow:0 2px 9px #214b3b1a;font-size:22px}
+.personaWelcome :is(a,button):focus-visible{outline:3px solid #176e6e;outline-offset:3px}
+@keyframes persona-breathe{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-5px) scale(1.015)}}
+@media(max-width:680px){
+  .personaWelcome{display:flex;flex-direction:column;gap:14px;padding:14px;border-radius:22px}
+  .personaWelcomeChange{align-self:flex-start}
+  .personaWelcomeArt{min-height:220px}
+  .personaWelcomeFace{width:174px;border-width:5px;font-size:62px}
+  .personaWelcomeBody h1{font-size:36px}
+  .personaWelcomeGreeting{font-size:16px}
+}
+@media(prefers-reduced-motion:reduce){.personaWelcomeFace{animation:none}}

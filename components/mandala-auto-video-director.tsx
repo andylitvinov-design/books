@@ -25,8 +25,7 @@ import {allocateFreeFilmTimeline,allocateAdaptiveFilmTimeline,allocateVariableFi
 import {STAGE_CAPTION_LIMIT,normalizeStageCaption} from "@/lib/mandala/stage-caption-track.mjs";
 import {montageReplacementOptions,validateMontageClips} from "@/lib/mandala/video-montage-sources.mjs";
 import {recommendPromptShotPlan} from "@/lib/mandala/prompt-shot-director.mjs";
-import {recommendScenarioMelodies} from "@/lib/mandala/scenario-soundtracks.mjs";
-import {scenarioAudioTracks} from "@/lib/mandala/scenario-audio-catalog.mjs";
+import {recommendCuratedAudio} from "@/lib/mandala/curated-audio-recommendations.mjs";
 import type {VideoTheme} from "@/lib/mandala/holistic-video-themes";
 import type {PublicLocale} from "@/lib/public-locales";
 import css from "./mandala-auto-video-director.module.css";
@@ -92,7 +91,7 @@ const copy={
    selectedGoal:"Выбранная цель",
    promptShotNotice:"Видеосцены подобраны отдельно под вашу цель из существующей библиотеки — без платной генерации.",
    promptShotPartial:"Некоторые образы из запроса не найдены. Проверьте кадры перед подтверждением.",
-   melodyOptions:"Четыре мелодии для вашего сценария",melodyHint:"Выбранная мелодия включается в видео; звук можно отключить.",
+   melodyOptions:"Проверенная музыка для видео",melodyHint:"Выбранная мелодия включается в видео; звук можно отключить.",
    captionTrack:"Текст по сценам",captionHint:"Необязательно: одна надпись на каждом этапе. Текст показывается в вашем видео, а не отправляется в ИИ.",soundTrack:"Музыка и голос",soundMissing:"Звук не прикреплён",soundSettings:"Настроить звук",
    timeline:"Монтажная шкала",openMontage:"Открыть монтаж (необязательно)",montageHelp:"Измените порядок и длительность сцен, затем подтвердите сценарий.",reorder:"Порядок сцены",less:"Укоротить",more:"Удлинить",audioHint:"Музыка, голос и фразы настраиваются в существующих разделах видеостудии.",replaceScene:"Заменить клип",replacementHint:"Доступны только проверенные видео из каталога.",
  },
@@ -113,7 +112,7 @@ const copy={
    selectedGoal:"Selected goal",
    promptShotNotice:"Each shot was selected from the existing film library for your goal; no paid generation.",
    promptShotPartial:"Some requested imagery is unavailable. Please check each shot before confirming.",
-   melodyOptions:"Four melodies for your story",melodyHint:"Selected music is included in the video; you can change or mute it.",
+   melodyOptions:"Reviewed music for your video",melodyHint:"Selected music is included in the video; you can change or mute it.",
    captionTrack:"Scene captions",captionHint:"Optional: one caption per stage. Your text appears in the video and is not sent to AI.",soundTrack:"Music and voice",soundMissing:"No audio attached",soundSettings:"Edit sound",
    timeline:"Montage timeline",openMontage:"Open montage (optional)",montageHelp:"Adjust shot order and durations, then confirm the storyboard.",reorder:"Reorder shot",less:"Shorten",more:"Lengthen",audioHint:"Music, voice and captions remain in the existing studio sections.",replaceScene:"Replace clip",replacementHint:"Only licensed catalogue videos are available.",
  },
@@ -134,7 +133,7 @@ const copy={
    selectedGoal:"Objetivo elegido",
    promptShotNotice:"Cada escena se seleccionó de la biblioteca existente según tu objetivo, sin generación de pago.",
    promptShotPartial:"Algunas imágenes solicitadas no están disponibles. Revisa las escenas antes de confirmar.",
-   melodyOptions:"Cuatro melodías para tu historia",melodyHint:"La melodía elegida se incluye en el vídeo; puedes cambiarla o silenciarla.",
+   melodyOptions:"Música revisada para tu vídeo",melodyHint:"La melodía elegida se incluye en el vídeo; puedes cambiarla o silenciarla.",
    captionTrack:"Texto por escena",captionHint:"Opcional: un texto por etapa. Se muestra en el vídeo, sin enviarlo a IA.",soundTrack:"Música y voz",soundMissing:"Sin audio adjunto",soundSettings:"Ajustar audio",
    timeline:"Línea de montaje",openMontage:"Abrir montaje (opcional)",montageHelp:"Cambia el orden y la duración; después confirma el guion.",reorder:"Ordenar escena",less:"Acortar",more:"Alargar",audioHint:"Música, voz y frases se ajustan en las secciones actuales.",replaceScene:"Cambiar clip",replacementHint:"Solo están disponibles vídeos aprobados del catálogo.",
  }
@@ -307,8 +306,8 @@ export function MandalaAutoVideoDirector({
    chosen&&validateMontageClips([...chosen.clips],scenes,proposal?.excludedMotifs||[],aspect)&&
    !selectedMotifId&&!selectedStyleId);
  const fallbackEnabled=Boolean(symbolicPlotFallback&&fallbackSourcesValid);
- const dedicatedMelodies=chosen?scenarioAudioTracks(chosen.id):[];
- const melodyOptions=dedicatedMelodies.length===4?dedicatedMelodies:chosen?recommendScenarioMelodies(chosen):[];
+ // Professional, licensed physical MP3s only; no oscillator score as an option.
+ const melodyOptions=recommendCuratedAudio({theme,kind:"melody"}).slice(0,4);
  const sceneById=new Map(scenes.map(item=>[item.id,item]));
  const sceneLabel=(id:string)=>sceneById.get(id)?.label[locale]||clipLabel(id);
  const scenePoster=(id:string)=>sceneById.get(id)?.poster||null;
