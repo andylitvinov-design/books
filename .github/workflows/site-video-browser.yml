@@ -218,7 +218,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ~/.cache/ms-playwright
-          key: hh-public-browser-blobs-${{ runner.os }}-${{ runner.arch }}-pw1.63.0-v1
+          key: hh-public-browser-blobs-${{ runner.os }}-${{ runner.arch }}-pw1.64.0-v1
       - name: Install isolated browser test dependencies without changing the app lockfile
         if: github.event_name != 'pull_request' || steps.impact.outputs.full == 'true'
         timeout-minutes: 12
@@ -227,11 +227,26 @@ jobs:
           if [ -f /etc/apt/apt-mirrors.txt ]; then
             printf '%s\n' 'https://archive.ubuntu.com/ubuntu/' | sudo tee /etc/apt/apt-mirrors.txt >/dev/null
           fi
-          npm install --prefix /tmp/video-browser-tools --no-package-lock --ignore-scripts @playwright/test@1.63.0
+          npm install --prefix /tmp/video-browser-tools --no-package-lock --ignore-scripts @playwright/test@1.64.0
           ln -s /tmp/video-browser-tools/node_modules/@playwright node_modules/@playwright
-          /tmp/video-browser-tools/node_modules/.bin/playwright install --with-deps chromium webkit
-      - run: sudo apt-get install -y redis-tools
+          # Real Chromium stays on the host. Real WebKit (with GTK/GStreamer)
+          # runs separately in the pinned official container; both must pass.
+          # No transient Ubuntu APT DNS dependency on PR or production push.
+          /tmp/video-browser-tools/node_modules/.bin/playwright install chromium
+          node scripts/ci-playwright-launch-proof.cjs chromium
+      - name: Start and prove real WebKit in pinned official Linux browser image
         if: github.event_name != 'pull_request' || steps.impact.outputs.full == 'true'
+        timeout-minutes: 8
+        run: |
+          set -euo pipefail
+          # Host networking exposes ONLY the runner loopback to WebKit.
+          # The actual browser must open the existing 127.0.0.1:3100 test app.
+          docker run --detach --rm --init --network host --name hh-site-video-webkit-${{ github.run_id }} --volume /tmp/video-browser-tools:/tmp/video-browser-tools:ro --workdir /tmp/video-browser-tools mcr.microsoft.com/playwright:v1.64.0-noble /tmp/video-browser-tools/node_modules/.bin/playwright run-server --host 127.0.0.1 --port 39120
+          echo 'HH_SITE_VIDEO_WEBKIT_WS_ENDPOINT=ws://127.0.0.1:39120/' >> "$GITHUB_ENV"
+          HH_SITE_VIDEO_WEBKIT_WS_ENDPOINT=ws://127.0.0.1:39120/ node scripts/ci-playwright-remote-webkit-proof.cjs
+      - name: Verify isolated Redis CLI without Ubuntu APT
+        if: github.event_name != 'pull_request' || steps.impact.outputs.full == 'true'
+        run: bash scripts/ci-redis-cli-bridge.sh
       - name: Create ephemeral local test certificate
         if: github.event_name != 'pull_request' || steps.impact.outputs.full == 'true'
         run: openssl req -x509 -newkey rsa:2048 -nodes -keyout /tmp/video-test-key.pem -out /tmp/video-test-cert.pem -days 1 -subj '/CN=localhost' -addext 'subjectAltName=DNS:localhost,IP:127.0.0.1'
@@ -266,6 +281,9 @@ jobs:
       - name: Verify all eight released page videos with full natural playback
         if: github.event_name == 'push'
         run: node scripts/verify-page-video-release.mjs --live
+      - name: Stop ephemeral WebKit browser container
+        if: always()
+        run: docker rm -f hh-site-video-webkit-${{ github.run_id }} >/dev/null 2>&1 || true
       - uses: actions/upload-artifact@v4
         if: always() && (github.event_name != 'pull_request' || steps.impact.outputs.full == 'true')
         with:
@@ -355,8 +373,9 @@ jobs:
           mkdir -p /tmp/hh-video-admin-browser
           npm install --prefix /tmp/hh-video-admin-browser --no-audit --no-fund @playwright/test@1.63.0
           ln -s /tmp/hh-video-admin-browser/node_modules/@playwright node_modules/@playwright
-          /tmp/hh-video-admin-browser/node_modules/.bin/playwright install --with-deps chromium
-          sudo apt-get install -y redis-tools
+          /tmp/hh-video-admin-browser/node_modules/.bin/playwright install chromium
+          node scripts/ci-playwright-launch-proof.cjs chromium
+          bash scripts/ci-redis-cli-bridge.sh
       - name: Prepare a loopback TLS certificate for the synthetic Redis gateway
         if: github.event_name != 'pull_request' || steps.impact.outputs.full == 'true'
         run: |

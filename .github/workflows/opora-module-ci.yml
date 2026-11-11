@@ -134,7 +134,13 @@ jobs:
         run: |
           npm install --prefix /tmp/hh-opora-browser --no-audit --no-fund @playwright/test@1.63.0
           ln -s /tmp/hh-opora-browser/node_modules/@playwright node_modules/@playwright
-          /tmp/hh-opora-browser/node_modules/.bin/playwright install --with-deps ${{ matrix.browser }}
+          # PR runs only Chromium; production push retains WebKit and its OS dependency gate.
+          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            /tmp/hh-opora-browser/node_modules/.bin/playwright install "$HH_TEST_BROWSER"
+          else
+            /tmp/hh-opora-browser/node_modules/.bin/playwright install --with-deps "$HH_TEST_BROWSER"
+          fi
+          node scripts/ci-playwright-launch-proof.cjs "$HH_TEST_BROWSER"
       - name: Verify hydrated Calm Morning RU/EN/ES at 320, 360, 390 and 430 pixels
         run: node scripts/verify-opora-as56-browser.mjs
       - name: Verify OPORA course-ready mobile viewport and visible Start CTA

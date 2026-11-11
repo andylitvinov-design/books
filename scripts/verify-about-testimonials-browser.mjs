@@ -10,8 +10,24 @@ const originals={
 export async function verifyAboutTestimonials(origin='http://127.0.0.1:3100'){
   const url=new URL(origin);
   assert.ok(['127.0.0.1','localhost'].includes(url.hostname)&&['http:','https:'].includes(url.protocol));
+  const remoteWebKitUrl=process.env.HH_SITE_VIDEO_WEBKIT_WS_ENDPOINT;
+  if(remoteWebKitUrl){
+    const remote=new URL(remoteWebKitUrl);
+    assert.equal(remote.protocol,'ws:');
+    assert.equal(remote.hostname,'127.0.0.1');
+    assert.equal(remote.port,'39120');
+    assert.equal(remote.pathname,'/');
+    assert.equal(remote.search,'');
+    assert.equal(remote.hash,'');
+    assert.equal(remote.username,'');
+    assert.equal(remote.password,'');
+  }
   for(const [engine,type] of [['chromium',chromium],['webkit',webkit]]){
-    const browser=await type.launch();
+    // The official pinned Linux image provides the missing real WebKit libraries.
+    // Keep all original EN/RU/ES and viewport/browser assertions unchanged.
+    const browser=await (engine==='webkit' && remoteWebKitUrl
+      ? webkit.connect(remoteWebKitUrl,{timeout:20000})
+      : type.launch());
     try{
       for(const locale of ['en','ru','es'])for(const width of [320,390,430]){
         const context=await browser.newContext({viewport:{width,height:844},isMobile:true,hasTouch:true,serviceWorkers:'block'});
