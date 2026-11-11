@@ -61,9 +61,9 @@ test("iPhone scrub repaints decoded frames and delayed audio starts on the user 
   assert.match(studio,/const scrubFrame=freeFilmVideoAt\(previewSeekSeconds,false\)/);
   assert.ok(studio.includes("const styleFirstBeat=Boolean(selectedStyleFilm&&styleFilmReady"),
     "the selected style must be decoded before previewing");
-  assert.ok(studio.includes("if(!usingFreeFilmCompilation||scrubFrame||styleFirstBeat)"),
+  assert.ok(studio.includes("if(!usingFreeFilmCompilation||scrubFrame||hasStoryboardPhotoAt(previewSeekSeconds)||styleFirstBeat)"),
     "only decoded original frames OR a decoded style source may paint the scrub frame");
-  assert.ok(studio.includes("if(!usingFreeFilmCompilation||stockFrame||styleBeatReady)"),
+  assert.ok(studio.includes("if(!usingFreeFilmCompilation||stockFrame||hasStoryboardPhotoAt(frameSecond)||styleBeatReady)"),
     "animated preview has the same source eligibility as paused preview");
   assert.match(studio,/onSeeked=\{\(\)=>\{if\(!previewPlaying\)setPreviewFrameRevision/);
   assert.match(studio,/players\.forEach\(player=>void player\.play\(\)\.catch/);
