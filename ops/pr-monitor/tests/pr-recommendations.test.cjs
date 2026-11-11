@@ -50,5 +50,3 @@ test('boot injects the recommendations block without starting a polling loop',()
  assert.ok(script.includes("fetch('/api/control-tower-stats'"));
  assert.doesNotMatch(script,/setInterval|setTimeout/);
 });
-
-[executed on device: MacBook-Air-Andrii-3.local (5a68b85e-3490-4ac3-a77e-81c382fe4c77)]

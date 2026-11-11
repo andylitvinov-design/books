@@ -38,6 +38,7 @@ const {readCompleteIssueComments,externalOwnerLeaseStatus}=require('./ci-pr-task
 const {hasVerifiedSourceHandoff}=require('./ci-pr-repair-worker.cjs');
 const {stageLine}=require('./ci-pr-stage-receipts.cjs');
 const {classifyRedCiError}=require('./ci-pr-red-ci-classifier.cjs');
+const {makeCoreTask,taskBody,taskStatus,taskLifecycle}=require('./ci-pr-error-task.cjs');
 const {isTrustedQualityFailureEvent,qualityEventMatchesPR}=require('./ci-pr-quality-event.cjs');
 
 /**
@@ -77,10 +78,15 @@ function normalizeLiveBatchPR(node, listed) {
 }
 
 function boundedRestFallback(selected) {
-  // Keep two most recently edited PRs and four rotating ones. Without GraphQL
-  // the oldest 180 PRs must still get attention rather than only hot PRs.
+  // Without GraphQL retain two priority/event slots and the independent
+  // audit ring. Preserve one existing safe source-repair QUEUE HINT so an
+  // event wake cannot accidentally omit the selected third-slot repair.
+  // It is only a read; exact-HEAD job, owner and lease proof still gate writes.
   if (selected.length <= MAX_REST_FALLBACK_LOOKUPS) return selected;
-  return [...selected.slice(0,2),...selected.slice(4,8)].slice(0,MAX_REST_FALLBACK_LOOKUPS);
+  const top=selected.slice(0,2);
+  const repair=selected.slice(2).find(pr=>isFreeFor(pr,'repair'))||null;
+  const ring=selected.slice(4).filter(pr=>pr!==repair).slice(0,repair?3:4);
+  return [...top,...(repair?[repair]:[]),...ring].slice(0,MAX_REST_FALLBACK_LOOKUPS);
 }
 
 function selectCandidates(prs,now,rotatedSize=12,urgentSize=4,priorityNumber=null){
@@ -101,7 +107,23 @@ function selectCandidates(prs,now,rotatedSize=12,urgentSize=4,priorityNumber=nul
     top.push(anchor);
     chosen.add(anchor.number);
   }
-  // Rotate fast slots within the highest ten-level operational rank.
+  // A confirmed source-queue LABEL is a high-value inspection hint, not a
+  // write grant. Reserve at most one remaining fast slot and rotate it each
+  // 10-minute tick. Without this, a P5 source fix can wait behind 100+ P1
+  // review-only PRs even when both existing Repair Workers are available.
+  // Manual/held/claimed PRs are excluded; downstream exact-HEAD Core proof,
+  // file safety and owner lease checks stay completely unchanged.
+  const repairQueue=ranked.filter(pr=>!chosen.has(pr.number)&&
+    isFreeFor(pr,'repair')&&pr.base?.ref===PROD&&
+    pr.head?.repo?.full_name==='andylitvinov-design/books'&&
+    /^[0-9a-f]{40}$/i.test(pr.head?.sha||''));
+  if(top.length<urgentSize&&repairQueue.length){
+    const offset=Math.floor(now/(10*MINUTE))%repairQueue.length;
+    const source=repairQueue[offset];
+    top.push(source);
+    chosen.add(source.number);
+  }
+  // Rotate other fast slots within the highest operational rank.
   // The independent audit ring still prevents starvation of other ranks.
   const rank=anchor?priorityFor(anchor,now).mergeRank:null;
   const peers=ranked.filter(pr=>priorityFor(pr,now).mergeRank===rank &&
@@ -185,6 +207,14 @@ function transientFailure(run, jobs, now) {
     ['timed_out','startup_failure'].includes(job.conclusion) ||
     job.steps?.some(step => step.conclusion === 'failure' &&
       /^(checkout|set ?up|install dependencies|download|fetch|restore cache|prepare runner)/i.test(step.name || '')));
+}
+
+function shouldRetryTransientCoreFailure({diagnosis,run,jobs,now,ciRoom,reruns=0}={}){
+  return ciRoom===true&&reruns<MAX_STALE_RUNS&&
+    diagnosis?.category==='INFRASTRUCTURE'&&
+    diagnosis.retry?.allowed===true&&
+    Number.isSafeInteger(diagnosis.retry.max_attempts)&&diagnosis.retry.max_attempts>0&&
+    transientFailure(run,jobs,now);
 }
 
 function classifyCoreFailureJobs(jobs) {
@@ -497,6 +527,40 @@ async function recordRepairHandoff(github, owner, repo, pr, run, jobs, dryRun, l
   return true;
 }
 
+/** Record a trusted diagnostic task per exact failed Core run/attempt.
+ * Existing PR comments are the durable store, not a new worker/queue.
+ */
+async function recordErrorTask(github,owner,repo,pr,run,diagnosis,root,
+  dryRun,log,limited,now){
+  const task=makeCoreTask({pr,run,classification:diagnosis,root,now});
+  if(dryRun)return 'WOULD_RECORD';
+  const comments=await readCompleteIssueComments(github,owner,repo,pr.number,limited);
+  const status=taskStatus(comments,task);
+  if(status===null)return 'UNVERIFIED_HISTORY';
+  if(status==='ALREADY_RECORDED'){
+    const lifecycle=taskLifecycle(comments,task);
+    log('HH_CI_ERROR_TASK_LIFECYCLE #'+pr.number+' '+lifecycle.state+
+      ' next='+lifecycle.next_action);
+    return lifecycle.state==='HISTORY_UNVERIFIED'?'UNVERIFIED_HISTORY':'ALREADY_RECORDED';
+  }
+  const current=(await limited('error-task-head-recheck',()=>
+    github.rest.pulls.get({owner,repo,pull_number:pr.number}))).data;
+  if(current?.state!=='open'||current.draft||current.base?.ref!==PROD||
+     current.head?.sha!==pr.head.sha||current.head?.ref!==pr.head.ref||
+     current.head?.repo?.full_name!==owner+'/'+repo)
+    return 'STALE_OR_UNTRUSTED_HEAD';
+  await limited('signed-error-task-receipt',()=>github.rest.issues.createComment({
+    owner,repo,issue_number:pr.number,body:taskBody(task)}));
+  // GitHub accepted the write; prove durable signed readback before claiming
+  // creation or allowing an unchanged-HEAD transient retry.
+  const verified=await readCompleteIssueComments(github,owner,repo,pr.number,limited);
+  if(taskStatus(verified,task)!=='ALREADY_RECORDED')
+    return 'TASK_RECEIPT_READBACK_UNVERIFIED';
+  log('HH_CI_ERROR_TASK_CREATED #'+pr.number+' '+task.task_id+
+    ' category='+task.category+' strategy='+task.strategy_code);
+  return 'CREATED';
+}
+
 function coreRunForCurrentPR(r,pr) {
   // GitHub can report a genuine PR Core run with pull_requests:[] even on
   // its exact source SHA. Do not misclassify it as missing CI: require the
@@ -703,6 +767,8 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
       '#'+availableRepair.number+' '+priorityFor(availableRepair,now).tier+
       ' '+priorityFor(availableRepair,now).direction : 'no eligible source repair',
     greenUnarmed:0,mergeCoordinatorDispatched:0,pendingCi:0,coreFailures:0,ciErrorByCategory:{},
+    errorTasksCreated:0,errorTasksExisting:0,errorTasksDeferred:0,errorTasksDryRun:0,
+    errorTaskReceiptVerified:0,errorTaskReceiptUnverified:0,
     releaseGateOnly:0,releaseGateQueued:0,specialistFailures:0,specialistQueued:0,
     specialistPolicyHolds:0,specialistContractFailures:0,specialistEvidenceUnverified:0,
     staleGateReclassified:0,wouldReclassifyStaleGate:0,
@@ -1142,31 +1208,65 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
     // Immediately hand verified source failures to Repair when capacity is idle.
     // A delayed, infrastructure-only retry is still guarded by transientFailure().
     let jobs=null;
-    try {jobs=await listJobs(github,owner,repo,latest.id,limited);} catch(e) {log(`#${pr.number} jobs lookup: ${e.message}`);continue;}
-    if (ciRoom && summary.transientCiReruns < MAX_STALE_RUNS && transientFailure(latest,jobs,now)) {
+    try {jobs=await listJobs(github,owner,repo,latest.id,limited);}
+    catch(e){log('#'+pr.number+' jobs lookup unavailable: '+e.message);jobs=[];}
+    // Every confirmed red Core event is classified before any retry, reroute,
+    // or source-repair decision. Retry requires both the classifier policy and
+    // the existing bounded exact-run timing/attempt gate.
+    const root=classifyCoreFailureJobs(jobs);
+    const diagnosis=classifyRedCiError({pr:live,jobs,coreRoot:root});
+    summary.ciErrorByCategory[diagnosis.category]=
+      (summary.ciErrorByCategory[diagnosis.category]||0)+1;
+    const blocker=summary.blockerCases.find(c=>c.pr_number===live.number&&
+      c.root_code==='CORE_REQUIRED_CHECK_FAILED');
+    if(blocker){
+      blocker.ci_error_category=diagnosis.category;
+      blocker.ci_error_ruleset_version=diagnosis.ruleset_version||null;
+      blocker.ci_error_confidence=Number.isFinite(diagnosis.confidence)?diagnosis.confidence:null;
+      blocker.ci_error_reason_code=diagnosis.reason_code||null;
+      blocker.ci_error_evidence_code=diagnosis.evidence_code||null;
+      blocker.ci_error_recommended_status=diagnosis.recommended_status||'UNCLASSIFIED';
+      blocker.ci_error_responsible_role=diagnosis.responsible_role||'ci-diagnostic-triage';
+      blocker.ci_error_next_action=diagnosis.recommended_action||'Preserve evidence and continue bounded diagnostics.';
+      blocker.ci_error_retry_policy=diagnosis.retry||{allowed:false,max_attempts:0};
+      if(diagnosis.failed_job)blocker.failed_job=diagnosis.failed_job;
+      if(diagnosis.failed_step)blocker.failed_step=diagnosis.failed_step;
+    }
+    log('HH_RED_CI_CATEGORY #'+live.number+' '+diagnosis.category+
+      ' root='+root+' HEAD='+live.head.sha.slice(0,12));
+    // Classification is never a no-op: write one versioned owner/strategy
+    // task even when no source-edit privilege or complete jobs are available.
+    let errorTaskDurable=false;
+    if(!budget.exhausted && (dryRun||summary.errorTasksCreated<3)){
+      try {
+        const result=await recordErrorTask(github,owner,repo,live,latest,
+          diagnosis,root,dryRun,log,limited,now);
+        if(result==='CREATED'){summary.errorTasksCreated++;errorTaskDurable=true;}
+        else if(result==='ALREADY_RECORDED'){summary.errorTasksExisting++;errorTaskDurable=true;}
+        else if(result==='WOULD_RECORD')summary.errorTasksDryRun++;
+        else {summary.errorTasksDeferred++;log('HH_CI_ERROR_TASK_DEFERRED #'+pr.number+' '+result);}
+        if(errorTaskDurable)summary.errorTaskReceiptVerified++;
+        else if(!dryRun)summary.errorTaskReceiptUnverified++;
+      }catch(error){
+        summary.errorTasksDeferred++;
+        log('HH_CI_ERROR_TASK_DEFERRED #'+pr.number+' '+String(error.message||error).slice(0,100));
+      }
+    }else summary.errorTasksDeferred++;
+    if(!jobs.length){summary.coreFailureUnverified++;continue;}
+    if(!dryRun&&!errorTaskDurable){
+      log('HH_CI_ERROR_TASK_BLOCKED_PENDING_SIGNED_RECEIPT #'+pr.number);
+      continue;
+    }
+    if ((dryRun||errorTaskDurable) && shouldRetryTransientCoreFailure({diagnosis,run:latest,jobs,now,ciRoom,
+        reruns:summary.transientCiReruns})) {
       if (!dryRun) {
         try {
           await limited('retry-failed-ci',()=>github.request('POST /repos/{owner}/{repo}/actions/runs/{run_id}/rerun-failed-jobs',{owner,repo,run_id:latest.id}));
         } catch(e) { log(`CI retry #${pr.number} failed: ${e.message}`);continue; }
       }
       summary.transientCiReruns++;
-      log(`${dryRun?'WOULD_RERUN':'RERUN'} transient core CI #${pr.number} run=${latest.id} HEAD ${pr.head.sha.slice(0,12)}`);
-    } else if (latest.conclusion === 'failure' && latest.run_attempt >= 1) {
-      const root=classifyCoreFailureJobs(jobs);
-      // Reuse the already fetched trusted exact-HEAD jobs. Diagnostic only:
-      // this category cannot authorize a source write, retry or merge.
-      const diagnosis=classifyRedCiError({pr:live,jobs,coreRoot:root});
-      summary.ciErrorByCategory[diagnosis.category]=
-        (summary.ciErrorByCategory[diagnosis.category]||0)+1;
-      const blocker=summary.blockerCases.find(c=>c.pr_number===live.number&&
-        c.root_code==='CORE_REQUIRED_CHECK_FAILED');
-      if(blocker){
-        blocker.ci_error_category=diagnosis.category;
-        if(diagnosis.failed_job)blocker.failed_job=diagnosis.failed_job;
-        if(diagnosis.failed_step)blocker.failed_step=diagnosis.failed_step;
-      }
-      log('HH_RED_CI_CATEGORY #'+live.number+' '+diagnosis.category+
-        ' root='+root+' HEAD='+live.head.sha.slice(0,12));
+      log(`${dryRun?'WOULD_RERUN':'RERUN'} classified ${diagnosis.category} core CI #${pr.number} run=${latest.id} HEAD ${pr.head.sha.slice(0,12)}`);
+    } else if ((dryRun||errorTaskDurable) && latest.conclusion === 'failure' && latest.run_attempt >= 1) {
       if(root==='RELEASE_GATE_ONLY') {
         summary.releaseGateOnly++;
         // This may be a production BASE_ADVANCED result or failed specialist
@@ -1341,4 +1441,4 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   return summary;
 }
 
-module.exports = {eventOnlyPR,isTrustedQualityFailureEvent,qualityEventMatchesPR,classifyIndependentSpecialistChecks,run,selectCandidates,latestByName,gateIsGreen,verifiedRedSpecialist,needsFailedCoreCronBackstop,transientFailure,canRetryCi,canDispatchRepair,classifyMergeState,coreRunForCurrentPR,verifyCoreRunOnExactHead,bootstrapLegacyCore,hasActiveLease,buildLiveBatchQuery,normalizeLiveBatchPR,boundedRestFallback,classifyCoreFailureJobs,latestCompletedFailedGate,recordRepairHandoff,assessCronHealth,canRetireCiHint};
+module.exports = {eventOnlyPR,isTrustedQualityFailureEvent,qualityEventMatchesPR,classifyIndependentSpecialistChecks,run,selectCandidates,latestByName,gateIsGreen,verifiedRedSpecialist,needsFailedCoreCronBackstop,transientFailure,shouldRetryTransientCoreFailure,canRetryCi,canDispatchRepair,classifyMergeState,coreRunForCurrentPR,verifyCoreRunOnExactHead,bootstrapLegacyCore,hasActiveLease,buildLiveBatchQuery,normalizeLiveBatchPR,boundedRestFallback,classifyCoreFailureJobs,latestCompletedFailedGate,recordRepairHandoff,assessCronHealth,canRetireCiHint};

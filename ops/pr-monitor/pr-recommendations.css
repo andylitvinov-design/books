@@ -26,5 +26,3 @@
 #hh-pr-recommendations[data-freshness="stale"]{border-color:#7a5b3b}
 #hh-pr-recommendations[data-freshness="stale"] .hh-pr-rec-meta{color:#efc68b}
 @media(min-width:700px){.hh-pr-rec-list{grid-template-columns:repeat(2,minmax(0,1fr))}.hh-pr-rec-card:first-child{grid-column:1/-1}.hh-pr-recommendations{padding:16px}}
-
-[executed on device: MacBook-Air-Andrii-3.local (5a68b85e-3490-4ac3-a77e-81c382fe4c77)]

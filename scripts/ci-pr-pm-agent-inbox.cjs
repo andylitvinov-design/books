@@ -75,7 +75,9 @@ const resultBody=(cmd,result,run)=>{
     'Request accepted by GitHub Actions for PR #'+cmd.pr+' exact HEAD '+cmd.sha+
     '. This is NOT runner start, patch, commit, CI green, merge, or LIVE.'):
    'Reason: '+trim(result.reason||'UNKNOWN',140);
- return head+summary+'\n\n'+text+'\n\n'+
+ const billing=result.ok&&typeof result.cost==='number'&&result.cost===0?
+   '\n\nModel: '+trim(result.model,120)+' · verified provider cost: $0':'';
+ return head+summary+'\n\n'+text+billing+'\n\n'+
   'Source: '+PREFIX+'/issues/'+ISSUE+'#issuecomment-'+cmd.id+
   '\nTrusted run: '+run+'\nSTATUS: '+state+
   '\nNo code change is inferred from this message. Public technical discussion only.';
@@ -121,7 +123,9 @@ async function askFree(prompt,{fetcher,token,run}){
  }catch(_){return {reason:'OPENROUTER_NETWORK_UNKNOWN_NO_RETRY'};}
  if(!response?.ok)return {reason:'OPENROUTER_HTTP_'+String(response?.status||'UNKNOWN')};
  let data;try{data=await response.json()}catch(_){return {reason:'OPENROUTER_RESPONSE_INVALID'};}
- if(Number(data?.usage?.cost||0)>0)return {reason:'MODEL_REPORTED_NONZERO_COST_HOLD'};
+ const cost=data?.usage?.cost;
+ if(typeof cost!=='number'||!Number.isFinite(cost))return {reason:'MODEL_BILLING_UNVERIFIED_HOLD'};
+ if(cost!==0)return {reason:'MODEL_REPORTED_NONZERO_COST_HOLD'};
  const model=String(data?.model||'');
  if(model&&model!=='openrouter/free'&&!model.endsWith(':free'))return {reason:'MODEL_ROUTING_NOT_VERIFIED_FREE'};
  const raw=data?.choices?.[0]?.message?.content;
@@ -134,7 +138,7 @@ async function askFree(prompt,{fetcher,token,run}){
    'OPENROUTER_REASONING_EXHAUSTED_VISIBLE_BUDGET':'OPENROUTER_EMPTY_RESPONSE';
   return {reason};
  }
- return {ok:true,text,model:model||'openrouter/free',cost:data?.usage?.cost??null};
+ return {ok:true,text,model:model||'openrouter/free',cost};
 }
 async function trustedRepair(github,cmd){
  let pr;try{pr=(await github.rest.pulls.get({owner:OWNER,repo:REPO,pull_number:cmd.pr})).data;}catch(_){return {reason:'PR_LOOKUP_UNAVAILABLE'};}
@@ -200,16 +204,26 @@ async function dispatchSource(github,cmd,{ownerToken,fetcher=fetch}={}){
 }
 async function run({github,core,context,fetcher=fetch,token=undefined,
  ownerToken=undefined,ownerFetcher=fetch}={}){
+ const issueComment=context.eventName==='issue_comment';
+ const trustedIssueComment=issueComment&&context.payload?.issue?.number===ISSUE&&
+  !context.payload?.issue?.pull_request&&context.payload?.comment?.user?.login===OWNER&&
+  context.payload?.comment?.user?.id===274943885&&context.payload?.comment?.user?.type==='User';
  if(context?.repo?.owner!==OWNER||context?.repo?.repo!==REPO||
   context?.ref!=='refs/heads/codex/bootstrap-books'||
-  !['schedule','workflow_dispatch'].includes(context.eventName)||
-  (context.eventName==='workflow_dispatch'&&String(context.payload?.inputs?.dry_run||'false')==='true'))
+  !['schedule','workflow_dispatch','issue_comment'].includes(context.eventName)||
+  (context.eventName==='workflow_dispatch'&&String(context.payload?.inputs?.dry_run||'false')==='true')||
+  (issueComment&&!trustedIssueComment))
   return {status:'SKIPPED_UNTRUSTED_CONTEXT'};
  const runUrl=PREFIX+'/actions/runs/'+String(context.runId||'UNKNOWN');
  let snapshot;try{snapshot=await comments(github)}catch(_){return {status:'INBOX_FETCH_UNAVAILABLE'};}
  if(snapshot.error)return {status:snapshot.error};
  const pick=pending(snapshot.comments);
  if(pick.status!=='OK'||!pick.next)return {status:pick.status==='OK'?'NO_PENDING':pick.status};
+ if(issueComment){
+  const submitted=command(context.payload.comment);
+  if(!submitted)return {status:'NO_OWNER_COMMAND'};
+  if(pick.next.id!==submitted.id)return {status:'OLDER_COMMAND_PENDING',commandId:pick.next.id};
+ }
  const cmd=pick.next;
  const cap=cmd.kind==='source'?3:cmd.kind==='repair'?6:MAX_DAILY;
  if(pick.used>=cap)return {status:'INBOX_DAILY_CAP_HOLD',kind:cmd.kind,commandId:cmd.id};
@@ -227,7 +241,9 @@ async function run({github,core,context,fetcher=fetch,token=undefined,
  catch(_){return {status:'RESULT_COMMENT_UNCONFIRMED',kind:cmd.kind,commandId:cmd.id};}
  if(core?.info)core.info('HH_PM_INBOX_RESULT '+JSON.stringify({
   commandId:cmd.id,kind:cmd.kind,status:outcome.ok?'AI_REPLIED':outcome.dispatched?'DISPATCH_ACCEPTED_UNCORRELATED':'BLOCKED',
-  reason:outcome.reason||null,model:outcome.model||null,sourceCommitConfirmed:false
+  reason:outcome.reason||null,model:outcome.model||null,
+  cost:typeof outcome.cost==='number'&&Number.isFinite(outcome.cost)?outcome.cost:null,
+  sourceCommitConfirmed:false
  }));
  return {status:outcome.ok?'AI_REPLIED':outcome.dispatched?'DISPATCH_ACCEPTED_UNCORRELATED':'BLOCKED',kind:cmd.kind,commandId:cmd.id};
 }

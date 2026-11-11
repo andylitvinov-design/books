@@ -18,6 +18,8 @@ const {pickQueueCandidates,priorityFor} = require('./ci-pr-priority.cjs');
 const {safeSourcePath: safeFreeSourcePath}=require('./ci-pr-repair-free-agent.cjs');
 const {taskFor,commentBody,readCompleteIssueComments,externalOwnerLeaseStatus,parseRecords,trustedControlComment,reservationStatus}=require('./ci-pr-task-state.cjs');
 const {stageLine}=require('./ci-pr-stage-receipts.cjs');
+const {buildTaskOutcome}=require('./ci-pr-task-outcome.cjs');
+const {makeWorkerFollowUp}=require('./ci-pr-error-task.cjs');
 
 function validBranch(ref) {
   return typeof ref === 'string' && ref.length <= 160 &&
@@ -319,11 +321,22 @@ async function claim({github,core,context,number=0,expectedSha='',taskKey='',res
     }
     // Persist the addressed task acknowledgement on the exact source HEAD.
     // CLAIMED is evidence of ownership, never evidence of a published fix.
-    const receipt=task;
+    const trustedReservation=taskKey?
+      parseRecords(comments.filter(trustedControlComment))?.filter(r=>
+        r.task_key===taskKey&&r.head_sha===pr.head.sha&&
+        r.state==='RESERVED'&&r.owner_run_id===reservationRunId).at(-1):null;
+    const receipt=trustedReservation?{...task,
+      ...(trustedReservation.error_task_id?
+        {error_task_id:trustedReservation.error_task_id}:{}),
+      ...(trustedReservation.assigned_executor_id?
+        {assigned_executor_id:trustedReservation.assigned_executor_id}:{}),
+      assignment_status:'WORKER_CLAIMED'}:task;
     const workerRunUrl=Number.isSafeInteger(context.runId)?
       'https://github.com/'+fullRepo+'/actions/runs/'+context.runId:null;
     const claimedReceipt=receipt?commentBody({...receipt,state:'CLAIMED',
       owner_run_id:String(context.runId||'unknown'),run_url:workerRunUrl,
+      executor_run_id:String(context.runId||'unknown'),
+      worker_started:true,source_published:false,
       outcome:'CLAIM_ONLY_NO_SOURCE_WRITE'}):'';
     const claimStage=Number.isSafeInteger(context.runId)&&receipt?.task_key?
       stageLine({stage:'claimed',pr_number:pr.number,head_sha:pr.head.sha,
@@ -489,7 +502,7 @@ async function publish({github,core,context,prNumber,expectedSha,candidate,write
       run_id:context.runId,task_key:receipt.task_key,source:'verified_git_ref',
       new_sha:created.sha,at:new Date().toISOString()}):'';
   await github.rest.issues.createComment({owner,repo,issue_number:prNumber,body:
-    'HH Repair Worker: committed verified '+(repairKind==='free_ai'?'free OpenCode/GLM source repair':repairKind==='codex'?'legacy source repair':'targeted ESLint autofix')+' ' + created.sha +
+    'HH Repair Worker: committed verified '+(repairKind==='free_ai'?'free-model source repair':repairKind==='codex'?'legacy source repair':'targeted ESLint autofix')+' ' + created.sha +
     ' for previous HEAD ' + expectedSha + '. Genuine PR synchronize should trigger Core CI; '+
     'AutoMerge is allowed only after exact-HEAD required checks pass.'+
     (receipt?'\n'+commentBody({...receipt,state:'PUBLISHED',
@@ -623,12 +636,84 @@ function sourceDeliveryStatus({state,sourcePublished,codeAvailable}) {
     next_action:'DIAGNOSE_EXACT_HEAD_FAILED_STEP'};
 }
 
+// The free model job is untrusted. Preserve a fixed, bounded receipt only;
+// never persist provider-controlled response keys, source text or reasoning.
+function normalizedOpenRouterResponseShape(value){
+ if(!value||typeof value!=='object'||Array.isArray(value)||
+   value.schema!=='HH_OPENROUTER_RESPONSE_SHAPE_V1')return null;
+ const integer=key=>Number.isSafeInteger(value[key])&&value[key]>=0&&value[key]<=100;
+ if(!['stop','length','max_tokens','max_output_tokens','content_filter','refusal',
+   'tool_calls','function_call','error','other'].includes(value.finish_reason)||
+   !['null','undefined','string','array','object','number','boolean'].includes(value.content_type)||
+   !integer('choices_count')||!integer('content_parts')||!integer('text_parts')||
+   value.text_parts>value.content_parts||
+   (value.content_type!=='array'&&(value.content_parts!==0||value.text_parts!==0))||
+   typeof value.reasoning_present!=='boolean'||
+   typeof value.tool_calls_present!=='boolean')return null;
+ return {schema:'HH_OPENROUTER_RESPONSE_SHAPE_V1',
+   choices_count:value.choices_count,finish_reason:value.finish_reason,
+   content_type:value.content_type,content_parts:value.content_parts,
+   text_parts:value.text_parts,reasoning_present:value.reasoning_present,
+   tool_calls_present:value.tool_calls_present};
+}
+function normalizeModelAudit(raw,{number,expectedSha,runId,runAttempt,taskKey}={}){
+ let v=raw;if(typeof raw==='string'){if(raw.length>8000)return null;try{v=JSON.parse(raw);}catch{return null;}}
+ if(!v||typeof v!=='object'||Array.isArray(v)||v.schema!=='HH_FREE_AI_MODEL_RUN_V1'||v.pr_number!==number||
+ v.source_head!==expectedSha||v.executor_type!=='free_ci_patch_proposer'||!['openrouter','opencode'].includes(v.provider)||
+ (Number.isSafeInteger(Number(runId))&&Number(runId)>0&&String(v.run_id)!==String(runId))||
+ (Number.isSafeInteger(Number(runAttempt))&&Number(runAttempt)>0&&v.run_attempt!==Number(runAttempt))||
+ !Number.isInteger(v.attempt_count)||v.attempt_count<0||v.attempt_count>1||typeof v.started_at!=='string'||
+ !Number.isFinite(Date.parse(v.started_at))||typeof v.result!=='string'||!/^[A-Z0-9_]{3,60}$/.test(v.result))return null;
+ const model=typeof v.model==='string'?v.model:null;
+ if(model&&!(v.provider==='openrouter'?/^[A-Za-z0-9][A-Za-z0-9_.-]*\/[A-Za-z0-9][A-Za-z0-9_.-]*:free$/.test(model):
+ /^opencode\/[A-Za-z0-9][A-Za-z0-9_.-]*-free$/.test(model)))return null;
+ if(v.attempt_count===1&&(!model||typeof v.model_call_started_at!=='string'||!Number.isFinite(Date.parse(v.model_call_started_at))))return null;
+ // Untrusted free-model job metadata is audit-only, never publication authority.
+ // A forged, cross-task or partial prompt receipt is excluded fail-closed.
+ const prompt=v.prompt_receipt;
+ const delivery=v.prompt_delivery_status;
+ if(prompt!=null){
+  if(!prompt||prompt.schema!=='HH_PR_PROMPT_RECEIPT_V1'||
+     !/^[a-f0-9]{32}$/i.test(prompt.prompt_id||'')||
+     !/^[a-f0-9]{32}$/i.test(prompt.task_key||'')||
+     prompt.task_key!==taskKey||
+     prompt.template_version!=='HH_PR_FREE_REPAIR_PROMPT_V1'||
+     prompt.ruleset_version!==require('./ci-pr-error-rules.v1.json').version||
+     !/^[a-f0-9]{64}$/i.test(prompt.context_hash||'')||
+     !/^[a-f0-9]{64}$/i.test(prompt.prompt_sha256||'')||
+     typeof v.prompt_prepared_at!=='string'||
+     !Number.isFinite(Date.parse(v.prompt_prepared_at))||
+     !['PREPARED','ATTEMPTED_UNCONFIRMED','RESPONSE_OBSERVED'].includes(delivery)||
+     (delivery!=='PREPARED'&&v.attempt_count!==1)||
+     (delivery==='RESPONSE_OBSERVED'&&
+       (!v.response_received_at||!Number.isFinite(Date.parse(v.response_received_at))))||
+     (delivery==='PREPARED'&&v.attempt_count!==0))return null;
+ }else if(delivery&&delivery!=='NOT_PREPARED')return null;
+ const failure=typeof v.failure_reason==='string'&&/^FREE_AI_[A-Z0-9_:-]{4,120}$/.test(v.failure_reason)?v.failure_reason:null;
+ return {schema:v.schema,provider:v.provider,model,model_version:typeof v.model_version==='string'?v.model_version.slice(0,120):null,
+ catalog_model_created:Number.isSafeInteger(v.catalog_model_created)?v.catalog_model_created:null,executor_type:v.executor_type,
+ pr_number:number,source_head:expectedSha,run_id:/^[0-9]{1,24}$/.test(String(v.run_id||''))?String(v.run_id):null,
+ run_attempt:Number.isInteger(v.run_attempt)&&v.run_attempt>0?v.run_attempt:null,started_at:v.started_at,
+ model_call_started_at:v.model_call_started_at||null,response_received_at:v.response_received_at||null,
+ attempt_count:v.attempt_count,result:v.result,failure_reason:failure,patch_present:v.patch_present===true,
+ candidate_paths:Array.isArray(v.candidate_paths)?v.candidate_paths.slice(0,8):[],
+ verification_result:typeof v.verification_result==='string'?v.verification_result.slice(0,80):'NOT_REPORTED',
+ prompt_receipt:prompt?{schema:prompt.schema,prompt_id:prompt.prompt_id,
+   task_key:prompt.task_key,template_version:prompt.template_version,
+   ruleset_version:prompt.ruleset_version,context_hash:prompt.context_hash,
+   prompt_sha256:prompt.prompt_sha256}:null,
+ prompt_prepared_at:prompt?v.prompt_prepared_at:null,
+ prompt_delivery_status:prompt?delivery:'NOT_RECORDED',
+ response_shape:v.provider==='openrouter'?
+   normalizedOpenRouterResponseShape(v.response_shape):null};
+}
+
 async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
   claimStatus='',claimReason='',claimResult='',fixResult='',strategy='lint',
   codeAvailable=false,codeResult='',codeStatus='',codeDetail='',
   codeVerifyResult='',codeVerifyStatus='',codeVerifyDetail='',publishResult='',
   publishStatus='',publishSha='',candidateStatus='',candidateDetail='',
-  candidateSnapshot='',dryRun=false}) {
+  candidateSnapshot='',modelAuditRaw='',modelAuditRunAttempt=0,dryRun=false}) {
   const {owner,repo}=context.repo || {},fullRepo=owner+'/'+repo;
   const skip=reason=>{core.info('HH_REPAIR_OUTCOME SKIP '+reason);return {status:'skipped',reason};};
   if(dryRun || fullRepo!=='andylitvinov-design/books')return skip('AUDIT_OR_FOREIGN_REPO');
@@ -670,23 +755,29 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
     state=strategy==='code'?'MANUAL':'FAILED';
     reason=(strategy==='code'?'DETERMINISTIC_REPAIR_JOB_':'FIX_JOB_')+
       String(fixResult||'UNKNOWN').toUpperCase();
+  }else if((strategy==='lint'||strategy==='code')&&
+    candidateStatus==='ready'&&codeVerifyStatus==='ready'&&
+    codeVerifyResult==='success'&&publishResult==='failure'){
+    // A verified deterministic patch exists; the source publisher failed.
+    // A skipped optional free-model step is NOT the causal failure.
+    state='FAILED';reason='SOURCE_PUBLISH_JOB_FAILURE';
   }else if(strategy==='code'&&!codeAvailable){
     state='MANUAL';reason='FREE_AI_EXECUTOR_NOT_CONFIGURED';
   }else if(strategy==='code'&&codeResult==='skipped'){
-    reason='CODEX_JOB_NOT_STARTED_NO_SOURCE_COMMIT';
+    reason='FREE_AI_JOB_NOT_STARTED_NO_SOURCE_COMMIT';
   }else if((strategy==='code'||candidateStatus==='manual_required')&&codeVerifyStatus==='ready'){
-    // A tested Codex candidate existed, but no source commit was proven.
-    reason='CODEX_VERIFIED_BUT_NOT_PUBLISHED_'+String(publishResult||'UNKNOWN').toUpperCase();
+    // A tested free-model candidate existed, but no source commit was proven.
+    reason='FREE_AI_VERIFIED_BUT_NOT_PUBLISHED_'+String(publishResult||'UNKNOWN').toUpperCase();
   }else if((strategy==='code'||candidateStatus==='manual_required')&&codeAvailable&&codeResult==='failure'){
-    reason='CODEX_JOB_FAILED_NO_SOURCE_COMMIT';
+    reason='FREE_AI_JOB_FAILED_NO_SOURCE_COMMIT';
   }else if((strategy==='code'||candidateStatus==='manual_required')&&codeAvailable&&codeStatus==='proposed'&&
       codeVerifyResult!=='success'){
-    reason='CODEX_VERIFIER_JOB_FAILED_NO_SOURCE_COMMIT';
+    reason='FREE_AI_VERIFIER_JOB_FAILED_NO_SOURCE_COMMIT';
   }else if(publishStatus==='manual_required' || candidateStatus==='manual_required' || strategy==='code'){
     state='MANUAL';
     reason=!codeAvailable?'FREE_AI_EXECUTOR_NOT_CONFIGURED':
-      codeVerifyStatus==='manual_required'?'CODEX_CANDIDATE_REJECTED':
-      'CODEX_NO_VERIFIED_SOURCE_CHANGE';
+      codeVerifyStatus==='manual_required'?'FREE_AI_CANDIDATE_REJECTED':
+      'FREE_AI_NO_VERIFIED_SOURCE_CHANGE';
   }else if(publishResult!=='success'){
     reason='PUBLISH_JOB_'+String(publishResult||'UNKNOWN').toUpperCase();
   }else{
@@ -735,7 +826,11 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
       const jobs=(await github.rest.actions.listJobsForWorkflowRun({
         owner,repo,run_id:Number(context.runId),per_page:100})).data?.jobs||[];
       if(['FAILED','REJECTED'].includes(state)){
-        const failed=jobs.find(j=>j.conclusion==='failure');
+        // Prefer the failed isolated code job to a later failing publisher:
+        // publisher failure is an expected consequence, not the causal defect.
+        const failed=(strategy==='code'&&codeResult==='failure'?
+          jobs.find(j=>j.name==='code_fix'&&j.conclusion==='failure'):null)||
+          jobs.find(j=>j.conclusion==='failure');
         failedStep=failed?.steps?.find(x=>x.conclusion==='failure')?.name||
           failed?.name||null;
       }
@@ -783,11 +878,24 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
     'SHALLOW_ANCESTRY_UNAVAILABLE','PRODUCTION_FETCH_UNAVAILABLE',
     'MERGE_TREE_NOT_VERIFIED'
   ]);
-  const detailCode=state==='PREPARED'&&strategy==='legacy'?
-    (allowedLegacyDetails.has(candidateDetail)?candidateDetail:'PREFLIGHT_DETAIL_UNVERIFIED'):
+  // Exact trusted workflow step failed before any model inference.
+  // A previous deterministic lint result must not replace its true cause
+  // with NO_AUTOFIXABLE_ESLINT_CHANGE or suggest an AI-provider problem.
+  const unsafeScopeFailure=state==='FAILED'&&strategy==='code'&&
+    codeResult==='failure'&&
+    failedStep==='Fail early on unsupported or sensitive free-model source scope';
+  const detailCode=unsafeScopeFailure?'FREE_AI_UNSAFE_SOURCE_SCOPE':
+    state==='PREPARED'&&strategy==='legacy'?
+      (allowedLegacyDetails.has(candidateDetail)?candidateDetail:'PREFLIGHT_DETAIL_UNVERIFIED'):
     state==='MANUAL'||state==='FAILED'?
       agentDetail||(validCandidateDetails.has(candidateDetail)?candidateDetail:null):null;
   const delivery=sourceDeliveryStatus({state,sourcePublished,codeAvailable});
+  const modelAudit=normalizeModelAudit(modelAuditRaw,{number,expectedSha,
+    runId:context.runId,runAttempt:modelAuditRunAttempt,taskKey});
+  const modelRun=modelAudit?{...modelAudit,patch_present:codeStatus==='proposed'||modelAudit.patch_present,
+   verification_result:codeVerifyStatus==='ready'&&codeVerifyResult==='success'?'PASSED':
+    codeVerifyStatus==='manual_required'?'REJECTED':codeVerifyStatus||'NOT_RUN',
+   published_commit_sha:sourcePublished?newSha:null}:null;
   const result={schema:'HH_PR_TASK_V1',task_key:taskKey,pr_number:number,
     ...delivery,verified_source_fix:state==='PUBLISHED'&&sourcePublished===true,
     head_sha:expectedSha,lane:strategy==='legacy'?'legacy':'repair',
@@ -799,8 +907,9 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
       parseLegacySnapshotSummary(candidateSnapshot):null,
     repair_kind:publishStatus==='committed'&&candidateStatus!=='ready'?'free_ai':
       publishStatus==='committed'?'lint':null,
-    code_agent_configured:codeAvailable,code_provider:codeAvailable?'opencode/glm-5.3-flash-free':null,
-     code_job_result:codeResult||'skipped',
+    code_agent_configured:codeAvailable,code_provider:modelRun?.provider||null,
+    code_model:modelRun?.model||null,code_model_version:modelRun?.model_version||null,
+    model_run:modelRun,code_job_result:codeResult||'skipped',
     code_candidate_status:codeStatus||'skipped',
     code_verify_result:codeVerifyResult||'skipped',
     code_verify_status:codeVerifyStatus||'skipped',
@@ -809,6 +918,29 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
     created_at:new Date().toISOString(),fix_result:fixResult||'unknown',
     publish_result:publishResult||'unknown',publish_status:publishStatus||'unknown',
     owner_run_id:runId,run_url:'https://github.com/'+fullRepo+'/actions/runs/'+runId};
+  if(Number.isSafeInteger(context.runId)&&context.runId>0){
+  result.outcome=buildTaskOutcome({task_key:taskKey,pr_number:number,
+    head_sha:expectedSha,new_sha:newSha,state,reason_code:reason,
+    source_published:sourcePublished,head_matches:state==='PUBLISHED'&&pr.head?.sha===newSha,
+    claim_status:claimStatus,retry_after:retryAfter,owner_run_id:runId,
+    now:result.created_at});
+  }
+
+  // A failed Worker forms a secondary strategy/task in this SAME signed
+  // finalizer receipt. It cannot rerun an unchanged HEAD or authorize a write.
+  if(['FAILED','MANUAL','REJECTED','VERIFY_REQUIRED'].includes(state)&&
+     Number.isSafeInteger(context.runId)&&context.runId>0){
+    try{
+      result.follow_up_task=makeWorkerFollowUp({
+        pr_number:number,head_sha:expectedSha,task_key:taskKey,
+        owner_run_id:runId,state,reason_code:reason,
+        detail_code:/^[A-Z0-9_]{3,120}$/.test(detailCode||'')?detailCode:null,
+        now:Date.parse(result.created_at)});
+    }catch(error){
+      core.warning('HH_REPAIR_FOLLOWUP_TASK_UNAVAILABLE '+
+        String(error.message||error).slice(0,90));
+    }
+  }
   // Learning is strictly advisory: only the already verified remote source
   // commit earns a case. The SAME existing finalizer comment carries it.
   // No additional GitHub write, provider call, CI run or source permission.
@@ -870,4 +1002,4 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
   return result;
 }
 
-module.exports={claim,publish,finalize,sourceDeliveryStatus,finalizeFailedFix,prioritizedRepairCandidates,currentRepairHead,eligible,legacyPrepEligible,trustedLegacySourceRetry,validBranch,safeFiles,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,verifiedCoreCodeFailure,claimedRepairMissingSourceProof,parseLegacySnapshotSummary,PROD,SOURCE,CONFLICT,MARKER};
+module.exports={claim,publish,finalize,sourceDeliveryStatus,finalizeFailedFix,prioritizedRepairCandidates,currentRepairHead,eligible,legacyPrepEligible,trustedLegacySourceRetry,validBranch,safeFiles,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,verifiedCoreCodeFailure,claimedRepairMissingSourceProof,parseLegacySnapshotSummary,normalizeModelAudit,PROD,SOURCE,CONFLICT,MARKER};

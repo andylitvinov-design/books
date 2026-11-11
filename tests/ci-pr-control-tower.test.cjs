@@ -30,14 +30,15 @@ const cap=(active=0,queued=0)=>computeCapacity(
  [{status:'in_progress'}]);
 const core=()=>({info(){},summary:{addHeading(){return this},addCodeBlock(){return this},async write(){}}});
 function fixture(items,{comments={},active=0,queued=0,recent=[],live=null}={}){
- const calls={dispatched:[],reserved:[],read:[],removed:[],labels:[]};
+ const calls={dispatched:[],reserved:[],acknowledged:[],read:[],removed:[],labels:[]};
  const github={rest:{pulls:{
   list:async({page})=>({data:page===1?items:[],headers:{'x-ratelimit-remaining':'2500'}}),
   get:async({pull_number})=>({data:live||items.find(x=>x.number===pull_number)}),
-  listFiles:async()=>({data:[{filename:'src/a.js',status:'modified'}]})
+  listFiles:async()=>({data:[{filename:'lib/repair-demo.js',status:'modified'}]})
  },issues:{
   listComments:async({issue_number})=>({data:comments[issue_number]||[]}),
   createComment:async arg=>{calls.reserved.push(arg);return {data:{id:5}};},
+  updateComment:async arg=>{calls.acknowledged.push(arg);return {data:{body:arg.body}};},
   addLabels:async arg=>{calls.labels.push(arg);return {data:{}};},
   removeLabel:async arg=>{calls.removed.push(arg);return {data:{}};}
  },actions:{createWorkflowDispatch:async arg=>{calls.dispatched.push(arg);return {status:204};}}},
@@ -144,6 +145,23 @@ test('single-writer dispatcher reserves before sending an exact-head repair',asy
  assert.equal(f.calls.dispatched[0].inputs.expected_sha,SHA);
  assert.equal(f.calls.dispatched[0].inputs.task_key.length,32);
  assert.equal(f.calls.dispatched[0].inputs.reservation_run_id,'42');
+ assert.equal(result.dispatchReceiptsConfirmed,1);
+ assert.equal(result.dispatchReceiptsUnverified,0);
+ assert.equal(f.calls.acknowledged.length,1);
+ assert.match(f.calls.acknowledged[0].body,/HH_CI_ERROR_DISPATCH_V1/);
+ assert.match(f.calls.acknowledged[0].body,/github-actions:hh-pr-repair-worker.yml/);
+ assert.equal(result.workerRuns[0].acceptanceReceiptPersisted,true);
+});
+test('accepted workflow with unavailable acknowledgment remains unconfirmed, never auto-retried',async()=>{
+ const f=fixture([pr(1)],{comments:{1:[proof()]}});
+ f.github.rest.issues.updateComment=async()=>{throw Error('write response lost');};
+ const r=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(r.dispatchAccepted,1,'GitHub accepted a dispatch request');
+ assert.equal(r.dispatchReceiptsConfirmed,0,'no durable readback exists');
+ assert.equal(r.dispatchReceiptsUnverified,1);
+ assert.equal(r.workerRuns[0].acceptanceReceiptPersisted,false);
+ assert.equal(r.blocked.DISPATCH_ACCEPTANCE_RECEIPT_UNVERIFIED,1);
+ assert.equal(f.calls.dispatched.length,1,'never send a second source writer');
 });
 test('two independent Repair PRs dispatch concurrently with exact HEAD receipts',async()=>{
  const items=[pr(101),pr(102),pr(103)];
@@ -256,6 +274,60 @@ test('stale PR SHA, missing source proof and manual hold cannot cause writes',as
   const item=opts.held?pr(1,'repair',{labels:[{name:'hh:repair-needed'},{name:'hh:hold'}]}):pr(1);
   const f=fixture([item],opts);const r=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
   assert.equal(r.dispatchAccepted,0);assert.equal(f.calls.dispatched.length,0);
+ }
+});
+test('manual-conflict hints get bounded rotating live probes even when list mergeability is absent',()=>{
+ const manual=Array.from({length:20},(_,i)=>pr(7000+i,'conflict',{
+  labels:[{name:'hh:repair-manual'},{name:'hh:conflict-repair-needed'}],
+  mergeable:null,mergeable_state:'unknown'
+ }));
+ const seen=new Set();
+ for(let turn=0;turn<12;turn++){
+  const tasks=planCandidates(manual,NOW+turn*600000);
+  assert.ok(tasks.length<=6,'never exhaust bounded inspect budget');
+  for(const candidate of tasks)seen.add(candidate.pr_number);
+ }
+ assert.ok(seen.size>=18,'do not permanently ignore old conflict hints');
+ const source=pr(8001,'repair');
+ const mixed=planCandidates([...manual,source],NOW);
+ assert.equal(mixed[0].pr_number,8001,'verified source keeps first slot');
+ assert.ok(mixed.some(x=>x.lane==='legacy'&&x.pr_number>=7000));
+});
+test('live exact-head DIRTY manual conflict routes to semantic executor without source writes',async()=>{
+ const old=pr(1624,'conflict',{
+  labels:[{name:'hh:repair-manual'},{name:'hh:conflict-repair-needed'}],
+  mergeable:null,mergeable_state:'unknown'
+ });
+ const live={...old,mergeable:false,mergeable_state:'dirty'};
+ const f=fixture([old],{live});
+ const result=await run({github:f.github,core:core(),context,now:NOW,
+  capacityFn:f.capacityFn});
+ assert.equal(result.verifiedManualConflictReroutes,1);
+ assert.equal(result.manualConflictHandoffs,1);
+ assert.equal(result.conflictQueueReleased,1);
+ assert.equal(result.dispatchAccepted,0);
+ assert.equal(f.calls.dispatched.length,0,'never dispatch a source writer for conflict');
+ assert.ok(f.calls.reserved.some(x=>x.body.includes('HH_CONTROL_CONFLICT_HANDOFF_V1 '+SHA)));
+ assert.ok(f.calls.labels.some(x=>x.labels.includes('hh:repair-manual')));
+ assert.ok(f.calls.removed.some(x=>x.name==='hh:conflict-repair-needed'));
+});
+test('manual conflict cannot be promoted on stale head or unverified mergeability',async()=>{
+ const old=pr(1624,'conflict',{
+  labels:[{name:'hh:repair-manual'},{name:'hh:conflict-repair-needed'}],
+  mergeable:null,mergeable_state:'unknown'
+ });
+ for(const fresh of [
+  {...old,mergeable:null,mergeable_state:'unknown'},
+  {...old,mergeable:true,mergeable_state:'clean'},
+  {...old,mergeable:false,mergeable_state:'dirty',
+   head:{...old.head,sha:'b'.repeat(40)}}
+ ]){
+  const f=fixture([old],{live:fresh});
+  const result=await run({github:f.github,core:core(),context,now:NOW,
+   capacityFn:f.capacityFn,dryRun:true});
+  assert.equal(result.verifiedManualConflictReroutes,0);
+  assert.equal(result.manualConflictHandoffs,0);
+  assert.equal(f.calls.dispatched.length,0);
  }
 });
 test('manual legacy PR gets only signed cloud preflight, never direct source permission',async()=>{
@@ -906,6 +978,39 @@ test('source dispatch requires a complete nonempty worker-safe changed-file scop
  }
 });
 
+test('real Meta Publisher / admin source scope is escalated BEFORE any free AI dispatch',async()=>{
+ const current=pr(4217,'repair',{title:'feat(growth): Instagram Business Stories'});
+ const f=fixture([current],{comments:{4217:[proof()]}});
+ f.github.rest.pulls.listFiles=async()=>({data:[
+  {filename:'app/admin/growth-studio/actions.js',status:'modified'},
+  {filename:'components/growth-studio.jsx',status:'modified'},
+  {filename:'lib/growth-studio/instagram-publisher.mjs',status:'modified'},
+  {filename:'lib/growth-studio/model.mjs',status:'modified'}
+ ]});
+ f.github.rest.issues.addAssignees=async()=>({data:{}});
+ const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(result.dispatchAccepted,0);
+ assert.equal(result.manualSourceEscalations,1);
+ assert.equal(result.blocked.SOURCE_SCOPE_UNSAFE_FOR_FREE_AI,1);
+ assert.equal(f.calls.dispatched.length,0);
+ assert.ok(f.calls.reserved.some(x=>x.body.includes('HH_CONTROL_SCOPE_OWNER_V1')));
+ assert.ok(f.calls.reserved.some(x=>x.body.includes('"state":"MANUAL"')));
+ assert.ok(!f.calls.reserved.some(x=>x.body.includes('"state":"RESERVED"')));
+ assert.ok(f.calls.labels.some(x=>x.labels.includes('hh:repair-manual')));
+});
+test('pure non-sensitive library source remains eligible for guarded worker',async()=>{
+ const f=fixture([pr(4218)],{comments:{4218:[proof()]}});
+ f.github.rest.pulls.listFiles=async()=>({data:[
+   {filename:'lib/repair-demo.js',status:'modified'},
+   {filename:'components/repair-card.tsx',status:'modified'}
+ ]});
+ const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(result.dispatchAccepted,1);
+ assert.equal(result.manualSourceEscalations,0);
+ assert.equal(f.calls.dispatched.length,1);
+ assert.equal(f.calls.dispatched[0].inputs.pr_number,'4218');
+});
+
 test('a blocked first source does not give the shared worker to conflict before another source',async()=>{
  const first=pr(1,'repair',{title:'fix(video): verified source'}),second=pr(2,'repair',{title:'fix(video): verified source'});
  const conflict=pr(100,'conflict',{title:'fix(video): conflict',mergeable:false,mergeable_state:'dirty'});
@@ -1466,7 +1571,7 @@ test('16 verified inspections preserve overlapping DIRTY/Core/Specialist blocker
  assert.equal(report.actionable,16,'manual preflight candidates count as routable');
  assert.equal(report.nonmanualRouted,0,'no manual source write was permitted');
  assert.equal(report.legacyPrepEligible,16);
- assert.equal(report.candidates,1,'one bounded legacy candidate, not four read-only runners');
+ assert.equal(report.candidates,3,'one hourly legacy candidate plus two bounded read-only conflict probes');
  assert.equal(report.dispatchAccepted,0,'the mock never proves capacity or a lease');
  assert.match(report.reason,/^CAPACITY_UNVERIFIED:/);
  assert.equal(report.watchdogSampleStatus,'VERIFIED_BOUNDED_SAMPLE');
@@ -1517,7 +1622,7 @@ test('mismatched Watchdog evidence never claims verified blockers or authorizes 
 });
 
 test('previous DIRTY conflict handoff cannot starve manual cloud preflight',async()=>{
- const old=pr(204,'repair',{mergeable:false,mergeable_state:'dirty',
+ const old=pr(204,'repair',{mergeable:null,mergeable_state:'unknown',
   labels:[{name:'hh:repair-manual'},{name:'hh:conflict-repair-needed'}]});
  const marker='<!-- HH_CONTROL_CONFLICT_HANDOFF_V1 '+SHA+' -->';
  const f=fixture([old],{comments:{204:[{body:marker+'\\nEarlier owner handoff; no source write.'}]}});
@@ -1537,7 +1642,7 @@ test('previous DIRTY conflict handoff cannot starve manual cloud preflight',asyn
 
 test('handled old PR does not cause another read-only worker until the next UTC hour',async()=>{
  const old=[204,205,206].map(number=>pr(number,'repair',{
-  mergeable:false,mergeable_state:'dirty',
+  mergeable:null,mergeable_state:'unknown',
   labels:[{name:'hh:repair-manual'},{name:'hh:conflict-repair-needed'}]
  }));
  const first=planCandidates(old,NOW).filter(x=>x.lane==='legacy')[0];
@@ -1566,7 +1671,7 @@ test('one normal source repair and one manual preflight share the existing two w
  const source=pr(1,'repair');
  const old=pr(204,'repair',{
   labels:[{name:'hh:repair-manual'},{name:'hh:conflict-repair-needed'}],
-  mergeable:false,mergeable_state:'dirty'});
+  mergeable:null,mergeable_state:'unknown'});
  const f=fixture([source,old],{comments:{1:[proof()]}});
  const r=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
  assert.equal(r.dispatchAccepted,2);
@@ -1641,4 +1746,23 @@ test('owner PM exact dispatch declares UUID and rejects mismatched inputs before
  assert.match(workflow,/inputs\.pm_request_id/);
  assert.match(workflow,/let reportResult,report;/);
  assert.match(workflow,/!dryRun && !manualTarget/);
+});
+
+
+test('dispatcher refuses ninth unsafe source BEFORE task reservation, dispatch and model start',async()=>{
+ const current=pr(6432,'repair',{title:'fix: mixed public source and owner-only publisher'});
+ const f=fixture([current],{comments:{6432:[proof()]}});
+ f.github.rest.pulls.listFiles=async()=>({data:[
+   ...Array.from({length:8},(_,i)=>({filename:'lib/repair-'+i+'.js',status:'modified'})),
+   {filename:'lib/growth-studio/meta-instagram.mjs',status:'modified'}
+ ]});
+ f.github.rest.issues.addAssignees=async()=>({data:{}});
+ const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(result.dispatchAccepted,0);
+ assert.equal(result.manualSourceEscalations,1);
+ assert.equal(result.blocked.SOURCE_SCOPE_UNSAFE_FOR_FREE_AI,1);
+ assert.deepEqual(f.calls.dispatched,[]);
+ assert.ok(!f.calls.reserved.some(c=>c.body.includes('"state":"RESERVED"')));
+ assert.ok(f.calls.reserved.some(c=>c.body.includes('"reason_code":"SOURCE_SCOPE_UNSAFE_FOR_FREE_AI"')));
+ assert.ok(f.calls.labels.some(c=>c.labels.includes('hh:repair-manual')));
 });

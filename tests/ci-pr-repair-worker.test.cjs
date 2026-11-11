@@ -4,6 +4,7 @@ const assert=require('node:assert/strict');
 const {eligible,safeFiles,claim,publish,finalize,finalizeFailedFix,prioritizedRepairCandidates,currentRepairHead,validBranch,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,verifiedCoreCodeFailure,MARKER}=require('../scripts/ci-pr-repair-worker.cjs');
 const {taskFor,commentBody,reservation,reservationStatus,externalOwnerLeaseStatus}=require('../scripts/ci-pr-task-state.cjs');
 const {stageLine,parseComment,timelineStages}=require('../scripts/ci-pr-stage-receipts.cjs');
+const {buildTaskOutcome,validateTaskOutcome}=require('../scripts/ci-pr-task-outcome.cjs');
 const sha='a'.repeat(40), newSha='b'.repeat(40), owner='andylitvinov-design', repo='books';
 const context={repo:{owner,repo}};
 const core={info:()=>{},outputs:{},setOutput(k,v){this.outputs[k]=v;}};
@@ -543,6 +544,25 @@ test('finalizer is idempotent for same signed exact-head run receipt',async()=>{
  assert.equal(result.status,'already_finalized');
  assert.equal(f.log.comments,0);
 });
+test('verified deterministic candidate plus failed GitHub publisher is NOT labeled as OpenRouter failure',async()=>{
+ const f=fixture();
+ const result=await finalize({github:f.github,core:outcomeCore,context:outcomeContext,
+  number:11,expectedSha:sha,taskKey:receiptKey,claimStatus:'claimed',
+  claimResult:'success',strategy:'code',fixResult:'success',codeAvailable:true,
+  codeResult:'skipped',candidateStatus:'ready',
+  candidateDetail:'VERIFIED_SOURCE_PATCH',
+  codeVerifyResult:'success',codeVerifyStatus:'ready',
+  publishResult:'failure'});
+ assert.equal(result.state,'FAILED');
+ assert.equal(result.source_published,false);
+ assert.equal(result.reason_code,'SOURCE_PUBLISH_JOB_FAILURE');
+ assert.equal(result.follow_up_task.category,'AUTOMATION_PROCESS');
+ assert.equal(result.follow_up_task.reason_code,'SOURCE_PUBLISH_JOB_FAILURE');
+ assert.equal(result.follow_up_task.strategy_code,'PUBLISHER_DIAGNOSTIC_HOLD');
+ assert.equal(result.follow_up_task.next_action,'CHECK_PUBLISH_TOKEN_QUOTA_PERMISSIONS_AND_EXACT_HEAD');
+ assert.equal(f.log.commit,0);
+});
+
 test('workflow guarantees a finalizer after code verification and publishing',()=>{
  const wf=require('node:fs').readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
  assert.match(wf,/  finalize:\n/);
@@ -765,23 +785,23 @@ test('free model is activated only after deterministic failure and never sees wr
  assert.match(pub,/HH_AUTOMERGE_TOKEN/);
  for(const isolated of [codeFix,codeVerify])assert.doesNotMatch(isolated,/HH_AUTOMERGE_TOKEN/);
 });
-test('Codex failures report NO source commit while unverified proposals cannot publish',async()=>{
+test('free-model failures report NO source commit while unverified proposals cannot publish',async()=>{
  const bot={user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
    performed_via_github_app:{id:15368,slug:'github-actions'}};
  const owned=commentBody({...taskFor(pr(),{tier:'P1'}),
    state:'CLAIMED',owner_run_id:String(outcomeContext.runId),task_key:receiptKey});
  for(const variant of [
-  {codeAvailable:true,codeResult:'failure',expected:'CODEX_JOB_FAILED_NO_SOURCE_COMMIT'},
+  {codeAvailable:true,codeResult:'failure',expected:'FREE_AI_JOB_FAILED_NO_SOURCE_COMMIT'},
   {codeAvailable:true,codeResult:'success',codeStatus:'proposed',
-    codeVerifyResult:'failure',expected:'CODEX_VERIFIER_JOB_FAILED_NO_SOURCE_COMMIT'},
+    codeVerifyResult:'failure',expected:'FREE_AI_VERIFIER_JOB_FAILED_NO_SOURCE_COMMIT'},
   {codeAvailable:true,codeResult:'success',codeStatus:'no_change',
-    expected:'CODEX_NO_VERIFIED_SOURCE_CHANGE'},
+    expected:'FREE_AI_NO_VERIFIED_SOURCE_CHANGE'},
   {codeAvailable:true,codeResult:'success',codeStatus:'proposed',
     codeVerifyResult:'success',codeVerifyStatus:'manual_required',
-    codeVerifyDetail:'CODEX_CANDIDATE_OUT_OF_SCOPE',expected:'CODEX_CANDIDATE_REJECTED'},
+    codeVerifyDetail:'FREE_AI_CANDIDATE_OUT_OF_SCOPE',expected:'FREE_AI_CANDIDATE_REJECTED'},
   {codeAvailable:true,codeResult:'success',codeStatus:'proposed',
     codeVerifyResult:'success',codeVerifyStatus:'ready',
-    expected:'CODEX_VERIFIED_BUT_NOT_PUBLISHED_SKIPPED'}
+    expected:'FREE_AI_VERIFIED_BUT_NOT_PUBLISHED_SKIPPED'}
  ]){
   const f=fixture({comments:[{...bot,body:'<!-- '+MARKER+' '+sha+' -->\n'+owned}]});
   const {expected,...props}=variant;
@@ -795,6 +815,38 @@ test('Codex failures report NO source commit while unverified proposals cannot p
   assert.notEqual(result.state,'PUBLISHED');
   assert.equal(f.log.commit,0);
  }
+});
+
+test('pre-model sensitive source failure preserves true root and a human source owner',async()=>{
+ const bot={user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+  performed_via_github_app:{id:15368,slug:'github-actions'}};
+ const claimed=commentBody({...taskFor(pr(),{tier:'P1'}),
+   state:'CLAIMED',owner_run_id:String(outcomeContext.runId),task_key:receiptKey});
+ const f=fixture({comments:[{...bot,body:'<!-- '+MARKER+' '+sha+' -->\\n'+claimed}]});
+ f.github.rest.actions={listJobsForWorkflowRun:async()=>({data:{jobs:[
+  {name:'publish',conclusion:'failure',steps:[
+    {name:'Finalize on publisher runner',conclusion:'failure'}]},
+  {name:'code_fix',conclusion:'failure',steps:[
+    {name:'Fail early on unsupported or sensitive free-model source scope',conclusion:'failure'}]}
+ ]}})};
+ const result=await finalize({github:f.github,core:outcomeCore,context:outcomeContext,
+  number:11,expectedSha:sha,taskKey:receiptKey,claimStatus:'claimed',
+  claimResult:'success',fixResult:'success',strategy:'code',
+  codeAvailable:true,codeResult:'failure',publishResult:'skipped',
+  candidateStatus:'manual_required',candidateDetail:'NO_AUTOFIXABLE_ESLINT_CHANGE'});
+ assert.equal(result.reason_code,'FREE_AI_JOB_FAILED_NO_SOURCE_COMMIT',
+  'existing monitor contract preserves the parent outcome');
+ assert.equal(result.failed_step,'Fail early on unsupported or sensitive free-model source scope');
+ assert.equal(result.detail_code,'FREE_AI_UNSAFE_SOURCE_SCOPE');
+ assert.equal(result.follow_up_task?.category,'SOURCE_CODE');
+ assert.equal(result.follow_up_task?.strategy_code,'MANUAL_SOURCE_SCOPE_REVIEW');
+ assert.equal(result.follow_up_task?.responsible_role,'source-repair-owner');
+ assert.equal(result.follow_up_task?.executor_kind,'owner_review');
+ assert.equal(result.follow_up_task?.next_action,'ASSIGN_OWNER_FOR_SENSITIVE_OR_UNSUPPORTED_SOURCE');
+ assert.equal(result.follow_up_task?.source_write_authorized,false);
+ assert.equal(result.source_published,false);
+ assert.equal(result.new_sha,null);
+ assert.equal(f.log.commit,0);
 });
 
 test('trusted Repair finalization fast paths preserve independent Codex verification',()=>{
@@ -817,7 +869,15 @@ test('trusted Repair finalization fast paths preserve independent Codex verifica
  assert.match(codeVerify,/permissions:\n      contents: read/);
  for(const untrusted of [fix,codeFix,codeVerify]) assert.doesNotMatch(untrusted,/HH_AUTOMERGE_TOKEN/);
  assert.match(pub,/HH_AUTOMERGE_TOKEN: \$\{\{ secrets\.HH_AUTOMERGE_TOKEN \}\}/);
- assert.doesNotMatch(pub,/contents: write/);
+ // Only the trusted publisher needs scoped contents:write after independent
+ // patch verification. Isolated untrusted jobs MUST stay read-only.
+ assert.match(pub,/permissions:\n      contents: write/);
+ assert.match(pub,/HH_REPAIR_JOB_TOKEN: \$\{\{ github\.token \}\}/);
+ assert.match(pub,/rateGuard\.chooseWriterMode/);
+ for(const untrusted of [claim,fix,codeFix,codeVerify]){
+  assert.doesNotMatch(untrusted,/contents: write/);
+  assert.doesNotMatch(untrusted,/HH_REPAIR_JOB_TOKEN/);
+ }
 });
 
 
@@ -1145,4 +1205,232 @@ test('read-only legacy finalization remains PREPARED and emits no-source deliver
  assert.equal(result.delivery_status,'READ_ONLY_PREFLIGHT_NO_SOURCE');
  assert.equal(result.next_action,'HANDOFF_EXISTING_SOURCE_OWNER');
  assert.equal(f.log.commit,0);
+});
+
+test('repair finalizer emits an owned FIXED receipt only for an exact published source commit',()=>{
+ const outcome=buildTaskOutcome({task_key:'1'.repeat(32),pr_number:11,
+  head_sha:sha,new_sha:newSha, state:'PUBLISHED',reason_code:'SOURCE_COMMIT_VERIFIED_ON_PR_HEAD',
+  source_published:true,head_matches:true,claim_status:'claimed',
+  owner_run_id:'12345',now:'2026-11-10T01:00:00.000Z'});
+ assert.equal(outcome.status,'FIXED');
+ assert.equal(outcome.verified_source,true);
+ assert.equal(outcome.next_action,'VERIFY_EXACT_HEAD_REQUIRED_CI');
+ assert.equal(outcome.responsible_role,'exact-head-ci-verifier');
+ assert.equal(validateTaskOutcome(outcome),true);
+});
+
+test('unverified or stale published claims cannot become FIXED',()=>{
+ for(const input of [
+  {source_published:false,head_matches:true},
+  {source_published:true,head_matches:false},
+  {source_published:true,head_matches:true,new_sha:sha}
+ ]){
+  assert.throws(()=>buildTaskOutcome({task_key:'1'.repeat(32),pr_number:11,
+   head_sha:sha,new_sha:input.new_sha||newSha,state:'PUBLISHED',
+   reason_code:'SOURCE_COMMIT_VERIFIED_ON_PR_HEAD',
+   source_published:input.source_published,head_matches:input.head_matches,
+   owner_run_id:'12345',now:'2026-11-10T01:00:00.000Z'}));
+ }
+});
+
+test('manual, rerouted, waiting and retry outcomes always have an owner and next check',()=>{
+ const now='2026-11-10T01:00:00.000Z';
+ const base={task_key:'2'.repeat(32),pr_number:11,head_sha:sha,
+  reason_code:'TEST_REASON',owner_run_id:'12345',now};
+ const cases=[
+  ['MANUAL','MANUAL_REQUIRED','repository-owner'],
+  ['SUPERSEDED','REROUTED','pr-head-reconciler'],
+  ['REJECTED','WAITING_INPUT','repository-owner'],
+  ['FAILED','REROUTED','agents-director-maintainer','unknown'],
+  ['FAILED','MANUAL_REQUIRED','repository-owner','claimed'],
+  ['PREPARED','REROUTED','source-repair-owner'],
+  ['UNKNOWN_STATE','UNCLASSIFIED','ci-diagnostic-triage']
+ ];
+ for(const [state,status,role,claim_status='unknown'] of cases){
+  const result=buildTaskOutcome({...base,state,claim_status});
+  assert.equal(result.status,status);
+  assert.equal(result.responsible_role,role);
+  assert.ok(result.next_action);
+  assert.ok(Number.isFinite(Date.parse(result.next_check_at)));
+  assert.equal(validateTaskOutcome(result),true);
+ }
+});
+
+test('retry receipt must have a future bounded timestamp and remains exact-head scoped',()=>{
+ const now='2026-11-10T01:00:00.000Z';
+ const result=buildTaskOutcome({task_key:'3'.repeat(32),pr_number:11,head_sha:sha,
+  state:'NO_CLAIM_RETRYABLE',reason_code:'NO_CLAIM_RETRYABLE',
+  owner_run_id:'12345',retry_after:'2026-11-10T01:15:00.000Z',now});
+ assert.equal(result.status,'RETRY_SCHEDULED');
+ assert.equal(result.next_check_at,'2026-11-10T01:15:00.000Z');
+ assert.throws(()=>buildTaskOutcome({task_key:'3'.repeat(32),pr_number:11,head_sha:sha,
+  state:'NO_CLAIM_RETRYABLE',reason_code:'NO_CLAIM_RETRYABLE',
+  owner_run_id:'12345',retry_after:'2026-11-10T00:59:00.000Z',now}));
+});
+
+test('outcome validation rejects terminal claims without independent source proof',()=>{
+ const valid=buildTaskOutcome({task_key:'4'.repeat(32),pr_number:11,head_sha:sha,
+  new_sha:newSha,state:'PUBLISHED',reason_code:'SOURCE_COMMIT_VERIFIED_ON_PR_HEAD',
+  source_published:true,head_matches:true,owner_run_id:'12345',
+  now:'2026-11-10T01:00:00.000Z'});
+ assert.equal(validateTaskOutcome(valid),true);
+ assert.equal(validateTaskOutcome({...valid,verified_source:false}),false);
+ assert.equal(validateTaskOutcome({...valid,next_action:''}),false);
+});
+
+
+test('free model audit preserves numeric GitHub Actions run IDs and rejects wrong PR/HEAD',()=>{
+ const {normalizeModelAudit}=require('../scripts/ci-pr-repair-worker.cjs');
+ const raw={schema:'HH_FREE_AI_MODEL_RUN_V1',provider:'openrouter',model:'cohere/north-mini-code:free',
+  model_version:'catalog-v1',catalog_model_created:1794260000,executor_type:'free_ci_patch_proposer',
+  pr_number:42,source_head:sha,run_id:'123456',run_attempt:1,started_at:'2026-11-09T00:00:00.000Z',
+  model_call_started_at:'2026-11-09T00:00:01.000Z',response_received_at:null,attempt_count:1,
+  result:'MODEL_CALL_FAILED_OR_OUTPUT_REJECTED',failure_reason:'FREE_AI_OPENROUTER_PATCH_RESPONSE_TRUNCATED',
+  patch_present:false,candidate_paths:[],verification_result:'NOT_RUN'};
+ const audit=normalizeModelAudit(raw,{number:42,expectedSha:sha,runId:123456,runAttempt:1});
+ assert.equal(audit.run_id,'123456');
+ assert.equal(normalizeModelAudit(raw,{number:43,expectedSha:sha,runId:123456,runAttempt:1}),null);
+ assert.equal(normalizeModelAudit({...raw,source_head:newSha},{number:42,expectedSha:sha,runId:123456,runAttempt:1}),null);
+ assert.equal(normalizeModelAudit(raw,{number:42,expectedSha:sha,runId:123457,runAttempt:1}),null,
+  'audit from a different workflow run must not be attached');
+ assert.equal(normalizeModelAudit(raw,{number:42,expectedSha:sha,runId:123456,runAttempt:2}),null,
+  'audit from a different rerun attempt must not be attached');
+});
+
+
+test('publisher and fallback finalizers pass the same-run free model audit with exact workflow attempt',()=>{
+ const fs=require('node:fs');
+ const source=fs.readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
+ assert.match(source,/HH_MODEL_AUDIT:\s*\$\{\{\s*needs\.code_fix\.outputs\.model_audit\s*\}\}/);
+ assert.match(source,/HH_WORKFLOW_ATTEMPT:\s*\$\{\{\s*github\.run_attempt\s*\}\}/);
+ assert.match(source,/modelAuditRaw:process\.env\.HH_MODEL_AUDIT/);
+ assert.match(source,/modelAuditRunAttempt:Number\(process\.env\.HH_WORKFLOW_ATTEMPT\|\|0\)/);
+});
+
+test('free-model prompt delivery receipt is accepted only for the exact signed task/run/attempt',()=>{
+ const {normalizeModelAudit}=require('../scripts/ci-pr-repair-worker.cjs');
+ const {promptReceipt}=require('../scripts/ci-pr-repair-free-agent.cjs');
+ const taskKey='1'.repeat(32);
+ const prompt=promptReceipt({sha,files:['components/public-card.tsx']},
+  'bounded prompt',{tests:{ok:false,detail:'redacted'}},
+  {taskKey,runId:'123456',runAttempt:1});
+ const raw={schema:'HH_FREE_AI_MODEL_RUN_V1',provider:'openrouter',
+   model:'cohere/north-mini-code:free',executor_type:'free_ci_patch_proposer',
+   pr_number:42,source_head:sha,run_id:'123456',run_attempt:1,
+   started_at:'2026-11-09T00:00:00.000Z',model_call_started_at:'2026-11-09T00:00:01.000Z',
+   response_received_at:'2026-11-09T00:00:02.000Z',attempt_count:1,
+   result:'MODEL_RESPONSE_RECEIVED',patch_present:false,candidate_paths:[],
+   verification_result:'NOT_RUN',prompt_receipt:prompt,
+   prompt_prepared_at:'2026-11-09T00:00:00.500Z',
+   prompt_delivery_status:'RESPONSE_OBSERVED'};
+ const expected={number:42,expectedSha:sha,runId:123456,runAttempt:1,taskKey};
+ const audit=normalizeModelAudit(raw,expected);
+ assert.equal(audit.prompt_receipt.prompt_id,prompt.prompt_id);
+ assert.equal(audit.prompt_receipt.context_hash,prompt.context_hash);
+ assert.equal(audit.prompt_delivery_status,'RESPONSE_OBSERVED');
+ assert.equal(normalizeModelAudit(raw,{...expected,taskKey:'2'.repeat(32)}),null);
+ assert.equal(normalizeModelAudit(raw,{...expected,runAttempt:2}),null);
+ assert.equal(normalizeModelAudit({...raw,prompt_receipt:{...prompt,context_hash:'bad'}},expected),null);
+ assert.equal(normalizeModelAudit({...raw,prompt_delivery_status:'RESPONSE_OBSERVED',
+   response_received_at:null},expected),null,
+  'a send attempt alone must never be recorded as a delivered response');
+ assert.equal(normalizeModelAudit({...raw,prompt_delivery_status:'ATTEMPTED_UNCONFIRMED',
+   response_received_at:null},expected).prompt_delivery_status,'ATTEMPTED_UNCONFIRMED');
+ assert.equal(normalizeModelAudit({...raw,prompt_delivery_status:'PREPARED'},expected),null,
+   'a started model call cannot be represented as only a prepared prompt');
+});
+test('repair workflow binds exact signed task key to isolated free proposer',()=>{
+ const wf=require('node:fs').readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
+ assert.match(wf,/REPAIR_TASK_KEY:\s*\$\{\{ needs\.claim\.outputs\.task_key \}\}/);
+});
+
+test('free-model publisher receipt is provider-neutral',()=>{
+ const fs=require('node:fs');
+ const source=fs.readFileSync(require.resolve('../scripts/ci-pr-repair-worker.cjs'),'utf8');
+ assert.equal(source.includes('free-model source repair'),true);
+ assert.equal(source.includes('free OpenCode/GLM source repair'),false);
+});
+
+test('verified dirty conflicts outrank manual legacy preflight and never enter source repair',()=>{
+ const conflicted=pr({mergeable:false,mergeable_state:'dirty',labels:[
+  {name:'hh:repair-manual'},
+  {name:'hh:conflict-repair-needed'},
+  {name:'hh:repair-needed'}
+ ]});
+ assert.equal(require('../scripts/ci-pr-task-state.cjs').validLegacyPrep(conflicted),true,
+  'fixture reproduces the legacy-preflight eligibility that previously masked the conflict');
+ const task=taskFor(conflicted,{tier:'P1',direction:'source'});
+ assert.equal(task.lane,'conflict');
+ assert.equal(task.reason_code,'merge-conflict');
+ assert.equal(task.next_action,'CONFLICT_TRIAGE');
+ assert.notEqual(task.next_action,'LEGACY_CLOUD_PREFLIGHT');
+});
+
+
+test('worker failure follow-up creates a specialist conflict task instead of UNKNOWN triage',()=>{
+ const {makeWorkerFollowUp,validTask}=require('../scripts/ci-pr-error-task.cjs');
+ const base={pr_number:3946,head_sha:sha,task_key:'a'.repeat(32),
+  owner_run_id:'42840000000',state:'MANUAL',
+  reason_code:'CONFLICT_REQUIRES_SOURCE_RESOLUTION',
+  now:Date.parse('2026-11-10T15:00:00.000Z')};
+ const first=makeWorkerFollowUp(base);
+ const repeated=makeWorkerFollowUp(base);
+ assert.equal(first.category,'MERGE_CONFLICT');
+ assert.equal(first.strategy_code,'SEMANTIC_CONFLICT_TRIAGE');
+ assert.equal(first.responsible_role,'semantic-conflict-resolver');
+ assert.equal(first.next_action,'ASSIGN_SEMANTIC_CONFLICT_OWNER');
+ assert.equal(first.recommended_status,'MANUAL_REQUIRED');
+ assert.equal(first.task_id,repeated.task_id,'same failed task/run remains idempotent');
+ assert.equal(first.source_write_authorized,false);
+ assert.equal(first.execution_authorized,false);
+ assert.equal(validTask(first),true);
+});
+
+test('worker failure follow-ups distinguish free-model failure from dispatch failure without authorizing retry',()=>{
+ const {makeWorkerFollowUp,validTask}=require('../scripts/ci-pr-error-task.cjs');
+ const common={pr_number:42,head_sha:sha,task_key:'b'.repeat(32),
+  owner_run_id:'42840000001',now:Date.parse('2026-11-10T15:00:00.000Z')};
+ const ai=makeWorkerFollowUp({...common,state:'FAILED',
+  reason_code:'FREE_AI_OPENROUTER_PATCH_RESPONSE_INVALID'});
+ const dispatch=makeWorkerFollowUp({...common,state:'REJECTED',
+  reason_code:'DISPATCH_RESERVATION_UNVERIFIED'});
+ assert.equal(ai.category,'AI_EXECUTOR');
+ assert.equal(ai.strategy_code,'FREE_PROVIDER_HOLD');
+ assert.equal(ai.recommended_status,'MANUAL_REQUIRED');
+ assert.equal(dispatch.category,'AUTOMATION_PROCESS');
+ assert.equal(dispatch.strategy_code,'RECOVER_EXISTING_TASK');
+ for(const task of [ai,dispatch]){
+  assert.equal(task.source_write_authorized,false);
+  assert.equal(task.execution_authorized,false);
+  assert.equal(validTask(task),true);
+ }
+});
+
+test('safe OpenRouter response-shape metadata survives task finalization without source leakage',()=>{
+ const {normalizeModelAudit}=require('../scripts/ci-pr-repair-worker.cjs');
+ const receipt={schema:'HH_OPENROUTER_RESPONSE_SHAPE_V1',
+  choices_count:1,finish_reason:'stop',content_type:'null',
+  content_parts:0,text_parts:0,reasoning_present:true,tool_calls_present:false,
+  raw_response:'SECRET_PRIVATE_MODEL_TEXT',untrusted_provider_key:'SECRET_PRIVATE_SOURCE'};
+ const raw={schema:'HH_FREE_AI_MODEL_RUN_V1',provider:'openrouter',
+  model:'cohere/north-mini-code:free',executor_type:'free_ci_patch_proposer',
+  pr_number:42,source_head:sha,run_id:'123456',run_attempt:1,
+  started_at:'2026-11-09T00:00:00.000Z',model_call_started_at:'2026-11-09T00:00:01.000Z',
+  response_received_at:'2026-11-09T00:00:02.000Z',attempt_count:1,
+  result:'MODEL_RESPONSE_RECEIVED',patch_present:false,candidate_paths:[],
+  verification_result:'NOT_RUN',response_shape:receipt};
+ const task={number:42,expectedSha:sha,runId:123456,runAttempt:1};
+ const normalized=normalizeModelAudit(raw,task);
+ assert.deepEqual(normalized.response_shape,{
+  schema:'HH_OPENROUTER_RESPONSE_SHAPE_V1',choices_count:1,
+  finish_reason:'stop',content_type:'null',content_parts:0,text_parts:0,
+  reasoning_present:true,tool_calls_present:false
+ });
+ assert.doesNotMatch(JSON.stringify(normalized),/SECRET_PRIVATE_MODEL_TEXT|SECRET_PRIVATE_SOURCE/);
+ assert.equal(normalizeModelAudit({...raw,response_shape:{...receipt,text_parts:2}},task).response_shape,null,
+  'invalid shape must not invalidate the full audit or become a trusted receipt');
+ assert.equal(normalizeModelAudit({...raw,response_shape:{...receipt,content_type:'SECRET_PRIVATE_SOURCE'}},task).response_shape,null);
+ assert.equal(normalizeModelAudit({...raw,provider:'opencode',
+  model:'opencode/glm-5.3-flash-free'},task).response_shape,null,
+  'OpenRouter response shape must not be attributed to another provider');
 });

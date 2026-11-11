@@ -2,7 +2,7 @@
 // Trusted non-privileged source-patch capture and independent verification.
 // Never execute this verifier in the Codex job as proof of publication: only
 // a fresh, read-only checkout can validate an untrusted artifact.
-const fs=require('node:fs'),cp=require('node:child_process'),path=require('node:path');
+const fs=require('node:fs'),cp=require('node:child_process'),path=require('node:path'),os=require('node:os');
 const {safeSourcePath}=require('./ci-pr-repair-free-agent.cjs');
 const SHA=/^[a-f0-9]{40}$/i;
 const SRC=/^(?!\/)(?!.*(?:^|\/)\.)(?!.*\.\.)(?:[A-Za-z0-9_()\[\].-]+\/)*[A-Za-z0-9_.-]+\.(?:js|jsx|ts|tsx|mjs|cjs)$/;
@@ -99,14 +99,20 @@ function capture(){
  // the monitor and owner; an empty proposal must never be a silent success.
  if(!result.files.length && fs.existsSync('.hh-free-agent-status')){
    const reason=fs.readFileSync('.hh-free-agent-status','utf8').trim();
-   if(/^FREE_AI_[A-Z0-9_]{5,90}$/.test(reason))result.detail_code=reason;
+   if(/^FREE_AI_[A-Z0-9_:-]{5,120}$/.test(reason))result.detail_code=reason;
  }
+ let modelAudit=null;
+ try{const raw=JSON.parse(fs.readFileSync(path.join(os.tmpdir(),'hh-free-ai-model-audit.json'),'utf8'));
+  if(raw?.schema==='HH_FREE_AI_MODEL_RUN_V1'&&raw.source_head===scope.sha&&raw.executor_type==='free_ci_patch_proposer'&&
+   ['openrouter','opencode'].includes(raw.provider))modelAudit=raw;}catch{}
+ if(modelAudit)result.model_audit=modelAudit;
  fs.writeFileSync('candidate-raw.json',JSON.stringify(result));
  const status=result.files.length?'proposed':'no_change';
  if(process.env.GITHUB_OUTPUT)fs.appendFileSync(process.env.GITHUB_OUTPUT,
-   'candidate_status='+status+'\n'+'candidate_detail='+result.detail_code+'\n');
- console.log('HH_FREE_AI_PATCH_CAPTURE '+JSON.stringify({status,
-   detail_code:result.detail_code,paths:result.files.map(f=>f.path)}));
+  'candidate_status='+status+'\n'+'candidate_detail='+result.detail_code+'\n'+'model_audit='+JSON.stringify(modelAudit||{})+'\n');
+ console.log('HH_FREE_AI_PATCH_CAPTURE '+JSON.stringify({status,detail_code:result.detail_code,
+  paths:result.files.map(f=>f.path),model_provider:modelAudit?.provider||null,model:modelAudit?.model||null,
+  model_attempts:modelAudit?.attempt_count??0}));
 }
 function verify(){
  const scope=sourceScope(),root=process.cwd();

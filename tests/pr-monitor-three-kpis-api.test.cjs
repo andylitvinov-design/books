@@ -45,8 +45,8 @@ test('normal GET uses existing archive only, with historical not fabricated',asy
   const res=fakeRes();await handler({method:'GET',query:{}},res);
   assert.equal(res.statusCode,200);
   assert.equal(res.payload.schema,model.SCHEMA);
-  assert.equal(res.payload.windows.two_weeks_ago.ci_first_pass.percent_observed,null);
-  assert.equal(res.payload.windows.two_weeks_ago.error_to_repair.mean_min,null);
+  assert.equal(res.payload.windows.week_ago.ci_first_pass.percent_observed,null);
+  assert.equal(res.payload.windows.week_ago.error_to_repair.mean_min,null);
   assert.equal(res.payload.windows.last_24h.error_to_repair.mean_min,null);
   assert.equal(res.payload.coverage.repair_read_budget,0);
   assert.equal(paths.length,1,'one GET only, no extra per-PR reads by default');

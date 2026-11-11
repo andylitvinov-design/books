@@ -7,6 +7,7 @@
 const SCHEMA='HH_PR_WAVE_EFFECTIVENESS_V1';
 const BASE='codex/public-book-library',HOUR=3600000,DAY=24*HOUR;
 const SHA=/^[0-9a-f]{40}$/i;
+const {window:alignedWindow}=require('./pr-three-kpi-model.cjs');
 const parsed=v=>{const x=Date.parse(v||'');return Number.isFinite(x)?x:null;};
 const id=n=>Number.isSafeInteger(n)&&n>0;
 const round=n=>Math.round(n*100)/100;
@@ -19,7 +20,8 @@ function quantiles(nums){
 function build(runs,pulls,now,{cohort_complete=false,pages=0,stale=false}={}){
  if(!Array.isArray(runs)||!Array.isArray(pulls)||!Number.isFinite(now)||
    runs.length>12000||pulls.length>600)throw Error('INVALID_EFFICIENCY_INPUT');
- const cutoff=now-2*DAY,group=new Map(),conflicted=new Set();
+ const currentWindow=alignedWindow(now,0),weeklyWindow=alignedWindow(now,7);
+ const cutoff=Date.parse(weeklyWindow.from),group=new Map(),conflicted=new Set();
  for(const p of pulls){
   const created=parsed(p?.created_at);
   if(!id(p?.number)||p?.base?.ref!==BASE||created===null||
@@ -104,8 +106,9 @@ function build(runs,pulls,now,{cohort_complete=false,pages=0,stale=false}={}){
   };
  }
  return {schema:SCHEMA,generated_at:new Date(now).toISOString(),
-  basis:'CREATED_PR_COHORTS_PRODUCTION_BASE; FIXED_24H_WINDOWS',
-  periods:{last_24h:period(now-DAY,now),previous_24h:period(now-2*DAY,now-DAY)},
+  basis:'CREATED_PR_COHORTS_PRODUCTION_BASE; MATCHED_TORONTO_24H_WINDOWS_7_DAYS_APART',
+  periods:{last_24h:period(Date.parse(currentWindow.from),Date.parse(currentWindow.to)),
+   week_ago:period(Date.parse(weeklyWindow.from),Date.parse(weeklyWindow.to))},
   coverage:{cohort_complete:cohort_complete===true,cohort_pages:pages,
    excluded_duplicate_prs:conflicted.size,stale:stale===true,
    core_history_complete:false,first_ever_wave_verified:false,

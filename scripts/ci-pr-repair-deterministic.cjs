@@ -114,6 +114,88 @@ function trustedRepairScope(env=process.env){
   throw Error('INVALID_TRUSTED_REPAIR_SCOPE');
  return {sha,files};
 }
+
+/** Restore a provably introduced one-line TS2304 error from protected
+ * production, never from model output or PR text. The verifier and publisher
+ * remain independent and every other case falls back to existing repairs. */
+function exactProtectedBaseTs2304Line({file,source,baseline,diagnostics}={}){
+ const {safeSourcePath}=require('./ci-pr-repair-free-agent.cjs');
+ const blocked=detail=>({changed:false,detail});
+ if(typeof file!=='string'||!/\.tsx?$/.test(file)||!safeSourcePath(file)||
+    typeof source!=='string'||typeof baseline!=='string'||typeof diagnostics!=='string')
+   return blocked('INVALID_SCOPE');
+ if(Buffer.byteLength(source)>MAX_BYTES||Buffer.byteLength(baseline)>MAX_BYTES||
+    !source.endsWith('\n')||!baseline.endsWith('\n')||
+    /[\r\0]/.test(source)||/[\r\0]/.test(baseline))
+   return blocked('INVALID_SOURCE_BYTES');
+ const errors=diagnostics.split(/\r?\n/).filter(s=>/: error TS\d{4}:/.test(s));
+ if(errors.length!==1)return blocked('MULTIPLE_OR_MISSING_COMPILER_ERRORS');
+ const escaped=file.split('').map(c=>/[a-zA-Z0-9_/]/.test(c)?c:'\\'+c).join('');
+ const linePattern='^'+escaped+
+   "\\((\\d+),(\\d+)\\): error TS2304: Cannot find name '([A-Za-z_$][\\w$]{0,79})'\\.$";
+ const m=new RegExp(linePattern).exec(errors[0]);
+ if(!m)return blocked('NOT_EXACT_TS2304');
+ const line=Number(m[1]),column=Number(m[2]),identifier=m[3];
+ if(!Number.isSafeInteger(line)||!Number.isSafeInteger(column)||line<1||column<1)
+   return blocked('INVALID_LINE_OR_COLUMN');
+ const curr=source.slice(0,-1).split('\n'),old=baseline.slice(0,-1).split('\n');
+ if(curr.length!==old.length||line>curr.length)return blocked('LINE_COUNTS_CHANGED');
+ let differences=0,changedLine=-1;
+ for(let i=0;i<curr.length;i++)if(curr[i]!==old[i]){differences++;changedLine=i;}
+ if(differences!==1||changedLine!==line-1)return blocked('NOT_UNIQUE_COMPILER_LINE_REGRESSION');
+ const bad=curr[line-1],good=old[line-1];
+ if(bad.slice(column-1,column-1+identifier.length)!==identifier||
+    good.includes(identifier)||bad.length>4000||good.length>4000)
+   return blocked('BAD_IDENTIFIER_OR_PROTECTED_LINE');
+ const patched=curr.slice();patched[line-1]=good;
+ return {changed:true,code:patched.join('\n')+'\n',line,column,
+   detail:'PROTECTED_BASE_EXACT_TS2304_LINE_RESTORED'};
+}
+function applyProtectedBaseTs2304Line(){
+ const {sha,files}=trustedRepairScope(),root=fs.realpathSync(process.cwd());
+ const diagnosticFile=path.join(root,'.hh-repair-tsc-errors.log');
+ if(files.length!==1||!/\.tsx?$/.test(files[0])||!fs.existsSync(diagnosticFile)){
+   console.log('HH_BASELINE_TS2304 '+JSON.stringify({changed:false,reason:'NO_SINGLE_SOURCE_ERROR'}));return;
+ }
+ const file=files[0],{safeSourcePath}=require('./ci-pr-repair-free-agent.cjs');
+ if(!safeSourcePath(file))throw Error('UNSAFE_PROTECTED_BASE_SCOPE');
+ const git=(args,timeout=12000)=>cp.spawnSync('git',args,{cwd:root,encoding:'utf8',
+   timeout,maxBuffer:512000,env:{PATH:process.env.PATH||'/usr/bin:/bin',
+     HOME:process.env.HOME||'/tmp',CI:'true',GIT_TERMINAL_PROMPT:'0'}});
+ const current=git(['rev-parse','HEAD']);
+ if(current.status!==0||current.stdout.trim()!==sha)throw Error('BASELINE_HEAD_STALE');
+ const abs=path.resolve(root,file);
+ if(!abs.startsWith(root+path.sep)||fs.realpathSync(abs)!==abs||!fs.lstatSync(abs).isFile())
+   throw Error('UNSAFE_PROTECTED_BASE_FILE');
+ if(git(['diff','--quiet','HEAD','--',file]).status!==0){
+   console.log('HH_BASELINE_TS2304 '+JSON.stringify({changed:false,reason:'SOURCE_ALREADY_EDITED'}));return;
+ }
+ const remote=git(['remote','get-url','origin']);
+ if(remote.status!==0||
+    !/^https:\/\/github\.com\/andylitvinov-design\/books(?:\.git)?\s*$/.test(remote.stdout)){
+   console.log('HH_BASELINE_TS2304 '+JSON.stringify({changed:false,reason:'UNTRUSTED_ORIGIN'}));return;
+ }
+ const fetched=git(['fetch','--quiet','--no-tags','--depth=1','origin','codex/public-book-library'],45000);
+ if(fetched.status!==0){
+   console.log('HH_BASELINE_TS2304 '+JSON.stringify({changed:false,reason:'BASELINE_FETCH_UNAVAILABLE'}));return;
+ }
+ const ref=git(['rev-parse','FETCH_HEAD']);
+ if(ref.status!==0||!SHA.test(ref.stdout.trim()))throw Error('BASELINE_SHA_INVALID');
+ const original=git(['show','FETCH_HEAD:'+file],16000);
+ if(original.status!==0){
+   console.log('HH_BASELINE_TS2304 '+JSON.stringify({changed:false,reason:'BASE_SOURCE_UNAVAILABLE'}));return;
+ }
+ const content=fs.readFileSync(abs,'utf8');
+ const decision=exactProtectedBaseTs2304Line({file,source:content,baseline:original.stdout,
+   diagnostics:fs.readFileSync(diagnosticFile,'utf8')});
+ if(decision.changed){
+   if(fs.readFileSync(abs,'utf8')!==content)throw Error('SOURCE_RACE_ABORT');
+   fs.writeFileSync(abs,decision.code,{mode:fs.statSync(abs).mode});
+ }
+ console.log('HH_BASELINE_TS2304 '+JSON.stringify({changed:decision.changed,detail:decision.detail,
+   line:decision.line||null,protected_sha:ref.stdout.trim()}));
+}
+
 function main(){
  const {sha,files}=trustedRepairScope();
  const root=fs.realpathSync(process.cwd());
@@ -142,5 +224,5 @@ function main(){
  }
  console.log('HH_DETERMINISTIC_REPAIR '+JSON.stringify({head_sha:sha,changed,skipped}));
 }
-if(require.main===module){try{main()}catch(error){console.error('HH_DETERMINISTIC_REPAIR_BLOCKED '+error.message);process.exitCode=1;}}
-module.exports={repairTypeOnlyImports,typeOnlyReference,exclusivelyTypeReferenced,trustedRepairScope};
+if(require.main===module){try{process.argv[2]==='base-line'?applyProtectedBaseTs2304Line():main();}catch(error){console.error('HH_DETERMINISTIC_REPAIR_BLOCKED '+error.message);process.exitCode=1;}}
+module.exports={repairTypeOnlyImports,typeOnlyReference,exclusivelyTypeReferenced,trustedRepairScope,exactProtectedBaseTs2304Line};

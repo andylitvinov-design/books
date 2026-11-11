@@ -3,6 +3,7 @@ const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const {confirmedCoreEvent,run}=require('../scripts/ci-pr-event-handoff.cjs');
+const {coreErrorTaskId}=require('../scripts/ci-pr-error-task.cjs');
 const {PATHS,isTrustedQualityFailureEvent,qualityEventMatchesPR}=require('../scripts/ci-pr-quality-event.cjs');
 const event=()=>({
  repo:{owner:'andylitvinov-design',repo:'books'},
@@ -83,15 +84,45 @@ test('event verifies causal source failure, then dispatches only verified PR in 
  const evidence={eventPrNumber:3162,verifiedSourceFailures:1,conflictLabelsQueued:0,verifiedPrSnapshot:snapshot};
  const result=await run({context:event(),github:{},core:{},
   reconcileRun:async args=>{calls.push(['reconcile',args]);return evidence;},
-  dispatchRun:async args=>{calls.push(['dispatch',args]);return {dispatchAccepted:1,reason:'DISPATCH_ACCEPTED'};}
+  dispatchRun:async args=>{calls.push(['dispatch',args]);return {
+   dispatchAccepted:1,reason:'DISPATCH_ACCEPTED',
+   workerRuns:[{pr_number:3162,head_sha:'a'.repeat(40),lane:'repair',
+    outcome:'DISPATCH_ACCEPTED',acceptanceReceiptPersisted:true,
+    executor_id:'github-actions:hh-pr-repair-worker.yml',task_key:'b'.repeat(32),
+    error_task_id:coreErrorTaskId(3162,'a'.repeat(40),100,1)}]
+  };}
  });
  assert.equal(result.outcome,'DISPATCH_ACCEPTED');
  assert.equal(result.dispatchAccepted,1);
+ assert.equal(result.dispatchAcknowledged,true);
+ assert.equal(result.executorId,'github-actions:hh-pr-repair-worker.yml');
+ assert.equal(result.workerTaskKey,'b'.repeat(32));
+ assert.equal(result.errorTaskId,coreErrorTaskId(3162,'a'.repeat(40),100,1));
  assert.equal(calls.length,2);
  assert.equal(calls[0][1].eventFastPath,true);
  assert.equal(calls[0][1].hasMergeToken,false);
  assert.equal(calls[1][1].focusPrNumber,3162);
  assert.equal(calls[1][1].focusPrSnapshot,snapshot,'dispatcher reuses the verified Watchdog snapshot');
+});
+test('aggregate dispatches, foreign PR heads and unpersisted ACK never prove task delivery',async()=>{
+ const evidence={eventPrNumber:3162,verifiedSourceFailures:1,
+   verifiedPrSnapshot:{number:3162,head:{ref:'codex/pr-source',sha:'a'.repeat(40)}}};
+ for(const other of [
+  {pr_number:9999,head_sha:'a'.repeat(40),acceptanceReceiptPersisted:true},
+  {pr_number:3162,head_sha:'c'.repeat(40),acceptanceReceiptPersisted:true},
+  {pr_number:3162,head_sha:'a'.repeat(40),acceptanceReceiptPersisted:false},
+  {pr_number:3162,head_sha:'a'.repeat(40),acceptanceReceiptPersisted:true,
+    error_task_id:'c'.repeat(32)}
+ ]){
+  const r=await run({context:event(),github:{},core:{},reconcileRun:async()=>evidence,
+   dispatchRun:async()=>({dispatchAccepted:1,reason:'DISPATCH_ACCEPTED',
+    workerRuns:[{lane:'repair',task_key:'b'.repeat(32),
+      executor_id:'github-actions:hh-pr-repair-worker.yml',outcome:'DISPATCH_ACCEPTED',
+      error_task_id:coreErrorTaskId(3162,'a'.repeat(40),100,1),...other}]})});
+  assert.equal(r.dispatchAccepted,0);
+  assert.equal(r.dispatchAcknowledged,false);
+  assert.equal(r.outcome,'DISPATCH_ACCEPTANCE_UNVERIFIED');
+ }
 });
 test('no speculative dispatch for policy, incomplete evidence or stale association',async()=>{
  for(const evidence of [
@@ -108,7 +139,7 @@ test('no speculative dispatch for policy, incomplete evidence or stale associati
   assert.notEqual(r.outcome,'DISPATCH_ACCEPTED');
  }
 });
-test('cron remains independent while failed Core uses a separate trusted event runner and same lease',()=>{
+test('cron remains independent while failed Core handoffs isolate pending branches under exact-HEAD leases',()=>{
  const yaml=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
  const direct=fs.readFileSync('.github/workflows/hh-pr-direct-core-failure.yml','utf8');
  const contract=fs.readFileSync('.github/workflows/hh-pr-watchdog-contract-ci.yml','utf8');
@@ -117,7 +148,9 @@ test('cron remains independent while failed Core uses a separate trusted event r
  assert.ok(!yaml.includes("      - 'HH PR core release gate'"));
  assert.ok(direct.includes("      - 'HH PR core release gate'"));
  assert.ok(direct.includes("types: [completed]"));
- assert.ok(direct.includes("group: hh-control-tower-single-writer"));
+ assert.ok(direct.includes("group: hh-direct-core-pr-"));
+ assert.ok(direct.includes("github.event.workflow_run.head_branch"));
+ assert.ok(!direct.includes("group: hh-control-tower-single-writer"));
  assert.ok(direct.includes("ci-pr-event-handoff.cjs"));
  assert.ok(direct.includes("HH_DIRECT_CORE_HANDOFF"));
  assert.ok(yaml.includes("group: hh-control-tower-single-writer"));

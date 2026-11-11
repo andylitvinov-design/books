@@ -4,8 +4,9 @@ import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
 const src=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
-test('standalone root is Commander; existing PR monitor remains available under a route',()=>{
- assert.match(src('index.html'),/data-view="home"/);
+test('standalone root opens PR monitor; briefing retained on own route',()=>{
+ assert.match(src('index.html'),/url=\/pr-monitor\.html/);
+ assert.match(src('briefing.html'),/data-view="home"/);
  assert.match(src('pr-monitor.html'),/pr-two-screen-boot\.js/);
  assert.doesNotMatch(src('index.html'),/pr-two-screen-boot\.js/);
 });
@@ -18,7 +19,7 @@ test('one seven-action dock is loaded for public Commander and PM views',()=>{
  assert.match(css,/grid-template-columns:repeat\(7,minmax\(0,1fr\)\)/);
  assert.match(css,/\.hh-cc-add\{width:clamp\(44px,11\.5vw,51px\)/);
  assert.match(css,/#hh-cc-dock\{position:fixed/);
- for(const [page,view]of [['index.html','home'],['agents.html','agents'],['projects.html','projects']]){
+ for(const [page,view]of [['briefing.html','home'],['agents.html','agents'],['projects.html','projects']]){
   assert.match(src(page),new RegExp('data-view="'+view+'"'));
   assert.match(src(page),/project-management-nav\.js/);
  }

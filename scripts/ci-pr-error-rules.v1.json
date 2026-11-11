@@ -1,0 +1,178 @@
+{
+  "schema": "HH_CI_ERROR_RULESET_V1",
+  "version": "1.1.0",
+  "precedence": [
+    "SECURITY",
+    "ACCESS_CONFIG",
+    "MERGE_CONFLICT",
+    "BASE_ADVANCED",
+    "BASE_OR_CI_ROUTING",
+    "INFRASTRUCTURE",
+    "AUTOMATION_PROCESS",
+    "AI_EXECUTOR",
+    "INTEGRATION",
+    "TYPESCRIPT",
+    "TEST_FAILURE",
+    "SOURCE_CODE",
+    "UNKNOWN"
+  ],
+  "invariant": "Classification is diagnostic only. It never grants execution, source-write, retry, merge, deployment, secret, or lease authority.",
+  "categories": {
+    "SECURITY": {
+      "reason_code": "SECURITY_GATE_FAILURE",
+      "action": "Hold source-changing automation; preserve evidence and require security owner review.",
+      "recommended_status": "MANUAL_REQUIRED",
+      "responsible_role": "security-owner",
+      "requires_human": true,
+      "retry": {
+        "allowed": false,
+        "max_attempts": 0,
+        "condition": "Never retry or bypass a failed security gate."
+      }
+    },
+    "ACCESS_CONFIG": {
+      "reason_code": "ACCESS_OR_CONFIGURATION_FAILURE",
+      "action": "Create a concrete owner action for the missing credential, permission, or environment setting; do not repeat unchanged workflow attempts.",
+      "recommended_status": "WAITING_INPUT",
+      "responsible_role": "repository-owner",
+      "requires_human": true,
+      "retry": {
+        "allowed": false,
+        "max_attempts": 0,
+        "condition": "Retry only after a verified configuration/permission change."
+      }
+    },
+    "MERGE_CONFLICT": {
+      "reason_code": "LIVE_PR_IS_DIRTY",
+      "action": "Route to semantic conflict resolution with exact base/head/diff; never apply blanket ours/theirs.",
+      "recommended_status": "MANUAL_REQUIRED",
+      "responsible_role": "semantic-conflict-resolver",
+      "requires_human": true,
+      "retry": {
+        "allowed": false,
+        "max_attempts": 0,
+        "condition": "No retry until a validated conflict-resolution patch is available."
+      }
+    },
+    "BASE_ADVANCED": {
+      "reason_code": "EXPLICIT_BASE_FAILURE",
+      "action": "Refresh live base/head and select protected rebase or synchronization path; preserve exact-head evidence.",
+      "recommended_status": "REROUTED",
+      "responsible_role": "base-synchronization-worker",
+      "requires_human": false,
+      "retry": {
+        "allowed": true,
+        "max_attempts": 1,
+        "condition": "Only after an explicit fresh-base check and single-writer lease."
+      }
+    },
+    "BASE_OR_CI_ROUTING": {
+      "reason_code": "TRUSTED_PREFLIGHT_ROUTING_FAILURE",
+      "action": "Diagnose workflow ownership, exact-head routing, and missing required checks; do not authorize a source edit.",
+      "recommended_status": "REROUTED",
+      "responsible_role": "ci-routing-owner",
+      "requires_human": false,
+      "retry": {
+        "allowed": true,
+        "max_attempts": 1,
+        "condition": "Only after the routing inputs or target state changed."
+      }
+    },
+    "INFRASTRUCTURE": {
+      "reason_code": "INFRASTRUCTURE_FAILURE",
+      "action": "Separate transient runner/service failure from persistent infrastructure configuration; retry only transient failures with bounded backoff.",
+      "recommended_status": "RETRY_SCHEDULED",
+      "responsible_role": "ci-infrastructure-owner",
+      "requires_human": false,
+      "retry": {
+        "allowed": true,
+        "max_attempts": 2,
+        "condition": "Transient timeout/startup/5xx only; same exact HEAD; no quota or permission retry; stop if the next attempt is identical."
+      }
+    },
+    "AUTOMATION_PROCESS": {
+      "reason_code": "AUTOMATION_HANDOFF_FAILURE",
+      "action": "Recover the existing task by idempotency key; inspect prompt receipt, assignment, lease, context, worker receipt, and finalizer before dispatching once.",
+      "recommended_status": "REROUTED",
+      "responsible_role": "agents-director-maintainer",
+      "requires_human": false,
+      "retry": {
+        "allowed": true,
+        "max_attempts": 1,
+        "condition": "Only after proving no active owner and no prior successful side effect."
+      }
+    },
+    "AI_EXECUTOR": {
+      "reason_code": "AI_EXECUTOR_OR_MODEL_FAILURE",
+      "action": "Preserve prompt/model/response metadata with redaction; validate free-model price and identity, then use one eligible zero-cost alternate or a deterministic tool.",
+      "recommended_status": "REROUTED",
+      "responsible_role": "free-executor-router",
+      "requires_human": false,
+      "retry": {
+        "allowed": true,
+        "max_attempts": 2,
+        "condition": "No retry on quota/provider rejection; each alternate must be independently verified $0; reject invalid patches."
+      }
+    },
+    "INTEGRATION": {
+      "reason_code": "INTEGRATION_FAILURE",
+      "action": "Route to the owner of the named API/provider; capture request correlation and redacted response metadata; keep access failures in ACCESS_CONFIG.",
+      "recommended_status": "REROUTED",
+      "responsible_role": "integration-owner",
+      "requires_human": false,
+      "retry": {
+        "allowed": true,
+        "max_attempts": 1,
+        "condition": "Only idempotent reads or after provider/config state changes; never replay non-idempotent writes."
+      }
+    },
+    "TYPESCRIPT": {
+      "reason_code": "FAILED_TYPESCRIPT_STEP",
+      "action": "Create a bounded source-repair task from exact failed step, changed paths, PR and HEAD; independent verification is mandatory.",
+      "recommended_status": "REROUTED",
+      "responsible_role": "free-code-repair-worker",
+      "requires_human": false,
+      "retry": {
+        "allowed": true,
+        "max_attempts": 2,
+        "condition": "One active worker per PR+HEAD; change strategy after a failed candidate; never rerun CI without a new verified source SHA."
+      }
+    },
+    "TEST_FAILURE": {
+      "reason_code": "FAILED_TEST_STEP_REQUIRES_TRIAGE",
+      "action": "Determine whether product code, fixture, environment, or the test oracle is wrong; retain regression coverage and never edit tests merely to obtain green CI.",
+      "recommended_status": "REROUTED",
+      "responsible_role": "test-triage-agent",
+      "requires_human": false,
+      "retry": {
+        "allowed": true,
+        "max_attempts": 1,
+        "condition": "Only after a concrete diagnosis or an independently justified transient/flaky-test reproduction."
+      }
+    },
+    "SOURCE_CODE": {
+      "reason_code": "SOURCE_BUILD_OR_LINT_FAILURE",
+      "action": "Use deterministic formatting/lint tools where safe; otherwise send exact changed files and failure evidence to a zero-cost code executor.",
+      "recommended_status": "REROUTED",
+      "responsible_role": "free-code-repair-worker",
+      "requires_human": false,
+      "retry": {
+        "allowed": true,
+        "max_attempts": 2,
+        "condition": "One active worker per PR+HEAD; independent patch verification; no blind repeat."
+      }
+    },
+    "UNKNOWN": {
+      "reason_code": "UNCLASSIFIED_FAILURE",
+      "action": "Retain evidence and send to bounded secondary diagnostics; if confidence stays low, require a named human owner and next action.",
+      "recommended_status": "UNCLASSIFIED",
+      "responsible_role": "ci-diagnostic-triage",
+      "requires_human": true,
+      "retry": {
+        "allowed": false,
+        "max_attempts": 0,
+        "condition": "No automatic execution until cause and action are established."
+      }
+    }
+  }
+}

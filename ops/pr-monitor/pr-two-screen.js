@@ -354,8 +354,11 @@
       ['Среднее runs / PR','mean_runs_per_pr',''],['Интервалов между waves','intervals','шт'],
       ['Переходов на новый HEAD','new_head','шт'],['Повторов на том же HEAD','same_head','шт'],
       ['HEAD не подтверждён','unverified_head','шт'],
-      ['Пауза после failed Core','after_failed','шт'],
-      ['Пауза после successful Core','after_success','шт'],
+      ['Пауза после failed workflow','after_workflow_failure','шт'],
+      ['После failed Core job','after_core_failure','шт'],
+      ['После failed Specialist job','after_specialist_failure','шт'],
+      ['После failed Merge Gate','after_merge_gate_failure','шт'],
+      ['После successful workflow','after_success','шт'],
       ['Сумма пауз','gap_total_minutes','мин'],['P50 паузы','gap_p50_minutes','мин'],
       ['P95 паузы','gap_p95_minutes','мин']
     ];
@@ -367,18 +370,23 @@
       });
       waveCompareMount.append(row);
     });
-    waveCompareMount.append(make('p','hh2-meta','Одинаковые окна по 24 ч. Охват наблюдаемых PR: '+
+    waveCompareMount.append(make('p','hh2-meta','Одинаковые окна по 24 ч. Охват архивной когорты: '+
       ['current','week_ago','two_weeks_ago'].map(function(id){
         var p=byId[id];return (p?.label||id)+' '+(p?.wave_summary?.observed_prs??'—')+
           '/'+(p?.coverage?.archived_prs??'—');
-      }).join(' · ')+'. Архив неполный. Новый HEAD не доказывает, кто и почему задержал публикацию.'));
+      }).join(' · ')+'. Паузы обрезаны по границам окна: предшествующее время за его пределами не включается. Архив неполный. Новый HEAD не доказывает, кто и почему задержал публикацию.'));
+    // Do not overwrite stages.ci_gaps.current: it belongs to the Created→Merged
+    // cohort rendered above. This comparison has a separate archive cohort
+    // (PR selected by last observed Core completion) and is diagnostic only.
     var s=stages.ci_gaps;
-    [['current','current'],['week_ago','week'],['two_weeks_ago','history']].forEach(function(pair){
+    s.current.title='Основное значение выше рассчитано по той же Created→Merged когорте и не заменяется архивной выборкой waves.';
+    [['week_ago','week'],['two_weeks_ago','history']].forEach(function(pair){
       var p=byId[pair[0]],v=p?.wave_summary?.gap_mean_minutes_per_pr;
       s[pair[1]].textContent=typeof v==='number'?duration(v):'—';
-      s[pair[1]].title=p?'Паузы между waves в окне '+(p.period?.from||'—')+
-        ' → '+(p.period?.to||'—')+'; PR cohort n='+p.wave_summary.observed_prs+
-        '. Неизвестное не считается нулём.':'Нет данных';
+      s[pair[1]].title=p?'Архивная диагностическая когорта; окно '+(p.period?.from||'—')+
+        ' → '+(p.period?.to||'—')+'; PR n='+p.wave_summary.observed_prs+
+        '/'+(p.coverage?.archived_prs??'—')+
+        '. Паузы обрезаны до выбранного окна; значение не складывается с Created→Merged.':'Нет данных';
     });
   }
   function applyJourneyComparison() {
@@ -517,10 +525,13 @@
       root.classList.add('hh2-stage-only');
       root.append(two);
       const main=document.querySelector('main.wrap')||document.querySelector('main');
-      const after=main?.querySelector('#diagnostics-mount')||main?.querySelector('.throughput');
-      if(after)after.insertAdjacentElement('afterend',root);
-      else if(main)main.append(root);
-      else document.body.append(root);
+      // Preserve the owner error funnel as the first block. Stage timings
+      // belong at the very top of monitoring, before the legacy queue/chart.
+      // If the funnel loads later, it prepends itself ahead of these timings.
+      const funnel=main?.querySelector('#hh-pr-error-funnel');
+      if(funnel)funnel.insertAdjacentElement('afterend',root);
+      else if(main)main.insertBefore(root,main.querySelector('header.header')||main.firstChild);
+      else document.body.prepend(root);
       // The original queue/KPI screen stays in place. Only the stage slide is added.
     }else{
       root.append(one,two);

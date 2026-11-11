@@ -1,0 +1,54 @@
+/* HH_PR_COMPACT_TOP_V1 — one compact live PR scorecard, all other panels intact. */
+#hh-pr-merge-speed.hh-compact-pr-top {
+  box-sizing:border-box; display:grid; gap:7px; min-width:0;
+  margin:0 0 10px!important; padding:10px!important;
+  border:1px solid #405a76!important; border-radius:14px;
+  background:#13263e; color:#e7f2ff;
+}
+#hh-pr-merge-speed.hh-compact-pr-top > h3 {
+  margin:0!important; padding:0!important; font-size:16px!important; line-height:1.15;
+}
+#hh-pr-merge-speed.hh-compact-pr-top .hh-pr-speed-ranges {
+  display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;
+  margin:0!important;padding:0!important;justify-content:stretch!important;
+}
+#hh-pr-merge-speed.hh-compact-pr-top .hh-pr-speed-ranges button {
+  box-sizing:border-box;min-width:0;max-width:none!important;min-height:35px!important;
+  padding:5px 3px!important; border-radius:9px!important; font-size:12px!important;
+}
+#hh-pr-merge-speed.hh-compact-pr-top .hh-pr-speed-grid {
+  display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:5px!important;
+}
+#hh-pr-merge-speed.hh-compact-pr-top .hh-pr-speed-grid > .hh-pr-speed-card {
+  box-sizing:border-box;min-width:0;min-height:63px!important;
+  padding:8px 3px 7px!important;gap:4px!important;border-radius:10px!important;
+}
+#hh-pr-merge-speed.hh-compact-pr-top .hh-pr-speed-grid > .hh-pr-speed-card strong {
+  font-size:clamp(18px,5.5vw,28px)!important;font-variant-numeric:tabular-nums;
+  line-height:1.1;white-space:nowrap;
+}
+#hh-pr-merge-speed.hh-compact-pr-top .hh-pr-speed-grid > .hh-pr-speed-card span {
+  font-size:clamp(9px,2.5vw,12px)!important;line-height:1.15;
+}
+#hh-pr-merge-speed.hh-compact-pr-top .hh-compact-pr-open strong {color:#b6a0ff!important}
+#hh-pr-merge-speed.hh-compact-pr-top .hh-compact-pr-median {
+  box-sizing:border-box;min-height:0!important;padding:1px 3px!important;
+  display:flex!important;flex-direction:row!important;justify-content:flex-start;
+  gap:8px!important;border:0!important;background:transparent!important;text-align:left!important;
+  align-items:center!important;
+}
+#hh-pr-merge-speed.hh-compact-pr-top .hh-compact-pr-median strong {
+  color:#ffc782;font-size:14px!important;white-space:nowrap;
+}
+#hh-pr-merge-speed.hh-compact-pr-top .hh-compact-pr-median span {
+  color:#a9bdd3;font-size:11px!important;
+}
+#hh-pr-merge-speed.hh-compact-pr-top .hh-pr-speed-hint,
+#hh-pr-merge-speed.hh-compact-pr-top .hh-pr-speed-meta,
+#hh-pr-merge-speed.hh-compact-pr-top .hh-pr-speed-description {display:none!important}
+@media(max-width:359px) {
+  #hh-pr-merge-speed.hh-compact-pr-top {padding:8px!important;gap:5px}
+  #hh-pr-merge-speed.hh-compact-pr-top .hh-pr-speed-grid {gap:4px!important}
+  #hh-pr-merge-speed.hh-compact-pr-top .hh-pr-speed-grid > .hh-pr-speed-card {padding:6px 2px!important}
+  #hh-pr-merge-speed.hh-compact-pr-top .hh-pr-speed-grid > .hh-pr-speed-card strong {font-size:19px!important}
+}

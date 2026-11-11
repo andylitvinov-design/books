@@ -240,7 +240,7 @@ function repairSample(candidates,proofs,w,checked) {
     rows:rows.slice(0,20).map(x=>({...x,minutes:round(x.minutes)}))};
 }
 function report(runs,now,{partialArchive=true,repairProofs={},repairChecked=0,mergeProofs=[]}={}) {
-  const windows={last_24h:window(now,0),two_weeks_ago:window(now,14)};
+  const windows={last_24h:window(now,0),week_ago:window(now,7)};
   const obj={};
   for(const [key,w] of Object.entries(windows)){
     const candidates=errors(runs,w,now);
@@ -252,6 +252,12 @@ function report(runs,now,{partialArchive=true,repairProofs={},repairChecked=0,me
       candidate_errors:candidates.length};
   }
   const earliest=runs.map(r=>ts(r.queued_at)).filter(Number.isFinite).sort((a,b)=>a-b)[0];
+  const weekly=windows.week_ago,lower=ts(weekly.from),upper=ts(weekly.to);
+  const observed=runs.filter(r=>{const at=ts(r.completed_at);return at!==null&&at>lower&&at<=upper;}).length;
+  const status=earliest===undefined||earliest>upper?'NO_ARCHIVED_CORE_COVERAGE':
+    earliest>lower?'PARTIAL_ARCHIVE_START':observed?'SAVED_EVENTS_PRESENT':'NO_SAVED_EVENTS_IN_WEEK';
+  const weekly_coverage={status,observed_core_runs:observed,history_complete:false,
+    missing_is_not_zero:true,period:weekly};
   return {schema:SCHEMA,generated_at:new Date(now).toISOString(),
     basis:'EXACT_EVENT_COMPLETION_IN_EACH_24H_WINDOW',
     source_archive:'https://github.com/'+HOST+'/issues/3419',
@@ -260,7 +266,7 @@ function report(runs,now,{partialArchive=true,repairProofs={},repairChecked=0,me
     earliest_archived_core_at:earliest===undefined?null:new Date(earliest).toISOString(),
     historic_context:'https://github.com/'+HOST+'/issues/3394',
     historical_notice:'Cohort 20–21 Oct has no attributable Core CI in #3394. It is a different clock window; do not substitute its totals for these KPI values.',
-    windows:obj};
+    windows:obj,weekly_coverage};
 }
 module.exports={SCHEMA,window,parseShards,firstPass,gateToMerge,verifyMergeProof,errors,
   parseRepairReceipts,repairSample,report,summarize,runOutcome,REQUIRED};

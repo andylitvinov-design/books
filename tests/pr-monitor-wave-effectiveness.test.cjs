@@ -15,14 +15,14 @@ function run(pr,runId,h,head=SHA_A,{attempt=1,conclusion='success'}={}){
   queued_at:at(h),completed_at:at(h-.01),conclusion,
   workflow_url:'https://github.com/andylitvinov-design/books/actions/runs/'+runId};
 }
-test('two adjacent 24h creation cohorts; merged P50/P90 stay right-censored',()=>{
+test('two matched week-apart 24h cohorts; merged P50/P90 stay right-censored',()=>{
  const prs=[pull(1,4,{merged:true}),pull(2,10,{merged:true}),
-  pull(3,12),pull(4,27,{merged:true}),pull(5,39)];
- const r=model.build([run(1,101,3),run(2,102,9),run(4,104,26)],
+  pull(3,12),pull(4,171,{merged:true}),pull(5,183)];
+ const r=model.build([run(1,101,3),run(2,102,9),run(4,104,170)],
   prs,NOW,{cohort_complete:true,pages:1});
  assert.equal(r.schema,'HH_PR_WAVE_EFFECTIVENESS_V1');
  assert.equal(r.periods.last_24h.created_prs,3);
- assert.equal(r.periods.previous_24h.created_prs,2);
+ assert.equal(r.periods.week_ago.created_prs,2);
  assert.equal(r.periods.last_24h.ci_archived_prs,2);
  assert.equal(r.periods.last_24h.one_observed_wave_prs,2);
  assert.equal(r.periods.last_24h.observed_one_wave_percent,100);
@@ -58,7 +58,7 @@ test('do not misattribute later HEAD to confirmed source repair',()=>{
  assert.ok(r.notes.some(s=>s.includes('not confirmed Repair')));
 });
 test('exclude wrong production base, unrelated PR, missing Core and contradictory run IDs',()=>{
- const prs=[pull(1,5),pull(2,4,{base:'codex/bootstrap-books'}),pull(3,30)];
+ const prs=[pull(1,5),pull(2,4,{base:'codex/bootstrap-books'}),pull(3,171)];
  const runs=[run(1,101,4,SHA_A),run(1,101,3,SHA_B),
   run(2,102,3),run(999,104,3)];
  const r=model.build(runs,prs,NOW);
@@ -66,7 +66,7 @@ test('exclude wrong production base, unrelated PR, missing Core and contradictor
  assert.equal(r.periods.last_24h.ci_archived_prs,0,
   'contradictory archive cannot be reported as verified one-wave');
  assert.equal(r.periods.last_24h.observed_one_wave_percent,null);
- assert.equal(r.periods.previous_24h.ci_missing_prs,1);
+ assert.equal(r.periods.week_ago.ci_missing_prs,1);
 });
 test('no merged timestamp or wrong merge SHA yields unknown merge clock',()=>{
  const a=pull(1,8,{merged:true});
@@ -81,7 +81,7 @@ test('no merged timestamp or wrong merge SHA yields unknown merge clock',()=>{
 test('API optional cohort has bounded cached reads and no CI writes',async()=>{
  const source=fs.readFileSync(path.join(__dirname,'../ops/pr-monitor/api/pr-three-kpis.js'),'utf8');
  const ui=fs.readFileSync(path.join(__dirname,'../ops/pr-monitor/pr-three-kpi-ui.js'),'utf8');
- assert.match(source,/MAX_COHORT_PAGES=4/);
+ assert.match(source,/MAX_COHORT_PAGES=9/);
  assert.match(source,/req\.query\?\.efficiency==='1'/);
  assert.match(ui,/HH_PR_WAVE_EFFECTIVENESS_V1/);
  assert.match(ui,/efficiency=1/);

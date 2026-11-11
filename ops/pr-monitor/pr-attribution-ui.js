@@ -149,6 +149,63 @@
     result.append(section);
   }
 
+  function renderTaskOutcomes(rows){
+    if(!Array.isArray(rows)||!rows.length)return;
+    const section=elt('details','hh-pr-audit-events hh-pr-audit-repair');
+    section.append(elt('summary',null,'Результаты Repair Worker · '+rows.length+
+      ' подписанных решений'));
+    const labels={
+      FIXED:'Исправление опубликовано · CI ещё проверяется',
+      VERIFIED:'Исправление и required CI подтверждены',
+      RETRY_SCHEDULED:'Назначена ограниченная повторная попытка',
+      REROUTED:'Передано другому исполнителю',
+      WAITING_INPUT:'Ожидаются данные или доступ',
+      MANUAL_REQUIRED:'Требуется действие владельца',
+      KNOWN_ISSUE:'Известная проблема · есть план',
+      NOT_ACTIONABLE:'Исправление исходников не требуется',
+      BLOCKED:'Задача заблокирована',
+      UNCLASSIFIED:'Ошибка ещё не классифицирована'
+    };
+    for(const row of rows){
+      const wrap=elt('div','hh-pr-audit-interval');
+      const head='HEAD '+String(row.head_sha||'').slice(0,12);
+      wrap.append(elt('strong',null,(labels[row.status]||row.status)+' · '+head+
+        (row.current_head?' · текущий HEAD':' · предыдущий HEAD')));
+      const list=elt('ol','hh-pr-audit-event-list');
+      const items=[
+        ['Причина',row.reason_code],
+        ['Ответственный',row.responsible_role],
+        ['Следующее действие',row.next_action],
+        ['Следующая проверка',row.next_check_at?fmtDate(row.next_check_at):'Не назначена']
+      ];
+      for(const [name,value] of items){
+        const li=elt('li');li.append(elt('span',null,name),elt('strong',null,value||'—'));
+        list.append(li);
+      }
+      const links=elt('p','hh-pr-audit-foot');
+      const comment=link(row.comment_url),run=link(row.run_url),commit=link(
+        row.new_sha?'https://github.com/andylitvinov-design/books/commit/'+row.new_sha:null);
+      if(comment){const a=elt('a',null,'Квитанция результата');a.href=comment;a.target='_blank';a.rel='noopener noreferrer';links.append(a);}
+      if(run){if(links.childNodes.length)links.append(' · ');const a=elt('a',null,'Запуск Worker');a.href=run;a.target='_blank';a.rel='noopener noreferrer';links.append(a);}
+      if(commit){if(links.childNodes.length)links.append(' · ');const a=elt('a',null,'Опубликованный commit');a.href=commit;a.target='_blank';a.rel='noopener noreferrer';links.append(a);}
+      wrap.append(list,links);
+      if(row.recorded_status==='FIXED'&&row.status==='VERIFIED'){
+        const note=elt('p','hh-pr-audit-foot',
+          'Проверено: текущий HEAD совпадает с опубликованным SHA, а Core, Specialist и Merge Gate прошли в одной успешной CI-попытке.');
+        const verified=link(row.verification_url);
+        if(verified){const a=elt('a',null,' · Проверка exact HEAD');a.href=verified;a.target='_blank';a.rel='noopener noreferrer';note.append(a);}
+        wrap.append(note);
+      }else if(row.recorded_status==='FIXED'){
+        wrap.append(elt('p','hh-pr-audit-foot',
+          'Новый source SHA подтверждён на PR, но VERIFIED ещё не присвоен: ожидается независимая зелёная проверка обязательных gates на точном HEAD.'));
+      }
+      section.append(wrap);
+    }
+    section.append(elt('p','hh-pr-audit-foot',
+      'Решения читаются только из неизменённых комментариев доверенного GitHub Actions App. Отправка prompt, принятие задачи или зелёный workflow сами по себе не считаются исправлением.'));
+    result.append(section);
+  }
+
   function render(data){
     result.replaceChildren();
     const line=elt('div','hh-pr-audit-summary');
@@ -202,6 +259,7 @@
     }
 
     renderRepairCycles(data.repair_cycles);
+    renderTaskOutcomes(data.task_outcomes);
 
     if(data.source?.history_partial){
       result.append(elt('p','hh-pr-audit-alert',

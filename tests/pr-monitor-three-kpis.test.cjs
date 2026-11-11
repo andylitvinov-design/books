@@ -27,11 +27,11 @@ function comment(runs,user=bot){
   body:'<!-- HH_CORE_CI_JOURNEY_SHARD_V1:'+bucket+' -->\n'+
   JSON.stringify({schema:'HH_CORE_CI_JOURNEY_SHARD_V1',bucket,runs})};
 }
-test('two weeks ago means identical Toronto hour across DST transition',()=>{
- const a=k.window(now,0),b=k.window(now,14);
+test('seven days ago means identical Toronto hour across DST transition',()=>{
+ const a=k.window(now,0),b=k.window(now,7);
  assert.equal(a.to,'2026-11-04T19:01:00.000Z');
- assert.equal(b.to,'2026-10-21T18:01:00.000Z');
- assert.equal(b.from,'2026-10-20T18:01:00.000Z');
+ assert.equal(b.to,'2026-10-28T18:01:00.000Z');
+ assert.equal(b.from,'2026-10-27T18:01:00.000Z');
 });
 test('do not accept untrusted or malformed shards',()=>{
  const a=record(2);
@@ -144,9 +144,9 @@ test('Error→Repair candidates include only failed required Core CI jobs',()=>{
  assert.match(candidates[0].failure_job_url,/job\/151$/);
  assert.equal(candidates[0].failed_at,today);
 });
-test('missing 2026-10-21 historical Core data is not reported as 0% or 0 minutes',()=>{
+test('missing week-old historical Core data is not reported as 0% or 0 minutes',()=>{
  const data=k.report([record(1)],now);
- const hist=data.windows.two_weeks_ago;
+ const hist=data.windows.week_ago;
  assert.equal(hist.ci_first_pass.percent_observed,null);
  assert.equal(hist.green_to_merge.mean_min,null);
  assert.equal(hist.error_to_repair.mean_min,null);

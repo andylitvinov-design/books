@@ -9,6 +9,7 @@ const REPO='andylitvinov-design/books';
 const DEFAULT='codex/bootstrap-books';
 const CORE='HH PR core release gate';
 const FAILURES=new Set(['failure','timed_out','startup_failure']);
+const {coreErrorTaskId}=require('./ci-pr-error-task.cjs');
 function confirmedCoreEvent(context){
  const event=context?.payload?.workflow_run;
  return Boolean(context?.repo?.owner+'/'+context?.repo?.repo===REPO &&
@@ -50,9 +51,29 @@ async function run({github,core,context,dryRun=false,reconcileRun=null,dispatchR
  // and exact-head proof before reserving or dispatching anything.
  const handed=await dispatch({github,core,context,dryRun,
   focusPrNumber:number,focusPrSnapshot:evidence.verifiedPrSnapshot||null});
- result.dispatchAccepted=Number(handed?.dispatchAccepted||0);
+ // Aggregate dispatcher counters can refer to a DIFFERENT PR or an
+ // unconfirmed reservation. Only the exact-HEAD, accepted and durable
+ // acknowledgement of this specific Core event belongs to this task.
+ const expectedHead=evidence.verifiedPrSnapshot?.head?.sha;
+ const expectedErrorTaskId=coreErrorTaskId(number,expectedHead,
+   context.payload.workflow_run.id,context.payload.workflow_run.run_attempt);
+ const matched=expectedErrorTaskId&&Array.isArray(handed?.workerRuns)&&/^[a-f0-9]{40}$/i.test(expectedHead||'')?
+   handed.workerRuns.filter(r=>r?.pr_number===number&&r.head_sha===expectedHead&&
+     r.lane==='repair'&&r.outcome==='DISPATCH_ACCEPTED'&&
+     r.acceptanceReceiptPersisted===true&&
+     r.error_task_id===expectedErrorTaskId&&
+     r.executor_id==='github-actions:hh-pr-repair-worker.yml'&&
+     /^[a-f0-9]{32}$/i.test(r.task_key||'')):[];
+ result.dispatchAccepted=!dryRun&&matched.length===1?1:0;
+ result.executorId=matched.length===1?matched[0].executor_id:null;
+ result.workerTaskKey=matched.length===1?matched[0].task_key:null;
+ result.headSha=matched.length===1?matched[0].head_sha:null;
+ result.errorTaskId=matched.length===1?matched[0].error_task_id:null;
+ result.dispatchAcknowledged=result.dispatchAccepted===1;
  result.outcome=result.dispatchAccepted?'DISPATCH_ACCEPTED':
-   dryRun?'WOULD_DISPATCH_OR_BLOCKED':'NOT_DISPATCHED_CRON_BACKSTOP';
+   dryRun?'WOULD_DISPATCH_OR_BLOCKED':
+   Number(handed?.dispatchAccepted||0)>0?'DISPATCH_ACCEPTANCE_UNVERIFIED':
+   'NOT_DISPATCHED_CRON_BACKSTOP';
  result.reason=handed?.reason||null;
  result.blocked=handed?.blocked||{};
  return result;

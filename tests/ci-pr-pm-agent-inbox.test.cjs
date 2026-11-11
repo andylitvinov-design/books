@@ -152,3 +152,66 @@ test('source request without owner token or exact current base refuses dispatch'
  assert.equal(stale.reason,'SOURCE_BASE_SHA_MOVED');
  assert.equal(sent,0);
 });
+test('unknown or nonzero provider billing is blocked and never reported as free',async()=>{
+ const cases=[[{},'MODEL_BILLING_UNVERIFIED_HOLD'],[{cost:null},'MODEL_BILLING_UNVERIFIED_HOLD'],
+  [{cost:'0'},'MODEL_BILLING_UNVERIFIED_HOLD'],[{cost:0.000001},'MODEL_REPORTED_NONZERO_COST_HOLD']];
+ for(const [usage,reason] of cases){
+  const fetcher=async()=>({ok:true,json:async()=>({model:'openrouter/free',usage,
+   choices:[{finish_reason:'stop',message:{content:'Ответ.'}}]})});
+  const out=await inbox.askFree('Проверка цены?',{fetcher,token:'synthetic-key'});
+  assert.equal(out.ok,undefined);assert.equal(out.reason,reason);
+ }
+});
+test('verified zero provider cost is included in owner-visible receipt and telemetry',async()=>{
+ const fetcher=async()=>({ok:true,json:async()=>({model:'nvidia/nemotron-3.5-super-vl:free',
+  usage:{cost:0},choices:[{finish_reason:'stop',message:{content:'Проверка пройдена.'}}]})});
+ const out=await inbox.askFree('Проверка цены?',{fetcher,token:'synthetic-key'});
+ assert.equal(out.ok,true);assert.equal(out.cost,0);
+ const body=inbox.resultBody({kind:'ask',id:777},{...out},'https://github.com/example/run/1');
+ assert.match(body,/nvidia\/nemotron-3\.5-super-vl:free/);
+ assert.match(body,/verified provider cost: \$0/);
+});
+
+test('owner issue-comment trigger processes only a fresh command on public Inbox #3890',async()=>{
+ const ownerContext={...context,eventName:'issue_comment',payload:{
+  issue:{number:3890,body:'<!-- HH_PM_PUBLIC_AGENT_INBOX_V1 -->'},
+  comment:cmd(701,'!pm ask Сколько независимых фактов нужно для LIVE?')
+ }};
+ const fx=stub([ownerContext.payload.comment]);
+ const out=await inbox.run({github:fx.github,context:ownerContext,fetcher:fx.fetcher,token:'mock-key'});
+ assert.equal(out.status,'AI_REPLIED');
+ assert.equal(out.commandId,701);
+ assert.equal(fx.calls.filter(x=>x==='openrouter').length,1);
+});
+test('issue-comment trigger rejects pull requests, other issues, bots, other users and non-command comments',async()=>{
+ const valid=cmd(702,'!pm ask Нужен короткий технический ответ?');
+ const cases=[
+  {...context,eventName:'issue_comment',payload:{issue:{number:7},comment:valid}},
+  {...context,eventName:'issue_comment',payload:{issue:{number:3890,pull_request:{url:'https://api.github.com/pulls/3890'}},comment:valid}},
+  {...context,eventName:'issue_comment',payload:{issue:{number:3890},comment:{...valid,user:bot}}},
+  {...context,eventName:'issue_comment',payload:{issue:{number:3890},comment:{...valid,user:{login:'intruder',id:1,type:'User'}}}},
+ ];
+ for(const ctx of cases){
+  const fx=stub([valid]);
+  const out=await inbox.run({github:fx.github,context:ctx,fetcher:fx.fetcher,token:'mock-key'});
+  assert.equal(out.status,'SKIPPED_UNTRUSTED_CONTEXT');
+  assert.equal(fx.calls.length,0);
+ }
+ const noCommand={...context,eventName:'issue_comment',payload:{
+  issue:{number:3890},comment:cmd(703,'Обычный комментарий без команды')
+ }};
+ const fx=stub([valid]);
+ const out=await inbox.run({github:fx.github,context:noCommand,fetcher:fx.fetcher,token:'mock-key'});
+ assert.equal(out.status,'NO_OWNER_COMMAND');
+ assert.equal(fx.calls.length,0);
+});
+test('issue-comment trigger does not skip FIFO when an earlier owner command is pending',async()=>{
+ const older=cmd(704,'!pm ask Старый ожидающий запрос?');
+ const submitted=cmd(705,'!pm ask Новый запрос?');
+ const ctx={...context,eventName:'issue_comment',payload:{issue:{number:3890},comment:submitted}};
+ const fx=stub([older,submitted]);
+ const out=await inbox.run({github:fx.github,context:ctx,fetcher:fx.fetcher,token:'mock-key'});
+ assert.equal(out.status,'OLDER_COMMAND_PENDING');
+ assert.equal(fx.calls.length,0);
+ assert.equal(fx.sent.length,0);
+});

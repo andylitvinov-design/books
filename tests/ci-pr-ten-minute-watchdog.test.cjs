@@ -1,7 +1,8 @@
 'use strict';
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
-const {selectCandidates, gateIsGreen, transientFailure, canRetryCi, canDispatchRepair, classifyMergeState, run, bootstrapLegacyCore, hasActiveLease} = require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+const {selectCandidates, boundedRestFallback, gateIsGreen, transientFailure, shouldRetryTransientCoreFailure, canRetryCi, canDispatchRepair, classifyMergeState, run, bootstrapLegacyCore, hasActiveLease, classifyCoreFailureJobs} = require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+const {classifyRedCiError}=require('../scripts/ci-pr-red-ci-classifier.cjs');
 const SHA = 'b'.repeat(40);
 const NOW = 1800000000000;
 const pr = number => ({
@@ -39,6 +40,38 @@ test('exact Core completion wake does not evict the top P1 direction while prese
   assert.equal(picked[0].number,159);
   assert.equal(picked[1].number,70);
   assert.ok(picked.length<=16);
+});
+test('repair-needed source queue receives a rotating fast inspection slot without bypassing holds',()=>{
+  const prs=Array.from({length:179},(_,i)=>({...pr(i+1),state:'open',
+    labels:[],title:i<20?'fix(video): urgent regression':'docs(other): ordinary work'}));
+  for(const n of [120,121,122,123])
+    prs[n-1].labels=[{name:'hh:repair-needed'}];
+  prs[120].labels.push({name:'hh:repair-manual'});
+  prs[121].labels.push({name:'hh:hold'});
+  const seen=new Set();
+  for(let tick=0;tick<6;tick++){
+    const selected=selectCandidates(prs,NOW+tick*600000);
+    const fast=selected.slice(0,4).map(x=>x.number);
+    assert.ok(fast.some(n=>n===120||n===123),'source hint must enter the 4 fast slots');
+    assert.ok(!fast.includes(121)&&!fast.includes(122),
+      'held/manual source hints must not take fast source slots');
+    fast.filter(n=>n===120||n===123).forEach(n=>seen.add(n));
+    assert.ok(selected.length<=16,'no additional GitHub PR inspection/API budget');
+  }
+  assert.deepEqual([...seen].sort(),[120,123],
+    'safe source queue must rotate instead of repeatedly inspecting one PR');
+});
+test('REST GraphQL fallback preserves a queued source repair and the 6-read budget',()=>{
+  const prs=Array.from({length:16},(_,i)=>({...pr(i+1),state:'open',labels:[]}));
+  const ordinary=boundedRestFallback(prs).map(x=>x.number);
+  assert.deepEqual(ordinary,[1,2,5,6,7,8]);
+  prs[2].labels=[{name:'hh:repair-needed'}];
+  const selected=boundedRestFallback(prs).map(x=>x.number);
+  assert.deepEqual(selected,[1,2,3,5,6,7]);
+  assert.equal(new Set(selected).size,6);
+  prs[2].labels.push({name:'hh:repair-manual'});
+  assert.deepEqual(boundedRestFallback(prs).map(x=>x.number),ordinary,
+    'manual hold never gains a priority repair slot');
 });
 test('only trusted green exact-SHA gate can schedule guarded merging',()=>{
   const gate={total_count:1,check_runs:[{id:1,name:'hh-core-verified',status:'completed',conclusion:'success',app:{id:15368}}]};
@@ -124,6 +157,8 @@ test('green unarmed PR dispatches existing protected coordinator, not a direct m
   assert.equal(targeted,true);
 });
 test('CI overload blocks retries, but code failures are handed to Repair once',async()=>{
+ const stored=[];
+ const signed=body=>({body,user:{id:41898282,login:'github-actions[bot]',type:'Bot'},performed_via_github_app:{id:15368,slug:'github-actions'}});
   let reruns=0,comments=0,labels=0;
   const github={rest:{
     pulls:{list:async()=>({data:[pr(98)]}),get:async()=>({data:{...pr(98),state:'open',mergeable:true,mergeable_state:'clean'}})},
@@ -134,11 +169,11 @@ test('CI overload blocks retries, but code failures are handed to Repair once',a
     },
     checks:{listForRef:async()=>({data:{total_count:1,check_runs:[{id:1,name:'hh-core-verified',conclusion:'failure'}]}})},
     repos:{getCommit:async()=>({data:{parents:[{sha:'a'.repeat(40)},{sha:SHA}]}})},
-    issues:{listComments:async()=>({data:[]}),createComment:async()=>{comments++;},addLabels:async()=>{labels++;}}
+    issues:{listComments:async()=>({data:stored}),createComment:async({body})=>{comments++;stored.push(signed(body));},addLabels:async()=>{labels++;}}
   },paginate:async()=>[],request:async(route,args)=>{
     if(route.includes('rerun-failed-jobs'))reruns++;
     if(args?.workflow_id==='hh-pr-core-release.yml')return {data:{total_count:1,workflow_runs:[{
-      id:44,name:'HH PR core release gate',event:'pull_request',head_sha:'c'.repeat(40),head_branch:'test-98',
+      id:44,name:'HH PR core release gate',path:'.github/workflows/hh-pr-core-release.yml@refs/heads/codex/bootstrap-books',repository:{full_name:'andylitvinov-design/books'},head_repository:{full_name:'andylitvinov-design/books'},event:'pull_request',head_sha:'c'.repeat(40),head_branch:'test-98',
       pull_requests:[{number:98,head:{sha:SHA,ref:'test-98'}}],
       status:'completed',conclusion:'failure',run_attempt:1,
       created_at:new Date(NOW-60*60000).toISOString(),updated_at:new Date(NOW-40*60000).toISOString()}]}};
@@ -148,7 +183,7 @@ test('CI overload blocks retries, but code failures are handed to Repair once',a
   assert.equal(result.blockedByCapacity,true);
   assert.equal(result.transientCiReruns,0);
   assert.equal(reruns,0);
-  assert.equal(comments,1);
+  assert.equal(comments,2);
   assert.equal(labels,1);
   assert.equal(result.activeActions,18);
   assert.equal(result.queuedActions,32);
@@ -819,6 +854,7 @@ test('native AutoMerge paginates trusted Core history and preserves exact-head e
     }};
     const payload=eventRunId===null?{pull_request:pr}:{workflow_run:{
       id:eventRunId,name:'HH PR core release gate',event:'pull_request',conclusion:'success',
+      path:'.github/workflows/hh-pr-core-release.yml@refs/pull/42/merge',
       repository:{full_name:full},head_repository:{full_name:full},
       head_branch:pr.head.ref,pull_requests:[{number:42,base:{ref:pr.base.ref}}]
     }};
@@ -1002,6 +1038,8 @@ test('PR #3245 CI source-contract failure routes to policy, not product Source R
 });
 
 test('CI contract-only failed Core labels release gate and does not hand off source',async()=>{
+ const stored=[];
+ const signed=body=>({body,user:{id:41898282,login:'github-actions[bot]',type:'Bot'},performed_via_github_app:{id:15368,slug:'github-actions'}});
   const current={...pr(3245),state:'open',mergeable:true,mergeable_state:'clean',labels:[]};
   let repairComments=0;const labels=[];
   const contractStep={name:'Verify specialist ownership and Messenger isolation on CI-policy changes',
@@ -1018,12 +1056,12 @@ test('CI contract-only failed Core labels release gate and does not hand off sou
     },
     checks:{listForRef:async()=>({data:{total_count:0,check_runs:[]}})},
     repos:{getCommit:async()=>({data:{parents:[{sha:'a'.repeat(40)},{sha:SHA}]}})},
-    issues:{addLabels:async({labels:added})=>{labels.push(...added);},
-      createComment:async()=>{repairComments++;}},
+    issues:{listComments:async()=>({data:stored}),addLabels:async({labels:added})=>{labels.push(...added);},
+      createComment:async({body})=>{repairComments++;stored.push(signed(body));}},
   },request:async(route,args)=>{
     if(args?.workflow_id==='hh-pr-core-release.yml')return {data:{
       total_count:1,workflow_runs:[{
-        id:41581262858,name:'HH PR core release gate',event:'pull_request',
+        id:41581262858,name:'HH PR core release gate',path:'.github/workflows/hh-pr-core-release.yml@refs/heads/codex/bootstrap-books',repository:{full_name:'andylitvinov-design/books'},head_repository:{full_name:'andylitvinov-design/books'},event:'pull_request',
         head_sha:'c'.repeat(40),head_branch:current.head.ref,
         pull_requests:[{number:current.number,head:{sha:SHA,ref:current.head.ref}}],
         status:'completed',conclusion:'failure',run_attempt:1,
@@ -1037,7 +1075,7 @@ test('CI contract-only failed Core labels release gate and does not hand off sou
   assert.equal(report.ciContractFailures,1);
   assert.equal(report.sourceRepairQueued,0);
   assert.equal(report.verifiedSourceFailures,0);
-  assert.equal(repairComments,0);
+  assert.equal(repairComments,1);
   assert.deepEqual(labels,['hh:release-gate-review']);
 });
 
@@ -1396,7 +1434,12 @@ test('existing failed-Core handler retries an isolated infra job without extra r
  assert.ok(handler.includes('id: infra_recovery'));
  assert.ok(handler.includes('selectInterruptedMandatoryJob'));
  assert.ok(handler.includes('github.rest.actions.reRunJobForWorkflowRun'));
- assert.ok(handler.includes("steps.base_recovery.outputs.updated != 'true' && steps.infra_recovery.outputs.infra_hold != 'true'"));
+ const router=readFileSync('scripts/ci-pr-commander-strategy-router.cjs','utf8');
+ assert.ok(router.includes('if(baseUpdated||infraRerun)'));
+ assert.ok(router.includes('if(infraHold)'));
+ assert.ok(handler.includes("infraHold:process.env.HH_INFRA_HOLD==='true'"));
+ assert.ok(handler.indexOf('id: send')<handler.indexOf('id: base_recovery'),
+  'persist failure task before protected base update can move the PR HEAD');
  assert.ok(!handler.includes('github.rest.actions.reRunWorkflow('));
 });
 
@@ -1437,6 +1480,8 @@ test('fresh environment failures are not source-repair diagnoses',()=>{
 });
 
 test('fresh checkout failure never queues source repair or an early rerun',async()=>{
+ const stored=[];
+ const signed=body=>({body,user:{id:41898282,login:'github-actions[bot]',type:'Bot'},performed_via_github_app:{id:15368,slug:'github-actions'}});
  let reruns=0,comments=0,labels=0;
  const github={rest:{
   pulls:{list:async()=>({data:[pr(98)]}),get:async()=>({data:{...pr(98),state:'open',mergeable:true,mergeable_state:'clean'}})},
@@ -1444,18 +1489,18 @@ test('fresh checkout failure never queues source repair or an early rerun',async
    listJobsForWorkflowRun:async()=>({data:{total_count:1,jobs:[{name:'core-lint-types-build',conclusion:'failure',steps:[{name:'Run actions/checkout@v4',conclusion:'failure'}]}]}})},
   checks:{listForRef:async()=>({data:{total_count:1,check_runs:[{id:1,name:'hh-core-verified',conclusion:'failure'}]}})},
   repos:{getCommit:async()=>({data:{parents:[{sha:'a'.repeat(40)},{sha:SHA}]}})},
-  issues:{listComments:async()=>({data:[]}),createComment:async()=>{comments++},addLabels:async()=>{labels++}}
+  issues:{listComments:async()=>({data:stored}),createComment:async({body})=>{comments++;stored.push(signed(body));},addLabels:async()=>{labels++}}
  },paginate:async()=>[],request:async(route,args)=>{
   if(route.includes('rerun-failed-jobs'))reruns++;
   if(args?.workflow_id==='hh-pr-core-release.yml')return {data:{total_count:1,workflow_runs:[{
-   id:44,name:'HH PR core release gate',event:'pull_request',head_sha:'c'.repeat(40),head_branch:'test-98',
+   id:44,name:'HH PR core release gate',path:'.github/workflows/hh-pr-core-release.yml@refs/heads/codex/bootstrap-books',repository:{full_name:'andylitvinov-design/books'},head_repository:{full_name:'andylitvinov-design/books'},event:'pull_request',head_sha:'c'.repeat(40),head_branch:'test-98',
    pull_requests:[{number:98,head:{sha:SHA,ref:'test-98'}}],status:'completed',conclusion:'failure',run_attempt:1,
    created_at:new Date(NOW-60000).toISOString(),updated_at:new Date(NOW-60000).toISOString()}]}};
   return {data:{workflow_runs:[]}};
  }};
  const result=await run({github,core:core(),context,now:NOW,hasMergeToken:false});
  assert.equal(result.infraOrEnvironment,1);assert.equal(result.sourceRepairQueued,0);
- assert.equal(reruns,0);assert.equal(comments,0);assert.equal(labels,0);
+ assert.equal(reruns,0);assert.equal(comments,1);assert.equal(labels,0);
 });
 
 test('watchdog does not accept an outsider marker as a durable source handoff',async()=>{
@@ -1871,4 +1916,38 @@ test('missing verified job ID keeps original signed handoff but never constructs
   assert.ok(body.includes('Confirmed failed Core source step'));
   assert.ok(!body.includes('/job/'));
   assert.equal(labels,1);
+});
+
+
+test('every transient Core retry requires the shared classifier to authorize infrastructure retry first',()=>{
+ const run={status:'completed',run_attempt:1,conclusion:'timed_out',
+  created_at:new Date(NOW-20*60_000).toISOString(),
+  updated_at:new Date(NOW-9*60_000).toISOString()};
+ const jobs=[{name:'core-lint-types-build',conclusion:'timed_out',steps:[
+  {name:'Run actions/checkout@v4',conclusion:'failure'}
+ ]}];
+ const pr={number:11,head:{sha:SHA}};
+ const root=classifyCoreFailureJobs(jobs);
+ const diagnosis=classifyRedCiError({pr,jobs,coreRoot:root});
+ assert.equal(diagnosis.category,'INFRASTRUCTURE');
+ assert.equal(diagnosis.retry.allowed,true);
+ assert.equal(shouldRetryTransientCoreFailure({diagnosis,run,jobs,now:NOW,ciRoom:true,reruns:0}),true);
+ assert.equal(shouldRetryTransientCoreFailure({diagnosis,run,jobs,now:NOW,ciRoom:false,reruns:0}),false);
+ assert.equal(shouldRetryTransientCoreFailure({diagnosis,run,jobs,now:NOW,ciRoom:true,reruns:2}),false);
+ assert.equal(shouldRetryTransientCoreFailure({diagnosis:{...diagnosis,retry:{allowed:false,max_attempts:0}},run,jobs,now:NOW,ciRoom:true,reruns:0}),false);
+ assert.equal(shouldRetryTransientCoreFailure({diagnosis:{...diagnosis,category:'SOURCE_CODE'},run,jobs,now:NOW,ciRoom:true,reruns:0}),false);
+ assert.equal(shouldRetryTransientCoreFailure({diagnosis,run:{...run,run_attempt:2},jobs,now:NOW,ciRoom:true,reruns:0}),false);
+ assert.equal(shouldRetryTransientCoreFailure({diagnosis,run,jobs,now:NOW-5*60_000,ciRoom:true,reruns:0}),false,
+  'a recent timeout must not retry before the existing backoff window');
+});
+
+test('Watchdog classifies red Core jobs and records blocker diagnostics before bounded retry evaluation',()=>{
+ const fs=require('node:fs');
+ const source=fs.readFileSync('scripts/ci-pr-ten-minute-watchdog.cjs','utf8');
+ const classify=source.indexOf('const diagnosis=classifyRedCiError({pr:live,jobs,coreRoot:root});');
+ const retry=source.indexOf('shouldRetryTransientCoreFailure({diagnosis,run:latest,jobs,now,ciRoom,');
+ const sourceRepair=source.indexOf('summary.verifiedSourceFailures++');
+ assert.ok(classify>=0&&retry>classify&&sourceRepair>retry);
+ assert.match(source,/blocker\.ci_error_category=diagnosis\.category/);
+ assert.match(source,/blocker\.ci_error_retry_policy=diagnosis\.retry/);
 });

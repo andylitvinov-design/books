@@ -2,7 +2,7 @@
   const MAIN='https://holistichouse.vercel.app'
   const MONITOR='https://holistic-house-pr-monitor.vercel.app'
   const status=document.getElementById('commander-auth-status')
-  let sessionToken=''
+  let sessionToken='',sessionRefreshToken=''
 
   function safeNext(value){
     if(typeof value!=='string'||value.length>240)return '/agents.html'
@@ -56,7 +56,7 @@
     const response=await fetchWithTimeout('/api/commander-session',{
       method:'POST',credentials:'same-origin',cache:'no-store',
       headers:{'Content-Type':'application/json',Accept:'application/json'},
-      body:JSON.stringify({token:sessionToken})
+      body:JSON.stringify({token:sessionToken,refreshToken:sessionRefreshToken})
     },'Подтверждение владельца')
     const data=await response.json().catch(()=>({}))
     if(!response.ok||data.authenticated!==true||data.owner!==true){
@@ -73,7 +73,9 @@
     const next=safeNext(params.get('next')||'/agents.html')
     try{
       const fragment=location.hash.startsWith('#')?location.hash.slice(1):''
-      sessionToken=new URLSearchParams(fragment).get('token')||''
+      const values=new URLSearchParams(fragment)
+      sessionToken=values.get('token')||''
+      sessionRefreshToken=values.get('refresh_token')||''
     }catch{}
     // Remove the short-lived bearer from the address bar before any network call.
     history.replaceState(null,'',location.pathname+location.search)

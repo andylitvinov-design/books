@@ -67,6 +67,73 @@ function extractStageReceipts(comments,number){
  }
  return result;
 }
+
+const TASK_OUTCOME_STATUSES=new Set([
+ 'FIXED','VERIFIED','RETRY_SCHEDULED','REROUTED','WAITING_INPUT',
+ 'MANUAL_REQUIRED','KNOWN_ISSUE','NOT_ACTIONABLE','BLOCKED','UNCLASSIFIED'
+]);
+function extractTaskOutcomes(comments,number,currentHead=null){
+ if(!Array.isArray(comments)||!safePr(number))return [];
+ const rows=[],seen=new Set();
+ for(const c of comments){
+  if(!trustedComment(c)||typeof c.body!=='string'||c.body.length>150000||
+     c.updated_at!==c.created_at||parseUTC(c.created_at)===null)continue;
+  const matches=[...c.body.matchAll(/<!-- HH_PR_REPAIR_OUTCOME_V1 ([a-f0-9]{40}) ([1-9][0-9]{0,18}) -->/g)];
+  if(!matches.length)continue;
+  const match=c.body.match(/<!-- HH_PR_TASK_V1 -->\s*```json\s*([\s\S]*?)```/);
+  if(!match||match[1].length>12000)continue;
+  let record;try{record=JSON.parse(match[1]);}catch{continue;}
+  const outcome=record?.outcome;
+  if(record?.schema!=='HH_PR_TASK_V1'||!TASK.test(record.task_key||'')||
+     record.pr_number!==number||!SHA.test(record.head_sha||'')||
+     !/^[1-9][0-9]{0,18}$/.test(String(record.owner_run_id||''))||
+     !outcome||outcome.schema!=='HH_TASK_OUTCOME_V1'||
+     !TASK_OUTCOME_STATUSES.has(outcome.status)||
+     outcome.task_key!==record.task_key||outcome.pr_number!==number||
+     outcome.head_sha!==record.head_sha||
+     String(outcome.owner_run_id)!==String(record.owner_run_id)||
+     typeof outcome.reason_code!=='string'||!outcome.reason_code||
+     outcome.reason_code.length>120||
+     typeof outcome.responsible_role!=='string'||!outcome.responsible_role||
+     typeof outcome.next_action!=='string'||!outcome.next_action||
+     !STAGE_ISO.test(outcome.created_at||'')||parseUTC(outcome.created_at)===null||
+     !STAGE_ISO.test(outcome.next_check_at||'')||parseUTC(outcome.next_check_at)===null||
+     parseUTC(outcome.next_check_at)<parseUTC(outcome.created_at)||
+     typeof outcome.source_published!=='boolean'||
+     typeof outcome.verified_source!=='boolean')continue;
+  const marker=matches.find(m=>m[1].toLowerCase()===record.head_sha.toLowerCase()&&m[2]===String(record.owner_run_id));
+  if(!marker)continue;
+  if(outcome.status==='FIXED'&&
+     (record.state!=='PUBLISHED'||record.source_published!==true||
+      outcome.source_published!==true||outcome.verified_source!==true||
+      !SHA.test(record.new_sha||'')||record.new_sha===record.head_sha||
+      outcome.new_sha!==record.new_sha))continue;
+  if(outcome.status==='VERIFIED'&&
+     (outcome.source_published!==true||outcome.verified_source!==true||
+      !SHA.test(outcome.new_sha||'')||outcome.new_sha===outcome.head_sha))continue;
+  if(outcome.verified_source===true&&
+     (!SHA.test(outcome.new_sha||'')||outcome.new_sha===outcome.head_sha))continue;
+  const key=record.task_key+':'+record.owner_run_id;
+  if(seen.has(key))continue;seen.add(key);
+  const url=typeof c.html_url==='string'&&
+    /^https:\/\/github\.com\/andylitvinov-design\/books\/pull\/\d+#issuecomment-\d+$/.test(c.html_url)?c.html_url:null;
+  const runUrl=typeof record.run_url==='string'&&
+    /^https:\/\/github\.com\/andylitvinov-design\/books\/actions\/runs\/\d+$/.test(record.run_url)?record.run_url:null;
+  rows.push({
+    task_key:record.task_key,pr_number:number,head_sha:record.head_sha.toLowerCase(),
+    status:outcome.status,reason_code:outcome.reason_code,
+    responsible_role:outcome.responsible_role,next_action:outcome.next_action,
+    next_check_at:outcome.next_check_at,created_at:outcome.created_at,
+    owner_run_id:String(record.owner_run_id),
+    source_published:outcome.source_published,verified_source:outcome.verified_source,
+    new_sha:outcome.new_sha||null,current_head:SHA.test(currentHead||'')&&
+      currentHead.toLowerCase()===((outcome.source_published===true&&SHA.test(outcome.new_sha||''))?
+        outcome.new_sha.toLowerCase():record.head_sha.toLowerCase()),
+    comment_url:url,run_url:runUrl,source:'SIGNED_GITHUB_ACTIONS_REPAIR_FINALIZER'
+  });
+ }
+ return rows.sort((a,b)=>parseUTC(b.created_at)-parseUTC(a.created_at));
+}
 /**
  * A historical LIVE observation is a signed-by-provenance GitHub Actions
  * comment. The current Vercel alias may have moved since this receipt.
@@ -222,6 +289,7 @@ async function loadPr(number,{request=fetch,token=TOKEN,now=Date.now()}={}){
  if(!Array.isArray(comments))throw makeError('PR_COMMENTS_UNVERIFIED',503);
  if(comments.length===100)partial=true;
  const events=extractStageReceipts(comments,number);
+ const rawTaskOutcomes=extractTaskOutcomes(comments,number,pr.head?.sha||null);
  let prTimelineEvents=null;
  // A label proves the recorded conflict signal, never the time spent fixing it.
  // When near the read budget, skip the optional timeline instead of losing core data.
@@ -247,6 +315,17 @@ async function loadPr(number,{request=fetch,token=TOKEN,now=Date.now()}={}){
  // Reuse the SAME previously fetched PR comment page: zero extra API calls.
  const live=verifiedLiveReceipt(comments,pr);
  const headProof=summarizeHeadStatus({pr,chronology:timeline.chronology,runs:filtered,historyPartial:partial,live});
+ const taskOutcomes=rawTaskOutcomes.map(row=>{
+  const verified=row.status==='FIXED'&&row.current_head===true&&
+    row.new_sha===pr.head?.sha?.toLowerCase?.()&&headProof.green_exact_head===true&&
+    parseUTC(headProof.green_at)!==null&&parseUTC(headProof.green_at)>=parseUTC(row.created_at);
+  return {...row,recorded_status:row.status,
+    status:verified?'VERIFIED':row.status,
+    verification_evidence:verified?'EXACT_CURRENT_HEAD_CORE_SPECIALIST_MERGE_GATES':
+      row.status==='FIXED'?'SOURCE_PUBLISHED_WAITING_EXACT_HEAD_REQUIRED_CI':'NOT_VERIFIED',
+    verified_at:verified?headProof.green_at:null,
+    verification_url:verified?headProof.green_url:null};
+ });
  if(live){
   timeline.chronology.push({kind:'live_verified',at:live.live_at,
    reason:'Production LIVE независимо подтверждён: '+live.proof_method,
@@ -309,7 +388,7 @@ async function loadPr(number,{request=fetch,token=TOKEN,now=Date.now()}={}){
   merge_to_live_ms:live?.merge_to_live_ms??null,
   created_to_live_ms:live?.created_to_live_ms??null,
   end_to_end_complete:!!live&&mergedAt!==null};
- return {...timeline,repair_cycles:repairCycles,live_evidence:live,journey,source:{kind:'GITHUB_READ_ONLY_ON_DEMAND',reads:used,
+ return {...timeline,repair_cycles:repairCycles,task_outcomes:taskOutcomes,live_evidence:live,journey,source:{kind:'GITHUB_READ_ONLY_ON_DEMAND',reads:used,
   exact_head_no_pr_ref_matches:headMatchFallbacks,
   history_partial:partial,remaining_api_quota:remaining,
   known_limitations:[
@@ -343,6 +422,7 @@ async function handler(req,res){
 }
 handler.loadPr=loadPr;
 handler.extractStageReceipts=extractStageReceipts;
+handler.extractTaskOutcomes=extractTaskOutcomes;
 handler.verifiedLiveReceipt=verifiedLiveReceipt;
 handler.extractConflictLabels=extractConflictLabels;
 handler.safePr=safePr;

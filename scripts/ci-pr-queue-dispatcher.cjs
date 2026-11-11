@@ -1,10 +1,14 @@
 'use strict';
 /** Trusted default-branch single-writer queue dispatcher: no source checkout, no merge. */
 const {REPO,PROD,DEFAULT,SHA,laneOf,validPR,validLegacyPrep,taskFor,reservation,commentBody,reservationStatus,parseRecords,readCompleteIssueComments,trustedControlComment,DEFINITIVE_DISPATCH_DENIAL}=require('./ci-pr-task-state.cjs');
+const {latestErrorTaskId,dispatchAcceptance,dispatchAcceptanceBody,
+ REPAIR_EXECUTOR,CI_EXECUTOR}=require('./ci-pr-error-task.cjs');
 const {priorityFor,rankedCandidates}=require('./ci-pr-priority.cjs');
 const {run:reconcileLegacyCiDenial}=require('./ci-pr-ci-legacy-recovery.cjs');
 const {WORKFLOWS,admission,snapshot}=require('./ci-pr-capacity.cjs');
 const {repairMode,safeFiles,hasVerifiedSourceHandoff,verifiedCoreCodeFailure}=require('./ci-pr-repair-worker.cjs');
+const {safeSourcePath: safeFreeSourcePath,
+ assessCompleteFreeRepairScope}=require('./ci-pr-repair-free-agent.cjs');
 const {verifiedRunnerReceipt}=require('./ci-pr-runner-evidence.cjs');
 const {reconcileCiWake,recoverVerifiedCiManualHold}=require('./ci-pr-ci-wake-reconcile.cjs');
 const {classifyIndependentSpecialistChecks,latestByName}=require('./ci-pr-ten-minute-watchdog.cjs');
@@ -135,6 +139,18 @@ function planCandidates(prs,now){
  const legacyStart=legacy.length?Math.floor(now/3600000)%legacy.length:0;
  const oldCandidates=Number.isFinite(now)&&now>=0&&legacy.length?
   [legacy[legacyStart]]:[];
+ // GitHub PR list does not include mergeability. A historical manual label
+ // can hide a verified DIRTY conflict until an exact-HEAD live PR read.
+ // Sample at most two rotating manual-conflict hints (read-only) each turn.
+ const manualConflictHints=legacy.filter(pr=>
+  (pr.labels||[]).some(label=>label.name==='hh:conflict-repair-needed'));
+ const manualConflictProbes=slots=>{
+  const pool=manualConflictHints.filter(pr=>
+   !oldCandidates.some(old=>old.number===pr.number));
+  const count=Math.min(2,Math.max(0,slots),pool.length);
+  const start=pool.length?(Math.floor(now/600000)*Math.max(1,count))%pool.length:0;
+  return Array.from({length:count},(_,i)=>pool[(start+i)%pool.length]);
+ };
  // During conflict-only backlogs, rotate a bounded window rather than reread
  // the same 16 already handed-off exact HEADs on each ten-minute cycle.
  if(!source.length&&!ci){
@@ -144,12 +160,20 @@ function planCandidates(prs,now){
   // lower-priority conflicts are never permanently excluded. A handoff is
   // only a receipt: the code-writing Chat/Codex lane owns the actual repair.
   const fast=conflicts.slice(0,Math.min(2,room));
-  const tail=conflicts.slice(fast.length),rotating=room-fast.length;
+  const probes=manualConflictProbes(MAX_CONFLICT_ONLY_INSPECT-fast.length-oldCandidates.length);
+  const tail=conflicts.slice(fast.length);
+  const rotating=Math.max(0,Math.min(tail.length,
+   MAX_CONFLICT_ONLY_INSPECT-fast.length-oldCandidates.length-probes.length));
   const offset=tail.length?(Math.floor(now/600000)*Math.max(1,rotating))%tail.length:0;
-  return [...oldCandidates,...fast,
+  const hintNumbers=new Set(probes.map(pr=>pr.number));
+  return [...fast,...oldCandidates,...probes,
    ...Array.from({length:rotating},(_,i)=>tail[(offset+i)%tail.length])]
    .slice(0,MAX_CONFLICT_ONLY_INSPECT)
-   .map(pr=>taskFor(pr,priorityFor(pr,now)));
+   .map(pr=>{
+    const task=taskFor(pr,priorityFor(pr,now));
+    return task&&hintNumbers.has(pr.number)?
+     {...task,manual_conflict_probe:true}:task;
+   });
  }
  const picked=[],chosen=new Set();
  const add=pr=>{if(pr&&!chosen.has(pr.number)&&picked.length<MAX_INSPECT){picked.push(pr);chosen.add(pr.number);}};
@@ -158,6 +182,10 @@ function planCandidates(prs,now){
  for(const old of oldCandidates)add(old);
  // Keep priority among the first three sources and rotate the remainder.
  for(const pr of source.slice(1,3))if(picked.length<MAX_INSPECT-(conflict&&!chosen.has(conflict.number)?1:0))add(pr);
+ // Preserve source/CI priority and a real-conflict slot before manual probes.
+ const probes=manualConflictProbes(MAX_INSPECT-picked.length-
+  (conflict&&!chosen.has(conflict.number)?1:0));
+ for(const pr of probes)add(pr);
  const sourceRoom=Math.max(0,MAX_INSPECT-picked.length-(conflict&&!chosen.has(conflict.number)?1:0));
  const tail=source.filter(pr=>!chosen.has(pr.number));
  const offset=tail.length?(Math.floor(now/600000)*Math.max(1,sourceRoom))%tail.length:0;
@@ -170,7 +198,12 @@ function planCandidates(prs,now){
  const room=Math.min(MAX_INSPECT-picked.length,rest.length);
  const start=rest.length?(Math.floor(now/600000)*Math.max(1,room))%rest.length:0;
  for(let i=0;i<room;i++)add(rest[(start+i)%rest.length]);
- return picked.map(pr=>taskFor(pr,priorityFor(pr,now)));
+ const hintNumbers=new Set(probes.map(pr=>pr.number));
+ return picked.map(pr=>{
+  const task=taskFor(pr,priorityFor(pr,now));
+  return task&&hintNumbers.has(pr.number)?
+   {...task,manual_conflict_probe:true}:task;
+ });
 }
 // This is a label-only inventory observation, NOT a source-repair admission.
 // Hold/Draft/conflict/specialist labels may overlap. No extra GitHub reads.
@@ -289,12 +322,14 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   dryRun,discovered:0,production:0,actionable:0,candidates:0,
   inspected:0,dispatchAccepted:0,wouldDispatch:0,
   staleConflictCleared:0,wouldClearStaleConflict:0,
-  manualConflictHandoffs:0,wouldManualConflictHandoffs:0,dependentPrsLinked:0,
+  manualConflictHandoffs:0,wouldManualConflictHandoffs:0,
+  verifiedManualConflictReroutes:0,dependentPrsLinked:0,
   conflictQueueReleased:0,unconfirmedHandoffs:0,
   manualSourceEscalations:0,wouldManualSourceEscalations:0,
   specialistReclassified:0,wouldSpecialistReclassify:0,
   policyReclassified:0,wouldPolicyReclassify:0,
   definitiveDispatchRejections:0,repairDispatchAccepted:0,
+  dispatchReceiptsConfirmed:0,dispatchReceiptsUnverified:0,
   actionableByLane:{repair:0,legacy:0,ci:0,conflict:0},
   legacyDispatchAccepted:0,
   capacityReason:null,blocked:{},legacyCiRecovery:null,
@@ -536,16 +571,18 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
  };
  // Preserve the source/CI-first plan. Conflict receipts are not code writes.
  const ordered=candidates;
- for(const task of ordered){
+ for(let task of ordered){
   if(summary.dispatchAccepted>=MAX_DISPATCH||quota.state.paused)break;
   if(task?.lane==='legacy'&&summary.legacyDispatchAccepted>=1)continue;
   currentTask=task;
   if(!task){blocked('UNCLASSIFIED');continue;}
   summary.inspected++;
-  if(conflictEvent&&task.lane!=='conflict'){
+  // Legacy is allowed only for a read-only fresh PR proof here.
+  // After that proof, a conflict event MUST be in the real conflict lane.
+  if(conflictEvent&&task.lane!=='conflict'&&task.lane!=='legacy'){
    blocked('CONFLICT_EVENT_LANE_MISMATCH');continue;
   }
-  const worker=WORKFLOWS[task.lane];
+  let worker=WORKFLOWS[task.lane];
   // A child based on this branch must not strand its parent. The trusted
   // executor receives this link, but never mutates or retargets the child.
   let children=prs,heads=prs;
@@ -579,9 +616,36 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   let fresh;
   try{fresh=(await limited('live-pr',()=>github.rest.pulls.get({owner,repo,pull_number:task.pr_number}))).data;}
   catch(err){blocked('LIVE_PR_UNAVAILABLE');log('PR #'+task.pr_number+' unavailable '+err.message);continue;}
+  // Fresh exact-HEAD DIRTY evidence may upgrade a legacy manual task to
+  // semantic conflict handoff only. It NEVER grants a source-write worker.
+  const verifiedManualDirtyConflict=task.lane==='legacy'&&
+   fresh?.head?.sha===task.head_sha&&fresh.head?.ref===task.head_ref&&
+   fresh.base?.ref===PROD&&validLegacyPrep(fresh)&&fresh.mergeable===false&&
+   fresh.mergeable_state==='dirty'&&
+   (fresh.labels||[]).some(label=>label.name==='hh:conflict-repair-needed')&&
+   laneOf(fresh)==='conflict';
+  if(verifiedManualDirtyConflict){
+   const converted=taskFor(fresh,priorityFor(fresh,now));
+   if(converted?.lane!=='conflict'||converted.head_sha!==task.head_sha){
+    blocked('MANUAL_DIRTY_CONFLICT_TASK_UNVERIFIED');continue;
+   }
+   task=converted;currentTask=task;worker=WORKFLOWS.conflict;
+   summary.verifiedManualConflictReroutes++;
+   log('VERIFIED_MANUAL_DIRTY_CONFLICT_REROUTE #'+task.pr_number+
+    ' '+task.head_sha.slice(0,12));
+  }
+  if(task.manual_conflict_probe&&!verifiedManualDirtyConflict){
+   // A probe is not a second hourly legacy worker. Only verified DIRTY
+   // evidence may advance it to a non-writing conflict owner handoff.
+   blocked('MANUAL_CONFLICT_PROBE_NOT_DIRTY');continue;
+  }
   if(!fresh||fresh.head?.sha!==task.head_sha||fresh.base?.ref!==PROD||
-     !(task.lane==='legacy'?validLegacyPrep(fresh):validPR(fresh))||
+     !(task.lane==='legacy'||verifiedManualDirtyConflict?
+       validLegacyPrep(fresh):validPR(fresh))||
       laneOf(fresh)!==task.lane){blocked('STALE_SHA_OR_STATE');continue;}
+  if(conflictEvent&&task.lane!=='conflict'){
+   blocked('CONFLICT_EVENT_LANE_MISMATCH');continue;
+  }
   let comments;
   try{
    comments=await readCompleteIssueComments(github,owner,repo,task.pr_number,limited);
@@ -893,9 +957,17 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
    try{files=(await limited('repair-files',()=>github.rest.pulls.listFiles({
     owner,repo,pull_number:task.pr_number,per_page:100,page:1}))).data;}
    catch(e){blocked('SOURCE_FILES_UNAVAILABLE');continue;}
+   // Do not let the eight-path worker shortlist hide any later sensitive
+   // path, configuration change or colocated test from the pre-dispatch gate.
+   const inventory=assessCompleteFreeRepairScope(files);
    const safe=safeFiles(files);
-   if(!safe||!safe.length){
-    blocked('SOURCE_SCOPE_NOT_ACTIONABLE');
+   const freeScopeSafe=inventory.allowed&&Array.isArray(safe)&&
+     safe.length===inventory.files.length&&
+     safe.every(safeFreeSourcePath)&&
+     safe.every((path,i)=>path===inventory.files[i]);
+   if(!freeScopeSafe){
+    const scopeReason=inventory.allowed?'SOURCE_SCOPE_UNSAFE_FOR_FREE_AI':inventory.reason;
+    blocked(scopeReason);
     // Verified source CI can affect files outside the source-writing sandbox.
     // Escalate once to the PR owner instead of repeatedly re-enqueueing an
     // unauthorized code-write attempt. NEVER auto-publish these files.
@@ -920,10 +992,11 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
      await limited('scope-owner-terminal-receipt',()=>github.rest.issues.createComment({
       owner,repo,issue_number:task.pr_number,
       body:marker+'\n@'+ownerPr.user.login+
-       ' — Core failed at this exact HEAD, but no file is within the permitted '+
-       'automatic source-repair scope. Authorized human/Code Repair review needed. '+
+       ' — Core failed at this exact HEAD, but the changed source scope is '+
+       'unsupported or sensitive for the existing free automatic repair. '+
+       'Authorized human/Code Repair review is required. '+
        'No source write or required CI bypass occurred.\n'+commentBody({
-        ...task,state:'MANUAL',reason_code:'SOURCE_SCOPE_NOT_ACTIONABLE',
+        ...task,state:'MANUAL',reason_code:scopeReason,
         source_published:false,owner_run_id:String(context.runId||'unknown'),
         created_at:new Date(now).toISOString()
        })
@@ -966,25 +1039,57 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   // The trusted single writer reserves the exact task before dispatch.
   // On interrupted dispatch this reservation fails closed pending a human
   // inspection of worker history: never duplicate a possible source write.
-  const claim=reservation(task,now,context.runId||'unspecified');
+  const errorTaskId=task.lane==='repair'?
+    latestErrorTaskId(comments,task.pr_number,task.head_sha):null;
+  const claim={...reservation(task,now,context.runId||'unspecified'),
+    assigned_executor_id:task.lane==='ci'?CI_EXECUTOR:REPAIR_EXECUTOR,
+    executor_kind:'github_actions',assignment_status:'SELECTED_RESERVED_NOT_STARTED',
+    ...(errorTaskId?{error_task_id:errorTaskId}:{})};
+  const reservedBody=commentBody(claim);
+  let reservationCommentId=null;
   try{
-   await limited('reserve-task',()=>github.rest.issues.createComment({
-    owner,repo,issue_number:task.pr_number,body:commentBody(claim)}));
+   const stored=await limited('reserve-task',()=>github.rest.issues.createComment({
+    owner,repo,issue_number:task.pr_number,body:reservedBody}));
+   reservationCommentId=stored?.data?.id||null;
   }catch(err){blocked('RESERVATION_FAILED');log('Reserve #'+task.pr_number+' '+err.message);continue;}
   const inputs={pr_number:String(task.pr_number),expected_sha:task.head_sha,
     task_key:task.task_key,reservation_run_id:String(context.runId||''),
     dry_run:'false'};
   try{
-   await limited('dispatch-worker',()=>github.rest.actions.createWorkflowDispatch({
+   const delivered=await limited('dispatch-worker',()=>github.rest.actions.createWorkflowDispatch({
     owner,repo,workflow_id:WORKER_PATH[task.lane],ref:DEFAULT,inputs}));
+   // A successful HTTP 204 proves GitHub accepted the dispatch request;
+   // it does not prove a worker run exists or that it claimed this HEAD.
+   if(delivered?.status!==204)throw Error('DISPATCH_HTTP_204_UNVERIFIED');
    summary.dispatchAccepted++;
    if(task.lane==='repair')summary.repairDispatchAccepted++;
    if(task.lane==='legacy')summary.legacyDispatchAccepted++;
-   summary.workerRuns.push({task_key:task.task_key,pr_number:task.pr_number,
-    head_sha:task.head_sha,lane:task.lane,outcome:'DISPATCH_ACCEPTED',
-    sourceCommitConfirmed:false});
+   const workerRun={task_key:task.task_key,pr_number:task.pr_number,
+    head_sha:task.head_sha,lane:task.lane,error_task_id:errorTaskId,
+    executor_id:claim.assigned_executor_id,outcome:'DISPATCH_ACCEPTED',
+    acceptanceReceiptPersisted:false,sourceCommitConfirmed:false};
+   // Patch the SAME reservation comment, keeping its first signed
+   // HH_PR_TASK_V1 JSON and RESERVED state exactly intact. The worker still
+   // requires the original reservation and records CLAIMED independently.
+   try{
+    if(!Number.isSafeInteger(reservationCommentId)||reservationCommentId<1)
+      throw Error('RESERVATION_COMMENT_ID_UNVERIFIED');
+    const ack=dispatchAcceptance(claim,now);
+    const body=reservedBody+'\n'+dispatchAcceptanceBody(ack);
+    const updated=await limited('persist-dispatch-acceptance',()=>github.rest.issues.updateComment({
+      owner,repo,comment_id:reservationCommentId,body}));
+    if(updated?.data?.body!==body)throw Error('DISPATCH_RECEIPT_WRITE_READBACK_UNVERIFIED');
+    workerRun.acceptanceReceiptPersisted=true;
+    summary.dispatchReceiptsConfirmed++;
+   }catch(error){
+    summary.dispatchReceiptsUnverified++;
+    blocked('DISPATCH_ACCEPTANCE_RECEIPT_UNVERIFIED');
+    log('Dispatch accepted but receipt not verified #'+task.pr_number+' '+String(error.message||error).slice(0,120));
+   }
+   summary.workerRuns.push(workerRun);
    occupyWorkerSlot(worker);
-   log('DISPATCH_ACCEPTED '+task.lane+' #'+task.pr_number+' '+task.head_sha.slice(0,12));
+   log('DISPATCH_ACCEPTED '+task.lane+' #'+task.pr_number+' '+task.head_sha.slice(0,12)+
+     ' executor='+claim.assigned_executor_id+' ack='+workerRun.acceptanceReceiptPersisted);
   }catch(err){
    blocked(classify(err)?'DISPATCH_RATE_LIMIT':'DISPATCH_DENIED');log('Dispatch #'+task.pr_number+' '+err.message);
    // Never release an ambiguous reservation. A definite non-accepted HTTP

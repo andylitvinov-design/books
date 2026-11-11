@@ -113,3 +113,62 @@ test('a production base that moves during classification fails closed',async()=>
  const result=await assess({github,owner:'o',repo:'r',pr,classifierBase:head,decideRoute:()=> 'CORE'});
  assert.equal(result.reason,'BASE_MOVED_DURING_CHECK');
 });
+
+test('hourly coordinator recovers trusted Core base if GH drops PR association',async()=>{
+ const {coreRunBaseForCheck}=require('../scripts/ci-pr-base-freshness.cjs');
+ const base='9e84af6e730328ab34099f97b98cb14211bc08af';
+ const head='e165aeb024da0d08d8631768bf6494e31d9d737e';
+ const p={number:4303,head:{ref:'codex/reasoning-mind-20261110',sha:head}};
+ const run={id:42922287638,event:'pull_request',name:'HH PR core release gate',
+   path:'.github/workflows/hh-pr-core-release.yml',
+   status:'completed',conclusion:'success',check_suite_id:116243651946,
+   head_sha:head,head_branch:p.head.ref,
+   repository:{full_name:'andylitvinov-design/books'},
+   head_repository:{full_name:'andylitvinov-design/books'},pull_requests:[]};
+ const check={id:12345,name:'hh-merge-check',app:{id:15368,slug:'github-actions'},
+   details_url:'https://github.com/andylitvinov-design/books/actions/runs/42922287638/job/99',
+   check_suite:{id:116243651946}};
+ const jobs=[
+  {id:1,run_id:run.id,name:'core-lint-types-build',status:'completed',conclusion:'success',
+   steps:[{name:'Verify bounded shallow scope ancestry before PR routing',
+    status:'completed',conclusion:'success'}]},
+  {id:2,run_id:run.id,name:'hh-specialist',status:'completed',conclusion:'success'},
+  {id:99,run_id:run.id,name:'hh-merge-check',status:'completed',conclusion:'success'}
+ ];
+ const logs='2026-11-10T23:19:40.0000000Z Verify bounded shallow scope ancestry before PR routing\n'+
+  '2026-11-10T23:19:47.4471074Z   HH_TESTED_BASE_VERIFIED: '+base+'\n';
+ let logCalls=0,jobPages=0;
+ const github={rest:{actions:{
+  getJobForWorkflowRun:async()=>({data:{id:99,run_id:run.id,name:'hh-merge-check',
+   status:'completed',conclusion:'success',
+   check_run_url:'https://api.github.com/repos/andylitvinov-design/books/check-runs/12345'}}),
+  getWorkflowRun:async()=>({data:run}),
+  listJobsForWorkflowRun:async()=>{jobPages++;return {data:{total_count:jobs.length,jobs}};}
+ }}};
+ const fetcher=async()=>{logCalls++;return {ok:true,
+   headers:{get:()=>String(logs.length)},text:async()=>logs};};
+ const args={github,owner:'andylitvinov-design',repo:'books',pr:p,
+   check,rows:[{status:'M',filename:'lib/ai/reasoning-mind.ts'}],
+   token:'test-only-token',fetcher};
+ assert.equal(await coreRunBaseForCheck(args),base);
+ assert.equal(jobPages,1);
+ assert.equal(logCalls,1);
+ // Changed workflow paths and forged/partial evidence can NEVER verify a base.
+ assert.equal(await coreRunBaseForCheck({...args,
+  rows:[{status:'M',filename:'.github/workflows/hh-pr-core-release.yml'}]}),null);
+ assert.equal(await coreRunBaseForCheck({...args,token:null}),null);
+ assert.equal(await coreRunBaseForCheck({...args,
+  pr:{...p,head:{...p.head,sha:'f'.repeat(40)}}}),null);
+ assert.equal(await coreRunBaseForCheck({...args,
+  check:{...check,app:{id:11,slug:'untrusted'}}}),null);
+ assert.equal(await coreRunBaseForCheck({...args,github:{rest:{actions:{
+  ...github.rest.actions,listJobsForWorkflowRun:async()=>({data:{total_count:4,jobs}})
+ }}}}),null);
+ assert.equal(logCalls,1,'no unauthorised runner-log read');
+});
+test('hourly Core-base fallback uses existing GitHub token and no scheduled work',()=>{
+ const hourly=require('node:fs').readFileSync('.github/workflows/hh-pr-full-inventory.yml','utf8');
+ assert.match(hourly,/HH_CORE_BASE_TOKEN: \$\{\{ github\.token \}\}/);
+ assert.equal((hourly.match(/verifiedRunBase:rows=>baseEvidence\.coreRunBaseForCheck/g)||[]).length,2);
+ assert.equal((hourly.match(/token:process\.env\.HH_CORE_BASE_TOKEN/g)||[]).length,2);
+});

@@ -10,8 +10,14 @@ permissions:
   issues: write
   pull-requests: write
   checks: read
+  id-token: write
 jobs:
-  direct-core-failure:
+  # Intake is intentionally OUTSIDE the single-writer reservation group.
+  # GitHub concurrency keeps only one pending run per group even with
+  # cancel-in-progress:false; if intake were inside that group, later failed
+  # Core events could silently replace pending tasks before classification.
+  ci_event_intake:
+    name: core-failure-ci-event-intake
     if: >-
       github.repository == 'andylitvinov-design/books' &&
       github.ref == 'refs/heads/codex/bootstrap-books' &&
@@ -23,8 +29,75 @@ jobs:
       (github.event.workflow_run.conclusion == 'failure' ||
        github.event.workflow_run.conclusion == 'timed_out' ||
        github.event.workflow_run.conclusion == 'startup_failure')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+      id-token: write
+    outputs:
+      receipt_json: ${{ steps.send.outputs.receipt_json }}
+    steps:
+      - name: Checkout only trusted default-branch event bridge
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Persist one verified error and Commander task before dispatcher queue
+        id: send
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const {sendWorkflowFailure}=require(process.env.GITHUB_WORKSPACE+
+              '/scripts/ci-pr-hermes-event-bridge.cjs');
+            const oidcToken=await core.getIDToken('hh-commander-ci');
+            const receipt=await sendWorkflowFailure({github,context,core,oidcToken});
+            core.setOutput('receipt_json',JSON.stringify(receipt));
+            await core.summary.addHeading('Core failure CI intake (independent of source writer)')
+              .addCodeBlock(JSON.stringify(receipt,null,2)).write();
+            const persistedAssociations=new Set([
+              'MATCHED_CHAT_EVENT_RECORDED',
+              'TASK_ASSIGNED_CHAT_RECORDED_NOT_DISPATCHED',
+              'AUTO_TASK_CREATED_NOT_DISPATCHED'
+            ]);
+            if(receipt.accepted!==true||!persistedAssociations.has(receipt.association))
+              throw Error('COMMANDER_CI_TASK_INGEST_NOT_VERIFIED');
+            // Durable read-only route is persisted BEFORE the serialized
+            // writer queue; pending CI handoffs can coalesce in that group.
+            // No source/base/infra action runs in this independent intake.
+            const {persistReadOnlyRoute}=require(process.env.GITHUB_WORKSPACE+
+              '/scripts/ci-pr-readonly-route-intake.cjs');
+            const routing=await persistReadOnlyRoute({
+              receipt,context,github,core,oidcToken
+            });
+            core.info('HH_CORE_INDEPENDENT_READONLY_ROUTE '+JSON.stringify(routing));
+            await core.summary.addHeading('Independent classified CI route')
+              .addCodeBlock(JSON.stringify(routing,null,2)).write();
+  direct-core-failure:
+    needs: ci_event_intake
+    if: >-
+      needs.ci_event_intake.result == 'success' &&
+      github.repository == 'andylitvinov-design/books' &&
+      github.ref == 'refs/heads/codex/bootstrap-books' &&
+      github.event.workflow_run.name == 'HH PR core release gate' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.status == 'completed' &&
+      github.event.workflow_run.repository.full_name == github.repository &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      (github.event.workflow_run.conclusion == 'failure' ||
+       github.event.workflow_run.conclusion == 'timed_out' ||
+       github.event.workflow_run.conclusion == 'startup_failure')
+    # GitHub Actions retains only ONE pending job per concurrency group.
+    # A global group silently cancelled unrelated PR error handoffs after
+    # their independent OIDC intake (for example PR #4288, run 42915425114).
+    # Serialize by trusted source branch; source edits remain protected by
+    # the existing exact-HEAD reservation, independent worker claim and PR
+    # source writer lease. Other PRs must not replace pending work.
     concurrency:
-      group: hh-control-tower-single-writer
+      group: hh-direct-core-pr-${{ github.event.workflow_run.head_branch || github.event.workflow_run.id }}
       cancel-in-progress: false
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -38,6 +111,9 @@ jobs:
       - name: Check trusted direct event code
         run: |
           node --check scripts/ci-pr-event-handoff.cjs
+          node --check scripts/ci-pr-commander-strategy-router.cjs
+          node --check scripts/ci-pr-commander-route-receipt.cjs
+          node --check scripts/ci-pr-error-task.cjs
           node --check scripts/ci-pr-ten-minute-watchdog.cjs
           node --check scripts/ci-pr-queue-dispatcher.cjs
           node --check scripts/ci-pr-base-advanced-recovery.cjs
@@ -143,21 +219,44 @@ jobs:
                 core.warning("FAILED_CORE_TARGETED_RECOVERY denied HTTP "+error.status);
               }else{throw error;}
             }
-      - name: Route verified failed Core directly to signed Repair
-        if: steps.base_recovery.outputs.updated != 'true' && steps.infra_recovery.outputs.infra_hold != 'true'
+      # The classified Commander task must exist before the code-writing
+      # handoff. The trusted ci-pr-event-handoff.cjs still independently checks
+      # causal job evidence, exact PR HEAD, leases, worker slots and labels.
+      - name: Route confirmed Commander CI task through guarded dispatcher
+        if: ${{ always() && needs.ci_event_intake.result == 'success' }}
         uses: actions/github-script@v7
         env:
           HH_CONTROL_TOWER_ENABLED: 'true'
           HH_DIRECT_HANDOFF_ENABLED: 'true'
+          HH_COMMANDER_CI_RECEIPT: ${{ needs.ci_event_intake.outputs.receipt_json }}
+          HH_BASE_UPDATED: ${{ steps.base_recovery.outputs.updated }}
+          HH_INFRA_RERUN: ${{ steps.infra_recovery.outputs.targeted_rerun }}
+          HH_INFRA_HOLD: ${{ steps.infra_recovery.outputs.infra_hold }}
         with:
           github-token: ${{ github.token }}
           script: |
-            const {run}=require(process.env.GITHUB_WORKSPACE+
+            const {route}=require(process.env.GITHUB_WORKSPACE+
+              '/scripts/ci-pr-commander-strategy-router.cjs');
+            const {run:existingCoreHandoff}=require(process.env.GITHUB_WORKSPACE+
               '/scripts/ci-pr-event-handoff.cjs');
-            const result=await run({github,core,context,dryRun:false});
+            let receipt=null;
+            try{receipt=JSON.parse(process.env.HH_COMMANDER_CI_RECEIPT||'null');}
+            catch(error){core.warning('COMMANDER_CI_RECEIPT_PARSE_FAILED');}
+            const result=await route({receipt,github,core,context,dryRun:false,
+              baseUpdated:process.env.HH_BASE_UPDATED==='true',
+              infraRerun:process.env.HH_INFRA_RERUN==='true',
+              infraHold:process.env.HH_INFRA_HOLD==='true',
+              existingCoreHandoff});
             core.info('HH_DIRECT_CORE_HANDOFF '+JSON.stringify(result));
-            await core.summary.addHeading('Core failure: direct exact-HEAD Repair')
-              .addCodeBlock(JSON.stringify(result,null,2)).write();
+            const {sendCommanderCiRoute}=require(process.env.GITHUB_WORKSPACE+
+              '/scripts/ci-pr-commander-route-receipt.cjs');
+            const oidcToken=await core.getIDToken('hh-commander-ci');
+            const delivery=await sendCommanderCiRoute({
+              routeResult:result,receipt,core,oidcToken});
+            core.info('HH_COMMANDER_CI_ROUTE_RECEIPT '+JSON.stringify(delivery));
+            await core.summary.addHeading('Commander CI strategy and delivery proof')
+              .addCodeBlock(JSON.stringify({route:result,delivery},null,2)).write();
+
       - name: Persist completed Core job timings without another runner
         if: ${{ always() }}
         uses: actions/github-script@v7
@@ -191,8 +290,14 @@ jobs:
     permissions:
       contents: read
       actions: write
-      pull-requests: read
+      # A PR Conversation receipt is a PR-scoped issue comment. Real Core
+      # #42958812466 reached independently verified GREEN, but the job's
+      # issues:write + pull-requests:read token was denied HTTP 403 on
+      # POST /issues/4306/comments. Keep contents:read and grant only this
+      # trusted success/terminal-receipt job PR write scope.
+      pull-requests: write
       issues: write
+      checks: read
     steps:
       - name: Checkout trusted default branch for bounded admission policy
         uses: actions/checkout@v4
@@ -207,6 +312,17 @@ jobs:
           script: |
             const {run}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-slot-wakeup.cjs');
             await run({github,core,context});
+      - name: Record independently verified repair outcome on real new HEAD
+        if: ${{ always() }}
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const {run}=require(process.env.GITHUB_WORKSPACE+
+              '/scripts/ci-pr-repair-verified-finalizer.cjs');
+            const result=await run({github,core,context});
+            await core.summary.addHeading('Repair task: exact-HEAD CI outcome')
+              .addCodeBlock(JSON.stringify(result,null,2)).write();
       - name: Persist completed Core job timings without another runner
         if: ${{ always() }}
         uses: actions/github-script@v7

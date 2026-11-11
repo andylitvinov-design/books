@@ -36,5 +36,3 @@ The public Control Tower feed supplies only bounded aggregate counts, not the fu
 - node --test ops/pr-monitor/tests/pr-recommendations.test.cjs
 
 No existing chart, PR stage source, CI endpoint, authentication or owner-only Command Center route is changed.
-
-[executed on device: MacBook-Air-Andrii-3.local (5a68b85e-3490-4ac3-a77e-81c382fe4c77)]

@@ -146,3 +146,31 @@ test('oversized source stays untouched while an independent small TS import is s
   assert.deepEqual(git('diff','--name-only').split('\n'),['components/small.ts']);
  }finally{fs.rmSync(dir,{recursive:true,force:true});}
 });
+
+test('strict one-line TS2304 may restore only the exact protected source line',()=>{
+ const {exactProtectedBaseTs2304Line:repair}=require('../scripts/ci-pr-repair-deterministic.cjs');
+ const file='components/site-navigation.tsx',symbol='hhRepairCanaryMissingV3';
+ const baseline='before\n    className="site-nav-free-entry"\nafter\n';
+ const source='before\n    className={'+symbol+'}\nafter\n';
+ const col=source.split('\n')[1].indexOf(symbol)+1;
+ const diagnostic=file+'(2,'+col+"): error TS2304: Cannot find name '"+symbol+"'.";
+ const actual=repair({file,source,baseline,diagnostics:diagnostic});
+ assert.equal(actual.changed,true);
+ assert.equal(actual.code,baseline);
+ assert.equal(actual.line,2);
+ for(const changed of [
+  {diagnostics:diagnostic+'\n'+diagnostic},
+  {diagnostics:diagnostic.replace('TS2304','TS2322')},
+  {diagnostics:diagnostic.replace('(2,','(1,')},
+  {diagnostics:diagnostic.replace(','+col+')',',1)')},
+  {source:source.replace('before','other')},
+  {source:source.replace('after','other')},
+  {source:source+source},
+  {baseline:baseline.replace('site-nav-free-entry',symbol)},
+  {file:'app/admin/auth.tsx'},
+  {file:'tests/home.test.ts'},
+  {source:source.slice(0,-1)},
+  {baseline:baseline.slice(0,-1)}
+ ])assert.equal(repair({file,source,baseline,diagnostics:diagnostic,...changed}).changed,false,
+   'invalid compiler proof or nonunique changes must be rejected');
+});
