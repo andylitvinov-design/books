@@ -244,11 +244,12 @@ test('Instagram drafts persist an explicit social destination; server approval g
   assert.equal(missing.socialAccountId,'')
   assert.equal(nextGrowthPost({current:missing,action:'approve',now:fixedNow}).status,'approved')
   const actions=readFileSync(new URL('../app/admin/growth-studio/actions.js',import.meta.url),'utf8')
-  assert.match(actions,/input\.action==='save' && input\.fields\?\.channel==='instagram'/)
+  assert.match(actions,/\['instagram','facebook'\]\.includes\(input\.fields\?\.channel\)/)
   assert.match(actions,/input\.action==='approve'\|\|input\.action==='plan'/)
   assert.match(actions,/instagram_account_required/)
   assert.throws(()=>normalizePostFields({...instagram,socialAccountId:'untrusted-account'}),/invalid_post/)
-  assert.throws(()=>normalizePostFields({...instagram,channel:'facebook'}),/invalid_post/)
+  assert.equal(normalizePostFields({...instagram,channel:'facebook'}).socialAccountId,'wizards_secrets')
+  assert.throws(()=>normalizePostFields({...instagram,channel:'facebook',socialAccountId:'untrusted-account'}),/invalid_post/)
 })
 
 test('legacy saved posts without socialAccountId remain readable',()=>{
@@ -326,7 +327,7 @@ test('Meta Graph Instagram receipts are valid only for the exact selected accoun
 
 test('owner approval action requires selected Instagram account for newly edited drafts and preserves old records',()=>{
   const actions=readFileSync(new URL('../app/admin/growth-studio/actions.js',import.meta.url),'utf8')
-  assert.match(actions,/input\.action==='save' && input\.fields\?\.channel==='instagram'/)
+  assert.match(actions,/\['instagram','facebook'\]\.includes\(input\.fields\?\.channel\)/)
   assert.match(actions,/input\.action==='approve'\|\|input\.action==='plan'/)
   assert.match(actions,/instagram_account_required/)
   assert.match(actions,/GROWTH_INSTAGRAM_ACCOUNT_TARGETS/)
