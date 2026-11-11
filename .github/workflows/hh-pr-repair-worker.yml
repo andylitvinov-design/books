@@ -879,6 +879,9 @@ jobs:
           HH_REPAIR_PR: ${{ needs.claim.outputs.pr_number }}
           HH_PUBLISHED_SHA: ${{ steps.publish_source.outputs.publish_sha }}
           HH_BASE_REF: codex/public-book-library
+          # Existing owner credential is exposed only to the trusted publisher
+          # step, never the isolated model, fix or code_verify jobs.
+          HH_AUTOMERGE_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN }}
         with:
           github-token: ${{ github.token }}
           script: |
@@ -905,8 +908,20 @@ jobs:
                 event:'pull_request',branch:identity.branch,per_page:100
               });
               const match=proof.findExactHeadCoreRun(response.data?.workflow_runs,identity);
-              return match?{state:'CONFIRMED',run_id:match.id,url:match.html_url,
-                status:match.status,conclusion:match.conclusion}:{state:'PENDING'};
+              if(!match)return {state:'PENDING'};
+              const summary={run_id:match.id,url:match.html_url,
+                status:match.status,conclusion:match.conclusion};
+              if(['queued','waiting','pending','requested'].includes(match.status))
+                return {state:'QUEUED',...summary};
+              const evidence=await github.rest.actions.listJobsForWorkflowRun({
+                owner,repo,run_id:match.id,per_page:100,filter:'latest'});
+              const snapshot=evidence?.data;
+              const coreJobs=Number.isSafeInteger(snapshot?.total_count)&&
+                snapshot.total_count>=0&&snapshot.total_count<=100&&
+                Array.isArray(snapshot.jobs)&&snapshot.jobs.length===snapshot.total_count?
+                snapshot.jobs:null;
+              const state=proof.coreExecutionState(match,coreJobs);
+              return {state:state==='UNVERIFIED'?'PENDING':state,...summary};
             };
             let outcome={state:'PENDING'};
             // Give the PAT-authenticated PR synchronize event a short chance to
@@ -915,6 +930,25 @@ jobs:
               outcome=await find();
               if(outcome.state!=='PENDING')break;
               if(i<5)await wait(5000);
+            }
+            if(outcome.state==='PENDING'){
+              // Bot-authored PR synchronization can be action_required
+              // with ZERO jobs. A bounded, exact-HEAD owner-authored PR
+              // metadata edit requests the ordinary read-only PR Core.
+              // No source push, no approval/check spoofing, no paid service.
+              const ownerWake=await proof.requestOwnerCoreWake({
+                token:process.env.HH_AUTOMERGE_TOKEN||'',prNumber:number,sha,
+                fetchImpl:fetch
+              });
+              core.info('HH_NEXT_CI_OWNER_METADATA_WAKE '+JSON.stringify(ownerWake));
+              if(['OWNER_METADATA_EDIT_ACCEPTED','OWNER_WAKE_ALREADY_REQUESTED']
+                .includes(ownerWake.status)){
+                for(let i=0;i<12;i++){
+                  await wait(5000);
+                  outcome=await find();
+                  if(outcome.state!=='PENDING')break;
+                }
+              }
             }
             if(outcome.state==='PENDING'){
               // Durable queue hint + existing serialized Watchdog is the
@@ -954,6 +988,11 @@ jobs:
               await core.summary.addHeading('Next exact-HEAD Core CI wave confirmed')
                 .addLink(outcome.url,'Open verified Core run')
                 .addRaw('\n\nSource SHA: '+sha).write();
+            }else if(outcome.state==='QUEUED'||outcome.state==='RUNNING'){
+              // A queued/running job is NOT a completed CI or VERIFIED repair.
+              // The existing finalizer and required gates must check results.
+              await core.summary.addHeading('Next exact-HEAD Core wave pending independent result')
+                .addRaw('\n\nSource SHA: '+sha+'; state: '+outcome.state).write();
             }else if(outcome.state==='SUPERSEDED'){
               await core.summary.addHeading('Published repair superseded by a newer owner HEAD')
                 .addRaw('\n\nNewer HEAD: '+String(outcome.current_sha)).write();
