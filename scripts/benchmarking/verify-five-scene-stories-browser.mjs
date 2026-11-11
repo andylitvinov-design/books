@@ -1,5 +1,5 @@
 /**
- * Stories Studio physical acceptance: five original motion scenes, 9:16 MP4/H264,
+ * Stories Studio physical acceptance: five independently reviewed camera-filmed scenes, 9:16 MP4/H264,
  * audible soundtrack and verified scene identity. Only GET/HEAD to local Next.
  * Never contacts an AI provider, uploads media or publishes a Story.
  */
@@ -10,6 +10,8 @@ import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {installGuestVideoBlobCapture,readRealGuestVideo} from './real-guest-video-file.mjs';
+import {isReviewedFilmedStoryScene} from '../../lib/mandala/reviewed-filmed-story.mjs';
+import {verifiedCategorySource} from '../../lib/mandala/category-video-storyboard.mjs';
 
 const origin='http://127.0.0.1:3100';
 const browserModule=process.env.HH_LIVE_VIDEO_PLAYWRIGHT;
@@ -17,10 +19,11 @@ assert.ok(browserModule?.startsWith('/'),'STORIES_BROWSER_DRIVER_REQUIRED');
 assert.equal(process.env.HH_STORIES_E2E_ENGINE,'webkit','STORIES_REAL_WEBKIT_REQUIRED');
 assert.equal(process.platform,'darwin','STORIES_REAL_MACOS_REQUIRED');
 const {webkit}=await import(pathToFileURL(browserModule).href);
-const catalog=JSON.parse(readFileSync('data/video-catalog/original-motion-scenes-v1.json','utf8'));
-const approved=new Map(catalog.scenes.filter(x=>x.status==='approved'&&
-  x.media==='original_motion_mp4'&&x.width<x.height&&x.durationSeconds>=4)
-  .map(x=>[x.id,x]));
+const catalog=JSON.parse(readFileSync('data/video-catalog/scene-taxonomy.json','utf8'));
+const approved=new Map(catalog.scenes.filter(scene=>
+  isReviewedFilmedStoryScene(scene,'portrait')&&
+  verifiedCategorySource(scene)?.durationSeconds>=4)
+  .map(scene=>[scene.id,scene]));
 const dir=mkdtempSync(path.join(tmpdir(),'hh-story-5shot-'));
 const evidencePath='artifacts/benchmarking/five-scene-stories-webkit.json';
 const result={test:'anonymous-local-stories-five-scene',browser:'webkit',origin:'localhost',
@@ -73,7 +76,7 @@ try{
    nodes.map(node=>node.value));
  assert.equal(ids.length,5,'STORIES_NOT_FIVE_REAL_SOURCES');
  assert.equal(new Set(ids).size,5,'STORIES_DUPLICATE_MEDIA');
- for(const id of ids)assert.ok(approved.has(id),'STORIES_UNAPPROVED_MOTION:'+id);
+ for(const id of ids)assert.ok(approved.has(id),'STORIES_UNREVIEWED_OR_GRAPHICAL_SOURCE:'+id);
  result.shotCount=ids.length;result.distinctSources=new Set(ids).size;
  result.verifiedRights=true;
  await page.locator('[data-video-montage-tab="audio"]').click();

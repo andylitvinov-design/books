@@ -52,6 +52,7 @@ import { cinematicPreviewSeconds, buildCinematicStoryboard } from "@/lib/mandala
 import { FIRST_VIDEO_FOOD_CANVAS_PLAN_VERSION } from "@/lib/mandala/first-video-director.mjs";
 import { allocateFreeFilmTimeline, allocateAdaptiveFilmTimeline, allocateSourceBoundedFilmTimeline, allocateVariableFilmTimeline, shiftAdaptiveFilmBoundary, shiftVariableFilmBoundary, reframeCinematicPlan } from "@/lib/mandala/free-film-timeline.mjs";
 import {validateMontageClips,isSafeMontageScene} from "@/lib/mandala/video-montage-sources.mjs";
+import {isReviewedFilmedStoryScene} from "@/lib/mandala/reviewed-filmed-story.mjs";
 import {autoFillApprovedFilm} from "@/lib/mandala/auto-fill-approved-film.mjs";
 import {normalizeStageCaption,stageCaptionAt} from "@/lib/mandala/stage-caption-track.mjs";
 import {pickSingleVideoTextSource} from "@/lib/mandala/single-video-text-track.mjs";
@@ -1100,19 +1101,31 @@ function compileFreeFilmPreset(
       emotionalPace:semantic.pace}:{})} as CinematicStoryboard;
 }
 
+// Story formats may show only camera-filmed footage with reviewed provenance.
+// Related wellness nature themes are allowed; business/goals MUST NOT fall back
+// to unrelated nature, procedural animation or generic composite MP4.
+const STORY_REVIEWED_THEME_COMPATIBILITY:Record<VideoTheme,readonly VideoTheme[]>={
+  money:["money"],goals:["goals"],relationships:["relationships"],
+  health:["health","life","energy"],life:["life","health","energy"],
+  energy:["energy","health","life"]
+};
 function selectFiveStoryClips(theme:VideoTheme,aspect:Aspect,durationSeconds=20,format:"visual"|"motion"="visual"):string[]{
-  const required=Math.max(1,Math.floor(durationSeconds/5));
+  const compatible=STORY_REVIEWED_THEME_COMPATIBILITY[theme];
+  const requiredClipDuration=durationSeconds/5;
   const ranked=FREE_FILM_CATALOG.flatMap(source=>{
     const verified=verifiedCategorySource(source);
-    if(!verified||source.status!=="approved"||source.theme!==theme||
-      (format==="motion"?source.media!=="original_motion_mp4":source.media!=="licensed_mp4")||
-      !isSafeMontageScene(source)||!verifiedSceneAspect(verified,aspect)||
-      verified.durationSeconds<required||!firstPartyFilmFor(theme,source.id))return [];
+    if(!compatible.includes(source.theme as VideoTheme)||
+      !isReviewedFilmedStoryScene(source,aspect)||!isSafeMontageScene(source)||
+      !verified||!verifiedSceneAspect(verified,aspect)||
+      verified.durationSeconds<requiredClipDuration||
+      !firstPartyFilmFor(source.theme as VideoTheme,source.id))return [];
     const key=canonicalSourceMasterKey(verified);
     if(!key)return [];
-    return [{id:source.id,key,group:"perceptualGroupId" in source&&typeof source.perceptualGroupId==="string"?source.perceptualGroupId:
-      "sourceOriginalGroupId" in source&&typeof source.sourceOriginalGroupId==="string"?source.sourceOriginalGroupId:null}];
-  });
+    return [{id:source.id,key,priority:compatible.indexOf(source.theme as VideoTheme),
+      group:"perceptualGroupId" in source&&typeof source.perceptualGroupId==="string"?source.perceptualGroupId:
+        "sourceOriginalGroupId" in source&&typeof source.sourceOriginalGroupId==="string"?source.sourceOriginalGroupId:null}];
+  }).sort((a,b)=>a.priority-b.priority||
+    (format==="motion"?b.id.localeCompare(a.id):a.id.localeCompare(b.id)));
   const selected:typeof ranked=[];
   const keys=new Set<string>(),groups=new Set<string>();
   for(const source of ranked){
@@ -4846,7 +4859,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     const clips=selectFiveStoryClips(theme,"portrait",20,format);
     if(clips.length!==5){
       setNotice(locale==="ru"
-        ?"В этой теме пока недостаточно пяти разных проверенных вертикальных MP4. Другие сцены не подставляются автоматически."
+        ?"В этой теме пока недостаточно пяти разных снятых и редакционно проверенных вертикальных видео. Рисованная графика и нерелевантная природа не подставляются."
         :locale==="es"
           ?"Aún no hay cinco vídeos verticales aprobados y distintos para este tema."
           :"This topic does not yet have five distinct approved portrait clips. Unrelated scenes will not be substituted.");
@@ -4860,11 +4873,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       captionTexts:clips.map(()=>""),excludedMotifs:[]
     };
     if(applyAutoFilm(preset.id,20,edit,"portrait",true)){
+      if(storyFormat==="motion"){setSpeed("dynamic");setMontageTransition("soft");}
       setMontagePanel("concept");
       setNotice(locale==="ru"
         ?"Пять проверенных сцен собраны в вертикальную историю. Просмотрите кадры и нажмите «Создать видео» для локального MP4."
         :locale==="es"
-          ?(storyFormat==="motion"?"Cinco escenas de movimiento originales están listas. Revisa el guion y crea el MP4 local.":"Cinco escenas de vídeo verificadas están listas. Revisa el guion y crea el MP4 local.")
+          ?(storyFormat==="motion"?"Cinco escenas reales filmadas están listas con montaje dinámico. Revisa el guion y crea el MP4 local.":"Cinco escenas de vídeo verificadas están listas. Revisa el guion y crea el MP4 local.")
           :"Five verified scenes are ready. Review the storyboard and create the local MP4.");
     }
   };
@@ -4873,7 +4887,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     const current=cinematicPlan,candidate=FREE_FILM_CATALOG_BY_ID.get(sceneId);
     const verified=candidate?verifiedCategorySource(candidate):null;
     if(current?.version!==FREE_FILM_PLAN_VERSION||!candidate||!verified||
-      candidate.status!=="approved"||!isSafeMontageScene(candidate)||
+      !STORY_REVIEWED_THEME_COMPATIBILITY[theme].includes(candidate.theme as VideoTheme)||
+      !isReviewedFilmedStoryScene(candidate,aspect)||
       !verifiedSceneAspect(verified,aspect)||
       verified.durationSeconds<(current.shots[index]?.durationSeconds||Infinity))return;
     const key=canonicalSourceMasterKey(verified);
@@ -8145,7 +8160,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 const localPhoto=storyboardPhotoAssetsRef.current[shot.sceneId];
                 const choices=FREE_FILM_CATALOG.filter(candidate=>{
                   const safe=verifiedCategorySource(candidate);
-                  if(!safe||candidate.status!=="approved"||!isSafeMontageScene(candidate)||
+                  if(!safe||!STORY_REVIEWED_THEME_COMPATIBILITY[theme].includes(candidate.theme as VideoTheme)||
+                    !isReviewedFilmedStoryScene(candidate,aspect)||
                     !verifiedSceneAspect(safe,aspect)||safe.durationSeconds<shot.durationSeconds)return false;
                   const key=canonicalSourceMasterKey(safe);
                   return Boolean(key)&&!cinematicPlan.shots.some((other,otherIndex)=>otherIndex!==index&&

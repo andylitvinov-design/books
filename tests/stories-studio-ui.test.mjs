@@ -31,6 +31,20 @@ test("five-scene story uses only approved, physically verified, distinct portrai
  assert.match(studio,/allocateVariableFilmTimeline\(20,clips\)/);
  assert.match(studio,/applyAutoFilm\(preset\.id,20,edit,"portrait",true\)/);
 });
+test("Visual and Motion Stories reject drawn MP4 and use the reviewed filming gate",()=>{
+ const selector=studio.slice(studio.indexOf("function selectFiveStoryClips("),studio.indexOf("const effects: Effect[]"));
+ assert.match(selector,/isReviewedFilmedStoryScene\(source,aspect\)/);
+ assert.doesNotMatch(selector,/original_motion_mp4/);
+ assert.match(studio,/money:\["money"\],goals:\["goals"\]/);
+ assert.match(selector,/STORY_REVIEWED_THEME_COMPATIBILITY\[theme\]/);
+ const replace=studio.slice(studio.indexOf("const replaceStoryboardSource="),studio.indexOf("async function transcribeVideoVoice"));
+ assert.match(replace,/isReviewedFilmedStoryScene\(candidate,aspect\)/);
+ const choices=studio.slice(studio.indexOf("const choices=FREE_FILM_CATALOG.filter"),studio.indexOf("return <article",studio.indexOf("const choices=FREE_FILM_CATALOG.filter")));
+ assert.match(choices,/isReviewedFilmedStoryScene\(candidate,aspect\)/);
+ const script=readFileSync(new URL("../scripts/benchmarking/verify-five-scene-stories-browser.mjs",import.meta.url),"utf8");
+ assert.match(script,/isReviewedFilmedStoryScene\(scene,'portrait'\)/);
+ assert.doesNotMatch(script,/original-motion-scenes-v1.json/);
+});
 test("scene photographs are validated and remain local to the current browser session",()=>{
  const start=studio.indexOf("const setStoryboardPhoto=");
  const end=studio.indexOf("const hasStoryboardPhotoAt",start);
