@@ -63,3 +63,21 @@ test("compact Montage Audio runs the existing macOS WebKit and Chromium paths",(
   assert.match(workflow,/runs-on: macos-15/);
   assert.match(workflow,/node scripts\/verify-affirmation-voice-browser\.mjs/);
 });
+
+test("physical original-motion WebKit exports selected licensed music without requiring upload-only Attach",()=>{
+  const browser=readFileSync(new URL("../scripts/benchmarking/verify-original-motion-export.mjs",import.meta.url),"utf8");
+  const start=browser.indexOf("const audioTab=page.locator");
+  const end=browser.indexOf("let captured;",start);
+  assert.ok(start>0&&end>start,"exercise actual Montage Audio and then encode");
+  const audioStep=browser.slice(start,end);
+  assert.match(audioStep,/data-video-montage-audio/);
+  assert.match(audioStep,/data-video-audio-compact-select/);
+  assert.match(audioStep,/availableTrack\.tap\(\)/,"WebKit must exercise real touch controls");
+  assert.match(audioStep,/selectedTracks\.count\(\)>=1/,"require a selected licensed recording");
+  assert.match(audioStep,/selectedTracks\.count\(\)<=3/,"respect three-track mix limit");
+  assert.match(audioStep,/await generate\.click/,"render only after actual music choice");
+  assert.doesNotMatch(audioStep,/attach\.waitFor|attach\.click/,"upload-only Attach is not present for catalog music");
+  assert.match(browser,/assert\.ok\(probe\.streams\.some\(s => s\.codec_type === 'audio'\)\)/);
+  assert.match(browser,/Math\.sqrt\(power \/ \(pcm\.length \/ 2\)\) > 0\.003/,"real exported audio must decode and be audible");
+  assert.match(browser,/sceneCorrelations:/,"preserve four physical footage comparisons");
+});
