@@ -216,3 +216,41 @@ test('baseline-green test becoming red is a regression even when other tests pas
   assert.match(run.stderr,/RELATED_TEST_REGRESSION_OR_UNVERIFIED_BASELINE/);
  }finally{f.cleanup()}
 });
+
+test('valid multi-import node:fs direct coverage is accepted without trusting aliases',()=>{
+ const f=fixture();
+ try{
+  const sourceFile='components/public-landing.tsx';
+  const testFile='tests/landing-source.test.mjs';
+  f.put(sourceFile,'export const landing=true;\n');
+  const read="const source=readFileSync(new URL('../components/public-landing.tsx',import.meta.url),'utf8');\n";
+  const body="import test from 'node:test';\n";
+  const check="test('landing source',()=>{if(!source)throw Error('missing')});\n";
+  const imports=[
+   "import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';\n",
+   'import { mkdirSync, readFileSync } from "node:fs";\n',
+   "import {readFileSync, writeFileSync as write} from 'node:fs';\n"
+  ];
+  for(const imported of imports){
+   f.put(testFile,body+imported+read+check);
+   assert.deepEqual(selectTests(f.root,[sourceFile],[testFile]),[testFile],
+     'a real unaliased native source reader has direct coverage');
+  }
+  for(const imported of [
+   "import { readFileSync as read, mkdirSync } from 'node:fs';\n",
+   "import { readFileSync, mkdirSync } from 'node:fs/promises';\n",
+   "import { getReadFileSync, mkdirSync } from 'node:fs';\n",
+   "// import { readFileSync, mkdirSync } from 'node:fs';\n",
+   "import { readFileSync, readFileSync as extra } from 'node:fs';\n"
+  ]){
+   f.put(testFile,body+imported+read+check);
+   assert.equal(selectTests(f.root,[sourceFile],[testFile]),null,
+     'an untrusted/missing/aliased fs import must not authorize coverage');
+  }
+  f.put(testFile,body+imports[0]+
+   "const file='../components/public-landing.tsx';\n"+
+   "const source=readFileSync(new URL(file,import.meta.url),'utf8');\n"+check);
+  assert.equal(selectTests(f.root,[sourceFile],[testFile]),null,
+    'dynamic source paths remain forbidden');
+ }finally{f.cleanup();}
+});
