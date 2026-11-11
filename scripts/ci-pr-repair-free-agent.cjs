@@ -118,6 +118,36 @@ function findTypeScriptFailureTarget(output,allowed){
  if(!targets.length||new Set(targets.map(t=>t.file)).size!==1)return null;
  return targets.sort((a,b)=>a.line-b.line||a.column-b.column)[0];
 }
+// Select an exact failed ESLint source only after focused tests and the
+// TypeScript compiler do not provide a source target. Never authorize edits
+// from an ambiguous, out-of-scope, malformed, or warning-only diagnostic.
+function findEslintFailureTarget(raw,allowed,root){
+ if(typeof raw!=='string'||raw.length>300000||!Array.isArray(allowed)||
+    !allowed.length||allowed.length>MAX_FILES||typeof root!=='string')return null;
+ let data,dir;
+ try{data=JSON.parse(raw);dir=fs.realpathSync(root);}catch{return null;}
+ if(!Array.isArray(data)||data.length<1||data.length>MAX_FILES)return null;
+ const found=[];
+ for(const entry of data){
+  if(!entry||typeof entry.filePath!=='string'||!path.isAbsolute(entry.filePath)||
+     !Array.isArray(entry.messages)||!Number.isSafeInteger(entry.errorCount)||
+     entry.errorCount<0)return null;
+  const full=path.resolve(entry.filePath);
+  const file=path.relative(dir,full).split(path.sep).join('/');
+  if(file.startsWith('../')||file==='..'||path.resolve(dir,file)!==full||
+     !allowed.includes(file)||!safeSourcePath(file))return null;
+  for(const m of entry.messages){
+   if(!m||m.severity!==2)continue;
+   if(typeof m.ruleId!=='string'||!/^[A-Za-z0-9_/@.-]{2,100}$/.test(m.ruleId)||
+      !Number.isSafeInteger(m.line)||m.line<1||m.line>50000||
+      !Number.isSafeInteger(m.column)||m.column<1||m.column>5000)return null;
+   found.push({file,line:m.line,column:m.column,code:m.ruleId,source:'eslint_diagnostic'});
+   if(found.length>80)return null;
+  }
+ }
+ if(!found.length||new Set(found.map(x=>x.file)).size!==1)return null;
+ return found.sort((a,b)=>a.line-b.line||a.column-b.column)[0];
+}
 function narrowFailedSourceScope(root,scope){
  const listing=run('git',['ls-files','-z','--','tests'],{cwd:root,timeout:10000});
  if(!listing.ok)throw Error('FREE_AI_TEST_INDEX_UNAVAILABLE');
@@ -168,6 +198,27 @@ function narrowFailedSourceScope(root,scope){
        evidence:'CURRENT_HEAD_COMPILER_DIAGNOSTIC'}));
    }
  }
+ if(!ranked.size){
+  // Only a locally reproduced severity-2 ESLint diagnostic on a tested
+  // allowlisted changed file permits the free model to propose a patch.
+  const lint=run(path.join(root,'node_modules/.bin/eslint'),
+    ['--format','json',...scope.files],
+    {cwd:root,env:noSecretEnv(),timeout:75000});
+  if(!lint.ok&&!lint.error){
+   const target=findEslintFailureTarget(lint.stdout,scope.files,root);
+   if(target){
+    const lines=fs.readFileSync(path.resolve(root,target.file),'utf8').split(/\r?\n/);
+    if(target.line<=lines.length){
+     target.assertion=String(lines[target.line-1]||'').trim().slice(0,240);
+     ranked.set(target.file,90);
+     evidence.set(target.file,target);
+     console.log('HH_FREE_AI_ESLINT_REPRODUCED '+JSON.stringify({
+       file:target.file,line:target.line,code:target.code,
+       evidence:'CURRENT_HEAD_BOUNDED_ESLINT_DIAGNOSTIC'}));
+    }
+   }
+  }
+ }
  if(!ranked.size)throw Error('FREE_AI_NO_REPRODUCED_BOUNDED_FAILURE');
  const selected=[...ranked].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]))[0][0];
  const focused={sha:scope.sha,files:[selected],evidence:evidence.get(selected)||null};
@@ -182,7 +233,7 @@ function boundedSource(content,evidence=null){
  if(Buffer.byteLength(content,'utf8')<=MAX_SOURCE)return {content,bounded:false};
  // The compiler points to a precise safe file/line. Include the surrounding
  // source (not arbitrary unrelated body) when the complete file is oversized.
- if(evidence?.source==='typescript_compiler'&&
+ if(['typescript_compiler','eslint_diagnostic'].includes(evidence?.source)&&
     Number.isSafeInteger(evidence.line)&&evidence.line>0){
    const lines=content.split(/\r?\n/),center=evidence.line-1;
    if(center<lines.length){
@@ -697,4 +748,4 @@ async function main(){
 if(require.main===module)main();
 module.exports={MODEL,safeSourcePath,assessCompleteFreeRepairScope,sourceScope,findTypeScriptFailureTarget,validateAgentAcl,extractTextEvents,
  validatePatch,exactJsonSingleLinePatch,promptFor,safeDiagnostic,isolatedEnvironment,verifyFreeModelMetadata,verifyFreeModelPrice,
- noSecretEnv,findFailureTarget,boundedSource,narrowFailedSourceScope,promptReceipt,reanchorSingleHunkPatch,exactSingleLineReplacementPatch};
+ noSecretEnv,findFailureTarget,findEslintFailureTarget,boundedSource,narrowFailedSourceScope,promptReceipt,reanchorSingleHunkPatch,exactSingleLineReplacementPatch};
