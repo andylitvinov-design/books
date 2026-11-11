@@ -52,3 +52,21 @@
   #hh-pr-merge-speed.hh-compact-pr-top .hh-pr-speed-grid > .hh-pr-speed-card {padding:6px 2px!important}
   #hh-pr-merge-speed.hh-compact-pr-top .hh-pr-speed-grid > .hh-pr-speed-card strong {font-size:19px!important}
 }
+
+/* Place both original live graphs immediately beneath compact KPIs. */
+#hh-pr-top-graphs{
+  box-sizing:border-box;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;min-width:0;margin:0 0 10px;padding:0;
+}
+#hh-pr-top-graphs > #hh-pr-trends,
+#hh-pr-top-graphs > #hh-merge-velocity{
+  box-sizing:border-box;width:100%!important;min-width:0;max-width:100%;
+  margin:0!important;overflow:visible;
+}
+#hh-pr-top-graphs svg{max-width:100%;height:auto}
+#hh-pr-top-graphs .hhv-graph,#hh-pr-top-graphs .hh-trends-plot{
+  max-width:100%;min-width:0;
+}
+@media(max-width:850px){
+  #hh-pr-top-graphs{grid-template-columns:minmax(0,1fr);gap:7px}
+}

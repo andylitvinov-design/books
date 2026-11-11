@@ -39,8 +39,6 @@ body.hh-pr-dense:not(.hh-pr-dense-expanded) #hh-pr-journey-health,
 body.hh-pr-dense:not(.hh-pr-dense-expanded) #hh-ci-queue-detail,
 body.hh-pr-dense:not(.hh-pr-dense-expanded) #hh-pr-timestamp-observer,
 body.hh-pr-dense:not(.hh-pr-dense-expanded) #hh-pr-error-funnel,
-body.hh-pr-dense:not(.hh-pr-dense-expanded) #hh-merge-velocity,
-body.hh-pr-dense:not(.hh-pr-dense-expanded) #hh-pr-trends,
 body.hh-pr-dense:not(.hh-pr-dense-expanded) #hh-pr-recommendations{display:none!important}
 body.hh-pr-dense #hh-pr-merge-speed.hh-compact-pr-top{margin-bottom:5px!important}
 body.hh-pr-dense #hh-pr-merge-speed.hh-compact-pr-top>.hh-pr-speed-hint,

@@ -84,7 +84,8 @@
       detailButton.setAttribute('aria-expanded',String(expanded));
     });
     foot.append(note,detailButton);box.append(head,table,foot);
-    speed.insertAdjacentElement('afterend',box);
+    // Preserve the newly merged #4378 charts directly after the scorecard.
+    speed.appendChild(box);
     doc.body.classList.add('hh-pr-dense');
     return true;
   }
@@ -93,6 +94,9 @@
     const entries=read(),rows=visibleRows(entries);
     const missed=specs.length-rows.length;
     const next=JSON.stringify(rows)+'|'+missed;
+    // Unmeasured is distinct from a true GitHub zero on every UI refresh.
+    doc.querySelectorAll('#hh-pr-merge-speed .hh-pr-speed-grid .hh-pr-speed-card strong')
+      .forEach(function(node){if(node.textContent.trim()==='—')node.textContent='н/д';});
     if(next===signature)return;
     signature=next;rowsNode.replaceChildren();
     if(!rows.length){
@@ -107,12 +111,6 @@
     }
     note.textContent=rows.length+'/'+specs.length+' измерений'+
       (missed?' · без данных: '+missed:'')+' · охват в деталях';
-    // Essential scorecard remains the single source for created/merged/open.
-    // Replace only an empty glyph, not an unknown GitHub number with zero.
-    doc.querySelectorAll('#hh-pr-merge-speed .hh-pr-speed-grid .hh-pr-speed-card strong')
-      .forEach(function(node){
-        if(node.textContent.trim()==='—')node.textContent='н/д';
-      });
   }
   function schedule() {
     if(queued)return;queued=true;

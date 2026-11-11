@@ -20,7 +20,7 @@
     // Preserve the manually deployed LIVE monitor extensions; source archives in
     // GitHub intentionally contain only a subset of the 100+ production assets.
     additions += '<link rel="stylesheet" href="/pr-monitor-fluid.css?v=20261105-v1">'+
-      '<script src="/pr-merge-velocity-ui.js?v=20261105-v1" defer><\/script>';
+      '<script src="/pr-merge-velocity-ui.js?v=20261111-restored-v1" defer><\/script>';
     additions += '<link rel="stylesheet" href="/pr-velocity-three-lines.css?v=20261105-v1">'+
       '<script src="/pr-velocity-three-lines.js?v=20261105-v1" defer><\/script>';
     additions += '<link rel="stylesheet" href="/pr-queue-recovery.css?v=20261105-queue-v1">'+
@@ -50,11 +50,11 @@
     additions += '<link rel="stylesheet" href="/pr-recommendations.css?v=20261111-v2">'+
       '<script src="/pr-recommendations.js?v=20261111-v2" defer><\/script>';
     // Reuse the current GitHub PR and open-queue counters; presentation only.
-    additions += '<link rel="stylesheet" href="/pr-compact-top.css?v=20261111-top-v1">'+
-      '<script src="/pr-compact-top.js?v=20261111-top-v1" defer><\/script>';
+    additions += '<link rel="stylesheet" href="/pr-compact-top.css?v=20261111-graphs-top-v2">'+
+      '<script src="/pr-compact-top.js?v=20261111-graphs-top-v2" defer><\/script>';
     // Numeric-only default PR view; all original diagnostic widgets remain available.
-    additions += '<link rel="stylesheet" href="/pr-dense-view.css?v=20261111-v1">'+
-      '<script src="/pr-dense-view.js?v=20261111-v1" defer><\/script>';
+    additions += '<link rel="stylesheet" href="/pr-dense-view.css?v=20261111-v2">'+
+      '<script src="/pr-dense-view.js?v=20261111-v2" defer><\/script>';
     // Disable only old layout reordering, preserving all sources and working APIs.
     // Keep the proven LIVE mobile screen flow; the CSS now expands the chart itself.
     additions += "<style id=\"hh-monitor-graph-first\">@media(max-width:700px){body.hh2-active .hh2-screen{height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;overscroll-behavior:auto!important;padding-top:12px!important;padding-bottom:12px!important}body.hh2-active .hh2-first{gap:8px!important}body.hh2-active .hh2-chart{min-height:190px!important;flex:0 0 auto!important}body.hh2-active #hh-merge-velocity{margin-top:4px!important;margin-bottom:4px!important}body.hh2-active .hh2-second{margin-top:7px!important}body.hh2-active .hh2-totals{margin-top:4px!important}body.hh2-active .hh2-chart-slot{overflow:visible!important}}</style>";
