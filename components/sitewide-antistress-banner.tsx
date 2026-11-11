@@ -106,7 +106,10 @@ const isDistractionSensitivePage = (pathname: string) =>
   /^\/(?:ru|en|es)\/academy\/reiki\/kundalini-reiki\/?$/.test(pathname) ||
   // A referral ribbon pointing to this same free-review page wastes the first mobile viewport.
   /^\/(?:ru|en|es)\/services\/free-situation-review\/?$/.test(pathname) ||
+  // Coaching can enter a safety hold; keep promotional offers out of the private session.
+  /^\/(?:ru|en|es)\/app\/coaching(?:\/|$)/.test(pathname) ||
   /^\/(?:ru|en|es)\/coaching\/?$/.test(pathname) ||
+  /^\/(?:ru|en|es)\/my-coach\/?$/.test(pathname) ||
   (/^\/(?:ru|en|es)\/client(?:\/|$)/.test(pathname) && !/^\/(?:en|ru)\/client(?:\/tests)?\/?$/.test(pathname)) ||
   /^\/(?:ru|en|es)\/(?:report|prescriptions)(?:\/|$)/.test(pathname) ||
   /^\/(?:ru|en|es)\/app\/(?:course|runs|results|documents|settings|privacy)(?:\/|$)/.test(pathname);

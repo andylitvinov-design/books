@@ -80,3 +80,130 @@
 }
 @media(max-width:355px){.heroHeading h1{font-size:39px!important}.stageGreeting h2{font-size:28px}.stageBubble{width:57%;bottom:39%}.stageBubble p{font-size:11px}.stageActions{bottom:26%}.talkButton{font-size:10px}.quickTopics button{min-height:61px!important;font-size:9px!important}.benefitTiles strong{font-size:10px}.localePill,.helpPill{padding:0 6px}}
 @media(prefers-reduced-motion:reduce){.coachRail,.directoryHeading{scroll-behavior:auto}}
+
+/* The global page-aware iHelp launcher still owns its dialog/keyboard logic.
+   When My Coach is mounted, its header button invokes that same launcher. */
+:global(body):has(.landing) :global([data-hh-ihelp-trigger]) { display:none!important }
+.helpPill{cursor:pointer}
+
+/* Owner-approved My Coach first-fold v2, 11 Nov 2026.
+   The stage is a static photographic poster; the CTA remains the real session
+   handoff. Do not fake autoplay, a live video connection or new auth behavior. */
+.heroStage{
+  background:radial-gradient(ellipse at 10% 35%,#809282 0%,#5c715e 42%,#c9b18b 100%);
+}
+.heroPortrait{
+  inset:0 0 0 auto;
+  width:78%;
+  background-size:cover;
+  background-position:center 37%;
+  filter:none;
+}
+.heroPortrait[data-persona=mira]{
+  background-image:url('/images/holistic-house/my-coach-mira-hires.webp');
+  background-size:cover;
+  background-position:center 34%;
+}
+.heroPortrait[data-persona=alex]{
+  background-image:url('/images/holistic-house/my-coach-alex-rail.webp');
+  background-size:cover;
+  background-position:center 26%;
+}
+.heroPortrait[data-persona=sofia]{
+  background-image:url('/images/holistic-house/my-coach-sofia-rail.webp');
+  background-size:cover;
+  background-position:center 27%;
+}
+.heroPortrait[data-persona=max]{
+  background-image:url('/images/holistic-house/my-coach-max-rail.webp');
+  background-size:cover;
+  background-position:center 24%;
+}
+.heroStage:before{
+  background:linear-gradient(90deg,rgba(14,39,33,.84) 0%,rgba(21,42,36,.60) 36%,rgba(17,36,31,.08) 83%),
+    linear-gradient(0deg,rgba(29,42,31,.65),transparent 56%);
+}
+.railPortrait[data-persona=mira]{
+  background-image:url('/images/holistic-house/my-coach-mira-rail.webp');
+  background-size:cover;
+  background-position:center 30%;
+}
+.railPortrait[data-persona=alex]{
+  background-image:url('/images/holistic-house/my-coach-alex-rail.webp');
+  background-size:cover;
+  background-position:center 30%;
+}
+.railPortrait[data-persona=sofia]{
+  background-image:url('/images/holistic-house/my-coach-sofia-rail.webp');
+  background-size:cover;
+  background-position:center 30%;
+}
+.railPortrait[data-persona=max]{
+  background-image:url('/images/holistic-house/my-coach-max-rail.webp');
+  background-size:cover;
+  background-position:center 30%;
+}
+
+
+/* My Coach mobile invitation v3: no crop distortion or overlapping fixed elements. */
+.heroStage{background:radial-gradient(ellipse at 14% 25%,#567466 0%,#75947d 55%,#d1bba0 100%)}
+.heroPortrait{inset:0!important;width:100%!important;background-size:auto 100%!important;background-position:right bottom!important;background-repeat:no-repeat!important;filter:none;-webkit-mask-image:linear-gradient(90deg,transparent 13%,#000 72%);mask-image:linear-gradient(90deg,transparent 13%,#000 72%)}
+.heroStage::before{background:linear-gradient(90deg,rgba(12,44,35,.79),rgba(21,49,39,.45) 49%,rgba(17,44,34,.09) 80%),linear-gradient(0deg,rgba(21,45,36,.32),transparent 68%)}
+.railPortrait{background-color:#e8eee8;background-size:auto 90%!important;background-position:center bottom!important;background-repeat:no-repeat!important}
+.railPlay,.waveform,.stageBubble,.previewControl,.stageActions .circleAction{display:none!important}
+@media(max-width:540px){
+ .stickyHeader{min-height:58px!important;padding:0 2px!important}
+ .heroHeading{padding:6px 4px 10px!important}
+ .heroHeading h1{font-size:clamp(31px,8.8vw,37px)!important;line-height:1.04!important;margin:0 0 4px!important}
+ .tagline{font-size:clamp(13px,3.6vw,16px);line-height:1.2;max-width:370px}
+ .heroStage{display:flex;flex-direction:column;height:clamp(320px,39svh,348px);min-height:0;max-height:none;aspect-ratio:auto;padding:12px 11px 10px;border-radius:24px;box-sizing:border-box}
+ .stageTop{position:relative;inset:auto;display:flex;align-items:center;justify-content:flex-start;z-index:2;flex-shrink:0}
+ .liveLabel{font-size:10px;padding:7px 10px}
+ .stageGreeting{position:relative;inset:auto;top:auto;left:auto;right:auto;width:min(73%,255px);max-width:min(73%,255px);margin:15px 0 0;flex-shrink:0;z-index:2}
+ .stageGreeting h2{font-size:clamp(26px,7.1vw,32px);line-height:1.07;margin:0 0 5px}
+ .stageGreeting p{font-size:12px;line-height:1.26;max-width:220px;text-wrap:pretty}
+ .stageActions{position:relative;inset:auto;left:auto;right:auto;bottom:auto;display:flex;width:100%;flex-shrink:0;align-items:center;margin-top:auto;margin-bottom:12px;z-index:3}
+ .stageActions>[data-my-coach-mira-quick-start]{width:100%;min-width:0}
+ .talkButton{width:100%;min-height:49px;padding:8px 12px;font-size:clamp(13px,3.7vw,16px)}
+ .stageTopics{position:relative;inset:auto;left:auto;right:auto;bottom:auto;width:100%;flex-shrink:0;z-index:2}
+ .stageTopics>span{font-size:11px;line-height:1.2;margin:0 0 5px 3px}
+ .quickTopics{gap:5px!important;margin:0!important}
+ .quickTopics button{min-height:61px!important;padding:5px 3px!important;font-size:9px!important;line-height:1.16!important;border-radius:15px!important;gap:4px!important;overflow-wrap:anywhere}
+ .quickTopics button svg{width:18px!important;height:18px!important;flex-shrink:0}
+ .coachRailHeading{margin:11px 2px 7px;gap:5px}
+ .coachRailHeading h2{font-size:clamp(17px,4.8vw,21px);line-height:1.12;margin:0;min-width:0}
+ .coachRailHeading a{font-size:11px;padding:6px 9px;min-height:35px;flex-shrink:0}
+ .coachRail{grid-auto-columns:minmax(84px,calc((100% - 21px)/4));gap:7px;padding:2px 1px 8px}
+ .railCard{padding:4px;border-radius:16px}
+ .railCard[aria-pressed=true]{padding:3px}
+ .railPortrait{height:clamp(66px,9svh,82px);border-radius:11px}
+ .railCard strong{font-size:13px;line-height:1.15;margin:4px 2px 2px}
+ .railCard small{font-size:10px;line-height:1.16;margin:0 2px 2px}
+ .benefitTiles{margin-top:18px}
+}
+@media(max-width:370px){
+ .heroStage{height:clamp(265px,39svh,312px);padding:9px 9px 8px}
+ .stageGreeting{margin-top:10px}
+ .stageGreeting h2{font-size:24px}
+ .stageGreeting p{font-size:11px}
+ .stageActions{margin-bottom:7px}
+ .quickTopics button{min-height:52px!important;font-size:8px!important;gap:2px!important}
+ .quickTopics button svg{width:15px!important;height:15px!important}
+ .coachRail{grid-auto-columns:minmax(82px,calc((100% - 14px)/3))}
+ .railPortrait{height:64px}
+}
+@media(max-width:540px) and (max-height:760px){
+ .heroHeading{padding-bottom:7px!important}
+ .heroHeading h1{font-size:30px!important}
+ .tagline{font-size:12px;line-height:1.16}
+ .heroStage{height:clamp(265px,37svh,296px)}
+ .stageGreeting{margin-top:10px}
+ .stageGreeting h2{font-size:25px}
+ .stageGreeting p{font-size:11px;line-height:1.2}
+ .stageActions{margin-bottom:7px}
+ .talkButton{min-height:44px}
+ .quickTopics button{min-height:52px!important;font-size:8px!important;padding:4px 2px!important}
+ .quickTopics button svg{width:16px!important;height:16px!important}
+ .railPortrait{height:65px}
+}
+@media(prefers-reduced-motion:reduce){.heroStage,.heroPortrait,.railPortrait{animation:none!important;transition:none!important}}

@@ -2,7 +2,7 @@
 
 import {useCallback,useEffect,useMemo,useRef,useState,type ReactNode} from "react";
 import {createPortal} from "react-dom";
-import {Check,Sparkles,Target,Play,ArrowRight,Sun,Heart,Sprout,BriefcaseBusiness,Gift,AudioLines,Leaf,Zap,Moon,Star} from "lucide-react";
+import {Check,Sparkles,Target,Play,ArrowRight,Sun,Heart,Sprout,BriefcaseBusiness,Gift,AudioLines,Film,Leaf,Zap,Moon,Star} from "lucide-react";
 import {AUTO_VIDEO_GOALS,recommendAutoVideo} from "@/lib/mandala/auto-video-director.mjs";
 import {recommendMyTubeTopicStoryClips} from "@/lib/mandala/mytube-video-tagging.mjs";
 import {recommendMyTubePlotMontage} from "@/lib/mandala/mytube-plot-montage.mjs";
@@ -25,8 +25,7 @@ import {allocateFreeFilmTimeline,allocateAdaptiveFilmTimeline,allocateVariableFi
 import {STAGE_CAPTION_LIMIT,normalizeStageCaption} from "@/lib/mandala/stage-caption-track.mjs";
 import {montageReplacementOptions,validateMontageClips} from "@/lib/mandala/video-montage-sources.mjs";
 import {recommendPromptShotPlan} from "@/lib/mandala/prompt-shot-director.mjs";
-import {recommendScenarioMelodies} from "@/lib/mandala/scenario-soundtracks.mjs";
-import {scenarioAudioTracks} from "@/lib/mandala/scenario-audio-catalog.mjs";
+import {recommendCuratedAudio} from "@/lib/mandala/curated-audio-recommendations.mjs";
 import type {VideoTheme} from "@/lib/mandala/holistic-video-themes";
 import type {PublicLocale} from "@/lib/public-locales";
 import css from "./mandala-auto-video-director.module.css";
@@ -91,7 +90,7 @@ const copy={
    selectedGoal:"Выбранная цель",
    promptShotNotice:"Видеосцены подобраны отдельно под вашу цель из существующей библиотеки — без платной генерации.",
    promptShotPartial:"Некоторые образы из запроса не найдены. Проверьте кадры перед подтверждением.",
-   melodyOptions:"Четыре мелодии для вашего сценария",melodyHint:"Выбранная мелодия включается в видео; звук можно отключить.",
+   melodyOptions:"Проверенная музыка для видео",melodyHint:"Выбранная мелодия включается в видео; звук можно отключить.",
    captionTrack:"Текст по сценам",captionHint:"Необязательно: одна надпись на каждом этапе. Текст показывается в вашем видео, а не отправляется в ИИ.",soundTrack:"Музыка и голос",soundMissing:"Звук не прикреплён",soundSettings:"Настроить звук",
    timeline:"Монтажная шкала",openMontage:"Открыть монтаж (необязательно)",montageHelp:"Измените порядок и длительность сцен, затем подтвердите сценарий.",reorder:"Порядок сцены",less:"Укоротить",more:"Удлинить",audioHint:"Музыка, голос и фразы настраиваются в существующих разделах видеостудии.",replaceScene:"Заменить клип",replacementHint:"Доступны только проверенные видео из каталога.",
  },
@@ -112,7 +111,7 @@ const copy={
    selectedGoal:"Selected goal",
    promptShotNotice:"Each shot was selected from the existing film library for your goal; no paid generation.",
    promptShotPartial:"Some requested imagery is unavailable. Please check each shot before confirming.",
-   melodyOptions:"Four melodies for your story",melodyHint:"Selected music is included in the video; you can change or mute it.",
+   melodyOptions:"Reviewed music for your video",melodyHint:"Selected music is included in the video; you can change or mute it.",
    captionTrack:"Scene captions",captionHint:"Optional: one caption per stage. Your text appears in the video and is not sent to AI.",soundTrack:"Music and voice",soundMissing:"No audio attached",soundSettings:"Edit sound",
    timeline:"Montage timeline",openMontage:"Open montage (optional)",montageHelp:"Adjust shot order and durations, then confirm the storyboard.",reorder:"Reorder shot",less:"Shorten",more:"Lengthen",audioHint:"Music, voice and captions remain in the existing studio sections.",replaceScene:"Replace clip",replacementHint:"Only licensed catalogue videos are available.",
  },
@@ -133,7 +132,7 @@ const copy={
    selectedGoal:"Objetivo elegido",
    promptShotNotice:"Cada escena se seleccionó de la biblioteca existente según tu objetivo, sin generación de pago.",
    promptShotPartial:"Algunas imágenes solicitadas no están disponibles. Revisa las escenas antes de confirmar.",
-   melodyOptions:"Cuatro melodías para tu historia",melodyHint:"La melodía elegida se incluye en el vídeo; puedes cambiarla o silenciarla.",
+   melodyOptions:"Música revisada para tu vídeo",melodyHint:"La melodía elegida se incluye en el vídeo; puedes cambiarla o silenciarla.",
    captionTrack:"Texto por escena",captionHint:"Opcional: un texto por etapa. Se muestra en el vídeo, sin enviarlo a IA.",soundTrack:"Música y voz",soundMissing:"Sin audio adjunto",soundSettings:"Ajustar audio",
    timeline:"Línea de montaje",openMontage:"Abrir montaje (opcional)",montageHelp:"Cambia el orden y la duración; después confirma el guion.",reorder:"Ordenar escena",less:"Acortar",more:"Alargar",audioHint:"Música, voz y frases se ajustan en las secciones actuales.",replaceScene:"Cambiar clip",replacementHint:"Solo están disponibles vídeos aprobados del catálogo.",
  }
@@ -296,8 +295,8 @@ export function MandalaAutoVideoDirector({
    chosen&&validateMontageClips([...chosen.clips],scenes,proposal?.excludedMotifs||[],aspect)&&
    !selectedMotifId&&!selectedStyleId);
  const fallbackEnabled=Boolean(symbolicPlotFallback&&fallbackSourcesValid);
- const dedicatedMelodies=chosen?scenarioAudioTracks(chosen.id):[];
- const melodyOptions=dedicatedMelodies.length===4?dedicatedMelodies:chosen?recommendScenarioMelodies(chosen):[];
+ // Professional, licensed physical MP3s only; no oscillator score as an option.
+ const melodyOptions=recommendCuratedAudio({theme,kind:"melody"}).slice(0,4);
  const sceneById=new Map(scenes.map(item=>[item.id,item]));
  const sceneLabel=(id:string)=>sceneById.get(id)?.label[locale]||clipLabel(id);
  const scenePoster=(id:string)=>sceneById.get(id)?.poster||null;
@@ -449,8 +448,8 @@ export function MandalaAutoVideoDirector({
      onAudioToMontage?.();return false;
    }
    if(!recipientKindId){
-     setRecipientContinueError(locale==="ru"?"Выберите подарок, поздравление или презентацию.":
-       locale==="es"?"Elige regalo, felicitación o presentación.":"Choose Gift, Greeting or Presentation first.");
+     setRecipientContinueError(locale==="ru"?"Выберите Reels, подарок, поздравление, презентацию или видео по аудио.":
+       locale==="es"?"Elige Reels, regalo, felicitación, presentación o vídeo desde audio.":"Choose Video Reels, Gift, Greeting, Presentation or Video from audio.");
      return false;
    }
    if(!chosen||!physicalClipReady||plotLacksApprovedClips){
@@ -555,7 +554,7 @@ export function MandalaAutoVideoDirector({
    setProposal(recommendAutoVideo({goal:nextGoal,goalId:nextIds[0],locale,
      fallbackTheme:selectedTheme,preferredTheme:selectedTheme,presets,scenes}));
  };
- // All three modes use the existing licensed four-shot planner and Canvas export.
+ // All recipient formats reuse the existing licensed scene planner and Canvas export.
  // No second renderer, remote API, contact database or paid generation.
  const resetAudienceStory=()=>{
    setRequestNeedsChoice(false);
@@ -979,6 +978,9 @@ export function MandalaAutoVideoDirector({
    </div>:null}
  </div>;
  const recipientFormatCards=[
+  {id:"reels",art:"stress",Icon:Film,
+   title:locale==="ru"?"Видео Reels":locale==="es"?"Video Reels":"Video Reels",
+   desc:locale==="ru"?"Короткий ролик · 9:16":locale==="es"?"Vídeo corto · 9:16":"Short vertical film · 9:16"},
   {id:"greeting",art:"love",Icon:Gift,
    title:locale==="ru"?"Поздравление или подарок":locale==="es"?"Felicitación o regalo":"Greeting or gift",
    desc:locale==="ru"?"Тёплое видео для близких":locale==="es"?"Vídeo para seres queridos":"A film for loved ones"},
@@ -1038,7 +1040,7 @@ export function MandalaAutoVideoDirector({
          const Icon=item.Icon;
          const selected=item.id==="audio_visual"?recipientAudioMode:item.id==="greeting"
           ?!recipientAudioMode&&(recipientKindId==="gift"||recipientKindId==="greeting")
-          :!recipientAudioMode&&recipientKindId==="presentation";
+          :!recipientAudioMode&&recipientKindId===item.id;
          return <button type="button" key={item.id} data-auto-video-recipient-kind={item.id}
            aria-pressed={selected} disabled={disabled}
            onClick={()=>item.id==="audio_visual"?chooseRecipientAudio():chooseRecipientVideo(item.id)}>
@@ -1066,7 +1068,12 @@ export function MandalaAutoVideoDirector({
            {listRecipientVideoKinds(locale).find(v=>v.id===kind)?.label}
          </button>)}
        </div>:null}
-     {recipientAudioMode?recipientAudioPanel:recipientKindId?<div className={css.recipientOccasions}>
+     {recipientAudioMode?recipientAudioPanel:recipientKindId==="reels"?
+       <p className={css.recipientHint}>{locale==="ru"
+         ?"Создадим короткое видео Reels из проверенных кадров. Тему можно уточнить в поле пожелания выше.":
+         locale==="es"?"Crearemos tu Reel con clips verificados. Puedes indicar el tema arriba.":
+         "Create a Reel using verified clips. Add your topic in the wish field above."}</p>:
+       recipientKindId?<div className={css.recipientOccasions}>
        <p className={css.popularHeading}>{locale==="ru"?"Уточните назначение":
          locale==="es"?"Elige una ocasión":"Choose an occasion"}</p>
        <div className={css.recipientOptionChoices} role="group" aria-label={
@@ -1081,9 +1088,9 @@ export function MandalaAutoVideoDirector({
          :locale==="es"?"Propondremos escenas simbólicas y textos que puedes editar durante el montaje."
          :"We'll suggest symbolic footage and editable video captions."}</p>
      </div>:<p className={css.recipientHint}>{locale==="ru"
-       ?"Выберите подарок, поздравление или видеопрезентацию."
-       :locale==="es"?"Elige regalo, felicitación o videopresentación."
-       :"Choose Gift, Greeting or Video presentation."}</p>}
+       ?"Выберите Video Reels, подарок, поздравление, видеопрезентацию или видео по аудио."
+       :locale==="es"?"Elige Video Reels, regalo, felicitación, presentación o vídeo desde audio."
+       :"Choose Video Reels, Gift, Greeting, Presentation or Video from audio."}</p>}
    </div>}
    {videoAudience==="others"&&recipientContinueError?<p role="status" data-video-recipient-continue-error>{recipientContinueError}</p>:null}
  </div>;

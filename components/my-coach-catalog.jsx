@@ -9,6 +9,7 @@ import {
 } from '@/lib/coaching/persona-registry.mjs'
 import styles from './my-coach-catalog.module.css'
 import heroStyles from './my-coach-mira-landing.module.css'
+import MyCoachExpressStart from './my-coach-express-start'
 
 const words = {
   en: {
@@ -27,7 +28,7 @@ const words = {
     preview: 'Preview of a follow-up question', start: 'Start guided coaching',
     viewProfile: 'Explore coach', favorite: 'Add to favorites', unfavorite: 'Remove from favorites',
     chosen: 'Selected', available: '8 characters', change: 'Change your coach anytime',
-    sessionNote: 'The current free session follows reviewed, fixed coaching questions; its optional follow-up adapts to the selected persona. Live generative AI and two-way voice are not enabled here.',
+    sessionNote: 'After sign-in and your explicit consent, a generative text dialogue is offered when a verified free privacy-preserving model is configured. Reviewed guided questions remain available as a fallback; two-way AI voice is not enabled.',
     back: 'Coaching Lounge', human: 'Human specialists', privacy: 'Search and choices stay in this browser; favorites save only persona IDs on this device.',
     safety: 'One question at a time · No diagnoses · Your decisions remain yours',
   },
@@ -47,7 +48,7 @@ const words = {
     preview: 'Пример дополнительного вопроса', start: 'Начать коучинг-сессию',
     viewProfile: 'Открыть профиль', favorite: 'В избранное', unfavorite: 'Убрать из избранного',
     chosen: 'Выбран', available: '8 персонажей', change: 'Коуча можно сменить в любой момент',
-    sessionNote: 'Сейчас бесплатная сессия проходит по проверенным фиксированным вопросам; дополнительные вопросы адаптированы к выбранному персонажу. Генеративный AI-диалог и двусторонний голос здесь пока не подключены.',
+    sessionNote: 'После входа и вашего согласия доступен генеративный текстовый диалог, если настроена проверенная бесплатная модель с защитой данных. Программа с проверенными вопросами остаётся запасным вариантом. Двусторонний AI-голос не подключён.',
     back: 'Гостиная коучинга', human: 'Реальные специалисты', privacy: 'Поиск остаётся в браузере; в избранном на устройстве сохраняются только ID персонажей.',
     safety: 'Один вопрос за раз · Без диагнозов · Решение остаётся за вами',
   },
@@ -67,7 +68,7 @@ const words = {
     preview: 'Ejemplo de pregunta de seguimiento', start: 'Empezar coaching guiado',
     viewProfile: 'Ver perfil', favorite: 'Añadir favorito', unfavorite: 'Quitar favorito',
     chosen: 'Seleccionado', available: '8 personajes', change: 'Cambia de coach cuando quieras',
-    sessionNote: 'La sesión gratuita usa preguntas revisadas y fijas; las preguntas adicionales se adaptan al personaje elegido. El diálogo generativo y la voz bidireccional aún no están activados.',
+    sessionNote: 'Tras iniciar sesión y dar consentimiento, se ofrece diálogo de texto generativo si hay un modelo gratuito con privacidad verificada. Las preguntas guiadas siguen disponibles. La voz bidireccional no está activada.',
     back: 'Sala de coaching', human: 'Profesionales reales', privacy: 'La búsqueda queda en este navegador; solo se guardan los ID de favoritos en el dispositivo.',
     safety: 'Una pregunta por turno · Sin diagnósticos · Tú decides',
   },
@@ -113,7 +114,7 @@ const designCopy = {
 const miraCopy = {
   en: {
     tagline: 'Your AI consultant for clarity, balance and growth',
-    hello: "Hi! I'm", subtitle: "Let's explore what's on your mind today.",
+    hello: "Hi! I'm", subtitle: "Let's talk about what matters to you.",
     badge: 'AI Coach · Guided', bubble: 'You can talk, ask questions, or find practical guidance right now.',
     preview: 'Read introduction', talk: 'Talk now with', choose: 'Choose another coach', all: 'All coaches',
     topic: 'Or start with a topic:', review: 'Free situation review',
@@ -123,7 +124,7 @@ const miraCopy = {
   },
   ru: {
     tagline: 'Ваш AI-консультант для ясности, баланса и развития',
-    hello: 'Привет! Я', subtitle: 'Давайте разберём то, что сейчас важно для вас.',
+    hello: 'Привет! Я', subtitle: 'Помогу разобраться в том, что важно для вас.',
     badge: 'AI-коуч · Практика', bubble: 'Вы можете задать вопрос, обсудить ситуацию или найти следующий практический шаг.',
     preview: 'Прочитать приветствие', talk: 'Поговорить с', choose: 'Выберите другого коуча', all: 'Все коучи',
     topic: 'Или начните с темы:', review: 'Бесплатный разбор ситуации',
@@ -133,7 +134,7 @@ const miraCopy = {
   },
   es: {
     tagline: 'Tu consultor de IA para claridad, equilibrio y crecimiento',
-    hello: '¡Hola! Soy', subtitle: 'Exploremos lo que te importa hoy.',
+    hello: '¡Hola! Soy', subtitle: 'Hablemos de lo que es importante para ti.',
     badge: 'Coach IA · Guiado', bubble: 'Puedes hacer preguntas, reflexionar y encontrar un próximo paso práctico.',
     preview: 'Leer presentación', talk: 'Hablar con', choose: 'Elige otro coach', all: 'Todos los coaches',
     topic: 'O empieza con un tema:', review: 'Revisión gratuita de tu situación',
@@ -169,7 +170,6 @@ export default function MyCoachCatalog({ locale = 'en' }) {
   const [onlyFavorites, setOnlyFavorites] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
-  const [introExpanded, setIntroExpanded] = useState(false)
   const [sortBy, setSortBy] = useState('all')
   const [paceFilter, setPaceFilter] = useState('any')
   const [favorites, setFavorites] = useState([])
@@ -236,7 +236,12 @@ export default function MyCoachCatalog({ locale = 'en' }) {
               <option value="en">EN</option><option value="ru">RU</option><option value="es">ES</option>
             </select>
           </label>
-          <Link className={heroStyles.helpPill} href={'/' + lang + '/contact'}><span aria-hidden="true">ⓘ</span> iHelp</Link>
+          <button type="button" className={heroStyles.helpPill}
+            onClick={() => {
+              const nativeHelp = document.querySelector('[data-hh-ihelp-trigger]')
+              if (nativeHelp instanceof HTMLElement) nativeHelp.click()
+              else window.location.assign('/' + lang + '/contact')
+            }}><span aria-hidden="true">ⓘ</span> iHelp</button>
         </nav>
       </header>
 
@@ -249,27 +254,16 @@ export default function MyCoachCatalog({ locale = 'en' }) {
           <div className={heroStyles.heroPortrait} data-persona={selected.id} aria-hidden="true" />
           <div className={heroStyles.stageTop}>
             <span className={heroStyles.liveLabel}><span className={heroStyles.liveDot} />{hw.badge}</span>
-            <button type="button" className={heroStyles.previewControl} onClick={() => setIntroExpanded(v => !v)}
-              aria-expanded={introExpanded} aria-label={hw.preview}>▶</button>
           </div>
           <div className={heroStyles.stageGreeting}>
             <h2>{hw.hello} {selectedName}</h2>
             <p>{hw.subtitle}</p>
           </div>
-          <div className={heroStyles.waveform} aria-hidden="true">
-            {Array.from({length:23}, (_, index) => <i key={index} />)}
-          </div>
-          <div className={heroStyles.stageBubble} aria-live="polite">
-            <span aria-hidden="true">◉</span>
-            <p>{introExpanded ? localCoachText(selected.opening, lang) : hw.bubble}</p>
-          </div>
           <div className={heroStyles.stageActions}>
-            <button type="button" className={heroStyles.circleAction} onClick={() => setIntroExpanded(v => !v)}
-              aria-label={hw.preview} aria-expanded={introExpanded}>▶</button>
-            <Link className={heroStyles.talkButton} href={startHref} prefetch={false}
-              data-my-coach-hero-start={selected.id}>♩ {hw.talk} {selectedName} <ArrowRight size={17} aria-hidden="true" /></Link>
-            <Link className={heroStyles.circleAction} href={startHref} prefetch={false}
-              aria-label={t.start}><ArrowRight size={21} aria-hidden="true" /></Link>
+            {selected.id === 'mira'
+              ? <MyCoachExpressStart locale={lang} embedded data-my-coach-hero-start={selected.id} />
+              : <Link className={heroStyles.talkButton} href={startHref} prefetch={false}
+                  data-my-coach-hero-start={selected.id}>♩ {hw.talk} {selectedName} <ArrowRight size={17} aria-hidden="true" /></Link>}
           </div>
           <div className={heroStyles.stageTopics}>
             <span>{hw.topic}</span>
@@ -298,9 +292,8 @@ export default function MyCoachCatalog({ locale = 'en' }) {
             if (!persona) return null
             return <button type="button" key={id} className={heroStyles.railCard}
               aria-pressed={selected.id === id}
-              onClick={() => { setSelectedId(id); setSettings(normalizeCoachSettings(id)); setIntroExpanded(false) }}>
+              onClick={() => { setSelectedId(id); setSettings(normalizeCoachSettings(id)) }}>
               <span className={heroStyles.railPortrait} data-persona={id} aria-hidden="true">
-                <span className={heroStyles.railPlay} aria-hidden="true">▶</span>
               </span>
               <strong>{localCoachText(persona.name, lang)}</strong>
               <small>{localCoachText(persona.role, lang)}</small>

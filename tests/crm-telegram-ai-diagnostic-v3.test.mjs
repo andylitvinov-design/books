@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {
   TELEGRAM_AI_DIAGNOSTIC_V3,V3_LABELS,V3_COPY,V3_BUTTONS,v3StartLocale,
-  v3CanStart,v3ModelKey,v3Context,v3ButtonsFor,v3IsStop,v3Action,v3CanCallModel,
+  v3CanStart,v3ModelKey,v3Context,v3ButtonsFor,v3IsStop,v3Action,v3CanCallModel,v3DailyReplyCount,
 } from '../lib/crm/telegram-ai-diagnostic-v3.mjs';
 import {v3Generate,v3ModelMessages} from '../lib/crm/telegram-ai-diagnostic-v3-model.mjs';
 
@@ -68,6 +68,9 @@ test('External inference never starts without a flag, free-only approval and ava
   assert.equal(v3CanStart({...env,HH_CRM_TG_AI_V3_FREE_TIER_CONFIRMED:'false'}),false);
   assert.equal(v3CanStart({...env,HH_CRM_TG_AI_V3_SHARED_KEY_APPROVED:'false'}),false);
   assert.equal(v3CanStart({...env,VERCEL_ENV:'preview'}),false);
+  assert.equal(v3CanStart({...env,HH_COUNCIL_OPENROUTER_API_KEY:'tiny'}),false);
+  assert.equal(v3CanStart({...env,HH_COUNCIL_OPENROUTER_API_KEY:'   '}),false);
+  assert.equal(v3CanStart({...env,HH_COUNCIL_OPENROUTER_API_KEY:''}),false);
   assert.equal(v3ModelKey({...env,HH_CRM_TG_AI_V3_ENABLED:'false'}),null);
 });
 
@@ -145,4 +148,14 @@ test('Signed CRM webhook is only routing; legacy V2 and owner/private bot remain
   assert.doesNotMatch(migration,/^\s*grant\s+.*\bto\s+(anon|authenticated)\b/im);
   assert.match(source('lib/crm/telegram-inline-buttons.mjs'),/hhv3:/);
   assert.match(source('app/api/public/telegram-diagnostic/route.js'),/aiInterviewAvailable/);
+});
+
+test('Postgres Date and ISO string preserve actual daily Telegram V3 reply quota',()=>{
+  const utc=new Date('2026-11-11T00:00:00.000Z');
+  assert.equal(v3DailyReplyCount({reply_day:utc,reply_count:35},'2026-11-11'),35);
+  assert.equal(v3DailyReplyCount({reply_day:'2026-11-11',reply_count:17},'2026-11-11'),17);
+  assert.equal(v3DailyReplyCount({reply_day:utc,reply_count:70},'2026-11-11'),40);
+  assert.equal(v3DailyReplyCount({reply_day:utc,reply_count:35},'2026-11-12'),0);
+  assert.equal(v3DailyReplyCount({reply_day:new Date('invalid'),reply_count:14},'2026-11-11'),0);
+  assert.equal(v3DailyReplyCount({reply_day:null,reply_count:25},'2026-11-11'),0);
 });

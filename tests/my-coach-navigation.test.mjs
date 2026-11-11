@@ -41,7 +41,7 @@ test('persona handoff keeps the existing, reviewed session runner and user conse
   assert.match(runner, /authoredFollowupFor/)
   assert.match(runner, /CoachingSessionIntroduction/)
   assert.match(component, /coachSessionHref\(lang, selected.id, safeSettings\)/)
-  assert.match(component, /Live generative AI and two-way voice are not enabled here/i)
+  assert.match(component, /a generative text dialogue is offered when a verified free privacy-preserving model is configured/i)
   const reg = read('lib/coaching/persona-registry.mjs')
   assert.match(reg, /COACH_SAFETY_RULES/)
   assert.doesNotMatch(reg, /OPENROUTER_API_KEY|SUPABASE_SERVICE_ROLE_KEY/)
@@ -55,7 +55,12 @@ test('About coach expands inline and Start Session opens the selected persona, n
   assert.match(catalog, /const \[expandedId, setExpandedId\] = useState\(null\)/)
   assert.match(catalog, /aria-expanded=\{isExpanded\} aria-controls=\{'my-coach-profile-' \+ persona.id\}/)
   assert.match(catalog, /\{isExpanded && \(/)
-  assert.doesNotMatch(catalog, /scrollIntoView/)
+  // About must not auto-scroll or redirect. Topic shortcuts may intentionally scroll to the directory.
+  const aboutHandler = catalog.match(/const choose = \(id\) => \{[\s\S]*?\n  \}/)?.[0]
+  assert.ok(aboutHandler, 'inline About handler remains present')
+  assert.doesNotMatch(aboutHandler, /scrollIntoView|router\.push|window\.location/)
+  const ribbon = read('components/sitewide-antistress-banner.tsx')
+  assert.match(ribbon, /my-coach/)
   assert.match(catalogCss, /\.cardSelected \.profile\{/)
   assert.match(runner, /\{!session\?selectedPersona\?<section/)
   assert.match(runner, /data-my-coach-handoff=\{selectedPersona.id\}/)

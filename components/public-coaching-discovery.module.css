@@ -1193,6 +1193,9 @@
 @media(max-width:600px){.personaBridge{padding:10px 12px;margin:8px 0 13px}.personaBridge>strong{font-size:15px}}
 
 /* A selected persona opens a direct, welcoming session entry; the lounge stays exclusive to generic discovery. */
+.personaWelcome [data-my-coach-live-dialogue]{grid-column:1/-1;width:100%;min-width:0}
+.personaWelcomeGuided{min-height:44px;display:inline-flex;justify-content:center;align-items:center;background:transparent;border:1px solid #accbbc;color:#286a56;border-radius:12px;padding:9px 14px;font-size:13px;font-weight:800;cursor:pointer;margin-top:8px}
+.personaWelcomeGuided:hover{background:#eaf4ed}
 .personaWelcome{max-width:910px;margin:9px auto;display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);
   gap:clamp(16px,4vw,35px);padding:clamp(18px,3vw,30px);border:1px solid #e6dccc;border-radius:28px;
   background:linear-gradient(142deg,#fffdf8,#fbf5e9);box-shadow:0 10px 35px #234b3a14}

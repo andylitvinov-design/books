@@ -21,4 +21,7 @@ test('My Coach opens on Mira invitation and scrolls to a working filtered direct
   assert.match(css, /@media\(max-width:355px\)/)
   assert.match(css, /my-coach-portraits\.avif/)
   assert.doesNotMatch(component, /<video[^>]+autoplay|<audio[^>]+autoplay/i)
+  assert.match(component, /document\.querySelector\('\[data-hh-ihelp-trigger\]'\)/)
+  assert.match(component, /nativeHelp\.click\(\)/)
+  assert.match(css, /:global\(body\):has\(\.landing\) :global\(\[data-hh-ihelp-trigger\]\)/)
 })

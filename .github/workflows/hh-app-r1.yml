@@ -6,6 +6,9 @@ on:
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
+      - 'scripts/ci-coaching-rls*.mjs'
+      - 'tests/ci-coaching-rls-guard.test.mjs'
+      - 'tests/personal-coaching-rls-isolated.integration.mjs'
       - 'scripts/verify-eight-v2-registry-proposal.mjs'
       - 'tests/author-score-clusters.test.mjs'
       - 'tests/cabinet-today.test.mjs'
@@ -291,6 +294,11 @@ jobs:
       - name: Isolated two-client/two-master client memory SQL and RLS acceptance
         if: needs.impact.outputs.database == 'true'
         run: node scripts/ci-client-memory-rls.mjs
+      - name: Isolated personal coaching owner RLS acceptance
+        if: needs.impact.outputs.database == 'true'
+        run: |
+          node --test tests/ci-coaching-rls-guard.test.mjs
+          node scripts/ci-coaching-rls.mjs
       - name: Prove exact eight-row registry proposal, atomic conflicts and full readback
         if: needs.impact.outputs.database == 'true'
         run: node scripts/verify-eight-v2-registry-proposal.mjs
