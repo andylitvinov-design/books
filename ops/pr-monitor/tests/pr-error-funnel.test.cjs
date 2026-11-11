@@ -170,3 +170,82 @@ test('duplicate incidents on one PR retain event count but avoid double-counting
  assert.equal(unknown.event_count,2);
  assert.equal(summary.unique_prs,1);
 });
+
+test('verified Commander diagnostic assignment counts without claiming source repair',()=>{
+ const e=event({route_receipt:{state:'TASK_ROUTED_TO_REVIEW',reason:'NO_SAFE_AUTOMATIC_WRITER_FOR_CATEGORY'},
+  assignment_receipt:{schema:'HH_CI_EXECUTOR_ASSIGNMENT_V1',
+   ciEventId:INBOX,prNumber:42,headSha:SHA,category:'TYPESCRIPT',
+   executor:'openrouter',executorId:'agent-commander-openrouter-worker',
+   strategy:'GUARDED_SOURCE_REPAIR_DIAGNOSIS',
+   runId:'12345678-1234-4234-8234-123412341234'}});
+ assert.equal(m.diagnosticAssignment(e),true);
+ const summary=m.summarize([e],{},24,NOW,true);
+ assert.equal(summary.counts.assigned,1);
+ assert.equal(summary.counts.source_assigned,0);
+ assert.equal(summary.counts.dispatched,0);
+ assert.equal(summary.counts.committed,0);
+ for(const key of ['ciEventId','headSha','executorId']){
+  const bad={...e,assignment_receipt:{...e.assignment_receipt,[key]:'untrusted'}};
+  assert.equal(m.diagnosticAssignment(bad),false);
+  assert.equal(m.summarize([bad],{},24,NOW,true).counts.assigned,0);
+ }
+});
+function signedErrorTask(){
+ const item={schema:'HH_CI_ERROR_TASK_V1',task_id:ERROR,
+  pr_number:42,head_sha:SHA,run_id:CORE,category:'TYPESCRIPT',
+  executor_id:'github-actions:hh-pr-repair-worker.yml',
+  strategy_code:'GUARDED_SOURCE_REPAIR',
+  source_write_authorized:false,execution_authorized:false};
+ return bot(91,'<!-- HH_CI_ERROR_TASK_V1 '+ERROR+' -->\n'+
+  'CI error task, diagnostic only.\n'+
+  String.fromCharCode(96).repeat(3)+'json\n'+JSON.stringify(item)+'\n'+
+  String.fromCharCode(96).repeat(3));
+}
+function withClaimIdentity(rows){
+ const claim=rows[1],f=String.fromCharCode(96).repeat(3);
+ const value=claim.body.split('json\n')[1].split('\n'+f)[0];
+ const next={...JSON.parse(value),head_ref:'test/pr-repair-proof',base_ref:'codex/public-book-library'};
+ claim.body=claim.body.replace(value,JSON.stringify(next));
+ return rows;
+}
+test('verified GitHub claim recovers historical source commit when database kept a backstop',()=>{
+ const stored={...event().route_receipt,state:'TASK_WAITING_FOR_DISPATCH',
+  dispatchAccepted:0,dispatchAcknowledged:false,
+  executorId:null,workerTaskKey:null,errorTaskId:null};
+ const e=event({route_receipt:stored});
+ assert.equal(m.routeFor(e),null);
+ const arr=withClaimIdentity([signedErrorTask(),...records()]);
+ const route=m.signedClaimRoute(arr,e);
+ assert.equal(route?.workerTaskKey,TASK);
+ assert.equal(route?.errorTaskId,ERROR);
+ assert.equal(route?.evidenceSource,'GITHUB_SIGNED_EXACT_HEAD_WORKER_CLAIM');
+ const proof=m.taskEvidence(arr,e);
+ assert.equal(proof.verified_route?.dispatchAccepted,1);
+ assert.equal(proof.claimed,true);
+ assert.equal(proof.runner,true);
+ assert.equal(proof.responded,true);
+ assert.equal(proof.candidate_sha,NEXT);
+ const noApi=m.summarize([e],{[INBOX]:proof},24,NOW,true);
+ assert.equal(noApi.counts.committed,0,'signed outcome alone cannot prove GitHub parent');
+ const confirmed=m.summarize([e],{[INBOX]:{...proof,commit_verified:true}},24,NOW,true);
+ for(const key of ['assigned','source_assigned','dispatched','claimed','runner','responded','committed'])
+  assert.equal(confirmed.counts[key],1,key);
+ assert.equal(confirmed.links.committed[0].url,
+  'https://github.com/andylitvinov-design/books/commit/'+NEXT);
+});
+test('forged, edited or mismatched historical receipts cannot restore dispatch',()=>{
+ const stored={...event().route_receipt,state:'TASK_WAITING_FOR_DISPATCH',
+  dispatchAccepted:0,dispatchAcknowledged:false,
+  executorId:null,workerTaskKey:null,errorTaskId:null};
+ const e=event({route_receipt:stored});
+ const arr=withClaimIdentity([signedErrorTask(),...records()]);
+ assert.ok(m.signedClaimRoute(arr,e));
+ const forged=arr.slice();forged[0]={...arr[0],user:{login:'attacker',id:9,type:'User'}};
+ assert.equal(m.signedClaimRoute(forged,e),null);
+ const edited=arr.slice();edited[1]={...arr[1],updated_at:'2026-11-10T19:00:00Z'};
+ assert.equal(m.signedClaimRoute(edited,e),null);
+ const otherRun=arr.slice();otherRun[0]={...arr[0],body:arr[0].body.replace('"run_id":12345','"run_id":12346')};
+ assert.equal(m.signedClaimRoute(otherRun,e),null);
+ const unrelated=arr.slice();unrelated[1]={...arr[1],body:arr[1].body.replace(ERROR,'d'.repeat(32))};
+ assert.equal(m.signedClaimRoute(unrelated,e),null);
+});

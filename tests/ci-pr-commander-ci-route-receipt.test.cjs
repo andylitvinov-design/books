@@ -183,7 +183,7 @@ test('CI route outcomes cannot violate the existing Commander chat execution_sta
 test('legacy zero-dispatch route receipts are upgraded without granting an executor ACK',()=>{
  const edge=fs.readFileSync('supabase/functions/agent-commander-private-store-v1/index.ts','utf8');
  const first=edge.indexOf('function normalizeLegacyZeroDispatchCiRoute(p: any): any {');
- const last=edge.indexOf('async function receiveCommanderCiRoute(req,origin){',first);
+ const last=edge.indexOf('function isMonotonicCiDispatchUpgrade(',first);
  a.ok(first>0&&last>first);
  const vm=require('node:vm');
  const fn=vm.runInNewContext(edge.slice(first,last).replace('p: any): any','p)')+
@@ -207,4 +207,72 @@ test('legacy zero-dispatch route receipts are upgraded without granting an execu
  a.match(edge,/p=normalizeLegacyZeroDispatchCiRoute\(p\);/);
  a.ok(edge.includes("p.dispatchAcknowledged!==(p.dispatchAccepted===1)"));
  a.ok(edge.includes('p.executorId!=="github-actions:hh-pr-repair-worker.yml"'));
+});
+
+
+test('OIDC route receipt allows only exact-event 0-to-1 dispatch promotion',()=>{
+ const edge=fs.readFileSync('supabase/functions/agent-commander-private-store-v1/index.ts','utf8');
+ const begin=edge.indexOf('function isMonotonicCiDispatchUpgrade(');
+ const end=edge.indexOf('async function receiveCommanderCiRoute(req,origin){',begin);
+ a.ok(begin>=0&&end>begin);
+ const js=edge.slice(begin,end).replace(
+   'prior: any, next: any): boolean','prior, next)');
+ const fn=require('node:vm').runInNewContext(js+
+   '\nisMonotonicCiDispatchUpgrade',Object.create(null));
+ const prior={schema:'HH_COMMANDER_CI_ROUTE_RECEIPT_V1',
+  inboxId:INBOX,prNumber:123,headSha:SHA,runId:456,
+  category:'TYPESCRIPT',router:'GUARDED_SOURCE_REPAIR',
+  responsibleRole:'free-code-repair-worker',
+  state:'TASK_WAITING_FOR_DISPATCH',reason:'NOT_DISPATCHED_CRON_BACKSTOP',
+  dispatchAccepted:0,dispatchAcknowledged:false,
+  workerStarted:false,sourceWriteVerified:false,liveVerified:false,
+  executorId:null,workerTaskKey:null,errorTaskId:null};
+ const next={...prior,state:'DISPATCH_ACCEPTED_NOT_WORKER_STARTED',
+  reason:'EXACT_HEAD_DISPATCH_RECEIPT_CONFIRMED',
+  dispatchAccepted:1,dispatchAcknowledged:true,
+  executorId:'github-actions:hh-pr-repair-worker.yml',
+  workerTaskKey:'b'.repeat(32),errorTaskId:coreErrorTaskId(123,SHA,456,1)};
+ a.equal(fn(prior,next),true);
+ for(const allowed of ['TASK_WAITING_FOR_DISPATCH','DISPATCH_UNCONFIRMED_RECONCILE',
+   'TASK_AWAITING_EXISTING_RECOVERY'])a.equal(fn({...prior,state:allowed},next),true);
+ for(const changed of [
+  {...prior,state:'TASK_ROUTED_TO_REVIEW'},
+  {...prior,state:'DISPATCH_ACCEPTED_NOT_WORKER_STARTED',dispatchAccepted:1},
+  {...prior,dispatchAcknowledged:true},
+  {...prior,executorId:'github-actions:hh-pr-repair-worker.yml'},
+  {...prior,workerStarted:true},
+  {...prior,sourceWriteVerified:true}
+ ])a.equal(fn(changed,next),false);
+ for(const changed of [
+  {...next,headSha:'c'.repeat(40)},{...next,prNumber:124},
+  {...next,runId:457},{...next,inboxId:'b'.repeat(36)},
+  {...next,category:'SOURCE_CODE'},
+  {...next,workerStarted:true},{...next,sourceWriteVerified:true},
+  {...next,dispatchAccepted:0},{...next,dispatchAcknowledged:false},
+  {...next,executorId:'fake'},
+  {...next,workerTaskKey:'invalid'}, {...next,errorTaskId:'invalid'}
+ ])a.equal(fn(prior,changed),false);
+ a.equal(fn(next,prior),false,'no 1→0 downgrade even if a late backstop arrives');
+});
+
+test('accepted dispatch upgrades one row under row lock, archives previous state and creates a distinct chat receipt',()=>{
+ const edge=fs.readFileSync('supabase/functions/agent-commander-private-store-v1/index.ts','utf8');
+ const begin=edge.indexOf('async function receiveCommanderCiRoute(req,origin){');
+ const end=edge.indexOf('\nasync function handler(req){',begin);
+ const code=edge.slice(begin,end);
+ a.match(code,/select ci_event_id,repository,workflow_run_id.*for update/s);
+ a.match(code,/if\(!isMonotonicCiDispatchUpgrade\(prior,record\)\)/);
+ a.match(code,/record\.previousRouteState=prior\.state/);
+ a.match(code,/record\.previousRouteReason=prior\.reason/);
+ a.match(code,/and route_receipt=\$4::text::jsonb returning ci_event_id/);
+ a.match(code,/and route_receipt is null returning ci_event_id/);
+ a.match(code,/CI_ROUTE_CONCURRENT_WRITE_ABORTED/);
+ a.match(code,/prior\?":dispatch-accepted":""/);
+ a.match(code,/UPGRADED_TO_DISPATCH_ACCEPTED/);
+ a.match(code,/exactCoreFailureTaskId\(e\)/);
+ a.match(code,/verifyGitHubActionsOidc\(req\)/);
+ a.match(code,/ROUTE_RECEIPT_IMMUTABLE_CONFLICT/);
+ const list=edge.split('if(action==="commander_list_ci_events"){')[1]?.split('if(action==="commander_list_model_preferences"){')[0]||'';
+ a.match(list,/assignment_receipt,route_receipt,route_recorded_at/);
+ a.match(list,/where inbox_owner_id=\$3::uuid/);
 });
