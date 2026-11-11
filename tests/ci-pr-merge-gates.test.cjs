@@ -91,7 +91,7 @@ test('Core event refreshes a moving protected classifier and tolerates unknown m
    coreRunBase:()=>old,
    loadTrustedClassifier:async()=>({classifierBase:checked,decideRoute:()=> 'CORE'}),
    assessBaseFreshness:async({verifiedRunBase})=>{
-     assert.equal(verifiedRunBase(),old);
+     assert.equal(await verifiedRunBase([]),old);
      assessed++;
      if(assessed===1){production=second;return {ok:false,reason:'BASE_MOVED_DURING_CHECK'};}
      return {ok:checked===production,reason:'NON_SENSITIVE_BASE_ADVANCE',base:production};
@@ -106,6 +106,8 @@ test('Core event refreshes a moving protected classifier and tolerates unknown m
      throw Error('Unexpected git');
    }};
    if(spec.endsWith('/scripts/ci-pr-base-freshness.cjs'))return fakePolicy;
+   if(spec.endsWith('/scripts/ci-pr-core-tested-base-logs.cjs'))
+     return {recoverTestedBase:async()=>old};
    throw Error('Unexpected module '+spec);
  };
  await vm.runInNewContext('(async()=>{\n'+script+'\n})()',{
