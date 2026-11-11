@@ -103,6 +103,8 @@ on:
       - 'ops/pr-monitor/pr-repair-cycle-model.cjs'
       - 'ops/pr-monitor/tests/pr-repair-cycle-model.test.cjs'
       - 'ops/pr-monitor/api/pr-attribution.js'
+      - 'ops/pr-monitor/pr-error-funnel.js'
+      - 'ops/pr-monitor/tests/pr-error-funnel.test.cjs'
       - 'ops/pr-monitor/pr-attribution-ui.js'
       - 'ops/pr-monitor/pr-attribution-ui.css'
       - 'ops/pr-monitor/pr-open-queue.js'
@@ -329,6 +331,8 @@ jobs:
           node --check scripts/ci-pr-timeline-audit.cjs
           node --check ops/pr-monitor/ci-pr-timeline-audit.cjs
           node --check ops/pr-monitor/api/pr-attribution.js
+          node --check ops/pr-monitor/pr-error-funnel.js
+          node --check ops/pr-monitor/tests/pr-error-funnel.test.cjs
           node --check ops/pr-monitor/api/pr-merge-ci-head-trends.js
           node --check ops/pr-monitor/pr-velocity-three-lines.js
           node --check tests/pr-monitor-velocity-three-lines.test.cjs
@@ -379,6 +383,8 @@ jobs:
         run: node --test ops/pr-monitor/tests/commander-codex.test.mjs
       - name: Standalone monitor legacy fallback contract
         run: node --test ops/pr-monitor/tests/vercel-fallback.test.cjs
+      - name: PR error funnel proof and diagnostic assignment contracts
+        run: node --test ops/pr-monitor/tests/pr-error-funnel.test.cjs
       - name: PR attribution timeline evidence contracts
         run: node --test ops/pr-monitor/tests/pr-repair-cycle-model.test.cjs tests/ci-pr-timeline-audit.test.cjs tests/pr-attribution-api.test.cjs tests/pr-checkpoint-evidence.test.cjs tests/pr-cohort-wall-clock.test.cjs tests/pr-monitor-reconciliation-v2.test.cjs tests/ci-pr-core-journey-summary.test.cjs tests/pr-monitor-two-screen.test.cjs tests/pr-monitor-velocity-three-lines.test.cjs tests/pr-monitor-wave-effectiveness.test.cjs tests/pr-monitor-three-kpi-boot.test.cjs tests/pr-monitor-three-kpis.test.cjs tests/pr-monitor-three-kpis-api.test.cjs
       - name: Checkout protected production classifier for integration test
