@@ -6,15 +6,15 @@ import {buildPublishedVideoIndex} from "../lib/video-discovery/catalog.mjs";
 import {rankDiscoveryVideos} from "../lib/video-discovery/ranker.mjs";
 
 const read=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
-test("one seven-button dock reuses six Practice actions and the existing Free Analysis",()=>{
- assert.deepEqual(UNIFIED_DOCK_IDS,["mytube","video","master","ai","analysis","practice","profile"]);
+test("one seven-button dock includes Services and My Coach on existing destinations",()=>{
+ assert.deepEqual(UNIFIED_DOCK_IDS,["mytube","video","coach","ai","services","practice","profile"]);
  for(const locale of ["en","ru","es"]){
   assert.deepEqual(UNIFIED_DOCK_IDS.map(id=>unifiedMobileDockHref(locale,id)),[
    "/"+locale+"/mytube",
    "/"+locale+"/holistic-support/mandala",
-   "/"+locale+"/practice",
+   "/"+locale+"/my-coach",
    "/"+locale+"/app/messages?section=ai",
-   "/"+locale+"/services/free-situation-review",
+   "/"+locale+"/services",
    "/"+locale+"/holistic-support/mobile",
    "/"+(locale==="es"?"en":locale)+"/app/portrait"
   ]);
@@ -26,9 +26,9 @@ test("one seven-button dock reuses six Practice actions and the existing Free An
 test("shared seven-tab dock has the approved labels in every language",()=>{
  const dock=read("components/unified-mobile-dock.tsx");
  const expected={
-  en:{mytube:"MyTube",video:"MyVideo",master:"Services",ai:"AI/Chat",analysis:"Hints",practice:"Study",profile:"Profile"},
-  ru:{mytube:"MyTube",video:"MyVideo",master:"Услуги",ai:"ИИ/Чат",analysis:"Подсказки",practice:"Обучение",profile:"Профиль"},
-  es:{mytube:"MyTube",video:"MyVideo",master:"Servicios",ai:"IA/Chat",analysis:"Pistas",practice:"Estudiar",profile:"Perfil"}
+  en:{mytube:"MyTube",video:"MyVideo",coach:"My Coach",ai:"AI/Chat",services:"Services",practice:"Study",profile:"Profile"},
+  ru:{mytube:"MyTube",video:"MyVideo",coach:"Мой коуч",ai:"ИИ/Чат",services:"Услуги",practice:"Обучение",profile:"Профиль"},
+  es:{mytube:"MyTube",video:"MyVideo",coach:"Mi coach",ai:"IA/Chat",services:"Servicios",practice:"Estudiar",profile:"Perfil"}
  };
  for(const [locale,names] of Object.entries(expected)){
   const row=dock.split("\n").find(line=>line.trimStart().startsWith(locale+": {"));
@@ -36,12 +36,13 @@ test("shared seven-tab dock has the approved labels in every language",()=>{
   for(const id of UNIFIED_DOCK_IDS)
    assert.ok(row.includes(id+': "'+names[id]+'"'),locale+" label for "+id);
  }
- assert.match(dock,/\$\{label\}:.*Free personal express review/);
+ assert.match(dock,/Выбор коуча/);
+ assert.match(dock,/Choose a coach/);
 });
 
 test("standalone public tabs bypass native link handoff but not private CSP",()=>{
  const dock=read("components/unified-mobile-dock.tsx");
- assert.ok(dock.includes('["mytube", "video", "practice", "master", "analysis"].includes(id)'));
+ assert.ok(dock.includes('["mytube", "video", "practice", "coach", "services"].includes(id)'));
  assert.ok(dock.includes('window.matchMedia?.("(display-mode: standalone)")'));
  assert.ok(dock.includes('(window.navigator as Navigator & {standalone?: boolean}).standalone'));
  assert.ok(dock.includes("event.preventDefault();"));
@@ -75,24 +76,30 @@ test("Holistic House Home and Free Analysis share exactly one fixed seven-button
  assert.ok(review.includes('FreeEntryLanding locale={locale} kind="situation"'));
  assert.ok(model.includes("compactNavigationIds = ['home', 'analysis', 'courses', 'profile', 'alchemy', 'pro', 'temple']"));
  assert.ok(menu.includes("id: 'practice', label: text.practice, href: '/' + activeLocale + '/holistic-support/mobile'"));
+ assert.ok(menu.includes("id: 'my-coach', label: myCoachMenuCopy[activeLocale], href: '/' + activeLocale + '/my-coach'"));
+ assert.ok(menu.includes('data-nav-item="services"'), 'Public Services remains a reachable menu item');
  for(const language of ["Practice","Практика","Práctica"])assert.ok(model.includes(language));
 });
 
 test("route-aware single dock, guest/signed-in consistency and private pages excluded",()=>{
  for(const locale of ["en","ru","es"]){
   for(const path of ["mytube","holistic-support/mandala","holistic-support/mobile","practice",
-   "app/messages","app/portrait","app/practice","temple-insights","services/free-situation-review"]){
+   "app/messages","app/portrait","app/practice","temple-insights","masters","my-coach","services","services/free-situation-review"]){
    assert.ok(isUnifiedMobileDockPath("/"+locale+"/"+path),path);
   }
   assert.equal(unifiedMobileDockActive("/"+locale+"/mytube"),"mytube");
   assert.equal(unifiedMobileDockActive("/"+locale+"/holistic-support/mandala"),"video");
   assert.equal(unifiedMobileDockActive("/"+locale+"/holistic-support/mandala","#video-director-chat"),"ai");
   assert.equal(unifiedMobileDockActive("/"+locale+"/holistic-support/mobile"),"practice");
-  assert.equal(unifiedMobileDockActive("/"+locale+"/practice"),"master");
-  assert.equal(unifiedMobileDockActive("/"+locale+"/app/practice"),"master");
+  assert.equal(unifiedMobileDockActive("/"+locale+"/practice"),"practice");
+  assert.equal(unifiedMobileDockActive("/"+locale+"/app/practice"),"practice");
   assert.equal(unifiedMobileDockActive("/"+locale+"/app/messages"),"ai");
   assert.equal(unifiedMobileDockActive("/"+locale+"/app/portrait"),"profile");
-  assert.equal(unifiedMobileDockActive("/"+locale+"/services/free-situation-review"),"analysis");
+  assert.equal(unifiedMobileDockActive("/"+locale+"/masters"),null);
+  assert.equal(unifiedMobileDockActive("/"+locale+"/my-coach"),"coach");
+   assert.equal(unifiedMobileDockActive("/"+locale+"/masters"),null);
+  assert.equal(unifiedMobileDockActive("/"+locale+"/services"),"services");
+  assert.equal(unifiedMobileDockActive("/"+locale+"/services/free-situation-review"),"services");
   assert.equal(isUnifiedMobileDockPath("/"+locale+"/app/document-view"),false);
   assert.equal(isUnifiedMobileDockPath("/"+locale+"/client/private-selector"),false);
  }

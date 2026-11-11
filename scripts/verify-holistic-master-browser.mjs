@@ -180,7 +180,12 @@ async function verify(engine, locale, width) {
     assert.ok(firstChipBox && noteBox && firstChipBox.y < noteBox.y,
       label + ": focus chips precede optional wishes");
     const findBox = await findOptions.boundingBox();
-    const bottomNav = await page.locator(".mobile-bottom-navigation").first().boundingBox();
+    // Services now uses the single unified mobile dock; do not wait for a removed legacy nav.
+    const unifiedDock = page.locator('[data-hh-unified-dock]');
+    await unifiedDock.waitFor({state:'visible',timeout:15000});
+    const bottomNav = await unifiedDock.boundingBox();
+    assert.equal(await unifiedDock.locator('[data-unified-dock-item="services"]').getAttribute('aria-current'), 'page',
+      label + ": Services is the active unified dock destination");
     assert.ok(findBox && bottomNav && findBox.y + findBox.height <= bottomNav.y + 2,
       label + ": complete finder CTA is above fixed mobile navigation at " + width + "px");
     await focusChoices.first().tap();
