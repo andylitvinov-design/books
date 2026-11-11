@@ -158,3 +158,29 @@ test('actual next-head Core requires a GitHub runner, not queued, skipped or act
    [{...started,status:'completed',conclusion:'success'},started]),'UNVERIFIED');
  assert.equal(coreExecutionState(run({status:'in_progress'}),null),'UNVERIFIED');
 });
+
+
+test('protected publisher wakes owner-authored Core once and cannot invent or bypass CI',()=>{
+ const fs=require('node:fs');
+ const wf=fs.readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
+ const pub=wf.split('\n  publish:\n')[1].split('\n  finalize:\n')[0];
+ assert.match(pub,/Verify and recover the next exact-HEAD Core CI wave/);
+ assert.match(pub,/HH_NEXT_CI_OWNER_METADATA_WAKE/);
+ assert.match(pub,/proof\.requestOwnerCoreWake/);
+ assert.match(pub,/proof\.coreExecutionState/);
+ assert.match(pub,/if\(outcome\.state==='PENDING'\)/);
+ assert.match(pub,/if\(outcome\.state==='QUEUED'\|\|outcome\.state==='RUNNING'\)/);
+ assert.match(pub,/HH_NEXT_CI_NOT_CONFIRMED/);
+ assert.match(pub,/HH_NEXT_CI_FALLBACK_DISPATCHED/);
+ assert.match(pub,/HH_REPAIR_REMOTE_REF VERIFIED/);
+ assert.match(pub,/HH_AUTOMERGE_TOKEN: \$\{\{ secrets\.HH_AUTOMERGE_TOKEN \}\}/);
+ assert.match(pub,/HH_PUBLISHED_SHA: \$\{\{ steps\.publish_source\.outputs\.publish_sha \}\}/);
+ assert.match(pub,/publishedAt:firstSeen/);
+ assert.match(pub,/needs\.code_verify\.result == 'success'/);
+ for(const job of ['fix','code_fix','code_verify']){
+  const part=wf.split('\n  '+job+':\n')[1]?.split(/\n  [a-z_]+:\n/)[0];
+  assert.ok(part,'isolated '+job+' job exists');
+  assert.doesNotMatch(part,/HH_AUTOMERGE_TOKEN|HH_REPAIR_JOB_TOKEN|contents: write/);
+ }
+ assert.doesNotMatch(pub,/--unidiff-zero|force:true|paid.fallback/i);
+});
