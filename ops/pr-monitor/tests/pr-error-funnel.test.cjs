@@ -41,7 +41,9 @@ function records(options={}){
  const state=options.state||'PUBLISHED';
  const reply=bot(102,'<!-- HH_PR_REPAIR_OUTCOME_V1 '+SHA+' '+WORKER+' -->\n'+json({
   schema:'HH_PR_TASK_V1',pr_number:42,head_sha:SHA,task_key:TASK,
-  owner_run_id:String(WORKER),state,reason_code:state==='PUBLISHED'?'FIXED':'MANUAL',
+  owner_run_id:String(WORKER),state,reason_code:options.reason||
+    (state==='PUBLISHED'?'FIXED':'MANUAL'),
+  detail_code:options.detail||null,follow_up_task:options.followUp||null,
   source_published:state==='PUBLISHED',verified_source_fix:state==='PUBLISHED',
   new_sha:state==='PUBLISHED'?NEXT:null,
   outcome:{schema:'HH_TASK_OUTCOME_V1',task_key:TASK,
@@ -88,6 +90,68 @@ test('manual outcome counts signed reply but never commit',()=>{
  assert.equal(p.responded,true);assert.equal(p.candidate_sha,null);
  assert.equal(m.summarize([e],{[INBOX]:p},24,NOW,true).counts.committed,0);
 });
+
+test('monitor splits diagnostic assignment from source Worker without inventing missing commits',()=>{
+ const e=event(),signed=m.taskEvidence(records({state:'MANUAL',
+   detail:'FREE_AI_NO_BOUNDED_TEST_COVERAGE'}),e);
+ const s=m.summarize([e],{[INBOX]:signed},24,NOW,true);
+ assert.equal(s.counts.assigned,1);
+ assert.equal(s.counts.source_assigned,1);
+ assert.equal(s.counts.responded,1);
+ assert.equal(s.counts.committed,0);
+ assert.equal(s.breakdown.assigned_diagnostic_not_source,0);
+ assert.equal(s.breakdown.worker_replies_without_commit,1);
+ assert.equal(s.blockers.find(x=>x.key==='why_coverage').pr_count,1);
+ assert.equal(s.blockers.find(x=>x.key==='worker_without_commit').pr_count,1);
+});
+test('each historical signed no-commit outcome has a distinct fixed-vocabulary failure reason',()=>{
+ const table=[
+  ['SOURCE_PUBLISH_JOB_FAILURE','VERIFIED_SOURCE_PATCH','publish'],
+  ['MANUAL','FREE_AI_NO_BOUNDED_TEST_COVERAGE','coverage'],
+  ['MANUAL','FREE_AI_NO_REPRODUCED_BOUNDED_FAILURE','coverage'],
+  ['MANUAL','FREE_AI_FREE_TIER_QUOTA_EXHAUSTED','provider'],
+  ['MANUAL','FREE_AI_OPENROUTER_HTTP_400','provider'],
+  ['MANUAL','FREE_AI_PATCH_APPLY_CHECK_FAILED','patch'],
+  ['MANUAL','FREE_AI_OPENROUTER_PATCH_RESPONSE_TRUNCATED','patch'],
+  ['MANUAL','FREE_AI_UNSAFE_SOURCE_SCOPE','scope'],
+  ['MANUAL','NOT_YET_CLASSIFIED','other']
+ ];
+ for(const [reason,detail,key] of table){
+  const e=event(),p=m.taskEvidence(records({state:'MANUAL',reason,detail}),e);
+  assert.equal(p.failure_reason,key,reason+' / '+detail);
+  const summary=m.summarize([e],{[INBOX]:p},24,NOW,true);
+  assert.equal(summary.blockers.find(x=>x.key==='why_'+key).pr_count,1);
+  assert.equal(summary.counts.committed,0);
+ }
+});
+test('source dispatch gap is counted only without an accepted signed route',()=>{
+ const e=event({route_receipt:null});
+ const s=m.summarize([e],{},24,NOW,true);
+ assert.equal(s.blockers.find(x=>x.key==='source_not_dispatched').pr_count,1);
+ assert.equal(s.counts.source_assigned,0);
+ const restored=m.summarize([e],{[INBOX]:{verified_route:event().route_receipt}},24,NOW,true);
+ assert.equal(restored.blockers.find(x=>x.key==='source_not_dispatched').pr_count,0);
+ assert.equal(restored.blockers.find(x=>x.key==='unrouted').pr_count,0,
+  'the signed GitHub route supersedes a stale database snapshot');
+});
+test('diagnostic review is explicitly not a software Repair Worker assignment',()=>{
+ const e=event({category:'BASE_OR_CI_ROUTING',
+  route_receipt:{state:'TASK_ROUTED_TO_REVIEW'},assignment_receipt:{
+   schema:'HH_CI_EXECUTOR_ASSIGNMENT_V1',ciEventId:INBOX,prNumber:42,headSha:SHA,
+   category:'BASE_OR_CI_ROUTING',executor:'openrouter',
+   executorId:'agent-commander-openrouter-worker',strategy:'CI_ROUTING_DIAGNOSIS',
+   runId:'12345678-1234-4234-8234-123412341234'},
+  classification:{schema:'HH_CI_ERROR_CLASSIFICATION_V1',
+    status:'DIAGNOSTIC_ONLY',category:'BASE_OR_CI_ROUTING',
+    reason_code:'SPECIALIST_REQUIRED_PROOF_MISSING_OR_STALE',
+    responsible_role:'ci-routing-owner'}});
+ const s=m.summarize([e],{},24,NOW,true);
+ assert.equal(s.counts.assigned,1);
+ assert.equal(s.counts.source_assigned,0);
+ assert.equal(s.breakdown.assigned_diagnostic_not_source,1);
+ assert.equal(s.blockers.find(x=>x.key==='diagnostic_only').pr_count,1);
+});
+
 test('unauthenticated, forged, or edited comment is not proof',()=>{
  const e=event(),arr=records();
  arr[0].user={login:'andylitvinov-design',id:99,type:'User'};
