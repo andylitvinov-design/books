@@ -107,3 +107,9 @@ The optional real-model branch requests OpenRouter `provider.zdr=true` and lists
 The encrypted session stores only a separately confirmed step, never the transient dialogue. The UI now displays one of these bounded reasons without exposing client text or upstream secrets: `feature_disabled`, `server_not_configured`, `privacy_model_unavailable`, `rate_limited`, `cost_unverified`, `response_unverified`, `model_unavailable`.
 
 A protected PR merge and Vercel READY are code-release proof, **not** signed-in AI inference proof. To call generative Coaching Brain VERIFIED LIVE, require the Vercel coaching feature flag, a valid Vercel server-only OpenRouter key, an actually available free ZDR endpoint, an authenticated active-session two-turn smoke, and a separate confirmed-step save/reload check. Unavailable steps are recorded as blockers, not assumed green.
+
+## Synthetic AI connectivity check — November 2026
+
+A signed-in client with an active private coaching session can click **Test AI without personal text**. The dedicated authenticated action is rate-limited to three attempts per hour and sends only fixed non-sensitive text to the existing OpenRouter zero-cost gateway. Every request requires `provider.zdr=true`, `data_collection=deny`, no provider fallbacks, verified zero pricing and `usage.cost=0`; no personal message, history, session ID or stored answer travels to the model. Responses show verified / unavailable with a bounded reason and do not persist transcripts. The synthetic test does NOT by itself verify a complete client conversation or action-plan persistence.
+
+OpenRouter's `provider.zdr=true` may still permit Safety Retention endpoints depending on account privacy settings. Strict no-retention requires confirming OpenRouter account ZDR-only settings and excluding Safety Retention separately; no claim of that account configuration is made here.

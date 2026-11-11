@@ -9,7 +9,7 @@ test('Ideas offers the public model chooser first and keeps local Tao insight',(
  const ui=read('components/ideas-discovery.tsx')
  const nav=read('lib/site-navigation-model.js')
  const css=read('components/ideas-discovery.module.css')
- assert.match(ui,/const coachingHref = "\/" \+ locale \+ "\/coaching"/)
+ assert.match(ui,/const coachingHref = "\/" \+ locale \+ "\/coaching\/sessions"/)
  assert.match(ui,/data-ideas-hero-actions[\s\S]*data-ideas-free-coaching[\s\S]*data-ideas-tao/)
  assert.doesNotMatch(ui,/\/app\/coaching/)
  assert.match(ui,/data-ideas-explore-coaching/)
