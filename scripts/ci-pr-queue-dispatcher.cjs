@@ -139,6 +139,18 @@ function planCandidates(prs,now){
  const legacyStart=legacy.length?Math.floor(now/3600000)%legacy.length:0;
  const oldCandidates=Number.isFinite(now)&&now>=0&&legacy.length?
   [legacy[legacyStart]]:[];
+ // GitHub PR list does not include mergeability. A historical manual label
+ // can hide a verified DIRTY conflict until an exact-HEAD live PR read.
+ // Sample at most two rotating manual-conflict hints (read-only) each turn.
+ const manualConflictHints=legacy.filter(pr=>
+  (pr.labels||[]).some(label=>label.name==='hh:conflict-repair-needed'));
+ const manualConflictProbes=slots=>{
+  const pool=manualConflictHints.filter(pr=>
+   !oldCandidates.some(old=>old.number===pr.number));
+  const count=Math.min(2,Math.max(0,slots),pool.length);
+  const start=pool.length?(Math.floor(now/600000)*Math.max(1,count))%pool.length:0;
+  return Array.from({length:count},(_,i)=>pool[(start+i)%pool.length]);
+ };
  // During conflict-only backlogs, rotate a bounded window rather than reread
  // the same 16 already handed-off exact HEADs on each ten-minute cycle.
  if(!source.length&&!ci){
@@ -148,12 +160,20 @@ function planCandidates(prs,now){
   // lower-priority conflicts are never permanently excluded. A handoff is
   // only a receipt: the code-writing Chat/Codex lane owns the actual repair.
   const fast=conflicts.slice(0,Math.min(2,room));
-  const tail=conflicts.slice(fast.length),rotating=room-fast.length;
+  const probes=manualConflictProbes(MAX_CONFLICT_ONLY_INSPECT-fast.length-oldCandidates.length);
+  const tail=conflicts.slice(fast.length);
+  const rotating=Math.max(0,Math.min(tail.length,
+   MAX_CONFLICT_ONLY_INSPECT-fast.length-oldCandidates.length-probes.length));
   const offset=tail.length?(Math.floor(now/600000)*Math.max(1,rotating))%tail.length:0;
-  return [...oldCandidates,...fast,
+  const hintNumbers=new Set(probes.map(pr=>pr.number));
+  return [...fast,...oldCandidates,...probes,
    ...Array.from({length:rotating},(_,i)=>tail[(offset+i)%tail.length])]
    .slice(0,MAX_CONFLICT_ONLY_INSPECT)
-   .map(pr=>taskFor(pr,priorityFor(pr,now)));
+   .map(pr=>{
+    const task=taskFor(pr,priorityFor(pr,now));
+    return task&&hintNumbers.has(pr.number)?
+     {...task,manual_conflict_probe:true}:task;
+   });
  }
  const picked=[],chosen=new Set();
  const add=pr=>{if(pr&&!chosen.has(pr.number)&&picked.length<MAX_INSPECT){picked.push(pr);chosen.add(pr.number);}};
@@ -162,6 +182,10 @@ function planCandidates(prs,now){
  for(const old of oldCandidates)add(old);
  // Keep priority among the first three sources and rotate the remainder.
  for(const pr of source.slice(1,3))if(picked.length<MAX_INSPECT-(conflict&&!chosen.has(conflict.number)?1:0))add(pr);
+ // Preserve source/CI priority and a real-conflict slot before manual probes.
+ const probes=manualConflictProbes(MAX_INSPECT-picked.length-
+  (conflict&&!chosen.has(conflict.number)?1:0));
+ for(const pr of probes)add(pr);
  const sourceRoom=Math.max(0,MAX_INSPECT-picked.length-(conflict&&!chosen.has(conflict.number)?1:0));
  const tail=source.filter(pr=>!chosen.has(pr.number));
  const offset=tail.length?(Math.floor(now/600000)*Math.max(1,sourceRoom))%tail.length:0;
@@ -174,7 +198,12 @@ function planCandidates(prs,now){
  const room=Math.min(MAX_INSPECT-picked.length,rest.length);
  const start=rest.length?(Math.floor(now/600000)*Math.max(1,room))%rest.length:0;
  for(let i=0;i<room;i++)add(rest[(start+i)%rest.length]);
- return picked.map(pr=>taskFor(pr,priorityFor(pr,now)));
+ const hintNumbers=new Set(probes.map(pr=>pr.number));
+ return picked.map(pr=>{
+  const task=taskFor(pr,priorityFor(pr,now));
+  return task&&hintNumbers.has(pr.number)?
+   {...task,manual_conflict_probe:true}:task;
+ });
 }
 // This is a label-only inventory observation, NOT a source-repair admission.
 // Hold/Draft/conflict/specialist labels may overlap. No extra GitHub reads.
@@ -293,7 +322,8 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   dryRun,discovered:0,production:0,actionable:0,candidates:0,
   inspected:0,dispatchAccepted:0,wouldDispatch:0,
   staleConflictCleared:0,wouldClearStaleConflict:0,
-  manualConflictHandoffs:0,wouldManualConflictHandoffs:0,dependentPrsLinked:0,
+  manualConflictHandoffs:0,wouldManualConflictHandoffs:0,
+  verifiedManualConflictReroutes:0,dependentPrsLinked:0,
   conflictQueueReleased:0,unconfirmedHandoffs:0,
   manualSourceEscalations:0,wouldManualSourceEscalations:0,
   specialistReclassified:0,wouldSpecialistReclassify:0,
@@ -541,16 +571,18 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
  };
  // Preserve the source/CI-first plan. Conflict receipts are not code writes.
  const ordered=candidates;
- for(const task of ordered){
+ for(let task of ordered){
   if(summary.dispatchAccepted>=MAX_DISPATCH||quota.state.paused)break;
   if(task?.lane==='legacy'&&summary.legacyDispatchAccepted>=1)continue;
   currentTask=task;
   if(!task){blocked('UNCLASSIFIED');continue;}
   summary.inspected++;
-  if(conflictEvent&&task.lane!=='conflict'){
+  // Legacy is allowed only for a read-only fresh PR proof here.
+  // After that proof, a conflict event MUST be in the real conflict lane.
+  if(conflictEvent&&task.lane!=='conflict'&&task.lane!=='legacy'){
    blocked('CONFLICT_EVENT_LANE_MISMATCH');continue;
   }
-  const worker=WORKFLOWS[task.lane];
+  let worker=WORKFLOWS[task.lane];
   // A child based on this branch must not strand its parent. The trusted
   // executor receives this link, but never mutates or retargets the child.
   let children=prs,heads=prs;
@@ -584,9 +616,36 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   let fresh;
   try{fresh=(await limited('live-pr',()=>github.rest.pulls.get({owner,repo,pull_number:task.pr_number}))).data;}
   catch(err){blocked('LIVE_PR_UNAVAILABLE');log('PR #'+task.pr_number+' unavailable '+err.message);continue;}
+  // Fresh exact-HEAD DIRTY evidence may upgrade a legacy manual task to
+  // semantic conflict handoff only. It NEVER grants a source-write worker.
+  const verifiedManualDirtyConflict=task.lane==='legacy'&&
+   fresh?.head?.sha===task.head_sha&&fresh.head?.ref===task.head_ref&&
+   fresh.base?.ref===PROD&&validLegacyPrep(fresh)&&fresh.mergeable===false&&
+   fresh.mergeable_state==='dirty'&&
+   (fresh.labels||[]).some(label=>label.name==='hh:conflict-repair-needed')&&
+   laneOf(fresh)==='conflict';
+  if(verifiedManualDirtyConflict){
+   const converted=taskFor(fresh,priorityFor(fresh,now));
+   if(converted?.lane!=='conflict'||converted.head_sha!==task.head_sha){
+    blocked('MANUAL_DIRTY_CONFLICT_TASK_UNVERIFIED');continue;
+   }
+   task=converted;currentTask=task;worker=WORKFLOWS.conflict;
+   summary.verifiedManualConflictReroutes++;
+   log('VERIFIED_MANUAL_DIRTY_CONFLICT_REROUTE #'+task.pr_number+
+    ' '+task.head_sha.slice(0,12));
+  }
+  if(task.manual_conflict_probe&&!verifiedManualDirtyConflict){
+   // A probe is not a second hourly legacy worker. Only verified DIRTY
+   // evidence may advance it to a non-writing conflict owner handoff.
+   blocked('MANUAL_CONFLICT_PROBE_NOT_DIRTY');continue;
+  }
   if(!fresh||fresh.head?.sha!==task.head_sha||fresh.base?.ref!==PROD||
-     !(task.lane==='legacy'?validLegacyPrep(fresh):validPR(fresh))||
+     !(task.lane==='legacy'||verifiedManualDirtyConflict?
+       validLegacyPrep(fresh):validPR(fresh))||
       laneOf(fresh)!==task.lane){blocked('STALE_SHA_OR_STATE');continue;}
+  if(conflictEvent&&task.lane!=='conflict'){
+   blocked('CONFLICT_EVENT_LANE_MISMATCH');continue;
+  }
   let comments;
   try{
    comments=await readCompleteIssueComments(github,owner,repo,task.pr_number,limited);
