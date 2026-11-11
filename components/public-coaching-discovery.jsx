@@ -26,9 +26,9 @@ import styles from './public-coaching-discovery.module.css'
 
 
 const myCoachCopy={
-  en:{eyebrow:'Your selected AI coaching style',edit:'Change coach',note:'The free guided session uses reviewed questions; only optional follow-up prompts are adapted to this persona. This is not a live generative AI chat.'},
-  ru:{eyebrow:'Выбранный AI-коуч',edit:'Сменить коуча',note:'Бесплатная сессия идёт по проверенным вопросам; к персонажу адаптированы дополнительные вопросы. Это ещё не живой генеративный AI-чат.'},
-  es:{eyebrow:'Estilo de coach IA elegido',edit:'Cambiar coach',note:'La sesión guiada usa preguntas revisadas; solo se adaptan preguntas adicionales. No es un chat generativo en vivo.'},
+  en:{eyebrow:'HOLISTIC HOUSE · YOUR AI COACH',edit:'Choose another coach',back:'Back to my coach',ready:'Here with you',start:'Start conversation',unavailable:'The guided session is temporarily unavailable. Please try again later.',note:'A private, guided conversation with reviewed questions and optional follow-ups. You can type or dictate answers. This is not yet a live generative AI voice chat.'},
+  ru:{eyebrow:'HOLISTIC HOUSE · ВАШ AI-КОУЧ',edit:'Выбрать другого коуча',back:'Назад к коучу',ready:'Я рядом',start:'Начать общение',unavailable:'Сессия временно недоступна. Попробуйте снова позже.',note:'Личный диалог по проверенным вопросам: можно писать или диктовать ответы. Живой генеративный голосовой AI-чат пока не включён.'},
+  es:{eyebrow:'HOLISTIC HOUSE · TU COACH DE IA',edit:'Elegir otro coach',back:'Volver al coach',ready:'Aquí contigo',start:'Empezar conversación',unavailable:'La sesión guiada no está disponible ahora. Vuelve a intentarlo más tarde.',note:'Conversación guiada privada: puedes escribir o dictar tus respuestas. El chat generativo de voz en vivo aún no está activado.'},
 }
 const copy={
   en:{
@@ -376,6 +376,14 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null,person
   },[session,index,finished,pendingFollowup,entryStep])
   const models=useMemo(()=>new Map((catalog?.models||[]).map(m=>[m.modelKey,m])),[catalog])
   const schemes=useMemo(()=>(catalog?.schemes||[]).filter(s=>models.has(s.modelKey)&&Array.isArray(s.questions)&&s.questions.length>0),[catalog,models])
+  // Only a published, non-sensitive model can open directly from a fictional AI persona.
+  const starterScheme=useMemo(()=>{
+    if(!selectedPersona)return null
+    const wantsFast=personaSelection?.settings?.pace==='fast'
+    const score=s=>personaMethodFit(selectedPersona.id,s.modelKey)*10+(s.style===(wantsFast?'quick':'reflective')?2:0)
+    return schemes.filter(s=>!coachingSchemeRequiresAdultConsent(s))
+      .sort((a,b)=>score(b)-score(a)||Math.abs(a.minutes-20)-Math.abs(b.minutes-20)||a.schemeKey.localeCompare(b.schemeKey))[0]||null
+  },[schemes,selectedPersona,personaSelection?.settings?.pace])
   // A dedicated public scheme landing may link back to an explicit Start action.
   // Only a whitelisted, published scheme key is read from the URL; never a
   // visitor's raw question or response. No session is stored by this handoff.
@@ -440,11 +448,11 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null,person
     setTopicGroup(coachingTopicGroup(groupId).id)
     setTopic('all')
   }
-  function start(scheme){
-    if(recommendation.blocked)return
+  function start(scheme,direct=false){
+    if(!scheme||recommendation.blocked)return
     setDictating(false)
     setAdultAcknowledged(false)
-    setSession(scheme);setEntryStep('intro');setCheckin('');setSessionTopic(isCoachingRequestTopic(topicGroup)?topicGroup:'');setIndex(0);setAnswers({});setDraft('');setFinished(false);setFinishedAt(null);setPdfError('');setCopied(false);setCopyError(false);setError('')
+    setSession(scheme);setEntryStep(direct?'questions':'intro');setCheckin('');setSessionTopic(isCoachingRequestTopic(topicGroup)?topicGroup:'');setIndex(0);setAnswers({});setDraft('');setFinished(false);setFinishedAt(null);setPdfError('');setCopied(false);setCopyError(false);setError('')
     setPendingFollowup(null);setReflectionDraft('');setReflections({});setApprovedPlan(null)
   }
   function backToModels(){
@@ -557,13 +565,31 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null,person
   }
   return <main ref={rootRef} className={styles.root} data-public-coaching data-public-coaching-active={session?'true':undefined} lang={lang}>
     <div className={styles.wrap}>
-      {!session?<>
-        {selectedPersona&&<div className={styles.personaBridge} data-my-coach-handoff={selectedPersona.id}>
-          <span>{personaBridgeText.eyebrow}</span>
-          <strong>{selectedPersona.symbol} {selectedPersonaName} · {localCoachText(selectedPersona.role,lang)}</strong>
-          <p>{personaBridgeText.note}</p>
-          <Link href={'/'+lang+'/my-coach'} prefetch={false}>{personaBridgeText.edit}<ArrowRight size={15} aria-hidden="true"/></Link>
-        </div>}
+      {!session?selectedPersona?<section className={styles.personaWelcome} data-my-coach-handoff={selectedPersona.id}>
+        <Link className={styles.personaWelcomeChange} href={'/'+lang+'/my-coach'} prefetch={false}>
+          <ArrowLeft size={17} aria-hidden="true"/>{personaBridgeText.edit}
+        </Link>
+        <div className={styles.personaWelcomeArt}>
+          <span className={styles.personaWelcomeGlow} aria-hidden="true"/>
+          <span className={styles.personaWelcomeFace} data-persona={selectedPersona.id}
+            role="img" aria-label={selectedPersonaName}>{selectedPersona.symbol}</span>
+          <span className={styles.personaWelcomeStatus}><Sparkles size={16} aria-hidden="true"/>{personaBridgeText.ready}</span>
+        </div>
+        <div className={styles.personaWelcomeBody}>
+          <p className={styles.personaWelcomeEyebrow}>{personaBridgeText.eyebrow}</p>
+          <h1>{selectedPersonaName}</h1>
+          <p className={styles.personaWelcomeRole}>{localCoachText(selectedPersona.role,lang)}</p>
+          <p className={styles.personaWelcomeDescription}>{localCoachText(selectedPersona.description,lang)}</p>
+          <blockquote className={styles.personaWelcomeGreeting}>“{localCoachText(selectedPersona.opening,lang)}”</blockquote>
+          <button type="button" className={styles.personaWelcomeStart} disabled={!starterScheme||recommendation.blocked}
+            onClick={()=>start(starterScheme,true)} data-my-coach-begin-conversation>
+            {personaBridgeText.start}<ArrowRight size={19} aria-hidden="true"/>
+          </button>
+          {recommendation.blocked?<p className={styles.alert} role="alert">{t.alert}</p>:
+            !starterScheme?<p className={styles.alert} role="status">{personaBridgeText.unavailable}</p>:null}
+          <p className={styles.personaWelcomeNote}><LockKeyhole size={15} aria-hidden="true"/>{personaBridgeText.note}</p>
+        </div>
+      </section>:<>
         <CoachingLoungeEntry locale={lang} selected={coachingChoice} onSelect={setCoachingChoice} />
         <section className={styles.controls} aria-label={t.filters}>
           <fieldset className={styles.topicGroups} data-coaching-topic-first>
@@ -727,7 +753,8 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null,person
       </>:<section className={styles.session} data-public-coaching-session data-intimacy-session={requiresAdult?'true':undefined}
         data-coaching-one-viewport={entryStep==='questions'&&!finished&&(!requiresAdult||adultAcknowledged)?'true':undefined}>
         <header className={styles.sessionHeader}>
-          <button type="button" className={styles.back} disabled={dictating} onClick={backToModels}><ArrowLeft size={18}/>{t.back}</button>
+          <button type="button" className={styles.back} disabled={dictating} onClick={backToModels}><ArrowLeft size={18}/>{selectedPersona?personaBridgeText.back:t.back}</button>
+          {selectedPersona&&<span className={styles.sessionPersonaMark} data-persona={selectedPersona.id} aria-hidden="true">{selectedPersona.symbol}</span>}
           <div className={styles.sessionHeaderInfo}>
             <p className={styles.eyebrow}>{coachingSessionTitle(session.schemeKey,lang,tr(session.name,lang))} · {selectedPersonaName?selectedPersonaName+' · ':''}{t.free}</p>
             {!finished&&<div className={styles.progress}>
