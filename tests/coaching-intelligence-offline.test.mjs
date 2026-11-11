@@ -128,11 +128,11 @@ test('continuity and unsubmitted followup safeguards reuse the same private acco
 test('backend keeps saved reflections and approved plans owner encrypted and optimistic-revision guarded',()=>{
   const src=source('lib/app/personal-coaching.js'),api=source('app/api/app/[...path]/route.js')
   for(const literal of ["input.action==='reflection'","input.action==='plan'",
-    'course.current.reflections={','course.current.actionPlan={','readRow(db,actor,true)',
+    'course.current.reflections={','course.current.actionPlan=plan','readRow(db,actor,true)',
     'seal(course,sealContext(actor),config)','authoredFollowupFor(question,original,course.current.reflections)',
     'PERSONAL_COACH_REFLECTION_UNAVAILABLE','PERSONAL_COACH_PLAN_INVALID'])
     assert.ok(src.includes(literal),literal)
-  assert.match(src,/onlyKeys\(input,\['action','revision','questionId','followupKey','note'\]\)/)
+  assert.match(src,/onlyKeys\(input,\['action','revision','questionId','followupKey','note','turnId'\]\)/)
   assert.match(api,/await auth\.verified\(\)/)
   assert.match(api,/savePersonalCoaching\(config, actor, await readBody\(request, 8192\)\)/)
   assert.doesNotMatch(src,/process\.env\.GEMINI|\bfetch\(/)

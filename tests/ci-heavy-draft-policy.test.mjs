@@ -903,6 +903,10 @@ test('Public Services ancestry proof uses exact merge parents and authenticated 
   ];
   for (const item of required) assert.ok((item === 'fetch-depth: 2' ? workflow : preflight).includes(item),
     'Missing fail-closed exact merge / ancestry proof: ' + item);
+  assert.ok(workflow.includes('fetch-depth: 2'), 'Checkout must stay bounded');
+  assert.ok(preflight.includes('curl --fail --silent --show-error --max-time 20'), 'Comparison must fail closed');
+  assert.ok(preflight.indexOf('[[ "$tested_head" == "$PR_HEAD_SHA"') < preflight.indexOf('curl --fail'),
+    'Verify the exact head before querying the base ancestry');
   assert.ok(preflight.indexOf('mapfile -t tested_parents') < preflight.indexOf('compare_json=') &&
     preflight.indexOf('compare_json=') < preflight.indexOf('[[ "$relation" == "ahead" || "$relation" == "identical" ]]'),
     'Exact merge parents must be checked before authenticated ancestry acceptance');
