@@ -2,7 +2,10 @@
 import {useMemo} from "react";
 import {ArrowRight,Brain,Check,Clock3,Film,Play,Sparkles} from "lucide-react";
 import {suggestVideoConcept} from "@/lib/mandala/auto-video-concept.mjs";
-import {planReviewedFilmedStory,isReviewedFilmedStorySequence,isReviewedFilmedStoryScene} from "@/lib/mandala/reviewed-filmed-story.mjs";
+import {planReviewedFilmedStory,planReviewedStoryWithPhotos,isReviewedFilmedStorySequence,
+ isReviewedStoryWithPhotosSequence,isReviewedFilmedStoryScene}
+ from "@/lib/mandala/reviewed-filmed-story.mjs";
+import {STORY_PHOTO_BY_ID,isTrustedStoryPhoto} from "@/lib/mandala/story-photo-library.mjs";
 import type {CategoryStoryboardShot} from "@/lib/mandala/category-video-storyboard.mjs";
 import type {ApprovedVideoConcept} from "./mandala-video-concept";
 import styles from "./mandala-video-mobile.module.css";
@@ -24,16 +27,16 @@ const words={
   sample:"Пример сюжета. Уточните запрос в «Идеях» для персонального результата.",
   replace:"В текущем монтаже есть графические или недостаточно проверенные кадры. Ниже — раскадровка только из реальных видеосъёмок. Примените её, чтобы заменить старые сцены.",
   personal:"Сцены уже предложены по вашей идее. Анкету заполнять не нужно.",
-  note:"Только снятые на камеру видеокадры с проверенным качеством и правами. Описания сцен могут быть символическими — проверьте соответствие сюжету.",
+  note:"Сначала подбираем реальные видео по действиям. Если подходящего бизнес-видео нет, используем лицензированное фото с плавным движением кадра. Люди на фото — иллюстрация, а не ваша команда.",
   format:"Для проверенных кадров при применении будет выбран вертикальный формат 9:16.",
   empty:"Для выбранной длительности недостаточно разных качественных видеосъёмок. Рисованные кадры не подставляются. Выберите ролик короче.",
   noPoster:"Превью недоступно"},
  en:{source:"Automatically from Ideas",scene:"Scene",visual:"Visual",preview:"Preview shot",
   apply:"Apply scenes to montage",applied:"Scenes in current montage",ideas:"Open concept in Ideas",
   sample:"Sample storyboard. Refine your goal in Ideas to personalize it.",
-  replace:"The current montage contains illustrated or insufficiently verified footage. The proposed scenes below use reviewed real-camera video only. Apply them to replace the old shots.",
+  replace:"The current montage contains illustrated or insufficiently reviewed media. Apply these real-camera videos and licensed photographs instead.",
   personal:"Scenes are already suggested from your idea. No questionnaire needed.",
-  note:"Only reviewed real-camera footage with verified rights and technical quality. Symbolic scene descriptions still need your review.",
+  note:"Real camera footage comes first; when there is no matching business video, a licensed photographic still replaces it. Stock subjects are illustrative, not your actual team. Review the story before export.",
   format:"Applying verified footage switches the video to portrait 9:16.",
   empty:"Not enough different reviewed camera shots for this duration. No illustrated filler will be used. Choose a shorter video.",
   noPoster:"Preview unavailable"},
@@ -42,7 +45,7 @@ const words={
   sample:"Guion de ejemplo. Define tu objetivo en Ideas para personalizarlo.",
   replace:"El montaje contiene escenas gráficas o sin verificar. La propuesta usa solo vídeo real revisado. Aplícala para sustituir los planos anteriores.",
   personal:"Escenas propuestas según tu idea, sin cuestionarios.",
-  note:"Solo imágenes de vídeo grabado con cámara, con derechos y calidad revisados. Comprueba la pertinencia de las escenas.",
+  note:"Primero, vídeo real que represente la acción; si falta, una foto con licencia y movimiento suave. Las personas de archivo son ilustrativas, no tu equipo.",
   format:"Al aplicar se utilizará el formato vertical 9:16.",
   empty:"No hay suficientes tomas reales revisadas para esta duración. No se usarán dibujos; elige un vídeo más corto.",
   noPoster:"Vista previa no disponible"}
@@ -65,18 +68,35 @@ export function MandalaAutomaticStoryboard({
  }) as ApprovedVideoConcept,[locale,goal,theme,styleIndex,phraseKey,transcript]);
  const concept=approvedConcept?.signature===suggested.signature?approvedConcept:suggested;
  // Four editorial meaning phases map to six distinct verified 5s videos at 30s.
- const proposal=useMemo(()=>planReviewedFilmedStory({
-  categoryId:concept.categoryId,locale,aspect:"portrait",durationSeconds,scenes
- }),[concept.categoryId,locale,durationSeconds,scenes]);
- const applied=Boolean(appliedShots?.length)&&isReviewedFilmedStorySequence({
-   shots:appliedShots,scenes,aspect:aspect as "portrait"|"landscape"|"square"
- });
+ const proposal=useMemo(()=>{
+   const request={categoryId:concept.categoryId,locale,aspect:"portrait" as const,
+     durationSeconds,scenes};
+   return concept.categoryId==="goals-money"
+     ?planReviewedStoryWithPhotos({...request,concept})
+     :planReviewedFilmedStory(request);
+ },[concept,locale,durationSeconds,scenes]);
+ const businessPhotoProposal=proposal.ok&&
+   proposal.status==="REVIEWED_BUSINESS_VIDEO_OR_PHOTO_STORYBOARD";
+ const isApprovedMedia=Boolean(appliedShots?.length)&&(
+   isReviewedFilmedStorySequence({
+     shots:appliedShots,scenes,aspect:aspect as "portrait"|"landscape"|"square"
+   })||isReviewedStoryWithPhotosSequence({
+     shots:appliedShots,scenes,aspect:aspect as "portrait"|"landscape"|"square"
+   }));
+ // A formerly applied nature montage is not relevant to a business brief.
+ // Do not hide the action-matched storyboard behind an applied status.
+ const applied=isApprovedMedia&&(!businessPhotoProposal||
+   (appliedShots?.length===proposal.shots.length&&
+     appliedShots!.every((shot,index)=>shot.sceneId===proposal.shots[index]?.sceneId)));
  const replacingGraphics=Boolean(appliedShots?.length&&!applied);
  const sceneCatalog=new Map(scenes.filter((scene):scene is {id:string}=>Boolean(
    scene&&typeof scene==="object"&&"id" in scene&&typeof scene.id==="string"))
    .map(scene=>[scene.id,scene]));
- const filmedProposalReady=proposal.ok&&proposal.shots.length>0&&proposal.shots.every(
-   shot=>isReviewedFilmedStoryScene(sceneCatalog.get(shot.sceneId),"portrait"));
+ const filmedProposalReady=proposal.ok&&proposal.shots.length>0&&proposal.shots.every(shot=>{
+   const photo=STORY_PHOTO_BY_ID.get(shot.sceneId);
+   return photo?isTrustedStoryPhoto(photo):
+     isReviewedFilmedStoryScene(sceneCatalog.get(shot.sceneId),"portrait");
+ });
  const count=applied?appliedShots!.length:filmedProposalReady?proposal.shots.length:0;
  const shots=applied?appliedShots!.map((shot,index)=>({
   sceneId:shot.sceneId,startSeconds:shot.startSeconds,durationSeconds:shot.durationSeconds,
@@ -87,7 +107,7 @@ export function MandalaAutomaticStoryboard({
  })):[];
  return <div className={styles.storyAutoRoot} data-video-auto-storyboard
   data-storyboard-source={applied?"montage":replacingGraphics?"filmed-replacement":"ideas"}
-  data-storyboard-scenes={shots.length} data-reviewed-filmed-only="true">
+  data-storyboard-scenes={shots.length} data-reviewed-filmed-only="false" data-reviewed-media-only="true" data-photo-fallback="licensed">
   <div className={styles.storyAutoHead}>
    <span className={styles.storyAutoBadge}><Sparkles size={15} aria-hidden="true"/>{t.source}</span>
    <strong>{concept.mainMessage}</strong>
@@ -98,17 +118,22 @@ export function MandalaAutomaticStoryboard({
     <span><Film size={15} aria-hidden="true"/>{shots.length} {locale==="ru"?"сцен":locale==="es"?"escenas":"scenes"}</span>
     <span><Clock3 size={15} aria-hidden="true"/>{durationSeconds}s</span>
     <span>{applied?aspect:"9:16"}</span>
+    {proposal.ok&&"photoCandidates" in proposal&&proposal.photoCandidates>0?
+      <span data-story-photo-options>{locale==="ru"?"Фото":locale==="es"?"Fotos":"Photos"}: {proposal.photoCandidates}</span>:null}
    </div>
   </div>
   {shots.length?<ol className={styles.storyAutoList} data-video-auto-storyboard-list>
    {shots.map((shot,index)=>{
-    const media=resolveMedia(shot.sceneId);
+    const photo=STORY_PHOTO_BY_ID.get(shot.sceneId);
+    const media=photo?{poster:photo.src,title:photo.labels[locale]}:resolveMedia(shot.sceneId);
     const step=Math.max(0,Math.min(3,shot.stage-1));
     const title=concept.sceneOutline?.[step]||
       (locale==="ru"?"Развитие сюжета":locale==="es"?"Desarrollo":"Story beat");
+    const repeated=Boolean(index>0&&shots[index-1]?.stage===shot.stage);
+    const displayTitle=repeated?title+" — "+media.title:title;
     const emotion=concept.emotionalProgram?.[step];
     return <li key={shot.sceneId+"-"+index} className={styles.storyAutoCard}
-      data-video-story-scene={index+1}>
+      data-video-story-scene={index+1} data-story-media-kind={photo?"photo":"video"}>
      <div className={styles.storyAutoPoster}>
       {media.poster? /* eslint-disable-next-line @next/next/no-img-element */
        <img src={media.poster} alt={media.title} loading="lazy"/>:
@@ -119,7 +144,9 @@ export function MandalaAutomaticStoryboard({
       <span className={styles.storyAutoNumber}>{t.scene} {index+1}
        <small>{clock(shot.startSeconds)}–{clock(shot.startSeconds+shot.durationSeconds)}</small>
       </span>
-      <strong>{title}</strong><p>{t.visual}: {media.title}</p>
+      <strong>{displayTitle}</strong><p>{t.visual}: {media.title}
+        {photo?<small> · {locale==="ru"?"Фото":locale==="es"?"Foto":"Photo"}</small>:null}
+      </p>
       {emotion?<small>{emotion}</small>:null}
       {applied?<button type="button" className={styles.storyAutoView}
         disabled={disabled} onClick={()=>onPreview(shot.startSeconds)}>
