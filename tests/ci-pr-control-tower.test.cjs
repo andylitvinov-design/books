@@ -311,6 +311,44 @@ test('live exact-head DIRTY manual conflict routes to semantic executor without 
  assert.ok(f.calls.labels.some(x=>x.labels.includes('hh:repair-manual')));
  assert.ok(f.calls.removed.some(x=>x.name==='hh:conflict-repair-needed'));
 });
+test('unknown list mergeability routes dual-labelled DIRTY source to owner conflict, not Worker',async()=>{
+ const listed=pr(4338,'repair',{
+  mergeable:null,mergeable_state:'unknown',
+  labels:[{name:'hh:repair-needed'},{name:'hh:conflict-repair-needed'}]
+ });
+ assert.equal(laneOf(listed),'repair','list snapshot has no DIRTY proof');
+ const live={...listed,mergeable:false,mergeable_state:'dirty'};
+ const f=fixture([listed],{live});
+ const r=await run({github:f.github,core:core(),context,now:NOW,
+  capacityFn:async()=>({known:false,reason:'RUN_CAPACITY_SATURATED'})});
+ assert.equal(r.verifiedSourceConflictReroutes,1);
+ assert.equal(r.manualConflictHandoffs,1);
+ assert.equal(r.conflictQueueReleased,1);
+ assert.equal(r.dispatchAccepted,0);
+ assert.equal(f.calls.dispatched.length,0,'never write DIRTY source');
+ assert.ok(f.calls.reserved.some(x=>x.body.includes('HH_CONTROL_CONFLICT_HANDOFF_V1 '+SHA)));
+ assert.ok(f.calls.labels.some(x=>x.labels.includes('hh:repair-manual')));
+ assert.deepEqual(new Set(f.calls.removed.map(x=>x.name)),
+  new Set(['hh:repair-needed','hh:conflict-repair-needed']));
+ assert.equal(r.blocked.STALE_SHA_OR_STATE,undefined);
+});
+test('moved HEAD cannot be promoted from source into conflict owner handoff',async()=>{
+ const listed=pr(4338,'repair',{
+  mergeable:null,mergeable_state:'unknown',
+  labels:[{name:'hh:repair-needed'},{name:'hh:conflict-repair-needed'}]
+ });
+ const live={...listed,mergeable:false,mergeable_state:'dirty',
+  head:{...listed.head,sha:'b'.repeat(40)}};
+ const f=fixture([listed],{live});
+ const r=await run({github:f.github,core:core(),context,now:NOW,
+  capacityFn:async()=>({known:false})});
+ assert.equal(r.verifiedSourceConflictReroutes,0);
+ assert.equal(r.manualConflictHandoffs,0);
+ assert.equal(r.dispatchAccepted,0);
+ assert.equal(f.calls.reserved.length,0);
+ assert.equal(f.calls.labels.length,0);
+ assert.equal(f.calls.removed.length,0);
+});
 test('manual conflict cannot be promoted on stale head or unverified mergeability',async()=>{
  const old=pr(1624,'conflict',{
   labels:[{name:'hh:repair-manual'},{name:'hh:conflict-repair-needed'}],
