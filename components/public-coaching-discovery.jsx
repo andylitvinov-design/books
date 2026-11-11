@@ -21,9 +21,15 @@ import { coachingSessionTitle, coachingSessionSummary } from '@/lib/coaching/ses
 import { coachingReportDate, downloadCoachingSessionPdf } from '@/lib/personal-coaching/session-pdf'
 import { COACHING_TOPIC_GROUPS, COACHING_OUTCOMES, COACHING_SESSION_MODES, COACHING_CATALOG_GROUPS, coachingCatalogGroupId, coachingSchemeMatchesSessionMode, coachingTopicGroup, coachingSchemeInGroup, coachingSignalInGroup, coachingTopicSchemeCount, coachingSchemeRequiresAdultConsent, coachingOutcomeFit } from '@/lib/coaching/coaching-topic-groups'
 import { stageIdeasCoachingQuestion, takeIdeasCoachingQuestion } from '@/lib/ideas-coaching-handoff'
+import { getCoachPersona, localCoachText, coachStagePrompt, personaMethodFit } from '@/lib/coaching/persona-registry.mjs'
 import styles from './public-coaching-discovery.module.css'
 
 
+const myCoachCopy={
+  en:{eyebrow:'Your selected AI coaching style',edit:'Change coach',note:'The free guided session uses reviewed questions; only optional follow-up prompts are adapted to this persona. This is not a live generative AI chat.'},
+  ru:{eyebrow:'Выбранный AI-коуч',edit:'Сменить коуча',note:'Бесплатная сессия идёт по проверенным вопросам; к персонажу адаптированы дополнительные вопросы. Это ещё не живой генеративный AI-чат.'},
+  es:{eyebrow:'Estilo de coach IA elegido',edit:'Cambiar coach',note:'La sesión guiada usa preguntas revisadas; solo se adaptan preguntas adicionales. No es un chat generativo en vivo.'},
+}
 const copy={
   en:{
     adultTitle:"Adults (18+) · Your conscious choice",
@@ -291,8 +297,11 @@ function CoachingCatalogGroup({group,items,locale,renderCard}){
   </section>
 }
 
-export default function PublicCoachingDiscovery({locale='en',catalog=null}){
+export default function PublicCoachingDiscovery({locale='en',catalog=null,personaSelection=null}){
   const lang=copy[locale]?locale:'en',t=copy[lang]
+  const selectedPersona=getCoachPersona(personaSelection?.personaId)
+  const selectedPersonaName=selectedPersona?localCoachText(selectedPersona.name,lang):''
+  const personaBridgeText=myCoachCopy[lang]
   const privateCoachingLocale=lang==='es'?'en':lang
   const traditionHref=id=>'/'+privateCoachingLocale+'/app/coaching/'+id+(lang==='es'?'?lang=es':'')
   const [format,setFormat]=useState('all')
@@ -386,7 +395,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   const recommendation=useMemo(()=>recommendCoachingForQuestion(question,catalog||{models:[],schemes:[],signals:[]},{minutes:duration||30,style}),[question,catalog,duration,style])
   const suggestionKeys=useMemo(()=>new Set(question.trim().length>=8&&recommendation.recognized?recommendation.suggestions.filter(s=>s.matchedTags.length>0).map(s=>s.schemeKey):[]),[question,recommendation])
   const shown=useMemo(()=>schemes.filter(s=>coachingSchemeMatchesSessionMode(s,sessionMode)&&coachingSchemeInGroup(s,topicGroup)&&(topic==='all'||s.tags?.includes(topic))&&(duration===0||s.minutes<=duration)&&(style==='all'||s.style===style))
-    .sort((a,b)=>Number(suggestionKeys.has(b.schemeKey))-Number(suggestionKeys.has(a.schemeKey))||outcomeScore(b,outcome,topicGroup)-outcomeScore(a,outcome,topicGroup)||a.minutes-b.minutes||a.schemeKey.localeCompare(b.schemeKey)),[schemes,sessionMode,topicGroup,topic,duration,style,outcome,suggestionKeys])
+    .sort((a,b)=>Number(suggestionKeys.has(b.schemeKey))-Number(suggestionKeys.has(a.schemeKey))||outcomeScore(b,outcome,topicGroup)-outcomeScore(a,outcome,topicGroup)||(personaMethodFit(selectedPersona?.id,b.modelKey)-personaMethodFit(selectedPersona?.id,a.modelKey))||a.minutes-b.minutes||a.schemeKey.localeCompare(b.schemeKey)),[schemes,sessionMode,topicGroup,topic,duration,style,outcome,suggestionKeys,selectedPersona?.id])
   const useGroupedCatalog=format==='all'&&sessionMode==='all'&&topicGroup==='all'&&topic==='all'&&duration===0&&style==='all'&&!outcome&&!question.trim()&&shown.length>6
   const shownTraditions=useMemo(()=>{
     if(sessionMode==='express'||sessionMode==='extended')return []
@@ -408,6 +417,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
     previousReflection:reflections?.[previousQuestion?.id]?.text,
     index,total:session?.questions?.length||1,locale:lang,
   })
+  const personaFollowupText=selectedPersona&&pendingFollowup?coachStagePrompt(selectedPersona.id,pendingFollowup.stage,lang,personaSelection?.settings):null
   const followupTurn=pendingFollowup?coachingConversationTurn({
     question:current,previousQuestion:current,previousAnswer:answers?.[current?.id],
     index,total:session?.questions?.length||1,locale:lang,followup:true,
@@ -548,6 +558,12 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   return <main ref={rootRef} className={styles.root} data-public-coaching data-public-coaching-active={session?'true':undefined} lang={lang}>
     <div className={styles.wrap}>
       {!session?<>
+        {selectedPersona&&<div className={styles.personaBridge} data-my-coach-handoff={selectedPersona.id}>
+          <span>{personaBridgeText.eyebrow}</span>
+          <strong>{selectedPersona.symbol} {selectedPersonaName} · {localCoachText(selectedPersona.role,lang)}</strong>
+          <p>{personaBridgeText.note}</p>
+          <Link href={'/'+lang+'/my-coach'} prefetch={false}>{personaBridgeText.edit}<ArrowRight size={15} aria-hidden="true"/></Link>
+        </div>}
         <CoachingLoungeEntry locale={lang} selected={coachingChoice} onSelect={setCoachingChoice} />
         <section className={styles.controls} aria-label={t.filters}>
           <fieldset className={styles.topicGroups} data-coaching-topic-first>
@@ -713,7 +729,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
         <header className={styles.sessionHeader}>
           <button type="button" className={styles.back} disabled={dictating} onClick={backToModels}><ArrowLeft size={18}/>{t.back}</button>
           <div className={styles.sessionHeaderInfo}>
-            <p className={styles.eyebrow}>{coachingSessionTitle(session.schemeKey,lang,tr(session.name,lang))} · {t.free}</p>
+            <p className={styles.eyebrow}>{coachingSessionTitle(session.schemeKey,lang,tr(session.name,lang))} · {selectedPersonaName?selectedPersonaName+' · ':''}{t.free}</p>
             {!finished&&<div className={styles.progress}>
               <span>{entryStep==='questions'?t.stage+' '+(index+1)+' '+t.of+' '+session.questions.length:progressPosition+' / '+(session.questions.length+2)}</span>
               <div role="progressbar" aria-valuemin={0} aria-valuemax={session.questions.length+2}
@@ -765,7 +781,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
           </div>:pendingFollowup?<div className={styles.questionScreen} data-public-coaching-followup>
             <p className={styles.stage}>{t.clarify}</p>
             <CoachingChatThread turn={followupTurn} locale={lang} compact>
-              <h1 ref={titleRef} tabIndex={-1}>{tr(pendingFollowup.prompt,lang)}</h1>
+              <h1 ref={titleRef} tabIndex={-1}>{personaFollowupText||tr(pendingFollowup.prompt,lang)}</h1>
             </CoachingChatThread>
             <p className={styles.hint}>{t.clarifyWhy}</p>
             {error&&<p className={styles.alert} role="alert">{error}</p>}
