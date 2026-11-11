@@ -71,12 +71,35 @@
     }
     updateOpenTotal();
 
-    // Other independent monitor scripts prepend their panels after DOMContentLoaded.
-    // Keep this one at the very top without polling or taking over their data.
+    // Rehome the ORIGINAL graphs without cloning SVGs, range selectors or data.
+    const charts = make('section', 'hh-pr-top-graphs');
+    charts.id = 'hh-pr-top-graphs';
+    charts.setAttribute('aria-label', 'Графики PR: активность и задержки');
+    function keepChartsNearTop() {
+      const activity = doc.getElementById('hh-pr-trends');
+      const latency = doc.getElementById('hh-merge-velocity');
+      if (!activity && !latency) return false;
+      if (charts.parentElement !== main || section.nextElementSibling !== charts) {
+        main.insertBefore(charts, section.nextSibling);
+      }
+      if (activity && activity.parentElement !== charts) charts.appendChild(activity);
+      if (latency && latency.parentElement !== charts) charts.appendChild(latency);
+      return Boolean(activity && latency);
+    }
+    // Keep the compact KPI first, then both charts before every other panel.
     function keepFirst() {
       if (main.firstElementChild !== section) main.insertBefore(section, main.firstChild);
+      keepChartsNearTop();
     }
     keepFirst();
+    // The independently deployed velocity module can mount after DOMContentLoaded.
+    // Observe until both real graphs exist; then stop this subtree observer.
+    if (!keepChartsNearTop()) {
+      const graphsWatcher = new MutationObserver(() => {
+        if (keepChartsNearTop()) graphsWatcher.disconnect();
+      });
+      graphsWatcher.observe(main, {childList: true, subtree: true});
+    }
     new MutationObserver(keepFirst).observe(main, {childList: true});
     return true;
   }
