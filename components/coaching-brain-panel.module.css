@@ -35,6 +35,12 @@
 .methodChoice{display:flex;align-items:center;justify-content:space-between;gap:9px;font-size:12px;font-weight:750;color:#2d5a50}
 .methodChoice select{font:inherit;font-size:13px;min-height:40px;max-width:min(65%,300px);padding:8px;border:1px solid #a5c6b9;border-radius:10px;color:#203d35;background:#fff}
 .methodChoice select:focus-visible{outline:3px solid #0a8f7c;outline-offset:2px}
+.aiProbe{display:flex;align-items:center;flex-wrap:wrap;gap:7px;font-size:11px;line-height:1.35;color:#406258}
+.aiProbe button{font:inherit;font-weight:750;border:1px solid #afcdc1;color:#145746;
+  background:#f4fbf7;padding:6px 10px;min-height:34px;border-radius:9px;cursor:pointer}
+.aiProbe button:disabled{opacity:.55;cursor:default}
+.aiProbe span{flex:1;min-width:140px}
+.aiProbe [data-coaching-probe-status="verified"]{font-weight:750;color:#176046}
 .decision{display:grid;gap:6px;padding:10px;border-radius:12px;background:#ecf5ed}
 .decision label,.form label{font-size:12px;font-weight:850;color:#2d5a50}
 .decision textarea,.form textarea{font:inherit;font-size:16px;line-height:1.4;

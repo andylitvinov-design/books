@@ -12,6 +12,7 @@ import PersonalCoachingPicker from './personal-coaching-picker'
 import CoachingContextReview from '@/components/coaching-context-review'
 import { buildClientCoachingContext, developmentGoalsContextItems } from '@/lib/personal-coaching/client-context.mjs'
 import CoachingQuestionVoice from './coaching-question-voice'
+import {useCoachingVisualViewport} from './use-coaching-visual-viewport'
 import CoachingAvatar from './coaching-avatar'
 import {coachingVisualAvatarId,normalizeAvatarSpeechEvent} from '@/lib/personal-coaching/coaching-avatar-state.mjs'
 import CoachingLiveVoice from './coaching-live-voice'
@@ -204,7 +205,8 @@ export default function PersonalCoaching({locale='en',accountId}){
   const [pendingFollowup,setPendingFollowup]=useState(null),[reflectionDraft,setReflectionDraft]=useState('')
   const [sessionControl,setSessionControl]=useState(null)
   const [useStandardPrompt,setUseStandardPrompt]=useState(false),[clipboardState,setClipboardState]=useState('')
-  const titleRef=useRef(null),busyRef=useRef(false)
+  const titleRef=useRef(null),busyRef=useRef(false),viewportRef=useRef(null)
+  useCoachingVisualViewport(viewportRef)
   const course=state?.course,session=course?.current,langCopy=extraCopy[lang]
   const scheme=session?.schemeKey?catalog?.schemes?.find(item=>item.schemeKey===session.schemeKey):null
   const avatarId=visualCoachId||coachingVisualAvatarId(scheme?.modelKey||session?.schemeKey)
@@ -469,7 +471,7 @@ export default function PersonalCoaching({locale='en',accountId}){
     const result=await command('delete',{confirmed:true})
     if(result){setNotice('');setNewSelection(false);visit(0,{},PERSONAL_COACH_QUESTIONS)}
   }
-  return <main className={styles.root} data-personal-coaching data-coaching-version="1" lang={lang}>
+  return <main ref={viewportRef} className={styles.root} data-personal-coaching data-coaching-version="1" lang={lang}>
     <div className={styles.scenery} aria-hidden="true"/>
     <div className={styles.layout}>
       <header className={styles.header}>

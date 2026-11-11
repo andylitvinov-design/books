@@ -63,7 +63,7 @@ test('only whitelisted persona/setting values survive the URL session handoff', 
   assert.equal(resolveCoachSelection({ coach: 'mira', depth: ['deep', 'shallow'] }).settings.depth, 'balanced')
   for (const persona of COACH_PERSONAS) {
     const url = coachSessionHref('ru', persona.id, { warmth: 1, directness: 5, pace: 'fast', depth: 'deep' })
-    assert.match(url, /^\/ru\/coaching\?coach=[a-z]+&/)
+    assert.match(url, /^\/ru\/coaching\/sessions\?coach=[a-z]+&/)
     const parsed = new URL(url, 'https://example.test')
     const selected = resolveCoachSelection(Object.fromEntries(parsed.searchParams))
     assert.equal(selected.personaId, persona.id)
@@ -74,7 +74,7 @@ test('only whitelisted persona/setting values survive the URL session handoff', 
     assert.equal(selected.settings.questionsPerTurn, 1)
   }
   assert.equal(coachSessionHref('ru', '../../admin'), null)
-  assert.match(coachSessionHref('../unsafe', 'mira'), /^\/en\/coaching/)
+  assert.match(coachSessionHref('../unsafe', 'mira'), /^\/en\/coaching\/sessions/)
 })
 
 test('coach style changes voluntary follow-up copy, not authored question count', () => {

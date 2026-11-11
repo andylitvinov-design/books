@@ -646,7 +646,11 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await advancedText.click();
       await expect(advancedVoice).toBeVisible({timeout:15000});
       await expect(advancedVoice).toHaveAttribute("open","");
-      await voiceModeButton.click();
+      // On a mobile WebKit handoff, verify the actual user touch interaction.
+      // Keep the same strict selected-state assertion: do not bypass the control.
+      await expect(voiceModeButton).toBeVisible();
+      if(engine==="webkit")await voiceModeButton.tap();
+      else await voiceModeButton.click();
       await expect(voiceModeButton).toHaveAttribute("aria-pressed","true");
       await expect(personalTab).toHaveAttribute("aria-pressed","true");
             // Voice mode intentionally hides the separate personal-intention editor;

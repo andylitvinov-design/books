@@ -610,7 +610,7 @@ export function IdeasDiscovery({ locale, variant = "ideas" }: { locale: PublicLo
   const suggestedTests = getIdeasTestSuggestions(question);
   const showSuggestedTests = testPickerOpen && Boolean(question.trim());
   const guestLocale = locale === "es" ? "en" : locale;
-  const coachingHref = "/" + locale + "/coaching";
+  const coachingHref = "/" + locale + "/coaching/sessions";
   const suggestedTestBrowserHref = "/" + locale + "/client/tests?focus=" + suggestedTests.focus.join(",");
 
   function openFreeTests() {
@@ -713,7 +713,7 @@ export function IdeasDiscovery({ locale, variant = "ideas" }: { locale: PublicLo
           {isHolistic ? <ArrowRight size={19} aria-hidden="true" /> : null}
         </button>
         {variant === "temple" ? <Link
-          href={"/" + locale + "/coaching#free-diagnostic-start"}
+          href={coachingHref}
           className={styles.diagnosticAction}
           data-ideas-personal-diagnostic
           prefetch={false}

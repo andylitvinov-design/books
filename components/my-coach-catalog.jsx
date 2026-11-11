@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, BookOpen, Heart, RotateCcw, Search, ShieldCheck, SlidersHorizontal, Sparkles, Users } from 'lucide-react'
+import { ArrowRight, BookOpen, Heart, RotateCcw, Search, ShieldCheck, SlidersHorizontal, Sparkles, Users, MoreHorizontal, Zap, Leaf, Flower2 } from 'lucide-react'
 import {
   COACH_PERSONAS, COACH_TOPICS, coachSessionHref, coachStagePrompt, getCoachPersona,
   localCoachText, normalizeCoachSettings,
@@ -79,6 +79,48 @@ const topicText = {
   es: { clarity: 'Claridad', resilience: 'Calma y apoyo', relationships: 'Relaciones', career: 'Carrera y negocio',
     meaning: 'Sentido', habits: 'Hábitos', creativity: 'Creatividad', decisions: 'Decisiones' },
 }
+
+const designCopy = {
+  en: {
+    lead: 'Choose your coach for a personal guided session',
+    filters: 'Filters', allTopics: 'All topics', recommended: 'Suggested', favorites: 'Favorites',
+    antistress: 'Calm', goals: 'Goals', growth: 'Growth', habits: 'Habits',
+    energy: 'Support & energy', love: 'Relationships & love', balance: 'Clarity & balance', meaning: 'Growth & meaning',
+    pace: 'Coaching pace', anyPace: 'Any pace', startNow: 'Start session',
+    aiPersona: 'Fictional AI coach', methods: 'Methods', language: 'EN · RU · ES',
+    showProfile: 'About coach', clear: 'Clear filters',
+  },
+  ru: {
+    lead: 'Выбери своего коуча для личной сессии',
+    filters: 'Фильтры', allTopics: 'Все темы', recommended: 'Подходящие', favorites: 'Избранные',
+    antistress: 'Антистресс', goals: 'Цели и карьера', growth: 'Саморазвитие', habits: 'Привычки',
+    energy: 'Поддержка и энергия', love: 'Отношения и любовь', balance: 'Ясность и баланс', meaning: 'Развитие и смысл',
+    pace: 'Темп беседы', anyPace: 'Любой темп', startNow: 'Начать сессию',
+    aiPersona: 'Вымышленный AI-коуч', methods: 'Методики', language: 'RU · EN · ES',
+    showProfile: 'О коуче', clear: 'Сбросить фильтры',
+  },
+  es: {
+    lead: 'Elige a tu coach para una sesión personal guiada',
+    filters: 'Filtros', allTopics: 'Todos los temas', recommended: 'Sugeridos', favorites: 'Favoritos',
+    antistress: 'Antiestrés', goals: 'Metas y carrera', growth: 'Crecimiento', habits: 'Hábitos',
+    energy: 'Apoyo y energía', love: 'Relaciones y amor', balance: 'Claridad y equilibrio', meaning: 'Sentido y crecimiento',
+    pace: 'Ritmo', anyPace: 'Cualquier ritmo', startNow: 'Iniciar sesión',
+    aiPersona: 'Coach IA ficticio', methods: 'Métodos', language: 'ES · EN · RU',
+    showProfile: 'Ver perfil', clear: 'Borrar filtros',
+  },
+}
+const visualTopics = [
+  { id: 'all', image: 'lotus' },
+  { id: 'resilience', image: 'calm' },
+  { id: 'relationships', image: 'love' },
+  { id: 'career', image: 'goals' },
+  { id: 'meaning', image: 'growth' },
+  { id: 'habits', image: 'habits' },
+]
+const categoryIcon = {
+  resilience: Zap, relationships: Heart, clarity: Flower2, meaning: Leaf,
+}
+
 const FAVORITES_KEY = 'hh-my-coach-favorites-v1'
 const normalizeSearch = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/ё/g, 'е').trim()
 
@@ -86,9 +128,14 @@ export default function MyCoachCatalog({ locale = 'en' }) {
   const lang = words[locale] ? locale : 'en'
   const t = words[lang]
   const categories = topicText[lang]
+  const d = designCopy[lang]
   const [search, setSearch] = useState('')
   const [topic, setTopic] = useState('all')
   const [onlyFavorites, setOnlyFavorites] = useState(false)
+  const [showFilters, setShowFilters] = useState(false)
+  const [showMenu, setShowMenu] = useState(false)
+  const [sortBy, setSortBy] = useState('all')
+  const [paceFilter, setPaceFilter] = useState('any')
   const [favorites, setFavorites] = useState([])
   const [favoritesReady, setFavoritesReady] = useState(false)
   const [selectedId, setSelectedId] = useState('mira')
@@ -109,6 +156,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
   const list = useMemo(() => COACH_PERSONAS.filter(persona => {
     if (topic !== 'all' && persona.topic !== topic && !persona.related.includes(topic)) return false
     if (onlyFavorites && !favorites.includes(persona.id)) return false
+    if (paceFilter !== 'any' && persona.defaults.pace !== paceFilter) return false
     if (!search.trim()) return true
     const haystack = [
       persona.id, persona.name[lang], persona.role[lang], persona.description[lang],
@@ -116,7 +164,11 @@ export default function MyCoachCatalog({ locale = 'en' }) {
       ...persona.related.map(id => categories[id]), ...persona.methods,
     ].join(' ')
     return normalizeSearch(haystack).includes(normalizeSearch(search))
-  }), [lang, topic, onlyFavorites, favorites, search, categories])
+  }), [lang, topic, onlyFavorites, favorites, search, categories, paceFilter])
+  const visibleList = useMemo(() => sortBy === 'suggested' ? [...list].sort((a, b) => {
+    const score = persona => (persona.topic === topic ? 3 : persona.related.includes(topic) ? 2 : 0)
+    return score(b) - score(a)
+  }) : list, [list, sortBy, topic])
   const selected = getCoachPersona(selectedId) || COACH_PERSONAS[0]
   const safeSettings = normalizeCoachSettings(selected.id, settings)
   const updateSettings = (field, value) => setSettings(previous =>
@@ -134,69 +186,152 @@ export default function MyCoachCatalog({ locale = 'en' }) {
     current.includes(id) ? current.filter(value => value !== id) : [...current, id].slice(-8))
   return <main className={styles.root} data-my-coach-catalog lang={lang}>
     <div className={styles.frame}>
-      <section className={styles.hero}>
-        <span className={styles.eyebrow}><Sparkles size={15} aria-hidden="true" /> {t.eyebrow}</span>
-        <h1>{t.title}</h1>
-        <p className={styles.heroLead}>{t.intro}</p>
-        <div className={styles.heroBottom}>
-          <span className={styles.heroCount}><Users size={17} aria-hidden="true" /> {t.available}</span>
-          <span className={styles.heroSafety}><ShieldCheck size={17} aria-hidden="true" /> {t.safety}</span>
+      <header className={styles.brandHeader}>
+        <Link href={'/' + lang} className={styles.brand} aria-label="Holistic House">
+          <span className={styles.brandMark} aria-hidden="true" />
+          <span>Holistic House<sup>®</sup></span>
+        </Link>
+        <nav className={styles.brandActions} aria-label={d.filters}>
+          <button type="button" onClick={() => { setOnlyFavorites(v => !v); setSortBy('all') }}
+            aria-pressed={onlyFavorites} aria-label={d.favorites} className={styles.brandAction}>
+            <Heart size={22} fill={onlyFavorites ? 'currentColor' : 'none'} aria-hidden="true" />
+          </button>
+          <button type="button" className={styles.brandAction} onClick={() => setShowMenu(value => !value)}
+            aria-label={t.back} aria-expanded={showMenu} aria-controls="my-coach-more-menu">
+            <MoreHorizontal size={24} aria-hidden="true" />
+          </button>
+          {showMenu ? <div className={styles.brandMenu} id="my-coach-more-menu">
+            <Link href={'/' + lang + '/coaching'}>{t.back}</Link>
+            <Link href={'/' + lang + '/masters'}>{t.human}</Link>
+          </div> : null}
+        </nav>
+      </header>
+
+      <section className={styles.hero} aria-labelledby="my-coach-heading">
+        <div className={styles.heroCopy}>
+          <span className={styles.eyebrow}>HOLISTIC HOUSE · MY COACH</span>
+          <h1 id="my-coach-heading">My Coach</h1>
+          <p className={styles.heroLead}>{d.lead}</p>
+        </div>
+        <div className={styles.heroWave} aria-hidden="true" />
+        <div className={styles.quickTopics} role="group" aria-label={t.topics}>
+          {[
+            { id: 'resilience', label: d.energy },
+            { id: 'relationships', label: d.love },
+            { id: 'clarity', label: d.balance },
+            { id: 'meaning', label: d.meaning },
+          ].map(item => {
+            const Icon = categoryIcon[item.id]
+            return <button type="button" key={item.id} aria-pressed={topic === item.id}
+              className={topic === item.id ? styles.quickTopicActive : styles.quickTopic}
+              onClick={() => setTopic(old => old === item.id ? 'all' : item.id)}>
+              <Icon size={21} strokeWidth={1.8} aria-hidden="true" /><span>{item.label}</span>
+            </button>
+          })}
         </div>
       </section>
-      <p className={styles.disclosure} role="note">{t.aiNotice}</p>
+
       <section className={styles.discover} aria-label={t.topics}>
         <div className={styles.controlTop}>
           <label className={styles.search}>
-            <Search size={19} aria-hidden="true" />
+            <Search size={20} aria-hidden="true" />
             <span className={styles.srOnly}>{t.search}</span>
             <input type="search" value={search} onChange={event => setSearch(event.target.value)}
               placeholder={t.searchPlaceholder} autoComplete="off" maxLength={90} />
           </label>
-          <button type="button" className={onlyFavorites ? styles.favoritesActive : styles.favoritesButton}
-            aria-pressed={onlyFavorites} onClick={() => setOnlyFavorites(value => !value)}>
-            <Heart size={17} fill={onlyFavorites ? 'currentColor' : 'none'} aria-hidden="true" /> {t.favorites}
+          <button type="button" className={showFilters ? styles.filtersActive : styles.filtersButton}
+            aria-pressed={showFilters} aria-expanded={showFilters} aria-controls="my-coach-filter-panel"
+            onClick={() => setShowFilters(value => !value)}>
+            <SlidersHorizontal size={20} aria-hidden="true" /> <span>{d.filters}</span>
+            {topic !== 'all' || paceFilter !== 'any' ? <i aria-hidden="true" className={styles.filterDot} /> : null}
           </button>
         </div>
-        <div className={styles.topicRail} role="group" aria-label={t.topics}>
-          <button type="button" aria-pressed={topic === 'all'} className={topic === 'all' ? styles.topicActive : styles.topicChip}
-            onClick={() => setTopic('all')}>{t.all}</button>
-          {COACH_TOPICS.map(key => <button type="button" key={key} aria-pressed={topic === key}
-            className={topic === key ? styles.topicActive : styles.topicChip} onClick={() => setTopic(key)}>{categories[key]}</button>)}
+        <div className={styles.typePills} role="group" aria-label={t.topics}>
+          <button type="button" aria-pressed={sortBy === 'all' && !onlyFavorites}
+            className={sortBy === 'all' && !onlyFavorites ? styles.pillActive : styles.pill}
+            onClick={() => { setSortBy('all'); setOnlyFavorites(false) }}><Users size={17} aria-hidden="true" />{t.all}</button>
+          <button type="button" aria-pressed={sortBy === 'suggested' && !onlyFavorites}
+            className={sortBy === 'suggested' && !onlyFavorites ? styles.pillActive : styles.pill}
+            onClick={() => { setSortBy('suggested'); setOnlyFavorites(false) }}><Sparkles size={17} aria-hidden="true" />{d.recommended}</button>
+          <button type="button" aria-pressed={onlyFavorites}
+            className={onlyFavorites ? styles.pillActive : styles.pill}
+            onClick={() => setOnlyFavorites(value => !value)}><Heart size={17} aria-hidden="true" />{t.favorites}</button>
         </div>
-        {list.length ? <div className={styles.cardGrid}>
-          {list.map(persona => {
+        <div id="my-coach-filter-panel" className={showFilters ? styles.filterPanel : styles.filterPanelHidden}>
+          <div className={styles.topicRail} role="group" aria-label={t.topics}>
+            <button type="button" aria-pressed={topic === 'all'} className={topic === 'all' ? styles.topicActive : styles.topicChip}
+              onClick={() => setTopic('all')}>{d.allTopics}</button>
+            {COACH_TOPICS.map(key => <button type="button" key={key} aria-pressed={topic === key}
+              className={topic === key ? styles.topicActive : styles.topicChip} onClick={() => setTopic(key)}>{categories[key]}</button>)}
+          </div>
+          <label className={styles.paceFilter}><span>{d.pace}</span>
+            <select value={paceFilter} onChange={e => setPaceFilter(e.target.value)}>
+              <option value="any">{d.anyPace}</option>
+              <option value="slow">{t.slow}</option>
+              <option value="balanced">{t.balanced}</option>
+              <option value="fast">{t.fast}</option>
+            </select>
+          </label>
+          <button type="button" className={styles.clearFilters}
+            onClick={() => { setTopic('all'); setSearch(''); setPaceFilter('any'); setOnlyFavorites(false); setSortBy('all') }}>
+            <RotateCcw size={15} aria-hidden="true" />{d.clear}</button>
+        </div>
+        <div className={styles.visualTopics} role="group" aria-label={d.allTopics}>
+          {visualTopics.map(item => {
+            const label = item.id === 'all' ? d.allTopics : item.id === 'resilience' ? d.antistress
+              : item.id === 'career' ? d.goals : item.id === 'meaning' ? d.growth
+              : item.id === 'habits' ? d.habits : categories[item.id]
+            return <button type="button" key={item.id} aria-pressed={topic === item.id}
+              className={topic === item.id ? styles.visualTopicActive : styles.visualTopic}
+              onClick={() => setTopic(item.id)}>
+              <span className={styles.topicPicture} data-art={item.image} aria-hidden="true" />
+              <span>{label}</span>
+            </button>
+          })}
+        </div>
+        {visibleList.length ? <div className={styles.cardGrid}>
+          {visibleList.map(persona => {
             const isSelected = selected.id === persona.id
             const isFavorite = favorites.includes(persona.id)
             return <article key={persona.id} className={isSelected ? styles.cardSelected : styles.card}
               data-my-coach-card={persona.id}>
-              <div className={styles.cardHead}>
-                <div className={styles.avatar} data-palette={persona.palette} role="img"
-                  aria-label={localCoachText(persona.role, lang)}>{persona.symbol}</div>
-                <button type="button" className={styles.heart} onClick={() => toggleFavorite(persona.id)}
-                  aria-label={(isFavorite ? t.unfavorite : t.favorite) + ': ' + localCoachText(persona.name, lang)}
-                  aria-pressed={isFavorite}>
-                  <Heart size={20} fill={isFavorite ? 'currentColor' : 'none'} aria-hidden="true" />
-                </button>
+              <div className={styles.cardPortrait} data-persona={persona.id} aria-hidden="true">
+                <span className={styles.avatarSymbol} data-palette={persona.palette}>{persona.symbol}</span>
               </div>
-              <h2>{localCoachText(persona.name, lang)}</h2>
-              <p className={styles.role}>{localCoachText(persona.role, lang)}</p>
-              <p className={styles.cardDescription}>{localCoachText(persona.description, lang)}</p>
-              <span className={styles.cardTopic}>{categories[persona.topic]}</span>
-              <button type="button" className={isSelected ? styles.selectedButton : styles.cardButton}
-                onClick={() => choose(persona.id)} aria-pressed={isSelected}>
-                {isSelected ? t.chosen : t.viewProfile} <ArrowRight size={16} aria-hidden="true" />
+              <div className={styles.cardBody}>
+                <h2>{localCoachText(persona.name, lang)}</h2>
+                <p className={styles.role}>{localCoachText(persona.role, lang)}</p>
+                <div className={styles.cardTags}>
+                  <span>{categories[persona.topic]}</span>
+                  {persona.related.slice(0, 2).map(tag => <span key={tag}>{categories[tag]}</span>)}
+                </div>
+                <p className={styles.cardMeta}><Sparkles size={13} aria-hidden="true" /> {d.aiPersona} <span aria-hidden="true">·</span> {d.language}</p>
+                <div className={styles.cardFooter}>
+                  <button type="button" className={styles.viewProfile} onClick={() => choose(persona.id)}
+                    aria-pressed={isSelected}>{d.showProfile}</button>
+                  <Link className={styles.cardButton}
+                    href={coachSessionHref(lang, persona.id, normalizeCoachSettings(persona.id))}
+                    prefetch={false}>{d.startNow}<ArrowRight size={16} aria-hidden="true" /></Link>
+                </div>
+              </div>
+              <button type="button" className={styles.heart}
+                onClick={() => toggleFavorite(persona.id)}
+                aria-label={(isFavorite ? t.unfavorite : t.favorite) + ': ' + localCoachText(persona.name, lang)}
+                aria-pressed={isFavorite}>
+                <Heart size={21} fill={isFavorite ? 'currentColor' : 'none'} aria-hidden="true" />
               </button>
             </article>
           })}
         </div> : <div className={styles.empty}>
           <p>{t.noResults}</p>
-          <button type="button" onClick={() => { setSearch(''); setTopic('all'); setOnlyFavorites(false) }}>{t.all}</button>
+          <button type="button" onClick={() => { setSearch(''); setTopic('all'); setOnlyFavorites(false); setPaceFilter('any') }}>{t.all}</button>
         </div>}
+        <p className={styles.disclosure} role="note"><ShieldCheck size={15} aria-hidden="true" />{t.aiNotice}</p>
       </section>
       <section ref={profileRef} className={styles.profile} aria-label={t.profile}
         data-my-coach-selected={selected.id}>
         <div className={styles.profileHead}>
-          <div className={styles.avatarLarge} data-palette={selected.palette} aria-hidden="true">{selected.symbol}</div>
+          <div className={styles.avatarLarge} data-persona={selected.id} data-palette={selected.palette} aria-hidden="true">{selected.symbol}</div>
           <div>
             <span className={styles.profileEyebrow}>{t.profile}</span>
             <h2>{selectedName}</h2>
