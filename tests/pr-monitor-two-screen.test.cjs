@@ -34,6 +34,12 @@ test('unknown evidence is not reported as a zero-duration observation',()=>{
  assert.equal(duration(-5),'—');
  assert.equal(duration(0),'0 сек');
 });
+test('stages are mounted before the legacy queue while preserving error funnel order',()=>{
+ assert.match(app,/const funnel=main\?\.querySelector\('#hh-pr-error-funnel'\)/);
+ assert.match(app,/if\(funnel\)funnel\.insertAdjacentElement\('afterend',root\)/);
+ assert.match(app,/main\.insertBefore\(root,main\.querySelector\('header\.header'\)\|\|main\.firstChild\)/);
+ assert.doesNotMatch(app,/const after=main\?\.querySelector\('#diagnostics-mount'\)/);
+});
 test('no automatic CI reruns, new scheduled polling or GitHub client calls',()=>{
  assert.doesNotMatch(app,/workflow_dispatch|setInterval\s*\(|api\.github\.com/);
  assert.match(app,/IntersectionObserver/);
