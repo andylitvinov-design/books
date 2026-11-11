@@ -1,0 +1,53 @@
+/* HH_PR_DENSE_NUMERIC_V1. Only the PR monitor gets the .hh-pr-dense flag. */
+#hh-pr-dense-view{
+  color:#eaf5ff;background:#10283e;border:1px solid #395c77;
+  border-radius:12px;padding:9px 10px;margin:6px 0 10px;min-width:0;
+}
+#hh-pr-dense-view *{box-sizing:border-box}
+.hh-pr-dense-head,.hh-pr-dense-foot{
+  display:flex;justify-content:space-between;align-items:center;gap:8px;
+}
+.hh-pr-dense-head{margin-bottom:6px}
+.hh-pr-dense-head h2{font-size:14px;line-height:1.2;margin:0;font-weight:800}
+.hh-pr-dense-head small,.hh-pr-dense-status{font-size:10px;color:#a9bfd5}
+.hh-pr-dense-table{display:grid;gap:0}
+.hh-pr-dense-row{
+  display:grid;grid-template-columns:minmax(0,1.45fr) repeat(2,minmax(0,.8fr));
+  align-items:center;gap:6px;min-height:29px;padding:5px 3px;
+  border-bottom:1px solid #2f4b62;
+  font-size:11px;line-height:1.2;
+}
+.hh-pr-dense-row span{min-width:0;overflow-wrap:anywhere}
+.hh-pr-dense-row span:not(:first-child){
+  text-align:right;color:#dbedff;font-size:12px;font-weight:800;
+  font-variant-numeric:tabular-nums;
+}
+.hh-pr-dense-labels{min-height:22px;font-size:9px;padding-top:0;color:#95afc5}
+.hh-pr-dense-labels span:not(:first-child){font-size:9px;color:#95afc5;font-weight:600}
+.hh-pr-dense-no-data{margin:6px 2px;font-size:11px;color:#b6cadd}
+.hh-pr-dense-foot{padding-top:7px}
+.hh-pr-dense-status{line-height:1.25}
+.hh-pr-dense-toggle{
+  flex:0 0 auto;min-height:30px;cursor:pointer;border-radius:7px;
+  border:1px solid #426b87;color:#c8e6fb;background:#183d56;
+  padding:5px 9px;font-size:11px;font-weight:700;
+}
+.hh-pr-dense-toggle:focus-visible{outline:2px solid #8bcaff;outline-offset:2px}
+body.hh-pr-dense:not(.hh-pr-dense-expanded) #hh-pr-three-kpis,
+body.hh-pr-dense:not(.hh-pr-dense-expanded) #hh-pr-two-screens,
+body.hh-pr-dense:not(.hh-pr-dense-expanded) #hh-pr-journey-health,
+body.hh-pr-dense:not(.hh-pr-dense-expanded) #hh-ci-queue-detail,
+body.hh-pr-dense:not(.hh-pr-dense-expanded) #hh-pr-timestamp-observer,
+body.hh-pr-dense:not(.hh-pr-dense-expanded) #hh-pr-error-funnel,
+body.hh-pr-dense:not(.hh-pr-dense-expanded) #hh-pr-recommendations{display:none!important}
+body.hh-pr-dense #hh-pr-merge-speed.hh-compact-pr-top{margin-bottom:5px!important}
+body.hh-pr-dense #hh-pr-merge-speed.hh-compact-pr-top>.hh-pr-speed-hint,
+body.hh-pr-dense #hh-pr-merge-speed.hh-compact-pr-top>.hh-pr-speed-description{display:none!important}
+@media(max-width:390px){
+ #hh-pr-dense-view{padding:8px}
+ .hh-pr-dense-row{grid-template-columns:minmax(0,1.3fr) repeat(2,minmax(0,.8fr));gap:4px}
+ .hh-pr-dense-row span{font-size:10px}
+ .hh-pr-dense-row span:not(:first-child){font-size:11px}
+ .hh-pr-dense-foot{gap:5px}
+ .hh-pr-dense-status{font-size:9px}
+}
