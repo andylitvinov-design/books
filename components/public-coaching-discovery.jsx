@@ -10,7 +10,9 @@ import { authoredFollowupFor, draftCoachingActionPlan } from '@/lib/personal-coa
 import { coachingQuickChoicesAllowed, coachingConversationTurn } from '@/lib/personal-coaching/gentle-dialogue'
 import CoachingActionPlan from '@/components/coaching-action-plan'
 import CoachingChatThread from '@/components/coaching-chat-thread'
+import MyCoachLiveDialogue from '@/components/my-coach-live-dialogue'
 import CoachingQuestionVoice from '@/components/app/coaching-question-voice'
+import {normalizeAvatarSpeechEvent} from '@/lib/personal-coaching/coaching-avatar-state.mjs'
 import { appendSpokenAnswer } from '@/lib/personal-coaching/speech-text'
 import { CoachingSessionIntroduction, CoachingSessionTopic } from '@/components/coaching-session-onboarding'
 import { coachingRequestTopicLabel, isCoachingRequestTopic } from '@/lib/coaching/session-onboarding'
@@ -42,9 +44,9 @@ const coachTopicTags={
   clarity:['unclear','confidence','goal'],creativity:['creativity','growth'],
 }
 const myCoachCopy={
-  en:{eyebrow:'HOLISTIC HOUSE · YOUR AI COACH',edit:'Choose another coach',back:'Back to my coach',ready:'Here with you',start:'Start conversation',unavailable:'The guided session is temporarily unavailable. Please try again later.',note:'A private, guided conversation with reviewed questions and optional follow-ups. You can type or dictate answers. This is not yet a live generative AI voice chat.'},
-  ru:{eyebrow:'HOLISTIC HOUSE · ВАШ AI-КОУЧ',edit:'Выбрать другого коуча',back:'Назад к коучу',ready:'Я рядом',start:'Начать общение',unavailable:'Сессия временно недоступна. Попробуйте снова позже.',note:'Личный диалог по проверенным вопросам: можно писать или диктовать ответы. Живой генеративный голосовой AI-чат пока не включён.'},
-  es:{eyebrow:'HOLISTIC HOUSE · TU COACH DE IA',edit:'Elegir otro coach',back:'Volver al coach',ready:'Aquí contigo',start:'Empezar conversación',unavailable:'La sesión guiada no está disponible ahora. Vuelve a intentarlo más tarde.',note:'Conversación guiada privada: puedes escribir o dictar tus respuestas. El chat generativo de voz en vivo aún no está activado.'},
+  en:{eyebrow:'HOLISTIC HOUSE · YOUR AI COACH',edit:'Choose another coach',back:'Back to my coach',ready:'Here with you',start:'Start conversation',guided:'Or use a guided session',unavailable:'The guided session is temporarily unavailable. Please try again later.',note:'Text AI responds only after sign-in and explicit consent, when a privacy-preserving free model is configured. Otherwise the reviewed guided session remains available. Live two-way voice is not enabled.'},
+  ru:{eyebrow:'HOLISTIC HOUSE · ВАШ AI-КОУЧ',edit:'Выбрать другого коуча',back:'Назад к коучу',ready:'Я рядом',start:'Начать общение',guided:'Или пройти пошаговую программу',unavailable:'Сессия временно недоступна. Попробуйте снова позже.',note:'Текстовый AI отвечает после входа и явного согласия, если настроена бесплатная модель с защитой данных. Иначе доступна программа с проверенными вопросами. Двусторонний голосовой AI-чат пока не включён.'},
+  es:{eyebrow:'HOLISTIC HOUSE · TU COACH DE IA',edit:'Elegir otro coach',back:'Volver al coach',ready:'Aquí contigo',start:'Empezar conversación',guided:'O usar sesión guiada',unavailable:'La sesión guiada no está disponible ahora. Vuelve a intentarlo más tarde.',note:'La IA de texto responde tras iniciar sesión y dar consentimiento, si hay un modelo gratuito con privacidad verificada. Si no, sigue disponible la sesión guiada. La voz bidireccional aún no está activada.'},
 }
 const copy={
   en:{
@@ -334,6 +336,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null,person
   const [duration,setDuration]=useState(0)
   const [style,setStyle]=useState('all')
   const [session,setSession]=useState(null)
+  const [liveChat,setLiveChat]=useState(false)
   const [entryStep,setEntryStep]=useState('intro')
   const [checkin,setCheckin]=useState('')
   const [sessionTopic,setSessionTopic]=useState('')
@@ -343,6 +346,9 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null,person
   const [draft,setDraft]=useState('')
   const [dictating,setDictating]=useState(false)
   const [speechConsent,setSpeechConsent]=useState(false)
+  const [avatarSpeech,setAvatarSpeech]=useState({phase:'idle',beat:0})
+  const avatarPhase=dictating?'listening':avatarSpeech.phase
+  const updateCoachSpeech=event=>setAvatarSpeech(normalizeAvatarSpeechEvent(event))
   const [finished,setFinished]=useState(false)
   const [finishedAt,setFinishedAt]=useState(null)
   const [pdfError,setPdfError]=useState('')
@@ -481,12 +487,14 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null,person
   function start(scheme,direct=false){
     if(!scheme||recommendation.blocked)return
     setDictating(false)
+    setAvatarSpeech({phase:'idle',beat:0})
     setAdultAcknowledged(false)
     setSession(scheme);setEntryStep(direct?'questions':'intro');setCheckin('');setSessionTopic(isCoachingRequestTopic(topicGroup)?topicGroup:'');setIndex(0);setAnswers({});setDraft('');setFinished(false);setFinishedAt(null);setPdfError('');setCopied(false);setCopyError(false);setError('')
     setPendingFollowup(null);setReflectionDraft('');setReflections({});setApprovedPlan(null)
   }
   function backToModels(){
     if(dictating){setError(t.stopMic);return}
+    setAvatarSpeech({phase:'idle',beat:0})
     if(!finished&&(Object.keys(answers).length>0||draft.trim())&&!window.confirm(t.discard))return
     setSession(null);setEntryStep('intro');setCheckin('');setSessionTopic('');setAdultAcknowledged(false);setIndex(0);setAnswers({});setDraft('');setFinished(false);setFinishedAt(null);setPdfError('');setError('')
     setPendingFollowup(null);setReflectionDraft('');setReflections({});setApprovedPlan(null)
@@ -593,9 +601,13 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null,person
       onLanding={()=>stageIdeasCoachingQuestion(question)}
       landingHref={'/'+lang+'/coaching/session/'+s.schemeKey}/>
   }
-  return <main ref={rootRef} className={styles.root} data-public-coaching data-public-coaching-active={session?'true':undefined} lang={lang}>
+  return <main ref={rootRef} className={styles.root} data-public-coaching data-public-coaching-active={session||liveChat?'true':undefined} lang={lang}>
     <div className={styles.wrap}>
       {!session?selectedPersona?<section className={styles.personaWelcome} data-my-coach-handoff={selectedPersona.id}>
+        {liveChat?<MyCoachLiveDialogue key={selectedPersona.id} locale={lang}
+          personaId={selectedPersona.id} settings={personaSelection?.settings}
+          onClose={()=>setLiveChat(false)}
+          onGuided={starterScheme?()=>{setLiveChat(false);start(starterScheme,true)}:null}/> : <>
         <Link className={styles.personaWelcomeChange} href={'/'+lang+'/my-coach'} prefetch={false}>
           <ArrowLeft size={17} aria-hidden="true"/>{personaBridgeText.edit}
         </Link>
@@ -611,14 +623,19 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null,person
           <p className={styles.personaWelcomeRole}>{localCoachText(selectedPersona.role,lang)}</p>
           <p className={styles.personaWelcomeDescription}>{localCoachText(selectedPersona.description,lang)}</p>
           <blockquote className={styles.personaWelcomeGreeting}>“{localCoachText(selectedPersona.opening,lang)}”</blockquote>
-          <button type="button" className={styles.personaWelcomeStart} disabled={!starterScheme||recommendation.blocked}
-            onClick={()=>start(starterScheme,true)} data-my-coach-begin-conversation>
+          <button type="button" className={styles.personaWelcomeStart} disabled={recommendation.blocked}
+            onClick={()=>setLiveChat(true)} data-my-coach-begin-conversation>
             {personaBridgeText.start}<ArrowRight size={19} aria-hidden="true"/>
           </button>
+          {starterScheme&&<button type="button" className={styles.personaWelcomeGuided}
+            onClick={()=>start(starterScheme,true)} data-my-coach-begin-guided-session>
+            {personaBridgeText.guided}
+          </button>}
           {recommendation.blocked?<p className={styles.alert} role="alert">{t.alert}</p>:
             !starterScheme?<p className={styles.alert} role="status">{personaBridgeText.unavailable}</p>:null}
           <p className={styles.personaWelcomeNote}><LockKeyhole size={15} aria-hidden="true"/>{personaBridgeText.note}</p>
         </div>
+        </>}
       </section>:<>
         <CoachingLoungeEntry locale={lang} selected={coachingChoice} onSelect={setCoachingChoice} />
         <section className={styles.controls} aria-label={t.filters}>
@@ -837,7 +854,8 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null,person
             <p className={styles.disclaimer}><LockKeyhole size={14}/>{t.memory}</p>
           </div>:pendingFollowup?<div className={styles.questionScreen} data-public-coaching-followup>
             <p className={styles.stage}>{t.clarify}</p>
-            <CoachingChatThread turn={followupTurn} locale={lang} coachPersona={selectedPersona} compact>
+            <CoachingChatThread turn={followupTurn} locale={lang} coachPersona={selectedPersona}
+              speechPhase={avatarPhase} speechBeat={avatarSpeech.beat} compact>
               <h1 ref={titleRef} tabIndex={-1}>{personaFollowupText||tr(pendingFollowup.prompt,lang)}</h1>
             </CoachingChatThread>
             <p className={styles.hint}>{t.clarifyWhy}</p>
@@ -845,7 +863,8 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null,person
           </div>:<div className={styles.questionScreen} data-public-coaching-slide={current.id}>
             <p className={styles.stage}>{tr(current.stageTitle,lang)}</p>
             <div data-public-coaching-gentle-guide>
-              <CoachingChatThread turn={conversationTurn} locale={lang} coachPersona={selectedPersona} compact>
+              <CoachingChatThread turn={conversationTurn} locale={lang} coachPersona={selectedPersona}
+                speechPhase={avatarPhase} speechBeat={avatarSpeech.beat} compact>
                 <h1 ref={titleRef} tabIndex={-1}>{tr(current.prompt,lang)}</h1>
               </CoachingChatThread>
             </div>
@@ -885,7 +904,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null,person
               <CoachingQuestionVoice key={(pendingFollowup?'guest-followup-':'guest-question-')+current.id+'-'+lang}
                 compact text={pendingFollowup?[followupTurn?.speech,tr(pendingFollowup.prompt,lang)].filter(Boolean).join(' '):[conversationTurn?.speech,tr(current.prompt,lang)].filter(Boolean).join(' ')}
                 locale={lang} mode="answer" fictionalPersona={Boolean(selectedPersona)} speechConsent={speechConsent} onConsent={()=>setSpeechConsent(true)}
-                onListeningChange={setDictating}
+                onListeningChange={setDictating} onSpeechChange={updateCoachSpeech}
                 onTranscript={words=>{
                   if(pendingFollowup)setReflectionDraft(old=>appendSpokenAnswer(old,words,500))
                   else setDraft(old=>appendSpokenAnswer(old.startsWith('choice:')?'':old,words))

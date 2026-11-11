@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
+import {normalizeAvatarSpeechEvent} from '../lib/personal-coaching/coaching-avatar-state.mjs'
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
 test('Mira begins in a goal-clarifying, non-financial GROW model',()=>{
  const runner=read('components/public-coaching-discovery.jsx')
@@ -22,4 +23,26 @@ test('all eight coaches use their own public identity, not the human presenter',
  assert.match(thread,/portrait-static\/andy-96-b9d7800d1448.webp/)
  assert.match(css,/my-coach-portraits\.avif/)
  assert.match(voice,/fictionalPersona\?t.characterDevice:t.device/)
+})
+
+test('selected My Coach portrait follows real device speech and dictation without affecting human sessions',()=>{
+ const runner=read('components/public-coaching-discovery.jsx')
+ const thread=read('components/coaching-chat-thread.jsx')
+ const css=read('components/coaching-chat-thread.module.css')
+ const voice=read('components/app/coaching-question-voice.jsx')
+ assert.equal((runner.match(/speechPhase=\{avatarPhase\}/g)||[]).length,2)
+ assert.equal((runner.match(/onSpeechChange=\{updateCoachSpeech\}/g)||[]).length,1)
+ assert.match(runner,/dictating\?'listening':avatarSpeech\.phase/)
+ assert.match(runner,/normalizeAvatarSpeechEvent\(event\)/)
+ assert.match(thread,/data-persona-speech=\{coachPersona\?avatarPhase:undefined\}/)
+ assert.match(thread,/data-speech-state=\{avatarPhase\}/)
+ assert.match(thread,/coachPersona\?<span/)
+ assert.match(css,/\.personaAvatar\[data-speech-state='speaking'\]/)
+ assert.match(css,/\.personaAvatar\[data-speech-state='paused'\]/)
+ assert.match(css,/prefers-reduced-motion:reduce/)
+ assert.match(voice,/item\.onstart=/)
+ assert.match(voice,/item\.onpause=/)
+ assert.match(voice,/item\.onend=/)
+ assert.deepEqual(normalizeAvatarSpeechEvent({phase:'paused',beat:3}),{phase:'paused',beat:3})
+ assert.deepEqual(normalizeAvatarSpeechEvent({phase:'fake',beat:3}),{phase:'idle',beat:3})
 })

@@ -41,7 +41,7 @@ test('persona handoff keeps the existing, reviewed session runner and user conse
   assert.match(runner, /authoredFollowupFor/)
   assert.match(runner, /CoachingSessionIntroduction/)
   assert.match(component, /coachSessionHref\(lang, selected.id, safeSettings\)/)
-  assert.match(component, /Live generative AI and two-way voice are not enabled here/i)
+  assert.match(component, /a generative text dialogue is offered when a verified free privacy-preserving model is configured/i)
   const reg = read('lib/coaching/persona-registry.mjs')
   assert.match(reg, /COACH_SAFETY_RULES/)
   assert.doesNotMatch(reg, /OPENROUTER_API_KEY|SUPABASE_SERVICE_ROLE_KEY/)
