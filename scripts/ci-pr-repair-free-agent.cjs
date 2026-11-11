@@ -343,6 +343,39 @@ function collectDiagnostics(root,scope){
    lint:{ok:lint.ok,detail:safeDiagnostic(lint.output,4800)},
    types:{ok:types.ok,detail:safeDiagnostic(types.output,7000)}};
 }
+// One $0-capped retry only when a verified free completion was truncated.
+// Restrict the second prompt to a real compiler/ESLint error line plus local
+// context; source/HEAD authorization and independent verification are unchanged.
+function boundedTruncationRetryPrompt(scope,root){
+ if(!scope||!Array.isArray(scope.files)||scope.files.length!==1||
+    !safeSourcePath(scope.files[0])||
+    !['typescript_compiler','eslint_diagnostic'].includes(scope.evidence?.source)||
+    !Number.isSafeInteger(scope.evidence.line)||scope.evidence.line<1||
+    scope.evidence.line>50000)return null;
+ const file=scope.files[0];
+ let source;
+ try{source=fs.readFileSync(path.resolve(root,file),'utf8');}catch{return null;}
+ const lines=source.split(/\r?\n/),pos=scope.evidence.line-1;
+ if(pos>=lines.length||source.length>MAX_DISK_SOURCE||!source.endsWith('\n')||
+    source.includes('\0')||lines[pos].length>1800||!lines[pos].trim())return null;
+ const first=Math.max(0,pos-5),last=Math.min(lines.length,pos+6);
+ const excerpt=lines.slice(first,last).map((line,i)=>String(first+i+1)+': '+line).join('\n');
+ const prompt=[
+  'Second and FINAL zero-price attempt for one exact-HEAD source error.',
+  'Previous free completion was truncated. Output ONLY compact JSON with exactly keys file,old,new.',
+  'Copy one complete original source line into old, including indentation.',
+  'Provide only a single complete replacement source line in new.',
+  'No reasoning, prose, markdown, or multiple edits. If unsafe, output NO_SAFE_PATCH.',
+  'Never change tests, private data, credentials, permissions or security checks.',
+  'Exact HEAD: '+scope.sha,
+  'Only source file: '+file,
+  'Verified '+scope.evidence.source+' error: '+String(scope.evidence.code||'').slice(0,90)+
+    ' at line '+scope.evidence.line,
+  'Exact old source line: '+JSON.stringify(lines[pos]),
+  'Adjacent code with original line numbers:\n'+excerpt
+ ].join('\n');
+ return prompt.length<=8500?prompt:null;
+}
 function promptFor(scope,sources,signals){
  return [
   'You are a zero-tool, zero-credential patch proposer for one source-red GitHub PR.',
@@ -671,12 +704,24 @@ async function propose(){
   let reply,modelUsed=MODEL;
   if(router){
    const openrouter=require('./ci-pr-repair-openrouter-free.cjs');
-   reply=await openrouter.requestFreePatch({prompt,key,model:process.env.HH_OPENROUTER_FREE_MODEL||'auto',role:'repair',
+   const invoke=async(nextPrompt,retry=false)=>openrouter.requestFreePatch({
+    prompt:nextPrompt,key,model:process.env.HH_OPENROUTER_FREE_MODEL||'auto',role:'repair',
     onVerifiedModel:r=>{modelUsed=r.model;audit.provider='openrouter';audit.model=r.model;
      audit.model_version=r.model_version||null;audit.catalog_model_created=r.catalog_created||null;
-     audit.model_call_started_at=new Date().toISOString();audit.attempt_count=1;
-      audit.prompt_delivery_status='ATTEMPTED_UNCONFIRMED';audit.result='MODEL_CALL_STARTED';persist();},
+     audit.model_call_started_at=new Date().toISOString();audit.attempt_count=retry?2:1;
+     audit.prompt_delivery_status='ATTEMPTED_UNCONFIRMED';audit.result='MODEL_CALL_STARTED';persist();},
     onResponseShape:shape=>{audit.response_shape=shape;persist();}});
+   try{reply=await invoke(prompt);}
+   catch(error){
+    const focused=error?.message==='FREE_AI_OPENROUTER_PATCH_RESPONSE_TRUNCATED'&&
+      audit.attempt_count===1?boundedTruncationRetryPrompt(scope,root):null;
+    if(!focused)throw error; // Never retry quota, denial, billing or bad patches.
+    audit.retry_prompt_receipt=promptReceipt(scope,focused,signals,{
+      taskKey:process.env.REPAIR_TASK_KEY,runId:audit.run_id,runAttempt:audit.run_attempt});
+    audit.retry_reason='TRUNCATED_EXACT_SOURCE_SINGLE_LINE';
+    audit.result='BOUNDED_ZERO_PRICE_RETRY';persist();
+    reply=await invoke(focused,true); // One final free catalog+request; no paid fallback.
+   }
   }else{
    const price=await verifyFreeModelPrice();audit.provider='opencode';audit.model=MODEL;
    console.log('HH_FREE_AI_ZERO_COST_MODEL_VERIFIED '+JSON.stringify(price));
@@ -748,4 +793,4 @@ async function main(){
 if(require.main===module)main();
 module.exports={MODEL,safeSourcePath,assessCompleteFreeRepairScope,sourceScope,findTypeScriptFailureTarget,validateAgentAcl,extractTextEvents,
  validatePatch,exactJsonSingleLinePatch,promptFor,safeDiagnostic,isolatedEnvironment,verifyFreeModelMetadata,verifyFreeModelPrice,
- noSecretEnv,findFailureTarget,findEslintFailureTarget,boundedSource,narrowFailedSourceScope,promptReceipt,reanchorSingleHunkPatch,exactSingleLineReplacementPatch};
+ noSecretEnv,findFailureTarget,findEslintFailureTarget,boundedTruncationRetryPrompt,boundedSource,narrowFailedSourceScope,promptReceipt,reanchorSingleHunkPatch,exactSingleLineReplacementPatch};
