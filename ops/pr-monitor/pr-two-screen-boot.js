@@ -39,8 +39,8 @@
     additions += '<link rel="stylesheet" href="/pr-attribution-ui.css?v=20261107-journey-v2">'+
       '<script src="/pr-attribution-ui.js?v=20261107-journey-v2" defer><\/script>';
     // Owner-scoped CI incident funnel: only on-demand read-only evidence.
-    additions += '<link rel="stylesheet" href="/pr-error-funnel.css?v=20261111-reasons-v5">'+
-      '<script src="/pr-error-funnel.js?v=20261111-reasons-v5" defer><\/script>';
+    additions += '<link rel="stylesheet" href="/pr-error-funnel.css?v=20261111-paginated-v6">'+
+      '<script src="/pr-error-funnel.js?v=20261111-paginated-v6" defer><\/script>';
     // HH_PM_NAV_V1: public monitor only links to the separate owner-authenticated page.
     additions += '<link rel="stylesheet" href="/project-management-nav.css?v=20261107-cc-v1">'+
       '<script src="/project-management-nav.js?v=20261107-cc-v1" defer><\/script>';

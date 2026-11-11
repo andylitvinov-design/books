@@ -406,8 +406,10 @@
     }
     return {events:events,complete:complete,pages:pages,oldest:oldest};
   }
-  // Prioritize authenticated, exact-run dispatch receipts for the 24 public
-  // comment read budget. This is scheduling only, never proof of a claim.
+  // Prioritize authenticated, exact-run dispatch receipts for a bounded
+  // 32-PR GitHub proof budget. This covers 27 distinct current source PRs;
+  // larger windows fail closed rather than inventing totals. This is scheduling only, never proof of a claim.
+  var PUBLIC_PROOF_PR_LIMIT=32;
   function proofPrs(candidates,limit){
     if(!Array.isArray(candidates)||!Number.isSafeInteger(limit)||limit<1)return [];
     var ranked=new Map();
@@ -425,13 +427,31 @@
     }
     return [...ranked.values()].sort(function(a,b){
       return b.score-a.score||b.at-a.at||b.pr-a.pr;
-    }).slice(0,limit).map(function(row){return row.pr;});
+    }).slice(0,Math.min(limit,PUBLIC_PROOF_PR_LIMIT)).map(function(row){return row.pr;});
+  }
+  // At most six GitHub public GETs in flight. Never fan out 32 simultaneous
+  // calls or misinterpret a rejected/rate-limited read as a confirmed zero.
+  async function boundedSettled(items,fn,maxInFlight){
+    if(!Array.isArray(items)||typeof fn!=='function'||
+      !Number.isSafeInteger(maxInFlight)||maxInFlight<1||maxInFlight>8)
+      throw Error('CI_GITHUB_PROOF_READ_BUDGET_INVALID');
+    var results=new Array(items.length),cursor=0;
+    var running=Array.from({length:Math.min(items.length,maxInFlight)},async function(){
+      while(cursor<items.length){
+        var index=cursor++;
+        try{results[index]={status:'fulfilled',value:await fn(items[index],index)};}
+        catch(error){results[index]={status:'rejected',reason:error};}
+      }
+    });
+    await Promise.all(running);
+    return results;
   }
   var model={STAGES:STAGES,validEvent:validEvent,classified:classified,
     taskLinked:taskLinked,routeFor:routeFor,trustedComment:trustedComment,
     diagnosticAssignment:diagnosticAssignment,sourceRepairCandidate:sourceRepairCandidate,signedClaimRoute:signedClaimRoute,
     taskEvidence:taskEvidence,summarize:summarize,
-    readFailureWindow:readFailureWindow,proofPrs:proofPrs};
+    readFailureWindow:readFailureWindow,proofPrs:proofPrs,
+    boundedSettled:boundedSettled};
   if(typeof module!=='undefined'&&module.exports)module.exports=model;
   if(typeof document==='undefined'||typeof window==='undefined')return;
   if(root.__hhPrErrorFunnelMounted)return;
@@ -617,12 +637,12 @@
       var candidates=eligible.filter(function(e){return taskLinked(e)&&
         sourceRepairCandidate(e);});
       var totalSourcePrs=new Set(candidates.map(function(e){return e.pr_number;})).size;
-      var prs=proofPrs(candidates,24);
-      // If 24 public proof lookups cannot cover all source PRs, the totals
+      var prs=proofPrs(candidates,PUBLIC_PROOF_PR_LIMIT);
+      // If 32 public proof lookups cannot cover all source PRs, the totals
       // are lower bounds even when the private inbox period was complete.
       if(totalSourcePrs>prs.length)complete=false;
       var evidence={},failed=0,commitFailures=0;
-      var batches=await Promise.allSettled(prs.map(commentsFor));
+      var batches=await boundedSettled(prs,commentsFor,6);
       var byPR=new Map();
       prs.forEach(function(pr,i){if(batches[i].status==='fulfilled'){
         byPR.set(pr,batches[i].value);
@@ -638,9 +658,9 @@
           commitChecks.push({e:e,proof:proof});
         }
       }
-      var checks=await Promise.allSettled(commitChecks.map(function(x){
+      var checks=await boundedSettled(commitChecks,function(x){
         return verifyCommit(x.e,x.proof.candidate_sha);
-      }));
+      },6);
       checks.forEach(function(result,i){
         if(result.status==='fulfilled'&&result.value===true)
           commitChecks[i].proof.commit_verified=true;
