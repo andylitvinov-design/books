@@ -1,7 +1,7 @@
 'use strict';
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-const {isExactHeadCoreRun,findExactHeadCoreRun,requestOwnerCoreWake}=require('../scripts/ci-pr-next-wave-proof.cjs');
+const {isExactHeadCoreRun,findExactHeadCoreRun,coreExecutionState,requestOwnerCoreWake}=require('../scripts/ci-pr-next-wave-proof.cjs');
 
 const sha='a'.repeat(40),prNumber=4242,branch='fix/verified-next-wave';
 const identity={prNumber,branch,sha,baseRef:'codex/public-book-library',
@@ -132,4 +132,29 @@ test('ambiguous or denied metadata PATCH cannot be counted as real CI',async()=>
  assert.equal(result.status,'OWNER_WAKE_EDIT_NOT_VERIFIED');
  assert.equal(result.coreRunVerified,false);
  assert.equal(patches,1);
+});
+
+
+test('actual next-head Core requires a GitHub runner, not queued, skipped or action_required records',()=>{
+ const started={id:77,name:'core-lint-types-build',status:'in_progress',
+   started_at:'2026-11-11T00:17:00Z',runner_name:'GitHub Actions 1000190034'};
+ assert.equal(coreExecutionState(run({status:'completed',conclusion:'action_required'}),[]),'UNVERIFIED');
+ assert.equal(coreExecutionState(run({status:'queued'}),[]),'QUEUED');
+ assert.equal(coreExecutionState(run({status:'in_progress'}),[{...started,status:'queued'}]),'QUEUED');
+ assert.equal(coreExecutionState(run({status:'in_progress'}),[started]),'RUNNING');
+ assert.equal(coreExecutionState(run({status:'in_progress'}),[{...started,runner_name:''}]),'UNVERIFIED');
+ assert.equal(coreExecutionState(run({status:'completed',conclusion:'success'}),
+   [{...started,status:'completed',conclusion:'success'}]),'CONFIRMED');
+ assert.equal(coreExecutionState(run({status:'completed',conclusion:'failure'}),
+   [{...started,status:'completed',conclusion:'failure'}]),'CONFIRMED',
+   'a real red Core is executed evidence, NOT green');
+ for(const denied of ['action_required','cancelled','skipped','startup_failure','neutral'])
+  assert.equal(coreExecutionState(run({status:'completed',conclusion:denied}),
+    [{...started,status:'completed',conclusion:'success'}]),'UNVERIFIED');
+ assert.equal(coreExecutionState(run({status:'completed',conclusion:'success'}),[]),'UNVERIFIED');
+ assert.equal(coreExecutionState(run({status:'completed',conclusion:'success'}),
+   [{...started,status:'completed',conclusion:'skipped'}]),'UNVERIFIED');
+ assert.equal(coreExecutionState(run({status:'completed',conclusion:'success'}),
+   [{...started,status:'completed',conclusion:'success'},started]),'UNVERIFIED');
+ assert.equal(coreExecutionState(run({status:'in_progress'}),null),'UNVERIFIED');
 });
