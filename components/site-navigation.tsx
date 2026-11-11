@@ -16,25 +16,26 @@ import { HomePersonalSpaceNavEntry } from './home-personal-space';
 type Props = { locale?: PublicLocale; onLocaleChange?: (locale: Locale) => void };
 
 const shopMenuCopy = { en: 'Shop', ru: 'Магазин', es: 'Tienda' } as const;
+const myCoachMenuCopy = { en: 'My Coach', ru: 'Мой коуч', es: 'Mi coach' } as const;
 
 const siteMenuCopy = {
   en: {
     open: 'Open site menu', heading: 'Explore Holistic House', label: 'Menu',
     start: 'Free review', freeTitle: 'Free situation review',
     freeDetail: 'Short questionnaire and drawing · personal written response',
-    quick: 'Main sections', more: 'Explore more',
+    quick: 'Main sections', more: 'Explore more', install: 'Install free app',
   },
   ru: {
     open: 'Открыть меню сайта', heading: 'Разделы Holistic House', label: 'Меню',
     start: 'Бесплатный разбор', freeTitle: 'Бесплатный разбор ситуации',
     freeDetail: 'Короткая анкета и рисунок · личный письменный ответ',
-    quick: 'Основные разделы', more: 'Другие разделы',
+    quick: 'Основные разделы', more: 'Другие разделы', install: 'Установить приложение бесплатно',
   },
   es: {
     open: 'Abrir menú del sitio', heading: 'Explorar Holistic House', label: 'Menú',
     start: 'Revisión gratis', freeTitle: 'Revisión gratuita de tu situación',
     freeDetail: 'Cuestionario y dibujo · respuesta personal por escrito',
-    quick: 'Secciones principales', more: 'Explorar más',
+    quick: 'Secciones principales', more: 'Explorar más', install: 'Instalar app gratis',
   },
 } as const;
 
@@ -44,6 +45,7 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
   const siteMenuRef = useRef<HTMLDetailsElement>(null);
   const preference = useNavigationLocale(locale);
   const activeLocale = locale ?? preference;
+  const previousNavigation = useRef({ pathname, locale: activeLocale });
   const text = navigationCopy[activeLocale];
   const siteMenu = siteMenuCopy[activeLocale];
   const current = activeNavigationId(pathname);
@@ -81,7 +83,12 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
     document.addEventListener('pointerdown', dismiss);
     document.addEventListener('focusin', dismiss);
     document.addEventListener('keydown', escape);
+    // Only advertise readiness after the Escape/focus handlers are installed.
+    // SSR markup alone is not proof that React has hydrated this menu.
+    const languageMenu = languageRef.current;
+    if (languageMenu) languageMenu.dataset.hhKeyboardReady = 'true';
     return () => {
+      if (languageMenu) delete languageMenu.dataset.hhKeyboardReady;
       document.removeEventListener('pointerdown', dismiss);
       document.removeEventListener('focusin', dismiss);
       document.removeEventListener('keydown', escape);
@@ -89,6 +96,9 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
   }, []);
 
   useEffect(() => {
+    const previous = previousNavigation.current;
+    if (previous.pathname === pathname && previous.locale === activeLocale) return;
+    previousNavigation.current = { pathname, locale: activeLocale };
     if (languageRef.current) languageRef.current.open = false;
     if (siteMenuRef.current) siteMenuRef.current.open = false;
   }, [pathname, activeLocale]);
@@ -114,10 +124,13 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
     item => ['energy', 'love', 'business', 'library', 'events'].includes(item.id),
   );
 
-  // Courses is now a primary tab. Keep dedicated Temple Insights and Services discoverable.
+  // Courses is now a primary tab. Keep Temple Insights and My Coach discoverable.
   extraMenuItems.push(
+    // Direct bridge from the marketing home to the approved six-tab Practice
+    // without replacing the existing Holistic Support catalogue.
+    { id: 'practice', label: text.practice, href: '/' + activeLocale + '/holistic-support/mobile', ariaLabel: text.practice, external: false },
     { id: 'insights', label: text.insights, href: '/' + activeLocale + '/temple-insights', ariaLabel: text.insights, external: false },
-    { id: 'services', label: text.services, href: '/' + activeLocale + '/services', ariaLabel: text.services, external: false },
+    { id: 'my-coach', label: myCoachMenuCopy[activeLocale], href: '/' + activeLocale + '/my-coach', ariaLabel: myCoachMenuCopy[activeLocale], external: false },
   );
 
   return <nav aria-label={text.navigation} className="site-navigation">
@@ -185,16 +198,31 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
           <Link href={`/${activeLocale}/cart`} prefetch={false} data-nav-item="cart" onClick={() => { if (siteMenuRef.current) siteMenuRef.current.open = false; }}>
             {activeLocale === 'ru' ? 'Корзина' : activeLocale === 'es' ? 'Carrito' : 'Cart'}
           </Link>
+          <Link href={`/${activeLocale}/install`} prefetch={false} data-nav-item="install"
+            aria-current={pathname === `/${activeLocale}/install` ? 'page' : undefined}
+            onClick={() => { if (siteMenuRef.current) siteMenuRef.current.open = false; }}>
+            {siteMenu.install}
+          </Link>
           {extraMenuItems.map(item => (
             <Link
               key={item.id}
               data-nav-item={item.id}
               href={item.href}
               prefetch={false}
-              aria-current={current === item.id ? 'page' : undefined}
+              aria-current={(current === item.id || (item.id === 'my-coach' && /^\/(?:ru|en|es)\/my-coach(?:\/|$)/.test(pathname))) ? 'page' : undefined}
               onClick={() => { if (siteMenuRef.current) siteMenuRef.current.open = false; }}
             >{item.label}</Link>
           ))}
+          <Link href={`/${activeLocale}/services`} prefetch={false} data-nav-item="services"
+            aria-current={/^\/(?:ru|en|es)\/services(?:\/|$)/.test(pathname) ? 'page' : undefined}
+            onClick={() => { if (siteMenuRef.current) siteMenuRef.current.open = false; }}>
+            {text.services}
+          </Link>
+          <Link href={`/${activeLocale}/masters`} prefetch={false} data-nav-item="human-mentors"
+            aria-current={/^\/(?:ru|en|es)\/masters(?:\/|$)/.test(pathname) ? 'page' : undefined}
+            onClick={() => { if (siteMenuRef.current) siteMenuRef.current.open = false; }}>
+            {activeLocale === 'ru' ? 'Реальные специалисты' : activeLocale === 'es' ? 'Profesionales reales' : 'Human specialists'}
+          </Link>
           <Link
             data-nav-item="about"
             href={`/${activeLocale}/about`}

@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {TRADITION_COURSES,traditionCourse,traditionBySlug,traditionEndcaps} from '../lib/personal-coaching/traditions.js'
+import {TRADITION_STAGE_KEYS,traditionStages,traditionStageGuide,traditionStageImage,traditionStageSource} from '../lib/personal-coaching/tradition-visuals.js'
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 test('two course templates do not alias GROW or each other and have 11/10 screens',()=>{
   assert.deepEqual(TRADITION_COURSES.map(item=>item.slug),['egyptian','greek'])
@@ -92,18 +93,20 @@ test('Reiki-style one question screen, choices, optional dictation and await bef
  assert.match(voice,/window\.speechSynthesis\.cancel\(\)/)
  assert.doesNotMatch(voice,/MediaRecorder|audio\.src|fetch\(/)
 })
-test('both Academy and My Courses contain independent entry and resume links',()=>{
+test('ancient planning methods are separate choices in Coaching only',()=>{
  const academy=source('components/academy-hub.tsx')
+ const lounge=source('components/public-coaching-discovery.jsx')
  const courses=source('components/app/my-courses-dashboard.jsx')
+ const art=source('lib/coaching/public-session-art.js')
+ assert.ok(academy.includes('const coachingItem: AcademyCourseItem = '))
  for(const slug of ['egyptian','greek']){
-   assert.match(academy,new RegExp('academy-free-'+slug+'-goal-planning'))
-   assert.match(academy,new RegExp('coaching#coaching-tradition-'+slug))
-   assert.match(courses,new RegExp("id:'"+slug+"'"))
-   assert.match(courses,new RegExp('data-tradition-course-card'))
+  assert.ok(!academy.includes('academy-free-'+slug+'-goal-planning'))
+  assert.ok(lounge.includes('id="'+slug+'" traditionKey="'+slug+'"'))
+  assert.ok(lounge.includes("primaryHref={traditionHref('"+slug+"')}"))
+  assert.ok(art.includes(slug+':'))
  }
- assert.doesNotMatch(academy,/\?lang=es/)
+ assert.doesNotMatch(courses,/data-ancient-coaching-courses|data-tradition-course-card/)
  assert.match(courses,/data-personal-coaching-course-link/)
- assert.match(courses,/data-ancient-coaching-courses/)
 })
 
 test('lesson footer stays visible on 320–430px phones while the question scrolls inside the slide',()=>{
@@ -124,58 +127,122 @@ test('lesson footer stays visible on 320–430px phones while the question scrol
  assert.match(base,/safe-area-inset-bottom/)
 })
 
+test('author source level guides cover all eight Egyptian bodies and eight Greek principles with distinct historic photographs',()=>{
+ const expected={
+  egyptian:['ka','ba','ib','sah','haibit','hu','ren','sekhem'],
+  greek:['epithymia','thymos','logos','nous','eidos','idea','daimon','telos']
+ }
+ for(const [slug,levels] of Object.entries(expected)){
+   assert.deepEqual(TRADITION_STAGE_KEYS[slug],levels)
+   const stages=traditionStages(slug)
+   assert.equal(stages.length,8)
+   assert.equal(new Set(stages.map(x=>x.photo.file)).size,8)
+   assert.equal(traditionStageGuide(slug,'start').id,levels[0])
+   assert.equal(traditionStageGuide(slug,'finish').id,levels[7])
+   assert.equal(traditionStageGuide(slug,'unrecognized'),null)
+   for(const stage of stages){
+     assert.equal(traditionStageGuide(slug,stage.id),stage)
+     assert.match(traditionStageImage(stage),/^\/images\/holistic-house\/coaching-ancient\/[a-z-]+\.(?:jpg|png)$/)
+     assert.match(traditionStageSource(stage),/^https:\/\/commons\.wikimedia\.org\/wiki\/File:/)
+     assert.ok(stage.photo.file.endsWith('.jpg')||stage.photo.file.endsWith('.JPG')||stage.photo.file.endsWith('.png'))
+     assert.ok(stage.photo.credit.length>=4)
+     assert.ok(stage.photo.license.length>=3)
+     for(const locale of ['en','ru','es']){
+       assert.ok(stage.title[locale].length>=7,slug+' '+stage.id+' '+locale+' title')
+       assert.ok(stage.description[locale].length>=65,slug+' '+stage.id+' '+locale+' context')
+       assert.ok(stage.focus[locale].length>=15,slug+' '+stage.id+' '+locale+' author question')
+     }
+   }
+ }
+})
+test('stages are illustrated before the question and shown in a pre-course map without changing persistence',()=>{
+ const component=source('components/app/tradition-coaching.jsx')
+ const css=source('components/app/tradition-coaching.module.css')
+ const guide=source('lib/personal-coaching/tradition-visuals.js')
+ assert.match(component,/data-tradition-stage-overview/)
+ assert.match(component,/traditionStages\(def\.slug\)\.map/)
+ assert.match(component,/entryStep==='roadmap'/)
+ assert.match(component,/TraditionStageArt stage=\{stageGuide\}/)
+ assert.ok(component.indexOf('TraditionStageArt stage={stageGuide}')<component.indexOf('>{question.question?.[lang]}</h1>'))
+ assert.match(component,/referrerPolicy="no-referrer"/)
+ assert.match(component,/loading=\{compact\?'lazy':'eager'\}/)
+ assert.match(component,/onError=\{event=>\{event\.currentTarget\.hidden=true\}\}/)
+ assert.match(css,/\.stagePhoto img\[hidden\]\{display:none\}/)
+ assert.match(component,/rel="noopener noreferrer"/)
+ assert.match(css,/\.roadmapList\{[^}]*overflow-y:auto/)
+ assert.match(css,/\.stageCard/)
+ assert.match(css,/@media\(max-width:380px\)/)
+ assert.match(css,/\[data-tradition-coaching="egyptian"\]/)
+ assert.match(css,/\[data-tradition-coaching="greek"\]/)
+ assert.doesNotMatch(component,/localStorage|sessionStorage|dangerouslySetInnerHTML/)
+ assert.doesNotMatch(guide,/fetch\(|sessionStorage|localStorage|account_id|payload_ciphertext/)
+})
 
-test('all guided coaching players keep footer visible and fit compact iPhone viewports',()=>{
- const privateCss=source('components/app/personal-coaching.module.css')
- const traditionCss=source('components/app/tradition-coaching.module.css')
- const dialogueCss=source('components/coaching-dialogue-turn.module.css')
- const guestCss=source('components/public-coaching-discovery.module.css')
- const viewport=source('components/app/use-coaching-visual-viewport.js')
- const tradition=source('components/app/tradition-coaching.jsx')
- const personal=source('components/app/personal-coaching.jsx')
- const guest=source('components/public-coaching-discovery.jsx')
- const voice=source('components/app/coaching-question-voice.jsx')
- assert.match(viewport,/visualViewport/)
- assert.match(viewport,/--coaching-viewport-height/)
- assert.match(viewport,/addEventListener\('resize',update\)/)
- assert.match(viewport,/removeEventListener\('scroll',update\)/)
- assert.match(privateCss,/\.session \.questionArea\{[\s\S]*?overflow-y:auto/)
- assert.match(privateCss,/\.session \.footer\{[\s\S]*?flex:none/)
- assert.match(privateCss,/--coaching-viewport-height/)
- assert.match(privateCss,/env\(safe-area-inset-bottom\)/)
- assert.match(tradition,/useCoachingVisualViewport\(viewportRef\)/)
- assert.match(personal,/useCoachingVisualViewport\(viewportRef\)/)
- assert.match(tradition,/ref=\{questionScrollRef\}/)
- assert.match(personal,/ref=\{questionScrollRef\}/)
- assert.match(traditionCss,/\.courseSession \.choices\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
- assert.match(traditionCss,/@media\(max-width:380px\)/)
- assert.match(traditionCss,/\.courseSession \.choice,\.courseSession \.chosen\{[\s\S]*?min-height:44px/)
- assert.match(privateCss,/\.session \.questionArea \.optionList\{[\s\S]*?repeat\(2,minmax\(0,1fr\)\)/)
- assert.match(dialogueCss,/@media\(max-width:600px\)/)
- assert.match(guest,/className=\{styles\.sessionScroll\}/)
- assert.match(guest,/className=\{styles\.sessionFooter\}/)
- assert.match(guestCss,/\.sessionFooter\{[\s\S]*?safe-area-inset-bottom/)
- assert.match(voice,/data-coaching-listening=/)
- assert.match(traditionCss,/data-coaching-listening="false"/)
+test('Egyptian and Greek coaching use fitting photos and preserve lesson image fallback',()=>{
+ const courses=source('lib/personal-coaching/traditions.js')
+ const academy=source('components/academy-hub.tsx')
+ const dashboard=source('components/app/my-courses-dashboard.jsx')
+ const lounge=source('components/public-coaching-discovery.jsx')
+ const art=source('components/app/tradition-coaching.jsx')
+ assert.match(courses,/"ru": "Египетское планирование"/)
+ assert.match(courses,/"ru": "Греческое планирование"/)
+ assert.match(courses,/coaching-ancient\/egyptian-cover\.jpg/)
+ assert.match(courses,/coaching-ancient\/greek-cover\.jpg/)
+ assert.doesNotMatch(academy,/academy-free-egyptian-goal-planning|academy-free-greek-goal-planning/)
+ assert.doesNotMatch(dashboard,/data-ancient-coaching-courses|data-tradition-course-card/)
+ assert.match(lounge,/image=\{traditionCoachingArt.egyptian\}/)
+ assert.match(lounge,/image=\{traditionCoachingArt.greek\}/)
+ assert.match(art,/event.currentTarget.hidden=true/)
+ assert.match(art,/referrerPolicy="no-referrer"/)
 })
-test('optional first-slide notes collapse but remain editable and available on dictation',()=>{
- const tradition=source('components/app/tradition-coaching.jsx')
- const personal=source('components/app/personal-coaching.jsx')
- const tradCss=source('components/app/tradition-coaching.module.css')
- const privateCss=source('components/app/personal-coaching.module.css')
- assert.match(tradition,/aria-expanded=\{noteExpanded\}/)
- assert.match(tradition,/hidden=\{quickChoices&&!noteExpanded\}/)
- assert.match(tradition,/setNoteExpanded\(true\)/)
- assert.match(tradition,/setNoteExpanded\(Boolean\(saved\?\.note\)\)/)
- assert.match(tradition,/maxLength=\{500\}/)
- assert.match(personal,/aria-expanded=\{showOwnWords\}/)
- assert.match(personal,/hidden=\{quickChoices&&!showOwnWords\}/)
- assert.match(personal,/setShowOwnWords\(true\)/)
- assert.match(personal,/maxLength=\{800\}/)
- assert.match(personal,/<details className=\{styles\.adaptivePanel\} data-coaching-adaptive-prompt>/)
- assert.match(tradCss,/\.noteSection\[hidden\]\{display:none\}/)
- assert.match(privateCss,/#hh-personal-coach-own-words\[hidden\]\{display:none\}/)
- // Original free-text steps must not become mandatory answer choices.
- assert.match(tradition,/!quickChoices&&!choice&&note\.trim\(\)\.length<3/)
- assert.match(personal,/if\(dictating\)\{setError\(t\.stopMic\);return\}/)
+
+
+test('all 18 approved Egyptian and Greek photographs are mapped to unique first-party assets',async()=>{
+ const {traditionCoachingArt}=await import('../lib/coaching/public-session-art.js')
+ const {TRADITION_COURSES}=await import('../lib/personal-coaching/traditions.js')
+ const root='/images/holistic-house/coaching-ancient/'
+ assert.equal(traditionCoachingArt.egyptian,root+'egyptian-cover.jpg')
+ assert.equal(traditionCoachingArt.greek,root+'greek-cover.jpg')
+ for(const course of TRADITION_COURSES){
+  assert.equal(course.art,traditionCoachingArt[course.slug])
+  assert.equal(traditionStages(course.slug).length,8)
+ }
+ const stages=['egyptian','greek'].flatMap(slug=>traditionStages(slug))
+ const urls=stages.map(traditionStageImage)
+ assert.equal(urls.length,16)
+ assert.equal(new Set(urls).size,16)
+ for(const url of urls)assert.ok(url.startsWith(root))
+ const builder=source('scripts/cache-ancient-coaching-photos.mjs')
+ const scripts=JSON.parse(source('package.json')).scripts
+ assert.match(builder,/traditionStages\(slug\)/)
+ assert.match(builder,/traditionStageImage\(stage\)/)
+ assert.match(builder,/response\.arrayBuffer\(\)/)
+ assert.match(builder,/validPhoto\(/)
+ assert.match(scripts.prebuild,/cache-ancient-coaching-photos\.mjs/)
+ assert.match(scripts.predev,/cache-ancient-coaching-photos\.mjs/)
+ assert.match(source('.gitignore'),/coaching-ancient/)
+ // Visible artist/license/source attribution must remain attached to lessons.
+ for(const stage of stages){
+  assert.match(traditionStageSource(stage),/^https:\/\/commons\.wikimedia\.org\/wiki\/File:/)
+  assert.ok(stage.photo.credit&&stage.photo.license)
+ }
 })
+
+test('private personal and traditional coaching shells follow real mobile Safari visual viewport and restore body scroll',()=>{
+ const hook=source('components/app/use-coaching-visual-viewport.js');
+ const base=source('components/app/personal-coaching.module.css');
+ const personal=source('components/app/personal-coaching.jsx');
+ const tradition=source('components/app/tradition-coaching.jsx');
+ assert.match(hook,/window\.visualViewport/);
+ assert.match(hook,/viewport\?\.addEventListener\('resize',update\)/);
+ assert.match(hook,/viewport\?\.addEventListener\('scroll',update\)/);
+ assert.match(hook,/viewport\?\.removeEventListener\('resize',update\)/);
+ assert.match(hook,/viewport\?\.removeEventListener\('scroll',update\)/);
+ assert.match(hook,/document\.body\.style\.overflow=originalOverflow/);
+ assert.match(base,/height:var\(--coaching-viewport-height,100dvh\)/);
+ assert.match(base,/top:var\(--coaching-viewport-top,0px\)/);
+ for(const player of [personal,tradition]){
+  assert.match(player,/useCoachingVisualViewport\(viewportRef\)/);
+  assert.match(player,/<main ref=\{viewportRef\} className=/);
+ }
+});

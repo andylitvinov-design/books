@@ -4,9 +4,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Check, ClipboardCopy, LockKeyhole, Plus, ShieldCheck, Trash2 } from "lucide-react";
 import { appFetch } from "@/lib/app/client-fetch";
-import { COACHING_FIELDS, COACHING_GROUPS, COACHING_INTAKE_VERSION, COACHING_TOPICS } from "@/lib/coaching/intake-model";
+import { COACHING_FIELDS, COACHING_GROUPS, COACHING_INTAKE_VERSION, COACHING_TOPICS, coachingIntakeEntryTopic } from "@/lib/coaching/intake-model";
+import { DIAGNOSTIC_START_KEY, parseDiagnosticStart } from "@/lib/coaching/diagnostic-enquiry.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./coaching-intake-form.module.css";
+import {MandatoryMessengerActions} from "@/components/mandatory-messenger-actions";
+import {websiteMessengerOnlyUi} from "@/lib/crm/website-messenger-only.mjs";
+
 
 type Draft = {
   topic: string;
@@ -22,6 +26,31 @@ const blank = (): Draft => ({ topic: "personal", name: "", city: "", answers: {}
 
 const copy = {
   en: {
+    sendEyebrow: "FINAL STEP · SEND YOUR REQUEST",
+    sendTitle: "Request your free written diagnostic",
+    sendPaidTitle: "Request a personal coaching session",
+    sendLead: "When you send your answers, the questionnaire and reply contact are saved automatically in the secure Holistic House CRM. No second save step is needed.",
+    sendOption: "Response format",
+    moreQuestions: "Add details · {n} optional questions",
+    lessQuestions: "Hide optional questions",
+    phoneInstead: "Prefer to leave a phone number?",
+    sendFree: "Free · €0",
+    sendShort: "30 min · €50",
+    sendFull: "60 min · €100",
+    telegramLinked: "Your answers will attach to the existing verified Telegram CRM conversation. Email and phone are optional.",
+    telegramMiniLinked: "Telegram verified. Your questionnaire will attach to the existing private conversation.",
+    telegramUnavailable: "Telegram identity is not verified. Open the questionnaire from the bot's Fill questionnaire button or your original signed link.",
+    telegramChecking: "Checking your Telegram connection…",
+    sendEmail: "Email for a reply",
+    sendPhone: "Phone (optional if email is supplied)",
+    sendDisclosure: "By selecting “Send answers to Andrey”, you agree to share your answers and reply contact with Andrey for this one request only. No marketing.",
+    sendButton: "Send answers to Andrey",
+    sendError: "Complete the three essential questions and provide an email or phone for a reply.",
+    sendFailure: "Your request could not be confirmed. Please retry; your answers are still here.",
+    sendSuccess: "Your questionnaire and contact were received. Reference:",
+    sendUpgrade: "Would you prefer a live consultation? Request 30 minutes (€50) or 60 minutes (€100).",
+    sendNext: "Your request awaits personal review. This does not book an appointment, collect payment or guarantee availability.",
+    saveOptional: "OPTIONAL · KEEP A PRIVATE COPY",
     eyebrow: "AUTHOR'S COACHING QUESTIONNAIRE · HOLISTIC HOUSE",
     title: "Your coaching questions",
     lead: "One question per line. Answer at your own pace.",
@@ -44,21 +73,46 @@ const copy = {
     completed: "Your questionnaire is saved as complete — it has not been sent to a coach.",
     saveError: "Could not save your answers. Please retry or copy them.",
     conflict: "This questionnaire changed in another tab. Reload your saved version before editing.",
-    copy: "Copy my answers", copied: "Copied. Nothing has been sent — choose where to share them.",
+    copy: "Copy for personal use", copied: "Copied for personal use. Keep private materials in your Cabinet.",
     copyFailed: "Automatic copying was blocked. Select the text below and copy it manually.",
-    preview: "Text to share, only if you choose", questions: "Questions for the coach",
+    preview: "Your personal copy", questions: "Questions for the coach",
     downloaded: "Export answers", downloadName: "my-coaching-questions.txt",
     delete: "Delete saved questionnaire", deleteConfirm: "Delete your saved coaching answers permanently from your account?",
     deleted: "Saved questionnaire deleted.", deleteError: "Could not delete. Please try again.",
     unsaved: "Not saved yet", upToDate: "All changes saved", dirty: "You have changes not yet saved.",
     saveRequired: "Sign in before using private save. Copying remains available without an account.",
     returnToServices: "Explore sessions", contact: "Contact Holistic House",
-    contactNote: "Copying does not submit a request or book a session. Use Contact to ask for a reply; share your answers only with your permission.",
+    contactNote: "Copying does not submit a request or book a session. Do not send answers, drawings or test results through messengers or email. Use Contact only to agree a secure handoff, without private materials.",
     chooseSaved: "Load my saved version", chooseLocal: "Keep answers from before sign-in",
     accountConflict: "You already have a saved questionnaire. Choose which version to work with; nothing is overwritten automatically.",
     privacy: "Your draft is visible only to you until you deliberately copy or share it. Do not include medical emergencies here; seek qualified urgent help instead.",
   },
   ru: {
+    sendEyebrow: "ЗАВЕРШЕНИЕ · ОТПРАВКА ЗАЯВКИ",
+    sendTitle: "Запросить бесплатную письменную диагностику",
+    sendPaidTitle: "Запросить личную коучинговую сессию",
+    sendLead: "После отправки ответы и контакт автоматически сохраняются в защищённой CRM Holistic House для личного ответа Андрея. Повторно сохранять ничего не нужно.",
+    sendOption: "Формат ответа",
+    moreQuestions: "Добавить подробности · ещё {n} вопросов",
+    lessQuestions: "Скрыть дополнительные вопросы",
+    phoneInstead: "Оставить телефон вместо email",
+    sendFree: "Бесплатно · €0",
+    sendShort: "30 мин · €50",
+    sendFull: "60 мин · €100",
+    telegramLinked: "Ответы привяжутся к существующему подтверждённому диалогу Telegram в CRM. Email и телефон необязательны.",
+    telegramMiniLinked: "Telegram подтверждён. Анкета будет привязана к существующему приватному диалогу.",
+    telegramUnavailable: "Telegram не подтверждён. Откройте анкету кнопкой бота «Заполнить анкету» или по исходной подписанной ссылке.",
+    telegramChecking: "Проверяем соединение с Telegram…",
+    sendEmail: "Email для ответа",
+    sendPhone: "Телефон (необязателен, если указан email)",
+    sendDisclosure: "Нажимая «Отправить ответы Андрею», вы передаёте ответы и контакт Андрею для одного личного ответа. Без рекламы и рассылок.",
+    sendButton: "Отправить ответы Андрею",
+    sendError: "Ответьте на три основных вопроса и укажите email или телефон для ответа.",
+    sendFailure: "Не удалось подтвердить получение заявки. Попробуйте повторить: ответы сохранились на экране.",
+    sendSuccess: "Ваша анкета и контакт получены. Номер заявки:",
+    sendUpgrade: "Хотите обсудить вопрос лично? Запросите 30 минут (€50) или 60 минут (€100).",
+    sendNext: "Андрей рассмотрит заявку. Это пока не подтверждённая запись, не оплата и не гарантия свободного времени.",
+    saveOptional: "ДОПОЛНИТЕЛЬНО · ПРИВАТНАЯ КОПИЯ",
     eyebrow: "АВТОРСКАЯ КОУЧИНГ-АНКЕТА · HOLISTIC HOUSE",
     title: "Вопросы и ответы",
     lead: "Один пункт — один вопрос. Отвечайте в своём темпе.",
@@ -81,21 +135,46 @@ const copy = {
     completed: "Анкета завершена и сохранена. Коучу она ещё не отправлена.",
     saveError: "Не удалось сохранить ответы. Повторите попытку или скопируйте их.",
     conflict: "Анкета изменилась в другой вкладке. Загрузите сохранённую версию перед изменениями.",
-    copy: "Скопировать ответы", copied: "Скопировано. Ничего не отправлено — вы сами выбираете, кому передать.",
+    copy: "Личная копия ответов", copied: "Создана личная копия. Храните частные материалы в кабинете.",
     copyFailed: "Браузер запретил автоматическое копирование. Скопируйте текст ниже вручную.",
-    preview: "Текст для передачи по вашему выбору", questions: "Вопросы коучу",
+    preview: "Ваша личная копия", questions: "Вопросы коучу",
     downloaded: "Экспортировать ответы", downloadName: "moya-coaching-anketa.txt",
     delete: "Удалить сохранённую анкету", deleteConfirm: "Безвозвратно удалить ваши сохранённые ответы из кабинета?",
     deleted: "Сохранённая анкета удалена.", deleteError: "Не удалось удалить. Повторите попытку.",
     unsaved: "Пока не сохранено", upToDate: "Все изменения сохранены", dirty: "Есть несохранённые изменения.",
     saveRequired: "Для приватного сохранения войдите в аккаунт. Без входа можно скопировать ответы.",
     returnToServices: "Посмотреть сессии", contact: "Написать в Holistic House",
-    contactNote: "Копирование не отправляет заявку и не бронирует сессию. Для ответа коуча используйте раздел «Контакты»; делитесь ответами только по своему желанию.",
+    contactNote: "Копирование не отправляет заявку и не бронирует сессию. Не отправляйте ответы, рисунки и результаты тестов через мессенджеры или email. Через «Контакты» согласуйте защищённую передачу без частных материалов.",
     chooseSaved: "Загрузить из кабинета", chooseLocal: "Оставить ответы до входа",
     accountConflict: "В кабинете уже есть анкета. Выберите версию, с которой продолжите; автоматически ничего не перезапишется.",
     privacy: "Черновик видите только вы, пока сами не решите им поделиться. При неотложных состояниях обращайтесь за квалифицированной помощью.",
   },
   es: {
+    sendEyebrow: "ÚLTIMO PASO · ENVÍA TU SOLICITUD",
+    sendTitle: "Solicitar evaluación escrita gratuita",
+    sendPaidTitle: "Solicitar una sesión personal de coaching",
+    sendLead: "Al enviar tus respuestas, el formulario y tu contacto se guardan automáticamente en el CRM privado de Holistic House. No necesitas guardarlos otra vez.",
+    sendOption: "Formato de respuesta",
+    moreQuestions: "Añadir detalles · {n} preguntas opcionales",
+    lessQuestions: "Ocultar preguntas opcionales",
+    phoneInstead: "¿Prefieres dejar tu teléfono?",
+    sendFree: "Gratis · €0",
+    sendShort: "30 min · €50",
+    sendFull: "60 min · €100",
+    telegramLinked: "Las respuestas se vincularán a tu conversación verificada de Telegram. Correo y teléfono son opcionales.",
+    telegramMiniLinked: "Telegram verificado. Las respuestas se añadirán al mismo chat privado.",
+    telegramUnavailable: "No se pudo verificar Telegram. Abre el formulario desde el botón del bot o utiliza tu enlace firmado original.",
+    telegramChecking: "Verificando tu cuenta de Telegram…",
+    sendEmail: "Email de contacto",
+    sendPhone: "Teléfono (opcional con email)",
+    sendDisclosure: "Al pulsar «Enviar respuestas a Andrey», aceptas compartir el formulario y tu contacto solo para esta respuesta personal. Sin publicidad.",
+    sendButton: "Enviar respuestas a Andrey",
+    sendError: "Completa las tres preguntas esenciales e indica un email o teléfono para responderte.",
+    sendFailure: "No se pudo confirmar el envío. Vuelve a intentarlo; tus respuestas siguen aquí.",
+    sendSuccess: "Hemos recibido tu cuestionario y contacto. Referencia:",
+    sendUpgrade: "¿Prefieres una sesión en vivo? Solicita 30 minutos (€50) o 60 minutos (€100).",
+    sendNext: "Andrey revisará la solicitud. No confirma una cita, disponibilidad ni pago.",
+    saveOptional: "OPCIONAL · GUARDAR COPIA PRIVADA",
     eyebrow: "FORMULARIO DE COACHING DEL AUTOR · HOLISTIC HOUSE",
     title: "Tus preguntas de coaching",
     lead: "Una pregunta por apartado. Responde a tu ritmo.",
@@ -118,16 +197,16 @@ const copy = {
     completed: "Formulario completado y guardado. No se ha enviado al coach.",
     saveError: "No se pudo guardar. Inténtalo de nuevo o copia tus respuestas.",
     conflict: "El formulario cambió en otra pestaña. Carga la versión guardada antes de editar.",
-    copy: "Copiar mis respuestas", copied: "Copiado. No se ha enviado nada; tú eliges qué compartir.",
+    copy: "Copiar para uso personal", copied: "Copia personal creada. Conserva los materiales privados en tu área privada.",
     copyFailed: "El navegador impidió copiar automáticamente. Selecciona y copia el texto de abajo.",
-    preview: "Texto para compartir solo si lo decides", questions: "Preguntas para el coach",
+    preview: "Tu copia personal", questions: "Preguntas para el coach",
     downloaded: "Exportar respuestas", downloadName: "mis-preguntas-coaching.txt",
     delete: "Eliminar formulario guardado", deleteConfirm: "¿Eliminar definitivamente tus respuestas guardadas?",
     deleted: "Formulario guardado eliminado.", deleteError: "No se pudo eliminar. Inténtalo de nuevo.",
     unsaved: "No guardado", upToDate: "Todos los cambios guardados", dirty: "Hay cambios sin guardar.",
     saveRequired: "Inicia sesión para guardar en privado. Puedes copiar sin una cuenta.",
     returnToServices: "Explorar sesiones", contact: "Contactar Holistic House",
-    contactNote: "Copiar no envía una solicitud ni reserva una cita. Usa Contacto para pedir respuesta; comparte tus respuestas solo si quieres.",
+    contactNote: "Copiar no envía una solicitud ni reserva una cita. No envíes respuestas, dibujos ni resultados por mensajería o correo. Usa Contacto solo para acordar una entrega segura, sin materiales privados.",
     chooseSaved: "Cargar mi versión guardada", chooseLocal: "Conservar respuestas previas",
     accountConflict: "Ya tienes un formulario guardado. Elige con cuál seguir; no se sobrescribe automáticamente.",
     privacy: "Tu borrador es solo tuyo hasta que decidas compartirlo. Ante una urgencia médica, busca ayuda profesional.",
@@ -162,34 +241,80 @@ function formatAnswers(draft: Draft, locale: PublicLocale) {
   return lines.join("\n");
 }
 
-export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
+export function CoachingIntakeForm({ locale, initialPrivateCopyMode = false }: { locale: PublicLocale; initialPrivateCopyMode?: boolean }) {
   const t = copy[locale];
   const [draft, setDraft] = useState<Draft>(blank);
   const [saved, setSaved] = useState<Saved | null>(null);
   const [auth, setAuth] = useState<"checking" | "guest" | "signed" | "error">("checking");
   const [consent, setConsent] = useState(false);
+  // Only an explicit private-copy link opens the legacy personal-account tools.
+  // Standard Telegram/public questionnaires have one CRM submission, not two save choices.
+  const [privateCopyMode, setPrivateCopyMode] = useState(initialPrivateCopyMode);
   const [dirty, setDirty] = useState(false);
   const [collision, setCollision] = useState(false);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const [fallbackCopy, setFallbackCopy] = useState(false);
+  const [replyContact, setReplyContact] = useState({ email: "", phone: "" });
+  const [showMore, setShowMore] = useState(false);
+  const [showPhone, setShowPhone] = useState(false);
+  const [offerChoice, setOfferChoice] = useState<"free" | "short" | "full">("free");
+  const [telegramHandoff, setTelegramHandoff] = useState<string | null>(null);
+  const [telegramInitData, setTelegramInitData] = useState<string | null>(null);
+  const [telegramStatus, setTelegramStatus] = useState<"none" | "checking" | "linked" | "unavailable">("none");
+  const [telegramEntry, setTelegramEntry] = useState(false);
+  const [leadBusy, setLeadBusy] = useState(false);
+  const [leadError, setLeadError] = useState("");
+  const [leadReceipt, setLeadReceipt] = useState("");
+  const leadAttempt = useRef<{ id: string; body: string; endpoint: string } | null>(null);
   const fallbackRef = useRef<HTMLTextAreaElement>(null);
   const fullText = useMemo(() => formatAnswers(draft, locale), [draft, locale]);
   const missing = COACHING_FIELDS.filter(field => field.required && !draft.answers[field.id]?.trim()).length;
-  const filled = COACHING_FIELDS.filter(field => Boolean(draft.answers[field.id]?.trim())).length;
-  const total = COACHING_FIELDS.length;
+  const visibleFields = COACHING_FIELDS.filter(field => showMore || privateCopyMode || field.required);
+  const filled = visibleFields.filter(field => Boolean(draft.answers[field.id]?.trim())).length;
+  const total = visibleFields.length;
+  const optionalCount = COACHING_FIELDS.filter(field => !field.required).length;
+  const miniLinked=telegramStatus==="linked" && Boolean(telegramInitData);
 
   useEffect(() => {
+    // Read and erase the short-lived opaque bearer token from the URL fragment.
+    // Never persist it in analytics, history, draft storage or query params.
+    const url = new URL(window.location.href);
+    const handoff = new URLSearchParams(url.hash.slice(1)).get("handoff");
+    setTelegramEntry(url.searchParams.get("from") === "telegram");
+    if (handoff && /^h1\.[A-Za-z0-9_-]{120,1100}$/.test(handoff)) setTelegramHandoff(handoff);
+    if (handoff) {
+      url.hash = "";
+      window.history.replaceState(window.history.state, "", url.pathname + url.search);
+    }
     let active = true;
     let restored: Draft | null = null;
+    let privateCopyRequested = new URLSearchParams(window.location.search).get("private") === "1";
+    // Only a public, allowlisted topic may cross this page link.
+    setDraft(previous => hasSomeAnswers(previous) ? previous
+      : { ...previous, topic: coachingIntakeEntryTopic(window.location.search) });
     try {
       const value = sessionStorage.getItem(key);
       sessionStorage.removeItem(key);
       if (value) {
         const parsed = JSON.parse(value);
         if (parsed.version === COACHING_INTAKE_VERSION && Number(parsed.expires) > Date.now()) {
+          privateCopyRequested = privateCopyRequested || parsed.privateMode === true;
           restored = normalise(parsed.draft);
+          setDraft(restored);
+          setDirty(hasSomeAnswers(restored));
+        }
+      }
+      const staged = parseDiagnosticStart(sessionStorage.getItem(DIAGNOSTIC_START_KEY), locale);
+      if (staged) {
+        setReplyContact({ email: staged.email, phone: staged.phone });
+        if (staged.phone) setShowPhone(true);
+        if (!restored) {
+          restored = normalise({
+            ...blank(), name: staged.name, topic: staged.topic,
+            answers: staged.question ? { request: staged.question } : {},
+          });
           setDraft(restored);
           setDirty(hasSomeAnswers(restored));
         }
@@ -197,7 +322,8 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
     } catch {
       // The private account remains the source of truth if browser storage is blocked.
     }
-    appFetch("coaching-intake").then((result: Saved) => {
+    setPrivateCopyMode(privateCopyRequested);
+    if (privateCopyRequested) appFetch("coaching-intake").then((result: Saved) => {
       if (!active) return;
       setSaved(result);
       setAuth("signed");
@@ -212,8 +338,9 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
       if (!active) return;
       setAuth(reason?.status === 401 ? "guest" : "error");
     });
+    else setAuth("guest");
     const onSignOut = (event: MessageEvent) => {
-      if (event.data === "signed-out") {
+      if (privateCopyRequested && event.data === "signed-out") {
         setSaved(null); setAuth("guest"); setDraft(blank()); setConsent(false); setDirty(false);
         setCollision(false); setNotice(""); setError("");
       }
@@ -222,6 +349,37 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
     try { channel = new BroadcastChannel("hh-app-session"); channel.onmessage = onSignOut; } catch { /* unavailable */ }
     return () => { active = false; channel?.close(); };
   }, []);
+
+  useEffect(() => {
+    // Never trust a URL flag for identity. The server must verify raw Telegram
+    // Mini App HMAC initData and the still-consented original CRM thread.
+    let active = true;
+    const url=new URL(window.location.href);
+    const parameters=new URLSearchParams(url.hash.slice(1));
+    const signed=(window as Window & {Telegram?:{WebApp?:{initData?:string}}})
+      .Telegram?.WebApp?.initData || parameters.get("tgWebAppData");
+    if(parameters.has("tgWebAppData")){
+      url.hash="";
+      window.history.replaceState(window.history.state,"",url.pathname+url.search);
+    }
+    if(!signed || parameters.has("handoff") ||
+      url.searchParams.get("private")==="1")return;
+    setTelegramStatus("checking");
+    void fetch("/api/coaching-diagnostic/telegram", {
+      method:"POST", credentials:"same-origin",
+      headers:{"content-type":"application/json"},
+      body:JSON.stringify({action:"context",initData:signed}),
+    }).then(async response=>response.ok?response.json():null)
+      .then(result=>{
+        if(!active)return;
+        if(result?.linked===true && COACHING_TOPICS.some(topic=>topic.id===result.topic)){
+          setTelegramInitData(signed);
+          setTelegramStatus("linked");
+          setDraft(previous=>({...previous,topic:result.topic}));
+        }else setTelegramStatus("unavailable");
+      }).catch(()=>{if(active)setTelegramStatus("unavailable")});
+    return ()=>{active=false};
+  },[]);
 
   function edit(next: (draft: Draft) => Draft) {
     if (collision || busy) return;
@@ -238,7 +396,7 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
       const result = await appFetch("auth/start", { locale, continueTo: "coaching-intake" });
       if (!result?.redirectUrl) throw new Error("SIGN_IN_UNAVAILABLE");
       try {
-        sessionStorage.setItem(key, JSON.stringify({ version: COACHING_INTAKE_VERSION, expires: Date.now() + 15 * 60 * 1000, draft }));
+        sessionStorage.setItem(key, JSON.stringify({ version: COACHING_INTAKE_VERSION, expires: Date.now() + 15 * 60 * 1000, privateMode: true, draft }));
       } catch { /* browser storage may be disabled; no private data sent in OAuth URL */ }
       window.location.assign(result.redirectUrl);
     } catch {
@@ -279,6 +437,53 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
       setNotice(t.deleted);
     } catch { setError(t.deleteError); } finally { setBusy(false); }
   }
+  async function submitDiagnostic() {
+    if (privateCopyMode || leadBusy || leadReceipt || busy || collision) return;
+    if(telegramStatus==="checking"){setLeadError(t.telegramChecking);return;}
+    if (websiteMessengerOnlyUi() && !miniLinked && !telegramHandoff) {
+      setLeadError(t.telegramUnavailable);return;
+    }
+    if(telegramEntry && !miniLinked && !telegramHandoff){
+      setLeadError(t.telegramUnavailable);return;
+    }
+    if(missing || (!miniLinked && !replyContact.email.trim() && !replyContact.phone.trim() && !telegramHandoff)){
+      setLeadError(t.sendError);return;
+    }
+    setLeadBusy(true); setLeadError("");
+    try {
+      if (!leadAttempt.current) {
+        const id = window.crypto.randomUUID();
+        const intake={operationId:id,locale,offer:offerChoice,
+          topic:draft.topic,name:draft.name,city:draft.city,
+          answers:draft.answers,questions:draft.questions};
+        const endpoint=miniLinked?"/api/coaching-diagnostic/telegram":"/api/coaching-diagnostic";
+        const payload=miniLinked
+          ? {action:"submit",initData:telegramInitData,questionnaire:{...intake,confirmed:true}}
+          : {...intake,contact:{displayName:draft.name,email:replyContact.email.trim(),phone:replyContact.phone.trim()},
+             contactConsent:true,website:"",...(telegramHandoff?{handoff:telegramHandoff}:{})};
+        // A lost response never changes the destination or creates a new lead.
+        leadAttempt.current={id,endpoint,body:JSON.stringify(payload)};
+      }
+      const response = await fetch(leadAttempt.current.endpoint, {
+        method: "POST", credentials: "same-origin",
+        headers: { "content-type": "application/json" },
+        body: leadAttempt.current.body,
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok || result?.saved !== true || !/^HH-[A-F0-9]{12}$/.test(result.referenceCode || "")) {
+        // A rejected payload was never saved, so edits must get a fresh idempotency key.
+        if (response.status === 400) leadAttempt.current = null;
+        throw new Error("COACHING_ENQUIRY_NOT_CONFIRMED");
+      }
+      setLeadReceipt(result.referenceCode);
+      try { sessionStorage.removeItem(DIAGNOSTIC_START_KEY); } catch { /* optional */ }
+    } catch {
+      // Retain the exact idempotency key and frozen payload across retries.
+      // A lost response must not create a second coach request.
+      setLeadError(t.sendFailure);
+    } finally { setLeadBusy(false); }
+  }
+
   async function copyAnswers() {
     try {
       await navigator.clipboard.writeText(fullText);
@@ -316,41 +521,46 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
       </div>
     </header>
 
-    <div className={styles.authBar}>
+    {privateCopyMode ? <div className={styles.authBar} data-coaching-private-copy>
       <LockKeyhole size={19} aria-hidden="true" />
       <div><p>{auth === "signed" ? t.signedIn : auth === "guest" ? t.signedOut : auth === "checking" ? t.loading : t.unavailable}</p>
         {auth === "guest" ? <small>{t.temporary}</small> : null}
       </div>
       {auth === "guest" ? <button type="button" disabled={busy} onClick={() => void signIn()} className={styles.login}>{t.login}<ArrowRight size={16} aria-hidden="true" /></button> : null}
-    </div>
+    </div> : null}
 
-    {collision ? <div role="alert" className={styles.conflict}>
+    {privateCopyMode && collision ? <div role="alert" className={styles.conflict}>
       <p>{t.accountConflict}</p>
       <div><button type="button" onClick={loadSaved}>{t.chooseSaved}</button><button type="button" onClick={keepLocal}>{t.chooseLocal}</button></div>
     </div> : null}
 
     <div className={styles.basic}>
       <label>{t.labelTopic}
-        <select value={draft.topic} disabled={collision || busy} onChange={event => edit(previous => ({ ...previous, topic: event.target.value }))}>
+        <select value={draft.topic} disabled={collision || busy || miniLinked} onChange={event => edit(previous => ({ ...previous, topic: event.target.value }))}>
           {COACHING_TOPICS.map(topic => <option key={topic.id} value={topic.id}>{topic.label[locale]}</option>)}
         </select>
       </label>
-      <label>{t.yourName}
+      {(showMore || privateCopyMode) ? <label>{t.yourName}
         <input value={draft.name} disabled={collision || busy} onChange={event => edit(previous => ({ ...previous, name: event.target.value }))} maxLength={120} autoComplete="nickname" />
-      </label>
-      <label>{t.location}
+      </label> : null}
+      {(showMore || privateCopyMode) ? <label>{t.location}
         <input value={draft.city} disabled={collision || busy} onChange={event => edit(previous => ({ ...previous, city: event.target.value }))} maxLength={150} autoComplete="address-level2" />
-      </label>
+      </label> : null}
     </div>
 
     <p className={styles.requiredLegend}>{t.requiredLegend}</p>
-    {COACHING_GROUPS.map((group, groupIndex) => <section key={group.id} className={styles.group} aria-labelledby={"coaching-" + group.id}>
+    {!privateCopyMode ? <button type="button" className={styles.moreToggle} aria-expanded={showMore}
+      disabled={collision || busy} onClick={() => setShowMore(value => !value)}>
+      {showMore ? t.lessQuestions : t.moreQuestions.replace("{n}", String(optionalCount))}
+      <span aria-hidden="true">{showMore ? "−" : "+"}</span>
+    </button> : null}
+    {COACHING_GROUPS.filter(group => showMore || privateCopyMode || COACHING_FIELDS.some(field => field.group === group.id && field.required)).map((group, groupIndex) => <section key={group.id} className={styles.group} aria-labelledby={"coaching-" + group.id}>
       <div className={styles.groupHeading}><span className={styles.number}>{String(groupIndex + 1).padStart(2, "0")}</span>
         <div><h3 id={"coaching-" + group.id}>{group.title[locale]}</h3><p>{group.hint[locale]}</p></div>
-        <span className={styles.groupCount}>{COACHING_FIELDS.filter(field => field.group === group.id && draft.answers[field.id]?.trim()).length}/{COACHING_FIELDS.filter(field => field.group === group.id).length}</span>
+        <span className={styles.groupCount}>{COACHING_FIELDS.filter(field => field.group === group.id && (showMore || privateCopyMode || field.required) && draft.answers[field.id]?.trim()).length}/{COACHING_FIELDS.filter(field => field.group === group.id && (showMore || privateCopyMode || field.required)).length}</span>
       </div>
       <ol className={styles.fields} start={COACHING_FIELDS.findIndex(item => item.group === group.id) + 1}>
-        {COACHING_FIELDS.filter(field => field.group === group.id).map(field => <li key={field.id} className={styles.fieldRow} data-coaching-question={field.id}>
+        {COACHING_FIELDS.filter(field => field.group === group.id && (showMore || privateCopyMode || field.required)).map(field => <li key={field.id} className={styles.fieldRow} data-coaching-question={field.id}>
           <label htmlFor={"coaching-field-" + field.id} className={styles.questionLabel}>
             <span className={styles.ordinal} aria-hidden="true">{String(COACHING_FIELDS.findIndex(item => item.id === field.id) + 1).padStart(2, "0")}</span>
             <span>{field.label[locale]} {field.required ? <em title={t.required}>*</em> : null}</span>
@@ -365,7 +575,7 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
           />
         </li>)}
       </ol>
-      {group.id === "session" ? <div className={styles.ownQuestions}>
+      {(showMore || privateCopyMode) && group.id === "session" ? <div className={styles.ownQuestions}>
         <div className={styles.ownHeader}><div><h4>{t.ownQuestions}</h4><p>{t.ownHint}</p></div>
           <button type="button" disabled={collision || busy || draft.questions.length >= 8} onClick={() => edit(previous => ({ ...previous, questions: [...previous.questions, ""] }))}>
             <Plus size={16} aria-hidden="true" />{t.addQuestion}
@@ -381,6 +591,59 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
     </section>)}
 
     <section className={styles.finish} aria-label={locale === "ru" ? "Сохранение анкеты" : locale === "es" ? "Guardar formulario" : "Save questionnaire"}>
+      {!privateCopyMode ? <div className={styles.requestBox} data-coaching-request>
+        <p className={styles.requestEyebrow}>{t.sendEyebrow}</p>
+        <h3>{offerChoice === "free" ? t.sendTitle : t.sendPaidTitle}</h3>
+        <p className={styles.requestLead}>{miniLinked?t.telegramMiniLinked:t.sendLead}</p>
+        {leadReceipt ? <div className={styles.requestSuccess} data-coaching-enquiry-saved role="status">
+          <Check size={18} aria-hidden="true" /><div><strong>{t.sendSuccess} {leadReceipt}</strong><p>{t.sendNext}</p></div>
+          {offerChoice === "free" ? <Link className={styles.requestUpgrade} href={"/" + locale + "/holistic-support#personal-insights-master"} prefetch={false}>
+            {t.sendUpgrade}<ArrowRight size={17} aria-hidden="true" />
+          </Link> : null}
+        </div> : <>
+          <fieldset className={styles.choiceFieldset} disabled={leadBusy || busy || collision}>
+            <legend>{t.sendOption}</legend>
+            <div className={styles.choiceGrid}>
+              {(["free", "short", "full"] as const).map(option => <label key={option} data-selected={offerChoice === option}>
+                <input type="radio" name="coaching-service-request" checked={offerChoice === option}
+                  onChange={() => { setOfferChoice(option); setLeadError(""); }} />
+                <span>{option === "free" ? t.sendFree : option === "short" ? t.sendShort : t.sendFull}</span>
+              </label>)}
+            </div>
+          </fieldset>
+          {miniLinked ? <p className={styles.requestFootnote} role="status">{t.telegramMiniLinked}</p>
+            : telegramHandoff ? <p className={styles.requestFootnote}>{t.telegramLinked}</p> : null}
+          {telegramStatus==="checking" ? <p role="status">{t.telegramChecking}</p> : null}
+          {telegramEntry && !miniLinked && !telegramHandoff && telegramStatus!=="checking"
+            ? <p className={styles.requestError} role="alert">{t.telegramUnavailable}</p> : null}
+          {websiteMessengerOnlyUi() && !miniLinked && !telegramHandoff
+            ? <MandatoryMessengerActions locale={locale}
+                label={locale==="ru"?"Подтвердите мессенджер":locale==="es"?"Verifica tu mensajería":"Verify your messenger"}
+                telegramUrl={"https://t.me/holistichouse_bot?start=hhreview_"+locale}
+                whatsappUrl={"https://wa.me/14376066502?text="+encodeURIComponent("Holistic House: please contact me about a written situation review.")}/> : null}
+          {!miniLinked && !telegramEntry && !websiteMessengerOnlyUi() ? <div className={styles.replyFields}>
+            <label>{t.sendEmail}<input type="email" autoComplete="email" maxLength={254}
+              disabled={leadBusy || busy || collision} value={replyContact.email}
+              onChange={event => { setReplyContact(value => ({ ...value, email: event.target.value })); setLeadError(""); }} /></label>
+            {(showPhone || Boolean(replyContact.phone)) ? <label>{t.sendPhone}<input type="tel" autoComplete="tel" maxLength={28}
+              disabled={leadBusy || busy || collision} value={replyContact.phone}
+              onChange={event => { setReplyContact(value => ({ ...value, phone: event.target.value })); setLeadError(""); }} /></label>
+              : <button type="button" className={styles.phoneInstead} disabled={leadBusy || busy || collision}
+                  onClick={() => setShowPhone(true)}>{t.phoneInstead}</button>}
+          </div> : null}
+          <p className={styles.requestDisclosure}>{t.sendDisclosure}</p>
+          {leadError ? <p className={styles.requestError} role="alert">{leadError}</p> : null}
+          <button className={styles.sendButton} type="button" disabled={leadBusy || busy || collision || missing > 0 ||
+            (websiteMessengerOnlyUi() && !miniLinked && !telegramHandoff) ||
+            (!miniLinked && !replyContact.email.trim() && !replyContact.phone.trim() && !telegramHandoff) ||
+            (telegramEntry && !miniLinked && !telegramHandoff) || telegramStatus==="checking"} onClick={() => void submitDiagnostic()}>
+            {leadBusy ? "…" : t.sendButton}<ArrowRight size={17} aria-hidden="true" />
+          </button>
+          <p className={styles.requestFootnote}>{t.sendNext}</p>
+        </>}
+      </div> : null}
+      {privateCopyMode ? <>
+      <p className={styles.requestEyebrow}>{t.saveOptional}</p>
       <div className={styles.saveStatus}><ShieldCheck size={19} aria-hidden="true" />{dirty ? t.dirty : saved?.intake ? t.upToDate : t.unsaved}</div>
       {auth === "signed" ? <label className={styles.consent}>
         <input type="checkbox" checked={consent} disabled={busy || collision} onChange={event => setConsent(event.target.checked)} />
@@ -404,6 +667,7 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
       <p className={styles.small}>{t.contactNote}</p>
       <p className={styles.small}>{t.privacy}</p>
       {saved?.intake && auth === "signed" ? <button className={styles.delete} type="button" disabled={busy || collision} onClick={() => void remove()}><Trash2 size={15} aria-hidden="true" />{t.delete}</button> : null}
+      </> : null}
     </section>
   </section>;
 }

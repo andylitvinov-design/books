@@ -82,6 +82,15 @@
   cursor:pointer;
 }
 .consent span { flex:1; min-width:0; }
+.requestSubmit {
+  display:flex;align-items:center;justify-content:center;gap:9px;box-sizing:border-box;
+  min-height:50px;width:100%;padding:11px 13px;border:0;border-radius:13px;
+  background:#874053;color:white;cursor:pointer;text-align:center;
+  font:800 14px/1.25 Arial,Helvetica,sans-serif;
+}
+.requestSubmit:disabled{opacity:.6;cursor:not-allowed}
+.requestSubmit:hover:not(:disabled){background:#723346}
+.section .requestSubmit:focus-visible{outline:3px solid #b87c44;outline-offset:3px}
 .channelHeading { display:flex; flex-wrap:wrap; align-items:baseline; gap:3px 10px; margin:2px 0 -3px; }
 .channelHeading strong { color:#404b40; font-size:13px; }
 .channelHeading span { color:#708077; font-size:11px; line-height:1.3; }
@@ -172,6 +181,7 @@
 .inline .head p:not(.kicker) { font-size:11px; }
 .inline .portrait { width:52px; height:59px; border-radius:10px; }
 .inline .field :is(input,select) { min-height:44px; }
+.inline .requestSubmit { min-height:46px; }
 .inline .channel { min-height:46px; font-size:13px; padding:9px 6px; }
 .inline .consent { font-size:11px; }
 .inline .notice { font-size:10px; }
@@ -179,3 +189,22 @@
   .inline .channels { grid-template-columns:1fr; gap:6px; }
 }
 @media(prefers-reduced-motion:reduce) { .channel { transition:none; } }
+
+/* Compact phone-and-messengers variant for the free-diagnosis landing. */
+.section.diagnosis{width:100%;max-width:100%;margin:0;padding:13px 15px;border:1px solid #d7c0ac;border-radius:19px;background:#f8efe4;box-shadow:none;color:#4b342b}
+.diagnosis .head{display:block;margin-bottom:10px}
+.diagnosis .head h2{margin:0 0 4px;font:400 clamp(20px,3vw,25px)/1.18 Georgia,"Times New Roman",serif;color:#4b342b}
+.diagnosis .head p:not(.kicker){max-width:620px;color:#6b594b;font-size:11.5px}
+.diagnosis .form{gap:9px}
+.diagnosis .field{color:#604d42}
+.diagnosis .field input{min-height:46px;border:1px solid #ccb7a6;border-radius:11px;background:#fffdfa;color:#44352c}
+.diagnosis .consent{min-height:32px;padding:0;color:#6b594b;font-size:10.5px}
+.diagnosis .consent input{width:18px;height:18px;accent-color:#874053}
+.diagnosis .channelHeading{display:none}
+.diagnosis .channels{gap:9px}
+.diagnosis .channel{min-height:46px;border-radius:11px;background:#874053;box-shadow:none;font-size:13px}
+.diagnosis .channel:hover:not(:disabled){background:#76344a;filter:none}
+.diagnosis .notice{color:#806f62;font-size:10px}
+.diagnosis .disclaimer{display:none}
+@media(max-width:600px){.section.diagnosis{width:100%;padding:13px 12px;border-radius:16px;margin:0}.diagnosis .head h2{font-size:21px}.diagnosis .channels{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.diagnosis .channel{min-height:46px;padding:9px 7px;font-size:12px}}
+@media(max-width:340px){.diagnosis .channel{font-size:11px;gap:4px}.diagnosis .channel svg{width:16px;height:16px}}

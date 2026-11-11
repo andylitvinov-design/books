@@ -49,7 +49,8 @@
 .messages{flex:0 1 auto;min-height:150px;max-height:310px;overflow-y:auto}
 .messages small{font-size:.78rem;line-height:1.45}
 .workflowActions{flex:none}
-.compose{flex:none}
+.compose{flex:none;position:relative}
+.salesbotAssistSlot{position:absolute;inset-inline-end:12px;bottom:calc(100% + 6px);z-index:12;pointer-events:auto}
 @media(max-width:700px){.conversation{max-height:none}.messages{min-height:120px;max-height:220px}.followupRow{align-items:flex-start;flex-wrap:wrap}}
 
 /* Secure bounded history paging. Search still applies to loaded contacts only. */
@@ -75,3 +76,293 @@
 .guideBody .copyButton{background:#ebf7f2;color:#1e6468;border:1px solid #9ccbc0;padding:10px 13px;min-height:44px}
 .channelGuide :focus-visible{outline:3px solid #185ac9;outline-offset:2px}
 @media(max-width:690px){.channelGrid{grid-template-columns:minmax(0,1fr)}.guideBody{padding-right:5px}}
+
+/* Signed-in CRM owner pilot: explicit first-party setup gate, no stored PII. */
+.pilotStart{box-sizing:border-box;width:100%;min-width:0;display:flex;flex-direction:column;gap:7px;
+  margin:7px 0;padding:11px;border:1px solid #abcfc3;border-radius:12px;background:#f1faf5}
+.pilotStart p{margin:0;color:#3b635b;font:500 12px/1.5 system-ui,sans-serif;overflow-wrap:anywhere}
+.pilotAction{display:flex;align-items:center;justify-content:center;box-sizing:border-box;
+  min-height:44px;max-width:100%;border:1px solid #246e67;border-radius:10px;
+  padding:9px 11px;background:#206861;color:#fff!important;text-decoration:none;
+  font:750 12px/1.4 system-ui,sans-serif;text-align:center;overflow-wrap:anywhere}
+.pilotAction:hover{background:#18574f}
+.pilotAction:focus-visible{outline:3px solid #185ac9;outline-offset:3px}
+
+/* Authenticated owner only: short-lived link for one second Telegram test chat. */
+.guestPilot{width:100%;box-sizing:border-box;min-width:0;display:flex;flex-direction:column;
+  align-items:flex-start;gap:7px;margin:7px 0;padding:11px;border:1px solid #dac49a;
+  border-radius:12px;background:#fff9eb;overflow-wrap:anywhere}
+.guestPilot strong{font:700 13px/1.4 system-ui,sans-serif;color:#523c2a}
+.guestPilot p,.guestPilot small{margin:0;font:500 12px/1.5 system-ui,sans-serif;color:#685842}
+.guestPilotButton{min-height:44px;width:100%;border-radius:10px;background:#80613c!important;
+  color:#fff!important;padding:10px 12px;cursor:pointer;font:700 13px/1.4 system-ui,sans-serif}
+.guestPilotButton:focus-visible{outline:3px solid #185ac9;outline-offset:3px}
+
+/* Compact inbox is opt-in on /app/messages; the full CRM settings page is unchanged. */
+.panel[data-compact="true"]{position:relative;display:flex;flex:1;flex-direction:column;min-height:0;min-width:0;margin:0;padding:0;border:0;border-radius:0;background:#fffdf9;box-shadow:none}
+.panel[data-compact="true"] .top{flex:none;min-height:41px;justify-content:flex-end;padding:4px 9px;border-bottom:1px solid #e8e1d7;background:#fffdf9}
+.topActions{display:flex;align-items:center;gap:7px;margin-left:auto}
+.panel[data-compact="true"] .topActions button{display:inline-flex;gap:7px;align-items:center;justify-content:center;min-height:32px;padding:5px 10px;border:1px solid #e2d9cf;border-radius:9px;background:#fff;color:#526f64;font:700 11px/1.3 system-ui,sans-serif}
+.panel[data-compact="true"] .topActions .plainButton{width:34px;padding:5px}
+.settingsButton span{font:700 11px system-ui,sans-serif;color:#7b827a}
+.settingsHost{position:relative;z-index:10}
+.panel[data-compact="true"] .settingsHost{position:absolute;top:42px;right:8px;left:8px;max-height:min(64vh,540px);overflow:auto;border:1px solid #d8cabc;border-radius:13px;background:#fffdf9;box-shadow:0 12px 38px #35261f30;padding:10px 8px}
+.panel[data-compact="true"] .channels{margin:0;padding:4px 8px;border:0}
+.panel[data-compact="true"] .channelGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.closeSettings{position:sticky;top:0;float:right;z-index:3;display:grid;place-items:center;min-height:32px!important;width:34px;padding:0!important;border-radius:8px;background:#f7ede7;border:1px solid #e2d2c7;cursor:pointer}
+.panel[data-compact="true"] .layout{display:grid;flex:1;min-height:0;min-width:0;margin:0;border:0;border-radius:0;grid-template-columns:minmax(235px,32%) minmax(0,1fr)}
+.panel[data-compact="true"] .list{display:flex;flex-direction:column;min-height:0;max-height:none;overflow:auto;background:#fffaf5;border-right:1px solid #eee3d7}
+.panel[data-compact="true"] .listHead{flex:none;min-height:37px;padding:4px 10px;border-bottom:0}
+.panel[data-compact="true"] .listHead strong{font:750 12px/1.3 system-ui,sans-serif}
+.listCount{font-size:11px;color:#948173;margin-left:3px}
+.panel[data-compact="true"] .filterButton{min-height:30px;padding:5px 7px;border:0;border-radius:7px;background:transparent;color:#386b5d}
+.panel[data-compact="true"] .filterButton span{color:#b23f63}
+.panel[data-compact="true"] .inboxFilters{flex:none;display:block;padding:3px 9px 9px;border-bottom:1px solid #eee3d7;background:transparent}
+.searchField{position:relative;display:flex;align-items:center;min-width:0;gap:6px}
+.searchField svg{position:absolute;left:9px;pointer-events:none;color:#7c8b83}
+.panel[data-compact="true"] .searchField input[type=search]{min-height:36px;padding:7px 9px 7px 33px;border-radius:10px;border-color:#e6dcd1;background:white;font:400 13px/1.3 system-ui,sans-serif}
+.filtersExtra{display:grid;gap:7px}
+.panel[data-compact="true"] .filtersExtra{padding-top:9px}
+.panel[data-compact="true"] .filtersExtra select{min-height:34px;padding:4px 9px;font-size:12px}
+.panel[data-compact="true"] .filtersExtra label{font-size:12px}
+.panel[data-compact="true"] .filtersExtra input[type=checkbox]{height:17px;width:17px}
+.panel[data-compact="true"] .thread,.panel[data-compact="true"] .threadActive{flex:none;min-height:65px;padding:10px;border-color:#f0e7df}
+.panel[data-compact="true"] .threadActive{background:#e9f2eb}
+.panel[data-compact="true"] .threadInfo small{font-size:11px}
+.panel[data-compact="true"] .avatar{width:39px;height:39px;background:#f2e3d7;color:#79594e}
+.panel[data-compact="true"] .conversation{position:relative;display:flex;flex:1;min-height:0;max-height:none}
+.panel[data-compact="true"] .chatHeader{flex:none;min-height:48px;flex-wrap:nowrap;padding:6px 10px;gap:7px;background:#fffcf8}
+.panel[data-compact="true"] .chatIdentity strong{font:750 14px/1.3 system-ui,sans-serif}
+.panel[data-compact="true"] .chatIdentity span{font-size:11px}
+.panel[data-compact="true"] .chatHeader .plainButton{flex:none;min-height:32px;padding:5px 8px;font-size:11px}
+.panel[data-compact="true"] .backButton{display:inline-flex;justify-content:center;align-items:center;flex:none;min-height:36px;width:36px;padding:7px;border:0;border-radius:10px;color:#275e50;background:#edf5ef}
+.panel[data-compact="true"] .contactActions{flex:none;min-height:41px;gap:6px;padding:3px 9px;background:#f7f5ef}
+.panel[data-compact="true"] .contactActions label{font-size:0}
+.panel[data-compact="true"] .contactActions select{min-height:32px;max-width:142px;font-size:11px;padding:4px 18px 4px 8px}
+.panel[data-compact="true"] .toolsButton{min-height:32px;margin-left:auto;padding:5px 10px;border:1px solid #cbded2;border-radius:9px;background:#fff;color:#386f5d;font:750 11px/1.3 system-ui,sans-serif}
+.panel[data-compact="true"] .messages{flex:1;min-height:0;padding:12px;overflow-y:auto;overscroll-behavior:contain;gap:9px}
+.panel[data-compact="true"] .inbound,.panel[data-compact="true"] .outbound{max-width:min(86%,560px);padding:9px 12px}
+.panel[data-compact="true"] .workflowActions{position:absolute;z-index:6;bottom:73px;left:7px;right:7px;max-height:70%;overflow:auto;border:1px solid #d9d5c4;border-radius:13px;box-shadow:0 10px 34px #29342c25}
+.panel[data-compact="true"] .compose{position:relative;flex:none;display:grid;grid-template-columns:minmax(0,1fr) 43px;gap:6px;padding:8px 10px;border-top:1px solid #e8e1d7;background:#fffcf8}
+.panel[data-compact="true"] .compose>label:first-child{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+.panel[data-compact="true"] .compose textarea{grid-column:1;grid-row:1;min-height:42px;height:42px;max-height:116px;padding:10px 12px;resize:vertical;border-color:#e5d9cd;border-radius:12px;font-size:13px}
+.panel[data-compact="true"] .compose>button:last-of-type{grid-column:2;grid-row:1;width:43px;min-height:42px;padding:8px;justify-self:stretch;border-radius:12px;background:#2f7968}
+.panel[data-compact="true"] .compose .repliesToggle{grid-column:1/3;grid-row:2;min-height:26px;justify-self:start;padding:2px 8px;border:0;border-radius:7px;background:#f4ede6;color:#6a574f;font:700 11px/1.3 system-ui,sans-serif}
+.panel[data-compact="true"] .quickReplies{position:absolute;bottom:calc(100% - 1px);left:8px;right:8px;z-index:7;display:flex;flex-wrap:wrap;gap:5px;padding:9px;border:1px solid #ded2c5;border-radius:11px;background:#fffdf9;box-shadow:0 8px 24px #3c30291a}
+.panel[data-compact="true"] .quickReplies button{min-height:32px;padding:5px 9px}
+.panel[data-compact="true"] .compose small{grid-column:1/3;font-size:11px}
+.panel[data-compact="true"] .notice{flex:none;margin:0;padding:5px 9px;font-size:11px;max-height:55px;overflow:auto}
+@media(max-width:760px){
+ .panel[data-compact="true"] .layout{display:flex;flex-direction:column}
+ .panel[data-compact="true"] .list{flex:1;max-height:none;border-right:0;overflow:auto}
+ .panel[data-compact="true"] .layout[data-chat-open="true"] .list{display:none}
+ .panel[data-compact="true"] .layout[data-chat-open="false"] .conversation{display:none}
+ .panel[data-compact="true"] .conversation{max-height:none}
+ .panel[data-compact="true"] .channelGrid{grid-template-columns:1fr}
+ .panel[data-compact="true"] .settingsHost{max-height:76%}
+}
+
+
+/* Focused owner conversation: all provider settings, CRM pipeline, follow-ups
+   and automation widgets remain available in My Practice, not inside a chat. */
+.detailOnly{display:flex;flex-direction:column;min-width:0;min-height:0;height:100%;width:100%;margin:0;padding:0;border:0;border-radius:0;box-shadow:none;background:#fff;color:#332f2b}
+.detailLayout{display:flex;flex:1;min-height:0;min-width:0;width:100%;overflow:hidden}
+.detailConversation{display:flex;flex:1;flex-direction:column;min-width:0;min-height:0;overflow:hidden;max-height:none}
+.detailConversation .messages{flex:1;min-height:0;max-height:none;padding:14px;overflow:auto;background:#fcfaf7;overscroll-behavior:contain}
+.detailConversation .chatHeader{display:flex;justify-content:flex-end;min-height:42px;border-bottom:0;padding:5px 12px}
+.detailConversation .compose{display:grid;gap:7px;flex:none;padding:10px 12px;border-top:1px solid #e9e0d7;background:#fff}
+.detailConversation .compose textarea{box-sizing:border-box;min-height:48px;max-height:105px;padding:10px 12px;resize:none;border-radius:11px;border:1px solid #ddd2c9;background:#fff}
+.detailConversation .compose>button{justify-self:end;min-height:40px;border:0;border-radius:11px;padding:8px 17px;background:#386e62;color:white;font-weight:700;cursor:pointer}
+.detailConversation .compose>button:disabled{opacity:.44;cursor:not-allowed}
+.detailOnly .notice{margin:4px 12px;font-size:12px;color:#76536a}
+.detailConversation .empty{margin:auto;color:#81766c}
+.srOnly{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+@media(max-width:700px){.detailConversation .messages{min-height:0;max-height:none}.detailConversation .compose{padding:9px 11px}}
+
+
+/* Client conversation polish, preserving the one-screen owner inbox. */
+.detailConversation .inbound{background:#fff;border:1px solid #e4ede6;border-bottom-left-radius:5px}
+.detailConversation .outbound{background:#e3f2e9;border:1px solid #d6e7dc;border-bottom-right-radius:5px}
+.detailConversation .messages{background:#f9fbf9;gap:9px;padding:12px}
+.detailConversation .messages p{margin:0 0 5px;font:500 14px/1.42 system-ui,sans-serif;color:#244a3f}
+.detailConversation .messages small{font-size:10px;color:#788d82}
+.detailConversation .compose{grid-template-columns:minmax(0,1fr) auto;gap:7px;align-items:center;padding:8px 10px}
+.detailConversation .compose textarea{grid-column:1;grid-row:1;min-height:45px;height:45px;max-height:115px;font:500 14px/1.4 system-ui,sans-serif;border-color:#d4e3d8;border-radius:13px}
+.detailConversation .compose textarea::placeholder{color:#8a9d92}
+.detailConversation .compose>button{grid-column:2;grid-row:1;min-height:45px;white-space:nowrap;border-radius:13px;background:#2f7763}
+.detailConversation .compose small{grid-column:1/-1}
+@media(max-width:380px){.detailConversation .compose{gap:5px;padding:7px}.detailConversation .compose>button{padding:7px 10px;font-size:12px}}
+.panel[data-compact="true"] .compose{grid-template-rows:auto auto}
+.panel[data-compact="true"] .compose .repliesToggle{grid-row:1;grid-column:1/3;justify-self:start}
+.panel[data-compact="true"] .compose textarea{grid-row:2;grid-column:1}
+.panel[data-compact="true"] .compose>button:last-of-type{grid-row:2;grid-column:2}
+
+.profileAction{display:inline-flex;align-items:center;justify-content:center;flex:none;min-height:40px;padding:8px 12px;border:1px solid #b9d9cc;border-radius:10px;background:#fff;color:#286452;cursor:pointer;font:700 12px/1.35 system-ui,sans-serif}
+.profileAction:focus-visible{outline:3px solid #185ac9;outline-offset:2px}
+@media(max-width:360px){.profileAction{padding:7px 9px}.contactActions{gap:6px}}
+/* iPhone composer: only the message history scrolls. The editor and Send are
+   one fixed-height row at the bottom of the available conversation viewport. */
+.detailConversation{display:flex;flex-direction:column;min-height:0;max-height:none;overflow:hidden}
+.detailConversation .messages{flex:1 1 0%;min-height:0;max-height:none;overflow-y:auto;overscroll-behavior:contain}
+.detailConversation .compose{
+  position:relative;z-index:2;margin-top:auto;flex:0 0 auto;
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(76px,max-content);
+  align-items:center;column-gap:8px;row-gap:5px;
+  padding:9px 11px;background:#fffdfb;
+}
+.detailConversation .compose textarea{
+  grid-column:1;grid-row:1;min-width:0;width:100%;height:46px;min-height:46px;
+  max-height:110px;resize:none;padding:11px 12px;font:400 16px/1.35 system-ui,sans-serif;
+}
+.detailConversation .compose>button:last-of-type{
+  grid-column:2;grid-row:1;justify-self:stretch;align-self:stretch;
+  display:flex;align-items:center;justify-content:center;
+  min-height:46px;min-width:76px;padding:8px 12px;white-space:nowrap;
+}
+.detailConversation .compose small{grid-column:1/-1}
+.composeNotice{
+  position:absolute;z-index:4;bottom:calc(100% + 4px);left:8px;right:8px;
+  max-height:44px;overflow-y:auto;pointer-events:none;
+  margin:0;padding:6px 9px;border:1px solid #e7ddcc;border-radius:9px;
+  background:#fffaf0;color:#755d40;font:600 12px/1.35 system-ui,sans-serif;
+}
+/* The older compact CRM entry is still accessible from My Practice.
+   Keep its Send on the same row, and prevent 13px Safari auto-zoom there too. */
+.panel[data-compact="true"] .compose{margin-top:auto}
+.panel[data-compact="true"] .compose textarea{
+  min-width:0;resize:none;font:400 16px/1.3 system-ui,sans-serif;
+}
+@media(max-width:760px){
+  .panel[data-compact="true"] .compose .repliesToggle{display:none}
+}
+
+
+@media(max-width:760px){
+  .panel .compose textarea{font-size:16px;resize:none}
+}
+
+
+/* Approved Messages 2026-10-31: CRM provider chat uses the same composer
+   geometry and quiet bubbles as order/private chat. No fake media controls. */
+.detailConversation .chatHeader{
+ flex:none;display:flex;align-items:center;justify-content:flex-end;
+ min-height:47px;padding:5px 11px;background:#fdfbf6;
+ border-bottom:1px solid #e8e8df;
+}
+.detailConversation .chatHeader .plainButton{
+ display:inline-flex;justify-content:center;align-items:center;gap:7px;
+ min-height:39px;border-radius:12px;border-color:#d8e8dd;
+ padding:7px 11px;background:#f4f9f3;color:#266b54;
+ font:700 12px/1.2 system-ui,sans-serif;
+}
+.detailConversation .chatHeader .plainButton:focus-visible{
+ outline:3px solid #218567;outline-offset:2px;
+}
+.detailConversation .messages{
+ flex:1 1 0%;min-height:0;max-height:none;
+ background:linear-gradient(175deg,#f8fbf7,#fdfaf5);
+ padding:12px;gap:10px;
+}
+.detailConversation .inbound,.detailConversation .outbound{
+ max-width:min(86%,560px);border-radius:17px;
+ padding:11px 13px;box-shadow:0 2px 10px #3c54370b;
+}
+.detailConversation .inbound{
+ background:#fffefa;border:1px solid #e1eadf;border-bottom-left-radius:5px;
+}
+.detailConversation .outbound{
+ background:#e3f3e7;border:1px solid #d0e9d8;border-bottom-right-radius:5px;
+}
+.detailConversation .messages p{
+ font:500 14px/1.48 system-ui,sans-serif;color:#24483a;
+ overflow-wrap:anywhere;
+}
+.detailConversation .compose{
+ display:grid;grid-template-columns:44px minmax(0,1fr) 46px;
+ column-gap:8px;row-gap:4px;align-items:center;
+ margin-top:auto;padding:8px 10px;
+ background:#fffdf9;border-top:1px solid #e2e9de;
+}
+.detailConversation .salesbotAssistSlot{
+ position:relative;inset-inline-end:auto;right:auto;bottom:auto;
+ grid-column:1;grid-row:1;align-self:center;justify-self:start;z-index:5;
+ pointer-events:auto;
+}
+.detailConversation .compose textarea{
+ grid-column:2;grid-row:1;min-width:0;width:100%;
+ height:46px;min-height:46px;max-height:108px;
+ margin:0;padding:11px 12px;resize:none;
+ border:1px solid #d5e5da;border-radius:13px;
+ background:#fff;color:#234838;font:500 16px/1.3 system-ui,sans-serif;
+}
+.detailConversation .compose>button:last-of-type{
+ display:grid;place-items:center;grid-column:3;grid-row:1;
+ justify-self:stretch;align-self:stretch;
+ min-width:46px;width:46px;min-height:46px;height:46px;
+ padding:0;border-radius:13px;background:#16876b;color:#fff;
+ font-size:0;
+}
+.detailConversation .compose>button:last-of-type svg{width:21px;height:21px}
+.detailConversation .compose>button:disabled{background:#acc9bb;color:#fff;opacity:.7}
+.detailConversation .compose small{grid-column:1/-1}
+@media(max-width:700px){
+ .detailConversation .chatHeader .plainButton{width:43px;min-width:43px;height:43px;padding:0}
+ .detailConversation .readLabel{
+  position:absolute;width:1px;height:1px;overflow:hidden;
+  clip:rect(0,0,0,0);white-space:nowrap;
+ }
+ .detailConversation .compose{grid-template-columns:44px minmax(0,1fr) 46px;gap:7px;padding:8px 9px}
+ .detailConversation .messages{padding:10px}
+}
+@media(max-width:354px){
+ .detailConversation .compose{grid-template-columns:42px minmax(0,1fr) 44px;gap:6px;padding:7px}
+ .detailConversation .compose>button:last-of-type{min-width:44px;width:44px;min-height:44px;height:44px}
+ .detailConversation .inbound,.detailConversation .outbound{max-width:92%}
+}
+
+/* Private mobile CRM chat: the AI assistant belongs inside the input toolbar,
+   never floating over the last client message. It expands inline only on tap. */
+@media(max-width:700px){
+ .detailConversation .chatHeader{min-height:0;padding:3px 10px;border-bottom:1px solid #e9e0d7}
+ .detailConversation .chatHeader .plainButton{
+  min-height:30px;padding:4px 10px;border-radius:999px;
+  font:700 11px/1.25 system-ui,sans-serif
+ }
+ .detailConversation .compose{
+  display:grid;grid-template-columns:36px minmax(0,1fr) minmax(70px,max-content);
+  align-items:center;gap:6px;margin-top:auto;padding:7px 8px
+ }
+ .detailConversation .compose textarea{
+  grid-column:2;grid-row:1;min-width:0;min-height:44px;height:44px;
+  max-height:92px;font-size:16px
+ }
+ .detailConversation .compose>button:last-of-type{
+  grid-column:3;grid-row:1;min-width:70px;min-height:44px;padding:7px 9px
+ }
+ .detailConversation .compose .salesbotAssistSlot{
+  position:relative;inset:auto;bottom:auto;left:auto;right:auto;
+  z-index:3;grid-column:1;grid-row:1;min-width:0;align-self:center
+ }
+ .detailConversation .compose .salesbotAssistSlot button[aria-expanded]{
+  box-sizing:border-box;min-width:36px;width:36px;min-height:44px;height:44px;
+  padding:0;overflow:hidden;font-size:0;border-radius:10px;box-shadow:none;
+  background:#edf6ef;color:#176a54
+ }
+ .detailConversation .compose .salesbotAssistSlot button[aria-expanded]::after{
+  content:"AI";font:750 12px/1 system-ui,sans-serif
+ }
+ .detailConversation .compose:has(.salesbotAssistSlot button[aria-expanded="true"]) .salesbotAssistSlot{
+  grid-column:1/-1;grid-row:2;align-self:stretch
+ }
+ .detailConversation .compose .salesbotAssistSlot [data-salesbot-operator-mode]{
+  display:flex;align-items:flex-start;gap:7px;min-width:0;max-width:100%
+ }
+ .detailConversation .compose .salesbotAssistSlot [role="region"]{
+  position:static;right:auto;bottom:auto;z-index:auto;flex:1;
+  box-sizing:border-box;width:auto;min-width:0;max-width:100%;
+  max-height:min(30dvh,235px);overflow-y:auto;box-shadow:none
+ }
+}
+@media(max-width:700px) and (max-height:550px){
+ .detailConversation .compose .salesbotAssistSlot [role="region"]{max-height:125px}
+}

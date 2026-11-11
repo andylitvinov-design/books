@@ -53,10 +53,14 @@ export function AcademyCourseVideoPlaylist({
   locale,
   courseTitle,
   lessons,
+  introText,
+  compact = false,
 }: {
   locale: PublicLocale;
   courseTitle: string;
   lessons: AcademyOrderedVideoLesson[];
+  introText?: string;
+  compact?: boolean;
 }) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const playerRef = useRef<HTMLDivElement>(null);
@@ -82,7 +86,7 @@ export function AcademyCourseVideoPlaylist({
   return (
     <section
       id="academy-video-lessons"
-      className={styles.root}
+      className={styles.root + (compact ? " " + styles.compact : "")}
       aria-label={courseTitle + " — " + t.allLessons}
       data-academy-course-playlist
       data-video-lesson-count={lessons.length}
@@ -91,7 +95,7 @@ export function AcademyCourseVideoPlaylist({
         <div className={styles.headingText}>
           <p className={styles.eyebrow}><ListVideo aria-hidden="true" size={16} />PsiMaster · {lessons.length} {t.total}</p>
           <h2>{t.heading}</h2>
-          <p className={styles.intro}>{t.intro}</p>
+          <p className={styles.intro}>{introText ?? t.intro}</p>
         </div>
       </header>
 
@@ -133,6 +137,7 @@ export function AcademyCourseVideoPlaylist({
                   onClick={() => choose(lessonIndex)}
                   aria-current={lessonIndex === index ? "step" : undefined}
                   aria-pressed={lessonIndex === index}
+                  aria-label={compact ? lesson.title : undefined}
                   data-academy-video-id={lesson.id}
                   data-source-order={lesson.order}
                 >

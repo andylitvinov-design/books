@@ -68,7 +68,7 @@ async function scenario(locale, surface, fault, visible = true) {
   await verify(bottom, { locale, surface: surface.startsWith('client') ? 'profile' : ['holistic-support','temple-insights'].includes(surface) ? 'temple' : surface, label: pathname });
 }
 for (const locale of ['en', 'ru', 'es']) {
-  for (const surface of ['home', 'energy', 'love', 'business', 'library', 'client', 'client/tests', 'personality-profiles', 'coaching', 'temple-insights', 'holistic-support', 'services/free-situation-review', 'academy', 'pro']) test(locale + '/' + surface + ' exact verifier accepts real JSX destinations, names and active state', () => scenario(locale, surface));
+  for (const surface of ['home', 'energy', 'love', 'business', 'library', 'client', 'client/tests', 'personality-profiles', 'coaching', 'services/alchemy-of-soul', 'services/psychohomeopathy', 'temple-insights', 'holistic-support', 'services/free-situation-review', 'academy', 'pro']) test(locale + '/' + surface + ' exact verifier accepts real JSX destinations, names and active state', () => scenario(locale, surface));
   for (const fault of ['old courses slot', 'old cabinet slot', 'wrong business destination', 'wrong house destination', 'wrong business label', 'wrong house label', 'wrong accessible name', 'missing link', 'extra link', 'wrong order', 'missing active', 'duplicate active', 'wrong active']) {
     test(locale + ' exact mobile verifier rejects ' + fault, () => assert.rejects(scenario(locale, 'client/tests', fault)));
   }

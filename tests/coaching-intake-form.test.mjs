@@ -48,7 +48,7 @@ test('author coaching model: pinned identity, valid multilingual groups, no fabr
 })
 
 test('coaching form is one page, text inputs plus up to eight user questions, no score/lead/autosend', () => {
-  assert.match(form, /COACHING_GROUPS\.map/)
+  assert.match(form, /COACHING_GROUPS\.filter\(group => showMore \|\| privateCopyMode \|\| COACHING_FIELDS\.some/)
   assert.match(form, /COACHING_FIELDS\.filter/)
   assert.match(form, /COACHING_TOPICS\.map/)
   assert.match(form, /draft\.questions\.map/)
@@ -61,12 +61,28 @@ test('coaching form is one page, text inputs plus up to eight user questions, no
   assert.match(form, /continueTo:\s*"coaching-intake"/)
   assert.match(form, /"coaching-intake"/)
   assert.match(form, /consent:\s*true/)
+  assert.match(form, /privateCopyRequested = new URLSearchParams/)
+  assert.match(form, /setPrivateCopyMode\(privateCopyRequested\)/)
+  assert.match(form, /privateMode: true, draft/)
   assert.match(form, /confirm\(t\.deleteConfirm\)/)
   assert.doesNotMatch(form, /fetch\(["']https?:\/\/|gtag\(|dataLayer\.push|whatsappEnquiryUrl|telegramEnquiryUrl|sendMessage|trackEvent/)
   assert.doesNotMatch(form, /autoPlay|autoplay|SpeechRecognition|recordAudio/)
   assert.match(form, /copyFailed/)
   assert.match(form, /accountConflict/)
   for (const locale of ['en', 'ru', 'es']) assert.match(form, new RegExp('^  ' + locale + ': \\{', 'm'))
+})
+
+test('public CRM questionnaire survives unrelated account sign-out', () => {
+  // Only the explicit ?private=1 personal-copy flow has an account session
+  // to invalidate. A broadcast from another tab must not erase guest answers.
+  const start = form.indexOf('const onSignOut = (event: MessageEvent) => {')
+  const end = form.indexOf('let channel: BroadcastChannel', start)
+  assert.ok(start >= 0 && end > start)
+  const handler = form.slice(start, end)
+  assert.match(handler, /if \(privateCopyRequested && event\.data === "signed-out"\)/)
+  assert.doesNotMatch(handler, /if \(event\.data === "signed-out"\)/)
+  assert.match(handler, /setDraft\(blank\(\)\)/)
+  assert.match(form, /if \(privateCopyRequested\) appFetch\("coaching-intake"\)/)
 })
 
 test('compact numbered rows: one editable answer per author question without multiple prompts in one field', () => {
@@ -126,7 +142,16 @@ test('API auth, origin, bounded body and OAuth safe redirect to localized coachi
   assert.match(api, /op: 'coaching-intake-save'/)
   assert.match(api, /continueTo === 'coaching-intake'/)
   assert.match(api, /\$\{origin\}\/\$\{locale\}\/coaching\/intake/)
-  assert.match(api, /\['enquiry','coaching-intake'\]/)
+  // Spanish OAuth entry and callback must expose the same finite allowlist,
+  // including the newer verified Telegram Cabinet/course destinations.
+  // Private direct-messages still requires a verified recipient, never an open URL.
+  const spanishContinue = "['enquiry','coaching-intake','practice-preview','direct-messages','video-studio','cabinet','course','tests','my-tests','my-courses','business']";
+  assert.ok(api.includes(spanishContinue+".includes(body.continueTo)"),
+    'Spanish login allows only enumerated first-party destinations');
+  assert.ok(api.includes(spanishContinue+".includes(url.searchParams.get('continue'))"),
+    'Spanish callback matches the same strict allowlist');
+  assert.match(api, /if \(recipientSlug !== null\) \{\s*if \(continueTo !== 'direct-messages'\)/)
+  assert.match(api, /safeEnquiryReturnPath\(returnPath, locale\)/)
   assert.match(api, /'enquiry','coaching-intake'/)
   assert.doesNotMatch(repo, /hh_app_inbox|app\.crm_contacts/)
 })

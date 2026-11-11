@@ -106,3 +106,15 @@ test("encrypted monthly messages enforce participant RLS and neutral in-site del
   assert.match(component,/data-monthly-support-messages/);
   assert.doesNotMatch(service+route+component,/https?:\/\/(?:wa\.me|t\.me)|sendMessage\(|sendSms\(|sendEmail\(|analyticsEvent\(/);
 });
+
+test("offers disclose EUR, confirmed terms before payment and bounded follow-up in all locales",()=>{
+  const offer=read("components/personal-support-landing.tsx");
+  const cart=read("components/commerce/consultation-cart-entry.tsx");
+  const lead=read("components/compact-lead-capture.tsx");
+  for(const phrase of ["Prices are in EUR", "Цены указаны в EUR", "Los precios están en EUR"])assert.ok(cart.includes(phrase),phrase);
+  for(const phrase of ["not unlimited", "не безлимитная", "no es ilimitada"])assert.ok(offer.includes(phrase),phrase);
+  for(const phrase of ["cancellation", "отмены", "cancelación"])assert.ok(cart.includes(phrase)&&offer.includes(phrase),phrase);
+  for(const phrase of ["awaiting a personal reply", "ожидает личного ответа", "pendiente de respuesta personal"])assert.ok(lead.includes(phrase),phrase);
+  assert.equal(MONTHLY_SUPPORT_PRICE_MINOR,20000);
+  assert.equal(MONTHLY_SUPPORT_SLOTS,2);
+});

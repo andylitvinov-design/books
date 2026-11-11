@@ -72,6 +72,12 @@ export function PractitionerCabinet({appRequestsEnabled=false}) {
       items:[
         {href:'/admin/materials',icon:Images,title:t.materials,body:t.materialsText},
         {href:'/admin/materials/courses/reiki-practitioner',icon:Headphones,title:t.reikiAudio,body:t.reikiAudioText},
+        {href:ru?'/ru/live/host':'/en/live/host',icon:Headphones,
+          title:ru?'Аудиоэфир · Live':'Live Audio · Host',
+          body:ru?'Начать настоящий голосовой эфир для слушателей сайта. Без камеры и записи.':'Broadcast microphone audio to site listeners. No camera or recording.'},
+        {href:'/admin/materials/coaching',icon:Headphones,
+         title:ru?'Коучинг · Египетский и Греческий':'Coaching · Egyptian and Greek',
+         body:ru?'Запись с iPhone, приватные аудиофайлы и назначение на слайды курса.':'Record on iPhone, keep audio private and attach approved narration to lessons.'},
         {href:'/admin/videos',icon:Film,title:t.videos,body:t.videosText},
         {href:'/admin/youtube-upload',icon:Film,title:ru?'Загрузить видео в YouTube':'Upload video to YouTube',
           body:ru?'Выберите подтверждённый канал и загрузите видео после проверки.':'Choose an authorized channel and upload after video QA.'},

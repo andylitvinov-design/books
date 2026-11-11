@@ -26,7 +26,7 @@ test('one contact field and no name creates an unverified reply-only registratio
 })
 test('OAuth enquiry continuation cannot redirect to a private page or foreign website',()=>{
   for(const [locale,path] of [
-    ['en','/en/services'],['ru','/ru/academy/reiki/tantra-reiki'],
+    ['en','/en/services'],['ru','/ru/academy/reiki/tantra-reiki'],['en','/en/cart'],['ru','/ru/cart'],['es','/es/cart'],
     ['es','/es/services'],['en','/en/toronto'],['en','/en/explore/business'],
   ])assert.equal(safeEnquiryReturnPath(path,locale),path)
   for(const path of [
@@ -45,10 +45,15 @@ test('Google entry uses existing PKCE and prefill, never silently submits a CRM 
   assert.match(src,/sessionStorage\.setItem\("hh-google-enquiry-return"/)
   assert.match(src,/fetch\("\/api\/app\/auth\/contact-profile"/)
   assert.match(src,/setGoogleReady\(true\)/)
-  assert.match(src,/method === "email" \? email\.trim\(\) : ""/)
-  assert.match(src,/method === "phone" \? cleanedPhone : ""/)
+  // Only legacy compact-phone enquiries are phone-only; cart and fixed Alchemy
+  // booking may use the actual verified Google email with explicit consent.
+  assert.match(src, /const usePhone = \(compactPhone && !bookingSku\) \|\| method === "phone"/)
+  assert.match(src, /email: usePhone \? "" : email\.trim\(\), phone: usePhone \? cleanedPhone : ""/)
+  assert.match(src, /if \(!interactive \|\| busy \|\| saved\) return;/)
   assert.match(src,/contactConsent: consent/)
-  assert.match(src,/<details className=\{styles\.optionalName\}>/)
+  assert.match(src,/<details key=\{resetSignature\} className=\{styles\.optionalName\}>/)
+  assert.match(src,/<summary>\{c\.nameOptional\}<\/summary>/)
+  assert.doesNotMatch(src,/nameOpen|setNameOpen/)
   assert.match(src,/<details className=\{styles\.privacy\}>/)
   assert.doesNotMatch(src,/localStorage|sendBeacon|autoSubmit/)
   assert.match(auth,/safeEnquiryReturnPath\(returnPath, locale\)/)

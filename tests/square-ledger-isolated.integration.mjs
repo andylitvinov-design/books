@@ -12,7 +12,7 @@ const good = process.env.CI === 'true' &&
 if (!good) {
   test('Square migration executes only against synthetic isolated PG17 in CI', { skip: true }, () => {})
 } else {
-  const migration = readFileSync(new URL('../supabase/migrations/20261024185000_hh_square_cart_one_time.sql',import.meta.url),'utf8')
+  const migration = readFileSync(new URL('../supabase/migrations/20261025190309_hh_square_cart_one_time_20261024.sql',import.meta.url),'utf8')
   const a = '123e4567-e89b-42d3-a456-426614174000'
   const b = '123e4567-e89b-42d3-a456-426614174001'
   const c = '123e4567-e89b-42d3-a456-426614174002'
@@ -83,10 +83,18 @@ if (!good) {
       await client.query('SAVEPOINT regressed')
       await assert.rejects(client.query("update app_private.square_service_orders set status='checkout_ready',revision=revision+1 where id=$1",[a]))
       await client.query('ROLLBACK TO SAVEPOINT regressed')
+      // A denied SELECT puts PostgreSQL in the aborted-transaction state.
+      // Keep the expected anonymous-role failure inside its own savepoint,
+      // just like the earlier forbidden write/paid transitions.
+      // No production payment or schema state is changed by this fixture.
       await client.query('RESET ROLE')
+      await client.query('SAVEPOINT anonymous_read')
       await client.query('SET LOCAL ROLE anon')
-      await assert.rejects(client.query("select * from app_private.square_service_orders"))
-      await client.query('RESET ROLE')
+      await assert.rejects(client.query("select * from app_private.square_service_orders"),{
+        code:'42501',
+      })
+      await client.query('ROLLBACK TO SAVEPOINT anonymous_read')
+      assert.notEqual((await client.query('select current_user')).rows[0].current_user,'anon')
     } finally {
       await client.query('ROLLBACK').catch(()=>{})
       await client.end()

@@ -285,9 +285,9 @@
   :root {
     --font-sans: Verdana, Tahoma, Arial, sans-serif;
     --font-serif: "Iowan Old Style", "Baskerville", "Palatino Linotype", serif;
-    --background: 35 41% 89%;
+    --background: 40 69% 95%;
     --foreground: 20 25% 12%;
-    --card: 0 0% 100%;
+    --card: 40 100% 98%;
     --card-foreground: 214 34% 17%;
     --popover: 0 0% 100%;
     --popover-foreground: 214 34% 17%;
@@ -326,7 +326,7 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
-    background: #f3ecdf;
+    background: var(--hh-light-canvas);
   }
 
   ::selection {
@@ -5965,3 +5965,10 @@
  .hh-admin-material-v4-tabs a svg{width:18px;height:18px}
 }
 @media(max-width:350px){.hh-admin-material-v4-tabs a{font-size:9px}}
+
+/* Privacy-first mobile intake: keep first-party statistics DISABLED by default.
+   Defer its optional opt-in prompt only while the contact form is expanded,
+   so it cannot cover the submit button; it reappears after the form closes. */
+@media(max-width:720px){
+ body:has([data-personal-express-enquiry][data-expanded="true"]) [data-first-party-consent]{display:none}
+}

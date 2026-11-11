@@ -146,3 +146,8 @@
 .recovery button,.recovery a{min-height:36px;display:inline-flex;align-items:center;gap:5px;border:0;background:transparent;padding:6px 2px;color:#755039;font:600 12px/1.5 Arial,Helvetica,sans-serif;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 .recovery a svg{width:14px;height:14px}
 .recovery button:focus-visible,.recovery a:focus-visible{outline:2px solid #755039;outline-offset:3px}
+
+
+/* Minimal poster layouts keep author attribution visible and tappable. */
+.minimal :global(.site-video-master-byline){grid-column:1/-1;grid-row:3;margin:3px 0 12px;padding:0 2px;min-width:0}
+.minimal :global(.site-video-master-link){min-height:44px}

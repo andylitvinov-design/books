@@ -2,20 +2,21 @@
 
 import {useEffect} from 'react'
 
-// Keep private Coaching and Academy players inside the iOS Safari *visible*
-// viewport, including the keyboard and changing browser chrome. Never persist
-// viewport measurements or client answers to storage.
+// Match the actually visible iPhone Safari viewport, including toolbars and
+// keyboard changes. The account data stays in its existing encrypted session;
+// never persist viewport measurements, drafts, or client identity here.
 export function useCoachingVisualViewport(rootRef){
   useEffect(()=>{
-    const node=rootRef.current
-    if(!node)return
+    const root=rootRef.current
+    if(!root||typeof window==='undefined')return
     const viewport=window.visualViewport
-    const previousOverflow=document.body.style.overflow
+    const originalOverflow=document.body.style.overflow
     document.body.style.overflow='hidden'
     const update=()=>{
       const height=Math.max(1,Math.round(viewport?.height||window.innerHeight))
-      node.style.setProperty('--coaching-viewport-height',height+'px')
-      node.style.setProperty('--coaching-viewport-top',Math.max(0,Math.round(viewport?.offsetTop||0))+'px')
+      const top=Math.max(0,Math.round(viewport?.offsetTop||0))
+      root.style.setProperty('--coaching-viewport-height',height+'px')
+      root.style.setProperty('--coaching-viewport-top',top+'px')
     }
     update()
     window.addEventListener('resize',update)
@@ -25,9 +26,9 @@ export function useCoachingVisualViewport(rootRef){
       window.removeEventListener('resize',update)
       viewport?.removeEventListener('resize',update)
       viewport?.removeEventListener('scroll',update)
-      node.style.removeProperty('--coaching-viewport-height')
-      node.style.removeProperty('--coaching-viewport-top')
-      document.body.style.overflow=previousOverflow
+      root.style.removeProperty('--coaching-viewport-height')
+      root.style.removeProperty('--coaching-viewport-top')
+      document.body.style.overflow=originalOverflow
     }
   },[rootRef])
 }

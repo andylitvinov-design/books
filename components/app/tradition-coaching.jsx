@@ -5,20 +5,65 @@ import Link from 'next/link'
 import {ArrowRight,Check,ChevronLeft,Download,LockKeyhole,Trash2,X} from 'lucide-react'
 import {appFetch} from '@/lib/app/client-fetch'
 import {traditionCourse} from '@/lib/personal-coaching/traditions'
+import {traditionStages,traditionStageGuide,traditionStageImage,traditionStageSource} from '@/lib/personal-coaching/tradition-visuals'
 import {coachingReportDate,downloadCoachingSessionPdf} from '@/lib/personal-coaching/session-pdf'
-import {coachingGentleGuide,coachingQuickChoicesAllowed,coachingConversationTurn} from '@/lib/personal-coaching/gentle-dialogue'
+import {coachingQuickChoicesAllowed,coachingConversationTurn} from '@/lib/personal-coaching/gentle-dialogue'
 import CoachingQuestionVoice from './coaching-question-voice'
 import {useCoachingVisualViewport} from './use-coaching-visual-viewport'
-import CoachingDialogueTurn from '@/components/coaching-dialogue-turn'
+import TraditionCoachingAudio from './tradition-coaching-audio'
+import CoachingChatThread from '@/components/coaching-chat-thread'
 import {CoachingSessionIntroduction,CoachingSessionTopic} from '@/components/coaching-session-onboarding'
 import {coachingRequestTopicLabel} from '@/lib/coaching/session-onboarding'
 import base from './personal-coaching.module.css'
 import extra from './tradition-coaching.module.css'
 
 const words={
- en:{private:'Private',load:'Loading your course…',loadError:'Could not open the private course.',retry:'Try again',start:'Start this course',again:'Start a new journey',back:'Back',continue:'Save & continue',finish:'Save & finish',save:'Saving…',skip:'Skip this reflection',question:'QUESTION',of:'OF',note:'My own words (optional)',placeholder:'Add a short detail, or dictate it…',noteHelp:'Choose a topic; you can add a few words.',notChosen:'Choose a topic before continuing.',writeAnswer:'Write a few words in your own voice, or skip this optional step.',ownAnswer:'Your answer, in your own words',openPlaceholder:'You can begin with one recent example…',freeHelp:'There is no right answer. Take the time you need.',earlierChoice:'Earlier saved choice',saved:'Saved to My Courses',error:'Could not save. Your answer is still on this screen.',conflict:'Your course changed in another tab. Reload before editing.',unsaved:'This answer has not been saved. Leave without saving?',complete:'Course completed',result:'My personal goal map',action:'The step I chose',history:'Previous sessions',empty:'Not answered',home:'My Courses',delete:'Delete this course history',confirm:'Delete this course and all its saved answers? The other coaching courses are not affected.',privacy:'Your answers are encrypted in your account. Nothing is sent to a practitioner, CRM or messenger.',pace:'One question on each screen · take your time',introNote:'Symbolic self-reflection, not a clinical test or a promise of results.',own:'Your note',review:'Review my answers',pdf:'Download PDF report',pdfError:'PDF export failed. Your saved answers are still available.',date:'Session date',reportNotice:'Your answers are saved in your private account. At the end, you can download a dated PDF report with every question and your answers.'},
- ru:{private:'Личное',load:'Открываем ваш курс…',loadError:'Не удалось открыть личный курс.',retry:'Повторить',start:'Начать курс',again:'Начать курс заново',back:'Назад',continue:'Сохранить и далее',finish:'Сохранить и завершить',save:'Сохраняем…',skip:'Пропустить этот вопрос',question:'ВОПРОС',of:'ИЗ',note:'Своими словами (необязательно)',placeholder:'Добавьте короткое уточнение или продиктуйте…',noteHelp:'Выберите тему; можно добавить пару слов.',notChosen:'Сначала выберите тему.',writeAnswer:'Напишите несколько слов своими словами или пропустите необязательный шаг.',ownAnswer:'Ваш ответ своими словами',openPlaceholder:'Можно начать с одного недавнего примера…',freeHelp:'Здесь нет правильного ответа. Не торопитесь.',earlierChoice:'Сохранённый ранее вариант',saved:'Сохранено в «Моих курсах»',error:'Не удалось сохранить ответ. Он остался на экране.',conflict:'Курс изменился в другой вкладке. Загрузите актуальные ответы.',unsaved:'Этот ответ не сохранён. Выйти без сохранения?',complete:'Курс завершён',result:'Моя карта цели',action:'Мой ближайший шаг',history:'Предыдущие прохождения',empty:'Без ответа',home:'Мои курсы',delete:'Удалить записи этого курса',confirm:'Удалить этот курс и все его ответы? Другие коучинговые курсы сохранятся.',privacy:'Ответы зашифрованы в личном кабинете. Ничего не уходит мастеру, в CRM или мессенджер.',pace:'Один вопрос на экран · в своём темпе',introNote:'Символическая практика самоисследования, не клинический тест и не гарантия результата.',own:'Ваше уточнение',review:'Посмотреть мои ответы',pdf:'Скачать PDF-отчёт',pdfError:'Не удалось сформировать PDF. Ответы по-прежнему сохранены.',date:'Дата сессии',reportNotice:'Ваши ответы будут сохранены в личном кабинете. В конце вы получите PDF-отчёт с датой, всеми вопросами и вашими ответами.'},
- es:{private:'Privado',load:'Abriendo tu curso…',loadError:'No se pudo abrir el curso privado.',retry:'Reintentar',start:'Empezar el curso',again:'Empezar otra vez',back:'Atrás',continue:'Guardar y continuar',finish:'Guardar y terminar',save:'Guardando…',skip:'Omitir esta pregunta',question:'PREGUNTA',of:'DE',note:'En mis palabras (opcional)',placeholder:'Añade una nota o dícala…',noteHelp:'Elige un tema; puedes añadir unas palabras.',notChosen:'Elige un tema para continuar.',writeAnswer:'Escribe unas palabras tuyas o salta este paso opcional.',ownAnswer:'Tu respuesta, con tus propias palabras',openPlaceholder:'Puedes empezar con un ejemplo reciente…',freeHelp:'No hay una respuesta correcta. Tómate tu tiempo.',earlierChoice:'Opción guardada anteriormente',saved:'Guardado en Mis cursos',error:'No se pudo guardar. La respuesta sigue aquí.',conflict:'El curso cambió en otra pestaña. Vuelve a cargar.',unsaved:'Esta respuesta no está guardada. ¿Salir?',complete:'Curso completado',result:'Mi mapa personal de metas',action:'El paso que elegí',history:'Sesiones anteriores',empty:'Sin respuesta',home:'Mis cursos',delete:'Eliminar el historial del curso',confirm:'¿Eliminar este curso y todas sus respuestas? Los otros cursos seguirán intactos.',privacy:'Tus respuestas están cifradas en tu cuenta. No se comparten con coaches, CRM ni mensajería.',pace:'Una pregunta por pantalla · a tu ritmo',introNote:'Práctica simbólica de autorreflexión, no una prueba clínica ni garantía de resultados.',own:'Tu nota',review:'Ver mis respuestas',pdf:'Descargar informe PDF',pdfError:'No se pudo crear el PDF. Tus respuestas siguen guardadas.',date:'Fecha de la sesión',reportNotice:'Tus respuestas se guardan en tu cuenta privada. Al terminar podrás descargar un informe PDF fechado con todas las preguntas y respuestas.'}
+ en:{private:'Private',load:'Loading your course…',loadError:'Could not open the private course.',retry:'Try again',start:'Start this course',again:'Start a new journey',back:'Back',continue:'Save & continue',finish:'Save & finish',save:'Saving…',skip:'Skip this reflection',question:'QUESTION',of:'OF',note:'My own words (optional)',placeholder:'Add a short detail, or dictate it…',noteHelp:'Choose a topic; you can add a few words.',notChosen:'Choose a topic before continuing.',writeAnswer:'Write a few words in your own voice, or skip this optional step.',ownAnswer:'Your answer, in your own words',openPlaceholder:'You can begin with one recent example…',freeHelp:'There is no right answer. Take the time you need.',earlierChoice:'Earlier saved choice',saved:'Saved to My Courses',error:'Could not save. Your answer is still on this screen.',conflict:'Your course changed in another tab. Reload before editing.',unsaved:'This answer has not been saved. Leave without saving?',complete:'Course completed',result:'My personal goal map',action:'The step I chose',history:'Previous sessions',empty:'Not answered',home:'My Courses',delete:'Delete this course history',confirm:'Delete this course and all its saved answers? The other coaching courses are not affected.',privacy:'Your answers are encrypted in your account. Nothing is sent to a practitioner, CRM or messenger.',pace:'One question on each screen · take your time',introNote:'Symbolic self-reflection, not a clinical test or a promise of results.',own:'Your note',review:'Review my answers',pdf:'Download PDF report',pdfError:'PDF export failed. Your saved answers are still available.',date:'Session date',reportNotice:'Tap Save to keep this answer in your private account. At the end, download a PDF with your reflections and answers.'},
+ ru:{private:'Личное',load:'Открываем ваш курс…',loadError:'Не удалось открыть личный курс.',retry:'Повторить',start:'Начать курс',again:'Начать курс заново',back:'Назад',continue:'Сохранить и далее',finish:'Сохранить и завершить',save:'Сохраняем…',skip:'Пропустить этот вопрос',question:'ВОПРОС',of:'ИЗ',note:'Своими словами (необязательно)',placeholder:'Добавьте короткое уточнение или продиктуйте…',noteHelp:'Выберите тему; можно добавить пару слов.',notChosen:'Сначала выберите тему.',writeAnswer:'Напишите несколько слов своими словами или пропустите необязательный шаг.',ownAnswer:'Ваш ответ своими словами',openPlaceholder:'Можно начать с одного недавнего примера…',freeHelp:'Здесь нет правильного ответа. Не торопитесь.',earlierChoice:'Сохранённый ранее вариант',saved:'Сохранено в «Моих курсах»',error:'Не удалось сохранить ответ. Он остался на экране.',conflict:'Курс изменился в другой вкладке. Загрузите актуальные ответы.',unsaved:'Этот ответ не сохранён. Выйти без сохранения?',complete:'Курс завершён',result:'Моя карта цели',action:'Мой ближайший шаг',history:'Предыдущие прохождения',empty:'Без ответа',home:'Мои курсы',delete:'Удалить записи этого курса',confirm:'Удалить этот курс и все его ответы? Другие коучинговые курсы сохранятся.',privacy:'Ответы зашифрованы в личном кабинете. Ничего не уходит мастеру, в CRM или мессенджер.',pace:'Один вопрос на экран · в своём темпе',introNote:'Символическая практика самоисследования, не клинический тест и не гарантия результата.',own:'Ваше уточнение',review:'Посмотреть мои ответы',pdf:'Скачать PDF-отчёт',pdfError:'Не удалось сформировать PDF. Ответы по-прежнему сохранены.',date:'Дата сессии',reportNotice:'Нажмите «Сохранить», чтобы ответ остался в личном кабинете. В конце вы сможете скачать PDF с вашими мыслями и ответами.'},
+ es:{private:'Privado',load:'Abriendo tu curso…',loadError:'No se pudo abrir el curso privado.',retry:'Reintentar',start:'Empezar el curso',again:'Empezar otra vez',back:'Atrás',continue:'Guardar y continuar',finish:'Guardar y terminar',save:'Guardando…',skip:'Omitir esta pregunta',question:'PREGUNTA',of:'DE',note:'En mis palabras (opcional)',placeholder:'Añade una nota o dícala…',noteHelp:'Elige un tema; puedes añadir unas palabras.',notChosen:'Elige un tema para continuar.',writeAnswer:'Escribe unas palabras tuyas o salta este paso opcional.',ownAnswer:'Tu respuesta, con tus propias palabras',openPlaceholder:'Puedes empezar con un ejemplo reciente…',freeHelp:'No hay una respuesta correcta. Tómate tu tiempo.',earlierChoice:'Opción guardada anteriormente',saved:'Guardado en Mis cursos',error:'No se pudo guardar. La respuesta sigue aquí.',conflict:'El curso cambió en otra pestaña. Vuelve a cargar.',unsaved:'Esta respuesta no está guardada. ¿Salir?',complete:'Curso completado',result:'Mi mapa personal de metas',action:'El paso que elegí',history:'Sesiones anteriores',empty:'Sin respuesta',home:'Mis cursos',delete:'Eliminar el historial del curso',confirm:'¿Eliminar este curso y todas sus respuestas? Los otros cursos seguirán intactos.',privacy:'Tus respuestas están cifradas en tu cuenta. No se comparten con coaches, CRM ni mensajería.',pace:'Una pregunta por pantalla · a tu ritmo',introNote:'Práctica simbólica de autorreflexión, no una prueba clínica ni garantía de resultados.',own:'Tu nota',review:'Ver mis respuestas',pdf:'Descargar informe PDF',pdfError:'No se pudo crear el PDF. Tus respuestas siguen guardadas.',date:'Fecha de la sesión',reportNotice:'Pulsa Guardar para conservar tu respuesta en tu cuenta privada. Al final podrás descargar un PDF con tus reflexiones y respuestas.'}
+}
+const visualWords={
+ en:{overview:'The eight levels of your goal',overviewText:'A visual journey. Every stage introduces one symbolic body or principle, then asks a question about the SAME goal. The images show historic art objects as visual metaphors, not literal pictures of the soul.',overviewStep:'The question you will explore',photo:'Artwork & photographer',introStep:'See the eight levels',nextStep:'Choose your goal',reflect:'Consider the level before you answer'},
+ ru:{overview:'Восемь уровней твоей цели',overviewText:'Сначала изучи символические тела или принципы. Затем на каждом экране увидишь историческое изображение, пояснение и вопрос к ОДНОЙ выбранной цели. Изображения — визуальные ассоциации, а не буквальные фотографии души.',overviewStep:'Вопрос для размышления',photo:'Изображение и автор',introStep:'Познакомиться с 8 уровнями',nextStep:'Выбрать цель',reflect:'Сначала почувствуй смысл уровня, затем ответь'},
+ es:{overview:'Los ocho niveles de tu meta',overviewText:'Primero conoce cada cuerpo simbólico o principio. Cada pantalla mostrará una obra histórica, su significado y una pregunta sobre la MISMA meta. Las imágenes son asociaciones, no fotografías literales del alma.',overviewStep:'La pregunta para reflexionar',photo:'Obra y fotógrafo',introStep:'Conocer los ocho niveles',nextStep:'Elegir mi objetivo',reflect:'Comprende este nivel antes de responder'}
+}
+function TraditionStageArt({stage,lang,compact=false,oneScreen=false}){
+ const detailsRef=useRef(null)
+ if(!stage)return null
+ const v=visualWords[lang]
+ const showDetails=compact||oneScreen
+ const infoLabel={en:'About this level',ru:'О смысле уровня',es:'Sobre este nivel'}[lang]
+ const closeLabel={en:'Close',ru:'Закрыть',es:'Cerrar'}[lang]
+ return <figure className={(compact?extra.roadmapCard:extra.stageCard)+(oneScreen?' '+extra.compactStageCard:'')} data-tradition-stage={stage.id}>
+   <div className={extra.stagePhoto}>
+     {/* Intentional ordinary img: Commons thumbnail, no paid Vercel optimization; no answer or referrer is shared. */}
+     {/* eslint-disable-next-line @next/next/no-img-element */}
+     <img src={traditionStageImage(stage)} loading={compact?'lazy':'eager'} decoding="async" referrerPolicy="no-referrer"
+       onError={event=>{event.currentTarget.hidden=true}}
+       alt={stage.title?.[lang]||stage.title?.en} width="120" height="150"/>
+     <span aria-hidden="true" className={extra.stageGlyph}>{stage.symbol}</span>
+   </div>
+   <figcaption className={extra.stageCopy}>
+     <strong>{stage.title?.[lang]||stage.title?.en}</strong>
+     <p>{stage.description?.[lang]||stage.description?.en}</p>
+     {compact&&<small><b>{v.overviewStep}:</b> {stage.focus?.[lang]||stage.focus?.en}</small>}
+     {!showDetails&&<a className={extra.photoCredit} href={traditionStageSource(stage)} target="_blank" rel="noopener noreferrer"
+       referrerPolicy="no-referrer" title={v.photo}>{stage.photo?.credit} · {stage.photo?.license}</a>}
+     {showDetails&&<button type="button" className={extra.stageInfo} onClick={()=>detailsRef.current?.showModal()}>
+       {infoLabel}
+     </button>}
+   </figcaption>
+   {showDetails&&<dialog ref={detailsRef} className={extra.stageDialog} aria-label={stage.title?.[lang]||stage.title?.en}
+     onClick={event=>{if(event.target===detailsRef.current)detailsRef.current?.close()}}>
+     <strong>{stage.title?.[lang]||stage.title?.en}</strong>
+     <p>{stage.description?.[lang]||stage.description?.en}</p>
+     <p>{stage.focus?.[lang]||stage.focus?.en}</p>
+     <a href={traditionStageSource(stage)} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer">
+       {stage.photo?.credit} · {stage.photo?.license}
+     </a>
+     <button type="button" onClick={()=>detailsRef.current?.close()}>{closeLabel}</button>
+   </dialog>}
+ </figure>
 }
 function nextIndex(questions,answers){
  const n=questions.findIndex(q=>!Object.prototype.hasOwnProperty.call(answers||{},q.id))
@@ -34,21 +79,22 @@ export default function TraditionCoaching({locale='en',accountId,template}){
  const def=traditionCourse(template)
  const lang=['ru','es'].includes(locale)?locale:'en'
  const t=words[lang]
+ const v=visualWords[lang]
  const root='/' + (lang==='ru'?'ru':'en') + '/app'
  const home=root+'/course?view=courses'
  const endpoint='tradition-coaching?template='+encodeURIComponent(template||'')
  const [data,setData]=useState(null),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false)
  const [error,setError]=useState(''),[notice,setNotice]=useState('')
  const [index,setIndex]=useState(0),[choice,setChoice]=useState(''),[note,setNote]=useState('')
- const [noteExpanded,setNoteExpanded]=useState(false)
  const [entryStep,setEntryStep]=useState('intro'),[clientTopic,setClientTopic]=useState(''),[topicAdultConfirmed,setTopicAdultConfirmed]=useState(false),[restartRequested,setRestartRequested]=useState(false)
- const busyRef=useRef(false),heading=useRef(null),viewportRef=useRef(null),questionScrollRef=useRef(null)
+ const [checkin,setCheckin]=useState('')
+ const busyRef=useRef(false),heading=useRef(null),viewportRef=useRef(null)
  useCoachingVisualViewport(viewportRef)
  const course=data?.course,session=course?.current
  const questions=data?.questions||[]
  const question=questions[index]
+ const stageGuide=traditionStageGuide(def?.slug,question?.stage)
  const quickChoices=coachingQuickChoicesAllowed(question,index)
- const gentleGuide=coachingGentleGuide(question,index,questions.length,lang)
  const previousQuestion=questions[index-1]
  const conversationTurn=coachingConversationTurn({
   question,previousQuestion,previousAnswer:session?.answers?.[previousQuestion?.id],
@@ -62,9 +108,7 @@ export default function TraditionCoaching({locale='en',accountId,template}){
  const visit=useCallback((position,values,list)=>{
   const next=Math.max(0,Math.min(list.length-1,position))
   const saved=values?.[list[next]?.id]
-  setIndex(next);setChoice(saved?.choiceId||'');setNote(saved?.note||'')
-   setNoteExpanded(Boolean(saved?.note));setError('');setNotice('')
-   if(questionScrollRef.current)questionScrollRef.current.scrollTop=0
+  setIndex(next);setChoice(saved?.choiceId||'');setNote(saved?.note||'');setError('');setNotice('')
  },[])
  const reload=useCallback(async()=>{
   if(!accountId||!def)return
@@ -87,12 +131,7 @@ export default function TraditionCoaching({locale='en',accountId,template}){
   }).catch(()=>{if(active)setError(t.loadError)}).finally(()=>{if(active)setLoading(false)})
   return ()=>{active=false}
  },[accountId,endpoint,visit,t.loadError,def])
- useEffect(()=>{
-   if(!loading&&question&&!completed){
-     if(questionScrollRef.current)questionScrollRef.current.scrollTop=0
-     heading.current?.focus({preventScroll:true})
-   }
- },[index,loading,completed,question])
+ useEffect(()=>{if(!loading&&question&&!completed)heading.current?.focus({preventScroll:true})},[index,loading,completed,question])
  useEffect(()=>{if(!loading&&(!course||restartRequested))heading.current?.focus({preventScroll:true})},[entryStep,loading,course?.current?.id,restartRequested])
  useEffect(()=>{
   if(!dirty)return
@@ -196,18 +235,27 @@ export default function TraditionCoaching({locale='en',accountId,template}){
       {entryStep==='intro'?<CoachingSessionIntroduction locale={lang} headingRef={heading}
         name={def.name[lang]} modelName={def.name[lang]} minutes={def.totalScreens*2}
         questionCount={def.totalScreens} style="reflective" imageSrc={def.art}
-        approach={def.description[lang]} outcome={def.note[lang]}/>
-      :<CoachingSessionTopic locale={lang} headingRef={heading} value={clientTopic}
+        approach={def.description[lang]} outcome={def.note[lang]}
+         checkin={checkin} onCheckinChange={setCheckin}/>
+      :entryStep==='roadmap'?<div className={extra.roadmap} data-tradition-stage-overview>
+        <span className={base.eyebrow}>{def.name[lang]}</span>
+        <h1 ref={heading} tabIndex={-1}>{v.overview}</h1>
+        <p>{v.overviewText}</p>
+        <div className={extra.roadmapList}>
+         {traditionStages(def.slug).map(stage=><TraditionStageArt key={stage.id} stage={stage} lang={lang} compact/>)}
+        </div>
+      </div>
+      :<CoachingSessionTopic locale={lang} checkin={checkin} headingRef={heading} value={clientTopic}
         onChange={value=>{setClientTopic(value);setTopicAdultConfirmed(false)}}
         ageConfirmed={topicAdultConfirmed} onAgeConfirm={setTopicAdultConfirmed}/>}
       {error&&<p role="alert" className={base.error}>{error}</p>}
       <div className={extra.introActions}>
-        {entryStep==='topic'&&<button type="button" className={base.back} disabled={busy} onClick={()=>setEntryStep('intro')}>
+        {entryStep!=='intro'&&<button type="button" className={base.back} disabled={busy} onClick={()=>setEntryStep(entryStep==='topic'?'roadmap':'intro')}>
           <ChevronLeft size={17}/>{t.back}</button>}
         <button type="button" className={base.primary}
           disabled={busy||(entryStep==='topic'&&(!clientTopic||(clientTopic==='sexuality'&&!topicAdultConfirmed)))}
-          onClick={()=>entryStep==='intro'?setEntryStep('topic'):(error&&!data?reload():start())}>
-          {busy?t.save:entryStep==='intro'?{en:'Continue coaching session',ru:'Продолжить коучинг-сессию',es:'Continuar la sesión de coaching'}[lang]
+          onClick={()=>entryStep==='intro'?setEntryStep('roadmap'):entryStep==='roadmap'?setEntryStep('topic'):(error&&!data?reload():start())}>
+          {busy?t.save:entryStep==='intro'?v.introStep:entryStep==='roadmap'?v.nextStep
             :error&&!data?t.retry:{en:'Continue to questions',ru:'Перейти к вопросам',es:'Ir a las preguntas'}[lang]}
           <ArrowRight size={18}/>
         </button>
@@ -239,12 +287,12 @@ export default function TraditionCoaching({locale='en',accountId,template}){
       <p className={base.privacyNote}>{t.privacy}</p>
       <button type="button" className={base.primary} data-coaching-download-pdf disabled={busy} onClick={()=>downloadReport(session)}><Download size={18}/>{t.pdf}</button>
       {error&&<p role="alert" className={base.error}>{error}</p>}
-      <button type="button" className={base.primary} disabled={busy} onClick={()=>{setEntryStep('intro');setClientTopic('');setTopicAdultConfirmed(false);setRestartRequested(true)}}>{t.again}<ArrowRight size={18}/></button>
+      <button type="button" className={base.primary} disabled={busy} onClick={()=>{setEntryStep('intro');setCheckin('');setClientTopic('');setTopicAdultConfirmed(false);setRestartRequested(true)}}>{t.again}<ArrowRight size={18}/></button>
       <Link className={base.secondary} href={home}>{t.home}</Link>
       <button type="button" className={base.delete} disabled={busy} onClick={erase}><Trash2 size={16}/>{t.delete}</button>
       <small className={base.disclaimer}>{t.introNote}</small>
     </div>
-    :question?<div className={base.session+' '+extra.courseSession} data-tradition-one-question data-tradition-question={question.id}>
+    :question?<div className={base.session+' '+extra.courseSession} data-tradition-one-question data-coaching-one-viewport data-tradition-question={question.id}>
       <div className={base.progressHeader}>
         <span className={base.eyebrow}>{def.name[lang]}</span>
         <strong>{t.question} {index+1} {t.of} {questions.length}</strong>
@@ -253,19 +301,17 @@ export default function TraditionCoaching({locale='en',accountId,template}){
         aria-valuemin={0} aria-valuemax={questions.length} aria-valuenow={index+1}>
         <span style={{width:((index+1)/questions.length*100)+'%'}}/>
       </div>
-      <div ref={questionScrollRef} className={base.questionArea+' '+extra.courseScroll}>
+      <div className={base.questionArea+' '+extra.courseScroll}>
         <span className={base.stage}>{question.title?.[lang]||question.title?.en||question.stage}</span>
-        {gentleGuide&&<div data-tradition-gentle-guide><CoachingDialogueTurn turn={conversationTurn}/></div>}
-        <div className={extra.questionHeader}>
-         <h1 ref={heading} tabIndex={-1}>{question.question?.[lang]}</h1>
+        <TraditionStageArt stage={stageGuide} lang={lang} oneScreen/>
+        <div data-tradition-gentle-guide>
+          <CoachingChatThread turn={conversationTurn} locale={lang} compact>
+            <div className={extra.questionHeader}>
+              <h1 ref={heading} tabIndex={-1}>{question.question?.[lang]}</h1>
+            </div>
+          </CoachingChatThread>
         </div>
-        <CoachingQuestionVoice key={question.id} text={[conversationTurn?.speech,question.question?.[lang]||''].filter(Boolean).join(' ')}
-           locale={lang} disabled={busy} onTranscript={value=>{
-             setNote(old=>((old?old+' ':'')+value).slice(0,500))
-             setNoteExpanded(true)
-             if(!quickChoices)setChoice('')
-             setNotice('');setError('')
-           }}/>
+        <TraditionCoachingAudio template={template} question={question.id} locale={lang} accountId={accountId}/>
         {quickChoices&&<p className={extra.hint}>{question.hint?.[lang]||''}</p>}
         {quickChoices&&<div className={extra.choices} role="radiogroup" aria-label={question.question?.[lang]} onKeyDown={onChoiceKeyDown}>
           {question.choices?.map((option,optionIndex)=><button type="button" role="radio" key={option.id}
@@ -277,29 +323,39 @@ export default function TraditionCoaching({locale='en',accountId,template}){
             {option.label?.[lang]||option.label?.en}</button>)}
         </div>}
         {!quickChoices&&choice&&<p className={extra.legacyChoice}>{t.earlierChoice}: {selectedText(question,{choiceId:choice,note:''},lang,t.empty)}</p>}
-        {quickChoices&&<button type="button" className={extra.noteToggle}
-          aria-controls="tradition-coaching-note-section" aria-expanded={noteExpanded}
-          disabled={busy} onClick={()=>setNoteExpanded(value=>!value)}>
-          {t.note}<span aria-hidden="true">{noteExpanded?'−':'+'}</span>
-        </button>}
-        <div id="tradition-coaching-note-section" className={extra.noteSection} hidden={quickChoices&&!noteExpanded}>
-          <label className={base.answerLabel} htmlFor="tradition-coaching-note">{quickChoices?t.note:t.ownAnswer}</label>
-          <textarea id="tradition-coaching-note" className={extra.note} value={note}
-            data-tradition-open-reflection={!quickChoices?'true':undefined}
-            disabled={busy} maxLength={500} rows={quickChoices?2:4}
-            placeholder={quickChoices?t.placeholder:t.openPlaceholder}
-            onChange={e=>{setNote(e.target.value);if(!quickChoices)setChoice('');setError('');setNotice('')}}/>
-          <small className={extra.noteTip}>{quickChoices?t.noteHelp:t.freeHelp}</small>
-        </div>
-        <small className={extra.noteTip} data-coaching-save-report-notice>{t.reportNotice}</small>
-        {notice&&<p role="status" className={base.notice}><Check size={15}/>{notice}</p>}
-        {error&&<p role="alert" className={base.error}>{error}</p>}
       </div>
-      <footer className={base.footer}>
+      <footer className={base.footer} data-coaching-messenger-footer>
+        {notice&&<p role="status" className={base.footerMessage}><Check size={15}/>{notice}</p>}
+        {error&&<p role="alert" className={base.footerMessage}>{error}</p>}
+         <div className={base.chatComposer+' '+extra.chatComposer} data-coaching-composer>
+           <label className={base.answerLabel} htmlFor="tradition-coaching-note">{quickChoices?t.note:t.ownAnswer}</label>
+           <textarea id="tradition-coaching-note" className={base.textarea+' '+extra.note}
+             value={note} aria-describedby="tradition-coaching-report-note"
+             data-tradition-open-reflection={!quickChoices?'true':undefined}
+             disabled={busy} maxLength={500} rows={2}
+             placeholder={quickChoices?t.placeholder:t.openPlaceholder}
+             onChange={e=>{setNote(e.target.value);if(!quickChoices)setChoice('');setError('');setNotice('')}}/>
+           <div className={base.composerTools}>
+             <CoachingQuestionVoice key={question.id} text={[conversationTurn?.speech,question.question?.[lang]||''].filter(Boolean).join(' ')}
+               locale={lang} compact disabled={busy} onTranscript={value=>{
+                 setNote(old=>((old?old+' ':'')+value).slice(0,500))
+                 if(!quickChoices)setChoice('')
+                 setNotice('');setError('')
+               }}/>
+             <small className={base.draftCount}>{note.length}/500</small>
+           </div>
+           <details className={base.reportDetails}>
+             <summary>{lang==='ru'?'Сохранение и PDF':lang==='es'?'Guardado y PDF':'Saving & PDF'}</summary>
+             <div className={base.reportPop}>
+<small className={extra.noteTip}>{quickChoices?t.noteHelp:t.freeHelp}</small>
+             <small className={extra.noteTip} id="tradition-coaching-report-note" data-coaching-save-report-notice>{t.reportNotice}</small>
+             </div>
+           </details>
+         </div>
         <div className={base.footerActions}>
           <button type="button" className={base.back} disabled={busy||index===0} onClick={backward}><ChevronLeft size={18}/>{t.back}</button>
           <button type="button" className={base.primary} disabled={busy} onClick={()=>advance(false)}>
-            {busy?t.save:index===questions.length-1?t.finish:t.continue}<ArrowRight size={18}/>
+            {busy?t.save:index===questions.length-1?t.finish:(lang==='ru'?'Отправить и далее':lang==='es'?'Enviar y seguir':'Send & continue')}<ArrowRight size={18}/>
           </button>
         </div>
         {!question.required&&<button type="button" className={base.skip} disabled={busy} onClick={()=>advance(true)}>{t.skip}</button>}

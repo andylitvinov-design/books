@@ -37,7 +37,7 @@ test('publishes paired localized About routes with complete, Ontario-safe editor
   assert.ok(existsSync(new URL('../public/images/holistic-house/andy-about.png', import.meta.url)))
 })
 
-test('shares all public destinations with six mobile shortcuts and no administration', async () => {
+test('shares all public destinations with seven mobile shortcuts and no administration', async () => {
   const { getCompactNavigation, getSiteNavigation, primaryNavigationIds } = await import('../lib/site-navigation-model.js')
   assert.deepEqual(primaryNavigationIds, ['home', 'energy', 'love', 'business', 'library', 'events', 'courses', 'pro', 'temple', 'cabinet'])
   for (const locale of ['en', 'ru', 'es']) {
@@ -48,7 +48,7 @@ test('shares all public destinations with six mobile shortcuts and no administra
     assert.equal(items.find((item) => item.id === 'events').href, `/${locale}/events`)
     assert.equal(items.find((item) => item.id === 'business').href, `/${locale}/explore/business`)
     assert.equal(items.find((item) => item.id === 'temple').href, `/${locale}/holistic-support`)
-    assert.equal(getCompactNavigation(locale).length, 6)
+    assert.equal(getCompactNavigation(locale).length, 7)
     assert.equal(items.find((item) => item.id === 'cabinet').href, `/${locale}/client`)
     assert.ok(!getCompactNavigation(locale).some((item) => item.id === 'business'))
   }
@@ -67,8 +67,9 @@ test('About reviews stay on Holistic House with genuine local posters and intern
   const aboutCopy = source('../data/about-biography.ts')
   const spanishCopy = source('../data/about-es.ts')
   for (const page of [enRuPage, esPage]) {
-    assert.match(page, /PersonalTestimonials/)
-    assert.match(page, /variant="about"/)
+    assert.match(page, /AboutTestimonialGallery/)
+    assert.match(page, /primaryVideos=/)
+    assert.match(page, /otherLanguageVideos=/)
     assert.doesNotMatch(page, /psimaster\.net|about-review-archive|archiveCards|archiveImage|target="_blank"/)
     assert.match(page, /internalOnly/)
   }

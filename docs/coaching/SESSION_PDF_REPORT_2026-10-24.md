@@ -5,7 +5,7 @@
 ## User-facing wording
 - Signed-in Personal Coaching and Egyptian/Greek Planning: after each editable response, explain that **submitted** answers are saved to the private account and a PDF report becomes downloadable on completion.
 - Guest Coaching Lounge: never claim account persistence. Explain that notes exist in the current browser tab only and the user must download a PDF before leaving.
-- EN/RU/ES versions are authored separately. Controls remain within the single-question mobile layout, with the PDF action on the completed summary (and in completed history for account courses).
+- EN/RU/ES wording is authored separately. A compact, screen-reader-associated save/PDF hint accompanies **every editable answer** (including optional free-text, authored follow-up and the final action plan). Private hints say save-on-submit; guest hints disclose tab-only state. Controls stay within the mobile question composer; PDF is downloadable on completed summary (and private history).
 
 ## Contents / source of truth
 - A4, dated report; Holistic House / Academy branding and method/title.
@@ -24,7 +24,7 @@
 - **Known limitation:** pages contain legible bitmap text and are not searchable/selectable or tagged for screen readers. A future reviewed Unicode-font PDF implementation could improve PDF accessibility without introducing a provider. Current interactive in-app summary remains readable/searchable to assistive tech.
 
 ## Test plan and release gates
-1. `node --test tests/coaching-session-pdf.test.mjs`: PDF signature, xref offsets, page count, i18n text painting, long-answer page breaks, dates, download MIME, UI copy and private/guest distinction.
+1. `node --test tests/coaching-session-pdf.test.mjs`: PDF signature, xref offsets, page count, i18n text painting, long-answer page breaks, dates, download MIME, associated hints beside every editable answer/follow-up/plan, UI copy and private/guest distinction.
 2. `npm run test:coaching:release`, lint, `tsc --noEmit`, Next.js build.
 3. Inspect PR against current actual production branch; merge only after focused tests or explicitly report unavailable CI.
 4. Verify Vercel READY deployment has exact merge SHA and canonical `https://holistichouse.vercel.app` aliases.

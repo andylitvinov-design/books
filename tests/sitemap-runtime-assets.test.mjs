@@ -42,3 +42,23 @@ test("sitemap isolates optional remedy loader errors from core URLs", () => {
   assert.match(sitemap, /const spanishRemedyPaths = await loadSpanishRemedyPaths\(\)/);
   assert.match(sitemap, /console\.error\("\[sitemap\]/);
 });
+
+test("production PR sitemap trace reuses mandatory Core build instead of an independent build", () => {
+  const workflow=read(".github/workflows/hh-sitemap-runtime-assets.yml");
+  const core=read(".github/workflows/hh-pr-core-release.yml");
+  const gate="if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  assert.ok(workflow.includes("- name: Check Next.js production trace\n        " + gate + "\n        run: |"),
+    "Sitemap source-only PRs must avoid a duplicate production build");
+  for(const evidence of [
+    "node --test tests/sitemap-runtime-assets.test.mjs",
+    "npm run build",
+    ".next/server/app/sitemap.xml/route.js.nft.json",
+    "data/spanish-remedies.json",
+    "content/remedies/"
+  ]) assert.ok(workflow.includes(evidence),"Sitemap manual trace or source check lost: "+evidence);
+  assert.ok(workflow.includes("  workflow_dispatch:"),"Full manual trace must remain available");
+  assert.ok(core.includes("name: Exact proposed release production build and TypeScript check"),
+    "Core must provide the production PR Next build");
+  assert.ok(core.includes("run: npm run build"),"Core cannot skip build on product changes");
+  assert.doesNotMatch(workflow,/continue-on-error:\s*true/);
+});

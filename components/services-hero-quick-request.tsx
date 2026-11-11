@@ -2,10 +2,15 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowRight, CheckCircle2, X } from "lucide-react";
+import { EnquiryAttributionChoice } from "@/components/enquiry-attribution-choice";
 import type { PublicLocale } from "@/lib/public-locales";
 import { RECEIPT_SESSION_KEY } from "@/lib/practitioners/enquiry-receipt.mjs";
 import styles from "./services-conversion-hero.module.css";
+import {MandatoryMessengerActions} from "@/components/mandatory-messenger-actions";
+import {websiteMessengerOnlyUi} from "@/lib/crm/website-messenger-only.mjs";
+import {whatsappEnquiryUrl} from "@/lib/whatsapp-enquiry";
 
 type MeetingMode = "online" | "toronto";
 
@@ -93,6 +98,7 @@ export function ServicesHeroQuickRequest({
   locale, service, mode, onClose,
 }: { locale: PublicLocale; service: string; mode: MeetingMode; onClose: () => void }) {
   const t = copy[locale];
+  const router = useRouter();
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
   const [consent, setConsent] = useState(false);
@@ -141,6 +147,7 @@ export function ServicesHeroQuickRequest({
       try {
         window.sessionStorage.setItem(RECEIPT_SESSION_KEY,
           JSON.stringify({ referenceCode: result.referenceCode, createdAt: Date.now() }));
+        router.push("/" + locale + "/thank-you");
       } catch { /* A blocked sessionStorage must not undo a server-confirmed enquiry. */ }
     } catch {
       setError(t.error);
@@ -149,6 +156,7 @@ export function ServicesHeroQuickRequest({
     }
   }
 
+  if (websiteMessengerOnlyUi()) return <div data-services-quick-request><button type="button" className={styles.requestClose} onClick={onClose} aria-label={t.close}><X size={20} aria-hidden="true"/></button><MandatoryMessengerActions locale={locale} label={service} whatsappUrl={whatsappEnquiryUrl({locale,service,request:mode==="toronto"?t.modeToronto:t.modeOnline,pagePath:"/"+locale+"/services"})}/></div>;
   return (
     <div ref={panelRef} tabIndex={-1} className={styles.requestPanel} data-services-quick-request role="group" aria-label={t.eyebrow}>
       <button type="button" className={styles.requestClose} onClick={onClose} aria-label={t.close}>
@@ -182,6 +190,7 @@ export function ServicesHeroQuickRequest({
             <input type="checkbox" checked={consent} required onChange={event => { setConsent(event.target.checked); operationId.current = null; setError(""); }} />
             <span>{t.consent}</span>
           </label>
+          <EnquiryAttributionChoice locale={locale} disabled={sending} />
           <button type="submit" disabled={!consent || sending} className={styles.requestSubmit}>
             {sending ? t.sending : t.submit}<ArrowRight size={17} aria-hidden="true" />
           </button>

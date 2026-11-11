@@ -15,7 +15,7 @@ const photos = {
   "allTests": "/images/holistic-house/ideas-pine-reference.webp",
   "profile": "/images/holistic-house/report-lighthouse-coast.webp",
   "growth": "/images/holistic-house/course-focus-mountain-boy.webp",
-  "review": "/images/holistic-house/andy-about.png",
+  "review": "/images/holistic-house/portrait-static/andy-640-25ce838f1a6e.webp",
   "businessConstellations": "/images/holistic-house/video-posters/constellations-en-v1.webp",
   "constellations": "/images/holistic-house/hero-olive-incense.webp",
   "aiCoaching": "/images/holistic-house/course-start-heron.webp",
@@ -24,7 +24,7 @@ const photos = {
   "energy": "/images/holistic-house/reiki-approved-sunrise-v3.webp",
   "pro": "/images/holistic-house/reiki-approved-sunrise-v3.webp",
   "service": "/images/holistic-house/portrait-static/andy-828-3dcbabded1e9.webp",
-  "course": "/images/holistic-house/andy-about.png"
+  "course": "/images/holistic-house/portrait-static/andy-640-25ce838f1a6e.webp"
 } as const;
 type OfferId = keyof typeof photos;
 // Only explicitly no-cost offerings receive the red corner mark.
@@ -606,6 +606,64 @@ const compactActions = {
   }
 } as const;
 
+// Small per-offer editorial labels match the established photo-card design across languages.
+const cardEyebrows = {
+  "en": {
+    "reiki": "REIKI · 5 LESSONS",
+    "opora": "OPORA · 14 DAYS",
+    "academy": "COURSE DIRECTORY",
+    "allTests": "FREE SELF-TESTS",
+    "profile": "PERSONALITY PROFILE",
+    "growth": "DEVELOPMENT PATH",
+    "review": "PERSONAL SITUATION REVIEW",
+    "businessConstellations": "BUSINESS CONSTELLATION",
+    "constellations": "FAMILY & RELATIONSHIPS",
+    "aiCoaching": "SELF-GUIDED COACHING",
+    "therapist": "PERSONAL CONSULTATION",
+    "alchemy": "DEEP INNER WORK",
+    "energy": "PERSONAL ENERGY SUPPORT",
+    "pro": "PROFESSIONAL STUDY",
+    "service": "PRACTITIONER SERVICES",
+    "course": "COURSE CREATION"
+  },
+  "ru": {
+    "reiki": "РЕЙКИ · 5 УРОКОВ",
+    "opora": "ОПОРА · 14 ДНЕЙ",
+    "academy": "КАТАЛОГ КУРСОВ",
+    "allTests": "БЕСПЛАТНЫЕ ТЕСТЫ",
+    "profile": "ПРОФИЛЬ ЛИЧНОСТИ",
+    "growth": "ПУТЬ РАЗВИТИЯ",
+    "review": "ЛИЧНЫЙ РАЗБОР СИТУАЦИИ",
+    "businessConstellations": "БИЗНЕС-РАССТАНОВКА",
+    "constellations": "СЕМЬЯ И ОТНОШЕНИЯ",
+    "aiCoaching": "САМОСТОЯТЕЛЬНЫЙ КОУЧИНГ",
+    "therapist": "ЛИЧНАЯ КОНСУЛЬТАЦИЯ",
+    "alchemy": "ГЛУБИННАЯ РАБОТА",
+    "energy": "ЭНЕРГЕТИЧЕСКАЯ ПОДДЕРЖКА",
+    "pro": "ОБУЧЕНИЕ МАСТЕРОВ",
+    "service": "УСЛУГИ МАСТЕРА",
+    "course": "СОЗДАНИЕ КУРСА"
+  },
+  "es": {
+    "reiki": "REIKI · 5 LECCIONES",
+    "opora": "OPORA · 14 DÍAS",
+    "academy": "CATÁLOGO DE CURSOS",
+    "allTests": "PRUEBAS GRATUITAS",
+    "profile": "PERFIL PERSONAL",
+    "growth": "PLAN DE DESARROLLO",
+    "review": "ANÁLISIS PERSONAL",
+    "businessConstellations": "CONSTELACIÓN EMPRESARIAL",
+    "constellations": "FAMILIA Y RELACIONES",
+    "aiCoaching": "COACHING AUTOGUIADO",
+    "therapist": "CONSULTA PERSONAL",
+    "alchemy": "TRABAJO INTERIOR",
+    "energy": "APOYO ENERGÉTICO",
+    "pro": "FORMACIÓN PROFESIONAL",
+    "service": "SERVICIOS PROFESIONALES",
+    "course": "CREACIÓN DE CURSOS"
+  }
+} as const;
+
 export function HomeFeaturedWorkspace({ locale }: { locale: PublicLocale }) {
   const [expandedOffer, setExpandedOffer] = useState<OfferId | null>(null);
   const t = copy[locale];
@@ -699,6 +757,7 @@ export function HomeFeaturedWorkspace({ locale }: { locale: PublicLocale }) {
                       </span>
                       <div className={styles.offerContent}>
                         <div className={styles.offerBody}>
+                          <span className={styles.offerMeta}>{cardEyebrows[locale][offer.id]}</span>
                           <h3 className={styles.offerTitle}>{offer.title}</h3>
                           <p className={styles.offerDetail}>{offer.body}</p>
                         </div>

@@ -1,0 +1,138 @@
+name: HH Owner Telegram Photo Audio Video
+
+on:
+  pull_request:
+    branches: [codex/public-book-library]
+    paths:
+      - ".github/workflows/hh-owner-telegram-video.yml"
+      - "app/admin/youtube-upload/page.js"
+      - "app/api/admin/heygen-youtube/**"
+      - "components/heygen-en-youtube-publisher.jsx"
+      - "lib/youtube/heygen-en-*"
+      - "tests/heygen-en-youtube.test.mjs"
+      - "app/admin/materials/page.js"
+      - "app/api/internal/housekeeping/route.js"
+      - "components/admin-telegram-videos.jsx"
+      - "components/admin-youtube-publications.jsx"
+      - "components/app/practice-youtube-share.jsx"
+      - "components/app/practice-video-field.jsx"
+      - "components/app/service-introduction-editor.jsx"
+      - "lib/youtube/owner-publication-service.js"
+      - "lib/youtube/upload-history-store.js"
+      - "app/api/admin/youtube-publications/**"
+      - "app/api/app/practice/youtube/share/**"
+      - "supabase/migrations/20261028154000_hh_owner_youtube_publication_queue.sql"
+      - "supabase/migrations/20261028162000_hh_owner_youtube_consent_policy_fix.sql"
+      - "supabase/migrations/20261028164500_hh_owner_youtube_moderator_review_only.sql"
+      - "supabase/migrations/20261028165500_hh_owner_youtube_creator_row_scope.sql"
+      - "tests/youtube-owner-publications.test.mjs"
+      - "app/api/admin/telegram-video/**"
+      - "app/api/app/crm/messenger/webhook/**"
+      - "app/api/app/notification-channels/telegram/webhook/**"
+      - "lib/app/client-telegram-transport.js"
+      - "lib/practitioners/owner-ai-telegram.mjs"
+      - "lib/practitioners/owner-telegram-audio-model.mjs"
+      - "lib/practitioners/owner-telegram-video-*"
+      - "lib/practitioners/owner-telegram-story-render.mjs"
+      - "lib/practitioners/owner-telegram-story-rights.mjs"
+      - "lib/mandala/dot-story-*"
+      - "tests/dot-story-*.test.mjs"
+      - "tests/owner-telegram-youtube-metadata.test.mjs"
+      - "tests/owner-telegram-video.test.mjs"
+      - "tests/owner-telegram-youtube-visibility.test.mjs"
+      - "tests/owner-telegram-track-pause.test.mjs"
+      - "lib/practitioners/owner-telegram-track-pause.mjs"
+      - "tests/owner-telegram-video-cut-recovery.test.mjs"
+      - "tests/telegram-story-*.test.mjs"
+      - "scripts/openverse-video-sfx.mjs"
+      - "tests/openverse-video-sfx.test.mjs"
+      - "scripts/propose-openverse-video-sfx.mjs"
+      - "tests/propose-openverse-video-sfx.test.mjs"
+      - "docs/videos/OPENVERSE_SFX_20261026.md"
+      - "tests/owner-telegram-audio-combine.test.mjs"
+      - "supabase/migrations/20261026175000_hh_owner_telegram_photo_audio_video.sql"
+      - "supabase/migrations/20261027020000_hh_owner_video_final_only_cabinet.sql"
+      - "supabase/migrations/20261028003500_hh_owner_video_trim_before_youtube.sql"
+      - "scripts/verify-telegram-owner-video-media.mjs"
+      - "next.config.ts"
+      - "package.json"
+      - "package-lock.json"
+  push:
+    branches: [codex/public-book-library]
+    paths:
+      - "app/api/admin/heygen-youtube/**"
+      - "components/heygen-en-youtube-publisher.jsx"
+      - "lib/youtube/heygen-en-*"
+      - "tests/heygen-en-youtube.test.mjs"
+      - "tests/owner-telegram-video-cut-recovery.test.mjs"
+      - "lib/practitioners/owner-telegram-video-*"
+      - "lib/practitioners/owner-telegram-story-render.mjs"
+      - "lib/practitioners/owner-telegram-story-rights.mjs"
+      - "lib/mandala/dot-story-*"
+      - "tests/dot-story-*.test.mjs"
+      - "tests/owner-telegram-youtube-metadata.test.mjs"
+      - "scripts/openverse-video-sfx.mjs"
+      - "tests/openverse-video-sfx.test.mjs"
+      - "scripts/propose-openverse-video-sfx.mjs"
+      - "tests/propose-openverse-video-sfx.test.mjs"
+      - "app/api/admin/telegram-video/**"
+      - "app/api/internal/housekeeping/route.js"
+      - "lib/youtube/owner-publication-service.js"
+      - "lib/youtube/upload-history-store.js"
+      - "app/api/admin/youtube-publications/**"
+      - "app/api/app/practice/youtube/share/**"
+      - "supabase/migrations/20261028154000_hh_owner_youtube_publication_queue.sql"
+      - "supabase/migrations/20261028162000_hh_owner_youtube_consent_policy_fix.sql"
+      - "supabase/migrations/20261028164500_hh_owner_youtube_moderator_review_only.sql"
+      - "supabase/migrations/20261028165500_hh_owner_youtube_creator_row_scope.sql"
+      - "tests/youtube-owner-publications.test.mjs"
+      - "tests/owner-telegram-youtube-visibility.test.mjs"
+      - ".github/workflows/hh-owner-telegram-video.yml"
+permissions:
+  contents: read
+concurrency:
+  # Obsolete PR heads may cancel; each production PUSH/manual run remains independent.
+  group: hh-owner-telegram-video-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
+
+jobs:
+  owner-video:
+    # Ubuntu-latest migrated to Ubuntu 26.04 (Nov 2026): the FFprobe apt
+    # prerequisite hung through the entire 25-minute job limit on #3606.
+    # Keep the standard, free GitHub-hosted 24.04 runner and ALL real media QA.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Stage checksum-verified FFmpeg before npm lifecycle
+        uses: ./.github/actions/ci-ffmpeg-static
+      - run: npm ci --no-audit --no-fund
+      - name: Materialize checksum-verified FFmpeg for package runtime
+        uses: ./.github/actions/ci-ffmpeg-static
+        with:
+          stage: materialize
+      - name: Install FFmpeg and FFprobe on the existing runner for real media acceptance
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
+          ffmpeg -version >/dev/null
+          ffprobe -version >/dev/null
+      - name: Telegram and audio regression tests
+        run: node --test tests/owner-telegram-youtube-visibility.test.mjs tests/owner-telegram-youtube-metadata.test.mjs tests/youtube-owner-publications.test.mjs tests/owner-telegram-video.test.mjs tests/heygen-en-youtube.test.mjs tests/owner-telegram-video-cut-recovery.test.mjs tests/dot-story-cut-plan.test.mjs tests/dot-story-ffmpeg-args.test.mjs tests/dot-story-render-runtime.test.mjs tests/dot-story-ffmpeg-integration.test.mjs tests/dot-story-compact-mux.test.mjs tests/telegram-story-picker.test.mjs tests/telegram-story-plots.test.mjs tests/owner-telegram-audio-combine.test.mjs tests/owner-telegram-track-pause.test.mjs tests/practitioner-owner-ai-telegram.test.mjs tests/openverse-video-sfx.test.mjs tests/propose-openverse-video-sfx.test.mjs
+      - name: Real 1080p MP4 with H264 AAC via ffmpeg-static
+        run: node scripts/verify-telegram-owner-video-media.mjs
+      - name: JS lint for touched files
+        run: npx eslint lib/app/client-telegram-transport.js lib/practitioners/owner-ai-telegram.mjs lib/practitioners/owner-telegram-audio-model.mjs app/api/app/notification-channels/telegram/webhook/route.js lib/practitioners/owner-telegram-video-* lib/practitioners/owner-telegram-story-render.mjs lib/practitioners/owner-telegram-story-rights.mjs lib/practitioners/owner-telegram-video-metadata-service.js lib/mandala/dot-story-*.mjs lib/mandala/telegram-story-*.mjs app/api/admin/telegram-video/youtube/start/route.js app/api/admin/telegram-video/youtube/callback/route.js app/api/admin/telegram-video/drafts/route.js "app/api/admin/telegram-video/drafts/[id]/file/route.js" "app/api/app/crm/messenger/webhook/[provider]/route.js" app/admin/youtube-upload/page.js app/admin/materials/page.js app/api/internal/housekeeping/route.js app/api/admin/youtube-publications/route.js "app/api/admin/youtube-publications/[id]/preview/route.js" app/api/app/practice/youtube/share/route.js lib/youtube/owner-publication-service.js lib/youtube/upload-history-store.js components/admin-youtube-publications.jsx components/app/practice-youtube-share.jsx components/app/practice-video-field.jsx components/app/service-introduction-editor.jsx components/admin-telegram-videos.jsx components/heygen-en-youtube-publisher.jsx app/api/admin/heygen-youtube/route.js lib/youtube/heygen-en-service.js lib/youtube/heygen-en-upload.mjs tests/heygen-en-youtube.test.mjs tests/youtube-owner-publications.test.mjs tests/owner-telegram-youtube-visibility.test.mjs tests/owner-telegram-video.test.mjs scripts/openverse-video-sfx.mjs tests/openverse-video-sfx.test.mjs scripts/propose-openverse-video-sfx.mjs tests/propose-openverse-video-sfx.test.mjs
+      - name: TypeScript
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
+        run: npx tsc --noEmit --incremental false
+      - name: Next production build
+        run: npm run build
+      - name: Verify shipped FFmpeg in owner Dot webhook function trace
+        run: node scripts/ensure-owner-video-renderer.mjs --verify-trace

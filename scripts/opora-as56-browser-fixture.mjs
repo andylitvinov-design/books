@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url'
 export const oporaFixtureOrigin = 'http://127.0.0.1:3100'
 export const oporaFixturePrefix = '/__hh-test__/opora-as56/'
 export const oporaFixtureBundlePath = oporaFixturePrefix + 'fixture.js'
-const fixturePerformanceBudget = Object.freeze({ hints: 'warning', maxAssetSize: 804 * 1024, maxEntrypointSize: 804 * 1024 })
+const fixturePerformanceBudget = Object.freeze({ hints: 'warning', maxAssetSize: 1200 * 1024, maxEntrypointSize: 1200 * 1024 })
 function assertFixtureCompilation(stats) {
   if (stats.hasErrors() || stats.hasWarnings()) throw new Error(stats.toString({ all: false, errors: true, warnings: true }))
 }
@@ -74,8 +74,10 @@ export async function buildOporaBrowserFixture({ projectRoot = projectDirectory 
       output: { path: directory, filename: 'fixture.js' },
       devtool: false,
       cache: false,
-      // This isolated Playwright harness bundles development dependencies that are
-      // not shipped in the production app. Keep an ~800 KiB unminified fixture budget.
+      // This standalone Playwright fixture includes unminified React, all three
+      // languages and the AS-5.8/5.9 historical plus AS-6.0 14×5 teaching scripts.
+      // It is NOT a production Next.js client chunk. Bound the fixture at 1.2 MiB;
+      // production performance requires separate Vercel bundle review.
       // Next's compiled Webpack cannot access its own Terser plugin here.
       optimization: { minimize: false },
       performance: fixturePerformanceBudget,

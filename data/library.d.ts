@@ -10,7 +10,7 @@ export type Book = {
   cover: string;
   sourceSeries: string;
   category: string;
-  mediaSeries: "alchemy" | "dao" | "maya";
+  mediaSeries: "alchemy" | "dao" | "maya" | "egypt" | "greek" | "roman" | "zoroastrian";
   originalSourceFile: string;
   status: string;
   tags: string[];

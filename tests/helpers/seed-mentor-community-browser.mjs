@@ -79,6 +79,26 @@ try {
   service = await practice.moderateService(service.id, { action: "approve" });
   assert.equal(service.status, "published");
 
+  // A second approved public *course offering*, distinct from private course slides,
+  // verifies that the mentor directory offers meaningful course/type filters.
+  let training = await practice.saveService(masterActor, null, {
+    draft: {
+      copy: {
+        en: { title: "Synthetic reflection course", shortDescription: "Educational exercises", description: "Test-only reflection course" },
+        ru: { title: "Тестовый курс рефлексии", shortDescription: "Учебные упражнения", description: "Синтетический курс рефлексии" },
+        es: { title: "Curso de reflexión sintético", shortDescription: "Ejercicios educativos", description: "Curso de prueba" },
+      },
+      areaKey: "personal_development", offeringType: "course",
+      deliveryFormat: "online", locationLabel: "",
+      languages: ["en", "ru", "es"], pricingMode: "contact",
+      confirmedPrice: null, currency: "", durationMinutes: null,
+      imagePath: "", displayLocales: ["en", "ru", "es"],
+    },
+  });
+  training = await practice.submitService(masterActor, training.id, { expectedRevision: training.revision });
+  training = await practice.moderateService(training.id, { action: "approve" });
+  assert.equal(training.status, "published");
+
   for (const item of articleData) {
     const draft = {
       locale: item.locale,

@@ -15,6 +15,7 @@ const TEXT={
   notReady:'Webhook is not yet verified.',notConfigured:'Add the missing keys, then redeploy.',
   error:'Setup check failed. Verify your signed-in owner account and Vercel configuration.',
   sendingOff:'Automatic client messaging is OFF until a controlled pilot is approved.',
+  pilotOn:'Owner-only alerts for real new requests: pilot enabled; delivery from a real enquiry remains unverified.',pilotOff:'Owner-only real-request alerts are off.',
   sendingOn:'Automatic client messaging is enabled. Review the pilot and consent controls.',
   loading:'Checking setup…',otherWebhook:'This bot already uses another webhook. No changes made.',ownerPair:'Verify the owner’s saved private Telegram pairing first.',reuse:'Using your existing verified practice bot; no new BotFather token or username is needed.',reuseHelp:'The owner chat remains paired. Webhook setup refuses to overwrite another app’s callback.',bot:'Bot:',
   test:'Send one test to my Telegram',testAccepted:'Telegram accepted the test request. Check your chat; delivery and reading are not confirmed.',
@@ -33,6 +34,7 @@ const TEXT={
   notReady:'Webhook пока не подтверждён.',notConfigured:'Добавьте недостающие переменные и обновите deployment.',
   error:'Проверка не удалась. Проверьте вход владельца и переменные Vercel.',
   sendingOff:'Автоматические сообщения клиентам ВЫКЛЮЧЕНЫ до подтверждённого теста.',
+  pilotOn:'Оповещение владельца о настоящих новых заявках: пилот включён; доставка реальной заявки ещё не проверена.',pilotOff:'Оповещения владельцу о новых заявках выключены.',
   sendingOn:'Автоматические сообщения клиентам включены. Проверьте согласия и результаты пилота.',
   loading:'Проверяем подключение…',otherWebhook:'У бота уже есть webhook другого приложения. Ничего не изменено.',ownerPair:'Сначала подтвердите сохранённую привязку мастера к Telegram.',reuse:'Используем уже настроенного бота мастера. Новый BotFather-токен и имя бота не нужны.',reuseHelp:'Привязка мастера сохранена. Подключение откажется заменять webhook другого приложения.',bot:'Бот:',
   test:'Отправить тест себе в Telegram',testAccepted:'Telegram принял тест. Проверьте чат; доставка и прочтение не подтверждаются.',
@@ -51,6 +53,7 @@ const TEXT={
   notReady:'Webhook todavía no verificado.',notConfigured:'Añade las variables y vuelve a desplegar.',
   error:'No se pudo verificar. Comprueba tu sesión de propietario y Vercel.',
   sendingOff:'Mensajes automáticos DESACTIVADOS hasta aprobar la prueba.',
+  pilotOn:'Avisos al propietario por solicitudes reales: piloto activado; entrega aún sin verificar.',pilotOff:'Avisos al propietario por solicitudes reales desactivados.',
   sendingOn:'Mensajes automáticos activados. Revisa el consentimiento y las pruebas.',
   loading:'Comprobando conexión…',otherWebhook:'Este bot utiliza otro webhook. No se cambió nada.',ownerPair:'Verifica primero la vinculación privada del profesional.',reuse:'Se utiliza el bot de práctica ya verificado; no hace falta otro token de BotFather.',reuseHelp:'Se conserva la vinculación del profesional y nunca se sobrescribe otro webhook.',bot:'Bot:',
   test:'Enviar una prueba a mi Telegram',testAccepted:'Telegram aceptó la prueba. Comprueba el chat; no se confirma la entrega ni la lectura.',
@@ -162,6 +165,7 @@ export default function CustomerTelegramBotSetup({locale='en',accountId}){
     <li key={key}><code>{key}</code></li>)}</ul>}
    <p role="status">{state.webhookVerified?t.ready:t.notReady}</p>
    <p>{state.sendingEnabled?t.sendingOn:t.sendingOff}</p>
+   <p role="status">{state.ownerPilotEnabled?t.pilotOn:t.pilotOff}</p>
    {state.configured&&<p>{state.ownerLinked
      ?t.testHelp
      :<><span>{t.testNotLinked}</span>{' '}

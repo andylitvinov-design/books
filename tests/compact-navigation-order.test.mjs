@@ -3,25 +3,31 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { activeCompactNavigationId, compactNavigationIds, getCompactNavigation, getSiteNavigation, navigationCopy } from '../lib/site-navigation-model.js'
 const read = path => readFileSync(new URL('../'+path,import.meta.url),'utf8')
-const order = ['home','analysis','courses','profile','coaching','pro','temple']
+const order = ['home','analysis','courses','profile','alchemy','pro','temple']
 test('seven accessible public tabs lead to distinct routes in EN/RU/ES', () => {
   assert.deepEqual(compactNavigationIds, order)
-  const routes = {analysis:'services/free-situation-review',courses:'academy',profile:'personality-profiles',coaching:'coaching',pro:'pro',temple:'holistic-support'}
+  const routes = {analysis:'services/free-situation-review',courses:'academy',profile:'app/portrait',alchemy:'services/alchemy-of-soul',pro:'pro',temple:'holistic-support'}
   for (const locale of ['en','ru','es']) {
     const items = getCompactNavigation(locale)
     assert.deepEqual(items.map(x=>x.id), order)
     assert.equal(new Set(items.map(x=>x.href)).size,7)
     assert.equal(items[0].href, locale==='en'?'/':'/'+locale)
-    for (const item of items.slice(1)) assert.equal(item.href, '/'+locale+'/'+routes[item.id])
+    for (const item of items.slice(1)) assert.equal(item.href,
+      '/' + (locale === 'es' && item.id === 'profile' ? 'en' : locale) + '/' + routes[item.id])
     for (const item of items) {
       assert.equal(item.label, navigationCopy[locale][item.id])
       assert.equal(item.ariaLabel,item.label)
       assert.equal(item.external,false)
     }
     assert.equal(activeCompactNavigationId('/'+locale+'/personality-profiles'),'profile')
+    if (locale !== 'es') assert.equal(activeCompactNavigationId('/'+locale+'/app/portrait'),'profile')
     assert.equal(activeCompactNavigationId('/'+locale+'/client/tests'),'profile')
     assert.equal(activeCompactNavigationId('/'+locale+'/tests'),'profile')
-    assert.equal(activeCompactNavigationId('/'+locale+'/coaching'),'coaching')
+    assert.equal(activeCompactNavigationId('/'+locale+'/coaching'),undefined)
+    assert.equal(activeCompactNavigationId('/'+locale+'/services/alchemy-of-soul'),'alchemy')
+    assert.equal(activeCompactNavigationId('/'+locale+'/services/psychohomeopathy'),'alchemy')
+    assert.equal(items.find(item=>item.id==='alchemy')?.label, {en:'Psychic Alchemy',ru:'Алхимия души',es:'Alquimia del Alma'}[locale])
+    assert.ok(!items.some(item=>item.id==='coaching'))
     assert.equal(activeCompactNavigationId('/'+locale+'/services/free-situation-review'),'analysis')
     assert.equal(activeCompactNavigationId('/'+locale+'/academy'),'courses')
     assert.equal(activeCompactNavigationId('/'+locale+'/temple-insights'),'temple')
@@ -39,7 +45,8 @@ test('bottom bar and hamburger share model, private menu remains separate', () =
   const bottom=read('components/mobile-bottom-navigation.tsx')
   const header=read('components/site-navigation.tsx')
   const icons=read('components/compact-navigation-icons.ts')
-  for (const key of ['analysis','courses','profile','coaching','pro','temple']) assert.match(icons,new RegExp(key+': '))
+  for (const key of ['analysis','courses','profile','alchemy','pro','temple']) assert.match(icons,new RegExp(key+': '))
+  assert.match(icons,/alchemy: FlaskConical/)
   assert.ok(bottom.includes('const mobileItems = getCompactNavigation(locale)'))
   assert.ok(bottom.includes('aria-label={item.ariaLabel}'))
   assert.ok(header.includes('const mainMenuItems = getCompactNavigation(activeLocale)'))
@@ -56,8 +63,8 @@ test('My Profile guest tests and separate support journeys are all localized and
   const locales=read('lib/public-locales.ts'), sitemap=read('app/sitemap.ts')
   assert.ok(builder.includes('data-personality-profile-builder'))
   assert.ok(builder.includes('data-profile-direct-tests'))
-  assert.ok(builder.includes("locale + '/tests'"))
-  assert.ok(builder.includes('data-profile-start-tests'))
+  assert.ok(builder.includes("locale + '/client/tests'"))
+  assert.ok(builder.includes('data-profile-google-signin'))
   assert.ok(builder.includes('/app/portfolio#hh-development-program'))
   for (const section of ['temple-insights','holistic-support']) {
     const page=read('app/[locale]/'+section+'/page.tsx')
@@ -71,6 +78,12 @@ test('My Profile guest tests and separate support journeys are all localized and
     assert.doesNotMatch(page,/createLead\(|checkout\(|localStorage|sessionStorage/)
   }
   assert.ok(read('app/[locale]/temple-insights/page.tsx').includes('<IdeasDiscovery locale={language} variant="temple"'))
-  assert.ok(read('app/[locale]/holistic-support/page.tsx').includes('/services/remote-energy-support'))
-  assert.ok(read('app/[locale]/holistic-support/page.tsx').includes('/services/alchemy-of-soul'))
+  const supportHub=read('app/[locale]/holistic-support/page.tsx')
+  const supportChoices=read('components/holistic-support-choices.tsx')
+  assert.ok(supportHub.includes('<HolisticSupportChoices locale={locale} />'),
+    'public support hub renders the existing reviewed choices')
+  assert.ok(supportChoices.includes('/services/remote-energy-support'),
+    'personal remote energy support remains an explicit choice')
+  assert.ok(read('lib/site-navigation-model.js').includes("alchemy: 'services/alchemy-of-soul'"),
+    'the separate Psychic Alchemy journey remains navigable')
 })

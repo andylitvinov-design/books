@@ -9,7 +9,10 @@ test('Legacy Energy / Love / Business categories remain available in More but no
   for (const locale of ['en', 'ru', 'es']) {
     const primary = getSiteNavigation(locale)
     const bottom = getCompactNavigation(locale)
-    assert.deepEqual(bottom.map(item => item.id), ['home','analysis','courses','profile','coaching','pro','temple'])
+    assert.deepEqual(bottom.map(item => item.id), ['home','analysis','courses','profile','alchemy','pro','temple'])
+    assert.equal(bottom.find(item => item.id === 'alchemy')?.href, '/' + locale + '/services/alchemy-of-soul')
+    assert.equal(activeCompactNavigationId('/' + locale + '/services/alchemy-of-soul'), 'alchemy')
+    assert.ok(!bottom.some(item => item.id === 'coaching'), 'The old Coaching bottom tab must not return')
     for (const [id, slug] of [['energy','energy'],['love','love'],['business','business']]) {
       assert.equal(primary.find(item => item.id === id).href, '/' + locale + '/explore/' + slug)
       assert.ok(!bottom.some(item => item.id === id), 'Topic remains outside fixed bottom bar')
@@ -39,12 +42,17 @@ test('Public discovery reuses photo assets and existing catalog routes', async (
   assert.ok(route.includes("theme === 'relationships') redirect"))
   assert.ok(route.includes('<DirectionExtras'))
   assert.ok(route.includes('<TopicJourneySelector'))
-  assert.ok(home.includes("direction.id === 'relationships' ? 'love'"))
+  assert.ok(home.includes("{ id: 'love-relationships', route: 'love'"), 'Keep canonical love category with legacy SEO route')
+  assert.ok(home.includes("{ id: 'goals-money', route: 'business'"), 'Keep canonical money category with legacy SEO route')
   assert.ok(spanish.includes('<HomeMoreDisclosure locale="es" />'))
   assert.ok(!more.includes('<HomepageTopicJourneys locale='))
-  assert.ok(more.includes('data-home-topic-filter="energy"'))
-  assert.ok(more.includes('data-home-topic-filter="business"'))
-  assert.ok(site.includes("id: 'services'"))
+  assert.ok(more.includes('data-home-topic-filter={category.id}'), 'Filter cards use the canonical category IDs')
+  assert.ok(more.includes('"energy-confidence": "energy"'), 'Legacy energy landing route stays reachable')
+  assert.ok(more.includes('"goals-money": "business"'), 'Legacy business landing route stays reachable')
+  assert.ok(site.includes("id: 'my-coach'"), 'My Coach stays in the site menu')
+   assert.ok(site.includes('data-nav-item="services"'), 'Services remains directly reachable in the site menu')
+   const dock = await readFile('lib/unified-mobile-dock.mjs', 'utf8')
+   assert.ok(dock.includes('case "services": return prefix+"/services"'), 'Services remains directly accessible in the mobile dock')
   // The old hard-coded Academy nav item was replaced by the canonical
   // Courses item; it still resolves to the Academy catalog.
   const model = await readFile('lib/site-navigation-model.js', 'utf8')

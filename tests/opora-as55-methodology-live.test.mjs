@@ -74,7 +74,7 @@ test('V7 only for new AS2; V6/V5/V3 old lesson ids and slide orders never migrat
   for(const locale of ['ru','en','es']){
     const data=antiStressBlueprint(locale)
     assert.equal(data.days.length,14)
-    assert.ok(data.days.every(d=>d.screens.length===15&&d.methodVersion==='AS-5.9'))
+    assert.ok(data.days.every(d=>d.screens.length===15&&d.methodVersion==='AS-6.0'))
   }
 })
 

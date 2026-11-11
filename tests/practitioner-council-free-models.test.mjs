@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {
   GEMINI_MODEL,GEMINI_FREE_FALLBACK_MODEL,MISTRAL_DIRECT_MODEL,MISTRAL_STUDIO_ALIAS,modelSettings,freeMistral,chooseFreeMistral,publicReviewPrompt,
-  reviewGemini,reviewMistral,inspectMistralStudioKey,reviewDailyCouncil,composeDailyCouncilTelegram
+  reviewGemini,reviewMistral,inspectMistralStudioKey,freeOpenRouterModel,chooseFreeOpenRouterModel,inspectOpenRouterFreeAccess,reviewOpenRouterFree,reviewDailyCouncil,composeDailyCouncilTelegram
 } from '../lib/practitioners/council-free-models.mjs'
 import {pickPublicCouncilReports,readCouncilEvidence} from '../lib/practitioners/council-telegram-archive.mjs'
 
@@ -89,10 +89,42 @@ test('Gemini Free Tier retries an explicit 503 once on stable free 3.6 only',asy
   assert.equal(result.status,'ok')
   assert.equal(result.model,GEMINI_FREE_FALLBACK_MODEL)
 })
-test('Gemini never retries 400, 403, 429, incomplete, or ambiguous timeout',async()=>{
+test('Gemini one safe Free Tier fallback on explicit 404/429; no paid or unknown retry',async()=>{
   const env={HH_COUNCIL_GEMINI_API_KEY:'synthetic',
     HH_COUNCIL_GEMINI_FREE_TIER_CONFIRMED:'true'}
-  for(const http of [400,403,429]){
+  for(const code of [404,429]){
+    const paths=[]
+    const result=await reviewGemini(report,env,async url=>{
+      paths.push(String(url))
+      if(paths.length===1)return json({},code)
+      return json({candidates:[{finishReason:'STOP',
+        content:{parts:[{text:long}]}}]})
+    },{retryDelayMs:0})
+    assert.equal(result.status,'ok')
+    assert.equal(result.model,GEMINI_FREE_FALLBACK_MODEL)
+    assert.deepEqual(paths.map(x=>x.match(/models\/(.*?):generateContent/)[1]),[
+      GEMINI_MODEL,GEMINI_FREE_FALLBACK_MODEL
+    ])
+  }
+})
+test('Gemini synthesis asks for JSON and keeps chat timeout independent from daily job',async()=>{
+  const env={HH_COUNCIL_GEMINI_API_KEY:'synthetic',
+    HH_COUNCIL_GEMINI_FREE_TIER_CONFIRMED:'true'}
+  const result=await reviewGemini(null,env,async(url,opt)=>{
+    const request=JSON.parse(opt.body)
+    assert.equal(request.generationConfig.responseMimeType,'application/json')
+    assert.equal(request.generationConfig.thinkingConfig.thinkingLevel,'low')
+    assert.ok(request.generationConfig.maxOutputTokens>=3000)
+    return json({candidates:[{finishReason:'STOP',content:{
+      parts:[{text:'{"answer":"Это тест проверяемого формата JSON"}'}]
+    }}]})
+  },{chat:true,prompt:'Составь JSON',synthesis:true})
+  assert.equal(result.status,'ok')
+})
+test('Gemini never retries 400, 403, incomplete, or ambiguous timeout',async()=>{
+  const env={HH_COUNCIL_GEMINI_API_KEY:'synthetic',
+    HH_COUNCIL_GEMINI_FREE_TIER_CONFIRMED:'true'}
+  for(const http of [400,403]){
     let attempts=0
     const r=await reviewGemini(report,env,async()=>{
       attempts++
@@ -383,8 +415,8 @@ test('Studio inference timeout or truncated output must not trigger a second pro
 test('Gemini daily audit uses bounded free-first output and no retry on timeout',async()=>{
   const source=readFileSync(new URL('../lib/practitioners/council-free-models.mjs',import.meta.url),'utf8')
   assert.match(source,/const MAX_INPUT=11500/)
-  assert.match(source,/maxOutputTokens:options\.chat===true\?1600:2700/)
-  assert.match(source,/AbortSignal\.timeout\(26000\)/)
+  assert.match(source,/maxOutputTokens:chat\?\(options\.synthesis===true\?3200:2000\):2700/)
+  assert.match(source,/AbortSignal\.timeout\(chat\?35000:26000\)/)
   const env={HH_COUNCIL_GEMINI_API_KEY:'synthetic-key',
     HH_COUNCIL_GEMINI_FREE_TIER_CONFIRMED:'true'}
   let count=0
@@ -398,4 +430,173 @@ test('Gemini daily audit uses bounded free-first output and no retry on timeout'
   })
   assert.equal(reply.status,'ok')
   assert.equal(count,1)
+})
+
+test('Studio GET 429 safely checks OpenRouter for independently verified $0 Mistral',async()=>{
+  const direct='https://api.mistral.ai/v1/models'
+  const router='https://openrouter.ai/api/v1/'
+  const free='mistralai/mistral-nemo:free'
+  const seen=[]
+  const env={
+    HH_COUNCIL_MISTRAL_API_KEY:'synthetic-studio-key',
+    HH_COUNCIL_MISTRAL_FREE_MODE_CONFIRMED:'true',
+    HH_COUNCIL_OPENROUTER_API_KEY:'synthetic-router-key'
+  }
+  const reply=await reviewMistral(report,env,async(url,options)=>{
+    seen.push(String(url))
+    if(url===direct){
+      assert.equal(options.method,'GET')
+      return json({},429)
+    }
+    if(url===router+'models'){
+      assert.equal(options.method,'GET')
+      return json({data:[
+        {id:'mistralai/mistral-small-2603',pricing:{prompt:'0.0000001',completion:'0.0000002'}},
+        {id:free,pricing:{prompt:'0',completion:'0',request:'0',image:'0'}}
+      ]})
+    }
+    assert.equal(url,router+'chat/completions')
+    const payload=JSON.parse(options.body)
+    assert.equal(payload.model,free)
+    assert.equal(payload.provider.allow_fallbacks,false)
+    assert.deepEqual(payload.provider.max_price,{prompt:0,completion:0,request:0,image:0})
+    return json({model:free,usage:{cost:0},
+      choices:[{finish_reason:'stop',message:{content:long}}]})
+  })
+  assert.equal(reply.status,'ok')
+  assert.equal(reply.model,free)
+  assert.deepEqual(seen,[direct,router+'models',router+'chat/completions'])
+})
+
+test('Studio GET 429 with no zero-price Mistral reports rejection, never pays or fabricates',async()=>{
+  const seen=[]
+  const env={
+    HH_COUNCIL_MISTRAL_API_KEY:'synthetic-studio-key',
+    HH_COUNCIL_MISTRAL_FREE_MODE_CONFIRMED:'true',
+    HH_COUNCIL_OPENROUTER_API_KEY:'synthetic-router-key'
+  }
+  const result=await reviewMistral(report,env,async(url,options)=>{
+    seen.push([String(url),options.method])
+    if(String(url)==='https://api.mistral.ai/v1/models')return json({},429)
+    assert.equal(String(url),'https://openrouter.ai/api/v1/models')
+    return json({data:[
+      {id:'mistralai/mistral-small-2603',pricing:{prompt:'0.0000001',completion:'0.0000002'}},
+      {id:'mistralai/mistral-nemo:free',pricing:{prompt:'0',completion:'0.000001'}}
+    ]})
+  })
+  assert.equal(result.status,'error')
+  assert.equal(result.reason,'HTTP 429')
+  assert.equal(result.phase,'preflight')
+  assert.equal(result.text,'')
+  assert.deepEqual(seen,[
+    ['https://api.mistral.ai/v1/models','GET'],
+    ['https://openrouter.ai/api/v1/models','GET']
+  ])
+})
+
+test('Studio POST 429 cannot trigger fallback or a second provider inference',async()=>{
+  const seen=[]
+  const env={
+    HH_COUNCIL_MISTRAL_API_KEY:'synthetic-studio-key',
+    HH_COUNCIL_MISTRAL_FREE_MODE_CONFIRMED:'true',
+    HH_COUNCIL_OPENROUTER_API_KEY:'synthetic-router-key'
+  }
+  const result=await reviewMistral(report,env,async(url,options)=>{
+    seen.push([String(url),options.method])
+    if(String(url)==='https://api.mistral.ai/v1/models')
+      return json({data:[{id:MISTRAL_DIRECT_MODEL}]})
+    assert.equal(String(url),'https://api.mistral.ai/v1/chat/completions')
+    return json({},429)
+  })
+  assert.equal(result.status,'error')
+  assert.equal(result.reason,'HTTP 429')
+  assert.notEqual(result.phase,'preflight')
+  assert.deepEqual(seen,[
+    ['https://api.mistral.ai/v1/models','GET'],
+    ['https://api.mistral.ai/v1/chat/completions','POST']
+  ])
+})
+
+test('current OpenRouter Free choice enforces exact zero pricing, text and explicit provider ID',()=>{
+  const valid={id:'google/gemma-4-31b-it:free',
+    pricing:{prompt:'0',completion:'0',request:'0'},architecture:{
+      input_modalities:['text'],output_modalities:['text']
+    }}
+  assert.equal(freeOpenRouterModel(valid),true)
+  for(const model of [
+    {...valid,id:'openrouter/free'},
+    {...valid,id:'mistralai/mistral-nemo:free'},
+    {...valid,id:'other/paid'},
+    {...valid,pricing:{prompt:'0',completion:'0.01'}},
+    {...valid,pricing:{prompt:'0',completion:'0',request:null}},
+    {...valid,architecture:{input_modalities:['image'],output_modalities:['text']}}
+  ])assert.equal(freeOpenRouterModel(model),false)
+  assert.equal(chooseFreeOpenRouterModel([{id:'other/paid',pricing:{prompt:'1',completion:'2'}},valid])?.id,valid.id)
+})
+test('OpenRouter Free read-only model listing and zero-cost Telegram inference identify the actual model',async()=>{
+  const env={HH_COUNCIL_OPENROUTER_API_KEY:'synthetic-free-key'}
+  const model='google/gemma-4-31b-it:free'
+  const calls=[]
+  const fetcher=async(url,options)=>{
+    const path=String(url)
+    calls.push({url:path,method:options?.method})
+    if(path.endsWith('/key')){
+      assert.equal(options.headers.Authorization,'Bearer '+env.HH_COUNCIL_OPENROUTER_API_KEY)
+      return json({data:{label:'owner-key'}})
+    }
+    if(path.endsWith('/models'))return json({data:[
+      {id:'other/paid',pricing:{prompt:'0.001',completion:'0.01'}},
+      {id:model,pricing:{prompt:'0',completion:'0'}}
+    ]})
+    const body=JSON.parse(options.body)
+    assert.equal(body.model,model)
+    assert.equal(body.provider.allow_fallbacks,false)
+    assert.deepEqual(body.provider.max_price,{prompt:0,completion:0,request:0,image:0})
+    assert.deepEqual(body.usage,{include:true})
+    assert.match(body.messages[1].content,/Оптимизируй старт/)
+    return json({model,usage:{cost:0},choices:[{
+      finish_reason:'stop',message:{content:'Попробуйте ясный CTA и проверьте реальную отправку заявки.'}
+    }]})
+  }
+  const check=await inspectOpenRouterFreeAccess(env,fetcher)
+  assert.deepEqual({status:check.status,model:check.model},{status:'ready',model})
+  assert.equal(calls.every(call=>call.method==='GET'),true)
+  const result=await reviewOpenRouterFree(null,env,fetcher,{
+    chat:true,prompt:'Оптимизируй старт'
+  })
+  assert.equal(result.status,'ok')
+  assert.equal(result.model,model)
+  assert.equal(calls.filter(x=>x.method==='POST').length,1)
+})
+test('OpenRouter Free refuses paid, unavailable, substituted and billed models',async()=>{
+  const env={HH_COUNCIL_OPENROUTER_API_KEY:'synthetic-free-key'},model='qwen/verified:free'
+  const catalog=async(url,options,response)=>{
+    if(String(url).endsWith('/key'))return json({data:{label:'verified'}})
+    if(String(url).endsWith('/models'))return json({data:[{id:model,pricing:{prompt:'0',completion:'0'}}]})
+    return json(response)
+  }
+  for(const response of [
+    {model:'other/different:free',usage:{cost:0},
+      choices:[{finish_reason:'stop',message:{content:'Wrong model response'}}]},
+    {model,usage:{cost:0.001},
+      choices:[{finish_reason:'stop',message:{content:'Paid response is unacceptable'}}]},
+    {model,usage:{},
+      choices:[{finish_reason:'stop',message:{content:'Unverified price'}}]}
+  ]){
+    const r=await reviewOpenRouterFree(null,env,(url,opt)=>catalog(url,opt,response),{
+      chat:true,prompt:'Какая гипотеза?'
+    })
+    assert.equal(r.status,'error')
+  }
+  let inference=0
+  const r=await reviewOpenRouterFree(null,env,async(url)=>{
+    if(String(url).endsWith('/key'))return json({data:{label:'ok'}})
+    if(String(url).endsWith('/models'))return json({data:[
+      {id:model,pricing:{prompt:'0',completion:'1'}}
+    ]})
+    inference++
+    throw Error('Must not send paid request')
+  },{chat:true,prompt:'Какая гипотеза?'})
+  assert.equal(r.status,'unavailable')
+  assert.equal(inference,0)
 })

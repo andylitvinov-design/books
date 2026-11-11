@@ -1,5 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+// Include 09/12/15 slot and owner-revenue tests in the existing focused Telegram CI.
+import './owner-telegram-daily-schedule.test.mjs'
 import {readFileSync} from 'node:fs'
 import {getTorontoCompletedPeriod,makePracticeDigest} from '../lib/practitioners/daily-digest.mjs'
 import {cronAuthorized} from '../lib/app/housekeeping-cron.js'
@@ -40,12 +42,16 @@ test('zero tracking is caveated and no personal notes leak into digest',()=>{
   assert.doesNotMatch(report.text,/private@x|secret|private client/)
   assert.match(report.text,/Новые заявки: 0/)
 })
-test('bot schedule is daily and independent of the existing housekeeping job',()=>{
+test('bot schedule is independent of housekeeping and consented phone push',()=>{
   const config=JSON.parse(readFileSync(new URL('../vercel.json',import.meta.url),'utf8'))
   assert.deepEqual(config.crons,[
     {path:'/api/internal/housekeeping',schedule:'0 5 * * *'},
-    {path:'/api/internal/practice-telegram-digest',schedule:'0 13 * * *'},
-    {path:'/api/internal/council-archive-telegram',schedule:'0 21 * * *'},
+    {path:'/api/internal/direct-message-push',schedule:'*/5 * * * *'},
+    {path:'/api/internal/revenue-ideas-telegram',schedule:'0 13,14 * * *'},
+    {path:'/api/internal/practice-telegram-digest',schedule:'0 13,14,19,20 * * *'},
+    {path:'/api/internal/council-archive-telegram',schedule:'0 16,17 * * *'},
+    {path:'/api/internal/market-intel-telegram',schedule:'0 18,19 * * *'},
+    {path:'/api/internal/video-scout-hourly',schedule:'17 * * * *'},
   ])
 })
 test('cron owner auth denies anonymous caller and allows only correct CRON_SECRET',()=>{
@@ -108,8 +114,8 @@ test('owner digest counts tracked site CTA clicks without inventing visitors or 
   ],counts:{newApp:0,newPublic:0}})
   assert.match(report.text,/Вчера: 6 \(Заказать 3 · WhatsApp 2 · Telegram 1\)/)
   assert.match(report.text,/За 7 дней: 9 учтённых кликов/)
-  assert.match(report.text,/источники не собираются/)
-  assert.match(report.text,/Всего посещений сайта: нет данных/)
+  assert.match(report.text,/пока нет измеренных агрегированных посещений/)
+  assert.match(report.text,/История до включения нового счётчика не восстановлена/)
   assert.match(report.text,/Учтены только кнопки услуг, не все клики на сайте/)
   assert.doesNotMatch(report.text,/untrusted\.example|fake_campaign|503|500/)
   assert.equal(report.totals.yesterday.orders,3)
@@ -119,6 +125,21 @@ test('owner digest counts tracked site CTA clicks without inventing visitors or 
 test('zero counted CTA clicks are not misreported as zero visits or zero Google traffic',()=>{
   const report=makePracticeDigest({dates,services:[one],daily:[]})
   assert.match(report.text,/Вчера: 0 \(Заказать 0 · WhatsApp 0 · Telegram 0\)/)
-  assert.match(report.text,/откуда пришли \(Google, соцсети, прямые\): нет данных/i)
+  assert.match(report.text,/посадочные страницы и источники: пока нет измеренных агрегированных посещений/i)
   assert.doesNotMatch(report.text,/Google: 0|посещений: 0/)
+})
+
+test('owner digest shows ranked public landing pages and coarse sources, never private URLs',()=>{
+ const report=makePracticeDigest({dates,services:[one],daily:[],pageDaily:[
+  {day:dates.yesterday,pagePath:'/en/services/alchemy-of-soul',source:'google-organic',landings:3,views:4,clicks:2},
+  {day:dates.yesterday,pagePath:'/en/services/alchemy-of-soul',source:'telegram',landings:1,views:2,clicks:1},
+  {day:dates.weekStart,pagePath:'/ru/academy',source:'direct',landings:7,views:11,clicks:4},
+  {day:dates.yesterday,pagePath:'/en/app/private',source:'unknown',landings:999,views:999,clicks:999}
+ ]})
+ assert.match(report.text,/Вчера: просмотры 6 · входы 4 · клики 3/)
+ assert.match(report.text,/За 7 дней: просмотры 17 · входы 11 · клики 7/)
+ assert.match(report.text,/\/en\/services\/alchemy-of-soul/)
+ assert.match(report.text,/Google поиск 3 · Telegram 1/)
+ assert.doesNotMatch(report.text,/\/en\/app\/private|999|\/\?/)
+ assert.ok(report.text.length<=3900)
 })

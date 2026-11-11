@@ -1,3 +1,4 @@
+import "./mentor-master-filters.test.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
@@ -14,6 +15,7 @@ test("community reuses approved public practitioner and article sources", async 
   assert.match(page, /<MarketplaceMasterFinder practitioners=/);
   assert.match(page, /<ArticleDirectory locale=\{locale\} preview articles=/);
   assert.match(page, /<MentorCommunitySwitch/);
+  assert.match(page, /requestedView === "articles" \? "articles" : "mentors"/);
   assert.match(page, /articles\.length > 0/);
   assert.match(articlesRepo, /a\.published<>'\{\}'::jsonb/);
   assert.match(articlesRepo, /p\.status in\('approved','submitted','changes_requested'\)/);
@@ -27,12 +29,13 @@ test("community switch exposes an accessible, keyboard-driven two-panel view", a
     read("components/mentor-community-switch.module.css"),
   ]);
   assert.match(switcher, /role="tablist"/);
+  assert.match(switcher, /initialView \?\? "mentors"/);
   assert.match(switcher, /role="tabpanel"/);
   assert.match(switcher, /aria-selected=\{view === item\}/);
   assert.match(switcher, /hidden=\{view !== "mentors"\}/);
   assert.match(switcher, /hidden=\{view !== "articles"\}/);
   for (const key of ["ArrowRight", "ArrowLeft", "Home", "End"]) assert.ok(switcher.includes(key));
-  for (const value of ["Find a mentor", "Сообщество наставников", "Comunidad de mentores"]) {
+  for (const value of ["Find a Master", "Найти мастера", "Encuentra un profesional"]) {
     assert.ok(switcher.includes(value));
   }
   assert.match(css, /min-height: 44px/);
@@ -85,8 +88,10 @@ test("empty community and server failures provide distinct, usable alternatives 
     read("tests/helpers/seed-mentor-community-browser.mjs"),
     read("scripts/verify-mentor-community-browser.mjs"),
   ]);
-  assert.match(page, /mastersUnavailable=\{mastersResult\.status === "rejected"\}/);
-  assert.match(page, /articlesUnavailable=\{articlesResult\.status === "rejected"\}/);
+  assert.match(page, /mastersUnavailable=\{mastersUnavailable\}/);
+  assert.match(page, /else mastersUnavailable = true/);
+  assert.match(page, /articlesUnavailable=\{articlesUnavailable\}/);
+  assert.match(page, /else articlesUnavailable = true/);
   assert.match(switcher, /data-community-unavailable/);
   assert.match(switcher, /data-community-empty="articles"/);
   assert.match(switcher, /activate\("mentors", true\)/);
@@ -125,7 +130,9 @@ test("approved services fill the community alongside moderated articles without 
   assert.match(repository, /async listPublicServices/);
   assert.match(journal, /listPublicServices\(locale\)/);
   assert.match(journal, /articleResult\.status === "rejected"/);
-  assert.match(switcher, /Articles & services/);
+  assert.match(switcher, /Services & articles/);
+  assert.match(switcher, /\/services\/catalog/);
+  assert.match(switcher, /communityFooter/);
   assert.match(switcher, /materialTab=services/);
   assert.match(switcher, /hasArticles \|\| hasServices/);
 });

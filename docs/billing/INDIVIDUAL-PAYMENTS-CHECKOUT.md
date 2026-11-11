@@ -40,10 +40,10 @@ To enable Square payment links after owner verification:
 4. After confirming link ownership and **exact CAD amounts** on Square, set HH_SQUARE_INDIVIDUAL_PAYEE_APPROVED=true and HH_SQUARE_CAD_AMOUNTS_APPROVED=true. Set HH_SQUARE_CAD_LINKS_ENABLED=true **last**. Turning any flag off is a kill switch.
 5. Provider URLs must be exact HTTPS square.link/u/… or checkout.square.site/… with no query, fragments, credentials or redirects supplied by users. All three links must be distinct, with increasing prices. The site fails closed if any mapping is missing or malformed.
 6. Verify a legitimate paid test/real charge with Square, check balance and refund reconciliation independently. Square links do **not** automatically settle the app's internal service-order ledger, so continue manual verification.
-7. The Square option remains **hidden** until the Production account, payee and all three amounts are approved; an unconfigured card button must never pretend to be ready.
+7. The **EUR-catalog Square cart option** remains **hidden** until the Production account, payee and all three amounts are approved; an unconfigured cart button must never pretend to be ready. The separately verified CA$40 and CA$50 session links are documented below and never mapped to EUR products.
 
 ## Legacy integrations
-- Existing Stripe Checkout / Stripe Payment Links remain unconfigured and are NOT displayed in the personal public cart. Never present Stripe signup as a prerequisite for personal PayPal.
+- Existing Stripe Checkout / Stripe Payment Links remain unconfigured by default. The new owner-approved optional Link consultation path (2026-11-06) appears only after verified merchant and exact-price configuration. Stripe is never a prerequisite for personal PayPal.
 - PayPal Business Orders v2 PR #923 is still not activated: it requires a verified PayPal Business merchant account, approved private ledger, signed webhooks and sandbox evidence. Never merge it solely to create a "PayPal" button.
 - ZEN.COM and merchant-verified Wise remain existing optional/manual paths. Do not send client health information or bank/card credentials to payment-provider links.
 
@@ -66,6 +66,21 @@ To enable Square payment links after owner verification:
 - Both consultations EUR 150: https://paypal.me/psitrends/150EUR
 - The /en/payments, /ru/payments and /es/payments pages now have direct PayPal links; the combined amount comes only from the fixed catalog.
 - Owner must verify the public payee is their PayPal account and that a real Goods & Services transaction reaches that account. Successful redirect does not mean a payment arrived.
+
+### Owner-supplied standalone Square session link — 27 October 2026
+
+- On 27 Oct the owner supplied a Square Buy Button / public URL `https://square.link/u/Kv0TfvaP`. Independent live page readback: `Session - Holistic House`, seller display `Holistic House`, **CA$50.00**, Square-hosted checkout at `checkout.square.site/merchant/.../checkout/...`. Do not copy the Square-supplied pop-up script: its click binding relies on an unspecified DOM id; opening the canonical clean URL directly is sufficient.
+- The public `/{en,ru,es}/payments` page offers this **separate explicitly labelled CA$50 session payment** only on Vercel Production, with an optional emergency flag `HH_SQUARE_CAD_50_SESSION_DISABLED=true`. It does **not** mean the established **EUR €50/30min** price is now CAD $50, does **not** compute an FX quote and does **not** assign or settle any cart SKU or CRM order. Show the card in a distinct section with EN/RU/ES warnings: client must first agree a specific CA$50 amount/session with Andrey and inspect the exact recipient/final total on Square.
+- The clean public link is not a secret. It is intentionally reused in existing `lib/commerce/square-payment-links.js` via `configuredStandaloneSquareSessionCad50`, rather than activating the **three-link EUR-cart Square mode**. Other individual `HH_SQUARE_CAD_*_LINK` mappings remain fail-closed until separately approved.
+- After payment, client sends only transaction ID by WhatsApp. Owner must independently check the transaction inside their Square Dashboard, gross amount/currency/refund state, and match it to the agreed consultation before any `paid` or fulfilment update. A click, return URL or WhatsApp claim is not settlement. No provider-side charge, refund or settlement was initiated during integration.
+- Before treating this as a business-complete payment flow, confirm actual Square payout/KYC, any tax or refund terms, and a consented small real payment + refund or reconciliation. If the dashboard changes the live link's amount/payee, **disable the public link immediately** until it is re-verified. Neither link should be reused for a different price without updating its independently verified public label.
+
+### Additional owner-supplied CA$40 Square session — 27 October 2026
+
+- The owner supplied `https://square.link/u/tQheRKN2` as a new, independent fixed-price button. Live read-only Square checkout verification on 27 Oct: **Session 40 - Holistic House**, seller **Holistic House**, **CA$40.00**, Square-hosted. It resolves to the same Square merchant ID as the separately approved CA$50 `https://square.link/u/Kv0TfvaP`; no payment was submitted or captured by this verification.
+- The existing EN/RU/ES `/payments` page offers **both** CA$40 and CA$50 standalone buttons. Neither is a conversion of the catalog EUR €50 / €100 prices; neither is assigned to an EUR SKU, cart, booked appointment, CRM paid ledger, subscription or entitlement. Clients must agree on the exact CAD amount with Andrey before paying, verify merchant and total on Square, and manually send only a Square transaction ID for owner review.
+- Use the clean HTTPS URL as a normal link with `rel="noopener noreferrer"` and `referrerPolicy="no-referrer"`; do not embed Square's popup JS/iframe or append tracking/payer data. `configuredStandaloneSquareSessionCad40` is available only in Vercel Production and can be disabled independently of CA$50 with server-only `HH_SQUARE_CAD_40_SESSION_DISABLED=true` plus redeploy.
+- Merchant payout, taxes/refunds, a completed real transaction and verified Square provider/CRM reconciliation remain separate E2E gates. If amount/merchant changes, disable the corresponding link rather than displaying a misleading fixed-price button. The static direct link does not activate `HH_SQUARE_API_ENABLED` or the three-link EUR-cart mapping.
 
 ### Interac: do not create a web link
 - Customers click Request Interac for one consultation or ask via the validated cart for combined services.
@@ -173,7 +188,7 @@ and explicit HTTPS sandbox webhook URL, never production keys.
 
 Do not configure until Square account/Canadian payout setup, business activity,
 CAD prices, tax and refund terms are approved by Square/owner. Additive private
-SQL file `supabase/migrations/20261024185000_hh_square_cart_one_time.sql`
+SQL file `supabase/migrations/20261025190309_hh_square_cart_one_time_20261024.sql`
 requires isolated PostgreSQL 17 RLS tests and a reviewed Supabase migration
 application before setting `HH_SQUARE_API_SCHEMA_APPROVED`.
 Keep static checkout links optional and PayPal/Interac/Wise manual alternatives.
@@ -188,3 +203,49 @@ automatic CRM lead/contact or course entitlement. Owner fulfilment and CRM
 invoice/booking association need separate authorized E2E after sandbox and first
 legitimate received funds. A failed/unknown provider checkout must be reconciled;
 never force-create another payment with a different idempotency key.
+
+## Optional Stripe Link — 6 November 2026 owner update
+
+The owner approves **Stripe Link as an optional additional payment method
+for one-time consultations only**. This overrides the previous Square-first
+preference **only for these one-time consultations**. The CAD wallet, XP
+credits and stored-value top-ups remain PayPal / Square ONLY; do NOT add
+Stripe to the wallet, subscriptions, courses or other products.
+
+Link is accelerated payer checkout **inside Stripe Checkout / Payment Links**;
+the Cloudflare payer screenshot does not activate a Stripe merchant account.
+Merchant prerequisites: verified Stripe Canada Individual / Sole Proprietor
+(or another eligible approved legal form), activity support, identity/KYC,
+payout bank, merchant display name, refunds, tax/legal review and enabled
+live charges + payouts. These are owner-only Stripe Dashboard operations.
+
+1. After merchant acceptance, create 3 exact one-time EUR Stripe Payment Links:
+   - `HH_CARD_PAYMENT_LINK_50_EUR` (€50, 30 min)
+   - `HH_CARD_PAYMENT_LINK_100_EUR` (€100, 60 min)
+   - `HH_CARD_PAYMENT_LINK_150_EUR` (€150, both)
+   Verify seller, LIVE mode, charge, title, product, refund/tax terms and amount.
+   Do not confuse them with Square CAD prices or conversions.
+2. Add approved clean HTTPS `buy.stripe.com` links in correct Vercel Production
+   project. Set `HH_CARD_PAYMENT_LINKS_PAYEE_VERIFIED=true` and
+   `HH_CARD_PAYMENT_LINKS_PRICES_VERIFIED=true` after independent inspection.
+   Set `HH_CARD_PAYMENT_LINKS_ENABLED=true` LAST and redeploy; OFF disables
+   public Stripe options after the next served deployment. No Stripe API key
+   is required for these static hosted links.
+3. The existing `buildIndividualCardPaymentUrl` selects only fixed server
+   catalog EUR prices and allowlisted link URLs. `/{en,ru,es}/payments`
+   and `/{en,ru,es}/cart` show Stripe only if a validated link exists.
+   Link, Apple Pay and Google Pay appear only when eligible by Stripe.
+   The site collects no PAN and appends no payer, health or private data.
+4. A redirect or customer payment reference **never** establishes a paid
+   status or appointment. Owner must verify merchant dashboard payment,
+   exact currency/amount, settlement, refunds/disputes before fulfillment.
+   Automatic CRM confirmation requires signed Stripe webhooks, idempotent
+   provider reconciliation and refund/dispute handling before activation.
+5. Validate EN/RU/ES, 320/390/430 + iOS WebKit, buyer eligibility, fail-closed
+   flags, exact amounts, actual merchant acceptance, payment and refund,
+   then verify protected GitHub merge and correct Vercel serving SHA.
+   Code-only release is NOT real provider LIVE. No new paid services/CI.
+
+Merchant: https://dashboard.stripe.com/
+Methods: https://dashboard.stripe.com/settings/payment_methods
+Links: https://dashboard.stripe.com/payment_links

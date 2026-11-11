@@ -19,7 +19,7 @@ test("seven-stage main home retains three real services through the shared CTAs 
   assert.match(more, /data-home-topic-filter="services"/);
   assert.match(more, /data-home-topic-filter="business"/);
   assert.match(home, /<PersonalTestimonials locale=\{locale\} variant="home"/);
-  assert.match(home, /\{introVideoContent\}/);
+  assert.doesNotMatch(home, /introVideoContent|HomeIntroVideoSection/);
 });
 
 test("homeopathy card has a complete local illustration instead of the observed broken image", () => {

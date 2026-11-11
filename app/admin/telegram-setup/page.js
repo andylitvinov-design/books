@@ -204,15 +204,15 @@ export default async function TelegramSetupPage({searchParams}){
             </p>}
           <p>Mistral · OpenRouter: <strong>{
             provider.mistralOpenRouterKeyPresent
-              ?ru?'Ключ сохранён; модель :free и цена проверяются при запуске':
-                'Key saved; :free model and price checked per run'
+              ?ru?'Ключ сохранён; допускается лишь Mistral :free с нулевой ценой':
+                'Key stored; only zero-priced Mistral :free can be requested'
               :ru?'Нет ключа':'No key'
           }</strong></p>
           <p>Mistral · Studio Free mode: <strong>{
             provider.mistralStudioKeyPresent
               ?provider.mistralFreeConfirmed
-                ?ru?'Ключ сохранён; Free mode подтверждён владельцем; доступность модели проверяется при запуске':
-                  'Key saved; owner-confirmed Free mode; model access checked per run'
+                ?ru?'Ключ сохранён; Free mode подтверждён, но API-доступ требует отдельной проверки':
+                  'Key stored; Free mode confirmed, actual API access checked separately'
                 :ru?'Ключ сохранён; требуется подтверждение Free mode без pay-as-you-go':
                   'Key saved; confirm Free mode with pay-as-you-go disabled'
               :ru?'Не подключён':'Not connected'
@@ -225,11 +225,11 @@ export default async function TelegramSetupPage({searchParams}){
                 ?ru?'Проверка Mistral API: модель доступна по GET без расходов. Настоящая генерация ещё не проверена.':
                   'Mistral API: model accessible via read-only GET; actual generation still unverified.'
                 :provider.mistralStudioProbeStatus==='access_denied'
-                  ?ru?'Mistral API отклонил доступ (401/403). Ключ сохранён, но его наличие не означает разрешение API. Не подключай платный тариф.':
-                    'Mistral API denied access (401/403). The key is saved, but API access is not confirmed. No paid upgrade is needed.'
+                  ?ru?'Mistral API отклонил доступ (401/403). Ключ сохранён, но API не работает. Не оформляй платный тариф: проверим бесплатный OpenRouter.':
+                    'Mistral API denied access (401/403). The key is saved, but API access is not confirmed. Do not upgrade; only free OpenRouter is considered.'
                   :provider.mistralStudioProbeStatus==='rate_limited'
-                    ?ru?'Mistral API сообщил о лимите (429). Генерация не запускалась.':
-                      'Mistral API returned a rate limit (429). No generation was performed.'
+                    ?ru?'Mistral Studio: проверочный GET отклонён (429). Генерация не запускалась, бесплатный OpenRouter проверяется отдельно.':
+                      'Mistral Studio: read-only GET was rate-limited (429). No generation ran; a free OpenRouter route is checked separately.'
                     :provider.mistralStudioProbeStatus==='model_unavailable'
                       ?ru?'Текущий Mistral Workspace не предоставляет нужную модель Small. Платный fallback отключён.':
                         'The workspace does not expose a supported Small model. Paid fallback is disabled.'
@@ -237,8 +237,8 @@ export default async function TelegramSetupPage({searchParams}){
                         'Mistral API access is not yet verified. Read-only GET is used without inference.'}
             </p>}
           <p className={styles.footnote}>{
-            ru?'Аудиты выполняются только по публичным страницам; платные модели автоматически не используются.':
-              'Public-site evidence only. Paid model fallback is strictly disabled.'
+            ru?'Ключ Studio и план Free сами по себе не доказывают доступ к API. Если Mistral просит обновить тариф — не покупай: проверяем только бесплатный маршрут OpenRouter. Используем публичные данные.':
+              'A saved Studio key and Free plan do not prove API access. If Mistral asks you to upgrade, do not buy a plan: only a verified free OpenRouter route is considered. Public data only.'
           }</p>
           <div className={styles.ownerAiSetup}>
             <h3>{ru?'Подключение AI — один экран':'AI setup — one screen'}</h3>

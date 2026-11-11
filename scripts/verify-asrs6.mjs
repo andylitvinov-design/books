@@ -228,7 +228,7 @@ try {
   const account = await isolatedContext()
   page = await account.newPage(); observe(page)
   await navigate(page, origin + '/en/app')
-  await page.getByRole('button', { name: 'Continue with Google', exact: true }).click()
+  await page.getByRole('button', { name: 'Open my Cabinet with Google', exact: true }).click()
   const onboarding = page.getByRole('heading', { name: 'Create my private space', exact: true })
   await expect(onboarding.or(page.locator('[data-profile-domains]')).first()).toBeVisible({ timeout: 60000 })
   if (await onboarding.isVisible()) {

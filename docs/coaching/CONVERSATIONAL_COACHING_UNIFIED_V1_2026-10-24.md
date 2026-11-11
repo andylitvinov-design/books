@@ -58,3 +58,30 @@ This is **not a live generative AI coach**. Genuine semantic multi-turn listenin
 **P3:** opt-in editable/deletable approved memory in existing owner journal and My Development Path; no mixing with CRM Contacts and no raw health details in notifications.
 **P4:** optional fictional roleplay and user-selected private summary sharing to human professional via real tested CRM flow; booking/payment only when provider-confirmed. No HeyGen generation or mass outreach under this request.
 **Evaluation before P2 launch:** at least 30 fictional EN/RU/ES scenarios; blind raters ≥80% relevant and ≥90% structurally compliant, 100% privacy-negative gates, zero unauthorized provider transmissions. These are proposed targets, **not** verified outcomes. No medical, psychotherapy or homeopathy claims.
+
+
+## PR #1891 · Unified messenger presentation (24 Oct 2026)
+
+Preserves the improved contextual semantics, redacted excerpt and full-source QA tests from merged PR #1892 without rendering its internal star-avatar bubbles a second time. New `CoachingChatThread` presents one owner-side **reviewed/redacted** user excerpt opposite the existing first-party Andrey portrait, a single local editorial coach reply and its published question inside one mobile-friendly bubble. The chat never receives raw previous answers as props: `turn.quote` is the only user excerpt, suppressed by the existing safety logic when necessary.
+
+Applied to existing public guest / private account / Egyptian and Greek coaching screens and authored followups, EN/RU/ES. Voice permission, explicitly saving, editing, skip/back, guest in-memory-only and account AES-GCM/RLS remain unchanged. No real-time generative coach, external delivery, new data model, notifications, additional HeyGen renders or billing.
+
+CI acceptance: run focused public + private regression, lint, typecheck, build; test desktop and mobile WebKit/Chromium; verify new production READY SHA and canonical route. Real signed-in Safari Google-save/logout/relogin and microphone recognition are still separate physical-device acceptance gates.
+
+## V1.1 · Optional reciprocal check-in on existing messenger (24 October 2026)
+
+Complements **already merged** #1891 photo messenger, #1892 authored response engine, #1895 PDF exports and #1884 calm voice. No duplicate chat renderer: existing `CoachingChatThread` is reused on both onboarding steps. The opening now greets the client ("Hello, how are you?" / "Здравствуйте! Как вы сегодня?" / "¿Cómo estás hoy?") and offers four **optional** choices (good, mixed, difficult, rather not say); on the next slide the person's selected chip is shown as a right-aligned message, followed by a reviewed neutral coach acknowledgement and "What would you like to explore today?" in the existing left coach bubble. The nine existing topic IDs are unchanged.
+
+The choice is **never sent** to an API, database, CRM, analytics, URL, OS speech, or external AI. It is reset on session exit/restart. No assumptions about hidden emotions, diagnoses or guaranteed outcomes. Course information is still available behind an accessible native disclosure. Existing personal encryption, signed-in permissions, public-only state, voice, authored follow-ups and PDF reports remain.
+
+Acceptance: `npm run test:coaching:release`, public coaching tests, lint, typecheck, Next build, exact canonical READY SHA, EN/RU/ES route/tap checks. Real physical iPhone Safari microphone/Google save-and-reload/cross-account authorization remain separate E2E tasks.
+
+## 2026-10-25 · One-viewport mobile question player
+
+**Owner's two iPhone screenshots:** Egyptian Goal Planning at question 2 displayed an oversized stage photograph/text block above the actual current coach question; a second view cut the previous answer and composer across scroll areas. Request: fix all coaching question sessions to remain inside one screen without vertical scrolling.
+
+**Implemented on code branch:** Scoped `data-coaching-one-viewport` on Personal (including authored follow-up), Egyptian and Greek active questions. The single-root `100dvh` layout uses a short progress header, one coach question card, two-column topic options, a 2-line editable answer, a compact icon-only speech/voice/pace row, and fixed Back/Continue/Skip. Text is never sent automatically. Stage artwork shrinks to a thumbnail; its **complete** description, original focus and Commons attribution are available on a clearly labeled, keyboard-accessible native dialog. Full editorial coach reply is available in a separate native dialog; prior excerpts are visually shortened without sending or changing data. PDF help, voice preferences and optional tailored coaching context open as overlays rather than pushing the footer away. The original Save ACK, guarded Back, encrypted account storage, report generation and opt-in voice behavior are untouched.
+
+**Scope:** guest free-model sessions (including optional follow-ups), encrypted Personal sessions and Egyptian/Greek active question screens and their inline explanations. The 8-level overview is presented as a compact 2-column set of tiles on mobile; full level text is available per tile. Completed multi-question reports/history still require normal scrolling because hiding information there would damage readability/accessibility. When the software keyboard reduces usable height, nonessential stage/answer-choice elements can temporarily collapse while the current question, text field and Save/Continue remain visible.
+
+**QA acceptance:** code regressions for 320/350/390/430px, short `100dvh` screens, EN/RU/ES accessible labels, full stage/source modal, stage/chat overflow containment, voice/pace and Save/PDF disclosure. Check targeted Node tests, lint, TypeScript, Next build and verify PR CI; then verify Vercel READY and exact production SHA/alias. **Real signed-in Safari per-model tapping, page reload/resume, voice recording and pixel-level measurement at 320/390/430px remain separate E2E gates**; do not label them complete based on static CSS tests or an HTTP 200.

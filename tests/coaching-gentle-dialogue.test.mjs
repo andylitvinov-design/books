@@ -121,7 +121,8 @@ test('guest, signed-in and Egyptian/Greek runners share contextual visibly spoke
   const css=source('components/coaching-dialogue-turn.module.css')
   for(const [name,ui] of [['guest',guest],['personal',signed],['tradition',symbolic]]){
     assert.match(ui,/coachingConversationTurn\(\{/,'context derived in '+name)
-    assert.match(ui,/<CoachingDialogueTurn turn=\{conversationTurn\}\/>/,'visible reply in '+name)
+    assert.match(ui,/<CoachingChatThread turn=\{conversationTurn\}/,'chat-shaped reviewed reply in '+name)
+    assert.match(ui,/data-coaching-composer/,'editable messenger-style composer: '+name)
     assert.match(ui,/conversationTurn\?\.speech/,'same reply read aloud in '+name)
     assert.match(ui,/previousAnswer:/,'previous answer from session in '+name)
     assert.doesNotMatch(ui,/dangerouslySetInnerHTML/,'no raw HTML echo in '+name)
@@ -131,7 +132,7 @@ test('guest, signed-in and Egyptian/Greek runners share contextual visibly spoke
     assert.equal(parsed.parseDiagnostics.length,0,name+' JSX syntax')
   }
   for(const ui of [guest,signed]){
-    assert.match(ui,/<CoachingDialogueTurn turn=\{followupTurn\}\/>/)
+    assert.match(ui,/<CoachingChatThread turn=\{followupTurn\}/)
     assert.match(ui,/followupTurn\?\.speech/)
   }
   assert.match(component,/data-coaching-conversational-turn/)
@@ -181,4 +182,69 @@ test('the new dialogue layout separates bounded user excerpts from the coach rep
   assert.doesNotMatch(helper+component,/fetch\(|sendBeacon|dangerouslySetInnerHTML/)
   const parsed=ts.createSourceFile('components/coaching-dialogue-turn.jsx',component,ts.ScriptTarget.Latest,true,ts.ScriptKind.JSX)
   assert.equal(parsed.parseDiagnostics.length,0)
+})
+
+
+test('all runners use one accessible, localized coach portrait chat and only reviewed excerpts',()=>{
+  const thread=source('components/coaching-chat-thread.jsx')
+  const css=source('components/coaching-chat-thread.module.css')
+  assert.match(thread,/data-coaching-chat-thread/)
+  assert.match(thread,/data-coaching-chat-user-turn/)
+  assert.match(thread,/data-coaching-chat-coach-turn/)
+  assert.match(thread,/portrait-static\/andy-96-b9d7800d1448\.webp/)
+  assert.match(thread,/typeof turn\?\.quote==='string'/,'never echo unsanitized user input')
+  assert.doesNotMatch(thread,/previousReply|sessionStorage|localStorage|fetch\(|sendBeacon|dangerouslySetInnerHTML/)
+  assert.match(thread,/turn\.coachReply\|\|turn\.response/,'retain latest QA editorial coach reply')
+  for(const language of ['Self-guided session · not a live chat',
+    'Самостоятельная сессия · не живой чат',
+    'Sesión autoguiada · no es un chat en vivo'])
+    assert.ok(thread.includes(language))
+  assert.match(css,/@media\(max-width:430px\)/)
+  assert.match(css,/@media\(max-width:350px\)/)
+  assert.match(css,/overflow-wrap:anywhere/)
+  const parsed=ts.createSourceFile('components/coaching-chat-thread.jsx',thread,
+    ts.ScriptTarget.Latest,true,ts.ScriptKind.JSX)
+  assert.equal(parsed.parseDiagnostics.length,0)
+})
+
+test('real messenger layout docks message editing below the timeline across all coaching modes',()=>{
+  const guest=source('components/public-coaching-discovery.jsx')
+  const personal=source('components/app/personal-coaching.jsx')
+  const tradition=source('components/app/tradition-coaching.jsx')
+  const thread=source('components/coaching-chat-thread.jsx')
+  const voice=source('components/app/coaching-question-voice.jsx')
+  const guestCss=source('components/public-coaching-discovery.module.css')
+  const personalCss=source('components/app/personal-coaching.module.css')
+  const symbolicCss=source('components/app/tradition-coaching.module.css')
+
+  for(const [kind,ui] of [['guest',guest],['personal',personal],['symbolic',tradition]]){
+    assert.match(ui,/data-coaching-messenger-footer/,kind+' has anchored reply footer')
+    assert.match(ui,/data-coaching-composer/,kind+' has editable reply composer')
+    assert.match(ui,/<CoachingQuestionVoice[^>]*compact/,kind+' has compact voice controls')
+    const chatIndex=ui.indexOf('<CoachingChatThread turn={conversationTurn}')
+    const composerIndex=ui.lastIndexOf('data-coaching-composer')
+    assert.ok(chatIndex>=0&&composerIndex>chatIndex,kind+' question is in timeline above composer')
+    const parse=ts.createSourceFile(kind+'.jsx',ui,ts.ScriptTarget.Latest,true,ts.ScriptKind.JSX)
+    assert.equal(parse.parseDiagnostics.length,0,kind+' valid JSX')
+  }
+  assert.match(guest,/data-coaching-quick-replies/)
+  assert.match(guest,/data-public-coaching-open-reflection/)
+  assert.match(guest,/public-coaching-followup-report-note/)
+  assert.match(guest,/public-coaching-report-note/)
+  assert.match(personal,/data-coaching-authored-followup/)
+  assert.match(personal,/data-coaching-one-question/)
+  assert.match(tradition,/data-tradition-open-reflection/)
+  assert.match(thread,/data-coaching-chat-draft/)
+  assert.match(thread,/data-coaching-chat-user-turn/)
+  assert.match(thread,/data-coaching-chat-coach-turn/)
+  assert.match(thread,/Portrait of Andrey/)
+  assert.match(voice,/data-coaching-voice-compact/)
+  assert.match(voice,/aria-label={t.voiceSettings}/)
+
+  for(const css of [guestCss,personalCss,symbolicCss]){
+    assert.match(css,/data-coaching-messenger-footer/)
+    assert.match(css,/safe-area-inset-bottom|footer/)
+    assert.match(css,/@media\(max-width:430px\)/)
+  }
+  assert.doesNotMatch(guest+personal+tradition+thread,/dangerouslySetInnerHTML|sendBeacon|localStorage|sessionStorage/)
 })

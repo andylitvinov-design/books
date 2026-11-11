@@ -1,0 +1,30 @@
+import {NextResponse} from 'next/server'
+import {AppError} from '@/lib/assessments/contracts'
+import {getAppConfig,requestOrigin} from '@/lib/app/config'
+import {createRequestAuth} from '@/lib/app/session'
+import {PRIVATE_HEADERS,safeError} from '@/lib/app/http'
+import {pilotVideoExportCapability} from '@/lib/mandala/video-branding-policy.mjs'
+
+export const runtime='nodejs'
+export const dynamic='force-dynamic'
+export const revalidate=0
+
+export async function GET(request){
+  let auth
+  try{
+    const config=getAppConfig()
+    requestOrigin(request,config)
+    auth=createRequestAuth(request,config)
+    const actor=await auth.verified()
+    if(request.headers.has('x-hh-account-id') &&
+      request.headers.get('x-hh-account-id')!==actor.id)
+      throw new AppError('ACCOUNT_CHANGED',409)
+    const result=pilotVideoExportCapability(actor)
+    return auth.apply(NextResponse.json(result,{headers:PRIVATE_HEADERS}))
+  }catch(error){
+    const safe=safeError(error)
+    const response=NextResponse.json({error:safe.code},
+      {status:safe.status,headers:PRIVATE_HEADERS})
+    return auth?auth.apply(response):response
+  }
+}

@@ -1,10 +1,49 @@
 import test from 'node:test'
+// Include the new consent and manual campaign guards in the existing protected CRM check.
+import './crm-telegram-campaigns.test.mjs'
+// The verified WhatsApp link regressions run in the EXISTING CRM job (no workflow change).
+import './crm-whatsapp-account-link.test.mjs'
+import './crm-whatsapp-guided-intake.test.mjs'
+import './crm-whatsapp-replay-receipts.test.mjs'
+import './crm-whatsapp-receipt-isolation.test.mjs'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
-import {canReply,channelTransportReady,telegramPilotReady,messengerSetupStatus,validateMessageText,MESSENGER_CHANNELS} from '../lib/crm/messenger-policy.js'
+import {canReply,channelTransportReady,telegramPilotReady,telegramBotBusinessId,messengerSetupStatus,validateMessageText,MESSENGER_CHANNELS,normalizeReplyFailure,evaluateMessengerReplyEligibility} from '../lib/crm/messenger-policy.js'
 import {messengerCursor,parseMessengerCursor} from '../lib/crm/messenger-pagination.js'
 const root=new URL('..',import.meta.url)
 const source=path=>readFileSync(new URL(path,root),'utf8')
+test('one reply policy is used before reserving and again before provider dispatch',()=>{
+  const now=Date.parse('2026-11-04T13:40:00Z')
+  const lastInboundAt=new Date(now-4*24*3600000).toISOString()
+  const base={channel:'telegram',lastInboundAt,enabled:true,suppressed:false,now}
+  assert.equal(evaluateMessengerReplyEligibility({...base,diagnosticConsentRequired:true,diagnosticConsented:false}).reason,'CONSENT_REQUIRED')
+  assert.equal(evaluateMessengerReplyEligibility({...base,diagnosticConsentRequired:true,diagnosticConsented:true}).ok,true)
+  assert.equal(evaluateMessengerReplyEligibility({...base,diagnosticConsentRequired:true,diagnosticConsented:true,suppressed:true}).reason,'CONTACT_BLOCKED')
+  assert.equal(evaluateMessengerReplyEligibility({...base,diagnosticConsentRequired:false}).ok,true)
+  const code=source('lib/crm/messenger-store.js')
+  assert.equal((code.match(/evaluateMessengerReplyEligibility\(/g)||[]).length,3)
+  assert.match(code,/for update of t/)
+  assert.match(code,/diagnosticConsented:thread[.]diagnostic_consented===true/)
+  assert.match(code,/diagnosticConsented:row[.]diagnostic_consented===true/)
+})
+test('blocked and uncertain replies retain only a safe encrypted reason and never become delivered',()=>{
+  assert.deepEqual(normalizeReplyFailure('blocked','CONSENT_REQUIRED','eligibility'),
+    {code:'CONSENT_REQUIRED',stage:'eligibility'})
+  assert.deepEqual(normalizeReplyFailure('failed','server-secret-example','provider'),
+    {code:'PROVIDER_REJECTED',stage:'provider'})
+  assert.deepEqual(normalizeReplyFailure('unknown','token=private','weird'),
+    {code:'PROVIDER_STATUS_UNKNOWN',stage:'persistence'})
+  assert.equal(normalizeReplyFailure('accepted','CONSENT_REQUIRED','provider'),null)
+  const store=source('lib/crm/messenger-store.js')
+  const route=source('app/api/app/crm/messenger/route.js')
+  const ui=source('components/app/crm-messenger.jsx')
+  assert.match(store,/deliveryFailure:diagnostic/)
+  assert.match(store,/body_ciphertext=coalesce\(\$5::text,body_ciphertext\)/)
+  assert.match(store,/for update/)
+  assert.match(route,/stage:'eligibility'/)
+  assert.match(route,/stage:'provider'/)
+  assert.match(ui,/m[.]failure[?][.]code/)
+})
 test('only supported official messenger channels',()=>{
   assert.deepEqual(MESSENGER_CHANNELS,['telegram','whatsapp','instagram','messenger'])
   assert.deepEqual(canReply({channel:'unknown',lastInboundAt:new Date().toISOString(),enabled:true,suppressed:false}).reason,'INVALID_CHANNEL')
@@ -108,9 +147,9 @@ test('signed early WhatsApp receipts survive out-of-order events with owner-scop
 test('Meta provider adapters use the correct official Instagram Login and Page-scoped endpoints',()=>{
   const provider=source('lib/crm/messenger-provider.js')
   assert.match(provider,/const INSTAGRAM = 'https:\/\/graph\.instagram\.com'/)
-  assert.match(provider,/INSTAGRAM\+'\/'\+version\+'\/me\/messages'/)
+  assert.ok(provider.includes("endpoint=INSTAGRAM+'/'+version+'/'+configuredExternalId('instagram',env)+'/messages'"))
   assert.match(provider,/configuredExternalId\('messenger',env\)\+'\/messages'/)
-  assert.match(provider,/INSTAGRAM\+'\/'\+version\+'\/me\?fields=id'/)
+  assert.ok(provider.includes("INSTAGRAM+'/'+version+'/me?fields=id,username,account_type'"))
 })
 
 test('multiple browser tabs and lost HTTP responses cannot reserve same pending message twice',()=>{
@@ -281,7 +320,7 @@ test('v3 quick replies are neutral owner-selected drafts, not scheduled or auto-
   assert.match(ui,/ru:\[/)
   assert.match(ui,/es:\[/)
   assert.match(ui,/role="group" aria-label=\{lang==='ru'\?'Быстрые ответы'/)
-  assert.match(ui,/onClick=\{\(\)=>\{pendingRequest\.current=null;setText\(item\.text\)\}\}/)
+  assert.match(ui,/onClick=\{\(\)=>\{pendingRequest\.current=null;setText\(item\.text\);setShowQuickReplies\(false\)\}\}/)
   assert.match(ui,/disabled=\{busy\|\|threadLoading\|\|!selected\.reply\.ok\}/)
   assert.doesNotMatch(ui,/setInterval\(|sendOneMessengerMessage\(/)
   assert.match(api,/action==='send'/)
@@ -354,9 +393,31 @@ test('idempotent outgoing reply key is bound to the original encrypted text and 
   assert.match(code,/openSealed\(existed\.body_ciphertext,messageContext\(actor\.id,existed\.id\),config\)/)
 })
 
+test('Telegram bot ID is derived safely from BotFather token and confirmed by getMe',()=>{
+  const env={VERCEL_ENV:'production',HH_CRM_MSG_TELEGRAM_ENABLED:'true',
+    HH_CRM_MSG_TELEGRAM_TOKEN:'12345678:VALID_FORMAT_FAKE_BOT_TOKEN_FOR_TEST',
+    HH_CRM_MSG_TELEGRAM_WEBHOOK_SECRET:'TEST_WEBHOOK_SECRET_2026',
+    HH_CRM_MSG_TELEGRAM_PILOT_ENABLED:'true',HH_CRM_MSG_TELEGRAM_PILOT_CHAT_ID:'123456789'}
+  assert.equal(telegramBotBusinessId(env),'12345678')
+  assert.equal(channelTransportReady('telegram',env),true)
+  assert.deepEqual(messengerSetupStatus('telegram',env).missingKeys,[])
+  assert.equal(telegramBotBusinessId({...env,HH_CRM_MSG_TELEGRAM_BOT_ID:'12345678'}),'12345678')
+  assert.equal(channelTransportReady('telegram',{...env,HH_CRM_MSG_TELEGRAM_BOT_ID:'87654321'}),false)
+  for(const invalid of ['', 'BOT_TOKEN_ONLY', 'abc:NOT_A_BOT_TOKEN', '12345678:short']){
+    assert.equal(telegramBotBusinessId({...env,HH_CRM_MSG_TELEGRAM_TOKEN:invalid}),null)
+  }
+  assert.equal(channelTransportReady('telegram',{...env,HH_CRM_MSG_TELEGRAM_TOKEN:'not-a-bot-token'}),false)
+  const provider=source('lib/crm/messenger-provider.js')
+  const webhook=source('lib/crm/messenger-webhook.js')
+  assert.match(provider,/String\(response\.result\.id\)!==telegramBotBusinessId\(env\)/)
+  assert.match(provider,/expectedUsername=String\(env\.HH_CRM_MSG_TELEGRAM_USERNAME/)
+  assert.match(provider,/String\(response\.result\.username\|\|''\)\.toLowerCase\(\)!==expectedUsername\.toLowerCase\(\)/)
+  assert.match(webhook,/const businessId=telegramBotBusinessId\(env\)/)
+  assert.match(webhook,/provider==='telegram'\?telegramBotBusinessId\(env\):null/)
+})
 test('pilot remains disabled by default and requires an exact allowlisted Telegram test chat',()=>{
   const basic={VERCEL_ENV:'production',HH_CRM_MSG_TELEGRAM_ENABLED:'true',
-    HH_CRM_MSG_TELEGRAM_TOKEN:'SYNTHETIC-TEST-ONLY',
+    HH_CRM_MSG_TELEGRAM_TOKEN:'12345678:SYNTHETIC_TEST_ONLY_BOT_TOKEN_xxxx',
     HH_CRM_MSG_TELEGRAM_WEBHOOK_SECRET:'SYNTHETIC_TEST_SECRET',
     HH_CRM_MSG_TELEGRAM_BOT_ID:'12345678'}
   assert.equal(telegramPilotReady(basic),false)
@@ -374,7 +435,7 @@ test('pilot remains disabled by default and requires an exact allowlisted Telegr
 })
 test('production full release gate and pilot gate are independent and never silently enable Meta',()=>{
   const env={VERCEL_ENV:'production',HH_CRM_MSG_TELEGRAM_ENABLED:'true',
-    HH_CRM_MSG_TELEGRAM_TOKEN:'SYNTHETIC',HH_CRM_MSG_TELEGRAM_WEBHOOK_SECRET:'SYNTHETIC_TOKEN',
+    HH_CRM_MSG_TELEGRAM_TOKEN:'12345678:SYNTHETIC_TEST_BOT_TOKEN_xxxx',HH_CRM_MSG_TELEGRAM_WEBHOOK_SECRET:'SYNTHETIC_TOKEN',
     HH_CRM_MSG_TELEGRAM_BOT_ID:'12345678',HH_CRM_MSG_TELEGRAM_PILOT_ENABLED:'true',
     HH_CRM_MSG_TELEGRAM_PILOT_CHAT_ID:'123456789'}
   assert.equal(channelTransportReady('telegram',{...env,HH_CRM_MSG_PRODUCTION_APPROVED:'false'}),true)
@@ -385,7 +446,7 @@ test('production full release gate and pilot gate are independent and never sile
 })
 test('read-only setup status shows ONLY missing key names, never tokens or account identifiers',()=>{
   const env={VERCEL_ENV:'production',HH_CRM_MSG_TELEGRAM_ENABLED:'true',
-    HH_CRM_MSG_TELEGRAM_TOKEN:'PROTECTED-SAMPLE-ONLY',
+    HH_CRM_MSG_TELEGRAM_TOKEN:'12345678:PROTECTED_SAMPLE_ONLY_BOT_TOKEN',
     HH_CRM_MSG_TELEGRAM_WEBHOOK_SECRET:'PROTECTED_SAMPLE_SECRET',
     HH_CRM_MSG_TELEGRAM_BOT_ID:'12345678'}
   const test=messengerSetupStatus('telegram',env)
@@ -425,4 +486,32 @@ test('Messenger owner console shows connected state and official setup without c
   assert.match(ui,/target="_blank" rel="noopener noreferrer"/)
   assert.doesNotMatch(ui,/HH_CRM_MSG_TELEGRAM_TOKEN\s*=/)
   assert.doesNotMatch(ui,/HH_CRM_MSG_META_APP_SECRET\s*=/)
+})
+
+test('CRM connections put verified owner bot first and explain optional CRM Inbox accurately',()=>{
+ const diag=source('components/app/crm-integration-diagnostics.jsx')
+ const manager=source('components/app/crm-manager.jsx')
+ assert.match(diag,/Telegram CRM Inbox \(separate\)/)
+ assert.match(diag,/CRM Telegram \(отдельный канал\)/)
+ assert.match(diag,/app\/settings#hh-telegram-connect/)
+ assert.match(diag,/Never reuse the same bot token with a different webhook/)
+ assert.ok(manager.indexOf('<CustomerTelegramBotSetup ') < manager.indexOf('<CrmIntegrationDiagnostics '),
+  'first show the reusable existing verified practice bot, then optional integrations')
+})
+
+test('owner sees actionable missing-consent state; terminal blocks do not strand retries',()=>{
+  const store=source('lib/crm/messenger-store.js')
+  const route=source('app/api/app/crm/messenger/route.js')
+  const ui=source('components/app/crm-messenger.jsx')
+  assert.ok(store.includes('as diagnostic_consented'))
+  const policy=source('lib/crm/messenger-policy.js')
+  assert.match(policy,/if\(diagnosticConsentRequired&&diagnosticConsented!==true\)/)
+  assert.match(policy,/reason:'CONSENT_REQUIRED'/)
+  assert.ok(store.includes("row.status==='queued'&&check.ok"))
+  assert.ok(store.includes('diagnosticConsentRequired:publicDiagnostic'))
+  assert.ok(store.includes('diagnosticConsented:row.diagnostic_consented===true'))
+  assert.ok(route.includes('reason:dispatch.reason'))
+  assert.ok(ui.includes('CONSENT_REQUIRED:'))
+  assert.ok(ui.includes('pendingRequest.current=null'))
+  assert.ok(ui.includes("document.addEventListener('visibilitychange',onVisible)"))
 })

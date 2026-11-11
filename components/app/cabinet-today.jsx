@@ -172,26 +172,10 @@ export default function CabinetToday({ locale = 'en', practitioner = false, owne
     <div className={styles.intro}>
       <span className={styles.mark}><Sparkles size={22} aria-hidden="true" /></span>
       <div className={styles.introText}>
-        <p className={styles.eyebrow}>{t.eyebrow}</p>
-        <h1 id="hh-cabinet-today-title">{t.title}</h1>
-        <p className={styles.hint}>{t.hint}</p>
+        <h2 id="hh-cabinet-today-title">{t.title}</h2>
+        <p className={styles.srOnly}>{t.hint}</p>
       </div>
     </div>
-    <form onSubmit={onSubmit} className={styles.form} data-cabinet-wish-form>
-      <label htmlFor="hh-cabinet-wish" className={styles.srOnly}>{t.prompt}</label>
-      <div className={styles.field}>
-        <input id="hh-cabinet-wish" type="text" value={wish} maxLength={240} autoComplete="off"
-          placeholder={t.placeholder} onChange={event => { setWish(event.target.value); setNotice('') }} />
-        {speechAvailable && <button className={styles.mic} type="button" onClick={onMic}
-          aria-label={listening ? t.micStop : t.micStart} aria-pressed={listening}>
-          {listening ? <MicOff size={18} aria-hidden="true" /> : <Mic size={18} aria-hidden="true" />}
-        </button>}
-        <button className={styles.submit} type="submit" disabled={!wish.trim()} aria-label={t.go}>
-          <ArrowUp size={19} strokeWidth={2.6} aria-hidden="true" />
-        </button>
-      </div>
-      {notice && <p role="status" className={styles.notice}>{notice}</p>}
-    </form>
     <div className={`${styles.paths} ${canCreate ? '' : styles.singlePath}`} data-cabinet-action-groups>
       <section className={`${styles.path} ${styles.personalPath}`}
         data-cabinet-category="personal" aria-labelledby="hh-cabinet-personal">
@@ -212,6 +196,21 @@ export default function CabinetToday({ locale = 'en', practitioner = false, owne
       <summary><span>{t.more}</span><ChevronDown size={16} aria-hidden="true" /></summary>
       <div className={styles.extraGrid}>{extras.map(renderAction)}</div>
     </details>}
+    <form onSubmit={onSubmit} className={styles.form} data-cabinet-wish-form>
+      <label htmlFor="hh-cabinet-wish" className={styles.srOnly}>{t.prompt}</label>
+      <div className={styles.field}>
+        <input id="hh-cabinet-wish" type="text" value={wish} maxLength={240} autoComplete="off"
+          placeholder={t.placeholder} onChange={event => { setWish(event.target.value); setNotice('') }} />
+        {speechAvailable && <button className={styles.mic} type="button" onClick={onMic}
+          aria-label={listening ? t.micStop : t.micStart} aria-pressed={listening}>
+          {listening ? <MicOff size={18} aria-hidden="true" /> : <Mic size={18} aria-hidden="true" />}
+        </button>}
+        <button className={styles.submit} type="submit" disabled={!wish.trim()} aria-label={t.go}>
+          <ArrowUp size={19} strokeWidth={2.6} aria-hidden="true" />
+        </button>
+      </div>
+      {notice && <p role="status" className={styles.notice}>{notice}</p>}
+    </form>
     <p className={styles.privacy}><ShieldCheck size={13} aria-hidden="true" />{t.privacy} {speechAvailable ? t.voicePrivacy : ''}</p>
   </section>
 }
