@@ -69,7 +69,11 @@ test('private coaching routes suppress the global promotional ribbon, while publ
       pathname=path
       assert.equal(renderToStaticMarkup(React.createElement(exports.SitewideAntistressBanner,{initialLocale:locale})), '')
     }
+    // The dedicated human coaching landing has its own compact header.
     pathname=`/${locale}/coaching`
+    assert.equal(renderToStaticMarkup(React.createElement(exports.SitewideAntistressBanner,{initialLocale:locale})), '')
+    // The self-guided session catalog remains a normal public discovery page.
+    pathname=`/${locale}/coaching/sessions`
     assert.match(renderToStaticMarkup(React.createElement(exports.SitewideAntistressBanner,{initialLocale:locale})),/data-sitewide-personal-review-banner/)
   }
 })
