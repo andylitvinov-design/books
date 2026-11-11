@@ -31,7 +31,7 @@
    location.pathname===paths.agents?'agents':location.pathname===paths.automations?'automations':location.pathname===paths.projects?'projects':
    location.pathname===paths.monitor?'monitor':location.pathname===paths.chats?'chats':
    (location.pathname===paths.home||location.pathname==='/'||location.pathname==='/index.html')?'home':null;
-  [['home','Главная'],['monitor','PR'],['tasks','Задачи'],['add','Создать'],['agents','Агенты'],['automations','Авто'],['chats','Чат'],['projects','Проекты']].forEach(([name,label])=>{
+  [['home','Главная'],['monitor','PR'],['tasks','Задачи'],['add','Создать'],['agents','Агенты'],['chats','Чат'],['projects','Проекты']].forEach(([name,label])=>{
    const e=make(name==='add'?'button':'a');if(name==='add'){
     e.type='button';e.setAttribute('aria-label','Создать задачу');e.append(make('span','hh-cc-add','+'));
     e.title='Нажмите для новой задачи, удерживайте для голосовой';
