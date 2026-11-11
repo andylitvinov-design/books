@@ -78,10 +78,15 @@ function normalizeLiveBatchPR(node, listed) {
 }
 
 function boundedRestFallback(selected) {
-  // Keep two most recently edited PRs and four rotating ones. Without GraphQL
-  // the oldest 180 PRs must still get attention rather than only hot PRs.
+  // Without GraphQL retain two priority/event slots and the independent
+  // audit ring. Preserve one existing safe source-repair QUEUE HINT so an
+  // event wake cannot accidentally omit the selected third-slot repair.
+  // It is only a read; exact-HEAD job, owner and lease proof still gate writes.
   if (selected.length <= MAX_REST_FALLBACK_LOOKUPS) return selected;
-  return [...selected.slice(0,2),...selected.slice(4,8)].slice(0,MAX_REST_FALLBACK_LOOKUPS);
+  const top=selected.slice(0,2);
+  const repair=selected.slice(2).find(pr=>isFreeFor(pr,'repair'))||null;
+  const ring=selected.slice(4).filter(pr=>pr!==repair).slice(0,repair?3:4);
+  return [...top,...(repair?[repair]:[]),...ring].slice(0,MAX_REST_FALLBACK_LOOKUPS);
 }
 
 function selectCandidates(prs,now,rotatedSize=12,urgentSize=4,priorityNumber=null){
@@ -102,7 +107,23 @@ function selectCandidates(prs,now,rotatedSize=12,urgentSize=4,priorityNumber=nul
     top.push(anchor);
     chosen.add(anchor.number);
   }
-  // Rotate fast slots within the highest ten-level operational rank.
+  // A confirmed source-queue LABEL is a high-value inspection hint, not a
+  // write grant. Reserve at most one remaining fast slot and rotate it each
+  // 10-minute tick. Without this, a P5 source fix can wait behind 100+ P1
+  // review-only PRs even when both existing Repair Workers are available.
+  // Manual/held/claimed PRs are excluded; downstream exact-HEAD Core proof,
+  // file safety and owner lease checks stay completely unchanged.
+  const repairQueue=ranked.filter(pr=>!chosen.has(pr.number)&&
+    isFreeFor(pr,'repair')&&pr.base?.ref===PROD&&
+    pr.head?.repo?.full_name==='andylitvinov-design/books'&&
+    /^[0-9a-f]{40}$/i.test(pr.head?.sha||''));
+  if(top.length<urgentSize&&repairQueue.length){
+    const offset=Math.floor(now/(10*MINUTE))%repairQueue.length;
+    const source=repairQueue[offset];
+    top.push(source);
+    chosen.add(source.number);
+  }
+  // Rotate other fast slots within the highest operational rank.
   // The independent audit ring still prevents starvation of other ranks.
   const rank=anchor?priorityFor(anchor,now).mergeRank:null;
   const peers=ranked.filter(pr=>priorityFor(pr,now).mergeRank===rank &&

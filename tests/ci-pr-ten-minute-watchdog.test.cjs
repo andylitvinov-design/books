@@ -1,7 +1,7 @@
 'use strict';
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
-const {selectCandidates, gateIsGreen, transientFailure, shouldRetryTransientCoreFailure, canRetryCi, canDispatchRepair, classifyMergeState, run, bootstrapLegacyCore, hasActiveLease, classifyCoreFailureJobs} = require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+const {selectCandidates, boundedRestFallback, gateIsGreen, transientFailure, shouldRetryTransientCoreFailure, canRetryCi, canDispatchRepair, classifyMergeState, run, bootstrapLegacyCore, hasActiveLease, classifyCoreFailureJobs} = require('../scripts/ci-pr-ten-minute-watchdog.cjs');
 const {classifyRedCiError}=require('../scripts/ci-pr-red-ci-classifier.cjs');
 const SHA = 'b'.repeat(40);
 const NOW = 1800000000000;
@@ -40,6 +40,38 @@ test('exact Core completion wake does not evict the top P1 direction while prese
   assert.equal(picked[0].number,159);
   assert.equal(picked[1].number,70);
   assert.ok(picked.length<=16);
+});
+test('repair-needed source queue receives a rotating fast inspection slot without bypassing holds',()=>{
+  const prs=Array.from({length:179},(_,i)=>({...pr(i+1),state:'open',
+    labels:[],title:i<20?'fix(video): urgent regression':'docs(other): ordinary work'}));
+  for(const n of [120,121,122,123])
+    prs[n-1].labels=[{name:'hh:repair-needed'}];
+  prs[120].labels.push({name:'hh:repair-manual'});
+  prs[121].labels.push({name:'hh:hold'});
+  const seen=new Set();
+  for(let tick=0;tick<6;tick++){
+    const selected=selectCandidates(prs,NOW+tick*600000);
+    const fast=selected.slice(0,4).map(x=>x.number);
+    assert.ok(fast.some(n=>n===120||n===123),'source hint must enter the 4 fast slots');
+    assert.ok(!fast.includes(121)&&!fast.includes(122),
+      'held/manual source hints must not take fast source slots');
+    fast.filter(n=>n===120||n===123).forEach(n=>seen.add(n));
+    assert.ok(selected.length<=16,'no additional GitHub PR inspection/API budget');
+  }
+  assert.deepEqual([...seen].sort(),[120,123],
+    'safe source queue must rotate instead of repeatedly inspecting one PR');
+});
+test('REST GraphQL fallback preserves a queued source repair and the 6-read budget',()=>{
+  const prs=Array.from({length:16},(_,i)=>({...pr(i+1),state:'open',labels:[]}));
+  const ordinary=boundedRestFallback(prs).map(x=>x.number);
+  assert.deepEqual(ordinary,[1,2,5,6,7,8]);
+  prs[2].labels=[{name:'hh:repair-needed'}];
+  const selected=boundedRestFallback(prs).map(x=>x.number);
+  assert.deepEqual(selected,[1,2,3,5,6,7]);
+  assert.equal(new Set(selected).size,6);
+  prs[2].labels.push({name:'hh:repair-manual'});
+  assert.deepEqual(boundedRestFallback(prs).map(x=>x.number),ordinary,
+    'manual hold never gains a priority repair slot');
 });
 test('only trusted green exact-SHA gate can schedule guarded merging',()=>{
   const gate={total_count:1,check_runs:[{id:1,name:'hh-core-verified',status:'completed',conclusion:'success',app:{id:15368}}]};
