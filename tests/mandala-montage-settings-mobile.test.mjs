@@ -113,7 +113,7 @@ test("Choosing a Montage style preserves the compiled film and paints the live a
   assert.match(studio,/data-video-preview-clips=\{usingFreeFilmCompilation/);
   assert.match(studio,/autoPlay=\{previewPlaying&&!recording&&!preparing\}/);
   assert.match(studio,/onCanPlay=\{event=>\{\s*setPremiumReady\(true\);[\s\S]*?event.currentTarget.play\(\)/);
-  assert.equal((studio.match(/activeMontageStyleId,styleFilmRef\.current\)/g)||[]).length,5,
+  assert.equal((studio.match(/activeMontageStyleId,styleFilmRef\.current,storyboardPhotos\)/g)||[]).length,5,
     "still preview, animation preview and both MP4 export encoders use the same style");
   assert.match(studio,/creationMode,activeMontageStyleId,currentFreeVideoPlan/,
     "a style edit invalidates only the previous exported recording");

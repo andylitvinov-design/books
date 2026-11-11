@@ -25,6 +25,22 @@ import { getCoachPersona, localCoachText, coachStagePrompt, personaMethodFit } f
 import styles from './public-coaching-discovery.module.css'
 
 
+const preferredCoachingStarters=Object.freeze({
+  mira:['grow_reflect_v1','oskar_wellbeing_resources_v1','oskar_resources_v1'],
+  max:['grow_quick_v1','tgrow_compass_v1'],
+  sofia:['solution_relationship_dialogue_v1','clear_dialogue_v1'],
+  alex:['tgrow_compass_v1','grow_quick_v1'],
+  lea:['appreciative_future_v1','grow_reflect_v1'],
+  noah:['woop_habit_v1','woop_wellbeing_routine_v1'],
+  iris:['oskar_resources_v1','solution_focus_quick_v1'],
+  ray:['appreciative_future_v1','grow_reflect_v1'],
+})
+const coachTopicTags={
+  resilience:['stress','wellbeing','unclear'],decisions:['goal','decision','unclear'],
+  relationships:['relationships','conflict'],career:['career','business'],
+  meaning:['growth','transition'],habits:['motivation','productivity'],
+  clarity:['unclear','confidence','goal'],creativity:['creativity','growth'],
+}
 const myCoachCopy={
   en:{eyebrow:'HOLISTIC HOUSE · YOUR AI COACH',edit:'Choose another coach',back:'Back to my coach',ready:'Here with you',start:'Start conversation',unavailable:'The guided session is temporarily unavailable. Please try again later.',note:'A private, guided conversation with reviewed questions and optional follow-ups. You can type or dictate answers. This is not yet a live generative AI voice chat.'},
   ru:{eyebrow:'HOLISTIC HOUSE · ВАШ AI-КОУЧ',edit:'Выбрать другого коуча',back:'Назад к коучу',ready:'Я рядом',start:'Начать общение',unavailable:'Сессия временно недоступна. Попробуйте снова позже.',note:'Личный диалог по проверенным вопросам: можно писать или диктовать ответы. Живой генеративный голосовой AI-чат пока не включён.'},
@@ -379,10 +395,24 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null,person
   // Only a published, non-sensitive model can open directly from a fictional AI persona.
   const starterScheme=useMemo(()=>{
     if(!selectedPersona)return null
+    const safe=schemes.filter(s=>!coachingSchemeRequiresAdultConsent(s))
+    const preferred=preferredCoachingStarters[selectedPersona.id]||[]
+    for(const key of preferred){
+      const found=safe.find(s=>s.schemeKey===key)
+      if(found)return found
+    }
+    const topicTags=coachTopicTags[selectedPersona.topic]||[]
     const wantsFast=personaSelection?.settings?.pace==='fast'
-    const score=s=>personaMethodFit(selectedPersona.id,s.modelKey)*10+(s.style===(wantsFast?'quick':'reflective')?2:0)
-    return schemes.filter(s=>!coachingSchemeRequiresAdultConsent(s))
-      .sort((a,b)=>score(b)-score(a)||Math.abs(a.minutes-20)-Math.abs(b.minutes-20)||a.schemeKey.localeCompare(b.schemeKey))[0]||null
+    const score=s=>{
+      const tags=Array.isArray(s.tags)?s.tags:[]
+      return (tags.some(tag=>topicTags.includes(tag))?40:0)
+        +(tags.some(tag=>['goal','unclear','growth'].includes(tag))?20:0)
+        +personaMethodFit(selectedPersona.id,s.modelKey)*10
+        +(s.style===(wantsFast?'quick':'reflective')?2:0)
+        -(tags.some(tag=>['money','budget'].includes(tag))&&selectedPersona.topic!=='career'?50:0)
+    }
+    return [...safe].sort((a,b)=>score(b)-score(a)||Math.abs(a.minutes-20)-Math.abs(b.minutes-20)
+      ||a.schemeKey.localeCompare(b.schemeKey))[0]||null
   },[schemes,selectedPersona,personaSelection?.settings?.pace])
   // A dedicated public scheme landing may link back to an explicit Start action.
   // Only a whitelisted, published scheme key is read from the URL; never a
@@ -807,7 +837,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null,person
             <p className={styles.disclaimer}><LockKeyhole size={14}/>{t.memory}</p>
           </div>:pendingFollowup?<div className={styles.questionScreen} data-public-coaching-followup>
             <p className={styles.stage}>{t.clarify}</p>
-            <CoachingChatThread turn={followupTurn} locale={lang} compact>
+            <CoachingChatThread turn={followupTurn} locale={lang} coachPersona={selectedPersona} compact>
               <h1 ref={titleRef} tabIndex={-1}>{personaFollowupText||tr(pendingFollowup.prompt,lang)}</h1>
             </CoachingChatThread>
             <p className={styles.hint}>{t.clarifyWhy}</p>
@@ -815,7 +845,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null,person
           </div>:<div className={styles.questionScreen} data-public-coaching-slide={current.id}>
             <p className={styles.stage}>{tr(current.stageTitle,lang)}</p>
             <div data-public-coaching-gentle-guide>
-              <CoachingChatThread turn={conversationTurn} locale={lang} compact>
+              <CoachingChatThread turn={conversationTurn} locale={lang} coachPersona={selectedPersona} compact>
                 <h1 ref={titleRef} tabIndex={-1}>{tr(current.prompt,lang)}</h1>
               </CoachingChatThread>
             </div>
@@ -854,7 +884,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null,person
             <div className={styles.replyTools}>
               <CoachingQuestionVoice key={(pendingFollowup?'guest-followup-':'guest-question-')+current.id+'-'+lang}
                 compact text={pendingFollowup?[followupTurn?.speech,tr(pendingFollowup.prompt,lang)].filter(Boolean).join(' '):[conversationTurn?.speech,tr(current.prompt,lang)].filter(Boolean).join(' ')}
-                locale={lang} mode="answer" speechConsent={speechConsent} onConsent={()=>setSpeechConsent(true)}
+                locale={lang} mode="answer" fictionalPersona={Boolean(selectedPersona)} speechConsent={speechConsent} onConsent={()=>setSpeechConsent(true)}
                 onListeningChange={setDictating}
                 onTranscript={words=>{
                   if(pendingFollowup)setReflectionDraft(old=>appendSpokenAnswer(old,words,500))

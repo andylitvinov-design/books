@@ -644,8 +644,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await advancedText.click();
       await expect(advancedVoice).toBeVisible({timeout:15000});
       await expect(advancedVoice).toHaveAttribute("open","");
+      // Exercise actual WebKit touch navigation and retain strict aria-pressed validation.
       await expect(voiceModeButton).toBeVisible();
-      // Exercise the real iPhone/WebKit touch event; keep selected-state assertion.
       if(engine==="webkit")await voiceModeButton.tap();
       else await voiceModeButton.click();
       await expect(voiceModeButton).toHaveAttribute("aria-pressed","true");
