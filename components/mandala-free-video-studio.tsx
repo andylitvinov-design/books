@@ -5311,7 +5311,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const goToMontageFromIdeas = () => {
     quickNavTokenRef.current++;
     setActiveWorkspace("editor");
-    setMontagePanel("text");
+    setMontagePanel("effects");
     setStudioMode("pump");
     setIntroPlaying(false);
     setTherapyJumpRequested(false);
@@ -5370,23 +5370,23 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   };
 
   const continueMontageOrGenerate=()=>{
-    // The large Style CTA must advance through the real editing tabs; it is
-    // not an implicit export/auth request. Settings remains optional.
+    // Navigation is independent from export, login, and charging. Keep the
+    // visible tab order Style → Audio → Text → Storyboard → Story.
     if(montagePanel==="effects"){
+      setMontagePanel("audio");setBasicPanelTab("music");
+    }else if(montagePanel==="audio"){
       setMontagePanel("text");
-      setNotice("");
-      window.requestAnimationFrame(()=>
-        document.querySelector("[data-video-montage-tools]")?.scrollIntoView({block:"start",behavior:"smooth"}));
-      return;
+    }else if(montagePanel==="text"){
+      setMontagePanel("settings");
+    }else if(montagePanel==="settings"){
+      setMontagePanel("concept");
+    }else{
+      // Soundtrack remains in Montage; visual effects live under Hypno.
+      setHypnoEntryGroup("effects");setActiveWorkspace("effects");
     }
-    if(montagePanel==="text"){
-      setMontagePanel("audio");setBasicPanelTab("music");setNotice("");setPreviewPlaying(false);
-      window.requestAnimationFrame(()=>
-        document.querySelector("[data-video-montage-tools]")?.scrollIntoView({block:"start",behavior:"smooth"}));
-      return;
-    }
-    // Soundtrack remains in Montage; visual effect presets move to Hypno > Effects.
-    setHypnoEntryGroup("effects");setActiveWorkspace("effects");setNotice("");setPreviewPlaying(false);
+    setNotice("");setPreviewPlaying(false);
+    window.requestAnimationFrame(()=>
+      document.querySelector("[data-video-montage-tools]")?.scrollIntoView({block:"start",behavior:"smooth"}));
   };
 
   // First mobile step is only the short goal, category and optional request.
@@ -8043,8 +8043,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           aria-label={locale==="ru"?"Настройки и инструменты монтажа":locale==="es"?"Opciones de montaje":"Montage options"}>
           <nav className={videoStyles.montageQuickTools} data-video-montage-tools
             aria-label={locale==="ru"?"Разделы монтажа":locale==="es"?"Secciones de montaje":"Montage sections"}>
-            {([{id:"effects",Icon:Sparkles},{id:"text",Icon:Type},
-              {id:"audio",Icon:Music2},{id:"settings",Icon:SlidersHorizontal},
+            {([{id:"effects",Icon:Sparkles},{id:"audio",Icon:Music2},
+              {id:"text",Icon:Type},{id:"settings",Icon:SlidersHorizontal},
               {id:"concept",Icon:Film}] as const).map(item=>
               <button type="button" key={item.id} data-video-montage-tab={item.id}
                 aria-pressed={montagePanel===item.id} aria-controls="video-montage-active-panel"
@@ -8345,7 +8345,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
                 document.querySelector<HTMLElement>('[data-video-own-voice-record]')?.scrollIntoView({behavior:"smooth",block:"center"})));
             }}
-            onCreate={()=>{setMontagePanel("audio");setBasicPanelTab("music");setPreviewPlaying(false);}} onGenerate={createQuickVideo} status={notice}/>
+            onCreate={()=>{setMontagePanel("settings");setPreviewPlaying(false);}} onGenerate={createQuickVideo} status={notice}/>
           </div>
           {montagePanel==="settings" ? <div className={videoStyles.montagePane} data-video-montage-text-tools>
           <details className={videoStyles.montageAdvancedTools} data-video-concept-text-tools>
@@ -8501,11 +8501,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               </div>
             </fieldset>
             <button type="button" className={videoStyles.montageStepNext}
-              data-video-montage-next="text" disabled={recording||preparing}
-              onClick={()=>setMontagePanel("text")}>
-              <Type size={19} aria-hidden="true"/>
-              <span>{locale==="ru"?"Далее · Текст":
-                locale==="es"?"Siguiente · Texto":"Next · Text"}</span>
+              data-video-montage-next="audio" disabled={recording||preparing}
+              onClick={()=>{setMontagePanel("audio");setBasicPanelTab("music");}}>
+              <Music2 size={19} aria-hidden="true"/>
+              <span>{locale==="ru"?"Далее · Аудио":
+                locale==="es"?"Siguiente · Audio":"Next · Audio"}</span>
               <ArrowRight size={20} aria-hidden="true"/>
             </button>
           </div> : null}
@@ -8954,13 +8954,17 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 locale==="ru"?"Создать видео":locale==="es"?"Generar vídeo":"Generate Video"}
             </button>
             <button type="button" className={videoStyles.stageAddButton}
-              data-video-montage-next={montagePanel==="effects"?"text":montagePanel==="text"?"audio":"hypno"}
+              data-video-montage-next={montagePanel==="effects"?"audio":montagePanel==="audio"?"text":montagePanel==="text"?"settings":montagePanel==="settings"?"concept":"hypno"}
               disabled={!studioHydrated||recording||preparing} onClick={continueMontageOrGenerate}>
               <Sparkles size={19} aria-hidden="true"/>
               {montagePanel==="effects"?
+                (locale==="ru"?"Выбрать аудио":locale==="es"?"Elegir audio":"Choose Audio"):
+                montagePanel==="audio"?
                 (locale==="ru"?"Добавить текст":locale==="es"?"Añadir texto":"Add Text"):
                 montagePanel==="text"?
-                (locale==="ru"?"Выбрать музыку":locale==="es"?"Elegir música":"Choose music"):
+                (locale==="ru"?"Раскадровка":locale==="es"?"Guion visual":"Storyboard"):
+                montagePanel==="settings"?
+                (locale==="ru"?"Сюжет":locale==="es"?"Guion":"Story"):
                 (locale==="ru"?"Гипноэффекты":locale==="es"?"Efectos hipno":"Hypno effects")}
               <ArrowRight size={18} aria-hidden="true"/>
             </button>

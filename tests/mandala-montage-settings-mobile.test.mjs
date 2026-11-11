@@ -9,7 +9,7 @@ test("Montage opens on Style, preserves real recorder and five functional tabs w
   const tabStart=studio.indexOf("<nav className={videoStyles.montageQuickTools}");
   const tabMarkup=studio.slice(tabStart,studio.indexOf("</nav>",tabStart));
   assert.ok(tabStart>0,"Montage nav must exist");
-  assert.deepEqual([...tabMarkup.matchAll(/id:"(settings|effects|text|audio)",Icon:/g)].map(m=>m[1]),["effects","text","audio","settings"]);
+  assert.deepEqual([...tabMarkup.matchAll(/id:"(settings|effects|text|audio)",Icon:/g)].map(m=>m[1]),["effects","audio","text","settings"]);
   assert.match(studio,/data-video-montage-tab=\{item.id\}/);
   assert.match(studio,/if\(id==="editor"\)setMontagePanel\("effects"\)/);
   assert.match(studio,/aria-pressed=\{montagePanel===item.id\}/);

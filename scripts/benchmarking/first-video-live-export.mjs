@@ -155,14 +155,14 @@ try {
       style?.getAttribute('aria-pressed')==='true';
   },undefined,{timeout:15000});
   assert.equal(await editorTab.getAttribute('aria-pressed'),'true','MONTAGE_TAB_MUST_ACTIVATE');
-  // Only a physical Next action advances the real Style → Text stage.
-  const styleNext=page.locator('[data-video-montage-effects] [data-video-montage-next="text"]');
+  // Only a physical Next action advances the real Style → Audio stage.
+  const styleNext=page.locator('[data-video-montage-effects] [data-video-montage-next="audio"]');
   await styleNext.waitFor({state:'visible',timeout:15000});
   await styleNext.click();
-  await page.waitForFunction(()=>document.querySelector('[data-video-montage-tab="text"]')
+  await page.waitForFunction(()=>document.querySelector('[data-video-montage-tab="audio"]')
     ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
-  assert.equal(await page.locator('[data-video-montage-tab="text"]').getAttribute('aria-pressed'),
-    'true','VISIBLE_STYLE_NEXT_MUST_OPEN_TEXT');
+  assert.equal(await page.locator('[data-video-montage-tab="audio"]').getAttribute('aria-pressed'),
+    'true','VISIBLE_STYLE_NEXT_MUST_OPEN_AUDIO');
   // Concept is reviewed in Ideas, not in the removed Montage Concept panel.
   await page.locator('[data-video-quick-control="phrases"]').click();
   await page.locator('[data-video-ideas-tab="concept"]').click();

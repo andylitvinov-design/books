@@ -86,8 +86,8 @@ test("shared widescreen preview and mutually exclusive format accordion keep pai
   assert.match(source,/freeVideoSelected = practiceType==="video" && practiceLevels\.video==="basic"/);
   const direct=source.slice(source.indexOf("data-video-quick-generate"),
     source.indexOf("</button>",source.indexOf("data-video-quick-generate")));
-  const addEffects=source.slice(source.indexOf('data-video-montage-next={montagePanel==="effects"?"text":montagePanel==="text"?"audio":"hypno"}'),
-    source.indexOf("</button>",source.indexOf('data-video-montage-next={montagePanel==="effects"?"text":montagePanel==="text"?"audio":"hypno"}')));
+  const addEffects=source.slice(source.indexOf('data-video-montage-next={montagePanel==="effects"?"audio":montagePanel==="audio"?"text":montagePanel==="text"?"settings":montagePanel==="settings"?"concept":"hypno"}'),
+    source.indexOf("</button>",source.indexOf('data-video-montage-next={montagePanel==="effects"?"audio":montagePanel==="audio"?"text":montagePanel==="text"?"settings":montagePanel==="settings"?"concept":"hypno"}')));
   assert.ok(direct.includes('onClick={createQuickVideo}'),"Create must use the original real renderer");
   assert.ok(addEffects.includes('onClick={continueMontageOrGenerate}'),"Add must only advance");
   for(const guard of ['if(!freeVideoSelected){','if(phrasePending){','if(narrationInvalid){','if(!canGenerate){'])
