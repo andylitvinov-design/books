@@ -99,7 +99,7 @@ function coreRunBase(run,pr,fullRepo,suiteId){
   x.base?.ref==='codex/public-book-library'&&SHA.test(x.base?.sha||''));
  return refs.length===1?refs[0].base.sha:null;
 }
-async function coreRunBaseForCheck({github,owner,repo,pr,check}){
+async function coreRunBaseForCheck({github,owner,repo,pr,check,rows=null,token=null,fetcher=globalThis.fetch}){
  try{
   const u=new URL(check?.details_url||'');
   const m=u.pathname.match(new RegExp('^/'+owner+'/'+repo+'/actions/runs/([0-9]+)/job/([0-9]+)/?$'));
@@ -114,7 +114,25 @@ async function coreRunBaseForCheck({github,owner,repo,pr,check}){
      job.check_run_url!=='https://api.github.com/repos/'+owner+'/'+repo+'/check-runs/'+check.id)return null;
   const run=(await github.rest.actions.getWorkflowRun({owner,repo,run_id:runId})).data;
   if(run?.id!==runId)return null;
-  return coreRunBase(run,pr,owner+'/'+repo,check.check_suite?.id);
+  const associated=coreRunBase(run,pr,owner+'/'+repo,check.check_suite?.id);
+  if(associated)return associated;
+  // The hourly coordinator must share the verified Core-base fallback with
+  // event-driven auto-merge. GitHub can return pull_requests: [] on green Core.
+  // Recover only for the matching current source SHA, complete exact-run jobs
+  // and a known non-workflow PR diff; unknown provenance stays unknown.
+  if(owner+'/'+repo!=='andylitvinov-design/books'||
+     !token||typeof fetcher!=='function'||!Array.isArray(rows)||!rows.length||
+     !Array.isArray(run?.pull_requests)||run.pull_requests.length!==0||
+     run.head_sha!==pr?.head?.sha)return null;
+  const page=(await github.rest.actions.listJobsForWorkflowRun({
+    owner,repo,run_id:runId,per_page:100,filter:'latest'
+  })).data;
+  if(!Number.isSafeInteger(page?.total_count)||page.total_count<1||
+     page.total_count>100||!Array.isArray(page.jobs)||
+     page.total_count!==page.jobs.length)return null;
+  const {recoverTestedBase}=require('./ci-pr-core-tested-base-logs.cjs');
+  return recoverTestedBase({github,owner,repo,pr,run,jobs:page.jobs,
+    rows,token,fetcher});
  }catch{return null;}
 }
 async function loadTrustedClassifier(workspace){
