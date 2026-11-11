@@ -157,3 +157,28 @@ test('no extra workflow or privileged source action is introduced',()=>{
  assert.match(yaml,/ci-pr-repair-verified-finalizer\.cjs/);
  assert.doesNotMatch(yaml,/HH_AUTOMERGE_TOKEN:[^\n]*core-slot-wakeup/);
 });
+
+
+test('terminal receipt job has PR write but cannot write source; real 403 requires separate permission',()=>{
+ const fs=require('node:fs');
+ const yaml=fs.readFileSync('.github/workflows/hh-pr-direct-core-failure.yml','utf8');
+ const slot=yaml.split('\n  core-slot-wakeup:\n')[1];
+ assert.ok(slot,'reuse the existing successful Core completion job, no new runner');
+ assert.match(slot,/name: core-ci-freed-slot-wakeup/);
+ assert.match(slot,/github\.event\.workflow_run\.conclusion == 'success'/);
+ assert.match(slot,/permissions:\s*\n\s*contents: read/);
+ assert.match(slot,/pull-requests: write/);
+ assert.match(slot,/issues: write/);
+ assert.match(slot,/checks: read/);
+ assert.match(slot,/Record independently verified repair outcome on real new HEAD/);
+ assert.match(slot,/ci-pr-repair-verified-finalizer\.cjs/);
+ assert.doesNotMatch(slot,/contents: write|HH_AUTOMERGE_TOKEN|HH_OPENROUTER_FREE_API_KEY|HH_REPAIR_JOB_TOKEN/);
+ const source=fs.readFileSync('scripts/ci-pr-repair-verified-finalizer.cjs','utf8');
+ assert.match(source,/HH_PR_REPAIR_VERIFIED_V1/);
+ assert.match(source,/latestGreenRequired\(checks,c\.published_head\)/);
+ assert.match(source,/HH_PR_REPAIR_VERIFIED_V1/);
+ assert.match(source,/github\.rest\.issues\.createComment/);
+ // This is still a protected status receipt, NOT a source merge or proof of
+ // a successful POST merely because its token's permissions were changed.
+ assert.doesNotMatch(source,/git\.updateRef|createCommitOnBranch|pulls\.merge/);
+});
