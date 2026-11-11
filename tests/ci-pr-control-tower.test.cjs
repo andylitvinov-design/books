@@ -276,6 +276,60 @@ test('stale PR SHA, missing source proof and manual hold cannot cause writes',as
   assert.equal(r.dispatchAccepted,0);assert.equal(f.calls.dispatched.length,0);
  }
 });
+test('manual-conflict hints get bounded rotating live probes even when list mergeability is absent',()=>{
+ const manual=Array.from({length:20},(_,i)=>pr(7000+i,'conflict',{
+  labels:[{name:'hh:repair-manual'},{name:'hh:conflict-repair-needed'}],
+  mergeable:null,mergeable_state:'unknown'
+ }));
+ const seen=new Set();
+ for(let turn=0;turn<12;turn++){
+  const tasks=planCandidates(manual,NOW+turn*600000);
+  assert.ok(tasks.length<=6,'never exhaust bounded inspect budget');
+  for(const candidate of tasks)seen.add(candidate.pr_number);
+ }
+ assert.ok(seen.size>=18,'do not permanently ignore old conflict hints');
+ const source=pr(8001,'repair');
+ const mixed=planCandidates([...manual,source],NOW);
+ assert.equal(mixed[0].pr_number,8001,'verified source keeps first slot');
+ assert.ok(mixed.some(x=>x.lane==='legacy'&&x.pr_number>=7000));
+});
+test('live exact-head DIRTY manual conflict routes to semantic executor without source writes',async()=>{
+ const old=pr(1624,'conflict',{
+  labels:[{name:'hh:repair-manual'},{name:'hh:conflict-repair-needed'}],
+  mergeable:null,mergeable_state:'unknown'
+ });
+ const live={...old,mergeable:false,mergeable_state:'dirty'};
+ const f=fixture([old],{live});
+ const result=await run({github:f.github,core:core(),context,now:NOW,
+  capacityFn:f.capacityFn});
+ assert.equal(result.verifiedManualConflictReroutes,1);
+ assert.equal(result.manualConflictHandoffs,1);
+ assert.equal(result.conflictQueueReleased,1);
+ assert.equal(result.dispatchAccepted,0);
+ assert.equal(f.calls.dispatched.length,0,'never dispatch a source writer for conflict');
+ assert.ok(f.calls.reserved.some(x=>x.body.includes('HH_CONTROL_CONFLICT_HANDOFF_V1 '+SHA)));
+ assert.ok(f.calls.labels.some(x=>x.labels.includes('hh:repair-manual')));
+ assert.ok(f.calls.removed.some(x=>x.name==='hh:conflict-repair-needed'));
+});
+test('manual conflict cannot be promoted on stale head or unverified mergeability',async()=>{
+ const old=pr(1624,'conflict',{
+  labels:[{name:'hh:repair-manual'},{name:'hh:conflict-repair-needed'}],
+  mergeable:null,mergeable_state:'unknown'
+ });
+ for(const fresh of [
+  {...old,mergeable:null,mergeable_state:'unknown'},
+  {...old,mergeable:true,mergeable_state:'clean'},
+  {...old,mergeable:false,mergeable_state:'dirty',
+   head:{...old.head,sha:'b'.repeat(40)}}
+ ]){
+  const f=fixture([old],{live:fresh});
+  const result=await run({github:f.github,core:core(),context,now:NOW,
+   capacityFn:f.capacityFn,dryRun:true});
+  assert.equal(result.verifiedManualConflictReroutes,0);
+  assert.equal(result.manualConflictHandoffs,0);
+  assert.equal(f.calls.dispatched.length,0);
+ }
+});
 test('manual legacy PR gets only signed cloud preflight, never direct source permission',async()=>{
  const manual=pr(2,'repair',{labels:[{name:'hh:repair-manual'},{name:'hh:repair-needed'}]});
  const f=fixture([manual]);
@@ -1517,7 +1571,7 @@ test('16 verified inspections preserve overlapping DIRTY/Core/Specialist blocker
  assert.equal(report.actionable,16,'manual preflight candidates count as routable');
  assert.equal(report.nonmanualRouted,0,'no manual source write was permitted');
  assert.equal(report.legacyPrepEligible,16);
- assert.equal(report.candidates,1,'one bounded legacy candidate, not four read-only runners');
+ assert.equal(report.candidates,3,'one hourly legacy candidate plus two bounded read-only conflict probes');
  assert.equal(report.dispatchAccepted,0,'the mock never proves capacity or a lease');
  assert.match(report.reason,/^CAPACITY_UNVERIFIED:/);
  assert.equal(report.watchdogSampleStatus,'VERIFIED_BOUNDED_SAMPLE');
