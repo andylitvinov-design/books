@@ -40,10 +40,17 @@
   // Only a signed Core source-owned test may join ordinary code repair.
   // Specialist/browser tests remain review-only.
   function sourceRepairCandidate(e){
-    return ['TYPESCRIPT','SOURCE_CODE'].includes(e?.category)||
-      (e?.category==='TEST_FAILURE'&&
-       e.classification?.failed_job==='core-lint-types-build'&&
-       e.classification?.failed_step==='Mobile Dock Core geometry and iPhone keyboard contracts');
+    if(['TYPESCRIPT','SOURCE_CODE'].includes(e?.category))return true;
+    if(e?.category!=='TEST_FAILURE'||!classified(e)||
+       e.classification?.reason_code!=='FAILED_TEST_STEP_REQUIRES_TRIAGE'||
+       e.classification?.evidence_code!=='FAILED_TEST_STEP_REQUIRES_TRIAGE')return false;
+    var job='core-lint-types-build',
+      step='Mobile Dock Core geometry and iPhone keyboard contracts';
+    // The private OIDC inbox retains failed_jobs/failed_steps separately;
+    // it deliberately does not persist unrestricted classifier fields.
+    return (e.classification.failed_job===job&&e.classification.failed_step===step)||
+      (Array.isArray(e.failed_jobs)&&e.failed_jobs.includes(job)&&
+       Array.isArray(e.failed_steps)&&e.failed_steps.includes(job+' / '+step));
   }
   function routeFor(e,comments){
     var r=e.route_receipt;
