@@ -265,7 +265,7 @@
 
 /* Guest discovery belongs to the thread, not to an auth wall. */
 .root[data-compact] .publicVideoActions{display:grid;gap:9px;width:100%;box-sizing:border-box;padding:10px;background:#fffaf2;border:1px solid #e7e1d3;border-radius:14px;flex:none}
-.root[data-compact] .topicChoices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.root[data-compact] .topicChoices{display:grid;grid-template-columns:minmax(0,1fr);gap:7px}
 .root[data-compact] .topicChoices button{min-height:44px;border:1px solid #dcdace;border-radius:12px;background:#fffefa;color:#23453b;font:700 13px/1.3 system-ui,sans-serif;cursor:pointer}
 .root[data-compact] .topicChoices button[aria-pressed="true"]{background:#e3f2e7;border-color:#71af9b;box-shadow:inset 0 0 0 1px #71af9b}
 .root[data-compact] :is(.readyVideoLink,.personalVideoButton){min-height:46px;display:flex;align-items:center;justify-content:center;padding:10px 12px;border-radius:12px;box-sizing:border-box;text-align:center;text-decoration:none;font:750 14px/1.35 system-ui,sans-serif;cursor:pointer}
@@ -285,7 +285,7 @@
 .root[data-compact] .videoOptions,
 .root[data-compact] .videoCommands,
 .root[data-compact] .videoEditOptions{
-  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;min-width:0
+  display:grid;grid-template-columns:minmax(0,1fr);gap:8px;min-width:0
 }
 .root[data-compact] .videoOptions button,
 .root[data-compact] .videoCommands button,
@@ -310,7 +310,7 @@
   padding:0 5px;color:#5d6a71;font:650 12px/1.4 system-ui,sans-serif
 }
 .root[data-compact] .videoPhraseFilters fieldset>div{
-  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px
+  display:grid;grid-template-columns:minmax(0,1fr);gap:6px
 }
 .root[data-compact] .videoPhraseFilters button[aria-pressed="true"]{
   border-color:#067a67;background:#e6f6f1;color:#143d3a;
@@ -360,7 +360,7 @@
 
 /* Judgment Mind: compact, optional, never a floating prompt. */
 .judgmentChoices {
-  display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0 10px;
+  display:flex;flex-direction:column;gap:8px;align-items:stretch;margin:8px 0 10px;
 }
 .judgmentChoices button {
   min-height:44px;max-width:100%;padding:9px 12px;border:1px solid #b6d6c8;
@@ -598,7 +598,7 @@
 .root[data-compact][data-chat-skin="messenger"] :global([data-hh-messenger-six-projects]){
   flex:none;width:100%;margin:2px 0 5px
 }
-.root[data-compact] .projectOptions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:100%;min-width:0;margin:4px 0 10px;align-self:stretch}
+.root[data-compact] .projectOptions{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;width:100%;min-width:0;margin:4px 0 10px;align-self:stretch}
 .root[data-compact] .projectOptions button{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:4px;min-width:0;min-height:68px;padding:9px 10px;border:1px solid #d9cde6;border-radius:14px;background:#f4edfd;color:#553d70;font:inherit;text-align:left;overflow-wrap:anywhere;cursor:pointer}
 .root[data-compact] .projectOptions button strong{font:750 13px/1.2 system-ui,sans-serif;color:#553d70}
 .root[data-compact] .projectOptions button small{font:550 11px/1.28 system-ui,sans-serif;color:#776b84}
@@ -614,3 +614,30 @@
 .answerActions button:disabled{opacity:.5;cursor:not-allowed}
 .answerActions small{color:#6e6255;font-size:12px}
 .alternativeLabel{display:block;margin-bottom:5px;color:#285e57;font-size:12px}
+
+/* Sessions: recommendations appear only after the goal/outcome exchange.
+   Reuse the same full-width visual card for real, locale-safe service links. */
+.root[data-compact] .projectOptions a{
+  display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:4px;
+  min-width:0;min-height:68px;padding:9px 10px;box-sizing:border-box;
+  border:1px solid #b8d9c9;border-radius:14px;background:#eaf6f0;
+  color:#234b42;text-align:left;text-decoration:none;overflow-wrap:anywhere
+}
+.root[data-compact] .projectOptions a strong{font:750 13px/1.2 system-ui,sans-serif;color:#164d40}
+.root[data-compact] .projectOptions a small{font:550 11px/1.28 system-ui,sans-serif;color:#46675c}
+.root[data-compact] .projectOptions a:hover{background:#ddf1e7}
+.root[data-compact] .projectOptions a:focus-visible{outline:3px solid #148069;outline-offset:2px}
+@media(max-width:355px){
+  .root[data-compact] .projectOptions a{min-height:64px;padding:8px 7px}
+  .root[data-compact] .projectOptions a strong{font-size:12px}
+  .root[data-compact] .projectOptions a small{font-size:10px;line-height:1.22}
+}
+/* All option groups rendered inside an ongoing Messenger dialogue stack
+   full-width, including media, guidance and short follow-up questions. */
+.root[data-compact][data-has-messages="true"] :is(.startActions,.topicChoices,.videoOptions,.videoCommands,.videoEditOptions){
+  grid-template-columns:minmax(0,1fr)
+}
+.root[data-compact] .videoOptions button,
+.root[data-compact] .videoEditOptions button,
+.root[data-compact] .videoCommands button{min-height:44px;text-align:left}
+.root[data-compact] .judgmentChoices button{align-self:stretch;text-align:left}
