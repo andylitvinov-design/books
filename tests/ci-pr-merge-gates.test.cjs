@@ -134,3 +134,44 @@ test('AutoMerge does not require unrelated CI and retains protected SHA-leased n
  assert.ok(source.includes('--auto "$merge_option" --match-head-commit "$PR_HEAD"'));
  assert.ok(classifier.includes("url.searchParams.set('sha',classifierBase)"));
 });
+
+test('unassociated successful Core resolves one PR only when exact trusted run HEAD matches',async()=>{
+ const workflowSource=workflow('hh-native-auto-merge');
+ const start=workflowSource.indexOf('      - name: Verify live PR and completed exact-head CI');
+ const end=workflowSource.indexOf('      - name: Verify same-run unified gate',start);
+ assert.ok(start>=0&&end>start);
+ const script=workflowSource.slice(start,end).split('          script: |\n')[1]
+  .split('\n').map(line=>line.startsWith('            ')?line.slice(12):line).join('\n');
+ const HEAD='a'.repeat(40),REPO='andylitvinov-design/books';
+ const base='b'.repeat(40);
+ async function check({sha=HEAD,branchCount=1,name='HH PR core release gate',path='.github/workflows/hh-pr-core-release.yml',repo=REPO}={}){
+  const pr={number:4303,state:'open',draft:false,base:{ref:'codex/public-book-library',sha:base},
+   head:{ref:'codex/reasoning-mind-20261110',sha:HEAD,repo:{full_name:REPO}},mergeable:true,mergeable_state:'clean'};
+  const run={id:42922287638,event:'pull_request',name,path,head_branch:pr.head.ref,head_sha:sha,
+   pull_requests:[],status:'completed',conclusion:'success',created_at:'2026-11-10T23:18:42Z',
+   repository:{full_name:REPO},head_repository:{full_name:repo}};
+  const outputs={},logs=[];
+  const github={rest:{
+   pulls:{list:async()=>({data:branchCount===1?[pr]:[pr,{...pr,number:4304}]}),get:async()=>({data:pr})},
+   actions:{listWorkflowRuns:async()=>({data:{workflow_runs:[run],total_count:1}}),
+    listJobsForWorkflowRun:async()=>({data:{total_count:2,jobs:[
+     {name:'hh-merge-check',status:'completed',conclusion:'success'},
+     {name:'hh-specialist',status:'completed',conclusion:'success'}]}})},
+   repos:{getBranch:async()=>({data:{protected:true,
+    protection:{required_status_checks:{contexts:['hh-merge-check']}}}})}
+  }};
+  await vm.runInNewContext('(async()=>{\n'+script+'\n})()',{
+   context:{eventName:'workflow_run',repo:{owner:'andylitvinov-design',repo:'books'},payload:{workflow_run:run}},
+   github,core:{setOutput:(key,value)=>outputs[key]=value,info:x=>logs.push(x)}
+  });
+  return {outputs,logs};
+ }
+ const good=await check();
+ assert.equal(good.outputs.eligible,'true','missing PR list can no longer strand valid exact HEAD');
+ assert.equal(good.outputs.pr,'4303');
+ for(const input of [{sha:'c'.repeat(40)},{branchCount:2},{repo:'other/repo'},
+   {path:'.github/workflows/fake.yml'},{name:'Optional untrusted workflow'}]){
+  const bad=await check(input);
+  assert.notEqual(bad.outputs.eligible,'true','untrusted or ambiguous run must fail closed');
+ }
+});

@@ -73,6 +73,10 @@ jobs:
             let number = null;
             let expectedHead = null;
             let completedRunId = null;
+            // Unassociated Core runs can be trusted only after an immutable
+            // workflow_run event resolves EXACTLY ONE live production PR
+            // from its branch. Never infer this from unrelated PR events.
+            let allowUnassociatedCore = false;
             const log = message => core.info("CI_AUTO_MERGE: " + message);
             if (context.eventName === "pull_request_target" ||
                 context.eventName === "pull_request_review") {
@@ -84,6 +88,9 @@ jobs:
             } else if (context.eventName === "workflow_run") {
               const run = context.payload.workflow_run;
               if (!run || run.event !== "pull_request" || run.conclusion !== "success" ||
+                  run.name !== "HH PR core release gate" ||
+                  String(run.path || "").split("@")[0] !== ".github/workflows/hh-pr-core-release.yml" ||
+                  !Number.isSafeInteger(run.id) || run.id < 1 ||
                   run.repository?.full_name !== fullRepo ||
                   (run.head_repository?.full_name && run.head_repository.full_name !== fullRepo)) return;
               completedRunId = run.id;
@@ -105,6 +112,7 @@ jobs:
                   return;
                 }
                 number = candidates[0].number;
+                allowUnassociatedCore = true;
               }
             } else return;
             if (!Number.isInteger(number)) return;
@@ -168,10 +176,25 @@ jobs:
             // base SHA is checked independently by the trusted freshness
             // classifier below, allowing proven non-sensitive base advancement.
             const matchesCurrentSource = run => run.event === "pull_request" &&
-              run.head_branch === pr.head.ref && (run.pull_requests || []).some(item =>
-                item.number === number &&
-                item.head?.sha === pr.head.sha && item.head?.ref === pr.head.ref &&
-                item.base?.ref === "codex/public-book-library");
+              run.head_branch === pr.head.ref &&
+              (
+                (Array.isArray(run.pull_requests) && run.pull_requests.some(item =>
+                  item.number === number &&
+                  item.head?.sha === pr.head.sha && item.head?.ref === pr.head.ref &&
+                  item.base?.ref === "codex/public-book-library"))
+                ||
+                // GitHub sometimes clears a successful Core run's PR list
+                // (real #4303 run 42922287638). Accept ONLY the exact source
+                // SHA, trusted Core workflow and same repository, after the
+                // event itself resolved one unambiguous current PR above.
+                (allowUnassociatedCore && Array.isArray(run.pull_requests) &&
+                  run.pull_requests.length === 0 &&
+                  run.head_sha === pr.head.sha &&
+                  run.name === "HH PR core release gate" &&
+                  String(run.path || "").split("@")[0] === ".github/workflows/hh-pr-core-release.yml" &&
+                  run.repository?.full_name === fullRepo &&
+                  run.head_repository?.full_name === fullRepo)
+              );
             // Search ONLY trusted Core runs, never every optional PR workflow.
             // The current HEAD's Core gate covers all mandatory Specialist jobs;
             // GitHub still enforces the production branch's required contexts.
