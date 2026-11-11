@@ -622,7 +622,8 @@ jobs:
   publish:
     needs: [claim,fix,code_fix,code_verify]
     # Do not schedule a separate terminal job for a claimed lint task.
-    # The owner token is injected only into the guarded publish_source step.
+    # Owner credential is scoped to guarded publisher + post-commit Core wake steps.
+    # Isolated claim/fix/model/verifier jobs remain credential-free or read-only.
     if: >-
       always() &&
       github.repository == 'andylitvinov-design/books' &&
@@ -943,7 +944,7 @@ jobs:
               core.info('HH_NEXT_CI_OWNER_METADATA_WAKE '+JSON.stringify(ownerWake));
               if(['OWNER_METADATA_EDIT_ACCEPTED','OWNER_WAKE_ALREADY_REQUESTED']
                 .includes(ownerWake.status)){
-                for(let i=0;i<12;i++){
+                for(let i=0;i<8;i++){
                   await wait(5000);
                   outcome=await find();
                   if(outcome.state!=='PENDING')break;
@@ -975,7 +976,7 @@ jobs:
                   ref:'codex/bootstrap-books',inputs:{dry_run:'false',direct_dispatch:'true'}
                 });
                 core.info('HH_NEXT_CI_FALLBACK_DISPATCHED '+JSON.stringify({pr:number,sha}));
-                for(let i=0;i<18;i++){
+                for(let i=0;i<10;i++){
                   await wait(5000);
                   outcome=await find();
                   if(outcome.state!=='PENDING')break;
