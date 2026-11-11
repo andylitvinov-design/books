@@ -331,8 +331,12 @@
       }
     }
     for(var key of Object.keys(links))links[key].sort(function(a,b){return b.pr-a.pr;});
-    var diagnosticAssignments=Math.max(0,counts.assigned-counts.source_assigned);
-    var workerRepliesWithoutCommit=Math.max(0,counts.responded-counts.committed);
+    // Differences of lower bounds are NOT lower bounds. Never render 15-3
+    // as an exact number when the 100-event/PR proof window is incomplete.
+    var diagnosticAssignments=complete===true?
+      Math.max(0,counts.assigned-counts.source_assigned):null;
+    var workerRepliesWithoutCommit=complete===true?
+      Math.max(0,counts.responded-counts.committed):null;
     return {schema:'HH_PR_ERROR_FUNNEL_V1',period_hours:hours,from:new Date(start).toISOString(),
       to:new Date(now).toISOString(),counts:counts,links:links,
       unique_prs:prs.size,unique_events:uniqueEvents.size,
@@ -356,7 +360,7 @@
   if(typeof document==='undefined'||typeof window==='undefined')return;
   if(root.__hhPrErrorFunnelMounted)return;
   root.__hhPrErrorFunnelMounted=true;
-  var panel,select,refreshButton,message,grid,drill,blockerPanel,loading=false;
+  var panel,select,refreshButton,message,insight,grid,drill,blockerPanel,loading=false;
   var commentsCache=new Map(),commitCache=new Map();
   var formatter=new Intl.NumberFormat('ru-RU');
   function el(tag,css,label){var n=document.createElement(tag);
@@ -387,6 +391,7 @@
     refreshButton.type='button';
     controls.append(label,refreshButton);
     header.append(titles,controls);
+    insight=el('p','hh-error-insight','Разбираю назначения и публикации по подтверждениям GitHub…');
     grid=el('div','hh-error-grid');
     message=el('p','hh-error-message','Загружаю подтверждённые события…');
     message.setAttribute('role','status');
@@ -394,7 +399,7 @@
     blockerPanel=el('details','hh-error-blockers');
     blockerPanel.append(el('summary','','Почему задачи останавливаются · причины и PR'),
       el('p','','После входа здесь появится разбивка по типу блокировки.'));
-    panel.append(header,grid,message,blockerPanel,drill);
+    panel.append(header,insight,grid,message,blockerPanel,drill);
     main.insertBefore(panel,main.firstChild);
     renderSkeleton();
     select.addEventListener('change',load);
@@ -444,6 +449,15 @@
   }
   function display(data,note){
     grid.replaceChildren();drill.replaceChildren();
+    insight.textContent=data.complete?
+      'Назначено: '+data.counts.source_assigned+' Repair Worker и '+
+      data.breakdown.assigned_diagnostic_not_source+' диагностических исполнителей. '+
+      'Подтверждённых коммитов: '+data.counts.committed+' из '+
+      data.counts.responded+' ответов Worker; без SHA — '+
+      data.breakdown.worker_replies_without_commit+'.':
+      'Неполные данные: подтверждено не менее '+
+      data.counts.source_assigned+' кодовых назначений и '+
+      data.counts.committed+' GitHub-коммитов. Причины ниже, точная доля недоступна.';
     for(var stage of STAGES){
       var key=stage[0],n=data.counts[key],card=el('article','hh-error-stage');
       var top=el('div','hh-error-stage-head');
@@ -494,12 +508,10 @@
       day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});
     message.append('Период: '+time.format(new Date(data.from))+' — '+time.format(new Date(data.to))+
       ' (Торонто). Ошибок Core CI: '+data.unique_events+' событий в '+
-      data.unique_prs+' PR. Из '+data.counts.assigned+' назначений '+ 
-      data.breakdown.assigned_diagnostic_not_source+' — диагностические, '+
-      data.counts.source_assigned+' — кодовому Worker. Из '+
-      data.counts.responded+' ответов Worker '+
-      data.breakdown.worker_replies_without_commit+
-      ' пока без проверенного SHA. Ответов модели OpenRouter: '+data.ai_responded_prs+
+      data.unique_prs+' PR. Назначений: '+data.counts.assigned+
+      ', кодовому Worker: '+data.counts.source_assigned+
+      ', коммитов: '+data.counts.committed+
+      '. Ответов модели OpenRouter: '+data.ai_responded_prs+
       ' PR (это не равно коммиту). В выборке есть закрытые и тестовые PR. '+(note||'')+
       (data.complete?'':' Неполное покрытие: показаны минимально подтверждённые значения, не все события.'));
   }
