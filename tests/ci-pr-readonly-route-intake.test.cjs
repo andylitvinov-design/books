@@ -108,3 +108,26 @@ test('read-only callback precedes branch-isolated guarded source stage in same w
  assert.match(writer,/ci-pr-event-handoff\.cjs/);
  assert.match(writer,/sendCommanderCiRoute/);
 });
+
+
+test('exact source-owned Core test bypasses only read-only route; other tests retain review',async()=>{
+ const source=receipt('TEST_FAILURE');
+ source.classification={...source.classification,
+  reason_code:'FAILED_TEST_STEP_REQUIRES_TRIAGE',
+  evidence_code:'FAILED_TEST_STEP_REQUIRES_TRIAGE',
+  failed_job:'core-lint-types-build',
+  failed_step:'Mobile Dock Core geometry and iPhone keyboard contracts'};
+ let delivered=0;
+ const deferred=await persistReadOnlyRoute({receipt:source,context,
+  sendFn:async()=>{delivered++;throw Error('DO_NOT_SEND');}});
+ assert.equal(deferred.outcome,'DEFERRED_TO_GUARDED_SINGLE_WRITER');
+ assert.equal(deferred.attempted,false);
+ assert.equal(delivered,0);
+ const ordinary={...source,classification:{...source.classification,
+  failed_step:'Real specialist browser test'}};
+ const review=await persistReadOnlyRoute({receipt:ordinary,context,github:{},
+  oidcToken:'not-used',sendFn:async()=>{delivered++;return {sent:true};}});
+ assert.equal(review.outcome,'READONLY_ROUTE_RECORDED');
+ assert.equal(review.routeState,'TASK_ROUTED_TO_REVIEW');
+ assert.equal(delivered,1);
+});
