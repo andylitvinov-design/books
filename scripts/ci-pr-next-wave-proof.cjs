@@ -33,6 +33,29 @@ function findExactHeadCoreRun(runs,identity) {
   return runs.find(run=>isExactHeadCoreRun(run,identity))||null;
 }
 
+// A run record alone is not a completed check. Require a real primary
+// Actions job and its GitHub runner timestamps before calling a child SHA
+// Core-executed. A queued job remains pending; action_required has no jobs.
+function coreExecutionState(run,jobs){
+ if(!run||!Array.isArray(jobs)||jobs.length>100)return 'UNVERIFIED';
+ if(run.status==='completed'&&!EXECUTED_CONCLUSIONS.has(run.conclusion))
+   return 'UNVERIFIED';
+ const primary=jobs.filter(j=>j?.name==='core-lint-types-build');
+ if(run.status==='queued'||run.status==='waiting'||run.status==='pending'||
+    run.status==='requested')return 'QUEUED';
+ if(primary.length!==1)return 'UNVERIFIED';
+ const job=primary[0];
+ if(job.status==='queued'||job.status==='waiting'||job.status==='pending')
+   return 'QUEUED';
+ const started=Number.isFinite(Date.parse(job.started_at||''))&&
+   typeof job.runner_name==='string'&&job.runner_name.length>0;
+ if(!started)return 'UNVERIFIED';
+ if(job.status==='in_progress'&&run.status==='in_progress')return 'RUNNING';
+ if(job.status==='completed'&&run.status==='completed'&&
+    EXECUTED_CONCLUSIONS.has(job.conclusion))return 'CONFIRMED';
+ return 'UNVERIFIED';
+}
+
 // After a scoped GITHUB_TOKEN source commit, GitHub may emit an
 // approval-only pull_request.synchronize workflow (0 jobs). An owner PAT
 // can request a REAL pull_request.edited Core wave without touching source,
@@ -85,4 +108,4 @@ async function requestOwnerCoreWake({token,prNumber,sha,fetchImpl=global.fetch}=
  return status('OWNER_METADATA_EDIT_ACCEPTED');
 }
 
-module.exports={REPO,CORE_NAME,CORE_PATH,isExactHeadCoreRun,findExactHeadCoreRun,requestOwnerCoreWake};
+module.exports={REPO,CORE_NAME,CORE_PATH,isExactHeadCoreRun,findExactHeadCoreRun,coreExecutionState,requestOwnerCoreWake};
