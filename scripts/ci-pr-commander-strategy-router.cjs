@@ -8,7 +8,7 @@
  * Does not create a workflow, queue or another paid provider.
  */
 const {confirmedCoreEvent}=require('./ci-pr-event-handoff.cjs');
-const {strategyFor,coreErrorTaskId}=require('./ci-pr-error-task.cjs');
+const {strategyFor,coreErrorTaskId,repairableCoreTestFailure}=require('./ci-pr-error-task.cjs');
 const rules=require('./ci-pr-error-rules.v1.json');
 const UUID=/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
 const SHA=/^[a-f0-9]{40}$/i;
@@ -73,7 +73,9 @@ async function route({
   const violation=receiptProof(receipt,context);
   if(violation){result.reason=violation;return result;}
   const c=receipt.classification;
-  const strategy=strategyFor(c.category,'UNVERIFIED',c.retry.allowed);
+  const sourceTest=repairableCoreTestFailure(c);
+  const strategy=sourceTest?
+    {code:'GUARDED_SOURCE_REPAIR'}:strategyFor(c.category,'UNVERIFIED',c.retry.allowed);
   result.prNumber=receipt.prNumber;
   result.runId=receipt.runId;
   result.category=c.category;
@@ -106,12 +108,12 @@ async function route({
     result.reason='INFRA_RERUN_NOT_PROVEN';
     return result;
   }
-  if(REVIEW_ONLY.has(c.category)){
+  if(REVIEW_ONLY.has(c.category)&&!sourceTest){
     result.state='TASK_ROUTED_TO_REVIEW';
     result.reason='NO_SAFE_AUTOMATIC_WRITER_FOR_CATEGORY';
     return result;
   }
-  if(!SAFE_SOURCE.has(c.category)||c.recommended_status!=='REROUTED'||
+  if(!(SAFE_SOURCE.has(c.category)||sourceTest)||c.recommended_status!=='REROUTED'||
      c.retry.allowed!==true||c.retry.max_attempts<1){
     result.state='TASK_REQUIRES_REVIEW';
     result.reason='SOURCE_REPAIR_POLICY_NOT_SATISFIED';
