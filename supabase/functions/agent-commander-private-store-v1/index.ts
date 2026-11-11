@@ -639,6 +639,29 @@ function normalizeLegacyZeroDispatchCiRoute(p: any): any {
   }
   return p;
 }
+// A low-confidence/backstop receipt may arrive before the authenticated
+// dispatcher accepts the *same* exact Core event. Permit only a one-way
+// 0→1 promotion after all OIDC, task, PR and causal checks below pass.
+// Never downgrade an accepted dispatch or rewrite a completed review route.
+function isMonotonicCiDispatchUpgrade(prior: any, next: any): boolean {
+  if(!prior||!next||prior.schema!=="HH_COMMANDER_CI_ROUTE_RECEIPT_V1"||
+     next.schema!==prior.schema||prior.dispatchAccepted!==0||
+     prior.dispatchAcknowledged!==false||next.dispatchAccepted!==1||
+     next.dispatchAcknowledged!==true||
+     next.state!=="DISPATCH_ACCEPTED_NOT_WORKER_STARTED"||
+     !["TASK_WAITING_FOR_DISPATCH","DISPATCH_UNCONFIRMED_RECONCILE",
+       "TASK_AWAITING_EXISTING_RECOVERY"].includes(prior.state)||
+     prior.workerStarted!==false||prior.sourceWriteVerified!==false||
+     prior.liveVerified!==false||prior.executorId!==null||
+     prior.workerTaskKey!==null||prior.errorTaskId!==null||
+     next.workerStarted!==false||next.sourceWriteVerified!==false||
+     next.liveVerified!==false||
+     next.executorId!=="github-actions:hh-pr-repair-worker.yml"||
+     !/^[a-f0-9]{32}$/.test(next.workerTaskKey||"")||
+     !/^[a-f0-9]{32}$/.test(next.errorTaskId||""))return false;
+  return ["inboxId","prNumber","headSha","runId","category","router",
+    "responsibleRole"].every(k=>prior[k]===next[k]);
+}
 async function receiveCommanderCiRoute(req,origin){
   const claims=await verifyGitHubActionsOidc(req);
   if(!claims)return reply(401,{recorded:false,outcome:"GITHUB_OIDC_IDENTITY_REJECTED"},origin);
@@ -709,12 +732,17 @@ async function receiveCommanderCiRoute(req,origin){
         dispatchAcknowledged:p.dispatchAcknowledged,
         workerStarted:false,sourceWriteVerified:false,liveVerified:false,
         proofLevel:"GITHUB_OIDC_ROUTE_ONLY_NOT_EXECUTION"};
-      if(e.route_receipt){
-        const prior=e.route_receipt;
+      const prior=e.route_receipt||null;
+      if(prior){
         const equivalent=Object.entries(record).every(([k,v])=>
           JSON.stringify(prior[k])===JSON.stringify(v));
-        return equivalent?{code:200,outcome:"ALREADY_RECORDED"}:
-          {code:409,outcome:"ROUTE_RECEIPT_IMMUTABLE_CONFLICT"};
+        if(equivalent)return {code:200,outcome:"ALREADY_RECORDED"};
+        if(!isMonotonicCiDispatchUpgrade(prior,record))
+          return {code:409,outcome:"ROUTE_RECEIPT_IMMUTABLE_CONFLICT"};
+        // Historical route preserved for diagnosis. A later cron backstop
+        // cannot overwrite this stronger accepted-dispatch receipt.
+        record.previousRouteState=prior.state;
+        record.previousRouteReason=prior.reason;
       }
       const tasks=await tx.unsafe(
         "select task_id,payload from business_brain.commander_tasks where task_id=$1::uuid and owner_id=$2::uuid and project_key='agent-commander' for update",
@@ -726,13 +754,19 @@ async function receiveCommanderCiRoute(req,origin){
         "select chat_id from business_brain.commander_chats where task_id=$1::uuid and owner_id=$2::uuid limit 2",
         [e.associated_task_id,e.inbox_owner_id]);
       if(chats.length!==1)return {code:409,outcome:"COMMANDER_CHAT_NOT_UNIQUE"};
-      await tx.unsafe(
-        "update business_brain.commander_ci_event_inbox set route_receipt=$1::text::jsonb,route_recorded_at=now() where ci_event_id=$2::uuid and route_receipt is null",
-        [jsonbText(record),p.inboxId]);
+      const written=prior
+        ?await tx.unsafe(
+          "update business_brain.commander_ci_event_inbox set route_receipt=$1::text::jsonb,route_recorded_at=now() where ci_event_id=$2::uuid and inbox_owner_id=$3::uuid and route_receipt=$4::text::jsonb returning ci_event_id",
+          [jsonbText(record),p.inboxId,e.inbox_owner_id,jsonbText(prior)])
+        :await tx.unsafe(
+          "update business_brain.commander_ci_event_inbox set route_receipt=$1::text::jsonb,route_recorded_at=now() where ci_event_id=$2::uuid and inbox_owner_id=$3::uuid and route_receipt is null returning ci_event_id",
+          [jsonbText(record),p.inboxId,e.inbox_owner_id]);
+      if(written.length!==1)
+        throw Error("CI_ROUTE_CONCURRENT_WRITE_ABORTED");
       await tx.unsafe(
         "update business_brain.commander_tasks set payload=jsonb_set(payload,'{ciLatestRoute}',$1::text::jsonb,true),updated_at=now() where task_id=$2::uuid and owner_id=$3::uuid",
         [jsonbText(record),e.associated_task_id,e.inbox_owner_id]);
-      const chatEventId=await stableScopeId(e.inbox_owner_id,"github-ci-route:"+p.inboxId);
+      const chatEventId=await stableScopeId(e.inbox_owner_id,"github-ci-route:"+p.inboxId+(prior?":dispatch-accepted":""));
       const event={schema:"HH_COMMANDER_EVENT_V1",id:chatEventId,
         kind:"github_report",author:"GitHub Actions · verified CI routing",
         text:clean("CI task PR #"+p.prNumber+" strategy "+p.router+
@@ -751,7 +785,7 @@ async function receiveCommanderCiRoute(req,origin){
       await tx.unsafe(
         "update business_brain.commander_chats set execution_state=$1,updated_at=now() where chat_id=$2::uuid and owner_id=$3::uuid",
         [commanderCiChatExecutionState(p.state),chats[0].chat_id,e.inbox_owner_id]);
-      return {code:202,outcome:"RECORDED"};
+      return {code:202,outcome:prior?"UPGRADED_TO_DISPATCH_ACCEPTED":"RECORDED"};
     });
     return reply(result.code,{recorded:result.code===200||result.code===202,
       outcome:result.outcome,inbox_id:p.inboxId,workerStarted:false,liveVerified:false},origin);
@@ -905,7 +939,7 @@ async function handler(req){
       if(body.pr!==undefined&&!pr)return reply(400,{error:"INVALID_PR_NUMBER"},origin);
       const rows=await q(db,
         `select ci_event_id,repository,workflow_run_id,run_attempt,pr_number,head_sha,
-          conclusion,category,classification,failed_jobs,failed_steps,run_url,association_status,route_receipt,route_recorded_at,triage_receipt,triage_recorded_at,historical_pr_readback,created_at
+          conclusion,category,classification,failed_jobs,failed_steps,run_url,association_status,assignment_receipt,route_receipt,route_recorded_at,triage_receipt,triage_recorded_at,historical_pr_readback,created_at
          from business_brain.commander_ci_event_inbox
          where inbox_owner_id=$3::uuid and ($1::int is null or pr_number=$1)
          order by created_at desc limit $2`,[pr,limit,ownerId]);
