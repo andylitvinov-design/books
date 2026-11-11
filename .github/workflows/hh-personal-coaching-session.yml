@@ -3,6 +3,8 @@ on:
   pull_request:
     branches: [codex/public-book-library]
     paths:
+      # Keep the private coaching owner self-verifying when its workflow policy changes.
+      - '.github/workflows/hh-personal-coaching-session.yml'
       - 'lib/personal-coaching/**'
       # Brain changes must always trigger the private coaching specialist gate.
       - 'lib/app/coaching-brain.js'
