@@ -88,8 +88,10 @@ test("empty community and server failures provide distinct, usable alternatives 
     read("tests/helpers/seed-mentor-community-browser.mjs"),
     read("scripts/verify-mentor-community-browser.mjs"),
   ]);
-  assert.match(page, /mastersUnavailable=\{mastersResult\.status === "rejected"\}/);
-  assert.match(page, /articlesUnavailable=\{articlesResult\.status === "rejected"\}/);
+  assert.match(page, /mastersUnavailable=\{mastersUnavailable\}/);
+  assert.match(page, /else mastersUnavailable = true/);
+  assert.match(page, /articlesUnavailable=\{articlesUnavailable\}/);
+  assert.match(page, /else articlesUnavailable = true/);
   assert.match(switcher, /data-community-unavailable/);
   assert.match(switcher, /data-community-empty="articles"/);
   assert.match(switcher, /activate\("mentors", true\)/);

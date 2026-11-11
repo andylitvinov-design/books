@@ -176,6 +176,7 @@ test('coaching free gateway enforces zero data retention without changing Agent 
   assert.match(track[0].url,/&zdr=true$/)
   const request=JSON.parse(track[1].options.body)
   assert.equal(request.provider.zdr,true)
+  assert.equal(request.provider.data_collection,'deny')
   assert.deepEqual(request.provider.max_price,{prompt:0,completion:0})
   assert.equal(request.provider.allow_fallbacks,false)
   assert.deepEqual(request.usage,{include:true})

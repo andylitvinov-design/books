@@ -12,6 +12,7 @@ import {nextManualSlot,findManualTimeConflicts,buildManualCalendarIcs} from '@/l
 import GrowthStudioConnections from './growth-studio-connections'
 import {CHANNEL_CAPABILITIES,reviewGrowthPublication,publicationStatusLabel} from '@/lib/growth-studio/channel-capabilities.mjs'
 import {GROWTH_INSTAGRAM_ACCOUNT_TARGETS} from '@/lib/growth-studio/instagram-accounts.mjs'
+import {instagramPublishReadiness} from '@/lib/growth-studio/instagram-publish-readiness.mjs'
 import {GROWTH_BRANDS,GROWTH_CHANNELS,GROWTH_LANGUAGES,publicCampaignLink,orderGrowthPosts} from '@/lib/growth-studio/model.mjs'
 import {analyzeGrowthSocialSeo} from '@/lib/growth-studio/social-seo.mjs'
 import styles from './growth-studio.module.css'
@@ -173,6 +174,8 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
   const [records,setRecords]=useState(initialRecords)
   const [ready,setReady]=useState(storageReady)
   const [telegramVerified,setTelegramVerified]=useState(false)
+  const [metaStatus,setMetaStatus]=useState(null)
+  const instagramReady=(accountId,placement)=>instagramPublishReadiness(metaStatus,accountId,placement).ready
   const [busy,setBusy]=useState(false)
   const [notice,setNotice]=useState('')
   const [editing,setEditing]=useState(null)
@@ -324,6 +327,23 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
     if(busy)return
     const account=GROWTH_INSTAGRAM_ACCOUNT_TARGETS.find(item=>item.id===post.socialAccountId)
     if(!account)return setNotice(t.instagram_invalid_approved_post)
+    const prior=instagramPublishReadiness(metaStatus,post.socialAccountId,post.placement)
+    if(!prior.ready)return setNotice(t[prior.reason]||t.instagram_account_not_connected)
+    // Fresh owner-only readback before displaying the final irreversible confirmation.
+    // The server action repeats the identity and revision gate before any Meta write.
+    setBusy(true);setNotice('')
+    try{
+      const response=await fetch('/api/admin/growth-studio/meta/status',
+        {credentials:'same-origin',cache:'no-store'})
+      if(!response.ok){setNotice(response.status===401?t.unauthorized:t.instagram_account_not_connected);return}
+      const snapshot=await response.json()
+      if(snapshot?.ok!==true){setNotice(t.instagram_account_not_connected);return}
+      const fresh={configuration:snapshot.configuration,accounts:snapshot.accounts}
+      setMetaStatus(fresh)
+      const checked=instagramPublishReadiness(fresh,post.socialAccountId,post.placement)
+      if(!checked.ready){setNotice(t[checked.reason]||t.instagram_account_not_connected);return}
+    }catch{setNotice(t.instagram_account_not_connected);return}
+    finally{setBusy(false)}
     const exactText=[post.caption,publicCampaignLink(post)].filter(Boolean).join('\n\n')
     const prompt=resume?t.instagramStoryResume:post.placement==='story'?t.instagramStoryConfirm:t.instagramConfirm
      const confirmation=[prompt,account.label,BRANDS[post.brand],post.title,
@@ -418,7 +438,8 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
       </div>
     </div>
     <GrowthStudioConnections locale={locale} telegram={telegram}
-      onTelegramVerified={setTelegramVerified} onStorageVerified={setStorageVerified}/>
+      onTelegramVerified={setTelegramVerified} onStorageVerified={setStorageVerified}
+      onMetaStatus={setMetaStatus}/>
     {workspaceOpen&&<>
     {!ready&&<p className={styles.warning} role="alert"><CircleAlert size={18}/>{t.unavailable}</p>}
     <p className={telegramVerified?styles.connectionReady:styles.connectionUnavailable}>
@@ -665,15 +686,23 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
           {post.status==='draft'&&<button type="button" disabled={busy||!ready||!storageVerified} onClick={()=>execute('approve',post)}><Check size={15}/>{t.approve}</button>}
           {post.status==='approved'&&<button type="button" disabled={busy||!ready||!storageVerified} onClick={()=>execute('plan',post)}><CalendarDays size={15}/>{t.plan}</button>}
           {post.channel==='instagram'&&post.status==='approved'&&post.socialAccountId&&
-            <button type="button" disabled={busy||!ready||!storageVerified||
+            <button type="button" disabled={busy||!ready||!storageVerified||!instagramReady(post.socialAccountId,post.placement)||
                 !(post.placement==='story'?/\.(?:jpe?g|mp4)$/i:/\.jpe?g$/i).test(new URL(post.mediaUrl||'https://invalid.invalid').pathname)||!post.mediaAlt}
-              title={post.placement==='story'?t.instagramStoryPublish:t.instagramPublish} onClick={()=>sendInstagram(post)}>
+              title={instagramReady(post.socialAccountId,post.placement)
+                ?(post.placement==='story'?t.instagramStoryPublish:t.instagramPublish)
+                :(t[instagramPublishReadiness(metaStatus,post.socialAccountId,post.placement).reason]||t.instagram_account_not_connected)}
+              onClick={()=>sendInstagram(post)}>
               <Send size={15}/>{post.placement==='story'?t.instagramStoryPublish:t.instagramPublish}</button>}
           {post.channel==='instagram'&&post.placement==='story'&&post.status==='delivery_unknown'&&
             post.delivery?.providerState==='provider_processing'&&!post.delivery?.providerPostId&&
-            <button type="button" disabled={busy||!ready||!storageVerified}
-              title={t.instagramStoryResume} onClick={()=>sendInstagram(post,true)}>
+            <button type="button" disabled={busy||!ready||!storageVerified||!instagramReady(post.socialAccountId,'story')}
+              title={instagramReady(post.socialAccountId,'story')?t.instagramStoryResume:(t[instagramPublishReadiness(metaStatus,post.socialAccountId,'story').reason]||t.instagram_account_not_connected)} onClick={()=>sendInstagram(post,true)}>
               <RefreshCcw size={15}/>{t.instagramStoryResume}</button>}
+          {post.channel==='instagram'&&post.status==='approved'&&post.socialAccountId&&
+            !instagramReady(post.socialAccountId,post.placement)&&<p className={styles.hint} role="status">
+              {t[instagramPublishReadiness(metaStatus,post.socialAccountId,post.placement).reason]||t.instagram_account_not_connected}
+              {' · '}{locale==='ru'?'Откройте «Подключения» и обновите статус Meta.':'Open Connections and refresh the Meta account status.'}
+            </p>}
           {post.channel==='telegram'&&post.brand==='holistic_house'&&['approved','planned_manual'].includes(post.status)&&
             <button type="button" disabled={busy||!ready||!storageVerified||!telegramVerified}
               title={telegramVerified?t.telegramSend:locale==='ru'?'Сначала проверьте права бота в разделе подключений':'Verify bot posting rights under Connections first'} onClick={()=>sendTelegram(post)}>

@@ -12,13 +12,13 @@ type Locale = 'ru'|'en'|'es';
 type AvatarProps = {messages:ChatMessage[];busy:boolean;status:string;locale:Locale;compact:boolean;iconOnly?:boolean};
 const copy = {
   ru:{name:'Визуальный помощник',idle:'Я рядом',reacting:'Слушаю',thinking:'Готовлю ответ',speaking:'Озвучиваю',error:'Ответ недоступен',
-    show:'Показать лицо',hide:'Скрыть лицо',expand:'Увеличить портрет',collapse:'Уменьшить портрет',listen:'Озвучить ответ',stop:'Остановить озвучку',
+    show:'Показать лицо',hide:'Скрыть лицо',expand:'Увеличить портрет',collapse:'Уменьшить портрет',listen:'Озвучить ответ',stop:'Остановить озвучку',voice:'Голос устройства',defaultVoice:'По умолчанию',noLocalVoice:'Нет локальных голосов для этого языка',
     unavailable:'Системная озвучка недоступна. Ответ можно прочитать.',otherAudio:'Сейчас звучит другое аудио. Попробуйте после него.'},
   en:{name:'Visual companion',idle:'Here with you',reacting:'Listening',thinking:'Preparing a reply',speaking:'Reading aloud',error:'Reply unavailable',
-    show:'Show face',hide:'Hide face',expand:'Expand portrait',collapse:'Collapse portrait',listen:'Read response aloud',stop:'Stop reading',
+    show:'Show face',hide:'Hide face',expand:'Expand portrait',collapse:'Collapse portrait',listen:'Read response aloud',stop:'Stop reading',voice:'Device voice',defaultVoice:'Default',noLocalVoice:'No local voices for this language',
     unavailable:'System speech is unavailable. You can still read the answer.',otherAudio:'Another audio session is active. Try again when it ends.'},
   es:{name:'Asistente visual',idle:'Estoy aquí',reacting:'Te escucho',thinking:'Preparando respuesta',speaking:'Leyendo en voz alta',error:'Respuesta no disponible',
-    show:'Mostrar rostro',hide:'Ocultar rostro',expand:'Ampliar retrato',collapse:'Reducir retrato',listen:'Escuchar respuesta',stop:'Detener lectura',
+    show:'Mostrar rostro',hide:'Ocultar rostro',expand:'Ampliar retrato',collapse:'Reducir retrato',listen:'Escuchar respuesta',stop:'Detener lectura',voice:'Voz del dispositivo',defaultVoice:'Predeterminada',noLocalVoice:'No hay voces locales para este idioma',
     unavailable:'La voz del dispositivo no está disponible. Puedes leer la respuesta.',otherAudio:'Ya se reproduce otro audio. Inténtalo al terminar.'},
 } as const;
 
@@ -30,6 +30,8 @@ export default function EmotionalAvatar({messages,busy,status,locale,compact,ico
   const [expanded,setExpanded]=useState(false);
   const [keyboardOpen,setKeyboardOpen]=useState(false);
   const [speechAvailable,setSpeechAvailable]=useState(false);
+  const [deviceVoices,setDeviceVoices]=useState<SpeechSynthesisVoice[]>([]);
+  const [selectedVoiceURI,setSelectedVoiceURI]=useState('');
   const [voiceNotice,setVoiceNotice]=useState('');
   const speech=useRef<SpeechController|null>(null);
   const turnId=useRef(0);
@@ -44,14 +46,19 @@ export default function EmotionalAvatar({messages,busy,status,locale,compact,ico
     const controller=createDeviceSpeech(()=>window);
     speech.current=controller;
     setSpeechAvailable(controller.available());
-    const unwatch=controller.watchVoices(()=>setSpeechAvailable(controller.available()));
+    const unwatch=controller.watchVoices(voices=>{
+      setSpeechAvailable(controller.available());
+      const local=voices.filter(voice=>voice.localService===true&&voice.lang?.toLowerCase().startsWith(locale));
+      setDeviceVoices(local);
+      setSelectedVoiceURI(current=>local.some(voice=>voice.voiceURI===current)?current:'');
+    });
     const stopHidden=()=>{if(document.hidden)controller.stop();};
     const stopPage=()=>controller.stop();
     document.addEventListener('visibilitychange',stopHidden);
     window.addEventListener('pagehide',stopPage);
     return()=>{document.removeEventListener('visibilitychange',stopHidden);
       window.removeEventListener('pagehide',stopPage);unwatch();controller.destroy();speech.current=null;};
-  },[]);
+  },[locale]);
 
   // One view of existing chat events: handles network replies AND batched local replies.
   useEffect(()=>{
@@ -112,7 +119,7 @@ export default function EmotionalAvatar({messages,busy,status,locale,compact,ico
     const ownerTurn=turnId.current;
     const ownerSpeech=Math.max(++speechId.current,state.speechId+1);
     speechId.current=ownerSpeech;
-    const result=speech.current?.speak(latestReply,locale,{
+    const result=speech.current?.speak(latestReply,locale,{voiceURI:selectedVoiceURI||undefined,
       onStart:()=>{setVoiceNotice('');dispatch({type:'SPEECH_START',turnId:ownerTurn,speechId:ownerSpeech});},
       onEnd:reason=>{dispatch({type:'SPEECH_END',turnId:ownerTurn,speechId:ownerSpeech});
         if(ownerTurn===turnId.current&&(reason==='error'||reason==='timeout'))setVoiceNotice(t.unavailable);},
@@ -122,13 +129,18 @@ export default function EmotionalAvatar({messages,busy,status,locale,compact,ico
   function hide(){speech.current?.stop();setExpanded(false);dispatch({type:'HIDE'});}
   const phase=state.phase as AvatarState['phase'];
   const statusText=t[phase==='hidden'?'idle':phase];
-  if(iconOnly)return <button type="button" className={styles.iconOnly}
-    data-hh-speech-control aria-label={state.speaking?t.stop:t.listen}
-    title={state.speaking?t.stop:t.listen} aria-pressed={state.speaking}
-    disabled={!speechAvailable||!latestReply||busy} onClick={toggleVoice}>
-    {state.speaking?<VolumeX size={21} aria-hidden="true"/>:
-      <Volume2 size={21} aria-hidden="true"/>}
-  </button>;
+  const voiceSelector=<label className={styles.voiceSelector}><span>{t.voice}</span><select aria-label={t.voice} value={selectedVoiceURI} onChange={event=>setSelectedVoiceURI(event.target.value)}>
+    <option value="">{t.defaultVoice}</option>{deviceVoices.map(voice=><option key={voice.voiceURI} value={voice.voiceURI}>{voice.name}</option>)}
+  </select>{deviceVoices.length===0&&<small>{t.noLocalVoice}</small>}</label>;
+  if(iconOnly)return <div className={styles.iconVoiceControls}>
+    <button type="button" className={styles.iconOnly}
+      data-hh-speech-control aria-label={state.speaking?t.stop:t.listen}
+      title={state.speaking?t.stop:t.listen} aria-pressed={state.speaking}
+      disabled={!speechAvailable||!latestReply||busy} onClick={toggleVoice}>
+      {state.speaking?<VolumeX size={21} aria-hidden="true"/>:<Volume2 size={21} aria-hidden="true"/>}
+    </button>
+    <details className={styles.voiceDetails}><summary aria-label={t.voice} title={t.voice}>Aa</summary>{voiceSelector}</details>
+  </div>;
   if(!state.visible)return <div className={styles.hidden} data-hh-emotional-avatar-hidden>
     <button type="button" onClick={()=>dispatch({type:'SHOW'})}>{t.show}</button>
   </div>;
@@ -175,6 +187,7 @@ export default function EmotionalAvatar({messages,busy,status,locale,compact,ico
           {expanded?t.collapse:t.expand}</button>
         <button type="button" onClick={hide}>{t.hide}</button>
       </div>
+      {voiceSelector}
       {voiceNotice&&<small role="status">{voiceNotice}</small>}
     </div>
   </section>;

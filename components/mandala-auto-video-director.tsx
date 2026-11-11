@@ -814,6 +814,13 @@ export function MandalaAutoVideoDirector({
   ):null);
  };
  const analyzedPath=promptClassification?getMyTubeTopic(promptClassification.topicId):null;
+ const requestAnalysisMeta=promptClassification as (typeof promptClassification & {
+  contextLabel?:Record<"ru"|"en"|"es",string>;
+  suggestedTopicIds?:readonly string[];
+  matchLevel?:"category"|"context";
+ });
+ const broadRequestMatch=requestAnalysisMeta?.matchLevel==="context"||
+  requestAnalysisMeta?.matchLevel==="category";
  const requestField=<label className={css.topicInput} data-video-request-input>
    <span className={css.srOnly}>{t.input}</span>
    <input type="text" data-auto-video-input value={requestDraft}
@@ -866,19 +873,36 @@ export function MandalaAutoVideoDirector({
      locale==="es"?"Elige Regalo, Felicitación o Videopresentación arriba.":
      "Choose Gift, Greeting or Video presentation above."}</p>
    :promptClassification&&analyzedPath?<>
-    <strong>{promptClassification.confidence==="low"?
+    <strong>{broadRequestMatch
+      ?(locale==="ru"?"Направление найдено — уточните ваш запрос":locale==="es"?"Encontramos el tema — elige una opción":"Topic found — choose an aspect")
+      :promptClassification.confidence==="low"?
       (locale==="ru"?"Предварительный вариант — проверьте":locale==="es"?"Propuesta preliminar — compruébala":"Provisional suggestion — please check"):
       (locale==="ru"?"Запрос разобран":locale==="es"?"Solicitud interpretada":"Request interpreted")}</strong>
     <span data-video-request-taxonomy>
-     {analyzedPath.category.label[locale]} → {analyzedPath.subcategory.label[locale]} → {analyzedPath.topic.label[locale]}
+     {broadRequestMatch
+       ?requestAnalysisMeta?.contextLabel?.[locale]||analyzedPath.category.label[locale]
+       :analyzedPath.category.label[locale]+" → "+analyzedPath.subcategory.label[locale]+" → "+analyzedPath.topic.label[locale]}
     </span>
-    <button type="button" className={css.requestJump} data-video-request-open-plan
+    {broadRequestMatch?<div data-video-context-options>
+      <p>{locale==="ru"?"Выберите направление, чтобы подобрать сценарий.":locale==="es"?"Elige una opción para preparar tu historia.":"Choose a direction for your story."}</p>
+      <div className={css.topicChoices} role="group" aria-label={
+        locale==="ru"?"Уточнение запроса":locale==="es"?"Opciones de contexto":"Context suggestions"}>
+        {(requestAnalysisMeta?.suggestedTopicIds||[]).map(id=>{
+          const found=getMyTubeTopic(id);
+          if(!found||found.category.id!==promptClassification.categoryId)return null;
+          return <button key={id} type="button" data-video-context-option={id}
+            disabled={disabled} onClick={()=>chooseTaxonomyTopic(id)}>
+            <span>{found.topic.label[locale]}</span>
+          </button>;
+        })}
+      </div>
+    </div>:<button type="button" className={css.requestJump} data-video-request-open-plan
      onClick={()=>document.querySelector<HTMLElement>("[data-auto-video-proposal]")?.scrollIntoView({
       behavior:"smooth",block:"start"
      })}>
      {locale==="ru"?"Посмотреть план из 4 сцен":locale==="es"?"Ver plan de 4 escenas":"See the 4-shot plan"}
      <ArrowRight size={14} aria-hidden="true"/>
-    </button>
+    </button>}
    </>:<p>{locale==="ru"?
     "Пока недостаточно данных для определения темы. Уточните запрос или выберите тему ниже.":
     locale==="es"?"No se puede determinar el tema. Aclara la petición o selecciona el tema.":

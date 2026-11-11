@@ -30,10 +30,13 @@ const copy = {
     sendTitle: "Request your free written diagnostic",
     sendPaidTitle: "Request a personal coaching session",
     sendLead: "When you send your answers, the questionnaire and reply contact are saved automatically in the secure Holistic House CRM. No second save step is needed.",
-    sendOption: "What would you like to request?",
-    sendFree: "Free written diagnostic · €0",
-    sendShort: "Personal session · 30 min · €50",
-    sendFull: "Personal session · 60 min · €100",
+    sendOption: "Response format",
+    moreQuestions: "Add details · {n} optional questions",
+    lessQuestions: "Hide optional questions",
+    phoneInstead: "Prefer to leave a phone number?",
+    sendFree: "Free · €0",
+    sendShort: "30 min · €50",
+    sendFull: "60 min · €100",
     telegramLinked: "Your answers will attach to the existing verified Telegram CRM conversation. Email and phone are optional.",
     telegramMiniLinked: "Telegram verified. Your questionnaire will attach to the existing private conversation.",
     telegramUnavailable: "Telegram identity is not verified. Open the questionnaire from the bot's Fill questionnaire button or your original signed link.",
@@ -89,10 +92,13 @@ const copy = {
     sendTitle: "Запросить бесплатную письменную диагностику",
     sendPaidTitle: "Запросить личную коучинговую сессию",
     sendLead: "После отправки ответы и контакт автоматически сохраняются в защищённой CRM Holistic House для личного ответа Андрея. Повторно сохранять ничего не нужно.",
-    sendOption: "Что вы хотите заказать?",
-    sendFree: "Бесплатная письменная диагностика · €0",
-    sendShort: "Личная сессия · 30 минут · €50",
-    sendFull: "Личная сессия · 60 минут · €100",
+    sendOption: "Формат ответа",
+    moreQuestions: "Добавить подробности · ещё {n} вопросов",
+    lessQuestions: "Скрыть дополнительные вопросы",
+    phoneInstead: "Оставить телефон вместо email",
+    sendFree: "Бесплатно · €0",
+    sendShort: "30 мин · €50",
+    sendFull: "60 мин · €100",
     telegramLinked: "Ответы привяжутся к существующему подтверждённому диалогу Telegram в CRM. Email и телефон необязательны.",
     telegramMiniLinked: "Telegram подтверждён. Анкета будет привязана к существующему приватному диалогу.",
     telegramUnavailable: "Telegram не подтверждён. Откройте анкету кнопкой бота «Заполнить анкету» или по исходной подписанной ссылке.",
@@ -148,10 +154,13 @@ const copy = {
     sendTitle: "Solicitar evaluación escrita gratuita",
     sendPaidTitle: "Solicitar una sesión personal de coaching",
     sendLead: "Al enviar tus respuestas, el formulario y tu contacto se guardan automáticamente en el CRM privado de Holistic House. No necesitas guardarlos otra vez.",
-    sendOption: "¿Qué te gustaría solicitar?",
-    sendFree: "Evaluación escrita gratis · €0",
-    sendShort: "Sesión personal · 30 min · €50",
-    sendFull: "Sesión personal · 60 min · €100",
+    sendOption: "Formato de respuesta",
+    moreQuestions: "Añadir detalles · {n} preguntas opcionales",
+    lessQuestions: "Ocultar preguntas opcionales",
+    phoneInstead: "¿Prefieres dejar tu teléfono?",
+    sendFree: "Gratis · €0",
+    sendShort: "30 min · €50",
+    sendFull: "60 min · €100",
     telegramLinked: "Las respuestas se vincularán a tu conversación verificada de Telegram. Correo y teléfono son opcionales.",
     telegramMiniLinked: "Telegram verificado. Las respuestas se añadirán al mismo chat privado.",
     telegramUnavailable: "No se pudo verificar Telegram. Abre el formulario desde el botón del bot o utiliza tu enlace firmado original.",
@@ -248,6 +257,8 @@ export function CoachingIntakeForm({ locale, initialPrivateCopyMode = false }: {
   const [error, setError] = useState("");
   const [fallbackCopy, setFallbackCopy] = useState(false);
   const [replyContact, setReplyContact] = useState({ email: "", phone: "" });
+  const [showMore, setShowMore] = useState(false);
+  const [showPhone, setShowPhone] = useState(false);
   const [offerChoice, setOfferChoice] = useState<"free" | "short" | "full">("free");
   const [telegramHandoff, setTelegramHandoff] = useState<string | null>(null);
   const [telegramInitData, setTelegramInitData] = useState<string | null>(null);
@@ -260,8 +271,10 @@ export function CoachingIntakeForm({ locale, initialPrivateCopyMode = false }: {
   const fallbackRef = useRef<HTMLTextAreaElement>(null);
   const fullText = useMemo(() => formatAnswers(draft, locale), [draft, locale]);
   const missing = COACHING_FIELDS.filter(field => field.required && !draft.answers[field.id]?.trim()).length;
-  const filled = COACHING_FIELDS.filter(field => Boolean(draft.answers[field.id]?.trim())).length;
-  const total = COACHING_FIELDS.length;
+  const visibleFields = COACHING_FIELDS.filter(field => showMore || privateCopyMode || field.required);
+  const filled = visibleFields.filter(field => Boolean(draft.answers[field.id]?.trim())).length;
+  const total = visibleFields.length;
+  const optionalCount = COACHING_FIELDS.filter(field => !field.required).length;
   const miniLinked=telegramStatus==="linked" && Boolean(telegramInitData);
 
   useEffect(() => {
@@ -296,6 +309,7 @@ export function CoachingIntakeForm({ locale, initialPrivateCopyMode = false }: {
       const staged = parseDiagnosticStart(sessionStorage.getItem(DIAGNOSTIC_START_KEY), locale);
       if (staged) {
         setReplyContact({ email: staged.email, phone: staged.phone });
+        if (staged.phone) setShowPhone(true);
         if (!restored) {
           restored = normalise({
             ...blank(), name: staged.name, topic: staged.topic,
@@ -526,22 +540,27 @@ export function CoachingIntakeForm({ locale, initialPrivateCopyMode = false }: {
           {COACHING_TOPICS.map(topic => <option key={topic.id} value={topic.id}>{topic.label[locale]}</option>)}
         </select>
       </label>
-      <label>{t.yourName}
+      {(showMore || privateCopyMode) ? <label>{t.yourName}
         <input value={draft.name} disabled={collision || busy} onChange={event => edit(previous => ({ ...previous, name: event.target.value }))} maxLength={120} autoComplete="nickname" />
-      </label>
-      <label>{t.location}
+      </label> : null}
+      {(showMore || privateCopyMode) ? <label>{t.location}
         <input value={draft.city} disabled={collision || busy} onChange={event => edit(previous => ({ ...previous, city: event.target.value }))} maxLength={150} autoComplete="address-level2" />
-      </label>
+      </label> : null}
     </div>
 
     <p className={styles.requiredLegend}>{t.requiredLegend}</p>
-    {COACHING_GROUPS.map((group, groupIndex) => <section key={group.id} className={styles.group} aria-labelledby={"coaching-" + group.id}>
+    {!privateCopyMode ? <button type="button" className={styles.moreToggle} aria-expanded={showMore}
+      disabled={collision || busy} onClick={() => setShowMore(value => !value)}>
+      {showMore ? t.lessQuestions : t.moreQuestions.replace("{n}", String(optionalCount))}
+      <span aria-hidden="true">{showMore ? "−" : "+"}</span>
+    </button> : null}
+    {COACHING_GROUPS.filter(group => showMore || privateCopyMode || COACHING_FIELDS.some(field => field.group === group.id && field.required)).map((group, groupIndex) => <section key={group.id} className={styles.group} aria-labelledby={"coaching-" + group.id}>
       <div className={styles.groupHeading}><span className={styles.number}>{String(groupIndex + 1).padStart(2, "0")}</span>
         <div><h3 id={"coaching-" + group.id}>{group.title[locale]}</h3><p>{group.hint[locale]}</p></div>
-        <span className={styles.groupCount}>{COACHING_FIELDS.filter(field => field.group === group.id && draft.answers[field.id]?.trim()).length}/{COACHING_FIELDS.filter(field => field.group === group.id).length}</span>
+        <span className={styles.groupCount}>{COACHING_FIELDS.filter(field => field.group === group.id && (showMore || privateCopyMode || field.required) && draft.answers[field.id]?.trim()).length}/{COACHING_FIELDS.filter(field => field.group === group.id && (showMore || privateCopyMode || field.required)).length}</span>
       </div>
       <ol className={styles.fields} start={COACHING_FIELDS.findIndex(item => item.group === group.id) + 1}>
-        {COACHING_FIELDS.filter(field => field.group === group.id).map(field => <li key={field.id} className={styles.fieldRow} data-coaching-question={field.id}>
+        {COACHING_FIELDS.filter(field => field.group === group.id && (showMore || privateCopyMode || field.required)).map(field => <li key={field.id} className={styles.fieldRow} data-coaching-question={field.id}>
           <label htmlFor={"coaching-field-" + field.id} className={styles.questionLabel}>
             <span className={styles.ordinal} aria-hidden="true">{String(COACHING_FIELDS.findIndex(item => item.id === field.id) + 1).padStart(2, "0")}</span>
             <span>{field.label[locale]} {field.required ? <em title={t.required}>*</em> : null}</span>
@@ -556,7 +575,7 @@ export function CoachingIntakeForm({ locale, initialPrivateCopyMode = false }: {
           />
         </li>)}
       </ol>
-      {group.id === "session" ? <div className={styles.ownQuestions}>
+      {(showMore || privateCopyMode) && group.id === "session" ? <div className={styles.ownQuestions}>
         <div className={styles.ownHeader}><div><h4>{t.ownQuestions}</h4><p>{t.ownHint}</p></div>
           <button type="button" disabled={collision || busy || draft.questions.length >= 8} onClick={() => edit(previous => ({ ...previous, questions: [...previous.questions, ""] }))}>
             <Plus size={16} aria-hidden="true" />{t.addQuestion}
@@ -606,9 +625,11 @@ export function CoachingIntakeForm({ locale, initialPrivateCopyMode = false }: {
             <label>{t.sendEmail}<input type="email" autoComplete="email" maxLength={254}
               disabled={leadBusy || busy || collision} value={replyContact.email}
               onChange={event => { setReplyContact(value => ({ ...value, email: event.target.value })); setLeadError(""); }} /></label>
-            <label>{t.sendPhone}<input type="tel" autoComplete="tel" maxLength={28}
+            {(showPhone || Boolean(replyContact.phone)) ? <label>{t.sendPhone}<input type="tel" autoComplete="tel" maxLength={28}
               disabled={leadBusy || busy || collision} value={replyContact.phone}
               onChange={event => { setReplyContact(value => ({ ...value, phone: event.target.value })); setLeadError(""); }} /></label>
+              : <button type="button" className={styles.phoneInstead} disabled={leadBusy || busy || collision}
+                  onClick={() => setShowPhone(true)}>{t.phoneInstead}</button>}
           </div> : null}
           <p className={styles.requestDisclosure}>{t.sendDisclosure}</p>
           {leadError ? <p className={styles.requestError} role="alert">{leadError}</p> : null}

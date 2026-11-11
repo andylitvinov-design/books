@@ -12,6 +12,9 @@ import PersonalCoachingPicker from './personal-coaching-picker'
 import CoachingContextReview from '@/components/coaching-context-review'
 import { buildClientCoachingContext, developmentGoalsContextItems } from '@/lib/personal-coaching/client-context.mjs'
 import CoachingQuestionVoice from './coaching-question-voice'
+import {useCoachingVisualViewport} from './use-coaching-visual-viewport'
+import CoachingAvatar from './coaching-avatar'
+import {coachingVisualAvatarId,normalizeAvatarSpeechEvent} from '@/lib/personal-coaching/coaching-avatar-state.mjs'
 import CoachingLiveVoice from './coaching-live-voice'
 import CoachingChatThread from '@/components/coaching-chat-thread'
 import { appendSpokenAnswer } from '@/lib/personal-coaching/speech-text'
@@ -197,12 +200,18 @@ export default function PersonalCoaching({locale='en',accountId}){
   const [error,setError]=useState(''),[notice,setNotice]=useState('')
   const [index,setIndex]=useState(0),[draft,setDraft]=useState('')
   const [dictating,setDictating]=useState(false),[speechConsent,setSpeechConsent]=useState(false)
+  const [visualCoachId,setVisualCoachId]=useState(null)
+  const [coachSpeech,setCoachSpeech]=useState({phase:'idle',beat:0})
   const [pendingFollowup,setPendingFollowup]=useState(null),[reflectionDraft,setReflectionDraft]=useState('')
   const [sessionControl,setSessionControl]=useState(null)
   const [useStandardPrompt,setUseStandardPrompt]=useState(false),[clipboardState,setClipboardState]=useState('')
-  const titleRef=useRef(null),busyRef=useRef(false)
+  const titleRef=useRef(null),busyRef=useRef(false),viewportRef=useRef(null)
+  useCoachingVisualViewport(viewportRef)
   const course=state?.course,session=course?.current,langCopy=extraCopy[lang]
   const scheme=session?.schemeKey?catalog?.schemes?.find(item=>item.schemeKey===session.schemeKey):null
+  const avatarId=visualCoachId||coachingVisualAvatarId(scheme?.modelKey||session?.schemeKey)
+  const avatarPhase=dictating?'listening':coachSpeech.phase
+  const updateAvatarSpeech=event=>setCoachSpeech(normalizeAvatarSpeechEvent(event))
   const activeQuestions=questionsFor(course,catalog)
   const question=activeQuestions[index]||activeQuestions[0]
   const quickChoices=coachingQuickChoicesAllowed(question,index)
@@ -274,6 +283,10 @@ export default function PersonalCoaching({locale='en',accountId}){
       .finally(()=>{if(live)setLoading(false)})
     return()=>{live=false}
   },[accountId,t.loadError])
+  useEffect(()=>{
+    setVisualCoachId(null)
+    setCoachSpeech({phase:'idle',beat:0})
+  },[session?.id])
   useEffect(()=>{
     if(loading||(!entry&&!session)||finished&&!entry)return
     titleRef.current?.focus({preventScroll:true})
@@ -458,7 +471,7 @@ export default function PersonalCoaching({locale='en',accountId}){
     const result=await command('delete',{confirmed:true})
     if(result){setNotice('');setNewSelection(false);visit(0,{},PERSONAL_COACH_QUESTIONS)}
   }
-  return <main className={styles.root} data-personal-coaching data-coaching-version="1" lang={lang}>
+  return <main ref={viewportRef} className={styles.root} data-personal-coaching data-coaching-version="1" lang={lang}>
     <div className={styles.scenery} aria-hidden="true"/>
     <div className={styles.layout}>
       <header className={styles.header}>
@@ -588,7 +601,7 @@ export default function PersonalCoaching({locale='en',accountId}){
             </Link>
           </footer>
         </div>
-        : pendingFollowup ? <div className={styles.session} data-coaching-authored-followup data-coaching-one-viewport>
+        : pendingFollowup ? <div className={styles.session} data-coaching-authored-followup data-coaching-one-viewport data-coaching-avatar-ready="true">
           <div className={styles.progressHeader}>
             <span className={styles.eyebrow}>{followupCopy[lang].title}</span>
             <strong>{t.question} {index+1} {t.of} {activeQuestions.length}</strong>
@@ -596,6 +609,8 @@ export default function PersonalCoaching({locale='en',accountId}){
           <div className={styles.progressTrack}><span style={{width:((index+1)/activeQuestions.length*100)+'%'}}/></div>
           <div className={styles.questionArea}>
             <span className={styles.stage}>{translated(question.stageTitle,lang)||pendingFollowup.stage.toUpperCase()}</span>
+            <CoachingAvatar locale={lang} avatarId={avatarId} onAvatarChange={setVisualCoachId}
+              phase={avatarPhase} beat={coachSpeech.beat}/>
             <CoachingChatThread turn={followupTurn} locale={lang} compact>
               <h1 ref={titleRef} tabIndex={-1}>{translated(pendingFollowup.prompt,lang)}</h1>
             </CoachingChatThread>
@@ -615,7 +630,7 @@ export default function PersonalCoaching({locale='en',accountId}){
                   text={[followupTurn?.speech,translated(pendingFollowup.prompt,lang)].filter(Boolean).join(' ')}
                   locale={lang} mode="answer" disabled={busy}
                   speechConsent={speechConsent} onConsent={()=>setSpeechConsent(true)}
-                  onListeningChange={setDictating}
+                  onListeningChange={setDictating} onSpeechChange={updateAvatarSpeech}
                   onTranscript={words=>{setReflectionDraft(v=>appendSpokenAnswer(v,words));setError('')}}/>
                 <small className={styles.draftCount}>{reflectionDraft.length}/500</small>
               </div>
@@ -637,7 +652,7 @@ export default function PersonalCoaching({locale='en',accountId}){
         : !question ? <div className={styles.center} role="alert">
             {langCopy.loadingCatalog} <button type="button" onClick={reload}>{t.retry}</button>
           </div>
-        : <div className={styles.session} data-coaching-one-question data-coaching-one-viewport data-coaching-question={question.id}>
+        : <div className={styles.session} data-coaching-one-question data-coaching-one-viewport data-coaching-avatar-ready="true" data-coaching-question={question.id}>
           <div className={styles.progressHeader}>
             <span className={styles.eyebrow}>{t.title}</span>
             <strong>{t.question} {index+1} {t.of} {activeQuestions.length}</strong>
@@ -650,6 +665,8 @@ export default function PersonalCoaching({locale='en',accountId}){
           </div>
           <div className={styles.questionArea}>
             <span className={styles.stage}>{translated(question.stageTitle,lang)||(question.stage||'').toUpperCase()}</span>
+            <CoachingAvatar locale={lang} avatarId={avatarId} onAvatarChange={setVisualCoachId}
+              phase={avatarPhase} beat={coachSpeech.beat}/>
             {session.clientQuestion&&<p className={styles.contextQuestion}>
               <strong>{langCopy.yourQuestion}:</strong> {session.clientQuestion}</p>}
             {scheme&&<span className={styles.schemeLabel}>{langCopy.chosen}: {coachingSessionTitle(scheme.schemeKey,lang,translated(scheme.name,lang))}</span>}
@@ -712,7 +729,7 @@ export default function PersonalCoaching({locale='en',accountId}){
                 <CoachingQuestionVoice key={question.id+'-'+lang+'-'+(useStandardPrompt?'standard':'tailored')} compact
                   text={[conversationTurn?.speech,visiblePrompt].filter(Boolean).join(' ')} locale={lang}
                   mode="answer" disabled={busy} speechConsent={speechConsent}
-                  onConsent={()=>setSpeechConsent(true)} onListeningChange={setDictating}
+                  onConsent={()=>setSpeechConsent(true)} onListeningChange={setDictating} onSpeechChange={updateAvatarSpeech}
                   onTranscript={words=>{
                     setDraft(previous=>appendSpokenAnswer(previous.startsWith('choice:')?'':previous,words))
                     setError('');setNotice('')
