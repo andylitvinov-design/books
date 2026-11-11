@@ -11,7 +11,7 @@ import originalMotionLibrary from "@/data/video-catalog/original-motion-scenes-v
 import extraFreeFilmPresets from "@/data/video-catalog/free-film-presets-v2.json";
 import { MandalaHypnoCompact } from "./mandala-hypno-compact";
 import { MandalaVideoIdeas } from "./mandala-video-ideas";
-import {MandalaVideoPersonalization,DEFAULT_VIDEO_GOAL_PROFILE,type VideoGoalProfile} from "./mandala-video-personalization";
+import {MandalaVideoPersonalization,DEFAULT_VIDEO_GOAL_PROFILE,summarizeVideoGoalProfile,type VideoGoalProfile} from "./mandala-video-personalization";
 import { MandalaVideoConcept, type ApprovedVideoConcept } from "./mandala-video-concept";
 
 import type { HypnoLightSettings } from "./mandala-hypnocorrection-mobile";
@@ -1955,6 +1955,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [montagePanel,setMontagePanel] = useState<"settings"|"effects"|"text"|"concept"|"audio"|"promo">("effects");
   const [hypnoEntryGroup,setHypnoEntryGroup] = useState<"visual"|"effects">("visual");
   const [approvedVideoConcept,setApprovedVideoConcept] = useState<ApprovedVideoConcept|null>(null);
+  const [appliedStoryKey,setAppliedStoryKey]=useState<string|null>(null);
   const [audioLibraryOpen,setAudioLibraryOpen] = useState(false);
   const audioLibraryCloseRef=useRef<HTMLButtonElement>(null);
   const audioLibraryTriggerRef=useRef<HTMLButtonElement>(null);
@@ -7930,7 +7931,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             </div>
             <MandalaAutomaticStoryboard
               locale={locale} goal={wish} theme={theme} durationSeconds={duration}
-              aspect={aspect} styleIndex={quickStyleIndex} phrases={affirmationLines}
+              aspect={aspect} styleIndex={quickStyleIndex} pace={speed}
+              personalization={ideasProfileConfirmed?summarizeVideoGoalProfile(ideasProfile,locale):null}
+              appliedStoryKey={appliedStoryKey} phrases={affirmationLines}
               transcript={voiceTranscript} approvedConcept={approvedVideoConcept}
               scenes={FREE_FILM_CATALOG}
               appliedShots={cinematicPlan?.shots.map(shot=>({
@@ -7950,16 +7953,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   behavior:"smooth",block:"start"
                 });
               }}
-              onApply={(shots,concept)=>{
+              onApply={(shots,concept,key,captions)=>{
                 const preset=aspectFilmPresets.find(option=>option.theme===theme);
                 if(!preset)return;
                 const edit:FreeFilmCompilationEdit={
                   clipIds:shots.map(shot=>shot.sceneId),
                   durationSecondsByStage:shots.map(shot=>shot.durationMs/1000),
-                  captionTexts:shots.map(()=>""),
+                  captionTexts:shots.map((_,index)=>captions[index]||""),
                 };
                 if(applyAutoFilm(preset.id,duration,edit,"portrait",true)){
-                  setMontageScriptText(concept.sceneOutline.join("\n"));
+                  setAppliedStoryKey(key);
+                  setMontageScriptText(captions.filter(Boolean).join("\n")||
+                    concept.sceneOutline.join("\n"));
                   setNotice(locale==="ru"
                     ?"Раскадровка применена. Проверьте сцены и нажмите «Создать видео»."
                     :locale==="es"
