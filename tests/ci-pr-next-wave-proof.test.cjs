@@ -21,6 +21,18 @@ test('accepts a newly created exact PR Core run even when Actions uses a synthet
  assert.equal(isExactHeadCoreRun(run(),identity),true);
  assert.equal(findExactHeadCoreRun([run()],identity).id,123);
 });
+test('GitHub action_required with zero jobs is not a verified new-HEAD Core wave',()=>{
+ const blocked=run({status:'completed',conclusion:'action_required',actor:{login:'github-actions[bot]'}});
+ assert.equal(isExactHeadCoreRun(blocked,identity),false);
+ assert.equal(findExactHeadCoreRun([blocked],identity),null);
+ const started=run({id:124,status:'in_progress',conclusion:null});
+ assert.equal(findExactHeadCoreRun([blocked,started],identity)?.id,124,
+   'a pending/real Core outranks an approval-only placeholder');
+ for(const denied of ['action_required','cancelled','skipped','stale','startup_failure','neutral',null])
+   assert.equal(isExactHeadCoreRun(run({status:'completed',conclusion:denied}),identity),false);
+ for(const executed of ['success','failure','timed_out'])
+   assert.equal(isExactHeadCoreRun(run({status:'completed',conclusion:executed}),identity),true);
+});
 test('rejects stale, wrong-PR, wrong-HEAD, wrong-branch and foreign workflow runs',()=>{
  const cases=[
   {pull_requests:[{number:prNumber,head:{sha:'c'.repeat(40)},base:{ref:identity.baseRef}}]},
