@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import {Mic, Paperclip, Plus, Send, X} from "lucide-react";
 import {MessengerAiLanding} from "@/components/app/messenger-ai-landing";
 import {MessengerSixProjects,messengerProject} from "@/components/app/messenger-six-projects";
@@ -379,6 +379,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   const threadRef=useRef<HTMLDivElement|null>(null);
   const followTail=useRef(true);
   const programmaticScrollTop=useRef<number|null>(null);
+  const composerFocused=useRef(false);
   const [newBelow,setNewBelow]=useState(false);
   const privateTranscript=usePrivateChatHistory({authenticated,onRestore:entries=>{
     // Explicit restore cancels both pending AI and device speech, and must not
@@ -418,14 +419,41 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       setTestSuggestedKey(candidate);setTestChatOpen(true);setEntryOpen(false);
     }
   },[compact]);
+  // Focused iPhone composer: preserve the most recent AI reply or first
+  // welcome question in the visible transcript, without moving the page.
+  const revealFocusedContext=useCallback(()=>{
+    if(!compact||!messengerView||!composerFocused.current)return;
+    const thread=threadRef.current;
+    if(!thread)return;
+    const aiReplies=thread.querySelectorAll('[data-hh-ai-assistant-message]');
+    const turns=thread.querySelectorAll('[data-hh-chat-turn]');
+    const anchor=aiReplies.item(aiReplies.length-1)||
+      thread.querySelector('[data-hh-ai-landing-question]')||
+      thread.querySelector('[data-hh-ai-welcome]')||
+      turns.item(turns.length-1);
+    if(!anchor)return;
+    const viewport=thread.getBoundingClientRect();
+    const bubble=anchor.getBoundingClientRect();
+    const breathingRoom=12;
+    // Preserve the reader's position if the end of the last AI turn is visible.
+    // Align a hidden turn just above the fixed composer after keyboard resize.
+    if(bubble.bottom<=viewport.bottom-breathingRoom&&bubble.bottom>=viewport.top+44)return;
+    const maxScroll=Math.max(0,thread.scrollHeight-thread.clientHeight);
+    const target=Math.max(0,Math.min(maxScroll,
+      thread.scrollTop+bubble.bottom-viewport.bottom+breathingRoom));
+    if(Math.abs(thread.scrollTop-target)<1)return;
+    programmaticScrollTop.current=target;
+    thread.scrollTop=target;
+    setNewBelow(false);
+  },[compact,messengerView]);
   useEffect(()=>{
     const thread=threadRef.current;
     if(!thread)return;
     const revealLatest=()=>{
       if(messengerView&&messages.length===0){
-        // The illustrated first screen opens at its hero, not its last card.
-        // Do not scroll the page or push the pinned composer below the dock.
-        thread.scrollTop=0;
+        // Hero first on load, welcome question while the keyboard is open.
+        if(composerFocused.current)revealFocusedContext();
+        else thread.scrollTop=0;
         setNewBelow(false);
         return;
       }
@@ -443,17 +471,22 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     const frame=window.requestAnimationFrame(revealLatest);
     return ()=>window.cancelAnimationFrame(frame);
   },[messages.length,status,choices.length,judgmentView,videoStep,videoDraft,contentStep,contentVoice,
-    videoPendingCategory,showVideoSignIn,needsPrivateSignIn,entryOpen,guideLink,testRevision,testChatOpen,testChatTurn,projectFlow,sessionStep,sessionOffers.length,messengerView]);
+    videoPendingCategory,showVideoSignIn,needsPrivateSignIn,entryOpen,guideLink,testRevision,testChatOpen,testChatTurn,projectFlow,sessionStep,sessionOffers.length,messengerView,revealFocusedContext]);
   useEffect(()=>{
-    if(!compact||!messengerView||messages.length===0)return;
+    if(!compact||!messengerView)return;
     const thread=threadRef.current;
     if(!thread)return;
     let frame=0;
     const revealVisibleReply=()=>{
       window.cancelAnimationFrame(frame);
       frame=window.requestAnimationFrame(()=>{
-        // Reading older messages must never be interrupted by automatic scrolling.
-        if(!followTail.current)return;
+        // The keyboard resizes before the first text message too. A reader
+        // manually browsing old turns may still scroll without being pulled.
+        if(composerFocused.current){
+          if(followTail.current)revealFocusedContext();
+          return;
+        }
+        if(!messages.length||!followTail.current)return;
         const target=Math.max(0,thread.scrollHeight-thread.clientHeight);
         programmaticScrollTop.current=target;
         thread.scrollTop=target;
@@ -475,7 +508,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       viewport?.removeEventListener("scroll",revealVisibleReply);
       window.removeEventListener("resize",revealVisibleReply);
     };
-  },[compact,messengerView,messages.length]);
+  },[compact,messengerView,messages.length,revealFocusedContext]);
   useEffect(()=>{
     if(!compact)return;
     const input=composerRef.current;
@@ -1477,6 +1510,13 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       }}/>}
     <form onSubmit={submit} className={styles.form}>
       <textarea ref={composerRef} value={draft} onChange={e=>setDraft(e.target.value)} placeholder={t.placeholder}
+        onFocus={()=>{
+          if(!compact||!messengerView)return;
+          composerFocused.current=true;
+          followTail.current=true;
+          window.requestAnimationFrame(revealFocusedContext);
+        }}
+        onBlur={()=>{composerFocused.current=false;}}
         maxLength={contentStep==="brief"?160:2000} rows={compact?1:3} disabled={busy} aria-label={t.placeholder}/>
       <div className={styles.actions}>
         {messengerView?<details className={styles.composerMore} data-hh-ai-more>
