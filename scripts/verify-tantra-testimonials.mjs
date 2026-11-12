@@ -244,10 +244,18 @@ async function startVisibleNative(disclosure, index, scenario = {}) {
         stalled.currentSrc && stalled.currentSrc === observation.before.currentSrc &&
         !stalled.paused && !stalled.seeking && !stalled.ended && stalled.error === null &&
         stalled.ready >= 2 && Math.abs(stalled.time - initial.time) <= 0.1);
-      if (!genuineSameSourceStall) throw clockFailure;
-      observation.nativeStall = { firstFailure: clockFailure.message, before: stalled, recoveryRequests: 1 };
-      // Only ONE user-like reactivation; if it fails, the REAL media gate stays red.
-      await video.evaluate(el => el.pause());
+      const pendingNoMetadata = Boolean(stalled.connected && stalled.visible &&
+        stalled.currentSrc && stalled.currentSrc === observation.before.currentSrc &&
+        !stalled.paused && !stalled.seeking && !stalled.ended && stalled.error === null &&
+        stalled.ready === 0 && stalled.frames === 0 && stalled.time === 0 &&
+        stalled.playRequest?.state === 'pending' && initial.frames === 0 &&
+        !initial.presentedFrame);
+      if (!genuineSameSourceStall && !pendingNoMetadata) throw clockFailure;
+      observation.nativeStall = { firstFailure: clockFailure.message, before: stalled,
+        recoveryRequests: 1, metadataReload: pendingNoMetadata };
+      // A metadata-less pending decoder needs one real HTMLMediaElement load.
+      // Keep the source unchanged; still demand a NEW real media clock/frame.
+      await video.evaluate(el => { el.pause(); if (el.readyState === 0) el.load(); });
       await expect.poll(() => video.evaluate(el => el.paused), { timeout: 5000 }).toBe(true);
       await video.evaluate(requestNativePlayback);
       await expect.poll(() => video.evaluate(el => el.paused), { timeout: 5000 }).toBe(false);
