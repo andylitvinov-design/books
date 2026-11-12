@@ -113,8 +113,30 @@ try {
     const submit = assist.locator('form button[type="submit"]');
     await visible(question);
     await expect(submit).toBeDisabled();
-    const topics = assist.locator('[role="group"] button[aria-pressed]');
+    // The six intent chips are distinct from the six category tabs above them.
+    const topics = assist.locator('[role="group"] button[aria-pressed]:not([data-assist-direction])');
     await expect(topics).toHaveCount(6);
+    const shelf = assist.locator("[data-assist-best-three]");
+    await visible(shelf.locator("#assist-best-three-title"));
+    const directionTabs = shelf.locator("button[data-assist-direction]");
+    await expect(directionTabs).toHaveCount(6);
+    const bestCards = shelf.locator("[data-assist-best-card]");
+    await expect(bestCards).toHaveCount(3);
+    for (const [id, route] of Object.entries({
+      homeopathy: "services/psychohomeopathy",
+      coaching: "services/imagery-therapy",
+      reiki: "services/remote-energy-support",
+    })) {
+      await expect(shelf.locator('[data-assist-best-action="' + id + '"]'))
+        .toHaveAttribute("href", "/" + locale + "/" + route);
+    }
+    await directionTabs.nth(1).click();
+    await expect(shelf.locator("[data-assist-selected-direction]")).toHaveAttribute("data-assist-selected-direction", "health");
+    await expect(bestCards).toHaveCount(3);
+    await expect(shelf.locator('[data-assist-best-card="tests"]')).toHaveCount(1);
+    await directionTabs.first().click();
+    await expect(shelf.locator("[data-assist-selected-direction]")).toHaveAttribute("data-assist-selected-direction", "forMe");
+    await expect(bestCards).toHaveCount(3);
     const tools = assist.locator("a[data-assist-tool]");
     await expect(tools).toHaveCount(8);
     const expectedTools = {
@@ -143,7 +165,7 @@ try {
     const stressRoutes = {
       tests: "tests",
       opora: "courses/antistress",
-      therapy: "services/imagery-therapy",
+      mytube: "mytube",
     };
     for (const [key, route] of Object.entries(stressRoutes)) {
       const link = results.locator('a[data-assist-recommendation="' + key + '"]');
@@ -159,7 +181,7 @@ try {
     await expect(results.locator('a[data-assist-recommendation="business"]'))
       .toHaveAttribute("href", "/" + locale + "/services/business-consulting");
 
-    const reset = results.locator('button[type="button"]');
+    const reset = results.locator("[data-assist-reset]");
     await reset.click();
     await expect(results).toHaveCount(0);
     await expect(question).toHaveValue("");
@@ -181,11 +203,13 @@ try {
     await submit.click();
     await visible(results.locator('[role="alert"]'));
     await expect(results.locator("a[data-assist-recommendation]")).toHaveCount(0);
+    await expect(shelf).toHaveCount(0); // No paid/symbolic suggestions while urgent help is shown.
     await assertNoDevIssueOverlay(page, locale + "/services/assist/" + width);
     await assertViewport(page, locale + "/services/assist/" + width);
     await reset.click();
     await expect(question).toHaveValue("");
     await expect(submit).toBeDisabled();
+    await expect(shelf.locator("[data-assist-best-card]")).toHaveCount(3);
   };
 
   // Spanish Alchemy has its own route. Check its untouched default state too;
