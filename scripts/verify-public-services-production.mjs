@@ -99,6 +99,95 @@ try {
     return page;
   };
 
+  // Mobile Assist replaces only the visible phone hero. The legacy cards,
+  // consultation/privacy flow, directory and desktop slider retain their own QA.
+  const verifyMobileAssist = async (page, locale, width) => {
+    const assist = page.locator("[data-assist-mobile]");
+    const legacy = page.locator("[data-services-showcase-hero]");
+    await visible(assist.locator("h1#assist-title"));
+    await expect(assist).toHaveAttribute("lang", locale);
+    await expect(legacy).toBeHidden();
+    await expect(page.locator("#services-conversion-title")).toBeHidden();
+
+    const question = assist.locator("textarea#assist-question");
+    const submit = assist.locator('form button[type="submit"]');
+    await visible(question);
+    await expect(submit).toBeDisabled();
+    const topics = assist.locator('[role="group"] button[aria-pressed]');
+    await expect(topics).toHaveCount(6);
+    const tools = assist.locator("a[data-assist-tool]");
+    await expect(tools).toHaveCount(8);
+    const expectedTools = {
+      therapy: "services/imagery-therapy",
+      homeopathy: "services/psychohomeopathy",
+      reiki: "services/remote-energy-support",
+      mandala: "holistic-support/mandala",
+      talisman: "holistic-support/mobile",
+      constellation: "services/systemic-constellations",
+      academy: "academy/reiki",
+      masters: "masters",
+    };
+    for (const [key, route] of Object.entries(expectedTools)) {
+      await expect(assist.locator('a[data-assist-tool="' + key + '"]'))
+        .toHaveAttribute("href", "/" + locale + "/" + route);
+    }
+    assert.equal(await assist.locator('input[type="email"],input[type="tel"]').count(), 0,
+      "Assist cannot silently collect contact details");
+
+    // Real hydrated topic interaction: exactly three source-backed stress links.
+    await topics.first().click();
+    const results = assist.locator("#assist-results");
+    await visible(results);
+    await expect(topics.first()).toHaveAttribute("aria-pressed", "true");
+    await expect(results.locator("a[data-assist-recommendation]")).toHaveCount(3);
+    const stressRoutes = {
+      tests: "tests",
+      opora: "courses/antistress",
+      therapy: "services/imagery-therapy",
+    };
+    for (const [key, route] of Object.entries(stressRoutes)) {
+      const link = results.locator('a[data-assist-recommendation="' + key + '"]');
+      await expect(link).toHaveAttribute("href", "/" + locale + "/" + route);
+      const box = await link.boundingBox();
+      assert.ok(box && box.height >= 44, "Mobile Assist link touch target: " + locale + "/" + width + "/" + key);
+    }
+
+    // Switching intent must replace, not append, old recommendations.
+    await topics.nth(4).click();
+    await expect(topics.nth(4)).toHaveAttribute("aria-pressed", "true");
+    await expect(results.locator("a[data-assist-recommendation]")).toHaveCount(3);
+    await expect(results.locator('a[data-assist-recommendation="business"]'))
+      .toHaveAttribute("href", "/" + locale + "/services/business-consulting");
+
+    const reset = results.locator('button[type="button"]');
+    await reset.click();
+    await expect(results).toHaveCount(0);
+    await expect(question).toHaveValue("");
+    await expect(submit).toBeDisabled();
+
+    // Free-text matching stays inside the browser; do not submit a lead.
+    await question.fill(locale === "ru" ? "Меня тревожит стресс" :
+      locale === "es" ? "Tengo estrés" : "I feel stress");
+    await expect(submit).toBeEnabled();
+    await submit.click();
+    await visible(results);
+    await expect(results.locator("a[data-assist-recommendation]")).toHaveCount(3);
+    await expect(results.locator('a[data-assist-recommendation="opora"]'))
+      .toHaveAttribute("href", "/" + locale + "/courses/antistress");
+
+    // Crisis never receives therapeutic sales recommendations.
+    await question.fill(locale === "ru" ? "Хочу убить себя" :
+      locale === "es" ? "Quiero morir" : "I want to kill myself");
+    await submit.click();
+    await visible(results.locator('[role="alert"]'));
+    await expect(results.locator("a[data-assist-recommendation]")).toHaveCount(0);
+    await assertNoDevIssueOverlay(page, locale + "/services/assist/" + width);
+    await assertViewport(page, locale + "/services/assist/" + width);
+    await reset.click();
+    await expect(question).toHaveValue("");
+    await expect(submit).toBeDisabled();
+  };
+
   // Spanish Alchemy has its own route. Check its untouched default state too;
   // do not navigate payment links or enable optional payment providers.
   {
@@ -142,23 +231,29 @@ try {
   }
 
   for (const locale of ["en", "ru"]) {
-    for (const width of [320, 360, 390, 1188]) {
+    for (const width of [320, 360, 390, 430, 1188]) {
       const page = await createPage(width);
       await page.goto(origin + "/" + locale + "/services", { waitUntil: "domcontentloaded" });
-      await visible(page.locator("#services-conversion-title"));
-      // Free-first studio: three distinct no-payment paths, then six real
-      // personal offers. No secondary marketplace repeats on the landing.
-      const freeCta = page.locator('[data-service-hero-cta="free"]');
-      const paidCta = page.locator('[data-service-hero-cta="paid"]');
-      await visible(freeCta);
-      await visible(paidCta);
-      assert.equal(await freeCta.getAttribute("href"), "#free-insights");
-      assert.equal(await paidCta.getAttribute("href"), "#consultation");
-      for (const action of [freeCta, paidCta]) {
-        const bounds = await action.boundingBox();
-        assert.ok(bounds && bounds.height >= 44,
-          "Services first-screen actions must be usable at " + locale + "/" + width);
+      if (width <= 760) {
+        await verifyMobileAssist(page, locale, width);
+      } else {
+        await visible(page.locator("#services-conversion-title"));
+        await expect(page.locator("[data-services-showcase-hero]")).toBeVisible();
+        await expect(page.locator("[data-assist-mobile]")).toBeHidden();
+        const freeCta = page.locator('[data-service-hero-cta="free"]');
+        const paidCta = page.locator('[data-service-hero-cta="paid"]');
+        await visible(freeCta);
+        await visible(paidCta);
+        assert.equal(await freeCta.getAttribute("href"), "#free-insights");
+        assert.equal(await paidCta.getAttribute("href"), "#consultation");
+        for (const action of [freeCta, paidCta]) {
+          const bounds = await action.boundingBox();
+          assert.ok(bounds && bounds.height >= 44,
+            "Desktop Services first-screen actions must be usable at " + locale + "/" + width);
+        }
       }
+      // Free-first studio: 3 no-payment paths, 6 personal offers and all
+      // independent consent/booking tests remain mandatory at every width.
       const free = page.locator('[data-services-studio-free]#free-insights');
       const paid = page.locator('[data-services-studio-paid]#solutions');
       await visible(free.locator("h2#services-free-title"));
@@ -244,7 +339,7 @@ try {
       }
       // Category slider and Online/Toronto choice: real client interactions,
       // never registering a lead, sending messages or initiating payment.
-      if (width === 320 || width === 390) {
+      if (width === 1188) {
         const showcase = page.locator("[data-services-showcase-hero]");
         await showcase.locator('[data-services-slide-dot="personal"]').click();
         await visible(showcase.locator('[data-services-slide="personal"]'));
@@ -252,8 +347,7 @@ try {
         await showcase.locator('[data-services-slide-dot="business"]').click();
         await visible(showcase.locator('[data-services-slide="business"]'));
         const businessAction = showcase.locator('[data-services-slide-action="business"]');
-        // At 320px the secondary slide action is deliberately hidden to keep
-        // the primary request readable. The same Business filter is usable.
+        // Use the live desktop action, falling back to its visible category filter.
         if (await businessAction.isVisible()) await businessAction.click();
         else await showcase.locator('[data-services-kind="business"]').click();
         await expect(page.locator('[data-services-kind="business"]')).toHaveAttribute("aria-pressed", "true");
@@ -378,7 +472,14 @@ try {
     assert.equal(await esMonthly.locator('[data-services-studio-action="monthly-support"]').getAttribute("href"),
       "/es/services/personal-support", "Spanish support offer must lead to the terms page");
     assert.equal(await page.locator("#find-your-service").count(), 0);
-    // Verify the same service mode and topic filtering in Spanish.
+    // Confirm the real Spanish mobile Assist, then retain the full original
+    // Spanish carousel/mode regression on a visible desktop viewport.
+    await verifyMobileAssist(page, "es", 390);
+    await page.setViewportSize({ width: 430, height: 844 });
+    await verifyMobileAssist(page, "es", 430);
+    await page.setViewportSize({ width: 1188, height: 844 });
+    await visible(page.locator("#services-conversion-title"));
+    await expect(page.locator("[data-assist-mobile]")).toBeHidden();
     const esShowcase = page.locator("[data-services-showcase-hero]");
     await esShowcase.locator('[data-services-slide-dot="business"]').click();
     await esShowcase.locator('[data-services-slide-action="business"]').click();
@@ -404,7 +505,8 @@ try {
     await esShowcase.locator('[data-services-kind="all"]').click();
     await expect(page.locator('[data-services-studio-free] [data-services-studio-card]:visible')).toHaveCount(3);
     await expect(page.locator('[data-services-studio-paid] [data-services-studio-card]:visible')).toHaveCount(6);
-    await assertViewport(page, "es/services/slider-filter/390");
+    await assertViewport(page, "es/services/slider-filter/1188");
+    await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(origin + "/es/services/catalog", { waitUntil: "domcontentloaded" });
     const freeOnly = page.locator("#find-your-service input[data-free-services-only]");
     await visible(freeOnly);

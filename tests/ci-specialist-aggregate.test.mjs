@@ -4,7 +4,7 @@ import test from 'node:test';
 import { readdirSync, readFileSync } from 'node:fs';
 import {
   TARGET, parsePrTrigger, matchesTrigger, classifyPackageImpact, expectedWorkflows, resolveExpectedSpecialists, APPROVED_SPECIALIST_REPLACEMENTS, inspectWorkflowRuns, concurrencyOnlyAdvisory, selfTriggerRemovalAdvisory, isConcurrencyAdvisoryRun,
-  inspectJobs, trustedConditionalJobs, validateParameters,
+  inspectJobs, trustedConditionalJobs, trustedRequiredJobs, validateParameters,
 } from '../lib/ci/specialist-aggregate.mjs';
 import { verify, githubReader, optionalMandalaMacosSkip, optionalProfileWriterSkip, revalidateAfterTrustedPolicyAdvance, verifiedOptionalOwnerSelectorMigration, trustedAdditiveActionlint } from '../scripts/ci-specialist-aggregate.mjs';
 // Run the focused dependency state/timeout regressions inside the existing
@@ -354,9 +354,18 @@ test('only definitively PR-inapplicable BASE jobs can be skipped',()=>{
 });
 
 
+
+const profileWriterLegacyGuard = "    if: ${{ github.event_name == 'pull_request' && (github.event.pull_request.base.ref == 'codex/holistic-intelligence-core-20261029' || github.event.pull_request.base.ref == 'codex/public-book-library') && (github.head_ref == 'feat/meditation-writer-device-voice-v1-20261030' || github.head_ref == 'fix/ci-ffmpeg-verified-github-asset-20261105') }}";
+const profileWriterReadyGuard = "    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}";
+function legacyProfileAxisSource(source) {
+  const ready = '  writer-practical-focused:\n' + profileWriterReadyGuard;
+  assert.equal(source.split(ready).length, 2, 'current Axis workflow has one Ready writer guard');
+  return source.replace(ready, '  writer-practical-focused:\n' + profileWriterLegacyGuard);
+}
+
 test('BASE-excluded writer-only job is neutral for unrelated dock PR only when axis suite passes', async () => {
   const filename = '.github/workflows/hh-profile-axis-matching.yml';
-  const source = readFileSync(filename,'utf8');
+  const source = legacyProfileAxisSource(readFileSync(filename,'utf8'));
   const branch = 'feat/mytube-unified-six-bottom-prod-20261103';
   const files = candidate => ({
     base:new Map([[filename,source]]),
@@ -398,7 +407,7 @@ test('BASE-excluded writer-only job is neutral for unrelated dock PR only when a
 
 test('profile-axis writer skip stays branch-conditional after exact one-line selective workflow migration',()=>{
   const file='.github/workflows/hh-profile-axis-matching.yml';
-  const base=readFileSync(file,'utf8');
+  const base=legacyProfileAxisSource(readFileSync(file,'utf8'));
   const oldPath="      - '.github/workflows/hh-profile-axis-matching.yml'";
   const contract="      - 'tests/ci-pr-selective-workflows.test.mjs'";
   assert.equal(base.split(oldPath).length,2);
@@ -2142,4 +2151,30 @@ test('base movement during Specialist preserves exact-HEAD results only for prov
   api.compare=async()=>comparison('tests/pr-fast-lane.test.mjs');
   api.pr=async()=>({...pr(),head:{...pr().head,sha:'d'.repeat(40)}});
   await assert.rejects(()=>verify(api,ctx,files,{maxWaitMs:0}),/PR_HEAD_CHANGED/);
+});
+
+
+test('Axis Ready PR requires practical writer job despite planner workflow changes', () => {
+  const file='.github/workflows/hh-profile-axis-matching.yml';
+  const source=readFileSync(file,'utf8');
+  const writer=source.split('  writer-practical-focused:\n')[1]?.split('  axis-unit-types-build:\n')[0];
+  assert.ok(writer, 'writer job must remain present');
+  assert.ok(writer.includes(profileWriterReadyGuard), 'Ready PR may not skip writer tests');
+  assert.doesNotMatch(writer,/github\.head_ref|continue-on-error:\s*true/,
+    'no PR-branch exemptions or silent success');
+  for (const retained of ['Practical director and prior writer regressions',
+    'Load original checksum-verified FFmpeg', 'Lint writer API, UI and contracts',
+    'TypeScript contract check']) assert.ok(writer.includes(retained), 'retain '+retained);
+  const required=trustedRequiredJobs(source).sort();
+  assert.deepEqual(required,['axis-unit-types-build','writer-practical-focused']);
+  assert.equal(optionalProfileWriterSkip({
+    base:new Map([[file,legacyProfileAxisSource(source)]]),
+    current:new Map([[file,source]]),
+  },'codex/hh-intelligence-private-api-20261029'),false,
+  'edited Axis guard may not inherit a BASE-only writer skip');
+  const axis={name:'axis-unit-types-build',status:'completed',conclusion:'success'};
+  const writerJob={name:'writer-practical-focused',status:'completed',conclusion:'success'};
+  assert.equal(inspectJobs([axis,writerJob],file,[],required),2);
+  assert.throws(()=>inspectJobs([axis,{...writerJob,conclusion:'skipped'}],file,[],required),
+    /UNSUCCESSFUL_SPECIALIST_JOB/, 'a skipped writer cannot satisfy protected Specialist');
 });

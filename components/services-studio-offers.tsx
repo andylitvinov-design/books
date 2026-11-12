@@ -4,6 +4,8 @@ import Image from "next/image";
 import { serviceIsVisible, useServicesExplorer, type StudioServiceId } from "@/components/services-explorer-state";
 import { StaticPortrait } from "@/components/static-portrait";
 import Link from "next/link";
+import { Fragment } from "react";
+import { ServicesVideoGenerationCard } from "@/components/services-video-generation-card";
 import { ArrowRight, ChevronDown, ClipboardCheck, ShieldCheck } from "lucide-react";
 
 import { ContactChannelChooser } from "@/components/contact-channel-chooser";
@@ -304,7 +306,10 @@ export function ServicesStudioOffers({ locale }: { locale: PublicLocale }) {
           <p>{t.paidLead}</p>
         </header>
         <div className={styles.paidGrid}>
-          {paid.map((offer, index) => <ServiceCard key={offer.id} offer={offer} locale={locale} index={index} hidden={!visible(offer.id)} />)}
+          {paid.map((offer, index) => <Fragment key={offer.id}>
+    <ServiceCard offer={offer} locale={locale} index={index} hidden={!visible(offer.id)} />
+    {offer.id === "alchemy" && visible(offer.id) ? <ServicesVideoGenerationCard locale={locale} /> : null}
+  </Fragment>)}
         </div>
         <div className={styles.paidFooter}>
           <span><ShieldCheck size={17} aria-hidden="true" />{t.reassurance}</span>

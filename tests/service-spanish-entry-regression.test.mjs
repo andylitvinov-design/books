@@ -11,7 +11,9 @@ const directory = read('components/services-directory-page.tsx')
 
 test('the real dedicated Spanish services route renders a complete existing conversion page', () => {
   assert.match(es, /export default async function SpanishServicesPage/)
-  assert.match(es, /<main className="services-shell services-shell--studio" lang="es">/)
+  assert.match(es, /<main className=\{"services-shell services-shell--studio " \+ assistStyles\.assistPage\} lang="es">/)
+  assert.match(es, /<ServicesAssistMobile locale="es"\s*\/>/)
+  assert.match(es, /import assistStyles from "@\/components\/services-assist-mobile\.module\.css"/)
   assert.match(es, /<ServicesConversionHero locale="es"\s*\/>/)
   assert.match(es, /<PublicConsultationCta locale="es" id="consultation" serviceBooking/)
   assert.match(es, /<ServicesStudioOffers locale="es"\s*\/>/)
