@@ -1,6 +1,9 @@
 name: HH closed PR Actions cleanup
 
 # pull_request_target lives on GitHub default; never run PR HEAD code.
+# Include merged closed PRs: their old PR-scoped checks are obsolete too.
+# The trusted controller independently checks closed state, unique branch,
+# source ancestry, exact run association and fresh state before cancellation.
 on:
   pull_request_target:
     types: [closed]
@@ -27,7 +30,6 @@ jobs:
       (github.event_name == 'workflow_dispatch' ||
        (github.event_name == 'pull_request_target' &&
         github.event.action == 'closed' &&
-        github.event.pull_request.merged == false &&
         github.event.pull_request.base.ref == 'codex/public-book-library'))
     runs-on: ubuntu-slim
     timeout-minutes: 7
@@ -53,7 +55,7 @@ jobs:
           script: |
             const {cleanup} = require(process.env.GITHUB_WORKSPACE + '/scripts/ci-pr-closed-run-cleanup.cjs');
             const result = await cleanup({github, context, core});
-            await core.summary.addHeading('Closed, unmerged production PR - isolated Actions cleanup')
+            await core.summary.addHeading('Closed production PR - isolated Actions cleanup')
               .addCodeBlock(JSON.stringify(result, null, 2), 'json').write();
             if (result.partial) core.warning('Closed PR scan partial; no ambiguous run was cancelled.');
             if (result.errors.length) core.setFailed('GitHub cancellation errors: ' + result.errors.length);
