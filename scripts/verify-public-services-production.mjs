@@ -138,6 +138,15 @@ try {
     await topics.first().click();
     const results = assist.locator("#assist-results");
     await visible(results);
+    const homeopathy = results.locator("[data-assist-homeopathy]");
+    await expect(homeopathy).toHaveCount(1);
+    await expect(homeopathy.locator("a[data-assist-remedy]")).toHaveCount(3);
+    for (const slug of ["gelsemium", "ignatia-amara", "nux-vomica"]) {
+      const card = homeopathy.locator('a[data-assist-remedy="' + slug + '"]');
+      await expect(card).toHaveAttribute("href", new RegExp("^/(ru|en)/homeopathy/remedies/" + slug + "$"));
+      await expect(card.locator("img")).toHaveAttribute("src", new RegExp("^/media/remedies/" + slug + "/message"));
+    }
+    await expect(homeopathy.locator('a[href="#consultation"]')).toHaveCount(1);
     await expect(topics.first()).toHaveAttribute("aria-pressed", "true");
     await expect(results.locator("a[data-assist-recommendation]")).toHaveCount(3);
     const stressRoutes = {
@@ -181,6 +190,7 @@ try {
     await submit.click();
     await visible(results.locator('[role="alert"]'));
     await expect(results.locator("a[data-assist-recommendation]")).toHaveCount(0);
+    await expect(results.locator("[data-assist-homeopathy]")).toHaveCount(0);
     await assertNoDevIssueOverlay(page, locale + "/services/assist/" + width);
     await assertViewport(page, locale + "/services/assist/" + width);
     await reset.click();

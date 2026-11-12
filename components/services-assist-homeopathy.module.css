@@ -1,0 +1,20 @@
+.panel{margin:0 0 16px;padding:15px 12px 14px;border:1px solid #dec498;border-radius:21px;background:#fffaf3;color:#17334b;box-shadow:0 5px 17px rgb(95 67 31 / 7%);min-width:0}
+.heading{display:flex;align-items:center;gap:9px}.mark{width:38px;height:38px;flex:none;display:grid;place-items:center;background:#f1eadc;color:#9f7837;border-radius:12px}
+.eyebrow{font-size:10px;color:#996f33;letter-spacing:.065em;text-transform:uppercase;margin:0 0 3px;font-weight:750}
+.heading h3{font-family:Georgia,"Times New Roman",serif;font-size:clamp(23px,6vw,28px);line-height:1.1;font-weight:700;color:#17334b;margin:0}
+.lead{margin:10px 0 12px;font-size:13px;line-height:1.45;color:#53666d}
+.cards{display:grid;gap:8px}
+.remedy{min-width:0;min-height:90px;display:flex;align-items:center;gap:10px;padding:7px 9px 7px 7px;border:1px solid #e8ddd1;background:#fffdf9;border-radius:14px;color:#17334b;text-decoration:none;box-shadow:0 2px 5px rgb(55 44 30 / 3%)}
+.remedy img{width:76px;height:78px;flex:none;object-fit:cover;border-radius:10px;background:#efe9df}
+.remedyCopy{display:grid;gap:3px;flex:1;min-width:0}.remedyCopy strong{font-family:Georgia,"Times New Roman",serif;font-weight:700;font-size:17px;line-height:1.12}.remedyCopy>span{font-size:12px;line-height:1.38;color:#535c64}.remedyCopy small{font-size:11px;font-weight:750;color:#006e63;text-decoration:underline;text-underline-offset:2px}
+.remedy>svg{flex:none;color:#075e59}
+.safety{display:flex;gap:9px;align-items:flex-start;background:#e9f1ed;border-radius:14px;padding:11px;color:#244f4e;margin:12px 0;font-size:12px;line-height:1.5}.safety svg{flex:none;margin-top:1px}
+.booking{display:grid;grid-template-columns:92px minmax(0,1fr);gap:12px;border:1px solid #d7bf97;border-radius:16px;padding:10px;background:#fffdf9;min-width:0}
+.portrait{width:92px;height:114px;object-fit:cover;object-position:center top;border-radius:12px;background:#f2ece7}
+.bookingContent{min-width:0}.bookingContent h4{font-family:Georgia,"Times New Roman",serif;font-size:18px;line-height:1.17;margin:0 0 5px;color:#17334b}
+.name{font-size:12px;margin:0 0 6px;color:#576269}.details{font-size:12px;line-height:1.35;margin:0 0 9px;color:#576269}
+.cta{min-height:44px;display:flex;justify-content:center;align-items:center;gap:7px;border-radius:12px;background:#005a54;color:white;padding:8px 10px;font-size:13px;font-weight:750;text-decoration:none;text-align:center}.cta svg{flex:none}
+.bookingContent>small{font-size:10px;line-height:1.4;display:block;margin-top:7px;color:#687177}
+.panel :is(a):focus-visible{outline:3px solid #08786c;outline-offset:3px}
+@media(max-width:350px){.panel{padding:11px 9px}.remedy{gap:7px}.remedy img{width:63px;height:76px}.remedyCopy strong{font-size:16px}.booking{grid-template-columns:74px minmax(0,1fr);gap:8px;padding:8px}.portrait{width:74px;height:105px}.bookingContent h4{font-size:16px}}
+@media(prefers-reduced-motion:reduce){.panel *{scroll-behavior:auto!important;transition:none!important}}

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowRight, HeartHandshake, Search, Sparkles } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./services-assist-mobile.module.css";
+import { ServicesAssistHomeopathy } from "./services-assist-homeopathy";
 
 type Focus = "stress" | "relationships" | "energy" | "health" | "work" | "growth" | "general";
 const routes = {
@@ -108,6 +109,7 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
       {crisis?<p role="alert" className={styles.crisis}>{t.crisis}</p>:<>
         <p className={styles.reply}><Sparkles size={18} aria-hidden="true"/>{t.reply[selection.focus]}</p>
         <h2 id="assist-results-title">{t.answer}</h2>
+        <ServicesAssistHomeopathy locale={locale} />
         <div className={styles.recommendations}>{choices[selection.focus].map((key,index)=>{
           const card=t.cards[key];
           return <Link className={styles.rec} href={"/"+locale+"/"+routes[key]} key={key} prefetch={false} data-assist-recommendation={key}>
