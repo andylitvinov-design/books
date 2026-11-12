@@ -151,8 +151,8 @@ const copy = {
 
 const messengerStarter = {
  ru:{
-  welcome:"Приветствую! Могу помочь с поддерживающим видео, практикой, тестом или личной экспресс-диагностикой. Выберите вариант или напишите свой вопрос.",
-  hello:"Я здесь! Можем создать видео, подобрать практику, выбрать тест или обратиться за личной экспресс-диагностикой. Что вам актуально?",
+  welcome:"Привет! 🙂 Здесь можно просто поговорить или вместе разобраться с вопросом. С чего тебе хочется начать?",
+  hello:"Привет! 🙂 Как проходит твой день?",
 
   video:"Создать контент",videoSub:"Видео · аудио · медитации · послания",
   contentIntent:"Хочу создать контент",
@@ -183,8 +183,8 @@ const messengerStarter = {
   safety:"Если вам или кому-то рядом угрожает непосредственная опасность, обратитесь в экстренную службу. Я могу помочь найти доступные материалы, когда это безопасно.",
  },
  en:{
-  welcome:"Welcome! I can help with a supportive video, a practice for now, a test or a personal express review. Choose an option or write your question.",
-  hello:"I'm here! We can create a video, choose a practice, explore a test or request a personal express review. What matters to you now?",
+  welcome:"Hi! 🙂 We can simply chat or think something through together. Where would you like to begin?",
+  hello:"Hi! 🙂 How's your day going?",
 
   video:"Create content",videoSub:"Video · audio · meditations · messages",
   contentIntent:"I want to create content",
@@ -875,8 +875,9 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       setContentStep(null);setContentVoice(false);setContentBrief("");
       followTail.current=true;setNewBelow(false);setStatus("");setSource("");setChoices([]);setDraft("");
       setMessages(prev=>[...prev,{role:"user" as const,text},
-        {role:"assistant" as const,text:/[а-яё]/iu.test(text)?messengerStarter.ru.hello:
-          /^(?:hola|buenas)/i.test(text)?messengerStarter.es.hello:turnStarter.hello}].slice(-30));
+        {role:"assistant" as const,text:ruleConversationReply({message:text,locale:turnLocale,history:messages.slice(-6)})?.reply||
+          (/[а-яё]/iu.test(text)?messengerStarter.ru.hello:
+            /^(?:hola|buenas)/i.test(text)?messengerStarter.es.hello:turnStarter.hello)}].slice(-30));
       return;
     }
     if(compact&&isContentCreationIntent(text)){setTestChatOpen(false);setTestChatTurn(null);setTestSuggestedKey("");startContent(turnLocale);return;}
@@ -1017,7 +1018,11 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       }
       setMessages(prev=>[...prev,{role:"assistant" as const,text:reply}].slice(-30));
       if(authenticated)void privateTranscript.savePair(text,reply);
-      setSource(used==="browser"?turnCopy.used:used==="owned"?turnCopy.backend:turnCopy.simple);
+      // Social replies are already AI-labelled: omit the mechanical
+      // "source: algorithm" footer only for this small-talk subset.
+      const socialRule=used==="rules"?ruleConversationReply({message:text,locale:turnLocale,history:prior}):null;
+      const friendlyTurn=Boolean(socialRule&&typeof socialRule.id==="string"&&["conversation_greeting","conversation_small_talk","conversation_chat_invitation"].includes(socialRule.id));
+      setSource(friendlyTurn?"":used==="browser"?turnCopy.used:used==="owned"?turnCopy.backend:turnCopy.simple);
     } catch (error) {
       if(!abort.signal.aborted){
         if(voice.conversing)voice.stopDialogue();
