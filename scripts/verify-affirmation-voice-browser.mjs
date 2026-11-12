@@ -1365,10 +1365,19 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       }
       await expect(standardVoiceMode).toHaveAttribute("aria-pressed","true");
       // Phrase selection is now owned by the real Montage → Text editor.
-      // Do not use the retired hidden Ideas/Hypno phrase picker.
-      await phrases.locator('[data-video-ideas-open-montage-text]').click();
+      // Do not use the retired hidden Ideas/Hypno phrase picker. WebKit needs
+      // the visitor's real touch gesture after recording and switching modes:
+      // a synthetic click can leave Ideas selected with Text hidden.
+      const montageTextEntry=phrases.locator('[data-video-ideas-open-montage-text]');
+      await expect(montageTextEntry).toBeVisible();
+      if(engine==="webkit")await montageTextEntry.tap();
+      else await montageTextEntry.click();
+      await expect(page.locator('[data-video-quick-control="editor"]'))
+        .toHaveAttribute("aria-pressed","true",{timeout:15000});
+      await expect(page.locator('[data-video-montage-tab="text"]'))
+        .toHaveAttribute("aria-pressed","true",{timeout:15000});
       const phraseEditor=page.locator('[data-video-montage-text] [data-video-ideas-phrases]');
-      await expect(phraseEditor).toBeVisible();
+      await expect(phraseEditor).toBeVisible({timeout:15000});
       const phraseRows=phraseEditor.locator('[data-video-idea-phrase]');
       const spokenPhrase=phraseRows.filter({hasText:approved});
       await expect(spokenPhrase).toHaveCount(1);

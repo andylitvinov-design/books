@@ -91,3 +91,25 @@ test("personalized Music Match remains visible in Ideas Voice while legacy contr
  assert.match(css,/\.studio\[data-active-workspace="phrases"\] \.phraseMusicSection\[data-personalized-music-match\]\{display:grid!important\}/,
    "the current 3 Music Match suggestions must remain visible");
 });
+
+test("post-export WebKit touch opens actual Montage Text and preserves stale narration safety",async()=>{
+ const {readFileSync}=await import("node:fs");
+ const script=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
+ const index=script.indexOf("Phrase selection is now owned by the real Montage");
+ assert.ok(index>0,"post-export phrase flow must exist");
+ const journey=script.slice(index);
+ assert.ok(journey.includes('if(engine==="webkit")await montageTextEntry.tap();'),
+   "Safari must use a genuine visitor touch, not a swallowed synthetic click");
+ assert.ok(journey.includes('else await montageTextEntry.click();'),
+   "Chromium must retain the real click path");
+ assert.ok(journey.includes('[data-video-quick-control="editor"]'),
+   "verify Montage actually becomes selected");
+ assert.ok(journey.includes('[data-video-montage-tab="text"]'),
+   "verify the actual Text panel becomes selected");
+ assert.ok(journey.includes('await expect(phraseEditor).toBeVisible({timeout:15000});'),
+   "verify approved phrases visibly render before editing");
+ assert.ok(journey.includes('[data-video-narration-reapproval]'),
+   "never permit stale narration after a spoken phrase changes");
+ assert.ok(journey.includes('toBeDisabled({timeout:15000})'),
+   "a stale voice cannot be exported as an approved recording");
+});
