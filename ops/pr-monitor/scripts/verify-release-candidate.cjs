@@ -8,6 +8,7 @@ const {createHash}=require('node:crypto');
 const fs=require('node:fs'),path=require('node:path');
 const CHECKS=Object.freeze({
  '/': 'html',
+ '/index.html': 'html',
  '/pr-monitor.html': 'html',
  '/legacy.html': 'html',
  '/pr-two-screen-boot.js': 'js',
@@ -43,6 +44,11 @@ function verifySourceAssets(root){
   if(body.length<30)errors.push('SOURCE_EMPTY '+f);
   for(const asset of assetsFrom(body))references.add(asset);
  }
+ if(fs.existsSync(path.join(folder,'index.html'))&&fs.existsSync(path.join(folder,'pr-monitor.html'))){
+  const index=fs.readFileSync(path.join(folder,'index.html'),'utf8');
+  const monitor=fs.readFileSync(path.join(folder,'pr-monitor.html'),'utf8');
+  if(index!==monitor)errors.push('SOURCE_INDEX_NOT_CANONICAL');
+ }
  for(const item of references){
   const file=path.join(folder,item.slice(1));
   if(!fs.existsSync(file)||!fs.statSync(file).isFile())errors.push('SOURCE_ASSET_MISSING '+item);
@@ -68,10 +74,16 @@ function validBody(path,kind,body){
   return 'VERCEL_ERROR_BODY';
  if(kind==='html'){
   if(!/<\s*html\b/i.test(body)||!/<\s*\/html\s*>/i.test(body))return 'INVALID_HTML';
-  if(path==='/pr-monitor.html'&&(!body.includes('/pr-two-screen-boot.js')||!body.includes('legacy.html')))
-   return 'MONITOR_ENTRY_NOT_WIRED';
+  // First-paint DOM, not a loading-only stub or client-side meta refresh.
+  if(['/', '/index.html', '/pr-monitor.html'].includes(path)){
+   if(/<meta\b[^>]*http-equiv\s*=\s*['"]refresh['"]/i.test(body))return 'CLIENT_META_REFRESH_FORBIDDEN';
+   if(body.includes('Загружаю проверенный монитор'))return 'LOADING_STUB_FORBIDDEN';
+   const realMain=/<main\b[^>]*class\s*=\s*['"][^'"]*\bwrap\b/i.test(body);
+   if(!realMain||!body.includes('/monitor-core.js')||
+      !body.includes('/pr-two-screen.js')||!body.includes('/pr-merge-velocity-ui.js'))
+    return 'MONITOR_DIRECT_ENTRY_REQUIRED';
+  }
   if(path==='/legacy.html'&&!/<\s*main\b/i.test(body))return 'LEGACY_NOT_COMPLETE';
-  if(path==='/'&&!body.includes('/pr-monitor.html'))return 'ROOT_MONITOR_LINK_MISSING';
  }
  if(kind==='js'&&(!/[();={}]/.test(body)||/\<\s*html\b/i.test(body.slice(0,180))))return 'INVALID_JAVASCRIPT';
  if(kind==='css'&&!/[{}:;]/.test(body))return 'INVALID_CSS';
@@ -92,7 +104,17 @@ async function verifyCandidate(input, fetchImpl=globalThis.fetch){
    const response=await fetchImpl(origin+pathname,{method:'GET',redirect:'manual',cache:'no-store',
     headers:{Accept:kind.startsWith('HH_')?'application/json':'*/*'}});
    const type=String(response.headers?.get?.('content-type')||'').toLowerCase();
-   if(response.status!==200){errors.push(`${pathname} HTTP_${response.status}`);continue;}
+   // Canonical server redirects: allow only root/index -> exact same-origin monitor.
+   if((pathname==='/'||pathname==='/index.html')&&
+      (response.status===307||response.status===308)){
+    const location=response.headers?.get?.('location');
+    let target;
+    try{if(location)target=new URL(location,origin+pathname)}catch{}
+    if(target&&target.origin===origin&&target.pathname==='/pr-monitor.html'&&
+       !target.search&&!target.hash){checked.push(pathname);continue;}
+    errors.push(pathname+' INVALID_CANONICAL_REDIRECT');continue;
+   }
+   if(response.status!==200){errors.push(pathname+' HTTP_'+response.status);continue;}
    const target=expectedType(kind);
    if(!type.includes(target)){errors.push(`${pathname} WRONG_CONTENT_TYPE ${type||'-'}`);continue;}
    const body=await response.text();
@@ -101,7 +123,7 @@ async function verifyCandidate(input, fetchImpl=globalThis.fetch){
    checked.push(pathname);
    if(kind==='html'||kind==='js'||kind==='css')
     digests[pathname]=createHash('sha256').update(body).digest('hex');
-   if(pathname==='/legacy.html'||pathname==='/pr-two-screen-boot.js'){
+   if(['/','/index.html','/pr-monitor.html','/legacy.html','/pr-two-screen-boot.js'].includes(pathname)){
     for(const asset of assetsFrom(body))if(!pending.has(asset))
      pending.set(asset,asset.endsWith('.css')?'css':'js');
    }
