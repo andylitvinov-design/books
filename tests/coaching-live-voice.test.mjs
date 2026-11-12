@@ -189,3 +189,29 @@ test('My Coach persona dialogue speaks and listens on exactly the consented sess
     assert.equal(parsed.parseDiagnostics.length,0,file+': '+parsed.parseDiagnostics.map(item=>item.messageText).join('; '))
   }
 })
+
+test('selected persona opens immersive My Coach session with real avatar, stages and consented voice',()=>{
+  const ui=source('components/my-coach-live-dialogue.jsx')
+  const css=source('components/my-coach-live-dialogue.module.css')
+  const discovery=source('components/public-coaching-discovery.jsx')
+  const discoveryCss=source('components/public-coaching-discovery.module.css')
+  const page=source('app/[locale]/coaching/sessions/page.jsx')
+  const pageCss=source('app/[locale]/coaching/sessions/page.module.css')
+  assert.ok(discovery.includes('useState(Boolean(selectedPersona))'))
+  assert.ok(page.includes('{!personaSelection&&<div className={styles.header}'))
+  for(const token of ['data-my-coach-immersive-session','sessionHero','sessionPortrait','sessionAvatar',
+    'CoachingAvatar locale={lang}','sessionProgressSegments','currentCoachPrompt','quickGoalCard',
+    'sessionBottomNav','goalRow','onVoiceStateChange={setVoiceState}']) assert.ok(ui.includes(token),token)
+  for(const token of ['stageKeys.indexOf(currentStage)','onClick={replayCoachReply}',
+    'onClick={()=>chooseTopic(id)}','composerRef.current?.focus()',
+    'coachingBrainSafety(input)||coachingBrainBoundary(input)']) assert.ok(ui.includes(token),token)
+  for(const token of ['my-coach-portraits.avif','reiki-approved-sunrise-v3.webp',
+    'messenger-zen-stones.svg','assessment-lotus.svg','safe-area-inset-bottom']) assert.ok(css.includes(token),token)
+  const globalCss=source('app/globals.css')
+  for(const token of ['body:has([data-my-coach-immersive-session]) .mobile-bottom-navigation',
+    'body:has([data-my-coach-immersive-session]) [data-sitewide-antistress-banner]',
+    'body:has([data-my-coach-immersive-session]) .launcher']) assert.ok(globalCss.includes(token),token)
+  assert.ok(discoveryCss.includes('personaWelcome:has([data-my-coach-immersive-session])'))
+  assert.ok(pageCss.includes('fullWidth:has([data-my-coach-immersive-session])'))
+  assert.ok(ui.includes("readiness.status==='checking'"))
+})
