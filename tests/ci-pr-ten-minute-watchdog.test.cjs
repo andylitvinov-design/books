@@ -1951,3 +1951,82 @@ test('Watchdog classifies red Core jobs and records blocker diagnostics before b
  assert.match(source,/blocker\.ci_error_category=diagnosis\.category/);
  assert.match(source,/blocker\.ci_error_retry_policy=diagnosis\.retry/);
 });
+
+
+const mergedCleanup=require('../scripts/ci-pr-merged-queue-cleanup.cjs');
+function cleanupFixture({state='closed',sha='b'.repeat(40),created='2026-11-11T18:00:00Z',
+ merged='2026-11-11T20:00:00Z',runStatus='queued',attempt=1,compareStatus='ahead',
+ compareBase='a'.repeat(40),unique=true,runAssoc=[],newPR=null}={}){
+ const pr={number:4370,state,merged:state==='closed',
+   created_at:created,merged_at:state==='closed'?merged:null,
+   base:{ref:'codex/public-book-library',repo:{full_name:'andylitvinov-design/books'}},
+   head:{ref:'feat/live-speech',sha,repo:{full_name:'andylitvinov-design/books'}}};
+ const run={id:1001,name:'HH Personal Coaching Session',event:'pull_request',
+  status:runStatus,run_attempt:attempt,created_at:'2026-11-11T19:00:00Z',
+  head_sha:'a'.repeat(40),head_branch:'feat/live-speech',
+  repository:{full_name:'andylitvinov-design/books'},
+  head_repository:{full_name:'andylitvinov-design/books'},
+  pull_requests:runAssoc};
+ const calls={cancel:[],branches:0,compares:0,runs:0,prs:0};
+ const github={rest:{
+  actions:{
+   listWorkflowRunsForRepo:async()=>({data:{total_count:139,workflow_runs:[run]}}),
+   getWorkflowRun:async()=>{calls.runs++;return {data:run};},
+   cancelWorkflowRun:async({run_id})=>{calls.cancel.push(run_id);return {status:202};}},
+  pulls:{
+   list:async()=>{calls.branches++;return {data:unique?[{...pr,merged:undefined}]:[{...pr,merged:undefined},{...pr,number:4371}]};},
+   get:async()=>{calls.prs++;return {data:newPR||pr};}},
+  repos:{compareCommits:async()=>{calls.compares++;return {data:{
+   status:compareStatus,base_commit:{sha:'a'.repeat(40)},
+   merge_base_commit:{sha:compareBase}}};}}
+ }};
+ const context={eventName:'schedule',ref:'refs/heads/codex/bootstrap-books',
+  repo:{owner:'andylitvinov-design',repo:'books'}};
+ return {github,context,calls,pr,run};
+}
+test('stale QUEUED PR checks of a uniquely owned already MERGED source are cancelled with ancestry and re-read proof',async()=>{
+ const f=cleanupFixture();
+ const result=await mergedCleanup.runCleanup({github:f.github,context:f.context,
+  observedQueued:139,observedRemaining:4700,now:Date.parse('2026-11-12T18:00:00Z')});
+ assert.equal(result.status,'CANCELLATION_ACCEPTED_NOT_TERMINAL');
+ assert.deepEqual(f.calls.cancel,[1001]);assert.equal(result.eligible,1);
+ assert.equal(result.cancel_accepted[0].pr,4370);
+ assert.equal(result.partial,true,'only one of 139 queued runs was observed; never claim complete');
+});
+test('stale queue cleanup never touches active PRs, ambiguous branches, bad ancestry, or manual reruns',async()=>{
+ for(const options of [{state:'open'},{unique:false},{compareStatus:'diverged'},
+   {compareBase:'f'.repeat(40)},{attempt:2},{runStatus:'in_progress'},
+   {runAssoc:[{number:999,base:{ref:'codex/public-book-library'}}]}]){
+  const f=cleanupFixture(options);
+  const res=await mergedCleanup.runCleanup({github:f.github,context:f.context,
+   observedQueued:139,observedRemaining:4700,now:Date.parse('2026-11-12T18:00:00Z')});
+  assert.equal(f.calls.cancel.length,0,JSON.stringify(options));
+  assert.equal(res.eligible,0);
+ }
+});
+test('queue cleanup fails closed on merged PR changes, invalid actor, no budget, or new attempts',async()=>{
+ const f=cleanupFixture();
+ assert.equal((await mergedCleanup.runCleanup({github:f.github,context:{...f.context,eventName:'push'},
+  observedQueued:139,observedRemaining:4700})).status,'UNTRUSTED_CONTEXT');
+ assert.equal((await mergedCleanup.runCleanup({github:f.github,context:f.context,
+  observedQueued:139,observedRemaining:120})).status,'NO_CONFIRMED_BUDGET_OR_PRESSURE');
+ assert.equal((await mergedCleanup.runCleanup({github:f.github,context:f.context,
+  observedQueued:60,observedRemaining:4700})).status,'NO_CONFIRMED_BUDGET_OR_PRESSURE');
+ const noMergeFlag=cleanupFixture({newPR:{...f.pr,merged:undefined}});
+ const stillUnverified=await mergedCleanup.runCleanup({github:noMergeFlag.github,context:noMergeFlag.context,
+  observedQueued:139,observedRemaining:4700,now:Date.parse('2026-11-12T18:00:00Z')});
+ assert.equal(stillUnverified.eligible,0);assert.deepEqual(noMergeFlag.calls.cancel,[]);
+ const moved=cleanupFixture({newPR:{...f.pr,head:{...f.pr.head,sha:'c'.repeat(40)}}});
+ const result=await mergedCleanup.runCleanup({github:moved.github,context:moved.context,
+  observedQueued:139,observedRemaining:4700,now:Date.parse('2026-11-12T18:00:00Z')});
+ assert.equal(result.eligible,0);assert.deepEqual(moved.calls.cancel,[]);
+});
+test('same existing scheduled Watchdog runner owns bounded cleanup; no new CI or workflow',()=>{
+ const fs=require('node:fs');
+ const workflow=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
+ const source=fs.readFileSync('scripts/ci-pr-merged-queue-cleanup.cjs','utf8');
+ assert.match(workflow,/context\.eventName==='schedule'&&[\s\S]{0,250}runCleanup/);
+ assert.match(workflow,/report\.queuedActions\)>100/);
+ assert.doesNotMatch(source,/workflow_dispatch|createWorkflowDispatch|reRunWorkflow|createPullRequest/);
+ assert.equal(mergedCleanup.MAX_CANCELS,12);
+});
