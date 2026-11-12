@@ -84,6 +84,34 @@ test('post-Core verified merge restores Green → Merge without inventing merge 
  const data=k.report([run],now,{mergeProofs:[proof]});
  assert.equal(data.windows.last_24h.green_to_merge.n,1);
 });
+
+test('long-tail diagnosis survives 30-row truncation without inventing a root cause',()=>{
+ const runs=Array.from({length:34},(_,i)=>{
+  const r=record(250+i);
+  if(i<4){
+   const old=new Date(now-(9+i)*3600000).toISOString();
+   const queued=new Date(Date.parse(old)-150000).toISOString();
+   r.queued_at=queued;r.completed_at=old;
+   r.jobs=r.jobs.map(j=>({...j,queued_at:queued,
+     started_at:new Date(Date.parse(old)-60000).toISOString(),completed_at:old}));
+  }
+  return r;
+ });
+ const result=k.gateToMerge(runs,k.window(now,0),now);
+ assert.equal(result.n,34);
+ assert.equal(result.rows.length,30,'display rows are bounded');
+ assert.equal(result.long_tail.schema,'HH_GREEN_MERGE_LONG_TAIL_V1');
+ assert.equal(result.long_tail.sample_n,34);
+ assert.equal(result.long_tail.outlier_n,4);
+ assert.equal(result.long_tail.top.length,4);
+ assert.equal(result.long_tail.top[0].pr,253);
+ assert.ok(result.long_tail.wait_share_percent>50);
+ assert.equal(result.long_tail.mean_without_outliers_min,25);
+ assert.equal(result.long_tail.cause_verified,false);
+ assert.equal(result.history_complete,false);
+ assert.equal(result.rows[0].pr,253,'slowest verified PR is not truncated away');
+});
+
 test('post-Core merge proof rejects wrong HEAD, base, SHA, creation time and duplicates',()=>{
  const created=new Date(now-7200000).toISOString();
  const run=record(19,'success',{merged_at:new Date(now-300000).toISOString(),

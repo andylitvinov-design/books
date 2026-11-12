@@ -170,10 +170,27 @@ function gateToMerge(runs,w,now,mergeProofs=[]) {
     const old=by.get(r.pr);
     if(!old||ts(entry.gate_completed_at)>ts(old.gate_completed_at))by.set(r.pr,entry);
   }
-  const rows=[...by.values()].sort((a,b)=>a.pr-b.pr);
+  // Keep the aggregate over the FULL verified sample. The UI exposes only
+  // the first 30 rows; never require that truncated list to diagnose outliers.
+  const rows=[...by.values()].sort((a,b)=>b.minutes-a.minutes||a.pr-b.pr);
+  const stats=summarize(rows.map(x=>x.minutes));
+  const slow=rows.filter(x=>x.minutes>=30&&
+    x.minutes>=5*(stats.median_min??Infinity));
+  const total=rows.reduce((sum,x)=>sum+x.minutes,0);
+  const slowTotal=slow.reduce((sum,x)=>sum+x.minutes,0);
+  const rest=rows.length-slow.length;
+  const longTail={
+    schema:'HH_GREEN_MERGE_LONG_TAIL_V1',
+    sample_n:rows.length,outlier_threshold_minutes:30,
+    outlier_n:slow.length,
+    wait_share_percent:slow.length&&total>0?round(100*slowTotal/total):null,
+    mean_without_outliers_min:rest?round((total-slowTotal)/rest):null,
+    top:slow.slice(0,5).map(x=>({...x,minutes:round(x.minutes)})),
+    cause_verified:false,history_complete:false
+  };
   return {schema:'HH_FINAL_REQUIRED_PASS_TO_MERGE_SAMPLE_V1',
     scope:'EXACT_PR_HEAD_CONFIRMED_MERGE_AND_THREE_REQUIRED_JOB_PASS',
-    ...summarize(rows.map(x=>x.minutes)),
+    ...stats,long_tail:longTail,
     observed_merged_prs:rows.length,history_complete:false,
     exact_head_merge_proofs:rows.filter(r=>r.merge_proof==='GITHUB_MERGED_PR_EXACT_HEAD').length,
     archived_merge_proofs:rows.filter(r=>r.merge_proof==='ARCHIVED_MERGE_OBSERVED').length,

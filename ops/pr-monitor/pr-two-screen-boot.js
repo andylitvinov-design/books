@@ -16,7 +16,7 @@
       '<script src="/ci-queue-backup.js?v=20261106-ci-filter-v2" defer><\/script>'+
       '<script data-pr-stage-only src="/pr-two-screen.js?v=20261111-full-journey-v3" defer><\/script>'+
       '<link rel="stylesheet" href="/pr-three-kpi-ui.css?v=20261106-wave-kpi1">'+
-      '<script src="/pr-three-kpi-ui.js?v=20261111-weekly-top-v1" defer><\/script>';
+      '<script src="/pr-three-kpi-ui.js?v=20261112-long-tail-v1" defer><\/script>';
     // Preserve the manually deployed LIVE monitor extensions; source archives in
     // GitHub intentionally contain only a subset of the 100+ production assets.
     additions += '<link rel="stylesheet" href="/pr-monitor-fluid.css?v=20261105-v1">'+

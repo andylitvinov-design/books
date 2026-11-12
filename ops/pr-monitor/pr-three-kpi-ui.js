@@ -66,12 +66,17 @@
    return {label:entry.n?min(entry.mean_min):'—',
     sub:entry.n?'n='+entry.n+' · p50 '+min(entry.median_min)+' · p95 '+min(entry.p95_min):
     'n=0 · Repair без доказанной пары событий'};
-  if(key==='green_to_merge')return {
-   label:entry.n?min(entry.mean_min):'—',
-   sub:entry.n?'n='+entry.n+' · P50 '+min(entry.median_min)+' · P95 '+min(entry.p95_min)+
-    ' · merge по точному HEAD '+(entry.exact_head_merge_proofs||0)+
-    ', архив '+(entry.archived_merge_proofs||0):
-    'n=0 · нет пары последних обязательных PASS и подтверждённого merge'};
+  if(key==='green_to_merge'){
+   const tail=observedLongTail(entry);
+   return {label:entry.n?min(entry.mean_min):'—',
+    sub:entry.n?'Среднее · n='+entry.n+' · P50 '+min(entry.median_min)+
+     ' · P95 '+min(entry.p95_min)+
+     (tail&&tail.outlier_n?' · длительных PR '+tail.outlier_n+
+       ' ('+fmt.format(tail.wait_share_percent)+'% ожидания)':'')+
+     ' · точный HEAD '+(entry.exact_head_merge_proofs||0)+
+     ', архив '+(entry.archived_merge_proofs||0):
+     'n=0 · нет пары последних обязательных PASS и подтверждённого merge'};
+  }
   const n=entry.measured||0;
   return {label:n&&entry.percent_observed!==null?
     '≈'+fmt.format(entry.percent_observed)+'%*':'—',
@@ -95,6 +100,25 @@
   if(worst.minutes<30||worst.minutes<5*entry.median_min)return null;
   const meanWithoutOutlier=ordered.slice(1).reduce((sum,r)=>sum+r.minutes,0)/(entry.n-1);
   return {pr:worst.pr,minutes:worst.minutes,meanWithoutOutlier};
+ }
+ // Read the signed-cohort calculation, not the truncated display rows.
+ // A partial/mismatched response must never be called an outlier diagnosis.
+ function observedLongTail(entry){
+  const t=entry?.long_tail;
+  if(!t||t.schema!=='HH_GREEN_MERGE_LONG_TAIL_V1'||
+     t.sample_n!==entry.n||!Number.isSafeInteger(entry.n)||entry.n<0||
+     !Number.isSafeInteger(t.outlier_n)||t.outlier_n<0||
+     !Array.isArray(t.top)||t.top.length>5||t.top.length>t.outlier_n||
+     t.outlier_n>entry.n||
+     (t.wait_share_percent!==null&&
+       (!Number.isFinite(t.wait_share_percent)||t.wait_share_percent<0||
+        t.wait_share_percent>100))||
+     (t.mean_without_outliers_min!==null&&
+       (!Number.isFinite(t.mean_without_outliers_min)||
+        t.mean_without_outliers_min<0)))return null;
+  if(t.top.some(r=>!Number.isSafeInteger(r?.pr)||r.pr<1||
+      !Number.isFinite(r?.minutes)||r.minutes<30))return null;
+  return t;
  }
 function renderWaves(){
   if(!wavePanel)return;
@@ -196,16 +220,40 @@ function renderWaves(){
    if(conf.key==='error_to_repair')description.append(el('p','hh-kpi-warning',
      'Repair измеряется только по подлинному событию repair_started на том же PR и HEAD после доказанной ошибки, а не по принятию dispatch или метке Repair.'));
    if(conf.key==='green_to_merge'){
-    const outlier=latencyOutlier(today?.green_to_merge);
-    if(outlier){
-     const warning=el('p','hh-kpi-warning','Среднее увеличено одним длительным PR ');
-     const prLink=el('a','','#'+outlier.pr);
-     prLink.href='https://github.com/andylitvinov-design/books/pull/'+outlier.pr;
-     prLink.target='_blank';prLink.rel='noopener noreferrer';
-     warning.append(prLink,': '+min(outlier.minutes)+' после подтверждённого Gate PASS. '+
-       'Без этого PR среднее ≈'+min(outlier.meanWithoutOutlier)+
-       '. Сам интервал не доказывает причину ожидания.');
-     description.append(warning);
+    const tail=observedLongTail(today?.green_to_merge);
+    if(tail?.outlier_n){
+     description.append(el('p','hh-kpi-warning',
+      'Среднее увеличено '+tail.outlier_n+' долгими PR (не менее 30 мин и 5× P50): '+
+      fmt.format(tail.wait_share_percent)+'% суммарного ожидания в наблюдаемой выборке. '+
+      'Без них среднее ≈'+min(tail.mean_without_outliers_min)+'.'));
+     const list=el('div','hh-kpi-examples');
+     for(const slow of tail.top){
+      const line=el('div','hh-kpi-example');
+      const link=el('a','','#'+slow.pr);
+      link.href='https://github.com/andylitvinov-design/books/pull/'+slow.pr;
+      link.target='_blank';link.rel='noopener noreferrer';
+      line.append(link,el('span','',min(slow.minutes)));
+      const proof=safeLink(slow.job_url||slow.run_url);
+      if(proof){const a=el('a','','CI');a.href=proof;a.target='_blank';
+       a.rel='noopener noreferrer';line.append(a);}
+      list.append(line);
+     }
+     description.append(list,el('p','',
+      'Это продолжительность после обязательного PASS, а не доказанная причина задержки. '+
+      'Ручные HOLD, изменение BASE и пропущенные события нужно проверять отдельно.'));
+    }else if(!tail){
+     // Backward compatibility with an older, complete API response only.
+     const outlier=latencyOutlier(today?.green_to_merge);
+     if(outlier){
+      const warning=el('p','hh-kpi-warning','Подтверждён длительный PR ');
+      const link=el('a','','#'+outlier.pr);
+      link.href='https://github.com/andylitvinov-design/books/pull/'+outlier.pr;
+      link.target='_blank';link.rel='noopener noreferrer';
+      warning.append(link,': '+min(outlier.minutes)+
+       '; среднее без него ≈'+min(outlier.meanWithoutOutlier)+
+       '. Причина ожидания отдельно не установлена.');
+      description.append(warning);
+     }
     }
    }
    const items=evidenceItems(conf.key,today?.[conf.key]);
