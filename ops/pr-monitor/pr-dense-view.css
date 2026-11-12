@@ -33,12 +33,11 @@
   padding:5px 9px;font-size:11px;font-weight:700;
 }
 .hh-pr-dense-toggle:focus-visible{outline:2px solid #8bcaff;outline-offset:2px}
+/* Only redundant secondary KPIs collapse; the full delivery path is permanent. */
 body.hh-pr-dense:not(.hh-pr-dense-expanded) #hh-pr-three-kpis,
-body.hh-pr-dense:not(.hh-pr-dense-expanded) #hh-pr-two-screens,
 body.hh-pr-dense:not(.hh-pr-dense-expanded) #hh-pr-journey-health,
 body.hh-pr-dense:not(.hh-pr-dense-expanded) #hh-ci-queue-detail,
-body.hh-pr-dense:not(.hh-pr-dense-expanded) #hh-pr-timestamp-observer,
-body.hh-pr-dense:not(.hh-pr-dense-expanded) #hh-pr-error-funnel{display:none!important}
+body.hh-pr-dense:not(.hh-pr-dense-expanded) #hh-pr-timestamp-observer{display:none!important}
 body.hh-pr-dense #hh-pr-merge-speed.hh-compact-pr-top{margin-bottom:5px!important}
 body.hh-pr-dense #hh-pr-merge-speed.hh-compact-pr-top>.hh-pr-speed-hint,
 body.hh-pr-dense #hh-pr-merge-speed.hh-compact-pr-top>.hh-pr-speed-description{display:none!important}
@@ -49,4 +48,40 @@ body.hh-pr-dense #hh-pr-merge-speed.hh-compact-pr-top>.hh-pr-speed-description{d
  .hh-pr-dense-row span:not(:first-child){font-size:11px}
  .hh-pr-dense-foot{gap:5px}
  .hh-pr-dense-status{font-size:9px}
+}
+
+/* Full Created -> LIVE stages below the two original graphs. */
+body.hh-pr-dense #hh-pr-two-screens{
+ display:block!important;position:static!important;visibility:visible!important;
+ margin:0 0 10px;min-width:0;max-width:100%;width:100%;
+}
+body.hh-pr-dense #hh-pr-two-screens #hh2-stages{
+ display:flex!important;flex-direction:column;gap:6px;
+ min-height:0!important;max-height:none!important;height:auto!important;
+ border:1px solid #35536e;border-radius:12px;background:#0c2135;
+ padding:10px 12px!important;margin:0;overflow:visible!important;
+}
+body.hh-pr-dense #hh2-stages .hh2-header h2{font-size:16px;line-height:1.2;margin:0}
+body.hh-pr-dense #hh2-stages .hh2-header small{font-size:10px;margin-top:2px}
+body.hh-pr-dense #hh2-stages .hh2-compare{gap:3px}
+body.hh-pr-dense #hh2-stages .hh2-stage-row{min-height:32px;padding:6px 7px}
+body.hh-pr-dense #hh2-stages .hh2-stage-row span{font-size:11px;line-height:1.2}
+body.hh-pr-dense #hh2-stages .hh2-stage-row strong{
+ font-size:11px;line-height:1.15;font-variant-numeric:tabular-nums;
+}
+body.hh-pr-dense #hh2-stages .hh2-stage-item{
+ border-radius:7px;border-color:#2b4861;background:#10263b;
+}
+body.hh-pr-dense #hh2-stages .hh2-total{border-color:#367769}
+body.hh-pr-dense #hh2-stages .hh2-live-total{border-color:#506c9c}
+body.hh-pr-dense #hh2-stages .hh2-live-total strong{color:#ddc3fa}
+body.hh-pr-dense #hh2-stages .hh2-meta,
+body.hh-pr-dense #hh2-stages .hh2-diagnostic{font-size:10px;line-height:1.35;margin:3px 0}
+body.hh-pr-dense #hh2-stages .hh2-prs>summary{padding:9px 10px;font-size:11px}
+@media(max-width:390px){
+ body.hh-pr-dense #hh-pr-two-screens #hh2-stages{padding:8px 7px!important}
+ body.hh-pr-dense #hh2-stages .hh2-stage-row{gap:4px;padding:5px 4px}
+ body.hh-pr-dense #hh2-stages .hh2-stage-row span,
+ body.hh-pr-dense #hh2-stages .hh2-stage-row strong{font-size:10px}
+ body.hh-pr-dense #hh2-stages .hh2-stage-coverage{font-size:9px}
 }

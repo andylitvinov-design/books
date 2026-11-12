@@ -98,8 +98,19 @@
     doc.body.classList.add('hh-pr-dense');
     return true;
   }
+  function keepLifecycleBelowGraphs(){
+    const stage=doc.getElementById('hh-pr-two-screens');
+    const graphs=doc.getElementById('hh-pr-top-graphs');
+    const speed=doc.getElementById('hh-pr-merge-speed');
+    const anchor=graphs?.parentElement===main?graphs:
+      speed?.parentElement===main?speed:null;
+    if(!stage||stage.parentElement!==main||!anchor)return false;
+    if(stage.previousElementSibling!==anchor)main.insertBefore(stage,anchor.nextSibling);
+    return true;
+  }
   function paint() {
     if(!mount())return;
+    keepLifecycleBelowGraphs();
     // One original widget refresh makes hidden read-only KPI numbers available.
     if(!woken)woken=wakeNativeKpi(doc.getElementById('hh-pr-three-kpis'));
     const entries=read(),rows=visibleRows(entries);
