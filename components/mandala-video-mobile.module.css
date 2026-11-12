@@ -4915,7 +4915,7 @@
 .studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] [data-video-hypnosis-section]{padding:0;margin:0;border:0;box-shadow:none;background:transparent}
 .studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] [data-video-hypnosis-section]>:not([data-hypno-overview]){display:none!important}
 .studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] [data-hypno-overview]{margin:0;padding:0;border:0;box-shadow:none;background:transparent}
-.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] [data-hypno-overview]>:not([data-hypno-voice]):not(#phrase-audio-settings){display:none!important}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] [data-hypno-overview]>:not([data-hypno-voice]):not([data-personalized-music-match]):not(#phrase-audio-settings){display:none!important}
 .studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .phraseVoiceSection{margin:0;padding:12px;border-radius:19px;border:1px solid #cbe4d8;background:#fffdf9}
 .studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .ideasVoiceActions{display:grid;margin:10px 0}
 .studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .phraseVoiceAction{display:none!important}

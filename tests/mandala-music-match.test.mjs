@@ -82,3 +82,12 @@ test("UI offers one of three suggestions and preserves user voice/silence",async
  assert.match(studio,/setAudioAuto\(false\);chooseMusic\("none"\);setAttachedAudio\(null\)/);
  assert.match(studio,/startPresetAudio\(attachedAudio\.id,soundVolume/);
 });
+
+test("personalized Music Match remains visible in Ideas Voice while legacy controls stay hidden",async()=>{
+ const {readFileSync}=await import("node:fs");
+ const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
+ const hidden='.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] [data-hypno-overview]>:not([data-hypno-voice]):not([data-personalized-music-match]):not(#phrase-audio-settings){display:none!important}';
+ assert.ok(css.includes(hidden),"compact Ideas Voice must exclude personalized music from its hidden legacy child selector");
+ assert.match(css,/\.studio\[data-active-workspace="phrases"\] \.phraseMusicSection\[data-personalized-music-match\]\{display:grid!important\}/,
+   "the current 3 Music Match suggestions must remain visible");
+});
