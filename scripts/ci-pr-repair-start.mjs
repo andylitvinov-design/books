@@ -85,6 +85,33 @@ export function assertNoCompetingCoreWave(snapshot,failed,pr){
   }
 }
 
+// Evidence points to a real failed job; aggregator failures are not source roots.
+export function failedJobEvidence(snapshot,{repo='andylitvinov-design/books',runId,head}){
+  if(repo!=='andylitvinov-design/books'||!positive(runId)||!SHA.test(head||'')||
+      !Number.isSafeInteger(snapshot?.total_count)||snapshot.total_count<1||
+      snapshot.total_count>100||!Array.isArray(snapshot.jobs)||
+      snapshot.jobs.length!==snapshot.total_count)
+    throw Error('TERMINAL_FAILED_JOB_EVIDENCE_REQUIRED');
+  const failed=snapshot.jobs.filter(job=>terminal.has(job?.conclusion));
+  if(!failed.length||failed.some(job=>!positive(job.id)||
+      typeof job.name!=='string'||!/^[^\r\n]{1,160}$/.test(job.name)||
+      !date(job.completed_at)||
+      (job.run_id!=null&&job.run_id!==runId)||
+      (job.head_sha!=null&&job.head_sha!==head)))
+    throw Error('FAILED_JOB_SOURCE_INVALID');
+  const first=[...failed].sort((a,b)=>
+    Date.parse(a.completed_at)-Date.parse(b.completed_at)||a.id-b.id)[0];
+  const failingStep=Array.isArray(first.steps)
+    ?first.steps.find(step=>terminal.has(step?.conclusion)&&
+      typeof step.name==='string'&&/^[^\r\n]{1,160}$/.test(step.name))
+    :null;
+  return {job_id:first.id,job_name:first.name,job_conclusion:first.conclusion,
+    failed_step:failingStep?.name??null,
+    job_url:'https://github.com/'+repo+'/actions/runs/'+runId+'/job/'+first.id,
+    failed_job_count:failed.length,
+    requires_origin_log:/^hh-(?:specialist|merge-check)$/.test(first.name)};
+}
+
 export async function recordRepairStart(api,{repo='andylitvinov-design/books',number,owner,failedRunId}){
   if(repo!=='andylitvinov-design/books'||!positive(number)||!positive(failedRunId)||
       !/^[a-zA-Z0-9_.-]{2,80}$/.test(owner||''))throw Error('INVALID_REPAIR_IDENTITY');
@@ -101,11 +128,7 @@ export async function recordRepairStart(api,{repo='andylitvinov-design/books',nu
      run.pull_requests[0]?.head?.sha!==identity.head)
     throw Error('EXACT_HEAD_FAILED_RUN_REQUIRED');
   const jobs=await api('/actions/runs/'+failedRunId+'/jobs?per_page=100&page=1');
-  if(!Number.isSafeInteger(jobs?.total_count)||jobs.total_count<1||
-      jobs.total_count>100||!Array.isArray(jobs.jobs)||
-      jobs.jobs.length!==jobs.total_count||
-      !jobs.jobs.some(job=>positive(job.id)&&terminal.has(job.conclusion)&&date(job.completed_at)))
-    throw Error('TERMINAL_FAILED_JOB_EVIDENCE_REQUIRED');
+  const failure=failedJobEvidence(jobs,{repo,runId:failedRunId,head:identity.head});
   const duplicate=duplicateMarker(previous,failedRunId,identity.head);
   if(duplicate)return {duplicate:true,comment_id:duplicate.id,recorded_at:duplicate.created_at};
   // Exactly the same PR head/base + single-writer lease must still exist at
@@ -124,7 +147,8 @@ export async function recordRepairStart(api,{repo='andylitvinov-design/books',nu
     encodeURIComponent(current.head.ref)+'&per_page=100&page=1');
   assertNoCompetingCoreWave(coreWaves,run,current);
   const body=REPAIR_MARKER+'\n'+JSON.stringify({schema:'HH_PR_REPAIR_STARTED_V1',
-    action:'repair_started',owner,failed_run_id:failedRunId,failed_head_sha:identity.head});
+    action:'repair_started',owner,failed_run_id:failedRunId,failed_head_sha:identity.head,
+    failure});
   const posted=await api('/issues/'+number+'/comments',{method:'POST',body:{body}});
   if(!positive(posted?.id)||!date(posted?.created_at))throw Error('REPAIR_COMMENT_RECEIPT_MISSING');
   return {duplicate:false,comment_id:posted.id,recorded_at:posted.created_at};

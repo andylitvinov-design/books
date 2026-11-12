@@ -1,0 +1,85 @@
+/* Inline, zero-overlay portrait: conversation owns scrolling and composer geometry. */
+.root{flex:none;min-width:0;min-height:88px;max-height:104px;display:flex;align-items:center;gap:9px;
+  overflow:hidden;padding:5px 9px;border:1px solid #dcece4;border-radius:14px;
+  background:linear-gradient(110deg,#f0f8f1,#fff9ef);color:#254c46;box-sizing:border-box}
+.portrait{display:block;flex:0 0 70px;width:70px;height:86px;overflow:visible}
+.head{transform-origin:80px 110px;animation:avatar-breathe 10s ease-in-out infinite}
+.eyes{transform-origin:center 89px;animation:avatar-blink 8s ease-in-out infinite}
+.brows,.browLeft,.browRight{transition:transform .45s ease;transform-origin:center}
+.info{flex:1;min-width:0;display:grid;gap:5px;align-content:center}
+.heading{display:flex;gap:5px;align-items:baseline;flex-wrap:wrap;font:500 11px/1.2 system-ui,sans-serif}
+.heading strong{font-weight:750;font-size:12px}
+.heading span{color:#557a70}
+.controls{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+.controls button,.hidden button{border:1px solid #bdd7ce;border-radius:10px;background:#fffefa;color:#14564d;
+  min-height:36px;padding:6px 9px;font:650 11px/1.25 system-ui,sans-serif;cursor:pointer}
+.controls button:disabled{opacity:.45;cursor:not-allowed}
+.controls button:focus-visible,.hidden button:focus-visible{outline:3px solid #05836e;outline-offset:2px}
+.info small{font:500 10px/1.25 system-ui,sans-serif;color:#775d52}
+.mouthNeutral,.mouthSmile,.mouthConcern,.mouthSpeaking{transition:opacity .3s ease;opacity:0}
+.mouthNeutral{opacity:1}
+.root[data-emotion="warm"] .mouthSmile,.root[data-emotion="encouraging"] .mouthSmile{opacity:1}
+.root[data-emotion="warm"] .mouthNeutral,.root[data-emotion="encouraging"] .mouthNeutral{opacity:0}
+.root[data-emotion="concerned"] .mouthConcern{opacity:1}
+.root[data-emotion="concerned"] .mouthNeutral{opacity:0}
+.root[data-emotion="curious"] .brows{transform:translateY(-4px)}
+.root[data-emotion="attentive"] .brows{transform:translateY(-2px)}
+.root[data-emotion="concerned"] .browLeft{transform:rotate(-8deg) translateY(2px)}
+.root[data-emotion="concerned"] .browRight{transform:rotate(8deg) translateY(2px)}
+.root[data-emotion="encouraging"] .head{animation:avatar-nod 3s ease-in-out 1}
+.root[data-phase="speaking"] .mouthSpeaking{opacity:1;animation:avatar-talk .38s ease-in-out infinite alternate}
+.root[data-phase="speaking"] :is(.mouthNeutral,.mouthSmile,.mouthConcern){opacity:0}
+.root[data-phase="thinking"] .eyes{animation:avatar-blink 4.5s ease-in-out infinite}
+.root[data-expanded="true"]{max-height:198px;min-height:168px}
+.root[data-expanded="true"] .portrait{width:145px;height:177px;flex-basis:145px}
+.hidden{min-height:0;flex:none;display:flex;justify-content:flex-end}
+.hidden button{min-height:38px;padding:6px 10px}
+@keyframes avatar-blink{0%,42%,44%,78%,80%,100%{transform:scaleY(1)}43%,79%{transform:scaleY(.12)}}
+@keyframes avatar-breathe{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(1px) rotate(.6deg)}}
+@keyframes avatar-nod{0%,100%{transform:rotate(0)}35%,65%{transform:rotate(2deg)}}
+@keyframes avatar-talk{from{transform:scaleY(.7)}to{transform:scaleY(1.9)}}
+@media(max-width:760px){
+ .root{min-height:72px;max-height:104px;padding:3px 7px;order:0;gap:7px}
+ .portrait{height:76px;width:62px;flex-basis:62px}
+ .heading strong{font-size:11px}
+ .controls button{min-height:36px;padding:5px 8px}
+ .root[data-expanded="true"]{min-height:160px;max-height:190px}
+ .root[data-expanded="true"] .portrait{height:162px;width:130px;flex-basis:130px}
+ :global(.hh-messages-page[data-hh-mobile-keyboard-open="true"]) .root,
+ :global([data-keyboard-open="true"]) .root,
+ .root[data-keyboard-hidden="true"]{display:none}
+ :global(.hh-messages-page[data-hh-mobile-keyboard-open="true"]) .hidden,
+ :global([data-keyboard-open="true"]) .hidden{display:none}
+}
+@media(max-width:375px){
+ .controls .expand{display:none}
+ .root[data-expanded="true"]{min-height:90px;max-height:104px}
+ .root[data-expanded="true"] .portrait{height:88px;width:70px;flex-basis:70px}
+ .controls button{font-size:10px;padding:5px 6px}
+ .heading span{font-size:10px}
+}
+@media(max-height:620px){.root[data-expanded="true"]{max-height:104px;min-height:88px}.root[data-expanded="true"] .portrait{height:86px;width:70px;flex-basis:70px}}
+@media(prefers-reduced-motion:reduce){
+ .head,.eyes,.root[data-emotion="encouraging"] .head,.root[data-phase="thinking"] .eyes,
+ .root[data-phase="speaking"] .mouthSpeaking{animation:none!important}
+ .brows,.browLeft,.browRight,.mouthNeutral,.mouthSmile,.mouthConcern,.mouthSpeaking{transition:none!important}
+}
+
+
+/* Same existing speech synthesis controller, exposed as ONE small button
+   beside Send in iChat. No second audio engine or portrait overlay. */
+.iconOnly{flex:none;box-sizing:border-box;display:grid;place-items:center;
+ width:40px;height:44px;min-width:40px;min-height:44px;padding:5px;
+ border:1px solid #e5eee7;border-radius:15px;background:#fff;color:#176b5d;
+ cursor:pointer}
+.iconOnly:disabled{opacity:.42;cursor:not-allowed}
+.iconOnly:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+@media(max-width:355px){.iconOnly{width:36px;min-width:36px}}
+
+.voiceSelector{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:12px;color:#53645f}
+.voiceSelector select{max-width:190px;min-height:34px;border:1px solid #d5e2db;border-radius:9px;background:#fff;color:#244b44;padding:5px 8px;font:inherit}
+.voiceSelector small{flex-basis:100%;color:#7a6858}
+.iconVoiceControls{display:inline-flex;align-items:center;gap:2px;min-height:44px}
+.voiceDetails{position:relative;z-index:4}
+.voiceDetails summary{min-width:28px;min-height:36px;display:grid;place-items:center;border:1px solid #e5eee7;border-radius:9px;color:#176b5d;background:#fff;font-size:11px;cursor:pointer}
+.voiceDetails .voiceSelector{position:absolute;right:0;bottom:calc(100% + 6px);width:min(245px,70vw);padding:9px;border:1px solid #d5e2db;border-radius:10px;background:#fff;box-shadow:0 5px 24px #183d311a}

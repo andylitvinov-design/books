@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { Check, Mic, Play, Square, Trash2 } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import type { AffirmationVoiceResult } from "./mandala-affirmation-voice";
@@ -38,8 +39,9 @@ const copy={
     name:"Mi pista"},
 } as const;
 
-export function MandalaLocalVoiceTracks({locale,disabled,approvalPending,hidden,onAttach,onDetach}:{
-  locale:PublicLocale;disabled:boolean;approvalPending:boolean;hidden:boolean;
+export function MandalaLocalVoiceTracks({locale,disabled,approvalPending,hidden,onAttach,onDetach,compact=false,uploadAction}:{
+  locale:PublicLocale;disabled:boolean;approvalPending:boolean;hidden:boolean;compact?:boolean;
+  uploadAction?:ReactNode;
   onAttach:(result:AffirmationVoiceResult)=>void;onDetach?:(file:File)=>void;
 }){
   const t=copy[locale];
@@ -124,15 +126,17 @@ export function MandalaLocalVoiceTracks({locale,disabled,approvalPending,hidden,
   }
   return <section className={css.localTracks} hidden={hidden} data-video-own-voice
     aria-label={t.record}>
-    <div className={css.localTop}>
-      <button type="button" data-video-own-voice-record
+    <div className={css.localTop} data-ideas-own-voice-actions={compact?"true":undefined}>
+      {compact?uploadAction:null}
+      <button type="button" data-video-own-voice-record data-video-ideas-record-voice={compact?"":undefined}
         disabled={disabled||(!recording&&tracks.length>=8)} aria-pressed={recording}
         onClick={()=>recording?stopRecording():void startRecording()}>
         {recording?<Square size={20} aria-hidden="true"/>:<Mic size={20} aria-hidden="true"/>}
-        {recording?t.stop:t.record}
+        {recording?t.stop:compact?(locale==="ru"?"Записать голос":locale==="es"?"Grabar voz":"Record a voice"):t.record}
       </button>
-      <small>{t.limit}</small>
+      {!compact?<small>{t.limit}</small>:null}
     </div>
+    {compact?<small className={css.localLimit}>{t.limit}</small>:null}
     <p className={css.localHint}>{t.note}</p>
     {tracks.length===0?<p className={css.localEmpty}>{t.empty}</p>:<div className={css.localList}>
       {tracks.map(track=><div className={css.localItem} key={track.id}

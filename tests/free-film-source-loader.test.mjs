@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { prepareFourFilmSources, playableFilmSource } from "../lib/mandala/free-film-source-loader.mjs";
+import { ensureDecodedVideoOnUserIntent } from "../lib/mandala/intent-video-loading.mjs";
 
 class FakeVideo extends EventTarget {
   constructor() {
@@ -185,4 +186,32 @@ test("a phase edit without real finite source duration is rejected, not silently
   await assert.rejects(prepareFourFilmSources(
     shots.map((s,i)=>({...s,sourcePhasePercent:i===1?100:0})),refs),
     /invalid_four_scene_montage/);
+});
+
+test("single source stays lazy at rest but primes inline decoding on an explicit gesture",async()=>{
+  const video=new FakeVideo();
+  assert.equal(video.preload,"none");
+  const pending=ensureDecodedVideoOnUserIntent(video,{timeoutMs:1000});
+  assert.equal(video.preload,"auto","Safari may now load the previously idle master");
+  assert.equal(video.playsInline,true);
+  assert.equal(video.muted,true);
+  assert.equal(video.loads,1);
+  assert.equal(video.plays,1);
+  video.ready();
+  assert.equal(await pending,true,"only physically decoded frames count");
+});
+
+test("single-source intent never restarts a loading decoder or accepts a corrupt frame",async()=>{
+  const loading=new FakeVideo();loading.networkState=2;
+  const first=ensureDecodedVideoOnUserIntent(loading,{timeoutMs:1000});
+  assert.equal(loading.preload,"auto");
+  assert.equal(loading.loads,0,"an existing network request must not restart");
+  loading.ready();
+  assert.equal(await first,true);
+  const failed=new FakeVideo();
+  const second=ensureDecodedVideoOnUserIntent(failed,{timeoutMs:1000});
+  failed.readyState=2;failed.videoWidth=0;failed.videoHeight=270;
+  failed.dispatchEvent(new Event("loadeddata"));
+  failed.fail();
+  assert.equal(await second,false,"readyState without width must fail closed");
 });

@@ -174,3 +174,244 @@
 .chatTabs> :is(a,span){display:flex;align-items:center;justify-content:center;min-width:0;min-height:44px;padding:7px 6px;border:1px solid #dae5dc;border-radius:12px;background:#fff;color:#466957;font:760 13px/1.2 system-ui,sans-serif;text-decoration:none}
 .chatTabs>[aria-current="page"]{background:#dcf3e7;border-color:#a8d6bd;color:#087257}
 .chatTabs a:focus-visible{outline:3px solid #188968;outline-offset:2px}
+
+/* Sitewide iHelp context does not replace or reset the actual scene Director. */
+.pageHelp{display:flex;flex-direction:column;gap:5px;flex:none;max-height:154px;
+ overflow-y:auto;padding:8px 12px;border-bottom:1px solid #e9dfd1;background:#fffaf1}
+.pageHelp p{margin:0;color:#35584a;font:500 12px/1.35 system-ui,sans-serif}
+.pageHelp>div{display:flex;flex-wrap:wrap;gap:4px}
+.pageHelp :is(button,a){display:inline-flex;align-items:center;text-align:left;flex:1 1 auto;
+ min-height:36px;border:0;border-radius:10px;padding:7px 10px;background:#f0f6ed;
+ color:#165b4b;text-decoration:none;font:650 12px/1.35 system-ui,sans-serif;cursor:pointer}
+.pageHelp :is(button,a):hover{background:#e3f0e6}
+.pageHelp :is(button,a):focus-visible{outline:3px solid #176e6e;outline-offset:1px}
+@media(max-width:390px){
+ .pageHelp{max-height:137px;padding:6px 8px}
+ .pageHelp :is(button,a){min-height:36px;padding:6px 7px;font-size:11px}
+}
+
+
+/* One-screen mobile welcome — approved warm iHelp mock.
+   Only first-turn welcome is restyled; ongoing chat, private Orders/Clients and
+   the one real recording pipeline retain their existing component state. */
+.window[data-chat-welcome="true"]{background:#fffaf2}
+.window[data-chat-welcome="true"] .heading{order:0;min-height:64px;padding:9px 13px}
+.window[data-chat-welcome="true"] .titleGroup strong{font-size:19px}
+.window[data-chat-welcome="true"] .titleGroup small{font-size:13px;color:#5d6a71}
+.window[data-chat-welcome="true"] .thread{order:1;padding:0;gap:0;min-width:0;
+ background:#fff9f1;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;
+ scrollbar-width:thin;scrollbar-color:#d4d5c9 transparent}
+.window[data-chat-welcome="true"] .chatTabs{order:2;display:grid;flex:none;
+ grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:8px 12px
+ max(9px,env(safe-area-inset-bottom,0px));border-top:1px solid #e9dfd1;
+ border-bottom:0;background:#fffaf2}
+.window[data-chat-welcome="true"] .chatTabs> :is(a,span){min-height:44px;border-radius:15px;
+ background:#fff;color:#1e4b41;font-size:14px;box-shadow:0 2px 7px #37533b0b}
+.window[data-chat-welcome="true"] .chatTabs>[aria-current="page"]{background:linear-gradient(130deg,#daf5e9,#f5fffa);
+ border-color:#87ceb6;color:#077b65}
+.welcome{display:flex;flex-direction:column;flex:none;width:100%;min-width:0;gap:0;
+ padding:0 0 12px;color:#143d3a}
+.welcomeHero{position:relative;display:flex;flex-direction:column;align-items:flex-start;
+ justify-content:center;min-height:212px;padding:18px 18px 28px;isolation:isolate;
+ background-image:linear-gradient(90deg,rgba(255,250,239,.99) 0%,
+ rgba(255,249,236,.89) 27%,rgba(255,248,237,.51) 48%,
+ rgba(255,247,234,.035) 75%),url("/images/holistic-house/reiki-approved-sunrise-v3.webp");
+ background-size:cover;background-position:center 43%;border-radius:0 0 25px 25px}
+.welcomeTitle{display:flex;flex-direction:column;max-width:61%;min-width:0;
+ margin:0;color:#113f38;font:850 clamp(29px,7.7vw,35px)/1.08 system-ui,sans-serif;
+ letter-spacing:-.043em;text-wrap:balance}
+.welcomeTitle span{display:block;position:relative;width:max-content;
+ margin-bottom:7px;font:italic 850 clamp(37px,10vw,49px)/1 system-ui,sans-serif}
+.welcomeTitle span::after{content:"";position:absolute;left:calc(100% + 8px);top:66%;
+ width:42px;height:7px;border-top:3px solid #69baa8;border-radius:50%;transform:rotate(-7deg)}
+.welcomeLead{max-width:61%;margin:12px 0 0;color:#394e4b;
+ font:550 clamp(14px,3.85vw,16px)/1.36 system-ui,sans-serif}
+.welcomeActions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+ gap:9px;isolation:isolate;margin:-14px 13px 12px;min-width:0}
+.welcomeActions>button{display:flex;flex-direction:column;align-items:stretch;
+ justify-content:flex-start;gap:8px;min-width:0;min-height:144px;padding:7px 7px 10px;
+ border:1px solid #e2e6de;border-radius:22px;background:#fffefb;color:#13483b;
+ text-align:center;cursor:pointer;box-shadow:0 6px 18px #514b3c12}
+.welcomeActions>button:first-child{background:linear-gradient(150deg,#f4fff9,#e1f5e8);
+ border-color:#c9e7d6}
+.welcomeActions>button:nth-child(2){background:linear-gradient(150deg,#fffef9,#f8f1fb)}
+.welcomeActions>button:nth-child(3){background:linear-gradient(150deg,#fffefa,#fdf6fc)}
+.welcomeActions>button strong{display:grid;place-items:center;flex:1;min-height:35px;
+ padding:0 2px;font:780 clamp(12px,3.55vw,15px)/1.18 system-ui,sans-serif;
+ overflow-wrap:break-word}
+.actionMedia{display:grid;place-items:center;flex:none;width:100%;height:74px;
+ border-radius:16px;background-position:center;background-size:cover;
+ box-shadow:inset 0 0 0 1px #ffffff8a;color:#fff}
+.actionMedia svg{filter:drop-shadow(0 2px 6px #183b3859)}
+.actionMedia[data-welcome-action-media="create"]{
+ background-image:linear-gradient(120deg,#1e605317,#eece9542),url("/images/holistic-house/ideas-zen-landscape.svg")}
+.actionMedia[data-welcome-action-media="create"] svg{width:38px;height:38px;padding:8px;
+ border:1.5px solid #fff;border-radius:50%;box-sizing:content-box;background:#132d312b}
+.actionMedia[data-welcome-action-media="ideas"]{
+ background-image:url("/images/holistic-house/messenger-zen-stones.svg");color:#fff}
+.actionMedia[data-welcome-action-media="ideas"] svg{opacity:.87}
+.actionMedia[data-welcome-action-media="ask"]{color:#fff;
+ background:radial-gradient(circle at 55% 43%,#e7dcfc 0%,#d2cdf2 55%,#fae3ec 100%)}
+.actionMedia[data-welcome-action-media="ask"] svg{color:#fff;filter:drop-shadow(0 2px 7px #9066b2)}
+.window[data-chat-welcome="true"] .composer{display:flex;align-items:center;gap:7px;flex:none;
+ width:calc(100% - 26px);min-width:0;min-height:61px;box-sizing:border-box;
+ margin:0 13px 10px;padding:7px 9px;
+ border:1px solid #cde4d9;border-radius:22px;background:#fff;
+ box-shadow:0 4px 16px #1e57421b}
+.window[data-chat-welcome="true"] .composer textarea{flex:1;min-width:0;width:100%;
+ min-height:43px;height:43px;max-height:88px;padding:10px 1px;
+ background:transparent;color:#143d3a;font:500 16px/1.35 system-ui,sans-serif!important;
+ resize:none;overflow:auto}
+.window[data-chat-welcome="true"] .composer textarea::placeholder{color:#6b777b;opacity:1}
+.composerSymbol{display:grid;place-items:center;flex:none;width:28px;height:44px;color:#12a195}
+.composerMic{display:grid;place-items:center;flex:none;width:43px;height:43px;
+ border:1px solid #edf1ed;border-radius:50%;background:#fff;color:#176c60;
+ cursor:pointer;box-shadow:0 2px 7px #183c3611}
+.window[data-chat-welcome="true"] .send{flex:none;width:43px;height:43px;
+ border-radius:50%;background:linear-gradient(135deg,#22b9a9,#07927c);
+ box-shadow:0 3px 12px #088e722a}
+.window[data-chat-welcome="true"] .send:disabled{opacity:.6}
+.welcomeGoals{min-width:0;padding:0 14px;margin:0 0 5px}
+.welcomeGoals>p{margin:0 0 8px;color:#506371;font:550 14px/1.2 system-ui,sans-serif}
+.goalRail{display:flex;align-items:stretch;gap:6px;min-width:0;
+ padding:2px 1px 7px;overflow-x:auto;overscroll-behavior-inline:contain;
+ -webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:#d0dad0 transparent}
+.goalRail button{display:inline-flex;align-items:center;justify-content:center;gap:5px;
+ flex:0 0 auto;min-height:44px;min-width:0;padding:7px 10px;
+ border:1px solid #d5e8dd;border-radius:15px;background:#eaf8ef;color:#155d50;
+ cursor:pointer;white-space:nowrap;box-shadow:none}
+.goalRail strong{padding:0;font:750 13px/1.3 system-ui,sans-serif}
+.goalRail svg{flex:none}
+.goalRail button[data-video-chat-welcome-goal="energy"]{background:#fbf1d8;border-color:#f0e6cd;color:#95650e}
+.goalRail button[data-video-chat-welcome-goal="love"]{background:#fceaf2;border-color:#f3dbe8;color:#ae4169}
+.goalRail button[data-video-chat-welcome-goal="business"]{background:#eaf4fb;border-color:#dae8f3;color:#2b718f}
+.goalRail button[data-video-chat-welcome-goal="stress"]{background:#e8f7ef;border-color:#d2e7dc;color:#187c69}
+.welcomeHelp{align-self:center;max-width:calc(100% - 30px);margin:2px 14px 0;color:#166b5b}
+.welcomeHelp summary{display:flex;align-items:center;justify-content:center;min-height:36px;
+ padding:6px 14px;border-radius:999px;cursor:pointer;color:#176d60;
+ font:650 13px/1.3 system-ui,sans-serif}
+.welcomeHelp p{margin:5px 4px 7px;color:#46655b;font:500 14px/1.36 system-ui,sans-serif}
+.welcomeHelp a{display:inline-flex;align-items:center;min-height:44px;padding:7px 14px;
+ color:#067761;font:700 13px/1.3 system-ui,sans-serif}
+.window[data-chat-welcome="true"] .foot,.window[data-chat-welcome="true"] .aiOptIn{display:none}
+.pageHelp{display:block;max-height:none;padding:0;border-bottom:1px solid #e9dfd1;background:#fffaf3}
+.pageHelp[open]{max-height:166px;overflow-y:auto;padding-bottom:10px}
+.pageHelp summary{display:flex;align-items:center;min-height:39px;padding:6px 15px;
+ color:#176d5c;font:700 14px/1.2 system-ui,sans-serif;cursor:pointer}
+.pageHelp p{font-size:14px;line-height:1.4;padding:4px 13px}
+.pageHelp>div{gap:7px;padding:7px 12px}
+.pageHelp :is(button,a){min-height:44px;font-size:14px}
+.welcome :is(button,a,summary):focus-visible,.pageHelp summary:focus-visible{
+ outline:3px solid #176e6e;outline-offset:2px}
+@media(max-width:355px){
+ .welcomeHero{min-height:200px;padding:14px 13px 24px;background-position:center 43%}
+ .welcomeTitle{max-width:65%;font-size:29px}
+ .welcomeLead{max-width:65%;margin-top:9px;font-size:14px}
+ .welcomeActions{gap:6px;margin:-12px 9px 9px}
+ .welcomeActions>button{min-height:126px;padding:5px 5px 8px;gap:5px;border-radius:17px}
+ .actionMedia{height:65px;border-radius:13px}
+ .welcomeActions>button strong{font-size:12px}
+ .window[data-chat-welcome="true"] .composer{width:calc(100% - 18px);margin:0 9px 8px;
+   gap:5px;padding:6px}
+ .composerSymbol{width:22px}
+ .composerMic{width:40px;height:40px}
+ .window[data-chat-welcome="true"] .send{width:40px;height:40px}
+ .welcomeGoals{padding:0 9px}
+ .goalRail button{padding:7px 8px;gap:4px}
+ .goalRail strong{font-size:12px}
+}
+@media(max-width:700px) and (max-height:700px){
+ .window[data-chat-welcome="true"] .heading{min-height:56px;padding:7px 11px}
+ .welcomeHero{min-height:152px;padding:10px 15px 16px}
+ .welcomeTitle{font-size:clamp(23px,6.9vw,29px)}
+ .welcomeTitle span{font-size:32px;margin-bottom:3px}
+ .welcomeLead{font-size:13px;margin-top:7px;line-height:1.28}
+ .welcomeActions{margin:-8px 10px 7px;gap:6px}
+ .welcomeActions>button{min-height:102px;padding:5px;gap:3px;border-radius:15px}
+ .actionMedia{height:49px;border-radius:12px}
+ .welcomeActions>button strong{font-size:12px;min-height:32px}
+ .welcomeHelp{display:none}
+ .window[data-chat-welcome="true"] .chatTabs{padding:4px 8px max(4px,env(safe-area-inset-bottom,0px))}
+}
+@media(prefers-reduced-motion:reduce){.welcome *{scroll-behavior:auto!important}}
+
+/* A single photo-led dialogue from Create through preview/export.
+   The hero stays outside the scrolling transcript so auto-scroll never hides it. */
+.window[data-chat-dialogue="true"]{background:#fffaf2}
+.window[data-chat-dialogue="true"] .heading{min-height:62px;padding:9px 13px}
+.window[data-chat-dialogue="true"] .titleGroup strong{font-size:19px}
+.window[data-chat-dialogue="true"] .titleGroup small{font-size:12px}
+.dialogueHero{flex:none;min-height:160px;padding:16px 18px 19px;
+ background-position:center 43%;border-radius:0 0 23px 23px}
+.dialogueTitle{max-width:60%;margin:0;color:#113f38;
+ font:850 clamp(25px,6.9vw,33px)/1.09 system-ui,-apple-system,sans-serif;
+ letter-spacing:-.035em;text-wrap:balance}
+.dialogueLead{max-width:59%;margin:10px 0 0;color:#394e4b;
+ font:550 clamp(13px,3.4vw,15px)/1.34 system-ui,-apple-system,sans-serif}
+.window[data-chat-dialogue="true"] .pageHelp{background:#fffaf2;border-color:#eadfd2}
+.window[data-chat-dialogue="true"] .pageHelp summary{min-height:34px;
+ color:#18725f;font-size:13px}
+.window[data-chat-dialogue="true"] .thread{min-height:0;padding:13px 12px 18px;
+ gap:11px;background:#fffaf2;overflow-x:hidden}
+.window[data-chat-dialogue="true"] .assistantTurn{width:100%}
+.window[data-chat-dialogue="true"] .assistant{max-width:100%;padding:12px 13px;
+ border-color:#deeadf;border-radius:18px;background:#f1f7f2;
+ color:#21483a;font:680 17px/1.42 system-ui,-apple-system,sans-serif}
+.window[data-chat-dialogue="true"] .user{background:#ecf6f0;
+ border-color:#d9ebdf;color:#275947;font-size:15px}
+.window[data-chat-dialogue="true"] .inlineAnswers{padding:11px;
+ border-color:#d2e8db;border-radius:19px;background:#fff;
+ box-shadow:0 4px 17px #335d4011}
+.window[data-chat-dialogue="true"] .inlineAnswers .choices{gap:9px}
+.window[data-chat-dialogue="true"] .inlineAnswers .choices button{
+ min-height:52px;padding:12px 13px;border-radius:16px;border-color:#c6dfd1;
+ background:#f0f9f4;color:#166953;font:750 15px/1.3 system-ui,-apple-system,sans-serif}
+.window[data-chat-dialogue="true"][data-chat-step="category"] .inlineAnswers .choices button:nth-child(2){
+ background:#faf0d9;border-color:#ebdeb8;color:#8b5b14}
+.window[data-chat-dialogue="true"][data-chat-step="category"] .inlineAnswers .choices button:nth-child(3){
+ background:#fbe9f1;border-color:#eed2df;color:#a14066}
+.window[data-chat-dialogue="true"][data-chat-step="category"] .inlineAnswers .choices button:nth-child(4){
+ background:#eaf3fb;border-color:#d4e4f1;color:#286b85}
+.window[data-chat-dialogue="true"] .composer{flex:none;min-width:0;min-height:63px;
+ margin:6px 11px 7px;padding:7px 9px;border:1px solid #cde4d9;
+ border-radius:22px;background:#fff;box-shadow:0 4px 16px #1e57421b}
+.window[data-chat-dialogue="true"] .composer textarea{min-height:42px;
+ padding:9px 4px;font-size:16px!important;color:#143d3a}
+.window[data-chat-dialogue="true"] .composerTool,.window[data-chat-dialogue="true"] .composerMic{
+ width:39px;height:39px;box-shadow:none}
+.window[data-chat-dialogue="true"] .send{width:43px;height:43px;
+ border-radius:50%;background:linear-gradient(135deg,#22b9a9,#07927c)}
+.chatAdvanced{flex:none;min-width:0;border-top:1px solid #eee5d8;
+ background:#fffaf2;color:#2d6b58}
+.chatAdvanced>summary{display:flex;align-items:center;justify-content:center;
+ min-height:33px;padding:6px 10px;font:690 12px/1.3 system-ui,sans-serif;
+ cursor:pointer;list-style-position:inside}
+.chatAdvanced[open]{max-height:175px;overflow:auto;overscroll-behavior:contain}
+.chatAdvanced .aiOptIn{padding:9px 13px;font-size:12px}
+.chatAdvanced .foot{padding:7px 13px 10px}
+.window[data-chat-dialogue="true"] .chatTabs{flex:none;display:grid;gap:8px;
+ padding:7px 11px max(8px,env(safe-area-inset-bottom,0px));
+ border-top:1px solid #e9dfd1;border-bottom:0;background:#fffaf2}
+.window[data-chat-dialogue="true"] .chatTabs> :is(a,span){min-height:44px;
+ border-radius:15px;background:#fff;color:#1e4b41;font-size:14px;
+ box-shadow:0 2px 7px #37533b0b}
+.window[data-chat-dialogue="true"] .chatTabs>[aria-current="page"]{
+ background:linear-gradient(130deg,#daf5e9,#f5fffa);border-color:#87ceb6;color:#077b65}
+@media(max-width:355px){
+ .dialogueHero{min-height:138px;padding:12px 13px 15px}
+ .dialogueTitle{max-width:64%;font-size:24px}
+ .dialogueLead{max-width:65%;font-size:12px;margin-top:7px}
+ .window[data-chat-dialogue="true"] .thread{padding:9px 8px 12px}
+ .window[data-chat-dialogue="true"] .inlineAnswers{padding:8px}
+ .window[data-chat-dialogue="true"] .inlineAnswers .choices button{font-size:14px;padding:10px}
+ .window[data-chat-dialogue="true"] .composer{margin:5px 7px 6px;gap:5px;padding:6px}
+ .window[data-chat-dialogue="true"] .composerTool,
+ .window[data-chat-dialogue="true"] .composerMic{width:36px;height:36px}
+}
+@media(max-width:700px) and (max-height:700px){
+ .dialogueHero{min-height:116px;padding:11px 15px 13px}
+ .dialogueTitle{font-size:24px}
+ .dialogueLead{margin-top:5px;font-size:12px;line-height:1.24}
+ .window[data-chat-dialogue="true"] .thread{padding-top:8px;padding-bottom:10px}
+ .window[data-chat-dialogue="true"] .inlineAnswers .choices button{min-height:46px}
+}

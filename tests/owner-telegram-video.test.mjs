@@ -707,10 +707,11 @@ test('manual YouTube handoff reads current exact private cut, not an unsigned pu
 
 test('owner Google OAuth RU grant upsert matches the deployed RU/EN composite target key',()=>{
  const service=readFileSync(new URL('../lib/practitioners/owner-telegram-video-service.js',import.meta.url),'utf8')
- const start=service.indexOf('export async function saveOwnerVideoYoutubeConsent(')
+ const consent=readFileSync(new URL('../lib/practitioners/owner-telegram-video-consent.js',import.meta.url),'utf8')
+ const start=service.indexOf('async function ownerVideoGrant(')
  const end=service.indexOf('export async function ownerVideoYoutubeConnected(',start)
  assert.ok(start>=0&&end>start)
- const oauth=service.slice(start,end)
+ const oauth=consent+'\n'+service.slice(start,end)
  // Production has PRIMARY KEY (practitioner_id,target). An old single-column
  // ON CONFLICT silently makes owner-approved Google callback return failed.
  assert.ok(oauth.includes('(practitioner_id,target,channel_id,token_ciphertext)'))
@@ -929,3 +930,43 @@ test('Dot story command and private deep link select story workflow without repl
  assert.ok(ownerAudioHelpMessage().reply_markup.inline_keyboard.flat().some(x=>
    x.url==='https://t.me/Andydotbot?start=video_story'));
 });
+
+test('owner-video pinned runner still performs real ffmpeg ffprobe and media acceptance',()=>{
+  const workflow=readFileSync(new URL('../.github/workflows/hh-owner-telegram-video.yml',import.meta.url),'utf8')
+  assert.match(workflow,/owner-video:\s*\n(?:\s*#[^\n]*\n)*\s*runs-on: ubuntu-24\.04\s*\n\s*timeout-minutes: 25/,
+    'Do not inherit the changing ubuntu-latest image or increase the job cap')
+  assert.match(workflow,/if ! command -v ffmpeg[^\n]*\|\| ! command -v ffprobe[^\n]*;/,
+    'Real ffmpeg AND ffprobe must be present before native media QA')
+  assert.match(workflow,/sudo apt-get update -qq/)
+  assert.match(workflow,/sudo apt-get install -y -qq ffmpeg/)
+  assert.match(workflow,/ffmpeg -version >\/dev\/null/)
+  assert.match(workflow,/ffprobe -version >\/dev\/null/)
+  assert.match(workflow,/node --test tests\/owner-telegram-youtube-visibility\.test\.mjs/)
+  assert.match(workflow,/node scripts\/verify-telegram-owner-video-media\.mjs/)
+  assert.match(workflow,/node scripts\/ensure-owner-video-renderer\.mjs --verify-trace/)
+  assert.doesNotMatch(workflow,/continue-on-error:\s*true/,
+    'Never permit media release checks to pass after a failed install')
+});
+
+test('GitHub FFmpeg fallback remains official, bounded, checksum-pinned and fail-closed',()=>{
+  const source=readFileSync(new URL('../.github/actions/ci-ffmpeg-static/action.yml',import.meta.url),'utf8');
+  assert.match(source,/if ! curl --fail --show-error --silent --location/);
+  assert.match(source,/api\.github\.com\/repos\/eugeneware\/ffmpeg-static\/releases\/assets\/316528626/);
+  assert.match(source,/github\.com\/eugeneware\/ffmpeg-static\/releases\/download\/b6\.1\.1\/ffmpeg-linux-x64\.gz/);
+  assert.match(source,/Both official FFmpeg sources unavailable; refusing to bypass SHA-256 verification/);
+  assert.match(source,/bfe8a8fc511530457b528c48d77b5737527b504a3797a9bc4866aeca69c2dffa/);
+  assert.match(source,/e7e7fb30477f717e6f55f9180a70386c62677ef8a4d4d1a5d948f4098aa3eb99/);
+  assert.equal((source.match(/sha256sum --check --status/g)||[]).length,4);
+  assert.match(source,/install -m 755 "\$FFMPEG_BIN" node_modules\/ffmpeg-static\/ffmpeg/);
+  assert.doesNotMatch(source,/continue-on-error:\s*true|skip-hash|untrusted-mirror/i);
+});
+
+test('YouTube OAuth callback dependency boundary excludes video rendering and story catalogues',()=>{
+ const consent=readFileSync(new URL('../lib/practitioners/owner-telegram-video-consent.js',import.meta.url),'utf8')
+ const callback=readFileSync(new URL('../app/api/admin/telegram-video/youtube/callback/route.js',import.meta.url),'utf8')
+ const service=readFileSync(new URL('../lib/practitioners/owner-telegram-video-service.js',import.meta.url),'utf8')
+ assert.match(callback,/from '@\/lib\/practitioners\/owner-telegram-video-consent'/)
+ assert.doesNotMatch(callback,/from '@\/lib\/practitioners\/owner-telegram-video-service'/)
+ assert.doesNotMatch(consent,/owner-telegram-story-render|telegram-story-plots|mytube-plots-|ffmpeg-static/)
+ assert.match(service,/export \{ownerYoutubeExpectedChannel,saveOwnerVideoYoutubeConsent\} from '\.\/owner-telegram-video-consent.js'/)
+})

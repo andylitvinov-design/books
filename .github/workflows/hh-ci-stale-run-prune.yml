@@ -11,6 +11,7 @@ on:
       - 'scripts/ci-prune-stale-runs.mjs'
       - 'tests/ci-prune-stale-runs.test.mjs'
       - 'lib/ci/pr-loss-metrics.mjs'
+      - 'lib/ci/pr-repair-cycle.mjs'
       - 'scripts/ci-pr-loss-report.mjs'
       - 'scripts/ci-pr-repair-start.mjs'
       - 'tests/ci-pr-loss-metrics.test.mjs'

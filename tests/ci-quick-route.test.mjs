@@ -114,6 +114,33 @@ test('exact four-file Mobile Dock routes only to DOCK; every scope extension fai
   assert.match(workflow,/steps\.specialist_route\.outputs\.route == 'DOCK'/);
 });
 
+test('real Mandala playback/export source requires FULL independent specialist gate',()=>{
+  const mediaPaths=[
+    'components/mandala-free-video-studio.tsx',
+    'components/mandala-video-mobile.module.css',
+    'components/mandala-auto-video-director.tsx',
+    'components/mandala-auto-video-director.module.css',
+    'components/mandala-affirmation-voice.tsx',
+    'components/mandala-multitrack-timeline.tsx',
+    'components/mandala-multitrack-timeline.module.css',
+    'lib/mandala/creative-editor-captions.mjs',
+    'lib/mandala/creative-editor-draft.mjs',
+    'lib/mandala/creative-editor-setups.mjs',
+    'lib/mandala/editable-timeline.mjs',
+    'lib/mandala/cinematic-director.mjs'
+  ];
+  for(const path of mediaPaths){
+    assert.equal(decideRoute([row(path)],trusted,()=>{}),'FULL',path);
+    assert.equal(decideRoute([row('components/public-greeting.jsx'),row(path)],trusted,()=>{}),'FULL',path);
+    assert.equal(decideRoute([row(path,'A')],trusted,()=>{}),'FULL',path);
+  }
+  // Preserve fast treatment for unrelated non-sensitive UI and vetted raster.
+  assert.equal(decideRoute([row('components/public-greeting.jsx')],trusted,()=>{}),'CORE');
+  assert.equal(decideRoute([image('public/images/home.webp')],trusted),'ASSETS');
+  const w=readFileSync('.github/workflows/hh-pr-core-release.yml','utf8');
+  assert.match(w,/steps\.specialist_route\.outputs\.route == 'FULL'/);
+  assert.match(w,/node "\$RUNNER_TEMP\/hh-ci-trusted\/scripts\/ci-specialist-aggregate\.mjs"/);
+});
 test('sensitive changes always demand full Core and specialist route',()=>{
   const paths=[
     'app/api/payment/route.ts','app/[locale]/client/page.tsx',
@@ -237,7 +264,7 @@ test('temporary backlog route leaves private, policy and unknown changes on full
     'supabase/migrations/001.sql','unrecognized/file.js'
   ];
   for (const path of paths) assert.equal(decideRoute([row(path)],trusted),'FULL',path);
-  for (const path of ['app/[locale]/about/page.tsx','lib/mandala/cinematic-director.mjs','components/public-greeting.jsx','docs/guide.md'])
+  for (const path of ['app/[locale]/about/page.tsx','components/public-greeting.jsx','docs/guide.md'])
     assert.equal(decideRoute([row(path)],trusted),'CORE',path);
   assert.equal(decideRoute([row('components/public-greeting.jsx','D')],trusted),'FULL');
   const gate=readFileSync('.github/workflows/hh-pr-core-release.yml','utf8');

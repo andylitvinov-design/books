@@ -1,0 +1,94 @@
+/* iChat approved 7 Nov: visual, not another chatbot or an automatic player. */
+.root{display:grid;gap:10px;min-width:0;color:var(--hh-light-ink,#143d3a);
+ padding:0 0 8px;align-self:stretch}
+.hero{position:relative;min-width:0;min-height:195px;overflow:hidden;isolation:isolate;
+ display:flex;align-items:center;padding:16px 14px 19px;box-sizing:border-box;
+ border-radius:23px;background:
+ linear-gradient(90deg,rgba(39,44,40,.61),rgba(64,54,48,.30) 56%,rgba(35,37,37,.06)),
+ url("/images/holistic-house/reiki-approved-sunrise-v3.webp") center 43%/cover no-repeat}
+.heroCopy{position:relative;z-index:1;display:grid;gap:7px;max-width:58%;
+ color:#fff;text-shadow:0 2px 10px #1b28245a}
+.heroCopy em{font:italic 850 clamp(29px,7.5vw,41px)/1 system-ui,sans-serif}
+.heroCopy h2{margin:0;color:inherit;font:800 clamp(21px,5vw,28px)/1.1 system-ui,sans-serif;
+ letter-spacing:-.035em}
+.heroCopy p{margin:0;font:650 clamp(12px,3.2vw,15px)/1.32 system-ui,sans-serif;color:#fff}
+.play{position:absolute;z-index:2;top:50%;left:56%;transform:translate(-50%,-50%);
+ display:grid;place-items:center;width:57px;height:57px;padding:0 0 0 3px;
+ border:2px solid #ffffffee;border-radius:50%;color:#fff;background:#243e3744;
+ backdrop-filter:blur(3px);cursor:pointer;box-shadow:0 4px 18px #18392e26}
+.play:hover{background:#1d63578a}
+.languageNote{position:absolute;right:10px;bottom:9px;z-index:1;
+ padding:4px 7px;background:#203c38b8;color:#fff;border-radius:10px;
+ font:700 10px/1.25 system-ui,sans-serif}
+.player{position:absolute;inset:0;z-index:4;background:#143d3a;
+ opacity:0;visibility:hidden;pointer-events:none}
+.hero[data-playing="true"] .player{opacity:1;visibility:visible;pointer-events:auto}
+.player video{display:block;width:100%;height:100%;object-fit:contain;background:#101d1b}
+.videoError{position:absolute;left:10px;right:10px;top:50%;z-index:6;
+ transform:translateY(-50%);display:flex;align-items:center;justify-content:center;
+ flex-wrap:wrap;gap:8px;padding:15px 10px;border-radius:12px;
+ color:#fff;background:#102c2ae8;font:650 12px/1.35 system-ui,sans-serif}
+.videoError button,.videoError a{padding:8px 10px;border:1px solid #ffffff99;
+ border-radius:9px;background:#fff;color:#153d38;text-decoration:none;
+ cursor:pointer;font:inherit}
+.videoError button:focus-visible,.videoError a:focus-visible{outline:3px solid #fff;outline-offset:2px}
+.dismiss{position:absolute;top:7px;right:7px;display:grid;place-items:center;
+ width:44px;height:44px;border:1px solid #fff7;border-radius:50%;
+ color:#fff;background:#102c2acc;cursor:pointer}
+.question{display:flex;align-items:center;gap:10px;min-width:0}
+.question img{flex:none;width:42px;height:42px;object-fit:cover;object-position:80% 39%;
+ border-radius:50%;box-shadow:0 2px 7px #213e321e}
+.question strong{flex:1;min-width:0;padding:10px 12px;border-radius:18px;
+ border:1px solid #eee6da;background:#fffcf7;color:#14443d;
+ font:700 15px/1.32 system-ui,sans-serif;box-shadow:0 3px 12px #443d3410}
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;min-width:0}
+.card{position:relative;isolation:isolate;display:flex;flex-direction:column;
+ justify-content:flex-start;align-items:center;min-width:0;min-height:117px;
+ gap:6px;padding:10px 5px 31px;box-sizing:border-box;
+ border:1px solid #cce9d9;border-radius:21px;background:#e9f7ee;color:#155f4e;
+ cursor:pointer;text-decoration:none;text-align:center;overflow:hidden;
+ font:inherit;box-shadow:0 2px 8px #31392413}
+.card>svg,.card>strong{position:relative;z-index:1;flex:none}
+.card strong{font:780 clamp(11px,3.1vw,15px)/1.2 system-ui,sans-serif;
+ overflow-wrap:anywhere;text-wrap:balance}
+.art{position:absolute;bottom:0;inset-inline:0;height:47px;z-index:0;
+ background-position:center;background-size:cover;
+ -webkit-mask-image:linear-gradient(transparent,#000 66%);
+ mask-image:linear-gradient(transparent,#000 66%);opacity:.85}
+.card[data-hh-ai-choice="test"] .art{background-image:url("/images/holistic-house/ideas-pine-reference.webp")}
+.card[data-hh-ai-choice="video"]{background:#f0e7fb;border-color:#e7d8f0;color:#7742a9}
+.card[data-hh-ai-choice="video"] .art{background-image:url("/images/holistic-house/ideas-zen-landscape.svg")}
+.card[data-hh-ai-choice="practice"]{background:#fff0e9;border-color:#f3ded5;color:#ad5d65}
+.card[data-hh-ai-choice="practice"] .art{background-image:url("/images/holistic-house/messenger-zen-stones.svg")}
+.card[data-hh-ai-choice="session"]{background:#fff4dc;border-color:#f1e6cb;color:#99681e}
+.card[data-hh-ai-choice="session"] .art{background-image:url("/images/holistic-house/reiki-practitioner-sunrise.webp")}
+.card[data-hh-ai-choice="course"]{background:#eaf4fa;border-color:#d8e5ed;color:#31718c}
+.card[data-hh-ai-choice="course"] .art{background-image:url("/images/holistic-house/books-library.webp")}
+.card[data-hh-ai-choice="ask"]{background:#e8f7ef;border-color:#cfe6dc;color:#168268}
+.card[data-hh-ai-choice="ask"] .art{background-image:url("/images/holistic-house/course-journey-landscape.svg")}
+.card:hover{border-color:#66a892;box-shadow:0 5px 14px #214e3a24}
+.card:focus-visible,.play:focus-visible,.dismiss:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+@media(max-width:355px){
+ .root{gap:7px}
+ .hero{min-height:147px;padding:10px 11px}
+ .heroCopy{gap:4px;max-width:59%}
+ .heroCopy em{font-size:28px}
+ .heroCopy h2{font-size:20px}
+ .heroCopy p{font-size:12px}
+ .play{width:46px;height:46px;left:59%}
+ .languageNote{font-size:9px;max-width:115px;text-align:right}
+ .cards{gap:5px}
+ .card{min-height:101px;border-radius:16px;padding:8px 4px 25px;gap:4px}
+ .card strong{font-size:11px}
+ .card>svg{width:19px;height:19px}
+ .art{height:37px}
+ .question strong{font-size:13px;padding:8px 9px}
+}
+@media(max-height:700px){
+ .hero{min-height:136px}
+ .card{min-height:100px;padding-bottom:23px}
+ .art{height:33px}
+}
+@media(prefers-reduced-motion:reduce){
+ .card{scroll-behavior:auto}
+}

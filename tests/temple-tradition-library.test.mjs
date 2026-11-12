@@ -58,3 +58,31 @@ test("library exposes manuals and the separate searchable cards entry", async ()
   assert.match(page, /name="q"/);
   assert.match(page, /archivePageHref\(language, entry\.traditionId, entry\.channelId, entry\.id, 1\)/);
 });
+
+test("all temple books link to independent cards, and cards link back to a descriptive manual", async () => {
+  const { readFileSync } = await import("node:fs");
+  const reader = readFileSync(new URL("../app/[locale]/books/[bookId]/page.tsx", import.meta.url), "utf8");
+  const cards = readFileSync(new URL("../app/[locale]/temple-channels/page.tsx", import.meta.url), "utf8");
+  const archiveStyle = readFileSync(new URL("../app/[locale]/temple-channels/temple-channels.module.css", import.meta.url), "utf8");
+  const readerStyle = readFileSync(new URL("../app/reader-responsive.css", import.meta.url), "utf8");
+  for (const [series, tradition, manualId] of [
+    ["maya","maya","maya-egregor-gods"],
+    ["egypt","egyptian","egypt-osiris-temple-magic"],
+    ["greek","greek","greek-metaphysics-planning"],
+    ["roman","roman","roman-imperial-temples"],
+  ]) {
+    assert.ok(reader.includes(`book.mediaSeries === "${series}" ? "${tradition}"`) || reader.includes(`book.mediaSeries === "${series}" : "${tradition}"`));
+    assert.ok(cards.includes(`${tradition}: "${manualId}"`));
+  }
+  assert.ok(reader.includes("reader-temple-switch__link"));
+  assert.ok(reader.includes("temple-channels?tradition="));
+  assert.ok(cards.includes("guideBookId ? "));
+  assert.ok(cards.includes("styles.librarySwitchLink"));
+  assert.match(cards, /open=\{query === entry\.id\}/);
+  assert.match(archiveStyle, /min-height: 44px/);
+  assert.match(readerStyle, /reader-temple-switch__link:focus-visible/);
+  for (const locale of ["ru","en","es"]) {
+    assert.ok(reader.includes('locale === "' + locale + '"') || locale === "en");
+    assert.ok(cards.includes(locale + ": {"));
+  }
+});

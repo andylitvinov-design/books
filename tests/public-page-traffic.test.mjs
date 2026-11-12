@@ -135,7 +135,9 @@ test('P0 nonessential popup policy: approved global shell only, no automatic req
   'PublicPageTraffic',
   'MobileBottomNavigation',
   // Approved shared six-tab dock is a persistent navigation surface, not an auto-open popup.
-  'UnifiedMobileDock'
+  'UnifiedMobileDock',
+  // Owner-requested iHelp is a small button; the dialogue exists only after an explicit click.
+  'SitewideIHelp'
  ],'Unexpected global widget: review for nonessential auto-open prompts before changing this guard')
  const dock=readFileSync(new URL('../components/unified-mobile-dock.tsx',import.meta.url),'utf8')
  assert.match(dock,/if \(!visible\) return null;/,'Global MyTube nav stays route-scoped')
@@ -151,3 +153,20 @@ test('P0 nonessential popup policy: approved global shell only, no automatic req
  assert.match(privacy,/<FirstPartyStatsPreferences\s*\/>/,
    'Privacy settings must remain accessible without an unsolicited prompt')
 })
+
+test('owner-invoked sitewide iHelp reuses the existing guest-safe agent and never auto-opens',()=>{
+ const layout=readFileSync(new URL('../app/layout.tsx',import.meta.url),'utf8')
+ const trigger=readFileSync(new URL('../components/sitewide-ihelp.tsx',import.meta.url),'utf8')
+ const chat=readFileSync(new URL('../components/holistic-agent-chat.tsx',import.meta.url),'utf8')
+ assert.match(layout,/<SitewideIHelp\s*\/>/)
+ assert.match(trigger,/data-hh-ihelp-trigger/)
+ assert.match(trigger,/setOpen\(true\)/)
+ assert.match(trigger,/function show\(\)/)
+ assert.match(trigger,/pageHelpFromRoute/)
+ assert.match(trigger,/<HolisticAgentChat locale=\{locale\} compact messengerView pageHelp=\{context\}/)
+ assert.match(trigger,/\[data-orders-clients-hub\]/)
+ assert.doesNotMatch(trigger,/useEffect\(\(\)=>\{\s*setOpen\(true\)/)
+ assert.match(chat,/data-hh-ihelp-actions/)
+ assert.match(chat,/data-hh-ihelp-ask/)
+ assert.match(chat,/data-page-help=\{pageHelp\?/)
+});

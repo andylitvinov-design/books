@@ -1,44 +1,63 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {myTubeDurationCounts,matchesMyTubeDuration,MYTUBE_STUDY_MIN_SECONDS} from "../lib/video-discovery/mytube-duration.mjs";
+import {classifyMyTubeFormat,matchesMyTubeFormat,myTubeFormatCounts}
+  from "../lib/video-discovery/mytube-duration.mjs";
 import {readFileSync} from "node:fs";
 const read=p=>readFileSync(new URL("../"+p,import.meta.url),"utf8");
 
-test("Shorts is strictly below 10 minutes; Study starts at exactly 10:00",()=>{
- assert.equal(MYTUBE_STUDY_MIN_SECONDS,600);
- for(const seconds of [1,60,599,599.99]){
-  assert.equal(matchesMyTubeDuration(seconds,"shorts"),true);
-  assert.equal(matchesMyTubeDuration(seconds,"study"),false);
- }
- for(const seconds of [600,601,3600,14400]){
-  assert.equal(matchesMyTubeDuration(seconds,"shorts"),false);
-  assert.equal(matchesMyTubeDuration(seconds,"study"),true);
- }
+test("semantic format shelves use content type and source, not a 10-minute cutoff",()=>{
+ const cards=[
+  {sourceGroup:"site-introduction",title:"Welcome",durationVerifiedSeconds:null},
+  {sourceGroup:"tantra-reiki",title:"Tantra Reiki Practice",durationVerifiedSeconds:null},
+  {sourceGroup:"videos/greek-mysteries-dionysus",seriesOrder:1,title:"Dionysus",durationVerifiedSeconds:90},
+  {sourceGroup:"owner-library",title:"Introduction to Reiki",durationVerifiedSeconds:null},
+  {sourceGroup:"owner-library",title:"Deep course on boundaries",durationVerifiedSeconds:60},
+  {sourceGroup:"approved-meditations",contentType:"soft_meditation",title:"Guided meditation"},
+  {sourceGroup:"owner-library",title:"Untitled approved educational video",durationVerifiedSeconds:null},
+ ];
+ assert.deepEqual(cards.map(classifyMyTubeFormat),["shorts","study","study","shorts","study","study","study"]);
+ assert.deepEqual(myTubeFormatCounts(cards),{all:7,shorts:2,study:5});
+ assert.equal(matchesMyTubeFormat(cards[1],"study"),true);
+ assert.equal(matchesMyTubeFormat(cards[1],"shorts"),false);
+ assert.equal(matchesMyTubeFormat(cards[1],"courses"),true);
+ assert.equal(matchesMyTubeFormat(cards[4],"courses"),true);
+ assert.equal(matchesMyTubeFormat(cards[0],"courses"),false);
+ assert.equal(matchesMyTubeFormat(cards[0],"all"),true);
+ assert.equal(matchesMyTubeFormat(cards[1],"nonsense"),false);
 });
-test("unknown duration stays in All, never fabricated in Shorts or Study",()=>{
- for(const seconds of [undefined,null,0,-1,NaN,Infinity,"9m"]){
-  assert.equal(matchesMyTubeDuration(seconds,"all"),true);
-  assert.equal(matchesMyTubeDuration(seconds,"shorts"),false);
-  assert.equal(matchesMyTubeDuration(seconds,"study"),false);
- }
- assert.equal(matchesMyTubeDuration(500,"invalid"),false);
- assert.deepEqual(myTubeDurationCounts([
-  {durationVerifiedSeconds:599},{durationVerifiedSeconds:600},
-  {durationVerifiedSeconds:1200},{durationVerifiedSeconds:null},{}
- ]),{all:5,shorts:1,study:2,unknown:2});
+test("format is an editorial selection; short lesson time and long intro time never overrule it",()=>{
+ assert.equal(classifyMyTubeFormat({mytubeFormat:"shorts",title:"Welcome",durationVerifiedSeconds:7200}),"shorts");
+ assert.equal(classifyMyTubeFormat({mytubeFormat:"study",title:"Reiki lesson",durationVerifiedSeconds:30}),"study");
+ assert.equal(classifyMyTubeFormat({title:"Practice",seriesId:"series"}),"study");
 });
-test("MyTube only: swipeable direction rail, additional filters and duration buttons",()=>{
- const c=read("components/video-discovery.tsx");
+test("MyTube segmented format filters keep unknown-duration videos visible",()=>{
+ const view=read("components/video-discovery.tsx");
  const css=read("components/video-discovery.module.css");
- assert.match(c,/data-mytube-category-rail/);
- assert.match(c,/data-mytube-categories role="group"/);
- assert.match(c,/data-mytube-filter-toggle/);
- assert.match(c,/aria-controls="mytube-refine-controls mytube-more-controls"/);
- assert.match(c,/data-mytube-duration-mode=\{mode\}/);
- assert.match(c,/matchesMyTubeDuration\(item\.durationVerifiedSeconds,durationMode\)/);
- assert.match(c,/durationMode!=="all"\?t\.durationUnknown/);
- assert.match(css,/\.mytube \.mytubeCategoryRail\{[^}]*overflow-x:auto/);
- assert.match(css,/touch-action:pan-x/);
- assert.match(css,/\.mytube \.mytubeDurationTabs button\[aria-pressed=true\]/);
- assert.match(c,/variant!=="mytube"&&<>/);
+ const hub=read("components/library-hub.tsx");
+ const feed=read("components/library-feed.tsx");
+ assert.match(view,/data-mytube-category-rail/);
+ assert.match(view,/data-mytube-categories role="group"/);
+ assert.match(view,/data-mytube-filter-toggle/);
+ assert.match(view,/data-mytube-subcategory-row/);
+ assert.match(view,/data-mytube-subcategory-rail/);
+ assert.match(view,/data-mytube-language-control/);
+ assert.match(view,/data-mytube-audio-language=\{value\}/);
+ assert.match(view,/data-mytube-duration/);
+ assert.doesNotMatch(view,/preferredSubcategoryIds/);
+ assert.match(view,/mytubeCategoryId!=="all"&&<div className=\{styles\.mytubeSubcategoryRail\}/);
+ assert.match(view,/data-mytube-format-tabs/);
+ assert.match(view,/data-mytube-format-mode=\{mode\}/);
+ assert.match(view,/matchesMyTubeShelf\(item,formatMode\)/);
+ assert.match(view,/onChange=\{event=>setDurationRange\(event.target.value\)\}/);
+ assert.doesNotMatch(view,/matchesMyTubeDuration\(item\.durationVerifiedSeconds/);
+ // The owner now explicitly requires verified practices of at most 600 seconds.
+ // Reject guessed-duration UI, not the legitimate reviewed-practice explanation.
+ assert.doesNotMatch(view,/durationUnknown|10 min or longer/);
+ assert.match(read("lib/video-discovery/mytube-shelves.mjs"),/seconds<=600/);
+ assert.match(css,/\.mytube \.mytubeFormatTabs\{[^}]*grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+ assert.match(css,/\.mytube \.mytubeCategoryRail\{[^}]*grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/);
+ assert.doesNotMatch(css.slice(css.indexOf("/* MyTube-only compact five-choice editorial taxonomy.")),/overflow-x:auto/);
+ assert.match(hub,/mytubeFormat:classifyMyTubeFormat\(video\)/);
+ assert.match(feed,/item\.mytubeFormat === "study"/);
+ assert.match(view,/variant!=="mytube"&&<>/);
 });

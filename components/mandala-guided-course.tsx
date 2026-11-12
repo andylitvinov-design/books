@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import Link from "next/link";
 import { MeditationCourseEnquiry } from "./meditation-course-enquiry";
 import { ArrowRight, BookOpen, Briefcase, Check, ChevronDown, Download, Headphones, Heart, LockKeyhole, Moon, Pause, Play, RefreshCw, ShieldCheck, Sparkles, Sun, Target, Flower2 } from "lucide-react";
@@ -614,11 +615,19 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
           <button type="button" disabled={disabled} data-guided-add-meditation
             aria-pressed={meditationChoice==="include"} onClick={()=>{
               includedSignatureRef.current=journeySignature;
-              setMeditationChoice("include");onAddMeditation?.(firstScript);
+              // Commit the visible choice before the parent opens the native
+              // narration details. Mobile WebKit can otherwise replay an older
+              // render and lose the next explicit "Skip" gesture.
+              flushSync(()=>setMeditationChoice("include"));
+              onAddMeditation?.(firstScript);
             }}><Play size={18} aria-hidden="true"/>{f.include}</button>
           <button type="button" disabled={disabled} data-guided-skip-meditation
             aria-pressed={meditationChoice==="omit"} onClick={()=>{
-              includedSignatureRef.current=null;setMeditationChoice("omit");onOmitMeditation?.();
+              includedSignatureRef.current=null;
+              // A real opt-out must commit before parent draft/audio revocation.
+              // Keep keyboard activation and native user clicks; no force path.
+              flushSync(()=>setMeditationChoice("omit"));
+              onOmitMeditation?.();
             }}>{f.omit}</button>
         </div>
         <small role="status">{meditationChoice==="include"?f.included:meditationChoice==="omit"?f.omitted:f.local}</small>

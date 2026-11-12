@@ -19,7 +19,8 @@ type Response={
 };
 type Props={
  locale:Locale;topicId:string;disabled:boolean;selectedScenarioId:string;allowEditorialDrafts?:boolean;
- onChooseScenario:(scenarioId:string)=>void;
+ onChooseScenario:(scenarioId:string,context?:{currentStateId:string;desiredStateId:string;
+   intensity:"low"|"medium"|"high";energy:"low"|"moderate"|"high"})=>void;
 };
 const language={
  ru:{title:"Путь от состояния «Сейчас» к «Хочу»",hint:"Два коротких выбора помогут предложить бережный сюжет для вашей темы.",
@@ -109,7 +110,8 @@ export function StateTransitionSelector({locale,topicId,disabled,selectedScenari
      motifId:rec.suggestedMotifIds[0]||null,styleId:rec.suggestedStyleId,
      editorialStatus:rec.editorialReviewStatus
    }));}catch{/* Private/no-storage modes remain supported. */}
-   onChooseScenario(rec.scenarioId);
+   onChooseScenario(rec.scenarioId,{currentStateId:current,desiredStateId:desired,
+      intensity,energy});
  };
  return <section className={css.panel} data-hh-state-transition data-topic-id={topicId}
     aria-label={t.title}>

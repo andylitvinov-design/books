@@ -21,13 +21,14 @@ import {
  isGeneratorEligible,VAULT_MAX_FILE_BYTES,VAULT_EXCEPTION_FILE_BYTES,
 } from '../lib/video-vault/contracts.mjs';
 import {r2Config,createR2Client,objectKeys} from '../lib/video-vault/r2-client.mjs';
+import {planVaultTrim} from '../lib/video-vault/ingest-trim.mjs';
 
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const orphanJournal=resolve(root,'artifacts/video-vault-orphans.jsonl');
 const digest=bytes=>createHash('sha256').update(bytes).digest('hex');
 function fail(code){throw Error('HH_VAULT_'+code)}
-function run(name,args,{binary=false}={}){
- const r=spawnSync(name,args,{encoding:binary?null:'utf8',shell:false,timeout:45000,maxBuffer:2000000});
+function run(name,args,{binary=false,timeout=45000}={}){
+ const r=spawnSync(name,args,{encoding:binary?null:'utf8',shell:false,timeout,maxBuffer:2000000});
  if(r.error||r.status!==0)fail('MEDIA_TOOL_FAILED_'+name);
  return r.stdout;
 }
@@ -49,7 +50,7 @@ function probe(file){
  const fpsParts=String(video?.avg_frame_rate||'0/1').split('/').map(Number);
  const fps=fpsParts[1]?fpsParts[0]/fpsParts[1]:NaN;
  if(!video||video.width<480||video.height<480||
-   !Number.isFinite(seconds)||seconds<5||seconds>600||
+   !Number.isFinite(seconds)||seconds<4.95||seconds>600||
    !Number.isFinite(fps)||fps<10||fps>120)fail('UNSUITABLE_SOURCE_MEDIA');
  return {seconds,width:video.width,height:video.height,codec:video.codec_name,
    pixFmt:video.pix_fmt,fps,hasAudio:info.streams.some(v=>v.codec_type==='audio')};
@@ -59,6 +60,9 @@ function decode(file,seconds){
   run('ffmpeg',['-hide_banner','-loglevel','error','-nostdin',
     '-ss',String(time),'-i',file,'-frames:v','1','-f','null','-']);
  }
+ // Spot frames are not a full corruption/decode check.
+ run('ffmpeg',['-hide_banner','-loglevel','error','-nostdin','-xerror',
+   '-i',file,'-f','null','-'],{timeout:120000});
 }
 function perceivedHash(file){
  const bytes=run('ffmpeg',['-hide_banner','-loglevel','error','-nostdin',
@@ -74,16 +78,18 @@ function perceivedHash(file){
 function normalize(input,asset,tmp){
  const output=join(tmp,'master.mp4'),poster=join(tmp,'poster.jpg');
  const src=probe(input);
- const seconds=Math.min(15,Math.max(5,Number(asset.desiredTrimSeconds)||10));
- const start=Number(asset.trimStartSeconds)||0;
- if(start<0||start+seconds>src.seconds)fail('TRIM_OUTSIDE_SOURCE');
+ const trim=planVaultTrim(src.seconds,asset.desiredTrimSeconds,asset.trimStartSeconds);
  const width=asset.aspect==='landscape'?1920:1080;
  const height=asset.aspect==='landscape'?1080:1920;
+ const filter='fps=24,scale='+width+':'+height+
+   ':force_original_aspect_ratio=increase,crop='+width+':'+height+',setsar=1,format=yuv420p'+
+   (trim.finalFrameHoldApplied?',tpad=stop_mode=clone:stop_duration=0.12':'');
+ // Input -t must precede -i, otherwise a tiny final still-frame hold gets cut off.
  run('ffmpeg',['-hide_banner','-loglevel','error','-nostdin','-y',
-   '-ss',String(start),'-i',input,'-t',String(seconds),'-an',
-   '-vf','fps=24,scale='+width+':'+height+':force_original_aspect_ratio=increase,crop='+width+':'+height+',setsar=1,format=yuv420p',
-   '-c:v','libx264','-pix_fmt','yuv420p','-preset','medium','-crf','27',
-   '-movflags','+faststart',output]);
+   '-ss',String(trim.startSeconds),'-t',String(trim.inputSeconds),'-i',input,
+   '-an','-vf',filter,'-frames:v',String(trim.outputFrames),
+   '-c:v','libx264','-pix_fmt','yuv420p','-preset','fast','-crf','27',
+   '-movflags','+faststart',output],{timeout:120000});
  const mp4=probe(output);
  if(mp4.codec!=='h264'||mp4.pixFmt!=='yuv420p'||mp4.width!==width||
    mp4.height!==height||Math.abs(mp4.fps-24)>.1||
@@ -96,7 +102,10 @@ function normalize(input,asset,tmp){
  if(master.length>VAULT_MAX_FILE_BYTES||
    jpg.length>=150000||jpg.length<500||
    master.toString('ascii',4,8)!=='ftyp')fail('CANONICAL_FILE_BUDGET');
- return {master,jpg,meta:mp4,sha256:digest(master),perceptualHash:perceivedHash(output)};
+ return {master,jpg,meta:mp4,sha256:digest(master),perceptualHash:perceivedHash(output),
+   sourceInputGeometry:{width:src.width,height:src.height},
+   upscaledFromStaging:src.width<width||src.height<height,
+   finalFrameHoldApplied:trim.finalFrameHoldApplied};
 }
 function parse(file){return JSON.parse(readFileSync(file,'utf8'))}
 function flags(args){
@@ -199,15 +208,25 @@ export async function runVideoVaultIngest(args=process.argv.slice(2)){
   for(const asset of manifest.assets){
    const file=sourcePath(batchDir,asset.localFile);
    const src=probe(file.path);
+   if((asset.aspect==='landscape'&&src.width<src.height)||
+      (asset.aspect==='portrait'&&src.width>src.height))fail('STAGED_ASPECT_MISMATCH');
+   const trim=planVaultTrim(src.seconds,asset.desiredTrimSeconds,asset.trimStartSeconds);
    decode(file.path,src.seconds);
    const hash=digest(readFileSync(file.path));
    if(asset.sourceHash&&asset.sourceHash!==hash)fail('SOURCE_HASH_MISMATCH');
-   prepared.push({asset,file,rawSha:hash,source:src});
+   prepared.push({asset,file,rawSha:hash,source:src,trim});
   }
  }
  if(!options.apply&&!options.audit){
   return {mode:'dry-run',batchId:manifest.batchId,checked:prepared.length,
    approvedForPreparation:prepared.map(a=>a.asset.assetId),
+   UPSCALE_WARNINGS_NOT_NATIVE_HD:prepared.filter(a=>
+      a.source.width<(a.asset.aspect==='landscape'?1920:1080)||
+      a.source.height<(a.asset.aspect==='landscape'?1080:1920))
+      .map(a=>({assetId:a.asset.assetId,sourceWidth:a.source.width,
+        sourceHeight:a.source.height,canonicalOutput:a.asset.aspect==='landscape'?'1920x1080':'1080x1920'})),
+   FINAL_FRAME_HOLD_WARNINGS:prepared.filter(a=>a.trim.finalFrameHoldApplied)
+      .map(a=>({assetId:a.asset.assetId,holdSeconds:a.trim.holdSeconds})),
    NEW_UPLOADED:0,READY_AFTER_QA:0,COUNTABLE_N_OVER_500:0,
    costGate:'NOT_RUN',message:'No R2, DB, network download or cloud writes performed'};
  }
@@ -241,7 +260,8 @@ export async function runVideoVaultIngest(args=process.argv.slice(2)){
      LIVE_VERIFIED:false};
   }
   const totals={mode:'apply',batchId:manifest.batchId,NEW_UPLOADED:0,
-   READY_AFTER_QA:0,DEDUPED:0,REJECTED:0,HOLD_COST:0,HOLD_RIGHTS:0,R2_BYTES:0};
+   READY_AFTER_QA:0,DEDUPED:0,REJECTED:0,HOLD_COST:0,HOLD_RIGHTS:0,R2_BYTES:0,
+   UPSCALED_FROM_STAGED_SOURCE:0,SHORT_FINAL_FRAME_HOLDS:0};
   for(const item of prepared){
    const {asset,file,rawSha}=item;
    const dup=findVaultDuplicate({...asset,sourceHash:rawSha},existing);
@@ -294,6 +314,8 @@ export async function runVideoVaultIngest(args=process.argv.slice(2)){
        expectedSha256:rendered.sha256});
      await register(db,asset,rendered,rawSha,keys,manifest.batchId,config.bucket);
      totals.NEW_UPLOADED++;totals.READY_AFTER_QA++;
+     if(rendered.upscaledFromStaging)totals.UPSCALED_FROM_STAGED_SOURCE++;
+     if(rendered.finalFrameHoldApplied)totals.SHORT_FINAL_FRAME_HOLDS++;
      totals.R2_BYTES+=rendered.master.length+rendered.jpg.length+rightsEvidence.length;
      existing.push({
       asset_id:asset.assetId,source_provider:asset.sourceProvider,

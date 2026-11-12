@@ -4,6 +4,8 @@ import {readFileSync,existsSync,statSync} from "node:fs";
 import {createHash} from "node:crypto";
 import {isApprovedMontageScene,validateMontageClips,montageReplacementOptions} from "../lib/mandala/video-montage-sources.mjs";
 import {videoQualityEvidence} from "../lib/mandala/video-quality-evidence.mjs";
+// Run physical SHA, two-aspect crop and source-rights proof inside the existing HD specialist CI.
+import "./warm-sunlight-filmed-release.test.mjs";
 const json=p=>JSON.parse(readFileSync(new URL("../"+p,import.meta.url),"utf8"));
 const catalog=json("data/video-catalog/scene-taxonomy.json");
 const sources=json("data/video-catalog/free-stock-scenes.json");
@@ -11,12 +13,12 @@ const presets=json("data/video-catalog/free-film-presets-v2.json").presets;
 const release=json("data/video-catalog/hd-published-20261105.json");
 const ids=["sun-trees-forest","warm-clouds-sunset","fall-foliage-forest","snow-forest-winter"];
 test("only four edited moving CC BY nature masters were promoted and all physical SHA-256 match",()=>{
- assert.equal(catalog.count,48);
- assert.equal(catalog.scenes.length,48);
- assert.equal(sources.length,16);
+ assert.equal(catalog.count,56);
+ assert.equal(catalog.scenes.length,56);
+ assert.equal(sources.length,24);
  assert.equal(release.targetCountTotal,732);
  assert.equal(release.creditedSourceVideoIds.length,4);
- assert.equal(new Set(catalog.scenes.map(s=>s.id)).size,48);
+ assert.equal(new Set(catalog.scenes.map(s=>s.id)).size,56);
  assert.equal(release.userViewedEachIndividualClip,false);
  for(const id of ids){
   const scene=catalog.scenes.find(s=>s.id===id),master=sources.find(s=>s.id===id);

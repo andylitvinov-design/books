@@ -8,7 +8,7 @@ import { pathToFileURL } from 'node:url';
 const SHA = /^[0-9a-f]{40}$/i;
 const fail = (code, message) => ({ ready: false, code, message });
 
-export function assessPrReadiness(event, live, repository, ancestryProof = null) {
+export function assessPrReadiness(event, live, repository, ancestryProof = null, baseAdvanceProof = null) {
   const pr = event?.pull_request;
   if (!pr || !live || event.repository?.full_name !== repository) {
     return fail('invalid_event', 'Cannot confirm PR and repository identity');
@@ -56,29 +56,56 @@ export function assessPrReadiness(event, live, repository, ancestryProof = null)
   if ((live.mergeable !== true || live.mergeable_state === 'unknown') && !exactFastForward) {
     return fail('mergeability_pending', 'GitHub has not confirmed mergeability');
   }
+  // Only independently ancestor-proven event BASE -> live BASE is BASE_ADVANCED.
+  // Missing/invalid Compare evidence cannot be silently treated as a verified move.
+  const baseMoved = pr.base.sha !== live.base.sha;
+  const provenAdvance = baseMoved && baseAdvanceProof?.status === 'ahead' &&
+    baseAdvanceProof.base_sha === pr.base.sha &&
+    baseAdvanceProof.head_sha === live.base.sha &&
+    baseAdvanceProof.merge_base_sha === pr.base.sha;
+  const diagnostic_signal = provenAdvance?'BASE_ADVANCED':
+    baseMoved?'BASE_CHANGED_UNVERIFIED':null;
   // Blocked/unstable may be caused by pending CI or reviews: never deadlock CI.
-  return { ready: true, code: 'ready', message: 'Exact HEAD and mergeability verified; trusted release gate pins the tested merge base' };
+  // The immutable-base Specialist still independently enforces strict freshness.
+  return { ready: true, code: 'ready', diagnostic_signal,
+    message: 'Exact HEAD and mergeability verified; trusted release gate pins the tested merge base' };
 }
 
-async function readLivePr(repository, number, token) {
-  const response = await fetch(`https://api.github.com/repos/${repository}/pulls/${number}`, {
-    headers: {
-      accept: 'application/vnd.github+json',
-      authorization: `Bearer ${token}`,
-      'x-github-api-version': '2022-11-28',
-    },
-    signal: AbortSignal.timeout(8000),
-  });
-  if (!response.ok) throw new Error(`GitHub PR read failed: HTTP ${response.status}`);
-  return response.json();
+export async function readLivePr(repository, number, token,
+    transportOrOptions = fetch, sleep = ms => new Promise(resolve => setTimeout(resolve, ms))) {
+  // Preserve the production positional testing/worker API while supporting
+  // the newer caller's scoped options object; no speculative mutating retry.
+  const withOptions = transportOrOptions !== null && typeof transportOrOptions === 'object';
+  const transport = withOptions ? (transportOrOptions.transport ?? fetch) : transportOrOptions;
+  const wait = withOptions ? (transportOrOptions.wait ?? sleep) : sleep;
+  if (typeof transport !== 'function' || typeof wait !== 'function')
+    throw new TypeError('INVALID_GITHUB_READ_TRANSPORT');
+  const url = `https://api.github.com/repos/${repository}/pulls/${number}`;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const response = await transport(url, {
+      headers: {
+        accept: 'application/vnd.github+json',
+        authorization: `Bearer ${token}`,
+        'x-github-api-version': '2022-11-28',
+      },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (response.ok) return response.json();
+    if (![502, 503, 504].includes(response.status) || attempt === 2)
+      throw new Error(`GitHub PR read failed: HTTP ${response.status}`);
+    // Production positional callers retain 750/1500ms, options-based CI
+    // pruning callers retain 250/750ms: both APIs are regression tested.
+    await wait(withOptions ? (attempt === 0 ? 250 : 750) : 750 * (2 ** attempt));
+  }
+  throw new Error('GitHub PR read exhausted without successful readback');
 }
 
-async function readExactBaseAncestry(repository, live, token) {
+export async function readExactBaseAncestry(repository, live, token, transport = fetch) {
   const base = live?.base?.sha;
   const head = live?.head?.sha;
-  if (!SHA.test(base ?? '') || !SHA.test(head ?? '')) return null;
-  const response = await fetch(
-    `https://api.github.com/repos/${repository}/compare/${base}...${head}`, {
+  if (!SHA.test(base ?? '') || !SHA.test(head ?? '') || base === head) return null;
+  const response = await transport(
+    `https://api.github.com/repos/${repository}/compare/${base}...${head}?per_page=100`, {
       headers: {
         accept: 'application/vnd.github+json',
         authorization: `Bearer ${token}`,
@@ -88,12 +115,19 @@ async function readExactBaseAncestry(repository, live, token) {
     });
   if (!response.ok) return null;
   const comparison = await response.json();
-  return {
-    status: comparison.status,
-    base_sha: comparison.base_commit?.sha,
-    head_sha: comparison.head_commit?.sha,
-    merge_base_sha: comparison.merge_base_commit?.sha,
-  };
+  // REST Compare intentionally has no head_commit property. The last complete
+  // commit item proves the exact target only with an untruncated, forward-only
+  // ancestry chain and verified base/merge-base SHA.
+  if (comparison?.status !== 'ahead' || comparison?.behind_by !== 0 ||
+      !Number.isSafeInteger(comparison?.ahead_by) || comparison.ahead_by < 1 ||
+      comparison.ahead_by > 100 ||
+      comparison.total_commits !== comparison.ahead_by ||
+      !Array.isArray(comparison.commits) ||
+      comparison.commits.length !== comparison.ahead_by ||
+      comparison.base_commit?.sha !== base ||
+      comparison.merge_base_commit?.sha !== base ||
+      comparison.commits.at(-1)?.sha !== head) return null;
+  return {status:'ahead',base_sha:base,head_sha:head,merge_base_sha:base};
 }
 
 // The Public Services job uses a pinned Playwright container. actions/checkout
@@ -119,9 +153,11 @@ export function verifiedPublicServicesCheckout(env = process.env, cwd = process.
 function emit(result) {
   const status = result.ready ? 'PASS' : 'BLOCK';
   console.log(`PR early-readiness ${status}: ${result.code}: ${result.message}`);
+  if(result.diagnostic_signal)console.log('PR BASE diagnostic signal: '+result.diagnostic_signal);
   if (process.env.GITHUB_STEP_SUMMARY) {
     appendFileSync(process.env.GITHUB_STEP_SUMMARY,
-      `- PR early-readiness **${status}**: ${result.code} — ${result.message}\n`);
+      `- PR early-readiness **${status}**: ${result.code} — ${result.message}\n`+
+      (result.diagnostic_signal?`- PR BASE signal: **${result.diagnostic_signal}** (advisory; does not modify security gates)\n`:''));
   }
 }
 
@@ -145,7 +181,12 @@ export async function main() {
     const ancestryProof = live.mergeable === false || live.mergeable_state === 'dirty'
       ? await readExactBaseAncestry(repository, live, token)
       : null;
-    const result = assessPrReadiness(event, live, repository, ancestryProof);
+    const baseAdvanceProof = SHA.test(event.pull_request.base?.sha ?? '') &&
+      SHA.test(live.base?.sha ?? '') && event.pull_request.base.sha !== live.base.sha
+      ? await readExactBaseAncestry(repository,
+        {base:{sha:event.pull_request.base.sha},head:{sha:live.base.sha}},token)
+      : null;
+    const result = assessPrReadiness(event, live, repository, ancestryProof, baseAdvanceProof);
     if (result.code !== 'mergeability_pending' || attempt === 2) {
       if (result.ready) {
         const publicWorkspace = verifiedPublicServicesCheckout();

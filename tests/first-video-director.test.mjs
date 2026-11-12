@@ -107,7 +107,8 @@ test("Safari export is never offered until the native video decoder succeeds",()
   assert.match(src,/recorder\.start\(\);/,"record one complete file rather than short Safari MP4 fragments");
   assert.doesNotMatch(src,/recorder\.start\(500\)/);
   assert.match(src,/playbackStatus==="ready"/);
-  assert.match(src,/resultReady=\{Boolean\(result\)&&playbackStatus==="ready"\}/);
+  assert.match(src,/resultReady=\{Boolean\(result\)&&playbackStatus==="ready"&&creditConfirmed\}/,
+    "decoded video is ready only after the authenticated credit charge is confirmed");
   assert.match(src,/onLoadedData=\{event=>confirmVideoPlayback/);
   assert.match(src,/video\.videoWidth>0 && video\.videoHeight>0 && video\.readyState>=2/);
   assert.match(src,/data-video-playback-error/);
@@ -356,7 +357,8 @@ test("iPhone encoder recovery preserves real media, truthful playback state and 
   assert.match(src,/data-video-recording-format/);
   assert.match(src,/data-video-save-direct/,"direct download must remain available when iPhone share sheet fails");
   assert.match(src,/onClick=\{\(\)=>void createVideo\(false,true\)\}/);
-  assert.match(src,/resultReady=\{Boolean\(result\)&&playbackStatus==="ready"\}/);
+  assert.match(src,/resultReady=\{Boolean\(result\)&&playbackStatus==="ready"&&creditConfirmed\}/,
+    "decoded video is ready only after the authenticated credit charge is confirmed");
   assert.doesNotMatch(src,/recorder\.start\(500\)/);
 });
 

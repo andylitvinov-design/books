@@ -111,16 +111,36 @@ test("primary capture components render channel chooser after service selection 
 
 });
 
-test("cart form is inert until real hydration, with phone and explicit consent still required", () => {
+test("default cart is messenger-only; historical phone/Google form stays gated behind explicit rollback", () => {
   const ui = read("components/contact-channel-chooser.tsx");
   const qa = read("scripts/verify-storefront-shop-browser.mjs");
   assert.match(ui, /data-contact-hydrated=\{cartContact \? String\(cartFormHydrated\)/);
   assert.match(ui, /cartContact && !cartFormHydrated/);
   assert.match(ui, /onChange=\{event => \{ setConsent\(event\.target\.checked\)/);
   assert.match(ui, /\!consent/);
-  assert.match(qa, /form\[data-contact-hydrated="true"\]/);
-  assert.match(qa, /String\(input\[key\]\?\.value \|\| ''\)\.includes\('416'\)/);
-  assert.match(qa, /syntheticEnquiries\[0\]\.contactConsent, true/);
+  assert.match(qa, /data-messenger-only-contact/);
+  assert.match(qa, /No synthetic CRM save before provider confirmation/);
+  assert.match(qa, /data-messenger-only-channel/);
+  assert.match(qa, /syntheticEnquiries.length,0/);
+});
+
+test("WebKit cart consent fallback uses only a real checked click, never implicit consent", () => {
+  const ui = read("components/contact-channel-chooser.tsx");
+  const cart = ui.slice(ui.indexOf('data-contact-hydrated={cartContact ? String(cartFormHydrated)'));
+  assert.ok(cart.length > 0, "cart-only contact form must exist");
+  assert.match(cart, /onClick=\{cartContact \? event => \{[\s\S]*?setConsent\(event\.currentTarget\.checked\)/,
+    "only a native cart checkbox click may reconcile Safari consent");
+  assert.match(cart, /onChange=\{event => \{ setConsent\(event\.target\.checked\)/,
+    "keep normal React change semantics");
+  assert.match(cart, /disabled=\{busy \|\| googleBusy \|\| !interactive \|\| \(cartContact && !cartFormHydrated\) \|\|[\s\S]*?!consent\}/,
+    "submission must still require explicit consent");
+  assert.doesNotMatch(cart, /onClick=\{cartContact \? event => \{\s*setConsent\(true\)/,
+    "never manufacture consent from a generic click");
+  const qa = read("scripts/verify-storefront-shop-browser.mjs");
+  assert.match(qa, /await wa\.waitFor\(/,
+    "real WebKit acceptance must still exercise an actual visitor click");
+  assert.match(qa, /No synthetic CRM save before provider confirmation/);
+  assert.match(qa, /unverified phone or Google session/);
 });
 
 test("optional name disclosure uses one native user click, reset only on changed offer, and never changes consent", () => {

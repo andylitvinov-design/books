@@ -17,8 +17,12 @@ const cases = [
   ["en", "imagery-therapy", 320],
   ["en", "imagery-therapy", 390],
   ["en", "imagery-therapy", 430],
+  ["ru", "imagery-therapy", 320],
   ["ru", "imagery-therapy", 390],
+  ["ru", "imagery-therapy", 430],
+  ["es", "imagery-therapy", 320],
   ["es", "imagery-therapy", 390],
+  ["es", "imagery-therapy", 430],
   ["en", "psychohomeopathy", 390],
   ["en", "systemic-constellations", 390],
   ["en", "hypnotherapy-course", 390],
@@ -33,6 +37,9 @@ for (const engine of [chromium, webkit]) {
       const page = await browser.newPage({
         viewport: { width, height }, hasTouch: true,
         deviceScaleFactor: 1, reducedMotion: "reduce",
+        // A PWA Service Worker bypasses Playwright route interception.
+        // Block it so all synthetic CRM POSTs stay in this test's mock.
+        serviceWorkers: "block",
       });
       const errors = [];
       page.on("pageerror", error => errors.push(error.message));
@@ -51,9 +58,12 @@ for (const engine of [chromium, webkit]) {
           assert.ok(await panels.count()>=2,label+" Alchemy stages remain visible");
           const request=page.locator('[data-alchemy-panel="request"]');
           assert.equal(await request.count(),1,label+" one Alchemy request");
-          const consent=request.locator('input[type="checkbox"][required]');
-          assert.equal(await consent.count(),1,label+" explicit reply consent");
-          assert.equal(await consent.isChecked(),false,label+" consent unchecked by default");
+          const messenger=request.locator('[data-messenger-only-contact]');
+          await messenger.waitFor({state:"visible",timeout:15000});
+          assert.equal(await messenger.locator('a[data-messenger-only-channel]').count(),2,
+            label+" two customer-initiated messenger choices");
+          assert.equal(await messenger.locator('form,input[type="email"],input[type="tel"]').count(),0,
+            label+" no standalone CRM request");
           assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth)<=width+2,label+" no horizontal overflow");
           assert.deepEqual(errors,[],label+" unexpected page errors");
           results.push({label,redirect:"alchemy-of-soul",form:true,errors:[]});
@@ -89,41 +99,47 @@ for (const engine of [chromium, webkit]) {
         const docWidth = await page.evaluate(() => document.documentElement.scrollWidth);
         assert.ok(docWidth <= width + 2, label + " document must not overflow horizontally");
         const capture = screens.last();
-        const form=capture.locator("form[data-compact-lead-form]");
-        await form.waitFor({state:"visible",timeout:20000});
-        await page.waitForFunction(()=>document.querySelector(
-          '[data-service-visual-screen="final-capture"] [data-compact-lead-form], [data-core-visual-screen="final-capture"] [data-compact-lead-form]')?.getAttribute(
-          "data-compact-hydrated")==="true",null,{timeout:15000});
-        assert.equal(await form.locator('input[name="contact"][required]').count(),1,
-          label+" real contact input");
-        const consent=form.locator('input[type="checkbox"][required]');
-        assert.equal(await consent.count(),1,label+" explicit reply consent");
-        assert.equal(await consent.isChecked(),false,label+" consent unchecked by default");
-        assert.ok(await form.locator('[data-enquiry-attribution-choice] input[type="checkbox"]').count()<=1,
-          label+" attribution is optional and separate");
-        // The current CRM-first capture uses an explicit messenger button, not
-        // a legacy form submit. Before consent it MUST NOT dispatch a POST.
-        assert.equal(await form.locator('button[type="submit"]').count(),0,
-          label+" no default form submission");
-        const action=form.locator('button[data-compact-channel="whatsapp"]');
-        await action.waitFor({state:"visible"});
-        let unexpectedWrites=0;
-        await page.route("**/api/service-enquiries",route=>{
-          if(route.request().method()==="POST"){unexpectedWrites++;return route.abort("blockedbyclient");}
-          return route.continue();
-        });
-        await action.click();
-        await form.locator('[role="alert"]').waitFor({state:"visible",timeout:10000});
-        assert.equal(unexpectedWrites,0,label+" no CRM request without consent");
-        assert.equal(await page.locator("[data-sitewide-capture]:visible").count(), 0,
-          label + " no duplicate generic form");
-        assert.deepEqual(errors, [], label + " unexpected page errors");
+        const messengerBlocks=capture.locator('[data-messenger-only-contact]');
+        const messengerCount=await messengerBlocks.count();
+        assert.ok(messengerCount>=1&&messengerCount<=2,
+          label+" one primary card and at most one optional user-opened request; got "+messengerCount);
+        const messenger=messengerBlocks.first();
+        if(messengerCount===2){
+          const secondaryMessenger=messengerBlocks.nth(1);
+          assert.equal(await secondaryMessenger.evaluate(node=>{
+            const details=node.closest("details");
+            return Boolean(details && !details.open);
+          }),true,label+" optional contact remains behind its deliberate disclosure");
+        }
+        await messenger.waitFor({state:"visible",timeout:20000});
+        const details=messenger.locator('details');
+        if(await details.count()&&await details.getAttribute('open')===null)
+          await details.locator(':scope > summary').click();
+        const whatsapp=messenger.locator('a[data-messenger-only-channel="whatsapp"]');
+        const telegram=messenger.locator('a[data-messenger-only-channel="telegram"]');
+        await whatsapp.waitFor({state:"visible",timeout:15000});
+        await telegram.waitFor({state:"visible",timeout:15000});
+        const draft=new URL(await whatsapp.getAttribute('href'));
+        assert.equal(draft.origin,'https://wa.me',label+" official manual messaging endpoint");
+        assert.ok((draft.searchParams.get('text')||'').length>24,label+" published service in draft");
+        assert.equal(await messenger.locator('form,input[type="email"],input[type="tel"]').count(),0,
+          label+" no unverified contact-only form");
+        assert.equal(await capture.locator('[data-lead-saved]').count(),0,
+          label+" no fake saved receipt");
+        assert.equal(await page.locator("[data-sitewide-capture]:visible").count(),0,
+          label+" no duplicate generic form");
+        assert.deepEqual(errors,[],label+" no unexpected page errors");
+        if (slug === "imagery-therapy" && width === 320 && locale === "en") {
+          await capture.scrollIntoViewIfNeeded();
+          await page.screenshot({ path: output + "/imagery-en-final-capture-320-" + engine.name() + ".png" });
+        }
         if (engine === webkit && slug === "imagery-therapy" && width === 390 && locale === "en") {
           await page.screenshot({ path: output + "/imagery-en-first-screen-webkit.png" });
           await capture.scrollIntoViewIfNeeded();
           await page.screenshot({ path: output + "/imagery-en-final-form-webkit.png" });
         }
-        results.push({ label, screens: rows, horizontalOverflow: false, form: true, errors: [] });
+        results.push({ label, screens: rows, horizontalOverflow: false, messengerChannels: 2, errors: [] });
+        console.log("PASS visual service route: "+label);
       } finally {
         await page.close();
       }

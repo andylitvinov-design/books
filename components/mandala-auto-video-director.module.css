@@ -786,3 +786,124 @@
  padding:3px 0;border:0;background:transparent;color:#087b62;
  font:750 12px/1.4 system-ui,-apple-system,sans-serif;text-decoration:underline;cursor:pointer}
 @media(max-width:430px){.designRequest{min-height:44px;font-size:13px}.requestAnalysis{padding:8px 9px}}
+
+/* Goal intake stays short; director planning and visual styling live in Ideas and Montage. */
+:global([data-active-workspace="video"]) .root,:global([data-active-workspace="video"]) .profilePanel{display:none!important}
+:global([data-active-workspace="video"]) .requestComposer>.designRequest,
+:global([data-active-workspace="video"]) .requestComposer>.requestAnalysis{display:none!important}
+.optionalTopic{display:grid;gap:7px;min-width:0}
+.optionalTopic>span{font:750 14px/1.3 Arial,Helvetica,sans-serif;color:#215443}
+.optionalTopic select{display:block;box-sizing:border-box;width:100%;min-width:0;min-height:46px;padding:10px 12px;border:1px solid #cfddce;border-radius:12px;background:#fffefa;color:#214b3d;font:500 16px/1.3 system-ui,-apple-system,sans-serif}
+.optionalTopic select:focus-visible,.montageStyle button:focus-visible,.ideaRefinement>summary:focus-visible{outline:3px solid #b79554;outline-offset:2px}
+.optionalTopic select:disabled{opacity:.65}
+.ideaRefinement{margin:9px 0;min-width:0;border:1px solid #d9e8d9;border-radius:15px;background:#fffdfa;padding:4px 11px}
+.ideaRefinement>summary{min-height:46px;display:flex;align-items:center;cursor:pointer;font:750 14px/1.35 Arial,Helvetica,sans-serif;color:#176a50;padding:9px 0}
+.ideaRefinement[open]>summary{margin-bottom:9px;border-bottom:1px solid #d9e8d9}
+.montageStyle{display:grid;gap:7px;min-width:0;padding:11px;border:1px solid #d8e3d8;border-radius:14px;background:#fffefa}
+.montageStyle>strong{font:800 15px/1.25 Arial,Helvetica,sans-serif;color:#174b3a}
+.montageStyle>p{margin:0;font:500 12px/1.4 Arial,Helvetica,sans-serif;color:#556b5c}
+.montageStyleChoices{display:flex;flex-wrap:wrap;gap:6px}
+.montageStyleChoices button{min-height:44px;min-width:75px;padding:7px 12px;border:1px solid #cbdacf;border-radius:11px;background:#fff;color:#20473b;font:700 13px/1.2 Arial,Helvetica,sans-serif;cursor:pointer}
+.montageStyleChoices button[aria-pressed="true"]{background:#e7f5ea;border-color:#078665;box-shadow:inset 0 0 0 1px #078665}
+.montageStyleChoices button:disabled{opacity:.55;cursor:not-allowed}
+
+
+/* Recipient-aware first Goal screen (2026-11-07).
+   Scoped to the new "For others" branch; keep the original self category
+   cards, taxonomy hierarchy and route-scoped mobile Goal overrides intact. */
+.audienceBar{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  min-width:0;width:100%;margin-bottom:7px}
+.audienceBar>span{flex:none;color:#31584a;font:750 13px/1.2 Arial,Helvetica,sans-serif}
+.audienceToggle{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px;
+  min-width:0;padding:3px;border:1px solid #cfdfd3;background:#f3f8f2;
+  border-radius:12px}
+.audienceToggle button{min-width:0;min-height:42px;padding:7px 12px;
+  border:0;border-radius:9px;background:transparent;color:#4d695b;
+  font:800 13px/1.2 Arial,Helvetica,sans-serif;cursor:pointer;white-space:nowrap}
+.audienceToggle button[aria-pressed="true"]{background:#116e55;color:#fff;
+  box-shadow:0 2px 7px rgba(25,75,55,.14)}
+.audienceToggle button:disabled{opacity:.55;cursor:not-allowed}
+.audienceToggle button:focus-visible,.recipientKinds button:focus-visible,
+.recipientOptionChoices button:focus-visible{outline:3px solid #b79554;outline-offset:2px}
+.recipientCatalog{display:grid;gap:8px;min-width:0;width:100%}
+.recipientKinds{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  min-width:0;gap:8px}
+.recipientKinds button{display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:7px;min-width:0;min-height:98px;padding:12px 5px;
+  border:1px solid #d9e5dc;border-radius:15px;background:#fffdf8;color:#255445;
+  font:750 13px/1.16 Arial,Helvetica,sans-serif;cursor:pointer;text-align:center}
+.recipientKinds button:nth-child(1){background:#fff3f5}
+.recipientKinds button:nth-child(2){background:#f3f3ff}
+.recipientKinds button:nth-child(3){background:#eef8f1}
+.recipientKinds button svg{flex:none;width:25px;height:25px;color:#137054}
+.recipientKinds button strong{font:inherit;overflow-wrap:anywhere;hyphens:auto}
+.recipientKinds button[aria-pressed="true"]{border:2px solid #087f69;
+  box-shadow:0 0 0 2px rgba(8,127,105,.12);background:#e9f7f0}
+.recipientKinds button:disabled{opacity:.55;cursor:not-allowed}
+.recipientOccasions{display:grid;gap:7px;min-width:0;
+  padding-top:9px;border-top:1px solid #e7ede7}
+.recipientOptionChoices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  min-width:0;gap:7px}
+.recipientOptionChoices button{min-width:0;min-height:44px;padding:9px 8px;
+  border:1px solid #d1e0d5;border-radius:11px;background:#fffefa;color:#235542;
+  font:750 13px/1.2 Arial,Helvetica,sans-serif;text-align:center;cursor:pointer}
+.recipientOptionChoices button[aria-pressed="true"]{background:#e5f4e9;
+  border:2px solid #0b8566;color:#145740}
+.recipientOptionChoices button:disabled{opacity:.55;cursor:not-allowed}
+.recipientHint{margin:1px 0 0;color:#698276;
+  font:500 12px/1.4 Arial,Helvetica,sans-serif}
+.recipientTopicSummary{display:grid;gap:6px;min-width:0;
+  padding:12px;border:1px solid #d7e7d9;border-radius:12px;background:#f6fbf6}
+.recipientTopicSummary span{font:750 14px/1.2 Arial,Helvetica,sans-serif;color:#295b46}
+.recipientTopicSummary strong{font:750 14px/1.35 Arial,Helvetica,sans-serif;color:#19654d}
+@media(max-width:759px){
+ .audienceBar{gap:6px}
+ .audienceBar>span{font-size:clamp(11px,3.2vw,13px)}
+ .audienceToggle button{min-height:40px;padding:6px 9px;font-size:clamp(11px,3.15vw,13px)}
+ .recipientKinds{gap:7px}
+ .recipientKinds button{min-height:92px;padding:10px 5px;border-radius:14px}
+ .recipientKinds button strong{font-size:clamp(11px,3.2vw,13px)}
+ .recipientOptionChoices button{font-size:clamp(12px,3.25vw,14px)}
+}
+@media(max-width:350px){
+ .audienceBar>span{font-size:11px}
+ .audienceToggle button{padding:6px;font-size:11px}
+ .recipientKinds button{min-height:86px;padding:8px 3px}
+ .recipientKinds button strong{font-size:11px}
+}
+
+/* Warm, image-led recipient choices: four full-width horizontal rows, including Video Reels.
+   Keep one vertical list on 320–430 px phones, tablets and desktop. */
+.recipientFormatTitle{font:850 clamp(17px,4.5vw,22px)/1.2 system-ui,sans-serif;margin:0;color:#143d3a}
+.recipientKinds{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;min-width:0}
+.recipientKinds button{position:relative;display:grid;grid-template-columns:clamp(72px,22vw,104px) minmax(0,1fr);
+  align-items:center;justify-content:stretch;gap:12px;min-height:84px;width:100%;
+  padding:5px 10px 5px 5px;overflow:hidden;text-align:left;
+  background:#fffcf7!important;border:1px solid #e9dfd1;border-radius:16px;
+  box-shadow:0 2px 7px rgba(45,67,53,.035)}
+.recipientKinds button[aria-pressed=true]{background:#e6f6f1!important;border:2px solid #07885f;
+  box-shadow:0 0 0 2px rgba(8,127,105,.12)}
+.recipientKinds button .recipientFormatArt{display:block;width:100%;height:74px;aspect-ratio:auto;
+  object-fit:cover;border-radius:11px}
+.recipientFormatBody{display:grid;grid-template-columns:20px minmax(0,1fr);align-content:center;
+  align-items:center;column-gap:6px;row-gap:3px;min-width:0;padding:4px 28px 4px 0;text-align:left}
+.recipientFormatBody svg{width:19px!important;height:19px!important;color:#087a62}
+.recipientKinds button .recipientFormatBody strong{min-width:0;overflow-wrap:break-word;
+  hyphens:none;color:#143d3a;font:800 clamp(14px,3.65vw,16px)/1.2 system-ui,sans-serif}
+.recipientFormatBody small{grid-column:2/-1;color:#5d6a71;
+  font:500 clamp(12px,3vw,13px)/1.28 system-ui,sans-serif}
+.recipientFormatSelected{position:absolute;top:50%;right:10px;transform:translateY(-50%);
+  display:grid;place-items:center;width:24px;height:24px;
+  border-radius:50%;background:#07885f;color:#fff}
+.recipientKinds button .recipientFormatSelected svg{width:15px!important;height:15px!important;color:#fff}
+.recipientPurposeSwitch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.recipientPurposeSwitch button{min-height:44px;border:1px solid #c0d8cc;border-radius:12px;
+  padding:9px;background:#fffcf7;color:#14523f;font:750 13px/1.2 system-ui,sans-serif}
+.recipientPurposeSwitch button[aria-pressed=true]{background:#e6f6f1;border:2px solid #07885f}
+.recipientPurposeSwitch button:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+@media(max-width:370px){
+ .recipientKinds button{grid-template-columns:72px minmax(0,1fr);gap:8px;min-height:82px;padding-right:6px}
+ .recipientKinds button .recipientFormatArt{height:70px}
+ .recipientFormatBody{padding-right:24px;column-gap:5px}
+ .recipientFormatSelected{right:6px;width:22px;height:22px}
+}

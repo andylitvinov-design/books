@@ -2,7 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {analyzePrLoss, summarizePrLoss, exclusiveStageMinutes,readRepairMarkers,analyzePrLifecycle,lifecycleConnected,analyzeCoreWaveGaps} from '../lib/ci/pr-loss-metrics.mjs';
-import {collectCohort, formatSummary, searchQuery} from '../scripts/ci-pr-loss-report.mjs';
+import {collectCohort, formatSummary, formatWaveDiagnostics, searchQuery} from '../scripts/ci-pr-loss-report.mjs';
+import {explainCoreWave,explainCoreRerunAttempt} from '../lib/ci/pr-wave-attribution.mjs';
+import {analyzeRepairCycles} from '../lib/ci/pr-repair-cycle.mjs';
 
 const head='a'.repeat(40), old='b'.repeat(40);
 const pr=(overrides={})=>({number:99,created_at:'2026-11-04T10:00:00Z',
@@ -35,6 +37,11 @@ test('exact-head repeated workflow wave and actual runner start wait keep PR-min
   assert.deepEqual(summary.top3.map(x=>x.stage),['green_to_merge','repeat_ci_wave','runner_start_wait']);
   assert.equal(summary.partial,false);
   assert.equal(summary.top3[0].p95_minutes,100);
+  assert.equal(summary.low_n,true);
+  assert.equal(summary.top3[0].low_n,true);
+  assert.match(formatSummary({...summary,cohort:{
+    created_utc_start:at('10:00'),created_utc_end:at('13:00'),inspected_prs:1,
+  }}),/LOW_N: n<5/);
 });
 
 test('never mistake parallel PR jobs or duplicate job intervals for additive PR minutes',()=>{
@@ -501,4 +508,146 @@ test('P1 collector restores true first Core despite GitHub moving old PR link SH
   assert.equal(report.rows[0].core_waves.observed_core_runs,2);
   assert.equal(report.rows[0].runs_considered,2);
   assert.match(formatSummary(report),/Historical HEADs relinked/);
+});
+
+test('Repair-cycle stage clocks separate failure, immutable lease, repair declaration, commit event, CI and runner',()=>{
+  const broken=run(800,at('10:01'),at('10:12'),{head_sha:old,conclusion:'failure',
+    pull_requests:[{number:99,base:{ref:'codex/public-book-library'},head:{sha:old}}]});
+  const after=run(801,at('10:35'),at('10:55'));
+  const jobs={800:{total_count:1,jobs:[job(8001,'core-lint-types-build',at('10:01'),at('10:03'),at('10:10'),'failure',
+    {steps:[{name:'TypeScript',conclusion:'failure'}]})]},801:{total_count:1,
+    jobs:[job(8011,'core-lint-types-build',at('10:36'),at('10:40'),at('10:55'))]}};
+  const lease={id:900,created_at:at('10:16'),updated_at:at('10:16'),
+    body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify({schema:'HH_PR_SWEEP_LEASE_V1',
+      owner:'ci-agent',head_sha:old,base_sha:'c'.repeat(40),
+      expires_at:at('11:00'),last_action:'claimed'})};
+  const receipt={id:901,created_at:at('10:20'),
+    body:'<!-- HH_PR_REPAIR_STARTED_V1 -->\n'+JSON.stringify({schema:'HH_PR_REPAIR_STARTED_V1',
+      action:'repair_started',owner:'ci-agent',failed_run_id:800,failed_head_sha:old})};
+  const history=[{event:'committed',sha:old,created_at:at('10:00')},
+    {event:'committed',sha:head,created_at:at('10:30')}];
+  const actual=analyzeRepairCycles(pr(),[broken,after],jobs,[lease,receipt],history,
+    {runHistoryComplete:true,commentsComplete:true});
+  assert.equal(actual.observed_failed_heads,1);
+  const c=actual.cycles[0],d=c.durations_minutes,t=c.timestamps;
+  assert.equal(c.failed_head,old);assert.equal(c.new_head,head);
+  assert.equal(c.failure.observed_failed_step,'TypeScript');
+  assert.equal(c.failure.root_cause_verified,false);
+  assert.equal(c.owner,'ci-agent');
+  assert.equal(t.new_head_commit_event_at,'2026-11-04T10:30:00.000Z');
+  assert.deepEqual([d.failure_to_claim,d.claim_to_repair_declaration,
+    d.repair_declaration_to_commit_event,d.commit_event_to_new_ci,
+    d.workflow_to_first_job,d.first_runner_job_queue],[6,4,10,5,1,4]);
+  assert.equal(t.actual_edit_started_at,null);
+  assert.equal(d.actual_edit_work,null);
+  assert.equal(c.evidence.agent_received_task_verified,false);
+  assert.equal(c.evidence.comments_complete,true);
+});
+
+test('Repair-cycle unknowns: no fake assignment, edit time, push time or runner shortage',()=>{
+  const broken=run(810,at('10:01'),at('10:12'),{head_sha:old,conclusion:'failure',
+    pull_requests:[{number:99,base:{ref:'codex/public-book-library'},head:{sha:old}}]});
+  const after=run(811,at('10:35'),at('10:55'));
+  const jobs={810:{total_count:1,jobs:[
+    job(8101,'core-lint-types-build',at('10:01'),at('10:03'),at('10:10'),'failure')]},
+    811:{total_count:1,jobs:[job(8111,'core-lint-types-build',at('10:36'),at('10:40'),at('10:55'))]}};
+  const updatedLease={id:910,created_at:at('10:16'),updated_at:at('10:21'),
+    body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify({schema:'HH_PR_SWEEP_LEASE_V1',
+      owner:'ci-agent',head_sha:old,base_sha:'c'.repeat(40),
+      expires_at:at('11:00'),last_action:'heartbeat'})};
+  const truncated=Array.from({length:100},()=>({event:'committed',sha:head,created_at:at('10:30')}));
+  const c=analyzeRepairCycles(pr(),[broken,after],jobs,[updatedLease],truncated).cycles[0];
+  assert.equal(c.timestamps.ci_failed_at,'2026-11-04T10:10:00.000Z');
+  assert.equal(c.timestamps.lease_claimed_at,null);
+  assert.equal(c.timestamps.repair_declared_at,null);
+  assert.equal(c.timestamps.new_head_commit_event_at,null);
+  assert.equal(c.timestamps.new_ci_created_at,'2026-11-04T10:35:00.000Z');
+  assert.equal(c.durations_minutes.failure_to_claim,null);
+  assert.equal(c.evidence.comments_complete,false);
+  assert.equal(c.evidence.timeline_complete,false);
+  const stranger={...after,pull_requests:[{number:900,base:{ref:'codex/public-book-library'}}]};
+  assert.equal(analyzeRepairCycles(pr(),[broken,stranger],jobs,[],null).cycles[0].new_head,null);
+  assert.equal(analyzeRepairCycles(pr(),[broken,after],
+    {810:{total_count:2,jobs:jobs[810].jobs},811:jobs[811]},[],null).cycles.length,0);
+});
+
+test('each new-HEAD Core wave reports technical proof but no invented commit author',()=>{
+  const a=run(801,at('10:01'),at('10:10'),{head_sha:old,actor:{login:'owner'}});
+  const b=run(802,at('10:20'),at('10:25'),{head_sha:head,actor:{login:'github-actions[bot]'}});
+  const cause=explainCoreWave({previous_run_id:801,run_id:802,head_relation:'new_head'},[a,b],
+    [{event:'committed',sha:head,author:{name:'forged-identity'}}]);
+  assert.equal(cause.code,'HEAD_CHANGED');
+  assert.equal(cause.confidence,'confirmed_technical');
+  assert.equal(cause.initiator,'github-actions[bot]');
+  assert.equal(cause.initiator_source,'workflow_actor');
+  assert.equal(cause.commit_sha,head);
+});
+test('metadata event has an observed actor but is not falsely marked a proven trigger',()=>{
+  const a=run(811,at('10:01'),at('10:10'));
+  const b=run(812,at('10:20'),at('10:26'),{actor:{login:'owner'}});
+  const cause=explainCoreWave({previous_run_id:811,run_id:812,
+    head_relation:'same_head',overlapping_or_unverified:false},[a,b],
+    [{event:'edited',created_at:at('10:19'),actor:{login:'owner'}}]);
+  assert.equal(cause.code,'PR_EVENT_CORRELATED');
+  assert.equal(cause.confidence,'correlated');
+  assert.equal(cause.initiator,'owner');
+  assert.equal(cause.event,'edited');
+  assert.equal(cause.initiator_source,'timeline_actor');
+});
+test('unknown, overlapping and conflicting same-HEAD repeats fail closed on attribution',()=>{
+  const a=run(821,at('10:01'),at('10:10'));
+  const b=run(822,at('10:20'),at('10:26'),{actor:{login:'owner'}});
+  const gap={previous_run_id:821,run_id:822,head_relation:'same_head',
+    overlapping_or_unverified:false};
+  const changed={event:'edited',created_at:at('10:19'),actor:{login:'different'}};
+  assert.equal(explainCoreWave(gap,[a,b],[changed]).code,'ACTOR_MISMATCH');
+  assert.equal(explainCoreWave(gap,[a,b],null).confidence,'unknown');
+  assert.equal(explainCoreWave({...gap,overlapping_or_unverified:true},[a,b],[]).code,'SAME_HEAD_UNVERIFIED');
+  assert.equal(explainCoreWave(gap,[a,b],[changed,{...changed,event:'reopened'}]).code,'MULTIPLE_PR_EVENTS');
+  assert.equal(explainCoreWave(gap,[a,run(823,at('10:20'),at('10:26'))],[]).confidence,'unknown');
+});
+test('repeat attempts preserve latest verified triggering_actor without pretending prior job history',()=>{
+  const retry=explainCoreRerunAttempt(run(831,at('10:01'),at('10:40'),
+    {run_attempt:3,triggering_actor:{login:'owner'}}));
+  assert.equal(retry.previous_attempts_without_history,2);
+  assert.equal(retry.latest_initiator,'owner');
+  assert.equal(retry.confidence,'unknown');
+  assert.equal(explainCoreRerunAttempt(run(832,at('10:01'),at('10:40'))),null);
+});
+test('P1 Markdown displays each repeat pair, actor, reason, evidence and reruns',()=>{
+  const report={rows:[{pr:99,core_waves:{gaps:[{previous_run_id:1,run_id:2,
+    minutes:5,head_relation:'new_head',cause:{code:'HEAD_CHANGED',label:'Новый HEAD PR',
+      confidence:'confirmed_technical',prior_sha:old,next_sha:head,
+      initiator:'owner',initiator_source:'workflow_actor'}}],
+    rerun_attempts:[{run_id:2,attempts:2,latest_initiator:'owner',
+      reason:'Почему запущен — неизвестно',previous_attempts_without_history:1}]}}]};
+  const md=formatWaveDiagnostics(report);
+  assert.match(md,/Причины каждой повторной волны Core CI/);
+  assert.match(md,/github.com\/andylitvinov-design\/books\/actions\/runs\/2/);
+  assert.match(md,/подтверждён новый HEAD: 1/);
+  assert.match(md,/@owner/);
+  assert.match(md,/Повторные попытки внутри одного run/);
+});
+
+test('each repeat Core wave exposes safe trigger attribution without inventing root cause',()=>{
+  const before=run(901,at('10:01'),at('10:10'),{head_sha:old,
+    pull_requests:[{number:99,base:{ref:'codex/public-book-library'},head:{sha:old}}]});
+  const after=run(902,at('10:20'),at('10:30'),{triggering_actor:{login:'github-actions[bot]'}});
+  const timeline=[{event:'committed',sha:head,author:{name:'contributor'},
+    html_url:'https://github.com/andylitvinov-design/books/commit/'+head}];
+  const row=analyzeCoreWaveGaps(pr(),[before,after],{},timeline,{runHistoryComplete:true});
+  assert.equal(row.gaps[0].trigger_event,'head_changed');
+  assert.equal(row.gaps[0].trigger_actor,'contributor');
+  assert.equal(row.gaps[0].trigger_confidence,'commit_verified');
+  assert.equal(row.gaps[0].reason_confirmed,false);
+  assert.match(row.gaps[0].reason_summary,/motivation not verified/);
+  const repeat=run(903,at('10:40'),at('10:50'),{triggering_actor:{login:'github-actions[bot]'}});
+  const rows=analyzeCoreWaveGaps(pr(),[after,repeat],{},[],{runHistoryComplete:true});
+  assert.equal(rows.gaps[0].trigger_event,'same_head_pull_request_trigger');
+  assert.equal(rows.gaps[0].trigger_confidence,'trigger_actor_only');
+  assert.equal(rows.gaps[0].reason_confirmed,false);
+  const formatted=formatSummary({cohort:{created_utc_start:at('10:00'),created_utc_end:at('13:00'),inspected_prs:1},
+    sampled_prs:1,top3:[],rows:[{pr:99,core_waves:rows}],categories:[],partial:true});
+  assert.match(formatted,/Each subsequent Core wave/);
+  assert.match(formatted,/github-actions\[bot\]/);
 });

@@ -55,8 +55,14 @@ jobs:
         with: {persist-credentials: false}
       - uses: actions/setup-node@v4
         with: {node-version: 22}
+      - name: Stage checksum-verified FFmpeg before npm lifecycle
+        uses: ./.github/actions/ci-ffmpeg-static
       - run: npm ci --no-audit --no-fund
-      - name: Square checkout syntax, TypeScript and focused lint
+      - name: Materialize checksum-verified FFmpeg for package runtime
+        uses: ./.github/actions/ci-ffmpeg-static
+        with:
+          stage: materialize
+      - name: Square checkout syntax and focused lint (Core owns full TypeScript)
         run: |
           node --check lib/commerce/square-payment-links.js
           node --check lib/commerce/square-gateway.js
@@ -66,7 +72,9 @@ jobs:
           node --check app/api/payments/square/webhook/route.js
           node --check lib/commerce/talisman-checkout.js
           node --check app/api/payments/talismans/checkout/route.js
-          npx tsc --noEmit --pretty false
+          # Required exact-HEAD Core already performs full-app TypeScript checking.
+          # Never repeat it here: one unrelated TS error produced two RED jobs
+          # while all isolated payment, provider and PostgreSQL/RLS tests stayed protected.
           npx eslint lib/commerce/square-payment-links.js lib/commerce/square-gateway.js lib/commerce/square-cart-service.js app/api/payments/square components/commerce/personal-cart.tsx app/'[locale]'/cart/page.tsx
       - name: Active PayPal.Me EUR manual fallback, kill switch and no fake paid status
         run: node --test tests/paypal-personal-payments.test.mjs
@@ -74,6 +82,8 @@ jobs:
         run: node --test tests/service-square-api-cart.test.mjs
       - name: Talisman fixed-price provider checkout gate and Google account return
         run: node --test tests/talisman-google-checkout.test.mjs
+      - name: Video XP RLS, grants and terminal ledger on fresh PostgreSQL 17
+        run: node --test tests/video-credits-postgres.integration.mjs
       - name: Square isolated payment-ledger FORCE RLS on PostgreSQL 17
         run: node --test tests/square-ledger-isolated.integration.mjs
       - name: ZEN checkout signatures, IPN, merchant readback and legacy Stripe regression

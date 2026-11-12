@@ -262,3 +262,22 @@ test('NPS: only official public-domain archives and independently filmed videos'
  assert.throws(()=>validateVaultAsset({...a,noRecognizablePeople:false,
   subjectReleaseStatus:'unknown'}),/RELEASE_MISSING/);
 });
+
+test('free nature CC0 can enter existing private vault contract only with exact individual rights and curator signoff',()=>{
+ const fn={
+  ...base,sourceProvider:'free_nature_stock',sourceAssetId:'red-sunset',
+  originalSourcePage:'https://freenaturestock.com/video/red-sunset/',
+  creator:'Free Nature Stock',licenseId:'cc0_1_0',
+  licenseUrl:'https://creativecommons.org/publicdomain/zero/1.0/',
+  licenseEvidence:'Official source page and CC0 rights checked for this specific video.',
+  exactClipLicenseConfirmed:true,identifiableSubjectsCleared:true,
+  attributionText:'',deliveryPolicy:'client_raw_allowed',rawClientDeliveryApproved:true,
+ };
+ assert.equal(validateVaultAsset(fn).sourceProvider,'free_nature_stock');
+ assert.throws(()=>validateVaultAsset({...fn,ownerApproved:false}),/HUMAN_CURATOR/);
+ assert.throws(()=>validateVaultAsset({...fn,noRecognizablePeople:false,
+  subjectReleaseStatus:'unknown'}),/RELEASE/);
+ assert.throws(()=>validateVaultAsset({...fn,originalSourcePage:'https://freenaturestock.com/videos/'}),/RIGHTS_EVIDENCE_MISSING|STOCK_UNTRUSTED_SOURCE_PAGE/);
+ assert.throws(()=>validateVaultAsset({...fn,licenseId:'cc_by_4_0'}),/STOCK_LICENSE/);
+ assert.throws(()=>validateVaultAsset({...fn,sourceProvider:'coverr',originalSourcePage:'https://coverr.co/videos/sample'}),/RIGHTS_EVIDENCE_MISSING|STOCK_LICENSE/);
+});

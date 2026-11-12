@@ -89,5 +89,5 @@ test("UI controls are wired to the real Canvas render path, never only CSS",()=>
   assert.match(editor,/data-video-timeline-split-caption/);
   assert.match(editor,/data-video-timeline-duplicate-caption/);
   assert.match(styles,/\.timelineViewport\{/);
-  assert.match(studio,/paintStageCaptionOverlay\(ctx,frameTime,cinematicPlan,timelineTextClips\)/);
+  assert.match(studio,/paintSingleVideoTextOverlay\(ctx,frameTime,singleTextSource,affirmationLines,affirmations,duration,cinematicPlan,timelineTextClips\)/);
 });

@@ -11,6 +11,16 @@ export interface VerifiedCategorySource {
  readonly height:number;
  readonly durationSeconds:number;
  readonly aspectPhysicallyVerified:true;
+ // Trusted identity/geometry above; editorial metadata below is optional.
+ // This preserves source-provenance fields after the runtime manifest lookup
+ // WITHOUT claiming that a textual tag is visually verified in the frame.
+ readonly tags?:readonly string[];
+ readonly motifs?:readonly string[];
+ readonly categories?:readonly string[];
+ readonly label?:Readonly<{en?:string;ru?:string;es?:string}>;
+ readonly description?:Readonly<{en?:string;ru?:string;es?:string}>;
+ readonly originMasterKeys?:readonly string[];
+ readonly perceptualGroupId?:string|null;
 }
 export interface CategoryStoryboardStage {
  readonly stage:number;

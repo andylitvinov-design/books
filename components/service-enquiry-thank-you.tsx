@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { SiteVideoPlayer } from "@/components/site-video-player";
 import { parseEnquiryReceipt, RECEIPT_SESSION_KEY } from "@/lib/practitioners/enquiry-receipt.mjs";
+import { whatsappEnquiryUrl, telegramEnquiryUrlFromWhatsApp } from "@/lib/whatsapp-enquiry";
 import type { PublishedSiteVideo } from "@/lib/site-videos/model";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./service-enquiry-thank-you.module.css";
@@ -25,6 +26,8 @@ const copy = {
     mediaSub: "You can watch this short introduction while you wait for a reply.",
     more: "Explore services",
     contact: "Contact us",
+    chat: "Optional: continue in chat",
+    chatRequest: "Following up on a submitted enquiry",
     pending: "Checking your request confirmation…",
     unavailableTitle: "Open this page after sending a request",
     unavailable: "No recent confirmed request is available in this browser tab. Please submit the service or course form first. Opening this page alone does not register an enquiry.",
@@ -42,6 +45,8 @@ const copy = {
     mediaSub: "Можно посмотреть короткое знакомство, пока вы ожидаете ответа.",
     more: "Посмотреть услуги",
     contact: "Написать нам",
+    chat: "Продолжить в чате (необязательно)",
+    chatRequest: "Уточнить ранее отправленную заявку",
     pending: "Проверяем подтверждение заявки…",
     unavailableTitle: "Откройте страницу после отправки заявки",
     unavailable: "В этой вкладке нет недавнего подтверждения. Сначала заполните форму на странице услуги или курса. Сам просмотр страницы не создаёт заявку.",
@@ -59,6 +64,8 @@ const copy = {
     mediaSub: "Puedes ver esta breve presentación mientras esperas su respuesta.",
     more: "Ver servicios",
     contact: "Contactarnos",
+    chat: "Continuar por chat (opcional)",
+    chatRequest: "Consultar una solicitud ya enviada",
     pending: "Comprobando la confirmación…",
     unavailableTitle: "Abre esta página después de enviar tu solicitud",
     unavailable: "No hay una confirmación reciente en esta pestaña. Primero envía el formulario de servicio o curso. Visitar esta página no crea una solicitud.",
@@ -84,6 +91,14 @@ export function ServiceEnquiryThankYou({
   }, []);
 
   const confirmed = /^HH-[A-F0-9]{12}$/.test(receipt);
+  // Only the short-lived, opaque saved reference travels to optional chat.
+  // It identifies the selected enquiry to the owner without revealing a
+  // course answer, topic, email, phone or client identity in a messenger URL.
+  const whatsapp = whatsappEnquiryUrl({
+    locale, service: "Holistic House",
+    request: c.chatRequest + (confirmed ? " · " + receipt : ""),
+  });
+  const telegram = telegramEnquiryUrlFromWhatsApp(whatsapp);
   return (
     <main className={styles.page}>
       <PublicSiteHeader locale={locale} />
@@ -134,7 +149,11 @@ export function ServiceEnquiryThankYou({
         )}
         <nav className={styles.actions} aria-label={c.more}>
           <Link href={"/" + locale + "/services"} className={styles.primary}>{confirmed ? c.more : c.back}<ArrowRight size={18} aria-hidden="true" /></Link>
-          {confirmed && <Link href={"/" + locale + "/contact"} className={styles.secondary}>{c.contact}</Link>}
+          {confirmed && <>
+            <a href={whatsapp} data-contact-channel="whatsapp" className={styles.secondary} target="_blank" rel="noopener noreferrer" aria-label={c.chat + ": WhatsApp"}>WhatsApp</a>
+            <a href={telegram} data-contact-channel="telegram" className={styles.secondary} target="_blank" rel="noopener noreferrer" aria-label={c.chat + ": Telegram"}>Telegram</a>
+            <Link href={"/" + locale + "/contact"} className={styles.secondary}>{c.contact}</Link>
+          </>}
         </nav>
       </div>
     </main>

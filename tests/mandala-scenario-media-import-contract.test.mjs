@@ -6,10 +6,10 @@ import {SUPPORTED_EXTRA_THEMES,validateFreeSceneBrief,STOCK_POLICIES} from "../l
 const read=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 test("both live scenario catalogs remain audited, not just the extra JSON list",()=>{
  const full=loadActiveFilmPresets();
- assert.equal(full.presets.length,48);
+ assert.equal(full.presets.length,49);
  assert.equal(full.inlineCount,24);
- assert.equal(full.additionalCount,24);
- assert.equal(new Set(full.presets.map(p=>p.id)).size,48);
+ assert.equal(full.additionalCount,25);
+ assert.equal(new Set(full.presets.map(p=>p.id)).size,49);
  assert.ok(SUPPORTED_EXTRA_THEMES.includes("money"));
 });
 test("importer accepts one genuine five-second source and never substitutes still frames",()=>{

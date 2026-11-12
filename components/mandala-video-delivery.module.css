@@ -30,3 +30,7 @@
  .choices .device{grid-column:1/-1}
  .root button,.root a{font-size:13px;overflow-wrap:anywhere}
 }
+
+.choices .savePrivate{background:#eaf6ed;border-color:#92cbb2;color:#125743}
+.root [data-video-saved-library-link]{justify-self:start;color:#0a6d52;background:#e6f5e9;font-weight:800}
+@media(max-width:480px){.choices .savePrivate{grid-column:1/-1}}

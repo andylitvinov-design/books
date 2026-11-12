@@ -100,3 +100,26 @@
 .cardPermalink { display: inline-block; align-self: start; margin: 0.35rem 0 0.55rem; color: #274f69; font-size: 0.86rem; text-decoration: underline; text-underline-offset: 3px; }
 .cardPermalink:hover { color: #172f45; }
 .cardPermalink:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; border-radius: 2px; }
+
+/* Warm, compact bridge between independent manuals and original attunement cards. */
+.librarySwitch {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 9px;
+  padding: 10px 13px; margin: 14px 0 0;
+  border: 1px solid var(--hh-light-border, #e9dfd1);
+  border-radius: 18px; background: var(--hh-light-surface, #fffcf7);
+}
+.librarySwitchLabel { font-size: 13px; font-weight: 700; color: #5d6a71; padding: 0 8px; }
+.librarySwitchLink, .librarySwitchCurrent {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 44px; padding: 9px 15px; border-radius: 14px;
+  font-size: 14px; font-weight: 750; line-height: 1.4;
+}
+.librarySwitchLink { color: #067a67; text-decoration: none; border: 1px solid #a2c5b9; background: #fff; }
+.librarySwitchLink:hover { background: #e6f6f1; }
+.librarySwitchCurrent { background: #e6f6f1; color: #143d3a; border: 1px solid #81bdae; }
+.librarySwitchLink:focus-visible { outline: 3px solid #176e6e; outline-offset: 3px; }
+@media (max-width: 520px) {
+  .librarySwitch { margin-top: 10px; padding: 10px; gap: 8px; }
+  .librarySwitchLabel { flex: 0 0 100%; }
+  .librarySwitchLink, .librarySwitchCurrent { flex: 1 1 170px; text-align: center; }
+}

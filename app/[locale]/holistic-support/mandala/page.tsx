@@ -15,6 +15,7 @@ import { freeMeditationVideos } from "@/data/academy/holistic-support-meditation
 import { isPublicLocale } from "@/data/academy/catalog";
 import { metadataBaseFor } from "@/data/site-metadata";
 import styles from "@/components/mandala-meditation.module.css";
+import "@/components/mandala-video-goal-refresh.css";
 
 type Props = { params: Promise<{ locale: string }>; searchParams?: Promise<{ pro?: string; master?: string; service?: string; mode?: string }> };
 
@@ -85,6 +86,9 @@ export default async function MandalaMeditationPage({ params, searchParams }: Pr
         </Link>
         <Link href={"/"+locale+"/holistic-support/mandala?mode=photo"} prefetch={false} aria-current={photoMode ? "page" : undefined}>
           {locale === "ru" ? "Фотомандалы" : locale === "es" ? "Mandalas de fotos" : "Photo mandalas"}
+        </Link>
+        <Link href={"/"+locale+"/holistic-support/voice-message"} prefetch={false}>
+          {locale === "ru" ? "Голос близкого" : locale === "es" ? "Voz cercana" : "Loved voice"}
         </Link>
       </nav>
       {photoMode ? <MentalicaPhotoMandala locale={locale} /> :

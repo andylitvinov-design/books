@@ -4,6 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
+import {MandatoryMessengerActions} from "@/components/mandatory-messenger-actions";
+import {websiteMessengerOnlyUi} from "@/lib/crm/website-messenger-only.mjs";
 import { EnquiryAttributionChoice } from "@/components/enquiry-attribution-choice";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { TAOIST_TALISMANS } from "@/lib/practitioners/taoist-talismans";
@@ -482,6 +484,14 @@ export function TaoistTalismanCart({ locale, inline = false }: { locale: PublicL
             <a href={manualTransferLink("zen")} target="_blank" rel="noopener noreferrer">{t.manualZen} →</a>
           </div>
         </details>
+        {websiteMessengerOnlyUi()? <MandatoryMessengerActions locale={locale}
+          label={t.quoteButton} whatsappUrl={whatsappEnquiryUrl({locale,
+            service:"Holistic House · Daoist Fu talismans",
+            request:locale==="ru"?"Прошу уточнить стоимость выбранных талисманов."
+              :locale==="es"?"Quisiera conocer el precio de los talismanes elegidos."
+              :"Please quote the selected talismans.",
+            option:idsKey,pagePath:"/"+locale+"/talismans/cart"})}/>
+        : <>
         {!profile && <div className={styles.guestBlock}>
           <p className={styles.stepLabel}>{t.fallback}</p>
           <label className={styles.oneContact}>{t.contactLabel}
@@ -515,7 +525,12 @@ export function TaoistTalismanCart({ locale, inline = false }: { locale: PublicL
             </button>
           </div>}
         </form>
-        <p className={styles.privacy}>{t.privacy}</p>
+        </>}
+        <p className={styles.privacy}>{websiteMessengerOnlyUi()
+          ? (locale==="ru"?"Нажмите «Отправить» в мессенджере. До подтверждения переписки заявка в CRM не создана."
+            :locale==="es"?"Pulsa Enviar en la aplicación. No se crea una solicitud de CRM hasta verificar el chat."
+            :"Press Send in the messenger. No CRM request is created until the conversation is verified.")
+          :t.privacy}</p>
       </>}
   </section>;
 }

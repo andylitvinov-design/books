@@ -51,7 +51,11 @@ test('automatic video delivery is explicit opt-in, owner scoped and private',()=
  assert.match(migration,/hh_app_backend/)
  assert.match(upload,/action:"automatic",enabled,consent:true/)
  assert.match(upload,/consent:!automatic/)
- assert.match(upload,/uploadToSignedUrl/)
+ assert.match(upload,/savePrivateMp4/);
+ const uploader=source('lib/mandala/signed-private-video-upload.mjs')
+ assert.match(uploader,/uploadToSignedUrl/)
+ assert.match(uploader,/uploadSignedPrivateVideoChunks/)
+ assert.match(uploader,/request\("personal-videos"/)
  assert.match(upload,/navigator.share/)
  assert.match(upload,/data-video-delivery-status/)
  const archive=source('components/app/my-personal-videos.jsx')
@@ -123,4 +127,19 @@ test('private library has owner-controlled Telegram consent, revocation and save
  assert.match(backend,/if\(!stillAllowed\)/)
  assert.match(route,/\(!body.enabled\|\|body.consent===true\)/)
  assert.doesNotMatch(panel,/HH_CRM_MSG_WHATSAPP/)
+});
+
+
+test('future-video opt-in cannot upload the current MP4 silently and iPhone Share failures preserve local save',()=>{
+ const ui=source('components/mandala-video-delivery.tsx')
+ const studio=source('components/mandala-free-video-studio.tsx')
+ assert.match(ui,/const automaticAtResultLoad=useRef\(false\)/)
+ assert.match(ui,/automaticAtResultLoad\.current=next\.telegram\.automatic===true/)
+ assert.match(ui,/!automaticAtResultLoad\.current\|\|!state\?\.telegram\.automatic/)
+ assert.match(ui,/automaticAtResultLoad\.current=false/)
+ assert.match(ui,/async function changeAutomatic\(enabled:boolean\)/)
+ assert.match(ui,/async function shareFromDevice\(\)\{\s*try\{/)
+ assert.match(ui,/typeof navigator\.canShare==="function"/)
+ assert.match(ui,/setNotice\(t\.noShare\)/)
+ assert.match(studio,/key=\{result\.url\}/)
 });

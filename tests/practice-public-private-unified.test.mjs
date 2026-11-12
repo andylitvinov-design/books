@@ -73,7 +73,8 @@ test('public showcase OAuth returns to reviewed dashboard without automatic priv
 
 test('cancelled Google sign-in returns to approved guest public screen',()=>{
  assert.match(server,/failedPracticeDestination = continueTo === 'practice-preview'/)
- assert.match(server,/\$\{origin\}\/\$\{locale\}\/practice` : destination/)
+ assert.match(server,/\$\{origin\}\/\$\{locale\}\/practice`/)
+ assert.match(server,/continueTo === 'my-coach-mira' \? `\$\{origin\}\/\$\{locale\}\/my-coach` : destination/)
  assert.equal((server.match(/new URL\(failedPracticeDestination\)/g)||[]).length,2)
  assert.match(showcase,/t\.authCancelled/)
 })
@@ -82,7 +83,7 @@ test('private panels shed old Account chrome and retain actual protected compone
  assert.match(account,/const practiceInner = page === 'practice'/)
  assert.match(account,/hh-app--practice-inner/)
  assert.match(account,/!documentReader && !practiceInner && <header className="hh-header"/)
- assert.match(account,/!documentReader && !practiceInner && page !== 'runs' && \(/)
+ assert.match(account,/!documentReader && !practiceInner && page !== 'runs' && page !== 'settings' && \(/)
  assert.match(account,/!documentReader && !practiceInner && page !== 'portrait'/)
  assert.match(account,/accountId=\{data\.account\.id\} key=\{data\.account\.id\} showcaseEntry/)
  assert.match(editor,/showcaseEntry=false/)

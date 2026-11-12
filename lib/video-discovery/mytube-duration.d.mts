@@ -1,6 +1,14 @@
-export type MyTubeDurationMode = "all" | "shorts" | "study";
-export declare const MYTUBE_STUDY_MIN_SECONDS: 600;
-export declare function matchesMyTubeDuration(verifiedSeconds: number | null | undefined,mode?:MyTubeDurationMode):boolean;
-export declare function myTubeDurationCounts(items?:ReadonlyArray<{durationVerifiedSeconds?:number|null}>):{
- all:number;shorts:number;study:number;unknown:number
-};
+export type MyTubeFormatMode = "all" | "shorts" | "courses" | "study";
+export type MyTubeEditorialFormat = "shorts" | "study";
+export interface MyTubeClassifiableVideo {
+  mytubeFormat?: MyTubeEditorialFormat | null;
+  contentType?: string | null;
+  sourceGroup?: string;
+  seriesId?: string;
+  seriesOrder?: number;
+  title?: string;
+  description?: string;
+}
+export declare function classifyMyTubeFormat(video?: MyTubeClassifiableVideo | null): MyTubeEditorialFormat;
+export declare function matchesMyTubeFormat(video: MyTubeClassifiableVideo, mode?: MyTubeFormatMode): boolean;
+export declare function myTubeFormatCounts(items?: ReadonlyArray<MyTubeClassifiableVideo>): {all: number; shorts: number; study: number};

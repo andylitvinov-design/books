@@ -31,6 +31,7 @@ jobs:
       docs_only: ${{ steps.diff.outputs.docs_only }}
       ci_only: ${{ steps.diff.outputs.ci_only }}
       route: ${{ steps.fast.outputs.route }}
+      lint_failed: ${{ steps.changed_lint.outcome == 'failure' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -105,6 +106,9 @@ jobs:
           set -euo pipefail
           docs_only=false
           ci_only=false
+          ci_touched=false
+          preflight_touched=false
+          repair_touched=false
           if [[ "$EVENT_NAME" == pull_request && -n "$BASE_SHA" ]]; then
             # pull_request checkout uses a synthetic merge commit. Production
             # may advance after the PR event base SHA was recorded. Compare
@@ -133,6 +137,25 @@ jobs:
             while IFS= read -r -d '' f; do
               [[ -z "$f" ]] && continue
               count=$((count + 1))
+              # CI contract suites are required when their code, manifests or
+              # dependencies change, even in a mixed application + CI PR.
+              # Ordinary product changes still execute their real lint, type,
+              # build, privacy and applicable specialist checks.
+              case "$f" in
+                .github/workflows/*|scripts/ci-*|scripts/vercel-scenario-music-cache.mjs|scripts/generate-soft-ocean-melody.mjs|lib/ci/*|tests/ci-*|tests/pr-fast-lane.test.mjs|tests/pr-sweep-guard.test.mjs|scripts/pr-sweep-guard.mjs|docs/operations/CI_RELEASE_POLICY.md|package.json|package-lock.json|next.config.ts|tsconfig.json)
+                  ci_touched=true ;;
+              esac
+              # Scope local CI contracts by their actual implementation.
+              # Cross-cutting fast-lane and Specialist policy suites still
+              # run for ANY CI workflow change (ci_touched).
+              case "$f" in
+                scripts/ci-source-preflight.mjs|tests/ci-source-preflight.test.mjs|scripts/vercel-scenario-music-cache.mjs|tests/ci-vercel-scenario-music-cache.test.mjs|scripts/generate-soft-ocean-melody.mjs|scripts/generate-scenario-melodies.mjs|.github/workflows/hh-pr-core-release.yml)
+                  preflight_touched=true ;;
+              esac
+              case "$f" in
+                scripts/ci-deterministic-eslint-repair.mjs|tests/ci-deterministic-eslint-repair.test.mjs|.github/workflows/hh-pr-core-release.yml|.github/workflows/hh-actionlint.yml)
+                  repair_touched=true ;;
+              esac
               case "$f" in
                 docs/*.md|README.md) ;;
                 *) docs_only=false ;;
@@ -142,6 +165,7 @@ jobs:
               case "$f" in
                   .github/workflows/*.yml|\
                   .github/workflows/*.yaml|\
+                  README.PR-LOSS-TELEMETRY.md|\
                   docs/operations/PR_FAST_LANE_20261029.md|\
                   lib/ci/production-base-impact.mjs|\
                   lib/ci/specialist-aggregate.mjs|\
@@ -188,9 +212,14 @@ jobs:
             done < /tmp/hh-pr-changed-files.z
             if [[ "$count" -eq 0 ]]; then docs_only=false; ci_only=false; fi
           fi
-          echo "docs_only=$docs_only" >> "$GITHUB_OUTPUT"
-          echo "ci_only=$ci_only" >> "$GITHUB_OUTPUT"
-          echo "Docs-only: $docs_only; CI-policy-only: $ci_only" >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "docs_only=$docs_only"
+            echo "ci_only=$ci_only"
+            echo "ci_touched=$ci_touched"
+            echo "preflight_touched=$preflight_touched"
+            echo "repair_touched=$repair_touched"
+          } >> "$GITHUB_OUTPUT"
+          echo "Docs-only: $docs_only; CI-policy-only: $ci_only; CI-touched: $ci_touched; preflight-contracts: $preflight_touched; repair-contracts: $repair_touched" >> "$GITHUB_STEP_SUMMARY"
       - name: Route exact image and proven public JSX changes without Next build
         id: fast
         if: github.event_name == 'pull_request'
@@ -251,12 +280,73 @@ jobs:
         if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') && steps.diff.outputs.ci_only != 'true' }}
         with:
           stage: materialize
-      # When full Mandala browser QA is advisory, Core retains a mandatory
-      # bounded, exact-tested-merge source gate for narration/privacy and codecs.
-      # The Specialist aggregator checks this trusted marker on BASE before
-      # treating Mandala's expensive independent workflow as diagnostic.
+      # The exact same six media/voice contracts also belong to the BASE-trusted Mandala
+      # focused-unit suite. Run them here only when that Specialist workflow does NOT
+      # own this exact diff. Use the shared BASE+HEAD path-filter implementation; never
+      # mirror its globs or trust only candidate workflow edits.
+      - name: Resolve BASE-trusted Mandala Specialist owner for overlapping fast contracts
+        id: mandala_owner
+        if: github.event_name == 'pull_request' && steps.diff.outputs.docs_only != 'true' && steps.diff.outputs.ci_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT'
+        env:
+          HH_EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import { execFileSync } from 'node:child_process';
+          import { readFileSync, writeFileSync, appendFileSync } from 'node:fs';
+          import { resolve } from 'node:path';
+          import { pathToFileURL } from 'node:url';
+
+          const workflowPath = '.github/workflows/holistic-support-mandala.yml';
+          const baseSha = execFileSync('git', ['rev-parse', 'HEAD^1'], { encoding: 'utf8' }).trim();
+          const testedHead = execFileSync('git', ['rev-parse', 'HEAD^2'], { encoding: 'utf8' }).trim();
+          if (!/^[0-9a-f]{40}$/.test(baseSha) ||
+              !/^[0-9a-f]{40}$/.test(testedHead) ||
+              testedHead !== process.env.HH_EVENT_HEAD_SHA) {
+            throw new Error('MANDALA_OWNER_ROUTE_UNVERIFIED_HEAD');
+          }
+
+          const changed = execFileSync(
+            'git',
+            ['diff', '--no-renames', '--name-only', '-z', baseSha, 'HEAD'],
+            { encoding: 'utf8', maxBuffer: 10 * 1024 * 1024 },
+          ).split('\0').filter(Boolean);
+          if (!changed.length || changed.length > 3000) {
+            throw new Error('MANDALA_OWNER_ROUTE_INVALID_DIFF');
+          }
+
+          // Read both workflow versions. Specialist uses this same BASE/HEAD union;
+          // a candidate PR cannot narrow its own required owner.
+          const baseWorkflow = execFileSync(
+            'git', ['show', baseSha + ':' + workflowPath],
+            { encoding: 'utf8', maxBuffer: 2 * 1024 * 1024 },
+          );
+          const headWorkflow = readFileSync(workflowPath, 'utf8');
+          const trustedModule = execFileSync(
+            'git', ['show', baseSha + ':lib/ci/specialist-aggregate.mjs'],
+            { encoding: 'utf8', maxBuffer: 2 * 1024 * 1024 },
+          );
+          const trustedPath = resolve(process.env.RUNNER_TEMP, 'hh-specialist-aggregate-base.mjs');
+          writeFileSync(trustedPath, trustedModule);
+          const { parsePrTrigger, matchesTrigger } = await import(pathToFileURL(trustedPath).href);
+          const baseTrigger = parsePrTrigger(baseWorkflow, workflowPath + ':base');
+          const headTrigger = parsePrTrigger(headWorkflow, workflowPath + ':head');
+          const specialistOwns = [baseTrigger, headTrigger].some(trigger =>
+            matchesTrigger(trigger, changed, 'codex/public-book-library'));
+          appendFileSync(process.env.GITHUB_OUTPUT, 'specialist_owns_mandala=' + String(specialistOwns) + '\n');
+          appendFileSync(
+            process.env.GITHUB_STEP_SUMMARY,
+            'Mandala duplicate-test owner: ' + (specialistOwns ? 'BASE-trusted Specialist' : 'Core fallback') + '\n',
+          );
+          console.log('Mandala overlapping fast contracts delegated to Specialist: ' + specialistOwns);
+          NODE
+
+      # This is a Core fallback only when the BASE/HEAD path router says the
+      # independent Mandala workflow does not own this exact diff. When it does,
+      # that workflow runs the same unit contracts once and Specialist validates it.
       - name: Fast Mandala release contracts (HH_MANDALA_FAST_RELEASE_V1)
-        if: ${{ github.event_name == 'pull_request' && steps.diff.outputs.docs_only != 'true' && steps.diff.outputs.ci_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT' }}
+        if: ${{ github.event_name == 'pull_request' && steps.diff.outputs.docs_only != 'true' && steps.diff.outputs.ci_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT' && steps.mandala_owner.outputs.specialist_owns_mandala != 'true' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -272,14 +362,16 @@ jobs:
             echo 'No Mandala media/voice changes; fast release contracts not applicable' >> "$GITHUB_STEP_SUMMARY"
           fi
       - name: Verify Source Preflight unit contracts
-        if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') }}
-        run: node --test tests/ci-source-preflight.test.mjs
+        if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.preflight_touched == 'true' && steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') }}
+        run: node --test tests/ci-source-preflight.test.mjs tests/ci-vercel-scenario-music-cache.test.mjs
       - name: Source Preflight — syntax and TypeScript before costly Next build
         if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') }}
         id: source_preflight
         shell: bash
         env:
           HH_PREFLIGHT_REPORT: ${{ runner.temp }}/hh-source-preflight.json
+          HH_PREFLIGHT_ROUTE: ${{ steps.fast.outputs.route }}
+          HH_PREFLIGHT_CI_ONLY: ${{ steps.diff.outputs.ci_only }}
         run: |
           set -euo pipefail
           if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
@@ -288,14 +380,16 @@ jobs:
             checked_base="$(git rev-parse HEAD)"
           fi
           args=(--base "$checked_base")
-          # Type-impacting PR files already trigger full next typegen + tsc
-          # through the immutable source-preflight impactsTypes() classifier.
-          # For CSS/data-only PRs, Next production build still does its own
-          # mandatory whole-project typecheck; avoid an earlier duplicate.
-          # Keep explicit full types on non-PR/manual/merge_group and on the
-          # DOCK lane (it omits Next build).
+          # Next's mandatory production build already checks all TypeScript.
+          # CORE and an EXACT media-editor subset of FULL can delegate the
+          # duplicate early tsc. The fail-closed source classifier rejects
+          # auth, payment, consent, provider, config, CI and any mixed paths.
+          # DOCK, manual, merge_group and all other FULL keep standalone tsc;
+          # all existing syntax, specialist and browser checks still execute.
           if [[ "$GITHUB_EVENT_NAME" != pull_request || "${{ steps.fast.outputs.route }}" == DOCK ]]; then
             args+=(--full-types)
+          elif [[ ( "${{ steps.fast.outputs.route }}" == CORE || "${{ steps.fast.outputs.route }}" == FULL ) && "${{ steps.diff.outputs.ci_only }}" != true ]]; then
+            args+=(--defer-types-to-next)
           fi
           node scripts/ci-source-preflight.mjs "${args[@]}"
       - name: Upload Source Preflight root diagnostics on failure
@@ -307,15 +401,16 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
       - name: Assert fast-lane workflow contracts
-        if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') }}
+        if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.ci_touched == 'true' && steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') }}
         run: node --test tests/pr-fast-lane.test.mjs
       - name: Verify deterministic ESLint repair worker contract
-        if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') }}
+        if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.repair_touched == 'true' && steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') }}
         run: node --test tests/ci-deterministic-eslint-repair.test.mjs
       - name: Verify specialist ownership and Messenger isolation on CI-policy changes
-        if: ${{ (github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT')) && (steps.diff.outputs.ci_only == 'true') }}
-        run: node --test tests/ci-workflow-globs.test.mjs tests/workflow-next-route-filters.test.mjs tests/ci-specialist-aggregate.test.mjs
+        if: ${{ (github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT')) && (github.event_name != 'pull_request' || steps.diff.outputs.ci_touched == 'true') }}
+        run: node --test tests/ci-workflow-globs.test.mjs tests/workflow-next-route-filters.test.mjs tests/ci-specialist-aggregate.test.mjs tests/ci-growth-course-core-reuse.test.mjs
       - name: Lint changed JS/TS sources on PR; full lint for manual/merge queue
+        id: changed_lint
         if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') }}
         shell: bash
         env:
@@ -504,7 +599,7 @@ jobs:
   hh-eslint-repair:
     name: hh-eslint-repair
     needs: [scope]
-    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository && failure() && needs.scope.result == 'failure' }}
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository && failure() && needs.scope.result == 'failure' && needs.scope.outputs.lint_failed == 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 18
     concurrency:
@@ -520,7 +615,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 2
-          token: ${{ secrets.HH_REPAIR_PUSH_TOKEN || github.token }}
+          token: ${{ secrets.HH_REPAIR_PUSH_TOKEN || secrets.HH_AUTOMERGE_TOKEN || github.token }}
           persist-credentials: true
       - uses: actions/setup-node@v4
         with:
@@ -530,7 +625,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_TOKEN: ${{ github.token }}
-          HH_REPAIR_PUSH_TOKEN: ${{ secrets.HH_REPAIR_PUSH_TOKEN }}
+          HH_REPAIR_PUSH_TOKEN: ${{ secrets.HH_REPAIR_PUSH_TOKEN || secrets.HH_AUTOMERGE_TOKEN }}
           HH_PR_NUMBER: ${{ github.event.pull_request.number }}
           HH_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HH_HEAD_SHA: ${{ github.event.pull_request.head.sha }}

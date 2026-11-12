@@ -160,3 +160,489 @@
   order:2;flex:none;margin:0 auto
  }
 }
+
+/* Compact Messenger: settings, source, error and verified options live INSIDE the scrollable log.
+   Only composer/actions reserve height; standalone course outline is not mounted. */
+@media(max-width:760px){
+ :global(.hh-messages-page) .root[data-compact]>.thread{
+  flex:1 1 auto;min-height:0;max-height:none;gap:9px;padding:10px;
+  background:#fffdfb;border:1px solid #e9e0d6;border-radius:16px
+ }
+ :global(.hh-messages-page) .root[data-compact] .thread>.compactSettings{
+  flex:none;align-self:flex-start;margin:0 0 2px;padding:0 8px;border-radius:10px;
+  background:#fffaf4;border:1px solid #ede4dc;max-width:100%
+ }
+ :global(.hh-messages-page) .root[data-compact] .thread>.compactSettings>summary{
+  min-height:30px;display:flex;align-items:center;padding:5px 3px;
+  font-size:11px;color:#5d6d64
+ }
+ :global(.hh-messages-page) .root[data-compact] .thread>.compactSettings[open]{align-self:stretch}
+ :global(.hh-messages-page) .root[data-compact] .thread .choices{
+  flex:none;max-height:none;overflow:visible;margin:2px 0 0;
+  border-top:1px solid #ece6df;padding-top:8px
+ }
+ :global(.hh-messages-page) .root[data-compact] .thread .choices h2{font-size:13px;margin:0}
+ :global(.hh-messages-page) .root[data-compact] .thread>.compactDisclosure{
+  flex:none;font-size:11px;line-height:1.4;margin:0;color:#706c64
+ }
+ :global(.hh-messages-page) .root[data-compact]>.form{
+  flex:none;padding:6px 0 0;gap:5px;margin:0;border-top:0;background:transparent
+ }
+ :global(.hh-messages-page) .root[data-compact]>.form textarea{
+  min-height:46px;height:46px;max-height:100px;padding:10px 12px
+ }
+}
+
+/* Four real chat entry actions with descriptive captions; 2×2 even at 320px. */
+.root[data-compact] .startActions{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:100%;margin:6px 0 0
+}
+.root[data-compact] .startActions :is(button,a){
+ display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;
+ min-width:0;min-height:106px;padding:9px 7px;box-sizing:border-box;
+ border:1px solid var(--hh-light-border,#e9dfd1);border-radius:15px;
+ background:var(--hh-light-surface-soft,#f5ecdc);color:var(--hh-light-ink,#143d3a);
+ cursor:pointer;text-align:center;text-decoration:none;overflow-wrap:anywhere
+}
+.root[data-compact] .startActions button:first-child{background:#e7f5ee;border-color:#cde5d8}
+.root[data-compact] .startActions :is(button,a):focus-visible{
+ outline:3px solid var(--hh-light-focus,#176e6e);outline-offset:2px
+}
+.root[data-compact] .startActions button:disabled{opacity:.5;cursor:not-allowed}
+.root[data-compact] .startActions .startIcon{font-size:21px;line-height:1.1}
+.root[data-compact] .startActions strong{font:750 13px/1.23 system-ui,sans-serif}
+.root[data-compact] .startActions small{font:550 11px/1.25 system-ui,sans-serif;color:#67736a}
+/* After a user turn, the existing four entry actions become quiet, single-line
+   suggestions in the chat. Initial welcome keeps its larger, two-column cards;
+   guided video/meditation/test flows continue to own their step-specific buttons. */
+.root[data-compact][data-has-messages="true"] .startActions{
+ display:grid;grid-template-columns:minmax(0,1fr);gap:2px;margin:2px 0 0;
+}
+.root[data-compact][data-has-messages="true"] .startActions :is(button,a){
+ flex-direction:row;justify-content:flex-start;gap:8px;text-align:left;
+ min-height:44px;padding:7px 10px;border:0;border-radius:9px;
+ background:transparent;box-shadow:none;
+}
+.root[data-compact][data-has-messages="true"] .startActions button:first-child{
+ background:transparent;border:0;
+}
+.root[data-compact][data-has-messages="true"] .startActions :is(button,a):hover{
+ background:var(--hh-light-surface-soft,#f5ecdc);
+}
+.root[data-compact][data-has-messages="true"] .startActions .startIcon{
+ flex:0 0 20px;font-size:15px;line-height:1.2;
+}
+.root[data-compact][data-has-messages="true"] .startActions strong{
+ font:600 13px/1.4 system-ui,sans-serif;color:#176e6e;
+}
+.root[data-compact][data-has-messages="true"] .startActions small{display:none}
+
+.root[data-compact] .testLink{
+ display:inline-flex;align-items:center;align-self:flex-start;min-height:44px;
+ border:1px solid #b8d9c9;border-radius:11px;padding:9px 13px;
+ background:#e7f5ee;color:#155a4b;font:700 13px/1.4 system-ui,sans-serif
+}
+.root[data-compact] .testLink:focus-visible{outline:3px solid #168b71;outline-offset:2px}
+@media(max-width:760px){
+ :global(.hh-messages-page) .root[data-compact] .user,
+ :global(.hh-messages-page) .root[data-compact] .assistant{font-size:15px;line-height:1.5}
+ :global(.hh-messages-page) .root[data-compact] .compactDisclosure{margin:2px 0;color:#63766c;font-size:11px}
+ :global(.hh-messages-page) [data-chat-editing="true"] .root[data-compact]>.form{
+  grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:6px
+ }
+ :global(.hh-messages-page) [data-chat-editing="true"] .root[data-compact]>.form .actions{
+  display:flex;align-items:center;gap:4px;flex-wrap:nowrap
+ }
+ :global(.hh-messages-page) [data-chat-editing="true"] .root[data-compact]>.form .actions button:first-child{display:none}
+}
+@media(max-width:354px){
+ .root[data-compact] .startActions{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+ .root[data-compact] .startActions :is(button,a){min-height:102px;flex-direction:column;padding:8px 4px}
+ .root[data-compact] .startActions strong{font-size:12px;line-height:1.2}
+ .root[data-compact] .startActions small{font-size:10px;line-height:1.2}
+ .root[data-compact] .startActions .startIcon{font-size:19px}
+}
+
+/* Guest discovery belongs to the thread, not to an auth wall. */
+.root[data-compact] .publicVideoActions{display:grid;gap:9px;width:100%;box-sizing:border-box;padding:10px;background:#fffaf2;border:1px solid #e7e1d3;border-radius:14px;flex:none}
+.root[data-compact] .topicChoices{display:grid;grid-template-columns:minmax(0,1fr);gap:7px}
+.root[data-compact] .topicChoices button{min-height:44px;border:1px solid #dcdace;border-radius:12px;background:#fffefa;color:#23453b;font:700 13px/1.3 system-ui,sans-serif;cursor:pointer}
+.root[data-compact] .topicChoices button[aria-pressed="true"]{background:#e3f2e7;border-color:#71af9b;box-shadow:inset 0 0 0 1px #71af9b}
+.root[data-compact] :is(.readyVideoLink,.personalVideoButton){min-height:46px;display:flex;align-items:center;justify-content:center;padding:10px 12px;border-radius:12px;box-sizing:border-box;text-align:center;text-decoration:none;font:750 14px/1.35 system-ui,sans-serif;cursor:pointer}
+.root[data-compact] .readyVideoLink{color:#fff;background:#087d68;border:1px solid #087d68}
+.root[data-compact] .personalVideoButton{color:#1e5244;background:#e5f4e9;border:1px solid #a6d4c2}
+.root[data-compact] .videoAuth{display:grid;gap:9px;padding:10px 0 0;border-top:1px solid #e5dacc}
+.root[data-compact] .videoAuth p{margin:0;color:#5f594e;font:500 13px/1.5 system-ui,sans-serif}
+.root[data-compact] .videoAuth :global([data-hh-messenger-google-login]){min-height:46px;width:100%;border:0;border-radius:12px;background:#087d68;color:#fff;font:750 14px/1.35 system-ui,sans-serif}
+.root[data-compact] .publicVideoActions :is(button,a):focus-visible{outline:3px solid #087d68;outline-offset:3px}
+
+/* Canonical Video Director choices in the existing protected Messenger transcript.
+   The chat remains the scroll owner; keyboard composer and mobile dock stay visible. */
+.root[data-compact] .videoInline{
+  align-self:stretch;display:grid;gap:9px;width:100%;min-width:0;
+  margin:4px 0 10px;color:var(--hh-light-ink,#143d3a)
+}
+.root[data-compact] .videoOptions,
+.root[data-compact] .videoCommands,
+.root[data-compact] .videoEditOptions{
+  display:grid;grid-template-columns:minmax(0,1fr);gap:8px;min-width:0
+}
+.root[data-compact] .videoOptions button,
+.root[data-compact] .videoCommands button,
+.root[data-compact] .videoEditOptions button,
+.root[data-compact] .videoPhraseFilters button{
+  box-sizing:border-box;min-width:0;min-height:44px;padding:10px 9px;
+  border:1px solid #dacfe7;border-radius:13px;background:#f7f0ff;
+  color:#513b72;font:650 13px/1.35 system-ui,sans-serif;
+  text-align:center;overflow-wrap:anywhere;cursor:pointer
+}
+.root[data-compact] .videoOptions button:hover,
+.root[data-compact] .videoEditOptions button:hover{background:#efe4fa}
+.root[data-compact] .videoCommands button{
+  background:#fffaf3;border-color:#e7d8c8;color:#59685c
+}
+.root[data-compact] .videoPhraseFilters{display:grid;gap:7px;min-width:0}
+.root[data-compact] .videoPhraseFilters fieldset{
+  min-width:0;margin:0;padding:8px;border:1px solid #e9dfd1;
+  border-radius:12px;background:#fffcf7
+}
+.root[data-compact] .videoPhraseFilters legend{
+  padding:0 5px;color:#5d6a71;font:650 12px/1.4 system-ui,sans-serif
+}
+.root[data-compact] .videoPhraseFilters fieldset>div{
+  display:grid;grid-template-columns:minmax(0,1fr);gap:6px
+}
+.root[data-compact] .videoPhraseFilters button[aria-pressed="true"]{
+  border-color:#067a67;background:#e6f6f1;color:#143d3a;
+  box-shadow:inset 0 0 0 1px #067a67
+}
+.root[data-compact] .videoReview{
+  display:grid;gap:10px;padding:10px;border:1px solid #e9dfd1;
+  border-radius:15px;background:#fffcf7
+}
+.root[data-compact] .videoReview p{
+  margin:0!important;color:#55635c;font:600 13px/1.45 system-ui,sans-serif
+}
+.root[data-compact] .videoEditDetails{min-width:0}
+.root[data-compact] .videoEditDetails>summary{
+  padding:8px 10px;min-height:42px;box-sizing:border-box;cursor:pointer;
+  color:#52675f;font:650 13px/1.45 system-ui,sans-serif
+}
+.root[data-compact] .videoEditDetails:not([open]) .videoEditOptions{display:none}
+.root[data-compact] .videoEditDetails[open] .videoEditOptions{margin-top:8px}
+.root[data-compact] .videoStudioLink{
+  display:flex;align-items:center;justify-content:center;min-height:52px;
+  padding:11px 14px;border-radius:13px;text-align:center;text-decoration:none;
+  color:white;background:#067a67;font:750 15px/1.35 system-ui,sans-serif
+}
+.root[data-compact] .videoStudioLink:focus-visible{outline:3px solid #176e6e;outline-offset:3px}
+.root[data-compact] .videoInline :is(button,a):focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+.root[data-compact] .videoInline button:disabled{opacity:.55;cursor:not-allowed}
+@media(max-width:354px){
+  .root[data-compact] .videoOptions,
+  .root[data-compact] .videoCommands,
+  .root[data-compact] .videoEditOptions{gap:6px}
+  .root[data-compact] .videoOptions button,
+  .root[data-compact] .videoCommands button,
+  .root[data-compact] .videoEditOptions button{padding:10px 6px;font-size:12px}
+}
+
+.root[data-compact] .videoStudioLink{border:0;cursor:pointer}
+.root[data-compact] .videoDiscoveryTextLink{
+  display:flex;align-items:center;justify-content:center;min-height:44px;
+  color:#176c53;text-decoration:underline;font:650 13px/1.4 system-ui,sans-serif;
+}
+
+/* Canonical four-goal selection before requesting a personal video brief. */
+.root[data-compact] .videoOptions button[aria-pressed="true"]{background:#e6f6f1;border-color:#067a67;box-shadow:inset 0 0 0 1px #067a67;color:#143d3a}
+.root[data-compact] .videoStudioLink:disabled{opacity:.5;cursor:not-allowed}
+
+
+/* Judgment Mind: compact, optional, never a floating prompt. */
+.judgmentChoices {
+  display:flex;flex-direction:column;gap:8px;align-items:stretch;margin:8px 0 10px;
+}
+.judgmentChoices button {
+  min-height:44px;max-width:100%;padding:9px 12px;border:1px solid #b6d6c8;
+  border-radius:12px;background:#eff8f4;color:#194e40;
+  font:600 13px/1.35 system-ui,sans-serif;cursor:pointer;
+}
+.judgmentChoices button[data-hh-judgment-skip] {
+  color:#52685f;background:transparent;border-color:transparent;text-decoration:underline;
+}
+.judgmentChoices button:focus-visible {outline:3px solid #158967;outline-offset:2px}
+.judgmentChoices button:disabled {opacity:.55;cursor:not-allowed}
+.root[data-compact] .judgmentChoices {margin:6px 0;gap:6px}
+@media (max-width:354px) {
+  .judgmentChoices button{font-size:12px;padding:8px 10px}
+}
+
+
+/* Owner-approved iChat: no giant figure, memory button, default audio block or
+   duplicate four-card starter. Real audio and TTS remain user-invoked. */
+.root[data-compact][data-chat-skin="messenger"]{
+  position:relative;display:flex;flex:1;flex-direction:column;gap:5px;
+  min-height:0;max-height:none;height:100%;overflow:hidden;background:#fffcf7
+}
+.root[data-compact][data-chat-skin="messenger"]>.thread{
+  order:1;flex:1 1 0%;min-height:0;max-height:none;
+  display:flex;flex-direction:column;gap:10px;
+  padding:7px 7px 12px;border:0;border-radius:0;
+  background:transparent;overflow-y:auto;overflow-x:hidden;
+  overscroll-behavior:contain;-webkit-overflow-scrolling:touch
+}
+/* Keep each message at its full natural height even with the iOS keyboard open.
+   The transcript scrolls; chat bubbles and options must not shrink or clip. */
+.root[data-compact][data-chat-skin="messenger"]>.thread>*{
+  flex-shrink:0
+}
+.root[data-compact][data-chat-skin="messenger"] .messageWithAvatar{
+  display:flex;align-items:flex-start;align-self:flex-start;gap:8px;
+  min-width:0;max-width:100%
+}
+.root[data-compact][data-chat-skin="messenger"] .messageWithAvatar p{
+  margin:0!important;max-width:calc(100% - 49px)
+}
+.root[data-compact][data-chat-skin="messenger"] .messagePortrait{
+  flex:none;width:37px;height:37px;object-fit:cover;object-position:80% 39%;
+  border-radius:50%;box-shadow:0 2px 9px #3754451a
+}
+.root[data-compact][data-chat-skin="messenger"] .thread>.user{
+  margin-left:auto!important;background:#efe5f6;color:#38264b
+}
+.root[data-compact][data-chat-skin="messenger"] .thread .assistant{
+  background:#eaf5ee;color:#243e36;font-size:15px;line-height:1.46
+}
+.root[data-compact][data-chat-skin="messenger"]>.form{
+  order:4;flex:none;display:flex;align-items:center;gap:5px;
+  min-height:61px;margin:0 6px 6px;padding:6px;
+  border:1px solid #b8d9cd;border-radius:22px;background:#fff;
+  box-shadow:0 4px 15px #264e3b15
+}
+.root[data-compact][data-chat-skin="messenger"]>.form textarea{
+  flex:1 1 0%;width:auto;min-width:0;max-width:none;
+  height:44px;min-height:44px;max-height:88px;padding:10px 7px;
+  border:0;border-radius:13px;background:#fff;
+  color:#173f36;resize:none;font:500 16px/1.4 system-ui,sans-serif
+}
+.root[data-compact][data-chat-skin="messenger"]>.form .actions{
+  flex:none;display:flex;align-items:center;justify-content:flex-end;
+  gap:3px;margin:0;flex-wrap:nowrap
+}
+.root[data-compact][data-chat-skin="messenger"]>.form .actions>button,
+.root[data-compact][data-chat-skin="messenger"]>.form .actions>.composerMore>summary{
+  box-sizing:border-box;display:grid;place-items:center;
+  width:40px;height:44px;min-width:40px;min-height:44px;padding:5px;
+  border:1px solid #e5eee7;border-radius:15px;background:#fff;
+  color:#166b5b;cursor:pointer
+}
+.root[data-compact][data-chat-skin="messenger"]>.form .actions button[type="submit"]{
+  width:44px;min-width:44px;height:44px;min-height:44px;padding:5px;
+  border:1px solid #0b9079;border-radius:50%;
+  background:linear-gradient(120deg,#27b9a8,#088c72);color:#fff;
+  box-shadow:0 3px 12px #14876c25
+}
+.root[data-compact][data-chat-skin="messenger"]>.form .actions button:disabled{
+  opacity:.55;cursor:not-allowed
+}
+.root[data-compact][data-chat-skin="messenger"] .recorderToggle[aria-pressed="true"]{
+  border-color:#7bb8a1;background:#e1f6e9
+}
+.root[data-compact][data-chat-skin="messenger"] .composerMore{
+  position:relative;flex:none;min-width:40px;margin:0
+}
+.root[data-compact][data-chat-skin="messenger"] .composerMore summary{
+  list-style:none;cursor:pointer
+}
+.root[data-compact][data-chat-skin="messenger"] .composerMore summary::-webkit-details-marker{display:none}
+.root[data-compact][data-chat-skin="messenger"] .composerMenu{
+  position:absolute;right:0;bottom:calc(100% + 9px);z-index:15;
+  display:grid;gap:6px;width:min(230px,calc(100vw - 38px));
+  padding:10px;border:1px solid #e6dfd5;border-radius:16px;
+  background:#fffcf7;box-shadow:0 9px 22px #26382d31
+}
+.root[data-compact][data-chat-skin="messenger"] .composerMenu :is(label,button){
+  position:relative;box-sizing:border-box;display:flex;align-items:center;
+  justify-content:flex-start;gap:10px;min-height:44px;width:100%;
+  padding:9px 11px;margin:0;border:1px solid #e6e2d9;border-radius:11px;
+  background:#fff;color:#1b6050;font:700 13px/1.3 system-ui,sans-serif;
+  cursor:pointer
+}
+.root[data-compact][data-chat-skin="messenger"] .composerMenu label>svg{flex:none}
+.root[data-compact][data-chat-skin="messenger"] .composerMenu :is(button,label):focus-within{
+  outline:3px solid #176e6e;outline-offset:1px
+}
+.root[data-compact][data-chat-skin="messenger"]>.videoReview{
+  order:3;flex:none;max-height:30dvh;overflow-y:auto
+}
+@media(max-width:760px){
+ :global(.hh-messages-page) .root[data-compact][data-chat-skin="messenger"]>.thread{
+   min-height:0;max-height:none;flex:1 1 0%;padding:5px 6px 9px
+ }
+ :global(.hh-messages-page) .root[data-compact][data-chat-skin="messenger"]>.form{
+   display:flex;grid-template-columns:none;flex:none;align-items:center;
+   margin:0 3px 5px;padding:5px;border-top:1px solid #b8d9cd
+ }
+ :global(.hh-messages-page) .root[data-compact][data-chat-skin="messenger"]>.form textarea{
+   height:44px;min-height:44px;max-height:88px;padding:8px 5px;font-size:16px
+ }
+ :global(.hh-messages-page) [data-chat-editing="true"] .root[data-compact][data-chat-skin="messenger"]>.form .actions>button:first-child{
+   display:grid
+ }
+}
+@media(max-width:355px){
+ .root[data-compact][data-chat-skin="messenger"]>.form{margin-inline:0;gap:2px;padding:4px}
+ .root[data-compact][data-chat-skin="messenger"]>.form .actions{gap:2px}
+ .root[data-compact][data-chat-skin="messenger"]>.form .actions>button,
+ .root[data-compact][data-chat-skin="messenger"]>.form .actions>.composerMore>summary{
+  width:36px;min-width:36px;height:44px;border-radius:12px
+ }
+ .root[data-compact][data-chat-skin="messenger"]>.form .actions button[type="submit"]{
+  width:42px;min-width:42px;height:44px
+ }
+}
+@media(prefers-reduced-motion:reduce){
+ .root[data-chat-skin="messenger"] :is(.thread,.form){scroll-behavior:auto}
+}
+
+/* Approved compact Messenger recommendations: one-screen question, answer and
+   three media cards. Preserve real links, private feedback and 44px actions. */
+.root[data-compact][data-chat-skin="messenger"] .thread .choices{
+  display:grid;gap:7px;margin:1px 0 0;padding:7px 1px 2px;min-width:0;
+  border-top:1px solid #e3ebe3
+}
+.root[data-compact][data-chat-skin="messenger"] .thread .choices h2{
+  display:flex;gap:7px;align-items:center;margin:0;color:#124a3b;
+  font:750 14px/1.3 system-ui,sans-serif
+}
+.root[data-compact][data-chat-skin="messenger"] .thread .choices h2:before{
+  content:"✦";font-size:15px;color:#7fae8c
+}
+.root[data-compact][data-chat-skin="messenger"] .offerList{
+  display:grid;gap:7px;min-width:0
+}
+.root[data-compact][data-chat-skin="messenger"] .thread .offer{
+  box-sizing:border-box;display:grid;grid-template-columns:70px minmax(0,1fr);
+  gap:10px;align-items:center;min-height:84px;margin:0;padding:7px;
+  border:1px solid #e8ddce;border-radius:17px;background:#fffdfa;
+  box-shadow:0 2px 9px #5947350c;min-width:0
+}
+.root[data-compact][data-chat-skin="messenger"] .offerPortrait{
+  display:block;width:70px;height:70px;object-fit:cover;border-radius:12px;
+  background:#ebf1e9;flex:none
+}
+.root[data-compact][data-chat-skin="messenger"] .offerBody{
+  display:flex;flex-direction:column;gap:5px;min-width:0
+}
+.root[data-compact][data-chat-skin="messenger"] .offerTitle{
+  display:flex;flex-direction:column;gap:1px;min-width:0
+}
+.root[data-compact][data-chat-skin="messenger"] .offerTitle strong{
+  overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;
+  font:760 13px/1.25 system-ui,sans-serif;color:#164638;overflow-wrap:anywhere
+}
+.root[data-compact][data-chat-skin="messenger"] .offerTitle small{
+  color:#7a7970;font:550 11px/1.15 system-ui,sans-serif
+}
+.root[data-compact][data-chat-skin="messenger"] .offerFoot{
+  display:flex;flex-wrap:wrap;align-items:center;gap:5px 13px;min-width:0
+}
+.root[data-compact][data-chat-skin="messenger"] .offerOpen{
+  display:inline-flex;align-items:center;box-sizing:border-box;width:auto;min-height:26px;
+  padding:2px 9px;border:0;border-radius:99px;background:#e5f4e9;
+  text-decoration:none;color:#11664d;font:720 12px/1.2 system-ui,sans-serif
+}
+.root[data-compact][data-chat-skin="messenger"] .offerFeedback{
+  min-width:0;color:#66776d
+}
+.root[data-compact][data-chat-skin="messenger"] .offerFeedback>summary{
+  cursor:pointer;min-height:26px;display:inline-flex;align-items:center;
+  color:#687970;font:600 11px/1.2 system-ui,sans-serif
+}
+.root[data-compact][data-chat-skin="messenger"] .offerFeedback .feedbackActions{
+  display:flex;gap:6px;margin:5px 0 0;flex-wrap:wrap
+}
+.root[data-compact][data-chat-skin="messenger"] .offerFeedback .feedbackActions button{
+  min-height:44px;padding:7px 9px;background:#fff9ef;border:1px solid #e8dccb;
+  border-radius:10px;color:#245a48;font:650 11px/1.25 system-ui,sans-serif
+}
+.root[data-compact][data-chat-skin="messenger"] .moreRecommendations,
+.root[data-compact][data-chat-skin="messenger"] .choicesInfo{
+  min-width:0;color:#63766c;font:550 11px/1.3 system-ui,sans-serif
+}
+.root[data-compact][data-chat-skin="messenger"] :is(.moreRecommendations,.choicesInfo)>summary{
+  display:inline-flex;align-items:center;min-height:28px;cursor:pointer;
+  color:#526e61;font:600 11px/1.3 system-ui,sans-serif
+}
+.root[data-compact][data-chat-skin="messenger"] .moreRecommendations .offerList{margin-top:6px}
+.root[data-compact][data-chat-skin="messenger"] .choicesInfo small{
+  display:block;margin:1px 0 3px;font:500 11px/1.35 system-ui,sans-serif
+}
+.root[data-compact][data-chat-skin="messenger"] .thread>.sourceBadge{
+  align-self:flex-start;margin:0;color:#7a8178;font:500 10px/1.2 system-ui,sans-serif
+}
+@media(max-width:355px){
+  .root[data-compact][data-chat-skin="messenger"] .thread .offer{
+    grid-template-columns:54px minmax(0,1fr);gap:7px;min-height:66px;padding:5px
+  }
+  .root[data-compact][data-chat-skin="messenger"] .offerPortrait{width:54px;height:54px;border-radius:9px}
+  .root[data-compact][data-chat-skin="messenger"] .offerTitle strong{font-size:12px}
+  .root[data-compact][data-chat-skin="messenger"] .offerFoot{gap:4px 9px}
+}
+@media(max-width:760px) and (max-height:740px){
+  .root[data-compact][data-chat-skin="messenger"] .thread .offer{
+    grid-template-columns:54px minmax(0,1fr);gap:8px;min-height:66px;padding:5px
+  }
+  .root[data-compact][data-chat-skin="messenger"] .offerPortrait{width:54px;height:54px;border-radius:9px}
+  .root[data-compact][data-chat-skin="messenger"] .thread .choices{gap:5px;padding-top:5px}
+  .root[data-compact][data-chat-skin="messenger"] .offerList{gap:5px}
+}
+
+/* Six first-party project entries: concise, explanatory and touch-friendly. */
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-quick-actions]){display:none}
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-messenger-six-projects]){
+  flex:none;width:100%;margin:2px 0 5px
+}
+.root[data-compact] .projectOptions{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;width:100%;min-width:0;margin:4px 0 10px;align-self:stretch}
+.root[data-compact] .projectOptions button{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:4px;min-width:0;min-height:68px;padding:9px 10px;border:1px solid #d9cde6;border-radius:14px;background:#f4edfd;color:#553d70;font:inherit;text-align:left;overflow-wrap:anywhere;cursor:pointer}
+.root[data-compact] .projectOptions button strong{font:750 13px/1.2 system-ui,sans-serif;color:#553d70}
+.root[data-compact] .projectOptions button small{font:550 11px/1.28 system-ui,sans-serif;color:#776b84}
+.root[data-compact] .projectOptions button:hover{background:#ebe1f8}
+.root[data-compact] .projectOptions button:focus-visible{outline:3px solid #148069;outline-offset:2px}
+.root[data-compact] .projectOptions button:disabled{opacity:.55;cursor:not-allowed}
+@media(max-width:355px){.root[data-compact][data-chat-skin="messenger"] :global([data-hh-messenger-six-projects]){margin-top:0}.root[data-compact] .projectOptions{gap:6px}.root[data-compact] .projectOptions button{min-height:64px;padding:8px 7px}.root[data-compact] .projectOptions button strong{font-size:12px}.root[data-compact] .projectOptions button small{font-size:10px;line-height:1.22}}
+
+/* Free on-device alternative answers; original assistant output remains in the thread. */
+.answerActions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:10px 0;padding:10px 12px;border:1px solid #d9cfbf;border-radius:12px;background:#fffdf9;color:#443c32;font:500 13px/1.45 system-ui}
+.answerActions strong,.answerActions small{flex-basis:100%}
+.answerActions button{min-height:42px;padding:8px 12px;border:1px solid #bda98e;border-radius:9px;background:#fff;color:#443a2d;font:650 13px/1.2 system-ui;cursor:pointer}
+.answerActions button:disabled{opacity:.5;cursor:not-allowed}
+.answerActions small{color:#6e6255;font-size:12px}
+.alternativeLabel{display:block;margin-bottom:5px;color:#285e57;font-size:12px}
+
+/* Sessions: recommendations appear only after the goal/outcome exchange.
+   Reuse the same full-width visual card for real, locale-safe service links. */
+.root[data-compact] .projectOptions a{
+  display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:4px;
+  min-width:0;min-height:68px;padding:9px 10px;box-sizing:border-box;
+  border:1px solid #b8d9c9;border-radius:14px;background:#eaf6f0;
+  color:#234b42;text-align:left;text-decoration:none;overflow-wrap:anywhere
+}
+.root[data-compact] .projectOptions a strong{font:750 13px/1.2 system-ui,sans-serif;color:#164d40}
+.root[data-compact] .projectOptions a small{font:550 11px/1.28 system-ui,sans-serif;color:#46675c}
+.root[data-compact] .projectOptions a:hover{background:#ddf1e7}
+.root[data-compact] .projectOptions a:focus-visible{outline:3px solid #148069;outline-offset:2px}
+@media(max-width:355px){
+  .root[data-compact] .projectOptions a{min-height:64px;padding:8px 7px}
+  .root[data-compact] .projectOptions a strong{font-size:12px}
+  .root[data-compact] .projectOptions a small{font-size:10px;line-height:1.22}
+}
+/* All option groups rendered inside an ongoing Messenger dialogue stack
+   full-width, including media, guidance and short follow-up questions. */
+.root[data-compact][data-has-messages="true"] :is(.startActions,.topicChoices,.videoOptions,.videoCommands,.videoEditOptions){
+  grid-template-columns:minmax(0,1fr)
+}
+.root[data-compact] .videoOptions button,
+.root[data-compact] .videoEditOptions button,
+.root[data-compact] .videoCommands button{min-height:44px;text-align:left}
+.root[data-compact] .judgmentChoices button{align-self:stretch;text-align:left}

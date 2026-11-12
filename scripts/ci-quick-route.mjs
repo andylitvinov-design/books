@@ -11,6 +11,11 @@ const PUBLIC_JSX = /^app\/\[locale\]\/(?:about|articles|books|events|explore|ins
 const ORDINARY = /^(?:app\/\[locale\]\/|components\/|lib\/|tests\/|public\/|content\/|data\/|docs\/)/;
 const PROTECTED_ROOT = /^(?:app\/\[locale\]\/(?:app|client|admin|services|booking|consultation)\/|components\/(?:app|commerce)\/|lib\/(?:app|practitioners|assessments|ci|auth|billing|crm|payments|security|supabase|integrations)\/|docs\/(?:operations|billing|payments)\/)/i;
 const SENSITIVE = /(?:^|[\/_.-])(?:auth|oauth|login|logout|security|privacy|private|payment|payments|billing|checkout|rls|secret|token|consent|admin|migration|crm|messenger|message|messages|messaging|conversation|client|contact|email|phone|order|booking|consultation|coaching|patient|medical|health|user|account|subscription|supabase|database|api|webhook|middleware|wallet|storage|provider|practitioner|assessment|credential|receipt|refund|permission|role|salesbot|notification|inbox|profile)(?:[\/_.-]|$)/i;
+// Edits to the real media renderer, voice attachment, or text/video timeline
+// must wait for independently completed, exact-HEAD Mandala/macOS checks.
+// A green Next build on a CORE route cannot prove a playable MP4 with audio.
+// Keep this scoped to physical media source files: ordinary UI still uses CORE.
+const PHYSICAL_MEDIA_SPECIALIST = /^(?:components\/mandala-(?:free-video-studio|auto-video-director|affirmation-voice|video-mobile|multitrack-timeline)(?:\.module)?\.(?:tsx|jsx|css)|lib\/mandala\/(?:creative-editor-[a-z0-9-]+|editable-timeline|cinematic-director)\.(?:mjs|js|ts|tsx))$/i;
 const ALLOWED_STATUS = new Set(['A','M']);
 const MAX_BYTES = 25 * 1024 * 1024, MAX_PIXELS = 90_000_000;
 // Large, legitimate media PRs require FULL Core instead of a parser failure.
@@ -62,7 +67,7 @@ export function decideRoute(rows, classifier, sources) {
   if (rows.length===mobileDock.size &&
       rows.every(r=>r.status==='M' && mobileDock.get(r.filename)==='M') &&
       [...mobileDock.keys()].every(path=>rows.some(r=>r.filename===path))) return 'DOCK';
-  if (filenames.some(f=>!ORDINARY.test(f) || PROTECTED_ROOT.test(f) || SENSITIVE.test(f) || /^\.github\/|^supabase\/|^scripts\/ci-|^lib\/ci\/|^tests\/ci-/.test(f) ||
+  if (filenames.some(f=>!ORDINARY.test(f) || PROTECTED_ROOT.test(f) || SENSITIVE.test(f) || PHYSICAL_MEDIA_SPECIALIST.test(f) || /^\.github\/|^supabase\/|^scripts\/ci-|^lib\/ci\/|^tests\/ci-/.test(f) ||
       /(?:^|\/)(?:package(?:-lock)?\.json|next\.config\.\w+|middleware\.\w+|AGENTS\.md|CI_RELEASE_POLICY\.md)$/.test(f))) return 'FULL';
   if (rows.every(r=>ALLOWED_STATUS.has(r.status) && IMAGE.test(r.filename)) &&
       typeof classifier === 'function' && classifier(filenames) === 'FAST') return 'ASSETS';

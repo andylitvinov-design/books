@@ -90,3 +90,62 @@ verify the production branch SHA and that the next real production-push
 prune job emits a **non-synthetic** P1 report. Do not call the report LIVE
 merely because code was committed or tests passed. Vercel READY/SHA
 verification is separate; CI telemetry does not add public application UI.
+
+## Exact-HEAD Repair cycle — individual observed intervals (6 November 2026)
+
+The existing read-only production-push CI report now attaches `HH_PR_REPAIR_CYCLE_V1` to each sampled PR. The GitHub Actions summary includes a separate **Repair cycle** table and minute-by-minute interval table; the machine-readable `HH_PR_LOSS_P1` JSON retains full commit SHAs, exact UTC timestamps, failed job IDs and links.
+
+**Failure → owner claim:** a real completed failing Core job and an *unchanged* GitHub `HH_PR_SWEEP_LEASE_V1` comment created for its exact failed HEAD. The lease establishes an owner claim, not that an agent read or received a task. Heartbeat-edited/released comments cannot provide immutable historical claim timing.
+
+**Claim → Repair declaration:** an existing `HH_PR_REPAIR_STARTED_V1` comment for the same failed run and failed SHA. The timestamp is a declared repair start; real local editing time remains unknown. A missing declaration does not imply the agent was idle or that work was zero.
+
+**Repair declaration → new HEAD commit event:** a bounded, complete GitHub PR `committed` timeline event for the SHA used by the next verified Core run. This is a GitHub PR event timestamp, *not* independent evidence of the exact remote push time. If the event is missing, misordered, or timeline truncated, this interval is unknown.
+
+**New HEAD event → Core workflow creation → first job created → runner started:** independent run `created_at`, job `created_at`, and job `started_at` timestamps show three different waits. GitHub scheduling, `needs` and concurrency may contribute; do not present runner scarcity as proven. The failed job/step is the *failure location* and links to the job log, not a confirmed root cause unless its log is inspected.
+
+The helper stays inside `lib/ci`; the same `scripts/ci-pr-loss-report.mjs` reader and existing `hh-ci-stale-run-prune.yml` runner execute it. No extra schedule, workflow, privileged token, runner, API provider, synthetic CI wake or Vercel runtime deployment. All missing evidence stays null; report `n/a`, not 0, and do not allocate inferred agent idle/work minutes.
+
+## P1 — Why each repeated Core CI wave happened (6 November 2026)
+
+The existing production-push P1 GitHub Actions report now includes **one row per
+observed consecutive Core workflow pair** (up to the bounded selected history):
+PR, previous/new GitHub workflow run links, old/new PR HEAD, observed pause,
+explanation, initiating GitHub event actor when available and evidence level.
+The JSON receipt also contains structured \`core_waves.gaps[].cause\` fields
+(\`code\`, \`label\`, \`confidence\`, \`initiator\`, \`initiator_source\`,
+\`event\`, \`event_at\`, \`prior_sha\`, \`next_sha\`). A separate section
+reports runs with \`run_attempt > 1\` and the latest verified
+\`triggering_actor\`; prior attempt job histories are **not** invented.
+
+- **confirmed_technical:** the linked Core runs demonstrably used different
+  commit SHAs. GitHub \`run.actor\` identifies the *workflow initiator*,
+  not independently the commit author or the person responsible for a delay.
+- **correlated:** precisely one nearby timeline event (\`edited\`,
+  \`ready_for_review\`, \`convert_to_draft\` or \`reopened\`) may explain a
+  same-HEAD run. The Core workflow \`pull_request\` run API omits the original
+  action: proximity alone is never proof of causation.
+- **unknown:** no supporting event, multiple events, mismatched actors,
+  overlapping/unverified run clocks, partial timeline or unavailable job
+  history. Unknown is not zero time and not evidence of fault.
+
+The report remains advisory, read-only, bounded and uses the **same existing
+production-push workflow/runner**. No new cron, paid API, scheduled poller,
+database, Vercel preview build, CI bypass or workflow rerun is introduced.
+
+
+## Per-wave cause visibility (6 November 2026)
+
+The existing P1 GitHub Actions job summary now contains **Each subsequent Core wave**:
+PR, previous/new run IDs, same/new HEAD, observed gap minutes, triggering
+event category, observed actor, evidence confidence, explanation and a GitHub
+run/commit link. The structured `HH_PR_LOSS_P1` JSON carries the same fields
+in `rows[].core_waves.gaps[]`.
+
+**Attribution guard:** a commit author is not necessarily the person who
+requested or caused the CI delay. A workflow triggering actor is not proof of
+why the workflow was requested. GitHub's bounded workflow-runs API does not
+prove the exact `pull_request` webhook action for same-HEAD repeats. The
+report therefore states the observed trigger category and leaves underlying
+root cause unconfirmed. Incomplete timeline or overlapping gaps remain
+unknown, not zero. No new polling, workflow, runner, Vercel deployment or
+paid provider is introduced.

@@ -5,6 +5,8 @@ import {appendFileSync} from 'node:fs';
 import {pathToFileURL} from 'node:url';
 import {resolve} from 'node:path';
 import {analyzePrLoss, summarizePrLoss, analyzePrLifecycle, lifecycleConnected, analyzeCoreWaveGaps} from '../lib/ci/pr-loss-metrics.mjs';
+import {explainCoreWave, explainCoreRerunAttempt} from '../lib/ci/pr-wave-attribution.mjs';
+import {analyzeRepairCycles} from '../lib/ci/pr-repair-cycle.mjs';
 
 const bounded=(value,fallback,min,max)=>{
   const n=Number(value);
@@ -87,14 +89,15 @@ export async function collectCohort(read,repo,{now=Date.now(),hours=24,offsetDay
           jobRows[run.id]=await read('/repos/'+repo+'/actions/runs/'+run.id+'/jobs?per_page=100&page=1');
         } catch(err){jobRows[run.id]={jobs:[],total_count:-1};errors.push('jobs:'+run.id+':'+String(err.message||err));}
       }
-      let comments=[];
+      let comments=[],commentsComplete=false;
       // Capture immutable explicit repair-start markers only. Claiming a PR
       // lease or pushing a new HEAD is not independently proven start of Repair.
       if(selected.some(r=>['failure','timed_out'].includes(r.conclusion))) {
         try {
           comments=await read('/repos/'+repo+'/issues/'+pr.number+'/comments?per_page=100&page=1');
           if(!Array.isArray(comments)) throw Error('INCOMPLETE_COMMENTS');
-          if(comments.length===100)searchTruncated=true;
+          commentsComplete=comments.length<100;
+          if(!commentsComplete)searchTruncated=true;
         }catch(err){errors.push('comments:'+pr.number+':'+String(err.message||err));}
       }
       // Read-only supplementary P1 lifecycle evidence. Failed or incomplete
@@ -112,6 +115,13 @@ export async function collectCohort(read,repo,{now=Date.now(),hours=24,offsetDay
             new Set(timeline.filter(e=>e.event==='committed'&&
               /^[0-9a-f]{40}$/i.test(e.sha||'')).map(e=>e.sha)).size>=pr.commits))
       });
+      row.core_waves.gaps=row.core_waves.gaps.map(gap=>{
+        const cause=explainCoreWave(gap,selected,timeline);
+        return {...gap,cause,reason_confirmed:cause.confidence==='confirmed_technical'};
+      });
+      row.core_waves.rerun_attempts=selected.filter(r=>
+        r.name==='HH PR core release gate' && lifecycleConnected(r,pr,timeline))
+        .map(explainCoreRerunAttempt).filter(Boolean);
       row.lifecycle=analyzePrLifecycle(pr,selected,jobRows,comments,timeline,commitStatus,{
         // Full branch run index + bounded jobs + full commit timeline are
         // necessary before calling the earliest Ready/Core timestamps exact.
@@ -121,6 +131,9 @@ export async function collectCohort(read,repo,{now=Date.now(),hours=24,offsetDay
           (pr.commits<=1||(Array.isArray(timeline)&&
             new Set(timeline.filter(e=>e.event==='committed'&&
               /^[0-9a-f]{40}$/i.test(e.sha||'')).map(e=>e.sha)).size>=pr.commits))
+      });
+      row.repair_cycles=analyzeRepairCycles(pr,selected,jobRows,comments,timeline,{
+        runHistoryComplete:row.core_waves.run_history_complete,commentsComplete
       });
       output.push(row);
     }catch(err) {errors.push('pr:'+issue.number+':'+String(err.message||err));}
@@ -137,8 +150,61 @@ export async function collectCohort(read,repo,{now=Date.now(),hours=24,offsetDay
   report.search_truncated=searchTruncated;
   return report;
 }
+export function formatWaveDiagnostics(report) {
+  const lines=[
+    '### Причины каждой повторной волны Core CI — проверяемый журнал',
+    '| PR / волна | Core run: предыдущий → новый | HEAD | Пауза (мин) | Причина | Инициатор события | Уровень доказательств |',
+    '| --- | --- | --- | ---: | --- | --- | --- |',
+  ];
+  const runLink = id => Number.isSafeInteger(id) && id > 0 ?
+    '['+id+'](https://github.com/andylitvinov-design/books/actions/runs/'+id+')' : 'нет ссылки';
+  const confidence = {confirmed_technical:'HEAD подтверждён',correlated:'корреляция, не доказанная причина',unknown:'причина не подтверждена'};
+  let gapCount=0, proof=0, correlated=0, unknown=0;
+  for (const row of report.rows || []) {
+    for (const [index,gap] of (row.core_waves?.gaps || []).entries()) {
+      const cause=gap.cause || {};
+      const level=cause.confidence || 'unknown';
+      gapCount++;
+      if(level==='confirmed_technical') proof++;
+      else if(level==='correlated') correlated++;
+      else unknown++;
+      const heads=cause.prior_sha && cause.next_sha ?
+        (cause.prior_sha===cause.next_sha ? 'тот же '+cause.next_sha.slice(0,7) :
+          cause.prior_sha.slice(0,7)+' → '+cause.next_sha.slice(0,7)) : 'не проверен';
+      const who=cause.initiator ? '@'+cause.initiator+' ('+
+        (cause.initiator_source==='timeline_actor'?'GitHub timeline':'GitHub run')+')' : 'не установлен';
+      const evidence=cause.event ? ' · '+cause.event+' @ '+cause.event_at : '';
+      const why=cause.label || 'Недостаточно данных';
+      const gapMinutes=Number.isFinite(gap.minutes) ? gap.minutes.toFixed(2) : 'н/д';
+      lines.push('| #'+row.pr+' / '+(index+2)+' | '+runLink(gap.previous_run_id)+' → '+runLink(gap.run_id)+
+        ' | '+heads+' | '+gapMinutes+' | '+why+' | '+who+' | '+(confidence[level]||confidence.unknown)+evidence+' |');
+    }
+  }
+  if(!gapCount)lines.push('| — | — | — | — | Повторные пары не подтверждены в выборке | — | — |');
+  lines.push('',
+    'В выборке: '+gapCount+' повторных пар; подтверждён новый HEAD: '+proof+
+    '; вероятный триггер: '+correlated+'; причина неизвестна: '+unknown+'.',
+    'Инициатор GitHub run — не доказанный автор коммита и не автоматически виновник задержки. События timeline — подсказки, пока нет прямого payload действия.',
+    'При неполной истории, неоднозначных событиях или пересечении запусков причина остаётся неподтверждённой.',
+    '',
+    '#### Повторные попытки внутри одного run (run_attempt > 1)',
+    '| PR / run | Попытки | Инициатор последней попытки | Причина | Доказательства |',
+    '| --- | ---: | --- | --- | --- |');
+  let retryRows=0;
+  for (const row of report.rows || []) {
+    for (const retry of row.core_waves?.rerun_attempts || []) {
+      retryRows++;
+      lines.push('| #'+row.pr+' / '+runLink(retry.run_id)+' | '+retry.attempts+
+        ' | '+(retry.latest_initiator?'@'+retry.latest_initiator:'не установлен')+
+        ' | '+retry.reason+' | Исходные попытки без отдельной истории jobs: '+
+        retry.previous_attempts_without_history+' |');
+    }
+  }
+  if(!retryRows)lines.push('| — | — | — | Нет наблюдаемых retry в выборке | — |');
+  return lines.join('\n');
+}
 export function formatSummary(report) {
-  const fmt=n=>n===null?'n/a':n.toFixed(2);
+  const fmt=n=>typeof n==='number'&&Number.isFinite(n)?n.toFixed(2):'n/a';
   const labels={green_to_merge:'Green → Merge',
     error_to_repair:'Error → Repair (explicit marker)',
     dependency_timeout:'Confirmed dependency timeout',
@@ -147,13 +213,14 @@ export function formatSummary(report) {
   const lines=['## P1 — Confirmed PR time exposure (read-only)',
     'PRs created: '+report.cohort.created_utc_start+' — '+report.cohort.created_utc_end+
       '; sampled '+report.sampled_prs+'; cohort total unknown.',
+    report.low_n?'LOW_N: n<5 PRs. Descriptive only: p50/p95 and TOP-3 are not stable population estimates.':'Stage-level n is shown; do not infer population guarantees.',
     'TOP-3 is limited to verified, mutually exclusive timestamp intervals in this sample.',
     '',
     '| Rank | Stage | Observed PR-min | PRs | Mean (observed) | p50 | p95 |',
     '| ---: | --- | ---: | ---: | ---: | ---: | ---: |'];
   report.top3.forEach((x,i)=>lines.push('| '+(i+1)+' | '+labels[x.stage]+
     ' | '+fmt(x.minutes)+' | '+x.pr_count+' | '+fmt(x.mean_minutes)+
-    ' | '+fmt(x.p50_minutes)+' | '+fmt(x.p95_minutes)+' |'));
+    ' | '+fmt(x.p50_minutes)+' | '+fmt(x.p95_minutes)+(x.low_n?' (n<5)':'')+' |'));
   if(!report.top3.length) lines.push('| — | Insufficient confirmed timestamps | — | — | — | — | — |');
   lines.push('','### PR → LIVE timestamps (observed UTC; unknown never equals zero)');
   lines.push('| PR | Ready | First Core CI | Runner | Error | Repair | New HEAD first CI* | Final PASS | Merge | Vercel provider READY* | Vercel skipped* | Functional smoke |');
@@ -175,13 +242,56 @@ export function formatSummary(report) {
     lines.push('| #'+row.pr+' | '+w.observed_core_runs+' | '+w.historical_core_runs_relinked+' | '+w.same_head_repeat_runs+
       ' | '+w.new_head_runs+' | '+w.gaps_measured.n+' | '+
       [w.gaps_measured.mean_minutes,w.gaps_measured.p50_minutes,w.gaps_measured.p95_minutes]
-        .map(fmt).join(' / ')+' | '+fmt(w.first_runner_wait.mean_minutes)+
+        .map(fmt).join(' / ')+(w.gaps_measured.n<5?' (n<5)':'')+' | '+fmt(w.first_runner_wait.mean_minutes)+
       ' | '+fmt(w.core_job_work.mean_minutes)+' | '+(w.run_history_complete?'complete':'partial')+' |');
   }
   lines.push('','Gap is previous Core run updated_at → next Core run created_at. Same-HEAD repeat, changed HEAD, runner wait and execution are distinct; timestamps alone never establish the root cause. Missing/overlapping history remains unknown.');
+  lines.push('','### Repair cycle — each observed interval (UTC, exact PR/HEAD)');
+  lines.push('| PR | Failed job / step | CI failure | Lease claim | Repair declared | Next HEAD / commit event | New Core CI | First job | Runner |');
+  lines.push('| ---: | --- | --- | --- | --- | --- | --- | --- | --- |');
+  const safe=x=>String(x??'unknown').replace(/[\r\n|]/g,' ').slice(0,100);
+  const short=x=>x?.slice(0,10)||'unknown';
+  const repairs=report.rows.flatMap(r=>(r.repair_cycles?.cycles||[]).map(c=>({pr:r.pr,c})));
+  for(const {pr,c} of repairs){
+    const t=c.timestamps;
+    lines.push('| #'+pr+' | [job '+c.failure.job_id+']('+c.failure.job_url+') '+
+      safe(c.failure.job_name)+(c.failure.observed_failed_step?' / '+safe(c.failure.observed_failed_step):'')+
+      ' | '+(t.ci_failed_at||'unknown')+' | '+(t.lease_claimed_at||'unknown')+
+      ' | '+(t.repair_declared_at||'unknown')+' | '+short(c.new_head)+' / '+
+      (t.new_head_commit_event_at||'unknown')+' | '+(t.new_ci_created_at||'unknown')+
+      ' | '+(t.first_job_created_at||'unknown')+' | '+(t.first_runner_started_at||'unknown')+' |');
+  }
+  if(!repairs.length)lines.push('| — | No confirmed failed Core job in sample | unknown | unknown | unknown | unknown | unknown | unknown | unknown |');
+  lines.push('','| PR / failed HEAD | Failure → claim | Claim → declared Repair | Declaration → commit event | Commit event → CI | CI → first job | Job created → runner |');
+  lines.push('| --- | ---: | ---: | ---: | ---: | ---: | ---: |');
+  for(const {pr,c} of repairs){
+    const d=c.durations_minutes;
+    lines.push('| #'+pr+' / '+short(c.failed_head)+' | '+[d.failure_to_claim,
+      d.claim_to_repair_declaration,d.repair_declaration_to_commit_event,
+      d.commit_event_to_new_ci,d.workflow_to_first_job,d.first_runner_job_queue].map(fmt).join(' | ')+' |');
+  }
+  if(!repairs.length)lines.push('| — | n/a | n/a | n/a | n/a | n/a | n/a |');
+  lines.push('','Lease claim = ownership, not proof an agent read the task. Repair declaration is not observed local editing. GitHub committed event is not independently verified push time. Queues include dependencies/concurrency, not proven runner shortages. Failed job/step is a location, not log-verified root cause. Unknown is n/a, never agent idle or zero.');
+  lines.push('','BASE_ADVANCED is reported independently by the ancestry-proven CI readiness advisory and the strict trusted Specialist; this read-only cohort report does not infer it from a changed HEAD.');
+  lines.push('',formatWaveDiagnostics(report));
+  lines.push('','### Each subsequent Core wave — trigger and evidence (not assumed root cause)');
+  lines.push('| PR | Previous → new run | HEAD | Gap min | Observed trigger | Actor (evidence level) | Why another wave? | Evidence |');
+  lines.push('| ---: | --- | --- | ---: | --- | --- | --- | --- |');
+  let waveRows=0;
+  for(const row of report.rows) for(const gap of row.core_waves?.gaps||[]) {
+    waveRows++;
+    const safe=s=>String(s??'unknown').replace(/[|\r\n]/g,' ');
+    const url=typeof gap.evidence_url==='string'&&/^https:\/\/github\.com\/andylitvinov-design\/books\/(?:actions\/runs\/\d+|commit\/[0-9a-f]{40})$/.test(gap.evidence_url)?gap.evidence_url:null;
+    lines.push('| #'+row.pr+' | '+gap.previous_run_id+' → '+gap.run_id+' | '+
+      gap.head_relation+' | '+fmt(gap.minutes)+' | '+safe(gap.trigger_event)+' | '+
+      safe(gap.trigger_actor)+' ('+safe(gap.trigger_confidence)+') | '+
+      safe(gap.reason_summary)+' | '+(url?'[GitHub]('+url+')':'unknown')+' |');
+  }
+  if(!waveRows)lines.push('| — | — | — | — | No subsequent waves in sampled PRs | — | — | — |');
+  lines.push('','The actor is the observed workflow trigger or commit author, not a proven owner of delay. Commit attribution does not establish why a commit was necessary; same-HEAD rechecks do not reveal their exact webhook action from the runs list. Unknown remains unknown.');
   lines.push('','### Stage coverage');
   for(const x of report.categories)lines.push('- '+labels[x.stage]+': '+
-    fmt(x.minutes)+' PR-min, confirmed PRs='+x.pr_count);
+    fmt(x.minutes)+' PR-min, confirmed PRs='+x.pr_count+(x.low_n?' (n<5; descriptive)':''));
   lines.push('','### Direct evidence (largest PR per stage)');
   for(const stage of report.top3) {
     const top=stage.evidence[0];
