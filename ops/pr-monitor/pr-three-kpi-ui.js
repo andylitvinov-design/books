@@ -68,11 +68,14 @@
     'n=0 · Repair без доказанной пары событий'};
   if(key==='green_to_merge'){
    const tail=observedLongTail(entry);
+   const partial=tail?null:partialLongTail(entry);
    return {label:entry.n?min(entry.mean_min):'—',
     sub:entry.n?'Среднее · n='+entry.n+' · P50 '+min(entry.median_min)+
      ' · P95 '+min(entry.p95_min)+
      (tail&&tail.outlier_n?' · длительных PR '+tail.outlier_n+
-       ' ('+fmt.format(tail.wait_share_percent)+'% ожидания)':'')+
+       ' ('+fmt.format(tail.wait_share_percent)+'% ожидания)':partial?
+       ' · ≥'+partial.outliers_seen_n+' длительных PR из '+partial.seen_n+
+       '/'+partial.sample_n+' наблюдаемых':'')+
      ' · точный HEAD '+(entry.exact_head_merge_proofs||0)+
      ', архив '+(entry.archived_merge_proofs||0):
      'n=0 · нет пары последних обязательных PASS и подтверждённого merge'};
@@ -103,6 +106,23 @@
  }
  // Read the signed-cohort calculation, not the truncated display rows.
  // A partial/mismatched response must never be called an outlier diagnosis.
+ // Read-only fallback for a truncated legacy standalone API. The unseen
+ // cohort remains unknown: do not extrapolate full wait-share or root cause.
+ function partialLongTail(entry){
+  if(!entry||!Number.isSafeInteger(entry.n)||entry.n<=30||
+     !Number.isFinite(entry.median_min)||entry.median_min<0||
+     !Array.isArray(entry.rows)||entry.rows.length!==30)return null;
+  const observed=[],seen=new Set();
+  for(const r of entry.rows){
+   if(!Number.isSafeInteger(r?.pr)||r.pr<1||seen.has(r.pr)||
+      !Number.isFinite(r?.minutes)||r.minutes<0)return null;
+   seen.add(r.pr);observed.push(r);
+  }
+  const slow=observed.filter(r=>r.minutes>=30&&
+    r.minutes>=5*entry.median_min).sort((a,b)=>b.minutes-a.minutes);
+  return slow.length?{sample_n:entry.n,seen_n:observed.length,
+    outliers_seen_n:slow.length,top:slow.slice(0,5),partial:true}:null;
+ }
  function observedLongTail(entry){
   const t=entry?.long_tail;
   if(!t||t.schema!=='HH_GREEN_MERGE_LONG_TAIL_V1'||
@@ -220,6 +240,28 @@ function renderWaves(){
    if(conf.key==='error_to_repair')description.append(el('p','hh-kpi-warning',
      'Repair измеряется только по подлинному событию repair_started на том же PR и HEAD после доказанной ошибки, а не по принятию dispatch или метке Repair.'));
    if(conf.key==='green_to_merge'){
+    const partial=partialLongTail(today?.green_to_merge);
+    if(partial){
+     description.append(el('p','hh-kpi-warning',
+      'Серверная выборка частична: показаны '+partial.seen_n+' из '+
+      partial.sample_n+' подтверждённых PR. Среди них ≥'+partial.outliers_seen_n+
+      ' задержек от 30 минут и 5× P50. Полный вклад в среднее не измерен.'));
+     const list=el('div','hh-kpi-examples');
+     for(const item of partial.top){
+      const line=el('div','hh-kpi-example');
+      const a=el('a','','#'+item.pr);
+      a.href='https://github.com/andylitvinov-design/books/pull/'+item.pr;
+      a.target='_blank';a.rel='noopener noreferrer';
+      line.append(a,el('span','',min(item.minutes)));
+      const proof=safeLink(item.job_url||item.run_url);
+      if(proof){const link=el('a','','CI');link.href=proof;
+       link.target='_blank';link.rel='noopener noreferrer';line.append(link);}
+      list.append(line);
+     }
+     description.append(list,el('p','',
+      'Причины задержек не определяются только временным интервалом. '+
+      'Непоказанные PR могут увеличивать число выбросов.'));
+    }
     const tail=observedLongTail(today?.green_to_merge);
     if(tail?.outlier_n){
      description.append(el('p','hh-kpi-warning',

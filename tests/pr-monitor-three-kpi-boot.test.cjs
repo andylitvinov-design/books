@@ -63,6 +63,28 @@ test('outlier data stays visible when the sample exceeds the 30-row UI cap',()=>
   top:[{pr:0,minutes:457.52}]}}),null,'invalid links rejected');
 });
 
+test('standalone old API reports a lower-bound tail for truncated 31-PR cohort',()=>{
+ const vm=require('node:vm');
+ const src=fs.readFileSync(path.join(__dirname,'../ops/pr-monitor/pr-three-kpi-ui.js'),'utf8');
+ const marker=" if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});";
+ const revised=src.replace(marker," window.__hhPartialTail=partialLongTail;\n"+marker);
+ assert.notEqual(revised,src);
+ const sandbox={window:{},document:{readyState:'loading',addEventListener(){}}};
+ vm.runInNewContext(revised,sandbox);
+ const pick=sandbox.window.__hhPartialTail;
+ const rows=Array.from({length:30},(_,i)=>({pr:4300+i,minutes:i<4?350+i*25:.5}));
+ const result=pick({n:31,median_min:.5,rows});
+ assert.equal(result.partial,true);
+ assert.equal(result.seen_n,30);
+ assert.equal(result.sample_n,31);
+ assert.equal(result.outliers_seen_n,4);
+ assert.equal(result.top[0].pr,4303);
+ assert.equal(pick({n:30,median_min:.5,rows}),null);
+ assert.equal(pick({n:31,median_min:.5,rows:rows.slice(1)}),null);
+ assert.equal(pick({n:31,median_min:.5,rows:[...rows.slice(0,29),rows[0]]}),null);
+ assert.equal(pick({n:31,median_min:null,rows}),null);
+});
+
 test('no CI dispatch, cron, paid integration or polling added to boot',()=>{
  assert.doesNotMatch(boot,/workflow_dispatch|setInterval\s*\(|createWorkflowDispatch|https:\/\/api\.github\.com/);
  assert.match(boot,/legacy\.html/);
