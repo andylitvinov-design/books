@@ -125,3 +125,24 @@
 }
 @media(min-width:700px){.root[data-my-coach-immersive-session]{padding-bottom:100px}.sessionHero{height:350px}.sessionDialogue,.sessionProgress,.voiceWorkspace,.goalRow{max-width:850px}}
 @media(prefers-reduced-motion:reduce){.voiceWaveLeft i,.voiceWaveRight i{animation:none!important}}
+
+/* Portrait media stays within the current immersive coaching hero. Animated
+   visual movement is ambient; real voice/speaking state remains in controller. */
+.sessionPortrait[data-persona=mira]{background-image:url('/images/holistic-house/my-coach-motion/mira-living.webp'),linear-gradient(110deg,#485e53,#cbb9a1);background-size:auto 140%,cover;background-position:right 32%,center;background-repeat:no-repeat}
+.sessionPortrait[data-persona=max]{background-image:url('/images/holistic-house/my-coach-motion/max-living.webp'),linear-gradient(110deg,#485e53,#cbb9a1);background-size:auto 140%,cover;background-position:right 32%,center;background-repeat:no-repeat}
+.sessionPortrait[data-persona=sofia]{background-image:url('/images/holistic-house/my-coach-motion/sofia-living.webp'),linear-gradient(110deg,#485e53,#cbb9a1);background-size:auto 140%,cover;background-position:right 32%,center;background-repeat:no-repeat}
+.sessionPortrait[data-persona=alex]{background-image:url('/images/holistic-house/my-coach-motion/alex-living.webp'),linear-gradient(110deg,#485e53,#cbb9a1);background-size:auto 140%,cover;background-position:right 32%,center;background-repeat:no-repeat}
+.sessionPortrait[data-persona=lea]{background-image:url('/images/holistic-house/my-coach-motion/lea-living.webp'),linear-gradient(110deg,#485e53,#cbb9a1);background-size:auto 140%,cover;background-position:right 32%,center;background-repeat:no-repeat}
+.sessionPortrait[data-persona=noah]{background-image:url('/images/holistic-house/my-coach-motion/noah-living.webp'),linear-gradient(110deg,#485e53,#cbb9a1);background-size:auto 140%,cover;background-position:right 32%,center;background-repeat:no-repeat}
+.sessionPortrait[data-persona=iris]{background-image:url('/images/holistic-house/my-coach-motion/iris-living.webp'),linear-gradient(110deg,#485e53,#cbb9a1);background-size:auto 140%,cover;background-position:right 32%,center;background-repeat:no-repeat}
+.sessionPortrait[data-persona=ray]{background-image:url('/images/holistic-house/my-coach-motion/ray-living.webp'),linear-gradient(110deg,#485e53,#cbb9a1);background-size:auto 140%,cover;background-position:right 32%,center;background-repeat:no-repeat}
+@media(prefers-reduced-motion:reduce){
+.sessionPortrait[data-persona=mira]{background-image:url('/images/holistic-house/my-coach-motion/mira-still.webp'),linear-gradient(110deg,#485e53,#cbb9a1)}
+.sessionPortrait[data-persona=max]{background-image:url('/images/holistic-house/my-coach-motion/max-still.webp'),linear-gradient(110deg,#485e53,#cbb9a1)}
+.sessionPortrait[data-persona=sofia]{background-image:url('/images/holistic-house/my-coach-motion/sofia-still.webp'),linear-gradient(110deg,#485e53,#cbb9a1)}
+.sessionPortrait[data-persona=alex]{background-image:url('/images/holistic-house/my-coach-motion/alex-still.webp'),linear-gradient(110deg,#485e53,#cbb9a1)}
+.sessionPortrait[data-persona=lea]{background-image:url('/images/holistic-house/my-coach-motion/lea-still.webp'),linear-gradient(110deg,#485e53,#cbb9a1)}
+.sessionPortrait[data-persona=noah]{background-image:url('/images/holistic-house/my-coach-motion/noah-still.webp'),linear-gradient(110deg,#485e53,#cbb9a1)}
+.sessionPortrait[data-persona=iris]{background-image:url('/images/holistic-house/my-coach-motion/iris-still.webp'),linear-gradient(110deg,#485e53,#cbb9a1)}
+.sessionPortrait[data-persona=ray]{background-image:url('/images/holistic-house/my-coach-motion/ray-still.webp'),linear-gradient(110deg,#485e53,#cbb9a1)}
+}
