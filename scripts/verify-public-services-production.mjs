@@ -18,6 +18,14 @@ await mkdir(output, { recursive: true });
 const browser = await chromium.launch();
 const diagnostics = { runtime: "next-start production", console: [], pageErrors: [], devIssueOverlay: false };
 const responseEvidence = [];
+// These are the ONLY missing-database 503 responses expected in isolated CI.
+// The real API must still fail closed, and all other 503 paths remain failures.
+const noDatabase503Paths = new Set([
+  "/api/catalog/ratings",
+  "/api/service-enquiries/booking-status",
+  "/api/app/bootstrap",
+  "/api/public/remote-energy-support-masters",
+]);
 let failure;
 try {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
@@ -47,9 +55,9 @@ try {
     page.on("response", response => {
       const url = new URL(response.url());
       if (response.request().method() === "GET" && response.status() === 503 &&
-          ["/api/catalog/ratings", "/api/service-enquiries/booking-status", "/api/app/bootstrap"].includes(url.pathname)) {
-        // Status and path are already verified above. Browser streams may
-        // close before body.json(), so do not misclassify empty reads.
+          url.origin === origin && url.pathname.startsWith("/api/")) {
+        // Capture EVERY same-origin GET 503. A newly failing endpoint must
+        // never disappear from the release gate merely because it is unlisted.
         responseEvidence.push(url.pathname);
       }
     });
@@ -832,17 +840,18 @@ try {
 
   diagnostics.devIssueOverlay = false;
   assert.deepEqual(diagnostics.pageErrors, [], "Unexpected browser page errors");
-  // In isolated CI, getAppConfig() is guaranteed to return 503 before any
-  // database query when HH_APP_SUPABASE_URL is absent. Do not read the response
-  // body after the browser resource has already closed. Only a real observed
-  // GET 503 from these two audited read-only endpoints can be exempted.
+  // Missing HH_APP_SUPABASE_URL means the published-only directory cannot
+  // access its repository and deliberately returns 503, never a fabricated
+  // empty list. This is tolerated only on audited GET paths in isolated CI.
+  // Do not read response bodies after the browser resource has closed.
   const unavailable = responseEvidence;
-  const unexpectedUnavailable = unavailable.filter(path =>
-    !['/api/catalog/ratings', '/api/service-enquiries/booking-status', '/api/app/bootstrap'].includes(path));
+  const unexpectedUnavailable = unavailable.filter(path => !noDatabase503Paths.has(path));
   assert.deepEqual(unexpectedUnavailable, [], 'Unexpected 503 API path');
   const expectedUnavailable = new Set();
   if (!process.env.HH_APP_SUPABASE_URL) {
-    for (const path of unavailable) expectedUnavailable.add(path);
+    for (const path of unavailable) {
+      if (noDatabase503Paths.has(path)) expectedUnavailable.add(path);
+    }
   }
   const unexpected = diagnostics.console.filter(entry => {
     if (entry.type !== 'error') return false;

@@ -36,3 +36,17 @@ test("mobile layout and confirmation disclaimer remain distinct from an actual b
   assert.match(component, /not medical treatment/);
   assert.match(styles, /focus-visible/);
 });
+
+test("Reiki directory has a narrow missing-database browser gate, never a blanket 503 exception", () => {
+  const browser = readFileSync(new URL("../scripts/verify-public-services-production.mjs", import.meta.url), "utf8");
+  const route = readFileSync(new URL("../app/api/public/remote-energy-support-masters/route.ts", import.meta.url), "utf8");
+  assert.match(browser, /"\/api\/public\/remote-energy-support-masters"/);
+  assert.match(browser, /url\.origin === origin && url\.pathname\.startsWith\("\/api\/"\)/);
+  assert.match(browser, /unexpectedUnavailable = unavailable\.filter\(path => !noDatabase503Paths\.has\(path\)\)/);
+  assert.match(browser, /if \(!process\.env\.HH_APP_SUPABASE_URL\)/);
+  assert.match(browser, /expectedUnavailable\.has\(entry\.path\)/);
+  assert.match(browser, /assert\.deepEqual\(diagnostics\.pageErrors, \[\]/);
+  assert.match(route, /listReikiSupportMasters\(locale\)/);
+  assert.match(route, /status: 503/);
+  assert.match(component, /setFailed\(true\)/);
+});
