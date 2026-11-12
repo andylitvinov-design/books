@@ -560,6 +560,15 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   unknownActiveRuns:capacity.unknownActiveRuns||0,
   unknownQueuedRuns:capacity.unknownQueuedRuns||0,
   conservativeJobPressure:capacity.conservativeJobPressure??null};
+ else if(capacity?.reason==='RUN_CAPACITY_SATURATED'){
+  // Preserve exact GitHub counts for the current Monitor snapshot. An
+  // over-100 count is a blocked queue, not an invalid API or worker success.
+  summary.capacity={known:false,activeRuns:capacity.activeRuns??null,
+   queuedRuns:capacity.queuedRuns??null,
+   inventoryConfidence:capacity.inventoryConfidence||'SATURATED_UNVERIFIED',
+   saturatedBy:capacity.saturatedBy||'CAPACITY_LIMIT',
+   safeToDispatch:false};
+ }
  // Both types of addressed Worker are per PR. Project the next queued run
  // immediately because the global Actions capacity snapshot is delayed.
  const occupyWorkerSlot=worker=>{

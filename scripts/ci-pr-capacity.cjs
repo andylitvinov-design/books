@@ -119,8 +119,21 @@ async function snapshot(github,owner,repo,now=Date.now()){
   qCount=q?.data?.total_count;
   if(!Array.isArray(active)||!Array.isArray(queued)||
      !Number.isSafeInteger(aCount)||!Number.isSafeInteger(qCount)||
-     aCount<0||qCount<0||aCount>100||qCount>100){
+     aCount<0||qCount<0){
     return {known:false,reason:'INVALID_RUN_INVENTORY',activeRuns:aCount??null,queuedRuns:qCount??null};
+  }
+  // GitHub's total_count may exceed the 100-entry page limit. This is
+  // verified queue saturation, NOT malformed inventory. The remaining runs
+  // are uninspected: never infer idle runners or dispatch another worker.
+  // A single count-only observation is sufficient; no costly pagination or
+  // retries when the queue already exceeds the hard safety limits.
+  if(aCount>100||qCount>100){
+    return {known:false,reason:'RUN_CAPACITY_SATURATED',
+      activeRuns:aCount,queuedRuns:qCount,
+      inventoryConfidence:'COUNT_ONLY_OVER_PAGE_LIMIT',
+      saturatedBy:aCount>100&&qCount>100?'BOTH':
+        aCount>100?'ACTIVE':'QUEUED',
+      safeToDispatch:false};
   }
   // When even the total count is saturated, do not waste API quota reading
   // runner jobs or accidentally treat an incomplete list as a free slot.
