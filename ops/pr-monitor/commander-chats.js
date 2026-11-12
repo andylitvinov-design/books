@@ -17,6 +17,46 @@
  let reportRefreshTimer=null,reportSyncBusy=false,pendingCreateId=null,ciInboxTimer=null,ciInboxBusy=false;
  let executorModels=null,executorModelsPromise=null,executionRefreshTimer=null,executionPollCount=0,executionPollBusy=false;
  let runSnapshot=null;
+ let freeQuota=null,freeQuotaPending=null,freeQuotaCheckedAt=0,lastQuotaTerminalRunId=null;
+ const QUOTA_OPTION_LABELS={
+  local:"Локальный советник",director:"Agents Director · OpenRouter Free (анализ)",
+  openrouter:"OpenRouter Free","council-free":"Совет ИИ · ответ в чате",
+  codex:"Codex","chatgpt-work":"ChatGPT Work","repair-worker":"GitHub Repair Worker",
+  hermes:"Hermes Cloud",manual:"Ручной исполнитель"
+ };
+ function remainingLabel(mode){
+  if(mode==="local")return "без лимита";
+  if(mode==="hermes")return "отключён";
+  if(mode==="manual")return "ручная передача";
+  if(!["director","council-free","openrouter"].includes(mode))return "лимит неизвестен";
+  const quota=mode==="openrouter"?freeQuota?.monitor:freeQuota?.worker;
+  return quota?.status==="VERIFIED"&&Number.isSafeInteger(quota.remaining)&&quota.remaining>=0?
+   quota.remaining+" осталось":"нет данных";
+ }
+ function updateQuotaMenuLabels(){
+  for(const scope of ["new-mode","mode"]){
+   for(const option of el(scope).querySelectorAll("option")){
+    const base=QUOTA_OPTION_LABELS[option.value];
+    if(base)option.textContent=base+" — "+remainingLabel(option.value);
+   }
+  }
+ }
+ async function refreshFreeQuota(force=false){
+  if(!remote||!authorized){updateQuotaMenuLabels();return;}
+  if(freeQuotaPending)return freeQuotaPending;
+  if(!force&&freeQuotaCheckedAt&&Date.now()-freeQuotaCheckedAt<45000)return;
+  freeQuotaPending=request(SERVER+"?action=free_quota").then(result=>{
+   if(result?.schema!=="HH_COMMANDER_QUOTA_MENU_V1"||
+      result.worker?.schema!=="HH_COMMANDER_FREE_QUOTA_V1"||
+      result.monitor?.schema!=="HH_COMMANDER_FREE_QUOTA_V1")
+    throw Error("QUOTA_RESPONSE_INVALID");
+   freeQuota={worker:result.worker,monitor:result.monitor};
+  }).catch(()=>{freeQuota=null;}).finally(()=>{
+   freeQuotaCheckedAt=Date.now();freeQuotaPending=null;
+   updateQuotaMenuLabels();configureModels("new");configureModels("thread");
+  });
+  return freeQuotaPending;
+ }
  // One-tap Council via same-origin, owner-verified server.
  let councilPending=null,councilChatIds=new Set();
  const make=(tag,cls,text)=>{const n=doc.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=String(text);return n};
@@ -128,6 +168,9 @@
    const labels={QUEUED:'В очереди OpenRouter.',STARTING:'Исполнитель запускается…',RUNNING:'Исполнитель работает…',WAITING_FOR_APPROVAL:'Ожидается подтверждение владельца.',COMPLETED:'Исполнение завершено. Ответ добавлен в чат.',FAILED:'Исполнение завершилось ошибкой.',CANCELLED:'Исполнение отменено.',BLOCKED:'Исполнитель не запущен или выполнение заблокировано.'};
    el('executor-state').textContent=(labels[run.status]||run.status||'Статус неизвестен')+(run.reason_code?' Причина: '+run.reason_code+'.':'')+(run.hermes_job_id?' · Job '+run.hermes_job_id:'');
    if(['COMPLETED','FAILED','BLOCKED'].includes(run.status)){
+    if(run.run_id&&run.run_id!==lastQuotaTerminalRunId){
+     lastQuotaTerminalRunId=run.run_id;void refreshFreeQuota(true);
+    }
     const latest=await request(SERVER+'?action=read&issue='+thread.issueNumber);
     if(thread?.id===latest.chat?.id){thread=latest.chat;messages=latest.messages;renderMessages();
      if(run.status==='COMPLETED'&&!messages.some(m=>m.kind==='agent_final'&&m.runId===run.run_id))run.awaitingFinal=true;
@@ -695,7 +738,7 @@ async function update(e){
    const placeholder=make('option',null,'Проверка бесплатных моделей…');placeholder.value='';
    selection.append(placeholder);
   }else for(const model of options){
-   const item=make('option',null,model.name+' · '+model.id);item.value=model.id;selection.append(item);
+   const item=make('option',null,model.name+' · '+model.id+' — '+(mode==='openrouter'?remainingLabel('openrouter'):'не подключён'));item.value=model.id;selection.append(item);
   }
   if(options.some(item=>item.id===current))selection.value=current;
   show(isNew?'new-model-label':'model-label',mode==='hermes'||(!isNew&&mode==='openrouter'));
@@ -811,7 +854,7 @@ async function update(e){
    await append(c,'ai',r.reply.slice(0,1800),r.model||mode);
    info('Ответ сохранён. Это консультация, не коммит или LIVE.');
   }catch(err){info('Сохранение/AI неполное: '+String(err.message||err))}
-  finally{busy=false;el('send').disabled=false}
+  finally{busy=false;el('send').disabled=false;if(mode==='openrouter')void refreshFreeQuota(true);}
  }
  async function addNote(){
   if(!thread||busy)return;const text=el('message').value.trim();
@@ -988,7 +1031,9 @@ async function update(e){
    select.querySelector('option[value=openrouter]').disabled=!aiReady;
   el('new-mode').value=ownedDirectorAvailable?'director':(aiReady?'openrouter':'local');
   show('free-model-status',!aiReady);
+  updateQuotaMenuLabels();
   if(remote){
+   void refreshFreeQuota(true);
    await loadExecutorModels();
    show('board',true);startCIInboxPolling();
    try{await listRemote();info('Рабочие чаты загружены.');await openRequestedTask();}
@@ -1029,6 +1074,7 @@ async function update(e){
   el('create-feedback').textContent='';show('create-feedback',false);
   el('new-question').value='';
   el('create').scrollIntoView({block:'nearest',behavior:'smooth'});
+  void refreshFreeQuota();
  }
  
  // Resume a saved question only on an explicit click; never duplicate its owner event.
@@ -1093,14 +1139,24 @@ async function update(e){
  });
  el('export').addEventListener('click',exportBackup);el('import').addEventListener('change',importBackup);
  el('mode').addEventListener('change',()=>{
-  const mode=el('mode').value;configureModels('thread');
+  const mode=el('mode').value;configureModels('thread');void refreshFreeQuota();
   if(mode==='hermes')void ensureExecutorModels().catch(err=>info('Каталог Hermes недоступен: '+String(err.message||err)));
  });
  el('new-mode').addEventListener('change',()=>{
-  configureModels('new');
+  configureModels('new');void refreshFreeQuota();
   if(el('new-mode').value==='hermes')void ensureExecutorModels().catch(err=>info('Каталог Hermes недоступен: '+String(err.message||err)));
  });
  
+ for(const name of ["mode","new-mode"]){
+  const select=el(name);
+  select.addEventListener("focus",()=>void refreshFreeQuota());
+  select.addEventListener("pointerdown",()=>void refreshFreeQuota());
+ }
+ doc.addEventListener("visibilitychange",()=>{
+  if(doc.visibilityState!=="hidden")void refreshFreeQuota();
+ });
+ updateQuotaMenuLabels();
+
  // Speech recognition is user-initiated and stays on device/browser voice services.
  // Never send raw audio. Only the edited transcript joins the chat on Send.
  let activeVoice=null,voiceSerial=0;

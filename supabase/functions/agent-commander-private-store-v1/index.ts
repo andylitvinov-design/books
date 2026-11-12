@@ -841,6 +841,32 @@ async function handler(req){
 
 
     const openRouterReady=Boolean(Deno.env.get("HH_PM_OPENROUTER_API_KEY")||Deno.env.get("OPENROUTER_API_KEY"));
+    // Daily free-model quota is a shared OpenRouter account counter, not a per-model balance.
+    // Owner JWT and business_brain.owner_access are checked before this branch.
+    if(action==="commander_free_model_quota"){
+      const schema="HH_COMMANDER_FREE_QUOTA_V1",observedAt=new Date().toISOString();
+      const apiKey=Deno.env.get("HH_PM_OPENROUTER_API_KEY")||Deno.env.get("OPENROUTER_API_KEY")||"";
+      const unavailable=reason=>reply(200,{schema,status:"UNAVAILABLE",reason,observedAt},origin);
+      if(!apiKey)return unavailable("KEY_NOT_CONFIGURED");
+      const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),4500);
+      try{
+        const response=await fetch("https://openrouter.ai/api/v1/key",{
+          method:"GET",cache:"no-store",redirect:"error",signal:controller.signal,
+          headers:{Authorization:"Bearer "+apiKey,Accept:"application/json"}
+        });
+        if(!response.ok)return unavailable("PROVIDER_UNAVAILABLE");
+        const raw=await response.text();
+        if(raw.length>16000)return unavailable("PROVIDER_RESPONSE_TOO_LARGE");
+        const counter=JSON.parse(raw)?.data?.free_model_daily_requests;
+        if(!counter||![counter.used,counter.limit,counter.remaining].every(Number.isSafeInteger)||
+           counter.used<0||counter.limit<0||counter.remaining<0||counter.remaining>counter.limit)
+          return unavailable("QUOTA_NOT_REPORTED");
+        return reply(200,{schema,status:"VERIFIED",remaining:counter.remaining,
+          used:counter.used,limit:counter.limit,source:"OPENROUTER_KEY_API",
+          sharedAcrossFreeModels:true,observedAt},origin);
+      }catch{return unavailable("PROVIDER_UNAVAILABLE")}
+      finally{clearTimeout(timer)}
+    }
     if(action==="commander_list_execution_runs"){
       const chatNumber=number(body.issueNumber);if(!chatNumber)return reply(400,{error:"INVALID_CHAT_NUMBER"},origin);
       const chats=await q(db,"select chat_id from business_brain.commander_chats where owner_id=$1::uuid and chat_number=$2 limit 1",[ownerId,chatNumber]);
