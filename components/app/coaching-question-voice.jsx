@@ -51,6 +51,7 @@ const voicePreferences={}
 export default function CoachingQuestionVoice({
   text,locale='en',onTranscript,onInterim,onListeningChange,disabled=false,mode='note',
   speechConsent=false,onConsent,compact=false,onSpeechChange,fictionalPersona=false,
+  allowDictation=true,
 }){
   const lang=['en','ru','es'].includes(locale)?locale:'en'
   const t=copy[lang]
@@ -150,6 +151,18 @@ export default function CoachingQuestionVoice({
     listeningCallback.current?.(false)
   },[disabled])
 
+  // A disabled public model or revoked consent must also stop active dictation.
+  // The native device speech playback is still available for a sample greeting.
+  useEffect(()=>{
+    if(allowDictation||!recognition.current)return
+    const capture=recognition.current
+    recognition.current=null
+    try{capture.abort()}catch{/* recognition may already have ended */}
+    setListening(false);setInterim('')
+    interimCallback.current?.('')
+    listeningCallback.current?.(false)
+  },[allowDictation])
+
   // Both buttons use exactly the same engine so the sample reflects real playback.
   // Sample text is fixed, localized and never contains a client's response.
   function playSpeech(value,preview=false){
@@ -234,7 +247,7 @@ export default function CoachingQuestionVoice({
   }
 
   function toggleMic(){
-    if(disabled)return
+    if(disabled||!allowDictation)return
     if(listening){
       try{recognition.current?.stop()}catch{/* the browser may have ended capture already */}
       return
@@ -297,7 +310,7 @@ export default function CoachingQuestionVoice({
         aria-label={speaking?t.stop:t.listen} title={speaking?t.stop:t.listen} aria-pressed={speaking}>
         {speaking?<VolumeX size={18}/>:<Volume2 size={18}/>} {!compact&&(speaking?t.stop:t.listen)}
       </button>:<small>{t.unavailable}</small>}
-      {support.stt&&<button type="button" disabled={disabled} onClick={toggleMic}
+      {support.stt&&allowDictation&&<button type="button" disabled={disabled} onClick={toggleMic}
         aria-label={listening?t.stopMic:mode==='answer'?t.micAnswer:t.micNote} title={listening?t.stopMic:mode==='answer'?t.micAnswer:t.micNote} aria-pressed={listening}>
         {listening?<MicOff size={18}/>:<Mic size={18}/>} {!compact&&(listening?t.stopMic:mode==='answer'?t.micAnswer:t.micNote)}
       </button>}

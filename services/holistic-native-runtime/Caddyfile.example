@@ -1,0 +1,10 @@
+# Replace ai.example.org with a real domain controlled by Holistic House.
+# HTTPS is mandatory for Vercel -> owned inference traffic.
+ai.example.org {
+  encode zstd gzip
+  header {
+    Cache-Control "no-store"
+    X-Content-Type-Options "nosniff"
+  }
+  reverse_proxy 127.0.0.1:8787
+}

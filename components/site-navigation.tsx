@@ -12,6 +12,7 @@ import { hasSpanishCounterpart, publicCounterpart, savePublicLocale, type Public
 import { activeCompactNavigationId, activeNavigationId, getCompactNavigation, getSiteNavigation, navigationCopy } from '@/lib/site-navigation-model';
 import { useNavigationLocale } from './use-navigation-locale';
 import { HomePersonalSpaceNavEntry } from './home-personal-space';
+import { HeaderCreditProfile } from './header-credit-profile';
 
 type Props = { locale?: PublicLocale; onLocaleChange?: (locale: Locale) => void };
 
@@ -140,8 +141,10 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
       : <Link key={item.id} data-nav-item={item.id} href={item.href} prefetch={false} aria-current={current === item.id ? 'page' : undefined}>{item.label}</Link>)}
     <Link className="site-nav-about-entry" href={`/${activeLocale}/about`} prefetch={false} aria-current={pathname === `/${activeLocale}/about` ? 'page' : undefined}>{text.about}</Link>
     <SiteSearch locale={activeLocale} pathname={pathname} />
-    <HomePersonalSpaceNavEntry locale={activeLocale}
-      href={`/${activeLocale === 'es' ? 'en' : activeLocale}/app`} />
+    {/^(?:\/)(?:en|ru|es)\/holistic-support\/mandala(?:\/|$)/.test(pathname)
+      ? <HeaderCreditProfile locale={activeLocale} />
+      : <HomePersonalSpaceNavEntry locale={activeLocale}
+          href={"/" + (activeLocale === "es" ? "en" : activeLocale) + "/app"} />}
     <Link className="site-nav-shop-entry" data-nav-item="shop" href={"/" + activeLocale + "/shop"}
       prefetch={false} aria-current={pathname === "/" + activeLocale + "/shop" ? "page" : undefined}>
       {shopMenuCopy[activeLocale]}
