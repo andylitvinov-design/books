@@ -5,7 +5,7 @@ const {latestErrorTaskId,dispatchAcceptance,dispatchAcceptanceBody,
  REPAIR_EXECUTOR,CI_EXECUTOR}=require('./ci-pr-error-task.cjs');
 const {priorityFor,rankedCandidates}=require('./ci-pr-priority.cjs');
 const {run:reconcileLegacyCiDenial}=require('./ci-pr-ci-legacy-recovery.cjs');
-const {WORKFLOWS,admission,snapshot}=require('./ci-pr-capacity.cjs');
+const {WORKFLOWS,admission,snapshot,verifiedGhostRepairCapacity,GHOST_REPAIR_MODE}=require('./ci-pr-capacity.cjs');
 const {repairMode,safeFiles,hasVerifiedSourceHandoff,verifiedCoreCodeFailure}=require('./ci-pr-repair-worker.cjs');
 const {safeSourcePath: safeFreeSourcePath,
  assessCompleteFreeRepairScope}=require('./ci-pr-repair-free-agent.cjs');
@@ -551,6 +551,16 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   try{capacity=await capacityFn(github,owner,repo);}
   catch(e){log('CI capacity recheck unavailable: '+String(e.message||e).slice(0,120));}
  }
+ // Only a trusted same-run jobless-409 receipt can unlock one existing
+ // source Repair Worker; exact-HEAD proof, owner lease and tests remain.
+ if(!capacity?.known&&capacity?.reason==='RUN_CAPACITY_SATURATED'&&
+    candidates.some(t=>t?.lane==='repair')&&
+    watchdogEvidence?.jobless409?.code==='QUEUED_WITH_ZERO_JOBS_CANCEL_409'){
+  const narrow=await verifiedGhostRepairCapacity(github,owner,repo,
+   watchdogEvidence.jobless409,now);
+  if(narrow.known){capacity=narrow;capacityReason=null;log('GHOST_409_ONE_REPAIR_SLOT_VERIFIED');}
+  else log('GHOST_409_HOLD '+narrow.reason);
+ }
  if(quota.state.paused){summary.reason='API_PAUSED_CAPACITY';return finish();}
  if(!capacity?.known)capacityReason||='CAPACITY_UNVERIFIED: '+(capacity?.reason||'unknown');
  summary.capacityReason=capacityReason;
@@ -908,6 +918,9 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   if(!capacity?.known){blocked('CAPACITY_UNVERIFIED');continue;}
   const permission=admission(task.lane,capacity);
   if(permission!=='ADMIT'){blocked(permission);continue;}
+  if(capacity?.inventoryConfidence===GHOST_REPAIR_MODE&&summary.dispatchAccepted>=1){
+   blocked('GHOST_ONLY_ONE_REPAIR_PER_SWEEP');continue;
+  }
   // Source must have an exact-HEAD trusted Watchdog diagnosis; labels alone
   // are stale hints and must not give privileged source write permission.
   if(task.lane==='repair'&&(!hasVerifiedSourceHandoff(comments,task.head_sha)||

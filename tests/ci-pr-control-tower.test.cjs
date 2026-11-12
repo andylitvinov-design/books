@@ -1947,3 +1947,56 @@ test('stale merged queue cleanup does not let a verified jobless GitHub 409 star
  assert.deepEqual(unverified.result.cancel_accepted,[]);
  assert.equal(unverified.result.non_cancelable[0].code,'CANCEL_409_UNVERIFIED');
 });
+
+
+/* HH_GHOST_409_ONE_REPAIR_TEST */
+const {verifiedGhostRepairCapacity:GRC,GHOST_REPAIR_MODE:GRM}=require('../scripts/ci-pr-capacity.cjs');
+function ghostFixture(o={}){
+ const old='a'.repeat(40),head='b'.repeat(40);
+ const run={id:900,status:'queued',event:'pull_request',run_attempt:1,
+  repository:{full_name:'andylitvinov-design/books'},
+  head_repository:{full_name:'andylitvinov-design/books'},
+  head_sha:old,head_branch:'feat/old',created_at:'2026-11-11T20:00:00Z',
+  pull_requests:[],...(o.run||{})};
+ const pr={number:4370,state:'closed',merged:true,merged_at:'2026-11-11T23:27:00Z',
+  base:{ref:'codex/public-book-library',repo:{full_name:'andylitvinov-design/books'}},
+  head:{ref:'feat/old',sha:head,repo:{full_name:'andylitvinov-design/books'}},...(o.pr||{})};
+ const activeCount=o.activeCount??1;
+ const a=Array.from({length:activeCount},(_,i)=>({id:i+300,status:'in_progress'}));
+ return {
+  p:{code:'QUEUED_WITH_ZERO_JOBS_CANCEL_409',run_id:900,pr:4370},
+  github:{rest:{actions:{
+   getWorkflowRun:async()=>({data:run}),
+   listJobsForWorkflowRun:async({run_id})=>({data:run_id===900?
+    {total_count:o.ghostJobs??0,jobs:o.ghostJobs?[{id:1,status:'queued'}]:[]}:
+    {total_count:1,jobs:[{id:run_id+1000,status:o.jobStatus||'completed'}]}}),
+   listWorkflowRunsForRepo:async({status})=>({data:status==='queued'?
+    {total_count:o.queueCount??137,workflow_runs:[]}:{
+     total_count:activeCount,workflow_runs:a}}),
+   listWorkflowRuns:async({status})=>({data:{
+    total_count:status==='queued'?(o.workerQueued??0):0,workflow_runs:[]}})
+  },pulls:{get:async()=>({data:pr})},
+  repos:{compareCommits:async()=>({data:{
+   status:o.comparison||'ahead',merge_base_commit:{sha:old},base_commit:{sha:old}}})}}}};
+}
+test('409 jobless merged PR allows one source Repair, never CI/legacy',async()=>{
+ const f=ghostFixture();
+ const cap=await GRC(f.github,'andylitvinov-design','books',f.p,Date.parse('2026-11-12T20:00:00Z'));
+ assert.equal(cap.known,true);assert.equal(cap.inventoryConfidence,GRM);
+ assert.equal(admission('repair',cap),'ADMIT');
+ assert.equal(admission('ci',cap),'GHOST_REPAIR_ONLY');
+ assert.equal(admission('legacy',cap),'GHOST_REPAIR_ONLY');
+ cap.activeWorker['HH PR source Repair Worker']=1;
+ assert.equal(admission('repair',cap),'GHOST_WORKER_BUSY');
+});
+test('409 fallback never admits unverified or congested runners',async()=>{
+ const variants=[{ghostJobs:1},{run:{status:'completed'}},{run:{pull_requests:[{number:55}]}},
+  {pr:{merged:false,merged_at:null}},{comparison:'diverged'},
+  {workerQueued:1},{queueCount:99},{queueCount:251},
+  {activeCount:13},{activeCount:9,jobStatus:'in_progress'}];
+ for(const opts of variants){
+  const f=ghostFixture(opts);
+  const result=await GRC(f.github,'andylitvinov-design','books',f.p,Date.parse('2026-11-12T20:00:00Z'));
+  assert.equal(result.known,false,'unsafe '+JSON.stringify(opts));
+ }
+});

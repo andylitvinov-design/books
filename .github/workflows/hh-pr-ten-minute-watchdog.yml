@@ -226,6 +226,11 @@ jobs:
                   const receipt=await runCleanup({github,context,core,
                     observedQueued:report.queuedActions,
                     observedRemaining:report.apiRemaining});
+                  const ghost=receipt?.non_cancelable?.find(x=>
+                    x.code==='QUEUED_WITH_ZERO_JOBS_CANCEL_409'&&
+                    Number.isSafeInteger(x.run_id)&&Number.isSafeInteger(x.pr));
+                  if(ghost)report.jobless409={
+                    code:ghost.code,run_id:ghost.run_id,pr:ghost.pr};
                   core.info('HH_QUEUE_ORPHAN_RECONCILE '+JSON.stringify(receipt));
                 }
               }catch(error){
