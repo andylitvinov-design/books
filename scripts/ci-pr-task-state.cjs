@@ -211,6 +211,31 @@ function externalOwnerLeaseStatus(comments,headSha,now){
    if(expiry>now)holders.set(key,{legacy:true,expires:expiry});
    continue;
   }
+  // Owner-issued pre-ID lease receipts used short expires_at windows and
+  // sometimes a descriptive \"heartbeat: ...\" / \"release: ...\" action.
+  // Without this bounded compatibility, an expired owner release is forever
+  // misread as OWNER_LEASE_UNVERIFIED and blocks protected base recovery.
+  // Modern ID-bearing leases are deliberately NOT eligible for TTL release.
+  const trustedBoundedLegacy=!doc.lease_id&&!doc.run_id&&doc.state==null&&
+   doc.head_sha===headSha&&entry.user?.login==='andylitvinov-design'&&
+   entry.user?.id===274943885&&typeof doc.last_action==='string'&&
+   doc.last_action.length>=4&&doc.last_action.length<=650&&
+   !/[\r\n\0]/.test(doc.last_action)&&
+   Number.isFinite(Date.parse(doc.expires_at||''))&&
+   Number.isFinite(Date.parse(entry.created_at||''));
+  if(trustedBoundedLegacy){
+   const expiry=Date.parse(doc.expires_at),created=Date.parse(entry.created_at);
+   // Invalid/overlong leases remain blocked. Historical bounded owner claims
+   // can expire; current claims still reserve the exact HEAD until expiry.
+   if(created>now+60000||expiry>created+4*3600000||
+      expiry<created-60000||!actor||!owner)
+    return 'OWNER_LEASE_UNVERIFIED';
+   if(/^release(?::|_|$)/.test(state)||/^released(?::|_|$)/.test(state))
+    holders.delete(key);
+   else if(expiry>now)
+    holders.set(key,{legacy:true,expires:expiry});
+   continue;
+  }
   if(activeStates.has(state)){
    if(doc.head_sha!==headSha)continue;
    // An unidentifiable active writer must NOT be unlocked by a stranger.

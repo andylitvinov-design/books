@@ -692,6 +692,48 @@ test('completed historical lease formats do not strand an unrelated exact HEAD',
  }],SHA,NOW),'OWNER_LEASE_UNVERIFIED');
 });
 
+test('owner signed narrative TTL lease expires, release clears, modern lease ID never silently expires',()=>{
+ const head='bdef67a80f87d2ee7e6980549bd7110bd20a37b0';
+ const owner='chatgpt-4234-exact-prod-reconcile-20261112-0050';
+ const doc=(last_action,expires_at,other={})=>({
+  schema:'HH_PR_SWEEP_LEASE_V1',owner,head_sha:head,expires_at,last_action,...other});
+ const note=(id,time,x)=>({id,created_at:time,
+  user:{id:274943885,login:'andylitvinov-design'},
+  body:'<!-- HH_PR_SWEEP_LEASE_V1 -->'+String.fromCharCode(10)+JSON.stringify(x)});
+ const claimed=note(6811214557,'2026-11-12T01:00:19Z',
+  doc('heartbeat: CI running','2026-11-12T01:20:00Z'));
+ const released=note(6811466023,'2026-11-12T01:15:48Z',
+  doc('release: finished source','2026-11-12T01:15:34Z'));
+ assert.equal(externalOwnerLeaseStatus([claimed],head,Date.parse('2026-11-12T01:05:00Z')),
+  'OWNER_LEASE_ACTIVE','no release while owner source lease is live');
+ assert.equal(externalOwnerLeaseStatus([claimed,released],head,Date.parse('2026-11-12T01:16:00Z')),
+  'FREE','same owner explicitly released the bounded legacy claim');
+ assert.equal(externalOwnerLeaseStatus([claimed],head,Date.parse('2026-11-12T01:21:00Z')),
+  'FREE','expired bounded owner legacy heartbeat cannot block later Core');
+ const live=note(6827593254,'2026-11-12T15:17:31Z',doc(
+  'Owner instruction to finish PR 4234', '2026-11-12T15:50:00Z',
+  {owner:'chatgpt-4234-disjoint-base-reconcile-20261112'}));
+ assert.equal(externalOwnerLeaseStatus([live],head,Date.parse('2026-11-12T15:30:00Z')),
+  'OWNER_LEASE_ACTIVE');
+ assert.equal(externalOwnerLeaseStatus([live],head,Date.parse('2026-11-12T15:51:00Z')),
+  'FREE');
+ const modern=note(6828000001,'2026-11-12T15:17:31Z',doc(
+  'claimed','2026-11-12T15:20:00Z',{lease_id:'permanent-owner-lock',state:'claimed'}));
+ assert.equal(externalOwnerLeaseStatus([modern],head,Date.parse('2026-11-12T15:51:00Z')),
+  'OWNER_LEASE_ACTIVE','modern ID claim requires matching release even after time limit');
+ const stranger={...live,user:{id:1,login:'attacker'}};
+ assert.equal(externalOwnerLeaseStatus([stranger],head,Date.parse('2026-11-12T15:51:00Z')),
+  'OWNER_LEASE_UNVERIFIED','untrusted actor cannot confer expiration');
+ const missing=note(6828000002,'2026-11-12T15:17:31Z',
+  doc('Owner instruction','garbage'));
+ assert.equal(externalOwnerLeaseStatus([missing],head,Date.parse('2026-11-12T16:00:00Z')),
+  'OWNER_LEASE_UNVERIFIED');
+ const overlong=note(6828000003,'2026-11-12T15:17:31Z',
+  doc('Owner instruction','2026-11-13T15:50:00Z'));
+ assert.equal(externalOwnerLeaseStatus([overlong],head,Date.parse('2026-11-13T16:00:00Z')),
+  'OWNER_LEASE_UNVERIFIED','unknown lease duration never grants an expired release');
+});
+
 test('CI capacity is rechecked once when the first inventory is partial',async()=>{
  const f=fixture([pr(8,'ci')]);let reads=0;
  const partial={...cap(),inventoryConfidence:'BOUNDED_PARTIAL',unknownActiveRuns:1};
