@@ -174,6 +174,26 @@ try {
     await expect(question).toHaveValue("");
     await expect(submit).toBeDisabled();
 
+    // Rich, distinctive symptoms must select a corpus-backed profile instead of the three static examples.
+    await question.fill(locale === "ru" ? "Стеснение в груди при волнении, дрожь при общении, запор на фоне стресса"
+      : locale === "es" ? "Temblor en compañía, opresión en el pecho y estreñimiento por tensión"
+      : "Chest tightness when anxious, trembling in company and stress related constipation");
+    await submit.click();
+    await visible(results);
+    await expect(results.locator('[data-assist-homeopathy-mind]')).toHaveCount(1);
+    await expect(results.locator('[data-assist-homeopathy] a[data-assist-remedy="ambra-grisea"]')).toHaveCount(1);
+    await expect(results.locator('[data-assist-homeopathy] a[data-assist-remedy="gelsemium"]')).toHaveCount(0);
+    await reset.click();
+
+    // Red-flag symptoms suppress all commercial recommendations, not just homeopathic examples.
+    await question.fill(locale === "ru" ? "Боль в груди и трудно дышать"
+      : locale === "es" ? "No puedo respirar" : "Chest pain and trouble breathing");
+    await submit.click();
+    await expect(results.locator('[role="alert"]')).toHaveCount(1);
+    await expect(results.locator('[data-assist-homeopathy]')).toHaveCount(0);
+    await expect(results.locator('a[data-assist-recommendation]')).toHaveCount(0);
+    await reset.click();
+
     // Free-text matching stays inside the browser; do not submit a lead.
     await question.fill(locale === "ru" ? "Меня тревожит стресс" :
       locale === "es" ? "Tengo estrés" : "I feel stress");

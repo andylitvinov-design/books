@@ -18,3 +18,10 @@
 .panel :is(a):focus-visible{outline:3px solid #08786c;outline-offset:3px}
 @media(max-width:350px){.panel{padding:11px 9px}.remedy{gap:7px}.remedy img{width:63px;height:76px}.remedyCopy strong{font-size:16px}.booking{grid-template-columns:74px minmax(0,1fr);gap:8px;padding:8px}.portrait{width:74px;height:105px}.bookingContent h4{font-size:16px}}
 @media(prefers-reduced-motion:reduce){.panel *{scroll-behavior:auto!important;transition:none!important}}
+
+.remedyWrap{display:grid;gap:3px;min-width:0}
+.evidence{font-weight:750;color:#966a1f!important;text-decoration:none!important}
+.poem{display:inline-flex;gap:6px;align-items:center;min-height:42px;padding:2px 9px;color:#067a67;font-size:12px;font-weight:750;text-decoration:underline;text-underline-offset:2px}
+.empty{border-radius:14px;background:#fff2e8;color:#763522;padding:13px;font-size:14px;line-height:1.5;margin:0 0 12px}
+.photoFallback{flex:none;display:grid;place-items:center;width:76px;height:78px;border-radius:10px;color:#067a67;background:#e9f1ed}
+@media(max-width:350px){.photoFallback{width:63px;height:76px}}

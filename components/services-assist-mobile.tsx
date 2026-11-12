@@ -9,6 +9,7 @@ import type { AssistPreferences } from "@/lib/assist/service-match.mjs";
 import styles from "./services-assist-mobile.module.css";
 import { AssistTopRecommendations } from "./assist-top-recommendations";
 import { ServicesAssistHomeopathy } from "./services-assist-homeopathy";
+import { containsUrgentSymptoms } from "@/lib/remedies/assist-matcher.mjs";
 
 type Focus = "stress" | "relationships" | "energy" | "health" | "work" | "growth" | "general";
 const routes = {
@@ -44,6 +45,7 @@ const copy = {
     questions:{"mode":{"prompt":"Как вам удобнее получить поддержку?","options":[["Со специалистом","human"],["С ИИ-консультантом","ai"],["Посмотреть видео","video"],["Самостоятельно","self"],["Пока не знаю","any"]]},"channel":{"prompt":"Как вам комфортнее общаться?","options":[["Очно","inperson"],["По видеосвязи","online"],["Заочно, без встречи","async"],["Неважно","any"]]},"budget":{"prompt":"Какой бюджет сейчас комфортен?","options":[["Только бесплатно","free"],["До €50","under50"],["До €100","under100"],["Можно обсудить","flexible"]]}},
     cards:{tests:["Тесты самочувствия","Бесплатная самопроверка и наблюдение за динамикой.","Бесплатно"],review:["Разбор ситуации","Короткая анкета и личный письменный ответ.","Бесплатно"],opora:["Курс ОПОРА","Пошаговые упражнения для работы со стрессом.","Курс"],therapy:["Образная психотерапия","Индивидуальная работа с переживаниями и образами.","Личная сессия"],constellation:["Расстановки","Исследование отношений и повторяющихся сценариев.","Личная сессия"],business:["Бизнес-консультация","Прояснение рабочих целей и практических решений.","Консультация"],reiki:["Сеансы Рейки","Энергетические и символические практики по желанию.","По запросу"],mandala:["Персональная мандала","Визуальная символическая практика для саморефлексии.","Практика"],talisman:["Талисманы","Символический каталог в Holistic Support.","Символика"],homeopathy:["Психогомеопатия","Авторский подход и его ограничения.","Ознакомиться"],masters:["Мастера","Опубликованные профили и услуги специалистов.","Каталог"],academy:["Рейки Академия","Обучающие программы и доступные практики.","Обучение"],mytube:["Видео MyTube","Короткие практики и тематические видео.","Видео"],aiCoach:["ИИ-коуч","Разговор с ИИ-помощником для размышления, не психотерапия.","ИИ"]},
     caution:"Гомеопатия не имеет надёжных доказательств эффективности для лечения заболеваний. Символические и энергетические практики не заменяют медицинскую или психологическую помощь.",
+    medicalUrgent:"Некоторые симптомы требуют срочной медицинской оценки. Не выбирайте лечение по каталогу — обратитесь за медицинской помощью.",
     crisis:"Если вы можете причинить себе вред или находитесь в непосредственной опасности, обратитесь в местную экстренную или кризисную службу прямо сейчас.",
   },
   en: {
@@ -57,6 +59,7 @@ const copy = {
     questions:{"mode":{"prompt":"How would you like support?","options":[["Talk to a specialist","human"],["AI guide","ai"],["Watch a video","video"],["Explore on my own","self"],["Not sure","any"]]},"channel":{"prompt":"How would you like to connect?","options":[["In person","inperson"],["Video call","online"],["Written / no meeting","async"],["No preference","any"]]},"budget":{"prompt":"What budget feels comfortable?","options":[["Free only","free"],["Up to €50","under50"],["Up to €100","under100"],["Flexible","flexible"]]}},
     cards:{tests:["Wellbeing check-ins","Free self-checks and ways to observe changes.","Free"],review:["Situation review","Short form and personal written reply.","Free"],opora:["OPORA course","Step-by-step stress support exercises.","Course"],therapy:["Guided imagery therapy","One-to-one exploration of experiences and imagery.","Session"],constellation:["Constellations","Explore relationship patterns and perspectives.","Session"],business:["Business consulting","Clarify work goals and decisions.","Consultation"],reiki:["Reiki sessions","Optional symbolic and energy practices.","Enquire"],mandala:["Personal mandala","Visual symbolism for self-reflection.","Practice"],talisman:["Talismans","Symbolic catalogue in Holistic Support.","Symbolic"],homeopathy:["Psycho-homeopathy","Explore the author's approach and its limitations.","Learn more"],masters:["Practitioners","Browse published practitioner services.","Directory"],academy:["Reiki Academy","Explore learning programs and practices.","Learning"],mytube:["MyTube videos","Short practices and topic videos.","Video"],aiCoach:["AI coach","Talk to an AI reflection assistant, not psychotherapy.","AI"]},
     caution:"Homeopathy lacks reliable evidence for treating health conditions. Symbolic and energy practices do not replace medical or mental-health care.",
+    medicalUrgent:"Some symptoms may require urgent medical evaluation. Do not choose treatment through the catalogue; seek medical care.",
     crisis:"If you may harm yourself or are in immediate danger, contact your local emergency or crisis service now.",
   },
   es: {
@@ -70,6 +73,7 @@ const copy = {
     questions:{"mode":{"prompt":"¿Cómo prefieres recibir apoyo?","options":[["Con profesional","human"],["Guía de IA","ai"],["Ver un video","video"],["Por mi cuenta","self"],["No sé aún","any"]]},"channel":{"prompt":"¿Cómo prefieres conectarte?","options":[["En persona","inperson"],["Videollamada","online"],["Por escrito / sin cita","async"],["Me da igual","any"]]},"budget":{"prompt":"¿Qué presupuesto te resulta cómodo?","options":[["Solo gratis","free"],["Hasta €50","under50"],["Hasta €100","under100"],["Flexible","flexible"]]}},
     cards:{tests:["Pruebas de bienestar","Autoevaluaciones gratuitas para observar cambios.","Gratis"],review:["Revisión de situación","Formulario breve y respuesta escrita personal.","Gratis"],opora:["Curso OPORA","Ejercicios guiados para el estrés.","Curso"],therapy:["Terapia de imágenes guiadas","Exploración individual de experiencias e imágenes.","Sesión"],constellation:["Constelaciones","Explora patrones de relación y perspectivas.","Sesión"],business:["Consultoría de negocios","Aclara metas y decisiones prácticas.","Consulta"],reiki:["Sesiones de Reiki","Prácticas simbólicas y energéticas opcionales.","Consultar"],mandala:["Mandala personal","Práctica visual para autorreflexión.","Práctica"],talisman:["Talismanes","Catálogo simbólico en Holistic Support.","Simbólico"],homeopathy:["Psico-homeopatía","Conoce el enfoque del autor y sus límites.","Información"],masters:["Profesionales","Explora servicios profesionales publicados.","Catálogo"],academy:["Academia Reiki","Formación y prácticas disponibles.","Formación"],mytube:["Videos MyTube","Prácticas breves y videos temáticos.","Video"],aiCoach:["Guía IA","Conversación con IA para reflexionar, no psicoterapia.","IA"]},
     caution:"La homeopatía carece de pruebas fiables de eficacia para tratar enfermedades. Las prácticas simbólicas y energéticas no sustituyen la atención médica o psicológica.",
+    medicalUrgent:"Algunos síntomas requieren atención médica urgente. No elijas un tratamiento del catálogo; busca atención médica.",
     crisis:"Si podrías hacerte daño o estás en peligro inmediato, contacta con emergencias o con una línea de crisis local ahora.",
   },
 } as const;
@@ -94,13 +98,13 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
     setSelection({text:value,focus:detect(value)});
     setPreferences(inferAssistPreferences(value));
   }
-  const crisis = selection !== null && urgent.test(selection.text);
+  const crisis = selection !== null && (urgent.test(selection.text) || containsUrgentSymptoms(selection.text));
   const question = selection && !crisis ? nextAssistQuestion(preferences) : null;
   const suggestions = selection && !crisis ? rankAssistOffers(selection.focus,preferences) : [];
   return <section className={styles.assist} data-assist-mobile lang={locale} aria-labelledby="assist-title">
     <div className={styles.photo} role="img" aria-label="Holistic House" />
     <header className={styles.intro}><p className={styles.eyebrow}><HeartHandshake size={15} aria-hidden="true"/>{t.eyebrow}</p><h1 id="assist-title">{t.title}</h1><p>{t.lead}</p></header>
-    <AssistTopRecommendations locale={locale} focus={selection?.focus ?? null} />
+    {!crisis ? <AssistTopRecommendations locale={locale} focus={selection?.focus ?? null} /> : null}
     <form className={styles.form} onSubmit={submit}>
       <label htmlFor="assist-question">{t.label}</label>
       <textarea id="assist-question" ref={inputRef} rows={3} value={text} maxLength={280} autoComplete="off"
@@ -115,7 +119,7 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
     <p className={styles.privacy}>{t.privacy}</p>
     {selection?<section id="assist-results" className={styles.results} aria-live="polite" aria-labelledby="assist-results-title" tabIndex={-1}>
       <div className={styles.bubble}><strong>{t.label}</strong><p>{selection.text}</p></div>
-      {crisis?<p role="alert" className={styles.crisis}>{t.crisis}</p>:<>
+      {crisis?<p role="alert" className={styles.crisis}>{urgent.test(selection.text) ? t.crisis : t.medicalUrgent}</p>:<>
         <p className={styles.reply}><Sparkles size={18} aria-hidden="true"/>{t.reply[selection.focus]}</p>
         {question ? <div className={styles.question} data-assist-question={question}>
           <p>{t.questions[question].prompt}</p>
@@ -123,7 +127,7 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
           <button type="button" className={styles.skip} onClick={()=>setPreferences(current=>({...current,[question]:"any"}))}>{t.skip}</button>
         </div> : <button type="button" className={styles.adjust} onClick={()=>setPreferences({})}>{t.adjust}</button>}
         <h2 id="assist-results-title">{t.answer}</h2>
-        <ServicesAssistHomeopathy locale={locale} />
+        <ServicesAssistHomeopathy locale={locale} query={selection.text} />
         {suggestions.length===0 ? <p className={styles.noOffers}>{t.noOffers}</p> : null}
         <div className={styles.recommendations}>{suggestions.map(({id:key},index)=>{
           const card=t.cards[key];

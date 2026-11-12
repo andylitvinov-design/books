@@ -37,7 +37,7 @@ test('the approved mobile layout preserves keyboard focus and 320px width', () =
 test('Assist inserts the panel only inside non-crisis suggestions', () => {
   assert.match(assist, /import \{ ServicesAssistHomeopathy \} from "\.\/services-assist-homeopathy";/);
   const crisis = assist.indexOf('{crisis?<p role="alert"');
-  const homeopathy = assist.indexOf('<ServicesAssistHomeopathy locale={locale} />');
+  const homeopathy = assist.indexOf('<ServicesAssistHomeopathy locale={locale} query={selection.text} />');
   const recommendations = assist.indexOf('<div className={styles.recommendations}>');
   assert.ok(crisis !== -1 && homeopathy > crisis && recommendations > homeopathy);
 });
@@ -49,3 +49,15 @@ test('Assist reset locator is unambiguous even with three follow-up answer butto
   assert.match(qa, /mytube: "mytube"/);
   assert.doesNotMatch(qa, /const reset = results\.locator\('button\[type="button"\]'\)/);
 });
+
+test('one approved Homeopathy card can compare profile evidence without a second panel', () => {
+  assert.match(source, /matchRemedyDescriptions/);
+  assert.match(source, /matchedSymptoms/);
+  assert.match(source, /data-assist-homeopathy-mind/);
+  assert.match(source, /media\.poemSlugs/);
+  assert.match(source, /result\.status === "urgent"/);
+  assert.match(assist, /containsUrgentSymptoms\(selection\.text\)/);
+  assert.equal((assist.match(/<ServicesAssistHomeopathy /g) || []).length, 1);
+});
+
+test("medical crisis removes recommendation sales panels", () => { assert.match(assist, /!crisis \? <AssistTopRecommendations/); assert.match(assist, /containsUrgentSymptoms\(selection\.text\)/); });
