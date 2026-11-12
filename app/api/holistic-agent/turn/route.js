@@ -45,6 +45,7 @@ const FAST_RULE_IDS = new Set([
   "price","privacy","login","technical","orders","video_status",
   "video_delivery","video_download","video_definition","human_help",
   // Reviewed factual FAQ: no orders, results, uploads, payments or network sends.
+  "conversation_greeting","conversation_small_talk","conversation_chat_invitation",
   "chat_guest","chat_modes","chat_bug","chat_keyboard","chat_history",
   "chat_delete","chat_telegram","chat_whatsapp","video_render_queue",
   "video_export","video_license","video_orientation",
