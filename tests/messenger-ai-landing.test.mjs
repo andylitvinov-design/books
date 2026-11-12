@@ -41,7 +41,22 @@ test("illustrated welcome stays at its top on first render; dialogue still scrol
  assert.match(first,/messengerView&&messages.length===0/);
  assert.match(first,/thread.scrollTop=0/);
  assert.match(first,/if\(followTail\.current\)/);
- assert.match(first,/thread.scrollTop=thread.scrollHeight/);
+ assert.match(first,/programmaticScrollTop.current=target/);
+ assert.match(first,/thread.scrollTop=target/);
+});
+
+test("focused iPhone composer exposes previous AI reply or welcome question after keyboard resize",()=>{
+ assert.match(chat,/const composerFocused=useRef\(false\)/);
+ assert.match(chat,/const revealFocusedContext=useCallback\(\(\)=>/);
+ assert.ok(chat.includes("querySelectorAll('[data-hh-ai-assistant-message]')"));
+ assert.ok(chat.includes("querySelector('[data-hh-ai-landing-question]')"));
+ assert.match(chat,/if\(composerFocused.current\)revealFocusedContext\(\)/);
+ assert.match(chat,/if\(composerFocused.current\)\{\s*if\(followTail.current\)revealFocusedContext\(\)/);
+ assert.doesNotMatch(chat,/if\(!compact\|\|!messengerView\|\|messages.length===0\)return;/);
+ assert.match(chat,/onFocus=\{\(\)=>\{/);
+ assert.match(chat,/onBlur=\{\(\)=>\{composerFocused.current=false;\}\}/);
+ assert.match(chat,/viewport\?\.addEventListener\("resize",revealVisibleReply\)/);
+ assert.match(chat,/observer.observe\(thread\)/);
 });
 
 test("approved HeyGen exports map EN and RU to distinct captioned MP4s, not YouTube",()=>{
