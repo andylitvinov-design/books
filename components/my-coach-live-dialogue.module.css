@@ -36,3 +36,12 @@
 .actions button:hover{background:#e8f3eb}
 @media(max-width:560px){.root{margin:0 auto;padding:14px 12px;border-radius:19px}.messages{max-height:43vh}.coachMessage,.userMessage{max-width:97%;padding:12px}.send{width:100%}.actions button{flex:1;font-size:12px}}
 @media(prefers-reduced-motion:reduce){.root *{scroll-behavior:auto}}
+
+/* Animate the actual SVG face inside the main AI chat; explicit device voice controls. */
+.livingPanel{margin:14px 0 2px;padding:10px;display:flex;flex-direction:column;gap:7px;
+ border-radius:19px;border:1px solid #d6e5d6;background:linear-gradient(115deg,#edf6ee,#fff7ed)}
+.livingActions{display:flex;flex-direction:column;gap:5px;min-width:0}
+.livingActions>span{font-size:11px;line-height:1.4;color:#536e62}
+.livingActions :global([data-coaching-question-voice]){margin:0;max-width:100%}
+.dictationInterim{font-size:12px;color:#365e51;overflow-wrap:anywhere}
+@media(max-width:560px){.livingPanel{padding:8px;gap:5px}.livingActions>span{font-size:10px}}
