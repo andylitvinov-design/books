@@ -71,9 +71,15 @@ export function assessPrReadiness(event, live, repository, ancestryProof = null,
     message: 'Exact HEAD and mergeability verified; trusted release gate pins the tested merge base' };
 }
 
-export async function readLivePr(repository, number, token, {
-  transport = fetch, wait = ms => new Promise(resolve => setTimeout(resolve, ms))
-} = {}) {
+export async function readLivePr(repository, number, token,
+    transportOrOptions = fetch, sleep = ms => new Promise(resolve => setTimeout(resolve, ms))) {
+  // Preserve the production positional testing/worker API while supporting
+  // the newer caller's scoped options object; no speculative mutating retry.
+  const withOptions = transportOrOptions !== null && typeof transportOrOptions === 'object';
+  const transport = withOptions ? (transportOrOptions.transport ?? fetch) : transportOrOptions;
+  const wait = withOptions ? (transportOrOptions.wait ?? sleep) : sleep;
+  if (typeof transport !== 'function' || typeof wait !== 'function')
+    throw new TypeError('INVALID_GITHUB_READ_TRANSPORT');
   const url = `https://api.github.com/repos/${repository}/pulls/${number}`;
   for (let attempt = 0; attempt < 3; attempt++) {
     const response = await transport(url, {
@@ -85,13 +91,11 @@ export async function readLivePr(repository, number, token, {
       signal: AbortSignal.timeout(8000),
     });
     if (response.ok) return response.json();
-    // Retry only transient, read-only GitHub 502/503/504 failures; never
-    // retry authorization, conflict or rate-limit errors, or mutate PR state.
-    if ([502, 503, 504].includes(response.status) && attempt < 2) {
-      await wait(attempt === 0 ? 250 : 750);
-      continue;
-    }
-    throw new Error(`GitHub PR read failed: HTTP ${response.status}`);
+    if (![502, 503, 504].includes(response.status) || attempt === 2)
+      throw new Error(`GitHub PR read failed: HTTP ${response.status}`);
+    // Production positional callers retain 750/1500ms, options-based CI
+    // pruning callers retain 250/750ms: both APIs are regression tested.
+    await wait(withOptions ? (attempt === 0 ? 250 : 750) : 750 * (2 ** attempt));
   }
   throw new Error('GitHub PR read exhausted without successful readback');
 }

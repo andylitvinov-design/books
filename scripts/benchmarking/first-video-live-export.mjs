@@ -170,13 +170,15 @@ try {
   await concept.waitFor({state:'visible',timeout:15000});
   await concept.locator('[data-video-concept-approve]').click();
   await page.locator('[data-video-quick-control="editor"]').click();
-  await page.locator('[data-video-montage-tab="settings"]').click();
+  await page.locator('[data-video-montage-tab="concept"]').click();
+  await page.locator('[data-video-story-open-settings]').click();
   await page.locator('[data-video-quick-control="phrases"]').click();
   await page.locator('[data-video-ideas-tab="concept"]').click();
   assert.equal(await page.locator('[data-video-concept-auto]').getAttribute('data-concept-approved'),
     'true','GUEST_APPROVAL_MUST_SURVIVE_TAB_NAVIGATION');
   await page.locator('[data-video-quick-control="editor"]').click();
-  await page.locator('[data-video-montage-tab="settings"]').click();
+  await page.locator('[data-video-montage-tab="concept"]').click();
+  await page.locator('[data-video-story-open-settings]').click();
   const textTools=page.locator('[data-video-concept-text-tools]');
   await textTools.locator(':scope > summary').click();
   await textTools.evaluate(node=>{if(!node.open)throw Error('CONCEPT_TEXT_TOOLS_DID_NOT_OPEN')});
