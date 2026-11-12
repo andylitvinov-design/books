@@ -145,11 +145,13 @@ test('API auth, origin, bounded body and OAuth safe redirect to localized coachi
   // Spanish OAuth entry and callback must expose the same finite allowlist,
   // including the newer verified Telegram Cabinet/course destinations.
   // Private direct-messages still requires a verified recipient, never an open URL.
-  const spanishContinue = "['enquiry','coaching-intake','practice-preview','direct-messages','video-studio','cabinet','course','tests','my-tests','my-courses','business']";
+  const spanishContinue = "['enquiry','coaching-intake','practice-preview','direct-messages','video-studio','cabinet','course','tests','my-tests','my-courses','business','my-coach-mira']";
   assert.ok(api.includes(spanishContinue+".includes(body.continueTo)"),
     'Spanish login allows only enumerated first-party destinations');
   assert.ok(api.includes(spanishContinue+".includes(url.searchParams.get('continue'))"),
     'Spanish callback matches the same strict allowlist');
+  assert.match(api, /continueTo === 'my-coach-mira'\s*\?\s*`\$\{origin\}\/\$\{locale\}\/coaching\/sessions\?coach=mira`/,
+    'Mira is only a finite first-party sessions destination, never an arbitrary redirect');
   assert.match(api, /if \(recipientSlug !== null\) \{\s*if \(continueTo !== 'direct-messages'\)/)
   assert.match(api, /safeEnquiryReturnPath\(returnPath, locale\)/)
   assert.match(api, /'enquiry','coaching-intake'/)

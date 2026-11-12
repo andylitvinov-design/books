@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { PublicLocale } from "@/lib/public-locales";
 import { approvedMemoryForLocalPrompt } from "@/lib/holistic-support/agent-memory-policy.mjs";
@@ -35,13 +35,17 @@ export function HolisticAgentMemoryPanel({locale,onUse}:{
   const [items,setItems]=useState<MyAgentMemory[]>([]);
   const [ownerBinding,setOwnerBinding]=useState("");
   const [drafts,setDrafts]=useState<Record<typeof keys[number],string>>(emptyDraft);
+  const readEpoch=useRef(0);
+  useEffect(()=>()=>{readEpoch.current+=1;},[]);
   const enabled=process.env.NEXT_PUBLIC_HH_AGENT_MEMORY_ENABLED==="true";
   if(!enabled)return null;
   const headers={"Content-Type":"application/json"} as const;
   async function read(){
+    const epoch=++readEpoch.current;
     setLoading(true);setError("");setOwnerBinding("");
     try{
       const response=await fetch("/api/app/agent-memory",{credentials:"same-origin",cache:"no-store"});
+      if(epoch!==readEpoch.current)return;
       if(response.status===401){
         setUseSaved(false);onUse([],"");setConsent(false);setItems([]);
         setStatus("signed");return;
@@ -51,6 +55,7 @@ export function HolisticAgentMemoryPanel({locale,onUse}:{
         setStatus("unavailable");return;
       }
       const data=await response.json() as MemoryReply;
+      if(epoch!==readEpoch.current)return;
       const rows=Array.isArray(data.items)?data.items:[];
       const binding=typeof data.ownerBinding==="string" && /^[a-f0-9]{64}$/u.test(data.ownerBinding)
         ?data.ownerBinding:"";
@@ -60,10 +65,11 @@ export function HolisticAgentMemoryPanel({locale,onUse}:{
       setDrafts({...emptyDraft,...Object.fromEntries(rows.map(row=>[row.kind,row.value]))});
       setStatus("ready");
     }catch{
+      if(epoch!==readEpoch.current)return;
       setUseSaved(false);onUse([],"");setConsent(false);setItems([]);
       setStatus("unavailable");
     }
-    finally{setLoading(false);}
+    finally{if(epoch===readEpoch.current)setLoading(false);}
   }
   function show(){
     if(open){setOpen(false);return;}

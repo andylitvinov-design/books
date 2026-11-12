@@ -99,8 +99,8 @@ test('disclosure cleanup never launches provider commands or playback; muted rec
   }
   assert.doesNotMatch(source,/fetch\(|postMessage\(|autoplay=|innerHTML|contentWindow|location\./,
     'No provider commands, automatic iframe playback or CSP mutation in this component');
-  assert.equal((source.match(/\.play\(/g)||[]).length,2,
-    'Only the bounded same-node recovery and one explicitly triggered fresh-decoder resume may call native play');
+  assert.equal((source.match(/\.play\(/g)||[]).length,3,
+    'Only one original decoder resume plus two source-guarded fresh-decoder plays after explicit user activation are allowed');
   const recovery=source.split('function onNativePlay(')[1]?.split('function discardRecovery(')[0];
   assert.ok(recovery,'The user-play observer must own the sole recovery');
   assert.match(recovery,/if \(video\.muted !== true \|\| video\.readyState < 2 \|\|/,
@@ -109,6 +109,23 @@ test('disclosure cleanup never launches provider commands or playback; muted rec
     'Only exact source and native seeked can resume muted user-requested playback');
   assert.match(recovery,/video\.pause\(\);[\s\S]*video\.preload = "metadata";[\s\S]*video\.load\(\);/,
     'Only one guarded same-source metadata reconstruction is allowed after proven stall');
+  // On a verified muted stall after the user's Play, a fresh same-source node
+  // may need one frame-priming Play and one post-seek resume. They are not
+  // disclosure-open autoplay, unbounded retry or a provider command.
+  assert.equal((recovery.match(/\.play\(/g) || []).length, 1,
+    'The original decoder gets exactly one bounded native resume');
+  const freshDecoderBranch = source.split('onLoadedMetadata={event => {')[1]?.split('onPlay={onNativePlay}')[0];
+  assert.ok(freshDecoderBranch, 'Fresh-decoder logic must remain scoped to native metadata');
+  assert.equal((freshDecoderBranch.match(/\.play\(/g) || []).length, 2,
+    'Fresh replacement has only one muted priming Play and one seek-confirmed resume');
+  assert.match(source, /setFreshDecoder\(previous => previous\?\.source === saved\.source \? previous :\s*\{source:saved\.source,time:resumeAt,token:Date\.now\(\)\}\)/,
+    'A stalled user-activated decoder alone may request one same-source replacement');
+  assert.match(freshDecoderBranch, /if \(!replacement\) \{ onNativeMetadata\(event\); return; \}/);
+  assert.match(freshDecoderBranch, /if \(!player\.isConnected \|\| !disclosure\?\.open \|\|[\s\S]*?player\.currentSrc !== replacement\.source/);
+  assert.match(freshDecoderBranch, /const active = \(\) => player\.isConnected && disclosure\.open &&[\s\S]*?player\.muted &&/);
+  assert.match(freshDecoderBranch, /const prime = \(\) => \{\s*if \(startedPriming \|\| !active\(\) \|\| player\.readyState < 2 \|\|/);
+  assert.match(freshDecoderBranch, /player\.requestVideoFrameCallback\(warmFrame\);\s*void player\.play\(\)\.catch/);
+  assert.match(freshDecoderBranch, /if \(player\.paused\) void player\.play\(\)\.catch/);
   assert.match(source, /<summary onClickCapture=\{onSummaryClickCapture\}>\{props.summary\}<\/summary>/);
   assert.match(source, /onToggle=\{onToggle\}/);
 });
