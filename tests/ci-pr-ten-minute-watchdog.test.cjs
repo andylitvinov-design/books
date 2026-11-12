@@ -2070,7 +2070,7 @@ test('direct/manual PM, dry-run, completion, unrelated triggers and foreign refs
 });
 
 
-test('GitHub queued cancellation 409 with zero jobs halts after exactly one attempt and preserves a support receipt',async()=>{
+test('GitHub queued cancellation 409 with zero jobs caps attempts at four and records support receipts',async()=>{
  const f=cleanupFixture();
  const first=f.run;
  let sent=0;
@@ -2083,14 +2083,14 @@ test('GitHub queued cancellation 409 with zero jobs halts after exactly one atte
   const err=Error('GitHub cancellation conflict');err.status=409;throw err;};
  const report=await mergedCleanup.runCleanup({github:f.github,context:f.context,
   observedQueued:139,observedRemaining:4700,now:Date.parse('2026-11-12T18:00:00Z')});
- assert.equal(sent,1,'do not burn 30+ API requests after a 409');
- assert.equal(report.cancel_attempts,1);
- assert.equal(report.eligible,1);
+ assert.equal(sent,4,'at most four 409 attempts per sweep; never burn 30+ API requests');
+ assert.equal(report.cancel_attempts,4);
+ assert.equal(report.eligible,4);
  assert.equal(report.status,'GITHUB_409_SUPPORT_TRIAGE');
  assert.deepEqual(report.cancel_accepted,[]);
- assert.equal(report.non_cancelable.length,1);
- assert.equal(report.non_cancelable[0].code,'QUEUED_WITH_ZERO_JOBS_CANCEL_409');
- assert.match(report.non_cancelable[0].url,/actions\/runs\/1001$/);
+ assert.equal(report.non_cancelable.length,4);
+ assert.ok(report.non_cancelable.every(x=>x.code==='QUEUED_WITH_ZERO_JOBS_CANCEL_409'));
+ assert.ok(report.non_cancelable.every(x=>x.url.startsWith('https://github.com/andylitvinov-design/books/actions/runs/')));
 });
 test('queued non-cancellable 409 never calls force-cancel and only labels a jobless zombie with proof',async()=>{
  const f=cleanupFixture();let force=0;

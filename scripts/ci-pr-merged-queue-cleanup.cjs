@@ -9,7 +9,7 @@ const OWNER='andylitvinov-design', REPO='books';
 const FULL=OWNER+'/'+REPO, PROD='codex/public-book-library';
 const CONTROL='codex/bootstrap-books', SHA=/^[a-f0-9]{40}$/i;
 const GRACE=30*60*1000, THRESHOLD=100;
-const MAX_CANCELS=12,MAX_BRANCHES=12,MAX_COMPARES=14;
+const MAX_CANCELS=12,MAX_BRANCHES=12,MAX_COMPARES=14,MAX_JOBLESS_409=4;
 const date=s=>{const x=Date.parse(s||'');return Number.isFinite(x)?x:null;};
 function queuedPRRun(run){
  return run&&Number.isSafeInteger(run.id)&&run.id>0&&
@@ -86,8 +86,12 @@ async function runCleanup({github,context,core={info(){},warning(){}},
  if(response.total_count<=THRESHOLD)
   return {...out,status:'QUEUE_NO_LONGER_SATURATED',partial:false};
  const branches=new Map(),commits=new Map();
- for(const item of response.workflow_runs){
+ // Rotate the bounded queue page so one uncancellable GitHub zombie cannot
+ // starve all other independently verified stale merged-PR checks forever.
+ const rotation=Math.floor(now/(10*60*1000))%Math.max(1,response.workflow_runs.length);
+ for(let index=0;index<response.workflow_runs.length;index++){
   if(out.cancel_attempts>=limit)break;
+  const item=response.workflow_runs[(rotation+index)%response.workflow_runs.length];
   if(!queuedPRRun(item)){out.skipped++;continue;}
   let pr=branches.get(item.head_branch);
   if(pr===undefined){
@@ -175,7 +179,11 @@ async function runCleanup({github,context,core={info(){},warning(){}},
      code:jobless?'QUEUED_WITH_ZERO_JOBS_CANCEL_409':'CANCEL_409_UNVERIFIED',
      url:'https://github.com/'+FULL+'/actions/runs/'+item.id});
     out.status='GITHUB_409_SUPPORT_TRIAGE';
-    break;
+    // Continue only after an exact readback proves GitHub queued/zero-jobs
+    // for this failed cancellation; unverified 409 remains a hard stop.
+    // Never force-cancel, and bound jobless 409 attempts per existing sweep.
+    if(!jobless||out.non_cancelable.length>=MAX_JOBLESS_409)break;
+    continue;
    }
    // Permission/rate/resolution conflicts stop, never retry in the same run.
    if([403,404,422,429].includes(status))break;
