@@ -66,6 +66,9 @@ function computeCapacity(active,queued,jobs){
 }
 
 const GHOST_REPAIR_MODE='GHOST_409_ONE_REPAIR';
+// Inspect at most twenty active workflow histories, leaving four Core slots.
+// In-progress wrapper statuses do not prove that their jobs are runnable.
+const GHOST_ACTIVE_PROOF_LIMIT=Math.min(LIMIT.maxJobReads,LIMIT.maxActiveRuns-4);
 async function verifiedGhostRepairCapacity(gh,owner,repo,p,now=Date.now()){
  const hold=reason=>({known:false,reason:'GHOST_'+reason});
  if(owner!=='andylitvinov-design'||repo!=='books'||
@@ -109,7 +112,8 @@ async function verifiedGhostRepairCapacity(gh,owner,repo,p,now=Date.now()){
   ]);
   const Q=q?.data?.total_count,A=a?.data?.total_count,active=a?.data?.workflow_runs;
   if(!Number.isSafeInteger(Q)||Q<=100||Q>250||
-   !Number.isSafeInteger(A)||A>12||A<0||!Array.isArray(active)||active.length!==A||
+   !Number.isSafeInteger(A)||A>GHOST_ACTIVE_PROOF_LIMIT||A<0||
+   !Array.isArray(active)||active.length!==A||
    wq?.data?.total_count!==0||!Array.isArray(wq.data.workflow_runs)||
    wa?.data?.total_count!==0||!Array.isArray(wa.data.workflow_runs))
    return hold('INCOMPLETE_RUN_CAPACITY');
@@ -139,7 +143,7 @@ function admission(lane,capacity){
   if(!capacity.known||!capacity.safeToDispatchOneRepair||
      !Number.isSafeInteger(capacity.ghostProofRunId))return 'GHOST_UNVERIFIED';
   if(lane!=='repair')return 'GHOST_REPAIR_ONLY';
-  if(capacity.activeRuns>12||capacity.queuedRuns>250||
+  if(capacity.activeRuns>GHOST_ACTIVE_PROOF_LIMIT||capacity.queuedRuns>250||
      capacity.runningJobs>8||capacity.queuedJobs>2||
      capacity.activeWorker?.[WORKFLOWS.repair]!==0)return 'GHOST_WORKER_BUSY';
   return 'ADMIT';

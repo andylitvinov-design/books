@@ -1989,11 +1989,32 @@ test('409 jobless merged PR allows one source Repair, never CI/legacy',async()=>
  cap.activeWorker['HH PR source Repair Worker']=1;
  assert.equal(admission('repair',cap),'GHOST_WORKER_BUSY');
 });
+
+test('bounded ghost mode proves 16-20 active workflow jobs before one Repair admission',async()=>{
+ for(const activeCount of [16,20]){
+  const f=ghostFixture({activeCount});
+  let verified=0;
+  const read=f.github.rest.actions.listJobsForWorkflowRun;
+  f.github.rest.actions.listJobsForWorkflowRun=async(args)=>{
+   if(args.run_id!==900)verified++;
+   return read(args);
+  };
+  const cap=await GRC(f.github,'andylitvinov-design','books',f.p,
+   Date.parse('2026-11-12T20:00:00Z'));
+  assert.equal(cap.known,true,'all jobs proven at '+activeCount);
+  assert.equal(verified,activeCount,'must inspect each active run');
+  assert.equal(admission('repair',cap),'ADMIT');
+  assert.equal(admission('legacy',cap),'GHOST_REPAIR_ONLY');
+  cap.activeWorker['HH PR source Repair Worker']=1;
+  assert.equal(admission('repair',cap),'GHOST_WORKER_BUSY');
+ }
+});
 test('409 fallback never admits unverified or congested runners',async()=>{
  const variants=[{ghostJobs:1},{run:{status:'completed'}},{run:{pull_requests:[{number:55}]}},
   {pr:{merged:false,merged_at:null}},{comparison:'diverged'},
   {workerQueued:1},{queueCount:99},{queueCount:251},
-  {activeCount:13},{activeCount:9,jobStatus:'in_progress'}];
+  {activeCount:21},{activeCount:9,jobStatus:'in_progress'},
+  {activeCount:20,jobStatus:'in_progress'}];
  for(const opts of variants){
   const f=ghostFixture(opts);
   const result=await GRC(f.github,'andylitvinov-design','books',f.p,Date.parse('2026-11-12T20:00:00Z'));
