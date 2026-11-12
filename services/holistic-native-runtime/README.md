@@ -59,3 +59,19 @@ Do not mix embedding vectors from E5 and Qwen in one index. Regenerate semantic 
 Run Node 22 source tests: node --test services/holistic-native-runtime/gateway.test.mjs. Run Python syntax check: python3 -m py_compile services/holistic-native-runtime/e5-worker.py. Full secured service integration also needs cloud installation, the existing authenticated Ollama adapter, CI/Core/Specialist, real browser, TLS and actual model quality/latency checks. Gateway denies unknown routes, non-Bearer requests, tool calls, unknown models, streamed requests, excessive input or concurrency; protects against user-supplied upstream URLs and never logs chat text.
 
 **Merging this kit alone is not a functioning free model server.** Provisioning requires an eligible cloud account/domain and consented deployment; neither is currently available through the connected GitHub/Vercel/Supabase tools.
+
+
+## Alternative: free HTTPS directly on the Oracle instance public IP (no domain purchase)
+
+**Status:** optional, version-dependent deployment recipe; not tested against the user's OCI VM. Since January 2026 Let's Encrypt has generally available **short-lived certificates for public IPv4/IPv6 addresses**. They expire in about **160 hours** and must renew automatically. A sufficiently recent Caddy release with ACME `shortlived` support can request them. This avoids buying a domain, but still relies on the certificate authority and Oracle public IP.
+
+Official verification: https://letsencrypt.org/2026/01/15/6day-and-ip-general-availability
+Caddy ACME syntax and version constraints: https://caddyserver.com/docs/caddyfile/directives/tls
+
+1. The VM must have an assigned **public IPv4** (avoid purchasing a separate paid reserved IP). Open public 80/443 in OCI Security List/NSG and the VM firewall. **Never open 11434, 8787 or 8788.**
+2. Use `services/holistic-native-runtime/Caddyfile.ip.example` on the **Oracle VM only**; replace BOTH `PUBLIC_ORACLE_IPV4` placeholders with the VM's real assigned IP. The `default_sni` entry is needed for TLS clients that omit SNI for an IPv4 literal.
+3. Validate `caddy validate --config /etc/caddy/Caddyfile`, then start/reload Caddy; check its official logs and confirm that the issuer is a **publicly trusted Let's Encrypt shortlived IP certificate**, not Caddy's internal/local CA. Test `curl -v https://ORACLE_PUBLIC_IP/api/chat` without `-k`: should return a denied or method/error response, **not a TLS trust error**.
+4. Recheck the certificate renewal before the 160-hour lifetime, OCI firewall, public-ip stability, authentication and zero external inference egress. If the Caddy version cannot issue trusted IP certificates, **do not set `tls internal` as a workaround**; use a reviewed owned domain or a correctly maintained public CA workflow instead.
+5. The existing protected Vercel owned-model adapter accepts `HH_AGENT_OLLAMA_ENDPOINT=https://ORACLE_PUBLIC_IP/api/chat` provided the certificate is publicly trusted and Node.js TLS verification succeeds. Configure only after real server quality, latency, owner consent, token and cost checks. Never put the token in `NEXT_PUBLIC_*` or GitHub files.
+
+This alternative requires **no new third-party generative API or purchased domain** but is not a substitute for an actual eligible Oracle VM and authorized account access. A merged source example does not prove the endpoint exists or works.
