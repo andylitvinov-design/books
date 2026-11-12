@@ -3,6 +3,7 @@ import test from "node:test";
 import { prefersSafariWebm, orderRecordingMimes } from "../lib/mandala/recording-codecs.mjs";
 import { readFileSync } from "node:fs";
 import ts from "typescript";
+import {stripApprovedIntroVideoSources} from "./helpers/approved-mandala-intro-sources.mjs";
 
 const read = p => readFileSync(new URL("../"+p,import.meta.url),"utf8");
 const audioSource = read("lib/mandala/local-video-music.ts");
@@ -152,8 +153,9 @@ test("iPhone editor wires native <audio> controls, explicit file input, EN/RU/ES
   assert.match(client,/data-video-audio-player/);
   assert.match(client,/controls preload="metadata"/);
   assert.match(client,/void player\.play\(\)\.catch/);
-  assert.match(client,/onPlay=\{\(\)=>/);
-  assert.match(client,/onPause=\{\(\)=>/);
+  // Native event handlers may take an event to reject stale Safari media nodes.
+  assert.match(client,/onPlay=\{(?:\(\)=>|event=>)/);
+  assert.match(client,/onPause=\{(?:\(\)=>|event=>)/);
   assert.match(client,/type="file"/);
   assert.match(client,/data-video-audio-upload/);
   assert.match(client,/isSupportedLocalAudio\(file\)/);
@@ -171,7 +173,7 @@ test("iPhone editor wires native <audio> controls, explicit file input, EN/RU/ES
   const approvedMusicBed=/fetch\(presetAudioUrl\(bedId\),\{credentials:"same-origin",cache:"force-cache"\}\)/g;
   assert.equal((audioSource.match(firstPartyWav)||[]).length,1,"one verified site-owned WAV GET");
   assert.equal((audioSource.match(approvedMusicBed)||[]).length,1,"one explicit approved music-bed GET");
-  assert.doesNotMatch((audioSource+client).replace(firstPartyWav,"").replace(approvedMusicBed,""),
+  assert.doesNotMatch((audioSource+stripApprovedIntroVideoSources(client)).replace(firstPartyWav,"").replace(approvedMusicBed,""),
     /\bfetch\s*\(|XMLHttpRequest|FormData|sendBeacon|postMessage|api\.kling|heygen|higgsfield|analytics/i);
 });
 

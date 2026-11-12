@@ -19,6 +19,9 @@ test("semantic format shelves use content type and source, not a 10-minute cutof
  assert.deepEqual(myTubeFormatCounts(cards),{all:7,shorts:2,study:5});
  assert.equal(matchesMyTubeFormat(cards[1],"study"),true);
  assert.equal(matchesMyTubeFormat(cards[1],"shorts"),false);
+ assert.equal(matchesMyTubeFormat(cards[1],"courses"),true);
+ assert.equal(matchesMyTubeFormat(cards[4],"courses"),true);
+ assert.equal(matchesMyTubeFormat(cards[0],"courses"),false);
  assert.equal(matchesMyTubeFormat(cards[0],"all"),true);
  assert.equal(matchesMyTubeFormat(cards[1],"nonsense"),false);
 });
@@ -35,14 +38,25 @@ test("MyTube segmented format filters keep unknown-duration videos visible",()=>
  assert.match(view,/data-mytube-category-rail/);
  assert.match(view,/data-mytube-categories role="group"/);
  assert.match(view,/data-mytube-filter-toggle/);
+ assert.match(view,/data-mytube-subcategory-row/);
+ assert.match(view,/data-mytube-subcategory-rail/);
+ assert.match(view,/data-mytube-language-control/);
+ assert.match(view,/data-mytube-audio-language=\{value\}/);
+ assert.match(view,/data-mytube-duration/);
+ assert.doesNotMatch(view,/preferredSubcategoryIds/);
+ assert.match(view,/mytubeCategoryId!=="all"&&<div className=\{styles\.mytubeSubcategoryRail\}/);
  assert.match(view,/data-mytube-format-tabs/);
  assert.match(view,/data-mytube-format-mode=\{mode\}/);
- assert.match(view,/matchesMyTubeFormat\(item,formatMode\)/);
+ assert.match(view,/matchesMyTubeShelf\(item,formatMode\)/);
  assert.match(view,/onChange=\{event=>setDurationRange\(event.target.value\)\}/);
  assert.doesNotMatch(view,/matchesMyTubeDuration\(item\.durationVerifiedSeconds/);
- assert.doesNotMatch(view,/durationUnknown|under 10 min|10 min or longer/);
+ // The owner now explicitly requires verified practices of at most 600 seconds.
+ // Reject guessed-duration UI, not the legitimate reviewed-practice explanation.
+ assert.doesNotMatch(view,/durationUnknown|10 min or longer/);
+ assert.match(read("lib/video-discovery/mytube-shelves.mjs"),/seconds<=600/);
  assert.match(css,/\.mytube \.mytubeFormatTabs\{[^}]*grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
- assert.match(css,/\.mytube \.mytubeCategoryRail\{[^}]*overflow-x:auto/);
+ assert.match(css,/\.mytube \.mytubeCategoryRail\{[^}]*grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/);
+ assert.doesNotMatch(css.slice(css.indexOf("/* MyTube-only compact five-choice editorial taxonomy.")),/overflow-x:auto/);
  assert.match(hub,/mytubeFormat:classifyMyTubeFormat\(video\)/);
  assert.match(feed,/item\.mytubeFormat === "study"/);
  assert.match(view,/variant!=="mytube"&&<>/);

@@ -1,4 +1,5 @@
 import test from 'node:test'
+import './messenger-telegram-first-entry.test.mjs'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import ts from 'typescript'
@@ -28,7 +29,9 @@ test('approved Messenger preserves existing CRM plus direct and client request a
   assert.match(simple,/<PracticeRequestConversation/)
   assert.match(orders,/data-orders-clients-hub/)
   assert.match(orders,/hidden=\{section!=='ai'\}/)
-  assert.match(orders,/if\(!\['ai','orders','clients'\]\.includes\(value\)\)return/)
+  assert.match(orders,/if\(!\['ai','orders','clients','news'\]\.includes\(value\)\)return/)
+  assert.match(orders,/id="hh-news-panel"/)
+  assert.match(orders,/section==='news'/)
   assert.match(orders,/url\.searchParams\.set\('section',value\)/)
   assert.match(page,/<MessagesOrdersClients locale=\{locale\}>/)
   assert.doesNotMatch(page,/fetch\(|localStorage|sessionStorage|forcePaid|sendOneMessengerMessage/)

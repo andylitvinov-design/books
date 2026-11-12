@@ -1,20 +1,21 @@
 "use client";
 
-import { useLayoutEffect, useState } from "react";
-import { createPortal } from "react-dom";
+import { useState } from "react";
 import type { ReactNode } from "react";
 import {
-  ArrowRight, AudioLines, ChevronDown, Eye, Headphones, Image as Picture,
-  MapPin, Mic, Play, Quote, Sparkles, Sun, Waves,
+  ArrowRight, AudioLines, Check, Eye, Headphones, Image as Picture,
+  MapPin, Mic, Play, Quote, Sparkles, Sun,
 } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import type { AffirmationSettings } from "@/lib/mandala/video-affirmations";
 import styles from "./mandala-hypnocorrection-mobile.module.css";
 
-export type HypnoLightSettings = { enabled: boolean; cyclesPerMinute: number; opacity: number };
-type GroupId = "phrases" | "visual" | "audio";
+export type HypnoLightSettings = { enabled: boolean; cyclesPerMinute: number; opacity: number; mode?: "sunlight"|"glow"|"waves" };
+type GroupId = "visual" | "audio" | "effects";
+type PosterGroupId = "visual" | "audio" | "phrases";
 type Props = {
   locale: PublicLocale;
+  initialGroup?: GroupId;
   disabled: boolean;
   affirmations: AffirmationSettings;
   onAffirmationsChange: (settings: AffirmationSettings) => void;
@@ -37,18 +38,18 @@ type Props = {
   onOpenScenes: () => void;
   onPickPhoto: () => void;
   onRemovePhoto: () => void;
-  onPreview: () => void;
   onCreate: () => void;
+  status?: string;
   onWavePreset: () => void;
   hasPhoto: boolean;
   hasVoiceFile: boolean;
   voiceActive: boolean;
-  posters: Record<GroupId,string>;
+  posters: Record<PosterGroupId,string>;
 };
 
 const copy = {
   ru: {
-    title:"Гипнокоррекция",sub:"Добавьте медитацию, визуальные эффекты, звук и слова поддержки",
+    title:"Гипноэффекты для вашего видео",sub:"Выберите визуальные или аудиоэффекты",phraseTab:"Фразы",visualTab:"Визуальные",audioTab:"Аудиоэффекты",effectsTab:"Эффекты",presetTitle:"Визуальные эффекты",presetHelp:"Выбор сразу отображается в видео и сохраняется при экспорте.",applyCreate:"Создать видео",withoutCreate:"Добавить эффекты",chooseScenes:"Выбрать сцены",choosePhoto:"Выбрать фото",
     wave:"Быстрая настройка с Wave",waveHelp:"Подберёт мягкие эффекты по вашей цели",try:"Попробовать",
     suggested:"Предложен мягкий световой ритм и видимые фразы. Измените любой пункт или отключите его.",
     phrases:"Установки и внушения",phrasesHelp:"Слова поддержки и настройки",
@@ -77,7 +78,7 @@ const copy = {
     preview:"Проверить в основном видео",privacy:"Бесплатные эффекты выполняются локально. Персональные файлы не отправляются стороннему ИИ.",
   },
   en: {
-    title:"Audio-visual support",sub:"Optional ways to present your personal video",
+    title:"Hypno effects for your video",sub:"Choose visual or audio effects to personalize your video.",phraseTab:"Phrases",visualTab:"Visual",audioTab:"Audio effects",effectsTab:"Effects",presetTitle:"Visual effects",presetHelp:"Your choice appears immediately in the preview and the exported film.",applyCreate:"Generate Video",withoutCreate:"Add Effects",chooseScenes:"Choose scenes",choosePhoto:"Choose photo",
     wave:"Quick setup with Wave",waveHelp:"Suggests suitable effects based on your goal",try:"Try it",
     suggested:"Gentle light waves and visible phrases suggested. You can edit or disable any effect.",
     phrases:"Phrases and suggestions",phrasesHelp:"Supportive words and timing",
@@ -106,7 +107,7 @@ const copy = {
     preview:"Preview in main video",privacy:"Free effects run on your device. Personal files are not sent to third-party AI.",
   },
   es: {
-    title:"Apoyo audiovisual",sub:"Formas opcionales de presentar tu vídeo personal",
+    title:"Efectos hipnóticos para tu vídeo",sub:"Elige efectos visuales o de audio para tu vídeo.",phraseTab:"Frases",visualTab:"Visuales",audioTab:"Efectos de audio",effectsTab:"Efectos",presetTitle:"Efectos visuales",presetHelp:"Tu elección aparece de inmediato en la vista previa y en el vídeo exportado.",applyCreate:"Generar vídeo",withoutCreate:"Añadir efectos",chooseScenes:"Elegir escenas",choosePhoto:"Elegir foto",
     wave:"Ajuste rápido con Wave",waveHelp:"Sugiere efectos adecuados según tu objetivo",try:"Probar",
     suggested:"Se sugieren ondas de luz suaves y frases visibles. Puedes cambiar o desactivar todo.",
     phrases:"Frases y sugerencias",phrasesHelp:"Palabras de apoyo y ritmo",
@@ -136,8 +137,17 @@ const copy = {
   },
 } as const;
 
-function Feature({icon,title,help,active,onToggle,onConfigure,disabled,unavailable,settings,poster}:{
-  icon:ReactNode;title:string;help:string;active:boolean;settings:string;poster?:string;
+
+const compactLabels = {
+  ru:{selected:"Выбрано",noFlashes:"Без вспышек",lightModes:["Мягко","Баланс","Ярче"],positions:["Сверху","Центр","Снизу"]},
+  en:{selected:"Selected",noFlashes:"No flashing",lightModes:["Soft","Balanced","Brighter"],positions:["Top","Centre","Bottom"]},
+  es:{selected:"Elegidos",noFlashes:"Sin destellos",lightModes:["Suave","Equilibrado","Más luz"],positions:["Arriba","Centro","Abajo"]},
+} as const;
+const lightOpacities = [.12,.18,.28] as const;
+const textPositions = ["top","center","bottom"] as const;
+
+function Feature({icon,title,help,active,onToggle,onConfigure,disabled,unavailable,settings,poster,children}:{
+  icon:ReactNode;title:string;help:string;active:boolean;settings:string;poster?:string;children?:ReactNode;
   onToggle?:()=>void;onConfigure:()=>void;disabled:boolean;unavailable?:boolean;
 }){
   return <div className={styles.feature} data-hypno-card={title} data-photo={Boolean(poster)}>
@@ -156,77 +166,76 @@ function Feature({icon,title,help,active,onToggle,onConfigure,disabled,unavailab
       <span/>
     </button>:<button type="button" className={styles.featureArrow} onClick={onConfigure}
       disabled={disabled} aria-label={title}><ArrowRight size={21}/></button>}
+    {children?<div className={styles.featureOptions}>{children}</div>:null}
   </div>;
 }
 
 export function MandalaHypnocorrectionMobile({
-  locale,disabled,affirmations,onAffirmationsChange,light,onLightChange,
+  locale,initialGroup="visual",disabled,affirmations,onAffirmationsChange,light,onLightChange,
   onOpenPhraseEditor,onOpenScenes,
-  onPickPhoto,onRemovePhoto,onPreview,onCreate,onWavePreset,hasPhoto,hasVoiceFile,voiceActive,posters,
+  onPickPhoto,onRemovePhoto,onCreate,status,onWavePreset,hasPhoto,hasVoiceFile,voiceActive,posters,
   voiceEditor,whisperEnabled,binauralEnabled,beatHz,repeatEverySeconds,whisperGain,audioEffectBusy,
   onToggleVoice,onToggleWhisper,onToggleBinaural,onBeatHzChange,onRepeatEveryChange,onWhisperGainChange,
 }:Props) {
   const t=copy[locale];
-  const [open,setOpen]=useState<GroupId[]>(["phrases","visual","audio"]);
+  const extra=compactLabels[locale];
+  const [activeGroup,setActiveGroup]=useState<GroupId>(initialGroup);
   const [showLightSettings,setShowLightSettings]=useState(false);
   const [showSpeechSettings,setShowSpeechSettings]=useState(false);
   const [showWhisperSettings,setShowWhisperSettings]=useState(false);
   const [showBinauralSettings,setShowBinauralSettings]=useState(false);
   const [note,setNote]=useState<"wave"|"audio"|"voice"|"frame"|"">("");
-  const [introTarget,setIntroTarget]=useState<HTMLElement|null>(null);
-  useLayoutEffect(()=>{
-    setIntroTarget(document.querySelector<HTMLElement>("[data-hypno-intro-slot]"));
-  },[]);
   const visible=affirmations.enabled&&affirmations.visibility.includes("large");
   const briefFrame=affirmations.enabled&&affirmations.visibility.includes("frame");
   const toggleVisibility=(mode:"large"|"frame")=>{
-    const visibility=affirmations.visibility.includes(mode)
-      ?affirmations.visibility.filter(value=>value!==mode)
-      :[...affirmations.visibility,mode];
+    // Disabled defaults may still carry "large": the first tap must enable,
+    // not silently remove, the previously remembered mode.
+    const current=affirmations.enabled?affirmations.visibility:[];
+    const visibility=current.includes(mode)
+      ?current.filter(value=>value!==mode)
+      :[...current,mode];
     onAffirmationsChange({...affirmations,visibility,enabled:visibility.length>0});
   };
   const showNote=(value:"audio"|"voice"|"frame")=>{setNote(value);};
-  const groups: {id:GroupId;title:string;help:string}[]=[
-    {id:"phrases",title:t.phrases,help:t.phrasesHelp},
-    {id:"visual",title:t.visual,help:t.visualHelp},
-    {id:"audio",title:t.audio,help:t.audioHelp},
+  const groups: {id:GroupId;title:string;tab:string;help:string}[]=[
+    {id:"visual",title:t.visual,tab:t.visualTab,help:t.visualHelp},
+    {id:"audio",title:t.audio,tab:t.audioTab,help:t.audioHelp},
+    {id:"effects",title:t.presetTitle,tab:t.effectsTab,help:t.presetHelp},
   ];
+  const visualCount=[light.enabled,visible,briefFrame,hasPhoto].filter(Boolean).length;
+  const audioCount=[voiceActive,whisperEnabled,binauralEnabled].filter(Boolean).length;
   const intro=<div className={styles.intro} data-hypno-intro>
-    <div className={styles.heading}><h3>{t.title}</h3><p>{t.sub}</p></div>
+    <div className={styles.heading}>
+      <span className={styles.sectionIcon} aria-hidden="true"><Sparkles size={24}/></span>
+      <div><h3>{t.title}</h3><p>{t.sub}</p></div>
+    </div>
     <section className={styles.wave}>
-      <div className={styles.waveTop}><Sparkles size={29} aria-hidden="true"/>
-        <div><strong>{t.wave}</strong><p>{t.waveHelp}</p></div></div>
       <button type="button" onClick={()=>{
-        onWavePreset();setOpen(current=>current.includes("visual")?current:[...current,"visual"]);setShowLightSettings(true);setNote("wave");
+        onWavePreset();setActiveGroup("visual");setShowLightSettings(false);setNote("wave");
       }} disabled={disabled} data-hypno-wave>
-        {t.try}<ArrowRight size={20} aria-hidden="true"/>
+        <Sparkles size={17} aria-hidden="true"/>{t.wave}<ArrowRight size={16} aria-hidden="true"/>
       </button>
       {note==="wave"?<p role="status" className={styles.note}>{t.suggested}</p>:null}
     </section>
   </div>;
-  return <section className={styles.panel} data-hypno-mobile lang={locale}
+  return <section className={styles.panel} data-hypno-compact="true" data-hypno-mobile lang={locale}
     aria-label={t.title}>
-    {introTarget?createPortal(intro,introTarget):intro}
-    {groups.map((group,index)=><section className={styles.group} data-hypno-group={group.id} key={group.id}>
-      <button type="button" className={styles.groupHeader} aria-expanded={open.includes(group.id)}
-        aria-controls={"hypno-group-"+group.id}
-        onClick={()=>setOpen(current=>current.includes(group.id)?current.filter(id=>id!==group.id):[...current,group.id])}>
-        {/* First-party scene posters; no duplicated player or third-party images. */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={posters[group.id]} alt="" loading="lazy"/>
-        <span className={styles.groupNumber} aria-hidden="true">{index+2}</span>
-        <span className={styles.groupTitle}><strong>{group.title}</strong><small>{group.help}</small></span>
-        <ChevronDown size={23} className={open.includes(group.id)?styles.expanded:styles.chevron} aria-hidden="true"/>
-      </button>
-      <div className={styles.groupContent} data-hypno-options id={"hypno-group-"+group.id} hidden={!open.includes(group.id)}>
-        {group.id==="phrases"?<>
-          <Feature icon={<Quote/>} title={t.text} help={t.textHelp}
-            active={visible} onToggle={()=>toggleVisibility("large")} onConfigure={onOpenPhraseEditor} disabled={disabled} settings={t.settings}/>
-          <Feature icon={<Eye/>} title={t.frame} help={t.frameHelp}
-            active={briefFrame} onToggle={()=>{toggleVisibility("frame");showNote("frame");}}
-            onConfigure={()=>showNote("frame")} disabled={disabled} settings={t.settings}/>
-          {note==="frame"?<p role="note" className={styles.note}>{t.science}</p>:null}
-        </>:null}
+    {intro}
+    <div className={styles.groupTabs} role="tablist" aria-label={t.title} data-hypno-tabs>
+      {groups.map(group=><button key={group.id} type="button" id={"hypno-tab-"+group.id}
+        role="tab" aria-selected={activeGroup===group.id} aria-controls={"hypno-group-"+group.id}
+        data-hypno-tab={group.id} onClick={()=>setActiveGroup(group.id)} disabled={disabled}>
+        {group.id==="visual"?<Eye size={20} aria-hidden="true"/>:
+          group.id==="audio"?<AudioLines size={20} aria-hidden="true"/>:
+          <Sparkles size={20} aria-hidden="true"/>}
+        <span>{group.tab}</span>
+      </button>)}
+    </div>
+    {groups.map(group=><section className={styles.group} data-hypno-group={group.id}
+      id={"hypno-group-"+group.id} role="tabpanel" aria-labelledby={"hypno-tab-"+group.id}
+      hidden={activeGroup!==group.id} key={group.id}>
+      <h4 className={styles.srOnly}>{group.title} — {group.help}</h4>
+      <div className={styles.groupContent} data-hypno-options>
         {group.id==="audio"?<>
           <Feature icon={<Mic/>} title={t.speech} help={t.speechHelp}
             active={voiceActive} onToggle={()=>{
@@ -267,11 +276,53 @@ export function MandalaHypnocorrectionMobile({
           {audioEffectBusy?<p className={styles.note} role="status" aria-live="polite" data-hypno-audio-effect-busy>{t.effectBusy}</p>:null}
           {note==="voice"?<p className={styles.note}>{t.voiceHint}</p>:null}
         </>:null}
+
+        {group.id==="effects"?<div className={styles.visualPresets} data-hypno-visual-effects>
+          <h4>{t.presetTitle}</h4>
+          <p>{t.presetHelp}</p>
+          <div className={styles.visualPresetGrid} role="group" aria-label={t.presetTitle}>
+            {([
+              {id:"none",icon:"○",ru:"Без эффекта",en:"None",es:"Sin efecto"},
+              {id:"sunlight",icon:"☀",ru:"Свет солнца",en:"Sunlight",es:"Luz solar"},
+              {id:"glow",icon:"✧",ru:"Мягкое сияние",en:"Soft glow",es:"Brillo suave"},
+              {id:"waves",icon:"〰",ru:"Волны сияния",en:"Radiant waves",es:"Ondas de luz"}
+            ] as const).map(item=><button key={item.id} type="button"
+              data-hypno-visual-effect={item.id} disabled={disabled}
+              aria-pressed={item.id==="none"?!light.enabled:
+                light.enabled&&(light.mode??"waves")===item.id}
+              onClick={()=>onLightChange({...light,
+                enabled:item.id!=="none",mode:item.id==="none"?"waves":item.id
+              })}>
+              <span aria-hidden="true">{item.icon}</span><strong>{item[locale]}</strong>
+              {(item.id==="none"?!light.enabled:
+                light.enabled&&(light.mode??"waves")===item.id)?<Check size={18} aria-hidden="true"/>:null}
+            </button>)}
+          </div>
+          <label className={styles.visualPresetIntensity} htmlFor="video-hypno-effect-strength">
+            {t.intensity}<strong>{Math.round(light.opacity*100)}%</strong>
+            <input id="video-hypno-effect-strength" type="range" min="5" max="35" step="5"
+              value={Math.round(light.opacity*100)} disabled={!light.enabled||disabled}
+              onChange={event=>onLightChange({...light,opacity:Number(event.currentTarget.value)/100})}/>
+          </label>
+          <p className={styles.note} role="status" data-hypno-effect-status>
+            {light.enabled
+              ?locale==="ru"?"Эффект применён · без вспышек · без оплаты до экспорта":locale==="es"?"Efecto aplicado · sin destellos · sin cobro hasta exportar":"Effect applied · no flashes · no charge until export"
+              :locale==="ru"?"Без визуального эффекта":locale==="es"?"Sin efecto visual":"No visual effect"}
+          </p>
+        </div>:null}
         {group.id==="visual"?<>
-          <Feature icon={<Sun/>} title={t.light} help={t.lightHelp} poster={posters.visual}
+          <Feature icon={<Sun/>} title={t.light} help={t.lightHelp}
             active={light.enabled}
             onToggle={()=>onLightChange({...light,enabled:!light.enabled})}
-            onConfigure={()=>setShowLightSettings(value=>!value)} disabled={disabled} settings={t.settings}/>
+            onConfigure={()=>setShowLightSettings(value=>!value)}
+            disabled={disabled} settings={t.settings}>
+            {lightOpacities.map((opacity,index)=><button key={opacity} type="button"
+              className={styles.effectChip} data-hypno-light-preset={index}
+              aria-pressed={Math.abs(light.opacity-opacity)<.005} disabled={disabled}
+              onClick={()=>onLightChange({...light,enabled:true,opacity})}>
+              {extra.lightModes[index]}
+            </button>)}
+          </Feature>
           {showLightSettings?<div className={styles.settings} data-hypno-light-settings>
             <label>{t.rhythm} <strong>{light.cyclesPerMinute} {t.cycles}</strong>
               <input type="range" min="5" max="8" step="1" value={light.cyclesPerMinute}
@@ -282,23 +333,49 @@ export function MandalaHypnocorrectionMobile({
                 disabled={disabled} onChange={event=>onLightChange({...light,opacity:Number(event.currentTarget.value)/100})}/>
             </label>
           </div>:null}
+          <Feature icon={<Quote/>} title={t.text} help={t.textHelp}
+            active={visible} onToggle={()=>toggleVisibility("large")}
+            onConfigure={onOpenPhraseEditor} disabled={disabled} settings={t.settings}>
+            {textPositions.map((position,index)=><button key={position} type="button"
+              className={styles.effectChip} data-hypno-text-position={position}
+              aria-pressed={visible&&(affirmations.position??"center")===position}
+              disabled={disabled} onClick={()=>onAffirmationsChange({
+                ...affirmations,position,enabled:true,
+                visibility:affirmations.enabled
+                  ?(affirmations.visibility.includes("large")?affirmations.visibility:[...affirmations.visibility,"large"])
+                  :["large"],
+              })}>
+              {extra.positions[index]}
+            </button>)}
+          </Feature>
+          <Feature icon={<Eye/>} title={t.frame} help={t.frameHelp}
+            active={briefFrame} onToggle={()=>{toggleVisibility("frame");setNote("frame");}}
+            onConfigure={()=>setNote("frame")} disabled={disabled} settings={t.settings}/>
+          {note==="frame"?<p role="note" className={styles.note}>{t.science}</p>:null}
           <Feature icon={<MapPin/>} title={t.places} help={t.placesHelp} poster={posters.visual}
-            active={false} onConfigure={onOpenScenes} disabled={disabled} settings={t.settings}/>
-          <Feature icon={<Picture/>} title={t.photo} help={t.photoHelp} poster={posters.audio}
+            active={false} onConfigure={onOpenScenes} disabled={disabled} settings={t.chooseScenes}/>
+          <Feature icon={<Picture/>} title={t.photo} help={t.photoHelp}
             active={hasPhoto} onToggle={hasPhoto?onRemovePhoto:onPickPhoto}
-            onConfigure={onPickPhoto} disabled={disabled} settings={t.settings}/>
+            onConfigure={onPickPhoto} disabled={disabled} settings={t.choosePhoto}/>
         </>:null}
 
       </div>
     </section>)}
-    <div className={styles.actions} data-hypno-actions>
-      <button type="button" data-hypno-create className={styles.create} disabled={disabled}
-      onClick={onCreate}><Play size={24} fill="currentColor" aria-hidden="true"/>
-      <span><strong>{t.create}</strong><small>{t.credits}</small></span></button>
+    <div className={styles.summary} data-hypno-summary aria-live="polite">
+      <span><Check size={17} aria-hidden="true"/>{extra.selected}: {activeGroup==="visual"?visualCount:activeGroup==="audio"?audioCount:Number(light.enabled)}</span>
+      <span className={styles.modeBadge}>{extra.noFlashes}</span>
     </div>
-    <button type="button" data-hypno-preview className={styles.preview}
-      disabled={disabled} onClick={onPreview}><Waves size={21} aria-hidden="true"/>
-      {t.preview}<ArrowRight size={19} aria-hidden="true"/></button>
+    <div className={styles.actions} data-hypno-actions>
+      <button type="button" data-hypno-create className={styles.create} disabled={disabled} onClick={onCreate}>
+        <Sparkles size={23} aria-hidden="true"/><strong>{t.applyCreate}</strong><ArrowRight size={21} aria-hidden="true"/>
+      </button>
+      <button type="button" data-hypno-add-effects className={styles.withoutEffects}
+        disabled={disabled} aria-controls={"hypno-group-"+(activeGroup==="visual"?"audio":activeGroup==="audio"?"effects":"visual")}
+        onClick={()=>setActiveGroup(activeGroup==="visual"?"audio":activeGroup==="audio"?"effects":"visual")}>
+        <Play size={20} aria-hidden="true"/><strong>{t.withoutCreate}</strong>
+      </button>
+    </div>
+    {status?<p className={styles.note} role="status" aria-live="polite" data-hypno-generate-status>{status}</p>:null}
     <p className={styles.privacy}>{t.privacy}</p>
   </section>;
 }

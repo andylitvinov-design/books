@@ -166,3 +166,100 @@
   display:block;flex:1 1 1px;min-width:1px;max-width:5px;
   border-radius:2px;background:currentColor;box-shadow:none
 }
+
+
+/* Approved mobile Montage Text: compact local setup arranger. */
+.setupAddBar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.setupAddBar button{display:flex;align-items:center;justify-content:center;gap:6px;min-width:0;min-height:46px;
+  border:1px solid #badfd0;border-radius:14px;background:#e5f6ee;color:#11694e;font-size:13px;font-weight:800}
+.setupAddBar button:disabled{opacity:.42}
+.setupList{display:grid;gap:3px;min-width:0;padding:8px;border-radius:15px;
+  border:1px solid #e6e3d8;background:#fffdf8}
+.setupHeading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:2px;font-size:13px}
+.setupHeading label{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:#516e62}
+.setupHeading input{width:17px;height:17px;accent-color:#07896c}
+.setupRow{display:flex;align-items:center;gap:3px;min-width:0;min-height:44px;
+  border-radius:11px;border:1px solid #e7e9de;background:#fff}
+.setupRow[data-active="true"]{border-color:#7dd6bf;background:#e8f8f2}
+.setupRow button{font:inherit}
+.setupGrip{display:grid;place-items:center;flex:none;width:35px;min-height:44px;
+  border:0;background:transparent;color:#527e6c;touch-action:none}
+.setupSelect{display:flex;align-items:center;flex:1;min-width:0;gap:5px;min-height:44px;
+  padding:2px 3px;border:0;background:transparent;color:#143d3a;text-align:left}
+.setupNumber{display:grid;place-items:center;flex:none;width:23px;height:23px;
+  border-radius:50%;background:#d8f3e7;font-size:12px;font-weight:850}
+.setupText{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:800}
+.setupSelect small{flex:none;color:#546b63;font-size:10px;font-variant-numeric:tabular-nums}
+.setupMove{display:flex;flex:none;gap:0}
+.setupMove button{display:grid;place-items:center;width:28px;min-height:44px;
+  border:0;background:transparent;color:#1b755b}
+.setupMove button:disabled{color:#bfcfc7}
+.motionStrip{display:grid;gap:6px;min-width:0;padding:8px;border:1px solid #cbe6d9;
+  border-radius:13px;background:#f8fcf8}
+.motionStrip>strong{font-size:12px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.motionChoices{display:flex;gap:5px;overflow-x:auto;overscroll-behavior-x:contain;padding:1px}
+.motionChoices button{min-width:62px;min-height:44px;padding:5px;border-radius:10px;
+  border:1px solid #dce4db;background:#fffdf8;color:#265449;font-size:11px;font-weight:750}
+.motionChoices button[aria-pressed="true"]{border-color:#008b6f;background:#e0f8ed;color:#006d54}
+.motionAdjust{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.motionAdjust label{display:flex;align-items:center;justify-content:space-between;gap:5px;
+  min-width:0;font-size:11px;font-weight:800}
+.motionAdjust select{min-width:0;flex:1;max-width:110px;min-height:38px;border-radius:9px;
+  border:1px solid #cbded3;background:#fffdfa;color:#174a3f;font-size:12px}
+.inspectorDisclosure{border:1px solid #d7e7df;border-radius:12px;background:#f7faf6}
+.inspectorDisclosure summary{min-height:44px;display:flex;align-items:center;padding:8px 11px;
+  font-size:12px;font-weight:750;color:#1c6451;cursor:pointer;max-width:100%;overflow:hidden}
+.inspectorDisclosure .inspector{border-radius:0 0 12px 12px}
+.addBar{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(max-width:759px){
+  .editor{gap:5px;padding:7px!important}
+  .setupList{padding:5px;gap:1px}
+  .setupSelect small{font-size:10px}
+  .lane{min-height:33px}
+  .timelineContent{gap:3px}
+  .transport{min-height:32px}
+  .transportActions button{height:34px;width:34px}
+  .ruler{height:27px}
+  .zoomBar{gap:3px}
+  .zoomBar label{min-height:30px}
+  .zoomBar button{min-height:32px;min-width:32px}
+}
+@media(max-width:359px){
+  .setupGrip{width:24px}
+  .setupSelect{gap:3px}
+  .setupMove button{width:24px}
+  .setupSelect small{font-size:9px}
+  .setupText{font-size:11px}
+  .setupAddBar button{font-size:11px;padding:4px}
+}
+
+/* Design Bible §10.13: warm neutral Montage editing chrome, never color-code
+   video/text/audio lanes with the same tone (their distinction is semantic). */
+:global([data-mandala-mode="video"]) .editor{
+  background:var(--hh-studio-surface,#FFFCFA);
+  border-color:var(--hh-studio-border,#EADFD9);
+  color:var(--hh-studio-ink,#142B3D);
+  box-shadow:var(--hh-studio-shadow,0 5px 18px rgb(66 42 31 / 7%))
+}
+:global([data-mandala-mode="video"]) .lane{
+  background:repeating-linear-gradient(90deg,transparent 0,
+    transparent calc(25% - 1px),
+    var(--hh-studio-divider,#EEE6E0) calc(25% - 1px),
+    var(--hh-studio-divider,#EEE6E0) 25%),
+    var(--hh-studio-inset,#FFF9F5)
+}
+:global([data-mandala-mode="video"]) .inspector,
+:global([data-mandala-mode="video"]) .shotActions{
+  background:var(--hh-studio-inset,#FFF9F5)
+}
+:global([data-mandala-mode="video"]) .inspector input,
+:global([data-mandala-mode="video"]) .shotActions button,
+:global([data-mandala-mode="video"]) .addBar button{
+  background:var(--hh-studio-surface,#FFFCFA);
+  border-color:var(--hh-studio-border,#EADFD9);
+  color:var(--hh-studio-forest,#14523F)
+}
+:global([data-mandala-mode="video"]) .transportActions button{
+  background:var(--hh-studio-primary,#087E61);
+  color:#FFFFFF
+}

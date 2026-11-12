@@ -2046,6 +2046,32 @@ test('independent production CI maintenance keeps already-green sensitive PRs on
     ordinary('lib/ci/pr-loss-metrics.mjs'),
     ordinary('tests/ci-pr-repair-start.test.mjs'),
   ]),BASE,live,candidate),true);
+  // Actual #3753 five-file, independently protected production advance.
+  // A new read-only attribution helper must not invalidate an unrelated,
+  // already-green exact-HEAD WebKit/Core run.
+  const telemetryOnly=[
+    ordinary('README.PR-LOSS-TELEMETRY.md'),
+    ordinary('lib/ci/pr-loss-metrics.mjs'),
+    {filename:'lib/ci/pr-wave-attribution.mjs',status:'added'},
+    ordinary('scripts/ci-pr-loss-report.mjs'),
+    ordinary('tests/ci-pr-loss-metrics.test.mjs'),
+  ];
+  assert.equal(safeIndependentCiMaintenanceAdvance(
+    diff(telemetryOnly),BASE,live,candidate),true,
+    'verified disjoint #3753 telemetry must not cause BASE_ADVANCED');
+  for (const unsafe of [
+    {...telemetryOnly[2],status:'removed'},
+    {...telemetryOnly[2],previous_filename:'lib/ci/renamed.mjs'},
+    ordinary('.github/workflows/hh-pr-core-release.yml'),
+    ordinary('lib/ci/specialist-aggregate.mjs'),
+    ordinary('app/api/payments/route.ts'),
+    ordinary('components/mandala-free-video-studio.tsx'),
+  ]) assert.equal(safeIndependentCiMaintenanceAdvance(
+    diff([...telemetryOnly.slice(0,2),unsafe,...telemetryOnly.slice(3)]),
+    BASE,live,candidate),false,'changed protected surface must block: '+unsafe.filename);
+  assert.equal(safeIndependentCiMaintenanceAdvance(diff(telemetryOnly),
+    BASE,live,['lib/ci/pr-wave-attribution.mjs']),false,
+    'a PR touching the attribution file cannot reuse the old evidence');
   const forbidden=[
     '.github/workflows/hh-pr-core-release.yml',
     '.github/workflows/hh-actionlint.yml',

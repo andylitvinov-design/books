@@ -21,7 +21,7 @@ test("goal taxonomy coverage: all 120 current editorial stories get four differe
   assert.equal(manifest.assignments.length,120);
   assert.deepEqual(GOAL_TREE_AUDIO_TOTALS,manifest.totals);
   assert.deepEqual(manifest.totals,{categories:5,topics:30,scenarios:120,audioPlacements:480,physicalDistinctAudioFiles:192});
-  assert.equal(SCENARIO_AUDIO_REGISTRY.length,48);
+  assert.equal(SCENARIO_AUDIO_REGISTRY.length,49);
   assert.equal(SCENARIO_AUDIO_VARIANTS.length,4);
   const seenScenarios=new Set(),seenTopic=new Map(),seenCategory=new Map(),all=new Set();
   for(const row of manifest.assignments){

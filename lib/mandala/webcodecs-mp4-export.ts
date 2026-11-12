@@ -4,6 +4,7 @@
  */
 import {
   AudioBufferSource, BufferTarget, CanvasSource, Mp4OutputFormat,
+  Input, BlobSource, MP4, VideoSampleSink,
   Output, Quality, canEncodeVideo, canEncodeAudio,
 } from "mediabunny";
 import {presetAudioUrl} from "./local-video-music";
@@ -121,6 +122,53 @@ async function prepareLocalAudio(audio:BrowserMovieAudio,seconds:number):Promise
   return rendered;
 }
 
+
+/**
+ * The ftyp signature and a non-empty Blob do not prove an MP4 is playable.
+ * Verify actual AVC/AAC tracks and decode a real first frame locally before
+ * handing this file to Safari or confirming an account credit reservation.
+ */
+async function verifyDecodableMp4Export(
+  bytes:ArrayBuffer,
+  expected:{width:number;height:number;seconds:number;withAudio:boolean;mime:string}
+):Promise<void>{
+  if(typeof document!=="undefined" &&
+    !document.createElement("video").canPlayType(expected.mime))
+    throw new Error("video_output_codec_unsupported");
+  const input=new Input({
+    source:new BlobSource(new Blob([bytes],{type:"video/mp4"})),
+    formats:[MP4],
+  });
+  try{
+    if(!(await input.canRead()))throw new Error("video_output_invalid_tracks");
+    const track=await input.getPrimaryVideoTrack();
+    if(!track)throw new Error("video_output_invalid_tracks");
+    const [codec,width,height,duration]=await Promise.all([
+      track.getCodec(),track.getCodedWidth(),track.getCodedHeight(),
+      track.getDurationFromMetadata(),
+    ]);
+    if(codec!=="avc"||width!==expected.width||height!==expected.height||
+      duration===null||!Number.isFinite(duration)||
+      duration<expected.seconds-.75||duration>expected.seconds+1)
+      throw new Error("video_output_invalid_tracks");
+    if(expected.withAudio){
+      const audioTrack=await input.getPrimaryAudioTrack();
+      if(!audioTrack||await audioTrack.getCodec()!=="aac")
+        throw new Error("video_output_invalid_tracks");
+    }
+    if(!(await track.canDecode()))throw new Error("video_output_decoder_failed");
+    const sink=new VideoSampleSink(track);
+    const frame=await sink.getSample(await track.getFirstTimestamp());
+    if(!frame)throw new Error("video_output_decoder_failed");
+    frame.close();
+  }catch(error){
+    if(error instanceof Error&&/^video_output_/.test(error.message))throw error;
+    throw new Error("video_output_decoder_failed");
+  }finally{
+    input.dispose();
+  }
+}
+
 /** A real H.264/AAC video/audio MP4. Rendering remains on the existing Canvas. */
 export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promise<Blob>{
   const {canvas,seconds,frameRate,renderFrame,audio,shouldContinue,onProgress}=options;
@@ -152,7 +200,10 @@ export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promi
   }
   if(!shouldContinue())throw new Error("export_cancelled");
   const target=new BufferTarget();
-  const output=new Output({format:new Mp4OutputFormat(),target});
+  // Put the finalized track index before media data. Safari's native Blob
+  // decoder must discover codec metadata before accepting the MP4 source.
+  // BufferTarget already retains the full bounded local movie in memory.
+  const output=new Output({format:new Mp4OutputFormat({fastStart:"in-memory"}),target});
   const videoSource=new CanvasSource(canvas,{
     codec:"avc", quality:new Quality({bitrate:videoBitrate}),
     keyFrameInterval:2,
@@ -181,12 +232,16 @@ export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promi
     // but never replace it with a stale/fake shot or drop the chosen sound.
     // Bound BOTH per-frame and whole-export decoder waits.
     let decoderHoldMs=0;
-    // Native H.264 encoding can legitimately take longer than one frame period.
-    // Account for that work separately from genuine decoder stalls: never
-    // advance scene PTS, skip a frame or weaken the whole-export timeout.
+    // Preserve exact video PTS while allowing native hardware H.264 encode latency.
     let encoderHoldMs=0;
     const maxFrameDecoderWaitMs=1400;
     const maxTotalDecoderWaitMs=4800;
+    // Safari's H.264 encoder can stall for more than one frame while still
+    // producing every original Canvas frame at EXACT presentation timestamps.
+    // A 750ms wall-clock cutoff misclassified valid 20s offline exports.
+    // Bound short encoder scheduling stalls to 3s, independently from the
+    // strict whole-export deadline and per-source decoder wait limits.
+    const maxEncoderPresentationLagMs=3000;
     for(let i=0;i<frames;i++){
       if(!shouldContinue())throw new Error("export_cancelled");
       const remaining=startedAt+decoderHoldMs+encoderHoldMs+(i*1000/frameRate)-performance.now();
@@ -194,7 +249,7 @@ export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promi
       // MP4 presentation timestamps remain exact even when a native decoder
       // briefly buffers at the original four-scene shot boundary.
       const time=i/frameRate;
-      if(performance.now()-startedAt > time*1000+decoderHoldMs+encoderHoldMs+750)
+      if(performance.now()-startedAt > time*1000+decoderHoldMs+maxEncoderPresentationLagMs)
         throw new Error("video_encoder_timeline_drift");
       const frameWorkStartedAt=performance.now();
       const decoderHoldBeforeFrame=decoderHoldMs;
@@ -213,9 +268,8 @@ export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promi
       }
       await videoSource.add(time,1/frameRate,
         {keyFrame:i%Math.max(1,Math.floor(frameRate*2))===0});
-      // The real source frame has been decoded and passed to H.264. Charging
-      // native encode latency to the wall-clock pacing budget avoids false
-      // timeline drift while preserving exact frame count and PTS.
+      // Native encoder work is separate from licensed-source decoder stalls.
+      // Never substitute stale frames or alter the encoded timestamp sequence.
       const workElapsedMs=performance.now()-frameWorkStartedAt;
       encoderHoldMs+=Math.max(0,
         workElapsedMs-(decoderHoldMs-decoderHoldBeforeFrame)-1000/frameRate);
@@ -234,6 +288,11 @@ export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promi
     const header=new Uint8Array(bytes,0,12);
     if(header[4]!==0x66||header[5]!==0x74||header[6]!==0x79||header[7]!==0x70)
       throw new Error("video_output_not_mp4");
+    await verifyDecodableMp4Export(bytes,{
+      width:canvas.width,height:canvas.height,seconds,
+      withAudio:Boolean(audio),mime:await output.getMimeType(),
+    });
+    if(!shouldContinue())throw new Error("export_cancelled");
     onProgress?.(100);
     return new Blob([bytes],{type:"video/mp4"});
   }catch(error){

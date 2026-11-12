@@ -26,7 +26,12 @@ test("invalid durations and repeated source clips fail closed",()=>{
 test("Studio uses the same four-shot timeline and never indexes nonexistent clips",()=>{
   const source=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
   const slice=source.slice(source.indexOf("function compileFreeFilmPreset("),source.indexOf("\n\nconst effects:"));
-  assert.match(slice,/allocateAdaptiveFilmTimeline\(/);
+  // Physical source length is now the first constraint. Adaptive pacing is
+  // still used when every verified master can cover its stage.
+  assert.match(slice,/allocateSourceBoundedFilmTimeline\(/);
+  const allocator=readFileSync(new URL("../lib/mandala/free-film-timeline.mjs",import.meta.url),"utf8");
+  assert.match(allocator,/export function allocateSourceBoundedFilmTimeline\(/);
+  assert.match(allocator,/const adaptive=allocateAdaptiveFilmTimeline\(/);
   assert.match(slice,/durationSeconds:20/);
   assert.match(slice,/shotCount:count/);
   assert.match(slice,/const count=clipIds\.length/);

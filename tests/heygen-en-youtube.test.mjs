@@ -122,7 +122,7 @@ test('wrong YouTube channel never passes readback',async()=>{
 })
 test('server OAuth persists EN target independently and cannot reuse RU seal',()=>{
  const service=readFileSync(new URL('../lib/practitioners/owner-telegram-video-service.js',
-   import.meta.url),'utf8')
+   import.meta.url),'utf8')+'\n'+readFileSync(new URL('../lib/practitioners/owner-telegram-video-consent.js',import.meta.url),'utf8')
  const start=readFileSync(new URL('../app/api/admin/telegram-video/youtube/start/route.js',
    import.meta.url),'utf8')
  const callback=readFileSync(new URL('../app/api/admin/telegram-video/youtube/callback/route.js',

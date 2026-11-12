@@ -2,27 +2,30 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useEffect, useMemo, useState } from 'react'
+import dynamic from 'next/dynamic'
 import { Plus, FileText, Film, IdCard, UsersRound, Leaf, ReceiptText, BarChart3, ChevronRight, ClipboardList, Share2, CheckCircle2, CalendarDays, Megaphone, BookOpen, Headphones, MessageCircle } from 'lucide-react'
-import CrmManager from './crm-manager'
-import PractitionerClientProfiles from './practitioner-client-profiles'
-import PracticeExpressReports from './practice-express-reports'
-import PracticeMaterials from './practice-materials'
 import {PracticeInnerHeader,PracticeInnerBottomNavigation} from './practice-inner-navigation'
-import PractitionerMeditationStudio from './practitioner-meditation-studio'
-import PracticeEvents from './practice-events'
 import PracticeServiceStatistics from './practice-service-statistics'
 import PracticeRequestsOverview from './practice-requests-overview'
-import PublicEnquiryContact from './public-enquiry-contact'
 import FreeExpressOwnerCase, { isOwnerFreeExpressRequest } from './free-express-owner-case'
-import MyServicesDashboard from './my-services-dashboard'
-import SimpleServiceEditor from './simple-service-editor'
-import RemoteGoalPhoto from './remote-goal-photo'
-import PracticePhotoUpload from './practice-photo-upload'
-import PracticeVideoField from './practice-video-field'
 import PracticePublicAlias from './practice-public-alias'
 import { getHobbyServiceQuota } from '@/lib/practitioners/service-quota.js'
 import { getPublicServiceDetailHref } from '@/lib/practitioners/public-service-links.js'
 import './practice-dashboard.css'
+
+// Defer private CRM, client, materials, and authoring panels until opened.
+const CrmManager = dynamic(() => import('./crm-manager'))
+const PractitionerClientProfiles = dynamic(() => import('./practitioner-client-profiles'))
+const PracticeExpressReports = dynamic(() => import('./practice-express-reports'))
+const PracticeMaterials = dynamic(() => import('./practice-materials'))
+const PractitionerMeditationStudio = dynamic(() => import('./practitioner-meditation-studio'))
+const PracticeEvents = dynamic(() => import('./practice-events'))
+const PublicEnquiryContact = dynamic(() => import('./public-enquiry-contact'))
+const MyServicesDashboard = dynamic(() => import('./my-services-dashboard'))
+const SimpleServiceEditor = dynamic(() => import('./simple-service-editor'))
+const RemoteGoalPhoto = dynamic(() => import('./remote-goal-photo'))
+const PracticePhotoUpload = dynamic(() => import('./practice-photo-upload'))
+const PracticeVideoField = dynamic(() => import('./practice-video-field'))
 
 async function practiceFetch(path='',body){
   const response=await fetch('/api/app/practice'+path,{method:body?'POST':'GET',credentials:'same-origin',cache:'no-store',headers:body?{'Content-Type':'application/json'}:undefined,body:body?JSON.stringify(body):undefined})

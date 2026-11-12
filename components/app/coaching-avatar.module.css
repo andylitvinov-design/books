@@ -1,0 +1,80 @@
+.frame{
+ --avatar-bg:#e5f4e8;--avatar-shirt:#16856d;--beat-speed:.32s;
+ display:flex;flex:none;align-items:center;gap:12px;
+ width:100%;height:74px;min-height:74px;max-height:74px;
+ margin:6px 0 8px;padding:4px 12px 4px 5px;
+ border:1px solid #dfebdf;border-radius:17px;
+ background:linear-gradient(90deg,rgba(254,251,247,.93),rgba(250,251,244,.79)),
+ url('/images/holistic-house/reiki-approved-sunrise-v3.webp') center/cover;
+ box-shadow:0 5px 16px rgba(37,80,61,.06);overflow:hidden;color:#143d3a
+}
+.face{position:relative;width:65px;height:65px;flex:0 0 65px;border-radius:15px;overflow:hidden}
+.illustration{width:100%;height:100%;display:block;transform:translateZ(0)}
+.halo{transform-origin:73px 73px}
+.head{transform-origin:73px 105px;animation:hh-coach-breathe 7s ease-in-out infinite}
+.eyes{transform-origin:73px 74px;animation:hh-coach-blink 7.5s linear infinite}
+.mouthTalk{opacity:0;transform-origin:73px 103px;transform:scaleY(.65)}
+.mouthRest{opacity:1}
+.frame[data-phase='speaking'] .mouthTalk{
+ opacity:1;animation:hh-coach-talk var(--beat-speed) ease-in-out infinite alternate
+}
+.frame[data-phase='speaking'] .mouthRest{opacity:0}
+.frame[data-phase='speaking'] .halo{animation:hh-coach-glow 1.2s ease-in-out infinite alternate}
+.frame[data-phase='listening'] .halo{animation:hh-coach-glow 2.2s ease-in-out infinite alternate}
+.frame[data-phase='paused'] .mouthTalk,.frame[data-phase='idle'] .mouthTalk{opacity:0;animation:none}
+.info{display:flex;flex-direction:column;justify-content:center;gap:5px;flex:1;min-width:0}
+.choice{display:block;min-width:0;width:100%}
+.choice select{
+ display:block;max-width:100%;min-width:0;width:100%;height:44px;padding:4px 25px 4px 9px;
+ border:1px solid #cee0d5;border-radius:10px;background:rgba(255,255,255,.94);
+ color:#245647;font:inherit;font-weight:750;font-size:12px;text-overflow:ellipsis
+}
+.choice select:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+.caption{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;min-width:0;line-height:1.1}
+.state{font-size:11px;font-weight:800;color:#176e5e}
+.device{font-size:10px;color:#63786f}
+.srOnly{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+@keyframes hh-coach-breathe{
+ 0%,100%{transform:translateY(0) rotate(0)}
+ 45%{transform:translateY(-1.6px) rotate(.5deg)}
+}
+@keyframes hh-coach-blink{
+ 0%,42%,45%,100%{transform:scaleY(1)}
+ 43%,44%{transform:scaleY(.08)}
+}
+@keyframes hh-coach-talk{
+ from{transform:scaleY(.45) scaleX(.9)}
+ to{transform:scaleY(1.9) scaleX(1.05)}
+}
+@keyframes hh-coach-glow{from{opacity:.8}to{opacity:1}}
+@media(max-width:370px){
+ .frame{gap:7px;padding-right:6px}
+ .face{width:58px;height:58px;flex-basis:58px}
+ .device{display:none}
+}
+@media(max-height:650px){.frame{height:66px;min-height:66px;max-height:66px;margin:3px 0 5px}.face{width:56px;height:56px;flex-basis:56px}.choice select{height:40px}.device{display:none}}
+@media(prefers-reduced-motion:reduce){
+ .head,.eyes,.halo,.mouthTalk{animation:none!important}
+ .frame[data-phase='speaking'] .mouthTalk{opacity:1;transform:scaleY(1)}
+}
+
+/* Enlarged, selectable-persona conversation: real separate mouth, blink and head layers. */
+.avatarName{display:block;color:#285d50;font-size:17px;line-height:1.2}
+.frame[data-avatar-size='large']{height:128px;min-height:128px;max-height:128px;
+ margin:0;padding:6px 12px 6px 6px;border-radius:19px}
+.frame[data-avatar-size='large'] .face{width:112px;height:112px;flex-basis:112px;border-radius:17px}
+.frame[data-phase='thinking'] .head{animation:hh-coach-thought 2.1s ease-in-out infinite alternate}
+.frame[data-phase='thinking'] .halo{animation:hh-coach-glow 2.1s ease-in-out infinite alternate}
+@keyframes hh-coach-thought{from{transform:translateY(0) rotate(-.6deg)}to{transform:translateY(1px) rotate(2.2deg)}}
+@media(max-width:560px){
+ .frame[data-avatar-size='large']{height:109px;min-height:109px;max-height:109px;gap:9px;padding:5px}
+ .frame[data-avatar-size='large'] .face{width:95px;height:95px;flex-basis:95px}
+ .avatarName{font-size:14px}
+}
+@media(max-width:350px){
+ .frame[data-avatar-size='large']{height:98px;min-height:98px;max-height:98px}
+ .frame[data-avatar-size='large'] .face{width:83px;height:83px;flex-basis:83px}
+}
+@media(prefers-reduced-motion:reduce){
+ .frame[data-phase='thinking'] .head,.frame[data-phase='thinking'] .halo{animation:none!important}
+}

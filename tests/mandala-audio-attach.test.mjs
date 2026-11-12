@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync, existsSync } from "node:fs";
 import ts from "typescript";
 import { runInNewContext } from "node:vm";
+import {curatedAudioTracks} from "../lib/mandala/curated-audio-recommendations.mjs";
 
 const read = path => readFileSync(new URL("../"+path,import.meta.url),"utf8");
 const studio=read("components/mandala-free-video-studio.tsx");
@@ -17,12 +18,14 @@ test("audio-only mobile list: no fake video images, real readable controls and f
   const section=studio.slice(start,end);
   assert.doesNotMatch(section,/<video\b|<img\b/,"this block selects audio, not video scenes");
   for(const hook of ["data-video-audio-context","data-video-audio-kind","data-video-audio-mood",
-    "data-video-audio-pace","data-video-audio-length","data-video-audio-search",
+    "data-video-audio-pace","data-video-audio-search",
     "data-video-audio-sort","data-video-audio-more","data-video-music=",
     "data-video-audio-player","data-video-audio-upload","data-video-audio-mic",
     "data-video-audio-attach","data-video-audio-attached"]){
     assert.ok(section.includes(hook),hook);
   }
+  assert.doesNotMatch(section,/data-video-audio-length/,"Duration belongs to Montage Settings");
+  assert.match(studio,/data-video-montage-preference="duration"/);
   assert.match(section,/visibleAudio\.map\(/);
   assert.match(section,/AudioLines/);
   assert.match(section,/audioUi\.pick/);
@@ -103,8 +106,18 @@ test("EN/RU/ES visible attach, select, upload and recording copy is complete",()
   const originalBedWav=/fetch\(presetAudioUrl\(bedId\),\{credentials:"same-origin",cache:"force-cache"\}\)/g;
   assert.equal((source.match(firstPartyWav)||[]).length,1,"one verified gallery music GET");
   assert.equal((source.match(originalBedWav)||[]).length,1,"one verified optional original-music GET");
-  assert.doesNotMatch((studio+source).replace(firstPartyWav,"").replace(originalBedWav,""),
-    /\bfetch\s*\(|XMLHttpRequest|FormData|sendBeacon|api\.kling|heygen/i);
+  // The Mandala intro is a separate, user-clicked HTML5 MP4 player. Keep
+  // its approved static media URLs outside the local audio-editor network
+  // contract, while rejecting every other external integration in audio code.
+  const introStart=studio.indexOf('const introVideo = locale==="ru" ? {');
+  const introEnd=studio.indexOf('const introVideoRef=',introStart);
+  assert.ok(introStart>0&&introEnd>introStart,"isolated native MP4 intro manifest");
+  const introBlock=studio.slice(introStart,introEnd);
+  const approvedIntroUrls=[...introBlock.matchAll(/https:\/\/resource2\.heygen\.ai\/movio\/video\/[a-f0-9]+\/[a-f0-9]+\/caption\.mp4/g)].map(x=>x[0]);
+  assert.equal(approvedIntroUrls.length,2,"two fixed approved MP4 assets; no API/render endpoint");
+  const localAudioEditor=studio.slice(0,introStart)+studio.slice(introEnd);
+  assert.doesNotMatch((localAudioEditor+source).replace(firstPartyWav,"").replace(originalBedWav,""),
+    /\bfetch\s*\(|XMLHttpRequest|FormData|sendBeacon|api\.kling|heygen|higgsfield/i);
 });
 
 test("39 soundtrack covers reuse approved local first-party illustration files",()=>{
@@ -179,32 +192,37 @@ test("quick music checkboxes attach at most three unique first-party melodies wh
   const transpiled=ts.transpileModule(handler.getText(ast),{
     fileName:"mandala.tsx",compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}
   }).outputText;
+  const [first,second,third,fourth]=curatedAudioTracks.slice(0,4).map(track=>track.id);
+  assert.ok(first&&second&&third&&fourth,"four real approved recordings required");
   let attached=null,selected="none",mutations=0,played=0;
   const invoke=choice=>{
     const attachedPresetIds=attached?.kind==="presets"?attached.ids:
       attached?.kind==="preset"?[attached.id]:[];
     runInNewContext(transpiled+";toggleQuickMusic(choice)",{
-      choice,attachedAudio:attached,locale:"en",attachedPresetIds,recording:false,preparing:false,micRecording:false,
+      choice,curatedAudioTracks,attachedAudio:attached,locale:"en",attachedPresetIds,recording:false,preparing:false,micRecording:false,
       clearUploadedAudio:()=>{},setSamplePreviewId:()=>{},setAudioAuto:()=>{},
       setMusic:id=>{selected=id;},setAttachedAudio:next=>{attached=next;mutations++;},
       setMusicWarning:()=>{},previewPlaying:false,startMovieSound:()=>{played++;}
     },{timeout:1000});
   };
   invoke("warm-morning");
-  assert.equal(attached.kind,"preset");assert.equal(attached.id,"warm-morning");
-  invoke("wings-of-light");
-  assert.deepEqual(Array.from(attached.ids),["warm-morning","wings-of-light"]);
-  invoke("heart-harmony");
+  assert.equal(attached,null,"old synthetic IDs cannot be attached to new videos");
+  assert.equal(mutations,0);
+  invoke(first);
+  assert.equal(attached.kind,"preset");assert.equal(attached.id,first);
+  invoke(second);
+  assert.deepEqual(Array.from(attached.ids),[first,second]);
+  invoke(third);
   assert.equal(attached.ids.length,3);
-  invoke("quiet-stars");
-  assert.deepEqual(Array.from(attached.ids),["wings-of-light","heart-harmony","quiet-stars"],"FIFO bound of 3");
-  invoke("heart-harmony");
-  assert.deepEqual(Array.from(attached.ids),["wings-of-light","quiet-stars"],"toggle off selected layer");
-  assert.equal(selected,"wings-of-light");
+  invoke(fourth);
+  assert.deepEqual(Array.from(attached.ids),[second,third,fourth],"FIFO bound of three");
+  invoke(third);
+  assert.deepEqual(Array.from(attached.ids),[second,fourth],"toggle off selected layer");
+  assert.equal(selected,second);
   assert.equal(mutations,5);assert.equal(played,0,"inactive film does not autoplay");
-  // A pre-existing mastered voice must never be replaced by standalone music.
+  // An already attached mastered voice must never be replaced by music.
   attached={kind:"file",narration:true,file:{name:"voice.wav"},id:"blob:voice"};
-  invoke("warm-morning");
+  invoke(first);
   assert.equal(attached.kind,"file");
   assert.equal(attached.narration,true);
   assert.equal(mutations,5,"no audio mutation when narration is attached");

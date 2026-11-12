@@ -1,4 +1,4 @@
-export type MyTubeFormatMode = "all" | "shorts" | "study";
+export type MyTubeFormatMode = "all" | "shorts" | "courses" | "study";
 export type MyTubeEditorialFormat = "shorts" | "study";
 export interface MyTubeClassifiableVideo {
   mytubeFormat?: MyTubeEditorialFormat | null;

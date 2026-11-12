@@ -97,7 +97,10 @@ concurrency:
 
 jobs:
   owner-video:
-    runs-on: ubuntu-latest
+    # Ubuntu-latest migrated to Ubuntu 26.04 (Nov 2026): the FFprobe apt
+    # prerequisite hung through the entire 25-minute job limit on #3606.
+    # Keep the standard, free GitHub-hosted 24.04 runner and ALL real media QA.
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
@@ -105,7 +108,13 @@ jobs:
         with:
           node-version: "22"
           cache: npm
+      - name: Stage checksum-verified FFmpeg before npm lifecycle
+        uses: ./.github/actions/ci-ffmpeg-static
       - run: npm ci --no-audit --no-fund
+      - name: Materialize checksum-verified FFmpeg for package runtime
+        uses: ./.github/actions/ci-ffmpeg-static
+        with:
+          stage: materialize
       - name: Install FFmpeg and FFprobe on the existing runner for real media acceptance
         run: |
           if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then

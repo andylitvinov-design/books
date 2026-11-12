@@ -45,8 +45,8 @@ test("three lanes share one exporter and user edits invalidate stale Blob",()=>{
   assert.match(editor,/data-video-track="text"/);
   assert.match(editor,/data-video-track="audio"/);
   assert.match(editor,/onPointerDown/);
-  assert.match(studio,/paintStageCaptionOverlay\(ctx,frameTime,cinematicPlan,timelineTextClips\)/);
-  assert.match(studio,/paintStageCaptionOverlay\(ctx,time,cinematicPlan,timelineTextClips\)/);
+  assert.match(studio,/paintSingleVideoTextOverlay\(ctx,frameTime,singleTextSource,affirmationLines,affirmations,duration,cinematicPlan,timelineTextClips\)/);
+  assert.match(studio,/paintSingleVideoTextOverlay\(ctx,time,singleTextSource,affirmationLines,affirmations,duration,cinematicPlan,timelineTextClips\)/);
   assert.match(studio,/audioStartSeconds,timelineTextClips/);
   assert.match(studio,/startSeconds:effectiveAudioStartSeconds/);
   assert.match(studio,/musicSession\?\.begin\?\.\(\)/);
@@ -59,7 +59,12 @@ test("iPhone scrub repaints decoded frames and delayed audio starts on the user 
   const component=readFileSync(new URL("../components/mandala-multitrack-timeline.tsx",import.meta.url),"utf8");
   const safari=readFileSync(new URL("../lib/mandala/webcodecs-mp4-export.ts",import.meta.url),"utf8");
   assert.match(studio,/const scrubFrame=freeFilmVideoAt\(previewSeekSeconds,false\)/);
-  assert.match(studio,/if\(!usingFreeFilmCompilation\|\|scrubFrame\)/);
+  assert.ok(studio.includes("const styleFirstBeat=Boolean(selectedStyleFilm&&styleFilmReady"),
+    "the selected style must be decoded before previewing");
+  assert.ok(studio.includes("if(!usingFreeFilmCompilation||scrubFrame||hasStoryboardPhotoAt(previewSeekSeconds)||styleFirstBeat)"),
+    "only decoded original frames OR a decoded style source may paint the scrub frame");
+  assert.ok(studio.includes("if(!usingFreeFilmCompilation||stockFrame||hasStoryboardPhotoAt(frameSecond)||styleBeatReady)"),
+    "animated preview has the same source eligibility as paused preview");
   assert.match(studio,/onSeeked=\{\(\)=>\{if\(!previewPlaying\)setPreviewFrameRevision/);
   assert.match(studio,/players\.forEach\(player=>void player\.play\(\)\.catch/);
   assert.match(studio,/player\.volume=delayed\?0:masterVolume/);

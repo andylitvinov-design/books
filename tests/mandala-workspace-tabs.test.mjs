@@ -9,7 +9,7 @@ test("exactly six real workspaces with all RU EN ES labels",()=>{
  const tabBlock=studio.match(/const workspaceTabs=\[([\s\S]*?)\] as const;/)?.[1];
  assert.ok(tabBlock,"workspace registry");
  const ids=[...tabBlock.matchAll(/id:"([a-z]+)"/g)].map(m=>m[1]);
- assert.deepEqual(ids,["video","phrases","editor","effects","practices","pro"]);
+ assert.deepEqual(ids,["video","phrases","editor","effects","pro","ready"]);
  for(const locale of ["ru","en","es"]){
    assert.match(studio,new RegExp(locale+":[\\s\\S]*?video:\\{tab:"));
    for(const id of ids)assert.match(studio,new RegExp(id+":\\{tab:"));
@@ -22,8 +22,9 @@ test("exactly six real workspaces with all RU EN ES labels",()=>{
 });
 test("top row uses local tab state rather than scrollIntoView or two anchors for settings",()=>{
  const nav=studio.slice(studio.indexOf("<nav className={videoStyles.quickVideoNav}"),studio.indexOf("</nav>",studio.indexOf("<nav className={videoStyles.quickVideoNav}")));
- assert.match(nav,/setActiveWorkspace\(item\.id\)/);
- assert.match(nav,/aria-pressed=\{activeWorkspace===item\.id\|\|\(!activeWorkspace&&item\.id==="video"\)\}/);
+ assert.match(nav,/onClick=\{\(\)=>activateQuickWorkspace\(item\.id\)\}/);
+ assert.match(nav,/onPointerUp=\{\(\)=>\{if\(activeWorkspace!==item\.id\)activateQuickWorkspace\(item\.id\);\}\}/);
+ assert.match(nav,/aria-pressed=\{activeWorkspace===item\.id\|\|\(activeWorkspace==="practices"&&item\.id==="ready"\)\|\|\(!activeWorkspace&&item\.id==="video"\)\}/);
  assert.match(nav,/aria-controls="video-workspace-panel"/);
  assert.doesNotMatch(nav,/scrollIntoView|openQuickDetailed|location\.hash|pushState/);
  assert.match(studio,/data-video-workspace-heading/);
@@ -74,13 +75,13 @@ function exercise(input,workspace,overrides={}){
  assert.ok(handler);
  const js=ts.transpileModule('const startFromHero='+handler.getText(ast)+';startFromHero();',{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText;
  let active=workspace,queued=workspace,basicTab=null,renders=0,picks=0;const cover={open:false},frames=[],scrolls=[],notices=[];
- const state={recording:false,preparing:false,hypnoAudioBusy:false,photoPending:false,phrasePending:false,locale:'ru',photoUrl:'blob:synthetic',backgroundOnly:false,photoConsent:false,audioNeedsAttachment:false,uploadedAudio:null,audioRights:false,source:'synthetic',...overrides};
+ const state={recording:false,preparing:false,hypnoAudioBusy:false,photoPending:false,phrasePending:false,narrationInvalid:false,locale:'ru',photoUrl:'blob:synthetic',backgroundOnly:false,photoConsent:false,audioNeedsAttachment:false,uploadedAudio:null,audioRights:false,source:'synthetic',...overrides};
  // Models only the source-defined workspace/display and native-details state,
  // not pixels or a real browser. React state commits at the frame boundary.
  const consent={scrollIntoView:()=>scrolls.push({open:cover.open,workspace:active,
    visible:cover.open&&(active==='video'||active==='editor')})};
  runInNewContext(js,{...state,canGenerate:true,preparingRef:{current:state.preparing},jobRef:{current:null},webCodecJobRef:{current:null},activeWorkspace:workspace,setActiveWorkspace:value=>{queued=value;},
-   setBasicPanelTab:value=>{basicTab=value;},setIntroPlaying:()=>{},setNotice:value=>notices.push(value),supportUi:{heroConsent:'Consent required'},audioUi:{needsAttach:'Attach audio'},ui:{audioRightsHelp:'Audio rights required'},onPickPhoto:()=>picks++,createVideo:()=>renders++,window:{requestAnimationFrame:cb=>frames.push(cb)},document:{querySelector:selector=>selector==='[data-video-cover-options]'?cover:selector==='[data-video-photo-consent]'?consent:{scrollIntoView(){}}}},{timeout:1000});
+   setBasicPanelTab:value=>{basicTab=value;},setMontagePanel:()=>{},setMontageStyleSettingsOpen:()=>{},setIntroPlaying:()=>{},setNotice:value=>notices.push(value),supportUi:{heroConsent:'Consent required'},audioUi:{needsAttach:'Attach audio'},ui:{audioRightsHelp:'Audio rights required'},onPickPhoto:()=>picks++,createVideo:()=>renders++,window:{requestAnimationFrame:cb=>frames.push(cb)},document:{querySelector:selector=>selector==='[data-video-cover-options]'?cover:selector==='[data-video-photo-consent]'?consent:{scrollIntoView(){}}}},{timeout:1000});
  assert.equal(scrolls.length,0,'scroll must retain two-frame boundary');
  while(frames.length){active=queued;frames.shift()();}
  return {workspace:active,basicTab,open:cover.open,scrolls,notices,renders,picks};
@@ -109,7 +110,7 @@ test('recording/preparing locks, consent, background, missing photo and audio ga
  }
 });
 test('negative control rejects previous handler in four nonowner workspaces',()=>{
- const line='      if(activeWorkspace!=="video"){setActiveWorkspace("editor");setBasicPanelTab("photo");}';
+ const line='      if(activeWorkspace!=="video"){setActiveWorkspace("editor");setMontagePanel("settings");setMontageStyleSettingsOpen(true);setBasicPanelTab("photo");}';
  assert.equal(source.split(line).length,2);
  for(const workspace of ['phrases','effects','practices','pro']){
   const r=exercise(source.replace(line,''),workspace);
@@ -129,17 +130,18 @@ test("Video opens as the only active workspace, advanced first-video remains acc
   assert.match(studio,/<MandalaGuidedCourse/);
   assert.match(studio,/data-video-audio-attach/);
 });
-test("published informational YouTube no longer overlays the original Canvas hero",()=>{
+test("approved Intro/My rail uses only one main video hero and local Canvas",()=>{
   const nav=studio.indexOf('<nav className={videoStyles.quickVideoNav}');
   const start=studio.indexOf('id="video-hero"');
-  const finish=studio.indexOf('{/* Show the introductory film separately',start);
-  assert.ok(nav>0&&start>nav&&finish>start,
-    "tabs precede the Canvas; the informational YouTube overlay follows it");
-  assert.doesNotMatch(studio.slice(start,finish),/data-video-therapy-intro/);
-  assert.match(studio,/className=\{videoStyles\.therapyIntroStandalone\}/);
-  assert.match(studio,/data-workspace-section="practices" data-video-therapy-info/);
-  assert.match(studio,/if\(item\.id!=="practices"\)setIntroPlaying\(false\)/);
+  const rail=studio.indexOf('data-video-intro-my-rail',start);
+  assert.ok(nav>0&&start>nav&&rail>start,"six tabs precede the original Canvas and Intro/My rail");
+  assert.match(studio.slice(start,rail),/data-video-therapy-intro="ready"/);
+  assert.match(studio.slice(start,rail),/data-video-preview-toggle/);
+  assert.match(studio,/const showIntroHero =/);
+  assert.match(studio,/onClick=\{\(\)=>activateQuickWorkspace\(item\.id\)\}/);
   assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
+  assert.equal((studio.match(/data-video-therapy-info/g)||[]).length,1);
+  assert.doesNotMatch(studio,/therapyIntroStandalone|therapyIntroOverlay/);
 });
 test("iPhone music is one scannable rail with distinct Listen and Include controls",()=>{
   assert.match(css,/grid-auto-columns:minmax\(188px,49%\)/);
@@ -174,8 +176,11 @@ test("video studio lazily loads optional editor workspaces and collapsed tools",
   }
   assert.match(studio, /onToggle=\{event=>\{if\(event\.currentTarget\.open\)setFirstVideoAdvancedActivated\(true\);\}\}/);
   assert.match(studio, /\{firstVideoAdvancedActivated \? <MandalaFirstVideoStart/);
-  assert.match(studio, /onToggle=\{event=>\{if\(event\.currentTarget\.open\)setVoiceStudioActivated\(true\);\}\}/);
-  assert.match(studio, /\{voiceStudioActivated \? <MandalaCloudVoiceStudio/);
+  // Voice can now be activated by a deep link and its one live details
+  // panel owns the same state as the lazily mounted studio.
+  assert.match(studio, /data-video-voice-studio open=\{voiceStudioActivated\}/);
+  assert.match(studio, /onToggle=\{event=>setVoiceStudioActivated\(event\.currentTarget\.open\)\}/);
+  assert.match(studio, /\{voiceStudioActivated\?<MandalaCloudVoiceStudio/);
   assert.match(studio, /useState<StudioWorkspace>\("video"\)/);
   assert.match(studio, /<MandalaAutoVideoDirector/);
 });
@@ -185,7 +190,7 @@ test("final approved six tabs lead to exactly one real workspace each",()=>{
     'tab:"Курс практик"','tab:"Монтаж"','tab:"PRO"'];
   for(const label of expected)assert.ok(studio.includes(label),"missing "+label);
   assert.match(studio,/data-video-quick-control=\{item.id\}/);
-  assert.match(studio,/setActiveWorkspace\(item.id\)/);
+  assert.match(studio,/setActiveWorkspace\(id\)/);
   assert.match(studio,/data-video-topic-section/);
   assert.match(studio,/data-video-director-goal-controls/);
   assert.match(studio,/data-video-director-topic-controls/);
@@ -198,12 +203,12 @@ test("pending Phrases selection blocks the actual shared hero handler in every w
   for(const workspace of workspaces){
     const state=exercise(source,workspace,{phrasePending:true,photoConsent:true});
     assert.equal(state.renders,0,"cannot export the old approved words");
-    assert.equal(state.workspace,"phrases","visitor is sent to the approval tab");
+    assert.equal(state.workspace,workspace,"a failed export must not jump to Voice");
     assert.ok(state.notices.some(note=>note.includes("Сначала утвердите фразы")));
   }
 });
 
-test("compact Ideas uses existing renderer while hiding old phrase editor",()=>{
+test("compact Ideas preserves one opt-in advanced phrase and voice editor",()=>{
  const start=studio.indexOf('<section className={videoStyles.quickPhraseSection} data-workspace-section="phrases"');
  const end=studio.indexOf('<section className={videoStyles.quickPhraseSection} data-workspace-section="effects"',start);
  assert.ok(start>0 && end>start);
@@ -212,13 +217,17 @@ test("compact Ideas uses existing renderer while hiding old phrase editor",()=>{
  const audio=section.indexOf('data-video-phrase-audio-shortcut');
  assert.ok(editor>0&&audio>editor);
  assert.equal((section.match(/\{deepHypnoPane\}/g)||[]).length,1);
- assert.match(section,/<MandalaVideoIdeas/);
- assert.match(section,/data-video-phrase-advanced/,
-   "original phrase settings remain accessible via a disclosure");
- assert.match(section,/hidden=\{activeWorkspace!=="phrases"\}/,
-   "optional phrase tools do not occupy other workspaces");
- assert.match(section,/<summary>[\s\S]*?<\/summary>/,
-   "the disclosure remains a user-accessible summary");
+ assert.doesNotMatch(section,/<MandalaVideoIdeas/);
+ assert.match(section,/data-video-ideas-open-montage-text/);
+ assert.match(studio,/data-video-montage-text hidden=\{montagePanel!=="text"\}/);
+ assert.equal((studio.match(/<MandalaVideoIdeas locale/g)||[]).length,1);
+ assert.match(section,/data-video-legacy-phrase-editor/);
+ assert.match(section,/data-video-ideas-recording-open=\{ideasVoiceAdvancedOpen\?"true":"false"\}/);
+ assert.match(section,/hidden=\{activeWorkspace!=="phrases"\|\|ideasSubtab!=="personalization"\}/);
+ assert.match(section,/aria-hidden=\{activeWorkspace!=="phrases"\|\|ideasSubtab!=="personalization"\}/);
+ assert.equal((section.match(/data-video-ideas-tab="/g)||[]).length,2);
+ assert.equal((section.match(/<MandalaVideoConcept /g)||[]).length,1);
+ assert.match(section,/data-video-ideas-advanced-voice open=\{ideasVoiceAdvancedOpen\}/);
  assert.equal((studio.match(/<MandalaHypnoCompact /g)||[]).length,1);
  assert.match(studio,/onPendingChange=\{setPhrasePending\}/);
  assert.match(studio,/onChange=\{setAffirmations\}/);
@@ -244,15 +253,15 @@ test("owner 03 Nov: compact tabs, real scenario updates and moved settings",()=>
  assert.match(nav,/quickNavFull/,"full labels remain on wider screens");
  const mobileCss=css.slice(css.lastIndexOf("/* Owner 03 Nov:"));
  assert.match(mobileCss,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/,"one row overrides legacy 3x2");
- const editor=studio.slice(studio.indexOf('data-video-editor-scenario'),studio.indexOf('data-video-quick-personal'));
+ const editor=studio.slice(studio.indexOf('data-video-editor-scenario'),studio.indexOf('data-video-quick-personal',studio.indexOf('data-video-editor-scenario')));
  const scenario=editor.indexOf('data-video-editor-scenario');
- assert.ok(scenario>=0&&scenario<editor.indexOf('id="video-basic-heading"'),"script leads Montage");
+ assert.ok(scenario>=0&&scenario<editor.indexOf('data-video-montage-audio'),"script is available before Audio");
  assert.match(editor,/data-video-montage-script-update/);
  assert.match(editor,/normalizeStageCaption\(lines\[index\]\|\|""\)/,
    "editing a four-shot montage changes the local actual caption track");
  assert.match(editor,/setCaptionMode\("custom"\)/,
    "single-scene style applies the script as a real caption");
- assert.match(editor,/data-video-editor-style-settings/);
+ assert.match(studio,/data-video-editor-style-settings/);
  assert.equal((studio.match(/\{deepVideoPane\}/g)||[]).length,1,"no duplicate settings panels");
  assert.doesNotMatch(studio,/Все настройки стиля видео/,"remove old stray style disclosure");
 });
@@ -278,7 +287,7 @@ test("all six workspaces use the same in-flow navigation and one real export",()
  assert.ok(studio.indexOf("data-video-quick-controls")<studio.indexOf("data-video-live-stage"));
  assert.doesNotMatch(studio,/createPortal|effectsNavTarget|montageNavTarget|data-video-hypno-nav-slot|data-video-montage-nav-slot/,
    "no mode can teleport the navigation to a different vertical position");
- const editor=studio.slice(studio.indexOf("data-video-basic-editor"),studio.indexOf("data-video-quick-personal"));
+ const editor=studio.slice(studio.lastIndexOf("data-video-basic-editor"),studio.indexOf("data-video-quick-personal",studio.lastIndexOf("data-video-basic-editor")));
  assert.match(editor,/data-video-montage-tools/);
  assert.match(editor,/data-video-montage-tab=\{item.id\}/);
  assert.match(editor,/data-video-montage-preferences/);
@@ -287,4 +296,75 @@ test("all six workspaces use the same in-flow navigation and one real export",()
  const mobileCss=css.slice(css.lastIndexOf("/* 04 Nov owner visual recovery"));
  assert.match(mobileCss,/\.studio\[data-active-workspace\] \.quickVideoNav button/);
  assert.match(css,/\.montageQuickTools\{[^}]*flex-wrap:nowrap/);
+});
+
+
+test("guided meditation opt-out is reconciled after React commit without losing explicit reopen",()=>{
+  assert.match(studio,/const \[courseMeditationOmitted,setCourseMeditationOmitted\]=useState\(false\)/);
+  assert.match(studio,/const \[courseMeditationIncluded,setCourseMeditationIncluded\]=useState\(false\)/);
+  assert.match(studio,/useLayoutEffect\(\(\)=>\{/);
+  assert.match(studio,/if\(courseMeditationOmitted\)details\.open=false/);
+  assert.match(studio,/else if\(courseMeditationIncluded&&courseMeditationDraft\)details\.open=true/);
+  assert.match(studio,/\},\[courseMeditationIncluded,courseMeditationOmitted,courseMeditationDraft\]\)/);
+  assert.match(studio,/onAddMeditation=\{script=>\{[\s\S]*?setCourseMeditationIncluded\(true\);\s*setCourseMeditationDraft\(script\)/);
+  assert.match(studio,/onOmitMeditation=\{\(\)=>\{\s*setCourseMeditationIncluded\(false\);[\s\S]*?setCourseMeditationOmitted\(true\)/);
+  assert.doesNotMatch(studio,/onAddMeditation=\{script=>\{[\s\S]{0,500}requestAnimationFrame/);
+});
+
+test("validated Messenger video handoff visibly opens the original Studio Director on compact Goals",()=>{
+ const director=readFileSync(new URL("../components/mandala-video-director-chat.tsx",import.meta.url),"utf8");
+ assert.match(director,/sessionStorage\.getItem\(MESSENGER_VIDEO_HANDOFF_KEY\)/);
+ assert.match(director,/decodeMessengerVideoHandoff\(packet,locale\)/);
+ assert.match(director,/nextVideoChatTreeStep\(incoming\)/);
+ assert.match(director,/if\(panel instanceof HTMLDetailsElement\)panel\.open=true/);
+ const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
+ assert.match(browser,/const handoffPanel=page\.locator/);
+ assert.match(browser,/await handoffPanel\.evaluate\(element=>\{element\.open=true;\}\)/);
+ assert.match(browser,/await expect\(handoffPanel\)\.toBeVisible/);
+
+ assert.match(studio,/data-video-director-chat-details data-workspace-section="video"/);
+ const handoffStart=css.lastIndexOf("/* Messenger Video validated handoff visibility.");
+ const nextSection=css.indexOf("/* Free first video:",handoffStart);
+ const rule=css.slice(handoffStart,nextSection>=0?nextSection:undefined);
+ assert.ok(rule.length>100,"Goals handoff visibility must survive compact-page CSS");
+ assert.match(rule,/data-video-scenario-open="false"\]:not\(\[data-hh-video-ihelp-open="true"\]\)/);
+ assert.match(rule,/\[data-video-director-chat-details\]\[data-workspace-section="video"\]\[open\]\s*\{\s*display:grid!important;/);
+ assert.doesNotMatch(rule,/display:none!important/,"the opened handoff must be visible");
+ assert.match(css,/\[data-workspace-section="video"\]:not\(\[data-video-topic-section\]\)\s*\{\s*display:none!important;/,
+   "unopened legacy Goals sections remain hidden");
+});
+
+test("Ideas → Montage cancels stale scroll on a genuine quick-tab action",()=>{
+  const at=studio.indexOf("const continueToIdeas = () => {");
+  const until=studio.indexOf("  const openVideoScenarioStep",at);
+  assert.ok(at>=0&&until>at,"one real Continue to Ideas handler");
+  const handler=studio.slice(at,until);
+  assert.match(handler,/navigationToken=\+\+quickNavTokenRef\.current/);
+  assert.match(handler,/if\(navigationToken!==quickNavTokenRef\.current\)return/);
+  assert.match(handler,/behavior:"instant" as ScrollBehavior/);
+  const navAt=studio.indexOf("const activateQuickWorkspace=");
+  assert.ok(navAt>=0);
+  assert.match(studio.slice(navAt,navAt+270),/quickNavTokenRef\.current\+\+/);
+  const browser=readFileSync(new URL("../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
+  assert.match(browser,/MONTAGE_TAB_MUST_ACTIVATE/);
+  assert.match(browser,/data-video-montage-tab="effects"/);
+  assert.match(browser,/MONTAGE_MUST_START_WITH_STYLE/);
+  assert.match(browser,/GUEST_APPROVAL_MUST_SURVIVE_TAB_NAVIGATION/);
+  assert.match(browser,/CONCEPT_TEXT_TOOLS_DID_NOT_OPEN/);
+});
+
+// Owner-approved UX: direct export and advancing to effects are independent.
+test("the video studio exposes two independent actions on every stage",()=>{
+ const ideas=readFileSync(new URL("../components/mandala-video-ideas.tsx",import.meta.url),"utf8");
+ const hypno=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.tsx",import.meta.url),"utf8");
+ for(const name of ["goal","montage"])assert.ok(studio.includes('data-video-stage-actions="'+name+'"'));
+ assert.ok(studio.includes('data-video-stage-generate="goal"'));
+ assert.ok(studio.includes('data-video-continue-scenarios'));
+ assert.ok(studio.includes('data-video-quick-generate'));
+ assert.ok(studio.includes('onClick={continueMontageOrGenerate}'));
+ assert.ok(ideas.includes('data-video-ideas-generate'));
+ assert.ok(ideas.includes('data-video-ideas-create'));
+ assert.ok(hypno.includes('data-hypno-create'));
+ assert.ok(hypno.includes('data-hypno-add-effects'));
+ assert.ok(!studio.includes('generateWithoutHypnoEffects'));
 });

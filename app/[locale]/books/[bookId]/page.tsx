@@ -170,6 +170,11 @@ export default async function BookReaderPage({ params }: PageProps) {
 
   if (!book) notFound();
 
+  const templeTraditionId = book.mediaSeries === "maya" ? "maya"
+    : book.mediaSeries === "egypt" ? "egyptian"
+    : book.mediaSeries === "greek" ? "greek"
+    : book.mediaSeries === "roman" ? "roman" : null;
+
   // Spanish metadata and navigation are localized; the complete source text is not.
   if (book.id === "alchemy-homeopathy-remedies" && locale !== "es") {
     return (
@@ -208,6 +213,15 @@ export default async function BookReaderPage({ params }: PageProps) {
           <div><dt>{labels.source}</dt><dd>{locale === "ru" ? book.sourceSeries : display.category}</dd></div>
           <div><dt>{labels.status}</dt><dd>{locale === "en" ? "published" : locale === "es" ? "Publicado" : book.status}</dd></div>
         </dl>
+        {templeTraditionId ? (
+          <nav className="reader-temple-switch" aria-label={locale === "ru" ? "Материалы традиции" : locale === "es" ? "Materiales de la tradición" : "Tradition materials"}>
+            <span className="reader-temple-switch__label">{locale === "ru" ? "В этой традиции" : locale === "es" ? "En esta tradición" : "In this tradition"}</span>
+            <span className="reader-temple-switch__current" aria-current="page">{locale === "ru" ? "Методичка · описание" : locale === "es" ? "Manual · descripción" : "Manual · overview"}</span>
+            <Link className="reader-temple-switch__link" prefetch={false} href={`/${locale}/temple-channels?tradition=${templeTraditionId}`}>
+              {locale === "ru" ? "Карточки · настройки" : locale === "es" ? "Fichas · sintonizaciones" : "Cards · attunements"}
+            </Link>
+          </nav>
+        ) : null}
       </header>
 
       <PageVideo slot="book-detail" locale={readingLocale} entityId={book.id} />

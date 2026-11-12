@@ -112,6 +112,7 @@ on:
       - 'tests/video-quality-evidence.test.mjs'
       - 'tests/hd-published-stock-quality.test.mjs'
       - 'scripts/benchmarking/verify-original-motion-export.mjs'
+      - 'scripts/benchmarking/verify-five-scene-stories-browser.mjs'
       - 'data/video-catalog/free-stock-scenes.json'
       - 'data/video-catalog/dareful-verified-import-20261030.json'
       - 'data/video-catalog/scene-taxonomy.json'
@@ -167,6 +168,8 @@ on:
       - 'tests/mytube-creative-choices.test.mjs'
       - 'scripts/audit-mytube-creative-choices.mjs'
       - 'tests/mandala-stories-characters.test.mjs'
+      - 'lib/mandala/stories-studio.*'
+      - 'tests/stories-studio-*.test.mjs'
       - 'tests/mandala-free-scene-taxonomy.test.mjs'
       - 'tests/free-film-timeline.test.mjs'
       - 'tests/adaptive-free-film-timeline.test.mjs'
@@ -211,7 +214,40 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          fetch-depth: 2
+      - name: Classify exact-head CI-policy-only PR maintenance
+        id: policy
+        shell: bash
+        env:
+          HH_EVENT_NAME: ${{ github.event_name }}
+          HH_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          policy_only=false
+          if [[ "$HH_EVENT_NAME" == pull_request &&
+                "$HH_PR_HEAD_SHA" =~ ^[0-9a-f]{40}$ &&
+                "$(git rev-parse HEAD^2 2>/dev/null || true)" == "$HH_PR_HEAD_SHA" ]]; then
+            policy_only=true
+            count=0
+            while IFS= read -r -d '' status && IFS= read -r -d '' file; do
+              count=$((count + 1))
+              # Only established CI-policy tests can accompany modified
+              # workflow YAML on this no-app-install route. Any video test,
+              # app source, unknown file, deletion or rename runs full media QA.
+              case "$status:$file" in
+                M:.github/workflows/*.yml|M:.github/workflows/*.yaml|\
+                M:tests/ci-workflow-globs.test.mjs|\
+                M:tests/pr-fast-lane.test.mjs|\
+                M:tests/ci-heavy-impact.test.mjs) ;;
+                *) policy_only=false ;;
+              esac
+            done < <(git diff --no-renames --name-status -z HEAD^1 HEAD)
+            (( count > 0 )) || policy_only=false
+          fi
+          echo "policy_only=$policy_only" >> "$GITHUB_OUTPUT"
+          echo "Mandala verified CI-policy-only route: $policy_only" >> "$GITHUB_STEP_SUMMARY"
       - name: Classify test-only edits before expensive video build
+        if: steps.policy.outputs.policy_only != 'true'
         id: impact
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -222,8 +258,22 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci --no-audit --no-fund
+      - name: Prepare verified upstream FFmpeg for full Mandala runtime
+        if: steps.policy.outputs.policy_only != 'true'
+        uses: ./.github/actions/ci-ffmpeg-static
+      - name: Install lockfile dependencies without networked FFmpeg postinstall
+        if: steps.policy.outputs.policy_only != 'true'
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Materialize SHA-verified FFmpeg for Mandala runtime and Next trace
+        if: steps.policy.outputs.policy_only != 'true'
+        uses: ./.github/actions/ci-ffmpeg-static
+        with:
+          stage: materialize
+      - name: Verify focused Mandala and CI scope contracts without app install
+        if: steps.policy.outputs.policy_only == 'true'
+        run: node --test tests/ci-heavy-impact.test.mjs tests/ci-workflow-globs.test.mjs
       - name: Verify pending Dareful editorial source rights (no network)
+        if: steps.policy.outputs.policy_only != 'true'
         run: |
           if [ -e scripts/preview-dareful-candidates.mjs ] || [ -e tests/dareful-preview-candidates.test.mjs ]; then
             test -f scripts/preview-dareful-candidates.mjs
@@ -265,60 +315,92 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
       - name: Check browser acceptance script syntax before slow production build
+        if: steps.policy.outputs.policy_only != 'true'
         run: node --check lib/mandala/video-executable-director.mjs && node --check lib/mandala/video-chat-executable-ai.mjs && node --check app/api/holistic-support/video-director-plan/route.js && node --check lib/mandala/first-video-director.mjs && node --check lib/mandala/first-video-free-providers.mjs && node --check app/api/holistic-support/first-video-prompt/route.js && node --check lib/mandala/video-studio-question-registry.mjs && node --check scripts/import-dareful-verified-batch.mjs && node --check scripts/import-free-stock-scene.mjs && node --check lib/mandala/free-stock-sources.mjs && node --check scripts/verify-holistic-mandala-browser.mjs && node --check scripts/cinematic-video-assemble.mjs && node --check scripts/video-ai-gpu-readiness.mjs && node --check scripts/verify-affirmation-voice-browser.mjs && node --check lib/mandala/auto-video-director.mjs && node --check lib/mandala/free-film-timeline.mjs && node --check app/api/holistic-support/hypno-strategy/route.js && node --check lib/mandala/hypno-visual-overlay.mjs && node --check scripts/audit-scenario-media.mjs && node --check scripts/import-scenario-video-batch.mjs && node --check scripts/read-live-film-presets.mjs && node --check lib/mandala/scenario-soundtracks.mjs && node --check lib/mandala/video-goal-media-coverage.mjs
       # WAV masters are reproducible build output; avoid 31MB of binaries in Git.
       # Generate locally before source/asset parity checks; production npm run
       # build has the identical prebuild hook.
+      # Reuse the already populated, immutable production Core MP3 cache.
+      # Same content hash, no PR cache write or fallback to old revisions:
+      # source changes get a miss and regenerate the originals below.
+      - name: Restore production-owned scenario MP3 cache (read-only)
+        if: steps.policy.outputs.policy_only != 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: public/audio/mandala/scenarios
+          key: hh-core-media-v1-${{ runner.os }}-${{ hashFiles('scripts/generate-scenario-melodies.mjs', 'scripts/generate-mandala-melodies.mjs', 'lib/mandala/scenario-audio-catalog.mjs', 'package-lock.json') }}
       - name: Generate original first-party melody masters
+        if: steps.policy.outputs.policy_only != 'true'
         run: node scripts/generate-mandala-melodies.mjs
       - name: Generate dedicated scenario music and four classic performances
+        if: steps.policy.outputs.policy_only != 'true'
         run: node scripts/generate-scenario-melodies.mjs && node scripts/generate-scenario-melodies.mjs --check
+      - name: Smart Audio Concept 38-field semantic and privacy contracts
+        if: steps.policy.outputs.policy_only != 'true'
+        run: |
+          node --check lib/mandala/video-concept-semantic.mjs
+          node --check lib/mandala/auto-video-concept.mjs
+          node --check lib/mandala/audio-visual-storyboard.mjs
+          node --test tests/mandala-audio-smart-concept.test.mjs tests/mandala-video-concept.test.mjs
       - name: Verify 48 scenarios each have four real unique music files
+        if: steps.policy.outputs.policy_only != 'true'
         run: node --test tests/mandala-scenario-audio.test.mjs
       - name: Video chat conversational intent contracts (RU/EN/ES)
+        if: steps.policy.outputs.policy_only != 'true'
         run: |
           node --check lib/mandala/video-chat-understanding.mjs
           node --check lib/mandala/video-chat-tree.mjs
           node --test tests/video-chat-understanding.test.mjs tests/video-chat-tree.test.mjs tests/video-chat-contextual-understanding.test.mjs tests/video-director-chat-live-acceptance.test.mjs
           npx --no-install eslint lib/mandala/video-chat-understanding.mjs lib/mandala/video-chat-tree.mjs
       - name: Video phrase catalog deterministic content and security contracts
+        if: steps.policy.outputs.policy_only != 'true'
         run: |
           node --check lib/mandala/video-phrase-catalog.mjs
           node --check app/api/holistic-support/video-phrases/route.js
           node --test tests/mandala-video-phrase-catalog.test.mjs
           npx --no-install eslint components/mandala-phrase-catalog.tsx lib/mandala/video-phrase-catalog.mjs app/api/holistic-support/video-phrases/route.js
       - name: Verify all 120 editorial scenarios map to four real soundtrack files
+        if: steps.policy.outputs.policy_only != 'true'
         run: node --test tests/goal-tree-audio-playlists.test.mjs
       - name: Verify copyrighted audio cannot be silently imported as reusable tracks
+        if: steps.policy.outputs.policy_only != 'true'
         run: node --test tests/import-reviewed-audio.test.mjs
       - name: Verify recording rights, provenance and deterministic audio contracts
+        if: steps.policy.outputs.policy_only != 'true'
         run: |
           node --test tests/curated-audio-selection.test.mjs
           # Media tools are not installed on this fast runner. The exact same
           # release must pass full physical ffmpeg/ffprobe validation on macOS.
           node --test --test-name-pattern="five exact|remote master|source provenance|lossy source|short licensed recordings|curated rights review" tests/curated-music-wave.test.mjs
       - name: Mandala and mobile support contracts
+        if: steps.policy.outputs.policy_only != 'true'
         run: node --test tests/video-chat-ai.test.mjs tests/original-motion-library.test.mjs tests/video-chat-intent.test.mjs tests/video-executable-director.test.mjs tests/video-project-v2.test.mjs tests/render-plan-v2.test.mjs tests/first-video-director.test.mjs tests/first-video-licensed-render.test.mjs tests/free-film-source-loader.test.mjs tests/video-catalog-probe.test.mjs tests/video-scenario-bindings.test.mjs tests/video-library-growth.test.mjs tests/free-film-source-clock.test.mjs tests/mandala-free-stock-sources.test.mjs tests/real-money-film-library.test.mjs tests/film-collection-v2.test.mjs tests/holistic-mandala-meditation.test.mjs tests/mandala-export.test.mjs tests/mandala-free-video.test.mjs tests/mandala-video-studio-telegram-handoff.test.mjs tests/mandala-mobile-video-design.test.mjs tests/mandala-approved-mobile-studio.test.mjs tests/mandala-workspace-tabs.test.mjs tests/personal-video-intent.test.mjs tests/mandala-sound.test.mjs tests/mandala-native-audio-files.test.mjs tests/mandala-smart-audio.test.mjs tests/mandala-audio-attach.test.mjs tests/video-affirmations.test.mjs tests/personal-guided-course.test.mjs tests/mandala-video-therapy-focus.test.mjs tests/holistic-support-meditations.test.mjs tests/holistic-support-mobile-alternative.test.mjs tests/meditation-filters.test.mjs tests/meditation-narration.test.mjs tests/personal-meditation-script.test.mjs tests/cinematic-studio.test.mjs tests/cinematic-creative-brief.test.mjs tests/video-studio-question-registry.test.mjs tests/video-ai-gpu-readiness.test.mjs tests/voice-studio.test.mjs tests/affirmation-voice.test.mjs tests/wav-pcm-mixer.test.mjs tests/mandala-webcodecs-mp4.test.mjs tests/cinematic-kling-handoff.test.mjs tests/free-film-timeline.test.mjs tests/adaptive-free-film-timeline.test.mjs tests/stage-caption-track.test.mjs tests/mandala-creative-editor-draft-history.test.mjs tests/mandala-creative-timeline.test.mjs tests/mandala-multitrack-timeline.test.mjs tests/mandala-auto-video-director.test.mjs tests/mandala-auto-video-director-ui.test.mjs tests/mandala-free-scene-taxonomy.test.mjs tests/hypno-wave-engine.test.mjs tests/mandala-hypnocorrection-mobile.test.mjs tests/mandala-meditation-courses.test.mjs tests/meditation-course-enquiry.test.mjs tests/adaptive-meditation-course.test.mjs tests/meditation-regeneration.test.mjs tests/video-scene-match.test.mjs tests/mandala-therapy-video-intro.test.mjs tests/scenario-media-coverage.test.mjs tests/mandala-classical-melodies.test.mjs tests/mandala-scenario-media-import-contract.test.mjs tests/mandala-scenario-soundtracks.test.mjs tests/mandala-video-goal-media-coverage.test.mjs tests/video-owner-review.test.mjs tests/free-video-generator.test.mjs tests/cartoon-storyboard.test.mjs tests/video-quality-evidence.test.mjs tests/hd-published-stock-quality.test.mjs
       - name: MyTube scenario motifs and visual style safeguards (same CI wave)
+        if: steps.policy.outputs.policy_only != 'true'
         run: |
           node scripts/audit-mytube-creative-choices.mjs
           node --test tests/mytube-creative-choices.test.mjs tests/mytube-content-taxonomy.test.mjs tests/mytube-video-tagging.test.mjs tests/mytube-plot-montage.test.mjs
       - name: Original Mentalica photo-mandala coordinates and local privacy contracts
+        if: steps.policy.outputs.policy_only != 'true'
         run: node --test tests/mentalica-photo-mandala.test.mjs
       - name: Voice provider contract and negative cases
+        if: steps.policy.outputs.policy_only != 'true'
         run: node --check lib/mandala/voice-studio-openrouter-provider.mjs && node --test tests/voice-studio-provider.test.mjs tests/voice-studio-openrouter.test.mjs tests/voice-selected-phrase-free.test.mjs tests/voice-selected-phrase-live.test.mjs
+      - name: Guest real voice message consent and device-only handoff contracts
+        run: node --test tests/mandala-guest-voice-message.test.mjs
 
       # One deliberately bounded real PRODUCTION request for a fixed public
       # phrase in the selected Leon/Puck Gemini voice. Runs once per owner PR
       # revision; no app secrets, no user data, no paid backup, no WAV artifact.
       - name: Genuine free selected phrase spoken by selected voice (owner opt-in)
-        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && github.head_ref == 'fix/voice-picker-single-phrase-20261103' && github.event.pull_request.head.repo.full_name == github.repository }}
+        if: ${{ steps.policy.outputs.policy_only != 'true' && github.event_name == 'pull_request' && github.event.pull_request.draft == false && github.head_ref == 'fix/voice-picker-single-phrase-20261103' && github.event.pull_request.head.repo.full_name == github.repository }}
         env:
           HH_VOICE_SELECTED_LIVE_OWNER_OPT_IN: 'true'
         run: |
           node --check scripts/verify-live-selected-voice-phrase.mjs
           node scripts/verify-live-selected-voice-phrase.mjs
       - name: Stories and Characters exact source acceptance
+        if: steps.policy.outputs.policy_only != 'true'
         run: |
           if [ -e components/mandala-stories-characters.tsx ] || [ -e tests/mandala-stories-characters.test.mjs ]; then
             test -f components/mandala-stories-characters.tsx
@@ -327,7 +409,11 @@ jobs:
             node --test tests/mandala-stories-characters.test.mjs
             npx --no-install eslint components/mandala-stories-characters.tsx lib/mandala/story-addon-catalog.ts
           fi
+      - name: Stories Studio four-format local director and editor acceptance
+        if: steps.policy.outputs.policy_only != 'true'
+        run: node --test tests/stories-studio-contract.test.mjs tests/stories-studio-ui.test.mjs
       - name: Targeted lint
+        if: steps.policy.outputs.policy_only != 'true'
         run: npx --no-install eslint lib/mandala/video-executable-director.mjs lib/mandala/video-project-v2.mjs lib/mandala/render-plan-v2.mjs lib/mandala/video-chat-executable-ai.mjs app/api/holistic-support/video-director-plan/route.js components/mandala-video-director-chat.tsx lib/mandala/video-chat-intent.mjs lib/mandala/video-chat-ai.mjs app/api/holistic-support/video-director-chat/route.js app/api/holistic-support/first-video-prompt/route.js components/mandala-first-video-start.tsx lib/mandala/first-video-director.mjs lib/mandala/first-video-free-providers.mjs scripts/import-dareful-verified-batch.mjs scripts/import-free-stock-scene.mjs lib/mandala/free-stock-sources.mjs lib/mandala/film-collection-v2.ts lib/mandala/personal-video-intent.mjs lib/mandala/real-money-film-library.ts lib/mandala/cinematic-money-video.ts lib/mandala/holistic-video-themes.ts lib/mandala/video-affirmations.ts lib/mandala/personal-guided-course.mjs lib/mandala/local-video-music.ts lib/mandala/audio-recommendations.mjs lib/mandala/money-flow-effects.ts components/holistic-support-mobile.tsx components/mandala-free-video-studio.tsx components/mandala-video-affirmations.tsx components/mandala-hypno-compact.tsx components/mandala-guided-course.tsx components/mandala-personal-meditation.tsx lib/mandala/meditation-narration.mjs lib/mandala/meditation-narrative-blocks.mjs lib/mandala/personal-meditation-script.mjs components/mandala-cinematic-director.tsx lib/mandala/cinematic-director.mjs lib/mandala/cinematic-production.mjs lib/mandala/cinematic-creative-brief.mjs lib/mandala/video-studio-question-registry.mjs scripts/cinematic-video-assemble.mjs scripts/video-ai-gpu-readiness.mjs components/mandala-meditation-client.tsx 'app/[locale]/holistic-support/mandala/page.tsx' 'app/[locale]/holistic-support/page.tsx' lib/public-locales.ts components/mandala-cloud-voice-studio.tsx components/mandala-affirmation-voice.tsx lib/mandala/wav-pcm-mixer.mjs lib/mandala/affirmation-voice.mjs lib/mandala/voice-studio.mjs lib/mandala/voice-studio-openrouter-provider.mjs lib/mandala/voice-audio-mix.ts 'app/[locale]/holistic-support/voice-studio/route.ts' app/api/holistic-support/voice/route.js lib/mandala/hypno-wave-engine.mjs lib/mandala/cinematic-kling-handoff.mjs lib/mandala/free-film-timeline.mjs components/mandala-auto-video-director.tsx lib/mandala/auto-video-director.mjs app/api/holistic-support/hypno-strategy/route.js components/mandala-hypnocorrection-mobile.tsx components/meditation-course-enquiry.tsx lib/mandala/video-owner-review.mjs lib/mandala/video-owner-review-html.mjs app/admin/videos/scenario-review/route.js
       # Mandatory Core checks exact-head TypeScript on production-bound PRs;
       # retain independent full typing for any other future event/ref.
@@ -335,18 +421,18 @@ jobs:
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit
       - name: Build
-        if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'feat/meditation-writer-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'fix/voice-picker-') || startsWith(github.head_ref, 'fix/webkit-') || startsWith(github.head_ref, 'feat/video-120-scenario-media-bindings-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'feat/video-chat-context-understanding-') || startsWith(github.head_ref, 'feat/video-owner-review-'))))
+        if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'feat/meditation-writer-') || startsWith(github.head_ref, 'codex/stories-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'codex/montage-audio-') || startsWith(github.head_ref, 'codex/video-reels-') || github.head_ref == 'rebase/video-ideas-personalization-20261109' || startsWith(github.head_ref, 'fix/voice-picker-') || startsWith(github.head_ref, 'fix/webkit-') || startsWith(github.head_ref, 'feat/video-120-scenario-media-bindings-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'feat/video-chat-context-understanding-') || startsWith(github.head_ref, 'feat/video-owner-review-'))))
         run: npm run build
 
       - name: Install isolated Chromium and WebKit (no external account)
-        if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'feat/meditation-writer-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'fix/voice-picker-') || startsWith(github.head_ref, 'fix/webkit-') || startsWith(github.head_ref, 'feat/video-120-scenario-media-bindings-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'feat/video-chat-context-understanding-') || startsWith(github.head_ref, 'feat/video-owner-review-'))))
+        if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'feat/meditation-writer-') || startsWith(github.head_ref, 'codex/stories-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'codex/montage-audio-') || startsWith(github.head_ref, 'codex/video-reels-') || github.head_ref == 'rebase/video-ideas-personalization-20261109' || startsWith(github.head_ref, 'fix/voice-picker-') || startsWith(github.head_ref, 'fix/webkit-') || startsWith(github.head_ref, 'feat/video-120-scenario-media-bindings-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'feat/video-chat-context-understanding-') || startsWith(github.head_ref, 'feat/video-owner-review-'))))
         run: |
           mkdir -p /tmp/hh-mandala-playwright
           npm install --prefix /tmp/hh-mandala-playwright --no-audit --no-fund @playwright/test@1.63.0
           ln -s /tmp/hh-mandala-playwright/node_modules/@playwright node_modules/@playwright
           /tmp/hh-mandala-playwright/node_modules/.bin/playwright install --with-deps chromium webkit
       - name: Ensure ffprobe and ffmpeg for real encoded video/audio verification
-        if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'feat/meditation-writer-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'fix/voice-picker-') || startsWith(github.head_ref, 'fix/webkit-') || startsWith(github.head_ref, 'feat/video-120-scenario-media-bindings-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'feat/video-chat-context-understanding-') || startsWith(github.head_ref, 'feat/video-owner-review-'))))
+        if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'feat/meditation-writer-') || startsWith(github.head_ref, 'codex/stories-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'codex/montage-audio-') || startsWith(github.head_ref, 'codex/video-reels-') || github.head_ref == 'rebase/video-ideas-personalization-20261109' || startsWith(github.head_ref, 'fix/voice-picker-') || startsWith(github.head_ref, 'fix/webkit-') || startsWith(github.head_ref, 'feat/video-120-scenario-media-bindings-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'feat/video-chat-context-understanding-') || startsWith(github.head_ref, 'feat/video-owner-review-'))))
         run: |
           if ! command -v ffprobe >/dev/null || ! command -v ffmpeg >/dev/null; then
             sudo apt-get update -qq
@@ -355,10 +441,10 @@ jobs:
           ffprobe -version | head -n 1
           ffmpeg -version | head -n 1
       - name: Verify all 44 first-party MP4 sources, SHA-256, real codec and frame decode
-        if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'feat/meditation-writer-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'fix/voice-picker-') || startsWith(github.head_ref, 'fix/webkit-') || startsWith(github.head_ref, 'feat/video-120-scenario-media-bindings-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'feat/video-chat-context-understanding-') || startsWith(github.head_ref, 'feat/video-owner-review-'))))
+        if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'feat/meditation-writer-') || startsWith(github.head_ref, 'codex/stories-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'codex/montage-audio-') || startsWith(github.head_ref, 'codex/video-reels-') || github.head_ref == 'rebase/video-ideas-personalization-20261109' || startsWith(github.head_ref, 'fix/voice-picker-') || startsWith(github.head_ref, 'fix/webkit-') || startsWith(github.head_ref, 'feat/video-120-scenario-media-bindings-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'feat/video-chat-context-understanding-') || startsWith(github.head_ref, 'feat/video-owner-review-'))))
         run: node scripts/video-catalog-probe.mjs --check
       - name: Audit 120 scenario physical candidates without auto-publication
-        if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'feat/meditation-writer-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'fix/voice-picker-') || startsWith(github.head_ref, 'fix/webkit-') || startsWith(github.head_ref, 'feat/video-120-scenario-media-bindings-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'feat/video-chat-context-understanding-') || startsWith(github.head_ref, 'feat/video-owner-review-'))))
+        if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'feat/meditation-writer-') || startsWith(github.head_ref, 'codex/stories-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'codex/montage-audio-') || startsWith(github.head_ref, 'codex/video-reels-') || github.head_ref == 'rebase/video-ideas-personalization-20261109' || startsWith(github.head_ref, 'fix/voice-picker-') || startsWith(github.head_ref, 'fix/webkit-') || startsWith(github.head_ref, 'feat/video-120-scenario-media-bindings-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'feat/video-chat-context-understanding-') || startsWith(github.head_ref, 'feat/video-owner-review-'))))
         run: node scripts/benchmarking/video-scenario-bindings.mjs --check
       - name: Verify private owner scenario review snapshot
         if: steps.impact.outputs.browser == 'true' && github.event_name == 'pull_request' && startsWith(github.head_ref, 'feat/video-owner-review-')
@@ -376,7 +462,7 @@ jobs:
           if-no-files-found: error
           retention-days: 3
       - name: Public mandala photo, PNG and video browser flow · 320/390/430px
-        if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'feat/meditation-writer-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'fix/voice-picker-') || startsWith(github.head_ref, 'fix/webkit-') || startsWith(github.head_ref, 'feat/video-120-scenario-media-bindings-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'feat/video-chat-context-understanding-') || startsWith(github.head_ref, 'feat/video-owner-review-'))))
+        if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'feat/meditation-writer-') || startsWith(github.head_ref, 'codex/stories-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'codex/montage-audio-') || startsWith(github.head_ref, 'codex/video-reels-') || github.head_ref == 'rebase/video-ideas-personalization-20261109' || startsWith(github.head_ref, 'fix/voice-picker-') || startsWith(github.head_ref, 'fix/webkit-') || startsWith(github.head_ref, 'feat/video-120-scenario-media-bindings-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'feat/video-chat-context-understanding-') || startsWith(github.head_ref, 'feat/video-owner-review-'))))
         env:
           HH_TEST_PUBLIC_ORIGIN: http://127.0.0.1:3100
           HH_HYPNO_SCREENSHOT_DIR: artifacts/hypno-compact
@@ -428,7 +514,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
       - name: Upload synthetic audio-only iPhone screenshots
-        if: always() && steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'feat/meditation-writer-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'fix/voice-picker-') || startsWith(github.head_ref, 'fix/webkit-') || startsWith(github.head_ref, 'feat/video-120-scenario-media-bindings-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'feat/video-chat-context-understanding-') || startsWith(github.head_ref, 'feat/video-owner-review-'))))
+        if: always() && steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'feat/meditation-writer-') || startsWith(github.head_ref, 'codex/stories-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'codex/montage-audio-') || startsWith(github.head_ref, 'codex/video-reels-') || github.head_ref == 'rebase/video-ideas-personalization-20261109' || startsWith(github.head_ref, 'fix/voice-picker-') || startsWith(github.head_ref, 'fix/webkit-') || startsWith(github.head_ref, 'feat/video-120-scenario-media-bindings-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'feat/video-chat-context-understanding-') || startsWith(github.head_ref, 'feat/video-owner-review-'))))
         uses: actions/upload-artifact@v4
         with:
           name: mandala-audio-mobile-${{ github.sha }}
@@ -436,7 +522,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
       - name: Publish synthetic mobile Hypno screenshots
-        if: always() && (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch')
+        if: always() && steps.policy.outputs.policy_only != 'true' && (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch')
         uses: actions/upload-artifact@v4
         with:
           name: hypno-compact-mobile-screenshots
@@ -489,11 +575,16 @@ jobs:
           node --check scripts/verify-affirmation-voice-browser.mjs
           node --check scripts/benchmarking/first-video-live-export.mjs
           node --check scripts/benchmarking/verify-original-motion-export.mjs
+          node --check scripts/benchmarking/verify-five-scene-stories-browser.mjs
           node --check scripts/verify-practices-mobile-browser.mjs
           node --check scripts/ci-pr-readiness.mjs
-          node --test tests/video-studio-question-registry.test.mjs tests/mandala-video-goal-media-coverage.test.mjs
+          # Catch stale compact mobile UI contracts before reserving
+          # a macOS runner. The standalone Node/fs suite needs no npm;
+          # tests requiring TypeScript stay in the full Mandala unit job.
+          # Actual WebKit MP4/audio release acceptance still runs unchanged.
+          node --test tests/video-studio-question-registry.test.mjs tests/mandala-video-goal-media-coverage.test.mjs tests/mandala-approved-mobile-studio.test.mjs tests/video-reels-ci-routing.test.mjs
   voice-webkit-macos:
-    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'feat/meditation-writer-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'fix/voice-picker-') || startsWith(github.head_ref, 'fix/webkit-') || startsWith(github.head_ref, 'feat/video-120-scenario-media-bindings-') || startsWith(github.head_ref, 'feat/video-phrase-catalog-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'codex/mandala-cancel-stale-head-cache-') || startsWith(github.head_ref, 'feat/video-chat-context-understanding-') || startsWith(github.head_ref, 'feat/hh-goal-tree-') || startsWith(github.head_ref, 'feat/video-') || startsWith(github.head_ref, 'feat/mytube-unified-six-bottom-') || startsWith(github.head_ref, 'feat/mytube-six-dock-production-') || github.head_ref == 'fix/mandala-compact-goals-montage-20261103' || github.head_ref == 'codex/professional-growth-templates-20261031') }}
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'feat/meditation-writer-') || startsWith(github.head_ref, 'codex/stories-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'codex/montage-audio-') || startsWith(github.head_ref, 'codex/video-reels-') || startsWith(github.head_ref, 'codex/video-concept-') || startsWith(github.head_ref, 'feat/video-chat-context-understanding-') || github.head_ref == 'codex/ready-signed-video-resumable-20261107' || startsWith(github.head_ref, 'fix/voice-picker-') || startsWith(github.head_ref, 'fix/webkit-') || startsWith(github.head_ref, 'feat/video-120-scenario-media-bindings-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'codex/mandala-cancel-stale-head-cache-') || startsWith(github.head_ref, 'feat/hh-goal-tree-') || startsWith(github.head_ref, 'feat/video-') || github.head_ref == 'feat/ideas-personalization-concept-20261108' || startsWith(github.head_ref, 'feat/voice-timed-storyboard-') || startsWith(github.head_ref, 'feat/mytube-unified-six-bottom-') || startsWith(github.head_ref, 'feat/mytube-six-dock-production-') || github.head_ref == 'fix/mandala-compact-goals-montage-20261103' || github.head_ref == 'codex/professional-growth-templates-20261031') }}
     needs: [webkit_preflight]
     runs-on: macos-15
     timeout-minutes: 25
@@ -524,10 +615,29 @@ jobs:
           key: hh-holistic-mandala-next-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
           restore-keys: |
             hh-holistic-mandala-next-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
-      - name: Install and build exact voice release candidate
+      - name: Install pinned dependencies without networked FFmpeg postinstall
         run: |
-          npm ci --no-audit --no-fund
-          npm run build
+          # ffmpeg-static's optional upstream binary endpoint intermittently returns HTTP 504.
+          # Install the already-used native Homebrew decoder first, then link it only into
+          # this ephemeral macOS CI workspace. Production npm/Vercel installs are unchanged.
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            brew install ffmpeg
+          fi
+          npm ci --ignore-scripts --no-audit --no-fund
+          test -f node_modules/ffmpeg-static/package.json
+          test "$(node -p "require('./node_modules/ffmpeg-static/package.json').version")" = "5.3.0"
+          ffmpeg_bin="$(command -v ffmpeg)"
+          test -x "$ffmpeg_bin"
+          ln -sfn "$ffmpeg_bin" node_modules/ffmpeg-static/ffmpeg
+          resolved_ffmpeg="$(node -p "require('ffmpeg-static')")"
+          test "$resolved_ffmpeg" = "$PWD/node_modules/ffmpeg-static/ffmpeg"
+          test -x "$resolved_ffmpeg"
+          "$resolved_ffmpeg" -hide_banner -version | head -n 1
+          ffprobe -hide_banner -version | head -n 1
+      - name: Build exact voice release candidate
+        run: |
+          # Same macOS runner; increase only the build worker's V8 heap, not the CI scope.
+          HH_FFMPEG_EXTERNAL_PATH="$(command -v ffmpeg)" NODE_OPTIONS=--max-old-space-size=3072 npm run build
       # Reuse Playwright's version-pinned WebKit payload; encoded-media tests still execute.
       - name: Restore pinned Playwright WebKit browser
         uses: actions/cache@v4
@@ -550,6 +660,12 @@ jobs:
             test -f tests/curated-music-wave.test.mjs
             node --test tests/curated-music-wave.test.mjs
           fi
+      # Guest recording stays browser-local: test the fragment invitation,
+      # voluntary adult consent and zero cloud TTS POST on the existing Mac job.
+      - name: Guest voice consent and invitation contract (macOS gate)
+        run: |
+          node --check scripts/verify-affirmation-voice-browser.mjs
+          node --test tests/mandala-guest-voice-message.test.mjs
       - name: WebKit recorded movie contains video and audible consented voice
         run: |
           set -euo pipefail
@@ -574,11 +690,20 @@ jobs:
             node scripts/benchmarking/first-video-live-export.mjs
           HH_ORIGINAL_MOTION_ENGINE=webkit HH_LIVE_VIDEO_PLAYWRIGHT="$RUNNER_TEMP/voice-playwright/node_modules/playwright/index.mjs" \
             node scripts/benchmarking/verify-original-motion-export.mjs
+          # Real five-shot vertical movie, identity and soundtrack gate for Stories PRs.
+          # The guard is strict, local-only and cannot invoke paid AI or publisher POST.
+          if [[ "${GITHUB_HEAD_REF:-}" == codex/stories-* ]]; then
+            HH_STORIES_E2E_ENGINE=webkit \
+              HH_LIVE_VIDEO_PLAYWRIGHT="$RUNNER_TEMP/voice-playwright/node_modules/playwright/index.mjs" \
+              node scripts/benchmarking/verify-five-scene-stories-browser.mjs
+          fi
       - name: Preserve anonymous WebKit encoded video evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: hh-webkit-four-scene-${{ github.sha }}
-          path: artifacts/benchmarking/first-video-live-export.json
+          path: |
+            artifacts/benchmarking/first-video-live-export.json
+            artifacts/benchmarking/five-scene-stories-webkit.json
           if-no-files-found: warn
           retention-days: 7

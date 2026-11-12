@@ -232,48 +232,75 @@
  .mytube .taxonomyPrimary{padding:10px 9px}
 }
 
-/* Small direction chips above video + compact advanced-filter disclosure.
-   The horizontal rail NEVER scrolls the page, and only MyTube gets these rules. */
-.mytube .mytubeToolbar{display:flex;align-items:stretch;gap:8px;min-width:0;margin:0 0 7px}
-.mytube .mytubeCategoryRail{display:flex;flex:1 1 0;min-width:0;gap:6px;align-items:center;
- overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-width:none;
- -webkit-overflow-scrolling:touch;touch-action:pan-x;padding:1px 1px 2px}
-.mytube .mytubeCategoryRail::-webkit-scrollbar{display:none}
-.mytube .mytubeCategoryRail button{flex:0 0 auto;white-space:nowrap;min-height:44px;
- border:1px solid #303030;border-radius:8px;background:#272727;color:#f1f1f1;
- padding:7px 12px;font:700 12px/1.2 Arial,Helvetica,sans-serif;cursor:pointer}
-.mytube .mytubeCategoryRail button[aria-pressed=true]{background:#f1f1f1;
- color:#0f0f0f;border-color:#f1f1f1}
-.mytube .mytubeCategoryRail button:focus-visible,
-.mytube .compactMoreButton:focus-visible,
-.mytube .mytubeFormatTabs button:focus-visible{outline:2px solid #fff;outline-offset:2px}
-.mytube .compactMoreButton{flex:0 0 auto;display:inline-flex;align-items:center;
- justify-content:center;gap:5px;min-height:44px;max-width:148px;padding:7px 9px;
- border:1px solid #3e3e3e;border-radius:9px;background:#191919;color:#f1f1f1;
- font:700 12px/1.15 Arial,Helvetica,sans-serif;cursor:pointer}
-.mytube .compactMoreButton svg{flex:none}
-.mytube .compactMoreButton svg:first-child{color:#ff0033}
-.mytube .compactMoreButton[aria-expanded=true]{border-color:#888;background:#303030}
-.mytube .compactMoreButton[aria-expanded=true] svg:last-child{transform:rotate(180deg)}
+
+/* MyTube-only compact five-choice editorial taxonomy. No hidden sideways categories. */
+.mytube .mytubeIntroBar{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;margin:0 0 8px}
+.mytube .mytubeIntroBar p{flex:1 1 auto;min-width:0;margin:0;color:#aaa;font:500 12px/1.3 Arial,Helvetica,sans-serif}
+.mytube .mytubeLanguages{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:2px;flex:0 0 168px;
+  min-width:0;padding:2px;border:1px solid #404040;border-radius:14px;background:#181818}
+.mytube .mytubeLanguages button{min-width:0;min-height:40px;padding:0 2px;border:0;border-radius:11px;
+  background:transparent;color:#c7c7c7;font:700 11px/1 Arial,Helvetica,sans-serif;cursor:pointer}
+.mytube .mytubeLanguages button[aria-pressed=true]{background:#f1f1f1;color:#101010}
+.mytube .mytubeSearchRow{display:flex;align-items:center;gap:7px;min-width:0;margin:0 0 9px}
+.mytube .mytubeSearchRow .topSearch{flex:1 1 0;min-width:0;min-height:44px;margin:0}
+.mytube .mytubeSearchRow .topSearch input{height:44px}
+.mytube .compactMoreButton{display:grid;place-items:center;flex:0 0 44px;width:44px;height:44px;
+  padding:0;border:1px solid #404040;border-radius:14px;background:#202020;color:#ededed;cursor:pointer}
+.mytube .compactMoreButton[aria-expanded=true]{background:#363636;border-color:#aaa}
+.mytube .mytubeCategoryRail{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));
+  align-items:stretch;gap:5px;min-width:0;width:100%;margin:0 0 8px;overflow:visible}
+.mytube .mytubeCategoryRail button{display:flex;align-items:center;justify-content:center;min-width:0;min-height:55px;
+  padding:7px 3px;border:1px solid #444;border-radius:13px;background:#202020;color:#e9e9e9;
+  font:700 clamp(10px,2.6vw,13px)/1.13 Arial,Helvetica,sans-serif;text-align:center;
+  overflow-wrap:anywhere;text-wrap:balance;cursor:pointer}
+.mytube .mytubeCategoryRail button[aria-pressed=true]{background:#f1f1f1;border-color:#f1f1f1;color:#0f0f0f}
+.mytube .mytubeSubcategoryRail{display:grid;grid-template-columns:44px repeat(2,minmax(0,1fr));
+  gap:5px;min-width:0;width:100%;margin:0 0 8px}
+.mytube .mytubeSubcategoryRail button{min-width:0;min-height:44px;padding:6px 8px;
+  border:1px solid #414141;border-radius:11px;background:#202020;color:#e9e9e9;
+  font:650 11px/1.18 Arial,Helvetica,sans-serif;text-align:center;overflow-wrap:break-word;cursor:pointer}
+.mytube .mytubeSubcategoryRail button:first-child{grid-row:span 2;padding:5px 2px}
+.mytube .mytubeSubcategoryRail button[aria-pressed=true]{background:#f1f1f1;border-color:#f1f1f1;color:#0f0f0f}
+.mytube .mytubeLanguages button:focus-visible,.mytube .mytubeCategoryRail button:focus-visible,
+.mytube .mytubeSubcategoryRail button:focus-visible,.mytube .compactMoreButton:focus-visible{
+  outline:2px solid #fff;outline-offset:2px}
 .mytube .mytubeFormatTabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
- gap:3px;max-width:420px;min-height:48px;margin:0 0 10px;padding:3px;
- border:1px solid #303030;border-radius:14px;background:#181818}
-.mytube .mytubeFormatTabs button{min-width:0;min-height:44px;padding:9px 8px;
- border:1px solid transparent;border-radius:11px;background:transparent;
- color:#cfcfcf;font:750 14px/1.2 Arial,Helvetica,sans-serif;cursor:pointer}
-.mytube .mytubeFormatTabs button[aria-pressed=true]{border-color:#ededed;
- background:#f1f1f1;color:#0f0f0f}
-.mytube .mytubeFormatTabs button:hover:not([aria-pressed=true]){background:#303030}
+  gap:0;width:100%;max-width:none;min-height:44px;margin:0 0 12px;padding:0;
+  border:0;border-bottom:1px solid #353535;border-radius:0;background:transparent}
+.mytube .mytubeFormatTabs button{min-width:0;min-height:44px;padding:9px 3px 7px;
+  border:0;border-bottom:3px solid transparent;border-radius:0;background:transparent;
+  color:#b6b6b6;font:750 13px/1.2 Arial,Helvetica,sans-serif;cursor:pointer}
+.mytube .mytubeFormatTabs button[aria-pressed=true]{border-color:#f1f1f1;color:#f1f1f1}
+.mytube .mytubeFormatTabs button:hover:not([aria-pressed=true]){background:#202020}
+@media(min-width:800px){
+ .mytube .mytubeSubcategoryRail{grid-template-columns:repeat(5,minmax(0,1fr))}
+ .mytube .mytubeSubcategoryRail button:first-child{grid-row:auto}
+}
 @media(max-width:430px){
- .mytube .mytubeToolbar{gap:6px}
- .mytube .mytubeCategoryRail{gap:5px}
- .mytube .mytubeCategoryRail button{font-size:12px;padding:7px 11px;border-radius:12px}
- .mytube .compactMoreButton{max-width:110px;padding:7px 8px;border-radius:12px}
- .mytube .compactMoreButton span{font-size:12px;white-space:nowrap}
- .mytube .mytubeFormatTabs{width:100%}
- .mytube .mytubeFormatTabs button{padding:9px 6px}
+ .mytube .mytubeIntroBar p{font-size:11px}
+ .mytube .mytubeLanguages{flex-basis:160px}
+ .mytube .mytubeCategoryRail{gap:4px}
+ .mytube .mytubeCategoryRail button{min-height:58px;padding:6px 2px;font-size:clamp(10px,2.6vw,11px)}
+ .mytube .mytubeFormatTabs button{font-size:12px}
 }
 @media(max-width:350px){
- .mytube .compactMoreButton{max-width:96px;gap:4px}
- .mytube .compactMoreButton svg:last-child{display:none}
+ .mytube .mytubeLanguages{flex-basis:152px}
+ .mytube .mytubeLanguages button{font-size:10px}
+ .mytube .mytubeCategoryRail button{font-size:10px}
 }
+
+/* MyTube course drilldown: type → tradition → numbered course. Public only. */
+.mytube .mytubeCourseNavigation{display:grid;gap:10px;margin:0 0 14px;padding:12px;
+  min-width:0;border:1px solid #343434;border-radius:15px;background:#181818}
+.mytube .mytubeCourseLevel{display:grid;gap:8px;min-width:0}
+.mytube .mytubeCourseLevel>strong{color:#d5d5d5;font-size:12px;font-weight:750}
+.mytube .mytubeCourseChoices{display:flex;flex-wrap:wrap;gap:7px;min-width:0}
+.mytube .mytubeCourseChoices button{min-height:44px;max-width:100%;padding:9px 13px;
+  border:1px solid #454545;border-radius:12px;background:#262626;color:#ececec;
+  font:700 13px/1.3 Arial,Helvetica,sans-serif;text-align:left;cursor:pointer;
+  overflow-wrap:anywhere}
+.mytube .mytubeCourseChoices button[aria-pressed=true]{background:#f1f1f1;
+  border-color:#f1f1f1;color:#0f0f0f}
+.mytube .mytubeCourseChoices button:focus-visible{outline:2px solid #fff;outline-offset:3px}
+@media(max-width:430px){.mytube .mytubeCourseNavigation{padding:10px}
+  .mytube .mytubeCourseChoices button{font-size:12px;padding:9px 11px}}

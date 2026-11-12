@@ -33,7 +33,7 @@ function navigationHarness() {
   const menus = ['language', 'site'].map(name => {
     const inside = new Node();
     const menu = {
-      name, inside, open: true, focusCount: 0,
+      name, inside, open: true, focusCount: 0, dataset: {},
       contains: target => target === inside || target === menu,
       querySelector: selector => {
         assert.equal(selector, 'summary');
@@ -129,7 +129,7 @@ test('route or active-locale changes close both disclosures without stealing foc
 test('locale selection and site-menu links close their own disclosures immediately', () => {
   assert.match(navigationSource, /function selectLocale\([^)]*\)\s*\{\s*if \(languageRef\.current\) languageRef\.current\.open = false/);
   assert.match(navigationSource, /onClick=\{\(\) => selectLocale\(next\)\}/);
-  assert.equal((navigationSource.match(/onClick=\{\(\) => \{ if \(siteMenuRef\.current\) siteMenuRef\.current\.open = false; \}\}/g) ?? []).length, 7, 'All seven menu link groups close their disclosure, including Shop, Cart and Free App');
+  assert.equal((navigationSource.match(/onClick=\{\(\) => \{ if \(siteMenuRef\.current\) siteMenuRef\.current\.open = false; \}\}/g) ?? []).length, 9, 'All nine menu link groups close their disclosure, including Services, human specialists, Shop, Cart and Free App');
   assert.match(navigationSource, /data-nav-item="install"[\s\S]*?onClick=\{\(\) => \{ if \(siteMenuRef\.current\) siteMenuRef\.current\.open = false; \}\}/);
 });
 test('Maya hub changes its actual locale and reader destinations, not just the menu label', () => {
@@ -226,12 +226,14 @@ test('long Maya readers wait for rendered content instead of global network idle
 test('release browser audit preserves separate free-topic and paid-service safety contracts', () => {
   const verifier = read('scripts/verify-release-reaudit.mjs');
   assert.match(verifier, /check\('consultation-safe-handoff'/);
-  assert.match(verifier, /check\('paid-imagery-consultation-safe-handoff'/);
+  assert.match(verifier, /check\('paid-imagery-consultation-messenger-only-handoff'/);
   assert.match(verifier, /data-consultation-action/);
   assert.match(verifier, /searchParams\.get\('topic'\)/);
   assert.match(verifier, /option\[value="30-min"\].*€50/);
   assert.match(verifier, /option\[value="60-min"\].*€100/);
-  assert.match(verifier, /No enquiry without explicit reply consent/);
+  assert.match(verifier, /data-messenger-only-intake/);
+  assert.match(verifier, /data-messenger-only-channel/);
+  assert.match(verifier, /contactFieldsAbsent: true/);
   assert.match(verifier, /check\('csp-navigation-and-history'/);
   assert.match(verifier, /privateIframeBlocked: true/);
   assert.match(verifier, /ignoreDefaultArgs: \['--disable-back-forward-cache'\]/);
@@ -244,23 +246,24 @@ test('release browser audit preserves separate free-topic and paid-service safet
   assert.match(verifier, /check\('api-video-csp-restrictive'/);
 });
 
-test('release audit verifies current compact paid capture and safe synthetic handoff', () => {
+test('release audit verifies messenger-only paid service capture without collecting typed personal data', () => {
   const verifier = read('scripts/verify-release-reaudit.mjs');
-  const paid = verifier.slice(verifier.indexOf("check('paid-imagery-consultation-safe-handoff'"), verifier.indexOf('if (width === 390)'));
+  const paid = verifier.slice(verifier.indexOf("check('paid-imagery-consultation-messenger-only-handoff'"), verifier.indexOf('if (width === 390)'));
   assert.match(paid, /data-service-visual-screen="final-capture"/);
-  assert.match(paid, /data-compact-hydrated/);
+  assert.match(paid, /data-messenger-only-intake/);
+  assert.match(paid, /form, input, textarea/);
+  assert.match(paid, /data-messenger-offer-format/);
   assert.match(paid, /option\[value="30-min"\].*€50/);
   assert.match(paid, /option\[value="60-min"\].*€100/);
+  assert.match(paid, /data-messenger-only-channel/);
+  assert.match(paid, /noopener/);
+  assert.match(paid, /noreferrer/);
+  assert.match(paid, /referrerpolicy/);
+  assert.match(paid, /Only approved WhatsApp or Telegram destinations/);
   assert.match(paid, /services\/free-situation-review/);
-  assert.match(paid, /replyConsent\)\.not\.toBeChecked/);
-  assert.match(paid, /attribution\)\.not\.toBeChecked/);
-  assert.match(paid, /assertSyntheticLoopback\(paidPage\.url\(\)\)/);
-  assert.match(paid, /assert\.equal\(submissions, 0/);
-  assert.match(paid, /assert\.equal\(submissions, 1/);
-  assert.match(paid, /submitted\.contactConsent, true/);
-  assert.match(paid, /data-lead-saved/);
-  assert.match(paid, /enquiry-qa%40example\.test/);
-  assert.match(paid, /liveConsentSubmitted:false/);
+  assert.match(paid, /messageSent: false/);
+  assert.match(paid, /contactFieldsAbsent: true/);
+  assert.doesNotMatch(paid, /data-compact-hydrated|contactConsent|enquiry-qa@/);
 });
 
 test('initial navigation effect and identical replay preserve preopened native menus', () => {
@@ -287,4 +290,115 @@ test('release audit preserves all four browser lanes while isolating CI process 
     "check('private-anonymous'", "check('api-video-csp-restrictive'"]) {
     assert.ok(verifier.includes(safety), 'Preserve release safety contract: ' + safety);
   }
+});
+
+
+test('release re-audit follows current My Space Today guest Profile and explicit CSP transitions', () => {
+  const source = read('scripts/verify-release-reaudit.mjs');
+  const navigation = read('lib/site-navigation-model.js');
+  const route = read('app/[locale]/app/portrait/page.jsx');
+  const workspace = read('components/app/app-workspace.jsx');
+  const guest = read('components/app/cabinet-guest-overview.jsx');
+  const hub = read('components/app/profile-hub-tabs.jsx');
+  const builder = read('components/personality-profiles-builder.tsx');
+  assert.ok(navigation.includes("profile: 'app/portrait'"), 'Profile dock keeps canonical route');
+  assert.ok(route.includes("return <AppWorkspaceNavigator locale={locale} path={['portrait']} />"), 'My Space Today is the real entry');
+  assert.ok(!route.includes('ProfileTestEntry') && !route.includes('hasPrivateIntent'), 'No obsolete test-first route');
+  assert.ok(workspace.includes("state !== 'ready' && page === 'portrait'"), 'Signed-out visitors need a guest view');
+  assert.ok(workspace.includes('<CabinetGuestOverview'), 'Approved My Space guest view remains');
+  assert.ok(workspace.includes('<ProfileHubTabs locale={locale} active="today" />'), 'Today is the first tab');
+  assert.ok(guest.includes('data-cabinet-guest-overview'));
+  assert.ok(guest.includes("'/client/tests'"), 'Free tests remain reachable without sign-in');
+  assert.ok(!guest.includes('appFetch('), 'Guest overview does not fetch private client data');
+  assert.ok(hub.includes('publicEntry = false') && hub.includes('data-profile-hub-tabs'));
+  assert.ok(builder.includes('data-profile-direct-tests'), 'Public builder still exposes tests');
+  const start = source.indexOf('// The unified Profile dock now opens the PRIVATE Cabinet first.');
+  const finish = source.indexOf('const discoveryBottom = cspPage.locator(');
+  assert.ok(start > 0 && finish > start + 1000, 'Real CSP browser journey is preserved');
+  const flow = source.slice(start, finish);
+  for (const required of [
+    "toHaveURL(origin + '/en/app/portrait')",
+    "toHaveAttribute('data-csp-class', 'private')",
+    "locator('[data-cabinet-guest-overview]')",
+    "locator('a[href=\"/en/client/tests\"]')",
+    "locator('[data-profile-hub-tabs] [data-profile-tab=\"today\"]')",
+    "locator('[data-profile-tests-first], [data-my-tests-dashboard], [data-profile-results-archive]')).toHaveCount(0)",
+    "locator('.mobile-bottom-navigation')).toHaveCount(0)",
+    "cspPage.goto(origin + '/en/personality-profiles', { waitUntil: 'domcontentloaded' })",
+    "toHaveURL(origin + '/en/personality-profiles')",
+    "toHaveAttribute('data-csp-class', 'public-video')",
+    "locator('[data-profile-direct-tests]').click()",
+    "toHaveURL(origin + '/en/client/tests')",
+  ]) assert.ok(flow.includes(required), 'Missing My Space/CSP regression: ' + required);
+  assert.ok(source.includes("toHaveAttribute('href', '/en/app/portrait')"), 'Private test navigation returns to Profile');
+  assert.ok(!source.includes('Public profile discovery must retain same-policy soft navigation'));
+});
+
+test('release audit refuses unbounded public animation frame stalls while retaining real browser coverage', () => {
+  const verifier = read('scripts/verify-release-reaudit.mjs');
+  const begin = verifier.indexOf('const settlePublicDocument = async stage =>');
+  const end = verifier.indexOf('const routePassed = await check(', begin);
+  assert.ok(begin > 0 && end > begin, 'Exact public document settling scope exists');
+  const scope = verifier.slice(begin, end);
+  for (const anchor of [
+    'await Promise.race([',
+    'requestAnimationFrame(() => requestAnimationFrame(resolve))',
+    'frameTimer = setTimeout(() => reject(new Error',
+    'two-frame wait exceeded 5000ms',
+    'clearTimeout(frameTimer)',
+    'pendingPublicRequests.size === 0',
+    "checkpoints.push({ type: 'settled'",
+  ]) assert.ok(scope.includes(anchor), 'Bounded WebKit settling preserves '+anchor);
+});
+
+test('Maya hub route remains fatal with bounded WebKit navigation and poster decode', () => {
+  const verifier = read('scripts/verify-release-reaudit.mjs');
+  const poster = read('scripts/public-poster-readiness.mjs');
+  for (const anchor of [
+    "['/books/maya-tradition', 'en']",
+    "['/books/maya-tradition?lang=ru', 'ru']",
+    'const routeTimer = setTimeout(',
+    "'[release-reaudit] ROUTE_STALLED '",
+    'process.exit(1)',
+    "if (path === '/books/maya-tradition')",
+    'publicPageState = await createPublicPage()',
+    "console.info('[release-reaudit] strict poster decode count='",
+    'await decodeReadyPoster(image, expect)',
+    "fullPage: path !== '/books/maya-tradition', timeout: 15000",
+    'clearTimeout(routeTimer)',
+  ]) assert.ok(verifier.includes(anchor), 'Real route remains checked: ' + anchor);
+  for (const anchor of [
+    'await Promise.race([',
+    'el.decode()',
+    'Poster decode timed out after 7000ms',
+    'clearTimeout(decodeDeadline)',
+    "throw new Error('Poster identity/readiness changed during decode')",
+  ]) assert.ok(poster.includes(anchor), 'Strict bounded poster decoding: ' + anchor);
+});
+
+test('language menu keyboard readiness is installed with native handlers and cleared on cleanup', () => {
+  const { menus, listeners, cleanup } = navigationHarness();
+  assert.equal(menus[0].dataset.hhKeyboardReady, 'true');
+  assert.equal(listeners.has('keydown'),true);
+  cleanup();
+  assert.equal(menus[0].dataset.hhKeyboardReady,undefined);
+  assert.equal(listeners.size,0);
+});
+
+test('client landing locale pages use independent real browser pages and retain fatal acceptance', () => {
+  const verifier = read('scripts/verify-release-reaudit.mjs');
+  const isolate = verifier.indexOf("if (['/en/client','/ru/client','/es/client'].includes(path))");
+  const assertRoute = verifier.indexOf("const routePassed = await check('public-page'", isolate);
+  assert.ok(isolate > 0 && assertRoute > isolate,
+    'all three guest Client locales isolate the previous WebKit document before audit');
+  const scope = verifier.slice(isolate, assertRoute);
+  for (const assertion of ['await page.close()', 'publicPageState = await createPublicPage()',
+    'page = publicPageState.page', 'errors = publicPageState.errors'])
+    assert.ok(scope.includes(assertion), 'isolated route retains new document tracking: ' + assertion);
+  for (const required of ['const routeTimer = setTimeout(',
+    "process.exit(1)", "await settlePublicDocument('before-assertions')",
+    "await settlePublicDocument('before-next-navigation')",
+    'await decodeReadyPoster(image, expect)', "assert.equal(state.htmlLang, locale",
+    "if (path === '/books/maya-tradition')"])
+    assert.ok(verifier.includes(required), 'Do not skip original public/CSP/locale checks: ' + required);
 });

@@ -44,10 +44,15 @@ async function assertAnonymousPrivateNavigation(page) {
   assert.equal(response.status(), 200);
   await expect(page).toHaveURL(origin + '/en/app/portrait');
   await expect(page.locator('body')).toHaveAttribute('data-csp-class', 'private');
-  await expect(page.locator('.hh-app--cabinet-guest [data-cabinet-guest-overview]')).toBeVisible();
+  // My Space Today is the Profile route for signed-in and anonymous visitors.
+  // Guests see a free-tests link; private results and legacy test-first screens
+  // must not be exposed without an authenticated account.
+  const guest = page.locator('[data-cabinet-guest-overview]');
+  await expect(guest).toBeVisible();
+  await expect(page.locator('[data-profile-hub-tabs] [data-profile-tab="today"]')).toHaveAttribute('aria-current', 'page');
+  await expect(guest.locator('a[href="/en/client/tests"]')).toBeVisible();
+  await expect(page.locator('[data-profile-tests-first], [data-my-tests-dashboard], [data-profile-results-archive]')).toHaveCount(0);
   await expect(page.locator('.mobile-bottom-navigation')).toHaveCount(0);
-  await expect(page.locator('[data-profile-domains], [data-my-tests-dashboard]')).toHaveCount(0);
-  await expect(page.locator('.hh-app--cabinet-guest [data-cabinet-guest-overview] a[href="/en/client"]')).toHaveAttribute('href', '/en/client');
 }
 
 async function verifyCspBfcache() {
@@ -223,18 +228,57 @@ async function exercise(engine, browserType, width) {
     // queued Next prefetches. Observe their actual completion after hydration,
     // including requests triggered by poster scrolling, before replacing a page.
     await expect.poll(() => page.evaluate(() => history.pushState.toString().includes('__NA')), { timeout: 15000 }).toBe(true);
-    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    let frameTimer = null;
+    try {
+      // WebKit may stall requestAnimationFrame on a background or suspended page.
+      // Fail this real release check explicitly rather than hanging the 35-minute job.
+      await Promise.race([
+        page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))),
+        new Promise((_, reject) => {
+          frameTimer = setTimeout(() => reject(new Error('Release re-audit two-frame wait exceeded 5000ms at ' + stage + ' ' + publicPhase)), 5000);
+        }),
+      ]);
+    } finally {
+      if (frameTimer !== null) clearTimeout(frameTimer);
+    }
     await expect.poll(() => publicPageState.pendingPublicRequests.size === 0 && Date.now() - publicPageState.lastPublicRequestActivity >= 500, { timeout: 15000, message: 'Hydrated public document requests must finish before the next audit navigation' }).toBe(true);
     publicDiagnostics.checkpoints.push({ type: 'settled', stage, path: publicPhase, time: Date.now(), pendingRequests: publicPageState.pendingPublicRequests.size, lastRequestActivity: publicPageState.lastPublicRequestActivity });
   };
   try {
     for (const [path, locale] of routes) {
+      // The Maya hub is audited fully, but in a new tab to avoid retaining
+      // the previous eighteen WebKit document/reader render trees.
+      const routeTimer = setTimeout(() => {
+        console.error('[release-reaudit] ROUTE_STALLED ' + engine + '/' + width + ' ' + path +
+          ' after 90s; checkpoints=' + JSON.stringify(publicDiagnostics.checkpoints.slice(-4)));
+        process.exit(1); // Fatal: do not count unverified route as passing.
+      }, 90000);
+      if (path === '/books/maya-tradition') {
+        console.info('[release-reaudit] isolating real Maya hub after previous navigations');
+        await page.close();
+        publicPageState = await createPublicPage();
+        page = publicPageState.page;
+        errors = publicPageState.errors;
+      }
+      // In the real WebKit mobile audit /en/client completed and fully settled,
+      // but the following /ru/client navigation never resolved. Each private
+      // landing locale now gets an isolated page so no prior guest/Next document
+      // can block the NEXT locale's navigation. All route, CSP, poster, language,
+      // 90-second fatal timeout, and no-JS-error assertions still execute.
+      if (['/en/client','/ru/client','/es/client'].includes(path)) {
+        console.info('[release-reaudit] isolating real client landing document: ' + path);
+        await page.close();
+        publicPageState = await createPublicPage();
+        page = publicPageState.page;
+        errors = publicPageState.errors;
+      }
       const routePassed = await check('public-page', { engine, width, path }, async () => {
         publicPhase = path;
         console.info('[release-reaudit] public route ' + engine + '/' + width + ': ' + path);
         publicDiagnostics.checkpoints.push({ type: 'goto', path, from: page.url(), time: Date.now() });
         errors.length = 0;
         const response = await page.goto(origin + path, { waitUntil: 'networkidle', timeout: 35000 });
+        console.info('[release-reaudit] navigated ' + engine + '/' + width + ': ' + path);
         assert.equal(response.status(), 200);
         await page.locator('main').first().waitFor();
         await settlePublicDocument('before-assertions');
@@ -257,14 +301,24 @@ async function exercise(engine, browserType, width) {
         // cannot reduce coverage. Each same element must load and strictly decode.
         const posters = page.locator('.site-video-poster');
         const posterImages = await posters.elementHandles();
-        for (const image of posterImages) {
+        console.info('[release-reaudit] strict poster decode count=' + posterImages.length + ' ' + path);
+        for (const [posterIndex, image] of posterImages.entries()) {
           await expect(posters).toHaveCount(posterImages.length);
           await decodeReadyPoster(image, expect);
+          console.info('[release-reaudit] decoded poster ' + (posterIndex + 1) + '/' + posterImages.length + ' ' + path);
         }
         await expect(posters).toHaveCount(posterImages.length);
         if (['/en/about', '/es/about', '/books/maya-tradition'].includes(path)) {
           await page.evaluate(() => scrollTo(0, 0));
-          await page.screenshot({ path: `${evidence}/${label}-${engine}-${width}-${path.replaceAll('/', '_')}.png`, fullPage: true });
+          console.info('[release-reaudit] capture screenshot ' + path);
+          // The four-volume Maya hub gets a real viewport image instead of an
+          // unbounded, memory-intensive full-page WebKit stitched screenshot.
+          // Its rendered DOM, poster decode and locale/CSP assertions remain fatal.
+          await page.screenshot({
+            path: `${evidence}/${label}-${engine}-${width}-${path.replaceAll('/', '_')}.png`,
+            fullPage: path !== '/books/maya-tradition', timeout: 15000,
+          });
+          console.info('[release-reaudit] captured screenshot ' + path);
         }
         await settlePublicDocument('before-next-navigation');
         assert.deepEqual(errors, [], 'No page errors after public poster decoding and scrolling');
@@ -283,6 +337,7 @@ async function exercise(engine, browserType, width) {
         page = publicPageState.page;
         errors = publicPageState.errors;
       }
+      clearTimeout(routeTimer);
     }
     await page.goto(origin + '/en/about', { waitUntil: 'networkidle' });
     const menu = page.locator('.site-language-menu');
@@ -364,16 +419,18 @@ async function exercise(engine, browserType, width) {
         assert.equal(await capture.locator('[data-contact-channel="telegram"]').count(), 0);
         return { messageSent: false, privateFieldsAbsent: true, changingTopicRebuildsUrl: true, freeAssessmentInternal: true };
       });
-      await check('paid-imagery-consultation-safe-handoff', { engine, width, locale }, async () => {
-        const local = ['localhost', '127.0.0.1', '[::1]'].includes(new URL(origin).hostname);
+      await check('paid-imagery-consultation-messenger-only-handoff', { engine, width, locale }, async () => {
         const paidPage = await context.newPage();
         try {
           await paidPage.goto(origin + `/${locale}/services/imagery-therapy`, { waitUntil: 'networkidle' });
           const capture = paidPage.locator('[data-service-visual-screen="final-capture"]');
           await expect(capture).toHaveCount(1);
-          const form = capture.locator('form[data-compact-lead-form]');
-          await expect(form).toHaveAttribute('data-compact-hydrated', 'true');
-          const formats = capture.locator('select');
+          const intake = capture.locator('[data-messenger-only-intake]');
+          await expect(intake).toHaveCount(1);
+          // Current site policy deliberately avoids typed email/phone capture:
+          // a messenger link click alone is not a verified conversation.
+          await expect(intake.locator('form, input, textarea')).toHaveCount(0);
+          const formats = intake.locator('select[data-messenger-offer-format]');
           await expect(formats).toHaveCount(1);
           await expect(formats.locator('option[value="30-min"]')).toContainText('€50');
           await expect(formats.locator('option[value="60-min"]')).toContainText('€100');
@@ -381,57 +438,33 @@ async function exercise(engine, browserType, width) {
           await expect(formats).toHaveValue('60-min');
           await formats.selectOption('30-min');
           await expect(formats).toHaveValue('30-min');
-          await expect(capture.locator('a[data-compact-channel]')).toHaveCount(0);
-          const free = capture.locator(`a[href="/${locale}/services/free-situation-review"]`);
-          await expect(free).toHaveCount(1);
-          const replyConsent = form.locator('input[type="checkbox"][required]');
-          const attribution = form.locator('[data-enquiry-attribution-choice] input[type="checkbox"]');
-          await expect(replyConsent).toHaveCount(1);
-          await expect(replyConsent).not.toBeChecked();
-          await expect(attribution).toHaveCount(1);
-          await expect(attribution).not.toBeChecked();
-          if (!local) return {messageSent:false, liveConsentSubmitted:false, paidPricesVerified:true, freeAssessmentInternal:true};
-          assertSyntheticLoopback(paidPage.url());
-          let submissions = 0, submitted = null;
-          await paidPage.route('**/api/service-enquiries', async route => {
-            if (route.request().method() !== 'POST') return route.continue();
-            submissions++; submitted = route.request().postDataJSON();
-            await route.fulfill({status:201, contentType:'application/json', body:JSON.stringify({saved:true, referenceCode:'HH-ABCD1234EF56'})});
-          });
-          await paidPage.evaluate(() => {
-            window.__testNoExternalHandoff = [];
-            window.open = () => ({opener:null, closed:false, location:{replace:url => window.__testNoExternalHandoff.push(String(url))}, close:()=>{}});
-          });
-          await form.locator('input[name="contact"]').fill('enquiry-qa@example.test');
-          const submit = form.locator('button[data-compact-channel="whatsapp"]');
-          await submit.click();
-          await expect(form.locator('[role="alert"]')).toBeVisible();
-          assert.equal(submissions, 0, 'No enquiry without explicit reply consent');
-          await replyConsent.check();
-          await submit.click();
-          await expect(capture.locator('[data-lead-saved]')).toBeVisible();
-          assert.equal(submissions, 1);
-          assert.equal(submitted.contactConsent, true);
-          assert.equal(submitted.contact.email, 'enquiry-qa@example.test');
-          assert.equal(submitted.sourcePath, `/${locale}/services/imagery-therapy`);
-          assert.ok(submitted.description.includes('30-min'));
-          for (const channel of ['whatsapp','telegram']) {
-            const link = capture.locator(`a[data-compact-channel="${channel}"]`);
+          const channels = intake.locator('a[data-messenger-only-channel]');
+          await expect(channels).toHaveCount(2);
+          // Each channel attribute is on the anchor itself, not a nested child.
+          const whatsapp = intake.locator('a[data-messenger-only-channel="whatsapp"]');
+          const telegram = intake.locator('a[data-messenger-only-channel="telegram"]');
+          for (const link of [whatsapp, telegram]) {
             await expect(link).toHaveAttribute('target', '_blank');
             await expect(link).toHaveAttribute('rel', /noopener/);
             await expect(link).toHaveAttribute('rel', /noreferrer/);
-            const draft = new URL(await link.getAttribute('href'));
-            assert.equal(draft.origin, channel === 'whatsapp' ? 'https://wa.me' : 'https://t.me');
-            assert.equal(draft.pathname, channel === 'whatsapp' ? '/14376066502' : '/AndyTherapist');
-            assert.deepEqual([...draft.searchParams.keys()], ['text']);
-            assert.ok(draft.searchParams.get('text')?.includes('HH-ABCD1234EF56'));
-            assert.ok(draft.searchParams.get('text')?.includes('30-min'));
-            assert.ok(!draft.href.includes('enquiry-qa%40example.test'));
+            await expect(link).toHaveAttribute('referrerpolicy', 'no-referrer');
+            const href = new URL(await link.getAttribute('href'));
+            assert.ok(href.protocol === 'https:', 'Messenger handoff must use HTTPS');
+            assert.ok(['wa.me', 'api.whatsapp.com', 't.me', 'telegram.me'].includes(href.hostname),
+              'Only approved WhatsApp or Telegram destinations are allowed');
           }
-          const handoffs = await paidPage.evaluate(() => window.__testNoExternalHandoff);
-          assert.equal(handoffs.length, 1);
-          assert.equal(new URL(handoffs[0]).origin, 'https://wa.me');
-          return {messageSent:false, syntheticConsent:true, paidPricesVerified:true, bothChannelsVerified:true, freeAssessmentInternal:true};
+          assert.equal(await capture.locator('a[data-compact-channel], form[data-compact-lead-form]').count(), 0,
+            'Legacy contact capture and CRM-confirmation controls must not appear in messenger-only mode');
+          const free = capture.locator(`a[href="/${locale}/services/free-situation-review"]`);
+          await expect(free).toHaveCount(1);
+          return {
+            messageSent: false,
+            contactFieldsAbsent: true,
+            paidPricesVerified: true,
+            bothChannelsVerified: true,
+            secureExternalHandoff: true,
+            freeAssessmentInternal: true,
+          };
         } finally { await paidPage.close(); }
       });
     }
@@ -552,15 +585,37 @@ async function exercise(engine, browserType, width) {
           await expect(cspPage).toHaveURL(origin + '/en/services');
           await expect(cspPage.locator('main')).toHaveClass(/services-shell/);
           assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), 'same-public-document', 'Same-policy links must retain soft navigation');
-          await cspPage.locator('.mobile-bottom-navigation [data-nav-item="profile"]').click();
+          // The unified Profile dock now opens the PRIVATE Cabinet first.
+          // Verify the hard CSP boundary, guest isolation and the public
+          // actual six-tab My Space and separate public profile builder.
+          await cspPage.locator('[data-hh-unified-dock] [data-unified-dock-item="profile"]').click();
+          await expect(cspPage).toHaveURL(origin + '/en/app/portrait');
+          await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'private');
+          await waitForDocument();
+          assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), undefined, 'Public to private Profile must load a new document');
+           // My Space Today is the approved Profile entry; anonymous visitors
+           // get a public tests link, never private account content.
+           const guestProfile = cspPage.locator('[data-cabinet-guest-overview]');
+           await expect(guestProfile).toBeVisible();
+           await expect(guestProfile.locator('a[href="/en/client/tests"]')).toBeVisible();
+           await expect(cspPage.locator('[data-profile-hub-tabs] [data-profile-tab="today"]')).toHaveAttribute('aria-current', 'page');
+           await expect(cspPage.locator('[data-profile-tests-first], [data-my-tests-dashboard], [data-profile-results-archive]')).toHaveCount(0);
+           await expect(cspPage.locator('.mobile-bottom-navigation')).toHaveCount(0);
+          await cspPage.evaluate(() => { window.__cspDocumentProbe = 'private-profile-before-public-builder'; });
+          // The builder is now a separate public route. Exercise the real
+          // private-to-public CSP boundary with a fresh document navigation.
+          await cspPage.goto(origin + '/en/personality-profiles', { waitUntil: 'domcontentloaded' });
           await expect(cspPage).toHaveURL(origin + '/en/personality-profiles');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
-          assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), 'same-public-document', 'Public profile discovery must retain same-policy soft navigation');
+          await waitForDocument();
+          assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), undefined, 'Private Profile to public builder must load a new document');
+          await expect(cspPage.locator('[data-profile-direct-tests]')).toBeVisible();
+          await cspPage.evaluate(() => { window.__cspDocumentProbe = 'public-builder-before-private-tests'; });
           await cspPage.locator('[data-profile-direct-tests]').click();
           await expect(cspPage).toHaveURL(origin + '/en/client/tests');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'private');
           await waitForDocument();
-          assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), undefined, 'Entering private must load a new document');
+          assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), undefined, 'Public tests to private must load a new document');
           await cspPage.evaluate(() => {
             window.__cspViolations = [];
             document.addEventListener('securitypolicyviolation', event => window.__cspViolations.push(event.effectiveDirective));
@@ -569,14 +624,14 @@ async function exercise(engine, browserType, width) {
             document.body.append(frame);
           });
           await expect.poll(() => cspPage.evaluate(() => window.__cspViolations.includes('frame-src'))).toBe(true);
-          // Test discovery keeps public navigation while retaining private CSP.
+          // Private test discovery keeps the six-dock navigation under private CSP.
           // Check the actual private account separately, without altering this
           // page's Back/Forward chain or reading an authenticated account.
           const discoveryBottom = cspPage.locator('.mobile-bottom-navigation');
           await expect(discoveryBottom).toBeVisible();
           await expect(discoveryBottom.locator('[aria-current="page"]')).toHaveCount(1);
           await expect(discoveryBottom.locator('[data-nav-item="profile"]')).toHaveAttribute('aria-current', 'page');
-          await expect(discoveryBottom.locator('[data-nav-item="profile"]')).toHaveAttribute('href', '/en/personality-profiles');
+          await expect(discoveryBottom.locator('[data-nav-item="profile"]')).toHaveAttribute('href', '/en/app/portrait');
           const privateContext = await cspBrowser.newContext({viewport:{width,height:900}, serviceWorkers: 'block'});
           await privateContext.route('**/api/**', route => ['GET', 'HEAD'].includes(route.request().method()) ? route.continue() : route.abort());
           const privatePage = await privateContext.newPage();
@@ -853,4 +908,3 @@ const failed = results.filter(row => !row.ok);
 writeFileSync(`${evidence}/${label}-results.json`, JSON.stringify({ origin, checkedAt: new Date().toISOString(), commit: process.env.GITHUB_SHA, total: results.length, failed: failed.length, results }, null, 2));
 console.log(JSON.stringify({ label, total: results.length, failed: failed.length, failures: failed }, null, 2));
 if (!process.argv.includes('--observe')) assert.equal(failed.length, 0, 'Re-audit failed; inspect evidence');
-

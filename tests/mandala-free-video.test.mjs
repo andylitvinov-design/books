@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
+import {stripApprovedIntroVideoSources} from "./helpers/approved-mandala-intro-sources.mjs";
 
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
@@ -19,7 +20,7 @@ test("free video lives inside original mandala editor and reuses its private loc
   assert.match(video, /URL\.revokeObjectURL\(result\.url\)/);
   assert.match(video, /loadSceneImage\(snapshot\)/);
   assert.match(video, /sourceRef\.current !== snapshot/);
-  assert.doesNotMatch(video, /\bfetch\s*\(|XMLHttpRequest|FormData|localStorage|sessionStorage|sendBeacon|supabase|kling|higgsfield|heygen/i);
+  assert.doesNotMatch(stripApprovedIntroVideoSources(video), /\bfetch\s*\(|XMLHttpRequest|FormData|localStorage|sessionStorage|sendBeacon|supabase|kling|higgsfield|heygen/i);
 });
 
 test("video recorder keeps legacy durations and adds the 15-second brief option across EN/RU/ES", () => {
@@ -77,7 +78,10 @@ test("client money-flow studio offers 16 original and licensed looks and starts 
   assert.match(effects, /ctx\.clip\("evenodd"\)/);
   assert.match(css, /@media\(max-width:350px\)\{\.moneyFlowSection/);
   assert.match(browser, /data-mandala-money-option/);
-  assert.doesNotMatch(studio + effects, /\bfetch\s*\(|XMLHttpRequest|FormData|localStorage|sessionStorage|sendBeacon|supabase|kling\.ai|higgsfield|heygen|publish/i);
+  // Ignore only code comments and the separately approved native intro sources;
+  // preserve the hard prohibition on external network/provider use in local video.
+  const executableCode=(stripApprovedIntroVideoSources(studio)+effects).replace(/^[ \t]*\/\/.*$/gm,"");
+  assert.doesNotMatch(executableCode, /\bfetch\s*\(|XMLHttpRequest|FormData|localStorage|sessionStorage|sendBeacon|supabase|kling\.ai|higgsfield|heygen|publish/i);
 
   const diagnostic = ts.transpileModule(effects, {
     fileName: "lib/mandala/money-flow-effects.ts",
@@ -124,7 +128,7 @@ test("cinematic customer video renders real layered motion, portrait and 720/108
     }).diagnostics||[];
     assert.equal(diagnostics.filter(d=>d.category===ts.DiagnosticCategory.Error).length,0,file);
   }
-  assert.doesNotMatch(studio+renderer, /\bfetch\s*\(|XMLHttpRequest|FormData|localStorage|sessionStorage|sendBeacon|supabase|kling\.ai|higgsfield|heygen/i);
+  assert.doesNotMatch(stripApprovedIntroVideoSources(studio)+renderer, /\bfetch\s*\(|XMLHttpRequest|FormData|localStorage|sessionStorage|sendBeacon|supabase|kling\.ai|higgsfield|heygen/i);
 });
 
 
@@ -174,7 +178,8 @@ test("Safari failed render offers only a source-backed unedited MP4 without pret
   assert.match(studio, /holistic-house-original-scene\.mp4/);
   assert.match(studio, /Это НЕ ваш готовый фильм/);
   assert.match(studio, /duration, format, photo, captions and music were not applied/);
-  assert.match(studio, /playbackStatus==="ready" \? <>/);
+  assert.match(studio, /playbackStatus==="ready"&&\(result\.mode==="catalog"\|\|creditConfirmed\)&&\s*\(!creditCatalog\?\.chargeRequired\|\|creditSession==="signed_in"\|\|result\.mode==="catalog"\) \? <>/,
+    "generated files cannot be downloaded before native decode AND authenticated credit confirmation");
   // No user-generated blob is advertised as ready when native decoding fails.
   assert.match(studio, /playbackStatus==="failed"\?<div role="alert" data-video-playback-error>/);
   const allowPublicMp4 = /^\/videos\/holistic-house\/[a-z0-9_-]+(?:\/[a-z0-9_-]+)*\.mp4$/;
@@ -190,14 +195,20 @@ test("Safari failed render offers only a source-backed unedited MP4 without pret
 test("AI Video Create acknowledges only an actually accepted local render preflight", () => {
   const studio=read("components/mandala-free-video-studio.tsx");
   const chat=read("components/mandala-video-director-chat.tsx");
-  const start=studio.slice(studio.indexOf("  const startFromHero=()=>{"),
-    studio.indexOf("  // This is a local, non-persistent preview."));
+  const startHandler=studio.indexOf("  const startFromHero=()=>{");
+  const endHandler=studio.indexOf("    void createVideo();\n    return true;\n  };",startHandler);
+  assert.ok(startHandler>=0&&endHandler>startHandler,"existing recorder preflight handler must exist");
+  const start=studio.slice(startHandler,endHandler+"    void createVideo();\n    return true;\n  };".length);
   const quick=studio.slice(studio.indexOf("  const createQuickVideo = () => {"),
     studio.indexOf("  const deepAudioPane = ("));
   assert.ok(start.includes("if(recording||preparing||preparingRef.current||jobRef.current||webCodecJobRef.current||photoPending)return false;"),
     "never start a new render while a source photo is decoding or an encoder is active");
   assert.doesNotMatch(start,/\breturn\s*;/);
-  assert.match(start,/if\(!canGenerate\)return false;\s*void createVideo\(\);\s*return true;/);
+  assert.ok(start.includes("if(!canGenerate){"),"a blocked Create must explain why");
+   assert.ok(start.includes('setNotice("")'),"successful Create clears the previous error notice");
+   assert.ok(start.indexOf("if(!canGenerate){")<start.indexOf("void createVideo()"),
+     "the encoder still starts only after readiness checks");
+   assert.ok(start.includes("return true;"),"the acknowledged local video render remains unchanged");
   assert.match(quick,/if\(narrationInvalid\)[\s\S]*?return false;/);
   assert.match(quick,/return startFromHero\(\);/);
   assert.doesNotMatch(quick,/startFromHero\(\);\s*return true;/);

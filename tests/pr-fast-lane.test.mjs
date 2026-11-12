@@ -278,10 +278,16 @@ const classifierCases = [
   ['merge queue docs change', 'docs/start.md', null, 'edit', false, 'merge_group'],
   ['newline code filename', 'source\nfile.ts', 'docs/moved.md', 'rename', false],
   ['missing base', 'docs/start.md', null, 'edit', false, 'pull_request', true],
+  ['Reviewed CI telemetry README', 'README.PR-LOSS-TELEMETRY.md', null, 'edit', false, 'pull_request', false, true],
+  ['Unreviewed README variant remains full Core', 'README.CI-EXPERIMENT.md', null, 'edit', false],
+  ['CI README with payment runtime stays full Core', 'README.PR-LOSS-TELEMETRY.md', 'app/api/payments/route.js', 'mixed', false],
   ['CI workflow YAML edit', '.github/workflows/example.yml', null, 'edit', false, 'pull_request', false, true],
   ['CI workflow YAML deletion', '.github/workflows/example.yml', null, 'delete', false, 'pull_request', false, true],
   ['CI source aggregator edit', 'lib/ci/specialist-aggregate.mjs', null, 'edit', false, 'pull_request', false, true],
   ['CI policy test edit', 'tests/pr-fast-lane.test.mjs', null, 'edit', false, 'pull_request', false, true],
+  ['Core CI workflow edit', '.github/workflows/hh-pr-core-release.yml', null, 'edit', false, 'pull_request', false, true],
+  ['Source Preflight contract edit', 'scripts/ci-source-preflight.mjs', null, 'edit', false, 'pull_request', false, true],
+  ['ESLint repair contract edit', 'scripts/ci-deterministic-eslint-repair.mjs', null, 'edit', false, 'pull_request', false, true],
   ['CI workflow validation test edit', 'tests/ci-workflow-globs.test.mjs', null, 'edit', false, 'pull_request', false, true],
   ['CI YAML plus runtime code', '.github/workflows/example.yml', 'app/api/payments/route.js', 'mixed', false],
   ['CI YAML rename to runtime file', '.github/workflows/example.yml', 'components/example.tsx', 'rename', false],
@@ -345,7 +351,23 @@ for (const [name, from, to, operation, expected, event = 'pull_request', missing
         assert.equal(result.signal, null, 'invalid base is a normal Git failure, not timeout');
         assert.ok(!existsSync(join(dir, 'output')) || !readFileSync(join(dir, 'output'), 'utf8').includes('docs_only=true'));
       } else {
-        assert.deepEqual(readFileSync(join(dir, 'output'), 'utf8').trim().split('\n'), [`docs_only=${expected}`,`ci_only=${expectedCiOnly}`]);
+        // Exact regressions prove CI-policy changes stay covered without
+        // classifying an unrelated runtime-only PR as CI infrastructure.
+        const expectedCiTouched = new Set([
+          'workflow-to-doc rename',
+          'CI workflow YAML edit', 'CI workflow YAML deletion',
+          'CI source aggregator edit', 'CI policy test edit',
+          'Core CI workflow edit', 'Source Preflight contract edit', 'ESLint repair contract edit',
+          'CI workflow validation test edit', 'CI YAML plus runtime code',
+          'CI YAML rename to runtime file', 'dependency lockfile edit',
+        ]).has(name);
+        const expectedPreflightTouched = new Set(['Core CI workflow edit', 'Source Preflight contract edit']).has(name);
+        const expectedRepairTouched = new Set(['Core CI workflow edit', 'ESLint repair contract edit']).has(name);
+        assert.deepEqual(readFileSync(join(dir, 'output'), 'utf8').trim().split('\n'),
+          [`docs_only=${expected}`,`ci_only=${expectedCiOnly}`,
+            `ci_touched=${expectedCiTouched}`,
+            `preflight_touched=${expectedPreflightTouched}`,
+            `repair_touched=${expectedRepairTouched}`]);
       }
     } finally { rmSync(dir, { recursive: true, force: true }); }
   });
@@ -401,7 +423,8 @@ test('PR fast lane ignores unrelated production commits in verified merge checko
         GITHUB_OUTPUT:output,GITHUB_STEP_SUMMARY:summary});
     assert.equal(checked.status,0,checked.stderr);
     assert.deepEqual(readFileSync(output,'utf8').trim().split('\n'),
-      ['docs_only=false','ci_only=true']);
+      ['docs_only=false','ci_only=true','ci_touched=true',
+        'preflight_touched=false','repair_touched=false']);
     assert.deepEqual(readFileSync(join(dir,'changed.z'),'utf8').split('\0').filter(Boolean),
       ['.github/workflows/example.yml']);
     const bad=run('bash',['--noprofile','--norc','-c',script],
@@ -1633,4 +1656,30 @@ test('Tantra keeps real 1.64.0 Chromium/WebKit acceptance with preinstalled Nobl
   assert.match(s,/npm run build/);
   assert.doesNotMatch(s,/^\s+.*\/bin\/playwright install --with-deps/m);
   assert.doesNotMatch(s,/continue-on-error:\s*true/);
+});
+
+
+test('billing specialist avoids repeated global TypeScript with all dedicated payment/RLS checks retained',()=>{
+  const billing=workflow('hh-billing-isolated.yml');
+  const core=workflow('hh-pr-core-release.yml');
+  assert.doesNotMatch(billing,/^      - '\.github\/workflows\/hh-billing-isolated\.yml'$/m);
+  assert.doesNotMatch(billing,/\bnpx tsc --noEmit\b/);
+  for(const test of ['tests/video-credits-postgres.integration.mjs',
+    'tests/square-ledger-isolated.integration.mjs',
+    'tests/service-square-api-cart.test.mjs', 'npm run test:billing:db']) {
+    assert.ok(billing.includes(test),'payment and SQL/RLS coverage must stay: '+test);
+  }
+  assert.match(core,/run: npm run build/);
+  assert.match(core,/node scripts\/ci-source-preflight\.mjs/);
+  assert.match(core,/^  hh-merge-check:/m);
+  assert.match(core,/^    needs: \[scope, hh-specialist\]$/m);
+});
+
+
+test('only the reviewed PR-loss README can enter the CI-only fast lane', () => {
+  const core=workflow('hh-pr-core-release.yml');
+  const scope=core.split('# CI-only allowlist is exact')[1]?.split('*) ci_only=false')[0]||'';
+  assert.ok(scope.includes('README.PR-LOSS-TELEMETRY.md|\\'), 'reviewed nonruntime report README can skip Next build');
+  assert.ok(!scope.includes('README.*'), 'unreviewed root README variants must remain strict');
+  assert.ok(core.includes("steps.diff.outputs.ci_only != 'true'"), 'full Next build remains for non-CI changes');
 });

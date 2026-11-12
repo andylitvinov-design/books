@@ -359,8 +359,17 @@ test('Ideas & Coaching PR validates source contracts while manual acceptance own
   const tsGate='        if: '+dollar+"{{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
   assert.ok(source.includes('      - name: TypeScript noEmit\n'+tsGate+'\n        run: npx --no-install tsc --noEmit'),
     'Manual/other branch typecheck stays, production PR relies on core');
+  // The focused job runs discovery in an existing multi-file node --test
+  // command. Require real execution, not an obsolete single-file invocation.
+  assert.ok(source.split('\n').some(line=>line.includes('node --test ') &&
+    line.includes('tests/public-coaching-discovery.test.mjs')),
+    'public discovery must remain a real executed specialist source test');
+  // Core runs the same contract in the mandatory package prebuild; retain
+  // both real gates while rejecting the stale literal command formatting.
+  const prebuild=JSON.parse(readFileSync(new URL('../package.json',import.meta.url),'utf8')).scripts.prebuild;
+  assert.ok(prebuild.includes('node --test tests/public-coaching-discovery.test.mjs'),
+    'mandatory Core Next build must still execute public coaching discovery');
   for(const preserved of [
-    'node --test tests/public-coaching-discovery.test.mjs',
     '- name: Next.js production build (manual full acceptance only)\n        if: github.event_name != \'pull_request\'\n        run: npm run build',
     'playwright install --with-deps chromium webkit',
     'node scripts/verify-coaching-lounge-mobile.mjs',
@@ -537,7 +546,7 @@ test('Draft staging keeps full IA security, SEO source-build and production moni
 
 // Existing Guard job exercises the new preflight's fail-closed decision table.
 // The preflight adds no standalone CI workflow, job, or required check.
-import { assessPrReadiness } from '../scripts/ci-pr-readiness.mjs';
+import { assessPrReadiness, readExactBaseAncestry } from '../scripts/ci-pr-readiness.mjs';
 
 const earlyRepo = 'andylitvinov-design/books';
 const earlyEvent = {
@@ -561,6 +570,53 @@ test('early readiness accepts current mergeable HEAD without deadlocking pending
   // A newer production base alone does not require rerunning all old CI suites.
   const advanced = { ...earlyLive, base: { ...earlyLive.base, sha: 'c'.repeat(40) }, mergeable_state: 'behind' };
   assert.equal(assessPrReadiness(earlyEvent, advanced, earlyRepo).ready, true);
+});
+
+test('real REST Compare requires a full ordered SHA lineage without head_commit',async()=>{
+  const base='b'.repeat(40),head='c'.repeat(40),parent='d'.repeat(40);
+  const valid={status:'ahead',behind_by:0,ahead_by:2,total_commits:2,
+    base_commit:{sha:base},merge_base_commit:{sha:base},
+    commits:[{sha:parent},{sha:head}]};
+  const mocked=data=>async(url,options)=>{
+    assert.ok(url.includes('/compare/'));
+    assert.ok(url.includes('per_page=100'));
+    assert.equal(options.headers.authorization,'Bearer test-token');
+    return {ok:true,json:async()=>data};
+  };
+  const live={base:{sha:base},head:{sha:head}};
+  const accepted=await readExactBaseAncestry(earlyRepo,live,'test-token',mocked(valid));
+  assert.deepEqual(accepted,{status:'ahead',base_sha:base,head_sha:head,merge_base_sha:base});
+  for(const wrong of [
+    {...valid,status:'diverged'},
+    {...valid,behind_by:1},
+    {...valid,ahead_by:3},
+    {...valid,total_commits:3},
+    {...valid,commits:[{sha:head}]},
+    {...valid,commits:[{sha:parent},{sha:parent}]},
+    {...valid,base_commit:{sha:'e'.repeat(40)}},
+    {...valid,merge_base_commit:{sha:'e'.repeat(40)}},
+    {...valid,commits:[],head_commit:{sha:head}},
+  ])assert.equal(await readExactBaseAncestry(earlyRepo,live,'test-token',mocked(wrong)),null);
+  assert.equal(await readExactBaseAncestry(earlyRepo,live,'test-token',
+    async()=>({ok:false})),null);
+  assert.equal(await readExactBaseAncestry(earlyRepo,{base:{sha:base},head:{sha:base}},
+    'test-token',async()=>{throw Error('MUST_NOT_FETCH_IDENTICAL_BASE');}),null);
+});
+
+test('BASE_ADVANCED is a separate ancestry-proven advisory, never a security bypass',()=>{
+  const moved={...earlyLive,base:{...earlyLive.base,sha:'c'.repeat(40)}};
+  const proof={status:'ahead',base_sha:earlyEvent.pull_request.base.sha,
+    head_sha:moved.base.sha,merge_base_sha:earlyEvent.pull_request.base.sha};
+  assert.equal(assessPrReadiness(earlyEvent,moved,earlyRepo).diagnostic_signal,'BASE_CHANGED_UNVERIFIED');
+  assert.equal(assessPrReadiness(earlyEvent,moved,earlyRepo,null,proof).diagnostic_signal,'BASE_ADVANCED');
+  for(const invalid of [
+    {...proof,status:'diverged'},
+    {...proof,base_sha:'d'.repeat(40)},
+    {...proof,head_sha:'d'.repeat(40)},
+    {...proof,merge_base_sha:'d'.repeat(40)},
+  ])assert.equal(assessPrReadiness(earlyEvent,moved,earlyRepo,null,invalid).diagnostic_signal,'BASE_CHANGED_UNVERIFIED');
+  assert.equal(assessPrReadiness(earlyEvent,{...moved,mergeable:false},earlyRepo,null,proof).ready,false);
+  assert.equal(assessPrReadiness(earlyEvent,earlyLive,earlyRepo,null,proof).diagnostic_signal,null);
 });
 
 test('stale dirty mergeability is overridden only by an exact fast-forward Compare proof', () => {
@@ -825,28 +881,36 @@ test('Free Review runs for real lead/intake changes, not shared CI policy test-o
   assert.doesNotMatch(yaml,/continue-on-error:\s*true/);
 });
 
-test('Public Services shallow recovery never bypasses exact merged HEAD and ancestry proof', () => {
+test('Public Services ancestry proof uses exact merge parents and authenticated GitHub Compare API', () => {
   const workflow = read('hh-public-services-production.yml');
   const preflight = workflow.split('      - name: Verify bounded Public Services PR ancestry before impact routing\n')[1]
     ?.split('      - uses: actions/setup-node@v4')[0];
   assert.ok(preflight, 'Public Services must validate the real synthetic merge before routing');
   const required = [
     'fetch-depth: 2',
-    'actual_checkout="$(git rev-parse HEAD)"',
-    '"$actual_checkout" == "$GITHUB_SHA"',
-    '"$(git rev-parse --is-shallow-repository)" == true',
-    'git fetch --quiet --no-tags --deepen=2 origin "$GITHUB_SHA"',
-    'tested_base="$(git rev-parse HEAD^1 2>/dev/null || true)"',
-    'tested_head="$(git rev-parse HEAD^2 2>/dev/null || true)"',
-    '"$tested_head" == "$PR_HEAD_SHA"',
-    'git merge-base --is-ancestor "$EVENT_BASE_SHA" "$tested_base"',
+    'EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}',
+    'PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}',
+    'EXPECTED_MERGE_SHA: ${{ github.sha }}',
+    '[[ "$(git rev-parse HEAD)" == "$EXPECTED_MERGE_SHA" ]]',
+    "mapfile -t tested_parents < <(git cat-file -p HEAD | sed -n 's/^parent //p')",
+    '[[ "${#tested_parents[@]}" -eq 2 ]]',
+    'tested_base="${tested_parents[0]}"',
+    'tested_head="${tested_parents[1]}"',
+    '[[ "$tested_head" == "$PR_HEAD_SHA" && "$tested_base" =~ ^[0-9a-f]{40}$ ]]',
+    '-H "Authorization: Bearer ${GH_TOKEN}"',
+    'https://api.github.com/repos/${GITHUB_REPOSITORY}/compare/${EVENT_BASE_SHA}...${tested_base}',
+    '[[ "$relation" == "ahead" || "$relation" == "identical" ]]',
   ];
   for (const item of required) assert.ok((item === 'fetch-depth: 2' ? workflow : preflight).includes(item),
-    'Missing fail-closed checkout proof: ' + item);
-  assert.ok(preflight.indexOf('git fetch --quiet --no-tags --deepen=2 origin "$GITHUB_SHA"') <
-    preflight.lastIndexOf('[[ "$tested_head" == "$PR_HEAD_SHA"'),
-    'Limited recovery must precede repeated strict parent validation, not override it');
-  assert.doesNotMatch(preflight, /fetch-depth: 0|git fetch .*--unshallow|continue-on-error:\s*true/,
+    'Missing fail-closed exact merge / ancestry proof: ' + item);
+  assert.ok(workflow.includes('fetch-depth: 2'), 'Checkout must stay bounded');
+  assert.ok(preflight.includes('curl --fail --silent --show-error --max-time 20'), 'Comparison must fail closed');
+  assert.ok(preflight.indexOf('[[ "$tested_head" == "$PR_HEAD_SHA"') < preflight.indexOf('curl --fail'),
+    'Verify the exact head before querying the base ancestry');
+  assert.ok(preflight.indexOf('mapfile -t tested_parents') < preflight.indexOf('compare_json=') &&
+    preflight.indexOf('compare_json=') < preflight.indexOf('[[ "$relation" == "ahead" || "$relation" == "identical" ]]'),
+    'Exact merge parents must be checked before authenticated ancestry acceptance');
+  assert.doesNotMatch(preflight, /fetch-depth: 0|git fetch .*--unshallow|continue-on-error:\s*true|git merge-base --is-ancestor/,
     'No full clone or ignored failures allowed');
   assert.ok(workflow.includes("  public-services:\n    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}"),
     'Ready PR real browser source/security gating must remain enabled');

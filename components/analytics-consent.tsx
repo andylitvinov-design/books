@@ -63,8 +63,9 @@ export function AnalyticsPreferences() {
   return (
     <section className="mt-4 rounded-xl border border-stone-300 bg-stone-50 p-4" aria-label="Analytics preferences">
       <p className="m-0 text-sm">
-        Analytics is temporarily unavailable while privacy safeguards are verified.
-        This version does not load Google Analytics. Your saved preference is kept.
+        Anonymous first-party public-page statistics are active and can be managed below.
+        Google Analytics remains disabled pending a separate privacy review. Your Google
+        preference is saved but does not activate third-party tracking.
       </p>
       <div className="mt-4 flex flex-wrap gap-3" role="group" aria-label="Choose analytics setting">
         <button
@@ -74,7 +75,7 @@ export function AnalyticsPreferences() {
           aria-pressed={choice === "granted"}
           className="min-h-11 rounded-full border border-stone-500 bg-white px-4 py-2 text-sm text-stone-800"
         >
-          Allow analytics
+          Allow Google Analytics (not yet available)
         </button>
         <button
           type="button"
@@ -82,11 +83,11 @@ export function AnalyticsPreferences() {
           aria-pressed={choice === "denied"}
           className="min-h-11 rounded-full border border-stone-500 bg-white px-4 py-2 text-sm text-stone-800"
         >
-          Keep analytics off
+          Keep Google Analytics off
         </button>
       </div>
       <p aria-live="polite" className="mb-0 mt-3 text-sm">
-        Saved preference: <strong>{choice === "granted" ? "On" : "Off"}</strong>
+        Google Analytics: <strong>off</strong>. Saved preference: <strong>{choice === "granted" ? "Allow when available" : "Keep off"}</strong>
       </p>
     </section>
   );

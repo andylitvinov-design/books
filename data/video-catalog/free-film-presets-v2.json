@@ -1,7 +1,7 @@
 {
   "version": "hh-curated-free-films-v2",
-  "notes": "24 additional FOUR-SCENE compilations using only the 44 existing approved local MP4s; not newly filmed footage",
-  "count": 24,
+  "notes": "24 existing curated four-shot film presets plus one new warm-sunshine real dual-aspect montage (4 origins, 8 format-specific MP4 files)",
+  "count": 25,
   "presets": [
     {
       "id": "financial-clarity",
@@ -505,6 +505,34 @@
         "calm",
         "confidence",
         "choice"
+      ]
+    },
+    {
+      "id": "warm-pleasant-sun",
+      "theme": "energy",
+      "label": {
+        "ru": "Тёплое приятное солнце",
+        "en": "Warm, pleasant sunshine",
+        "es": "Sol cálido y agradable"
+      },
+      "clips": [
+        "sun-warm-ocean-dawn",
+        "sun-golden-aspen",
+        "sun-leaves-canopy",
+        "sun-autumn-hills"
+      ],
+      "portraitClips": [
+        "sun-warm-ocean-dawn-portrait",
+        "sun-golden-aspen-portrait",
+        "sun-leaves-canopy-portrait",
+        "sun-autumn-hills-portrait"
+      ],
+      "focusTags": [
+        "sun",
+        "warm-sunlight",
+        "golden-hour",
+        "morning",
+        "comfort"
       ]
     }
   ]

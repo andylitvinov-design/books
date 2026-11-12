@@ -4,35 +4,54 @@ import {readFileSync} from "node:fs";
 const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
 const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
 
-test("Montage opens on preferences, preserves real recorder and exactly four functional tabs",()=>{
-  assert.match(studio,/useState<"settings"\|"effects"\|"text"\|"audio">\("settings"\)/);
+test("Montage opens on Style, preserves real recorder and five functional tabs with Audio replacing Effects",()=>{
+  assert.match(studio,/useState<"settings"\|"effects"\|"text"\|"concept"\|"audio"\|"promo">\("effects"\)/);
   const tabStart=studio.indexOf("<nav className={videoStyles.montageQuickTools}");
   const tabMarkup=studio.slice(tabStart,studio.indexOf("</nav>",tabStart));
   assert.ok(tabStart>0,"Montage nav must exist");
-  assert.equal((tabMarkup.match(/id:"(settings|effects|text|audio)",Icon:/g)||[]).length,4);
+  assert.deepEqual([...tabMarkup.matchAll(/id:"(promo|effects|text|audio|concept)",Icon:/g)].map(m=>m[1]),["effects","audio","text","promo","concept"]);
   assert.match(studio,/data-video-montage-tab=\{item.id\}/);
-  assert.match(studio,/if\(item.id==="editor"\)setMontagePanel\("settings"\)/);
+  assert.match(studio,/if\(id==="editor"\)setMontagePanel\("effects"\)/);
   assert.match(studio,/aria-pressed=\{montagePanel===item.id\}/);
+  assert.doesNotMatch(tabMarkup,/id:"settings"/);
+  assert.match(tabMarkup,/promo:\{ru:"Монтаж PRO",en:"Montage PRO",es:"Montaje PRO"\}/);
   assert.match(studio,/data-video-montage-preferences/);
-  for(const field of ["format","duration","transitions","speed","quality","style"])
+  for(const field of ["format","duration","transitions","speed","quality"])
     assert.ok(studio.includes('data-video-montage-preference="'+field+'"'),field);
   assert.match(studio,/onChange=\{event=>changeVideoAspect/);
   assert.match(studio,/onChange=\{event=>changeVideoDuration/);
   assert.match(studio,/onChange=\{event=>setQuality/);
-  assert.match(studio,/onChange=\{event=>quickPickStyle/);
+  assert.match(studio,/onClick=\{\(\)=>quickPickStyle\(index\)\}/);
+  assert.match(studio,/data-video-montage-style=\{index\}/);
+  assert.doesNotMatch(studio,/data-video-montage-preference="style"/);
+  for(const label of ["Choose your style","Add Text","Añadir texto","Добавить текст"])
+    assert.ok(studio.includes(label),label);
   assert.match(studio,/onClick=\{createQuickVideo\}/);
-  assert.match(studio,/Сгенерировать видео/);
+  assert.match(studio,/Создать видео/);
   assert.equal((studio.match(/data-video-montage-export/g)||[]).length,0,"no duplicate export CTA");
   assert.equal((studio.match(/data-video-quick-generate/g)||[]).length,1,"one real generate CTA");
 });
 test("The editable timeline, script, audio and draft tools are preserved, but not on initial screen",()=>{
-  assert.match(studio,/montagePanel==="text" \? <div[^>]+data-video-montage-text/);
+  assert.match(studio,/data-video-montage-text hidden=\{montagePanel!=="text"\}/);
+  assert.match(studio,/active=\{activeWorkspace==="editor"&&montagePanel==="text"\}/);
+  assert.equal((studio.match(/<MandalaVideoIdeas locale/g)||[]).length,1);
   assert.match(studio,/<MandalaMultiTrackTimeline/);
   assert.match(studio,/data-video-montage-script-update/);
   assert.match(studio,/data-video-editor-draft-save/);
   assert.match(studio,/montagePanel==="audio" \? <div[^>]+data-video-montage-audio/);
   assert.match(studio,/data-video-audio-bed-panel/);
   assert.match(studio,/data-video-music-editor/);
+  const audio=studio.slice(studio.indexOf('montagePanel==="audio" ? <div'),
+    studio.indexOf('data-video-audio-bed-panel'));
+  assert.doesNotMatch(audio,/data-video-basic-tab|data-video-basic-duration|data-video-basic-format|data-video-editor-style-settings/);
+  assert.match(audio,/\{deepAudioPane\}/);
+  assert.match(studio,/data-video-voice-studio/);
+  assert.doesNotMatch(studio,/data-video-audio-length=/);
+  const settings=studio.slice(studio.indexOf('montagePanel==="settings" ? <div'),
+    studio.indexOf('montagePanel==="text" ? <div'));
+  assert.match(settings,/\{deepVideoPane\}/);
+  assert.match(settings,/data-video-montage-photo-open/);
+  assert.match(settings,/basicPanelTab==="photo" \? deepCharacterPhotoPane : null/);
   assert.match(css,/\.montagePreferencesGrid\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(css,/\.studio\[data-active-workspace="editor"\] \.previewStage \.heroRail\{display:none!important\}/);
 });
@@ -61,4 +80,75 @@ test("Montage iPhone retains the compact header, real six selectors and on-scree
   assert.match(css,/max-width:278px!important/);
   assert.match(css,/\[data-video-order-bar\] \.quickGenerate\{\s*min-height:50px!important/);
   assert.match(studio,/data-video-montage-auto-sound/);
+});
+
+test("Original motion WebKit export reaches legacy preferences via Story and keeps Audio controls",()=>{
+ const motion=readFileSync(new URL("../scripts/benchmarking/verify-original-motion-export.mjs",import.meta.url),"utf8");
+ assert.match(motion,/data-video-story-open-settings/);
+ assert.match(motion,/data-video-montage-tab="concept"/);
+ assert.match(motion,/data-video-montage-preference="duration"/);
+ assert.match(motion,/await duration\.selectOption\('20'\)/);
+ assert.match(motion,/data-video-montage-open-audio/);
+ assert.match(motion,/data-video-audio-compact-select/);
+ assert.match(motion,/data-video-audio-compact-selected/);
+ assert.match(motion,/await generate\.click\(\{timeout:30000\}\)/);
+ assert.match(motion,/ffprobe|ffmpeg/);
+ assert.doesNotMatch(motion,/data-video-montage-settings|data-video-basic-tab=|data-video-audio-length="/);
+});
+
+test("Choosing a Montage style preserves the compiled film and paints the live and exported player",()=>{
+  const start=studio.indexOf("const quickPickStyle = (index:number) => {");
+  const end=studio.indexOf("// Keep the deep editor tabs usable",start);
+  assert.ok(start>0&&end>start,"real Montage click handler exists");
+  const handler=studio.slice(start,end);
+  assert.doesNotMatch(handler,/setCinematicPlan\(null\)/,"style must not discard approved source clips");
+  assert.match(handler,/setCinematicPlan\(current=>current\?\{\.\.\.current,styleId:visualStyleId\}:null\)/);
+  assert.match(handler,/setCreationMode\("catalog"\);setFreeVideoPlan\(null\)/,
+    "return from procedural animation to film footage");
+  assert.match(handler,/setPreviewSeekSeconds\(0\);setPreviewPlayhead\(0\)/);
+  assert.match(handler,/setPreviewPlaying\(true\)/);
+  for(const style of ["nature","warm","dream","minimal","water","light"])
+    assert.ok(studio.includes('styleId==="'+style+'"'),"visible filter "+style);
+  assert.match(studio,/paintStudioVisualGrade\(ctx,montageStyleId\)/,
+    "style works for a single physical MP4 too");
+  assert.match(studio,/paintStudioVisualGrade\(ctx,montageStyleId\|\|storyboard.styleId\)/,
+    "style applies across all the licensed shots");
+  assert.match(studio,/data-video-preview-style=\{activeMontageStyleId/);
+  assert.match(studio,/data-video-preview-clips=\{usingFreeFilmCompilation/);
+  assert.match(studio,/autoPlay=\{previewPlaying&&!recording&&!preparing\}/);
+  assert.match(studio,/onCanPlay=\{event=>\{\s*setPremiumReady\(true\);[\s\S]*?event.currentTarget.play\(\)/);
+  assert.equal((studio.match(/activeMontageStyleId,styleFilmRef\.current,storyboardPhotos\)/g)||[]).length,5,
+    "still preview, animation preview and both MP4 export encoders use the same style");
+  assert.match(studio,/creationMode,activeMontageStyleId,currentFreeVideoPlan/,
+    "a style edit invalidates only the previous exported recording");
+});
+
+test("iPhone Style primes a newly mounted MP4 without fetching on first render",()=>{
+  assert.match(studio,/preload="none"/,"idle first paint must keep HD loading lazy");
+  assert.match(studio,/if\(previewPlaying&&!recording&&!preparing&&video\.readyState<2\)/);
+  assert.match(studio,/video\.preload="auto"/);
+  assert.match(studio,/if\(video\.networkState!==2\)video\.load\(\)/);
+  const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
+  assert.match(browser,/await minimal\.tap\(\)/);
+  assert.match(browser,/data-video-preview-style","minimal"/);
+  assert.match(browser,/video\.readyState>=2&&video\.videoWidth>0/);
+  assert.doesNotMatch(browser,/\[data-video-director-style-controls\] \[data-mytube-style-filter\]/);
+});
+
+test("Montage PRO has precisely the owner-approved three offers and two navigation actions",()=>{
+ const offer=readFileSync(new URL("../components/mandala-montage-pro-offer.tsx",import.meta.url),"utf8");
+ const offerCss=readFileSync(new URL("../components/mandala-montage-pro-offer.module.css",import.meta.url),"utf8");
+ assert.ok(studio.includes('montagePanel==="promo" ? <MandalaMontageProOffer'));
+ assert.ok(studio.includes('setMontagePanel("concept");setNotice("")'));
+ assert.ok(studio.includes('setActiveWorkspace("pro");setNotice("")'));
+ assert.ok(studio.includes('hidden={montagePanel==="promo"}'));
+ assert.ok(studio.includes('data-video-story-open-settings'));
+ assert.ok(offer.includes('data-video-montage-pro-offer'));
+ assert.deepEqual([...offer.matchAll(/id:"(greeting|cinematic|portrait)"/g)].map(match=>match[1]),
+   ["greeting","cinematic","portrait","greeting","cinematic","portrait","greeting","cinematic","portrait"]);
+ assert.equal((offer.match(/data-video-montage-pro-free/g)||[]).length,1);
+ assert.equal((offer.match(/data-video-montage-pro-explore/g)||[]).length,1);
+ assert.doesNotMatch(offer,/Pro montage & effects|const tiers|data-video-pro-tier-panel/i);
+ assert.match(offerCss,/@media\(max-width:355px\)/);
+ assert.match(css,/\[data-video-order-bar\]\[hidden\]\{display:none!important\}/);
 });
