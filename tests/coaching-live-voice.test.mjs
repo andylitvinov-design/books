@@ -196,21 +196,19 @@ test('selected persona opens immersive My Coach session with real avatar, stages
   const discovery=source('components/public-coaching-discovery.jsx')
   const discoveryCss=source('components/public-coaching-discovery.module.css')
   const page=source('app/[locale]/coaching/sessions/page.jsx')
-  assert.match(discovery,/useState\\(Boolean\\(selectedPersona\\)\\)/)
-  assert.match(page,/!personaSelection&&<div className=\\{styles\\.header\\}/)
-  for(const token of ['data-my-coach-immersive-session','sessionHero','sessionPortrait','sessionAvatar','CoachingAvatar locale={lang}','sessionProgressSegments','currentCoachPrompt','quickGoalCard','sessionBottomNav','goalRow','onVoiceStateChange=\\{setVoiceState\\}']) assert.ok(ui.includes(token),token)
-  assert.match(ui,/stageKeys\\.indexOf\\(currentStage\\)/)
-  assert.match(ui,/onClick=\\{replayCoachReply\\}/)
-  assert.match(ui,/onClick=\\{\\(\\)=>chooseTopic\\(id\\)\\}/)
-  assert.match(ui,/composerRef\\.current\\?\\.focus\\(\\)/)
-  assert.match(css,/my-coach-portraits\\.avif/)
-  assert.match(css,/reiki-approved-sunrise-v3\\.webp/)
-  assert.match(css,/messenger-zen-stones\\.svg/)
-  assert.match(css,/assessment-lotus\\.svg/)
-  assert.match(css,/safe-area-inset-bottom/)
-  assert.match(css,/body:has\\(\\[data-my-coach-immersive-session\\]\\) \\.mobile-bottom-navigation/)
-  assert.match(discoveryCss,/personaWelcome:has\\(\\[data-my-coach-immersive-session\\]\\)/)
-  assert.match(source('app/[locale]/coaching/sessions/page.module.css'),/fullWidth:has\\(\\[data-my-coach-immersive-session\\]\\)/)
-  assert.match(ui,/readiness\\.status==='checking'/)
-  assert.match(ui,/coachingBrainSafety\\(input\\)\\|\\|coachingBrainBoundary\\(input\\)/)
+  const pageCss=source('app/[locale]/coaching/sessions/page.module.css')
+  assert.ok(discovery.includes('useState(Boolean(selectedPersona))'))
+  assert.ok(page.includes('{!personaSelection&&<div className={styles.header}'))
+  for(const token of ['data-my-coach-immersive-session','sessionHero','sessionPortrait','sessionAvatar',
+    'CoachingAvatar locale={lang}','sessionProgressSegments','currentCoachPrompt','quickGoalCard',
+    'sessionBottomNav','goalRow','onVoiceStateChange={setVoiceState}']) assert.ok(ui.includes(token),token)
+  for(const token of ['stageKeys.indexOf(currentStage)','onClick={replayCoachReply}',
+    'onClick={()=>chooseTopic(id)}','composerRef.current?.focus()',
+    'coachingBrainSafety(input)||coachingBrainBoundary(input)']) assert.ok(ui.includes(token),token)
+  for(const token of ['my-coach-portraits.avif','reiki-approved-sunrise-v3.webp',
+    'messenger-zen-stones.svg','assessment-lotus.svg','safe-area-inset-bottom',
+    'body:has([data-my-coach-immersive-session]) .mobile-bottom-navigation']) assert.ok(css.includes(token),token)
+  assert.ok(discoveryCss.includes('personaWelcome:has([data-my-coach-immersive-session])'))
+  assert.ok(pageCss.includes('fullWidth:has([data-my-coach-immersive-session])'))
+  assert.ok(ui.includes("readiness.status==='checking'"))
 })
