@@ -144,7 +144,10 @@ async function verifiedGhostRepairCapacity(gh,owner,repo,p,now=Date.now()){
    queuedJobs=jobs.filter(j=>['queued','waiting','pending'].includes(j.status)).length;
   if(runningJobs>8||queuedJobs>2)return hold('REAL_JOB_PRESSURE');
   return {known:true,inventoryConfidence:GHOST_REPAIR_MODE,
-   safeToDispatchOneRepair:true,ghostProofRunId:p.run_id,
+   safeToDispatchOneRepair:true,
+   // One existing legacy manual queue preflight can use the same verified
+   // free Ubuntu slot. Manual stays manual; exact-head write gates remain.
+   safeToDispatchOneLegacyPreflight:true,ghostProofRunId:p.run_id,
    activeRuns:effectiveActive,originalActiveRuns:A,
    verifiedTerminalOverhangRuns:verifiedOverhangs,
    queuedRuns:Q,runningJobs,queuedJobs,unknownQueuedRuns:Q,
@@ -156,7 +159,12 @@ function admission(lane,capacity){
  if(capacity?.inventoryConfidence===GHOST_REPAIR_MODE){
   if(!capacity.known||!capacity.safeToDispatchOneRepair||
      !Number.isSafeInteger(capacity.ghostProofRunId))return 'GHOST_UNVERIFIED';
-  if(lane!=='repair')return 'GHOST_REPAIR_ONLY';
+  // Legacy is an authenticated existing cloud preflight; its manual hold
+  // stays in place. Any exceptional source write needs the worker's
+  // independent strict exact-HEAD authorisation and a subsequent CI wave.
+  if(lane!=='repair'&&lane!=='legacy')return 'GHOST_REPAIR_ONLY';
+  if(lane==='legacy'&&capacity.safeToDispatchOneLegacyPreflight!==true)
+   return 'GHOST_LEGACY_PREFLIGHT_UNVERIFIED';
   if(capacity.activeRuns>GHOST_ACTIVE_PROOF_LIMIT||capacity.queuedRuns>250||
      capacity.runningJobs>8||capacity.queuedJobs>2||
      capacity.activeWorker?.[WORKFLOWS.repair]!==0)return 'GHOST_WORKER_BUSY';

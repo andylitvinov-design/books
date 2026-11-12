@@ -1988,15 +1988,16 @@ function ghostFixture(o={}){
   repos:{compareCommits:async()=>({data:{
    status:o.comparison||'ahead',merge_base_commit:{sha:old},base_commit:{sha:old}}})}}}};
 }
-test('409 jobless merged PR allows one source Repair, never CI/legacy',async()=>{
+test('409 jobless merged PR allows repair or manual preflight, never unrelated CI',async()=>{
  const f=ghostFixture();
  const cap=await GRC(f.github,'andylitvinov-design','books',f.p,Date.parse('2026-11-12T20:00:00Z'));
  assert.equal(cap.known,true);assert.equal(cap.inventoryConfidence,GRM);
  assert.equal(admission('repair',cap),'ADMIT');
  assert.equal(admission('ci',cap),'GHOST_REPAIR_ONLY');
- assert.equal(admission('legacy',cap),'GHOST_REPAIR_ONLY');
+ assert.equal(admission('legacy',cap),'ADMIT');
  cap.activeWorker['HH PR source Repair Worker']=1;
  assert.equal(admission('repair',cap),'GHOST_WORKER_BUSY');
+ assert.equal(admission('legacy',cap),'GHOST_WORKER_BUSY');
 });
 
 test('bounded ghost mode proves 16-20 active workflow jobs before one Repair admission',async()=>{
@@ -2013,10 +2014,38 @@ test('bounded ghost mode proves 16-20 active workflow jobs before one Repair adm
   assert.equal(cap.known,true,'all jobs proven at '+activeCount);
   assert.equal(verified,activeCount,'must inspect each active run');
   assert.equal(admission('repair',cap),'ADMIT');
-  assert.equal(admission('legacy',cap),'GHOST_REPAIR_ONLY');
+  assert.equal(admission('legacy',cap),'ADMIT');
   cap.activeWorker['HH PR source Repair Worker']=1;
   assert.equal(admission('repair',cap),'GHOST_WORKER_BUSY');
  }
+});
+
+test('ghost legacy admission is fail-closed without exact signed slot proof',async()=>{
+ const f=ghostFixture();
+ const safe=await GRC(f.github,'andylitvinov-design','books',f.p,
+  Date.parse('2026-11-12T20:00:00Z'));
+ assert.equal(safe.safeToDispatchOneLegacyPreflight,true);
+ assert.equal(admission('legacy',safe),'ADMIT');
+ assert.equal(admission('ci',safe),'GHOST_REPAIR_ONLY');
+ assert.equal(admission('conflict',safe),'GHOST_REPAIR_ONLY');
+ assert.equal(admission('merge',safe),'GHOST_REPAIR_ONLY');
+ assert.equal(admission('legacy',{...safe,safeToDispatchOneLegacyPreflight:false}),
+  'GHOST_LEGACY_PREFLIGHT_UNVERIFIED');
+ assert.equal(admission('legacy',{...safe,activeWorker:{
+  ...safe.activeWorker,'HH PR source Repair Worker':1}}),'GHOST_WORKER_BUSY');
+ assert.equal(admission('legacy',{...safe,ghostProofRunId:null}),'GHOST_UNVERIFIED');
+});
+test('dispatcher uses only authenticated jobless 409 with bounded manual legacy',()=>{
+ const fs=require('node:fs');
+ const dispatcher=fs.readFileSync('scripts/ci-pr-queue-dispatcher.cjs','utf8');
+ const start=dispatcher.indexOf('// Only trusted same-run jobless-409 proof');
+ const end=dispatcher.indexOf('if(quota.state.paused)',start);
+ const gate=dispatcher.slice(start,end);
+ assert.match(gate,/candidates\.some\(t=>\['repair','legacy'\]\.includes\(t\?\.lane\)\)/);
+ assert.match(gate,/watchdogEvidence\?\.jobless409\?\.code==='QUEUED_WITH_ZERO_JOBS_CANCEL_409'/);
+ assert.match(gate,/verifiedGhostRepairCapacity\(github,owner,repo,/);
+ assert.match(dispatcher,/summary\.legacyDispatchAccepted>=1/);
+ assert.match(dispatcher,/GHOST_ONLY_ONE_WORKER_PER_SWEEP/);
 });
 test('409 fallback never admits unverified or congested runners',async()=>{
  const variants=[{ghostJobs:1},{run:{status:'completed'}},{run:{pull_requests:[{number:55}]}},
@@ -2050,7 +2079,7 @@ test('ghost-409 capacity counts only independently verified old terminal wrapper
   assert.equal(result.activeRuns,expected);
   assert.equal(admission('repair',result),'ADMIT');
   assert.equal(admission('ci',result),'GHOST_REPAIR_ONLY');
-  assert.equal(admission('legacy',result),'GHOST_REPAIR_ONLY');
+  assert.equal(admission('legacy',result),'ADMIT');
  }
 });
 test('overhang rescue fails closed for uncertain, fresh or excessive wrappers/jobs',async()=>{
