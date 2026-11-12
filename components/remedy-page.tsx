@@ -6,6 +6,7 @@ import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { PageVideo } from "@/components/page-video";
 import { getRemedyArticleLinks } from "@/data/remedy-articles";
+import { getRemedyAttunements } from "@/data/remedy-attunements";
 import { getRelatedRemedies, getRemedyDirectory, getRemedySwitchPath } from "@/data/remedies";
 import type { Locale, Remedy } from "@/data/remedies";
 
@@ -59,6 +60,7 @@ export function RemedyPage({ locale, remedy }: RemedyPageProps) {
   const otherLocale: Locale = locale === "ru" ? "en" : "ru";
   const related = getRelatedRemedies(locale, remedy);
   const articles = getRemedyArticleLinks(remedy);
+  const poems = getRemedyAttunements(remedy.slug);
   return (
     <main className="homeopathy-shell">
       <PublicSiteHeader locale={locale} />
@@ -69,6 +71,14 @@ export function RemedyPage({ locale, remedy }: RemedyPageProps) {
         <h1>{remedy.canonical_latin_name}</h1>
         {remedy.russian_common_name ? <p className="remedy-common-name">{labels.sourceName}: {remedy.russian_common_name}</p> : null}
         <RemedyEssence locale={locale} remedy={remedy} />
+        {poems.length ? <section aria-label={locale === "ru" ? "Стихотворные настройки" : "Original remedy poems"} className="my-6 rounded-3xl border border-[#e9dfd1] bg-[#fffcf7] p-5">
+          <p className="mb-2 text-sm font-semibold uppercase tracking-widest text-[#966a1f]">{locale === "ru" ? "Алхимия Души · стихи-настройки" : "Alchemy of the Soul · original poems"}</p>
+          <Link className="inline-flex min-h-12 items-center font-semibold text-[#067a67] underline underline-offset-4"
+            href={`/${locale}/homeopathy/attunements/${remedy.slug}`}>
+            {locale === "ru" ? "Читать стих-настройку" : "Read the original poem"}
+            {poems.length > 1 ? ` (${poems.length})` : ""}
+          </Link>
+        </section> : null}
         <PageVideo slot="remedy-detail" locale={locale} entityId={remedy.slug} />
         <RemedyPrimaryImage locale={locale} remedy={remedy} />
         <RemedyContent locale={locale} remedy={remedy} showEssence={false} sourceUrl={remedy.primary_source_url} variant="standalone" />
