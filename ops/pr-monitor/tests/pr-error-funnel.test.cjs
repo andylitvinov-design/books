@@ -152,6 +152,60 @@ test('diagnostic review is explicitly not a software Repair Worker assignment',(
  assert.equal(s.blockers.find(x=>x.key==='diagnostic_only').pr_count,1);
 });
 
+
+test('an authenticated BASE_ADVANCED recovery receipt is a distinct handling route, not an executor',()=>{
+ const e=event({category:'BASE_ADVANCED',route_receipt:null,
+   classification:{schema:'HH_CI_ERROR_CLASSIFICATION_V1',status:'DIAGNOSTIC_ONLY',
+     category:'BASE_ADVANCED',reason_code:'PRODUCTION_BASE_CHANGED',
+     responsible_role:'base-synchronization-worker'}});
+ e.route_receipt={schema:'HH_COMMANDER_CI_ROUTE_RECEIPT_V1',
+   prNumber:e.pr_number,headSha:e.head_sha,runId:e.workflow_run_id,
+   category:e.category,inboxId:e.ci_event_id,dispatchAccepted:0,
+   state:'EXISTING_RECOVERY_ACCEPTED',reason:'BASE_SYNCHRONISATION_UPDATED',
+   responsibleRole:'base-synchronization-worker'};
+ assert.equal(m.routeDisposition(e),'base_recovery_accepted');
+ const s=m.summarize([e],{},24,NOW,true);
+ const pick=key=>s.route_outcomes.find(x=>x.key===key);
+ assert.equal(pick('base_recovery_accepted').pr_count,1);
+ assert.equal(pick('base_recovery_accepted').event_count,1);
+ assert.equal(s.counts.assigned,0);
+ assert.equal(s.counts.source_assigned,0);
+ assert.equal(s.counts.committed,0);
+ for(const change of [{headSha:NEXT},{runId:CORE+1},{inboxId:'wrong'},
+   {prNumber:99},{dispatchAccepted:1},{state:'PUBLISHED'}])
+  assert.equal(m.routeDisposition({...e,route_receipt:{...e.route_receipt,...change}}),null);
+});
+
+test('review and waiting recovery are separate routes, deduping PRs without false worker claims',()=>{
+ const mk=(num,category,reason,state,role,runId,eventId)=>event({
+   pr_number:num,ci_event_id:eventId,workflow_run_id:runId,category,
+   classification:{schema:'HH_CI_ERROR_CLASSIFICATION_V1',status:'DIAGNOSTIC_ONLY',
+     category,reason_code:reason,responsible_role:role},
+   route_receipt:{schema:'HH_COMMANDER_CI_ROUTE_RECEIPT_V1',
+     prNumber:num,headSha:SHA,runId,category,inboxId:eventId,
+     dispatchAccepted:0,reason,state,responsibleRole:role}
+ });
+ const review=mk(71,'BASE_OR_CI_ROUTING','NO_SAFE_AUTOMATIC_WRITER_FOR_CATEGORY',
+   'TASK_ROUTED_TO_REVIEW','ci-routing-owner',CORE,'11111111-1111-4111-8111-111111111111');
+ const repeat=mk(71,'BASE_OR_CI_ROUTING','NO_SAFE_AUTOMATIC_WRITER_FOR_CATEGORY',
+   'TASK_ROUTED_TO_REVIEW','ci-routing-owner',CORE+1,'22222222-2222-4222-8222-222222222222');
+ const waiting=mk(72,'BASE_ADVANCED','BASE_RECOVERY_NOT_PROVEN',
+   'TASK_AWAITING_EXISTING_RECOVERY','base-synchronization-worker',CORE+2,
+   '33333333-3333-4333-8333-333333333333');
+ const manual=mk(73,'MERGE_CONFLICT','HUMAN_REVIEW_REQUIRED',
+   'TASK_REQUIRES_REVIEW','semantic-conflict-resolver',CORE+3,
+   '44444444-4444-4444-8444-444444444444');
+ const s=m.summarize([review,repeat,waiting,manual],{},24,NOW,true);
+ const pick=key=>s.route_outcomes.find(x=>x.key===key);
+ assert.equal(pick('owner_review_required').pr_count,2);
+ assert.equal(pick('owner_review_required').event_count,3);
+ assert.equal(pick('awaiting_recovery_proof').pr_count,1);
+ assert.deepEqual(pick('base_recovery_accepted').prs,[]);
+ assert.equal(s.counts.assigned,0);
+ assert.equal(s.counts.runner,0);
+ assert.equal(s.counts.committed,0);
+});
+
 test('unauthenticated, forged, or edited comment is not proof',()=>{
  const e=event(),arr=records();
  arr[0].user={login:'andylitvinov-design',id:99,type:'User'};
