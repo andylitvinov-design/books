@@ -94,6 +94,30 @@
       typeof a.strategy==='string'&&a.strategy.length>0&&
       typeof a.runId==='string'&&a.runId.length>0);
   }
+
+  // Handling paths without a source writer are not failed executor assignments.
+  // Trust only the owner-private OIDC route attached to this exact CI incident.
+  function routeDisposition(e){
+    var r=e?.route_receipt;
+    if(!taskLinked(e)||!r||r.schema!=='HH_COMMANDER_CI_ROUTE_RECEIPT_V1'||
+       r.prNumber!==e.pr_number||r.headSha!==e.head_sha||
+       String(r.runId)!==String(e.workflow_run_id)||r.category!==e.category||
+       r.inboxId!==e.ci_event_id||r.dispatchAccepted!==0)return null;
+    if(e.category==='BASE_ADVANCED'&&
+       r.responsibleRole==='base-synchronization-worker'){
+      if(r.state==='EXISTING_RECOVERY_ACCEPTED'&&r.reason==='BASE_SYNCHRONISATION_UPDATED')
+        return 'base_recovery_accepted';
+      if(r.state==='TASK_AWAITING_EXISTING_RECOVERY'&&r.reason==='BASE_RECOVERY_NOT_PROVEN')
+        return 'awaiting_recovery_proof';
+    }
+    if(r.state==='TASK_ROUTED_TO_REVIEW'&&
+       r.reason==='NO_SAFE_AUTOMATIC_WRITER_FOR_CATEGORY'&&
+       r.responsibleRole==='ci-routing-owner')return 'owner_review_required';
+    if(r.state==='TASK_REQUIRES_REVIEW'&&r.reason==='HUMAN_REVIEW_REQUIRED'&&
+       typeof r.responsibleRole==='string'&&r.responsibleRole.length>0)
+       return 'owner_review_required';
+    return null;
+  }
   // GitHub's signed, immutable CLAIMED receipt is stronger than an early
   // Supabase cron-backstop snapshot. Reconstruct an accepted source route
   // only when a separate trusted Core error-task comment binds the same
@@ -283,6 +307,15 @@
     // Count the PR once per step; independent incidents on the same PR cannot
     // be accidentally combined into a fabricated single verified repair.
     var prs=new Map(),uniqueEvents=new Set(),counts={},links={};
+    // Distinct evidence-backed handling cohorts; routes may overlap on the same PR.
+    var routeLabels=[
+      ['base_recovery_accepted','Синхронизация базы принята'],
+      ['awaiting_recovery_proof','Ожидает доказательства восстановления'],
+      ['owner_review_required','Требуется ручной разбор']
+    ];
+    var routed=Object.fromEntries(routeLabels.map(function(pair){
+      return [pair[0],{prs:new Set(),events:new Set()}];
+    }));
     // These diagnostic cohorts overlap. No missing receipt is fabricated.
     var BLOCKERS=[
       ['diagnostic_only','Ошибка не требует кодового Worker',
@@ -308,6 +341,11 @@
       var id=String(e.ci_event_id||'');
       var proof=byEvent&&byEvent[id]||{};
       var route=routeFor(e)||proof.verified_route||null;
+      var handling=routeDisposition(e);
+      if(handling){
+        routed[handling].prs.add(e.pr_number);
+        routed[handling].events.add([e.pr_number,e.head_sha,e.workflow_run_id,e.run_attempt].join(':'));
+      }
       if(!classified(e)||e.category==='UNKNOWN')mark('unclassified',e);
       if(taskLinked(e)&&!e.route_receipt&&!route)mark('unrouted',e);
       if(taskLinked(e)&&!SOURCE_CATEGORIES.has(e.category))
@@ -355,6 +393,12 @@
     return {schema:'HH_PR_ERROR_FUNNEL_V1',period_hours:hours,from:new Date(start).toISOString(),
       to:new Date(now).toISOString(),counts:counts,links:links,
       unique_prs:prs.size,unique_events:uniqueEvents.size,
+      route_outcomes:routeLabels.map(function(pair){
+        var row=routed[pair[0]];
+        return {key:pair[0],label:pair[1],
+          pr_count:row.prs.size,event_count:row.events.size,
+          prs:[...row.prs].sort(function(a,b){return b-a;})};
+      }),
       ai_responded_prs:[...prs.values()].filter(function(p){return p.ai_response;}).length,
       breakdown:{assigned_diagnostic_not_source:diagnosticAssignments,
         worker_replies_without_commit:workerRepliesWithoutCommit,
@@ -448,7 +492,8 @@
   }
   var model={STAGES:STAGES,validEvent:validEvent,classified:classified,
     taskLinked:taskLinked,routeFor:routeFor,trustedComment:trustedComment,
-    diagnosticAssignment:diagnosticAssignment,sourceRepairCandidate:sourceRepairCandidate,signedClaimRoute:signedClaimRoute,
+    diagnosticAssignment:diagnosticAssignment,routeDisposition:routeDisposition,
+    sourceRepairCandidate:sourceRepairCandidate,signedClaimRoute:signedClaimRoute,
     taskEvidence:taskEvidence,summarize:summarize,
     readFailureWindow:readFailureWindow,proofPrs:proofPrs,
     boundedSettled:boundedSettled};
@@ -554,6 +599,10 @@
       'Неполные данные: подтверждено не менее '+
       data.counts.source_assigned+' кодовых назначений и '+
       data.counts.committed+' GitHub-коммитов. Причины ниже, точная доля недоступна.';
+    var handled=(data.route_outcomes||[]).filter(function(x){return x.pr_count>0;})
+      .map(function(x){return x.label+': '+(data.complete?'':'≥')+x.pr_count+' PR';});
+    if(handled.length)insight.textContent+=' Отдельные маршруты: '+handled.join(' · ')+
+      '. Принятый маршрут не означает исполнителя, успешный CI или LIVE.';
     for(var stage of STAGES){
       var key=stage[0],n=data.counts[key],card=el('article','hh-error-stage');
       var top=el('div','hh-error-stage-head');
