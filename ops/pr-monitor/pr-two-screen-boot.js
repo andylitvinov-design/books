@@ -20,7 +20,7 @@
     // Preserve the manually deployed LIVE monitor extensions; source archives in
     // GitHub intentionally contain only a subset of the 100+ production assets.
     additions += '<link rel="stylesheet" href="/pr-monitor-fluid.css?v=20261105-v1">'+
-      '<script src="/pr-merge-velocity-ui.js?v=20261111-restored-v1" defer><\/script>';
+      '<script src="/pr-merge-velocity-ui.js?v=20261111-direct-source-v3" defer><\/script>';
     additions += '<link rel="stylesheet" href="/pr-velocity-three-lines.css?v=20261105-v1">'+
       '<script src="/pr-velocity-three-lines.js?v=20261105-v1" defer><\/script>';
     additions += '<link rel="stylesheet" href="/pr-queue-recovery.css?v=20261105-queue-v1">'+
