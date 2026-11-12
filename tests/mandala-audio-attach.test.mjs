@@ -106,8 +106,18 @@ test("EN/RU/ES visible attach, select, upload and recording copy is complete",()
   const originalBedWav=/fetch\(presetAudioUrl\(bedId\),\{credentials:"same-origin",cache:"force-cache"\}\)/g;
   assert.equal((source.match(firstPartyWav)||[]).length,1,"one verified gallery music GET");
   assert.equal((source.match(originalBedWav)||[]).length,1,"one verified optional original-music GET");
-  assert.doesNotMatch((studio+source).replace(firstPartyWav,"").replace(originalBedWav,""),
-    /\bfetch\s*\(|XMLHttpRequest|FormData|sendBeacon|api\.kling|heygen/i);
+  // The Mandala intro is a separate, user-clicked HTML5 MP4 player. Keep
+  // its approved static media URLs outside the local audio-editor network
+  // contract, while rejecting every other external integration in audio code.
+  const introStart=studio.indexOf('const introVideo = locale==="ru" ? {');
+  const introEnd=studio.indexOf('const introVideoRef=',introStart);
+  assert.ok(introStart>0&&introEnd>introStart,"isolated native MP4 intro manifest");
+  const introBlock=studio.slice(introStart,introEnd);
+  const approvedIntroUrls=[...introBlock.matchAll(/https:\/\/resource2\.heygen\.ai\/movio\/video\/[a-f0-9]+\/[a-f0-9]+\/caption\.mp4/g)].map(x=>x[0]);
+  assert.equal(approvedIntroUrls.length,2,"two fixed approved MP4 assets; no API/render endpoint");
+  const localAudioEditor=studio.slice(0,introStart)+studio.slice(introEnd);
+  assert.doesNotMatch((localAudioEditor+source).replace(firstPartyWav,"").replace(originalBedWav,""),
+    /\bfetch\s*\(|XMLHttpRequest|FormData|sendBeacon|api\.kling|heygen|higgsfield/i);
 });
 
 test("39 soundtrack covers reuse approved local first-party illustration files",()=>{
