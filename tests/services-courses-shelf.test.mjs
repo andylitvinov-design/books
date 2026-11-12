@@ -29,3 +29,13 @@ test("Localized filters and mobile tap targets are preserved",()=>{
  assert.match(css,/@media\(max-width:760px\)/);
  assert.match(css,/min-height:48px/);
 });
+
+
+test("Messenger-only order CTA stays compact until deliberate tap",()=>{
+  assert.match(src,/compactTrigger/);
+  assert.match(src,/data-assist-course-order=\{course\.id\}/);
+  assert.match(css,/\.order:has\(details\) summary/);
+  assert.match(css,/\.actions:has\(details\[open\]\)/);
+  assert.match(css,/details\[open\]>div/);
+  assert.match(src,/ContactChannelChooser/);
+});

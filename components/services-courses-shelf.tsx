@@ -113,10 +113,12 @@ export function ServicesCoursesShelf({ locale }: { locale: PublicLocale }) {
             <Link className={styles.details} href={href} prefetch={false} data-assist-course-detail={course.id}>
               <Info size={18} aria-hidden="true"/>{t.details}
             </Link>
-            <ContactChannelChooser locale={locale} label={t.order} className={styles.order}
-              publicServiceTitle={item.title} publicTopic={item.title} event="service_request_start"
-              whatsappUrl={whatsappEnquiryUrl({locale,service:item.title,request:t.enquire,pagePath:href})}
-              attributes={{"data-assist-course-order":course.id}}/>
+            <div className={styles.orderWrap} data-assist-course-order={course.id}>
+              <ContactChannelChooser locale={locale} label={t.order} className={styles.order} compactTrigger
+                publicServiceTitle={item.title} publicTopic={item.title} event="service_request_start"
+                whatsappUrl={whatsappEnquiryUrl({locale,service:item.title,request:t.enquire,pagePath:href})}
+                attributes={{"data-assist-course-order":course.id}}/>
+            </div>
           </div>
         </article>;
       })}
