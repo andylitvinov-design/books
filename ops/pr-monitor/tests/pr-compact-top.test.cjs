@@ -47,6 +47,6 @@ test('both original PR graphs are rehomed beneath KPI without duplicate fetches'
   assert.match(script, /graphsWatcher\.disconnect\(\)/);
   assert.match(css, /#hh-pr-top-graphs/);
   assert.match(css, /@media\(max-width:850px\)/);
-  assert.match(boot, /pr-merge-velocity-ui\.js\?v=20261111-restored-v1/);
+  assert.match(boot, /pr-merge-velocity-ui\.js\?v=20261111-direct-source-v3/);
   assert.doesNotMatch(script, /fetch\(|setInterval\(|setTimeout\(|workflow_dispatch/);
 });
