@@ -20,3 +20,12 @@
 }
 @media(max-width:350px){.assist{width:calc(100% - 20px)}.photo{height:124px}.intro h1{font-size:28px}.chips button{padding:8px;font-size:12px}.tool{padding:10px}.tool strong{font-size:14px}}
 @media(prefers-reduced-motion:reduce){.assist *{transition:none!important}}
+
+@media(max-width:760px){
+.question{margin:14px 0 17px;padding:13px;border-radius:17px;background:#edf8f1;border:1px solid #cbe5d8}
+.question p{margin:0 0 10px;font-size:16px;font-weight:750;color:#143d3a}
+.answerOptions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.answerOptions button{min-height:48px;padding:9px 10px;border:1px solid #a9cebf;border-radius:13px;background:white;color:#143d3a;text-align:left;font:650 14px/1.25 Arial,Helvetica,sans-serif;cursor:pointer}
+.question .skip,.adjust{margin-top:9px;min-height:40px;padding:8px 12px;border:0;border-radius:12px;background:transparent;color:#067a67;font:700 14px/1.25 Arial,Helvetica,sans-serif;cursor:pointer}
+.noOffers{font-size:14px;color:#763522;line-height:1.5}
+}
