@@ -8,15 +8,17 @@ test('avatar mounts in actual HolisticAgentChat without second data path',()=>{
   const chat=read('components/holistic-agent-chat.tsx');
   const avatar=read('components/app/emotional-avatar.tsx');
   assert.match(chat,/import EmotionalAvatar from ['"]@\/components\/app\/emotional-avatar['"]/);
-  assert.match(chat,/<EmotionalAvatar\s+messages=\{messages\}\s+busy=\{busy\}\s+status=\{status\}\s+locale=\{locale\}\s+compact=\{compact\}/);
+  assert.match(chat,/<EmotionalAvatar\s+messages=\{messages\}\s+busy=\{busy\}\s+status=\{status\}\s+locale=\{locale\}\s+compact=\{compact\}\s+companionVoice=\{voiceEnabled\?voice:undefined\}/);
   assert.match(chat,/data-page-help=\{pageHelp\?/);
   assert.match(chat,/if\(compact&&!authenticated&&mode==="rules"\)/);
-  assert.match(chat,/if\(compact&&videoStep\)/);
+  assert.match(chat,/if\(compact&&quickPrompt\.format==="test"\)/);
   assert.match(chat,/selectPageHelpAction/);
   assert.match(chat,/setMessages\(prev=>\[\.\.\.prev/);
   assert.doesNotMatch(avatar,/\bfetch\s*\(|getUserMedia|MediaRecorder|localStorage|sessionStorage|sendBeacon|createClient/);
   assert.match(avatar,/classifyAvatarEmotion/);
   assert.match(avatar,/createDeviceSpeech/);
+  assert.match(avatar,/if\(externalSpeech\)return/);
+  assert.match(avatar,/companionVoice\?\.stop\(\)/);
 });
 test('voice requires a user click and state only changes on real utterance callbacks',()=>{
   const avatar=read('components/app/emotional-avatar.tsx');
