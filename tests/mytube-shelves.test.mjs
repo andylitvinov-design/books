@@ -72,3 +72,18 @@ test("MyTube routes preserve numbered original course order and do not change ot
  assert.match(view,/variant!=="mytube"&&<>/);
  assert.match(view,/mytubeShelf=\{variant==="mytube"\?formatMode:undefined\}/);
 });
+
+test("numbered short course lessons stay in courses; full MyTube playlists are not paginated",()=>{
+ const shortLesson={kind:"video",id:"lesson9",sourceGroup:"videos/greek-mysteries-dionysus",
+   seriesId:"greek-dionysus",seriesOrder:9,contentType:"soft_meditation",
+   durationVerifiedSeconds:300,sourceApproved:true,curation:"verified"};
+ assert.equal(matchesMyTubeShelf(shortLesson,"courses"),true);
+ assert.equal(matchesMyTubeShelf(shortLesson,"practices"),false);
+ const longSeries=Array.from({length:12},(_,i)=>({...shortLesson,id:"lesson"+i,seriesOrder:12-i}));
+ assert.deepEqual(sortMyTubeCourseLessons(longSeries).map(item=>item.seriesOrder),
+   Array.from({length:12},(_,i)=>i+1));
+ const feed=read("components/library-feed.tsx");
+ const view=read("components/video-discovery.tsx");
+ assert.match(feed,/visibleLimit = mytubeShelf === "courses" \? filtered\.length/);
+ assert.match(view,/setSearch\(""\);setSavedOnly\(false\);setHiddenIds\(\[\]\)/);
+});

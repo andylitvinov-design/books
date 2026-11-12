@@ -140,9 +140,11 @@ export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = fa
         : 0);
     });
   }, [items, kind, query, locale, videosOnly, guidesOnly, selectedSeries, seriesChoices, preserveOrder]);
-  // A whole series is visible even when it has more than the normal eight cards.
-  const visibleLimit = videosOnly && !preserveOrder && selectedSeries === "all"
-    ? Math.max(limit, filtered.filter(item => Boolean(item.seriesId)).length) : limit;
+  // A selected MyTube course is a complete ordered playlist, not a preview of
+  // the first eight lessons. Keep normal pagination for other Library feeds.
+  const visibleLimit = mytubeShelf === "courses" ? filtered.length :
+    videosOnly && !preserveOrder && selectedSeries === "all"
+      ? Math.max(limit, filtered.filter(item => Boolean(item.seriesId)).length) : limit;
   const visible = filtered.slice(0, visibleLimit);
   const filters = [
     { id: "all", label: copy.all },

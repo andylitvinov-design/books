@@ -45,3 +45,104 @@
 .livingActions :global([data-coaching-question-voice]){margin:0;max-width:100%}
 .dictationInterim{font-size:12px;color:#365e51;overflow-wrap:anywhere}
 @media(max-width:560px){.livingPanel{padding:8px;gap:5px}.livingActions>span{font-size:10px}}
+
+.root[data-my-coach-immersive-session]{--session-ink:#143d3a;display:flex;flex-direction:column;align-items:stretch;gap:12px;width:100%;max-width:100%;min-height:100dvh;margin:0;padding:0 0 calc(102px + env(safe-area-inset-bottom));border:0;border-radius:0;background:#fbf5e9;color:var(--session-ink);box-shadow:none}
+.sessionTopbar{width:min(100%,900px);min-height:61px;margin:0 auto;padding:calc(6px + env(safe-area-inset-top)) 15px 5px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.sessionBrand{display:inline-flex;align-items:center;gap:9px;color:#143d3a;text-decoration:none;font:760 18px/1 system-ui;letter-spacing:-.03em}
+.sessionBrandMark{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:#e5f3e9;color:#087a62;font-size:25px}
+.chooseCoach{display:inline-flex;align-items:center;gap:7px;min-height:42px;padding:7px 12px;border:1px solid #d9e4db;border-radius:99px;background:#fffdf8;color:#286b59;font:720 12px/1.2 system-ui;text-decoration:none}
+.chooseCoach svg{transform:rotate(180deg)}
+.sessionHero{position:relative;isolation:isolate;overflow:hidden;width:min(calc(100% - 24px),900px);height:clamp(255px,37vh,350px);min-height:245px;margin:0 auto;border:1px solid #fff;border-radius:27px;background:#dfe8dc;box-shadow:0 8px 22px #3e452f22;color:#fff}
+.sessionPortrait{position:absolute;inset:0;z-index:-2;background-image:url('/images/holistic-house/my-coach-portraits.avif');background-size:400% 100%;background-repeat:no-repeat;background-position:0% center}
+.sessionPortrait[data-persona=max]{background-position:33.333% center}.sessionPortrait[data-persona=sofia]{background-position:66.667% center}.sessionPortrait[data-persona=alex]{background-position:100% center}
+.sessionHeroShade{position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,#0c241fac,#122a2142 57%,#15261f0d),linear-gradient(0deg,#0a1e189e,transparent 65%)}
+.sessionHeroCopy{position:absolute;left:17px;bottom:17px;width:48%;display:flex;flex-direction:column;align-items:flex-start;gap:5px;text-shadow:0 2px 12px #0005}
+.sessionHeroBadge{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border:1px solid #ffffffa6;border-radius:99px;background:#0a5f4be6;font:800 9px/1 system-ui;letter-spacing:.055em}
+.sessionHeroCopy>p{margin:2px 0 0;color:#f4fff6;font-size:11px;font-weight:750;line-height:1.2}
+.sessionHeroCopy h1{margin:0;color:#fff;font:760 clamp(30px,7.5vw,44px)/1 Georgia,serif;letter-spacing:-.035em}
+.sessionHeroCopy>small{color:#fff;font-size:11px;line-height:1.25;font-weight:620;max-width:240px}
+.sessionAvatar{position:absolute;right:12px;bottom:12px;width:min(46%,220px);filter:drop-shadow(0 5px 14px #0003)}
+.sessionAvatar :global([data-coach-avatar]){margin:0;border-color:#ffffffb0;background:#fffdf8eb;backdrop-filter:blur(9px)}
+.sessionDisclosure{width:min(calc(100% - 36px),850px);margin:-3px auto 0;color:#60746c;font-size:10px;line-height:1.35}
+.sessionProgress{width:min(calc(100% - 24px),900px);margin:0 auto;display:flex;align-items:center;gap:14px;padding:11px 14px;border:1px solid #ece5d9;border-radius:19px;background:#fffdf8;box-shadow:0 4px 14px #4540310e}
+.sessionProgressText{display:flex;align-items:center;flex-wrap:wrap;gap:6px;min-width:0;flex:1}
+.sessionProgressText strong{font-size:13px;white-space:nowrap;color:#143d3a}.sessionProgressText span{font-size:12px;color:#5d6a71;line-height:1.25}
+.sessionProgressSegments{display:flex;align-items:center;justify-content:flex-end;gap:5px;flex:1;min-width:90px}
+.sessionProgressSegments span{display:block;flex:1;min-width:7px;height:8px;border-radius:99px;background:#e7e3dc}
+.sessionProgressSegments span[data-complete=true]{background:#68b99b}.sessionProgressSegments span[data-current=true]{background:#078365}
+.sessionDialogue{width:min(calc(100% - 24px),900px);margin:0 auto;display:flex;flex-direction:column;gap:11px}
+.currentCoachPrompt{position:relative;isolation:isolate;overflow:hidden;min-height:105px;display:flex;align-items:center;gap:11px;padding:14px 12px;border:1px solid #d5e8dc;border-radius:22px;background:linear-gradient(100deg,#eaf7ef,#e1f2e7 58%,#d9eee4);box-shadow:0 5px 17px #27573e12}
+.currentCoachPrompt:after{content:"";position:absolute;z-index:-1;right:0;top:0;bottom:0;width:33%;background:url('/images/holistic-house/reiki-approved-sunrise-v3.webp') center/cover no-repeat;opacity:.36;mask-image:linear-gradient(90deg,transparent,black 38%)}
+.promptWave{flex:none;display:flex;align-items:center;justify-content:center;gap:3px;width:33px;height:45px}
+.promptWave i{display:block;width:4px;height:13px;border-radius:5px;background:#16866b}.promptWave i:nth-child(2n){height:25px}.promptWave i:nth-child(3n){height:34px}
+.currentCoachCopy{min-width:0;flex:1;max-width:640px}.currentCoachCopy>span{display:block;color:#4d786b;font-size:10px;font-weight:820;letter-spacing:.07em;text-transform:uppercase}
+.currentCoachCopy p{margin:3px 0 0;color:#143d3a;font-size:clamp(15px,3.7vw,19px);font-weight:760;line-height:1.32;white-space:pre-wrap}
+.replayInline{flex:none;display:grid;place-items:center;width:37px;height:37px;border:1px solid #c9ded1;border-radius:50%;background:#fffdf7;color:#176d57;cursor:pointer}.replayInline:disabled{opacity:.35;cursor:not-allowed}
+.conversationHistory{border:1px solid #e3e8dd;border-radius:14px;background:#fffdf8;color:#365b4f}.conversationHistory>summary{min-height:40px;padding:10px 13px;font-size:12px;font-weight:750;cursor:pointer}
+.historyMessages{display:grid;gap:7px;padding:0 11px 11px;max-height:34vh;overflow:auto}
+.historyUser,.historyCoach{padding:9px 11px;border-radius:12px;background:#f5efe5}.historyCoach{background:#edf7f0}
+.historyMessages strong{font-size:10px;color:#4d7163}.historyMessages p{margin:3px 0 0;color:#344e45;font-size:12px;line-height:1.4;white-space:pre-wrap}
+.quickGoals{display:grid;gap:8px}.quickGoalsHeading{display:flex;flex-direction:column;gap:3px}.quickGoalsHeading strong{color:#143d3a;font-size:15px;font-weight:820}.quickGoalsHeading span{color:#708077;font-size:10px;line-height:1.35}
+.quickGoalGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.quickGoalCard{position:relative;overflow:hidden;display:flex;align-items:flex-end;min-width:0;min-height:112px;border:1px solid #fff;border-radius:18px;padding:0;background:#e9eee5;color:#143d3a;box-shadow:0 4px 13px #3845351a;cursor:pointer;text-align:left}
+.quickGoalCard[aria-pressed=true]{outline:2px solid #14876b;outline-offset:2px}.quickGoalArt{position:absolute;inset:0;background-size:cover;background-position:center;background-repeat:no-repeat}
+.quickGoalCard[data-art=stones] .quickGoalArt{background-image:url('/images/holistic-house/messenger-zen-stones.svg')}.quickGoalCard[data-art=sunrise] .quickGoalArt{background-image:url('/images/holistic-house/reiki-approved-sunrise-v3.webp')}.quickGoalCard[data-art=lotus] .quickGoalArt{background-image:url('/images/holistic-house/assessment-lotus.svg')}
+.quickGoalLabel{position:relative;z-index:1;display:flex;align-items:center;gap:5px;width:100%;min-height:41px;padding:7px 8px;background:#fffdf8eb;backdrop-filter:blur(6px);color:#173f36;font-size:10px;font-weight:790;line-height:1.15}.quickGoalLabel svg{flex:none;color:#0d775d}
+.voiceWorkspace{width:min(calc(100% - 24px),900px);margin:0 auto;display:grid;gap:9px}
+.voiceControls{display:flex;align-items:center;justify-content:space-between;gap:11px;min-height:112px;padding:4px 12px;background:radial-gradient(ellipse at center,#eef8ef,transparent 76%)}
+.keyboardControl,.replayControl{flex:none;display:grid;place-items:center;width:58px;height:58px;border:1px solid #e6dfd3;border-radius:50%;background:#fffdf8;color:#175c4e;box-shadow:0 4px 13px #3645371a;cursor:pointer}
+.keyboardControl:focus-visible,.replayControl:focus-visible,.replayInline:focus-visible{outline:3px solid #16876b;outline-offset:3px}.replayControl:disabled{opacity:.42;cursor:not-allowed}
+.voiceCenter{position:relative;display:flex;align-items:center;justify-content:center;min-width:0;flex:1}.voiceCenter :global([data-my-coach-voice]){display:flex;align-items:center;flex-direction:column;gap:3px;min-width:0}
+.voiceCenter :global([data-my-coach-voice] button){display:grid;place-items:center;width:99px;height:99px;padding:0;border:3px solid #adf2d6;border-radius:50%;background:linear-gradient(145deg,#28b58a,#006e50);color:#fff;box-shadow:0 0 0 7px #7cd7b13d,0 7px 19px #08674833;cursor:pointer}
+.voiceCenter :global([data-my-coach-voice] button svg){width:38px;height:38px;stroke-width:1.8}.voiceCenter :global([data-my-coach-voice] button span){position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+.voiceCenter :global([data-my-coach-voice] button:disabled){opacity:.45;cursor:not-allowed}.voiceCenter :global([data-my-coach-voice] .status){color:#3c7763;font-size:10px;font-weight:750;text-align:center}
+.voiceCenter :global([data-my-coach-voice] .note){max-width:205px;margin:2px 0;color:#6a746e;font-size:10px;line-height:1.25;text-align:center}.voiceCenter :global([data-my-coach-voice] .privacy){max-width:235px;margin:2px 0;color:#7a857e;font-size:9px;line-height:1.2;text-align:center}
+.voiceWaveLeft,.voiceWaveRight{position:absolute;top:48%;display:flex;align-items:center;gap:3px;transform:translateY(-50%);opacity:.48;pointer-events:none}.voiceWaveLeft{right:calc(50% + 56px)}.voiceWaveRight{left:calc(50% + 56px)}
+.voiceWaveLeft i,.voiceWaveRight i{display:block;width:3px;height:13px;border-radius:5px;background:#68c5a4}.voiceWaveLeft i:nth-child(2n),.voiceWaveRight i:nth-child(2n){height:24px}.voiceWaveLeft i:nth-child(3n),.voiceWaveRight i:nth-child(3n){height:32px}
+.voiceCenter[data-voice-active=true] .voiceWaveLeft i,.voiceCenter[data-voice-active=true] .voiceWaveRight i{animation:sessionWave .6s ease-in-out infinite alternate;opacity:1}
+.voiceCenter[data-voice-active=true] .voiceWaveLeft i:nth-child(2n),.voiceCenter[data-voice-active=true] .voiceWaveRight i:nth-child(2n){animation-delay:.15s}.voiceCenter[data-voice-active=true] .voiceWaveLeft i:nth-child(3n),.voiceCenter[data-voice-active=true] .voiceWaveRight i:nth-child(3n){animation-delay:.3s}
+.textComposer{display:grid;gap:8px;padding:11px;border:1px solid #e5e0d4;border-radius:19px;background:#fffdf8}.textComposer .readiness{margin:0;padding:8px 10px;font-size:11px}
+.textComposer .composer{display:flex;flex-direction:column;gap:7px}.textComposer .composer>label:first-child{margin:0;color:#43685b;font-size:11px}
+.textComposer .composer textarea{min-height:49px;max-height:145px;padding:10px 12px;border:1px solid #d4e2d8;border-radius:13px;background:#fff;color:#143d3a;font-size:16px;line-height:1.4}
+.textComposer .consent{font-size:10px;line-height:1.4}.textComposer .send{align-self:stretch;display:flex;align-items:center;justify-content:center;min-height:45px;width:100%;border-radius:14px;background:#087d66;color:white;font-size:13px}
+.textComposer .privacy{margin:0;font-size:10px;line-height:1.4}.guidedFallback{justify-self:start;display:inline-flex;align-items:center;gap:7px;min-height:40px;border:1px solid #c9ded1;border-radius:99px;padding:7px 12px;background:#fffdf8;color:#266653;font-size:11px;font-weight:750}
+.goalRow{width:min(calc(100% - 24px),900px);min-height:56px;margin:0 auto 2px;padding:8px 13px;display:flex;align-items:center;gap:8px;border:1px solid #e8e0d5;border-radius:17px;background:#fffdf8;box-shadow:0 4px 14px #433e2c0f;color:#164d3d}
+.goalRow>span{flex:none;font-size:12px;font-weight:850}.goalRow input{flex:1;min-width:0;border:0;outline:0;background:transparent;color:#2f5145;font:600 13px/1.3 system-ui}
+.goalRow input::placeholder{color:#84918a;font-weight:450}.goalRow input:focus-visible{outline:2px solid #18836a;outline-offset:3px;border-radius:5px}.goalRow svg:last-child{flex:none;color:#54826f}
+.goalPrivacy{display:block;width:min(calc(100% - 34px),890px);margin:0 auto;color:#7c8980;font-size:9px;line-height:1.3}
+.sessionBottomNav{position:fixed;z-index:70;bottom:0;left:0;right:0;width:100%;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;padding:7px max(5px,env(safe-area-inset-left)) calc(7px + env(safe-area-inset-bottom)) max(5px,env(safe-area-inset-right));border:1px solid #e4e7dc;border-bottom:0;border-radius:25px 25px 0 0;background:#fffdf8f7;box-shadow:0 -7px 22px #2842301f;backdrop-filter:blur(14px)}
+.sessionBottomNav a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:0;min-height:53px;border-radius:14px;color:#6a7770;text-decoration:none;font-size:10px;font-weight:700;line-height:1.12;text-align:center}
+.sessionBottomNav a[aria-current=page]{background:#e5f6ed;color:#08745d;font-weight:830}.sessionBottomNav a:focus-visible{outline:3px solid #15846a;outline-offset:-2px}
+.sessionTopbar a:focus-visible,.quickGoalCard:focus-visible,.guidedFallback:focus-visible{outline:3px solid #167d68;outline-offset:3px}
+@keyframes sessionWave{from{transform:scaleY(.55);opacity:.55}to{transform:scaleY(1.25);opacity:1}}
+@media(max-width:390px){
+.sessionHero{height:clamp(245px,34vh,305px);min-height:242px}.sessionHeroCopy{left:12px;bottom:13px;width:46%}.sessionHeroCopy h1{font-size:31px}.sessionHeroCopy>small{font-size:10px}.sessionHeroBadge{font-size:8px;padding:6px 8px}
+.sessionAvatar{right:8px;bottom:9px;width:48%}.sessionAvatar :global([data-avatar-size=large]){gap:5px;padding:4px}.sessionAvatar :global([data-avatar-size=large] .face){width:78px;height:78px;flex-basis:78px}.sessionAvatar :global([data-avatar-size=large] .avatarName){font-size:12px}
+.sessionProgress{gap:8px;padding:10px}.sessionProgressText strong{font-size:11px}.sessionProgressText span{font-size:10px}.sessionProgressSegments{gap:3px}.sessionProgressSegments span{height:7px}
+.quickGoalGrid{gap:6px}.quickGoalCard{min-height:98px;border-radius:15px}.quickGoalLabel{gap:4px;padding:6px;font-size:9px}
+.voiceControls{gap:7px;padding-inline:5px}.keyboardControl,.replayControl{width:48px;height:48px}.voiceCenter :global([data-my-coach-voice] button){width:85px;height:85px}.voiceCenter :global([data-my-coach-voice] button svg){width:32px;height:32px}.voiceWaveLeft{right:calc(50% + 46px)}.voiceWaveRight{left:calc(50% + 46px)}
+.goalRow{padding-inline:9px;gap:6px}.goalRow>span{font-size:10px}.goalRow input{font-size:11px}.sessionBottomNav a{font-size:9px}.sessionBottomNav a svg{width:20px;height:20px}
+}
+@media(min-width:700px){.root[data-my-coach-immersive-session]{padding-bottom:100px}.sessionHero{height:350px}.sessionDialogue,.sessionProgress,.voiceWorkspace,.goalRow{max-width:850px}}
+@media(prefers-reduced-motion:reduce){.voiceWaveLeft i,.voiceWaveRight i{animation:none!important}}
+
+/* Portrait media stays within the current immersive coaching hero. Animated
+   visual movement is ambient; real voice/speaking state remains in controller. */
+.sessionPortrait[data-persona=mira]{background-image:url('/images/holistic-house/my-coach-motion/mira-living.webp'),linear-gradient(110deg,#485e53,#cbb9a1);background-size:auto 140%,cover;background-position:right 32%,center;background-repeat:no-repeat}
+.sessionPortrait[data-persona=max]{background-image:url('/images/holistic-house/my-coach-motion/max-living.webp'),linear-gradient(110deg,#485e53,#cbb9a1);background-size:auto 140%,cover;background-position:right 32%,center;background-repeat:no-repeat}
+.sessionPortrait[data-persona=sofia]{background-image:url('/images/holistic-house/my-coach-motion/sofia-living.webp'),linear-gradient(110deg,#485e53,#cbb9a1);background-size:auto 140%,cover;background-position:right 32%,center;background-repeat:no-repeat}
+.sessionPortrait[data-persona=alex]{background-image:url('/images/holistic-house/my-coach-motion/alex-living.webp'),linear-gradient(110deg,#485e53,#cbb9a1);background-size:auto 140%,cover;background-position:right 32%,center;background-repeat:no-repeat}
+.sessionPortrait[data-persona=lea]{background-image:url('/images/holistic-house/my-coach-motion/lea-living.webp'),linear-gradient(110deg,#485e53,#cbb9a1);background-size:auto 140%,cover;background-position:right 32%,center;background-repeat:no-repeat}
+.sessionPortrait[data-persona=noah]{background-image:url('/images/holistic-house/my-coach-motion/noah-living.webp'),linear-gradient(110deg,#485e53,#cbb9a1);background-size:auto 140%,cover;background-position:right 32%,center;background-repeat:no-repeat}
+.sessionPortrait[data-persona=iris]{background-image:url('/images/holistic-house/my-coach-motion/iris-living.webp'),linear-gradient(110deg,#485e53,#cbb9a1);background-size:auto 140%,cover;background-position:right 32%,center;background-repeat:no-repeat}
+.sessionPortrait[data-persona=ray]{background-image:url('/images/holistic-house/my-coach-motion/ray-living.webp'),linear-gradient(110deg,#485e53,#cbb9a1);background-size:auto 140%,cover;background-position:right 32%,center;background-repeat:no-repeat}
+@media(prefers-reduced-motion:reduce){
+.sessionPortrait[data-persona=mira]{background-image:url('/images/holistic-house/my-coach-motion/mira-still.webp'),linear-gradient(110deg,#485e53,#cbb9a1)}
+.sessionPortrait[data-persona=max]{background-image:url('/images/holistic-house/my-coach-motion/max-still.webp'),linear-gradient(110deg,#485e53,#cbb9a1)}
+.sessionPortrait[data-persona=sofia]{background-image:url('/images/holistic-house/my-coach-motion/sofia-still.webp'),linear-gradient(110deg,#485e53,#cbb9a1)}
+.sessionPortrait[data-persona=alex]{background-image:url('/images/holistic-house/my-coach-motion/alex-still.webp'),linear-gradient(110deg,#485e53,#cbb9a1)}
+.sessionPortrait[data-persona=lea]{background-image:url('/images/holistic-house/my-coach-motion/lea-still.webp'),linear-gradient(110deg,#485e53,#cbb9a1)}
+.sessionPortrait[data-persona=noah]{background-image:url('/images/holistic-house/my-coach-motion/noah-still.webp'),linear-gradient(110deg,#485e53,#cbb9a1)}
+.sessionPortrait[data-persona=iris]{background-image:url('/images/holistic-house/my-coach-motion/iris-still.webp'),linear-gradient(110deg,#485e53,#cbb9a1)}
+.sessionPortrait[data-persona=ray]{background-image:url('/images/holistic-house/my-coach-motion/ray-still.webp'),linear-gradient(110deg,#485e53,#cbb9a1)}
+}

@@ -327,6 +327,9 @@ export function VideoDiscovery({locale,videos,variant="library",subtitle}:{local
             setMyTubeTopicId("all");setMyTubeScenarioId("all");setMyTubeMotifId("all");
             setMyTubeStyleId("all");setContentType("all");setDirection("all");setTradition("all");
             setDurationRange("all");setCourseType("");setCourseTradition("");setCourseSeriesId("");
+            // A filter from the previous shelf must not silently hide course episodes.
+            setGoal("all");setArea("all");setLanguage("all");setSource("all");setPeriod("all");
+            setSearch("");setSavedOnly(false);setHiddenIds([]);
             setSort(mode==="courses"?"series":"for-you");}}>
           {mode==="practices"?t.mytubePractices:mode==="courses"?t.mytubeCourses:t.mytubeMasters}
         </button>)}
