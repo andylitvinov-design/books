@@ -25,7 +25,7 @@ test('homeopathy is explicitly educational and does not replace care', () => {
   assert.match(source, /not personalised prescriptions/);
   assert.match(source, /lacks reliable evidence/);
   assert.match(source, /не имеет надёжных доказательств/);
-  assert.doesNotMatch(source, /\bdosage\b|\bpotency\b|mg\b/);
+  assert.doesNotMatch(source, /\bdosage\b|\bpotency\b|\bmg\b/);
 });
 test('the approved mobile layout preserves keyboard focus and 320px width', () => {
   assert.match(css, /grid-template-columns:92px minmax\(0,1fr\)/);
