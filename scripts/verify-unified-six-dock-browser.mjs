@@ -95,7 +95,7 @@ async function inspect(browserType,locale,width){
     id+" deeper taxonomy must not push videos down by default");
   assert.deepEqual(
     await page.locator("[data-mytube-format-tabs] button").evaluateAll(els=>els.map(el=>el.dataset.mytubeFormatMode)),
-    ["all","shorts","courses","study"],id+" four functional editorial shelves are visible");
+    ["practices","courses","masters"],id+" exactly three approved MyTube content modes are visible");
   const filterBounds=await moreFilters.boundingBox();
   assert.ok(filterBounds&&filterBounds.height>=44&&filterBounds.height<=60,
     id+" single slim accessible taxonomy bar");
@@ -178,15 +178,17 @@ async function inspect(browserType,locale,width){
    await page.evaluate(()=>window.scrollTo({top:0,behavior:"instant"}));
    await page.screenshot({path:folder+"/mytube-webkit-ru-390.png",fullPage:false});
   }
-  for(const mode of ["shorts","courses","study","all"]){
+  // Three mutually exclusive modes; no invented videos required for acceptance.
+  for(const mode of ["practices","courses","masters"]){
     const control=page.locator('[data-mytube-format-mode="'+mode+'"]');
     await control.click();
-    assert.equal(await control.getAttribute("aria-pressed"),"true",id+" active "+mode);
-    if(locale==="en" && (mode==="shorts"||mode==="study")){
-      await page.waitForFunction(()=>Number(document.querySelector("[data-mytube-result-count]")?.textContent)>0,
-        null,{timeout:15000});
-    }
+    assert.equal(await control.getAttribute("aria-pressed"),"true",id+" selected "+mode);
+    assert.equal(await page.locator('[data-mytube-course-navigation]').isVisible(),mode==="courses",
+      id+" course-type navigation belongs only to Courses");
   }
+  // Four-category taxonomy is a Practices subfilter; restore it before testing.
+  await page.locator('[data-mytube-format-mode="practices"]').click();
+  await rail.waitFor({state:"visible",timeout:15000});
   await moreFilters.click();
   assert.equal(await moreFilters.getAttribute("aria-expanded"),"true",id+" icon expands filters");
   await moreControls.waitFor({state:"visible",timeout:15000});
