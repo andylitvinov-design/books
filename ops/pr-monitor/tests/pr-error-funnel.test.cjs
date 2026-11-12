@@ -548,17 +548,24 @@ test('GitHub proof reads stay at six concurrent requests and preserve failures',
  assert.equal(results[31].value,62);
  assert.equal(live,0);
 });
-test('fast monitor links to full v6 error-funnel proof; legacy boot retains exactly v6',()=>{
+test('canonical full PR monitor and separate fast page both retain v6 proof',()=>{
  const fs=require('node:fs'),path=require('node:path');
  const home=path.resolve(__dirname,'..');
  const boot=fs.readFileSync(path.join(home,'pr-two-screen-boot.js'),'utf8');
- const fast=fs.readFileSync(path.join(home,'pr-monitor.html'),'utf8');
+ const entry=fs.readFileSync(path.join(home,'pr-monitor.html'),'utf8');
+ const fast=fs.readFileSync(path.join(home,'pr-monitor-fast.html'),'utf8');
  const full=fs.readFileSync(path.join(home,'pr-monitor-full.html'),'utf8');
  const source=fs.readFileSync(path.join(home,'pr-error-funnel.js'),'utf8');
- // The canonical mobile entrance is intentionally lightweight. Detailed
- // proof and repair diagnostics moved to a real linked full HTML page.
- // Test both routes, preserving the v6 contracts rather than pretending
- // the fast page itself must load a heavy funnel bundle.
+ // The owner-facing canonical main monitor retains every original control
+ // and diagnostic section. Fast is a separate lean entry, not a replacement.
+ assert.equal(entry,full,'canonical main/full monitor must not diverge');
+ assert.match(entry,/HH_PR_MONITOR_DIRECT_HTML_V1/);
+ assert.match(entry,/pr-graphs-restore\.js\?v=20261112-two-charts-v1/);
+ assert.match(entry,/ci-journey-dashboard\.js\?v=20261104-v1/);
+ assert.match(entry,/pr-recommendations\.js\?v=20261111-v2/);
+ assert.match(entry,/href="\/automations\.html"/);
+ assert.match(entry,/href="\/agents\.html"/);
+ assert.doesNotMatch(entry,/pr-two-screen-boot\.js/);
  assert.match(fast,/id="pr-monitor-fast"/);
  assert.match(fast,/href="\/pr-monitor-full\.html"/);
  assert.match(fast,/pr-monitor-fast\.js\?v=20261112-fast-v1/);
