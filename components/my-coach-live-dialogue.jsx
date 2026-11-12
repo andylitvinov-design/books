@@ -5,6 +5,7 @@ import Link from 'next/link'
 import {ArrowLeft,ArrowRight,Check,LockKeyhole,Send,ShieldCheck,Sparkles} from 'lucide-react'
 import {getCoachPersona,localCoachText,coachStagePrompt} from '@/lib/coaching/persona-registry.mjs'
 import {coachingBrainSafety,coachingBrainBoundary} from '@/lib/personal-coaching/coaching-brain.mjs'
+import {classifyWisdomRequest} from '@/lib/coaching/wisdom-retrieval.mjs'
 import styles from './my-coach-live-dialogue.module.css'
 import MyCoachSpeechLoop from './my-coach-speech-loop'
 import CoachingAvatar from '@/components/app/coaching-avatar'
@@ -119,7 +120,12 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   async function sendMessage(raw){
     const message=String(raw||'').trim()
     if(!message||!consent||busy||paused||authRequired||readiness.status==='checking')return
-    if(readiness.status!=='verified'){
+    // Explicit quote requests use only the already-authenticated first-party
+    // Wisdom Library. They do not require a free model or contact OpenRouter.
+    const wisdomRequested=Boolean(classifyWisdomRequest({
+      locale:lang,message,turns:turns.map(({role,content})=>({role,content})),
+    }))
+    if(readiness.status!=='verified'&&!wisdomRequested){
       // Local-only authored fallback. NEVER send private text to an unverified model.
       // Same editorial persona prompts, same browser-only conversation history.
       const input={locale:lang,message,turns:turns.map(({role,content})=>({role,content}))}
