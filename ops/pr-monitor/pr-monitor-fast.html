@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ru">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="color-scheme" content="dark"><meta name="theme-color" content="#0b1726"><meta name="robots" content="noindex,nofollow,noarchive">
+<title>PR Monitor · Holistic House</title>
+<link rel="stylesheet" href="/pr-monitor-fast.css?v=20261112-fast-v1">
+<script src="/pr-monitor-fast.js?v=20261112-fast-v1" defer></script></head>
+<body>
+<header class="site-head"><div class="brand">HOLISTIC HOUSE <span>PR Monitor</span></div><a href="/briefing.html">Брифинг</a></header>
+<main class="wrap" id="pr-monitor-fast">
+<div class="heading"><div><h1>Монитор PR</h1><p>Создание · CI · Merge · LIVE</p></div><button id="refresh" type="button">↻ Обновить</button></div>
+<p class="state" id="live-state" role="status" aria-live="polite">Монитор открыт. Получаю последние подтверждённые данные…</p>
+<section class="graph-grid" aria-label="Два графика PR">
+<article class="graph-card" id="activity-card"><div class="card-title"><h2>Динамика PR и CI</h2><small>6 последних часов · Торонто</small></div>
+<div class="legend"><span><i class="dot created"></i>Создано</span><span><i class="dot merged"></i>Merge</span><span><i class="dot ci"></i>CI workflow</span></div>
+<svg id="activity-graph" viewBox="0 0 360 190" role="img" aria-label="График созданных и объединённых PR и запусков CI за шесть часов"><text x="180" y="96" text-anchor="middle" fill="#aabfd3" font-size="13">Подключаю данные…</text></svg>
+<p class="chart-note" id="activity-note" aria-live="polite">Проверяю PR и GitHub Actions…</p></article>
+<article class="graph-card" id="latency-card"><div class="card-title"><h2>Задержки PR → Merge</h2><small>Merge/час и медиана времени PR</small></div>
+<div class="legend"><span><i class="dot merged"></i>Merge/час</span><span><i class="dot created"></i>P50 до Merge</span></div>
+<svg id="latency-graph" viewBox="0 0 360 190" role="img" aria-label="График скорости PR до слияния и количества merge"><text x="180" y="96" text-anchor="middle" fill="#aabfd3" font-size="13">Подключаю данные…</text></svg>
+<div class="periods" role="group" aria-label="Период задержек"><button type="button" data-hours="1">1ч</button><button type="button" data-hours="6" aria-pressed="true">6ч</button><button type="button" data-hours="24">24ч</button><button type="button" data-hours="72">72ч</button></div>
+<p class="chart-note" id="latency-note" aria-live="polite">Проверяю событие Merge…</p></article>
+</section>
+<section class="numbers" aria-label="Ключевые показатели"><article><span>Создано / час</span><strong id="count-created">—</strong></article><article><span>Merge / час</span><strong id="count-merged">—</strong></article><article><span>CI workflow / час</span><strong id="count-ci">—</strong></article><article><span>Скорость Merge, P50</span><strong id="merge-p50">—</strong></article></section>
+<details class="journey" id="journey"><summary>Этапы Created → CI → Merge → LIVE <span>Развернуть</span></summary><div id="journey-body"><p>Покажу проверенные этапы после открытия. Нет данных ≠ 0.</p></div></details>
+<nav class="secondary" aria-label="Дополнительная диагностика"><a href="/pr-monitor-full.html">Полная диагностика PR, ремонт и рекомендации</a><a href="/automations.html">Автоматизации</a><a href="/projects.html">Проекты</a></nav>
+<footer>Данные только для чтения. Merge не означает подтверждённый LIVE. Если API недоступен, монитор остаётся открытым.</footer>
+</main></body></html>

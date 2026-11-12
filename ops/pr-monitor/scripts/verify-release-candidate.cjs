@@ -10,6 +10,9 @@ const CHECKS=Object.freeze({
  '/': 'html',
  '/index.html': 'html',
  '/pr-monitor.html': 'html',
+ '/pr-monitor-full.html': 'html',
+ '/pr-monitor-fast.css': 'css',
+ '/pr-monitor-fast.js': 'js',
  '/legacy.html': 'html',
  '/pr-two-screen-boot.js': 'js',
  '/pr-two-screen.js': 'js',
@@ -26,6 +29,8 @@ const CHECKS=Object.freeze({
  '/api/pr-merge-speed': 'HH_PR_MERGE_SPEED_V1',
  '/api/pr-stage-overview': 'HH_PR_STAGE_OVERVIEW_V1',
  '/api/pr-activity': 'HH_PR_ACTIVITY_CONSISTENT_V1',
+ '/api/ci-runner-trends': 'HH_CI_RUNNER_BINS_V2',
+ '/api/pr-stage-timeline?hours=6': 'HH_PR_STAGE_TIMELINE_V2',
  '/api/ci-insights': 'HH_CI_DEEP_MONITOR_V1'
 });
 const EXT=/\/([a-z0-9][a-z0-9._-]*\.(?:js|css))(?=[?\s"'`<\\]|$)/gi;
@@ -35,7 +40,7 @@ function assetsFrom(source){
  return [...found];
 }
 function verifySourceAssets(root){
- const folder=path.resolve(root),errors=[],sources=['legacy.html','pr-two-screen-boot.js','pr-monitor.html','index.html'];
+ const folder=path.resolve(root),errors=[],sources=['legacy.html','pr-two-screen-boot.js','pr-monitor.html','index.html','pr-monitor-full.html'];
  const references=new Set();
  for(const f of sources){
   const file=path.join(folder,f);
@@ -79,9 +84,10 @@ function validBody(path,kind,body){
    if(/<meta\b[^>]*http-equiv\s*=\s*['"]refresh['"]/i.test(body))return 'CLIENT_META_REFRESH_FORBIDDEN';
    if(body.includes('Загружаю проверенный монитор'))return 'LOADING_STUB_FORBIDDEN';
    const realMain=/<main\b[^>]*class\s*=\s*['"][^'"]*\bwrap\b/i.test(body);
-   if(!realMain||!body.includes('/monitor-core.js')||
-      !body.includes('/pr-two-screen.js')||!body.includes('/pr-merge-velocity-ui.js'))
-    return 'MONITOR_DIRECT_ENTRY_REQUIRED';
+   const full=body.includes('/monitor-core.js')&&body.includes('/pr-two-screen.js')&&body.includes('/pr-merge-velocity-ui.js');
+   const fast=body.includes('id="activity-graph"')&&body.includes('id="latency-graph"')&&
+      body.includes('/pr-monitor-fast.js')&&body.includes('/pr-monitor-fast.css');
+   if(!realMain||!(full||fast))return 'MONITOR_DIRECT_ENTRY_REQUIRED';
   }
   if(path==='/legacy.html'&&!/<\s*main\b/i.test(body))return 'LEGACY_NOT_COMPLETE';
  }
@@ -123,7 +129,7 @@ async function verifyCandidate(input, fetchImpl=globalThis.fetch){
    checked.push(pathname);
    if(kind==='html'||kind==='js'||kind==='css')
     digests[pathname]=createHash('sha256').update(body).digest('hex');
-   if(['/','/index.html','/pr-monitor.html','/legacy.html','/pr-two-screen-boot.js'].includes(pathname)){
+   if(['/','/index.html','/pr-monitor.html','/pr-monitor-full.html','/legacy.html','/pr-two-screen-boot.js'].includes(pathname)){
     for(const asset of assetsFrom(body))if(!pending.has(asset))
      pending.set(asset,asset.endsWith('.css')?'css':'js');
    }
