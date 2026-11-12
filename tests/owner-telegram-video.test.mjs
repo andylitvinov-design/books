@@ -707,10 +707,11 @@ test('manual YouTube handoff reads current exact private cut, not an unsigned pu
 
 test('owner Google OAuth RU grant upsert matches the deployed RU/EN composite target key',()=>{
  const service=readFileSync(new URL('../lib/practitioners/owner-telegram-video-service.js',import.meta.url),'utf8')
- const start=service.indexOf('export async function saveOwnerVideoYoutubeConsent(')
+ const consent=readFileSync(new URL('../lib/practitioners/owner-telegram-video-consent.js',import.meta.url),'utf8')
+ const start=service.indexOf('async function ownerVideoGrant(')
  const end=service.indexOf('export async function ownerVideoYoutubeConnected(',start)
  assert.ok(start>=0&&end>start)
- const oauth=service.slice(start,end)
+ const oauth=consent+'\n'+service.slice(start,end)
  // Production has PRIMARY KEY (practitioner_id,target). An old single-column
  // ON CONFLICT silently makes owner-approved Google callback return failed.
  assert.ok(oauth.includes('(practitioner_id,target,channel_id,token_ciphertext)'))
@@ -959,3 +960,13 @@ test('GitHub FFmpeg fallback remains official, bounded, checksum-pinned and fail
   assert.match(source,/install -m 755 "\$FFMPEG_BIN" node_modules\/ffmpeg-static\/ffmpeg/);
   assert.doesNotMatch(source,/continue-on-error:\s*true|skip-hash|untrusted-mirror/i);
 });
+
+test('YouTube OAuth callback dependency boundary excludes video rendering and story catalogues',()=>{
+ const consent=readFileSync(new URL('../lib/practitioners/owner-telegram-video-consent.js',import.meta.url),'utf8')
+ const callback=readFileSync(new URL('../app/api/admin/telegram-video/youtube/callback/route.js',import.meta.url),'utf8')
+ const service=readFileSync(new URL('../lib/practitioners/owner-telegram-video-service.js',import.meta.url),'utf8')
+ assert.match(callback,/from '@\/lib\/practitioners\/owner-telegram-video-consent'/)
+ assert.doesNotMatch(callback,/from '@\/lib\/practitioners\/owner-telegram-video-service'/)
+ assert.doesNotMatch(consent,/owner-telegram-story-render|telegram-story-plots|mytube-plots-|ffmpeg-static/)
+ assert.match(service,/export \{ownerYoutubeExpectedChannel,saveOwnerVideoYoutubeConsent\} from '\.\/owner-telegram-video-consent.js'/)
+})
