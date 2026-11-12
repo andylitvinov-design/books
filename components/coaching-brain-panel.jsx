@@ -13,7 +13,7 @@ const copy={
     privacy:'Диалог не сохраняется в истории. Только ваш подтверждённый шаг можно записать в защищённую сессию.',
     label:'Ваше сообщение',placeholder:'Что сейчас важно прояснить?',send:'Отправить',sending:'Думаю…',
     you:'Вы',coach:'AI-коуч',offline:'AI сейчас недоступен · авторский вопрос',
-    ai:'Ответ модели',safety:'Пауза для безопасности',method:'Метод',methodChoice:'Методика',methodAuto:'Выбрать автоматически',hypothesis:'Возможная гипотеза — проверьте',
+    ai:'Ответ модели',wisdom:'Библиотека мудрости',safety:'Пауза для безопасности',method:'Метод',methodChoice:'Методика',methodAuto:'Выбрать автоматически',hypothesis:'Возможная гипотеза — проверьте',
     suggestion:'Возможный следующий шаг (предложение, не решение)',evidence:'Основание — ваши слова',
     decision:'Мой следующий шаг (проверьте и исправьте)',save:'Подтвердить и сохранить шаг',
     saving:'Сохраняем…',saved:'Подтверждённый шаг сохранён в личной сессии',
@@ -28,7 +28,7 @@ const copy={
     privacy:'This conversation is not added to your history. Only a step you confirm can be saved in the private session.',
     label:'Your message',placeholder:'What would you like to understand?',send:'Send',sending:'Thinking…',
     you:'You',coach:'AI coach',offline:'AI unavailable · authored question',
-    ai:'Model reply',safety:'Safety pause',method:'Method',methodChoice:'Method',methodAuto:'Choose automatically',hypothesis:'Tentative hypothesis — please correct',
+    ai:'Model reply',wisdom:'Wisdom Library',safety:'Safety pause',method:'Method',methodChoice:'Method',methodAuto:'Choose automatically',hypothesis:'Tentative hypothesis — please correct',
     suggestion:'Possible next step (suggestion, not a decision)',evidence:'Based on your words',
     decision:'My next step (review and edit)',save:'Confirm and save this step',
     saving:'Saving…',saved:'Your confirmed step was saved in your private session',
@@ -43,7 +43,7 @@ const copy={
     privacy:'Esta conversación no se añade al historial. Solo se guarda el paso que confirmes expresamente.',
     label:'Tu mensaje',placeholder:'¿Qué te gustaría aclarar?',send:'Enviar',sending:'Pensando…',
     you:'Tú',coach:'Coach IA',offline:'IA no disponible · pregunta preparada',
-    ai:'Respuesta del modelo',safety:'Pausa de seguridad',method:'Método',methodChoice:'Método',methodAuto:'Elegir automáticamente',hypothesis:'Hipótesis provisional — corrígela',
+    ai:'Respuesta del modelo',wisdom:'Biblioteca de sabiduría',safety:'Pausa de seguridad',method:'Método',methodChoice:'Método',methodAuto:'Elegir automáticamente',hypothesis:'Hipótesis provisional — corrígela',
     suggestion:'Posible paso siguiente (sugerencia, no decisión)',evidence:'Basado en tus palabras',
     decision:'Mi siguiente paso (revisar y editar)',save:'Confirmar y guardar este paso',
     saving:'Guardando…',saved:'Tu paso confirmado se guardó en tu sesión privada',
@@ -160,7 +160,7 @@ export default function CoachingBrainPanel({locale='en',accountId,sessionId,onCo
           {turns.map((turn,index)=><article key={index} className={turn.role==='user'?styles.user:styles.assistant}>
             <span className={styles.sender}>{turn.role==='user'?t.you:t.coach}</span>
             {turn.role==='assistant'&&<div className={styles.meta}>
-              {turn.mode==='ai'?t.ai:turn.mode==='safety'?t.safety:
+              {turn.mode==='ai'?t.ai:turn.mode==='wisdom'?t.wisdom:turn.mode==='safety'?t.safety:
                 turn.mode==='offline'&&turn.offlineReason?
                   t.offline+' · '+(offlineReasons[lang][turn.offlineReason]||offlineReasons[lang].model_unavailable):t.offline}
               {turn.mode==='ai'&&turn.method&&<> · {t.method}: {methodLabels[turn.method]||turn.method}</>}{turn.phase&&<> · {t.phase}: {t.phases[turn.phase]||turn.phase}</>}
