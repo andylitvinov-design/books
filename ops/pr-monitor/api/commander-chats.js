@@ -99,8 +99,11 @@ module.exports=async function(req,res){
     action='commander_start_run';
     // This project is first-party only. Never forward code execution to legacy Hermes Cloud.
     if(body.executor==='hermes')return sendJson(res,410,{error:'EXTERNAL_HERMES_SERVICE_DISABLED_FIRST_PARTY_ONLY'});
-    if(body.executor==='local'&&body.modelId!=='owned-default')
-      return sendJson(res,400,{error:'OWNED_DIRECTOR_MODEL_REQUIRED'});
+    // Owner-only named models must be exactly an editorially verified :free ID.
+    // The existing Supabase service independently rechecks the live catalogue.
+    if(body.executor==='local'&&body.modelId!=='owned-default'&&
+       !(typeof body.modelId==='string'&&/^[A-Za-z0-9][A-Za-z0-9_.-]*\/[A-Za-z0-9][A-Za-z0-9_.-]*:free$/.test(body.modelId)))
+      return sendJson(res,400,{error:'VERIFIED_FREE_MODEL_REQUIRED'});
     if(body.executor==='hermes'&&(typeof body.modelId!=='string'||!/^[A-Za-z0-9][A-Za-z0-9_.-]*\/[A-Za-z0-9][A-Za-z0-9_.-]*:free$/.test(body.modelId)))
       return sendJson(res,400,{error:'VERIFIED_FREE_MODEL_REQUIRED'});
     if(body.confirmGitHubWrite!==undefined&&typeof body.confirmGitHubWrite!=='boolean')return sendJson(res,400,{error:'INVALID_GITHUB_WRITE_CONSENT'});

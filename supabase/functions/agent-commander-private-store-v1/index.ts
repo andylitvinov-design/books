@@ -902,6 +902,15 @@ async function handler(req){
         requiredBeforeSourceChange:"Resolve live GitHub PR and exact HEAD before any source change."
       };
       const modelId=typeof body.modelId==="string"&&body.modelId.length?clean(body.modelId,120):"owned-default";
+      // Each named run is explicitly chosen by the owner; no generic free-label
+      // can bypass the independent live zero-price text-model catalogue check.
+      if((executor==="local"||executor==="openrouter")&&modelId!=="owned-default"&&modelId!=="openrouter/free"){
+        if(!MODEL_ID.test(modelId))return reply(400,{error:"VERIFIED_FREE_MODEL_REQUIRED"},origin);
+        try{await verifyFreeModel(modelId)}
+        catch(error){return reply(422,{error:"OPENROUTER_FREE_MODEL_UNAVAILABLE",reasonCode:String(error?.message||"FREE_MODEL_NOT_VERIFIED").slice(0,100)},origin)}
+      }
+      if(executor==="local"&&modelId==="openrouter/free")
+        return reply(400,{error:"VERIFIED_FREE_MODEL_REQUIRED"},origin);
       const writeConfirmed=body.confirmGitHubWrite===true;
       const canDispatch=(executor==="local"||executor==="openrouter")&&!writeConfirmed&&openRouterReady;
       let reasonCode="EXECUTOR_TRANSPORT_NOT_CONFIGURED";
@@ -958,7 +967,7 @@ async function handler(req){
         run:{...result.run,status:"QUEUED",reason_code:"OPENROUTER_WORKER_QUEUED",receipt:initialReceipt},
         duplicate:false,dispatchAttempted:false,agentStarted:false,executionVerified:false,
         liveVerified:false,status:"QUEUED",reasonCode:"OPENROUTER_WORKER_QUEUED",
-        model:"openrouter/free",sourceWrite:null,storage:"SUPABASE_PRIVATE"},origin);
+        model:modelId==="owned-default"?"openrouter/free":modelId,sourceWrite:null,storage:"SUPABASE_PRIVATE"},origin);
     }
     if(action==="commander_list_ci_events"){
       const limit=Math.max(1,Math.min(100,Number(body.limit)||30));

@@ -83,7 +83,7 @@ test('server chat refresh is retryable and never silently switches to a local ar
  assert.match(js,/else if\(authorized\)\{await authenticated\(\)/);
  assert.match(js,/A transient API failure must not silently replace server chats/);
  assert.match(js,/Серверное хранилище временно недоступно/);
- assert.ok(html.includes('commander-chats.js?v=20261111-free-quota-rich-v2'));
+ assert.ok(html.includes('commander-chats.js?v=20261112-free-models-quota-rich-v1'));
  assert.match(js,/Проверка защищённого серверного хранилища временно не завершилась/);
  assert.match(js,/if\(statusError\)/);
 });
@@ -185,7 +185,8 @@ test('Commander one-box UX shows the question first and keeps task metadata in a
  assert.ok(js.includes("await send({preventDefault(){}})"));
  assert.ok(js.includes("el('new-context').close()"));
  assert.ok(js.includes("el('history-all').addEventListener('toggle',renderList)"));
- assert.ok(js.includes("await assignSelectedExecutor(c,mode)"));
+ assert.ok(js.includes("await assignSelectedExecutor(c,chosenFreeModel?'local':mode)"),
+   "named :free selection uses existing owner-checked local worker, not a new executor");
  const preferred="el('new-mode').value=ownedDirectorAvailable?'director':(aiReady?'openrouter':'local')";
  assert.equal(js.split(preferred).length-1,2,'authenticated Director default remains set on both initial load and chat creation');
  assert.ok(js.includes("ownedDirectorAvailable=remote&&status.dispatchAvailable===true&&status.dispatchMode==='FIRST_PARTY_AGENT_DIRECTOR'"));
@@ -559,7 +560,7 @@ test('legacy external Hermes code executor is disabled in UI and rejected before
 
 test('CI Inbox displays the shared diagnostic recommendation and retry policy without granting execution authority',()=>{
  const html=src('chats.html'),js=src('commander-chats.js'),css=src('commander-chats.css');
- assert.match(html,/commander-chats\.js\?v=20261111-free-quota-rich-v2/);
+ assert.match(html,/commander-chats\.js\?v=20261112-free-models-quota-rich-v1/);
  assert.match(html,/commander-chats\.css\?v=20261110-rich-markdown-v1/);
  assert.match(js,/event\.classification&&typeof event\.classification==='object'/);
  for(const field of ['recommended_action','recommended_status','reason_code','responsible_role','retry','requires_human','ruleset_version','confidence'])
@@ -571,7 +572,7 @@ test('CI Inbox displays the shared diagnostic recommendation and retry policy wi
 test('owner chat accurately labels first-party OpenRouter Free and translates every fail-closed provider reason',()=>{
  const html=src('chats.html'),js=src('commander-chats.js');
  assert.equal((html.match(/Agents Director · OpenRouter Free \(анализ\)/g)||[]).length,2);
- assert.match(html,/commander-chats\.js\?v=20261111-free-quota-rich-v2/);
+ assert.match(html,/commander-chats\.js\?v=20261112-free-models-quota-rich-v1/);
  assert.match(js,/director:'Agents Director · OpenRouter Free'/);
  for(const code of ['OWNED_MODEL_RUNTIME_NOT_CONFIGURED','OWNED_MODEL_FREE_RATE_LIMIT',
    'OWNED_MODEL_NO_VERIFIED_FREE_MODELS','OWNED_MODEL_COST_UNVERIFIED',
@@ -629,7 +630,7 @@ test("free-model quota is derived from provider key daily request counter, not c
  assert.match(ui,/QUOTA_OPTION_LABELS/);
  assert.match(ui,/SERVER\+"\?action=free_quota"/);
  assert.match(ui,/refreshFreeQuota\(true\)/);
- assert.match(html,/commander-chats\.js\?v=20261111-free-quota-rich-v2/);
+ assert.match(html,/commander-chats\.js\?v=20261112-free-models-quota-rich-v1/);
  const unauth=response();
  await api({method:"GET",url:"/api/commander-chats?action=free_quota",
   headers:{host:"holistic-house-pr-monitor.vercel.app"}},unauth);
@@ -695,4 +696,34 @@ test('historic flattened AI Markdown is recovered without injecting model HTML',
  assert.equal(modern.filter(node=>node.tag==='a').length,1);
  assert.ok(!modern.some(node=>node.tag==='script'));
  assert.ok(modern.some(node=>node.tag==='span'&&node.text?.includes('<script>')));
+});
+
+
+test('one selector supports live-catalog named free models without breaking owner quota and Markdown',()=>{
+ const js=src('commander-chats.js'),api=src('api/commander-chats.js'),html=src('chats.html');
+ const store=src('../../supabase/functions/agent-commander-private-store-v1/index.ts');
+ const worker=src('../../supabase/functions/agent-commander-openrouter-worker/index.ts');
+ assert.match(js,/const FREE_MODEL_MODE='free:'/);
+ assert.match(js,/isVerifiedFreeChoice=mode=>/);
+ assert.match(js,/function refreshFreeChoices\(\)/);
+ assert.match(js,/group\.setAttribute\('data-director-free'/);
+ assert.match(js,/modelsList\.slice\(0,15\)/);
+ assert.match(js,/label\+' — '\+remainingLabel\('director'\)/);
+ assert.match(js,/selectedFreeModel\(mode\)/);
+ assert.match(js,/chosenFreeModel\?\{modelId:chosenFreeModel,confirmGitHubWrite:false\}/);
+ assert.match(js,/executor:mode==='director'\|\|chosenFreeModel\?'local':mode/);
+ assert.match(js,/HH_COMMANDER_QUOTA_MENU_V1/);
+ assert.match(js,/HH_COMMANDER_RICH_MARKDOWN_V1/);
+ assert.match(html,/commander-chats\.js\?v=20261112-free-models-quota-rich-v1/);
+ assert.match(api,/VERIFIED_FREE_MODEL_REQUIRED/);
+ assert.match(api,/name==='free_quota'\)return await freeQuota\(req,res\)/);
+ assert.match(store,/await verifyFreeModel\(modelId\)/);
+ assert.match(store,/HH_COMMANDER_FREE_QUOTA_V1/);
+ assert.match(worker,/model: requestedModel, messages/);
+ assert.match(worker,/actualModel !== requestedModel/);
+ assert.match(worker,/allow_fallbacks: false/);
+ assert.match(worker,/max_price: \{ prompt: 0, completion: 0 \}/);
+ assert.match(worker,/data_collection: "deny"/);
+ assert.match(worker,/cleanMultiline\(assistant\.content/);
+ assert.doesNotMatch(js,/modelId:chosenFreeModel,confirmGitHubWrite:true/);
 });
