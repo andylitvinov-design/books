@@ -328,6 +328,7 @@ export async function POST(request) {
     const spokenDecision=explanation?{...decision,message:explanation}:decision;
     const envelope=prepareNaturalDialogue({
       locale:body.locale,message:body.message,history:body.history,decision:spokenDecision,
+      selectedGoal:goal,
       access:{authenticated:true,ownerScoped:true},
       consent:{ownedInference:allowOwned,browserInference:false,
         agentMemory:Boolean(approvedMemory)},
@@ -362,6 +363,7 @@ export async function POST(request) {
       .slice(0,3).map(({id,kind,href,title})=>({id,kind,href,title}));
     return auth.apply(NextResponse.json({
       status:decision.status, reply:generated.text, modelUsed:generated.modelUsed,
+      mindRole:generated.modelUsed?envelope.mindRole:null,
       source:generated.provider, decision:{status:decision.status,message:decision.message,
         suggestions,question:decision.question||null},
       suggestions, memorySaved:false, userAuthorized:true,
