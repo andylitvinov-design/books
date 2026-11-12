@@ -1972,6 +1972,7 @@ function cleanupFixture({state='closed',sha='b'.repeat(40),created='2026-11-11T1
   actions:{
    listWorkflowRunsForRepo:async()=>({data:{total_count:139,workflow_runs:[run]}}),
    getWorkflowRun:async()=>{calls.runs++;return {data:run};},
+   listJobsForWorkflowRun:async()=>({data:{total_count:0,jobs:[]}}),
    cancelWorkflowRun:async({run_id})=>{calls.cancel.push(run_id);return {status:202};}},
   pulls:{
    list:async()=>{calls.branches++;return {data:unique?[{...pr,merged:undefined}]:[{...pr,merged:undefined},{...pr,number:4371}]};},
@@ -2066,4 +2067,39 @@ test('direct/manual PM, dry-run, completion, unrelated triggers and foreign refs
   assert.equal(mergedCleanup.trustedContext(ctx),false);
  }
  assert.deepEqual(f.calls.cancel,[]);
+});
+
+
+test('GitHub queued cancellation 409 with zero jobs halts after exactly one attempt and preserves a support receipt',async()=>{
+ const f=cleanupFixture();
+ const first=f.run;
+ let sent=0;
+ f.github.rest.actions.listWorkflowRunsForRepo=async()=>({
+  data:{total_count:139,workflow_runs:Array.from({length:30},(_,i)=>({...first,id:1001+i}))}
+ });
+ f.github.rest.actions.getWorkflowRun=async({run_id})=>({data:{...first,id:run_id}});
+ f.github.rest.actions.listJobsForWorkflowRun=async()=>({data:{total_count:0,jobs:[]}});
+ f.github.rest.actions.cancelWorkflowRun=async()=>{sent++;
+  const err=Error('GitHub cancellation conflict');err.status=409;throw err;};
+ const report=await mergedCleanup.runCleanup({github:f.github,context:f.context,
+  observedQueued:139,observedRemaining:4700,now:Date.parse('2026-11-12T18:00:00Z')});
+ assert.equal(sent,1,'do not burn 30+ API requests after a 409');
+ assert.equal(report.cancel_attempts,1);
+ assert.equal(report.eligible,1);
+ assert.equal(report.status,'GITHUB_409_SUPPORT_TRIAGE');
+ assert.deepEqual(report.cancel_accepted,[]);
+ assert.equal(report.non_cancelable.length,1);
+ assert.equal(report.non_cancelable[0].code,'QUEUED_WITH_ZERO_JOBS_CANCEL_409');
+ assert.match(report.non_cancelable[0].url,/actions\/runs\/1001$/);
+});
+test('queued non-cancellable 409 never calls force-cancel and only labels a jobless zombie with proof',async()=>{
+ const f=cleanupFixture();let force=0;
+ f.github.rest.actions.cancelWorkflowRun=async()=>{const err=Error('409');err.status=409;throw err;};
+ f.github.rest.actions.forceCancelWorkflowRun=async()=>{force++;throw Error('should not force');};
+ f.github.rest.actions.listJobsForWorkflowRun=async()=>({data:{total_count:1,jobs:[{id:9,status:'queued'}]}});
+ const r=await mergedCleanup.runCleanup({github:f.github,context:f.context,
+  observedQueued:139,observedRemaining:4700,now:Date.parse('2026-11-12T18:00:00Z')});
+ assert.equal(force,0);
+ assert.equal(r.non_cancelable[0].code,'CANCEL_409_UNVERIFIED');
+ assert.equal(r.cancel_attempts,1);
 });
