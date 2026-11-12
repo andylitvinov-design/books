@@ -2,10 +2,11 @@
 import {cloneElement,isValidElement,useCallback,useEffect,useMemo,useRef,useState} from 'react'
 import {useSearchParams} from 'next/navigation'
 import Link from 'next/link'
-import {ArrowLeft,ArrowRight,Bell,Clock3,Headphones,MessageCircle,PackageCheck,RefreshCw,ShoppingBag,Leaf,Search,SlidersHorizontal,UsersRound,ChevronRight,Sparkles,Newspaper} from 'lucide-react'
+import {ArrowLeft,ArrowRight,Bell,Clock3,Headphones,MessageCircle,PackageCheck,History,SquarePen,ShoppingBag,Leaf,Search,SlidersHorizontal,UsersRound,ChevronRight,Sparkles,Newspaper} from 'lucide-react'
 import PracticeRequestConversation from './practice-request-conversation'
 import MessengerAiWorkspace from './messenger-ai-workspace'
 import MessagesDailyBriefing from './messages-daily-briefing'
+import MessengerGuestGate from './messenger-guest-gate'
 import styles from './messages-orders-clients.module.css'
 
 const TEXT={
@@ -90,8 +91,10 @@ function priceOf(order,t){
     ? new Intl.NumberFormat('en-IE',{maximumFractionDigits:2}).format(Number(r.price))+' '+(r.currency||'EUR')
     :t.noPrice
 }
-export default function MessagesOrdersClients({locale='en',children}){
+export default function MessagesOrdersClients({locale:routeLocale='en',children}){
   const searchParams=useSearchParams()
+  const [locale,setLocale]=useState(routeLocale)
+  useEffect(()=>setLocale(routeLocale),[routeLocale])
   const t=TEXT[locale]||TEXT.en,status=STATES[locale]||STATES.en
   const [section,setSection]=useState(()=>{
     const requested=searchParams.get('section')
@@ -160,7 +163,7 @@ export default function MessagesOrdersClients({locale='en',children}){
       .catch(e=>{if(!controller.signal.aborted){setError(t.error);setSignedOut(e.message==='SIGN_IN_REQUIRED');setOrdersData(null)}})
       .finally(()=>{if(!controller.signal.aborted)setLoading(false)})
     return()=>controller.abort()
-  },[generation,locale])
+  },[generation,routeLocale])
   // Orders failures are not logout; only a verified identity change can reset chat.
   useEffect(()=>{
     if(aiIdentity.status==='authenticated'){
@@ -301,6 +304,17 @@ export default function MessagesOrdersClients({locale='en',children}){
     // Preserve selected client/order and their unsent drafts while changing folders.
     window.history.replaceState(window.history.state,'',url)
   }
+  function chooseLocale(nextLocale){
+    if(!['en','ru','es'].includes(nextLocale))return
+    setLocale(nextLocale)
+    const url=new URL(window.location.href)
+    const localePrefix=/^\/(en|ru|es)(?=\/|$)/
+    if(localePrefix.test(url.pathname)){
+      // Use the App Router-compatible native history API: keep the live chat mounted.
+      url.pathname=url.pathname.replace(localePrefix, `/${nextLocale}`)
+      window.history.replaceState(window.history.state,'',url)
+    }
+  }
   function chooseOrder(id){
     setSelectedId(id)
     const url=new URL(window.location.href)
@@ -308,6 +322,7 @@ export default function MessagesOrdersClients({locale='en',children}){
     else url.searchParams.delete('order')
     window.history.replaceState(window.history.state,'',url)
   }
+  const guestAccess=aiIdentity.status==='guest'
   const clientTab=ordersData?.hasPractice?t.clients:t.conversations
   const detailMode=(section==='orders'&&Boolean(selected))||(section==='clients'&&clientDetailOpen)
   // Load-dependent helper lives inside the active panel, not above the tabs.
@@ -320,8 +335,19 @@ export default function MessagesOrdersClients({locale='en',children}){
         loading="lazy" width="118" height="104" className={styles.introArt}/>
     </div>
   )
-  return <section ref={hubRef} className={styles.root} data-orders-clients-hub
+  return <section ref={hubRef} className={styles.root} lang={locale} data-orders-clients-hub
     data-detail-open={detailMode||undefined} data-section={section}>
+    <div className={styles.languageBar} data-hh-messenger-language-switcher>
+      <span className={styles.languageLabel}>{locale==='ru'?'Язык':locale==='es'?'Idioma':'Language'}</span>
+      <div className={styles.languageOptions} role="group"
+        aria-label={locale==='ru'?'Язык мессенджера':locale==='es'?'Idioma del mensajero':'Messenger language'}>
+        {['en','ru','es'].map(language=><button key={language} type="button"
+          data-hh-messenger-language-option={language}
+          aria-label={language==='en'?'English':language==='ru'?'Русский':'Español'}
+          aria-pressed={locale===language} title={language==='en'?'English':language==='ru'?'Русский':'Español'}
+          onClick={()=>chooseLocale(language)}>{language.toUpperCase()}</button>)}
+      </div>
+    </div>
     <div className={styles.sections} role="tablist" aria-label={t.title} data-chat-top-tabs>
       <button type="button" role="tab" aria-controls="hh-ai-panel" aria-selected={section==='ai'}
         className={styles.aiTab} onClick={()=>chooseSection('ai')}>
@@ -345,27 +371,34 @@ export default function MessagesOrdersClients({locale='en',children}){
         <span><strong>{locale==='ru'?'Новости':locale==='es'?'Noticias':'News'}</strong></span>
       </button>
     </div>
-    <header className={styles.head}>
-      <div><h1>{locale==='ru'?'Мессенджер':locale==='es'?'Mensajero':'Messenger'}</h1><p>{t.subtitle}</p></div>
-      <span className={styles.headerActions}>
-        <Link prefetch={false} className={styles.notificationSettings}
-          href={'/'+(locale==='es'?'en':locale)+'/app/settings#hh-phone-notifications'}
-          aria-label={locale==='ru'?'Уведомления':locale==='es'?'Notificaciones':'Notifications'}
-          title={locale==='ru'?'Уведомления':locale==='es'?'Notificaciones':'Notifications'}>
-          <Bell size={17} aria-hidden="true"/>
-        </Link>
-        <button type="button" onClick={reload} className={styles.refresh}
-          aria-label={t.retry} title={t.retry}>
-          <RefreshCw size={19} aria-hidden="true"/>
+    <header className={styles.head} data-hh-ai-assistant-header>
+      <div><h1>{locale==='ru'?'ИИ-ассистент':locale==='es'?'Asistente IA':'AI Assistant'}</h1>
+        <p>{locale==='ru'?'Спросить · Исследовать · Учиться · Создавать':
+          locale==='es'?'Preguntar · Explorar · Aprender · Crear':'Ask · Explore · Learn · Create'}</p></div>
+      <span className={styles.headerActions} data-hh-ai-assistant-actions>
+        <button type="button" className={styles.notificationSettings}
+          data-hh-ai-chat-history
+          onClick={()=>{chooseSection('ai');window.dispatchEvent(new Event('hh:messenger-open-history'));}}
+          aria-label={locale==='ru'?'История диалогов':locale==='es'?'Historial de conversaciones':'Conversation history'}
+          title={locale==='ru'?'История':locale==='es'?'Historial':'History'}>
+          <History size={19} aria-hidden="true"/>
+        </button>
+        <button type="button" className={styles.refresh}
+          data-hh-ai-new-chat
+          onClick={()=>{chooseSection('ai');window.dispatchEvent(new Event('hh:messenger-new-chat'));}}
+          aria-label={locale==='ru'?'Новый диалог':locale==='es'?'Nuevo chat':'New chat'}
+          title={locale==='ru'?'Новый диалог':locale==='es'?'Nuevo chat':'New chat'}>
+          <SquarePen size={19} aria-hidden="true"/>
         </button>
       </span>
     </header>
     <div id="hh-ai-panel" role="tabpanel" data-hh-messenger-ai hidden={section!=='ai'}>
       <MessengerAiWorkspace key={aiSession} locale={locale}
-          authenticated={aiIdentity.status==='authenticated'} authStatus={aiIdentity.status}
+          onConversationLocaleChange={chooseLocale} authenticated={aiIdentity.status==='authenticated'} authStatus={aiIdentity.status}
           onAuthRetry={retryAiIdentity}/>
     </div>
     <div id="hh-orders-panel" role="tabpanel" className={styles.panel} hidden={section!=='orders'}>
+      {guestAccess?(section==='orders'?<MessengerGuestGate locale={locale} section="orders"/>:null):<>
       {listHelper}
       {!loading&&!error&&orders.length>0&&!selected&&
         <aside className={styles.notifyInvite}>
@@ -480,17 +513,20 @@ export default function MessagesOrdersClients({locale='en',children}){
           <Link href={'/'+(locale==='es'?'en':locale)+'/app/practice'}>{t.myPractice}<ArrowRight size={18}/></Link>
         </div>
       </div>}
+      </>}
     </div>
     <div id="hh-clients-panel" role="tabpanel" className={styles.clients} hidden={section!=='clients'}>
+      {guestAccess?(section==='clients'?<MessengerGuestGate locale={locale} section="clients"/>:null):<>
       {listHelper}
       {clientsVisited&&(isValidElement(children)?cloneElement(children,{
-        onClientsCount:setClientCount,onDetailChange:setClientDetailOpen}):children)}
+        locale,onClientsCount:setClientCount,onDetailChange:setClientDetailOpen}):children)}
+      </>}
     </div>
     <div id="hh-news-panel" role="tabpanel" hidden={section!=='news'}>
-      <MessagesDailyBriefing locale={locale} accountId={aiIdentity.accountId}
+      {guestAccess?(section==='news'?<MessengerGuestGate locale={locale} section="news"/>:null):<MessagesDailyBriefing locale={locale} accountId={aiIdentity.accountId}
         authStatus={aiIdentity.status} active={section==='news'}
         orders={ordersData?.accountId===aiIdentity.accountId?ordersData.orders:null}
-        refreshKey={generation}/>
+        refreshKey={generation}/>}
     </div>
   </section>
 }

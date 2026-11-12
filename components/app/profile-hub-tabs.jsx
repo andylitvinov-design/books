@@ -1,5 +1,6 @@
 import Link from 'next/link'
-import { BookOpen, ClipboardList, FileClock, ListChecks, LockKeyhole, Settings2, Sparkles, UserRound } from 'lucide-react'
+import InstantCabinetLink from './instant-cabinet-link'
+import { Activity, BookOpen, ClipboardList, FileClock, FileText, House, LockKeyhole, ListChecks, Route, Settings2 } from 'lucide-react'
 import { assessmentHistoryTitle } from '@/lib/assessments/personal-guidance'
 import styles from './profile-hub-tabs.module.css'
 
@@ -39,36 +40,172 @@ const COPY = {
   },
 }
 const TABS = [
-  { id: 'create', icon: Sparkles },
-  { id: 'view', icon: UserRound },
-  { id: 'results', icon: ClipboardList },
-  { id: 'settings', icon: Settings2 },
+  { id: 'today', icon: House }, { id: 'tests', icon: ClipboardList },
+  { id: 'state', icon: Activity }, { id: 'path', icon: Route },
+  { id: 'courses', icon: BookOpen }, { id: 'reports', icon: FileText },
 ]
+const STUDIO_COPY = {
+  en: {
+    title: 'My Space', label: 'MY SPACE · PERSONAL GROWTH', settings: 'Settings',
+    tabs: { today: 'Today', tests: 'Tests', state: 'State', path: 'My Path', courses: 'Courses', reports: 'Reports' },
+    hero: 'Your path of growth',
+    intro: 'Discover yourself, notice changes and choose a meaningful next step — at your own pace.',
+    video: 'Scenic introduction to My Space', film: 'Nature film · no narration', route: 'My route',
+    actions: ['Take a test', 'Check my state', 'Continue learning'],
+    privacy: 'Saved results stay in your protected account.',
+    details: { tests: 'Your assessments and chosen tests.', state: 'State check-ins and real saved measurements.', path: 'Verified milestones, goals and personalised learning.', courses: 'Continue your real courses and practices.', reports: 'Saved test attempts and private practitioner reports.' },
+  },
+  ru: {
+    title: 'Моё пространство', label: 'МОЁ ПРОСТРАНСТВО · ЛИЧНОСТНЫЙ РОСТ', settings: 'Настройки',
+    tabs: { today: 'Сегодня', tests: 'Тесты', state: 'Замер', path: 'Мой путь', courses: 'Курсы', reports: 'Отчёты' },
+    hero: 'Мой путь развития',
+    intro: 'Узнавайте себя, замечайте изменения и выбирайте следующий шаг в своём темпе.',
+    video: 'Природное вступление в Моё пространство', film: 'Видео о природе · без озвучивания', route: 'Мой маршрут',
+    actions: ['Пройти тест', 'Оценить состояние', 'Продолжить курс'],
+    privacy: 'Сохранённые результаты остаются в защищённом кабинете.',
+    details: { tests: 'Ваши тесты и выбранные опросники.', state: 'Самонаблюдение и реальные сохранённые замеры.', path: 'Подтверждённые шаги, цели и программа развития.', courses: 'Ваши настоящие курсы и практики.', reports: 'Сохранённые попытки и приватные отчёты специалиста.' },
+  },
+  es: {
+    title: 'Mi espacio', label: 'MI ESPACIO · CRECIMIENTO PERSONAL', settings: 'Ajustes',
+    tabs: { today: 'Hoy', tests: 'Tests', state: 'Estado', path: 'Mi ruta', courses: 'Cursos', reports: 'Informes' },
+    hero: 'Mi camino de crecimiento',
+    intro: 'Conócete, observa tus cambios y elige tu próximo paso a tu ritmo.',
+    video: 'Introducción visual de naturaleza a Mi espacio', film: 'Vídeo de naturaleza · sin narración', route: 'Mi ruta',
+    actions: ['Hacer un test', 'Ver mi estado', 'Seguir aprendiendo'],
+    privacy: 'Tus resultados permanecen en tu cuenta privada.',
+    details: { tests: 'Tus pruebas y cuestionarios.', state: 'Registro personal y mediciones reales.', path: 'Etapas verificadas, metas y desarrollo.', courses: 'Tus cursos y prácticas.', reports: 'Intentos guardados e informes privados.' },
+  },
+}
+// Announced packages are informative until server-authoritative billing verifies prices.
+// Never treat a selected UI card as a paid subscription or confirmed checkout.
+const NEW_PACKAGES = [
+  { key: 'free', amount: 0 },
+  { key: 'practice', amount: 5 },
+  { key: 'master', amount: 20 },
+  { key: 'pro', amount: 40 },
+]
+const SETTINGS_HUB_COPY = {
+  en: { menu: 'Profile sections', pageTitle: 'My profile', account: 'Account & privacy', messenger: 'Messengers', plans: 'Plans',
+    detail: 'Profile details', contacts: 'Telegram & WhatsApp', change: 'Edit', manage: 'Manage',
+    membership: 'Monthly packages', note: 'New package prices. Checkout and access start only after payment-provider confirmation.',
+    name: 'Name', timeZone: 'Time zone', language: 'Language', expand: 'Open settings',
+    top: { create: 'Create', view: 'View', results: 'Results', settings: 'Settings' } },
+  ru: { menu: 'Разделы профиля', pageTitle: 'Мой профиль', account: 'Аккаунт и приватность', messenger: 'Мессенджеры', plans: 'Тарифы',
+    detail: 'Параметры профиля', contacts: 'Telegram и WhatsApp', change: 'Изменить', manage: 'Управлять',
+    membership: 'Тарифы в месяц', note: 'Новые цены. Оплата и доступ подтверждаются только платёжным провайдером.',
+    name: 'Имя', timeZone: 'Часовой пояс', language: 'Язык', expand: 'Открыть настройки',
+    top: { create: 'Создать', view: 'Просмотр', results: 'Результаты', settings: 'Настройки' } },
+  es: { menu: 'Secciones del perfil', pageTitle: 'Mi perfil', account: 'Cuenta y privacidad', messenger: 'Mensajería', plans: 'Planes',
+    detail: 'Datos del perfil', contacts: 'Telegram y WhatsApp', change: 'Editar', manage: 'Gestionar',
+    membership: 'Planes mensuales', note: 'Nuevos precios. El pago y el acceso requieren confirmación del proveedor.',
+    name: 'Nombre', timeZone: 'Zona horaria', language: 'Idioma', expand: 'Abrir ajustes',
+    top: { create: 'Crear', view: 'Ver', results: 'Resultados', settings: 'Ajustes' } },
+}
+const VIDEO = '/videos/holistic-house/film-collection-v3/sun-autumn-hills.mp4'
+const POSTER = '/videos/holistic-house/film-collection-v3/sun-autumn-hills.jpg'
 
-export function ProfileHubTabs({ locale = 'en', active = 'view', resultCount = null }) {
+export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = null, account = null, publicEntry = false }) {
   const selected = COPY[locale] ? locale : 'en'
-  const t = COPY[selected]
-  // The protected Cabinet has an EN fallback for ES; the public builder is fully ES-localized.
+  const t = STUDIO_COPY[selected]
+  // Existing protected Cabinet uses EN fallback for ES; do not introduce a new account.
   const accountLocale = selected === 'es' ? 'en' : selected
-  const paths = {
-    create: '/' + selected + '/personality-profiles',
-    view: '/' + accountLocale + '/app/portrait',
-    results: '/' + accountLocale + '/app/portfolio',
-    settings: '/' + accountLocale + '/app/settings',
+  const root = '/' + accountLocale + '/app'
+  const privatePaths = {
+    today: root + '/portrait?space=today',
+    tests: root + '/tests',
+    state: root + '/monitoring',
+    path: root + '/portrait?space=path',
+    courses: root + '/course?view=courses',
+    reports: root + '/portrait?space=reports',
   }
-  return <section className={styles.hub} data-profile-hub-tabs data-profile-active={active}>
-    <div className={styles.heading}>
-      <div><p className={styles.eyebrow}>{t.eyebrow}</p><h2>{t.title}</h2><p>{t.intro}</p></div>
-      {Number.isInteger(resultCount) && <span className={styles.count}><ListChecks size={16} aria-hidden="true" />{resultCount} {t.count}</span>}
-    </div>
-    <nav className={styles.tabs} aria-label={t.navigation}>
-      {TABS.map(({ id, icon: Icon }) => <Link key={id} href={paths[id]} prefetch={false}
-        data-profile-tab={id} aria-current={active === id ? 'page' : undefined}
-        className={active === id ? styles.current : styles.tab}>
+  // Guest Profile never initiates account reads just by visiting or changing tabs.
+  const paths = publicEntry ? { ...privatePaths,
+    today: root + '/portrait',
+    tests: '#profile-free-tests',
+    state: '/' + selected + '/client?startTests=state',
+    path: '/' + selected + '/personality-profiles',
+    courses: '/' + selected + '/academy',
+  } : privatePaths
+  const current = active === 'view' ? 'today' : active === 'results' ? 'reports' : active
+  const settingsMode = current === 'settings'
+  const s = SETTINGS_HUB_COPY[selected]
+  return <section className={styles.hub} data-profile-hub-tabs data-profile-active={current}>
+    <header className={styles.heading}>
+      <div><p className={styles.eyebrow}>{t.label}</p><h2>{settingsMode ? s.pageTitle : t.title}</h2></div>
+      {!settingsMode && <InstantCabinetLink href={root + '/settings'} prefetch={false} className={styles.settings}>
+        <Settings2 size={17} aria-hidden="true" />{t.settings}
+      </InstantCabinetLink>}
+    </header>
+    <nav className={settingsMode ? styles.settingsTabs : styles.tabs} aria-label={settingsMode ? s.menu : COPY[selected].navigation}>
+      {settingsMode ? [
+        { id: 'create', href: '/' + selected + '/personality-profiles' },
+        { id: 'view', href: paths.today },
+        { id: 'results', href: paths.reports },
+        { id: 'settings', href: root + '/settings' },
+      ].map(item => <InstantCabinetLink key={item.id} href={item.href} prefetch={false}
+        aria-current={item.id === 'settings' ? 'page' : undefined} className={item.id === 'settings' ? styles.current : styles.tab}>
+        {s.top[item.id]}
+      </InstantCabinetLink>) : TABS.map(({ id, icon: Icon }) => <InstantCabinetLink key={id} href={paths[id]} prefetch={false}
+        data-profile-tab={id} aria-current={current === id ? 'page' : undefined}
+        className={current === id ? styles.current : styles.tab}>
         <Icon size={20} strokeWidth={1.9} aria-hidden="true" /><span>{t.tabs[id]}</span>
-      </Link>)}
+        {id === 'tests' && Number.isInteger(resultCount) && resultCount > 0 &&
+          <span className={styles.resultBadge} aria-label={resultCount + ' ' + COPY[selected].count}>{resultCount}</span>}
+      </InstantCabinetLink>)}
     </nav>
-    {active === 'create' && <p className={styles.hint}>{t.creationHint}</p>}
+    {(current === 'today' || settingsMode) && <>
+      <div className={styles.hero} data-profile-video-hero>
+        <h1 className={styles.srOnly}>{t.hero}</h1>
+        <div className={styles.videoFrame}>
+          <video controls playsInline preload="none" poster={POSTER} aria-label={t.video}>
+            <source src={VIDEO} type="video/mp4" />
+            <track kind="captions" src="/videos/holistic-house/profile-scenic.en.vtt" srcLang="en" label="English" />
+          </video>
+        </div>
+        {settingsMode ? <nav className={styles.settingsQuickActions} data-profile-settings-actions aria-label={s.menu}>
+          <a href="#hh-settings-account">{s.detail}</a>
+          <a href="#hh-settings-messengers">{s.messenger}</a>
+          <a href="#hh-settings-plans">{s.plans}</a>
+        </nav> : <nav className={styles.quickActions} data-profile-quick-actions aria-label={t.label}>
+          <InstantCabinetLink href={paths.path} prefetch={false} className={styles.primaryQuickAction}><Route size={19} aria-hidden="true" />{t.route}</InstantCabinetLink>
+          <InstantCabinetLink href={paths.tests} prefetch={false}><ClipboardList size={19} aria-hidden="true" />{t.actions[0]}</InstantCabinetLink>
+          <InstantCabinetLink href={paths.state} prefetch={false}><Activity size={19} aria-hidden="true" />{t.actions[1]}</InstantCabinetLink>
+          <InstantCabinetLink href={paths.courses} prefetch={false}><BookOpen size={19} aria-hidden="true" />{t.actions[2]}</InstantCabinetLink>
+        </nav>}
+        <p className={styles.srOnly}>{t.privacy}</p>
+      </div>
+    </>}
+    {settingsMode && <section className={styles.settingsOverview} data-profile-settings-overview aria-label={s.account}>
+      <div className={styles.settingsIdentity} id="hh-settings-overview-account">
+        <div className={styles.settingsCardHeading}>
+          <h3>{s.account}</h3>
+          <a href="#hh-settings-account">{s.change}</a>
+        </div>
+        <div className={styles.accountDetails}>
+          <span><small>{s.name}</small><strong>{account?.displayName || '—'}</strong></span>
+          <span><small>{s.timeZone}</small><strong>{account?.timezone || '—'}</strong></span>
+          <span><small>{s.language}</small><strong>{selected.toUpperCase()}</strong></span>
+        </div>
+      </div>
+      <div className={styles.connectionOverview}>
+        <h3>{s.contacts}</h3>
+        <a href="#hh-settings-messengers">Telegram <span>{s.manage}</span></a>
+        <a href="#hh-settings-messengers">WhatsApp <span>{s.manage}</span></a>
+      </div>
+      <div className={styles.packagesOverview} id="hh-settings-overview-plans">
+        <div className={styles.settingsCardHeading}><h3>{s.membership}</h3><a href="#hh-settings-plans">{s.expand}</a></div>
+        <div className={styles.packagesGrid}>{NEW_PACKAGES.map(item =>
+          <a key={item.key} href="#hh-settings-plans" className={styles.packageCard} data-package={item.key}>
+            <strong>{item.key.charAt(0).toUpperCase() + item.key.slice(1)}</strong>
+            <span>€{item.amount} <small>/ {selected === 'ru' ? 'мес' : selected === 'es' ? 'mes' : 'mo'}</small></span>
+          </a>)}</div>
+        <p className={styles.packageFinePrint}>{s.note}</p>
+      </div>
+    </section>}
+    {current !== 'today' && current !== 'create' && !settingsMode && !publicEntry && <div className={styles.sectionIntro}>
+      <h1>{t.tabs[current] || t.title}</h1><p>{t.details[current] || t.privacy}</p>
+    </div>}
+    {current === 'create' && <p className={styles.hint}>{COPY[selected].creationHint}</p>}
   </section>
 }
 

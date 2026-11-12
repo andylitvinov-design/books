@@ -167,3 +167,59 @@
 .pmCopy strong{font-size:14px;line-height:1.25}
 .pmCopy small{font-size:11px;line-height:1.35;color:#cbb8e4}
 .pmArrow{font-size:26px;color:#d7b3ff}
+
+/* Evidence gaps are visible, never an unearned successful agent badge. */
+.auditGap{padding:12px 13px;border-radius:12px;border:1px solid rgba(218,164,125,.4);
+ background:rgba(103,66,56,.24);font-size:12px;color:#f5d8c7;line-height:1.45;margin:0 0 12px}
+
+/* Owner-invoked bounded multi-task selection and factual execution receipts. */
+.batchArea{display:grid;gap:8px}
+.batchHint{margin:2px 0 4px;color:var(--cc-muted);font-size:12px}
+.batchRow{display:flex;align-items:stretch;gap:8px;min-width:0}
+.batchRow>.taskCard{flex:1;min-width:0;width:auto;margin:0;align-self:stretch}
+.batchCheck{display:flex;align-items:center;justify-content:center;flex:0 0 44px;min-width:44px;min-height:54px;
+ border-radius:12px;border:1px solid var(--cc-edge);background:rgba(255,255,255,.05);cursor:pointer}
+.batchCheck input{width:19px;height:19px;accent-color:#bb91f5;cursor:pointer}
+.batchCheck input:disabled{opacity:.4;cursor:not-allowed}
+.batchExec{display:grid;gap:11px;margin:8px 0 12px;border:1px solid rgba(172,121,245,.38);
+ border-radius:17px;background:rgba(42,36,63,.8);padding:14px}
+.batchExec label{color:#f0e1ff;font-size:13px;font-weight:760}
+.batchExec select,.batchHandoff{width:100%;min-width:0;min-height:46px;padding:11px 12px;
+ background:#1c2031;color:#fff;border:1px solid #65537d;border-radius:11px;font:inherit;font-size:13px}
+.batchHandoff{resize:vertical;min-height:160px;line-height:1.45;overflow-wrap:anywhere}
+.batchReceipt{display:grid;gap:5px;padding:12px;border:1px solid var(--cc-edge);border-radius:12px}
+.batchReceipt strong{font-size:13px}.batchReceipt p{font-size:12px;overflow-wrap:anywhere;margin:0;color:#cabddb}
+
+
+/* Agent Commander PR Watch — lives within existing Agents tab, above fixed bottom dock. */
+.prWatchPanel{padding:15px;margin:0 0 14px;border:1px solid rgba(180,133,248,.26);border-radius:17px;
+ background:linear-gradient(150deg,rgba(44,35,73,.91),rgba(25,30,49,.97));overflow-wrap:anywhere}
+.prWatchTop{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.prWatchTop h2{font-size:16px;margin:0 0 5px;line-height:1.25}
+.prWatchTop strong{color:#d7baff;background:rgba(149,95,213,.18);padding:6px 9px;border-radius:9px;white-space:nowrap;font-size:12px}
+.prWatchPanel h3{font-size:13px;margin:14px 0 10px;color:#e0d5fc}
+.prWatchPolicy{font-size:11px;color:#b5bed8;line-height:1.5;margin:9px 0 12px}
+.prWatchList{display:grid;gap:9px}
+.prWatchRow{padding:12px;border:1px solid rgba(255,255,255,.11);background:rgba(14,20,39,.55);border-radius:13px}
+.prWatchLine{display:flex;justify-content:space-between;align-items:center;gap:9px;margin-bottom:7px;font-size:12px}
+.prWatchLine strong{font-size:12px;line-height:1.4;min-width:0}
+.prWatchLine a{white-space:nowrap;flex-shrink:0;color:#d3b7ff;text-decoration:underline}
+.prWatchEnabled,.prWatchDisabled{font-size:10px;line-height:1.3;border-radius:8px;padding:4px 6px;flex-shrink:0}
+.prWatchEnabled{color:#73e7b3;background:#173d37}.prWatchDisabled{color:#bac1d9;background:#34384b}
+.prWatchTiming{font-size:10px;line-height:1.5;color:#adb6d0;margin:5px 0 10px}
+.prWatchActions{display:flex;gap:8px;flex-wrap:wrap}
+.prWatchActions button{min-height:43px;padding:8px 12px;flex:1;white-space:normal;font-size:12px}
+.prWatchAssign{border-top:1px solid rgba(255,255,255,.12);margin-top:14px;padding-top:8px;display:grid;gap:9px}
+.prWatchAssign select{width:100%;min-width:0;min-height:43px;color:#f6f1ff;background:#252b41;border:1px solid #756496;border-radius:10px;padding:7px}
+.prWatchAssign button{min-height:44px}
+.prWatchHistory{border-top:1px solid rgba(255,255,255,.12);padding-top:12px;margin-top:15px;font-size:11px;color:#c5cae0}
+.prWatchHistory summary{cursor:pointer;min-height:33px;font-size:12px;font-weight:700}
+.prWatchHistory p{margin:7px 0;line-height:1.45;overflow-wrap:anywhere}
+.prWatchNotice{font-size:12px;color:#f9c9b1;margin:9px 0 0}
+
+/* Protected, user-approved cross-domain draft import; full prompt is read-only, not silently truncated. */
+.importedPrompt{display:grid;gap:9px;border:1px solid #7b65a4;border-radius:12px;padding:12px;background:#24223e;color:#eee7ff}
+.importedPrompt summary{cursor:pointer;font-weight:750;font-size:13px;min-height:28px}
+.importedPrompt p{margin:8px 0;font-size:12px;line-height:1.5;color:#cec3df}
+.importedPrompt textarea{min-height:160px;max-height:290px;resize:vertical;font-size:12px;font-family:ui-monospace,monospace;line-height:1.5}
+.importedPrompt button{margin-top:8px}

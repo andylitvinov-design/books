@@ -129,27 +129,59 @@ try {
       document.querySelector('[data-mandala-free-video]')?.getAttribute('data-video-studio-hydrated')==='true',
       undefined,{timeout:40000});
   }
-  // Visitor route: Goals → Ideas → Montage Text → Add video.
-  // Never force a hidden "All stories" button. Keep all subsequent real
-  // four-shot, duration, WAV, video/audio and FFprobe requirements unchanged.
+  // Visitor route: Goals → Ideas → Montage Style → Settings deep Concept → verified timeline.
+  // Use the real visitor actions; do not bypass hydration, rights, or editor.
   const continueToIdeas=page.locator('[data-video-continue-scenarios]');
   await continueToIdeas.waitFor({state:'visible',timeout:40000});
   await continueToIdeas.click();
   const ideas=page.locator('[data-video-quick-control="phrases"]');
   assert.equal(await ideas.getAttribute('aria-pressed'),'true','GOALS_MUST_OPEN_IDEAS');
-  await page.locator('[data-video-quick-control="editor"]').click();
-  // The real Style panel owns the visible green Next CTA. Avoid clicking a
-  // second legacy/hideable Text tab before the visitor progresses naturally.
-  const styleNext=page.locator('[data-video-montage-effects] [data-video-montage-next="text"]');
-  await styleNext.waitFor({state:'visible',timeout:20000});
-  await styleNext.click();
-  // A real Safari pointer action can resolve before React commits its
-  // workspace state. Poll the actual DOM; do not simulate or force a tap.
+  const editorTab=page.locator('[data-video-quick-control="editor"]');
+  await editorTab.click();
   await page.waitForFunction(()=>
-    document.querySelector('[data-video-montage-tab="text"]')
+    document.querySelector('[data-video-quick-control="editor"]')
       ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
+  assert.equal(await page.locator('[data-video-montage-tab="effects"]').getAttribute('aria-pressed'),
+    'true','MONTAGE_MUST_START_WITH_STYLE');
+  const montageStyle=page.locator('[data-video-montage-tab="effects"]');
+  await montageStyle.waitFor({state:'visible',timeout:20000});
+  await montageStyle.click();
+  await page.waitForFunction(()=>{
+    const studio=document.querySelector('[data-mandala-free-video]');
+    const style=document.querySelector('[data-video-montage-tab="effects"]');
+    const panel=document.querySelector('[data-video-basic-editor]');
+    return studio?.getAttribute('data-active-workspace')==='editor' &&
+      panel?.getAttribute('data-montage-panel')==='effects' &&
+      style?.getAttribute('aria-pressed')==='true';
+  },undefined,{timeout:15000});
+  assert.equal(await editorTab.getAttribute('aria-pressed'),'true','MONTAGE_TAB_MUST_ACTIVATE');
+  // Only a physical Next action advances the real Style → Text stage.
+  const styleNext=page.locator('[data-video-montage-effects] [data-video-montage-next="text"]');
+  await styleNext.waitFor({state:'visible',timeout:15000});
+  await styleNext.click();
+  await page.waitForFunction(()=>document.querySelector('[data-video-montage-tab="text"]')
+    ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
   assert.equal(await page.locator('[data-video-montage-tab="text"]').getAttribute('aria-pressed'),
     'true','VISIBLE_STYLE_NEXT_MUST_OPEN_TEXT');
+  // Concept is reviewed in Ideas, not in the removed Montage Concept panel.
+  await page.locator('[data-video-quick-control="phrases"]').click();
+  await page.locator('[data-video-ideas-tab="concept"]').click();
+  const concept=page.locator('[data-video-ideas-concept-panel]');
+  await concept.waitFor({state:'visible',timeout:15000});
+  await concept.locator('[data-video-concept-approve]').click();
+  await page.locator('[data-video-quick-control="editor"]').click();
+  await page.locator('[data-video-montage-tab="concept"]').click();
+  await page.locator('[data-video-story-open-settings]').click();
+  await page.locator('[data-video-quick-control="phrases"]').click();
+  await page.locator('[data-video-ideas-tab="concept"]').click();
+  assert.equal(await page.locator('[data-video-concept-auto]').getAttribute('data-concept-approved'),
+    'true','GUEST_APPROVAL_MUST_SURVIVE_TAB_NAVIGATION');
+  await page.locator('[data-video-quick-control="editor"]').click();
+  await page.locator('[data-video-montage-tab="concept"]').click();
+  await page.locator('[data-video-story-open-settings]').click();
+  const textTools=page.locator('[data-video-concept-text-tools]');
+  await textTools.locator(':scope > summary').click();
+  await textTools.evaluate(node=>{if(!node.open)throw Error('CONCEPT_TEXT_TOOLS_DID_NOT_OPEN')});
   const addVideo=page.locator('[data-video-timeline-add-video]');
   await addVideo.waitFor({state:'visible',timeout:20000});
   await addVideo.click();
@@ -172,15 +204,46 @@ try {
     (document.querySelector('[data-first-video-prompt]')?.value?.length || 0) > 60,
     undefined, {timeout: 25000});
   assert.ok((await prompt.inputValue()).length > 60, 'PROMPT_NOT_PERSONALIZED');
-  // Separate the quick-format UI from the actual media export. A broken or
-  // occluded quick button must not prevent probing the real rendering path.
-  row.quickPortraitButtonCount = await first.locator('[data-first-video-quick-aspect="portrait"]').count();
-  await first.locator('[data-first-video-filters] > summary').click();
-  await first.locator('[data-first-video-aspect]').selectOption('portrait');
+  // Validate the REAL visible mobile aspect action. Safari can restore an
+  // already-open <details>; blindly clicking summary then hid its select.
+  const portrait=first.locator('[data-first-video-quick-aspect="portrait"]');
+  row.quickPortraitButtonCount=await portrait.count();
+  assert.equal(row.quickPortraitButtonCount,1,'MOBILE_ASPECT_CONTROL_MISSING');
+  row.phase='portrait-real-click';
+  await portrait.click();
+  row.phase='portrait-selection-confirmation';
+  // Verify React committed the selection on the actual visible, hydrated
+  // first-video widget, not another hidden or detached mobile host.
+  try {
+    await page.waitForFunction(()=>[...document.querySelectorAll(
+      '[data-first-free-video][data-first-video-hydrated="true"]'
+    )].some(root=>root.getClientRects().length>0&&
+      root.querySelector('[data-first-video-quick-aspect="portrait"]')
+        ?.getAttribute('aria-pressed')==='true'),undefined,{timeout:15000});
+  } catch {throw Error('LIVE_VIDEO_PORTRAIT_SELECTION_NOT_REFLECTED');}
+  // Advanced settings remain genuine native select interactions. Open the
+  // disclosure only if closed; never force-select a hidden/disabled field.
+  const filters=first.locator('[data-first-video-filters]');
+  const openFilters=async()=>{
+    row.phase='native-filters-opening';
+    await filters.waitFor({state:'visible',timeout:15000});
+    if(!await filters.evaluate(element=>element instanceof HTMLDetailsElement&&element.open))
+      await filters.locator(':scope > summary').click();
+    const fieldset=filters.locator('fieldset');
+    await fieldset.waitFor({state:'visible',timeout:15000});
+    assert.equal(await fieldset.isEnabled(),true,'LIVE_VIDEO_FILTERS_DISABLED');
+    assert.equal(await filters.evaluate(element=>element.open),true,
+      'LIVE_VIDEO_FILTERS_NOT_OPEN');
+    row.phase='native-filters-ready';
+  };
+  await openFilters();
   assert.equal(await first.locator('[data-first-video-aspect]').inputValue(),
-    'portrait', 'PORTRAIT_NOT_SELECTED');
+    'portrait','PORTRAIT_NOT_SELECTED');
   await first.locator('[data-first-video-duration]').selectOption('20');
+  await openFilters();
   await first.locator('[data-first-video-music]').selectOption('meditation');
+  assert.equal(await first.locator('[data-first-video-music]').inputValue(),
+    'meditation','MEDITATION_MUSIC_NOT_SELECTED');
   assert.equal(await first.locator('[data-first-video-ai-consent]').isChecked(), false,
     'SYNTHETIC_LIVE_SMOKE_SHOULD_NOT_SEND_AI');
   let licensedSources=[];
@@ -336,6 +399,20 @@ try {
             })),
             progress:Number(progress?.getAttribute('aria-valuenow')||0),
             hadResult:Boolean(document.querySelector('[data-mandala-video-download]')),
+            // Structure-only diagnostic: never capture audio, transcript or text.
+            firstVideoWidgets:[...document.querySelectorAll('[data-first-free-video]')].slice(0,3)
+              .map(root=>({
+                hydrated:root.getAttribute('data-first-video-hydrated')==='true',
+                visible:root.getClientRects().length>0,
+                portraitPressed:root.querySelector('[data-first-video-quick-aspect="portrait"]')
+                  ?.getAttribute('aria-pressed')==='true',
+                filtersOpen:Boolean(root.querySelector('[data-first-video-filters]')?.open),
+                filtersDisabled:root.querySelector('[data-first-video-filters] fieldset')
+                  ?.disabled??null,
+              })),
+            advancedOpen:Boolean(document.querySelector('[data-video-first-video-advanced]')?.open),
+            activeWorkspace:document.querySelector('[data-mandala-free-video]')
+              ?.getAttribute('data-active-workspace')||null,
           };
         }),
         new Promise((_,reject)=>setTimeout(()=>reject(Error('WEBKIT_MEDIA_DIAGNOSTIC_TIMEOUT')),3000)),
@@ -346,6 +423,7 @@ try {
   }
   if(safeEncoderCodes.length)row.encoderFailureCodes=[...safeEncoderCodes];
   console.error(source===LIVE_ORIGIN?'LIVE_FIRST_VIDEO_REAL_EXPORT_FAIL':'LOCAL_FIRST_VIDEO_REAL_EXPORT_FAIL', row.failure);
+  if(row.phase)console.error('WEBKIT_MOVIE_EXPORT_LAST_PHASE',row.phase);
   if(row.exportDiagnostic)console.error('WEBKIT_MOVIE_EXPORT_SAFE_DIAGNOSTIC',JSON.stringify(row.exportDiagnostic));
   if(row.encoderFailureCodes)console.error('WEBKIT_MOVIE_ENCODER_CODES',row.encoderFailureCodes.join(','));
   process.exitCode = 1;

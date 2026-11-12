@@ -184,3 +184,34 @@ test('WebKit rapid About-to-Tantra forward requires real old-document RSC proven
     {stack:'Fetch API cannot load https://other.test/?_rsc=probe due to access control checks.'},
   ]) assert.equal(classifyCspNavigationCancellation({...err,...change},info),null);
 });
+
+test('Telegram anonymous GET is allowed ONLY when exact old Tantra document abort is proven', () => {
+  const url = origin + '/api/public/telegram-diagnostic';
+  const tantra = origin + '/en/academy/reiki/tantra-reiki';
+  const about = origin + '/en/about';
+  const trace = [
+    {type:'init',time:1,documentProbe:'tantra',url:tantra},
+    {type:'navigate',time:95,documentProbe:'tantra',url:tantra,documentClass:'tantra-media',sameDocument:true,navigationType:'traverse',destination:about},
+    {type:'navigate',time:100,documentProbe:'tantra',url:about,documentClass:'tantra-media',sameDocument:false,navigationType:'replace',destination:about},
+    {type:'pagehide',time:110,documentProbe:'tantra'},
+    {type:'init',time:125,documentProbe:'about',url:about},
+  ];
+  const fetch=[{type:'fetch-start',path:'/api/public/telegram-diagnostic',rsc:false,documentProbe:'tantra',time:102}];
+  const err={...diagnostic(url,105),phase:'back-from-tantra'};
+  const info={...detail,lifecycle:trace,fetchTelemetry:fetch};
+  assert.equal(classifyCspNavigationCancellation(err,info)?.kind,'webkit-hard-navigation-fetch-cancellation');
+  for(const variant of [
+    {...info,fetchTelemetry:[]},
+    {...info,fetchTelemetry:[{...fetch[0],documentProbe:'about'}]},
+    {...info,fetchTelemetry:[{...fetch[0],path:'/api/app/guest/bootstrap'}]},
+    {...info,fetchTelemetry:[{...fetch[0],time:106}]},
+    {...info,lifecycle:trace.filter(event=>event.type!=='pagehide')},
+    {...info,lifecycle:[...trace,{type:'policy-violation',documentProbe:'tantra',time:104}]},
+    {...info,readiness:'loaded-history'}, {...info,engine:'chromium'},
+    {...info,lifecycle:trace.map(e=>e.type==='navigate'&&!e.sameDocument?{...e,navigationType:'push'}:e)},
+  ]) assert.equal(classifyCspNavigationCancellation(err,variant),null);
+  for(const wrong of [url+'?token=secret',url+'?_rsc=x','https://elsewhere.test/api/public/telegram-diagnostic'])
+    assert.equal(classifyCspNavigationCancellation({...err,stack:diagnostic(wrong,105).stack},info),null);
+  for(const time of [99,110,125])
+    assert.equal(classifyCspNavigationCancellation({...err,time},info),null);
+});

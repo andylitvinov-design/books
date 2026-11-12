@@ -5,6 +5,9 @@ import Link from 'next/link';
 import {suggestCommandTask,ownerTaskActions} from '@/lib/command-center/mobile-intake.mjs';
 import styles from './command-center-mobile.module.css';
 import CommandCenterVoiceButton from './command-center-voice-button';
+import CommandCenterBatch from './command-center-batch';
+import CommandCenterPrWatch from './command-center-pr-watch';
+import {attachCommanderDraftReceiver} from '@/lib/command-center/task-transfer-receiver.mjs';
 
 const labels={
  ru:{home:'Главная',tasks:'Задачи',agents:'Агенты',projects:'Проекты',hello:'Мой брифинг',subtitle:'Проекты и агенты · фактический статус',
@@ -19,7 +22,7 @@ const labels={
    current:'Текущий этап',iterations:'Итераций',history:'История выполнений',noRuns:'Пока нет запусков',notKnown:'Нет подтверждения',
    ready:'Готова к запуску',running:'Выполняется',needsSpec:'Нужен исполнитель',stopped:'Остановлена',
    verifiedMetadata:'Данные GitHub проверены',noRuntime:'Исполнитель для кода пока не подключён',
-   noLive:'LIVE ещё не подтверждён',prOpened:'PR открыт',prMerged:'PR смержен',prWaiting:'PR ещё не найден',
+   noLive:'LIVE ещё не подтверждён',needsEvidence:'Нет независимого подтверждения',missingProofCount:'Задачи без доказательств',prOpened:'PR открыт',prMerged:'PR смержен',prWaiting:'PR ещё не найден',
    status:'Статус',start:'Запустить безопасную проверку',pause:'Приостановить проверки',
    resume:'Включить проверки',disabled:'Запуск пока недоступен',readOnly:'Только проверка GitHub',
    unavailable:'Хранилище задач недоступно. Не удалось подтвердить изменения.',
@@ -43,7 +46,7 @@ const labels={
    needsSetup:'Needs setup',view:'Details',accepted:'Accepted',executor:'Agent',pr:'PR',tests:'Tests',live:'LIVE',
    current:'Current stage',iterations:'Iterations',history:'Execution history',noRuns:'No runs yet',notKnown:'Not verified',
    ready:'Ready',running:'In progress',needsSpec:'No executor',stopped:'Stopped',verifiedMetadata:'GitHub data verified',
-   noRuntime:'Coding runtime is not connected',noLive:'LIVE has not been verified',prOpened:'PR opened',
+   noRuntime:'Coding runtime is not connected',noLive:'LIVE has not been verified',needsEvidence:'No independent verification receipt',missingProofCount:'Tasks without evidence',prOpened:'PR opened',
    prMerged:'PR merged',prWaiting:'PR not linked',status:'Status',start:'Run safe check',pause:'Pause checks',
    resume:'Enable checks',disabled:'Execution unavailable',readOnly:'GitHub read-only',
    unavailable:'Task storage unavailable; changes could not be confirmed.',retry:'Retry permitted task',
@@ -68,7 +71,7 @@ const labels={
    current:'Estado',iterations:'Intentos',history:'Historial',noRuns:'Sin ejecuciones',
    notKnown:'Sin verificar',ready:'Lista',running:'En curso',needsSpec:'Sin ejecutor',
    stopped:'Detenida',verifiedMetadata:'Datos de GitHub verificados',
-   noRuntime:'No hay ejecutor de código',noLive:'LIVE sin verificar',
+   noRuntime:'No hay ejecutor de código',noLive:'LIVE sin verificar',needsEvidence:'Sin comprobante independiente',missingProofCount:'Tareas sin pruebas',
    prOpened:'PR abierto',prMerged:'PR integrado',prWaiting:'PR sin vincular',status:'Estado',
    start:'Ejecutar revisión segura',pause:'Pausar',resume:'Activar revisiones',disabled:'No disponible',
    readOnly:'GitHub de solo lectura',unavailable:'Almacenamiento no disponible.',
@@ -87,6 +90,11 @@ const deliveryNextLabels={
  en:{inspect_again:'Repeat the evidence check',closed_without_merge:'PR was closed without merge',repair_checks:'Repair failed CI checks',wait_checks:'Wait for running CI',review_protected_merge:'Review protected PR merge',check_ci_evidence:'Verify CI evidence on current HEAD',check_functional_live:'Test the feature on LIVE',verify_deployment_identity:'Verify production deployment SHA',await_verified_deployment:'Check production deployment'},
  es:{inspect_again:'Repetir verificación',closed_without_merge:'PR cerrado sin integrar',repair_checks:'Corregir pruebas CI fallidas',wait_checks:'Esperar las pruebas CI',review_protected_merge:'Revisar integración protegida',check_ci_evidence:'Verificar CI del commit actual',check_functional_live:'Probar función en producción',verify_deployment_identity:'Verificar SHA del despliegue',await_verified_deployment:'Verificar despliegue de producción'}
 };
+const transferLabels={
+ ru:{notice:'Черновик получен с отдельного Agent Commander. Проверьте данные и сохраните задачу вручную.',heading:'Полный промпт для исполнителя',explain:'База задач хранит описание до 800 символов. Краткая версия ниже будет сохранена по вашему нажатию; полный промпт пока доступен только здесь для копирования.',copy:'Копировать полный промпт',copied:'Полный промпт скопирован.',failed:'Копирование недоступно — выделите текст вручную.'},
+ en:{notice:'Draft received from standalone Agent Commander. Review before saving.',heading:'Full executor prompt',explain:'Task storage currently limits descriptions to 800 characters. The short version below is saved only after your click; copy the full prompt here.',copy:'Copy full prompt',copied:'Full prompt copied.',failed:'Copy unavailable. Select text manually.'},
+ es:{notice:'Borrador recibido. Revísalo antes de guardarlo.',heading:'Prompt completo',explain:'La base admite descripciones de 800 caracteres. La versión corta solo se guarda al confirmar; copia el prompt completo aquí.',copy:'Copiar prompt completo',copied:'Prompt copiado.',failed:'No se pudo copiar. Selecciona el texto manualmente.'}
+};
 const blockedStates=new Set(['needs_spec','blocked_dependency','blocked_no_runner','blocked_external','blocked_approval','blocked_budget','dead_letter']);
 const runningStates=new Set(['running','awaiting_evidence','retry_wait','ready','planned']);
 const verifiedStates=new Set(['completed_verified','completed_live']);
@@ -94,9 +102,9 @@ const safe=(value,max=180)=>typeof value==='string'?value.trim().slice(0,max):''
 const isTrustedEvidenceUrl=value=>typeof value==='string'&&/^https:\/\/github\.com\/andylitvinov-design\/books\/(pull|issues)\/[1-9]\d{0,7}$/.test(value);
 const date=value=>{if(!value)return '—';try{return new Intl.DateTimeFormat('ru-RU',{timeZone:'America/Toronto',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}).format(new Date(value));}catch{return '—';}};
 const glyph={home:'⌂',tasks:'☑',agents:'♧',projects:'▦'};
-function stateLabel(state,t){
+function stateLabel(state,t,hasEvidence=false){
  if(state==='completed_live')return 'LIVE ✓';
- if(verifiedStates.has(state))return t.verifiedMetadata;
+ if(state==='completed_verified')return hasEvidence===true?t.verifiedMetadata:t.needsEvidence;
  if(state==='running')return t.running;
  if(state==='ready'||state==='retry_wait')return t.ready;
  if(blockedStates.has(state))return t.needsSpec;
@@ -116,6 +124,8 @@ export default function CommandCenterMobile({lang='ru',initialSnapshot=null,regi
  const [draft,setDraft]=useState(''),[details,setDetails]=useState(''),[source,setSource]=useState(''),[kind,setKind]=useState('code_change'),
    [project,setProject]=useState(''),[priority,setPriority]=useState('65'),[projectName,setProjectName]=useState(''),[projectSummary,setProjectSummary]=useState('');
  const [busy,setBusy]=useState(false),[notice,setNotice]=useState(''),[confirmCancel,setConfirmCancel]=useState(null);
+ const [importedPrompt,setImportedPrompt]=useState('');
+ const transferText=transferLabels[lang]||transferLabels.ru;
  const [deliveryCheck,setDeliveryCheck]=useState(null);
  const enabled=Boolean(snapshot?.settings?.enabled&&envReady),available=Boolean(snapshot);
  const tasks=snapshot?.tasks||[],projects=snapshot?.projects||[],runs=snapshot?.runs||[],evidences=snapshot?.evidence||[],slots=snapshot?.slots||[];
@@ -130,6 +140,12 @@ export default function CommandCenterMobile({lang='ru',initialSnapshot=null,regi
   const timer=setInterval(()=>{if(!document.hidden)refresh();},45000);
   return ()=>{document.removeEventListener('visibilitychange',onFocus);clearInterval(timer);};
  },[refresh]);
+ useEffect(()=>attachCommanderDraftReceiver(task=>{
+  // No source write: import only opens this existing owner-authenticated composer.
+  setDraft(task.title);setDetails(task.description);setImportedPrompt(task.fullPrompt);
+  setSource('');setKind('code_change');setProject('');setPriority('65');
+  setTab('tasks');setSelected(null);setComposer(true);setNotice(transferText.notice);
+ }),[transferText.notice]);
  useEffect(()=>{if(!composer&&!projectComposer)return;
   const previous=document.body.style.overflow;
   document.body.style.overflow='hidden';
@@ -159,7 +175,7 @@ export default function CommandCenterMobile({lang='ru',initialSnapshot=null,regi
   if(title.length<6){setNotice(t.taskText);return;}
   const description=safe(details,800)||title+(title.length<10?' — '+t.details:'');
   const result=await send('create_task',{title,description,kind,projectId:project||null,sourceRef:safe(source)||null,priority:Number(priority)});
-  if(result){setComposer(false);setDraft('');setDetails('');setSource('');
+  if(result){setComposer(false);setDraft('');setDetails('');setSource('');setImportedPrompt('');
     setNotice(result.status==='already_exists'?t.alreadyExists:t.saved);
     setTab('tasks');setFilter('all');if(result.task?.id)setSelected(result.task.id);}
  };
@@ -181,9 +197,10 @@ export default function CommandCenterMobile({lang='ru',initialSnapshot=null,regi
  const prMatched=Boolean(selectedTask?.source_ref?.includes('/pull/'));
  const merged=selectedProof?selectedProof.prState==='merged':Boolean(observed?.merged);
  const agentActive=Boolean(selectedTask?.state==='running');
+ const verifiedTask=selectedTask?.state==='completed_verified'&&selectedTask?.has_evidence===true;
  const phases=[
   {label:t.accepted,ok:Boolean(selectedTask),current:false},
-  {label:t.executor,ok:agentActive||verifiedStates.has(selectedTask?.state),current:agentActive},
+  {label:t.executor,ok:agentActive||verifiedTask,current:agentActive},
   {label:t.pr,ok:prMatched&&Boolean(latestEvidence),current:prMatched&&!latestEvidence},
   {label:t.tests,ok:selectedProof?.ci==='passed',current:false},
   {label:t.live,ok:selectedTask?.state==='completed_live',current:false}
@@ -191,8 +208,8 @@ export default function CommandCenterMobile({lang='ru',initialSnapshot=null,regi
  const count=(fn)=>tasks.filter(fn).length;
  const taskCard=(v,i)=> <button key={v.id} type="button" className={styles.taskCard} onClick={()=>setSelected(v.id)}>
   <span className={styles.rank}>{i+1}</span><span className={styles.taskCopy}><strong>{v.title}</strong>
-  <small>{projects.find(p=>p.id===v.project_id)?.title||t.chooseProject} · {stateLabel(v.state,t)} {v.attempt_count>0?'· '+v.attempt_count+'×':''}</small></span>
-  <span className={blockedStates.has(v.state)?styles.bad:verifiedStates.has(v.state)?styles.good:styles.purple} aria-hidden="true">●</span>
+  <small>{projects.find(p=>p.id===v.project_id)?.title||t.chooseProject} · {stateLabel(v.state,t,v.has_evidence)} {v.attempt_count>0?'· '+v.attempt_count+'×':''}</small></span>
+  <span className={blockedStates.has(v.state)?styles.bad:verifiedStates.has(v.state)&&v.has_evidence===true?styles.good:styles.purple} aria-hidden="true">●</span>
   </button>;
  const tabs=[['home',t.home],['tasks',t.tasks],['plus',t.plus],['agents',t.agents],['projects',t.projects]];
  return <div className={styles.app} lang={lang} data-hh-command-center-mobile>
@@ -204,7 +221,7 @@ export default function CommandCenterMobile({lang='ru',initialSnapshot=null,regi
   <main className={styles.main}>
    {selectedTask? <section className={styles.detail}>
     <button type="button" className={styles.back} onClick={()=>setSelected(null)}>‹ {t.tasks}</button>
-    <p className={styles.overline}>{t.status} · {stateLabel(selectedTask.state,t)}</p>
+    <p className={styles.overline}>{t.status} · {stateLabel(selectedTask.state,t,selectedTask.has_evidence)}</p>
     <h1>{selectedTask.title}</h1><p className={styles.summary}>{selectedTask.description}</p>
     <div className={styles.chips}><span>{projects.find(p=>p.id===selectedTask.project_id)?.title||t.chooseProject}</span>
      <span>P{selectedTask.priority}</span><span>{selectedTask.kind}</span></div>
@@ -288,9 +305,17 @@ export default function CommandCenterMobile({lang='ru',initialSnapshot=null,regi
    tab==='tasks'?<section className={styles.section}><div className={styles.heading}><h1>{t.tasks}</h1><span>{snapshot?.partial?tasks.length+'+':snapshot?.brief?.total??tasks.length}</span></div>
      <div className={styles.filters}>{[['all',t.all],['active',t.active],['blocked',t.blocked]].map(([value,label])=>
        <button type="button" key={value} onClick={()=>setFilter(value)} className={filter===value?styles.selectedFilter:''}>{label}</button>)}</div>
-     {visibleTasks.map(taskCard)}{!visibleTasks.length&&<div className={styles.empty}>{t.noTasks}</div>}
+     <CommandCenterBatch key={filter} lang={lang} tasks={visibleTasks} projects={projects}
+      available={available} enabled={enabled} busy={busy}
+      onRun={taskIds=>send('run_selected_safe',{taskIds})}
+      onOpen={id=>setSelected(id)}/>
     </section>:
    tab==='agents'?<section className={styles.section}><div className={styles.heading}><h1>{t.agents}</h1><span>{registry.length}</span></div>
+    <div className={styles.panel}><h2>⏱ {lang==='ru'?'Автоматизации · Cron Jobs':lang==='es'?'Automatizaciones · Cron Jobs':'Automations · Cron Jobs'}</h2><p className={styles.muted}>{lang==='ru'?'Читать и изменять инструкции, создавать задания с навыками и памятью агента':lang==='es'?'Ver, editar y crear tareas programadas con habilidades y memoria':'Read, edit and create scheduled tasks with skills and agent memory'}</p><a className={styles.github} href="/admin/command-center/automations">{lang==='ru'?'Открыть автоматизации':lang==='es'?'Abrir automatizaciones':'Open automations'} ↗</a></div>
+    <CommandCenterPrWatch lang={lang} tasks={tasks} watch={snapshot?.prWatch} busy={busy}
+      available={available} onSet={(taskId,enabled)=>send('watch_set',{taskId,enabled})}
+      onCheck={taskId=>send('watch_check',{taskId})}/>
+    {snapshot?.brief?.missingProof>0&&<p className={styles.auditGap} role="status">⚠ {t.missingProofCount}: {snapshot.brief.missingProof}</p>}
     {registry.map(a=><div key={a.id} className={styles.agentCard}><span className={styles.agentIcon}>{a.id.includes('github')?'⌘':a.id.includes('codex')?'◇':'✧'}</span>
       <div><strong>{a.id}</strong><small>{a.role}</small><small>{a.status==='not_connected'?t.noAgents:a.status==='manual_only'?t.manual:enabled?t.activeAgent:t.pausedAgent}</small></div>
       <span className={a.status==='available_when_enabled'&&enabled?styles.greenDot:styles.greyDot}>●</span></div>)}
@@ -350,8 +375,17 @@ export default function CommandCenterMobile({lang='ru',initialSnapshot=null,regi
           if(suggestion.kind&&kind==='code_change')setKind(suggestion.kind);}
        }} rows={3}/>
       <CommandCenterVoiceButton lang={lang} onTranscript={spoken=>setDraft(previous=>safe((previous?previous+' ':'')+spoken,140))}/>
-      <label htmlFor="cc-extra">{t.description}</label><textarea id="cc-extra" maxLength={800} value={details}
+      <label htmlFor="cc-extra">{t.description}</label><textarea id="cc-extra" maxLength={2000} value={details}
         onChange={e=>setDetails(e.target.value)} rows={2}/>
+      {importedPrompt&&<details className={styles.importedPrompt} open>
+       <summary>{transferText.heading}</summary><p>{transferText.explain}</p>
+       <textarea readOnly rows={8} aria-label={transferText.heading} value={importedPrompt}/>
+       <button type="button" className={styles.secondary} onClick={async()=>{
+        try{if(!navigator.clipboard?.writeText)throw Error('NO_CLIPBOARD');
+         await navigator.clipboard.writeText(importedPrompt);setNotice(transferText.copied)}
+        catch{setNotice(transferText.failed)}
+       }}>{transferText.copy}</button>
+      </details>}
       <div className={styles.formSplit}><div><label htmlFor="cc-project">{t.project}</label><select id="cc-project" value={project} onChange={e=>setProject(e.target.value)}>
        <option value="">{t.chooseProject}</option>{projects.map(p=><option key={p.id} value={p.id}>{p.title}</option>)}</select></div>
        <div><label htmlFor="cc-priority">{t.priority}</label><select id="cc-priority" value={priority} onChange={e=>setPriority(e.target.value)}>

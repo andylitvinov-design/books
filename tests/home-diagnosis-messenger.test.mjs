@@ -10,7 +10,7 @@ const endpoint = read("app/api/service-enquiries/route.js");
 const intake = read("lib/practitioners/public-service-enquiry.js");
 const classifier = read("lib/practitioners/public-service-enquiry-input.mjs");
 
-test("free-review messenger choices save a consented contact-only enquiry before handoff", () => {
+test("legacy contact-first guest capture is gated; signed messenger is the public route", () => {
   assert.match(banner, /const contact = parseReplyContact\(address\)/);
   assert.match(banner, /if \(!contact\).*return;/);
   assert.match(banner, /if \(!consent\).*return;/);
@@ -22,7 +22,10 @@ test("free-review messenger choices save a consented contact-only enquiry before
   assert.doesNotMatch(banner, /sendBeacon|localStorage|google-analytics|facebook\.com/);
   assert.match(endpoint, /requireSameOrigin\(request, config\)/);
   assert.match(endpoint, /consumeRate\(config, \{ op: 'guest-service-enquiry', ip \}, 6, 3600\)/);
-  assert.match(intake, /if \(contact && !crmEnabled\(\)\)/);
+  assert.match(intake, /if \(\(contact\|\|linkedTelegram\) && !crmEnabled\(\)\)/);
+  assert.match(intake, /if \(websiteMessengerOnly\(\) && !linkedTelegram\)/);
+  assert.match(banner, /hidden=\{!open \|\| websiteMessengerOnlyUi\(\)\}/);
+  assert.match(banner, /MandatoryMessengerActions/);
   assert.match(intake, /insert into app\.public_service_enquiries/);
   assert.match(intake, /insert into app\.crm_contacts/);
   assert.match(intake, /on conflict do nothing/);

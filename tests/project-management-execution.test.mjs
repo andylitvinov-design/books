@@ -43,3 +43,27 @@ test('ChatGPT Work handoff is copyable but not evidence of execution',()=>{
  assert.match(text,/No new paid services/);
  assert.doesNotMatch(text,/Bearer |HH_AUTOMERGE_TOKEN/);
 });
+
+test('selected awaiting-evidence code tasks can re-enter only a verified RED repair',()=>{
+ assert.equal(admit({task:{...task,state:'awaiting_evidence'}}).ok,true);
+ for(const state of ['blocked_external','completed_verified','completed_live'])
+  assert.equal(admit({task:{...task,state}}).ok,false,state);
+ assert.equal(admit({task:{...task,state:'awaiting_evidence',option_state:'proposed'}}).ok,false);
+ assert.equal(admit({task:{...task,state:'awaiting_evidence'},
+  pr:{...pr,labels:[...pr.labels,{name:'hh:repair-manual'}]}}).ok,false);
+});
+test('newer GREEN or PENDING exact-HEAD Core blocks an old failed attempt',()=>{
+ const red={...checks.check_runs[0],created_at:'2026-11-07T16:00:00Z',
+  started_at:'2026-11-07T16:00:01Z',completed_at:'2026-11-07T16:02:00Z'};
+ const green={...red,id:1235,conclusion:'success',
+  created_at:'2026-11-07T16:03:00Z',started_at:'2026-11-07T16:03:05Z',
+  completed_at:'2026-11-07T16:04:00Z'};
+ const pending={...green,id:1236,status:'in_progress',conclusion:null,
+  created_at:'2026-11-07T16:05:00Z',started_at:'2026-11-07T16:05:10Z',completed_at:null};
+ const result=arr=>admit({checks:{total_count:arr.length,check_runs:arr}});
+ assert.equal(result([red,green]).reason,'NO_VERIFIED_FAILED_EXACT_HEAD_CORE');
+ assert.equal(result([green,red]).reason,'NO_VERIFIED_FAILED_EXACT_HEAD_CORE');
+ assert.equal(result([red,pending]).reason,'CURRENT_EXACT_HEAD_CORE_PENDING');
+ assert.equal(result([red]).ok,true);
+ assert.equal(result([red,{...green,head_sha:'b'.repeat(40)}]).ok,true);
+});

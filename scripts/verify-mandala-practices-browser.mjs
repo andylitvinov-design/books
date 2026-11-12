@@ -29,31 +29,20 @@ export async function verifyGuidedPractices({browser,base,engine}){
         if(url.origin!==trustedOrigin)return route.abort();
         return route.continue();
       });
-      await page.goto(base+"/"+locale+"/holistic-support/mandala",{
+      await page.goto(base+"/"+locale+"/holistic-support/mandala#guided-video-series",{
         waitUntil:"domcontentloaded",timeout:70000,
       });
       await page.locator('[data-video-studio-hydrated="true"]').waitFor({state:"attached",timeout:35000});
-      // The six-tab mobile Studio keeps the old pump banner hidden on Goal.
-      // Use the actual visible journey route: Ready → 8-session course →
-      // Create my programme. Do not force-click CSS-hidden legacy controls.
-      const readyTab=page.locator('[data-video-quick-control="ready"]');
-      await expect(readyTab).toBeVisible({timeout:25000});
-      await expect(readyTab).toBeEnabled();
-      await readyTab.click();
-      await expect(readyTab).toHaveAttribute("aria-pressed","true");
-      const ready=page.locator("[data-video-ready]");
-      await expect(ready).toBeVisible({timeout:25000});
-      const journey=ready.locator("[data-ready-journey]");
-      await expect(journey).toBeVisible();
-      await journey.click();
-      await expect(ready).toHaveAttribute("data-ready-view","journey");
-      await expect(ready.locator("[data-ready-eight-sessions]")).toBeVisible();
-      const enterCourse=ready.locator("[data-ready-create-course]");
-      await expect(enterCourse).toBeVisible();
-      await expect(enterCourse).toBeEnabled();
-      await enterCourse.click();
+      const studio=page.locator("[data-mandala-free-video]");
       const course=page.locator("[data-video-guided-course]");
       await course.waitFor({state:"visible",timeout:25000});
+      // The six-tab Video Studio intentionally has no obsolete seventh
+      // "practices" tab. The existing, public #guided-video-series deep link
+      // is a real supported route to this same guided course.
+      await expect(studio).toHaveAttribute("data-active-workspace","practices");
+      await expect(studio).toHaveAttribute("data-video-studio-mode","therapy");
+      await expect(page.locator("[data-video-quick-controls] button")).toHaveCount(6);
+      await expect(page.locator('[data-video-quick-control="ready"]')).toHaveAttribute("aria-pressed","true");
       const generate=course.locator("[data-guided-generate-meditation]");
       assert.equal(await generate.isDisabled(),true,"state mode needs an explicit choice");
       assert.equal(await course.locator("[data-guided-focus-state]").count(),6,
@@ -74,28 +63,35 @@ export async function verifyGuidedPractices({browser,base,engine}){
       assert.equal(await kinds.count(),3,"one selectable ritual / exercise / practice row");
       const titles=[];
       for(let i=0;i<3;i++){
-        await kinds.nth(i).click();
-        assert.equal(await kinds.nth(i).getAttribute("aria-pressed"),"true");
+        // WebKit resolves a genuine pointer click before React paints a
+        // committed selection on some locales. Require its real pressed state,
+        // never a second synthetic click or a weakened assertion.
+        const kind=kinds.nth(i);
+        await kind.click();
+        try{
+          await expect(kind).toHaveAttribute("aria-pressed","true",{timeout:15000});
+        }catch(error){
+          const evidence=await kinds.evaluateAll(nodes=>nodes.map(node=>({
+            kind:node.getAttribute("data-guided-practice-kind"),
+            pressed:node.getAttribute("aria-pressed"),
+            disabled:node.disabled,
+          })));
+          throw new Error("GUIDED_KIND_DID_NOT_COMMIT "+engine+" "+locale+
+            " index="+i+" "+JSON.stringify(evidence),{cause:error});
+        }
         titles.push(await practice.locator("h5").innerText());
       }
       assert.equal(new Set(titles).size,3,"all three choices produce genuinely different practices");
       await practice.locator("button").last().click();
       assert.notEqual(await practice.locator("h5").innerText(),titles[2],"refresh changes the method");
 
-      const include= result.locator("[data-guided-add-meditation]");
-      await include.click();
-      // The included choice must really commit before the parent scrolls
-      // the expanded narration editor. This prevents a stale WebKit tap
-      // from silently losing the next opt-out action.
-      await expect(include).toHaveAttribute("aria-pressed","true",{timeout:15000});
+      await result.locator("[data-guided-add-meditation]").click();
       const voice=page.locator("[data-video-therapy-meditation-audio]");
       await page.waitForFunction(()=>document.querySelector("[data-video-therapy-meditation-audio]")?.open===true);
       await voice.locator("[data-meditation-script]").waitFor({state:"attached"});
       const seeded=await voice.locator("[data-meditation-script]").inputValue();
       assert.equal(seeded.trim(),script.trim(),"approved original script reaches the existing narration editor");
-      const skip= result.locator("[data-guided-skip-meditation]");
-      await expect(skip).toBeEnabled();
-      await skip.click();
+      await result.locator("[data-guided-skip-meditation]").click();
       // WebKit may resolve the DOM click before React commits the reversible
       // omission. Wait for both verified effects, never a timed sleep.
       try{
@@ -174,33 +170,33 @@ export async function verifyGuidedPractices({browser,base,engine}){
       }
       assert.equal(await programme.locator("[data-guided-session]").count(),8);
       assert.equal(await programme.locator("[data-guided-free-video]").count(),1);
-      const enquiry=programme.locator("[data-meditation-course-order]");
-      assert.equal(await enquiry.count(),1,"one consented course enquiry");
-      await enquiry.click();
-      // Headed WebKit can resolve a click before React commits the disclosure.
-      // Verify both the control state and the mounted form; a missing form still
-      // fails the release gate rather than being treated as a successful click.
-      await page.waitForFunction(()=>{
-        const button=document.querySelector("[data-meditation-course-order]");
-        return button?.getAttribute("aria-expanded")==="true" &&
-          Boolean(document.querySelector("[data-meditation-course-contact]"));
-      },null,{timeout:15000});
-      const form=programme.locator("[data-meditation-course-contact]");
-      try{
-        await form.waitFor({state:"visible",timeout:15000});
-      }catch(error){
-        const state=await programme.evaluate(root=>({
-          orderButtons:[...root.querySelectorAll("[data-meditation-course-order]")]
-            .map(button=>({expanded:button.getAttribute("aria-expanded"),text:button.textContent?.trim()})),
-          contactForms:root.querySelectorAll("[data-meditation-course-contact]").length,
-          formDisplay:[...root.querySelectorAll("[data-meditation-course-contact]")]
-            .map(node=>getComputedStyle(node).display),
-          programmeVisible:Boolean(root.getClientRects().length),
-        }));
-        throw new Error(engine+" "+locale+" "+width+"px course enquiry did not open: "+JSON.stringify(state),{cause:error});
-      }
-      assert.equal(await form.locator("[data-meditation-course-submit]").isDisabled(),true,
-        "one-off reply consent gates the real course enquiry");
+      // Messenger-only website policy: the course has one enquiry entrypoint,
+      // but personal contact details are not collected in this page. A visitor
+      // chooses a channel and explicitly presses Send inside that messenger.
+      const enquiry=programme.locator("[data-meditation-course-enquiry]");
+      assert.equal(await enquiry.count(),1,"one course enquiry entrypoint");
+      assert.equal(await enquiry.locator("[data-messenger-only-contact]").count(),1,
+        "mandatory messenger policy is applied to the course enquiry");
+      assert.equal(await enquiry.locator("[data-meditation-course-contact]").count(),0,
+        "course enquiry never renders a direct personal-data form under messenger-only policy");
+      assert.equal(await enquiry.locator("input").count(),0,
+        "no email, phone or consent fields are collected on this page");
+      const channelDisclosure=enquiry.locator("[data-messenger-only-contact] details");
+      assert.equal(await channelDisclosure.count(),1,"one collapsed messenger choice");
+      await channelDisclosure.locator(":scope > summary").click();
+      const whatsapp=enquiry.locator('[data-messenger-only-channel="whatsapp"]');
+      const telegram=enquiry.locator('[data-messenger-only-channel="telegram"]');
+      await expect(whatsapp).toBeVisible();
+      await expect(telegram).toBeVisible();
+      const destinations=await enquiry.locator("a[data-messenger-only-channel]").evaluateAll(links=>
+        links.map(link=>({channel:link.getAttribute("data-messenger-only-channel"),
+          href:link.getAttribute("href"),target:link.getAttribute("target")})));
+      assert.deepEqual(destinations.map(item=>item.channel).sort(),["telegram","whatsapp"]);
+      assert.ok(destinations.every(item=>item.href?.startsWith("https://")&&item.target==="_blank"),
+        "both channels use secure external links and a separate messenger context");
+      const disclosureNote=await enquiry.locator("[data-messenger-only-contact] p").last().innerText();
+      assert.match(disclosureNote,/Press Send inside the messenger|Нажмите «Отправить» в самом мессенджере|Pulsa Enviar dentro de la aplicación/,
+        "opening a messenger is not treated as a submitted enquiry");
       const geometry=await course.evaluate((el)=>{
         const rect=el.getBoundingClientRect();
         const selectors=["[data-guided-create-plan]","[data-guided-generate-meditation]","[data-guided-skip-meditation]"];

@@ -1,0 +1,55 @@
+.launch{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  min-height:32px;padding:5px 10px;border:1px solid #cde5d9;
+  background:#e5f5ef;color:#176a58;border-radius:99px;
+  font-size:11px;font-weight:750;white-space:nowrap;cursor:pointer;
+}
+.launch:disabled{opacity:.55;cursor:not-allowed}
+.dialog{
+  position:fixed;inset:0;margin:auto;box-sizing:border-box;max-width:min(440px,96vw);
+  width:min(440px,96vw);max-height:min(92dvh,790px);padding:18px 17px;
+  overflow-y:auto;border:1px solid #d8e7db;border-radius:25px;
+  background:#fffcf7;color:#143d3a;box-shadow:0 25px 90px #122f2b3b;
+  overscroll-behavior:contain;
+}
+.dialog::backdrop{background:rgba(10,31,29,.64);backdrop-filter:blur(5px)}
+.head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.head small{font-size:10px;font-weight:750;letter-spacing:.1em;color:#48826b}
+.head h2{font-size:22px;line-height:1.2;margin:5px 0 12px;color:#143d3a}
+.icon{background:#edf6ed;border:0;border-radius:100%;width:36px;height:36px;display:grid;place-items:center;color:#205b4e;cursor:pointer}
+.disclosure{font-size:14px;line-height:1.6;color:#365b53}
+.subtle{font-size:12px;line-height:1.45;color:#617d70}
+.mainAction{width:100%;min-height:52px;border:0;border-radius:17px;background:#067a67;color:white;font-weight:750;display:flex;align-items:center;justify-content:center;gap:9px;cursor:pointer}
+.topControls{display:flex;gap:10px;align-items:center;justify-content:space-between;margin:9px 0 14px}
+.topControls label{font-size:12px;font-weight:700;color:#466c5a}
+.topControls select{min-height:39px;padding:5px 11px;border:1px solid #ccddd1;border-radius:13px;color:#143d3a;background:white}
+.avatar{display:grid;place-items:center;margin:5px auto 8px;height:126px;width:126px;border-radius:50%;background:radial-gradient(circle at 35% 20%,#effff5,#b1ddcb 65%,#3d9b83);box-shadow:0 8px 26px rgba(24,97,71,.14)}
+.pulse{height:83px;width:83px;display:grid;place-items:center;border:1px solid #eafcf4;border-radius:50%;background:#fff9;color:#146955}
+.avatar[data-voice-phase="speaking"] .pulse,.avatar[data-voice-phase="listening"] .pulse{animation:voiceBreathe 1.7s ease-in-out infinite}
+@keyframes voiceBreathe{50%{transform:scale(1.08);opacity:.75}}
+.phase{text-align:center;font-weight:750;color:#23675a;margin:5px 0 12px}
+.interim{max-height:55px;overflow:hidden;color:#5d796b;text-align:center;font-size:13px;margin:0 0 10px}
+.reply{margin:8px 0 14px;border:1px solid #dae9da;border-radius:16px;background:#f1f8f2;padding:10px 12px;max-height:160px;overflow-y:auto}
+.reply strong{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#3a7866}
+.reply p{margin:6px 0 0;line-height:1.45;font-size:14px;overflow-wrap:anywhere}
+.controls{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:13px 0}
+.controls button{border:1px solid #d1e2d7;border-radius:15px;min-height:64px;padding:8px 2px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;color:#23675a;background:#eff7f1;cursor:pointer}
+.controls button span{font-size:10px;line-height:1.15;text-align:center;font-weight:650}
+.controls button:disabled{opacity:.42;cursor:not-allowed}
+.composer{margin:11px 0 0}
+.composer label{display:block;margin-bottom:5px;font-size:12px;font-weight:650;color:#426b58}
+.composer>div{display:flex;gap:7px}
+.composer input{min-width:0;width:100%;min-height:45px;padding:0 13px;border:1px solid #d2e2d6;border-radius:13px;background:white;color:#143d3a;font:inherit;font-size:15px}
+.composer button{min-height:45px;min-width:46px;border:0;background:#067a67;border-radius:13px;display:grid;place-items:center;color:white;cursor:pointer}
+.composer button:disabled{background:#a5bfb4}
+.error{color:#9c3232;font-size:13px;line-height:1.4}
+.end{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;min-height:42px;margin-top:13px;border:1px solid #d4e3d8;border-radius:14px;color:#47685d;background:white;font-weight:700;cursor:pointer}
+.privacy{text-align:center;color:#6e8175;font-size:11px;margin:12px 0 0;line-height:1.35}
+.dialog :is(button,input,select):focus-visible,.launch:focus-visible{outline:3px solid #176e6e;outline-offset:3px}
+@media(max-width:390px){.launchText{display:none}.launch{min-width:34px;padding:5px}}
+@media(max-width:370px){
+ .dialog{max-width:99vw;width:99vw;padding:14px 12px;border-radius:19px}
+ .head h2{font-size:19px}.controls{gap:4px}
+ .controls button span{font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){.avatar .pulse{animation:none!important}}

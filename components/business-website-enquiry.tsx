@@ -10,13 +10,16 @@ import type { BusinessLocale } from "@/data/business-consulting-copy";
 import { PhoneCountryInput } from "@/components/phone-country-input";
 import { parseBusinessReplyContact } from "@/lib/business-consulting/intake-policy";
 import styles from "./business-website-enquiry.module.css";
+import {MandatoryMessengerActions} from "@/components/mandatory-messenger-actions";
+import {websiteMessengerOnlyUi} from "@/lib/crm/website-messenger-only.mjs";
+import {whatsappEnquiryUrl} from "@/lib/whatsapp-enquiry";
 
 type Format = "free" | "express" | "full" | "mentoring";
 
 const translations = {
   en: {
     eyebrow:"DIRECT TO ANDREY", title:"Request a consultation",
-    lead:"Choose a format and leave a contact. Andrey replies personally. No payment or confirmed booking here.",
+    lead:"Choose a consultation format, then write to Andrey via Telegram or WhatsApp. No booking or payment is confirmed.",
     format:"Consultation",formatNames:{free:"Free written review",express:"30 minutes · €50",full:"60 minutes · €100",mentoring:"Goals Mentoring · by arrangement"},
     name:"Your name",namePlaceholder:"How should I address you?",
     contact:"How should Andrey reply?",email:"Email",whatsapp:"WhatsApp",contactPlaceholder:"name@example.com or +1 416 555 1234",
@@ -32,7 +35,7 @@ const translations = {
   },
   ru: {
     eyebrow:"НАПРЯМУЮ АНДРЕЮ",title:"Запросить консультацию",
-    lead:"Выберите формат и оставьте контакт. Андрей ответит лично. Это не запись и не оплата.",
+    lead:"Выберите формат и напишите Андрею в Telegram или WhatsApp. Запись и оплата не подтверждаются автоматически.",
     format:"Формат",formatNames:{free:"Бесплатный письменный разбор",express:"30 минут · €50",full:"60 минут · €100",mentoring:"Goals Mentoring · по договорённости"},
     name:"Ваше имя",namePlaceholder:"Как к вам обращаться?",
     contact:"Как вам ответить?",email:"Email",whatsapp:"WhatsApp",contactPlaceholder:"name@example.com или +1 416 555 1234",
@@ -48,7 +51,7 @@ const translations = {
   },
   es: {
     eyebrow:"DIRECTO A ANDREY",title:"Solicitar una consulta",
-    lead:"Elige una modalidad y deja un contacto. Andrey responderá personalmente. Sin pago ni reserva confirmada.",
+    lead:"Elige un formato y escribe por Telegram o WhatsApp. No se confirma ninguna reserva ni pago.",
     format:"Modalidad",formatNames:{free:"Revisión escrita gratuita",express:"30 minutos · €50",full:"60 minutos · €100",mentoring:"Goals Mentoring · por acuerdo"},
     name:"Tu nombre",namePlaceholder:"¿Cómo te llamas?",
     contact:"¿Cómo deseas recibir respuesta?",email:"Correo",whatsapp:"WhatsApp",contactPlaceholder:"nombre@ejemplo.com o +1 416 555 1234",
@@ -143,6 +146,17 @@ export function BusinessWebsiteEnquiry({locale}:{locale:BusinessLocale}) {
     }catch{setError(t.error)}
     finally{setBusy(false)}
   }
+  if (websiteMessengerOnlyUi()) return <section className={styles.panel}
+      id="business-direct-request" data-business-website-enquiry data-messenger-only-intake lang={locale}>
+    <h2>{t.title}</h2><p>{t.lead}</p>
+    <label>{t.format}<select data-business-field="format" value={format}
+      onChange={event=>setFormat(event.target.value as Format)}>
+      {Object.entries(t.formatNames).map(([value,name])=><option key={value} value={value}>{name}</option>)}
+    </select></label>
+    <MandatoryMessengerActions locale={locale} label={t.formatNames[format]} collapsed
+      whatsappUrl={whatsappEnquiryUrl({locale,service:"Business consulting · "+t.formatNames[format],
+        request:"Please contact me about this consultation.",pagePath:"/"+locale+"/services/business-consulting"})}/>
+  </section>;
   return <section className={styles.panel} id="business-direct-request" data-business-website-enquiry aria-labelledby="business-website-title">
     <p className={styles.eyebrow}>{t.eyebrow}</p>
     <h2 id="business-website-title">{t.title}</h2>

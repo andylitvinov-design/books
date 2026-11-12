@@ -6,8 +6,9 @@ import {readProjectManagement,createEpic,proposeEpicOptions,selectEpicOption,
  linkTaskPR,pmTaskSource,pmExecutionTask,pmExecutionHistory,
  reservePmExecution,settlePmExecution,cancelPmFutureAttempts} from '@/lib/project-management/store.mjs';
 import {inspectCommandTaskDelivery} from '@/lib/command-center/release-proof.mjs';
+import {verifyPmSourceReceipts,signedCandidateSha} from '@/lib/project-management/source-receipts.mjs';
 import {REPO,CONTROL,WATCHDOG,SHA,executionAdmission,buildChatgptHandoff,
- dispatchPayload} from '@/lib/project-management/execution.mjs';
+ dispatchPayload,observePmWatchdogRun} from '@/lib/project-management/execution.mjs';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -29,7 +30,7 @@ const actions={
 const isPlainObject=v=>v&&typeof v==='object'&&!Array.isArray(v);
 const GH='https://api.github.com/repos/'+REPO+'/';
 async function githubRead(path,{token=null}={}){
- if(!/^(pulls\/[1-9]\d{0,7}|commits\/[a-f0-9]{40}\/check-runs\?per_page=100|actions\/workflows\/hh-pr-ten-minute-watchdog\.yml\/runs\?event=workflow_dispatch&per_page=30|actions\/runs\/[1-9]\d{0,17}\/jobs\?per_page=100)$/.test(path))
+ if(!/^(pulls\/[1-9]\d{0,7}|issues\/[1-9]\d{0,7}\/comments\?per_page=100|commits\/[a-f0-9]{40}(?:\/check-runs\?per_page=100)?|actions\/workflows\/hh-pr-ten-minute-watchdog\.yml\/runs\?event=workflow_dispatch&per_page=30|actions\/runs\/[1-9]\d{0,17}\/jobs\?per_page=100)$/.test(path))
   throw Error('GITHUB_PATH_DENIED');
  const response=await fetch(GH+path,{method:'GET',cache:'no-store',redirect:'error',
   headers:{Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28',
@@ -124,26 +125,48 @@ export async function POST(request){
     try{
      const runs=await githubRead('actions/workflows/'+WATCHDOG+
       '/runs?event=workflow_dispatch&per_page=30');
-     const matches=(runs.workflow_runs||[]).filter(x=>x.event==='workflow_dispatch'&&
-      x.head_branch===CONTROL&&String(x.display_title||'').includes(last.result.requestId));
+     const title=`HH watchdog / PM #${last.result.prNumber} / ${last.result.requestId}`;
+     const matches=Array.isArray(runs.workflow_runs)&&runs.workflow_runs.length<=30?
+      runs.workflow_runs.filter(x=>x.event==='workflow_dispatch'&&
+       x.head_branch===CONTROL&&x.display_title===title):[];
      if(matches.length===1){
       const workflow=matches[0];
       let jobs=null;
       try{jobs=await githubRead('actions/runs/'+workflow.id+'/jobs?per_page=100');}
-      catch{/* Missing job proof never becomes RUNNER_STARTED. */}
-      const started=(jobs?.jobs||[]).some(x=>x.name==='direct-handoff'&&
-       x.started_at&&Number.isFinite(Date.parse(x.started_at)));
-      run={id:workflow.id,url:workflow.html_url,status:workflow.status,
-       conclusion:workflow.conclusion,createdAt:workflow.created_at,
-       runnerStarted:started,stage:started?'RUNNER_STARTED':'DISPATCH_ACCEPTED'};
+      catch{/* Missing Watchdog job proof never becomes a code worker claim. */}
+      run=observePmWatchdogRun({workflow,jobs,
+       prNumber:last.result.prNumber,requestId:last.result.requestId});
      }
     }catch{/* Unknown run history is not proof of no execution. */}
    }
-   let delivery=null;
-   if(Number.isSafeInteger(task.pr_number)&&task.pr_number>0)
-    delivery=await inspectCommandTaskDelivery('https://github.com/'+REPO+'/pull/'+task.pr_number);
+   // Read-only source and delivery inspection can run concurrently,
+   // avoiding multiplied GitHub latency in the owner mobile request.
+   const sourceReadback=async()=>{
+    if(!run?.id||!last?.result?.headSha||
+       last.result.prNumber!==task.pr_number||
+       !SHA.test(last.result.headSha))return null;
+    try{
+     const pr=await githubRead('pulls/'+task.pr_number);
+     // A single complete 100-comment page is necessary to rule out a
+     // malicious partial history or mismatched reservation.
+     if(!Number.isSafeInteger(pr?.comments)||pr.comments<0||pr.comments>100)return null;
+     const comments=await githubRead('issues/'+task.pr_number+'/comments?per_page=100');
+     if(!Array.isArray(comments)||comments.length!==pr.comments)return null;
+     const args={comments,pr,watchdogRunId:run.id,requestId:last.result.requestId,
+      expectedHeadSha:last.result.headSha,requestedAt:last.result.requestedAt};
+     const candidate=signedCandidateSha(args);
+     let commit=null;
+     if(candidate)try{commit=await githubRead('commits/'+candidate);}
+      catch{/* A missing commit readback keeps source publication unverified. */}
+     return verifyPmSourceReceipts({...args,commit});
+    }catch{return null;}
+   };
+   const deliveryReadback=Number.isSafeInteger(task.pr_number)&&task.pr_number>0?
+    inspectCommandTaskDelivery('https://github.com/'+REPO+'/pull/'+task.pr_number)
+     .catch(()=>null):Promise.resolve(null);
+   const [sourceReceipt,delivery]=await Promise.all([sourceReadback(),deliveryReadback]);
    result={status:'OBSERVED',taskId:data.taskId,history,run,
-    delivery:delivery?.proof||null,liveVerified:false};
+    sourceReceipt,delivery:delivery?.proof||null,liveVerified:false};
   }else if(data.action==='cancel_future_attempts'){
    if(!uuid(data.taskId)||data.confirmed!==true)
     return privateJson({error:'OWNER_CONFIRMATION_REQUIRED'},400);

@@ -1,7 +1,7 @@
 "use client";
 
 /** Owner-approved 31 Oct mobile panel; one existing video renderer, no second editor. */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BookOpen, Check, ChevronRight, CircleHelp, Gem, MapPinned, Plus, RotateCcw, Sparkles, UserRound, WandSparkles } from "lucide-react";
 import type { VideoTheme } from "@/lib/mandala/holistic-video-themes";
 import type { StoryAddonKind, StoryLocale, StorySelection } from "@/lib/mandala/story-addon-catalog";
@@ -14,6 +14,7 @@ type Props={
   disabled:boolean;
   applied:StorySelection;
   onApply:(next:StorySelection)=>void;
+  requestedKind?:StoryAddonKind;
 };
 const copy={
   ru:{
@@ -74,10 +75,11 @@ const recommended:Record<VideoTheme,readonly string[]>={
   goals:["C01","S01","L03"],
   life:["C01","S02","L02"]
 };
-export function MandalaStoriesCharacters({locale,theme,disabled,applied,onApply}:Props){
+export function MandalaStoriesCharacters({locale,theme,disabled,applied,onApply,requestedKind}:Props){
   const t=copy[locale];
   const [draft,setDraft]=useState<StorySelection>({});
-  const [active,setActive]=useState<StoryAddonKind>("character");
+  const [active,setActive]=useState<StoryAddonKind>(requestedKind??"character");
+  useEffect(()=>{if(requestedKind)setActive(requestedKind);},[requestedKind]);
   const [showAll,setShowAll]=useState<Partial<Record<StoryAddonKind,boolean>>>({});
   const [showMy,setShowMy]=useState(false);
   const [hasApplied,setHasApplied]=useState(false);

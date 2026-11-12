@@ -71,3 +71,21 @@ test("eight-video offer opens the existing consented CRM form instead of generic
   }
   assert.doesNotMatch(form,/JSON.stringify\(\{[\s\S]*?(?:keyDifficulty|keyGoal|profileEvidence|testResults|meditationScript):/);
 });
+
+test("iPhone course enquiry opens with one committed user gesture before consent",()=>{
+  const form=read("components/meditation-course-enquiry.tsx");
+  const browser=read("scripts/verify-practices-mobile-browser.mjs");
+  for(const marker of [
+    'data-meditation-course-order',
+    'onPointerDown={event=>{',
+    'setPointerCapture(event.pointerId)',
+    'flushSync(()=>setOpen(current=>!current))',
+    'aria-expanded={open}',
+    'data-meditation-course-contact',
+  ])assert.ok(form.includes(marker),"preserve the live mobile enquiry control: "+marker);
+  assert.ok(browser.includes('await order.click();'));
+  assert.ok(browser.includes('await expect(order).toHaveAttribute("aria-expanded","true"'));
+  assert.ok(browser.includes('await form.waitFor({state:"visible",timeout:12000})'));
+  assert.ok(browser.includes('data-guided-programme-signature-match'));
+  assert.doesNotMatch(browser,/await order\.click\(\);\s*await order\.click\(\);/);
+});

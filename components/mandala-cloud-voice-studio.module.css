@@ -59,3 +59,38 @@
 .offline label{display:grid;gap:7px;font-size:12px;font-weight:750;color:#246c52;min-width:0}
 .offline input{width:100%;min-width:0;max-width:100%;padding:9px;border:1px solid #bfdacc;border-radius:10px;background:#fff;color:#205740}
 .offline input:disabled{opacity:.55}
+
+/* Design Bible §10.13 — nested consented Cloud Voice panel in Video Studio.
+   Do not alter original voice identity, provider calls, quota or audio rights. */
+:global([data-mandala-mode="video"]) .shell{
+  background:var(--hh-studio-surface,#FFFCFA);
+  border-color:var(--hh-studio-border,#EADFD9);
+  color:var(--hh-studio-ink,#142B3D);
+  box-shadow:var(--hh-studio-shadow,0 5px 18px rgb(66 42 31 / 7%))
+}
+:global([data-mandala-mode="video"]) :is(
+  .options,.levels,.offline,.result
+){
+  background:var(--hh-studio-inset,#FFF9F5);
+  border-color:var(--hh-studio-border,#EADFD9)
+}
+:global([data-mandala-mode="video"]) :is(
+  .voice:not([aria-pressed="true"]),
+  .language button:not([aria-pressed="true"]),
+  .textLabel textarea,.moreBeds select,.offline input
+){
+  background:var(--hh-studio-surface,#FFFCFA);
+  border-color:var(--hh-studio-border,#EADFD9);
+  color:var(--hh-studio-ink,#142B3D)
+}
+:global([data-mandala-mode="video"]) .heading h2{
+  color:var(--hh-studio-forest,#14523F)
+}
+:global([data-mandala-mode="video"]) .intro{
+  color:var(--hh-studio-muted,#5D6A71)
+}
+:global([data-mandala-mode="video"]) .primary{
+  background:var(--hh-studio-primary,#087E61);
+  border-color:var(--hh-studio-deep,#006B4B);
+  color:#FFFFFF
+}

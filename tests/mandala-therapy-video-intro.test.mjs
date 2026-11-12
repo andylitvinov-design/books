@@ -1,55 +1,60 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {readFileSync} from "node:fs";
-
 const read=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 
-test("RU and EN YouTube destinations are different, no Russian audio on EN",()=>{
+test("verified RU presentation is the first Goal 16:9 player state, never a second player",()=>{
   const studio=read("components/mandala-free-video-studio.tsx");
   const css=read("components/mandala-video-mobile.module.css");
   const route=read("app/[locale]/holistic-support/mandala/page.tsx");
-  assert.match(studio,/const introVideoId = locale==="ru" \? "P9Wvo3gEY6U" : null;/);
-  assert.doesNotMatch(studio,/locale==="es" \? null : "P9Wvo3gEY6U"/);
-  assert.doesNotMatch(studio,/Russian audio/i);
-  assert.match(studio,/href="https:\/\/www\.youtube\.com\/@aatapro\/videos"/);
-  assert.match(studio,/href={\x60https:\/\/www\.youtube\.com\/watch\?v=\$\{introVideoId\}\x60}/);
-  assert.match(studio,/data-video-therapy-youtube="ru"/);
-  assert.match(studio,/data-video-therapy-youtube="en"/);
-  assert.match(studio,/data-video-therapy-intro="english-channel"/);
-  assert.match(studio,/Video therapy film not yet linked/,
-    "do not claim an EN Video Therapy film without its own verified YouTube ID");
-  assert.match(studio,/data-intro-spoken-locale="ru"/);
-  assert.match(studio,/src={\x60https:\/\/www\.youtube-nocookie\.com\/embed\/\$\{introVideoId\}\?autoplay=1&playsinline=1&rel=0\x60}/);
-  assert.match(studio,/<span>О видеотерапии · 52 сек<\/span>/);
-  assert.match(studio,/data-video-therapy-intro="ready"/);
-  assert.match(studio,/data-video-therapy-intro="playing"/);
   const stage=studio.indexOf('data-video-live-stage');
   const hero=studio.indexOf('id="video-hero"',stage);
-  const original=studio.indexOf('data-video-preview-toggle',hero);
-  const nav=studio.indexOf('data-video-quick-controls');
-  const dock=studio.indexOf('data-video-therapy-info',original);
-  const promo=studio.indexOf('data-video-therapy-intro="playing"',dock);
-  assert.ok(nav>=0&&stage>nav&&hero>stage&&original>hero&&dock>original&&promo>dock,
-    "the one six-tab rail stays above the original Canvas; intro remains Practices-only");
-  assert.doesNotMatch(studio.slice(hero,dock),/data-video-therapy-intro/,
-    "no external YouTube chrome can obscure the creative editor");
-  assert.match(studio,/<canvas key={aspect} ref={canvasRef}/);
-  assert.match(studio,/MediaRecorder/);
-  assert.match(studio,/className={videoStyles\.therapyIntroOverlay}/);
-  assert.match(css,/\.studio \.therapyIntroStandalone \.therapyIntroOverlay\{/);
-  assert.match(css,/position:relative;inset:auto/);
-  assert.match(css,/\.studio \.therapyIntroDirect:focus-visible/);
-  assert.match(css,/@media\(max-width:355px\)/);
-  assert.match(route,/<MandalaMeditationClient locale={locale}/);
+  const rail=studio.indexOf('data-video-intro-my-rail',hero);
+  const content=studio.slice(hero,rail);
+  assert.ok(stage>0&&hero>stage&&rail>hero);
+  assert.match(content,/showIntroHero \? <div className=\{videoStyles\.therapyHero\} data-video-therapy-info/);
+  assert.match(content,/data-video-therapy-intro=\{introPlaying\?"playing":"ready"\}/);
+  assert.match(content,/data-playing=\{introPlaying\?"true":"false"\}/);
+  assert.match(content,/data-video-therapy-intro-close/);
+  assert.match(content,/data-mandala-cinematic-canvas/);
+  assert.match(content,/data-video-preview-toggle/);
+  assert.match(studio,/const introVideo = locale==="ru" \? \{/);
+  assert.match(studio,/72e3e6f45c3664b0b8d75281b1b413a5/);
+  assert.match(studio,/8d998c778af3b563aa63233aa4fb4a06/);
+  assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
+  assert.equal((studio.match(/data-video-therapy-info/g)||[]).length,1);
+  assert.doesNotMatch(studio,/therapyIntroStandalone|therapyIntroOverlay/);
+  assert.match(css,/\.studio \.therapyHero\{/);
+  assert.match(css,/\.studio \.therapyHeroVideo\{/);
+  assert.match(css,/\.studio \.therapyHeroPlayback\[data-playing="true"\]/);
+  assert.match(route,/<MandalaMeditationClient locale=\{locale\}/);
 });
 
-test("remote iframe is mounted only on the RU visitor's deliberate click",()=>{
+test("verified RU presentation is opt-in on RU and EN; EN discloses spoken language",()=>{
   const source=read("components/mandala-free-video-studio.tsx");
-  assert.match(source,/introPlaying \? \(\s*<div className={videoStyles\.therapyIntroOverlay}/);
-  assert.match(source,/onClick=\{\(\)=>\{\s*premiumVideoRef\.current\?\.pause\(\);\s*setPreviewPlaying\(false\);\s*setIntroPlaying\(true\);/);
-  assert.match(source,/<button className={videoStyles\.heroPlay}/);
-  assert.match(source,/setActiveWorkspace\(item\.id\);[\s\S]{0,140}setIntroPlaying\(false\);[\s\S]{0,90}setStudioMode\("pump"\)/);
-  assert.match(source,/className={videoStyles\.therapyIntroClose}[\s\S]*?onClick=\{\(\)=>setIntroPlaying\(false\)\}/);
-  assert.match(source,/referrerPolicy="strict-origin-when-cross-origin"/);
+  const css=read("components/mandala-video-mobile.module.css");
+  assert.match(source,/<div className=\{videoStyles\.therapyHeroPlayback\}[\s\S]*?data-video-therapy-intro=\{introPlaying\?"playing":"ready"\}/);
+  assert.match(source,/data-video-therapy-intro-close/);
+  assert.match(source,/setIntroDismissed\(true\)/);
+  assert.match(source,/English audio · 01:31/);
+  assert.match(source,/Русская озвучка · 01:37/);
+  assert.match(source,/<video ref=\{introVideoRef\}[^>]+src=\{introVideo\.src\}/);
+  assert.match(source,/const playIntro=\(\)=>/);
+  assert.match(source,/const closeIntro=\(\)=>/);
+  assert.doesNotMatch(source,/youtube-nocookie|data-video-therapy-youtube|introVideoId|therapyHeroFrame/);
+  assert.match(source,/<video ref=\{introVideoRef\} className=\{videoStyles\.therapyHeroVideo\}/);
+  assert.match(source,/src=\{introVideo\.src\} controls=\{introPlaying\} playsInline preload="none"/);
+  assert.match(source,/onEnded=\{closeIntro\}/);
+  assert.match(source,/const closeIntro=\(\)=>\{/);
+  assert.match(source,/introVideoRef\.current\?\.pause\(\)/);
+  assert.match(source,/onError=\{\(\)=>setIntroFailed\(true\)\}/);
+  assert.match(source,/onClick=\{playIntro\}/);
+  assert.doesNotMatch(source,/youtube-nocookie|data-video-therapy-youtube|introVideoId|therapyHeroFrame/);
+  assert.match(source,/playsInline preload="none"/);
+  assert.match(source,/onClick=\{\(\)=>activateQuickWorkspace\(item\.id\)\}/);
+  assert.match(source,/onError=\{\(\)=>setIntroFailed\(true\)\}/);
   assert.match(source,/rel="noopener noreferrer"/);
+  assert.match(css,/video-studio-presentation-ru\.jpg/);
+  assert.match(source,/const showIntroHero =/);
+  assert.doesNotMatch(source,/therapyIntroStandalone|therapyIntroOverlay/);
 });

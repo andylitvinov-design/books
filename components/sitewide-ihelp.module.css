@@ -1,66 +1,218 @@
-/* An owner-invoked, sitewide entry: no automatic modal and no extra chat backend. */
+/* One owner-invoked sitewide iHelp. Shared photograph and semantic palette
+   follow the approved AI Video Director welcome; all existing chat actions work. */
 .launcher{
  position:fixed;z-index:115;top:max(58px,calc(env(safe-area-inset-top,0px) + 8px));
  right:max(10px,env(safe-area-inset-right,0px));display:flex;align-items:center;
- justify-content:center;gap:6px;min-width:80px;min-height:42px;padding:7px 12px;
+ justify-content:center;gap:6px;min-width:80px;min-height:44px;padding:7px 12px;
  border:1px solid #abcfbe;border-radius:999px;background:#fffcf7;color:#08745d;
- box-shadow:0 4px 15px rgba(26,62,48,.16);font:750 13px/1.25 system-ui,sans-serif;cursor:pointer
+ box-shadow:0 4px 15px #1a3e3029;font:750 13px/1.25 system-ui,sans-serif;cursor:pointer
 }
 .launcher:hover{background:#edf8f1}
 .launcher:focus-visible,.close:focus-visible{outline:3px solid #176e6e;outline-offset:3px}
 .overlay{position:fixed;inset:0;z-index:180}
 .overlay[hidden]{display:none!important}
 .backdrop{position:absolute;inset:0;width:100%;height:100%;border:0;
- background:rgba(15,34,31,.47);cursor:pointer}
-.panel{position:absolute;top:max(74px,calc(env(safe-area-inset-top,0px) + 60px));
- right:max(12px,env(safe-area-inset-right,0px));
- display:flex;flex-direction:column;box-sizing:border-box;overflow:hidden;
- width:min(460px,calc(100vw - 24px));height:min(730px,calc(100dvh - 94px));
- min-height:0;background:#fffcf7;border:1px solid #e9dfd1;border-radius:22px;
- box-shadow:0 24px 72px rgba(18,41,35,.30);color:#143d3a}
+ background:#0f221f78;cursor:pointer}
+.panel{position:absolute;top:max(66px,calc(env(safe-area-inset-top,0px) + 52px));
+ right:max(12px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;
+ box-sizing:border-box;overflow:hidden;width:min(520px,calc(100vw - 24px));
+ height:min(830px,calc(100dvh - 90px));min-height:0;background:#fbf5e9;
+ border:1px solid #e9dfd1;border-radius:24px;box-shadow:0 24px 72px #1229234d;color:#143d3a
+}
 .header{flex:none;display:flex;align-items:center;justify-content:space-between;
- gap:12px;padding:12px 15px;background:#f5ecdc;border-bottom:1px solid #e9dfd1}
-.heading{display:flex;flex-direction:column;gap:2px;min-width:0}
-.heading strong{font:800 18px/1.3 system-ui,sans-serif}
-.heading small{font:500 12px/1.35 system-ui,sans-serif;color:#5d6a71}
+ gap:10px;min-height:54px;padding:6px 13px;background:#f5ecdc;
+ border-bottom:1px solid #e9dfd1}
+.heading{display:flex;align-items:baseline;flex-wrap:wrap;gap:8px;min-width:0}
+.heading strong{font:820 20px/1.2 system-ui,sans-serif;color:#143d3a}
+.heading small{font:560 12px/1.35 system-ui,sans-serif;color:#5d6a71}
 .close{flex:none;display:grid;place-items:center;width:44px;height:44px;
- border-radius:13px;border:1px solid #d8d8d0;background:#fff;color:#244b42;cursor:pointer}
-.chat{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;padding:10px}
+ border-radius:14px;border:1px solid #d7ddd5;background:#fffdfa;color:#244b42;cursor:pointer}
+.chat{flex:1;min-height:0;min-width:0;display:flex;flex-direction:column;
+ overflow:hidden;padding:0 12px 7px;background:#fbf5e9}
 .chat :global([data-hh-agent-preview][data-page-help]){
- flex:1;display:flex;flex-direction:column;gap:7px;min-height:0;max-height:none;height:100%;overflow:hidden
+ flex:1;display:flex;flex-direction:column;gap:5px;min-height:0;max-height:none;
+ height:100%;overflow:hidden;background:transparent
 }
 .chat :global([data-hh-agent-preview][data-page-help]>[role="log"]){
- flex:1;min-height:0;max-height:none;overflow-y:auto;overscroll-behavior:contain;
- background:#fff;border:1px solid #e9dfd1
+ flex:1;min-height:0;max-height:none;overflow-y:auto;overflow-x:hidden;
+ overscroll-behavior:contain;background:transparent;border:0;border-radius:0;
+ padding:7px 0 9px;gap:8px
 }
-.chat :global([data-hh-agent-preview][data-page-help]>form){
- flex:none;min-height:0;margin:0;gap:6px;padding:8px 1px 2px;border-top:1px solid #e9dfd1
-}
-.chat :global([data-hh-agent-preview][data-page-help]>form textarea){
- min-height:45px;max-height:100px;height:45px;resize:vertical;font-size:16px
+.chat :global([data-hh-agent-preview][data-page-help] [data-hh-ai-welcome]){
+ display:none
 }
 .chat :global([data-hh-agent-preview][data-page-help] [data-hh-ihelp-actions]){
- display:grid;grid-template-columns:minmax(0,1fr);gap:5px;margin:5px 0 0;max-width:100%
+ display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;
+ width:100%;max-width:100%;margin:0 0 2px
 }
-.chat :global([data-hh-agent-preview][data-page-help] [data-hh-ihelp-actions] button){
- box-sizing:border-box;display:flex;align-items:center;justify-content:flex-start;
- flex-direction:row;gap:8px;text-align:left;min-height:44px;padding:9px 12px;
- border:1px solid #d5e6d9;border-radius:12px;background:#f3f9f4;color:#135b4a;
- box-shadow:none;font:650 13px/1.35 system-ui,sans-serif;overflow-wrap:anywhere
+.chat :global([data-hh-agent-preview][data-page-help] [data-hh-ihelp-option]){
+ display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;
+ min-width:0;min-height:151px;gap:8px;padding:7px 6px 9px;
+ text-align:center;overflow-wrap:anywhere;
+ border:1px solid #e3e7df;border-radius:20px;background:#fffcf8;
+ color:#143d3a;box-shadow:0 5px 13px #514b3c13;
+ font:760 clamp(11px,3.4vw,14px)/1.2 system-ui,sans-serif
 }
-.chat :global([data-hh-agent-preview][data-page-help] [data-hh-ihelp-actions] button:hover){
+.chat :global([data-hh-agent-preview][data-page-help] [data-hh-ihelp-option]:first-child){
+ background:linear-gradient(145deg,#f2fff9,#dff3e8);border-color:#c8e7d7
+}
+.chat :global([data-hh-agent-preview][data-page-help] [data-hh-ihelp-option]:nth-child(2)){
+ background:linear-gradient(145deg,#fffef9,#f7f0fb)
+}
+.chat :global([data-hh-agent-preview][data-page-help] [data-hh-ihelp-option]:nth-child(3)){
+ background:linear-gradient(145deg,#fffefa,#fdf3fb)
+}
+.chat :global([data-hh-agent-preview][data-page-help] [data-hh-ihelp-option]::before){
+ content:"";display:block;flex:none;width:100%;height:70px;border-radius:13px;
+ background-repeat:no-repeat;background-size:cover;background-position:center;
+ box-shadow:inset 0 0 0 1px #ffffffa8
+}
+.chat :global([data-hh-agent-preview][data-page-help] [data-hh-ihelp-option]:first-child::before){
+ background-image:linear-gradient(130deg,#1e605312,#f4dba54f),
+ url("/images/holistic-house/ideas-zen-landscape.svg")
+}
+.chat :global([data-hh-agent-preview][data-page-help] [data-hh-ihelp-option]:nth-child(2)::before){
+ background-image:url("/images/holistic-house/messenger-zen-stones.svg")
+}
+.chat :global([data-hh-agent-preview][data-page-help] [data-hh-ihelp-option]:nth-child(3)::before){
+ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 11.5a8.4 8.4 0 0 1-8.4 8.4 9.1 9.1 0 0 1-4-.9L3 21l1.9-5.6a8.6 8.6 0 1 1 16.1-3.9Z'/%3E%3C/svg%3E"),
+ radial-gradient(circle at 50% 40%,#e9dbfa,#cac8f0 65%,#f9dce9);
+ background-size:34px 34px,cover;background-position:center;background-repeat:no-repeat
+}
+.chat :global([data-hh-agent-preview][data-page-help] [data-hh-ihelp-ask]){
+ grid-column:1/-1;min-height:36px;padding:5px;border:0;border-radius:10px;
+ background:transparent;color:#176e60;box-shadow:none;
+ font:700 13px/1.2 system-ui,sans-serif
+}
+.chat :global([data-hh-agent-preview][data-page-help] [data-hh-ihelp-ask]:hover){
  background:#e6f4ea
 }
 .chat :global([data-hh-agent-preview][data-page-help] [data-hh-ihelp-actions] button:focus-visible){
  outline:3px solid #176e6e;outline-offset:2px
 }
+/* Like the native Video Director, only the transcript scrolls; the composer stays on one line. */
+.chat :global([data-hh-agent-preview][data-page-help]>form){
+ flex:none;display:flex;align-items:center;box-sizing:border-box;min-width:0;
+ gap:6px;margin:0 2px 4px;min-height:62px;padding:6px 8px;
+ border:1px solid #c9e3d7;border-radius:22px;background:#fff;
+ box-shadow:0 3px 13px #1e57421b
+}
+.chat :global([data-hh-agent-preview][data-page-help]>form textarea){
+ flex:1 1 0%;min-width:0;width:0;height:44px;min-height:44px;max-height:92px;
+ padding:10px 7px;border:0;border-radius:13px;background:transparent;
+ color:#143d3a;resize:none;font:500 16px/1.35 system-ui,sans-serif
+}
+.chat :global([data-hh-agent-preview][data-page-help]>form>div){
+ flex:none;display:flex;align-items:center;justify-content:flex-end;
+ gap:4px;flex-wrap:nowrap;max-width:none;margin:0
+}
+.chat :global([data-hh-agent-preview][data-page-help]>form>div>button),
+.chat :global([data-hh-agent-preview][data-page-help]>form>div>details>summary){
+ box-sizing:border-box;display:grid;place-items:center;flex:none;
+ width:40px;min-width:40px;height:44px;min-height:44px;padding:5px;
+ border:1px solid #e5eee7;border-radius:15px;background:#fff;
+ color:#176b5d;font-size:12px
+}
+.chat :global([data-hh-agent-preview][data-page-help]>form>div>button[type="submit"]){
+ width:44px;min-width:44px;border-color:#0b9079;border-radius:50%;
+ background:linear-gradient(130deg,#22b9a9,#078b76);color:#fff
+}
+.chat :global([data-hh-agent-preview][data-page-help]>form textarea:focus-visible){
+ outline:2px solid #176e6e;outline-offset:-2px
+}
+.chat :global([data-hh-agent-preview][data-page-help] [data-hh-emotional-avatar-hidden]){
+ margin:0;min-height:0
+}
+.panel:has([data-has-messages]) :global([data-hh-ihelp-hero]){
+ min-height:95px;padding:9px 14px 12px
+}
+.panel:has([data-has-messages]) :global([data-hh-ihelp-hero] h2){
+ font-size:22px
+}
+.panel:has([data-has-messages]) :global([data-hh-ihelp-hero] h2 em){
+ font-size:27px;margin-bottom:3px
+}
+.panel:has([data-has-messages]) :global([data-hh-ihelp-hero] p){
+ display:none
+}
+.panel:has([data-has-messages]) :global([data-hh-ihelp-topics]){display:none}
 @media(max-width:760px){
- .launcher{top:max(64px,calc(env(safe-area-inset-top,0px) + 8px));min-height:40px;padding:6px 10px}
- .panel{inset:0;width:100vw;height:100dvh;max-height:none;border-radius:0;border:0;
-  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
- .header{padding:7px 12px}
- .chat{padding:7px}
+ .launcher{top:max(64px,calc(env(safe-area-inset-top,0px) + 8px));min-height:44px;padding:6px 10px}
+ .panel{inset:auto;top:var(--hh-ihelp-visual-top,0px);left:0;right:0;
+  width:100vw;height:var(--hh-ihelp-visual-height,100dvh);max-height:none;
+  border-radius:0;border:0;padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px)}
+ .panel[data-hh-mobile-keyboard-open] :global([data-hh-ihelp-welcome]),
+ .panel[data-hh-mobile-keyboard-open] :global([data-hh-ihelp-topics]),
+ .panel[data-hh-mobile-keyboard-open] .bottomNav{display:none}
+ .header{min-height:52px;padding:5px 11px}
+ .heading strong{font-size:19px}
+ .heading small{font-size:11px}
+ .chat{padding:0 10px 6px}
+ .chat :global([data-hh-agent-preview][data-page-help] [data-hh-ihelp-actions]){gap:6px}
+ .chat :global([data-hh-agent-preview][data-page-help] [data-hh-ihelp-option]){
+  min-height:139px;padding:6px 5px 8px;border-radius:18px
+ }
+ .chat :global([data-hh-agent-preview][data-page-help] [data-hh-ihelp-option]::before){
+  height:62px
+ }
+}
+@media(max-width:355px){
+ .chat{padding-left:7px;padding-right:7px}
+ .chat :global([data-hh-agent-preview][data-page-help] [data-hh-ihelp-actions]){gap:5px}
+ .chat :global([data-hh-agent-preview][data-page-help] [data-hh-ihelp-option]){
+  min-height:125px;gap:5px;padding:5px 4px 8px;border-radius:15px;
+  font-size:11px;line-height:1.17
+ }
+ .chat :global([data-hh-agent-preview][data-page-help] [data-hh-ihelp-option]::before){
+  height:53px;border-radius:11px
+ }
+ .chat :global([data-hh-agent-preview][data-page-help]>form){gap:4px;padding:6px}
+ .chat :global([data-hh-agent-preview][data-page-help]>form){gap:3px;padding:5px}
+ .chat :global([data-hh-agent-preview][data-page-help]>form>div){gap:3px}
+ .chat :global([data-hh-agent-preview][data-page-help]>form>div>button),
+ .chat :global([data-hh-agent-preview][data-page-help]>form>div>details>summary){
+  width:38px;min-width:38px;padding:5px
+ }
+}
+@media(max-height:650px){
+ .panel :global([data-hh-ihelp-topics]){display:none}
+ .chat :global([data-hh-agent-preview][data-page-help] [data-hh-ihelp-option]){
+  min-height:108px
+ }
+ .chat :global([data-hh-agent-preview][data-page-help] [data-hh-ihelp-option]::before){
+  height:44px
+ }
+}
+.bottomNav{display:grid;flex:none;grid-template-columns:repeat(3,minmax(0,1fr));
+ gap:8px;min-width:0;padding:8px 12px max(9px,env(safe-area-inset-bottom,0px));
+ border-top:1px solid #e9dfd1;background:#f8f3e9}
+.bottomNav :is(a,span){display:grid;place-items:center;min-width:0;min-height:44px;
+ border:1px solid #e2e3dc;border-radius:15px;background:#fffefb;
+ color:#245046;text-decoration:none;font:750 14px/1.2 system-ui,sans-serif;
+ box-shadow:0 2px 7px #37533b0b}
+.bottomNav [aria-current="page"]{background:linear-gradient(135deg,#ddf5e9,#f5fffa);
+ border-color:#88ceb5;color:#067a67}
+.bottomNav a:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+:global(body:has([data-video-ihelp-header-trigger])) .launcher{display:none!important}
+
+
+/* Profile / Video Studio mobile: never cover the six top tabs or scenic player. */
+@media(max-width:600px){
+  :global(body:has([data-profile-hub-tabs])) .launcher{
+    top:auto;right:max(12px,env(safe-area-inset-right,0px));
+    bottom:calc(86px + env(safe-area-inset-bottom,0px));
+    width:44px;min-width:44px;height:44px;min-height:44px;padding:0;
+  }
+  :global(body:has([data-profile-hub-tabs])) .launcher span{display:none}
 }
 
-/* One sitewide helper: on Studio use the in-header trigger instead of a floating duplicate. */
-:global(body:has([data-video-ihelp-header-trigger])) .launcher{display:none!important}
+/* MyTube: keep original-audio languages and category chips completely clickable.
+   Reuse the same compact mobile floating launcher above the fixed dock. */
+:global(body:has([data-mytube-page])) .launcher{
+  top:auto;bottom:calc(86px + env(safe-area-inset-bottom,0px));
+  right:max(12px,env(safe-area-inset-right,0px));
+  width:44px;min-width:44px;height:44px;min-height:44px;
+  padding:0;justify-content:center;
+}
+:global(body:has([data-mytube-page])) .launcher span{display:none}

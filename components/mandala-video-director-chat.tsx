@@ -96,18 +96,21 @@ const welcomeCopy={
   goal:"Или выберите тему:",topicNames:{body:"Тело",business:"Работа",energy:"Энергия",love:"Любовь",stress:"Стресс"},
   ownWords:"Ваша идея или цель…",how:"Как это работает?",
   help:"Опишите цель своими словами или выберите одну из пяти тем. Я помогу подобрать подходящую идею и доступные видеосцены.",
+  journeyTitle:"Ваше видео — ваш сюжет",journeyLead:"Выберите вариант или расскажите своими словами.",more:"Настройки ИИ и звука",
   library:"Посмотреть готовые видео"},
  en:{hello:"Hi!",headline:"Let's create your video",lead:"Turn your idea, text or voice into a beautiful video.",
   create:"Create my video",browse:"Explore ideas",ideas:"Ask a question",actions:"Choose what to do",
   goal:"Or choose a topic:",topicNames:{body:"Body",business:"Work",energy:"Energy",love:"Love",stress:"Stress"},
   ownWords:"Your goal or idea…",how:"How does it work?",
   help:"Describe your goal in your own words or pick one of five topics. I'll help you find a suitable idea and available video footage.",
+  journeyTitle:"Your video, your story",journeyLead:"Choose an answer or describe your idea.",more:"AI & audio options",
   library:"Browse ready-made videos"},
  es:{hello:"¡Hola!",headline:"Creemos tu vídeo",lead:"Transforma tu idea, texto o voz en un vídeo bonito.",
   create:"Crear mi vídeo",browse:"Explorar ideas",ideas:"Hacer una pregunta",actions:"Elige qué hacer",
   goal:"O elige un tema:",topicNames:{body:"Cuerpo",business:"Trabajo",energy:"Energía",love:"Amor",stress:"Estrés"},
   ownWords:"Tu idea u objetivo…",how:"¿Cómo funciona?",
   help:"Describe tu objetivo o elige uno de cinco temas. Te ayudaré a encontrar ideas y escenas disponibles.",
+  journeyTitle:"Tu vídeo, tu historia",journeyLead:"Elige una opción o cuéntame tu idea.",more:"Opciones de IA y sonido",
   library:"Ver vídeos disponibles"},
 } as const;
 const WELCOME_TOPIC_ORDER=["body","energy","love","business","stress"];
@@ -795,15 +798,19 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
        maxLength={800} disabled={disabled}
        autoComplete="off" aria-label={t.placeholder} placeholder={showWelcome?w.ownWords:t.placeholder}/>
      {showWelcome&&<button className={css.composerMic} type="button" onClick={onOpenAudio} disabled={disabled} aria-label={t.audio} title={t.audio}><Mic size={20}/></button>}
+     {!showWelcome&&<button className={css.composerMic} type="button" onClick={onOpenAudio} disabled={disabled} aria-label={t.audio} title={t.audio}><Mic size={20}/></button>}
      <button className={css.send} type="submit" aria-label={t.send} disabled={disabled||!input.trim()}><Send size={19}/></button>
    </form>;
-  return <section id="video-director-chat" ref={windowRef} className={css.window} data-video-director-chat data-chat-step={step} data-chat-hydrated={clientHydrated?"true":"false"} data-chat-welcome={showWelcome?"true":undefined} aria-labelledby="video-director-chat-heading">
+  return <section id="video-director-chat" ref={windowRef} className={css.window} data-video-director-chat data-chat-step={step} data-chat-hydrated={clientHydrated?"true":"false"} data-chat-welcome={showWelcome?"true":undefined} data-chat-dialogue={!showWelcome?"true":undefined} aria-labelledby="video-director-chat-heading">
    <header className={css.heading}>
      <span className={css.avatar} aria-hidden="true"><Sparkles size={20}/></span>
      <span className={css.titleGroup}><strong id="video-director-chat-heading">{t.title}</strong><small>{t.subtitle}</small></span>
      <button type="button" className={css.iconButton} disabled={disabled||captureStarted} onClick={onOpenEditor} aria-label={t.editor} title={t.editor}><SlidersHorizontal size={20}/></button>
    </header>
-   {!showWelcome&&chatNav}
+   {!showWelcome&&<div className={`${css.welcomeHero} ${css.dialogueHero}`} data-video-chat-dialogue-hero>
+     <h2 className={css.dialogueTitle}>{w.journeyTitle}</h2>
+     <p className={css.dialogueLead}>{w.journeyLead}</p>
+   </div>}
    {pageHelp&&!showWelcome&&<details className={css.pageHelp} data-video-ihelp-context data-help-tab={pageHelp.section}>
      <summary>{w.how}</summary>
      <p>{pageHelp.greeting}</p>
@@ -1011,8 +1018,9 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
        <button type="button" className={css.secondary} onClick={()=>{onInvalidate();setStep("review");}}>{t.edit}</button>
      </div>:null}
    </div>
-   {showWelcome&&chatNav}
    {!showWelcome&&composer}
+   {!showWelcome&&<details className={css.chatAdvanced} data-video-chat-advanced>
+     <summary>{w.more}</summary>
    <label className={css.aiOptIn}>
      <input type="checkbox" checked={aiConsent} disabled={disabled}
        onChange={(event:ChangeEvent<HTMLInputElement>)=>{
@@ -1027,5 +1035,7 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
      <span>{t.aiConsent}{aiStatus==="loading"?" · "+t.aiBusy:""}{semanticStatus==="loading"?" · "+t.aiUnderstanding:""}</span>
    </label>
    <div className={css.foot}><span>{aiConsent?t.noteAi:t.note}</span><button type="button" onClick={onOpenAudio} disabled={disabled}><Music2 size={14}/>{t.audio}</button></div>
+   </details>}
+   {chatNav}
  </section>;
 }

@@ -12,3 +12,7 @@ export function selectWebCodecsForRecording(args?:{
   proceduralRoute?:'native'|'native-webm'|'webcodecs'|'unsupported';
   preferWebm?:boolean;
 }):boolean;
+export function shouldAutoRecoverSafariPlayback(args?:{
+  safariWebKit?:boolean;format?:string;errorCode?:number;nativeWebm?:boolean;
+  alreadyAttempted?:boolean;catalog?:boolean;
+}):boolean;

@@ -4,6 +4,7 @@ import {useCallback,useEffect,useRef,useState} from "react";
 import Link from "next/link";
 import {Download,Send,RefreshCw,MessageCircle,CheckCircle2} from "lucide-react";
 import {appFetch} from "@/lib/app/client-fetch";
+import {savePrivateMp4} from "@/lib/mandala/signed-private-video-upload.mjs";
 import type {PublicLocale} from "@/lib/public-locales";
 import css from "./mandala-video-delivery.module.css";
 
@@ -31,6 +32,9 @@ const COPY={
   cloudOff:"Автоотправка пока не активирована на сервере. Отправка через меню телефона доступна.",
   unsupported:"Для автоотправки требуется проверенный MP4 не больше 12 МБ. Этот ролик можно скачать и поделиться им вручную.",
   wait:"Подготавливаем приватную доставку…",
+  uploading:"Загружаем видео частями: {percent}%. Не закрывайте вкладку.",
+  uploadRetry:"Загрузка прервалась. Нажмите «Сохранить» ещё раз — продолжим тот же файл без новой записи.",
+  uploadExpired:"Срок загрузки истёк. Удалите незавершённую запись в «Моих видео» и повторите сохранение.",
   accepted:"Telegram принял видео к отправке. Это ещё не подтверждение получения или просмотра.",
   duplicate:"Отправка этого ролика уже обрабатывалась. Повторного сообщения не создаём.",
   saved:"Настройка автоматической доставки изменена.",
@@ -51,6 +55,9 @@ const COPY={
   cloudOff:"Automatic delivery is not enabled on the server yet. Device sharing is still available.",
   unsupported:"Automatic delivery requires a playable MP4 under 12 MB. You can still download and share this file manually.",
   wait:"Preparing private delivery…",
+  uploading:"Uploading video in parts: {percent}%. Keep this tab open.",
+  uploadRetry:"Upload interrupted. Tap Save again to resume the same file without reserving another video.",
+  uploadExpired:"Upload expired. Delete the unfinished entry in My Videos before trying again.",
   accepted:"Telegram accepted the video for sending. This does not confirm delivery or viewing.",
   duplicate:"A delivery attempt already exists for this video. No duplicate message was sent.",
   saved:"Automatic delivery preference updated.",
@@ -71,6 +78,9 @@ const COPY={
   cloudOff:"El envío automático aún no está habilitado en el servidor. Puedes compartir desde tu teléfono.",
   unsupported:"El envío automático requiere un MP4 válido de hasta 12 MB. Puedes descargar y compartir el archivo manualmente.",
   wait:"Preparando entrega privada…",
+  uploading:"Subiendo el vídeo por partes: {percent} %. Mantén esta pestaña abierta.",
+  uploadRetry:"Subida interrumpida. Pulsa Guardar para reanudar el mismo archivo sin crear otro registro.",
+  uploadExpired:"La carga caducó. Borra la entrada incompleta en Mis vídeos y vuelve a intentarlo.",
   accepted:"Telegram aceptó el vídeo para envío, pero no ha confirmado su entrega o visualización.",
   duplicate:"Este vídeo ya tiene un intento de envío. No enviamos duplicados.",
   saved:"Preferencia de envío automático actualizada.",
@@ -91,6 +101,8 @@ export function MandalaVideoDelivery({locale,open,onClose,blob,url,extension,mim
  const [session,setSession]=useState<"checking"|"signed_in"|"guest"|"unavailable">("checking");
  const [notice,setNotice]=useState("");
  const [savedId,setSavedId]=useState<string|null>(null);
+ const uploadSessionRef=useRef<unknown>(null);
+ const [uploadPercent,setUploadPercent]=useState<number|null>(null);
  const [busy,setBusy]=useState(false);
  const [botUrl,setBotUrl]=useState("");
  const inFlight=useRef<Promise<string>|null>(null);
@@ -148,21 +160,13 @@ export function MandalaVideoDelivery({locale,open,onClose,blob,url,extension,mim
   if(inFlight.current)return inFlight.current;
   const task=(async()=>{
    if(!readyMp4)throw new Error("VIDEO_FORMAT_UNSUPPORTED");
-   const header=new Uint8Array(await blob.slice(0,12).arrayBuffer());
-   if(String.fromCharCode(...header.slice(4,8))!=="ftyp")throw new Error("VIDEO_FORMAT_UNSUPPORTED");
    const chosenTheme=["money","relationships","energy","goals","health","life"].includes(theme)?theme:"energy";
-   const created=await appFetch("personal-videos",{
-    theme:chosenTheme,sceneId:"personal-film",aspect,duration,bytes:blob.size,consent:true
-   },"POST");
-   const {createClient}=await import("@supabase/supabase-js");
-   const supabase=createClient(created.supabaseUrl,created.publishableKey,{
-    auth:{persistSession:false,autoRefreshToken:false}
+   return savePrivateMp4({
+    file:blob,details:{theme:chosenTheme,sceneId:"personal-film",aspect,duration},
+    request:(path,body)=>appFetch(path,body,"POST"),
+    sessionRef:uploadSessionRef,
+    onProgress:(done,total)=>setUploadPercent(Math.min(100,Math.round(done/total*100)))
    });
-   const {error}=await supabase.storage.from(created.bucket).uploadToSignedUrl(
-    created.objectKey,created.token,blob,{contentType:"video/mp4",upsert:false});
-   if(error)throw new Error("VIDEO_UPLOAD_FAILED");
-   await appFetch("personal-videos/"+created.id,undefined,"POST");
-   return created.id as string;
   })();
   inFlight.current=task;
   void task.catch(()=>{if(inFlight.current===task)inFlight.current=null;});
@@ -170,12 +174,14 @@ export function MandalaVideoDelivery({locale,open,onClose,blob,url,extension,mim
  }
  async function saveToLibrary(){
   if(busy||session!=="signed_in"||!readyMp4)return;
-  setBusy(true);setNotice(t.wait);
+  setBusy(true);setUploadPercent(0);setNotice(t.wait);
   try{
    const id=await privateUpload();
    setSavedId(id);
-   setNotice(t.savedPrivate);
-  }catch{setNotice(t.error);}
+   setNotice(t.savedPrivate);setUploadPercent(null);
+  }catch(error){
+   setNotice(errorCode(error)==="PRIVATE_UPLOAD_EXPIRED"?t.uploadExpired:t.uploadRetry);
+  }
   finally{setBusy(false);}
  }
  async function sendViaBot(automatic:boolean){
@@ -185,16 +191,20 @@ export function MandalaVideoDelivery({locale,open,onClose,blob,url,extension,mim
    automaticAtResultLoad.current=false;
    autoAttempted.current=true;
   }
-  setBusy(true);setNotice(t.wait);
+  setBusy(true);setUploadPercent(0);setNotice(t.wait);
+  let uploadComplete=false;
   try{
    const id=await privateUpload();
+   uploadComplete=true;setUploadPercent(null);
    const result=await appFetch("personal-videos/"+id+"/delivery",{
     channel:"telegram",automatic,consent:!automatic,locale
    },"POST");
    setNotice(result.status==="accepted"?t.accepted:
     result.duplicate||result.status==="claimed"?t.duplicate:t.error);
-  }catch{
-   setNotice(t.error);
+  }catch(error){
+   // Provider outcomes can be unknown: never suggest retrying a sent message.
+   setNotice(uploadComplete?t.error:
+     errorCode(error)==="PRIVATE_UPLOAD_EXPIRED"?t.uploadExpired:t.uploadRetry);
   }finally{setBusy(false);}
  }
  useEffect(()=>{
@@ -299,6 +309,8 @@ export function MandalaVideoDelivery({locale,open,onClose,blob,url,extension,mim
     {!state.telegram.sendingAvailable?<p className={css.hint}>{t.cloudOff}</p>:null}
    </div>:null}
   {session==="signed_in"&&!state?.telegram.linkAvailable?<p className={css.hint}>{t.cloudOff}</p>:null}
+  {busy&&uploadPercent!==null?<p className={css.notice} role="status" aria-live="polite"
+    data-video-upload-progress>{t.uploading.replace("{percent}",String(uploadPercent))}</p>:null}
   {notice?<p className={css.notice} role="status" aria-live="polite">{notice}</p>:null}
   <small className={css.privacy}>{t.privacy}</small>
  </section>;

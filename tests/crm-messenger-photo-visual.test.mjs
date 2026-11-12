@@ -29,7 +29,10 @@ test('Telegram photo blob previews are allowed only on the two owner messenger r
   for(const path of ['/en/app/videos','/ru/app/videos','/es/app/videos/']) assert.equal(onlyCabinet.test(path),true,path)
   for(const path of ['/','/en','/en/client/123','/en/app/messages','/en/app/portrait']) assert.equal(onlyCabinet.test(path),false,path)
   assert.match(middleware,/directMessageStorageOrigin/)
-  assert.match(middleware,/directMessageStorageOrigin,\n    "font-src/)
+  assert.match(middleware,/directMessageStorageOrigin \+ \(\(messengerIntroductionVideo\|\|studioIntroductionVideo\) \? ' https:\/\/resource2\.heygen\.ai' : ''\)/);
+  assert.ok(middleware.includes("const messengerIntroductionVideo = /^\\/(en|ru|es)\\/app\\/messages\\/?$/.test(pathname)"));
+  assert.ok(middleware.includes("const studioIntroductionVideo = /^\\/(en|ru|es)\\/holistic-support\\/mandala\\/?$/.test(pathname)"));
+  assert.doesNotMatch(middleware,/messengerIntroductionEmbed/);
   assert.doesNotMatch(middleware,/img-src[^\n]* https:\/\/\*\./)
   assert.match(middleware,/"frame-src 'none'"/)
   assert.match(middleware,/"object-src 'none'"/)
@@ -71,7 +74,7 @@ test('Private photos remain linked to the new one-screen customer messenger',()=
     'ME-GOAL-OBSTACLE drawing, shared voluntarily for private review'])
     assert.ok(chat.includes(marker),marker)
   assert.match(chat,/!m\.photo\|\|!photoOnlyMessage\.test\(String\(m\.text\|\|''\)\.trim\(\)\)/)
-  assert.match(chat,/m\.photo&&selected\.channel==='telegram'&&<CrmTelegramPhoto/)
+  assert.match(chat,/m\.photo&&\['telegram','whatsapp'\]\.includes\(selected\.channel\)&&<CrmTelegramPhoto/)
   assert.match(chat,/purpose=\{m\.photoPurpose==='drawing'\?'drawing':'portrait'\}/)
   assert.match(chat,/placeholder=\{conversationOnly\|\|compact\?/)
   assert.match(inbox,/function PrivateAvatar\(/)

@@ -68,10 +68,16 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - name: Stage checksum-verified FFmpeg before npm lifecycle
+        uses: ./.github/actions/ci-ffmpeg-static
       - name: Install lockfile-pinned packages
         run: npm ci --no-audit --no-fund
       # Production-only cache ownership. The existing static-image guard already
       # performs a full build on relevant protected production pushes.
+      - name: Materialize checksum-verified FFmpeg for package runtime
+        uses: ./.github/actions/ci-ffmpeg-static
+        with:
+          stage: materialize
       - name: Restore trusted scenario MP3 cache
         id: ci_media_cache
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/codex/public-book-library'

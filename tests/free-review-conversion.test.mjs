@@ -185,7 +185,7 @@ test("mobile browser acceptance taps the entire focus card and validates the nat
   assert.match(script, /width === 320 \|\| width === 430/);
   assert.doesNotMatch(script, /locator\('input\[value="(?:energy|situation)"\]'\)\.check\(\)/,
     "Do not emulate tapping a moving 19px radio dot on WebKit");
-  assert.match(script, /"changing the focus cannot silently opt the user in"/);
-  assert.match(script, /"changing focus is not a lead or booking"/);
+  assert.match(script, /"focus change never creates hidden consent or unverified web submission"/);
+  assert.match(script, /"changing the selected focus never fabricates a CRM lead"/);
   assert.match(css, /\.choice\{[^}]*min-height:94px/);
 });

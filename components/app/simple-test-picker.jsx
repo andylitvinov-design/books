@@ -551,6 +551,13 @@ export function SimpleTestPicker({
                    aria-label={`${c.takeTest}: ${entry.title}`}>
                    {c.takeTest} <ArrowRight size={16} aria-hidden="true" />
                  </button>
+                 {entry.selectable && entry.guestEligible === true && entry.rightsStatus === 'cleared' &&
+                   entry.key !== 'phq-9' && <Link className={styles.chatStart} prefetch={false}
+                     href={`/${locale}/app/messages?section=ai&chatTest=${encodeURIComponent(entry.key)}`}
+                     aria-label={`${locale === 'ru' ? 'Пройти в чате' : locale === 'es' ? 'Hacer en el chat' : 'Take in chat'}: ${entry.title}`}>
+                     {locale === 'ru' ? 'Пройти в чате с Ау' : locale === 'es' ? 'Responder en chat con Au' : 'Take in chat with Au'}
+                     <ArrowRight size={15} aria-hidden="true" />
+                   </Link>}
                </div>
              </div>
              <div id={detailsId} className={styles.testDetailsBody} hidden={!expanded}>

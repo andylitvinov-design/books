@@ -45,5 +45,7 @@ test("user editing, editor restore, and Canvas re-render stay connected",()=>{
  assert.match(setting,/ideasDraft\?: \{ signature: string; options: string\[\]; chosen: number\[\] \}/);
  assert.match(setting,/const options = Array\.isArray\(settings\.presetOverride\)/);
  assert.match(setting,/return \[\.\.\.selected, \.\.\.custom\]\.slice\(0, 10\)/);
- assert.match(studio,/paintVideoAffirmations\(ctx,previewSeekSeconds,affirmationLines,affirmations,duration\)/);
+ assert.match(studio,/paintSingleVideoTextOverlay\(ctx,previewSeekSeconds,singleTextSource,affirmationLines,affirmations,duration,cinematicPlan,timelineTextClips\)/);
+ assert.equal((studio.match(/paintSingleVideoTextOverlay\(ctx,/g)||[]).length,5,
+   "preview and all exports must use the same single text painter");
 });

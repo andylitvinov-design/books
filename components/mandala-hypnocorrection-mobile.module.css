@@ -1,457 +1,171 @@
-.panel{--hypno-ink:#122c48;color:var(--hypno-ink);max-width:720px;width:100%;min-width:0;margin:12px auto;padding:0 2px;font-family:Arial,Helvetica,sans-serif}
+/* Owner-approved 07 Nov Hypno Effects: one existing Studio player above,
+   one warm workspace card below, two tabs and real renderer-backed controls. */
+.panel{--ink:#143d3a;--accent:#067a67;--edge:#e9dfd1;
+  color:var(--ink);width:100%;max-width:780px;min-width:0;margin:10px auto 0;
+  padding:clamp(10px,2.9vw,18px);border:1px solid var(--edge);border-radius:24px;
+  background:#fffcf7;box-shadow:0 7px 22px #3b493016;font-family:Arial,Helvetica,sans-serif}
 .panel *{box-sizing:border-box}
 .panel button{cursor:pointer;font-family:inherit}
-.panel button:focus-visible,.panel input:focus-visible{outline:3px solid #d6a958;outline-offset:2px}
-.panel button:disabled{opacity:.58;cursor:not-allowed}
-.heading{margin:0 0 10px;padding:1px 2px}
-.heading h3{margin:0;color:#092640;font:700 clamp(26px,7vw,36px)/1.12 Georgia,serif}
-.heading p{margin:5px 0 0;color:#61748b;font:500 15px/1.4 Arial,sans-serif}
-.wave{border:1px solid #e3d8fa;border-radius:17px;background:linear-gradient(125deg,#fbf6ff,#f2f4ff 74%,#fffafc);padding:13px;margin:0 0 12px;box-shadow:0 4px 13px #483a8821}
-.waveTop{display:flex;align-items:center;gap:12px;color:#7050e5}
-.waveTop>svg{flex:none}
-.waveTop strong{display:block;color:#40319c;font:800 18px/1.2 Arial,sans-serif}
-.waveTop p{margin:4px 0 0;color:#67608e;font-size:14px;line-height:1.35}
-.wave>button{display:flex;justify-content:center;align-items:center;gap:12px;min-height:46px;width:100%;margin-top:11px;background:linear-gradient(110deg,#8752f0,#5b37d8);border:0;border-radius:12px;color:white;font-size:17px;font-weight:800}
-.group{border:1px solid #e6e8e6;border-radius:17px;background:#fff;margin:0 0 11px;box-shadow:0 4px 13px #274f4613;overflow:hidden}
-.groupHeader{display:flex;gap:12px;align-items:center;width:100%;min-height:92px;padding:10px;border:0;text-align:left;background:#fff;color:#0e2845}
-.groupHeader>img{width:78px;height:69px;border-radius:11px;flex:none;object-fit:cover;background:#eaf1e8}
-.groupTitle{display:flex;flex-direction:column;gap:5px;flex:1;min-width:0}
-.groupTitle strong{font:700 clamp(20px,5.3vw,25px)/1.12 Georgia,serif}
-.groupTitle small{font:500 14px/1.3 Arial,sans-serif;color:#69788a}
-.chevron,.expanded{flex:none;color:#45687b;transition:transform .2s}
-.expanded{transform:rotate(180deg)}
-.groupContent{padding:0 9px 10px}
-.groupContent[hidden]{display:none}
-.feature{display:grid;grid-template-columns:42px minmax(0,1fr) 54px;gap:11px;align-items:center;min-height:92px;margin:0 0 8px;padding:11px;border:1px solid #edf0ea;border-radius:13px;background:linear-gradient(110deg,#fff,#f8fbf8)}
-.feature:last-child{margin-bottom:0}
-.featureIcon{display:flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:13px;background:#e9f5f0;color:#087b70}
-.featureIcon svg{width:25px;height:25px;stroke-width:1.9}
-.featureText{border:0;padding:0;background:transparent;text-align:left;color:#0c2b48;min-width:0}
-.featureText strong{display:block;font-size:18px;line-height:1.17;font-weight:800}
-.featureText span{display:block;color:#65788b;font-size:14px;line-height:1.32;margin-top:5px}
-.switch{display:flex;align-items:center;justify-content:flex-start;justify-self:end;height:32px;width:54px;border:0;border-radius:25px;background:#bdc3cc;padding:3px}
-.switch>span{display:block;width:26px;height:26px;background:#fff;border-radius:100%;box-shadow:0 1px 4px #0002;transition:transform .17s}
-.switch[data-on=true]{background:#018d79}
-.switch[data-on=true]>span{transform:translateX(22px)}
-.featureArrow{display:flex;align-items:center;justify-content:center;justify-self:end;height:43px;width:43px;border:1px solid #d8e7dc;border-radius:100%;background:#f5faf5;color:#008574}
-.settings{display:grid;gap:10px;margin:3px 0 10px;padding:13px;background:#f2f8f5;border:1px solid #dbeadf;border-radius:12px}
-.settings label{display:grid;gap:8px;font-size:14px;font-weight:700;color:#274d47}
+.panel button:disabled{cursor:not-allowed;opacity:.58}
+.panel :is(button,input):focus-visible{outline:3px solid #176e6e;outline-offset:3px}
+.srOnly{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.intro{display:grid;gap:9px;min-width:0;margin-bottom:12px}
+.heading{display:flex;align-items:center;gap:11px;min-width:0}
+.heading>div{min-width:0}
+.sectionIcon{display:grid;place-items:center;flex:none;width:51px;height:51px;
+  border-radius:16px;background:linear-gradient(145deg,#fff0cd,#e9f3e1);color:#047361}
+.heading h3{margin:0;color:#17334b;font:800 clamp(20px,5.3vw,27px)/1.14 Arial,Helvetica,sans-serif;letter-spacing:-.02em}
+.heading p{margin:5px 0 0;color:#5d6a71;font:500 clamp(12px,3.35vw,15px)/1.34 Arial,sans-serif}
+.wave{min-width:0}
+.wave>button{display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  min-height:44px;max-width:100%;padding:7px 12px;border:1px solid #c4dccc;
+  border-radius:14px;background:#f5faf2;color:#086f59;
+  font:800 clamp(12px,3.35vw,14px)/1.2 Arial,sans-serif}
+.wave>button svg{flex:none}
+.wave>.note{margin:7px 0 0}
+.groupTabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;
+  padding:4px;margin-bottom:12px;border:1px solid #e9dfd1;border-radius:19px;background:#f5ecdc}
+.groupTabs button{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:3px;
+  min-width:0;min-height:54px;padding:6px 3px;border:0;border-radius:15px;
+  background:transparent;color:#164a42;font:800 clamp(11px,3vw,14px)/1.16 Arial,sans-serif;
+  text-align:center;white-space:normal}
+.groupTabs button svg{flex:none;width:18px;height:18px}
+.groupTabs button[aria-selected="true"]{color:white;
+  background:linear-gradient(110deg,#15a584,#067a67);
+  box-shadow:0 3px 10px #06694e2c}
+.groupTabs button:not([aria-selected="true"]):hover{background:#fffaf2}
+.group{min-width:0}
+.group[hidden]{display:none!important}
+.groupContent{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;min-width:0}
+.feature{display:grid;grid-template-columns:48px minmax(0,1fr) 44px;
+  grid-template-rows:auto;align-items:center;gap:6px 10px;min-width:0;min-height:72px;
+  padding:9px 10px;border:1px solid #e9dfd1;border-radius:17px;background:#fff;
+  box-shadow:0 2px 9px #3b493011}
+.featureIcon{display:grid;place-items:center;width:45px;height:45px;
+  border-radius:13px;background:#e9f5ef;color:#087b60}
+.featureIcon svg{width:25px;height:25px;stroke-width:1.8}
+.featurePoster{display:block;width:47px;height:49px;object-fit:cover;border-radius:11px}
+.featureText{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;
+  min-width:0;min-height:44px;padding:0;border:0;background:transparent;text-align:left;color:#17334b}
+.featureText strong{display:block;color:#17334b;font-size:clamp(14px,3.8vw,18px);
+  font-weight:800;line-height:1.2;overflow-wrap:anywhere}
+.featureText>span:not(.configureLink){display:block;margin-top:3px;color:#5d6a71;
+  font-size:clamp(11px,3vw,13px);line-height:1.25;overflow-wrap:anywhere}
+.configureLink{display:inline-flex;align-items:center;gap:3px;margin-top:4px;
+  font:750 clamp(11px,3vw,12px)/1.25 Arial,sans-serif;color:#067a67}
+.configureLink svg{width:13px;height:13px}
+.featureOptions{grid-column:2/-1;display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-width:0}
+.effectChip{display:inline-flex;align-items:center;justify-content:center;min-height:35px;
+  min-width:0;padding:5px 10px;border:1px solid #dfd9ce;border-radius:14px;
+  background:#fffaf2;color:#234d43;font:750 12px/1.1 Arial,sans-serif}
+.effectChip[aria-pressed="true"]{border-color:#067a67;background:#067a67;color:#fff}
+.switch{position:relative;display:flex;align-items:center;justify-content:flex-start;
+  justify-self:end;width:44px;height:44px;padding:0;border:0;background:transparent;border-radius:13px}
+.switch::before{position:absolute;content:"";left:0;top:9px;width:44px;height:26px;
+  border-radius:18px;background:#b5c4c1}
+.switch[data-on=true]::before{background:#067a67}
+.switch>span{position:relative;z-index:1;flex:none;width:20px;height:20px;
+  margin-left:3px;border-radius:50%;background:#fff;box-shadow:0 1px 4px #0002;transition:transform .15s}
+.switch[data-on=true]>span{transform:translateX(18px)}
+.featureArrow{display:grid;place-items:center;justify-self:end;width:44px;height:44px;
+  border:1px solid #dbe4da;border-radius:50%;background:#fffdf7;color:#087b60}
+.settings{grid-column:1/-1;display:grid;gap:8px;margin:0;padding:10px 12px;
+  border:1px solid #dbe8dc;border-radius:15px;background:#f5f9f5}
+.settings label{display:grid;gap:4px;color:#275147;font-size:13px;font-weight:750;line-height:1.3}
 .settings label strong{font-weight:800}
-.settings input{width:100%;accent-color:#018d79;height:26px}
-.meditation{padding:14px;background:linear-gradient(120deg,#fcfaff,#f4ecff);border-radius:13px;text-align:center}
-.meditation>svg{color:#6c42d9}
-.meditation p{font-size:15px;line-height:1.4;color:#5d5682;margin:7px 0 13px}
-.meditation button{display:flex;align-items:center;justify-content:center;gap:9px;min-height:51px;width:100%;border:0;border-radius:13px;background:linear-gradient(100deg,#7950ed,#6332dc);color:white;font-size:16px;font-weight:800}
-.preview{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;min-height:49px;padding:10px;border:1px solid #a8cfc4;background:#edf8f3;border-radius:12px;color:#087160;font-size:16px;font-weight:800}
-.note{margin:7px 1px 10px;padding:10px 12px;border:1px solid #e5e0cf;border-radius:10px;background:#fcfbf3;color:#546778;font-size:14px;line-height:1.4}
-.privacy{margin:9px 3px 1px;color:#637c73;font-size:12px;line-height:1.4}
-@media(max-width:360px){.panel{padding:0}.groupHeader{gap:9px;padding:8px}.groupHeader>img{width:66px;height:61px}.feature{grid-template-columns:36px minmax(0,1fr) 48px;gap:8px;padding:8px;min-height:88px}.featureIcon{width:36px;height:36px}.featureText strong{font-size:17px}.featureText span{font-size:13.5px}.switch{width:48px;height:29px}.switch>span{width:23px;height:23px}.switch[data-on=true]>span{transform:translateX(19px)}}
-@media(prefers-reduced-motion:reduce){.panel *{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
-
-/* 1 Nov owner-approved THIRD workspace: photo-led four rows, all controls visible.
-   This applies only to the Hypnocorrection child, not other Studio workspaces. */
-.create{display:flex;justify-content:center;align-items:center;gap:14px;width:100%;
-  min-height:65px;padding:10px 16px;margin:11px 0 0;border:0;border-radius:15px;
-  background:linear-gradient(105deg,#0ba78c,#078c74 60%,#1ab5a0);color:white;
-  box-shadow:0 4px 14px #086f5d2e;text-align:left}
-.create>span{display:flex;flex-direction:column;gap:3px}
-.create strong{font:800 20px/1.13 Arial,sans-serif}
-.create small{font:500 13px/1.2 Arial,sans-serif;color:#e5fff5}
-.configureLink{display:none}
-.featurePoster{display:block;width:100%;height:48px;border-radius:9px;object-fit:cover}
-.meditationStart,.meditationOptions button{cursor:pointer}
-.meditationStart small,.meditationOptions small{display:block}
-
-@media(max-width:759px){
-  .panel{display:flex;flex-direction:column;gap:0;max-width:100%;min-width:0;margin:0;padding:0 1px}
-  .heading{order:0;margin:0 0 8px;padding:0}
-  .heading h3{font-size:clamp(26px,7vw,34px);line-height:1.12}
-  .heading p{font-size:clamp(13px,3.6vw,16px);line-height:1.3}
-  .wave{order:1;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;
-    align-items:center;padding:9px 10px;margin-bottom:10px;border-radius:15px}
-  .waveTop{min-width:0;gap:8px}
-  .waveTop>svg{width:26px;height:26px}
-  .waveTop strong{font-size:clamp(13px,3.8vw,17px);line-height:1.13}
-  .waveTop p{font-size:clamp(10px,2.85vw,12px);line-height:1.21}
-  .wave>button{width:auto;min-width:100px;min-height:44px;margin:0;padding:5px 10px;
-    font-size:clamp(12px,3.2vw,14px);border-radius:12px}
-  .wave>.note{grid-column:1/-1;margin:0}
-  .group{order:2;display:grid;grid-template-columns:clamp(100px,28%,123px) minmax(0,1fr);
-    align-items:stretch;gap:6px;min-width:0;margin:0 0 9px;padding:0;border:0;
-    border-radius:0;background:transparent;box-shadow:none;overflow:visible}
-  .groupHeader{position:relative;display:flex;flex-direction:column;align-items:flex-start;
-    justify-content:flex-end;width:100%;min-height:170px;max-width:100%;padding:9px;
-    border-radius:14px;overflow:hidden;background:#204b47;color:#fff;text-align:left;
-    text-shadow:0 2px 5px #081714b3}
-  .groupHeader:after{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
-    background:linear-gradient(0deg,#081c1ac9 0%,#15302d33 68%,transparent)}
-  .groupHeader>img{position:absolute;inset:0;width:100%;height:100%;border-radius:0;
-    object-fit:cover;filter:saturate(1.12)}
-  .groupTitle{position:relative;z-index:1;width:100%;gap:5px}
-  .groupTitle strong{font:700 clamp(16px,4.6vw,21px)/1.09 Georgia,serif;
-    overflow-wrap:anywhere;color:#fff}
-  .groupTitle small{font:500 clamp(10px,2.7vw,12px)/1.24 Arial,sans-serif;color:#fff}
-  .chevron,.expanded{position:absolute;z-index:2;right:6px;top:7px;color:#fff;
-    filter:drop-shadow(0 1px 3px #10271f)}
-  .groupContent:not([hidden]){display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
-    align-content:start;gap:6px;min-width:0;padding:0}
-  .feature{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:38px 1fr;
-    gap:2px;align-items:start;min-width:0;min-height:170px;margin:0;
-    padding:7px 6px;border:1px solid #e6ebe2;border-radius:13px;
-    background:#fffefb;box-shadow:0 2px 10px #24463816}
-  .feature[data-photo=true]{grid-template-rows:50px 1fr}
-  .featurePoster{grid-column:1;grid-row:1;width:100%;height:49px;object-fit:cover;
-    border-radius:9px}
-  .featureIcon{grid-column:1;grid-row:1;width:30px;height:30px;border-radius:10px;
-    color:#087b75;background:transparent}
-  .featureIcon svg{width:27px;height:27px}
-  .featureText{grid-column:1;grid-row:2;display:flex;flex-direction:column;
-    align-items:stretch;min-height:0;width:100%;height:100%;text-align:left}
-  .featureText strong{font:800 clamp(11.5px,3.2vw,14px)/1.11 Arial,sans-serif;
-    color:#0c2b48;overflow-wrap:anywhere;hyphens:auto}
-  .featureText>span:not(.configureLink){font-size:clamp(10px,2.65vw,12px);line-height:1.18;
-    margin:5px 0 6px;color:#687b8d;overflow-wrap:anywhere}
-  .featureText .configureLink{display:flex;align-items:center;justify-content:center;gap:4px;
-    min-width:0;min-height:31px;width:100%;margin:auto 0 0;padding:3px 1px;
-    border-radius:9px;background:#f4f5ef;color:#16294b;
-    font:700 clamp(10px,2.7vw,12px)/1 Arial,sans-serif}
-  .configureLink svg{flex:none;width:13px;height:13px}
-  .switch{grid-column:1;grid-row:1;z-index:2;justify-self:end;align-self:start;
-    width:39px;height:25px;padding:2px}
-  .switch>span{width:21px;height:21px}
-  .switch[data-on=true]>span{transform:translateX(14px)}
-  .featureArrow{grid-column:1;grid-row:1;z-index:2;justify-self:end;align-self:start;
-    width:29px;height:29px;background:#ffffffdc;border-color:#d9e7dd}
-  .featureArrow svg{width:16px;height:16px}
-  .groupContent>.note,.groupContent>.settings{order:10;grid-column:1/-1;margin:0}
-  .group[data-hypno-group=meditation] .groupContent:not([hidden]){display:block}
-  .meditation{display:grid;gap:6px;min-height:170px;padding:0;border:0;
-    border-radius:0;background:transparent;text-align:left}
-  .meditationStart{display:grid;grid-template-columns:32px minmax(0,1fr) 20px;
-    align-items:center;gap:6px;width:100%;min-height:84px;padding:8px;
-    border:1px solid #ece5e0;border-radius:13px;background:#fffefa;text-align:left}
-  .meditationStart>svg{color:#7852da}
-  .meditationStart span{min-width:0}
-  .meditationStart strong{display:block;color:#101f3c;
-    font:800 clamp(12px,3.4vw,15px)/1.13 Arial,sans-serif}
-  .meditationStart small{margin-top:5px;color:#64788a;
-    font:500 clamp(10px,2.65vw,12px)/1.17 Arial,sans-serif}
-  .meditationOptions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
-  .meditationOptions button{display:flex;flex-direction:column;align-items:flex-start;
-    gap:4px;min-height:80px;min-width:0;padding:7px 5px;border:1px solid #e6ece5;
-    border-radius:12px;background:#fffefa;text-align:left;color:#0e2a47}
-  .meditationOptions svg{color:#7651d8}
-  .meditationOptions strong{font:750 clamp(10px,2.6vw,12px)/1.1 Arial,sans-serif}
-  .meditationOptions small{font:500 clamp(9px,2.5vw,11px)/1.19 Arial,sans-serif;
-    color:#687b8d;overflow-wrap:anywhere}
-  .create{order:3;margin-top:5px}
-  .preview{order:4;min-height:43px;margin:5px 0 0;padding:5px 7px;
-    border:0;background:transparent;box-shadow:none;font-size:13px}
-  .privacy{order:5;font-size:11px}
-}
-@media(max-width:374px){
-  .wave{grid-template-columns:minmax(0,1fr)}
-  .wave>button{width:100%;min-height:44px}
-  .group{grid-template-columns:1fr}
-  .groupHeader{min-height:96px;flex-direction:row;align-items:flex-end}
-  .groupTitle strong{font-size:21px;overflow-wrap:normal}
-  .groupContent:not([hidden]){grid-template-columns:repeat(3,minmax(0,1fr))}
-  .feature{min-height:154px;padding:8px}
-  .featureText strong{font-size:13px}
-  .featureText>span:not(.configureLink){font-size:11px}
-  .meditation{min-height:0}
-  .meditationStart{min-height:80px}
-  .meditationOptions button{min-height:77px}
-}
-/* Preserve a true 44 × 44 CSS-pixel touch target for the compact iPhone switches.
-   The visible pill remains 44 × 26 inside the transparent button hit area. */
-@media(max-width:759px){
-  .switch{position:relative;display:flex;align-items:center;justify-content:flex-start;
-    width:44px;height:44px;padding:0;background:transparent;border-radius:14px}
-  .switch::before{content:"";position:absolute;top:9px;left:0;width:44px;height:26px;
-    border-radius:18px;background:#bdc3cc}
-  .switch[data-on=true]{background:transparent}
-  .switch[data-on=true]::before{background:#018d79}
-  .switch>span{position:relative;z-index:1;flex:none;margin-left:3px;
-    width:20px;height:20px;transform:none}
-  .switch[data-on=true]>span{transform:translateX(18px)}
-}
-
-/* The one real Hypnocorrection title + Wave is portaled ahead of the shared
-   original hero player only in the third workspace; no duplicate controls. */
-.intro{display:grid;gap:8px;min-width:0;width:100%;margin:0 0 5px;padding:1px 0;
-  font-family:Arial,Helvetica,sans-serif;color:#122c48}
-.intro *{box-sizing:border-box}
-.intro button:focus-visible{outline:3px solid #d6a958;outline-offset:2px}
-.intro .wave{margin:0}
-
-/* Follow the approved iPhone reference density without reducing touch targets:
-   keep 3 readable cards per row but never force 170px-high cards. */
-@media(min-width:375px) and (max-width:759px){
- .groupHeader{min-height:128px}
- .feature{min-height:128px;grid-template-rows:38px 1fr}
- .feature[data-photo=true]{grid-template-rows:36px 1fr}
- .featurePoster{height:36px}
- .meditation{min-height:128px}
- .meditationStart{min-height:60px}
- .meditationOptions button{min-height:62px}
- .create{min-height:54px}
-}
-@media(max-width:374px){
- .groupHeader{min-height:84px}
- .feature{min-height:120px}
- .meditationStart{min-height:64px}
- .meditationOptions button{min-height:64px}
- .create{min-height:54px}
-}
-/* Owner's 02 Nov visual QA: reduce long, three-column iPhone rows to the
-   approved compact rhythm. Keep all real controls/notes in the DOM and
-   preserve the 44x44 switch touch targets. */
-@media (max-width:759px){
-  .groupNumber{position:absolute;left:7px;top:7px;z-index:3;display:grid;
-    place-items:center;min-width:26px;height:26px;padding:0 6px;border-radius:9px;
-    background:#fffdf7;color:#122b46;text-shadow:none;
-    box-shadow:0 1px 5px #122a4025;font:800 15px/1 Arial,sans-serif}
-  .groupTitle strong{font-size:clamp(16px,4.4vw,19px);line-height:1.1;
-    overflow-wrap:normal;hyphens:auto}
-  .groupTitle small{display:-webkit-box;-webkit-line-clamp:3;
-    -webkit-box-orient:vertical;overflow:hidden;font-size:clamp(10px,2.65vw,12px);
-    line-height:1.2}
-  .featureText strong{display:-webkit-box;-webkit-box-orient:vertical;
-    -webkit-line-clamp:3;overflow:hidden;word-break:normal;hyphens:auto;
-    font-size:clamp(11px,3.1vw,13px);line-height:1.12;letter-spacing:-.015em}
-  .featureText>span:not(.configureLink){display:-webkit-box;-webkit-box-orient:vertical;
-    -webkit-line-clamp:2;overflow:hidden;margin:3px 0;color:#627789;
-    font-size:clamp(10px,2.7vw,11.5px);line-height:1.17}
-  .featureText .configureLink{min-height:28px;padding:4px 1px;font-size:clamp(10px,2.7vw,12px)}
-  .featureText .configureLink svg{width:12px;height:12px}
-  .featureArrow{min-width:29px;min-height:29px}
-  .groupHeader:focus-visible,.featureText:focus-visible,.meditationStart:focus-visible{
-    outline:3px solid #d9b65c;outline-offset:2px}
-  /* A generic `.meditation button` rule previously forced the CTA into a
-     purple block. These more-specific selectors restore the owner's WHITE
-     mini-card with readable navy text and a purple document icon. */
-  .meditation .meditationStart{display:grid;grid-template-columns:39px minmax(0,1fr) 17px;
-    gap:7px;align-items:center;justify-content:initial;padding:6px;
-    border:1px solid #e8e5e9;border-radius:12px;background:#fffdf9;
-    color:#142c45;text-align:left;box-shadow:none}
-  .meditation .meditationOptions button{background:#fffdf9;color:#142c45}
-  .meditationStart>svg:first-child{width:39px;height:39px;padding:8px;
-    border-radius:10px;background:#f1eaff;color:#7655da}
-  .meditationStart strong{font-size:clamp(12px,3.3vw,14px)}
-  .meditationStart small{display:-webkit-box;-webkit-box-orient:vertical;
-    -webkit-line-clamp:2;overflow:hidden}
-}
-@media(min-width:375px) and (max-width:759px){
-  .group{grid-template-columns:clamp(104px,27%,123px) minmax(0,1fr);
-    align-items:stretch;gap:6px;margin-bottom:8px}
-  .groupHeader{height:124px;min-height:124px;padding:8px}
-  .groupContent:not([hidden]){gap:5px}
-  .feature{height:124px;min-height:124px;max-height:124px;
-    grid-template-rows:31px minmax(0,1fr);gap:2px;
-    padding:6px 5px;overflow:hidden}
-  .feature[data-photo=true]{grid-template-rows:31px minmax(0,1fr)}
-  .featurePoster{height:31px}
-  .featureIcon,.featureIcon svg{width:26px;height:26px}
-  .featureText{min-height:0;overflow:hidden}
-  .meditation{height:124px;min-height:124px;grid-template-rows:59px 60px;gap:5px}
-  .meditationStart{height:59px;min-height:59px;padding:6px}
-  .meditationOptions button{height:60px;min-height:60px}
-  .groupTitle{gap:4px}
-}
-@media(max-width:374px){
-  .groupHeader{height:84px;min-height:84px}
-  .groupContent:not([hidden]){gap:5px}
-  .feature{height:124px;min-height:124px;max-height:124px;
-    grid-template-rows:30px minmax(0,1fr);padding:6px 5px;overflow:hidden}
-  .feature[data-photo=true]{grid-template-rows:30px minmax(0,1fr)}
-  .featurePoster{height:30px}
-  .featureIcon,.featureIcon svg{width:26px;height:26px}
-  .featureText{min-height:0;overflow:hidden}
-  .meditation{min-height:0;grid-template-rows:65px 62px;gap:5px}
-  .meditationStart{min-height:65px;height:65px}
-  .meditationOptions button{height:62px;min-height:62px}
-}
-
-/* 02 Nov approved iPhone reference: three real full-width option cards under
-   each heading, not the former 27%-wide left poster + cramped side cards.
-   Keep the original JSX handlers, collapsed states, switch roles and portals. */
-@media(max-width:759px){
- .panel{max-width:100%;padding:0;margin:0}
- .group{display:block;grid-template-columns:none;min-width:0;margin:0 0 9px;
-   padding:9px;border:1px solid #eae9e1;border-radius:18px;
-   background:#fffefa;box-shadow:0 3px 14px #344c3710;overflow:hidden}
- .groupHeader{display:flex;flex-direction:row;align-items:center;justify-content:flex-start;
-   gap:9px;width:100%;height:auto!important;min-height:44px!important;
-   padding:0 3px 8px;border-radius:0;background:transparent;color:#13263c;
-   text-align:left;text-shadow:none}
- .groupHeader::after,.groupHeader>img{display:none}
- .groupNumber{position:static;flex:0 0 34px;min-width:34px;width:34px;height:34px;
-   display:grid;place-items:center;padding:0;border-radius:50%;background:#e1f0d3;
-   color:#163c2e;text-shadow:none;box-shadow:none;font:800 18px/1 Arial,sans-serif}
- .groupTitle{position:static;display:flex;flex-direction:column;gap:1px;min-width:0}
- .groupTitle strong{font:800 clamp(17px,4.6vw,21px)/1.14 Arial,Helvetica,sans-serif;
-   color:#15253b;overflow-wrap:normal;hyphens:auto}
- .groupTitle small{display:block;font:500 clamp(11px,3vw,13px)/1.23 Arial,Helvetica,sans-serif;
-   color:#62728a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
- .chevron,.expanded{position:static;flex:none;color:#526976;filter:none}
- .groupContent:not([hidden]){display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
-   gap:7px;min-width:0;padding:0}
- .feature,.feature[data-photo=true]{position:relative;isolation:isolate;display:grid;
-   grid-template-columns:minmax(0,1fr);grid-template-rows:34px minmax(0,1fr);
-   gap:3px;align-items:start;width:100%;height:156px;min-height:156px;max-height:none;
-   min-width:0;margin:0;padding:8px 7px;border:1px solid #e7e9e3;
-   border-radius:14px;background:#fff;color:#112944;box-shadow:0 2px 9px #24493610;
-   overflow:hidden}
- .featureIcon{grid-column:1;grid-row:1;width:30px;height:30px;
-   border-radius:8px;background:transparent;color:#16806b}
- .featureIcon svg{width:27px;height:27px}
- .featureText{grid-column:1;grid-row:2;display:flex;flex-direction:column;
-   align-items:stretch;justify-content:flex-start;min-width:0;min-height:0;
-   width:100%;height:100%;padding:0;text-align:left}
- .featureText strong{display:-webkit-box;-webkit-box-orient:vertical;
-   -webkit-line-clamp:3;overflow:hidden;max-height:47px;color:#122c48;
-   font:800 clamp(11.3px,3.25vw,14px)/1.13 Arial,Helvetica,sans-serif;
-   letter-spacing:-.015em;word-break:normal;hyphens:auto}
- .featureText>span:not(.configureLink){display:-webkit-box;-webkit-box-orient:vertical;
-   -webkit-line-clamp:2;overflow:hidden;margin:4px 0 5px;color:#687789;
-   font:500 clamp(10px,2.75vw,12px)/1.2 Arial,Helvetica,sans-serif}
- .featureText .configureLink{display:flex;align-items:center;justify-content:center;
-   gap:3px;min-width:0;min-height:29px;width:100%;margin:auto 0 0;
-   padding:4px 1px;border-radius:9px;background:#eef5e9;color:#135d49;
-   font:800 clamp(10px,2.9vw,12px)/1 Arial,Helvetica,sans-serif}
- .featureText .configureLink svg{width:13px;height:13px;flex:none}
- .switch{grid-column:1;grid-row:1;z-index:3;justify-self:end;align-self:start;
-   flex:none;width:44px;height:44px;margin:-7px -6px 0 0}
- .featureArrow{grid-column:1;grid-row:1;z-index:3;justify-self:end;align-self:start;
-   width:44px;height:44px;min-width:44px;min-height:44px;
-   margin:-7px -6px 0 0;border:0;background:#fffefbe9;color:#147b64}
- .feature[data-photo=true]{grid-template-rows:34px minmax(0,1fr);
-   background:#1b4743;border-color:#b9d0c4;box-shadow:none}
- .feature[data-photo=true]::after{content:"";position:absolute;inset:0;z-index:0;
-   background:linear-gradient(0deg,#071d20d9 0%,#07222a47 55%,transparent 90%);
-   pointer-events:none}
- .feature[data-photo=true] .featurePoster{position:absolute;inset:0;z-index:0;
-   width:100%;height:100%;border:0;border-radius:inherit;object-fit:cover}
- .feature[data-photo=true] .featureText{grid-row:1 / 3;z-index:1;
-   align-self:stretch;justify-content:flex-end;padding:0 2px 3px}
- .feature[data-photo=true] .featureText strong{color:#fff;
-   font:800 clamp(12px,3.3vw,15px)/1.11 Arial,Helvetica,sans-serif;
-   text-shadow:0 1px 5px #081b1db3}
- .feature[data-photo=true] .featureText>span:not(.configureLink),
- .feature[data-photo=true] .configureLink{display:none}
- .group[data-hypno-group=meditation] .groupContent:not([hidden]){display:block}
- .meditation{display:grid;grid-template-rows:auto auto;gap:7px;
-   height:auto;min-height:0;margin:0;padding:0;background:transparent;border-radius:0}
- .meditation .meditationStart{display:grid;grid-template-columns:42px minmax(0,1fr) 20px;
-   align-items:center;justify-content:initial;gap:8px;width:100%;
-   height:auto;min-height:64px;padding:9px 11px;
-   border:1px solid #e4dced;border-radius:14px;
-   background:linear-gradient(110deg,#f7f0ff,#fff9fd);
-   color:#2d2358;text-align:left;box-shadow:none}
- .meditationStart>svg:first-child{width:37px;height:37px;padding:7px;
-   border-radius:11px;background:#f0e5ff;color:#7652cd}
- .meditationStart strong{font:800 clamp(13px,3.8vw,16px)/1.16 Arial,Helvetica,sans-serif;color:#1d2444}
- .meditationStart small{display:-webkit-box;-webkit-line-clamp:2;
-   -webkit-box-orient:vertical;overflow:hidden;margin-top:3px;color:#6a6b85;
-   font:500 clamp(10.5px,2.9vw,12px)/1.2 Arial,Helvetica,sans-serif}
- .meditationOptions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
- .meditation .meditationOptions button{display:flex;flex-direction:column;
-   justify-content:flex-start;align-items:flex-start;gap:4px;
-   width:100%;height:auto;min-height:85px;min-width:0;padding:9px 7px;
-   border:1px solid #e8e8e3;border-radius:13px;background:#fff;color:#162c45;
-   text-align:left}
- .meditationOptions svg{width:23px;height:23px;color:#7957c9}
- .meditationOptions strong{font:800 clamp(11px,3vw,13px)/1.15 Arial,Helvetica,sans-serif}
- .meditationOptions small{font:500 clamp(10px,2.8vw,12px)/1.2 Arial,Helvetica,sans-serif;
-   color:#64758a;overflow-wrap:normal}
- .group[data-hypno-group=phrases] .feature{height:142px;min-height:142px}
- .group[data-hypno-group=phrases] .featureIcon{color:#8055c9}
- .actions{order:3;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
-   gap:8px;min-width:0;margin:9px 0 0}
- .actions .meditationAction,.actions .create{display:flex;align-items:center;justify-content:center;
-   gap:7px;min-width:0;width:100%;min-height:59px;height:auto;margin:0;padding:10px 6px;
-   border-radius:16px;font:800 clamp(12px,3.35vw,15px)/1.15 Arial,Helvetica,sans-serif;
-   text-align:center;box-shadow:0 3px 11px #24493618}
- .actions .meditationAction{border:1px solid #03936b;
-   background:linear-gradient(110deg,#0ba475,#00845e);color:white}
- .actions .meditationAction svg{flex:none}
- .actions .create{border:1px solid #c5dcd0;background:#fffdf9;color:#0b6048}
- .actions .create svg{width:22px;height:22px;flex:none}
- .actions .create>span{display:flex;flex-direction:column;gap:2px;align-items:flex-start}
- .actions .create strong{font:800 clamp(12px,3.35vw,15px)/1.15 Arial,Helvetica,sans-serif}
- .actions .create small{font:600 10px/1.15 Arial,Helvetica,sans-serif;color:#4d7869}
- .preview{margin:4px 0 0;min-height:44px;font-size:12px}
- .privacy{margin:2px 4px 0;font-size:11px}
-}
+.settings input{width:100%;min-height:35px;accent-color:#067a67}
+.note{grid-column:1/-1;margin:0;padding:10px 12px;border:1px solid #e9dfd1;
+  border-radius:12px;background:#fff8e9;color:#5d6a71;font-size:12px;line-height:1.35}
+.summary{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;
+  gap:8px;margin:12px 0 8px;padding-top:10px;border-top:1px solid #e9dfd1;
+  color:#174b3f;font-size:13px;font-weight:800}
+.summary>span:first-child{display:inline-flex;align-items:center;gap:6px}
+.modeBadge{display:inline-flex;align-items:center;min-height:29px;padding:4px 10px;
+  border-radius:18px;background:#edf5e9;color:#206d54;font-weight:750;font-size:12px}
+.actions{order:3;display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
+.actions .create,.actions .withoutEffects{display:flex;align-items:center;justify-content:center;
+  gap:9px;width:100%;min-height:54px;padding:9px 12px;border-radius:16px;
+  font:800 clamp(13px,3.6vw,17px)/1.2 Arial,sans-serif;text-align:center}
+.actions strong{font:inherit}
+.actions svg{flex:none;width:20px;height:20px}
+.actions .create{border:1px solid #067a67;background:linear-gradient(115deg,#16a687,#04765f);color:white;box-shadow:0 3px 10px #06694e30}
+.actions .withoutEffects{border:1px solid #add1c3;background:#fffdf7;color:#12684e}
+.privacy{margin:9px 3px 0;color:#5d6a71;font-size:12px;line-height:1.35}
 @media(max-width:359px){
- .group{padding:7px}
- .groupContent:not([hidden]){gap:5px}
- .feature,.feature[data-photo=true]{height:153px;min-height:153px;padding:7px 5px}
- .featureText strong{font-size:11.2px}
- .featureText>span:not(.configureLink){font-size:10px}
- .feature[data-photo=true] .featureText strong{font-size:12px}
- .meditationOptions{gap:5px}
- .meditation .meditationOptions button{padding:8px 5px}
+ .panel{padding:9px;border-radius:19px}
+ .groupTabs{gap:2px;padding:3px}
+ .groupTabs button{gap:2px;font-size:11px}
+ .heading h3{font-size:20px}
+ .sectionIcon{width:43px;height:43px}
+ .feature{grid-template-columns:39px minmax(0,1fr) 44px;gap:5px;padding:8px 7px}
+ .featureIcon{width:38px;height:38px}
+ .featurePoster{width:39px;height:43px}
+ .featureText strong{font-size:14px}
+ .featureOptions{gap:4px}
+ .effectChip{padding:5px 8px;font-size:11.5px}
+}
+@media(prefers-reduced-motion:reduce){.panel *{transition:none!important;animation:none!important}}
+
+/* Design Bible §10.13: Hypno neutral chrome adopts the same warm palette.
+   Effect toggles, selected chips, visual/auditory distinction stay semantic. */
+:global([data-mandala-mode="video"]) .panel{
+  --ink:var(--hh-studio-ink,#142B3D);
+  --accent:var(--hh-studio-primary,#087E61);
+  --edge:var(--hh-studio-border,#EADFD9);
+  background:var(--hh-studio-surface,#FFFCFA);
+  border-color:var(--hh-studio-border,#EADFD9);
+  color:var(--hh-studio-ink,#142B3D);
+  box-shadow:var(--hh-studio-shadow,0 5px 18px rgb(66 42 31 / 7%))
+}
+:global([data-mandala-mode="video"]) .heading h3,
+:global([data-mandala-mode="video"]) .featureText strong{
+  color:var(--hh-studio-ink,#142B3D)
+}
+:global([data-mandala-mode="video"]) .heading p,
+:global([data-mandala-mode="video"]) .featureText>span:not(.configureLink){
+  color:var(--hh-studio-muted,#5D6A71)
+}
+:global([data-mandala-mode="video"]) .groupTabs,
+:global([data-mandala-mode="video"]) .settings{
+  background:var(--hh-studio-inset,#FFF9F5);
+  border-color:var(--hh-studio-border,#EADFD9)
+}
+:global([data-mandala-mode="video"]) .feature,
+:global([data-mandala-mode="video"]) .effectChip:not([aria-pressed="true"]){
+  background:var(--hh-studio-surface,#FFFCFA);
+  border-color:var(--hh-studio-border,#EADFD9)
+}
+:global([data-mandala-mode="video"]) .groupTabs button[aria-selected="true"],
+:global([data-mandala-mode="video"]) .effectChip[aria-pressed="true"]{
+  background:linear-gradient(120deg,var(--hh-studio-primary,#087E61),
+    var(--hh-studio-deep,#006B4B));
+  border-color:var(--hh-studio-deep,#006B4B);
+  color:#FFFFFF
 }
 
-/* Approved 06 Nov Hypno: three compact tabs, one effect group visible at a time. */
-.panel[data-hypno-compact="true"]{max-width:780px;margin:8px auto 0;padding:0;color:#17334b}
-.panel[data-hypno-compact="true"] .srOnly{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
-.panel[data-hypno-compact="true"] .intro{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px;padding:0 3px}
-.panel[data-hypno-compact="true"] .heading{flex:1 1 180px;min-width:0;margin:0}
-.panel[data-hypno-compact="true"] .heading h3{font:800 clamp(23px,5.8vw,29px)/1.14 Georgia,serif;color:#17334b}
-.panel[data-hypno-compact="true"] .heading p{margin:4px 0 0;font-size:clamp(12px,3.1vw,15px);color:#5d6a71}
-.panel[data-hypno-compact="true"] .wave{flex:0 1 auto;display:block;min-width:0;margin:0;padding:0;border:0;background:transparent;box-shadow:none}
-.panel[data-hypno-compact="true"] .wave>button{display:flex;align-items:center;justify-content:center;gap:7px;width:auto;min-height:44px;margin:0;padding:7px 12px;border:1px solid #bfdccf;border-radius:14px;background:#fffcf7;color:#08765d;box-shadow:0 2px 7px #154c3420;font-size:clamp(11px,3.15vw,14px);font-weight:800}
-.panel[data-hypno-compact="true"] .wave>.note{margin:5px 0 0;max-width:280px}
-.panel[data-hypno-compact="true"] .groupTabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;min-width:0;margin:0 0 11px}
-.panel[data-hypno-compact="true"] .groupTabs button{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:3px;min-width:0;min-height:61px;padding:8px 3px;border:1px solid #e9dfd1;border-radius:17px;background:#fffcf7;box-shadow:0 3px 10px #4e3d2d14;color:#174437;font:800 clamp(11px,3.05vw,15px)/1.16 Arial,sans-serif;text-align:center}
-.panel[data-hypno-compact="true"] .groupTabs button svg{flex:none;color:#087b60}
-.panel[data-hypno-compact="true"] .groupTabs button[aria-selected="true"]{background:linear-gradient(140deg,#18a27f,#05765c);border-color:#067a67;color:#fff;box-shadow:0 4px 11px #056b5430}
-.panel[data-hypno-compact="true"] .groupTabs button[aria-selected="true"] svg{color:#fff}
-.panel[data-hypno-compact="true"] .group{display:block;min-width:0;margin:0;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;overflow:visible}
-.panel[data-hypno-compact="true"] .group[hidden]{display:none!important}
-.panel[data-hypno-compact="true"] .groupContent,
-.panel[data-hypno-compact="true"] .groupContent:not([hidden]){display:grid;grid-template-columns:minmax(0,1fr);gap:8px;padding:0;min-width:0}
-.panel[data-hypno-compact="true"] .feature,
-.panel[data-hypno-compact="true"] .feature[data-photo=true]{position:relative;isolation:auto;display:grid;grid-template-columns:76px minmax(0,1fr) 44px;grid-template-rows:auto;align-items:center;gap:10px;width:100%;height:auto;min-height:82px;max-height:none;min-width:0;margin:0;padding:8px;border:1px solid #e9dfd1;border-radius:17px;background:#fffcf7;box-shadow:0 3px 12px #3b493016;overflow:visible}
-.panel[data-hypno-compact="true"] .feature[data-photo=true]::after{display:none}
-.panel[data-hypno-compact="true"] .featurePoster{position:static;grid-column:1;grid-row:1;display:block;width:76px;height:65px;max-width:100%;object-fit:cover;border-radius:11px;filter:none}
-.panel[data-hypno-compact="true"] .featureIcon{grid-column:1;grid-row:1;width:53px;height:53px;margin:auto;border-radius:13px;background:#e9f5ef;color:#087b60}
-.panel[data-hypno-compact="true"] .featureIcon svg{width:30px;height:30px}
-.panel[data-hypno-compact="true"] .featureText,
-.panel[data-hypno-compact="true"] .feature[data-photo=true] .featureText{grid-column:2;grid-row:1;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:0;width:100%;height:auto;min-width:0;min-height:0;padding:0;overflow:visible;text-align:left;color:#17334b}
-.panel[data-hypno-compact="true"] .featureText strong,
-.panel[data-hypno-compact="true"] .feature[data-photo=true] .featureText strong{display:block;max-height:none;color:#17334b;text-shadow:none;font:800 clamp(13px,3.65vw,18px)/1.16 Arial,sans-serif;overflow-wrap:anywhere;hyphens:auto}
-.panel[data-hypno-compact="true"] .featureText>span:not(.configureLink),
-.panel[data-hypno-compact="true"] .feature[data-photo=true] .featureText>span:not(.configureLink){display:block;max-height:none;margin:5px 0 0;color:#687780;font:500 clamp(11px,2.8vw,13px)/1.22 Arial,sans-serif;overflow-wrap:anywhere}
-.panel[data-hypno-compact="true"] .configureLink,
-.panel[data-hypno-compact="true"] .feature[data-photo=true] .configureLink{display:flex;align-items:center;gap:4px;width:auto;min-height:35px;margin:6px 0 0;padding:6px 9px;border-radius:11px;background:#e9f5e6;color:#155f49;font:800 clamp(11px,2.9vw,13px)/1.1 Arial,sans-serif}
-.panel[data-hypno-compact="true"] .switch,
-.panel[data-hypno-compact="true"] .featureArrow{grid-column:3;grid-row:1;position:relative;z-index:1;justify-self:end;align-self:center;width:44px;height:44px;min-width:44px;min-height:44px;margin:0}
-.panel[data-hypno-compact="true"] .switch{display:flex;align-items:center;justify-content:flex-start;padding:0;border:0;border-radius:13px;background:transparent}
-.panel[data-hypno-compact="true"] .switch::before{content:"";position:absolute;left:0;top:9px;width:44px;height:26px;border-radius:15px;background:#bec4cd}
-.panel[data-hypno-compact="true"] .switch[data-on=true]::before{background:#068b72}
-.panel[data-hypno-compact="true"] .switch>span{position:relative;z-index:1;width:20px;height:20px;margin-left:3px;transform:none;background:#fff}
-.panel[data-hypno-compact="true"] .switch[data-on=true]>span{transform:translateX(18px)}
-.panel[data-hypno-compact="true"] .featureArrow{border:1px solid #dae5d9;border-radius:50%;background:#f9fcf5;color:#087b60}
-.panel[data-hypno-compact="true"] .settings{grid-column:1/-1;display:grid;gap:8px;margin:0;padding:9px 12px;background:#f7faf5;border:1px solid #dbe8dc;border-radius:14px}
-.panel[data-hypno-compact="true"] .settings label{display:grid;grid-template-columns:minmax(0,1fr);gap:3px;font-size:13px;line-height:1.25}
-.panel[data-hypno-compact="true"] .settings input{min-height:35px;width:100%;accent-color:#087b60}
-.panel[data-hypno-compact="true"] .groupContent>.note{grid-column:1/-1;margin:0}
-.panel[data-hypno-compact="true"] .actions{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;margin:13px 0 0}
-.panel[data-hypno-compact="true"] .actions .create,
-.panel[data-hypno-compact="true"] .actions .withoutEffects{display:flex;justify-content:center;align-items:center;gap:9px;width:100%;min-height:53px;height:auto;margin:0;padding:10px 12px;border-radius:17px;font:800 clamp(12px,3.5vw,17px)/1.18 Arial,sans-serif;box-shadow:0 3px 10px #25442c16;text-align:center}
-.panel[data-hypno-compact="true"] .actions .create{border:1px solid #067a67;background:linear-gradient(115deg,#159f7d,#05765b);color:#fff}
-.panel[data-hypno-compact="true"] .actions .withoutEffects{border:1px solid #087b60;background:#fffcf7;color:#165f4e}
-.panel[data-hypno-compact="true"] .actions svg{flex:none}
-.panel[data-hypno-compact="true"] .privacy{margin:7px 4px 1px;font-size:11px;color:#63766f}
-@media(max-width:359px){
- .panel[data-hypno-compact="true"] .groupTabs{gap:5px}
- .panel[data-hypno-compact="true"] .feature,.panel[data-hypno-compact="true"] .feature[data-photo=true]{grid-template-columns:56px minmax(0,1fr) 44px;gap:6px;padding:7px}
- .panel[data-hypno-compact="true"] .featurePoster{width:56px;height:62px}
- .panel[data-hypno-compact="true"] .featureIcon{width:42px;height:42px}
- .panel[data-hypno-compact="true"] .featureText strong{font-size:12.5px}
- .panel[data-hypno-compact="true"] .groupTabs button{font-size:11px}
+
+/* Owner 10 Nov: original Canvas visual presets now live in Hypno > Effects. */
+.visualPresets{display:grid;gap:12px;min-width:0}
+.visualPresets h4{margin:0;color:#163e35;font:800 19px/1.2 Arial,Helvetica,sans-serif}
+.visualPresets>p{margin:0;color:#536b62;font:500 13px/1.42 Arial,Helvetica,sans-serif}
+.visualPresetGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;min-width:0}
+.visualPresetGrid button{display:flex;align-items:center;justify-content:flex-start;gap:7px;
+ min-width:0;min-height:64px;padding:9px 8px;border:1px solid #dfdfd1;border-radius:14px;
+ background:#fffdfa;color:#143d3a;text-align:left;font:750 13px/1.18 Arial,Helvetica,sans-serif}
+.visualPresetGrid button>span{display:grid;place-items:center;flex:none;width:32px;height:32px;
+ border-radius:11px;background:#fbf0d8;color:#ad7628;font:700 23px/1 Arial,Helvetica,sans-serif}
+.visualPresetGrid button>strong{flex:1;min-width:0;overflow-wrap:anywhere}
+.visualPresetGrid button>svg{flex:none;color:#067a67}
+.visualPresetGrid button[aria-pressed="true"]{border:2px solid #067a67;background:#e6f6f1}
+.visualPresetGrid button:disabled{opacity:.6}
+.visualPresetIntensity{display:grid;grid-template-columns:1fr auto;gap:9px;align-items:center;
+ color:#143d3a;font:750 15px/1.3 Arial,Helvetica,sans-serif}
+.visualPresetIntensity strong{color:#067a67;font-variant-numeric:tabular-nums}
+.visualPresetIntensity input{grid-column:1/-1;width:100%;min-height:44px;accent-color:#067a67}
+.visualPresetGrid button:focus-visible,.visualPresetIntensity input:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+@media(max-width:340px){
+ .visualPresetGrid{gap:6px}
+ .visualPresetGrid button{padding:8px 5px;font-size:12px}
+ .visualPresetGrid button>span{width:28px;height:28px;font-size:20px}
 }

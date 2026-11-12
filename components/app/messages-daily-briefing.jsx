@@ -1,7 +1,7 @@
 'use client'
-import {useEffect,useMemo,useState} from 'react'
+import {useEffect,useMemo,useRef,useState} from 'react'
 import Link from 'next/link'
-import {ArrowRight,BarChart3,Check,ChevronRight,Clock3,Leaf,RefreshCw,ShieldCheck,Sparkles,Target,X} from 'lucide-react'
+import {ArrowRight,BarChart3,CalendarDays,Check,ChevronLeft,ChevronRight,Clock3,Leaf,RefreshCw,ShieldCheck,Sparkles,Target} from 'lucide-react'
 import {buildDailyInsight} from '@/lib/app/insight-recommendations.mjs'
 import styles from './messages-daily-briefing.module.css'
 
@@ -43,7 +43,43 @@ const WORDS={
     source:'Datos de tu cuenta privada',date:'Datos hasta',personalProgress:'Pruebas para el aprendizaje',manage:'Configurar resúmenes de Telegram',
     own:'Solo tú puedes leer este informe.',pending:'Novedades',partial:'Algunas fuentes no están disponibles'}
 }
-const colors={clients:'client',profile:'profile',marketing:'marketing',personal:'personal'}
+const FEED_WORDS={
+  en:{
+    feedTitle:'Your personal updates',cards:'updates',filterLabel:'Filter updates',pagination:'Briefing carousel',card:'Update',
+    refreshed:'Briefing refreshed',previous:'Previous update',next:'Next update',none:'No updates in this category right now.',
+    categories:{messages:'Messages',tasks:'Tasks',news:'News',analytics:'Analytics',personal:'Personal'},
+    filters:{all:'All',messages:'Messages',tasks:'Tasks',news:'News',analytics:'Analytics',personal:'Personal'},
+    analyticsTitle:'Your service activity',servicesTitle:'Your published services'
+  },
+  ru:{
+    feedTitle:'Лента ваших новостей',cards:'карточек',filterLabel:'Фильтр новостей',pagination:'Карточки брифинга',card:'Карточка',
+    refreshed:'Брифинг обновлён',previous:'Предыдущая новость',next:'Следующая новость',none:'В этой категории пока нет новостей.',
+    categories:{messages:'Сообщения',tasks:'Задачи',news:'Новости',analytics:'Аналитика',personal:'Личное'},
+    filters:{all:'Все',messages:'Сообщения',tasks:'Задачи',news:'Новости',analytics:'Аналитика',personal:'Личное'},
+    analyticsTitle:'Активность ваших услуг',servicesTitle:'Опубликованные услуги'
+  },
+  es:{
+    feedTitle:'Tus novedades',cards:'tarjetas',filterLabel:'Filtrar novedades',pagination:'Tarjetas del informe',card:'Tarjeta',
+    refreshed:'Informe actualizado',previous:'Tarjeta anterior',next:'Tarjeta siguiente',none:'No hay novedades en esta categoría.',
+    categories:{messages:'Mensajes',tasks:'Tareas',news:'Noticias',analytics:'Análisis',personal:'Personal'},
+    filters:{all:'Todo',messages:'Mensajes',tasks:'Tareas',news:'Noticias',analytics:'Análisis',personal:'Personal'},
+    analyticsTitle:'Actividad de tus servicios',servicesTitle:'Servicios publicados'
+  }
+}
+const FEED_CATEGORIES=['all','messages','tasks','news','analytics','personal']
+function briefingCategory(item){
+  if(item.id==='clients-reply')return 'messages'
+  if(item.category==='clients')return 'tasks'
+  if(item.category==='personal')return 'personal'
+  return 'news'
+}
+function briefingTime(value,locale){
+  if(!value)return ''
+  return new Intl.DateTimeFormat(locale==='ru'?'ru-RU':locale==='es'?'es-ES':'en-CA',{
+    timeZone:'America/Toronto',weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'
+  }).format(new Date(value))
+}
+
 function torontoDay(){
   const parts=new Intl.DateTimeFormat('en-US',{timeZone:'America/Toronto',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date())
   const p=Object.fromEntries(parts.map(x=>[x.type,x.value]))
@@ -66,12 +102,18 @@ export default function MessagesDailyBriefing({
   locale='en',accountId=null,authStatus='checking',active=false,orders=null,refreshKey=0
 }){
   const t=WORDS[locale]||WORDS.en
+  const v=FEED_WORDS[locale]||FEED_WORDS.en
   const [settings,setSettings]=useState({ready:false,personal:false,actions:{}})
   const [state,setState]=useState({loading:false,practice:null,journey:null,goals:null,partial:false})
   const [generation,setGeneration]=useState(0)
+  const [lastUpdated,setLastUpdated]=useState(null)
+  const [feedFilter,setFeedFilter]=useState('all')
+  const [feedIndex,setFeedIndex]=useState(0)
+  const railRef=useRef(null)
   const day=torontoDay()
   useEffect(()=>{
-    if(!accountId){setSettings({ready:false,personal:false,actions:{}});setState({loading:false,practice:null,journey:null,goals:null,partial:false});return}
+    if(!accountId){setSettings({ready:false,personal:false,actions:{}});setState({loading:false,practice:null,journey:null,goals:null,partial:false});setLastUpdated(null);return}
+    setLastUpdated(null)
     const saved=readLocal(accountId)
     setSettings({ready:true,...saved})
   },[accountId])
@@ -79,6 +121,7 @@ export default function MessagesDailyBriefing({
     if(!active||!accountId||!settings.ready)return undefined
     const controller=new AbortController()
     setState(old=>({...old,loading:true,partial:false}))
+    setLastUpdated(null)
     const jobs=[fetchPrivate('practice',accountId,controller.signal)]
     if(settings.personal){
       jobs.push(fetchPrivate('journey',accountId,controller.signal))
@@ -89,6 +132,7 @@ export default function MessagesDailyBriefing({
       const good=index=>result[index]?.status==='fulfilled'?result[index].value:null
       setState({loading:false,practice:good(0),journey:settings.personal?good(1):null,
         goals:settings.personal?good(2):null,partial:result.some(item=>item.status!=='fulfilled')})
+      if(result.some(item=>item.status==='fulfilled'))setLastUpdated(new Date().toISOString())
     })
     return ()=>controller.abort()
   },[active,accountId,settings.ready,settings.personal,refreshKey,generation])
@@ -112,6 +156,52 @@ export default function MessagesDailyBriefing({
   const headline=visible[0]
   const metrics=insight.analytics?.totals
   const num=n=>new Intl.NumberFormat(locale==='ru'?'ru-RU':locale==='es'?'es-ES':'en-CA').format(n)
+  // Cards are a view of authenticated, account-bound facts. They are not fictional events:
+  // the timestamp explicitly means "briefing refreshed", not "client message received".
+  const cards=[
+    ...visible.map(item=>({...item,kind:'recommendation',feedCategory:briefingCategory(item)})),
+    ...(metrics?[{
+      id:'seven-day-analytics',kind:'analytics',feedCategory:'analytics',title:v.analyticsTitle,
+      reason:t.date+': '+insight.analytics.period+' · '+t.views+' ≠ '+t.leads,
+      href:'/'+locale+'/app/practice?panel=analytics'
+    }]:[]),
+    ...(insight.services?[{
+      id:'published-services',kind:'snapshot',feedCategory:'news',title:v.servicesTitle,
+      reason:t.services+': '+num(insight.services.published),
+      href:'/'+locale+'/app/practice?panel=services'
+    }]:[])
+  ]
+  const filters=FEED_CATEGORIES.filter(id=>id==='all'||cards.some(item=>item.feedCategory===id))
+  const filteredCards=cards.filter(item=>feedFilter==='all'||item.feedCategory===feedFilter)
+  const page=Math.min(feedIndex,Math.max(0,filteredCards.length-1))
+  const timestamp=briefingTime(lastUpdated,locale)
+  function selectFilter(id){
+    setFeedFilter(id)
+    setFeedIndex(0)
+    if(railRef.current)railRef.current.scrollLeft=0
+  }
+  function jumpToCard(index){
+    const to=Math.max(0,Math.min(filteredCards.length-1,index))
+    if(!filteredCards.length)return
+    const rail=railRef.current
+    const element=rail?.querySelectorAll('[data-hh-briefing-card]')[to]
+    if(rail&&element){
+      const left=element.getBoundingClientRect().left-rail.getBoundingClientRect().left+rail.scrollLeft
+      rail.scrollTo({left,behavior:'smooth'})
+    }
+    setFeedIndex(to)
+  }
+  function handleFeedScroll(event){
+    const rail=event.currentTarget
+    const left=rail.getBoundingClientRect().left
+    const elements=rail.querySelectorAll('[data-hh-briefing-card]')
+    let closest=0,distance=Infinity
+    elements.forEach((item,index)=>{
+      const gap=Math.abs(item.getBoundingClientRect().left-left)
+      if(gap<distance){distance=gap;closest=index}
+    })
+    setFeedIndex(old=>old===closest?old:closest)
+  }
   if(!active)return null
   if(authStatus!=='authenticated'||!accountId){
     return <section className={styles.guest} aria-live="polite"><Sparkles size={25}/>
@@ -123,11 +213,58 @@ export default function MessagesDailyBriefing({
     <header className={styles.heading}>
       <div><span className={styles.eyebrow}><Sparkles size={14}/>{t.source}</span>
         <h2>{t.title}</h2><p>{t.subtitle}</p></div>
-      <button className={styles.refresh} type="button" onClick={()=>setGeneration(n=>n+1)}
-        disabled={state.loading} aria-label={t.retry} title={t.retry}><RefreshCw size={19}/></button>
+      <div className={styles.headingTools}>
+        {timestamp&&<time className={styles.datePill} dateTime={lastUpdated}><CalendarDays size={16}/>{timestamp}</time>}
+        <button className={styles.refresh} type="button" onClick={()=>setGeneration(n=>n+1)}
+          disabled={state.loading} aria-label={t.retry} title={t.retry}><RefreshCw size={19}/></button>
+      </div>
     </header>
     {state.loading&&<p className={styles.status} role="status">{t.loading}</p>}
     {state.partial&&!state.loading&&<p className={styles.status} role="status">{t.partial} · {t.dataUnavailable}</p>}
+    {!state.loading&&<section className={styles.feed} aria-label={v.feedTitle} data-hh-briefing-feed>
+      <div className={styles.feedHeading}><strong>{v.feedTitle}</strong><span>{filteredCards.length} {v.cards}</span></div>
+      <div className={styles.feedFilters} role="group" aria-label={v.filterLabel}>
+        {filters.map(id=><button key={id} type="button" aria-pressed={feedFilter===id}
+          onClick={()=>selectFilter(id)}>{v.filters[id]}</button>)}
+      </div>
+      {filteredCards.length>0?<div className={styles.feedContentBlock}>
+        <div className={styles.feedRail} ref={railRef} role="region" tabIndex={0} aria-label={v.feedTitle}
+          onScroll={handleFeedScroll}>
+          {filteredCards.map(item=><article key={item.id} className={styles.feedCard}
+            data-tone={item.feedCategory} data-hh-briefing-card>
+            <div className={styles.feedArtwork} aria-hidden="true"/>
+            <div className={styles.feedCardBody}>
+              <span className={styles.feedCategory}>{v.categories[item.feedCategory]}</span>
+              {timestamp&&<time className={styles.feedTime} dateTime={lastUpdated}>
+                <Clock3 size={14}/>{v.refreshed}: {timestamp}
+              </time>}
+              <h3>{item.title}</h3><p>{item.reason}</p>
+              {item.kind==='analytics'&&metrics&&<div className={styles.feedMetrics}>
+                <span><strong>{num(metrics.impressions)}</strong><small>{t.views}</small></span>
+                <span><strong>{num(metrics.orders)}</strong><small>{t.clicks}</small></span>
+                <span><strong>{num(metrics.whatsapp+metrics.telegram)}</strong><small>{t.handoffs}</small></span>
+              </div>}
+              <div className={styles.feedActions}>
+                <Link href={item.href} prefetch={false}>{t.open}<ArrowRight size={16}/></Link>
+                {item.kind==='recommendation'&&<>
+                  <button type="button" onClick={()=>mark(item.id,'done')} title={t.done} aria-label={t.done}><Check size={18}/></button>
+                  <button type="button" onClick={()=>mark(item.id,'snoozed')} title={t.later} aria-label={t.later}><Clock3 size={18}/></button>
+                </>}
+              </div>
+            </div>
+          </article>)}
+        </div>
+        <nav className={styles.feedPager} aria-label={v.pagination}>
+          <button type="button" onClick={()=>jumpToCard(page-1)} disabled={page<=0}
+            aria-label={v.previous}><ChevronLeft size={21}/></button>
+          <div className={styles.feedDots}>{filteredCards.map((item,index)=><button key={item.id}
+            type="button" aria-current={page===index?'true':undefined}
+            aria-label={v.card+' '+(index+1)} onClick={()=>jumpToCard(index)}/>)}</div>
+          <button type="button" onClick={()=>jumpToCard(page+1)}
+            disabled={page>=filteredCards.length-1} aria-label={v.next}><ChevronRight size={21}/></button>
+        </nav>
+      </div>:<p className={styles.feedEmpty}>{v.none}</p>}
+    </section>}
     {!state.loading&&headline&&<article className={styles.hero}>
       <span className={styles.sectionLabel}><Target size={17}/>{t.today}</span>
       <h3>{headline.title}</h3><p>{headline.reason}</p>
@@ -158,18 +295,6 @@ export default function MessagesDailyBriefing({
       <ShieldCheck size={20}/><span>{state.partial?t.dataUnavailable:t.noPractice}
       {insight.ordersCount!=null?' · '+t.orders+': '+num(insight.ordersCount):''}</span>
     </div>}
-    <section className={styles.cards}>
-      <div className={styles.sectionHeading}><strong>{t.other}</strong></div>
-      {visible.slice(1,4).map(item=><article key={item.id} className={styles.advice}>
-        <span className={styles.category} data-category={colors[item.category]||'profile'}>{item.category==='personal'?t.personal:item.category==='clients'?t.tasks:item.category==='marketing'?'Marketing':'Profile'}</span>
-        <h3>{item.title}</h3><p>{item.reason}</p>
-        <div className={styles.actions}>
-          <Link href={item.href} prefetch={false}>{t.open}<ArrowRight size={15}/></Link>
-          <button type="button" onClick={()=>mark(item.id,'done')} title={t.done}><Check size={17}/></button>
-          <button type="button" onClick={()=>mark(item.id,'snoozed')} title={t.later}><X size={16}/></button>
-        </div>
-      </article>)}
-    </section>
     <section className={styles.personal}>
       <label className={styles.switch}>
         <input type="checkbox" checked={settings.personal}

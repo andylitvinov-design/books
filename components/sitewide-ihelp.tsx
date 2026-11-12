@@ -2,17 +2,19 @@
 
 import {useEffect,useRef,useState} from "react";
 import {usePathname} from "next/navigation";
+import Link from "next/link";
 import {MessageCircleQuestion, X} from "lucide-react";
-import {HolisticAgentChat} from "@/components/holistic-agent-chat";
+import {HolisticAgentChat, type HolisticAgentQuickPrompt} from "@/components/holistic-agent-chat";
+import {IHelpTopics, IHelpWelcome} from "@/components/ihelp-welcome";
 import {pageHelpFromRoute} from "@/lib/ihelp/page-context.mjs";
 import type {IHelpPageContext} from "@/lib/ihelp/page-context.mjs";
 import type {PublicLocale} from "@/lib/public-locales";
 import styles from "./sitewide-ihelp.module.css";
 
 const UI={
- ru:{open:"Открыть iHelp — помощник по странице",close:"Закрыть iHelp",title:"iHelp",subtitle:"ИИ-помощник по странице · не психотерапевт"},
- en:{open:"Open iHelp — page-aware guide",close:"Close iHelp",title:"iHelp",subtitle:"AI guide for this page · not a therapist"},
- es:{open:"Abrir iHelp — guía de la página",close:"Cerrar iHelp",title:"iHelp",subtitle:"Guía IA de esta página · no es terapeuta"},
+ ru:{open:"Открыть iHelp — помощник по странице",close:"Закрыть iHelp",title:"iHelp",subtitle:"ИИ-помощник, не человек и не психотерапевт",ai:"ИИ",orders:"Заказы",clients:"Клиенты"},
+ en:{open:"Open iHelp — page-aware guide",close:"Close iHelp",title:"iHelp",subtitle:"AI assistant, not a person or therapist",ai:"AI",orders:"Orders",clients:"Clients"},
+ es:{open:"Abrir iHelp — guía de la página",close:"Cerrar iHelp",title:"iHelp",subtitle:"Asistente IA, no una persona ni terapeuta",ai:"IA",orders:"Pedidos",clients:"Clientes"},
 } as const;
 
 function routeLocale(pathname:string):PublicLocale {
@@ -43,6 +45,7 @@ export function SitewideIHelp(){
  const [open,setOpen]=useState(false);
  const [nativeVideoOpen,setNativeVideoOpen]=useState(false);
  const [mounted,setMounted]=useState(false);
+ const [quickPrompt,setQuickPrompt]=useState<HolisticAgentQuickPrompt|undefined>(undefined);
  const [context,setContext]=useState<IHelpPageContext>(()=>pageHelpFromRoute({locale,pathname}));
  const launcher=useRef<HTMLButtonElement>(null);
  const dialog=useRef<HTMLElement>(null);
@@ -99,7 +102,50 @@ export function SitewideIHelp(){
    };
  },[open]);
 
+
+ // On iPhone, the on-screen keyboard changes visualViewport but not always
+ // 100dvh. Constrain the shared dialog to the visible area so its conversation
+ // and genuine composer remain reachable across all site sections.
+ useEffect(()=>{
+   if(!open||!dialog.current)return;
+   const panel=dialog.current;
+   const viewport=window.visualViewport;
+   const initialHeight=viewport?.height??window.innerHeight;
+   let frame=0;
+   const syncViewport=()=>{
+     window.cancelAnimationFrame(frame);
+     frame=window.requestAnimationFrame(()=>{
+       const height=viewport?.height??window.innerHeight;
+       panel.style.setProperty("--hh-ihelp-visual-height",Math.max(160,Math.round(height))+"px");
+       panel.style.setProperty("--hh-ihelp-visual-top",Math.max(0,Math.round(viewport?.offsetTop??0))+"px");
+       panel.toggleAttribute("data-hh-mobile-keyboard-open",
+         window.innerWidth<=760&&(initialHeight-height>140||window.innerHeight-height>140));
+     });
+   };
+   syncViewport();
+   viewport?.addEventListener("resize",syncViewport);
+   viewport?.addEventListener("scroll",syncViewport);
+   window.addEventListener("resize",syncViewport);
+   return ()=>{
+     window.cancelAnimationFrame(frame);
+     viewport?.removeEventListener("resize",syncViewport);
+     viewport?.removeEventListener("scroll",syncViewport);
+     window.removeEventListener("resize",syncViewport);
+     panel.style.removeProperty("--hh-ihelp-visual-height");
+     panel.style.removeProperty("--hh-ihelp-visual-top");
+     panel.removeAttribute("data-hh-mobile-keyboard-open");
+   };
+ },[open]);
+
+ function chooseTopic(prompt:string){
+   // An explicit chip fills the existing unsent composer; no network call or diagnosis.
+   setQuickPrompt(previous=>({revision:(previous?.revision??0)+1,text:prompt}));
+   window.requestAnimationFrame(()=>dialog.current?.querySelector<HTMLTextAreaElement>(
+     "[data-hh-agent-preview] textarea")?.focus({preventScroll:true}));
+ }
  function close(){
+   // Stop any ongoing browser narration when the user closes iHelp.
+   window.dispatchEvent(new Event("hh:voice-companion-stop"));
    setOpen(false);
    window.requestAnimationFrame(()=>launcher.current?.focus({preventScroll:true}));
  }
@@ -156,9 +202,19 @@ export function SitewideIHelp(){
          <button type="button" ref={closeButton} className={styles.close} onClick={close}
            aria-label={t.close}><X size={21} aria-hidden="true"/></button>
        </header>
+       <IHelpWelcome locale={locale} section={context.section}/>
        <div className={styles.chat}>
-         <HolisticAgentChat locale={locale} compact pageHelp={context}/>
+         <HolisticAgentChat locale={locale} compact messengerView pageHelp={context} quickPrompt={quickPrompt}/>
        </div>
+       <IHelpTopics locale={locale} onSelect={chooseTopic}/>
+       <nav className={styles.bottomNav} aria-label={
+         locale==="ru"?"Разделы сообщений":locale==="es"?"Secciones de mensajes":"Message sections"}>
+         <span aria-current="page">{t.ai}</span>
+         <Link href={"/"+locale+"/app/messages?section=orders"} prefetch={false}
+           onClick={close}>{t.orders}</Link>
+         <Link href={"/"+locale+"/app/messages?section=clients"} prefetch={false}
+           onClick={close}>{t.clients}</Link>
+       </nav>
      </section>
    </div>}
  </>;
