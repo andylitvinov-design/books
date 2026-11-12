@@ -7,6 +7,17 @@ const CONTROL = 'codex/bootstrap-books';
 const ACTIVE = new Set(['queued', 'in_progress']);
 const SHA40 = /^[0-9a-f]{40}$/i;
 const MAX_RUNS_PER_PR = 150;
+const MAX_ANCESTRY_READS = 24; // Shared owner API budget; never infer ancestry.
+
+function verifiedClosedState(pr) {
+  if (pr?.state !== 'closed' || typeof pr.merged !== 'boolean') return false;
+  const closed = Date.parse(pr.closed_at || '');
+  if (!Number.isFinite(closed) || closed <= 0) return false;
+  // Only a consistent, completed merge is eligible for merged-run cleanup.
+  if (!pr.merged) return pr.merged_at == null;
+  const merged = Date.parse(pr.merged_at || '');
+  return Number.isFinite(merged) && merged > 0 && merged <= closed;
+}
 
 function trustedEvent(context) {
   if (!context || (context.repo?.owner + '/' + context.repo?.repo) !== REPOSITORY) {
@@ -17,7 +28,7 @@ function trustedEvent(context) {
     const pr = event?.pull_request;
     if (event?.action !== 'closed' || event?.number !== pr?.number ||
         event?.repository?.full_name !== REPOSITORY || !Number.isSafeInteger(pr?.number) ||
-        pr.number <= 0 || pr.state !== 'closed' || pr.merged !== false ||
+        pr.number <= 0 || !verifiedClosedState(pr) ||
         pr.base?.ref !== PRODUCTION || pr.base?.repo?.full_name !== REPOSITORY ||
         pr.head?.repo?.full_name !== REPOSITORY || !SHA40.test(pr.head?.sha || '')) {
       throw Error('UNTRUSTED_CLOSED_PR_EVENT');
@@ -37,8 +48,7 @@ function trustedEvent(context) {
 }
 
 function closedProductionPR(pr, number, expectedHead = null) {
-  if (!pr || pr.number !== number || pr.state !== 'closed' ||
-      pr.merged !== false || pr.merged_at != null ||
+  if (!pr || pr.number !== number || !verifiedClosedState(pr) ||
       pr.base?.ref !== PRODUCTION || pr.base?.repo?.full_name !== REPOSITORY ||
       pr.head?.repo?.full_name !== REPOSITORY ||
       !pr.head?.ref || pr.head.ref === PRODUCTION || pr.head.ref === CONTROL ||
@@ -50,12 +60,13 @@ function closedProductionPR(pr, number, expectedHead = null) {
 
 function sameClosedPR(a, b) {
   return a?.number === b?.number && a?.state === 'closed' && b?.state === 'closed' &&
-    a?.merged === false && b?.merged === false &&
+    verifiedClosedState(a) && verifiedClosedState(b) &&
+    a.merged === b.merged && a.merged_at === b.merged_at &&
     a?.base?.ref === b?.base?.ref && a?.head?.ref === b?.head?.ref &&
     a?.head?.sha === b?.head?.sha && a?.closed_at === b?.closed_at;
 }
 
-function eligible(run, pr, uniqueBranch) {
+function eligible(run, pr, uniqueBranch, verifiedAncestor = false) {
   if (!run || !Number.isSafeInteger(run.id) || run.id <= 0 ||
       run.event !== 'pull_request' || !ACTIVE.has(run.status) ||
       // A manually re-run pull_request workflow still has event=pull_request.
@@ -71,7 +82,8 @@ function eligible(run, pr, uniqueBranch) {
   // BOTH the immutable exact SHA and unique branch ownership across all PRs.
   if (!Array.isArray(run.pull_requests)) return false;
   if (run.pull_requests.length === 0) {
-    return uniqueBranch === true && run.head_sha === pr.head.sha;
+    return uniqueBranch === true && (run.head_sha === pr.head.sha ||
+      (pr.merged === true && verifiedAncestor === true));
   }
   if (run.pull_requests.length !== 1) return false;
   const association = run.pull_requests[0];
@@ -120,7 +132,7 @@ async function cleanup({github, context, core = {info(){}}, dryRun, maxCancels =
   const {owner, repo} = context.repo;
   const pr = (await github.rest.pulls.get({owner,repo,pull_number:event.number})).data;
   if (!closedProductionPR(pr, event.number, event.headSha)) {
-    return {pr:event.number, reason:'NO_LONGER_CLOSED_UNMERGED_PRODUCTION_PR',
+    return {pr:event.number, reason:'NO_LONGER_CLOSED_PRODUCTION_PR',
       dryRun:event.dryRun, scanned:0, eligible:0, accepted:[], confirmed:[], skipped:0, errors:[], partial:false};
   }
   const {runs, truncated} = await listCandidates(github, owner, repo, pr.head.ref);
@@ -133,10 +145,47 @@ async function cleanup({github, context, core = {info(){}}, dryRun, maxCancels =
     try { uniqueBranch = await uniquePRHeadBranch(github, owner, repo, pr); }
     catch(error) { summary.partial = true; core.info('HH_CLOSED_PR_BRANCH_PROOF_UNAVAILABLE '+String(error)); }
   }
+  // GitHub removes pull_requests[] from many queued older SHA runs after merge.
+  // For a uniquely owned, CLOSED+MERGED PR branch, accept an old source HEAD
+  // ONLY when GitHub independently proves it is an ancestor of the final PR HEAD.
+  // Negative, unavailable or over-budget proof remains a safe hold.
+  const ancestry = new Map();
+  let ancestryReads = 0;
+  async function ancestorVerified(item) {
+    if (pr.merged !== true || !uniqueBranch ||
+        item.event !== 'pull_request' || !ACTIVE.has(item.status) ||
+        item.run_attempt !== 1 || item.repository?.full_name !== REPOSITORY ||
+        item.head_repository?.full_name !== REPOSITORY ||
+        item.head_branch !== pr.head.ref ||
+        !Array.isArray(item.pull_requests) || item.pull_requests.length !== 0 ||
+        !SHA40.test(item.head_sha || '') || item.head_sha === pr.head.sha ||
+        !Number.isFinite(Date.parse(item.created_at || '')) ||
+        Date.parse(item.created_at) > Date.parse(pr.closed_at)) return false;
+    if (ancestry.has(item.head_sha)) return ancestry.get(item.head_sha);
+    if (ancestryReads >= MAX_ANCESTRY_READS) {summary.partial = true;return false;}
+    ancestryReads++;
+    let valid = false;
+    try {
+      const comparison = (await github.rest.repos.compareCommits({
+        owner, repo, base:item.head_sha, head:pr.head.sha, per_page:1,
+      })).data;
+      valid = comparison?.status === 'ahead' &&
+        Number.isSafeInteger(comparison.ahead_by) && comparison.ahead_by > 0 &&
+        comparison.behind_by === 0 &&
+        comparison.base_commit?.sha === item.head_sha &&
+        comparison.merge_base_commit?.sha === item.head_sha;
+    } catch (error) {
+      summary.partial = true;
+      core.info('HH_CLOSED_PR_ANCESTRY_UNAVAILABLE ' + String(error).slice(0,120));
+    }
+    ancestry.set(item.head_sha,valid);
+    return valid;
+  }
   const limit = Math.max(1, Math.min(MAX_RUNS_PER_PR, Number(maxCancels) || MAX_RUNS_PER_PR));
   for (const item of runs) {
     if (summary.accepted.length + summary.wouldCancel.length >= limit) { summary.partial = true; break; }
-    if (!eligible(item,pr,uniqueBranch)) { summary.skipped++; continue; }
+    const provedAncestor = await ancestorVerified(item);
+    if (!eligible(item,pr,uniqueBranch,provedAncestor)) { summary.skipped++; continue; }
     // Re-read both resources immediately before ANY write. Reopened, merged,
     // rewritten or independently re-run PRs must retain their checks.
     const [runResponse, prResponse] = await Promise.all([
@@ -146,7 +195,7 @@ async function cleanup({github, context, core = {info(){}}, dryRun, maxCancels =
     const liveRun = runResponse.data, livePR = prResponse.data;
     if (!closedProductionPR(livePR, event.number, event.headSha) ||
         !sameClosedPR(pr,livePR) ||
-        !eligible(liveRun,livePR,uniqueBranch) ||
+        !eligible(liveRun,livePR,uniqueBranch,provedAncestor) ||
         liveRun.head_sha !== item.head_sha) { summary.skipped++; continue; }
     summary.eligible++;
     if (event.dryRun) {summary.wouldCancel.push(item.id);continue;}
@@ -165,9 +214,11 @@ async function cleanup({github, context, core = {info(){}}, dryRun, maxCancels =
       if (!finished) summary.errors.push({id:item.id, message:String(error.message||error).slice(0,140)});
     }
   }
+  summary.ancestry_checked = ancestryReads;
+  summary.ancestry_proved = [...ancestry.values()].filter(Boolean).length;
   core.info('HH_CLOSED_PR_CLEANUP '+JSON.stringify(summary));
   return summary;
 }
 
-module.exports = {REPOSITORY,PRODUCTION,CONTROL,trustedEvent,closedProductionPR,
+module.exports = {REPOSITORY,PRODUCTION,CONTROL,verifiedClosedState,trustedEvent,closedProductionPR,
   sameClosedPR,eligible,listCandidates,uniquePRHeadBranch,cleanup};
