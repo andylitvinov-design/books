@@ -29,7 +29,7 @@ on:
       - 'tests/intelligence-plan.test.mjs'
       - 'tests/app-auth-pkce.integration.mjs'
       - 'lib/holistic-support/meditation-discovery-server.ts'
-      - 'app/api/app/[...path]/route.js'
+      - 'app/api/app/**/route.js'
       - 'tests/intelligence-meditation-bridge.test.mjs'
       - 'lib/holistic-support/client-reasoning-risk.mjs'
       - 'tests/intelligence-risk.test.mjs'
