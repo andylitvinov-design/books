@@ -1,3 +1,5 @@
+// Existing specialist suite also enforces RU/EN Qwen quality without a new CI workflow.
+import "./qwen-quality-ru-en.test.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import {prepareNaturalDialogue,acceptNaturalOutput,finishNaturalDialogue} from "../lib/holistic-support/natural-dialogue.mjs";
@@ -50,7 +52,7 @@ test("history bounded, unauthenticated role claims ignored, unsupported suggesti
   assert.ok(!s.includes("PROMPT_OVERRIDE")&&!s.includes("javascript")&&!s.includes("line1"));
 });
 test("rephrase works; disallowed URLs, HTML and impersonation fall back",async()=>{
-  const x=prepareNaturalDialogue({decision:d,message:"Where to begin?",channel:"browser",
+  const x=prepareNaturalDialogue({decision:d,locale:"en",message:"Where to begin?",channel:"browser",
     consent:{browserInference:true}});
   assert.ok(acceptNaturalOutput("We could start with a small step.",x));
   for(const text of ["Go to https://malicious.example","<script>hi</script>","I am a human"])
