@@ -354,7 +354,7 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,active,disab
   <button type="button" className={css.addEffects} data-video-ideas-create
     disabled={disabled||selectedCount<5} onClick={onCreate}>
     <Sparkles size={19} aria-hidden="true"/>
-    {locale==="ru"?"Добавить эффекты":locale==="es"?"Añadir efectos":"Add Effects"}
+    {locale==="ru"?"Далее · Раскадровка":locale==="es"?"Siguiente · Guion visual":"Next · Storyboard"}
     <span aria-hidden="true">→</span>
   </button>
  </div>
