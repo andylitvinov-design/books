@@ -1,0 +1,66 @@
+/* The PRO page stays compact; the complete 30-character picker is in a native
+ * modal dialog in the browser top layer and does not push the two CTAs below. */
+.root{width:100%;min-width:0;margin:6px 0 8px;max-width:100%;color:#254a3a}
+.launch{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  min-width:0;padding:9px 10px;border:1px solid #d7e3d9;border-radius:12px;
+  background:linear-gradient(115deg,#f6faf4,#fffcf6)}
+.launchCopy{display:grid;gap:3px;min-width:0;flex:1}
+.launchCopy strong{font-size:13px;display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.launchCopy small{font-weight:730;font-size:10.5px;color:#2c7955}
+.launchCopy span{font-size:12px;line-height:1.25;color:#617366;overflow-wrap:anywhere}
+.openButton{display:inline-flex;gap:4px;align-items:center;justify-content:center;min-height:44px;min-width:86px;
+  border:1px solid #377d60;border-radius:10px;background:white;color:#275d48;font-weight:740;font-size:12px;cursor:pointer}
+.dialog{padding:0;border:1px solid #d3e4d8;border-radius:18px;box-shadow:0 18px 65px #203c2d50;
+  max-height:min(85dvh,790px);width:min(92vw,600px);max-width:600px;overflow:auto;
+  color:#254a3a;background:linear-gradient(145deg,#fffcf5,#f2f8f3)}
+.dialog::backdrop{background:#142d2199;backdrop-filter:blur(3px)}
+.modalContent{display:grid;gap:10px;width:100%;min-width:0;padding:14px;box-sizing:border-box}
+.head{display:flex;align-items:center;justify-content:space-between;gap:7px;min-width:0}
+.title{display:flex;align-items:center;gap:7px;font-size:17px;line-height:1.2;min-width:0}
+.title svg{flex-shrink:0}
+.closeButton{display:flex;align-items:center;justify-content:center;background:white;color:#285742;border:1px solid #cbdccc;
+  width:44px;height:44px;border-radius:10px;cursor:pointer}
+.free{justify-self:start;font-size:11.5px;line-height:1.2;font-weight:750;color:#256249;background:#e1f1e6;
+  padding:6px 9px;border-radius:999px}
+.hint{font-size:13px;line-height:1.45;margin:0;color:#4f6559}
+.primaryChoices{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.6fr);gap:6px}
+.special,.selectedSpecial{min-height:44px;min-width:0;display:flex;justify-content:center;align-items:center;gap:5px;
+  padding:6px 9px;border-radius:10px;font-size:12px;line-height:1.3;font-weight:680;
+  color:#28543f;background:#fff;border:1px solid #d0dfd3;cursor:pointer;text-align:center}
+.selectedSpecial{background:#266a50;color:#fff;border-color:#266a50}
+.filters{display:flex;gap:5px;min-width:0;overflow-x:auto;scrollbar-width:thin;overscroll-behavior-inline:contain;padding:2px 0 6px}
+.filter,.activeFilter{display:inline-flex;align-items:center;justify-content:center;gap:3px;flex:0 0 auto;
+  min-height:37px;padding:6px 10px;border-radius:999px;border:1px solid #d3ded4;
+  font-size:11.5px;font-weight:700;background:#fff;color:#456454;cursor:pointer}
+.activeFilter{color:#fff;background:#2a644f;border-color:#2a644f}
+.choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;max-height:270px;overflow-y:auto;
+  overscroll-behavior:contain;min-width:0;padding:2px 3px 3px 0}
+.choice,.chosen{min-width:0;min-height:96px;display:grid;grid-template-rows:auto auto;justify-items:center;
+  position:relative;gap:3px;padding:8px 5px;border-radius:11px;border:1px solid #dae4db;
+  background:#fff;color:#345644;font-size:12px;line-height:1.2;cursor:pointer;text-align:center}
+.chosen{background:#e4f3e8;border-color:#348061;box-shadow:inset 0 0 0 1px #348061}
+.avatar{display:block;width:100%;max-width:102px;min-width:0;overflow:hidden;border-radius:7px}
+.thumbnail{display:block;width:100%;height:auto;aspect-ratio:220/124;object-fit:cover;background:#bad5cf}
+.cardCopy{display:grid;gap:3px;justify-items:center;min-width:0}
+.cardCopy strong{font-weight:740;overflow-wrap:anywhere}
+.cardCopy small{font-size:10.5px;font-weight:530;color:#688172}
+.tick{position:absolute;right:3px;top:3px;color:#24704e}
+.bottom{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap}
+.selectedSummary{display:grid;gap:2px;min-width:0;font-size:12px;flex:1}
+.selectedSummary strong{overflow-wrap:anywhere}
+.selectedSummary small{color:#6a8173}
+.preview{flex:0 0 auto;min-height:44px;display:inline-flex;gap:6px;align-items:center;justify-content:center;
+  padding:8px 13px;border-radius:10px;background:#fff;border:1px solid #397c5c;color:#245d44;
+  font-size:13px;font-weight:740;cursor:pointer}
+.privacy{font-size:11px;line-height:1.3;color:#607b67}
+.openButton:focus-visible,.closeButton:focus-visible,.special:focus-visible,.selectedSpecial:focus-visible,
+.filter:focus-visible,.activeFilter:focus-visible,.choice:focus-visible,.chosen:focus-visible,.preview:focus-visible{
+  outline:3px solid #93c8aa;outline-offset:2px}
+.openButton:disabled,.special:disabled,.selectedSpecial:disabled,.filter:disabled,.activeFilter:disabled,
+.choice:disabled,.chosen:disabled,.preview:disabled{opacity:.55;cursor:not-allowed}
+@media(max-width:480px){.dialog{width:calc(100vw - 18px);border-radius:14px;max-height:90dvh}
+.modalContent{padding:12px;gap:9px}.title{font-size:16px}.choices{grid-template-columns:repeat(3,minmax(0,1fr));max-height:35dvh}
+.choice,.chosen{min-height:75px}.cardCopy strong{font-size:11.5px}.launchCopy strong{font-size:12px}}
+@media(max-width:345px){.primaryChoices{grid-template-columns:1fr 1fr}
+.special,.selectedSpecial{font-size:11px;padding:5px}
+.choices{grid-template-columns:repeat(2,minmax(0,1fr));max-height:39dvh}}

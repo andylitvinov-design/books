@@ -38,6 +38,9 @@ import { MandalaProfessionalPromo } from "./mandala-professional-promo";
 import type { MandalaProfessionalSource } from "./mandala-meditation-client";
 import { availableStoryScene, storySelectionItems } from "@/lib/mandala/story-addon-catalog";
 import type { StorySelection, StoryAddonKind } from "@/lib/mandala/story-addon-catalog";
+import { paintFreeGreeting, FREE_GREETING_DURATION } from "@/lib/mandala/free-greeting-overlay.mjs";
+import type { FreeGreetingCharacter } from "@/lib/mandala/free-greeting-overlay.mjs";
+import { MandalaFreeGreeting } from "./mandala-free-greeting";
 import type { CinematicStoryboard } from "./mandala-cinematic-director";
 import type { GuidedMeditationFocus } from "./mandala-guided-course";
 
@@ -2419,6 +2422,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const localEditorHistoryRef=useRef<EditorHistoryState>(emptyMyTubeEditorHistory() as EditorHistoryState);
   const [editorHistoryAvailability,setEditorHistoryAvailability]=useState({undo:false,redo:false});
   const [appliedStory,setAppliedStory] = useState<StorySelection>({});
+  const [greetingCharacter,setGreetingCharacter] = useState<FreeGreetingCharacter>("none");
   const [activeFreeFilmPreset,setActiveFreeFilmPreset] = useState<string|null>(null);
   const [goalTreeAudioScenarioId,setGoalTreeAudioScenarioId] = useState<string|null>(null);
   const [showAllFreeFilms,setShowAllFreeFilms] = useState(false);
@@ -2906,6 +2910,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // For background-only video, async mandala/photo frame updates are
   // intentionally unrelated. Do not abort an active free export when
   // a decorative image finishes loading in a different editor panel.
+  const greetingSceneKey=cinematicPlan?.shots.slice(-1)[0]?.sceneId || (theme==="money"?moneyScene||otherScene:otherScene);
   const signature = JSON.stringify([source,backgroundOnly?null:frameUrl,backgroundOnly?null:photoUrl,theme,moneyScene,otherScene,backgroundOnly,
     effect,aspect,duration,quality,speed,brightness,attachedAudioKey,attachedAudio?soundVolume:0,
     audioStartSeconds,timelineTextClips,caption,singleTextSource,wish,affirmations,hypnoLight,
@@ -2914,7 +2919,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
        shot.transitionIn||"soft",shot.colorLook||"original",shot.motion??null,
        shot.sourcePhasePercent??0,shot.sourceSpeed??1]),appliedStory,
     creationMode,activeMontageStyleId,currentFreeVideoPlan?.seed,currentFreeVideoPlan?.family,currentFreeVideoPlan?.palette,
-    currentFreeVideoPlan?.motion,currentFreeVideoPlan?.variation,currentFreeVideoPlan?.reducedMotion,professionalMode,storyboardPhotoRevision]);
+    currentFreeVideoPlan?.motion,currentFreeVideoPlan?.variation,currentFreeVideoPlan?.reducedMotion,professionalMode,greetingCharacter,greetingSceneKey,storyboardPhotoRevision]);
   const sourceRef = useRef(signature);
   sourceRef.current = signature;
   // Keep the real Create button reachable when user must attach/authorize audio.
@@ -3436,6 +3441,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           creationMode==="generated"&&!backgroundOnly&&photoConsent&&Boolean(photoUrl)?image:null,activeMontageStyleId,styleFilmRef.current,storyboardPhotos);
         paintHypnoLightOverlay(ctx,previewSeekSeconds,hypnoLight);
         paintStoryMotifs(ctx,previewSeekSeconds,appliedStory);
+        paintFreeGreeting(ctx,previewSeekSeconds,duration,greetingCharacter,aspect,greetingSceneKey,theme);
         paintSingleVideoTextOverlay(ctx,previewSeekSeconds,singleTextSource,affirmationLines,affirmations,duration,cinematicPlan,timelineTextClips);
       }
       if (!previewPlaying) return;
@@ -3460,6 +3466,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             paintCinematicFrame(ctx,image,effect,frameSecond,aspect,moneyScene,visibleCaption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,stockFrame,currentFreeVideoPlan,
         creationMode==="generated"&&!backgroundOnly&&photoConsent&&Boolean(photoUrl)?image:null,activeMontageStyleId,styleFilmRef.current,storyboardPhotos);
             paintStoryMotifs(ctx,frameSecond,appliedStory);
+            paintFreeGreeting(ctx,elapsed,duration,greetingCharacter,aspect,greetingSceneKey,theme);
             paintHypnoLightOverlay(ctx,frameSecond,hypnoLight);
             paintSingleVideoTextOverlay(ctx,frameSecond,singleTextSource,affirmationLines,affirmations,duration,cinematicPlan,timelineTextClips);
           }
@@ -3472,7 +3479,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     return () => { cancelled = true; window.cancelAnimationFrame(animation); };
   }, [source, effect, moneyScene, theme, otherScene, aspect, previewPlaying, previewSeekSeconds,
     recording, speed, brightness, caption, visibleCaption, singleTextSource, wish, affirmations, hypnoLight, locale, cinematicPlan,
-    usingFreeFilmCompilation, freeFilmReady, appliedStory, timelineTextClips,stopMovieSound,duration,previewFrameRevision,
+    usingFreeFilmCompilation, freeFilmReady, appliedStory, greetingCharacter, greetingSceneKey, timelineTextClips,stopMovieSound,duration,previewFrameRevision,
     creationMode,currentFreeVideoPlan,activeMontageStyleId,selectedStyleFilm?.src,styleFilmReady,backgroundOnly,photoConsent,photoUrl,activeWorkspace,storyboardPhotoRevision]);
 
   async function videoCreditRequest(action:"hold"|"complete"|"release",body:Record<string,unknown>){
@@ -3711,7 +3718,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           ?firstPartyFilmFor(first.theme,first.sceneId):null;
         if(!backgroundOnly||attachedAudio||caption||affirmations.enabled||
           Boolean(cinematicPlan?.shots.some(shot=>shot.overlayText))||
-          storySelectionItems(appliedStory).length>0||
+          storySelectionItems(appliedStory).length>0||greetingCharacter!=="none"||
           !film?.src.startsWith("/videos/holistic-house/")){
           setNotice(t.unsupported);
           setExportUnavailable(true);
@@ -3756,6 +3763,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       paintCinematicFrame(ctx,image,effect,0,aspect,moneyScene,visibleCaption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,firstStockFrame,currentFreeVideoPlan,
         creationMode==="generated"&&!backgroundOnly&&photoConsent&&Boolean(photoUrl)?image:null,activeMontageStyleId,styleFilmRef.current,storyboardPhotos);
       paintStoryMotifs(ctx,0,appliedStory);
+      paintFreeGreeting(ctx,0,duration,greetingCharacter,aspect,greetingSceneKey,theme);
       paintHypnoLightOverlay(ctx,0,hypnoLight);
       paintSingleVideoTextOverlay(ctx,0,singleTextSource,affirmationLines,affirmations,duration,cinematicPlan,timelineTextClips);
        paintVideoBrandStamp(ctx,exportBrandVariant);
@@ -3820,6 +3828,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,frame,currentFreeVideoPlan,
                 creationMode==="generated"&&!backgroundOnly&&photoConsent&&Boolean(photoUrl)?image:null,activeMontageStyleId,styleFilmRef.current,storyboardPhotos);
               paintStoryMotifs(ctx,time,appliedStory);
+              paintFreeGreeting(ctx,time,duration,greetingCharacter,aspect,greetingSceneKey,theme);
               paintHypnoLightOverlay(ctx,time,hypnoLight);
               paintSingleVideoTextOverlay(ctx,time,singleTextSource,affirmationLines,affirmations,duration,cinematicPlan,timelineTextClips);
               paintVideoBrandStamp(ctx,exportBrandVariant);
@@ -4039,6 +4048,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           paintCinematicFrame(ctx,image,effect,frameTime,aspect,moneyScene,visibleCaption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,stockFrame,currentFreeVideoPlan,
         creationMode==="generated"&&!backgroundOnly&&photoConsent&&Boolean(photoUrl)?image:null,activeMontageStyleId,styleFilmRef.current,storyboardPhotos);
           paintStoryMotifs(ctx,frameTime,appliedStory);
+          paintFreeGreeting(ctx,frameTime,duration,greetingCharacter,aspect,greetingSceneKey,theme);
           paintHypnoLightOverlay(ctx,frameTime,hypnoLight);
           paintSingleVideoTextOverlay(ctx,frameTime,singleTextSource,affirmationLines,affirmations,duration,cinematicPlan,timelineTextClips);
           paintVideoBrandStamp(ctx,exportBrandVariant);
@@ -8870,6 +8880,29 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </div>
         </section>
 
+        {activeWorkspace==="pro"?<MandalaFreeGreeting
+          locale={locale} selected={greetingCharacter} sceneKey={greetingSceneKey} theme={theme}
+          disabled={recording||preparing||micRecording}
+          onSelect={character=>{
+            setGreetingCharacter(character);
+            stopMovieSound();setPreviewPlaying(false);
+            const at=Math.max(0,duration-FREE_GREETING_DURATION+1.15);
+            setPreviewSeekSeconds(at);setPreviewPlayhead(at);
+          }}
+          onPreview={()=>{
+            const at=Math.max(0,duration-FREE_GREETING_DURATION);
+            stopMovieSound();setPreviewPlaying(false);
+            setPreviewSeekSeconds(at);setPreviewPlayhead(at);
+            if(attachedAudio)startMovieSound(attachedAudio,soundVolume,at);
+            setPreviewPlaying(true);
+            const film=premiumVideoRef.current;
+            if(film&&activeFilm){
+              film.muted=true;
+              void film.play().catch(()=>setPreviewPlaying(false));
+            }
+            document.querySelector("[data-video-preview-frame]")
+              ?.scrollIntoView({block:"center",behavior:"smooth"});
+          }}/>:null}
         <MandalaProEnhance locale={locale} disabled={!studioHydrated||recording||preparing||micRecording}
           onGenerateFree={createQuickVideo}
           onPickPhoto={onPickPhoto} photoSelected={Boolean(photoUrl)} photoPending={photoPending}
