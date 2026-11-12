@@ -2021,12 +2021,49 @@ test('queue cleanup fails closed on merged PR changes, invalid actor, no budget,
   observedQueued:139,observedRemaining:4700,now:Date.parse('2026-11-12T18:00:00Z')});
  assert.equal(result.eligible,0);assert.deepEqual(moved.calls.cancel,[]);
 });
-test('same existing scheduled Watchdog runner owns bounded cleanup; no new CI or workflow',()=>{
+test('same existing scheduled or verified reconcile Watchdog runner owns bounded cleanup; no new CI or workflow',()=>{
  const fs=require('node:fs');
  const workflow=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
  const source=fs.readFileSync('scripts/ci-pr-merged-queue-cleanup.cjs','utf8');
- assert.match(workflow,/context\.eventName==='schedule'&&[\s\S]{0,250}runCleanup/);
+ assert.match(workflow,/trustedContext\(context\)/);
+ assert.match(workflow,/Number\(report\.queuedActions\)>100/);
  assert.match(workflow,/report\.queuedActions\)>100/);
- assert.doesNotMatch(source,/workflow_dispatch|createWorkflowDispatch|reRunWorkflow|createPullRequest/);
+ assert.doesNotMatch(source,/createWorkflowDispatch|reRunWorkflow|createPullRequest|setInterval\s*\(/);
+ assert.match(source,/context\.eventName!=='workflow_dispatch'/);
  assert.equal(mergedCleanup.MAX_CANCELS,12);
+});
+
+
+test('bounded cleanup accepts proven owner reconcile fallback when GitHub schedule is delayed',async()=>{
+ const f=cleanupFixture();
+ const manual={...f.context,eventName:'workflow_dispatch',
+  payload:{inputs:{dry_run:'false',completion_wake:'false',
+    direct_dispatch:'false',pm_pr_number:'',pm_request_id:''}}};
+ assert.equal(mergedCleanup.trustedContext(manual),true);
+ const result=await mergedCleanup.runCleanup({github:f.github,context:manual,
+  observedQueued:139,observedRemaining:4700,now:Date.parse('2026-11-12T18:00:00Z')});
+ assert.equal(result.status,'CANCELLATION_ACCEPTED_NOT_TERMINAL');
+ assert.deepEqual(f.calls.cancel,[1001]);
+});
+test('direct/manual PM, dry-run, completion, unrelated triggers and foreign refs cannot clean',async()=>{
+ const f=cleanupFixture(),base={...f.context,eventName:'workflow_dispatch',
+  payload:{inputs:{}}};
+ const blocked=[{dry_run:'true'},{completion_wake:'true'},
+  {direct_dispatch:'true'},{pm_pr_number:'4370'},
+  {pm_request_id:'owner-target'}, {dry_run:true}];
+ for(const inputs of blocked){
+  const ctx={...base,payload:{inputs}};
+  assert.equal(mergedCleanup.trustedContext(ctx),false,JSON.stringify(inputs));
+  const receipt=await mergedCleanup.runCleanup({github:f.github,context:ctx,
+   observedQueued:139,observedRemaining:4700,now:Date.parse('2026-11-12T18:00:00Z')});
+  assert.equal(receipt.status,'UNTRUSTED_CONTEXT');
+ }
+ for(const ctx of [
+  {...base,eventName:'issue_comment'},
+  {...base,eventName:'push'},
+  {...base,ref:'refs/heads/codex/public-book-library'},
+  {...base,repo:{owner:'someone-else',repo:'books'}}]){
+  assert.equal(mergedCleanup.trustedContext(ctx),false);
+ }
+ assert.deepEqual(f.calls.cancel,[]);
 });

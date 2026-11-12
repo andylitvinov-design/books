@@ -217,16 +217,17 @@ jobs:
             // GitHub Actions queue is severely saturated. Cancel only queued
             // first-attempt PR checks proven ancestral to ALREADY MERGED PRs.
             // No new workflow, runner, CI dispatch, or source modification.
-            if(!dryRun&&context.eventName==='schedule'&&
-               Number(report.queuedActions)>100&&
+            if(!dryRun&&Number(report.queuedActions)>100&&
                Number(report.apiRemaining)>=250){
               try{
-                const {runCleanup}=require(process.env.GITHUB_WORKSPACE+
+                const {trustedContext,runCleanup}=require(process.env.GITHUB_WORKSPACE+
                   '/scripts/ci-pr-merged-queue-cleanup.cjs');
-                const receipt=await runCleanup({github,context,core,
-                  observedQueued:report.queuedActions,
-                  observedRemaining:report.apiRemaining});
-                core.info('HH_QUEUE_ORPHAN_RECONCILE '+JSON.stringify(receipt));
+                if(trustedContext(context)){
+                  const receipt=await runCleanup({github,context,core,
+                    observedQueued:report.queuedActions,
+                    observedRemaining:report.apiRemaining});
+                  core.info('HH_QUEUE_ORPHAN_RECONCILE '+JSON.stringify(receipt));
+                }
               }catch(error){
                 core.warning('HH_QUEUE_ORPHAN_RECONCILE_UNAVAILABLE '+
                   String(error?.message||'unknown').slice(0,150));
