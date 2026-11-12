@@ -15,24 +15,12 @@ on:
       - 'lib/wealth-video-local.ts'
       - 'tests/kling-avatar.test.mjs'
       - '.github/workflows/hh-kling-video.yml'
-  push:
-    branches: [codex/public-book-library]
-    paths:
-      - 'lib/kling-video.mjs'
-      - 'lib/kling-avatar.mjs'
-      - 'app/admin/videos/**'
-      - 'components/kling-scene-studio.tsx'
-      - 'components/kling-avatar-studio.tsx'
-      - 'app/api/admin/kling-avatar/**'
-      - 'docs/videos/KLING_AVATAR_PILOT_20261027.md'
-      - 'app/site-video-admin.css'
-      - 'tests/kling-video.test.mjs'
-      - 'lib/wealth-video-local.ts'
-      - 'tests/kling-avatar.test.mjs'
-      - '.github/workflows/hh-kling-video.yml'
-
 permissions:
   contents: read
+
+concurrency:
+  group: hh-kling-video-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 
 jobs:
   kling:
@@ -52,6 +40,8 @@ jobs:
       - name: Scoped ESLint
         run: npx eslint lib/wealth-video-local.ts lib/kling-video.mjs lib/kling-avatar.mjs app/admin/videos/page.tsx app/admin/videos/kling-actions.js app/api/admin/kling-avatar/route.js components/kling-scene-studio.tsx components/kling-avatar-studio.tsx tests/kling-video.test.mjs tests/kling-avatar.test.mjs
       - name: TypeScript
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx tsc --noEmit
       - name: Next.js build
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npm run build

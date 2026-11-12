@@ -23,6 +23,8 @@ for (const engine of [chromium, webkit]) {
         const page = await browser.newPage({
           viewport: { width, height: 844 }, deviceScaleFactor: 1,
           hasTouch: true, isMobile: true, reducedMotion: "reduce",
+          // Keep synthetic directory routes independent of the app service worker.
+          serviceWorkers: "block",
         });
         const errors = [];
         page.on("pageerror", err => errors.push(err.message));
@@ -38,23 +40,23 @@ for (const engine of [chromium, webkit]) {
           assert.equal(response?.status(), 200, label + " existing mobile route");
           const root = page.locator("[data-holistic-mobile-alternative]");
           await root.waitFor({ state: "visible", timeout: 30000 });
-          await page.waitForFunction(() => {
-            const input = document.querySelector('[data-support-scale="relationships"] input[type="range"]');
-            return Boolean(input && Object.keys(input).some(key => key.startsWith("__reactProps$")));
-          }, null, {timeout:30000});
+          const relationshipsInput=root.locator('[data-support-scale="relationships"] input[type="range"]');
+          await relationshipsInput.waitFor({state:"visible",timeout:30000});
+          assert.equal(await root.locator('[data-support-scale] input[type="range"]').count(),4,
+            label+" four hydrated, user-operable scale controls");
 
           const assessment = root.locator('[aria-labelledby="mobile-assessment-title"]');
           const photo = root.locator("[data-support-photo]");
           const gallery = root.locator("[data-support-meditation-gallery]");
           const hero = root.locator("[data-support-player]");
-          const launch = assessment.locator("[data-support-recommendations]");
-          assert.equal(await launch.count(), 1, label + " one left-side picker");
+          const launch = root.locator("[data-support-recommendations]");
+          assert.equal(await launch.count(), 1, label + " one recommendation action");
           assert.equal(await root.locator("[data-support-recommendations]").count(), 1,
             label + " no duplicate focus picker");
           assert.equal(await root.locator('[data-support-scale] input[type="range"]').count(), 4,
             label + " four editable self-scores");
-          assert.equal(await root.locator(".focusSelector").count(), 0,
-            label + " no old focus control");
+          assert.equal(await root.locator("[data-support-active-focus]").count(), 1,
+            label + " one current focus indicator");
           assert.equal(await root.locator('[data-support-detailed-analysis]').count(), 0,
             label + " old left Tests CTA replaced");
           assert.equal(await gallery.locator("[data-support-video]").count(), 4,
@@ -103,8 +105,32 @@ for (const engine of [chromium, webkit]) {
           const selectedThumb = gallery.locator("[data-support-video]").last();
           const id = await selectedThumb.getAttribute("data-support-video");
           assert.match(id, /^[A-Za-z0-9_-]{11}$/, label + " verified selected video ID");
-          await selectedThumb.click();
-          assert.equal(await selectedThumb.getAttribute("aria-pressed"), "true",
+          // Match an iPhone finger press, rather than an offscreen desktop
+          // mouse click while a previous recommendation scroll is settling.
+          await selectedThumb.evaluate(element=>element.scrollIntoView({
+            behavior:"instant",block:"center",inline:"nearest"
+          }));
+          await page.waitForFunction(videoId=>{
+            const card=document.querySelector('[data-support-video="'+videoId+'"]');
+            if(!card)return false;
+            const rect=card.getBoundingClientRect();
+            const dock=document.querySelector('[data-support-mobile-bottom-nav]');
+            const visibleDock=dock&&getComputedStyle(dock).display!=="none";
+            if(rect.top<0||visibleDock&&rect.bottom>dock.getBoundingClientRect().top-5)return false;
+            const x=rect.left+rect.width/2,y=rect.top+rect.height/2;
+            const hit=document.elementFromPoint(x,y);
+            return hit===card||card.contains(hit);
+          },id,{timeout:12000});
+          await selectedThumb.tap();
+          // Verify the real React state; WebKit can commit after tap() resolves.
+          await page.waitForFunction(videoId=>{
+            const el=document.querySelector('[data-support-video="'+videoId+'"]');
+            return el?.getAttribute("aria-pressed")==="true";
+          },id,{timeout:12000});
+          // The reordered gallery can change which card is ".last()" after React commits.
+          // Assert against the exact verified video ID instead of a moving locator.
+          const committedThumb=gallery.locator('[data-support-video="'+id+'"]');
+          assert.equal(await committedThumb.getAttribute("aria-pressed"), "true",
             label + " thumbnail changes the scenic player selection");
           assert.equal(await hero.locator("iframe").count(), 0, label + " no autoplay on thumbnail");
           assert.equal(await root.locator("[data-support-video-source] a[href^='https://www.youtube.com/watch']").count(),
@@ -138,9 +164,15 @@ for (const engine of [chromium, webkit]) {
           const categories = viewer.locator("[data-support-talisman-category]");
           assert.equal(await categories.count(), 6, label + " six real-data intent shortcuts");
           await viewer.locator('[data-support-talisman-category="relationships"]').click();
+          // WebKit may commit React state after click() resolves: require the real SKU transition.
+          await page.waitForFunction(expected => document.querySelector('[data-support-talisman]')?.getAttribute('data-support-talisman') === expected,
+            "fu-harmony", {timeout:12000});
           assert.equal(await viewer.locator("[data-support-talisman]").getAttribute("data-support-talisman"),
             "fu-harmony", label + " love category selects existing harmony art");
           await viewer.locator('[data-support-talisman-category="money"]').click();
+          // WebKit may commit React state after click() resolves: require the real SKU transition.
+          await page.waitForFunction(expected => document.querySelector('[data-support-talisman]')?.getAttribute('data-support-talisman') === expected,
+            "fu-prosperity", {timeout:12000});
           assert.equal(await viewer.locator("[data-support-talisman]").getAttribute("data-support-talisman"),
             "fu-prosperity", label + " money category selects existing prosperity art");
           const categoryRail = viewer.locator("[data-support-talisman-categories]");
@@ -150,8 +182,16 @@ for (const engine of [chromium, webkit]) {
           await page.waitForFunction(() =>
             (document.querySelector("[data-support-talisman-categories]")?.scrollLeft ?? 0) > 0,
             null, { timeout: 4000 });
-          await viewer.locator('[data-support-talisman-filter="master"]').click();
-          assert.equal(await viewer.locator("#talisman-master-note").isVisible(), true,
+          const makerFilter=viewer.locator('[data-support-talisman-filter="master"]');
+          await makerFilter.scrollIntoViewIfNeeded();
+          await makerFilter.tap();
+          const makerNote=viewer.locator("#talisman-master-note");
+          // On mobile WebKit, a genuine touch can resolve before React commits
+          // the explanatory disclosure. Do not waive the real visibility check.
+          await makerNote.waitFor({state:"visible",timeout:12000});
+          assert.equal(await makerFilter.getAttribute("aria-expanded"),"true",
+            label + " maker filter expands after a real touch");
+          assert.equal(await makerNote.isVisible(), true,
             label + " unknown maker is disclosed, not fabricated");
           await viewer.locator('[data-support-talisman-filter="tradition"] select').selectOption("daoist");
           await viewer.locator('[data-support-talisman-filter="description"] select').selectOption("fu-harmony");
@@ -180,7 +220,12 @@ for (const engine of [chromium, webkit]) {
 
           await root.locator('[data-support-tool="masters"]').click();
           const masterViewer = root.locator('[data-support-master-viewer][data-support-directory-kind="masters"]');
-          await masterViewer.locator('[data-support-master-hero]').waitFor({state:"visible",timeout:10000});
+          try { await masterViewer.locator('[data-support-master-hero]').waitFor({state:"visible",timeout:10000}); }
+          catch (error) {
+            console.error(JSON.stringify({phase:"synthetic-master-directory",locale,width,
+              text:(await masterViewer.innerText()).slice(0,500),errors}));
+            throw error;
+          }
           assert.equal(await masterViewer.locator('[data-support-master-thumb]').count(),2,
             label + " published fixture masters selectable under large profile");
           await masterViewer.locator('[data-support-master-thumb="qa-energy-two"]').click();

@@ -145,3 +145,27 @@
     padding: 13px 14px;
   }
 }
+
+/* One clearly labelled reading path: original tradition manual ↔ searchable cards. */
+.reader-shell .reader-temple-switch {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+  max-width: 920px; padding: 10px; margin-top: 18px;
+  background: var(--hh-light-surface, #fffcf7);
+  border: 1px solid var(--hh-light-border, #e9dfd1); border-radius: 18px;
+}
+.reader-shell .reader-temple-switch__label { padding: 0 10px; color: #5d6a71; font-size: 13px; font-weight: 700; }
+.reader-shell .reader-temple-switch__current,
+.reader-shell .reader-temple-switch__link {
+  display: inline-flex; justify-content: center; align-items: center;
+  min-height: 44px; padding: 9px 16px; border-radius: 13px;
+  font-size: 14px; line-height: 1.4; font-weight: 750; text-align: center;
+}
+.reader-shell .reader-temple-switch__current { background: #e6f6f1; color: #143d3a; border: 1px solid #81bdae; }
+.reader-shell .reader-temple-switch__link { background: #067a67; color: #fff; text-decoration: none; border: 1px solid #067a67; }
+.reader-shell .reader-temple-switch__link:hover { background: #036656; }
+.reader-shell .reader-temple-switch__link:focus-visible { outline: 3px solid #176e6e; outline-offset: 3px; }
+@media (max-width: 520px) {
+  .reader-shell .reader-temple-switch__label { flex: 0 0 100%; }
+  .reader-shell .reader-temple-switch__current,
+  .reader-shell .reader-temple-switch__link { flex: 1 1 170px; }
+}

@@ -2,6 +2,10 @@ import { NextResponse, after } from 'next/server'
 import { randomUUID } from 'node:crypto'
 import { getAppConfig, requireSameOrigin, requestOrigin } from '@/lib/app/config'
 import { createRequestAuth } from '@/lib/app/session'
+import {
+  TELEGRAM_OIDC_PROVIDER, IDENTITY_LINK_COOKIE, telegramLoginEnabled, oauthProvider,
+  createIdentityLinkProof, verifyIdentityLinkProof,
+} from '@/lib/app/telegram-oauth.mjs'
 import { safeEnquiryReturnPath } from '@/lib/app/enquiry-auth-redirect'
 import {directMessengerRecipient,directMessengerReturnPath,directMessengerSetupPath} from '@/lib/app/direct-messenger-handoff.mjs'
 import { createAppRepository } from '@/lib/app/repository'
@@ -12,6 +16,13 @@ import { readLearningJourney } from '@/lib/app/learning-journey-repository'
 import { listLabReports, saveLabReport, deleteLabReport } from '@/lib/app/lab-reports'
 import { readBusinessCoaching, saveBusinessCoaching } from '@/lib/app/business-coaching'
 import { readPersonalCoaching, savePersonalCoaching, readTraditionCoaching, saveTraditionCoaching, readTraditionCoachingSummaries } from '@/lib/app/personal-coaching'
+import {personalCoachingBrainTurn,personalCoachingBrainProbe,myCoachGenerativeTurn,myCoachGenerativeProbe} from '@/lib/app/coaching-brain'
+import { readCoachingReportDraft } from '@/lib/app/coaching-report-v2'
+import { listCoachingReports, exportCoachingReports, readCoachingReport, saveCoachingReport, deleteCoachingReport } from '@/lib/app/coaching-report-store'
+import { readCoachingLifePlan, updateCoachingLifePlanArea, importCoachingReportActions } from '@/lib/app/coaching-life-plan'
+import { exportCoachingLifePlan } from '@/lib/app/coaching-life-plan'
+import { revokeCoachingPlanContext } from '@/lib/app/coaching-life-plan'
+import { deleteCoachingPlanAction } from '@/lib/app/coaching-life-plan'
 import {learnerCoachingAudio} from '@/lib/academy/coaching-audio-store'
 import { readPersonalCoachingCatalog } from '@/lib/app/personal-coaching-catalog'
 import { readCoachingIntake, saveCoachingIntake } from '@/lib/app/coaching-intake'
@@ -176,10 +187,21 @@ async function handle(request, { params }) {
     auth = createRequestAuth(request, config)
     const json = (data, status = 200) =>
       auth.apply(NextResponse.json(data, { status, headers: PRIVATE_HEADERS }))
+    if (joined === 'auth/providers' && method === 'GET')
+      return json({ google: true, telegram: telegramLoginEnabled() })
+    if (joined === 'auth/status' && method === 'GET') {
+      await auth.verified()
+      return json({ authenticated: true })
+    }
     if (joined === 'auth/start' && method === 'POST') {
       const body = await readBody(request)
-      onlyKeys(body, ['locale', 'intentId', 'serviceId', 'continueTo', 'program', 'requestId', 'native', 'returnPath', 'profi', 'coachingMode', 'coachingLang', 'recipientSlug'])
-      const locale = body.locale === 'ru' ? 'ru' : body.locale === 'es' && ['enquiry','coaching-intake','practice-preview','direct-messages'].includes(body.continueTo) ? 'es' : 'en'
+      onlyKeys(body, ['locale', 'intentId', 'serviceId', 'continueTo', 'program', 'requestId', 'native', 'returnPath', 'profi', 'coachingMode', 'coachingLang', 'recipientSlug', 'provider'])
+      const authChoice = body.provider ?? 'google'
+      if (authChoice !== 'google' && authChoice !== 'telegram')
+        throw new AppError('INVALID_AUTH_PROVIDER', 400)
+      const selectedProvider = oauthProvider(authChoice)
+      if (!selectedProvider) throw new AppError('TELEGRAM_LOGIN_UNAVAILABLE', 503)
+      const locale = body.locale === 'ru' ? 'ru' : body.locale === 'es' && ['enquiry','coaching-intake','practice-preview','direct-messages','video-studio','cabinet','course','tests','my-tests','my-courses','business','my-coach-mira'].includes(body.continueTo) ? 'es' : 'en'
       const intentId = body.intentId || null,
         serviceId = body.serviceId || null,
         continueTo = body.continueTo || null,
@@ -192,8 +214,8 @@ async function handle(request, { params }) {
         coachingLang = body.coachingLang ?? null,
         recipientSlug = body.recipientSlug ?? null
       if (body.native !== undefined && body.native !== true) throw new AppError('INVALID_CONTINUATION',400)
-      if (continueTo !== null && !['tests', 'course', 'consultations', 'business', 'coaching', 'coaching-intake', 'enquiry'].includes(continueTo) &&
-        !['cabinet','my-practice','practice-preview','direct-messages','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','practitioner-youtubeConnect','energywork','practitioner'].includes(continueTo)) throw new AppError('INVALID_CONTINUATION', 400)
+      if (continueTo !== null && !['tests', 'course', 'consultations', 'business', 'coaching', 'coaching-intake', 'enquiry', 'my-coach-mira'].includes(continueTo) &&
+        !['commander-monitor','cabinet','my-practice','practice-preview','direct-messages','video-studio','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','practitioner-youtubeConnect','energywork','practitioner'].includes(continueTo)) throw new AppError('INVALID_CONTINUATION', 400)
       if (coachingMode !== null && (continueTo !== 'coaching' || !['egyptian','greek'].includes(coachingMode))) throw new AppError('INVALID_CONTINUATION', 400)
       if (coachingLang !== null && (continueTo !== 'coaching' || coachingLang !== 'es' || coachingMode === null)) throw new AppError('INVALID_CONTINUATION', 400)
       if (recipientSlug !== null) {
@@ -220,9 +242,9 @@ async function handle(request, { params }) {
         600,
       )
       const { data, error } = await auth.client.auth.signInWithOAuth({
-        provider: 'google',
+        provider: selectedProvider.provider,
         options: {
-          scopes: 'openid email profile',
+          ...(authChoice === 'google' ? { scopes: 'openid email profile' } : { scopes: selectedProvider.scopes }),
           redirectTo: `${origin}/api/app/auth/callback?locale=${locale}${native ? '&native=1' : ''}${intentId ? `&intent=${encodeURIComponent(intentId)}` : ''}${serviceId ? `&service=${encodeURIComponent(serviceId)}` : ''}${continueTo ? `&continue=${encodeURIComponent(continueTo)}` : ''}${program ? `&program=${encodeURIComponent(program)}` : ''}${requestId ? `&request=${encodeURIComponent(requestId)}` : ''}${returnPath ? `&returnPath=${encodeURIComponent(returnPath)}` : ''}${profi ? `&profi=${encodeURIComponent(profi)}` : ''}${coachingMode ? `&coachingMode=${encodeURIComponent(coachingMode)}` : ''}${coachingLang ? `&coachingLang=${encodeURIComponent(coachingLang)}` : ''}${recipientSlug ? `&recipientSlug=${encodeURIComponent(recipientSlug)}` : ''}`,
           skipBrowserRedirect: true,
         },
@@ -233,7 +255,7 @@ async function handle(request, { params }) {
     }
     if (joined === 'auth/callback' && method === 'GET') {
       const url = new URL(request.url),
-        locale = url.searchParams.get('locale') === 'ru' ? 'ru' : url.searchParams.get('locale') === 'es' && ['enquiry','coaching-intake','practice-preview','direct-messages'].includes(url.searchParams.get('continue')) ? 'es' : 'en',
+        locale = url.searchParams.get('locale') === 'ru' ? 'ru' : url.searchParams.get('locale') === 'es' && ['enquiry','coaching-intake','practice-preview','direct-messages','video-studio','cabinet','course','tests','my-tests','my-courses','business','my-coach-mira'].includes(url.searchParams.get('continue')) ? 'es' : 'en',
         code = url.searchParams.get('code'),
         intentId = url.searchParams.get('intent'),
         serviceId = url.searchParams.get('service'),
@@ -245,6 +267,22 @@ async function handle(request, { params }) {
         coachingMode = url.searchParams.get('coachingMode'),
         coachingLang = url.searchParams.get('coachingLang'),
         recipientSlug = url.searchParams.get('recipientSlug')
+      const linkMode = url.searchParams.get('link')
+      if (linkMode !== null && linkMode !== '1') throw new AppError('INVALID_LINK_FLOW',400)
+      const linkProof = linkMode === '1'
+        ? verifyIdentityLinkProof(request.cookies.get(IDENTITY_LINK_COOKIE)?.value,config)
+        : null
+      const linkedAccount=linkProof?.accountId??null
+      if (linkMode === '1' && !linkedAccount) throw new AppError('INVALID_LINK_FLOW',400)
+      if (linkedAccount && (await auth.verified()).id !== linkedAccount)
+        throw new AppError('INVALID_LINK_FLOW',403)
+      const finishAuth = response => {
+        const applied = auth.apply(response)
+        if (linkedAccount) applied.cookies.set(IDENTITY_LINK_COOKIE,'',{
+          path:'/api/app/auth',maxAge:0,httpOnly:true,secure:!config.test,sameSite:'lax',
+        })
+        return applied
+      }
       if (coachingMode !== null && (continueTo !== 'coaching' || !['egyptian','greek'].includes(coachingMode))) throw new AppError('INVALID_CONTINUATION', 400)
       if (coachingLang !== null && (continueTo !== 'coaching' || coachingLang !== 'es' || coachingMode === null)) throw new AppError('INVALID_CONTINUATION', 400)
       if (url.searchParams.getAll('recipientSlug').length>1) throw new AppError('INVALID_CONTINUATION',400)
@@ -261,12 +299,13 @@ async function handle(request, { params }) {
       if (serviceId) requireUUID(serviceId)
       if (requestId !== null) requireUUID(requestId)
       if ((continueTo === 'consultations') !== Boolean(requestId)) throw new AppError('INVALID_CONTINUATION', 400)
-      if ((intentId && serviceId) || (continueTo && (!['tests','course','consultations','business','coaching','cabinet','my-practice','practice-preview','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','practitioner-youtubeConnect','energywork','practitioner','enquiry','coaching-intake','direct-messages'].includes(continueTo) || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
+      if ((intentId && serviceId) || (continueTo && (!['commander-monitor','tests','course','consultations','business','coaching','cabinet','my-practice','practice-preview','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','practitioner-youtubeConnect','energywork','practitioner','enquiry','coaching-intake','direct-messages','video-studio','my-coach-mira'].includes(continueTo) || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
       // Native OAuth runs Google in the system browser. This HTTPS callback
       // merely returns the single-use PKCE authorization code to the app;
       // the WebView's existing HttpOnly PKCE cookie then exchanges it through
       // THIS SAME callback without native=1. Never transfer session tokens.
       if (url.searchParams.get('native') === '1') {
+        if (linkedAccount) throw new AppError('INVALID_LINK_FLOW',400)
         if (continueTo === 'enquiry') throw new AppError('INVALID_CONTINUATION', 400)
         const handoff = new URL('holistichouse://auth/callback')
         for (const key of ['locale','intent','service','continue','program','request','profi','coachingMode','coachingLang','recipientSlug','sb_flow_id']) {
@@ -276,18 +315,24 @@ async function handle(request, { params }) {
         if (url.searchParams.has('error')) handoff.searchParams.set('error','cancelled')
         else if (code && code.length <= 4096) handoff.searchParams.set('code',code)
         else handoff.searchParams.set('error','cancelled')
-        return auth.apply(NextResponse.redirect(handoff.toString(),{status:303,headers:PRIVATE_HEADERS}))
+        return finishAuth(NextResponse.redirect(handoff.toString(),{status:303,headers:PRIVATE_HEADERS}))
       }
       const destination = intentId
         ? `${origin}/${locale}/app/continue?intent=${encodeURIComponent(intentId)}&auto=1`
         : serviceId
           ? `${origin}/${locale}/app/consultations?service=${encodeURIComponent(serviceId)}`
-          : continueTo === 'consultations'
+          : continueTo === 'commander-monitor'
+            ? `${origin}/commander-connect.html?finish=1`
+        : continueTo === 'consultations'
             ? `${origin}/${locale}/app/consultations?request=${encodeURIComponent(requestId)}`
           : continueTo === 'enquiry'
             ? `${origin}${returnPath}?hh_enquiry=google`
           : continueTo === 'direct-messages'
             ? `${origin}${directMessengerReturnPath(locale,recipientSlug)}`
+          : continueTo === 'video-studio'
+            ? `${origin}/${locale}/holistic-support/mandala`
+          : continueTo === 'my-coach-mira'
+            ? `${origin}/${locale}/coaching/sessions?coach=mira`
           : continueTo === 'tests'
             ? `${origin}/${locale}/app/tests?selection=pending`
             : continueTo === 'course'
@@ -297,7 +342,7 @@ async function handle(request, { params }) {
               : continueTo === 'coaching'
                 ? `${origin}/${locale}/app/coaching${coachingMode ? '/'+coachingMode : ''}${coachingLang==='es'?'?lang=es':''}`
               : continueTo === 'coaching-intake'
-                ? `${origin}/${locale}/coaching/intake`
+                ? `${origin}/${locale}/coaching/intake?private=1`
               : continueTo === 'practice-preview'
                 // Return to the identical canonical Practice dashboard for
                 // guest and signed-in users. Older action-code continuations
@@ -305,7 +350,7 @@ async function handle(request, { params }) {
                 // The user explicitly chooses a protected editor after login.
                 ? `${origin}/${locale}/practice`
               : continueTo === 'cabinet'
-                ? `${origin}/${locale}/app/portrait`
+                ? `${origin}/${locale}/app/portrait?space=today`
                 : continueTo === 'my-practice'
                   ? profi
                     ? `${origin}/${locale}/app/practice${profi === 'course' ? '?panel=materials&materialTab=courses&create=1' : profi === 'profile' ? '?panel=profile' : profi === 'requests' ? '?panel=requests' : ['session','intro','workshop','diagnostic','energy','personal'].includes(profi) ? '?panel=services&create=1&starter=' + profi : ''}`
@@ -315,7 +360,7 @@ async function handle(request, { params }) {
                   : continueTo === 'my-courses'
                     ? `${origin}/${locale}/app/course`
                     : continueTo === 'reports'
-                      ? `${origin}/${locale}/app/portrait#personal-reports`
+                      ? `${origin}/${locale}/app/portrait?space=reports#personal-reports`
                       : continueTo === 'practitioner-growth'
                         ? `${origin}/admin/login?destination=growth`
                       : continueTo === 'practitioner-seo'
@@ -334,10 +379,11 @@ async function handle(request, { params }) {
       // Failed Google login returns to the guest-visible approved design,
       // not a private editor that can only show an old sign-in shell.
       const failedPracticeDestination = continueTo === 'practice-preview'
-        ? `${origin}/${locale}/practice` : destination
+        ? `${origin}/${locale}/practice`
+        : continueTo === 'my-coach-mira' ? `${origin}/${locale}/my-coach` : destination
       if (url.searchParams.has('error') || !code || code.length > 4096)
-        return auth.apply(
-          NextResponse.redirect((value => { const url = new URL(failedPracticeDestination); url.searchParams.set('auth', value); return url.href; })('cancelled'), {
+        return finishAuth(
+          NextResponse.redirect((value => { const url = new URL(failedPracticeDestination); if(linkedAccount) { url.pathname=`/${locale}/app/settings`; url.search=''; url.hash=''; } url.searchParams.set('auth', value); return url.href; })('cancelled'), {
             status: 303,
             headers: PRIVATE_HEADERS,
           }),
@@ -348,22 +394,85 @@ async function handle(request, { params }) {
         flowId === null ? undefined : { flowId },
       )
       if (error)
-        return auth.apply(
-          NextResponse.redirect((value => { const url = new URL(failedPracticeDestination); url.searchParams.set('auth', value); return url.href; })('failed'), {
+        return finishAuth(
+          NextResponse.redirect((value => { const url = new URL(failedPracticeDestination); if(linkedAccount) { url.pathname=`/${locale}/app/settings`; url.search=''; url.hash=''; } url.searchParams.set('auth', value); return url.href; })('failed'), {
             status: 303,
             headers: PRIVATE_HEADERS,
           }),
         )
       const actor = await auth.verified()
+      if (linkedAccount && actor.id !== linkedAccount) {
+        await auth.client.auth.signOut({scope:'local'})
+        const denied=NextResponse.redirect(`${origin}/${locale}/app?auth=link-mismatch`,{
+          status:303,headers:PRIVATE_HEADERS,
+        })
+        return auth.clear(finishAuth(denied))
+      }
+      if (linkProof) {
+        const {data:linkedIdentities,error:identityError}=await auth.client.auth.getUserIdentities()
+        if (identityError || !linkedIdentities?.identities?.some(item=>item.provider===linkProof.provider))
+          return finishAuth(NextResponse.redirect(`${origin}/${locale}/app/settings?identity=failed`,{
+            status:303,headers:PRIVATE_HEADERS,
+          }))
+      }
       const account=await createAppRepository(config).ensureAccount(actor)
       // On first Google sign-in, the client must finish explicit account
       // consent before a private thread is created. Keep the chosen master's
       // public slug through this existing Cabinet onboarding, never in storage.
-      const verifiedDestination=continueTo==='direct-messages'&&account.onboardingState!=='active'
+      const verifiedDestination=linkedAccount ? `${origin}/${locale}/app/settings?identity=linked` : continueTo==='direct-messages'&&account.onboardingState!=='active'
         ? origin+directMessengerSetupPath(locale,recipientSlug) : destination
-      return auth.apply(
+      return finishAuth(
         NextResponse.redirect(verifiedDestination, { status: 303, headers: PRIVATE_HEADERS }),
       )
+    }
+    if (joined === 'auth/identities' && method === 'GET') {
+      const actor=await auth.verified()
+      if (request.headers.get('x-hh-account-id') !== actor.id)
+        throw new AppError('ACCOUNT_CHANGED',409)
+      const {data,error}=await auth.client.auth.getUserIdentities()
+      if (error || !Array.isArray(data?.identities))
+        throw new AppError('IDENTITY_LIST_UNAVAILABLE',503)
+      const providers=new Set(data.identities.map(item=>item.provider))
+      return json({
+        google:providers.has('google'),
+        telegram:providers.has(TELEGRAM_OIDC_PROVIDER),
+        telegramAvailable:telegramLoginEnabled(),
+      })
+    }
+    if (joined === 'auth/link' && method === 'POST') {
+      const actor=await auth.verified()
+      if (request.headers.get('x-hh-account-id') !== actor.id)
+        throw new AppError('ACCOUNT_CHANGED',409)
+      const body=await readBody(request,1024)
+      onlyKeys(body,['provider','locale','confirm'])
+      if (body.confirm !== true || !['google','telegram'].includes(body.provider))
+        throw new AppError('IDENTITY_LINK_CONSENT_REQUIRED',400)
+      const selected=oauthProvider(body.provider)
+      if (!selected) throw new AppError('TELEGRAM_LOGIN_UNAVAILABLE',503)
+      const {data:identities,error:readError}=await auth.client.auth.getUserIdentities()
+      if (readError || !Array.isArray(identities?.identities))
+        throw new AppError('IDENTITY_LIST_UNAVAILABLE',503)
+      if (identities.identities.some(item=>item.provider===selected.provider))
+        return json({alreadyLinked:true})
+      await consumeRate(config,{
+        op:'oauth-link',ip:request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()||'unknown',
+      },10,600)
+      const locale=['ru','en','es'].includes(body.locale) ? body.locale : 'en'
+      const {data,error}=await auth.client.auth.linkIdentity({
+        provider:selected.provider,
+        options:{
+          scopes:selected.scopes,
+          redirectTo:`${origin}/api/app/auth/callback?locale=${locale}&continue=cabinet&link=1`,
+          skipBrowserRedirect:true,
+        },
+      })
+      if (error || !data?.url || new URL(data.url).origin !== config.supabaseUrl)
+        throw new AppError('IDENTITY_LINK_UNAVAILABLE',503)
+      const response=json({redirectUrl:data.url})
+      response.cookies.set(IDENTITY_LINK_COOKIE,createIdentityLinkProof(actor.id,selected.provider,config),{
+        path:'/api/app/auth',maxAge:600,httpOnly:true,secure:!config.test,sameSite:'lax',
+      })
+      return response
     }
     if (joined === 'auth/contact-profile' && method === 'GET') {
       // Verified server-side Google identity only. Never create a lead, infer
@@ -743,11 +852,80 @@ async function handle(request, { params }) {
       if (method === 'GET') return json(await readPersonalCoachingCatalog(config,actor))
       throw new AppError('NOT_FOUND',404)
     }
+    // One conservative shared free-model budget across the two coaching paths.
+    // The gateway invokes it only when an actual provider request is attempted.
+    const reserveCoachingFreeCall=()=>consumeRate(config,
+      {op:'coaching-openrouter-shared-daily'},40,86400)
+    // Signed-in, stateless dialogue for the selected My Coach persona. Client
+    // history is not stored; auth, same-origin protection and DB throttles apply.
+    if (joined === 'my-coach/turn') {
+      if (method !== 'POST') throw new AppError('NOT_FOUND',404)
+      await consumeRate(config,{op:'my-coach-generative-turn',actor:actor.id},40,3600)
+      return json(await myCoachGenerativeTurn(await readBody(request,16384),
+        {signal:request.signal,reserveModelCall:reserveCoachingFreeCall}))
+    }
+    // A synthetic preflight proves verified ZDR free-model access before any
+    // visitor text can reach a provider. The call is authenticated and bounded.
+    if (joined === 'my-coach/probe') {
+      if (method !== 'POST') throw new AppError('NOT_FOUND',404)
+      await consumeRate(config,{op:'my-coach-generative-probe',actor:actor.id},12,3600)
+      onlyKeys(await readBody(request,512),[])
+      return json(await myCoachGenerativeProbe({
+        signal:request.signal,reserveModelCall:reserveCoachingFreeCall
+      }))
+    }
+    if (joined === 'personal-coaching/brain-probe') {
+      if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED',409)
+      if (method !== 'POST') throw new AppError('NOT_FOUND',404)
+      await consumeRate(config, {op:'coaching-brain-probe',actor:actor.id},3,3600)
+      return json(await personalCoachingBrainProbe(config,actor,
+        await readBody(request,512),{signal:request.signal,reserveModelCall:reserveCoachingFreeCall}))
+    }
+    if (joined === 'personal-coaching/brain') {
+      if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED', 409)
+      if (method !== 'POST') throw new AppError('NOT_FOUND', 404)
+      await consumeRate(config, {op:'coaching-brain-turn', actor:actor.id}, 40, 3600)
+      return json(await personalCoachingBrainTurn(config,actor,
+        await readBody(request,16384),{signal:request.signal,reserveModelCall:reserveCoachingFreeCall}))
+    }
     if (joined === 'personal-coaching') {
       if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED', 409)
       if (method === 'GET') return json(await readPersonalCoaching(config, actor))
       if (method === 'POST') return json(await savePersonalCoaching(config, actor, await readBody(request, 8192)))
       throw new AppError('NOT_FOUND', 404)
+    }
+    if (joined === 'personal-coaching-report') {
+      if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED', 409)
+      if (method === 'POST') return json(await readCoachingReportDraft(config,actor,await readBody(request,2048)))
+      throw new AppError('NOT_FOUND',404)
+    }
+    if (path[0] === 'personal-coaching-reports') {
+      if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED',409)
+      if (path.length===1 && method==='GET') return json(await listCoachingReports(config,actor))
+      if (path.length===1 && method==='POST') return json(await saveCoachingReport(config,actor,await readBody(request,4096)))
+      if (path.length===2 && method==='GET') return json(await readCoachingReport(config,actor,path[1]))
+      if (path.length===3 && path[2]==='delete' && method==='POST') return json(await deleteCoachingReport(config,actor,path[1],await readBody(request,1024)))
+      throw new AppError('NOT_FOUND',404)
+    }
+    if (path[0] === 'coaching-life-plan') {
+      if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED',409)
+      if (path.length===1 && method==='GET') {
+        const locale=new URL(request.url).searchParams.get('locale')||'en'
+        return json(await readCoachingLifePlan(config,actor,{locale}))
+      }
+      if (path.length===3 && path[1]==='areas' && method==='POST') {
+        return json(await updateCoachingLifePlanArea(config,actor,{...await readBody(request,8192),areaKey:path[2]}))
+      }
+      if (path.length===2 && path[1]==='import' && method==='POST') {
+        return json(await importCoachingReportActions(config,actor,await readBody(request,2048)))
+      }
+      if (path.length===2 && path[1]==='revoke-context' && method==='POST') {
+        return json(await revokeCoachingPlanContext(config,actor,await readBody(request,1024)))
+      }
+      if (path.length===4 && path[1]==='actions' && path[3]==='delete' && method==='POST') {
+        return json(await deleteCoachingPlanAction(config,actor,path[2],await readBody(request,1024)))
+      }
+      throw new AppError('NOT_FOUND',404)
     }
     if (joined === 'tradition-coaching-summary') {
       if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED', 409)
@@ -793,7 +971,8 @@ async function handle(request, { params }) {
     if (joined === 'bootstrap' && method === 'GET') {
       // A reduced initial payload is safe only after the normal verified session,
       // account check and private rate limit above. Other tabs stay unchanged.
-      const view = new URL(request.url).searchParams.get('view') === 'portrait' ? 'portrait' : 'full'
+      const requestedView = new URL(request.url).searchParams.get('view')
+      const view = requestedView === 'portrait' || requestedView === 'practice' ? requestedView : 'full'
       return json(await repo.bootstrap(actor, { view }))
     }
     if (joined === 'personal-analysis-reports' && method === 'GET')
@@ -939,6 +1118,8 @@ async function handle(request, { params }) {
       exported.labReports = (await listLabReports(config, actor)).reports
       exported.businessCoaching = await readBusinessCoaching(config, actor)
       exported.personalCoaching = await readPersonalCoaching(config, actor)
+      exported.coachingReports = (await exportCoachingReports(config, actor)).reports
+      exported.coachingLifePlan = await exportCoachingLifePlan(config, actor)
       exported.egyptianCoaching = await readTraditionCoaching(config, actor, 'hh-egyptian-goal-planning-v1')
       exported.greekCoaching = await readTraditionCoaching(config, actor, 'hh-greek-goal-planning-v1')
       exported.growthCourse = (await createGrowthCourseRepository(config).read(actor)).course

@@ -8,6 +8,7 @@ import { applyAgentMemoryForTurn, approvedMemoryForLocalPrompt, proposeAgentMemo
 import { publicReikiAudioSlots, verifiedPublicReikiIntro } from "@/lib/holistic-support/public-reiki-audio-client.mjs";
 import { prepareLocalConversation, acceptLocalConversationReply, type LocalContext } from "@/lib/holistic-support/local-conversation-contract.mjs";
 import { HolisticAgentMemoryPanel, type MyAgentMemory } from "@/components/holistic-agent-memory-panel";
+import { verifiedAgentMemoryForTurn, currentOwnerMatchesMemory } from "@/lib/holistic-support/agent-memory-turn-guard.mjs";
 import styles from "./holistic-language-conversation.module.css";
 
 type Video = { id: string; title: string; topics: string[]; sourceLanguage?: "en" | "ru"; durationMinutes?: number };
@@ -80,11 +81,14 @@ export function HolisticLanguageConversation({
   const [memoryProposal,setMemoryProposal] = useState<{kind:string;value:string}|null>(null);
   const [memoryNotice,setMemoryNotice] = useState("");
   const [memorySaving,setMemorySaving] = useState(false);
+  const [verifyingMemory,setVerifyingMemory] = useState(false);
   const [modelError,setModelError] = useState("");
   const modelWorker=useRef<Worker | null>(null);
   const requestCounter=useRef(0);
   const activeLocalContext=useRef<LocalContext|null>(null);
   const audioCounter=useRef(0);
+  const submitPending=useRef(false);
+  const memoryEpoch=useRef(0);
   const threadRef=useRef<HTMLDivElement>(null);
   const modelExperiment=process.env.NEXT_PUBLIC_HH_LOCAL_LLM_EXPERIMENTAL === "true";
 
@@ -181,22 +185,58 @@ export function HolisticLanguageConversation({
       setModelMode("failed");setModelError(t.error);
     }
   }
-  function submit() {
+  async function submit() {
     const value=draft.trim();
-    if(!value || generating)return;
+    if(!value || generating || submitPending.current)return;
+    submitPending.current=true;
+    const turnMemoryEpoch=memoryEpoch.current;
+    try {
+      // A verified memory owner can change while this SPA remains mounted.
+      // Revalidate with the authenticated same-origin server before each
+      // local-model turn; stale A->B or revoked consent fails closed.
+      let turnMemory:MyAgentMemory[]=[];
+      if(memoryOwner || savedMemory.length) {
+        setVerifyingMemory(true);
+        let latest:unknown=null;
+        try {
+          if(process.env.NEXT_PUBLIC_HH_AGENT_MEMORY_ENABLED==="true") {
+            const response=await fetch("/api/app/agent-memory",{
+              method:"GET",credentials:"same-origin",cache:"no-store",
+            });
+            if(response.ok)latest=await response.json();
+          }
+        }catch { /* A failed request must never authorize stale memory. */ }
+        if(turnMemoryEpoch!==memoryEpoch.current){
+          // A consent or owner event arrived while the network call was active.
+          reset();setDraft(value);return;
+        }
+        const ownerMatches=currentOwnerMatchesMemory(latest,memoryOwner);
+        const check=savedMemory.length ? verifiedAgentMemoryForTurn(latest,memoryOwner):null;
+        if(!ownerMatches || (savedMemory.length && (!check?.verified || !check.items.length))) {
+          // Reset history and pending model output: another signed-in account
+          // must never inherit this tab's earlier account-specific context.
+          setSavedMemory([]);setMemoryOwner("");reset();setDraft(value);
+          setMemoryNotice(locale==="ru"?"Аккаунт или согласие изменились. Память отключена; повторите отправку."
+            :locale==="es"?"La cuenta o el consentimiento cambió. Se borró el contexto; vuelve a enviar."
+            :"Account or consent changed. Memory was cleared; send again.");
+          return;
+        }
+        turnMemory=check?.items||[];
+        setSavedMemory(turnMemory);
+      }
     // Only previously verified public catalog props; never submit private tests.
     const input={text:value,previous:state,locale,catalog:{videos,tests}};
     const plainResult=turnLanguageAgent(input);
     // Saved communication preferences influence the deterministic guide while
     // enabled, but never overwrite the visitor's explicit session choices.
-    const withPreference=savedMemory.length
-      ?applyAgentMemoryForTurn(state,savedMemory):null;
+    const withPreference=turnMemory.length
+      ?applyAgentMemoryForTurn(state,turnMemory):null;
     const result=withPreference ? turnLanguageAgent({...input,previous:withPreference})
       : plainResult;
     const localRequestId=++requestCounter.current;
     const localContext=prepareLocalConversation({
       history:entries.map(entry=>({role:entry.role,text:entry.generated||entry.text})),
-      currentMessage:value,decision:result,locale,memory:savedMemory,
+      currentMessage:value,decision:result,locale,
     });
     setState(plainResult.state); // do not persist memory-derived state across opt-out
     setMemoryNotice("");
@@ -246,6 +286,10 @@ export function HolisticLanguageConversation({
         type:"generate",requestId:localRequestId,
         context:localContext,turns:localContext.turns,
       });
+    }
+    } finally {
+      submitPending.current=false;
+      setVerifyingMemory(false);
     }
   }
 
@@ -318,7 +362,7 @@ export function HolisticLanguageConversation({
     </div>
     <form className={styles.form} onSubmit={event=>{event.preventDefault();submit();}}>
       <label htmlFor="holistic-free-dialogue-input">{t.title}</label>
-      <textarea id="holistic-free-dialogue-input" value={draft} maxLength={4000} rows={2}
+      <textarea id="holistic-free-dialogue-input" value={draft} maxLength={4000} rows={2} disabled={verifyingMemory}
         onChange={event=>setDraft(event.target.value)}
         onKeyDown={event=>{if(event.key==="Enter"&&!event.shiftKey&&!event.nativeEvent.isComposing){
           event.preventDefault();submit();
@@ -328,7 +372,7 @@ export function HolisticLanguageConversation({
         <button type="button" className={styles.reset} onClick={reset}>
           <RotateCcw size={15} aria-hidden="true"/>{t.clear}
         </button>
-        <button type="submit" disabled={!draft.trim()||generating} className={styles.send}>
+        <button type="submit" disabled={!draft.trim()||generating||verifyingMemory} className={styles.send}>
           <Send size={16} aria-hidden="true"/>{t.send}
         </button>
       </div>
@@ -346,7 +390,12 @@ export function HolisticLanguageConversation({
     </div> : null}
     {memoryNotice?<p role="status" className={styles.memoryNotice}>{memoryNotice}</p>:null}
     <HolisticAgentMemoryPanel locale={locale} onUse={(rows,ownerBinding)=>{
-      stopAnswer();setSavedMemory(rows);setMemoryOwner(ownerBinding);
+      memoryEpoch.current+=1;
+      if((memoryOwner && memoryOwner!==ownerBinding) || (savedMemory.length>0 && rows.length===0)) {
+        // Changing the account or revoking consent invalidates earlier turns.
+        reset();
+      } else stopAnswer();
+      setSavedMemory(rows);setMemoryOwner(ownerBinding);
     }}/>
     {modelExperiment ? <div className={styles.experiment} data-local-model-experiment>
       <p><Volume2 size={16} aria-hidden="true"/>{t.gpu}</p>

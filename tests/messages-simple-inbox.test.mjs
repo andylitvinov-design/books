@@ -70,8 +70,9 @@ test('website consultation remains accessible and manual WhatsApp/email are neve
   const simple=read('components/app/messages-simple-inbox.jsx')
   const portal=read('components/app/practice-request-conversation.jsx')
   assert.match(simple,/<PracticeRequestConversation key=\{selected\.id\} inline autoOpen/)
-  assert.match(simple,/requestKind!=='public'/)
-  assert.match(simple,/app\/practice\?panel=clients&requestId=/)
+  assert.match(simple,/inMessagesTab\(selected,'chats'\)\s*\?\s*<PracticeRequestConversation/)
+  assert.doesNotMatch(simple,/app\/practice\?panel=clients&requestId=/)
+  assert.match(simple,/onClick=\{\(\)=>setShowCard\(true\)\}/)
   assert.match(simple,/selected\.item\.replyChannel==='whatsapp'/)
   assert.match(simple,/selected\.item\.replyChannel==='email'/)
   assert.match(simple,/cleanPhone\(selected\.item\.phone\)/)
@@ -99,7 +100,7 @@ test('client card is available in the owner one-screen chat and existing full CR
   assert.match(simple,/setShowCard\(value=>!value\)/)
   assert.match(simple,/contactId:item\.contactId/)
   assert.match(simple,/showCard&&selected&&<MessagesContactCard/)
-  assert.match(simple,/hidden=\{showCard\|\|selected\?\.kind!=='crm'\}/)
+  assert.match(simple,/hidden=\{showCard\|\|selected\?\.kind!=='crm'\|\|!crmEnabled\}/)
   assert.match(simple,/hidden=\{showCard\|\|selected\?\.kind!=='direct'\}/)
   assert.match(legacy,/showContactCard&&!conversationOnly/)
   assert.match(legacy,/onBack=\{\(\)=>setShowContactCard\(false\)\}/)
@@ -114,7 +115,7 @@ test('client card is available in the owner one-screen chat and existing full CR
   assert.match(card,/state\.key===stateKey/)
   assert.match(card,/CrmTelegramPhoto/)
   assert.match(card,/\/api\/app\/direct-messages\/media/)
-  assert.match(card,/panel=clients&requestId=/)
+  assert.doesNotMatch(card,/panel=clients&requestId=/)
   assert.match(css,/@media\(max-width:430px\)/)
   assert.doesNotMatch(card,/telegramPhotoFileId|api\.telegram\.org|service_role|localStorage|mailto:/)
 })
@@ -131,7 +132,12 @@ test('master link uses only a verified approved practitioner, never a name guess
   assert.match(card,/kind==='direct'&&validSlug\(item\.peerMasterSlug\)/)
   assert.match(card,/\/masters\/'\+masterSlug/)
   assert.match(middleware,/const ownerMessengerImages =/)
-  assert.match(middleware,/ownerMessengerImages \|\| publicMandalaLocalImages \? ' blob:' : ''/)
+  assert.match(middleware,/ownerMessengerImages \|\| publicMandalaLocalImages \|\| supportMobilePublishedMedia \|\| privateSupportPhotoCabinet \? ' blob:' : ''/)
+  // Private photo signed URLs are allowed only in authenticated My Videos,
+  // with an actual supabase.co hostname (not an escaped-backslash regex).
+  assert.match(middleware,/const privateSupportPhotoCabinet =/);
+  assert.match(middleware,/if \(!privateSupportPhotoCabinet\) return ''/);
+  assert.ok(middleware.includes(String.raw`/^[a-z0-9]{20}\.supabase\.co$/`));
   assert.match(middleware,/directMessageStorageOrigin/)
   assert.match(middleware,/directMessageStorageOrigin = \(\(\) => \{\s*if \(!ownerMessengerImages\) return ''/)
   assert.match(middleware,/\+ directMessageStorageOrigin \+ externalVideoUploadOrigin/)

@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, ChevronDown, Compass, BookOpen, Play, ClipboardList, HandHeart, Headphones } from "lucide-react";
+import { ArrowRight, ChevronDown, Compass, BookOpen, Play, ClipboardList, HandHeart } from "lucide-react";
 import { PROFILE_RESEARCH_AXES } from "@/lib/profile/profile-scale-selection";
-import { publishedAxisOffers, verifiedAxisEvidence, AXIS_REFS } from "@/lib/holistic-support/axis-offer-matcher.mjs";
-import { buildHolisticIntelligencePlan } from "@/lib/holistic-support/holistic-intelligence.mjs";
+import { publishedAxisOffers, rankAxisOffers, verifiedAxisEvidence, AXIS_REFS } from "@/lib/holistic-support/axis-offer-matcher.mjs";
 import { coreServiceOffers } from "@/data/core-service-offers";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
 import { freeMeditationVideos } from "@/data/academy/holistic-support-meditations";
@@ -21,13 +20,7 @@ const TEXT = {
     missing: "Not assessed", noAverage: "No population comparison or deficit inferred.",
     suggestions: "Related existing options", noMatches: "No reviewed published offer is linked to this axis yet.",
     relevance: "Editorial topic relevance", privacy: "Only you can see these scores. Choosing a link does not transmit them or create a lead, booking or payment.",
-    group: {video:"Videos",audio:"Audio",test:"Tests",course:"Courses",service:"Services"},
-    useEvidence:"Use saved test evidence to refine matches",paidConsent:"Also show paid services (optional)",
-    feedbackDone:"Already tried",feedbackUndo:"Undo",feedbackDismiss:"Not for me",feedbackReset:"Restore suggestions",feedbackLocal:"These choices are only for this page and are not saved.",feedbackComplete:"Already tried",audioLoad:"Check published course audio",
-    audioLoading:"Checking released audio…",audioReady:"Course audio checked",
-    audioNone:"No course audio is published in this language yet.",audioError:"Audio unavailable; editor sounds are still available.",
-    soundtrack:"Soundtrack for the video editor, not a recorded meditation",
-    courseAudio:"Published course introduction · listen",audioLink:"Choose in editor",
+    group: {video:"Videos",test:"Tests",course:"Courses",service:"Services"},
     levels: {primary:"Primary axis",supporting:"Supporting axis",related:"Related theme"},
     audio:"Original audio", noPromise:"These are thematic suggestions, not predicted results or clinical recommendations.",
     topics: {emotions:"Emotions",recovery:"Recovery",body:"Body",connection:"Relationships",
@@ -42,13 +35,7 @@ const TEXT = {
     missing: "Не исследовано", noAverage: "Сравнение с популяцией или вывод о дефиците не производится.",
     suggestions: "Подходящие существующие предложения", noMatches: "Для этой оси пока нет проверенного опубликованного предложения.",
     relevance: "Тематическое соответствие", privacy: "Баллы видны только вам. Переход по ссылке не передаёт их и не создаёт лид, бронь или оплату.",
-    group: {video:"Видео",audio:"Аудио",test:"Тесты",course:"Курсы",service:"Услуги"},
-    useEvidence:"Учесть результаты моих тестов",paidConsent:"Также показывать платные сессии (по желанию)",
-    feedbackDone:"Уже попробовал(а)",feedbackUndo:"Отменить",feedbackDismiss:"Не подходит",feedbackReset:"Вернуть рекомендации",feedbackLocal:"Отметки действуют только на этой странице и не сохраняются.",feedbackComplete:"Уже попробовано",audioLoad:"Проверить опубликованные аудиоуроки",
-    audioLoading:"Проверяем опубликованные аудиозаписи…",audioReady:"Аудиозаписи проверены",
-    audioNone:"На этом языке пока нет опубликованных аудиоуроков.",audioError:"Каталог аудио недоступен; звуки редактора доступны.",
-    soundtrack:"Звук для видеоредактора, не готовая аудиомедитация",
-    courseAudio:"Опубликованное вступительное аудио · слушать",audioLink:"Выбрать в редакторе",
+    group: {video:"Видео",test:"Тесты",course:"Курсы",service:"Услуги"},
     levels: {primary:"Основная ось",supporting:"Поддерживающая ось",related:"Смежная тема"},
     audio:"Язык оригинала", noPromise:"Это тематический подбор, а не прогноз результата или медицинская рекомендация.",
     topics: {emotions:"Эмоции",recovery:"Восстановление",body:"Тело",connection:"Отношения",
@@ -63,13 +50,7 @@ const TEXT = {
     missing:"No evaluado",noAverage:"No se infieren déficits ni comparaciones poblacionales.",
     suggestions:"Opciones disponibles",noMatches:"Aún no hay una oferta publicada y revisada vinculada a este eje.",
     relevance:"Relevancia temática editorial",privacy:"Solo tú ves tus resultados. Abrir enlaces no los transmite ni crea una reserva, contacto o pago.",
-    group:{video:"Vídeos",audio:"Audio",test:"Pruebas",course:"Cursos",service:"Servicios"},
-    useEvidence:"Usar los resultados guardados",paidConsent:"Mostrar también servicios de pago (opcional)",
-    feedbackDone:"Ya lo probé",feedbackUndo:"Deshacer",feedbackDismiss:"No me interesa",feedbackReset:"Restaurar sugerencias",feedbackLocal:"Estas opciones se aplican solo a esta página y no se guardan.",feedbackComplete:"Ya probado",audioLoad:"Consultar audio publicado",
-    audioLoading:"Comprobando audio…",audioReady:"Audio del curso comprobado",
-    audioNone:"Todavía no hay audio publicado en este idioma.",audioError:"Audio no disponible; siguen los sonidos del editor.",
-    soundtrack:"Sonido para el editor de vídeo; no es una meditación grabada",
-    courseAudio:"Introducción del curso publicada · escuchar",audioLink:"Elegir en el editor",
+    group:{video:"Vídeos",test:"Pruebas",course:"Cursos",service:"Servicios"},
     levels:{primary:"Eje principal",supporting:"Eje complementario",related:"Tema relacionado"},
     audio:"Idioma original",noPromise:"Son sugerencias temáticas, no resultados previstos ni consejos médicos.",
     topics:{emotions:"Emociones",recovery:"Recuperación",body:"Cuerpo",connection:"Relaciones",
@@ -77,7 +58,7 @@ const TEXT = {
   },
 };
 const TYPES = [
-  {id:"video",Icon:Play}, {id:"audio",Icon:Headphones}, {id:"test",Icon:ClipboardList},
+  {id:"video",Icon:Play}, {id:"test",Icon:ClipboardList},
   {id:"course",Icon:BookOpen}, {id:"service",Icon:HandHeart},
 ];
 
@@ -89,44 +70,6 @@ export function PersonalAxisMatches({ measurements = [], locale = "en", showMeas
   const [third, setThird] = useState("");
   const [now, setNow] = useState("");
   const [want, setWant] = useState("");
-  const [includeTestEvidence, setIncludeTestEvidence] = useState(false);
-  const [includePaidOffers, setIncludePaidOffers] = useState(false);
-  // Ephemeral user choices only. Never store feedback without a separate consent and owner-scoped write.
-  const [localFeedback, setLocalFeedback] = useState({ dismissedIds: [], completedIds: [] });
-  const toggleFeedback = (id, field) => setLocalFeedback(previous => {
-    const values = new Set(previous[field]);
-    if (values.has(id)) values.delete(id); else values.add(id);
-    return { ...previous, [field]: [...values] };
-  });
-  const [loadCourseAudio, setLoadCourseAudio] = useState(false);
-  const [audioRefresh, setAudioRefresh] = useState(0);
-  const [publishedCourseAudio, setPublishedCourseAudio] = useState([]);
-  const [audioState, setAudioState] = useState("idle");
-
-  // Only fixed lesson/locale GETs reach the public API; no scores, IDs or free
-  // text are sent. The server releases audio only from the approved manifest.
-  useEffect(() => {
-    if (!loadCourseAudio || lang === "es") return;
-    const ctrl = new AbortController();
-    let alive = true;
-    setAudioState("loading");
-    const lessons = ["flight","tantra","kundalini","yggdrasil","initiation"];
-    Promise.all(lessons.map(async lesson => {
-      const response = await fetch("/api/reiki-intro-audio?lesson="+lesson+"&locale="+lang,
-        {signal:ctrl.signal,credentials:"omit"});
-      if (!response.ok) throw new Error("PUBLIC_AUDIO_UNAVAILABLE");
-      const data = await response.json();
-      return data?.audio?.src && data?.audio?.publishedAt
-        ? {lesson,locale:lang,src:data.audio.src,
-          publishedAt:data.audio.publishedAt,verifiedPublicManifest:true} : null;
-    })).then(rows => {
-      if (!alive) return;
-      const approved = rows.filter(Boolean);
-      setPublishedCourseAudio(approved);
-      setAudioState(approved.length ? "ready" : "none");
-    }).catch(() => { if (alive) setAudioState("error"); });
-    return () => {alive=false;ctrl.abort();};
-  }, [loadCourseAudio,lang,audioRefresh]);
   const media = useMemo(() => lang === "ru"
     ? freeMeditationVideos("ru").map(video => ({...video,sourceLanguage:"ru"}))
     : englishGuidedMeditations.filter(video => video.youtubeId)
@@ -135,22 +78,12 @@ export function PersonalAxisMatches({ measurements = [], locale = "en", showMeas
     locale:lang, services:coreServiceOffers(lang), videos:media,
   }), [lang, media]);
   const evidence = useMemo(() => verifiedAxisEvidence(measurements), [measurements]);
-  const selectedEvidence = showMeasurements ? evidence.filter(row => row.axisRef === focus) : [];
+  const selectedEvidence = evidence.filter(row => row.axisRef === focus);
   const selectedAxes = [focus, second, third].filter(Boolean);
   const goalRatings = now !== "" && want !== "" ? {[focus]:{current:Number(now),desired:Number(want)}} : {};
-  const intelligence = useMemo(() => focus ? buildHolisticIntelligencePlan({
-    locale:lang,
-    intent:{chosenAxes:selectedAxes,goalRatings,
-      enabledFormats:["video","audio","test","course","service"],
-      paymentPreference:includePaidOffers ? "any" : "free",
-      dismissedIds:localFeedback.dismissedIds},
-    profile:{ownerAuthorized:true,consentToUseResults:includeTestEvidence,measurements},
-    catalogs:{axisOffers:offers,publishedReikiAudio:publishedCourseAudio},
-    limits:{axisOffers:30,publicAudio:5,editorAudio:3},
-  }) : null, [focus,second,third,now,want,offers,measurements,includeTestEvidence,includePaidOffers,localFeedback.dismissedIds,publishedCourseAudio,lang]);
-  const completed = new Set(localFeedback.completedIds);
-  const matches = [...(intelligence?.axisOffers || []),...(intelligence?.audio || [])]
-    .sort((a,b)=>Number(completed.has(a.id))-Number(completed.has(b.id)));
+  const matches = useMemo(() => focus ? rankAxisOffers({
+    chosenAxis:focus,chosenAxes:selectedAxes,goalRatings,offers,measurements,limit:30,
+  }) : [], [focus,second,third,now,want,offers,measurements]);
 
   const selectedLabel = focus && AXIS_REFS[focus]
     ? AXIS_REFS[focus].label[lang] || AXIS_REFS[focus].label.en : "";
@@ -210,7 +143,7 @@ export function PersonalAxisMatches({ measurements = [], locale = "en", showMeas
               prefetch={false}>{t.result}<ArrowRight size={14} aria-hidden="true"/></Link>
           </div>)}
           <small>{t.noAverage}</small>
-        </div> : showMeasurements ? <small>{t.none}</small> : null}
+        </div> : <small>{t.none}</small>}
       </div>
       <div className={styles.goalGap} data-axis-personal-gap>
         <div><label htmlFor="hh-axis-self-now">{t.now}</label>
@@ -221,16 +154,6 @@ export function PersonalAxisMatches({ measurements = [], locale = "en", showMeas
             value={want} onChange={event=>setWant(event.target.value)} placeholder="—"/></div>
         <small>{t.gapNote}</small>
       </div>
-      <label className={styles.consent}>
-        <input type="checkbox" checked={includeTestEvidence}
-          onChange={event=>setIncludeTestEvidence(event.target.checked)}
-          data-intelligence-use-test-evidence /> {t.useEvidence}
-      </label>
-      <label className={styles.consent}>
-        <input type="checkbox" checked={includePaidOffers}
-          onChange={event=>setIncludePaidOffers(event.target.checked)}
-          data-intelligence-allow-paid /> {t.paidConsent}
-      </label>
       <h4 className={styles.suggestionTitle}>{t.suggestions}</h4>
       {matches.length ? <div className={styles.groupGrid}>
         {TYPES.map(({id,Icon}) => {
@@ -239,48 +162,19 @@ export function PersonalAxisMatches({ measurements = [], locale = "en", showMeas
             <h5><Icon size={16} aria-hidden="true"/>{t.group[id]}</h5>
             {rows.map(item=><article key={item.id} className={styles.offer}
               data-axis-offer={item.id} data-match-level={item.matchLevel}>
-              <span className={styles.rank}>{item.kind==="audio" ?
-                (item.playable ? t.courseAudio : t.soundtrack) :
-                t.levels[item.matchLevel] + " · " + t.relevance}</span>
+              <span className={styles.rank}>{t.levels[item.matchLevel]} · {t.relevance} {item.score}/100</span>
               <strong>{item.title}</strong>
-              {completed.has(item.id) && <small className={styles.completedNote}>{t.feedbackComplete}</small>}
-              {item.kind!=="audio" && item.matchedAxes?.length ? <small className={styles.matchedAxes}>
+              {item.matchedAxes?.length ? <small className={styles.matchedAxes}>
                 {item.matchedAxes.map(axis=>AXIS_REFS[axis.ref]?.label[lang] || axis.ref).join(" · ")}
               </small> : null}
               {item.kind==="video" && <small>{t.audio}: {item.originalLanguage?.toUpperCase()}</small>}
-              {item.kind==="audio" && item.playable ?
-                <audio controls preload="none" src={item.href} aria-label={item.title} /> :
-                item.href.startsWith("https://") ?
-                  <a href={item.href} target="_blank" rel="noopener noreferrer">{t.group[id]}<ArrowRight size={14} aria-hidden="true"/></a> :
-                  <Link href={item.href} prefetch={false}>
-                    {item.kind==="audio"?t.audioLink:t.group[id]}<ArrowRight size={14} aria-hidden="true"/>
-                  </Link>}
-              <div className={styles.feedbackActions} data-intelligence-feedback={item.id}>
-                <button type="button" onClick={()=>toggleFeedback(item.id,"completedIds")}
-                  aria-pressed={completed.has(item.id)}>
-                  {completed.has(item.id)?t.feedbackUndo:t.feedbackDone}
-                </button>
-                <button type="button" onClick={()=>toggleFeedback(item.id,"dismissedIds")}>
-                  {t.feedbackDismiss}
-                </button>
-              </div>
+              {item.href.startsWith("https://") ?
+                <a href={item.href} target="_blank" rel="noopener noreferrer">{t.group[id]}<ArrowRight size={14} aria-hidden="true"/></a> :
+                <Link href={item.href} prefetch={false}>{t.group[id]}<ArrowRight size={14} aria-hidden="true"/></Link>}
             </article>)}
           </section> : null;
         })}
       </div> : <p className={styles.empty}>{t.noMatches}</p>}
-      {localFeedback.dismissedIds.length > 0 && <button type="button"
-        className={styles.feedbackRestore} onClick={()=>setLocalFeedback({dismissedIds:[],completedIds:[]})}
-        data-intelligence-restore>{t.feedbackReset}</button>}
-      <p className={styles.feedbackLocal}>{t.feedbackLocal}</p>
-      {lang!=="es" && <div className={styles.audioLookup}>
-        <button type="button" onClick={()=>{setLoadCourseAudio(true);setAudioRefresh(n=>n+1);}}
-          disabled={audioState==="loading"} data-intelligence-public-audio>
-          <Headphones size={16} aria-hidden="true"/>
-          {audioState==="loading"?t.audioLoading:audioState==="ready"?t.audioReady:t.audioLoad}
-        </button>
-        {audioState==="none" && <small>{t.audioNone}</small>}
-        {audioState==="error" && <small role="status">{t.audioError}</small>}
-      </div>}
       <p className={styles.muted}>{t.noPromise}</p>
     </>}
     <p className={styles.privacy}>{t.privacy}</p>

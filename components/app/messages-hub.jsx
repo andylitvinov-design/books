@@ -3,6 +3,7 @@ import {useCallback,useEffect,useState} from 'react'
 import {ArrowRight,ClipboardList,Link2,MessageCircle,ShieldCheck} from 'lucide-react'
 import {useSearchParams} from 'next/navigation'
 import DirectMessageInbox from './direct-message-inbox'
+import MessengerGuestGate from './messenger-guest-gate'
 import MessengerSignIn from './messenger-sign-in'
 import CrmMessengerPanel from './crm-messenger'
 import MessagesClientRequests from './messages-client-requests'
@@ -27,7 +28,7 @@ const COPY={
     ownerLead:'Nuevas solicitudes de Telegram y mensajería',ownerUnread:'mensajes sin leer',otherLoading:'Cargando otras solicitudes…',sessionRequired:'Inicia sesión en la cuenta de Holistic House para ver los mensajes de esta conversación.',signIn:'Inicia sesión para ver las solicitudes',masterSignIn:'Entrar y escribir al profesional',masterAuth:'Inicia sesión para iniciar una conversación privada con este profesional.',privacy:'Las conversaciones privadas solo son visibles para el cliente y su profesional.'},
 }
 const VALID_TABS=new Set(['chats','requests'])
-export default function MessagesHub({locale='en'}){
+export default function MessagesHub({locale='en',embedded=false,onClientsCount=undefined,onDetailChange=undefined}){
   const searchParams=useSearchParams()
   const t=COPY[locale]||COPY.en
   const [tab,setTab]=useState('chats')
@@ -47,12 +48,15 @@ export default function MessagesHub({locale='en'}){
   const [telegramUrl,setTelegramUrl]=useState('')
   const [telegramCopied,setTelegramCopied]=useState(false)
   const [directDestination,setDirectDestination]=useState('')
+  const [directThreadId,setDirectThreadId]=useState('')
   const onCrmThreads=useCallback(summary=>setCrmSummary(summary),[])
   useEffect(()=>{
     const params=new URLSearchParams(window.location.search)
     const to=params.get('to')||''
     setDirectDestination(/^[a-z0-9-]{2,90}$/.test(to)?to:'')
-    setTab(params.has('to')?'chats':VALID_TABS.has(params.get('tab'))?params.get('tab'):'chats')
+    const thread=params.get('thread')||''
+    setDirectThreadId(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(thread)?thread.toLowerCase():'')
+    setTab(params.has('to')||thread?'chats':VALID_TABS.has(params.get('tab'))?params.get('tab'):'chats')
   },[searchParams])
   useEffect(()=>{
     const controller=new AbortController()
@@ -141,15 +145,45 @@ export default function MessagesHub({locale='en'}){
   if(ownerAccountId&&directDestination)return <div className={styles.hub} data-private-direct-order-chat>
     <a href={'/'+locale+'/app/messages?section=clients'}>{locale==='ru'?'← К клиентам':locale==='es'?'← Clientes':'← Clients'}</a>
     <DirectMessageInbox key={ownerAccountId+':'+directDestination} locale={locale} embedded
-      ownerCrmAvailable expectedAccountId={ownerAccountId}/>
+      ownerCrmAvailable expectedAccountId={ownerAccountId}
+      simpleDetail={Boolean(directThreadId)} initialThreadId={directThreadId}/>
   </div>
   if(ownerAccountId)return <MessagesSimpleInbox key={ownerAccountId} locale={locale}
+    initialDirectThreadId={directThreadId}
     accountId={ownerAccountId} requests={requestData?.requests||[]}
     businessEnquiries={requestData?.businessEnquiries||[]}
     telegramUrl={telegramUrl}
     websiteLoading={loading} websiteUnavailable={!usableData&&!loading}
-    onReload={()=>setRefreshKey(n=>n+1)}/>
+    onReload={()=>setRefreshKey(n=>n+1)} embedded={embedded}
+    onClientsCount={onClientsCount} onDetailChange={onDetailChange}/>
   if(ownerBootstrapPending&&!data)return <p className={styles.authNotice} role="status">{t.loading}</p>
+  // Practitioner and ordinary member accounts share the same compact protected
+  // conversation-list UI, WITHOUT connecting to the owner-only Telegram CRM.
+  // Their direct threads and assigned requests remain separately authorized.
+  if(embedded&&requestData?.accountId)return <MessagesSimpleInbox
+    key={requestData.accountId+':member'} locale={locale}
+    accountId={requestData.accountId} requests={requestData.requests||[]}
+    businessEnquiries={requestData.businessEnquiries||[]}
+    crmEnabled={false} embedded websiteLoading={loading}
+    websiteUnavailable={!usableData&&!loading}
+    onClientsCount={onClientsCount} onDetailChange={onDetailChange}
+    onReload={()=>setRefreshKey(value=>value+1)}/>
+  // If the optional consultation-directory request fails, the standalone
+  // private messenger still uses its own verified account API. Never hide
+  // existing direct conversations just because one listing endpoint is down.
+  if(embedded)return <div className={styles.hub} data-member-direct-fallback>
+    {(unauthenticated||bootstrapSignInRequired)
+      ?directDestination
+        ?<p className={styles.authNotice} role="alert">
+          {t.masterAuth}{' '}
+          <MessengerSignIn locale={locale} recipientSlug={directDestination} label={t.masterSignIn}/>
+        </p>
+        :<MessengerGuestGate locale={locale} section="clients"/>
+      :<>
+        {!loading&&<p className={styles.authNotice} role="alert">{t.failure}</p>}
+        <DirectMessageInbox locale={locale} embedded compact ownerCrmAvailable={false}/>
+      </>}
+  </div>
   return <div className={styles.hub} data-messages-hub
     data-thread-open={tab==='chats'&&(ownerAccountId?(source==='crm'?crmOpen:directOpen):directOpen)||undefined}>
     <div className={styles.hero}>
@@ -175,7 +209,8 @@ export default function MessagesHub({locale='en'}){
     </button>}
     {(unauthenticated||bootstrapSignInRequired)&&!ownerAccountId&&!data&&<p className={styles.authNotice} role="alert">
       {directDestination?t.masterAuth:t.sessionRequired}{' '}
-      <MessengerSignIn locale={locale} recipientSlug={directDestination} label={directDestination?t.masterSignIn:t.signIn}/>
+      <MessengerSignIn locale={locale} recipientSlug={directDestination}
+        label={directDestination?t.masterSignIn:t.signIn}/>
     </p>}
     <div className={styles.tabs} role="tablist" aria-label={t.title}>
       {[['chats',MessageCircle,t.chats],['requests',ClipboardList,t.requests]].map(([id,Icon,label])=>
@@ -214,6 +249,7 @@ export default function MessagesHub({locale='en'}){
         <section hidden={Boolean(ownerAccountId)&&source!=='direct'}
           className={styles.direct} aria-label={t.direct}>
           <DirectMessageInbox locale={locale} embedded compact onOpenChange={setDirectOpen}
+            initialThreadId={directThreadId} simpleDetail={Boolean(directThreadId)}
             ownerCrmAvailable={Boolean(ownerAccountId)}/>
         </section>
       </div>
@@ -232,7 +268,8 @@ export default function MessagesHub({locale='en'}){
           crmState={safeCrmSummary||{loading:Boolean(ownerAccountId),error:false,threads:[],partial:false}}/>
       </>:loading?<p className={styles.note} role="status">{t.loading}</p>:error?
         <p className={styles.note} role="alert">{unauthenticated?
-          <MessengerSignIn locale={locale} recipientSlug={directDestination} label={directDestination?t.masterSignIn:t.signIn}/>:error}</p>:null}
+          <MessengerSignIn locale={locale} recipientSlug={directDestination}
+            label={directDestination?t.masterSignIn:t.signIn}/>:error}</p>:null}
     </section>
   </div>
 }

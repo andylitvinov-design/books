@@ -514,7 +514,8 @@ export function RemoteEnergySupportBooking({
   return (
     <section className={mode === "inline" ? styles.page + " " + styles.inline + (compactFinder ? " " + styles.compactResults : "") : styles.page}
       aria-labelledby="remote-support-title" data-remote-support-intent-first
-      data-support-request-kind={requestKind}>
+      data-support-request-kind={requestKind}
+      data-public-visual-landing={compactFinder ? undefined : "remote-energy"}>
       {compactFinder ? <h2 id="remote-support-title" className={styles.srOnly}>{t.specialistsTitle}</h2> : <header className={styles.intro}>
         <p className={styles.eyebrow}>✦ {t.eyebrow}</p>
         <h1 id="remote-support-title">{requestKind === "talisman" ? t.talismanTitle : t.title}</h1>
@@ -585,8 +586,8 @@ export function RemoteEnergySupportBooking({
               : t.noMasters}</p>
             {compactFinder && priceBudget !== "any" && onClearBudget &&
               <button type="button" className={styles.clearBudget} onClick={onClearBudget}>{t.resetBudget}</button>}
-            <Link href={"/" + locale + "/masters"}>{t.more} →</Link>
-            <Link href={"/" + locale + "/academy/reiki/yggdrasil/free-initiation"}>{t.freeReiki} →</Link>
+            <Link href={"/" + locale + "/masters"} prefetch={false}>{t.more} →</Link>
+            <Link href={"/" + locale + "/academy/reiki/yggdrasil/free-initiation"} prefetch={false}>{t.freeReiki} →</Link>
           </div>
         ) : (
           <div className={styles.cards}>
@@ -759,18 +760,20 @@ export function RemoteEnergySupportBooking({
                     </form>
                     {mode === "inline" && contactDraft?.serviceId === master.serviceId && (
                       <section id="remote-public-contact" className={styles.publicContact}
-                        data-remote-public-order-contact aria-label={t.send}>
+                        data-remote-public-order-contact data-remote-visual-screen="final-capture" aria-label={t.send}>
                         <h4>{locale === "ru" ? "Оформление заявки" : locale === "es" ? "Enviar solicitud" : "Request contact"}</h4>
                         <p>{locale === "ru"
-                          ? "Укажите телефон или войдите через Google. После отправки с вашим согласием заявка появится в CRM. Время и оплата ещё не подтверждены."
+                          ? "Выберите Telegram или WhatsApp и отправьте сообщение. Пока это не запись и не оплата; привязка к CRM требует подтверждённой переписки."
                           : locale === "es"
-                            ? "Indica tu teléfono o usa Google. La solicitud se guarda solo con tu consentimiento; todavía no hay reserva ni pago."
-                            : "Enter your phone or use Google. Your consented request is saved to CRM; no booking or payment is confirmed."}</p>
+                            ? "Elige Telegram o WhatsApp y pulsa Enviar. La reserva, el pago y la vinculación al CRM aún no están confirmados."
+                            : "Choose Telegram or WhatsApp and press Send in the app. Booking, payment and CRM linking require separate verification."}</p>
                         <ContactChannelChooser
                           locale={locale} quick cartContact stayAfterSave
                           whatsappUrl={whatsappEnquiryUrl({
                             locale, service: remoteSupportPublicServiceTitle(contactDraft),
                             request: "Please confirm the Reiki support enquiry",
+                            option: remoteSupportPublicRequestSummary(contactDraft, locale),
+                            pagePath:"/"+locale+"/holistic-support/mobile",
                           })}
                           publicServiceTitle={remoteSupportPublicServiceTitle(contactDraft)}
                           publicTopic={remoteSupportPublicRequestSummary(contactDraft, locale)}

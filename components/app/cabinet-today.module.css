@@ -1,6 +1,6 @@
 .shell {
   color: #214c47;
-  margin: 0 0 12px;
+  margin: 0 0 9px;
   padding: clamp(13px, 2.2vw, 22px);
   border: 1px solid #d9cfc0;
   border-radius: 24px;
@@ -8,9 +8,9 @@
   box-shadow: 0 9px 30px rgba(65, 58, 42, .055);
   font-family: system-ui, sans-serif;
 }
-.intro { display:flex; align-items:flex-start; gap:11px; margin-bottom:12px; }
+.intro { display:flex; align-items:center; gap:9px; margin-bottom:9px; }
 .mark {
-  flex:0 0 39px; height:39px; display:grid; place-items:center;
+  flex:0 0 30px; height:30px; display:grid; place-items:center;
   border-radius:13px; background:#e6efe8; color:#18806d;
 }
 .introText { min-width:0; flex:1; }
@@ -18,12 +18,12 @@
   color:#8c7560; margin:1px 0 3px; text-transform:uppercase;
   font:750 10px/1.2 system-ui,sans-serif; letter-spacing:.105em;
 }
-.shell .intro h1 {
-  font:400 clamp(24px,3.8vw,35px)/1.13 Georgia,serif;
+.shell .intro h2 {
+  font:600 clamp(17px,3.8vw,21px)/1.15 Georgia,serif;
   color:#184641; letter-spacing:-.035em; margin:0;
 }
 .shell .hint { margin:5px 0 0; color:#736b61; font:400 12px/1.4 system-ui,sans-serif; }
-.form { margin:0 0 11px; }
+.form { margin:10px 0 4px; }
 .field {
   width:100%; display:flex; align-items:center; gap:5px; min-width:0;
   padding:4px 4px 4px 12px; border:1px solid #b8d7cd; border-radius:16px;
@@ -112,8 +112,8 @@
 @media(max-width:430px) {
   .shell { padding:12px; border-radius:19px; margin-bottom:9px; }
   .intro { margin-bottom:10px; }
-  .mark { flex-basis:34px; height:34px; border-radius:11px; }
-  .shell .intro h1 { font-size:24px; }
+  .mark { flex-basis:29px; height:29px; border-radius:10px; }
+  .shell .intro h2 { font-size:19px; }
   .shell .hint { font-size:11.5px; }
   .paths { gap:7px; }
   .path { padding:7px; border-radius:13px; }
@@ -124,7 +124,7 @@
 }
 @media(max-width:350px) {
   .shell { padding:10px; }
-  .shell .intro h1 { font-size:22px; }
+  .shell .intro h2 { font-size:18px; }
   .paths { gap:6px; }
   .path { padding:6px; }
   .shell .pathTitle { font-size:11px; }

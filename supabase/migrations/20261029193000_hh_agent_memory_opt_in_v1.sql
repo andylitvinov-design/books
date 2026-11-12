@@ -1,7 +1,7 @@
 -- Holistic Mind v3: only explicit, owner-scoped, encrypted AI conversational
 -- preferences. NEVER store raw conversations, source test scores, health or CRM
 -- data in this table. Empty until the user consents in the UI.
--- Source-only migration until reviewed on an isolated database. 
+-- Source-only migration until protected merge, RLS review and production readback. 
 begin;
 
 create table if not exists app_private.agent_memory_consent (
@@ -32,8 +32,8 @@ create index if not exists agent_memory_item_owner_idx
 
 -- Server-authenticated application operations only. Client Data API roles
 -- cannot SELECT any ciphertext, much less cleartext.
-revoke all on app_private.agent_memory_item from public,anon,authenticated;
-revoke all on app_private.agent_memory_consent from public,anon,authenticated;
+revoke all on app_private.agent_memory_item from public,anon,authenticated,hh_app_inbox,hh_crm_backend;
+revoke all on app_private.agent_memory_consent from public,anon,authenticated,hh_app_inbox,hh_crm_backend;
 grant select,insert,update,delete on app_private.agent_memory_item to hh_app_backend;
 grant select,insert,update,delete on app_private.agent_memory_consent to hh_app_backend;
 

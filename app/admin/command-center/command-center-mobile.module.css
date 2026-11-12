@@ -1,0 +1,225 @@
+
+.app{--cc-bg:#0f1323;--cc-card:#1a2031;--cc-card2:#23293c;--cc-edge:rgba(207,216,255,.12);--cc-ink:#f9f8ff;--cc-muted:#a4acc7;--cc-violet:#9861e6;--cc-green:#45da9c;
+ min-height:100dvh;max-width:560px;margin:0 auto;padding:env(safe-area-inset-top,0px) 0 calc(96px + env(safe-area-inset-bottom,0px));
+ background:radial-gradient(ellipse 105% 240px at 62% 0%,rgba(117,67,161,.29),transparent 75%),linear-gradient(180deg,#1a1b32 0%,#101421 43%,#0e1323 100%);
+ color:var(--cc-ink);font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;isolation:isolate;line-height:1.42}
+.app *{box-sizing:border-box}
+.app button,.app select,.app textarea,.app input{font:inherit}
+.app button{cursor:pointer}
+.app button:disabled{opacity:.48;cursor:not-allowed}
+.app a{color:#d4bbff;text-decoration:none}
+.app :is(button,input,textarea,select,a):focus-visible{outline:3px solid #d3a9ff;outline-offset:2px}
+.top{display:flex;align-items:center;gap:10px;padding:16px 19px 11px;min-height:70px}
+.logo{display:grid;place-items:center;width:39px;height:39px;border-radius:13px;border:1px solid rgba(201,166,255,.42);
+ background:rgba(141,92,210,.18);color:#d1abff;font-size:27px;line-height:1}
+.brand{display:grid;gap:0;flex:1}.brand strong{font-size:15px;letter-spacing:-.03em;font-weight:750}
+.brand small{font-size:11px;color:#c4b7d3;letter-spacing:.01em}
+.refresh,.admin{display:grid;place-items:center;min-width:43px;min-height:43px;border:0;border-radius:14px;background:rgba(255,255,255,.06);
+ color:#e9e6ff!important;font-size:24px}
+.main{padding:0 16px 20px}
+.hero{margin:2px 0 13px;padding:17px 17px 21px;border-radius:20px;min-height:141px;display:flex;flex-direction:column;justify-content:flex-end;
+ background:linear-gradient(110deg,rgba(18,20,39,.97),rgba(47,35,67,.47)),radial-gradient(ellipse at 80% 15%,#d77a65 1%,#af7b6d 12%,transparent 55%),linear-gradient(150deg,#1b1f3d,#444262);
+ border:1px solid rgba(255,255,255,.11);box-shadow:0 6px 25px rgba(0,0,0,.14)}
+.hero p{margin:0 0 9px;font-size:10px;letter-spacing:.12em;color:#e3c7f8;font-weight:750}
+.hero h1{margin:0 0 3px;font-weight:760;font-size:29px;letter-spacing:-.055em;line-height:1.1}
+.hero span{font-size:12px;color:#e1dded}
+.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-bottom:13px}
+.metric{min-width:0;border:1px solid var(--cc-edge);border-radius:14px;background:linear-gradient(160deg,rgba(43,48,73,.88),rgba(25,29,47,.86));padding:11px 7px;display:grid;gap:5px}
+.metric b{font-size:23px;line-height:1.08;font-weight:800;font-variant-numeric:tabular-nums}
+.metric small{color:#b2bad3;font-size:10px;line-height:1.2;overflow-wrap:anywhere}
+.panel{padding:14px;border:1px solid var(--cc-edge);border-radius:17px;margin:0 0 12px;background:linear-gradient(145deg,rgba(36,41,62,.97),rgba(25,31,49,.96));
+ box-shadow:0 9px 24px rgba(0,0,0,.09)}
+.panel h2{font-size:15px;line-height:1.25;font-weight:760;margin:0 0 10px}
+.panelHead{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.panelHead button{border:0;background:transparent;color:#b6bbcc;font-size:24px;min-height:35px;min-width:42px}
+.taskCard{display:flex;text-align:left;width:100%;gap:10px;align-items:center;border:0;border-bottom:1px solid rgba(255,255,255,.095);
+ background:transparent;color:#f3f2ff;min-height:67px;padding:10px 0}
+.taskCard:last-child{border-bottom:0}
+.taskCard .rank{flex-shrink:0;display:grid;place-items:center;background:linear-gradient(130deg,#7951cd,#5d3f94);color:#fff;
+ font-size:12px;font-weight:800;width:25px;height:25px;border-radius:9px}
+.taskCopy{min-width:0;flex:1;display:grid;gap:5px}
+.taskCopy strong{font-size:13px;font-weight:690;overflow-wrap:anywhere;line-height:1.35}
+.taskCopy small{font-size:11px;color:var(--cc-muted);overflow-wrap:anywhere}
+.bad{color:#ef7b78}.good{color:var(--cc-green)}.purple{color:#b69bf6}
+.projectLine{display:flex;align-items:center;gap:12px;min-height:67px;padding:9px 0;border-top:1px solid rgba(255,255,255,.07)}
+.projectLine>span:first-child{width:40px;height:38px;border-radius:12px;background:#362955;color:#d7c2ff;display:grid;place-items:center;font-size:17px}
+.projectLine div{flex:1;min-width:0;display:grid;gap:5px}.projectLine strong{font-size:13px}
+.projectLine small{color:var(--cc-muted);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.muted{color:var(--cc-muted);font-size:12px;line-height:1.55;margin:6px 0}
+.timestamp{font-size:11px;color:#848ba5;text-align:center;margin:10px 0}
+.section{padding-top:8px}.heading{display:flex;justify-content:space-between;align-items:center;margin:0 0 16px;gap:12px}
+.heading h1{font-size:26px;letter-spacing:-.045em;margin:0}.heading span{font-size:13px;color:var(--cc-muted)}
+.filters{display:flex;gap:5px;border:1px solid var(--cc-edge);background:#1d2235;border-radius:15px;padding:4px;margin-bottom:13px}
+.filters button{flex:1;border:0;min-height:39px;background:transparent;color:#b5bbd1;border-radius:12px;font-size:12px;font-weight:680}
+.filters button.selectedFilter{background:linear-gradient(145deg,#8a5cc4,#5a398b);color:white;box-shadow:0 1px 8px #462c674d}
+.section>.taskCard,.agentCard,.projectCard{min-height:83px;margin-bottom:9px;background:linear-gradient(130deg,rgba(37,42,62,.9),rgba(24,30,48,.92));padding:12px;
+ border:1px solid var(--cc-edge);border-radius:14px}
+.section>.taskCard{border-left:3px solid var(--cc-violet)}
+.agentCard{display:flex;gap:13px;align-items:center}
+.agentIcon,.projectSymbol{display:grid;place-items:center;flex-shrink:0;width:44px;height:44px;border-radius:13px;
+ background:linear-gradient(140deg,#283b58,#1e2c45);color:#7cc8ff;font-size:24px}
+.agentCard>div,.projectCard>div:last-child{display:grid;flex:1;gap:4px;min-width:0}
+.agentCard strong,.projectCard strong{font-size:14px;font-weight:750}
+.agentCard small,.projectCard small,.projectMeta{display:block;font-size:11px;color:var(--cc-muted);overflow-wrap:anywhere}
+.greenDot{color:#41d8a0}.greyDot{color:#848ca9}
+.projectCard{display:flex;align-items:center;gap:12px}
+.projectMeta{margin-top:5px;color:#cdb5ff}
+.smallAdd{width:42px;height:42px;border:1px solid #945fc7;background:#62428e;border-radius:13px;color:#fff;font-size:23px}
+.empty{min-height:144px;padding:25px 18px;display:grid;align-content:center;justify-items:center;gap:15px;text-align:center;
+ border:1px dashed #4d4967;border-radius:16px;color:var(--cc-muted);font-size:13px}
+.empty button{border:0;border-radius:10px;padding:11px 15px;background:#7b52b8;color:#fff;font-weight:700}
+.dock{position:fixed;z-index:15;bottom:0;left:50%;transform:translateX(-50%);width:min(100%,560px);padding:9px 12px calc(7px + env(safe-area-inset-bottom,0px));
+ min-height:77px;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));align-items:center;
+ border-top:1px solid rgba(255,255,255,.14);background:rgba(12,16,29,.96);
+ box-shadow:0 -8px 30px rgba(0,0,0,.28);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.tab,.activeTab{background:transparent;border:0;color:#bdc0d1;display:grid;justify-items:center;gap:3px;min-height:52px;padding:5px 0}
+.tab>span,.activeTab>span{font-size:22px;line-height:23px}
+.tab small,.activeTab small{font-size:10px}
+.activeTab{color:#c69bff}
+.plus{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;margin:0 auto;background:linear-gradient(135deg,#ba8bff,#6e47bd);
+ color:white;font-size:36px;font-weight:300;border:3px solid #393050;box-shadow:0 2px 13px rgba(122,78,199,.3)}
+.plus span{transform:translateY(-2px)}
+.detail{padding-top:5px}.back{background:transparent;border:0;color:#d6c0fb;min-height:44px;padding:0 4px;font-size:14px}
+.detail h1{font-size:21px;letter-spacing:-.03em;line-height:1.25;margin:11px 0 10px;overflow-wrap:anywhere}
+.overline{font-size:11px;color:#b4a2d5;text-transform:uppercase;letter-spacing:.07em;font-weight:800}
+.summary{font-size:13px;color:#c4c7db;line-height:1.6;white-space:pre-wrap}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin:14px 0}
+.chips span{font-size:11px;padding:6px 9px;border-radius:8px;background:#332950;color:#e5d0ff;overflow-wrap:anywhere}
+.pipeline{display:flex;justify-content:space-between;gap:4px;margin:19px 0 15px}
+.phase{flex:1;display:grid;justify-items:center;gap:7px;text-align:center;min-width:0;position:relative}
+.phase:not(:last-child)::after{content:'';position:absolute;top:14px;left:calc(50% + 18px);width:calc(100% - 36px);height:2px;background:#4c4462}
+.phase>span{display:grid;place-items:center;width:29px;height:29px;border-radius:50%;font-weight:760;font-size:12px;z-index:1;border:2px solid #5e5578;background:#262d42;color:#99a2bc}
+.phase>span.phaseDone{background:#358e6a;border-color:#65e2b4;color:#f6fff9}
+.phase>span.phaseCurrent{border-color:#ac79f5;color:#eedaff;background:#563775}
+.phase small{font-size:10px;color:#c4c1d6}
+.subline{color:var(--cc-muted);font-size:12px;margin:7px 0 3px;line-height:1.55}
+.agentLine{display:flex;align-items:center;gap:12px}
+.agentLine div{flex:1;min-width:0;display:grid;gap:5px}
+.agentLine strong{font-size:13px}.agentLine small{font-size:11px;color:var(--cc-muted)}
+.event{display:flex;gap:11px;align-items:flex-start;border-top:1px solid var(--cc-edge);padding:12px 0}
+.event>span{font-size:19px;color:#bb9ce5}.event div{display:grid;gap:3px}
+.event strong{font-size:12px}.event small{font-size:10px;color:var(--cc-muted)}
+.github{display:inline-flex;align-items:center;min-height:40px;color:#d4adff;font-size:12px}
+.disclaimer{font-size:12px;color:#bcb8cb;line-height:1.6;margin:13px 0}
+.primary,.secondary{border:0;border-radius:13px;min-height:49px;padding:13px 16px;font-weight:750;font-size:14px;width:100%;color:#fff;
+ background:linear-gradient(125deg,#a97af0,#7244c6);box-shadow:0 4px 15px rgba(102,64,173,.25)}
+.secondary{border:1px solid #7e66aa;background:#282441;box-shadow:none}
+.sheetBackdrop{position:fixed;z-index:30;inset:0;background:rgba(4,6,15,.78);display:flex;justify-content:center;align-items:flex-end}
+.sheet{border:1px solid #54456b;background:linear-gradient(170deg,#26243c,#141827);border-radius:23px 23px 0 0;
+ max-height:min(94dvh,860px);min-height:250px;width:min(100%,560px);overflow:auto;padding:15px 18px calc(20px + env(safe-area-inset-bottom,0px));
+ box-shadow:0 -12px 50px rgba(0,0,0,.4)}
+.sheetHeader{display:flex;align-items:center;justify-content:space-between;margin:0 0 13px}
+.sheetHeader h2{font-size:21px;letter-spacing:-.04em;margin:0}
+.sheetHeader button{border:0;background:#38354b;color:#eee4ff;border-radius:12px;font-size:23px;width:40px;height:40px}
+.composer{display:grid;gap:11px}
+.composer label{font-size:12px;color:#d6d2e8;font-weight:690}
+.composer textarea,.composer input,.composer select{width:100%;min-width:0;border:1px solid #59546f;border-radius:12px;background:#1c2031;color:#fff;
+ min-height:45px;padding:11px 12px;font-size:14px;resize:vertical}
+.composer textarea::placeholder,.composer input::placeholder{color:#878aa2}
+.formSplit{display:grid;grid-template-columns:1.5fr 1fr;gap:10px}
+.formSplit>div{display:grid;gap:8px;min-width:0}
+.composer .primary{margin-top:8px}
+.warning,.notice{margin:4px 16px 12px;border-radius:11px;border:1px solid #8b574a;background:#462c35;color:#ffe0d3;padding:10px 12px;font-size:12px}
+.notice{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.notice button{background:transparent;border:0;color:inherit;font-size:21px;min-width:35px}
+@media(min-width:600px){.app{margin:18px auto;min-height:calc(100dvh - 36px);border-radius:28px;border:1px solid rgba(255,255,255,.14);
+ box-shadow:0 20px 50px rgba(0,0,0,.14);overflow:hidden}.dock{bottom:0}}
+@media(max-width:340px){.main{padding:0 11px 16px}.top{padding-left:12px;padding-right:12px}.hero h1{font-size:25px}.metric{padding:9px 5px}.metric b{font-size:20px}.metric small{font-size:9px}}
+@media(prefers-reduced-motion:reduce){.app *{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+
+:global(body):has(.app) :global([data-hh-ihelp-trigger]){display:none!important}
+
+.home{display:block}
+.phase>span.phasePending{border-color:#5e5578;color:#99a2bc;background:#262d42}
+
+/* Existing approved dark mobile Command Center: bounded Agent Studio actions. */
+.commandStack{display:grid;gap:9px}
+.commandStack button{min-height:48px}
+
+
+/* Owner-invoked task controls, no hidden destructive action. */
+.taskControls{display:grid;gap:9px;margin:11px 0 8px}
+.sheetNotice{margin:0 0 12px;border-radius:11px;border:1px solid rgba(235,168,142,.45);
+ background:rgba(124,54,65,.27);padding:10px 12px;color:#ffe3da;font-size:13px;line-height:1.45}
+
+/* On-demand read-only production code proof, never a functional LIVE claim. */
+.proofDetail{display:grid;gap:7px;margin-top:12px;border-top:1px solid var(--cc-edge);padding-top:12px;overflow-wrap:anywhere}
+.proofDetail p{margin:0;font-size:12px;line-height:1.5}
+.proofDetail small{font-size:11px;color:#a9b3cc;font-variant-numeric:tabular-nums}
+
+/* PR Workbench artifacts: read-only public file receipts, expandable on iPhone. */
+.prFiles{border:1px solid var(--cc-edge);border-radius:12px;background:rgba(255,255,255,.03);overflow:hidden}
+.prFiles summary{cursor:pointer;min-height:44px;padding:12px 13px;font-weight:720;font-size:13px;line-height:1.4}
+.prFiles summary:focus-visible{outline:3px solid #d3a9ff;outline-offset:-3px}
+.prFileRows{display:grid;gap:0;padding:0 12px 8px}
+.prFileRow{display:grid;gap:4px;min-width:0;border-top:1px solid var(--cc-edge);padding:9px 0}
+.prFileRow span{font-size:12px;line-height:1.45;overflow-wrap:anywhere;color:#f1effc}
+.prFileRow small{color:var(--cc-muted);font-size:11px;font-variant-numeric:tabular-nums}
+
+/* Owner-only gateway to the existing Project Management route. */
+.pmShortcut{display:flex;align-items:center;gap:12px;min-height:74px;padding:12px 13px;margin:0 0 13px;
+ border:1px solid rgba(185,143,245,.36);border-radius:15px;
+ background:linear-gradient(115deg,rgba(99,63,145,.39),rgba(38,31,64,.92));
+ color:#f4eaff!important;text-decoration:none!important}
+.pmSymbol{display:grid;place-items:center;flex:0 0 42px;height:42px;border-radius:12px;
+ background:#4b3971;color:#e0c6ff;font-size:23px}
+.pmCopy{display:grid;gap:4px;flex:1;min-width:0}
+.pmCopy strong{font-size:14px;line-height:1.25}
+.pmCopy small{font-size:11px;line-height:1.35;color:#cbb8e4}
+.pmArrow{font-size:26px;color:#d7b3ff}
+
+/* Evidence gaps are visible, never an unearned successful agent badge. */
+.auditGap{padding:12px 13px;border-radius:12px;border:1px solid rgba(218,164,125,.4);
+ background:rgba(103,66,56,.24);font-size:12px;color:#f5d8c7;line-height:1.45;margin:0 0 12px}
+
+/* Owner-invoked bounded multi-task selection and factual execution receipts. */
+.batchArea{display:grid;gap:8px}
+.batchHint{margin:2px 0 4px;color:var(--cc-muted);font-size:12px}
+.batchRow{display:flex;align-items:stretch;gap:8px;min-width:0}
+.batchRow>.taskCard{flex:1;min-width:0;width:auto;margin:0;align-self:stretch}
+.batchCheck{display:flex;align-items:center;justify-content:center;flex:0 0 44px;min-width:44px;min-height:54px;
+ border-radius:12px;border:1px solid var(--cc-edge);background:rgba(255,255,255,.05);cursor:pointer}
+.batchCheck input{width:19px;height:19px;accent-color:#bb91f5;cursor:pointer}
+.batchCheck input:disabled{opacity:.4;cursor:not-allowed}
+.batchExec{display:grid;gap:11px;margin:8px 0 12px;border:1px solid rgba(172,121,245,.38);
+ border-radius:17px;background:rgba(42,36,63,.8);padding:14px}
+.batchExec label{color:#f0e1ff;font-size:13px;font-weight:760}
+.batchExec select,.batchHandoff{width:100%;min-width:0;min-height:46px;padding:11px 12px;
+ background:#1c2031;color:#fff;border:1px solid #65537d;border-radius:11px;font:inherit;font-size:13px}
+.batchHandoff{resize:vertical;min-height:160px;line-height:1.45;overflow-wrap:anywhere}
+.batchReceipt{display:grid;gap:5px;padding:12px;border:1px solid var(--cc-edge);border-radius:12px}
+.batchReceipt strong{font-size:13px}.batchReceipt p{font-size:12px;overflow-wrap:anywhere;margin:0;color:#cabddb}
+
+
+/* Agent Commander PR Watch — lives within existing Agents tab, above fixed bottom dock. */
+.prWatchPanel{padding:15px;margin:0 0 14px;border:1px solid rgba(180,133,248,.26);border-radius:17px;
+ background:linear-gradient(150deg,rgba(44,35,73,.91),rgba(25,30,49,.97));overflow-wrap:anywhere}
+.prWatchTop{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.prWatchTop h2{font-size:16px;margin:0 0 5px;line-height:1.25}
+.prWatchTop strong{color:#d7baff;background:rgba(149,95,213,.18);padding:6px 9px;border-radius:9px;white-space:nowrap;font-size:12px}
+.prWatchPanel h3{font-size:13px;margin:14px 0 10px;color:#e0d5fc}
+.prWatchPolicy{font-size:11px;color:#b5bed8;line-height:1.5;margin:9px 0 12px}
+.prWatchList{display:grid;gap:9px}
+.prWatchRow{padding:12px;border:1px solid rgba(255,255,255,.11);background:rgba(14,20,39,.55);border-radius:13px}
+.prWatchLine{display:flex;justify-content:space-between;align-items:center;gap:9px;margin-bottom:7px;font-size:12px}
+.prWatchLine strong{font-size:12px;line-height:1.4;min-width:0}
+.prWatchLine a{white-space:nowrap;flex-shrink:0;color:#d3b7ff;text-decoration:underline}
+.prWatchEnabled,.prWatchDisabled{font-size:10px;line-height:1.3;border-radius:8px;padding:4px 6px;flex-shrink:0}
+.prWatchEnabled{color:#73e7b3;background:#173d37}.prWatchDisabled{color:#bac1d9;background:#34384b}
+.prWatchTiming{font-size:10px;line-height:1.5;color:#adb6d0;margin:5px 0 10px}
+.prWatchActions{display:flex;gap:8px;flex-wrap:wrap}
+.prWatchActions button{min-height:43px;padding:8px 12px;flex:1;white-space:normal;font-size:12px}
+.prWatchAssign{border-top:1px solid rgba(255,255,255,.12);margin-top:14px;padding-top:8px;display:grid;gap:9px}
+.prWatchAssign select{width:100%;min-width:0;min-height:43px;color:#f6f1ff;background:#252b41;border:1px solid #756496;border-radius:10px;padding:7px}
+.prWatchAssign button{min-height:44px}
+.prWatchHistory{border-top:1px solid rgba(255,255,255,.12);padding-top:12px;margin-top:15px;font-size:11px;color:#c5cae0}
+.prWatchHistory summary{cursor:pointer;min-height:33px;font-size:12px;font-weight:700}
+.prWatchHistory p{margin:7px 0;line-height:1.45;overflow-wrap:anywhere}
+.prWatchNotice{font-size:12px;color:#f9c9b1;margin:9px 0 0}
+
+/* Protected, user-approved cross-domain draft import; full prompt is read-only, not silently truncated. */
+.importedPrompt{display:grid;gap:9px;border:1px solid #7b65a4;border-radius:12px;padding:12px;background:#24223e;color:#eee7ff}
+.importedPrompt summary{cursor:pointer;font-weight:750;font-size:13px;min-height:28px}
+.importedPrompt p{margin:8px 0;font-size:12px;line-height:1.5;color:#cec3df}
+.importedPrompt textarea{min-height:160px;max-height:290px;resize:vertical;font-size:12px;font-family:ui-monospace,monospace;line-height:1.5}
+.importedPrompt button{margin-top:8px}

@@ -1,0 +1,54 @@
+.root{margin:16px 0;padding:18px;background:#f5f8f6;color:#16352f;border:1px solid #cadecf;border-radius:18px;max-width:760px}
+.render{border-bottom:1px solid #ccddd3;margin-bottom:16px;padding-bottom:12px}
+.render>strong{display:block;font-size:16px}.render p{margin:6px 0;color:#3c675a;font-size:14px}
+.track{background:#d6e6df;border-radius:99px;height:10px;overflow:hidden;margin:9px 0 4px}
+.track span{display:block;height:100%;background:#26856e;transition:width .2s ease;border-radius:inherit}
+.render small{font-variant-numeric:tabular-nums}
+.header{display:flex;align-items:baseline;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.header h3{font-size:21px;line-height:1.25;margin:0 0 8px;color:#133e36}
+.header span{font-size:12px;font-weight:700;color:#426c5e}
+.explain{font-size:14px;line-height:1.5;margin:7px 0 13px;color:#345a50}
+.question{padding:4px 0 8px}.questionHead{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.questionHead small{font-size:12px;color:#567b70}.questionHead strong{font-size:18px}
+.rating{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px}
+.rating button,.choices button{border:1px solid #afc9bb;background:white;color:#1c493e;border-radius:10px;min-height:42px;cursor:pointer;font-weight:700;font-size:15px}
+.rating button.selected,.choices button.selected{background:#23745e;color:white;border-color:#23745e}
+.rating button:focus-visible,.choices button:focus-visible,.primary:focus-visible,.back:focus-visible{outline:3px solid #edb85b;outline-offset:2px}
+.range{display:flex;justify-content:space-between;gap:12px;margin:8px 0 12px;color:#56796e}
+.range small,.caption,.privacy{font-size:12px;line-height:1.5}
+.back{font:inherit;font-size:14px;color:#285e4b;background:none;border:0;padding:9px 0;text-decoration:underline;cursor:pointer}
+.reaction h4,.results h4{font-size:17px;margin:12px 0;color:#163e35}
+.choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 0}
+.primary{width:100%;border:0;border-radius:12px;padding:13px 14px;min-height:46px;background:#246c57;color:white;font-size:15px;font-weight:700;cursor:pointer}
+.primary:disabled{background:#93afa5;cursor:not-allowed}
+.rows{border-top:1px solid #ccddd3}
+.resultRow{padding:10px 0;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 14px;border-bottom:1px solid #ccddd3;align-items:baseline}
+.resultRow span{font-size:14px}.resultRow strong{font-variant-numeric:tabular-nums;white-space:nowrap}
+.resultRow small{grid-column:1 / -1;color:#64756d;font-weight:700}
+.resultRow small[data-direction="up"]{color:#17744b}.resultRow small[data-direction="down"]{color:#a83d46}
+.average{font-size:14px;font-weight:700;margin:12px 0}.caption{color:#546d62;margin:8px 0}
+.privacy{color:#5a7267;border-top:1px solid #cfddd5;margin:14px 0 0;padding-top:10px}
+@media(max-width:380px){.root{padding:13px;margin:12px 0}.rating{grid-template-columns:repeat(6,minmax(0,1fr));gap:5px}.header h3{font-size:19px}}
+@media(prefers-reduced-motion:reduce){.track span{transition:none}}
+
+/* Design Bible §10.13: the existing post-video reflection is part of Ready.
+   Preserve meaningful progress and selected/rating state colors. */
+:global([data-mandala-mode="video"]) .root{
+  background:var(--hh-studio-surface,#FFFCFA);
+  border-color:var(--hh-studio-border,#EADFD9);
+  color:var(--hh-studio-ink,#142B3D);
+  box-shadow:var(--hh-studio-shadow,0 5px 18px rgb(66 42 31 / 7%))
+}
+:global([data-mandala-mode="video"]) .rating button:not(.selected),
+:global([data-mandala-mode="video"]) .choices button:not(.selected){
+  background:var(--hh-studio-surface,#FFFCFA);
+  border-color:var(--hh-studio-border,#EADFD9);
+  color:var(--hh-studio-ink,#142B3D)
+}
+:global([data-mandala-mode="video"]) .rating button.selected,
+:global([data-mandala-mode="video"]) .choices button.selected,
+:global([data-mandala-mode="video"]) .primary{
+  background:var(--hh-studio-primary,#087E61);
+  border-color:var(--hh-studio-deep,#006B4B);
+  color:#FFFFFF
+}

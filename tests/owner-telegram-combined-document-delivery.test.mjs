@@ -177,20 +177,24 @@ test('resend button is only valid for a real Dot callback in its owner chat',()=
   assert.equal(parseOwnerAudioCallback(update),null)
 })
 
+const savedReceipt=service.match(/async function recordCombinedDocumentDelivery\([\s\S]*?\n}\nasync function resendSavedCombined/)
+assert.ok(savedReceipt,'confirmed provider receipt must be part of the deployed source')
+const receiptSource=savedReceipt[0].replace(/\nasync function resendSavedCombined$/,'')
+
 const savedResend=service.match(/async function resendSavedCombined\([\s\S]*?\n}\nasync function finishAudioCombine/)
 assert.ok(savedResend,'owner-only resend helper must exist')
 const resendSource=savedResend[0].replace(/\nasync function finishAudioCombine$/,'')
 
 function simulatedSavedResend(row,{corrupt=false,providerFails=false,voiceFails=false}={}){
-  const events={downloads:0,binaries:[],voices:[],messages:[],claims:0,cleanups:0,lastUpdate:100}
+  const events={downloads:0,binaries:[],voices:[],messages:[],claims:0,cleanups:0,receipts:[],lastUpdate:100}
   const bytes=new Uint8Array(128)
   bytes.set([79,103,103,83],0)
   const run=new Function(
     'ownerTransaction','PRACTITIONER_ID','checkedAudioStorage',
     'sendCombinedDocument','sendCombinedVoice','sendOwner','combinedDeliveryKeyboard',
     'failure','OWNER_AUDIO_COMBINE_MAX_BYTES','OWNER_AUDIO_COMBINE_MAX_PARTS',
-    'audioMatchesMagic','folderLabel','itemLink','deleteTemporaryAudioParts',
-    resendSource+'\nreturn resendSavedCombined')(
+    'audioMatchesMagic','folderLabel','itemLink','deleteTemporaryAudioParts','ownerAudioIdValid',
+    receiptSource+'\n'+resendSource+'\nreturn resendSavedCombined')(
     async(_,callback)=>callback({query:async(sql,values)=>{
       if(sql.includes('select batch_id,status,result_audio_id,last_command_update_id'))
         return {rows:[{...row,last_command_update_id:events.lastUpdate}]}
@@ -202,6 +206,13 @@ function simulatedSavedResend(row,{corrupt=false,providerFails=false,voiceFails=
       }
       if(sql.includes('select mime,bytes,storage_path,folder'))
         return {rows:[row]}
+      if(sql.includes('telegram_delivery_message_id=coalesce(telegram_delivery_message_id,$3)')){
+        assert.deepEqual(values,['owner-practitioner',row.result_audio_id,444])
+        events.receipts.push({id:values[1],messageId:values[2]})
+        return {rowCount:1,rows:[{
+          telegram_delivery_message_id:events.receipts[0].messageId,
+          delivered_at:'2026-11-04T00:00:00.000Z'}]}
+      }
       throw Error('UNEXPECTED_SQL')
     }}),
     'owner-practitioner',
@@ -232,6 +243,7 @@ function simulatedSavedResend(row,{corrupt=false,providerFails=false,voiceFails=
     folder=>folder,
     id=>'https://holistichouse.vercel.app/admin/materials/telegram?item='+id,
     async()=>{events.cleanups++},
+    id=>/^[0-9a-f-]{36}$/.test(id),
   )
   return {run,events}
 }
@@ -250,6 +262,7 @@ test('finished file is resent from private Storage to Telegram with its selected
   assert.equal(events.voices.length,1,'the detailed document has a separate playable voice twin')
   assert.equal(events.messages.length,0,'successful binary delivery must be the sole final Telegram message')
   assert.equal(events.cleanups,1,'a confirmed resend also clears hidden staged sources')
+  assert.deepEqual(events.receipts,[{id,messageId:444}],'persist provider receipt before cleanup')
 })
 test('stale batch button never downloads or transmits another saved audio',async()=>{
   const id='550e8400-e29b-41d4-a716-446655440000'
@@ -269,6 +282,7 @@ test('uncertain Telegram sending exposes only explicit resend; no fake success',
   const {run,events}=simulatedSavedResend(row,{providerFails:true})
   await run({},{batchId:id,updateId:101},credentials)
   assert.equal(events.binaries.length,1)
+  assert.equal(events.receipts.length,0,'no receipt from failed Telegram delivery')
   assert.match(events.messages.at(-1).text,/не подтвердил отправку/)
   assert.equal(events.messages.at(-1).keyboard.inline_keyboard[0][0].callback_data,
     'hh-audio:voice:'+id)
@@ -296,6 +310,8 @@ test('a repeated webhook update never delivers a duplicate file, a NEW owner cli
   assert.equal(events.voices.length,2)
   assert.equal(events.downloads,2)
   assert.equal(events.claims,2)
+  assert.deepEqual(events.receipts,[{id,messageId:444},{id,messageId:444}],
+    'two distinct confirmed owner sends retain the first receipt')
 })
 
 
@@ -330,6 +346,8 @@ test('an optional sendVoice failure never retracts a delivered document or loses
   assert.equal(events.voices.length,1,'clean voice attempted once')
   assert.equal(events.cleanups,1,'temporary source cleanup is independent of optional voice')
   assert.equal(events.messages.length,1,'only an optional-delivery warning follows')
+  assert.deepEqual(events.receipts,[{id,messageId:444}],
+    'optional sendVoice failure retains confirmed document receipt')
   assert.match(events.messages[0].text,/голосовое/)
   assert.equal(events.messages[0].keyboard.inline_keyboard[0][0].callback_data,
     'hh-audio:voice:'+id)

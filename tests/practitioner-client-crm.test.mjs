@@ -89,6 +89,11 @@ test('message send uses real server session, exact request participant and immut
   // verified requester/operation context; never send an unsealed asset ID.
   assert.match(server,/const cipher=seal\(\{text,\.\.\.\(assetId\?\{assetId\}:\{\}\)\},\s*bodyContext\(scope\.requester,input\.operationId\),config\)/)
   assert.match(server,/old\.assetId\|\|null\)!==assetId/)
+  // Retain #2543's private media invariants within the consolidated Messages PR.
+  assert.match(server,/if\(assetId!==null\)requireUUID\(assetId\)/)
+  assert.match(server,/if\(assetId&&visibility!=='participants'\)throw new AppError\('INVALID_MESSAGE',400\)/)
+  assert.match(server,/where id=\$1 and request_id=\$2 and uploader_account_id=\$3\s+and status='ready' and message_id is null/)
+  assert.match(server,/if\(linked\.rowCount!==1\)throw new AppError\('ATTACHMENT_NOT_READY',409\)/)
   assert.match(server,/uploader_account_id=\$3[\s\S]*?status='ready'/)
   assert.match(server,/PRACTICE_MESSAGE_DAILY_LIMIT/)
   assert.doesNotMatch(server,/sendOneMessengerMessage|Telegram|WhatsApp|service_role/i)

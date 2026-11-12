@@ -2,26 +2,30 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useEffect, useMemo, useState } from 'react'
+import dynamic from 'next/dynamic'
 import { Plus, FileText, Film, IdCard, UsersRound, Leaf, ReceiptText, BarChart3, ChevronRight, ClipboardList, Share2, CheckCircle2, CalendarDays, Megaphone, BookOpen, Headphones, MessageCircle } from 'lucide-react'
-import CrmManager from './crm-manager'
-import PractitionerClientProfiles from './practitioner-client-profiles'
-import PracticeExpressReports from './practice-express-reports'
-import PracticeMaterials from './practice-materials'
 import {PracticeInnerHeader,PracticeInnerBottomNavigation} from './practice-inner-navigation'
-import PracticeEvents from './practice-events'
 import PracticeServiceStatistics from './practice-service-statistics'
 import PracticeRequestsOverview from './practice-requests-overview'
-import PublicEnquiryContact from './public-enquiry-contact'
 import FreeExpressOwnerCase, { isOwnerFreeExpressRequest } from './free-express-owner-case'
-import MyServicesDashboard from './my-services-dashboard'
-import SimpleServiceEditor from './simple-service-editor'
-import RemoteGoalPhoto from './remote-goal-photo'
-import PracticePhotoUpload from './practice-photo-upload'
-import PracticeVideoField from './practice-video-field'
 import PracticePublicAlias from './practice-public-alias'
 import { getHobbyServiceQuota } from '@/lib/practitioners/service-quota.js'
 import { getPublicServiceDetailHref } from '@/lib/practitioners/public-service-links.js'
 import './practice-dashboard.css'
+
+// Defer private CRM, client, materials, and authoring panels until opened.
+const CrmManager = dynamic(() => import('./crm-manager'))
+const PractitionerClientProfiles = dynamic(() => import('./practitioner-client-profiles'))
+const PracticeExpressReports = dynamic(() => import('./practice-express-reports'))
+const PracticeMaterials = dynamic(() => import('./practice-materials'))
+const PractitionerMeditationStudio = dynamic(() => import('./practitioner-meditation-studio'))
+const PracticeEvents = dynamic(() => import('./practice-events'))
+const PublicEnquiryContact = dynamic(() => import('./public-enquiry-contact'))
+const MyServicesDashboard = dynamic(() => import('./my-services-dashboard'))
+const SimpleServiceEditor = dynamic(() => import('./simple-service-editor'))
+const RemoteGoalPhoto = dynamic(() => import('./remote-goal-photo'))
+const PracticePhotoUpload = dynamic(() => import('./practice-photo-upload'))
+const PracticeVideoField = dynamic(() => import('./practice-video-field'))
 
 async function practiceFetch(path='',body){
   const response=await fetch('/api/app/practice'+path,{method:body?'POST':'GET',credentials:'same-origin',cache:'no-store',headers:body?{'Content-Type':'application/json'}:undefined,body:body?JSON.stringify(body):undefined})
@@ -173,13 +177,21 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
   // Trusted cabinet deep link: owner still must authenticate before opening tools.
   useEffect(()=>{
     const params=new URLSearchParams(window.location.search)
-    if(params.get('panel')==='materials'){
+    if(params.get('panel')==='materials'&&['audio','video'].includes(params.get('meditation'))){
+      // Legacy bookmarks previously opened the course builder; keep that entry working.
+      setActivePanel('meditations')
+      setMeditationType(params.get('meditation'))
+    }else if(params.get('panel')==='materials'){
       setActivePanel('materials')
       if(params.get('materialTab')==='courses'&&params.get('create')==='1'){
         setProCourseStart(true)
         const meditation=params.get('meditation')
         if(['audio','video'].includes(meditation))setMeditationType(meditation)
       }
+    }
+    if(params.get('panel')==='meditations'){
+      setActivePanel('meditations')
+      setMeditationType(params.get('meditation')==='video'?'video':'audio')
     }
     if(params.get('panel')==='services'){
       setActivePanel('services')
@@ -362,12 +374,9 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
       document.getElementById('hh-practice-onboarding')?.scrollIntoView({behavior:'smooth',block:'start'})
       return
     }
-    setProCourseStart(true)
     setMeditationType(kind)
-    setMaterialTab('courses')
-    setActivePanel('materials')
-    setMaterialShortcut(current=>({tab:'courses',nonce:current.nonce+1}))
-    setPanelRoute('materials','courses')
+    setActivePanel('meditations')
+    setPanelRoute('meditations')
     setMeditationPickerOpen(false)
     setError('')
   }
@@ -382,6 +391,15 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
   const services=data.services||[]
   const serviceQuota=data.serviceQuota||getHobbyServiceQuota(services)
   const publishedCount=services.filter(item=>item.status==='published').length
+  // Practitioner-scoped links only; no owner-only Growth Studio/CRM role
+  // escalation. The destination resolves the public offering again server-side.
+  const professionalVideoServices=services.filter(item=>
+    item.status==='published' && item.active===true && p?.slug &&
+    (!item.displayLocales || locale!=='es' || item.displayLocales.includes('es')) &&
+    /^[a-z0-9][a-z0-9-]{0,89}$/.test(item.slug||'')
+  ).slice(0,8)
+  const professionalVideoHref=(item)=>'/'+locale+'/holistic-support/mandala?pro=1&master='+
+    encodeURIComponent(p.slug)+'&service='+encodeURIComponent(item.slug)
   const openRequests=requests.filter(item=>['requested','contacted','booked','reschedule_proposed','confirmed','in_progress'].includes(item.status)).length
   const newRequests=requests.filter(item=>item.status==='requested').length
   const pendingServices=services.filter(item=>['submitted','changes_requested'].includes(item.status)).length
@@ -550,6 +568,25 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
           <ChevronRight aria-hidden="true"/>
         </button>
       </nav>}
+      {!activePanel&&<details className="hh-practice-v4-extra" data-practice-professional-growth>
+        <summary><Film aria-hidden="true"/><span>{ru?'Продвижение через видео':locale==='es'?'Promoción con vídeo':'Video promotion'}</span><ChevronRight aria-hidden="true"/></summary>
+        <nav className="hh-practice-community-shortcuts"
+          aria-label={ru?'Видео для моей услуги':locale==='es'?'Vídeos para mis servicios':'Videos for my services'}>
+          {professionalVideoServices.length?professionalVideoServices.map(item=>
+            <Link key={item.id} href={professionalVideoHref(item)} prefetch={false}>
+              <Film aria-hidden="true"/>
+              <span><strong>{item.copy?.[locale]?.title||item.copy?.title||item.slug}</strong>
+                <small>{ru?'Подготовить видеоролик и публикацию':locale==='es'?'Crear vídeo y publicación':'Create video and post'}</small></span>
+              <ChevronRight aria-hidden="true"/>
+            </Link>
+          ):<Link href={'/'+locale+'/holistic-support/mandala?pro=1'} prefetch={false}>
+            <Film aria-hidden="true"/>
+            <span><strong>{ru?'Образовательное видео':locale==='es'?'Vídeo educativo':'Educational video'}</strong>
+              <small>{ru?'Без ссылки на неопубликованную услугу':locale==='es'?'Sin enlace a servicios no publicados':'No links to unpublished services'}</small></span>
+            <ChevronRight aria-hidden="true"/>
+          </Link>}
+        </nav>
+      </details>}
     </section>}
 
     {!activePanel&&<div className="hh-practice-v4-requests"><PracticeRequestsOverview requests={requests} services={services} locale={locale}
@@ -683,6 +720,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
             </button>)}
           </div>
         </div>}
+        {activePanel==='meditations'&&<PractitionerMeditationStudio key={p?.id||'meditations'} locale={locale} initialKind={meditationType||'audio'}/>}
         {activePanel==='materials'&&<PracticeMaterials key={p?.id||'materials'} quickCreateCourse={proCourseStart} meditationType={meditationType} shortcut={materialShortcut} onTabChange={setMaterialTab} locale={locale} practitioner={p} services={services} busy={busy} isOwner={isOwner} onOpenReikiCourse={(lesson,mode)=>openOwner('reikiCourse',undefined,lesson,mode)} onOpenCoachingAudio={slug=>openOwner('coachingAudio',undefined,slug)} onOpenServices={()=>choosePanel('services')} onAddService={addService} onOpenYoutube={()=>openOwner('youtube')} accountId={accountId}
            onSaveVideos={videos=>act(()=>practiceFetch('/profile',{action:'save',
              profile:{...emptyProfile,...(p?.draftProfile||{}),videoMaterials:videos},expectedRevision:p.revision}),{rethrow:true})}

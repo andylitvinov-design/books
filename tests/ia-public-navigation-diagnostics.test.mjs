@@ -85,3 +85,69 @@ test('viewport settling rejects unfinished requests and removes its observers', 
  assert.match(source,/await resizePublicViewport\(page, \{ width, height: 900 \}\)\s+assert.equal\(\(await go\(page, path\)\)/)
  assert.match(source,/assert\.deepEqual\(errors, \[\]\)/)
 })
+
+test('IA browser acceptance verifies the global My Space dialog on public pages', () => {
+  const source = readFileSync(new URL('../scripts/verify-ia-v2.mjs', import.meta.url), 'utf8')
+  assert.match(source, /Global My Space dialog is available across public routes/)
+  assert.match(source, /cabinetEntry\.click\(\)/)
+  assert.match(source, /home-personal-space-dialog/)
+  assert.doesNotMatch(source, /all other public routes retain the direct Cabinet link/)
+})
+
+test('mobile menu keeps a 44px touch target at narrow widths', () => {
+  const css = readFileSync(new URL('../app/holistic-house-home.css', import.meta.url), 'utf8')
+  assert.doesNotMatch(css, /\.house-header--services \.site-main-menu-trigger\s*\{\s*width:\s*40px/)
+  assert.match(css, /\.house-header--services \.site-main-menu-trigger\s*\{\s*width:\s*44px;\s*min-width:\s*44px/)
+})
+
+test('header keyboard acceptance visits visible shop and cart before language', () => {
+  const source = readFileSync(new URL('../scripts/verify-ia-v2.mjs', import.meta.url), 'utf8')
+  assert.match(source, /visibleHeaderLink/)
+  assert.match(source, /data-nav-item="shop"/)
+  assert.match(source, /data-nav-item="cart"/)
+  assert.match(source, /expect\(visibleHeaderLink\)\.toBeFocused\(\)/)
+})
+
+test('IA acceptance scrolls each menu destination into view without omitting it', () => {
+  const source = readFileSync(new URL('../scripts/verify-ia-v2.mjs', import.meta.url), 'utf8')
+  assert.match(source, /for \(const link of await links\.all\(\)\)\s*\{\s*await link\.scrollIntoViewIfNeeded\(\)/)
+  assert.match(source, /await inViewport\(link, label \+ '\/site-menu-link'\)/)
+})
+
+test('PR WebKit public navigation stays bounded while full manual/Chromium and private Safari coverage remain', () => {
+  const source = readFileSync(new URL('../scripts/verify-ia-v2.mjs', import.meta.url), 'utf8')
+  const browser = source.slice(source.indexOf('async function verifyPublicHeaderMatrix'), source.indexOf('async function verifyPublicDiscoveryNavigation'))
+  assert.match(browser, /const fullHeaderWidths = \[320, 360, 374, 375, 390, 430, 768, 1023, 1024, 1100, 1280\]/)
+  assert.match(browser, /const prWebkitHeaderWidths = \[320, 390, 768, 1280\]/)
+  assert.match(browser, /engine === 'webkit' && process\.env\.GITHUB_EVENT_NAME === 'pull_request'/)
+  assert.match(browser, /for \(const width of publicHeaderWidths\)/)
+  assert.match(browser, /await expect\(header\)\.toBeVisible\(\)/)
+  assert.doesNotMatch(browser, /waitForLoadState\('networkidle'\)/)
+  assert.match(source, /await verifyPublicHeaderMatrix\(sp, 'webkit'\)/)
+  assert.match(source, /await authenticateOwner\(safari\)/)
+  assert.match(source, /await expect\(sp\.locator\('\.canonical-progress-item'\)\)\.toHaveCount\(2\)/)
+})
+
+test('full IA public matrices retain all languages and viewports with isolated parallel pages', () => {
+  const source = readFileSync(new URL('../scripts/verify-ia-v2.mjs', import.meta.url), 'utf8')
+  const helper = source.slice(source.indexOf('async function verifyPublicByLocale'), source.indexOf('async function verifyPublicHeaderMatrix'))
+  const header = source.slice(source.indexOf('async function verifyPublicHeaderMatrix'), source.indexOf('async function verifyPublicDiscoveryNavigation'))
+  const discovery = source.slice(source.indexOf('async function verifyPublicDiscoveryNavigation'), source.indexOf('\ntry {\n  await redis('))
+  assert.match(helper, /page\.context\(\)\.browser\(\)\.newContext\(/, 'each locale needs its own cookie-isolated browser context')
+  assert.match(helper, /Promise\.allSettled\(/, 'all locale outcomes must complete before closing pages')
+  assert.match(helper, /if \(failed\) throw failed\.reason/, 'a failed locale must fail the job')
+  assert.match(helper, /assert\.deepEqual\(pageErrors, \[\]/, 'side-page JavaScript errors cannot be lost')
+  assert.match(helper, /finally \{[\s\S]*\.close\(\)/, 'temporary browser contexts must always close')
+  assert.match(header, /if \(locales\.length > 1\) return verifyPublicByLocale\(page, engine, locales, verifyPublicHeaderMatrix\)/)
+  assert.match(discovery, /if \(locales\.length > 1\) return verifyPublicByLocale\(page, engine, locales, verifyPublicDiscoveryNavigation\)/)
+  assert.match(header, /for \(const locale of locales\)/)
+  assert.equal((discovery.match(/for \(const locale of locales\)/g) || []).length, 2, 'discovery and real link clicks retain each locale')
+  assert.match(header, /const fullHeaderWidths = \[320, 360, 374, 375, 390, 430, 768, 1023, 1024, 1100, 1280\]/)
+  assert.match(header, /const prWebkitHeaderWidths = \[320, 390, 768, 1280\]/)
+  for (const entry of [
+    "await verifyPublicHeaderMatrix(page, 'chromium')",
+    "await verifyPublicDiscoveryNavigation(page, 'chromium')",
+    "await verifyPublicHeaderMatrix(sp, 'webkit')",
+    "await verifyPublicDiscoveryNavigation(sp, 'webkit')",
+  ]) assert.ok(source.includes(entry), entry + ' must remain in actual browser acceptance')
+})

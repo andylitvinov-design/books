@@ -1,4 +1,4 @@
-import {NextResponse} from 'next/server'
+import {NextResponse,after} from 'next/server'
 import {getAppConfig} from '@/lib/app/config'
 import {closeDatabase} from '@/lib/app/database'
 import {cronAuthorized} from '@/lib/app/housekeeping-cron'
@@ -23,6 +23,37 @@ export async function GET(request){
     return NextResponse.json({error:'UNAUTHORIZED'},{status:401,headers:PRIVATE_HEADERS})
   const ownerDue=torontoReportDue('operations')
   const masterDue=torontoReportDue('revenue')
+  // Native Telegram Menu is independent of daily sending and customer consent.
+  // Refresh only on the EXISTING 09:00 Toronto CRON_SECRET slot. The adapter
+  // verifies getMe + the same signed webhook and preserves all older commands.
+  if(masterDue&&process.env.VERCEL_ENV==='production'&&
+     process.env.HH_CRM_TG_COMPANION_ENABLED==='true'){
+    after(async()=>{
+      try{
+        const {ensureTelegramCompanionNativeMenu}=await import('@/lib/crm/messenger-provider')
+        const status=await ensureTelegramCompanionNativeMenu(process.env)
+        if(status.ready)console.info('HH_CRM_TG_COMMAND_MENU_READY',{
+          source:'morning_cron',changedScopes:status.changedScopes||0})
+        else console.error('HH_CRM_TG_COMMAND_MENU_NOT_READY',{reason:status.reason})
+      }catch{console.error('HH_CRM_TG_COMMAND_MENU_SETUP_FAILED')}
+    })
+  }
+  // Reuse the EXISTING 09:00 Toronto cron slot: a separate daily greeting
+  // only for Telegram chats that explicitly opted in. Never a new scheduler.
+  if(masterDue&&process.env.VERCEL_ENV==='production'&&
+     process.env.HH_CRM_TG_COMPANION_ENABLED==='true'&&
+     process.env.HH_CRM_TG_COMPANION_DAILY_ENABLED==='true'){
+    try{
+      const config=getAppConfig()
+      const {deliverTelegramCompanionDaily}=await import('@/lib/crm/telegram-companion-service')
+      await deliverTelegramCompanionDaily(config,process.env,{limit:5})
+    }catch{
+      // Keep existing owner/practitioner reports independent.
+      console.error('HH_CRM_TG_COMPANION_DAILY_FAILED')
+    }finally{
+      await closeDatabase()
+    }
+  }
   if(!ownerDue&&!masterDue)
     return NextResponse.json({status:'not_due'},{headers:PRIVATE_HEADERS})
   if(process.env.VERCEL_ENV==='preview')

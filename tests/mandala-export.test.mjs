@@ -5,6 +5,15 @@ import ts from "typescript";
 
 const read = file => readFileSync(new URL("../" + file, import.meta.url), "utf8");
 
+test("mobile browser matrix covers every requested locale and width", () => {
+  const browser = read("scripts/verify-holistic-mandala-browser.mjs");
+  for (const locale of ["ru", "en", "es"]) {
+    for (const width of [320, 354, 375, 390, 430]) {
+      assert.ok(browser.includes(`{ locale: "${locale}", width: ${width} }`), `${locale}/${width}`);
+    }
+  }
+});
+
 test("mandala export preserves local-only image and no external upload", () => {
   const client = read("components/mandala-meditation-client.tsx");
   const exporter = read("lib/mandala/export-png.ts");
@@ -22,7 +31,7 @@ test("mandala export preserves local-only image and no external upload", () => {
   assert.match(exporter, /ctx\.clip\(\)/);
   assert.match(css, /\.focus \.exportButton\{display:none\}/);
   assert.match(middleware, /const publicMandalaLocalImages/);
-  assert.match(middleware, /ownerMessengerImages \|\| publicMandalaLocalImages \? ' blob:'/);
+  assert.match(middleware, /ownerMessengerImages \|\| publicMandalaLocalImages \|\| supportMobilePublishedMedia \|\| privateSupportPhotoCabinet \? ' blob:'/);
   assert.doesNotMatch(exporter + client, /fetch\(|XMLHttpRequest|navigator\.sendBeacon|FormData|localStorage|sessionStorage/);
 });
 
@@ -51,8 +60,41 @@ test("actual PNG renderer TypeScript parses; browser runner covers WebKit and do
   assert.match(browser, /chromium.*webkit/);
   assert.match(browser, /setInputFiles/);
   assert.match(browser, /png\.subarray\(0, 8\)/);
-  assert.match(browser, /youtube-nocookie\.com\/embed/);
-  assert.match(browser, /await page\.keyboard\.press\("Escape"\)/);
+  assert.match(browser, /photoPage\.locator\("\[data-mentalica-photo-mandala\]"/);
+  assert.match(browser, /photoDownload\.suggestedFilename\(\)/);
   assert.match(browser, /width: 320/);
   assert.match(browser, /width: 430/);
+});
+
+test("Mandala browser acceptance preserves 12 independent encoded-video E2E scenarios with bounded parallelism", () => {
+  const script = read("scripts/verify-holistic-mandala-browser.mjs");
+  for (const locale of ["ru", "en", "es"]) assert.ok(script.includes('locale: "' + locale + '"'));
+  for (const width of [320, 354, 390, 430]) assert.ok(script.includes('width: ' + width));
+  assert.match(script, /\["webkit", webkit\], \["chromium", chromium\]/);
+  // The two engines may overlap, but each has a single active context.
+  // The full 6 × 2 coverage, native media decoding and fail-closed semantics remain.
+  assert.match(script, /const engines = \[\["webkit", webkit\], \["chromium", chromium\]\]/);
+  assert.match(script, /for \(const \{ locale, width \} of orderedViewports\)/);
+  assert.doesNotMatch(script, /viewports\.slice\(from, from \+ 2\)/);
+  assert.match(script, /Promise\.allSettled\(engines\.map\(runEngine\)\)/);
+  assert.match(script, /if \(rejectedEngines\.length\)/);
+  assert.match(script, /throw new AggregateError\(/);
+  assert.match(script, /assert\.equal\(passes, viewports\.length \* engines\.length/);
+  assert.match(script, /await context\.close\(\)/);
+  assert.match(script, /spawnSync\("ffprobe"/);
+  assert.match(script, /spawnSync\("ffmpeg"/);
+});
+
+test('synthetic Mandala screenshots retain the full public page without animation-stability hangs', () => {
+  const browser = read('scripts/verify-holistic-mandala-browser.mjs');
+  assert.match(browser, /async function captureSyntheticOverview\(page, locator, path\)/);
+  assert.match(browser, /getBoundingClientRect\(\)/);
+  assert.match(browser, /bounds\.width>0 && bounds\.height>0/);
+  assert.match(browser, /page\.screenshot\(\{path,fullPage:true,animations:"disabled",timeout:30000\}\)/);
+  assert.match(browser, /captureSyntheticOverview\(page, compactHypno/);
+  assert.match(browser, /captureSyntheticOverview\(page, page\.locator/);
+  assert.match(browser, /captureSyntheticOverview\(page,panel,"artifacts\/mandala-audio\//);
+  assert.match(browser, /Mandala browser E2E:/);
+  assert.doesNotMatch(browser, /compactHypno\.screenshot\(/);
+  assert.doesNotMatch(browser, /panel\.screenshot\(/);
 });

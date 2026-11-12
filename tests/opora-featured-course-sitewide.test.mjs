@@ -32,6 +32,18 @@ test('original navy and burgundy free-review banner stays distinct from contextu
   assert.match(layout, /<SitewideAntistressBanner initialLocale=\{lang\} \/>/)
   assert.match(bar, /export function SitewideAntistressBanner/)
   assert.match(bar, /data-sitewide-personal-review-banner/)
+  // The global marketing ribbon must never appear above Video Studio.
+  const videoGuard = String.raw`/^\/(?:ru|en|es)\/holistic-support\/mandala\/?$/`;
+  assert.ok(bar.includes(videoGuard),"all Studio locales suppress the global ribbon");
+  assert.ok(bar.includes("if (isDistractionSensitivePage(pathname)) return null"));
+  const videoPath = /^\/(?:ru|en|es)\/holistic-support\/mandala\/?$/;
+  for (const locale of ["ru","en","es"]) {
+    assert.ok(videoPath.test("/"+locale+"/holistic-support/mandala"));
+    assert.ok(videoPath.test("/"+locale+"/holistic-support/mandala/"));
+    assert.equal(videoPath.test("/"+locale+"/holistic-support"),false);
+    assert.equal(videoPath.test("/"+locale+"/services/free-situation-review"),false);
+  }
+
   assert.ok(bar.includes('className={styles.cta} href={`/${locale}/services/free-situation-review`}'))
   assert.match(bar, /Get free review/)
   assert.match(style, /\.ribbon\{/)

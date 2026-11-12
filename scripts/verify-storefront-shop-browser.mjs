@@ -48,10 +48,15 @@ try {
     })
     const location = origin + '/' + locale + '/shop'
     try {
-      const response = await page.goto(location, { waitUntil: 'networkidle', timeout: 30000 })
+      const response = await page.goto(location, { waitUntil: 'domcontentloaded', timeout: 30000 })
       assert.equal(response?.status(), 200, locale + ': shop route HTTP')
       const shop = page.locator('[data-service-storefront]')
-      await shop.waitFor({ state: 'visible' })
+      await shop.waitFor({ state: 'visible', timeout: 15000 })
+      // Await the real React filter before checkout and consent assertions.
+      await page.waitForFunction(() => {
+        const button = document.querySelector('[data-shop-filter="program"]');
+        return !!button && Object.keys(button).some(key => key.startsWith('__reactProps$'));
+      }, null, { timeout: 15000 });
       assert.equal(await page.locator('[data-shop-product]').count(), 7)
       assert.equal(await page.locator('[data-shop-filter]').count(), 4)
       assert.equal(await page.locator('[data-shop-add]').count(), 2)
@@ -111,39 +116,27 @@ try {
       await cart.locator('[data-cart-start-order]').click()
       const contactForm = cart.locator('[data-cart-contact-form]')
       await contactForm.waitFor({ state: 'visible' })
-      assert.equal(await contactForm.locator('button[type="submit"]').isDisabled(), true,
-        'Order must require a contact and explicit reply-only opt-in')
-      assert.equal(await contactForm.locator('input[type="checkbox"][required]').count(), 1,
-        'The visitor must consent before the first-party CRM save')
-      assert.equal(await contactForm.locator('button').filter({ hasText: /Google/i }).count(), 1)
-      assert.equal(await cart.locator('[data-cart-payment-step]').count(), 0,
-        'No payment step before the CRM confirms an order')
-      await contactForm.locator('input[type="tel"]').fill('416 555 1234')
-      assert.equal(await contactForm.locator('button[type="submit"]').isDisabled(), true,
-        'Phone without reply-only opt-in is insufficient')
-      await contactForm.locator('input[type="checkbox"][required]').check()
-      await contactForm.locator('button[type="submit"]').click()
-      await cart.locator('[data-cart-order-registration][data-cart-order-ready="true"]').waitFor()
-      await cart.locator('[data-cart-payment-step]').waitFor({ state: 'visible' })
-      assert.equal(syntheticEnquiries.length, 1, 'Exactly one mocked CRM order')
-      assert.equal(syntheticEnquiries[0].contactConsent, true)
-      assert.equal(syntheticEnquiries[0].contact.phone, '+14165551234')
-      assert.equal(syntheticEnquiries[0].sourcePath, '/' + locale + '/cart')
-      assert.equal(syntheticEnquiries[0].serviceTitle.includes('30'), true)
-      assert.equal(await cart.locator('[data-cart-order-saved]').count(), 1)
-      assert.equal(await cart.locator('fieldset input[type="radio"]').count() > 0, true,
-        'Payment choices only after saved CRM reference')
-      // No provider navigation: inspect only that the canonical payee/price are retained.
-      const manual = page.locator('[data-cart-paypal-personal]')
-      if (await manual.count()) {
-        assert.equal(await manual.getAttribute('href'), 'https://paypal.me/psitrends/50EUR')
-      }
-      assert.equal(await page.locator('[data-cart-square-payment-link]').count(), 0,
-        'Unapproved Square link must stay hidden')
-      assert.equal(await page.locator('[data-cart-paypal-hosted]').count(), 0,
-        'Unapproved PayPal hosted link must stay hidden')
-      assert.equal(await page.locator('[data-cart-verified-paypal-checkout]').count(), 0,
-        'Merchant Orders v2 must stay disabled without financial ledger')
+      // In messenger-only mode the website must not accept a typed
+      // phone/Google-only order or fabricate a CRM receipt.
+      const card=contactForm.locator('[data-messenger-only-contact]');
+      await card.waitFor({state:'visible',timeout:20000});
+      const details=card.locator('details');
+      if(await details.count())await details.locator(':scope > summary').click();
+      const wa=card.locator('a[data-messenger-only-channel="whatsapp"]');
+      const tg=card.locator('a[data-messenger-only-channel="telegram"]');
+      await wa.waitFor({state:'visible',timeout:15000});
+      await tg.waitFor({state:'visible',timeout:15000});
+      const draft=new URL(await wa.getAttribute('href'));
+      assert.equal(draft.origin,'https://wa.me','Only customer-initiated WhatsApp');
+      assert.ok((draft.searchParams.get('text')||'').includes('30'),
+        'The selected 30-minute service is retained in the draft');
+      assert.equal(await contactForm.locator('form,input[type="tel"],input[type="email"],button[type="submit"]').count(),0,
+        'An unverified phone or Google session cannot create an order');
+      assert.equal(syntheticEnquiries.length,0,'No synthetic CRM save before provider confirmation');
+      assert.equal(await cart.locator('[data-cart-order-saved],[data-cart-payment-step]').count(),0,
+        'Opening messenger options does not imply booking, order or payment');
+      assert.equal(await cart.locator('fieldset input[type="radio"]').count(),0,
+        'Payment options remain gated until an authorized verified order');
       const cartSize = await reportOverflow()
       assert.ok(cartSize.scrollWidth <= cartSize.viewport + 1,
         locale + '/' + width + ': cart horizontal overflow ' + JSON.stringify(cartSize))

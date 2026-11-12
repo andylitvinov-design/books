@@ -52,6 +52,10 @@ const run = async (locale, width) => {
       captured.ratingReads.push({kind, count:keys.length});
       return json({ratings:Object.fromEntries(keys.map(key => [key,{count:0,average:0,mine:null}]))});
     }
+    // The public messenger card checks signed bot availability using one
+    // read-only first-party GET. Never allow provider sends or CRM writes.
+    if (url.pathname === "/api/public/telegram-diagnostic" && method==="GET")
+      return json({available:false,directAvailable:false});
     if (url.pathname === "/api/public/talisman-checkout" && method==="GET")
       return json(priced ? fixed : {available:false,reason:"PRICE_NOT_APPROVED"});
     if (url.pathname === "/api/app/auth/contact-profile" && method==="GET")
@@ -88,6 +92,14 @@ const run = async (locale, width) => {
     await page.locator('[data-support-tool="talisman"]').click();
     const viewer = page.locator("[data-support-talisman-viewer]");
     await viewer.waitFor({state:"visible"});
+    // Published catalog ratings load only after the full catalog opens.
+    const ratingsRequest = page.waitForRequest(req => {
+      const url = new URL(req.url());
+      return req.method() === "GET" && url.origin === origin &&
+        url.pathname === "/api/catalog/ratings" && url.searchParams.get("kind") === "talisman";
+    }, {timeout:15000});
+    await viewer.locator('button[aria-controls="support-talisman-full-catalog"]').click();
+    await ratingsRequest;
     await viewer.locator('[data-support-talisman-thumb="fu-prosperity"]').click();
     await viewer.locator("[data-support-talisman-request]").click();
     const modal = page.locator('dialog[open][aria-labelledby="support-talisman-order-title"]');
@@ -101,19 +113,22 @@ const run = async (locale, width) => {
       "Wise / Interac / ZEN must be inquiries, not fake charges");
     assert.equal(await cart.locator("[data-talisman-google-start]").count(),1,
       "First option: Google creates or opens existing cabinet");
-    assert.equal(await cart.locator("[data-talisman-contact]").count(),1,
-      "Guest fallback has just one visible contact field");
-    assert.equal(await cart.locator("details").first().getAttribute("open"),null,
-      "Additional name and wishes are collapsed");
-    await cart.locator("[data-talisman-contact]").fill("visitor@example.test");
-    await cart.locator('[data-talisman-reply-consent] input[type="checkbox"]').check();
-    await cart.locator("[data-talisman-request-quote]").click();
-    await cart.locator("[data-talisman-quote-saved]").waitFor();
-    assert.equal(captured.enquiries.length,1);
-    assert.equal(captured.enquiries[0].contact.email,"visitor@example.test");
-    assert.equal(captured.enquiries[0].contactConsent,true);
-    assert.equal(captured.enquiries[0].sourcePath,"/"+locale+"/holistic-support");
-    assert.equal(captured.checkouts.length,0,"A quote never triggers a charge");
+    const contact=cart.locator('[data-messenger-only-contact]');
+    await contact.waitFor({state:'visible',timeout:10000});
+    const wa=contact.locator('a[data-messenger-only-channel="whatsapp"]');
+    const tg=contact.locator('a[data-messenger-only-channel="telegram"]');
+    await wa.waitFor({state:'visible',timeout:10000});
+    assert.equal(await tg.count(),1,'Telegram handoff for selected talisman');
+    const draft=new URL(await wa.getAttribute('href'));
+    assert.equal(draft.origin,'https://wa.me');
+    assert.match(draft.searchParams.get('text')||'',/fu-prosperity/,
+      'Selected Fu talisman must survive the manual quote request');
+    assert.equal(await cart.locator('[data-talisman-contact],[data-talisman-request-quote]').count(),0,
+      'No email-only custom quote form remains');
+    assert.equal(captured.enquiries.length,0,'Clicking options is not a verified CRM lead');
+    assert.equal(captured.checkouts.length,0,'A quote cannot initiate payment');
+    assert.equal(await cart.locator('[data-talisman-quote-saved]').count(),0,
+      'No invented receipt');
     assert.deepEqual(pageErrors,[]);
 
     // Synthetic Google OAuth return: a public path/time marker and published
@@ -163,7 +178,7 @@ const run = async (locale, width) => {
       path:"artifacts/talisman-google-checkout/ru-390-google-pay.png",
       fullPage:false,timeout:12000,
     }).catch(()=>{});
-    report.push({locale,width,guestQuote:true,googleResume:true,checkoutSynthetic:true});
+    report.push({locale,width,guestMessengerQuote:true,googleResume:true,checkoutSynthetic:true});
     console.log("PASS talisman "+locale+"/"+width+" guest → Google → fixed-price provider synthetic");
   } finally { await ctx.close(); await browser.close(); }
 };

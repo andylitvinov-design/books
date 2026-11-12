@@ -28,6 +28,27 @@ test('page and service form only acknowledge a successful server-saved reply req
   assert.match(form,/setSaved\(\{ saved: true, referenceCode: data\.referenceCode \}\)/)
   assert.match(form,/sessionStorage\.setItem\(RECEIPT_SESSION_KEY/)
   assert.match(form,/router\.push\("\/" \+ locale \+ "\/thank-you"\)/)
+  // Browser receipt is presentation-only; actual encrypted CRM commit
+  // and explicit reply-only consent always precede a Thank You route.
+  for (const path of [
+    "components/compact-lead-capture.tsx",
+    "components/services-hero-quick-request.tsx",
+    "components/business-website-enquiry.tsx",
+  ]) {
+    const code = source(path)
+    assert.match(code,/sessionStorage\.setItem\(RECEIPT_SESSION_KEY/)
+    assert.match(code,/router\.push\(/)
+  }
+  const compact = source("components/compact-lead-capture.tsx")
+  assert.match(compact,/if \(!channel\) router\.push\(/)
+  assert.match(compact,/if \(!channel\) return/)
+  // Preserve the current explicit Google Send and manually requested chat.
+  assert.match(form,/if \(!stayAfterSave\) router\.push\(/)
+  assert.match(source("lib/business-consulting/enquiry-store.js"),/referenceCode: "HH-" \+ digest\.slice\(0, 12\)/)
+  assert.match(ui,/telegramEnquiryUrlFromWhatsApp\(whatsapp\)/)
+  assert.match(ui,/request: c\.chatRequest \+ \(confirmed \? " · " \+ receipt : ""\)/)
+  assert.match(ui,/const confirmed = \/\^HH-/)
+  assert.doesNotMatch(ui,/sendBeacon|fetch\(|gtag|fbq/i)
   assert.doesNotMatch(form,/localStorage|sendBeacon/i)
   assert.match(page,/robots: \{ index: false, follow: false/)
   assert.match(ui,/parseEnquiryReceipt\(window\.sessionStorage\.getItem/)
@@ -51,7 +72,8 @@ test('video is draft-only until explicit checked publication, with no default au
   assert.throws(()=>prepareVideoChange(draft,{
     slot:'thank-you',locale:'ru',intent:'publish',youtubeUrl:'https://youtu.be/OkLEN8Zb-sY',title:'Thanks',reviewed:false,
   }))
-  assert.match(source('app/[locale]/thank-you/page.tsx'),/getPublishedSiteVideos/)
+  // A single explicitly published slot, never a bulk draft catalogue.
+  assert.match(source('app/[locale]/thank-you/page.tsx'),/getPublishedSiteVideo\("thank-you:" \+ locale\)/)
   assert.match(source('components/site-video-manager.tsx'),/\["about-intro", "thank-you"\]\.includes\(item\.id\)/)
   assert.match(source('components/service-enquiry-thank-you.tsx'),/\{video && \(/)
 })

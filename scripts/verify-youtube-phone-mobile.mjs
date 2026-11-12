@@ -5,14 +5,14 @@ import {spawn} from 'node:child_process'
 import {mkdirSync} from 'node:fs'
 import {chromium, webkit, expect} from '@playwright/test'
 
-const origin = 'http://127.0.0.1:3157'
+const origin = 'http://localhost:3157'
 const evidence = '/tmp/youtube-phone-mobile-evidence'
 mkdirSync(evidence, {recursive:true})
 let app
 const browsers = []
 const wait = ms => new Promise(resolve => setTimeout(resolve,ms))
 async function boot() {
-  app = spawn(process.execPath,['node_modules/next/dist/bin/next','start','-p','3157','-H','127.0.0.1'],{
+  app = spawn(process.execPath,['node_modules/next/dist/bin/next','start','-p','3157','-H','localhost'],{
     env:{
       ...process.env,
       NEXT_TELEMETRY_DISABLED:'1',

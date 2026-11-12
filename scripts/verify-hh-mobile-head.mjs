@@ -37,6 +37,23 @@ for(const path of ['/holistic-house-app.webmanifest','/holistic-house-app-ru.web
     const manifest=await response.json()
     assert.equal(manifest.display,'standalone',path)
     assert.equal(manifest.name,path==='/manifest.webmanifest'?'PsiAlchemy':'Holistic House',path)
+    if(path!=='/manifest.webmanifest'){
+      const locale=path.includes('-ru.')?'ru':path.includes('-es.')?'es':'en'
+      assert.equal(manifest.start_url,'/'+locale,path+' must start on public unified Home')
+      assert.equal(manifest.id,'/en/app',path+' must preserve installed app identity')
+      assert.equal(manifest.scope,'/',path+' must cover all seven app destinations')
+    }
+  }catch(error){failures.push(path+': '+String(error?.message||error))}
+}
+for(const locale of ['ru','en','es']){
+  const path='/holistic-house-offline-'+locale+'.html'
+  try{
+    const response=await fetch(new URL(path,origin))
+    assert.equal(response.status,200,path+' status')
+    assert.match(response.headers.get('content-type')||'',/text\/html/i,path+' content-type')
+    const html=await response.text()
+    assert.match(html,/noindex,nofollow/,path+' must not be indexed')
+    assert.match(html,/Holistic House/,path+' must not be an empty fallback')
   }catch(error){failures.push(path+': '+String(error?.message||error))}
 }
 if(failures.length){

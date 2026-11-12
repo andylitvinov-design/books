@@ -115,3 +115,97 @@
 }
 
 @media(max-width:375px){.seriesFilters button{flex:1 1 120px;font-size:12px;padding:8px}.seriesHeading{padding:12px}.seriesHeading h3{font-size:20px}}
+
+/* Public videos only: optional lightweight actions, never shown in articles/guides. */
+.preferenceAction{display:inline-flex;align-items:center;justify-content:center;flex:0 0 40px;min-height:44px;border:1px solid #cde0d3;border-radius:10px;background:#f4fbf5;color:#28714e;padding:7px;cursor:pointer}
+.preferenceAction[aria-pressed=true]{background:#e1f4e8;border-color:#27835b}
+.preferenceAction:hover{background:#e9f8ee}
+.preferenceAction:focus-visible{outline:3px solid #2d9471;outline-offset:2px}
+@media(max-width:375px){.actions{gap:5px}.preferenceAction{flex-basis:35px;min-height:40px;padding:6px}}
+
+/* MyTube: reuse the same existing consent-on-click Library player and approved records. */
+.mytubeFeed{width:100%;max-width:1240px;color:#181b1a}
+.mytubeFeed .list{grid-template-columns:repeat(3,minmax(0,1fr));gap:25px 19px}
+.mytubeFeed .card,.mytubeFeed .playing{display:flex;flex-direction:column;grid-column:auto;min-height:0;border:0;border-radius:15px;background:transparent;box-shadow:none;overflow:visible}
+.mytubeFeed .visual,.mytubeFeed .playing .visual{flex:none;width:100%;height:auto;min-height:0;aspect-ratio:16/9;margin:0;overflow:hidden;border-radius:15px;background:#dcebe2}
+.mytubeFeed .playButton,.mytubeFeed .pictureLink{width:100%;height:100%;min-height:0;aspect-ratio:16/9}
+.mytubeFeed .iframe{width:100%;height:100%}
+.mytubeFeed .playIcon{width:54px;height:54px;background:#101d19cb;color:#fff;box-shadow:0 2px 12px #0007}
+.mytubeFeed .playIcon svg{width:24px;height:24px}
+.mytubeFeed .details,.mytubeFeed .playing .details{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:7px;padding:12px 3px 6px}
+.mytubeFeed .details h2,.mytubeFeed .playing .details h2{font:750 clamp(17px,1.65vw,20px)/1.27 Arial,Helvetica,sans-serif;letter-spacing:-.015em;color:#18211d;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.mytubeFeed .meta{font-size:12px;flex-wrap:wrap;color:#67736d}
+.mytubeFeed .description{font-size:13px;line-height:1.4;-webkit-line-clamp:2;color:#65726a}
+.mytubeFeed .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:1px}
+.mytubeFeed .primaryAction{min-height:40px;border-radius:20px;background:#eef5ee;padding:8px 12px;color:#125a46;font-size:13px;font-weight:800}
+.mytubeFeed .primaryAction:hover{background:#deeee3;text-decoration:none}
+.mytubeFeed .secondaryAction{min-height:40px;min-width:40px}
+.mytubeFeed .preferenceAction{min-height:40px;min-width:42px;border-radius:20px;background:#f0f4f0}
+.channelIdentity{display:flex;align-items:center;gap:8px;margin:0;color:#5b6b61;font-size:13px;font-weight:650;line-height:1.3}
+.channelIdentity>span:nth-child(2){flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.channelIdentity small{color:#68786e;font-size:11px;border:1px solid #dce7dc;border-radius:7px;padding:2px 5px}
+.channelAvatar{display:grid;place-items:center;flex:none;width:31px;height:31px;border-radius:50%;background:#dcefe2;color:#126449;font-weight:850;font-size:14px}
+@media(max-width:1100px){.mytubeFeed .list{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:680px){
+ .mytubeFeed .list{grid-template-columns:minmax(0,1fr);gap:20px}
+ .mytubeFeed .card{border-radius:0}
+ .mytubeFeed .visual,.mytubeFeed .playing .visual{border-radius:14px}
+ .mytubeFeed .details,.mytubeFeed .playing .details{padding:11px 2px 3px;gap:7px}
+ .mytubeFeed .details h2,.mytubeFeed .playing .details h2{font-size:18px}
+ .mytubeFeed .description{font-size:13px;-webkit-line-clamp:2}
+ .mytubeFeed .meta{font-size:12px}
+ .mytubeFeed .actions{gap:7px}
+ .mytubeFeed .primaryAction,.mytubeFeed .preferenceAction{min-height:44px}
+}
+
+
+/* Dark YouTube-like catalog only for MyTube's public video variant. */
+.mytubeFeed{color:#f1f1f1;color-scheme:dark}
+.mytubeFeed .list{gap:22px 16px}
+.mytubeFeed .card,.mytubeFeed .playing{background:transparent;border:0;box-shadow:none}
+.mytubeFeed .visual,.mytubeFeed .playing .visual{background:#202020;border-radius:12px}
+.mytubeFeed .playButton,.mytubeFeed .pictureLink{background:#202020;color:#f1f1f1}
+.mytubeFeed .playIcon{width:45px;height:45px;background:rgba(0,0,0,.76);color:#fff;box-shadow:0 3px 12px #0007}
+.mytubeFeed .playIcon svg{width:21px;height:21px}
+.mytubeFeed .details,.mytubeFeed .playing .details{gap:6px;padding:11px 2px 2px}
+.mytubeFeed .details h2,.mytubeFeed .playing .details h2{color:#f1f1f1;
+  font:750 clamp(16px,1.55vw,18px)/1.34 Arial,Helvetica,sans-serif;letter-spacing:-.012em}
+.mytubeFeed .titleButton,.mytubeFeed .details h2 a{color:#f1f1f1}
+.mytubeFeed .meta{color:#aaa;font-size:12px;gap:6px}
+.mytubeFeed .meta>span:not(:first-child)::before{color:#888}
+.mytubeFeed .kind{color:#aaa;font-weight:650}
+.mytubeFeed .channelIdentity{color:#c4c4c4;font-size:13px;gap:9px}
+.mytubeFeed .channelIdentity small{color:#bbb;background:#232323;border:1px solid #383838}
+.mytubeFeed .channelAvatar{background:#343434;color:#fff;width:34px;height:34px;font-size:14px}
+.mytubeFeed .description{color:#a6a6a6;font-size:12px;line-height:1.35;-webkit-line-clamp:1}
+.mytubeFeed .actions{gap:8px;align-items:center;margin-top:5px}
+.mytubeFeed .primaryAction{min-height:38px;border-radius:20px;padding:8px 13px;
+  background:#272727;color:#f1f1f1;font-size:12px;font-weight:700}
+.mytubeFeed .primaryAction:hover{background:#3b3b3b;text-decoration:none}
+.mytubeFeed .secondaryAction{min-height:38px;min-width:38px;color:#f1f1f1}
+.mytubeFeed .preferenceAction{min-height:38px;min-width:38px;flex-basis:38px;
+  border:1px solid #383838;border-radius:50%;padding:7px;background:#272727;color:#f1f1f1}
+.mytubeFeed .preferenceAction[aria-pressed=true]{background:#542532;border-color:#ff0033;color:#fff}
+.mytubeFeed .preferenceAction:hover{background:#3b3b3b}
+.mytubeFeed .more{border-color:#383838;background:#272727;color:#f1f1f1}
+.mytubeFeed .more:hover{background:#3b3b3b}
+.mytubeFeed .empty{background:#202020;color:#ddd}
+.mytubeFeed .seriesHeading{margin-top:8px;padding:10px 2px 12px;border:0;border-bottom:1px solid #303030;
+  border-radius:0;background:transparent;gap:7px}
+.mytubeFeed .seriesHeading span{color:#aaa;font-size:11px}
+.mytubeFeed .seriesHeading h3{color:#f1f1f1;font:750 clamp(18px,2.4vw,23px)/1.24 Arial,Helvetica,sans-serif}
+.mytubeFeed .seriesHeading a{color:#d9d9d9;min-height:40px;font-size:12px}
+.mytubeFeed :is(.primaryAction,.secondaryAction,.preferenceAction,.titleButton,.playButton,.more):focus-visible{
+  outline:2px solid #fff;outline-offset:2px
+}
+@media(max-width:680px){
+  .mytubeFeed .list{gap:19px}
+  .mytubeFeed .visual,.mytubeFeed .playing .visual{border-radius:12px}
+  .mytubeFeed .details,.mytubeFeed .playing .details{padding:10px 1px 1px;gap:6px}
+  .mytubeFeed .details h2,.mytubeFeed .playing .details h2{font-size:16px;line-height:1.32}
+  .mytubeFeed .meta{font-size:11px}
+  .mytubeFeed .description{display:none}
+  .mytubeFeed .actions{gap:7px}
+  .mytubeFeed .primaryAction,.mytubeFeed .preferenceAction{min-height:40px}
+  .mytubeFeed .secondaryAction{min-height:40px;min-width:40px}
+}

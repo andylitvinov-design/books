@@ -48,7 +48,10 @@ jobs:
           cache: npm
       - name: Install pinned repository dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
+      # Production PR Core owns the mandatory full-project TypeScript gate;
+      # standalone and other-base runs retain independent verification.
       - name: TypeScript check
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx tsc --noEmit
       - name: Targeted ESLint
         run: npx eslint components/holistic-language-conversation.tsx components/holistic-support-inline-guide.tsx

@@ -74,9 +74,15 @@ test('all existing publishing, content discovery and manual-versus-verified stat
   for(const signal of [
     'buildManualCalendarIcs','saveCsv(records)','findManualTimeConflicts',
     "publicationStatusLabel(post.status,locale)","post.status==='planned_manual'",
-    "post.status==='manual_done'","post.status==='published'&&post.delivery?.url",
+    "post.status==='manual_done'",
     "post.channel==='telegram'","telegramVerified", "confirmed:true",
   ])assert.ok(studio.includes(signal),'missing '+signal)
+  // Telegram keeps its authenticated URL; Instagram displays a provider ID
+  // and only links to a URL when Meta actually supplies one (Stories may not).
+  assert.ok(studio.includes("post.status==='published'&&post.delivery?.provider==='telegram'&&post.delivery?.url"))
+  assert.ok(studio.includes("post.status==='published'&&post.delivery?.provider==='meta_graph_api'"))
+  assert.ok(studio.includes("post.delivery.providerPostId"))
+  assert.ok(studio.includes('post.delivery.url&&<>'))
   assert.doesNotMatch(studio,/onClick=\{\(\)=>publishGrowthTelegramNowAction\(/)
 })
 
@@ -124,8 +130,9 @@ test('revealed composer and saved posts move keyboard and screen reader focus wi
 test('superseded CI runs for this PR are canceled without canceling manual dispatches',()=>{
   const workflow=read('.github/workflows/hh-growth-studio.yml')
   assert.match(workflow,/concurrency:\n  group: growth-studio-/)
-  assert.match(workflow,/github\.event\.pull_request\.number \|\| github\.ref/)
-  assert.match(workflow,/cancel-in-progress: \$\{\{ github\.event_name == 'pull_request' \}\}/)
+  assert.ok(workflow.includes("format('pr-{0}', github.event.pull_request.number)"), 'synchronize batches group by the same PR')
+  assert.ok(workflow.includes("format('run-{0}', github.run_id)"), 'manual and other events never share the moving-PR cancellation group')
+  assert.ok(workflow.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}"), 'only a first-attempt PR synchronize event cancels a prior PR run; undefined before/after fields are not trusted')
   assert.match(workflow,/workflow_dispatch:/)
   assert.match(workflow,/tests\/growth-studio-benchmark-quick-compose\.test\.mjs/)
 })

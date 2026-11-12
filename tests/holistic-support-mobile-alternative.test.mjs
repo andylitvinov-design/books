@@ -25,17 +25,37 @@ test("alternate support screen is separate, linked and localized without replaci
   assert.match(client, /data-support-mobile-bottom-nav/);
 });
 
-test("personal scores and photos are local-only and accessible; no fake completion or payment", () => {
+test("personal scores stay local; iPhone photos are previewed locally and saved only by explicit private action", () => {
+  const photoHelper = read("lib/mandala/prepare-browser-photo.ts");
   assert.match(client, /type="range" min="1" max="10"/);
   assert.match(client, /aria-valuetext=\{scores\[id\]/);
-  assert.match(client, /type="file" accept="image\/jpeg,image\/png,image\/webp"/);
-  assert.match(client, /URL\.createObjectURL\(file\)/);
+  assert.match(client, /type="file" accept=\{SUPPORT_PHOTO_ACCEPT\}/);
+  // SSR file pickers cannot act before React installs the actual decoder.
+  assert.match(client,/const \[photoHydrated,setPhotoHydrated\] = useState\(false\)/);
+  assert.match(client,/useEffect\(\(\)=>setPhotoHydrated\(true\),\[\]\)/);
+  assert.match(client,/data-support-photo-hydrated=\{photoHydrated\?"true":"false"\}/);
+  assert.match(client,/disabled=\{!photoHydrated\|\|photoBusy\}/);
+  assert.doesNotMatch(client,/disabled=\{photoBusy\} aria-label=\{photoUrl/);
+  assert.match(photoHelper, /SUPPORT_PHOTO_ACCEPT = "image\/\*,\.heic,\.heif,\.jpg,\.jpeg,\.png,\.webp"/);
+  assert.match(photoHelper, /SUPPORT_PHOTO_MAX_INPUT_BYTES = 25_000_000/);
+  assert.match(photoHelper, /SUPPORT_PHOTO_MAX_UPLOAD_BYTES = 1_350_000/);
+  assert.match(photoHelper, /canvas\.toBlob\(resolve, "image\/jpeg"/);
+  assert.match(client, /prepareBrowserPhoto\(file\)/);
+  assert.match(client, /URL\.createObjectURL\(blob\)/);
   assert.match(client, /URL\.revokeObjectURL\(photoUrl\)/);
-  assert.match(client, /8 \* 1024 \* 1024/);
+  // The selected original remains local. Only an explicitly tapped Save action
+  // sends the stripped, resized JPEG to the authenticated first-party route.
+  assert.match(client, /photoBlob && <button/);
+  assert.match(client, /data-support-photo-save/);
+  assert.match(client, /onClick=\{\(\) => \{ void savePhoto\(\); \}\}/);
+  assert.match(client, /fetch\("\/api\/app\/support-photo", \{/);
+  assert.match(client, /method:"POST", credentials:"same-origin"/);
+  assert.match(client, /response\.status === 401/);
+  assert.match(client, /data-support-photo-signin/);
   assert.match(client, /data-support-recommendations/);
   assert.match(client, /recommendSupportByLowestScores\(/);
   assert.match(client, /Videos opened here|Видео открыто здесь|Vídeos abiertos aquí/);
-  assert.doesNotMatch(client, /localStorage|sessionStorage|fetch\(|navigator\.sendBeacon|URLSearchParams|paid:\s*true/);
+  assert.doesNotMatch(client, /localStorage|sessionStorage|navigator\.sendBeacon|URLSearchParams|paid:\s*true/);
   assert.match(read("components/holistic-support-master-gallery.tsx"), /<RemoteEnergySupportBooking/);
   assert.match(client, /<TaoistTalismanCatalog/);
 });
@@ -58,7 +78,9 @@ test("four real recording cards from published sources, not arbitrary stock samp
 test("playback keeps visible selectors and explicit meditation topics filter honestly", () => {
   assert.ok(client.includes('data-playing={playing ? "true" : "false"}'));
   assert.ok(client.includes('theme !== "all"'));
-  assert.ok(client.includes('return eligible.slice(0, 4)'));
+  assert.ok(client.includes('const relevantVideos = choice === "pump" && program !== "all" ? catalogVideos : catalogVideos.slice(0, 4)'),
+    "four featured cards remain, while the same source-backed full catalogue stays available below");
+  assert.ok(client.includes('data-support-meditation-feed'));
   assert.ok(css.includes('.hero[data-playing="true"] .heroFilters'));
   assert.ok(css.includes('.iframeWrap { position: relative'));
   assert.ok(css.includes('aspect-ratio: 16 / 9'));
@@ -90,11 +112,26 @@ test("support mobile dock opens the EXISTING Messages conversations in EN/RU/ES"
   assert.match(client, /href=\{"\/" \+ locale \+ "\/app\/messages\?tab=chats"\} prefetch=\{false\}/);
   for (const pair of ['navMessages: "Messages"', 'navMessages: "Сообщения"', 'navMessages: "Mensajes"'])
     assert.ok(client.includes(pair), pair);
-  // The tab query is critical: without it the existing route initially shows
-  // Orders, not the already-approved person-by-person conversations.
-  assert.match(orders, /q\.has\('tab'\)\?'clients':'orders'/);
+  // Legacy ?tab=chats still opens protected client conversations, while
+  // new direct Messenger visits intentionally open the owner-approved AI tab.
+  assert.ok(orders.includes("requested==='clients'||q.has('requestId')||q.has('to')||q.has('tab')?'clients':"));
+  // The account-scoped Messenger gained a fourth News folder, while Orders,
+  // protected Clients and legacy ?tab=chats must retain their precedence.
+  // Both initial hydration and URL-change handling should preserve the route.
+  for (const expression of [
+    "requested==='orders'||searchParams.has('order')?'orders':requested==='news'?'news':'ai'",
+    "requested==='orders'||q.has('order')?'orders':requested==='news'?'news':'ai'",
+    "requested==='clients'||q.has('requestId')||q.has('to')||q.has('tab')?'clients':",
+    "onClick={()=>chooseSection('orders')}",
+    "onClick={()=>chooseSection('clients')}",
+    "onClick={()=>chooseSection('news')}",
+    'aria-controls="hh-orders-panel"',
+    'aria-controls="hh-clients-panel"',
+    'aria-controls="hh-news-panel"',
+    "hidden={section!=='news'}",
+  ]) assert.ok(orders.includes(expression), "protected Messenger routing regressed: "+expression);
   assert.match(inbox, /VALID_TABS=new Set\(\['chats','requests'\]\)/);
-  assert.match(page, /<MessagesOrdersClients locale=\{locale\}><MessagesHub locale=\{locale\}\/><\/MessagesOrdersClients>/);
+  assert.match(page, /<MessagesOrdersClients locale=\{locale\}>\s*<MessagesHub locale=\{locale\} embedded\/>\s*<\/MessagesOrdersClients>/);
   assert.match(inbox, /<MessagesSimpleInbox/);
   assert.match(inbox, /<DirectMessageInbox/);
   assert.doesNotMatch(client, /<DirectMessageInbox|<CrmMessengerPanel|<MessagesHub/);

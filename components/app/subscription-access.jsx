@@ -233,38 +233,36 @@ function CheckoutAction({ t, planId }) {
   </div>
 }
 
+// New package prices are not a Stripe price-ID switch. Preserve server-confirmed
+// legacy paid access, and do not initiate old-price checkout for new selections.
 function PlanSelection({ t }) {
-  const { status, busy } = useSubscription()
-  const [planId, setPlanId] = useState('advanced')
-  const groupId = useId(), historyId = useId()
-  return <div className={styles.planSelection}>
-    <fieldset className={styles.planFieldset} disabled={Boolean(busy)} aria-describedby={historyId}>
+  const [planId, setPlanId] = useState('free')
+  const groupId = useId()
+  const announced = [{ key: 'free', amount: 0 }, { key: 'practice', amount: 5 },
+    { key: 'master', amount: 20 }, { key: 'pro', amount: 40 }]
+  return <div className={styles.planSelection} data-announced-packages>
+    <fieldset className={styles.planFieldset}>
       <legend>{t.choosePlan}</legend>
-      <div className={styles.planGrid}>{['free', ...PURCHASABLE_PLAN_KEYS].map(key => {
-        const plan = t.plans[key], descriptionId = groupId + '-' + key
-        return <label key={key} className={styles.planCard} data-selected={planId === key}>
-          <span className={styles.planHeading}>
-            <input type="radio" name={groupId} value={key} checked={planId === key}
-              aria-labelledby={descriptionId + '-name ' + descriptionId + '-price'} aria-describedby={descriptionId} onChange={() => setPlanId(key)}/>
-            <span id={descriptionId + '-name'} className={styles.planName}>{plan.name}</span>
-            <span id={descriptionId + '-price'} className={styles.planPrice}>{plan.price}</span>
-          </span>
-          <span id={descriptionId} className={styles.planDescription}>
-            {plan.benefits.map(benefit => <span key={benefit}>{benefit}</span>)}
-            {key === 'premium' && <span>{t.scheduling}</span>}
-          </span>
-        </label>
-      })}</div>
+      <div className={styles.planGrid}>{announced.map(({ key, amount }) => {
+        const descriptionId = groupId + '-' + key
+        return <label key={key}
+        className={styles.planCard} data-selected={planId === key}>
+        <span className={styles.planHeading}>
+          <input type="radio" name={groupId} value={key} checked={planId === key}
+            aria-labelledby={descriptionId + '-name ' + descriptionId + '-price'}
+            aria-describedby={descriptionId}
+            onChange={() => setPlanId(key)} />
+          <span id={descriptionId + '-name'} className={styles.planName}>{key.charAt(0).toUpperCase() + key.slice(1)}</span>
+          <span id={descriptionId + '-price'} className={styles.planPrice}>€{amount} / {t.month}</span>
+        </span>
+        <span id={descriptionId} className={styles.srOnly}>{key === 'free' ? t.freeSelected : t.newPricingNotice}</span>
+      </label>})}</div>
     </fieldset>
-    <p id={historyId} className={styles.fine}>{t.history}</p>
-    {status?.sandbox && <p className={styles.testMode}>{t.sandbox}</p>}
-    <CheckoutAction t={t} planId={planId}/>
+    <p className={styles.notice} role="status">{t.newPricingNotice}</p>
+    {planId === 'free' && <p className={styles.fine}>{t.freeSelected}</p>}
   </div>
 }
 
-/** Nonmodal offer: no backdrop, scroll lock, focus trap, or requirement to buy.
- * Escape dismisses while focus is within the offer. Course controls remain usable.
- */
 export function SubscriptionOffer() {
   const { locale, status, phase, offerKey, offerScope, dismissOffer, error } = useSubscription()
   const t = SUBSCRIPTION_COPY[locale], titleId = useId()

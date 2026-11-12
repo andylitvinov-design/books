@@ -27,7 +27,8 @@ test("free diagnosis button reveals one compact messenger handoff inside its war
   assert.match(banner, /data-home-diagnosis-order/);
   assert.match(banner, /aria-expanded=\{open\}/);
   assert.match(banner, /aria-controls=\{formId\}/);
-  assert.match(banner, /hidden=\{!open\}/);
+  assert.match(banner, /hidden=\{!open \|\| websiteMessengerOnlyUi\(\)\}/);
+  assert.match(banner, /MandatoryMessengerActions/);
   assert.match(banner, /data-home-diagnosis-request/);
   assert.match(banner, /data-home-diagnosis-channel="whatsapp"/);
   assert.match(banner, /data-home-diagnosis-channel="telegram"/);

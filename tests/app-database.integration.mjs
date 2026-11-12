@@ -87,6 +87,24 @@ test('Current State v2 is seeded as a new immutable definition and retains encry
     desired_change: 'Synthetic desired change',
   })
 })
+test('My Practice bootstrap keeps verified account but excludes unrelated assessments', async () => {
+  const full = await repo.bootstrap(v2Actor)
+  assert.ok(full.results.length > 0, 'fixture has private result data')
+  const lite = await repo.bootstrap(v2Actor, { view: 'practice' })
+  assert.equal(lite.account.id, v2Actor.id)
+  assert.equal(lite.account.onboardingState, 'active')
+  assert.deepEqual(lite.results, [])
+  assert.deepEqual(lite.runs, [])
+  assert.deepEqual(lite.requests, [])
+  assert.deepEqual(lite.services, [])
+  assert.deepEqual(lite.savedReports, [])
+  assert.equal(lite.snapshot, null)
+  assert.deepEqual(Object.keys(lite).sort(), Object.keys(full).sort())
+  const another = await repo.bootstrap(b, { view: 'practice' })
+  assert.equal(another.account.id, b.id)
+  assert.deepEqual(another.results, [])
+})
+
 const start = (who = a, def = en) =>
   repo.startRun(who, {
     definitionKey: def.key,
@@ -123,6 +141,258 @@ before(async () => {
   }
 })
 after(closeDatabase)
+test('coaching report storage enforces owner RLS, immutable versions and deletion tombstones',async()=>{
+  const db=await adminClient()
+  const reportId='30000000-0000-4000-8000-000000000001',sessionId='30000000-0000-4000-8000-000000000002'
+  const versionId='30000000-0000-4000-8000-000000000003',operationId='30000000-0000-4000-8000-000000000004'
+  try{
+    const roles=(await db.query("select relname,relrowsecurity,relforcerowsecurity from pg_class join pg_namespace n on n.oid=relnamespace where n.nspname='app_private' and relname=any($1::text[])",[['coaching_reports','coaching_report_versions','coaching_report_receipts']])).rows
+    assert.equal(roles.length,3)
+    assert.ok(roles.every(row=>row.relrowsecurity))
+    assert.equal(roles.find(row=>row.relname==='coaching_report_receipts').relforcerowsecurity,true)
+    for(const name of ['coaching_reports','coaching_report_versions','coaching_report_receipts']){
+      const grants=(await db.query("select has_table_privilege('authenticated',$1,'SELECT') as can_read",['app_private.'+name])).rows[0]
+      assert.equal(grants.can_read,false)
+    }
+    await rawAs(a,'hh_app_backend',async client=>{
+      await client.query("insert into app_private.coaching_session_records(id,account_id,scheme_key,model_key,status,current_phase,prompt_version,method_version,persona_version,idempotency_key,completed_at) values($1,$2,'grow_quick_v1','grow_v1','completed','complete','unknown','unknown','unknown',$1,now())",[sessionId,A])
+    })
+    await assert.rejects(()=>rawAs(a,'hh_app_backend',client=>client.query("insert into app_private.coaching_session_events(session_id,account_id,revision,event_type,actor_type) values($1,$2,1,'session_started','client')",[sessionId,A])),err=>err.code==='42501')
+    await assert.rejects(()=>rawAs(a,'hh_app_backend',client=>client.query("insert into app_private.coaching_reports(id,account_id,session_id,authorship,schema_version,locale,status,report_ciphertext,evidence_manifest_ciphertext,content_hash,current_revision,confirmed_at) values($1,$2,$3,'ai','test','en','confirmed',$4,$4,$5,1,now())",[reportId,A,sessionId,'x'.repeat(128),'a'.repeat(64)])),err=>err.code==='42501')
+    await rawAs(a,'hh_app_backend',async client=>{
+      await client.query("insert into app_private.coaching_session_consents(session_id,account_id,consent_type,accepted,policy_version,purpose) values($1,$2,'session_persistence',true,'test','synthetic session persistence'),($1,$2,'message_archive',true,'test','synthetic message archive')",[sessionId,A])
+      await client.query("insert into app_private.coaching_session_events(session_id,account_id,revision,event_type,actor_type) values($1,$2,1,'session_started','client')",[sessionId,A])
+      await client.query("insert into app_private.coaching_session_consents(session_id,account_id,consent_type,accepted,policy_version,purpose) values($1,$2,'report_storage',true,'test','synthetic report storage')",[sessionId,A])
+      await client.query("insert into app_private.coaching_reports(id,account_id,session_id,authorship,schema_version,locale,status,report_ciphertext,evidence_manifest_ciphertext,content_hash,current_revision,confirmed_at) values($1,$2,$3,'ai','test','en','confirmed',$4,$4,$5,1,now())",[reportId,A,sessionId,'x'.repeat(128),'a'.repeat(64)])
+      await client.query("insert into app_private.coaching_report_versions(id,report_id,account_id,revision,report_ciphertext,evidence_manifest_ciphertext,content_hash,change_reason,editor_kind) values($1,$2,$3,1,$4,$4,$5,'client_confirmation','client')",[versionId,reportId,A,'x'.repeat(128),'a'.repeat(64)])
+      await client.query("insert into app_private.coaching_report_receipts(account_id,operation_id,report_id,report_revision,request_fingerprint,state) values($1,$2,$3,1,$4,'saved')",[A,operationId,reportId,'a'.repeat(64)])
+    })
+    const olderVoice='30000000-0000-4000-8000-000000000010',currentVoice='30000000-0000-4000-8000-000000000011'
+    await rawAs(a,'hh_app_backend',client=>client.query("insert into app_private.coaching_session_consents(id,session_id,account_id,consent_type,accepted,policy_version,purpose,occurred_at) values($1,$3,$4,'voice_transcript_storage',true,'test','synthetic transcript',now()-interval '1 second'),($2,$3,$4,'voice_transcript_storage',true,'test','synthetic transcript',now())",[olderVoice,currentVoice,sessionId,A]))
+    const insertTranscript=(client,consentId)=>client.query("insert into app_private.coaching_session_messages(session_id,account_id,sequence_no,turn_id,speaker,content_kind,content_ciphertext,content_hash,input_mode,locale,consent_event_id) values($1,$2,1,$3,'client','consented_transcript',$4,$5,'voice','en',$6)",[sessionId,A,'30000000-0000-4000-8000-000000000012','x'.repeat(128),'a'.repeat(64),consentId])
+    await assert.rejects(()=>rawAs(a,'hh_app_backend',client=>insertTranscript(client,olderVoice)),err=>err.code==='42501')
+    await rawAs(a,'hh_app_backend',client=>insertTranscript(client,currentVoice))
+    await rawAs(a,'hh_app_backend',client=>client.query("insert into app_private.coaching_session_consents(session_id,account_id,consent_type,accepted,policy_version,purpose,occurred_at) values($1,$2,'voice_transcript_storage',false,'test','synthetic revocation',now()+interval '1 second')",[sessionId,A]))
+    await assert.rejects(()=>rawAs(a,'hh_app_backend',client=>client.query("insert into app_private.coaching_session_messages(session_id,account_id,sequence_no,turn_id,speaker,content_kind,content_ciphertext,content_hash,input_mode,locale,consent_event_id) values($1,$2,2,$3,'client','consented_transcript',$4,$5,'voice','en',$6)",[sessionId,A,'30000000-0000-4000-8000-000000000013','x'.repeat(128),'a'.repeat(64),currentVoice])),err=>err.code==='42501')
+    for(const name of ['coaching_reports','coaching_report_versions','coaching_report_receipts'])
+      assert.equal((await rawAs(b,'hh_app_backend',client=>client.query('select * from app_private.'+name))).rowCount,0)
+    await assert.rejects(()=>rawAs(b,'hh_app_backend',client=>client.query("insert into app_private.coaching_report_versions(id,report_id,account_id,revision,report_ciphertext,evidence_manifest_ciphertext,content_hash,change_reason,editor_kind) values($1,$2,$3,2,$4,$4,$5,'client_confirmation','client')",['30000000-0000-4000-8000-000000000006',reportId,B,'x'.repeat(128),'a'.repeat(64)])))
+    await assert.rejects(()=>rawAs(b,'hh_app_backend',client=>client.query("insert into app_private.coaching_reports(id,account_id,session_id,authorship,schema_version,locale,status,report_ciphertext,evidence_manifest_ciphertext,content_hash,current_revision,confirmed_at) values($1,$2,$3,'ai','test','en','confirmed',$4,$4,$5,1,now())",['30000000-0000-4000-8000-000000000005',A,sessionId,'x'.repeat(128),'a'.repeat(64)])))
+    await assert.rejects(()=>rawAs(a,'hh_app_backend',client=>client.query('update app_private.coaching_report_versions set report_ciphertext=$1 where id=$2',['y'.repeat(128),versionId])))
+    await assert.rejects(()=>rawAs(a,'hh_app_backend',client=>client.query('update app_private.coaching_reports set account_id=$1 where id=$2',[B,reportId])))
+    assert.equal((await rawAs(b,'hh_app_backend',client=>client.query('delete from app_private.coaching_reports where id=$1',[reportId]))).rowCount,0)
+    assert.equal((await rawAs(a,'hh_app_backend',client=>client.query('delete from app_private.coaching_reports where id=$1',[reportId]))).rowCount,1)
+    assert.equal((await rawAs(a,'hh_app_backend',client=>client.query('select * from app_private.coaching_report_versions where report_id=$1',[reportId]))).rowCount,0)
+    assert.equal((await rawAs(a,'hh_app_backend',client=>client.query('select state from app_private.coaching_report_receipts where operation_id=$1',[operationId]))).rows[0].state,'deleted')
+    await assert.rejects(()=>rawAs(a,'hh_app_backend',client=>client.query("insert into app_private.coaching_report_receipts(account_id,operation_id,report_id,report_revision,request_fingerprint,state) values($1,$2,$3,1,$4,'saved')",[A,operationId,reportId,'a'.repeat(64)])),err=>err.code==='23505')
+    const C='30000000-0000-4000-8000-000000000007',SC='30000000-0000-4000-8000-000000000008'
+    const c=actor(C,SC)
+    await db.query('insert into auth.users(id,email) values($1,$2)',[C,'coaching-storage@example.invalid'])
+    await db.query('insert into auth.sessions(id,user_id) values($1,$2)',[SC,C])
+    await db.query("insert into app.accounts(id,status,onboarding_state) values($1,'active','active')",[C])
+    await assert.rejects(()=>rawAs(c,'hh_app_backend',client=>client.query("insert into app_private.coaching_action_items(id,goal_id,account_id,description_ciphertext) values($1,$2,$3,'synthetic-cipher')",[randomUUID(),randomUUID(),C])),err=>err.code==='23503')
+    let ownedAreaId,ownedGoalId
+    await rawAs(c,'hh_app_backend',async client=>{
+      const cSession='30000000-0000-4000-8000-000000000009'
+      await client.query("insert into app_private.coaching_session_records(id,account_id,scheme_key,model_key,status,current_phase,prompt_version,method_version,persona_version,idempotency_key,completed_at) values($1,$2,'grow_quick_v1','grow_v1','completed','complete','unknown','unknown','unknown',$1,now())",[cSession,C])
+      await client.query("insert into app_private.coaching_session_consents(session_id,account_id,consent_type,accepted,policy_version,purpose) values($1,$2,'report_storage',true,'test','synthetic report storage')",[cSession,C])
+      await client.query("insert into app_private.coaching_reports(id,account_id,session_id,authorship,schema_version,locale,status,report_ciphertext,evidence_manifest_ciphertext,content_hash,current_revision,confirmed_at) values($1,$2,$3,'ai','test','en','confirmed',$4,$4,$5,1,now())",[reportId,C,cSession,'x'.repeat(128),'a'.repeat(64)])
+      await client.query("insert into app_private.coaching_report_versions(id,report_id,account_id,revision,report_ciphertext,evidence_manifest_ciphertext,content_hash,change_reason,editor_kind) values($1,$2,$3,1,$4,$4,$5,'client_confirmation','client')",[versionId,reportId,C,'x'.repeat(128),'a'.repeat(64)])
+      await client.query("insert into app_private.coaching_report_receipts(account_id,operation_id,report_id,report_revision,request_fingerprint,state) values($1,$2,$3,1,$4,'saved')",[C,operationId,reportId,'a'.repeat(64)])
+      const planId=randomUUID(),areaId=randomUUID(),goalId=randomUUID(),actionId=randomUUID()
+      ownedAreaId=areaId;ownedGoalId=goalId
+      await client.query('insert into app_private.coaching_life_plans(id,account_id) values($1,$2)',[planId,C])
+      await client.query("insert into app_private.coaching_life_plan_areas(id,plan_id,account_id,area_key,source_report_id) values($1,$2,$3,'body_health',$4)",[areaId,planId,C,reportId])
+      await client.query("insert into app_private.coaching_goals(id,area_id,account_id,source_session_id,source_report_id,title_ciphertext,idempotency_key) values($1,$2,$3,$4,$5,'synthetic-cipher',$1)",[goalId,areaId,C,cSession,reportId])
+      await client.query("insert into app_private.coaching_action_items(id,goal_id,account_id,source_session_id,source_report_id,description_ciphertext) values($1,$2,$3,$4,$5,'synthetic-cipher')",[actionId,goalId,C,cSession,reportId])
+    })
+    // Privileged writes still cannot commit child references owned by another account.
+    for(const [sql,params] of [
+      ["insert into app_private.coaching_goals(id,area_id,account_id,title_ciphertext,idempotency_key) values($1,$2,$3,'synthetic-cipher',$1)",[randomUUID(),ownedAreaId,A]],
+      ["insert into app_private.coaching_action_items(id,goal_id,account_id,description_ciphertext) values($1,$2,$3,'synthetic-cipher')",[randomUUID(),ownedGoalId,A]],
+    ]){
+      await db.query('begin')
+      try{
+        await db.query(sql,params)
+        await assert.rejects(db.query('commit'),err=>err.code==='23503')
+      }finally{await db.query('rollback')}
+    }
+    await db.query('delete from auth.users where id=$1',[C])
+    for(const name of ['coaching_reports','coaching_report_versions','coaching_report_receipts','coaching_life_plans','coaching_life_plan_areas','coaching_goals','coaching_action_items'])
+      assert.equal((await db.query('select * from app_private.'+name+' where account_id=$1',[C])).rowCount,0)
+  }finally{await db.end()}
+})
+test('cross-session permission remains revocable without a plan and is owner scoped',async()=>{
+  const db=await adminClient()
+  const C=randomUUID(),SC=randomUUID(),session=randomUUID(),c=actor(C,SC)
+  try{
+    await db.query('insert into auth.users(id,email) values($1,$2)',[C,'context-consent@example.invalid'])
+    await db.query('insert into auth.sessions(id,user_id) values($1,$2)',[SC,C])
+    await db.query("insert into app.accounts(id,status,onboarding_state) values($1,'active','active')",[C])
+    await rawAs(c,'hh_app_backend',async client=>{
+      await client.query("insert into app_private.coaching_session_records(id,account_id,scheme_key,model_key,status,current_phase,prompt_version,method_version,persona_version,idempotency_key,completed_at) values($1,$2,'grow_quick_v1','grow_v1','completed','complete','test','test','test',$1,now())",[session,C])
+      await client.query("insert into app_private.coaching_session_consents(session_id,account_id,consent_type,accepted,policy_version,purpose,occurred_at) values($1,$2,'cross_session_context',true,'test','synthetic permission',clock_timestamp()+interval '1 minute')",[session,C])
+    })
+    const {readCoachingLifePlan,revokeCoachingPlanContext}=await import('../lib/app/coaching-life-plan.js')
+    const before=await readCoachingLifePlan(config,c)
+    assert.equal(before.plan,null)
+    assert.equal(before.contextPermissions[0].sessionId,session)
+    await assert.rejects(()=>revokeCoachingPlanContext(config,b,{sessionId:session,confirmed:true}),err=>err.code==='COACHING_PLAN_SESSION_NOT_FOUND')
+    await assert.rejects(()=>revokeCoachingPlanContext(config,c,{sessionId:session,confirmed:false}),err=>err.code==='COACHING_PLAN_CONFIRMATION_REQUIRED')
+    assert.equal((await revokeCoachingPlanContext(config,c,{sessionId:session,confirmed:true})).revoked,true)
+    assert.equal((await revokeCoachingPlanContext(config,c,{sessionId:session,confirmed:true})).revoked,true)
+    assert.equal((await readCoachingLifePlan(config,c)).contextPermissions.length,0)
+    const ledger=(await db.query("select accepted from app_private.coaching_session_consents where account_id=$1 and session_id=$2 and consent_type='cross_session_context' order by occurred_at,id",[C,session])).rows
+    assert.deepEqual(ledger.map(row=>row.accepted),[true,false])
+  }finally{await db.query('delete from auth.users where id=$1',[C]);await db.end()}
+})
+test('coaching report preview reads only the authenticated owner session without writing',async()=>{
+  const db=await adminClient()
+  try{
+    const {readFile}=await import('node:fs/promises')
+    await db.query(await readFile(new URL('../supabase/migrations/20261023183700_hh_personal_coaching_sessions.sql',import.meta.url),'utf8'))
+    const {savePersonalCoaching}=await import('../lib/app/personal-coaching.js')
+    const {readCoachingReportDraft}=await import('../lib/app/coaching-report-v2.js')
+    let state=await savePersonalCoaching(config,a,{action:'start',revision:0})
+    state=await savePersonalCoaching(config,a,{action:'answer',revision:state.revision,questionId:'topic',answer:'Make room for rest'})
+    state=await savePersonalCoaching(config,a,{action:'answer',revision:state.revision,questionId:'first_step',answer:'Take a short walk'})
+    state=await savePersonalCoaching(config,a,{action:'complete',revision:state.revision})
+    const request={sessionId:state.course.current.id,revision:state.revision,locale:'en'}
+    const before=(await db.query('select payload_ciphertext,revision from app_private.personal_coaching_sessions where account_id=$1',[A])).rows[0]
+    const preview=await readCoachingReportDraft(config,a,request)
+    assert.equal(preview.report.sessionId,request.sessionId)
+    assert.equal(preview.report.generation.sourceRevision,state.revision)
+    assert.ok(preview.report.evidence.some(item=>item.value==='Make room for rest'))
+    assert.equal(preview.report.actionCandidates[0].status,'draft')
+    await assert.rejects(()=>readCoachingReportDraft(config,b,{...request,revision:0}),err=>err.code==='COACHING_REPORT_SESSION_NOT_FOUND')
+    await assert.rejects(()=>readCoachingReportDraft(config,a,{...request,revision:state.revision-1}),err=>err.code==='PERSONAL_COACH_REVISION_CONFLICT')
+    await assert.rejects(()=>readCoachingReportDraft(config,a,{...request,answers:{topic:'forged'}}),err=>err.code==='UNKNOWN_FIELD')
+    const {saveCoachingReport}=await import('../lib/app/coaching-report-store.js')
+    await assert.rejects(()=>saveCoachingReport(config,a,{...request,operationId:randomUUID(),saveConsent:true,decisions:preview.report.actionCandidates.map(candidate=>({candidateId:candidate.candidateId,status:'accepted'}))}),err=>err.code==='COACHING_REPORT_SOURCE_UNVERSIONED')
+    const after=(await db.query('select payload_ciphertext,revision from app_private.personal_coaching_sessions where account_id=$1',[A])).rows[0]
+    assert.deepEqual(after,before)
+    assert.equal(after.payload_ciphertext.includes('Make room for rest'),false)
+  }finally{await db.end()}
+})
+test('coaching report save requires consent, binds the owner source and survives retries without resurrection',async()=>{
+  const db=await adminClient(),C=randomUUID(),SC=randomUUID(),c=actor(C,SC)
+  try{
+    const {readFile}=await import('node:fs/promises')
+    if(!(await db.query("select to_regclass('app_private.personal_coaching_sessions') as table")).rows[0].table)
+      await db.query(await readFile(new URL('../supabase/migrations/20261023183700_hh_personal_coaching_sessions.sql',import.meta.url),'utf8'))
+    if(!(await db.query("select to_regclass('app_private.coaching_reports') as table")).rows[0].table)
+      await db.query(await readFile(new URL('../supabase/migrations/20261110153118_hh_coaching_report_storage_v1.sql',import.meta.url),'utf8'))
+    await db.query('insert into auth.users(id,email) values($1,$2)',[C,'coaching-report-save@example.invalid'])
+    await db.query('insert into auth.sessions(id,user_id) values($1,$2)',[SC,C])
+    await repo.ensureAccount(c)
+    await repo.onboarding(c,{adult:true,necessary:true,marketing:false,displayName:'Synthetic',uiLocale:'en',timezone:'America/Toronto',goal:'explore'})
+    const {savePersonalCoaching}=await import('../lib/app/personal-coaching.js')
+    const {readCoachingReportDraft}=await import('../lib/app/coaching-report-v2.js')
+    const {saveCoachingReport,listCoachingReports,exportCoachingReports,readCoachingReport,deleteCoachingReport}=await import('../lib/app/coaching-report-store.js')
+    const {loadSchemeQuestions}=await import('../lib/app/personal-coaching-catalog.js')
+    const scheme=await loadSchemeQuestions(db,'grow_quick_v1',{publishedOnly:true})
+    let state=await savePersonalCoaching(config,c,{action:'start',revision:0,schemeKey:'grow_quick_v1',clientQuestion:'How can I make room for rest?'})
+    for(const question of scheme.questions){
+      const answer=question.stepKey==='will'?'Take a short walk':'Make room for rest'
+      state=await savePersonalCoaching(config,c,{action:'answer',revision:state.revision,questionId:question.id,answer})
+    }
+    state=await savePersonalCoaching(config,c,{action:'complete',revision:state.revision})
+    const preview=await readCoachingReportDraft(config,c,{sessionId:state.course.current.id,revision:state.revision,locale:'en'})
+    const request={sessionId:state.course.current.id,revision:state.revision,locale:'en',operationId:randomUUID(),saveConsent:true,decisions:[{candidateId:preview.report.actionCandidates[0].candidateId,status:'accepted'}]}
+    await assert.rejects(()=>saveCoachingReport(config,c,{...request,saveConsent:false}),err=>err.code==='COACHING_REPORT_CONSENT_REQUIRED')
+    await assert.rejects(()=>saveCoachingReport(config,c,{...request,report:{status:'reviewed'}}),err=>err.code==='UNKNOWN_FIELD')
+    const [one,two]=await Promise.all([saveCoachingReport(config,c,request),saveCoachingReport(config,c,request)])
+    assert.equal(one.id,two.id);assert.equal(one.revision,1);assert.equal(two.revision,1)
+    await assert.rejects(()=>saveCoachingReport(config,c,{...request,decisions:[{candidateId:request.decisions[0].candidateId,status:'declined'}]}),err=>err.code==='COACHING_REPORT_OPERATION_REUSED')
+    const saved=(await readCoachingReport(config,c,one.id)).report
+    assert.equal(saved.report.review.status,'confirmed')
+    assert.equal(saved.report.actionCandidates[0].status,'accepted')
+    assert.equal((await listCoachingReports(config,c)).reports.length,1)
+    await assert.rejects(()=>readCoachingReport(config,b,one.id),err=>err.code==='COACHING_REPORT_NOT_FOUND')
+    const {importCoachingReportActions,updateCoachingLifePlanArea,exportCoachingLifePlan,revokeCoachingPlanContext,deleteCoachingPlanAction}=await import('../lib/app/coaching-life-plan.js')
+    const planRequest={reportId:one.id,reportRevision:1,areaKey:'body_health',candidateIds:[request.decisions[0].candidateId],planConsent:true}
+    await rawAs(c,'hh_app_backend',client=>client.query("insert into app_private.coaching_session_consents(session_id,account_id,consent_type,accepted,policy_version,purpose,occurred_at) values($1,$2,'report_storage',false,'test','synthetic revocation',now()+interval '1 second')",[request.sessionId,C]))
+    await assert.rejects(()=>importCoachingReportActions(config,c,planRequest),err=>err.code==='COACHING_REPORT_CONSENT_REQUIRED')
+    for(const table of ['coaching_life_plans','coaching_life_plan_areas','coaching_goals','coaching_action_items','coaching_life_plan_changes'])assert.equal((await db.query('select count(*)::int as n from app_private.'+table+' where account_id=$1',[C])).rows[0].n,0)
+    assert.equal((await db.query("select count(*)::int as n from app_private.coaching_session_consents where account_id=$1 and consent_type='cross_session_context'",[C])).rows[0].n,0)
+    await rawAs(c,'hh_app_backend',client=>client.query("insert into app_private.coaching_session_consents(session_id,account_id,consent_type,accepted,policy_version,purpose,occurred_at) values($1,$2,'report_storage',true,'test','synthetic renewed consent',now()+interval '2 seconds')",[request.sessionId,C]))
+    await rawAs(c,'hh_app_backend',client=>client.query("insert into app_private.coaching_session_consents(session_id,account_id,consent_type,accepted,policy_version,purpose,occurred_at) values($1,$2,'cross_session_context',false,'test','synthetic past withdrawal',clock_timestamp()+interval '1 minute')",[request.sessionId,C]))
+    await assert.rejects(()=>importCoachingReportActions(config,b,planRequest),err=>err.code==='COACHING_REPORT_NOT_FOUND')
+    const imported=await importCoachingReportActions(config,c,planRequest)
+    assert.equal(imported.imported,1)
+    assert.equal((await db.query("select accepted from app_private.coaching_session_consents where account_id=$1 and session_id=$2 and consent_type='cross_session_context' order by occurred_at desc,id desc limit 1",[C,request.sessionId])).rows[0].accepted,true)
+    assert.equal((await db.query('select count(*)::int as n from app_private.coaching_action_items where account_id=$1',[C])).rows[0].n,1)
+    await revokeCoachingPlanContext(config,c,{sessionId:request.sessionId,confirmed:true})
+    assert.equal((await importCoachingReportActions(config,c,planRequest)).imported,0)
+    assert.equal((await db.query("select accepted from app_private.coaching_session_consents where account_id=$1 and session_id=$2 and consent_type='cross_session_context' order by occurred_at desc,id desc limit 1",[C,request.sessionId])).rows[0].accepted,false)
+    await updateCoachingLifePlanArea(config,c,{areaKey:'body_health',revision:1,currentState:'Synthetic current state',desiredState:'Synthetic desired state',obstacles:'Synthetic obstacle',selfRating:4})
+    const exportedPlan=await exportCoachingLifePlan(config,c)
+    assert.equal(exportedPlan.areas[0].currentState,'Synthetic current state')
+    assert.equal(exportedPlan.actions.length,1)
+    assert.ok(exportedPlan.changes.some(change=>change.snapshot.currentState==='Synthetic current state'))
+    assert.ok(exportedPlan.consents.some(event=>event.consent_type==='cross_session_context'))
+    assert.doesNotMatch(JSON.stringify(exportedPlan),/ciphertext/)
+    assert.equal((await exportCoachingLifePlan(config,b)).plans.some(plan=>plan.account_id===C),false)
+    const actionRow=(await db.query('select id,description_ciphertext from app_private.coaching_action_items where account_id=$1',[C])).rows[0]
+    await assert.rejects(()=>rawAs(b,'hh_app_backend',client=>client.query('select app_private.erase_own_coaching_action($1)',[actionRow.id])),err=>err.code==='42501')
+    await assert.rejects(()=>rawAs(c,'hh_app_backend',client=>client.query("delete from app_private.coaching_life_plan_changes where entity_kind='action' and entity_id=$1",[actionRow.id])),err=>err.code==='42501')
+    await assert.rejects(()=>rawAs(c,'hh_app_backend',client=>client.query('insert into app_private.coaching_erased_action_receipts(account_id,source_key) values($1,$2)',[C,'a'.repeat(64)])),err=>err.code==='42501')
+    await assert.rejects(()=>rawAs(c,'hh_app_backend',async client=>{await client.query('select app_private.erase_own_coaching_action($1)',[actionRow.id]);throw new Error('synthetic rollback')}),/synthetic rollback/)
+    assert.equal((await db.query('select count(*)::int as n from app_private.coaching_action_items where id=$1',[actionRow.id])).rows[0].n,1)
+    assert.equal((await db.query('select count(*)::int as n from app_private.coaching_erased_action_receipts where account_id=$1',[C])).rows[0].n,0)
+    await db.query('update app_private.coaching_action_items set description_ciphertext=$1 where id=$2',['unknown',actionRow.id])
+    await assert.rejects(()=>exportCoachingLifePlan(config,c),err=>err.code==='PRIVATE_DATA_UNAVAILABLE')
+    await db.query('update app_private.coaching_action_items set description_ciphertext=$1 where id=$2',[actionRow.description_ciphertext,actionRow.id])
+    await assert.rejects(()=>deleteCoachingPlanAction(config,b,actionRow.id,{confirmed:true}),err=>err.code==='COACHING_PLAN_ACTION_NOT_FOUND')
+    await assert.rejects(()=>deleteCoachingPlanAction(config,c,actionRow.id,{confirmed:false}),err=>err.code==='COACHING_PLAN_CONFIRMATION_REQUIRED')
+    assert.equal((await deleteCoachingPlanAction(config,c,actionRow.id,{confirmed:true})).deleted,true)
+    assert.equal((await db.query("select count(*)::int as n from app_private.coaching_life_plan_changes where account_id=$1 and entity_kind='action' and entity_id=$2",[C,actionRow.id])).rows[0].n,0)
+    assert.equal((await db.query('select count(*)::int as n from app_private.coaching_action_items where account_id=$1',[C])).rows[0].n,0)
+    assert.match((await db.query('select source_key from app_private.coaching_erased_action_receipts where account_id=$1',[C])).rows[0].source_key,/^[a-f0-9]{64}$/)
+    assert.equal((await rawAs(b,'hh_app_backend',client=>client.query('select * from app_private.coaching_erased_action_receipts'))).rowCount,0)
+    assert.equal((await readCoachingReport(config,c,one.id)).report.id,one.id)
+    await assert.rejects(()=>importCoachingReportActions(config,c,planRequest),err=>err.code==='COACHING_PLAN_ACTION_DELETED')
+    await assert.rejects(()=>importCoachingReportActions(config,c,{...planRequest,reportId:one.id.toUpperCase()}),err=>err.code==='COACHING_PLAN_ACTION_DELETED')
+    await db.query('delete from app_private.coaching_life_plans where account_id=$1',[C])
+    const cipher=(await db.query('select report_ciphertext from app_private.coaching_report_versions where account_id=$1',[C])).rows[0].report_ciphertext
+    assert.equal(cipher.includes('Make room for rest'),false)
+    const consent=(await db.query("select accepted from app_private.coaching_session_consents where account_id=$1 and session_id=$2 and consent_type='report_storage'",[C,request.sessionId])).rows
+    assert.equal(consent.length,3);assert.equal(consent.filter(event=>event.accepted).length,2)
+    assert.equal((await exportCoachingReports(config,c)).reports.length,1)
+    const otherReport=randomUUID()
+    await rawAs(c,'hh_app_backend',client=>client.query("insert into app_private.coaching_reports(id,account_id,session_id,report_kind,authorship,schema_version,locale,status,report_ciphertext,evidence_manifest_ciphertext,content_hash,current_revision,confirmed_at) values($1,$2,$3,'human_specialist','human','other','en','confirmed',$4,$4,$5,1,now())",[otherReport,C,request.sessionId,'x'.repeat(128),'a'.repeat(64)]))
+    await assert.rejects(()=>exportCoachingReports(config,c),err=>err.code==='PRIVATE_DATA_UNAVAILABLE')
+    await assert.rejects(()=>deleteCoachingReport(config,c,otherReport,{confirmed:true}),err=>err.code==='COACHING_REPORT_NOT_FOUND')
+    assert.equal((await rawAs(c,'hh_app_backend',client=>client.query('delete from app_private.coaching_reports where id=$1',[otherReport]))).rowCount,1)
+    await assert.rejects(()=>deleteCoachingReport(config,c,one.id,{confirmed:false}),err=>err.code==='COACHING_REPORT_CONFIRMATION_REQUIRED')
+    assert.equal((await deleteCoachingReport(config,c,one.id,{confirmed:true})).deleted,true)
+    assert.equal((await listCoachingReports(config,c)).reports.length,0)
+    await assert.rejects(()=>saveCoachingReport(config,c,request),err=>err.code==='COACHING_REPORT_DELETED')
+    // Recreate the source row with the same revision while another save waits.
+    // A pre-lock read would save the old session despite its replacement.
+    const replacement=structuredClone(state.course)
+    replacement.current.id=randomUUID()
+    const replacementCipher=seal(replacement,{accountId:C,recordId:C,field:'personal.coaching'},config)
+    const observer=await adminClient()
+    try{
+      await db.query('begin')
+      await db.query('delete from app_private.personal_coaching_sessions where account_id=$1',[C])
+      await db.query('insert into app_private.personal_coaching_sessions(account_id,payload_ciphertext,revision) values($1,$2,$3)',[C,replacementCipher,state.revision])
+      const waiting=saveCoachingReport(config,c,{...request,operationId:randomUUID()}).then(value=>({value}),error=>({error}))
+      let blocked=false
+      for(let attempt=0;attempt<100&&!blocked;attempt++){
+        const result=await observer.query("select exists(select 1 from pg_stat_activity where application_name='holistic-house-app' and cardinality(pg_blocking_pids(pid))>0) as blocked")
+        blocked=result.rows[0].blocked
+        if(!blocked)await new Promise(resolve=>setTimeout(resolve,20))
+      }
+      assert.equal(blocked,true,'save must be waiting on the replacing transaction')
+      await db.query('commit')
+      const outcome=await waiting
+      assert.equal(outcome.error?.code,'COACHING_REPORT_SESSION_NOT_FOUND')
+      assert.equal((await db.query('select count(*)::int as count from app_private.coaching_reports where account_id=$1',[C])).rows[0].count,0)
+    }finally{await db.query('rollback').catch(()=>{});await observer.end()}
+  }finally{await db.query('delete from auth.users where id=$1',[C]);await db.end()}
+})
 test('snapshot SQL uses exact definition-scale identity and retains source security', async t => {
   const db = await adminClient()
   try {
@@ -1255,6 +1525,32 @@ function minimumMonitoringAnswers(definition) {
 test('every published monitoring test completes through the repository and returns a readable result', async () => {
   const items = MONITORING_CATALOG.filter((item) => item.startable)
   assert.ok(items.length >= 42, 'the published catalog should not shrink when adding instruments')
+  // Fail with the exact missing source version instead of a late generic 503.
+  // This is a read-only CI seed parity check, never a synthetic enrollment.
+  const expectedVersions = items.map((item) => {
+    const locale = item.instrumentLocale === 'dynamic' ? 'en' : item.instrumentLocale
+    const def = getAssessmentDefinition(item.key, item.version, locale)
+    return { id: def.id, key: item.key, version: item.version, locale, hash: def.contentHash }
+  })
+  const admin = await adminClient()
+  let storedVersions
+  try {
+    storedVersions = (await admin.query(
+      'select id,content_hash from app.assessment_versions where id=any($1::uuid[])',
+      [expectedVersions.map((version) => version.id)],
+    )).rows
+  } finally {
+    await admin.end()
+  }
+  const actualHashes = new Map(storedVersions.map((row) => [row.id, row.content_hash]))
+  const missingVersions = expectedVersions.filter((v) => actualHashes.get(v.id) !== v.hash)
+  assert.equal(
+    missingVersions.length, 0,
+    'UNSEEDED_MONITORING_FIXTURE: ' + missingVersions
+      .map((v) => v.key + '@' + v.version + '/' + v.locale)
+      .join(', '),
+  )
+
   const created = []
 
   for (const item of items) {
@@ -2022,7 +2318,10 @@ test('private session share grants enforce per-consultation ownership under real
     await db.query('create schema if not exists storage')
     await db.query('create table if not exists storage.buckets (id text primary key,name text not null,public boolean,file_size_limit bigint,allowed_mime_types text[])')
     const sql=await readFile(new URL('../sql/client-delivery-sessions-20261015.sql',import.meta.url),'utf8')
-    await db.query(sql)
+    // setup() already applied the approved SQL once; duplicate CREATE POLICY fails.
+    assert.match(sql,/create policy hh_delivery_server_only/)
+    const parents=await db.query("select to_regclass('app_private.client_delivery_sessions') as sessions,to_regclass('app_private.client_delivery_assets') as assets")
+    assert.ok(parents.rows[0].sessions&&parents.rows[0].assets)
     // The private PDF extension is additive and does not grant browser DB access.
     const pdfExtension=await readFile(new URL('../sql/client-delivery-session-private-pdfs-20261015.sql',import.meta.url),'utf8')
     await db.query(pdfExtension)
@@ -2311,4 +2610,11 @@ test('guest Bach v2 EN/RU lifecycle retains weighted themes and session isolatio
     assert.deepEqual((await guestRepo.getResult(owner, result.id)).dimensions, result.dimensions)
     await assert.rejects(() => guestRepo.getResult(outsider, result.id), /NOT_FOUND/)
   }
+})
+
+// Companion account-memory security acceptance is part of this EXISTING isolated
+// App R1 Postgres suite, not a new runner or unrelated media CI workflow.
+// Execute only after the other fixture tests, using fresh synthetic owners.
+test('Holistic Companion memory two-owner RLS, session, consent and erase', async () => {
+  await import('../scripts/verify-agent-memory-rls-ci.mjs')
 })

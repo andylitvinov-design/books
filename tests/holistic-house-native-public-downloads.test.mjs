@@ -93,12 +93,12 @@ test('iOS links only direct to verified Apple App Store; unsigned IPA and TestFl
   }
 })
 
-test('mobile public install landing is native-first, localized and has an explicitly separate PWA fallback',()=>{
+test('public install page prioritizes the working PWA, while unreleased native installers fail closed',()=>{
   const page=read('app/[locale]/install/page.jsx')
   const css=read('app/[locale]/install/install.module.css')
   const banner=read('components/free-mobile-app-banner.tsx')
   assert.match(page,/getNativePublicDownloads\(nativeReleases\)/)
-  assert.ok(page.indexOf('data-hh-native-downloads')<page.indexOf('data-hh-pwa-alternative'))
+  assert.ok(page.indexOf('data-hh-pwa-alternative')<page.indexOf('data-hh-native-downloads'))
   for(const label of ['Настоящее приложение для iPhone и Android','Real iPhone and Android applications','Aplicaciones reales para iPhone y Android']){
     assert.ok(page.includes(label),label)
   }
@@ -125,4 +125,31 @@ test('same-site endpoints fail closed without approval; never proxy binary bytes
     assert.match(src,/NextResponse.redirect\(target/)
     assert.doesNotMatch(src,/fetch\(|readFileSync|storage\.from|cookies\(|api\.github\.com/)
   }
+})
+
+test('direct Android APK top CTA appears only after verified native release gates',()=>{
+  const page=read('app/[locale]/install/page.jsx')
+  const registry=current()
+  assert.equal(getNativePublicDownloads(registry).androidUrl,null)
+  assert.match(page,/downloads\.androidUrl && <section/)
+  assert.match(page,/data-hh-direct-apk-ready/)
+  assert.match(page,/href="\/api\/native-download\/android"/)
+  assert.match(page,/Скачать APK с сайта/)
+  assert.match(page,/без Google Play/)
+  assert.match(page,/без App Store/)
+  const gate=read('lib/native/public-downloads.mjs')
+  assert.match(gate,/ownerApproved !== true/)
+  assert.match(gate,/process\.env\.HH_NATIVE_PUBLIC_RELEASES_ENABLED === 'true'/)
+})
+
+test('rendered mobile install checker supports signed APK launch without weakening fail-closed pending state',()=>{
+  const checker=read('scripts/verify-hh-install-browser.mjs')
+  assert.match(checker,/nativeAndroidReady:/)
+  assert.match(checker,/directApkReady:/)
+  assert.match(checker,/nativeIosReady:/)
+  assert.match(checker,/assert\.notEqual\(measurements\.nativeAndroidPending,measurements\.nativeAndroidReady/)
+  assert.match(checker,/assert\.equal\(measurements\.directApkReady,measurements\.nativeAndroidReady/)
+  assert.match(checker,/assert\.equal\(measurements\.directApkHref,'\/api\/native-download\/android'/)
+  assert.match(checker,/directApkAction\.height>=44/)
+  assert.doesNotMatch(checker,/nativeIosPending&&measurements\.nativeAndroidPending/)
 })

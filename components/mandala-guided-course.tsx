@@ -1,13 +1,18 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import Link from "next/link";
-import { BookOpen, Check, ChevronDown, Download, Headphones, LockKeyhole, Pause, Play, ShieldCheck, Sparkles, Target } from "lucide-react";
+import { MeditationCourseEnquiry } from "./meditation-course-enquiry";
+import { ArrowRight, BookOpen, Briefcase, Check, ChevronDown, Download, Headphones, Heart, LockKeyhole, Moon, Pause, Play, RefreshCw, ShieldCheck, Sparkles, Sun, Target, Flower2 } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import type { VideoTheme } from "@/lib/mandala/holistic-video-themes";
 import { affirmationGoalCatalog } from "@/lib/mandala/video-affirmations";
 import type { VideoAffirmationGoal } from "@/lib/mandala/video-affirmations";
 import { buildPersonalImageryCourse, COURSE_THEMES, selectVerifiedCourseEvidence, suggestGuidedGoalsFromProfile } from "@/lib/mandala/personal-guided-course.mjs";
+import { chooseMeditationCourseTheme } from "@/lib/mandala/adaptive-meditation-course.mjs";
+import { buildPersonalMeditationScript, isMeditationSafetyResponse } from "@/lib/mandala/personal-meditation-script.mjs";
+import { selectResourcePractice } from "@/lib/mandala/resource-practice-selector.mjs";
 import css from "./mandala-guided-course.module.css";
 
 type Evidence = {axis:string;sourceTitle:string;measuredAt:string;definitionKey:string;percent:number};
@@ -18,6 +23,8 @@ export type GuidedMeditationFocus = {
 };
 type Props = {
   onContextChange?: (focus:GuidedMeditationFocus)=>void;
+  onAddMeditation?: (script:string)=>void;
+  onOmitMeditation?: ()=>void;
   locale:PublicLocale; theme:VideoTheme; selfRatings:Partial<Record<VideoTheme,number>>;
   disabled:boolean; onApplyFreeVideo:(session:Session)=>void;
 };
@@ -38,7 +45,7 @@ const copy = {
     listen:"Listen to script on this device",stop:"Stop reading",script:"Text + voice script",download:"Save free script",
     spoken:"Device read-aloud is a preview, not a downloadable narrated audio file.",
     package:"Full 8-session package",packInfo:"8 reviewed storyboards, scripts, narrated audio meditations and 8 videos — available only after practitioner approval, confirmed payment and actual delivery. The remaining seven are previews, not unlocked purchases.",
-    request:"Discuss the full package",locked:"Review and verified access needed",
+    request:"Request the course",locked:"Review and verified access needed",
     safeguard:"Pause or skip any image that feels uncomfortable. Do not use this for trauma exposure, crisis care or diagnosis. A qualified practitioner must review any clinical treatment plan.",
     privacy:"Private: no upload, third-party AI, CRM, marketing tags or persistent browser storage. Closing the page clears the profile preview.",
     focusLabel:"YOUR PERSONAL FOCUS",focusHeading:"What matters most to you now?",
@@ -66,7 +73,7 @@ const copy = {
     listen:"Прослушать текст на устройстве",stop:"Остановить озвучку",script:"Текст и сценарий медитации",download:"Скачать текст №1",
     spoken:"Озвучивание устройством — превью, это ещё не скачиваемый аудиофайл с голосом.",
     package:"Полный пакет из 8 сессий",packInfo:"8 проверенных сюжетов, тексты, озвученные аудиомедитации и 8 видео — после проверки специалистом, подтверждённой оплаты и фактической доставки. Остальные 7 пока только анонс.",
-    request:"Обсудить полный пакет",locked:"После проверки и подтверждения доступа",
+    request:"Заказать курс",locked:"После проверки и подтверждения доступа",
     safeguard:"Если образ неприятен — остановитесь или пропустите. Программа не предназначена для работы с травмой, кризисом или диагностики. Клиническую программу проверяет специалист.",
     privacy:"Приватно: нет загрузки в сторонний ИИ, CRM, рекламные системы или постоянное хранилище браузера. При закрытии страницы данные исчезают.",
     focusLabel:"ЛИЧНЫЙ ФОКУС",focusHeading:"Что для вас важно сейчас?",
@@ -94,7 +101,7 @@ const copy = {
     listen:"Escuchar guion en este dispositivo",stop:"Detener audio",script:"Texto y guion",download:"Descargar guion gratis",
     spoken:"La voz del dispositivo es una vista previa, no un archivo de narración descargable.",
     package:"Paquete completo de 8 sesiones",packInfo:"8 guiones revisados, textos, meditaciones narradas y 8 vídeos, solo tras revisión profesional, pago confirmado y entrega real. Los 7 restantes son avances.",
-    request:"Consultar el paquete",locked:"Requiere revisión y acceso confirmado",
+    request:"Solicitar el curso",locked:"Requiere revisión y acceso confirmado",
     safeguard:"Detente o salta cualquier imagen incómoda. No es para exposición a traumas, crisis ni diagnósticos. Un profesional debe revisar los planes clínicos.",
     privacy:"Privado: sin envío a IA externa, CRM, anuncios ni almacenamiento permanente. Los datos desaparecen al cerrar.",
     focusLabel:"TU ENFOQUE PERSONAL",focusHeading:"¿Qué es importante para ti ahora?",
@@ -108,8 +115,155 @@ const copy = {
   }
 } as const;
 
-export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFreeVideo,onContextChange}:Props) {
+const flowCopy = {
+  ru:{
+    focus:"Фокус практики",state:"Состояние",vector:"Вектор развития",
+    stateQuestion:"Как вы хотите себя чувствовать?",vectorQuestion:"В каком направлении хотите изменений?",
+    stateHint:"Выберите желаемое состояние. Можно уточнить его своими словами ниже.",
+    vectorHint:"Выберите область развития. Текущие обстоятельства можно добавить ниже.",
+    contextLabel:"Что сейчас важно учесть? · необязательно",
+    contextPlaceholder:"Например: после рабочего дня сложно переключиться и отдохнуть",
+    focusRequired:"Выберите желаемое состояние.",vectorRequired:"Выберите направление развития.",transferLabel:"В повседневной жизни",
+    stateOptions:{calm:"Спокойствие и сон",support:"Опора в себе",energy:"Больше энергии",connection:"Близость и тепло",confidence:"Уверенность в себе",clarity:"Ясность и гармония"},
+    meditation:"Сформировать медитацию",generateMeditation:"Сгенерировать медитацию",meditationText:"Текст медитации",
+    include:"Добавить медитацию к видео",omit:"Не добавлять",included:"Текст передан в редактор озвучки ниже. Озвучка и видео создаются только после отдельных подтверждений.",
+    omitted:"Медитация останется отдельным текстом, в видео она не добавляется.",local:"Персональный текст формируется на устройстве без отправки результатов тестов внешнему ИИ.",
+    practice:"Практика или ритуал",ritual:"Ритуал",exercise:"Упражнение",daily:"Практика",
+    practiceLead:"Небольшая практика по выбранному фокусу. Можно остановиться или пропустить любой шаг.",
+    refreshPractice:"Другой вариант",program:"Личная программа развития",generateProgram:"Сгенерировать программу из 8 сессий",
+    personal:"Личная медитация",
+    personalIntro:"Персональная практика под ваш запрос и желаемое состояние.",
+    personalTheme:"Тема",
+    personalNow:"Сейчас",
+    personalDesired:"Желаемый результат",
+    personalUnknown:"По вашему выбору",
+    personalButton:"Создать личную медитацию",
+    personalNote:"Откроется существующий редактор. Текст, голос и сохранение — по вашему выбору.",
+    personalFeatures:["Индивидуальный текст","Ваш темп и настроение","Сохранение текста"],
+    ritualHeading:"Личный ритуал",
+    ritualIntro:"Небольшой ритуал с настроем, символическим действием и мягкой практикой.",
+    ritualMomentTitle:"Выберите подходящий момент",
+    ritualMoments:{"morning":"Утро","evening":"Вечер","transition":"Новый этап","recovery":"Восстановление"},
+    ritualCues:{"morning":"Начните утро с короткой паузы и одного посильного намерения.","evening":"Завершите день бережно, отпуская лишние задачи.","transition":"Отметьте небольшой шаг в новый этап, без необходимости торопиться.","recovery":"Выберите отдых и опору; можно остановиться в любой момент."},
+    ritualButton:"Сформировать ритуал",
+    ritualFormats:"Другие форматы по этой же цели",
+    programLead:"8 практик по вашим целям · результаты тестов только по согласию",
+    programStages:["Знакомство","Опора","Гибкость","Ресурсы","Границы","Шаги","Выбор","Интеграция"],
+    benefitsHeading:"Что вы получите",
+    benefits:[["Пошаговый путь","Восемь связанных тем от старта к интеграции"],["Персональные практики","Образы, упражнения и темы по вашему запросу"],["Рефлексия","Возможность замечать изменения после каждой практики"]],
+    progress:"Этапы составления",
+    generate:"Сгенерировать программу из 8 сессий",
+    companion:"Дополнительные настройки и результаты тестов по согласию"
+  },
+  en:{
+    focus:"Practice focus",state:"Present state",vector:"Development direction",
+    stateQuestion:"How would you like to feel?",vectorQuestion:"Which area would you like to develop?",
+    stateHint:"Choose the state you want to nurture. Add a personal note below if useful.",
+    vectorHint:"Choose a development area. Your current circumstances are optional.",
+    contextLabel:"What should we keep in mind? · optional",contextPlaceholder:"For example: it is hard to switch off and rest after work",
+    focusRequired:"Choose a desired state first.",vectorRequired:"Choose a development direction first.",transferLabel:"Everyday transfer",
+    stateOptions:{calm:"Calm and sleep",support:"Inner support",energy:"More energy",connection:"Closeness and warmth",confidence:"Self-confidence",clarity:"Clarity and harmony"},
+    meditation:"Create your meditation",generateMeditation:"Generate meditation",meditationText:"Meditation script",
+    include:"Add meditation to video",omit:"Do not add",included:"Script sent to the narration editor below. Voice and video require separate explicit actions.",
+    omitted:"Your meditation stays as a separate text and will not be in the video.",local:"Script is assembled on this device; test results are not sent to outside AI.",
+    practice:"Practice or ritual",ritual:"Ritual",exercise:"Exercise",daily:"Practice",
+    practiceLead:"A small practice around your chosen focus. Pause or skip any step.",
+    refreshPractice:"Try another",program:"Personal development plan",generateProgram:"Create my 8-session programme",
+    personal:"Personal meditation",
+    personalIntro:"A personal practice shaped by your focus and desired state.",
+    personalTheme:"Theme",
+    personalNow:"Right now",
+    personalDesired:"Desired outcome",
+    personalUnknown:"Your selected focus",
+    personalButton:"Create personal meditation",
+    personalNote:"Opens the existing editor. You choose the text, voice and local save actions.",
+    personalFeatures:["Individual script","Your pace and mood","Save the text"],
+    ritualHeading:"Personal ritual",
+    ritualIntro:"A gentle ritual with an intention, symbolic action and short practice.",
+    ritualMomentTitle:"Choose a suitable moment",
+    ritualMoments:{"morning":"Morning","evening":"Evening","transition":"New chapter","recovery":"Restore"},
+    ritualCues:{"morning":"Start with a quiet pause and one manageable intention.","evening":"Close the day gently and put down what can wait.","transition":"Mark a small new beginning without rushing.","recovery":"Choose rest and support; stop whenever you wish."},
+    ritualButton:"Compose my ritual",
+    ritualFormats:"Other practices for this focus",
+    programLead:"8 practices for your goals · saved tests only with consent",
+    programStages:["Explore","Support","Flexibility","Resources","Boundaries","Steps","Choice","Integration"],
+    benefitsHeading:"What you receive",
+    benefits:[["Step-by-step journey","Eight connected themes from a starting point to integration"],["Personal practices","Imagery, exercises and themes for your request"],["Reflection","Room to notice changes after each practice"]],
+    progress:"Steps of creation",
+    generate:"Create my 8-session programme",
+    companion:"Optional settings and test results with consent"
+  },
+  es:{
+    focus:"Enfoque de la práctica",state:"Estado",vector:"Dirección de desarrollo",
+    stateQuestion:"¿Cómo te gustaría sentirte?",vectorQuestion:"¿En qué área quieres avanzar?",
+    stateHint:"Elige el estado que deseas cultivar. Puedes añadir una nota personal abajo.",
+    vectorHint:"Elige un área de desarrollo. Tu situación actual es opcional.",
+    contextLabel:"¿Qué debemos tener en cuenta? · opcional",contextPlaceholder:"Por ejemplo: me cuesta desconectar y descansar después del trabajo",
+    focusRequired:"Elige primero un estado deseado.",vectorRequired:"Elige primero una dirección de desarrollo.",transferLabel:"En la vida diaria",
+    stateOptions:{calm:"Calma y descanso",support:"Apoyo interior",energy:"Más energía",connection:"Cercanía y calidez",confidence:"Confianza en mí",clarity:"Claridad y armonía"},
+    meditation:"Crear meditación",generateMeditation:"Generar meditación",meditationText:"Texto de meditación",
+    include:"Añadir meditación al vídeo",omit:"No añadir",included:"Texto enviado al editor de voz. La voz y el vídeo requieren acciones y consentimientos separados.",
+    omitted:"Tu meditación seguirá siendo un texto separado.",local:"El texto se crea en tu dispositivo; las pruebas no se envían a una IA externa.",
+    practice:"Práctica o ritual",ritual:"Ritual",exercise:"Ejercicio",daily:"Práctica",
+    practiceLead:"Una breve práctica según tu enfoque. Puedes detener o saltar cualquier paso.",
+    refreshPractice:"Otra variante",program:"Programa de desarrollo personal",generateProgram:"Crear programa de 8 sesiones",
+    personal:"Meditación personal",
+    personalIntro:"Una práctica personalizada según tu enfoque y estado deseado.",
+    personalTheme:"Tema",
+    personalNow:"Ahora",
+    personalDesired:"Resultado deseado",
+    personalUnknown:"Tu enfoque elegido",
+    personalButton:"Crear meditación personal",
+    personalNote:"Abre el editor existente. Tú eliges el texto, la voz y cómo guardar el texto.",
+    personalFeatures:["Texto personal","Tu ritmo y estado de ánimo","Guardar el texto"],
+    ritualHeading:"Ritual personal",
+    ritualIntro:"Un ritual sencillo con intención, gesto simbólico y práctica suave.",
+    ritualMomentTitle:"Elige un momento",
+    ritualMoments:{"morning":"Mañana","evening":"Noche","transition":"Nueva etapa","recovery":"Recuperación"},
+    ritualCues:{"morning":"Empieza con una pausa y una intención alcanzable.","evening":"Termina el día con amabilidad y deja ir tareas pendientes.","transition":"Marca un pequeño comienzo sin prisa.","recovery":"Elige descanso y apoyo. Puedes detenerte cuando quieras."},
+    ritualButton:"Crear mi ritual",
+    ritualFormats:"Otros formatos para este enfoque",
+    programLead:"8 prácticas según tus metas · pruebas guardadas solo con permiso",
+    programStages:["Conocer","Apoyo","Flexibilidad","Recursos","Límites","Pasos","Elección","Integración"],
+    benefitsHeading:"Qué recibirás",
+    benefits:[["Camino paso a paso","Ocho temas conectados, del inicio a la integración"],["Prácticas personales","Imágenes y ejercicios según tu solicitud"],["Reflexión","Espacio para notar cambios tras cada práctica"]],
+    progress:"Pasos de creación",
+    generate:"Crear programa de 8 sesiones",
+    companion:"Opciones y pruebas con consentimiento"
+  }
+} as const;
+const stateOptions = [
+  {id:"calm",theme:"health" as VideoTheme,Icon:Moon},
+  {id:"support",theme:"goals" as VideoTheme,Icon:Briefcase},
+  {id:"energy",theme:"energy" as VideoTheme,Icon:Sun},
+  {id:"connection",theme:"relationships" as VideoTheme,Icon:Heart},
+  {id:"confidence",theme:"goals" as VideoTheme,Icon:Target},
+  {id:"clarity",theme:"life" as VideoTheme,Icon:Flower2}
+] as const;
+const vectorOptions = [
+  {id:"energy",theme:"energy" as VideoTheme,Icon:Sun},
+  {id:"money",theme:"money" as VideoTheme,Icon:Briefcase},
+  {id:"relationships",theme:"relationships" as VideoTheme,Icon:Heart},
+  {id:"goals",theme:"goals" as VideoTheme,Icon:Target},
+  {id:"life",theme:"life" as VideoTheme,Icon:Flower2},
+  {id:"health",theme:"health" as VideoTheme,Icon:Moon}
+] as const;
+type PracticeKind = "ritual" | "exercise" | "daily";
+const ritualMoments = ["morning","evening","transition","recovery"] as const;
+type RitualMoment = (typeof ritualMoments)[number];
+
+export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFreeVideo,onContextChange,onAddMeditation,onOmitMeditation}:Props) {
   const t = copy[locale];
+  const f = flowCopy[locale];
+  const [focusMode,setFocusMode] = useState<"state"|"vector">("state");
+  const [selectedState,setSelectedState] = useState<string|null>(null);
+  const [meditationOpen,setMeditationOpen] = useState(false);
+  const [meditationChoice,setMeditationChoice] = useState<"include"|"omit"|null>(null);
+  const [practiceKind,setPracticeKind] = useState<PracticeKind>("ritual");
+  const [practiceVariant,setPracticeVariant] = useState(0);
+  const [ritualMoment,setRitualMoment] = useState<RitualMoment>("morning");
+  const [ritualReady,setRitualReady] = useState(false);
+  const [personalOpened,setPersonalOpened] = useState(false);
   const [goals,setGoals] = useState<VideoTheme[]>([]);
   const [goalsOpen,setGoalsOpen] = useState(false);
   const [detailGoals,setDetailGoals] = useState<VideoAffirmationGoal[]>([]);
@@ -119,33 +273,107 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
   const [profileStatus,setProfileStatus] = useState<Status>("idle");
   const [profileEvidence,setProfileEvidence] = useState<Evidence[]>([]);
   const [suggestedGoals,setSuggestedGoals] = useState<VideoTheme[]>([]);
-  const [planOpen,setPlanOpen] = useState(false);
+  // One committed programme signature, not two independently batched state values.
+  const [planActionCount,setPlanActionCount] = useState(0);
+  const [meditationActionCount,setMeditationActionCount] = useState(0);
   const [speaking,setSpeaking] = useState(false);
   const profileRequestRef = useRef(0);
-  const actualGoals = goals.length ? goals : [theme];
+  const vectorTheme=chooseMeditationCourseTheme({request:keyGoal,theme}) as VideoTheme;
+  const activeTheme:VideoTheme=goals[0]||(focusMode==="vector"?vectorTheme:theme);
+  const actualGoals=useMemo(()=>goals.length?goals:[activeTheme],[goals,activeTheme]);
+  const detailLabels=useMemo(()=>detailGoals.flatMap(id=>
+    affirmationGoalCatalog[locale].filter(item=>item.id===id).map(item=>item.label)),[detailGoals,locale]);
+  const practiceResult=useMemo(()=>selectResourcePractice({
+    locale,theme:activeTheme,kind:practiceKind==="daily"?"practice":practiceKind,
+    revision:practiceVariant+(practiceKind==="ritual"?ritualMoments.indexOf(ritualMoment):0),
+    focus:{difficulty:keyDifficulty,goal:keyGoal,goals:actualGoals,details:detailLabels},
+  }),[locale,activeTheme,practiceKind,practiceVariant,ritualMoment,keyDifficulty,keyGoal,actualGoals,detailLabels]);
+  const safetyProbe=useMemo(()=>buildPersonalMeditationScript({
+    locale,theme:activeTheme,wish:keyGoal,technique:"grounding",length:3,
+    focus:{difficulty:keyDifficulty,goal:keyGoal,goals:actualGoals,details:detailLabels},
+  }),[locale,activeTheme,keyDifficulty,keyGoal,actualGoals,detailLabels]);
+  const safetyBlocked=practiceResult.status==="blocked"||isMeditationSafetyResponse(safetyProbe,locale);
+  const safetyMessage=practiceResult.status==="blocked"?practiceResult.message:safetyBlocked?safetyProbe:"";
+  const needsVector=focusMode==="vector"&&!selectedState;
+  const needsState=focusMode==="state"&&!selectedState&&!keyGoal.trim()&&!goals.length;
+  const focusReady=!safetyBlocked&&!needsVector&&!needsState;
+  const journeySignature=JSON.stringify([focusMode,selectedState,activeTheme,goals,detailGoals,keyDifficulty,keyGoal,profileEvidence,selfRatings]);
+  const [approvedSignature,setApprovedSignature]=useState("");
+  const [programmeSignature,setProgrammeSignature]=useState("");
+  // Compare delayed WebKit change/blur events with the latest committed value,
+  // not an older onChange closure that can revoke a freshly approved script.
+  const committedDifficultyRef=useRef(keyDifficulty);
+  // Do not rewind this ref during an unrelated React render. A delayed WebKit
+  // change/blur event must compare against the last *handled* input value.
+  const planOpen=programmeSignature.length>0;
+  const currentMeditation=meditationOpen&&approvedSignature===journeySignature&&focusReady;
+  const currentProgramme=planOpen&&programmeSignature===journeySignature&&focusReady;
   // Only the visitor's explicit, on-device focus is shared with the
   // meditation composer. Never forward private test scores or raw answers.
   useEffect(()=>{
-    onContextChange?.({difficulty:keyDifficulty,goal:keyGoal,goals,
-      details:detailGoals.flatMap(id=>affirmationGoalCatalog[locale].filter(item=>item.id===id).map(item=>item.label))});
-  },[onContextChange,keyDifficulty,keyGoal,goals,detailGoals,locale]);
+    onContextChange?.({difficulty:keyDifficulty,goal:keyGoal,goals:actualGoals,details:detailLabels});
+  },[onContextChange,keyDifficulty,keyGoal,actualGoals,detailLabels,locale]);
   const plan = useMemo(()=>buildPersonalImageryCourse({
-    locale,theme,goals:actualGoals,selfRatings,evidence:profileEvidence,keyDifficulty,keyGoal,
-    detailGoals:detailGoals.flatMap(id=>affirmationGoalCatalog[locale].filter(item=>item.id===id).map(item=>item.label))
-  }),[locale,theme,goals,selfRatings,profileEvidence,keyDifficulty,keyGoal,detailGoals]);
+    locale,theme:activeTheme,goals:actualGoals,selfRatings,evidence:profileEvidence,keyDifficulty,keyGoal,
+    detailGoals:detailLabels
+  }),[locale,activeTheme,actualGoals,selfRatings,profileEvidence,keyDifficulty,keyGoal,detailLabels]);
   const sessions = plan.sessions as Session[];
+  const firstScript = sessions[0]?.script || "";
+  // Track the exact user-approved narration independently of React render timing.
+  // A delayed effect from an edited focus must never erase a fresh Generate click.
+  const includedSignatureRef=useRef<string|null>(null);
+  // Count explicit state-changing focus actions without recording private text.
+  const focusResetCountRef=useRef(0);
+  const resetGeneratedMeditation=()=>{
+    focusResetCountRef.current+=1;
+    if(includedSignatureRef.current){
+      includedSignatureRef.current=null;
+      onOmitMeditation?.();
+    }
+    setMeditationOpen(false);setMeditationChoice(null);
+    setRitualReady(false);setPersonalOpened(false);
+    setApprovedSignature("");setProgrammeSignature("");
+  };
+  const previousSignatureRef=useRef(journeySignature);
+  useEffect(()=>{
+    if(previousSignatureRef.current===journeySignature)return;
+    previousSignatureRef.current=journeySignature;
+    if(includedSignatureRef.current && includedSignatureRef.current!==journeySignature){
+      includedSignatureRef.current=null;
+      onOmitMeditation?.();
+    }
+    // The currentMeditation/currentProgramme signature gates hide stale results
+    // synchronously. Revoke any separately attached narration here; do NOT
+    // clear the approval in a passive effect, because WebKit can flush delayed
+    // textarea events after the user's Generate click.
+  },[journeySignature,onOmitMeditation]);
+  const selectState=(id:string,goalTheme:VideoTheme)=>{
+    // A duplicate tap on the already selected choice must not revoke a
+    // separately approved meditation or course. An actual focus change still does.
+    if(focusMode==="state"&&selectedState===id&&goals.length===1&&goals[0]===goalTheme&&
+      keyGoal===f.stateOptions[id as keyof typeof f.stateOptions])return;
+    setSelectedState(id);setGoals([goalTheme]);setKeyGoal(f.stateOptions[id as keyof typeof f.stateOptions]);
+    resetGeneratedMeditation();
+  };
+  const selectVector=(id:(typeof vectorOptions)[number]["id"],goalTheme:VideoTheme)=>{
+    if(focusMode==="vector"&&selectedState==="vector-"+id&&goals.length===1&&goals[0]===goalTheme&&
+      keyGoal===t.themes[goalTheme])return;
+    setSelectedState("vector-"+id);setGoals([goalTheme]);setKeyGoal(t.themes[goalTheme]);
+    resetGeneratedMeditation();
+  };
   useEffect(()=>()=>{profileRequestRef.current++;if(typeof window!=="undefined")window.speechSynthesis?.cancel();},[]);
   const toggleGoal=(goal:VideoTheme)=>{
-    // Once explicitly consented and verified, the source readings can be
-    // reused for a different chosen focus without another network request.
+    resetGeneratedMeditation();
     setGoals(prev=>prev.includes(goal)?prev.filter(value=>value!==goal):
       prev.length<3?[...prev,goal]:[...prev.slice(1),goal]);
   };
   const toggleDetailGoal=(id:VideoAffirmationGoal)=>{
+    resetGeneratedMeditation();
     setDetailGoals(previous=>previous.includes(id)?previous.filter(value=>value!==id):
       previous.length<3?[...previous,id]:previous);
   };
   const withdraw=()=>{
+    resetGeneratedMeditation();
     profileRequestRef.current++;
     setConsent(false);setProfileEvidence([]);setSuggestedGoals([]);setProfileStatus("idle");
   };
@@ -175,14 +403,39 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
       const evidence=Array.from(new Map(candidates.map(item=>[item.axis,item])).values()).slice(0,17) as Evidence[];
       const suggested=suggestGuidedGoalsFromProfile(portrait) as VideoTheme[];
       if(requestId!==profileRequestRef.current)return;
+      resetGeneratedMeditation();
       setProfileEvidence(evidence);
       setSuggestedGoals(suggested);
       setProfileStatus(evidence.length?"ready":"empty");
     } catch {if(requestId===profileRequestRef.current){setProfileEvidence([]);setProfileStatus("error");}}
   }
+  function generateMeditation(){
+    if(disabled||!focusReady||!firstScript)return;
+    setMeditationActionCount(count=>count+1);
+    if(includedSignatureRef.current){
+      includedSignatureRef.current=null;
+      onOmitMeditation?.();
+    }
+    setApprovedSignature(journeySignature);
+    setMeditationOpen(true);setMeditationChoice(null);
+  }
+  function openPersonalMeditation(){
+    if(disabled||!focusReady)return;
+    const editorDetails=document.querySelector("[data-video-therapy-meditation-audio]");
+    if(editorDetails instanceof HTMLDetailsElement){
+      editorDetails.open=true;
+      setPersonalOpened(true);
+      // Scroll synchronously: a deferred smooth scroll can move Safari's page
+      // AFTER a visitor taps the next 'Create programme' control, swallowing
+      // that real tap while the on-screen button appears enabled.
+      // The editor details is already present and open at this point.
+      editorDetails.scrollIntoView({behavior:"instant",block:"start"});
+    }
+  }
   function createProgramme(){
-    if(disabled || profileStatus==="loading")return;
-    setPlanOpen(true);
+    if(disabled||!focusReady||profileStatus==="loading")return;
+    setPlanActionCount(count=>count+1);
+    setProgrammeSignature(journeySignature);
     if(consent && !["ready","empty"].includes(profileStatus))void loadPrivateProfile();
   }
   function speak(script:string){
@@ -204,7 +457,28 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
     document.body.appendChild(a);a.click();a.remove();
     window.setTimeout(()=>URL.revokeObjectURL(url),2000);
   }
-  return <section className={css.panel} data-video-guided-course aria-labelledby="guided-course-heading">
+  const exploredSteps=currentProgramme?5:ritualReady?4:personalOpened?3:currentMeditation?2:focusReady?1:0;
+  return <section className={css.panel} data-video-guided-course
+    data-guided-personal-opened={personalOpened ? "true" : "false"}
+    data-guided-plan-requested={planOpen ? "true" : "false"}
+    data-guided-plan-current={currentProgramme ? "true" : "false"}
+    data-guided-focus-ready={focusReady?"true":"false"}
+    data-guided-profile-status={profileStatus}
+    data-guided-has-script={firstScript.trim().length>0?"true":"false"}
+    data-guided-meditation-open={meditationOpen?"true":"false"}
+    data-guided-meditation-click-count={meditationActionCount}
+    data-guided-focus-reset-count={focusResetCountRef.current}
+    data-guided-plan-open={planOpen?"true":"false"}
+    data-guided-plan-click-count={planActionCount}
+    data-guided-plan-signature-match={programmeSignature===journeySignature?"true":"false"}
+    data-guided-signature-match={approvedSignature===journeySignature?"true":"false"}
+    data-guided-meditation-ready={currentMeditation?"true":"false"}
+    data-guided-programme-ready={currentProgramme?"true":"false"}
+    data-guided-context-ready={keyDifficulty.trim()?"true":"false"}
+    data-guided-focus-mode={focusMode}
+    data-guided-selected={selectedState?"true":"false"}
+    data-guided-programme-signature-match={programmeSignature===journeySignature?"true":"false"}
+    aria-labelledby="guided-course-heading">
     <div className={css.header}>
       <span className={css.emblem}><Sparkles size={20} aria-hidden="true"/></span>
       <div className={css.heading}>
@@ -213,26 +487,52 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
       <span className={css.stageBadge}>01—08</span>
     </div>
     <p className={css.intro}>{t.intro}</p>
+    <div className={css.journeyProgress} role="progressbar" aria-label={f.progress}
+      aria-valuemin={0} aria-valuemax={5} aria-valuenow={exploredSteps}>
+      {([1,2,3,4,5] as const).map(step=><span key={step} data-complete={step<=exploredSteps}/>)}
+    </div>
     <div className={css.focusCard} data-video-therapy-focus>
-      <div className={css.focusHeading}>
-        <small><Target size={14} aria-hidden="true"/>{t.focusLabel}</small>
-        <h4>{t.focusHeading}</h4>
-        <p>{t.focusDescription}</p>
+      <div className={css.flowTitle}><span>01</span><Target size={23} aria-hidden="true"/><h4>{f.focus}</h4></div>
+      <div className={css.focusSwitch} role="group" aria-label={f.focus}>
+        <button type="button" aria-pressed={focusMode==="state"} disabled={disabled}
+          onClick={()=>{setFocusMode("state");setSelectedState(null);setGoals([]);setKeyGoal("");committedDifficultyRef.current="";setKeyDifficulty("");resetGeneratedMeditation();}}><Heart size={20} aria-hidden="true"/>{f.state}</button>
+        <button type="button" aria-pressed={focusMode==="vector"} disabled={disabled}
+          onClick={()=>{setFocusMode("vector");setSelectedState(null);setGoals([]);setKeyGoal("");committedDifficultyRef.current="";setKeyDifficulty("");resetGeneratedMeditation();}}><Target size={20} aria-hidden="true"/>{f.vector}</button>
       </div>
-      <div className={css.focusFields}>
-        <label htmlFor="therapy-key-difficulty">
-          <span>{t.difficultyLabel}</span>
-          <textarea id="therapy-key-difficulty" rows={2} maxLength={140}
-            data-video-key-difficulty value={keyDifficulty} placeholder={t.difficultyPlaceholder}
-            disabled={disabled} onChange={event=>setKeyDifficulty(event.currentTarget.value)}/>
-        </label>
-        <label htmlFor="therapy-key-goal">
-          <span>{t.goalLabel}</span>
-          <textarea id="therapy-key-goal" rows={2} maxLength={140}
-            data-video-key-goal value={keyGoal} placeholder={t.goalPlaceholder}
-            disabled={disabled} onChange={event=>setKeyGoal(event.currentTarget.value)}/>
-        </label>
-      </div>
+      <p className={css.focusChoiceHeading}>{focusMode==="state"?f.stateQuestion:f.vectorQuestion}</p>
+      {focusMode==="state"?<div className={css.stateGrid} role="group" aria-label={f.state}>
+        {stateOptions.map(({id,theme:goalTheme,Icon})=><button key={id} type="button" disabled={disabled}
+          aria-pressed={selectedState===id} data-guided-focus-state={id}
+          onClick={()=>selectState(id,goalTheme)}>
+          <Icon size={22} aria-hidden="true"/><span>{f.stateOptions[id]}</span>
+          {selectedState===id?<Check size={18} aria-hidden="true"/>:null}
+        </button>)}
+      </div>:<div className={css.stateGrid} role="group" aria-label={f.vector}>
+        {vectorOptions.map(({id,theme:goalTheme,Icon})=><button key={id} type="button" disabled={disabled}
+          aria-pressed={selectedState==="vector-"+id} data-guided-focus-vector={id}
+          onClick={()=>selectVector(id,goalTheme)}>
+          <Icon size={22} aria-hidden="true"/><span>{t.themes[goalTheme]}</span>
+          {selectedState==="vector-"+id?<Check size={18} aria-hidden="true"/>:null}
+        </button>)}
+      </div>}
+      <div className={css.focusNote}><label htmlFor="therapy-key-difficulty">
+        <span>{f.contextLabel}</span>
+        <textarea id="therapy-key-difficulty" rows={2} maxLength={140}
+          data-video-key-difficulty value={keyDifficulty} placeholder={f.contextPlaceholder}
+          disabled={disabled} onChange={event=>{
+            const next=event.currentTarget.value;
+            // Safari may deliver a delayed input/blur after Generate.
+            // Exact-signature render gates immediately hide stale output when
+            // the text really changes, without clearing a newer approval.
+            if(next===committedDifficultyRef.current)return;
+            committedDifficultyRef.current=next;
+            setKeyDifficulty(next);
+          }}/>
+      </label></div>
+      <p className={css.focusHint}>{focusMode==="state"?f.stateHint:f.vectorHint}</p>
+      {safetyBlocked?<p role="alert" className={css.profileNotice}>{safetyMessage}</p>:
+        (needsVector||needsState)?<p role="note" className={css.profileNotice}>
+          {needsVector?f.vectorRequired:f.focusRequired}</p>:null}
       <div className={css.goalActions}>
         <button type="button" className={css.goalReview}
           data-video-goal-accents data-video-personal-pick disabled={disabled}
@@ -286,7 +586,7 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
           <small>{t.suggested}</small>
           <div>{suggestedGoals.map(goal=><span key={goal}>{t.themes[goal]}</span>)}</div>
           <button type="button" disabled={disabled} data-guided-apply-suggestions
-            onClick={()=>setGoals(suggestedGoals)}>{t.applySuggested}</button>
+            onClick={()=>{resetGeneratedMeditation();setGoals(suggestedGoals);}}>{t.applySuggested}</button>
         </div>:null}
         {plan.evidence.length?<ul className={css.sources} data-guided-score-provenance>
           {plan.evidence.map(item=><li key={item.axis+"-"+item.measuredAt}>
@@ -295,17 +595,128 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
         </ul>:null}
         <small className={css.self}>{t.self}</small>
       </div>:null}
-      <button type="button" className={css.planButton} onClick={createProgramme}
-        disabled={disabled||profileStatus==="loading"} data-guided-create-plan>
-        <BookOpen size={23} aria-hidden="true"/>
-        <span><strong>{planOpen?t.refresh:t.create}</strong>
-          <small>{consent?t.fromTests:t.fromGoals}</small></span>
-      </button>
       {profileStatus==="loading"?<p className={css.profileNotice} role="status">{t.loading}</p>:null}
       {profileStatus==="signin"?<p className={css.profileNotice}>{t.signin} <Link href={"/"+locale+"/app"} prefetch={false}>{t.signInLink}</Link></p>:null}
       {profileStatus==="error"?<p className={css.profileNotice} role="status">{t.error}</p>:null}
+
     </div>
-    {planOpen?<div className={css.programme} data-guided-eight-sessions>
+    <section className={css.flowBlock} data-guided-meditation-step>
+      <div className={css.flowTitle}><span>02</span><Headphones size={23} aria-hidden="true"/><h4>{f.meditation}</h4></div>
+      <button type="button" className={css.flowPrimary} data-guided-generate-meditation
+        disabled={disabled||!firstScript||!focusReady}
+        data-guided-context-committed-length={keyDifficulty.length}
+        onClick={generateMeditation}>
+        <Sparkles size={22} aria-hidden="true"/>{f.generateMeditation}<ArrowRight size={20} aria-hidden="true"/>
+      </button>
+      {currentMeditation?<div className={css.flowResult} data-guided-meditation-result>
+        <strong><BookOpen size={20} aria-hidden="true"/>{f.meditationText}</strong>
+        <div className={css.meditationScript}>{firstScript}</div>
+        <div className={css.meditationChoices}>
+          <button type="button" disabled={disabled} data-guided-add-meditation
+            aria-pressed={meditationChoice==="include"} onClick={()=>{
+              includedSignatureRef.current=journeySignature;
+              // Commit the visible choice before the parent opens the native
+              // narration details. Mobile WebKit can otherwise replay an older
+              // render and lose the next explicit "Skip" gesture.
+              flushSync(()=>setMeditationChoice("include"));
+              onAddMeditation?.(firstScript);
+            }}><Play size={18} aria-hidden="true"/>{f.include}</button>
+          <button type="button" disabled={disabled} data-guided-skip-meditation
+            aria-pressed={meditationChoice==="omit"} onClick={()=>{
+              includedSignatureRef.current=null;
+              // A real opt-out must commit before parent draft/audio revocation.
+              // Keep keyboard activation and native user clicks; no force path.
+              flushSync(()=>setMeditationChoice("omit"));
+              onOmitMeditation?.();
+            }}>{f.omit}</button>
+        </div>
+        <small role="status">{meditationChoice==="include"?f.included:meditationChoice==="omit"?f.omitted:f.local}</small>
+      </div>:null}
+    </section>
+    <section className={css.flowBlock} data-guided-personal-meditation-step>
+      <div className={css.flowTitle}><span>03</span><Flower2 size={23} aria-hidden="true"/><h4>{f.personal}</h4></div>
+      <p className={css.personalIntro}>{f.personalIntro}</p>
+      <div className={css.personalPreview}>
+        <div><Target size={21} aria-hidden="true"/><span><strong>{f.personalTheme}</strong>{t.themes[activeTheme]}</span></div>
+        <div><Heart size={21} aria-hidden="true"/><span><strong>{f.personalNow}</strong>{focusMode==="vector"?keyDifficulty||f.personalUnknown:f.personalUnknown}</span></div>
+        <div><Sun size={21} aria-hidden="true"/><span><strong>{f.personalDesired}</strong>{keyGoal||f.personalUnknown}</span></div>
+      </div>
+      <button type="button" className={css.flowPrimary} data-guided-open-personal-meditation
+        disabled={disabled||!focusReady} onClick={openPersonalMeditation}>
+        <Sparkles size={21} aria-hidden="true"/>{f.personalButton}<ArrowRight size={20} aria-hidden="true"/>
+      </button>
+      <div className={css.personalFeatures}>
+        {f.personalFeatures.map((item,index)=><div key={item}>
+          {index===0?<Heart size={20} aria-hidden="true"/>:index===1?<Headphones size={20} aria-hidden="true"/>:<BookOpen size={20} aria-hidden="true"/>}
+          <span>{item}</span>
+        </div>)}
+      </div>
+      <small className={css.personalNote}>{f.personalNote}</small>
+    </section>
+    {currentMeditation?<section className={css.flowBlock} data-guided-practice-step>
+      <div className={css.flowTitle}><span>04</span><Flower2 size={23} aria-hidden="true"/><h4>{f.ritualHeading}</h4></div>
+      <div className={css.ritualArtwork} aria-hidden="true"><Flower2 size={62}/></div>
+      <p className={css.ritualIntro}>{f.ritualIntro}</p>
+      <div className={css.ritualMoments} aria-label={f.ritualMomentTitle}>
+        {ritualMoments.map((moment,index)=><button type="button" key={moment}
+          data-guided-ritual-moment={moment} disabled={disabled} aria-pressed={ritualMoment===moment}
+          onClick={()=>{setRitualMoment(moment);setPracticeKind("ritual");setPracticeVariant(0);setRitualReady(false);}}>
+          {index===0?<Sun size={23} aria-hidden="true"/>:index===1?<Moon size={23} aria-hidden="true"/>:
+            index===2?<Target size={23} aria-hidden="true"/>:<Heart size={23} aria-hidden="true"/>}
+          <span>{f.ritualMoments[moment]}</span>
+        </button>)}
+      </div>
+      <button type="button" className={css.flowPrimary} data-guided-create-ritual
+        disabled={disabled||!focusReady}
+        onClick={()=>{setPracticeKind("ritual");setPracticeVariant(0);setRitualReady(true);}}>
+        <Sparkles size={21} aria-hidden="true"/>{f.ritualButton}<ArrowRight size={20} aria-hidden="true"/>
+      </button>
+      <div className={css.practicePanel}>
+        <p className={css.ritualFormats}>{f.ritualFormats}</p>
+        <div className={css.practicePicker} role="group" aria-label={f.practice}>
+          {(["ritual","exercise","daily"] as const).map(kind=><button key={kind} type="button"
+            disabled={disabled} aria-pressed={practiceKind===kind} onClick={()=>{setPracticeKind(kind);setPracticeVariant(0);setRitualReady(true);}}>
+            {kind==="ritual"?f.ritual:kind==="exercise"?f.exercise:f.daily}
+          </button>)}
+        </div>
+        {ritualReady&&practiceResult.status==="ready"?<>
+          {practiceKind==="ritual"?<p className={css.ritualCue}>{f.ritualCues[ritualMoment]}</p>:null}
+          <h5>{practiceResult.title}</h5>
+          <p>{f.practiceLead} {practiceResult.description}</p>
+          <p><small>{practiceResult.topic}</small></p>
+          <ol>{practiceResult.steps.map((step,index)=><li key={index}>{step}</li>)}</ol>
+          <p><strong>{f.transferLabel}:</strong> {practiceResult.transfer}</p>
+          <button className={css.practiceRefresh} type="button" disabled={disabled}
+            onClick={()=>setPracticeVariant(current=>current+1)}>
+            <RefreshCw size={17} aria-hidden="true"/>{f.refreshPractice}
+          </button>
+        </>:null}
+      </div>
+    </section>:null}
+    <section className={css.flowBlock} data-guided-programme-step>
+      <div className={css.flowTitle}><span>05</span><BookOpen size={23} aria-hidden="true"/><h4>{f.program}</h4></div>
+      <p className={css.programLead}>{f.programLead}</p>
+      <div className={css.programTiles}>
+        {f.programStages.map((stage,index)=><div key={stage}>
+          <span>{index+1}</span><strong>{stage}</strong>
+        </div>)}
+      </div>
+      <div className={css.programBenefits}>
+        <h5><Sparkles size={21} aria-hidden="true"/>{f.benefitsHeading}</h5>
+        {f.benefits.map(([heading,description],index)=><div className={css.programBenefit} key={heading}>
+          {index===0?<Target size={25} aria-hidden="true"/>:index===1?<Heart size={25} aria-hidden="true"/>:<BookOpen size={25} aria-hidden="true"/>}
+          <span><strong>{heading}</strong><small>{description}</small></span>
+        </div>)}
+      </div>
+      <button type="button" className={css.planButton} onClick={createProgramme}
+        disabled={disabled||!focusReady||profileStatus==="loading"} data-guided-create-plan>
+        <Sparkles size={22} aria-hidden="true"/>
+        <span><strong>{f.generateProgram}</strong>
+          <small>{consent?t.fromTests:t.fromGoals}</small></span>
+        <ArrowRight size={18} aria-hidden="true"/>
+      </button>
+    </section>
+    {currentProgramme?<div className={css.programme} data-guided-eight-sessions>
       <div className={css.sequenceHeader}><div><small>{t.stage}</small><h4>{t.sequence}</h4></div><span>8 / 8</span></div>
       <div className={css.sessionTrack} aria-label={t.sequence}>
         {sessions.map((session,index)=><span key={session.id} className={index===0?css.trackActive:""}>
@@ -348,7 +759,10 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
       </div>
       <div className={css.package}>
         <h4>{t.package}</h4><p>{t.packInfo}</p>
-        <Link href={"/"+locale+"/services/imagery-therapy"} prefetch={false}>{t.request}</Link>
+        <MeditationCourseEnquiry key={journeySignature} locale={locale} focus={activeTheme} courseKind="video-series"/>
+        <small className={css.enquiryNote}>{locale==="ru"?"Откроется заявка на обсуждение курса. Оплата и создание видео не запускаются.":
+          locale==="es"?"Se abre una consulta sobre el curso, sin pago ni creación automática de vídeos.":
+          "Opens a course enquiry, not a payment or automatic video production."}</small>
       </div>
       <p className={css.safeguard} role="note">{t.safeguard}</p>
     </div>:null}

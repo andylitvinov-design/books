@@ -1,4 +1,5 @@
 import test from 'node:test'
+import './consultation-messenger-first.test.mjs'
 import assert from 'node:assert/strict'
 import {randomBytes} from 'node:crypto'
 import {readFileSync} from 'node:fs'
@@ -13,7 +14,7 @@ const id=n=>'10000000-0000-4000-8000-'+String(n).padStart(12,'0')
 const config={encryptionKey:randomBytes(32),encryptionKeyId:'message-chain-qa'}
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 
-function fixture(){
+function fixture({verified=true}={}){
  const messages=[],seen=new Map()
  let status='requested',remoteBooking=null
  return {
@@ -21,6 +22,8 @@ function fixture(){
   messages,
   transaction:async(_config,actor,fn)=>{
    const db={async query(sql,p=[]){
+    if(sql.includes("to_regprocedure('app_private.hh_consultation_messenger_verified(uuid)')"))return {rows:[{ready:true}]}
+    if(sql.includes('app_private.hh_consultation_messenger_verified($1)'))return {rows:[{verified}]}
     if(sql.includes('from app.consultation_requests r')){
      return {rows:[{id:requestId,account_id:clientId,
        recipient_practitioner_id:id(201),status,remote_booking:remoteBooking,
@@ -172,3 +175,21 @@ test('RLS hotfix closes shared messages on terminal remote sessions without chan
  assert.match(sql,/visibility='practitioner_note'/)
  assert.doesNotMatch(sql,/create policy .*for select/i)
 })
+
+test('unverified consultation keeps old history and master private notes but denies new customer chat',async()=>{
+ const db=fixture({verified:false}),store=createPractitionerClientMessages(config,{transaction:db.transaction})
+ const client={id:clientId},master={id:masterId}
+ const previous=await store.list(client,requestId)
+ assert.equal(previous.canReply,false)
+ assert.equal(previous.requiresMessengerVerification,true)
+ await assert.rejects(store.send(client,{requestId,operationId:id(96),
+  visibility:'participants',text:'Please write me a personal reply'}),
+  error=>error.code==='MESSENGER_VERIFICATION_REQUIRED')
+ await assert.rejects(store.send(master,{requestId,operationId:id(97),
+  visibility:'participants',text:'Please contact me'}),
+  error=>error.code==='MESSENGER_VERIFICATION_REQUIRED')
+ const note=await store.send(master,{requestId,operationId:id(98),
+  visibility:'practitioner_note',text:'Private record; not delivered to client'})
+ assert.equal(note.saved,true)
+ assert.equal((await store.list(client,requestId)).messages.length,0)
+});

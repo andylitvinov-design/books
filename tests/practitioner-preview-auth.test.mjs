@@ -54,12 +54,15 @@ test('guest actions prompt for Google and return to the same showroom after OAut
   assert.ok(showcase.includes('TOOLS.map('))
 })
 
-test('approved mock owns its five-tab navigation without the sitewide promo', () => {
+test('approved practice keeps functional internal actions and uses the shared seven-destination dock', () => {
   assert.ok(promoBanner.includes('The standalone practitioner mockup'))
   assert.ok(promoBanner.includes('/practice'))
-  assert.ok(siteBottomNavigation.includes('The public practitioner showcase'))
-  assert.ok(siteBottomNavigation.includes('/practice'))
-  assert.ok(showcase.includes('className={styles.bottomNav}'))
+  assert.ok(siteBottomNavigation.includes('The shared seven-destination app dock owns Home, Practice, Studio,'))
+  assert.ok(siteBottomNavigation.includes('isUnifiedMobileDockPath(pathname)'))
+  assert.ok(siteBottomNavigation.includes('practice|mytube|temple-insights'))
+  assert.ok(rootLayout.includes('<UnifiedMobileDock initialLocale={lang} />'))
+  assert.ok(read('app/unified-mobile-dock.css').includes('data-legacy-practice-bottom-nav'))
+  assert.ok(showcase.includes('data-legacy-practice-bottom-nav'))
   assert.ok(showcase.includes('TABS.map('))
   assert.ok(!showcase.includes('className={styles.eyebrow}'))
   assert.ok(!showcase.includes('<h2>{t.creations}</h2>'))
@@ -79,9 +82,12 @@ test('iPhone 320–430 mock has inline profile, six horizontal actions and six v
 test('existing protected service, meditation and course editors remain available', () => {
   assert.ok(showcase.includes('panel=services&create=1&starter=session'))
   assert.ok(showcase.includes('panel=services&create=1&starter=energy'))
-  assert.ok(showcase.includes('panel=materials&materialTab=courses&create=1&meditation=audio'))
+  assert.ok(showcase.includes('panel=meditations&meditation=audio'))
   assert.ok(showcase.includes('panel=materials&materialTab=courses&create=1'))
   assert.ok(showcase.includes("practice:'/' + locale + '/practice'"))
+  assert.ok(editor.includes("setActivePanel('meditations')"))
+  assert.ok(editor.includes('<PractitionerMeditationStudio'))
+  assert.ok(editor.includes("params.get('panel')==='materials'&&['audio','video']"))
   assert.ok(editor.includes("const meditation=params.get('meditation')"))
   assert.ok(editor.includes('setMeditationType(meditation)'))
 })

@@ -84,19 +84,32 @@ const reviewCopy = {
 // questionnaire execution, private results, sensitive reports or admin workflows.
 /** Restore the original top navy/burgundy bar independently of the compact course offers. */
 const isDistractionSensitivePage = (pathname: string) =>
+  // MyTube is a video-first dark destination; no generic review promotion over the feed.
+  /^\/(?:ru|en|es)\/mytube\/?$/.test(pathname) ||
   // The alternative Support screen is an immersive mobile application.
   // Suppress the sitewide promo ribbon only there; standard Support keeps it.
   /^\/(?:ru|en|es)\/holistic-support\/mobile(?:\/|$)/.test(pathname) ||
+  // Video Studio has an approved compact header and six-tab top player.
+  // Do not displace its first viewport with the global free-review ribbon.
+  /^\/(?:ru|en|es)\/holistic-support\/mandala\/?$/.test(pathname) ||
   // The standalone practitioner mockup has its own hero and must open at the header.
   /^\/(?:ru|en|es)\/practice\/?$/.test(pathname) ||
   // The private practitioner editor shares the new minimal header and dock.
   /^\/(?:ru|en|es)\/app\/practice\/?$/.test(pathname) ||
+  // My Space is video-first: leave its first viewport for the player and real actions.
+  /^\/(?:ru|en|es)\/app\/portrait\/?$/.test(pathname) ||
+  // The signed-in Orders / Clients Messenger is an app, not a marketing page.
+  /^\/(?:ru|en|es)\/app\/messages\/?$/.test(pathname) ||
   /^\/(?:admin|api|document-preview|privacy|terms)(?:\/|$)/.test(pathname) ||
   /^\/(?:ru|en|es)\/academy\/reiki\/yggdrasil\/free-initiation\/?$/.test(pathname) ||
   // Keep the fire landing hero and its CTA inside the first phone viewport.
   /^\/(?:ru|en|es)\/academy\/reiki\/kundalini-reiki\/?$/.test(pathname) ||
   // A referral ribbon pointing to this same free-review page wastes the first mobile viewport.
   /^\/(?:ru|en|es)\/services\/free-situation-review\/?$/.test(pathname) ||
+  // Coaching can enter a safety hold; keep promotional offers out of the private session.
+  /^\/(?:ru|en|es)\/app\/coaching(?:\/|$)/.test(pathname) ||
+  /^\/(?:ru|en|es)\/coaching\/?$/.test(pathname) ||
+  /^\/(?:ru|en|es)\/my-coach\/?$/.test(pathname) ||
   (/^\/(?:ru|en|es)\/client(?:\/|$)/.test(pathname) && !/^\/(?:en|ru)\/client(?:\/tests)?\/?$/.test(pathname)) ||
   /^\/(?:ru|en|es)\/(?:report|prescriptions)(?:\/|$)/.test(pathname) ||
   /^\/(?:ru|en|es)\/app\/(?:course|runs|results|documents|settings|privacy)(?:\/|$)/.test(pathname);
