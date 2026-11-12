@@ -170,3 +170,15 @@ test('two consecutive coach questions trigger a non-question response hint',()=>
   assert.match(messages[1].content,/Break that pattern/)
   assert.ok(!messages[0].content.includes('Я думаю о работе.'))
 })
+
+
+test('explicit Wisdom Library requests bypass an unavailable model without bypassing consent or safety',()=>{
+  const ui=source('components/my-coach-live-dialogue.jsx')
+  const server=source('lib/app/coaching-brain.js')
+  assert.match(ui,/import \{classifyWisdomRequest\} from '@\/lib\/coaching\/wisdom-retrieval\.mjs'/)
+  assert.match(ui,/const wisdomRequested=Boolean\(classifyWisdomRequest\(/)
+  assert.match(ui,/readiness\.status!=='verified'&&!wisdomRequested/)
+  assert.match(ui,/if\(!message\|\|!consent\|\|busy\|\|paused\|\|authRequired\|\|readiness\.status==='checking'\)return/)
+  assert.match(server,/if\(interruption\)return interruption[\s\S]*if\(boundary\)return boundary[\s\S]*wisdomLookup/)
+  assert.match(server,/if\(env\.HH_COACHING_BRAIN_ENABLED!=='true'\)return offline/)
+})
