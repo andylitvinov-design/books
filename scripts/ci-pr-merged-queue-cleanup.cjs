@@ -1,6 +1,6 @@
 'use strict';
 // HH_STALE_MERGED_QUEUE_CLEANUP_V1
-// Called only inside the EXISTING scheduled Watchdog runner when the recorded
+// Called only inside the EXISTING scheduled or trusted reconcile Watchdog run when the recorded
 // Actions queue is over 100. Never starts CI, edits source, or merges a PR.
 // Restrict cancellation to first-attempt QUEUED pull_request runs whose
 // original source SHA is proven ancestral to the final SHA of one unique,
@@ -46,8 +46,18 @@ function validComparison(compare,run,pr){
    compare.base_commit.sha.toLowerCase()===run.head_sha.toLowerCase());
 }
 function trustedContext(context){
- return context?.repo?.owner===OWNER&&context.repo.repo===REPO&&
-  context.ref==='refs/heads/'+CONTROL&&context.eventName==='schedule';
+ if(context?.repo?.owner!==OWNER||context.repo.repo!==REPO||
+    context.ref!=='refs/heads/'+CONTROL)return false;
+ if(context.eventName==='schedule')return true;
+ // GitHub cron delivery is irregular: the EXISTING owner-controlled
+ // reconciliation uses workflow_dispatch (observed signed run 43283105500).
+ // Never activate for a dry-run, targeted PM, completion or direct dispatch.
+ if(context.eventName!=='workflow_dispatch')return false;
+ const inputs=context.payload?.inputs||{};
+ const enabled=k=>String(inputs[k]??'false').toLowerCase()==='true';
+ return !enabled('dry_run')&&!enabled('completion_wake')&&
+  !enabled('direct_dispatch')&&
+  String(inputs.pm_pr_number||'')===''&&String(inputs.pm_request_id||'')==='';
 }
 async function runCleanup({github,context,core={info(){},warning(){}},
  observedQueued,observedRemaining,now=Date.now(),maxCancels=MAX_CANCELS}={}){
