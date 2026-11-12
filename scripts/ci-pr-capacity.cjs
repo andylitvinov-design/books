@@ -64,7 +64,87 @@ function computeCapacity(active,queued,jobs){
  return {known:true,activeRuns:active.length,queuedRuns:queued.length,
   runningJobs,queuedJobs,activeWorker,coreQueuedRuns,coreQueuedJobs};
 }
+
+const GHOST_REPAIR_MODE='GHOST_409_ONE_REPAIR';
+async function verifiedGhostRepairCapacity(gh,owner,repo,p,now=Date.now()){
+ const hold=reason=>({known:false,reason:'GHOST_'+reason});
+ if(owner!=='andylitvinov-design'||repo!=='books'||
+   p?.code!=='QUEUED_WITH_ZERO_JOBS_CANCEL_409'||
+   !Number.isSafeInteger(p.run_id)||p.run_id<=0||
+   !Number.isSafeInteger(p.pr)||p.pr<=0)return hold('UNTRUSTED');
+ const args={owner,repo},full='andylitvinov-design/books';
+ try{
+  const [r,j,prResponse]=await Promise.all([
+   gh.rest.actions.getWorkflowRun({...args,run_id:p.run_id}),
+   gh.rest.actions.listJobsForWorkflowRun({...args,run_id:p.run_id,per_page:5}),
+   gh.rest.pulls.get({...args,pull_number:p.pr})
+  ]);
+  const run=r?.data, pr=prResponse?.data;
+  if(run?.id!==p.run_id||run.status!=='queued'||run.event!=='pull_request'||
+   run.run_attempt!==1||run.repository?.full_name!==full||
+   run.head_repository?.full_name!==full||!Array.isArray(run.pull_requests)||
+   run.pull_requests.length>1||
+   (run.pull_requests.length===1&&run.pull_requests[0]?.number!==p.pr)||
+   !/^[a-f0-9]{40}$/i.test(run.head_sha||'')||
+   j?.data?.total_count!==0||!Array.isArray(j.data.jobs)||j.data.jobs.length!==0||
+   pr?.number!==p.pr||pr.state!=='closed'||pr.merged!==true||
+   pr.base?.ref!=='codex/public-book-library'||pr.base?.repo?.full_name!==full||
+   pr.head?.repo?.full_name!==full||pr.head?.ref!==run.head_branch||
+   !/^[a-f0-9]{40}$/i.test(pr.head.sha||'')||
+   !Number.isFinite(Date.parse(run.created_at||''))||
+   !Number.isFinite(Date.parse(pr.merged_at||''))||
+   Date.parse(run.created_at)>Date.parse(pr.merged_at)||
+   Date.parse(pr.merged_at)>now)return hold('JOBLESS_OR_MERGED_HEAD');
+  const diff=(await gh.rest.repos.compareCommits({...args,
+   base:run.head_sha,head:pr.head.sha,per_page:1}))?.data;
+  if(!diff||!['ahead','identical'].includes(diff.status)||
+   diff.merge_base_commit?.sha!==run.head_sha||
+   (diff.base_commit?.sha&&diff.base_commit.sha!==run.head_sha))
+   return hold('ANCESTRY');
+  const [q,a,wq,wa]=await Promise.all([
+   gh.rest.actions.listWorkflowRunsForRepo({...args,status:'queued',per_page:1}),
+   gh.rest.actions.listWorkflowRunsForRepo({...args,status:'in_progress',per_page:100}),
+   gh.rest.actions.listWorkflowRuns({...args,workflow_id:'hh-pr-repair-worker.yml',status:'queued',per_page:1}),
+   gh.rest.actions.listWorkflowRuns({...args,workflow_id:'hh-pr-repair-worker.yml',status:'in_progress',per_page:1})
+  ]);
+  const Q=q?.data?.total_count,A=a?.data?.total_count,active=a?.data?.workflow_runs;
+  if(!Number.isSafeInteger(Q)||Q<=100||Q>250||
+   !Number.isSafeInteger(A)||A>12||A<0||!Array.isArray(active)||active.length!==A||
+   wq?.data?.total_count!==0||!Array.isArray(wq.data.workflow_runs)||
+   wa?.data?.total_count!==0||!Array.isArray(wa.data.workflow_runs))
+   return hold('INCOMPLETE_RUN_CAPACITY');
+  const batches=await Promise.all(active.map(async x=>{
+   if(x.status!=='in_progress'||!Number.isSafeInteger(x.id))throw Error('BAD_ACTIVE');
+   const page=(await gh.rest.actions.listJobsForWorkflowRun({...args,run_id:x.id,per_page:100}))?.data;
+   if(!Number.isSafeInteger(page?.total_count)||page.total_count>100||
+     !Array.isArray(page.jobs)||page.jobs.length!==page.total_count||
+     page.jobs.some(j=>!Number.isSafeInteger(j.id)||
+      !['completed','queued','waiting','pending','in_progress'].includes(j.status)))
+    throw Error('INCOMPLETE_JOBS');
+   return page.jobs;
+  }));
+  const jobs=batches.flat();
+  const runningJobs=jobs.filter(j=>j.status==='in_progress').length,
+   queuedJobs=jobs.filter(j=>['queued','waiting','pending'].includes(j.status)).length;
+  if(runningJobs>8||queuedJobs>2)return hold('REAL_JOB_PRESSURE');
+  return {known:true,inventoryConfidence:GHOST_REPAIR_MODE,
+   safeToDispatchOneRepair:true,ghostProofRunId:p.run_id,
+   activeRuns:A,queuedRuns:Q,runningJobs,queuedJobs,unknownQueuedRuns:Q,
+   coreQueuedRuns:null,coreQueuedJobs:null,
+   activeWorker:Object.fromEntries([...new Set(Object.values(WORKFLOWS))].map(x=>[x,0]))};
+ }catch{return hold('READBACK_FAILED');}
+}
 function admission(lane,capacity){
+ if(capacity?.inventoryConfidence===GHOST_REPAIR_MODE){
+  if(!capacity.known||!capacity.safeToDispatchOneRepair||
+     !Number.isSafeInteger(capacity.ghostProofRunId))return 'GHOST_UNVERIFIED';
+  if(lane!=='repair')return 'GHOST_REPAIR_ONLY';
+  if(capacity.activeRuns>12||capacity.queuedRuns>250||
+     capacity.runningJobs>8||capacity.queuedJobs>2||
+     capacity.activeWorker?.[WORKFLOWS.repair]!==0)return 'GHOST_WORKER_BUSY';
+  return 'ADMIT';
+ }
+
  if(!capacity?.known)return 'CAPACITY_UNKNOWN';
  const worker=WORKFLOWS[lane];if(!worker)return 'LANE_UNKNOWN';
  // An unobserved run is reserved pessimistically and cannot authorize CI.
@@ -191,4 +271,4 @@ async function snapshot(github,owner,repo,now=Date.now()){
    capacity.unknownActiveRuns*8+capacity.unknownQueuedRuns*2;
  return capacity;
 }
-module.exports={WORKFLOWS,LIMIT,computeCapacity,admission,snapshot,possibleTerminalOverhang,verifiedTerminalOverhang};
+module.exports={WORKFLOWS,LIMIT,computeCapacity,admission,snapshot,possibleTerminalOverhang,verifiedTerminalOverhang,verifiedGhostRepairCapacity,GHOST_REPAIR_MODE};

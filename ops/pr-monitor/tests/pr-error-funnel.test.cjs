@@ -548,19 +548,26 @@ test('GitHub proof reads stay at six concurrent requests and preserve failures',
  assert.equal(results[31].value,62);
  assert.equal(live,0);
 });
-test('direct HTML and legacy boot both uniquely load current v6 error funnel, not stale v5',()=>{
+test('fast monitor links to full v6 error-funnel proof; legacy boot retains exactly v6',()=>{
  const fs=require('node:fs'),path=require('node:path');
  const home=path.resolve(__dirname,'..');
  const boot=fs.readFileSync(path.join(home,'pr-two-screen-boot.js'),'utf8');
- const html=fs.readFileSync(path.join(home,'pr-monitor.html'),'utf8');
+ const fast=fs.readFileSync(path.join(home,'pr-monitor.html'),'utf8');
+ const full=fs.readFileSync(path.join(home,'pr-monitor-full.html'),'utf8');
  const source=fs.readFileSync(path.join(home,'pr-error-funnel.js'),'utf8');
- // The canonical page now serves direct HTML, not the old async boot tag.
- // Both direct HTML and the legacy bootstrap must still load exactly one v6
- // error-funnel CSS/JS pair, keeping older v5 assets out of the bundle.
- assert.match(html,/HH_PR_MONITOR_DIRECT_HTML_V1/);
- assert.doesNotMatch(html,/pr-two-screen-boot\.js/);
- assert.equal((html.match(/pr-error-funnel\.js\?v=20261111-paginated-v6/g)||[]).length,1);
- assert.equal((html.match(/pr-error-funnel\.css\?v=20261111-paginated-v6/g)||[]).length,1);
+ // The canonical mobile entrance is intentionally lightweight. Detailed
+ // proof and repair diagnostics moved to a real linked full HTML page.
+ // Test both routes, preserving the v6 contracts rather than pretending
+ // the fast page itself must load a heavy funnel bundle.
+ assert.match(fast,/id="pr-monitor-fast"/);
+ assert.match(fast,/href="\/pr-monitor-full\.html"/);
+ assert.match(fast,/pr-monitor-fast\.js\?v=20261112-fast-v1/);
+ assert.doesNotMatch(fast,/pr-two-screen-boot\.js/);
+ assert.doesNotMatch(fast,/pr-error-funnel\.js\?v=/);
+ assert.match(full,/HH_PR_MONITOR_DIRECT_HTML_V1/);
+ assert.doesNotMatch(full,/pr-two-screen-boot\.js/);
+ assert.equal((full.match(/pr-error-funnel\.js\?v=20261111-paginated-v6/g)||[]).length,1);
+ assert.equal((full.match(/pr-error-funnel\.css\?v=20261111-paginated-v6/g)||[]).length,1);
  assert.match(boot,/pr-error-funnel\.js\?v=20261111-paginated-v6/);
  assert.match(boot,/pr-error-funnel\.css\?v=20261111-paginated-v6/);
  assert.doesNotMatch(boot,/pr-error-funnel\.js\?v=20261111-reasons-v5/);
