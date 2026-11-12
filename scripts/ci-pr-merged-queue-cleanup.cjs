@@ -63,13 +63,15 @@ async function runCleanup({github,context,core={info(){},warning(){}},
  observedQueued,observedRemaining,now=Date.now(),maxCancels=MAX_CANCELS}={}){
  const out={schema:'HH_STALE_MERGED_QUEUE_CLEANUP_V1',status:'HOLD',
   scanned:0,checked_branches:0,proved_shas:0,eligible:0,
-  cancel_accepted:[],skipped:0,partial:true,errors:[]};
+  cancel_accepted:[],cancel_attempts:0,non_cancelable:[],
+  skipped:0,partial:true,errors:[]};
  if(!trustedContext(context))return {...out,status:'UNTRUSTED_CONTEXT'};
  if(!Number.isSafeInteger(observedQueued)||observedQueued<=THRESHOLD||
     !Number.isSafeInteger(observedRemaining)||observedRemaining<250)
   return {...out,status:'NO_CONFIRMED_BUDGET_OR_PRESSURE'};
  if(!github?.rest?.actions?.listWorkflowRunsForRepo||
     !github.rest.actions.getWorkflowRun||!github.rest.actions.cancelWorkflowRun||
+    !github.rest.actions.listJobsForWorkflowRun||
     !github.rest.pulls?.list||!github.rest.pulls.get||
     !github.rest.repos?.compareCommits)
   return {...out,status:'MISSING_TRUSTED_APIS'};
@@ -85,7 +87,7 @@ async function runCleanup({github,context,core={info(){},warning(){}},
   return {...out,status:'QUEUE_NO_LONGER_SATURATED',partial:false};
  const branches=new Map(),commits=new Map();
  for(const item of response.workflow_runs){
-  if(out.cancel_accepted.length>=limit)break;
+  if(out.cancel_attempts>=limit)break;
   if(!queuedPRRun(item)){out.skipped++;continue;}
   let pr=branches.get(item.head_branch);
   if(pr===undefined){
@@ -143,20 +145,47 @@ async function runCleanup({github,context,core={info(){},warning(){}},
    out.skipped++;continue;
   }
   out.eligible++;
+  // Cap attempted API mutations, not successful cancellations. GitHub can
+  // report zombie queued runs that reject every cancel with HTTP 409.
+  out.cancel_attempts++;
   try{
    await github.rest.actions.cancelWorkflowRun({owner:OWNER,repo:REPO,run_id:item.id});
    out.cancel_accepted.push({run_id:item.id,pr:pr.number,
     old_head:item.head_sha.slice(0,12)});
   }catch(error){
-   out.errors.push('CANCEL_DENIED:'+String(error?.status||'unknown'));
+   const status=Number(error?.status||0);
+   out.errors.push('CANCEL_DENIED:'+String(status||'unknown'));
    out.partial=true;
-   if([403,429].includes(Number(error?.status)))break;
+   if(status===409){
+    // GitHub's documented backend mismatch can show queued with 0 jobs,
+    // while both cancel and force-cancel return 409. Do NOT flood retries
+    // or force-cancel ambiguous runs; preserve a precise support receipt.
+    let runAfter=null,jobs=null;
+    try{
+     const [runResult,jobResult]=await Promise.all([
+      github.rest.actions.getWorkflowRun({owner:OWNER,repo:REPO,run_id:item.id}),
+      github.rest.actions.listJobsForWorkflowRun({
+       owner:OWNER,repo:REPO,run_id:item.id,per_page:5})
+     ]);
+     runAfter=runResult.data;jobs=jobResult.data;
+    }catch(e){out.errors.push('JOBLESS_409_PROOF_UNAVAILABLE:'+String(e?.status||'unknown'));}
+    const jobless=runAfter?.id===item.id&&runAfter.status==='queued'&&
+      jobs?.total_count===0&&Array.isArray(jobs.jobs)&&jobs.jobs.length===0;
+    out.non_cancelable.push({run_id:item.id,pr:pr.number,
+     code:jobless?'QUEUED_WITH_ZERO_JOBS_CANCEL_409':'CANCEL_409_UNVERIFIED',
+     url:'https://github.com/'+FULL+'/actions/runs/'+item.id});
+    out.status='GITHUB_409_SUPPORT_TRIAGE';
+    break;
+   }
+   // Permission/rate/resolution conflicts stop, never retry in the same run.
+   if([403,404,422,429].includes(status))break;
   }
  }
- out.status=out.errors.length?'PARTIAL_ERRORS':
-  out.cancel_accepted.length?'CANCELLATION_ACCEPTED_NOT_TERMINAL':'NO_PROVEN_STALE_RUN';
+ if(out.status!=='GITHUB_409_SUPPORT_TRIAGE')
+  out.status=out.errors.length?'PARTIAL_ERRORS':
+   out.cancel_accepted.length?'CANCELLATION_ACCEPTED_NOT_TERMINAL':'NO_PROVEN_STALE_RUN';
  out.partial=out.partial||response.total_count>response.workflow_runs.length||
-  out.cancel_accepted.length>=limit;
+  out.cancel_attempts>=limit;
  core.info('HH_STALE_MERGED_QUEUE_CLEANUP '+JSON.stringify(out));
  return out;
 }
