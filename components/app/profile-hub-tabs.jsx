@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import InstantCabinetLink from './instant-cabinet-link'
-import { Activity, BookOpen, ClipboardList, FileClock, FileText, House, LockKeyhole, ListChecks, Route, Settings2 } from 'lucide-react'
+import { ProfileModeSwitch } from '../master-mode-switch'
+import { Activity, BookOpen, ClipboardList, FileClock, FileText, House, LockKeyhole, ListChecks, Route } from 'lucide-react'
 import { assessmentHistoryTitle } from '@/lib/assessments/personal-guidance'
 import styles from './profile-hub-tabs.module.css'
 
@@ -132,9 +133,7 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
   return <section className={styles.hub} data-profile-hub-tabs data-profile-active={current}>
     <header className={styles.heading}>
       <div><p className={styles.eyebrow}>{t.label}</p><h2>{settingsMode ? s.pageTitle : t.title}</h2></div>
-      {!settingsMode && <InstantCabinetLink href={root + '/settings'} prefetch={false} className={styles.settings}>
-        <Settings2 size={17} aria-hidden="true" />{t.settings}
-      </InstantCabinetLink>}
+      {!settingsMode && <ProfileModeSwitch locale={selected} active="live" />}
     </header>
     <nav className={settingsMode ? styles.settingsTabs : styles.tabs} aria-label={settingsMode ? s.menu : COPY[selected].navigation}>
       {settingsMode ? [
