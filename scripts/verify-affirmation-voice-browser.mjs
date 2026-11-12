@@ -678,12 +678,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         }
       }
       await page.setViewportSize({width:390,height:840});
-      // Ideas offers a compact set of five phrases by default. The original
-      // consented voice editor is an opt-in advanced section, not a missing
-      // Phrases control or a forced hidden test-only shortcut.
-      // Reuse the same persistent advancedVoice disclosure.
-      // Text mode deliberately collapses the advanced editor. The actual
-      // visitor taps Record a phrase to reveal it; this does not request mic access.
+      // The original voice editor was opened by the real opt-in gesture above.
       await expect(advancedVoice).toHaveAttribute("open","");
       // The approved one phrase editor now lives in Montage Text. Traverse
       // through visible Ideas → Montage → Text, then Record → My Voice.

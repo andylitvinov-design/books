@@ -232,6 +232,8 @@ export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promi
     // but never replace it with a stale/fake shot or drop the chosen sound.
     // Bound BOTH per-frame and whole-export decoder waits.
     let decoderHoldMs=0;
+    // Preserve exact video PTS while allowing native hardware H.264 encode latency.
+    let encoderHoldMs=0;
     const maxFrameDecoderWaitMs=1400;
     const maxTotalDecoderWaitMs=4800;
     // Safari's H.264 encoder can stall for more than one frame while still
@@ -242,13 +244,15 @@ export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promi
     const maxEncoderPresentationLagMs=3000;
     for(let i=0;i<frames;i++){
       if(!shouldContinue())throw new Error("export_cancelled");
-      const remaining=startedAt+decoderHoldMs+(i*1000/frameRate)-performance.now();
+      const remaining=startedAt+decoderHoldMs+encoderHoldMs+(i*1000/frameRate)-performance.now();
       if(remaining>0)await new Promise<void>(resolve=>setTimeout(resolve,remaining));
       // MP4 presentation timestamps remain exact even when a native decoder
       // briefly buffers at the original four-scene shot boundary.
       const time=i/frameRate;
       if(performance.now()-startedAt > time*1000+decoderHoldMs+maxEncoderPresentationLagMs)
         throw new Error("video_encoder_timeline_drift");
+      const frameWorkStartedAt=performance.now();
+      const decoderHoldBeforeFrame=decoderHoldMs;
       let decodedRealFrame=renderFrame(time);
       if(!decodedRealFrame){
         const waitStarted=performance.now();
@@ -264,6 +268,11 @@ export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promi
       }
       await videoSource.add(time,1/frameRate,
         {keyFrame:i%Math.max(1,Math.floor(frameRate*2))===0});
+      // Native encoder work is separate from licensed-source decoder stalls.
+      // Never substitute stale frames or alter the encoded timestamp sequence.
+      const workElapsedMs=performance.now()-frameWorkStartedAt;
+      encoderHoldMs+=Math.max(0,
+        workElapsedMs-(decoderHoldMs-decoderHoldBeforeFrame)-1000/frameRate);
       if((i%Math.max(1,Math.ceil(frameRate/3)))===0)
         onProgress?.(Math.min(99,Math.floor(i/frames*100)));
       if(performance.now()-startedAt>(seconds+20)*1000+decoderHoldMs)
