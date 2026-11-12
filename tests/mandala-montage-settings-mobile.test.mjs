@@ -5,14 +5,16 @@ const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",
 const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
 
 test("Montage opens on Style, preserves real recorder and five functional tabs with Audio replacing Effects",()=>{
-  assert.match(studio,/useState<"settings"\|"effects"\|"text"\|"concept"\|"audio">\("effects"\)/);
+  assert.match(studio,/useState<"settings"\|"effects"\|"text"\|"concept"\|"audio"\|"promo">\("effects"\)/);
   const tabStart=studio.indexOf("<nav className={videoStyles.montageQuickTools}");
   const tabMarkup=studio.slice(tabStart,studio.indexOf("</nav>",tabStart));
   assert.ok(tabStart>0,"Montage nav must exist");
-  assert.deepEqual([...tabMarkup.matchAll(/id:"(settings|effects|text|audio)",Icon:/g)].map(m=>m[1]),["effects","audio","text","settings"]);
+  assert.deepEqual([...tabMarkup.matchAll(/id:"(promo|effects|text|audio|concept)",Icon:/g)].map(m=>m[1]),["effects","audio","text","promo","concept"]);
   assert.match(studio,/data-video-montage-tab=\{item.id\}/);
   assert.match(studio,/if\(id==="editor"\)setMontagePanel\("effects"\)/);
   assert.match(studio,/aria-pressed=\{montagePanel===item.id\}/);
+  assert.doesNotMatch(tabMarkup,/id:"settings"/);
+  assert.match(tabMarkup,/promo:\{ru:"Монтаж PRO",en:"Montage PRO",es:"Montaje PRO"\}/);
   assert.match(studio,/data-video-montage-preferences/);
   for(const field of ["format","duration","transitions","speed","quality"])
     assert.ok(studio.includes('data-video-montage-preference="'+field+'"'),field);
@@ -80,14 +82,16 @@ test("Montage iPhone retains the compact header, real six selectors and on-scree
   assert.match(studio,/data-video-montage-auto-sound/);
 });
 
-test("Original motion WebKit export reaches advanced Audio via Settings without fake fifth tab",()=>{
+test("Original motion WebKit export reaches legacy preferences via Story and keeps Audio controls",()=>{
  const motion=readFileSync(new URL("../scripts/benchmarking/verify-original-motion-export.mjs",import.meta.url),"utf8");
- assert.match(motion,/data-video-montage-tab="settings"/);
+ assert.match(motion,/data-video-story-open-settings/);
+ assert.match(motion,/data-video-montage-tab="concept"/);
  assert.match(motion,/data-video-montage-preference="duration"/);
  assert.match(motion,/await duration\.selectOption\('20'\)/);
  assert.match(motion,/data-video-montage-open-audio/);
- assert.match(motion,/data-video-audio-compact-attach/);
- assert.match(motion,/await generate\.click\(\)/);
+ assert.match(motion,/data-video-audio-compact-select/);
+ assert.match(motion,/data-video-audio-compact-selected/);
+ assert.match(motion,/await generate\.click\(\{timeout:30000\}\)/);
  assert.match(motion,/ffprobe|ffmpeg/);
  assert.doesNotMatch(motion,/data-video-montage-settings|data-video-basic-tab=|data-video-audio-length="/);
 });
@@ -129,4 +133,22 @@ test("iPhone Style primes a newly mounted MP4 without fetching on first render",
   assert.match(browser,/data-video-preview-style","minimal"/);
   assert.match(browser,/video\.readyState>=2&&video\.videoWidth>0/);
   assert.doesNotMatch(browser,/\[data-video-director-style-controls\] \[data-mytube-style-filter\]/);
+});
+
+test("Montage PRO has precisely the owner-approved three offers and two navigation actions",()=>{
+ const offer=readFileSync(new URL("../components/mandala-montage-pro-offer.tsx",import.meta.url),"utf8");
+ const offerCss=readFileSync(new URL("../components/mandala-montage-pro-offer.module.css",import.meta.url),"utf8");
+ assert.ok(studio.includes('montagePanel==="promo" ? <MandalaMontageProOffer'));
+ assert.ok(studio.includes('setMontagePanel("concept");setNotice("")'));
+ assert.ok(studio.includes('setActiveWorkspace("pro");setNotice("")'));
+ assert.ok(studio.includes('hidden={montagePanel==="promo"}'));
+ assert.ok(studio.includes('data-video-story-open-settings'));
+ assert.ok(offer.includes('data-video-montage-pro-offer'));
+ assert.deepEqual([...offer.matchAll(/id:"(greeting|cinematic|portrait)"/g)].map(match=>match[1]),
+   ["greeting","cinematic","portrait","greeting","cinematic","portrait","greeting","cinematic","portrait"]);
+ assert.equal((offer.match(/data-video-montage-pro-free/g)||[]).length,1);
+ assert.equal((offer.match(/data-video-montage-pro-explore/g)||[]).length,1);
+ assert.doesNotMatch(offer,/Pro montage & effects|const tiers|data-video-pro-tier-panel/i);
+ assert.match(offerCss,/@media\(max-width:355px\)/);
+ assert.match(css,/\[data-video-order-bar\]\[hidden\]\{display:none!important\}/);
 });

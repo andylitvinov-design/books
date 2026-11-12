@@ -152,8 +152,9 @@ test("WebKit keeps two Ideas tabs and real opt-in voice while five Montage tabs 
  assert.match(browser,/await advancedText\.click\(\)/);
  assert.match(browser,/await myVoiceModeButton\.click\(\)/);
  assert.match(browser,/data-video-affirmation-voice-consent/);
- for(const tab of ['id:"effects",Icon:Sparkles','id:"text",Icon:Type','id:"audio",Icon:Music2','id:"settings",Icon:SlidersHorizontal'])
+ for(const tab of ['id:"effects",Icon:Sparkles','id:"text",Icon:Type','id:"audio",Icon:Music2','id:"promo",Icon:Zap'])
   assert.ok(studio.includes(tab),tab);
+ assert.ok(studio.includes("data-video-story-open-settings"),"legacy video settings remain under Story");
 });
 
 test("selecting a new phrase at the ten-phrase cap replaces the last choice and reports it",()=>{
