@@ -81,3 +81,15 @@ test('SQLSTATE 42P08 regression: scalar placeholders are cast before JSONB check
  assert.ok(worker.includes("'phase',$4::text,'errorCode',$2::text"));
  assert.ok(worker.includes("'answerSha256',$3::text,'completedAt',$4::timestamptz"));
 });
+
+
+test('OpenRouter final answers preserve Markdown and newlines without unsafe controls',()=>{
+ const declaration=worker.match(/^const cleanMultiline = .*;$/m)?.[0];
+ assert.ok(declaration);
+ const sanitizer=Function(declaration+'\nreturn cleanMultiline;')();
+ assert.equal(sanitizer('  Первый\r\n\r\n### Тема\r**жирный**\n- Пункт\t\u0000',8000),
+  'Первый\n\n### Тема\n**жирный**\n- Пункт');
+ assert.match(worker,/text: cleanMultiline\(text, 8000\)/);
+ assert.match(worker,/const answer = cleanMultiline\(assistant\.content, 8000\)/);
+ assert.match(worker,/Format answers as readable Markdown/);
+});

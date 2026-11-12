@@ -1,38 +1,25 @@
-# PR Monitor — top 5 actionable recommendations (HH_PR_RECOMMENDATIONS_V1)
+# PR Monitor — 3 technical prompts from current automation evidence (HH_PR_RECOMMENDATIONS_V2)
 
-Date: 9 November 2026
+Updated: 2026-11-11 (Toronto). The existing five-card module is REUSED, not duplicated.
 
-## Placement and interaction
+## What the operator sees
 
-The recommendations block is mounted immediately after the existing PR stage/timing section (#hh2-stages). On the page this puts the five technical actions directly below the PR timing table, after the first operational graph/overview, instead of at the bottom of the long dashboard.
+- Three ranked technical recommendations in a single mobile column below the two top charts; always visible even with the compact numeric view enabled.
+- Each card has observed reason/counters, confidence, current automation workflow link, expandable executable /goal prompt, Copy, and owner-gated 'В задачу' handoff.
+- 'В задачу' transports text using the existing 10-minute hh.commander.handoff.v2 envelope; it never submits or runs a worker without the owner checking and saving it.
 
-The block is compact and mobile-first. Every recommendation contains priority, evidence confidence, observed signal, existing role owner, one precondition/blocker, technical steps, focused tests, measurable acceptance and an evidence link. Expandable details keep the default screen short.
+## Evidence and safeguards
 
-## Source, refresh and freshness
+- One GET to the existing public /api/control-tower-stats per page open; explicit Refresh only. This API is backed by the existing Control Tower #3128 Watchdog/Dispatcher snapshot and its job/run link.
+- Dynamic causal ranking: blocked dispatcher/inventory; exact-head Core; verified merge-tree conflicts; Specialist; signed wake; fallback only to labeled verification tasks.
+- Contradictory/population-incomplete counters are not added together. HTTP accepted, signed RUNNER_STARTED, GitHub source SHA, merged and Vercel LIVE are separate verified states.
+- Sample checked_at is used for freshness. FRESH <=15m, DELAYED 15–75m, STALE >75m; stale prompt requires fresh per-PR/HEAD/lease/job evidence.
+- Individual failed job stack traces and private :20 Docs are not exposed to the public page. Prompts explicitly require reading the linked GitHub Actions run and protected receipts before making changes.
+- Never assume that conflict label means a real dirty merge, or that worker response means a commit. Never bypass Core/Specialist/Guard and security/privacy/consent/payment checks.
+- No new backend, tokens, AI model request, Actions/cron, polling, GitHub scan, CI runs, paid service or automatic source write.
 
-The block reads the existing same-origin /api/control-tower-stats endpoint, backed by the current public Control Tower issue #3128. It performs one read on page open and a second read only when the owner taps «Обновить». No timer, background polling, new GitHub scan, new provider, CI dispatch, task execution or write credential is added.
+## Release
 
-Freshness is calculated from the exact bounded Watchdog sample's checked_at timestamp, not from page load time or the containing API response:
-- FRESH: up to 15 minutes
-- DELAYED: 15–75 minutes
-- STALE: over 75 minutes
+Source files: pr-recommendations.js/css, pr-dense-view.css and this README + focused tests. Monitor uses a manually deployed full manifest. After a protected merge, update only the three existing immutable-source Vercel Project Routes to point to the merged commit; do not redeploy a partial site. Verify alias/HTTP MIME/route version and a real mobile end-to-end smoke before marking LIVE.
 
-If data is stale, the warning is prominent and the text requires revalidation of current PR HEAD, lease and CI before any source action. Missing values stay unknown, never zero.
-
-## Current technical recommendation categories
-
-1. Semantic merge-conflict resolution by one verified owner.
-2. Exact-HEAD Core CI failure repair with a focused source regression test.
-3. Specialist failures versus policy holds, preserving privacy, consent, payment and Guard restrictions.
-4. Dispatch acceptance → trusted RUNNER_STARTED → terminal source receipt reconciliation.
-5. Freshness and snapshot provenance, preventing stale recommendations from being actioned.
-
-The public Control Tower feed supplies only bounded aggregate counts, not the full affected-PR list, individual HEADs or private journal text. The page explicitly says the sample is bounded, never invents PR numbers and requires current PR/HEAD/lease revalidation before implementation. The :20 automation prompt now emits a versioned five-task block with those details into its existing private Google Doc; this public UI does not expose that private document or claim it is already synchronized. A future secure sanitized handoff can replace these public sample-derived cards when the existing writer publishes one.
-
-## Verification
-
-- node --check ops/pr-monitor/pr-recommendations.js
-- node --check ops/pr-monitor/pr-two-screen-boot.js
-- node --test ops/pr-monitor/tests/pr-recommendations.test.cjs
-
-No existing chart, PR stage source, CI endpoint, authentication or owner-only Command Center route is changed.
+GLOBAL_PR_ONE_PUBLISH_V1: staged_before_open=yes; local_checks=verified; post_open_head_updates=0; extra_waves=none; cost_new_spend=NO_NEW_SERVICES

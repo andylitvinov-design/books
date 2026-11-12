@@ -83,7 +83,7 @@ test('server chat refresh is retryable and never silently switches to a local ar
  assert.match(js,/else if\(authorized\)\{await authenticated\(\)/);
  assert.match(js,/A transient API failure must not silently replace server chats/);
  assert.match(js,/Серверное хранилище временно недоступно/);
- assert.ok(html.includes('commander-chats.js?v=20261111-free-quota-v1'));
+ assert.ok(html.includes('commander-chats.js?v=20261111-free-quota-rich-v2'));
  assert.match(js,/Проверка защищённого серверного хранилища временно не завершилась/);
  assert.match(js,/if\(statusError\)/);
 });
@@ -126,7 +126,7 @@ test('Council routes through owner-authenticated free worker and exposes a persi
  assert.match(js,/request\(SERVER\+'\?action=run','POST'/);
  assert.match(js,/lastQuestion\(\)/);
  assert.match(css,/\.cc-run-status/);
- assert.match(html,/20261111-free-quota-v1/);
+ assert.match(html,/20261110-rich-markdown-v1/);
 });
 
 test('Commander Hermes adapter exposes only owner-authenticated free models and consented writes',()=>{
@@ -192,7 +192,7 @@ test('Commander one-box UX shows the question first and keeps task metadata in a
  assert.ok(css.includes('HH_COMMANDER_ONE_BOX_CHAT_V1'));
  assert.ok(css.includes('.cc-context-dialog::backdrop'));
  assert.ok(css.includes('body.hh-cc-shell:has(#cc-board textarea:focus) #hh-cc-dock'));
- assert.ok(html.includes('commander-chats.css?v=20261110-openrouter-status-v3'));
+ assert.ok(html.includes('commander-chats.css?v=20261110-rich-markdown-v1'));
 });
 
 test('compact mobile chat never silently swallows validation or duplicates a timed-out creation',()=>{
@@ -279,7 +279,7 @@ test('question-first chat completes owner-scoped create, reply, save and reopen 
    if(target.pathname==='/api/commander-session')return response({authenticated:true,owner:true,privateStoreConfigured:true,expiresAt:2000000000});
    if(target.pathname==='/api/pm-agent-chat'){
     if(action==='status')return response({authenticated:true,modes:{local:true,openrouter:false}});
-    if(action==='chat')return response({reply:'Синтетический ответ советника',model:'local'});
+    if(action==='chat')return response({reply:'**Синтетический ответ советника**\n\n### 1. Проверка\n- **Шаг:** сохранить\n- [Ссылка](https://example.org)\n\nПервая строка\nВторая строка\n\n<script>alert(1)</script> [опасно](javascript:alert(1))',model:'local'});
     if(action==='council')return response({reply:'Синтетический ответ Совета ИИ, это проверенный тестовый ответ.',model:'Council free'});
     if(action==='reports')return response({reports:[]});
    }
@@ -331,10 +331,15 @@ test('question-first chat completes owner-scoped create, reply, save and reopen 
  assert.deepEqual(created.executors,['local']);
  assert.deepEqual(eventRows.map(e=>e.kind),['owner','assistant_unverified']);
  assert.equal(eventRows[0].text,'Проверь работу сохранения рабочего чата');
- assert.equal(eventRows[1].text,'Синтетический ответ советника');
+ assert.match(eventRows[1].text,/\*\*Синтетический ответ советника\*\*/);
  assert.equal(elements['cc-thread'].hidden,false);
  assert.equal(elements['cc-create'].hidden,true);
  assert.equal(elements['cc-messages'].children.length,2);
+ const descendants=node=>[node,...node.children.flatMap(descendants)];
+ const renderedReply=descendants(elements['cc-messages'].children[1]);
+ for(const tag of ['strong','h4','ul','li','br','a'])assert.ok(renderedReply.some(node=>node.id===tag),tag);
+ assert.equal(renderedReply.filter(node=>node.id==='a').length,1,'unsafe scheme must remain plain text');
+ assert.ok(!renderedReply.some(node=>node.id==='script'),'model HTML must not execute');
  assert.match(elements['cc-chat-feedback'].textContent,/Ответ сохранён/);
  assert.equal(elements['cc-create-send'].disabled,false);
  assert.ok(network.some(x=>x.action==='create'&&x.method==='POST'));
@@ -554,8 +559,8 @@ test('legacy external Hermes code executor is disabled in UI and rejected before
 
 test('CI Inbox displays the shared diagnostic recommendation and retry policy without granting execution authority',()=>{
  const html=src('chats.html'),js=src('commander-chats.js'),css=src('commander-chats.css');
- assert.match(html,/commander-chats\.js\?v=20261111-free-quota-v1/);
- assert.match(html,/commander-chats\.css\?v=20261110-openrouter-status-v3/);
+ assert.match(html,/commander-chats\.js\?v=20261111-free-quota-rich-v2/);
+ assert.match(html,/commander-chats\.css\?v=20261110-rich-markdown-v1/);
  assert.match(js,/event\.classification&&typeof event\.classification==='object'/);
  for(const field of ['recommended_action','recommended_status','reason_code','responsible_role','retry','requires_human','ruleset_version','confidence'])
   assert.ok(js.includes('classification.'+field)||js.includes('classification?.'+field),field);
@@ -566,7 +571,7 @@ test('CI Inbox displays the shared diagnostic recommendation and retry policy wi
 test('owner chat accurately labels first-party OpenRouter Free and translates every fail-closed provider reason',()=>{
  const html=src('chats.html'),js=src('commander-chats.js');
  assert.equal((html.match(/Agents Director · OpenRouter Free \(анализ\)/g)||[]).length,2);
- assert.match(html,/commander-chats\.js\?v=20261111-free-quota-v1/);
+ assert.match(html,/commander-chats\.js\?v=20261111-free-quota-rich-v2/);
  assert.match(js,/director:'Agents Director · OpenRouter Free'/);
  for(const code of ['OWNED_MODEL_RUNTIME_NOT_CONFIGURED','OWNED_MODEL_FREE_RATE_LIMIT',
    'OWNED_MODEL_NO_VERIFIED_FREE_MODELS','OWNED_MODEL_COST_UNVERIFIED',
@@ -624,7 +629,7 @@ test("free-model quota is derived from provider key daily request counter, not c
  assert.match(ui,/QUOTA_OPTION_LABELS/);
  assert.match(ui,/SERVER\+"\?action=free_quota"/);
  assert.match(ui,/refreshFreeQuota\(true\)/);
- assert.match(html,/commander-chats\.js\?v=20261111-free-quota-v1/);
+ assert.match(html,/commander-chats\.js\?v=20261111-free-quota-rich-v2/);
  const unauth=response();
  await api({method:"GET",url:"/api/commander-chats?action=free_quota",
   headers:{host:"holistic-house-pr-monitor.vercel.app"}},unauth);
@@ -669,4 +674,25 @@ test("provider daily free quota contract is parsed safely without inference or l
  const missing=await helper(()=>{throw Error("should not fetch")},"")();
  assert.equal(missing.status,"UNAVAILABLE");
  assert.equal(missing.reason,"KEY_NOT_CONFIGURED");
+});
+
+
+test('historic flattened AI Markdown is recovered without injecting model HTML',()=>{
+ const source=src('commander-chats.js');
+ const start=source.indexOf(' // HH_COMMANDER_RICH_MARKDOWN_V1: DOM only');
+ const end=source.indexOf(' function renderMessages(){',start);
+ assert.ok(start>0&&end>start);
+ const make=(tag,cls,text)=>({tag,cls,text,children:[],append(...children){this.children.push(...children)}});
+ const rich=Function('make',source.slice(start,end)+';return richMessage;')(make);
+ const descendants=node=>[node,...node.children.flatMap(descendants)];
+ const historic=descendants(rich('Вот тренды: ### 1. Мультимодальность - **Что это:** описание - **Примеры:** GPT'));
+ assert.ok(historic.some(node=>node.tag==='h4'));
+ assert.equal(historic.filter(node=>node.tag==='li').length,2);
+ assert.equal(historic.filter(node=>node.tag==='strong').length,2);
+ const modern=descendants(rich('## Заголовок\n\n**Жирный** и *курсив*\n\n1. Шаг\n2. Второй\n\nФраза\nещё фраза\n\n' +
+  '[ссылка](https://example.org) [опасно](javascript:alert(1)) <script>alert(1)</script>'));
+ for(const tag of ['h3','strong','em','ol','li','br','a'])assert.ok(modern.some(node=>node.tag===tag),tag);
+ assert.equal(modern.filter(node=>node.tag==='a').length,1);
+ assert.ok(!modern.some(node=>node.tag==='script'));
+ assert.ok(modern.some(node=>node.tag==='span'&&node.text?.includes('<script>')));
 });

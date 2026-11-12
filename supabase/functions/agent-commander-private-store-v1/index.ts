@@ -13,6 +13,7 @@ const STATES = new Set(["planned","assigned","working","review","blocked","archi
 const EXECUTORS = new Set(["local","openrouter","codex","chatgpt-work","repair-worker","hermes","manual"]);
 const uuid = v => typeof v==="string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
 const clean = (v,n) => typeof v==="string" ? v.replace(/[\u0000-\u001f\u007f]/g," ").trim().slice(0,n) : "";
+const cleanMultiline = (v, n) => typeof v === "string" ? v.replace(/\r\n?/g, "\n").replace(/[\u0000-\u0009\u000b-\u001f\u007f]/g, " ").trim().slice(0, n) : "";
 const number = v => Number.isSafeInteger(Number(v)) && Number(v)>0 && Number(v)<100000 ? Number(v) : null;
 
 const DIRECTOR_RUN_SCHEMA="HH_AGENT_DIRECTOR_RUN_V1";
@@ -43,7 +44,7 @@ function trustedOwnedDirectorReceipt(value,run){
   throw Error("AGENT_DIRECTOR_RECEIPT_NOT_VERIFIED");
  return {status:value.status,reasonCode:clean(value.reasonCode,110)||null,
   agentStarted:value.agentStarted,executionVerified:value.executionVerified,model:clean(value.model,120)||null,
-  result:value.status==="COMPLETED"?clean(value.result,1800):"",sourceWrite:null,proofLevel:value.proofLevel};
+  result:value.status==="COMPLETED"?cleanMultiline(value.result,1800):"",sourceWrite:null,proofLevel:value.proofLevel};
 }
 async function saveOwnedDirectorReceipt(db,ownerId,chatId,runId,report){
  const selected=await q(db,"select request_payload from business_brain.commander_execution_runs where run_id=$1::uuid and owner_id=$2::uuid and chat_id=$3::uuid limit 1",[runId,ownerId,chatId]);
@@ -59,7 +60,7 @@ async function saveOwnedDirectorReceipt(db,ownerId,chatId,runId,report){
  const text=done?"Ответ Agent Director (собственная модель, read-only): "+report.result+"\nИсходный код не менялся. GitHub PR, CI и LIVE не подтверждены.":
   "Запуск Agent Director заблокирован: "+(report.reasonCode||"OWNED_MODEL_RUNTIME_NOT_CONFIGURED")+".";
  const event={schema:"HH_COMMANDER_EVENT_V1",id:eventId,kind:"agent_final",author:"Agent Director",
-  text:clean(text,1800),status:report.status,model:report.model,sourceWrite:null,sourceVerified:false,
+  text:cleanMultiline(text,1800),status:report.status,model:report.model,sourceWrite:null,sourceVerified:false,
   proofLevel:report.proofLevel,createdAt:new Date().toISOString()};
  await q(db,"insert into business_brain.commander_chat_events(event_id,chat_id,owner_id,kind,payload,source_verified) values($1::uuid,$2::uuid,$3::uuid,'note',$4::text::jsonb,false) on conflict(event_id) do nothing",
   [eventId,chatId,ownerId,jsonbText(event)]);
@@ -191,7 +192,7 @@ async function resolveScope(scope,body){
 function cleanEvent(body){
   if(!uuid(body.eventId))throw Error("INVALID_EVENT_ID");
   if(!["owner","ai","note"].includes(body.kind))throw Error("INVALID_EVENT_KIND");
-  const text=clean(body.text,1800);
+  const text=cleanMultiline(body.text,1800);
   if(!text||String(body.text||"").length>1800)throw Error("INVALID_EVENT_TEXT");
   const ai=body.kind==="ai";
   return {schema:"HH_COMMANDER_EVENT_V1",id:body.eventId,
@@ -1168,7 +1169,7 @@ async function handler(req){
         comment.issue_url!=="https://api.github.com/repos/andylitvinov-design/books/issues/"+m[1])
         return reply(400,{error:"REPORT_PROVENANCE_UNVERIFIED"},origin);
       const eventId=body.eventId;if(!uuid(eventId))return reply(400,{error:"INVALID_EVENT_ID"},origin);
-      const text=clean(String(comment.body||"").replace(/<!--[\s\S]*?-->/g,"").replace(/(?:ghp_|gho_|sk-)[A-Za-z0-9_-]{16,}/g,"[REDACTED]"),1600);
+      const text=cleanMultiline(String(comment.body||"").replace(/<!--[\s\S]*?-->/g,"").replace(/(?:ghp_|gho_|sk-)[A-Za-z0-9_-]{16,}/g,"[REDACTED]"),1600);
       const event={schema:"HH_COMMANDER_EVENT_V1",id:eventId,kind:"github_report",author:"GitHub report",
         text,url:body.url,sourceVerified:false,proofLevel:"REPORT_ONLY_NOT_COMMIT",createdAt:new Date().toISOString()};
       const inserted=await q(db,"insert into business_brain.commander_chat_events(event_id,chat_id,owner_id,kind,payload,source_verified) values($1::uuid,$2::uuid,$3::uuid,'github_report',$4::text::jsonb,false) on conflict(event_id) do nothing returning event_id",[eventId,rows[0].chat_id,ownerId,jsonbText(event)]);

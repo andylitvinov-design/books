@@ -419,6 +419,70 @@ const from64=s=>Uint8Array.from(win.atob(s),v=>v.charCodeAt(0));
   }
   if(!filtered.length)box.append(make('p','cc-empty',chats.length?'Чаты не найдены.':'Начните диалог — он появится здесь.'));
  } 
+ // HH_COMMANDER_RICH_MARKDOWN_V1: DOM only; no model HTML.
+ function richMessage(text){
+ const root=make('div','cc-message-markdown');
+ let source=String(text||'').replace(/\r\n?/g,'\n');
+ if(source.split('\n').length<4){
+  source=source.replace(/[ \t]+(?=#{1,6}[ \t]+\d+[.)][ \t]+)/g,'\n\n')
+   .replace(/[ \t]+(?=-[ \t]+\*\*[^*\n]{1,75}\*\*)/g,'\n');
+ }
+ const lines=source.split('\n');
+ const heading=/^ {0,3}(#{1,6})[ \t]+(.+?)\s*#*\s*$/;
+ const bullet=/^ {0,3}[-*+][ \t]+(.+)$/;
+ const number=/^ {0,3}\d{1,3}[.)][ \t]+(.+)$/;
+ const quote=/^ {0,3}>[ \t]?(.*)$/;
+ const fence=/^ {0,3}(`{3,}|~{3,})/;
+ const inline=/\[([^\]\n]{1,120})\]\((https?:\/\/[^\s)]+)\)|`([^`\n]+)`|\*\*([^*\n]+)\*\*|__([^_\n]+)__|\*([^*\n]+)\*|_([^_\n]+)_/g;
+ function addInline(parent,value){
+  const line=String(value),matcher=new RegExp(inline.source,'g');
+  let match,from=0;
+  while((match=matcher.exec(line))){
+   if(match.index>from)parent.append(make('span',null,line.slice(from,match.index)));
+   if(match[1]){const link=make('a',null,match[1]);link.href=match[2];link.target='_blank';link.rel='noopener noreferrer';parent.append(link);}
+   else if(match[3])parent.append(make('code',null,match[3]));
+   else if(match[4]||match[5])parent.append(make('strong',null,match[4]||match[5]));
+   else parent.append(make('em',null,match[6]||match[7]));
+   from=matcher.lastIndex;
+  }
+  if(from<line.length)parent.append(make('span',null,line.slice(from)));
+ }
+ function addLines(parent,paragraphLines){paragraphLines.forEach((line,index)=>{if(index)parent.append(make('br'));addInline(parent,line.trim());});}
+ function block(line){
+  if(!line.trim())return 'blank';
+  if(fence.test(line))return 'fence';
+  if(heading.test(line))return 'heading';
+  if(bullet.test(line))return 'ul';
+  if(number.test(line))return 'ol';
+  if(quote.test(line))return 'quote';
+  if(/^ {0,3}(?:-{3,}|\*{3,}|_{3,})\s*$/.test(line))return 'rule';
+  return 'paragraph';
+ }
+ for(let i=0;i<lines.length;){
+  const kind=block(lines[i]);
+  if(kind==='blank'){i++;continue;}
+  if(kind==='fence'){
+   const marker=fence.exec(lines[i])[1],content=[];i++;
+   while(i<lines.length&&!new RegExp('^ {0,3}'+marker[0]+'{'+marker.length+',}\\s*$').test(lines[i]))content.push(lines[i++]);
+   if(i<lines.length)i++;
+   const pre=make('pre'),code=make('code',null,content.join('\n'));pre.append(code);root.append(pre);continue;
+  }
+  if(kind==='heading'){const match=heading.exec(lines[i++]);const element=make('h'+Math.min(4,Math.max(2,match[1].length+1)));addInline(element,match[2]);root.append(element);continue;}
+  if(kind==='rule'){root.append(make('hr'));i++;continue;}
+  if(kind==='ul'||kind==='ol'){
+   const list=make(kind),pattern=kind==='ul'?bullet:number;
+   while(i<lines.length&&block(lines[i])===kind){const item=make('li');addInline(item,pattern.exec(lines[i++])[1]);list.append(item);}
+   root.append(list);continue;
+  }
+  if(kind==='quote'){
+   const quoted=[],blockquote=make('blockquote');while(i<lines.length&&block(lines[i])==='quote')quoted.push(quote.exec(lines[i++])[1]);
+   const p=make('p');addLines(p,quoted);blockquote.append(p);root.append(blockquote);continue;
+  }
+  const paragraph=[];while(i<lines.length&&block(lines[i])==='paragraph')paragraph.push(lines[i++]);
+  const p=make('p');addLines(p,paragraph);root.append(p);
+ }
+ return root;
+}
  function renderMessages(){
   const box=el('messages');box.replaceChildren();
   if(!messages.length)box.append(make('p','cc-empty','Напишите вопрос, чтобы начать диалог.'));
@@ -426,7 +490,8 @@ const from64=s=>Uint8Array.from(win.atob(s),v=>v.charCodeAt(0));
    const c=make('div','cc-message-item cc-from-'+msg.kind);
    const author=msg.kind==='owner'?'Вы':msg.kind==='assistant_unverified'?(String(msg.model||'').startsWith('Совет ИИ')?'Совет ИИ':'Ассистент'):
     msg.kind==='note'?'Заметка':msg.author||'Сообщение';
-   c.append(make('div','cc-message-by',author),make('p',null,msg.text||''),
+   c.append(make('div','cc-message-by',author),
+    msg.kind==='owner'?make('p',null,msg.text||''):richMessage(msg.text||''),
     make('small',null,time(msg.createdAt)+(msg.kind==='github_report'?' · отчёт, не доказательство LIVE':'')));
    if(msg.kind==='github_report')htmlLink(c,'Источник GitHub',msg.url);
    if(msg.kind==='agent_final'&&msg.sourceWrite?.verified===true)htmlLink(c,'Проверенный Draft PR #'+msg.sourceWrite.prNumber,msg.sourceWrite.prUrl);
