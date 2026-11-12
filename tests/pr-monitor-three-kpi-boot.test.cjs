@@ -8,7 +8,7 @@ const assets=['pr-timestamp-coverage.css?v=20261104-5',
  'pr-cohort-wall-clock.js?v=20261104-kpi-p95-3476',
  'pr-two-screen.js?v=20261111-full-journey-v3',
  'pr-three-kpi-ui.css?v=20261106-wave-kpi1',
- 'pr-three-kpi-ui.js?v=20261111-weekly-top-v1'];
+ 'pr-three-kpi-ui.js?v=20261112-long-tail-v1'];
 test('latest production assets and KPI are loaded exactly once',()=>{
  for(const item of assets){
   assert.equal(boot.split(item).length-1,1,item);
@@ -42,6 +42,27 @@ test('Green to Merge outliers use a verified same-cohort sample only',()=>{
  assert.equal(pick({...entry,n:5}),null,'incomplete sample is unknown');
  assert.equal(pick({...entry,rows:entry.rows.map(r=>({...r,minutes:2}))}),null,'no spurious outlier');
 });
+
+test('outlier data stays visible when the sample exceeds the 30-row UI cap',()=>{
+ const vm=require('node:vm');
+ const source=fs.readFileSync(path.join(__dirname,'../ops/pr-monitor/pr-three-kpi-ui.js'),'utf8');
+ const marker=" if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});";
+ const instrumented=source.replace(marker,
+  " window.__hhTestLongTail=observedLongTail;\n"+marker);
+ assert.notEqual(instrumented,source);
+ const sandbox={window:{},document:{readyState:'loading',addEventListener(){}}};
+ vm.runInNewContext(instrumented,sandbox);
+ const pick=sandbox.window.__hhTestLongTail;
+ const entry={n:31,rows:Array.from({length:30},()=>({pr:1,minutes:1})),
+  long_tail:{schema:'HH_GREEN_MERGE_LONG_TAIL_V1',sample_n:31,
+   outlier_n:4,top:[{pr:4322,minutes:457.52}],
+   wait_share_percent:95.8,mean_without_outliers_min:2.2}};
+ assert.equal(pick(entry).outlier_n,4);
+ assert.equal(pick({...entry,n:32}),null,'mismatched cohort is not evidence');
+ assert.equal(pick({...entry,long_tail:{...entry.long_tail,
+  top:[{pr:0,minutes:457.52}]}}),null,'invalid links rejected');
+});
+
 test('no CI dispatch, cron, paid integration or polling added to boot',()=>{
  assert.doesNotMatch(boot,/workflow_dispatch|setInterval\s*\(|createWorkflowDispatch|https:\/\/api\.github\.com/);
  assert.match(boot,/legacy\.html/);
