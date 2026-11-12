@@ -66,8 +66,10 @@ function computeCapacity(active,queued,jobs){
 }
 
 const GHOST_REPAIR_MODE='GHOST_409_ONE_REPAIR';
-// Inspect at most twenty active workflow histories, leaving four Core slots.
-// In-progress wrapper statuses do not prove that their jobs are runnable.
+// Inspect at most the existing 24-run job-read budget. Admit a Repair only
+// when independently proven terminal overhangs leave <=20 real active wrappers.
+// Unknown or fresh in-progress runs still occupy capacity; four Core slots remain.
+// In-progress wrapper statuses alone never prove whether jobs are runnable.
 const GHOST_ACTIVE_PROOF_LIMIT=Math.min(LIMIT.maxJobReads,LIMIT.maxActiveRuns-4);
 async function verifiedGhostRepairCapacity(gh,owner,repo,p,now=Date.now()){
  const hold=reason=>({known:false,reason:'GHOST_'+reason});
@@ -112,7 +114,7 @@ async function verifiedGhostRepairCapacity(gh,owner,repo,p,now=Date.now()){
   ]);
   const Q=q?.data?.total_count,A=a?.data?.total_count,active=a?.data?.workflow_runs;
   if(!Number.isSafeInteger(Q)||Q<=100||Q>250||
-   !Number.isSafeInteger(A)||A>GHOST_ACTIVE_PROOF_LIMIT||A<0||
+   !Number.isSafeInteger(A)||A>LIMIT.maxJobReads||A<0||
    !Array.isArray(active)||active.length!==A||
    wq?.data?.total_count!==0||!Array.isArray(wq.data.workflow_runs)||
    wa?.data?.total_count!==0||!Array.isArray(wa.data.workflow_runs))
@@ -125,15 +127,27 @@ async function verifiedGhostRepairCapacity(gh,owner,repo,p,now=Date.now()){
      page.jobs.some(j=>!Number.isSafeInteger(j.id)||
       !['completed','queued','waiting','pending','in_progress'].includes(j.status)))
     throw Error('INCOMPLETE_JOBS');
-   return page.jobs;
+   return page;
   }));
-  const jobs=batches.flat();
+  // GitHub can retain an in_progress wrapper for days after all its jobs
+  // completed. An overhang is discounted only with exact complete job IDs,
+  // terminal conclusions and >60-minute-old job and wrapper timestamps.
+  // Reuse the existing strict classifier; do not infer idle from a status
+  // or from the queued-409 proof.
+  const verifiedOverhangs=active.reduce((count,run,index)=>
+   count+(verifiedTerminalOverhang(run,batches[index],now)?1:0),0);
+  const effectiveActive=A-verifiedOverhangs;
+  if(effectiveActive>GHOST_ACTIVE_PROOF_LIMIT)
+   return hold('REAL_ACTIVE_RUN_PRESSURE');
+  const jobs=batches.flatMap(page=>page.jobs);
   const runningJobs=jobs.filter(j=>j.status==='in_progress').length,
    queuedJobs=jobs.filter(j=>['queued','waiting','pending'].includes(j.status)).length;
   if(runningJobs>8||queuedJobs>2)return hold('REAL_JOB_PRESSURE');
   return {known:true,inventoryConfidence:GHOST_REPAIR_MODE,
    safeToDispatchOneRepair:true,ghostProofRunId:p.run_id,
-   activeRuns:A,queuedRuns:Q,runningJobs,queuedJobs,unknownQueuedRuns:Q,
+   activeRuns:effectiveActive,originalActiveRuns:A,
+   verifiedTerminalOverhangRuns:verifiedOverhangs,
+   queuedRuns:Q,runningJobs,queuedJobs,unknownQueuedRuns:Q,
    coreQueuedRuns:null,coreQueuedJobs:null,
    activeWorker:Object.fromEntries([...new Set(Object.values(WORKFLOWS))].map(x=>[x,0]))};
  }catch{return hold('READBACK_FAILED');}
