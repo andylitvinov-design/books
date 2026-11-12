@@ -467,8 +467,10 @@ test("post-export stale narration refusal reopens mounted Audio and consented Vo
  assert.doesNotMatch(source.slice(audio,expand),/data-video-montage-settings|data-video-basic-tab/);
 });
 
-test("WebKit release follows the real Montage Settings, Audio, and voice disclosure",()=>{
- assert.match(source,/const montageSettingsTab=page\.locator\('\[data-video-montage-tab="settings"\]'\)/);
+test("WebKit release follows Story video settings, Audio, and voice disclosure",()=>{
+ assert.match(source,/const montageSettingsTab=page\.locator\('\[data-video-story-open-settings\]'\)/);
+ assert.match(source,/await page\.locator\('\[data-video-montage-tab="concept"\]'\)\.click\(\)/);
+ assert.match(source,/data-montage-panel","settings"/);
  assert.match(source,/const durationSelect=page\.locator\('\[data-video-montage-preference="duration"\]'\)/);
  assert.match(source,/await durationSelect\.selectOption\("10"\)/);
  assert.match(source,/await expect\(page\.locator\('\[data-video-montage-audio\]'\)\)\.toBeVisible\(\)/);
