@@ -1962,14 +1962,23 @@ function ghostFixture(o={}){
   base:{ref:'codex/public-book-library',repo:{full_name:'andylitvinov-design/books'}},
   head:{ref:'feat/old',sha:head,repo:{full_name:'andylitvinov-design/books'}},...(o.pr||{})};
  const activeCount=o.activeCount??1;
- const a=Array.from({length:activeCount},(_,i)=>({id:i+300,status:'in_progress'}));
+ const a=Array.from({length:activeCount},(_,i)=>({
+  id:i+300,status:'in_progress',conclusion:null,run_attempt:1,
+  created_at:i<(o.terminalOverhang||0)?'2026-11-11T15:00:00Z':'2026-11-12T19:00:00Z',
+  updated_at:i<(o.terminalOverhang||0)?'2026-11-11T16:00:00Z':'2026-11-12T19:59:00Z'
+ }));
  return {
   p:{code:'QUEUED_WITH_ZERO_JOBS_CANCEL_409',run_id:900,pr:4370},
   github:{rest:{actions:{
    getWorkflowRun:async()=>({data:run}),
    listJobsForWorkflowRun:async({run_id})=>({data:run_id===900?
     {total_count:o.ghostJobs??0,jobs:o.ghostJobs?[{id:1,status:'queued'}]:[]}:
-    {total_count:1,jobs:[{id:run_id+1000,status:o.jobStatus||'completed'}]}}),
+    {total_count:o.badJobPage&&run_id===300?2:1,
+     jobs:[{id:run_id+1000,status:o.jobStatus||'completed',
+       conclusion:'success',
+       completed_at:o.invalidTerminalJob&&run_id===300?'INVALID':
+        run_id-300<(o.terminalOverhang||0)?
+         '2026-11-11T17:00:00Z':'2026-11-12T19:59:00Z'}]}}),
    listWorkflowRunsForRepo:async({status})=>({data:status==='queued'?
     {total_count:o.queueCount??137,workflow_runs:[]}:{
      total_count:activeCount,workflow_runs:a}}),
@@ -2019,5 +2028,43 @@ test('409 fallback never admits unverified or congested runners',async()=>{
   const f=ghostFixture(opts);
   const result=await GRC(f.github,'andylitvinov-design','books',f.p,Date.parse('2026-11-12T20:00:00Z'));
   assert.equal(result.known,false,'unsafe '+JSON.stringify(opts));
+ }
+});
+
+
+test('ghost-409 capacity counts only independently verified old terminal wrapper overhangs',async()=>{
+ const now=Date.parse('2026-11-12T20:00:00Z');
+ for(const [all,old,expected] of [[24,5,19],[24,4,20],[21,1,20]]){
+  const f=ghostFixture({activeCount:all,terminalOverhang:old});
+  let reads=0;
+  const getJobs=f.github.rest.actions.listJobsForWorkflowRun;
+  f.github.rest.actions.listJobsForWorkflowRun=async args=>{
+    if(args.run_id!==900)reads++;
+    return getJobs(args);
+  };
+  const result=await GRC(f.github,'andylitvinov-design','books',f.p,now);
+  assert.equal(result.known,true,'complete 1-hour proof '+all+'/'+old);
+  assert.equal(reads,all,'every in_progress wrapper was checked');
+  assert.equal(result.originalActiveRuns,all);
+  assert.equal(result.verifiedTerminalOverhangRuns,old);
+  assert.equal(result.activeRuns,expected);
+  assert.equal(admission('repair',result),'ADMIT');
+  assert.equal(admission('ci',result),'GHOST_REPAIR_ONLY');
+  assert.equal(admission('legacy',result),'GHOST_REPAIR_ONLY');
+ }
+});
+test('overhang rescue fails closed for uncertain, fresh or excessive wrappers/jobs',async()=>{
+ const now=Date.parse('2026-11-12T20:00:00Z');
+ for(const [variation,reason] of [
+  [{activeCount:24,terminalOverhang:3},'21 active wrappers remain'],
+  [{activeCount:24,terminalOverhang:4,invalidTerminalJob:true},'stale time missing'],
+  [{activeCount:24,terminalOverhang:5,badJobPage:true},'incomplete jobs page'],
+  [{activeCount:25,terminalOverhang:25},'over proof budget'],
+  [{activeCount:24,terminalOverhang:5,jobStatus:'in_progress'},'real job pressure']
+ ]){
+  const f=ghostFixture(variation);
+  const result=await GRC(f.github,'andylitvinov-design','books',f.p,now);
+  assert.equal(result.known,false,reason);
+  assert.notEqual(admission('repair',result),'ADMIT',reason);
  }
 });
