@@ -21,7 +21,7 @@ test("exactly three distinct symbolic offerings have real non-payment request pa
   assert.match(component, /whatsappEnquiryUrl/);
   assert.match(component, /services\/remote-energy-support/);
   assert.match(component, /holistic-support\/mandala\?mode=photo/);
-  assert.match(component, /href=\{"/" \+ locale \+ "\/masters"\}/);
+  assert.ok(component.includes('href={"/" + locale + "/masters"}'));
   assert.doesNotMatch(component, /€\d+|confirmed booking|guaranteed income/i);
 });
 test("Russian, English and Spanish titles, privacy language and links are present", () => {
