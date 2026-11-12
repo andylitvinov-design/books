@@ -32,7 +32,7 @@ test("Montage audio is an owner-approved compact panel, not a second generator",
 test("Style, Add text, Audio, Montage PRO and real audio source actions remain",()=>{
   const start=source.indexOf('<nav className={videoStyles.montageQuickTools}');
   const rail=source.slice(start,source.indexOf('</nav>',start));
-  assert.match(rail,/id:"effects".*id:"text"[\s\S]*id:"audio".*id:"promo"/);
+  assert.match(rail,/id:"effects".*id:"audio"[\s\S]*id:"text".*id:"promo"/);
   assert.ok(source.includes('"Choose your style"'));
   assert.match(source,/"Add Text"/);
   assert.ok(source.includes('data-video-audio-compact-upload'));

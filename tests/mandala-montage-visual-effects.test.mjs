@@ -52,7 +52,7 @@ test('Five visible Montage tabs preserve the separate video storyboard and one s
  const rail=studio.slice(studio.indexOf('<nav className={videoStyles.montageQuickTools}'));
  const firstNav=rail.slice(0,rail.indexOf('</nav>'));
  assert.deepEqual([...firstNav.matchAll(/\{id:"(\w+)",Icon:/g)].map(match=>match[1]),
-  ['effects','text','audio','settings','concept']);
+  ['effects','audio','text','promo','concept']);
  assert.equal((studio.match(/<MandalaVideoIdeas locale/g)||[]).length,1);
  assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
  assert.match(studio,/data-video-montage-text hidden=\{montagePanel!=="text"\}/);

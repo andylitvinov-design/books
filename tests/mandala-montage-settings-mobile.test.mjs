@@ -9,7 +9,7 @@ test("Montage opens on Style, preserves real recorder and five functional tabs w
   const tabStart=studio.indexOf("<nav className={videoStyles.montageQuickTools}");
   const tabMarkup=studio.slice(tabStart,studio.indexOf("</nav>",tabStart));
   assert.ok(tabStart>0,"Montage nav must exist");
-  assert.deepEqual([...tabMarkup.matchAll(/id:"(promo|effects|text|audio|concept)",Icon:/g)].map(m=>m[1]),["effects","text","audio","promo","concept"]);
+  assert.deepEqual([...tabMarkup.matchAll(/id:"(promo|effects|text|audio|concept)",Icon:/g)].map(m=>m[1]),["effects","audio","text","promo","concept"]);
   assert.match(studio,/data-video-montage-tab=\{item.id\}/);
   assert.match(studio,/if\(id==="editor"\)setMontagePanel\("effects"\)/);
   assert.match(studio,/aria-pressed=\{montagePanel===item.id\}/);
@@ -89,8 +89,9 @@ test("Original motion WebKit export reaches legacy preferences via Story and kee
  assert.match(motion,/data-video-montage-preference="duration"/);
  assert.match(motion,/await duration\.selectOption\('20'\)/);
  assert.match(motion,/data-video-montage-open-audio/);
- assert.match(motion,/data-video-audio-compact-attach/);
- assert.match(motion,/await generate\.click\(\)/);
+ assert.match(motion,/data-video-audio-compact-select/);
+ assert.match(motion,/data-video-audio-compact-selected/);
+ assert.match(motion,/await generate\.click\(\{timeout:30000\}\)/);
  assert.match(motion,/ffprobe|ffmpeg/);
  assert.doesNotMatch(motion,/data-video-montage-settings|data-video-basic-tab=|data-video-audio-length="/);
 });
@@ -116,7 +117,7 @@ test("Choosing a Montage style preserves the compiled film and paints the live a
   assert.match(studio,/data-video-preview-clips=\{usingFreeFilmCompilation/);
   assert.match(studio,/autoPlay=\{previewPlaying&&!recording&&!preparing\}/);
   assert.match(studio,/onCanPlay=\{event=>\{\s*setPremiumReady\(true\);[\s\S]*?event.currentTarget.play\(\)/);
-  assert.equal((studio.match(/activeMontageStyleId,styleFilmRef\.current\)/g)||[]).length,5,
+  assert.equal((studio.match(/activeMontageStyleId,styleFilmRef\.current,storyboardPhotos\)/g)||[]).length,5,
     "still preview, animation preview and both MP4 export encoders use the same style");
   assert.match(studio,/creationMode,activeMontageStyleId,currentFreeVideoPlan/,
     "a style edit invalidates only the previous exported recording");

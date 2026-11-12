@@ -67,18 +67,18 @@ try {
   await sourceDuration.selectOption('20');
   assert.equal(await sourceDuration.inputValue(),'20',
     'four real source-backed 5-second scenes require 20s before selecting a preset');
-  // Style's native Next opens Text. The existing verified source timeline is
+  // Style's native Next opens Audio. The existing verified source timeline is
   // reachable through Settings → advanced Concept, not a fifth visible tab.
   const styleTab=page.locator('[data-video-montage-tab="effects"]');
   await styleTab.waitFor({state:'visible',timeout:20000});
   await styleTab.click();
-  const styleNext=page.locator('[data-video-montage-effects] [data-video-montage-next="text"]');
+  const styleNext=page.locator('[data-video-montage-effects] [data-video-montage-next="audio"]');
   await styleNext.waitFor({state:'visible',timeout:20000});
   await styleNext.click();
-  await page.waitForFunction(()=>document.querySelector('[data-video-montage-tab="text"]')
+  await page.waitForFunction(()=>document.querySelector('[data-video-montage-tab="audio"]')
     ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
-  assert.equal(await page.locator('[data-video-montage-tab="text"]').getAttribute('aria-pressed'),
-    'true','VISIBLE_STYLE_NEXT_MUST_OPEN_TEXT');
+  assert.equal(await page.locator('[data-video-montage-tab="audio"]').getAttribute('aria-pressed'),
+    'true','VISIBLE_STYLE_NEXT_MUST_OPEN_AUDIO');
   await page.locator('[data-video-quick-control="phrases"]').click();
   await page.locator('[data-video-ideas-tab="concept"]').click();
   const conceptPanel=page.locator('[data-video-ideas-concept-panel]');

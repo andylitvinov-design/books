@@ -295,7 +295,7 @@ test("Montage and PRO retain one operational video/audio pipeline without duplic
   const nav=studio.slice(studio.indexOf('<nav className={videoStyles.montageQuickTools}'),
     studio.indexOf('</nav>',studio.indexOf('<nav className={videoStyles.montageQuickTools}')));
   assert.deepEqual([...nav.matchAll(/id:"(effects|text|audio|promo|concept)",Icon:/g)].map(m=>m[1]),
-    ["effects","text","audio","promo","concept"],"Style, Text, Audio, Montage PRO and Story under the existing player");
+    ["effects","audio","text","promo","concept"],"Style, Audio, Text, Montage PRO and Story under the existing player");
   assert.match(studio,/data-video-montage-text hidden=\{montagePanel!=="text"\}/);
   assert.match(studio,/data-video-montage-audio/);
   assert.doesNotMatch(studio,/data-video-montage-visual-effect=/);
