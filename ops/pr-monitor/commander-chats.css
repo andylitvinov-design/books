@@ -328,3 +328,24 @@ body.hh-cc-shell.cc-keyboard-active .cc-composer-space{
 .cc-thread-surface #cc-retry-run{min-height:32px;padding:6px 9px;border-radius:9px;border:1px solid #9e7ac3;background:#49345a;color:#fff;font-size:12px}
 @keyframes cc-run-pulse{50%{opacity:.4;transform:scale(.8)}}
 @media(prefers-reduced-motion:reduce){.cc-thread-surface .cc-run-status[data-state="pending"] .cc-run-dot{animation:none}}
+
+
+/* HH_COMMANDER_RICH_MARKDOWN_V1: readable mobile answers; never model HTML. */
+.cc-thread-surface .cc-message-markdown{min-width:0;color:#efeaf7;font-size:14px;line-height:1.6;overflow-wrap:anywhere}
+.cc-thread-surface .cc-message-markdown > :first-child{margin-top:0}
+.cc-thread-surface .cc-message-markdown > :last-child{margin-bottom:0}
+.cc-thread-surface .cc-message-markdown p{margin:0 0 12px;font:inherit;color:inherit;line-height:inherit;white-space:normal}
+.cc-thread-surface .cc-message-markdown :is(h2,h3,h4){font-weight:750;line-height:1.32;color:#f5e6ff;overflow-wrap:anywhere;margin:16px 0 8px}
+.cc-thread-surface .cc-message-markdown h2{font-size:17px}
+.cc-thread-surface .cc-message-markdown h3{font-size:16px}
+.cc-thread-surface .cc-message-markdown h4{font-size:15px}
+.cc-thread-surface .cc-message-markdown :is(ul,ol){padding-left:20px;margin:6px 0 13px}
+.cc-thread-surface .cc-message-markdown li{margin:5px 0;padding-left:1px}
+.cc-thread-surface .cc-message-markdown strong{font-weight:750;color:#fff}
+.cc-thread-surface .cc-message-markdown em{font-style:italic}
+.cc-thread-surface .cc-message-markdown a{font-size:inherit;min-height:0;display:inline;padding:0;text-decoration:underline;text-underline-offset:2px;overflow-wrap:anywhere}
+.cc-thread-surface .cc-message-markdown code{font-size:.92em;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre-wrap;word-break:break-word;padding:1px 4px;background:#ffffff14;border-radius:4px}
+.cc-thread-surface .cc-message-markdown pre{max-width:100%;overflow-x:auto;margin:10px 0;padding:10px 12px;border-radius:10px;background:#131326;border:1px solid #584a74;white-space:pre}
+.cc-thread-surface .cc-message-markdown pre code{white-space:pre;word-break:normal;background:transparent;padding:0}
+.cc-thread-surface .cc-message-markdown blockquote{padding:2px 0 2px 12px;margin:9px 0 12px;border-left:3px solid #a781dc;color:#dfd5ee}
+.cc-thread-surface .cc-message-markdown hr{border:0;border-top:1px solid #584a74;margin:15px 0}
