@@ -18,7 +18,7 @@ test('first guest video does not need an account-bound XP hold, but signed-in vi
   assert.doesNotMatch(studio,/Sign in to create videos\./)
 })
 
-test('Montage follows Style, Audio, Text, Storyboard, Story then Hypno without charging',()=>{
+test('Montage advances Style, Audio, Text, Storyboard, Story then Hypno without charging',()=>{
  const handler=studio.slice(studio.indexOf('const continueMontageOrGenerate='),
    studio.indexOf('// First mobile step is only',studio.indexOf('const continueMontageOrGenerate=')));
  assert.ok(handler.includes('if(montagePanel==="effects"){'));
@@ -26,6 +26,9 @@ test('Montage follows Style, Audio, Text, Storyboard, Story then Hypno without c
  assert.ok(handler.includes('setBasicPanelTab("music")'));
  assert.ok(handler.includes('setActiveWorkspace("effects")'));
  assert.ok(handler.includes('setMontagePanel("audio")'));
+  assert.ok(handler.includes('if(montagePanel==="audio"){'));
+  assert.ok(handler.includes('setMontagePanel("text")'),"Audio advances to the Text/affirmations editor");
+  assert.ok(handler.includes('setHypnoEntryGroup("effects")'),"optional Hypno preserved");
  assert.ok(!handler.includes('startFromHero()'));
  assert.ok(!handler.includes('createQuickVideo()'),"Add Effects must never encode or charge credits");
  const direct=studio.slice(studio.indexOf('data-video-quick-generate'),studio.indexOf('</button>',studio.indexOf('data-video-quick-generate')));
@@ -33,7 +36,8 @@ test('Montage follows Style, Audio, Text, Storyboard, Story then Hypno without c
  assert.ok(direct.includes('onClick={createQuickVideo}'));
  assert.ok(next.includes('onClick={continueMontageOrGenerate}'));
  assert.ok(next.includes('montagePanel==="audio"?"text"'));
- assert.ok(next.includes('montagePanel==="text"?"settings"'));
+  assert.ok(next.includes('montagePanel==="text"?"settings"'));
+  assert.ok(next.includes('montagePanel==="settings"?"concept"'));
  assert.ok(studio.includes('if(!freeVideoSelected){'),"paid formats stay explicitly gated");
  assert.ok(studio.includes('<MandalaVideoConcept locale={locale}'));
  assert.ok(studio.includes('onApprove={approved=>'));
@@ -41,14 +45,14 @@ test('Montage follows Style, Audio, Text, Storyboard, Story then Hypno without c
 });
 
 
-test('stale phrase narration blocks direct Generate, not the Add Effects navigation',()=>{
+test('stale phrase narration blocks direct Generate, not the Add Affirmations navigation',()=>{
  const stage=studio.indexOf('data-video-stage-actions="montage"');
  assert.ok(stage>0,"real final action group");
  const fromCreate=studio.indexOf('data-video-quick-generate',stage);
  const create=studio.slice(fromCreate,studio.indexOf('</button>',fromCreate));
  const addStart=studio.indexOf('data-video-montage-next={montagePanel===',stage);
  const add=studio.slice(addStart,studio.indexOf('</button>',addStart));
- assert.ok(addStart>fromCreate);
+ assert.ok(addStart>stage&&addStart<fromCreate,"Affirmations precedes Create Video");
  assert.match(create,/disabled=\{!studioHydrated\|\|recording\|\|preparing\|\|narrationInvalid\}/);
  assert.match(create,/onClick=\{createQuickVideo\}/);
  assert.match(add,/onClick=\{continueMontageOrGenerate\}/);

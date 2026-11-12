@@ -90,6 +90,10 @@ test("shared widescreen preview and mutually exclusive format accordion keep pai
     source.indexOf("</button>",source.indexOf('data-video-montage-next={montagePanel==="effects"?"audio":montagePanel==="audio"?"text":montagePanel==="text"?"settings":montagePanel==="settings"?"concept":"hypno"}')));
   assert.ok(direct.includes('onClick={createQuickVideo}'),"Create must use the original real renderer");
   assert.ok(addEffects.includes('onClick={continueMontageOrGenerate}'),"Add must only advance");
+  assert.match(source,/if\(montagePanel==="audio"\)\{[\s\S]*?setMontagePanel\("text"\)/,
+    "Audio Add returns to the existing affirmations editor");
+  assert.doesNotMatch(addEffects,/createQuickVideo|videoCreditRequest|startFromHero/,
+    "Add cannot generate or charge");
   for(const guard of ['if(!freeVideoSelected){','if(phrasePending){','if(narrationInvalid){','if(!canGenerate){'])
     assert.ok(source.includes(guard),"protected export gate: "+guard);
   assert.match(source,/prepareFourFilmSources\(freeFilmShots,freeFilmPlayerRefs\.current/,

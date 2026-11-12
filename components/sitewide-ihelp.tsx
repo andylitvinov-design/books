@@ -144,6 +144,8 @@ export function SitewideIHelp(){
      "[data-hh-agent-preview] textarea")?.focus({preventScroll:true}));
  }
  function close(){
+   // Stop any ongoing browser narration when the user closes iHelp.
+   window.dispatchEvent(new Event("hh:voice-companion-stop"));
    setOpen(false);
    window.requestAnimationFrame(()=>launcher.current?.focus({preventScroll:true}));
  }

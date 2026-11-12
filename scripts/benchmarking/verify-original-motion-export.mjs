@@ -139,18 +139,26 @@ try {
   const audioTab=page.locator('[data-video-montage-open-audio]');
   await audioTab.click();
   await page.locator('[data-video-montage-audio]').waitFor({state:'visible'});
-  await page.locator('[data-video-montage-audio]').waitFor({state:'visible'});
-  const generate = page.locator('[data-video-quick-generate]');
-  await generate.click({ timeout: 30000 });
-  // The compact Audio attach control is the real, visible user action.
-  // Some pre-approved music is already attached; in that case export
-  // continues without an unnecessary second click or duplicate track.
-  const attach=page.locator('[data-video-audio-compact-attach]');
-  await attach.waitFor({state:'visible',timeout:15000});
-  if(await attach.isEnabled()){
-    await attach.click();
-    await generate.click();
+  // The optional "Attach" button exists ONLY after a user uploads their own
+  // audio and accepts the rights declaration. Never wait for that upload-only
+  // control when testing a pre-approved licensed soundtrack.
+  const selectedTracks=page.locator('[data-video-audio-compact-select][aria-pressed="true"]');
+  if(await selectedTracks.count()===0){
+    const availableTrack=page.locator('[data-video-audio-compact-select]:not([disabled])').first();
+    await availableTrack.waitFor({state:'visible',timeout:15000});
+    if(engine==='webkit')await availableTrack.tap();
+    else await availableTrack.click();
+    await page.waitForFunction(()=>Array.from(
+      document.querySelectorAll('[data-video-audio-compact-select]')
+    ).some(node=>node.getAttribute('aria-pressed')==='true'),undefined,{timeout:15000});
   }
+  assert.ok(await selectedTracks.count()>=1,
+    'a genuinely selected licensed soundtrack must reach the editor before export');
+  assert.ok(await selectedTracks.count()<=3,
+    'the compact music picker keeps its three-track rights and mix limit');
+  await page.locator('[data-video-audio-compact-selected]').waitFor({state:'visible'});
+  const generate = page.locator('[data-video-quick-generate]');
+  await generate.click({timeout:30000});
   // The actual verified film moves to Ready; guests cannot use direct Save.
   // Reuse the first-party encoded Blob and prove the login gate instead.
   let captured;

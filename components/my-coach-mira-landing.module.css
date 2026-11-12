@@ -207,3 +207,10 @@
  .railPortrait{height:65px}
 }
 @media(prefers-reduced-motion:reduce){.heroStage,.heroPortrait,.railPortrait{animation:none!important;transition:none!important}}
+/* Keep language and iHelp usable as compact icons on a narrow phone. */
+@media(max-width:540px){
+ .brandControls .helpPill{min-width:37px;width:37px;padding:0;font-size:0}
+ .brandControls .helpPill>span{font-size:17px}
+ .brandControls .localePill{min-width:47px;padding:0 5px}
+ .brandControls .localePill>span[aria-hidden="true"]{display:none}
+}
