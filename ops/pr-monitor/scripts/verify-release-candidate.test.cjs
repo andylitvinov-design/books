@@ -4,12 +4,13 @@ const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
 const {verifyCandidate,verifySourceAssets,normalizeOrigin,assetsFrom,CHECKS}=require('./verify-release-candidate.cjs');
 const origin='https://holistic-house-pr-monitor-example-super10.vercel.app';
 function fixture(overrides={}){
- const direct='<html><head><script src="/monitor-core.js"></script><script src="/pr-two-screen.js"></script><script src="/pr-merge-velocity-ui.js"></script></head><body><main class="wrap"><h1>PR Monitor</h1></main></body></html>';
+ const direct='<html><head><script src="/monitor-core.js"></script><script src="/pr-two-screen.js"></script><script src="/pr-merge-velocity-ui.js"></script><script src="/pr-recommendations.js"></script><script src="/pr-error-funnel.js"></script><script src="/project-management-nav.js"></script><script src="/pr-stage-dashboard.js"></script></head><body><nav id="hh-project-management-nav"><a href="/agents.html">Агенты</a></nav><main class="wrap"><h1>PR Monitor</h1></main></body></html>';
  const data={
   '/':direct,
   '/index.html':direct,
   '/pr-monitor.html':direct,
   '/pr-monitor-full.html':direct,
+  '/pr-monitor-fast.html':'<html><head><link rel="stylesheet" href="/pr-monitor-fast.css"><script src="/pr-monitor-fast.js"></script></head><body><main class="wrap" id="pr-monitor-fast"><svg id="activity-graph"></svg><svg id="latency-graph"></svg></main></body></html>',
   '/legacy.html':'<!doctype html><html><head><link rel="stylesheet" href="/compact.css"></head><body><main><script src="/monitor-core.js"></script></main></body></html>',
   '/pr-two-screen-boot.js':`'use strict';fetch('/legacy.html');const s='<script src="/pr-velocity-three-lines.js"></script>';`,
   '/compact.css':'.a{color:navy;}',
@@ -55,7 +56,7 @@ test('200 HTML instead of JS or wrong JSON schema fails CLOSED',async()=>{
 });
 test('soft 200 monitor placeholder without first-paint UI fails CLOSED',async()=>{
  const r=await verifyCandidate(origin,fixture({'/pr-monitor.html':'<html><body>empty page but valid HTML</body></html>'}));
- assert.equal(r.ok,false);assert.ok(r.errors.some(e=>e.includes('MONITOR_DIRECT_ENTRY_REQUIRED')));
+ assert.equal(r.ok,false);assert.ok(r.errors.some(e=>e.includes('MONITOR_FULL_REQUIRED')));
 });
 
 test('legacy 650-byte meta refresh homepage fails despite complete monitor endpoint',async()=>{
@@ -71,13 +72,17 @@ test('same-origin server 307 canonical redirects pass; external redirect fails',
  assert.equal(invalid.ok,false);
  assert.ok(invalid.errors.some(e=>e.includes('INVALID_CANONICAL_REDIRECT')));
 });
-test('lightweight two-graph first-paint HTML is valid; missing chart is not',async()=>{
+test('full monitor is mandatory on canonical routes; two-graph fast view is optional only',async()=>{
  const fast='<html><head><link rel="stylesheet" href="/pr-monitor-fast.css"><script src="/pr-monitor-fast.js"></script></head><body><main class="wrap" id="pr-monitor-fast"><svg id="activity-graph"></svg><svg id="latency-graph"></svg></main></body></html>';
- const ok=await verifyCandidate(origin,fixture({'/':fast,'/index.html':fast,'/pr-monitor.html':fast}));
+ const bad=await verifyCandidate(origin,fixture({'/':fast,'/index.html':fast,'/pr-monitor.html':fast}));
+ assert.equal(bad.ok,false);
+ assert.ok(bad.errors.some(e=>e.includes('MONITOR_FULL_REQUIRED')));
+ const ok=await verifyCandidate(origin,fixture({'/pr-monitor-fast.html':fast}));
  assert.equal(ok.ok,true,ok.errors.join('; '));
  const invalid=fast.replace('id="latency-graph"','id="deleted-graph"');
- const bad=await verifyCandidate(origin,fixture({'/pr-monitor.html':invalid}));
- assert.equal(bad.ok,false);assert.ok(bad.errors.some(e=>e.includes('MONITOR_DIRECT_ENTRY_REQUIRED')));
+ const invalidFast=await verifyCandidate(origin,fixture({'/pr-monitor-fast.html':invalid}));
+ assert.equal(invalidFast.ok,false);
+ assert.ok(invalidFast.errors.some(e=>e.includes('MONITOR_FAST_INVALID')));
 });
 test('incomplete source archive fails closed even when entry HTML exists',t=>{
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'hh-monitor-release-'));
@@ -86,7 +91,7 @@ test('incomplete source archive fails closed even when entry HTML exists',t=>{
  const files={
   'index.html':entry,
   'pr-monitor.html':entry,
-  'pr-monitor-full.html':'<html><head></head><body><main class="wrap">Full diagnostics</main></body></html>',
+  'pr-monitor-full.html':entry,
   'legacy.html':'<html><head><script src="/monitor-core.js"></script></head><body><main>old</main></body></html>',
   'pr-two-screen-boot.js':"'use strict';let s='/pr-lifecycle-ribbon.js';fetch('/legacy.html');"
  };
@@ -99,4 +104,7 @@ test('incomplete source archive fails closed even when entry HTML exists',t=>{
  assert.equal(verifySourceAssets(root).ok,true);
  fs.writeFileSync(path.join(root,'index.html'),'<html><body>stale meta fallback</body></html>');
  assert.ok(verifySourceAssets(root).errors.includes('SOURCE_INDEX_NOT_CANONICAL'));
+ fs.writeFileSync(path.join(root,'index.html'),entry);
+ fs.writeFileSync(path.join(root,'pr-monitor-full.html'),'<html><body>fast-only alternate</body></html>');
+ assert.ok(verifySourceAssets(root).errors.includes('SOURCE_FULL_NOT_CANONICAL'));
 });

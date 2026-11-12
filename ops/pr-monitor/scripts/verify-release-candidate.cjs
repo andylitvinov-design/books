@@ -11,6 +11,8 @@ const CHECKS=Object.freeze({
  '/index.html': 'html',
  '/pr-monitor.html': 'html',
  '/pr-monitor-full.html': 'html',
+ '/pr-monitor-fast.html': 'html',
+ '/pr-monitor-restored.css': 'css',
  '/pr-monitor-fast.css': 'css',
  '/pr-monitor-fast.js': 'js',
  '/legacy.html': 'html',
@@ -49,6 +51,12 @@ function verifySourceAssets(root){
   if(body.length<30)errors.push('SOURCE_EMPTY '+f);
   for(const asset of assetsFrom(body))references.add(asset);
  }
+ if(fs.existsSync(path.join(folder,'pr-monitor-full.html'))&&
+    fs.existsSync(path.join(folder,'pr-monitor.html'))){
+  const full=fs.readFileSync(path.join(folder,'pr-monitor-full.html'),'utf8');
+  const canonical=fs.readFileSync(path.join(folder,'pr-monitor.html'),'utf8');
+  if(full!==canonical)errors.push('SOURCE_FULL_NOT_CANONICAL');
+ }
  if(fs.existsSync(path.join(folder,'index.html'))&&fs.existsSync(path.join(folder,'pr-monitor.html'))){
   const index=fs.readFileSync(path.join(folder,'index.html'),'utf8');
   const monitor=fs.readFileSync(path.join(folder,'pr-monitor.html'),'utf8');
@@ -84,10 +92,16 @@ function validBody(path,kind,body){
    if(/<meta\b[^>]*http-equiv\s*=\s*['"]refresh['"]/i.test(body))return 'CLIENT_META_REFRESH_FORBIDDEN';
    if(body.includes('Загружаю проверенный монитор'))return 'LOADING_STUB_FORBIDDEN';
    const realMain=/<main\b[^>]*class\s*=\s*['"][^'"]*\bwrap\b/i.test(body);
-   const full=body.includes('/monitor-core.js')&&body.includes('/pr-two-screen.js')&&body.includes('/pr-merge-velocity-ui.js');
+   const full=body.includes('/monitor-core.js')&&body.includes('/pr-two-screen.js')&&
+      body.includes('/pr-merge-velocity-ui.js')&&body.includes('/pr-recommendations.js')&&
+      body.includes('/pr-error-funnel.js')&&body.includes('/project-management-nav.js')&&
+      body.includes('/pr-stage-dashboard.js')&&body.includes('id="hh-project-management-nav"');
+   if(!realMain||!full)return 'MONITOR_FULL_REQUIRED';
+  }
+  if(path==='/pr-monitor-fast.html'){
    const fast=body.includes('id="activity-graph"')&&body.includes('id="latency-graph"')&&
       body.includes('/pr-monitor-fast.js')&&body.includes('/pr-monitor-fast.css');
-   if(!realMain||!(full||fast))return 'MONITOR_DIRECT_ENTRY_REQUIRED';
+   if(!fast)return 'MONITOR_FAST_INVALID';
   }
   if(path==='/legacy.html'&&!/<\s*main\b/i.test(body))return 'LEGACY_NOT_COMPLETE';
  }
@@ -129,7 +143,7 @@ async function verifyCandidate(input, fetchImpl=globalThis.fetch){
    checked.push(pathname);
    if(kind==='html'||kind==='js'||kind==='css')
     digests[pathname]=createHash('sha256').update(body).digest('hex');
-   if(['/','/index.html','/pr-monitor.html','/pr-monitor-full.html','/legacy.html','/pr-two-screen-boot.js'].includes(pathname)){
+   if(['/','/index.html','/pr-monitor.html','/pr-monitor-full.html','/pr-monitor-fast.html','/legacy.html','/pr-two-screen-boot.js'].includes(pathname)){
     for(const asset of assetsFrom(body))if(!pending.has(asset))
      pending.set(asset,asset.endsWith('.css')?'css':'js');
    }
