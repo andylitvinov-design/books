@@ -1900,3 +1900,50 @@ test('dispatcher refuses ninth unsafe source BEFORE task reservation, dispatch a
  assert.ok(f.calls.reserved.some(c=>c.body.includes('"reason_code":"SOURCE_SCOPE_UNSAFE_FOR_FREE_AI"')));
  assert.ok(f.calls.labels.some(c=>c.labels.includes('hh:repair-manual')));
 });
+
+
+test('stale merged queue cleanup does not let a verified jobless GitHub 409 starve independent safe cancellations',async()=>{
+ const {runCleanup}=require('../scripts/ci-pr-merged-queue-cleanup.cjs');
+ const full='andylitvinov-design/books', old='a'.repeat(40), next='b'.repeat(40);
+ const now=Date.parse('2026-11-12T20:00:00Z');
+ const item=id=>({id,event:'pull_request',status:'queued',run_attempt:1,
+  repository:{full_name:full},head_repository:{full_name:full},
+  head_branch:'feat/proven-merged',head_sha:old,
+  created_at:'2026-11-10T10:00:00Z',pull_requests:[]});
+ const closed={number:4321,state:'closed',merged:true,merged_at:'2026-11-11T10:00:00Z',
+  created_at:'2026-11-09T10:00:00Z',
+  base:{ref:'codex/public-book-library',repo:{full_name:full}},
+  head:{ref:'feat/proven-merged',sha:next,repo:{full_name:full}}};
+ const context={repo:{owner:'andylitvinov-design',repo:'books'},
+  ref:'refs/heads/codex/bootstrap-books',eventName:'workflow_dispatch',payload:{inputs:{}}};
+ const check=async(jobless)=>{
+  const items=[item(991),item(992)],cancelled=[];
+  const github={rest:{
+   actions:{
+    listWorkflowRunsForRepo:async()=>({data:{total_count:137,workflow_runs:items}}),
+    getWorkflowRun:async({run_id})=>({data:items.find(x=>x.id===run_id)}),
+    listJobsForWorkflowRun:async()=>({data:{total_count:jobless?0:1,
+     jobs:jobless?[]:[{id:1}]}}),
+    cancelWorkflowRun:async({run_id})=>{
+     cancelled.push(run_id);
+     if(run_id===991)throw Object.assign(new Error('queued 0-job conflict'),{status:409});
+    }
+   },
+   pulls:{list:async()=>({data:[closed]}),get:async()=>({data:closed})},
+   repos:{compareCommits:async()=>({data:{status:'ahead',
+    base_commit:{sha:old},merge_base_commit:{sha:old}}})}
+  }};
+  const result=await runCleanup({github,context,observedQueued:137,
+   observedRemaining:4500,now});
+  return {cancelled,result};
+ };
+ const verified=await check(true);
+ assert.deepEqual(verified.cancelled,[991,992]);
+ assert.deepEqual(verified.result.cancel_accepted.map(x=>x.run_id),[992]);
+ assert.equal(verified.result.non_cancelable[0].code,'QUEUED_WITH_ZERO_JOBS_CANCEL_409');
+ assert.equal(verified.result.status,'GITHUB_409_SUPPORT_TRIAGE');
+ const unverified=await check(false);
+ assert.deepEqual(unverified.cancelled,[991]);
+ assert.deepEqual(unverified.result.cancel_accepted,[]);
+ assert.equal(unverified.result.non_cancelable[0].code,'CANCEL_409_UNVERIFIED');
+});
