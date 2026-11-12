@@ -1,0 +1,54 @@
+.shelf{display:none}
+@media(max-width:760px){
+.shelf,.shelf *{box-sizing:border-box}
+.shelf{display:block;width:calc(100% - 24px);max-width:520px;margin:24px auto;padding:14px 11px 16px;border:1px solid #e3c9a8;border-radius:25px;background:#fcf8f2;color:#142b3f;box-shadow:0 7px 23px #60462c14;font:15px/1.4 Arial,Helvetica,sans-serif;overflow-wrap:anywhere}
+.hero{min-height:145px;border-radius:18px;padding:18px 14px 12px;background:linear-gradient(90deg,#fff9f1 7%,#fff8f2ea 54%,#ffffff18 100%),url("/images/holistic-house/hero-olive-incense.webp") right center/cover no-repeat}
+.eyebrow{display:flex;gap:7px;align-items:center;margin:0 0 11px;color:#ae771e;font-size:10px;font-weight:800;letter-spacing:.08em}
+.hero h2{margin:0;color:#101e45;font:700 clamp(28px,7.5vw,35px)/1.12 Georgia,"Times New Roman",serif}
+.hero>p:last-child{max-width:255px;margin:8px 0 0;color:#57475b;font-size:14px;font-weight:560;line-height:1.34}
+.filters{display:grid;gap:7px;margin:11px 0;padding:12px;border:1px solid #e3d5c6;border-radius:18px;background:#fffdfa}
+.directionLabel,.formatLabel{display:flex;gap:8px;align-items:center;margin:0;color:#343043;font-size:14px;font-weight:750}
+.directionLabel svg,.formatLabel svg{flex:none;color:#bd871f}
+.filters select{display:block;min-height:48px;width:100%;padding:9px 32px 9px 12px;border:1px solid #dbc5a8;border-radius:15px;background:#fffdf8;color:#0b544b;font:700 15px/1.25 Arial,Helvetica,sans-serif}
+.formatLabel{margin-top:5px}
+.pills{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.pills button{min-height:45px;min-width:0;border:1px solid #d7c7b4;border-radius:23px;padding:7px 5px;background:#fffaf4;color:#40364a;font:700 12px/1.25 Arial,Helvetica,sans-serif;cursor:pointer}
+.pills button[aria-pressed="true"]{background:linear-gradient(130deg,#2bab9d,#00675c 65%,#004a42);border-color:#00675c;color:#fff;box-shadow:0 3px 11px #00554c26}
+.topics{display:flex;gap:7px;overflow-x:auto;margin:12px 0 18px;padding:0 0 5px;scrollbar-width:thin}
+.topics button{flex:none;display:flex;align-items:center;gap:6px;min-height:44px;padding:7px 12px;border:1px solid #e1d2c4;border-radius:23px;background:#fffdfa;color:#134d46;font:700 12px/1.2 Arial,Helvetica,sans-serif;cursor:pointer}
+.topics button[aria-pressed="true"]{border-color:#b99769;background:#f4e7d5}
+.topics span{color:#ce8e23;font-size:18px}
+.sectionTitle{margin:0 3px 13px;color:#0c1940;font:700 clamp(25px,6.8vw,31px)/1.13 Georgia,"Times New Roman",serif}
+.cards{display:grid;gap:11px}
+.card{display:grid;grid-template-columns:95px minmax(0,1fr);column-gap:11px;row-gap:10px;min-width:0;border:1px solid #e2d5c8;border-radius:19px;padding:10px;background:#fffdfa;box-shadow:0 4px 13px #66432e12}
+.art{display:block;overflow:hidden;min-height:122px;border-radius:14px;background:#ede0c9}
+.art img{display:block;width:100%;height:100%;min-height:122px;object-fit:cover}
+.body{min-width:0}
+.tag{display:inline-block;max-width:100%;border-radius:20px;padding:4px 8px;background:#e7f0e8;color:#1b5147;font:700 10px/1.2 Arial,Helvetica,sans-serif}
+.body h4{margin:5px 0;color:#101e45;font:700 clamp(19px,5.8vw,24px)/1.1 Georgia,"Times New Roman",serif;letter-spacing:-.02em}
+.body h4 a{color:inherit;text-decoration:none}
+.body p{margin:0 0 6px;color:#4b4453;font-size:12.5px;line-height:1.33}
+.body small{color:#92672e;font-size:11px;font-weight:700}
+.actions{display:grid;grid-column:1/-1;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:7px}
+.details,.order{display:flex!important;justify-content:center;align-items:center;gap:5px;min-height:48px;min-width:0;padding:8px 7px;border-radius:24px;text-align:center;text-decoration:none;font:700 13px/1.2 Arial,Helvetica,sans-serif;white-space:normal;cursor:pointer}
+.details{border:1px solid #c7a57d;background:#fffaf1;color:#124d47}
+.order{border:1px solid #005a50;background:linear-gradient(130deg,#2aa79a,#00685e 65%,#00443d);box-shadow:0 5px 13px #00574b24;color:#fff!important}
+/* The production messenger-only flow is a full information panel by default.
+   Keep the approved card compact until the visitor taps Order; expand to full
+   card width only after that deliberate action. Normal CRM rollback stays usable. */
+.orderWrap{min-width:0;width:100%}
+.order:has(details){display:block!important;width:100%;min-height:0;padding:0;border:0;background:transparent;box-shadow:none;color:inherit!important;text-align:initial}
+.order:has(details) details{width:100%}
+.order:has(details) summary{display:flex;align-items:center;justify-content:center;min-height:48px;padding:9px 9px;border:1px solid #005a50;border-radius:24px;background:linear-gradient(130deg,#2aa79a,#00685e 65%,#00443d);box-shadow:0 5px 13px #00574b24;color:white!important;font:700 13px/1.22 Arial,Helvetica,sans-serif;text-align:center;list-style:none;cursor:pointer}
+.order:has(details) summary::-webkit-details-marker{display:none}
+.order:has(details) details[open]>div{margin-top:9px}
+.actions:has(details[open]){grid-template-columns:1fr}
+.shelf summary:focus-visible{outline:3px solid #c99847;outline-offset:3px}
+
+.empty{border:1px dashed #d3b88e;border-radius:16px;padding:14px;text-align:center}.empty p{margin:0 0 9px}.empty button{min-height:44px;padding:8px 12px;border:1px solid #9cbdac;border-radius:23px;background:#e7f4ed;color:#115147;font-weight:750}
+.all{display:flex;align-items:center;justify-content:center;gap:8px;min-height:56px;margin:15px 0 11px;border:2px solid #0b5b51;border-radius:28px;padding:9px 8px;background:#fffbf8;color:#09564c;text-align:center;text-decoration:none;font-size:16px;font-weight:800}
+.all svg{flex:none}
+.note{display:flex;align-items:flex-start;gap:7px;margin:0 3px;color:#74646a;font-size:11px;line-height:1.38}.note svg{flex:none;color:#b18750}
+.shelf a:focus-visible,.shelf button:focus-visible,.shelf select:focus-visible{outline:3px solid #c99847;outline-offset:2px}
+}
+@media(max-width:350px){.shelf{padding:12px 8px}.card{grid-template-columns:82px minmax(0,1fr);column-gap:8px;padding:8px}.body h4{font-size:19px}.details,.order{font-size:12px}.all{font-size:14px}.pills button{font-size:11px}}

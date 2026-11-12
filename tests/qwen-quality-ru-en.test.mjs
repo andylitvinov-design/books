@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {routeMindRole, MIND_ROLE_ROUTER_VERSION, mindRoleInstruction} from '../lib/holistic-support/mind-role-router.mjs';
 import {assessRoleReply} from '../lib/holistic-support/role-output-guard.mjs';
+import {prepareNaturalDialogue,finishNaturalDialogue} from '../lib/holistic-support/natural-dialogue.mjs';
 
 // Original synthetic, no private messages. A routing regression fixture, NOT
 // a blind real-model quality evaluation.
@@ -119,4 +120,32 @@ test('synthetic SFT seed has distinct balanced source examples without client da
  }
  for(const locale of ['ru','en'])for(const role of ['coach','secretary'])
   assert.equal(data.filter(x=>x.locale===locale&&x.role===role).length,10);
+});
+
+
+test('existing owned-only Qwen protection and role guard both survive a conflict resolution',async()=>{
+ const base={channel:'owned',access:{authenticated:true,ownerScoped:true},
+  consent:{ownedInference:true},
+  decision:{status:'clarify',message:'Trusted fallback, no model answer.',suggestions:[]}};
+ const ru=prepareNaturalDialogue({...base,locale:'ru',message:'Моя цель — спокойнее говорить на работе'});
+ assert.equal(ru.mindRole,'coach');
+ assert.match(ru.modelRequest.messages[0].content,/«Не знаю, с чего начать»/);
+ const think=await finishNaturalDialogue(ru,async()=>'<think>secret model chain</think>Понимаю.');
+ assert.equal(think.modelUsed,false);
+ assert.equal(think.text,ru.replyFallback);
+ const diagnosis=await finishNaturalDialogue(ru,async()=> 'У вас депрессия.');
+ assert.equal(diagnosis.modelUsed,false);
+ assert.equal(diagnosis.text,ru.replyFallback);
+ const valid=await finishNaturalDialogue(ru,async()=> 'Можно начать с короткого разговора завтра, если вам это подходит.');
+ assert.equal(valid.modelUsed,true);
+ assert.equal(valid.provider,'owned');
+ const en=prepareNaturalDialogue({...base,locale:'en',message:'I feel stuck with my goal'});
+ assert.equal(en.mindRole,'coach');
+ const falseAction=await finishNaturalDialogue(en,async()=> 'I have booked your appointment.');
+ assert.equal(falseAction.modelUsed,false);
+ const noOpt=prepareNaturalDialogue({...base,locale:'en',message:'I feel stuck',consent:{}});
+ assert.equal(noOpt.modelAllowed,false);
+ const es=prepareNaturalDialogue({...base,locale:'es',message:'Hola'});
+ assert.equal(es.mindRole,'general');
+ assert.doesNotMatch(es.modelRequest.messages[0].content,/Secretary Mind|Coach Mind/);
 });

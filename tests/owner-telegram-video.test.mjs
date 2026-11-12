@@ -618,7 +618,7 @@ test('YouTube owner OAuth start restores an expired/missing admin browser sessio
     '@/lib/app/config':{getAppConfig(){return {}}},
     '@/lib/app/crypto':{seal(){return 'sealed-with-private-server-key'}},
     '@/data/app-services':{PRACTITIONER_ID:'synthetic-owner-id'},
-    '@/lib/practitioners/owner-telegram-video-service':{ownerVideoOauthConfigured(){return configured}},
+    '@/lib/practitioners/owner-telegram-video-oauth-config.mjs':{ownerVideoOauthConfigured(){return configured}},
   }
   const result=ts.default.transpileModule(source,{
     compilerOptions:{module:ts.default.ModuleKind.CommonJS,target:ts.default.ScriptTarget.ES2022}
@@ -969,4 +969,13 @@ test('YouTube OAuth callback dependency boundary excludes video rendering and st
  assert.doesNotMatch(callback,/from '@\/lib\/practitioners\/owner-telegram-video-service'/)
  assert.doesNotMatch(consent,/owner-telegram-story-render|telegram-story-plots|mytube-plots-|ffmpeg-static/)
  assert.match(service,/export \{ownerYoutubeExpectedChannel,saveOwnerVideoYoutubeConsent\} from '\.\/owner-telegram-video-consent.js'/)
+})
+
+
+test('YouTube OAuth start imports configuration without video rendering dependencies',()=>{
+ const start=readFileSync(new URL('../app/api/admin/telegram-video/youtube/start/route.js',import.meta.url),'utf8')
+ const config=readFileSync(new URL('../lib/practitioners/owner-telegram-video-oauth-config.mjs',import.meta.url),'utf8')
+ assert.ok(start.includes("from '@/lib/practitioners/owner-telegram-video-oauth-config.mjs'"))
+ assert.doesNotMatch(start,/owner-telegram-video-service/)
+ assert.doesNotMatch(config,/owner-telegram-video-service|owner-telegram-story-render|telegram-story-plots|mytube-plots-|ffmpeg-static/)
 })

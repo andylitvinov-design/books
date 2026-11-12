@@ -1,8 +1,11 @@
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { redirect } from "next/navigation";
 import { ServicesConversionHero } from "@/components/services-conversion-hero";
+import { ServicesAssistMobile } from "@/components/services-assist-mobile";
+import assistStyles from "@/components/services-assist-mobile.module.css";
 import { ServicesExplorerProvider } from "@/components/services-explorer-state";
 import { ServicesStudioOffers } from "@/components/services-studio-offers";
+import { SpiritualReadingEntry } from "@/components/services-spiritual-reading";
 import { ServicesIntroMedia, ServicesMethodVideos, ServicesDirectoryInvitation } from "@/components/services-studio-extras";
 import { PersonalTestimonials } from "@/components/personal-testimonials";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
@@ -20,10 +23,12 @@ export const metadata = spanishMetadata(
 export default async function SpanishServicesPage({ searchParams }: { searchParams: Promise<{catalog?:string}> }) {
   if ((await searchParams)?.catalog === "1") redirect("/es/services/catalog#service-listings");
   return (
-    <main className="services-shell services-shell--studio" lang="es">
+    <main className={"services-shell services-shell--studio " + assistStyles.assistPage} lang="es">
       <PublicSiteHeader locale="es" showAssessmentStrip={false} />
       <ServicesExplorerProvider>
+        <ServicesAssistMobile locale="es" />
         <ServicesConversionHero locale="es" />
+        <SpiritualReadingEntry locale="es" />
         <PublicConsultationCta locale="es" id="consultation" serviceBooking wiseEnabled={wisePaymentsEnabled()} paypalPersonalEnabled={personalPayPalEnabled()} />
         <ServicesStudioOffers locale="es" />
       </ServicesExplorerProvider>

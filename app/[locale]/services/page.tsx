@@ -3,8 +3,12 @@ import { notFound, redirect } from "next/navigation";
 
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { ServicesConversionHero } from "@/components/services-conversion-hero";
+import { ServicesAssistMobile } from "@/components/services-assist-mobile";
+import { ServicesMagicalHelpMobile } from "@/components/services-magical-help-mobile";
+import assistStyles from "@/components/services-assist-mobile.module.css";
 import { ServicesExplorerProvider } from "@/components/services-explorer-state";
 import { ServicesStudioOffers } from "@/components/services-studio-offers";
+import { SpiritualReadingEntry } from "@/components/services-spiritual-reading";
 import { ServicesIntroMedia, ServicesMethodVideos, ServicesDirectoryInvitation } from "@/components/services-studio-extras";
 import { PersonalTestimonials } from "@/components/personal-testimonials";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
@@ -22,7 +26,7 @@ export const revalidate = 0;
 
 const copy = {
   ru: {
-    title: "Индивидуальные услуги — Holistic House",
+    title: "Assist — персональная поддержка · Holistic House",
     description: "Личные сессии в Торонто и онлайн. Три бесплатных способа начать: тесты, письменный анализ ситуации и символический профиль ресурсов У-Син.",
     about: "Об Андрее",
     footerTitle: "Не знаете, с чего начать?",
@@ -30,7 +34,7 @@ const copy = {
     note: "Символические практики не заменяют медицинскую диагностику и лечение. Гомеопатия не имеет надёжных доказательств эффективности для лечения заболеваний; конкретные результаты не гарантируются.",
   },
   en: {
-    title: "Personal services — Holistic House",
+    title: "Assist — personal support · Holistic House",
     description: "Personal sessions in Toronto or online, plus three free entry points: self-check tests, a written situation review, and a symbolic Wu Xing resource profile.",
     about: "About Andrey",
     footerTitle: "Not sure where to start?",
@@ -69,12 +73,15 @@ export default async function ServicesPage({ params, searchParams }: PageProps) 
   if ((await searchParams)?.catalog === "1") redirect("/" + locale + "/services/catalog#service-listings");
   const current = copy[locale as Locale];
   return (
-    <main className="services-shell services-shell--studio" lang={locale}>
+    <main className={"services-shell services-shell--studio " + assistStyles.assistPage} lang={locale}>
       <PublicSiteHeader locale={locale} showAssessmentStrip={false} />
       <ServicesExplorerProvider>
+        <ServicesAssistMobile locale={locale as Locale} />
         <ServicesConversionHero locale={locale as Locale} />
+        <SpiritualReadingEntry locale={locale as Locale} />
         <PublicConsultationCta locale={locale as Locale} id="consultation" serviceBooking wiseEnabled={wisePaymentsEnabled()} paypalPersonalEnabled={personalPayPalEnabled()} />
         <ServicesStudioOffers locale={locale as Locale} />
+        <ServicesMagicalHelpMobile locale={locale as Locale} />
       </ServicesExplorerProvider>
       <ServicesIntroMedia locale={locale as Locale} />
       <PersonalTestimonials locale={locale as Locale} variant="services" />
