@@ -6,6 +6,7 @@ import { StaticPortrait } from "@/components/static-portrait";
 import Link from "next/link";
 import { Fragment } from "react";
 import { ServicesVideoGenerationCard } from "@/components/services-video-generation-card";
+import { ServicesCoachTherapistMobile } from "@/components/services-coach-therapist-mobile";
 import { ArrowRight, ChevronDown, ClipboardCheck, ShieldCheck } from "lucide-react";
 
 import { ContactChannelChooser } from "@/components/contact-channel-chooser";
@@ -316,6 +317,7 @@ export function ServicesStudioOffers({ locale }: { locale: PublicLocale }) {
           <p>{t.disclaimer}</p>
         </div>
       </section>
+      <ServicesCoachTherapistMobile locale={locale} />
     </>
   );
 }
