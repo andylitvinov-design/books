@@ -23,6 +23,8 @@ test("approved public profiles and responsive targets",()=>{
   assert.match(api,/profilePhoto: publicConsultationPhoto/);
   assert.match(parent,/<ServicesCoachTherapistMobile locale=\{locale\} \/>/);
   assert.match(parent,/<ServicesVideoGenerationCard locale=\{locale\} \/>/);
+  assert.match(parent,/<ServicesCoursesShelf locale=\{locale\} \/>/);
+  assert.equal((parent.match(/<ServicesCoachTherapistMobile locale=\{locale\} \/>/g) || []).length, 1, "coach shelf is mounted exactly once");
   assert.match(css,/\.shelf\{display:none\}/);
   assert.match(css,/min-height:48px/);
 });
