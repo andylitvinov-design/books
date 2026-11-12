@@ -6,11 +6,11 @@ const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",
 const hypno=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.tsx",import.meta.url),"utf8");
 const css=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.module.css",import.meta.url),"utf8");
 
-test("Montage third tab is Audio and keeps the real soundtrack editor",()=>{
+test("Montage keeps Audio as third tab and approved PRO offer as fourth",()=>{
   const start=studio.indexOf("<nav className={videoStyles.montageQuickTools}");
   const nav=studio.slice(start,studio.indexOf("</nav>",start));
   assert.deepEqual([...nav.matchAll(/\{id:"(\w+)",Icon:/g)].map(m=>m[1]),
-    ["effects","text","audio","settings","concept"]);
+    ["effects","text","audio","promo","concept"]);
   assert.match(nav,/audio:\{ru:"Аудио",en:"Audio",es:"Audio"\}/);
   assert.doesNotMatch(nav,/id:"visual"/);
   for(const marker of ["data-video-montage-audio","Background music","Фоновая композиция",

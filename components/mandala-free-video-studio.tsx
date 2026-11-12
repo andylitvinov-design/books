@@ -110,6 +110,7 @@ const MandalaVideoDirectorChat = dynamic(() => import("./mandala-video-director-
 const MandalaFirstVideoStart = dynamic(() => import("./mandala-first-video-start").then(module => module.MandalaFirstVideoStart));
 const MandalaStoriesCharacters = dynamic(() => import("./mandala-stories-characters").then(module => module.MandalaStoriesCharacters));
 const MandalaProEnhance = dynamic(() => import("./mandala-pro-enhance").then(module => module.MandalaProEnhance));
+const MandalaMontageProOffer = dynamic(() => import("./mandala-montage-pro-offer").then(module => module.MandalaMontageProOffer));
 const MandalaPersonalMeditation = dynamic(() => import("./mandala-personal-meditation").then(module => module.MandalaPersonalMeditation));
 const MandalaCloudVoiceStudio = dynamic(() => import("./mandala-cloud-voice-studio").then(module => module.MandalaCloudVoiceStudio));
 const MandalaPhraseCatalog = dynamic(() => import("./mandala-phrase-catalog").then(module => module.MandalaPhraseCatalog));
@@ -2005,7 +2006,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [showAdvancedVideo,setShowAdvancedVideo] = useState(false);
   const [montageStyleSettingsOpen,setMontageStyleSettingsOpen] = useState(false);
   // Montage is a preference-first wizard: detailed timeline is available only under Text.
-  const [montagePanel,setMontagePanel] = useState<"settings"|"effects"|"text"|"concept"|"audio">("effects");
+  const [montagePanel,setMontagePanel] = useState<"settings"|"effects"|"text"|"concept"|"audio"|"promo">("effects");
   const [hypnoEntryGroup,setHypnoEntryGroup] = useState<"visual"|"effects">("visual");
   const [storyFormat,setStoryFormat] = useState<"visual"|"motion"|"talking_character"|"ai_cinematic">("visual");
   const [approvedVideoConcept,setApprovedVideoConcept] = useState<ApprovedVideoConcept|null>(null);
@@ -6692,13 +6693,16 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       <section className={videoStyles.hero} id="video-hero" data-video-mandala-hero
         data-hero-promo={activeWorkspace!=="phrases"&&creationMode!=="generated"&&!cinematicPlan&&!photoUrl&&!previewPlaying&&!recording&&!selectedStyleFilm&&!hypnoLight.enabled?"true":"false"}
          data-video-therapy-preview={studioMode==="therapy"?"true":"false"}
+        data-montage-pro-hero={activeWorkspace==="editor"&&montagePanel==="promo"?"true":undefined}
         data-video-theme-active={videoCategory} data-preview-playing={previewPlaying?"true":"false"}
         data-video-preview-style={activeMontageStyleId||cinematicPlan?.styleId||"original"}
         data-video-preview-clips={usingFreeFilmCompilation?freeFilmShots.length:activeFilm?1:0}
         aria-labelledby="video-hero-heading">
         <h2 id="video-hero-heading" className={videoStyles.srOnly}>{studioMode==="therapy"?layout.therapyHeading:layout.previewTitle}</h2>
         <div className={videoStyles.heroPromo} aria-hidden="true"
-          style={activeFilm ? {backgroundImage:`linear-gradient(110deg,rgba(10,43,35,.12),rgba(6,28,29,.18)),url("${activeFilm.poster}")`} : undefined}/>
+          style={activeWorkspace==="editor"&&montagePanel==="promo"&&!activeFilm
+          ? {backgroundImage:'linear-gradient(105deg,rgba(8,39,31,.08),rgba(9,37,29,.28)),url("/images/holistic-house/pro-enhance-hero.webp")'}
+          : activeFilm ? {backgroundImage:`linear-gradient(110deg,rgba(10,43,35,.12),rgba(6,28,29,.18)),url("${activeFilm.poster}")`} : undefined}/>
         <div className={videoStyles.heroCanvas} data-video-preview-frame
           data-video-selected-style={selectedStyleFilm?.sceneId||undefined}>
           <canvas key={aspect} ref={canvasRef} width={formatDimensions(aspect,"hd")[0]}
@@ -6730,7 +6734,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <div className={videoStyles.heroShade} aria-hidden="true"/>
         <div className={videoStyles.heroEditorial} aria-hidden={previewPlaying||recording||activeWorkspace==="phrases"||showIntroHero}>
           <span className={videoStyles.heroEyebrow}><Film size={16} aria-hidden="true"/>
-            {activeWorkspace==="phrases"?(locale==="ru"?"Идеи · предпросмотр":locale==="es"?"Ideas · vista previa":"Ideas · preview"):locale==="ru"?"Видеогенератор":locale==="es"?"Generador de vídeo":"Video creator"}
+            {activeWorkspace==="phrases"?(locale==="ru"?"Идеи · предпросмотр":locale==="es"?"Ideas · vista previa":"Ideas · preview"):activeWorkspace==="editor"&&montagePanel==="promo"?"Montage PRO":locale==="ru"?"Видеогенератор":locale==="es"?"Generador de vídeo":"Video creator"}
           </span>
           <h2>{activeWorkspace==="phrases"
               ?(locale==="ru"?"Как работают фразы поддержки":locale==="es"?"Cómo funcionan las frases":"How support phrases work")
@@ -6738,6 +6742,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               ?(locale==="ru"?"Создайте своё видео":locale==="es"?"Crea tu propio vídeo":"Create your own video")
               :activeWorkspace==="pro"
               ?(locale==="ru"?"Улучшите своё видео":locale==="es"?"Mejora tu vídeo":"Enhance your video")
+              :activeWorkspace==="editor"&&montagePanel==="promo"
+              ?"Montage PRO"
               :(locale==="ru"?"Создавайте видео для поддержки, баланса и развития":
                 locale==="es"?"Crea vídeos para tu bienestar y crecimiento":
                 "Create videos for balance, support and growth")}</h2>
@@ -6751,6 +6757,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 "Practice, meditation or an inspiring film with your meaning")
               :activeWorkspace==="pro"
               ?(locale==="ru"?"Выберите улучшение или создайте видео бесплатно.":locale==="es"?"Elige una mejora o crea un vídeo gratis.":"Choose an upgrade or create a free video.")
+              :activeWorkspace==="editor"&&montagePanel==="promo"
+              ?(locale==="ru"?"Персонаж для приветствия, качественные AI-сцены и ваш образ в видео.":locale==="es"?"Un presentador, escenas de IA y tu propia imagen en el vídeo.":"A greeting character, premium AI scenes and your own image.")
               :(locale==="ru"?"Персональные видео, медитации и практики под ваш запрос.":
                 locale==="es"?"Vídeos, meditaciones y prácticas para tu objetivo.":
                 "Personal videos, meditations and practices for your goals.")}</p>
@@ -8056,7 +8064,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <nav className={videoStyles.montageQuickTools} data-video-montage-tools
             aria-label={locale==="ru"?"Разделы монтажа":locale==="es"?"Secciones de montaje":"Montage sections"}>
             {([{id:"effects",Icon:Sparkles},{id:"text",Icon:Type},
-              {id:"audio",Icon:Music2},{id:"settings",Icon:SlidersHorizontal},
+              {id:"audio",Icon:Music2},{id:"promo",Icon:Zap},
               {id:"concept",Icon:Film}] as const).map(item=>
               <button type="button" key={item.id} data-video-montage-tab={item.id}
                 aria-pressed={montagePanel===item.id} aria-controls="video-montage-active-panel"
@@ -8067,7 +8075,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 }}>
                 <item.Icon size={19} aria-hidden="true"/>
                 <span>{({
-                  settings:{ru:"Раскадровка",en:"Storyboard",es:"Guion visual"},
+                  promo:{ru:"Монтаж PRO",en:"Montage PRO",es:"Montaje PRO"},
                   effects:{ru:"Стиль",en:"Style",es:"Estilo"},
                   text:{ru:"Текст",en:"Text",es:"Texto"},
                   audio:{ru:"Аудио",en:"Audio",es:"Audio"},
@@ -8077,6 +8085,19 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </nav>
           <div data-video-director-style-controls hidden={montagePanel!=="effects"} />
           <div id="video-montage-active-panel" className={videoStyles.montageActivePanel}>
+          {montagePanel==="promo" ? <MandalaMontageProOffer
+            locale={locale} disabled={recording||preparing}
+            onGoStory={()=>{
+              setMontagePanel("concept");setNotice("");
+              window.requestAnimationFrame(()=>
+                document.querySelector('[data-video-montage-tools]')?.scrollIntoView({behavior:"smooth",block:"start"}));
+            }}
+            onExplorePro={()=>{
+              setActiveWorkspace("pro");setNotice("");setIntroPlaying(false);
+              window.requestAnimationFrame(()=>
+                document.getElementById("free-personal-video")?.scrollIntoView({behavior:"auto",block:"start"}));
+            }}
+          /> : null}
           {montagePanel==="concept" ? <section className={videoStyles.montagePane}
             data-video-montage-concept aria-label={locale==="ru"?"Видеоконцепт и раскадровка":
               locale==="es"?"Concepto visual y storyboard":"Video concept and storyboard"}>
@@ -8132,6 +8153,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               }}
               onOpenIdeas={()=>{setActiveWorkspace("phrases");setIdeasSubtab("concept");}}
             />}
+            <button type="button" className={videoStyles.quickEdit}
+              data-video-story-open-settings disabled={recording||preparing}
+              onClick={()=>{setMontagePanel("settings");setMontageStyleSettingsOpen(false);}}>
+              <SlidersHorizontal size={17} aria-hidden="true"/>
+              {locale==="ru"?"Настройки видео":locale==="es"?"Ajustes de vídeo":"Video settings"}
+            </button>
           </section> : null}
           {montagePanel==="concept" ? <div className={videoStyles.montagePreferences} data-video-montage-storyboard>
             <div className={videoStyles.montagePreferencesHeader}>
@@ -8948,7 +8975,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             </div>
           </details>
         </section> : null}
-        <div className={videoStyles.quickOrderBar} data-workspace-section="editor" data-video-order-bar>
+        <div className={videoStyles.quickOrderBar} data-workspace-section="editor" data-video-order-bar
+          hidden={montagePanel==="promo"}>
           <div className={videoStyles.quickOrderSummary} data-video-price-summary aria-live="polite">
             <small>{practiceCopy.total}</small>
             <strong>{creditCatalog?.chargeRequired&&freeVideoSelected
