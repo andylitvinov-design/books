@@ -1,27 +1,90 @@
 <!doctype html>
+<!-- HH_PR_MONITOR_DIRECT_HTML_V1: full original markup at first paint; no asynchronous document.open/write bootstrap -->
 <html lang="ru">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="color-scheme" content="dark"><meta name="theme-color" content="#0b1726"><meta name="robots" content="noindex,nofollow,noarchive">
-<title>PR Monitor · Holistic House</title>
-<link rel="stylesheet" href="/pr-monitor-fast.css?v=20261112-fast-v1">
-<script src="/pr-monitor-fast.js?v=20261112-fast-v1" defer></script></head>
+<head><script src="/pr-two-screen-pre.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0b1220">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="PR Monitor">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<title>PR · Holistic House</title>
+<link rel="stylesheet" href="/compact.css">
+<script src="/monitor-core.js" defer></script>
+<script src="/compact.js" defer></script>
+<link rel="stylesheet" href="/diagnostics.css">
+<script src="/diagnostics.js" defer></script>
+<link rel="stylesheet" href="/impact-ranking.css">
+<script src="/impact-ranking.js" defer></script>
+<link rel="stylesheet" href="/ci-insights.css">
+<script src="/ci-insights.js" defer></script>
+<link rel="stylesheet" href="/seo.css">
+<script src="/seo.js" defer></script>
+<link rel="stylesheet" href="/seo-bridge.css">
+<script src="/seo-bridge.js" defer></script>
+<link rel="stylesheet" href="/repair-outcomes.css">
+<script src="/repair-outcomes-ui.js" defer></script>
+<link rel="stylesheet" href="/pr-stage-dashboard.css">
+<script src="/pr-stage-dashboard.js" defer></script>
+
+
+<link rel="stylesheet" href="/pr-attribution-ui.css">
+<script src="/pr-attribution-ui.js" defer></script>
+<script src="/ci-first-last.js?v=20261104a" defer></script>
+<script src="/ci-journey-dashboard.js?v=20261104-v1" defer></script>
+<link rel="stylesheet" href="/pr-timestamp-coverage.css?v=20261104-5"><script src="/pr-timestamp-coverage.js?v=20261104-5" defer></script><link rel="stylesheet" href="/pr-two-screen.css?v=20261104-4"><script src="/pr-cohort-wall-clock.js?v=20261104-kpi-p95-3476" defer></script><script src="/ci-queue-backup.js?v=20261106-ci-filter-v2" defer></script><script data-pr-stage-only src="/pr-two-screen.js?v=20261111-full-journey-v3" defer></script><link rel="stylesheet" href="/pr-three-kpi-ui.css?v=20261106-wave-kpi1"><script src="/pr-three-kpi-ui.js?v=20261111-weekly-top-v1" defer></script><link rel="stylesheet" href="/pr-monitor-fluid.css?v=20261105-v1"><script src="/pr-merge-velocity-ui.js?v=20261111-direct-source-v3" defer></script><link rel="stylesheet" href="/pr-velocity-three-lines.css?v=20261105-v1"><script src="/pr-velocity-three-lines.js?v=20261105-v1" defer></script><link rel="stylesheet" href="/pr-queue-recovery.css?v=20261105-queue-v1"><script src="/pr-open-queue.js?v=20261105-queue-v1" defer></script><link rel="stylesheet" href="/pr-trends.css?v=20261112-two-charts-v1"><script src="/pr-trends.js?v=20261112-two-charts-v1" defer></script><script src="/pr-trends-recovery.js?v=20261105-history-v1" defer></script><link rel="stylesheet" href="/gpt-agent-counter.css?v=20261106-grid-v1"><script src="/gpt-agent-counter.js?v=20261106-grid-v1" defer></script><script src="/ci-jobs-bridge.js?v=20261109-workflow-labels-v1" defer></script><link rel="stylesheet" href="/pr-lifecycle-ribbon.css?v=20261107-journey-v2"><script src="/pr-lifecycle-ribbon.js?v=20261107-journey-v2" defer></script><link rel="stylesheet" href="/pr-attribution-ui.css?v=20261107-journey-v2"><script src="/pr-attribution-ui.js?v=20261107-journey-v2" defer></script><link rel="stylesheet" href="/pr-error-funnel.css?v=20261111-paginated-v6"><script src="/pr-error-funnel.js?v=20261111-paginated-v6" defer></script><link rel="stylesheet" href="/project-management-nav.css?v=20261107-cc-v1"><script src="/project-management-nav.js?v=20261107-cc-v1" defer></script><link rel="stylesheet" href="/commander-learning.css?v=20261107-learning-v1"><link rel="stylesheet" href="/pr-recommendations.css?v=20261111-v2"><script src="/pr-recommendations.js?v=20261111-v2" defer></script><link rel="stylesheet" href="/pr-compact-top.css?v=20261111-graphs-top-v2"><script src="/pr-compact-top.js?v=20261111-graphs-top-v2" defer></script><link rel="stylesheet" href="/pr-dense-view.css?v=20261111-full-journey-v3"><script src="/pr-dense-view.js?v=20261111-full-journey-v3" defer></script><link rel="stylesheet" href="/pr-monitor-mobile-safe.css"><link rel="stylesheet" href="/pr-graphs-restore.css?v=20261112-two-charts-v1"><script src="/pr-graphs-restore.js?v=20261112-two-charts-v1" defer></script><link rel="stylesheet" href="/pr-monitor-restored.css?v=20261112-full-restored-v1">
+</head>
 <body>
-<header class="site-head"><div class="brand">HOLISTIC HOUSE <span>PR Monitor</span></div><a href="/briefing.html">Брифинг</a></header>
-<main class="wrap" id="pr-monitor-fast">
-<div class="heading"><div><h1>Монитор PR</h1><p>Создание · CI · Merge · LIVE</p></div><button id="refresh" type="button">↻ Обновить</button></div>
-<p class="state" id="live-state" role="status" aria-live="polite">Монитор открыт. Получаю последние подтверждённые данные…</p>
-<section class="graph-grid" aria-label="Два графика PR">
-<article class="graph-card" id="activity-card"><div class="card-title"><h2>Динамика PR и CI</h2><small>6 последних часов · Торонто</small></div>
-<div class="legend"><span><i class="dot created"></i>Создано</span><span><i class="dot merged"></i>Merge</span><span><i class="dot ci"></i>CI workflow</span></div>
-<svg id="activity-graph" viewBox="0 0 360 190" role="img" aria-label="График созданных и объединённых PR и запусков CI за шесть часов"><text x="180" y="96" text-anchor="middle" fill="#aabfd3" font-size="13">Подключаю данные…</text></svg>
-<p class="chart-note" id="activity-note" aria-live="polite">Проверяю PR и GitHub Actions…</p></article>
-<article class="graph-card" id="latency-card"><div class="card-title"><h2>Задержки PR → Merge</h2><small>Merge/час и медиана времени PR</small></div>
-<div class="legend"><span><i class="dot merged"></i>Merge/час</span><span><i class="dot created"></i>P50 до Merge</span></div>
-<svg id="latency-graph" viewBox="0 0 360 190" role="img" aria-label="График скорости PR до слияния и количества merge"><text x="180" y="96" text-anchor="middle" fill="#aabfd3" font-size="13">Подключаю данные…</text></svg>
-<div class="periods" role="group" aria-label="Период задержек"><button type="button" data-hours="1">1ч</button><button type="button" data-hours="6" aria-pressed="true">6ч</button><button type="button" data-hours="24">24ч</button><button type="button" data-hours="72">72ч</button></div>
-<p class="chart-note" id="latency-note" aria-live="polite">Проверяю событие Merge…</p></article>
+<nav id="hh-project-management-nav" class="hh-monitor-static-nav" aria-label="Agent Commander · разделы">
+<a href="/briefing.html">Главная</a><a aria-current="page" href="/pr-monitor.html">Монитор PR</a><a href="/project-management-public.html">Задачи</a><a href="/agents.html">Агенты</a><a href="/chats.html">Чаты</a><a href="/automations.html">Автоматизации</a><a href="/projects.html">Проекты</a><a href="/skills.html">Навыки</a><a href="/task-editor.html">Создать</a>
+</nav>
+<main class="wrap">
+<header class="header">
+<div class="brand">HOLISTIC HOUSE</div>
+<div class="header-row"><h1>Очередь PR</h1><button id="refresh" type="button" class="button">↻ Обновить</button></div>
+</header><p class="hh-learning-monitor-entry"><a href="/competitors.html">◈ Конкуренты · Market Intelligence</a> · <a href="/learning.html">✦ Обучение агентов</a></p>
+<section id="quick-signal" class="decision unknown" aria-live="polite" aria-atomic="true">
+<div class="decision-line"><span class="dot" aria-hidden="true"></span><h2 id="quick-recommendation">Проверяю GitHub CI…</h2></div>
+<p id="quick-explanation" class="explanation">Загружаю свежие данные</p>
+<div class="ci-counters">
+<div class="counter"><strong id="quick-queued">—</strong><span>CI ожидает</span></div>
+<div class="counter"><strong id="quick-running">—</strong><span>CI выполняется</span></div>
+</div>
 </section>
-<section class="numbers" aria-label="Ключевые показатели"><article><span>Создано / час</span><strong id="count-created">—</strong></article><article><span>Merge / час</span><strong id="count-merged">—</strong></article><article><span>CI workflow / час</span><strong id="count-ci">—</strong></article><article><span>Скорость Merge, P50</span><strong id="merge-p50">—</strong></article></section>
-<details class="journey" id="journey"><summary>Этапы Created → CI → Merge → LIVE <span>Развернуть</span></summary><div id="journey-body"><p>Покажу проверенные этапы после открытия. Нет данных ≠ 0.</p></div></details>
-<nav class="secondary" aria-label="Дополнительная диагностика"><a href="/pr-monitor-full.html">Полная диагностика PR, ремонт и рекомендации</a><a href="/automations.html">Автоматизации</a><a href="/projects.html">Проекты</a></nav>
-<footer>Данные только для чтения. Merge не означает подтверждённый LIVE. Если API недоступен, монитор остаётся открытым.</footer>
-</main></body></html>
+<section class="throughput" aria-label="PR за последние 60 минут">
+<div class="throughput-card"><span>Новые PR / час</span><strong id="quick-created">—</strong></div>
+<div class="throughput-card"><span>Merge / час</span><strong id="quick-merged">—</strong></div>
+</section>
+<div id="diagnostics-mount"></div>
+<div class="small-row"><span id="freshness">CI не обновлена · Торонто</span><a href="https://github.com/andylitvinov-design/books/actions" target="_blank" rel="noopener noreferrer">GitHub CI ↗</a></div>
+<details class="details" id="extended">
+<summary>Подробнее <span class="summary-arrow" aria-hidden="true">⌄</span></summary>
+<div class="details-body">
+<p class="tiny">Показывается нагрузка GitHub Actions, а не количество PR с ошибками. Наличие свободных CI-слотов не означает, что все PR готовы к merge.</p>
+<div class="extra-grid">
+<div><span>Открытых PR в production</span><strong id="now-prod">—</strong></div>
+<div><span>PR в обработке (минимум)</span><strong id="now-work">—</strong></div>
+<div><span>Проверенно готовы</span><strong id="now-ready">—</strong></div>
+</div>
+<p class="small" id="now-total">Всего открыто —</p>
+<h3>История по часам</h3>
+<div class="range-group" aria-label="Интервал">
+<button class="range" data-hours="6" type="button">6 ч</button>
+<button class="range" data-hours="12" type="button">12 ч</button>
+<button class="range" data-hours="24" type="button">24 ч</button>
+<button class="range" data-hours="72" type="button">3 дня</button>
+</div>
+<div id="days" class="days"></div>
+<p id="status" class="small" role="status">Получаю статистику…</p>
+<button id="download-csv" type="button" class="button small-button">Скачать историю CSV</button>
+</div>
+</details>
+<div class="engine-values" hidden aria-hidden="true">
+<i id="signal" class="signal-dot unknown"></i>
+<span id="recommendation"></span><span id="recommendation-reason"></span>
+<span id="now-created"></span><span id="now-merged"></span><span id="now-queued"></span><span id="now-running"></span>
+</div>
+</main>
+</body>
+</html>
