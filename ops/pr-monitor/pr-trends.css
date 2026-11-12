@@ -1,0 +1,27 @@
+.hh-pr-trends{margin:20px 0 18px;padding:17px 15px 13px;border:1px solid #31445c;border-radius:19px;background:#142239;color:#eef4ff;min-width:0}
+.hh-trends-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:12px}
+.hh-trends-head h2{font-size:17px;line-height:1.22;letter-spacing:-.15px;margin:0 0 3px;font-weight:800}
+.hh-trends-head p{margin:0;color:#91a8bf;font-size:11px}
+.hh-trends-updated{font-size:10px;color:#91a8bf;text-align:right;white-space:nowrap;line-height:1.4;max-width:105px}
+.hh-trends-legend{display:flex;justify-content:space-between;gap:5px;margin-bottom:10px;flex-wrap:wrap}
+.hh-trends-legend span{display:inline-flex;align-items:center;gap:4px;color:#c5d4e7;font-size:10px;white-space:nowrap}
+.hh-trends-legend i{height:7px;width:7px;border-radius:50%;display:inline-block;flex:0 0 auto}
+.hh-dot-created{background:#8bc9ff}.hh-dot-processed{background:#75e2be}.hh-dot-ci{background:#ffc576}
+.hh-trends-plot{height:167px;position:relative;overflow:hidden}
+.hh-trends-plot svg{display:block;width:100%;height:100%;overflow:visible}
+.hh-axis-left,.hh-axis-right{position:absolute;top:0;z-index:1;color:#91a8bf;font-size:9px;line-height:1}
+.hh-axis-left{left:16px}.hh-axis-right{right:16px}
+.hh-trends-periods{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;margin-top:5px}
+.hh-period{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0;aspect-ratio:1;border:1px solid #3c526b;background:#101c2e;border-radius:8px;padding:3px 1px;line-height:1.04;cursor:pointer;font-variant-numeric:tabular-nums;gap:2px}
+.hh-period:focus-visible{outline:2px solid #8bc9ff;outline-offset:2px}
+.hh-period.is-selected{border-color:#8bc9ff;background:#1c354a;box-shadow:inset 0 0 0 1px #8bc9ff}
+.hh-period-hour{font-size:10px;font-weight:750;color:#dce9ff;margin-bottom:1px}
+.hh-period-created,.hh-period-processed,.hh-period-ci{font-size:10px;font-weight:750;max-width:100%;overflow:hidden;text-overflow:clip;white-space:nowrap}
+.hh-period-created,.hh-blue{color:#8bc9ff}.hh-period-processed,.hh-green{color:#75e2be}.hh-period-ci,.hh-amber{color:#ffc576}
+.hh-trends-selected{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;padding-top:10px;border-top:1px solid #31445c;font-size:12px}
+.hh-trends-selected strong{font-weight:750;color:#dce9ff}
+.hh-trends-selected-metrics{display:flex;gap:9px;align-items:center;font-size:12px;font-variant-numeric:tabular-nums}
+.hh-trends-selected-metrics b{font-weight:800}
+.hh-trends-note{margin:9px 0 0;font-size:10px;line-height:1.35;color:#91a8bf}
+@media(max-width:360px){.hh-pr-trends{padding:14px 11px 12px}.hh-trends-legend span{font-size:9px}.hh-trends-selected-metrics{gap:6px;font-size:11px}.hh-trends-periods{gap:4px}}
+@media(prefers-reduced-motion:reduce){.hh-period{transition:none}}
