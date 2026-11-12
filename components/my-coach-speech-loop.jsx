@@ -25,7 +25,7 @@ const words={
     privacy:'El navegador puede enviar audio al proveedor de reconocimiento. No almacenamos grabaciones. Detén la conversación cuando quieras.'},
 }
 
-export default function MyCoachSpeechLoop({locale='en',enabled=false,canStart=true,onTurn,onCancelTurn}){
+export default function MyCoachSpeechLoop({locale='en',enabled=false,canStart=true,onTurn,onCancelTurn,onVoiceStateChange}){
   const lang=words[locale]?locale:'en',t=words[lang]
   const [phase,setPhase]=useState('idle')
   const [notice,setNotice]=useState('')
@@ -36,10 +36,18 @@ export default function MyCoachSpeechLoop({locale='en',enabled=false,canStart=tr
   const speakingRef=useRef(false)
   const generationRef=useRef(0)
   const turnRef=useRef(onTurn),cancelRef=useRef(onCancelTurn),stopRef=useRef(null)
+  const voiceStateRef=useRef(onVoiceStateChange)
+  const beatRef=useRef(0)
   turnRef.current=onTurn
   cancelRef.current=onCancelTurn
+  voiceStateRef.current=onVoiceStateChange
 
-  function changePhase(next){phaseRef.current=next;setPhase(next)}
+  function changePhase(next){
+    phaseRef.current=next
+    if(next!=='speaking')beatRef.current=0
+    setPhase(next)
+    voiceStateRef.current?.({phase:next,beat:beatRef.current})
+  }
   function silence(){
     activeRef.current=false
     generationRef.current+=1
@@ -134,7 +142,15 @@ export default function MyCoachSpeechLoop({locale='en',enabled=false,canStart=tr
     const preferred=voices.find(voice=>voice.lang?.toLowerCase()===langs[lang].toLowerCase())
       ||voices.find(voice=>voice.lang?.toLowerCase().startsWith(lang+'-'))
     if(preferred)utterance.voice=preferred
+    // Only a real browser speech onstart changes the avatar into speaking.
+    // Queuing speech must not animate the mouth before audio starts.
     utterance.onstart=()=>{if(activeRef.current&&generationRef.current===generation)changePhase('speaking')}
+    utterance.onboundary=event=>{
+      if(!activeRef.current||generationRef.current!==generation||phaseRef.current!=='speaking')return
+      if(event.name&&event.name!=='word'&&event.name!=='sentence')return
+      beatRef.current+=1
+      voiceStateRef.current?.({phase:'speaking',beat:beatRef.current})
+    }
     utterance.onend=()=>{
       speakingRef.current=false
       if(!activeRef.current||generationRef.current!==generation)return
@@ -151,7 +167,6 @@ export default function MyCoachSpeechLoop({locale='en',enabled=false,canStart=tr
     try{
       speech.cancel()
       speakingRef.current=true
-      changePhase('speaking')
       speech.speak(utterance)
     }catch{speakingRef.current=false;silence();changePhase('idle');setNotice(t.restart)}
   }

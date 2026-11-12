@@ -5529,3 +5529,16 @@
  .audioCompactBrowse{padding:5px;font-size:10px}
  .studio[data-active-workspace="editor"][data-montage-panel="audio"] [data-video-stage-actions="montage"]>button{font-size:12px}
 }
+
+/* Compact verified credit balance: retain the approved Audio/Montage layout. */
+@media(max-width:759px){
+ .studio[data-active-workspace] .quickBuilder>.quickBrandBar{gap:4px!important}
+ .studio[data-active-workspace] .quickBrandIdentity{flex:1 1 0!important;min-width:0!important}
+ .studio[data-active-workspace] .quickBrandPhoto{min-width:37px!important;min-height:38px!important;padding:3px!important}
+ .studio[data-active-workspace] .quickBrandIHelp{min-width:37px!important;width:37px!important;padding:4px!important}
+ .studio[data-active-workspace] .quickBrandIHelp span{display:none!important}
+}
+@media(max-width:359px){
+ .studio[data-active-workspace] .quickBrandIdentity{display:none!important}
+ .studio[data-active-workspace] .quickBrandIHelp{margin-left:auto!important}
+}

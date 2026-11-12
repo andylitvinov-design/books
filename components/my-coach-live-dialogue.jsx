@@ -7,6 +7,7 @@ import {getCoachPersona,localCoachText,coachStagePrompt} from '@/lib/coaching/pe
 import {coachingBrainSafety,coachingBrainBoundary} from '@/lib/personal-coaching/coaching-brain.mjs'
 import styles from './my-coach-live-dialogue.module.css'
 import MyCoachSpeechLoop from './my-coach-speech-loop'
+import CoachingAvatar from '@/components/app/coaching-avatar'
 
 const copy={
   en:{
@@ -55,6 +56,15 @@ const copy={
     failed:'La respuesta IA no pasó la validación.',retry:'El servicio IA está temporalmente inaccesible.',goal:'Comienza por tu objetivo.',
   },
 }
+const avatarVisuals={
+  mira:'warm',max:'clear',sofia:'calm',alex:'clear',
+  lea:'calm',noah:'warm',iris:'warm',ray:'clear',
+}
+const avatarNotice={
+  en:'Animated 2D coach · device voice, not a video call.',
+  ru:'Анимированный 2D-коуч · голос устройства, не видеозвонок.',
+  es:'Coach animado en 2D · voz del dispositivo, no videollamada.',
+}
 const reasons={
   feature_disabled:'disabled',server_not_configured:'config',rate_limited:'limit',
   privacy_model_unavailable:'protected',cost_unverified:'cost',
@@ -74,6 +84,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [authRequired,setAuthRequired]=useState(false)
   const [readiness,setReadiness]=useState({status:'checking',reason:''})
   const [paused,setPaused]=useState(false)
+  const [voiceState,setVoiceState]=useState({phase:'idle',beat:0})
   const [editablePlan,setEditablePlan]=useState('')
   const pending=useRef(null),end=useRef(null)
   useEffect(()=>()=>pending.current?.abort(),[])
@@ -176,6 +187,13 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       <span className={styles.badge}><Sparkles size={15} aria-hidden="true"/>{t.badge}</span>
       <h2>{t.title}</h2>
       <p>{t.disclosure}</p>
+      <div className={styles.livingPanel} data-my-coach-living-dialogue="true">
+        <CoachingAvatar locale={lang} avatarId={avatarVisuals[personaId]||'warm'}
+          displayName={name} showPicker={false} size="large"
+          phase={voiceState.phase==='speaking'?'speaking':paused?'paused':busy?'thinking':voiceState.phase}
+          beat={voiceState.beat}/>
+        <div className={styles.livingActions}><span>{avatarNotice[lang]}</span></div>
+      </div>
     </header>
     <div className={styles.messages} role="log" aria-live="polite" aria-relevant="additions text">
       <div className={styles.coachMessage}>
@@ -235,7 +253,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     <MyCoachSpeechLoop locale={lang}
       enabled={consent&&readiness.status!=='checking'&&!authRequired}
       canStart={!busy&&!paused} onTurn={sendMessage}
-      onCancelTurn={()=>pending.current?.abort()}/>
+      onCancelTurn={()=>pending.current?.abort()}
+      onVoiceStateChange={setVoiceState}/>
     {error&&<p className={styles.error} role="alert">{error}</p>}
     <p className={styles.privacy}><ShieldCheck size={16} aria-hidden="true"/>{t.privacy}</p>
     <nav className={styles.actions}>

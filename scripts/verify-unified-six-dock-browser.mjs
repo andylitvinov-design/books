@@ -810,23 +810,29 @@ try{
  await unifiedProfile.click();
  await page.waitForURL(/\/ru\/app\/portrait\/?$/,{timeout:45000});
  await page.locator('[data-profile-hub-tabs]').waitFor({state:"visible",timeout:45000});
- assert.equal(await page.locator('[data-profile-tab="tests"][aria-current="page"]').count(),1,
-   "guest Profile intentionally opens its public Tests-first section");
- // The protected #3909 profile has six real sections; old View/Create tabs
- // and /personality-profiles were replaced. Test the visible DOM and navigation,
- // not a hidden fallback or loosened count.
+ // #4301 restored My Space / Today as the canonical Profile landing.
+ // A signed-out visitor sees the public Cabinet overview and may deliberately
+ // open guest Tests; the old auto-opened Tests-first page is no longer mounted.
+ assert.equal(await page.locator('[data-profile-tab="today"][aria-current="page"]').count(),1,
+   "guest Profile opens the current My Space Today tab, not the retired Tests-first view");
+ const guestOverview=page.locator('[data-cabinet-guest-overview="true"]');
+ await guestOverview.waitFor({state:"visible",timeout:45000});
+ const publicTests=guestOverview.locator('a[href="/ru/client/tests"]');
+ await publicTests.waitFor({state:"visible",timeout:15000});
+ assert.equal(await page.locator('[data-profile-tests-first]').count(),0,
+   "retired standalone test-first component must not replace the My Space overview");
+ // The same six canonical tabs remain visible, but private tabs are explicit
+ // account routes rather than in-page guest anchors.
  assert.deepEqual(await page.locator('[data-profile-hub-tabs] [data-profile-tab]').evaluateAll(
    links=>links.map(link=>link.dataset.profileTab)),
    ["today","tests","state","path","courses","reports"],
-   "the guest and signed-in My Space show the same six canonical sections");
- await page.locator('[data-profile-tab="tests"]').click();
- await page.waitForFunction(()=>location.hash==="#profile-free-tests",{},{timeout:15000});
- await page.locator('[data-profile-hub-tabs][data-profile-active="tests"]').waitFor({state:"visible",timeout:45000});
- assert.equal(await page.locator('[data-profile-tab="tests"][aria-current="page"]').count(),1);
+   "My Space retains six canonical sections for guest and signed-in users");
  assert.equal(await page.locator('[data-hh-unified-dock] [data-unified-dock-item="profile"][aria-current="page"]').count(),1);
  assert.equal(await page.locator('.mobile-bottom-navigation:visible').count(),0);
- assert.equal(await page.locator('[data-profile-hub-tabs] [data-profile-tab]').count(),6);
- results.push({journey:"Public Profile → six-tab My Space Today → protected Tests with one seven-tab dock",passed:true});
+ await publicTests.click();
+ await page.waitForURL(/\/ru\/client\/tests\/?$/, {timeout:45000});
+ await page.locator('main[lang="ru"]').waitFor({state:"visible",timeout:45000});
+ results.push({journey:"Public Profile → My Space Today guest overview → explicit public Tests without forced login",passed:true});
 
 }finally{await browser.close();}
 writeFileSync(folder+"/results.json",JSON.stringify(results,null,2));
