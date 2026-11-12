@@ -239,6 +239,40 @@ test('re-read exact live run and PR before cancellation; cap and dry-run', async
   assert.deepEqual((await prune(api, ctx)).cancelled, []);
 });
 
+
+test('GitHub HTTP 409 with queued and zero jobs is reported as unresolved, not cancelled', async () => {
+  const api = { list: async () => ({ workflow_runs: [run()] }),
+    pr: async () => pr(), run: async () => run(),
+    compare: async () => ({ status: 'ahead', ahead_by: 1 }),
+    cancel: async () => { throw Error('GitHub POST /actions/runs/100/cancel: HTTP 409'); },
+    jobs: async () => ({ total_count: 0, jobs: [] }),
+    forceCancel: async () => { throw Error('Never force a jobless GitHub 409'); } };
+  const result = await prune(api, ctx);
+  assert.equal(result.candidates, 1);
+  assert.deepEqual(result.cancelled, []);
+  assert.deepEqual(result.errors, []);
+  assert.equal(result.partial, true);
+  assert.deepEqual(result.jobless409, [{
+    id: 100, reason: 'GITHUB_QUEUED_ZERO_JOBS_CANCEL_409',
+    url: 'https://github.com/' + repo + '/actions/runs/100' }]);
+});
+
+test('409 with known jobs or other errors remains a real cleanup error', async () => {
+  const api = { list: async () => ({ workflow_runs: [run()] }),
+    pr: async () => pr(), run: async () => run(),
+    compare: async () => ({ status: 'ahead', ahead_by: 1 }),
+    cancel: async () => { throw Error('GitHub POST /actions/runs/100/cancel: HTTP 409'); },
+    jobs: async () => ({ total_count: 1, jobs: [{ name: 'core-lint-types-build' }] }) };
+  const withJobs = await prune(api, ctx);
+  assert.equal(withJobs.errors.length, 1);
+  assert.equal(withJobs.jobless409.length, 0);
+  api.jobs = async () => ({ total_count: 0, jobs: [] });
+  api.cancel = async () => { throw Error('GitHub POST /actions/runs/100/cancel: HTTP 403'); };
+  const denied = await prune(api, ctx);
+  assert.equal(denied.errors.length, 1);
+  assert.equal(denied.jobless409.length, 0);
+});
+
 test('HTTP API uses queued PR filter and POST for cancellation', async () => {
   const calls = [];
   const http = async (url, options) => { calls.push([url, options.method]); return { ok: true, json: async () => ({ workflow_runs: [] }) }; };
