@@ -547,3 +547,25 @@
  .root .sections button strong,.root .sections .aiTab strong{font-size:10px}
  .root .sections button>svg,.root .sections .aiTab svg{width:15px;height:15px}
 }
+
+/* Compact messenger locale selector: stays above the four folder tabs on phone. */
+.root .languageBar{display:flex;align-items:center;justify-content:flex-end;gap:8px;
+  margin:0 3px 7px;min-height:30px}
+.root .languageLabel{font:700 10px/1 system-ui,-apple-system,sans-serif;letter-spacing:.08em;
+  color:#928679;text-transform:uppercase}
+.root .languageOptions{display:inline-flex;align-items:center;gap:2px;padding:3px;
+  border:1px solid #e8dfd2;border-radius:999px;background:linear-gradient(120deg,#fffdf8,#f4eee5);
+  box-shadow:0 2px 8px #5147340a}
+.root .languageOptions button{display:grid;place-items:center;min-width:34px;min-height:27px;
+  padding:0 8px;border:0;border-radius:999px;background:transparent;color:#786f63;
+  font:760 10px/1 system-ui,-apple-system,sans-serif;cursor:pointer}
+.root .languageOptions button[aria-pressed="true"]{background:linear-gradient(115deg,#198c72,#08745f);
+  color:#fff;box-shadow:0 2px 6px #08745f26}
+.root .languageOptions button:focus-visible{outline:2px solid #087f60;outline-offset:2px}
+@media(max-width:700px){
+  .root .languageBar{margin:0 2px 6px;min-height:28px;gap:7px}
+  .root .languageLabel{font-size:9px}
+  .root .languageOptions{padding:2px}
+  .root .languageOptions button{min-width:33px;min-height:26px;font-size:10px}
+}
+@media(prefers-reduced-motion:reduce){.root .languageOptions button{transition:none}}

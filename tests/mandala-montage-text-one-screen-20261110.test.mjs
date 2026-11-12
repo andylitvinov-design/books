@@ -41,5 +41,5 @@ test("intentional Play reveals the original Canvas; render and effects are not c
  assert.ok(studio.includes("const openAffirmationPreview = () => {"));
  assert.ok(studio.includes("setPreviewPlaying(true)"));
  assert.ok(studio.includes("data-video-live-stage"));
- assert.ok(studio.includes('onCreate={()=>{setMontagePanel("visual");setPreviewPlaying(false);}}'));
+ assert.ok(studio.includes('onCreate={()=>{setMontagePanel("audio");setBasicPanelTab("music");setPreviewPlaying(false);}}'));
 });

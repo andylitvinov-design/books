@@ -304,6 +304,17 @@ export default function MessagesOrdersClients({locale:routeLocale='en',children}
     // Preserve selected client/order and their unsent drafts while changing folders.
     window.history.replaceState(window.history.state,'',url)
   }
+  function chooseLocale(nextLocale){
+    if(!['en','ru','es'].includes(nextLocale))return
+    setLocale(nextLocale)
+    const url=new URL(window.location.href)
+    const localePrefix=/^\/(en|ru|es)(?=\/|$)/
+    if(localePrefix.test(url.pathname)){
+      // Use the App Router-compatible native history API: keep the live chat mounted.
+      url.pathname=url.pathname.replace(localePrefix, `/${nextLocale}`)
+      window.history.replaceState(window.history.state,'',url)
+    }
+  }
   function chooseOrder(id){
     setSelectedId(id)
     const url=new URL(window.location.href)
@@ -326,6 +337,17 @@ export default function MessagesOrdersClients({locale:routeLocale='en',children}
   )
   return <section ref={hubRef} className={styles.root} lang={locale} data-orders-clients-hub
     data-detail-open={detailMode||undefined} data-section={section}>
+    <div className={styles.languageBar} data-hh-messenger-language-switcher>
+      <span className={styles.languageLabel}>{locale==='ru'?'Язык':locale==='es'?'Idioma':'Language'}</span>
+      <div className={styles.languageOptions} role="group"
+        aria-label={locale==='ru'?'Язык мессенджера':locale==='es'?'Idioma del mensajero':'Messenger language'}>
+        {['en','ru','es'].map(language=><button key={language} type="button"
+          data-hh-messenger-language-option={language}
+          aria-label={language==='en'?'English':language==='ru'?'Русский':'Español'}
+          aria-pressed={locale===language} title={language==='en'?'English':language==='ru'?'Русский':'Español'}
+          onClick={()=>chooseLocale(language)}>{language.toUpperCase()}</button>)}
+      </div>
+    </div>
     <div className={styles.sections} role="tablist" aria-label={t.title} data-chat-top-tabs>
       <button type="button" role="tab" aria-controls="hh-ai-panel" aria-selected={section==='ai'}
         className={styles.aiTab} onClick={()=>chooseSection('ai')}>
@@ -372,7 +394,7 @@ export default function MessagesOrdersClients({locale:routeLocale='en',children}
     </header>
     <div id="hh-ai-panel" role="tabpanel" data-hh-messenger-ai hidden={section!=='ai'}>
       <MessengerAiWorkspace key={aiSession} locale={locale}
-          onConversationLocaleChange={setLocale} authenticated={aiIdentity.status==='authenticated'} authStatus={aiIdentity.status}
+          onConversationLocaleChange={chooseLocale} authenticated={aiIdentity.status==='authenticated'} authStatus={aiIdentity.status}
           onAuthRetry={retryAiIdentity}/>
     </div>
     <div id="hh-orders-panel" role="tabpanel" className={styles.panel} hidden={section!=='orders'}>

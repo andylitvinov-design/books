@@ -852,13 +852,17 @@ async function handle(request, { params }) {
       if (method === 'GET') return json(await readPersonalCoachingCatalog(config,actor))
       throw new AppError('NOT_FOUND',404)
     }
+    // One conservative shared free-model budget across the two coaching paths.
+    // The gateway invokes it only when an actual provider request is attempted.
+    const reserveCoachingFreeCall=()=>consumeRate(config,
+      {op:'coaching-openrouter-shared-daily'},40,86400)
     // Signed-in, stateless dialogue for the selected My Coach persona. Client
     // history is not stored; auth, same-origin protection and DB throttles apply.
     if (joined === 'my-coach/turn') {
       if (method !== 'POST') throw new AppError('NOT_FOUND',404)
       await consumeRate(config,{op:'my-coach-generative-turn',actor:actor.id},40,3600)
       return json(await myCoachGenerativeTurn(await readBody(request,16384),
-        {signal:request.signal}))
+        {signal:request.signal,reserveModelCall:reserveCoachingFreeCall,config,actor}))
     }
     // A synthetic preflight proves verified ZDR free-model access before any
     // visitor text can reach a provider. The call is authenticated and bounded.
@@ -866,21 +870,23 @@ async function handle(request, { params }) {
       if (method !== 'POST') throw new AppError('NOT_FOUND',404)
       await consumeRate(config,{op:'my-coach-generative-probe',actor:actor.id},12,3600)
       onlyKeys(await readBody(request,512),[])
-      return json(await myCoachGenerativeProbe({signal:request.signal}))
+      return json(await myCoachGenerativeProbe({
+        signal:request.signal,reserveModelCall:reserveCoachingFreeCall
+      }))
     }
     if (joined === 'personal-coaching/brain-probe') {
       if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED',409)
       if (method !== 'POST') throw new AppError('NOT_FOUND',404)
       await consumeRate(config, {op:'coaching-brain-probe',actor:actor.id},3,3600)
       return json(await personalCoachingBrainProbe(config,actor,
-        await readBody(request,512),{signal:request.signal}))
+        await readBody(request,512),{signal:request.signal,reserveModelCall:reserveCoachingFreeCall}))
     }
     if (joined === 'personal-coaching/brain') {
       if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED', 409)
       if (method !== 'POST') throw new AppError('NOT_FOUND', 404)
       await consumeRate(config, {op:'coaching-brain-turn', actor:actor.id}, 40, 3600)
       return json(await personalCoachingBrainTurn(config,actor,
-        await readBody(request,16384),{signal:request.signal}))
+        await readBody(request,16384),{signal:request.signal,reserveModelCall:reserveCoachingFreeCall}))
     }
     if (joined === 'personal-coaching') {
       if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED', 409)

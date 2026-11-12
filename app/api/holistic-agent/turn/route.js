@@ -16,6 +16,7 @@ import { AXIS_REFS, publishedAxisOffers } from "@/lib/holistic-support/axis-offe
 import { interpretSupportUtterance, explainUserQuestion } from "@/lib/holistic-support/guide-dialogue.mjs";
 import { ruleConversationReply } from "@/lib/holistic-support/rule-conversation.mjs";
 import { nativeSecretaryTurn } from "@/lib/holistic-support/native-secretary.mjs";
+import { resolveWisdomRequest } from "@/lib/app/coaching-wisdom.js";
 import { resolveConversationFocus } from "@/lib/holistic-support/conversation-context.mjs";
 import { detectConversationLocale } from "@/lib/holistic-support/conversation-locale.mjs";
 import { planJudgmentTurn } from "@/lib/holistic-support/judgment-mind.mjs";
@@ -140,6 +141,28 @@ export async function POST(request) {
     const recentUnsafe = body.history.some(turn => turn.role==="user" &&
       preflight(turn.text,body.locale).status!=="clear");
     if (recentUnsafe && safety.status==="clear") safety.status="human_review";
+    // Explicit opt-in to one wisdom reflection. This is a server-only DB
+    // lookup after origin, session, throttles and safety checks. It never
+    // overrides signed judgment choices or sends client text to other APIs.
+    if (body.mode==="rules" && safety.status==="clear" && !recentUnsafe &&
+        body.judgmentContext==null && body.judgmentChoice==null &&
+        body.usePrivateProfile!==true && body.usePrivateHistory!==true &&
+        body.useAgentMemory!==true && body.preferredFormat==null) {
+      const wisdom=await resolveWisdomRequest(config,actor,{
+        locale:body.locale,message:body.message,
+        turns:body.history.map(row=>({role:row.role,content:row.text})),
+      });
+      if(wisdom){
+        const reply=[wisdom.reflection,wisdom.question].filter(Boolean).join("\n\n");
+        return auth.apply(NextResponse.json({
+          status:"clarify",reply,modelUsed:false,source:"wisdom-library",
+          memorySaved:false,userAuthorized:true,suggestions:[],
+          usedSavedTestEvidence:false,usedSavedVideoHistory:false,
+          browserModelAllowed:false,
+          decision:{status:"clarify",message:reply,question:null,suggestions:[]},
+        },{headers:PRIVATE_HEADERS}));
+      }
+    }
     // A short reviewed FAQ should not depend on media scans or paid inference.
     // Safety and authorization have already been verified for this exact turn.
     const fastRule=body.mode==="rules"&&safety.status==="clear"&&!recentUnsafe

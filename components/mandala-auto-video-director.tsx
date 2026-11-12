@@ -5,6 +5,7 @@ import {createPortal} from "react-dom";
 import {Check,Sparkles,Target,Play,ArrowRight,Sun,Heart,Sprout,BriefcaseBusiness,Gift,AudioLines,Film,Leaf,Zap,Moon,Star} from "lucide-react";
 import {AUTO_VIDEO_GOALS,recommendAutoVideo} from "@/lib/mandala/auto-video-director.mjs";
 import {recommendMyTubeTopicStoryClips} from "@/lib/mandala/mytube-video-tagging.mjs";
+import {searchApprovedVideoScenes,videoSceneTagLabel} from "@/lib/mandala/video-scene-search.mjs";
 import {recommendMyTubePlotMontage} from "@/lib/mandala/mytube-plot-montage.mjs";
 import {planEmotionDrivenVideo} from "@/lib/mandala/video-emotional-scene-plan.mjs";
 import {planMyTubeCategory,verifiedCategorySource,verifiedSceneAspect,canonicalSourceMasterKey} from "@/lib/mandala/category-video-storyboard.mjs";
@@ -57,6 +58,7 @@ type Props={
   recipientAudioPanel?:ReactNode;audioStoryboardReady?:boolean;onAudioToMontage?:()=>void;
   onAudioSelectionChange?:(active:boolean)=>void;
   onGoalChange:(value:string)=>void;
+  onConceptTopicChange?:(selection:{categoryId:string;subcategoryId:string;topicId:string;brief?:string}|null)=>void;
   onCategoryChange?:(theme:VideoTheme)=>void;
   onAspectChange?:(value:"landscape"|"portrait"|"square")=>void;
   onContinue?:()=>void;onClarify?:()=>void;helpOpen?:boolean;
@@ -180,7 +182,7 @@ const themeLabels={
 
 export function MandalaAutoVideoDirector({
  locale,goal,theme,aspect,presets,scenes,disabled,activePresetId,clipLabel,
- audioAttached=false,audioTrackLabel="",audioTrackId=null,onPickAudio,onOpenAudio,recipientAudioPanel,audioStoryboardReady=false,onAudioToMontage,onAudioSelectionChange,onGoalChange,onCategoryChange,onAspectChange,onContinue,goalContinueRef,onClarify,helpOpen=false,onShowAll,onInvalidate,onApply,onCreate,canCreate=false,rendering=false,createFeedback=""
+ audioAttached=false,audioTrackLabel="",audioTrackId=null,onPickAudio,onOpenAudio,recipientAudioPanel,audioStoryboardReady=false,onAudioToMontage,onAudioSelectionChange,onGoalChange,onConceptTopicChange,onCategoryChange,onAspectChange,onContinue,goalContinueRef,onClarify,helpOpen=false,onShowAll,onInvalidate,onApply,onCreate,canCreate=false,rendering=false,createFeedback=""
 }:Props){
  const t=copy[locale];
  // A licensed four-shot sample is visible before any click; no recording begins automatically.
@@ -246,6 +248,7 @@ export function MandalaAutoVideoDirector({
  const [refineText,setRefineText]=useState("");
  const [promptClassification,setPromptClassification]=useState<ReturnType<typeof classifyMyTubeRequest>|null>(null);
  const [promptDesignedFor,setPromptDesignedFor]=useState<string|null>(null);
+ const [sceneTagQuery,setSceneTagQuery]=useState("");
  const [timelineEdits,setTimelineEdits]=useState<{
    presetId:string;totalSeconds:number;clipIds:string[];durations:number[];captions:string[];userEdited?:boolean;
  }|null>(null);
@@ -276,6 +279,16 @@ export function MandalaAutoVideoDirector({
  const taxonomySubcategories=listMyTubeSubcategories(selectedCategoryId,locale);
  const taxonomyTopics=selectedSubcategoryId?listMyTubeTopics(selectedCategoryId,selectedSubcategoryId,locale):[];
  const selectedTaxonomyTopic=selectedTopicId?getMyTubeTopic(selectedTopicId):null;
+ // The explicitly picked canonical taxonomy is the source of truth for Ideas.
+ // A stale optional request must never override this verified path.
+ useEffect(()=>{
+   if(!onConceptTopicChange)return;
+   const current=selectedTopicId?getMyTubeTopic(selectedTopicId):null;
+   onConceptTopicChange(current&&current.category.id===selectedCategoryId&&
+     current.subcategory.id===selectedSubcategoryId?
+     {categoryId:selectedCategoryId,subcategoryId:selectedSubcategoryId,topicId:selectedTopicId,
+      brief:requestDraft.trim().slice(0,800)}:null);
+ },[selectedCategoryId,selectedSubcategoryId,selectedTopicId,requestDraft,onConceptTopicChange]);
  const taxonomyMeanings=selectedTopicId?listMyTubeMeaningAxes(selectedTopicId,locale):[];
  const taxonomyScenarios=selectedTopicId&&selectedMeaningAxisId&&selectedMotifId?
    listMyTubeMotifScenarios(selectedTopicId,selectedMeaningAxisId,selectedMotifId,locale):[];
@@ -432,11 +445,40 @@ export function MandalaAutoVideoDirector({
    (STSE_DRAFTS_ENABLED&&stseScenario?.newExpansion)||(selectedPlotId&&
    !semanticReady&&!selectedPlotMedia?.hasFourApprovedSources&&!fallbackEnabled)||creativeSelectionUnavailable);
  const topicSceneScores=new Map((topicMediaCoverage?.candidates||[]).map(item=>[item.sceneId,item.score]));
- const availableReplacements=stageClipIds.map(currentId=>
-   montageReplacementOptions({scenes,currentId,selectedIds:stageClipIds,
-     excludedMotifs:proposal?.excludedMotifs||[],limit:12,targetAspect:aspect})
-     .sort((a,b)=>(topicSceneScores.get(b.id)||0)-(topicSceneScores.get(a.id)||0))
-     .slice(0,6));
+  // Querying the original request is free and happens after Design, not on
+  // every keystroke in the first-screen Goal. A separate query is optional.
+  const selectedSearchQuery=sceneTagQuery.trim()||
+    (promptDesignedFor===goal?goal:"");
+  const excludedSceneMotifs=(proposal?.excludedMotifs||[]).join("|");
+  const tagSearch=useMemo(()=>selectedSearchQuery?searchApprovedVideoScenes({
+    scenes,query:selectedSearchQuery,aspect,locale,limit:100,
+    excludedMotifs:excludedSceneMotifs?excludedSceneMotifs.split("|"):[],
+  }):null,[scenes,selectedSearchQuery,aspect,locale,excludedSceneMotifs]);
+  const tagScores=new Map((tagSearch?.items||[]).map(row=>[row.sceneId,row.score]));
+  const availableReplacements=stageClipIds.map((currentId,index)=>{
+    const ordinary=montageReplacementOptions({scenes,currentId,selectedIds:stageClipIds,
+      excludedMotifs:proposal?.excludedMotifs||[],limit:12,targetAspect:aspect})
+      .sort((a,b)=>(topicSceneScores.get(b.id)||0)-(topicSceneScores.get(a.id)||0));
+    if(!tagSearch)return ordinary.slice(0,6);
+    const tagged=tagSearch.items.flatMap(row=>{
+      const scene=sceneById.get(row.sceneId);
+      if(!scene||scene.id===currentId||stageClipIds.includes(scene.id))return [];
+      const source=verifiedCategorySource(scene);
+      if(!source||!verifiedSceneAspect(source,aspect)||
+        source.durationSeconds<stageDurations[index])return [];
+      return [scene];
+    });
+    // Explicit search is strict: do not append unrelated replacements.
+    // Without an explicit query retain the old fallback + rank by user goal.
+    const pool=sceneTagQuery.trim()?tagged:[...tagged,...ordinary];
+    const seen=new Set<string>();
+    return pool.filter(scene=>{
+      if(seen.has(scene.id))return false;
+      seen.add(scene.id);return true;
+    }).sort((a,b)=>(tagScores.get(b.id)||0)-(tagScores.get(a.id)||0)||
+      (topicSceneScores.get(b.id)||0)-(topicSceneScores.get(a.id)||0)||
+      a.id.localeCompare(b.id)).slice(0,6);
+  });
  // The one visible Goal CTA stages this plan; it never exports or charges.
  const prepareGoalForIdeas=():boolean=>{
    if(videoAudience!=="others")return true;
@@ -648,7 +690,9 @@ export function MandalaAutoVideoDirector({
    const found=getMyTubeTopic(topicId);
    if(!found||found.category.id!==selectedCategoryId)return;
    const nextTheme=legacyThemeForSubcategory[found.subcategory.id]||theme;
-   const label=requestDraft.trim()||found.topic.label[locale];
+   // Preserve optional user prose in requestDraft but publish the explicit topic
+   // as the canonical Studio goal, avoiding stale unrelated wishes (e.g. Sex).
+   const label=found.topic.label[locale];
    onInvalidate?.();onCategoryChange?.(nextTheme);onGoalChange(label);
    const recommended=recommendAutoVideo({goal:label,locale,fallbackTheme:nextTheme,
      preferredTheme:nextTheme,presets,scenes});
@@ -1508,7 +1552,7 @@ export function MandalaAutoVideoDirector({
              {scenePoster(clip)?<img src={scenePoster(clip)!} alt="" loading="lazy" className={css.shotPoster}/>:null}
              <b>{index+1}. {t.stages[Math.min(3,Math.floor(index*4/stageClipIds.length))]} · {stageDurations[index]} s</b><span>{sceneLabel(clip)}</span>
              {scene?<small className={css.clipDescription}>{scene.description[locale]}</small>:null}
-             {scene?<small className={css.clipTags}>{themeLabels[locale][scene.theme as VideoTheme]||scene.theme} · {scene.tags.slice(0,3).join(" · ")}</small>:null}
+             {scene?<small className={css.clipTags}>{themeLabels[locale][scene.theme as VideoTheme]||scene.theme} · {scene.tags.slice(0,3).map(tag=>videoSceneTagLabel(tag,locale)).join(" · ")}</small>:null}
            </li>;
          })}
        </ol>
@@ -1534,6 +1578,25 @@ export function MandalaAutoVideoDirector({
        <details className={css.montageDetails} data-auto-video-montage>
          <summary>{t.openMontage}</summary>
          <p className={css.notice}>{t.montageHelp}</p>
+          <label data-video-scene-tag-finder style={{display:"block",marginBottom:12}}>
+            <span style={{display:"block",marginBottom:6}}>{locale==="ru"?
+              "Найти сцены по тегам":locale==="es"?"Buscar escenas por etiquetas":"Find scenes by tags"}</span>
+            <input type="search" data-video-scene-tag-query
+              value={sceneTagQuery} maxLength={160} disabled={disabled}
+              placeholder={locale==="ru"?"Солнечный лес без воды":locale==="es"?
+                "Bosque soleado sin agua":"Sunny forest without water"}
+              aria-label={locale==="ru"?"Поиск сцен по тегам":locale==="es"?
+                "Buscar escenas por etiquetas":"Search scenes by tags"}
+              onChange={event=>setSceneTagQuery(event.currentTarget.value)}
+              style={{width:"100%",minWidth:0,minHeight:40}}/>
+          </label>
+          {sceneTagQuery.trim()?<p role="status" aria-live="polite" data-video-scene-tag-results>
+            {tagSearch?.status==="ok"?(locale==="ru"?"Найдено по метаданным: ":
+              locale==="es"?"Coincidencias de metadatos: ":"Metadata matches: ")+tagSearch.total:
+              (locale==="ru"?"Среди одобренных сцен совпадений нет. Уточните запрос.":
+              locale==="es"?"No hay escenas aprobadas que coincidan. Ajusta tu búsqueda.":
+              "No approved tagged scene matches; refine your search.")}
+          </p>:null}
          <div className={css.montageRows}>
            {stageClipIds.map((clip,index)=><div className={css.montageRow} key={clip}>
              <span className={css.montageName}>

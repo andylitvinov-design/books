@@ -272,6 +272,7 @@ function approvedAcademyDiscoveryVideos():LibraryFeedItem[]{
           href:"https://www.youtube.com/watch?v="+youtubeId,
           sourceLabel:record.sourceProvider==="psimaster"?"PsiMaster · архив":"PsiTrends · archive",
           sourceGroup:record.logicalId,audioLanguage:sourceLocale,
+           mytubeLessonOrder:Number.isInteger(media.order)?media.order:undefined,
           curation:"verified" as const,
           topicTags:discoveryTags[record.logicalId]||["practices"],
         }];

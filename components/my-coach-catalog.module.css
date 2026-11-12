@@ -290,3 +290,12 @@
   .card .profileFacts,.cardSelected .profileFacts{grid-template-columns:1fr}
   .card .settingsGrid,.cardSelected .settingsGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+
+/* Responsive real account + credit control, without hiding the coach CTA. */
+@media(max-width:540px){
+ .brandHeader{gap:5px}
+ .brand{font-size:16px;letter-spacing:-.04em;white-space:nowrap}
+ .brandMark{width:26px;height:26px}
+ .brandActions{gap:4px;flex:0 0 auto}
+}
+@media(max-width:380px){.brand>span:last-child{display:none}}

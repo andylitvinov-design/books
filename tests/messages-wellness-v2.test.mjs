@@ -254,7 +254,24 @@ test('owner Messenger preserves one chat with six in-chat entries and locale con
  assert.equal((landing.match(/\{id:"(?:test|video|practice|session|course|ask)"/g)||[]).length,6)
  assert.match(landing,/data-hh-ai-choice=\{item\.id\}/)
  assert.match(landing,/onClick=\{item\.id==="video"\?onCreateVideo:/)
- assert.match(landing,/data-hh-ai-intro-play onClick=\{\(\)=>setPlaying\(true\)\}/)
+ // The hero is a native MP4 player, starts only after the explicit tap,
+ // and keeps audio language, error recovery and close/pause behavior visible.
+ assert.match(landing,/data-hh-ai-intro-play onClick=\{start\}/);
+ assert.match(landing,/const start=\(\)=>\{/);
+ assert.match(landing,/videoRef\.current\?\.play\(\)/);
+ assert.match(landing,/<video ref=\{videoRef\} src=\{introduction\.src\} controls playsInline preload="none"/);
+ assert.match(landing,/onError=\{\(\)=>setFailed\(true\)\}/);
+ assert.match(landing,/const close=\(\)=>\{/);
+ assert.match(landing,/videoRef\.current\?\.pause\(\)/);
+ assert.match(landing,/onClick=\{close\}/);
+ assert.match(landing,/const retry=\(\)=>\{/);
+ assert.match(landing,/onClick=\{retry\}/);
+ assert.doesNotMatch(landing,/youtube-nocookie|<iframe|autoPlay|autoplay|useEffect\(/);
+ assert.equal((landing.match(/setPlaying\(true\)/g)||[]).length,1,'only user-activated start may reveal the native player');
+ assert.match(landing,/const start=\(\)=>\{\s*setFailed\(false\);\s*setPlaying\(true\);/);
+ assert.match(landing,/videoLanguage:"English audio"/);
+ assert.match(landing,/videoLanguage:"Русская озвучка"/);
+ assert.match(landing,/videoLanguage:"Audio en inglés"/);
  assert.match(chat,/method:"POST",credentials:"same-origin"/)
  assert.ok(mobile.includes('body:has(.hh-messages-page[data-hh-mobile-keyboard-open="true"]) [data-hh-unified-dock]'))
  assert.match(ui,/data-free-order-offers/)

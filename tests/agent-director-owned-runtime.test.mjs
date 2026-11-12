@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {normalizeOwnedCommanderRun,ownedModelConfig,executeOwnedCommanderRun,verifiedFreeReply}
+import {readFileSync} from 'node:fs';
+import {normalizeOwnedCommanderRun,ownedModelConfig,coachingModelConfig,executeOwnedCommanderRun,verifiedFreeReply}
   from '../lib/agent-director/commander-owned-runtime.mjs';
 
 const run={
@@ -188,3 +189,65 @@ test('coaching free gateway enforces zero data retention without changing Agent 
   await assert.rejects(()=>verifiedFreeReply(selected,{privacyMode:'non_zdr',messages:[]},async()=>{calls++;throw Error('SHOULD_NOT_CALL')},AbortSignal.timeout(2000)),/OWNED_MODEL_PRIVACY_POLICY_INVALID/)
   assert.equal(calls,0)
 })
+
+
+test('coaching securely reuses the Council server key without starting owner inference',()=>{
+  const council='sk-or-v1-'+'C'.repeat(40);
+  const env={HH_COACHING_BRAIN_ENABLED:'true',HH_AGENT_OPENROUTER_ENABLED:'true',
+    HH_COUNCIL_OPENROUTER_API_KEY:council};
+  assert.equal(coachingModelConfig(env).apiKey,council);
+  assert.equal(ownedModelConfig(env),null,'owner runtime remains independently gated');
+  assert.equal(coachingModelConfig({...env,HH_AGENT_OPENROUTER_API_KEY:key}).apiKey,key);
+  assert.equal(coachingModelConfig({...env,HH_AGENT_OPENROUTER_API_KEY:'malformed'}),null);
+  assert.equal(coachingModelConfig({...env,HH_COACHING_BRAIN_ENABLED:'false'}),null);
+  assert.equal(coachingModelConfig({...env,HH_AGENT_OPENROUTER_ENABLED:'false'}),null);
+  assert.equal(coachingModelConfig({...env,HH_COUNCIL_OPENROUTER_API_KEY:'wrong'}),null);
+  assert.equal(coachingModelConfig({}),null);
+});
+
+test('coaching prefers reviewed ZDR free conversational models, not data-collecting NVIDIA',async()=>{
+  const track=[],chosen='google/gemma-4-31b-it:free';
+  const models=[
+    free('nvidia/nemotron-3-ultra-550b-a55b:free',1000000),
+    free('liquid/lfm-3-1.7b:free',262144),
+    free('google/gemma-4-26b-a4b-it:free',262144),
+    free(chosen,262144),
+  ];
+  const reply=await verifiedFreeReply(ownedModelConfig(configured),
+    {privacyMode:'zdr',messages:[{role:'user',content:'Synthetic coaching test.'}]},
+    fetchMock({models,reply:goodAnswer('An ordinary synthetic conversation.',0,chosen),track}),
+    AbortSignal.timeout(2000));
+  assert.equal(reply.model,chosen);
+  assert.equal(track.length,2);
+  assert.match(track[0].url,/&zdr=true$/);
+  const payload=JSON.parse(track[1].options.body);
+  assert.equal(payload.model,chosen);
+  assert.deepEqual(payload.provider,{allow_fallbacks:false,max_price:{prompt:0,completion:0},
+    zdr:true,data_collection:'deny'});
+  assert.deepEqual(payload.usage,{include:true});
+  const rejected=[];
+  await assert.rejects(()=>verifiedFreeReply(ownedModelConfig(configured),
+    {privacyMode:'zdr',messages:[{role:'user',content:'Test'}]},
+    fetchMock({models:models.slice(0,1),track:rejected}),AbortSignal.timeout(2000)),
+  /OWNED_MODEL_NO_VERIFIED_ZDR_FREE_MODELS/);
+  assert.equal(rejected.length,1,'unsafe-only catalog cannot trigger generation');
+  const pinned=[];
+  const preferred=ownedModelConfig({...configured,HH_AGENT_OPENROUTER_MODEL:models[0].id});
+  await assert.rejects(()=>verifiedFreeReply(preferred,
+    {privacyMode:'zdr',messages:[{role:'user',content:'Test'}]},
+    fetchMock({models,track:pinned}),AbortSignal.timeout(2000)),
+  /OWNED_MODEL_NOT_FREE_IN_CATALOG/);
+  assert.equal(pinned.length,1);
+});
+
+test('coaching shares an explicit daily free-model budget before provider requests',()=>{
+  const route=readFileSync(new URL('../app/api/app/[...path]/route.js',import.meta.url),'utf8');
+  const service=readFileSync(new URL('../lib/app/coaching-brain.js',import.meta.url),'utf8');
+  assert.match(route,/coaching-openrouter-shared-daily/);
+  assert.match(route,/\},40,86400\)/);
+  assert.ok(route.match(/reserveModelCall:reserveCoachingFreeCall/g)?.length>=4);
+  assert.match(service,/if\(typeof reserveModelCall==='function'\)await reserveModelCall\(\)/);
+  assert.match(service,/VERIFIED_PROBE_TTL_MS=60_000/);
+  assert.match(service,/createHash\('sha256'\)/);
+  assert.match(service,/RATE_LIMITED:'rate_limited'/);
+});
