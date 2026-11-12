@@ -4,12 +4,12 @@ import {readFileSync} from "node:fs";
 const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
 const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
 
-test("Montage opens on Style, preserves real recorder and exactly four functional tabs",()=>{
-  assert.match(studio,/useState<"settings"\|"effects"\|"text"\|"visual"\|"concept"\|"audio">\("effects"\)/);
+test("Montage opens on Style, preserves real recorder and five functional tabs with Audio replacing Effects",()=>{
+  assert.match(studio,/useState<"settings"\|"effects"\|"text"\|"concept"\|"audio">\("effects"\)/);
   const tabStart=studio.indexOf("<nav className={videoStyles.montageQuickTools}");
   const tabMarkup=studio.slice(tabStart,studio.indexOf("</nav>",tabStart));
   assert.ok(tabStart>0,"Montage nav must exist");
-  assert.deepEqual([...tabMarkup.matchAll(/id:"(settings|effects|text|visual)",Icon:/g)].map(m=>m[1]),["effects","text","visual","settings"]);
+  assert.deepEqual([...tabMarkup.matchAll(/id:"(settings|effects|text|audio)",Icon:/g)].map(m=>m[1]),["effects","text","audio","settings"]);
   assert.match(studio,/data-video-montage-tab=\{item.id\}/);
   assert.match(studio,/if\(id==="editor"\)setMontagePanel\("effects"\)/);
   assert.match(studio,/aria-pressed=\{montagePanel===item.id\}/);
@@ -113,7 +113,7 @@ test("Choosing a Montage style preserves the compiled film and paints the live a
   assert.match(studio,/data-video-preview-clips=\{usingFreeFilmCompilation/);
   assert.match(studio,/autoPlay=\{previewPlaying&&!recording&&!preparing\}/);
   assert.match(studio,/onCanPlay=\{event=>\{\s*setPremiumReady\(true\);[\s\S]*?event.currentTarget.play\(\)/);
-  assert.equal((studio.match(/activeMontageStyleId,styleFilmRef\.current\)/g)||[]).length,5,
+  assert.equal((studio.match(/activeMontageStyleId,styleFilmRef\.current,storyboardPhotos\)/g)||[]).length,5,
     "still preview, animation preview and both MP4 export encoders use the same style");
   assert.match(studio,/creationMode,activeMontageStyleId,currentFreeVideoPlan/,
     "a style edit invalidates only the previous exported recording");

@@ -18,6 +18,7 @@ on:
       - 'components/alchemy-soul-lead-form.tsx'
       - 'components/compact-lead-capture*'
       - 'components/contact-channel-chooser*'
+      - 'components/sitewide-lead-capture*'
       # Real public conversion/consent/booking and cart UI are NOT covered by
       # the shallow components/*service* glob. A source change to these
       # surfaces needs real Public Services Chromium/WebKit, not only Core.
@@ -30,6 +31,7 @@ on:
       - 'components/academy-course-capture*'
       - 'components/commerce/**'
       - 'lib/whatsapp-enquiry.js'
+      - 'lib/public-lead-capture.js'
       - 'lib/practitioners/enquiry-receipt.mjs'
       - 'app/api/service-enquiries/**'
       - 'components/academy-course-video-playlist.tsx'
@@ -45,6 +47,7 @@ on:
       - 'scripts/verify-alchemy-one-screen.mjs'
       - 'scripts/verify-business-quiz-mobile.mjs'
       - 'scripts/verify-contact-channel-chooser-browser.mjs'
+      - 'scripts/verify-academy-messenger-order.mjs'
       - 'scripts/verify-direction-focus-mobile.mjs'
       - 'scripts/verify-home-consultation-first-screen.mjs'
       - 'scripts/verify-ideas-mobile-browser.mjs'
@@ -53,6 +56,7 @@ on:
       - 'scripts/verify-storefront-shop-browser.mjs'
       - 'scripts/verify-talisman-google-checkout-browser.mjs'
       - 'tests/goal-support-offers.test.mjs'
+      - 'tests/sitewide-lead-capture.test.mjs'
       - 'tests/practitioner-homeopathy-canonical-route.test.mjs'
       - 'tests/practitioner-remote-energy-support.test.mjs'
       - 'tests/service-alchemy-one-screen-story.test.mjs'
@@ -229,6 +233,7 @@ jobs:
           EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           EXPECTED_MERGE_SHA: ${{ github.sha }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           [[ "$EVENT_BASE_SHA" =~ ^[0-9a-f]{40}$ && "$PR_HEAD_SHA" =~ ^[0-9a-f]{40}$ && "$EXPECTED_MERGE_SHA" =~ ^[0-9a-f]{40}$ ]] || {
@@ -237,21 +242,9 @@ jobs:
           [[ "$(git rev-parse HEAD)" == "$EXPECTED_MERGE_SHA" ]] || {
             echo "::error::Checkout differs from the exact PR event merge SHA"; exit 1;
           }
-          # Preserve production #3490's bounded shallow-history recovery. Raw
-          # header proof below still checks exact immutable parents independently.
-          tested_base="$(git rev-parse HEAD^1 2>/dev/null || true)"
-          tested_head="$(git rev-parse HEAD^2 2>/dev/null || true)"
-          if [[ "$tested_head" != "$PR_HEAD_SHA" || ! "$tested_base" =~ ^[0-9a-f]{40}$ ]]; then
-            actual_checkout="$(git rev-parse HEAD)"
-            [[ "$actual_checkout" == "$GITHUB_SHA" && "$(git rev-parse --is-shallow-repository)" == true ]] || {
-              echo "::error::Unexpected or non-shallow PR checkout; refusing recovery"; exit 1;
-            }
-            git fetch --quiet --no-tags --deepen=2 origin "$GITHUB_SHA"
-            tested_base="$(git rev-parse HEAD^1 2>/dev/null || true)"
-            tested_head="$(git rev-parse HEAD^2 2>/dev/null || true)"
-          fi
-          # The raw merge commit itself must contain exactly two parents,
-          # independent of whether shallow traversal can resolve HEAD^2.
+          # Prove the immutable two-parent merge checkout from GitHub's commit graph.
+          # Local shallow clones may contain only a tiny fragment of a long-running
+          # production branch; bounded deepen loops cannot prove a 200+ commit ancestry.
           mapfile -t tested_parents < <(git cat-file -p HEAD | sed -n 's/^parent //p')
           [[ "${#tested_parents[@]}" -eq 2 ]] || {
             echo "::error::Exact event SHA is not a two-parent test merge"; exit 1;
@@ -261,19 +254,14 @@ jobs:
           [[ "$tested_head" == "$PR_HEAD_SHA" && "$tested_base" =~ ^[0-9a-f]{40}$ ]] || {
             echo "::error::Checkout parent SHAs differ from the submitted PR HEAD"; exit 1;
           }
-          if ! git merge-base --is-ancestor "$EVENT_BASE_SHA" "$tested_base" 2>/dev/null; then
-            # Feature branches may already include a much newer production
-            # first-parent base while the PR target SHA is hundreds of commits
-            # old. Keep recovery bounded, but deep enough to prove that ancestry.
-            for extra in 128 512; do
-              git fetch --quiet --no-tags --deepen="$extra" origin "$tested_base"
-              if git merge-base --is-ancestor "$EVENT_BASE_SHA" "$tested_base" 2>/dev/null; then
-                break
-              fi
-            done
-          fi
-          git merge-base --is-ancestor "$EVENT_BASE_SHA" "$tested_base" || {
-            echo "::error::Event base ancestry unverified; no unsafe fast lane"; exit 1;
+          compare_json="$(curl --fail --silent --show-error --max-time 20 \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/compare/${EVENT_BASE_SHA}...${tested_base}")"
+          relation="$(printf '%s' "$compare_json" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>{try{const x=JSON.parse(s);if(typeof x.status!=="string")process.exit(2);process.stdout.write(x.status)}catch{process.exit(2)}})')"
+          [[ "$relation" == "ahead" || "$relation" == "identical" ]] || {
+            echo "::error::Event base is not an ancestor of the immutable tested base ($relation)"; exit 1;
           }
       - uses: actions/setup-node@v4
         with:
@@ -484,6 +472,7 @@ jobs:
             run_case "verify-reiki-mobile-order-browser.mjs" node scripts/verify-reiki-mobile-order-browser.mjs || failed=1
             run_case "verify-talisman-google-checkout-browser.mjs" node scripts/verify-talisman-google-checkout-browser.mjs || failed=1
             run_case "verify-storefront-shop-browser.mjs" node scripts/verify-storefront-shop-browser.mjs || failed=1
+            run_case "verify-academy-messenger-order.mjs" node scripts/verify-academy-messenger-order.mjs || failed=1
             return "$failed"
           }
           lane_a &
@@ -533,6 +522,7 @@ jobs:
             artifacts/contact-channel-browser/
             artifacts/service-cart/
             artifacts/storefront-shop/
+            artifacts/academy-messenger-order/
           retention-days: 7
           if-no-files-found: warn
       # Explicit save also works after browser failure: a successful, exact

@@ -10,6 +10,7 @@ import { verifyMessengerWebhook,verifyMessengerChallenge,normalizeMessengerUpdat
 import { sendTelegramDiagnosticPrompt, sendWhatsAppDiagnosticPrompt, ensureTelegramInlineWebhookUpdates, acknowledgeTelegramInlineCallback, sendTelegramCompanionMessage } from '@/lib/crm/messenger-provider'
 import { telegramPresentationOnStart } from '@/lib/crm/telegram-presentation.mjs'
 import {processTelegramCompanion} from '@/lib/crm/telegram-companion-service'
+import {processTelegramAiV3,finishTelegramAiV3} from '@/lib/crm/telegram-ai-diagnostic-v3-service'
 import {shouldBootstrapTelegramNativeMenu} from '@/lib/crm/telegram-companion-native-commands.mjs'
 import { receiveOwnerTelegramVideoWebhook } from '@/lib/practitioners/owner-telegram-video-service'
 export const runtime='nodejs'
@@ -125,11 +126,43 @@ export async function POST(request,{params}){
           }
           continue
         }
-        const intake=companion.reviewRequested
-          ?await processTelegramDiagnostic({
-            ...event,rawText:'/start hhreview_'+companion.reviewLocale,inlineAction:null
-          },config)
-          :await processTelegramDiagnostic(event,config)
+        const diagnosticEvent=companion.reviewRequested
+          ?{...event,rawText:'/start hhreview_'+companion.reviewLocale,inlineAction:null}
+          :event
+        // The V3 interviewer reuses this signed CRM bot and takes priority ONLY
+        // for explicitly started or already active V3 diagnostic sessions.
+        const aiIntake=await processTelegramAiV3(diagnosticEvent,config)
+        if(aiIntake.handled){
+          if(event.callbackId){
+            try{await acknowledgeTelegramInlineCallback({
+              callbackId:event.callbackId,to:event.userId,
+              messageId:event.callbackMessageId})}catch{}
+          }
+          if(aiIntake.reply){
+            try{await sendTelegramDiagnosticPrompt({
+              to:aiIntake.to,text:aiIntake.reply,keyboard:aiIntake.keyboard,
+              locale:aiIntake.locale,approvedPilotGuest:aiIntake.approvedPilotGuest,
+            })}catch(error){
+              const evidence=telegramPromptFailureEvidence(event.eventId,error,
+                value=>operationHash(value,config))
+              console.error('HH_CRM_TG_V3_PROMPT_SEND_FAILED',evidence)
+            }
+          }
+          if(aiIntake.generate)after(async()=>{
+            try{
+              const ready=await finishTelegramAiV3(config,aiIntake.generate)
+              if(ready?.reply)await sendTelegramDiagnosticPrompt({
+                to:ready.to,text:ready.reply,keyboard:ready.keyboard,
+                locale:ready.locale,approvedPilotGuest:ready.approvedPilotGuest,
+              })
+            }catch{
+              // Never log client text, credentials, model prompt or Telegram IDs.
+              console.error('HH_CRM_TG_V3_AI_AFTER_FAILED')
+            }
+          })
+          continue
+        }
+        const intake=await processTelegramDiagnostic(diagnosticEvent,config)
         if(intake.handled){
           if(event.callbackId){
             // Acknowledge only after the encrypted stage transition commits.

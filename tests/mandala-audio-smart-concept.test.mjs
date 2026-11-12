@@ -155,7 +155,7 @@ test("Existing STT endpoint remains the only transcript transport; UI feeds audi
  assert.match(endpoint,/HH_AUDIO_STT_FREE_CONFIRMED/);
  assert.match(editor,/speechTranscript=\{voiceTranscript\}/);
  assert.match(editor,/concept:speechConcept/);
- assert.match(editor,/setMontagePanel\("concept"\)/);
+ assert.match(editor,/setActiveWorkspace\("phrases"\);setIdeasSubtab\("concept"\)/);
  assert.match(panel,/data-video-concept-all-parameters/);
  assert.match(panel,/data-video-concept-from-audio/);
  assert.match(scene,/isSafeMontageScene\(scene,sceneExclusions\)/);

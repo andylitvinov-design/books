@@ -24,7 +24,8 @@ export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale
   const clientRoute = /^\/(?:ru|en|es)\/client(?:\/|$)/.test(pathname);
   // The shared seven-destination app dock owns Home, Practice, Studio,
   // Messenger, Master, Profile and Free Analysis. Never mount two footers.
-  const hidden = isUnifiedMobileDockPath(pathname)
+  const hidden = /^\/(?:ru|en|es)\/coaching\/?$/.test(pathname)
+    || isUnifiedMobileDockPath(pathname)
     || /^\/(?:ru|en|es)\/(?:practice|mytube|temple-insights)\/?$/.test(pathname)
     || /^\/(?:ru|en|es)\/holistic-support\/(?:mobile|mandala)(?:\/|$)/.test(pathname)
     || /^\/(?:admin|document-preview)(?:\/|$)/.test(pathname)

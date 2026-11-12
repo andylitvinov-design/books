@@ -108,9 +108,9 @@ test("owner's iPhone mock uses ONE live player, one shared goal and four picture
  assert.match(studio,/data-video-quick-music-play=\{id\}/);
  assert.match(studio,/startPresetMixAudio\(attachedAudio\.ids,soundVolume,\{startSeconds:effectiveAudioStartSeconds,deferStart:true\}\)/);
  assert.match(studio,/featuredMelodies\.slice\(0,4\)/);
- assert.match(studio,/const featuredMelodies=\(scenarioTracks\.length\?scenarioTracks:recommendMandalaAudio/);
+ assert.match(studio,/const featuredMelodies=recommendCuratedAudio\(/);
  assert.match(studio,/selectScenarioMusic\(preset\.id\)/,"confirmed film assigns a real first-party soundtrack only when auto-music is enabled");
- assert.match(studio,/theme:audioTheme,kind:"melody",wish/);
+ assert.match(studio,/theme:audioTheme,kind:"melody"/);
  assert.match(studio,/featuredMelodies\.slice\(0,4\)/);
  assert.match(studio,/data-video-theme-advanced/,"existing six topical video scenes remain editable");
  assert.match(css,/\.studio \.quickBuilder>\.previewStage\{order:1/);
@@ -207,7 +207,7 @@ test("four canonical goal pills, exclusive subcategories and real scenario/audio
  assert.match(studio,/onContinue=\{\(\)=>\{/);
  assert.match(studio,/setActiveWorkspace\("phrases"\)/);
  assert.match(studio,/data-video-phrase-audio-shortcut/);
- assert.match(studio,/data-video-phrase-audio-shortcut[\s\S]*?setPhraseAudioExpanded\(true\)[\s\S]*?getElementById\("phrase-audio-settings"\)/);
+ assert.ok(studio.includes("data-video-phrase-audio-shortcut") && studio.includes("setPhraseAudioExpanded(true)") && studio.includes("data-video-ideas-advanced-voice"), "the visible Ideas shortcut opens the current advanced voice disclosure");
  assert.equal((director.match(/data-auto-video-input value=\{requestDraft\}/g)||[]).length,1);
  assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
  assert.match(studio,/data-video-advanced-toggle/);
@@ -293,12 +293,15 @@ test("Montage and PRO retain one operational video/audio pipeline without duplic
   assert.match(studio,/data-video-basic-editor/);
   const nav=studio.slice(studio.indexOf('<nav className={videoStyles.montageQuickTools}'),
     studio.indexOf('</nav>',studio.indexOf('<nav className={videoStyles.montageQuickTools}')));
-  assert.deepEqual([...nav.matchAll(/id:"(effects|text|visual|settings)",Icon:/g)].map(m=>m[1]),
-    ["effects","text","visual","settings"],"Style, Text, Effects and Settings under the existing player");
+  assert.deepEqual([...nav.matchAll(/id:"(effects|text|audio|settings|concept)",Icon:/g)].map(m=>m[1]),
+    ["effects","text","audio","settings","concept"],"Style, Text, Audio, Settings and Storyboard under the existing player");
   assert.match(studio,/data-video-montage-text hidden=\{montagePanel!=="text"\}/);
-  assert.match(studio,/data-video-montage-visual-effect=\{item.id\}/);
+  assert.match(studio,/data-video-montage-audio/);
+  assert.doesNotMatch(studio,/data-video-montage-visual-effect=/);
   assert.match(studio,/data-video-montage-aspect-switch/);
   assert.match(studio,/data-video-montage-open-concept/);
+  assert.match(studio,/data-video-montage-concept/);
+  assert.match(studio,/data-video-pro-open-montage-storyboard/);
   assert.match(studio,/data-video-montage-open-audio/);
   assert.match(studio,/data-video-concept-text-tools/,"caption editor and timeline remain available");
   assert.match(studio,/data-video-montage-style=\{index\}/);
@@ -317,7 +320,7 @@ test("Montage and PRO retain one operational video/audio pipeline without duplic
   assert.match(studio,/data-video-final-editor/);
   assert.match(studio,/data-video-editor-style-settings/);
   assert.match(studio,/data-video-quick-generate/);
-  assert.match(css,/\.montageQuickTools\{\s*display:grid!important;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
+  assert.match(css,/\.montageQuickTools\{\s*display:grid!important;grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/);
   assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
 });
 
@@ -333,7 +336,12 @@ test("MyTube cards display the original scenario, not the four generic archetype
 test("owner correction: canonical subcategory and optional topic and request precede the story",()=>{
  const goals=director.slice(director.indexOf("const goalPanel="),director.indexOf("return <section className={css.root}"));
  const goalBlock=goals.slice(0,goals.indexOf("const quickTopicPanel="));
- assert.match(goalBlock,/subcategoriesOpen\?<div className=\{css\.subcategories\}/);
+ assert.match(goalBlock,/subcategoriesOpen&&!requestNeedsChoice\?<div className=\{css\.subcategories\}/,
+   "show subcategories only after an explicit or reliable category selection");
+ assert.match(goalBlock,/aria-pressed=\{selectedCategoryId===item\.id&&!requestNeedsChoice\}/,
+   "an unmatched wish must not show the previously selected category as checked");
+ assert.match(director,/if\(!classification\|\|broad\)\{[\s\S]*?setProposal\(null\);setTimelineEdits\(null\);return/,
+   "unresolved or broad wishes must not inherit a ready film timeline");
  assert.match(goalBlock,/taxonomySubcategories\.map\(item=>/);
  assert.match(goalBlock,/data-auto-video-subcategory=\{item\.id\}/);
  assert.match(goalBlock,/selectedSubcategoryId===item\.id/);

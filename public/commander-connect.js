@@ -4,6 +4,7 @@
   const status = document.getElementById('status')
   const button = document.getElementById('continue')
   let busy = false
+  let buttonAction = 'google'
 
   function safeNext(value) {
     if (typeof value !== 'string' || value.length > 240) return '/agents.html'
@@ -30,32 +31,72 @@
     return safeNext(new URLSearchParams(location.search).get('next') || '/agents.html')
   }
 
+  async function fetchWithTimeout(url, options, timeoutMs, label) {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), timeoutMs)
+    try {
+      return await fetch(url, { ...options, signal: controller.signal })
+    } catch (error) {
+      if (error?.name === 'AbortError') throw Error(label + ' не ответил за ' + Math.round(timeoutMs / 1000) + ' сек. Проверьте соединение и повторите.')
+      throw error
+    } finally {
+      clearTimeout(timer)
+    }
+  }
+
   async function json(response) {
     let data
     try { data = await response.json() } catch { throw Error('Сервер вернул некорректный ответ.') }
-    if (!response.ok) throw Error(data.error || 'Не удалось подтвердить сессию владельца.')
+    if (!response.ok) {
+      const error = Error(data.error || 'Не удалось подтвердить сессию владельца.')
+      error.status = response.status
+      error.code = typeof data.error === 'string' ? data.error : ''
+      throw error
+    }
     return data
+  }
+
+  function showAction(message, action = 'google', label = 'Продолжить через Google') {
+    status.textContent = message
+    button.hidden = false
+    button.disabled = false
+    button.textContent = label
+    buttonAction = action
+  }
+
+  function recoverHandoff(error) {
+    // A true expired/invalid main-app session needs SSO, not an endless retry loop.
+    if (error?.status === 401 &&
+        ['OWNER_SESSION_INVALID', 'SIGN_IN_REQUIRED', 'OWNER_SIGN_IN_REQUIRED'].includes(error.code)) {
+      showAction('Сессия Holistic House истекла. Продолжите через Google для восстановления входа.', 'google')
+      return
+    }
+    showAction(String(error.message || error) + ' Повторите проверку владельца.', 'handoff', 'Повторить проверку')
   }
 
   async function handoff() {
     status.textContent = 'Проверяю права владельца и подключаю приватное хранилище…'
-    const response = await fetch('/api/app/commander/session', {
+    const response = await fetchWithTimeout('/api/app/commander/session', {
       method: 'POST',
       credentials: 'same-origin',
       cache: 'no-store',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: '{}',
-    })
+    }, 10000, 'Проверка владельца')
     const data = await json(response)
     if (data.owner !== true || data.privateStoreConfigured !== true ||
-        typeof data.accessToken !== 'string' || data.accessToken.length < 120) {
+        typeof data.accessToken !== 'string' || data.accessToken.length < 120 ||
+        typeof data.refreshToken !== 'string' || data.refreshToken.length < 12 || data.refreshToken.length > 4096) {
       throw Error('У этого аккаунта нет подтверждённых прав владельца Agent Commander.')
     }
     const target = new URL(MONITOR + '/commander-auth.html')
     target.searchParams.set('next', nextPath())
     // The short-lived JWT is in the URL fragment only: it is not sent to servers
     // in HTTP requests or Referer headers. The monitor page removes it immediately.
-    target.hash = 'token=' + encodeURIComponent(data.accessToken)
+    target.hash = new URLSearchParams({
+      token: data.accessToken,
+      refresh_token: data.refreshToken,
+    }).toString()
     try { sessionStorage.removeItem(KEY) } catch {}
     location.replace(target.href)
   }
@@ -66,13 +107,13 @@
     button.disabled = true
     status.textContent = 'Открываю существующий Google-вход Holistic House…'
     try {
-      const response = await fetch('/api/app/auth/start', {
+      const response = await fetchWithTimeout('/api/app/auth/start', {
         method: 'POST',
         credentials: 'same-origin',
         cache: 'no-store',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({ provider: 'google', continueTo: 'commander-monitor', locale: 'ru' }),
-      })
+      }, 12000, 'Google-вход')
       const data = await json(response)
       if (typeof data.redirectUrl !== 'string' ||
           new URL(data.redirectUrl).origin !== 'https://shervdixkaxurnaecioe.supabase.co') {
@@ -80,9 +121,8 @@
       }
       location.assign(data.redirectUrl)
     } catch (error) {
+      showAction(String(error.message || error) + ' Можно повторить вход.', 'google')
       busy = false
-      button.disabled = false
-      status.textContent = String(error.message || error)
     }
   }
 
@@ -90,28 +130,41 @@
     const next = safeNext(new URLSearchParams(location.search).get('next') || nextPath())
     try { sessionStorage.setItem(KEY, next) } catch {}
     if (new URLSearchParams(location.search).get('finish') === '1') {
-      await handoff()
+      try { await handoff() } catch (error) {
+        recoverHandoff(error)
+      }
       return
     }
     try {
-      const response = await fetch('/api/app/session', {
+      const response = await fetchWithTimeout('/api/app/session', {
         credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' },
-      })
+      }, 8000, 'Проверка сессии')
       const data = await response.json().catch(() => ({}))
       if (response.ok && data.authenticated === true) {
-        await handoff()
+        try { await handoff() } catch (error) {
+          recoverHandoff(error)
+        }
         return
       }
-    } catch {}
-    status.textContent = 'Войдите через Google-аккаунт владельца Holistic House.'
-    button.hidden = false
-    button.addEventListener('click', startGoogle, { once: true })
+    } catch (error) {
+      // A slow auth provider must never leave the owner on an endless spinner.
+      showAction(String(error.message || error) + ' Войдите повторно через Google.', 'google')
+      return
+    }
+    showAction('Сессия не подтверждена. Войдите через Google-аккаунт владельца Holistic House.', 'google')
   }
 
-  start().catch(error => {
-    status.textContent = String(error.message || error)
-    button.hidden = false
-    button.disabled = false
-    button.addEventListener('click', startGoogle, { once: true })
+  button.addEventListener('click', () => {
+    if (busy) return
+    if (buttonAction === 'handoff') {
+      busy = true
+      button.disabled = true
+      handoff().catch(error => recoverHandoff(error))
+        .finally(() => { busy = false })
+      return
+    }
+    startGoogle()
   })
+
+  start().catch(error => showAction(String(error.message || error) + ' Войдите повторно через Google.', 'google'))
 })()

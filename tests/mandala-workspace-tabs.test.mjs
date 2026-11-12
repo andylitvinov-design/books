@@ -221,7 +221,12 @@ test("compact Ideas preserves one opt-in advanced phrase and voice editor",()=>{
  assert.match(section,/data-video-ideas-open-montage-text/);
  assert.match(studio,/data-video-montage-text hidden=\{montagePanel!=="text"\}/);
  assert.equal((studio.match(/<MandalaVideoIdeas locale/g)||[]).length,1);
- assert.match(section,/data-video-legacy-phrase-editor data-video-ideas-recording-open=\{ideasVoiceAdvancedOpen\?"true":"false"\}\s+hidden=\{activeWorkspace!=="phrases"\} aria-hidden=\{activeWorkspace!=="phrases"\}/);
+ assert.match(section,/data-video-legacy-phrase-editor/);
+ assert.match(section,/data-video-ideas-recording-open=\{ideasVoiceAdvancedOpen\?"true":"false"\}/);
+ assert.match(section,/hidden=\{activeWorkspace!=="phrases"\|\|ideasSubtab!=="personalization"\}/);
+ assert.match(section,/aria-hidden=\{activeWorkspace!=="phrases"\|\|ideasSubtab!=="personalization"\}/);
+ assert.equal((section.match(/data-video-ideas-tab="/g)||[]).length,2);
+ assert.equal((section.match(/<MandalaVideoConcept /g)||[]).length,1);
  assert.match(section,/data-video-ideas-advanced-voice open=\{ideasVoiceAdvancedOpen\}/);
  assert.equal((studio.match(/<MandalaHypnoCompact /g)||[]).length,1);
  assert.match(studio,/onPendingChange=\{setPhrasePending\}/);
@@ -248,7 +253,7 @@ test("owner 03 Nov: compact tabs, real scenario updates and moved settings",()=>
  assert.match(nav,/quickNavFull/,"full labels remain on wider screens");
  const mobileCss=css.slice(css.lastIndexOf("/* Owner 03 Nov:"));
  assert.match(mobileCss,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/,"one row overrides legacy 3x2");
- const editor=studio.slice(studio.indexOf('data-video-editor-scenario'),studio.indexOf('data-video-quick-personal'));
+ const editor=studio.slice(studio.indexOf('data-video-editor-scenario'),studio.indexOf('data-video-quick-personal',studio.indexOf('data-video-editor-scenario')));
  const scenario=editor.indexOf('data-video-editor-scenario');
  assert.ok(scenario>=0&&scenario<editor.indexOf('data-video-montage-audio'),"script is available before Audio");
  assert.match(editor,/data-video-montage-script-update/);
@@ -282,7 +287,7 @@ test("all six workspaces use the same in-flow navigation and one real export",()
  assert.ok(studio.indexOf("data-video-quick-controls")<studio.indexOf("data-video-live-stage"));
  assert.doesNotMatch(studio,/createPortal|effectsNavTarget|montageNavTarget|data-video-hypno-nav-slot|data-video-montage-nav-slot/,
    "no mode can teleport the navigation to a different vertical position");
- const editor=studio.slice(studio.indexOf("data-video-basic-editor"),studio.indexOf("data-video-quick-personal"));
+ const editor=studio.slice(studio.lastIndexOf("data-video-basic-editor"),studio.indexOf("data-video-quick-personal",studio.lastIndexOf("data-video-basic-editor")));
  assert.match(editor,/data-video-montage-tools/);
  assert.match(editor,/data-video-montage-tab=\{item.id\}/);
  assert.match(editor,/data-video-montage-preferences/);
@@ -296,11 +301,14 @@ test("all six workspaces use the same in-flow navigation and one real export",()
 
 test("guided meditation opt-out is reconciled after React commit without losing explicit reopen",()=>{
   assert.match(studio,/const \[courseMeditationOmitted,setCourseMeditationOmitted\]=useState\(false\)/);
-  assert.match(studio,/useLayoutEffect\(\(\)=>\{\s*if\(!courseMeditationOmitted\)return;/);
-  assert.match(studio,/if\(details instanceof HTMLDetailsElement\)details\.open=false/);
-  assert.match(studio,/\},\[courseMeditationOmitted,courseMeditationDraft\]\)/);
-  assert.match(studio,/onAddMeditation=\{script=>\{[\s\S]*?setCourseMeditationOmitted\(false\)/);
-  assert.match(studio,/onOmitMeditation=\{\(\)=>\{[\s\S]*?setCourseMeditationOmitted\(true\)/);
+  assert.match(studio,/const \[courseMeditationIncluded,setCourseMeditationIncluded\]=useState\(false\)/);
+  assert.match(studio,/useLayoutEffect\(\(\)=>\{/);
+  assert.match(studio,/if\(courseMeditationOmitted\)details\.open=false/);
+  assert.match(studio,/else if\(courseMeditationIncluded&&courseMeditationDraft\)details\.open=true/);
+  assert.match(studio,/\},\[courseMeditationIncluded,courseMeditationOmitted,courseMeditationDraft\]\)/);
+  assert.match(studio,/onAddMeditation=\{script=>\{[\s\S]*?setCourseMeditationIncluded\(true\);\s*setCourseMeditationDraft\(script\)/);
+  assert.match(studio,/onOmitMeditation=\{\(\)=>\{\s*setCourseMeditationIncluded\(false\);[\s\S]*?setCourseMeditationOmitted\(true\)/);
+  assert.doesNotMatch(studio,/onAddMeditation=\{script=>\{[\s\S]{0,500}requestAnimationFrame/);
 });
 
 test("validated Messenger video handoff visibly opens the original Studio Director on compact Goals",()=>{

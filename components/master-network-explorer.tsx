@@ -411,10 +411,34 @@ function Filters({
       </select>
     </label>
   );
+  const primaryMasterFilters = (
+    <div className={styles.mentorFilterGrid} data-mentor-primary-filters>
+                <label>{t.offering}
+                  <select id="mentor-filter-offering" value={state.offeringType}
+                    onChange={(event) => set("offeringType", event.target.value)}>
+                    <option value="">{t.anyOffering}</option>
+                    {offeringTypes.map((type) => <option key={type} value={type}>{OFFERING_NAMES[type]?.[locale] || type}</option>)}
+                  </select>
+                </label>
+                {(!embedded || courseChoices.length > 0) ? <label>{t.courseTitle}
+                  <select id="mentor-filter-course" value={state.courseKey}
+                    disabled={!courseChoices.length}
+                    onChange={(event) => set("courseKey", event.target.value)}>
+                    <option value="">{courseChoices.length ? t.anyCourse : coursesUnavailable ? t.courseUnavailable : t.noCourse}</option>
+                    {courseChoices.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+                  </select>
+                </label> : null}
+                {formatSelect}
+                {languageSelect}
+              </div>
+  );
   return (
     <section className={styles.filters} aria-label={t.filterTitle} data-mentor-filters={mode === "masters" ? "" : undefined}>
       <div className={styles.heading}>
-        <h2>{mode === "masters" ? (locale === "ru" ? "Выберите практика" : locale === "es" ? "Elige un profesional" : "Choose a practitioner") : t.filterTitle}</h2>
+        <h2>{mode === "masters" ? (embedded
+          ? locale === "ru" ? "Подберите коуча" : locale === "es" ? "Encuentra tu coach" : "Find your coach"
+          : locale === "ru" ? "Выберите практика" : locale === "es" ? "Elige un profesional" : "Choose a practitioner")
+          : t.filterTitle}</h2>
         <span className={styles.count} role="status" aria-live="polite">{count} {mode === "masters" && count === 1 ? (locale === "ru" ? "мастер" : locale === "es" ? "profesional" : "practitioner") : mode === "masters" ? t.masters : t.services}</span>
       </div>
       <div className={styles.searchRow} role="search">
@@ -439,25 +463,7 @@ function Filters({
               </button>
             ))}
           </div>
-          <div className={styles.mentorFilterGrid} data-mentor-primary-filters>
-            <label>{t.offering}
-              <select id="mentor-filter-offering" value={state.offeringType}
-                onChange={(event) => set("offeringType", event.target.value)}>
-                <option value="">{t.anyOffering}</option>
-                {offeringTypes.map((type) => <option key={type} value={type}>{OFFERING_NAMES[type]?.[locale] || type}</option>)}
-              </select>
-            </label>
-            {(!embedded || courseChoices.length > 0) ? <label>{t.courseTitle}
-              <select id="mentor-filter-course" value={state.courseKey}
-                disabled={!courseChoices.length}
-                onChange={(event) => set("courseKey", event.target.value)}>
-                <option value="">{courseChoices.length ? t.anyCourse : coursesUnavailable ? t.courseUnavailable : t.noCourse}</option>
-                {courseChoices.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-              </select>
-            </label> : null}
-            {formatSelect}
-            {languageSelect}
-          </div>
+                    {!embedded ? primaryMasterFilters : null}
           <div className={styles.masterExtra}>
             <button type="button" className={styles.masterExtraToggle}
               aria-expanded={mastersMoreOpen} aria-controls="mentor-extra-filters"
@@ -468,10 +474,11 @@ function Filters({
                 setMastersMoreOpen((previous) => !previous);
               }}
               onClick={() => setMastersMoreOpen((previous) => !previous)}>
-              {locale === "ru" ? "Метод, город, цена и другие направления" : locale === "es" ? "Método, lugar, precio y áreas" : "Method, location, price & more"}
+              {embedded ? (locale === "ru" ? "Фильтры · язык, формат, метод и цена" : locale === "es" ? "Filtros · idioma, formato, método y precio" : "Filters · language, format, method & price") : (locale === "ru" ? "Метод, город, цена и другие направления" : locale === "es" ? "Método, lugar, precio y áreas" : "Method, location, price & more")}
               <span aria-hidden="true">⌄</span>
             </button>
             <div id="mentor-extra-filters" className={styles.masterExtraBody} hidden={!mastersMoreOpen}>
+            {embedded ? primaryMasterFilters : null}
             <div className={styles.selectGrid}>
               <label>{t.method}
                 <select value={state.method} onChange={(event) => set("method", event.target.value)}>
@@ -488,7 +495,7 @@ function Filters({
               {pricingSelect}
               {sortSelect}
             </div>
-            {areaFilters}
+            {!embedded ? areaFilters : null}
             </div>
           </div>
         </>

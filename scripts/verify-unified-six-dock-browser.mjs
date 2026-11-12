@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import {mkdirSync,writeFileSync} from "node:fs";
 import {createRequire} from "node:module";
 const require=createRequire(import.meta.url);
-const {chromium,webkit}=require(process.env.HH_PLAYWRIGHT_PACKAGE||"playwright");
+const {chromium,webkit,expect}=require(process.env.HH_PLAYWRIGHT_PACKAGE||"playwright");
 const origin=process.env.HH_PUBLIC_QA_ORIGIN||"http://127.0.0.1:3100";
 const url=new URL(origin);
 if(!["localhost","127.0.0.1"].includes(url.hostname)||
@@ -10,11 +10,11 @@ if(!["localhost","127.0.0.1"].includes(url.hostname)||
 const folder="artifacts/unified-six-dock";
 mkdirSync(folder,{recursive:true});
 const results=[];
-const ids=["mytube","video","master","ai","analysis","practice","profile"];
+const ids=["mytube","video","coach","ai","services","practice","profile"];
 const labels={
-  en:["MyTube","MyVideo","Services","AI/Chat","Hints","Study","Profile"],
-  ru:["MyTube","MyVideo","Услуги","ИИ/Чат","Подсказки","Обучение","Профиль"],
-  es:["MyTube","MyVideo","Servicios","IA/Chat","Pistas","Estudiar","Perfil"],
+  en:["MyTube","MyVideo","My Coach","AI/Chat","Services","Study","Profile"],
+  ru:["MyTube","MyVideo","Мой коуч","ИИ/Чат","Услуги","Обучение","Профиль"],
+  es:["MyTube","MyVideo","Mi coach","IA/Chat","Servicios","Estudiar","Perfil"],
 };
 
 // The fixed dock belongs to the ROOT shell, not to individual pages. Check
@@ -265,15 +265,16 @@ async function inspect(browserType,locale,width){
   if(locale==="ru" || width===390){
     const prefix="/"+locale;
     const routeCases=[
-      ["practice",prefix+"/holistic-support/mobile"],
-      ["video",prefix+"/holistic-support/mandala"],
-      ["ai",prefix+"/app/messages?section=ai"],
-      ["master",prefix+"/practice"],
-      ["profile","/"+(locale==="es"?"en":locale)+"/app/portrait"],
-      ["analysis",prefix+"/services/free-situation-review"],
+      ["practice",prefix+"/holistic-support/mobile","practice"],
+      ["video",prefix+"/holistic-support/mandala","video"],
+      ["ai",prefix+"/app/messages?section=ai","ai"],
+      ["coach",prefix+"/my-coach","coach"],
+      ["profile","/"+(locale==="es"?"en":locale)+"/app/portrait","profile"],
+      ["services",prefix+"/services","services"],
+      ["services-review",prefix+"/services/free-situation-review","services"],
     ];
-    for(const [active,path] of routeCases){
-      const marker=id+":"+active;
+    for(const [caseName,path,active] of routeCases){
+      const marker=id+":"+caseName;
       await page.goto(origin+path,{waitUntil:"domcontentloaded",timeout:75000});
       await assertPinnedSixDock(page,marker,active);
       if(browserType===webkit && locale==="ru" && width===390)
@@ -294,9 +295,24 @@ async function inspect(browserType,locale,width){
       return link&&Object.keys(link).some(k=>k.startsWith("__reactProps$"));
     },null,{timeout:20000});
     await ideaButton.click();
-    const voiceButton=page.locator('[data-video-ideas-tab="voice"]');
+    const personalizationTab=page.locator('[data-video-ideas-tab="personalization"]');
+    await personalizationTab.waitFor({state:"visible",timeout:30000});
+    assert.equal(await personalizationTab.getAttribute("aria-pressed"),"true",
+      id+" Ideas opens on the current Personalization tab");
+    // Advanced voice is hidden by design until the visitor opens its visible
+    // audio-guidance shortcut. Do not bypass the UI or force hidden controls.
+    const voiceShortcut=page.locator('[data-video-phrase-audio-shortcut]');
+    await voiceShortcut.waitFor({state:"visible",timeout:30000});
+    await voiceShortcut.click();
+    const advancedVoice=page.locator('details[data-video-ideas-advanced-voice]');
+    await advancedVoice.waitFor({state:"visible",timeout:30000});
+    assert.equal(await advancedVoice.getAttribute("open"),"",
+      id+" advanced Voice opens from an actual visible audio shortcut");
+    const voiceButton=advancedVoice.locator('[data-video-ideas-voice-mode="voice"]');
     await voiceButton.waitFor({state:"visible",timeout:30000});
     await voiceButton.click();
+    assert.equal(await voiceButton.getAttribute("aria-pressed"),"true",
+      id+" real Voice mode is selected");
     const voice=page.locator('[data-ideas-subtab="voice"] [data-hypno-voice]');
     await voice.waitFor({state:"visible",timeout:30000});
     const palette=await page.evaluate(()=>{
@@ -304,7 +320,7 @@ async function inspect(browserType,locale,width){
       const card=document.querySelector('[data-ideas-subtab="voice"] [data-hypno-voice]');
       const picker=document.querySelector('[data-ideas-subtab="voice"] [data-video-affirmation-voice]');
       const phrase=document.querySelector('[data-ideas-subtab="voice"] [data-video-affirmation-phrase]');
-      const selected=document.querySelector('[data-video-ideas-tab="voice"]');
+      const selected=document.querySelector('[data-video-ideas-tab="personalization"]');
       const c=node=>node?getComputedStyle(node):null;
       return {background:c(root)?.backgroundImage||"",card:c(card)?.backgroundColor||"",
         border:c(card)?.borderTopColor||"",ink:c(picker)?.color||"",
@@ -330,8 +346,8 @@ async function inspect(browserType,locale,width){
       id+" TTS picker neutral border is warm not green");
     assert.equal(palette.phrase,"rgb(255, 249, 245)",
       id+" phrase inset stays warm, not green");
-    assert.match(palette.selected,/rgb\(8,\s*126,\s*97\)/,
-      id+" active Voice tab uses accessible emerald");
+    assert.match(palette.selected,/rgb\((?:18,\s*169,\s*135|3,\s*121,\s*96)\)/,
+      id+" active Ideas Personalization tab preserves accessible emerald");
     assert.ok(palette.width<=palette.viewport+2,
       id+" Ideas Voice has no horizontal document overflow");
     assert.equal(palette.dockCount,1,id+" one fixed Holistic House dock");
@@ -406,8 +422,8 @@ async function inspect(browserType,locale,width){
     for(const [tab,path] of [
       ["video","/ru/holistic-support/mandala"],
       ["mytube","/ru/mytube"],
-      ["master","/ru/practice"],
-      ["analysis","/ru/services/free-situation-review"],
+      ["coach","/ru/my-coach"],
+      ["services","/ru/services"],
       ["practice","/ru/holistic-support/mobile"],
     ]){
       await page.locator('[data-unified-dock-item="'+tab+'"]').click();
@@ -416,9 +432,21 @@ async function inspect(browserType,locale,width){
         tab+" standalone public navigation must stay in the same document");
     }
     assert.equal(popups,0,"standalone public tabs must not open another page");
-    results.push({journey:"Simulated iOS standalone Practice → Video → MyTube → Master → Free Analysis → Practice",sameDocument:true});
+    results.push({journey:"Simulated iOS standalone Practice → Video → MyTube → My Coach → Services → Practice",sameDocument:true});
   }
- }finally{await context.close();await browser.close();}
+ }finally{
+  // WebKit may dispose a context as part of a crash/teardown race after the
+  // scenario has completed. Treat an already-disposed context as closed, but
+  // surface every other cleanup error and always close the owning browser.
+  try{await context.close();}
+  catch(error){
+    if(!/Failed to find context with id|Target page, context or browser has been closed/.test(String(error?.message)))throw error;
+  }
+  try{await browser.close();}
+  catch(error){
+    if(!/Target page, context or browser has been closed|Browser has been closed/.test(String(error?.message)))throw error;
+  }
+ }
 }
 for(const locale of ["ru","en","es"]){
  for(const width of [320,390,430])await inspect(webkit,locale,width);
@@ -519,32 +547,32 @@ try{
    "obsolete five-button rail must not consume transcript space");
  await chat.locator('[data-hh-ai-landing]').waitFor({state:"visible",timeout:15000});
  const log=chat.locator('[role="log"]');
- const starters=chat.locator('[data-hh-ai-quick-actions] [data-hh-ai-choice]');
- const six=["test","video","practice","session","course","ask"];
- assert.deepEqual(await starters.evaluateAll(nodes=>nodes.map(node=>node.getAttribute("data-hh-ai-choice"))),
-   six,"single iChat landing displays exactly six real actions");
+ const projectGrid=chat.locator('[data-hh-messenger-six-projects]');
+ await projectGrid.waitFor({state:"visible",timeout:15000});
+ const projects=chat.locator('[data-hh-messenger-six-projects] [data-hh-ai-project]');
+ const six=["hint","test","mytube","sessions","practice","ai-video"];
+ assert.deepEqual(await projects.evaluateAll(nodes=>nodes.map(node=>node.getAttribute("data-hh-ai-project"))),
+   six,"Messenger shows the six current project entries in canonical order");
  assert.equal(await chat.locator("iframe").count(),0,"approved introduction video needs a deliberate Play click");
  for(const id of six){
-   const item=chat.locator('[data-hh-ai-choice="'+id+'"]');
+   const item=chat.locator('[data-hh-ai-project="'+id+'"]');
    await item.waitFor({state:"visible",timeout:15000});
    const rect=await item.boundingBox();
-   assert.ok(rect&&rect.width>=44&&rect.height>=44,id+" accessible action");
+   assert.ok(rect&&rect.width>=44&&rect.height>=44,id+" accessible project card");
  }
- // The welcome card has its own paragraph, but it is removed when the
- // conversation starts. Count actual DIRECT turns, never the landing copy.
- const before=await log.evaluate(node=>[...node.children].filter(child=>
-   child.matches('p,[data-hh-ai-assistant-message]')).length);
- await chat.locator('[data-hh-ai-choice="video"]').click();
- await page.waitForFunction(count=>{
-   const root=document.querySelector('[data-hh-agent-preview]');
-   const transcript=root?.querySelector('[role="log"]');
-   const turns=[...(transcript?.children||[])].filter(child=>
-     child.matches('p,[data-hh-ai-assistant-message]'));
-   return root?.getAttribute("data-has-messages")==="true"
-     && turns.length>=count+2
-     && turns.some(child=>child.matches('[data-hh-ai-assistant-message]'));
- },before,{timeout:10000});
- assert.equal(await starters.count(),0,"landing yields to the original one chat transcript");
+ // The former generic quick-action landing is intentionally retired; its
+ // hidden links must not be mistaken for the six visible project cards.
+ assert.equal(await chat.locator('[data-hh-ai-quick-actions] [data-hh-ai-choice]:visible').count(),0,
+   "retired generic quick actions remain hidden");
+ // AI-Video opens the existing in-chat format selector through the approved
+ // six-project entry. No generation, payment or external request occurs here.
+ await chat.locator('[data-hh-ai-project="ai-video"]').click();
+ const initialContentKinds=chat.locator('[data-hh-content-step="kind"] [data-hh-content-kind]');
+ await initialContentKinds.first().waitFor({state:"visible",timeout:15000});
+ assert.deepEqual(await initialContentKinds.evaluateAll(nodes=>nodes.map(node=>
+   node.getAttribute("data-hh-content-kind"))),["video","audio","meditation","message"],
+   "Video opens the four approved formats inside the same chat");
+  assert.equal(await chat.locator('[data-hh-ai-quick-actions] [data-hh-ai-choice]').count(),0,"landing yields to the original one chat transcript");
  // The current Create Content entry deliberately asks format -> source -> short
  // personal idea BEFORE the canonical video goal tree. Earlier browser QA
  // expected the retired one-tap goal branch and timed out without testing it.
@@ -608,38 +636,102 @@ try{
    .some(node=>node.textContent?.includes("Я здесь!")),null,{timeout:10000});
  assert.equal(await chat.locator("video").count(),0,
    "no completed video is claimed before rendering");
- // Check the six approved iChat actions through actual user clicks, never mocked routes.
+
+ // Language follows the message, not the /en route. Keep both turns in one
+ // transcript and verify the composer/region language changes without navigation.
+ await page.goto(origin+"/en/app/messages?section=ai",{waitUntil:"domcontentloaded",timeout:75000});
+ await chat.locator('[data-hh-ai-landing]').waitFor({state:"visible",timeout:30000});
+ const bilingualInput=chat.locator("textarea");
+ const bilingualLog=chat.locator('[role="log"]');
+ await bilingualInput.fill("Хочу денег");
+ await chat.locator('button[type="submit"]').click();
+ await page.waitForFunction(()=>document.querySelector('[data-hh-agent-preview]')?.getAttribute("lang")==="ru",null,{timeout:15000});
+ await page.waitForFunction(()=>document.querySelector('[data-hh-agent-preview] textarea')?.getAttribute("placeholder")==="Что сейчас для вас важно?",null,{timeout:10000});
+ await page.waitForFunction(()=>[...document.querySelectorAll('[data-hh-agent-preview] [data-hh-chat-turn="user"]')]
+   .some(node=>node.textContent?.includes("Хочу денег")),null,{timeout:10000});
+ await bilingualInput.fill("I want to discuss my income");
+ await chat.locator('button[type="submit"]').click();
+ await page.waitForFunction(()=>document.querySelector('[data-hh-agent-preview]')?.getAttribute("lang")==="en",null,{timeout:15000});
+ await page.waitForFunction(()=>document.querySelector('[data-hh-agent-preview] textarea')?.getAttribute("placeholder")==="What's on your mind?",null,{timeout:10000});
+ assert.equal(new URL(page.url()).pathname,"/en/app/messages",
+   "switching dialogue language does not navigate away from the original route");
+ const retainedTurns=await bilingualLog.locator('[data-hh-chat-turn="user"]').allTextContents();
+ assert.ok(retainedTurns.some(text=>text.includes("Хочу денег")),"Russian turn remains in the same transcript");
+ assert.ok(retainedTurns.some(text=>text.includes("I want to discuss my income")),"English turn is appended, not substituted");
+ assert.equal(await bilingualLog.locator('[data-hh-chat-turn="user"]').count(),2,
+   "two language changes preserve exactly the two submitted user turns");
+ results.push({journey:"English Messenger route → Russian message → English message; transcript retained without route navigation",passed:true});
+ // The bilingual journey deliberately ends in English. Begin a separate RU
+ // project-entry journey so project-link assertions verify locale propagation,
+ // not the stale locale from the prior test case.
+ await page.goto(origin+"/ru/app/messages?section=ai",{waitUntil:"domcontentloaded",timeout:75000});
+ await chat.waitFor({state:"visible",timeout:30000});
+ await expect.poll(()=>chat.getAttribute("lang")).toBe("ru");
+ await chat.locator('[data-hh-ai-landing]').waitFor({state:"visible",timeout:15000});
+ // Exercise the six current project cards and their one-question / four-choice
+ // flows. The retired generic data-hh-ai-choice links stay hidden by design.
  const resetViaMore=async()=>{
-   // The current compact Messenger keeps New conversation inside the actual
-   // + (More actions) menu; do not test a button hidden under closed details.
    const more=chat.locator('details[data-hh-ai-more]');
-   await more.locator('summary').click();
-   await more.getByRole('button',{name:'Новый разговор'}).click();
-   if(await more.evaluate(node=>node.open))
-     await more.locator('summary').click();
+   await more.waitFor({state:"visible",timeout:15000});
+   if(await more.evaluate(node=>!node.open)) await more.locator("summary").click();
+   const resetButtons=more.locator("button");
+   await expect.poll(()=>resetButtons.count()).toBe(1);
+   await resetButtons.first().click();
+   if(await more.evaluate(node=>node.open)) await more.locator("summary").click();
+   await chat.locator('[data-hh-ai-landing]').waitFor({state:"visible",timeout:15000});
+   await expect.poll(()=>chat.locator('[data-hh-chat-turn="user"]').count()).toBe(0);
  };
- await resetViaMore();
- await chat.locator('[data-hh-ai-choice="practice"]').waitFor({state:"visible"});
- await chat.locator('[data-hh-ai-choice="practice"]').click();
- await chat.getByText(/сколько минут у вас есть/).waitFor({state:"visible"});
- await resetViaMore();
- await chat.locator('[data-hh-ai-choice="ask"]').click();
+ const openProject=async(id)=>{
+   await resetViaMore();
+   await chat.locator('[data-hh-ai-project="'+id+'"]').waitFor({state:"visible",timeout:15000});
+   await chat.locator('[data-hh-ai-project="'+id+'"]').click();
+   // Sessions has a goal-first two-step intake; other projects use one-step choices.
+   const options=id==="sessions"?
+     chat.locator("[data-hh-session-goal-options]"):
+     chat.locator('[data-hh-project-step="'+id+'"]');
+   await options.waitFor({state:"visible",timeout:15000});
+   const choices=id==="sessions"?
+     chat.locator("[data-hh-session-goal-choice]"):
+     chat.locator("[data-hh-project-choice]");
+   assert.ok(await choices.count()<=4,
+     id+" must expose no more than four short choices");
+ };
+ await openProject("practice");
+ await chat.locator('[data-hh-project-choice="stress"]').click();
+ const practiceLink=chat.locator('[data-hh-ihelp-link]');
+ await practiceLink.waitFor({state:"visible",timeout:15000});
+ await expect.poll(()=>chat.getAttribute("lang")).toBe("ru");
+ assert.equal(await practiceLink.getAttribute("href"),"/ru/courses/antistress",
+   "Practice route follows the Russian conversation language");
+
+ await openProject("hint");
+ await chat.locator('[data-hh-project-choice="life"]').click();
+ await expect.poll(()=>chat.locator('[data-hh-ai-assistant-message]').count()).toBeGreaterThan(0);
  assert.equal(await chat.locator("textarea").evaluate(node=>document.activeElement===node),
-   true,"Ask focuses the existing unsent composer without auto-submission");
- await chat.locator('[data-hh-ai-choice="test"]').click();
- await page.waitForURL(/\/ru\/tests\/?$/,{timeout:45000});
- await page.locator('[data-free-entry-landing="tests"]').waitFor({state:"visible",timeout:30000});
- await page.goto(origin+"/ru/app/messages?section=ai",{waitUntil:"domcontentloaded",timeout:75000});
- await chat.locator('[data-hh-ai-choice="session"]').waitFor({state:"visible",timeout:30000});
- await chat.locator('[data-hh-ai-choice="session"]').click();
- await page.waitForURL(/\/ru\/services\/?$/,{timeout:45000});
- await page.locator("h1").first().waitFor({state:"visible",timeout:30000});
- await page.goto(origin+"/ru/app/messages?section=ai",{waitUntil:"domcontentloaded",timeout:75000});
- await chat.locator('[data-hh-ai-choice="course"]').waitFor({state:"visible",timeout:30000});
- await chat.locator('[data-hh-ai-choice="course"]').click();
- await page.waitForURL(/\/ru\/academy\/?$/,{timeout:45000});
- await page.locator("h1").first().waitFor({state:"visible",timeout:30000});
- await page.goto(origin+"/ru/app/messages?section=ai",{waitUntil:"domcontentloaded",timeout:75000});
+   true,"Get a hint asks one question and focuses the same unsent composer");
+
+ await openProject("test");
+ await chat.locator('[data-hh-project-choice="stress"]').click();
+ const testJourney=chat.locator('[data-hh-messenger-test-chat]');
+ await testJourney.waitFor({state:"visible",timeout:15000});
+
+ await openProject("mytube");
+ await chat.locator('[data-hh-project-choice="calm"]').click();
+ const mytubeLink=chat.locator('[data-hh-ihelp-link]');
+ await mytubeLink.waitFor({state:"visible",timeout:15000});
+ assert.equal(await mytubeLink.getAttribute("href"),"/ru/mytube?goal=stress",
+   "MyTube uses the existing topic-filtered catalogue in Russian");
+
+ await openProject("sessions");
+ await chat.locator('[data-hh-session-goal-choice="personal"]').click();
+ const sessionComposer=chat.locator("textarea");
+ await sessionComposer.fill("Хочу разобраться в сложном личном выборе и понять, как поступить дальше.");
+ await chat.locator('button[type="submit"]').click();
+ const sessionLink=chat.locator('[data-hh-session-offer="free-review"]');
+ await sessionLink.waitFor({state:"visible",timeout:15000});
+ assert.equal(await sessionLink.getAttribute("href"),"/ru/services/free-situation-review",
+   "Sessions asks for a goal and outcome before offering the free review route in Russian");
+
  await page.locator("[data-chat-top-tabs]").waitFor({state:"visible",timeout:30000});
  await page.locator('[data-chat-top-tabs] button[aria-controls="hh-orders-panel"]').click();
  await page.locator("#hh-orders-panel").waitFor({state:"visible"});
@@ -654,7 +746,7 @@ try{
  assert.equal(await page.locator('[data-support-practice-tabs] button').nth(1).getAttribute("aria-pressed"),"true");
  results.push({journey:"MyTube → Video → six real iChat choices → one protected transcript → private Orders/Clients → Practice",passed:true});
  // Both Home and Practice now share the original Practice visual dock,
- // with one seventh link to the REAL free express-review page.
+ // with canonical Services and My Coach destinations.
  await page.goto(origin+"/ru",{waitUntil:"domcontentloaded",timeout:75000});
  const homeDock=page.locator("[data-hh-unified-dock]");
  await homeDock.waitFor({state:"visible",timeout:30000});
@@ -677,17 +769,17 @@ try{
  }
 
  assert.equal(await page.locator("[data-hh-unified-dock]:visible").count(),1);
- await homeDock.locator('[data-unified-dock-item="analysis"]').click();
- await page.waitForURL(/\/ru\/services\/free-situation-review\/?$/,{timeout:45000});
- await page.locator('[data-free-entry-landing="situation"]').waitFor({state:"visible",timeout:30000});
- assert.equal(await page.locator('[data-unified-dock-item="analysis"][aria-current="page"]').count(),1);
+ await homeDock.locator('[data-unified-dock-item="services"]').click();
+ await page.waitForURL(/\/ru\/services\/?$/,{timeout:45000});
+ await page.locator('[data-unified-dock-item="services"][aria-current="page"]').waitFor({state:"visible",timeout:30000});
+ assert.equal(await page.locator('[data-unified-dock-item="services"][aria-current="page"]').count(),1);
  assert.equal(await page.locator(".mobile-bottom-navigation:visible").count(),0);
  await homeDock.locator('[data-unified-dock-item="practice"]').click();
  await page.waitForURL(/\/ru\/holistic-support\/mobile\/?$/,{timeout:45000});
  await page.locator("[data-support-practice-tabs]").waitFor({state:"visible",timeout:30000});
  assert.equal(await page.locator("[data-hh-unified-dock]:visible").count(),1);
  assert.equal(await page.locator('[data-hh-unified-dock] [data-unified-dock-item]').count(),7);
- results.push({journey:"Holistic House Home → original Free Analysis → Practice with one seven-tab dock",passed:true});
+ results.push({journey:"Holistic House Home → Services → Practice with one seven-tab dock",passed:true});
 
  // Profile unification: both Home and Practice open the existing private hub.
  // The protected CSP transition must remain a full server-authorized reload.
@@ -698,7 +790,8 @@ try{
  await unifiedProfile.click();
  await page.waitForURL(/\/ru\/app\/portrait\/?$/,{timeout:45000});
  await page.locator('[data-profile-hub-tabs]').waitFor({state:"visible",timeout:45000});
- assert.equal(await page.locator('[data-profile-tab="today"][aria-current="page"]').count(),1);
+ assert.equal(await page.locator('[data-profile-tab="tests"][aria-current="page"]').count(),1,
+   "guest Profile intentionally opens its public Tests-first section");
  // The protected #3909 profile has six real sections; old View/Create tabs
  // and /personality-profiles were replaced. Test the visible DOM and navigation,
  // not a hidden fallback or loosened count.
@@ -707,7 +800,7 @@ try{
    ["today","tests","state","path","courses","reports"],
    "the guest and signed-in My Space show the same six canonical sections");
  await page.locator('[data-profile-tab="tests"]').click();
- await page.waitForURL(/\/ru\/app\/tests\/?$/,{timeout:45000});
+ await page.waitForFunction(()=>location.hash==="#profile-free-tests",{},{timeout:15000});
  await page.locator('[data-profile-hub-tabs][data-profile-active="tests"]').waitFor({state:"visible",timeout:45000});
  assert.equal(await page.locator('[data-profile-tab="tests"][aria-current="page"]').count(),1);
  assert.equal(await page.locator('[data-hh-unified-dock] [data-unified-dock-item="profile"][aria-current="page"]').count(),1);

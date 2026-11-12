@@ -15,6 +15,7 @@ import { HolisticSupportTalismanViewer } from "@/components/holistic-support-tal
 import { HolisticSupportCourseProfiles, type CourseProfileSector } from "@/components/holistic-support-course-profiles";
 import { HolisticSupportLearningCatalog, type LearningCatalogItem } from "@/components/holistic-support-learning-catalog";
 import { HolisticSupportMasterGallery } from "@/components/holistic-support-master-gallery";
+import { HolisticUnifiedPath } from "@/components/holistic-unified-path";
 import { GOAL_RECOMMENDATION_FORMATS, HolisticSupportGoalFilter,
   goalSectorFocus, goalSectorCheckinKey, summarizeGoalSelection,
   type GoalSelection, type GoalSector, type GoalSectorSnapshot,
@@ -919,6 +920,9 @@ export function HolisticSupportMobile({ locale, videos, courses = [], learningIt
             </div>
           </section>
         </div>
+
+        <HolisticUnifiedPath locale={locale} activeChoice={choice}
+          suggestedFocus={goalSelection ? focus : null} />
 
         <section className={styles.experience} id="support-mobile-experience" aria-live="off">
           {guideOpen && !goalFilterOpen ? <HolisticSupportInlineGuide
