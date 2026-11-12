@@ -39,7 +39,7 @@
     '/goal '+title,
     'КОНТЕКСТ: '+common,
     'ОПОРНЫЕ ДАННЫЕ: '+signal+'; '+scope+'; checked_at='+snapshot+'; freshness='+freshness.toUpperCase()+'.',
-    'ЛОГИ / EVIDENCE: '+SOURCE+(runUrl?' ; '+runUrl:'')+'. В публичном агрегате нет полного списка PR/HEAD и job stack traces.',
+    'LOGS / EVIDENCE: '+SOURCE+(runUrl?' ; '+runUrl:'')+'. В публичном агрегате нет полного списка PR/HEAD и job stack traces.',
     'ШАГ 1 — ПРОВЕРИТЬ: '+verify,
     'ШАГ 2 — ИСПРАВИТЬ: '+fix,
     'TEST PLAN: '+tests,
