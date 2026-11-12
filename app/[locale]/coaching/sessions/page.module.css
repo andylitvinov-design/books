@@ -6,3 +6,6 @@
 
 .fullWidth:has([data-my-coach-immersive-session]){min-height:100dvh;background:#fbf5e9;padding:0;margin:0;overflow-x:clip}
 .fullWidth:has([data-my-coach-immersive-session])>.header{display:none}
+
+.fullWidth:has([data-my-coach-immersive-session]){min-height:100dvh;background:#fbf5e9;padding:0;margin:0;overflow-x:clip}
+.fullWidth:has([data-my-coach-immersive-session])>.header{display:none}

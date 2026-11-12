@@ -75,6 +75,19 @@ es:{choose:'Elegir otro coach',mode:'COACH IA · DIÁLOGO EN VIVO',step:'Paso',o
 const quickTopics=[{id:'stress',icon:Leaf,art:'stones'},{id:'energy',icon:Zap,art:'sunrise'},{id:'relationships',icon:Heart,art:'lotus'}]
 const stageKeys=['clarify','explore','awareness','reframe','choice','planning','commitment','integration']
 
+
+const sessionScreen={
+ en:{choose:'Choose another coach',badge:'AI COACH · YOUR SESSION',step:'Step',of:'of',topics:'What would you like to focus on?',stress:'Release stress',energy:'Restore energy',love:'Relationships',goal:'My goal',goalHint:'Add a personal goal…',type:'Type a message',hear:'Listen to the coach',home:'Home',coaching:'Coaching',practice:'Practices',video:'Video',profile:'Profile',stages:['Goal','Explore','Resources','New perspective','Options','Next step'],history:'Conversation history',draftHint:'Select a focus to add it to your draft. Nothing is sent until you press Send.'},
+ ru:{choose:'Выбрать другого коуча',badge:'AI-КОУЧ · ВАША СЕССИЯ',step:'Шаг',of:'из',topics:'На чём хотите сосредоточиться?',stress:'Снять стресс',energy:'Вернуть энергию',love:'Отношения',goal:'Моя цель',goalHint:'Добавьте личную цель…',type:'Написать сообщение',hear:'Прослушать коуча',home:'Главная',coaching:'Коучинг',practice:'Практики',video:'Видео',profile:'Профиль',stages:['Цель','Исследование','Ресурсы','Новый взгляд','Варианты','Следующий шаг'],history:'История разговора',draftHint:'Выберите направление — оно добавится в черновик. Ничего не отправится без нажатия «Отправить».'},
+ es:{choose:'Elegir otro coach',badge:'COACH IA · TU SESIÓN',step:'Paso',of:'de',topics:'¿En qué te gustaría enfocarte?',stress:'Reducir estrés',energy:'Recuperar energía',love:'Relaciones',goal:'Mi objetivo',goalHint:'Añade un objetivo personal…',type:'Escribir un mensaje',hear:'Escuchar al coach',home:'Inicio',coaching:'Coaching',practice:'Prácticas',video:'Vídeo',profile:'Perfil',stages:['Objetivo','Explorar','Recursos','Nueva perspectiva','Opciones','Siguiente paso'],history:'Historial de conversación',draftHint:'Elige un enfoque para añadirlo al borrador. No se envía nada hasta pulsar Enviar.'}
+}
+const sessionFocus=[{id:'stress',art:'stones',icon:Leaf},{id:'energy',art:'sunrise',icon:Zap},{id:'love',art:'lotus',icon:Heart}]
+const coachStageOrder={goal:0,clarify:0,reality:1,explore:1,resources:2,awareness:2,reframe:3,options:4,choice:4,action:5,planning:5,commitment:5}
+const sessionFocusPrompts={
+ en:{stress:'I would like to feel less stressed. Can we explore what is weighing on me?',energy:'I would like to restore my energy. Can we explore what is draining it?',love:'I would like to improve an important relationship. Can we explore what matters most?'},
+ ru:{stress:'Я хочу снизить стресс. Давайте разберём, что сейчас на меня давит.',energy:'Я хочу восстановить энергию. Давайте посмотрим, что её забирает.',love:'Я хочу улучшить важные для меня отношения. Давайте разберём, что сейчас важнее всего.'},
+ es:{stress:'Quiero reducir el estrés. Exploremos qué me está pesando.',energy:'Quiero recuperar mi energía. Exploremos qué me la está quitando.',love:'Quiero mejorar una relación importante. Exploremos qué es lo más importante.'}
+}
 const reasons={
   feature_disabled:'disabled',server_not_configured:'config',rate_limited:'limit',
   privacy_model_unavailable:'protected',cost_unverified:'cost',
@@ -83,7 +96,7 @@ const reasons={
 const assistantText=(result)=>result.mode==='ai' && typeof result.message==='string'
   ? result.message : [result.reflection,result.hypothesis,result.question].filter(Boolean).join('\n\n')
 
-export default function MyCoachLiveDialogue({locale='en',personaId='mira',settings={},onClose,onGuided}){
+export default function MyCoachLiveDialogue({locale='en',personaId='mira',settings={},onGuided}){
   const lang=copy[locale]?locale:'en',t=copy[lang]
   const persona=getCoachPersona(personaId)
   const [consent,setConsent]=useState(false)
@@ -123,6 +136,33 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   useEffect(()=>{if(turns.length)end.current?.scrollIntoView({block:'nearest',behavior:'auto'})},[turns])
   const name=persona?localCoachText(persona.name,lang):t.coach
   const opening=persona?localCoachText(persona.opening,lang):t.goal
+  const screen=sessionScreen[lang]||sessionScreen.en
+  const latestCoachTurn=[...turns].reverse().find(turn=>turn.role==='assistant')
+  const latestCoachText=latestCoachTurn?.content||opening
+  const currentStage=latestCoachTurn?.stage||'goal'
+  const visibleStageIndex=Math.min(5,Math.max(0,coachStageOrder[currentStage]??0))
+  const focusLabels={stress:screen.stress,energy:screen.energy,love:screen.love}
+  function chooseFocus(id){
+    const prompt=sessionFocusPrompts[lang]?.[id]||''
+    setSelectedGoal(focusLabels[id]||'')
+    setDraft(previous=>previous.trim()?previous:prompt)
+    setError('')
+    composerRef.current?.focus()
+  }
+  function replayCoachReply(){
+    if(!latestCoachText||replaying||voiceState.phase!=='idle'||!window.speechSynthesis||!window.SpeechSynthesisUtterance)return
+    try{
+      window.speechSynthesis.cancel()
+      const utterance=new window.SpeechSynthesisUtterance(latestCoachText.slice(0,900))
+      utterance.lang=({en:'en-GB',ru:'ru-RU',es:'es-ES'})[lang];utterance.rate=.97
+      const voices=window.speechSynthesis.getVoices?.()||[]
+      const voice=voices.find(item=>item.lang?.toLowerCase()===utterance.lang.toLowerCase())||voices.find(item=>item.lang?.toLowerCase().startsWith(lang+'-'))
+      if(voice)utterance.voice=voice
+      utterance.onend=()=>setReplaying(false);utterance.onerror=()=>setReplaying(false)
+      setReplaying(true);window.speechSynthesis.speak(utterance)
+    }catch{setReplaying(false)}
+  }
+  useEffect(()=>()=>{try{window.speechSynthesis?.cancel()}catch{}},[])
   const ui=sessionUi[lang]||sessionUi.en
   const latestCoachTurn=[...turns].reverse().find(turn=>turn.role==='assistant')
   const latestCoachText=latestCoachTurn?.content||opening
@@ -234,122 +274,27 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     }
   }
   return <section className={styles.root} lang={lang} data-my-coach-live-dialogue={personaId} data-my-coach-immersive-session>
-    <header className={styles.sessionTopbar}>
-      <Link className={styles.sessionBrand} href={'/'+lang+'/coaching/sessions'} aria-label="Holistic House">
-        <span className={styles.sessionBrandMark} aria-hidden="true">✿</span><span>Holistic House</span>
-      </Link>
-      <Link className={styles.chooseCoach} href={'/'+lang+'/my-coach'}><ArrowRight size={16} aria-hidden="true"/>{ui.choose}</Link>
-    </header>
-    <section className={styles.sessionHero} aria-label={name}>
-      <div className={styles.sessionPortrait} data-persona={personaId} role="img" aria-label={name}/>
-      <div className={styles.sessionHeroShade} aria-hidden="true"/>
-      <div className={styles.sessionHeroCopy}>
-        <span className={styles.sessionHeroBadge}><Sparkles size={14} aria-hidden="true"/>{ui.mode}</span>
-        <p>{localCoachText(persona?.role,lang)||t.coach}</p><h1>{name}</h1>
-        <small>{localCoachText(persona?.approach,lang)||localCoachText(persona?.description,lang)}</small>
-      </div>
-      <div className={styles.sessionAvatar}>
-        <CoachingAvatar locale={lang} avatarId={avatarVisuals[personaId]||'warm'} displayName={name}
-          showPicker={false} size="large"
-          phase={voiceState.phase==='speaking'?'speaking':paused?'paused':busy?'thinking':voiceState.phase} beat={voiceState.beat}/>
-      </div>
-    </section>
-    <p className={styles.sessionDisclosure}>{ui.disclosure}</p>
-    <section className={styles.sessionProgress} aria-label={ui.stageQuestion}>
-      <div className={styles.sessionProgressText}><strong>{ui.step} {visibleStageIndex+1} {ui.of} 6</strong>
-        <span>{currentStage==='safety'?ui.safety:ui.stages[visibleStageIndex]}</span></div>
-      <div className={styles.sessionProgressSegments} role="progressbar" aria-label={ui.stageQuestion}
-        aria-valuemin={1} aria-valuemax={6} aria-valuenow={visibleStageIndex+1}>
-        {ui.stages.map((label,index)=><span key={label} data-complete={index<=visibleStageIndex?'true':undefined}
-          data-current={index===visibleStageIndex?'true':undefined}/>)}
-      </div>
-    </section>
-    <section className={styles.sessionDialogue} aria-label={ui.stageQuestion}>
-      <div className={styles.currentCoachPrompt}>
-        <span className={styles.promptWave} aria-hidden="true"><i/><i/><i/><i/><i/><i/><i/></span>
-        <div className={styles.currentCoachCopy}><span>{name}</span><p>{latestCoachText}</p></div>
-        <button type="button" className={styles.replayInline} onClick={replayCoachReply}
-          disabled={voiceState.phase!=='idle'||replaying} aria-label={ui.replay} title={ui.replay}>
-          <Volume2 size={19} aria-hidden="true"/>
-        </button>
-      </div>
-      {turns.length>1&&<details className={styles.conversationHistory}>
-        <summary>{lang==='ru'?'История разговора':lang==='es'?'Historial de conversación':'Conversation history'}</summary>
-        <div className={styles.historyMessages} role="log" aria-live="polite">
-          {turns.map((turn,index)=><div key={index} className={turn.role==='user'?styles.historyUser:styles.historyCoach}>
-            <strong>{turn.role==='user'?t.user:name}</strong><p>{turn.content}</p>
-          </div>)}
-          <div ref={end}/>
-        </div>
-      </details>}
-      <div className={styles.quickGoals}>
-        <div className={styles.quickGoalsHeading}><strong>{ui.topics}</strong><span>{ui.chooseTopic}</span></div>
-        <div className={styles.quickGoalGrid}>
-          {quickTopics.map(({id,icon:Icon,art})=><button key={id} type="button"
-            className={styles.quickGoalCard} data-art={art} aria-pressed={selectedGoal===goalLabels[id]}
-            onClick={()=>chooseTopic(id)}>
-            <span className={styles.quickGoalArt} aria-hidden="true"/>
-            <span className={styles.quickGoalLabel}><Icon size={19} aria-hidden="true"/>{goalLabels[id]}</span>
-          </button>)}
-        </div>
-      </div>
-    </section>
-    {editablePlan&&<label className={styles.plan}>{t.plan}<textarea value={editablePlan} maxLength={300} rows={2}
-      onChange={event=>setEditablePlan(event.target.value)}/></label>}
-    <section className={styles.voiceWorkspace} aria-label={ui.voice}>
-      <div className={styles.voiceControls}>
-        <button type="button" className={styles.keyboardControl} onClick={()=>composerRef.current?.focus()}
-          aria-label={ui.type} title={ui.type}><Keyboard size={21} aria-hidden="true"/></button>
-        <div className={styles.voiceCenter} data-voice-active={voiceState.phase!=='idle'?'true':undefined}>
-          <span className={styles.voiceWaveLeft} aria-hidden="true"><i/><i/><i/><i/><i/></span>
-          <MyCoachSpeechLoop locale={lang} enabled={consent&&readiness.status!=='checking'&&!authRequired}
-            canStart={!busy&&!paused&&!replaying} onTurn={sendMessage}
-            onCancelTurn={()=>pending.current?.abort()} onVoiceStateChange={setVoiceState}/>
-          <span className={styles.voiceWaveRight} aria-hidden="true"><i/><i/><i/><i/><i/></span>
-        </div>
-        <button type="button" className={styles.replayControl} onClick={replayCoachReply}
-          disabled={!latestCoachText||voiceState.phase!=='idle'||replaying} aria-label={ui.replay} title={ui.replay}>
-          <Volume2 size={21} aria-hidden="true"/>
-        </button>
-      </div>
-      <div className={styles.textComposer}>
-        {!authRequired&&<p className={styles.readiness} role="status">
-          {readiness.status==='checking'?t.verifying:readiness.status==='verified'?t.verified:t.unavailable+' '+(t[reasons[readiness.reason]]||t.retry)}
-        </p>}
-        {authRequired?<div className={styles.auth} role="status"><LockKeyhole size={20} aria-hidden="true"/>
-          <span>{t.login}</span><Link href={'/'+lang+'/my-coach'}>{t.loginLink}<ArrowRight size={16}/></Link></div>:null}
-        {!paused&&<form className={styles.composer} onSubmit={send}>
-          <label htmlFor="hh-my-coach-live-input">{t.field}</label>
-          <textarea ref={composerRef} id="hh-my-coach-live-input" value={draft} maxLength={1200} rows={2}
-            placeholder={t.placeholder} disabled={busy||authRequired||readiness.status==='checking'}
-            onChange={event=>{setDraft(event.target.value);setError('')}}/>
-          <label className={styles.consent}><input type="checkbox" checked={consent}
-            disabled={busy||readiness.status==='checking'}
-            onChange={event=>{setConsent(event.target.checked);if(!event.target.checked)pending.current?.abort()}}/>
-            <span>{t.consent}</span></label>
-          <button className={styles.send} type="submit"
-            disabled={!consent||busy||!draft.trim()||authRequired||readiness.status==='checking'}>
-            {busy?t.sending:t.send}<ArrowRight size={18} aria-hidden="true"/>
-          </button>
-        </form>}
-        {error&&<p className={styles.error} role="alert">{error}</p>}
-        <p className={styles.privacy}><ShieldCheck size={16} aria-hidden="true"/>{t.privacy}</p>
-        {onGuided&&<button className={styles.guidedFallback} type="button" onClick={onGuided}>
-          {ui.guided}<ArrowRight size={16} aria-hidden="true"/>
-        </button>}
-      </div>
-    </section>
-    <label className={styles.goalRow}><Target size={22} aria-hidden="true"/><span>{ui.goal}</span>
-      <input aria-label={ui.goal} value={selectedGoal} maxLength={180} placeholder={ui.goalPlaceholder}
-        onChange={event=>setSelectedGoal(event.target.value)}/><Pencil size={17} aria-hidden="true"/>
-    </label>
-    <small className={styles.goalPrivacy}>{ui.typedGoal}</small>
-    <nav className={styles.sessionBottomNav} aria-label={lang==='ru'?'Нижняя навигация':lang==='es'?'Navegación inferior':'Bottom navigation'}>
-      <Link href={'/'+lang}><Home size={21} aria-hidden="true"/><span>{ui.home}</span></Link>
-      <Link href={'/'+lang+'/my-coach'} aria-current="page"><MessageCircle size={21} aria-hidden="true"/><span>{ui.coaching}</span></Link>
-      <Link href={'/'+lang+'/holistic-support/mobile'}><Leaf size={21} aria-hidden="true"/><span>{ui.practice}</span></Link>
-      <Link href={'/'+lang+'/holistic-support/mandala'}><Video size={21} aria-hidden="true"/><span>{ui.video}</span></Link>
-      <Link href={'/'+(lang==='es'?'en':lang)+'/app/portrait'}><UserRound size={21} aria-hidden="true"/><span>{ui.profile}</span></Link>
-    </nav>
-  </section>
+<header className={styles.sessionTopbar}><Link className={styles.sessionBrand} href={'/'+lang+'/coaching/sessions'} aria-label="Holistic House"><span className={styles.sessionBrandMark} aria-hidden="true">✿</span><span>Holistic House</span></Link><Link className={styles.chooseCoach} href={'/'+lang+'/my-coach'}><ArrowRight size={17}/>{screen.choose}</Link></header>
+<section className={styles.sessionHero} aria-label={name}><div className={styles.sessionPortrait} data-persona={personaId} role="img" aria-label={name}/><div className={styles.sessionHeroShade}/>
+<div className={styles.sessionHeroCopy}><span className={styles.sessionHeroBadge}><Sparkles size={14}/>{screen.badge}</span><p>{localCoachText(persona?.role,lang)||t.coach}</p><h1>{name}</h1><small>{localCoachText(persona?.description,lang)||localCoachText(persona?.approach,lang)}</small>
+<div className={styles.sessionHeroTags}><span><Leaf size={13}/>{screen.stress}</span><span><Heart size={13}/>{screen.love}</span><span><Zap size={13}/>{screen.energy}</span></div></div></section>
+<section className={styles.sessionProgress} aria-label={screen.history}><div className={styles.sessionProgressText}><strong>{screen.step} {visibleStageIndex+1} {screen.of} 6</strong><span>{screen.stages[visibleStageIndex]}</span></div>
+<div className={styles.sessionProgressSegments} role="progressbar" aria-label={screen.history} aria-valuemin={1} aria-valuemax={6} aria-valuenow={visibleStageIndex+1}>{screen.stages.map((label,index)=><span key={label} data-complete={index<=visibleStageIndex?'true':undefined} data-current={index===visibleStageIndex?'true':undefined}/>)}</div></section>
+<section className={styles.sessionDialogue}><div className={styles.currentCoachPrompt}><span className={styles.promptWave} aria-hidden="true"><i/><i/><i/><i/><i/><i/><i/></span>
+<div className={styles.currentCoachCopy}><span>{name}</span><p>{latestCoachText}</p></div><button type="button" className={styles.replayInline} onClick={replayCoachReply} disabled={replaying||voiceState.phase!=='idle'} aria-label={screen.hear}><Volume2 size={19}/></button></div>
+{turns.length>1&&<details className={styles.conversationHistory}><summary>{screen.history}</summary><div className={styles.historyMessages} role="log" aria-live="polite">{turns.map((turn,index)=><div key={index} className={turn.role==='user'?styles.historyUser:styles.historyCoach}><strong>{turn.role==='user'?t.user:name}</strong><p>{turn.content}</p></div>)}<div ref={end}/></div></details>}
+<div className={styles.quickGoals}><div className={styles.quickGoalsHeading}><strong>{screen.topics}</strong><span>{screen.draftHint}</span></div><div className={styles.quickGoalGrid}>{sessionFocus.map(({id,art,icon:Icon})=><button key={id} type="button" className={styles.quickGoalCard} data-art={art} aria-pressed={selectedGoal===focusLabels[id]} onClick={()=>chooseFocus(id)}><span className={styles.quickGoalArt}/><span className={styles.quickGoalLabel}><Icon size={19}/>{focusLabels[id]}</span></button>)}</div></div></section>
+{editablePlan&&<label className={styles.plan}>{t.plan}<textarea value={editablePlan} maxLength={300} rows={2} onChange={event=>setEditablePlan(event.target.value)}/></label>}
+<section className={styles.voiceWorkspace}><div className={styles.voiceControls}><button type="button" className={styles.keyboardControl} onClick={()=>composerRef.current?.focus()} aria-label={screen.type}><Keyboard size={22}/></button>
+<div className={styles.voiceCenter} data-voice-active={voiceState.phase!=='idle'?'true':undefined}><span className={styles.voiceWaveLeft}><i/><i/><i/><i/><i/></span>
+<MyCoachSpeechLoop locale={lang} enabled={consent&&readiness.status!=='checking'&&!authRequired} canStart={!busy&&!paused&&!replaying} onTurn={sendMessage} onCancelTurn={()=>pending.current?.abort()} onVoiceStateChange={setVoiceState}/>
+<span className={styles.voiceWaveRight}><i/><i/><i/><i/><i/></span></div><button type="button" className={styles.replayControl} onClick={replayCoachReply} disabled={!latestCoachText||voiceState.phase!=='idle'||replaying} aria-label={screen.hear}><Volume2 size={22}/></button></div>
+<div className={styles.textComposer}>{!authRequired&&<p className={styles.readiness} role="status">{readiness.status==='checking'?t.verifying:readiness.status==='verified'?t.verified:t.unavailable+' '+(t[reasons[readiness.reason]]||t.retry)}</p>}
+{authRequired?<div className={styles.auth} role="status"><LockKeyhole size={20}/><span>{t.login}</span><Link href={'/'+lang+'/my-coach'}>{t.loginLink}<ArrowRight size={16}/></Link></div>:null}
+{!paused&&<form className={styles.composer} onSubmit={send}><label htmlFor="hh-my-coach-live-input">{t.field}</label><textarea ref={composerRef} id="hh-my-coach-live-input" value={draft} maxLength={1200} rows={2} placeholder={t.placeholder} disabled={busy||authRequired||readiness.status==='checking'} onChange={event=>{setDraft(event.target.value);setError('')}}/>
+<label className={styles.consent}><input type="checkbox" checked={consent} disabled={busy||readiness.status==='checking'} onChange={event=>{setConsent(event.target.checked);if(!event.target.checked)pending.current?.abort()}}/><span>{t.consent}</span></label>
+<button className={styles.send} type="submit" disabled={!consent||busy||!draft.trim()||authRequired||readiness.status==='checking'}>{busy?t.sending:t.send}<ArrowRight size={18}/></button></form>}
+{error&&<p className={styles.error} role="alert">{error}</p>}<p className={styles.privacy}><ShieldCheck size={16}/>{t.privacy}</p>{onGuided&&<button className={styles.guidedFallback} type="button" onClick={onGuided}>{t.guided}<ArrowRight size={16}/></button>}</div></section>
+<label className={styles.goalRow}><Target size={22}/><span>{screen.goal}</span><input aria-label={screen.goal} value={selectedGoal} maxLength={180} placeholder={screen.goalHint} onChange={event=>setSelectedGoal(event.target.value)}/><Pencil size={17}/></label>
+<nav className={styles.sessionBottomNav} aria-label={lang==='ru'?'Нижняя навигация':lang==='es'?'Navegación inferior':'Bottom navigation'}><Link href={'/'+lang}><Home size={22}/><span>{screen.home}</span></Link><Link href={'/'+lang+'/coaching'} aria-current="page"><MessageCircle size={22}/><span>{screen.coaching}</span></Link><Link href={'/'+lang+'/holistic-support/mobile'}><Leaf size={22}/><span>{screen.practice}</span></Link><Link href={'/'+lang+'/holistic-support/mandala'}><Video size={22}/><span>{screen.video}</span></Link><Link href={'/'+(lang==='es'?'en':lang)+'/app/portrait'}><UserRound size={22}/><span>{screen.profile}</span></Link></nav></section>
 }

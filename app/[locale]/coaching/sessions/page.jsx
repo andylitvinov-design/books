@@ -39,7 +39,7 @@ export default async function PublicCoachingPage({params,searchParams}){
    // Keep booking/help reachable if the backend is temporarily unavailable.
  }
  return <div className={styles.fullWidth} lang={locale} data-coaching-full-width>
-   {!personaSelection&&<div className={styles.header}><PublicSiteHeader locale={locale}/></div>}
+   {!personaSelection&&{!personaSelection&&<div className={styles.header}><PublicSiteHeader locale={locale}/></div>}}
    <PublicCoachingDiscovery locale={locale} catalog={catalog} personaSelection={personaSelection}/>
  </div>
 }
