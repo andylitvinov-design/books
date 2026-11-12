@@ -5,6 +5,7 @@ import Link from 'next/link'
 import {ArrowLeft,ArrowRight,Check,LockKeyhole,Send,ShieldCheck,Sparkles} from 'lucide-react'
 import {getCoachPersona,localCoachText,coachStagePrompt} from '@/lib/coaching/persona-registry.mjs'
 import {coachingBrainSafety,coachingBrainBoundary} from '@/lib/personal-coaching/coaching-brain.mjs'
+import {classifyWisdomRequest} from '@/lib/coaching/wisdom-retrieval.mjs'
 import styles from './my-coach-live-dialogue.module.css'
 import MyCoachSpeechLoop from './my-coach-speech-loop'
 import CoachingAvatar from '@/components/app/coaching-avatar'
@@ -15,7 +16,7 @@ const copy={
     disclosure:'I’m a fictional AI coach, not a therapist. No questionnaires here — just a conversation. You choose the pace and direction.',
     consent:'I agree to send the messages I type in this conversation to OpenRouter and an eligible free model. Nothing is sent until you press Send or explicitly start voice mode. Browser speech recognition may send microphone audio to its provider. Do not share passwords or document numbers.',
     field:'Your message',placeholder:'What’s on your mind?…',
-    send:'Send',sending:'Thinking…',verifying:'Checking the free model before sending any personal text…',verified:'Free privacy-checked AI is ready.',user:'You',coach:'AI coach',ai:'Model response',offline:'Offline coaching question',crisis:'Safety pause',
+    send:'Send',sending:'Thinking…',verifying:'Checking the free model before sending any personal text…',verified:'Free privacy-checked AI is ready.',user:'You',coach:'AI coach',ai:'Model response',wisdom:'Wisdom Library',offline:'Offline coaching question',crisis:'Safety pause',
     plan:'Possible next step — your choice',evidence:'Based on your words',back:'Back to coach',guided:'Use the guided session instead',
     privacy:'This dialogue stays in this tab. It is not saved to your Cabinet. Only a confirmed action in a separate private session can be saved.',
     login:'Please sign in to Holistic House before using the live model.',loginLink:'Open sign in',
@@ -30,7 +31,7 @@ const copy={
     disclosure:'Я AI-персонаж, не психотерапевт. Здесь нет анкеты — просто разговор в вашем темпе, а направление выбираете вы.',
     consent:'Я согласен(на) отправлять сообщения этого диалога в OpenRouter и подходящую бесплатную модель. До нажатия «Отправить» или включения голосового режима сообщения не передаются. Браузер может отправлять звук поставщику распознавания речи. Не вводите пароли и номера документов.',
     field:'Ваше сообщение',placeholder:'Что сейчас у вас на уме?…',
-    send:'Отправить',sending:'Думаю…',verifying:'Проверяем бесплатную модель без передачи ваших сообщений…',verified:'Бесплатная AI-модель проверена и готова.',user:'Вы',coach:'AI-коуч',ai:'Ответ модели',offline:'Офлайн-вопрос коуча',crisis:'Пауза для безопасности',
+    send:'Отправить',sending:'Думаю…',verifying:'Проверяем бесплатную модель без передачи ваших сообщений…',verified:'Бесплатная AI-модель проверена и готова.',user:'Вы',coach:'AI-коуч',ai:'Ответ модели',wisdom:'Библиотека мудрости',offline:'Офлайн-вопрос коуча',crisis:'Пауза для безопасности',
     plan:'Возможный следующий шаг — решаете вы',evidence:'Основание — ваши слова',back:'Назад к коучу',guided:'Пройти пошаговую программу',
     privacy:'Диалог остаётся только в этой вкладке и не сохраняется в кабинете. Сохранить можно лишь ваш отдельно подтверждённый шаг в личной сессии.',
     login:'Для общения с AI-моделью сначала войдите в Holistic House.',loginLink:'Открыть вход',
@@ -45,7 +46,7 @@ const copy={
     disclosure:'Soy un personaje ficticio de IA, no terapeuta. Sin cuestionarios: podemos charlar con naturalidad, a tu ritmo.',
     consent:'Acepto enviar los mensajes que escriba en este diálogo a OpenRouter y un modelo gratuito apto. No se envía nada hasta pulsar Enviar o activar el modo de voz. El navegador puede enviar audio al proveedor de reconocimiento. No incluyas contraseñas ni números de documentos.',
     field:'Tu mensaje',placeholder:'¿Qué tienes en mente?…',
-    send:'Enviar',sending:'Pensando…',verifying:'Verificando el modelo gratuito sin enviar tus mensajes…',verified:'El modelo gratuito con privacidad verificada está listo.',user:'Tú',coach:'Coach IA',ai:'Respuesta del modelo',offline:'Pregunta preparada',crisis:'Pausa de seguridad',
+    send:'Enviar',sending:'Pensando…',verifying:'Verificando el modelo gratuito sin enviar tus mensajes…',verified:'El modelo gratuito con privacidad verificada está listo.',user:'Tú',coach:'Coach IA',ai:'Respuesta del modelo',wisdom:'Biblioteca de sabiduría',offline:'Pregunta preparada',crisis:'Pausa de seguridad',
     plan:'Posible siguiente paso — tú decides',evidence:'Basado en tus palabras',back:'Volver al coach',guided:'Usar sesión guiada',
     privacy:'El diálogo permanece solo en esta pestaña. No se guarda en tu cuenta. Solo se guarda una acción confirmada en una sesión privada aparte.',
     login:'Inicia sesión en Holistic House antes de usar el modelo IA.',loginLink:'Abrir acceso',
@@ -119,7 +120,12 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   async function sendMessage(raw){
     const message=String(raw||'').trim()
     if(!message||!consent||busy||paused||authRequired||readiness.status==='checking')return
-    if(readiness.status!=='verified'){
+    // Explicit quote requests use only the already-authenticated first-party
+    // Wisdom Library. They do not require a free model or contact OpenRouter.
+    const wisdomRequested=Boolean(classifyWisdomRequest({
+      locale:lang,message,turns:turns.map(({role,content})=>({role,content})),
+    }))
+    if(readiness.status!=='verified'&&!wisdomRequested){
       // Local-only authored fallback. NEVER send private text to an unverified model.
       // Same editorial persona prompts, same browser-only conversation history.
       const input={locale:lang,message,turns:turns.map(({role,content})=>({role,content}))}
@@ -204,7 +210,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         className={turn.role==='user'?styles.userMessage:styles.coachMessage}>
         <strong>{turn.role==='user'?t.user:name}</strong>
         {turn.role==='assistant'&&turn.mode!=='ai'&&<small className={styles.meta}>
-          {turn.mode==='safety'?t.crisis:t.offline}
+          {turn.mode==='safety'?t.crisis:turn.mode==='wisdom'?t.wisdom:t.offline}
         </small>}
         {turn.role==='assistant'?<>
           {turn.mode==='ai'?<p>{turn.content}</p>:<>

@@ -53,7 +53,8 @@ try {
   await page.waitForFunction(()=>
     document.querySelector('[data-video-montage-style="3"]')
       ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
-  const settings=page.locator('[data-video-montage-tab="settings"]');
+  await page.locator('[data-video-montage-tab="concept"]').click();
+  const settings=page.locator('[data-video-story-open-settings]');
   await settings.waitFor({state:'visible',timeout:20000});
   await settings.click();
   const sourceFormat=page.locator('[data-video-montage-preference="format"]');
@@ -66,31 +67,33 @@ try {
   await sourceDuration.selectOption('20');
   assert.equal(await sourceDuration.inputValue(),'20',
     'four real source-backed 5-second scenes require 20s before selecting a preset');
-  // Style's native Next opens Text. The existing verified source timeline is
+  // Style's native Next opens Audio. The existing verified source timeline is
   // reachable through Settings → advanced Concept, not a fifth visible tab.
   const styleTab=page.locator('[data-video-montage-tab="effects"]');
   await styleTab.waitFor({state:'visible',timeout:20000});
   await styleTab.click();
-  const styleNext=page.locator('[data-video-montage-effects] [data-video-montage-next="text"]');
+  const styleNext=page.locator('[data-video-montage-effects] [data-video-montage-next="audio"]');
   await styleNext.waitFor({state:'visible',timeout:20000});
   await styleNext.click();
-  await page.waitForFunction(()=>document.querySelector('[data-video-montage-tab="text"]')
+  await page.waitForFunction(()=>document.querySelector('[data-video-montage-tab="audio"]')
     ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
-  assert.equal(await page.locator('[data-video-montage-tab="text"]').getAttribute('aria-pressed'),
-    'true','VISIBLE_STYLE_NEXT_MUST_OPEN_TEXT');
+  assert.equal(await page.locator('[data-video-montage-tab="audio"]').getAttribute('aria-pressed'),
+    'true','VISIBLE_STYLE_NEXT_MUST_OPEN_AUDIO');
   await page.locator('[data-video-quick-control="phrases"]').click();
   await page.locator('[data-video-ideas-tab="concept"]').click();
   const conceptPanel=page.locator('[data-video-ideas-concept-panel]');
   await conceptPanel.waitFor({state:'visible',timeout:15000});
   await conceptPanel.locator('[data-video-concept-approve]').click();
   await page.locator('[data-video-quick-control="editor"]').click();
-  const settingsTab=page.locator('[data-video-montage-tab="settings"]');
+  const settingsTab=page.locator('[data-video-story-open-settings]');
+  await page.locator('[data-video-montage-tab="concept"]').click();
   await settingsTab.click();
   await page.locator('[data-video-quick-control="phrases"]').click();
   await page.locator('[data-video-ideas-tab="concept"]').click();
   assert.equal(await page.locator('[data-video-concept-auto]').getAttribute('data-concept-approved'),
     'true','APPROVED_CONCEPT_MUST_PERSIST');
   await page.locator('[data-video-quick-control="editor"]').click();
+  await page.locator('[data-video-montage-tab="concept"]').click();
   await settingsTab.click();
   const textTools=page.locator('[data-video-concept-text-tools]');
   await textTools.locator(':scope > summary').click();
@@ -127,14 +130,16 @@ try {
   assert.equal(await preset.getAttribute('aria-pressed'), 'true');
   assert.deepEqual(await page.locator('[data-free-film-source]').evaluateAll(nodes => nodes.map(node => node.dataset.freeFilmSource)), ids);
   await page.locator('[data-video-quick-control="editor"]').click();
-  // Match the real post-#3676 Montage. Format/duration live in Settings.
+  // Match the real post-#3676 Montage. Format/duration are available through Story → Video settings.
+  await page.locator('[data-video-montage-tab="concept"]').click();
   await settingsTab.waitFor({state:'visible'});
   await settingsTab.click();
-  assert.equal(await settingsTab.getAttribute('aria-pressed'),'true');
+  assert.equal(await page.locator('[data-video-basic-editor]').getAttribute('data-montage-panel'),'settings');
   const duration=page.locator('[data-video-montage-preference="duration"]');
   await duration.waitFor({state:'visible'});
   await duration.selectOption('20');
   assert.equal(await duration.inputValue(),'20');
+  await page.locator('[data-video-montage-tab="concept"]').click();
   await settingsTab.click();
   const audioTab=page.locator('[data-video-montage-open-audio]');
   await audioTab.click();

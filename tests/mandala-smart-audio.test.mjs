@@ -5,6 +5,7 @@ import ts from "typescript";
 import {createHash} from "node:crypto";
 import { mandalaAudioTracks, recommendMandalaAudio } from "../lib/mandala/audio-recommendations.mjs";
 import { SONGS, MASTER_IDS, SAMPLE_RATE, DURATION_SECONDS, renderMelody } from "../scripts/generate-mandala-melodies.mjs";
+import {stripApprovedIntroVideoSources} from "./helpers/approved-mandala-intro-sources.mjs";
 
 const read = path => readFileSync(new URL("../"+path,import.meta.url),"utf8");
 const studio = read("components/mandala-free-video-studio.tsx");
@@ -111,7 +112,7 @@ test("mobile audio controls preserve native HTTPS playback, private files, EN/RU
   ])assert.ok(studio.includes(selector),selector);
   assert.match(studio,/const \[audioKind,setAudioKind\] = useState\("melody"\)/);
   assert.match(studio,/const \[audioAuto,setAudioAuto\] = useState\(true\)/);
-  assert.match(studio,/const featuredMelodies=recommendCuratedAudio\(/);
+  assert.match(studio,/const featuredMelodies=rankPersonalMusic/);
   assert.match(studio,/scenarioAudioTracks\(activeFreeFilmPreset\)/);
   assert.doesNotMatch(studio,/const baseAudioMatches=recommendMandalaAudio/);
   assert.match(studio,/const curatedMatches=recommendCuratedAudio/);
@@ -120,6 +121,9 @@ test("mobile audio controls preserve native HTTPS playback, private files, EN/RU
   assert.match(studio,/SCENARIO_AUDIO_REGISTRY\.flatMap\(\(scene:\{id:string\}\)=>scenarioAudioTracks\(scene\.id\)\)/);
   assert.match(studio,/const audioCandidates=\[\.\.\.curatedMatches\]/);
   assert.match(studio,/const seenAudioSearchIds=new Set<string>\(\)/);
+  assert.match(studio,/const rankedAudioPool=filteredLibraryAudio\.filter/);
+  assert.match(studio,/rankPersonalMusic\(\{tracks:rankedAudioPool/);
+  assert.match(studio,/voiceBedMode\?mandalaAudioTracks\.filter/);
   assert.match(studio,/if\(seenAudioSearchIds\.has\(track\.id\)\)return false/);
   assert.match(studio,/return !audioThemeOverride\|\|track\.themes\.includes\(audioThemeOverride\)/);
   for (const text of ["Real recording", "Реальная запись", "Grabación real", "shortened and loudness-normalized", "сокращена и нормализована по громкости", "acortada y normalizada"]) assert.ok(studio.includes(text),text);
@@ -144,7 +148,7 @@ test("mobile audio controls preserve native HTTPS playback, private files, EN/RU
   assert.match(css,/\.audioFileInput\{position:absolute!important/);
   assert.match(css,/@media\(max-width:380px\)/);
   assert.ok(studio.includes("Под вашу тему")&&studio.includes("For your video theme")&&studio.includes("Para el tema elegido"));
-  assert.doesNotMatch(studio+audioSource,/XMLHttpRequest|FormData|sendBeacon|api\.kling|heygen|higgsfield/i);
+  assert.doesNotMatch(stripApprovedIntroVideoSources(studio)+audioSource,/XMLHttpRequest|FormData|sendBeacon|api\.kling|heygen|higgsfield/i);
   assert.match(audioSource,/fetch\(presetAudioUrl\(id\),\{cache:"force-cache"\}\)/,"melody master is fetched from the same-origin preset path");
 });
 

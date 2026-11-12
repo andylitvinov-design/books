@@ -107,11 +107,12 @@ test("owner's iPhone mock uses ONE live player, one shared goal and four picture
  assert.match(studio,/data-video-quick-music-check=\{id\}/);
  assert.match(studio,/data-video-quick-music-play=\{id\}/);
  assert.match(studio,/startPresetMixAudio\(attachedAudio\.ids,soundVolume,\{startSeconds:effectiveAudioStartSeconds,deferStart:true\}\)/);
- assert.match(studio,/featuredMelodies\.slice\(0,4\)/);
- assert.match(studio,/const featuredMelodies=recommendCuratedAudio\(/);
+ assert.match(studio,/featuredMelodies\.slice\(0,3\)/);
+ assert.match(studio,/const featuredMelodies=rankPersonalMusic/);
  assert.match(studio,/selectScenarioMusic\(preset\.id\)/,"confirmed film assigns a real first-party soundtrack only when auto-music is enabled");
- assert.match(studio,/theme:audioTheme,kind:"melody"/);
- assert.match(studio,/featuredMelodies\.slice\(0,4\)/);
+ assert.match(studio,/const musicContext=\{[\s\S]*?theme:audioTheme,wish/);
+ assert.match(studio,/\.\.\.musicContext,kind:"melody"/);
+ assert.match(studio,/featuredMelodies\.slice\(0,3\)/);
  assert.match(studio,/data-video-theme-advanced/,"existing six topical video scenes remain editable");
  assert.match(css,/\.studio \.quickBuilder>\.previewStage\{order:1/);
  assert.match(css,/\[data-video-quick-section="1"\]\{order:3/);
@@ -293,14 +294,15 @@ test("Montage and PRO retain one operational video/audio pipeline without duplic
   assert.match(studio,/data-video-basic-editor/);
   const nav=studio.slice(studio.indexOf('<nav className={videoStyles.montageQuickTools}'),
     studio.indexOf('</nav>',studio.indexOf('<nav className={videoStyles.montageQuickTools}')));
-  assert.deepEqual([...nav.matchAll(/id:"(effects|text|audio|settings|concept)",Icon:/g)].map(m=>m[1]),
-    ["effects","text","audio","settings","concept"],"Style, Text, Audio, Settings and Storyboard under the existing player");
+  assert.deepEqual([...nav.matchAll(/id:"(effects|text|audio|promo|concept)",Icon:/g)].map(m=>m[1]),
+    ["effects","audio","text","promo","concept"],"Style, Audio, Text, Montage PRO and Story under the existing player");
   assert.match(studio,/data-video-montage-text hidden=\{montagePanel!=="text"\}/);
   assert.match(studio,/data-video-montage-audio/);
   assert.doesNotMatch(studio,/data-video-montage-visual-effect=/);
   assert.match(studio,/data-video-montage-aspect-switch/);
   assert.match(studio,/data-video-montage-open-concept/);
   assert.match(studio,/data-video-montage-concept/);
+  assert.match(studio,/data-video-story-open-settings/);
   assert.match(studio,/data-video-pro-open-montage-storyboard/);
   assert.match(studio,/data-video-montage-open-audio/);
   assert.match(studio,/data-video-concept-text-tools/,"caption editor and timeline remain available");
