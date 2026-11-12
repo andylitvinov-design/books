@@ -132,7 +132,7 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
           </Link>;
         })}</div>
       </>}
-      <button type="button" className={styles.reset} onClick={()=>{setSelection(null);setText("");setPreferences({});inputRef.current?.focus();}}>{t.change}</button>
+      <button type="button" data-assist-reset className={styles.reset} onClick={()=>{setSelection(null);setText("");setPreferences({});inputRef.current?.focus();}}>{t.change}</button>
     </section>:null}
     <section className={styles.tools} aria-labelledby="assist-tools-title">
       <h2 id="assist-tools-title">{t.tools}</h2><p>{t.browse}</p>

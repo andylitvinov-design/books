@@ -150,9 +150,9 @@ try {
     await expect(topics.first()).toHaveAttribute("aria-pressed", "true");
     await expect(results.locator("a[data-assist-recommendation]")).toHaveCount(3);
     const stressRoutes = {
+      mytube: "mytube",
       tests: "tests",
-      opora: "courses/antistress",
-      therapy: "services/imagery-therapy",
+      aiCoach: "my-coach",
     };
     for (const [key, route] of Object.entries(stressRoutes)) {
       const link = results.locator('a[data-assist-recommendation="' + key + '"]');
@@ -168,7 +168,7 @@ try {
     await expect(results.locator('a[data-assist-recommendation="business"]'))
       .toHaveAttribute("href", "/" + locale + "/services/business-consulting");
 
-    const reset = results.locator('button[type="button"]');
+    const reset = results.locator('[data-assist-reset]');
     await reset.click();
     await expect(results).toHaveCount(0);
     await expect(question).toHaveValue("");
@@ -181,8 +181,8 @@ try {
     await submit.click();
     await visible(results);
     await expect(results.locator("a[data-assist-recommendation]")).toHaveCount(3);
-    await expect(results.locator('a[data-assist-recommendation="opora"]'))
-      .toHaveAttribute("href", "/" + locale + "/courses/antistress");
+    await expect(results.locator('a[data-assist-recommendation="mytube"]'))
+      .toHaveAttribute("href", "/" + locale + "/mytube");
 
     // Crisis never receives therapeutic sales recommendations.
     await question.fill(locale === "ru" ? "Хочу убить себя" :

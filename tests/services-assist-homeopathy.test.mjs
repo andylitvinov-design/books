@@ -41,3 +41,11 @@ test('Assist inserts the panel only inside non-crisis suggestions', () => {
   const recommendations = assist.indexOf('<div className={styles.recommendations}>');
   assert.ok(crisis !== -1 && homeopathy > crisis && recommendations > homeopathy);
 });
+
+test('Assist reset locator is unambiguous even with three follow-up answer buttons', () => {
+  assert.match(assist, /data-assist-reset/);
+  const qa = read('scripts/verify-public-services-production.mjs');
+  assert.match(qa, /locator\('\[data-assist-reset\]'\)/);
+  assert.match(qa, /mytube: "mytube"/);
+  assert.doesNotMatch(qa, /const reset = results\.locator\('button\[type="button"\]'\)/);
+});
