@@ -47,11 +47,11 @@ test("MyTube segmented format filters keep unknown-duration videos visible",()=>
  assert.match(view,/mytubeCategoryId!=="all"&&<div className=\{styles\.mytubeSubcategoryRail\}/);
  assert.match(view,/data-mytube-format-tabs/);
  assert.match(view,/data-mytube-format-mode=\{mode\}/);
- assert.match(view,/matchesMyTubeFormat\(item,formatMode\)/);
+ assert.match(view,/matchesMyTubeShelf\(item,formatMode\)/);
  assert.match(view,/onChange=\{event=>setDurationRange\(event.target.value\)\}/);
  assert.doesNotMatch(view,/matchesMyTubeDuration\(item\.durationVerifiedSeconds/);
  assert.doesNotMatch(view,/durationUnknown|under 10 min|10 min or longer/);
- assert.match(css,/\.mytube \.mytubeFormatTabs\{[^}]*grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
+ assert.match(css,/\.mytube \.mytubeFormatTabs\{[^}]*grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
  assert.match(css,/\.mytube \.mytubeCategoryRail\{[^}]*grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/);
  assert.doesNotMatch(css.slice(css.indexOf("/* MyTube-only compact five-choice editorial taxonomy.")),/overflow-x:auto/);
  assert.match(hub,/mytubeFormat:classifyMyTubeFormat\(video\)/);
