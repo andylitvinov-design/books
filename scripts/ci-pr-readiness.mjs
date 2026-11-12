@@ -71,17 +71,29 @@ export function assessPrReadiness(event, live, repository, ancestryProof = null,
     message: 'Exact HEAD and mergeability verified; trusted release gate pins the tested merge base' };
 }
 
-async function readLivePr(repository, number, token) {
-  const response = await fetch(`https://api.github.com/repos/${repository}/pulls/${number}`, {
-    headers: {
-      accept: 'application/vnd.github+json',
-      authorization: `Bearer ${token}`,
-      'x-github-api-version': '2022-11-28',
-    },
-    signal: AbortSignal.timeout(8000),
-  });
-  if (!response.ok) throw new Error(`GitHub PR read failed: HTTP ${response.status}`);
-  return response.json();
+export async function readLivePr(repository, number, token, {
+  transport = fetch, wait = ms => new Promise(resolve => setTimeout(resolve, ms))
+} = {}) {
+  const url = `https://api.github.com/repos/${repository}/pulls/${number}`;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const response = await transport(url, {
+      headers: {
+        accept: 'application/vnd.github+json',
+        authorization: `Bearer ${token}`,
+        'x-github-api-version': '2022-11-28',
+      },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (response.ok) return response.json();
+    // Retry only transient, read-only GitHub 502/503/504 failures; never
+    // retry authorization, conflict or rate-limit errors, or mutate PR state.
+    if ([502, 503, 504].includes(response.status) && attempt < 2) {
+      await wait(attempt === 0 ? 250 : 750);
+      continue;
+    }
+    throw new Error(`GitHub PR read failed: HTTP ${response.status}`);
+  }
+  throw new Error('GitHub PR read exhausted without successful readback');
 }
 
 export async function readExactBaseAncestry(repository, live, token, transport = fetch) {
