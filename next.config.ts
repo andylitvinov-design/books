@@ -26,6 +26,8 @@ const practitionerRecordingSources = [
 // and optional AI voice. Grant microphone only to these exact private pages;
 // all other Cabinet, reports and API routes remain denied.
 const privateCoachingVoiceSources = ["/en/app/coaching", "/ru/app/coaching"];
+// Explicit microphone opt-in for the selected AI persona dialogue only.
+const publicMyCoachVoiceSources = ["/en/coaching/sessions", "/ru/coaching/sessions", "/es/coaching/sessions"];
 
 const liveAudioHostSources = [
   "/en/live/host", "/ru/live/host", "/es/live/host",
@@ -109,6 +111,10 @@ const nextConfig: NextConfig = {
         ],
       })),
       ...privateCoachingVoiceSources.map((source) => ({
+        source,
+        headers: [{ key: "Permissions-Policy", value: "camera=(), microphone=(self), geolocation=()" }],
+      })),
+      ...publicMyCoachVoiceSources.map((source) => ({
         source,
         headers: [{ key: "Permissions-Policy", value: "camera=(), microphone=(self), geolocation=()" }],
       })),

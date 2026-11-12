@@ -63,7 +63,8 @@ test("Ideas Concept owns the single editor and Montage retains its real timeline
   assert.match(source,/setMontagePanel\("concept"\)/);
   assert.match(source,/data-video-pro-open-montage-storyboard/);
   assert.match(source,/\{id:"effects",Icon:Sparkles\},\{id:"text",Icon:Type\}/);
-  assert.match(source,/\{id:"audio",Icon:Music2\},\{id:"settings",Icon:SlidersHorizontal\}/);
+  assert.match(source,/\{id:"audio",Icon:Music2\},\{id:"promo",Icon:Zap\}/);
+  assert.match(source,/data-video-story-open-settings/);
   assert.match(source,/data-video-montage-open-concept/);
   assert.match(source,/data-video-concept-text-tools/);
   assert.match(source,/data-video-montage-text/);

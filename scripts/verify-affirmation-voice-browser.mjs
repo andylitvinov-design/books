@@ -482,6 +482,35 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(montageStyleTab).toBeVisible();
       await montageStyleTab.click();
       await expect(montageStyleTab).toHaveAttribute("aria-pressed","true",{timeout:15000});
+      // Owner-approved Montage PRO is a real fourth tab with three clear
+      // offers and TWO navigation actions, not a checkout or a second renderer.
+      const montageProTab=page.locator('[data-video-montage-tab="promo"]');
+      await montageProTab.click();
+      const montageProOffer=page.locator('[data-video-montage-pro-offer]');
+      await expect(montageProOffer).toBeVisible();
+      await expect(montageProOffer.locator('[data-video-pro-feature]')).toHaveCount(3);
+      await expect(montageProOffer.locator('[data-video-montage-pro-free]')).toBeVisible();
+      await expect(montageProOffer.locator('[data-video-montage-pro-explore]')).toBeVisible();
+      // Verify iPhone widths without replacing the live editor with a mock.
+      for(const width of [320,390,430]){
+        await page.setViewportSize({width,height:844});
+        const geometry=await page.evaluate(()=>({
+          viewport:document.documentElement.clientWidth,
+          document:document.documentElement.scrollWidth
+        }));
+        assert.ok(geometry.document<=geometry.viewport+2,
+          'MONTAGE_PRO_NO_HORIZONTAL_OVERFLOW_'+width+' '+JSON.stringify(geometry));
+      }
+      await page.setViewportSize({width:390,height:844});
+      await montageProOffer.locator('[data-video-montage-pro-free]').click();
+      await expect(page.locator('[data-video-montage-tab="concept"]')).toHaveAttribute('aria-pressed','true');
+      await montageProTab.click();
+      await montageProOffer.locator('[data-video-montage-pro-explore]').click();
+      await expect(page.locator('[data-video-quick-control="pro"]')).toHaveAttribute('aria-pressed','true');
+      await editorTab.click();
+      await montageStyleTab.click();
+      await expect(montageStyleTab).toHaveAttribute('aria-pressed','true');
+      phase(engine,"montage-pro-offer-routes-passed");
       // Reproduce the owner's iPhone case before recording real voice.
       const selectedStyle=page.locator('[data-video-montage-style="3"]');
       const selectedMaster=page.locator("[data-mandala-master-mp4]");
@@ -496,9 +525,10 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // Exercise the real visible tab instead of waiting for an unmounted drawer.
       // Current Montage has four compact tabs. Real duration is under Settings
       // and current sound/library controls are in the independent Audio tab.
-      const montageSettingsTab=page.locator('[data-video-montage-tab="settings"]');
+      await page.locator('[data-video-montage-tab="concept"]').click();
+      const montageSettingsTab=page.locator('[data-video-story-open-settings]');
       await montageSettingsTab.click();
-      await expect(montageSettingsTab).toHaveAttribute("aria-pressed","true");
+      await expect(page.locator('[data-video-basic-editor]')).toHaveAttribute("data-montage-panel","settings");
       const durationSelect=page.locator('[data-video-montage-preference="duration"]');
       await durationSelect.waitFor({state:"visible",timeout:25000});
       await durationSelect.selectOption("10");
@@ -507,7 +537,31 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await montageAudio.click();
       await expect(page.locator('[data-video-montage-audio]')).toBeVisible();
       await expect(page.locator('[data-video-montage-audio]')).toBeVisible();
-      await expect(page.locator('[data-video-audio-mode="library"]')).toBeVisible();
+      const compactGrid=page.locator('[data-video-audio-compact-grid]');
+      await expect(compactGrid).toBeVisible();
+      // Initial filter follows the approved video concept; choose All to
+      // inspect the entire approved collection, then prove Focus narrows it.
+      const allMusic=page.locator('[data-video-audio-category="all"]');
+      const focusMusic=page.locator('[data-video-audio-category="focus"]');
+      await allMusic.click();
+      await expect(allMusic).toHaveAttribute("aria-pressed","true");
+      await expect(compactGrid.locator('[data-video-audio-compact-track]')).toHaveCount(5);
+      await focusMusic.click();
+      await expect(focusMusic).toHaveAttribute("aria-pressed","true");
+      await expect(compactGrid.locator('[data-video-audio-compact-track]')).toHaveCount(1);
+      await allMusic.click();
+      await expect(compactGrid.locator('[data-video-audio-compact-track]')).toHaveCount(5);
+      await expect(page.locator('[data-video-audio-compact-upload]')).toHaveCount(1);
+      await expect(page.locator('[data-video-audio-mode]')).toHaveCount(0);
+      await page.locator('[data-video-audio-compact-silent]').click();
+      const choices=compactGrid.locator('[data-video-audio-compact-select]');
+      await choices.nth(0).click();
+      await choices.nth(1).click();
+      await expect(choices.nth(0)).toHaveAttribute("aria-pressed","true");
+      await expect(choices.nth(1)).toHaveAttribute("aria-pressed","true");
+      await expect(page.locator('[data-video-audio-compact-selected]')).toContainText("2/3");
+      await expect(page.locator('[data-video-stage-actions="montage"] [data-video-quick-generate]')).toBeVisible();
+      await page.locator('[data-video-audio-compact-silent]').click();
       await page.locator('[data-video-quick-control="phrases"]').click();
       const phrases=page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]');
       await phrases.waitFor({state:"visible"});
@@ -783,7 +837,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         await page.locator('[data-video-quick-control="editor"]').click();
         // The original recorder's export button is available in the real
         // Montage Audio step, never in the intentionally hidden Style footer.
-        await page.locator('[data-video-montage-tab="settings"]').click();
+        await page.locator('[data-video-montage-tab="concept"]').click();
+        await page.locator('[data-video-story-open-settings]').click();
         const ownAudioStep=page.locator('[data-video-montage-open-audio]');
         await ownAudioStep.click();
         await expect(page.locator('[data-video-montage-audio]')).toBeVisible();
@@ -1042,7 +1097,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(creationStyleTab).toBeVisible();
       await creationStyleTab.click();
       await expect(creationStyleTab).toHaveAttribute("aria-pressed","true");
-      await page.locator('[data-video-montage-tab="settings"]').click();
+      await page.locator('[data-video-montage-tab="concept"]').click();
+        await page.locator('[data-video-story-open-settings]').click();
       const montageAudioTab=page.locator('[data-video-montage-open-audio]');
       await expect(montageAudioTab).toBeVisible();
       await montageAudioTab.click();
@@ -1322,7 +1378,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(page.locator("[data-video-narration-reapproval]")).toBeVisible();
       await expect(page.locator('[data-video-quick-generate]')).toBeDisabled();
       await page.locator('[data-video-quick-control="editor"]').click();
-      await page.locator('[data-video-montage-tab="settings"]').click();
+      await page.locator('[data-video-montage-tab="concept"]').click();
+        await page.locator('[data-video-story-open-settings]').click();
       const montageAudioAfterExport=page.locator('[data-video-montage-open-audio]');
       await montageAudioAfterExport.click();
       await expect(page.locator('[data-video-montage-audio]')).toBeVisible();

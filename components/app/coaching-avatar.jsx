@@ -4,20 +4,20 @@ import {COACH_AVATAR_OPTIONS} from '@/lib/personal-coaching/coaching-avatar-stat
 import styles from './coaching-avatar.module.css'
 
 const copy={
- en:{label:'Coach illustration',idle:'Ready to listen',speaking:'Speaking',paused:'Paused',listening:'Listening',device:'Illustrated avatar · device voice'},
- ru:{label:'Образ коуча',idle:'Готов к разговору',speaking:'Говорит',paused:'Пауза',listening:'Слушает',device:'2D-аватар · голос устройства'},
- es:{label:'Imagen del coach',idle:'Listo para escuchar',speaking:'Hablando',paused:'En pausa',listening:'Escuchando',device:'Avatar ilustrado · voz del dispositivo'},
+ en:{label:'Coach illustration',idle:'Ready to listen',thinking:'Thinking',speaking:'Speaking',paused:'Paused',listening:'Listening',device:'Illustrated avatar · device voice'},
+ ru:{label:'Образ коуча',idle:'Готов к разговору',thinking:'Думает',speaking:'Говорит',paused:'Пауза',listening:'Слушает',device:'2D-аватар · голос устройства'},
+ es:{label:'Imagen del coach',idle:'Listo para escuchar',thinking:'Pensando',speaking:'Hablando',paused:'En pausa',listening:'Escuchando',device:'Avatar ilustrado · voz del dispositivo'},
 }
-export default function CoachingAvatar({locale='en',avatarId='warm',onAvatarChange,phase='idle',beat=0}){
+export default function CoachingAvatar({locale='en',avatarId='warm',onAvatarChange,phase='idle',beat=0,showPicker=true,displayName='',size='compact'}){
  const lang=['ru','en','es'].includes(locale)?locale:'en'
  const t=copy[lang]
  const profile=COACH_AVATAR_OPTIONS.find(item=>item.id===avatarId)||COACH_AVATAR_OPTIONS[0]
  const uid=useId().replaceAll(':','')
  const skinId='hh-coach-skin-'+uid
- const state=['speaking','paused','listening'].includes(phase)?phase:'idle'
+ const state=['speaking','paused','listening','thinking'].includes(phase)?phase:'idle'
  const palette={'--avatar-bg':profile.bg,'--avatar-shirt':profile.shirt,
   '--beat-speed':(0.27+(Math.abs(beat)%4)*0.05)+'s'}
- return <div className={styles.frame} data-coach-avatar="true" data-phase={state}
+ return <div className={styles.frame} data-coach-avatar="true" data-avatar-size={size==='large'?'large':'compact'} data-phase={state}
   data-avatar-id={profile.id} style={palette} aria-label={t.label}>
   <div className={styles.face} aria-hidden="true">
    <svg className={styles.illustration} viewBox="0 0 146 146" focusable="false">
@@ -44,7 +44,7 @@ export default function CoachingAvatar({locale='en',avatarId='warm',onAvatarChan
    </svg>
   </div>
   <div className={styles.info}>
-   <label className={styles.choice}>
+   {showPicker?<label className={styles.choice}>
     <span className={styles.srOnly}>{t.label}</span>
     <select aria-label={t.label} value={profile.id}
       onChange={event=>onAvatarChange?.(event.target.value)}>
@@ -52,7 +52,7 @@ export default function CoachingAvatar({locale='en',avatarId='warm',onAvatarChan
       {option.labels[lang]}
      </option>)}
     </select>
-   </label>
+   </label>:<strong className={styles.avatarName}>{displayName||profile.labels[lang]}</strong>}
    <div className={styles.caption}>
     <span className={styles.state} aria-live="polite">{t[state]}</span>
     <small className={styles.device}>{t.device}</small>

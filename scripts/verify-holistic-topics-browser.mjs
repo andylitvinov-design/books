@@ -29,9 +29,10 @@ async function waitForConsultationFixtures(page, locale, ids, label) {
         links.every((href, index) => href === wanted[index]);
     };
     if (!isExact()) return false;
-    // Reject the stale previous React commit if the async directory rerender
-    // clears articles on the following frames; never relax EUR/CAD assertions.
-    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    // The real directory can clear and refill results after the first paint.
+    // Require exact IDs to remain continuously present across the delayed
+    // fixture fetch and following React commit, not merely for two frames.
+    await new Promise(resolve => setTimeout(resolve, 300));
     return isExact();
   }, expected, { timeout: 15000 });
   const actual = await page.locator("#holistic-inline-results article a[href]")
