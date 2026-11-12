@@ -155,10 +155,78 @@ test("Existing STT endpoint remains the only transcript transport; UI feeds audi
  assert.match(endpoint,/HH_AUDIO_STT_FREE_CONFIRMED/);
  assert.match(editor,/speechTranscript=\{voiceTranscript\}/);
  assert.match(editor,/concept:speechConcept/);
- assert.match(editor,/setMontagePanel\("concept"\)/);
+ assert.match(editor,/setActiveWorkspace\("phrases"\);setIdeasSubtab\("concept"\)/);
  assert.match(panel,/data-video-concept-all-parameters/);
  assert.match(panel,/data-video-concept-from-audio/);
  assert.match(scene,/isSafeMontageScene\(scene,sceneExclusions\)/);
  assert.match(scene,/validateMontageClips\(ids,scenes,sceneExclusions/);
  assert.doesNotMatch(semantic,/\bfetch\s*\(|\bXMLHttpRequest\b|\blocalStorage\b/);
+});
+
+
+test("anxiety without a clear cause uses inner support rather than invented family or bridge",()=>{
+ const goal="Anxiety for No Clear Reason";
+ const suggestion=suggestVideoConcept({locale:"en",theme:"health",goal,
+  phrases:["My family supports me","I need to see a bridge","My mum will help me"]});
+ assert.equal(suggestion.semanticAudience,null,"editorial Ideas cannot establish a recipient");
+ assert.equal(suggestion.parameters.audience.status,"unknown");
+ assert.equal(suggestion.meaningAxisId,"anchor");
+ assert.equal(suggestion.motifId,"nest");
+ assert.equal(suggestion.parameters.intent.source,"goal");
+ assert.notEqual(suggestion.mainMessage,goal);
+ assert.match(suggestion.mainMessage,/steadiness|support/i);
+ assert.match(suggestion.emotionalProgram[0],/uncertainty/i);
+ assert.match(suggestion.emotionalProgram.at(-1),/answer/i);
+ assert.equal(suggestion.sceneOutline.length,4);
+ assert.notDeepEqual(suggestion.emotionalProgram,["Arrive","Support","Explore","Integrate"]);
+ assert.equal(videoConceptIsValid(suggestion),true);
+ assert.equal(suggestion.mediaBindingStatus,"editorial_only_unverified");
+});
+test("anxiety meaning remains grounded in Russian and Spanish without invented recipient",()=>{
+ for(const [locale,goal] of [
+  ["ru","Тревога без понятной причины"],
+  ["es","Ansiedad sin razón clara"]
+ ]){
+  const p=suggestVideoConcept({locale,goal,theme:"relationships",
+   phrases:["Для семьи и близких","For my family"]});
+  assert.equal(p.semanticAudience,null,locale);
+  assert.equal(p.meaningAxisId,"anchor",locale);
+  assert.equal(p.motifId,"nest",locale);
+  assert.equal(p.emotionalProgram.length,4,locale);
+  assert.ok(p.mainMessage.length>18,locale);
+  assert.equal(p.parameters.mainMessage.source,"editorial",locale);
+  assert.equal(videoConceptIsValid(p),true,locale);
+ }
+});
+test("family audience needs an explicit recipient; a story about family is not for family",()=>{
+ const distress=suggestVideoConcept({locale:"en",goal:"Anxiety when I see my family"});
+ assert.equal(distress.semanticAudience,null);
+ const greeting=suggestVideoConcept({locale:"ru",goal:"Хочу поздравить маму с днём рождения"});
+ assert.equal(greeting.semanticAudience,"family");
+ assert.equal(greeting.semanticPurpose,"celebration");
+ assert.equal(greeting.motifId,"flower");
+ assert.match(greeting.mainMessage,/поздравлен/i);
+ assert.notEqual(greeting.mainMessage,greeting.goal);
+ const forClient=suggestVideoConcept({locale:"en",goal:"A presentation of services for clients"});
+ assert.equal(forClient.semanticAudience,"client");
+ assert.equal(forClient.semanticPurpose,"presentation");
+ assert.match(forClient.mainMessage,/value/i);
+});
+test("author-supplied audio remains actual speech while editorial main idea differs",()=>{
+ const transcript=speaking([
+  "I am worried without knowing why.",
+  "I want to find a calmer moment.",
+  "Maybe I can slow down for a breath.",
+  "I can stop without forcing an answer."
+ ]);
+ const p=suggestVideoConcept({locale:"en",speechTranscript:transcript,goal:"Old unrelated text"});
+ assert.equal(p.goal,"I am worried without knowing why");
+ assert.equal(p.parameters.intent.source,"speech");
+ assert.equal(p.parameters.mainMessage.source,"editorial");
+ assert.match(p.sceneOutline[0],/worried/i);
+ assert.equal(p.speechBeatsSource,"transcript");
+ assert.equal(p.semanticAudience,null);
+ assert.equal(p.motifId,"nest");
+ assert.equal(p.emotionalProgram.length,4);
+ assert.equal(Object.keys(p.parameters).length,38);
 });

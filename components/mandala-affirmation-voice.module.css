@@ -280,3 +280,25 @@
   border-color:var(--hh-studio-border,#EADFD9);
   color:var(--hh-studio-ink,#142B3D)
 }
+
+/* Owner-approved compact mobile Voice: consent is required, CTA immediately after sample. */
+.panel[data-voice-layout="compact"]>.heading{order:0}
+.panel[data-voice-layout="compact"]>.phrasePick{order:1}
+.panel[data-voice-layout="compact"]>.transcriptDisclosure{order:2}
+.panel[data-voice-layout="compact"]>.consentRow{order:3}
+.panel[data-voice-layout="compact"]>.voiceChoices{order:4;margin-bottom:0}
+.panel[data-voice-layout="compact"]>.action{order:5}
+.panel[data-voice-layout="compact"]>.hint,.panel[data-voice-layout="compact"]>.warning{order:6}
+.panel[data-voice-layout="compact"]>.result{order:7}
+.panel[data-voice-layout="compact"]>.voiceAdvanced{order:8}
+.panel[data-voice-layout="compact"]>.message{order:9}
+.panel[data-voice-layout="compact"] .voiceToolbar[hidden]{display:none!important}
+/* My Voice retains the original MediaRecorder with two native working controls. */
+.panel[data-own-voice-only="true"] .voiceChoices{margin:0;gap:5px}
+.panel[data-own-voice-only="true"] .localTracks{padding:0}
+.panel[data-own-voice-only="true"] .localTop{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch;gap:8px}
+.panel[data-own-voice-only="true"] .localTop [data-video-ideas-voice-actions]{display:grid!important;grid-template-columns:1fr;gap:0;margin:0!important}
+.panel[data-own-voice-only="true"] .localTop>button{width:100%;min-width:0;min-height:50px;padding:8px 4px;border:1px solid #D8DED6;border-radius:13px;background:#FFFCF7;color:#155444;font:780 clamp(11px,3.25vw,15px)/1.2 system-ui;box-shadow:0 1px 5px #563D270a}
+.panel[data-own-voice-only="true"] .localTop [data-video-ideas-own-notice]{grid-column:1/-1}
+.panel[data-own-voice-only="true"] .localLimit{display:block;color:#54725f;font-size:12px;line-height:1.35}
+.panel[data-own-voice-only="true"] .localHint{font-size:12px;line-height:1.35}

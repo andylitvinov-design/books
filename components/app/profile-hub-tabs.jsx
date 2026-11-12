@@ -1,5 +1,6 @@
 import Link from 'next/link'
-import { Activity, ArrowRight, BookOpen, ClipboardList, FileClock, FileText, House, ListChecks, LockKeyhole, Route, Settings2 } from 'lucide-react'
+import InstantCabinetLink from './instant-cabinet-link'
+import { Activity, BookOpen, ClipboardList, FileClock, FileText, House, LockKeyhole, ListChecks, Route, Settings2 } from 'lucide-react'
 import { assessmentHistoryTitle } from '@/lib/assessments/personal-guidance'
 import styles from './profile-hub-tabs.module.css'
 
@@ -75,65 +76,133 @@ const STUDIO_COPY = {
     details: { tests: 'Tus pruebas y cuestionarios.', state: 'Registro personal y mediciones reales.', path: 'Etapas verificadas, metas y desarrollo.', courses: 'Tus cursos y prácticas.', reports: 'Intentos guardados e informes privados.' },
   },
 }
+// Announced packages are informative until server-authoritative billing verifies prices.
+// Never treat a selected UI card as a paid subscription or confirmed checkout.
+const NEW_PACKAGES = [
+  { key: 'free', amount: 0 },
+  { key: 'practice', amount: 5 },
+  { key: 'master', amount: 20 },
+  { key: 'pro', amount: 40 },
+]
+const SETTINGS_HUB_COPY = {
+  en: { menu: 'Profile sections', pageTitle: 'My profile', account: 'Account & privacy', messenger: 'Messengers', plans: 'Plans',
+    detail: 'Profile details', contacts: 'Telegram & WhatsApp', change: 'Edit', manage: 'Manage',
+    membership: 'Monthly packages', note: 'New package prices. Checkout and access start only after payment-provider confirmation.',
+    name: 'Name', timeZone: 'Time zone', language: 'Language', expand: 'Open settings',
+    top: { create: 'Create', view: 'View', results: 'Results', settings: 'Settings' } },
+  ru: { menu: 'Разделы профиля', pageTitle: 'Мой профиль', account: 'Аккаунт и приватность', messenger: 'Мессенджеры', plans: 'Тарифы',
+    detail: 'Параметры профиля', contacts: 'Telegram и WhatsApp', change: 'Изменить', manage: 'Управлять',
+    membership: 'Тарифы в месяц', note: 'Новые цены. Оплата и доступ подтверждаются только платёжным провайдером.',
+    name: 'Имя', timeZone: 'Часовой пояс', language: 'Язык', expand: 'Открыть настройки',
+    top: { create: 'Создать', view: 'Просмотр', results: 'Результаты', settings: 'Настройки' } },
+  es: { menu: 'Secciones del perfil', pageTitle: 'Mi perfil', account: 'Cuenta y privacidad', messenger: 'Mensajería', plans: 'Planes',
+    detail: 'Datos del perfil', contacts: 'Telegram y WhatsApp', change: 'Editar', manage: 'Gestionar',
+    membership: 'Planes mensuales', note: 'Nuevos precios. El pago y el acceso requieren confirmación del proveedor.',
+    name: 'Nombre', timeZone: 'Zona horaria', language: 'Idioma', expand: 'Abrir ajustes',
+    top: { create: 'Crear', view: 'Ver', results: 'Resultados', settings: 'Ajustes' } },
+}
 const VIDEO = '/videos/holistic-house/film-collection-v3/sun-autumn-hills.mp4'
 const POSTER = '/videos/holistic-house/film-collection-v3/sun-autumn-hills.jpg'
 
-export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = null }) {
+export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = null, account = null, publicEntry = false }) {
   const selected = COPY[locale] ? locale : 'en'
   const t = STUDIO_COPY[selected]
   // Existing protected Cabinet uses EN fallback for ES; do not introduce a new account.
   const accountLocale = selected === 'es' ? 'en' : selected
   const root = '/' + accountLocale + '/app'
-  const paths = {
-    today: root + '/portrait',
+  const privatePaths = {
+    today: root + '/portrait?space=today',
     tests: root + '/tests',
     state: root + '/monitoring',
     path: root + '/portrait?space=path',
     courses: root + '/course?view=courses',
     reports: root + '/portrait?space=reports',
   }
+  // Guest Profile never initiates account reads just by visiting or changing tabs.
+  const paths = publicEntry ? { ...privatePaths,
+    today: root + '/portrait',
+    tests: '#profile-free-tests',
+    state: '/' + selected + '/client?startTests=state',
+    path: '/' + selected + '/personality-profiles',
+    courses: '/' + selected + '/academy',
+  } : privatePaths
   const current = active === 'view' ? 'today' : active === 'results' ? 'reports' : active
+  const settingsMode = current === 'settings'
+  const s = SETTINGS_HUB_COPY[selected]
   return <section className={styles.hub} data-profile-hub-tabs data-profile-active={current}>
     <header className={styles.heading}>
-      <div><p className={styles.eyebrow}>{t.label}</p><h2>{t.title}</h2></div>
-      <Link href={root + '/settings'} prefetch={false} className={styles.settings}>
+      <div><p className={styles.eyebrow}>{t.label}</p><h2>{settingsMode ? s.pageTitle : t.title}</h2></div>
+      {!settingsMode && <InstantCabinetLink href={root + '/settings'} prefetch={false} className={styles.settings}>
         <Settings2 size={17} aria-hidden="true" />{t.settings}
-      </Link>
+      </InstantCabinetLink>}
     </header>
-    <nav className={styles.tabs} aria-label={COPY[selected].navigation}>
-      {TABS.map(({ id, icon: Icon }) => <Link key={id} href={paths[id]} prefetch={false}
+    <nav className={settingsMode ? styles.settingsTabs : styles.tabs} aria-label={settingsMode ? s.menu : COPY[selected].navigation}>
+      {settingsMode ? [
+        { id: 'create', href: '/' + selected + '/personality-profiles' },
+        { id: 'view', href: paths.today },
+        { id: 'results', href: paths.reports },
+        { id: 'settings', href: root + '/settings' },
+      ].map(item => <InstantCabinetLink key={item.id} href={item.href} prefetch={false}
+        aria-current={item.id === 'settings' ? 'page' : undefined} className={item.id === 'settings' ? styles.current : styles.tab}>
+        {s.top[item.id]}
+      </InstantCabinetLink>) : TABS.map(({ id, icon: Icon }) => <InstantCabinetLink key={id} href={paths[id]} prefetch={false}
         data-profile-tab={id} aria-current={current === id ? 'page' : undefined}
         className={current === id ? styles.current : styles.tab}>
         <Icon size={20} strokeWidth={1.9} aria-hidden="true" /><span>{t.tabs[id]}</span>
-      </Link>)}
+        {id === 'tests' && Number.isInteger(resultCount) && resultCount > 0 &&
+          <span className={styles.resultBadge} aria-label={resultCount + ' ' + COPY[selected].count}>{resultCount}</span>}
+      </InstantCabinetLink>)}
     </nav>
-    {current === 'today' && <>
+    {(current === 'today' || settingsMode) && <>
       <div className={styles.hero} data-profile-video-hero>
-        <div className={styles.heroCopy}>
-          <p className={styles.eyebrow}>{t.label}</p>
-          <h1>{t.hero}</h1>
-          <p>{t.intro}</p>
-        </div>
+        <h1 className={styles.srOnly}>{t.hero}</h1>
         <div className={styles.videoFrame}>
           <video controls playsInline preload="none" poster={POSTER} aria-label={t.video}>
             <source src={VIDEO} type="video/mp4" />
             <track kind="captions" src="/videos/holistic-house/profile-scenic.en.vtt" srcLang="en" label="English" />
           </video>
         </div>
-        <div className={styles.heroFoot}>
-          <small>{t.film}</small>
-          <Link href={paths.path} prefetch={false}>{t.route}<ArrowRight size={17} aria-hidden="true" /></Link>
+        {settingsMode ? <nav className={styles.settingsQuickActions} data-profile-settings-actions aria-label={s.menu}>
+          <a href="#hh-settings-account">{s.detail}</a>
+          <a href="#hh-settings-messengers">{s.messenger}</a>
+          <a href="#hh-settings-plans">{s.plans}</a>
+        </nav> : <nav className={styles.quickActions} data-profile-quick-actions aria-label={t.label}>
+          <InstantCabinetLink href={paths.path} prefetch={false} className={styles.primaryQuickAction}><Route size={19} aria-hidden="true" />{t.route}</InstantCabinetLink>
+          <InstantCabinetLink href={paths.tests} prefetch={false}><ClipboardList size={19} aria-hidden="true" />{t.actions[0]}</InstantCabinetLink>
+          <InstantCabinetLink href={paths.state} prefetch={false}><Activity size={19} aria-hidden="true" />{t.actions[1]}</InstantCabinetLink>
+          <InstantCabinetLink href={paths.courses} prefetch={false}><BookOpen size={19} aria-hidden="true" />{t.actions[2]}</InstantCabinetLink>
+        </nav>}
+        <p className={styles.srOnly}>{t.privacy}</p>
+      </div>
+    </>}
+    {settingsMode && <section className={styles.settingsOverview} data-profile-settings-overview aria-label={s.account}>
+      <div className={styles.settingsIdentity} id="hh-settings-overview-account">
+        <div className={styles.settingsCardHeading}>
+          <h3>{s.account}</h3>
+          <a href="#hh-settings-account">{s.change}</a>
+        </div>
+        <div className={styles.accountDetails}>
+          <span><small>{s.name}</small><strong>{account?.displayName || '—'}</strong></span>
+          <span><small>{s.timeZone}</small><strong>{account?.timezone || '—'}</strong></span>
+          <span><small>{s.language}</small><strong>{selected.toUpperCase()}</strong></span>
         </div>
       </div>
-      <div className={styles.quickActions} data-profile-quick-actions>
-        <Link href={paths.tests} prefetch={false}><ClipboardList size={19} aria-hidden="true" />{t.actions[0]}</Link>
-        <Link href={paths.state} prefetch={false}><Activity size={19} aria-hidden="true" />{t.actions[1]}</Link>
-        <Link href={paths.courses} prefetch={false}><BookOpen size={19} aria-hidden="true" />{t.actions[2]}</Link>
+      <div className={styles.connectionOverview}>
+        <h3>{s.contacts}</h3>
+        <a href="#hh-settings-messengers">Telegram <span>{s.manage}</span></a>
+        <a href="#hh-settings-messengers">WhatsApp <span>{s.manage}</span></a>
       </div>
-      <p className={styles.privacyNote}><LockKeyhole size={15} aria-hidden="true" />{t.privacy}</p>
-      {Number.isInteger(resultCount) && <p className={styles.count}><ListChecks size={16} aria-hidden="true" />{resultCount} {COPY[selected].count}</p>}
-    </>}
-    {current !== 'today' && current !== 'create' && <div className={styles.sectionIntro}>
+      <div className={styles.packagesOverview} id="hh-settings-overview-plans">
+        <div className={styles.settingsCardHeading}><h3>{s.membership}</h3><a href="#hh-settings-plans">{s.expand}</a></div>
+        <div className={styles.packagesGrid}>{NEW_PACKAGES.map(item =>
+          <a key={item.key} href="#hh-settings-plans" className={styles.packageCard} data-package={item.key}>
+            <strong>{item.key.charAt(0).toUpperCase() + item.key.slice(1)}</strong>
+            <span>€{item.amount} <small>/ {selected === 'ru' ? 'мес' : selected === 'es' ? 'mes' : 'mo'}</small></span>
+          </a>)}</div>
+        <p className={styles.packageFinePrint}>{s.note}</p>
+      </div>
+    </section>}
+    {current !== 'today' && current !== 'create' && !settingsMode && !publicEntry && <div className={styles.sectionIntro}>
       <h1>{t.tabs[current] || t.title}</h1><p>{t.details[current] || t.privacy}</p>
     </div>}
     {current === 'create' && <p className={styles.hint}>{COPY[selected].creationHint}</p>}

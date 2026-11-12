@@ -197,7 +197,10 @@ test("physical voice WebKit checks real Settings and Audio, exclusive Hypno tabs
  assert.match(browser,/const hypnoTabs=page\.locator\('\[data-hypno-tabs\]'\)/);
  assert.match(browser,/const visualTab=hypnoTabs\.locator\('\[data-hypno-tab="visual"\]'\)/);
  assert.match(browser,/const audioTab=hypnoTabs\.locator\('\[data-hypno-tab="audio"\]'\)/);
- assert.match(browser,/await expect\(hypnoTabs\.getByRole\("tab"\)\)\.toHaveCount\(2\)/);
+ assert.match(browser,/await expect\(hypnoTabs\.getByRole\("tab"\)\)\.toHaveCount\(3\)/);
+  assert.match(browser,/const effectsTab=hypnoTabs\.locator\('\[data-hypno-tab="effects"\]'\)/);
+  assert.match(browser,/await effectsTab\.click\(\)/);
+  assert.match(browser,/await expect\(effectsGroup\)\.toBeVisible\(\)/);
  assert.match(browser,/await expect\(visualTab\)\.toHaveAttribute\("aria-selected","true"\)/);
  assert.match(browser,/await expect\(audioTab\)\.toHaveAttribute\("aria-selected","true"\)/);
  assert.match(browser,/await balancedLight\.click\(\)/);
@@ -210,8 +213,11 @@ test("physical voice WebKit checks real Settings and Audio, exclusive Hypno tabs
  const firstVideo=readFileSync(new URL("../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
  assert.match(firstVideo,/const montageStyle=page\.locator\('\[data-video-montage-tab="effects"\]'\)/);
  assert.match(firstVideo,/await montageStyle\.click\(\)/);
- assert.match(firstVideo,/await page\.locator\('\[data-video-montage-tab="concept"\]'\)\.click\(\)/,
-   "visitor returns from Style to the proposed Concept");
+ assert.match(firstVideo,/await page\.locator\('\[data-video-ideas-tab="concept"\]'\)\.click\(\)/,
+   "visitor can review the preserved Concept through the visible Ideas tab");
+ assert.match(firstVideo,/const concept=page\.locator\('\[data-video-ideas-concept-panel\]'\)/);
+ assert.match(firstVideo,/await concept\.waitFor\(\{state:'visible',timeout:15000\}\)/,
+   "the actual Concept panel is visible before explicit guest approval");
  assert.match(firstVideo,/await concept\.locator\('\[data-video-concept-approve\]'\)\.click\(\)/,
    "guest explicitly approves Concept before timeline editing");
  assert.match(firstVideo,/const textTools=page\.locator\('\[data-video-concept-text-tools\]'\)/,
@@ -333,33 +339,31 @@ test("guest real encoded video must keep Save behind sign-in and preserve physic
 });
 
 
-test("compact Ideas opens its actual opt-in voice editor via visible user control",()=>{
+test("WebKit traverses Ideas Personalization and Concept before consented Voice/My Voice",()=>{
  const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
- // Verify the actual Text→Voice→Text switch and the visible Record button;
- // no synthetic clicks on hidden details, or removal of media/consent assertions.
  const modes=browser.indexOf('const ideasModes=phrases.locator("[data-video-ideas-tabs]")');
- const text=browser.indexOf('await expect(ideasModes.locator',modes);
- const voice=browser.indexOf('await ideasModes.locator(\'[data-video-ideas-tab="voice"]\').click()',text);
- const back=browser.indexOf('await ideasModes.locator(\'[data-video-ideas-tab="text"]\').click()',voice);
- const button=browser.indexOf('const recordEntry=phrases.locator',back);
- const hidden=browser.indexOf('await expect(advancedVoice).toBeHidden()',button);
- const visible=browser.indexOf('await expect(recordEntry).toBeVisible',hidden);
- const tap=browser.indexOf('await recordEntry.click()',visible);
- const opened=browser.indexOf('await expect(advancedVoice).toHaveAttribute("open","")',tap);
- const voiceOptions=browser.indexOf('await expect(advancedVoice.locator',opened);
- assert.ok(modes>=0&&text>modes&&voice>text&&back>voice&&button>back&&
-   hidden>button&&visible>hidden&&tap>visible&&opened>tap&&voiceOptions>opened,
-   "real Ideas subtab and Record UI must reveal the original voice editor");
+ const personal=browser.indexOf('const personalTab=ideasModes.locator',modes);
+ const concept=browser.indexOf('await conceptTab.click()',personal);
+ const back=browser.indexOf('await personalTab.click()',concept);
+ const opened=browser.indexOf('await advancedText.click()',back);
+ const voice=browser.indexOf('await voiceModeButton.click()',opened);
+ const my=browser.indexOf('await myVoiceModeButton.click()',voice);
+ const record=browser.indexOf('const recordEntry=page.locator',my);
+ const tap=browser.indexOf('await recordEntry.click()',record);
+ const phrase=browser.indexOf('const phraseSelector=page.locator',tap);
+ const consent=browser.indexOf('await narrationConsent.check()',phrase);
+ assert.ok(modes>=0&&personal>modes&&concept>personal&&back>concept&&
+   opened>back&&voice>opened&&my>voice&&record>my&&tap>record&&
+   phrase>tap&&consent>phrase,"real WebKit route must use visible controls before TTS consent");
  const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
- assert.ok(studio.includes('data-video-ideas-recording-open={ideasVoiceAdvancedOpen?"true":"false"}'),
-   "recording-open state must remain bound to the original shared editor");
- assert.match(browser,/data-video-ideas-tabs/);
- assert.match(browser,/data-video-ideas-record/);
+ assert.equal((studio.match(/data-video-ideas-tab="/g)||[]).length,2);
+ assert.match(studio,/data-video-ideas-recording-open=\{ideasVoiceAdvancedOpen\?"true":"false"\}/);
+ assert.match(studio,/data-video-ideas-voice-mode="my-voice"/);
  assert.doesNotMatch(browser,/await advancedVoice\.locator\(":scope > summary"\)\.click\(\)/);
  for(const required of ["data-video-affirmation-voice-preview","data-hypno-approve",
   "voice-wav-ready","hypno-audio-effects-rendered","encoded-audio-verified",
   'spawnSync("ffprobe"','spawnSync("ffmpeg"'])
-  assert.ok(browser.includes(required),"do not lose true media/consent coverage: "+required);
+  assert.ok(browser.includes(required),"do not lose real media, rights and consent proof: "+required);
 });
 
 test("failed Safari output hides guest Watch and labels the result as a playback failure",()=>{

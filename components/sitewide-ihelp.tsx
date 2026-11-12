@@ -102,6 +102,41 @@ export function SitewideIHelp(){
    };
  },[open]);
 
+
+ // On iPhone, the on-screen keyboard changes visualViewport but not always
+ // 100dvh. Constrain the shared dialog to the visible area so its conversation
+ // and genuine composer remain reachable across all site sections.
+ useEffect(()=>{
+   if(!open||!dialog.current)return;
+   const panel=dialog.current;
+   const viewport=window.visualViewport;
+   const initialHeight=viewport?.height??window.innerHeight;
+   let frame=0;
+   const syncViewport=()=>{
+     window.cancelAnimationFrame(frame);
+     frame=window.requestAnimationFrame(()=>{
+       const height=viewport?.height??window.innerHeight;
+       panel.style.setProperty("--hh-ihelp-visual-height",Math.max(160,Math.round(height))+"px");
+       panel.style.setProperty("--hh-ihelp-visual-top",Math.max(0,Math.round(viewport?.offsetTop??0))+"px");
+       panel.toggleAttribute("data-hh-mobile-keyboard-open",
+         window.innerWidth<=760&&(initialHeight-height>140||window.innerHeight-height>140));
+     });
+   };
+   syncViewport();
+   viewport?.addEventListener("resize",syncViewport);
+   viewport?.addEventListener("scroll",syncViewport);
+   window.addEventListener("resize",syncViewport);
+   return ()=>{
+     window.cancelAnimationFrame(frame);
+     viewport?.removeEventListener("resize",syncViewport);
+     viewport?.removeEventListener("scroll",syncViewport);
+     window.removeEventListener("resize",syncViewport);
+     panel.style.removeProperty("--hh-ihelp-visual-height");
+     panel.style.removeProperty("--hh-ihelp-visual-top");
+     panel.removeAttribute("data-hh-mobile-keyboard-open");
+   };
+ },[open]);
+
  function chooseTopic(prompt:string){
    // An explicit chip fills the existing unsent composer; no network call or diagnosis.
    setQuickPrompt(previous=>({revision:(previous?.revision??0)+1,text:prompt}));
@@ -109,6 +144,8 @@ export function SitewideIHelp(){
      "[data-hh-agent-preview] textarea")?.focus({preventScroll:true}));
  }
  function close(){
+   // Stop any ongoing browser narration when the user closes iHelp.
+   window.dispatchEvent(new Event("hh:voice-companion-stop"));
    setOpen(false);
    window.requestAnimationFrame(()=>launcher.current?.focus({preventScroll:true}));
  }
@@ -167,7 +204,7 @@ export function SitewideIHelp(){
        </header>
        <IHelpWelcome locale={locale} section={context.section}/>
        <div className={styles.chat}>
-         <HolisticAgentChat locale={locale} compact pageHelp={context} quickPrompt={quickPrompt}/>
+         <HolisticAgentChat locale={locale} compact messengerView pageHelp={context} quickPrompt={quickPrompt}/>
        </div>
        <IHelpTopics locale={locale} onSelect={chooseTopic}/>
        <nav className={styles.bottomNav} aria-label={

@@ -6,6 +6,8 @@ on:
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     paths:
       - 'public/holistic-house*.webmanifest'
+      - 'public/sw.js'
+      - 'public/holistic-house-offline-*.html'
       - 'data/native-public-releases.json'
       - 'lib/native/public-downloads.mjs'
       - 'app/api/native-download/**'
@@ -44,6 +46,8 @@ on:
       - codex/public-book-library
     paths:
       - 'public/holistic-house*.webmanifest'
+      - 'public/sw.js'
+      - 'public/holistic-house-offline-*.html'
       - 'data/native-public-releases.json'
       - 'lib/native/public-downloads.mjs'
       - 'app/api/native-download/**'
@@ -135,9 +139,9 @@ jobs:
             file /tmp/hh-icon.png | grep -q "PNG image data, $size x $size"
           done
           curl --fail --silent --show-error http://127.0.0.1:3098/holistic-house-app-ru.webmanifest -o /tmp/hh-manifest-ru.json
-          node -e "const f=require('/tmp/hh-manifest-ru.json');if(f.start_url!=='/ru/app/messages'||f.id!=='/en/app'||!f.shortcuts.some(x=>x.url==='/ru/app/messages'))process.exit(1)"
+          node -e "const f=require('/tmp/hh-manifest-ru.json');if(f.start_url!=='/ru'||f.id!=='/en/app'||!f.shortcuts.some(x=>x.url==='/ru/app/messages'))process.exit(1)"
           curl --fail --silent --show-error http://127.0.0.1:3098/holistic-house-app-es.webmanifest -o /tmp/hh-manifest-es.json
-          node -e "const f=require('/tmp/hh-manifest-es.json');if(f.start_url!=='/es/app/messages'||f.id!=='/en/app'||!f.shortcuts.some(x=>x.url==='/es/app/messages'))process.exit(1)"
+          node -e "const f=require('/tmp/hh-manifest-es.json');if(f.start_url!=='/es'||f.id!=='/en/app'||!f.shortcuts.some(x=>x.url==='/es/app/messages'))process.exit(1)"
           node scripts/verify-hh-mobile-head.mjs http://127.0.0.1:3098
           HH_PLAYWRIGHT_PACKAGE=/tmp/hh-install-browser-tools/node_modules/playwright node scripts/verify-hh-install-browser.mjs http://127.0.0.1:3098
       - name: Archive guest-only iPhone/Android install screenshots

@@ -68,7 +68,7 @@ test("provider never transcribes without explicit free-project approval",()=>{
  assert.match(helper,/fetch\("\/api\/holistic-support\/audio-storyboard"/);
  assert.match(helper,/method:"POST",cache:"no-store",credentials:"same-origin"/);
  assert.match(helper,/form.append\("consent","yes"\)/);
- assert.match(source,/requestConsentedTimedTranscript\(entry.file,locale,sttConsent,controller.signal\)/);
+ assert.match(source,/requestConsentedTimedTranscript\(entry.file,locale,true,controller.signal\)/);
  assert.doesNotMatch(source,/\bfetch\s*\(|\bFormData\b/);
 });
 
@@ -78,7 +78,8 @@ test("iHelp voice attachment hands off only through local one-use storage",async
  assert.match(chat,/data-hh-voice-transcribe/);
  assert.match(chat,/stageVoiceStudioHandoff/);
  assert.match(source,/consumeVoiceStudioHandoff/);
- assert.match(source,/data-video-audio-stt-consent/);
+ assert.match(source,/data-video-audio-stt-notice/);
+ assert.match(source,/data-video-audio-transcribed-text/);
  assert.match(source,/data-video-audio-visual-plan/);
  assert.equal(await consumeVoiceStudioHandoff(),null);
 });
@@ -103,6 +104,11 @@ test("recipient audio shows STT failure at step 2 and preserves local manual pro
    recipient.indexOf("data-video-recipient-audio-plan"));
  assert.equal(recipient.split("data-video-recipient-audio-error").length-1,1);
  assert.match(recipient,/data-video-recipient-audio-manual/);
+ assert.match(recipient,/data-video-recipient-audio-transcript/);
+ assert.match(recipient,/data-video-recipient-audio-stt-notice/);
+ assert.doesNotMatch(recipient,/type="checkbox"/);
+ assert.match(source,/if\(recipientAudioSelected\)setAudioRights\(true\)/);
+ assert.match(source,/recipientAudioSelected\?59000:180000/);
  assert.match(source,/function goRecipientAudioToManualMontage\(\)/);
  assert.match(source,/setAttachedAudio\(\{kind:"file",file:entry\.file,id:entry\.url,nonLoop:true\}\)/);
  assert.match(source,/if\(recipientAudioSelected\)window\.requestAnimationFrame/);

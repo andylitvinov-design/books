@@ -4,6 +4,7 @@ import {readFileSync} from "node:fs";
 
 const read=file=>readFileSync(new URL("../"+file,import.meta.url),"utf8");
 const phrases=read("components/mandala-hypno-compact.tsx");
+const ideas=read("components/mandala-video-ideas.tsx");
 const style=read("components/mandala-hypno-compact.module.css");
 const studio=read("components/mandala-free-video-studio.tsx");
 const studioCss=read("components/mandala-video-mobile.module.css");
@@ -94,12 +95,11 @@ test("all phrase changes including catalog and idea are staged until explicit Ap
  assert.doesNotMatch(compact,/<MandalaVideoAffirmations /);
  assert.match(compact,/onPendingChange\?\.\(hasPendingEdits\)/);
  assert.match(compact,/data-hypno-create-video disabled=\{disabled\|\|!settings\.enabled\|\|hasPendingEdits\}/);
- const finalCreate=studio.slice(studio.indexOf("data-video-quick-generate"),
+ const direct=studio.slice(studio.indexOf("data-video-quick-generate"),
    studio.indexOf("</button>",studio.indexOf("data-video-quick-generate")));
- assert.match(finalCreate,/montagePanel!=="effects"/);
-  assert.match(studio,/if\(montagePanel==="concept"\)return/,"guest concept approval never triggers rendering");
- assert.match(finalCreate,/!freeVideoSelected\|\|\(usingFreeFilmCompilation&&!freeFilmSourcesListed\)\|\|voiceGenerating\|\|narrationInvalid\|\|phrasePending/,
-   "unapproved phrase edits still block final export, not navigation");
+ assert.ok(direct.includes('onClick={createQuickVideo}'));
+ for(const guard of ['if(!freeVideoSelected){','if(phrasePending){','if(narrationInvalid){'])
+   assert.ok(studio.includes(guard),"approved phrase and paid-format guard: "+guard);
  assert.match(studio,/if\(phrasePending\)\{/);
  assert.match(compact,/if\(ideaPending&&!draft\)return/);
  assert.match(compact,/externalPhraseDraft!==null\?\[\]:settings\.selected/);
@@ -167,7 +167,9 @@ test("real WebKit voice acceptance expands the approved transcript before compar
   const voice=read("components/mandala-affirmation-voice.tsx");
   assert.match(voice,/<details className=\{css\.transcriptDisclosure\} data-video-affirmation-transcript-review>/);
   assert.match(voice,/data-video-affirmation-spoken-text/);
-  assert.match(e2e,/const transcriptDisclosure=page\.locator\("\[data-video-affirmation-voice\] details"\)/);
+  assert.match(e2e,/const transcriptDisclosure=page\.locator\("\[data-video-affirmation-transcript-review\]"\)/);
+  assert.match(e2e,/await expect\(transcriptDisclosure\)\.toHaveCount\(1\)/);
+  assert.match(e2e,/await expect\(transcriptDisclosure\)\.toHaveCount\(0\)/);
   assert.match(e2e,/await transcriptDisclosure\.locator\(":scope > summary"\)\.click\(\)/);
   assert.match(e2e,/await expect\(speech\)\.toBeVisible\(\)/);
   assert.match(e2e,/assert\.equal\(affirmationRequests\[0\]\.text,transcript\)/);
@@ -180,7 +182,11 @@ test("real WebKit voice acceptance expands advanced sound options before selecti
   assert.match(voice,/const bindVoiceAdvanced=useCallback/);
   assert.match(voice,/voiceAdvancedNodeRef\.current=node/);
   assert.match(voice,/summary onClick=\{event=>\{/);
-  assert.match(voice,/event\.preventDefault\(\)/);
+  assert.match(voice,/voiceAdvancedOpenRef\.current=!node\.open/);
+  assert.doesNotMatch(voice,/event\.preventDefault\(\)/,
+    "allow native WebKit summary to perform one disclosure toggle");
+  assert.doesNotMatch(voice,/node\.open\s*=\s*!node\.open/,
+    "do not manually toggle the native disclosure twice");
   assert.match(voice,/data-video-affirmation-bed/);
   assert.match(browser,/const voiceOptions=page\.locator\("\[data-video-affirmation-voice\] details"\)/);
   assert.match(browser,/await voiceOptions\.locator\(":scope > summary"\)\.click\(\)/);
@@ -189,4 +195,49 @@ test("real WebKit voice acceptance expands advanced sound options before selecti
   assert.match(browser,/await page\.locator\("\[data-video-affirmation-bed\]"\)\.selectOption\("ocean"\)/);
   assert.match(browser,/const audioTrack=streams\.find\(row=>row\.codec_type==="audio"\)/);
   assert.match(browser,/assert\.ok\(audioTrack/);
+});
+
+test("Safari fine-tuning uses one accessible button and a stable hidden region",()=>{
+  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+  const css=read("components/mandala-hypno-compact.module.css");
+  for(const part of [
+    "const ideaControlsId=useId();",
+    "<div className={css.ideaDisclosure} data-hypno-idea-details>",
+    "data-hypno-idea-toggle",
+    "aria-expanded={ideaDisclosureOpen} aria-controls={ideaControlsId}",
+    "onClick={()=>setIdeaDisclosureOpen(value=>!value)}",
+    "id={ideaControlsId} hidden={!ideaDisclosureOpen}",
+  ])assert.ok(phrases.includes(part),part);
+  assert.ok(!phrases.includes("<details className={css.ideaDisclosure}"));
+  assert.ok(css.includes(".overview .ideaDisclosure>.card[hidden]{display:none!important}"));
+  assert.ok(browser.includes("await expect(intentDetails).toBeHidden()"),
+    "personal-intent editor is kept in the Personalization tab, outside voice-only mode");
+  assert.ok(browser.includes("await expect(phrases.locator('[data-video-ideas-personalization-panel]')).toBeVisible()"));
+});
+
+test("choosing Ready preserves private audio state while the current Ideas editor owns phrase selection",()=>{
+ const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+ assert.ok(ideas.includes("data-video-idea-select"));
+ assert.ok(browser.includes("data-video-affirmation-phrase"));
+ assert.ok(browser.includes("data-video-affirmation-transcript-review"));
+ assert.ok(browser.includes("data-video-narration-reapproval"),"removed spoken phrases require explicit narration reapproval");
+ assert.ok(browser.includes("the old WAV may remain attached, but must be unusable until narration is regenerated"),"stale audio stays attached only as unusable media");
+ assert.ok(browser.includes("await expect(page.locator('[data-video-quick-generate]')).toBeDisabled"));
+ assert.doesNotMatch(browser,/approvalButton\.tap\(\)/,
+   "the retired standalone Hypno approval button must not reappear");
+});
+
+test("ten-phrase limit and stale spoken-audio guard use the current visible Montage Text editor",()=>{
+ const script=read("scripts/verify-affirmation-voice-browser.mjs");
+ assert.ok(ideas.includes("else if(chosen.length>=10){"),"ten-phrase cap stays explicit");
+  assert.ok(ideas.includes("apply(options,[...chosen.slice(0,-1),index])"),"choosing at the cap replaces the last selected phrase");
+  assert.ok(ideas.includes("setFeedback(t.savedReplaced)"),"the replacement is communicated to the visitor");
+ assert.ok(ideas.includes("Choose up to 10 phrases for your video."));
+ assert.ok(ideas.includes("The maximum remains ten"));
+ assert.match(script,/const unselectedToggle=phraseEditor\.locator\('\[data-video-idea-select\]\[aria-pressed="false"\]'\)\.first\(\)/);
+ assert.ok(script.includes("const spokenToggle=spokenPhrase.locator('[data-video-idea-select]')"));
+ assert.ok(script.includes("adding an unspoken phrase does not invalidate the actual WAV"));
+ assert.ok(script.includes("data-video-narration-reapproval"));
+ assert.ok(script.includes("the old WAV may remain attached, but must be unusable until narration is regenerated"));
+ assert.ok(script.includes("await expect(page.locator('[data-video-quick-generate]')).toBeDisabled"));
 });

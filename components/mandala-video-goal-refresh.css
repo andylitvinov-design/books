@@ -604,9 +604,9 @@
     background:linear-gradient(135deg,#fff9f1,#f4f8ef)!important;
     box-shadow:0 2px 12px rgba(62,65,41,.06)!important;
   }
-  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-goal-category-title] {
+  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-auto-video-goal-panel] [data-auto-video-subcategories] > p[data-video-goal-category-title] {
     display:block!important;
-    margin:0!important;
+    margin:0 0 10px!important;
     font:800 clamp(17px,4.4vw,20px)/1.22 Arial,Helvetica,sans-serif!important;
     color:#143d3a!important;
   }
@@ -620,7 +620,7 @@
     padding:0!important;
     overflow:visible!important;
   }
-  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-mytube-subcategories] button {
+  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-auto-video-goal-panel] [data-auto-video-subcategories] [data-mytube-subcategories] button[data-auto-video-subcategory] {
     display:flex!important;
     flex:initial!important;
     align-items:center!important;
@@ -641,10 +641,13 @@
     word-break:normal!important;
     hyphens:none!important;
   }
+  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-auto-video-goal-panel] [data-auto-video-subcategories] [data-mytube-subcategories] button[data-auto-video-subcategory] span {
+    font:inherit!important;
+  }
   [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-mytube-subcategories] button:last-child:nth-child(odd) {
     grid-column:1/-1!important;
   }
-  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-mytube-subcategories] button[aria-pressed="true"] {
+  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-auto-video-goal-panel] [data-auto-video-subcategories] [data-mytube-subcategories] button[data-auto-video-subcategory][aria-pressed="true"] {
     background:#e6f6f1!important;
     border:2px solid #087f69!important;
     box-shadow:0 0 0 2px rgba(8,127,105,.10)!important;
@@ -692,7 +695,7 @@
     padding:6px 4px!important;
     font-size:10.5px!important;
   }
-  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-mytube-subcategories] button {
+  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-auto-video-goal-panel] [data-auto-video-subcategories] [data-mytube-subcategories] button[data-auto-video-subcategory] {
     min-height:66px!important;
     font-size:14px!important;
   }

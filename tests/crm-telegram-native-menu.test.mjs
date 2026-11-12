@@ -8,12 +8,41 @@ test('native menu is scoped to private chats and available in RU EN ES',()=>{
  assert.deepEqual(CRM_PRIVATE_COMMAND_SCOPE,{type:'all_private_chats'});
  for(const locale of ['ru','en','es']){
   const commands=telegramCompanionNativeCommands(locale);
-  assert.equal(commands.length,15);
-  assert.equal(new Set(commands.map(x=>x.command)).size,15);
+  assert.equal(commands.length,14);
+  assert.equal(new Set(commands.map(x=>x.command)).size,14);
   assert.ok(commands.every(x=>/^[a-z0-9_]{1,32}$/.test(x.command)&&x.description.length>0&&x.description.length<=256));
   for(const key of ['menu','cabinet','ai','ai_off','checkin','daily','daily_off','stop'])assert.ok(commands.some(x=>x.command===key));
+  assert.equal(commands.some(x=>x.command==='lang_es'),false,'Spanish is not offered in the native RU/EN menu');
  }
 });
+test('drop only old bot-owned Spanish language command; preserve custom BotFather commands',()=>{
+ for(const [locale,description] of [
+   ['ru','Español'],['en','Spanish language'],['es','Idioma español']
+ ]){
+  const old=[{command:'start',description:'Owner start'},{command:'lang_es',description}];
+  const next=mergeTelegramCompanionNativeCommands(old,locale);
+  assert.ok(next);
+  assert.equal(next.some(x=>x.command==='lang_es'),false,locale);
+  assert.equal(next[0].command,'start');
+  assert.equal(telegramCompanionCommandsEqual(next,mergeTelegramCompanionNativeCommands(next,locale)),true);
+ }
+ const custom=mergeTelegramCompanionNativeCommands([
+  {command:'start',description:'Owner custom start'},
+  {command:'lang_es',description:'Custom owner language shortcut'}
+ ],'ru');
+ assert.equal(custom.filter(x=>x.command==='lang_es').length,1,'owner custom command remains');
+ assert.equal(mergeTelegramCompanionNativeCommands([
+  {command:'lang_es',description:'Español'},
+  {command:'lang_es',description:'Español'}
+ ],'ru'),null,'duplicates are never silently removed');
+ const menu=readFileSync(new URL('../lib/crm/telegram-companion-menu.mjs',import.meta.url),'utf8');
+ assert.ok(menu.includes("language:'🌐 Выбери язык бота: /lang_ru · /lang_en.'"));
+ assert.ok(menu.includes("language:'🌐 Choose language: /lang_ru · /lang_en.'"));
+ assert.ok(!menu.includes("language:'🌐 Choose language: /lang_ru · /lang_en · /lang_es.'"));
+ // Legacy explicitly typed Spanish commands and deep links remain parsed.
+ assert.match(menu,/lang_es:'lang_es'/);
+});
+
 test('preserves existing BotFather commands, their descriptions and order',()=>{
  const existing=[{command:'start',description:'Old start'},{command:'agree',description:'Old consent'},{command:'video',description:'Old video'}];
  const merged=mergeTelegramCompanionNativeCommands(existing,'ru');
@@ -65,6 +94,12 @@ test('first Home reply may bootstrap native Menu once per hour without blocking 
  assert.ok(route.includes("HH_CRM_TG_COMMAND_MENU_SETUP_FAILED"));
  assert.ok(route.includes('after(async()=>'));
  // It must not mutate webhooks and must not interfere with existing customer /stop.
- assert.ok(route.includes('const intake=companion.reviewRequested'));
+ assert.ok(route.includes('const diagnosticEvent=companion.reviewRequested'));
+ assert.ok(route.includes("rawText:'/start hhreview_'+companion.reviewLocale,inlineAction:null"));
+ assert.ok(route.includes('const aiIntake=await processTelegramAiV3(diagnosticEvent,config)'));
+ assert.ok(route.includes('const intake=await processTelegramDiagnostic(diagnosticEvent,config)'));
+ assert.ok(route.indexOf('const aiIntake=await processTelegramAiV3') <
+   route.indexOf('const intake=await processTelegramDiagnostic'),
+   'consented V3 is handled first; legacy diagnostics remain the next handler');
  assert.ok(route.includes('const video=await receiveOwnerTelegramVideoWebhook'));
 });

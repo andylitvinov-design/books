@@ -33,8 +33,14 @@ jobs:
         with:
           node-version: "22"
           cache: npm
+      - name: Stage checksum-verified FFmpeg before npm lifecycle
+        uses: ./.github/actions/ci-ffmpeg-static
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
+      - name: Materialize checksum-verified FFmpeg for package runtime
+        uses: ./.github/actions/ci-ffmpeg-static
+        with:
+          stage: materialize
       - name: Build pinned approved coast image for A4 PDF
         run: node scripts/build-report-pdf-art.mjs
       - name: Verify A4/mobile images, narrative, pagination and signatures

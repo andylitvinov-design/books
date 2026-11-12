@@ -41,8 +41,11 @@ test("six real sample buttons remain usable, with bounded cancellation and iPhon
     "no orphan timeout after network success/failure");
   assert.ok(ui.includes('sampleBusyId?t.sampleBusyHelp:sampleMessage'),
     "spinner must explain progress and cancellation");
-  assert.ok(ui.includes('onError={()=>setSampleMessage(t.sampleAudioError)}'),
-    "native audio decode failures must be visible rather than silent");
+  assert.ok(ui.includes('onCanPlay={sampleCanPlay} onError={samplePlaybackError}'),
+    "native audio decode failures must invoke the self-healing error handler");
+  assert.ok(ui.includes('setSampleMessage(t.sampleAudioError)') &&
+    ui.includes('deletePublicVoiceSample(storageKey)'),
+    "failed audio must show an error and evict that exact cached voice");
   for(const language of ["ru","en","es"]){
     const txt=VOICE_STUDIO_SAMPLE[language];
     assert.ok(txt.length>=35&&txt.length<=85,"short public sample in "+language);

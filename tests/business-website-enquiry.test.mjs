@@ -46,7 +46,11 @@ test("public intake is fail-closed, encrypted and never claims a confirmed booki
   assert.match(form,/contactConsent:consent/);
   assert.match(form,/type="checkbox" required/);
   assert.doesNotMatch(form,/mailto:|send_email|setTimeout\(/);
-  assert.match(form,/No payment|no payment|без регистрации|sin registro/);
+  assert.match(form,/No booking or payment is confirmed/);
+  assert.match(form,/Запись и оплата не подтверждаются автоматически/);
+  assert.match(form,/No se confirma ninguna reserva ni pago/);
+  assert.match(form,/if \(websiteMessengerOnlyUi\(\)\) return /);
+  assert.match(form,/MandatoryMessengerActions/);
 });
 
 

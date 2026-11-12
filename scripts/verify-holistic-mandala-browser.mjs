@@ -183,10 +183,22 @@ const runEngine = async ([engine, browserType]) => {
         assert.ok(goalRects.every(rect=>Math.abs(rect.y-goalRects[0].y)<=2),
           engine+" "+locale+" "+width+" five categories must share one row: "+JSON.stringify(goalRects));
         const continueButton=quick.locator("[data-video-continue-scenarios]");
+        const generateButton=quick.locator('[data-video-stage-generate="goal"]');
         const customInput=quick.locator("[data-video-request-after-topic] [data-auto-video-input]");
         const initialStories=quick.locator("[data-auto-video-story-options] [data-auto-video-option]");
         await expect(customInput).toBeVisible({timeout:12000});
         await expect(continueButton).toBeEnabled();
+        await expect(generateButton).toBeVisible();
+        const generateBounds=await generateButton.boundingBox();
+        const personalizeBounds=await continueButton.boundingBox();
+        assert.ok(generateBounds&&personalizeBounds&&
+          generateBounds.width>=44&&generateBounds.height>=44&&
+          personalizeBounds.width>=44&&personalizeBounds.height>=44&&
+          Math.abs(generateBounds.y-personalizeBounds.y)<=2&&
+          generateBounds.x+generateBounds.width<=personalizeBounds.x+2,
+          engine+" "+locale+" "+width+" two Goal buttons must share a row without overlap");
+        assert.equal(await page.locator("[data-mandala-advanced]").isVisible(),false);
+        assert.equal(await page.locator('[class*="voiceStudioLink"]').isVisible(),false);
         await expect(initialStories.first()).toBeHidden();
         await expect(quick.locator("[data-video-practice-shortcuts]")).toBeHidden();
         await expect(quick.locator("[data-video-procedural-options]")).toBeHidden();
@@ -218,13 +230,14 @@ const runEngine = async ([engine, browserType]) => {
               topic:rect("[data-video-director-topic-controls]"),
               input:rect("[data-video-request-after-topic] [data-auto-video-input]"),
               cta:rect("[data-video-continue-scenarios]"),
+              generate:rect('[data-video-stage-generate="goal"]'),
               visibleBottom:Math.min(innerHeight,...fixedDocks)};
           });
         };
         for(const height of [820,700]){
           if(height===700 && width!==320 && width!==390)continue;
           const g=await checkFirstScreen(height);
-          assert.ok(g.hero&&g.goals&&g.topic&&g.input&&g.cta,
+          assert.ok(g.hero&&g.goals&&g.topic&&g.input&&g.cta&&g.generate,
             engine+" "+locale+" "+width+" missing source-backed entry controls");
           assert.ok(g.pageWidth<=width+2,
             engine+" "+locale+" "+width+" horizontal overflow: "+JSON.stringify(g));
@@ -694,6 +707,16 @@ const runEngine = async ([engine, browserType]) => {
         const firstMaster=await livePreview.locator("video").getAttribute("src");
         assert.ok(firstMaster?.startsWith("/videos/holistic-house/"),
           "same-origin published first-party film master");
+        // Verify presentation in the real Goal film viewport, before the
+        // Canvas controls. No iframe loads before deliberate Play.
+        const ownerIntro=quick.locator('[data-video-therapy-intro="ready"]');
+        if((locale==="ru"||locale==="en")&&await ownerIntro.isVisible()){
+          assert.equal(await page.locator('iframe[src*="youtube-nocookie.com"]').count(),0);
+          await ownerIntro.click();
+          await expect(page.locator('iframe[src*="youtube-nocookie.com/embed/P9Wvo3gEY6U"]')).toHaveCount(1);
+          await page.locator('[data-video-therapy-intro-close]').click();
+          await expect(page.locator("[data-video-preview-toggle]")).toBeVisible();
+        }
         // The owner-approved screen has ONE visible Play, on the central Canvas.
         // Keep the native first-party MP4 mounted for the same renderer, without
         // requiring a tap on its hidden (legacy) miniature UI.
@@ -971,10 +994,13 @@ const runEngine = async ([engine, browserType]) => {
           await captureSyntheticOverview(page,effects,
             process.env.HH_HYPNO_SCREENSHOT_DIR+"/"+engine+"-"+locale+"-"+width+"-third-workspace.png");
         }
-        await workspaceQuick.locator('[data-video-quick-control="editor"]').click();
-        const conceptPanel=page.locator("[data-video-montage-concept]");
+        await workspaceQuick.locator('[data-video-quick-control="phrases"]').click();
+        await page.locator('[data-video-ideas-tab="concept"]').click();
+        const conceptPanel=page.locator("[data-video-ideas-concept-panel]");
         await expect(conceptPanel).toBeVisible({timeout:15000});
         await expect(conceptPanel.locator("[data-video-concept-approve]")).toBeVisible();
+        await workspaceQuick.locator('[data-video-quick-control="editor"]').click();
+        await page.locator('[data-video-montage-tab="settings"]').click();
         const conceptTextTools=page.locator("[data-video-concept-text-tools]");
         if(!(await conceptTextTools.evaluate(node=>node.open)))
           await conceptTextTools.locator(":scope > summary").click();
@@ -1061,24 +1087,20 @@ const runEngine = async ([engine, browserType]) => {
           "the owner-approved mock keeps one short editorial line on top of the real video");
         assert.equal(await hero.locator("[data-video-preview-toggle]").count(),1,
           "one prominent central Canvas Play/Pause remains");
-        // The client Canvas is not an informational YouTube player.
-        const introDock=page.locator("[data-video-therapy-info]");
-        assert.equal(await hero.locator("[data-video-therapy-intro]").count(),0,
-          "published YouTube must not cover the live creative video frame");
-        assert.equal(await introDock.count(),locale==="es"?0:1,
-          "only locales with a verified destination receive a separate introduction");
-        assert.equal(await introDock.locator('[data-video-therapy-intro="ready"]').count(),locale==="ru"?1:0,
-          "RU presentation stays within the Practices workspace");
-        assert.equal(await introDock.locator('[data-video-therapy-intro="english-channel"]').count(),locale==="en"?1:0,
-          "EN links to its own verified channel, not the RU soundtrack");
-        const youtubeLink=introDock.locator('[data-video-therapy-youtube]');
-        assert.equal(await youtubeLink.count(),locale==="es"?0:1);
-        if(locale==="ru")assert.equal(await youtubeLink.getAttribute("href"),
-          "https://www.youtube.com/watch?v=P9Wvo3gEY6U");
-        if(locale==="en")assert.equal(await youtubeLink.getAttribute("href"),
-          "https://www.youtube.com/@aatapro/videos");
-        assert.equal(await introDock.locator("iframe").count(),0,
-          "no remote YouTube iframe before a deliberate visitor interaction");
+        // This production page has Intro + My beside the ONE 16:9 player.
+        // Reopening Intro must mount a RU-only iframe after the visitor clicks.
+        const introRail=quick.locator('[data-video-intro-info]');
+        await expect(introRail).toBeVisible();
+        assert.equal(await hero.locator('iframe[src*="youtube-nocookie.com"]').count(),0);
+        if(locale==="ru"||locale==="en"){
+          await introRail.click();
+          await expect(hero.locator('iframe[src*="youtube-nocookie.com/embed/P9Wvo3gEY6U"]')).toHaveCount(1);
+          await hero.locator('[data-video-therapy-intro-close]').click();
+          await expect(hero.locator('[data-video-preview-toggle]')).toBeVisible();
+        }
+        assert.equal(await page.locator("[data-video-therapy-info]").count(),0,
+          "leaving Intro restores the original Canvas inside one player");
+        assert.equal(await hero.locator('iframe[src*="youtube-nocookie.com"]').count(),0);
         assert.equal(await hero.locator("button").count(),1,
           "central Canvas Play remains the only creative hero control");
         assert.equal(await hero.getAttribute("data-hero-promo"),"false",
@@ -1286,39 +1308,48 @@ const runEngine = async ([engine, browserType]) => {
           assert.equal(await page.locator("[data-video-template]").count(),4,id+" template quartet");
         }
         await page.locator('[data-video-theme="money"]').click();
-        await page.locator("[data-mandala-advanced] > summary").click();
-        const preset = page.locator('[data-mandala-preset="star"]');
-        await preset.click();
-        assert.equal(await page.locator("[data-selected-mandala]").getAttribute("data-selected-mandala"), "star");
-        assert.equal(await preset.getAttribute("aria-pressed"), "true");
-
-        await page.locator("#mandala-intention").fill("Calm & confidence");
+        // The video page ends with two actions, with no legacy Voice/Mandala
+        // panel visible beneath. Synthetic local photo is still handled by
+        // the single real video editor and requires explicit export consent.
+        assert.equal(await page.locator("[data-mandala-advanced]").isVisible(),false);
         await page.locator("#mandala-photo").setInputFiles({
           name: "local-private-test.png",
           mimeType: "image/png",
           buffer: PNG,
         });
-        await page.locator('img[src^="blob:"]').first().waitFor({ state: "attached", timeout: 10000 });
-        await page.waitForFunction(() => {
-          const photo = document.querySelector('img[src^="blob:"]');
-          return photo && photo.complete && photo.naturalWidth > 0;
-        }, undefined, { timeout: 15000 });
-        assert.deepEqual(uploaded, [], engine + " synthetic photo must not be uploaded");
+        await page.locator('img[src^="blob:"]').first().waitFor({state:"attached",timeout:10000});
+        await page.waitForFunction(()=>{
+          const photo=document.querySelector('img[src^="blob:"]');
+          return photo&&photo.complete&&photo.naturalWidth>0;
+        },undefined,{timeout:15000});
+        assert.deepEqual(uploaded,[],engine+" synthetic photo must not be uploaded");
         await page.waitForFunction(()=>document.querySelector("[data-video-photo-enabled]")?.checked===true,
           undefined,{timeout:10000});
         assert.equal(await page.locator("[data-video-photo-consent]").isChecked(),false,
-          "selecting a photo must not imply permission to export it");
-
-        const downloadLink = page.locator('a[download="holistic-house-mandala.png"]');
-        await downloadLink.waitFor({ state: "visible", timeout: 30000 });
-        const [download] = await Promise.all([
-          page.waitForEvent("download", { timeout: 20000 }),
-          downloadLink.click(),
-        ]);
-        assert.equal(download.suggestedFilename(), "holistic-house-mandala.png");
-        const png = await bufferFromStream(await download.createReadStream());
-        assert.deepEqual(png.subarray(0, 8), Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
-        assert.ok(png.length > 2000, engine + " PNG must include composed illustration and photo");
+          "selecting a photo must not imply export permission");
+        // One real browser case verifies the already-independent photo mode.
+        if(engine==="webkit"&&locale==="en"&&width===390){
+          const photoPage=await context.newPage();
+          try{
+            const photoResponse=await photoPage.goto(url+"?mode=photo",
+              {waitUntil:"domcontentloaded",timeout:90000});
+            assert.equal(photoResponse?.status(),200);
+            await expect(photoPage.locator("[data-mentalica-photo-mandala]")).toBeVisible();
+            await expect(photoPage.locator("[data-photo-mandala-stage]")).toBeVisible();
+            // The existing Photo constructor owns PNG export. Verify actual
+            // bytes here instead of reopening its obsolete Video-page footer.
+            const [photoDownload]=await Promise.all([
+              photoPage.waitForEvent("download",{timeout:30000}),
+              photoPage.locator("[data-mentalica-photo-mandala] [class*='actionRow']")
+                .first().locator("button").first().click(),
+            ]);
+            assert.match(photoDownload.suggestedFilename(),/mandala\.png$/);
+            const png=await bufferFromStream(await photoDownload.createReadStream());
+            assert.deepEqual(png.subarray(0, 8),
+              Buffer.from([137,80,78,71,13,10,26,10]),"dedicated Photo Mandala exports real PNG");
+            assert.ok(png.length>2000,"photo mandala PNG contains rendered illustration");
+          }finally{await photoPage.close();}
+        }
 
         const moneySelector = page.locator("[data-mandala-money-effects]");
         await moneySelector.waitFor({ state: "visible", timeout: 15000 });
@@ -2161,32 +2192,10 @@ const runEngine = async ([engine, browserType]) => {
           if(oldTheme)await page.locator('[data-video-quick-theme="'+oldTheme+'"]').click();
         }
 
-        const focus = page.locator("button[aria-pressed][class*='focusButton']");
-        await focus.click();
-        try {
-          await page.waitForFunction(() =>
-            document.querySelector("[data-mandala-focus]")?.getAttribute("data-mandala-focus") === "true",
-            undefined, {timeout:12000});
-        } catch {
-          const diagnostic=await page.evaluate(()=>{
-            const button=document.querySelector("button[class*='focusButton']");
-            const wrapper=document.querySelector("[data-mandala-focus]");
-            const advanced=document.querySelector("[data-mandala-advanced]");
-            return {buttonPressed:button?.getAttribute("aria-pressed"),focus:wrapper?.getAttribute("data-mandala-focus"),
-              advancedOpen:advanced?.hasAttribute("open"),buttonVisible:Boolean(button?.getBoundingClientRect().width)};
-          });
-          throw new Error(engine+" "+locale+" "+width+"px focus transition failed: "+JSON.stringify(diagnostic));
-        }
-        assert.equal(await page.locator("[data-mandala-focus]").getAttribute("data-mandala-focus"), "true");
-        const poster = page.locator(".academy-video-poster");
-        assert.equal(await page.locator('iframe[src*="youtube-nocookie.com/embed/"]').count(), 0);
-        await poster.click();
-        await page.locator('iframe[src*="youtube-nocookie.com/embed/"]').waitFor({ state: "attached", timeout: 15000 });
-        await page.keyboard.press("Escape");
-        await page.waitForFunction(() =>
-          document.querySelector("[data-mandala-focus]")?.getAttribute("data-mandala-focus")==="false",
-          undefined,{timeout:12000});
-        assert.equal(await page.locator("[data-mandala-focus]").getAttribute("data-mandala-focus"), "false");
+        // Legacy meditation focus controls cannot overlay the Video Studio
+        // Goal. Their photo constructor lives at ?mode=photo.
+        assert.equal(await page.locator("[data-mandala-advanced]").isVisible(),false);
+        assert.equal(await page.locator('[class*="focusButton"]').isVisible(),false);
 
         // Owner's iPhone regression: a single, functional Support dock is
         // shared with the local video editor, never a second legacy nav.

@@ -7,6 +7,9 @@ import Link from "next/link";
 import type { PublicLocale } from "@/lib/public-locales";
 import type { VideoTheme } from "@/lib/mandala/holistic-video-themes";
 import css from "./meditation-course-enquiry.module.css";
+import {MandatoryMessengerActions} from "@/components/mandatory-messenger-actions";
+import {websiteMessengerOnlyUi} from "@/lib/crm/website-messenger-only.mjs";
+import {whatsappEnquiryUrl} from "@/lib/whatsapp-enquiry";
 
 const copy={
   ru:{
@@ -103,6 +106,7 @@ export function MeditationCourseEnquiry({locale,focus,courseKind="meditation"}:{
     }catch{setError(t.error);}
     finally{setBusy(false);}
   }
+  if (websiteMessengerOnlyUi()) return <div className={css.root} data-meditation-course-enquiry><MandatoryMessengerActions locale={locale} collapsed label={t.open} whatsappUrl={whatsappEnquiryUrl({locale,service:t.service,request:t.description+focus,pagePath:courseKind==="video-series"?"/"+locale+"/holistic-support/mandala":"/"+locale+"/services/imagery-therapy"})}/></div>;
   return <div className={css.root} data-meditation-course-enquiry>
     {saved!==null?<p className={css.success} data-meditation-course-enquiry-saved role="status">
       {t.done}{saved?<span>{t.reference}: {saved}</span>:null}

@@ -1,0 +1,4 @@
+.page{background:#f8f5ef;min-height:100vh;min-width:0;width:100%;overflow-x:clip}
+.header{width:100%;max-width:1220px;min-width:0;margin:0 auto;padding:0 clamp(10px,2vw,25px);box-sizing:border-box}
+.header :global(.house-header){max-width:none}
+@media(max-width:580px){.header{padding-inline:10px}}

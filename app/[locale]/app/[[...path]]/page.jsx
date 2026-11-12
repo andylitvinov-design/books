@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation'
 import { englishCabinetTarget } from '@/lib/app/spanish-cabinet-bridge.mjs'
-import AppWorkspace from '@/components/app/app-workspace'
+import { AppWorkspaceNavigator } from '@/components/app/app-workspace'
 import './workspace.css'
 import './assessment-dashboard.css'
 import './insights-compact.css'
@@ -19,6 +19,7 @@ export async function generateMetadata({ params, searchParams }) {
     tests: locale === 'ru' ? 'Мои тесты' : 'My tests',
     portfolio: locale === 'ru' ? 'Мои результаты' : 'My results',
     progress: locale === 'ru' ? 'Мой прогресс' : locale === 'es' ? 'Mi progreso' : 'My Progress',
+    'my-coaching-plan': locale === 'ru' ? 'Мой план коучинга' : locale === 'es' ? 'Mi plan de coaching' : 'My Coaching Plan',
     course: locale === 'ru' ? 'Мои курсы' : 'My courses',
     business: locale === 'ru' ? 'Мой бизнес-курс на 90 дней' : 'My 90-day business programme',
     coaching: path[1] === 'egyptian'
@@ -68,10 +69,10 @@ export default async function AppPage({ params, searchParams }) {
     }
   }
   if (path[0] === 'coaching' && path.length === 2 && !['egyptian','greek'].includes(path[1])) notFound()
-  if (path.length > 2 || (!['portrait','monitoring','tests','runs','results','history','consultations','settings','continue','reports','portfolio','progress','practice','analysis','documents','course','business','coaching','labs','videos'].includes(path[0]) && path.length)) notFound()
+  if (path.length > 2 || (!['portrait','monitoring','tests','runs','results','history','consultations','settings','continue','reports','portfolio','progress','my-coaching-plan','practice','analysis','documents','course','business','coaching','labs','videos'].includes(path[0]) && path.length)) notFound()
   // Existing Analysis bookmarks are permanently useful: open the merged report archive.
   if (path[0] === 'analysis' && path.length === 1) redirect('/' + locale + '/app/portrait?space=reports#personal-reports')
   // A tab-specific workspace cannot briefly render full screens with a
   // previous tab's reduced Profile data while the next bootstrap is loading.
-  return <AppWorkspace key={path[0]} locale={locale} path={path} />
+  return <AppWorkspaceNavigator locale={locale} path={path} />
 }

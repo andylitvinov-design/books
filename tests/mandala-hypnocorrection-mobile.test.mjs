@@ -82,20 +82,23 @@ test("mobile layout reuses one editor, real phrase settings and both frame pipel
   assert.doesNotMatch(ui,/fetch\(|getUserMedia\(|checkout|stripe|payPal/i);
 });
 
-test("07 Nov Hypno uses two exclusive effect tabs and live visual option chips",()=>{
+test("10 Nov Hypno uses three exclusive tabs including the moved visual presets",()=>{
   const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
   const ui=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.tsx",import.meta.url),"utf8");
   const css=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.module.css",import.meta.url),"utf8");
   const videoCss=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
-  for(const id of ["visual","audio"])assert.match(ui,new RegExp('id:"'+id+'"'));
+  for(const id of ["visual","audio","effects"])assert.match(ui,new RegExp('id:"'+id+'"'));
   assert.doesNotMatch(ui,/id:"phrases",title:/,"phrases are now accessible within Visual");
   assert.match(ui,/data-hypno-light-preset=\{index\}/);
   assert.match(ui,/data-hypno-text-position=\{position\}/);
   assert.match(ui,/data-hypno-summary/);
   assert.match(ui,/onOpenPhraseEditor/);
   assert.match(ui,/onLightChange\(\{\.\.\.light,enabled:true,opacity\}\)/);
-  assert.match(ui,/useState<GroupId>\("visual"\)/);
+  assert.match(ui,/useState<GroupId>\(initialGroup\)/);
   assert.match(ui,/data-hypno-tabs/);
+  assert.match(ui,/data-hypno-visual-effect=\{item.id\}/);
+  assert.match(ui,/data-hypno-effect-status/);
+  assert.match(ui,/data-hypno-visual-effects/);
   assert.match(ui,/role="tablist"/);
   assert.match(ui,/role="tabpanel"/);
   assert.match(ui,/aria-selected=\{activeGroup===group.id\}/);
@@ -104,33 +107,30 @@ test("07 Nov Hypno uses two exclusive effect tabs and live visual option chips",
   assert.match(ui,/data-hypno-binaural-settings/);
   assert.match(ui,/data-hypno-light-settings/);
   assert.match(ui,/data-hypno-create/);
-  assert.match(ui,/data-hypno-without-effects/);
-  assert.match(ui,/onClick=\{onCreateWithoutEffects\}/);
+  assert.match(ui,/data-hypno-add-effects/);
+  assert.match(ui,/onClick=\{\(\)=>setActiveGroup\(activeGroup==="visual"\?"audio":activeGroup==="audio"\?"effects":"visual"\)\}/);
   assert.doesNotMatch(ui,/createPortal|data-hypno-intro-slot|data-hypno-meditation-action/);
   assert.doesNotMatch(ui,/Yes, add|keep simple|Browse hypno library/);
   assert.match(css,/\.groupTabs\{/);
   assert.match(css,/\.group\[hidden\]\{display:none!important\}/);
   assert.match(css,/@media\(max-width:359px\)/);
   assert.match(videoCss,/data-active-workspace="effects"\] \.quickBuilder>\[data-video-quick-section="1"\],[\s\S]*?display:none!important/);
-  assert.match(studio,/onCreate=\{startFromHero\} onCreateWithoutEffects=\{generateWithoutHypnoEffects\}/);
+  assert.match(studio,/status=\{notice\} onCreate=\{createQuickVideo\}/);
   assert.match(studio,/data-hypno-stage-intro/);
   assert.match(videoCss,/\.hypnoStageTitle\{display:none\}/);
   assert.match(videoCss,/\.studio\[data-active-workspace="effects"\] \.previewStage \.heroRail\{display:none!important\}/);
   assert.match(videoCss,/\.studio\[data-active-workspace="effects"\] \.heroEditorial\{display:none!important\}/);
   assert.equal((studio.match(/id="video-hero"/g)||[]).length,1);
 });
-test("Generate without effects strips Hypno layers before original local renderer",()=>{
-  const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
-  const start=studio.indexOf("async function generateWithoutHypnoEffects");
-  const action=studio.slice(start,studio.indexOf("// This is a local, non-persistent preview.",start));
-  assert.ok(start>0);
-  assert.match(action,/hypnoWhisperEnabled\|\|hypnoBinauralEnabled/);
-  assert.match(action,/await applyHypnoAudioEffects\(\{whisper:false,binaural:false/);
-  assert.match(action,/if\(previousHypnoAudioRef\.current\)return/);
-  assert.match(action,/setHypnoLight\(value=>\(\{\.\.\.value,enabled:false\}\)\)/);
-  assert.match(action,/setAffirmations\(value=>\(\{\.\.\.value,enabled:false\}\)\)/);
-  assert.match(action,/freshHypnoCreateRef\.current\(\)/);
-  assert.doesNotMatch(action,/setAttachedAudio\(|setTimelineTextClips\(/);
+test("Effects offers real Generate plus optional Visual/Audio step, without a Voice detour",()=>{
+ const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+ const ui=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.tsx",import.meta.url),"utf8");
+ assert.ok(ui.includes("data-hypno-create"));
+ assert.ok(ui.includes("data-hypno-add-effects"));
+ assert.ok(ui.includes('onClick={()=>setActiveGroup(activeGroup==="visual"?"audio":activeGroup==="audio"?"effects":"visual")}'));
+ assert.ok(studio.includes("status={notice} onCreate={createQuickVideo}"));
+ assert.ok(!studio.includes("generateWithoutHypnoEffects"));
+ assert.ok(studio.includes("void createVideo()"),"must use the real protected video renderer");
 });
 
 test("Effects shares the one compact in-flow tab rail and preserves the original video",()=>{

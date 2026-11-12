@@ -121,15 +121,15 @@ test("studio exposes four scenario melodies in its existing real audio/video mix
   // registry. Do not restore a duplicate global array to satisfy a stale test.
   const musicCss=read("components/mandala-video-mobile.module.css");
   assert.match(studio,/const libraryScenarioTracks=useMemo/);
-  assert.match(studio,/SCENARIO_AUDIO_REGISTRY\\.flatMap\\(\\(scene:\\{id:string\\}\\)=>scenarioAudioTracks\\(scene\\.id\\)\\)/);
-  assert.match(studio,/const catalogueScenarioMatches=libraryScenarioTracks\\.filter/);
-  assert.match(studio,/const seenAudioSearchIds=new Set<string>\\(\\)/);
-  assert.match(studio,/const filteredLibraryAudio=audioCandidates\\.filter/);
-  assert.match(studio,/return !audioThemeOverride\\|\\|track\\.themes\\.includes\\(audioThemeOverride\\)/);
+  assert.match(studio,/SCENARIO_AUDIO_REGISTRY\.flatMap\(\(scene:\{id:string\}\)=>scenarioAudioTracks\(scene\.id\)\)/);
+  assert.match(studio,/\.\.\.curatedAudioTracks,\.\.\.libraryScenarioTracks,\.\.\.classicalAudioTracks/);
+  assert.match(studio,/const seenAudioSearchIds=new Set<string>\(\)/);
+  assert.match(studio,/const filteredLibraryAudio=audioCandidates\.filter/);
+  assert.match(studio,/return !audioThemeOverride\|\|track\.themes\.includes\(audioThemeOverride\)/);
   // The new Music Match radio choices must be actually visible on the Phrases
   // workspace instead of being rendered invisibly behind older mobile CSS.
   assert.match(studio,/data-hypno-music data-personalized-music-match/);
-  assert.match(musicCss,/\\.studio\\[data-active-workspace="phrases"\\] \\.phraseMusicSection\\[data-personalized-music-match\\]\\{display:grid!important\\}/);
+  assert.match(musicCss,/\.studio\[data-active-workspace="phrases"\] \.phraseMusicSection\[data-personalized-music-match\]\{display:grid!important\}/);
   assert.match(studio,/availableAudioTracks\.find/);
   assert.match(studio,/toggleQuickMusic\(id\)/);
   assert.match(studio,/playQuickTrack\(id\)/);

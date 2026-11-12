@@ -130,8 +130,10 @@ test('practitioner client inbox is unified without revealing owner-only CRM',()=
 test('direct messenger remains available when the optional request directory is down',()=>{
  const hub=source('components/app/messages-hub.jsx')
  assert.match(hub,/if\(embedded\)return <div className=\{styles.hub\} data-member-direct-fallback>/)
- assert.match(hub,/<DirectMessageInbox locale=\{locale\} embedded compact ownerCrmAvailable=\{false\}\/>/)
- assert.match(hub,/!loading&&!unauthenticated&&!bootstrapSignInRequired/)
+ assert.match(hub,/<MessengerGuestGate locale=\{locale\} section="clients"\/>/)
+ assert.match(hub,/if\(embedded\)return[\s\S]*?<DirectMessageInbox locale=\{locale\} embedded compact ownerCrmAvailable=\{false\}\/>/)
+ assert.match(hub,/if\(ownerAccountId&&directDestination\)[\s\S]*?recipientSlug=\{directDestination\}/)
+ assert.match(hub,/\(unauthenticated\|\|bootstrapSignInRequired\)[\s\S]*?<MessengerGuestGate/)
 })
 
 test('CSP class is identical on Spanish app routes in server and client',()=>{
@@ -198,9 +200,11 @@ test('Messenger keeps the same header and tab shell across AI, Orders, Clients a
  const css=source('components/app/messages-orders-clients.module.css')
  for(const text of ['AI · Orders · Clients','ИИ · Заказы · Клиенты','IA · Pedidos · Clientes'])
    assert.ok(ui.includes(text),text)
- assert.match(ui,/<p>\{t.subtitle\}<\/p>/)
+ for(const label of ["AI Assistant","ИИ-ассистент","Asistente IA"])assert.ok(ui.includes(label),label);
+ assert.match(ui,/data-hh-ai-chat-history/);
+ assert.match(ui,/data-hh-ai-new-chat/);
  assert.doesNotMatch(ui,/<p>\{section==='ai'\?/)
- const header=ui.indexOf('<header className={styles.head}>')
+ const header=ui.indexOf('<header className={styles.head} data-hh-ai-assistant-header>')
  const tabs=ui.indexOf('<div className={styles.sections} role="tablist"')
  const orders=ui.indexOf('<div id="hh-orders-panel"')
  assert.ok(tabs!==-1&&header>tabs&&orders>header,'tab switcher appears before shared heading')
@@ -212,27 +216,62 @@ test('Messenger keeps the same header and tab shell across AI, Orders, Clients a
 })
 
 
-test('owner Messenger preserves one private chat while topic hints prepare an unsent draft',()=>{
+test('owner Messenger preserves one chat with six in-chat entries and locale control',()=>{
  const ui=source('components/app/messages-orders-clients.jsx')
  const ai=source('components/app/messenger-ai-workspace.jsx')
  const css=source('components/app/messenger-ai-workspace.module.css')
  const chat=source('components/holistic-agent-chat.tsx')
  const mobile=source('app/[locale]/app/messages/messages-page.css')
  assert.ok(ui.indexOf('<div className={styles.sections} role="tablist"')<
-   ui.indexOf('<header className={styles.head}>'))
+   ui.indexOf('<header className={styles.head} data-hh-ai-assistant-header>'))
  assert.match(css,/\.layout\{display:flex;flex-direction:column/)
  assert.match(css,/\.content\{display:flex;flex:1/)
  assert.ok(chat.includes('data-hh-ai-welcome'))
  for(const id of ['video','meditation'])assert.ok(chat.includes('data-hh-ai-start="'+id+'"'))
  assert.ok(chat.includes('startGuided(kind:'))
  assert.ok(chat.includes('isCasualGreeting(text)'))
- // This widget has one chat instance. Shared iHelp topic chips populate its draft,
- // but must not create a second conversation/menu rail or auto-send.
+ // One original protected chat. The approved six-action landing opens only
+ // on a user gesture; its old IHelpTopics rail and automatic prompt transfer
+ // were retired. Auth/consent, one composer and local draft remain intact.
  assert.doesNotMatch(ai,/data-chat-menu-rail/)
  assert.equal((ai.match(/<HolisticAgentChat\b/g)||[]).length,1)
- assert.match(ai,/<HolisticAgentChat locale=\{locale\} compact quickPrompt=\{quickPrompt\}/)
- assert.match(ai,/<IHelpTopics locale=\{locale\} onSelect=\{prompt=>setQuickPrompt\(/)
- assert.match(ai,/previous=>\(\{revision:\(previous\?\.revision\|\|0\)\+1,text:prompt\}\)/)
+ assert.match(ai,/<HolisticAgentChat locale=\{locale\} compact messengerView/)
+ assert.match(ai,/authenticated=\{authenticated\} authStatus=\{authStatus\}/)
+ assert.match(ai,/onAuthRetry=\{onAuthRetry\}/)
+ assert.match(ai,/onConversationLocaleChange=\{onConversationLocaleChange\}/)
+ assert.match(chat,/data-chat-skin=\{messengerView\?"messenger":undefined\}/)
+ assert.doesNotMatch(ai,/<IHelpTopics\b|quickPrompt=\{/)
+ assert.match(chat,/compact&&messengerView&&!pageHelp&&!messages\.length&&<>[\s\S]*?<MessengerAiLanding/)
+ assert.ok(chat.includes('<MessengerSixProjects locale={locale} onSelect={startProject}/>'))
+ assert.match(chat,/onCreateVideo=\{(?:startContent|\(\)\s*=>\s*startContent\(\))\}/)
+ assert.match(chat,/onPractice=\{\(\)=>startGuided\("meditation"\)\}/)
+ assert.match(chat,/onAsk=\{\(\)=>composerRef\.current\?\.focus\(\{preventScroll:true\}\)\}/)
+ assert.match(chat,/if\(!quickPrompt\)return;\s*setDraft\(quickPrompt\.text\.slice\(0,2000\)\)/)
+ const landing=source('components/app/messenger-ai-landing.tsx')
+ assert.match(landing,/const ACTIONS=\[/)
+ for(const id of ['test','video','practice','session','course','ask'])
+   assert.ok(landing.includes('{id:"'+id+'"'),id)
+ assert.equal((landing.match(/\{id:"(?:test|video|practice|session|course|ask)"/g)||[]).length,6)
+ assert.match(landing,/data-hh-ai-choice=\{item\.id\}/)
+ assert.match(landing,/onClick=\{item\.id==="video"\?onCreateVideo:/)
+ // The hero is a native MP4 player, starts only after the explicit tap,
+ // and keeps audio language, error recovery and close/pause behavior visible.
+ assert.match(landing,/data-hh-ai-intro-play onClick=\{start\}/);
+ assert.match(landing,/const start=\(\)=>\{/);
+ assert.match(landing,/videoRef\.current\?\.play\(\)/);
+ assert.match(landing,/<video ref=\{videoRef\} src=\{introduction\.src\} controls playsInline preload="none"/);
+ assert.match(landing,/onError=\{\(\)=>setFailed\(true\)\}/);
+ assert.match(landing,/const close=\(\)=>\{/);
+ assert.match(landing,/videoRef\.current\?\.pause\(\)/);
+ assert.match(landing,/onClick=\{close\}/);
+ assert.match(landing,/const retry=\(\)=>\{/);
+ assert.match(landing,/onClick=\{retry\}/);
+ assert.doesNotMatch(landing,/youtube-nocookie|<iframe|autoPlay|autoplay|useEffect\(/);
+ assert.equal((landing.match(/setPlaying\(true\)/g)||[]).length,1,'only user-activated start may reveal the native player');
+ assert.match(landing,/const start=\(\)=>\{\s*setFailed\(false\);\s*setPlaying\(true\);/);
+ assert.match(landing,/videoLanguage:"English audio"/);
+ assert.match(landing,/videoLanguage:"Русская озвучка"/);
+ assert.match(landing,/videoLanguage:"Audio en inglés"/);
  assert.match(chat,/method:"POST",credentials:"same-origin"/)
  assert.ok(mobile.includes('body:has(.hh-messages-page[data-hh-mobile-keyboard-open="true"]) [data-hh-unified-dock]'))
  assert.match(ui,/data-free-order-offers/)

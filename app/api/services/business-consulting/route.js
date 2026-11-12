@@ -5,6 +5,7 @@ import { readBody, safeError } from "@/lib/app/http";
 import { AppError } from "@/lib/assessments/contracts";
 import { validateBusinessEnquiry } from "@/lib/business-consulting/intake-policy";
 import { submitBusinessEnquiry } from "@/lib/business-consulting/enquiry-store";
+import { websiteMessengerOnly } from "@/lib/crm/website-messenger-only.mjs";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -25,6 +26,7 @@ export async function POST(request) {
     const ip=(request.headers.get("x-forwarded-for")||request.headers.get("x-real-ip")||"unknown").split(",")[0].trim().slice(0,70);
     await consumeRate(config,{op:"business-enquiry-hour",ip},5,3600);
     await consumeRate(config,{op:"business-enquiry-global"},120,3600);
+    if (websiteMessengerOnly()) throw new AppError('MESSENGER_VERIFICATION_REQUIRED',428);
     const result=await submitBusinessEnquiry(config,input);
     return NextResponse.json(result,{status:202,headers:{"Cache-Control":"no-store"}});
   }catch(error) {

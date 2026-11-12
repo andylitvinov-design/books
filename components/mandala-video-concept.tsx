@@ -2,16 +2,19 @@
 
 import {useEffect,useMemo,useRef,useState} from "react";
 import Link from "next/link";
-import {ArrowRight,Brain,Check,ChevronDown,Film,Heart,Layers,Leaf,LockKeyhole,
-  Music2,Pencil,RefreshCw,Sparkles,Target,UserRound,X} from "lucide-react";
+import {ArrowRight,Brain,Check,ChevronDown,LockKeyhole,
+  Pencil,RefreshCw,Sparkles,UserRound,X} from "lucide-react";
 import {getMyTubeTaxonomy,listMyTubeScenarios} from "@/lib/mandala/mytube-content-taxonomy.mjs";
 import {listMyTubeMeaningAxes,listMyTubeMeaningMotifs} from "@/lib/mandala/mytube-meaning-hierarchy.mjs";
 import {listMyTubeStyles} from "@/lib/mandala/mytube-creative-choices.mjs";
-import {VIDEO_CONCEPT_FIELD_LABELS} from "@/lib/mandala/video-concept-semantic.mjs";
+import {VIDEO_CONCEPT_FIELD_LABELS,VIDEO_CONCEPT_REVIEW_FIELD_IDS,buildConceptShotSketch}
+  from "@/lib/mandala/video-concept-semantic.mjs";
+import {summarizeVideoGoalProfile,type VideoGoalProfile} from "./mandala-video-personalization";
 import type {TimedSpeechTranscript} from "@/lib/mandala/audio-visual-storyboard.mjs";
 import {suggestVideoConcept,reviseVideoConcept,videoConceptIsValid}
   from "@/lib/mandala/auto-video-concept.mjs";
 import type {PublicLocale} from "@/lib/public-locales";
+import {buildVideoConceptNarrative} from "@/lib/mandala/video-concept-narrative.mjs";
 import css from "./mandala-video-concept.module.css";
 
 export type ApprovedVideoConcept={
@@ -22,12 +25,15 @@ export type ApprovedVideoConcept={
   currentLabel:string;desiredLabel:string;mediaBindingStatus:string;
   hasPersonalInput:boolean;inferredTopic:boolean;
   semanticConfidence?:string;semanticPurpose?:string|null;semanticAudience?:string|null;
-  avoidImagery?:string[];speechBeatsSource?:string;
+  conceptText?:string;energyStart?:number|null;energyTarget?:number|null;
+  avoidImagery?:string[];speechBeatsSource?:string;personalizationFocus?:string|null;
   parameters?:Record<string,{value:string|string[]|null;status:string;source:string}>;
 };
 type Props={
   locale:PublicLocale;goal:string;theme:string;styleIndex:number;
   speechTranscript?:TimedSpeechTranscript|null;
+  profile?:VideoGoalProfile|null;durationSeconds?:number;
+  selectedTopic?:{categoryId:string;subcategoryId:string;topicId:string;brief?:string}|null;
   ownerFields?:Partial<Record<"references"|"delivery"|"wordsAndVoice"|"soundtrack"|"timelineBinding"|"creationMode",string|null>>;
   phrases:string[];approvedConcept:ApprovedVideoConcept|null; signedIn:boolean;loginUnavailable:boolean;disabled:boolean;
   onRefreshLogin:()=>void;onApprove:(concept:ApprovedVideoConcept)=>void;
@@ -36,11 +42,12 @@ type Props={
 const COPY={
  ru:{
   ready:"Автоконцепция готова",title:"Ваша концепция видео",
-  lead:"Мы подготовили сценарий на основе вашей цели. Посмотрите предложение и решите, подходит ли оно.",
+  lead:"Сначала ключевая идея, затем связный концепт и параметры.",
   example:"Это пример без личной цели. Уточните её во вкладке «Цель», чтобы получить подходящий вариант.",
   goal:"Цель",category:"Категория",subcategory:"Подкатегория",topic:"Тема",
   style:"Стиль",scenario:"Сценарий",emotion:"Эмоциональная программа",meaning:"Смысл",motif:"Мотив",
   stages:"Четыре смысловых эпизода",story:"Основная идея",editing:"Редактирование концепции",
+  textTitle:"Текст концепции",textEdit:"Изменить текст",textSave:"Сохранить текст",textCancel:"Отмена",parameters:"Параметры концепции",
   preview:"Редакционный сценарий, не готовое видео. Перед записью проверим подходящие видеосцены.",
   approve:"Одобрить и продолжить",edit:"Редактировать концепцию",editHelp:"Требуется регистрация",
   approved:"Концепция одобрена",changed:"Цель изменилась. Проверьте обновлённую концепцию.",
@@ -52,11 +59,12 @@ const COPY={
  },
  en:{
   ready:"Your concept is ready",title:"Your video concept",
-  lead:"We prepared a story from your goal. Review the suggestion and decide whether it feels right.",
+  lead:"Review your main idea, the short film concept and its details.",
   example:"This is an example without a personal goal. Add your goal to get a more relevant suggestion.",
   goal:"Goal",category:"Category",subcategory:"Subcategory",topic:"Topic",
   style:"Style",scenario:"Scenario",emotion:"Emotional journey",meaning:"Meaning",motif:"Motif",
   stages:"Four story stages",story:"Main idea",editing:"Edit concept",
+  textTitle:"Concept story",textEdit:"Edit text",textSave:"Save text",textCancel:"Cancel",parameters:"Concept parameters",
   preview:"An editorial story, not a finished film. We check suitable source footage before export.",
   approve:"Approve & continue",edit:"Edit concept",editHelp:"Sign-in required",
   approved:"Concept approved",changed:"The goal changed. Review the updated suggestion.",
@@ -68,11 +76,12 @@ const COPY={
  },
  es:{
   ready:"Concepto preparado",title:"Tu concepto de vídeo",
-  lead:"Hemos preparado una historia según tu objetivo. Revisa la propuesta y decide si te gusta.",
+  lead:"Primero la idea clave, después el concepto y sus detalles.",
   example:"Este es un ejemplo sin objetivo personal. Añade tu objetivo para una mejor propuesta.",
   goal:"Objetivo",category:"Categoría",subcategory:"Subcategoría",topic:"Tema",
   style:"Estilo",scenario:"Guion",emotion:"Programa emocional",meaning:"Sentido",motif:"Motivo",
   stages:"Cuatro fases",story:"Idea principal",editing:"Editar concepto",
+  textTitle:"Texto del concepto",textEdit:"Editar texto",textSave:"Guardar texto",textCancel:"Cancelar",parameters:"Parámetros del concepto",
   preview:"Es un guion editorial, no un vídeo terminado. Verificamos los clips antes de exportar.",
   approve:"Aprobar y continuar",edit:"Editar concepto",editHelp:"Requiere acceso",
   approved:"Concepto aprobado",changed:"Cambió el objetivo. Revisa la nueva propuesta.",
@@ -83,17 +92,18 @@ const COPY={
   guest:"Propuesta gratuita · sin registro",noGoal:"Precisar objetivo",editStyle:"Abrir estilos"
  }
 } as const;
-const IconBadge=({icon:Icon,tone}:{icon:typeof Target;tone:string})=>
-  <span className={css.rowIcon} data-tone={tone}><Icon size={19} aria-hidden="true"/></span>;
-
-export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speechTranscript=null,ownerFields,approvedConcept,signedIn,
+export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speechTranscript=null,ownerFields,profile=null,selectedTopic=null,durationSeconds=30,approvedConcept,signedIn,
   loginUnavailable,disabled,onRefreshLogin,onApprove,onOpenGoal,onOpenStyle}:Props){
   const t=COPY[locale]||COPY.en;
   const phraseSignature=phrases.join("\u001f");
   const suggested=useMemo(()=>suggestVideoConcept({
-    locale,goal,theme,styleIndex,phrases:phraseSignature?phraseSignature.split("\u001f"):[],speechTranscript
-  }) as ApprovedVideoConcept,[locale,goal,theme,styleIndex,phraseSignature,speechTranscript]);
+    locale,goal,theme,styleIndex,phrases:phraseSignature?phraseSignature.split("\u001f"):[],speechTranscript,
+    personalization:profile?summarizeVideoGoalProfile(profile,locale):null,
+    selectedTopicId:selectedTopic?.topicId||null,creativeBrief:selectedTopic?.brief||null
+  }) as ApprovedVideoConcept,[locale,goal,theme,styleIndex,phraseSignature,speechTranscript,profile,selectedTopic?.topicId,selectedTopic?.brief]);
   const [custom,setCustom]=useState<ApprovedVideoConcept|null>(null);
+  const [textEditing,setTextEditing]=useState(false);
+  const [textDraft,setTextDraft]=useState("");
   const [editing,setEditing]=useState(false);
   const [loginOpen,setLoginOpen]=useState(false);
   const [approvedSignature,setApprovedSignature]=useState<string|null>(null);
@@ -115,6 +125,20 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
   const style=styles.find(s=>s.id===concept.styleId);
   const approved=!hasLocalEdits&&(approvedSignature===concept.signature||
     approvedConcept?.signature===concept.signature);
+  // A category-only intent (for example "Love") must not imply a specific love story.
+  const displayedTopic=concept.semanticConfidence==="low"?category.label[locale]:topic.label[locale];
+  const generatedText=buildVideoConceptNarrative({
+    locale,topic:displayedTopic,mainMessage:concept.mainMessage,
+    scenario:concept.semanticConfidence==="low"?"":scenario?.label||"",
+    motif:concept.semanticConfidence==="low"?"":motif?.label||"",
+    emotionalProgram:concept.emotionalProgram,
+    currentState:concept.parameters?.currentState?.value,
+    desiredState:concept.parameters?.desiredState?.value,
+    focus:concept.personalizationFocus,
+    pace:concept.parameters?.pace?.value,
+    energyStart:concept.energyStart,energyTarget:concept.energyTarget,durationSeconds
+  });
+  const narrativeText=concept.conceptText?.trim()||generatedText;
 
   useEffect(()=>{
     if(loginOpen&&signedIn){setLoginOpen(false);setEditing(true);}
@@ -130,45 +154,102 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
     const next=reviseVideoConcept(concept,patch,locale) as ApprovedVideoConcept;
     setCustom(next);setApprovedSignature(null);setHasLocalEdits(true);
   };
+  const startTextEdit=()=>{setTextDraft(narrativeText);setTextEditing(true);};
+  const saveTextEdit=()=>{
+    const text=textDraft.trim();
+    if(!text)return;
+    if(text!==narrativeText){
+      setCustom({...concept,conceptText:text});
+      setApprovedSignature(null);setHasLocalEdits(true);
+    }
+    setTextEditing(false);
+  };
   const submit=()=>{
-    if(!videoConceptIsValid(concept))return;
+    if(textEditing||!videoConceptIsValid(concept))return;
+    const approvedToSave={...concept,conceptText:narrativeText};
+    setCustom(approvedToSave);
     setApprovedSignature(concept.signature);
     setHasLocalEdits(false);
     setEditing(false);
-    onApprove(concept);
+    onApprove(approvedToSave);
   };
   const purposes:Record<string,[string,string,string]>={
     celebration:["Поздравление / подарок","Greeting / gift","Felicitación / regalo"],
     presentation:["Презентация","Presentation","Presentación"],
     practice:["Медитативная практика","Guided practice","Práctica guiada"],
     audio_visual:["Видеоряд по аудио","Audio-based visuals","Vídeo desde audio"],
-    personal_support:["Личная поддержка","Personal support","Apoyo personal"]
+    personal_support:["Личная поддержка","Personal support","Apoyo personal"],
+    reflection:["Личное размышление","Personal reflection","Reflexión personal"]
   };
   const purposeLabel=(value:string|null|undefined)=>{
     const labels=purposes[value||""];
     return labels?(locale==="ru"?labels[0]:locale==="es"?labels[2]:labels[1]):"—";
   };
-  const allParameterRows=VIDEO_CONCEPT_FIELD_LABELS;
+  // Display every meaningful creative parameter, not legacy technical placeholders.
+  // The headline, style, meaning, symbol, scenario and emotional arc are no longer
+  // hidden in a second grid, so they belong in this same vertical list.
+  const visibleCreativeKeys=new Set([
+    "intent","topicId","meaningAxisId","motifId","scenarioId",
+    "styleId","emotionalProgram"
+  ]);
+  const allParameterRows=VIDEO_CONCEPT_FIELD_LABELS.filter(row=>{
+    if(!visibleCreativeKeys.has(row.id)&&!VIDEO_CONCEPT_REVIEW_FIELD_IDS.includes(row.id))
+      return false;
+    const field=concept.parameters?.[row.id];
+    return Boolean(field&&field.status!=="unknown"&&field.value!==null&&field.value!==""&&
+      (!Array.isArray(field.value)||field.value.length));
+  });
+  const sketch=buildConceptShotSketch(concept,durationSeconds);
+  const word=(ru:string,en:string,es:string)=>locale==="ru"?ru:locale==="es"?es:en;
+  const audienceText:Record<string,string>={
+    family:word("Семья","Family","Familia"),
+    partner:word("Партнёр","Partner","Pareja"),
+    client:word("Клиент","Client","Cliente"),
+    public:word("Зрители","Viewers","Público"),
+    self:word("Для себя","For myself","Para mí")
+  };
   const statuses:Record<string,[string,string,string]>={
     extracted:["из речи","from speech","del audio"],suggested:["предложено","suggested","sugerido"],
     synchronized:["из настроек","synced","sincronizado"],manual:["изменено","edited","editado"],
     unknown:["не указано","unknown","sin datos"]
   };
-  const rows=[
-    {id:"goal",label:t.goal,value:concept.goal,Icon:Target,tone:"rose"},
-    {id:"purpose",label:locale==="ru"?"Назначение":locale==="es"?"Finalidad":"Purpose",
-      value:purposeLabel(concept.semanticPurpose),Icon:Film,tone:"gold"},
-    {id:"audience",label:locale==="ru"?"Для кого":locale==="es"?"Destinatario":"Audience",
-      value:concept.semanticAudience||"—",Icon:UserRound,tone:"mint"},
-    {id:"category",label:t.category,value:category.label[locale],Icon:Layers,tone:"gold"},
-    {id:"subcategory",label:t.subcategory,value:subcategory.label[locale],Icon:Leaf,tone:"mint"},
-    {id:"topic",label:t.topic,value:topic.label[locale],Icon:Sparkles,tone:"purple"},
-    {id:"style",label:t.style,value:style?.label||"",Icon:Sparkles,tone:"lilac"},
-    {id:"scenario",label:t.scenario,value:scenario?.label||"",Icon:Film,tone:"blue"},
-    {id:"emotion",label:t.emotion,value:concept.emotionalProgram.join(" → "),Icon:Heart,tone:"coral"},
-    {id:"meaning",label:t.meaning,value:meaning?.label||"",Icon:Brain,tone:"gold"},
-    {id:"motif",label:t.motif,value:motif?.label||"",Icon:Leaf,tone:"purple"}
-  ] as const;
+  const codeNames:Record<string,string>={
+    symbolic_quest:word("Символическая история","Symbolic story","Historia simbólica"),
+    relational_mirror:word("История отношений","Relationship story","Historia de vínculos"),
+    grounded_dilemma:word("Ситуация и выбор","Situation and choice","Situación y elección"),
+    journey:word("Путь","Journey","Viaje"),
+    shelter:word("Защищённое пространство","Shelter","Refugio"),
+    awakening:word("Пробуждение","Awakening","Despertar"),
+    integration:word("Интеграция","Integration","Integración"),
+    steady:word("Ровный","Steady","Constante"),
+    gentle:word("Мягкий","Gentle","Suave"),
+    balanced:word("Умеренная","Balanced","Equilibrada"),
+    dynamic:word("Динамичный","Dynamic","Dinámico"),
+    uplifting:word("Воодушевляющая","Uplifting","Inspiradora"),
+    rising:word("Нарастающий","Rising","Creciente"),
+    warm:word("Тёплый","Warm","Cálido"),
+    clear:word("Ясный","Clear","Claro"),
+    meditation:word("Медитация","Meditation","Meditación"),
+    reiki:"Reiki",hypnosis:word("Гипноз","Hypnosis","Hipnosis")
+  };
+  const shotKinds=[
+    word("Общий план","Establishing shot","Plano general"),
+    word("Деталь","Detail","Detalle"),
+    word("Поворот","Turning point","Giro"),
+    word("Действие","Action","Acción"),
+    word("Отклик","Response","Respuesta"),
+    word("Финал","Closing shot","Plano final")
+  ];
+  const timecode=(seconds:number)=>
+    String(Math.floor(seconds/60)).padStart(2,"0")+":"+String(seconds%60).padStart(2,"0");
+  const parameterLabels:Record<string,string|null>={
+    purpose:purposeLabel(concept.semanticPurpose),
+    audience:concept.semanticAudience?audienceText[concept.semanticAudience]||concept.semanticAudience:null,
+    categoryId:category.label[locale],subcategoryId:subcategory.label[locale],
+    topicId:displayedTopic,meaningAxisId:meaning?.label||null,
+    motifId:motif?.label||null,scenarioId:scenario?.label||null,
+    styleId:style?.label||null
+  };
 
   return <section className={css.panel} data-video-concept-auto data-concept-source={concept.source}
       data-concept-approved={approved?"true":"false"} aria-label={t.title}>
@@ -182,6 +263,29 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
       {t.example} <button type="button" disabled={disabled} onClick={onOpenGoal}>{t.noGoal}</button>
     </p>:null}
     {approvedSignature&&!approved?<p className={css.example} role="status">{t.changed}</p>:null}
+    <section className={css.mainIdeaCard} aria-label={t.story}>
+      <h4>{t.story}</h4>
+      <strong data-video-concept-main-idea="true">{concept.mainMessage}</strong>
+    </section>
+    <section className={css.narrativeCard} data-video-concept-text>
+      <div className={css.narrativeHeading}>
+        <h4>{t.textTitle}</h4>
+        {!textEditing?<button type="button" className={css.narrativeEdit}
+          data-video-concept-text-edit disabled={disabled} onClick={startTextEdit}>
+          <Pencil size={16}/>{t.textEdit}
+        </button>:null}
+      </div>
+      {textEditing?<>
+        <textarea className={css.narrativeInput} data-video-concept-text-input
+          aria-label={t.textTitle} rows={5} maxLength={1200} autoFocus
+          value={textDraft} disabled={disabled} onChange={event=>setTextDraft(event.target.value)}/>
+        <div className={css.narrativeButtons}>
+          <button type="button" onClick={saveTextEdit} disabled={disabled||!textDraft.trim()}>
+            <Check size={16}/>{t.textSave}</button>
+          <button type="button" onClick={()=>setTextEditing(false)}>{t.textCancel}</button>
+        </div>
+      </>:<p className={css.narrativeCopy} data-video-concept-paragraph>{narrativeText}</p>}
+    </section>
     {editing&&signedIn ? <div className={css.editor} data-video-concept-editor>
       <label>{t.category}
         <select value={category.id} disabled={disabled} onChange={e=>change({
@@ -221,53 +325,82 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
       </label>
       <button type="button" className={css.styleLink} onClick={onOpenStyle}
         disabled={disabled}><Sparkles size={17}/>{t.editStyle}<ArrowRight size={16}/></button>
-    </div> : <div className={css.rows} data-video-concept-summary>
-      {rows.map(row=><div className={css.row} key={row.id} data-video-concept-field={row.id}>
-        <IconBadge icon={row.Icon} tone={row.tone}/>
-        <strong>{row.label}</strong>
-        <span className={css.rowValue}>{row.value}</span>
-        <ChevronDown className={css.rowChevron} size={15} aria-hidden="true"/>
-      </div>)}
-    </div>}
-    <details className={css.beats} data-video-concept-beats>
-      <summary>{t.stages}<ChevronDown size={17} aria-hidden="true"/></summary>
-      <ol>{concept.sceneOutline.map((beat,index)=><li key={index}>{beat}</li>)}</ol>
-    </details>
-    {concept.source==="audio_transcript"?<p className={css.status} data-video-concept-from-audio role="status">
-      {locale==="ru"?"Все смысловые параметры предложены по расшифровке речи. Слова и монтаж можно проверить отдельно.":
-        locale==="es"?"Los parámetros se propusieron a partir del audio. Revisa el texto y el montaje por separado.":
-        "Concept parameters were proposed from your transcript. Review wording and footage separately."}
-    </p>:null}
-    {concept.parameters?<details className={css.beats} data-video-concept-all-parameters>
-      <summary>{locale==="ru"?"Все 38 параметров":locale==="es"?"Los 38 parámetros":"All 38 parameters"}
-        <ChevronDown size={17} aria-hidden="true"/></summary>
-      <ol>{allParameterRows.map(row=>{
+    </div> : null}
+    {concept.parameters?<section className={css.parameters} data-video-concept-all-parameters>
+      <h4>{t.parameters}</h4>
+      <ol className={css.parameterList}>{allParameterRows.map(row=>{
         const item=concept.parameters?.[row.id];
         const v=item?.status==="synchronized"?ownerFields?.[row.id as keyof NonNullable<Props["ownerFields"]>]??item?.value:item?.value;
-        const value=Array.isArray(v)?v.join(" → "):v==null||v===""?"—":String(v);
+        const shown=parameterLabels[row.id]??v;
+        const value=Array.isArray(shown)?shown.join(" → "):
+          shown==null||shown===""?"—":codeNames[String(shown)]||String(shown);
         const stateLabels=statuses[item?.status||"unknown"]||statuses.unknown;
-        const state=locale==="ru"?stateLabels[0]:locale==="es"?stateLabels[2]:stateLabels[1];
+        const state=item?.status==="unknown"?word("Не указано","Not specified","Sin datos"):
+          item?.source==="goal"?word("Из цели","From goal","Del objetivo"):
+          item?.source==="personalization"?word("Из персонализации","From personalization","De personalización"):
+          item?.source==="speech"?word("Из аудио","From audio","Del audio"):
+          locale==="ru"?stateLabels[0]:locale==="es"?stateLabels[2]:stateLabels[1];
         return <li key={row.id} data-concept-parameter={row.id}>
-          <strong>{locale==="ru"?row.ru:locale==="es"?row.es:row.en}</strong>: {" "}{value}
-          <small> · {state}</small>
+          <div className={css.parameterLabel}>
+            <strong>{locale==="ru"?row.ru:locale==="es"?row.es:row.en}</strong>
+            <small>{state}</small>
+          </div>
+          {row.id==="emotionalProgram"?
+            <ol className={css.emotionSteps} data-video-concept-journey>
+              {concept.emotionalProgram.map((phase,index)=><li key={index}>
+                <span className={css.journeyNumber}>{index+1}</span><span>{phase}</span>
+              </li>)}
+            </ol>:
+            <div className={css.parameterValue}>{value}</div>}
         </li>;
       })}</ol>
-    </details>:null}
-    <p className={css.status} role="note">{t.preview}</p>
-    <div className={css.actions}>
+    </section>:null}
+    {concept.personalizationFocus?<p className={css.status} data-video-concept-personalization-focus>
+      {word("Что укрепляем","Personalization focus","Enfoque personal")}: {concept.personalizationFocus}
+    </p>:null}
+    <div className={css.actions} data-video-concept-action-rail>
       <button type="button" className={css.approve} data-video-concept-approve
-        disabled={disabled||!videoConceptIsValid(concept)} onClick={submit}>
+        disabled={disabled||textEditing||!videoConceptIsValid(concept)} onClick={submit}>
         <Check size={21}/><span>{editing?t.save:t.approve}</span><ArrowRight size={18}/>
       </button>
       <button type="button" ref={editButtonRef} className={css.edit}
         data-video-concept-edit disabled={disabled} onClick={()=>{
-          if(editing){setEditing(false);setCustom(null);setHasLocalEdits(false);return;}
+          if(editing){
+            setEditing(false);
+            const base=approvedConcept?.signature===suggested.signature?approvedConcept:suggested;
+            setCustom(concept.conceptText?{...base,conceptText:concept.conceptText}:null);
+            setHasLocalEdits(Boolean(concept.conceptText));return;
+          }
           if(signedIn)setEditing(true);else setLoginOpen(true);
         }}>
         <Pencil size={19}/><span>{editing?t.cancel:t.edit}
           {!signedIn&&!editing?<small>{t.editHelp}</small>:null}</span>
       </button>
     </div>
+    <details className={css.beats} data-video-concept-beats>
+      <summary>{t.stages}<ChevronDown size={17} aria-hidden="true"/></summary>
+      <ol>{concept.sceneOutline.map((beat,index)=><li key={index}>{beat}</li>)}</ol>
+    </details>
+    <details className={css.beats} data-video-concept-shot-sketch>
+      <summary>{word("Предложенная раскадровка","Suggested storyboard","Guion gráfico propuesto")}
+        {" · "}{durationSeconds}{word(" сек","s"," s")} · {sketch.length} {word("кадров","shots","tomas")}
+        <ChevronDown size={17} aria-hidden="true"/></summary>
+      <ol className={css.parameterList}>{sketch.map(shot=><li key={shot.number}>
+        <strong>{timecode(shot.startSeconds)}–{timecode(shot.endSeconds)}</strong> ·
+        {" "}{shotKinds[shot.shotKind]}: {shot.beat}
+      </li>)}</ol>
+      <p className={css.status}>{word(
+        "Это план сцен, не подтверждение наличия разных видеоматериалов. Подбор и проверка MP4 — в Монтаже.",
+        "This is an editorial shot plan, not verified footage. Montage checks distinct source clips.",
+        "Es un plan creativo, no metraje verificado. Montaje comprueba clips distintos."
+      )}</p>
+    </details>
+    {concept.source==="audio_transcript"?<p className={css.status} data-video-concept-from-audio role="status">
+      {locale==="ru"?"Все смысловые параметры предложены по расшифровке речи. Слова и монтаж можно проверить отдельно.":
+        locale==="es"?"Los parámetros se propusieron a partir del audio. Revisa el texto y el montaje por separado.":
+        "Concept parameters were proposed from your transcript. Review wording and footage separately."}
+    </p>:null}
+    <p className={css.status} role="note">{t.preview}</p>
     <p className={css.guestNote}>{t.guest}</p>
     {loginOpen?<div className={css.backdrop} data-video-concept-auth-overlay
       onMouseDown={e=>{if(e.target===e.currentTarget)setLoginOpen(false);}}>

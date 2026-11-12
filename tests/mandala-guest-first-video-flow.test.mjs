@@ -18,24 +18,47 @@ test('first guest video does not need an account-bound XP hold, but signed-in vi
   assert.doesNotMatch(studio,/Sign in to create videos\./)
 })
 
-test('Style advances to Audio; Concept requires free guest approval; only final Create exports',()=>{
-  const handler=studio.slice(studio.indexOf('const continueMontageOrGenerate='),
-    studio.indexOf('// First mobile step is only',studio.indexOf('const continueMontageOrGenerate=')))
-  assert.match(handler,/if\(montagePanel==="effects"\)\{/)
-  assert.match(handler,/setMontagePanel\("audio"\)/)
-  assert.match(handler,/if\(montagePanel==="concept"\)return/)
-  assert.match(handler,/createQuickVideo\(\)/)
-  const start=studio.indexOf('data-video-quick-generate')
-  const btn=studio.slice(start,studio.indexOf('</button>',start))
-  assert.match(btn,/onClick=\{continueMontageOrGenerate\}/)
-  assert.match(btn,/data-video-montage-next=\{montagePanel==="effects"\?"audio":undefined\}/)
-  for(const text of ['Next · Audio','Далее · Аудио','Siguiente · Audio'])
-    assert.ok(btn.includes(text),text)
-  assert.match(studio,/<MandalaVideoConcept locale=\{locale\}/)
-  assert.match(studio,/onApprove=\{approved=>/)
-  assert.match(studio,/data-video-concept-text-tools/)
-})
+test('Montage next opens Audio then affirmations without rendering or charging',()=>{
+ const handler=studio.slice(studio.indexOf('const continueMontageOrGenerate='),
+   studio.indexOf('// First mobile step is only',studio.indexOf('const continueMontageOrGenerate=')));
+ assert.ok(handler.includes('if(montagePanel==="effects"){'));
+ assert.ok(handler.includes('setMontagePanel("text")'));
+ assert.ok(handler.includes('setBasicPanelTab("music")'));
+ assert.ok(handler.includes('setActiveWorkspace("effects")'));
+ assert.ok(handler.includes('setMontagePanel("audio")'));
+  assert.ok(handler.includes('if(montagePanel==="audio"){'));
+  assert.ok(handler.includes('setMontagePanel("text");setNotice("")'),"Add opens Text/affirmations");
+  assert.ok(handler.includes('setHypnoEntryGroup("effects")'),"optional Hypno preserved");
+ assert.ok(!handler.includes('startFromHero()'));
+ assert.ok(!handler.includes('createQuickVideo()'),"Add Effects must never encode or charge credits");
+ const direct=studio.slice(studio.indexOf('data-video-quick-generate'),studio.indexOf('</button>',studio.indexOf('data-video-quick-generate')));
+ const next=studio.slice(studio.indexOf('data-video-montage-next={montagePanel==="effects"?"text":montagePanel==="text"?"audio":montagePanel==="audio"?"text":"hypno"}'),studio.indexOf('</button>',studio.indexOf('data-video-montage-next={montagePanel==="effects"?"text":montagePanel==="text"?"audio":montagePanel==="audio"?"text":"hypno"}')));
+ assert.ok(direct.includes('onClick={createQuickVideo}'));
+ assert.ok(next.includes('onClick={continueMontageOrGenerate}'));
+ assert.ok(next.includes('montagePanel==="audio"?"text":"hypno"'));
+ assert.ok(studio.includes('if(!freeVideoSelected){'),"paid formats stay explicitly gated");
+ assert.ok(studio.includes('<MandalaVideoConcept locale={locale}'));
+ assert.ok(studio.includes('onApprove={approved=>'));
+ assert.ok(studio.includes('data-video-concept-text-tools'));
+});
 
+
+test('stale phrase narration blocks direct Generate, not the Add Affirmations navigation',()=>{
+ const stage=studio.indexOf('data-video-stage-actions="montage"');
+ assert.ok(stage>0,"real final action group");
+ const fromCreate=studio.indexOf('data-video-quick-generate',stage);
+ const create=studio.slice(fromCreate,studio.indexOf('</button>',fromCreate));
+ const addStart=studio.indexOf('data-video-montage-next={montagePanel===',stage);
+ const add=studio.slice(addStart,studio.indexOf('</button>',addStart));
+ assert.ok(addStart>stage&&addStart<fromCreate,"Affirmations precedes Create Video");
+ assert.match(create,/disabled=\{!studioHydrated\|\|recording\|\|preparing\|\|narrationInvalid\}/);
+ assert.match(create,/onClick=\{createQuickVideo\}/);
+ assert.match(add,/onClick=\{continueMontageOrGenerate\}/);
+ assert.doesNotMatch(add,/narrationInvalid/);
+ assert.match(studio,/data-video-narration-reapproval/);
+ assert.match(studio,/const narrationInvalid=Boolean\(/);
+ assert.match(studio,/if\(narrationInvalid\)\{/);
+});
 
 test('guest native player is mounted without sign-in; save and share stay gated',()=>{
   const from=studio.indexOf('data-video-result hidden={!result}')

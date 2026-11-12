@@ -13,17 +13,19 @@ export function classifyCspNavigationCancellation(error, { engine, readiness, or
     && [...url.searchParams.keys()].length === 1 && url.searchParams.has('_rsc') && !!url.searchParams.get('_rsc');
   const clientPrefetch = ['/en/client', '/en/contact'].includes(url.pathname)
     && [...url.searchParams.keys()].length === 1 && url.searchParams.has('_rsc') && !!url.searchParams.get('_rsc');
+  // Only the exact anonymous GET may be traced during verified old-document teardown.
+  const telegramTeardown = url.pathname === '/api/public/telegram-diagnostic' && !url.search;
   const tantraPrefetch = (['/', '/en/academy', '/en/academy/principles-of-energywork/learn'].includes(url.pathname)
       && [...url.searchParams.keys()].length === 1 && !!url.searchParams.get('_rsc'))
     || (url.pathname === '/en/client/tests' && [...url.searchParams.keys()].length === 2
       && url.searchParams.get('focus') === 'tantra' && !!url.searchParams.get('_rsc'));
-  if (!bootstrap && !prefetch && !clientPrefetch && !tantraPrefetch) return null;
+  if (!bootstrap && !prefetch && !clientPrefetch && !tantraPrefetch && !telegramTeardown) return null;
   for (const navigation of lifecycle) {
     if (navigation.type !== 'navigate' || navigation.sameDocument !== false || Math.floor(navigation.time) > error.time) continue;
     const source = lifecycle.find(event => event.type === 'init' && event.documentProbe === navigation.documentProbe);
     if (!source || new URL(source.url).origin !== url.origin) continue;
     const sourcePath = new URL(source.url).pathname;
-    const tantraBack = tantraPrefetch && error.phase === 'back-from-tantra'
+    const tantraBack = (tantraPrefetch || telegramTeardown) && error.phase === 'back-from-tantra'
       && source.url === new URL('/en/academy/reiki/tantra-reiki', origin).href
       && navigation.documentClass === 'tantra-media' && navigation.navigationType === 'replace'
       && navigation.destination === new URL('/en/about', origin).href
@@ -41,7 +43,7 @@ export function classifyCspNavigationCancellation(error, { engine, readiness, or
       && lifecycle.some(event => event.type === 'navigate' && event.documentProbe === navigation.documentProbe
         && event.time <= navigation.time && event.sameDocument === true && event.navigationType === 'traverse'
         && event.url === new URL('/en/about', origin).href && event.destination === navigation.destination);
-    if (tantraPrefetch && !prefetch && !clientPrefetch && !tantraBack) continue;
+    if ((tantraPrefetch || telegramTeardown) && !prefetch && !clientPrefetch && !tantraBack) continue;
     // The same shared-header home prefetch was observed during private Back/
     // Forward teardown. Accept only that traced client -> About traversal.
     const clientHomePrefetch = prefetch && url.pathname === '/'
@@ -72,6 +74,19 @@ export function classifyCspNavigationCancellation(error, { engine, readiness, or
     // attributable to the old document, even when the wording is identical.
     if (!nextDocument || error.time >= Math.floor(nextDocument.time) || nextDocument.url !== navigation.destination) continue;
     const pageHide = lifecycle.find(event => event.type === 'pagehide' && event.documentProbe === navigation.documentProbe && event.time >= navigation.time && event.time < nextDocument.time);
+    if (telegramTeardown) {
+      // Source-backed WebKit-only cancellation, never an allowed CSP violation:
+      // require a matching old-document anonymous fetch and a real pagehide
+      // AFTER the console diagnostic and BEFORE the new About document.
+      const oldFetch = fetchTelemetry.find(item => item.type === 'fetch-start'
+        && item.path === '/api/public/telegram-diagnostic' && item.rsc === false
+        && item.documentProbe === source.documentProbe
+        && item.time >= navigation.time - 1000 && item.time <= error.time);
+      if (!oldFetch || !pageHide || error.time >= Math.floor(pageHide.time)
+        || lifecycle.some(item => item.type === 'policy-violation'
+          && item.documentProbe === source.documentProbe
+          && item.time >= navigation.time - 1000 && item.time <= nextDocument.time)) continue;
+    }
     if (!pageHide || error.time > Math.floor(pageHide.time)) {
       // No broad console-error ignore: prove the request, exact timeline,
       // required cross-policy document and lack of real CSP violations.

@@ -75,7 +75,7 @@ function exercise(input,workspace,overrides={}){
  assert.ok(handler);
  const js=ts.transpileModule('const startFromHero='+handler.getText(ast)+';startFromHero();',{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText;
  let active=workspace,queued=workspace,basicTab=null,renders=0,picks=0;const cover={open:false},frames=[],scrolls=[],notices=[];
- const state={recording:false,preparing:false,hypnoAudioBusy:false,photoPending:false,phrasePending:false,locale:'ru',photoUrl:'blob:synthetic',backgroundOnly:false,photoConsent:false,audioNeedsAttachment:false,uploadedAudio:null,audioRights:false,source:'synthetic',...overrides};
+ const state={recording:false,preparing:false,hypnoAudioBusy:false,photoPending:false,phrasePending:false,narrationInvalid:false,locale:'ru',photoUrl:'blob:synthetic',backgroundOnly:false,photoConsent:false,audioNeedsAttachment:false,uploadedAudio:null,audioRights:false,source:'synthetic',...overrides};
  // Models only the source-defined workspace/display and native-details state,
  // not pixels or a real browser. React state commits at the frame boundary.
  const consent={scrollIntoView:()=>scrolls.push({open:cover.open,workspace:active,
@@ -130,17 +130,18 @@ test("Video opens as the only active workspace, advanced first-video remains acc
   assert.match(studio,/<MandalaGuidedCourse/);
   assert.match(studio,/data-video-audio-attach/);
 });
-test("published informational YouTube no longer overlays the original Canvas hero",()=>{
+test("approved Intro/My rail uses only one main video hero and local Canvas",()=>{
   const nav=studio.indexOf('<nav className={videoStyles.quickVideoNav}');
   const start=studio.indexOf('id="video-hero"');
-  const finish=studio.indexOf('{/* Show the introductory film separately',start);
-  assert.ok(nav>0&&start>nav&&finish>start,
-    "tabs precede the Canvas; the informational YouTube overlay follows it");
-  assert.doesNotMatch(studio.slice(start,finish),/data-video-therapy-intro/);
-  assert.match(studio,/className=\{videoStyles\.therapyIntroStandalone\}/);
-  assert.match(studio,/data-workspace-section="practices" data-video-therapy-info/);
-  assert.match(studio,/const activateQuickWorkspace=[\s\S]{0,220}setActiveWorkspace\(id\);[\s\S]{0,130}setIntroPlaying\(false\);[\s\S]{0,90}setStudioMode\("pump"\)/);
+  const rail=studio.indexOf('data-video-intro-my-rail',start);
+  assert.ok(nav>0&&start>nav&&rail>start,"six tabs precede the original Canvas and Intro/My rail");
+  assert.match(studio.slice(start,rail),/data-video-therapy-intro="ready"/);
+  assert.match(studio.slice(start,rail),/data-video-preview-toggle/);
+  assert.match(studio,/const showIntroHero =/);
+  assert.match(studio,/onClick=\{\(\)=>activateQuickWorkspace\(item\.id\)\}/);
   assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
+  assert.equal((studio.match(/data-video-therapy-info/g)||[]).length,1);
+  assert.doesNotMatch(studio,/therapyIntroStandalone|therapyIntroOverlay/);
 });
 test("iPhone music is one scannable rail with distinct Listen and Include controls",()=>{
   assert.match(css,/grid-auto-columns:minmax\(188px,49%\)/);
@@ -202,7 +203,7 @@ test("pending Phrases selection blocks the actual shared hero handler in every w
   for(const workspace of workspaces){
     const state=exercise(source,workspace,{phrasePending:true,photoConsent:true});
     assert.equal(state.renders,0,"cannot export the old approved words");
-    assert.equal(state.workspace,"phrases","visitor is sent to the approval tab");
+    assert.equal(state.workspace,workspace,"a failed export must not jump to Voice");
     assert.ok(state.notices.some(note=>note.includes("Сначала утвердите фразы")));
   }
 });
@@ -216,8 +217,16 @@ test("compact Ideas preserves one opt-in advanced phrase and voice editor",()=>{
  const audio=section.indexOf('data-video-phrase-audio-shortcut');
  assert.ok(editor>0&&audio>editor);
  assert.equal((section.match(/\{deepHypnoPane\}/g)||[]).length,1);
- assert.match(section,/<MandalaVideoIdeas/);
- assert.match(section,/data-video-legacy-phrase-editor data-video-ideas-recording-open=\{ideasVoiceAdvancedOpen\?"true":"false"\}\s+hidden=\{activeWorkspace!=="phrases"\} aria-hidden=\{activeWorkspace!=="phrases"\}/);
+ assert.doesNotMatch(section,/<MandalaVideoIdeas/);
+ assert.match(section,/data-video-ideas-open-montage-text/);
+ assert.match(studio,/data-video-montage-text hidden=\{montagePanel!=="text"\}/);
+ assert.equal((studio.match(/<MandalaVideoIdeas locale/g)||[]).length,1);
+ assert.match(section,/data-video-legacy-phrase-editor/);
+ assert.match(section,/data-video-ideas-recording-open=\{ideasVoiceAdvancedOpen\?"true":"false"\}/);
+ assert.match(section,/hidden=\{activeWorkspace!=="phrases"\|\|ideasSubtab!=="personalization"\}/);
+ assert.match(section,/aria-hidden=\{activeWorkspace!=="phrases"\|\|ideasSubtab!=="personalization"\}/);
+ assert.equal((section.match(/data-video-ideas-tab="/g)||[]).length,2);
+ assert.equal((section.match(/<MandalaVideoConcept /g)||[]).length,1);
  assert.match(section,/data-video-ideas-advanced-voice open=\{ideasVoiceAdvancedOpen\}/);
  assert.equal((studio.match(/<MandalaHypnoCompact /g)||[]).length,1);
  assert.match(studio,/onPendingChange=\{setPhrasePending\}/);
@@ -244,7 +253,7 @@ test("owner 03 Nov: compact tabs, real scenario updates and moved settings",()=>
  assert.match(nav,/quickNavFull/,"full labels remain on wider screens");
  const mobileCss=css.slice(css.lastIndexOf("/* Owner 03 Nov:"));
  assert.match(mobileCss,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/,"one row overrides legacy 3x2");
- const editor=studio.slice(studio.indexOf('data-video-editor-scenario'),studio.indexOf('data-video-quick-personal'));
+ const editor=studio.slice(studio.indexOf('data-video-editor-scenario'),studio.indexOf('data-video-quick-personal',studio.indexOf('data-video-editor-scenario')));
  const scenario=editor.indexOf('data-video-editor-scenario');
  assert.ok(scenario>=0&&scenario<editor.indexOf('data-video-montage-audio'),"script is available before Audio");
  assert.match(editor,/data-video-montage-script-update/);
@@ -278,7 +287,7 @@ test("all six workspaces use the same in-flow navigation and one real export",()
  assert.ok(studio.indexOf("data-video-quick-controls")<studio.indexOf("data-video-live-stage"));
  assert.doesNotMatch(studio,/createPortal|effectsNavTarget|montageNavTarget|data-video-hypno-nav-slot|data-video-montage-nav-slot/,
    "no mode can teleport the navigation to a different vertical position");
- const editor=studio.slice(studio.indexOf("data-video-basic-editor"),studio.indexOf("data-video-quick-personal"));
+ const editor=studio.slice(studio.lastIndexOf("data-video-basic-editor"),studio.indexOf("data-video-quick-personal",studio.lastIndexOf("data-video-basic-editor")));
  assert.match(editor,/data-video-montage-tools/);
  assert.match(editor,/data-video-montage-tab=\{item.id\}/);
  assert.match(editor,/data-video-montage-preferences/);
@@ -292,11 +301,14 @@ test("all six workspaces use the same in-flow navigation and one real export",()
 
 test("guided meditation opt-out is reconciled after React commit without losing explicit reopen",()=>{
   assert.match(studio,/const \[courseMeditationOmitted,setCourseMeditationOmitted\]=useState\(false\)/);
-  assert.match(studio,/useLayoutEffect\(\(\)=>\{\s*if\(!courseMeditationOmitted\)return;/);
-  assert.match(studio,/if\(details instanceof HTMLDetailsElement\)details\.open=false/);
-  assert.match(studio,/\},\[courseMeditationOmitted,courseMeditationDraft\]\)/);
-  assert.match(studio,/onAddMeditation=\{script=>\{[\s\S]*?setCourseMeditationOmitted\(false\)/);
-  assert.match(studio,/onOmitMeditation=\{\(\)=>\{[\s\S]*?setCourseMeditationOmitted\(true\)/);
+  assert.match(studio,/const \[courseMeditationIncluded,setCourseMeditationIncluded\]=useState\(false\)/);
+  assert.match(studio,/useLayoutEffect\(\(\)=>\{/);
+  assert.match(studio,/if\(courseMeditationOmitted\)details\.open=false/);
+  assert.match(studio,/else if\(courseMeditationIncluded&&courseMeditationDraft\)details\.open=true/);
+  assert.match(studio,/\},\[courseMeditationIncluded,courseMeditationOmitted,courseMeditationDraft\]\)/);
+  assert.match(studio,/onAddMeditation=\{script=>\{[\s\S]*?setCourseMeditationIncluded\(true\);\s*setCourseMeditationDraft\(script\)/);
+  assert.match(studio,/onOmitMeditation=\{\(\)=>\{\s*setCourseMeditationIncluded\(false\);[\s\S]*?setCourseMeditationOmitted\(true\)/);
+  assert.doesNotMatch(studio,/onAddMeditation=\{script=>\{[\s\S]{0,500}requestAnimationFrame/);
 });
 
 test("validated Messenger video handoff visibly opens the original Studio Director on compact Goals",()=>{
@@ -336,7 +348,23 @@ test("Ideas → Montage cancels stale scroll on a genuine quick-tab action",()=>
   const browser=readFileSync(new URL("../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
   assert.match(browser,/MONTAGE_TAB_MUST_ACTIVATE/);
   assert.match(browser,/data-video-montage-tab="effects"/);
-  assert.match(browser,/MONTAGE_MUST_START_WITH_AUTO_CONCEPT/);
+  assert.match(browser,/MONTAGE_MUST_START_WITH_STYLE/);
   assert.match(browser,/GUEST_APPROVAL_MUST_SURVIVE_TAB_NAVIGATION/);
   assert.match(browser,/CONCEPT_TEXT_TOOLS_DID_NOT_OPEN/);
+});
+
+// Owner-approved UX: direct export and advancing to effects are independent.
+test("the video studio exposes two independent actions on every stage",()=>{
+ const ideas=readFileSync(new URL("../components/mandala-video-ideas.tsx",import.meta.url),"utf8");
+ const hypno=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.tsx",import.meta.url),"utf8");
+ for(const name of ["goal","montage"])assert.ok(studio.includes('data-video-stage-actions="'+name+'"'));
+ assert.ok(studio.includes('data-video-stage-generate="goal"'));
+ assert.ok(studio.includes('data-video-continue-scenarios'));
+ assert.ok(studio.includes('data-video-quick-generate'));
+ assert.ok(studio.includes('onClick={continueMontageOrGenerate}'));
+ assert.ok(ideas.includes('data-video-ideas-generate'));
+ assert.ok(ideas.includes('data-video-ideas-create'));
+ assert.ok(hypno.includes('data-hypno-create'));
+ assert.ok(hypno.includes('data-hypno-add-effects'));
+ assert.ok(!studio.includes('generateWithoutHypnoEffects'));
 });

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { parsePrTrigger, matchesTrigger } from '../lib/ci/specialist-aggregate.mjs';
 
 const workflow = (name) => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
 
@@ -351,7 +352,10 @@ test('Mandala workflow-only speed route fails closed for all product or deleted 
   assert.match(source,/M:tests\/pr-fast-lane\.test\.mjs/);
   assert.match(source,/policy_only=false/);
   assert.match(source,/node --test tests\/ci-heavy-impact\.test\.mjs tests\/ci-workflow-globs\.test\.mjs/);
-  assert.match(source,/- run: npm ci --no-audit --no-fund\n        if: steps\.policy\.outputs\.policy_only != 'true'/);
+  assert.ok(source.includes('- name: Install lockfile dependencies without networked FFmpeg postinstall\n        if: steps.policy.outputs.policy_only != \'true\'\n        run: npm ci --ignore-scripts --no-audit --no-fund'),
+    'Mandala installs lockfile dependencies without invoking networked ffmpeg-static postinstall');
+  assert.ok(source.includes('- name: Prepare verified upstream FFmpeg for full Mandala runtime'));
+  assert.ok(source.includes('- name: Materialize SHA-verified FFmpeg for Mandala runtime and Next trace'));
   for(const name of ['Mandala and mobile support contracts','Voice provider contract and negative cases','Targeted lint']){
     const clause=source.split('      - name: '+name+'\n')[1]?.split('\n')[0] || '';
     assert.match(clause,/steps\.policy\.outputs\.policy_only != 'true'/);
@@ -451,4 +455,95 @@ test('benchmark scripts and standalone Video Studio UI do not allocate unrelated
     'app/api/service-enquiries/**'
   ]) assert.ok(pathsOnly.includes("      - '" + sensitive + "'"),
     'real public booking/checkout/service changes must keep E2E: ' + sensitive);
+});
+
+
+test('Core Mandala fast contracts run only as fallback when the BASE/HEAD Specialist path filter does not own the diff',()=>{
+  const core=workflow('hh-pr-core-release.yml');
+  const mandala=workflow('holistic-support-mandala.yml');
+  const owner=core.split('      - name: Resolve BASE-trusted Mandala Specialist owner for overlapping fast contracts')[1]
+    ?.split('      - name: Fast Mandala release contracts')[0];
+  const fast=core.split('      - name: Fast Mandala release contracts')[1]
+    ?.split('      - name: Verify Source Preflight unit contracts')[0];
+  assert.ok(owner,'Core resolves ownership before considering the duplicate test suite');
+  assert.ok(fast,'Core keeps its bounded fallback release suite');
+  for(const marker of [
+    "execFileSync", "HEAD^1",
+    "execFileSync", "HEAD^2",
+    "HH_EVENT_HEAD_SHA",
+    "baseSha + ':' + workflowPath",
+    "baseSha + ':lib/ci/specialist-aggregate.mjs'",
+    "lib/ci/specialist-aggregate.mjs",
+    "parsePrTrigger",
+    "matchesTrigger",
+    "specialist_owns_mandala=",
+  ]) assert.ok(owner.includes(marker),'owner router must verify '+marker);
+  assert.ok(fast.includes("steps.mandala_owner.outputs.specialist_owns_mandala != 'true'"));
+
+  const specialistOwns=(baseSource,headSource,changed)=>{
+    const triggers=[
+      parsePrTrigger(baseSource,'.github/workflows/holistic-support-mandala.yml:base'),
+      parsePrTrigger(headSource,'.github/workflows/holistic-support-mandala.yml:head'),
+    ];
+    return triggers.some(trigger=>matchesTrigger(trigger,changed,'codex/public-book-library'));
+  };
+  assert.equal(specialistOwns(mandala,mandala,['components/mandala-free-video-studio.tsx']),true,
+    'a changed Mandala component belongs to the independent specialist workflow');
+  assert.equal(specialistOwns(mandala,mandala,['tests/affirmation-voice.test.mjs']),true,
+    'the real voice acceptance test is owned by the specialist path');
+  assert.equal(specialistOwns(mandala,mandala,['tests/mandala-video-phrase-catalog.test.mjs']),true,
+    'the phrase-catalog contract is owned by its dedicated specialist path');
+  assert.equal(specialistOwns(mandala,mandala,['tests/mandala-audio-attach.test.mjs']),true,
+    'the broad Mandala unit-test manifest owns all mandala-*.test.mjs files');
+  assert.equal(specialistOwns(mandala,mandala,['tests/video-export-contract.test.mjs']),false,
+    'a video test outside the owned video-chat and video-owner manifest retains Core fallback coverage');
+  assert.equal(specialistOwns(mandala,mandala,['scripts/benchmarking/first-video-live-export.mjs']),false,
+    'the first-video benchmark keeps the Core fallback unless its specialist path is explicitly added');
+
+  const newline = String.fromCharCode(10);
+  const narrowed=mandala.replace("      - 'components/mandala-*'"+newline,'');
+  assert.equal(specialistOwns(mandala,narrowed,['components/mandala-free-video-studio.tsx']),true,
+    'candidate narrowing cannot remove BASE-owned specialist coverage');
+  const extended=mandala.replace("      - 'tests/affirmation-voice.test.mjs'"+newline,
+    "      - 'tests/affirmation-voice.test.mjs'"+newline+"      - 'tests/mandala-audio-attach.test.mjs'"+newline);
+  assert.equal(specialistOwns(mandala,extended,['tests/mandala-audio-attach.test.mjs']),true,
+    'a HEAD-only owner addition is also considered by the same BASE/HEAD union');
+  assert.throws(()=>specialistOwns(mandala,'not a supported workflow',['components/mandala-free-video-studio.tsx']),
+    /MISSING_ON|UNSUPPORTED/,'unknown workflow syntax must not authorize skipping Core tests');
+
+  const duplicated=[
+    'tests/affirmation-voice.test.mjs',
+    'tests/mandala-webcodecs-mp4.test.mjs',
+    'tests/mandala-audio-attach.test.mjs',
+    'tests/mandala-export.test.mjs',
+    'tests/mandala-free-video.test.mjs',
+    'tests/mandala-video-phrase-catalog.test.mjs',
+  ];
+  for(const name of duplicated){
+    assert.ok(fast.includes(name),'Core fallback must retain '+name);
+    assert.ok(mandala.includes(name),'Specialist focused unit coverage must retain '+name);
+  }
+});
+
+test('Stories Studio PR must execute real WebKit and four-format acceptance, never silently skip media gates', () => {
+  const s=workflow('holistic-support-mandala.yml');
+  assert.match(s, /'lib\/mandala\/stories-studio\.\*'/);
+  assert.match(s, /'tests\/stories-studio-\*\.test\.mjs'/);
+  assert.match(s, /node --test tests\/stories-studio-contract\.test\.mjs tests\/stories-studio-ui\.test\.mjs/);
+  const webkit=s.slice(s.indexOf('  voice-webkit-macos:'),s.indexOf('    needs: [webkit_preflight]',s.indexOf('  voice-webkit-macos:')));
+  assert.match(webkit, /startsWith\(github\.head_ref, 'codex\/stories-'\)/);
+  const linux=s.slice(s.indexOf('      - name: Build\n'),s.indexOf('  webkit_preflight:'));
+  assert.match(linux, /startsWith\(github\.head_ref, 'codex\/stories-'\)/);
+});
+
+
+test('Stories physical five-scene MP4 is mandatory in the macOS WebKit release path',()=>{
+  const s=workflow('holistic-support-mandala.yml');
+  assert.match(s,/scripts\/benchmarking\/verify-five-scene-stories-browser\.mjs/);
+  const mac=s.slice(s.indexOf('  voice-webkit-macos:'));
+  assert.match(mac,/if \[\[ "\$\{GITHUB_HEAD_REF:-\}" == codex\/stories-\* \]\]/);
+  assert.match(mac,/HH_STORIES_E2E_ENGINE=webkit/);
+  assert.match(mac,/node scripts\/benchmarking\/verify-five-scene-stories-browser\.mjs/);
+  assert.match(mac,/artifacts\/benchmarking\/five-scene-stories-webkit\.json/);
+  assert.doesNotMatch(mac,/continue-on-error:\s*true/);
 });

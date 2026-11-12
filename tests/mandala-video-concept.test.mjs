@@ -49,13 +49,23 @@ test("Concept never claims video exists; unsupported IDs are rejected",()=>{
   assert.equal(videoConceptIsValid({...p,scenarioId:"invented"}),false);
   assert.equal(videoConceptIsValid({...p,motifId:"invented"}),false);
 });
-test("Montage still owns the original single editor and verifies guest approval UX",()=>{
+test("Ideas Concept owns the single editor and Montage retains its real timeline and guest gate",()=>{
   const source=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
   const concept=readFileSync(new URL("../components/mandala-video-concept.tsx",import.meta.url),"utf8");
   const css=readFileSync(new URL("../components/mandala-video-concept.module.css",import.meta.url),"utf8");
+  assert.match(source,/data-video-ideas-concept-panel/);
   assert.match(source,/data-video-montage-concept/);
-  assert.match(source,/\{id:"effects",Icon:Sparkles\},\{id:"audio",Icon:Music2\}/);
-  assert.match(source,/\{id:"concept",Icon:Brain\},\{id:"settings",Icon:SlidersHorizontal\}/);
+  assert.equal((source.match(/<MandalaVideoConcept /g)||[]).length,1,
+    "the written concept remains a single editor in Ideas");
+  assert.equal((source.match(/<MandalaCinematicDirector /g)||[]).length,1,
+    "the separate cinematic storyboard remains a single editor in Montage");
+  assert.match(source,/id:"concept",Icon:Film/);
+  assert.match(source,/setMontagePanel\("concept"\)/);
+  assert.match(source,/data-video-pro-open-montage-storyboard/);
+  assert.match(source,/\{id:"effects",Icon:Sparkles\},\{id:"text",Icon:Type\}/);
+  assert.match(source,/\{id:"audio",Icon:Music2\},\{id:"promo",Icon:Zap\}/);
+  assert.match(source,/data-video-story-open-settings/);
+  assert.match(source,/data-video-montage-open-concept/);
   assert.match(source,/data-video-concept-text-tools/);
   assert.match(source,/data-video-montage-text/);
   assert.match(source,/MandalaMultiTrackTimeline/);
@@ -64,7 +74,7 @@ test("Montage still owns the original single editor and verifies guest approval 
   assert.match(source,/approvedConcept=\{approvedVideoConcept\}/);
   assert.match(source,/setApprovedVideoConcept\(approved\)/);
   assert.match(concept,/approvedConcept\?\.signature===concept\.signature/);
-  assert.doesNotMatch(source,/data-video-montage-tab="text"/);
+  assert.match(source,/data-video-montage-text hidden=\{montagePanel!=="text"\}/);
   assert.match(concept,/data-video-concept-approve/);
   assert.match(concept,/data-video-concept-edit/);
   assert.match(concept,/if\(signedIn\)setEditing\(true\);else setLoginOpen\(true\)/);
@@ -77,23 +87,26 @@ test("Montage still owns the original single editor and verifies guest approval 
   assert.match(css,/safe-area-inset-bottom/);
 });
 
-test("macOS WebKit must enter Style from default Concept before selecting media",()=>{
+test("macOS WebKit opens Style by default and still allows reviewed Concept",()=>{
   const source=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
   const start=source.indexOf('const editorTab=page.locator');
   const end=source.indexOf('const selectedStyle=page.locator',start);
   assert.ok(start>0&&end>start);
   const route=source.slice(start,end);
-  assert.match(route,/\[data-video-montage-tab="concept"\]/);
+  assert.match(route,/\[data-video-montage-tab="effects"\]/);
+  assert.match(source,/\[data-video-ideas-concept-panel\]/);
   assert.match(route,/await montageStyleTab\.click\(\)/);
   assert.match(route,/await expect\(montageStyleTab\)\.toHaveAttribute\("aria-pressed","true"/);
   assert.doesNotMatch(route,/force:\s*true|setMontagePanel/);
 });
 
-test("required Hypno two tabs and guided kind click remain browser-tested after Concept",()=>{
+test("required Hypno three tabs, relocated effects and guided kind remain browser-tested after Concept",()=>{
   const webkit=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
   const guided=readFileSync(new URL("../scripts/verify-mandala-practices-browser.mjs",import.meta.url),"utf8");
   const exportFlow=readFileSync(new URL("../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
-  assert.match(webkit,/await expect\(hypnoTabs\.getByRole\("tab"\)\)\.toHaveCount\(2\)/);
+  assert.match(webkit,/await expect\(hypnoTabs\.getByRole\("tab"\)\)\.toHaveCount\(3\)/);
+  assert.match(webkit,/await effectsTab\.click\(\)/);
+  assert.match(webkit,/data-hypno-visual-effect="sunlight"/);
   assert.match(webkit,/await expect\(briefFrame\)\.toHaveAttribute\("aria-checked","false"\)/);
   assert.match(guided,/await expect\(kind\)\.toHaveAttribute\("aria-pressed","true",\{timeout:15000\}\)/);
   assert.match(guided,/GUIDED_KIND_DID_NOT_COMMIT/);
@@ -122,4 +135,41 @@ test("Ideas keeps production's one-click Safari disclosure with ref persistence"
   assert.match(disclosure,/node\.open=!node\.open/);
   assert.match(disclosure,/ideaRefinementOpenRef\.current=node\.open/);
   assert.doesNotMatch(disclosure,/open=\{ideaRefinementExpanded\}/);
+});
+
+
+test("Concept shows editable story first, followed by all parameters in one column",()=>{
+ const panel=readFileSync(new URL("../components/mandala-video-concept.tsx",import.meta.url),"utf8");
+ const css=readFileSync(new URL("../components/mandala-video-concept.module.css",import.meta.url),"utf8");
+ const semantic=readFileSync(new URL("../lib/mandala/video-concept-semantic.mjs",import.meta.url),"utf8");
+ assert.match(panel,/data-video-concept-text/);
+ assert.match(panel,/data-video-concept-text-edit/);
+ assert.match(panel,/data-video-concept-text-input/);
+ assert.match(panel,/data-video-concept-paragraph/);
+ assert.match(panel,/data-video-concept-main-idea/);
+ assert.match(panel,/data-video-concept-all-parameters/);
+ assert.match(panel,/data-video-concept-journey/);
+ assert.ok(panel.indexOf("data-video-concept-text")<panel.indexOf("data-video-concept-all-parameters"),
+   "Narrative precedes all creative parameters");
+ assert.ok(panel.indexOf("data-video-concept-all-parameters")<panel.indexOf("data-video-concept-action-rail"),
+   "All parameters are visible above the approval rail in DOM order");
+ assert.match(panel,/allParameterRows\.map\(row=>/);
+ assert.equal((panel.match(/data-video-concept-approve/g)||[]).length,1);
+ assert.equal((panel.match(/data-video-concept-edit disabled/g)||[]).length,1);
+ assert.match(panel,/onApprove\(approvedToSave\)/);
+ assert.match(css,/\.parameterList\{display:grid;grid-template-columns:minmax\(0,1fr\)/);
+ assert.match(css,/\.emotionSteps\{display:grid;grid-template-columns:minmax\(0,1fr\)/);
+ assert.match(css,/\.editor\{grid-template-columns:minmax\(0,1fr\)/);
+ assert.doesNotMatch(panel,/className=\{css\.compactGrid\}/);
+ assert.match(css,/\.panel \.actions\{position:fixed/);
+ assert.match(css,/safe-area-inset-bottom/);
+ assert.match(css,/display-mode:standalone/);
+ assert.match(css,/safe-area-inset-top/);
+ assert.match(semantic,/const raw=audio\|\|clean\(creativeBrief,800\)\|\|plainGoal\|\|clean\(phraseText,1200\)/);
+ assert.match(semantic,/const selected=getMyTubeTopic\(selectedTopicId\)/);
+ assert.match(semantic,/const topicChoice=selected\?\{id:selectedTopicId,confidence:"explicit",reason:"user_selection"\}/);
+ assert.match(semantic,/const dynamic=energizing&&!explicitSlow/);
+ assert.match(semantic,/const audience=matched\(low,AUDIENCES\)/);
+ assert.match(semantic,/const anxiety=ANXIETY_CONTEXT\.test\(low\)/);
+ assert.match(panel,/if\(signedIn\)setEditing\(true\);else setLoginOpen\(true\)/);
 });
