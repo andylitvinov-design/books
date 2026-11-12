@@ -548,13 +548,19 @@ test('GitHub proof reads stay at six concurrent requests and preserve failures',
  assert.equal(results[31].value,62);
  assert.equal(live,0);
 });
-test('mobile entry and funnel assets are uniquely versioned v6, not stale v5',()=>{
+test('direct HTML and legacy boot both uniquely load current v6 error funnel, not stale v5',()=>{
  const fs=require('node:fs'),path=require('node:path');
  const home=path.resolve(__dirname,'..');
  const boot=fs.readFileSync(path.join(home,'pr-two-screen-boot.js'),'utf8');
  const html=fs.readFileSync(path.join(home,'pr-monitor.html'),'utf8');
  const source=fs.readFileSync(path.join(home,'pr-error-funnel.js'),'utf8');
- assert.match(html,/pr-two-screen-boot\.js\?v=20261111-paginated-v6/);
+ // The canonical page now serves direct HTML, not the old async boot tag.
+ // Both direct HTML and the legacy bootstrap must still load exactly one v6
+ // error-funnel CSS/JS pair, keeping older v5 assets out of the bundle.
+ assert.match(html,/HH_PR_MONITOR_DIRECT_HTML_V1/);
+ assert.doesNotMatch(html,/pr-two-screen-boot\.js/);
+ assert.equal((html.match(/pr-error-funnel\.js\?v=20261111-paginated-v6/g)||[]).length,1);
+ assert.equal((html.match(/pr-error-funnel\.css\?v=20261111-paginated-v6/g)||[]).length,1);
  assert.match(boot,/pr-error-funnel\.js\?v=20261111-paginated-v6/);
  assert.match(boot,/pr-error-funnel\.css\?v=20261111-paginated-v6/);
  assert.doesNotMatch(boot,/pr-error-funnel\.js\?v=20261111-reasons-v5/);
