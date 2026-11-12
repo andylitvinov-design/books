@@ -185,7 +185,8 @@ test('Commander one-box UX shows the question first and keeps task metadata in a
  assert.ok(js.includes("await send({preventDefault(){}})"));
  assert.ok(js.includes("el('new-context').close()"));
  assert.ok(js.includes("el('history-all').addEventListener('toggle',renderList)"));
- assert.ok(js.includes("await assignSelectedExecutor(c,mode)"));
+ assert.ok(js.includes("await assignSelectedExecutor(c,chosenFreeModel?'local':mode)"),
+   "named :free selection uses existing owner-checked local worker, not a new executor");
  const preferred="el('new-mode').value=ownedDirectorAvailable?'director':(aiReady?'openrouter':'local')";
  assert.equal(js.split(preferred).length-1,2,'authenticated Director default remains set on both initial load and chat creation');
  assert.ok(js.includes("ownedDirectorAvailable=remote&&status.dispatchAvailable===true&&status.dispatchMode==='FIRST_PARTY_AGENT_DIRECTOR'"));

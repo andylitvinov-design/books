@@ -27,7 +27,12 @@
   for(const id of ['new-mode','mode']){
    const selector=el(id),previous=selector.value;
    const current=selector.querySelector('optgroup[data-director-free]');
-   current?.remove();
+   // Browsers support Element.remove(); minimalist DOM adapters may only
+   // expose parentNode.removeChild. Never allow a missing convenience method
+   // to break the entire owner chat / quota-picker initialization.
+   if(current&&typeof current.remove==='function')current.remove();
+   else if(current?.parentNode&&typeof current.parentNode.removeChild==='function')
+    current.parentNode.removeChild(current);
    if(!remote||!authorized||!ownedDirectorAvailable||!executorModels?.length)continue;
    const group=make('optgroup');
    group.label='OpenRouter · бесплатные модели';
@@ -44,7 +49,7 @@
     group.append(option);
    }
    const executors=selector.querySelector('optgroup[label^="Исполнители"]');
-   if(executors)selector.insertBefore(group,executors);else selector.append(group);
+   if(executors&&typeof selector.insertBefore==='function')selector.insertBefore(group,executors);else selector.append(group);
    if(isVerifiedFreeChoice(previous))selector.value=previous;
    else if(selectedFreeModel(previous))selector.value='director';
   }
