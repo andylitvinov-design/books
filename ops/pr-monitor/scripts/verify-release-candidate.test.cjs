@@ -9,6 +9,7 @@ function fixture(overrides={}){
   '/':direct,
   '/index.html':direct,
   '/pr-monitor.html':direct,
+  '/pr-monitor-full.html':direct,
   '/legacy.html':'<!doctype html><html><head><link rel="stylesheet" href="/compact.css"></head><body><main><script src="/monitor-core.js"></script></main></body></html>',
   '/pr-two-screen-boot.js':`'use strict';fetch('/legacy.html');const s='<script src="/pr-velocity-three-lines.js"></script>';`,
   '/compact.css':'.a{color:navy;}',
@@ -16,7 +17,7 @@ function fixture(overrides={}){
   ...overrides
  };
  return async url=>{
-  const p=new URL(url).pathname;
+  const target=new URL(url),p=target.pathname+target.search;
   if(p in data&&data[p]===null)return {status:404,headers:{get:()=> 'text/plain'},text:async()=> 'NOT_FOUND'};
   if(typeof data[p]==='object'&&data[p]?.redirect)
    return {status:307,headers:{get:n=>n.toLowerCase()==='location'?data[p].redirect:'text/plain'},text:async()=>''};
@@ -70,6 +71,14 @@ test('same-origin server 307 canonical redirects pass; external redirect fails',
  assert.equal(invalid.ok,false);
  assert.ok(invalid.errors.some(e=>e.includes('INVALID_CANONICAL_REDIRECT')));
 });
+test('lightweight two-graph first-paint HTML is valid; missing chart is not',async()=>{
+ const fast='<html><head><link rel="stylesheet" href="/pr-monitor-fast.css"><script src="/pr-monitor-fast.js"></script></head><body><main class="wrap" id="pr-monitor-fast"><svg id="activity-graph"></svg><svg id="latency-graph"></svg></main></body></html>';
+ const ok=await verifyCandidate(origin,fixture({'/':fast,'/index.html':fast,'/pr-monitor.html':fast}));
+ assert.equal(ok.ok,true,ok.errors.join('; '));
+ const invalid=fast.replace('id="latency-graph"','id="deleted-graph"');
+ const bad=await verifyCandidate(origin,fixture({'/pr-monitor.html':invalid}));
+ assert.equal(bad.ok,false);assert.ok(bad.errors.some(e=>e.includes('MONITOR_DIRECT_ENTRY_REQUIRED')));
+});
 test('incomplete source archive fails closed even when entry HTML exists',t=>{
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'hh-monitor-release-'));
  t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
@@ -77,6 +86,7 @@ test('incomplete source archive fails closed even when entry HTML exists',t=>{
  const files={
   'index.html':entry,
   'pr-monitor.html':entry,
+  'pr-monitor-full.html':'<html><head></head><body><main class="wrap">Full diagnostics</main></body></html>',
   'legacy.html':'<html><head><script src="/monitor-core.js"></script></head><body><main>old</main></body></html>',
   'pr-two-screen-boot.js':"'use strict';let s='/pr-lifecycle-ribbon.js';fetch('/legacy.html');"
  };
