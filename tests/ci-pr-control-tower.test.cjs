@@ -600,6 +600,44 @@ test('saturated run count stops before job reads',async()=>{
  assert.equal(jobs,0);
 });
 
+test('137 stale queued Actions are reported as saturation, not invalid inventory',async()=>{
+ let lookups=0,jobReads=0;
+ const github={rest:{actions:{
+  listWorkflowRunsForRepo:async({status,per_page})=>{
+   lookups++;assert.equal(per_page,100);
+   return {data:status==='queued'?
+    {total_count:137,workflow_runs:Array.from({length:100},(_,i)=>({id:i+1,status:'queued'}))}:
+    {total_count:8,workflow_runs:Array.from({length:8},(_,i)=>({id:i+200,status:'in_progress'}))}};
+  },
+  listJobsForWorkflowRun:async()=>{jobReads++;throw Error('SATURATED_QUEUE_MUST_SKIP_JOB_READS');}
+ }}};
+ const state=await snapshot(github,'andylitvinov-design','books');
+ assert.equal(state.known,false);
+ assert.equal(state.reason,'RUN_CAPACITY_SATURATED');
+ assert.equal(state.queuedRuns,137);
+ assert.equal(state.activeRuns,8);
+ assert.equal(state.saturatedBy,'QUEUED');
+ assert.equal(state.inventoryConfidence,'COUNT_ONLY_OVER_PAGE_LIMIT');
+ assert.equal(state.safeToDispatch,false);
+ assert.equal(admission('repair',state),'CAPACITY_UNKNOWN');
+ assert.equal(admission('ci',state),'CAPACITY_UNKNOWN');
+ assert.equal(lookups,2,'one bounded count-only census; no second retry');
+ assert.equal(jobReads,0);
+});
+
+test('malformed Actions count remains invalid and never enters repair lane',async()=>{
+ let jobs=0;
+ const github={rest:{actions:{
+  listWorkflowRunsForRepo:async({status})=>({data:
+   status==='queued'?{total_count:-1,workflow_runs:[]}:{total_count:2,workflow_runs:[]}}),
+  listJobsForWorkflowRun:async()=>{jobs++;return {data:{total_count:0,jobs:[]}};}
+ }}};
+ const state=await snapshot(github,'andylitvinov-design','books');
+ assert.equal(state.reason,'INVALID_RUN_INVENTORY');
+ assert.equal(state.known,false);
+ assert.equal(jobs,0);
+});
+
 test('incomplete job inventory stops without dispatch',async()=>{
  const github={rest:{actions:{
   listWorkflowRunsForRepo:async({status})=>({data:status==='in_progress'?
