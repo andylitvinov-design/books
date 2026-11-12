@@ -78,6 +78,7 @@ export function HolisticLanguageConversation({
   const [generating,setGenerating] = useState(false);
   const [savedMemory,setSavedMemory] = useState<MyAgentMemory[]>([]);
   const [memoryOwner,setMemoryOwner] = useState("");
+  const [memoryPanelRevision,setMemoryPanelRevision] = useState(0);
   const [memoryProposal,setMemoryProposal] = useState<{kind:string;value:string}|null>(null);
   const [memoryNotice,setMemoryNotice] = useState("");
   const [memorySaving,setMemorySaving] = useState(false);
@@ -215,7 +216,9 @@ export function HolisticLanguageConversation({
         if(!ownerMatches || (savedMemory.length && (!check?.verified || !check.items.length))) {
           // Reset history and pending model output: another signed-in account
           // must never inherit this tab's earlier account-specific context.
-          setSavedMemory([]);setMemoryOwner("");reset();setDraft(value);
+          setSavedMemory([]);setMemoryOwner("");
+          setMemoryPanelRevision(revision=>revision+1);
+          reset();setDraft(value);
           setMemoryNotice(locale==="ru"?"Аккаунт или согласие изменились. Память отключена; повторите отправку."
             :locale==="es"?"La cuenta o el consentimiento cambió. Se borró el contexto; vuelve a enviar."
             :"Account or consent changed. Memory was cleared; send again.");
@@ -389,7 +392,7 @@ export function HolisticLanguageConversation({
       </div>
     </div> : null}
     {memoryNotice?<p role="status" className={styles.memoryNotice}>{memoryNotice}</p>:null}
-    <HolisticAgentMemoryPanel locale={locale} onUse={(rows,ownerBinding)=>{
+    <HolisticAgentMemoryPanel key={memoryPanelRevision} locale={locale} onUse={(rows,ownerBinding)=>{
       memoryEpoch.current+=1;
       if((memoryOwner && memoryOwner!==ownerBinding) || (savedMemory.length>0 && rows.length===0)) {
         // Changing the account or revoking consent invalidates earlier turns.
