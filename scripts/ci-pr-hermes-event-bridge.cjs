@@ -6,6 +6,7 @@ const FAILURES = new Set(['failure', 'timed_out', 'startup_failure']);
 const SHA = /^[a-f0-9]{40}$/i;
 const { classifyRedCiError } = require('./ci-pr-red-ci-classifier.cjs');
 const { strategyFor } = require('./ci-pr-error-task.cjs');
+const {validatedJobEvidence,isActualBaseAdvancedLog}=require('./ci-pr-base-advanced-recovery.cjs');
 
 function exactPullRequestLink(pr) {
   if (!pr || pr.state !== 'open' || pr.draft ||
@@ -64,7 +65,22 @@ async function resolveExactPR({ github, owner, repo, workflowRun }) {
   return { ok: true, pullRequest: exact[0] };
 }
 
-function buildDiagnostics(jobs, pr) {
+/** Optional read-only proof for the existing immutable BASE-owned specialist.
+ * Invalid/missing logs keep the original classification without any retry.
+ * Do not log, store or expose raw job logs or provider information. */
+async function verifiedSpecialistBaseAdvanced({github,owner,repo,jobData}={}){
+ if(owner+'/'+repo!==REPO||typeof github?.request!=='function')return '';
+ const jobId=validatedJobEvidence(jobData);
+ if(!jobId)return '';
+ try{
+  const response=await github.request(
+   'GET /repos/{owner}/{repo}/actions/jobs/{job_id}/logs',
+   {owner,repo,job_id:jobId});
+  return isActualBaseAdvancedLog(response?.data)
+   ?'BASE_ADVANCED: PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED':'';
+ }catch{return '';}
+}
+function buildDiagnostics(jobs, pr, verifiedFailureHint='') {
   const failed = (Array.isArray(jobs) ? jobs : []).filter((job) =>
     FAILURES.has(job?.conclusion));
   const failedJobs = failed.map((job) => String(job.name || 'unnamed-job').slice(0, 160));
@@ -72,7 +88,10 @@ function buildDiagnostics(jobs, pr) {
     .filter((step) => FAILURES.has(step?.conclusion))
     .map((step) => String(job.name || 'unnamed-job').slice(0, 90) + ' / ' +
       String(step.name || 'unnamed-step').slice(0, 90))).slice(0, 10);
-  const decision = classifyRedCiError({ pr, jobs });
+  const failureMessage=verifiedFailureHint===
+    'BASE_ADVANCED: PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED'
+      ?verifiedFailureHint:'';
+  const decision = classifyRedCiError({ pr, jobs, failureMessage });
   const strategy=strategyFor(decision.category,'UNVERIFIED',decision.retry.allowed===true);
   return {
     category: decision.category,
@@ -135,7 +154,11 @@ async function sendWorkflowFailure({
   const jobsResponse = await github.rest.actions.listJobsForWorkflowRun({
     owner, repo, run_id: workflowRun.id, per_page: 100, filter: 'latest'
   });
-  const diagnostics = buildDiagnostics(jobsResponse.data?.jobs, association.pullRequest);
+  const verifiedFailureHint=await verifiedSpecialistBaseAdvanced({
+    github,owner,repo,jobData:jobsResponse.data
+  });
+  const diagnostics = buildDiagnostics(jobsResponse.data?.jobs,
+    association.pullRequest,verifiedFailureHint);
   const payload = {
     action: 'completed',
     workflow_run: { ...workflowRun, pull_requests: [association.pullRequest] },
@@ -171,4 +194,4 @@ async function sendWorkflowFailure({
   return result;
 }
 
-module.exports = { exactPullRequestLink, resolveExactPR, buildDiagnostics, sendWorkflowFailure };
+module.exports = { exactPullRequestLink, resolveExactPR, buildDiagnostics, verifiedSpecialistBaseAdvanced, sendWorkflowFailure };
