@@ -4,9 +4,11 @@ import { notFound, redirect } from "next/navigation";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { ServicesConversionHero } from "@/components/services-conversion-hero";
 import { ServicesAssistMobile } from "@/components/services-assist-mobile";
+import { ServicesMagicalHelpMobile } from "@/components/services-magical-help-mobile";
 import assistStyles from "@/components/services-assist-mobile.module.css";
 import { ServicesExplorerProvider } from "@/components/services-explorer-state";
 import { ServicesStudioOffers } from "@/components/services-studio-offers";
+import { SpiritualReadingEntry } from "@/components/services-spiritual-reading";
 import { ServicesIntroMedia, ServicesMethodVideos, ServicesDirectoryInvitation } from "@/components/services-studio-extras";
 import { PersonalTestimonials } from "@/components/personal-testimonials";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
@@ -76,8 +78,10 @@ export default async function ServicesPage({ params, searchParams }: PageProps) 
       <ServicesExplorerProvider>
         <ServicesAssistMobile locale={locale as Locale} />
         <ServicesConversionHero locale={locale as Locale} />
+        <SpiritualReadingEntry locale={locale as Locale} />
         <PublicConsultationCta locale={locale as Locale} id="consultation" serviceBooking wiseEnabled={wisePaymentsEnabled()} paypalPersonalEnabled={personalPayPalEnabled()} />
         <ServicesStudioOffers locale={locale as Locale} />
+        <ServicesMagicalHelpMobile locale={locale as Locale} />
       </ServicesExplorerProvider>
       <ServicesIntroMedia locale={locale as Locale} />
       <PersonalTestimonials locale={locale as Locale} variant="services" />

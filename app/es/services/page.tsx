@@ -5,6 +5,7 @@ import { ServicesAssistMobile } from "@/components/services-assist-mobile";
 import assistStyles from "@/components/services-assist-mobile.module.css";
 import { ServicesExplorerProvider } from "@/components/services-explorer-state";
 import { ServicesStudioOffers } from "@/components/services-studio-offers";
+import { SpiritualReadingEntry } from "@/components/services-spiritual-reading";
 import { ServicesIntroMedia, ServicesMethodVideos, ServicesDirectoryInvitation } from "@/components/services-studio-extras";
 import { PersonalTestimonials } from "@/components/personal-testimonials";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
@@ -27,6 +28,7 @@ export default async function SpanishServicesPage({ searchParams }: { searchPara
       <ServicesExplorerProvider>
         <ServicesAssistMobile locale="es" />
         <ServicesConversionHero locale="es" />
+        <SpiritualReadingEntry locale="es" />
         <PublicConsultationCta locale="es" id="consultation" serviceBooking wiseEnabled={wisePaymentsEnabled()} paypalPersonalEnabled={personalPayPalEnabled()} />
         <ServicesStudioOffers locale="es" />
       </ServicesExplorerProvider>
