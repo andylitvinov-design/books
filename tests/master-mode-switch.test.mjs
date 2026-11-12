@@ -45,3 +45,33 @@ test("the same accessible segmented navigation is above both existing page surfa
   assert.match(practiceBrowser, /data-legacy-practice-bottom-nav/);
   assert.match(communityBrowser, /data-master-mode="share"/);
 });
+
+test("Live / Work is a reversible profile-header switch to real service publishing", async () => {
+  const [component, css, profile, practice, workspace, route] = await Promise.all([
+    read("components/master-mode-switch.tsx"),
+    read("components/master-mode-switch.module.css"),
+    read("components/app/profile-hub-tabs.jsx"),
+    read("components/practice-showcase.jsx"),
+    read("components/app/app-workspace.jsx"),
+    read("app/[locale]/practice/page.jsx"),
+  ]);
+  assert.match(component, /export function ProfileModeSwitch/);
+  assert.match(component, /profileLocale = language === "es" \? "en" : language/);
+  assert.match(component, /href=\{"\/" \+ profileLocale \+ "\/app\/portrait"\}/);
+  assert.match(component, /href=\{"\/" \+ language \+ "\/practice"\}/);
+  assert.match(component, /data-profile-mode="live"/);
+  assert.match(component, /data-profile-mode="work"/);
+  assert.match(component, /aria-current=\{active === "live" \? "page"/);
+  assert.match(component, /aria-current=\{active === "work" \? "page"/);
+  assert.match(profile, /<ProfileModeSwitch locale=\{selected\} active="live" \/>/);
+  assert.doesNotMatch(profile, /className=\{styles\.settings\}/);
+  assert.match(practice, /<ProfileModeSwitch locale=\{locale\} active="work" \/>/);
+  assert.match(practice, /onClick=\{\(\) => void openAction\('create'\)\}/);
+  assert.match(workspace, /page === 'practice' && <PracticeWorkspace/);
+  assert.match(workspace, /href=\{root \+ '\/settings'\}/);
+  assert.match(route, /<PracticeShowcase locale=\{locale\} \/>/);
+  assert.match(css, /\.profileSwitch a\[aria-current="page"\]/);
+  assert.match(css, /min-height: 44px/);
+  assert.match(css, /max-width: 360px/);
+  assert.doesNotMatch(component, /auth\/start|appFetch|window\.|fetch\(/);
+});

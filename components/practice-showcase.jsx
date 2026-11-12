@@ -10,7 +10,7 @@ import {
 } from 'lucide-react'
 import { appFetch } from '@/lib/app/client-fetch'
 import styles from './practice-showcase.module.css'
-import { MasterModeSwitch } from './master-mode-switch'
+import { MasterModeSwitch, ProfileModeSwitch } from './master-mode-switch'
 
 const COPY = {
   ru: {
@@ -369,6 +369,7 @@ export default function PracticeShowcase({ locale = 'en' }) {
           <h1>{t.title}</h1>
           <p>{t.subtitle}</p>
         </div>
+        <ProfileModeSwitch locale={locale} active="work" />
       </header>
 
       <section className={styles.identity} aria-label={t.yourProfile}>
