@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowRight, HeartHandshake, Search, Sparkles } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./services-assist-mobile.module.css";
+import { AssistTopRecommendations } from "./assist-top-recommendations";
 
 type Focus = "stress" | "relationships" | "energy" | "health" | "work" | "growth" | "general";
 const routes = {
@@ -91,6 +92,7 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
   return <section className={styles.assist} data-assist-mobile lang={locale} aria-labelledby="assist-title">
     <div className={styles.photo} role="img" aria-label="Holistic House" />
     <header className={styles.intro}><p className={styles.eyebrow}><HeartHandshake size={15} aria-hidden="true"/>{t.eyebrow}</p><h1 id="assist-title">{t.title}</h1><p>{t.lead}</p></header>
+    <AssistTopRecommendations locale={locale} focus={selection?.focus ?? null} />
     <form className={styles.form} onSubmit={submit}>
       <label htmlFor="assist-question">{t.label}</label>
       <textarea id="assist-question" ref={inputRef} rows={3} value={text} maxLength={280} autoComplete="off"
