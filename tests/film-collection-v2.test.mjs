@@ -70,5 +70,17 @@ test("EN RU ES scene selectors share native MP4 and local photo compositor acros
  assert.match(studio,/data-video-health-disclaimer/);
  assert.match(studio,/backgroundOnly/);
  assert.match(sceneFile,/ctx\.drawImage\(video,|c\.drawImage\(video,/);
- assert.doesNotMatch(studio+library,/\bfetch\s*\(|XMLHttpRequest|FormData|sendBeacon|localStorage|sessionStorage|heygen|higgsfield|kling\.ai/i);
+  // The only remote media in this component is the two approved, click-to-play
+  // HTML5 intro MP4s. Exclude that isolated manifest when asserting that the
+  // personal-photo compositor and scene library remain local-only.
+  const introStart=studio.indexOf('const introVideo = locale==="ru" ? {');
+  const introEnd=studio.indexOf('const introVideoRef=',introStart);
+  assert.ok(introStart>0&&introEnd>introStart,"isolated native MP4 intro manifest");
+  const introBlock=studio.slice(introStart,introEnd);
+  const approvedIntroUrls=[...introBlock.matchAll(/https:\/\/resource2\.heygen\.ai\/movio\/video\/[a-f0-9]+\/[a-f0-9]+\/caption\.mp4/g)].map(x=>x[0]);
+  assert.equal(approvedIntroUrls.length,2,"only the two approved static introduction MP4 sources");
+  assert.ok(approvedIntroUrls.some(x=>x.includes("72e3e6f45c3664b0b8d75281b1b413a5")));
+  assert.ok(approvedIntroUrls.some(x=>x.includes("8d998c778af3b563aa63233aa4fb4a06")));
+  const localComposer=studio.slice(0,introStart)+studio.slice(introEnd);
+  assert.doesNotMatch(localComposer+library,/\bfetch\s*\(|XMLHttpRequest|FormData|sendBeacon|localStorage|sessionStorage|heygen|higgsfield|kling\.ai/i);
 });

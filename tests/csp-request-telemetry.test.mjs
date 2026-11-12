@@ -70,7 +70,7 @@ test('telemetry is bounded and init source is self-contained', () => {
 });
 test('verifier preserves fatal error gates and adds no classifier input or waiting policy', () => {
   const source = readFileSync(new URL('../scripts/verify-release-reaudit.mjs', import.meta.url), 'utf8');
-  assert.match(source, /classifyCspNavigationCancellation\(error, \{ engine, readiness, origin, lifecycle: lifecycleTrace \}\)/);
+  assert.match(source, /classifyCspNavigationCancellation\(error, \{ engine, readiness, origin, lifecycle: lifecycleTrace, fetchTelemetry: evidenceFetches \}\)/);
   assert.match(source, /assert\.deepEqual\(unexpectedErrors, \[\], 'No unexplained JavaScript diagnostics during CSP navigation'\)/);
   assert.match(source, /if \(readiness === 'loaded-history'\) assert\.deepEqual\(cspErrors, \[\]/);
   assert.match(source, /if \(readiness !== 'loaded-history'\) return;/);
@@ -154,4 +154,18 @@ test('stats diagnostics retain only exact public aggregate path without query va
   assert.match(source, /cspContext.addInitScript\(\{ content: catalogStatsDiagnosticSource\(\) \}\)/);
   assert.match(source, /record\('policy-violation'/);
   assert.match(source, /JSON.stringify\(\{ statsResponses, statsFetch, requestTelemetry, fetchTelemetry/);
+});
+
+test('Telegram cancellation telemetry records only its exact anonymous public path', () => {
+  assert.deepEqual(sanitizeCspRequest('/api/public/telegram-diagnostic',origin),
+    {path:'/api/public/telegram-diagnostic',rsc:false});
+  for (const path of ['/api/public/telegram-diagnostic?token=x',
+    '/api/public/telegram-diagnostic?_rsc=x',
+    '/api/public/telegram-diagnostic/other',
+    '/api/public/telegram-diagnostic?scope=private'])
+    assert.equal(sanitizeCspRequest(path,origin),null);
+  const observation=fixture(()=>Promise.resolve(null));
+  observation.env.fetch('/api/public/telegram-diagnostic');
+  assert.equal(observation.events()[0].path,'/api/public/telegram-diagnostic');
+  assert.doesNotMatch(JSON.stringify(observation.events()),/token|https?:|scope/);
 });

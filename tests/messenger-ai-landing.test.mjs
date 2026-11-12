@@ -18,8 +18,9 @@ test("one real iChat, one scroll log, 6 first-party actions and always-visible c
  assert.match(workspace,/<HolisticAgentChat locale=\{locale\} compact messengerView/);
  assert.doesNotMatch(workspace,/IHelpTopics|fetch\(|new WebSocket|new AudioContext/);
  assert.match(chat,/data-chat-skin=\{messengerView\?"messenger":undefined\}/);
- assert.match(chat,/messengerView&&!messages.length&&<MessengerAiLanding/);
- assert.match(chat,/onCreateVideo=\{startContent\}/);
+ assert.match(chat,/\{compact&&messengerView&&!pageHelp&&!messages.length&&<>/);
+ assert.match(chat,/<MessengerAiLanding locale=\{locale\}/);
+ assert.ok(chat.includes('onCreateVideo={()=>startContent()}'), 'Messenger launches the original Video workflow with user gesture');
  assert.match(chat,/onPractice=\{\(\)=>startGuided\("meditation"\)\}/);
  assert.match(chat,/composerRef.current\?\.focus/);
  assert.match(chat,/!pageHelp&&!messengerView&&<div className=\{styles.startActions\}/);
@@ -31,7 +32,8 @@ test("one real iChat, one scroll log, 6 first-party actions and always-visible c
    assert.ok(landing.includes('id:"'+id+'"'),id);
  for(const path of ["tests","services","academy"])
    assert.ok(landing.includes('href:"'+path+'"'),path);
- assert.equal((landing.match(/<iframe\b/g)||[]).length,1);
+ assert.equal((landing.match(/<iframe\b/g)||[]).length,0);
+ assert.equal((landing.match(/<video\b/g)||[]).length,1);
 });
 
 test("illustrated welcome stays at its top on first render; dialogue still scrolls to newest reply",()=>{
@@ -42,19 +44,25 @@ test("illustrated welcome stays at its top on first render; dialogue still scrol
  assert.match(first,/thread.scrollTop=thread.scrollHeight/);
 });
 
-test("approved video only: click-to-load Russian source, no fake English/Spanish render",()=>{
- assert.match(landing,/approvedTelegramPresentation\("ru"\)/);
- assert.match(landing,/playing&&introduction\?/);
- assert.match(landing,/setPlaying\(true\)/);
- assert.match(landing,/setPlaying\(false\)/);
- assert.match(landing,/data-hh-ai-intro-play/);
- assert.match(landing,/youtube-nocookie\.com\/embed/);
- assert.match(landing,/referrerPolicy="strict-origin-when-cross-origin"/);
- for(const text of ["Russian audio","Русская озвучка","Audio en ruso"])
-  assert.ok(landing.includes(text),text);
- assert.doesNotMatch(landing,/useEffect|autoplay\s*\>|api\/heygen|private.*mp4/i);
+test("approved HeyGen exports map EN and RU to distinct captioned MP4s, not YouTube",()=>{
+ assert.match(landing,/en:\{\s*src:"https:\/\/resource2\.heygen\.ai\/movio\/video\/8d998c778af3b563aa63233aa4fb4a06\/89b101dc9dbb4fcea06aab3eb6ce5094\/caption\.mp4"/);
+ assert.match(landing,/ru:\{\s*src:"https:\/\/resource2\.heygen\.ai\/movio\/video\/72e3e6f45c3664b0b8d75281b1b413a5\/2e30e44294964059b57670860ee3828b\/caption\.mp4"/);
+ assert.match(landing,/INTRO\[locale==="ru"\?"ru":"en"\]/);
+ assert.match(landing,/durationSeconds:91\.2457/);
+ assert.match(landing,/durationSeconds:96\.862/);
+ for(const phrase of ["English audio","Русская озвучка","Audio en inglés"])
+   assert.ok(landing.includes(phrase),phrase);
+ assert.doesNotMatch(landing,/youtube-nocookie|<iframe|approvedTelegramPresentation|autoplay=1/);
+ assert.doesNotMatch(landing,/src:"https:\/\/files2\.heygen\.ai/);
+ assert.match(landing,/<video ref=\{videoRef\} src=\{introduction\.src\} controls playsInline preload="none"/);
+ assert.match(landing,/videoRef\.current\?\.play\(\)/);
+ assert.match(landing,/videoRef\.current\?\.pause\(\)/);
+ assert.match(landing,/onError=\{\(\)=>setFailed\(true\)\}/);
+ assert.match(landing,/data-hh-ai-intro-play onClick=\{start\}/);
+ assert.match(landing,/href=\{introduction\.src\} target="_blank" rel="noopener noreferrer"/);
+ assert.match(landingCss,/\.hero\[data-playing="true"\] \.player/);
+ assert.match(landingCss,/\.player video\{/);
 });
-
 test("photo appears in actual reply bubbles, while big avatar and memory button are omitted",()=>{
  assert.match(chat,/data-hh-ai-assistant-message/);
  assert.match(chat,/className=\{styles.messagePortrait\}/);
@@ -63,7 +71,8 @@ test("photo appears in actual reply bubbles, while big avatar and memory button 
  assert.match(chat,/authenticated&&!messengerView&&<HolisticAgentMemoryPanel/);
  assert.match(chat,/!messengerView&&<EmotionalAvatar/);
  assert.match(chat,/messengerView&&<EmotionalAvatar[\s\S]*?iconOnly/);
- assert.match(speech,/if\(iconOnly\)return <button/);
+ assert.match(speech,/if\(iconOnly\)return <div className=\{styles.iconVoiceControls\}>/);
+ assert.match(speech,/<button type="button" className=\{styles.iconOnly\}/);
  assert.match(speech,/data-hh-speech-control/);
  assert.match(speech,/createDeviceSpeech/);
  assert.match(chatCss,/\.messageWithAvatar/);
@@ -106,21 +115,23 @@ test("EN RU ES, phone widths and syntax of edited React sources",()=>{
 });
 
 
-test("private Messenger allows only the approved nocookie intro iframe, with an explicit iPhone escape link",()=>{
+test("Messenger and Goal Studio alone permit direct HeyGen CDN MP4; other private routes stay restricted",()=>{
  const middleware=read("middleware.ts");
  const exactMessenger=/^\/(en|ru|es)\/app\/messages\/?$/;
- const match=middleware.match(/const messengerIntroductionEmbed = ([^\n]+)/);
+ const exactStudio=/^\/(en|ru|es)\/holistic-support\/mandala\/?$/;
+ const match=middleware.match(/const messengerIntroductionVideo = ([^\n]+)/);
+ const studioMatch=middleware.match(/const studioIntroductionVideo = ([^\n]+)/);
  assert.equal(match?.[1],exactMessenger.toString()+".test(pathname)");
- for(const path of ["/en/app/messages","/ru/app/messages/","/es/app/messages"])
+ assert.equal(studioMatch?.[1],exactStudio.toString()+".test(pathname)");
+ for(const path of ["/en/app/messages","/ru/app/messages","/es/app/messages"])
    assert.equal(exactMessenger.test(path),true,path);
+ for(const path of ["/en/holistic-support/mandala","/ru/holistic-support/mandala","/es/holistic-support/mandala"])
+   assert.equal(exactStudio.test(path),true,path);
  for(const path of ["/en/app","/en/app/profile","/en/app/orders",
-   "/ru/client/session/abc","/api/app/messenger","/admin/videos","/en/app/messages/admin"])
-   assert.equal(exactMessenger.test(path),false,path);
- assert.match(middleware,/sessionEducationEmbed \? "frame-src https:\/\/www\.youtube-nocookie\.com" : messengerIntroductionEmbed \? "frame-src https:\/\/www\.youtube-nocookie\.com" : practitionerDraftPreview/);
+   "/ru/client/session/abc","/api/app/messenger","/admin/videos","/en/app/messages/admin",
+   "/en/holistic-support/mandala/edit","/en/services"])
+   assert.equal(exactMessenger.test(path)||exactStudio.test(path),false,path);
+ assert.match(middleware,/directMessageStorageOrigin \+ \(\(messengerIntroductionVideo\|\|studioIntroductionVideo\) \? ' https:\/\/resource2\.heygen\.ai' : ''\)/);
+ assert.doesNotMatch(middleware,/messengerIntroductionEmbed/);
  assert.match(middleware,/practitionerDraftPreview \? "frame-src blob:" : "frame-src 'none'"/);
- assert.match(landing,/href=\{introduction\.url\} className=\{css\.externalYouTube\} target="_blank"/);
- assert.match(landing,/rel="noopener noreferrer">\{t\.openOnYouTube\}/);
- assert.match(landingCss,/\.externalYouTube\{/);
- for(const name of ["Open on YouTube","Открыть на YouTube","Abrir en YouTube"])
-   assert.ok(landing.includes(name),name);
 });
