@@ -137,7 +137,7 @@ export async function prune(api, ctx, { limit = 300, dryRun = false,
     } catch { closedScanPartial = true; }
   }
   const summary = { scanned: found.length, candidates: 0, closedCandidates: 0,
-    cancelled: [], forced: [], confirmed: [], dryRun: [], errors: [],
+    cancelled: [], forced: [], confirmed: [], dryRun: [], errors: [], jobless409: [],
     partial: truncated || closedScanPartial };
   const accepted = new Map();
   const baseWorkflows = new Map();
@@ -188,7 +188,22 @@ export async function prune(api, ctx, { limit = 300, dryRun = false,
     catch (e) {
       // Another janitor may have cancelled the same run between GET and POST.
       const after = await api.run(run.id).catch(() => null);
-      if (after?.status === freshRun.status) summary.errors.push({ id: run.id, status: String(e.message || e).slice(0, 100) });
+      if (after?.status === freshRun.status) {
+        const message = String(e.message || e).slice(0, 100);
+        // GitHub can retain a queued, jobless run and reject both cancellation
+        // endpoints with HTTP 409. This is NOT a real runner wait or success.
+        // Record exact evidence without retry/force-cancel or failing protected CI.
+        if (after.status === 'queued' && /HTTP 409\b/.test(message)) {
+          const jobs = await api.jobs(run.id).catch(() => null);
+          if (jobs?.total_count === 0 && Array.isArray(jobs.jobs) && jobs.jobs.length === 0) {
+            summary.jobless409.push({ id: run.id, reason: 'GITHUB_QUEUED_ZERO_JOBS_CANCEL_409',
+              url: 'https://github.com/' + ctx.repo + '/actions/runs/' + run.id });
+            summary.partial = true;
+            continue;
+          }
+        }
+        summary.errors.push({ id: run.id, status: message });
+      }
     }
   }
   // A normal cancel can leave always() jobs queued and block the next SHA.
@@ -304,15 +319,28 @@ export async function observeCI(api, { windowMinutes = 60, sampleRuns = 20, now 
     ...summarizeJobs(lists, now) };
 }
 
-export function client(repo, token, transport = fetch) {
+export function client(repo, token, transport = fetch,
+  wait = ms => new Promise(resolve => setTimeout(resolve, ms))) {
   const prefix = 'https://api.github.com/repos/' + repo;
   async function call(path, method = 'GET') {
-    const resp = await transport(prefix + path, { method, headers: {
-      Authorization: 'Bearer ' + token, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28',
-    } });
-    if (!resp.ok) throw Error('GitHub ' + method + ' ' + path.split('?')[0] + ': HTTP ' + resp.status);
-    return method === 'POST' ? true : resp.json();
+    // GitHub occasionally returns HTTP 503 for live PR GET, even when
+    // exact HEAD is valid. Limited retries cannot weaken any PR proof.
+    const prRead = method === 'GET' && /^\/pulls\/[1-9]\d*$/.test(path);
+    const attempts = prRead ? 3 : 1;
+    for (let attempt = 0; attempt < attempts; attempt++) {
+      const resp = await transport(prefix + path, { method, headers: {
+        Authorization: 'Bearer ' + token, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28',
+      } });
+      if (resp.ok) return method === 'POST' ? true : resp.json();
+      if (prRead && [502, 503, 504].includes(resp.status) && attempt < attempts - 1) {
+        await wait(attempt === 0 ? 250 : 750);
+        continue;
+      }
+      throw Error('GitHub ' + method + ' ' + path.split('?')[0] + ': HTTP ' + resp.status);
+    }
+    throw Error('GitHub PR read exhausted without successful readback');
   }
+
   return {
     pr: (n) => call('/pulls/' + n),
     closed: page => call('/pulls?' + new URLSearchParams({state:'closed',sort:'updated',direction:'desc',per_page:'100',page:String(page)})),
@@ -350,8 +378,11 @@ async function main() {
   const fmt = ms => ms == null ? 'n/a' : (ms / 60000).toFixed(2) + ' min';
   const msg = (ctx.closedHeadSha ? 'CI closed-PR cleanup: ' : ctx.headSha ? 'CI targeted stale-HEAD prune: ' : 'CI queued-only prune: ') +
     'scanned=' + s.scanned + ' eligible=' + s.candidates + ' closed_PR_eligible=' + s.closedCandidates +
-    ' cancelled=' + s.cancelled.length + ' dry_run=' + s.dryRun.length + ' errors=' + s.errors.length +
-    '\nCancellation accepted IDs: ' + (s.cancelled.join(',') || 'none') + '\n' +
+    ' cancelled=' + s.cancelled.length + ' dry_run=' + s.dryRun.length +
+    ' jobless_409=' + s.jobless409.length + ' errors=' + s.errors.length +
+    '\nCancellation accepted IDs: ' + (s.cancelled.join(',') || 'none') +
+    '\nGitHub queued/jobless 409 (unresolved, not cancelled): ' +
+    (s.jobless409.slice(0, 8).map(x => x.url).join(', ') || 'none') + '\n' +
     '\n## CI queue monitoring\n\n| Metric | Observation |\n| --- | --- |\n' +
     '| New PR workflow checks (last 60 min) | ' + (m ? m.newChecks + (m.truncated ? ' (PARTIAL)' : '') : 'n/a') + ' |\n' +
     '| Queued / running checks (last 60 min) | ' + (m ? m.queuedChecks + ' / ' + m.runningChecks : 'n/a') + ' |\n' +
@@ -365,7 +396,8 @@ async function main() {
   console.log(msg);
   console.log('HH_CI_QUEUE_METRICS ' + JSON.stringify({ at: new Date().toISOString(), scanned: s.scanned,
     candidates: s.candidates, closedCandidates: s.closedCandidates, cancelAccepted: s.cancelled.length, forceAccepted: s.forced.length, cancelConfirmed: s.confirmed.length,
-    partial: s.partial, errors: s.errors.length, snapshot: m, metricError }));
+    partial: s.partial, errors: s.errors.length, jobless409: s.jobless409.length,
+    jobless409RunIds: s.jobless409.slice(0, 8).map(x => x.id), snapshot: m, metricError }));
   if (env.GITHUB_STEP_SUMMARY) appendFileSync(env.GITHUB_STEP_SUMMARY, msg);
   if (s.errors.length) { console.error(s.errors); process.exitCode = 1; }
 }

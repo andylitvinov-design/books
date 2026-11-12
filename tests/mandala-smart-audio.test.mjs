@@ -5,6 +5,7 @@ import ts from "typescript";
 import {createHash} from "node:crypto";
 import { mandalaAudioTracks, recommendMandalaAudio } from "../lib/mandala/audio-recommendations.mjs";
 import { SONGS, MASTER_IDS, SAMPLE_RATE, DURATION_SECONDS, renderMelody } from "../scripts/generate-mandala-melodies.mjs";
+import {stripApprovedIntroVideoSources} from "./helpers/approved-mandala-intro-sources.mjs";
 
 const read = path => readFileSync(new URL("../"+path,import.meta.url),"utf8");
 const studio = read("components/mandala-free-video-studio.tsx");
@@ -144,7 +145,7 @@ test("mobile audio controls preserve native HTTPS playback, private files, EN/RU
   assert.match(css,/\.audioFileInput\{position:absolute!important/);
   assert.match(css,/@media\(max-width:380px\)/);
   assert.ok(studio.includes("Под вашу тему")&&studio.includes("For your video theme")&&studio.includes("Para el tema elegido"));
-  assert.doesNotMatch(studio+audioSource,/XMLHttpRequest|FormData|sendBeacon|api\.kling|heygen|higgsfield/i);
+  assert.doesNotMatch(stripApprovedIntroVideoSources(studio)+audioSource,/XMLHttpRequest|FormData|sendBeacon|api\.kling|heygen|higgsfield/i);
   assert.match(audioSource,/fetch\(presetAudioUrl\(id\),\{cache:"force-cache"\}\)/,"melody master is fetched from the same-origin preset path");
 });
 

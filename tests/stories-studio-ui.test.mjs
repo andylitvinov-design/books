@@ -3,11 +3,14 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
 const painter=studio.slice(studio.indexOf("function paintCinematicFrame("),studio.indexOf("function paintSingleVideoTextOverlay("));
-test("Stories extend the existing Story tab; Settings and Hypno remain intact",()=>{
+test("Stories preserve Concept and Hypno while Montage PRO replaces Settings tab",()=>{
  const start=studio.indexOf("<nav className={videoStyles.montageQuickTools}");
  const nav=studio.slice(start,studio.indexOf("</nav>",start));
  assert.match(nav,/id:"concept",Icon:Film/);
- assert.match(nav,/id:"settings",Icon:SlidersHorizontal/);
+ assert.match(nav,/id:"promo",Icon:Zap/);
+ assert.doesNotMatch(nav,/id:"settings",Icon:SlidersHorizontal/);
+ assert.match(studio,/montagePanel==="promo" \? <MandalaMontageProOffer/);
+ assert.match(studio,/data-video-story-open-settings/);
  assert.match(nav,/concept:\{ru:"Сюжет",en:"Story",es:"Guion"\}/);
  assert.match(studio,/data-video-montage-concept/);
  assert.match(studio,/MandalaAutomaticStoryboard/);

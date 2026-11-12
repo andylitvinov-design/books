@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { context, eligible, prune, observeCI, summarizeJobs, client, TARGET } from '../scripts/ci-prune-stale-runs.mjs';
+import { readLivePr } from '../scripts/ci-pr-readiness.mjs';
 
 const repo = 'andylitvinov-design/books';
 const ctx = { repo, target: TARGET, number: 5 };
@@ -237,6 +238,90 @@ test('re-read exact live run and PR before cancellation; cap and dry-run', async
   api.run = async () => run(); let count = 0;
   api.pr = async () => (++count > 1 ? pr({ head: { ...pr().head, sha: OLD } }) : pr());
   assert.deepEqual((await prune(api, ctx)).cancelled, []);
+});
+
+
+test('GitHub HTTP 409 with queued and zero jobs is reported as unresolved, not cancelled', async () => {
+  const api = { list: async () => ({ workflow_runs: [run()] }),
+    pr: async () => pr(), run: async () => run(),
+    compare: async () => ({ status: 'ahead', ahead_by: 1 }),
+    cancel: async () => { throw Error('GitHub POST /actions/runs/100/cancel: HTTP 409'); },
+    jobs: async () => ({ total_count: 0, jobs: [] }),
+    forceCancel: async () => { throw Error('Never force a jobless GitHub 409'); } };
+  const result = await prune(api, ctx);
+  assert.equal(result.candidates, 1);
+  assert.deepEqual(result.cancelled, []);
+  assert.deepEqual(result.errors, []);
+  assert.equal(result.partial, true);
+  assert.deepEqual(result.jobless409, [{
+    id: 100, reason: 'GITHUB_QUEUED_ZERO_JOBS_CANCEL_409',
+    url: 'https://github.com/' + repo + '/actions/runs/100' }]);
+});
+
+test('409 with known jobs or other errors remains a real cleanup error', async () => {
+  const api = { list: async () => ({ workflow_runs: [run()] }),
+    pr: async () => pr(), run: async () => run(),
+    compare: async () => ({ status: 'ahead', ahead_by: 1 }),
+    cancel: async () => { throw Error('GitHub POST /actions/runs/100/cancel: HTTP 409'); },
+    jobs: async () => ({ total_count: 1, jobs: [{ name: 'core-lint-types-build' }] }) };
+  const withJobs = await prune(api, ctx);
+  assert.equal(withJobs.errors.length, 1);
+  assert.equal(withJobs.jobless409.length, 0);
+  api.jobs = async () => ({ total_count: 0, jobs: [] });
+  api.cancel = async () => { throw Error('GitHub POST /actions/runs/100/cancel: HTTP 403'); };
+  const denied = await prune(api, ctx);
+  assert.equal(denied.errors.length, 1);
+  assert.equal(denied.jobless409.length, 0);
+});
+
+
+test('live PR readiness retries GitHub transient 503 with a fresh exact readback', async () => {
+  const calls=[], pauses=[], status=[503, 502, 200];
+  const live={number:5,head:{sha:NEW},base:{ref:TARGET}};
+  const result=await readLivePr(repo,5,'test-token',{
+    transport:async(url,options)=>{
+      calls.push({url,auth:options.headers.authorization});
+      const s=status.shift();
+      return {ok:s===200,status:s,json:async()=>live};
+    },
+    wait:async ms=>{pauses.push(ms);}
+  });
+  assert.equal(result,live);
+  assert.equal(calls.length,3);
+  assert.deepEqual(pauses,[250,750]);
+  assert.ok(calls.every(c=>c.url.endsWith('/pulls/5')&&c.auth==='Bearer test-token'));
+});
+
+test('live PR readiness fails closed for denied or persistently unavailable GitHub', async () => {
+  for (const denied of [401,403,404,429]) {
+    let reads=0;
+    await assert.rejects(readLivePr(repo,5,'test',{transport:async()=>{
+      reads++;return {ok:false,status:denied};
+    },wait:async()=>{}}),new RegExp('HTTP '+denied));
+    assert.equal(reads,1);
+  }
+  let reads=0;
+  await assert.rejects(readLivePr(repo,5,'test',{transport:async()=>{
+    reads++;return {ok:false,status:503};
+  },wait:async()=>{}}),/HTTP 503/);
+  assert.equal(reads,3);
+});
+
+test('janitor retries ONLY trusted PR GET 503, never changes POST or other GET behavior', async () => {
+  const seen=[],pauses=[];
+  const transport=async(url,options)=>{
+    seen.push({url,method:options.method});
+    const attempt=seen.filter(x=>x.url===url).length;
+    if(url.endsWith('/pulls/5')&&attempt<3)return {ok:false,status:503};
+    if(url.endsWith('/actions/runs/100/cancel'))return {ok:false,status:503};
+    return {ok:true,status:200,json:async()=>({number:5})};
+  };
+  const api=client(repo,'test-token',transport,async ms=>pauses.push(ms));
+  assert.equal((await api.pr(5)).number,5);
+  assert.deepEqual(pauses,[250,750]);
+  assert.equal(seen.filter(x=>x.url.endsWith('/pulls/5')).length,3);
+  await assert.rejects(api.cancel(100),/HTTP 503/);
+  assert.equal(seen.filter(x=>x.url.endsWith('/actions/runs/100/cancel')).length,1);
 });
 
 test('HTTP API uses queued PR filter and POST for cancellation', async () => {

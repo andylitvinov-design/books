@@ -151,7 +151,18 @@ async function verifyWorkspaceHydration(browser,locale){
     await ideasConceptTab.tap();
     const concept=page.locator("[data-video-ideas-concept-panel]");
     await expect(concept).toBeVisible();
-    await expect(concept.locator("[data-video-concept-summary]")).toBeVisible();
+    const headline=concept.locator("[data-video-concept-main-idea]");
+    const narrative=concept.locator("[data-video-concept-paragraph]");
+    await expect(headline).toBeVisible();
+    await expect(narrative).toBeVisible();
+    await expect(concept.locator("[data-video-concept-all-parameters]")).toBeVisible();
+    const mainBox=await headline.boundingBox(),storyBox=await narrative.boundingBox();
+    assert.ok(mainBox&&storyBox&&mainBox.y<storyBox.y,"Main idea above story on iPhone");
+    const rects=await concept.locator("[data-concept-parameter]").evaluateAll(nodes=>
+      nodes.map(node=>{const r=node.getBoundingClientRect();return {x:r.x,y:r.y};}));
+    assert.ok(rects.length>=6&&rects.length<=26,"Only visible decision-relevant parameters");
+    for(let i=1;i<rects.length;i++)assert.ok(rects[i].y>rects[i-1].y&&
+      Math.abs(rects[i].x-rects[0].x)<3,"Parameters stay in one vertical column");
     await concept.locator("[data-video-concept-edit]").click();
     await expect(page.locator("[data-video-concept-auth-overlay]")).toBeVisible();
     await page.locator("[data-video-concept-auth-close]").click();
@@ -482,6 +493,35 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(montageStyleTab).toBeVisible();
       await montageStyleTab.click();
       await expect(montageStyleTab).toHaveAttribute("aria-pressed","true",{timeout:15000});
+      // Owner-approved Montage PRO is a real fourth tab with three clear
+      // offers and TWO navigation actions, not a checkout or a second renderer.
+      const montageProTab=page.locator('[data-video-montage-tab="promo"]');
+      await montageProTab.click();
+      const montageProOffer=page.locator('[data-video-montage-pro-offer]');
+      await expect(montageProOffer).toBeVisible();
+      await expect(montageProOffer.locator('[data-video-pro-feature]')).toHaveCount(3);
+      await expect(montageProOffer.locator('[data-video-montage-pro-free]')).toBeVisible();
+      await expect(montageProOffer.locator('[data-video-montage-pro-explore]')).toBeVisible();
+      // Verify iPhone widths without replacing the live editor with a mock.
+      for(const width of [320,390,430]){
+        await page.setViewportSize({width,height:844});
+        const geometry=await page.evaluate(()=>({
+          viewport:document.documentElement.clientWidth,
+          document:document.documentElement.scrollWidth
+        }));
+        assert.ok(geometry.document<=geometry.viewport+2,
+          'MONTAGE_PRO_NO_HORIZONTAL_OVERFLOW_'+width+' '+JSON.stringify(geometry));
+      }
+      await page.setViewportSize({width:390,height:844});
+      await montageProOffer.locator('[data-video-montage-pro-free]').click();
+      await expect(page.locator('[data-video-montage-tab="concept"]')).toHaveAttribute('aria-pressed','true');
+      await montageProTab.click();
+      await montageProOffer.locator('[data-video-montage-pro-explore]').click();
+      await expect(page.locator('[data-video-quick-control="pro"]')).toHaveAttribute('aria-pressed','true');
+      await editorTab.click();
+      await montageStyleTab.click();
+      await expect(montageStyleTab).toHaveAttribute('aria-pressed','true');
+      phase(engine,"montage-pro-offer-routes-passed");
       // Reproduce the owner's iPhone case before recording real voice.
       const selectedStyle=page.locator('[data-video-montage-style="3"]');
       const selectedMaster=page.locator("[data-mandala-master-mp4]");
@@ -496,9 +536,10 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // Exercise the real visible tab instead of waiting for an unmounted drawer.
       // Current Montage has four compact tabs. Real duration is under Settings
       // and current sound/library controls are in the independent Audio tab.
-      const montageSettingsTab=page.locator('[data-video-montage-tab="settings"]');
+      await page.locator('[data-video-montage-tab="concept"]').click();
+      const montageSettingsTab=page.locator('[data-video-story-open-settings]');
       await montageSettingsTab.click();
-      await expect(montageSettingsTab).toHaveAttribute("aria-pressed","true");
+      await expect(page.locator('[data-video-basic-editor]')).toHaveAttribute("data-montage-panel","settings");
       const durationSelect=page.locator('[data-video-montage-preference="duration"]');
       await durationSelect.waitFor({state:"visible",timeout:25000});
       await durationSelect.selectOption("10");
@@ -637,12 +678,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         }
       }
       await page.setViewportSize({width:390,height:840});
-      // Ideas offers a compact set of five phrases by default. The original
-      // consented voice editor is an opt-in advanced section, not a missing
-      // Phrases control or a forced hidden test-only shortcut.
-      // Reuse the same persistent advancedVoice disclosure.
-      // Text mode deliberately collapses the advanced editor. The actual
-      // visitor taps Record a phrase to reveal it; this does not request mic access.
+      // The original voice editor was opened by the real opt-in gesture above.
       await expect(advancedVoice).toHaveAttribute("open","");
       // The approved one phrase editor now lives in Montage Text. Traverse
       // through visible Ideas → Montage → Text, then Record → My Voice.
@@ -711,11 +747,21 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(compactVoicePanel.locator('[data-video-affirmation-transcript-review]')).toHaveCount(1);
       await expect(page.locator("[data-hypno-pending]")).toHaveCount(0);
       await expect(page.locator("[data-video-voice-approval-required]")).toHaveCount(0);
-      await voiceModeButton.click();
+      // iPhone WebKit dispatches native taps; a synthetic click can lose the
+      // React gender-filter update during the Voice/My Voice handoff.
+      if(engine==="webkit")await voiceModeButton.tap();
+      else await voiceModeButton.click();
+      await expect(voiceModeButton).toHaveAttribute("aria-pressed","true");
       const chooserPending=page.locator("[data-video-affirmation-voice-select]");
-      await expect(chooserPending.locator('[data-video-affirmation-gender="male"]')).toBeEnabled();
-      await chooserPending.locator('[data-video-affirmation-gender="male"]').click();
-      await chooserPending.locator('[data-video-affirmation-voice-card="leon"]').click();
+      const maleGender=chooserPending.locator('[data-video-affirmation-gender="male"]');
+      await expect(maleGender).toBeEnabled();
+      if(engine==="webkit")await maleGender.tap();
+      else await maleGender.click();
+      await expect(maleGender).toHaveAttribute("aria-pressed","true");
+      const leonCard=chooserPending.locator('[data-video-affirmation-voice-card="leon"]');
+      await expect(leonCard).toBeVisible();
+      if(engine==="webkit")await leonCard.tap();
+      else await leonCard.click();
       await expect(chooserPending.locator('[data-video-affirmation-voice-card="leon"]')).toHaveAttribute("aria-pressed","true");
       const previewButton=chooserPending.locator('[data-video-affirmation-voice-preview="leon"]');
       await expect(previewButton).toBeEnabled();
@@ -812,7 +858,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         await page.locator('[data-video-quick-control="editor"]').click();
         // The original recorder's export button is available in the real
         // Montage Audio step, never in the intentionally hidden Style footer.
-        await page.locator('[data-video-montage-tab="settings"]').click();
+        await page.locator('[data-video-montage-tab="concept"]').click();
+        await page.locator('[data-video-story-open-settings]').click();
         const ownAudioStep=page.locator('[data-video-montage-open-audio]');
         await ownAudioStep.click();
         await expect(page.locator('[data-video-montage-audio]')).toBeVisible();
@@ -1071,7 +1118,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(creationStyleTab).toBeVisible();
       await creationStyleTab.click();
       await expect(creationStyleTab).toHaveAttribute("aria-pressed","true");
-      await page.locator('[data-video-montage-tab="settings"]').click();
+      await page.locator('[data-video-montage-tab="concept"]').click();
+        await page.locator('[data-video-story-open-settings]').click();
       const montageAudioTab=page.locator('[data-video-montage-open-audio]');
       await expect(montageAudioTab).toBeVisible();
       await montageAudioTab.click();
@@ -1326,7 +1374,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const optionCountBeforeAddition=await phraseRows.count();
       assert.ok(countBeforeAddition>=5,"approved phrase selection remains above the five-phrase minimum");
       assert.ok(countBeforeAddition<10,"an additional phrase can be selected below the hard maximum");
-      await unselectedToggle.click();
+      if(engine==="webkit")await unselectedToggle.tap();
+      else await unselectedToggle.click();
       await expect(phraseEditor.locator(`[data-video-idea-select="${unselectedIndex}"]`)).toHaveAttribute('aria-pressed','true');
       await expect(montageCountLabel).toContainText(`${countBeforeAddition+1} / ${optionCountBeforeAddition}`);
       assert.ok(countBeforeAddition+1<=10,"adding a phrase never exceeds the ten-phrase export limit");
@@ -1351,7 +1400,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(page.locator("[data-video-narration-reapproval]")).toBeVisible();
       await expect(page.locator('[data-video-quick-generate]')).toBeDisabled();
       await page.locator('[data-video-quick-control="editor"]').click();
-      await page.locator('[data-video-montage-tab="settings"]').click();
+      await page.locator('[data-video-montage-tab="concept"]').click();
+        await page.locator('[data-video-story-open-settings]').click();
       const montageAudioAfterExport=page.locator('[data-video-montage-open-audio]');
       await montageAudioAfterExport.click();
       await expect(page.locator('[data-video-montage-audio]')).toBeVisible();

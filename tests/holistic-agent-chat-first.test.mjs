@@ -75,3 +75,22 @@ test('RU EN ES greetings answer without a paid model; focused iPhone editor fill
  for(const label of ['Получить ИИ-подсказку','Получить личную блиц-диагностику','Get an AI suggestion','Solicitar revisión exprés personal'])
   assert.ok(source('components/holistic-agent-chat.tsx').includes(label),label)
 })
+
+
+test('iPhone Messenger scrolls complete assistant answers above the keyboard',()=>{
+ const agent=source('components/holistic-agent-chat.tsx')
+ const css=source('components/holistic-agent-chat.module.css')
+ const start=agent.indexOf('const revealLatest=()=>{')
+ const end=agent.indexOf('  },[messages.length',start)
+ assert.ok(start>=0&&end>start)
+ const scroll=agent.slice(start,end)
+ assert.match(scroll,/const target=Math\.max\(0,thread\.scrollHeight-thread\.clientHeight\)/)
+ assert.doesNotMatch(scroll,/querySelectorAll<HTMLElement>/)
+ assert.match(agent,/if\(!compact\|\|!messengerView\|\|messages\.length===0\)return/)
+ assert.match(agent,/new ResizeObserver\(revealVisibleReply\)/)
+ assert.match(agent,/viewport\?\.addEventListener\("resize",revealVisibleReply\)/)
+ assert.match(agent,/viewport\?\.addEventListener\("scroll",revealVisibleReply\)/)
+ assert.match(agent,/if\(!followTail\.current\)return/,'resizing cannot interrupt manual history reading')
+ assert.match(css,/\.root\[data-compact\]\[data-chat-skin="messenger"\]>\.thread>\*\{\s*flex-shrink:0/)
+ assert.match(agent,/const atBottom=el\.scrollHeight-el\.scrollTop-el\.clientHeight<64/)
+})
