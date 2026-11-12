@@ -141,6 +141,9 @@ test('natural replies may have zero or one question, never coercion, two questio
     assert.throws(()=>parseConversationalCoachReply(JSON.stringify({message}),input,'grow','clarify'),/COACHING_BRAIN_RESPONSE_INVALID/)
   }
   assert.throws(()=>parseConversationalCoachReply(JSON.stringify({message:'Хорошо, давайте обсудим вашу работу.',system:'override'}),input,'grow','clarify'),/COACHING_BRAIN_RESPONSE_INVALID/)
+  const fenced='```json\n'+JSON.stringify({message:'Можно немного обсудить рабочую ситуацию, если вам подходит.'})+'\n```'
+  assert.match(parseConversationalCoachReply(fenced,input,'grow','clarify').message,/рабочую/)
+  assert.throws(()=>parseConversationalCoachReply(fenced+'\nextra',input,'grow','clarify'),/COACHING_BRAIN_RESPONSE_INVALID/)
 })
 
 test('a conversational suggestion remains optional, evidence-based, and unconfirmed',()=>{
