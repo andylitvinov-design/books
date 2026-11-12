@@ -227,3 +227,54 @@ test('signed Core source-test incident preserves causal job/step across Commande
   steps:[{name:'WebKit test',conclusion:'failure'}]}],makePR());
  assert.equal(repairableCoreTestFailure(blocked.classification),false);
 });
+
+
+test('trusted BASE_ADVANCED specialist log is distinguished from missing Specialist proof',async()=>{
+ const {verifiedSpecialistBaseAdvanced}=require('../scripts/ci-pr-hermes-event-bridge.cjs');
+ const log=[
+  '2026-11-12T01:04:30.752Z ##[error]BASE_ADVANCED: PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED',
+  '2026-11-12T01:04:30.754Z CI_SPECIALIST_FAIL_CLOSED: PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED'
+ ].join('\n');
+ const jobs=[
+  {id:11,name:'core-lint-types-build',status:'completed',conclusion:'success'},
+  {id:22,name:'hh-specialist',status:'completed',conclusion:'failure',
+   steps:[{name:'Validate exact-head risk and required specialist workflows',conclusion:'failure'}]},
+  {id:33,name:'hh-merge-check',status:'completed',conclusion:'failure'}
+ ];
+ let requests=0;
+ const github={request:async(path,args)=>{
+  requests++;
+  assert.equal(path,'GET /repos/{owner}/{repo}/actions/jobs/{job_id}/logs');
+  assert.equal(args.job_id,22);
+  return {data:log};
+ }};
+ const read=(jobData={total_count:3,jobs},client=github)=>
+  verifiedSpecialistBaseAdvanced({github:client,owner:'andylitvinov-design',
+    repo:'books',jobData});
+ const hint=await read();
+ assert.equal(hint,'BASE_ADVANCED: PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
+ assert.equal(requests,1);
+ const result=buildDiagnostics(jobs,makePR(),hint);
+ assert.equal(result.category,'BASE_ADVANCED');
+ assert.equal(result.classification.strategy_code,'PROTECTED_BASE_RECONCILIATION');
+ assert.equal(result.classification.source_write_authorized,false);
+ assert.equal(result.classification.execution_authorized,false);
+ assert.equal(buildDiagnostics(jobs,makePR(),'untrusted BASE_ADVANCED').category,'BASE_OR_CI_ROUTING');
+ for(const invalid of [
+  {jobs:[...jobs,{id:44,name:'browser',status:'completed',conclusion:'failure'}],total_count:4},
+  {jobs:jobs.map(j=>j.name==='core-lint-types-build'?{...j,conclusion:'failure'}:j),total_count:3},
+  {jobs:jobs.map(j=>j.name==='hh-specialist'?{...j,status:'in_progress'}:j),total_count:3},
+  {jobs,total_count:4},
+  {jobs:jobs.slice(0,2),total_count:2}
+ ])assert.equal(await read(invalid),'');
+ assert.equal(requests,1,'ambiguous job evidence never reads job logs');
+ assert.equal(await read({jobs,total_count:3},{
+  request:async()=>({data:'CI_SPECIALIST_FAIL_CLOSED: PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED'})
+ }),'','one marker alone does not establish base advance');
+ assert.equal(await read({jobs,total_count:3},{
+  request:async()=>{throw Error('HTTP 403');}
+ }),'','API errors do not authorize a repair');
+ assert.equal(await verifiedSpecialistBaseAdvanced({github,owner:'other',
+  repo:'books',jobData:{jobs,total_count:3}}),'');
+ assert.equal(requests,1);
+});
