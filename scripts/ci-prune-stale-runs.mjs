@@ -319,15 +319,28 @@ export async function observeCI(api, { windowMinutes = 60, sampleRuns = 20, now 
     ...summarizeJobs(lists, now) };
 }
 
-export function client(repo, token, transport = fetch) {
+export function client(repo, token, transport = fetch,
+  wait = ms => new Promise(resolve => setTimeout(resolve, ms))) {
   const prefix = 'https://api.github.com/repos/' + repo;
   async function call(path, method = 'GET') {
-    const resp = await transport(prefix + path, { method, headers: {
-      Authorization: 'Bearer ' + token, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28',
-    } });
-    if (!resp.ok) throw Error('GitHub ' + method + ' ' + path.split('?')[0] + ': HTTP ' + resp.status);
-    return method === 'POST' ? true : resp.json();
+    // GitHub occasionally returns HTTP 503 for live PR GET, even when
+    // exact HEAD is valid. Limited retries cannot weaken any PR proof.
+    const prRead = method === 'GET' && /^\/pulls\/[1-9]\d*$/.test(path);
+    const attempts = prRead ? 3 : 1;
+    for (let attempt = 0; attempt < attempts; attempt++) {
+      const resp = await transport(prefix + path, { method, headers: {
+        Authorization: 'Bearer ' + token, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28',
+      } });
+      if (resp.ok) return method === 'POST' ? true : resp.json();
+      if (prRead && [502, 503, 504].includes(resp.status) && attempt < attempts - 1) {
+        await wait(attempt === 0 ? 250 : 750);
+        continue;
+      }
+      throw Error('GitHub ' + method + ' ' + path.split('?')[0] + ': HTTP ' + resp.status);
+    }
+    throw Error('GitHub PR read exhausted without successful readback');
   }
+
   return {
     pr: (n) => call('/pulls/' + n),
     closed: page => call('/pulls?' + new URLSearchParams({state:'closed',sort:'updated',direction:'desc',per_page:'100',page:String(page)})),

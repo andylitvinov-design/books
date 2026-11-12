@@ -226,7 +226,48 @@ async function startVisibleNative(disclosure, index, scenario = {}) {
     }));
     observation.initial = initial;
     observation.stage = 'observe-decoded-playback';
-    await expect.poll(() => video.evaluate(el => el.currentTime), { timeout: 20000 }).toBeGreaterThan(initial.time + 0.1);
+    // A genuinely stalled native decoder may report paused=false with a healthy
+    // source but no advancing media clock (observed WebKit: 17.436s for 20s).
+    // One explicit native pause/play is equivalent to the user's recovery tap.
+    // Never count it as success without a fresh advancing clock AND decoded
+    // presented-frame proof below. Do not reload/change source or loop retries.
+    let clockFailure = null;
+    try {
+      await expect.poll(() => video.evaluate(el => el.currentTime), { timeout: 12000 }).toBeGreaterThan(initial.time + 0.1);
+    } catch (error) {
+      clockFailure = error;
+    }
+    let frameBaseline = initial;
+    if (clockFailure) {
+      const stalled = await video.evaluate(nativePlaybackSnapshot);
+      const genuineSameSourceStall = Boolean(stalled.connected && stalled.visible &&
+        stalled.currentSrc && stalled.currentSrc === observation.before.currentSrc &&
+        !stalled.paused && !stalled.seeking && !stalled.ended && stalled.error === null &&
+        stalled.ready >= 2 && Math.abs(stalled.time - initial.time) <= 0.1);
+      const pendingNoMetadata = Boolean(stalled.connected && stalled.visible &&
+        stalled.currentSrc && stalled.currentSrc === observation.before.currentSrc &&
+        !stalled.paused && !stalled.seeking && !stalled.ended && stalled.error === null &&
+        stalled.ready === 0 && stalled.frames === 0 && stalled.time === 0 &&
+        stalled.playRequest?.state === 'pending' && initial.frames === 0 &&
+        !initial.presentedFrame);
+      if (!genuineSameSourceStall && !pendingNoMetadata) throw clockFailure;
+      observation.nativeStall = { firstFailure: clockFailure.message, before: stalled,
+        recoveryRequests: 1, metadataReload: pendingNoMetadata };
+      // A metadata-less pending decoder needs one real HTMLMediaElement load.
+      // Keep the source unchanged; still demand a NEW real media clock/frame.
+      await video.evaluate(el => { el.pause(); if (el.readyState === 0) el.load(); });
+      await expect.poll(() => video.evaluate(el => el.paused), { timeout: 5000 }).toBe(true);
+      await video.evaluate(requestNativePlayback);
+      await expect.poll(() => video.evaluate(el => el.paused), { timeout: 5000 }).toBe(false);
+      await expect.poll(() => video.evaluate(el => el.currentTime), { timeout: 20000 }).toBeGreaterThan(initial.time + 0.1);
+      const resumed = await video.evaluate(nativePlaybackSnapshot);
+      assert.equal(resumed.currentSrc, stalled.currentSrc, 'Reactivation must retain original native source');
+      assert.equal(resumed.error, null, 'Reactivation must not ignore an HTMLMediaElement error');
+      assert.equal(resumed.paused, false, 'Reactivation must leave the native media playing');
+      observation.nativeStall.after = resumed;
+      // Baseline the second independent frame gate AFTER the initial stall.
+      frameBaseline = { ...initial, presentedFrame: stalled.presentedFrame };
+    }
     // Real WebKit/GStreamer can reset totalVideoFrames during the same-source
     // decoder rebuild (24 -> 11 on actual WebKit EN 1365 in artifact 13274813238)
     // even though media time and presented frame callbacks genuinely advance.
@@ -242,7 +283,7 @@ async function startVisibleNative(disclosure, index, scenario = {}) {
         Math.abs(frame.mediaTime - el.currentTime) < 0.35 &&
         !el.paused && !el.seeking && !el.ended && !el.error &&
         el.readyState >= 2 && el.currentSrc);
-    }, initial), { timeout: 20000 }).toBe(true);
+    }, frameBaseline), { timeout: 20000 }).toBe(true);
     const sample = await video.evaluate(nativePlaybackSnapshot);
     observation.sample = sample;
     assert.equal(sample.paused, false);

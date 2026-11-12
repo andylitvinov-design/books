@@ -138,32 +138,37 @@ test("Ideas keeps production's one-click Safari disclosure with ref persistence"
 });
 
 
-test("compact Concept is four decisions, coherent main idea, and one real approval rail",()=>{
+test("Concept shows editable story first, followed by all parameters in one column",()=>{
  const panel=readFileSync(new URL("../components/mandala-video-concept.tsx",import.meta.url),"utf8");
  const css=readFileSync(new URL("../components/mandala-video-concept.module.css",import.meta.url),"utf8");
  const semantic=readFileSync(new URL("../lib/mandala/video-concept-semantic.mjs",import.meta.url),"utf8");
- assert.match(panel,/const highlights=\[/);
- const start=panel.indexOf("const highlights=[");
- const end=panel.indexOf("] as const;",start);
- assert.ok(end>start);
- assert.deepEqual([...panel.slice(start,end).matchAll(/id:"(style|meaning|motif|scenario)"/g)]
-   .map(x=>x[1]),["style","meaning","motif","scenario"]);
+ assert.match(panel,/data-video-concept-text/);
+ assert.match(panel,/data-video-concept-text-edit/);
+ assert.match(panel,/data-video-concept-text-input/);
+ assert.match(panel,/data-video-concept-paragraph/);
  assert.match(panel,/data-video-concept-main-idea/);
- assert.match(panel,/data-video-concept-highlights/);
- assert.match(panel,/data-video-concept-journey/);
- assert.match(panel,/data-video-concept-context/);
- assert.match(panel,/goalRepeatsTopic/);
  assert.match(panel,/data-video-concept-all-parameters/);
- assert.ok(panel.indexOf("data-video-concept-action-rail")<panel.indexOf("data-video-concept-all-parameters"),
-   "Approve appears before long details");
+ assert.match(panel,/data-video-concept-journey/);
+ assert.ok(panel.indexOf("data-video-concept-text")<panel.indexOf("data-video-concept-all-parameters"),
+   "Narrative precedes all creative parameters");
+ assert.ok(panel.indexOf("data-video-concept-all-parameters")<panel.indexOf("data-video-concept-action-rail"),
+   "All parameters are visible above the approval rail in DOM order");
+ assert.match(panel,/allParameterRows\.map\(row=>/);
  assert.equal((panel.match(/data-video-concept-approve/g)||[]).length,1);
  assert.equal((panel.match(/data-video-concept-edit disabled/g)||[]).length,1);
- assert.match(css,/\.compactGrid\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+ assert.match(panel,/onApprove\(approvedToSave\)/);
+ assert.match(css,/\.parameterList\{display:grid;grid-template-columns:minmax\(0,1fr\)/);
+ assert.match(css,/\.emotionSteps\{display:grid;grid-template-columns:minmax\(0,1fr\)/);
+ assert.match(css,/\.editor\{grid-template-columns:minmax\(0,1fr\)/);
+ assert.doesNotMatch(panel,/className=\{css\.compactGrid\}/);
  assert.match(css,/\.panel \.actions\{position:fixed/);
- assert.match(css,/bottom:calc\(var\(--hh-unified-nav-height,90px\) \+ env\(safe-area-inset-bottom,0px\) \+ 8px\)/);
+ assert.match(css,/safe-area-inset-bottom/);
  assert.match(css,/display-mode:standalone/);
  assert.match(css,/safe-area-inset-top/);
- assert.match(semantic,/const raw=audio\|\|plainGoal\|\|clean\(phraseText/);
+ assert.match(semantic,/const raw=audio\|\|clean\(creativeBrief,800\)\|\|plainGoal\|\|clean\(phraseText,1200\)/);
+ assert.match(semantic,/const selected=getMyTubeTopic\(selectedTopicId\)/);
+ assert.match(semantic,/const topicChoice=selected\?\{id:selectedTopicId,confidence:"explicit",reason:"user_selection"\}/);
+ assert.match(semantic,/const dynamic=energizing&&!explicitSlow/);
  assert.match(semantic,/const audience=matched\(low,AUDIENCES\)/);
  assert.match(semantic,/const anxiety=ANXIETY_CONTEXT\.test\(low\)/);
  assert.match(panel,/if\(signedIn\)setEditing\(true\);else setLoginOpen\(true\)/);

@@ -58,6 +58,7 @@ type Props={
   recipientAudioPanel?:ReactNode;audioStoryboardReady?:boolean;onAudioToMontage?:()=>void;
   onAudioSelectionChange?:(active:boolean)=>void;
   onGoalChange:(value:string)=>void;
+  onConceptTopicChange?:(selection:{categoryId:string;subcategoryId:string;topicId:string;brief?:string}|null)=>void;
   onCategoryChange?:(theme:VideoTheme)=>void;
   onAspectChange?:(value:"landscape"|"portrait"|"square")=>void;
   onContinue?:()=>void;onClarify?:()=>void;helpOpen?:boolean;
@@ -181,7 +182,7 @@ const themeLabels={
 
 export function MandalaAutoVideoDirector({
  locale,goal,theme,aspect,presets,scenes,disabled,activePresetId,clipLabel,
- audioAttached=false,audioTrackLabel="",audioTrackId=null,onPickAudio,onOpenAudio,recipientAudioPanel,audioStoryboardReady=false,onAudioToMontage,onAudioSelectionChange,onGoalChange,onCategoryChange,onAspectChange,onContinue,goalContinueRef,onClarify,helpOpen=false,onShowAll,onInvalidate,onApply,onCreate,canCreate=false,rendering=false,createFeedback=""
+ audioAttached=false,audioTrackLabel="",audioTrackId=null,onPickAudio,onOpenAudio,recipientAudioPanel,audioStoryboardReady=false,onAudioToMontage,onAudioSelectionChange,onGoalChange,onConceptTopicChange,onCategoryChange,onAspectChange,onContinue,goalContinueRef,onClarify,helpOpen=false,onShowAll,onInvalidate,onApply,onCreate,canCreate=false,rendering=false,createFeedback=""
 }:Props){
  const t=copy[locale];
  // A licensed four-shot sample is visible before any click; no recording begins automatically.
@@ -278,6 +279,16 @@ export function MandalaAutoVideoDirector({
  const taxonomySubcategories=listMyTubeSubcategories(selectedCategoryId,locale);
  const taxonomyTopics=selectedSubcategoryId?listMyTubeTopics(selectedCategoryId,selectedSubcategoryId,locale):[];
  const selectedTaxonomyTopic=selectedTopicId?getMyTubeTopic(selectedTopicId):null;
+ // The explicitly picked canonical taxonomy is the source of truth for Ideas.
+ // A stale optional request must never override this verified path.
+ useEffect(()=>{
+   if(!onConceptTopicChange)return;
+   const current=selectedTopicId?getMyTubeTopic(selectedTopicId):null;
+   onConceptTopicChange(current&&current.category.id===selectedCategoryId&&
+     current.subcategory.id===selectedSubcategoryId?
+     {categoryId:selectedCategoryId,subcategoryId:selectedSubcategoryId,topicId:selectedTopicId,
+      brief:requestDraft.trim().slice(0,800)}:null);
+ },[selectedCategoryId,selectedSubcategoryId,selectedTopicId,requestDraft,onConceptTopicChange]);
  const taxonomyMeanings=selectedTopicId?listMyTubeMeaningAxes(selectedTopicId,locale):[];
  const taxonomyScenarios=selectedTopicId&&selectedMeaningAxisId&&selectedMotifId?
    listMyTubeMotifScenarios(selectedTopicId,selectedMeaningAxisId,selectedMotifId,locale):[];
@@ -679,7 +690,9 @@ export function MandalaAutoVideoDirector({
    const found=getMyTubeTopic(topicId);
    if(!found||found.category.id!==selectedCategoryId)return;
    const nextTheme=legacyThemeForSubcategory[found.subcategory.id]||theme;
-   const label=requestDraft.trim()||found.topic.label[locale];
+   // Preserve optional user prose in requestDraft but publish the explicit topic
+   // as the canonical Studio goal, avoiding stale unrelated wishes (e.g. Sex).
+   const label=found.topic.label[locale];
    onInvalidate?.();onCategoryChange?.(nextTheme);onGoalChange(label);
    const recommended=recommendAutoVideo({goal:label,locale,fallbackTheme:nextTheme,
      preferredTheme:nextTheme,presets,scenes});

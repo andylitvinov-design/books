@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
+import {stripApprovedIntroVideoSources} from "./helpers/approved-mandala-intro-sources.mjs";
 
 const read = path => readFileSync(new URL("../"+path, import.meta.url),"utf8");
 
@@ -125,7 +126,7 @@ test("talisman-style video catalog changes real theme, scene, motion and duratio
   assert.match(css,/\.catalogFilters\{/);
   assert.match(css,/\.catalogShell \.heroMain\{/);
   assert.match(css,/@media\(max-width:390px\)/);
-  assert.doesNotMatch(studio,/\bfetch\s*\(|FormData|localStorage|sessionStorage/i);
+  assert.doesNotMatch(stripApprovedIntroVideoSources(studio),/\bfetch\s*\(|FormData|localStorage|sessionStorage/i);
 });
 
 test("money, energy, relationships and goals have real local frame engines, not fake poster links", async () => {
@@ -153,7 +154,7 @@ test("money, energy, relationships and goals have real local frame engines, not 
       compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext,jsx:ts.JsxEmit.ReactJSX}}).diagnostics||[];
     assert.equal(diagnostics.filter(d=>d.category===ts.DiagnosticCategory.Error).length,0,path);
   }
-  assert.doesNotMatch(client+local,/\bfetch\s*\(|XMLHttpRequest|FormData|localStorage|sessionStorage|sendBeacon|higgsfield|heygen/i);
+  assert.doesNotMatch(stripApprovedIntroVideoSources(client)+local,/\bfetch\s*\(|XMLHttpRequest|FormData|localStorage|sessionStorage|sendBeacon|higgsfield|heygen/i);
 });
 
 test("video UI choices affect the actual free MP4/WebM recording and the user sees download/share", () => {
@@ -200,7 +201,7 @@ test("client photo consent and privacy are enforced without payment or server ph
   const approvedMusicBed=/fetch\(presetAudioUrl\(bedId\),\{credentials:"same-origin",cache:"force-cache"\}\)/g;
   assert.equal((audio.match(firstPartyWav)||[]).length,1,"one verified site-owned WAV GET");
   assert.equal((audio.match(approvedMusicBed)||[]).length,1,"one explicit first-party music-bed GET");
-  assert.doesNotMatch((studio+audio).replace(firstPartyWav,"").replace(approvedMusicBed,""),
+  assert.doesNotMatch((stripApprovedIntroVideoSources(studio)+audio).replace(firstPartyWav,"").replace(approvedMusicBed,""),
     /\bfetch\s*\(|XMLHttpRequest|FormData|localStorage|sessionStorage|navigator\.sendBeacon|higgsfield|kling\.ai|heygen|supabase/i);
   assert.match(audio,/Royalty-free ambient sound generated locally/);
 });
