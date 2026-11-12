@@ -862,7 +862,7 @@ async function handle(request, { params }) {
       if (method !== 'POST') throw new AppError('NOT_FOUND',404)
       await consumeRate(config,{op:'my-coach-generative-turn',actor:actor.id},40,3600)
       return json(await myCoachGenerativeTurn(await readBody(request,16384),
-        {signal:request.signal,reserveModelCall:reserveCoachingFreeCall}))
+        {signal:request.signal,reserveModelCall:reserveCoachingFreeCall,config,actor}))
     }
     // A synthetic preflight proves verified ZDR free-model access before any
     // visitor text can reach a provider. The call is authenticated and bounded.
