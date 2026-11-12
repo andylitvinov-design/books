@@ -125,6 +125,3 @@
 }
 @media(min-width:700px){.root[data-my-coach-immersive-session]{padding-bottom:100px}.sessionHero{height:350px}.sessionDialogue,.sessionProgress,.voiceWorkspace,.goalRow{max-width:850px}}
 @media(prefers-reduced-motion:reduce){.voiceWaveLeft i,.voiceWaveRight i{animation:none!important}}
-:global(body:has([data-my-coach-immersive-session]) .mobile-bottom-navigation),
-:global(body:has([data-my-coach-immersive-session]) [data-sitewide-antistress-banner]),
-:global(body:has([data-my-coach-immersive-session]) .launcher){display:none!important}

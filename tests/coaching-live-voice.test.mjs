@@ -206,8 +206,11 @@ test('selected persona opens immersive My Coach session with real avatar, stages
     'onClick={()=>chooseTopic(id)}','composerRef.current?.focus()',
     'coachingBrainSafety(input)||coachingBrainBoundary(input)']) assert.ok(ui.includes(token),token)
   for(const token of ['my-coach-portraits.avif','reiki-approved-sunrise-v3.webp',
-    'messenger-zen-stones.svg','assessment-lotus.svg','safe-area-inset-bottom',
-    'body:has([data-my-coach-immersive-session]) .mobile-bottom-navigation']) assert.ok(css.includes(token),token)
+    'messenger-zen-stones.svg','assessment-lotus.svg','safe-area-inset-bottom']) assert.ok(css.includes(token),token)
+  const globalCss=source('app/globals.css')
+  for(const token of ['body:has([data-my-coach-immersive-session]) .mobile-bottom-navigation',
+    'body:has([data-my-coach-immersive-session]) [data-sitewide-antistress-banner]',
+    'body:has([data-my-coach-immersive-session]) .launcher']) assert.ok(globalCss.includes(token),token)
   assert.ok(discoveryCss.includes('personaWelcome:has([data-my-coach-immersive-session])'))
   assert.ok(pageCss.includes('fullWidth:has([data-my-coach-immersive-session])'))
   assert.ok(ui.includes("readiness.status==='checking'"))
