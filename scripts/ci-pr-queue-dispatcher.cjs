@@ -551,14 +551,15 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   try{capacity=await capacityFn(github,owner,repo);}
   catch(e){log('CI capacity recheck unavailable: '+String(e.message||e).slice(0,120));}
  }
- // Only a trusted same-run jobless-409 receipt can unlock one existing
- // source Repair Worker; exact-HEAD proof, owner lease and tests remain.
+ // Only trusted same-run jobless-409 proof may unlock ONE existing source
+ // Repair or manual legacy preflight; no new runner, CI or hold removal.
  if(!capacity?.known&&capacity?.reason==='RUN_CAPACITY_SATURATED'&&
-    candidates.some(t=>t?.lane==='repair')&&
+    candidates.some(t=>['repair','legacy'].includes(t?.lane))&&
     watchdogEvidence?.jobless409?.code==='QUEUED_WITH_ZERO_JOBS_CANCEL_409'){
   const narrow=await verifiedGhostRepairCapacity(github,owner,repo,
    watchdogEvidence.jobless409,now);
-  if(narrow.known){capacity=narrow;capacityReason=null;log('GHOST_409_ONE_REPAIR_SLOT_VERIFIED');}
+  if(narrow.known){capacity=narrow;capacityReason=null;
+   log('GHOST_409_ONE_WORKER_SLOT_VERIFIED');}
   else log('GHOST_409_HOLD '+narrow.reason);
  }
  if(quota.state.paused){summary.reason='API_PAUSED_CAPACITY';return finish();}
@@ -919,7 +920,7 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   const permission=admission(task.lane,capacity);
   if(permission!=='ADMIT'){blocked(permission);continue;}
   if(capacity?.inventoryConfidence===GHOST_REPAIR_MODE&&summary.dispatchAccepted>=1){
-   blocked('GHOST_ONLY_ONE_REPAIR_PER_SWEEP');continue;
+   blocked('GHOST_ONLY_ONE_WORKER_PER_SWEEP');continue;
   }
   // Source must have an exact-HEAD trusted Watchdog diagnosis; labels alone
   // are stale hints and must not give privileged source write permission.
