@@ -16,52 +16,79 @@
  let remote=false,authorized=false,chats=[],thread=null,messages=[],key=null,salt=null,deviceMode=false,models=[],aiReady=false,busy=false,ownedDirectorAvailable=false;
  let reportRefreshTimer=null,reportSyncBusy=false,pendingCreateId=null,ciInboxTimer=null,ciInboxBusy=false;
  let executorModels=null,executorModelsPromise=null,executionRefreshTimer=null,executionPollCount=0,executionPollBusy=false;
- let freeQuota=null;
+ let runSnapshot=null;
+ let freeQuota=null,freeQuotaPending=null,freeQuotaCheckedAt=0,lastQuotaTerminalRunId=null;
  const FREE_MODEL_MODE='free:';
  const selectedFreeModel=mode=>typeof mode==='string'&&mode.startsWith(FREE_MODEL_MODE)?mode.slice(FREE_MODEL_MODE.length):'';
  const isVerifiedFreeChoice=mode=>Boolean(selectedFreeModel(mode)&&(executorModels||[]).some(m=>m.id===selectedFreeModel(mode)));
- function quotaLabel(){
-   if(freeQuota&&Number.isSafeInteger(freeQuota.remaining)&&Number.isSafeInteger(freeQuota.limit))
-    return freeQuota.remaining+' из '+freeQuota.limit+' общих';
-   return 'лимит неизвестен';
- }
- async function refreshFreeQuota(){
-   if(!remote||!authorized)return;
-   try{
-     const result=await request(SERVER+'?action=free_quota');
-     const quota=result.quota;
-     freeQuota=quota&&Number.isSafeInteger(quota.remaining)&&Number.isSafeInteger(quota.limit)
-      &&quota.remaining>=0&&quota.remaining<=quota.limit?quota:null;
-     refreshFreeChoices();
-   }catch{freeQuota=null;refreshFreeChoices();}
- }
+ // The native model picker shares one currently verified OpenRouter quota per
+ // account; individual :free models do not have their own invented allowance.
  function refreshFreeChoices(){
-   for(const name of ['new-mode','mode']){
-     const selector=el(name),previous=selector.value;
-     const old=selector.querySelector('optgroup[data-director-free]');
-     if(old)old.remove();
-     const director=selector.querySelector('option[value="director"]');
-     if(director)director.textContent='Agents Director · авто — '+quotaLabel();
-     if(!executorModels?.length)continue;
-     const group=make('optgroup');group.label='OpenRouter · бесплатные модели';group.setAttribute('data-director-free','');
-     const preferred=/nemotron|gemma|qwen|deepseek|llama|mistral|phi|cohere/i;
-     const ordered=executorModels.slice().sort((a,b)=>
-      Number(preferred.test(b.name+' '+b.id))-Number(preferred.test(a.name+' '+a.id))||
-      a.name.localeCompare(b.name,'ru'));
-     for(const model of ordered.slice(0,15)){
-       const option=make('option',null,model.name.replace(/\s*\(free\)\s*/ig,'').slice(0,39)+' — '+quotaLabel());
-       option.value=FREE_MODEL_MODE+model.id;
-       option.title=model.id+' · $0 · общий лимит OpenRouter';
-       group.append(option);
-     }
-     const executors=selector.querySelector('optgroup[label^="Исполнители"]');
-     if(executors&&typeof selector.insertBefore==='function')selector.insertBefore(group,executors);
-     else selector.append(group);
-     if(isVerifiedFreeChoice(previous))selector.value=previous;
+  for(const id of ['new-mode','mode']){
+   const selector=el(id),previous=selector.value;
+   const current=selector.querySelector('optgroup[data-director-free]');
+   current?.remove();
+   if(!remote||!authorized||!ownedDirectorAvailable||!executorModels?.length)continue;
+   const group=make('optgroup');
+   group.label='OpenRouter · бесплатные модели';
+   group.setAttribute('data-director-free','');
+   const preferred=/nemotron|gemma|qwen|deepseek|llama|mistral|phi|cohere/i;
+   const modelsList=executorModels.slice().sort((a,b)=>
+    Number(preferred.test(b.name+' '+b.id))-Number(preferred.test(a.name+' '+a.id))||
+    a.name.localeCompare(b.name,'ru'));
+   for(const model of modelsList.slice(0,15)){
+    const label=model.name.replace(/\s*\(free\)\s*/ig,'').slice(0,39);
+    const option=make('option',null,label+' — '+remainingLabel('director'));
+    option.value=FREE_MODEL_MODE+model.id;
+    option.title=model.id+' · $0 · общий лимит OpenRouter (Agents Director)';
+    group.append(option);
    }
+   const executors=selector.querySelector('optgroup[label^="Исполнители"]');
+   if(executors)selector.insertBefore(group,executors);else selector.append(group);
+   if(isVerifiedFreeChoice(previous))selector.value=previous;
+   else if(selectedFreeModel(previous))selector.value='director';
+  }
  }
-
- let runSnapshot=null;
+ const QUOTA_OPTION_LABELS={
+  local:"Локальный советник",director:"Agents Director · OpenRouter Free (анализ)",
+  openrouter:"OpenRouter Free","council-free":"Совет ИИ · ответ в чате",
+  codex:"Codex","chatgpt-work":"ChatGPT Work","repair-worker":"GitHub Repair Worker",
+  hermes:"Hermes Cloud",manual:"Ручной исполнитель"
+ };
+ function remainingLabel(mode){
+  if(mode==="local")return "без лимита";
+  if(mode==="hermes")return "отключён";
+  if(mode==="manual")return "ручная передача";
+  if(!["director","council-free","openrouter"].includes(mode))return "лимит неизвестен";
+  const quota=mode==="openrouter"?freeQuota?.monitor:freeQuota?.worker;
+  return quota?.status==="VERIFIED"&&Number.isSafeInteger(quota.remaining)&&quota.remaining>=0?
+   quota.remaining+" осталось":"нет данных";
+ }
+ function updateQuotaMenuLabels(){
+  for(const scope of ["new-mode","mode"]){
+   for(const option of el(scope).querySelectorAll("option")){
+    const base=QUOTA_OPTION_LABELS[option.value];
+    if(base)option.textContent=base+" — "+remainingLabel(option.value);
+   }
+  }
+  refreshFreeChoices();
+ }
+ async function refreshFreeQuota(force=false){
+  if(!remote||!authorized){updateQuotaMenuLabels();return;}
+  if(freeQuotaPending)return freeQuotaPending;
+  if(!force&&freeQuotaCheckedAt&&Date.now()-freeQuotaCheckedAt<45000)return;
+  freeQuotaPending=request(SERVER+"?action=free_quota").then(result=>{
+   if(result?.schema!=="HH_COMMANDER_QUOTA_MENU_V1"||
+      result.worker?.schema!=="HH_COMMANDER_FREE_QUOTA_V1"||
+      result.monitor?.schema!=="HH_COMMANDER_FREE_QUOTA_V1")
+    throw Error("QUOTA_RESPONSE_INVALID");
+   freeQuota={worker:result.worker,monitor:result.monitor};
+  }).catch(()=>{freeQuota=null;}).finally(()=>{
+   freeQuotaCheckedAt=Date.now();freeQuotaPending=null;
+   updateQuotaMenuLabels();configureModels("new");configureModels("thread");
+  });
+  return freeQuotaPending;
+ }
  // One-tap Council via same-origin, owner-verified server.
  let councilPending=null,councilChatIds=new Set();
  const make=(tag,cls,text)=>{const n=doc.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=String(text);return n};
@@ -168,15 +195,14 @@
   try{
    const result=await request(SERVER+'?action=runs&issue='+thread.issueNumber);
    const run=Array.isArray(result.runs)?result.runs[0]:null;
-   const previous=runSnapshot?.chatId===thread.id?runSnapshot.run:null;
    runSnapshot={chatId:thread.id,run};showRunState(run);
-   if(run&&['COMPLETED','FAILED','BLOCKED'].includes(run.status)&&
-      (previous?.run_id!==run.run_id||previous?.status!==run.status))
-     void refreshFreeQuota();
    if(!run)return null;
    const labels={QUEUED:'В очереди OpenRouter.',STARTING:'Исполнитель запускается…',RUNNING:'Исполнитель работает…',WAITING_FOR_APPROVAL:'Ожидается подтверждение владельца.',COMPLETED:'Исполнение завершено. Ответ добавлен в чат.',FAILED:'Исполнение завершилось ошибкой.',CANCELLED:'Исполнение отменено.',BLOCKED:'Исполнитель не запущен или выполнение заблокировано.'};
    el('executor-state').textContent=(labels[run.status]||run.status||'Статус неизвестен')+(run.reason_code?' Причина: '+run.reason_code+'.':'')+(run.hermes_job_id?' · Job '+run.hermes_job_id:'');
    if(['COMPLETED','FAILED','BLOCKED'].includes(run.status)){
+    if(run.run_id&&run.run_id!==lastQuotaTerminalRunId){
+     lastQuotaTerminalRunId=run.run_id;void refreshFreeQuota(true);
+    }
     const latest=await request(SERVER+'?action=read&issue='+thread.issueNumber);
     if(thread?.id===latest.chat?.id){thread=latest.chat;messages=latest.messages;renderMessages();
      if(run.status==='COMPLETED'&&!messages.some(m=>m.kind==='agent_final'&&m.runId===run.run_id))run.awaitingFinal=true;
@@ -424,7 +450,71 @@ const from64=s=>Uint8Array.from(win.atob(s),v=>v.charCodeAt(0));
    b.addEventListener('click',()=>openChat(c));box.append(b);
   }
   if(!filtered.length)box.append(make('p','cc-empty',chats.length?'Чаты не найдены.':'Начните диалог — он появится здесь.'));
+ } 
+ // HH_COMMANDER_RICH_MARKDOWN_V1: DOM only; no model HTML.
+ function richMessage(text){
+ const root=make('div','cc-message-markdown');
+ let source=String(text||'').replace(/\r\n?/g,'\n');
+ if(source.split('\n').length<4){
+  source=source.replace(/[ \t]+(?=#{1,6}[ \t]+\d+[.)][ \t]+)/g,'\n\n')
+   .replace(/[ \t]+(?=-[ \t]+\*\*[^*\n]{1,75}\*\*)/g,'\n');
  }
+ const lines=source.split('\n');
+ const heading=/^ {0,3}(#{1,6})[ \t]+(.+?)\s*#*\s*$/;
+ const bullet=/^ {0,3}[-*+][ \t]+(.+)$/;
+ const number=/^ {0,3}\d{1,3}[.)][ \t]+(.+)$/;
+ const quote=/^ {0,3}>[ \t]?(.*)$/;
+ const fence=/^ {0,3}(`{3,}|~{3,})/;
+ const inline=/\[([^\]\n]{1,120})\]\((https?:\/\/[^\s)]+)\)|`([^`\n]+)`|\*\*([^*\n]+)\*\*|__([^_\n]+)__|\*([^*\n]+)\*|_([^_\n]+)_/g;
+ function addInline(parent,value){
+  const line=String(value),matcher=new RegExp(inline.source,'g');
+  let match,from=0;
+  while((match=matcher.exec(line))){
+   if(match.index>from)parent.append(make('span',null,line.slice(from,match.index)));
+   if(match[1]){const link=make('a',null,match[1]);link.href=match[2];link.target='_blank';link.rel='noopener noreferrer';parent.append(link);}
+   else if(match[3])parent.append(make('code',null,match[3]));
+   else if(match[4]||match[5])parent.append(make('strong',null,match[4]||match[5]));
+   else parent.append(make('em',null,match[6]||match[7]));
+   from=matcher.lastIndex;
+  }
+  if(from<line.length)parent.append(make('span',null,line.slice(from)));
+ }
+ function addLines(parent,paragraphLines){paragraphLines.forEach((line,index)=>{if(index)parent.append(make('br'));addInline(parent,line.trim());});}
+ function block(line){
+  if(!line.trim())return 'blank';
+  if(fence.test(line))return 'fence';
+  if(heading.test(line))return 'heading';
+  if(bullet.test(line))return 'ul';
+  if(number.test(line))return 'ol';
+  if(quote.test(line))return 'quote';
+  if(/^ {0,3}(?:-{3,}|\*{3,}|_{3,})\s*$/.test(line))return 'rule';
+  return 'paragraph';
+ }
+ for(let i=0;i<lines.length;){
+  const kind=block(lines[i]);
+  if(kind==='blank'){i++;continue;}
+  if(kind==='fence'){
+   const marker=fence.exec(lines[i])[1],content=[];i++;
+   while(i<lines.length&&!new RegExp('^ {0,3}'+marker[0]+'{'+marker.length+',}\\s*$').test(lines[i]))content.push(lines[i++]);
+   if(i<lines.length)i++;
+   const pre=make('pre'),code=make('code',null,content.join('\n'));pre.append(code);root.append(pre);continue;
+  }
+  if(kind==='heading'){const match=heading.exec(lines[i++]);const element=make('h'+Math.min(4,Math.max(2,match[1].length+1)));addInline(element,match[2]);root.append(element);continue;}
+  if(kind==='rule'){root.append(make('hr'));i++;continue;}
+  if(kind==='ul'||kind==='ol'){
+   const list=make(kind),pattern=kind==='ul'?bullet:number;
+   while(i<lines.length&&block(lines[i])===kind){const item=make('li');addInline(item,pattern.exec(lines[i++])[1]);list.append(item);}
+   root.append(list);continue;
+  }
+  if(kind==='quote'){
+   const quoted=[],blockquote=make('blockquote');while(i<lines.length&&block(lines[i])==='quote')quoted.push(quote.exec(lines[i++])[1]);
+   const p=make('p');addLines(p,quoted);blockquote.append(p);root.append(blockquote);continue;
+  }
+  const paragraph=[];while(i<lines.length&&block(lines[i])==='paragraph')paragraph.push(lines[i++]);
+  const p=make('p');addLines(p,paragraph);root.append(p);
+ }
+ return root;
+}
  function renderMessages(){
   const box=el('messages');box.replaceChildren();
   if(!messages.length)box.append(make('p','cc-empty','Напишите вопрос, чтобы начать диалог.'));
@@ -432,7 +522,8 @@ const from64=s=>Uint8Array.from(win.atob(s),v=>v.charCodeAt(0));
    const c=make('div','cc-message-item cc-from-'+msg.kind);
    const author=msg.kind==='owner'?'Вы':msg.kind==='assistant_unverified'?(String(msg.model||'').startsWith('Совет ИИ')?'Совет ИИ':'Ассистент'):
     msg.kind==='note'?'Заметка':msg.author||'Сообщение';
-   c.append(make('div','cc-message-by',author),make('p',null,msg.text||''),
+   c.append(make('div','cc-message-by',author),
+    msg.kind==='owner'?make('p',null,msg.text||''):richMessage(msg.text||''),
     make('small',null,time(msg.createdAt)+(msg.kind==='github_report'?' · отчёт, не доказательство LIVE':'')));
    if(msg.kind==='github_report')htmlLink(c,'Источник GitHub',msg.url);
    if(msg.kind==='agent_final'&&msg.sourceWrite?.verified===true)htmlLink(c,'Проверенный Draft PR #'+msg.sourceWrite.prNumber,msg.sourceWrite.prUrl);
@@ -538,7 +629,7 @@ function renderThread(){
    if(mode==='openrouter'&&!aiReady)throw Error('Бесплатная модель OpenRouter сейчас недоступна. Выберите локального советника.');
    if(mode==='director'&&(!remote||!ownedDirectorAvailable))throw Error('Agents Director пока не подключён к защищённому серверу.');
    if(selectedFreeModel(mode)&&(!remote||!ownedDirectorAvailable||!isVerifiedFreeChoice(mode)))
-    throw Error('Эта бесплатная модель сейчас не подтверждена сервером OpenRouter.');
+    throw Error('Выбранная бесплатная модель не подтверждена текущим каталогом OpenRouter.');
    if(mode==='hermes'){
     const free=await ensureExecutorModels();
     if(!free.length)throw Error('Каталог не подтвердил бесплатные текстовые модели Hermes.');
@@ -667,9 +758,6 @@ async function update(e){
    const free=result.models.filter(m=>typeof m?.id==='string'&&/^[A-Za-z0-9][A-Za-z0-9_.-]*\/[A-Za-z0-9][A-Za-z0-9_.-]*:free$/.test(m.id)&&
     typeof m.name==='string'&&m.name.length>0&&m.name.length<=120);
    executorModels=free;
-   const quota=result.quota;
-   freeQuota=quota&&Number.isSafeInteger(quota.remaining)&&Number.isSafeInteger(quota.limit)
-    &&quota.remaining>=0&&quota.remaining<=quota.limit?quota:null;
    refreshFreeChoices();
    configureModels('new');configureModels('thread');
    return free;
@@ -679,13 +767,13 @@ async function update(e){
  function configureModels(scope){
   const isNew=scope==='new',mode=el(isNew?'new-mode':'mode').value;
   const selection=el(isNew?'new-model':'model'),current=selection.value;
-  const options=mode==='hermes'?(executorModels||[]):models;
+  const options=mode==='hermes'?(executorModels||[]):selectedFreeModel(mode)?[]:models;
   selection.replaceChildren();
   if(mode==='hermes'&&!executorModels){
    const placeholder=make('option',null,'Проверка бесплатных моделей…');placeholder.value='';
    selection.append(placeholder);
   }else for(const model of options){
-   const item=make('option',null,model.name+' · '+model.id);item.value=model.id;selection.append(item);
+   const item=make('option',null,model.name+' · '+model.id+' — '+(mode==='openrouter'?remainingLabel('openrouter'):'не подключён'));item.value=model.id;selection.append(item);
   }
   if(options.some(item=>item.id===current))selection.value=current;
   show(isNew?'new-model-label':'model-label',mode==='hermes'||(!isNew&&mode==='openrouter'));
@@ -702,7 +790,7 @@ async function update(e){
   if(mode==='director'&&(!remote||!ownedDirectorAvailable))return info('Собственный Agents Director ещё не доступен в защищённом сервисе.');
   const chosenFreeModel=selectedFreeModel(mode);
   if(chosenFreeModel&&(!remote||!ownedDirectorAvailable||!isVerifiedFreeChoice(mode)))
-   return info('Выбранная бесплатная модель не подтверждена. Обновите каталог моделей.');
+   return info('Выбранная бесплатная модель сейчас не подтверждена OpenRouter. Обновите каталог.');
   let c=thread;
   if(mode!=='council-free'&&!thread.executors.includes(mode==='director'||chosenFreeModel?'local':mode)){
    busy=true;el('send').disabled=true;
@@ -804,7 +892,7 @@ async function update(e){
    await append(c,'ai',r.reply.slice(0,1800),r.model||mode);
    info('Ответ сохранён. Это консультация, не коммит или LIVE.');
   }catch(err){info('Сохранение/AI неполное: '+String(err.message||err))}
-  finally{busy=false;el('send').disabled=false}
+  finally{busy=false;el('send').disabled=false;if(mode==='openrouter')void refreshFreeQuota(true);}
  }
  async function addNote(){
   if(!thread||busy)return;const text=el('message').value.trim();
@@ -981,7 +1069,9 @@ async function update(e){
    select.querySelector('option[value=openrouter]').disabled=!aiReady;
   el('new-mode').value=ownedDirectorAvailable?'director':(aiReady?'openrouter':'local');
   show('free-model-status',!aiReady);
+  updateQuotaMenuLabels();
   if(remote){
+   void refreshFreeQuota(true);
    await loadExecutorModels();
    show('board',true);startCIInboxPolling();
    try{await listRemote();info('Рабочие чаты загружены.');await openRequestedTask();}
@@ -1022,8 +1112,9 @@ async function update(e){
   el('create-feedback').textContent='';show('create-feedback',false);
   el('new-question').value='';
   el('create').scrollIntoView({block:'nearest',behavior:'smooth'});
+  void refreshFreeQuota();
  }
-
+ 
  // Resume a saved question only on an explicit click; never duplicate its owner event.
  el('retry-run').addEventListener('click',async()=>{
   if(!thread||!remote||!authorized||busy)return;
@@ -1086,13 +1177,23 @@ async function update(e){
  });
  el('export').addEventListener('click',exportBackup);el('import').addEventListener('change',importBackup);
  el('mode').addEventListener('change',()=>{
-  const mode=el('mode').value;configureModels('thread');
+  const mode=el('mode').value;configureModels('thread');void refreshFreeQuota();
   if(mode==='hermes')void ensureExecutorModels().catch(err=>info('Каталог Hermes недоступен: '+String(err.message||err)));
  });
  el('new-mode').addEventListener('change',()=>{
-  configureModels('new');
+  configureModels('new');void refreshFreeQuota();
   if(el('new-mode').value==='hermes')void ensureExecutorModels().catch(err=>info('Каталог Hermes недоступен: '+String(err.message||err)));
  });
+ 
+ for(const name of ["mode","new-mode"]){
+  const select=el(name);
+  select.addEventListener("focus",()=>void refreshFreeQuota());
+  select.addEventListener("pointerdown",()=>void refreshFreeQuota());
+ }
+ doc.addEventListener("visibilitychange",()=>{
+  if(doc.visibilityState!=="hidden")void refreshFreeQuota();
+ });
+ updateQuotaMenuLabels();
 
  // Speech recognition is user-initiated and stays on device/browser voice services.
  // Never send raw audio. Only the edited transcript joins the chat on Send.

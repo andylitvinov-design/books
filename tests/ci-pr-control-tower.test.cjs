@@ -12,6 +12,22 @@ test('Control Tower is read-only; Watchdog owns the worker dispatch lease',()=>{
  assert.ok(watchdog.includes('group: hh-control-tower-single-writer'));
  assert.ok(watchdog.includes('needs: reconcile'));
 });
+test('unrelated issue comments cannot displace authenticated Watchdog/PM single-writer jobs',()=>{
+ const fs=require('node:fs');
+ const workflow=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
+ const reconcile=workflow.split('  reconcile:')[1]?.split('  conflict-event-handoff:')[0]||'';
+ const guard=reconcile.split('    runs-on:')[0];
+ assert.match(workflow,/issue_comment:\n\s+types: \[created\]/);
+ assert.match(guard,/github\.event_name != 'issue_comment'/);
+ assert.match(guard,/github\.event\.action == 'created'/);
+ assert.match(guard,/github\.event\.issue\.number == 3890/);
+ assert.match(guard,/github\.event\.issue\.pull_request == null/);
+ assert.match(guard,/github\.event\.comment\.user\.login == 'andylitvinov-design'/);
+ assert.match(guard,/cancel-in-progress: false/);
+ assert.doesNotMatch(guard,/cancel-in-progress: true/);
+ assert.match(reconcile,/HH PM inbox using verified Github free secret/);
+ assert.match(reconcile,/github\.event\.issue\.number == 3890/);
+});
 const {taskFor,validPR,laneOf,reservation,commentBody,reservationStatus,externalOwnerLeaseStatus}=require('../scripts/ci-pr-task-state.cjs');
 const {computeCapacity,admission,snapshot}=require('../scripts/ci-pr-capacity.cjs');
 const {trustedContext,planCandidates,run,workerBusyOrCooling}=require('../scripts/ci-pr-queue-dispatcher.cjs');

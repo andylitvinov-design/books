@@ -13,6 +13,7 @@ const STATES = new Set(["planned","assigned","working","review","blocked","archi
 const EXECUTORS = new Set(["local","openrouter","codex","chatgpt-work","repair-worker","hermes","manual"]);
 const uuid = v => typeof v==="string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
 const clean = (v,n) => typeof v==="string" ? v.replace(/[\u0000-\u001f\u007f]/g," ").trim().slice(0,n) : "";
+const cleanMultiline = (v, n) => typeof v === "string" ? v.replace(/\r\n?/g, "\n").replace(/[\u0000-\u0009\u000b-\u001f\u007f]/g, " ").trim().slice(0, n) : "";
 const number = v => Number.isSafeInteger(Number(v)) && Number(v)>0 && Number(v)<100000 ? Number(v) : null;
 
 const DIRECTOR_RUN_SCHEMA="HH_AGENT_DIRECTOR_RUN_V1";
@@ -43,7 +44,7 @@ function trustedOwnedDirectorReceipt(value,run){
   throw Error("AGENT_DIRECTOR_RECEIPT_NOT_VERIFIED");
  return {status:value.status,reasonCode:clean(value.reasonCode,110)||null,
   agentStarted:value.agentStarted,executionVerified:value.executionVerified,model:clean(value.model,120)||null,
-  result:value.status==="COMPLETED"?clean(value.result,1800):"",sourceWrite:null,proofLevel:value.proofLevel};
+  result:value.status==="COMPLETED"?cleanMultiline(value.result,1800):"",sourceWrite:null,proofLevel:value.proofLevel};
 }
 async function saveOwnedDirectorReceipt(db,ownerId,chatId,runId,report){
  const selected=await q(db,"select request_payload from business_brain.commander_execution_runs where run_id=$1::uuid and owner_id=$2::uuid and chat_id=$3::uuid limit 1",[runId,ownerId,chatId]);
@@ -59,7 +60,7 @@ async function saveOwnedDirectorReceipt(db,ownerId,chatId,runId,report){
  const text=done?"Ответ Agent Director (собственная модель, read-only): "+report.result+"\nИсходный код не менялся. GitHub PR, CI и LIVE не подтверждены.":
   "Запуск Agent Director заблокирован: "+(report.reasonCode||"OWNED_MODEL_RUNTIME_NOT_CONFIGURED")+".";
  const event={schema:"HH_COMMANDER_EVENT_V1",id:eventId,kind:"agent_final",author:"Agent Director",
-  text:clean(text,1800),status:report.status,model:report.model,sourceWrite:null,sourceVerified:false,
+  text:cleanMultiline(text,1800),status:report.status,model:report.model,sourceWrite:null,sourceVerified:false,
   proofLevel:report.proofLevel,createdAt:new Date().toISOString()};
  await q(db,"insert into business_brain.commander_chat_events(event_id,chat_id,owner_id,kind,payload,source_verified) values($1::uuid,$2::uuid,$3::uuid,'note',$4::text::jsonb,false) on conflict(event_id) do nothing",
   [eventId,chatId,ownerId,jsonbText(event)]);
@@ -191,7 +192,7 @@ async function resolveScope(scope,body){
 function cleanEvent(body){
   if(!uuid(body.eventId))throw Error("INVALID_EVENT_ID");
   if(!["owner","ai","note"].includes(body.kind))throw Error("INVALID_EVENT_KIND");
-  const text=clean(body.text,1800);
+  const text=cleanMultiline(body.text,1800);
   if(!text||String(body.text||"").length>1800)throw Error("INVALID_EVENT_TEXT");
   const ai=body.kind==="ai";
   return {schema:"HH_COMMANDER_EVENT_V1",id:body.eventId,
@@ -839,26 +840,32 @@ async function handler(req){
     if(writeActions.has(action)&&!writable)return reply(403,{error:"OWNER_WRITE_DENIED"},origin);
 
 
-    const openRouterKey=Deno.env.get("HH_PM_OPENROUTER_API_KEY")||Deno.env.get("OPENROUTER_API_KEY")||"";
-    const openRouterReady=Boolean(openRouterKey);
+    const openRouterReady=Boolean(Deno.env.get("HH_PM_OPENROUTER_API_KEY")||Deno.env.get("OPENROUTER_API_KEY"));
+    // Daily free-model quota is a shared OpenRouter account counter, not a per-model balance.
+    // Owner JWT and business_brain.owner_access are checked before this branch.
     if(action==="commander_free_model_quota"){
-      // Owner-only, read-only. Return only a verified numeric shared quota, never the key or balance.
-      if(!openRouterKey)return reply(200,{schema:"HH_OPENROUTER_FREE_QUOTA_V1",quota:null,observedAt:new Date().toISOString()},origin);
+      const schema="HH_COMMANDER_FREE_QUOTA_V1",observedAt=new Date().toISOString();
+      const apiKey=Deno.env.get("HH_PM_OPENROUTER_API_KEY")||Deno.env.get("OPENROUTER_API_KEY")||"";
+      const unavailable=reason=>reply(200,{schema,status:"UNAVAILABLE",reason,observedAt},origin);
+      if(!apiKey)return unavailable("KEY_NOT_CONFIGURED");
+      const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),4500);
       try{
-        const res=await fetch("https://openrouter.ai/api/v1/key",{
-          method:"GET",redirect:"error",cache:"no-store",signal:AbortSignal.timeout(6000),
-          headers:{Authorization:"Bearer "+openRouterKey,Accept:"application/json"}
+        const response=await fetch("https://openrouter.ai/api/v1/key",{
+          method:"GET",cache:"no-store",redirect:"error",signal:controller.signal,
+          headers:{Authorization:"Bearer "+apiKey,Accept:"application/json"}
         });
-        if(!res.ok)return reply(200,{schema:"HH_OPENROUTER_FREE_QUOTA_V1",quota:null,observedAt:new Date().toISOString()},origin);
-        const raw=await res.text();if(raw.length>16384)throw Error("FREE_QUOTA_TOO_LARGE");
+        if(!response.ok)return unavailable("PROVIDER_UNAVAILABLE");
+        const raw=await response.text();
+        if(raw.length>16000)return unavailable("PROVIDER_RESPONSE_TOO_LARGE");
         const counter=JSON.parse(raw)?.data?.free_model_daily_requests;
-        const limit=counter?.limit,used=counter?.used,remaining=counter?.remaining;
-        const quota=[limit,used,remaining].every(Number.isSafeInteger)&&limit>=0&&used>=0&&remaining>=0&&remaining<=limit?
-          {used,limit,remaining,shared:true,period:"UTC_DAY"}:null;
-        return reply(200,{schema:"HH_OPENROUTER_FREE_QUOTA_V1",quota,observedAt:new Date().toISOString()},origin);
-      }catch{
-        return reply(200,{schema:"HH_OPENROUTER_FREE_QUOTA_V1",quota:null,observedAt:new Date().toISOString()},origin);
-      }
+        if(!counter||![counter.used,counter.limit,counter.remaining].every(Number.isSafeInteger)||
+           counter.used<0||counter.limit<0||counter.remaining<0||counter.remaining>counter.limit)
+          return unavailable("QUOTA_NOT_REPORTED");
+        return reply(200,{schema,status:"VERIFIED",remaining:counter.remaining,
+          used:counter.used,limit:counter.limit,source:"OPENROUTER_KEY_API",
+          sharedAcrossFreeModels:true,observedAt},origin);
+      }catch{return unavailable("PROVIDER_UNAVAILABLE")}
+      finally{clearTimeout(timer)}
     }
     if(action==="commander_list_execution_runs"){
       const chatNumber=number(body.issueNumber);if(!chatNumber)return reply(400,{error:"INVALID_CHAT_NUMBER"},origin);
@@ -895,11 +902,12 @@ async function handler(req){
         requiredBeforeSourceChange:"Resolve live GitHub PR and exact HEAD before any source change."
       };
       const modelId=typeof body.modelId==="string"&&body.modelId.length?clean(body.modelId,120):"owned-default";
-      // No arbitrary model IDs: a named local model must be a live, strictly zero-priced text chat model.
+      // Each named run is explicitly chosen by the owner; no generic free-label
+      // can bypass the independent live zero-price text-model catalogue check.
       if((executor==="local"||executor==="openrouter")&&modelId!=="owned-default"&&modelId!=="openrouter/free"){
         if(!MODEL_ID.test(modelId))return reply(400,{error:"VERIFIED_FREE_MODEL_REQUIRED"},origin);
         try{await verifyFreeModel(modelId)}
-        catch(error){return reply(422,{error:"OPENROUTER_FREE_MODEL_UNAVAILABLE",reasonCode:String(error?.message||"FREE_MODEL_NOT_VERIFIED").slice(0,100)},origin);}
+        catch(error){return reply(422,{error:"OPENROUTER_FREE_MODEL_UNAVAILABLE",reasonCode:String(error?.message||"FREE_MODEL_NOT_VERIFIED").slice(0,100)},origin)}
       }
       if(executor==="local"&&modelId==="openrouter/free")
         return reply(400,{error:"VERIFIED_FREE_MODEL_REQUIRED"},origin);
@@ -1170,7 +1178,7 @@ async function handler(req){
         comment.issue_url!=="https://api.github.com/repos/andylitvinov-design/books/issues/"+m[1])
         return reply(400,{error:"REPORT_PROVENANCE_UNVERIFIED"},origin);
       const eventId=body.eventId;if(!uuid(eventId))return reply(400,{error:"INVALID_EVENT_ID"},origin);
-      const text=clean(String(comment.body||"").replace(/<!--[\s\S]*?-->/g,"").replace(/(?:ghp_|gho_|sk-)[A-Za-z0-9_-]{16,}/g,"[REDACTED]"),1600);
+      const text=cleanMultiline(String(comment.body||"").replace(/<!--[\s\S]*?-->/g,"").replace(/(?:ghp_|gho_|sk-)[A-Za-z0-9_-]{16,}/g,"[REDACTED]"),1600);
       const event={schema:"HH_COMMANDER_EVENT_V1",id:eventId,kind:"github_report",author:"GitHub report",
         text,url:body.url,sourceVerified:false,proofLevel:"REPORT_ONLY_NOT_COMMIT",createdAt:new Date().toISOString()};
       const inserted=await q(db,"insert into business_brain.commander_chat_events(event_id,chat_id,owner_id,kind,payload,source_verified) values($1::uuid,$2::uuid,$3::uuid,'github_report',$4::text::jsonb,false) on conflict(event_id) do nothing returning event_id",[eventId,rows[0].chat_id,ownerId,jsonbText(event)]);

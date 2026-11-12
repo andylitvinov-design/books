@@ -55,7 +55,10 @@ test('Commander private API returns the detailed classification receipt',()=>{
 
 test('OIDC event bridge uses the same versioned classifier and carries its diagnostic-only receipt',()=>{
  assert.match(bridge,/require\('\.\/ci-pr-red-ci-classifier\.cjs'\)/);
- assert.match(bridge,/classifyRedCiError\(\{ pr, jobs \}\)/);
+ assert.match(bridge,/classifyRedCiError\(\{ pr, jobs, failureMessage \}\)/);
+ assert.match(bridge,/validatedJobEvidence,isActualBaseAdvancedLog/);
+ assert.match(bridge,/verifiedFailureHint===/);
+ assert.match(bridge,/BASE_ADVANCED: PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED/);
  assert.match(bridge,/HH_CI_ERROR_CLASSIFICATION_V1/);
  assert.match(bridge,/source_write_authorized: decision\.source_write_authorized/);
  assert.match(bridge,/execution_authorized: decision\.execution_authorized/);
