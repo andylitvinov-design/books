@@ -1972,6 +1972,7 @@ function cleanupFixture({state='closed',sha='b'.repeat(40),created='2026-11-11T1
   actions:{
    listWorkflowRunsForRepo:async()=>({data:{total_count:139,workflow_runs:[run]}}),
    getWorkflowRun:async()=>{calls.runs++;return {data:run};},
+   listJobsForWorkflowRun:async()=>({data:{total_count:0,jobs:[]}}),
    cancelWorkflowRun:async({run_id})=>{calls.cancel.push(run_id);return {status:202};}},
   pulls:{
    list:async()=>{calls.branches++;return {data:unique?[{...pr,merged:undefined}]:[{...pr,merged:undefined},{...pr,number:4371}]};},
