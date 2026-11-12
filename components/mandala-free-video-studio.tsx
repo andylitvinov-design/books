@@ -85,6 +85,7 @@ import {consumeMessengerAudio} from "@/lib/mandala/messenger-audio-video-handoff
 import type { AmbientMusic, AmbientSession } from "@/lib/mandala/local-video-music";
 import { mandalaAudioTracks } from "@/lib/mandala/audio-recommendations.mjs";
 import { SCENARIO_AUDIO_REGISTRY, scenarioAudioTracks, classicalAudioTracks } from "@/lib/mandala/scenario-audio-catalog.mjs";
+import {rankPersonalMusic} from "@/lib/mandala/music-match.mjs";
 import { getGoalTreeAudioChoices } from "@/lib/mandala/goal-tree-audio-playlists.mjs";
 import {curatedAudioTracks,recommendCuratedAudio,curatedAudioMatchesCategory,inferVideoAudioCategory} from "@/lib/mandala/curated-audio-recommendations.mjs";
 import type { MoneySceneId } from "@/lib/mandala/money-flow-effects";
@@ -2962,11 +2963,25 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // Keep generated historical IDs below solely for previously saved projects.
   const audioCandidates=[...curatedMatches];
   const seenAudioSearchIds=new Set<string>();
-  const audioMatches=audioCandidates.filter(track=>{
+  // Retain all 196 approved tracks and full deduplicated theme-filtered catalogue.
+  const filteredLibraryAudio=audioCandidates.filter(track=>{
     if(seenAudioSearchIds.has(track.id))return false;
     seenAudioSearchIds.add(track.id);
     return !audioThemeOverride||track.themes.includes(audioThemeOverride);
   });
+  // Local ranking uses only the current goal and explicitly consented speech.
+  const musicContext={
+    theme:audioTheme,wish,transcript:voiceTranscript?.text||"",
+    scenarioId:activeFreeFilmPreset||"",
+    priorityIds:scenarioTracks.map(track=>track.id),
+    voiceFriendly:audioVoiceFriendly||Boolean(voiceTranscript),
+  };
+  const rankedAudioPool=filteredLibraryAudio.filter(track=>track.kind==="melody");
+  const rankedAudioMelodies=rankPersonalMusic({tracks:rankedAudioPool,
+    ...musicContext,kind:audioKind,mood:audioMood,pace:audioPace,limit:300});
+  const audioMatches=audioKind==="all"?[...rankedAudioMelodies,
+      ...filteredLibraryAudio.filter(track=>track.kind!=="melody")]:
+    audioKind==="melody"?rankedAudioMelodies:filteredLibraryAudio;
   // Keep every licensed track addressable by the SAME existing player/export,
   // even after changing the search filters or moving between storyboards.
   const availableAudioCandidates=[...scenarioTracks,...filmScenarioTracks,
@@ -2977,8 +2992,16 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     seenAvailableAudioIds.add(track.id);
     return true;
   });
-  const featuredMelodies=recommendCuratedAudio({theme:audioTheme,kind:"melody",voiceFriendly:audioVoiceFriendly}).filter(track=>curatedAudioMatchesCategory(track,audioCategory)).slice(0,4);
-  const recommendedAudioId = curatedMatches[0]?.id as Exclude<AmbientMusic, "none"> | undefined;
+  // Three distinct suggestions; do not replace a consented voice.
+  const voiceBedMode=attachedAudio?.kind==="file";
+  const featuredMelodies=rankPersonalMusic({
+    tracks:voiceBedMode?mandalaAudioTracks.filter(track=>MYTUBE_MUSIC_BEDS.some(id=>id===track.id)):
+      availableAudioTracks,
+    ...musicContext,kind:"melody",mood:"all",pace:"all",
+    voiceFriendly:voiceBedMode||musicContext.voiceFriendly,limit:3,
+  });
+  const recommendedAudioId = (voiceBedMode?featuredMelodies[0]:
+    audioMatches[0]||featuredMelodies[0])?.id as Exclude<AmbientMusic, "none"> | undefined;
   const selectedAudio = availableAudioTracks.find(item=>item.id===music);
   const reviewedRecording=curatedAudioTracks.find(item=>item.id===music);
   const appliedAudioName=attachedAudio===null?audioUi.noAttached:attachedAudio.kind==="file"
@@ -4168,6 +4191,26 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setAudioAuto(false);setMusic(next[0]||"none");
     setAttachedAudio(attached);setMusicWarning("");
     if(previewPlaying)startMovieSound(attached,soundVolume);
+  }
+  // Personal music suggestions select one soundtrack and preserve any voice.
+  // Advanced multi-layer mixing stays available in the existing editor.
+  function choosePersonalMusic(choice:PresetId){
+    if(recording||preparing||micRecording)return;
+    if(attachedAudio?.kind==="file"){
+      if(!audioRights){setMusicWarning(ui.audioRightsHelp);return;}
+      if(!MYTUBE_MUSIC_BEDS.some(id=>id===choice)){
+        setMusicWarning(locale==="ru"?"Для голоса выберите одну из предложенных фоновых мелодий.":
+          locale==="es"?"Para voz, elige una melodía de fondo compatible.":
+            "For voice, choose a compatible background melody.");
+        return;
+      }
+      changeMusicBed({id:choice as MyTubeMusicBed["id"]});
+      setAudioAuto(false);setMusicWarning("");return;
+    }
+    stopSoundPreview();clearUploadedAudio();setSamplePreviewId(null);
+    setAudioAuto(false);setMusic(choice);setAttachedAudio({kind:"preset",id:choice});
+    setMusicWarning("");
+    if(previewPlaying)startMovieSound({kind:"preset",id:choice},soundVolume);
   }
   function playQuickTrack(choice:PresetId){
     if(!curatedAudioTracks.some(track=>track.id===choice))return;
@@ -5936,22 +5979,23 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           }}/> : null}
       </details>
       {activeWorkspace==="phrases" ? hypnoVoiceEditor : null}
-      <section className={videoStyles.phraseMusicSection} data-hypno-music>
+      <section className={videoStyles.phraseMusicSection} data-hypno-music data-personalized-music-match>
         <div className={videoStyles.phraseAudioHeading}>
           <span><Music2 size={23} aria-hidden="true"/></span>
           <div><h3>{locale==="ru"?"4. Подобрать музыку":locale==="es"?"4. Elegir música":"4. Choose music"}</h3>
-            <p>{locale==="ru"?"Выберите и прослушайте мелодии; отметка добавит их в видео.":locale==="es"?"Escucha y marca las pistas para incluirlas en el vídeo.":"Preview and tick a track to include it in the video."}</p></div>
+            <p>{locale==="ru"?"Три мелодии под вашу цель: прослушайте и выберите одну для видео.":locale==="es"?"Tres melodías para tu objetivo. Escucha y elige una.":"Three melodies matched to your goal. Listen and choose one."}</p></div>
         </div>
-        <div className={videoStyles.phraseMusicList} role="group"
+        <div className={videoStyles.phraseMusicList} role="radiogroup"
           aria-label={locale==="ru"?"Фоновая музыка":locale==="es"?"Música de fondo":"Background music"}>
           {featuredMelodies.slice(0,3).map(track=>{
             const id=track.id as PresetId;
-            const checked=attachedPresetIds.includes(id);
+            const checked=attachedAudio?.kind==="preset"&&attachedAudio.id===id ||
+              attachedAudio?.kind==="file"&&musicBed.id===id;
             const listening=samplePreviewId===id&&soundPreview;
             return <div className={videoStyles.phraseMusicItem} key={id} data-phrase-music-track={id}>
               <button type="button" className={videoStyles.phraseMusicChoice} data-phrase-music-attach={id}
-                aria-pressed={checked} disabled={recording||preparing||micRecording||Boolean(attachedAudio?.kind==="file"&&attachedAudio.narration)}
-                onClick={()=>toggleQuickMusic(id)}>
+                role="radio" aria-checked={checked} disabled={recording||preparing||micRecording}
+                onClick={()=>choosePersonalMusic(id)}>
                 <span aria-hidden="true">{checked?<Check size={21}/>:<Music2 size={21}/>}</span>
                 <span>{track.name[locale]}</span>
               </button>
@@ -7351,7 +7395,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </div>
         <div className={videoStyles.quickMusicRail} role="group" aria-label={
           locale==="ru"?"Музыкальные дорожки":locale==="es"?"Pistas musicales":"Music tracks"}>
-          {featuredMelodies.slice(0,4).map((track,index)=>{
+          {featuredMelodies.slice(0,3).map((track,index)=>{
             const id=track.id as PresetId;
             const checked=attachedPresetIds.includes(id);
             const listening=samplePreviewId===id&&soundPreview;

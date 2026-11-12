@@ -1012,8 +1012,18 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // Real attached WAV is reflected on the shared live video stage, not
       // merely in a hidden legacy audio panel or a transient preview label.
       await expect(page.locator("[data-video-live-audio]")).toContainText(expectedFileName);
-      assert.equal(await page.locator('[data-hypno-music] [data-phrase-music-attach]').first().isDisabled(),true,
-        "standalone music cannot silently replace mixed narration WAV");
+      // Music Match now permits compatible background beds with approved voice.
+      // Prove it with a physical Safari click and confirm the narration WAV
+      // remains attached: no standalone music silently replaces a client's voice.
+      const personalMusic=page.locator('[data-hypno-music][data-personalized-music-match]');
+      await expect(personalMusic).toBeVisible({timeout:15000});
+      await expect(personalMusic.locator('[role="radio"]')).toHaveCount(3);
+      const bedChoice=personalMusic.locator('[data-phrase-music-attach]').first();
+      await expect(bedChoice).toBeVisible();
+      await expect(bedChoice).toBeEnabled();
+      await bedChoice.click();
+      await expect(bedChoice).toHaveAttribute("aria-checked","true");
+      await expect(page.locator("[data-video-live-audio]")).toContainText(expectedFileName);
       const firstAudio=await page.locator("[data-video-affimations-audio-ready] audio").getAttribute("src");
       assert.equal(await page.locator("[data-video-affirmation-bed] option").count(),14,
         "the first-party library offers none and thirteen backgrounds");
@@ -1355,10 +1365,19 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       }
       await expect(standardVoiceMode).toHaveAttribute("aria-pressed","true");
       // Phrase selection is now owned by the real Montage → Text editor.
-      // Do not use the retired hidden Ideas/Hypno phrase picker.
-      await phrases.locator('[data-video-ideas-open-montage-text]').click();
+      // Do not use the retired hidden Ideas/Hypno phrase picker. WebKit needs
+      // the visitor's real touch gesture after recording and switching modes:
+      // a synthetic click can leave Ideas selected with Text hidden.
+      const montageTextEntry=phrases.locator('[data-video-ideas-open-montage-text]');
+      await expect(montageTextEntry).toBeVisible();
+      if(engine==="webkit")await montageTextEntry.tap();
+      else await montageTextEntry.click();
+      await expect(page.locator('[data-video-quick-control="editor"]'))
+        .toHaveAttribute("aria-pressed","true",{timeout:15000});
+      await expect(page.locator('[data-video-montage-tab="text"]'))
+        .toHaveAttribute("aria-pressed","true",{timeout:15000});
       const phraseEditor=page.locator('[data-video-montage-text] [data-video-ideas-phrases]');
-      await expect(phraseEditor).toBeVisible();
+      await expect(phraseEditor).toBeVisible({timeout:15000});
       const phraseRows=phraseEditor.locator('[data-video-idea-phrase]');
       const spokenPhrase=phraseRows.filter({hasText:approved});
       await expect(spokenPhrase).toHaveCount(1);
