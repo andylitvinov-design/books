@@ -988,7 +988,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       // Social replies are already AI-labelled: omit the mechanical
       // "source: algorithm" footer only for this small-talk subset.
       const socialRule=used==="rules"?ruleConversationReply({message:text,locale:turnLocale,history:prior}):null;
-      const friendlyTurn=Boolean(socialRule&&["conversation_greeting","conversation_small_talk","conversation_chat_invitation"].includes(socialRule.id));
+      const friendlyTurn=Boolean(socialRule&&typeof socialRule.id==="string"&&["conversation_greeting","conversation_small_talk","conversation_chat_invitation"].includes(socialRule.id));
       setSource(friendlyTurn?"":used==="browser"?turnCopy.used:used==="owned"?turnCopy.backend:turnCopy.simple);
     } catch (error) {
       if(!abort.signal.aborted){
