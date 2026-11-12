@@ -44,16 +44,15 @@ async function assertAnonymousPrivateNavigation(page) {
   assert.equal(response.status(), 200);
   await expect(page).toHaveURL(origin + '/en/app/portrait');
   await expect(page.locator('body')).toHaveAttribute('data-csp-class', 'private');
-  // /app/portrait is a public test-first Profile entry, even though the
-  // route keeps the private CSP boundary. It must not mount the old account
-  // overview or request a personal bootstrap for an anonymous visitor.
-  const guest = page.locator('[data-profile-tests-first]');
+  // My Space Today is the Profile route for signed-in and anonymous visitors.
+  // Guests see a free-tests link; private results and legacy test-first screens
+  // must not be exposed without an authenticated account.
+  const guest = page.locator('[data-cabinet-guest-overview]');
   await expect(guest).toBeVisible();
-  await expect(guest.locator('[data-guest-test-choice]')).toHaveCount(3);
-  await expect(guest.locator('[data-profile-create-link]')).toHaveAttribute('href', '/en/personality-profiles');
-  await expect(guest.locator('[data-profile-results-link]')).toHaveAttribute('href', '/en/app/portrait?space=reports');
+  await expect(page.locator('[data-profile-hub-tabs] [data-profile-tab="today"]')).toHaveAttribute('aria-current', 'page');
+  await expect(guest.locator('a[href="/en/client/tests"]')).toBeVisible();
+  await expect(page.locator('[data-profile-tests-first], [data-my-tests-dashboard], [data-profile-results-archive]')).toHaveCount(0);
   await expect(page.locator('.mobile-bottom-navigation')).toHaveCount(0);
-  await expect(page.locator('[data-profile-domains], [data-my-tests-dashboard], [data-profile-results-archive]')).toHaveCount(0);
 }
 
 async function verifyCspBfcache() {
@@ -594,16 +593,14 @@ async function exercise(engine, browserType, width) {
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'private');
           await waitForDocument();
           assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), undefined, 'Public to private Profile must load a new document');
-          // Anonymous Profile now exposes the approved public test-first entry.
-          // It stays under the private CSP class but must not request account data.
-          const guestProfile = cspPage.locator('[data-profile-tests-first]');
-          await expect(guestProfile).toBeVisible();
-          await expect(guestProfile.locator('[data-guest-test-choice]')).toHaveCount(3);
-          await expect(guestProfile.locator('[data-profile-create-link]')).toHaveAttribute('href', '/en/personality-profiles');
-          await expect(guestProfile.locator('[data-profile-results-link]')).toHaveAttribute('href', '/en/app/portrait?space=reports');
-          await expect(cspPage.locator('[data-profile-hub-tabs] [data-profile-tab="tests"]')).toHaveAttribute('aria-current', 'page');
-          await expect(cspPage.locator('[data-profile-domains], [data-my-tests-dashboard], [data-profile-results-archive]')).toHaveCount(0);
-          await expect(cspPage.locator('.mobile-bottom-navigation')).toHaveCount(0);
+           // My Space Today is the approved Profile entry; anonymous visitors
+           // get a public tests link, never private account content.
+           const guestProfile = cspPage.locator('[data-cabinet-guest-overview]');
+           await expect(guestProfile).toBeVisible();
+           await expect(guestProfile.locator('a[href="/en/client/tests"]')).toBeVisible();
+           await expect(cspPage.locator('[data-profile-hub-tabs] [data-profile-tab="today"]')).toHaveAttribute('aria-current', 'page');
+           await expect(cspPage.locator('[data-profile-tests-first], [data-my-tests-dashboard], [data-profile-results-archive]')).toHaveCount(0);
+           await expect(cspPage.locator('.mobile-bottom-navigation')).toHaveCount(0);
           await cspPage.evaluate(() => { window.__cspDocumentProbe = 'private-profile-before-public-builder'; });
           // The builder is now a separate public route. Exercise the real
           // private-to-public CSP boundary with a fresh document navigation.
@@ -911,4 +908,3 @@ const failed = results.filter(row => !row.ok);
 writeFileSync(`${evidence}/${label}-results.json`, JSON.stringify({ origin, checkedAt: new Date().toISOString(), commit: process.env.GITHUB_SHA, total: results.length, failed: failed.length, results }, null, 2));
 console.log(JSON.stringify({ label, total: results.length, failed: failed.length, failures: failed }, null, 2));
 if (!process.argv.includes('--observe')) assert.equal(failed.length, 0, 'Re-audit failed; inspect evidence');
-

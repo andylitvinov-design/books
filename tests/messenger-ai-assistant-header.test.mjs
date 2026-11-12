@@ -20,3 +20,20 @@ test("New chat reuses the established reset handler",()=>{
   assert.match(hub,/hh:messenger-new-chat/);assert.match(chat,/const startNewConversation=\(\)=>resetConversation\(\)/);
   assert.match(chat,/function resetConversation\(\)/);assert.match(chat,/removeEventListener\("hh:messenger-new-chat"/);
 });
+
+test("Messenger language switcher is a compact accessible EN/RU/ES control above the four tabs",()=>{
+  assert.match(hub,/data-hh-messenger-language-switcher/);
+  for(const language of ["en","ru","es"])assert.ok(hub.includes(`data-hh-messenger-language-option={language}`)&&hub.includes(`{language.toUpperCase()}`));
+  assert.match(hub,/aria-pressed=\{locale===language\}/);
+  assert.match(hub,/role="group"/);
+  assert.match(hub,/data-chat-top-tabs/);
+  assert.ok(hub.indexOf("data-hh-messenger-language-switcher")<hub.indexOf("data-chat-top-tabs"));
+});
+test("Manual and message-detected language changes update the localized route without reloading the live chat",()=>{
+  assert.match(hub,/function chooseLocale\(nextLocale\)/);
+  assert.match(hub,/url\.pathname=url\.pathname\.replace\(localePrefix/);
+  assert.match(hub,/window\.history\.replaceState\(window\.history\.state,'',url\)/);
+  assert.match(hub,/onConversationLocaleChange=\{chooseLocale\}/);
+  assert.doesNotMatch(hub,/window\.location\.(reload|assign)\(/);
+  assert.match(css,/\.root \.languageOptions button\[aria-pressed="true"\]/);
+});

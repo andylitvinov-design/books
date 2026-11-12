@@ -685,8 +685,15 @@ try{
    await resetViaMore();
    await chat.locator('[data-hh-ai-project="'+id+'"]').waitFor({state:"visible",timeout:15000});
    await chat.locator('[data-hh-ai-project="'+id+'"]').click();
-   await chat.locator('[data-hh-project-step="'+id+'"]').waitFor({state:"visible",timeout:15000});
-   assert.ok(await chat.locator('[data-hh-project-choice]').count()<=4,
+   // Sessions has a goal-first two-step intake; other projects use one-step choices.
+   const options=id==="sessions"?
+     chat.locator("[data-hh-session-goal-options]"):
+     chat.locator('[data-hh-project-step="'+id+'"]');
+   await options.waitFor({state:"visible",timeout:15000});
+   const choices=id==="sessions"?
+     chat.locator("[data-hh-session-goal-choice]"):
+     chat.locator("[data-hh-project-choice]");
+   assert.ok(await choices.count()<=4,
      id+" must expose no more than four short choices");
  };
  await openProject("practice");
@@ -716,11 +723,14 @@ try{
    "MyTube uses the existing topic-filtered catalogue in Russian");
 
  await openProject("sessions");
- await chat.locator('[data-hh-project-choice="free-review"]').click();
- const sessionLink=chat.locator('[data-hh-ihelp-link]');
+ await chat.locator('[data-hh-session-goal-choice="personal"]').click();
+ const sessionComposer=chat.locator("textarea");
+ await sessionComposer.fill("Хочу разобраться в сложном личном выборе и понять, как поступить дальше.");
+ await chat.locator('button[type="submit"]').click();
+ const sessionLink=chat.locator('[data-hh-session-offer="free-review"]');
  await sessionLink.waitFor({state:"visible",timeout:15000});
  assert.equal(await sessionLink.getAttribute("href"),"/ru/services/free-situation-review",
-   "Sessions links to the existing free situation-review route in Russian");
+   "Sessions asks for a goal and outcome before offering the free review route in Russian");
 
  await page.locator("[data-chat-top-tabs]").waitFor({state:"visible",timeout:30000});
  await page.locator('[data-chat-top-tabs] button[aria-controls="hh-orders-panel"]').click();
