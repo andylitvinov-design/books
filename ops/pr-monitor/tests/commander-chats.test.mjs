@@ -727,3 +727,13 @@ test('one selector supports live-catalog named free models without breaking owne
  assert.match(worker,/cleanMultiline\(assistant\.content/);
  assert.doesNotMatch(js,/modelId:chosenFreeModel,confirmGitHubWrite:true/);
 });
+
+test('PR Monitor source release keeps owner APIs on their own deployment (no stale catch-all rewrite)',()=>{
+ const config=JSON.parse(src('vercel.json'));
+ assert.ok(Array.isArray(config.headers)&&config.headers.length>0);
+ assert.ok(!Array.isArray(config.rewrites)||!config.rewrites.some(rule=>
+  rule.source==='/:path*'||rule.source==='/(.*)'||String(rule.destination||'').includes('2yqc9bhgt')),
+  'standalone monitor owner/session/API paths must not be forwarded to the old deployment');
+ assert.match(src('api/commander-chats.js'),/commander-private-store/);
+ assert.match(src('lib/commander-private-store.js'),/callStore/);
+});

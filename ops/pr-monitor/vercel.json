@@ -25,11 +25,5 @@
         }
       ]
     }
-  ],
-  "rewrites": [
-    {
-      "source": "/:path*",
-      "destination": "https://holistic-house-pr-monitor-2yqc9bhgt-super10.vercel.app/:path*"
-    }
   ]
 }
