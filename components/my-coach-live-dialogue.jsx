@@ -249,7 +249,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         <small>{localCoachText(persona?.approach,lang)||localCoachText(persona?.description,lang)}</small>
       </div>
       <div className={styles.sessionAvatar}>
-        <CoachingAvatar locale={lang} avatarId={avatarVisuals[personaId]||'warm'} displayName={name}
+        <CoachingAvatar locale={lang} avatarId={avatarVisuals[personaId]||'warm'} personaId={personaId} displayName={name}
           showPicker={false} size="large"
           phase={voiceState.phase==='speaking'?'speaking':paused?'paused':busy?'thinking':voiceState.phase} beat={voiceState.beat}/>
       </div>
