@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { ArrowRight, HeartHandshake, Search, Sparkles } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
+import { ServicesAssistMyTube } from "@/components/services-assist-mytube";
 import styles from "./services-assist-mobile.module.css";
 
 type Focus = "stress" | "relationships" | "energy" | "health" | "work" | "growth" | "general";
@@ -114,6 +115,7 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
             <span className={styles.index}>{index+1}</span><span className={styles.recText}><small>{card[2]}</small><strong>{card[0]}</strong><span>{card[1]}</span></span><ArrowRight size={18} aria-hidden="true"/>
           </Link>;
         })}</div>
+        <ServicesAssistMyTube locale={locale} focus={selection.focus} question={selection.text} />
       </>}
       <button type="button" className={styles.reset} onClick={()=>{setSelection(null);setText("");inputRef.current?.focus();}}>{t.change}</button>
     </section>:null}

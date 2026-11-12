@@ -1,0 +1,21 @@
+.shelf{margin:22px 0 8px;color:#17334b}
+.header{margin:0 0 14px}
+.header>p{display:flex;gap:7px;align-items:center;margin:0 0 5px;color:#986a26;font-size:13px;font-weight:750}
+.header>h3{margin:0 0 5px;color:#102645;font:700 clamp(23px,6.4vw,29px)/1.14 Georgia,"Times New Roman",serif}
+.header>span{font-size:14px;line-height:1.45;color:#5d6a71}
+.cards{display:grid;gap:12px}
+.card{display:grid;grid-template-columns:minmax(0,37%) minmax(0,1fr);gap:11px;padding:10px;border:1px solid #eadbc5;border-radius:23px;background:#fffcf7;box-shadow:0 5px 15px rgb(91 55 26 / 8%);min-width:0}
+.poster{position:relative;min-height:147px;border-radius:16px;overflow:hidden;background:#eee5d3;display:block}
+.poster img{object-fit:cover}
+.play{position:absolute;top:50%;left:50%;display:grid;place-items:center;width:48px;height:48px;transform:translate(-50%,-50%);border:2px solid white;border-radius:50%;background:#066d65bd;color:white}
+.duration{position:absolute;bottom:7px;left:7px;padding:3px 6px;border-radius:6px;color:white;background:rgb(16 31 35 / 82%);font-size:11px;font-weight:700;font-variant-numeric:tabular-nums}
+.body{display:flex;flex-direction:column;min-width:0;gap:5px}
+.eyebrow{color:#086f64;font-weight:800;font-size:11px;line-height:1.2}
+.body h4{margin:0;font:700 clamp(17px,4.6vw,20px)/1.14 Georgia,"Times New Roman",serif;color:#102645;overflow-wrap:anywhere}
+.body>p{margin:0;color:#5d6065;font-size:13px;line-height:1.32;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
+.watch{display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;margin-top:auto;padding:9px 8px;border-radius:15px;background:linear-gradient(110deg,#087c78,#006451);color:white;text-align:center;font-size:14px;font-weight:800;text-decoration:none}
+.watch svg,.more svg{flex-shrink:0}
+.more{display:flex;align-items:center;justify-content:center;gap:9px;min-height:54px;margin-top:14px;padding:12px;border-radius:17px;color:white;background:linear-gradient(110deg,#087c78,#005d52);text-decoration:none;text-align:center;font-size:14px;line-height:1.3;font-weight:800}
+.status{padding:14px;border:1px solid #eadbc5;border-radius:15px;background:#fbf5e9;color:#5d6a71;font-size:14px}
+.shelf a:focus-visible{outline:3px solid #176e6e;outline-offset:3px}
+@media(max-width:350px){.card{gap:8px;padding:8px;grid-template-columns:minmax(0,35%) minmax(0,1fr)}.poster{min-height:138px}.body h4{font-size:16px}.body>p{font-size:12px}.eyebrow{font-size:10px}.watch{font-size:13px}.more{font-size:13px}}
