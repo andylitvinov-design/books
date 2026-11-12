@@ -62,8 +62,15 @@ test("Ideas Concept owns the single editor and Montage retains its real timeline
   assert.match(source,/id:"concept",Icon:Film/);
   assert.match(source,/setMontagePanel\("concept"\)/);
   assert.match(source,/data-video-pro-open-montage-storyboard/);
-  assert.match(source,/\{id:"effects",Icon:Sparkles\},\{id:"text",Icon:Type\}/);
-  assert.match(source,/\{id:"audio",Icon:Music2\},\{id:"promo",Icon:Zap\}/);
+  const navStart=source.indexOf('<nav className={videoStyles.montageQuickTools}');
+  const navEnd=source.indexOf('</nav>',navStart);
+  assert.ok(navStart>0&&navEnd>navStart,'The real five-tab Montage navigator must render');
+  const navigation=source.slice(navStart,navEnd);
+  assert.deepEqual([...navigation.matchAll(/id:"(effects|audio|text|promo|concept)",Icon:/g)]
+    .map(match=>match[1]),["effects","audio","text","promo","concept"],
+    "Style → Audio → Text → Montage PRO → Story without missing or repeated tabs");
+  assert.match(source,/data-video-montage-next=\{montagePanel==="effects"\?"audio"/);
+  assert.match(source,/onClick=\{continueMontageOrGenerate\}/);
   assert.match(source,/data-video-story-open-settings/);
   assert.match(source,/data-video-montage-open-concept/);
   assert.match(source,/data-video-concept-text-tools/);
