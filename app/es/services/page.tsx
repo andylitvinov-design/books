@@ -2,6 +2,7 @@ import { PublicSiteHeader } from "@/components/public-site-header";
 import { redirect } from "next/navigation";
 import { ServicesConversionHero } from "@/components/services-conversion-hero";
 import { ServicesAssistMobile } from "@/components/services-assist-mobile";
+import { ServicesMagicalHelpMobile } from "@/components/services-magical-help-mobile";
 import assistStyles from "@/components/services-assist-mobile.module.css";
 import { ServicesExplorerProvider } from "@/components/services-explorer-state";
 import { ServicesStudioOffers } from "@/components/services-studio-offers";
@@ -31,6 +32,7 @@ export default async function SpanishServicesPage({ searchParams }: { searchPara
         <SpiritualReadingEntry locale="es" />
         <PublicConsultationCta locale="es" id="consultation" serviceBooking wiseEnabled={wisePaymentsEnabled()} paypalPersonalEnabled={personalPayPalEnabled()} />
         <ServicesStudioOffers locale="es" />
+        <ServicesMagicalHelpMobile locale="es" />
       </ServicesExplorerProvider>
       <ServicesIntroMedia locale="es" />
       <PersonalTestimonials locale="es" variant="services" />
