@@ -172,6 +172,10 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,active,disab
  const selectedCount=chosen.length;
  const textSizeIndex=Math.max(0,scaleValues.indexOf(settings.textScale??"medium"));
  const apply=(candidates:string[],indices:number[])=>{
+  // Mark this signature initialized before a real click can be overwritten by
+  // a delayed activation effect when iOS/WebKit enters Montage → Text.
+  // Editing phrases always wins over stale automatic bootstrap suggestions.
+  lastApplied.current=signature;
   // The editor and renderer receive a single projection of the selected text.
   // Stop an old playback frame before repainting at 0 with the new phrases.
   const plan=planIdeaSelection(candidates,indices,suggested,signature);

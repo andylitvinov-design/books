@@ -151,7 +151,18 @@ async function verifyWorkspaceHydration(browser,locale){
     await ideasConceptTab.tap();
     const concept=page.locator("[data-video-ideas-concept-panel]");
     await expect(concept).toBeVisible();
-    await expect(concept.locator("[data-video-concept-summary]")).toBeVisible();
+    const headline=concept.locator("[data-video-concept-main-idea]");
+    const narrative=concept.locator("[data-video-concept-paragraph]");
+    await expect(headline).toBeVisible();
+    await expect(narrative).toBeVisible();
+    await expect(concept.locator("[data-video-concept-all-parameters]")).toBeVisible();
+    const mainBox=await headline.boundingBox(),storyBox=await narrative.boundingBox();
+    assert.ok(mainBox&&storyBox&&mainBox.y<storyBox.y,"Main idea above story on iPhone");
+    const rects=await concept.locator("[data-concept-parameter]").evaluateAll(nodes=>
+      nodes.map(node=>{const r=node.getBoundingClientRect();return {x:r.x,y:r.y};}));
+    assert.ok(rects.length>=6&&rects.length<=26,"Only visible decision-relevant parameters");
+    for(let i=1;i<rects.length;i++)assert.ok(rects[i].y>rects[i-1].y&&
+      Math.abs(rects[i].x-rects[0].x)<3,"Parameters stay in one vertical column");
     await concept.locator("[data-video-concept-edit]").click();
     await expect(page.locator("[data-video-concept-auth-overlay]")).toBeVisible();
     await page.locator("[data-video-concept-auth-close]").click();
@@ -741,11 +752,21 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(compactVoicePanel.locator('[data-video-affirmation-transcript-review]')).toHaveCount(1);
       await expect(page.locator("[data-hypno-pending]")).toHaveCount(0);
       await expect(page.locator("[data-video-voice-approval-required]")).toHaveCount(0);
-      await voiceModeButton.click();
+      // iPhone WebKit dispatches native taps; a synthetic click can lose the
+      // React gender-filter update during the Voice/My Voice handoff.
+      if(engine==="webkit")await voiceModeButton.tap();
+      else await voiceModeButton.click();
+      await expect(voiceModeButton).toHaveAttribute("aria-pressed","true");
       const chooserPending=page.locator("[data-video-affirmation-voice-select]");
-      await expect(chooserPending.locator('[data-video-affirmation-gender="male"]')).toBeEnabled();
-      await chooserPending.locator('[data-video-affirmation-gender="male"]').click();
-      await chooserPending.locator('[data-video-affirmation-voice-card="leon"]').click();
+      const maleGender=chooserPending.locator('[data-video-affirmation-gender="male"]');
+      await expect(maleGender).toBeEnabled();
+      if(engine==="webkit")await maleGender.tap();
+      else await maleGender.click();
+      await expect(maleGender).toHaveAttribute("aria-pressed","true");
+      const leonCard=chooserPending.locator('[data-video-affirmation-voice-card="leon"]');
+      await expect(leonCard).toBeVisible();
+      if(engine==="webkit")await leonCard.tap();
+      else await leonCard.click();
       await expect(chooserPending.locator('[data-video-affirmation-voice-card="leon"]')).toHaveAttribute("aria-pressed","true");
       const previewButton=chooserPending.locator('[data-video-affirmation-voice-preview="leon"]');
       await expect(previewButton).toBeEnabled();
@@ -1358,7 +1379,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const optionCountBeforeAddition=await phraseRows.count();
       assert.ok(countBeforeAddition>=5,"approved phrase selection remains above the five-phrase minimum");
       assert.ok(countBeforeAddition<10,"an additional phrase can be selected below the hard maximum");
-      await unselectedToggle.click();
+      if(engine==="webkit")await unselectedToggle.tap();
+      else await unselectedToggle.click();
       await expect(phraseEditor.locator(`[data-video-idea-select="${unselectedIndex}"]`)).toHaveAttribute('aria-pressed','true');
       await expect(montageCountLabel).toContainText(`${countBeforeAddition+1} / ${optionCountBeforeAddition}`);
       assert.ok(countBeforeAddition+1<=10,"adding a phrase never exceeds the ten-phrase export limit");

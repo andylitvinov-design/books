@@ -72,7 +72,14 @@ export function assessPrReadiness(event, live, repository, ancestryProof = null,
 }
 
 export async function readLivePr(repository, number, token,
-    transport = fetch, sleep = ms => new Promise(resolve => setTimeout(resolve, ms))) {
+    transportOrOptions = fetch, sleep = ms => new Promise(resolve => setTimeout(resolve, ms))) {
+  // Preserve the production positional testing/worker API while supporting
+  // the newer caller's scoped options object; no speculative mutating retry.
+  const withOptions = transportOrOptions !== null && typeof transportOrOptions === 'object';
+  const transport = withOptions ? (transportOrOptions.transport ?? fetch) : transportOrOptions;
+  const wait = withOptions ? (transportOrOptions.wait ?? sleep) : sleep;
+  if (typeof transport !== 'function' || typeof wait !== 'function')
+    throw new TypeError('INVALID_GITHUB_READ_TRANSPORT');
   const url = `https://api.github.com/repos/${repository}/pulls/${number}`;
   for (let attempt = 0; attempt < 3; attempt++) {
     const response = await transport(url, {
@@ -84,13 +91,13 @@ export async function readLivePr(repository, number, token,
       signal: AbortSignal.timeout(8000),
     });
     if (response.ok) return response.json();
-    if (![502, 503, 504].includes(response.status) || attempt === 2) {
+    if (![502, 503, 504].includes(response.status) || attempt === 2)
       throw new Error(`GitHub PR read failed: HTTP ${response.status}`);
-    }
-    // Retry only finite GitHub gateway/unavailable responses, never stale SHA,
-    // identity, permissions, rate limits or conflicts; no new CI run is woken.
-    await sleep(750 * (2 ** attempt));
+    // Production positional callers retain 750/1500ms, options-based CI
+    // pruning callers retain 250/750ms: both APIs are regression tested.
+    await wait(withOptions ? (attempt === 0 ? 250 : 750) : 750 * (2 ** attempt));
   }
+  throw new Error('GitHub PR read exhausted without successful readback');
 }
 
 export async function readExactBaseAncestry(repository, live, token, transport = fetch) {
