@@ -14,7 +14,7 @@
       '<link rel="stylesheet" href="/pr-two-screen.css?v=20261104-4">'+
       '<script src="/pr-cohort-wall-clock.js?v=20261104-kpi-p95-3476" defer><\/script>'+
       '<script src="/ci-queue-backup.js?v=20261106-ci-filter-v2" defer><\/script>'+
-      '<script data-pr-stage-only src="/pr-two-screen.js?v=20261107-stage-return-v1" defer><\/script>'+
+      '<script data-pr-stage-only src="/pr-two-screen.js?v=20261111-full-journey-v3" defer><\/script>'+
       '<link rel="stylesheet" href="/pr-three-kpi-ui.css?v=20261106-wave-kpi1">'+
       '<script src="/pr-three-kpi-ui.js?v=20261111-weekly-top-v1" defer><\/script>';
     // Preserve the manually deployed LIVE monitor extensions; source archives in
@@ -53,8 +53,8 @@
     additions += '<link rel="stylesheet" href="/pr-compact-top.css?v=20261111-graphs-top-v2">'+
       '<script src="/pr-compact-top.js?v=20261111-graphs-top-v2" defer><\/script>';
     // Numeric-only default PR view; all original diagnostic widgets remain available.
-    additions += '<link rel="stylesheet" href="/pr-dense-view.css?v=20261111-v2">'+
-      '<script src="/pr-dense-view.js?v=20261111-v2" defer><\/script>';
+    additions += '<link rel="stylesheet" href="/pr-dense-view.css?v=20261111-full-journey-v3">'+
+      '<script src="/pr-dense-view.js?v=20261111-full-journey-v3" defer><\/script>';
     // Disable only old layout reordering, preserving all sources and working APIs.
     // Keep the proven LIVE mobile screen flow; the CSS now expands the chart itself.
     additions += "<style id=\"hh-monitor-graph-first\">@media(max-width:700px){body.hh2-active .hh2-screen{height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;overscroll-behavior:auto!important;padding-top:12px!important;padding-bottom:12px!important}body.hh2-active .hh2-first{gap:8px!important}body.hh2-active .hh2-chart{min-height:190px!important;flex:0 0 auto!important}body.hh2-active #hh-merge-velocity{margin-top:4px!important;margin-bottom:4px!important}body.hh2-active .hh2-second{margin-top:7px!important}body.hh2-active .hh2-totals{margin-top:4px!important}body.hh2-active .hh2-chart-slot{overflow:visible!important}}</style>";

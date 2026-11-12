@@ -12,12 +12,12 @@
   // as a slide after the existing central metrics, not a second top overview.
   var STAGE_ONLY = Boolean(document.currentScript?.hasAttribute?.("data-pr-stage-only"));
   var STAGES = [
-    ['before_unknown','До первой сохранённой CI · неатрибутировано','Включает Draft, подготовку PR и пропущенные Core runs; это НЕ измерение задержки GitHub до первой CI'],
+    ['before_unknown','Создан → первая CI* (частично)','Включает Draft, подготовку PR и пропущенные Core runs; это НЕ измерение задержки GitHub до первой CI'],
     ['workflow_wait','Workflow → jobs','Время создания jobs в сохранённых Core runs'],
     ['runner_wait','Очередь runner','От jobs queued до started_at'],
     ['checks','Работа Core CI','Подтверждённое wall-clock jobs без двойного счёта'],
     ['ci_gaps','Между волнами CI','Промежутки между Core runs, не приписываем Repair без доказательств'],
-    ['after_unknown','Последняя CI → Merge','После последнего сохранённого job; Gate/ожидание не разделены'],
+    ['after_unknown','Последняя CI → Merge*','После последнего сохранённого job; Gate/ожидание не разделены'],
     ['no_archive_unknown','Нет CI-истории PR','Общее время PR без подходящих достоверных CI-записей'],
     ['merge_to_live','Merge → LIVE','Только независимо проверенная production-квитанция']
   ];
@@ -476,8 +476,9 @@
     var two = make('section','hh2-screen hh2-second'); two.id = 'hh2-stages';
     two.setAttribute('aria-label','Экран 2 — этапы и сравнение с двумя неделями назад');
     var head2 = make('header','hh2-header');
-    var title2 = make('div','');title2.append(make('h2','','Путь PR → LIVE'),make('small','','Экран 2 / 2 · сравнение этапов'));
-    var back = make('a','hh2-link','↑ Обзор');back.href='#hh2-overview';
+    var title2 = make('div','');title2.append(make('h2','','Полный путь PR: создание → LIVE'),
+      make('small','',STAGE_ONLY?'24ч · сравнение 7/14 дней · данные GitHub':'Подтверждённые этапы'));
+    var back = make('a','hh2-link','↑ Сводка');back.href=STAGE_ONLY?'#hh-pr-merge-speed':'#hh2-overview';
     head2.append(title2,back);two.append(head2);
     comparison = make('div','hh2-compare');
     var compareTitle = make('div','hh2-stage-head');
@@ -490,6 +491,7 @@
       summary.append(name,current,week,history);
       var explanation = make('div','hh2-detail');
       detail.append(summary,explanation);
+      if(spec[0]==='merge_to_live')detail.open=true;
       comparison.append(detail);
       stages[spec[0]] = {name:name,current:current,week:week,history:history,explanation:explanation};
       buildSubsteps(spec[0],explanation);
@@ -501,6 +503,15 @@
       make('strong','','—'),make('strong','','—'),make('strong','','—'));
     all.append(sum,make('div','hh2-detail','Сравнение использует одинаковые 24-часовые окна: сейчас, 7 дней назад и 14 дней назад. До LIVE это не полный путь.'));
     comparison.append(all);stages.total={current:sum.children[1],week:sum.children[2],history:sum.children[3]};
+    // Separate end-to-end delivery: never infer a LIVE confirmation from merge.
+    var liveTotal=make('details','hh2-stage-item hh2-live-total');
+    var liveSum=make('summary','hh2-stage-row');
+    liveSum.append(make('span','','Итого: Created → LIVE'),
+      make('strong','','н/д'),make('strong','','н/д'),make('strong','','н/д'));
+    liveTotal.append(liveSum,make('div','hh2-detail',
+      'Требуются Created → merged_at → production SHA → подтверждённый функциональный LIVE smoke. '+
+      'Нет независимых квитанций — итог не измерен, а не 0.'));
+    comparison.append(liveTotal);
     two.append(comparison);
     diagnostics=make('p','hh2-diagnostic','Проверяю охват подэтапов и сопоставимость периодов…');
     two.append(diagnostics);
@@ -648,7 +659,7 @@
       showQueue();
     }
     // Both screens read exactly the same created-and-merged PR cohort.
-    if (baseline) {
+    if (baseline && !STAGE_ONLY && cells.avg) {
       cells.avg.querySelector('strong').textContent=duration(baseline.mean);
       cells.median.querySelector('strong').textContent=duration(baseline.median);
        cells.p95.querySelector('strong').textContent=duration(baseline.p95);
@@ -677,8 +688,10 @@
     coverage.textContent='Единая когорта созданных и смерженных PR: '+N+
       ' за 24 ч; историческая когорта: '+(historical?.n??'—')+
       '. Для исторических этапов двухнедельной давности нет сопоставимого CI-архива; «—» означает «не измерено», а не 0.';
-    cells.live.querySelector('strong').textContent='—';
-    cells.live.querySelector('small').textContent='Полный набор независимых LIVE-квитанций отсутствует';
+    if(cells.live){
+      cells.live.querySelector('strong').textContent='—';
+      cells.live.querySelector('small').textContent='Полный набор независимых LIVE-квитанций отсутствует';
+    }
   }
   var AUDIT_STAGES=[
     ['created_to_first_ci','Создание → первый наблюдаемый Core CI'],
@@ -926,7 +939,7 @@
           var button=second.querySelector('.hh2-button');
           void readArchive();
         }
-      },{threshold:0.18});
+      },{threshold:0,rootMargin:'200px 0px'});
       if(second)io.observe(second);
     }
   }
