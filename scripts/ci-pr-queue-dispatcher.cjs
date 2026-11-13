@@ -9,7 +9,7 @@ const {WORKFLOWS,admission,snapshot,verifiedGhostRepairCapacity,GHOST_REPAIR_MOD
 const {repairMode,safeFiles,hasVerifiedSourceHandoff,verifiedCoreCodeFailure}=require('./ci-pr-repair-worker.cjs');
 const {safeSourcePath: safeFreeSourcePath,
  assessCompleteFreeRepairScope}=require('./ci-pr-repair-free-agent.cjs');
-const {verifiedRunnerReceipt}=require('./ci-pr-runner-evidence.cjs');
+const {verifiedRunnerReceipt,recentlyStartedRunner}=require('./ci-pr-runner-evidence.cjs');
 const {reconcileCiWake,recoverVerifiedCiManualHold}=require('./ci-pr-ci-wake-reconcile.cjs');
 const {classifyIndependentSpecialistChecks,latestByName}=require('./ci-pr-ten-minute-watchdog.cjs');
 const {PATHS:QUALITY_EVENT_PATHS,isTrustedQualityFailureEvent,qualityEventMatchesPR}=require('./ci-pr-quality-event.cjs');
@@ -679,7 +679,9 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
    if(sample)summary.ciWakeTelemetry.push(sample);
   }
   const realRunner=verifiedRunnerReceipt(comments,task);
-  if(realRunner){
+  // Historical execution receipts remain meaningful task history, but must
+  // not inflate the current dashboard's recently started Worker count.
+  if(realRunner&&recentlyStartedRunner(realRunner,now)){
    summary.runnerStartedConfirmed++;
    summary.runnerEvidence.push({pr_number:task.pr_number,task_key:task.task_key,
     run_id:realRunner.runner.run_id,job_id:realRunner.runner.job_id,

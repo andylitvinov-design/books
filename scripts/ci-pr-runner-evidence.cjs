@@ -9,6 +9,15 @@ const {REPO,DEFAULT,SHA,taskFor,commentBody,parseRecords,trustedControlComment}=
 const {priorityFor}=require('./ci-pr-priority.cjs');
 const WORKFLOW='HH PR source Repair Worker';
 const RUNNER_MARKER='HH_EXECUTION_RUNNER_V1';
+const RECENT_RUNNER_WINDOW_MS=15*60*1000;
+// Signed runner receipts are durable history. They remain valid proof of a
+// previous execution, but cannot be counted as a new/current sweep's worker.
+// Never report a days-old RUNNER_STARTED as current dispatch throughput.
+function recentlyStartedRunner(receipt,now=Date.now()){
+ const started=Date.parse(receipt?.runner?.started_at||'');
+ return Number.isFinite(now)&&Number.isFinite(started)&&
+  started>=now-RECENT_RUNNER_WINDOW_MS&&started<=now+60*1000;
+}
 
 function verifiedRunnerReceipt(comments,task){
  if(!Array.isArray(comments)||!task)return null;
@@ -77,4 +86,4 @@ async function confirmRepairRunner({github,context,number,expectedSha,taskKey}){
  await github.rest.issues.createComment({owner,repo,issue_number:number,body});
  return {status:'RUNNER_CONFIRMED',number,sha:expectedSha,runner};
 }
-module.exports={confirmRepairRunner,verifiedRunnerReceipt,RUNNER_MARKER};
+module.exports={confirmRepairRunner,verifiedRunnerReceipt,recentlyStartedRunner,RECENT_RUNNER_WINDOW_MS,RUNNER_MARKER};
