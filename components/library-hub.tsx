@@ -10,6 +10,7 @@ import { growthGuideFor } from "@/data/growth-guides";
 import { greekVideoSeries } from "@/data/academy/greek-video-series";
 import { freeMeditationVideos } from "@/data/academy/holistic-support-meditations";
 import psimasterMedia from "@/data/academy/psimaster-media.generated.json";
+import psimasterOwnerApproval from "@/data/academy/psimaster-mytube-owner-approval-20261112.json";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
 import { academyDisplayTitle, mediaForRecord, preferredAcademyRecords, youtubeIdFromUrl } from "@/data/academy/catalog";
 import { VideoDiscovery } from "@/components/video-discovery";
@@ -411,15 +412,16 @@ export function buildPublicVideoDiscoveryItems(
   // candidate-only Supabase short-meditation table. Preserve original RU audio.
   // Playback duration is not verified: never assert that these are under 10m.
   // The "Online Energy-Practice Marathons" introduction is not a meditation.
+  const ownerApprovedIds=new Set(psimasterOwnerApproval.youtubeIds);
   const curatedMeditations=freeMeditationVideos("ru")
-    .filter(video=>video.id!=="95peObUizeE");
+    .filter(video=>video.id!=="95peObUizeE"&&ownerApprovedIds.has(video.id));
   const curatedIds=new Set(curatedMeditations.map(video=>video.id));
   // Restore the entire original "Planetary Power" meditation cycle, including
   // Mars, Mercury, Jupiter, Saturn, the money circle and the Sun. Several
   // recordings also occur in the curated selection: keep exactly one per ID.
   const planetaryMeditations=psimasterMedia
     .filter(media=>media.logicalId==="videos/planetary-power"&&
-      media.status==="verified_legacy_public_embed"&&
+      media.status==="verified_legacy_public_embed"&&ownerApprovedIds.has(media.videoId)&&
       /^[A-Za-z0-9_-]{11}$/.test(media.videoId)&&!curatedIds.has(media.videoId))
     .sort((a,b)=>a.order-b.order)
     .map(media=>({

@@ -1012,17 +1012,18 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // Real attached WAV is reflected on the shared live video stage, not
       // merely in a hidden legacy audio panel or a transient preview label.
       await expect(page.locator("[data-video-live-audio]")).toContainText(expectedFileName);
-      // Music Match now permits compatible background beds with approved voice.
-      // Prove it with a physical Safari click and confirm the narration WAV
-      // remains attached: no standalone music silently replaces a client's voice.
+      // Rights-reviewed recordings only: the legacy five synthesized music
+      // beds are not permitted as new suggestions after the voice WAV is
+      // attached. The separately consented Voice Background control already
+      // selected above remains the real, existing remix path.
       const personalMusic=page.locator('[data-hypno-music][data-personalized-music-match]');
       await expect(personalMusic).toBeVisible({timeout:15000});
-      await expect(personalMusic.locator('[role="radio"]')).toHaveCount(3);
-      const bedChoice=personalMusic.locator('[data-phrase-music-attach]').first();
-      await expect(bedChoice).toBeVisible();
-      await expect(bedChoice).toBeEnabled();
-      await bedChoice.click();
-      await expect(bedChoice).toHaveAttribute("aria-checked","true");
+      await expect(personalMusic.locator('[role="radio"]')).toHaveCount(0);
+      await expect(personalMusic.locator('[data-phrase-music-attach]')).toHaveCount(0);
+      const qualityNotice=personalMusic.locator('[data-phrase-music-guidance="voice"]');
+      await expect(qualityNotice).toBeVisible();
+      await expect(qualityNotice).toContainText(
+        locale==="ru"?"Голос сохранён.":locale==="es"?"La voz está guardada.":"Your voice stays attached.");
       await expect(page.locator("[data-video-live-audio]")).toContainText(expectedFileName);
       const firstAudio=await page.locator("[data-video-affimations-audio-ready] audio").getAttribute("src");
       assert.equal(await page.locator("[data-video-affirmation-bed] option").count(),14,

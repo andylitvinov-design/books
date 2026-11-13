@@ -2992,11 +2992,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     seenAvailableAudioIds.add(track.id);
     return true;
   });
-  // Three distinct suggestions; do not replace a consented voice.
+  // Recommendations are exclusively approved real recordings. The five
+  // historical synthetic beds cannot be recommended beside a verified voice;
+  // the existing voice editor owns its separate, explicitly chosen audio mix.
   const voiceBedMode=attachedAudio?.kind==="file";
   const featuredMelodies=rankPersonalMusic({
-    tracks:voiceBedMode?mandalaAudioTracks.filter(track=>MYTUBE_MUSIC_BEDS.some(id=>id===track.id)):
-      availableAudioTracks,
+    tracks:voiceBedMode?[]:rankedAudioPool,
     ...musicContext,kind:"melody",mood:"all",pace:"all",
     voiceFriendly:voiceBedMode||musicContext.voiceFriendly,limit:3,
   });
@@ -5984,7 +5985,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <div className={videoStyles.phraseAudioHeading}>
           <span><Music2 size={23} aria-hidden="true"/></span>
           <div><h3>{locale==="ru"?"4. Подобрать музыку":locale==="es"?"4. Elegir música":"4. Choose music"}</h3>
-            <p>{locale==="ru"?"Три мелодии под вашу цель: прослушайте и выберите одну для видео.":locale==="es"?"Tres melodías para tu objetivo. Escucha y elige una.":"Three melodies matched to your goal. Listen and choose one."}</p></div>
+            <p data-phrase-music-guidance={voiceBedMode?"voice":"melody"}>
+              {voiceBedMode
+                ?locale==="ru"?"Голос сохранён. Фон к голосу настраивается выше; неподтверждённые записи не предлагаются."
+                :locale==="es"?"La voz está guardada. Ajusta el fondo arriba; no ofrecemos pistas sin verificar."
+                :"Your voice stays attached. Adjust its background above; no unverified music is offered."
+                :locale==="ru"?"Три проверенные записи под вашу цель: прослушайте и выберите одну для видео."
+                :locale==="es"?"Tres grabaciones verificadas para tu objetivo. Escucha y elige una."
+                :"Three verified recordings matched to your goal. Listen and choose one."}
+            </p></div>
         </div>
         <div className={videoStyles.phraseMusicList} role="radiogroup"
           aria-label={locale==="ru"?"Фоновая музыка":locale==="es"?"Música de fondo":"Background music"}>

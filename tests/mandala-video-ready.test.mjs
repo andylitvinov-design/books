@@ -273,3 +273,15 @@ test("approved Ready result has a thin status, full video and two secure primary
     }
   }
 });
+
+
+test("verified voice retains the original narration while Music Match forbids synthesized bed suggestions",()=>{
+  const source=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
+  assert.ok(source.includes("tracks:voiceBedMode?[]:rankedAudioPool,"));
+  assert.match(source,/data-phrase-music-guidance=\{voiceBedMode\?"voice":"melody"\}/);
+  assert.match(browser,/await expect\(personalMusic\.locator\('\[role="radio"\]'\)\)\.toHaveCount\(0\)/);
+  assert.match(browser,/await expect\(page\.locator\("\[data-video-live-audio\]"\)\)\.toContainText\(expectedFileName\)/);
+  assert.match(browser,/await page\.locator\("\[data-video-bed-volume\]"\)\.focus\(\)/);
+  assert.match(browser,/await page\.waitForFunction\(previous=>/);
+});
