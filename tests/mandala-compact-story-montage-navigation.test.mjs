@@ -51,7 +51,7 @@ test("advanced five-scene source/photo editor preserved in fifth Montage, closed
  assert.match(studio,/setMontagePanel\("promo"\)/);
  assert.match(styles,/data-montage-panel="concept"\] \[data-video-live-stage\]/);
  assert.match(styles,/height:66px;min-height:66px/);
- assert.match(offer,/goStory:"Continue free"/);
+ assert.match(offer,/goStory:"Create free video"/);
 });
 
 test("navigation is only a selection; export, checks and payment stay behind the existing Create flow",()=>{
@@ -60,6 +60,12 @@ test("navigation is only a selection; export, checks and payment stay behind the
  assert.doesNotMatch(story,/createQuickVideo|startFromHero|stripe|chargeWallet/);
  assert.match(studio,/data-video-quick-generate/);
  assert.match(studio,/onClick=\{createQuickVideo\}/);
+ assert.match(studio,/onGoStory=\{createQuickVideo\}/,
+   "the fifth Montage free action must invoke the real renderer in the same user gesture");
+ assert.doesNotMatch(studio,/document\.querySelector\('\[data-video-quick-generate\]'\)/,
+   "do not scroll visitors to the hidden Create button in Montage");
+ assert.match(studio,/if\(narrationInvalid\)\{/);
+ assert.match(studio,/if\(creditCatalog\?\.chargeRequired&&creditSession==="guest"&&guestFirstVideoUsed\)/);
  assert.match(studio,/data-video-montage-next=\{montagePanel==="effects"/);
 });
 

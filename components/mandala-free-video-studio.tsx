@@ -8215,13 +8215,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <div data-video-director-style-controls hidden={montagePanel!=="effects"} />
           <div id="video-montage-active-panel" className={videoStyles.montageActivePanel}>
           {montagePanel==="promo" ? <MandalaMontageProOffer
-            locale={locale} disabled={recording||preparing}
-            onGoStory={()=>{
-              setNotice("");
-              // Free reuses the original on-device Create action without charging here.
-              window.requestAnimationFrame(()=>
-                document.querySelector('[data-video-quick-generate]')?.scrollIntoView({behavior:"smooth",block:"center"}));
-            }}
+            locale={locale} disabled={!studioHydrated||recording||preparing||narrationInvalid}
+            // A trusted user click invokes the original local renderer, not a
+            // hidden footer or simulated Ready page. Credit and consent gates
+            // remain inside createQuickVideo.
+            onGoStory={createQuickVideo}
             onExplorePro={()=>{
               setActiveWorkspace("pro");setNotice("");setIntroPlaying(false);
               window.requestAnimationFrame(()=>
