@@ -27,6 +27,7 @@ import {
   changeMessengerVideoPhraseStyle,encodeMessengerVideoHandoff,
 } from "@/lib/mandala/video-chat-messenger-flow.mjs";
 import {stageVoiceStudioHandoff} from "@/lib/mandala/voice-studio-handoff.mjs";
+import {transcribeDeviceAudioFile} from "@/lib/mandala/device-audio-stt.mjs";
 import type {TimedSpeechTranscript} from "@/lib/mandala/audio-visual-storyboard.mjs";
 import styles from "./holistic-agent-chat.module.css";
 import {useVoiceCompanion,VoiceCompanionControls} from "./voice-companion-controls";
@@ -781,18 +782,27 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     const abort=new AbortController();voiceAbortRef.current=abort;
     setVoiceBusy(true);setVoiceError("");
     try{
-      const body=new FormData();
-      body.append("file",file,file.name);
-      body.append("locale",locale);body.append("consent","yes");
-      const response=await fetch("/api/holistic-support/audio-storyboard",{
-        method:"POST",body,cache:"no-store",credentials:"same-origin",signal:abort.signal
-      });
-      const data=await response.json() as {transcript?:TimedSpeechTranscript;error?:string};
-      if(!response.ok||!data.transcript)throw Error(data.error||"VOICE_STT_UNAVAILABLE");
+      // A verified installed browser language pack keeps the uploaded file on
+      // the device; unavailable browsers use the already consented free bridge.
+      let transcript:TimedSpeechTranscript;
+      try{
+        transcript=await transcribeDeviceAudioFile(file,locale,abort.signal);
+      }catch{
+        if(abort.signal.aborted)return;
+        const body=new FormData();
+        body.append("file",file,file.name);
+        body.append("locale",locale);body.append("consent","yes");
+        const response=await fetch("/api/holistic-support/audio-storyboard",{
+          method:"POST",body,cache:"no-store",credentials:"same-origin",signal:abort.signal
+        });
+        const data=await response.json() as {transcript?:TimedSpeechTranscript;error?:string};
+        if(!response.ok||!data.transcript)throw Error(data.error||"VOICE_STT_UNAVAILABLE");
+        transcript=data.transcript;
+      }
       if(voiceAbortRef.current!==abort)return;
-      const stored=await stageVoiceStudioHandoff(file,data.transcript);
+      const stored=await stageVoiceStudioHandoff(file,transcript);
       if(voiceAbortRef.current!==abort)return;
-      setVoiceTranscript(data.transcript);setVoiceHandoffReady(stored);
+      setVoiceTranscript(transcript);setVoiceHandoffReady(stored);
       setVideoStep(null);setGuidedTrack("video");
       setMessages(old=>[...old,
         {role:"user" as const,text:(locale==="ru"?"Голосовое сообщение: ":"Voice message: ")+file.name},
@@ -809,9 +819,9 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       if(abort.signal.aborted)return;
       const code=error instanceof Error?error.message:"";
       setVoiceError(code==="AUDIO_STT_FREE_PROVIDER_NOT_CONFIGURED"?
-        (locale==="ru"?"Бесплатное распознавание пока не подключено. Аудио не отправлялось провайдеру.":
+        (locale==="ru"?"Распознавание файла недоступно в этом браузере, а бесплатный серверный сервис не настроен. Воспользуйтесь голосовым вводом или напишите сообщение.":
           locale==="es"?"El reconocimiento gratuito no está configurado. No se envió el audio.":
-            "Free transcription is not configured. Audio was not sent to a provider.") :
+            "Automatic file transcription is unavailable here. Try the live microphone or type your message; no paid service was used.") :
         (locale==="ru"?"Не удалось распознать голос с таймкодами. Проверьте файл и подключение.":
           locale==="es"?"No se pudo transcribir con tiempos. Comprueba el archivo y la conexión.":
             "Timed transcription failed. Check the file and connection."));
