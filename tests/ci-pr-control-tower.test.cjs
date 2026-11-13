@@ -2047,6 +2047,54 @@ test('dispatcher uses only authenticated jobless 409 with bounded manual legacy'
  assert.match(dispatcher,/summary\.legacyDispatchAccepted>=1/);
  assert.match(dispatcher,/GHOST_ONLY_ONE_WORKER_PER_SWEEP/);
 });
+
+test('one transient GitHub run-count drift is rechecked read-only before ghost worker admission',async()=>{
+ const f=ghostFixture({activeCount:16});
+ const original=f.github.rest.actions.listWorkflowRunsForRepo;
+ let activeReads=0,queuedReads=0;
+ f.github.rest.actions.listWorkflowRunsForRepo=async args=>{
+  const r=await original(args);
+  if(args.status==='in_progress'&&++activeReads===1)
+   return {data:{...r.data,total_count:r.data.total_count+1}};
+  if(args.status==='queued')queuedReads++;
+  return r;
+ };
+ const result=await GRC(f.github,'andylitvinov-design','books',f.p,
+  Date.parse('2026-11-12T20:00:00Z'));
+ assert.equal(result.known,true);
+ assert.equal(result.capacityReadbacks,2);
+ assert.equal(activeReads,2);
+ assert.equal(queuedReads,2);
+ assert.equal(admission('legacy',result),'ADMIT');
+ assert.equal(admission('ci',result),'GHOST_REPAIR_ONLY');
+});
+test('persistent inconsistent counts or worker occupancy never authorise ghost preflight',async()=>{
+ const f=ghostFixture({activeCount:4});
+ const original=f.github.rest.actions.listWorkflowRunsForRepo;
+ let reads=0;
+ f.github.rest.actions.listWorkflowRunsForRepo=async args=>{
+  const r=await original(args);
+  if(args.status==='in_progress'){reads++;
+   return {data:{...r.data,total_count:r.data.total_count+1}};
+  }
+  return r;
+ };
+ const result=await GRC(f.github,'andylitvinov-design','books',f.p,
+  Date.parse('2026-11-12T20:00:00Z'));
+ assert.equal(result.known,false);
+ assert.equal(result.reason,'GHOST_INCOMPLETE_RUN_CAPACITY_AFTER_RECHECK');
+ assert.equal(reads,2,'no unbounded retry loop');
+ assert.notEqual(admission('legacy',result),'ADMIT');
+ const busy=ghostFixture();
+ busy.github.rest.actions.listWorkflowRuns=async({status})=>({data:{
+  total_count:status==='queued'?1:0,
+  workflow_runs:status==='queued'?[{id:901,status:'queued'}]:[]
+ }});
+ const blocked=await GRC(busy.github,'andylitvinov-design','books',busy.p,
+  Date.parse('2026-11-12T20:00:00Z'));
+ assert.equal(blocked.known,false,'missing free worker proof is a hard stop');
+ assert.notEqual(admission('legacy',blocked),'ADMIT');
+});
 test('409 fallback never admits unverified or congested runners',async()=>{
  const variants=[{ghostJobs:1},{run:{status:'completed'}},{run:{pull_requests:[{number:55}]}},
   {pr:{merged:false,merged_at:null}},{comparison:'diverged'},
