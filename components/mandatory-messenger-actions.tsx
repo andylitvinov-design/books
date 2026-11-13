@@ -16,6 +16,9 @@ export function MandatoryMessengerActions({locale,whatsappUrl,label,telegramUrl,
  // The verified diagnostic bot supports hhreview when directAvailable is OFF.
  // Opening a bot link alone never authenticates a client or stores a CRM lead.
  useEffect(()=>{
+  // Explicit consented course/service enquiries go to the owner with their
+  // selected course intact, never through the unrelated free-review bot.
+  if(telegramUrl){setBot(null);return;}
   const abort=new AbortController();
   setBot(null);
   fetch("/api/public/telegram-diagnostic",{cache:"no-store",signal:abort.signal})
@@ -24,15 +27,15 @@ export function MandatoryMessengerActions({locale,whatsappUrl,label,telegramUrl,
     if(!abort.signal.aborted)setBot(resolveTelegramFirstEntry(payload,locale));
    }).catch(()=>{if(!abort.signal.aborted)setBot(null);});
   return ()=>abort.abort();
- },[locale]);
+ },[locale,telegramUrl]);
  const channels=<>
   <img className={styles.art} data-hh-messenger-art src="/images/holistic-house/reiki-approved-sunrise-v3.webp" alt="" aria-hidden="true" width="600" height="100" loading="lazy"/>
   <p className={styles.intro}>{t.intro}</p>
   <div className={styles.actions} role="group" aria-label={t.title}>
    <a href={whatsappUrl} className={styles.whatsapp} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" data-messenger-only-channel="whatsapp"><MessageCircle size={19} aria-hidden="true"/>WhatsApp</a>
-   <a href={telegramUrl||bot?.href||telegramEnquiryUrlFromWhatsApp(whatsappUrl)} data-telegram-route={bot?.kind||"manual"} className={styles.telegram} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" data-messenger-only-channel="telegram"><Send size={19} aria-hidden="true"/>Telegram</a>
+   <a href={telegramUrl||bot?.href||telegramEnquiryUrlFromWhatsApp(whatsappUrl)} data-telegram-route={telegramUrl?"manual":bot?.kind||"manual"} className={styles.telegram} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" data-messenger-only-channel="telegram"><Send size={19} aria-hidden="true"/>Telegram</a>
   </div>
-  <p className={styles.note}>{t.note}</p>{bot?<p className={styles.note} role="status">{bot.kind==="review"?t.review:t.bot}</p>:null}
+  <p className={styles.note}>{t.note}</p>{!telegramUrl&&bot?<p className={styles.note} role="status">{bot.kind==="review"?t.review:t.bot}</p>:null}
  </>;
  return <div id={id} className={[styles.root,className].filter(Boolean).join(" ")} data-messenger-only-contact lang={locale}>
   {collapsed?<details><summary className={styles.summary}>{label||t.title}</summary><div className={styles.body}>{channels}</div></details>

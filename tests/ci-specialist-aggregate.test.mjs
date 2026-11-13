@@ -354,7 +354,6 @@ test('only definitively PR-inapplicable BASE jobs can be skipped',()=>{
 });
 
 
-
 const profileWriterLegacyGuard = "    if: ${{ github.event_name == 'pull_request' && (github.event.pull_request.base.ref == 'codex/holistic-intelligence-core-20261029' || github.event.pull_request.base.ref == 'codex/public-book-library') && (github.head_ref == 'feat/meditation-writer-device-voice-v1-20261030' || github.head_ref == 'fix/ci-ffmpeg-verified-github-asset-20261105') }}";
 const profileWriterReadyGuard = "    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}";
 function legacyProfileAxisSource(source) {
@@ -1770,6 +1769,37 @@ test('trusted Mandala WebKit allowlist accepts exact branch entries and the full
     'encoded video work is never excused from WebKit');
 });
 
+test('BASE-owned Mandala WebKit list accepts 25-32 strict literal routes, never 33 or a changed guard',()=>{
+  const path='.github/workflows/holistic-support-mandala.yml';
+  const original=readFileSync(path,'utf8');
+  const guard=original.match(/^  voice-webkit-macos:\n    if: \$\{\{ (.+) \}\}$/m)?.[0];
+  assert.ok(guard,'trusted macOS job has a single literal branch guard');
+  const extra=n=>Array.from({length:n},(_,i)=>
+    "startsWith(github.head_ref, 'fix/ci-webkit-budget-probe-"+i+"-')");
+  const extended=n=>original.replace(guard,guard.replace(/\) \}\}$/,
+    ' || '+extra(n).join(' || ')+') }}'));
+  const safe=['components/holistic-support-goal-filter.tsx'];
+  const out='feat/support-confidence-harmony-goal-filter-20261102';
+  const skip=(base,branch=out,changed=safe,current=base)=>optionalMandalaMacosSkip({
+    base:new Map([[path,base]]),current:new Map([[path,current]])
+  },branch,changed);
+  const literalRoutes=guard.match(/(?:startsWith\(github\.head_ref, '[^']+'\)|github\.head_ref == '[^']+')/g)||[];
+  const toLimit=32-literalRoutes.length;
+  assert.ok(toLimit>=1 && toLimit<=8,'the reviewed BASE allowlist has 24-31 literal routes');
+  assert.equal(skip(original),true,'reviewed BASE literal routes remain checkable');
+  assert.equal(skip(extended(1)),true,'one additional literal prefix remains checkable');
+  assert.equal(skip(extended(toLimit)),true,'exactly 32 static predicates remain checkable');
+  assert.equal(skip(extended(toLimit+1)),false,'33 predicates fail closed');
+  assert.equal(skip(extended(toLimit),'fix/ci-webkit-budget-probe-'+(toLimit-1)+'-check'),false,
+    'a matching WebKit branch must actually execute macOS');
+  assert.equal(skip(extended(toLimit),out,['lib/mandala/audio-render.mjs']),false,
+    'encoded audio source cannot skip macOS');
+  assert.equal(skip(original,out,safe,extended(1)),false,
+    'PR changing the trusted macOS guard cannot certify its own skip');
+  assert.equal(skip(extended(1).replace(extra(1)[0],'success()')),false,
+    'arbitrary GitHub expressions are not static allowlist predicates');
+});
+
 test('VideoProjectV2 source changes require real macOS WebKit acceptance on video feature PRs', () => {
   const path = '.github/workflows/holistic-support-mandala.yml';
   const actual = readFileSync(path, 'utf8');
@@ -2152,7 +2182,6 @@ test('base movement during Specialist preserves exact-HEAD results only for prov
   api.pr=async()=>({...pr(),head:{...pr().head,sha:'d'.repeat(40)}});
   await assert.rejects(()=>verify(api,ctx,files,{maxWaitMs:0}),/PR_HEAD_CHANGED/);
 });
-
 
 test('Axis Ready PR requires practical writer job despite planner workflow changes', () => {
   const file='.github/workflows/hh-profile-axis-matching.yml';
