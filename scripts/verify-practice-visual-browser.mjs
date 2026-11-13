@@ -34,7 +34,9 @@ const measure=page=>page.evaluate(()=>{
   const el=selector=>root?.querySelector(selector)
   const all=selector=>[...root.querySelectorAll(selector)].map(rect)
   const video=el('[data-work-video-hero] video')
-  const bottom=el('[data-legacy-practice-bottom-nav]')
+  // The unified seven-item dock is the only visible navigation on public Work.
+  // The legacy five-item Practice nav remains in the DOM but is hidden by the shell.
+  const bottom=document.querySelector('[data-hh-unified-dock]')
   return {
     viewport:document.documentElement.clientWidth,
     documentWidth:document.documentElement.scrollWidth,
@@ -118,7 +120,15 @@ for(const browserType of [chromium,webkit]){
           assert.equal(await root.locator('[class*="offerRail"] > button').count(),6,
             label+' existing six offering categories preserved')
           assert.equal(await root.locator('[data-legacy-practice-bottom-nav] button').count(),5,
-            label+' existing bottom navigation preserved')
+            label+' legacy buttons preserved for the protected editor')
+          assert.equal(await root.locator('[data-legacy-practice-bottom-nav]').isVisible(),false,
+            label+' old five-button dock must not visually duplicate the unified dock')
+          const unifiedDock=page.locator('[data-hh-unified-dock]')
+          await unifiedDock.waitFor({state:'visible',timeout:15000})
+          assert.equal(await unifiedDock.locator('[data-unified-dock-item]').count(),7,
+            label+' visible sitewide seven-button dock')
+          assert.equal(await unifiedDock.locator('[data-unified-dock-item="profile"]').getAttribute('aria-current'),
+            'page',label+' Profile selected on public Work')
           const video=root.locator('[data-work-video-hero] video')
           assert.equal(await video.count(),1,label+' actual accessible scenic film')
           assert.match(await video.locator('source').getAttribute('src'),/sun-autumn-hills\.mp4/,
@@ -139,7 +149,7 @@ for(const browserType of [chromium,webkit]){
             ['tabs',g.tabRects],['quick',g.actionRects],['tiles',g.tileRects],['offers',g.offerRects]
           ])assert.ok(rects.every(r=>r.width>0&&r.x>=-3&&r.right<=g.viewport+3),
             label+' '+name+' controls clipped off screen')
-          assert.equal(g.dockPosition,'fixed',label+' original fixed mobile dock')
+          assert.equal(g.dockPosition,'fixed',label+' existing unified dock remains fixed')
           if(item.width===390&&!item.ready){
             await page.screenshot({path:out+'/'+label+'.png',fullPage:false})
             await page.screenshot({path:out+'/'+label+'-full.png',fullPage:true})

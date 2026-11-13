@@ -124,13 +124,24 @@ try {
     await expect(directionTabs).toHaveCount(6);
     const bestCards = shelf.locator("[data-assist-best-card]");
     await expect(bestCards).toHaveCount(3);
-    for (const [key,route] of Object.entries({
-      homeopathy: "services/psychohomeopathy",
-      coaching: "services/imagery-therapy",
-      reiki: "services/remote-energy-support",
-    })) {
-      await expect(shelf.locator('[data-assist-best-action="' + key + '"]'))
-        .toHaveAttribute("href", "/" + locale + "/" + route);
+    // Published session requests now open the user's @holistichouse chat with
+    // an explicit unsent draft. Verify exact account, localized service ID and
+    // privacy attributes; never click an external provider or assume booking.
+    for (const key of ["homeopathy", "coaching", "reiki"]) {
+      const action = shelf.locator('[data-assist-best-action="' + key + '"]');
+      const rawHref = await action.getAttribute("href");
+      assert.ok(rawHref, "a real Telegram request link is required");
+      const request = new URL(rawHref);
+      assert.equal(request.origin, "https://t.me", "no spoofed Telegram destination");
+      assert.equal(request.pathname, "/holistichouse", "the approved contact only");
+      assert.match(request.searchParams.get("text") || "",
+        new RegExp("\\[HH-REQ:" + key + ":" + locale + "\\]$"),
+        "an unsent, localized service choice is included");
+      assert.equal(await action.getAttribute("target"), "_blank",
+        "external requests cannot replace the current Assist page");
+      assert.match(await action.getAttribute("rel") || "", /noopener noreferrer/,
+        "external target must not inherit the window opener");
+      assert.equal(await action.getAttribute("referrerpolicy"), "no-referrer");
     }
     await directionTabs.nth(1).click();
     await expect(shelf.locator("[data-assist-selected-direction]"))
