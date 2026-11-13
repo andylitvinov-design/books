@@ -6,6 +6,7 @@ import { ArrowRight, ArrowUpRight, BookOpen, Bookmark, BookmarkCheck, Film, Play
 import { Fragment, useMemo, useState } from "react";
 
 import type { PublicLocale } from "@/lib/public-locales";
+import { myTubeCourseInfo } from "@/lib/video-discovery/mytube-shelves.mjs";
 import type { MyTubeVideoTags } from "@/lib/mandala/mytube-video-tagging.mjs";
 import styles from "./library-feed.module.css";
 
@@ -201,8 +202,16 @@ export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = fa
         const matchingScenario=matchingTopic?.scenarios.find(s=>
           s.scenarioId===mytubeFocus?.scenarioId);
         const matchingScore=matchingScenario?.score??matchingTopic?.score;
+        const courseInfo=mytubeShelf==="courses"?myTubeCourseInfo(item):null;
+        const previousCourseInfo=mytubeShelf==="courses"&&index>0
+          ?myTubeCourseInfo(visible[index-1]):null;
         return <Fragment key={item.id}>
-          {item.seriesId && (index === 0 || visible[index - 1]?.seriesId !== item.seriesId) ? (
+          {courseInfo && courseInfo.id!==previousCourseInfo?.id ? (
+            <div className={styles.seriesHeading} data-mytube-course-heading={courseInfo.id}>
+              <div><span>{copy.mytubeCourse}</span><h3>{courseInfo.label}</h3></div>
+            </div>
+          ) : null}
+          {!courseInfo && item.seriesId && (index === 0 || visible[index - 1]?.seriesId !== item.seriesId) ? (
             <div className={styles.seriesHeading} data-library-video-series={item.seriesId}>
               <div><span>{copy.seriesTitle}</span><h3>{item.seriesTitle}</h3></div>
               {item.seriesHref ? <Link href={item.seriesHref}>{copy.seriesDetails}<ArrowUpRight size={14} aria-hidden="true" /></Link> : null}
