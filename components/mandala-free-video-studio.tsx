@@ -5458,19 +5458,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   };
 
   const continueMontageOrGenerate=()=>{
-    // Keep the approved five-step Montage journey independent from export,
-    // authentication and credit charging: Style → Audio → Text → Montage PRO → Story.
+    // Style → Audio → Text → Story → Montage PRO; format choices navigate,
+    // but never charge or render without the destination workspace's checks.
     if(montagePanel==="effects"){
       setMontagePanel("audio");setBasicPanelTab("music");
     }else if(montagePanel==="audio"){
       setMontagePanel("text");
-    }else if(montagePanel==="text"){
-      setMontagePanel("promo");
-    }else if(montagePanel==="promo"||montagePanel==="settings"){
+    }else if(montagePanel==="text"||montagePanel==="settings"){
       setMontagePanel("concept");
+    }else if(montagePanel==="concept"){
+      setMontagePanel("promo");
     }else{
-      // Only after Story does Next hand off to the real Hypno effects workspace.
-      setHypnoEntryGroup("effects");setActiveWorkspace("effects");
+      return;
     }
     setNotice("");setPreviewPlaying(false);
     window.requestAnimationFrame(()=>
@@ -6831,7 +6830,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               :activeWorkspace==="pro"
               ?(locale==="ru"?"Выберите улучшение или создайте видео бесплатно.":locale==="es"?"Elige una mejora o crea un vídeo gratis.":"Choose an upgrade or create a free video.")
               :activeWorkspace==="editor"&&montagePanel==="promo"
-              ?(locale==="ru"?"Персонаж для приветствия, качественные AI-сцены и ваш образ в видео.":locale==="es"?"Un presentador, escenas de IA y tu propia imagen en el vídeo.":"A greeting character, premium AI scenes and your own image.")
+              ?(locale==="ru"?"Бесплатное видео, AI-персонаж или кинематографический ролик.":locale==="es"?"Vídeo gratis, personaje IA o cine premium.":"Free video, AI character or premium cinema.")
               :(locale==="ru"?"Персональные видео, медитации и практики под ваш запрос.":
                 locale==="es"?"Vídeos, meditaciones y prácticas para tu objetivo.":
                 "Personal videos, meditations and practices for your goals.")}</p>
@@ -8122,8 +8121,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <nav className={videoStyles.montageQuickTools} data-video-montage-tools
             aria-label={locale==="ru"?"Разделы монтажа":locale==="es"?"Secciones de montaje":"Montage sections"}>
             {([{id:"effects",Icon:Sparkles},{id:"audio",Icon:Music2},
-              {id:"text",Icon:Type},{id:"promo",Icon:Zap},
-              {id:"concept",Icon:Film}] as const).map(item=>
+              {id:"text",Icon:Type},{id:"concept",Icon:Film},
+              {id:"promo",Icon:Zap}] as const).map(item=>
               <button type="button" key={item.id} data-video-montage-tab={item.id}
                 aria-pressed={montagePanel===item.id} aria-controls="video-montage-active-panel"
                 disabled={recording||preparing}
@@ -8144,14 +8143,24 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <div data-video-director-style-controls hidden={montagePanel!=="effects"} />
           <div id="video-montage-active-panel" className={videoStyles.montageActivePanel}>
           {montagePanel==="promo" ? <MandalaMontageProOffer
-            locale={locale} disabled={recording||preparing}
-            onGoStory={()=>{
-              setMontagePanel("concept");setNotice("");
+            locale={locale} disabled={!studioHydrated||recording||preparing}
+            onChooseFree={()=>{
+              setPracticeType("video");setPracticeLevels(value=>({...value,video:"basic"}));
+              setStoryFormat("visual");setActiveWorkspace("ready");setNotice("");
+              setIntroPlaying(false);setPreviewPlaying(false);setStudioMode("pump");
               window.requestAnimationFrame(()=>
-                document.querySelector('[data-video-montage-tools]')?.scrollIntoView({behavior:"smooth",block:"start"}));
+                document.getElementById("free-personal-video")?.scrollIntoView({behavior:"auto",block:"start"}));
             }}
-            onExplorePro={()=>{
-              setActiveWorkspace("pro");setNotice("");setIntroPlaying(false);
+            onChooseCharacter={()=>{
+              setStoryFormat("talking_character");setProCatalogKind("character");
+              setHypnoEntryGroup("visual");setActiveWorkspace("effects");setNotice("");
+              setIntroPlaying(false);setPreviewPlaying(false);setStudioMode("pump");
+              window.requestAnimationFrame(()=>
+                document.getElementById("free-personal-video")?.scrollIntoView({behavior:"auto",block:"start"}));
+            }}
+            onChooseCinematic={()=>{
+              setStoryFormat("ai_cinematic");setActiveWorkspace("pro");setNotice("");
+              setIntroPlaying(false);setPreviewPlaying(false);setStudioMode("pump");
               window.requestAnimationFrame(()=>
                 document.getElementById("free-personal-video")?.scrollIntoView({behavior:"auto",block:"start"}));
             }}
@@ -9078,7 +9087,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </div>
           <div className={videoStyles.stageActionPair} data-video-stage-actions="montage">
             <button type="button" className={videoStyles.stageAddButton}
-              data-video-montage-next={montagePanel==="effects"?"audio":montagePanel==="audio"?"text":montagePanel==="text"?"promo":montagePanel==="promo"||montagePanel==="settings"?"concept":"hypno"}
+              data-video-montage-next={montagePanel==="effects"?"audio":montagePanel==="audio"?"text":montagePanel==="text"||montagePanel==="settings"?"concept":montagePanel==="concept"?"promo":"choose"}
               disabled={!studioHydrated||recording||preparing}
               onClick={continueMontageOrGenerate}>
               <Sparkles size={19} aria-hidden="true"/>
@@ -9086,11 +9095,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 (locale==="ru"?"Выбрать аудио":locale==="es"?"Elegir audio":"Choose Audio"):
                 montagePanel==="audio"?
                 (locale==="ru"?"Добавить текст":locale==="es"?"Añadir texto":"Add Text"):
-                montagePanel==="text"?
-                (locale==="ru"?"Монтаж PRO":locale==="es"?"Montaje PRO":"Montage PRO"):
-                montagePanel==="promo"||montagePanel==="settings"?
+                montagePanel==="text"||montagePanel==="settings"?
                 (locale==="ru"?"Сюжет":locale==="es"?"Guion":"Story"):
-                (locale==="ru"?"Гипноэффекты":locale==="es"?"Efectos hipno":"Hypno effects")}
+                montagePanel==="concept"?
+                (locale==="ru"?"Выбрать видео":locale==="es"?"Elegir vídeo":"Choose video"):
+                (locale==="ru"?"Выбрать формат":locale==="es"?"Elegir formato":"Choose format")}
               <ArrowRight size={18} aria-hidden="true"/>
             </button>
             <button type="button" className={videoStyles.quickGenerate} data-video-quick-generate
