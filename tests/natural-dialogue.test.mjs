@@ -1,3 +1,5 @@
+// Existing specialist suite also enforces RU/EN Qwen quality without a new CI workflow.
+import "./qwen-quality-ru-en.test.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import {prepareNaturalDialogue,acceptNaturalOutput,finishNaturalDialogue} from "../lib/holistic-support/natural-dialogue.mjs";
@@ -50,7 +52,7 @@ test("history bounded, unauthenticated role claims ignored, unsupported suggesti
   assert.ok(!s.includes("PROMPT_OVERRIDE")&&!s.includes("javascript")&&!s.includes("line1"));
 });
 test("rephrase works; disallowed URLs, HTML and impersonation fall back",async()=>{
-  const x=prepareNaturalDialogue({decision:d,message:"Where to begin?",channel:"browser",
+  const x=prepareNaturalDialogue({locale:"en",decision:d,message:"Where to begin?",channel:"browser",
     consent:{browserInference:true}});
   assert.ok(acceptNaturalOutput("We could start with a small step.",x));
   for(const text of ["Go to https://malicious.example","<script>hi</script>","I am a human"])
@@ -58,6 +60,17 @@ test("rephrase works; disallowed URLs, HTML and impersonation fall back",async()
   const valid=await finishNaturalDialogue(x,async()=>"What would help you most right now?");
   assert.equal(valid.modelUsed,true);
   assert.equal((await finishNaturalDialogue(x,async()=>"https://evil.example")).modelUsed,false);
+});
+test("browser generation cannot claim that it has booked a client",async()=>{
+ for(const [locale,message,response] of [
+  ['en','I would like a consultation.',"I've booked you for tomorrow."],
+  ['ru','Я хочу консультацию.','Я записала вас на завтра.'],
+ ]){
+  const envelope=prepareNaturalDialogue({locale,message,decision:{status:'clarify',message:'Please clarify.'},
+   channel:'browser',consent:{browserInference:true}});
+  const result=await finishNaturalDialogue(envelope,async()=>response);
+  assert.equal(result.modelUsed,false);assert.notEqual(result.text,response);
+ }
 });
 test("oversized text, empty policy and null input never invoke a model",()=>{
   assert.equal(prepareNaturalDialogue({decision:d,message:"x".repeat(3001),channel:"browser",

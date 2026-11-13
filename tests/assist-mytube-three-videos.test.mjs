@@ -35,9 +35,10 @@ test("public catalog and links preserve privacy, approval and actual playback", 
   assert.match(component, /mytube\?goal=/);
   assert.match(mytube, /data-mytube-assist-featured/);
   assert.match(mobile, /<ServicesAssistMyTube locale=\{locale\} focus=\{selection\.focus\} question=\{selection\.text\}/);
+  assert.match(mobile, /!crisis&&selection\?<ServicesAssistMyTube/);
   assert.match(mobile, /data-assist-topic-suggestions/);
   assert.match(mobile, /data-assist-reset/);
-  assert.match(browserQA, /rankDiscoveryVideos\(publicVideos\.videos, \{ goal: "stress" \}\)/);
-  assert.match(browserQA, /videoUrl\.search, "\?locale=" \+ locale/);
+  assert.match(browserQA, /rankDiscoveryVideos\(publicVideos\.videos,\{goal:"stress",sort:"for-you"\}\)/);
+  assert.match(browserQA, /publishedVideoUrl\.search,"\?locale="\+locale/);
   assert.match(browserQA, /data-assist-mytube/);
 });

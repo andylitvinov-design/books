@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { ArrowRight, HeartHandshake, Search, Sparkles } from "lucide-react";
+import { ArrowDown, ArrowRight, HeartHandshake, Mic, Sparkles } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import { inferAssistPreferences, nextAssistQuestion, rankAssistOffers } from "@/lib/assist/service-match.mjs";
 import type { AssistPreferences } from "@/lib/assist/service-match.mjs";
@@ -26,7 +26,7 @@ const signals: readonly [Exclude<Focus,"general">, RegExp][] = [
   ["relationships", /отношен|любов|партн|семь|одиноч|relationship|partner|love|family|relaci|pareja|familia/i],
   ["work", /работ|карьер|бизнес|деньг|финанс|work|career|business|money|trabajo|negocio|dinero/i],
   ["energy", /энерг|сил нет|тело|рейки|reiki|energ|body|cuerpo/i],
-  ["growth", /смысл|цель|путь|развит|самопозн|meaning|purpose|growth|goal|sentido|propósito/i],
+  ["growth", /смысл|цель|путь|развит|самопозн|meaning|purpose|growth|goal|\blost\b|\bdirection\b|desorient|perdid|rumbo|sentido|propósito|потерял|потеряна|не знаю куда|ориентир/i],
 ];
 const urgent = /суицид|убить себя|самоповрежд|покончить с собой|suicid|self.harm|kill myself|quiero morir|hacerme daño/i;
 const detect = (text: string): Focus => signals.find(([,re])=>re.test(text))?.[0] ?? "general";
@@ -34,10 +34,10 @@ const toolList: readonly Option[] = ["therapy","homeopathy","reiki","mandala","t
 
 const copy = {
   ru: {
-    eyebrow:"HOLISTIC HOUSE · ASSIST", title:"Что сейчас вам нужно?", lead:"Расскажите, что происходит. Мы поможем найти подходящий способ поддержки.",
-    placeholder:"Например: я постоянно напряжён и хочу научиться расслабляться…", submit:"Подобрать поддержку", topics:"Или выберите тему",
-    hints:[["Стресс и тревога","Хочу уменьшить стресс и тревогу","stress"],["Отношения","Хочу разобраться в отношениях","relationships"],["Нет энергии","Чувствую усталость и нехватку сил","energy"],["Здоровье","Меня беспокоит самочувствие","health"],["Работа и деньги","Хочу разобраться с работой и деньгами","work"],["Смысл и развитие","Ищу смысл и направление развития","growth"]],
-    privacy:"Подбор работает в вашем браузере: текст не сохраняется и не отправляется внешнему ИИ.", voice:"Можно использовать диктовку на клавиатуре телефона.",
+    eyebrow:"HOLISTIC HOUSE · SERVICES", title:"AI Assistant", lead:"Помогу подобрать подходящую услугу или специалиста для вашей ситуации.", ask:"С чем вы хотели бы обратиться?", choose:"Выберите проблему или опишите её своими словами.",
+    placeholder:"Опишите вашу ситуацию или цель…", submit:"Показать рекомендации", topics:"Частые обращения",
+    hints:[["Стресс / тревога","Меня беспокоят стресс и тревога","stress"],["Мало сил","Чувствую усталость и недостаток энергии","energy"],["Конфликты в паре","У меня конфликт в отношениях с партнером","relationships"],["Плохой сон","Мне трудно спать и расслабиться","stress"],["Работа / деньги","Меня тревожат работа и деньги","work"],["Душевная боль","Мне тяжело эмоционально, хочется поддержки","stress"],["Ссоры в семье","Есть напряжение и конфликты в семье","relationships"],["Нет ясности в жизни","Я потерял направление и смысл","growth"],["Симптомы в теле","Меня беспокоят физические симптомы и самочувствие","health"],["Сложно решиться","Мне трудно принять важное решение","growth"],["Нужна практика","Хочу освоить практику для поддержки себя","growth"],["Другое…","","general"]],
+    privacy:"Подбор работает в вашем браузере: текст не сохраняется и не отправляется внешнему ИИ.", voice:"Открыть клавиатуру для диктовки голосом",
     label:"Ваш запрос", answer:"Что может помочь", change:"Изменить запрос", tools:"Инструменты поддержки", browse:"Можно выбрать метод самостоятельно — без разговора.", all:"Все услуги и мастера",
     reply:{stress:"Начните с самопроверки, затем попробуйте практику. Личная работа остаётся вашим выбором.",relationships:"Сначала можно прояснить ситуацию, а затем выбрать индивидуальную поддержку.",energy:"Оцените своё состояние и попробуйте подходящую практику.",health:"При физических симптомах важна медицинская оценка. Здесь — только дополнительная поддержка и самоисследование.",work:"Бесплатный разбор поможет сформулировать запрос. Затем можно обсудить решения на консультации.",growth:"Начните с прояснения вопроса, а затем выберите обучение или личную работу.",general:"Вот несколько реальных вариантов, с которых можно начать без обязательной записи."},
     skip:"Пропустить", adjust:"Изменить пожелания", noOffers:"С такими условиями сейчас нет подтверждённых вариантов. Можно изменить формат или бюджет.",
@@ -47,10 +47,10 @@ const copy = {
     crisis:"Если вы можете причинить себе вред или находитесь в непосредственной опасности, обратитесь в местную экстренную или кризисную службу прямо сейчас.",
   },
   en: {
-    eyebrow:"HOLISTIC HOUSE · ASSIST", title:"What would help right now?", lead:"Tell us what's happening. Explore suitable ways to find support.",
-    placeholder:"For example: I feel tense and want to learn to relax…", submit:"Find support", topics:"Or choose a topic",
-    hints:[["Stress & anxiety","I need help with stress and anxiety","stress"],["Relationships","I want clarity in relationships","relationships"],["Low energy","I feel tired and low on energy","energy"],["Health","I'm concerned about my health","health"],["Work & money","I need clarity about work and money","work"],["Meaning & growth","I want direction and personal growth","growth"]],
-    privacy:"Matching happens in your browser. Your text is not stored or sent to external AI.", voice:"You can use your phone keyboard's dictation.",
+    eyebrow:"HOLISTIC HOUSE · SERVICES", title:"AI Assistant", lead:"Find the right support, service or specialist for your situation.", ask:"What would you like help with right now?", choose:"Choose a common issue or describe it in your own words.",
+    placeholder:"Describe your situation or goal…", submit:"See recommendations", topics:"Common concerns",
+    hints:[["Stress / anxiety","I feel stressed and anxious","stress"],["Low energy","I feel tired and low on energy","energy"],["Relationship conflict","I have conflict with my partner","relationships"],["Sleep problems","I struggle with sleep and relaxation","stress"],["Work or money","I am worried about work and money","work"],["Emotional pain","I am in emotional pain and need support","stress"],["Family tension","I am dealing with tension in my family","relationships"],["Feeling lost","I feel lost and lack a sense of direction","growth"],["Body symptoms","I am concerned about physical symptoms","health"],["Hard decisions","I am struggling to make a decision","growth"],["Need a practice","I want to learn a supportive practice","growth"],["Other…","","general"]],
+    privacy:"Matching happens in your browser. Your text is not stored or sent to external AI.", voice:"Open keyboard to use voice dictation",
     label:"Your question", answer:"Suggested next steps", change:"Change my question", tools:"Support tools", browse:"Prefer browsing? Choose a method yourself.", all:"All services & practitioners",
     reply:{stress:"Start with a self-check, try a practice and consider personal support if helpful.",relationships:"Clarify your situation first, then choose individual support if you wish.",energy:"Explore your current state and consider a gentle practice.",health:"Physical symptoms deserve medical assessment. These options are for additional support and reflection only.",work:"A free review can clarify the question before a business consultation.",growth:"Clarify your goal, then explore learning or personal support.",general:"Here are real starting points that do not require a booking."},
     skip:"Skip", adjust:"Change preferences", noOffers:"No verified options match all these preferences. You can adjust the format or budget.",
@@ -60,10 +60,10 @@ const copy = {
     crisis:"If you may harm yourself or are in immediate danger, contact your local emergency or crisis service now.",
   },
   es: {
-    eyebrow:"HOLISTIC HOUSE · ASSIST", title:"¿Qué necesitas ahora?", lead:"Cuéntanos qué ocurre y descubre formas de apoyo adecuadas.",
-    placeholder:"Por ejemplo: siento tensión y quiero relajarme…", submit:"Buscar apoyo", topics:"O elige un tema",
-    hints:[["Estrés y ansiedad","Busco apoyo con estrés y ansiedad","stress"],["Relaciones","Quiero entender mis relaciones","relationships"],["Poca energía","Siento cansancio y poca energía","energy"],["Salud","Me preocupa mi salud","health"],["Trabajo y dinero","Quiero aclarar mi trabajo y dinero","work"],["Sentido y desarrollo","Busco sentido y crecimiento personal","growth"]],
-    privacy:"La selección ocurre en tu navegador. El texto no se guarda ni se envía a una IA externa.", voice:"Puedes usar el dictado del teclado.",
+    eyebrow:"HOLISTIC HOUSE · SERVICES", title:"AI Assistant", lead:"Encuentra el servicio o profesional adecuado para tu situación.", ask:"¿Con qué necesitas ayuda ahora?", choose:"Elige una dificultad o describe tu situación.",
+    placeholder:"Describe tu situación o tu objetivo…", submit:"Ver recomendaciones", topics:"Problemas frecuentes",
+    hints:[["Estrés / ansiedad","Siento estrés y ansiedad","stress"],["Poca energía","Me siento cansado y sin energía","energy"],["Conflicto de pareja","Tengo conflictos en mi relación de pareja","relationships"],["Problemas de sueño","Me cuesta dormir y relajarme","stress"],["Trabajo / dinero","Me preocupan el trabajo y el dinero","work"],["Dolor emocional","Siento dolor emocional y necesito apoyo","stress"],["Tensión familiar","Tengo tensiones y conflictos en mi familia","relationships"],["Sin rumbo","Me siento perdido y sin dirección","growth"],["Síntomas físicos","Me preocupan síntomas físicos y mi salud","health"],["Decisión difícil","Me cuesta tomar una decisión importante","growth"],["Busco una práctica","Quiero aprender una práctica de apoyo","growth"],["Otro…","","general"]],
+    privacy:"La selección ocurre en tu navegador. El texto no se guarda ni se envía a una IA externa.", voice:"Abrir teclado para usar dictado de voz",
     label:"Tu consulta", answer:"Opciones que pueden ayudar", change:"Cambiar consulta", tools:"Herramientas de apoyo", browse:"También puedes explorar métodos directamente.", all:"Servicios y profesionales",
     reply:{stress:"Empieza con una autoevaluación, prueba ejercicios y considera apoyo personal si quieres.",relationships:"Aclara primero la situación y después elige apoyo individual.",energy:"Explora tu estado y prueba una práctica suave.",health:"Los síntomas físicos requieren evaluación médica. Estas opciones son solo apoyo adicional.",work:"Una revisión gratuita puede aclarar tus preguntas antes de una consulta.",growth:"Aclara tus objetivos y explora formación o apoyo personal.",general:"Estas son opciones reales que no requieren una reserva."},
     skip:"Omitir", adjust:"Cambiar preferencias", noOffers:"No hay opciones verificadas que cumplan todas estas preferencias. Puedes cambiar el formato o presupuesto.",
@@ -73,75 +73,147 @@ const copy = {
     crisis:"Si podrías hacerte daño o estás en peligro inmediato, contacta con emergencias o con una línea de crisis local ahora.",
   },
 } as const;
-type Selection = { text:string; focus:Focus };
+type Selection = {text:string;focus:Focus};
+type ChatTurn = {role:"user"|"assistant";text:string};
+const compactCopy = {
+  ru: {moreIssues:"Показать ещё проблемы",lessIssues:"Скрыть остальные",moreTools:"Больше инструментов",lessTools:"Скрыть инструменты",viewMatches:"Посмотреть подходящие мне варианты"},
+  en: {moreIssues:"More concerns",lessIssues:"Show fewer",moreTools:"More tools",lessTools:"Fewer tools",viewMatches:"View my matching options"},
+  es: {moreIssues:"Ver más problemas",lessIssues:"Mostrar menos",moreTools:"Más herramientas",lessTools:"Menos herramientas",viewMatches:"Ver mis opciones recomendadas"},
+} as const;
 
 export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
-  const t = copy[locale];
-  const [text,setText] = useState("");
-  const [selection,setSelection] = useState<Selection|null>(null);
-  const [preferences,setPreferences] = useState<AssistPreferences>({});
-  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const t=copy[locale], labels=compactCopy[locale];
+  const [text,setText]=useState("");
+  const [selection,setSelection]=useState<Selection|null>(null);
+  const [preferences,setPreferences]=useState<AssistPreferences>({});
+  const [turns,setTurns]=useState<ChatTurn[]>([]);
+  const [expandedIssues,setExpandedIssues]=useState(false);
+  const [expandedTools,setExpandedTools]=useState(false);
+  const [critical,setCritical]=useState(false);
+  const inputRef=useRef<HTMLTextAreaElement>(null);
+  const chatRef=useRef<HTMLDivElement>(null);
+  const crisis=selection!==null&&(critical||urgent.test(selection.text));
+  const question=selection&&!crisis?nextAssistQuestion(preferences):null;
+  const suggestions=selection&&!crisis?rankAssistOffers(selection.focus,preferences):[];
+
+  // Only the message history scrolls; never jump the page to a second questionnaire.
   useEffect(()=>{
-    if(!selection) return;
-    const frame = requestAnimationFrame(()=>document.getElementById("assist-results")?.scrollIntoView({block:"start",behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"}));
+    if(!selection)return;
+    const frame=requestAnimationFrame(()=>{if(chatRef.current)chatRef.current.scrollTop=chatRef.current.scrollHeight;});
     return ()=>cancelAnimationFrame(frame);
-  },[selection]);
+  },[selection,question,turns]);
+
+  function beginRequest(value:string) {
+    const trimmed=value.trim().slice(0,280);
+    if(!trimmed)return;
+    const focus=detect(trimmed);
+    const unsafe=urgent.test(trimmed);
+    setSelection({text:trimmed,focus});
+    setPreferences(inferAssistPreferences(trimmed));
+    setCritical(unsafe);
+    setTurns(unsafe?[{role:"user",text:trimmed}]:[{role:"user",text:trimmed},{role:"assistant",text:t.reply[focus]}]);
+    setText("");
+    setExpandedIssues(false);
+    inputRef.current?.blur();
+  }
   function submit(event:FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const value = text.trim().slice(0,280);
-    if(!value) return;
-    inputRef.current?.blur();
-    setSelection({text:value,focus:detect(value)});
-    setPreferences(inferAssistPreferences(value));
+    const value=text.trim().slice(0,280);
+    if(!value)return;
+    if(!selection){beginRequest(value);return;}
+    // New typed messages stay in this messenger. Infer only explicitly stated preferences.
+    // Do not transmit the conversation to providers or add it to URLs/storage.
+    setTurns(current=>[...current,{role:"user" as const,text:value}].slice(-12));
+    setSelection(current=>current?{
+      text:(current.text+" "+value).slice(0,280),
+      focus:detect(value)==="general"?current.focus:detect(value),
+    }:current);
+    setPreferences(current=>({...current,...inferAssistPreferences(value)}));
+    if(urgent.test(value))setCritical(true);
+    setText("");
   }
-  const crisis = selection !== null && urgent.test(selection.text);
-  const question = selection && !crisis ? nextAssistQuestion(preferences) : null;
-  const suggestions = selection && !crisis ? rankAssistOffers(selection.focus,preferences) : [];
+  function chooseAnswer(value:string,label:string) {
+    if(!question)return;
+    setTurns(current=>[...current,{role:"assistant" as const,text:t.questions[question].prompt},{role:"user" as const,text:label}].slice(-12));
+    setPreferences(current=>({...current,[question]:value}));
+  }
+  // Navigate on an explicit tap only: selecting a preference must not jump the page.
+  function scrollToRecommendations() {
+    const target=document.getElementById("assist-recommendations");
+    if(!target)return;
+    inputRef.current?.blur();
+    target.focus({preventScroll:true});
+    target.scrollIntoView({
+      behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",
+      block:"start",
+    });
+  }
+  function reset() {
+    setSelection(null);setText("");setPreferences({});setTurns([]);
+    setCritical(false);setExpandedIssues(false);
+    inputRef.current?.focus();
+  }
   return <section className={styles.assist} data-assist-mobile lang={locale} aria-labelledby="assist-title">
-    <div className={styles.photo} role="img" aria-label="Holistic House" />
+    <div className={styles.photo} role="img" aria-label="Holistic House"/>
     <header className={styles.intro}><p className={styles.eyebrow}><HeartHandshake size={15} aria-hidden="true"/>{t.eyebrow}</p><h1 id="assist-title">{t.title}</h1><p>{t.lead}</p></header>
-    <AssistTopRecommendations locale={locale} focus={selection?.focus ?? null} />
-    <form className={styles.form} onSubmit={submit}>
-      <label htmlFor="assist-question">{t.label}</label>
-      <textarea id="assist-question" ref={inputRef} rows={3} value={text} maxLength={280} autoComplete="off"
-        placeholder={t.placeholder} onChange={event=>setText(event.target.value)}/>
-      <button type="submit" disabled={!text.trim()}><Search size={18} aria-hidden="true"/>{t.submit}<ArrowRight size={18} aria-hidden="true"/></button>
-      <small>{t.voice}</small>
-    </form>
-    <div className={styles.quick}><p>{t.topics}</p><div className={styles.chips} role="group" aria-label={t.topics} data-assist-topic-suggestions>
-      {t.hints.map(([label,example,focus])=><button key={focus} type="button" aria-pressed={selection?.focus===focus}
-        onClick={()=>{inputRef.current?.blur();setText(example);setSelection({text:example,focus:focus as Focus});setPreferences(inferAssistPreferences(example));}}>{label}</button>)}
-    </div></div>
+    <div className={styles.conversation} data-assist-dialogue>
+      <div className={styles.messages} id="assist-results" ref={chatRef} role="log" aria-live="polite" aria-label={t.answer} aria-relevant="additions text" tabIndex={0}>
+        {selection?<>
+          {turns.map((turn,index)=><div key={index} className={turn.role==="user"?styles.turnUser:styles.turnAssistant} data-assist-message={turn.role}><p>{turn.text}</p></div>)}
+          {crisis?<p role="alert" className={styles.crisis}>{t.crisis}</p>:<>
+            {question?<div className={styles.inlineQuestion} data-assist-question={question}>
+              <p className={styles.questionPrompt}>{t.questions[question].prompt}</p>
+              <div className={styles.answerOptions}>{t.questions[question].options.map(([label,value])=><button type="button" key={value} onClick={()=>chooseAnswer(value,label)}>{label}</button>)}</div>
+              <button type="button" className={styles.skip} onClick={()=>chooseAnswer("any",t.skip)}>{t.skip}</button>
+            </div>:<button type="button" className={styles.viewMatches} data-assist-view-matches
+              aria-controls="assist-recommendations" onClick={scrollToRecommendations}>
+              {labels.viewMatches}<ArrowDown size={19} aria-hidden="true"/>
+            </button>}
+          </>}
+        </>:<div className={styles.chatStart}>
+          <div className={styles.greeting}>
+            <span className={styles.avatar} aria-hidden="true"><Sparkles size={20}/></span>
+            <div className={styles.speech}><strong>{t.ask}</strong><span>{t.choose}</span></div>
+          </div>
+          <div className={styles.quick}>
+            <div className={styles.chips} role="group" aria-label={t.topics} data-assist-topic-suggestions data-assist-issue-suggestions>
+              {t.hints.slice(0,expandedIssues?12:6).map(([label,example,focus])=><button key={label} type="button" aria-pressed={false}
+                onClick={()=>{
+                  if(focus==="general"){setText("");inputRef.current?.focus();return;}
+                  beginRequest(example);
+                }}>{label}</button>)}
+            </div>
+            <button type="button" className={styles.expand} aria-expanded={expandedIssues} onClick={()=>setExpandedIssues(current=>!current)}>
+              {expandedIssues?labels.lessIssues:labels.moreIssues}<span aria-hidden="true">{expandedIssues?" −":" +"}</span>
+            </button>
+          </div>
+        </div>}
+      </div>
+      <form className={styles.form} onSubmit={submit}>
+        <label className={styles.srOnly} htmlFor="assist-question">{t.label}</label>
+        <textarea id="assist-question" ref={inputRef} rows={1} value={text} maxLength={280} autoComplete="off"
+          placeholder={t.placeholder} onChange={event=>setText(event.target.value)}
+          onKeyDown={event=>{if(event.key==="Enter"&&!event.shiftKey&&!event.nativeEvent.isComposing){event.preventDefault();event.currentTarget.form?.requestSubmit();}}}/>
+        <button type="button" className={styles.voiceButton} aria-label={t.voice} title={t.voice} onClick={()=>inputRef.current?.focus()}><Mic size={20} aria-hidden="true"/></button>
+        <button type="submit" className={styles.sendButton} disabled={!text.trim()} aria-label={t.submit} title={t.submit}><ArrowRight size={21} aria-hidden="true"/></button>
+      </form>
+      {selection?<button type="button" className={styles.reset} data-assist-reset onClick={reset}>{t.change}</button>:null}
+    </div>
     <p className={styles.privacy}>{t.privacy}</p>
-    {selection?<section id="assist-results" className={styles.results} aria-live="polite" aria-labelledby="assist-results-title" tabIndex={-1}>
-      <div className={styles.bubble}><strong>{t.label}</strong><p>{selection.text}</p></div>
-      {crisis?<p role="alert" className={styles.crisis}>{t.crisis}</p>:<>
-        <p className={styles.reply}><Sparkles size={18} aria-hidden="true"/>{t.reply[selection.focus]}</p>
-        {question ? <div className={styles.question} data-assist-question={question}>
-          <p>{t.questions[question].prompt}</p>
-          <div className={styles.answerOptions}>{t.questions[question].options.map(([label,value])=><button type="button" key={value} onClick={()=>setPreferences(current=>({...current,[question]:value}))}>{label}</button>)}</div>
-          <button type="button" className={styles.skip} onClick={()=>setPreferences(current=>({...current,[question]:"any"}))}>{t.skip}</button>
-        </div> : <button type="button" className={styles.adjust} onClick={()=>setPreferences({})}>{t.adjust}</button>}
-        <h2 id="assist-results-title">{t.answer}</h2>
-        {suggestions.length===0 ? <p className={styles.noOffers}>{t.noOffers}</p> : null}
-        <div className={styles.recommendations}>{suggestions.map(({id:key},index)=>{
-          const card=t.cards[key];
-          return <Link className={styles.rec} href={"/"+locale+"/"+routes[key]} key={key} prefetch={false} data-assist-recommendation={key}>
-            <span className={styles.index}>{index+1}</span><span className={styles.recText}><small>{card[2]}</small><strong>{card[0]}</strong><span>{card[1]}</span></span><ArrowRight size={18} aria-hidden="true"/>
-          </Link>;
-        })}</div>
-        <ServicesAssistMyTube locale={locale} focus={selection.focus} question={selection.text} />
-      </>}
-      <button type="button" className={styles.reset} data-assist-reset onClick={()=>{setSelection(null);setText("");setPreferences({});inputRef.current?.focus();}}>{t.change}</button>
-    </section>:null}
+    {!crisis&&selection?<AssistTopRecommendations locale={locale} focus={selection.focus} preferences={preferences}
+      matchingIds={suggestions.map(({id})=>id)} noMatchLabel={t.noOffers}/>:null}
+    {!crisis&&selection?<ServicesAssistMyTube locale={locale} focus={selection.focus} question={selection.text}/>:null}
     <section className={styles.tools} aria-labelledby="assist-tools-title">
       <h2 id="assist-tools-title">{t.tools}</h2><p>{t.browse}</p>
-      <div className={styles.toolGrid}>{toolList.map((key)=>{
+      <div className={styles.toolGrid}>{toolList.slice(0,expandedTools?toolList.length:4).map((key)=>{
         const card=t.cards[key];
         return <Link className={styles.tool} href={"/"+locale+"/"+routes[key]} key={key} prefetch={false} data-assist-tool={key}>
           <span aria-hidden="true">✦</span><strong>{card[0]}</strong><small>{card[2]}</small>
         </Link>;
       })}</div>
+      <button type="button" className={styles.moreTools} aria-expanded={expandedTools} onClick={()=>setExpandedTools(current=>!current)}>
+        {expandedTools?labels.lessTools:labels.moreTools}
+      </button>
       <Link className={styles.all} href={"/"+locale+"/services/catalog#service-listings"} prefetch={false}>{t.all}<ArrowRight size={18} aria-hidden="true"/></Link>
     </section>
     <p className={styles.caution}>{t.caution}</p>

@@ -18,27 +18,37 @@ test('first guest video does not need an account-bound XP hold, but signed-in vi
   assert.doesNotMatch(studio,/Sign in to create videos\./)
 })
 
-test('Montage advances Style, Audio, Text, Montage PRO, Story then Hypno without charging',()=>{
+test('Montage follows Story then three format choice routes without an automatic debit',()=>{
  const handler=studio.slice(studio.indexOf('const continueMontageOrGenerate='),
-   studio.indexOf('// First mobile step is only',studio.indexOf('const continueMontageOrGenerate=')));
+  studio.indexOf('// First mobile step is only',studio.indexOf('const continueMontageOrGenerate=')));
  assert.ok(handler.includes('if(montagePanel==="effects"){'));
- assert.ok(handler.includes('setMontagePanel("text")'));
- assert.ok(handler.includes('setBasicPanelTab("music")'));
- assert.ok(handler.includes('setActiveWorkspace("effects")'));
  assert.ok(handler.includes('setMontagePanel("audio")'));
-  assert.ok(handler.includes('if(montagePanel==="audio"){'));
-  assert.ok(handler.includes('setMontagePanel("text")'),"Audio advances to the Text/affirmations editor");
-  assert.ok(handler.includes('setHypnoEntryGroup("effects")'),"optional Hypno preserved");
- assert.ok(!handler.includes('startFromHero()'));
- assert.ok(!handler.includes('createQuickVideo()'),"Add Effects must never encode or charge credits");
- const direct=studio.slice(studio.indexOf('data-video-quick-generate'),studio.indexOf('</button>',studio.indexOf('data-video-quick-generate')));
- const next=studio.slice(studio.indexOf('data-video-montage-next={montagePanel==="effects"?"audio":montagePanel==="audio"?"text":montagePanel==="text"?"promo":montagePanel==="promo"||montagePanel==="settings"?"concept":"hypno"}'),studio.indexOf('</button>',studio.indexOf('data-video-montage-next={montagePanel==="effects"?"audio":montagePanel==="audio"?"text":montagePanel==="text"?"promo":montagePanel==="promo"||montagePanel==="settings"?"concept":"hypno"}')));
- assert.ok(direct.includes('onClick={createQuickVideo}'));
- assert.ok(next.includes('onClick={continueMontageOrGenerate}'));
- assert.ok(next.includes('montagePanel==="audio"?"text"'));
-  assert.ok(next.includes('montagePanel==="text"?"promo"'));
-  assert.ok(next.includes('montagePanel==="promo"||montagePanel==="settings"?"concept"'));
- assert.ok(studio.includes('if(!freeVideoSelected){'),"paid formats stay explicitly gated");
+ assert.ok(handler.includes('setBasicPanelTab("music")'));
+ assert.ok(handler.includes('setMontagePanel("text")'));
+ assert.ok(handler.includes('setMontagePanel("concept")'),"Text → Story");
+ assert.ok(handler.includes('setMontagePanel("promo")'),"Story → Montage PRO");
+ assert.doesNotMatch(handler,/setActiveWorkspace\("(?:effects|pro|ready)"\)/,"Next never auto-renders or skips a choice");
+ assert.doesNotMatch(handler,/startFromHero\(|createQuickVideo\(/);
+ const direct=studio.slice(studio.indexOf('data-video-quick-generate'),
+  studio.indexOf('</button>',studio.indexOf('data-video-quick-generate')));
+ const nextStart=studio.indexOf('data-video-montage-next={montagePanel==="effects"?"audio":montagePanel==="audio"?"text":');
+ const next=studio.slice(nextStart,studio.indexOf('</button>',nextStart));
+ assert.ok(nextStart>0&&next.includes('onClick={continueMontageOrGenerate}'));
+ assert.ok(next.includes('montagePanel==="text"||montagePanel==="settings"?"concept"'));
+ assert.ok(next.includes('montagePanel==="concept"?"promo"'));
+ assert.ok(direct.includes('onClick={createQuickVideo}'),"original renderer retained");
+ const routeStart=studio.indexOf('montagePanel==="promo" ? <MandalaMontageProOffer');
+ const routes=studio.slice(routeStart,studio.indexOf('/> : null}',routeStart));
+ const free=routes.slice(routes.indexOf("onChooseFree={()=>"),routes.indexOf("onChooseCharacter={()=>"));
+ assert.ok(free.includes("createQuickVideo();"),"Free invokes the original guarded encoder");
+ assert.ok(!free.includes('setActiveWorkspace("ready")'),"Free cannot claim a Ready MP4 before validation");
+ assert.ok(studio.includes("Only a native, decodable exported video opens Ready automatically"));
+ assert.ok(studio.includes('playbackStatus!=="ready"||!creditConfirmed'));
+ for(const [choice,target] of [["Character","effects"],["Cinematic","pro"]]){
+  assert.ok(routes.includes('onChoose'+choice+'={()'),choice+" handler");
+  assert.ok(routes.includes('setActiveWorkspace("'+target+'")'),target+" real workspace");
+ }
+ assert.ok(studio.includes('if(!freeVideoSelected){'),"paid formats remain guarded");
  assert.ok(studio.includes('<MandalaVideoConcept locale={locale}'));
  assert.ok(studio.includes('onApprove={approved=>'));
  assert.ok(studio.includes('data-video-concept-text-tools'));
@@ -94,8 +104,8 @@ test('PRO result uses full-size native video, never the previous 112px cropped v
   assert.match(css,/\.studio \.result\[hidden\]\{display:none!important\}/)
 })
 
-test('real encoded result opens the existing PRO workspace and retains in-page Blob',()=>{
-  const start=studio.indexOf('  // A completed local recording lives in the existing result pane.')
+test('real encoded result stays on Ready without losing the in-page Blob',()=>{
+  const start=studio.indexOf('  // A completed local recording stays in the Ready workspace.')
   const end=studio.indexOf('  // Auto-music must be ATTACHED',start)
   assert.ok(start>0&&end>start)
   const effect=studio.slice(start,end)
@@ -104,7 +114,7 @@ test('real encoded result opens the existing PRO workspace and retains in-page B
     let callback=null
     const win={requestAnimationFrame(fn){frames.push(fn);return frames.length},cancelAnimationFrame(){}}
     const document={getElementById(id){
-      assert.equal(id,'personal-video-result')
+      assert.equal(id,result.mode==='catalog'?'personal-video-result':'free-personal-video')
       return {scrollIntoView(options){assert.equal(options.behavior,'auto');state.scrolls++}}
     }}
     runInNewContext(effect,{
@@ -119,7 +129,7 @@ test('real encoded result opens the existing PRO workspace and retains in-page B
     while(frames.length)frames.shift()()
     return state
   }
-  assert.deepEqual(run({mode:'rendered',url:'blob:local'}),{workspace:'pro',mode:'pump',expanded:true,scrolls:1})
+  assert.deepEqual(run({mode:'rendered',url:'blob:local'}),{workspace:'ready',mode:'pump',expanded:true,scrolls:1})
   assert.equal(run({mode:'catalog',url:'/videos/holistic-house/unedited.mp4'}).workspace,null)
   assert.equal(run(null).scrolls,0)
 })
@@ -130,4 +140,24 @@ test('failed Safari decode does not waste the free guest export',()=>{
   const journey=readFileSync(new URL('../components/mandala-video-effect-journey.tsx',import.meta.url),'utf8')
   assert.match(journey,/status==="verifying"/)
   assert.match(journey,/Checking your video/)
+})
+
+test('WebKit real encoded Ready guest route keeps Save gate and decoded MP4 proof',()=>{
+  const browser=readFileSync(new URL('../scripts/verify-affirmation-voice-browser.mjs',import.meta.url),'utf8')
+  const ready=readFileSync(new URL('../components/mandala-video-ready.tsx',import.meta.url),'utf8')
+  assert.equal(browser.split('readyView.locator("[data-ready-save]")').length-1,3,
+    'Ready Save is visible and clicked both before and after real media ends');
+  const firstSave=browser.indexOf('await readyView.locator("[data-ready-save]").click()');
+  const ended=browser.indexOf('video.dispatchEvent(new Event("ended"))');
+  const secondSave=browser.lastIndexOf('await readyView.locator("[data-ready-save]").click()');
+  assert.ok(firstSave>=0&&ended>firstSave&&secondSave>ended,
+    'Guest Save must remain clickable after the encoded MP4 ends');
+  assert.match(browser,/toHaveCount\(0,\{timeout:10000\}\)/)
+  assert.doesNotMatch(browser,/data-ready-download/)
+  assert.match(ready,/onClick=\{\(\)=>chooseDelivery\("save"\)\}/)
+  assert.match(ready,/data-ready-save>/)
+  assert.match(ready,/if\(!signedIn\|\|intent==="telegram"\|\|intent==="house"\)/)
+  assert.match(browser,/data-ready-save-gate-signin/)
+  assert.match(browser,/GUEST_REAL_VIDEO_BLOB_UNAVAILABLE/)
+  assert.match(browser,/spawnSync\("ffprobe"/)
 })

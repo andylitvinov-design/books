@@ -28,7 +28,9 @@ test("Secretary and Coach use one approved model path with different server prom
       fetcher:async(url,options)=>{
         assert.equal(url,"https://models.example.test/api/chat");
         sent.push(JSON.parse(options.body));
-        return {ok:true,json:async()=>({message:{content:"A short safe answer."}})};
+        const content=envelope.locale==="ru"?"Я не знаю стоимость. Какую услугу вы имеете в виду?":
+          "What would you like to change about your goal?";
+        return {ok:true,json:async()=>({message:{content}})};
       },
     }));
     assert.equal(generated.modelUsed,true);
