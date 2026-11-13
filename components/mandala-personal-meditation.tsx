@@ -350,6 +350,14 @@ export function MandalaPersonalMeditation({
         </div>
       </div>
       <div className={css.quickGrid} data-meditation-main-filters>
+            <label>{t.meditationTheme}
+              <select data-meditation-topic value={meditationTheme} disabled={disabled}
+                onChange={event=>setMeditationTheme(event.target.value as VideoTheme|"inherit")}>
+                <option value="inherit">{t.sameTheme}</option>
+                {(Object.keys(themeLabels[locale]) as VideoTheme[]).map(id=>
+                  <option value={id} key={id}>{themeLabels[locale][id]}</option>)}
+              </select>
+            </label>
         <label>{t.method}
           <select data-meditation-method value={technique} disabled={disabled}
             onChange={event=>setTechnique(event.target.value as Technique)}>
@@ -366,6 +374,11 @@ export function MandalaPersonalMeditation({
           </select>
         </label>
       </div>
+          <label className={css.extra}>{t.extra}
+            <textarea rows={2} maxLength={160} value={extra} disabled={disabled}
+              data-meditation-extra placeholder={t.placeholder}
+              onChange={event=>setExtra(event.currentTarget.value)}/>
+          </label>
       <details className={css.customize} data-meditation-accents>
         <summary><Sparkles size={16} aria-hidden="true"/>{t.customize}<ChevronDown size={16} aria-hidden="true"/></summary>
         <div className={css.customBody}>
@@ -377,14 +390,6 @@ export function MandalaPersonalMeditation({
             </button>)}
           </div>
           <div className={css.selectors}>
-            <label>{t.meditationTheme}
-              <select data-meditation-topic value={meditationTheme} disabled={disabled}
-                onChange={event=>setMeditationTheme(event.target.value as VideoTheme|"inherit")}>
-                <option value="inherit">{t.sameTheme}</option>
-                {(Object.keys(themeLabels[locale]) as VideoTheme[]).map(id=>
-                  <option value={id} key={id}>{themeLabels[locale][id]}</option>)}
-              </select>
-            </label>
             <label>{t.moment}
               <select data-meditation-moment value={moment} disabled={disabled}
                 onChange={event=>setMoment(event.target.value as Moment)}>
@@ -426,17 +431,13 @@ export function MandalaPersonalMeditation({
               </select>
             </label>
           </div>
-          <label className={css.extra}>{t.extra}
-            <textarea rows={2} maxLength={160} value={extra} disabled={disabled}
-              data-meditation-extra placeholder={t.placeholder}
-              onChange={event=>setExtra(event.currentTarget.value)}/>
-          </label>
+
         </div>
       </details>
       <button type="button" className={css.generate} data-meditation-generate disabled={disabled}
         onClick={generate}>
         {script?<RotateCcw size={19} aria-hidden="true"/>:<Sparkles size={19} aria-hidden="true"/>}
-        {script?(coursePreview?course.regenerate:t.regenerate):t.generate}
+        {script?(coursePreview?course.regenerate:t.regenerate):locale==="ru"?"Сгенерировать текст медитации":locale==="es"?"Generar texto de meditación":"Generate meditation text"}
       </button>
       {script?<div className={css.result} data-meditation-result>
         <div className={css.resultHead}>

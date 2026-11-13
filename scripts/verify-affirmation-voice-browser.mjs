@@ -1042,6 +1042,9 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // The approved TTS track is already attached; both effects must render
       // locally into a real stereo WAV before the movie export starts.
       await page.locator('[data-video-quick-control="effects"]').click();
+      await page.locator('[data-therapy-subtab="practice"]').click();
+      await page.locator('[data-therapy-effects-toggle]').click();
+      // The original advanced effects engine remains under Therapy > Practice.
       // Hypno has three exclusive subtabs: Visual, Audio effects and Effects.
       // Verify the relocated effect presets in macOS WebKit before the audio mixer.
       const hypnoTabs=page.locator('[data-hypno-tabs]');
