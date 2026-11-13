@@ -25,7 +25,7 @@ const signals: readonly [Exclude<Focus,"general">, RegExp][] = [
   ["relationships", /отношен|любов|партн|семь|одиноч|relationship|partner|love|family|relaci|pareja|familia/i],
   ["work", /работ|карьер|бизнес|деньг|финанс|work|career|business|money|trabajo|negocio|dinero/i],
   ["energy", /энерг|сил нет|тело|рейки|reiki|energ|body|cuerpo/i],
-  ["growth", /смысл|цель|путь|развит|самопозн|meaning|purpose|growth|goal|sentido|propósito/i],
+  ["growth", /смысл|цель|путь|развит|самопозн|meaning|purpose|growth|goal|\blost\b|\bdirection\b|desorient|perdid|rumbo|sentido|propósito|потерял|потеряна|не знаю куда|ориентир/i],
 ];
 const urgent = /суицид|убить себя|самоповрежд|покончить с собой|suicid|self.harm|kill myself|quiero morir|hacerme daño/i;
 const detect = (text: string): Focus => signals.find(([,re])=>re.test(text))?.[0] ?? "general";
@@ -185,8 +185,8 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
       {selection?<button type="button" className={styles.reset} data-assist-reset onClick={reset}>{t.change}</button>:null}
     </div>
     <p className={styles.privacy}>{t.privacy}</p>
-    {!crisis?<AssistTopRecommendations locale={locale} focus={selection?.focus??null}
-      matchingIds={selection?suggestions.map(({id})=>id):undefined} noMatchLabel={t.noOffers}/>:null}
+    {!crisis&&selection?<AssistTopRecommendations locale={locale} focus={selection.focus} preferences={preferences}
+      matchingIds={suggestions.map(({id})=>id)} noMatchLabel={t.noOffers}/>:null}
     <section className={styles.tools} aria-labelledby="assist-tools-title">
       <h2 id="assist-tools-title">{t.tools}</h2><p>{t.browse}</p>
       <div className={styles.toolGrid}>{toolList.slice(0,expandedTools?toolList.length:4).map((key)=>{
