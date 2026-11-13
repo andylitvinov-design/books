@@ -8,7 +8,7 @@ import {LibraryFeed, type LibraryFeedItem} from "@/components/library-feed";
 import type {PublicLocale} from "@/lib/public-locales";
 import {listMyTubeCategories,listMyTubeSubcategories,listMyTubeTopics,listMyTubeScenarios,getMyTubeTopic} from "@/lib/mandala/mytube-content-taxonomy.mjs";
 import {listMyTubeScenarioMotifs,listMyTubeStyles,videoMatchesMyTubeVisualFilter} from "@/lib/mandala/mytube-creative-choices.mjs";
-import {matchesMyTubeShelf,myTubeCourseInfo,listMyTubeCourseTypes,listMyTubeCourseTraditions,listMyTubeCourseSeries,sortMyTubeCourseLessons} from "@/lib/video-discovery/mytube-shelves.mjs";
+import {matchesMyTubeShelf,myTubeCourseInfo,listMyTubeCourseTypes,listMyTubeCourseTraditions,listMyTubeCourseSeries,sortMyTubeCourseLessons,sortMyTubeMasterPresentations} from "@/lib/video-discovery/mytube-shelves.mjs";
 import styles from "./video-discovery.module.css";
 
 type Order="for-you"|"series"|"newest";
@@ -267,6 +267,7 @@ export function VideoDiscovery({locale,videos,variant="library",subtitle}:{local
       goal,area,contentType,direction,tradition,language,savedIds,hiddenIds,savedOnly,sort,
     });
     if(variant==="mytube"&&formatMode==="courses")return sortMyTubeCourseLessons(matches);
+    if(variant==="mytube"&&formatMode==="masters")return sortMyTubeMasterPresentations(matches);
     if(variant!=="mytube"||[mytubeCategoryId,mytubeSubcategoryId,mytubeTopicId,mytubeScenarioId].every(id=>id==="all"))return matches;
     const score=(video:LibraryFeedItem)=>{
       if(mytubeScenarioId!=="all")return Math.max(0,...(video.mytubeRankings||[]).flatMap(topic=>
