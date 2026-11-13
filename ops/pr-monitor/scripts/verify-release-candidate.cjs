@@ -11,10 +11,8 @@ const CHECKS=Object.freeze({
  '/index.html': 'html',
  '/pr-monitor.html': 'html',
  '/pr-monitor-full.html': 'html',
- '/pr-monitor-fast.html': 'html',
- '/pr-monitor-restored.css': 'css',
- '/pr-monitor-fast.css': 'css',
- '/pr-monitor-fast.js': 'js',
+ '/briefing.html': 'html',
+ '/pr-monitor-yesterday.css': 'css',
  '/legacy.html': 'html',
  '/pr-two-screen-boot.js': 'js',
  '/pr-two-screen.js': 'js',
@@ -42,7 +40,7 @@ function assetsFrom(source){
  return [...found];
 }
 function verifySourceAssets(root){
- const folder=path.resolve(root),errors=[],sources=['legacy.html','pr-two-screen-boot.js','pr-monitor.html','index.html','pr-monitor-full.html'];
+ const folder=path.resolve(root),errors=[],sources=['legacy.html','pr-two-screen-boot.js','pr-monitor.html','index.html','briefing.html','pr-monitor-full.html'];
  const references=new Set();
  for(const f of sources){
   const file=path.join(folder,f);
@@ -57,10 +55,10 @@ function verifySourceAssets(root){
   const canonical=fs.readFileSync(path.join(folder,'pr-monitor.html'),'utf8');
   if(full!==canonical)errors.push('SOURCE_FULL_NOT_CANONICAL');
  }
- if(fs.existsSync(path.join(folder,'index.html'))&&fs.existsSync(path.join(folder,'pr-monitor.html'))){
+ if(fs.existsSync(path.join(folder,'index.html'))&&fs.existsSync(path.join(folder,'briefing.html'))){
   const index=fs.readFileSync(path.join(folder,'index.html'),'utf8');
-  const monitor=fs.readFileSync(path.join(folder,'pr-monitor.html'),'utf8');
-  if(index!==monitor)errors.push('SOURCE_INDEX_NOT_CANONICAL');
+  const briefing=fs.readFileSync(path.join(folder,'briefing.html'),'utf8');
+  if(index!==briefing)errors.push('SOURCE_INDEX_NOT_BRIEFING');
  }
  for(const item of references){
   const file=path.join(folder,item.slice(1));
@@ -88,20 +86,20 @@ function validBody(path,kind,body){
  if(kind==='html'){
   if(!/<\s*html\b/i.test(body)||!/<\s*\/html\s*>/i.test(body))return 'INVALID_HTML';
   // First-paint DOM, not a loading-only stub or client-side meta refresh.
-  if(['/', '/index.html', '/pr-monitor.html'].includes(path)){
+  if(['/', '/index.html', '/briefing.html'].includes(path)){
    if(/<meta\b[^>]*http-equiv\s*=\s*['"]refresh['"]/i.test(body))return 'CLIENT_META_REFRESH_FORBIDDEN';
+   if(!body.includes('data-view="home"')||!body.includes('/project-management-nav.js')||
+      !body.includes('/commander-ui.js'))return 'COMMANDER_BRIEFING_REQUIRED';
+  }
+  if(['/pr-monitor.html','/pr-monitor-full.html'].includes(path)){
    if(body.includes('Загружаю проверенный монитор'))return 'LOADING_STUB_FORBIDDEN';
    const realMain=/<main\b[^>]*class\s*=\s*['"][^'"]*\bwrap\b/i.test(body);
    const full=body.includes('/monitor-core.js')&&body.includes('/pr-two-screen.js')&&
       body.includes('/pr-merge-velocity-ui.js')&&body.includes('/pr-recommendations.js')&&
       body.includes('/pr-error-funnel.js')&&body.includes('/project-management-nav.js')&&
-      body.includes('/pr-stage-dashboard.js')&&body.includes('id="hh-project-management-nav"');
+      body.includes('/pr-stage-dashboard.js')&&body.includes('/pr-monitor-yesterday.css')&&
+      body.includes('id="hh-project-management-nav"');
    if(!realMain||!full)return 'MONITOR_FULL_REQUIRED';
-  }
-  if(path==='/pr-monitor-fast.html'){
-   const fast=body.includes('id="activity-graph"')&&body.includes('id="latency-graph"')&&
-      body.includes('/pr-monitor-fast.js')&&body.includes('/pr-monitor-fast.css');
-   if(!fast)return 'MONITOR_FAST_INVALID';
   }
   if(path==='/legacy.html'&&!/<\s*main\b/i.test(body))return 'LEGACY_NOT_COMPLETE';
  }
@@ -124,13 +122,13 @@ async function verifyCandidate(input, fetchImpl=globalThis.fetch){
    const response=await fetchImpl(origin+pathname,{method:'GET',redirect:'manual',cache:'no-store',
     headers:{Accept:kind.startsWith('HH_')?'application/json':'*/*'}});
    const type=String(response.headers?.get?.('content-type')||'').toLowerCase();
-   // Canonical server redirects: allow only root/index -> exact same-origin monitor.
+   // Commander root may redirect only to same-origin briefing; never to the PR boot stub.
    if((pathname==='/'||pathname==='/index.html')&&
       (response.status===307||response.status===308)){
     const location=response.headers?.get?.('location');
     let target;
     try{if(location)target=new URL(location,origin+pathname)}catch{}
-    if(target&&target.origin===origin&&target.pathname==='/pr-monitor.html'&&
+    if(target&&target.origin===origin&&target.pathname==='/briefing.html'&&
        !target.search&&!target.hash){checked.push(pathname);continue;}
     errors.push(pathname+' INVALID_CANONICAL_REDIRECT');continue;
    }
@@ -143,7 +141,7 @@ async function verifyCandidate(input, fetchImpl=globalThis.fetch){
    checked.push(pathname);
    if(kind==='html'||kind==='js'||kind==='css')
     digests[pathname]=createHash('sha256').update(body).digest('hex');
-   if(['/','/index.html','/pr-monitor.html','/pr-monitor-full.html','/pr-monitor-fast.html','/legacy.html','/pr-two-screen-boot.js'].includes(pathname)){
+   if(['/','/index.html','/pr-monitor.html','/pr-monitor-full.html','/briefing.html','/legacy.html','/pr-two-screen-boot.js'].includes(pathname)){
     for(const asset of assetsFrom(body))if(!pending.has(asset))
      pending.set(asset,asset.endsWith('.css')?'css':'js');
    }
