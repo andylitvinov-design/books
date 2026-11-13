@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import {personalVideoStorageCsp} from "../lib/app/personal-video-storage-csp.mjs";
 import {readFileSync} from "node:fs";
 import {selectResourcePractice} from "../lib/mandala/resource-practice-selector.mjs";
 import {VIDEO_CART_PRODUCTS,createVideoCartSelection} from "../lib/commerce/cart.js";
@@ -323,4 +324,43 @@ test("verified signed-in Ready Save uploads directly through the existing signed
       loc==="ru"?delivery.indexOf(" en:{",i):delivery.indexOf("} as const;",i);
     assert.ok(i>0&&e>i&&delivery.slice(i,e).includes("cloudSaveOff:"),loc+" clear cloud error");
   }
+});
+
+test("personal video CSP permits only signed Supabase API + resumable storage on Video Studio/My Videos",()=>{
+  const env={HH_PERSONAL_VIDEO_CLOUD_SAVE_ENABLED:"true",
+    HH_APP_SUPABASE_URL:"https://abcdefghijklmnopqrst.supabase.co"};
+  const api="https://abcdefghijklmnopqrst.supabase.co";
+  const tus="https://abcdefghijklmnopqrst.storage.supabase.co";
+  for(const lang of ["ru","en","es"]){
+    const studio=personalVideoStorageCsp("/"+lang+"/holistic-support/mandala",env);
+    assert.equal(studio.connect," "+api+" "+tus);
+    assert.equal(studio.media,"","studio should render only its local Blob movie");
+    const cabinet=personalVideoStorageCsp("/"+lang+"/app/videos",env);
+    assert.equal(cabinet.connect," "+api+" "+tus);
+    assert.equal(cabinet.media," blob: "+api,
+      "the My Videos cabinet needs local file metadata and private signed MP4 playback");
+  }
+  for(const path of ["/ru/app/messages","/ru/app/practice","/ru/app/videos/other",
+    "/ru/holistic-support/mobile","/api/app/personal-videos","/admin/videos"]){
+    assert.deepEqual(personalVideoStorageCsp(path,env),{connect:"",media:""},path);
+  }
+  assert.deepEqual(personalVideoStorageCsp("/ru/holistic-support/mandala",
+    {...env,HH_PERSONAL_VIDEO_CLOUD_SAVE_ENABLED:"false"}),{connect:"",media:""});
+  assert.deepEqual(personalVideoStorageCsp("/ru/app/videos",
+    {...env,HH_PERSONAL_VIDEO_CLOUD_SAVE_ENABLED:"false"}),{connect:"",media:" blob:"});
+  for(const bad of ["http://abcdefghijklmnopqrst.supabase.co",
+    "https://abcdefghijklmnopqrst.supabase.co.evil.test",
+    "https://abcdefghijklmnopqrst.supabase.co:4433",
+    "https://user:secret@abcdefghijklmnopqrst.supabase.co",
+    "https://abcdefghijklmnopqrst.supabase.co/other-path",
+    "https://abcdefghijklmnopqrst.supabase.co/?api_key=bad",
+    "https://other.supabase.co"]){
+    assert.deepEqual(personalVideoStorageCsp("/en/holistic-support/mandala",
+      {...env,HH_APP_SUPABASE_URL:bad}),{connect:"",media:""},bad);
+  }
+  const middleware=readFileSync(new URL("../middleware.ts",import.meta.url),"utf8");
+  assert.match(middleware,/personalVideoStorageCsp\(pathname,process\.env\)/);
+  assert.match(middleware,/"connect-src 'self'".*personalVideoStorage\.connect/);
+  assert.match(middleware,/directMessageStorageOrigin \+ personalVideoStorage\.media/);
+  assert.doesNotMatch(middleware,/connect-src[^\n]*https:\/\/\*\.supabase\.co/);
 });
