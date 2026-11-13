@@ -493,7 +493,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(montageStyleTab).toBeVisible();
       await montageStyleTab.click();
       await expect(montageStyleTab).toHaveAttribute("aria-pressed","true",{timeout:15000});
-      // Owner-approved Montage PRO is a real fourth tab with three clear
+      // Owner-approved Montage PRO is the fifth tab with three clear
       // offers and TWO navigation actions, not a checkout or a second renderer.
       const montageProTab=page.locator('[data-video-montage-tab="promo"]');
       await montageProTab.click();
@@ -513,8 +513,17 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           'MONTAGE_PRO_NO_HORIZONTAL_OVERFLOW_'+width+' '+JSON.stringify(geometry));
       }
       await page.setViewportSize({width:390,height:844});
-      await montageProOffer.locator('[data-video-montage-pro-free]').click();
-      await expect(page.locator('[data-video-montage-tab="concept"]')).toHaveAttribute('aria-pressed','true');
+      // Do not start recording until the user has chosen verified source, music
+      // and voice. The free CTA now calls the real gated renderer directly;
+      // this is covered by the renderer contract and later encoded-media flow.
+      const freeAction=montageProOffer.locator('[data-video-montage-pro-free]');
+      await expect(freeAction).toContainText(
+        locale==="ru"?"Создать видео бесплатно":locale==="es"?"Crear vídeo gratis":"Create free video");
+      await expect(freeAction).toBeEnabled();
+      const storyStep=page.locator('[data-video-montage-tab="concept"]');
+      await storyStep.click();
+      await expect(page.locator('[data-video-auto-storyboard-list]')).toBeVisible({timeout:20000});
+      await expect(page.locator('[data-video-story-select-quality]')).toBeVisible();
       await montageProTab.click();
       await montageProOffer.locator('[data-video-montage-pro-explore]').click();
       await expect(page.locator('[data-video-quick-control="pro"]')).toHaveAttribute('aria-pressed','true');

@@ -77,4 +77,7 @@ test("compact Story source branch runs mandatory macOS WebKit instead of skipped
  assert.ok(match[1].includes("github.head_ref == 'codex/video-story-five-cards-quality-last-20261112'"));
  assert.match(workflow,/voice-webkit-macos:[\s\S]*?needs: \[webkit_preflight\][\s\S]*?runs-on: macos-15/);
  assert.match(workflow,/HH_VOICE_E2E_ENGINE: webkit/);
+ assert.ok(workflow.includes('codex/video-story-five-cards-quality-last-20261112 ]]; then'),
+   "the same existing macOS runner must verify real five-scene H264/AAC Story output");
+ assert.match(workflow,/verify-five-scene-stories-browser\.mjs/);
 });

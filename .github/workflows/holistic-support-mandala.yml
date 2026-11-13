@@ -692,7 +692,7 @@ jobs:
             node scripts/benchmarking/verify-original-motion-export.mjs
           # Real five-shot vertical movie, identity and soundtrack gate for Stories PRs.
           # The guard is strict, local-only and cannot invoke paid AI or publisher POST.
-          if [[ "${GITHUB_HEAD_REF:-}" == codex/stories-* ]]; then
+          if [[ "${GITHUB_HEAD_REF:-}" == codex/stories-* || "${GITHUB_HEAD_REF:-}" == codex/video-story-five-cards-quality-last-20261112 ]]; then
             HH_STORIES_E2E_ENGINE=webkit \
               HH_LIVE_VIDEO_PLAYWRIGHT="$RUNNER_TEMP/voice-playwright/node_modules/playwright/index.mjs" \
               node scripts/benchmarking/verify-five-scene-stories-browser.mjs
