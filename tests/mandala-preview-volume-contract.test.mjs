@@ -43,6 +43,9 @@ test("native music, film preview and exported MP4 receive same slider percent",(
   assert.match(studio,/session\.mixer\.setGains\(levels\)/);
   assert.match(studio,/audio:files\.length\?\{files,volume:soundVolume\}:undefined/);
   assert.match(studio,/data-video-audio-compact-volume/);
-  assert.doesNotMatch(studio,/data-video-audio-affirmations|data-video-voice-studio/);
+  const musicPane=studio.slice(studio.indexOf('{montagePanel==="audio" ? <div className={videoStyles.montageAudioCompact}'),
+    studio.indexOf('{musicWarning?<p role="alert" className={videoStyles.montageAudioWarning}>'));
+  assert.doesNotMatch(musicPane,/data-video-audio-affirmations|data-video-voice-studio/);
+  assert.match(studio,/data-video-voice-studio open=\{voiceStudioActivated\}/);
   assert.match(studio,/voiceEditor=\{activeWorkspace==="effects"\?hypnoVoiceEditor:null\}/);
 });

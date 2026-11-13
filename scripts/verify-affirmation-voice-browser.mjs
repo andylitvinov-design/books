@@ -1424,15 +1424,19 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const montageAudioAfterExport=page.locator('[data-video-montage-open-audio]');
       await montageAudioAfterExport.click();
       await expect(page.locator('[data-video-montage-audio]')).toBeVisible();
-      // Compact Audio preserves an explicitly opened cloud Voice Studio,
-      // without the retired basic nested tab.
-      // The phrase warning is intentionally unmounted in Montage. If the
-      // old narration is still attached there, export must remain disabled;
-      // an independently selected soundtrack is not stale narration.
+      // Leaving an attached stale voice invalidates export; selected music is independent.
       const soundtrackLabels=await page.locator("[data-video-live-audio]").allTextContents();
       const stillHasOldVoice=soundtrackLabels.some(label=>
         label.includes("holistic-house-hypno-audio.wav")||label.includes(expectedFileName));
       if(stillHasOldVoice)await expect(page.locator("[data-video-quick-generate]")).toBeDisabled();
+      // Montage has no voice control. Enter Hypno Audio and expose the one
+      // consented voice editor before testing real provider invocation.
+      await page.locator('[data-video-quick-control="effects"]').click();
+      await expect(page.locator("[data-video-hypnocorrection-panel]")).toBeVisible();
+      await page.locator('[data-hypno-tab="audio"]').click();
+      await expect(page.locator('[data-hypno-group="audio"]')).toBeVisible();
+      await page.locator('[data-hypno-group="audio"] [data-hypno-card] button').first().click();
+      await expect(page.locator("[data-hypno-speech-settings]")).toBeVisible();
       const voicePanel=page.locator("[data-video-voice-studio]");
       await voicePanel.waitFor({state:"visible",timeout:25000});
       if(await voicePanel.getAttribute("open")===null)

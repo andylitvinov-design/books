@@ -118,6 +118,7 @@ const MandalaStoriesCharacters = dynamic(() => import("./mandala-stories-charact
 const MandalaProEnhance = dynamic(() => import("./mandala-pro-enhance").then(module => module.MandalaProEnhance));
 const MandalaMontageProOffer = dynamic(() => import("./mandala-montage-pro-offer").then(module => module.MandalaMontageProOffer));
 const MandalaPersonalMeditation = dynamic(() => import("./mandala-personal-meditation").then(module => module.MandalaPersonalMeditation));
+const MandalaCloudVoiceStudio = dynamic(() => import("./mandala-cloud-voice-studio").then(module => module.MandalaCloudVoiceStudio));
 const MandalaPhraseCatalog = dynamic(() => import("./mandala-phrase-catalog").then(module => module.MandalaPhraseCatalog));
 const MandalaMultiTrackTimeline = dynamic(() => import("./mandala-multitrack-timeline").then(module => module.MandalaMultiTrackTimeline));
 
@@ -1995,6 +1996,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [videoScenarioOpen,setVideoScenarioOpen] = useState(false);
   const goalContinueRef=useRef<(()=>boolean)|null>(null);
   const [firstVideoAdvancedActivated,setFirstVideoAdvancedActivated] = useState(false);
+  const [voiceStudioActivated,setVoiceStudioActivated] = useState(false);
   const [phraseCatalogActivated,setPhraseCatalogActivated] = useState(false);
   const [studioMode,setStudioMode] = useState<"pump"|"therapy">("pump");
   const [activeWorkspace,setActiveWorkspace] = useState<StudioWorkspace>("video");
@@ -5336,7 +5338,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       }
       if(hash==="video-audio"){setMontagePanel("audio");setBasicPanelTab("music");}
       if(hash==="video-settings"){setMontagePanel("settings");setMontageStyleSettingsOpen(true);}
-      if(hash==="voice-studio"){setHypnoEntryGroup("audio");setQuickDetailedOpen(true);}
+      if(hash==="voice-studio"){setHypnoEntryGroup("audio");setVoiceStudioActivated(true);setQuickDetailedOpen(true);}
       if(hash==="video-audio"||hash==="voice-studio"||hash==="video-templates")
         setShowAdvancedVideo(true);
       setStudioMode(tab==="practices"?"therapy":"pump");
@@ -5370,7 +5372,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       setVideoScenarioOpen(true);
       setFirstVideoAdvancedActivated(true);
     }
-    if(anchor==="voice-studio")setHypnoEntryGroup("audio");
+    if(anchor==="voice-studio"){setHypnoEntryGroup("audio");setVoiceStudioActivated(true);}
     // The compact Video surface hides the full audio gallery by default.
     // Make the *single* real audio editor visible before navigating to it.
     if(anchor==="video-audio"||anchor==="voice-studio"||anchor==="video-templates")
@@ -5964,6 +5966,20 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           {locale==="ru"?"Записать или загрузить свой голос":locale==="es"?"Grabar o subir mi voz":"Record or upload my voice"}
           <ChevronDown size={18} aria-hidden="true"/>
         </button>
+        {/* Cloud narration is now in Hypno → Audio, not Montage Music. */}
+        <details id="voice-studio" className={[videoStyles.extraControls,videoStyles.basicVoicePane].join(" ")}
+          data-video-voice-studio open={voiceStudioActivated}
+          onToggle={event=>setVoiceStudioActivated(event.currentTarget.open)}>
+          <summary><AudioLines size={18} aria-hidden="true"/>
+            {locale==="ru"?"Озвучка фраз · голоса RU/EN":
+              locale==="es"?"Narración · voces RU/EN":"Voice narration · RU/EN voices"}
+          </summary>
+          {voiceStudioActivated?<MandalaCloudVoiceStudio locale={locale}
+            sourceText={currentAffirmationSpeech} sourceIsPublic
+            onAudioReady={attachMeditationNarration}
+            onAudioInvalidated={()=>setAttachedAudio(current=>
+              current?.kind==="file"&&current.nonLoop?null:current)}/>:null}
+        </details>
       </section>
   );
   const advancedPhraseEditorVisible=activeWorkspace==="phrases" && phraseAudioExpanded;
