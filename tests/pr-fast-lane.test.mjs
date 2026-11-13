@@ -881,7 +881,8 @@ test('core release checkout preserves ancestry jobs and pins exact base for boun
   assert.match(source, /git diff --no-renames --name-only -z/, 'scope must still diff actual base');
   assert.match(release, /git show/, 'immutable base specialist aggregate must remain');
   assert.match(release, /scripts\/ci-specialist-aggregate\.mjs/);
-  assert.match(release, /timeout-minutes: 45/);
+  assert.ok(release.includes("    timeout-minutes: ${{ contains(fromJSON('[\"ASSETS\",\"TEXT\",\"CORE\"]'), needs.scope.outputs.route) && 15 || 45 }}"),
+    'fast routes use slim/15m; FULL, DOCK and unrecognized routes retain original 45m');
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
 });
 
