@@ -24,19 +24,31 @@
 .art{display:block;overflow:hidden;min-height:122px;border-radius:14px;background:#ede0c9}
 .art img{display:block;width:100%;height:100%;min-height:122px;object-fit:cover}
 .body{min-width:0}
-.tag{display:inline-block;max-width:100%;border-radius:20px;padding:4px 8px;background:#e7f0e8;color:#1b5147;font:700 10px/1.2 Arial,Helvetica,sans-serif}
+.tag{display:inline-block;max-width:100%;border-radius:20px;padding:4px 8px;background:#e7f0e8;color:#1b5147;font:700 11px/1.25 Arial,Helvetica,sans-serif}
 .body h4{margin:5px 0;color:#101e45;font:700 clamp(19px,5.8vw,24px)/1.1 Georgia,"Times New Roman",serif;letter-spacing:-.02em}
 .body h4 a{color:inherit;text-decoration:none}
-.body p{margin:0 0 6px;color:#4b4453;font-size:12.5px;line-height:1.33}
-.body small{color:#92672e;font-size:11px;font-weight:700}
+.body p{margin:0 0 6px;color:#4b4453;font-size:14px;line-height:1.36}
+.body small{color:#92672e;font-size:12px;font-weight:700}
 .actions{display:grid;grid-column:1/-1;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:7px}
-.details,.order{display:flex!important;justify-content:center;align-items:center;gap:5px;min-height:48px;min-width:0;padding:8px 7px;border-radius:24px;text-align:center;text-decoration:none;font:700 13px/1.2 Arial,Helvetica,sans-serif;white-space:normal;cursor:pointer}
+.details,.order{display:flex!important;justify-content:center;align-items:center;gap:5px;min-height:48px;min-width:0;padding:8px 7px;border-radius:24px;text-align:center;text-decoration:none;font:700 14px/1.22 Arial,Helvetica,sans-serif;white-space:normal;cursor:pointer}
 .details{border:1px solid #c7a57d;background:#fffaf1;color:#124d47}
 .order{border:1px solid #005a50;background:linear-gradient(130deg,#2aa79a,#00685e 65%,#00443d);box-shadow:0 5px 13px #00574b24;color:#fff!important}
+/* The production messenger-only flow is a full information panel by default.
+   Keep the approved card compact until the visitor taps Order; expand to full
+   card width only after that deliberate action. Normal CRM rollback stays usable. */
+.orderWrap{min-width:0;width:100%}
+.order:has(details){display:block!important;width:100%;min-height:0;padding:0;border:0;background:transparent;box-shadow:none;color:inherit!important;text-align:initial}
+.order:has(details) details{width:100%}
+.order:has(details) summary{display:flex;align-items:center;justify-content:center;min-height:48px;padding:9px 9px;border:1px solid #005a50;border-radius:24px;background:linear-gradient(130deg,#2aa79a,#00685e 65%,#00443d);box-shadow:0 5px 13px #00574b24;color:white!important;font:700 14px/1.22 Arial,Helvetica,sans-serif;text-align:center;list-style:none;cursor:pointer}
+.order:has(details) summary::-webkit-details-marker{display:none}
+.order:has(details) details[open]>div{margin-top:9px}
+.actions:has(details[open]){grid-template-columns:1fr}
+.shelf summary:focus-visible{outline:3px solid #c99847;outline-offset:3px}
+
 .empty{border:1px dashed #d3b88e;border-radius:16px;padding:14px;text-align:center}.empty p{margin:0 0 9px}.empty button{min-height:44px;padding:8px 12px;border:1px solid #9cbdac;border-radius:23px;background:#e7f4ed;color:#115147;font-weight:750}
 .all{display:flex;align-items:center;justify-content:center;gap:8px;min-height:56px;margin:15px 0 11px;border:2px solid #0b5b51;border-radius:28px;padding:9px 8px;background:#fffbf8;color:#09564c;text-align:center;text-decoration:none;font-size:16px;font-weight:800}
 .all svg{flex:none}
 .note{display:flex;align-items:flex-start;gap:7px;margin:0 3px;color:#74646a;font-size:11px;line-height:1.38}.note svg{flex:none;color:#b18750}
 .shelf a:focus-visible,.shelf button:focus-visible,.shelf select:focus-visible{outline:3px solid #c99847;outline-offset:2px}
 }
-@media(max-width:350px){.shelf{padding:12px 8px}.card{grid-template-columns:82px minmax(0,1fr);column-gap:8px;padding:8px}.body h4{font-size:19px}.details,.order{font-size:12px}.all{font-size:14px}.pills button{font-size:11px}}
+@media(max-width:350px){.shelf{padding:12px 8px}.card{grid-template-columns:82px minmax(0,1fr);column-gap:8px;padding:8px}.body h4{font-size:19px}.details,.order{font-size:12.5px}.order:has(details) summary{font-size:12.5px}.all{font-size:14px}.pills button{font-size:11px}}

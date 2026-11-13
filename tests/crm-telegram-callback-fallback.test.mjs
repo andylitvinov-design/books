@@ -38,6 +38,8 @@ async function routeRun({source=candidate,payload=callback(),diagnostic='off',co
    sendWhatsAppDiagnosticPrompt:async()=>{calls.waSend++},
    // Production CRM webhook routes owner-only video commands before diagnostic callbacks.
    receiveOwnerTelegramVideoWebhook:async()=>({handled:false}),
+   // The business account is an independent Telegram update, not this callback route.
+   telegramBusinessRequestFromUpdate:()=>null,
    // WhatsApp locale marker helper belongs to the production normalizer, not this VM.
    whatsappExpressReviewLocale:()=>null,
    processTelegramCompanion:async()=>{calls.companion++;return companion==='handled'?{handled:true,to:'123456789',locale:'ru',text:'test companion welcome',markup:null}:{handled:false}},

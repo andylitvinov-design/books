@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs";
 const component = readFileSync(new URL("../components/services-magical-help-mobile.tsx", import.meta.url), "utf8");
 const styles = readFileSync(new URL("../components/services-magical-help-mobile.module.css", import.meta.url), "utf8");
 const page = readFileSync(new URL("../app/[locale]/services/page.tsx", import.meta.url), "utf8");
+const spanishPage = readFileSync(new URL("../app/es/services/page.tsx", import.meta.url), "utf8");
 
 test("the existing Services route contains one independent mobile Magical Help section", () => {
   assert.match(page, /<ServicesMagicalHelpMobile locale=\{locale as Locale\}/);
@@ -33,4 +34,14 @@ test("Russian, English and Spanish titles, privacy language and links are presen
   assert.match(component, /не лечение или финансовые рекомендации/);
   assert.match(component, /not medical treatment or financial advice/);
   assert.match(component, /no tratamientos médicos ni asesoramiento financiero/);
+});
+
+// The dedicated /es/services route shadows the dynamic /[locale]/services route.
+// Keep the published Magical Help card shelf on BOTH entry points.
+test("dedicated Spanish Services page mounts Magical Help once after Studio offers", () => {
+  assert.match(spanishPage, /import \{ ServicesMagicalHelpMobile \} from "@\/components\/services-magical-help-mobile"/);
+  assert.equal((spanishPage.match(/<ServicesMagicalHelpMobile locale="es"/g) || []).length, 1);
+  assert.ok(spanishPage.indexOf('<ServicesMagicalHelpMobile locale="es" />') > spanishPage.indexOf('<ServicesStudioOffers locale="es" />'));
+  assert.match(spanishPage, /<ServicesExplorerProvider>/);
+  assert.match(spanishPage, /<PublicSiteHeader locale="es"/);
 });
