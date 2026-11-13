@@ -33,7 +33,7 @@ test('one consented voice controller drives avatar phases from real TTS lifecycl
   assert.doesNotMatch(dialog,/<CoachingQuestionVoice/)
   assert.match(dialog,/onVoiceStateChange=\{setVoiceState\}/)
   assert.match(dialog,/enabled=\{consent&&readiness\.status!=='checking'&&!authRequired\}/)
-  assert.match(dialog,/canStart=\{!busy&&!paused\}/)
+  assert.match(dialog,/canStart=\{!busy&&!paused&&!replaying&&readiness\.status!=='checking'&&!authRequired\}/)
   assert.match(dialog,/onCancelTurn=\{\(\)=>pending\.current\?\.abort\(\)\}/)
   assert.match(loop,/utterance\.onstart=/)
   assert.match(loop,/utterance\.onboundary=/)

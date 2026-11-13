@@ -16,6 +16,7 @@ import { AXIS_REFS, publishedAxisOffers } from "@/lib/holistic-support/axis-offe
 import { interpretSupportUtterance, explainUserQuestion } from "@/lib/holistic-support/guide-dialogue.mjs";
 import { ruleConversationReply } from "@/lib/holistic-support/rule-conversation.mjs";
 import { nativeSecretaryTurn } from "@/lib/holistic-support/native-secretary.mjs";
+import { consultServiceQuestion } from "@/lib/assist/consultant-mind.mjs";
 import { resolveWisdomRequest } from "@/lib/app/coaching-wisdom.js";
 import { resolveConversationFocus } from "@/lib/holistic-support/conversation-context.mjs";
 import { detectConversationLocale } from "@/lib/holistic-support/conversation-locale.mjs";
@@ -164,6 +165,25 @@ export async function POST(request) {
         },{headers:PRIVATE_HEADERS}));
       }
     }
+    // Source-checked Consultant Mind answers only explicitly requested service
+    // questions. All existing actor, consent, safety and throttling gates win.
+    const consultation=safety.status==="clear"&&!recentUnsafe &&
+      body.judgmentContext==null && body.judgmentChoice==null &&
+      body.usePrivateProfile!==true && body.usePrivateHistory!==true &&
+      body.useAgentMemory!==true && body.preferredFormat==null &&
+      (!body.chosenAxes || body.chosenAxes.length===0) &&
+      ["rules","owned"].includes(body.mode)
+      ? consultServiceQuestion({message:body.message,locale:body.locale,history:body.history})
+      : null;
+    if(consultation)return auth.apply(NextResponse.json({
+      status:consultation.status,reply:consultation.reply,
+      mindRole:"consultant",modelUsed:false,source:"consultant-rules",
+      memorySaved:false,userAuthorized:true,suggestions:consultation.suggestions,
+      usedSavedTestEvidence:false,usedSavedVideoHistory:false,
+      browserModelAllowed:false,
+      decision:{status:consultation.status,message:consultation.reply,
+        question:null,suggestions:consultation.suggestions},
+    },{headers:PRIVATE_HEADERS}));
     // A short reviewed FAQ should not depend on media scans or paid inference.
     // Safety and authorization have already been verified for this exact turn.
     const fastRule=body.mode==="rules"&&safety.status==="clear"&&!recentUnsafe
