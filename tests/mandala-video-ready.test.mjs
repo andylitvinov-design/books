@@ -246,3 +246,30 @@ test("Ready Basic auto-attaches suggested music before Generate without bypassin
   assert.match(studio,/onGenerateBasicVideo=\{\(\)=>\{/);
   assert.match(studio,/return createQuickVideo\(\)/);
 });
+
+test("approved Ready result has a thin status, full video and two secure primary actions",()=>{
+  const css=readFileSync(new URL("../components/mandala-video-ready.module.css",import.meta.url),"utf8");
+  const studioCss=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
+  assert.match(ready,/data-ready-state=\{completed\?"complete":"choose"\}/);
+  assert.match(ready,/data-ready-status/);
+  assert.match(ready,/\{completed\?<p className=\{css\.readyStatus\}/);
+  assert.match(ready,/data-ready-save><Download/);
+  assert.match(ready,/data-ready-telegram><Send/);
+  assert.match(ready,/data-ready-generate-new onClick=\{onStartNewVideo\}/);
+  assert.match(ready,/onLoadedData=\{event=>onVerifyPlayback\(event\.currentTarget\)\}/);
+  assert.match(ready,/onCanPlay=\{event=>onVerifyPlayback\(event\.currentTarget\)\}/);
+  assert.match(studio,/onVerifyPlayback=\{confirmVideoPlayback\}/);
+  assert.match(studio,/onStartNewVideo=\{\(\)=>\{/);
+  assert.match(studio,/inert=\{activeWorkspace==="ready"\}/);
+  assert.match(studioCss,/data-active-workspace="ready"[^\n]*\[data-video-result\]:not\(\[hidden\]\)/);
+  assert.match(css,/\.root\[data-ready-state="complete"\] \.selectedVideo\{width:100%;aspect-ratio:16\/9/);
+  assert.match(css,/\.root\[data-ready-state="complete"\] \.journey\{grid-template-columns:minmax\(0,1fr\)/);
+  for(const locale of ["en","ru","es"]){
+    const start=ready.indexOf("  "+locale+":{",ready.indexOf("const COPY={"));
+    const end=locale==="en"?ready.indexOf("  ru:{",start):
+      locale==="ru"?ready.indexOf("  es:{",start):ready.indexOf("} as const;",start);
+    for(const key of ["ready","nextSteps","nextLead","newVideo","sendTelegram","meditationNext","journeyNext"]){
+      assert.ok(ready.slice(start,end).includes(key+":"),locale+" missing "+key);
+    }
+  }
+});

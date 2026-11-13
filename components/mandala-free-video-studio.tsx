@@ -3110,20 +3110,21 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     void createVideo(true);
   },[pendingCompatibleRetry,signature,canGenerate]);
 
-  // A completed local recording lives in the existing result pane.
-  // Reveal that pane before scrolling; a collapsed result is not delivery.
+  // A completed local recording stays in the Ready workspace. Keep the
+  // original verifier mounted for WebKit recovery without navigating to PRO.
   useEffect(() => {
     if (!result) return;
     if(result.mode!=="catalog"){
-      setActiveWorkspace("pro");
+      setActiveWorkspace("ready");
       setStudioMode("pump");
       setIntroPlaying(false);
     }
     setQuickDetailedOpen(true);
+    const target=result.mode==="catalog"?"personal-video-result":"free-personal-video";
     let nextFrame = 0;
     const firstFrame = window.requestAnimationFrame(() => {
       nextFrame = window.requestAnimationFrame(() => {
-        document.getElementById("personal-video-result")?.scrollIntoView({
+        document.getElementById(target)?.scrollIntoView({
           behavior:"auto",
           block:"start",
         });
@@ -7061,7 +7062,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       </header> : <span id="video-workspace-panel" className={videoStyles.srOnly}/>}
       
       {activeWorkspace==="ready"?<MandalaVideoReady
-        locale={locale} theme={theme} wish={wish} focus={meditationFocus}
+        locale={locale} theme={theme} wish={wish} focus={meditationFocus} aspect={aspect}
         video={result&&result.mode!=="catalog"?{
           url:result.url,extension:result.extension,bytes:result.bytes,duration
         }:null}
@@ -7075,11 +7076,17 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         basicFreeAvailable={basicVideoAccess.allowed}
         basicFreeIssue={basicVideoAccess.reason}
         basicCreditCost={basicVideoAccess.chargeCredits}
+        onVerifyPlayback={confirmVideoPlayback}
+        onStartNewVideo={()=>{
+          activateQuickWorkspace("video");
+          window.requestAnimationFrame(()=>document.getElementById("free-personal-video")
+            ?.scrollIntoView({behavior:"auto",block:"start"}));
+        }}
         onGenerateBasicVideo={()=>{
           // Never substitute a credit-charged or paid render for the FREE offer.
+          // Normalize the existing choice without forcing the visitor out of Ready.
           if(!freeVideoSelected){
             setPracticeType("video");setPracticeLevels(value=>({...value,video:"basic"}));
-            setActiveWorkspace("pro");setStudioMode("pump");
             return false;
           }
           return createQuickVideo();
@@ -7590,6 +7597,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           setCaptionMode("custom");
         }}/> : null}
       <section className={videoStyles.result} id="personal-video-result" data-video-result hidden={!result}
+        aria-hidden={activeWorkspace==="ready"} inert={activeWorkspace==="ready"}
         data-video-result-mode={result?.mode==="catalog"?"catalog":"rendered"}
         data-video-recording-format={result?.mode==="catalog"?"catalog":result?.extension||"none"}>
         <h3>{playbackStatus==="ready"?(locale==="ru"?"Готовое видео":locale==="es"?"Vídeo listo":"Finished video")

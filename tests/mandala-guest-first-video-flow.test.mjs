@@ -94,8 +94,8 @@ test('PRO result uses full-size native video, never the previous 112px cropped v
   assert.match(css,/\.studio \.result\[hidden\]\{display:none!important\}/)
 })
 
-test('real encoded result opens the existing PRO workspace and retains in-page Blob',()=>{
-  const start=studio.indexOf('  // A completed local recording lives in the existing result pane.')
+test('real encoded result stays on Ready without losing the in-page Blob',()=>{
+  const start=studio.indexOf('  // A completed local recording stays in the Ready workspace.')
   const end=studio.indexOf('  // Auto-music must be ATTACHED',start)
   assert.ok(start>0&&end>start)
   const effect=studio.slice(start,end)
@@ -104,7 +104,7 @@ test('real encoded result opens the existing PRO workspace and retains in-page B
     let callback=null
     const win={requestAnimationFrame(fn){frames.push(fn);return frames.length},cancelAnimationFrame(){}}
     const document={getElementById(id){
-      assert.equal(id,'personal-video-result')
+      assert.equal(id,result.mode==='catalog'?'personal-video-result':'free-personal-video')
       return {scrollIntoView(options){assert.equal(options.behavior,'auto');state.scrolls++}}
     }}
     runInNewContext(effect,{
@@ -119,7 +119,7 @@ test('real encoded result opens the existing PRO workspace and retains in-page B
     while(frames.length)frames.shift()()
     return state
   }
-  assert.deepEqual(run({mode:'rendered',url:'blob:local'}),{workspace:'pro',mode:'pump',expanded:true,scrolls:1})
+  assert.deepEqual(run({mode:'rendered',url:'blob:local'}),{workspace:'ready',mode:'pump',expanded:true,scrolls:1})
   assert.equal(run({mode:'catalog',url:'/videos/holistic-house/unedited.mp4'}).workspace,null)
   assert.equal(run(null).scrolls,0)
 })
