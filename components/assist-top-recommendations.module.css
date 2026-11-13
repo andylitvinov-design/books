@@ -78,9 +78,9 @@
  .content>p{grid-column:1;grid-row:2;display:-webkit-box;-webkit-line-clamp:2;margin:0;font-size:11px;line-height:1.3}
  .actions{grid-column:2;grid-row:1/span 2;display:flex;flex-direction:column;gap:4px;align-items:stretch;margin:0}
  .details,.cta{flex:none;width:100%}
- .details summary{min-height:32px;padding:4px;font-size:11px}
+ .details summary{min-height:44px;padding:4px;font-size:11px}
  .details[open] p{font-size:11px}
- .cta{min-height:41px;padding:5px 3px;font-size:11px}
+ .cta{min-height:44px;padding:5px 3px;font-size:11px}
  .cta svg{width:13px;height:13px}
  .all{min-height:43px;margin-top:9px;font-size:13px}
  .all svg{width:17px;height:17px}
