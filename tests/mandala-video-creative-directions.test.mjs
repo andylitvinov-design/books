@@ -132,3 +132,43 @@ test("mobile editor selects directions, hides advanced settings, and carries app
  assert.match(montage,/selectedTopicId:selectedTopic\?\.topicId/);
  assert.match(montage,/buildAlignedStorySceneGuides/);
 });
+
+
+test("anxiety is a stated PROBLEM, never a positive goal; cinematic stories replace technical copy in RU/EN/ES",()=>{
+ const issue={en:"Anxiety for No Clear Reason",ru:"Тревога без причины",
+   es:"Ansiedad sin motivo aparente"};
+ const setting={...personal,
+   currentState:"Tired · Tense · Uncertain",currentIds:["fatigue","tension","uncertain"],
+   desiredState:"Safe · Joyful · Connected",desiredIds:["safe","joyful","connected"],
+   energyStart:4,energyTarget:6};
+ for(const locale of ["ru","en","es"]){
+  const base=suggestVideoConcept({locale,theme:"energy",goal:issue[locale],
+   selectedTopicId:"anxiety-no-reason",personalization:setting});
+  assert.equal(base.topicId,"anxiety-no-reason");
+  assert.notEqual(base.goal,issue[locale],"the problem is not the goal");
+  assert.equal(base.parameters.intent.value,base.goal);
+  assert.equal(base.parameters.intent.status,"suggested");
+  assert.equal(base.parameters.situation.value,issue[locale]);
+  assert.equal(base.parameters.situation.source,"goal");
+  assert.doesNotMatch(base.mainMessage,/From tiredness|From tension|От усталости|Desde el cansancio/i);
+  const directions=getVideoCreativeDirections(base,locale);
+  assert.equal(directions.length,3);
+  assert.equal(new Set(directions.map(d=>d.idea)).size,3);
+  assert.equal(new Set(directions.map(d=>d.story)).size,3);
+  for(const d of directions){
+   assert.equal(d.storyboard.length,6);
+   assert.equal(new Set(d.storyboard.map(s=>s.action)).size,6);
+   assert.ok(d.storyboard.every(s=>s.keywords.length>=2));
+   assert.doesNotMatch(d.story,/4\/10|6\/10|six distinct|30 seconds|30 секунд|30 segundos|verified|verificado|not yet verified|aún sin verificar/i);
+   const chosen=applyVideoCreativeDirection(base,d);
+   assert.equal(chosen.conceptText,d.story);
+   assert.equal(chosen.parameters.intent.value,base.goal);
+   assert.equal(chosen.parameters.situation.value,issue[locale]);
+   assert.equal(chosen.mediaBindingStatus,"editorial_only_unverified");
+   assert.equal(videoConceptIsValid(chosen),true);
+   const shots=buildConceptShotSketch(chosen,30);
+   assert.equal(shots.length,6);
+   assert.ok(shots.every(s=>!s.sourceVerified));
+  }
+ }
+});

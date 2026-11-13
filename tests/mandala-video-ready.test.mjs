@@ -246,3 +246,54 @@ test("Ready Basic auto-attaches suggested music before Generate without bypassin
   assert.match(studio,/onGenerateBasicVideo=\{\(\)=>\{/);
   assert.match(studio,/return createQuickVideo\(\)/);
 });
+
+test("approved Ready result has a thin status, full video and two secure primary actions",()=>{
+  const css=readFileSync(new URL("../components/mandala-video-ready.module.css",import.meta.url),"utf8");
+  const studioCss=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
+  assert.match(ready,/data-ready-state=\{completed\?"complete":"choose"\}/);
+  assert.match(ready,/data-ready-status/);
+  assert.match(ready,/\{completed\?<p className=\{css\.readyStatus\}/);
+  assert.match(ready,/data-ready-save><Download/);
+  assert.match(ready,/data-ready-telegram><Send/);
+  assert.match(ready,/data-ready-generate-new onClick=\{onStartNewVideo\}/);
+  assert.match(ready,/onLoadedData=\{event=>onVerifyPlayback\(event\.currentTarget\)\}/);
+  assert.match(ready,/onCanPlay=\{event=>onVerifyPlayback\(event\.currentTarget\)\}/);
+  assert.match(studio,/onVerifyPlayback=\{confirmVideoPlayback\}/);
+  assert.match(studio,/onStartNewVideo=\{\(\)=>\{/);
+  assert.match(studio,/inert=\{activeWorkspace==="ready"\}/);
+  assert.match(studioCss,/data-active-workspace="ready"[^\n]*\[data-video-result\]:not\(\[hidden\]\)/);
+  assert.match(css,/\.root\[data-ready-state="complete"\] \.selectedVideo\{width:100%;aspect-ratio:16\/9/);
+  assert.match(css,/\.root\[data-ready-state="complete"\] \.journey\{grid-template-columns:minmax\(0,1fr\)/);
+  for(const locale of ["en","ru","es"]){
+    const start=ready.indexOf("  "+locale+":{",ready.indexOf("const COPY={"));
+    const end=locale==="en"?ready.indexOf("  ru:{",start):
+      locale==="ru"?ready.indexOf("  es:{",start):ready.indexOf("} as const;",start);
+    for(const key of ["ready","nextSteps","nextLead","newVideo","sendTelegram","meditationNext","journeyNext"]){
+      assert.ok(ready.slice(start,end).includes(key+":"),locale+" missing "+key);
+    }
+  }
+});
+
+
+test("verified voice retains the original narration while Music Match forbids synthesized bed suggestions",()=>{
+  const source=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
+  assert.ok(source.includes("tracks:voiceBedMode?[]:rankedAudioPool,"));
+  assert.match(source,/data-phrase-music-guidance=\{voiceBedMode\?"voice":"melody"\}/);
+  assert.match(browser,/await expect\(personalMusic\.locator\('\[role="radio"\]'\)\)\.toHaveCount\(0\)/);
+  assert.match(browser,/await expect\(page\.locator\("\[data-video-live-audio\]"\)\)\.toContainText\(expectedFileName\)/);
+  assert.match(browser,/await page\.locator\("\[data-video-bed-volume\]"\)\.focus\(\)/);
+  assert.match(browser,/await page\.waitForFunction\(previous=>/);
+});
+
+
+test("real Safari encoded-Blob guest helper gates Save without relying on the removed Download button",()=>{
+  const helper=readFileSync(new URL("../scripts/benchmarking/real-guest-video-file.mjs",import.meta.url),"utf8");
+  assert.match(helper,/await ready\.locator\('\[data-ready-save\]'\)\.click\(\)/);
+  assert.doesNotMatch(helper,/data-ready-download/);
+  assert.match(helper,/await expect\(page\.locator\('\[data-mandala-video-download\]'\)\)\.toBeHidden\(\)/);
+  assert.match(helper,/await expect\.poll\(\(\)=>renderedPlayer\.evaluate/);
+  assert.match(helper,/window\.__hhTestRecordedVideoBlobs/);
+  assert.match(helper,/assert\.equal\(downloads,0,'GUEST_DOWNLOAD_MUST_REQUIRE_LOGIN'\)/);
+  assert.match(helper,/data-ready-save-gate-signin/);
+});

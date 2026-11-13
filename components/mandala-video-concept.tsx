@@ -290,6 +290,7 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
   ];
   const timecode=(seconds:number)=>
     String(Math.floor(seconds/60)).padStart(2,"0")+":"+String(seconds%60).padStart(2,"0");
+  const problemTopic=concept.topicId==="anxiety-no-reason"||concept.topicId==="constant-anxiety";
   const parameterLabels:Record<string,string|null>={
     purpose:purposeLabel(concept.semanticPurpose),
     audience:concept.semanticAudience?audienceText[concept.semanticAudience]||concept.semanticAudience:null,
@@ -414,7 +415,8 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
           locale==="ru"?stateLabels[0]:locale==="es"?stateLabels[2]:stateLabels[1];
         return <li key={row.id} data-concept-parameter={row.id}>
           <div className={css.parameterLabel}>
-            <strong>{locale==="ru"?row.ru:locale==="es"?row.es:row.en}</strong>
+            <strong>{problemTopic&&row.id==="situation"?word("Проблема","Problem","Problema"):
+              locale==="ru"?row.ru:locale==="es"?row.es:row.en}</strong>
             <small>{state}</small>
           </div>
           {row.id==="emotionalProgram"?

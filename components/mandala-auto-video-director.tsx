@@ -1333,14 +1333,14 @@ export function MandalaAutoVideoDirector({
      </p>:null}
    </div>:null}
    {selectedScenarioId&&plotsLoading?<p className={css.notice} data-mytube-plots-loading aria-live="polite">
-     {locale==="ru"?"Открываем четыре сюжета сценария…":locale==="es"?"Cargando cuatro tramas del escenario…":"Loading four plots for this scenario…"}
+     {locale==="ru"?"Открываем шесть сюжетов сценария…":locale==="es"?"Cargando seis tramas del escenario…":"Loading six plots for this scenario…"}
    </p>:null}
-   {selectedScenarioId&&!plotsLoading&&taxonomyPlots.length===4?
+   {selectedScenarioId&&!plotsLoading&&taxonomyPlots.length===6?
      <div className={css.storyChoices} role="group" data-mytube-plot-choices
-       aria-label={locale==="ru"?"Четыре разных сюжета выбранного сценария":locale==="es"?"Cuatro tramas diferentes":"Four distinct plots"}>
+       aria-label={locale==="ru"?"Шесть разных сюжетов выбранного сценария":locale==="es"?"Seis tramas diferentes":"Six distinct plots"}>
        <p className={css.variantsTitle}>
-         {locale==="ru"?"Сюжеты: выберите одну из четырёх самостоятельных историй":
-          locale==="es"?"Tramas: elige una de las cuatro historias":"Plots: choose one of four separate stories"}
+         {locale==="ru"?"Сюжеты: выберите одну из шести самостоятельных историй":
+          locale==="es"?"Tramas: elige una de las seis historias":"Plots: choose one of six separate stories"}
        </p>
        {taxonomyPlots.map((plot,index)=><button type="button" key={plot.id} data-mytube-plot={plot.id}
          aria-pressed={selectedPlotId===plot.id} disabled={disabled}
@@ -1356,11 +1356,11 @@ export function MandalaAutoVideoDirector({
        locale==="es"?"Este nuevo guion espera revisión editorial y vídeo autorizado. La exportación está desactivada.":
          "This new script awaits editorial review and licensed footage binding. Export is disabled."}
    </p>:null}
-   {selectedScenarioId&&!plotsLoading&&plotData?.scenarioId===selectedScenarioId&&taxonomyPlots.length!==4?
+   {selectedScenarioId&&!plotsLoading&&plotData?.scenarioId===selectedScenarioId&&taxonomyPlots.length!==6?
      <p className={css.warning} data-mytube-plots-unavailable>
-       {locale==="ru"?"Четыре сюжета пока недоступны; сценарий остаётся без выбранного сюжета.":
-        locale==="es"?"Las cuatro tramas no están disponibles; no se ha elegido ninguna.":
-        "Four plots are unavailable; no plot has been selected."}
+       {locale==="ru"?"Шесть сюжетов пока недоступны; сценарий остаётся без выбранного сюжета.":
+        locale==="es"?"Las seis tramas no están disponibles; no se ha elegido ninguna.":
+        "Six plots are unavailable; no plot has been selected."}
      </p>:null}
    {selectedTaxonomyPlot?<div className={selectedPlotMedia?.hasFourApprovedSources?css.notice:css.warning}
      role="status" data-mytube-plot-media-status
