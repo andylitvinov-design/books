@@ -24,7 +24,8 @@ test("meditation-course workspace opens the existing working composer within the
   assert.match(composer,/buildPersonalMeditationScript\(\{/);
   assert.match(composer,/data-meditation-course-request/);
   assert.match(composer,/maxLength=\{160\}/);
-  assert.match(composer,/\{script\?\(coursePreview\?course.regenerate:t.regenerate\):t.generate\}/);
+  assert.match(composer,/\{script\?\(coursePreview\?course.regenerate:t.regenerate\):locale==="ru"/);
+  assert.match(composer,/Generate meditation text/);
   assert.match(css,/\.workspaceCourses\{/);
 });
 

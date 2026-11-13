@@ -186,8 +186,8 @@ test("video studio lazily loads optional editor workspaces and collapsed tools",
 });
 
 test("final approved six tabs lead to exactly one real workspace each",()=>{
-  const expected=['tab:"Цель"','tab:"Идеи"','tab:"Гипноэффект"',
-    'tab:"Курс практик"','tab:"Монтаж"','tab:"PRO"'];
+  const expected=['tab:"Цель"','tab:"Идеи"','tab:"Монтаж"',
+    'tab:"PRO"','tab:"Ready"','tab:"Therapy"'];
   for(const label of expected)assert.ok(studio.includes(label),"missing "+label);
   assert.match(studio,/data-video-quick-control=\{item.id\}/);
   assert.match(studio,/setActiveWorkspace\(id\)/);
