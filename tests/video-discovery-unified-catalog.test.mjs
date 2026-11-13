@@ -115,7 +115,10 @@ test("Supabase candidate rows stay invisible until complete independent review",
  assert.deepEqual(reviewed[0].topicTags,["energy","meaning"]);
  assert.equal(buildPublishedVideoIndex(reviewed).length,1);
  assert.deepEqual(projectApprovedMeditationRows([{...base,editorial_status:"candidate"}]),[]);
- assert.deepEqual(projectApprovedMeditationRows([{...base,duration_verified_seconds:601}]),[]);
+ assert.equal(projectApprovedMeditationRows([{...base,duration_verified_seconds:900}]).length,1,
+   "reviewed recordings exactly 15 minutes are now allowed");
+ assert.deepEqual(projectApprovedMeditationRows([{...base,duration_verified_seconds:901}]),[],
+   "strict 15-minute cap still rejects 15:01");
 });
 
 test("high-risk original videos cannot be published through the discovery adapter",()=>{
