@@ -632,10 +632,20 @@ try{
  await agentComposer.waitFor({state:"visible"});
  assert.equal((await agentComposer.inputValue()).trim(),"",
    "clicking Video asks a question in chat, not a fake prepared send");
+ const repliesBeforeGreeting=await chat.locator("[data-hh-ai-assistant-message]").count();
  await agentComposer.fill("Привет Ау");
  await chat.locator('button[type="submit"]').click();
- await page.waitForFunction(()=>[...document.querySelectorAll('[data-hh-agent-preview] [role="log"] p')]
-   .some(node=>node.textContent?.includes("Я здесь!")),null,{timeout:10000});
+ // A real fresh, substantive Russian assistant turn is required. Wording and
+ // punctuation can evolve with the reviewed conversation intelligence.
+ await page.waitForFunction(before=>{
+   const root=document.querySelector("[data-hh-agent-preview]");
+   const userTurns=[...(root?.querySelectorAll('[data-hh-chat-turn="user"]')||[])];
+   const replies=[...(root?.querySelectorAll("[data-hh-ai-assistant-message]")||[])];
+   const reply=replies.at(-1)?.textContent?.trim()||"";
+   return userTurns.some(node=>node.textContent?.includes("Привет Ау"))&&
+     replies.length>before&&reply.length>=12&&/[а-яё]/iu.test(reply)&&
+     !/^(?:привет ау|ошибка|error)$/iu.test(reply);
+ },repliesBeforeGreeting,{timeout:10000});
  assert.equal(await chat.locator("video").count(),0,
    "no completed video is claimed before rendering");
 

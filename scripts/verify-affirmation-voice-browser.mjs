@@ -1012,17 +1012,18 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // Real attached WAV is reflected on the shared live video stage, not
       // merely in a hidden legacy audio panel or a transient preview label.
       await expect(page.locator("[data-video-live-audio]")).toContainText(expectedFileName);
-      // Music Match now permits compatible background beds with approved voice.
-      // Prove it with a physical Safari click and confirm the narration WAV
-      // remains attached: no standalone music silently replaces a client's voice.
+      // Rights-reviewed recordings only: the legacy five synthesized music
+      // beds are not permitted as new suggestions after the voice WAV is
+      // attached. The separately consented Voice Background control already
+      // selected above remains the real, existing remix path.
       const personalMusic=page.locator('[data-hypno-music][data-personalized-music-match]');
       await expect(personalMusic).toBeVisible({timeout:15000});
-      await expect(personalMusic.locator('[role="radio"]')).toHaveCount(3);
-      const bedChoice=personalMusic.locator('[data-phrase-music-attach]').first();
-      await expect(bedChoice).toBeVisible();
-      await expect(bedChoice).toBeEnabled();
-      await bedChoice.click();
-      await expect(bedChoice).toHaveAttribute("aria-checked","true");
+      await expect(personalMusic.locator('[role="radio"]')).toHaveCount(0);
+      await expect(personalMusic.locator('[data-phrase-music-attach]')).toHaveCount(0);
+      const qualityNotice=personalMusic.locator('[data-phrase-music-guidance="voice"]');
+      await expect(qualityNotice).toBeVisible();
+      await expect(qualityNotice).toContainText(
+        locale==="ru"?"Голос сохранён.":locale==="es"?"La voz está guardada.":"Your voice stays attached.");
       await expect(page.locator("[data-video-live-audio]")).toContainText(expectedFileName);
       const firstAudio=await page.locator("[data-video-affimations-audio-ready] audio").getAttribute("src");
       assert.equal(await page.locator("[data-video-affirmation-bed] option").count(),14,
@@ -1237,14 +1238,14 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
             .toHaveAttribute("data-video-result-mode","rendered");
           await expect(output).toBeHidden();
           await expect(page.locator("[data-video-save-direct]")).toBeHidden();
-          await expect(readyView.locator("[data-ready-download]")).toBeVisible();
+          await expect(readyView.locator("[data-ready-save]")).toBeVisible();
           // Read native decoded media, not just a Ready label or simulated file.
           await expect.poll(()=>page.locator("[data-mandala-video-preview]").evaluate(video=>
             video instanceof HTMLVideoElement&&video.readyState>=2&&
             video.videoWidth>0&&video.videoHeight>0&&!video.error),
             {timeout:20000}).toBe(true);
           // Guest Save/Download must invoke actual login gate, not a download.
-          await readyView.locator("[data-ready-download]").click();
+          await readyView.locator("[data-ready-save]").click();
           await expect(readyView.locator("[data-ready-save-gate]")).toBeVisible();
           await expect(readyView.locator("[data-ready-save-gate-signin]")).toBeVisible();
           await readyView.locator("[data-ready-save-close]").click();
@@ -1424,15 +1425,19 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const montageAudioAfterExport=page.locator('[data-video-montage-open-audio]');
       await montageAudioAfterExport.click();
       await expect(page.locator('[data-video-montage-audio]')).toBeVisible();
-      // Compact Audio preserves an explicitly opened cloud Voice Studio,
-      // without the retired basic nested tab.
-      // The phrase warning is intentionally unmounted in Montage. If the
-      // old narration is still attached there, export must remain disabled;
-      // an independently selected soundtrack is not stale narration.
+      // Leaving an attached stale voice invalidates export; selected music is independent.
       const soundtrackLabels=await page.locator("[data-video-live-audio]").allTextContents();
       const stillHasOldVoice=soundtrackLabels.some(label=>
         label.includes("holistic-house-hypno-audio.wav")||label.includes(expectedFileName));
       if(stillHasOldVoice)await expect(page.locator("[data-video-quick-generate]")).toBeDisabled();
+      // Montage has no voice control. Enter Hypno Audio and expose the one
+      // consented voice editor before testing real provider invocation.
+      await page.locator('[data-video-quick-control="effects"]').click();
+      await expect(page.locator("[data-video-hypnocorrection-panel]")).toBeVisible();
+      await page.locator('[data-hypno-tab="audio"]').click();
+      await expect(page.locator('[data-hypno-group="audio"]')).toBeVisible();
+      await page.locator('[data-hypno-group="audio"] [data-hypno-card] button').first().click();
+      await expect(page.locator("[data-hypno-speech-settings]")).toBeVisible();
       const voicePanel=page.locator("[data-video-voice-studio]");
       await voicePanel.waitFor({state:"visible",timeout:25000});
       if(await voicePanel.getAttribute("open")===null)
