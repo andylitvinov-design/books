@@ -242,7 +242,12 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
     return Boolean(field&&field.status!=="unknown"&&field.value!==null&&field.value!==""&&
       (!Array.isArray(field.value)||field.value.length));
   });
-  const sketch=buildConceptShotSketch(concept,durationSeconds);
+  // The shared JS storyboard helper can return legacy or authored film shots.
+  // Narrow the UI contract explicitly so strict TypeScript never infers any.
+  const sketch=buildConceptShotSketch(concept,durationSeconds) as Array<{
+    number:number;startSeconds:number;endSeconds:number;shotKind:number;
+    beat:string;title?:string;emotion?:string
+  }>;
   const word=(ru:string,en:string,es:string)=>locale==="ru"?ru:locale==="es"?es:en;
   const audienceText:Record<string,string>={
     family:word("Семья","Family","Familia"),
