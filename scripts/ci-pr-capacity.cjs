@@ -98,6 +98,11 @@ function staleMergedQueueSamples(runs,now){
 // discounted, but never widens the actual 20-live-wrapper/8-running-job cap.
 // Incomplete reads or unproven histories remain occupied, not free capacity.
 const GHOST_ACTIVE_INVENTORY_LIMIT=32;
+// Trusted overflow: only ONE existing source Repair under verified stale-queue
+// pressure. Core/CI bootstrap, legacy, conflict and merge keep their strict gates.
+const GHOST_ELEVATED_REPAIR_MAX_RUNNING=14;
+const GHOST_ELEVATED_REPAIR_MAX_ACTIVE=16;
+const GHOST_RECENT_QUEUE_GRACE_MS=24*60*60*1000;
 const GHOST_ACTIVE_PROOF_LIMIT=Math.min(LIMIT.maxJobReads,LIMIT.maxActiveRuns-4);
 async function verifiedGhostRepairCapacity(gh,owner,repo,p,now=Date.now()){
  const hold=reason=>({known:false,reason:'GHOST_'+reason});
@@ -191,14 +196,31 @@ async function verifiedGhostRepairCapacity(gh,owner,repo,p,now=Date.now()){
   const jobs=batches.flatMap(page=>page.jobs);
   const runningJobs=jobs.filter(j=>j.status==='in_progress').length,
    queuedJobs=jobs.filter(j=>['queued','waiting','pending'].includes(j.status)).length;
-  if(runningJobs>8||queuedJobs>2)return hold('REAL_JOB_PRESSURE');
+  const normalPressure=runningJobs<=8&&queuedJobs<=2;
+  // The GitHub queued Actions listing is newest-first. Check the exact
+  // one-run first page: any recent Core/specialist arrival refuses overflow.
+  const newestQueued=q.data.workflow_runs;
+  const queueStale=Array.isArray(newestQueued)&&newestQueued.length===1&&
+   q.data.total_count===Q&&
+   Number.isSafeInteger(newestQueued[0]?.id)&&newestQueued[0].id>0&&
+   newestQueued[0].status==='queued'&&
+   Number.isFinite(Date.parse(newestQueued[0].created_at||''))&&
+   Date.parse(newestQueued[0].created_at)<=now-GHOST_RECENT_QUEUE_GRACE_MS;
+  // A merged/jobless ghost AND 3+ hour-old terminal wrappers must be proven.
+  // Only one existing source Repair can use this moderate-pressure branch;
+  // other lanes never treat a count-only 137 queue as free runner capacity.
+  const elevatedRepair=!normalPressure&&queueStale&&
+   verifiedOverhangs>=3&&effectiveActive<=GHOST_ELEVATED_REPAIR_MAX_ACTIVE&&
+   runningJobs<=GHOST_ELEVATED_REPAIR_MAX_RUNNING&&queuedJobs===0;
+  if(!normalPressure&&!elevatedRepair)return hold('REAL_JOB_PRESSURE');
   return {known:true,
    inventoryConfidence:staleReadOnly?STALE_MERGED_REPAIR_MODE:GHOST_REPAIR_MODE,
    ghostProofKind:p.code,
    safeToDispatchOneRepair:true,
    // One existing legacy manual queue preflight can use the same verified
    // free Ubuntu slot. Manual stays manual; exact-head write gates remain.
-   safeToDispatchOneLegacyPreflight:true,ghostProofRunId:p.run_id,
+   safeToDispatchOneLegacyPreflight:normalPressure,
+   elevatedRepairProof:elevatedRepair,ghostProofRunId:p.run_id,
    activeRuns:effectiveActive,originalActiveRuns:A,
    capacityReadbacks,
    fullActiveJobPagesVerified:A,verifiedTerminalOverhangRuns:verifiedOverhangs,
@@ -253,8 +275,12 @@ function admission(lane,capacity){
   if(lane!=='repair'&&lane!=='legacy')return 'GHOST_REPAIR_ONLY';
   if(lane==='legacy'&&capacity.safeToDispatchOneLegacyPreflight!==true)
    return 'GHOST_LEGACY_PREFLIGHT_UNVERIFIED';
+  const elevated=lane==='repair'&&capacity.elevatedRepairProof===true&&
+   capacity.activeRuns<=GHOST_ELEVATED_REPAIR_MAX_ACTIVE&&
+   capacity.runningJobs<=GHOST_ELEVATED_REPAIR_MAX_RUNNING&&
+   capacity.queuedJobs===0&&capacity.safeToDispatchOneLegacyPreflight===false;
   if(capacity.activeRuns>GHOST_ACTIVE_PROOF_LIMIT||capacity.queuedRuns>250||
-     capacity.runningJobs>8||capacity.queuedJobs>2||
+     ((capacity.runningJobs>8||capacity.queuedJobs>2)&&!elevated)||
      capacity.activeWorker?.[WORKFLOWS.repair]!==0)return 'GHOST_WORKER_BUSY';
   return 'ADMIT';
  }
