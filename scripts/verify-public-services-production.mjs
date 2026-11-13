@@ -197,9 +197,21 @@ try {
       nodes.map(node=>node.getAttribute("data-assist-best-card")));
     assert.deepEqual(actualStress, expectedStress,
       "Initial stress choices match client-only ranking in compact cards");
+    // Bookable sessions now open the approved @holistichouse prepared draft;
+    // self-service products continue to their first-party destination.
+    const sessionKeys = new Set(["homeopathy","coaching","reiki","constellations","business"]);
     for (const key of expectedStress) {
       const action = shelf.locator('[data-assist-best-action="' + key + '"]');
-      await expect(action).toHaveAttribute("href", new RegExp("^/" + locale + "/[a-z0-9/-]+$"));
+      if (sessionKeys.has(key)) {
+        const expectedUrl = telegramServiceRequestUrl(key, locale);
+        assert.ok(expectedUrl, "Requested session must have a valid Telegram draft: " + key);
+        await expect(action).toHaveAttribute("href", expectedUrl);
+        await expect(action).toHaveAttribute("target", "_blank");
+        assert.equal(new URL(expectedUrl).searchParams.get("text")?.split(String.fromCharCode(10)).at(-1),
+          "[HH-REQ:" + key + ":" + locale + "]", "Telegram draft preserves service and locale");
+      } else {
+        await expect(action).toHaveAttribute("href", new RegExp("^/" + locale + "/[a-z0-9/-]+$"));
+      }
       const box = await action.boundingBox();
       assert.ok(box && box.height >= 44,
         "Mobile Assist action touch target: " + locale + "/" + width + "/" + key);

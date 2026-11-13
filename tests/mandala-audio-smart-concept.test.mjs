@@ -172,7 +172,13 @@ test("anxiety without a clear cause uses inner support rather than invented fami
  assert.equal(suggestion.parameters.audience.status,"unknown");
  assert.equal(suggestion.meaningAxisId,"anchor");
  assert.equal(suggestion.motifId,"nest");
- assert.equal(suggestion.parameters.intent.source,"goal");
+ assert.equal(suggestion.parameters.situation.source,"goal",
+  "original anxiety wording is retained as the stated problem");
+ assert.equal(suggestion.parameters.situation.value,goal);
+ assert.equal(suggestion.parameters.intent.source,"editorial",
+  "a positive goal is suggested, never attributed to the user as a quote");
+ assert.notEqual(suggestion.goal,goal,"the problem is not relabeled as a goal");
+ assert.match(suggestion.goal,/steadiness|calm|support/i);
  assert.notEqual(suggestion.mainMessage,goal);
  assert.match(suggestion.mainMessage,/steadiness|support/i);
  assert.match(suggestion.emotionalProgram[0],/uncertainty/i);
