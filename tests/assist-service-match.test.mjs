@@ -43,3 +43,46 @@ test("mobile page wires all localized questions while preserving crisis and gues
   assert.equal((component.match(/questions:\{/g)||[]).length,3);
   assert(!/localStorage|fetch\(|sendBeacon|analytics\.track/.test(component));
 });
+
+test("an explicit human, video, AI or self-guided choice never recommends another interaction",()=>{
+  for(const [focus,prefs] of [
+    ["relationships",{mode:"human",budget:"free"}],
+    ["stress",{mode:"video",budget:"free"}],
+    ["work",{mode:"ai",budget:"flexible"}],
+    ["stress",{mode:"self",budget:"any"}],
+  ]) {
+    const ranked=rankAssistOffers(focus,prefs);
+    assert(ranked.length>0);
+    for(const suggestion of ranked) assert(ASSIST_OFFER_CATALOG[suggestion.id].modes.includes(prefs.mode),suggestion.id);
+  }
+});
+test("online, in-person, asynchronous and free do not claim unsupported options",()=>{
+  assert.deepEqual(rankAssistOffers("stress",{mode:"human",channel:"online",budget:"free"}),[]);
+  assert(rankAssistOffers("relationships",{mode:"human",channel:"async",budget:"free"}).every(x=>
+    ASSIST_OFFER_CATALOG[x.id].channels.includes("async")&&ASSIST_OFFER_CATALOG[x.id].cost==="free"));
+  assert(rankAssistOffers("work",{mode:"human",channel:"inperson",budget:"flexible"}).every(x=>
+    ASSIST_OFFER_CATALOG[x.id].channels.includes("inperson")));
+});
+test("RU EN ES explicit formats and prices skip already answered questions",()=>{
+  const inputs=[
+    ["Мне нужна бесплатная онлайн консультация",{budget:"free",channel:"online",mode:"human"}],
+    ["Хочу онлайн сессию с консультантом бесплатно",{budget:"free",channel:"online",mode:"human"}],
+    ["video call under €50",{budget:"under50",channel:"online",mode:"human"}],
+    ["Quiero una consulta por escrito, gratis",{budget:"free",channel:"async",mode:"human"}],
+    ["Хочу посмотреть видео бесплатно",{budget:"free",mode:"video"}],
+  ];
+  for(const [input,want] of inputs) {
+    const preferences=inferAssistPreferences(input);
+    assert.deepEqual(preferences,want,input);
+    if(preferences.budget) assert.equal(nextAssistQuestion(preferences),null,input);
+  }
+});
+test("negated free and video requests are not interpreted positively",()=>{
+  assert.notEqual(inferAssistPreferences("Не хочу бесплатно, только с человеком").budget,"free");
+  assert.notEqual(inferAssistPreferences("Not free, I want to talk to a specialist").budget,"free");
+  assert.equal(inferAssistPreferences("Не хочу видео, нужна консультация").mode,"human");
+  assert.equal(inferAssistPreferences("Не хочу очно, можно заочно").channel,"async");
+});
+test("the default three stress cards stay stable for in-flight Assist browser acceptance",()=>{
+  assert.deepEqual(rankAssistOffers("stress",{}).map(x=>x.id),["mytube","tests","aiCoach"]);
+});
