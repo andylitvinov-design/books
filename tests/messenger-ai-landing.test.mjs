@@ -110,6 +110,23 @@ test("existing voice recording, upload and consent remain reachable only by user
  assert.match(page,/--hh-messenger-height/);
 });
 
+test("Messenger hides voice controls behind the composer settings, not above the welcome",()=>{
+ const moreStart=chat.indexOf('data-hh-ai-more');
+ const moreEnd=chat.indexOf('</details>:voiceAttachment}',moreStart);
+ assert.ok(moreStart>0&&moreEnd>moreStart);
+ const menu=chat.slice(moreStart,moreEnd);
+ assert.match(menu,/data-hh-voice-settings/);
+ assert.match(menu,/\{voiceControls\}/);
+ assert.match(menu,/\{voiceAttachment\}/);
+ assert.match(chat,/const voiceControls=voiceEnabled\?<VoiceCompanionControls/);
+ assert.equal((chat.match(/<VoiceCompanionControls\b/g)||[]).length,1);
+ assert.match(chat,/\{compact&&!messengerView&&voiceEnabled&&<details className=\{styles.compactSettings\} data-hh-voice-settings>/);
+ assert.match(chat,/\{!compact&&settings\}/);
+ assert.match(chat,/data-hh-conversation-mic/);
+ assert.match(chatCss,/\.composerMenu \.voiceSettings>summary/);
+ assert.match(chatCss,/max-height:min\(65dvh,520px\);overflow-y:auto/);
+});
+
 test("EN RU ES, phone widths and syntax of edited React sources",()=>{
  for(const lang of ["en","ru","es"])assert.match(landing,new RegExp(lang+":\\{"));
  for(const id of ["test","video","practice","session","course","ask"])

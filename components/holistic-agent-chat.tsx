@@ -1153,6 +1153,15 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       }}/>
   </label>:null;
   const resetControl=<button type="button" onClick={resetConversation}>{t.reset}</button>;
+  const voiceControls=voiceEnabled?<VoiceCompanionControls voice={voice} locale={locale}
+    greeting={pageHelp?.greeting??starter.welcome}
+    latestReply={[...messages].reverse().find(item=>item.role==="assistant")?.text}
+    onTranscript={text=>setDraft(prev=>((prev?prev+" ":"")+text).slice(0,2000))}
+    onConversationTurn={text=>{
+      if(busy||mode==="owned"&&!agree){setDraft(text);voice.stopDialogue();return;}
+      if(requiresProtectedReply(text,locale))voice.stopDialogue();
+      setDraft(text);void sendTurn(text);
+    }}/>:null;
 
   const settings = (
     <details className={compact?styles.compactSettings:styles.expandedSettings} open={!compact}>
@@ -1196,6 +1205,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       <input type="checkbox" checked={agree} onChange={event=>setAgree(event.target.checked)}/>
       {t.consent}
     </label>}
+    {voiceControls}
     </details>
   );
   const availableSuggestions=choices.filter(x=>!dismissedIds.includes(x.id)&&!completedIds.includes(x.id));
@@ -1509,15 +1519,10 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         </a>}
       </div>}
     </section>}
-    {voiceEnabled&&<VoiceCompanionControls voice={voice} locale={locale}
-      greeting={pageHelp?.greeting??starter.welcome}
-      latestReply={[...messages].reverse().find(item=>item.role==="assistant")?.text}
-      onTranscript={text=>setDraft(prev=>((prev?prev+" ":"")+text).slice(0,2000))}
-      onConversationTurn={text=>{
-        if(busy||mode==="owned"&&!agree){setDraft(text);voice.stopDialogue();return;}
-        if(requiresProtectedReply(text,locale))voice.stopDialogue();
-        setDraft(text);void sendTurn(text);
-      }}/>}
+    {compact&&!messengerView&&voiceEnabled&&<details className={styles.compactSettings} data-hh-voice-settings>
+      <summary>{locale==="ru"?"Настройки голоса":locale==="es"?"Ajustes de voz":"Voice settings"}</summary>
+      {voiceControls}
+    </details>}
     <form onSubmit={submit} className={styles.form}>
       <textarea ref={composerRef} value={draft} onChange={e=>setDraft(e.target.value)} placeholder={t.placeholder}
         onFocus={()=>{
@@ -1531,7 +1536,14 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       <div className={styles.actions}>
         {messengerView?<details className={styles.composerMore} data-hh-ai-more>
           <summary aria-label={locale==="ru"?"Дополнительные действия":locale==="es"?"Más acciones":"More actions"}><Plus size={19} aria-hidden="true"/></summary>
-          <div className={styles.composerMenu}>{voiceAttachment}{resetControl}</div>
+          <div className={styles.composerMenu}>
+            {voiceAttachment}
+            {voiceEnabled&&<details className={styles.voiceSettings} data-hh-voice-settings>
+              <summary>{locale==="ru"?"Настройки голоса":locale==="es"?"Ajustes de voz":"Voice settings"}</summary>
+              {voiceControls}
+            </details>}
+            {resetControl}
+          </div>
         </details>:voiceAttachment}
         {messengerView&&!pageHelp&&voiceEnabled&&<button type="button"
           className={styles.recorderToggle} data-hh-conversation-mic
