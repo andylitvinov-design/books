@@ -1631,7 +1631,7 @@ test('App R1 banner matrix runs REAL preinstalled Playwright only when applicabl
   const source=workflow('hh-app-r1.yml');
   const section=source.split('  course-banner-browser:\n')[1]?.split('\n  database:\n')[0];
   assert.ok(section,'course-banner-browser must exist');
-  assert.match(section,/runs-on: ubuntu-24\.04/);
+  assert.match(section,/runs-on: \$\{\{ matrix\.browser != 'none' && 'ubuntu-24\.04' \|\| 'ubuntu-slim' \}\}/);
   assert.match(section,/timeout-minutes: 15/);
   assert.match(section,/browser: \$\{\{ fromJSON\(needs\.impact\.outputs\.banner == 'true'/);
   assert.match(section,/if: needs\.impact\.outputs\.banner != 'true'/);
