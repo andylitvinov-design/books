@@ -9,7 +9,7 @@ import {readFileSync} from "node:fs";
 
 test("a plot selection yields four distinct approved topic-matched MP4 scenes, not fake plot footage",async()=>{
   const variants=await listMyTubePlots("money-mindset-s1","ru");
-  assert.equal(variants.length,4);
+  assert.equal(variants.length,6);
   for(const plot of variants){
     assert.equal(plot.visualCues.length,4);
     const result=recommendMyTubePlotMontage({plot,scenes:stock.scenes});
@@ -36,10 +36,10 @@ test("a plot selection yields four distinct approved topic-matched MP4 scenes, n
 
 test("different plots use independent visual cues and describe the storyboard without certifying its scenes",async()=>{
   const plots=await listMyTubePlots("stress-relief-s1","en");
-  assert.equal(plots.length,4);
+  assert.equal(plots.length,6);
   const plans=plots.map(plot=>recommendMyTubePlotMontage({plot,scenes:stock.scenes}));
   assert.ok(plans.every(plan=>plan.hasFourApprovedSources && plan.verifiedFinishedPlot===false));
-  assert.equal(new Set(plots.map(plot=>plot.plotMode)).size,4);
+  assert.equal(new Set(plots.map(plot=>plot.plotMode)).size,6);
   assert.equal(new Set(plots.map(plot=>plot.visualCues.join("|"))).size,4);
   assert.ok(plans.every(plan=>plan.stages.every(stage=>stage.sourceTopicScore>=65)));
 });
@@ -58,7 +58,7 @@ test("uncovered subjects cannot masquerade as plot-ready licensed video",async()
 test("malformed plot IDs, wrong scenario or unapproved/foreign assets fail closed",async()=>{
   const [plot]=await listMyTubePlots("money-mindset-s1","ru");
   const invalid=[
-    {...plot,id:"money-mindset-s1-p5"},
+    {...plot,id:"money-mindset-s1-p7"},
     {...plot,scenarioId:"panic-attacks-s1"},
     {...plot,plotMode:"unknown"},
     {...plot,beats:["only one"]},
