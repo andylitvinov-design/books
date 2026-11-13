@@ -1,31 +1,31 @@
 'use client'
 
-import {useEffect,useRef,useState} from 'react'
+import {forwardRef,useEffect,useImperativeHandle,useRef,useState} from 'react'
 import {Mic,MicOff,Volume2} from 'lucide-react'
 import styles from './my-coach-speech-loop.module.css'
 
 const langs={en:'en-GB',ru:'ru-RU',es:'es-ES'}
 const words={
   en:{start:'Talk by voice',stop:'Stop voice',listening:'Listening…',thinking:'Coach is thinking…',speaking:'Coach is speaking…',
-    unsupported:'Voice recognition is unavailable here. You can still type.',blocked:'Microphone denied. Check Safari/browser permissions.',
+    unsupported:'Voice recognition is unavailable in this browser. Try opening this page in Safari, or type your message.',blocked:'Microphone denied. Check Safari/browser permissions.',
     short:'I did not catch that. Tap the microphone to try again.',restart:'Tap the microphone for the next turn.',
     failed:'Could not complete this voice turn. Please try again or type.',
     privacy:'Microphone audio may be processed by your browser’s speech-recognition provider. We do not store recordings. Press Stop at any time.'},
   ru:{start:'Говорить голосом',stop:'Остановить голос',listening:'Слушаю…',thinking:'Коуч думает…',speaking:'Коуч говорит…',
-    unsupported:'Распознавание речи недоступно. Можно написать сообщение.',
+    unsupported:'Голосовой ввод недоступен в этом браузере. Попробуйте открыть страницу в Safari или написать сообщение.',
     blocked:'Доступ к микрофону запрещён. Разрешите его в Safari или настройках браузера.',
     short:'Не удалось разобрать фразу. Нажмите микрофон ещё раз.',restart:'Нажмите микрофон для следующей реплики.',
     failed:'Голосовой ответ недоступен. Попробуйте ещё раз или напишите сообщение.',
     privacy:'Браузер может передавать аудио поставщику распознавания речи. Мы не сохраняем записи. Разговор можно остановить в любой момент.'},
   es:{start:'Hablar por voz',stop:'Detener voz',listening:'Escuchando…',thinking:'El coach piensa…',speaking:'El coach habla…',
-    unsupported:'El reconocimiento de voz no está disponible. Puedes escribir.',
+    unsupported:'El reconocimiento de voz no está disponible aquí. Prueba abrir la página en Safari o escribe tu mensaje.',
     blocked:'Micrófono bloqueado. Actívalo en Safari o en los ajustes del navegador.',
     short:'No entendí la frase. Toca el micrófono otra vez.',restart:'Toca el micrófono para continuar.',
     failed:'No se pudo completar el turno de voz. Inténtalo de nuevo o escribe.',
     privacy:'El navegador puede enviar audio al proveedor de reconocimiento. No almacenamos grabaciones. Detén la conversación cuando quieras.'},
 }
 
-export default function MyCoachSpeechLoop({locale='en',enabled=false,canStart=true,onTurn,onCancelTurn,onVoiceStateChange}){
+const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',enabled=false,canStart=true,onTurn,onCancelTurn,onVoiceStateChange,onRequestConsent},ref){
   const lang=words[locale]?locale:'en',t=words[lang]
   const [phase,setPhase]=useState('idle')
   const [notice,setNotice]=useState('')
@@ -69,6 +69,14 @@ export default function MyCoachSpeechLoop({locale='en',enabled=false,canStart=tr
     changePhase('idle')
   }
   stopRef.current=stopVoice
+  useImperativeHandle(ref,()=>({
+    startWithConsent(){
+      if(activeRef.current||!canStart)return
+      activeRef.current=true
+      generationRef.current+=1
+      startListening()
+    },
+  }))
   useEffect(()=>{
     setSupported(Boolean(window.SpeechRecognition||window.webkitSpeechRecognition))
     const onHidden=()=>{if(document.visibilityState==='hidden')stopRef.current?.()}
@@ -173,7 +181,9 @@ export default function MyCoachSpeechLoop({locale='en',enabled=false,canStart=tr
 
   function toggle(){
     if(activeRef.current){stopVoice();setNotice('');return}
-    if(!enabled||!canStart)return
+    if(!canStart)return
+    if(supported===false){setNotice(t.unsupported);return}
+    if(!enabled){onRequestConsent?.();return}
     activeRef.current=true
     generationRef.current+=1
     startListening()
@@ -182,7 +192,7 @@ export default function MyCoachSpeechLoop({locale='en',enabled=false,canStart=tr
   const active=phase!=='idle'
   return <div className={styles.root} data-my-coach-voice={phase}>
     <button type="button" className={styles.button}
-      onClick={toggle} disabled={supported===false||(!active&&(!enabled||!canStart))}
+      onClick={toggle} disabled={!active&&!canStart}
       aria-pressed={active} aria-label={active?t.stop:t.start}>
       {active?<MicOff size={19} aria-hidden="true"/>:<Mic size={19} aria-hidden="true"/>}
       <span>{active?t.stop:t.start}</span>
@@ -193,6 +203,8 @@ export default function MyCoachSpeechLoop({locale='en',enabled=false,canStart=tr
       {phase==='listening'?t.listening:phase==='thinking'?t.thinking:t.speaking}
     </span>}
     {notice&&<p className={styles.note} role="status">{notice}</p>}
-    <p className={styles.privacy}>{t.privacy}</p>
+    <p className={styles.privacy} data-my-coach-voice-privacy>{t.privacy}</p>
   </div>
-}
+})
+
+export default MyCoachSpeechLoop
