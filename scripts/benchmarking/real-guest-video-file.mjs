@@ -51,7 +51,9 @@ export async function readRealGuestVideo(page,{timeout=120000}={}){
   const onDownload=()=>{downloads++;};
   page.on('download',onDownload);
   try{
-    await ready.locator('[data-ready-download]').click();
+    // The approved Ready has two primary actions; Save is the explicit auth gate.
+    // Do not click a removed Download button or weaken the decoded Blob checks.
+    await ready.locator('[data-ready-save]').click();
     await gate.waitFor({state:'visible',timeout:10000});
     await ready.locator('[data-ready-save-gate-signin]').waitFor({state:'visible',timeout:10000});
     await ready.locator('[data-ready-save-close]').click();

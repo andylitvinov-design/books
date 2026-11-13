@@ -42,3 +42,17 @@
 .embeddedWrap{flex:1;min-width:0;max-width:none;margin:0;align-self:center}
 .embeddedWrap .talkButton{min-height:52px;padding:5px 7px;gap:5px;font:800 clamp(11px,1.9vw,15px)/1.12 system-ui;box-shadow:0 0 0 3px #12ffa35c,0 3px 20px #00ffd366}
 @media(max-width:355px){.embeddedWrap .portrait{width:27px;height:27px}.embeddedWrap .talkButton{font-size:10px;gap:3px;padding:4px}}
+
+/* The hero CTA matches the approved simple Talk Now button.
+   Keep the profile photo in the user-invoked login dialog. */
+.embeddedWrap .portrait{display:none}
+.embeddedWrap .talkButton{
+  width:100%;min-height:53px;padding:9px 18px;gap:10px;
+  font:800 clamp(14px,3.9vw,18px)/1.15 system-ui;
+  background:linear-gradient(110deg,#16bd8c,#027153);
+  border:2px solid #a7fadd;
+  box-shadow:0 0 0 2px #27b98f50,0 4px 15px #075f494a;
+}
+.embeddedWrap .talkButton svg:first-of-type{margin-left:auto}
+.embeddedWrap .talkButton svg:last-of-type{margin-left:auto}
+@media(max-width:355px){.embeddedWrap .talkButton{min-height:47px;font-size:13px;padding:7px 11px}}

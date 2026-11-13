@@ -2,37 +2,52 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {
-  isMyTubeMeditationPractice,isMyTubeMasterPresentation,matchesMyTubeShelf,
+  isMyTubeMeditationPractice,isMyTubeMasterPresentation,isMyTubeEducationalVideo,matchesMyTubeShelf,
   myTubeCourseInfo,listMyTubeCourseTypes,listMyTubeCourseTraditions,
   listMyTubeCourseSeries,sortMyTubeCourseLessons
 } from "../lib/video-discovery/mytube-shelves.mjs";
 const read=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 
-test("exactly three exclusive MyTube sections without an All section",()=>{
+test("exactly four exclusive MyTube sections without an All section",()=>{
  const view=read("components/video-discovery.tsx");
  const css=read("components/video-discovery.module.css");
- assert.match(view,/\(\["practices","courses","masters"\] as const\)\.map/);
+ assert.match(view,/\(\["practices","courses","masters","videos"\] as const\)\.map/);
  assert.doesNotMatch(view,/\(\["all","shorts","courses","study"\] as const\)/);
  assert.match(view,/data-mytube-format-mode=\{mode\}/);
- assert.match(view,/data-mytube-course-type=\{type\}/);
- assert.match(view,/data-mytube-course-tradition=\{traditionId\}/);
- assert.match(view,/data-mytube-course-series=\{series\.id\}/);
- assert.match(css,/\.mytube \.mytubeFormatTabs\{[^}]*grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
- for(const name of ["Практики","Курсы","Мастера","Practices","Courses","Masters","Prácticas","Cursos","Maestros"]){
+ const playlists=read("components/mytube-course-playlists.tsx");
+ assert.match(playlists,/data-mytube-course-type=\{value\}/);
+ assert.match(playlists,/data-mytube-course-tradition=\{value\}/);
+ assert.match(playlists,/data-mytube-course-series=\{group\.id\}/);
+ assert.match(css,/\.mytube \.mytubeFormatTabs\{[^}]*grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
+ for(const name of ["Практики","Курсы","Мастера","Видео","Practices","Courses","Masters","Videos","Prácticas","Cursos","Maestros","Vídeos"]){
    assert.ok(view.includes('"'+name+'"'),"translated label "+name);
  }
 });
-test("practice shelf is a strict approved meditation of verified 1–600s, not a teaser or talk",()=>{
+test("practice shelf is a strict approved meditation of verified 1–900s, not a teaser or talk",()=>{
  const base={id:"v",sourceGroup:"approved-meditations",sourceApproved:true,curation:"verified",
   editorial_status:"approved",embed_status:"confirmed",rights_status:"embed_approved",
-  contentType:"soft_meditation",durationVerifiedSeconds:600};
+  contentType:"soft_meditation",durationVerifiedSeconds:900};
  assert.equal(isMyTubeMeditationPractice(base),true);
- assert.equal(isMyTubeMeditationPractice({...base,durationVerifiedSeconds:601}),false);
+ assert.equal(isMyTubeMeditationPractice({...base,durationVerifiedSeconds:901}),false);
+ assert.equal(isMyTubeMeditationPractice({...base,durationVerifiedSeconds:601}),true);
  assert.equal(isMyTubeMeditationPractice({...base,durationVerifiedSeconds:null}),false);
  assert.equal(isMyTubeMeditationPractice({...base,contentType:"explanation"}),false);
  assert.equal(isMyTubeMeditationPractice({...base,editorial_status:"draft"}),false);
  assert.equal(matchesMyTubeShelf({title:"Quick intro",sourceGroup:"site-introduction"},"practices"),false);
  assert.equal(matchesMyTubeShelf(base,"masters"),false);
+});
+test("published owner-library talks occupy Videos without weakening the other three shelves",()=>{
+ const talk={id:"owner-v",sourceGroup:"owner-library",sourceApproved:true,
+  curation:"published",youtubeId:"AbCdEfGhIj0",title:"An encouraging talk"};
+ assert.equal(isMyTubeEducationalVideo(talk),true);
+ assert.equal(matchesMyTubeShelf(talk,"videos"),true);
+ assert.equal(matchesMyTubeShelf(talk,"practices"),false);
+ assert.equal(matchesMyTubeShelf(talk,"courses"),false);
+ assert.equal(matchesMyTubeShelf(talk,"masters"),false);
+ assert.equal(isMyTubeEducationalVideo({...talk,sourceApproved:false}),false);
+ assert.equal(isMyTubeEducationalVideo({...talk,curation:"candidate"}),false);
+ assert.equal(isMyTubeEducationalVideo({...talk,youtubeId:"not-a-youtube-id"}),false);
+ assert.equal(isMyTubeEducationalVideo({...talk,sourceGroup:"site-introduction"}),false);
 });
 test("course type and Greek tradition are genuine multi-episode series ordered 1 to last",()=>{
  const items=[7,2,1,5,3,4,6].map(n=>({
@@ -61,6 +76,30 @@ test("Masters requires actual presentation metadata or a specific introductory t
  assert.equal(isMyTubeMasterPresentation({sourceGroup:"master-presentations",sourceApproved:false}),false);
  assert.equal(matchesMyTubeShelf({}, "all"),false);
 });
+test("nine published site presentations are available in Masters without elevating unreviewed videos",()=>{
+  const hub=read("components/library-hub.tsx");
+  const feed=read("components/library-feed.tsx");
+  const videoRegistry=hub.slice(hub.indexOf("const videoYouTubeIds:"),hub.indexOf("/** The Library and Ideas surfaces"));
+  const approvedIds=[
+    "Y4K4piEwwA8","s30Y42IwPcg","ILyRWyHtJoE","vqRmI79cecQ",
+    "sfVFOQNr2qk","AE8Pelpo424","Cz6SxXJNZbw","Q9NvYECKWuc","eLsjFaKCBhI",
+  ];
+  assert.equal(new Set(approvedIds).size,9);
+  for(const id of approvedIds)assert.ok(videoRegistry.includes('"'+id+'"'),id+" must be source-backed");
+  assert.match(hub,/const approvedSiteMasterIds=new Set\(siteIntroductions\.map\(video=>video\.youtubeId\)\)/);
+  assert.match(hub,/approvedSiteMasterIds\.has\(video\.youtubeId\)&&video\.sourceApproved===true/);
+  assert.match(hub,/!video\.seriesId&&!Number\.isInteger\(video\.seriesOrder\)/);
+  assert.match(hub,/mytubeSection:"masters" as const,author:"Andy"/);
+  const presentation={kind:"video",youtubeId:"vqRmI79cecQ",title:"Psychotherapy — introduction in English",
+    sourceGroup:"site-introduction",sourceApproved:true,curation:"published",mytubeSection:"masters"};
+  assert.equal(matchesMyTubeShelf(presentation,"masters"),true);
+  for(const shelf of ["practices","courses","videos"])assert.equal(matchesMyTubeShelf(presentation,shelf),false);
+  assert.equal(matchesMyTubeShelf({...presentation,mytubeSection:undefined},"masters"),false);
+  assert.equal(matchesMyTubeShelf({...presentation,sourceApproved:false},"masters"),false);
+  assert.equal(matchesMyTubeShelf({sourceGroup:"site-introduction",title:"Our service",
+    curation:"published",sourceApproved:true},"masters"),false);
+  assert.match(feed,/mytubeShelf === "masters"\) \? filtered\.length/);
+});
 test("MyTube routes preserve numbered original course order and do not change other Library layout",()=>{
  const page=read("app/[locale]/mytube/page.tsx");
  const view=read("components/video-discovery.tsx");
@@ -84,6 +123,6 @@ test("numbered short course lessons stay in courses; full MyTube playlists are n
    Array.from({length:12},(_,i)=>i+1));
  const feed=read("components/library-feed.tsx");
  const view=read("components/video-discovery.tsx");
- assert.match(feed,/visibleLimit = mytubeShelf === "courses" \? filtered\.length/);
+ assert.match(feed,/mytubeShelf === "courses" \|\| mytubeShelf === "practices" \|\| mytubeShelf === "videos" \|\| mytubeShelf === "masters"/);
  assert.match(view,/setSearch\(""\);setSavedOnly\(false\);setHiddenIds\(\[\]\)/);
 });

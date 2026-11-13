@@ -622,6 +622,16 @@ try{
  assert.equal(await canonicalTopics.count(),4,"chosen subcategory owns four exact canonical topics");
  await canonicalTopics.first().click();
  await chat.locator('[data-hh-video-chat-step="topic"]').waitFor({state:"visible"});
+ // A click can scroll the selected option into view, which switches the
+ // transcript into reader-scroll mode. Verify either auto-follow or its real
+ // accessible "New messages" affordance; then verify the latest is visible.
+ await page.waitForFunction(()=>{
+   const el=document.querySelector('[data-hh-agent-preview] [role="log"]');
+   const jump=document.querySelector('[data-hh-agent-preview] button[class*="jumpToLatest"]');
+   return !!el&&(el.scrollHeight-el.scrollTop-el.clientHeight<12||!!jump);
+ },null,{timeout:10000});
+ const latestJump=chat.locator('button[class*="jumpToLatest"]');
+ if(await latestJump.isVisible())await latestJump.click();
  await page.waitForFunction(()=>{
    const el=document.querySelector('[data-hh-agent-preview] [role="log"]');
    return !!el&&el.scrollHeight-el.scrollTop-el.clientHeight<12;
