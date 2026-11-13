@@ -1,10 +1,11 @@
 name: HH PR core release gate
 on:
   pull_request:
-    # Metadata-only backfill: a PAT-authored PR body edit runs REAL exact-HEAD
-    # Core and Specialist jobs without a no-op source commit. Ordinary PR
-    # edits also receive the full fail-closed release gate; no skipped required jobs.
-    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft, edited]
+    # PR title/body edits are not a source change: do not launch duplicate
+    # Core/Specialist waves on the same HEAD. The trusted control worker
+    # recovers genuinely missing PR CI via a signed Draft -> Ready transition.
+    # A retargeted Ready PR must still receive a real Ready/synchronize event.
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
   merge_group:
     types: [checks_requested]
@@ -15,7 +16,7 @@ permissions:
 concurrency:
   group: hh-pr-core-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
   # Cancel costly older Ready CI when a PR becomes Draft; the new Draft
-  # attempt remains fail-closed. Do not cancel metadata-only or manual runs.
+  # attempt remains fail-closed. Do not cancel manual runs.
   cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && (github.event.action == 'synchronize' || github.event.action == 'converted_to_draft') }}
 jobs:
   scope:
