@@ -337,15 +337,19 @@ export default function MyCoachCatalog({ locale = 'en' }) {
               aria-pressed={selected.id === id}
               onClick={() => { setSelectedId(id); setSettings(normalizeCoachSettings(id)) }}>
               <span className={heroStyles.railPortrait} data-persona={id} aria-hidden="true">
-                <img
-                  className={heroStyles.railPhoto}
-                  src={`/images/holistic-house/my-coach-${id}-rail.webp`}
-                  alt=""
-                  width={288}
-                  height={320}
-                  loading="lazy"
-                  decoding="async"
-                />
+                <picture>
+                  <source media="(prefers-reduced-motion: reduce)" type="image/webp"
+                    srcSet={`/images/holistic-house/my-coach-motion/${id}-still.webp`} />
+                  <img
+                    className={heroStyles.railPhoto}
+                    src={`/images/holistic-house/my-coach-motion/${id}-living.webp`}
+                    alt=""
+                    width={288}
+                    height={320}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </picture>
               </span>
               <strong>{localCoachText(persona.name, lang)}</strong>
               <small>{localCoachText(persona.role, lang)}</small>

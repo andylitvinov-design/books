@@ -1249,6 +1249,10 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
             video.videoWidth>0&&video.videoHeight>0&&!video.error),
             {timeout:20000}).toBe(true);
           // Guest Save/Download must invoke actual login gate, not a download.
+          // The optional progress/check-in overlay must get out of the way
+          // automatically when verified Ready appears, without bypassing the UI.
+          await expect(page.locator("[data-video-effect-overlay]")).toHaveCount(0);
+          await expect(page.locator("[data-video-effect-reopen]")).toBeVisible();
           await readyView.locator("[data-ready-save]").click();
           await expect(readyView.locator("[data-ready-save-gate]")).toBeVisible();
           await expect(readyView.locator("[data-ready-save-gate-signin]")).toBeVisible();
