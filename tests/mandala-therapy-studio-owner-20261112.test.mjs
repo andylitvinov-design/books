@@ -57,3 +57,11 @@ test("Mobile visuals have roomy touch targets and correct eight-draft disclosure
  assert.match(ui,/Eight-session mode initially creates a plan and the first editable script/);
  assert.match(ui,/Курс сначала создаёт план из 8 сессий и текст первой медитации/);
 });
+
+test("Therapy WebKit preserves voice and reviewed recording rights",()=>{
+ const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+ assert.ok(browser.includes("await expect(personalMusic.locator('[role=\"radio\"]')).toHaveCount(0);"));
+ assert.ok(browser.includes("data-phrase-music-guidance=\"voice\""));
+ assert.ok(browser.includes("data-therapy-subtab=\"practice\""));
+ assert.ok(browser.includes("data-therapy-effects-toggle"));
+});

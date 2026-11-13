@@ -39,3 +39,24 @@ test('website includes real progress, post-play feedback and does not claim an u
   assert.match(studio,/MandalaVideoEffectJourney/);
   assert.match(studio,/status=\{preparing\?"preparing":recording\?"rendering"/);
 });
+
+test('render progress and the optional one-at-a-time check-in in a centered, dismissible mobile dialog',()=>{
+  const source=readFileSync(new URL('../components/mandala-video-effect-journey.tsx',import.meta.url),'utf8');
+  const css=readFileSync(new URL('../components/mandala-video-effect-journey.module.css',import.meta.url),'utf8');
+  assert.match(source,/createPortal\(modalOpen/);
+  assert.match(source,/data-video-effect-overlay/);
+  assert.match(source,/role="dialog" aria-modal="true"/);
+  assert.match(source,/aria-labelledby="video-effect-journey-title"/);
+  assert.match(source,/document\.body\.style\.overflow="hidden"/);
+  assert.match(source,/event\.key==="Escape"/);
+  assert.match(source,/data-video-effect-reopen/);
+  assert.match(source,/videoEnded\|\|status==="failed"/);
+  assert.match(source,/data-video-effect-watch/);
+  assert.match(source,/onClick=\{\(\)=>chooseScore\(value\)\}/);
+  assert.match(css,/\.overlay\{position:fixed;inset:0;z-index:11000/);
+  assert.match(css,/\.modal\{box-sizing:border-box;width:min\(100%,440px\)/);
+  assert.match(css,/max-height:calc\(100dvh/);
+  assert.match(css,/overflow-y:auto/);
+  assert.match(css,/safe-area-inset-bottom/);
+  assert.match(css,/\.reopen\{position:fixed/);
+});

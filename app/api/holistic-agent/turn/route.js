@@ -17,6 +17,7 @@ import { interpretSupportUtterance, explainUserQuestion } from "@/lib/holistic-s
 import { ruleConversationReply } from "@/lib/holistic-support/rule-conversation.mjs";
 import { nativeSecretaryTurn } from "@/lib/holistic-support/native-secretary.mjs";
 import { consultServiceQuestion } from "@/lib/assist/consultant-mind.mjs";
+import { resolveComplaintTurn } from "@/lib/holistic-support/complaint-mind.mjs";
 import { resolveWisdomRequest } from "@/lib/app/coaching-wisdom.js";
 import { resolveConversationFocus } from "@/lib/holistic-support/conversation-context.mjs";
 import { detectConversationLocale } from "@/lib/holistic-support/conversation-locale.mjs";
@@ -143,6 +144,27 @@ export async function POST(request) {
     const recentUnsafe = body.history.some(turn => turn.role==="user" &&
       preflight(turn.text,body.locale).status!=="clear");
     if (recentUnsafe && safety.status==="clear") safety.status="human_review";
+
+    // Complaint Mind is a reviewed, no-side-effect response layer. The prior
+    // actor, rate, safety and recent-unsafe gates always take precedence.
+    const complaint=safety.status==="clear"&&!recentUnsafe &&
+      body.judgmentContext==null && body.judgmentChoice==null &&
+      body.usePrivateProfile!==true && body.usePrivateHistory!==true &&
+      body.useAgentMemory!==true && body.preferredFormat==null &&
+      (!body.chosenAxes || body.chosenAxes.length===0) &&
+      ["rules","owned"].includes(body.mode)
+      ? resolveComplaintTurn({message:body.message,locale:body.locale,history:body.history})
+      : null;
+    if(complaint){
+      return auth.apply(NextResponse.json({
+        status:"clarify",reply:complaint.reply,source:complaint.source,
+        mindRole:null,modelUsed:false,memorySaved:false,userAuthorized:true,
+        suggestions:[],usedSavedTestEvidence:false,usedSavedVideoHistory:false,
+        browserModelAllowed:false,
+        decision:{status:"clarify",message:complaint.reply,question:null,suggestions:[]}
+      },{headers:PRIVATE_HEADERS}));
+    }
+
     // Explicit opt-in to one wisdom reflection. This is a server-only DB
     // lookup after origin, session, throttles and safety checks. It never
     // overrides signed judgment choices or sends client text to other APIs.
