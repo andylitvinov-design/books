@@ -1,0 +1,28 @@
+/* Scoped private activity panel inside the existing Memory page. Never override PR Monitor graphs/dock. */
+.hh-agent-digest-panel{min-width:0;overflow-wrap:anywhere;display:grid;gap:13px}
+.hh-agent-digest-header{display:grid;gap:5px}
+.hh-agent-digest-header h2{font-size:clamp(19px,5vw,25px);line-height:1.2;margin:0;color:#fff}
+.hh-agent-digest-header p{margin:0;color:#c6bfdd;font-size:13px;line-height:1.5}
+.hh-agent-digest-filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;align-items:end}
+.hh-agent-digest-filters label{display:grid;gap:6px;font-size:12px;font-weight:700;color:#e3d5f5;min-width:0}
+.hh-agent-digest-filters select{width:100%;min-width:0;min-height:46px;padding:10px 12px;background:#171b2e;border:1px solid #847498;border-radius:11px;color:#fff;font:inherit;font-size:15px}
+.hh-agent-digest-filters select:focus-visible,.hh-agent-digest-refresh:focus-visible{outline:3px solid #d4b5ff;outline-offset:2px}
+.hh-agent-digest-refresh{border:1px solid #bd96ef;border-radius:12px;background:#6c499e;color:#fff;font-weight:750;font-size:14px;padding:12px 16px;min-height:46px;cursor:pointer}
+.hh-agent-digest-refresh:disabled{opacity:.6}
+.hh-agent-digest-status,.hh-agent-digest-summary{font-size:13px!important;line-height:1.5!important;margin:0;color:#d4cbe8!important}
+.hh-agent-digest-summary{font-weight:650}
+.hh-agent-digest-list{display:grid;gap:10px;min-width:0}
+.hh-agent-digest-item{display:grid;gap:7px;border:1px solid #5a506e;background:#1e2033;border-radius:15px;padding:14px;min-width:0;overflow-wrap:anywhere}
+.hh-agent-digest-item h3{font-size:17px;line-height:1.25;margin:0;color:#fff}
+.hh-agent-digest-item p{margin:0;font-size:14px;line-height:1.55;color:#e9e2f3}
+.hh-agent-digest-meta{color:#c3afd6!important;font-size:12px!important}
+.hh-agent-digest-result{font-weight:650}
+.hh-agent-digest-next{color:#c9c2d7!important}
+.hh-agent-digest-proof{display:flex;flex-wrap:wrap;align-items:center;gap:5px;font-size:12px!important;color:#b6adc7!important}
+.hh-agent-digest-proof a{color:#e6c9ff;overflow-wrap:anywhere;text-decoration:underline}
+.hh-agent-digest-proof code{font-size:11px;padding:2px 4px;background:#111627;border-radius:5px;overflow-wrap:anywhere}
+.hh-agent-digest-login a{color:#edcffb;display:inline-block;padding:12px;border:1px solid #9277af;border-radius:11px;text-decoration:none;min-height:44px}
+.hh-agent-digest-panel [hidden]{display:none!important}
+@media(max-width:430px){.hh-agent-digest-filters{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.hh-agent-digest-filters label:first-child{grid-column:span 2}.hh-agent-digest-refresh{width:100%}.hh-agent-digest-item{padding:12px}}
+@media(max-width:390px){.hh-agent-digest-panel{gap:11px}.hh-agent-digest-filters select{font-size:14px}.hh-agent-digest-item h3{font-size:16px}}
+@media(max-width:320px){.hh-agent-digest-filters{grid-template-columns:minmax(0,1fr)}.hh-agent-digest-filters label:first-child{grid-column:auto}.hh-agent-digest-filters select{font-size:16px}.hh-agent-digest-refresh{width:100%}.hh-agent-digest-proof{font-size:11px!important}}
