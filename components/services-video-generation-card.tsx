@@ -7,17 +7,17 @@ import styles from "./services-video-generation-card.module.css";
 
 const thumbnails = [
  "/images/holistic-house/reiki-approved-sunrise-v3.webp",
- "/images/holistic-house/ideas-zen-landscape.svg",
- "/images/holistic-house/hero-olive-incense.webp",
+ "/images/holistic-house/assist-video-lake.svg",
+ "/images/holistic-house/assist-video-letter.svg",
 ] as const;
 const content = {
  ru: {
-  title:"Видеогенерация", badge:"Для практики", sub:"Три сценария персонального видео для мягкой поддержки",
-  ideas:[["Видео-настрой","Короткий фильм для внутренней опоры и ясного намерения"],["Видео-медитация","Природные образы и спокойный ритм для саморефлексии"],["Видео-послание","Ваши слова поддержки, цель или важная мысль"]],
-  info:"Сценарии — идеи для начала. Тему, слова, музыку и длительность вы выбираете в видеостудии.",
-  action:"Персональное видео", detail:"По вашей теме · визуал, текст и звук",
-  create:"Сгенерировать персональное видео",
-  note:"Видеопрактики не заменяют психотерапию или медицинскую помощь.", open:"Видеостудия: ",
+  title:"Видеогенерация", badge:"Для практики", sub:"Три сценария видео для мягкой поддержки",
+  ideas:[["Видео-настрой","Короткое персональное видео для внутренней опоры"],["Видео-медитация","С мягким голосовым сопровождением и образами"],["Видео-послание","Под ваш запрос, цель или эмоциональное состояние"]],
+  info:"Сценарии служат для знакомства. Персональное видео создаётся по вашему запросу.",
+  action:"Персональное видео", detail:"На основе вашей темы · текст + аудио + визуал",
+  create:"Сгенерировать видео",
+  note:"Видео не заменяет психотерапию или медицинскую помощь.", open:"Видеостудия: ",
  },
  en: {
   title:"Personal video", badge:"Gentle practice", sub:"Three video ideas for calm reflection and support",
@@ -38,13 +38,14 @@ export function ServicesVideoGenerationCard({locale}:{locale:PublicLocale}) {
  const t=content[locale], url="/"+locale+"/holistic-support/mandala";
  return <section className={styles.card} data-assist-video-generation lang={locale} aria-labelledby="services-video-title">
   <header className={styles.top}>
+   <Image className={styles.flora} src="/images/holistic-house/assist-video-botanical.svg" alt="" width={320} height={168} unoptimized loading="lazy" aria-hidden="true"/>
    <div className={styles.titles}><h3 id="services-video-title">{t.title}</h3><span>{t.badge}</span></div>
-   <p>{t.sub}</p><span className={styles.star} aria-hidden="true">✦</span>
+   <p>{t.sub}</p>
   </header>
   <div className={styles.list}>
    {t.ideas.map(([title,desc],i)=><Link key={title} href={url} prefetch={false}
     data-assist-video-scenario={i+1} className={styles.item} aria-label={t.open+title}>
-    <Image src={thumbnails[i]} width={128} height={96} alt="" unoptimized loading="lazy"/>
+    <Image src={thumbnails[i]} width={220} height={124} alt="" unoptimized loading="lazy"/>
     <span><strong>{title}</strong><small>{desc}</small></span><ChevronRight size={20} aria-hidden="true"/>
    </Link>)}
   </div>
