@@ -285,3 +285,15 @@ test("verified voice retains the original narration while Music Match forbids sy
   assert.match(browser,/await page\.locator\("\[data-video-bed-volume\]"\)\.focus\(\)/);
   assert.match(browser,/await page\.waitForFunction\(previous=>/);
 });
+
+
+test("real Safari encoded-Blob guest helper gates Save without relying on the removed Download button",()=>{
+  const helper=readFileSync(new URL("../scripts/benchmarking/real-guest-video-file.mjs",import.meta.url),"utf8");
+  assert.match(helper,/await ready\.locator\('\[data-ready-save\]'\)\.click\(\)/);
+  assert.doesNotMatch(helper,/data-ready-download/);
+  assert.match(helper,/await expect\(page\.locator\('\[data-mandala-video-download\]'\)\)\.toBeHidden\(\)/);
+  assert.match(helper,/await expect\.poll\(\(\)=>renderedPlayer\.evaluate/);
+  assert.match(helper,/window\.__hhTestRecordedVideoBlobs/);
+  assert.match(helper,/assert\.equal\(downloads,0,'GUEST_DOWNLOAD_MUST_REQUIRE_LOGIN'\)/);
+  assert.match(helper,/data-ready-save-gate-signin/);
+});
