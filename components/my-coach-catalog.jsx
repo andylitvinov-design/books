@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { ArrowRight, BookOpen, Heart, RotateCcw, Search, ShieldCheck, SlidersHorizontal, Sparkles, Users, MoreHorizontal, Zap, Leaf, Flower2 } from 'lucide-react'
 import {
   COACH_PERSONAS, COACH_TOPICS, coachSessionHref, coachStagePrompt, getCoachPersona,
@@ -144,6 +145,43 @@ const miraCopy = {
     back: 'Volver a Mira', browse: 'Elige tu coach para una sesión personal de IA',
   },
 }
+
+const humanCopy = {
+  en: {
+    chooser: 'Choose coach type', ai: 'AI Coach', real: 'Real People',
+    intro: 'Meet a real practitioner for a personal therapy session.',
+    name: 'Andrey Litvinov', role: 'Psychotherapy & guided imagery',
+    tags: ['Therapy', 'Relationships', 'Inner clarity'],
+    type: 'Real practitioner · Online · EN / RU',
+    about: 'About therapist', action: 'Request session',
+    bio: 'Individual sessions combine a Jung-oriented approach, Guided Affective Imagery, body-oriented psychotherapy and systemic constellations. We explore your situation together, at your pace.',
+    note: 'Personal sessions are arranged by request. Date and availability are confirmed separately.',
+    more: 'Explore other real practitioners',
+  },
+  ru: {
+    chooser: 'Тип специалиста', ai: 'AI-коучи', real: 'Реальные люди',
+    intro: 'Выберите живого специалиста для индивидуальной терапевтической сессии.',
+    name: 'Андрей Литвинов', role: 'Психотерапия и работа с образами',
+    tags: ['Терапия', 'Отношения', 'Ясность'],
+    type: 'Реальный специалист · Онлайн · RU / EN',
+    about: 'О терапевте', action: 'Запросить сессию',
+    bio: 'В индивидуальной работе объединяются юнгианский подход, направленное образное переживание, телесная психотерапия и системные расстановки. Мы вместе исследуем вашу ситуацию в комфортном темпе.',
+    note: 'Личные сессии проводятся по запросу. Время и доступность подтверждаются отдельно.',
+    more: 'Другие реальные специалисты',
+  },
+  es: {
+    chooser: 'Tipo de coach', ai: 'Coaches IA', real: 'Personas reales',
+    intro: 'Conoce a un profesional real para una sesión de terapia individual.',
+    name: 'Andrey Litvinov', role: 'Psicoterapia e imaginación guiada',
+    tags: ['Terapia', 'Relaciones', 'Claridad'],
+    type: 'Profesional real · En línea · EN / RU',
+    about: 'Sobre el terapeuta', action: 'Solicitar sesión',
+    bio: 'Las sesiones individuales combinan un enfoque junguiano, imaginación afectiva guiada, psicoterapia corporal y constelaciones sistémicas. Exploramos tu situación a tu propio ritmo.',
+    note: 'Las sesiones se solicitan por separado; el horario y la disponibilidad se confirman después.',
+    more: 'Explorar otros profesionales',
+  },
+}
+
 const topicGlyphs = { all: '▦', resilience: 'ϟ', relationships: '♡', career: '◇', meaning: '✿', habits: '✧' }
 const visualTopics = [
   { id: 'all', image: 'lotus' },
@@ -166,6 +204,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
   const categories = topicText[lang]
   const d = designCopy[lang]
   const hw = miraCopy[lang]
+  const h = humanCopy[lang]
   const [search, setSearch] = useState('')
   const [topic, setTopic] = useState('all')
   const [onlyFavorites, setOnlyFavorites] = useState(false)
@@ -177,6 +216,8 @@ export default function MyCoachCatalog({ locale = 'en' }) {
   const [favoritesReady, setFavoritesReady] = useState(false)
   const [selectedId, setSelectedId] = useState('mira')
   const [expandedId, setExpandedId] = useState(null)
+  const [directoryMode, setDirectoryMode] = useState('ai')
+  const [humanExpanded, setHumanExpanded] = useState(false)
   const [settings, setSettings] = useState(() => normalizeCoachSettings('mira'))
   useEffect(() => {
     try {
@@ -296,6 +337,15 @@ export default function MyCoachCatalog({ locale = 'en' }) {
               aria-pressed={selected.id === id}
               onClick={() => { setSelectedId(id); setSettings(normalizeCoachSettings(id)) }}>
               <span className={heroStyles.railPortrait} data-persona={id} aria-hidden="true">
+                <img
+                  className={heroStyles.railPhoto}
+                  src={`/images/holistic-house/my-coach-${id}-rail.webp`}
+                  alt=""
+                  width={288}
+                  height={320}
+                  loading="lazy"
+                  decoding="async"
+                />
               </span>
               <strong>{localCoachText(persona.name, lang)}</strong>
               <small>{localCoachText(persona.role, lang)}</small>
@@ -310,10 +360,20 @@ export default function MyCoachCatalog({ locale = 'en' }) {
       </section>
       <section className={heroStyles.directoryHeading} id="all-coaches" aria-label={hw.browse}>
         <a href="#my-coach-top" className={heroStyles.directoryBack} aria-label={hw.back}>‹</a>
-        <div><h2>My Coach</h2><p>{hw.browse}</p></div>
+        <div><h2>My Coach</h2><p>{directoryMode === 'ai' ? hw.browse : h.intro}</p></div>
       </section>
 
-      <section className={styles.discover} aria-label={t.topics}>
+      <div className={styles.coachKindSwitch} role="group" aria-label={h.chooser} data-my-coach-kind-switch>
+        <button type="button" className={directoryMode === 'ai' ? styles.coachKindActive : styles.coachKind}
+          aria-pressed={directoryMode === 'ai'} onClick={() => setDirectoryMode('ai')}>
+          <Sparkles size={17} aria-hidden="true" />{h.ai}
+        </button>
+        <button type="button" className={directoryMode === 'human' ? styles.coachKindActive : styles.coachKind}
+          aria-pressed={directoryMode === 'human'} onClick={() => setDirectoryMode('human')}>
+          <Users size={17} aria-hidden="true" />{h.real}
+        </button>
+      </div>
+      <section className={styles.discover} aria-label={t.topics} hidden={directoryMode !== 'ai'}>
         <div className={[styles.visualTopics, heroStyles.directoryTopics].join(' ')} role="group" aria-label={d.allTopics}>
           {visualTopics.map(item => {
             const label = item.id === 'all' ? d.allTopics : item.id === 'resilience' ? d.antistress
@@ -463,7 +523,37 @@ export default function MyCoachCatalog({ locale = 'en' }) {
         </div>}
         <p className={styles.disclosure} role="note"><ShieldCheck size={15} aria-hidden="true" />{t.aiNotice}</p>
       </section>
-      
+
+      <section className={styles.humanDirectory} hidden={directoryMode !== 'human'} aria-label={h.real}
+        data-my-coach-real-people>
+        <div className={styles.cardGrid}>
+          <article className={styles.cardSelected} data-my-coach-human-card="andrey-litvinov">
+            <div className={styles.humanPortrait}>
+              <Image src="/images/holistic-house/andy-about.png" width={320} height={380}
+                alt={h.name} sizes="(max-width: 540px) 100px, 136px" />
+            </div>
+            <div className={styles.cardBody}>
+              <h2>{h.name}</h2>
+              <p className={styles.role}>{h.role}</p>
+              <div className={styles.cardTags}>{h.tags.map(tag => <span key={tag}>{tag}</span>)}</div>
+              <p className={styles.cardMeta}><Users size={14} aria-hidden="true" />{h.type}</p>
+              <div className={styles.cardFooter}>
+                <button type="button" className={styles.viewProfile} onClick={() => setHumanExpanded(value => !value)}
+                  aria-expanded={humanExpanded} aria-controls="my-coach-human-andrey-about">{h.about}</button>
+                <Link className={styles.cardButton} href={'/' + lang + '/services/imagery-therapy'}
+                  prefetch={false}>{h.action}<ArrowRight size={16} aria-hidden="true" /></Link>
+              </div>
+            </div>
+            {humanExpanded && <div className={styles.humanProfile} id="my-coach-human-andrey-about">
+              <p>{h.bio}</p>
+              <p>{h.note}</p>
+            </div>}
+          </article>
+        </div>
+        <p className={styles.humanNote}>{h.note}</p>
+        <Link className={styles.humanMore} href={'/' + lang + '/masters'}>{h.more}<ArrowRight size={16} aria-hidden="true" /></Link>
+      </section>
+
       <nav className={styles.secondaryNav} aria-label={t.change}>
         <Link href={'/' + lang + '/coaching'}><BookOpen size={17} aria-hidden="true" /> {t.back}</Link>
         <Link href={'/' + lang + '/masters'}><Users size={17} aria-hidden="true" /> {t.human}</Link>

@@ -147,13 +147,21 @@ try {
     await expect(directionTabs).toHaveCount(6);
     const bestCards = shelf.locator("[data-assist-best-card]");
     await expect(bestCards).toHaveCount(3);
-    for (const [key,route] of Object.entries({
-      homeopathy: "services/psychohomeopathy",
-      coaching: "services/imagery-therapy",
-      reiki: "services/remote-energy-support",
-    })) {
-      await expect(shelf.locator('[data-assist-best-action="' + key + '"]'))
-        .toHaveAttribute("href", "/" + locale + "/" + route);
+    // Request now opens @holistichouse with an exact-service draft, not the
+    // old internal service page. Opening a link is not a submitted booking.
+    for (const key of ["homeopathy", "coaching", "reiki"]) {
+      const action = shelf.locator('[data-assist-best-action="' + key + '"]');
+      const href = await action.getAttribute("href");
+      assert.ok(href, "Request must have a valid Telegram link: " + key);
+      const requestUrl = new URL(href);
+      assert.equal(requestUrl.origin, "https://t.me");
+      assert.equal(requestUrl.pathname, "/holistichouse");
+      assert.equal(requestUrl.searchParams.has("start"), false, "No /start required");
+      const draft = requestUrl.searchParams.get("text");
+      assert.ok(draft?.includes("[HH-REQ:" + key + ":" + locale + "]"),
+        "Request draft must preserve the service and locale");
+      await expect(action).toHaveAttribute("target", "_blank");
+      await expect(action).toHaveAttribute("rel", /noopener/);
     }
     await directionTabs.nth(1).click();
     await expect(shelf.locator("[data-assist-selected-direction]"))
