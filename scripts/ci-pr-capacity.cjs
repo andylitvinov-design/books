@@ -106,19 +106,32 @@ async function verifiedGhostRepairCapacity(gh,owner,repo,p,now=Date.now()){
    diff.merge_base_commit?.sha!==run.head_sha||
    (diff.base_commit?.sha&&diff.base_commit.sha!==run.head_sha))
    return hold('ANCESTRY');
-  const [q,a,wq,wa]=await Promise.all([
+  // GitHub Actions often reports out-of-sync total_count for one transition
+  // while a runner finishes. Retry READ-ONLY once; never discount an unknown
+  // run, unknown worker occupancy, or an unverified second snapshot.
+  const readCapacity=()=>Promise.all([
    gh.rest.actions.listWorkflowRunsForRepo({...args,status:'queued',per_page:1}),
    gh.rest.actions.listWorkflowRunsForRepo({...args,status:'in_progress',per_page:100}),
    gh.rest.actions.listWorkflowRuns({...args,workflow_id:'hh-pr-repair-worker.yml',status:'queued',per_page:1}),
    gh.rest.actions.listWorkflowRuns({...args,workflow_id:'hh-pr-repair-worker.yml',status:'in_progress',per_page:1})
   ]);
-  const Q=q?.data?.total_count,A=a?.data?.total_count,active=a?.data?.workflow_runs;
-  if(!Number.isSafeInteger(Q)||Q<=100||Q>250||
-   !Number.isSafeInteger(A)||A>LIMIT.maxJobReads||A<0||
-   !Array.isArray(active)||active.length!==A||
-   wq?.data?.total_count!==0||!Array.isArray(wq.data.workflow_runs)||
-   wa?.data?.total_count!==0||!Array.isArray(wa.data.workflow_runs))
-   return hold('INCOMPLETE_RUN_CAPACITY');
+  const completeCapacity=([q,a,wq,wa])=>{
+   const Q=q?.data?.total_count,A=a?.data?.total_count,active=a?.data?.workflow_runs;
+   return Number.isSafeInteger(Q)&&Q>100&&Q<=250&&
+    Number.isSafeInteger(A)&&A>=0&&A<=LIMIT.maxJobReads&&
+    Array.isArray(active)&&active.length===A&&
+    Array.isArray(wq?.data?.workflow_runs)&&wq.data.total_count===0&&
+    Array.isArray(wa?.data?.workflow_runs)&&wa.data.total_count===0;
+  };
+  let snapshot=await readCapacity(),capacityReadbacks=1;
+  if(!completeCapacity(snapshot)){
+   snapshot=await readCapacity();
+   capacityReadbacks++;
+   if(!completeCapacity(snapshot))
+    return hold('INCOMPLETE_RUN_CAPACITY_AFTER_RECHECK');
+  }
+  const [q,a,wq,wa]=snapshot;
+  const Q=q.data.total_count,A=a.data.total_count,active=a.data.workflow_runs;
   const batches=await Promise.all(active.map(async x=>{
    if(x.status!=='in_progress'||!Number.isSafeInteger(x.id))throw Error('BAD_ACTIVE');
    const page=(await gh.rest.actions.listJobsForWorkflowRun({...args,run_id:x.id,per_page:100}))?.data;
@@ -149,6 +162,7 @@ async function verifiedGhostRepairCapacity(gh,owner,repo,p,now=Date.now()){
    // free Ubuntu slot. Manual stays manual; exact-head write gates remain.
    safeToDispatchOneLegacyPreflight:true,ghostProofRunId:p.run_id,
    activeRuns:effectiveActive,originalActiveRuns:A,
+   capacityReadbacks,
    verifiedTerminalOverhangRuns:verifiedOverhangs,
    queuedRuns:Q,runningJobs,queuedJobs,unknownQueuedRuns:Q,
    coreQueuedRuns:null,coreQueuedJobs:null,
