@@ -6,6 +6,7 @@ const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
 const { expect } = require((process.env.HH_PLAYWRIGHT_PACKAGE || "playwright") + "/test");
 import assert from "node:assert/strict";
+import { inferAssistPreferences, rankAssistOffers } from "../lib/assist/service-match.mjs";
 import { mkdir, writeFile } from "node:fs/promises";
 
 const origin = process.env.HH_PUBLIC_QA_ORIGIN || "http://127.0.0.1:3100";
@@ -113,8 +114,7 @@ try {
     const submit = assist.locator('form button[type="submit"]');
     await visible(question);
     await expect(submit).toBeDisabled();
-    // The six intent chips are distinct from the six category tabs above them.
-    const topics = assist.locator('[role="group"] button[aria-pressed]:not([data-assist-direction])');
+    const topics = assist.locator('[data-assist-topic-suggestions] button[aria-pressed]');
     await expect(topics).toHaveCount(6);
     const shelf = assist.locator("[data-assist-best-three]");
     await visible(shelf.locator("#assist-best-three-title"));
@@ -122,20 +122,22 @@ try {
     await expect(directionTabs).toHaveCount(6);
     const bestCards = shelf.locator("[data-assist-best-card]");
     await expect(bestCards).toHaveCount(3);
-    for (const [id, route] of Object.entries({
+    for (const [key,route] of Object.entries({
       homeopathy: "services/psychohomeopathy",
       coaching: "services/imagery-therapy",
       reiki: "services/remote-energy-support",
     })) {
-      await expect(shelf.locator('[data-assist-best-action="' + id + '"]'))
+      await expect(shelf.locator('[data-assist-best-action="' + key + '"]'))
         .toHaveAttribute("href", "/" + locale + "/" + route);
     }
     await directionTabs.nth(1).click();
-    await expect(shelf.locator("[data-assist-selected-direction]")).toHaveAttribute("data-assist-selected-direction", "health");
+    await expect(shelf.locator("[data-assist-selected-direction]"))
+      .toHaveAttribute("data-assist-selected-direction","health");
     await expect(bestCards).toHaveCount(3);
     await expect(shelf.locator('[data-assist-best-card="tests"]')).toHaveCount(1);
     await directionTabs.first().click();
-    await expect(shelf.locator("[data-assist-selected-direction]")).toHaveAttribute("data-assist-selected-direction", "forMe");
+    await expect(shelf.locator("[data-assist-selected-direction]"))
+      .toHaveAttribute("data-assist-selected-direction","forMe");
     await expect(bestCards).toHaveCount(3);
     const tools = assist.locator("a[data-assist-tool]");
     await expect(tools).toHaveCount(8);
@@ -162,26 +164,36 @@ try {
     await visible(results);
     await expect(topics.first()).toHaveAttribute("aria-pressed", "true");
     await expect(results.locator("a[data-assist-recommendation]")).toHaveCount(3);
-    const stressRoutes = {
-      tests: "tests",
-      opora: "courses/antistress",
-      mytube: "mytube",
-    };
-    for (const [key, route] of Object.entries(stressRoutes)) {
+    // The production matcher now ranks by optional preferences; prove three
+    // real route-linked recommendations without assuming retired fixed cards.
+    const expectedStress = rankAssistOffers("stress",
+      inferAssistPreferences(await question.inputValue())).map(offer => offer.id);
+    const actualStress = await results.locator("a[data-assist-recommendation]").evaluateAll(
+      links => links.map(link => link.getAttribute("data-assist-recommendation")));
+    assert.deepEqual(actualStress, expectedStress, "Assist stress rankings match the tested client-only matcher");
+    for (const key of expectedStress) {
       const link = results.locator('a[data-assist-recommendation="' + key + '"]');
-      await expect(link).toHaveAttribute("href", "/" + locale + "/" + route);
+      await expect(link).toHaveAttribute("href", new RegExp("^/" + locale + "/[a-z0-9/-]+$"));
       const box = await link.boundingBox();
-      assert.ok(box && box.height >= 44, "Mobile Assist link touch target: " + locale + "/" + width + "/" + key);
+      assert.ok(box && box.height >= 44,
+        "Mobile Assist link touch target: " + locale + "/" + width + "/" + key);
     }
 
     // Switching intent must replace, not append, old recommendations.
     await topics.nth(4).click();
     await expect(topics.nth(4)).toHaveAttribute("aria-pressed", "true");
     await expect(results.locator("a[data-assist-recommendation]")).toHaveCount(3);
-    await expect(results.locator('a[data-assist-recommendation="business"]'))
-      .toHaveAttribute("href", "/" + locale + "/services/business-consulting");
+    const expectedWork = rankAssistOffers("work",
+      inferAssistPreferences(await question.inputValue())).map(offer => offer.id);
+    const actualWork = await results.locator("a[data-assist-recommendation]").evaluateAll(
+      links => links.map(link => link.getAttribute("data-assist-recommendation")));
+    assert.deepEqual(actualWork, expectedWork, "Assist work ranking replaces previous stress cards");
+    if (expectedWork.includes("business")) {
+      await expect(results.locator('a[data-assist-recommendation="business"]'))
+        .toHaveAttribute("href", "/" + locale + "/services/business-consulting");
+    }
 
-    const reset = results.locator("[data-assist-reset]");
+    const reset = results.locator('button[data-assist-reset]');
     await reset.click();
     await expect(results).toHaveCount(0);
     await expect(question).toHaveValue("");
@@ -194,8 +206,12 @@ try {
     await submit.click();
     await visible(results);
     await expect(results.locator("a[data-assist-recommendation]")).toHaveCount(3);
-    await expect(results.locator('a[data-assist-recommendation="opora"]'))
-      .toHaveAttribute("href", "/" + locale + "/courses/antistress");
+    const expectedTypedStress = rankAssistOffers("stress",
+      inferAssistPreferences(await question.inputValue())).map(offer => offer.id);
+    const actualTypedStress = await results.locator("a[data-assist-recommendation]").evaluateAll(
+      links => links.map(link => link.getAttribute("data-assist-recommendation")));
+    assert.deepEqual(actualTypedStress, expectedTypedStress,
+      "Typed stress query applies the current ranked matcher, not obsolete fixed links");
 
     // Crisis never receives therapeutic sales recommendations.
     await question.fill(locale === "ru" ? "Хочу убить себя" :
@@ -203,7 +219,7 @@ try {
     await submit.click();
     await visible(results.locator('[role="alert"]'));
     await expect(results.locator("a[data-assist-recommendation]")).toHaveCount(0);
-    await expect(shelf).toHaveCount(0); // No paid/symbolic suggestions while urgent help is shown.
+    await expect(shelf).toHaveCount(0); // No sales or symbolic offers in crisis state.
     await assertNoDevIssueOverlay(page, locale + "/services/assist/" + width);
     await assertViewport(page, locale + "/services/assist/" + width);
     await reset.click();
