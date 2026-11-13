@@ -87,7 +87,7 @@ const isDistractionSensitivePage = (pathname: string) =>
   // MyTube is a video-first dark destination; no generic review promotion over the feed.
   /^\/(?:ru|en|es)\/mytube\/?$/.test(pathname) ||
   // The Services AI dialogue already handles personal situation review.
-  /^\\/(?:ru|en|es)\\/services\\/?$/.test(pathname) ||
+  /^\/(?:ru|en|es)\/services\/?$/.test(pathname) ||
   // The alternative Support screen is an immersive mobile application.
   // Suppress the sitewide promo ribbon only there; standard Support keeps it.
   /^\/(?:ru|en|es)\/holistic-support\/mobile(?:\/|$)/.test(pathname) ||

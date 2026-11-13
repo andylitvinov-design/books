@@ -65,12 +65,12 @@ test("Services composer stays at unzoomed iPhone scale and clears the mobile doc
   for(const token of ["data-assist-composer","formRef=useRef<HTMLFormElement>(null)",
     "window.visualViewport","dockRect.top","window.scrollBy(",
     'document.activeElement===inputRef.current']) assert.ok(shell.includes(token),token);
-  assert.match(shellCss,/\\.form\\{display:flex;[^}]*width:100%;max-width:100%;min-width:0;/);
-  assert.match(shellCss,/\\.conversation\\{min-width:0;max-width:100%;/);
-  assert.match(shellCss,/\\.form textarea\\{flex:1;[^}]*font-size:16px;/);
-  assert.match(shellCss,/@media\\(max-width:350px\\)[^\\n]*\\.form textarea\\{font-size:16px\\}/);
-  assert.match(shellCss,/\\.assistPage\\{padding-bottom:calc\\(var\\(--hh-unified-nav-height,77px\\) \\+ 22px\\)\\}/);
+  assert.match(shellCss,/\.form\{display:flex;[^}]*width:100%;max-width:100%;min-width:0;/);
+  assert.match(shellCss,/\.conversation\{min-width:0;max-width:100%;/);
+  assert.match(shellCss,/\.form textarea\{flex:1;[^}]*font-size:16px;/);
+  assert.match(shellCss,/@media\(max-width:350px\)[^\n]*\.form textarea\{font-size:16px\}/);
+  assert.match(shellCss,/\.assistPage\{padding-bottom:calc\(var\(--hh-unified-nav-height,77px\) \+ 22px\)\}/);
   assert.ok(banner.includes("The Services AI dialogue already handles personal situation review"));
-  assert.ok(banner.includes("services\\\\/?$/.test(pathname) ||"));
-  assert.doesNotMatch(shellCss,/\\.conversation \\.form\\{[^}]*position:(?:sticky|fixed)/);
+  assert.ok(banner.includes("services\\/?$/.test(pathname) ||"));
+  assert.doesNotMatch(shellCss,/\.conversation \.form\{[^}]*position:(?:sticky|fixed)/);
 });
