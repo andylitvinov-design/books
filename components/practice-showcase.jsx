@@ -174,7 +174,7 @@ function destination(locale, key) {
     courseList:root + '?panel=materials&materialTab=courses',
     masters:'/' + appLocale + '/masters',
     clients:root + '?panel=clients',
-    requests:root + '?panel=requests',
+    requests:'/' + locale + '/app/messages?section=clients&tab=requests',
     messages:'/' + appLocale + '/app/messages?section=clients&tab=chats',
     services:root + '?panel=services',
     materials:root + '?panel=materials',

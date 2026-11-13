@@ -88,3 +88,18 @@ test('both inbox tabs report website loading and failure even when CRM is ready'
   assert.match(source,/\{tabLoading\?<p className=\{styles\.info\} role="status">\{t\.loading\}/)
   assert.match(source,/crmState\.error&&<p role="alert" className=\{styles\.info\}>\{t\.crmUnavailable\}/)
 })
+
+test('Work Requests opens existing messenger enquiries instead of the legacy practice pane',()=>{
+  const practice=read('components/practice-showcase.jsx')
+  const inbox=read('components/app/messages-simple-inbox.jsx')
+  const css=read('components/app/messages-simple-inbox.module.css')
+  assert.ok(practice.includes("requests:'/' + locale + '/app/messages?section=clients&tab=requests',"))
+  assert.ok(!practice.includes("requests:root + '?panel=requests'"))
+  assert.ok(practice.split("openAction('requests')").length-1>=3)
+  assert.ok(inbox.includes("const requestFocus=embedded&&tab==='requests'"))
+  assert.ok(inbox.includes("!requestFocus||inMessagesTab(row,'requests')"))
+  assert.ok(inbox.includes("{requestFocus&&<div className={styles.requestFocus}"))
+  assert.ok(inbox.includes("onClick={()=>switchTab('chats')}"))
+  assert.ok(inbox.includes("tab==='requests'?t.emptyRequests"))
+  assert.ok(css.includes('.requestFocus button:focus-visible'))
+})
