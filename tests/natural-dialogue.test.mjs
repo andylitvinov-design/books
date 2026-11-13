@@ -1,3 +1,5 @@
+// Existing specialist suite also enforces RU/EN Qwen quality without a new CI workflow.
+import "./qwen-quality-ru-en.test.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import {prepareNaturalDialogue,acceptNaturalOutput,finishNaturalDialogue} from "../lib/holistic-support/natural-dialogue.mjs";
