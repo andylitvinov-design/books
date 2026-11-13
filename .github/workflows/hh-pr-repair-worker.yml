@@ -934,15 +934,15 @@ jobs:
             }
             if(outcome.state==='PENDING'){
               // Bot-authored PR synchronization can be action_required
-              // with ZERO jobs. A bounded, exact-HEAD owner-authored PR
-              // metadata edit requests the ordinary read-only PR Core.
+              // with ZERO jobs. After exact-HEAD and zero-job proof, a signed
+              // one-shot Draft -> Ready replaces the obsolete edited event.
               // No source push, no approval/check spoofing, no paid service.
               const ownerWake=await proof.requestOwnerCoreWake({
                 token:process.env.HH_AUTOMERGE_TOKEN||'',prNumber:number,sha,
                 fetchImpl:fetch
               });
-              core.info('HH_NEXT_CI_OWNER_METADATA_WAKE '+JSON.stringify(ownerWake));
-              if(['OWNER_METADATA_EDIT_ACCEPTED','OWNER_WAKE_ALREADY_REQUESTED']
+              core.info('HH_NEXT_CI_OWNER_READY_WAKE '+JSON.stringify(ownerWake));
+              if(['OWNER_READY_EVENT_REQUESTED','OWNER_READY_ALREADY_REQUESTED']
                 .includes(ownerWake.status)){
                 for(let i=0;i<8;i++){
                   await wait(5000);
@@ -953,8 +953,8 @@ jobs:
             }
             if(outcome.state==='PENDING'){
               // Durable queue hint + existing serialized Watchdog is the
-              // no-new-service fallback. The CI worker creates a genuine
-              // PR synchronization event; it never marks checks green.
+              // no-new-service fallback. The CI worker requests a genuine
+              // signed Ready event; it never marks checks green.
               let live=(await github.rest.pulls.get({owner,repo,pull_number:number})).data;
               if(live.state==='open'&&!live.draft&&live.head?.sha===sha&&
                  live.base?.ref===baseRef){

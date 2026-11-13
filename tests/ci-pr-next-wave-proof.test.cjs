@@ -58,83 +58,115 @@ test('requires complete trusted PR association and a valid source identity',()=>
 });
 
 
-test('one owner-authored metadata wake preserves exact repaired SHA and never writes source',async()=>{
- const sha='c'.repeat(40),number=4306,body='NEVER MERGE this controlled source repair';
- const sourcePr={number,state:'open',draft:false,body,user:{login:'andylitvinov-design'},
-   base:{ref:'codex/public-book-library'},head:{sha,repo:{full_name:'andylitvinov-design/books'}}};
- const requests=[];
- let pr={...sourcePr};
+test('signed owner Ready wake runs only for proven jobless current-HEAD Core and preserves source',async()=>{
+ const sha='c'.repeat(40),number=4306,body='approved repair source';
+ const pr={number,state:'open',draft:false,body,node_id:'PR_test4306',
+  mergeable:true,mergeable_state:'clean',auto_merge:null,
+  user:{login:'andylitvinov-design'},base:{ref:'codex/public-book-library'},
+  head:{sha,ref:'fix/repair-4306',repo:{full_name:'andylitvinov-design/books'}}};
+ let draft=false;const calls=[],comments=[];
  const fetchImpl=async(url,args)=>{
-  requests.push({url,method:args.method,body:args.body||null});
-  assert.equal(args.headers.Authorization,'Bearer test-owner-only-no-access');
-  if(url.endsWith('/user'))return {ok:true,json:async()=>({login:'andylitvinov-design'})};
-  if(args.method==='PATCH'){
-   const changed=JSON.parse(args.body);
-   assert.equal(typeof changed.body,'string');
-   assert.deepEqual(Object.keys(changed),['body']);
-   assert.equal(pr.head.sha,sha);
-   pr={...pr,body:changed.body};
+  calls.push({url,method:args.method});
+  const path=new URL(url).pathname;
+  if(path==='/user')return {ok:true,json:async()=>({login:'andylitvinov-design'})};
+  if(path.endsWith('/pulls/4306'))return {ok:true,json:async()=>({...pr,draft})};
+  if(path.endsWith('/issues/4306/comments')){
+   if(args.method==='POST'){
+    const receipt={id:77,body:JSON.parse(args.body).body,user:{login:'andylitvinov-design'}};
+    comments.push(receipt);return {ok:true,json:async()=>receipt};
+   }
+   return {ok:true,json:async()=>comments};
   }
-  return {ok:true,json:async()=>pr};
+  if(path.endsWith('/workflows/hh-pr-core-release.yml/runs'))
+   return {ok:true,json:async()=>({total_count:1,workflow_runs:[{
+    id:44,event:'pull_request',head_branch:'fix/repair-4306',head_sha:sha,
+    status:'completed',conclusion:'action_required',pull_requests:[]}]})};
+  if(path.endsWith('/actions/runs/44/jobs'))
+   return {ok:true,json:async()=>({total_count:0,jobs:[]})};
+  if(path==='/graphql'){
+   const request=JSON.parse(args.body);
+   const action=request.query.includes('convertPullRequestToDraft')?
+    'convertPullRequestToDraft':'markPullRequestReadyForReview';
+   draft=action==='convertPullRequestToDraft';
+   return {ok:true,json:async()=>({data:{[action]:{
+    pullRequest:{id:'PR_test4306',isDraft:draft}}}})};
+  }
+  throw Error('unexpected owner endpoint: '+url);
  };
- const first=await requestOwnerCoreWake({
-  token:'test-owner-only-no-access',prNumber:number,sha,fetchImpl});
- assert.deepEqual(first,{status:'OWNER_METADATA_EDIT_ACCEPTED',
+ const call=()=>requestOwnerCoreWake({token:'test-owner-token',prNumber:number,sha,fetchImpl});
+ const first=await call();
+ assert.deepEqual(first,{status:'OWNER_READY_EVENT_REQUESTED',
    sourceChanged:false,coreRunVerified:false});
- assert.equal(requests.filter(x=>x.method==='PATCH').length,1);
- assert.equal(requests.filter(x=>x.method==='POST').length,0);
- assert.match(pr.body,/HH_OWNER_POST_REPAIR_CORE_WAKE_V1 pr=4306 sha=/);
- assert.equal(pr.head.sha,sha,'never rewrite source or branch ref');
- const second=await requestOwnerCoreWake({
-  token:'test-owner-only-no-access',prNumber:number,sha,fetchImpl});
- assert.equal(second.status,'OWNER_WAKE_ALREADY_REQUESTED');
- assert.equal(requests.filter(x=>x.method==='PATCH').length,1,'never duplicate the same HEAD event');
+ assert.equal(pr.body,body);
+ assert.equal(pr.head.sha,sha);
+ assert.equal(draft,false);
+ assert.equal(calls.filter(c=>c.method==='PATCH').length,0);
+ assert.equal(calls.filter(c=>c.url.endsWith('/graphql')).length,2);
+ assert.equal(comments.length,1);
+ assert.match(comments[0].body,/HH_OWNER_POST_REPAIR_CORE_READY_V2 pr=4306 sha=/);
+ assert.equal((await call()).status,'OWNER_READY_ALREADY_REQUESTED');
+ assert.equal(calls.filter(c=>c.url.endsWith('/graphql')).length,2,
+   'no repeated Ready wave for identical SHA');
 });
-test('owner wake refuses PAT identity mismatch, changed HEAD, foreign PR, draft and bad body',async()=>{
+test('owner recovery refuses wrong identity, changed HEAD, Draft and missing zero-job proof',async()=>{
  const sha='c'.repeat(40),n=4306;
- const good={number:n,state:'open',draft:false,body:'NO MERGE',user:{login:'andylitvinov-design'},
-  base:{ref:'codex/public-book-library'},head:{sha,repo:{full_name:'andylitvinov-design/books'}}};
- const invalid=[
-  {user:{login:'untrusted-user'}},{head:{sha:'f'.repeat(40),repo:{full_name:'andylitvinov-design/books'}}},
-  {head:{sha,repo:{full_name:'other/repo'}}},{base:{ref:'main'}},{draft:true},
-  {state:'closed'},{body:null},{body:'x'.repeat(50001)}
- ];
- for(const variant of invalid){
-  let patches=0;
+ const good={number:n,state:'open',draft:false,body:'approved',node_id:'PR_test4306',
+  mergeable:true,mergeable_state:'clean',user:{login:'andylitvinov-design'},
+  base:{ref:'codex/public-book-library'},
+  head:{sha,ref:'fix/repair-4306',repo:{full_name:'andylitvinov-design/books'}}};
+ for(const bad of [
+  {user:{login:'foreign'}},{state:'closed'},{draft:true},{body:null},
+  {head:{sha:'b'.repeat(40),ref:'fix/repair-4306',repo:{full_name:'andylitvinov-design/books'}}},
+  {head:{sha,ref:'fix/repair-4306',repo:{full_name:'foreign/books'}}},
+  {base:{ref:'main'}},{mergeable_state:'dirty'}
+ ]){
+  let posts=0;
   const fetchImpl=async(url,args)=>{
-   if(args.method==='PATCH')patches++;
+   if(args.method==='POST')posts++;
    return {ok:true,json:async()=>url.endsWith('/user')?
-     {login:'andylitvinov-design'}:{...good,...variant}};
+    {login:'andylitvinov-design'}:{...good,...bad}};
   };
-  const r=await requestOwnerCoreWake({token:'safe-test',prNumber:n,sha,fetchImpl});
-  assert.equal(r.status,'OWNER_WAKE_PR_HEAD_OR_SCOPE_CHANGED');
-  assert.equal(patches,0);
+  assert.equal((await requestOwnerCoreWake({token:'owner',prNumber:n,sha,fetchImpl})).status,
+   'OWNER_WAKE_PR_HEAD_OR_SCOPE_CHANGED');
+  assert.equal(posts,0);
  }
- let calls=0;
- const rejected=await requestOwnerCoreWake({token:'safe-test',prNumber:n,sha,
-  fetchImpl:async()=>{calls++;return {ok:true,json:async()=>({login:'other'})}}});
- assert.equal(rejected.status,'OWNER_PAT_IDENTITY_UNVERIFIED');
- assert.equal(calls,1);
- assert.equal((await requestOwnerCoreWake({token:'',prNumber:n,sha})).status,'OWNER_WAKE_INVALID_ARGUMENTS');
- assert.equal((await requestOwnerCoreWake({token:'test',prNumber:n,sha:'wrong'})).status,'OWNER_WAKE_INVALID_ARGUMENTS');
-});
-test('ambiguous or denied metadata PATCH cannot be counted as real CI',async()=>{
- const sha='a'.repeat(40);
- const pr={number:4306,state:'open',draft:false,body:'safe',user:{login:'andylitvinov-design'},
-  base:{ref:'codex/public-book-library'},head:{sha,repo:{full_name:'andylitvinov-design/books'}}};
- let patches=0;
- const fetchImpl=async(url,args)=>{
-  if(url.endsWith('/user'))return {ok:true,json:async()=>({login:'andylitvinov-design'})};
-  if(args.method==='PATCH'){patches++;return {ok:false,status:403,json:async()=>({message:'secret'})};}
-  return {ok:true,json:async()=>pr};
+ const probe=(conclusion,jobsCount=0,runStatus='completed')=>{
+  let posts=0;
+  const fetchImpl=async(url,args)=>{
+   if(args.method==='POST')posts++;
+   const path=new URL(url).pathname;
+   if(path==='/user')return {ok:true,json:async()=>({login:'andylitvinov-design'})};
+   if(path.endsWith('/pulls/4306'))return {ok:true,json:async()=>good};
+   if(path.endsWith('/issues/4306/comments'))return {ok:true,json:async()=>[]};
+   if(path.endsWith('/workflows/hh-pr-core-release.yml/runs'))
+    return {ok:true,json:async()=>({total_count:1,workflow_runs:[{
+     id:44,event:'pull_request',head_sha:sha,head_branch:good.head.ref,
+     status:runStatus,conclusion,pull_requests:[]}]})};
+   if(path.endsWith('/actions/runs/44/jobs'))
+    return {ok:true,json:async()=>({total_count:jobsCount,
+     jobs:jobsCount?[{id:45}]:[]})};
+   throw Error('unexpected '+url);
+  };
+  return {execute:()=>requestOwnerCoreWake({token:'owner',prNumber:n,sha,fetchImpl}),
+   get writes(){return posts}};
  };
- const result=await requestOwnerCoreWake({token:'test',prNumber:4306,sha,fetchImpl});
- assert.equal(result.status,'OWNER_WAKE_EDIT_NOT_VERIFIED');
- assert.equal(result.coreRunVerified,false);
- assert.equal(patches,1);
+ for(const conclusion of ['success','failure','timed_out']){
+  const f=probe(conclusion);
+  assert.equal((await f.execute()).status,'OWNER_READY_EXISTING_CORE_NOT_RETRYABLE');
+  assert.equal(f.writes,0);
+ }
+ const waiting=probe(null,0,'in_progress');
+ assert.equal((await waiting.execute()).status,'OWNER_READY_CORE_ALREADY_ACTIVE');
+ assert.equal(waiting.writes,0);
+ const notJobless=probe('action_required',1);
+ assert.equal((await notJobless.execute()).status,'OWNER_READY_ZERO_JOB_PROOF_MISSING');
+ assert.equal(notJobless.writes,0);
+ assert.equal((await requestOwnerCoreWake({token:'owner',prNumber:n,sha,
+  fetchImpl:async()=>({ok:true,json:async()=>({login:'other'})})})).status,
+  'OWNER_PAT_IDENTITY_UNVERIFIED');
+ assert.equal((await requestOwnerCoreWake({token:'',prNumber:n,sha})).status,
+  'OWNER_WAKE_INVALID_ARGUMENTS');
 });
-
-
 test('actual next-head Core requires a GitHub runner, not queued, skipped or action_required records',()=>{
  const started={id:77,name:'core-lint-types-build',status:'in_progress',
    started_at:'2026-11-11T00:17:00Z',runner_name:'GitHub Actions 1000190034'};
@@ -165,7 +197,7 @@ test('protected publisher wakes owner-authored Core once and cannot invent or by
  const wf=fs.readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
  const pub=wf.split('\n  publish:\n')[1].split('\n  finalize:\n')[0];
  assert.match(pub,/Verify and recover the next exact-HEAD Core CI wave/);
- assert.match(pub,/HH_NEXT_CI_OWNER_METADATA_WAKE/);
+ assert.match(pub,/HH_NEXT_CI_OWNER_READY_WAKE/);
  assert.match(pub,/proof\.requestOwnerCoreWake/);
  assert.match(pub,/proof\.coreExecutionState/);
  assert.match(pub,/if\(outcome\.state==='PENDING'\)/);

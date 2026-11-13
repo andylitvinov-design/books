@@ -290,3 +290,12 @@ test('CI Worker schedule calls trusted backstop before addressed metadata wake',
  assert.ok(yaml.includes('HH_CI_SCHEDULE_FALLBACK'));
  assert.ok(yaml.includes('node --check scripts/ci-pr-schedule-fallback.cjs'));
 });
+
+test('scheduled CI Worker is a twice-hourly backup, not an extra ten-minute PR scan',()=>{
+ const yaml=require('node:fs').readFileSync('.github/workflows/hh-pr-ci-worker.yml','utf8');
+ assert.ok(yaml.includes("cron: '3,33 * * * *'"));
+ assert.ok(!yaml.includes("cron: '3,13,23,33,43,53 * * * *'"));
+ assert.match(yaml,/context\.eventName==='schedule'/);
+ assert.match(yaml,/scripts\/ci-pr-schedule-fallback\.cjs/);
+ assert.match(yaml,/reservation_run_id/);
+});

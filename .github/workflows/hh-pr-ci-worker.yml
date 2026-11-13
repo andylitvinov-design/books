@@ -1,8 +1,9 @@
 name: HH zero-cost PR CI worker
 on:
   schedule:
-    - cron: '3,13,23,33,43,53 * * * *'
-  # No workflow_run fanout: Watchdog dispatches only an actionable queue.
+    - cron: '3,33 * * * *'
+  # Existing ten-minute Watchdog and signed events own primary routing.
+  # Two 30-minute backup ticks replace six idle Worker cron runs per hour.
   workflow_dispatch:
     inputs:
       dry_run:

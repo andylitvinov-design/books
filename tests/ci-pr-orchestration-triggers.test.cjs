@@ -52,7 +52,8 @@ test('source Repair Worker is addressed only; no empty cron consumes its publish
 });
 test('CI scheduled recovery retains cron but cannot reserve addressed worker lease',()=>{
  const s=read('hh-pr-ci-worker');
- assert.ok(s.includes("cron: '3,13,23,33,43,53 * * * *'"));
+ assert.ok(s.includes("cron: '3,33 * * * *'"));
+ assert.ok(!s.includes("cron: '3,13,23,33,43,53 * * * *'"));
  assert.ok(s.includes('workflow_dispatch:'));
  assert.ok(s.includes('cancel-in-progress: false'));
  assert.ok(s.includes("github.event_name == 'workflow_dispatch' && inputs.pr_number != '0'"));
