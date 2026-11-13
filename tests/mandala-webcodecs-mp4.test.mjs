@@ -328,7 +328,7 @@ test("guest real encoded video must keep Save behind sign-in and preserve physic
  assert.match(browser,/!video\.currentSrc\.startsWith\("blob:"\)/);
  assert.match(browser,/guest-real-encoded-mp4-auth-gate-verified/);
  assert.match(browser,/data-video-ready/);
- assert.match(browser,/data-ready-download/);
+ assert.match(browser,/data-ready-save/);
  assert.match(browser,/data-ready-save-gate/);
  assert.match(browser,/ready-real-encoded-mp4-auth-gate-verified/);
  assert.match(browser,/__hhRecordedVideoBlobs/);

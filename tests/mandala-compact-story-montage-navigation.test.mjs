@@ -62,3 +62,13 @@ test("navigation is only a selection; export, checks and payment stay behind the
  assert.match(studio,/onClick=\{createQuickVideo\}/);
  assert.match(studio,/data-video-montage-next=\{montagePanel==="effects"/);
 });
+
+
+test("compact Story source branch runs mandatory macOS WebKit instead of skipped Safari",()=>{
+ const workflow=readFileSync(new URL("../.github/workflows/holistic-support-mandala.yml",import.meta.url),"utf8");
+ const match=workflow.match(/^  voice-webkit-macos:\n    if: \$\{\{ (.+) \}\}$/m);
+ assert.ok(match,"original WebKit job stays present");
+ assert.ok(match[1].includes("github.head_ref == 'codex/video-story-five-cards-quality-last-20261112'"));
+ assert.match(workflow,/voice-webkit-macos:[\s\S]*?needs: \[webkit_preflight\][\s\S]*?runs-on: macos-15/);
+ assert.match(workflow,/HH_VOICE_E2E_ENGINE: webkit/);
+});

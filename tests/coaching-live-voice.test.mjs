@@ -215,3 +215,39 @@ test('selected persona opens immersive My Coach session with real avatar, stages
   assert.ok(pageCss.includes('fullWidth:has([data-my-coach-immersive-session])'))
   assert.ok(ui.includes("readiness.status==='checking'"))
 })
+
+test('My Coach speech is visible as text while recording and safely remains editable on partial iOS results',()=>{
+  const ui=source('components/my-coach-live-dialogue.jsx')
+  const loop=source('components/my-coach-speech-loop.jsx')
+  const css=source('components/my-coach-live-dialogue.module.css')
+  for(const marker of ['data-coach-live-transcript','role="log" aria-live="polite"','speechPreview&&',
+    'onTranscript={setSpeechPreview}',"onDraft={text=>{setDraft(text);setSpeechPreview('');setError('')}}",
+    'className={styles.textComposer} open','captions.consentShort']){
+    assert.ok(ui.includes(marker),marker)
+  }
+  for(const marker of ['heardRef.current=(final||interim).slice(0,1200)',
+    'transcriptRef.current?.(heardRef.current)','const recovered=heardRef.current.trim()',
+    'draftRef.current?.(recovered)','draftRef.current?.(text)','void deliver(finished)']){
+    assert.ok(loop.includes(marker),marker)
+  }
+  assert.match(css,/\.liveTranscript/)
+  assert.match(css,/\.transcriptFeed\{[^}]*overflow-y:auto/)
+  assert.match(css,/\.textComposer \.composer textarea/)
+  assert.doesNotMatch(loop,/localStorage|sessionStorage|MediaRecorder|sendBeacon/)
+})
+
+test('approved live-session visual hierarchy keeps a real voice pipeline, readable transcript and functional mobile controls',()=>{
+  const ui=source('components/my-coach-live-dialogue.jsx')
+  const css=source('components/my-coach-live-dialogue.module.css')
+  for(const token of ['data-session-visual-v2','className={styles.heroSubtitle}',
+    'showCaptions&&','className={styles.captionsControl}','setShowCaptions(value=>!value)',
+    'className={styles.endControl}','className={styles.liveTranscript}','className={styles.voiceControls}',
+    'className={styles.textComposer} open','<details className={styles.quickGoals}>',
+    'onTurn={sendMessage}','onTranscript={setSpeechPreview}']) assert.ok(ui.includes(token),token)
+  for(const token of ['.heroSubtitle','.transcriptFeed','.sessionBottomNav{display:none}',
+    '.voiceCenter :global([data-my-coach-voice] button)','@media(max-width:350px)',
+    '@media(max-width:699px) and (max-height:680px)']) assert.ok(css.includes(token),token)
+  for(const term of ['Выбрать другого коуча','Elegir otro coach','Toggle subtitles','Завершить сессию','Terminar sesión'])
+    assert.ok(ui.includes(term),term)
+  assert.doesNotMatch(ui,/new MediaRecorder|localStorage\.setItem|sessionStorage\.setItem/)
+})
