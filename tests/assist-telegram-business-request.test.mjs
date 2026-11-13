@@ -190,7 +190,7 @@ test('the actual locked state machine requires initial request, format and disti
 });
 test('only explicit confirmed provider session can create an existing encrypted CRM enquiry',()=>{
  const source=get('lib/crm/telegram-business-service.js');
- const migration=get('supabase/migrations/20261113155500_hh_crm_tg_business_service_sessions_v1.sql');
+ const migration=get('supabase/migrations/20261113222405_hh_crm_tg_business_service_sessions_v1.sql');
  const provider=get('lib/crm/messenger-provider.js');
  assert.match(source,/HH_CRM_TG_CHAT_AUTOMATION_ENABLED!=='true'/);
  assert.match(source,/assertHolisticBusinessConnection\(\{connectionId:event.connectionId/);
@@ -241,7 +241,7 @@ test('warm service recognition and explicit, natural format preferences across R
 
 test('one atomic CRM transaction for enquiry + session, STOP/Cancel uses same lock',()=>{
  const source=get('lib/crm/telegram-business-service.js');
- const migration=get('supabase/migrations/20261113155500_hh_crm_tg_business_service_sessions_v1.sql');
+ const migration=get('supabase/migrations/20261113222405_hh_crm_tg_business_service_sessions_v1.sql');
  const route=get('app/api/app/crm/messenger/webhook/[provider]/route.js');
  const begin=source.indexOf('async function saveConfirmedEnquiry(');
  const end=source.indexOf('export async function processTelegramBusinessConversation(',begin);
