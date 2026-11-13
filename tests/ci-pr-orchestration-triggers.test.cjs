@@ -424,3 +424,39 @@ test('all five bounded Watchdog event/schedule control jobs use the existing 1-v
   assert.match(w,/HH PR 10-minute watchdog/);
   assert.doesNotMatch(w,/continue-on-error:\s*true/);
 });
+
+test('bounded AutoMerge/Dispatcher/API workers use slim without changing their full-runner safeguards',()=>{
+  const cases=[
+    ['hh-native-auto-merge',[['enable',5],['recover-interrupted-core',4]]],
+    ['hh-pr-queue-dispatcher',[['observe',8]]],
+    ['hh-pr-ci-worker',[['bootstrap',6]]],
+    ['hh-pr-direction-watcher',[['classify',8]]],
+  ];
+  for(const [workflowName,jobs] of cases){
+    const workflow=read(workflowName);
+    for(const [job,timeout] of jobs){
+      const section=workflow.split('  '+job+':\n')[1]?.split(/\n  [a-z][a-z0-9-]*:\n/)[0];
+      assert.ok(section,workflowName+'/'+job+' must exist');
+      assert.match(section,/^    runs-on: ubuntu-slim$/m,job+' API runner must be slim');
+      assert.match(section,new RegExp('^    timeout-minutes: '+timeout+'$','m'));
+      assert.ok(timeout<15,'slim hard cap respected');
+      assert.match(section,/actions\/github-script@v7/,'must be a bounded API script');
+      assert.doesNotMatch(section,/npm ci|npm run build|docker|apt-get|sudo|playwright|ffmpeg|denoland\/setup-deno/i,
+        'no heavyweight suites on slim');
+    }
+  }
+  const native=read('hh-native-auto-merge');
+  const prune=native.split('  prune-head:\n')[1];
+  assert.match(prune,/^    runs-on: ubuntu-24\.04$/m,'prune janitor stays on full Ubuntu');
+  assert.match(native,/^  workflow_run:\n    workflows:\n      - 'HH PR core release gate'/m);
+  assert.match(native,/hh-merge-check/);
+  assert.match(native,/hh-specialist/);
+  const dispatch=read('hh-pr-queue-dispatcher');
+  const contract=dispatch.split('  contract:\n')[1]?.split(/\n  [a-z][a-z0-9-]*:\n/)[0];
+  assert.match(contract,/^    runs-on: ubuntu-24\.04$/m,'dedicated contract tests keep full runner');
+  const ci=read('hh-pr-ci-worker');
+  assert.match(ci,/reservation_run_id/,'signed per-PR reservation retained');
+  const repair=read('hh-pr-repair-worker');
+  assert.match(repair,/^    runs-on: ubuntu-24\.04$/m,'source repair remains full Ubuntu');
+  assert.doesNotMatch(native,/continue-on-error:\s*true/);
+});
