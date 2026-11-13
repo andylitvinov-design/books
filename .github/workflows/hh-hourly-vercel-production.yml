@@ -1,0 +1,67 @@
+name: HH hourly Vercel production batch
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+    inputs:
+      emergency:
+        description: 'Emergency deploy now (bypass unchanged-SHA check)'
+        type: boolean
+        required: false
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: hh-hourly-vercel-production
+  cancel-in-progress: false
+jobs:
+  publish:
+    # A scheduled run must not consume a runner until both existing
+    # credentials and the Vercel deploy hook have been verified and armed.
+    # Manual emergency Deploy Now remains accessible while the gate is off.
+    if: ${{ github.event_name == 'workflow_dispatch' || vars.HH_VERCEL_HOURLY_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check prerequisites and last production SHA
+        id: gate
+        env:
+          VERCEL_TOKEN: ${{ secrets.HH_VERCEL_RELEASE_TOKEN }}
+          VERCEL_HOOK: ${{ secrets.HH_VERCEL_PRODUCTION_DEPLOY_HOOK }}
+          EMERGENCY: ${{ inputs.emergency }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$VERCEL_TOKEN" || -z "$VERCEL_HOOK" ]]; then
+            echo 'Hourly batch not armed: both HH_VERCEL_RELEASE_TOKEN and HH_VERCEL_PRODUCTION_DEPLOY_HOOK are required.'
+            exit 1
+          fi
+          head_sha="$(git ls-remote https://github.com/andylitvinov-design/books.git refs/heads/codex/public-book-library | cut -f1)"
+          [[ "$head_sha" =~ ^[a-f0-9]{40}$ ]] || exit 1
+          if [[ "$EMERGENCY" != "true" ]]; then
+            response="$(curl -fsS --retry 2 --max-time 20 -H "Authorization: Bearer $VERCEL_TOKEN" 'https://api.vercel.com/v6/deployments?teamId=team_OSf690d0nxRHWVMXCElA8i95&projectId=prj_4jAwcx6lrKyUKZ3R9vgC5xwwyC0b&target=production&limit=20')"
+            if ! printf '%s' "$response" | jq -e '.deployments | type == "array"' >/dev/null; then
+              echo 'Unable to verify current Vercel production deployments; refusing speculative build.'
+              exit 1
+            fi
+            if printf '%s' "$response" | jq -e --arg sha "$head_sha" '[.deployments[] | select(.meta.githubCommitSha == $sha and (.readyState == "READY" or .readyState == "BUILDING" or .readyState == "QUEUED" or .readyState == "INITIALIZING"))] | length > 0' >/dev/null; then
+              echo "Already deployed or in progress: $head_sha"
+              exit 0
+            fi
+          fi
+          echo 'run=true' >> "$GITHUB_OUTPUT"
+      - name: Trigger one production build
+        if: steps.gate.outputs.run == 'true'
+        env:
+          VERCEL_HOOK: ${{ secrets.HH_VERCEL_PRODUCTION_DEPLOY_HOOK }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$VERCEL_HOOK" in
+            https://api.vercel.com/v1/integrations/deploy/*) ;;
+            *) echo 'Unexpected deploy-hook URL'; exit 1 ;;
+          esac
+          # A deploy-hook POST is not idempotent; a timeout may mean accepted.
+          # Never retry uncertain POSTs and accidentally create extra builds.
+          curl -fsS --max-time 30 -X POST "$VERCEL_HOOK" >/dev/null
+          echo 'Vercel deployment requested; READY and LIVE must be verified separately.'
