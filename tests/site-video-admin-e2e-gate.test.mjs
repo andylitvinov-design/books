@@ -92,3 +92,22 @@ test('owner Reel local preview is checked by real authenticated browser and narr
   assert.match(source,/element\.videoWidth > 0/)
   assert.match(source,/await nativeFileInput\.setInputFiles\(\[\]\)/)
 })
+
+
+test('isolated Next DEV first HTTP 500 may not poison accepted 200 document or bypass genuine JavaScript errors',()=>{
+  assert.match(publicSource,/const recoveredFailedDevErrors = new Set\(\)/,
+    'Every temporary error must be explicitly attributed, not globally reset');
+  assert.match(publicSource,/const errorCountBeforeDocument = pageErrors.length/);
+  assert.match(publicSource,/if \(!live && response\?\.status\(\) === 500\)/);
+  assert.match(publicSource,/const rejectedDocumentUrl = response\.url\(\)/);
+  assert.match(publicSource,/rejectedDocumentErrors\.length <= 1/);
+  assert.match(publicSource,/error\.message === 'Unexpected end of JSON input'/);
+  assert.match(publicSource,/error\.url === rejectedDocumentUrl/);
+  assert.match(publicSource,/new URL\(error\.url\)\.origin === origin/);
+  assert.match(publicSource,/response = await page\.reload\(options\)/);
+  assert.match(publicSource,/if \(response\?\.status\(\) === 200\)/);
+  assert.match(publicSource,/recoveredFailedDevErrors\.add\(error\)/);
+  assert.match(publicSource,/assert\.deepEqual\(pageErrors\.filter\(error => !recoveredFailedDevErrors\.has\(error\)\), \[\]/);
+  assert.doesNotMatch(publicSource,/^[ \t]*pageErrors\s*=\s*\[\]/m,
+    'A transient first 500 must never erase errors from accepted documents');
+});

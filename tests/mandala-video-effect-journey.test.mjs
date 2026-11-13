@@ -50,10 +50,12 @@ test('render progress and the optional one-at-a-time check-in in a centered, dis
   assert.match(source,/document\.body\.style\.overflow="hidden"/);
   assert.match(source,/event\.key==="Escape"/);
   assert.match(source,/data-video-effect-reopen/);
-  assert.match(source,/videoEnded\|\|status==="failed"/);
+  assert.match(source,/if\(status==="ready"\)setModalOpen\(false\)/);
+  assert.match(source,/else if\(status==="failed"\)setModalOpen\(true\)/);
+  assert.doesNotMatch(source,/if\(videoEnded\)setModalOpen\(true\)/);
+  assert.match(source,/const viewed=videoStarted\|\|videoEnded\|\|confirmedWatched/);
   assert.match(source,/data-video-effect-watch/);
-  assert.match(source,/if\(status==="ready"&&!videoEnded\)setModalOpen\(false\)/,
-    'Ready must close its optional overlay before Save/Download or Telegram actions');
+
   assert.match(source,/onClick=\{\(\)=>chooseScore\(value\)\}/);
   assert.match(css,/\.overlay\{position:fixed;inset:0;z-index:11000/);
   assert.match(css,/\.modal\{box-sizing:border-box;width:min\(100%,440px\)/);
@@ -61,4 +63,7 @@ test('render progress and the optional one-at-a-time check-in in a centered, dis
   assert.match(css,/overflow-y:auto/);
   assert.match(css,/safe-area-inset-bottom/);
   assert.match(css,/\.reopen\{position:fixed/);
+  const browser=readFileSync(new URL('../scripts/verify-affirmation-voice-browser.mjs',import.meta.url),'utf8');
+  assert.match(browser,/video\.dispatchEvent\(new Event\("ended"\)\)/);
+  assert.match(browser,/data-video-effect-overlay/);
 });
