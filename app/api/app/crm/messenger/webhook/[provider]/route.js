@@ -14,6 +14,7 @@ import {processTelegramAiV3,finishTelegramAiV3} from '@/lib/crm/telegram-ai-diag
 import {shouldBootstrapTelegramNativeMenu} from '@/lib/crm/telegram-companion-native-commands.mjs'
 import { receiveOwnerTelegramVideoWebhook } from '@/lib/practitioners/owner-telegram-video-service'
 import {processTelegramBusinessConversation} from '@/lib/crm/telegram-business-service'
+import {processTelegramBusinessSecretary,gateTelegramBusinessSecretaryOptOut} from '@/lib/crm/telegram-secretary-service'
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
 export const revalidate=0
@@ -54,6 +55,12 @@ export async function POST(request,{params}){
         return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
       }
     }
+    // Durable STOP gate for the account secretary, including contacts who
+    // have never ordered. This signed update is not a CRM lead.
+    if(provider==='telegram'){
+      const stop=await gateTelegramBusinessSecretaryOptOut(body,config)
+      if(stop.blocked)return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
+    }
     // Separate signed Business-chat service intake: only public service-code
     // messages and explicit short replies, never ordinary personal text or
     // diagnostic/Companion updates. Confirmation persists before acknowledgement.
@@ -80,6 +87,29 @@ export async function POST(request,{params}){
           }catch{
             // Provider acceptance is not delivery; never re-send blindly.
             console.error('HH_TG_BUSINESS_REPLY_NOT_CONFIRMED')
+          }
+        }
+        return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
+      }
+      // After the existing consent/format/STOP workflow, respond to explicit
+      // product lookup questions using only reviewed first-party sources.
+      const secretary=await processTelegramBusinessSecretary(body,config)
+      if(secretary.handled){
+        if(secretary.reply){
+          try{
+            await consumeRate(config,{op:'hh-tg-secretary-reply',
+              connectionId:secretary.connectionId,chatId:secretary.to,
+              messageId:secretary.messageId},1,7*86400)
+            await consumeRate(config,{op:'hh-tg-secretary-chat',
+              connectionId:secretary.connectionId,chatId:secretary.to},15,86400)
+            await consumeRate(config,{op:'hh-tg-secretary-global'},100,86400)
+            await sendHolisticBusinessRequestReply({
+              connectionId:secretary.connectionId,to:secretary.to,
+              text:secretary.reply,buttons:secretary.buttons||[],
+            })
+          }catch{
+            // Unknown send state never triggers an automatic duplicate retry.
+            console.error('HH_TG_SECRETARY_REPLY_NOT_CONFIRMED')
           }
         }
         return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
