@@ -17,7 +17,7 @@ test("six original PsiMaster practices are real source-backed, publicly embedded
   }
   const hub=read("components/library-hub.tsx");
   assert.match(hub,/freeMeditationVideos\("ru"\)/);
-  assert.match(hub,/\.filter\(video=>video\.id!=="95peObUizeE"\)/);
+  assert.match(hub,/ownerApprovedIds\.has\(video\.id\)/);
   assert.match(hub,/\.\.\.originalPsiMasterPractices/);
   assert.match(hub,/sourceGroup:"psimaster-original-meditations"/);
 });
@@ -36,7 +36,7 @@ test("original publicly embedded meditation can be a practice with unknown durat
   assert.equal(matchesMyTubeShelf(unrelated,"practices"),false);
   const query=read("lib/video-discovery/approved-meditations.ts");
   assert.match(query,/editorial_status='approved' and embed_status='confirmed'/);
-  assert.match(query,/duration_verified_seconds between 1 and 600/);
+  assert.match(query,/duration_verified_seconds between 1 and 900/);
 });
 
 test("All courses lists every series without mandatory category and keeps each ordered",()=>{
@@ -83,4 +83,39 @@ test("all verified PsiMaster planetary meditations complement the original Sun a
   assert.match(hub,/media\.logicalId==="videos\/planetary-power"/);
   assert.match(hub,/media\.status==="verified_legacy_public_embed"/);
   assert.match(hub,/!curatedIds\.has\(media\.videoId\)/);
+  assert.match(hub,/ownerApprovedIds\.has\(media\.videoId\)/);
+});
+
+test("all 15 original PsiMaster recordings have explicit owner approval and appear without pagination",()=>{
+  const approved=JSON.parse(read("data/academy/psimaster-mytube-owner-approval-20261112.json"));
+  assert.equal(approved.maxPracticeDurationSeconds,900);
+  assert.equal(approved.youtubeIds.length,15);
+  assert.equal(new Set(approved.youtubeIds).size,15);
+  for(const id of approved.youtubeIds){
+    assert.ok(archived.some(media=>media.videoId===id&&
+      media.status==="verified_legacy_public_embed"),"missing original public source "+id);
+  }
+  assert.equal(approved.youtubeIds.includes("95peObUizeE"),false,
+    "event announcement must not be presented as meditation");
+  const feed=read("components/library-feed.tsx");
+  assert.match(feed,/mytubeShelf === "courses" \|\| mytubeShelf === "practices"/);
+  assert.match(feed,/data-mytube-duration-unverified/);
+  const view=read("components/video-discovery.tsx");
+  assert.match(view,/До 15 минут/);
+  assert.match(view,/if\(durationRange==="under15" && seconds>900\)return false/);
+});
+
+test("reviewed meditation projector includes 15:00 but rejects 15:01 and unapproved content",async()=>{
+  const {projectReviewedShortLessonRows}=await import("../lib/video-discovery/reviewed-short-lessons.mjs");
+  const row={youtube_id:"AaAaAaAaAa1",title:"Reviewed practice",creator:"Owner",
+    source_kind:"original",source_url:"https://www.youtube.com/watch?v=AaAaAaAaAa1",
+    audio_language:"ru",content_type:"guided",goals:["energy"],subtopics:["energy_health"],
+    user_situations:[],duration_verified_seconds:900,duration_basis:"metadata_checked",
+    editorial_status:"approved",embed_status:"confirmed",rights_status:"embed_approved",
+    content_checked_at:"2026-11-12T01:00:00Z",embed_checked_at:"2026-11-12T01:00:00Z",
+    metadata_checked_at:"2026-11-12T01:00:00Z",claims_risk:"low"};
+  assert.equal(projectReviewedShortLessonRows([row]).length,1);
+  assert.equal(projectReviewedShortLessonRows([{...row,duration_verified_seconds:901}]).length,0);
+  assert.equal(projectReviewedShortLessonRows([{...row,embed_status:"unverified"}]).length,0);
+  assert.equal(projectReviewedShortLessonRows([{...row,editorial_status:"candidate"}]).length,0);
 });
