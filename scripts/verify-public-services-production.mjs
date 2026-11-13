@@ -199,8 +199,12 @@ try {
     await log.locator('[data-assist-question="mode"] div button').nth(2).click();
     await expect(log.locator('[data-assist-message="user"]')).toHaveCount(2);
     await expect(log.locator('[data-assist-question="budget"]')).toHaveCount(1);
-    await expect(bestCards).toHaveCount(1);
+    const expectedVideo = rankAssistOffers("stress",{mode:"video"}).map(offer=>offer.id);
+    const actualVideo = await bestCards.evaluateAll(nodes=>
+      nodes.map(node=>node.getAttribute("data-assist-best-card")));
+    assert.deepEqual(actualVideo,expectedVideo,"Video format can include video-linked symbolic options until budget is set");
     await expect(shelf.locator('[data-assist-best-card="mytube"]')).toHaveCount(1);
+    await expect(shelf.locator('[data-assist-best-card="mandala"]')).toHaveCount(1);
     await log.locator('[data-assist-question="budget"] div button').first().click();
     await expect(log.locator('[data-assist-message="user"]')).toHaveCount(3);
     await expect(log.locator('[data-assist-question]')).toHaveCount(0);
