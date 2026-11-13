@@ -13,7 +13,6 @@ import { ContactChannelChooser } from "@/components/contact-channel-chooser";
 import { coreServiceOffers, type CoreServiceOffer } from "@/data/core-service-offers";
 import type { PublicLocale } from "@/lib/public-locales";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
-import { AssistReikiSession } from "@/components/assist-reiki-session";
 import styles from "./services-studio-offers.module.css";
 
 type Offer = {
@@ -283,7 +282,6 @@ export function ServicesStudioOffers({ locale }: { locale: PublicLocale }) {
   return (
     <>
       <div id="service-results" className={styles.resultsAnchor} tabIndex={-1} />
-      <AssistReikiSession locale={locale} />
       <section className={styles.section} id="free-insights" hidden={!freeAvailable} aria-labelledby="services-free-title" data-services-studio-free lang={locale}>
         <header className={styles.heading}>
           <p className={styles.eyebrow}><ClipboardCheck size={16} aria-hidden="true" />{t.freeEyebrow}</p>

@@ -4,6 +4,8 @@ import { notFound, redirect } from "next/navigation";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { ServicesConversionHero } from "@/components/services-conversion-hero";
 import { ServicesAssistMobile } from "@/components/services-assist-mobile";
+import { ServicesPersonalConsultationMobile } from "@/components/services-personal-consultation-mobile";
+import { AssistReikiSession } from "@/components/assist-reiki-session";
 import { ServicesMagicalHelpMobile } from "@/components/services-magical-help-mobile";
 import assistStyles from "@/components/services-assist-mobile.module.css";
 import { ServicesExplorerProvider } from "@/components/services-explorer-state";
@@ -77,6 +79,8 @@ export default async function ServicesPage({ params, searchParams }: PageProps) 
       <PublicSiteHeader locale={locale} showAssessmentStrip={false} />
       <ServicesExplorerProvider>
         <ServicesAssistMobile locale={locale as Locale} />
+        <ServicesPersonalConsultationMobile locale={locale as Locale} />
+        <AssistReikiSession locale={locale as Locale} />
         <ServicesConversionHero locale={locale as Locale} />
         <SpiritualReadingEntry locale={locale as Locale} />
         <PublicConsultationCta locale={locale as Locale} id="consultation" serviceBooking wiseEnabled={wisePaymentsEnabled()} paypalPersonalEnabled={personalPayPalEnabled()} />

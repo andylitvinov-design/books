@@ -394,8 +394,9 @@ export function RemoteEnergySupportBooking({
       setDuration(budgetOptions[0].duration);
     }
   }, [selectedServiceId, budgetOptions, duration]);
-  // Safe date/time/duration prefill from Assist Reiki; these are preferences only,
-  // never a confirmed slot. The server still revalidates the published offer.
+
+  // Assist Reiki passes only a preferred slot and moderated duration, not a booking.
+  // Always revalidate the current published master and price; no implied payment.
   useEffect(() => {
     if (mode !== "standalone" || !preferredPractitioner) return;
     const params = new URLSearchParams(window.location.search);

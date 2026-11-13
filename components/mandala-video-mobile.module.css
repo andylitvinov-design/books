@@ -5559,3 +5559,47 @@
    Ideas without restoring hidden legacy music controls. Source marker avoids
    changing other Phrases/Voice layouts or the existing consent/voice editor. */
 .studio[data-active-workspace="phrases"] .phraseMusicSection[data-personalized-music-match]{display:grid!important}
+
+/* 12 Nov: three-format Montage PRO, without touching original renderer and checkout. */
+@media(max-width:759px){
+ .studio[data-active-workspace="editor"][data-montage-panel="promo"] .quickBuilder{gap:5px!important;padding-bottom:7px!important}
+ .studio[data-active-workspace="editor"][data-montage-panel="promo"] .quickBuilder>.previewStage{padding:0!important}
+ .studio[data-active-workspace="editor"][data-montage-panel="promo"] .previewStage>.heroWithRail{
+   display:block!important;width:100%!important;max-width:none!important;margin:0!important
+ }
+ .studio[data-active-workspace="editor"][data-montage-panel="promo"] .previewStage .heroWithRail>.hero{
+   display:block!important;box-sizing:border-box!important;width:100%!important;max-width:none!important;
+   height:auto!important;aspect-ratio:2.55/1!important;min-height:128px!important;border-radius:17px!important;overflow:hidden
+ }
+ .studio[data-active-workspace="editor"][data-montage-panel="promo"] .previewStage .heroRail{display:none!important}
+ .studio[data-active-workspace="editor"][data-montage-panel="promo"] [data-video-basic-editor]{
+   padding:0!important;border:0!important;box-shadow:none!important;background:transparent!important
+ }
+ .studio[data-active-workspace="editor"][data-montage-panel="promo"] .montageQuickTools{gap:5px!important;padding:0!important;margin:0!important}
+ .studio[data-active-workspace="editor"][data-montage-panel="promo"] .montageQuickTools button{min-height:44px!important}
+ .studio[data-active-workspace="editor"][data-montage-panel="promo"] .montageActivePanel{padding:0!important}
+ .studio[data-active-workspace="editor"] .previewStage .hero[data-montage-pro-hero="true"] .heroEyebrow{display:none!important}
+ .studio[data-active-workspace="editor"] .previewStage .hero[data-montage-pro-hero="true"] .heroEditorial{left:44%!important;right:10px!important;bottom:9px!important;max-width:54%!important}
+ .studio[data-active-workspace="editor"] .previewStage .hero[data-montage-pro-hero="true"] .heroEditorial h2{font-size:clamp(20px,5.6vw,28px)!important}
+ .studio[data-active-workspace="editor"] .previewStage .hero[data-montage-pro-hero="true"] .heroEditorial p{font-size:clamp(10px,2.6vw,12px)!important;line-height:1.24!important}
+}
+@media(max-width:355px){
+ .studio[data-active-workspace="editor"][data-montage-panel="promo"] .previewStage .heroWithRail>.hero{min-height:119px!important;aspect-ratio:2.65/1!important}
+ .studio[data-active-workspace="editor"] .previewStage .hero[data-montage-pro-hero="true"] .heroEditorial h2{font-size:18px!important}
+}
+
+/* The native WebKit verification/retry player remains mounted, decoded and
+   inaccessible on Ready. The visible full-size playback is MandalaVideoReady. */
+.studio[data-active-workspace="ready"] .quickBuilder>[data-video-result]:not([hidden]){
+ display:block!important;position:absolute!important;left:0!important;top:0!important;
+ width:2px!important;height:2px!important;margin:0!important;padding:0!important;
+ overflow:hidden!important;opacity:0!important;pointer-events:none!important;z-index:-1!important;
+ border:0!important;box-shadow:none!important}
+.studio[data-active-workspace="ready"] .quickBuilder>[data-video-result]:not([hidden])>video{
+ display:block!important;width:2px!important;height:2px!important;
+ min-width:2px!important;min-height:2px!important;margin:0!important}
+
+/* Ready keeps the 2px native video decoder alive, but legacy Result controls
+   must be display-hidden. Opacity:0 + inert alone are still Playwright-visible. */
+.studio[data-active-workspace="ready"] .quickBuilder>[data-video-result]:not([hidden]) [data-mandala-video-download],
+.studio[data-active-workspace="ready"] .quickBuilder>[data-video-result]:not([hidden]) [data-video-save-direct]{display:none!important}

@@ -4,27 +4,27 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, BookOpen, GraduationCap, Info, Sparkles } from "lucide-react";
 import { ContactChannelChooser } from "@/components/contact-channel-chooser";
-import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
+import { telegramEnquiryUrlFromWhatsApp, whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./services-courses-shelf.module.css";
 
 type Direction = "all" | "temple" | "reiki";
-type Format = "all" | "online" | "teacher";
+type Format = "all" | "free" | "teacher";
 const courses = [
-  { id: "dionysus", direction: "temple", teacher: false,
+  { id: "dionysus", direction: "temple", teacher: false, freeIntro: false,
     path: "academy/archive/dionysian-tantra-club", image: "/images/holistic-house/hero-olive-incense.webp" },
-  { id: "tantra", direction: "reiki", teacher: true,
+  { id: "tantra", direction: "reiki", teacher: true, freeIntro: true,
     path: "academy/reiki/free-practitioner-course", image: "/images/holistic-house/tantra-reiki-yin-yang-cover.svg" },
-  { id: "yggdrasil", direction: "reiki", teacher: true,
+  { id: "yggdrasil", direction: "reiki", teacher: true, freeIntro: false,
     path: "academy/reiki/yggdrasil/basic-course", image: "/academy/reiki-yggdrasil/source/basic-program.jpg" },
 ] as const;
 const content = {
   ru: {
     eyebrow: "HOLISTIC HOUSE · ОБУЧЕНИЕ", title: "Обучающие курсы",
     lead: "Знания, практики и инициации для целостного развития",
-    direction: "Направление обучения", format: "Формат обучения", recommended: "Рекомендуемые курсы",
+    direction: "Направление обучения", format: "Вариант обучения", recommended: "Рекомендуемые курсы",
     directions: { all: "Все курсы", temple: "Храмовые традиции", reiki: "Рейки и энергия" },
-    formats: { all: "Любое", online: "Онлайн", teacher: "С мастером" },
+    formats: { all: "Все", free: "Бесплатно", teacher: "С мастером" },
     details: "Подробнее", order: "Заказать курс", all: "Посмотреть все курсы",
     empty: "По этому фильтру пока нет курсов.", reset: "Сбросить фильтры",
     enquire: "Хочу уточнить актуальный набор, стоимость и формат курса. Заявка не является оплатой.",
@@ -38,9 +38,9 @@ const content = {
   en: {
     eyebrow: "HOLISTIC HOUSE · LEARNING", title: "Learning courses",
     lead: "Knowledge, practices and initiations for personal growth",
-    direction: "Learning direction", format: "Learning format", recommended: "Recommended courses",
+    direction: "Learning direction", format: "Learning option", recommended: "Recommended courses",
     directions: { all: "All courses", temple: "Temple traditions", reiki: "Reiki & energy" },
-    formats: { all: "Any", online: "Online", teacher: "With a teacher" },
+    formats: { all: "All", free: "Free", teacher: "With a teacher" },
     details: "Details", order: "Enquire about course", all: "Explore all courses",
     empty: "No courses match these filters yet.", reset: "Reset filters",
     enquire: "Please confirm current enrolment, pricing and format before any payment.",
@@ -54,9 +54,9 @@ const content = {
   es: {
     eyebrow: "HOLISTIC HOUSE · FORMACIÓN", title: "Cursos de formación",
     lead: "Conocimientos, prácticas e iniciaciones para crecer",
-    direction: "Área de formación", format: "Modalidad", recommended: "Cursos recomendados",
+    direction: "Área de formación", format: "Opción de formación", recommended: "Cursos recomendados",
     directions: { all: "Todos los cursos", temple: "Tradiciones de templo", reiki: "Reiki y energía" },
-    formats: { all: "Cualquiera", online: "En línea", teacher: "Con un maestro" },
+    formats: { all: "Todos", free: "Gratis", teacher: "Con un maestro" },
     details: "Detalles", order: "Solicitar curso", all: "Ver todos los cursos",
     empty: "Aún no hay cursos para estos filtros.", reset: "Restablecer filtros",
     enquire: "Quisiera confirmar la inscripción, el precio y la modalidad antes de pagar.",
@@ -74,7 +74,7 @@ export function ServicesCoursesShelf({ locale }: { locale: PublicLocale }) {
   const [direction, setDirection] = useState<Direction>("all");
   const [format, setFormat] = useState<Format>("all");
   const filtered = courses.filter((course) => (direction === "all" || course.direction === direction)
-    && (format !== "teacher" || course.teacher));
+    && (format === "all" || (format === "free" && course.freeIntro) || (format === "teacher" && course.teacher)));
   return <section className={styles.shelf} lang={locale} data-assist-course-shelf aria-labelledby="assist-courses-title">
     <header className={styles.hero}>
       <p className={styles.eyebrow}><Sparkles size={16} aria-hidden="true"/>{t.eyebrow}</p>
@@ -87,7 +87,7 @@ export function ServicesCoursesShelf({ locale }: { locale: PublicLocale }) {
       </select>
       <p className={styles.formatLabel}><BookOpen size={22} aria-hidden="true"/>{t.format}</p>
       <div className={styles.pills} role="group" aria-label={t.format}>
-        {(["all","online","teacher"] as const).map(key=><button key={key} type="button" aria-pressed={format===key}
+        {(["all","free","teacher"] as const).map(key=><button key={key} type="button" aria-pressed={format===key}
           onClick={()=>setFormat(key)}>{t.formats[key]}</button>)}
       </div>
     </div>
@@ -100,6 +100,7 @@ export function ServicesCoursesShelf({ locale }: { locale: PublicLocale }) {
       {filtered.map(course=>{
         const item=t.items[course.id];
         const href="/"+locale+"/"+course.path;
+        const enquiryUrl = whatsappEnquiryUrl({locale,service:item.title,request:t.enquire,pagePath:href});
         return <article key={course.id} className={styles.card} data-assist-learning-course={course.id}>
           <Link className={styles.art} href={href} prefetch={false} aria-label={item.title}>
             <Image src={course.image} alt="" width={230} height={230} unoptimized loading="lazy"/>
@@ -114,9 +115,9 @@ export function ServicesCoursesShelf({ locale }: { locale: PublicLocale }) {
               <Info size={18} aria-hidden="true"/>{t.details}
             </Link>
             <div className={styles.orderWrap} data-assist-course-order={course.id}>
-              <ContactChannelChooser locale={locale} label={t.order} className={styles.order} compactTrigger
+              <ContactChannelChooser locale={locale} label={t.order} className={styles.order} compactTrigger compactMessenger
                 publicServiceTitle={item.title} publicTopic={item.title} event="service_request_start"
-                whatsappUrl={whatsappEnquiryUrl({locale,service:item.title,request:t.enquire,pagePath:href})}
+                whatsappUrl={enquiryUrl} telegramEnquiryUrl={telegramEnquiryUrlFromWhatsApp(enquiryUrl)}
                 attributes={{"data-assist-course-order":course.id}}/>
             </div>
           </div>

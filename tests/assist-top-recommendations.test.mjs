@@ -1,32 +1,47 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-const root = new URL("../components/", import.meta.url);
-const component = readFileSync(new URL("assist-top-recommendations.tsx", root), "utf8");
-const shell = readFileSync(new URL("services-assist-mobile.tsx", root), "utf8");
-const css = readFileSync(new URL("assist-top-recommendations.module.css", root), "utf8");
+import {readFileSync} from "node:fs";
+import {rankAssistProducts} from "../lib/assist/product-recommendations.mjs";
+const read=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
+const component=read("components/assist-top-recommendations.tsx");
+const shell=read("components/services-assist-mobile.tsx");
+const css=read("components/assist-top-recommendations.module.css");
 
-test("mobile Assist has three mixed-direction default recommendations", () => {
-  assert.match(component, /forMe:\s*\["homeopathy","coaching","reiki"\]/);
-  for (const id of ["homeopathy","coaching","reiki"]) assert.match(component, new RegExp(id + ': \\{ path:'));
-  assert.match(component, /data-assist-best-three/);
-  assert.match(shell, /<AssistTopRecommendations locale=\{locale\} focus=\{selection\?\.focus \?\? null\}/);
+test("products, not general direction filters, occupy the recommendation shelf",()=>{
+  assert.match(component,/rankAssistProducts\(focus\?\?"general",preferences\)/);
+  assert.doesNotMatch(component,/data-assist-direction|const directions|const shelves/);
+  for(const id of ["review","therapy","constellation","business","opora","reiki","mandala"])
+    assert(component.includes(id+":{path:"),id);
+  assert.match(component,/data-assist-product-link=\{id\}/);
+  assert.match(component,/data-assist-best-action=\{id\}/);
+  assert.match(shell,/!crisis&&selection\?<AssistTopRecommendations/);
+  assert.match(shell,/preferences=\{preferences\}/);
 });
-test("topic switch shows three cards and does not send private question to providers", () => {
-  for (const category of ["health","relationships","energy","learning","spiritual"]) {
-    assert.match(component, new RegExp(category + ': \\["[^"]+","[^"]+","[^"]+"\\]'));
-  }
-  assert.match(component, /aria-pressed=\{active===direction\}/);
-  assert.match(component, /byFocus\[focus\]/);
-  assert.doesNotMatch(component, /fetch\(|localStorage|sessionStorage/);
+
+test("a visitor feeling lost sees three existing concrete offers in helpful order",()=>{
+  assert.deepEqual(rankAssistProducts("growth",{}),["review","therapy","constellation"]);
+  assert.match(shell,/\\blost\\b/);
+  assert.match(shell,/\\bdirection\\b/);
+  assert.match(component,/services\/free-situation-review/);
+  assert.match(component,/services\/imagery-therapy/);
+  assert.match(component,/services\/systemic-constellations/);
 });
-test("existing public navigation, safe actions and mobile touch targets", () => {
-  assert.match(component, /services\/psychohomeopathy/);
-  assert.match(component, /services\/imagery-therapy/);
-  assert.match(component, /services\/remote-energy-support/);
-  assert.match(component, /prefetch=\{false\}/);
-  assert.match(component, /confirmed booking|подтверждённую запись/);
-  assert.match(css, /min-height:50px/);
-  assert.match(css, /min-height:42px/);
-  assert.doesNotMatch(component, /onClick=.*payment|automaticBooking/);
+
+test("horizontal mobile rows have readable prices and real single-product actions",()=>{
+  assert.match(css,/\.card\{display:grid;grid-template-columns:minmax\(0,1fr\) 87px/);
+  assert.match(css,/\.product\{display:grid;grid-template-columns:67px/);
+  assert.match(css,/\.action\{[^}]*min-height:44px/);
+  assert.match(component,/assistPriceLabel/);
+  assert.match(component,/telegramServiceRequestUrl/);
+  assert.match(component,/href=\{href\}/);
+  assert.match(component,/referrerPolicy="no-referrer"/);
+  assert.doesNotMatch(component,/href="#"/);
+});
+
+test("local-only matching, crisis guard and all three languages remain",()=>{
+  for(const marker of ["ru:{","en:{","es:{","Free Personal Situation Review",
+    "Бесплатный разбор ситуации","Revisión personal gratuita"])
+    assert(component.includes(marker),marker);
+  assert.match(shell,/urgent\.test\(selection\.text\)/);
+  assert.doesNotMatch(component,/fetch\(|localStorage|sessionStorage|sendBeacon/);
 });

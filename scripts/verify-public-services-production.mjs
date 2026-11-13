@@ -6,6 +6,9 @@ const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
 const { expect } = require((process.env.HH_PLAYWRIGHT_PACKAGE || "playwright") + "/test");
 import assert from "node:assert/strict";
+import { inferAssistPreferences } from "../lib/assist/service-match.mjs";
+import { rankAssistProducts } from "../lib/assist/product-recommendations.mjs";
+import { telegramServiceRequestUrl } from "../lib/assist/telegram-business-request.mjs";
 import { mkdir, writeFile } from "node:fs/promises";
 
 const origin = process.env.HH_PUBLIC_QA_ORIGIN || "http://127.0.0.1:3100";
@@ -18,8 +21,7 @@ await mkdir(output, { recursive: true });
 const browser = await chromium.launch();
 const diagnostics = { runtime: "next-start production", console: [], pageErrors: [], devIssueOverlay: false };
 const responseEvidence = [];
-// These are the ONLY missing-database 503 responses expected in isolated CI.
-// The real API must still fail closed, and all other 503 paths remain failures.
+// Isolated CI: only these audited read-only endpoints may lack the database.
 const noDatabase503Paths = new Set([
   "/api/catalog/ratings",
   "/api/service-enquiries/booking-status",
@@ -56,8 +58,7 @@ try {
       const url = new URL(response.url());
       if (response.request().method() === "GET" && response.status() === 503 &&
           url.origin === origin && url.pathname.startsWith("/api/")) {
-        // Capture EVERY same-origin GET 503. A newly failing endpoint must
-        // never disappear from the release gate merely because it is unlisted.
+        // Record all first-party read failures, including any unexpected new endpoint.
         responseEvidence.push(url.pathname);
       }
     });
@@ -107,8 +108,9 @@ try {
     return page;
   };
 
-  // Mobile Assist replaces only the visible phone hero. The legacy cards,
-  // consultation/privacy flow, directory and desktop slider retain their own QA.
+  // Mobile Assist keeps issues, questions, answers, and reset in one messenger.
+  // The three responsive recommendations are separate small cards BELOW the chat.
+  // Preserve all locale/desktop/privacy contracts; never navigate Telegram in CI.
   const verifyMobileAssist = async (page, locale, width) => {
     const assist = page.locator("[data-assist-mobile]");
     const legacy = page.locator("[data-services-showcase-hero]");
@@ -116,14 +118,60 @@ try {
     await expect(assist).toHaveAttribute("lang", locale);
     await expect(legacy).toBeHidden();
     await expect(page.locator("#services-conversion-title")).toBeHidden();
+    // Keep the new single-messenger Assist; hide all superseded giant cards.
+    const legacyPhoneSelectors = [
+      "#consultation", "[data-services-studio-free]", "[data-services-studio-card]",
+      "[data-services-studio-paid] > header", "[data-services-studio-paid] > div:last-child",
+      "[data-services-meet]", '[data-personal-testimonials="services"]',
+      "#method-videos", "[data-services-directory-invitation]", "[data-service-lead-capture]"
+    ];
+    for (const selector of legacyPhoneSelectors) {
+      await expect(page.locator(selector + ":visible")).toHaveCount(0);
+    }
+    for (const selector of [
+      "[data-assist-personal-consultation]", "[data-assist-spiritual-entry]",
+      "[data-assist-video-generation]", "[data-assist-course-shelf]",
+      "[data-assist-magical-help]", "[data-assist-reiki-session]"
+    ]) {
+      await visible(page.locator(selector));
+    }
 
-    const question = assist.locator("textarea#assist-question");
-    const submit = assist.locator('form button[type="submit"]');
+
+    // The reiki picker is a distinct mounted mobile category, not another chat step.
+    const reiki=page.locator("[data-assist-reiki-session]");
+    await expect(reiki).toHaveCount(1);
+    await expect(reiki.locator('button[aria-pressed]')).toHaveCount(3);
+    await expect(reiki.locator('input[type="date"]')).toHaveCount(1);
+    await expect(reiki.locator('input[type="time"]')).toHaveCount(1);
+    await expect(reiki.locator('a[href*="holistic-support/mobile"]')).toHaveCount(1);
+
+    const conversation = assist.locator("[data-assist-dialogue]");
+    const log = conversation.locator("#assist-results");
+    await visible(conversation);
+    await expect(log).toHaveAttribute("role", "log");
+    const question = conversation.locator("textarea#assist-question");
+    const submit = conversation.locator('form button[type="submit"]');
     await visible(question);
     await expect(submit).toBeDisabled();
-    const topics = assist.locator('[role="group"] button[aria-pressed]');
+    const topics = conversation.locator("[data-assist-issue-suggestions] button");
+    const issueToggle = conversation.locator('button[aria-expanded]');
     await expect(topics).toHaveCount(6);
+    await expect(issueToggle).toHaveAttribute("aria-expanded", "false");
+    await issueToggle.click();
+    await expect(topics).toHaveCount(12);
+    await expect(issueToggle).toHaveAttribute("aria-expanded", "true");
+    await issueToggle.click();
+    await expect(topics).toHaveCount(6);
+
+    const shelf = assist.locator("[data-assist-best-three]");
+    const bestCards = shelf.locator("[data-assist-best-card]");
+    await expect(shelf).toHaveCount(0); // No generic cards before a real request.
+
     const tools = assist.locator("a[data-assist-tool]");
+    const toolsToggle = assist.locator('section[aria-labelledby="assist-tools-title"] button[aria-expanded]');
+    await expect(tools).toHaveCount(4);
+    await expect(toolsToggle).toHaveAttribute("aria-expanded", "false");
+    await toolsToggle.click();
     await expect(tools).toHaveCount(8);
     const expectedTools = {
       therapy: "services/imagery-therapy",
@@ -135,65 +183,128 @@ try {
       academy: "academy/reiki",
       masters: "masters",
     };
-    for (const [key, route] of Object.entries(expectedTools)) {
+    for (const [key,route] of Object.entries(expectedTools)) {
       await expect(assist.locator('a[data-assist-tool="' + key + '"]'))
         .toHaveAttribute("href", "/" + locale + "/" + route);
     }
+    await toolsToggle.click();
+    await expect(tools).toHaveCount(4);
     assert.equal(await assist.locator('input[type="email"],input[type="tel"]').count(), 0,
       "Assist cannot silently collect contact details");
 
-    // Real hydrated topic interaction: exactly three source-backed stress links.
+    // One issue enters a user bubble, followed by a helper reply and one question.
     await topics.first().click();
-    const results = assist.locator("#assist-results");
-    await visible(results);
-    await expect(topics.first()).toHaveAttribute("aria-pressed", "true");
-    await expect(results.locator("a[data-assist-recommendation]")).toHaveCount(3);
-    const stressRoutes = {
-      tests: "tests",
-      opora: "courses/antistress",
-      therapy: "services/imagery-therapy",
-    };
-    for (const [key, route] of Object.entries(stressRoutes)) {
-      const link = results.locator('a[data-assist-recommendation="' + key + '"]');
-      await expect(link).toHaveAttribute("href", "/" + locale + "/" + route);
-      const box = await link.boundingBox();
-      assert.ok(box && box.height >= 44, "Mobile Assist link touch target: " + locale + "/" + width + "/" + key);
+    await expect(conversation.locator("[data-assist-topic-suggestions]")).toHaveCount(0);
+    await expect(log.locator('[data-assist-message="user"]')).toHaveCount(1);
+    await expect(log.locator('[data-assist-message="assistant"]')).toHaveCount(1);
+    await expect(log.locator('[data-assist-question="mode"]')).toHaveCount(1);
+    await expect(log.locator("a[data-assist-recommendation]")).toHaveCount(0);
+    await expect(question).toHaveValue("");
+    await visible(shelf.locator("#assist-best-three-title"));
+    const expectedStress = rankAssistProducts("stress", {});
+    const actualStress = await bestCards.evaluateAll(nodes=>
+      nodes.map(node=>node.getAttribute("data-assist-best-card")));
+    assert.deepEqual(actualStress,expectedStress,
+      "Matching real products, not directions, for the selected problem");
+    // Preserve the previously approved exact Telegram link/locale assertion,
+    // now mapping concrete offered products onto the existing service codes.
+    const requestIds = {therapy:"coaching",constellation:"constellations",business:"business",reiki:"reiki"};
+    for(const key of expectedStress){
+      const detail=shelf.locator('[data-assist-product-link="'+key+'"]');
+      await expect(detail).toHaveAttribute("href",new RegExp("^/"+locale+"/[a-z0-9/-]+$"));
+      const action=shelf.locator('[data-assist-best-action="'+key+'"]');
+      const code=requestIds[key];
+      if(code){
+        const url=telegramServiceRequestUrl(code,locale);
+        assert.ok(url,"No unapproved Telegram request: "+key);
+        await expect(action).toHaveAttribute("href",url);
+        await expect(action).toHaveAttribute("target","_blank");
+        assert.equal(new URL(url).searchParams.get("text")?.split(String.fromCharCode(10)).at(-1),
+          "[HH-REQ:"+code+":"+locale+"]","Deep link contains no private problem text");
+      }else{
+        await expect(action).toHaveAttribute("href",new RegExp("^/"+locale+"/[a-z0-9/-]+$"));
+      }
+      const box=await action.boundingBox();
+      assert.ok(box&&box.height>=44,"Mobile product touch target: "+locale+"/"+width+"/"+key);
     }
 
-    // Switching intent must replace, not append, old recommendations.
-    await topics.nth(4).click();
-    await expect(topics.nth(4)).toHaveAttribute("aria-pressed", "true");
-    await expect(results.locator("a[data-assist-recommendation]")).toHaveCount(3);
-    await expect(results.locator('a[data-assist-recommendation="business"]'))
-      .toHaveAttribute("href", "/" + locale + "/services/business-consulting");
+    // A reply stays in the chat and reranks the service cards without a page jump.
+    await log.locator('[data-assist-question="mode"] div button').nth(2).click();
+    await expect(log.locator('[data-assist-message="user"]')).toHaveCount(2);
+    await expect(log.locator('[data-assist-question="budget"]')).toHaveCount(1);
+    // Video-only preferences are not a saleable product.
+    await expect(bestCards).toHaveCount(0);
+    await expect(shelf.locator('[role="status"]')).toBeVisible();
+    await log.locator('[data-assist-question="budget"] div button').first().click();
+    await expect(log.locator('[data-assist-message="user"]')).toHaveCount(3);
+    await expect(log.locator('[data-assist-question]')).toHaveCount(0);
+    await expect(bestCards).toHaveCount(0);
 
-    const reset = results.locator('button[type="button"]');
+    // Switching intent resets only the conversation, never opens another page.
+    const reset = conversation.locator("button[data-assist-reset]");
     await reset.click();
-    await expect(results).toHaveCount(0);
+    await expect(topics).toHaveCount(6);
+    await expect(log.locator("[data-assist-message]")).toHaveCount(0);
     await expect(question).toHaveValue("");
     await expect(submit).toBeDisabled();
+    await topics.nth(4).click();
+    const actualWork = await bestCards.evaluateAll(nodes=>
+      nodes.map(node=>node.getAttribute("data-assist-best-card")));
+    const expectedWork=rankAssistProducts("work",{});
+    assert.deepEqual(actualWork,expectedWork,"Work cards rerank without appending the prior intent");
+    if (expectedWork.includes("business")) {
+      await expect(shelf.locator('[data-assist-best-action="business"]'))
+        .toHaveAttribute("href", /^https:\/\/t\.me\/holistichouse\?text=/);
+    }
+    await reset.click();
+    await expect(topics).toHaveCount(6);
 
-    // Free-text matching stays inside the browser; do not submit a lead.
-    await question.fill(locale === "ru" ? "Меня тревожит стресс" :
-      locale === "es" ? "Tengo estrés" : "I feel stress");
+    // "Other" is revealed deliberately and focuses typing instead of inventing a complaint.
+    await issueToggle.click();
+    await expect(topics).toHaveCount(12);
+    await topics.last().click();
+    await expect(question).toBeFocused();
+    await expect(log.locator("[data-assist-message]")).toHaveCount(0);
+    await expect(question).toHaveValue("");
+    const typedStress = locale === "ru" ? "Меня тревожит стресс" :
+      locale === "es" ? "Tengo estrés" : "I feel stress";
+    await question.fill(typedStress);
     await expect(submit).toBeEnabled();
     await submit.click();
-    await visible(results);
-    await expect(results.locator("a[data-assist-recommendation]")).toHaveCount(3);
-    await expect(results.locator('a[data-assist-recommendation="opora"]'))
-      .toHaveAttribute("href", "/" + locale + "/courses/antistress");
+    await expect(question).toHaveValue("");
+    await expect(log.locator('[data-assist-message="user"]')).toHaveCount(1);
+    await expect(bestCards).toHaveCount(3);
+    const typedRanking=rankAssistProducts("stress",inferAssistPreferences(typedStress));
+    const actualTyped = await bestCards.evaluateAll(nodes=>
+      nodes.map(node=>node.getAttribute("data-assist-best-card")));
+    assert.deepEqual(actualTyped,typedRanking,
+      "Typed question applies live deterministic matching without storing the text");
 
-    // Crisis never receives therapeutic sales recommendations.
+    // The owner's real life-direction example must produce purchasable/requestable offers.
+    await reset.click();
+    await question.fill(locale==="ru"?"Я потерял направление и не знаю куда двигаться":
+      locale==="es"?"Me siento perdido, sin rumbo":
+      "I feel lost and lack a sense of direction");
+    await submit.click();
+    const actualGrowth=await bestCards.evaluateAll(nodes=>
+      nodes.map(node=>node.getAttribute("data-assist-best-card")));
+    assert.deepEqual(actualGrowth,["review","therapy","constellation"],
+      "Life direction needs review, guided imagery therapy, constellations, not Reiki Academy");
+
+    // Crisis safety takes precedence over sales even after a previous question.
     await question.fill(locale === "ru" ? "Хочу убить себя" :
       locale === "es" ? "Quiero morir" : "I want to kill myself");
     await submit.click();
-    await visible(results.locator('[role="alert"]'));
-    await expect(results.locator("a[data-assist-recommendation]")).toHaveCount(0);
+    await visible(log.locator('[role="alert"]'));
+    await expect(shelf).toHaveCount(0);
+    await expect(log.locator("a[data-assist-recommendation]")).toHaveCount(0);
     await assertNoDevIssueOverlay(page, locale + "/services/assist/" + width);
     await assertViewport(page, locale + "/services/assist/" + width);
     await reset.click();
     await expect(question).toHaveValue("");
     await expect(submit).toBeDisabled();
+    await expect(shelf).toHaveCount(0);
+    await expect(tools).toHaveCount(4);
   };
 
   // Spanish Alchemy has its own route. Check its untouched default state too;
@@ -260,42 +371,49 @@ try {
             "Desktop Services first-screen actions must be usable at " + locale + "/" + width);
         }
       }
-      // Free-first studio: 3 no-payment paths, 6 personal offers and all
-      // independent consent/booking tests remain mandatory at every width.
+      // The old catalog is still regression-tested on desktop, not on phones.
       const free = page.locator('[data-services-studio-free]#free-insights');
       const paid = page.locator('[data-services-studio-paid]#solutions');
-      await visible(free.locator("h2#services-free-title"));
-      await visible(paid.locator("h2#services-personal-title"));
-      assert.equal(await free.locator('[data-services-studio-card]').count(), 3);
-      assert.equal(await paid.locator('[data-services-studio-card]').count(), 6);
       const monthlySupport = paid.locator('[data-services-studio-card="monthly-support"]');
-      await visible(monthlySupport);
-      await expect(monthlySupport).toContainText(locale === "ru" ? "€200 / месяц" : locale === "es" ? "200 € / mes" : "€200 / month");
-      assert.equal(await monthlySupport.locator('[data-services-studio-action="monthly-support"]').getAttribute("href"),
-        "/" + locale + "/services/personal-support", "Approved monthly support must reach its own terms page");
-      assert.equal(await page.locator("#find-your-service").count(), 0,
-        "Detailed practitioner search belongs on the separate directory");
-      const testAction = free.locator('[data-services-studio-action="tests"]');
-      assert.equal(await testAction.getAttribute("href"), "/" + locale + "/tests");
-      await visible(free.locator('a[href="/' + locale + '/services/free-situation-review"]').first());
-      await visible(free.locator('a[href="/' + locale + '/services/dao-health-profile"]').first());
-      await visible(free.locator('a[href="/' + locale + '/courses/antistress"]'));
-      assert.equal(await page.locator("h1#services-conversion-title").count(), 1);
-      assert.equal(await page.evaluate(() => {
-        const selectors = ["#services-conversion-title", "#consultation", "#free-insights", "#solutions",
-          "[data-services-meet]", '[data-personal-testimonials="services"]',
-          "#method-videos", "[data-services-directory-invitation]"];
-        const sections = selectors.map(selector => [...document.querySelectorAll(selector)]);
-        if (sections.some(matches => matches.length !== 1)) return false;
-        return sections.every((matches, index) => index === 0 ||
-          Boolean(sections[index - 1][0].compareDocumentPosition(matches[0]) & Node.DOCUMENT_POSITION_FOLLOWING));
-      }), true, "Owner studio order: hero, booking, 3 free, personal offers, intro, reviews, methods, directory");
-      await expect(page.locator("#method-videos")).toHaveAttribute("open", "",
-        { timeout: 15000 });
-      // Method posters are visible, while third-party players stay opt-in.
-      assert.equal(await page.locator("#method-videos iframe").count(), 0,
-        "Method videos must not eagerly load third-party players");
-      await visible(page.locator('a[href="/' + locale + '/services/free-situation-review"]').first());
+      if (width > 760) {
+        await visible(free.locator("h2#services-free-title"));
+        await visible(paid.locator("h2#services-personal-title"));
+        assert.equal(await free.locator('[data-services-studio-card]').count(), 3);
+        assert.equal(await paid.locator('[data-services-studio-card]').count(), 6);
+        await visible(monthlySupport);
+        await expect(monthlySupport).toContainText(locale === "ru" ? "€200 / месяц" : locale === "es" ? "200 € / mes" : "€200 / month");
+        assert.equal(await monthlySupport.locator('[data-services-studio-action="monthly-support"]').getAttribute("href"),
+          "/" + locale + "/services/personal-support", "Approved monthly support must reach its own terms page");
+        assert.equal(await page.locator("#find-your-service").count(), 0,
+          "Detailed practitioner search belongs on the separate directory");
+        const testAction = free.locator('[data-services-studio-action="tests"]');
+        assert.equal(await testAction.getAttribute("href"), "/" + locale + "/tests");
+        await visible(free.locator('a[href="/' + locale + '/services/free-situation-review"]').first());
+        await visible(free.locator('a[href="/' + locale + '/services/dao-health-profile"]').first());
+        await visible(free.locator('a[href="/' + locale + '/courses/antistress"]'));
+        assert.equal(await page.locator("h1#services-conversion-title").count(), 1);
+        assert.equal(await page.evaluate(() => {
+          const selectors = ["#services-conversion-title", "#consultation", "#free-insights", "#solutions",
+            "[data-services-meet]", '[data-personal-testimonials="services"]',
+            "#method-videos", "[data-services-directory-invitation]"];
+          const sections = selectors.map(selector => [...document.querySelectorAll(selector)]);
+          if (sections.some(matches => matches.length !== 1)) return false;
+          return sections.every((matches, index) => index === 0 ||
+            Boolean(sections[index - 1][0].compareDocumentPosition(matches[0]) & Node.DOCUMENT_POSITION_FOLLOWING));
+        }), true, "Owner studio order: hero, booking, 3 free, personal offers, intro, reviews, methods, directory");
+        await expect(page.locator("#method-videos")).toHaveAttribute("open", "",
+          { timeout: 15000 });
+        // Method posters are visible, while third-party players stay opt-in.
+        assert.equal(await page.locator("#method-videos iframe").count(), 0,
+          "Method videos must not eagerly load third-party players");
+        await visible(page.locator('a[href="/' + locale + '/services/free-situation-review"]').first());
+      } else {
+        await expect(free).toBeHidden();
+        await expect(paid.locator("h2#services-personal-title")).toBeHidden();
+        await expect(paid.locator("[data-services-studio-card]:visible")).toHaveCount(0);
+        await visible(paid.locator("[data-assist-video-generation]"));
+        assert.equal(await page.locator("#find-your-service").count(), 0);
+      }
       await assertNoDevIssueOverlay(page, locale + "/services/" + width);
       // RootLayout provides My Space: the canonical header opens an accessible
       // account dialog, not a direct Cabinet link. Never bypass sign-in here.
@@ -341,9 +459,9 @@ try {
         await page.screenshot({ path: output + "/services-" + locale + "-hero-" + width + ".png", fullPage: false });
       }
       if (width === 390) {
-        const insights = page.locator("[data-services-studio-free]#free-insights");
-        await insights.scrollIntoViewIfNeeded();
-        await insights.screenshot({ path: output + "/services-" + locale + "-free-insights-390.png" });
+        const consultation = page.locator("[data-assist-personal-consultation]");
+        await consultation.scrollIntoViewIfNeeded();
+        await consultation.screenshot({ path: output + "/services-" + locale + "-compact-consultation-390.png" });
       }
       // Category slider and Online/Toronto choice: real client interactions,
       // never registering a lead, sending messages or initiating payment.
@@ -471,11 +589,11 @@ try {
   {
     const page = await createPage(390);
     await page.goto(origin + "/es/services", { waitUntil: "domcontentloaded" });
-    await visible(page.locator('[data-services-studio-free]'));
+    await expect(page.locator('[data-services-studio-free]')).toBeHidden();
     assert.equal(await page.locator('[data-services-studio-free] [data-services-studio-card]').count(), 3);
     assert.equal(await page.locator('[data-services-studio-paid] [data-services-studio-card]').count(), 6);
     const esMonthly = page.locator('[data-services-studio-paid] [data-services-studio-card="monthly-support"]');
-    await expect(esMonthly).toBeVisible();
+    await expect(esMonthly).toBeHidden();
     await expect(esMonthly).toContainText("200 € / mes");
     assert.equal(await esMonthly.locator('[data-services-studio-action="monthly-support"]').getAttribute("href"),
       "/es/services/personal-support", "Spanish support offer must lead to the terms page");
@@ -840,10 +958,10 @@ try {
 
   diagnostics.devIssueOverlay = false;
   assert.deepEqual(diagnostics.pageErrors, [], "Unexpected browser page errors");
-  // Missing HH_APP_SUPABASE_URL means the published-only directory cannot
-  // access its repository and deliberately returns 503, never a fabricated
-  // empty list. This is tolerated only on audited GET paths in isolated CI.
-  // Do not read response bodies after the browser resource has closed.
+  // In isolated CI, getAppConfig() is guaranteed to return 503 before any
+  // database query when HH_APP_SUPABASE_URL is absent. Do not read the response
+  // body after the browser resource has already closed. Only a real observed
+  // GET 503 from these two audited read-only endpoints can be exempted.
   const unavailable = responseEvidence;
   const unexpectedUnavailable = unavailable.filter(path => !noDatabase503Paths.has(path));
   assert.deepEqual(unexpectedUnavailable, [], 'Unexpected 503 API path');

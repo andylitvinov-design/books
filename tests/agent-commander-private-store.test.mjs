@@ -32,7 +32,7 @@ test('private store source requires a verified Supabase user and owner ACL', () 
   assert.match(edge, /can_read/)
   assert.match(edge, /can_write/)
   assert.match(edge, /assistant_unverified/)
-  assert.match(edge, /executorDispatch:false,dispatchAvailable:true,executionRunLedger:true,dispatchMode:"FIRST_PARTY_AGENT_DIRECTOR"/)
+  assert.match(edge, /dispatchEnabled:false,dispatchAvailable:openRouterReady/); assert.match(edge, /executionRunLedger:true,dispatchMode:"FIRST_PARTY_AGENT_DIRECTOR"/)
   assert.match(config, /verify_jwt = true/)
 })
 
@@ -85,10 +85,10 @@ test('Agent Director owns its run path and the Supabase store does not depend on
   const runtime=read('lib/agent-director/commander-owned-runtime.mjs');
   assert.match(edge,/DIRECTOR_ORIGIN="https:\/\/holistichouse\.vercel\.app"/);
   assert.match(edge,/ownedDirectorCall\(req,/);
-  assert.match(edge,/const canDispatch=executor==="local"&&!writeConfirmed/);
+  assert.match(edge,/const canDispatch=\(executor==="local"\|\|executor==="openrouter"\)&&!writeConfirmed&&openRouterReady/);
   assert.match(edge,/EXTERNAL_HERMES_SERVICE_DISABLED_FIRST_PARTY_ONLY/);
-  assert.match(edge,/trustedOwnedDirectorReceipt\(remote,/);
-  assert.match(edge,/saveOwnedDirectorReceipt\(db,ownerId,chat\.chat_id,runId,verified\)/);
+  assert.match(edge,/function trustedOwnedDirectorReceipt\(value,run\)/);
+  assert.match(edge,/async function saveOwnedDirectorReceipt\(db,ownerId,chatId,runId,report\)/);
   assert.doesNotMatch(edge,/HERMES_ORIGIN_URL|HERMES_SHARED_SECRET|hermesCall\(|trustedHermesReceipt/);
   assert.match(route,/auth\/v1\/user/);
   assert.match(route,/privateStoreConfigured!==true/);
@@ -98,12 +98,12 @@ test('Agent Director owns its run path and the Supabase store does not depend on
   assert.match(route,/run\.request_sha256!==body\.requestSha256/);
   assert.match(route,/consumeRate\(config/);
   assert.match(edge,/canWrite:writable/);
-  assert.match(edge,/requestSha256,ownerId,projectKey:/);
+  assert.match(edge,/requestSha256/); assert.match(edge,/projectKey:"holistic-house"/);
   assert.match(runtime,/HH_AGENT_OLLAMA_ENABLED!=='true'/);
   assert.match(runtime,/AGENT_DIRECTOR_GITHUB_APP_NOT_CONFIGURED/);
   assert.match(runtime,/AGENT_DIRECTOR_READ_ONLY_RESPONSE/);
   assert.doesNotMatch(runtime,/OPENROUTER_API_KEY|GITHUB_TOKEN/);
-  assert.match(edge,/executorDispatch:false,dispatchAvailable:true/);
+  assert.match(edge,/dispatchEnabled:false,dispatchAvailable:openRouterReady/);
 });
 
 

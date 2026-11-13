@@ -547,3 +547,18 @@ test('Stories physical five-scene MP4 is mandatory in the macOS WebKit release p
   assert.match(mac,/artifacts\/benchmarking\/five-scene-stories-webkit\.json/);
   assert.doesNotMatch(mac,/continue-on-error:\s*true/);
 });
+
+test('Axis private planner trigger accepts catch-all routes without GitHub character classes', () => {
+  const source = workflow('hh-profile-axis-matching.yml');
+  assert.ok(source.includes("      - 'app/api/app/**/route.js'"));
+  assert.ok(!source.includes("      - 'app/api/app/[...path]/route.js'"));
+  const trigger = parsePrTrigger(source, '.github/workflows/hh-profile-axis-matching.yml');
+  for (const path of ['app/api/app/[...path]/route.js', 'app/api/app/[[...path]]/route.js'])
+    assert.equal(matchesTrigger(trigger, [path], 'codex/public-book-library'), true);
+  assert.equal(matchesTrigger(trigger, ['docs/unrelated.md'], 'codex/public-book-library'), false);
+  assert.match(source, /tests\/intelligence-plan\.test\.mjs/);
+  assert.ok(source.includes('node --conditions=react-server --test tests/app-auth-pkce.integration.mjs'));
+  assert.ok(source.includes('github.event.pull_request.draft == false'));
+  assert.doesNotMatch(source, /continue-on-error:\s*true/);
+});
+
