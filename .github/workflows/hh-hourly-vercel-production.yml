@@ -16,6 +16,10 @@ concurrency:
   cancel-in-progress: false
 jobs:
   publish:
+    # A scheduled run must not consume a runner until both existing
+    # credentials and the Vercel deploy hook have been verified and armed.
+    # Manual emergency Deploy Now remains accessible while the gate is off.
+    if: ${{ github.event_name == 'workflow_dispatch' || vars.HH_VERCEL_HOURLY_ENABLED == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -40,8 +44,8 @@ jobs:
               echo 'Unable to verify current Vercel production deployments; refusing speculative build.'
               exit 1
             fi
-            if printf '%s' "$response" | jq -e --arg sha "$head_sha" '[.deployments[] | select(.readyState == "READY" and .meta.githubCommitSha == $sha)] | length > 0' >/dev/null; then
-              echo "Already deployed: $head_sha"
+            if printf '%s' "$response" | jq -e --arg sha "$head_sha" '[.deployments[] | select(.meta.githubCommitSha == $sha and (.readyState == "READY" or .readyState == "BUILDING" or .readyState == "QUEUED" or .readyState == "INITIALIZING"))] | length > 0' >/dev/null; then
+              echo "Already deployed or in progress: $head_sha"
               exit 0
             fi
           fi
@@ -57,5 +61,7 @@ jobs:
             https://api.vercel.com/v1/integrations/deploy/*) ;;
             *) echo 'Unexpected deploy-hook URL'; exit 1 ;;
           esac
-          curl -fsS --retry 2 --max-time 30 -X POST "$VERCEL_HOOK" >/dev/null
+          # A deploy-hook POST is not idempotent; a timeout may mean accepted.
+          # Never retry uncertain POSTs and accidentally create extra builds.
+          curl -fsS --max-time 30 -X POST "$VERCEL_HOOK" >/dev/null
           echo 'Vercel deployment requested; READY and LIVE must be verified separately.'
