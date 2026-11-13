@@ -6985,7 +6985,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <div className={videoStyles.therapyHeroPlayback}
             data-video-therapy-intro={introPlaying?"playing":"ready"}
             data-playing={introPlaying?"true":"false"}
-            data-intro-playback-source={introFailed?"heygen":"mp4"}>
+            data-intro-playback-source={introFailed?"fallback":"mp4"}>
             <video ref={introVideoRef} className={videoStyles.therapyHeroVideo}
               src={introVideo.src} controls={introPlaying} playsInline preload="none"
               poster="/images/video-studio-presentation-ru.jpg"
@@ -6999,7 +6999,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             </button>}
             {introPlaying&&introFailed&&<>
               <iframe className={videoStyles.therapyHeroFallbackFrame}
-                data-video-therapy-fallback="heygen"
+                data-video-therapy-fallback="provider"
                 src={introVideo.embed}
                 title={locale==="ru"?"Резервный проигрыватель русской презентации":locale==="es"?"Reproductor alternativo, audio en inglés":"Alternative player, English introduction"}
                 allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
