@@ -79,3 +79,14 @@ test('eight fictional AI coaches have truly separate six-frame photos across pub
   assert.ok(hero.includes(still),'reduced-motion fallback must match catalog: '+id)
  }
 })
+
+test('foreground swipe-rail photos match each coach and respect reduced motion',()=>{
+  const jsx=source('components/my-coach-catalog.jsx')
+  const css=source('components/my-coach-mira-landing.module.css')
+  assert.ok(jsx.includes('src={`/images/holistic-house/my-coach-motion/${id}-living.webp`}'))
+  assert.ok(jsx.includes('srcSet={`/images/holistic-house/my-coach-motion/${id}-still.webp`}'))
+  assert.ok(jsx.includes('<source media="(prefers-reduced-motion: reduce)" type="image/webp"'))
+  assert.ok(!jsx.includes('my-coach-${id}-rail.webp'),
+    'legacy rail <img> overlay must not obscure the persona-specific animated background')
+  assert.match(css,/\.railPhoto\s*\{[^}]*object-fit:cover;/)
+})
