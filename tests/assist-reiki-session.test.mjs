@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs";
 const component = readFileSync(new URL("../components/assist-reiki-session.tsx", import.meta.url), "utf8");
 const styles = readFileSync(new URL("../components/assist-reiki-session.module.css", import.meta.url), "utf8");
 const parent = readFileSync(new URL("../app/[locale]/services/page.tsx", import.meta.url), "utf8");
+const spanish = readFileSync(new URL("../app/es/services/page.tsx", import.meta.url), "utf8");
 const booking = readFileSync(new URL("../components/remote-energy-support-booking.tsx", import.meta.url), "utf8");
 
 test("mobile Assist has a real published Reiki directory, not synthetic masters or prices", () => {
@@ -50,4 +51,21 @@ test("Reiki directory has a narrow missing-database browser gate, never a blanke
   assert.match(route, /listReikiSupportMasters\(locale\)/);
   assert.match(route, /status: 503/);
   assert.match(component, /setFailed\(true\)/);
+});
+
+
+test("published-only Reiki picker mounts once after consultation in RU/EN and standalone Spanish", () => {
+  for (const [source, label] of [[parent, "RU/EN"], [spanish, "ES"]]) {
+    assert.equal((source.match(/<AssistReikiSession\b/g) || []).length, 1,
+      label + " must mount exactly one Reiki section");
+    const consultation = source.indexOf("<ServicesPersonalConsultationMobile");
+    const picker = source.indexOf("<AssistReikiSession");
+    const following = source.indexOf("<ServicesConversionHero");
+    assert.ok(consultation >= 0 && consultation < picker && picker < following,
+      label + " must show Reiki after consultation and before next section");
+  }
+  assert.match(spanish, /import \{ AssistReikiSession \} from "@\/components\/assist-reiki-session"/);
+  const offers = readFileSync(new URL("../components/services-studio-offers.tsx", import.meta.url), "utf8");
+  assert.doesNotMatch(offers, /<AssistReikiSession/,
+    "Do not also mount a second Reiki shelf in the studio offers");
 });
