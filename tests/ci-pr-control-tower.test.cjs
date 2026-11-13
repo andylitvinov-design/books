@@ -2229,3 +2229,71 @@ test('full candidate fallback is scoped to terminal legacy and still refuses man
  assert.match(s,/legacyDispatchAttempted=true/);
  assert.match(s,/legacyHourlyWorkerSlot\(response\?\.data,now\)/);
 });
+
+/* HH_STALE_MERGED_JOBLESS_RECOVERY_TEST */
+const {verifiedStaleMergedRepairCapacity:SMRC,
+ staleMergedQueueSamples,STALE_MERGED_REPAIR_MODE:SMRM}
+ =require('../scripts/ci-pr-capacity.cjs');
+test('bounded stale-queue samples contain only trusted old PR jobs and unique branches',()=>{
+ const now=Date.parse('2026-11-12T20:00:00Z');
+ const run={id:900,status:'queued',event:'pull_request',run_attempt:1,
+  repository:{full_name:'andylitvinov-design/books'},
+  head_repository:{full_name:'andylitvinov-design/books'},
+  head_sha:'a'.repeat(40),head_branch:'feat/old',
+  created_at:'2026-11-11T20:00:00Z',pull_requests:[]};
+ const samples=staleMergedQueueSamples([run,run,
+  {...run,id:901,status:'in_progress'},
+  {...run,id:902,created_at:'2026-11-12T19:30:00Z'},
+  {...run,id:903,head_branch:'codex/bootstrap-books'}],now);
+ assert.deepEqual(samples,[{run_id:900,head_sha:run.head_sha,
+  head_branch:run.head_branch,created_at:run.created_at}]);
+});
+test('read-only merged jobless proof admits ONE existing Repair/legacy, never CI',async()=>{
+ const now=Date.parse('2026-11-12T20:00:00Z');
+ const f=ghostFixture();
+ const pr=(await f.github.rest.pulls.get()).data;
+ f.github.rest.pulls.list=async()=>({data:[pr]});
+ const samples=[{run_id:900,head_sha:'a'.repeat(40),
+  head_branch:'feat/old',created_at:'2026-11-11T20:00:00Z'}];
+ const result=await SMRC(f.github,'andylitvinov-design','books',samples,now);
+ assert.equal(result.known,true);
+ assert.equal(result.inventoryConfidence,SMRM);
+ assert.equal(result.ghostProofKind,'MERGED_JOBLESS_QUEUE_READONLY');
+ assert.equal(admission('legacy',result),'ADMIT');
+ assert.equal(admission('repair',result),'ADMIT');
+ assert.equal(admission('ci',result),'GHOST_REPAIR_ONLY');
+ result.activeWorker['HH PR source Repair Worker']=1;
+ assert.equal(admission('legacy',result),'GHOST_WORKER_BUSY');
+});
+test('read-only fallback fails closed for open or duplicate PR, changed run and active worker',async()=>{
+ const now=Date.parse('2026-11-12T20:00:00Z');
+ const sample={run_id:900,head_sha:'a'.repeat(40),head_branch:'feat/old',
+  created_at:'2026-11-11T20:00:00Z'};
+ for(const variant of ['open','duplicate','moved','jobs','worker','queue']){
+  const f=ghostFixture(variant==='jobs'?{ghostJobs:1}:
+   variant==='worker'?{workerQueued:1}:
+   variant==='queue'?{queueCount:99}:{});
+  const pr=(await f.github.rest.pulls.get()).data;
+  f.github.rest.pulls.list=async()=>({data:variant==='duplicate'?[pr,pr]:
+    [variant==='open'?{...pr,state:'open',merged_at:null}:pr]});
+  if(variant==='moved'){
+   const previous=f.github.rest.actions.getWorkflowRun;
+   f.github.rest.actions.getWorkflowRun=async args=>{
+    const result=await previous(args);
+    return {data:{...result.data,head_sha:'c'.repeat(40)}};
+   };
+  }
+  const result=await SMRC(f.github,'andylitvinov-design','books',[sample],now);
+  assert.equal(result.known,false,'unsafe '+variant);
+  assert.notEqual(admission('legacy',result),'ADMIT');
+ }
+});
+test('saturated direct handoff still requires owner/HEAD proof and has no CI wake',()=>{
+ const source=require('node:fs').readFileSync('scripts/ci-pr-queue-dispatcher.cjs','utf8');
+ assert.ok(source.includes('verifiedStaleMergedRepairCapacity(github,owner,repo,'));
+ assert.ok(source.includes('GHOST_ONLY_ONE_WORKER_PER_SWEEP'));
+ assert.ok(source.includes('reservationStatus(task,comments,now)'));
+ assert.ok(source.includes('LEGACY_HOURLY_WORKER_ALREADY_DISPATCHED'));
+ assert.ok(source.includes('hasVerifiedSourceHandoff(comments,task.head_sha)'));
+ assert.ok(source.includes('GHOST_STALE_MERGED_HOLD'));
+});

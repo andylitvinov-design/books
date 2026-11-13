@@ -66,6 +66,32 @@ function computeCapacity(active,queued,jobs){
 }
 
 const GHOST_REPAIR_MODE='GHOST_409_ONE_REPAIR';
+const STALE_MERGED_REPAIR_MODE='GHOST_STALE_MERGED_ONE_REPAIR';
+const STALE_MERGED_PROOF='MERGED_JOBLESS_QUEUE_READONLY';
+const STALE_QUEUE_PROBE_LIMIT=3;
+const SHA40=/^[a-f0-9]{40}$/i;
+function staleMergedQueueSamples(runs,now){
+ if(!Array.isArray(runs)||!Number.isFinite(now))return [];
+ const seen=new Set(),out=[];
+ for(const r of runs){
+  if(out.length>=STALE_QUEUE_PROBE_LIMIT)break;
+  const at=Date.parse(r?.created_at||'');
+  if(!Number.isSafeInteger(r?.id)||r.id<=0||r.status!=='queued'||
+     r.event!=='pull_request'||r.run_attempt!==1||
+     r.repository?.full_name!=='andylitvinov-design/books'||
+     r.head_repository?.full_name!=='andylitvinov-design/books'||
+     !SHA40.test(r.head_sha||'')||typeof r.head_branch!=='string'||
+     !r.head_branch||r.head_branch==='codex/bootstrap-books'||
+     r.head_branch==='codex/public-book-library'||
+     !Array.isArray(r.pull_requests)||r.pull_requests.length>1||
+     !Number.isFinite(at)||at>now-60*60*1000||
+     seen.has(r.head_branch))continue;
+  seen.add(r.head_branch);
+  out.push({run_id:r.id,head_sha:r.head_sha,head_branch:r.head_branch,
+   created_at:r.created_at});
+ }
+ return out;
+}
 // Inspect up to 32 full workflow/job records only in the signed, jobless 409
 // overflow path. The ordinary CI/worker read budget remains 24. This additional
 // bounded *read-only* proof lets GitHub's 5+ terminal zombie wrappers be
@@ -75,8 +101,12 @@ const GHOST_ACTIVE_INVENTORY_LIMIT=32;
 const GHOST_ACTIVE_PROOF_LIMIT=Math.min(LIMIT.maxJobReads,LIMIT.maxActiveRuns-4);
 async function verifiedGhostRepairCapacity(gh,owner,repo,p,now=Date.now()){
  const hold=reason=>({known:false,reason:'GHOST_'+reason});
+ const staleReadOnly=p?.code===STALE_MERGED_PROOF;
  if(owner!=='andylitvinov-design'||repo!=='books'||
-   p?.code!=='QUEUED_WITH_ZERO_JOBS_CANCEL_409'||
+   (p?.code!=='QUEUED_WITH_ZERO_JOBS_CANCEL_409'&&!staleReadOnly)||
+   (staleReadOnly&&(!SHA40.test(p.head_sha||'')||
+     typeof p.head_branch!=='string'||!p.head_branch||
+     !Number.isFinite(Date.parse(p.created_at||''))))||
    !Number.isSafeInteger(p.run_id)||p.run_id<=0||
    !Number.isSafeInteger(p.pr)||p.pr<=0)return hold('UNTRUSTED');
  const args={owner,repo},full='andylitvinov-design/books';
@@ -90,6 +120,10 @@ async function verifiedGhostRepairCapacity(gh,owner,repo,p,now=Date.now()){
   if(run?.id!==p.run_id||run.status!=='queued'||run.event!=='pull_request'||
    run.run_attempt!==1||run.repository?.full_name!==full||
    run.head_repository?.full_name!==full||!Array.isArray(run.pull_requests)||
+   (staleReadOnly&&(run.head_sha!==p.head_sha||
+     run.head_branch!==p.head_branch||run.created_at!==p.created_at||
+     Date.parse(run.created_at||'')>now-60*60*1000||
+     Date.parse(pr.merged_at||'')>now-30*60*1000))||
    run.pull_requests.length>1||
    (run.pull_requests.length===1&&run.pull_requests[0]?.number!==p.pr)||
    !/^[a-f0-9]{40}$/i.test(run.head_sha||'')||
@@ -158,7 +192,9 @@ async function verifiedGhostRepairCapacity(gh,owner,repo,p,now=Date.now()){
   const runningJobs=jobs.filter(j=>j.status==='in_progress').length,
    queuedJobs=jobs.filter(j=>['queued','waiting','pending'].includes(j.status)).length;
   if(runningJobs>8||queuedJobs>2)return hold('REAL_JOB_PRESSURE');
-  return {known:true,inventoryConfidence:GHOST_REPAIR_MODE,
+  return {known:true,
+   inventoryConfidence:staleReadOnly?STALE_MERGED_REPAIR_MODE:GHOST_REPAIR_MODE,
+   ghostProofKind:p.code,
    safeToDispatchOneRepair:true,
    // One existing legacy manual queue preflight can use the same verified
    // free Ubuntu slot. Manual stays manual; exact-head write gates remain.
@@ -171,8 +207,44 @@ async function verifiedGhostRepairCapacity(gh,owner,repo,p,now=Date.now()){
    activeWorker:Object.fromEntries([...new Set(Object.values(WORKFLOWS))].map(x=>[x,0]))};
  }catch{return hold('READBACK_FAILED');}
 }
+// Read-only queue evidence can unlock only the already existing Repair Worker.
+// No cancellation, new workflow, Core wake, source write or lease override.
+async function verifiedStaleMergedRepairCapacity(gh,owner,repo,samples,now=Date.now()){
+ const hold=reason=>({known:false,reason:'GHOST_'+reason});
+ if(owner!=='andylitvinov-design'||repo!=='books'||
+    !Array.isArray(samples)||samples.length<1||
+    samples.length>STALE_QUEUE_PROBE_LIMIT)return hold('STALE_SAMPLE_INVALID');
+ for(const item of samples){
+  if(!Number.isSafeInteger(item?.run_id)||item.run_id<=0||
+     !SHA40.test(item.head_sha||'')||
+     typeof item.head_branch!=='string'||!item.head_branch||
+     !Number.isFinite(Date.parse(item.created_at||''))||
+     Date.parse(item.created_at)>now-60*60*1000)
+    return hold('STALE_SAMPLE_INVALID');
+  let prs;
+  try{
+   prs=(await gh.rest.pulls.list({owner,repo,head:owner+':'+item.head_branch,
+     state:'all',per_page:2,page:1}))?.data;
+  }catch{return hold('STALE_BRANCH_READ_FAILED');}
+  if(!Array.isArray(prs)||prs.length!==1)continue;
+  const pr=prs[0];
+  if(!Number.isSafeInteger(pr?.number)||pr.number<=0||
+     pr.state!=='closed'||!pr.merged_at||
+     pr.base?.ref!=='codex/public-book-library'||
+     pr.base?.repo?.full_name!=='andylitvinov-design/books'||
+     pr.head?.repo?.full_name!=='andylitvinov-design/books'||
+     pr.head?.ref!==item.head_branch)continue;
+  const result=await verifiedGhostRepairCapacity(gh,owner,repo,{
+   ...item,pr:pr.number,code:STALE_MERGED_PROOF},now);
+  if(result.known)return result;
+  // Conflicting live run/inventory proof is not permission to guess again.
+  return result;
+ }
+ return hold('NO_VERIFIED_STALE_MERGED_RUN');
+}
 function admission(lane,capacity){
- if(capacity?.inventoryConfidence===GHOST_REPAIR_MODE){
+ if([GHOST_REPAIR_MODE,STALE_MERGED_REPAIR_MODE]
+    .includes(capacity?.inventoryConfidence)){
   if(!capacity.known||!capacity.safeToDispatchOneRepair||
      !Number.isSafeInteger(capacity.ghostProofRunId))return 'GHOST_UNVERIFIED';
   // Legacy is an authenticated existing cloud preflight; its manual hold
@@ -255,7 +327,8 @@ async function snapshot(github,owner,repo,now=Date.now()){
       inventoryConfidence:'COUNT_ONLY_OVER_PAGE_LIMIT',
       saturatedBy:aCount>100&&qCount>100?'BOTH':
         aCount>100?'ACTIVE':'QUEUED',
-      safeToDispatch:false};
+      safeToDispatch:false,
+      ghostQueueCandidates:qCount>100?staleMergedQueueSamples(queued,now):[]};
   }
   // When even the total count is saturated, do not waste API quota reading
   // runner jobs or accidentally treat an incomplete list as a free slot.
@@ -313,4 +386,7 @@ async function snapshot(github,owner,repo,now=Date.now()){
    capacity.unknownActiveRuns*8+capacity.unknownQueuedRuns*2;
  return capacity;
 }
-module.exports={WORKFLOWS,LIMIT,computeCapacity,admission,snapshot,possibleTerminalOverhang,verifiedTerminalOverhang,verifiedGhostRepairCapacity,GHOST_REPAIR_MODE};
+module.exports={WORKFLOWS,LIMIT,computeCapacity,admission,snapshot,
+ possibleTerminalOverhang,verifiedTerminalOverhang,verifiedGhostRepairCapacity,
+ verifiedStaleMergedRepairCapacity,staleMergedQueueSamples,
+ GHOST_REPAIR_MODE,STALE_MERGED_REPAIR_MODE};
