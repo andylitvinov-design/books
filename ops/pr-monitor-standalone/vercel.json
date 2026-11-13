@@ -1,0 +1,129 @@
+{
+  "version": 2,
+  "cleanUrls": false,
+  "rewrites": [
+    {
+      "source": "/api/blocker-period",
+      "destination": "https://holistic-house-pr-monitor.vercel.app/api/blocker-period"
+    },
+    {
+      "source": "/api/blockers",
+      "destination": "https://holistic-house-pr-monitor.vercel.app/api/blockers"
+    },
+    {
+      "source": "/api/ci-insights",
+      "destination": "https://holistic-house-pr-monitor.vercel.app/api/ci-insights"
+    },
+    {
+      "source": "/api/ci-journey-summary",
+      "destination": "https://holistic-house-pr-monitor.vercel.app/api/ci-journey-summary"
+    },
+    {
+      "source": "/api/ci-phase-latency",
+      "destination": "https://holistic-house-pr-monitor.vercel.app/api/ci-phase-latency"
+    },
+    {
+      "source": "/api/ci-queue-detail",
+      "destination": "https://holistic-house-pr-monitor.vercel.app/api/ci-queue-detail"
+    },
+    {
+      "source": "/api/ci-runner-trends",
+      "destination": "https://holistic-house-pr-monitor.vercel.app/api/ci-runner-trends"
+    },
+    {
+      "source": "/api/ci-verified-load",
+      "destination": "https://holistic-house-pr-monitor.vercel.app/api/ci-verified-load"
+    },
+    {
+      "source": "/api/control-tower-stats",
+      "destination": "https://holistic-house-pr-monitor.vercel.app/api/control-tower-stats"
+    },
+    {
+      "source": "/api/impact-range",
+      "destination": "https://holistic-house-pr-monitor.vercel.app/api/impact-range"
+    },
+    {
+      "source": "/api/observer-archive",
+      "destination": "https://holistic-house-pr-monitor.vercel.app/api/observer-archive"
+    },
+    {
+      "source": "/api/pr-activity",
+      "destination": "https://holistic-house-pr-monitor.vercel.app/api/pr-activity"
+    },
+    {
+      "source": "/api/pr-attribution",
+      "destination": "https://holistic-house-pr-monitor.vercel.app/api/pr-attribution"
+    },
+    {
+      "source": "/api/pr-created-cohort",
+      "destination": "https://holistic-house-pr-monitor.vercel.app/api/pr-created-cohort"
+    },
+    {
+      "source": "/api/pr-detail",
+      "destination": "https://holistic-house-pr-monitor.vercel.app/api/pr-detail"
+    },
+    {
+      "source": "/api/pr-merge-ci-head-trends",
+      "destination": "https://holistic-house-pr-monitor.vercel.app/api/pr-merge-ci-head-trends"
+    },
+    {
+      "source": "/api/pr-merge-period",
+      "destination": "https://holistic-house-pr-monitor.vercel.app/api/pr-merge-period"
+    },
+    {
+      "source": "/api/pr-merge-speed",
+      "destination": "https://holistic-house-pr-monitor.vercel.app/api/pr-merge-speed"
+    },
+    {
+      "source": "/api/pr-stage-overview",
+      "destination": "https://holistic-house-pr-monitor.vercel.app/api/pr-stage-overview"
+    },
+    {
+      "source": "/api/pr-stage-timeline",
+      "destination": "https://holistic-house-pr-monitor.vercel.app/api/pr-stage-timeline"
+    },
+    {
+      "source": "/api/pr-three-kpis",
+      "destination": "https://holistic-house-pr-monitor.vercel.app/api/pr-three-kpis"
+    },
+    {
+      "source": "/api/pr-transition-clock",
+      "destination": "https://holistic-house-pr-monitor.vercel.app/api/pr-transition-clock"
+    },
+    {
+      "source": "/api/repair-outcomes",
+      "destination": "https://holistic-house-pr-monitor.vercel.app/api/repair-outcomes"
+    },
+    {
+      "source": "/api/seo-public",
+      "destination": "https://holistic-house-pr-monitor.vercel.app/api/seo-public"
+    },
+    {
+      "source": "/api/seo-first-party",
+      "destination": "https://holistic-house-pr-monitor.vercel.app/api/seo-first-party"
+    },
+    {
+      "source": "/api/watchdog-stats",
+      "destination": "https://holistic-house-pr-monitor.vercel.app/api/watchdog-stats"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self' https://api.github.com https://raw.githubusercontent.com; img-src 'self' data:; font-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-ancestors 'none'"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex,nofollow,noarchive"
+        }
+      ]
+    }
+  ]
+}

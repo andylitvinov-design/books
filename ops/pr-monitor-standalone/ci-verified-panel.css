@@ -1,0 +1,22 @@
+/* Keeps all live monitor graphs and one-screen mobile layout untouched. */
+#hh-ci-verified{box-sizing:border-box;margin:12px 0;padding:12px;border:1px solid #375b77;border-radius:15px;background:#101f34;color:#e4f1fa}
+#hh-ci-verified *{box-sizing:border-box}
+.hh-ci-v-heading{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.hh-ci-v-heading h3{font-size:17px;line-height:1.3;margin:0;flex:1 1 120px}
+.hh-ci-v-pill{font-size:10px;color:#adc3d5;flex:1 1 100%;order:3}
+.hh-ci-v-refresh{border:1px solid #6a92b2;border-radius:9px;background:#173349;color:#e4f3ff;padding:7px 10px;font-size:12px}
+.hh-ci-v-refresh:disabled{opacity:.55}
+.hh-ci-v-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:10px}
+.hh-ci-v-stat{padding:9px;border-radius:11px;background:#172f48;display:flex;flex-direction:column;gap:2px;min-width:0}
+.hh-ci-v-stat span{font-size:12px;color:#bbd3e3}
+.hh-ci-v-stat strong{font-size:25px;line-height:1.15;font-variant-numeric:tabular-nums}
+.hh-ci-v-stat.bad{border:1px solid #ea6575;background:#542534;color:#fff}
+.hh-ci-v-note{font-size:11px;line-height:1.5;color:#b2cada;margin:7px 0 0}
+.hh-ci-v-stale{padding:8px 0;font-size:12px}
+.hh-ci-v-stale-title{display:block;color:#ffb5b8;margin-bottom:6px}
+.hh-ci-v-stale-link{display:block;margin-top:5px;overflow-wrap:anywhere;color:#ffbdc5}
+.hh-ci-v-panel h4{font-size:14px;margin:10px 0 4px}
+.hh-ci-v-chart{width:100%;min-width:0}
+.hh-ci-v-chart svg{display:block;max-width:100%;height:auto}
+.hh-ci-v-schedule{margin-top:8px;padding-top:9px;border-top:1px solid #294761;font-size:12px}
+@media(max-width:370px){.hh-ci-v-stat strong{font-size:22px}.hh-ci-v-heading h3{font-size:16px}}
