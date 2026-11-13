@@ -326,7 +326,8 @@ test('trusted PR synchronize cancels only ancestor-proven stale HEADs, never arm
   const enable=native.split('  enable:\n')[1]?.split('  recover-interrupted-core:\n')[0];
   const prune=native.split(/^  prune-head:\s*$/m)[1];
   assert.ok(enable && prune, 'both isolated jobs must remain');
-  assert.ok(native.includes('types: [opened, reopened, ready_for_review, synchronize]'));
+  assert.ok(native.includes('types: [opened, ready_for_review, synchronize]'));
+  assert.ok(!native.includes('types: [opened, reopened, ready_for_review, synchronize]'));
   assert.ok(enable.includes("github.event.action != 'synchronize'"), 'new HEAD must not arm before Core success');
   assert.ok(enable.includes("github.event.workflow_run.conclusion == 'success'"), 'post-Core ARM retained');
   assert.ok(prune.includes("github.event.action == 'synchronize'"));
@@ -376,19 +377,26 @@ test('successful Core CI refills capacity through the direct event runner withou
 });
 
 
-test('opened PR records Ready but defers API-heavy merge validation until Core succeeds',()=>{
+test('opened and promoted-to-Ready PRs record readiness but defer heavyweight merge checks until Core succeeds',()=>{
   const s=read('hh-native-auto-merge');
   const ready=s.indexOf('source:opened?"pr_opened_ready":"ready_event_observed"');
-  const defer=s.indexOf('DEFER_OPENED_UNTIL_EXACT_HEAD_CORE_SUCCESS');
+  const defer=s.indexOf('DEFER_READY_EVENT_UNTIL_EXACT_HEAD_CORE_SUCCESS');
   const wait=s.indexOf('for (const delayMs of [1500, 3000, 5000, 8000])');
   const core=s.indexOf('const currentRuns = [];');
   assert.ok(ready>0 && defer>ready && wait>defer && core>wait,
     'authenticated opened Ready receipt must precede early return before expensive merge polling');
-  assert.ok(s.includes("if: ${{ github.event_name != 'pull_request_target' || github.event.action != 'opened' }}"),
-    'opened event cannot consume second production checkout');
-  assert.ok(s.includes('context.payload.action === "opened") {'),
-    'return is limited to opened; reviews, reopened and successful Core events remain authoritative');
+  assert.ok(s.includes("if: ${{ github.event_name != 'pull_request_target' || (github.event.action != 'opened' && github.event.action != 'ready_for_review') }}"),
+    'opened/Ready events do not consume a second production checkout');
+  assert.ok(s.includes('["opened","ready_for_review"].includes(context.payload.action)'),
+    'new Ready events defer to freshly completed Core rather than reusing an old green run');
   assert.ok(s.includes("github.event.workflow_run.conclusion == 'success'"));
   assert.ok(s.includes("steps.safety.outputs.eligible == 'true'"),
     'mandatory protected merge guard must remain');
+});
+test('watchdog contracts execute the immutable-base freshness suite once per CI wave',()=>{
+  const source=read('hh-pr-watchdog-contract-ci');
+  const command=source.split('      - name: Watchdog decision contracts\n')[1]?.split('\n      - name:')[0]||'';
+  assert.ok(command.includes('node --test tests/ci-pr-core-tested-base-logs.test.cjs'));
+  assert.equal((command.match(/tests\/ci-pr-base-freshness\.test\.cjs/g)||[]).length,1,
+    'repeated test path wastes a runner without adding coverage');
 });

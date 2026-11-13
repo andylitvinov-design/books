@@ -3,7 +3,7 @@ on:
   pull_request_target:
     # Synchronize only wakes the separate stale-HEAD janitor job. Native
     # auto-merge itself still waits for a successful Core CI completion.
-    types: [opened, reopened, ready_for_review, synchronize]
+    types: [opened, ready_for_review, synchronize]
     branches: ['codex/public-book-library']
   # Reviewer changes are an event-driven wakeup, never a new poller.
   pull_request_review:
@@ -51,10 +51,9 @@ jobs:
           ref: codex/bootstrap-books
           persist-credentials: false
       - name: Checkout protected production classifier
-        # An opened PR cannot yet have the successfully completed exact-HEAD Core.
-        # The event may record Ready but must not spend a second checkout or
-        # merge-validation API budget until Core's workflow_run completion.
-        if: ${{ github.event_name != 'pull_request_target' || github.event.action != 'opened' }}
+        # Opened and promoted-to-Ready PRs only write a trusted Ready receipt.
+        # Their newly triggered Core wave owns subsequent release evaluation.
+        if: ${{ github.event_name != 'pull_request_target' || (github.event.action != 'opened' && github.event.action != 'ready_for_review') }}
         uses: actions/checkout@v4
         with:
           ref: codex/public-book-library
@@ -142,14 +141,13 @@ jobs:
                   String(error.message||error).slice(0,120));
               }
             }
-            // A newly opened Ready PR has just triggered exact-head Core.
-            // Record its authenticated Ready receipt above, then return before
-            // waiting for GitHub mergeability or enumerating Core runs. The
-            // successful Core workflow_run event separately evaluates protected
-            // release gates; scheduled reconciliation remains a fallback.
+            // Opening or promoting a PR to Ready starts a new exact-HEAD Core.
+            // Preserve the authenticated Ready receipt above, then defer heavy
+            // mergeability and Core-history reads to successful workflow_run.
+            // Do not arm from an old green run while the new wave is pending.
             if (context.eventName === "pull_request_target" &&
-                context.payload.action === "opened") {
-              log("DEFER_OPENED_UNTIL_EXACT_HEAD_CORE_SUCCESS");
+                ["opened","ready_for_review"].includes(context.payload.action)) {
+              log("DEFER_READY_EVENT_UNTIL_EXACT_HEAD_CORE_SUCCESS");
               return;
             }
             // Mergeability may be temporarily unknown immediately after Core CI.
