@@ -2297,3 +2297,58 @@ test('saturated direct handoff still requires owner/HEAD proof and has no CI wak
  assert.ok(source.includes('hasVerifiedSourceHandoff(comments,task.head_sha)'));
  assert.ok(source.includes('GHOST_STALE_MERGED_HOLD'));
 });
+
+/* HH_LEGACY_FALLBACK_FAIRNESS_V2_TEST */
+test('terminal fallback windows cover all 73 legacy candidates without raising per-sweep cap',()=>{
+ const {legacyFallbackStart}=require('../scripts/ci-pr-queue-dispatcher.cjs');
+ const size=73,observed=new Set();
+ const slot=Math.floor(NOW/600_000);
+ for(let k=0;k<Math.ceil(size/4);k++){
+  const start=legacyFallbackStart(size,(slot+k)*600_000);
+  assert.ok(start>=0&&start<size);
+  for(let i=0;i<4;i++)observed.add((start+i)%size);
+ }
+ assert.equal(observed.size,size,
+  'bounded existing ten-minute turns eventually inspect every fallback position');
+ assert.equal(legacyFallbackStart(0,NOW),0);
+ assert.equal(legacyFallbackStart(73,-1),0);
+ assert.equal(legacyFallbackStart(73,NaN),0);
+});
+test('processed legacy receipts rotate to a free exact-HEAD task without duplicate claims',async()=>{
+ const count=19,freeNumber=6018;
+ const items=Array.from({length:count},(_,i)=>pr(6000+i,'repair',{
+  title:'feat(video): bounded legacy candidate '+i,
+  mergeable:null,mergeable_state:'unknown',
+  labels:[{name:'hh:repair-manual'}]
+ }));
+ const comments={};
+ for(const item of items){
+  if(item.number===freeNumber)continue;
+  const t=taskFor(item,{tier:'P1',direction:'video'});
+  comments[item.number]=[{
+   user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+   performed_via_github_app:{id:15368,slug:'github-actions'},
+   body:commentBody({...t,state:'PREPARED',source_published:false})
+  }];
+ }
+ const start=Math.floor(NOW/600_000)*600_000;
+ let successes=0;
+ for(let i=0;i<Math.ceil(count/4)+1;i++){
+  const f=fixture(items,{comments});
+  const report=await run({github:f.github,core:core(),context,
+   now:start+i*600_000,capacityFn:f.capacityFn});
+  assert.ok(report.inspected<=5,'one hourly legacy + at most four fallbacks');
+  assert.ok(report.legacyDispatchAccepted<=1,'never create an extra legacy worker');
+  assert.equal(report.repairDispatchAccepted,0,'manual cannot become source-writing lane');
+  assert.equal(f.calls.dispatched.length,report.legacyDispatchAccepted);
+  assert.equal(f.calls.reserved.length,report.legacyDispatchAccepted);
+  assert.equal(f.calls.removed.length,0,'do not clear manual/conflict holds');
+  if(report.legacyDispatchAccepted){
+   assert.equal(f.calls.dispatched[0].inputs.pr_number,String(freeNumber));
+   assert.equal(f.calls.dispatched[0].inputs.expected_sha,SHA);
+   successes++;
+   break;
+  }
+ }
+ assert.equal(successes,1,'unprocessed item reachable without changing Worker quota');
+});
