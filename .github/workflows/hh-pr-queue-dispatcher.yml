@@ -90,7 +90,9 @@ jobs:
       github.repository == 'andylitvinov-design/books' &&
       github.ref == 'refs/heads/codex/bootstrap-books' &&
       github.event_name != 'pull_request'
-    runs-on: ubuntu-24.04
+    # GitHub API and Node-only control step; reuse 1-vCPU slim runner
+    # within its 15-minute hard cap, with existing timeout unchanged.
+    runs-on: ubuntu-slim
     timeout-minutes: 8
     concurrency:
       group: hh-control-tower-observer
