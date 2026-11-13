@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
-import {detectedSpeechLocale,chooseDictationLanguage,readDictationResults} from '../lib/personal-coaching/my-coach-dictation.mjs'
+import {detectedSpeechLocale,chooseDictationLanguage,readDictationResults,ios27NeedsSpeechRecovery} from '../lib/personal-coaching/my-coach-dictation.mjs'
 import {appendSpokenAnswer} from '../lib/personal-coaching/speech-text.js'
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 test('Auto follows device language and remembered transcript; manual RU/EN override works',()=>{
@@ -33,4 +33,20 @@ test('Mic shows real listening state and writes interim results to the actual fo
  for(const s of ['readDictationResults(event.results,1200)','draftRef.current?.(appendSpokenAnswer(draftAtStartRef.current,visible,1200))','recognition.onstart=',"changePhase('starting')",'lastHeardRef.current=finished',"event.error==='network'"])assert.ok(loop.includes(s),s)
  for(const s of ["onDraft={text=>{setDraft(text);setError('')}}",'speechLocale={speechLocale}','initialDraft={draft}','value={speechLocale}','responseLocale=detectedSpeechLocale(message,lang)','locale:responseLocale,consent:true,message'])assert.ok(ui.includes(s),s)
  assert.doesNotMatch(loop,/new MediaRecorder|sendBeacon|localStorage|sessionStorage/)
+})
+
+test('iOS 27 Safari recovery targets only affected WebKit and preserves RU/EN conversation',()=>{
+ const ios27={userAgent:'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 Version/27.2 Mobile/15E148 Safari/604.1'}
+ assert.equal(ios27NeedsSpeechRecovery(ios27),true)
+ assert.equal(ios27NeedsSpeechRecovery({userAgent:ios27.userAgent.replace('Version/27.2','Version/26.6')}),false)
+ assert.equal(ios27NeedsSpeechRecovery({userAgent:'Mozilla/5.0 (Macintosh; Intel Mac OS X) Version/27.2 Safari/605.1.15',platform:'MacIntel',maxTouchPoints:0}),false)
+ assert.equal(ios27NeedsSpeechRecovery({userAgent:'Mozilla/5.0 (Macintosh; Intel Mac OS X) Version/27.2 Safari/605.1.15',platform:'MacIntel',maxTouchPoints:5}),true)
+ assert.equal(ios27NeedsSpeechRecovery({userAgent:'Mozilla/5.0 (iPhone) CriOS/156.0 Mobile Safari/604.1'}),false)
+ const sourceCode=source('components/my-coach-speech-loop.jsx')
+ for(const part of ['if(!ios27)try{recognition.stop()}catch{}','ios27NeedsSpeechRecovery(window.navigator)',
+   'cue.onend=finishCue','cue.onerror=finishCue','iosCueSatisfiedRef.current',
+   'hasRecognizedRef.current','iosResultTimerRef.current=setTimeout',
+   'draftRef.current?.(appendSpokenAnswer(draftAtStartRef.current,visible,1200))'])
+   assert.ok(sourceCode.includes(part),part)
+ assert.doesNotMatch(sourceCode,/MediaRecorder|sendBeacon|localStorage|sessionStorage/)
 })
