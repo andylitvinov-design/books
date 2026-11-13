@@ -1776,7 +1776,7 @@ test('previous DIRTY conflict handoff cannot starve manual cloud preflight',asyn
 });
 
 test('handled old PR uses one verified fallback, never repeats its signed source task',async()=>{
- const old=[204,205,206].map(number=>pr(number,'repair',{
+ const old=[204,205,206,207,208].map(number=>pr(number,'repair',{
   mergeable:null,mergeable_state:'unknown',
   labels:[{name:'hh:repair-manual'},{name:'hh:conflict-repair-needed'}]
  }));
@@ -2182,7 +2182,7 @@ test('dispatched worker telemetry includes recency guard instead of all-time run
 
 
 test('historical/active workers consume the global legacy hourly slot, never duplicate dispatch',async()=>{
- const old=[204,205,206].map(number=>pr(number,'repair',{
+ const old=[204,205,206,207,208].map(number=>pr(number,'repair',{
   mergeable:null,mergeable_state:'unknown',
   labels:[{name:'hh:repair-manual'},{name:'hh:conflict-repair-needed'}]
  }));
