@@ -44,14 +44,26 @@ async function assertPinnedSixDock(page, id, active) {
       window.scrollTo({top,behavior:"instant"});
       await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
     },point);
-    const position=await dock.evaluate(node=>{
+    let position;
+    try{
+      position=await dock.evaluate(node=>{
       const rect=node.getBoundingClientRect(),v=window.visualViewport;
       const style=window.getComputedStyle(node);
       return {css:style.position,bottom:style.bottom,rectBottom:rect.bottom,
         visibleBottom:v?v.offsetTop+v.height:window.innerHeight,
         staleInset:document.body.style.getPropertyValue("--hh-unified-viewport-inset"),
         height:rect.height};
-    });
+      },undefined,{timeout:10000});
+    }catch(error){
+      const observed=await page.evaluate(()=>({
+        path:location.pathname,loaded:document.readyState,
+        dockCount:document.querySelectorAll('[data-hh-unified-dock]').length,
+        visibleDock:!!document.querySelector('[data-hh-unified-dock]')&&getComputedStyle(document.querySelector('[data-hh-unified-dock]')).display!=='none',
+        visualHeight:window.visualViewport?.height??null,
+        screenWidth:innerWidth
+      })).catch(()=>null);
+      throw new Error('DOCK_MISSING_DURING_SCROLL '+JSON.stringify({scenario:id,point,observed}),{cause:error});
+    }
     assert.equal(position.css,"fixed",id+" "+point+" dock is fixed");
     assert.ok(Number.isFinite(Number.parseFloat(position.bottom)) &&
       Math.abs(Number.parseFloat(position.bottom))<=320,

@@ -20,4 +20,5 @@ test("approved light mobile dock includes elevated AI hero and keeps iPhone prot
   assert.doesNotMatch(overrides, /MyTube dark-mode exception|background:rgba\(15,15,15/);
   assert.match(overrides, /data-keyboard-open="true"/);
   assert.match(overrides, /--hh-unified-nav-height,94px/);
+  assert.match(overrides, /padding-bottom:calc\(var\(--hh-unified-nav-height,94px\) \+ 64px\)!important/);
 });

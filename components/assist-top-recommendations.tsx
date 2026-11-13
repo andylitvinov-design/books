@@ -49,7 +49,7 @@ const tabsIcons = { forMe: Sparkles, health: Leaf, relationships: Heart, energy:
 
 const copy = {
   ru: {
-    title: "Три рекомендации", start: "Выберите тему или опишите свой запрос ниже — подборка изменится.", matched: "Подборка по теме вашего запроса. Вы можете выбрать другое направление.",
+    title: "Рекомендуемые услуги для вас", start: "Выберите проблему выше или опишите ваш запрос — рекомендации изменятся.", matched: "Подборка учитывает ваш запрос. Можно выбрать другое направление.",
     tabs: { forMe: "Для меня", health: "Здоровье", relationships: "Отношения", energy: "Энергия", learning: "Обучение", spiritual: "Духовный путь" },
     themes: "Направления рекомендаций", details: "Подробнее", request: "Заказать", explore: "Открыть", more: "Все сервисы Assist",
     note: "«Заказать» открывает страницу заявки, а не подтверждённую запись или оплату. Символические методы не заменяют медицинскую помощь.",
@@ -69,7 +69,7 @@ const copy = {
     },
   },
   en: {
-    title: "Three recommendations", start: "Choose a theme or share your question below to change these suggestions.", matched: "Suggestions based on the theme of your question. You can switch topics.",
+    title: "Recommended services for you", start: "Choose an issue above or describe your situation to refine these suggestions.", matched: "Suggestions based on your request. You can explore other directions.",
     tabs: { forMe: "For me", health: "Health", relationships: "Relationships", energy: "Energy", learning: "Learning", spiritual: "Spiritual path" },
     themes: "Recommendation topics", details: "Details", request: "Request", explore: "Explore", more: "All Assist services",
     note: "A request opens an enquiry page, not a confirmed booking or payment. Symbolic approaches do not replace medical care.",
@@ -89,7 +89,7 @@ const copy = {
     },
   },
   es: {
-    title: "Tres recomendaciones", start: "Elige un tema o comparte tu consulta para adaptar las sugerencias.", matched: "Sugerencias según el tema de tu consulta. Puedes cambiar de categoría.",
+    title: "Servicios recomendados para ti", start: "Elige un problema arriba o describe tu situación para adaptar las sugerencias.", matched: "Sugerencias basadas en tu consulta. Puedes explorar otras opciones.",
     tabs: { forMe: "Para mí", health: "Salud", relationships: "Relaciones", energy: "Energía", learning: "Aprendizaje", spiritual: "Camino espiritual" },
     themes: "Temas de recomendaciones", details: "Detalles", request: "Solicitar", explore: "Explorar", more: "Todos los servicios Assist",
     note: "Solicitar abre una página de consulta, no una cita ni un pago confirmado. Los métodos simbólicos no sustituyen la atención médica.",
@@ -117,6 +117,10 @@ export function AssistTopRecommendations({ locale, focus }: { locale: PublicLoca
   const ids = active === "forMe" && focus ? byFocus[focus] : shelves[active];
   return (
     <section className={styles.root} data-assist-best-three aria-labelledby="assist-best-three-title">
+      <header className={styles.header}>
+        <h2 id="assist-best-three-title">{t.title}</h2>
+        <p>{focus ? t.matched : t.start}</p>
+      </header>
       <div className={styles.tabs} role="group" aria-label={t.themes}>
         {directions.map((direction) => {
           const Icon = tabsIcons[direction];
@@ -126,10 +130,6 @@ export function AssistTopRecommendations({ locale, focus }: { locale: PublicLoca
           </button>;
         })}
       </div>
-      <header className={styles.header}>
-        <h2 id="assist-best-three-title">{t.title}</h2>
-        <p>{focus ? t.matched : t.start}</p>
-      </header>
       <div className={styles.list} data-assist-selected-direction={active}>
         {ids.map((id) => {
           const item = entries[id];

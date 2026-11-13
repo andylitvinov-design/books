@@ -105,23 +105,10 @@ for (const engine of [chromium, webkit]) {
           const selectedThumb = gallery.locator("[data-support-video]").last();
           const id = await selectedThumb.getAttribute("data-support-video");
           assert.match(id, /^[A-Za-z0-9_-]{11}$/, label + " verified selected video ID");
-          // Match an iPhone finger press, rather than an offscreen desktop
-          // mouse click while a previous recommendation scroll is settling.
-          await selectedThumb.evaluate(element=>element.scrollIntoView({
-            behavior:"instant",block:"center",inline:"nearest"
-          }));
-          await page.waitForFunction(videoId=>{
-            const card=document.querySelector('[data-support-video="'+videoId+'"]');
-            if(!card)return false;
-            const rect=card.getBoundingClientRect();
-            const dock=document.querySelector('[data-support-mobile-bottom-nav]');
-            const visibleDock=dock&&getComputedStyle(dock).display!=="none";
-            if(rect.top<0||visibleDock&&rect.bottom>dock.getBoundingClientRect().top-5)return false;
-            const x=rect.left+rect.width/2,y=rect.top+rect.height/2;
-            const hit=document.elementFromPoint(x,y);
-            return hit===card||card.contains(hit);
-          },id,{timeout:12000});
-          await selectedThumb.tap();
+          // Playwright's real touch actionability check scrolls into view and
+          // verifies the thumbnail receives input, even with a fixed mobile dock.
+          // No force/click fallback or bypass of the verified React state.
+          await selectedThumb.tap({ timeout: 12000 });
           // Verify the real React state; WebKit can commit after tap() resolves.
           await page.waitForFunction(videoId=>{
             const el=document.querySelector('[data-support-video="'+videoId+'"]');

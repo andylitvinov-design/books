@@ -55,6 +55,21 @@ body:has([data-hh-unified-dock]) [data-video-director-chat-details]{scroll-margi
  body:has([data-free-entry-landing="situation"]) [data-hh-unified-dock]{display:none!important}
 }
 
+/* A floating AI orb reaches above the dock. Reserve actual document space
+   so the final form buttons/summary controls can scroll ABOVE its hitbox.
+   In particular, an expanded Services questionnaire must never trap its
+   last action beneath the 7-column nav. Messenger/immersive apps already
+   manage their own viewport/bottom reservation. */
+@media(max-width:759px){
+ body:has([data-hh-unified-dock]):not(:has(
+   .hh-messages-page,[data-mytube-page],[data-mandala-meditation-page],
+   [data-holistic-mobile-alternative],[data-practice-showcase],
+   [data-hh-home-route]
+ )){
+  padding-bottom:calc(var(--hh-unified-nav-height,94px) + 64px)!important;
+ }
+}
+
 /* Only detected keyboard hides dock; lingering input focus does not. */
 @media(max-width:760px){
  body:has(.hh-messages-page [data-keyboard-open="true"]) [data-hh-unified-dock]{display:none!important}
