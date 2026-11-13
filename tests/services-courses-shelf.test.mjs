@@ -39,3 +39,36 @@ test("Messenger-only order CTA stays compact until deliberate tap",()=>{
   assert.match(css,/details\[open\]>div/);
   assert.match(src,/ContactChannelChooser/);
 });
+
+test("All, Free and Teacher filter options do not duplicate the same course selection",()=>{
+ assert.match(src,/type Format = "all" \| "free" \| "teacher"/);
+ assert.doesNotMatch(src,/online: "Онлайн"/);
+ assert.match(src,/format === "all"/);
+ assert.match(src,/format === "free" && course.freeIntro/);
+ assert.match(src,/format === "teacher" && course.teacher/);
+ assert.match(src,/id: "dionysus", direction: "temple", teacher: false, freeIntro: false/);
+ assert.match(src,/id: "tantra", direction: "reiki", teacher: true, freeIntro: true/);
+ assert.match(src,/id: "yggdrasil", direction: "reiki", teacher: true, freeIntro: false/);
+});
+
+test("Telegram course enquiry uses the same selected-course handoff as WhatsApp",()=>{
+ const chooser=readFileSync("components/contact-channel-chooser.tsx","utf8");
+ const messenger=readFileSync("components/mandatory-messenger-actions.tsx","utf8");
+ const whatsapp=readFileSync("lib/whatsapp-enquiry.js","utf8");
+ assert.match(src,/const enquiryUrl = whatsappEnquiryUrl/);
+ assert.match(src,/telegramEnquiryUrl=\{telegramEnquiryUrlFromWhatsApp\(enquiryUrl\)\}/);
+ assert.match(chooser,/telegramEnquiryUrl\?: string/);
+ assert.match(chooser,/telegramUrl=\{telegramEnquiryUrl\}/);
+ assert.match(messenger,/if\(telegramUrl\)\{setBot\(null\);return;\}/);
+ assert.match(messenger,/telegramUrl\?"manual":bot\?\.kind/);
+ assert.match(messenger,/!telegramUrl&&bot/);
+ assert.match(whatsapp,/export const TELEGRAM_USERNAME = "AndyTherapist"/);
+ assert.match(whatsapp,/new URL\(whatsappUrl\)/);
+});
+
+test("Course cards have readable mobile copy and tappable controls",()=>{
+ assert.match(css,/\.body p\{[^}]*font-size:14px/);
+ assert.match(css,/\.body small\{[^}]*font-size:12px/);
+ assert.match(css,/\.details,\.order\{[^}]*min-height:48px/);
+ assert.match(css,/\.order:has\(details\) summary\{[^}]*min-height:48px/);
+});

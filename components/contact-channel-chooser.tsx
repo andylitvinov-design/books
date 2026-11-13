@@ -139,6 +139,8 @@ const copy = {
 type Props = {
   locale: PublicLocale;
   whatsappUrl: string;
+  /** Explicit first-party course/service message URL, bypassing the unrelated diagnostic bot. */
+  telegramEnquiryUrl?: string;
   className?: string;
   label?: string;
   event?: AcquisitionEvent;
@@ -169,7 +171,7 @@ type Props = {
 
 /** Anonymous first-party lead save, followed by an explicit client-initiated messenger handoff. */
 export function ContactChannelChooser({
-  locale, whatsappUrl, className, label, event = "contact_click", analyticsEvent,
+  locale, whatsappUrl, telegramEnquiryUrl, className, label, event = "contact_click", analyticsEvent,
   onChannelClick, onSaved, attributes, id, quick = false, cartContact = false, compactPhone = false, compactTrigger = false, stayAfterSave = false, resetKey, publicTopic, publicServiceTitle, allowSecureExpressClaim = false, bookingSku,
 }: Props) {
   const [settledResetSignature, setSettledResetSignature] = useState<string | null>(null);
@@ -511,7 +513,7 @@ export function ContactChannelChooser({
 
   if (websiteMessengerOnlyUi()) return <div data-contact-channel-chooser
     data-session-booking-flow={bookingSku?"":undefined} data-booking-sku={bookingSku||undefined}>
-    <MandatoryMessengerActions locale={locale} whatsappUrl={referredWhatsappUrl}
+    <MandatoryMessengerActions locale={locale} whatsappUrl={referredWhatsappUrl} telegramUrl={telegramEnquiryUrl}
       label={label||c.order} collapsed={(compactPhone||compactTrigger)&&!allowSecureExpressClaim} id={id} className={className}/>
   </div>;
   if (compactPhone && bookingSku) {
