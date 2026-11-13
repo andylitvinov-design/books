@@ -536,9 +536,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // Exercise the real visible tab instead of waiting for an unmounted drawer.
       // Current Montage has four compact tabs. Real duration is under Settings
       // and current sound/library controls are in the independent Audio tab.
-      await page.locator('[data-video-montage-tab="concept"]').click();
-      const montageSettingsTab=page.locator('[data-video-story-open-settings]');
-      await montageSettingsTab.click();
+      await openMontageSettingsViaQuality(page);
       await expect(page.locator('[data-video-basic-editor]')).toHaveAttribute("data-montage-panel","settings");
       const durationSelect=page.locator('[data-video-montage-preference="duration"]');
       await durationSelect.waitFor({state:"visible",timeout:25000});
@@ -858,8 +856,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         await page.locator('[data-video-quick-control="editor"]').click();
         // The original recorder's export button is available in the real
         // Montage Audio step, never in the intentionally hidden Style footer.
-        await page.locator('[data-video-montage-tab="concept"]').click();
-        await page.locator('[data-video-story-open-settings]').click();
+        await openMontageSettingsViaQuality(page);
         const ownAudioStep=page.locator('[data-video-montage-open-audio]');
         await ownAudioStep.click();
         await expect(page.locator('[data-video-montage-audio]')).toBeVisible();
@@ -1128,8 +1125,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(creationStyleTab).toBeVisible();
       await creationStyleTab.click();
       await expect(creationStyleTab).toHaveAttribute("aria-pressed","true");
-      await page.locator('[data-video-montage-tab="concept"]').click();
-        await page.locator('[data-video-story-open-settings]').click();
+      await openMontageSettingsViaQuality(page);
       const montageAudioTab=page.locator('[data-video-montage-open-audio]');
       await expect(montageAudioTab).toBeVisible();
       await montageAudioTab.click();
@@ -1419,8 +1415,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(page.locator("[data-video-narration-reapproval]")).toBeVisible();
       await expect(page.locator('[data-video-quick-generate]')).toBeDisabled();
       await page.locator('[data-video-quick-control="editor"]').click();
-      await page.locator('[data-video-montage-tab="concept"]').click();
-        await page.locator('[data-video-story-open-settings]').click();
+      await openMontageSettingsViaQuality(page);
       const montageAudioAfterExport=page.locator('[data-video-montage-open-audio]');
       await montageAudioAfterExport.click();
       await expect(page.locator('[data-video-montage-audio]')).toBeVisible();
@@ -1467,3 +1462,16 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
   }finally{phase(engine,"closing-browser");await withDeadline(browser.close(),10000,engine+" browser.close");phase(engine,"closed");}
 }
 clearTimeout(watchdog);
+
+
+// Access detailed video settings through the new fifth Montage step.
+// Story stays one-screen with its single quality-selection CTA.
+async function openMontageSettingsViaQuality(page){
+  const montage=page.locator('[data-video-montage-tab="promo"]');
+  await montage.click();
+  const advanced=page.locator('[data-video-stories-advanced]');
+  await advanced.locator(':scope > summary').click();
+  const settings=advanced.locator('[data-video-stories-settings]');
+  await settings.waitFor({state:"visible",timeout:20000});
+  await settings.click();
+}

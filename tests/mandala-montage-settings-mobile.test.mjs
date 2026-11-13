@@ -9,12 +9,12 @@ test("Montage opens on Style, preserves real recorder and five functional tabs w
   const tabStart=studio.indexOf("<nav className={videoStyles.montageQuickTools}");
   const tabMarkup=studio.slice(tabStart,studio.indexOf("</nav>",tabStart));
   assert.ok(tabStart>0,"Montage nav must exist");
-  assert.deepEqual([...tabMarkup.matchAll(/id:"(promo|effects|text|audio|concept)",Icon:/g)].map(m=>m[1]),["effects","audio","text","promo","concept"]);
+  assert.deepEqual([...tabMarkup.matchAll(/id:"(promo|effects|text|audio|concept)",Icon:/g)].map(m=>m[1]),["effects","audio","text","concept","promo"]);
   assert.match(studio,/data-video-montage-tab=\{item.id\}/);
   assert.match(studio,/if\(id==="editor"\)setMontagePanel\("effects"\)/);
   assert.match(studio,/aria-pressed=\{montagePanel===item.id\}/);
   assert.doesNotMatch(tabMarkup,/id:"settings"/);
-  assert.match(tabMarkup,/promo:\{ru:"Монтаж PRO",en:"Montage PRO",es:"Montaje PRO"\}/);
+  assert.match(tabMarkup,/promo:\{ru:"Монтаж",en:"Montage",es:"Montaje"\}/);
   assert.match(studio,/data-video-montage-preferences/);
   for(const field of ["format","duration","transitions","speed","quality"])
     assert.ok(studio.includes('data-video-montage-preference="'+field+'"'),field);
@@ -29,7 +29,7 @@ test("Montage opens on Style, preserves real recorder and five functional tabs w
   assert.match(studio,/onClick=\{createQuickVideo\}/);
   assert.match(studio,/Создать видео/);
   assert.equal((studio.match(/data-video-montage-export/g)||[]).length,0,"no duplicate export CTA");
-  assert.equal((studio.match(/data-video-quick-generate/g)||[]).length,1,"one real generate CTA");
+  assert.equal((studio.match(/<button[^>]*data-video-quick-generate/g)||[]).length,1,"one real Generate button; optional navigation may reference its selector");
 });
 test("The editable timeline, script, audio and draft tools are preserved, but not on initial screen",()=>{
   assert.match(studio,/data-video-montage-text hidden=\{montagePanel!=="text"\}/);
@@ -84,8 +84,9 @@ test("Montage iPhone retains the compact header, real six selectors and on-scree
 
 test("Original motion WebKit export reaches legacy preferences via Story and keeps Audio controls",()=>{
  const motion=readFileSync(new URL("../scripts/benchmarking/verify-original-motion-export.mjs",import.meta.url),"utf8");
- assert.match(motion,/data-video-story-open-settings/);
- assert.match(motion,/data-video-montage-tab="concept"/);
+ assert.match(motion,/data-video-stories-advanced/);
+ assert.match(motion,/data-video-stories-settings/);
+ assert.match(motion,/data-video-montage-tab="promo"/);
  assert.match(motion,/data-video-montage-preference="duration"/);
  assert.match(motion,/await duration\.selectOption\('20'\)/);
  assert.match(motion,/data-video-montage-open-audio/);
@@ -139,7 +140,7 @@ test("Montage PRO has precisely the owner-approved three offers and two navigati
  const offer=readFileSync(new URL("../components/mandala-montage-pro-offer.tsx",import.meta.url),"utf8");
  const offerCss=readFileSync(new URL("../components/mandala-montage-pro-offer.module.css",import.meta.url),"utf8");
  assert.ok(studio.includes('montagePanel==="promo" ? <MandalaMontageProOffer'));
- assert.ok(studio.includes('setMontagePanel("concept");setNotice("")'));
+ assert.ok(studio.includes('onChooseQuality={()=>{'),"Story must open fifth Montage for quality");
  assert.ok(studio.includes('setActiveWorkspace("pro");setNotice("")'));
  assert.ok(studio.includes('hidden={montagePanel==="promo"}'));
  assert.ok(studio.includes('data-video-story-open-settings'));

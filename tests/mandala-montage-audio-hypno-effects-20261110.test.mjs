@@ -6,11 +6,11 @@ const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",
 const hypno=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.tsx",import.meta.url),"utf8");
 const css=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.module.css",import.meta.url),"utf8");
 
-test("Montage puts Audio after Style, followed by Text and approved PRO",()=>{
+test("Montage puts Audio after Style, then Text, Story and Montage",()=>{
   const start=studio.indexOf("<nav className={videoStyles.montageQuickTools}");
   const nav=studio.slice(start,studio.indexOf("</nav>",start));
   assert.deepEqual([...nav.matchAll(/\{id:"(\w+)",Icon:/g)].map(m=>m[1]),
-    ["effects","audio","text","promo","concept"]);
+    ["effects","audio","text","concept","promo"]);
   assert.match(nav,/audio:\{ru:"Аудио",en:"Audio",es:"Audio"\}/);
   assert.doesNotMatch(nav,/id:"visual"/);
   for(const marker of ["data-video-montage-audio","Background music","Фоновая музыка",

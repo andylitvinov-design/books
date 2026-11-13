@@ -84,10 +84,13 @@ test("shared widescreen preview and mutually exclusive format accordion keep pai
   assert.match(source,/meditation:\{basic:2\.90,smart:4\.90,pro:null\}/);
   assert.match(source,/course:\{basic:19\.90,smart:null,pro:39\}/);
   assert.match(source,/freeVideoSelected = practiceType==="video" && practiceLevels\.video==="basic"/);
-  const direct=source.slice(source.indexOf("data-video-quick-generate"),
-    source.indexOf("</button>",source.indexOf("data-video-quick-generate")));
-  const addEffects=source.slice(source.indexOf('data-video-montage-next={montagePanel==="effects"?"audio":montagePanel==="audio"?"text":montagePanel==="text"?"promo":montagePanel==="promo"||montagePanel==="settings"?"concept":"hypno"}'),
-    source.indexOf("</button>",source.indexOf('data-video-montage-next={montagePanel==="effects"?"audio":montagePanel==="audio"?"text":montagePanel==="text"?"promo":montagePanel==="promo"||montagePanel==="settings"?"concept":"hypno"}')));
+  const action=source.indexOf('data-video-stage-actions="montage"');
+  const nextStart=source.indexOf('data-video-montage-next={montagePanel===',action);
+  const directStart=source.indexOf('data-video-quick-generate',action);
+  assert.ok(action>0&&nextStart>action&&directStart>nextStart,
+    "the real Create control must follow the navigation control");
+  const direct=source.slice(directStart,source.indexOf("</button>",directStart));
+  const addEffects=source.slice(nextStart,source.indexOf("</button>",nextStart));
   assert.ok(direct.includes('onClick={createQuickVideo}'),"Create must use the original real renderer");
   assert.ok(addEffects.includes('onClick={continueMontageOrGenerate}'),"Add must only advance");
   assert.match(source,/if\(montagePanel==="audio"\)\{[\s\S]*?setMontagePanel\("text"\)/,
