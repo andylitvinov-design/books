@@ -271,8 +271,8 @@ test('My Coach Fish TTS is only available with opt-in free access and never leak
     'PRIVATE_HEADERS','s2.1-pro-free'])assert.ok(route.includes(part),part)
   for(const part of ['startCoachingMp3Playback','cloudControllerRef.current?.abort()',
     'cloudPlayerRef.current?.cancel()','cloudAgreed&&cloudAvailable',
-    'cloudVoiceConsent:true,trainingUseConsent:true'])assert.ok(speech.includes(part),part)
-  for(const part of ['checked={cloudAgreed}','naturalVoiceCopy[lang].disclosure',
+    "cloudProvider==='fish_free'?{trainingUseConsent:true}:{}"])assert.ok(speech.includes(part),part)
+  for(const part of ['checked={cloudAgreed}','providerCopy.disclosure',
     'setCloudAgreed(false)'])assert.ok(page.includes(part),part)
   assert.ok(page.includes('reply may train models'))
   assert.ok(page.includes('ответ может использоваться для обучения'))

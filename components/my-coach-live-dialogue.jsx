@@ -8,6 +8,7 @@ import {coachingBrainSafety,coachingBrainBoundary} from '@/lib/personal-coaching
 import {classifyWisdomRequest} from '@/lib/coaching/wisdom-retrieval.mjs'
 import styles from './my-coach-live-dialogue.module.css'
 import MyCoachSpeechLoop from './my-coach-speech-loop'
+import {startCoachingMp3Playback} from '@/lib/personal-coaching/streamed-mp3-playback.mjs'
 import {detectedSpeechLocale} from '@/lib/personal-coaching/my-coach-dictation.mjs'
 import CoachingAvatar from '@/components/app/coaching-avatar'
 
@@ -63,9 +64,9 @@ const avatarVisuals={
   lea:'calm',noah:'warm',iris:'warm',ray:'clear',
 }
 const avatarNotice={
-  en:'Animated 2D coach · device voice, not a video call.',
-  ru:'Анимированный 2D-коуч · голос устройства, не видеозвонок.',
-  es:'Coach animado en 2D · voz del dispositivo, no videollamada.',
+  en:'Animated 2D coach · natural speech when available, not a video call.',
+  ru:'Анимированный 2D-коуч · естественная озвучка при доступности, не видеозвонок.',
+  es:'Coach animado en 2D · voz natural cuando esté disponible, no videollamada.',
 }
 
 const sessionUi={
@@ -77,6 +78,11 @@ const transcriptUi={
   en:{heading:'Conversation · transcript',listening:'Listening',languageLabel:'Speech recognition language',autoLanguage:'Device · auto',hint:'Your spoken words will appear here. Or type your reply below.',consentShort:'I agree to send my text to the eligible free AI; browser recognition may process my voice.',details:'Privacy and data processing'},
   ru:{heading:'Диалог · расшифровка',listening:'Слушаю',languageLabel:'Язык распознавания речи',autoLanguage:'Авто · устройство',hint:'Здесь появятся ваши слова. Можно также написать ответ ниже.',consentShort:'Согласен(на) отправлять текст бесплатной AI-модели; браузер может обрабатывать мой голос.',details:'Приватность и обработка данных'},
   es:{heading:'Diálogo · transcripción',listening:'Escuchando',languageLabel:'Idioma de reconocimiento de voz',autoLanguage:'Auto · dispositivo',hint:'Aquí aparecerán tus palabras. También puedes escribir abajo.',consentShort:'Acepto enviar mi texto a la IA gratuita; el navegador puede procesar mi voz.',details:'Privacidad y procesamiento'},
+}
+const googleChirpCopy={
+  en:{label:'Natural voice · Google Chirp 3 HD',about:'Privacy',disclosure:'Optional. Only the coach’s spoken question is sent to Google Cloud Text-to-Speech for synthesis. Google may process this text. No audio or text is saved by Holistic House. Use text-only for private topics if you prefer.'},
+  ru:{label:'Естественный голос · Google Chirp 3 HD',about:'Приватность',disclosure:'Необязательно. Только озвучиваемый вопрос коуча отправляется в Google Cloud Text-to-Speech. Google обрабатывает этот текст для создания голоса. Holistic House не сохраняет аудио. Для личных тем можно оставить текстовый режим.'},
+  es:{label:'Voz natural · Google Chirp 3 HD',about:'Privacidad',disclosure:'Opcional. Solo la pregunta hablada del coach se envía a Google Cloud Text-to-Speech para generar voz. Holistic House no guarda el audio ni el texto. Puedes seguir solo con texto.'}
 }
 const naturalVoiceCopy={
  en:{label:'Natural voice · Fish Audio (reply may train models)',about:'Privacy',disclosure:'Optional. Only the coach’s reply goes to Fish Audio. The free service may use text to improve models. Turn off for sensitive topics.'},
@@ -107,6 +113,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [speechPreview,setSpeechPreview]=useState('')
   const [cloudAvailable,setCloudAvailable]=useState(false)
   const [cloudAgreed,setCloudAgreed]=useState(false)
+  const [cloudProvider,setCloudProvider]=useState(null)
   const [speechLocale,setSpeechLocale]=useState('auto')
   const [showCaptions,setShowCaptions]=useState(true)
   const [turns,setTurns]=useState([])
@@ -122,6 +129,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [playbackNotice,setPlaybackNotice]=useState('')
   const pending=useRef(null),end=useRef(null),composerRef=useRef(null),transcriptRef=useRef(null)
   const composerDetailsRef=useRef(null),voiceConsentRef=useRef(null),speechRef=useRef(null)
+  const replayControllerRef=useRef(null),replayPlayerRef=useRef(null)
   useEffect(()=>()=>pending.current?.abort(),[])
   useEffect(()=>{
     // This probe sends only a synthetic OK to the free-only ZDR gateway.
@@ -146,13 +154,17 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   useEffect(()=>{if(transcriptRef.current)transcriptRef.current.scrollTop=transcriptRef.current.scrollHeight},[turns,speechPreview])
   useEffect(()=>{
     if(!consent||authRequired||readiness.status==='checking'){
-      setCloudAvailable(false);setCloudAgreed(false);return
+      setCloudAvailable(false);setCloudAgreed(false);setCloudProvider(null);return
     }
     const controller=new AbortController()
     fetch('/api/app/my-coach/voice/synthesize',{
       credentials:'same-origin',cache:'no-store',signal:controller.signal,
     }).then(r=>r.ok?r.json():null).then(data=>{
-      if(!controller.signal.aborted)setCloudAvailable(data?.available===true)
+      if(!controller.signal.aborted){
+        setCloudAgreed(false)
+        setCloudProvider(['google_chirp3_hd','fish_free'].includes(data?.provider)?data.provider:null)
+        setCloudAvailable(data?.available===true&&['google_chirp3_hd','fish_free'].includes(data?.provider))
+      }
     }).catch(()=>{if(!controller.signal.aborted)setCloudAvailable(false)})
     return ()=>controller.abort()
   },[consent,authRequired,readiness.status])
@@ -161,6 +173,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const ui=sessionUi[lang]||sessionUi.en
   const voiceGate=voiceGateText[lang]||voiceGateText.en
   const captions=transcriptUi[lang]||transcriptUi.en
+  const providerCopy=cloudProvider==='google_chirp3_hd'?googleChirpCopy[lang]:naturalVoiceCopy[lang]
   const latestCoachTurn=[...turns].reverse().find(turn=>turn.role==='assistant')
   const latestCoachText=latestCoachTurn?.content||opening
   const currentStage=latestCoachTurn?.stage||'clarify'
@@ -180,22 +193,52 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   }
   function replayCoachReply(){
     if(!latestCoachText||voiceState.phase!=='idle'||replaying)return
-    if(!window.speechSynthesis||!window.SpeechSynthesisUtterance){setPlaybackNotice(voiceGate.playbackUnavailable);return}
     setPlaybackNotice('')
-    try{
-      window.speechSynthesis.cancel()
-      const utterance=new window.SpeechSynthesisUtterance(latestCoachText.slice(0,900))
-      utterance.lang=({en:'en-GB',ru:'ru-RU',es:'es-ES'})[lang]
-      utterance.rate=0.97
-      const voices=window.speechSynthesis.getVoices?.()||[]
-      const voice=voices.find(item=>item.lang?.toLowerCase()===utterance.lang.toLowerCase())||voices.find(item=>item.lang?.toLowerCase().startsWith(lang+'-'))
-      if(voice)utterance.voice=voice
-      utterance.onend=()=>setReplaying(false)
-      utterance.onerror=()=>{setReplaying(false);setPlaybackNotice(voiceGate.playbackUnavailable)}
-      setReplaying(true);window.speechSynthesis.speak(utterance)
-    }catch{setReplaying(false);setPlaybackNotice(voiceGate.playbackUnavailable)}
+    if(cloudAgreed&&['google_chirp3_hd','fish_free'].includes(cloudProvider)){
+      const controller=new AbortController()
+      replayControllerRef.current=controller
+      setReplaying(true)
+      const question=latestCoachText.match(/[^.!?\n]+[?？]/gu)?.at(-1)?.trim()
+      const spoken=cloudProvider==='google_chirp3_hd'?
+        (question&&question.length<=500?question:latestCoachText.slice(0,500)):
+        latestCoachText.slice(0,900)
+      void fetch('/api/app/my-coach/voice/synthesize',{
+        method:'POST',credentials:'same-origin',cache:'no-store',signal:controller.signal,
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({provider:cloudProvider,personaId,locale:lang,text:spoken,
+          voiceConsent:true,cloudVoiceConsent:true,
+          ...(cloudProvider==='fish_free'?{trainingUseConsent:true}:{})}),
+      }).then(response=>{
+        if(!response.ok||!response.body)throw Error('TTS_UNAVAILABLE')
+        if(controller.signal.aborted)return
+        replayPlayerRef.current=startCoachingMp3Playback(response,{
+          onEnd:()=>{replayControllerRef.current=null;replayPlayerRef.current=null;setReplaying(false)},
+          onError:()=>{replayControllerRef.current=null;replayPlayerRef.current=null;setReplaying(false);setPlaybackNotice(voiceGate.playbackUnavailable)}
+        })
+      }).catch(()=>{if(!controller.signal.aborted){setReplaying(false);setPlaybackNotice(voiceGate.playbackUnavailable)}})
+      return
+    }
+    setPlaybackNotice(voiceGate.playbackUnavailable)
+    // No automatic low-quality device voice: keep the coach question visible.
   }
-  useEffect(()=>()=>{try{window.speechSynthesis?.cancel()}catch{}},[])
+  useEffect(()=>{
+    const stopReplay=()=>{
+      replayControllerRef.current?.abort()
+      replayPlayerRef.current?.cancel()
+      replayControllerRef.current=null
+      replayPlayerRef.current=null
+      setReplaying(false)
+    }
+    const onHidden=()=>{if(document.hidden)stopReplay()}
+    document.addEventListener('visibilitychange',onHidden)
+    window.addEventListener('pagehide',stopReplay)
+    return()=>{
+      document.removeEventListener('visibilitychange',onHidden)
+      window.removeEventListener('pagehide',stopReplay)
+      replayControllerRef.current?.abort()
+      replayPlayerRef.current?.cancel()
+    }
+  },[])
 
   function approveVoiceConsent(){
     if(busy||paused||authRequired||readiness.status==='checking')return
@@ -393,7 +436,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           aria-label={ui.type} title={ui.type}><Keyboard size={21} aria-hidden="true"/><span>{ui.keyboardShort}</span></button>
         <div className={styles.voiceCenter} data-voice-active={voiceState.phase!=='idle'?'true':undefined}>
           <span className={styles.voiceWaveLeft} aria-hidden="true"><i/><i/><i/><i/><i/></span>
-          <MyCoachSpeechLoop ref={speechRef} locale={lang} speechLocale={speechLocale} initialDraft={draft} cloudAvailable={cloudAvailable} cloudAgreed={cloudAgreed} enabled={consent&&readiness.status!=='checking'&&!authRequired}
+          <MyCoachSpeechLoop ref={speechRef} locale={lang} speechLocale={speechLocale} initialDraft={draft} cloudAvailable={cloudAvailable} cloudAgreed={cloudAgreed} cloudProvider={cloudProvider} personaId={personaId} enabled={consent&&readiness.status!=='checking'&&!authRequired}
             canStart={!busy&&!paused&&!replaying&&readiness.status!=='checking'&&!authRequired} onTurn={sendMessage}
             onRequestConsent={()=>{if(!voiceConsentRef.current?.open)voiceConsentRef.current?.showModal()}}
             onCancelTurn={()=>pending.current?.abort()} onVoiceStateChange={setVoiceState}
@@ -412,9 +455,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         <label><input type="checkbox" checked={cloudAgreed}
           disabled={voiceState.phase!=='idle'}
           onChange={event=>setCloudAgreed(event.target.checked)}/>
-          <span>{naturalVoiceCopy[lang].label}</span></label>
-        <details><summary>{naturalVoiceCopy[lang].about}</summary>
-          <p>{naturalVoiceCopy[lang].disclosure}</p></details>
+          <span>{providerCopy.label}</span></label>
+        <details><summary>{providerCopy.about}</summary>
+          <p>{providerCopy.disclosure}</p></details>
       </div>}
       {playbackNotice&&<p className={styles.playbackNotice} role="status">{playbackNotice}</p>}
       <details ref={composerDetailsRef} className={styles.textComposer} open>
