@@ -93,10 +93,10 @@ test("native WebCodecs, MediaRecorder and preview consume independent voice/musi
  assert.doesNotMatch(audio,/fetch\(\s*["\x27]https?:\/\//);
 });
 
-test("voice overlay uses only recorded, rights-reviewed music for preview and MP4",()=>{
+test("voice auto music fails closed while explicit licensed beds retain export support",()=>{
  const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
  const audio=readFileSync(new URL("../lib/mandala/local-video-music.ts",import.meta.url),"utf8");
- assert.match(studio,/tracks:voiceBedMode\?curatedAudioTracks\.filter/);
+ assert.match(studio,/tracks:voiceBedMode\?\[\]:rankedAudioPool/);
  assert.doesNotMatch(studio,/tracks:voiceBedMode\?mandalaAudioTracks\.filter/);
  assert.match(studio,/if\(!MYTUBE_REVIEWED_MUSIC_BEDS\.some\(id=>id===choice\)\)/);
  assert.match(studio,/\{MYTUBE_REVIEWED_MUSIC_BEDS\.map\(id=>/);

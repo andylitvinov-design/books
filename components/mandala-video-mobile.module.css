@@ -5559,3 +5559,14 @@
    Ideas without restoring hidden legacy music controls. Source marker avoids
    changing other Phrases/Voice layouts or the existing consent/voice editor. */
 .studio[data-active-workspace="phrases"] .phraseMusicSection[data-personalized-music-match]{display:grid!important}
+
+/* The native WebKit verification/retry player remains mounted, decoded and
+   inaccessible on Ready. The visible full-size playback is MandalaVideoReady. */
+.studio[data-active-workspace="ready"] .quickBuilder>[data-video-result]:not([hidden]){
+ display:block!important;position:absolute!important;left:0!important;top:0!important;
+ width:2px!important;height:2px!important;margin:0!important;padding:0!important;
+ overflow:hidden!important;opacity:0!important;pointer-events:none!important;z-index:-1!important;
+ border:0!important;box-shadow:none!important}
+.studio[data-active-workspace="ready"] .quickBuilder>[data-video-result]:not([hidden])>video{
+ display:block!important;width:2px!important;height:2px!important;
+ min-width:2px!important;min-height:2px!important;margin:0!important}

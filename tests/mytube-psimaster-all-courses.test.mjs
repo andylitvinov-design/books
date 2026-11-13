@@ -66,7 +66,7 @@ test("MyTube shows course names and lessons immediately; category filters option
   assert.match(discovery,/data-mytube-course-series="all"/);
   assert.match(discovery,/activeCourseSeries!=="all"/);
   assert.match(feed,/data-mytube-course-heading=\{courseInfo\.id\}/);
-  assert.match(feed,/visibleLimit = mytubeShelf === "courses" \? filtered\.length/);
+  assert.match(feed,/mytubeShelf === "courses" \|\| mytubeShelf === "practices" \|\| mytubeShelf === "videos" \|\| mytubeShelf === "masters"/);
 });
 
 test("all verified PsiMaster planetary meditations complement the original Sun and Ajna set",()=>{

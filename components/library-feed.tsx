@@ -30,6 +30,7 @@ export type LibraryFeedItem = {
   curation?: "verified" | "published";
   sourceGroup?: string;
   sourceLabel?: string;
+  mytubeSection?: "masters";
   durationVerifiedSeconds?: number;
   mytubeFormat?: "shorts" | "study";
   sourceApproved?: boolean;
@@ -143,7 +144,7 @@ export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = fa
   }, [items, kind, query, locale, videosOnly, guidesOnly, selectedSeries, seriesChoices, preserveOrder]);
   // A selected MyTube course is a complete ordered playlist, not a preview of
   // the first eight lessons. Keep normal pagination for other Library feeds.
-  const visibleLimit = (mytubeShelf === "courses" || mytubeShelf === "practices" || mytubeShelf === "videos") ? filtered.length :
+  const visibleLimit = (mytubeShelf === "courses" || mytubeShelf === "practices" || mytubeShelf === "videos" || mytubeShelf === "masters") ? filtered.length :
     videosOnly && !preserveOrder && selectedSeries === "all"
       ? Math.max(limit, filtered.filter(item => Boolean(item.seriesId)).length) : limit;
   const visible = filtered.slice(0, visibleLimit);
