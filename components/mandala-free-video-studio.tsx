@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import { MandalaSmartAnimation } from "./mandala-smart-animation";
 import Link from "next/link";
 import { flushSync } from "react-dom";
 import { ArrowRight, Brain, BarChart3, Camera, Check, ChevronDown, ChevronRight, ListVideo, RefreshCw, Coins, Download, Film, HandHeart, Headphones, Heart, HeartPulse, Leaf, Sprout, Music2, AudioLines, Clock3, Smile, Paperclip, Search, Mic, Pause, Play, Share2, Scissors, SlidersHorizontal, Sparkles, Target, TestTubeDiagonal, Zap, X, Save, FolderOpen, Type, MessageCircleQuestion } from "lucide-react";
@@ -7305,6 +7306,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               {locale==="ru"?"Создать анимацию":locale==="es"?"Crear animación":"Create animated video"}
             </button>
           </> : null}
+        </details>
+        <details className={videoStyles.quickSection} data-workspace-section="video" data-video-smart-animation>
+          <summary style={{display:"flex",alignItems:"center",minHeight:44,cursor:"pointer",fontWeight:700,color:"#18533e"}}>
+            {locale==="ru"?"Мультфильм за минуту · Smart Animation":locale==="es"?"Cuento animado de un minuto · Smart Animation":"One-minute cartoon · Smart Animation"}
+          </summary>
+          <MandalaSmartAnimation locale={locale}/>
         </details>
         <details className={videoStyles.quickExtras} data-workspace-section="video"
           onToggle={event=>{if(event.currentTarget.open)setFirstVideoAdvancedActivated(true);}}

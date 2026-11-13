@@ -75,12 +75,12 @@ export async function renderCartoonMp4({plan,output,audioPath=null,silentDemo=fa
 }
 function readArgs(args){const result={};for(let i=0;i<args.length;i++){
   const key=args[i];if(key==='--silent-demo'){result.silentDemo=true;continue;}
-  if(!['--output','--locale','--preset','--aspect','--audio','--preview-seconds','--width','--height','--source-fps'].includes(key)||!args[i+1])throw Error('cartoon_cli_invalid');
+  if(!['--output','--locale','--preset','--aspect','--audio','--preview-seconds','--width','--height','--source-fps','--variation'].includes(key)||!args[i+1])throw Error('cartoon_cli_invalid');
   result[key.slice(2).replace(/-([a-z])/g,(_,s)=>s.toUpperCase())]=args[++i];
 }return result;}
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
   const o=readArgs(process.argv.slice(2));
-  const plan=createCartoonStoryboard({locale:o.locale||'ru',preset:o.preset||'friendship',aspect:o.aspect||'portrait'});
+  const plan=createCartoonStoryboard({locale:o.locale||'ru',preset:o.preset||'friendship',aspect:o.aspect||'portrait',variation:o.variation?Number(o.variation):0});
   renderCartoonMp4({plan,output:o.output,audioPath:o.audio,silentDemo:o.silentDemo,
     previewSeconds:o.previewSeconds?Number(o.previewSeconds):60,sourceFps:o.sourceFps?Number(o.sourceFps):24,
     width:o.width?Number(o.width):undefined,height:o.height?Number(o.height):undefined,
