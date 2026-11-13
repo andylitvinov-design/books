@@ -1,9 +1,10 @@
 export declare const MYTUBE_MUSIC_BEDS:readonly [
   "warm-morning","wings-of-light","heart-harmony","quiet-stars","bright-path"
 ];
+export declare const MYTUBE_REVIEWED_MUSIC_BEDS:readonly `curated-${string}`[];
 export declare const MYTUBE_BED_FADES:readonly [0,0.5,1,2];
 export type MyTubeMusicBed={
-  id:"none"|"warm-morning"|"wings-of-light"|"heart-harmony"|"quiet-stars"|"bright-path";
+  id:"none"|"warm-morning"|"wings-of-light"|"heart-harmony"|"quiet-stars"|"bright-path"|`curated-${string}`;
   volumePercent:number;
   fadeSeconds:number;
 };
