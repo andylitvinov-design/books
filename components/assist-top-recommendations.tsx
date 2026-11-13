@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, BookOpen, Heart, Leaf, Sparkles, Zap } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
+import { telegramServiceRequestUrl } from "@/lib/assist/telegram-business-request.mjs";
 import styles from "./assist-top-recommendations.module.css";
 
 type Direction = "forMe" | "health" | "relationships" | "energy" | "learning" | "spiritual";
@@ -52,7 +53,7 @@ const copy = {
     title: "Рекомендуемые услуги для вас", start: "Выберите проблему выше или опишите ваш запрос — рекомендации изменятся.", matched: "Подборка учитывает ваш запрос. Можно выбрать другое направление.",
     tabs: { forMe: "Для меня", health: "Здоровье", relationships: "Отношения", energy: "Энергия", learning: "Обучение", spiritual: "Духовный путь" },
     themes: "Направления рекомендаций", details: "Подробнее", request: "Заказать", explore: "Открыть", more: "Все сервисы Assist",
-    note: "«Заказать» открывает страницу заявки, а не подтверждённую запись или оплату. Символические методы не заменяют медицинскую помощь.",
+    note: "«Заказать» откроет чат @holistichouse с готовым текстом. Нажмите «Отправить» в Telegram: это не подтверждённая запись или оплата. Символические методы не заменяют медицинскую помощь.",
     cards: {
       homeopathy: ["Психогомеопатия","Авторский подход к исследованию состояния и переживаний.","Гомеопатия не имеет надёжных доказательств эффективности для лечения заболеваний. Перед выбором средства необходима консультация специалиста."],
       coaching: ["Коучинг / Терапия","Прояснить ситуацию и найти внутреннюю опору.","Личная работа с переживаниями и образами. Формат и условия встречи согласуются индивидуально."],
@@ -72,7 +73,7 @@ const copy = {
     title: "Recommended services for you", start: "Choose an issue above or describe your situation to refine these suggestions.", matched: "Suggestions based on your request. You can explore other directions.",
     tabs: { forMe: "For me", health: "Health", relationships: "Relationships", energy: "Energy", learning: "Learning", spiritual: "Spiritual path" },
     themes: "Recommendation topics", details: "Details", request: "Request", explore: "Explore", more: "All Assist services",
-    note: "A request opens an enquiry page, not a confirmed booking or payment. Symbolic approaches do not replace medical care.",
+    note: "Request opens @holistichouse with a prepared message. Press Send in Telegram; this is not a confirmed booking or payment. Symbolic approaches do not replace medical care.",
     cards: {
       homeopathy: ["Psycho-homeopathy","Explore an author's approach to feelings and wellbeing.","Homeopathy lacks reliable evidence for treating health conditions. Consult a qualified professional before considering a remedy."],
       coaching: ["Coaching / Therapy","Clarify your situation and explore inner support.","Personal exploration of experiences and imagery. Session details are agreed individually."],
@@ -92,7 +93,7 @@ const copy = {
     title: "Servicios recomendados para ti", start: "Elige un problema arriba o describe tu situación para adaptar las sugerencias.", matched: "Sugerencias basadas en tu consulta. Puedes explorar otras opciones.",
     tabs: { forMe: "Para mí", health: "Salud", relationships: "Relaciones", energy: "Energía", learning: "Aprendizaje", spiritual: "Camino espiritual" },
     themes: "Temas de recomendaciones", details: "Detalles", request: "Solicitar", explore: "Explorar", more: "Todos los servicios Assist",
-    note: "Solicitar abre una página de consulta, no una cita ni un pago confirmado. Los métodos simbólicos no sustituyen la atención médica.",
+    note: "Solicitar abre @holistichouse con un mensaje preparado. Pulsa Enviar en Telegram; no es una reserva ni un pago confirmado. Los métodos simbólicos no sustituyen la atención médica.",
     cards: {
       homeopathy: ["Psico-homeopatía","Conoce un enfoque de autor sobre experiencias y bienestar.","La homeopatía carece de pruebas fiables para tratar enfermedades. Consulta a un profesional antes de elegir un remedio."],
       coaching: ["Coaching / Terapia","Aclara tu situación y encuentra apoyo interior.","Exploración individual de experiencias e imágenes. Las condiciones se acuerdan antes de reservar."],
@@ -148,8 +149,13 @@ export function AssistTopRecommendations({ locale, focus }: { locale: PublicLoca
                   <summary>{t.details}</summary>
                   <p>{extra}</p>
                 </details>
-                <Link className={styles.cta} href={"/" + locale + "/" + item.path} prefetch={false}
-                  data-assist-best-action={id}>{item.kind==="session" ? t.request : t.explore}<ArrowRight size={17} aria-hidden="true"/></Link>
+                {item.kind==="session"
+                  ? <a className={styles.cta} href={telegramServiceRequestUrl(id,locale) || "#"}
+                      target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer"
+                      aria-label={t.request + ": " + name + " — Telegram"}
+                      data-assist-best-action={id}>{t.request}<ArrowRight size={17} aria-hidden="true"/></a>
+                  : <Link className={styles.cta} href={"/" + locale + "/" + item.path} prefetch={false}
+                      data-assist-best-action={id}>{t.explore}<ArrowRight size={17} aria-hidden="true"/></Link>}
               </div>
             </div>
           </article>;
