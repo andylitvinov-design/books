@@ -54,7 +54,7 @@ test("MyTube segmented format filters keep unknown-duration videos visible",()=>
  // Reject guessed-duration UI, not the legitimate reviewed-practice explanation.
  assert.doesNotMatch(view,/durationUnknown|10 min or longer/);
  assert.match(read("lib/video-discovery/mytube-shelves.mjs"),/seconds<=MYTUBE_PRACTICE_MAX_SECONDS/);
- assert.match(css,/\.mytube \.mytubeFormatTabs\{[^}]*grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+ assert.match(css,/\.mytube \.mytubeFormatTabs\{[^}]*grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
  assert.match(css,/\.mytube \.mytubeCategoryRail\{[^}]*grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/);
  assert.doesNotMatch(css.slice(css.indexOf("/* MyTube-only compact five-choice editorial taxonomy.")),/overflow-x:auto/);
  assert.match(hub,/mytubeFormat:classifyMyTubeFormat\(video\)/);
