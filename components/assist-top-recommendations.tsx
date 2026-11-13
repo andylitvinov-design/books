@@ -81,7 +81,7 @@ export function AssistTopRecommendations({
 }){
   const t=copy[locale];
   const productIds:readonly ProductId[]=matchingIds?.length===0?[]:rankAssistProducts(focus??"general",preferences) as ProductId[];
-  return <section className={styles.root} data-assist-best-three aria-labelledby="assist-best-three-title">
+  return <section className={styles.root} id="assist-recommendations" tabIndex={-1} data-assist-best-three aria-labelledby="assist-best-three-title">
     <header className={styles.header}>
       <h2 id="assist-best-three-title">{t.heading}</h2>
       <p>{t.detail}</p>
