@@ -409,7 +409,7 @@ jobs:
             core.setOutput("requires_current_base",String(
               freshness.reason==="SENSITIVE_BASE_VERIFIED" ||
               freshness.reason==="ISOLATED_CI_PUBLIC_MEDIA_REVALIDATED"));
-      - name: Request one necessary Core revalidation on newer protected base
+      - name: Revalidate sensitive BASE with one protected sync or signed Ready
         if: >-
           github.event_name == 'workflow_run' &&
           steps.ready.outputs.eligible == 'true' &&
@@ -430,7 +430,7 @@ jobs:
               newBase:'${{ steps.freshness.outputs.new_base }}',
               coreRunId:Number('${{ steps.ready.outputs.core_run }}')});
             core.info('CI_BASE_REVALIDATION '+JSON.stringify(outcome));
-            if(outcome.status!=='WAKE_REQUESTED')
+            if(!['BASE_SYNC_REQUESTED','WAKE_REQUESTED'].includes(outcome.status))
               core.warning('CI_BASE_REVALIDATION_HOLD '+outcome.reason);
       - name: Verify effective review, resolved threads and free owner lease
         id: safety

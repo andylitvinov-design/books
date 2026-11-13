@@ -1,7 +1,10 @@
 'use strict';
-// One necessary, bounded revalidation of a changed *protected* production
-// base. Uses the existing PAT-authored Ready event, never a source commit,
-// direct merge, invented green check, new workflow, or cron.
+// One necessary, bounded revalidation of a changed protected production BASE.
+// Prefer one CAS-protected native update-branch when the tested source HEAD
+// diverged from the current base. That yields one real exact-HEAD CI wave,
+// rather than a Ready recheck that can fail again before a second branch sync.
+// If HEAD already contains the current BASE, a signed Ready event is enough.
+// Never force-push, spoof green checks, bypass reviewers/leases or add cron.
 const {readCompleteIssueComments,externalOwnerLeaseStatus,
  trustedControlComment}=require('./ci-pr-task-state.cjs');
 const OWNER='andylitvinov-design',REPO='books',FULL=OWNER+'/'+REPO;
@@ -22,7 +25,8 @@ function candidate(pr,expectedHead){
 async function run({github,context,token,number,head,oldBase,newBase,coreRunId,
  now=Date.now(),fetcher=globalThis.fetch}={}){
  const result={schema:MARKER,pr_number:number,status:'HOLD',reason:'UNVERIFIED',
-  sourceChanged:false,ciVerified:false,metadataEventRequested:false};
+  sourceChanged:false,ciVerified:false,metadataEventRequested:false,
+  headUpdateRequested:false};
  const hold=reason=>({...result,reason});
  if(context?.eventName!=='workflow_run'||
    context?.repo?.owner!==OWNER||context?.repo?.repo!==REPO||
@@ -38,7 +42,7 @@ async function run({github,context,token,number,head,oldBase,newBase,coreRunId,
  if(typeof token!=='string'||!token||typeof fetcher!=='function')
   return hold('OWNER_TOKEN_NOT_CONFIGURED');
  const {owner,repo}=context.repo;
- let pr,branch,latest,comparison,children,comments;
+ let pr,branch,latest,comparison,children,comments,needsHeadUpdate=false;
  try{
   pr=(await github.rest.pulls.get({owner,repo,pull_number:number})).data;
   if(!candidate(pr,head))return hold('PR_HOLD_OR_CHANGED_HEAD');
@@ -51,6 +55,30 @@ async function run({github,context,token,number,head,oldBase,newBase,coreRunId,
      comparison.base_commit?.sha!==oldBase||
      comparison.merge_base_commit?.sha!==oldBase)
    return hold('BASE_ANCESTRY_NOT_PROVEN');
+
+  // First prove this code HEAD was based on the exact Core-tested old BASE.
+  // A random unrelated branch must not be auto-updated with broad privileges.
+  const source=(await github.rest.repos.compareCommits({
+   owner,repo,base:oldBase,head,per_page:100})).data;
+  if(source?.status!=='ahead'||source.base_commit?.sha!==oldBase||
+     source.merge_base_commit?.sha!==oldBase||
+     !Number.isInteger(source.ahead_by)||source.ahead_by<1)
+   return hold('SOURCE_OLD_BASE_ANCESTRY_UNVERIFIED');
+  // GitHub native update-branch is only needed if the new protected BASE
+  // diverged. If that BASE is already an ancestor of the current source,
+  // preserve HEAD and use the existing signed Ready event instead.
+  const relative=(await github.rest.repos.compareCommits({
+   owner,repo,base:newBase,head,per_page:100})).data;
+  if(relative?.base_commit?.sha!==newBase||
+     !SHA.test(relative.merge_base_commit?.sha||''))
+   return hold('SOURCE_NEW_BASE_RELATION_UNVERIFIED');
+  if(relative.status==='diverged'&&relative.merge_base_commit.sha===oldBase&&
+     Number.isInteger(relative.behind_by)&&relative.behind_by>0&&
+     Number.isInteger(relative.ahead_by)&&relative.ahead_by>0) {
+    needsHeadUpdate=true;
+  }else if(relative.status==='ahead'&&relative.merge_base_commit.sha===newBase){
+    needsHeadUpdate=false;
+  }else return hold('SOURCE_BASE_RELATION_NOT_SAFE');
   latest=(await github.rest.actions.listWorkflowRuns({owner,repo,
    workflow_id:'hh-pr-core-release.yml',branch:pr.head.ref,
    event:'pull_request',per_page:20})).data;
@@ -82,6 +110,8 @@ async function run({github,context,token,number,head,oldBase,newBase,coreRunId,
    signal:AbortSignal.timeout(20000)
   });
   if(!response?.ok)throw Error('OWNER_API_DENIED_'+response?.status);
+  if(method==='PUT'&&response.status!==202)
+   throw Error('EXPECTED_NATIVE_UPDATE_BRANCH_202');
   return response.json();
  };
  let pat;
@@ -98,15 +128,46 @@ async function run({github,context,token,number,head,oldBase,newBase,coreRunId,
   if(!candidate(current,head)||check?.commit?.sha!==newBase||
      current.body!==pr.body)return hold('PR_OR_BASE_CHANGED_BEFORE_WAKE');
  }catch{return hold('OWNER_PREFLIGHT_UNAVAILABLE');}
- // A signed one-shot intent is written BEFORE any metadata mutation. Even if
- // the transition fails, do not storm a PR with duplicate CI or Draft cycles.
+ // Record the one-shot intent BEFORE the owner mutation (Ready or branch CAS).
+ // Even if GitHub delivery is ambiguous, do not start another duplicate wave.
  try{
   await github.rest.issues.createComment({owner,repo,issue_number:number,
    body:'<!-- '+MARKER+' pr='+number+' head='+head+
     ' from='+oldBase+' to='+newBase+' core='+coreRunId+' -->\n'+
     'Necessary current-base CI revalidation requested by trusted coordinator. '+
-    'One attempt for this exact HEAD; this is not CI PASS, merge or LIVE.'});
+    'One protected update or Ready event only, with real new HEAD CI required. '+
+    'Not a completed source update, CI PASS, merge or LIVE.'});
  }catch{return hold('SIGNED_WAKE_INTENT_NOT_WRITTEN');}
+
+ if(needsHeadUpdate){
+  try{
+   // A source-changing update needs a second just-in-time state/lease read.
+   // GitHub's expected_head_sha is the final atomic writer CAS.
+   const fresh=(await github.rest.pulls.get({owner,repo,pull_number:number})).data;
+   const baseFresh=(await github.rest.repos.getBranch({owner,repo,branch:PROD})).data;
+   if(!candidate(fresh,head)||fresh.head.ref!==pr.head.ref||
+      fresh.body!==pr.body||baseFresh?.protected!==true||
+      baseFresh.commit?.sha!==newBase)
+    return hold('SOURCE_OR_BASE_CHANGED_BEFORE_SYNC');
+   let rereadPages=0;
+   const latestComments=await readCompleteIssueComments(github,owner,repo,number,
+    async(_name,call)=>{if(++rereadPages>5)throw Error('LEASE_REREAD_LIMIT');return call();});
+   if(!Array.isArray(latestComments)||
+      externalOwnerLeaseStatus(latestComments,head,now)!=='FREE')
+    return hold('SOURCE_OWNER_LEASE_CHANGED');
+   const patFresh=await ownerCall('GET','/repos/'+FULL+'/pulls/'+number);
+   if(patFresh?.head?.sha!==head||patFresh?.base?.ref!==PROD||
+      patFresh?.head?.ref!==pr.head.ref||patFresh?.state!=='open'||
+      patFresh.draft!==false||patFresh.body!==pr.body)
+    return hold('PAT_SOURCE_CHANGED_BEFORE_SYNC');
+   // Native update-branch is non-force, uses the current protected BASE and
+   // rejects any concurrent writer who moved the expected source HEAD.
+   await ownerCall('PUT','/repos/'+FULL+'/pulls/'+number+'/update-branch',
+    {expected_head_sha:head});
+   return {...result,status:'BASE_SYNC_REQUESTED',
+     reason:'AWAITING_NEW_HEAD_EXACT_CORE',headUpdateRequested:true};
+  }catch{return hold('PROTECTED_BASE_SYNC_NOT_ACCEPTED');}
+ }
  const mutation=async(name)=>{
   const query='mutation($id:ID!){'+name+
    '(input:{pullRequestId:$id}){pullRequest{id isDraft}}}';
