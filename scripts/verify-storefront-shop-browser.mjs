@@ -113,9 +113,18 @@ try {
       assert.equal(await cart.locator('[data-cart-order-registration][data-cart-order-ready="false"]').count(), 1)
       assert.equal(await cart.locator('[data-cart-start-order]').count(), 1)
       assert.equal(await cart.locator('[data-cart-payment-step]').count(), 0)
-      await cart.locator('[data-cart-start-order]').click()
+      const startOrder = cart.locator('[data-cart-start-order]')
+      await startOrder.click()
       const contactForm = cart.locator('[data-cart-contact-form]')
-      await contactForm.waitFor({ state: 'visible' })
+      try {
+        await contactForm.waitFor({ state: 'visible', timeout: 6000 })
+      } catch {
+        // A tap during Next hydration may be consumed before React attaches
+        // the handler. Retry once while the button still exists; fail closed
+        // if the real messenger-only contact panel never becomes visible.
+        if (await startOrder.isVisible()) await startOrder.click()
+        await contactForm.waitFor({ state: 'visible', timeout: 12000 })
+      }
       // In messenger-only mode the website must not accept a typed
       // phone/Google-only order or fabricate a CRM receipt.
       const card=contactForm.locator('[data-messenger-only-contact]');

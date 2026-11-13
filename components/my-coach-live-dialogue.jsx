@@ -78,6 +78,11 @@ const transcriptUi={
   ru:{heading:'Диалог · расшифровка',listening:'Слушаю',languageLabel:'Язык распознавания речи',autoLanguage:'Авто · устройство',hint:'Здесь появятся ваши слова. Можно также написать ответ ниже.',consentShort:'Согласен(на) отправлять текст бесплатной AI-модели; браузер может обрабатывать мой голос.',details:'Приватность и обработка данных'},
   es:{heading:'Diálogo · transcripción',listening:'Escuchando',languageLabel:'Idioma de reconocimiento de voz',autoLanguage:'Auto · dispositivo',hint:'Aquí aparecerán tus palabras. También puedes escribir abajo.',consentShort:'Acepto enviar mi texto a la IA gratuita; el navegador puede procesar mi voz.',details:'Privacidad y procesamiento'},
 }
+const naturalVoiceCopy={
+ en:{label:'Natural voice · Fish Audio (reply may train models)',about:'Privacy',disclosure:'Optional. Only the coach’s reply goes to Fish Audio. The free service may use text to improve models. Turn off for sensitive topics.'},
+ ru:{label:'Естественный голос · Fish Audio (ответ может использоваться для обучения)',about:'Приватность',disclosure:'Необязательно. В Fish Audio передаётся только ответ коуча. Бесплатный сервис может использовать текст для улучшения моделей. Для личных тем оставьте выключенным.'},
+ es:{label:'Voz natural · Fish Audio (puede usarse para entrenar modelos)',about:'Privacidad',disclosure:'Opcional. Solo se envía la respuesta del coach a Fish Audio. El servicio gratuito puede usarla para mejorar los modelos. Desactívala para temas sensibles.'},
+}
 const voiceGateText={
  en:{title:'Before voice conversation',cancel:'Not now',agree:'Agree and talk',playbackUnavailable:'Audio playback is unavailable in this browser. Try Safari or use text.'},
  ru:{title:'Перед голосовым разговором',cancel:'Не сейчас',agree:'Согласен и начать',playbackUnavailable:'В этом браузере не работает озвучивание. Попробуйте Safari или текстовый диалог.'},
@@ -100,6 +105,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [consent,setConsent]=useState(false)
   const [draft,setDraft]=useState('')
   const [speechPreview,setSpeechPreview]=useState('')
+  const [cloudAvailable,setCloudAvailable]=useState(false)
+  const [cloudAgreed,setCloudAgreed]=useState(false)
   const [speechLocale,setSpeechLocale]=useState('auto')
   const [showCaptions,setShowCaptions]=useState(true)
   const [turns,setTurns]=useState([])
@@ -137,6 +144,18 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     return ()=>controller.abort()
   },[])
   useEffect(()=>{if(transcriptRef.current)transcriptRef.current.scrollTop=transcriptRef.current.scrollHeight},[turns,speechPreview])
+  useEffect(()=>{
+    if(!consent||authRequired||readiness.status==='checking'){
+      setCloudAvailable(false);setCloudAgreed(false);return
+    }
+    const controller=new AbortController()
+    fetch('/api/app/my-coach/voice/synthesize',{
+      credentials:'same-origin',cache:'no-store',signal:controller.signal,
+    }).then(r=>r.ok?r.json():null).then(data=>{
+      if(!controller.signal.aborted)setCloudAvailable(data?.available===true)
+    }).catch(()=>{if(!controller.signal.aborted)setCloudAvailable(false)})
+    return ()=>controller.abort()
+  },[consent,authRequired,readiness.status])
   const name=persona?localCoachText(persona.name,lang):t.coach
   const opening=persona?localCoachText(persona.opening,lang):t.goal
   const ui=sessionUi[lang]||sessionUi.en
@@ -374,7 +393,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           aria-label={ui.type} title={ui.type}><Keyboard size={21} aria-hidden="true"/><span>{ui.keyboardShort}</span></button>
         <div className={styles.voiceCenter} data-voice-active={voiceState.phase!=='idle'?'true':undefined}>
           <span className={styles.voiceWaveLeft} aria-hidden="true"><i/><i/><i/><i/><i/></span>
-          <MyCoachSpeechLoop ref={speechRef} locale={lang} speechLocale={speechLocale} initialDraft={draft} enabled={consent&&readiness.status!=='checking'&&!authRequired}
+          <MyCoachSpeechLoop ref={speechRef} locale={lang} speechLocale={speechLocale} initialDraft={draft} cloudAvailable={cloudAvailable} cloudAgreed={cloudAgreed} enabled={consent&&readiness.status!=='checking'&&!authRequired}
             canStart={!busy&&!paused&&!replaying&&readiness.status!=='checking'&&!authRequired} onTurn={sendMessage}
             onRequestConsent={()=>{if(!voiceConsentRef.current?.open)voiceConsentRef.current?.showModal()}}
             onCancelTurn={()=>pending.current?.abort()} onVoiceStateChange={setVoiceState}
@@ -389,6 +408,14 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           <PhoneOff size={21} aria-hidden="true"/><span>{lang==='ru'?'Конец':lang==='es'?'Salir':'End'}</span>
         </Link>
       </div>
+      {cloudAvailable&&consent&&!authRequired&&<div className={styles.naturalVoiceRow}>
+        <label><input type="checkbox" checked={cloudAgreed}
+          disabled={voiceState.phase!=='idle'}
+          onChange={event=>setCloudAgreed(event.target.checked)}/>
+          <span>{naturalVoiceCopy[lang].label}</span></label>
+        <details><summary>{naturalVoiceCopy[lang].about}</summary>
+          <p>{naturalVoiceCopy[lang].disclosure}</p></details>
+      </div>}
       {playbackNotice&&<p className={styles.playbackNotice} role="status">{playbackNotice}</p>}
       <details ref={composerDetailsRef} className={styles.textComposer} open>
         <summary>{ui.type}</summary>
