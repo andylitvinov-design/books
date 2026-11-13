@@ -153,3 +153,11 @@
     gap:0;
   }
 }
+
+/* Services chat and the global fixed iPhone dock share one viewport.
+   Reserve scroll space instead of floating the input over chat answers. */
+@media(max-width:760px){
+  .assistPage{padding-bottom:calc(var(--hh-unified-nav-height,77px) + 22px)}
+  .conversation .form{scroll-margin-bottom:calc(var(--hh-unified-nav-height,77px) + 12px)}
+  :global(body:has([data-hh-unified-dock][data-keyboard-open="true"])) .conversation .form{scroll-margin-bottom:12px}
+}

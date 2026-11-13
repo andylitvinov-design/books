@@ -41,3 +41,25 @@ test("guest privacy, crisis suppression, existing Telegram requests and locales 
   assert.doesNotMatch(shell,/localStorage|sessionStorage|fetch\(|sendBeacon|window\.location/);
   assert.match(shellCss,/\.form textarea\{min-height:42px\}/);
 });
+
+
+test("Services composer clears the mobile dock and hides unrelated global review ribbon",()=>{
+  const banner=read("components/sitewide-antistress-banner.tsx");
+  for (const token of [
+    "data-assist-composer",
+    "formRef=useRef<HTMLFormElement>(null)",
+    "window.visualViewport",
+    "dockRect.top",
+    "Math.min(viewportBottom,dockBottomLimit)",
+    "window.scrollBy(",
+    'window.addEventListener("resize",revealComposer',
+    'viewport?.addEventListener("resize",revealComposer',
+    "document.activeElement===inputRef.current"
+  ]) assert.ok(shell.includes(token),token);
+  assert.ok(banner.includes("Services already starts with a personal AI dialogue"));
+  assert.ok(banner.includes("services\\/?$/.test(pathname) ||"));
+  assert.ok(shellCss.includes(".assistPage{padding-bottom:calc(var(--hh-unified-nav-height,77px) + 22px)}"));
+  assert.ok(shellCss.includes(".conversation .form{scroll-margin-bottom:calc(var(--hh-unified-nav-height,77px) + 12px)}"));
+  assert.ok(shellCss.includes('[data-keyboard-open="true"]'));
+  assert.doesNotMatch(shellCss,/\.conversation \.form\{[^}]*position:(?:sticky|fixed)/);
+});
