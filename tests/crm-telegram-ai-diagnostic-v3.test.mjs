@@ -159,3 +159,20 @@ test('Postgres Date and ISO string preserve actual daily Telegram V3 reply quota
   assert.equal(v3DailyReplyCount({reply_day:new Date('invalid'),reply_count:14},'2026-11-11'),0);
   assert.equal(v3DailyReplyCount({reply_day:null,reply_count:25},'2026-11-11'),0);
 });
+
+test('Consent is explained once; follow-up nudges do not repeat the privacy wall',()=>{
+  for(const locale of ['ru','en','es']){
+    const messages=V3_COPY[locale];
+    assert.ok(messages.intro.length<500);
+    assert.ok(messages.nudge.length>30&&messages.nudge.length<180);
+    assert.ok(messages.intro.includes('OpenRouter'));
+    assert.ok(messages.intro.includes('/stop'));
+    assert.doesNotMatch(messages.nudge,/OpenRouter|medical|медицинск|médic/i);
+    assert.notEqual(messages.intro,messages.nudge);
+  }
+  const service=source('lib/crm/telegram-ai-diagnostic-v3-service.js');
+  assert.ok(service.includes("if(start&&active&&row?.stage==='consent')"));
+  assert.ok(service.includes("allowed?copy.nudge:copy.notReady"));
+  assert.ok(service.includes("ai_consent_at=now()"));
+  assert.ok(service.includes("row&&Number(row.last_update_id)>=updateId"));
+});
