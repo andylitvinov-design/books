@@ -678,10 +678,16 @@ try{
  await agentComposer.waitFor({state:"visible"});
  assert.equal((await agentComposer.inputValue()).trim(),"",
    "clicking Video asks a question in chat, not a fake prepared send");
+ // Require a new assistant turn, not retired punctuation or a previous reply.
+ const assistantCountBeforeGreeting=await chat.locator('[data-hh-ai-assistant-message]').count();
  await agentComposer.fill("Привет Ау");
  await chat.locator('button[type="submit"]').click();
- await page.waitForFunction(()=>[...document.querySelectorAll('[data-hh-agent-preview] [role="log"] p')]
-   .some(node=>node.textContent?.includes("Я здесь!")),null,{timeout:10000});
+ await page.waitForFunction(({baseline})=>{
+   const log=document.querySelector('[data-hh-agent-preview] [role="log"]');
+   const turns=log?.querySelectorAll('[data-hh-ai-assistant-message]');
+   if(!turns||turns.length<=baseline)return false;
+   return Boolean((turns.item(turns.length-1)?.textContent||"").trim().length>5);
+ },{baseline:assistantCountBeforeGreeting},{timeout:10000});
  assert.equal(await chat.locator("video").count(),0,
    "no completed video is claimed before rendering");
 
