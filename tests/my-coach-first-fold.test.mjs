@@ -45,3 +45,20 @@ test('the user-approved photo assets are WebP, nontrivial quality and local to t
   assert.match(ctaCss, /my-coach-mira-rail\.webp/)
   assert.doesNotMatch(ctaCss, /my-coach-portraits\.avif/)
 })
+
+test('owner-approved visual mock uses the original fictional portraits instead of unrelated motion art',()=>{
+  const css=read('components/my-coach-mira-landing.module.css')
+  const button=read('components/my-coach-express-start.module.css')
+  for(const id of ['mira','alex','sofia','max']){
+    assert.match(css,new RegExp('heroPortrait\\[data-persona='+id+'\\][\\s\\S]*?background-image:url\\('))
+    assert.match(css,new RegExp('railPortrait\\[data-persona='+id+'\\][\\s\\S]*?background-image:url\\('))
+  }
+  assert.match(css,/my-coach-mira-hires\.webp/)
+  assert.match(css,/background-size:cover!important/)
+  assert.match(css,/mask-image:linear-gradient/)
+  assert.match(css,/brandControls :global\(\[data-hh-credit-profile\]\)\{display:none!important\}/)
+  assert.match(button,/embeddedWrap \.portrait\{display:none\}/)
+  assert.match(button,/embeddedWrap \.talkButton/)
+  assert.match(css,/heroStage\{height:clamp\(292px,42svh,305px\)\}/)
+  assert.match(css,/railPortrait\{height:clamp\(77px,11svh,90px\)\}/)
+})
