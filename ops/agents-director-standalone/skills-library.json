@@ -1,0 +1,729 @@
+{
+  "schema": "HH_COMMANDER_SKILLS_V1",
+  "version": "1.0.0",
+  "source": "Holistic House first-party curated skills",
+  "updated": "2026-11-07",
+  "skills": [
+    {
+      "id": "task-architect",
+      "title": "Архитектор задач",
+      "category": "Core",
+      "summary": "Преобразовать голосовую или текстовую просьбу в точную задачу",
+      "keywords": [
+        "задач",
+        "постав",
+        "тз",
+        "декомпоз",
+        "план",
+        "промпт",
+        "task",
+        "spec"
+      ],
+      "steps": [
+        "Сохранить исходные слова владельца",
+        "Отделить главное намерение, объект и результат от методов и слов-паразитов диктовки",
+        "Если работа уже начиналась, сначала найти её задачу/PR, затем перечислить оставшиеся действия",
+        "Сопоставить каждый запрос владельца с конкретным действием и критерием приёмки; не подменять реализацию подготовкой ТЗ"
+      ],
+      "proof": "Каждое действие владельца покрыто проверяемым шагом, не возникли посторонние задачи и выдуманные PR",
+      "version": "1.1.0",
+      "status": "curated",
+      "sourcePath": "ops/pr-monitor/skills-library.json#task-architect"
+    },
+    {
+      "id": "context-assembler",
+      "title": "Сборщик контекста",
+      "category": "Core",
+      "summary": "Собрать минимальный проверенный контекст проекта",
+      "keywords": [
+        "проект",
+        "контекст",
+        "истори",
+        "предыдущ",
+        "документ",
+        "код",
+        "context",
+        "project"
+      ],
+      "steps": [
+        "Найти оригинальный проект, защищённые политики и текущие файлы",
+        "Указать ссылки, релевантные PR и точные SHA",
+        "Отделить проверенные факты от предположений и устаревших заметок"
+      ],
+      "proof": "Контекст с источниками, без приватных данных и выдуманных ссылок",
+      "version": "1.0.0",
+      "status": "curated",
+      "sourcePath": "ops/pr-monitor/skills-library.json#context-assembler"
+    },
+    {
+      "id": "agent-handoff",
+      "title": "Передача исполнителю",
+      "category": "Core",
+      "summary": "Назначить исполнителя и передать проверяемые материалы",
+      "keywords": [
+        "исполнител",
+        "переда",
+        "отправ",
+        "агент",
+        "delegate",
+        "handoff",
+        "agent"
+      ],
+      "steps": [
+        "Сверить допустимого исполнителя и права владельца",
+        "Приложить задачу, контекст, skill IDs и критерии результата",
+        "Записать маршрут передачи, подтверждение и ограничения"
+      ],
+      "proof": "Есть фактическая ссылка на handoff; передача не считается коммитом",
+      "version": "1.0.0",
+      "status": "curated",
+      "sourcePath": "ops/pr-monitor/skills-library.json#agent-handoff"
+    },
+    {
+      "id": "independent-reviewer",
+      "title": "Независимая проверка",
+      "category": "Quality",
+      "summary": "Проверить готовый PR другой ролью",
+      "keywords": [
+        "провер",
+        "ревью",
+        "review",
+        "качест",
+        "ошибк",
+        "acceptance"
+      ],
+      "steps": [
+        "Сравнить постановку задачи и фактические изменённые файлы",
+        "Воспроизвести тесты и пользовательский сценарий",
+        "Указать недостатки с файлами, SHA и ссылкой на отчёт"
+      ],
+      "proof": "Проверяющий отличен от исполнителя; результат связан с PR и текущим HEAD",
+      "version": "1.0.0",
+      "status": "curated",
+      "sourcePath": "ops/pr-monitor/skills-library.json#independent-reviewer"
+    },
+    {
+      "id": "codebase-impact",
+      "title": "Анализ влияния кода",
+      "category": "Development",
+      "summary": "Определить меняемые модули и риск регрессий",
+      "keywords": [
+        "код",
+        "файл",
+        "модул",
+        "путь",
+        "исправ",
+        "code",
+        "refactor"
+      ],
+      "steps": [
+        "Найти реализацию на production и контрольной ветке",
+        "Проверить зависимости и соседние сценарии",
+        "Составить ограниченный diff и регрессионные тесты"
+      ],
+      "proof": "Изменяется минимальная область; прежние функции проходят тесты",
+      "version": "1.0.0",
+      "status": "curated",
+      "sourcePath": "ops/pr-monitor/skills-library.json#codebase-impact"
+    },
+    {
+      "id": "pr-deduplicator",
+      "title": "Дедупликация PR",
+      "category": "GitHub",
+      "summary": "Найти похожие PR и канонический путь выпуска",
+      "keywords": [
+        "pr",
+        "пиар",
+        "дублик",
+        "похож",
+        "объедин",
+        "merge",
+        "pull request"
+      ],
+      "steps": [
+        "Найти PR с тем же продуктовым root и пересечением файлов",
+        "Сравнить исходные SHA, цели и живые owner lease",
+        "Выбрать канонический PR без автоматического закрытия чужих веток"
+      ],
+      "proof": "Нет параллельных дублирующих публикаций; решения привязаны к PR",
+      "version": "1.0.0",
+      "status": "curated",
+      "sourcePath": "ops/pr-monitor/skills-library.json#pr-deduplicator"
+    },
+    {
+      "id": "github-workflow",
+      "title": "GitHub Workflow",
+      "category": "GitHub",
+      "summary": "Провести изменение через защищённый цикл репозитория",
+      "keywords": [
+        "github",
+        "commit",
+        "branch",
+        "workflow",
+        "pr",
+        "ветк",
+        "репозитор"
+      ],
+      "steps": [
+        "Проверить базовую ветку, SHA и owner lease",
+        "Подготовить одну согласованную публикацию исходников",
+        "Дождаться требуемых checks, protected merge и записи SHA"
+      ],
+      "proof": "Отдельно доказаны исходная публикация, CI и merge",
+      "version": "1.0.0",
+      "status": "curated",
+      "sourcePath": "ops/pr-monitor/skills-library.json#github-workflow"
+    },
+    {
+      "id": "ci-root-cause",
+      "title": "Причина сбоя CI",
+      "category": "GitHub",
+      "summary": "Найти первый причинный failed job на текущем SHA",
+      "keywords": [
+        "ci",
+        "ошибк",
+        "fail",
+        "red",
+        "провер",
+        "слом",
+        "lint",
+        "types"
+      ],
+      "steps": [
+        "Привязать ошибку к exact HEAD и воспроизвести локально",
+        "Разделить инфраструктуру и ошибки исходников",
+        "Исправить причину без отключения проверок"
+      ],
+      "proof": "Проверка новой версии зелёная на том же exact HEAD",
+      "version": "1.0.0",
+      "status": "curated",
+      "sourcePath": "ops/pr-monitor/skills-library.json#ci-root-cause"
+    },
+    {
+      "id": "merge-arbiter",
+      "title": "Арбитр конфликтов",
+      "category": "GitHub",
+      "summary": "Безопасно разрешить семантические конфликты",
+      "keywords": [
+        "конфликт",
+        "dirty",
+        "merge",
+        "мерж",
+        "base advanced",
+        "three-way"
+      ],
+      "steps": [
+        "Проверить merge-tree и оба исходных намерения",
+        "Сохранить уникальное полезное поведение обеих веток",
+        "Запустить полные релевантные тесты и повторную проверку конфликтов"
+      ],
+      "proof": "Ни одна необходимая функция не потеряна при слиянии",
+      "version": "1.0.0",
+      "status": "curated",
+      "sourcePath": "ops/pr-monitor/skills-library.json#merge-arbiter"
+    },
+    {
+      "id": "release-guardian",
+      "title": "Защита релиза",
+      "category": "Release",
+      "summary": "Соблюсти политику защищённого выпуска без лишних волн CI",
+      "keywords": [
+        "релиз",
+        "публикац",
+        "release",
+        "merge",
+        "prod",
+        "защит",
+        "ci"
+      ],
+      "steps": [
+        "Проверить точный PR HEAD, обязательные Core/Specialist/Guard",
+        "Слить только через защищённый механизм",
+        "Сопоставить production deployment с целевым SHA"
+      ],
+      "proof": "MERGED и READY не выдаются за функциональный LIVE",
+      "version": "1.0.0",
+      "status": "curated",
+      "sourcePath": "ops/pr-monitor/skills-library.json#release-guardian"
+    },
+    {
+      "id": "live-verifier",
+      "title": "Проверка LIVE",
+      "category": "Release",
+      "summary": "Подтвердить результат на реальном сайте",
+      "keywords": [
+        "лив",
+        "live",
+        "прод",
+        "деплой",
+        "deploy",
+        "vercel",
+        "работает"
+      ],
+      "steps": [
+        "Проверить правильный домен, deployment READY и serving SHA",
+        "Воспроизвести основной сценарий на мобильном экране",
+        "Проверить отсутствие ошибок и обратный путь rollback"
+      ],
+      "proof": "Есть URL, время, SHA и воспроизводимый функциональный тест",
+      "version": "1.0.0",
+      "status": "curated",
+      "sourcePath": "ops/pr-monitor/skills-library.json#live-verifier"
+    },
+    {
+      "id": "mobile-ui",
+      "title": "Мобильный UI",
+      "category": "Product",
+      "summary": "Сохранить согласованный экран и нижнее меню",
+      "keywords": [
+        "мобил",
+        "телефон",
+        "iphone",
+        "ios",
+        "safari",
+        "дизайн",
+        "макет",
+        "экран",
+        "ui",
+        "ux"
+      ],
+      "steps": [
+        "Использовать согласованный мобильный макет как источник",
+        "Проверить 320/390/430px, клавиатуру и safe areas",
+        "Проверить доступность, контраст и неизменность пяти вкладок"
+      ],
+      "proof": "Без горизонтальной прокрутки и регрессий навигации",
+      "version": "1.0.0",
+      "status": "curated",
+      "sourcePath": "ops/pr-monitor/skills-library.json#mobile-ui"
+    },
+    {
+      "id": "accessibility",
+      "title": "Доступность",
+      "category": "Product",
+      "summary": "Сделать интерфейс удобным с клавиатурой и VoiceOver",
+      "keywords": [
+        "accessibility",
+        "aria",
+        "voiceover",
+        "доступн",
+        "клавиат",
+        "скринридер"
+      ],
+      "steps": [
+        "Проверить семантику, подписи, фокус и статусные сообщения",
+        "Тестировать touch-цели и ошибки без визуальных подсказок",
+        "Проверить контраст и восстановление фокуса после диалога"
+      ],
+      "proof": "Критические действия доступны клавиатурой и ассистивными средствами",
+      "version": "1.0.0",
+      "status": "curated",
+      "sourcePath": "ops/pr-monitor/skills-library.json#accessibility"
+    },
+    {
+      "id": "test-strategy",
+      "title": "Стратегия тестов",
+      "category": "Quality",
+      "summary": "Выбрать тесты по конкретному риску",
+      "keywords": [
+        "тест",
+        "qa",
+        "регресс",
+        "unit",
+        "e2e",
+        "playwright",
+        "провер"
+      ],
+      "steps": [
+        "Выделить самый рискованный пользовательский путь",
+        "Добавить воспроизводимые unit/integration тесты",
+        "Проверить mobile, ошибки, rollback и точные исходные SHA"
+      ],
+      "proof": "Тесты защищают заявленные критерии, а не только исходную строку",
+      "version": "1.0.0",
+      "status": "curated",
+      "sourcePath": "ops/pr-monitor/skills-library.json#test-strategy"
+    },
+    {
+      "id": "supabase-rls",
+      "title": "Supabase RLS",
+      "category": "Data",
+      "summary": "Безопасно менять схему, миграции и закрытые политики",
+      "keywords": [
+        "supabase",
+        "postgres",
+        "rls",
+        "баз",
+        "sql",
+        "таблиц",
+        "миграц"
+      ],
+      "steps": [
+        "Проверить действующую схему, доступ и миграции",
+        "Оставить приватные данные с FORCE RLS и deny-by-default",
+        "Протестировать anon, authenticated, backend роли и откат"
+      ],
+      "proof": "Запрещённый клиент не читает и не изменяет данные",
+      "version": "1.0.0",
+      "status": "curated",
+      "sourcePath": "ops/pr-monitor/skills-library.json#supabase-rls"
+    },
+    {
+      "id": "secure-access",
+      "title": "Безопасный доступ",
+      "category": "Security",
+      "summary": "Защитить секреты, токены и действия владельца",
+      "keywords": [
+        "auth",
+        "секрет",
+        "token",
+        "permission",
+        "cookie",
+        "csrf",
+        "oauth",
+        "доступ"
+      ],
+      "steps": [
+        "Проверить сессию владельца, same-origin и области полномочий",
+        "Не передавать секреты в браузер и тексты навыков",
+        "Отказать небезопасным и неавторизованным операциям"
+      ],
+      "proof": "Негативные security-тесты явно пройдены",
+      "version": "1.0.0",
+      "status": "curated",
+      "sourcePath": "ops/pr-monitor/skills-library.json#secure-access"
+    },
+    {
+      "id": "cost-guard",
+      "title": "Контроль стоимости",
+      "category": "Security",
+      "summary": "Выбирать нулевые новые расходы",
+      "keywords": [
+        "free",
+        "бесплат",
+        "затрат",
+        "лимит",
+        "openrouter",
+        "цен",
+        "бюджет",
+        "cost"
+      ],
+      "steps": [
+        "Перед вызовом провайдера проверить текущую цену и квоты",
+        "Если цена неизвестна — STOP без платной замены",
+        "Сохранить отчёт о фактической модели и стоимости"
+      ],
+      "proof": "Никаких новых платных сервисов и тихих списаний",
+      "version": "1.0.0",
+      "status": "curated",
+      "sourcePath": "ops/pr-monitor/skills-library.json#cost-guard"
+    },
+    {
+      "id": "performance",
+      "title": "Производительность",
+      "category": "Development",
+      "summary": "Ускорить сайт и уменьшить лишние запросы",
+      "keywords": [
+        "скорост",
+        "performance",
+        "ttfb",
+        "lcp",
+        "cache",
+        "slow",
+        "оптимиз"
+      ],
+      "steps": [
+        "Измерить первичное время и реальный узкий участок",
+        "Сократить тяжёлые зависимости и дублированные запросы",
+        "Сравнить до/после на тех же маршрутах и устройствах"
+      ],
+      "proof": "Улучшение измерено; критические сценарии работают",
+      "version": "1.0.0",
+      "status": "curated",
+      "sourcePath": "ops/pr-monitor/skills-library.json#performance"
+    },
+    {
+      "id": "observability",
+      "title": "Наблюдаемость",
+      "category": "Operations",
+      "summary": "Отображать проверяемые статусы агентов и очереди",
+      "keywords": [
+        "монитор",
+        "статус",
+        "watchdog",
+        "cron",
+        "очеред",
+        "наблюд",
+        "metrics",
+        "лог"
+      ],
+      "steps": [
+        "Разделить диспатч, старт исполнителя, коммит, CI и LIVE",
+        "Использовать проверенный source/run SHA и время наблюдения",
+        "Явно показывать UNKNOWN и устаревшие наблюдения"
+      ],
+      "proof": "Отчёт не подменяет фактическую работу",
+      "version": "1.0.0",
+      "status": "curated",
+      "sourcePath": "ops/pr-monitor/skills-library.json#observability"
+    },
+    {
+      "id": "pr-watchdog",
+      "title": "PR Watcher",
+      "category": "Operations",
+      "summary": "Мониторить назначения PR без дублирующих cron",
+      "keywords": [
+        "каждые",
+        "монитор",
+        "watch",
+        "periodic",
+        "кажд",
+        "провер",
+        "15 мин"
+      ],
+      "steps": [
+        "Привязать задачу к PR, HEAD и разрешённому owner watcher",
+        "Повторно использовать существующий 10-минутный тик и rate guard",
+        "Писать изменения статуса только с проверенными источниками"
+      ],
+      "proof": "Отображены last/next check и источник без лишних cron",
+      "version": "1.0.0",
+      "status": "curated",
+      "sourcePath": "ops/pr-monitor/skills-library.json#pr-watchdog"
+    },
+    {
+      "id": "video-studio",
+      "title": "Video Studio",
+      "category": "Product",
+      "summary": "Проверять сценарий, аудио, монтаж и playable MP4",
+      "keywords": [
+        "видео",
+        "монтаж",
+        "video",
+        "mp4",
+        "голос",
+        "аудио",
+        "ролик",
+        "сценари"
+      ],
+      "steps": [
+        "Проверить текущую вкладку, предварительный сценарий и входы",
+        "Сохранить утверждённый простой мобильный UX",
+        "Воспроизвести итоговый ролик и проверить скачанный MP4"
+      ],
+      "proof": "Файл реально открывается в Safari, не только создан",
+      "version": "1.0.0",
+      "status": "curated",
+      "sourcePath": "ops/pr-monitor/skills-library.json#video-studio"
+    },
+    {
+      "id": "ai-council",
+      "title": "Совет ИИ",
+      "category": "Communication",
+      "summary": "Маршрутизировать запрос, дать быстрый ACK и ответ на русском",
+      "keywords": [
+        "совет",
+        "мудрец",
+        "ai council",
+        "китайск",
+        "перевод",
+        "дискус",
+        "чат"
+      ],
+      "steps": [
+        "Немедленно подтвердить получение сообщения и показать request ID",
+        "Запросить роли совета и дождаться содержательного результата",
+        "Перевести ответ на язык пользователя, сохранив факты"
+      ],
+      "proof": "Русский ответ со статусом; отсутствие результата честно отражено",
+      "version": "1.0.0",
+      "status": "curated",
+      "sourcePath": "ops/pr-monitor/skills-library.json#ai-council"
+    },
+    {
+      "id": "telegram-bot",
+      "title": "Telegram-бот",
+      "category": "Communication",
+      "summary": "Обеспечить ответы и форматирование Telegram",
+      "keywords": [
+        "телеграм",
+        "telegram",
+        "бот",
+        "сообщен",
+        "уведомлен",
+        "ответ"
+      ],
+      "steps": [
+        "Проверить реальное событие сообщения и callback",
+        "Отправить ACK без ложного статуса готовности",
+        "Нормализовать RU/EN/ES и обработать повторные доставки"
+      ],
+      "proof": "Пользователь видит понятный ответ и ошибки",
+      "version": "1.0.0",
+      "status": "curated",
+      "sourcePath": "ops/pr-monitor/skills-library.json#telegram-bot"
+    },
+    {
+      "id": "multilingual",
+      "title": "Локализация",
+      "category": "Product",
+      "summary": "Сохранять паритет RU/EN/ES",
+      "keywords": [
+        "язык",
+        "перевод",
+        "русск",
+        "english",
+        "español",
+        "локал",
+        "language"
+      ],
+      "steps": [
+        "Найти все связанные строки, состояния и ошибки",
+        "Согласовать смысл на русском, английском и испанском",
+        "Протестировать три локали без смешанных текстов"
+      ],
+      "proof": "Нет пропущенных локалей и неуместных языковых переключений",
+      "version": "1.0.0",
+      "status": "curated",
+      "sourcePath": "ops/pr-monitor/skills-library.json#multilingual"
+    },
+    {
+      "id": "content-seo",
+      "title": "Контент и SEO",
+      "category": "Marketing",
+      "summary": "Изменять контент без нарушения индексации",
+      "keywords": [
+        "seo",
+        "текст",
+        "стат",
+        "контент",
+        "поиск",
+        "сайт",
+        "search",
+        "маркет"
+      ],
+      "steps": [
+        "Сверить страницы, canonical, hreflang и доказанный поисковый спрос",
+        "Подготовить ясный контент и нужные языковые версии",
+        "Не заявлять рост трафика без Search Console/GA4 данных"
+      ],
+      "proof": "Изменения прослеживаемы, без ложных маркетинговых KPI",
+      "version": "1.0.0",
+      "status": "curated",
+      "sourcePath": "ops/pr-monitor/skills-library.json#content-seo"
+    },
+    {
+      "id": "case-memory",
+      "title": "Память исправлений",
+      "category": "Operations",
+      "summary": "Извлекать правила из проверенных прошлых случаев",
+      "keywords": [
+        "памят",
+        "истори",
+        "learning",
+        "case",
+        "повтор",
+        "почин",
+        "исправ"
+      ],
+      "steps": [
+        "Принимать только заверенные случаи с source SHA и проверенным происхождением",
+        "Отделять published, CI, merge и LIVE доказательства",
+        "Предлагать найденный рецепт лишь на ручную проверку"
+      ],
+      "proof": "Нет автоматического повторения неподтверждённых патчей",
+      "version": "1.0.0",
+      "status": "curated",
+      "sourcePath": "ops/pr-monitor/skills-library.json#case-memory"
+    },
+    {
+      "id": "skills-curator",
+      "title": "Куратор навыков",
+      "category": "Core",
+      "summary": "Улучшать инструкции по проверенным результатам",
+      "keywords": [
+        "скилл",
+        "навык",
+        "skill",
+        "каталог",
+        "библиотек",
+        "hermes",
+        "учени"
+      ],
+      "steps": [
+        "Найти повторяющийся доказанный успешный процесс",
+        "Подготовить версионированный candidate SKILL.md и тесты",
+        "Активация только после владельца и отдельного reviewed PR"
+      ],
+      "proof": "Старые и небезопасные версии не активируются автоматически",
+      "version": "1.0.0",
+      "status": "curated",
+      "sourcePath": "ops/pr-monitor/skills-library.json#skills-curator"
+    },
+    {
+      "id": "lint-autofix",
+      "title": "ESLint Autofix",
+      "category": "Repair",
+      "summary": "Детерминированное исправление lint под контролем Worker",
+      "keywords": [
+        "eslint",
+        "lint",
+        "стиль",
+        "source red"
+      ],
+      "steps": [
+        "Проверить точный HEAD и signed worker lease",
+        "Использовать только scoped ESLint autofix",
+        "Запустить тесты, TS и независимую проверку"
+      ],
+      "proof": "Только review_only, источник docs/agent-skills/lint-autofix/SKILL.md",
+      "version": "1.0.0",
+      "status": "review_only",
+      "sourcePath": "docs/agent-skills/lint-autofix/SKILL.md"
+    },
+    {
+      "id": "typescript-deterministic",
+      "title": "TypeScript Deterministic",
+      "category": "Repair",
+      "summary": "Безопасная правка TypeScript imports",
+      "keywords": [
+        "typescript",
+        "ts",
+        "тип",
+        "импорт",
+        "type-only"
+      ],
+      "steps": [
+        "Воспроизвести ошибку TS на точном HEAD",
+        "Применить только разрешённый import codemod",
+        "Сравнить диагностики до/после и выполнить тесты"
+      ],
+      "proof": "Только review_only, источник docs/agent-skills/typescript-deterministic/SKILL.md",
+      "version": "1.0.0",
+      "status": "review_only",
+      "sourcePath": "docs/agent-skills/typescript-deterministic/SKILL.md"
+    },
+    {
+      "id": "bounded-free-ai",
+      "title": "Bounded Free AI",
+      "category": "Repair",
+      "summary": "Изолированное предложение патча бесплатной моделью",
+      "keywords": [
+        "free ai",
+        "openrouter",
+        "модель",
+        "patch",
+        "llm"
+      ],
+      "steps": [
+        "Проверить :free стоимость и допустимый scope",
+        "Предложение модели не получает tool/GitHub права",
+        "Независимо проверить patch перед отдельной публикацией"
+      ],
+      "proof": "Только review_only, источник docs/agent-skills/bounded-free-ai/SKILL.md",
+      "version": "1.0.0",
+      "status": "review_only",
+      "sourcePath": "docs/agent-skills/bounded-free-ai/SKILL.md"
+    }
+  ]
+}

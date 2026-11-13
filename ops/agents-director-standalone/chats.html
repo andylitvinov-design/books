@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="ru"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow,noarchive"><meta name="color-scheme" content="dark">
+<title>Рабочие чаты · Agent Commander · Holistic House</title>
+<link rel="stylesheet" href="/commander-shell.css?v=20261107-cc-v1">
+<link rel="stylesheet" href="/commander-chats.css?v=20261110-rich-markdown-v1">
+<link rel="stylesheet" href="/commander-codex.css?v=20261108-v2">
+<link rel="stylesheet" href="/owner-google-signin.css?v=20261107-v1">
+<script src="/project-management-nav.js?v=20261107-cc-v1" defer></script>
+<script src="/owner-google-signin.js?v=20261107-v1" defer></script>
+<script src="/commander-chats.js?v=20261112-free-models-quota-rich-v1" defer></script>
+<script src="/commander-codex.js?v=20261108-v2" defer></script>
+</head><body class="hh-cc-shell">
+<main id="cc-chat-root" class="cc-chats-page">
+<header class="cc-chats-hero">
+  <a class="cc-back" href="/agents.html" aria-label="К агентам">‹</a>
+  <div class="cc-chat-page-name"><h1>Чаты</h1><p>Ваши диалоги с ИИ</p></div>
+  <button id="cc-new-toggle" type="button" class="cc-new-chat-button" aria-label="Начать новый чат">＋ <span>Новый</span></button>
+</header>
+<p class="cc-alert" id="cc-alert" role="status" aria-live="polite">Проверяю доступ владельца…</p>
+<section id="cc-login" class="cc-surface" hidden aria-label="Авторизация владельца">
+<h2>Вход через Google</h2>
+<p class="cc-help">Подтверждённая сессия владельца открывает чаты сразу. Если сессия закончилась, продолжите через Google.</p>
+<div id="cc-google-owner" class="hh-sso-slot"></div>
+<details class="hh-sso-backup"><summary>Резервный вход по коду</summary>
+<form id="cc-login-form"><label>Код владельца<input id="cc-password" type="password" autocomplete="current-password" required maxlength="256"></label>
+<button type="submit" class="cc-primary">Войти</button></form></details></section>
+<section id="cc-vault" class="cc-surface" hidden aria-label="Локальное защищённое хранилище">
+<h2>Открытие старой истории</h2>
+<p class="cc-help">Обнаружена история со старым паролем. Введите его один раз, чтобы перенести чаты в защищённое хранилище этого устройства. Для новых чатов повторный пароль не потребуется.</p>
+<form id="cc-vault-form"><label>Пароль локальной истории (не код PR Monitor)
+<input id="cc-vault-password" type="password" autocomplete="new-password" minlength="10" maxlength="200" required></label>
+<button class="cc-primary" type="submit">Открыть / создать хранилище</button></form>
+<p class="cc-help">Для переноса между устройствами используйте зашифрованную резервную копию. Не вводите сюда пароли API и данные клиентов.</p></section>
+
+<div id="cc-board" hidden>
+<div class="cc-hidden-stats" hidden aria-hidden="true">
+  <span id="cc-count">0</span><span id="cc-active-count">0</span><span id="cc-blocked-count">0</span>
+</div>
+<section id="cc-ci-inbox" class="cc-reports cc-ci-inbox" aria-label="CI Inbox" hidden>
+  <div class="cc-heading"><h2>CI Inbox <small id="cc-ci-meta">Ошибки PR и Repair</small></h2><button type="button" id="cc-ci-refresh" aria-label="Обновить события CI">⟳</button></div>
+  <p class="cc-help">Подтверждённые события GitHub Actions. Неоднозначные события остаются здесь и не прикрепляются к случайному чату.</p>
+  <div id="cc-ci-list"></div>
+</section>
+<section id="cc-history" class="cc-history" aria-label="Последние чаты">
+  <div class="cc-history-toolbar">
+    <h2>Недавние чаты <small id="cc-list-meta"></small></h2>
+    <button type="button" id="cc-refresh" aria-label="Обновить список чатов" title="Обновить">⟳</button>
+  </div>
+  <div id="cc-chat-list" class="cc-chat-list"></div>
+  <details id="cc-history-all" class="cc-history-all">
+    <summary>Все чаты и поиск</summary>
+    <div class="cc-filter-line">
+      <label>Поиск<input type="search" id="cc-search" placeholder="Поиск по теме или PR"></label>
+      <label>Статус<select id="cc-filter"><option value="all">Все</option><option value="planned">Запланировано</option><option value="assigned">Назначено</option><option value="working">В работе</option><option value="review">Проверка</option><option value="blocked">Блокировано</option><option value="archived">Архив</option></select></label>
+    </div>
+  </details>
+  <details class="cc-backup-tools"><summary>Хранилище и резервная копия</summary>
+    <p id="cc-storage-label" class="cc-help"></p>
+    <button id="cc-export" type="button" hidden>Сохранить зашифрованную копию</button>
+    <label id="cc-import-label" class="cc-file-button" hidden>Восстановить копию<input id="cc-import" type="file" accept="application/json,.json" hidden></label>
+  </details>
+</section>
+<section id="cc-thread" class="cc-thread-surface" hidden aria-label="Переписка">
+  <div class="cc-thread-top">
+    <div><h2 id="cc-thread-title">Рабочий чат</h2>
+    <p id="cc-thread-updated" class="cc-thread-stamp"></p></div>
+    <button type="button" id="cc-close-thread" aria-label="Вернуться к новому вопросу">Закрыть ×</button>
+  </div>
+  <div id="cc-messages" class="cc-messages" role="log" aria-live="polite"></div>
+  <div id="cc-run-status" class="cc-run-status" role="status" aria-live="polite" hidden>
+    <span class="cc-run-dot" aria-hidden="true"></span>
+    <div class="cc-run-text"><strong id="cc-run-status-label"></strong><span id="cc-run-status-detail"></span></div>
+    <button id="cc-retry-run" type="button" hidden>Повторить</button>
+  </div>
+  <details id="cc-thread-advanced" class="cc-advanced">
+  <summary>Контекст и проверки</summary>
+  <p id="cc-executor-state" class="cc-help" role="status">Назначение не означает запуск исполнителя.</p>
+  <button type="button" id="cc-verify-chat">Проверить сохранение вопроса и ответа</button>
+  <p id="cc-verify-status" class="cc-help" role="status" aria-live="polite"></p>
+<details id="cc-thread-details"><summary>Команда, задачи, статус и PR</summary>
+<form id="cc-metadata-form">
+<label>Название<input id="cc-title" maxlength="110" required></label>
+<label>Проект<select id="cc-project"><option value="commander">Agent Commander</option><option value="video">Video Studio</option><option value="holistic">Holistic House</option><option value="other">Другой</option></select></label>
+<label>Этап выполнения<select id="cc-status">
+<option value="planned">Запланировано</option><option value="assigned">Назначено (не запущено)</option>
+<option value="working">В работе (со слов исполнителя)</option><option value="review">Требует проверки</option>
+<option value="blocked">Блокировано</option><option value="archived">Архив, не обязательно выполнено</option></select></label>
+<label>Задачи<input id="cc-tasks" placeholder="ci-head:A01, ai-commits:B02"></label>
+<label>PR<input id="cc-prs" placeholder="3886, 3889"></label>
+<fieldset id="cc-executors"><legend>Исполнители (назначение ≠ запуск)</legend></fieldset>
+<label>Цель<textarea id="cc-description" rows="2" maxlength="1000"></textarea></label>
+<button type="submit" class="cc-primary">Сохранить настройки</button></form></details>
+
+<div class="cc-evidence"><div class="cc-heading"><h3>Проверяемые результаты</h3><button type="button" id="cc-check-prs">Проверить PR</button></div>
+<p class="cc-help">Отдельно проверяются открытие PR, merge и функциональный LIVE. Отчёт агента сам по себе ничего не подтверждает.</p>
+<div id="cc-pr-proof"></div></div>
+
+<div class="cc-reports"><div class="cc-heading"><h3>CI / Repair · отчёты по этим PR</h3><button type="button" id="cc-load-reports">Обновить</button></div>
+<p class="cc-help">Свежие подписанные отчёты автоматически появляются при открытии чата и обновляются раз в 2 минуты, пока чат открыт. Они не заменяют проверку HEAD, CI, merge и LIVE.</p>
+<div id="cc-report-list"></div></div>
+
+  <button type="button" id="cc-handoff">Скопировать задание для исполнителя</button>
+  <p class="cc-help">Ответ AI — консультация. Коммит, Merge и LIVE подтверждаются только отдельной проверкой.</p>
+</details>
+
+  <details class="cc-chat-extra" id="cc-chat-extra"><summary>Ещё действия</summary>
+    <button type="button" id="cc-note">Сохранить текст поля как заметку</button>
+  </details>
+</section>
+<div id="cc-composer-space" class="cc-composer-space" aria-label="Панель ввода чата">
+  <section id="cc-create" class="cc-composer-panel" aria-label="Новый чат">
+    <form id="cc-create-form" novalidate>
+      <label class="cc-visually-hidden" for="cc-new-question">Введите вопрос</label>
+      <textarea id="cc-new-question" rows="3" minlength="2" maxlength="1200" required autocomplete="off" placeholder="Спросите что угодно…"></textarea>
+      <div class="cc-composer-actions">
+        <button type="button" id="cc-context-toggle" class="cc-composer-tool" title="Контекст задачи" aria-label="Контекст задачи (необязательно)" aria-haspopup="dialog" aria-controls="cc-new-context">＋</button>
+        <label class="cc-mode-pick" for="cc-new-mode"><span class="cc-visually-hidden">Исполнитель</span>
+          <select id="cc-new-mode" aria-label="Выберите исполнителя"><optgroup label="Советники">
+  <option value="local">Локальный советник</option>
+  <option value="director" disabled>Agents Director · OpenRouter Free (анализ)</option>
+  <option value="openrouter" disabled>OpenRouter Free</option>
+  <option value="council-free">Совет ИИ · ответ в чате</option>
+</optgroup>
+<optgroup label="Исполнители (при подключении)">
+  <option value="codex">Codex</option>
+  <option value="chatgpt-work">ChatGPT Work</option>
+  <option value="repair-worker">GitHub Repair Worker</option>
+  <option value="hermes" disabled>Hermes Cloud · отключён (только собственный Agents Director)</option>
+  <option value="manual">Ручной исполнитель</option>
+</optgroup></select>
+        </label>
+        <span class="cc-composer-spacer"></span>
+        <button type="button" id="cc-voice-new" class="cc-voice-toggle" aria-pressed="false" aria-label="Диктовать сообщение" title="Голосовой ввод">
+<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="13" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3m-4 0h8"/></svg></button>
+        <button class="cc-send-primary" type="submit" id="cc-create-send" aria-label="Отправить вопрос"><span aria-hidden="true">↑</span></button>
+      </div>
+      <label id="cc-new-model-label" hidden>Бесплатная модель для Hermes<select id="cc-new-model" aria-label="Бесплатная модель Hermes"></select></label>
+      <label id="cc-new-github-write-wrap" class="cc-github-write-wrap" hidden><input type="checkbox" id="cc-new-github-write">Разрешить коммит и Draft PR в GitHub (без merge и деплоя)</label>
+      <p id="cc-create-feedback" class="cc-chat-feedback cc-create-feedback" role="alert" aria-live="assertive" tabindex="-1" hidden></p>
+      <dialog id="cc-new-context" class="cc-context-dialog" aria-labelledby="cc-context-title">
+    <div class="cc-dialog-head">
+      <h3 id="cc-context-title">Контекст задачи</h3>
+      <button type="button" id="cc-context-close" aria-label="Закрыть настройки">Готово ✓</button>
+    </div>
+    <p class="cc-help">Эти поля нужны только для работы с проектом или PR. Для обычного вопроса оставьте их пустыми.</p>
+    <p id="cc-free-model-status" class="cc-help" role="status" hidden>OpenRouter Free сейчас недоступен. Подключение проверенных бесплатных моделей: настройте <code>HH_PM_OPENROUTER_API_KEY</code> в переменных production вашего <a href="https://vercel.com/super10/holistic-house-pr-monitor/settings/environment-variables" target="_blank" rel="noopener noreferrer">проекта PR Monitor в Vercel</a>. Ключ не отправляйте в чат. Платные модели заблокированы на сервере.</p>
+    <label>Название чата<input id="cc-new-title" maxlength="110" autocomplete="off" placeholder="Автоматически из вопроса"></label>
+    <label>Проект<select id="cc-new-project"><option value="commander">Agent Commander / PR Monitor</option><option value="video">Video Studio</option><option value="holistic">Holistic House</option><option value="other">Другой</option></select></label>
+    <label>Задачи (необязательно)<input id="cc-new-tasks" autocomplete="off" placeholder="ci-head:A01, ai-commits:B02"></label>
+    <label>Номера PR (необязательно)<input id="cc-new-prs" inputmode="text" autocomplete="off" placeholder="3886, 3889"></label>
+    <label>Цель (необязательно)<textarea id="cc-new-description" rows="2" maxlength="1000" placeholder="Какого результата нужно достичь?"></textarea></label>
+    <label>Критерии приёмки (необязательно)<textarea id="cc-new-acceptance" rows="3" maxlength="2500" placeholder="По одному критерию на строку, максимум 5"></textarea></label>
+    <label>Skill IDs (необязательно)<input id="cc-new-skill-ids" maxlength="1200" placeholder="github.read, tests.run"></label>
+    <p class="cc-help">Критерии и навыки передаются исполнителю как контекст. Skill IDs сами по себе не выдают доступ к инструментам.</p>
+  </dialog>
+    </form>
+  </section>
+  <form id="cc-chat-form" class="cc-composer-panel cc-thread-composer" hidden>
+    <label class="cc-visually-hidden" for="cc-message">Ваше сообщение</label>
+    <textarea id="cc-message" rows="3" minlength="2" maxlength="1800" autocomplete="off" placeholder="Сообщение…"></textarea>
+    <div class="cc-composer-actions">
+      <button type="button" id="cc-thread-context-toggle" class="cc-composer-tool" title="Настройки чата" aria-label="Настройки чата">＋</button>
+      <label class="cc-mode-pick" for="cc-mode"><span class="cc-visually-hidden">Исполнитель</span>
+        <select id="cc-mode" aria-label="Выберите исполнителя"><optgroup label="Советники">
+  <option value="local">Локальный советник</option>
+  <option value="director" disabled>Agents Director · OpenRouter Free (анализ)</option>
+  <option value="openrouter" disabled>OpenRouter Free</option>
+  <option value="council-free">Совет ИИ · ответ в чате</option>
+</optgroup>
+<optgroup label="Исполнители (при подключении)">
+  <option value="codex">Codex</option>
+  <option value="chatgpt-work">ChatGPT Work</option>
+  <option value="repair-worker">GitHub Repair Worker</option>
+  <option value="hermes" disabled>Hermes Cloud · отключён (только собственный Agents Director)</option>
+  <option value="manual">Ручной исполнитель</option>
+</optgroup></select>
+      </label>
+      <span class="cc-composer-spacer"></span>
+      <button type="button" id="cc-voice-thread" class="cc-voice-toggle" aria-pressed="false" aria-label="Диктовать сообщение" title="Голосовой ввод">
+<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="13" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3m-4 0h8"/></svg></button>
+      <button type="submit" class="cc-send-primary" id="cc-send" aria-label="Отправить сообщение"><span aria-hidden="true">↑</span></button>
+    </div>
+    <label id="cc-model-label" hidden>Бесплатная модель<select id="cc-model"></select></label>
+  </form>
+    <label id="cc-github-write-wrap" class="cc-github-write-wrap" hidden><input type="checkbox" id="cc-github-write">Разрешить коммит и Draft PR в GitHub (без merge и деплоя)</label>
+  <p id="cc-voice-status" class="cc-voice-status" role="status" aria-live="polite" hidden></p>
+  <p id="cc-chat-feedback" class="cc-chat-feedback" role="status" aria-live="polite" hidden></p>
+</div>
+</div>
+</main></body></html>

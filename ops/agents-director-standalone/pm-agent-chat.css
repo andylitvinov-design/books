@@ -1,0 +1,34 @@
+/* HH PM owner-only agent chat. Static page CSP, no third-party scripts. */
+.pm-agent-chat{margin:16px 0;padding:15px;background:#12283b;border:1px solid #38647b;border-radius:18px;box-shadow:0 8px 24px #03132188}
+.pm-agent-chat-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.pm-agent-chat-heading h2{font-size:19px;margin:0;color:#f0faff}
+.pm-agent-chat-heading small{color:#9fded0;font-size:11px}
+.pm-chat-hint{color:#a9bed2;font-size:12px;line-height:1.5;margin:9px 0}
+.pm-chat-login{border:1px solid #56778c;border-radius:13px;background:#182f43;padding:13px;display:flex;align-items:end;flex-wrap:wrap;gap:9px}
+.pm-chat-login label{display:flex;flex:1 1 170px;flex-direction:column;gap:6px;font-size:12px;color:#d9edf4}
+.pm-chat-password,.pm-chat-mode,.pm-chat-model{width:100%;min-width:0;min-height:44px;padding:10px;border:1px solid #57788d;border-radius:11px;background:#0a2030;color:#effaff;font:inherit;font-size:13px}
+.pm-chat-main{margin-top:13px}
+.pm-chat-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:4px 0 13px}
+.pm-chat-tabs button{background:#253d50;color:#e3efff;border:1px solid #4c7187;font-size:12px}
+.pm-chat-tabs button[aria-selected="true"]{background:#357565;color:#eefff8;border-color:#71baac}
+.pm-chat-field{display:block;font-size:12px;font-weight:700;color:#d3e7f3;margin:10px 0 5px}
+.pm-chat-field select{display:block;margin-top:5px}
+.pm-chat-history{max-height:340px;min-height:115px;overflow-y:auto;overscroll-behavior:contain;background:#0a1b2b;border-radius:12px;padding:9px;border:1px solid #304d63}
+.pm-chat-line{border:1px solid #365063;background:#192c3e;border-radius:12px;padding:9px 12px;margin:8px 0;overflow-wrap:anywhere}
+.pm-chat-user{background:#173c42;margin-left:10px;border-color:#326f6b}
+.pm-chat-who{font-size:11px;font-weight:760;color:#98e7d1}
+.pm-chat-text{white-space:pre-wrap;font-size:13px;color:#e0ebf3;line-height:1.55;margin:6px 0}
+.pm-chat-meta{font-size:10px;color:#a0bdce}
+.pm-chat-input-form{display:grid;grid-template-columns:1fr;gap:8px;margin-top:11px}
+.pm-chat-editor{resize:vertical;min-height:75px;max-height:220px;width:100%;padding:11px;border-radius:11px;background:#0b2233;border:1px solid #52788c;color:#eff8ff;font:inherit;font-size:13px;line-height:1.45}
+.pm-chat-input-form button{justify-self:end}
+.pm-chat-notice{font-size:12px;color:#b5ebdb;line-height:1.5;min-height:20px;margin:12px 0 0}
+.pm-chat-report-card{background:#142c3d;border:1px solid #315771;border-radius:12px;padding:12px;margin:10px 0}
+.pm-chat-report-head{font-size:12px;color:#a1e0d2;font-weight:750;line-height:1.45}
+.pm-chat-report-text{font-size:12px;color:#d0e2eb;line-height:1.5;white-space:pre-wrap;max-height:200px;overflow-y:auto;overflow-wrap:anywhere}
+.pm-chat-report-link{font-size:12px;color:#a3e5fe;text-decoration:underline;display:inline-flex;min-height:44px;align-items:center;margin-right:12px}
+.pm-chat-report-card .pm-btn{font-size:12px}
+.pm-chat-error{color:#ffb8b8;font-size:12px}
+.pm-chat-reports[hidden],.pm-chat-dialog[hidden],.pm-chat-login[hidden],.pm-chat-main[hidden]{display:none!important}
+.pm-chat-editor:focus-visible,.pm-chat-mode:focus-visible,.pm-chat-model:focus-visible,.pm-chat-password:focus-visible{outline:3px solid #8af6dd;outline-offset:2px}
+@media(max-width:480px){.pm-agent-chat{padding:12px;margin:11px 0}.pm-agent-chat-heading h2{font-size:16px}.pm-chat-login button{width:100%}.pm-chat-tabs{gap:6px}.pm-chat-tabs button{padding:8px;font-size:11px}.pm-chat-input-form button{justify-self:stretch}}

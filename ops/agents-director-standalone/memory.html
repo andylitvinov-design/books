@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ru"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="dark"><meta name="robots" content="noindex,nofollow,noarchive">
+<title>Память проектов · Agent Commander</title>
+<link rel="stylesheet" href="/commander-shell.css?v=20261107-cc-v1">
+<link rel="stylesheet" href="/commander-memory.css?v=20261107-brain-v1">
+<script src="/project-management-nav.js?v=20261107-brain-v1" defer></script>
+<script src="/commander-memory.js?v=20261107-brain-v1" defer></script>
+<script src="/commander-memory-page.js?v=20261107-brain-v1" defer></script>
+</head><body><main class="hh-cc-page-main hh-cc-memory-main" aria-label="Память проектов">
+<section class="hh-cc-hero"><p class="hh-cc-eyebrow">✦ AGENT COMMANDER · AI PROJECTS BRAIN</p>
+<h1>Память проектов</h1>
+<p>Одна база знаний для агентов: паспорта, текущее состояние, решения и проверки. Публичное чтение из GitHub; без копирования второй базы.</p></section>
+<section class="hh-cc-panel hh-memory-card" aria-label="Выбор проекта">
+<label for="hh-memory-search">Найти проект по названию, синониму или репозиторию</label>
+<input id="hh-memory-search" type="search" autocomplete="off" placeholder="Например, Agent Commander или Reiki">
+<p id="hh-memory-status" role="status" aria-live="polite">Подключаю AI Projects Brain…</p>
+<div id="hh-memory-projects" class="hh-memory-list" aria-label="Папки проектов"></div>
+</section>
+<section id="hh-memory-detail" class="hh-cc-panel hh-memory-card" hidden aria-label="Память выбранного проекта">
+<h2 id="hh-memory-title">Паспорт проекта</h2><p id="hh-memory-meta"></p>
+<div id="hh-memory-docs" class="hh-memory-docs"></div>
+<label for="hh-memory-bundle">Контекст для агента — с проверяемыми ссылками</label>
+<textarea id="hh-memory-bundle" rows="7" readonly aria-label="Контекст из памяти проекта"></textarea>
+<div class="hh-memory-actions">
+<button id="hh-memory-copy" type="button">Копировать контекст</button>
+<button id="hh-memory-task" type="button">+ Поставить задачу с памятью</button>
+</div>
+<p id="hh-memory-feedback" role="status" aria-live="polite"></p>
+</section>
+<p class="hh-cc-muted hh-memory-footnote">Источник: <a href="https://github.com/andylitvinov-design/ai-projects-brain/tree/main/projects" target="_blank" rel="noopener noreferrer">AI Projects Brain / projects</a>. Файлы могут устаревать. Фактический LIVE и PR проверяются отдельно; секреты и данные клиентов сюда не записываются.</p>
+</main></body></html>

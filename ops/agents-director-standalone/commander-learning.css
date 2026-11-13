@@ -1,0 +1,27 @@
+.hh-learning-back{display:inline-block;margin-top:8px;color:#d8c7ff;font-weight:600;text-decoration:none}
+#hh-learning{display:grid;gap:12px;padding-bottom:90px}
+.hh-learning-pane{border:1px solid rgba(195,186,228,.21);background:rgba(33,30,66,.78);border-radius:16px;padding:14px;min-width:0}
+.hh-learning-pane h2{font-size:1.08rem;margin:0 0 12px;color:#fff}
+.hh-learning-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.hh-learning-metric{background:rgba(112,91,177,.22);border-radius:12px;padding:12px 8px;min-width:0}
+.hh-learning-metric strong{display:block;font-size:1.45rem;color:#fff}
+.hh-learning-metric span{display:block;color:#d7d0e9;font-size:.79rem;line-height:1.35}
+.hh-learning-note{color:#d5cfe3;line-height:1.5;font-size:.9rem;margin:10px 0 0}
+.hh-learning-status{color:#efeaff;line-height:1.4;font-size:.94rem}
+.hh-learning-refresh{border:1px solid rgba(200,177,255,.42);border-radius:999px;padding:10px 15px;background:#6f4bbb;color:#fff;cursor:pointer;font:inherit;font-weight:700}
+.hh-learning-refresh:disabled{opacity:.6}
+.hh-learning-case{border:1px solid rgba(207,188,255,.14);border-radius:12px;padding:12px;margin:9px 0;background:rgba(8,12,38,.22)}
+.hh-learning-case h3{font-size:.98rem;margin:0 0 9px;color:#fff;overflow-wrap:anywhere}
+.hh-learning-case p{font-size:.92rem;line-height:1.5;color:#e6dff4}
+.hh-learning-proofs{display:flex;gap:6px;flex-wrap:wrap}
+.hh-learning-fact{font-size:.71rem;border-radius:30px;padding:5px 8px;background:#38364d;color:#ede9f5}
+.hh-learning-fact.verified{background:#174e42;color:#b9f6d5}
+.hh-learning-links{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px}
+.hh-learning-links a{color:#d1b6ff;font-size:.9rem;text-decoration:underline}
+@media(min-width:760px){#hh-learning{max-width:880px}.hh-learning-pane{padding:20px}.hh-learning-metrics{gap:14px}}
+@media(max-width:345px){.hh-learning-pane{padding:11px}.hh-learning-metric{padding:10px 5px}.hh-learning-metric span{font-size:.7rem}}
+
+/* Secondary link on the original monitor; never changes its five-tab navigation. */
+.hh-learning-monitor-entry{margin:8px 0 14px;padding:0 1px;font-size:.87rem;line-height:1.4}
+.hh-learning-monitor-entry a{display:inline-flex;align-items:center;min-height:36px;padding:7px 13px;border:1px solid rgba(170,150,232,.42);border-radius:999px;background:rgba(93,71,146,.16);color:#decfff;text-decoration:none;font-weight:650}
+.hh-learning-monitor-entry a:focus-visible{outline:2px solid #eee0ff;outline-offset:3px}

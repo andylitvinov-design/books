@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="ru"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow,noarchive"><meta name="color-scheme" content="dark">
+<title>Защищённый редактор · Agent Commander · PR Monitor</title>
+<link rel="stylesheet" href="/commander-shell.css">
+<link rel="stylesheet" href="/commander-shell.css?v=20261107-cc-v1">
+<link rel="stylesheet" href="/task-editor.css?v=20261107-1">
+<link rel="stylesheet" href="/commander-codex.css?v=20261108-v2">
+<link rel="stylesheet" href="/owner-google-signin.css?v=20261107-v1">
+<script src="/project-management-nav.js?v=20261107-cc-v1" defer></script>
+<script src="/owner-google-signin.js?v=20261107-v1" defer></script>
+<script src="/task-editor.js?v=20261107-sso-v1" defer></script>
+<script src="/commander-source-bridge.js?v=20261107-v1" defer></script>
+<script src="/commander-codex.js?v=20261108-v2" defer></script>
+</head><body class="hh-cc-shell">
+<main class="ac-editor" id="ac-editor">
+  <header class="ac-heading">
+    <a href="/" class="ac-back" aria-label="На главную PR Monitor">‹</a>
+    <div><p class="ac-eyebrow">AGENT COMMANDER · PR MONITOR</p><h1>Защищённый редактор</h1><p class="ac-subtle">Проверьте задачу, найдите прежний PR и только затем передавайте исполнителю.</p></div>
+    <span class="ac-shield" aria-label="Доступ владельца">🛡</span>
+  </header>
+  <section class="ac-card" id="ac-login" aria-label="Авторизация владельца">
+    <h2>Доступ владельца</h2>
+    <p class="ac-subtle">Повторный код не нужен при действующей сессии владельца. В остальных случаях продолжите через Google.</p>
+    <div id="ac-google-owner" class="hh-sso-slot"></div>
+    <details class="hh-sso-backup"><summary>Резервный вход по коду</summary>
+    <form id="ac-login-form" autocomplete="on">
+      <label for="ac-owner-password">Код владельца</label>
+      <input type="password" id="ac-owner-password" autocomplete="current-password" required>
+      <button type="submit" class="ac-primary">Открыть редактор</button>
+    </form></details>
+    <p role="status" id="ac-login-status" class="ac-note">Проверяю текущую сессию…</p>
+  </section>
+  <div id="ac-workspace" hidden>
+    <div class="ac-statusline"><span id="ac-state">Черновик · не сохранён</span><span id="ac-auth-tag">🔒 Владелец</span></div>
+    <section class="ac-card">
+      <div class="ac-card-title"><h2>1. Карточка задачи</h2><span class="ac-counter">Задача</span></div>
+      <label for="ac-title">Название</label><input id="ac-title" maxlength="140" placeholder="Например, классифицировать открытые PR">
+      <div class="ac-two">
+        <label>Проект<select id="ac-project"><option value="commander">Agent Commander / PR Monitor</option><option value="holistic">Holistic House</option><option value="video">Video Studio</option><option value="other">Другой проект</option></select></label>
+        <label>Приоритет<select id="ac-priority"><option value="normal">Обычный</option><option value="high">Высокий</option><option value="urgent">Срочный</option></select></label>
+      </div>
+      <label for="ac-area">Направление</label><input id="ac-area" maxlength="100" placeholder="PR / CI / Design / Video…">
+    </section>
+    <section class="ac-card">
+      <div class="ac-card-title"><h2>2. Исходный запрос</h2><span class="ac-counter">Дословно</span></div>
+      <textarea id="ac-source" rows="4" maxlength="2500" placeholder="Опишите, что нужно выполнить."></textarea>
+      <p class="ac-hint">Оригинал сохраняется отдельным полем. Если меняете его, обновите промпт перед передачей.</p>
+    </section>
+    <section class="ac-card">
+      <div class="ac-card-title"><h2>3. Понимание задачи</h2><button type="button" id="ac-understand" class="ac-textbtn">Переосмыслить</button></div>
+      <textarea id="ac-summary" rows="3" maxlength="1400" aria-label="Краткая цель задачи"></textarea>
+    </section>
+    <section class="ac-card">
+      <div class="ac-card-title"><h2>4. Поиск существующих PR</h2><button type="button" id="ac-pr-search" class="ac-textbtn">Проверить GitHub</button></div>
+      <p class="ac-hint">Совпадения — кандидаты для проверки, не доказанные дубли. Показаны реальные открытые PR.</p>
+      <label for="ac-pr-filter">Найти PR по названию или номеру</label>
+      <input id="ac-pr-filter" type="search" placeholder="Фильтр списка, например #3874">
+      <p class="ac-note" id="ac-pr-status" role="status">Поиск ещё не выполнен.</p>
+      <div id="ac-pr-results" class="ac-pr-list"></div>
+      <p class="ac-hint" id="ac-pr-linked">Связанных PR пока нет.</p>
+    </section>
+    <section class="ac-card">
+      <div class="ac-card-title"><h2>5. План и подзадачи</h2><button type="button" id="ac-build-plan" class="ac-textbtn">Сформировать план</button></div>
+      <textarea id="ac-plan" rows="5" maxlength="4500" placeholder="Проверить текущий код, найти прошлый PR, исправить, провести тесты…"></textarea>
+    </section>
+    <section class="ac-card">
+      <div class="ac-card-title"><h2>6. Готовый промпт</h2><button type="button" id="ac-improve" class="ac-textbtn">Улучшить ИИ</button></div>
+      <textarea id="ac-prompt" rows="12" maxlength="15000" placeholder="Полный текст задания исполнителю, с критериями приёмки и ограничениями."></textarea>
+      <div class="ac-inline"><button type="button" id="ac-copy" class="ac-secondary">Копировать</button><button type="button" id="ac-regenerate" class="ac-secondary">Обновить из запроса</button></div>
+      <p class="ac-hint" id="ac-prompt-note" role="status">ИИ не заменяет ваши правки автоматически.</p>
+    </section>
+    <section class="ac-card">
+      <div class="ac-card-title"><h2>7. Проверка качества</h2><button type="button" id="ac-quality-run" class="ac-textbtn">Проверить</button></div>
+      <div id="ac-quality" aria-live="polite" class="ac-checks"></div>
+    </section>
+    <section class="ac-card">
+      <h2>8. Исполнитель и режим</h2>
+      <label for="ac-executor">Ответственный исполнитель</label>
+      <select id="ac-executor"><option value="agent-commander">Agent Commander · рекомендован</option><option value="repair-worker">PR Repair Worker</option><option value="review">Аналитик / только проверка</option></select>
+      <label for="ac-mode">Что разрешено</label>
+      <select id="ac-mode"><option value="analysis">Только анализ</option><option value="repair">Доработать существующий PR</option><option value="full">Полный цикл, с защищёнными подтверждениями</option></select>
+    </section>
+    <section class="ac-card">
+      <h2>9. Ограничения</h2>
+      <label class="ac-checkrow"><input id="ac-no-cost" type="checkbox" checked> Не подключать новые платные сервисы</label>
+      <label class="ac-checkrow"><input id="ac-no-duplicate" type="checkbox" checked> Сначала искать существующий PR и проверять lease</label>
+      <label class="ac-checkrow"><input id="ac-verify-live" type="checkbox" checked> Не считать Merge и Vercel READY доказательством LIVE</label>
+    </section>
+    <section class="ac-card ac-actions">
+      <h2>10. Сохранение и передача</h2>
+      <p id="ac-remote-status" class="ac-note" role="status">Проверяю подключение защищённого хранилища…</p>
+      <button type="button" id="ac-save-remote" class="ac-primary">Сохранить задачу владельца</button>
+      <button type="button" id="ac-open-task-chat" class="ac-secondary" disabled>Открыть чат этой задачи</button>
+      <button type="button" id="ac-queue" class="ac-primary ac-send">Передать Agent Commander</button>
+      <p class="ac-hint">Передача в очередь не равна запуску агента. Код, PR, CI, Merge и LIVE подтверждаются отдельно.</p>
+      <details id="ac-source-workflow" class="ac-backup">
+        <summary>Настоящий GitHub commit: публичная техническая задача</summary>
+        <p class="ac-hint" id="ac-source-mode-note">Используется существующий GitHub Watchdog и Repair Worker. Приватные тексты сюда не отправляйте.</p>
+        <p class="ac-hint">GitHub Issue #3890 — <strong>публичный</strong>. Эта функция не передаёт ваш закрытый черновик автоматически, не создаёт коммит без вашего подтверждения на GitHub и не обходит защищённые проверки.</p>
+        <label for="ac-source-base">Целевая ветка</label>
+        <select id="ac-source-base"><option value="codex/bootstrap-books">Agent Commander / control</option><option value="codex/public-book-library">Holistic House / product</option></select>
+        <label for="ac-source-path">Один существующий файл исходного кода</label>
+        <input id="ac-source-path" placeholder="components/existing-component.js" maxlength="230" autocomplete="off" spellcheck="false">
+        <label for="ac-source-code-mode">Способ исправления</label>
+        <select id="ac-source-code-mode"><option value="literal">Точный поиск и замена · без AI</option><option value="free_ai">Бесплатный AI · одна проверяемая правка</option></select>
+        <div id="ac-source-literal">
+          <label for="ac-source-find">Найти — точный уникальный фрагмент</label>
+          <textarea id="ac-source-find" maxlength="7000" rows="3" spellcheck="false"></textarea>
+          <label for="ac-source-replace">Заменить на</label>
+          <textarea id="ac-source-replace" maxlength="7000" rows="3" spellcheck="false"></textarea>
+        </div>
+        <div id="ac-source-ai" hidden>
+          <label for="ac-source-instruction">Техническая инструкция без личных данных</label>
+          <textarea id="ac-source-instruction" maxlength="3500" rows="4" placeholder="Исправить конкретное поведение в указанном файле…"></textarea>
+        </div>
+        <label class="ac-checkrow"><input id="ac-source-approve" type="checkbox"> Я проверил текст: здесь только технические сведения, их можно опубликовать в открытом GitHub</label>
+        <button type="button" id="ac-source-prepare" class="ac-secondary">Подготовить команду и проверить SHA</button>
+        <p id="ac-source-status" class="ac-note" role="status">Запуск ещё не подготовлен.</p>
+        <label for="ac-source-command">Команда для комментария GitHub</label>
+        <textarea id="ac-source-command" rows="6" readonly spellcheck="false" aria-label="Техническая команда для существующего GitHub Watchdog"></textarea>
+        <div class="ac-inline">
+          <button type="button" id="ac-source-copy" class="ac-secondary" disabled>Скопировать команду</button>
+          <a id="ac-source-issue-link" class="ac-secondary" href="https://github.com/andylitvinov-design/books/issues/3890" target="_blank" rel="noopener noreferrer">Открыть GitHub Inbox</a>
+          <a id="ac-source-workflow-link" class="ac-secondary" href="https://github.com/andylitvinov-design/books/actions/workflows/hh-pr-repair-worker.yml" target="_blank" rel="noopener noreferrer">GitHub Actions</a>
+        </div>
+        <p class="ac-hint">После публикации комментария существующий Watchdog автоматически проверит команду при очередном запуске. Статус CLAIMED/ BLOCKED/ DISPATCH_ACCEPTED не является доказательством изменения исходного файла.</p>
+        <button type="button" id="ac-source-check" class="ac-secondary" disabled>Проверить созданный PR</button>
+        <p id="ac-source-proof" class="ac-note">Подтверждённого PR ещё нет.</p>
+        <a id="ac-source-pr-link" href="#" hidden target="_blank" rel="noopener noreferrer">Открыть подтверждённый PR</a>
+      </details>
+      <details class="ac-backup"><summary>Зашифрованная резервная копия на этом устройстве</summary>
+        <p class="ac-hint">Без сервера: зашифровано AES-GCM с вашим отдельным кодом. Недоступно на других устройствах и не запускает задачи.</p>
+        <label for="ac-backup-key">Код шифрования (не менее 8 символов)</label>
+        <input id="ac-backup-key" type="password" autocomplete="off" minlength="8">
+        <div class="ac-inline"><button type="button" id="ac-backup-save" class="ac-secondary">Сохранить копию</button><button type="button" id="ac-backup-load" class="ac-secondary">Восстановить</button></div>
+      </details>
+    </section>
+    <section class="ac-card">
+      <div class="ac-card-title"><h2>11. История и проверка PR</h2><button type="button" class="ac-textbtn" id="ac-refresh">Обновить</button></div>
+      <p id="ac-history" class="ac-hint" role="status">Нет подтверждённых событий выполнения.</p>
+      <p id="ac-pr-live" class="ac-hint">Статусы привязанных PR будут проверены отдельно.</p>
+      <details><summary>Мои сохранённые задачи</summary><div id="ac-saved" class="ac-pr-list"></div><button type="button" id="ac-list" class="ac-secondary">Загрузить из защищённого хранилища</button></details>
+    </section>
+    <section class="ac-card">
+      <h2>12. Журнал результата</h2>
+      <p class="ac-hint">Здесь фиксируются только подтверждённые факты: номер задачи, ссылка на PR, CI, Merge SHA, статус Vercel и проверка LIVE.</p>
+      <div id="ac-evidence" class="ac-evidence">Пока нет подтверждённых результатов.</div>
+    </section>
+  </div>
+</main></body></html>
