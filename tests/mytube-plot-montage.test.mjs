@@ -40,7 +40,7 @@ test("different plots use independent visual cues and describe the storyboard wi
   const plans=plots.map(plot=>recommendMyTubePlotMontage({plot,scenes:stock.scenes}));
   assert.ok(plans.every(plan=>plan.hasFourApprovedSources && plan.verifiedFinishedPlot===false));
   assert.equal(new Set(plots.map(plot=>plot.plotMode)).size,6);
-  assert.equal(new Set(plots.map(plot=>plot.visualCues.join("|"))).size,4);
+  assert.equal(new Set(plots.map(plot=>plot.visualCues.join("|"))).size,6);
   assert.ok(plans.every(plan=>plan.stages.every(stage=>stage.sourceTopicScore>=65)));
 });
 
