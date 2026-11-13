@@ -196,7 +196,7 @@ export function optionalMandalaMacosSkip(files, branch, changed) {
   const fixed = "github.event_name == 'pull_request' && github.event.pull_request.draft == false && (";
   if (!guard?.startsWith(fixed) || !guard.endsWith(')')) return false;
   const predicates = guard.slice(fixed.length, -1).split(' || ');
-  if (!predicates.length || predicates.length > 24) return false;
+  if (!predicates.length || predicates.length > 32) return false;
   // Trusted BASE guards may include literal startsWith prefixes and one
   // literal exact branch. Reject every computed or unknown expression.
   const rules = predicates.map(item => {
