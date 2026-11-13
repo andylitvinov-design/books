@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0c1728">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<title>PR Monitor — Holistic House</title>
+<link rel="stylesheet" href="/monitor.css">
+<script src="/monitor.js" defer></script>
+</head>
+<body>
+<header class="topbar">
+ <a class="brand" href="/" aria-label="PR Monitor · главная"><span class="brand-mark">✦</span><span><strong>Holistic House</strong><small>PR MONITOR</small></span></a>
+ <a class="director-link" href="https://holistic-house-agents-director.vercel.app/">Agents Director <span aria-hidden="true">↗</span></a>
+</header>
+<main class="container">
+ <section class="lead" id="overview">
+  <div><p class="eyebrow">НЕЗАВИСИМЫЙ МОНИТОРИНГ · GITHUB</p><h1>PR, CI и Merge</h1><p class="intro">Все этапы, задержки и ошибки. Отдельно от управления агентами.</p></div>
+  <button type="button" id="refresh" class="refresh">↻ Обновить</button>
+ </section>
+ <div class="freshness"><span class="status-dot" id="state-dot"></span><span id="status" role="status" aria-live="polite">Страница открыта. Получаю подтверждённые данные…</span><span id="updated-at"></span></div>
+ <nav class="section-nav" aria-label="Разделы PR Monitor">
+  <a href="#graphs">Графики</a><a href="#stages">Этапы</a><a href="#ci">CI</a><a href="#queue">Очередь</a><a href="#prs">PR</a><a href="#repair">Ремонт</a><a href="#issues">Ошибки</a>
+ </nav>
+ <section class="metrics" aria-label="Основные показатели">
+  <article><span>Новые PR / час</span><strong id="k-created">—</strong><small>Создание PR</small></article>
+  <article><span>Merge / час</span><strong id="k-merged">—</strong><small>Факт GitHub merge</small></article>
+  <article><span>Открытых PR</span><strong id="k-open">—</strong><small>По последней проверке</small></article>
+  <article><span>PR → Merge · P50</span><strong id="k-median">—</strong><small id="k-median-note">Измеренный интервал</small></article>
+ </section>
+ <section class="chart-grid" id="graphs" aria-label="Динамика PR и CI">
+  <article class="panel chart"><div class="panel-heading"><div><p class="eyebrow">ДИНАМИКА</p><h2>Создание PR и CI</h2></div><span class="small">6 × 1 час</span></div>
+   <div class="legend"><span><b class="square blue"></b>Созданы</span><span><b class="square green"></b>Merge</span><span><b class="square yellow"></b>Запуски CI</span></div>
+   <svg id="chart-flow" viewBox="0 0 360 180" role="img" aria-label="Часовая динамика новых PR, объединений и запусков CI"><text x="180" y="92" fill="#abc4d7" font-size="12" text-anchor="middle">Ожидаю измерения…</text></svg>
+   <p id="flow-info" class="note">Недоступные значения будут показаны как «—», не как ноль.</p>
+  </article>
+  <article class="panel chart"><div class="panel-heading"><div><p class="eyebrow">СКОРОСТЬ</p><h2>PR → Merge</h2></div><span class="small">Последние 24 часа</span></div>
+   <div class="legend"><span><b class="square green"></b>Merge / интервал</span><span><b class="square blue"></b>P50 до Merge</span></div>
+   <svg id="chart-speed" viewBox="0 0 360 180" role="img" aria-label="Merge по интервалам и медиана времени до объединения"><text x="180" y="92" fill="#abc4d7" font-size="12" text-anchor="middle">Ожидаю измерения…</text></svg>
+   <p id="speed-info" class="note">Измеряется по подтверждённым событиям GitHub.</p>
+  </article>
+ </section>
+ <section class="panel" id="stages" aria-labelledby="stages-title">
+  <div class="panel-heading"><div><p class="eyebrow">ПОЛНЫЙ ПУТЬ PR</p><h2 id="stages-title">Этапы прохождения и задержки</h2></div><span id="stages-period" class="small">24 часа</span></div>
+  <div class="stage-flow" aria-label="Этапы"> <span>Created</span><span>Подготовка</span><span>Runner</span><span>Core / Specialist CI</span><span>Gate</span><span>Merge</span><span>LIVE*</span></div>
+  <div class="table-scroll"><table><thead><tr><th>Этап</th><th>PR с замером</th><th>P50</th><th>P90</th><th>Ожидают</th></tr></thead><tbody id="stage-rows"><tr><td colspan="5">Получаю подтверждённые интервалы…</td></tr></tbody></table></div>
+  <div class="subheading">Подэтапы CI и очередей</div><div id="stage-detail" class="mini-grid"><p>Core, Specialist, Preflight, Gate — данные загружаются…</p></div>
+  <p class="caution">* Merge и LIVE — разные события. Без квитанции production-публикации LIVE не считается подтверждённым.</p>
+ </section>
+ <section class="panel" id="ci" aria-labelledby="ci-title">
+  <div class="panel-heading"><div><p class="eyebrow">GITHUB ACTIONS</p><h2 id="ci-title">CI: нагрузка, ошибки и ожидание runner</h2></div><span class="small" id="ci-coverage">Источник проверяется</span></div>
+  <div class="metrics compact"><article><span>Запуски workflow / час</span><strong id="k-ci">—</strong></article><article><span>Проверенные jobs</span><strong id="k-ci-jobs">—</strong></article><article><span>Ошибки в выборке</span><strong id="k-ci-fails">—</strong></article><article><span>Очередь runner · P50</span><strong id="k-runner">—</strong></article></div>
+  <div class="two-col"><div><h3>Типы ошибок CI</h3><div class="list" id="ci-errors">Данные проверяются…</div></div><div><h3>Задержки по проверкам</h3><div id="ci-checks" class="list">Данные проверяются…</div></div></div>
+  <p class="note">Статистика CI может быть выборочной. Количество workflow-run не равно числу CI jobs.</p>
+ </section>
+ <section class="panel" id="queue" aria-labelledby="queue-title">
+  <div class="panel-heading"><div><p class="eyebrow">ОПЕРАЦИОННАЯ ОЧЕРЕДЬ</p><h2 id="queue-title">PR, блокировки и исполнители</h2></div><span class="small" id="queue-asof">Срез не получен</span></div>
+  <div class="metrics compact"><article><span>PR в обработке</span><strong id="k-actionable">—</strong></article><article><span>Блокировки</span><strong id="k-blocked">—</strong></article><article><span>Назначения worker</span><strong id="k-worker">—</strong></article><article><span>PR в production</span><strong id="k-production">—</strong></article></div>
+  <div class="two-col"><div><h3>Очередь по состояниям</h3><div class="list" id="queue-states">Данные проверяются…</div></div><div><h3>Причины блокировок</h3><div class="list" id="blocked-reasons">Данные проверяются…</div></div></div>
+ </section>
+ <section class="panel" id="prs" aria-labelledby="prs-title">
+  <div class="panel-heading"><div><p class="eyebrow">КОНКРЕТНЫЕ PR</p><h2 id="prs-title">Последние изменения и свидетельства</h2></div><span class="small">До 15 записей</span></div>
+  <p class="note">Наличие записи не доказывает успешный CI, merge или LIVE. Для статуса переходите в GitHub.</p>
+  <div class="table-scroll"><table><thead><tr><th>PR</th><th>Последнее изменение</th><th>HEAD</th><th>Зафиксировано</th></tr></thead><tbody id="pr-rows"><tr><td colspan="4">Загружаю проверенный реестр…</td></tr></tbody></table></div>
+ </section>
+ <section class="panel" id="repair" aria-labelledby="repair-title">
+  <div class="panel-heading"><div><p class="eyebrow">ПУТЬ ИСПРАВЛЕНИЯ</p><h2 id="repair-title">Ошибка → Repair → Green → Merge</h2></div><span class="small">24 часа · архив</span></div>
+  <div class="metrics compact"><article><span>Ошибка → Repair · P50</span><strong id="k-repair">—</strong></article><article><span>Первая CI · наблюд.</span><strong id="k-firstpass">—</strong></article><article><span>Green → Merge · P50</span><strong id="k-greenmerge">—</strong></article><article><span>Замерено Green → Merge</span><strong id="k-green-n">—</strong></article></div>
+  <p id="repair-explanation" class="note">Покажу только подтверждённые интервалы и размер выборки.</p>
+  <div class="subheading">Примеры подтверждённых переходов</div><div id="repair-examples" class="list">Получаю события…</div>
+ </section>
+ <section class="panel" id="issues" aria-labelledby="issues-title">
+  <div class="panel-heading"><div><p class="eyebrow">РЕКОМЕНДАЦИИ</p><h2 id="issues-title">Где застревает работа</h2></div><span class="small">На основе фактов</span></div>
+  <div id="recommendations" class="list">Собираю данные из CI и очереди…</div>
+  <div class="inline-links"><a href="https://github.com/andylitvinov-design/books/pulls">Открытые PR в GitHub ↗</a><a href="https://github.com/andylitvinov-design/books/actions">GitHub Actions ↗</a><a href="https://github.com/andylitvinov-design/books/issues/4398">История инцидента ↗</a></div>
+ </section>
+ <footer class="footer"><strong>Holistic House · PR Monitor</strong><span>Независимый интерфейс. Данные берутся из существующих публичных API и GitHub; нет автоматического списания средств, редактирования PR или фонового опроса.</span><a href="https://holistic-house-agents-director.vercel.app/">Перейти в Agents Director ↗</a></footer>
+</main>
+</body></html>
