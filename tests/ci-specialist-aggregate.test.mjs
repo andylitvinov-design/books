@@ -1761,6 +1761,34 @@ test('trusted Mandala WebKit allowlist accepts exact branch entries and the full
     'encoded video work is never excused from WebKit');
 });
 
+test('BASE-owned Mandala WebKit list accepts 25-32 strict literal routes, never 33 or a changed guard',()=>{
+  const path='.github/workflows/holistic-support-mandala.yml';
+  const original=readFileSync(path,'utf8');
+  const guard=original.match(/^  voice-webkit-macos:\n    if: \$\{\{ (.+) \}\}$/m)?.[0];
+  assert.ok(guard,'trusted macOS job has a single literal branch guard');
+  const extra=n=>Array.from({length:n},(_,i)=>
+    "startsWith(github.head_ref, 'fix/ci-webkit-budget-probe-"+i+"-')");
+  const extended=n=>original.replace(guard,guard.replace(/\) \}\}$/,
+    ' || '+extra(n).join(' || ')+') }}'));
+  const safe=['components/holistic-support-goal-filter.tsx'];
+  const out='feat/support-confidence-harmony-goal-filter-20261102';
+  const skip=(base,branch=out,changed=safe,current=base)=>optionalMandalaMacosSkip({
+    base:new Map([[path,base]]),current:new Map([[path,current]])
+  },branch,changed);
+  assert.equal(skip(original),true,'BASE 24-part contract remains valid');
+  assert.equal(skip(extended(1)),true,'25 static prefixes remain checkable');
+  assert.equal(skip(extended(8)),true,'32 static prefixes remain checkable');
+  assert.equal(skip(extended(9)),false,'33 prefixes exceed the fail-closed limit');
+  assert.equal(skip(extended(8),'fix/ci-webkit-budget-probe-7-check'),false,
+    'a matching WebKit branch must actually execute macOS');
+  assert.equal(skip(extended(8),out,['lib/mandala/audio-render.mjs']),false,
+    'encoded audio source cannot skip macOS');
+  assert.equal(skip(original,out,safe,extended(1)),false,
+    'PR changing the trusted macOS guard cannot certify its own skip');
+  assert.equal(skip(extended(1).replace(extra(1)[0],'success()')),false,
+    'arbitrary GitHub expressions are not static allowlist predicates');
+});
+
 test('VideoProjectV2 source changes require real macOS WebKit acceptance on video feature PRs', () => {
   const path = '.github/workflows/holistic-support-mandala.yml';
   const actual = readFileSync(path, 'utf8');
