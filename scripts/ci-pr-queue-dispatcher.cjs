@@ -5,7 +5,9 @@ const {latestErrorTaskId,dispatchAcceptance,dispatchAcceptanceBody,
  REPAIR_EXECUTOR,CI_EXECUTOR}=require('./ci-pr-error-task.cjs');
 const {priorityFor,rankedCandidates}=require('./ci-pr-priority.cjs');
 const {run:reconcileLegacyCiDenial}=require('./ci-pr-ci-legacy-recovery.cjs');
-const {WORKFLOWS,admission,snapshot,verifiedGhostRepairCapacity,GHOST_REPAIR_MODE}=require('./ci-pr-capacity.cjs');
+const {WORKFLOWS,admission,snapshot,verifiedGhostRepairCapacity,
+ verifiedStaleMergedRepairCapacity,GHOST_REPAIR_MODE,STALE_MERGED_REPAIR_MODE}
+ =require('./ci-pr-capacity.cjs');
 const {repairMode,safeFiles,hasVerifiedSourceHandoff,verifiedCoreCodeFailure}=require('./ci-pr-repair-worker.cjs');
 const {safeSourcePath: safeFreeSourcePath,
  assessCompleteFreeRepairScope}=require('./ci-pr-repair-free-agent.cjs');
@@ -599,6 +601,21 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
    log('GHOST_409_ONE_WORKER_SLOT_VERIFIED');}
   else log('GHOST_409_HOLD '+narrow.reason);
  }
+ // A direct event handoff has no same-run cancellation-409 receipt. Reuse
+ // only bounded, READ-ONLY hints from this capacity census; verify again
+ // against live run, uniquely merged PR, source ancestry, all active jobs,
+ // and zero Repair Worker runs. Never retry cancellation or wake Core.
+ if(!capacity?.known&&capacity?.reason==='RUN_CAPACITY_SATURATED'&&
+    capacity.saturatedBy==='QUEUED'&&
+    Array.isArray(capacity.ghostQueueCandidates)&&
+    capacity.ghostQueueCandidates.length>0&&
+    candidates.some(t=>['repair','legacy'].includes(t?.lane))){
+  const narrow=await verifiedStaleMergedRepairCapacity(github,owner,repo,
+    capacity.ghostQueueCandidates,now);
+  if(narrow.known){capacity=narrow;capacityReason=null;
+   log('GHOST_STALE_MERGED_ONE_WORKER_SLOT_VERIFIED run='+narrow.ghostProofRunId);}
+  else log('GHOST_STALE_MERGED_HOLD '+narrow.reason);
+ }
  if(quota.state.paused){summary.reason='API_PAUSED_CAPACITY';return finish();}
  if(!capacity?.known)capacityReason||='CAPACITY_UNVERIFIED: '+(capacity?.reason||'unknown');
  summary.capacityReason=capacityReason;
@@ -1001,7 +1018,8 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   if(!capacity?.known){blocked('CAPACITY_UNVERIFIED');continue;}
   const permission=admission(task.lane,capacity);
   if(permission!=='ADMIT'){blocked(permission);continue;}
-  if(capacity?.inventoryConfidence===GHOST_REPAIR_MODE&&summary.dispatchAccepted>=1){
+  if([GHOST_REPAIR_MODE,STALE_MERGED_REPAIR_MODE]
+      .includes(capacity?.inventoryConfidence)&&summary.dispatchAccepted>=1){
    blocked('GHOST_ONLY_ONE_WORKER_PER_SWEEP');continue;
   }
   // Source must have an exact-HEAD trusted Watchdog diagnosis; labels alone
