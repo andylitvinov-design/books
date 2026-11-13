@@ -179,8 +179,17 @@ test("voice browser opens Ideas and applies six visible Montage styles with deco
  assert.match(source,/voiceOptions\.locator\(":scope > summary"\)\.click\(\)[\s\S]*?data-video-affirmation-bed/);
 });
 
-test("voice browser selects the visible montage workspace before recording",()=>{
-  assert.match(source,/phase\(engine,"offline-remix-ready"\)[\s\S]*?data-video-quick-control="editor"[\s\S]*?expect\(generate\)\.toBeVisible/);
+test("voice browser selects the actual Text Generate after Audio without restoring hidden montage Create",()=>{
+  const remix=source.indexOf('phase(engine,"offline-remix-ready")');
+  const montage=source.indexOf('data-video-quick-control="editor"',remix);
+  const audioNext=source.indexOf('[data-video-audio-next-text]',montage);
+  const hidden=source.indexOf('await expect(generate).toBeHidden()',montage);
+  const textButton=source.indexOf("const textGenerate=page.locator('[data-video-montage-text] [data-video-ideas-generate]')",audioNext);
+  const visible=source.indexOf('await expect(textGenerate).toBeVisible',textButton);
+  const create=source.indexOf('await textGenerate.click()',visible);
+  assert.ok(remix>=0&&montage>remix&&hidden>montage&&audioNext>hidden&&
+    textButton>audioNext&&visible>textButton&&create>visible,
+    "Audio must advance to visible Text Generate before a real voice movie is rendered");
 });
 
 test("affirmation attachment acceptance verifies the visible live movie soundtrack",()=>{

@@ -575,8 +575,15 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(choices.nth(0)).toHaveAttribute("aria-pressed","true");
       await expect(choices.nth(1)).toHaveAttribute("aria-pressed","true");
       await expect(page.locator('[data-video-audio-compact-selected]')).toContainText("2/3");
-      await expect(page.locator('[data-video-stage-actions="montage"] [data-video-quick-generate]')).toBeVisible();
+      const addSupportPhrases=page.locator('[data-video-audio-next-text]');
+      await expect(addSupportPhrases).toBeVisible();
+      await expect(page.locator('[data-video-price-summary]')).toBeHidden();
+      await expect(page.locator('[data-video-stage-actions="montage"] [data-video-quick-generate]')).toBeHidden();
+      // The licensed soundtrack remains selected until the user explicitly clears it.
       await page.locator('[data-video-audio-compact-silent]').click();
+      await addSupportPhrases.click();
+      await expect(page.locator('[data-video-montage-tab="text"]')).toHaveAttribute('aria-pressed','true');
+      await expect(page.locator('[data-video-montage-text]')).toBeVisible();
       await page.locator('[data-video-quick-control="phrases"]').click();
       const phrases=page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]');
       await phrases.waitFor({state:"visible"});
@@ -860,16 +867,21 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         // Confirm the chosen recorded track survives the ACTUAL local MP4/WebM
         // export. Reading a selection badge or blob URL is not E2E evidence.
         await page.locator('[data-video-quick-control="editor"]').click();
-        // The original recorder's export button is available in the real
-        // Montage Audio step, never in the intentionally hidden Style footer.
+        // The Audio screen offers only Add support phrases. The original
+        // protected local export remains in Montage Text after that action.
         await page.locator('[data-video-montage-tab="concept"]').click();
         await page.locator('[data-video-story-open-settings]').click();
         const ownAudioStep=page.locator('[data-video-montage-open-audio]');
         await ownAudioStep.click();
         await expect(page.locator('[data-video-montage-audio]')).toBeVisible();
         const ownCreate=page.locator("[data-video-quick-generate]");
-        await expect(ownCreate).toBeEnabled({timeout:30000});
-        await ownCreate.click();
+        await expect(ownCreate).toBeHidden();
+        await page.locator('[data-video-audio-next-text]').click();
+        await expect(page.locator('[data-video-montage-text]')).toBeVisible({timeout:15000});
+        const ownTextCreate=page.locator('[data-video-montage-text] [data-video-ideas-generate]');
+        await expect(ownTextCreate).toBeVisible({timeout:30000});
+        await expect(ownTextCreate).toBeEnabled({timeout:30000});
+        await ownTextCreate.click();
         const ownDownload=page.locator("[data-mandala-video-download]");
         await ownDownload.waitFor({state:"visible",timeout:45000});
         // Primary Save opens the real choice of Files / Telegram / WhatsApp.
@@ -1140,10 +1152,14 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await montageAudioTab.click();
       await expect(page.locator('[data-video-montage-audio]')).toBeVisible();
       const generate=page.locator("[data-video-quick-generate]");
-      await expect(generate).toBeVisible({timeout:30000});
-      await expect(generate).not.toHaveAttribute("data-video-montage-next",/./);
-      await expect(generate).toBeEnabled({timeout:30000});
-      assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),false,
+      await expect(generate).toBeHidden();
+      await page.locator('[data-video-audio-next-text]').click();
+      await expect(page.locator('[data-video-montage-text]')).toBeVisible({timeout:15000});
+      const textGenerate=page.locator('[data-video-montage-text] [data-video-ideas-generate]');
+      await expect(textGenerate).toBeVisible({timeout:30000});
+      await expect(textGenerate).not.toHaveAttribute("data-video-montage-next",/./);
+      await expect(textGenerate).toBeEnabled({timeout:30000});
+      assert.equal(await textGenerate.isDisabled(),false,
         "newly remixed WAV must automatically attach to local movie");
       // One Create tap decodes the idle MP4 and exports the actual voice video.
       if(engine==="chromium"||engine==="webkit") {
@@ -1153,7 +1169,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
             "the user's earlier Style tap must already prime the real MP4");
         }
         // Real locally encoded file: not a mere blob preview or a silent fake.
-        await expect(generate).toBeEnabled({timeout:30000});
+        await expect(textGenerate).toBeEnabled({timeout:30000});
         const mediaCapabilities=await page.evaluate(()=>({
           userAgent:navigator.userAgent,
           canvasCapture:typeof HTMLCanvasElement.prototype.captureStream==="function",
@@ -1163,7 +1179,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         }));
         console.log("VOICE_E2E_MEDIA_CAPABILITIES "+engine+" "+JSON.stringify(mediaCapabilities));
         phase(engine,"start-media-recorder");
-        await generate.click();
+        await textGenerate.click();
         // The idle source remains preload=none until the user's actual Create
         // gesture; Safari must then start a physical decode, never a CSS-only
         // preview or an unverified download.
@@ -1210,7 +1226,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           try {
             uiState=await withDeadline(page.evaluate(()=>{
             const video=document.querySelector("[data-mandala-master-mp4]");
-            const create=document.querySelector("[data-video-quick-generate]");
+            const create=document.querySelector('[data-video-montage-text] [data-video-ideas-generate]')
+              || document.querySelector("[data-video-quick-generate]");
             const result=document.querySelector("[data-video-result]");
             return {
               canClick:create instanceof HTMLButtonElement ? !create.disabled : null,
@@ -1455,6 +1472,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const soundtrackLabels=await page.locator("[data-video-live-audio]").allTextContents();
       const stillHasOldVoice=soundtrackLabels.some(label=>
         label.includes("holistic-house-hypno-audio.wav")||label.includes(expectedFileName));
+      await expect(page.locator("[data-video-quick-generate]")).toBeHidden();
       if(stillHasOldVoice)await expect(page.locator("[data-video-quick-generate]")).toBeDisabled();
       // Montage has no voice control. Enter Hypno Audio and expose the one
       // consented voice editor before testing real provider invocation.

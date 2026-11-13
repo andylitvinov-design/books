@@ -9038,6 +9038,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </details>
                   </div>
             {musicWarning?<p role="alert" className={videoStyles.montageAudioWarning}>{musicWarning}</p>:null}
+            <button type="button" className={videoStyles.audioCompactNext}
+              data-video-audio-next-text data-video-montage-next="text"
+              disabled={!studioHydrated||recording||preparing}
+              onClick={continueMontageOrGenerate}>
+              <Sparkles size={18} aria-hidden="true"/>
+              <span>{locale==="ru"?"Добавить фразы поддержки":locale==="es"?
+                "Añadir frases de apoyo":"Add support phrases"}</span>
+              <ArrowRight size={19} aria-hidden="true"/>
+            </button>
           </div> : null}
           </div>
         </section>
@@ -9175,7 +9184,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </details>
         </section> : null}
         <div className={videoStyles.quickOrderBar} data-workspace-section="editor" data-video-order-bar
-          hidden={montagePanel==="promo"}>
+          hidden={montagePanel==="promo"||montagePanel==="audio"}>
           <div className={videoStyles.quickOrderSummary} data-video-price-summary aria-live="polite">
             <small>{practiceCopy.total}</small>
             <strong>{creditCatalog?.chargeRequired&&freeVideoSelected
