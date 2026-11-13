@@ -166,14 +166,14 @@ test('My Coach persona dialogue speaks and listens on exactly the consented sess
   assert.match(ui,/Local-only authored fallback/)
   assert.match(ui,/coachingBrainSafety\(input\)\|\|coachingBrainBoundary\(input\)/)
   assert.match(ui,/if\(mode==='safety'\|\|\(mode==='boundary'/)
-  assert.match(ui,/coachStagePrompt\(personaId,stage,lang,settings\)/)
+  assert.match(ui,/coachStagePrompt\(personaId,stage,responseLocale,settings\)/)
   const sendFunction=ui.slice(ui.indexOf('async function sendMessage(raw){'))
   assert.ok(sendFunction.indexOf("if(readiness.status!=='verified'){") < sendFunction.indexOf("fetch('/api/app/my-coach/turn'"), 'offline turn never reaches external provider')
   assert.match(ui,/Browser speech recognition may send microphone audio/)
   assert.match(ui,/Браузер может отправлять звук поставщику распознавания речи/)
   for(const phrase of ['window.SpeechRecognition||window.webkitSpeechRecognition',
-    'recognition.interimResults=true','recognition.lang=langs[lang]',
-    'void deliver(finished)','turnRef.current?.(text)','window.SpeechSynthesisUtterance',
+    'recognition.interimResults=true','recognition.lang=chooseDictationLanguage',
+    'void deliver(appendSpokenAnswer(draftAtStartRef.current,finished,1200))','turnRef.current?.(text)','window.SpeechSynthesisUtterance',
     'activeRef.current=false','document.visibilityState===\'hidden\'',
     'recognition.abort()','onCancelTurn','aria-pressed={active}'])
     assert.ok(loop.includes(phrase),phrase)
@@ -221,13 +221,13 @@ test('My Coach speech is visible as text while recording and safely remains edit
   const loop=source('components/my-coach-speech-loop.jsx')
   const css=source('components/my-coach-live-dialogue.module.css')
   for(const marker of ['data-coach-live-transcript','role="log" aria-live="polite"','speechPreview&&',
-    'onTranscript={setSpeechPreview}',"onDraft={text=>{setDraft(text);setSpeechPreview('');setError('')}}",
+    'onTranscript={setSpeechPreview}',"onDraft={text=>{setDraft(text);setError('')}}",
     'className={styles.textComposer} open','captions.consentShort']){
     assert.ok(ui.includes(marker),marker)
   }
-  for(const marker of ['heardRef.current=(final||interim).slice(0,1200)',
-    'transcriptRef.current?.(heardRef.current)','const recovered=heardRef.current.trim()',
-    'draftRef.current?.(recovered)','draftRef.current?.(text)','void deliver(finished)']){
+  for(const marker of ['heardRef.current=visible','finished=visible',
+    'transcriptRef.current?.(visible)','const recovered=heardRef.current.trim()',
+    'draftRef.current?.(appendSpokenAnswer(draftAtStartRef.current,recovered,1200))','draftRef.current?.(text)','void deliver(appendSpokenAnswer(draftAtStartRef.current,finished,1200))']){
     assert.ok(loop.includes(marker),marker)
   }
   assert.match(css,/\.liveTranscript/)
