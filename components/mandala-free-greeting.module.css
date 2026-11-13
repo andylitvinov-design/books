@@ -23,7 +23,7 @@
 .selectionLine{display:flex;justify-content:space-between;gap:8px;min-width:0;color:#557165;font-size:10.5px;line-height:1.3}
 .scrollHint{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;text-align:right;color:#929b90}
 .modes button:focus-visible,.rail:focus-visible,.choice:focus-visible,.chosen:focus-visible,.quickChoices button:focus-visible,.preview:focus-visible{outline:3px solid #24aa91;outline-offset:2px}
-button:disabled{opacity:.55;cursor:not-allowed}
+.root button:disabled{opacity:.55;cursor:not-allowed}
 @media(max-width:390px){
  .root{padding:9px 8px;gap:7px}
  .header{flex-wrap:wrap;gap:5px}
