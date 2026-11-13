@@ -8,7 +8,8 @@ import {LibraryFeed, type LibraryFeedItem} from "@/components/library-feed";
 import type {PublicLocale} from "@/lib/public-locales";
 import {listMyTubeCategories,listMyTubeSubcategories,listMyTubeTopics,listMyTubeScenarios,getMyTubeTopic} from "@/lib/mandala/mytube-content-taxonomy.mjs";
 import {listMyTubeScenarioMotifs,listMyTubeStyles,videoMatchesMyTubeVisualFilter} from "@/lib/mandala/mytube-creative-choices.mjs";
-import {matchesMyTubeShelf,myTubeCourseInfo,listMyTubeCourseTypes,listMyTubeCourseTraditions,listMyTubeCourseSeries,sortMyTubeCourseLessons} from "@/lib/video-discovery/mytube-shelves.mjs";
+import {matchesMyTubeShelf,sortMyTubeCourseLessons} from "@/lib/video-discovery/mytube-shelves.mjs";
+import {MyTubeCoursePlaylists} from "@/components/mytube-course-playlists";
 import styles from "./video-discovery.module.css";
 
 type Order="for-you"|"series"|"newest";
@@ -101,17 +102,6 @@ export function VideoDiscovery({locale,videos,variant="library",subtitle}:{local
   const [period,setPeriod]=useState("all");
   const [durationRange,setDurationRange]=useState("all");
   const [formatMode,setFormatMode]=useState<MyTubeFormat>("practices");
-  const [courseType,setCourseType]=useState("all");
-  const [courseTradition,setCourseTradition]=useState("all");
-  const [courseSeriesId,setCourseSeriesId]=useState("all");
-  // The choices reflect only existing, verified public assets in the active audio language.
-  const courseVideos=useMemo(()=>videos.filter(item=>matchesMyTubeShelf(item,"courses")&&
-    (language==="all"||item.audioLanguage===language)),[videos,language]);
-  const courseTypes=listMyTubeCourseTypes(courseVideos);
-  const courseTraditions=courseType==="temple"?listMyTubeCourseTraditions(courseVideos,courseType):[];
-  const courseSeries=listMyTubeCourseSeries(courseVideos,courseType,courseTradition);
-  const activeCourseSeries=courseSeries.some(item=>item.id===courseSeriesId)
-    ?courseSeriesId:"all";
   const [mytubeCategoryId,setMyTubeCategoryId]=useState("all");
   const [mytubeSubcategoryId,setMyTubeSubcategoryId]=useState("all");
   const [mytubeTopicId,setMyTubeTopicId]=useState("all");
@@ -164,12 +154,6 @@ export function VideoDiscovery({locale,videos,variant="library",subtitle}:{local
       // Editorial format uses published video intent; unknown length is eligible.
       if(variant==="mytube"){
         if(!matchesMyTubeShelf(item,formatMode))return false;
-        if(formatMode==="courses"){
-          const course=myTubeCourseInfo(item);
-          if(!course||(courseType!=="all"&&course.type!==courseType)||
-            (courseType==="temple"&&courseTradition!=="all"&&course.tradition!==courseTradition)||
-            (activeCourseSeries!=="all"&&course.id!==activeCourseSeries))return false;
-        }
       }
       if(needle && ![item.title,item.description,item.sourceLabel||"",item.author||"",item.seriesTitle||"",item.topicTags?.join(" ")||""]
           .join(" ").toLocaleLowerCase(locale).includes(needle))return false;
@@ -261,7 +245,7 @@ export function VideoDiscovery({locale,videos,variant="library",subtitle}:{local
       }
       return true;
     });
-  },[videos,search,source,period,durationRange,formatMode,courseType,courseTradition,activeCourseSeries,variant,locale,mytubeCategoryId,mytubeSubcategoryId,mytubeTopicId,mytubeScenarioId,mytubeMotifId,mytubeStyleId]);
+  },[videos,search,source,period,durationRange,formatMode,variant,locale,mytubeCategoryId,mytubeSubcategoryId,mytubeTopicId,mytubeScenarioId,mytubeMotifId,mytubeStyleId]);
   const ordered=useMemo(()=>{
     const matches=rankDiscoveryVideos(sourceVideos,{
       goal,area,contentType,direction,tradition,language,savedIds,hiddenIds,savedOnly,sort,
@@ -326,7 +310,7 @@ export function VideoDiscovery({locale,videos,variant="library",subtitle}:{local
           onClick={()=>{setFormatMode(mode);setMyTubeCategoryId("all");setMyTubeSubcategoryId("all");
             setMyTubeTopicId("all");setMyTubeScenarioId("all");setMyTubeMotifId("all");
             setMyTubeStyleId("all");setContentType("all");setDirection("all");setTradition("all");
-            setDurationRange("all");setCourseType("all");setCourseTradition("all");setCourseSeriesId("all");
+            setDurationRange("all");
             // A filter from the previous shelf must not silently hide course episodes.
             setGoal("all");setArea("all");setLanguage("all");setSource("all");setPeriod("all");
             setSearch("");setSavedOnly(false);setHiddenIds([]);
@@ -362,55 +346,7 @@ export function VideoDiscovery({locale,videos,variant="library",subtitle}:{local
         </button>)}
       </div>}
       </>}
-      {formatMode==="courses"&&<div className={styles.mytubeCourseNavigation}
-        data-mytube-course-navigation>
-        <div className={styles.mytubeCourseLevel}>
-          <strong>{t.courseTypeLabel}</strong>
-          <div className={styles.mytubeCourseChoices} role="group" aria-label={t.courseTypeLabel}>
-            <button type="button" data-mytube-course-type="all"
-              aria-pressed={courseType==="all"}
-              onClick={()=>{setCourseType("all");setCourseTradition("all");setCourseSeriesId("all");}}>
-              {t.durationAll}
-            </button>
-            {courseTypes.map(type=><button key={type} type="button"
-              data-mytube-course-type={type} aria-pressed={courseType===type}
-              onClick={()=>{setCourseType(type);setCourseTradition("all");setCourseSeriesId("all");}}>
-              {t.courseTypes[type as keyof typeof t.courseTypes]}
-            </button>)}
-          </div>
-        </div>
-        {courseType==="temple"&&<div className={styles.mytubeCourseLevel}>
-          <strong>{t.courseTraditionLabel}</strong>
-          <div className={styles.mytubeCourseChoices} role="group" aria-label={t.courseTraditionLabel}>
-            <button type="button" data-mytube-course-tradition="all"
-              aria-pressed={courseTradition==="all"}
-              onClick={()=>{setCourseTradition("all");setCourseSeriesId("all");}}>
-              {t.durationAll}
-            </button>
-            {courseTraditions.map(traditionId=><button key={traditionId} type="button"
-              data-mytube-course-tradition={traditionId}
-              aria-pressed={courseTradition===traditionId}
-              onClick={()=>{setCourseTradition(traditionId);setCourseSeriesId("all");}}>
-              {t.courseTraditions[traditionId as keyof typeof t.courseTraditions]}
-            </button>)}
-          </div>
-        </div>}
-        {courseSeries.length>0&&<div className={styles.mytubeCourseLevel}>
-          <strong>{t.courseSeriesLabel}</strong>
-          <div className={styles.mytubeCourseChoices} role="group" aria-label={t.courseSeriesLabel}>
-            <button type="button" data-mytube-course-series="all"
-              aria-pressed={activeCourseSeries==="all"} onClick={()=>setCourseSeriesId("all")}>
-              {locale==="ru"?"Все курсы":locale==="es"?"Todos los cursos":"All courses"}
-            </button>
-            {courseSeries.map(series=><button key={series.id} type="button"
-              data-mytube-course-series={series.id}
-              aria-pressed={activeCourseSeries===series.id}
-              onClick={()=>setCourseSeriesId(series.id)}>
-              {series.label} · {series.count}
-            </button>)}
-          </div>
-        </div>}
-      </div>}
+
 
     </>}
     <section className={styles.panel} aria-label={t.title}>
@@ -569,12 +505,14 @@ export function VideoDiscovery({locale,videos,variant="library",subtitle}:{local
       {variant==="mytube" && <button type="button" className={styles.clearFilters}
         onClick={()=>{setArea("all");setGoal("all");setMyTubeCategoryId("all");setMyTubeSubcategoryId("all");setMyTubeTopicId("all");setMyTubeScenarioId("all");setMyTubeMotifId("all");setMyTubeStyleId("all");setContentType("all");setDirection("all");
           setTradition("all");setLanguage("all");setSource("all");setPeriod("all");
-          setDurationRange("all");setFormatMode("practices");setCourseType("all");setCourseTradition("all");setCourseSeriesId("all");setSearch("");setSort("for-you");setSavedOnly(false);}}>
+          setDurationRange("all");setFormatMode("practices");setSearch("");setSort("for-you");setSavedOnly(false);}}>
         <RotateCcw size={15} aria-hidden="true"/>{t.resetFilters}
       </button>}
       <p className={styles.note}>{t.note}</p>
       </div>
     </section>
+    {variant==="mytube"&&formatMode==="courses" ?
+      <MyTubeCoursePlaylists locale={locale} items={ordered} savedVideoIds={savedIds} onToggleSaved={save}/> : <>
     <div className={styles.results} aria-live="polite">
       <span>{variant==="mytube"?(formatMode==="practices"?t.mytubePractices:formatMode==="courses"?t.mytubeCourses:formatMode==="masters"?t.mytubeMasters:t.mytubeVideos):area!=="all"?t.areas[VIDEO_LIFE_AREAS.indexOf(area)]:index>0?t.result+": "+t.goals[index]:t.allResult}</span><span data-mytube-result-count={variant==="mytube"?"true":undefined}>{ordered.length}</span>
     </div>
@@ -591,5 +529,6 @@ export function VideoDiscovery({locale,videos,variant="library",subtitle}:{local
         }:undefined}
         savedVideoIds={savedIds} onToggleSaved={save} onDismissVideo={dismiss}
         saveText={t.save} unsaveText={t.unsave} dismissText={t.dismiss}/>}
+    </>}
   </div>;
 }

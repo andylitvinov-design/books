@@ -14,9 +14,10 @@ test("exactly four exclusive MyTube sections without an All section",()=>{
  assert.match(view,/\(\["practices","courses","masters","videos"\] as const\)\.map/);
  assert.doesNotMatch(view,/\(\["all","shorts","courses","study"\] as const\)/);
  assert.match(view,/data-mytube-format-mode=\{mode\}/);
- assert.match(view,/data-mytube-course-type=\{type\}/);
- assert.match(view,/data-mytube-course-tradition=\{traditionId\}/);
- assert.match(view,/data-mytube-course-series=\{series\.id\}/);
+ const playlists=read("components/mytube-course-playlists.tsx");
+ assert.match(playlists,/data-mytube-course-type=\{value\}/);
+ assert.match(playlists,/data-mytube-course-tradition=\{value\}/);
+ assert.match(playlists,/data-mytube-course-series=\{group\.id\}/);
  assert.match(css,/\.mytube \.mytubeFormatTabs\{[^}]*grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
  for(const name of ["Практики","Курсы","Мастера","Видео","Practices","Courses","Masters","Videos","Prácticas","Cursos","Maestros","Vídeos"]){
    assert.ok(view.includes('"'+name+'"'),"translated label "+name);
