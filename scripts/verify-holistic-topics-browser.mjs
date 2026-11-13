@@ -32,9 +32,12 @@ async function waitForConsultationFixtures(page, locale, ids, label) {
     // The real directory can clear and refill results after the first paint.
     // Require exact IDs to remain continuously present across the delayed
     // fixture fetch and following React commit, not merely for two frames.
-    await new Promise(resolve => setTimeout(resolve, 300));
+    // On busy shared CI the React commit for the second filtered fetch may
+    // finish after the first visible match. Require a longer continuously
+    // exact result state; stale or mismatched fixtures still fail closed.
+    await new Promise(resolve => setTimeout(resolve, 900));
     return isExact();
-  }, expected, { timeout: 15000 });
+  }, expected, { timeout: 20000 });
   const actual = await page.locator("#holistic-inline-results article a[href]")
     .evaluateAll(links => links.map(link => link.getAttribute("href")).sort());
   assert.deepEqual(actual, expected, label + " only the requested published EUR fixture; CAD and stale results excluded");
