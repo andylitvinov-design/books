@@ -53,7 +53,9 @@ test('Assist and signed Telegram webhook preserve bot diagnostics, prefill, limi
  const ui=get('components/assist-top-recommendations.tsx');
  const provider=get('lib/crm/messenger-provider.js');
  const route=get('app/api/app/crm/messenger/webhook/[provider]/route.js');
- assert.match(ui,/telegramServiceRequestUrl\(id,locale\)/);
+ // The current Assist renders product cards by item.requestId; the older
+ // direct-id lookup is retained as a supported call shape.
+ assert.match(ui,/telegramServiceRequestUrl\((?:id|item\.requestId),locale\)/);
  assert.match(ui,/target="_blank"/);
  assert.match(ui,/data-assist-best-action=\{id\}/);
  assert.match(route,/verifyMessengerWebhook\(provider,raw,request.headers\)/);
