@@ -1,0 +1,17 @@
+/* Mobile-first task/PR model picker, always an advisory preference. */
+.hh-task-model{display:inline-flex;align-items:center;justify-content:center;max-width:100%;min-height:36px;padding:6px 11px;border-radius:22px;border:1px solid #9e73df;background:#2d214d;color:#efe3ff;font-size:13px;font-weight:700;line-height:1.2;text-align:center;overflow-wrap:anywhere;cursor:pointer}
+.hh-task-model[data-assigned="true"]{background:#18394d;border-color:#50c2db;color:#ddf9ff}
+.pm-task-head,.hh-pt-pr-head{flex-wrap:wrap;gap:7px}
+.hh-model-backdrop{position:fixed;inset:0;z-index:3000;display:flex;align-items:flex-end;justify-content:center;background:#050813c9;padding:10px;padding-bottom:max(12px,env(safe-area-inset-bottom))}
+.hh-model-sheet{width:min(100%,530px);max-height:86dvh;overflow:hidden;display:flex;flex-direction:column;gap:12px;padding:17px;border:1px solid #7863a2;border-radius:21px;background:#171b35;color:#f7f4ff;box-shadow:0 16px 70px #0009}
+.hh-model-top,.hh-model-actions{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.hh-model-top h3{font-size:20px;line-height:1.25;margin:0}
+.hh-model-close,.hh-model-reset{min-height:42px;padding:8px 14px;border:1px solid #796f9c;border-radius:12px;color:#f4e9ff;background:#292743;font:inherit;cursor:pointer}
+.hh-model-note,.hh-model-state{margin:0;font-size:14px;line-height:1.42;color:#d4c9ed}
+.hh-model-search{width:100%;min-height:45px;padding:10px 12px;font-size:16px;background:#0e152b;border:1px solid #796f9c;color:#fff;border-radius:12px}
+.hh-model-list{overflow:auto;min-height:80px;max-height:43dvh;display:flex;flex-direction:column;gap:6px}
+.hh-model-option{padding:10px 12px;display:flex;flex-direction:column;gap:3px;align-items:flex-start;background:#232a4b;border:1px solid #525e87;border-radius:12px;color:#fff;text-align:left;font-size:15px;cursor:pointer}
+.hh-model-option small{font-size:12px;color:#aee2ff;overflow-wrap:anywhere}
+.hh-model-empty{font-size:14px;color:#c6bade}
+.hh-model-option:focus-visible,.hh-task-model:focus-visible,.hh-model-reset:focus-visible{outline:3px solid #be9bff;outline-offset:2px}
+@media(min-width:680px){.hh-model-backdrop{align-items:center}.hh-model-sheet{max-height:75dvh}}

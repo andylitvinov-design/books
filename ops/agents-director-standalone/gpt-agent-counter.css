@@ -1,0 +1,18 @@
+/* Three compact KPI cards in one mobile row; detailed scope below the cards. */
+.hh2-root .hh2-ci-kpis{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.hh2-root .hh2-ci-card,.hh2-root .hh-gpt-counter{min-width:0;padding:8px 7px;overflow-wrap:anywhere}
+.hh2-root .hh2-ci-card{gap:5px}
+.hh2-root .hh2-ci-card span,.hh2-root .hh-gpt-counter-title{font-size:11px;line-height:1.2;font-weight:700;color:#d1e4f4}
+.hh2-root .hh2-ci-card strong,.hh2-root .hh-gpt-counter-count{font-size:24px;line-height:1.12;font-weight:850;font-variant-numeric:tabular-nums}
+.hh2-root .hh-gpt-counter{display:flex;flex-direction:column;align-items:flex-start;gap:5px;border:1px solid #365979;border-radius:13px;background:#10283f}
+.hh2-root .hh-gpt-counter-count{color:#8ed1ff}
+.hh2-root .hh-gpt-counter[data-fresh="true"] .hh-gpt-counter-count{color:#73e2bd}
+.hh2-root .hh2-ci-card small,.hh2-root .hh-gpt-counter-note{font-size:9px;line-height:1.25;color:#a9bece;overflow-wrap:anywhere}
+.hh2-root .hh-gpt-counter-scope{font-size:10px;line-height:1.35;color:#a9bece;margin:0}
+@media(max-width:359px){
+ .hh2-root .hh2-ci-kpis{gap:4px}
+ .hh2-root .hh2-ci-card,.hh2-root .hh-gpt-counter{padding:7px 5px}
+ .hh2-root .hh2-ci-card span,.hh2-root .hh-gpt-counter-title{font-size:10px}
+ .hh2-root .hh2-ci-card small,.hh2-root .hh-gpt-counter-note{font-size:8px}
+ .hh2-root .hh2-ci-card strong,.hh2-root .hh-gpt-counter-count{font-size:21px}
+}

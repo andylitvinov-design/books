@@ -1,0 +1,13 @@
+
+#hh-skills-hub{display:grid;gap:13px}#hh-skills-hub .hh-skills-pane,#hh-skills-hub .hh-skills-results,#hh-skills-hub .hh-skill-card{border:1px solid #b59bd34a;border-radius:16px;background:linear-gradient(135deg,#292840,#1c2035);padding:14px}
+#hh-skills-hub h2{font-size:17px;margin:6px 0}#hh-skills-hub label{display:block;font-size:13px;font-weight:700;margin-bottom:8px}
+#hh-skills-hub textarea,#hh-skills-hub input,#hh-skills-hub select{font:inherit;width:100%;padding:12px;border:1px solid #8e72ac;border-radius:11px;background:#151a2e;color:#fff;font-size:16px;min-height:46px}
+#hh-skills-hub textarea{min-height:104px;resize:vertical}#hh-skills-hub select{font-size:13px;margin:10px 0;max-width:100%}
+#hh-skills-hub .hh-skills-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}#hh-skills-hub button,.hh-skills-shortcut button{font:inherit;border-radius:11px;min-height:44px;padding:9px 11px;background:#7b4bc3;border:1px solid #a38ad0;color:#fff;font-size:13px;font-weight:700;cursor:pointer}
+#hh-skills-hub .hh-skills-note,#hh-skills-hub .hh-skill-status{font-size:12px;color:#b9bdd1;line-height:1.5}#hh-skills-hub .hh-skills-output{font-size:13px;min-height:210px;max-height:50dvh;white-space:pre-wrap;line-height:1.5}
+#hh-skills-hub .hh-skills-library{display:grid;gap:10px}#hh-skills-hub .hh-skill-card-heading{display:flex;flex-direction:column;gap:4px}#hh-skills-hub .hh-skill-card-heading strong{font-size:14px}#hh-skills-hub .hh-skill-card-heading small{font-size:11px;color:#b8b4d2}#hh-skills-hub .hh-skill-card p{font-size:12px;color:#c7c6d6;margin:10px 0;line-height:1.5}
+#hh-skills-hub .hh-skill-actions{display:flex;gap:8px;flex-wrap:wrap}#hh-skills-hub .hh-skill-actions button{flex:1}#hh-skills-hub .hh-skill-actions button:last-child{flex:0 0 46px}
+#hh-skills-hub .hh-skill-chip{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #ffffff20}#hh-skills-hub .hh-skill-chip div{display:grid;gap:5px;min-width:0;flex:1}#hh-skills-hub .hh-skill-chip strong{font-size:13px}#hh-skills-hub .hh-skill-chip small{font-size:11px;color:#c6c0d3}
+#hh-skills-hub .hh-skill-md{white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px;line-height:1.45;background:#101425;padding:10px;border-radius:9px;max-height:350px;overflow:auto}
+.hh-skills-shortcut{margin:14px 0;background:#25243a;border:1px solid #9271c47b;border-radius:14px;padding:14px;color:#eee8fa}.hh-skills-shortcut h2{font-size:17px;margin:0 0 8px}.hh-skills-shortcut p{font-size:13px}.hh-skills-shortcut button{width:100%}
+@media(max-width:355px){#hh-skills-hub .hh-skills-actions{grid-template-columns:1fr}#hh-skills-hub .hh-skill-actions button{font-size:12px;padding:7px}}

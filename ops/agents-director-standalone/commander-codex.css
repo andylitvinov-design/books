@@ -1,0 +1,21 @@
+/* Shared mobile Codex handoff card for protected chats and task editor. */
+.hh-codex-card{display:grid;gap:11px;line-height:1.45}
+.hh-codex-card[hidden],.hh-codex-card [hidden]{display:none!important}
+.hh-codex-heading{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.hh-codex-heading h2{margin:0;font-size:18px;line-height:1.3}
+.hh-codex-pill{font-size:11px;background:#4b3c68;color:#e9d5ff;border:1px solid #9075b4;border-radius:50px;padding:4px 9px}
+.hh-codex-card .hh-codex-hint{margin:0;color:#c8c0d9;font-size:13px}
+.hh-codex-card form{display:grid;gap:10px;margin:0}
+.hh-codex-card form>label{display:grid;gap:5px;font-size:13px;color:#f0eaf6}
+.hh-codex-card input:not([type=checkbox]),.hh-codex-card select,.hh-codex-card textarea{box-sizing:border-box;display:block;max-width:100%;width:100%;background:#15162a;border:1px solid #81719e;color:#faf7ff;border-radius:11px;padding:10px 11px;font-size:15px;line-height:1.5}
+.hh-codex-card textarea{min-height:130px;resize:vertical}
+.hh-codex-card .hh-codex-consent{display:flex;align-items:flex-start;flex-direction:row;gap:9px;font-size:12px;line-height:1.5}
+.hh-codex-consent input[type=checkbox]{margin-top:3px;accent-color:#a38ff0;width:18px;height:18px;flex-shrink:0}
+.hh-codex-actions{display:flex;gap:8px;flex-wrap:wrap}
+.hh-codex-card button,.hh-codex-card a[data-codex=link]{border-radius:10px;padding:10px 12px;background:#393052;border:1px solid #9484aa;color:#f1eaff;min-height:44px;font-size:13px;font-weight:650;cursor:pointer}
+.hh-codex-card button:disabled{opacity:.5;cursor:not-allowed}
+.hh-codex-card .hh-codex-send{width:100%;background:#625296;border-color:#bca2fa;font-size:15px;min-height:48px}
+.hh-codex-card a[data-codex=link]{display:inline-flex;text-decoration:none;align-items:center;overflow-wrap:anywhere}
+.hh-codex-result{margin:0;min-height:35px;color:#e9d6ff;font-size:13px;overflow-wrap:anywhere}
+.hh-codex-card :is(button,input,select,textarea,a):focus-visible{outline:2px solid #dfceff;outline-offset:2px}
+@media(max-width:390px){.hh-codex-actions>*{flex:1 1 135px}}

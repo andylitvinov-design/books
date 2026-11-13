@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="color-scheme" content="dark"><title>Project Management · PR Monitor · Holistic House</title>
+<link rel="stylesheet" href="/project-management-nav.css">
+<link rel="stylesheet" href="/project-management-public.css?v=20261107-task-first-v2">
+<link rel="stylesheet" href="/pr-task-tree.css?v=20261107-comment-v3">
+<link rel="stylesheet" href="/project-management-selection.css">
+<link rel="stylesheet" href="/pr-ai-repair-handoff.css?v=20261107-ai-repair-v1">
+<link rel="stylesheet" href="/pm-agent-chat.css">
+<link rel="stylesheet" href="/owner-google-signin.css?v=20261107-v1">
+<script src="/project-management-proof.js" defer></script>
+<script src="/project-management-selection.js" defer></script>
+<script src="/owner-google-signin.js?v=20261107-v1" defer></script>
+<script src="/pm-agent-chat.js?v=20261107-sso-v1" defer></script>
+<script src="/pr-context-comments.js?v=20261107-comment-v3" defer></script>
+<script src="/project-management-public.js?v=20261107-comment-v3" defer></script>
+<script src="/pr-task-tree.js?v=20261107-comment-v3" defer></script>
+<script src="/pr-ai-repair-handoff.js?v=20261107-ai-repair-v1" defer></script>
+<script src="/project-management-nav.js?v=20261107-cc-v1" defer></script>
+</head>
+<body class="hh-pm-nav-ready pm-body">
+<nav id="hh-project-management-nav" aria-label="Навигация PR Monitor">
+<a class="hh-pm-tab hh-pm-link" href="https://holistic-house-pr-observatory.vercel.app/">PR Monitor</a>
+<span class="hh-pm-tab hh-pm-current" aria-current="page">Project Management</span>
+</nav>
+<main class="pm-page">
+<header class="pm-hero">
+<div class="pm-eyebrow">AGENT COMMANDER · ЗАДАЧИ</div>
+<h1>Задачи и PR</h1>
+<a class="pm-chat-shortcut" href="/chats.html">Рабочие чаты</a>
+</header>
+<section class="pm-overview" aria-label="Общая сводка">
+<div><strong id="pm-projects">—</strong><small>Больших проекта</small></div><div><strong id="pm-total">—</strong><small>Подзадачи</small></div>
+<div><strong id="pm-done">—</strong><small>Подтверждено</small></div><div><strong id="pm-blocked">—</strong><small>Блокировано</small></div>
+</section>
+<p id="pm-info" role="status">Загружаю публичные данные…</p>
+<details class="pm-filter-panel"><summary>Поиск и фильтры задач</summary>
+<section class="pm-controls" aria-label="Поиск и фильтр подзадач">
+<label for="pm-query">Найти подзадачу
+<input id="pm-query" type="search" autocomplete="off" placeholder="Название, номер или PR" aria-controls="pm-root"></label>
+<label for="pm-status-filter">Показать статус
+<select id="pm-status-filter" aria-controls="pm-root">
+<option value="all">Все задачи</option>
+<option value="blocked">Блокировано</option>
+<option value="planned">Не начато</option>
+<option value="partial">Частично</option>
+<option value="verified">Подтверждено</option>
+</select></label>
+<p id="pm-matches" aria-live="polite">Сначала доступны все задачи.</p>
+</section>
+</details>
+<section id="pm-root" aria-label="Проекты и подзадачи"></section>
+<details class="pm-live-panel"><summary>Все открытые PR по направлениям · GitHub</summary>
+<section id="hh-pr-task-tree" aria-label="Дерево задач и открытых PR"><p role="status">Загрузка открытых PR…</p></section>
+</details>
+<footer class="pm-footer">Привязанный PR не означает Merge. Успешный GitHub CI или Vercel READY не означает функционально проверенный LIVE.
+Внутренние решения и изменение кода защищены отдельно.</footer>
+</main></body></html>

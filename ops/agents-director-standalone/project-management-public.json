@@ -1,0 +1,517 @@
+{
+  "schema": "HH_PM_PUBLIC_V1",
+  "asOf": "2026-11-07T17:44:16.426Z",
+  "source": "owner-reviewed public task status snapshot; GitHub PR status verified on demand; LIVE requires independent receipt",
+  "projects": [
+    {
+      "key": "ci-head",
+      "title": "01 · CI → исправленный HEAD → Merge",
+      "summary": "Сокращение времени от первой CI до нового HEAD, защищённого Merge и подтверждённого LIVE.",
+      "stages": [
+        {
+          "key": "a-1",
+          "title": "Мониторинг CI — измерения",
+          "tasks": [
+            {
+              "id": "M01",
+              "title": "Корректно сопоставлять run_attempt и jobs первого/следующего CI",
+              "status": "verified",
+              "prs": [
+                3817
+              ]
+            },
+            {
+              "id": "M02",
+              "title": "Отделять свежие running/queued jobs от зависших workflow (Stale CI)",
+              "status": "partial",
+              "prs": [
+                3822
+              ]
+            },
+            {
+              "id": "M03",
+              "title": "Различать GitHub CI, другие Actions, PR created и merge на одном графике",
+              "status": "partial",
+              "prs": [
+                3820
+              ]
+            },
+            {
+              "id": "M04",
+              "title": "Путь каждого PR: Commit → CI → Fix → Green → Merge → LIVE",
+              "status": "partial",
+              "prs": [
+                3807
+              ]
+            },
+            {
+              "id": "M05",
+              "title": "Разложить первый CI → новый HEAD на 8 наблюдаемых интервалов",
+              "status": "planned",
+              "prs": []
+            }
+          ]
+        },
+        {
+          "key": "a-2",
+          "title": "Мониторинг CI — выпуск и coverage",
+          "tasks": [
+            {
+              "id": "M06",
+              "title": "Безопасно обновить отдельный Vercel PR Monitor полным source-бандлом",
+              "status": "verified",
+              "prs": [],
+              "evidence_url": "https://holistic-house-pr-monitor.vercel.app/",
+              "evidence_note": "Сохранено 118/118 предыдущих файлов при выпуске публичной вкладки; 4 файла добавлены, удалений нет"
+            },
+            {
+              "id": "M07",
+              "title": "Создать baseline и сравнение 24 ч / 7 дней именно по CI→HEAD",
+              "status": "planned",
+              "prs": []
+            },
+            {
+              "id": "M08",
+              "title": "Показывать настоящую загрузку исправляющих агентов",
+              "status": "planned",
+              "prs": []
+            },
+            {
+              "id": "M09",
+              "title": "Разделять commit event, реальную публикацию branch REF_UPDATED и старт следующей CI",
+              "status": "partial",
+              "prs": [
+                3817
+              ]
+            }
+          ]
+        },
+        {
+          "key": "a-3",
+          "title": "Ошибка → Triage → владелец",
+          "tasks": [
+            {
+              "id": "T01",
+              "title": "Извлекать первопричину из failed job/step для exact HEAD",
+              "status": "partial",
+              "prs": []
+            },
+            {
+              "id": "T02",
+              "title": "Передавать ошибку исполнителю событийно, а не ждать следующего часа",
+              "status": "partial",
+              "prs": []
+            },
+            {
+              "id": "T03",
+              "title": "Восстановить контроль реальных schedule-событий, не путать с dispatch",
+              "status": "partial",
+              "prs": []
+            },
+            {
+              "id": "T04",
+              "title": "Единый правообладатель PR×HEAD, Lease с TTL и атомарным перепроверенным claim",
+              "status": "partial",
+              "prs": []
+            },
+            {
+              "id": "T05",
+              "title": "Дедупликация root×PR; устранять один общий дефект, а не десятки похожих PR",
+              "status": "partial",
+              "prs": []
+            },
+            {
+              "id": "T06",
+              "title": "После двух циклов NO_SOURCE_WRITE менять исполнителя/путь, а не повторять анализ",
+              "status": "planned",
+              "prs": []
+            },
+            {
+              "id": "T07",
+              "title": "Разделить source-error, Specialist/WebKit, CI routing, BASE_ADVANCED, true DIRTY, security/manual",
+              "status": "partial",
+              "prs": [
+                3822
+              ]
+            },
+            {
+              "id": "T08",
+              "title": "Закончить переход от анализа :40 к разрешённому реальному source publisher",
+              "status": "blocked",
+              "prs": []
+            }
+          ]
+        },
+        {
+          "key": "a-4",
+          "title": "Repair Worker — исправление",
+          "tasks": [
+            {
+              "id": "R01",
+              "title": "Сначала безопасное детерминированное исправление (TS type imports / targeted ESLint)",
+              "status": "verified",
+              "prs": [
+                3830
+              ]
+            },
+            {
+              "id": "R02",
+              "title": "Подключить только подтверждённую бесплатную AI-модель, без платного fallback",
+              "status": "partial",
+              "prs": [
+                3830
+              ]
+            },
+            {
+              "id": "R03",
+              "title": "Проверить наличие и фактическую доступность бесплатного API key, без раскрытия секрета",
+              "status": "blocked",
+              "prs": []
+            },
+            {
+              "id": "R04",
+              "title": "Проверка patch на независимом checkout и актуальном original blob",
+              "status": "partial",
+              "prs": [
+                3830
+              ]
+            },
+            {
+              "id": "R05",
+              "title": "Автоматически опубликовать проверенный fix одним CAS на существующем PR",
+              "status": "partial",
+              "prs": [
+                3830
+              ]
+            }
+          ]
+        },
+        {
+          "key": "a-5",
+          "title": "Repair Worker — приёмка",
+          "tasks": [
+            {
+              "id": "R06",
+              "title": "Провести контрольный полный пример failed CI → repair → новый HEAD → новый CI",
+              "status": "planned",
+              "prs": []
+            },
+            {
+              "id": "R07",
+              "title": "Не считать workflow success исправлением без source SHA",
+              "status": "verified",
+              "prs": [
+                3755
+              ]
+            },
+            {
+              "id": "R08",
+              "title": "Безопасная семантическая интеграция true DIRTY, без слепого ours/theirs",
+              "status": "blocked",
+              "prs": []
+            },
+            {
+              "id": "R09",
+              "title": "Устранить известные классы WebKit E2E ошибок без ослабления проверки",
+              "status": "planned",
+              "prs": []
+            }
+          ]
+        },
+        {
+          "key": "a-6",
+          "title": "Ускорение CI и экономия runner",
+          "tasks": [
+            {
+              "id": "C01",
+              "title": "Публиковать один согласованный HEAD, а не по коммиту на файл",
+              "status": "verified",
+              "prs": []
+            },
+            {
+              "id": "C02",
+              "title": "Убрать нерелевантные benchmark/Public Services проверки для изолированного Video UI",
+              "status": "partial",
+              "prs": [
+                3835
+              ]
+            },
+            {
+              "id": "C03",
+              "title": "Отменять только superseded queued/started PR-head runs",
+              "status": "partial",
+              "prs": []
+            },
+            {
+              "id": "C04",
+              "title": "Исправить повторный BASE_ADVANCED без бесконечного cascade",
+              "status": "planned",
+              "prs": []
+            },
+            {
+              "id": "C05",
+              "title": "Двухступенчатая проверка: быстрые ошибки до дорогого браузера, но с тем же safety scope",
+              "status": "partial",
+              "prs": []
+            },
+            {
+              "id": "C06",
+              "title": "Отдельно измерять ожидание runner и wall time CI",
+              "status": "planned",
+              "prs": []
+            },
+            {
+              "id": "C07",
+              "title": "Переносить только проверенные кеши и результаты без новой волны CI",
+              "status": "planned",
+              "prs": []
+            },
+            {
+              "id": "C08",
+              "title": "Сопоставить локальные repair checks с обязательными проверками целевого PR",
+              "status": "partial",
+              "prs": [
+                3827
+              ]
+            }
+          ]
+        },
+        {
+          "key": "a-7",
+          "title": "Merge → LIVE и измерение эффекта",
+          "tasks": [
+            {
+              "id": "L01",
+              "title": "Защищённый native auto-merge только на exact-head Green",
+              "status": "partial",
+              "prs": []
+            },
+            {
+              "id": "L02",
+              "title": "Проверить после merge реальный Vercel READY, alias и функциональный smoke",
+              "status": "partial",
+              "prs": []
+            },
+            {
+              "id": "L03",
+              "title": "Связать этот реестр с Project Management → Task → PR",
+              "status": "partial",
+              "prs": [
+                3831
+              ]
+            },
+            {
+              "id": "L04",
+              "title": "Обновлять этот реестр по реальным HH_CURRENT/GitHub данным, не плодить мониторинги",
+              "status": "partial",
+              "prs": []
+            },
+            {
+              "id": "L05",
+              "title": "Раз в 7 дней проверять эффективность, а не число зеленых workflow",
+              "status": "planned",
+              "prs": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "ai-commits",
+      "title": "02 · Автоматизации → коммиты → Merge",
+      "summary": "Автоматические исправления должны завершаться настоящим коммитом, повторной CI и безопасным merge.",
+      "stages": [
+        {
+          "key": "b-1",
+          "title": "Ошибка и право на исправление",
+          "tasks": [
+            {
+              "id": "A01",
+              "title": "Подтвердить исходные NO_SOURCE_PUBLICATION инциденты",
+              "status": "verified",
+              "prs": [
+                3830
+              ]
+            },
+            {
+              "id": "A02",
+              "title": "Классифицировать causal failed step на exact HEAD",
+              "status": "partial",
+              "prs": []
+            },
+            {
+              "id": "A03",
+              "title": "Выделить эксклюзивный PR×HEAD lease и TTL",
+              "status": "partial",
+              "prs": []
+            },
+            {
+              "id": "A04",
+              "title": "Довести dispatch до реального запуска code executor",
+              "status": "partial",
+              "prs": [
+                3830
+              ]
+            },
+            {
+              "id": "A05",
+              "title": "Разделить PREPARED и SOURCE_COMMITTED",
+              "status": "verified",
+              "prs": [
+                3755
+              ]
+            },
+            {
+              "id": "A06",
+              "title": "Подтвердить доступность бесплатного API ключа",
+              "status": "blocked",
+              "prs": []
+            },
+            {
+              "id": "A07",
+              "title": "Проверять реальную цену 0 и запретить платный fallback",
+              "status": "verified",
+              "prs": [
+                3830
+              ]
+            },
+            {
+              "id": "A08",
+              "title": "Отделить ручные/security holds от автоисправлений",
+              "status": "partial",
+              "prs": [
+                3830
+              ]
+            }
+          ]
+        },
+        {
+          "key": "b-2",
+          "title": "Исполнитель → тест → source commit",
+          "tasks": [
+            {
+              "id": "B01",
+              "title": "Детерминированный fix до AI",
+              "status": "verified",
+              "prs": [
+                3830
+              ]
+            },
+            {
+              "id": "B02",
+              "title": "Одна попытка бесплатного AI только при no-patch",
+              "status": "partial",
+              "prs": [
+                3830
+              ]
+            },
+            {
+              "id": "B03",
+              "title": "Изолированный checkout исходного PR HEAD",
+              "status": "partial",
+              "prs": [
+                3830
+              ]
+            },
+            {
+              "id": "B04",
+              "title": "Независимая верификация патча",
+              "status": "partial",
+              "prs": [
+                3830
+              ]
+            },
+            {
+              "id": "B05",
+              "title": "Защитить секреты и запрещённые зоны исходников",
+              "status": "verified",
+              "prs": [
+                3830
+              ]
+            },
+            {
+              "id": "B06",
+              "title": "Публиковать пакет атомарным Git commit/CAS",
+              "status": "partial",
+              "prs": [
+                3830
+              ]
+            },
+            {
+              "id": "B07",
+              "title": "Подтвердить git REF_UPDATED и новый HEAD readback",
+              "status": "partial",
+              "prs": [
+                3830
+              ]
+            },
+            {
+              "id": "B08",
+              "title": "Эскалировать после двух циклов NO_SOURCE_WRITE",
+              "status": "planned",
+              "prs": []
+            }
+          ]
+        },
+        {
+          "key": "b-3",
+          "title": "PR → CI → Merge → LIVE доказательства",
+          "tasks": [
+            {
+              "id": "D01",
+              "title": "Выбирать только разрешённые красные PR",
+              "status": "partial",
+              "prs": []
+            },
+            {
+              "id": "D02",
+              "title": "Одна исправляющая публикация — одна новая волна CI",
+              "status": "partial",
+              "prs": [
+                3830
+              ]
+            },
+            {
+              "id": "D03",
+              "title": "Обязательный exact-HEAD Core",
+              "status": "verified",
+              "prs": []
+            },
+            {
+              "id": "D04",
+              "title": "Не ослаблять Specialist, WebKit и hh-merge-check",
+              "status": "verified",
+              "prs": []
+            },
+            {
+              "id": "D05",
+              "title": "Передавать прошедший PR в native auto-merge",
+              "status": "partial",
+              "prs": []
+            },
+            {
+              "id": "D06",
+              "title": "Сверить deployment READY/alias и функциональный smoke",
+              "status": "partial",
+              "prs": []
+            },
+            {
+              "id": "D07",
+              "title": "Показывать все source outcomes в Project Management",
+              "status": "planned",
+              "prs": [
+                3831
+              ]
+            },
+            {
+              "id": "D08",
+              "title": "Доказать полноценный бесплатный FAIL→COMMIT→MERGE",
+              "status": "blocked",
+              "prs": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

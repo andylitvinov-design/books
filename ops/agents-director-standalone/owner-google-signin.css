@@ -1,0 +1,10 @@
+/* Mobile-first Google owner entry, no blocking overlay or password prompt. */
+.hh-sso-slot{max-width:100%;min-height:60px;margin:14px 0 6px;display:grid;justify-items:start;gap:8px}
+.hh-sso-button{max-width:100%;min-height:44px}
+.hh-sso-status{font-size:14px;line-height:1.5;color:#d9c6ee;margin:0}
+.hh-sso-backup{margin-top:18px;font-size:13px;color:#c9bddb}
+.hh-sso-backup summary{cursor:pointer;min-height:44px;display:flex;align-items:center}
+.hh-sso-backup form{display:grid;gap:10px;margin-top:10px}
+.hh-sso-backup input{width:100%;min-height:48px}
+
+.hh-sso-button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 18px;border-radius:12px;text-decoration:none;font-weight:700}
