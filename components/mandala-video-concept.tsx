@@ -15,6 +15,7 @@ import {suggestVideoConcept,reviseVideoConcept,videoConceptIsValid}
   from "@/lib/mandala/auto-video-concept.mjs";
 import type {PublicLocale} from "@/lib/public-locales";
 import {buildVideoConceptNarrative} from "@/lib/mandala/video-concept-narrative.mjs";
+import {getVideoCreativeDirections,applyVideoCreativeDirection} from "@/lib/mandala/video-creative-directions.mjs";
 import css from "./mandala-video-concept.module.css";
 
 export type ApprovedVideoConcept={
@@ -26,6 +27,9 @@ export type ApprovedVideoConcept={
   hasPersonalInput:boolean;inferredTopic:boolean;
   semanticConfidence?:string;semanticPurpose?:string|null;semanticAudience?:string|null;
   conceptText?:string;energyStart?:number|null;energyTarget?:number|null;
+  baseSignature?:string;creativeDirectionId?:string;creativeTitle?:string;creativeMode?:string;
+  creativeSymbol?:string;
+  storySource?:string;storyboard?:Array<{title:string;action:string;emotion:string;keywords:string[]}>;
   avoidImagery?:string[];speechBeatsSource?:string;personalizationFocus?:string|null;
   parameters?:Record<string,{value:string|string[]|null;status:string;source:string}>;
 };
@@ -92,6 +96,14 @@ const COPY={
   guest:"Propuesta gratuita · sin registro",noGoal:"Precisar objetivo",editStyle:"Abrir estilos"
  }
 } as const;
+const DIRECTION_UI={
+  ru:{title:"Выберите историю",lead:"Три разных сюжета по вашей цели. Выберите тот, который откликается.",
+    badge:"Режиссёрские варианты",settings:"Творческие настройки"},
+  en:{title:"Choose your story",lead:"Three different films inspired by your goal. Choose the one that feels right.",
+    badge:"Creative directions",settings:"Creative settings"},
+  es:{title:"Elige tu historia",lead:"Tres relatos distintos basados en tu objetivo. Elige el que más te inspire.",
+    badge:"Propuestas creativas",settings:"Ajustes creativos"}
+} as const;
 export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speechTranscript=null,ownerFields,profile=null,selectedTopic=null,durationSeconds=30,approvedConcept,signedIn,
   loginUnavailable,disabled,onRefreshLogin,onApprove,onOpenGoal,onOpenStyle}:Props){
   const t=COPY[locale]||COPY.en;
@@ -101,6 +113,16 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
     personalization:profile?summarizeVideoGoalProfile(profile,locale):null,
     selectedTopicId:selectedTopic?.topicId||null,creativeBrief:selectedTopic?.brief||null
   }) as ApprovedVideoConcept,[locale,goal,theme,styleIndex,phraseSignature,speechTranscript,profile,selectedTopic?.topicId,selectedTopic?.brief]);
+  const [chosenDirectionId,setChosenDirectionId]=useState<string|null>(null);
+  const directions=useMemo(()=>getVideoCreativeDirections(suggested,locale),
+    [suggested,locale]);
+  const selectedDirection=directions.find(d=>d.id===chosenDirectionId)||
+    (approvedConcept?.baseSignature===suggested.signature?
+      directions.find(d=>d.id===approvedConcept?.creativeDirectionId):undefined)||
+    directions[0];
+  const directed=useMemo(()=>selectedDirection?
+    applyVideoCreativeDirection(suggested,selectedDirection) as ApprovedVideoConcept:suggested,
+    [suggested,selectedDirection]);
   const [custom,setCustom]=useState<ApprovedVideoConcept|null>(null);
   const [textEditing,setTextEditing]=useState(false);
   const [textDraft,setTextDraft]=useState("");
@@ -110,8 +132,8 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
   const [hasLocalEdits,setHasLocalEdits]=useState(false);
   const editButtonRef=useRef<HTMLButtonElement>(null);
   const modalRef=useRef<HTMLDivElement>(null);
-  const concept=(custom&&custom.signature===suggested.signature)?custom:
-    (approvedConcept&&approvedConcept.signature===suggested.signature?approvedConcept:suggested);
+  const concept=(custom&&custom.signature===directed.signature)?custom:
+    (approvedConcept&&approvedConcept.signature===directed.signature?approvedConcept:directed);
   const taxonomy=getMyTubeTaxonomy();
   const categories=taxonomy.categories;
   const category=categories.find(c=>c.id===concept.categoryId)||categories[0];
@@ -150,8 +172,29 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
     return()=>{(before||editButtonRef.current)?.focus();};
   },[loginOpen]);
 
+  const chooseDirection=(id:string)=>{
+    if(id===selectedDirection?.id)return;
+    setChosenDirectionId(id);
+    setCustom(null);setApprovedSignature(null);setHasLocalEdits(false);
+    setTextEditing(false);setEditing(false);
+  };
   const change=(patch:Partial<ApprovedVideoConcept>)=>{
     const next=reviseVideoConcept(concept,patch,locale) as ApprovedVideoConcept;
+    if(Object.keys(patch).some(key=>
+      ["categoryId","subcategoryId","topicId","scenarioId","meaningAxisId","motifId"].includes(key))){
+      const editedScenario=listMyTubeScenarios(next.topicId,locale)
+        .find(s=>s.id===next.scenarioId);
+      next.mainMessage=editedScenario?.label||next.mainMessage;
+      next.conceptText=undefined;next.storyboard=undefined;next.creativeDirectionId=undefined;
+      next.creativeTitle=undefined;next.creativeSymbol=undefined;
+      next.creativeMode=undefined;next.storySource=undefined;
+      if(next.parameters){
+        const defaultVisual=listMyTubeStyles(locale).find(s=>s.id===next.styleId)?.description||null;
+        next.parameters={...next.parameters,
+          visualWorld:{value:defaultVisual,status:"manual",source:"editor"},
+          visualActions:{value:[...next.sceneOutline],status:"manual",source:"editor"}};
+      }
+    }
     setCustom(next);setApprovedSignature(null);setHasLocalEdits(true);
   };
   const startTextEdit=()=>{setTextDraft(narrativeText);setTextEditing(true);};
@@ -247,7 +290,8 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
     audience:concept.semanticAudience?audienceText[concept.semanticAudience]||concept.semanticAudience:null,
     categoryId:category.label[locale],subcategoryId:subcategory.label[locale],
     topicId:displayedTopic,meaningAxisId:meaning?.label||null,
-    motifId:motif?.label||null,scenarioId:scenario?.label||null,
+    motifId:concept.creativeSymbol||motif?.label||null,
+    scenarioId:concept.creativeTitle||scenario?.label||null,
     styleId:style?.label||null
   };
 
@@ -263,8 +307,31 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
       {t.example} <button type="button" disabled={disabled} onClick={onOpenGoal}>{t.noGoal}</button>
     </p>:null}
     {approvedSignature&&!approved?<p className={css.example} role="status">{t.changed}</p>:null}
+    {directions.length>1?<section className={css.directionChooser} data-video-concept-directions
+       aria-label={DIRECTION_UI[locale].title}>
+       <span className={css.directionEyebrow}><Sparkles size={14} aria-hidden="true"/>
+         {DIRECTION_UI[locale].badge}</span>
+       <h4>{DIRECTION_UI[locale].title}</h4>
+       <p>{DIRECTION_UI[locale].lead}</p>
+       <div className={css.directionGrid}>
+         {directions.map(direction=><button type="button" key={direction.id}
+           className={css.directionOption} data-video-concept-direction={direction.id}
+           aria-pressed={selectedDirection?.id===direction.id}
+           disabled={disabled||textEditing||editing}
+           onClick={()=>chooseDirection(direction.id)}>
+           <span className={css.directionOptionTop}>
+             <strong>{direction.title}</strong>
+             <span className={css.directionRadio} aria-hidden="true">
+               {selectedDirection?.id===direction.id?<Check size={15}/>:null}</span>
+           </span>
+           <small>{direction.mode}</small>
+           <span className={css.directionIdea}>{direction.idea}</span>
+         </button>)}
+       </div>
+     </section>:null}
     <section className={css.mainIdeaCard} aria-label={t.story}>
       <h4>{t.story}</h4>
+      {concept.creativeTitle?<span className={css.conceptTitle}>{concept.creativeTitle}</span>:null}
       <strong data-video-concept-main-idea="true">{concept.mainMessage}</strong>
     </section>
     <section className={css.narrativeCard} data-video-concept-text>
@@ -326,8 +393,8 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
       <button type="button" className={css.styleLink} onClick={onOpenStyle}
         disabled={disabled}><Sparkles size={17}/>{t.editStyle}<ArrowRight size={16}/></button>
     </div> : null}
-    {concept.parameters?<section className={css.parameters} data-video-concept-all-parameters>
-      <h4>{t.parameters}</h4>
+    {concept.parameters?<details className={css.parameters} data-video-concept-all-parameters>
+      <summary><strong>{DIRECTION_UI[locale].settings}</strong><ChevronDown size={19} aria-hidden="true"/></summary>
       <ol className={css.parameterList}>{allParameterRows.map(row=>{
         const item=concept.parameters?.[row.id];
         const v=item?.status==="synchronized"?ownerFields?.[row.id as keyof NonNullable<Props["ownerFields"]>]??item?.value:item?.value;
@@ -354,7 +421,7 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
             <div className={css.parameterValue}>{value}</div>}
         </li>;
       })}</ol>
-    </section>:null}
+    </details>:null}
     {concept.personalizationFocus?<p className={css.status} data-video-concept-personalization-focus>
       {word("Что укрепляем","Personalization focus","Enfoque personal")}: {concept.personalizationFocus}
     </p>:null}
@@ -387,7 +454,9 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
         <ChevronDown size={17} aria-hidden="true"/></summary>
       <ol className={css.parameterList}>{sketch.map(shot=><li key={shot.number}>
         <strong>{timecode(shot.startSeconds)}–{timecode(shot.endSeconds)}</strong> ·
-        {" "}{shotKinds[shot.shotKind]}: {shot.beat}
+        {" "}{shot.title?<span className={css.shotTitle}>{shot.title}</span>:
+          shotKinds[shot.shotKind]}: <span className={css.shotAction}>{shot.beat}</span>
+        {shot.emotion?<small className={css.shotEmotion}>{shot.emotion}</small>:null}
       </li>)}</ol>
       <p className={css.status}>{word(
         "Это план сцен, не подтверждение наличия разных видеоматериалов. Подбор и проверка MP4 — в Монтаже.",

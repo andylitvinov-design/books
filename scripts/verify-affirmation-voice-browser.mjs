@@ -158,6 +158,10 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(concept.locator("[data-video-concept-all-parameters]")).toBeVisible();
     const mainBox=await headline.boundingBox(),storyBox=await narrative.boundingBox();
     assert.ok(mainBox&&storyBox&&mainBox.y<storyBox.y,"Main idea above story on iPhone");
+    // Advanced production fields now stay folded under Creative settings;
+    // expand the disclosure before checking one-column geometry.
+    await concept.locator("[data-video-concept-all-parameters] > summary").click();
+    await expect(concept.locator("[data-video-concept-all-parameters]")).toHaveAttribute("open","");
     const rects=await concept.locator("[data-concept-parameter]").evaluateAll(nodes=>
       nodes.map(node=>{const r=node.getBoundingClientRect();return {x:r.x,y:r.y};}));
     assert.ok(rects.length>=6&&rects.length<=26,"Only visible decision-relevant parameters");

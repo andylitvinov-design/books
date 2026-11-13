@@ -7298,7 +7298,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               // Existing manually edited text clips, voice, music and media are retained.
               if(!timelineTextClips?.length){
                 setMontageScriptText(approved.sceneOutline.join("\n"));
-                if(cinematicPlan?.version===FREE_FILM_PLAN_VERSION&&
+                if(!approved.storyboard?.length&&cinematicPlan?.version===FREE_FILM_PLAN_VERSION&&
                   cinematicPlan.shots.length>=4&&captionMode!=="custom"){
                   setCinematicPlan(current=>current?.version===FREE_FILM_PLAN_VERSION
                     ? {...current,shots:current.shots.map((shot,index)=>({
@@ -7307,9 +7307,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 }
               }
               setPreviewPlaying(false);
-              setNotice(locale==="ru"?"Концепция одобрена. Выберите стиль и аудио в разделе «Монтаж».":
-                locale==="es"?"Concepto aprobado. Elige el estilo y audio en Montaje.":
-                "Concept approved. Choose style and audio in Montage before making the video.");
+              setNotice(approved.storyboard?.length?
+                (locale==="ru"?"История одобрена. В Монтаже проверьте реальные кадры на соответствие сценам. Неподходящие материалы не подставляем.":
+                 locale==="es"?"Historia aprobada. En Montaje comprueba que las tomas reales correspondan a cada escena.":
+                 "Story approved. In Montage, check that real footage matches each scene; unrelated clips will not be substituted."):
+                (locale==="ru"?"Концепция одобрена. Выберите стиль и аудио в разделе «Монтаж».":
+                 locale==="es"?"Concepto aprobado. Elige el estilo y audio en Montaje.":
+                 "Concept approved. Choose style and audio in Montage before making the video."));
               setActiveWorkspace("editor");setMontagePanel("effects");
             }}/>
         </div>
@@ -8170,6 +8174,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               locale={locale} goal={wish} theme={theme} durationSeconds={duration}
               aspect={aspect} styleIndex={quickStyleIndex} pace={speed}
               personalization={ideasProfileConfirmed?summarizeVideoGoalProfile(ideasProfile,locale):null}
+              selectedTopic={selectedConceptTopic}
               appliedStoryKey={appliedStoryKey} phrases={affirmationLines}
               transcript={voiceTranscript} approvedConcept={approvedVideoConcept}
               scenes={FREE_FILM_CATALOG}
