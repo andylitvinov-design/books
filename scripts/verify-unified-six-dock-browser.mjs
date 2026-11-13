@@ -634,15 +634,32 @@ try{
  assert.equal(await focusedComposer.evaluate(el=>document.activeElement===el),true,
    "the real Messenger composer receives focus");
  // Keep the substantive viewport/assistant visibility assertion below intact.
- await page.waitForFunction(()=>{
-   const thread=document.querySelector('[data-hh-agent-preview] [role="log"]');
-   const replies=thread?.querySelectorAll('[data-hh-ai-assistant-message]');
-   const reply=replies?.item(replies.length-1);
-   if(!thread||!reply)return false;
-   const viewport=thread.getBoundingClientRect(),bubble=reply.getBoundingClientRect();
-   return bubble.bottom<=viewport.bottom+2&&bubble.bottom>=viewport.top+44
-     &&bubble.left<viewport.right-8&&bubble.right>viewport.left+8;
- },null,{timeout:10000});
+ try{
+   await page.waitForFunction(()=>{
+     const thread=document.querySelector('[data-hh-agent-preview] [role="log"]');
+     const replies=thread?.querySelectorAll('[data-hh-ai-assistant-message]');
+     const reply=replies?.item(replies.length-1);
+     if(!thread||!reply)return false;
+     const viewport=thread.getBoundingClientRect(),bubble=reply.getBoundingClientRect();
+     return bubble.bottom<=viewport.bottom+2&&bubble.bottom>=viewport.top+44
+       &&bubble.left<viewport.right-8&&bubble.right>viewport.left+8;
+   },null,{timeout:10000});
+ }catch(error){
+   // Fail closed with geometry rather than looping CI on an opaque timeout.
+   // No message text, account data, media or secrets are recorded.
+   const geometry=await page.evaluate(()=>{
+     const thread=document.querySelector('[data-hh-agent-preview] [role="log"]');
+     const replies=thread?.querySelectorAll('[data-hh-ai-assistant-message]');
+     const reply=replies?.item(replies.length-1);
+     const box=el=>{if(!el)return null;const r=el.getBoundingClientRect();
+       return {top:Math.round(r.top),bottom:Math.round(r.bottom),height:Math.round(r.height)};};
+     return {focused:document.activeElement?.tagName,
+       replyCount:replies?.length??0,thread:box(thread),lastReply:box(reply),
+       scrollTop:thread?.scrollTop??null,scrollHeight:thread?.scrollHeight??null,
+       clientHeight:thread?.clientHeight??null,overflow:thread?getComputedStyle(thread).overflowY:null};
+   });
+   throw new Error("FOCUSED_AI_REPLY_NOT_VISIBLE "+JSON.stringify(geometry),{cause:error});
+ }
  assert.equal(await chat.locator("[data-hh-video-sign-in]").count(),0,
    "no login before the creative questionnaire");
  const agentComposer=chat.locator("textarea");

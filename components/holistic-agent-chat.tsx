@@ -422,7 +422,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   // Focused iPhone composer: preserve the most recent AI reply or first
   // welcome question in the visible transcript, without moving the page.
   const revealFocusedContext=useCallback(()=>{
-    if(!compact||!messengerView||!composerFocused.current)return;
+    if(!compact||!messengerView)return;
     const thread=threadRef.current;
     if(!thread)return;
     const aiReplies=thread.querySelectorAll('[data-hh-ai-assistant-message]');
@@ -458,12 +458,16 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         return;
       }
       if(followTail.current){
-        // Keep the latest complete AI reply visible, not just the preceding user turn.
-        // Scroll only the transcript: never move the pinned composer or Safari viewport.
-        const target=Math.max(0,thread.scrollHeight-thread.clientHeight);
-        programmaticScrollTop.current=target;
-        thread.scrollTop=target;
-        setNewBelow(false);
+        // A long option group lives AFTER the latest AI question in the log.
+        // On Messenger show that question above the composer, not the tail
+        // of the option list. Preserve manual reading when followTail=false.
+        if(messengerView)revealFocusedContext();
+        else{
+          const target=Math.max(0,thread.scrollHeight-thread.clientHeight);
+          programmaticScrollTop.current=target;
+          thread.scrollTop=target;
+          setNewBelow(false);
+        }
       }else if(messages.length)setNewBelow(true);
     };
     revealLatest();
@@ -482,15 +486,10 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       frame=window.requestAnimationFrame(()=>{
         // The keyboard resizes before the first text message too. A reader
         // manually browsing old turns may still scroll without being pulled.
-        if(composerFocused.current){
-          if(followTail.current)revealFocusedContext();
-          return;
-        }
-        if(!messages.length||!followTail.current)return;
-        const target=Math.max(0,thread.scrollHeight-thread.clientHeight);
-        programmaticScrollTop.current=target;
-        thread.scrollTop=target;
-        setNewBelow(false);
+        // A viewport resize must not undo the focused reply placement by
+        // jumping to the bottom of interactive choices.
+        if(!followTail.current||(!messages.length&&!composerFocused.current))return;
+        revealFocusedContext();
       });
     };
     // The keyboard changes iPhone's visual viewport after the textarea is focused;
