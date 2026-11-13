@@ -134,7 +134,7 @@ test("one screenshot-1 style seven-button dock and protected old docks removed v
  assert.match(dock,/viewport\?\.addEventListener\("scroll", update/);
  assert.match(dock,/viewport\?\.removeEventListener\("scroll", update/);
  assert.match(dock,/hideForKeyboard/);
- assert.match(css,/min-height:52px/);
+ assert.match(css,/min-height:54px/);\n assert.match(css,/min-height:94px/);\n assert.match(css,/top:-38px;left:50%;transform:translateX\\(-50%\\)/);
  for(const former of ["data-support-mobile-bottom-nav","data-mandala-support-bottom-nav",
   ".hh-mobile-app-nav",".hh-practice-inner-dock","data-legacy-practice-bottom-nav",".mobile-bottom-navigation"])
   assert.ok(hide.includes(former),former);
