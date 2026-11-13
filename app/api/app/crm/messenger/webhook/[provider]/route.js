@@ -13,7 +13,7 @@ import {processTelegramCompanion} from '@/lib/crm/telegram-companion-service'
 import {processTelegramAiV3,finishTelegramAiV3} from '@/lib/crm/telegram-ai-diagnostic-v3-service'
 import {shouldBootstrapTelegramNativeMenu} from '@/lib/crm/telegram-companion-native-commands.mjs'
 import { receiveOwnerTelegramVideoWebhook } from '@/lib/practitioners/owner-telegram-video-service'
-import { telegramBusinessRequestFromUpdate, telegramBusinessRequestReply } from '@/lib/assist/telegram-business-request.mjs'
+import {processTelegramBusinessConversation} from '@/lib/crm/telegram-business-service'
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
 export const revalidate=0
@@ -54,24 +54,28 @@ export async function POST(request,{params}){
         return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
       }
     }
-    // Signed business_message from a customer contacting the separate owner's
-    // @holistichouse account. Never create an unconsented CRM lead here.
+    // Separate signed Business-chat service intake: only public service-code
+    // messages and explicit short replies, never ordinary personal text or
+    // diagnostic/Companion updates. Confirmation persists before acknowledgement.
     if(provider==='telegram'){
-      const draft=telegramBusinessRequestFromUpdate(body)
-      if(draft&&process.env.HH_CRM_TG_CHAT_AUTOMATION_ENABLED==='true'){
-        try{
-          await consumeRate(config,{op:'hh-tg-business-intent-message',
-            connectionId:draft.connectionId,chatId:draft.chatId,messageId:draft.messageId},1,7*86400)
-          await consumeRate(config,{op:'hh-tg-business-intent-chat',
-            connectionId:draft.connectionId,chatId:draft.chatId},3,86400)
-          await consumeRate(config,{op:'hh-tg-business-intent-global'},100,86400)
-          await sendHolisticBusinessRequestReply({connectionId:draft.connectionId,
-            to:draft.chatId,text:telegramBusinessRequestReply(draft)})
-        }catch{
-          // No automatic retry after uncertain provider status or budget cap.
-          // The original request is still visible in the owner's Telegram.
-          console.error('HH_TG_BUSINESS_REPLY_NOT_CONFIRMED')
+      const business=await processTelegramBusinessConversation(body,config)
+      if(business.handled){
+        if(business.reply){
+          try{
+            await consumeRate(config,{op:'hh-tg-business-intent-message',
+              connectionId:business.connectionId,chatId:business.to,
+              messageId:business.messageId},1,7*86400)
+            await consumeRate(config,{op:'hh-tg-business-intent-chat',
+              connectionId:business.connectionId,chatId:business.to},3,86400)
+            await consumeRate(config,{op:'hh-tg-business-intent-global'},100,86400)
+            await sendHolisticBusinessRequestReply({connectionId:business.connectionId,
+              to:business.to,text:business.reply})
+          }catch{
+            // Provider acceptance is not delivery; never re-send blindly.
+            console.error('HH_TG_BUSINESS_REPLY_NOT_CONFIRMED')
+          }
         }
+        return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
       }
     }
 

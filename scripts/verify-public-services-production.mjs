@@ -7,6 +7,7 @@ const { chromium } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
 const { expect } = require((process.env.HH_PLAYWRIGHT_PACKAGE || "playwright") + "/test");
 import assert from "node:assert/strict";
 import { inferAssistPreferences, rankAssistOffers } from "../lib/assist/service-match.mjs";
+import { telegramServiceRequestUrl } from "../lib/assist/telegram-business-request.mjs";
 import { mkdir, writeFile } from "node:fs/promises";
 
 const origin = process.env.HH_PUBLIC_QA_ORIGIN || "http://127.0.0.1:3100";
@@ -135,9 +136,18 @@ try {
     await expect(directionTabs).toHaveCount(6);
     const bestCards = shelf.locator("[data-assist-best-card]");
     await expect(bestCards).toHaveCount(3);
+    // Exact real Telegram chat draft, no /start or website order screen.
+    // Verify all three selected services, RU/EN/ES and safe external links.
     for (const key of ["homeopathy","coaching","reiki"]) {
       const action = shelf.locator('[data-assist-best-action="' + key + '"]');
-      await expect(action).toHaveAttribute("href", /^https:\/\/t\.me\/holistichouse\?text=/);
+      const href = telegramServiceRequestUrl(key, locale);
+      assert.ok(href?.startsWith("https://t.me/holistichouse?text="));
+      await expect(action).toHaveAttribute("href", href);
+      await expect(action).toHaveAttribute("target", "_blank");
+      await expect(action).toHaveAttribute("rel", "noopener noreferrer");
+      const url = new URL(href);
+      assert.equal(url.searchParams.has("start"), false);
+      assert.ok(url.searchParams.get("text")?.includes("[HH-REQ:" + key + ":" + locale + "]"));
     }
     await directionTabs.nth(1).click();
     await expect(shelf.locator("[data-assist-selected-direction]"))
