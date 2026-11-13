@@ -210,4 +210,4 @@ export function MandalaVideoEffectJourney({locale,status,progress,videoStarted,v
       {status==="ready"?t.ready:status==="failed"?t.failedShort:t.progress}
       {status==="rendering"||status==="verifying"?" · "+renderedProgress+"%":null}
     </button>,document.body);
-
+}
