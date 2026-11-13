@@ -108,6 +108,9 @@ test("route-aware single dock, guest/signed-in consistency and private pages exc
  assert.equal(isUnifiedMobileDockPath("/ru/holistic-support/mandala-evil"),false);
 });
 test("public editorial journeys share the approved seven-item dock without private-route spillover",()=>{
+ const declaration=read("lib/unified-mobile-dock.d.mts");
+ assert.ok(declaration.includes("isUnifiedMobileDockAppPath"));
+ assert.ok(declaration.includes("isUnifiedMobileDockEditorialPath"));
  const dock=read("components/unified-mobile-dock.tsx");
  const legacy=read("components/mobile-bottom-navigation.tsx");
  const css=read("components/unified-mobile-dock.module.css");
