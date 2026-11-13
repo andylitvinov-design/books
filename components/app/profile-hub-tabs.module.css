@@ -86,3 +86,9 @@
 .packageFinePrint{margin:7px 0 0!important;font-size:10.5px;line-height:1.35;color:#66716b}
 @media(max-width:360px){.settingsIdentity,.connectionOverview,.packagesOverview{padding:8px}.accountDetails{grid-template-columns:1fr 1.2fr .6fr;gap:5px}.packageCard{padding:8px 6px}.packageCard strong{font-size:12px}.packageCard>span{font-size:14px}}
 @media(min-width:768px){.hub[data-profile-active=settings] .hero{max-width:600px}.hub[data-profile-active=settings] .settingsOverview{grid-template-columns:1fr 1fr}.hub[data-profile-active=settings] .settingsIdentity{grid-column:1/-1}}
+
+/* Single universal profile entry, available to both guests and registered users. */
+.profileHeadingActions{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:6px}
+.myPageLink{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:8px 10px;background:#eaf7f1;border:1px solid #cbe4d5;border-radius:13px;color:#075d4d;text-decoration:none;font-size:12px;font-weight:750;white-space:nowrap}
+.myPageLink:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+@media(max-width:430px){.profileHeadingActions{flex:0 1 auto;gap:4px}.myPageLink{padding:7px 8px;font-size:11px}}

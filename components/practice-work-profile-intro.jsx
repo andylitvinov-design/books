@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { BookOpen, ClipboardList, FileText, Home, Leaf, Plus, Users, BriefcaseBusiness } from 'lucide-react'
 import { ProfileModeSwitch } from './master-mode-switch'
 import styles from './app/profile-hub-tabs.module.css'
@@ -31,7 +32,13 @@ export default function PracticeWorkProfileIntro({ locale, t, onAction }) {
   return <section className={styles.hub} data-profile-hub-tabs data-profile-work-hub data-profile-active="today">
     <header className={styles.heading} data-practice-workspace-heading>
       <div><p className={styles.eyebrow}>{t.spaceEyebrow}</p><h2>{t.title}</h2></div>
-      <ProfileModeSwitch locale={locale} active="work" />
+      <div className={styles.profileHeadingActions}>
+        <Link href={'/' + locale + '/my-page'} prefetch={false}
+          className={styles.myPageLink} data-work-my-page>
+          {locale === 'ru' ? 'Моя страница' : locale === 'es' ? 'Mi página' : 'My Page'}
+        </Link>
+        <ProfileModeSwitch locale={locale} active="work" />
+      </div>
     </header>
     <nav className={styles.tabs} data-work-profile-tabs aria-label={t.workNavigation}>
       {TABS.map(({id,action,Icon}) =>

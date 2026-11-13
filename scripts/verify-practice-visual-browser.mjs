@@ -108,6 +108,11 @@ for(const browserType of [chromium,webkit]){
             label+' no old Master Network masthead or double finder/share gate')
           assert.equal(await root.locator('[data-profile-mode="work"]').getAttribute('aria-current'),
             'page',label+' Work active in Profile switch')
+          const myPage=root.locator('[data-work-my-page]')
+          assert.equal(await myPage.getAttribute('href'),'/'+locale+'/my-page',
+            label+' existing universal My Page entry remains reachable')
+          assert.equal(await myPage.isVisible(),true,
+            label+' My Page link is present for guest and owner')
           assert.equal(await root.locator('[data-profile-mode="live"]').getAttribute('href'),
             '/'+(locale==='es'?'en':locale)+'/app/portrait',label+' reversible Live link')
           assert.equal(await root.locator('[data-work-profile-tab]').count(),6,label+' six compact tabs before video')
