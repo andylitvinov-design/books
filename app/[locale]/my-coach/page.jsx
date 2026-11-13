@@ -5,12 +5,12 @@ import styles from './page.module.css'
 
 const locales = ['en', 'ru', 'es']
 const metadata = {
-  en: { title: 'My Coach · AI coaching personas | Holistic House',
-    description: 'Explore eight fictional AI coach personalities, compare coaching styles and choose how your guided session unfolds.' },
-  ru: { title: 'My Coach · Каталог AI-коучей | Holistic House',
-    description: 'Выберите AI-персонажа для коучинга: восемь профилей, индивидуальные стили, темы и настройки поведения.' },
-  es: { title: 'My Coach · Personajes de coaching con IA | Holistic House',
-    description: 'Elige entre ocho personajes de coach con IA y adapta el ritmo, el estilo y las preguntas de seguimiento.' },
+  en: { title: 'My Coach · AI coaches & real practitioners | Holistic House',
+    description: 'Explore AI coaches and real human practitioners, and request a personal psychotherapy session.' },
+  ru: { title: 'My Coach · AI-коучи и реальные специалисты | Holistic House',
+    description: 'Выберите AI-коуча или реального терапевта для индивидуальной сессии.' },
+  es: { title: 'My Coach · Coaches IA y profesionales reales | Holistic House',
+    description: 'Elige un coach de IA o un profesional real y solicita una sesión de terapia individual.' },
 }
 export function generateStaticParams() { return locales.map(locale => ({ locale })) }
 export async function generateMetadata({ params }) {
