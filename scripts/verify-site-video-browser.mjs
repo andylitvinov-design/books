@@ -207,8 +207,21 @@ try {
         assert.ok(hrefs.includes('/' + locale + '/services/' + suffix), id + ' route not reachable from Services')
       }
       await page.setViewportSize({ width: 390, height: 844 })
-      await expect(intro.locator('button.site-video-play')).toBeVisible()
-      await expect(visibleGallery).toHaveAttribute('open', '')
+      // The owner-approved mobile Services page deliberately hides the legacy
+      // method-video gallery and intro; desktop above still verifies both.
+      // On phones validate the replacement three-scenario Personal video card
+      // and its real first-party studio destination, not a hidden old player.
+      await expect(intro.locator('button.site-video-play')).toBeHidden()
+      await expect(visibleGallery).toBeHidden()
+      const mobileVideo = page.locator('[data-assist-video-generation]')
+      await expect(mobileVideo).toBeVisible()
+      await expect(mobileVideo.locator('a[data-assist-video-scenario]')).toHaveCount(3)
+      const createVideo = mobileVideo.locator('a[data-assist-video-create]')
+      await expect(createVideo).toBeVisible()
+      await expect(createVideo).toHaveAttribute('href', '/' + locale + '/holistic-support/mandala')
+      const createBox = await createVideo.boundingBox()
+      assert.ok(createBox && createBox.height >= 44, 'Services mobile create-video action is finger-sized: ' + locale)
+      await expect(mobileVideo.locator('iframe')).toHaveCount(0)
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2), 'Services mobile overflow: ' + locale)
       await page.screenshot({ path: `${evidence}/services-${locale}-mobile-video.png`, fullPage: true })
       await page.setViewportSize({ width: 1365, height: 1000 })
