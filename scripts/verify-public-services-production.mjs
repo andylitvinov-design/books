@@ -6,7 +6,8 @@ const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
 const { expect } = require((process.env.HH_PLAYWRIGHT_PACKAGE || "playwright") + "/test");
 import assert from "node:assert/strict";
-import { inferAssistPreferences, rankAssistOffers } from "../lib/assist/service-match.mjs";
+import { inferAssistPreferences } from "../lib/assist/service-match.mjs";
+import { rankAssistProducts } from "../lib/assist/product-recommendations.mjs";
 import { telegramServiceRequestUrl } from "../lib/assist/telegram-business-request.mjs";
 import { mkdir, writeFile } from "node:fs/promises";
 
@@ -111,6 +112,24 @@ try {
     await expect(assist).toHaveAttribute("lang", locale);
     await expect(legacy).toBeHidden();
     await expect(page.locator("#services-conversion-title")).toBeHidden();
+    // Keep the new single-messenger Assist; hide all superseded giant cards.
+    const legacyPhoneSelectors = [
+      "#consultation", "[data-services-studio-free]", "[data-services-studio-card]",
+      "[data-services-studio-paid] > header", "[data-services-studio-paid] > div:last-child",
+      "[data-services-meet]", '[data-personal-testimonials="services"]',
+      "#method-videos", "[data-services-directory-invitation]", "[data-service-lead-capture]"
+    ];
+    for (const selector of legacyPhoneSelectors) {
+      await expect(page.locator(selector + ":visible")).toHaveCount(0);
+    }
+    for (const selector of [
+      "[data-assist-personal-consultation]", "[data-assist-spiritual-entry]",
+      "[data-assist-video-generation]", "[data-assist-course-shelf]",
+      "[data-assist-magical-help]"
+    ]) {
+      await visible(page.locator(selector));
+    }
+
 
     const conversation = assist.locator("[data-assist-dialogue]");
     const log = conversation.locator("#assist-results");
@@ -131,24 +150,8 @@ try {
     await expect(topics).toHaveCount(6);
 
     const shelf = assist.locator("[data-assist-best-three]");
-    await visible(shelf.locator("#assist-best-three-title"));
-    const directionTabs = shelf.locator("button[data-assist-direction]");
-    await expect(directionTabs).toHaveCount(6);
     const bestCards = shelf.locator("[data-assist-best-card]");
-    await expect(bestCards).toHaveCount(3);
-    for (const key of ["homeopathy","coaching","reiki"]) {
-      const action = shelf.locator('[data-assist-best-action="' + key + '"]');
-      await expect(action).toHaveAttribute("href", /^https:\/\/t\.me\/holistichouse\?text=/);
-    }
-    await directionTabs.nth(1).click();
-    await expect(shelf.locator("[data-assist-selected-direction]"))
-      .toHaveAttribute("data-assist-selected-direction","health");
-    await expect(bestCards).toHaveCount(3);
-    await expect(shelf.locator('[data-assist-best-card="tests"]')).toHaveCount(1);
-    await directionTabs.first().click();
-    await expect(shelf.locator("[data-assist-selected-direction]"))
-      .toHaveAttribute("data-assist-selected-direction","forMe");
-    await expect(bestCards).toHaveCount(3);
+    await expect(shelf).toHaveCount(0); // No generic cards before a real request.
 
     const tools = assist.locator("a[data-assist-tool]");
     const toolsToggle = assist.locator('section[aria-labelledby="assist-tools-title"] button[aria-expanded]');
@@ -183,45 +186,45 @@ try {
     await expect(log.locator('[data-assist-question="mode"]')).toHaveCount(1);
     await expect(log.locator("a[data-assist-recommendation]")).toHaveCount(0);
     await expect(question).toHaveValue("");
-    const expectedStress = rankAssistOffers("stress", {}).map(offer=>offer.id);
+    await visible(shelf.locator("#assist-best-three-title"));
+    const expectedStress = rankAssistProducts("stress", {});
     const actualStress = await bestCards.evaluateAll(nodes=>
       nodes.map(node=>node.getAttribute("data-assist-best-card")));
-    assert.deepEqual(actualStress, expectedStress,
-      "Initial stress choices match client-only ranking in compact cards");
-    // Bookable sessions now open the approved @holistichouse prepared draft;
-    // self-service products continue to their first-party destination.
-    const sessionKeys = new Set(["homeopathy","coaching","reiki","constellations","business"]);
-    for (const key of expectedStress) {
-      const action = shelf.locator('[data-assist-best-action="' + key + '"]');
-      if (sessionKeys.has(key)) {
-        const expectedUrl = telegramServiceRequestUrl(key, locale);
-        assert.ok(expectedUrl, "Requested session must have a valid Telegram draft: " + key);
-        await expect(action).toHaveAttribute("href", expectedUrl);
-        await expect(action).toHaveAttribute("target", "_blank");
-        assert.equal(new URL(expectedUrl).searchParams.get("text")?.split(String.fromCharCode(10)).at(-1),
-          "[HH-REQ:" + key + ":" + locale + "]", "Telegram draft preserves service and locale");
-      } else {
-        await expect(action).toHaveAttribute("href", new RegExp("^/" + locale + "/[a-z0-9/-]+$"));
+    assert.deepEqual(actualStress,expectedStress,
+      "Matching real products, not directions, for the selected problem");
+    // Preserve the previously approved exact Telegram link/locale assertion,
+    // now mapping concrete offered products onto the existing service codes.
+    const requestIds = {therapy:"coaching",constellation:"constellations",business:"business",reiki:"reiki"};
+    for(const key of expectedStress){
+      const detail=shelf.locator('[data-assist-product-link="'+key+'"]');
+      await expect(detail).toHaveAttribute("href",new RegExp("^/"+locale+"/[a-z0-9/-]+$"));
+      const action=shelf.locator('[data-assist-best-action="'+key+'"]');
+      const code=requestIds[key];
+      if(code){
+        const url=telegramServiceRequestUrl(code,locale);
+        assert.ok(url,"No unapproved Telegram request: "+key);
+        await expect(action).toHaveAttribute("href",url);
+        await expect(action).toHaveAttribute("target","_blank");
+        assert.equal(new URL(url).searchParams.get("text")?.split(String.fromCharCode(10)).at(-1),
+          "[HH-REQ:"+code+":"+locale+"]","Deep link contains no private problem text");
+      }else{
+        await expect(action).toHaveAttribute("href",new RegExp("^/"+locale+"/[a-z0-9/-]+$"));
       }
-      const box = await action.boundingBox();
-      assert.ok(box && box.height >= 44,
-        "Mobile Assist action touch target: " + locale + "/" + width + "/" + key);
+      const box=await action.boundingBox();
+      assert.ok(box&&box.height>=44,"Mobile product touch target: "+locale+"/"+width+"/"+key);
     }
 
     // A reply stays in the chat and reranks the service cards without a page jump.
     await log.locator('[data-assist-question="mode"] div button').nth(2).click();
     await expect(log.locator('[data-assist-message="user"]')).toHaveCount(2);
     await expect(log.locator('[data-assist-question="budget"]')).toHaveCount(1);
-    const expectedVideo = rankAssistOffers("stress",{mode:"video"}).map(offer=>offer.id);
-    const actualVideo = await bestCards.evaluateAll(nodes=>
-      nodes.map(node=>node.getAttribute("data-assist-best-card")));
-    assert.deepEqual(actualVideo,expectedVideo,"Video format can include video-linked symbolic options until budget is set");
-    await expect(shelf.locator('[data-assist-best-card="mytube"]')).toHaveCount(1);
-    await expect(shelf.locator('[data-assist-best-card="mandala"]')).toHaveCount(1);
+    // Video-only preferences are not a saleable product.
+    await expect(bestCards).toHaveCount(0);
+    await expect(shelf.locator('[role="status"]')).toBeVisible();
     await log.locator('[data-assist-question="budget"] div button').first().click();
     await expect(log.locator('[data-assist-message="user"]')).toHaveCount(3);
     await expect(log.locator('[data-assist-question]')).toHaveCount(0);
-    await expect(shelf.locator('[data-assist-best-card="mytube"]')).toHaveCount(1);
+    await expect(bestCards).toHaveCount(0);
 
     // Switching intent resets only the conversation, never opens another page.
     const reset = conversation.locator("button[data-assist-reset]");
@@ -233,8 +236,7 @@ try {
     await topics.nth(4).click();
     const actualWork = await bestCards.evaluateAll(nodes=>
       nodes.map(node=>node.getAttribute("data-assist-best-card")));
-    const expectedWork = rankAssistOffers("work",{}).map(offer=>
-      ({therapy:"coaching",constellation:"constellations"}[offer.id] ?? offer.id));
+    const expectedWork=rankAssistProducts("work",{});
     assert.deepEqual(actualWork,expectedWork,"Work cards rerank without appending the prior intent");
     if (expectedWork.includes("business")) {
       await expect(shelf.locator('[data-assist-best-action="business"]'))
@@ -258,12 +260,22 @@ try {
     await expect(question).toHaveValue("");
     await expect(log.locator('[data-assist-message="user"]')).toHaveCount(1);
     await expect(bestCards).toHaveCount(3);
-    const typedRanking = rankAssistOffers("stress",inferAssistPreferences(typedStress))
-      .map(offer=>offer.id);
+    const typedRanking=rankAssistProducts("stress",inferAssistPreferences(typedStress));
     const actualTyped = await bestCards.evaluateAll(nodes=>
       nodes.map(node=>node.getAttribute("data-assist-best-card")));
     assert.deepEqual(actualTyped,typedRanking,
       "Typed question applies live deterministic matching without storing the text");
+
+    // The owner's real life-direction example must produce purchasable/requestable offers.
+    await reset.click();
+    await question.fill(locale==="ru"?"Я потерял направление и не знаю куда двигаться":
+      locale==="es"?"Me siento perdido, sin rumbo":
+      "I feel lost and lack a sense of direction");
+    await submit.click();
+    const actualGrowth=await bestCards.evaluateAll(nodes=>
+      nodes.map(node=>node.getAttribute("data-assist-best-card")));
+    assert.deepEqual(actualGrowth,["review","therapy","constellation"],
+      "Life direction needs review, guided imagery therapy, constellations, not Reiki Academy");
 
     // Crisis safety takes precedence over sales even after a previous question.
     await question.fill(locale === "ru" ? "Хочу убить себя" :
@@ -277,7 +289,7 @@ try {
     await reset.click();
     await expect(question).toHaveValue("");
     await expect(submit).toBeDisabled();
-    await expect(shelf.locator("[data-assist-best-card]")).toHaveCount(3);
+    await expect(shelf).toHaveCount(0);
     await expect(tools).toHaveCount(4);
   };
 
@@ -345,42 +357,49 @@ try {
             "Desktop Services first-screen actions must be usable at " + locale + "/" + width);
         }
       }
-      // Free-first studio: 3 no-payment paths, 6 personal offers and all
-      // independent consent/booking tests remain mandatory at every width.
+      // The old catalog is still regression-tested on desktop, not on phones.
       const free = page.locator('[data-services-studio-free]#free-insights');
       const paid = page.locator('[data-services-studio-paid]#solutions');
-      await visible(free.locator("h2#services-free-title"));
-      await visible(paid.locator("h2#services-personal-title"));
-      assert.equal(await free.locator('[data-services-studio-card]').count(), 3);
-      assert.equal(await paid.locator('[data-services-studio-card]').count(), 6);
       const monthlySupport = paid.locator('[data-services-studio-card="monthly-support"]');
-      await visible(monthlySupport);
-      await expect(monthlySupport).toContainText(locale === "ru" ? "€200 / месяц" : locale === "es" ? "200 € / mes" : "€200 / month");
-      assert.equal(await monthlySupport.locator('[data-services-studio-action="monthly-support"]').getAttribute("href"),
-        "/" + locale + "/services/personal-support", "Approved monthly support must reach its own terms page");
-      assert.equal(await page.locator("#find-your-service").count(), 0,
-        "Detailed practitioner search belongs on the separate directory");
-      const testAction = free.locator('[data-services-studio-action="tests"]');
-      assert.equal(await testAction.getAttribute("href"), "/" + locale + "/tests");
-      await visible(free.locator('a[href="/' + locale + '/services/free-situation-review"]').first());
-      await visible(free.locator('a[href="/' + locale + '/services/dao-health-profile"]').first());
-      await visible(free.locator('a[href="/' + locale + '/courses/antistress"]'));
-      assert.equal(await page.locator("h1#services-conversion-title").count(), 1);
-      assert.equal(await page.evaluate(() => {
-        const selectors = ["#services-conversion-title", "#consultation", "#free-insights", "#solutions",
-          "[data-services-meet]", '[data-personal-testimonials="services"]',
-          "#method-videos", "[data-services-directory-invitation]"];
-        const sections = selectors.map(selector => [...document.querySelectorAll(selector)]);
-        if (sections.some(matches => matches.length !== 1)) return false;
-        return sections.every((matches, index) => index === 0 ||
-          Boolean(sections[index - 1][0].compareDocumentPosition(matches[0]) & Node.DOCUMENT_POSITION_FOLLOWING));
-      }), true, "Owner studio order: hero, booking, 3 free, personal offers, intro, reviews, methods, directory");
-      await expect(page.locator("#method-videos")).toHaveAttribute("open", "",
-        { timeout: 15000 });
-      // Method posters are visible, while third-party players stay opt-in.
-      assert.equal(await page.locator("#method-videos iframe").count(), 0,
-        "Method videos must not eagerly load third-party players");
-      await visible(page.locator('a[href="/' + locale + '/services/free-situation-review"]').first());
+      if (width > 760) {
+        await visible(free.locator("h2#services-free-title"));
+        await visible(paid.locator("h2#services-personal-title"));
+        assert.equal(await free.locator('[data-services-studio-card]').count(), 3);
+        assert.equal(await paid.locator('[data-services-studio-card]').count(), 6);
+        await visible(monthlySupport);
+        await expect(monthlySupport).toContainText(locale === "ru" ? "€200 / месяц" : locale === "es" ? "200 € / mes" : "€200 / month");
+        assert.equal(await monthlySupport.locator('[data-services-studio-action="monthly-support"]').getAttribute("href"),
+          "/" + locale + "/services/personal-support", "Approved monthly support must reach its own terms page");
+        assert.equal(await page.locator("#find-your-service").count(), 0,
+          "Detailed practitioner search belongs on the separate directory");
+        const testAction = free.locator('[data-services-studio-action="tests"]');
+        assert.equal(await testAction.getAttribute("href"), "/" + locale + "/tests");
+        await visible(free.locator('a[href="/' + locale + '/services/free-situation-review"]').first());
+        await visible(free.locator('a[href="/' + locale + '/services/dao-health-profile"]').first());
+        await visible(free.locator('a[href="/' + locale + '/courses/antistress"]'));
+        assert.equal(await page.locator("h1#services-conversion-title").count(), 1);
+        assert.equal(await page.evaluate(() => {
+          const selectors = ["#services-conversion-title", "#consultation", "#free-insights", "#solutions",
+            "[data-services-meet]", '[data-personal-testimonials="services"]',
+            "#method-videos", "[data-services-directory-invitation]"];
+          const sections = selectors.map(selector => [...document.querySelectorAll(selector)]);
+          if (sections.some(matches => matches.length !== 1)) return false;
+          return sections.every((matches, index) => index === 0 ||
+            Boolean(sections[index - 1][0].compareDocumentPosition(matches[0]) & Node.DOCUMENT_POSITION_FOLLOWING));
+        }), true, "Owner studio order: hero, booking, 3 free, personal offers, intro, reviews, methods, directory");
+        await expect(page.locator("#method-videos")).toHaveAttribute("open", "",
+          { timeout: 15000 });
+        // Method posters are visible, while third-party players stay opt-in.
+        assert.equal(await page.locator("#method-videos iframe").count(), 0,
+          "Method videos must not eagerly load third-party players");
+        await visible(page.locator('a[href="/' + locale + '/services/free-situation-review"]').first());
+      } else {
+        await expect(free).toBeHidden();
+        await expect(paid.locator("h2#services-personal-title")).toBeHidden();
+        await expect(paid.locator("[data-services-studio-card]:visible")).toHaveCount(0);
+        await visible(paid.locator("[data-assist-video-generation]"));
+        assert.equal(await page.locator("#find-your-service").count(), 0);
+      }
       await assertNoDevIssueOverlay(page, locale + "/services/" + width);
       // RootLayout provides My Space: the canonical header opens an accessible
       // account dialog, not a direct Cabinet link. Never bypass sign-in here.
@@ -426,9 +445,9 @@ try {
         await page.screenshot({ path: output + "/services-" + locale + "-hero-" + width + ".png", fullPage: false });
       }
       if (width === 390) {
-        const insights = page.locator("[data-services-studio-free]#free-insights");
-        await insights.scrollIntoViewIfNeeded();
-        await insights.screenshot({ path: output + "/services-" + locale + "-free-insights-390.png" });
+        const consultation = page.locator("[data-assist-personal-consultation]");
+        await consultation.scrollIntoViewIfNeeded();
+        await consultation.screenshot({ path: output + "/services-" + locale + "-compact-consultation-390.png" });
       }
       // Category slider and Online/Toronto choice: real client interactions,
       // never registering a lead, sending messages or initiating payment.
@@ -556,11 +575,11 @@ try {
   {
     const page = await createPage(390);
     await page.goto(origin + "/es/services", { waitUntil: "domcontentloaded" });
-    await visible(page.locator('[data-services-studio-free]'));
+    await expect(page.locator('[data-services-studio-free]')).toBeHidden();
     assert.equal(await page.locator('[data-services-studio-free] [data-services-studio-card]').count(), 3);
     assert.equal(await page.locator('[data-services-studio-paid] [data-services-studio-card]').count(), 6);
     const esMonthly = page.locator('[data-services-studio-paid] [data-services-studio-card="monthly-support"]');
-    await expect(esMonthly).toBeVisible();
+    await expect(esMonthly).toBeHidden();
     await expect(esMonthly).toContainText("200 € / mes");
     assert.equal(await esMonthly.locator('[data-services-studio-action="monthly-support"]').getAttribute("href"),
       "/es/services/personal-support", "Spanish support offer must lead to the terms page");
