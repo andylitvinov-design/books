@@ -441,7 +441,7 @@ test("real WebKit selects Settings duration, then Audio and real voice before re
  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
  const studio=read("components/mandala-free-video-studio.tsx");
  const entry=browser.indexOf("const editorTab=page.locator");
- const settings=browser.indexOf("const montageSettingsTab=page.locator",entry);
+ const settings=browser.indexOf("await openMontageSettingsViaQuality(page);",entry);
  const duration=browser.indexOf("const durationSelect=page.locator",settings);
  const audio=browser.indexOf("const montageAudio=page.locator",duration);
  const click=browser.indexOf("await montageAudio.click()",audio);
@@ -467,9 +467,12 @@ test("post-export stale narration refusal reopens mounted Audio and consented Vo
  assert.doesNotMatch(source.slice(audio,expand),/data-video-montage-settings|data-video-basic-tab/);
 });
 
-test("WebKit release follows Story video settings, Audio, and voice disclosure",()=>{
- assert.match(source,/const montageSettingsTab=page\.locator\('\[data-video-story-open-settings\]'\)/);
- assert.match(source,/await page\.locator\('\[data-video-montage-tab="concept"\]'\)\.click\(\)/);
+test("WebKit release follows fifth Montage advanced settings, Audio, and voice disclosure",()=>{
+ assert.match(source,/async function openMontageSettingsViaQuality\(page\)/);
+ assert.match(source,/data-video-montage-tab="promo"/);
+ assert.match(source,/data-video-stories-advanced/);
+ assert.match(source,/data-video-stories-settings/);
+ assert.match(source,/await openMontageSettingsViaQuality\(page\)/);
  assert.match(source,/data-montage-panel","settings"/);
  assert.match(source,/const durationSelect=page\.locator\('\[data-video-montage-preference="duration"\]'\)/);
  assert.match(source,/await durationSelect\.selectOption\("10"\)/);

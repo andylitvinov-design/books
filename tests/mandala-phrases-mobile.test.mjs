@@ -95,8 +95,10 @@ test("all phrase changes including catalog and idea are staged until explicit Ap
  assert.doesNotMatch(compact,/<MandalaVideoAffirmations /);
  assert.match(compact,/onPendingChange\?\.\(hasPendingEdits\)/);
  assert.match(compact,/data-hypno-create-video disabled=\{disabled\|\|!settings\.enabled\|\|hasPendingEdits\}/);
- const direct=studio.slice(studio.indexOf("data-video-quick-generate"),
-   studio.indexOf("</button>",studio.indexOf("data-video-quick-generate")));
+ const action=studio.indexOf('data-video-stage-actions="montage"');
+ const directStart=studio.indexOf("data-video-quick-generate",action);
+ assert.ok(action>0&&directStart>action,"the original Create button remains in the real Montage action bar");
+ const direct=studio.slice(directStart,studio.indexOf("</button>",directStart));
  assert.ok(direct.includes('onClick={createQuickVideo}'));
  for(const guard of ['if(!freeVideoSelected){','if(phrasePending){','if(narrationInvalid){'])
    assert.ok(studio.includes(guard),"approved phrase and paid-format guard: "+guard);
