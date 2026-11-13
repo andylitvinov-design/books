@@ -458,7 +458,10 @@ jobs:
         env:
           # A repo-scoped token lets resulting merges trigger push workflows.
           # Preserve native auto-merge if the optional credential is absent.
-          GH_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN || github.token }}
+          # Reuse the GitHub Actions token for bounded read-only preflight.
+          # Reserve the scarce owner PAT for the single protected auto-merge mutation.
+          GH_TOKEN: ${{ github.token }}
+          HH_AUTOMERGE_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN }}
           HH_HAS_AUTOMERGE_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN != '' }}
           GH_REPO: ${{ github.repository }}
           PR_NUMBER: ${{ steps.ready.outputs.pr }}
@@ -512,7 +515,7 @@ jobs:
                 exit 0
               fi
             fi
-            if gh pr merge "$PR_NUMBER" --auto "$merge_option" --match-head-commit "$PR_HEAD" 2> "$RUNNER_TEMP/auto-merge-error"; then
+            if GH_TOKEN="${HH_AUTOMERGE_TOKEN:-$GH_TOKEN}" gh pr merge "$PR_NUMBER" --auto "$merge_option" --match-head-commit "$PR_HEAD" 2> "$RUNNER_TEMP/auto-merge-error"; then
               echo "CI_AUTO_MERGE: GitHub accepted ARM for PR #$PR_NUMBER at $PR_HEAD" >> "$GITHUB_STEP_SUMMARY"
               exit 0
             fi
