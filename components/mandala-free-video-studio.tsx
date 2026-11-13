@@ -2992,11 +2992,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     seenAvailableAudioIds.add(track.id);
     return true;
   });
-  // Three distinct suggestions; do not replace a consented voice.
+  // Recommendations are exclusively approved real recordings. The five
+  // historical synthetic beds cannot be recommended beside a verified voice;
+  // the existing voice editor owns its separate, explicitly chosen audio mix.
   const voiceBedMode=attachedAudio?.kind==="file";
   const featuredMelodies=rankPersonalMusic({
-    tracks:voiceBedMode?mandalaAudioTracks.filter(track=>MYTUBE_MUSIC_BEDS.some(id=>id===track.id)):
-      availableAudioTracks,
+    tracks:voiceBedMode?[]:rankedAudioPool,
     ...musicContext,kind:"melody",mood:"all",pace:"all",
     voiceFriendly:voiceBedMode||musicContext.voiceFriendly,limit:3,
   });
@@ -3110,20 +3111,21 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     void createVideo(true);
   },[pendingCompatibleRetry,signature,canGenerate]);
 
-  // A completed local recording lives in the existing result pane.
-  // Reveal that pane before scrolling; a collapsed result is not delivery.
+  // A completed local recording stays in the Ready workspace. Keep the
+  // original verifier mounted for WebKit recovery without navigating to PRO.
   useEffect(() => {
     if (!result) return;
     if(result.mode!=="catalog"){
-      setActiveWorkspace("pro");
+      setActiveWorkspace("ready");
       setStudioMode("pump");
       setIntroPlaying(false);
     }
     setQuickDetailedOpen(true);
+    const target=result.mode==="catalog"?"personal-video-result":"free-personal-video";
     let nextFrame = 0;
     const firstFrame = window.requestAnimationFrame(() => {
       nextFrame = window.requestAnimationFrame(() => {
-        document.getElementById("personal-video-result")?.scrollIntoView({
+        document.getElementById(target)?.scrollIntoView({
           behavior:"auto",
           block:"start",
         });
@@ -5983,7 +5985,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <div className={videoStyles.phraseAudioHeading}>
           <span><Music2 size={23} aria-hidden="true"/></span>
           <div><h3>{locale==="ru"?"4. Подобрать музыку":locale==="es"?"4. Elegir música":"4. Choose music"}</h3>
-            <p>{locale==="ru"?"Три мелодии под вашу цель: прослушайте и выберите одну для видео.":locale==="es"?"Tres melodías para tu objetivo. Escucha y elige una.":"Three melodies matched to your goal. Listen and choose one."}</p></div>
+            <p data-phrase-music-guidance={voiceBedMode?"voice":"melody"}>
+              {voiceBedMode
+                ?locale==="ru"?"Голос сохранён. Фон к голосу настраивается выше; неподтверждённые записи не предлагаются."
+                :locale==="es"?"La voz está guardada. Ajusta el fondo arriba; no ofrecemos pistas sin verificar."
+                :"Your voice stays attached. Adjust its background above; no unverified music is offered."
+                :locale==="ru"?"Три проверенные записи под вашу цель: прослушайте и выберите одну для видео."
+                :locale==="es"?"Tres grabaciones verificadas para tu objetivo. Escucha y elige una."
+                :"Three verified recordings matched to your goal. Listen and choose one."}
+            </p></div>
         </div>
         <div className={videoStyles.phraseMusicList} role="radiogroup"
           aria-label={locale==="ru"?"Фоновая музыка":locale==="es"?"Música de fondo":"Background music"}>
@@ -7061,7 +7071,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       </header> : <span id="video-workspace-panel" className={videoStyles.srOnly}/>}
       
       {activeWorkspace==="ready"?<MandalaVideoReady
-        locale={locale} theme={theme} wish={wish} focus={meditationFocus}
+        locale={locale} theme={theme} wish={wish} focus={meditationFocus} aspect={aspect}
         video={result&&result.mode!=="catalog"?{
           url:result.url,extension:result.extension,bytes:result.bytes,duration
         }:null}
@@ -7075,11 +7085,17 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         basicFreeAvailable={basicVideoAccess.allowed}
         basicFreeIssue={basicVideoAccess.reason}
         basicCreditCost={basicVideoAccess.chargeCredits}
+        onVerifyPlayback={confirmVideoPlayback}
+        onStartNewVideo={()=>{
+          activateQuickWorkspace("video");
+          window.requestAnimationFrame(()=>document.getElementById("free-personal-video")
+            ?.scrollIntoView({behavior:"auto",block:"start"}));
+        }}
         onGenerateBasicVideo={()=>{
           // Never substitute a credit-charged or paid render for the FREE offer.
+          // Normalize the existing choice without forcing the visitor out of Ready.
           if(!freeVideoSelected){
             setPracticeType("video");setPracticeLevels(value=>({...value,video:"basic"}));
-            setActiveWorkspace("pro");setStudioMode("pump");
             return false;
           }
           return createQuickVideo();
@@ -7590,6 +7606,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           setCaptionMode("custom");
         }}/> : null}
       <section className={videoStyles.result} id="personal-video-result" data-video-result hidden={!result}
+        aria-hidden={activeWorkspace==="ready"} inert={activeWorkspace==="ready"}
         data-video-result-mode={result?.mode==="catalog"?"catalog":"rendered"}
         data-video-recording-format={result?.mode==="catalog"?"catalog":result?.extension||"none"}>
         <h3>{playbackStatus==="ready"?(locale==="ru"?"Готовое видео":locale==="es"?"Vídeo listo":"Finished video")

@@ -4,7 +4,7 @@ import {useEffect,useMemo,useRef,useState} from "react";
 import type {ReactNode} from "react";
 import Link from "next/link";
 import {useRouter} from "next/navigation";
-import {ArrowRight,BookOpen,CheckCircle2,Download,Flower2,FolderOpen,Headphones,LockKeyhole,Play,RefreshCw,Send,ShieldCheck,Sparkles,UserRound} from "lucide-react";
+import {ArrowRight,BookOpen,CheckCircle2,Clock3,Download,Flower2,FolderOpen,Headphones,Play,RefreshCw,Send,ShieldCheck,Sparkles,UserRound} from "lucide-react";
 import type {PublicLocale} from "@/lib/public-locales";
 import type {VideoTheme} from "@/lib/mandala/holistic-video-themes";
 import type {GuidedMeditationFocus} from "./mandala-guided-course";
@@ -21,17 +21,17 @@ type Offer="meditation"|"ritual"|"journey";
 type VideoTier="basic"|"photo"|"character";
 type CourseText={number:number;title:string;motif:string;script:string};
 type Props={
-  locale:PublicLocale;theme:VideoTheme;wish:string;focus:GuidedMeditationFocus;
+  locale:PublicLocale;theme:VideoTheme;wish:string;focus:GuidedMeditationFocus;aspect:"portrait"|"landscape"|"square";
   video:VideoFile|null;verified:boolean;checking:boolean;signedIn:boolean;
   loginUnavailable:boolean;disabled:boolean;meditationEditor:ReactNode;
   onOpenDelivery:()=>void;onRefreshLogin:()=>void;onOpenCourse:()=>void;onReturnToPro:()=>void;
-  onGenerateBasicVideo:()=>boolean;basicFreeAvailable:boolean;
+  onGenerateBasicVideo:()=>boolean;onStartNewVideo:()=>void;onVerifyPlayback:(player:HTMLVideoElement)=>void;basicFreeAvailable:boolean;
   basicFreeIssue:"checking"|"unavailable"|"guest_used"|"insufficient"|null;basicCreditCost:number;
 };
 const COPY={
   en:{
     saveGateTitle:"Save your video free",saveGateLead:"Your video is ready. Sign in to save it in My Videos, download it or send it to Telegram.",saveGateTag:"YOUR VIDEO · YOUR CHOICE",saveGateBenefitSave:"Keep in My Videos",saveGateBenefitDownload:"Download to device",saveGateBenefitTelegram:"Send to Telegram",saveGateBenefitPractice:"Meditation or course",saveGateLogin:"Sign in to My House",saveGateTelegram:"Open Telegram · tap Start",saveGateTelegramConnect:"Get secure Telegram link",saveGateTelegramChecking:"Checking Telegram link…",saveGateTelegramUnavailable:"Telegram linking is unavailable. You can still use My House.",saveGateTelegramPending:"Tap Start in the Telegram chat, then return here.",saveGateTelegramLinked:"Telegram linked to your account.",saveGateTelegramVerify:"Check Telegram connection",saveGateContinue:"Continue saving",saveGateOr:"or",saveGateClose:"Close",saveGatePrivacy:"Free within available limits · Sent only with consent · Private by choice",saveGateSignInHint:"First sign in to My House. Open it in a new tab so your video stays here. Then check your sign-in.",saveGateTelegramHint:"Start connects the bot to your signed-in account. It does not send or save the video automatically.",saveGateRefresh:"Check sign-in",saveGateUnavailable:"Could not verify your account. The video stays on your device.",
-    ready:"Your video is ready",preview:"Preview, save or continue your journey.",
+    ready:"Your video is ready!",nextSteps:"Next steps: create a deeper practice",nextLead:"Continue your video as a gentle practice or a series.",newVideo:"Generate New Video",sendTelegram:"Send to Telegram",meditationNext:"Add a Guided Meditation",meditationNextHint:"Add voice and music to your video.",journeyNext:"Create an 8-Session Video Therapy",journeyNextHint:"Eight connected steps for your goal.",preview:"Preview, save or continue your journey.",
     notReady:"Your video is not ready yet",createFirst:"Create and verify a video in PRO first.",
     videoChooseTitle:"Choose a video option",videoChooseHint:"Choose a format, then generate your video.",
     videoBasic:"Basic video",videoBasicHint:"Quality video from our library.",videoPhoto:"Animated photo",videoPhotoHint:"Your photo or character with gentle motion.",
@@ -73,7 +73,7 @@ const COPY={
   },
   ru:{
     saveGateTitle:"Сохраните видео бесплатно",saveGateLead:"Видео уже готово. Войдите, чтобы сохранить его в «Моих видео», скачать или отправить себе в Telegram.",saveGateTag:"ВАШЕ ВИДЕО · ВАШ ВЫБОР",saveGateBenefitSave:"В Мои видео",saveGateBenefitDownload:"Скачать на телефон",saveGateBenefitTelegram:"Отправить в Telegram",saveGateBenefitPractice:"Медитация или курс",saveGateLogin:"Войти в Мой дом",saveGateTelegram:"Открыть Telegram · нажать «Старт»",saveGateTelegramConnect:"Получить ссылку в Telegram",saveGateTelegramChecking:"Проверяем Telegram…",saveGateTelegramUnavailable:"Подключение Telegram недоступно. Сохранить видео можно через кабинет.",saveGateTelegramPending:"Нажмите «Старт» в Telegram и вернитесь на эту страницу.",saveGateTelegramLinked:"Telegram подключён к кабинету.",saveGateTelegramVerify:"Проверить Telegram",saveGateContinue:"Продолжить сохранение",saveGateOr:"или",saveGateClose:"Закрыть",saveGatePrivacy:"Бесплатно в рамках лимитов · Только с согласия · Приватно",saveGateSignInHint:"Сначала войдите в «Мой дом». Откроется новая вкладка, ваше видео останется здесь. Затем проверьте вход.",saveGateTelegramHint:"«Старт» привязывает бота к вашему кабинету, но не отправляет и не сохраняет видео автоматически.",saveGateRefresh:"Проверить вход",saveGateUnavailable:"Не удалось проверить вход. Видео осталось на вашем устройстве.",
-    ready:"Ваше видео готово",preview:"Посмотрите, сохраните или продолжите практику.",
+    ready:"Ваше видео готово!",nextSteps:"Следующий шаг: углубите практику",nextLead:"Дополните ролик медитацией или программой занятий.",newVideo:"Создать новое видео",sendTelegram:"Отправить в Telegram",meditationNext:"Добавить медитацию с голосом",meditationNextHint:"Озвучка и музыка к вашему ролику.",journeyNext:"Создать 8 видео-сессий",journeyNextHint:"Восемь связанных этапов вашей практики.",preview:"Посмотрите, сохраните или продолжите практику.",
     notReady:"Видео пока не готово",createFirst:"Сначала создайте ролик в PRO и проверьте воспроизведение.",
     videoChooseTitle:"Выберите вариант видео",videoChooseHint:"Выберите формат и нажмите «Создать видео».",
     videoBasic:"Базовое видео",videoBasicHint:"Качественный видеоряд из нашей библиотеки.",videoPhoto:"Анимированное фото",videoPhotoHint:"Ваше фото или персонаж с мягкой анимацией.",
@@ -115,7 +115,7 @@ const COPY={
   },
   es:{
     saveGateTitle:"Guarda tu vídeo gratis",saveGateLead:"Tu vídeo está listo. Inicia sesión para guardarlo en Mis vídeos, descargarlo o enviártelo por Telegram.",saveGateTag:"TU VÍDEO · TU ELECCIÓN",saveGateBenefitSave:"Mis vídeos",saveGateBenefitDownload:"Descarga al móvil",saveGateBenefitTelegram:"Enviar a Telegram",saveGateBenefitPractice:"Meditación o curso",saveGateLogin:"Entrar a Mi espacio",saveGateTelegram:"Abrir Telegram · pulsar Start",saveGateTelegramConnect:"Obtener enlace de Telegram",saveGateTelegramChecking:"Comprobando Telegram…",saveGateTelegramUnavailable:"No se puede conectar Telegram. Puedes guardar desde Mi espacio.",saveGateTelegramPending:"Pulsa Start en Telegram y vuelve a esta página.",saveGateTelegramLinked:"Telegram conectado a tu cuenta.",saveGateTelegramVerify:"Comprobar Telegram",saveGateContinue:"Continuar y guardar",saveGateOr:"o",saveGateClose:"Cerrar",saveGatePrivacy:"Gratis dentro de los límites · Solo con consentimiento · Privado",saveGateSignInHint:"Primero entra a Mi espacio. Se abrirá otra pestaña y el vídeo seguirá aquí. Después comprueba el acceso.",saveGateTelegramHint:"Start vincula el bot a tu cuenta, no guarda ni envía automáticamente el vídeo.",saveGateRefresh:"Comprobar acceso",saveGateUnavailable:"No se pudo comprobar la sesión. El vídeo sigue en tu dispositivo.",
-    ready:"Tu vídeo está listo",preview:"Míralo, guárdalo o continúa tu camino.",
+    ready:"¡Tu vídeo está listo!",nextSteps:"Siguiente paso: profundiza en tu práctica",nextLead:"Continúa con una meditación o un programa.",newVideo:"Crear otro vídeo",sendTelegram:"Enviar a Telegram",meditationNext:"Añadir meditación guiada",meditationNextHint:"Voz y música para tu vídeo.",journeyNext:"Crear 8 sesiones de vídeo",journeyNextHint:"Ocho pasos conectados con tu objetivo.",preview:"Míralo, guárdalo o continúa tu camino.",
     notReady:"Tu vídeo todavía no está listo",createFirst:"Primero crea y verifica un vídeo en PRO.",
     videoChooseTitle:"Elige una opción de vídeo",videoChooseHint:"Elige el formato y pulsa «Generar vídeo».",
     videoBasic:"Vídeo básico",videoBasicHint:"Vídeo de calidad de nuestra biblioteca.",videoPhoto:"Foto animada",videoPhotoHint:"Tu foto o personaje con movimiento suave.",
@@ -158,9 +158,9 @@ const COPY={
 } as const;
 
 export function MandalaVideoReady({
-  locale,theme,wish,focus,video,verified,checking,signedIn,loginUnavailable,disabled,
+  locale,theme,wish,focus,aspect,video,verified,checking,signedIn,loginUnavailable,disabled,
   meditationEditor,onOpenDelivery,onRefreshLogin,onOpenCourse,onReturnToPro,
-  onGenerateBasicVideo,basicFreeAvailable,basicFreeIssue,basicCreditCost
+  onGenerateBasicVideo,onStartNewVideo,onVerifyPlayback,basicFreeAvailable,basicFreeIssue,basicCreditCost
 }:Props){
   const t=COPY[locale];
   const router=useRouter();
@@ -334,6 +334,8 @@ export function MandalaVideoReady({
     }
     setVideoGenerationNotice(onGenerateBasicVideo()?"":t.videoSetup);
   }
+  const completed=Boolean(verified&&video);
+  const videoTime=video?`${Math.floor(video.duration/60)}:${String(Math.round(video.duration%60)).padStart(2,"0")}`:"0:00";
   const videoTiers=[
     {id:"basic" as VideoTier,title:t.videoBasic,description:t.videoBasicHint,price:t.videoFree,
       image:"/videos/holistic-house/film-collection-v2/meadow-morning.jpg"},
@@ -342,39 +344,37 @@ export function MandalaVideoReady({
     {id:"character" as VideoTier,title:t.videoCharacter,description:t.videoCharacterHint,price:"€5",
       image:"/images/holistic-house/ready-save-sunrise-portrait.jpg"},
   ];
-  const header=<div className={css.selectedVideo}>
-    {video&&verified?<video key={video.url} src={video.url} playsInline controls preload="metadata"
-      aria-label={t.ready}/>:
+  const header=<div className={css.selectedVideo} data-aspect={aspect}>
+    {video?<video key={video.url} src={video.url} playsInline controls preload="auto"
+      onLoadedData={event=>onVerifyPlayback(event.currentTarget)}
+      onCanPlay={event=>onVerifyPlayback(event.currentTarget)}
+      aria-label={completed?t.ready:t.verifying}/>:
     /* Approved first-party example, never labelled an exported personal movie. */
     <div className={css.example}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/videos/holistic-house/film-collection-v2/meadow-morning.jpg" alt=""/>
       <span>{checking?t.verifying:t.notReady}</span>
     </div>}
-    {video&&verified?<span className={css.duration}>{video.duration}s · {video.extension.toUpperCase()}</span>:null}
   </div>;
   return <section className={css.root} data-video-ready data-ready-view={view}
+    data-ready-state={completed?"complete":"choose"}
     aria-label={view==="login"?t.authTitle:t.ready}>
     {(view==="home"||view==="login")?<>
+      {completed?<p className={css.readyStatus} role="status" data-ready-status>
+        <CheckCircle2 size={19} aria-hidden="true"/><strong>{t.ready}</strong>
+        <span className={css.readyTime}><Clock3 size={15} aria-hidden="true"/>{videoTime}</span>
+      </p>:null}
       {header}
-      <div className={css.title}>
-        <h2>{verified&&video?t.ready:t.videoChooseTitle}</h2>
-        <p>{verified&&video?t.preview:checking?t.verifying:t.videoChooseHint}</p>
-      </div>
-      {verified&&video?<>
-        <p className={css.signin}><LockKeyhole size={19} aria-hidden="true"/>
-          {signedIn?t.preview:t.signIn}</p>
+      {!completed?<div className={css.title}>
+        <h2>{t.videoChooseTitle}</h2>
+        <p>{checking?t.verifying:t.videoChooseHint}</p>
+      </div>:null}
+      {completed?<>
         <div className={css.actions} data-ready-save-choices>
           <button type="button" onClick={()=>chooseDelivery("save")} disabled={disabled}
-            data-ready-save><FolderOpen size={23} aria-hidden="true"/><span>{t.save}</span></button>
-          <button type="button" onClick={()=>chooseDelivery("download")} disabled={disabled}
-            data-ready-download><Download size={23} aria-hidden="true"/><span>{t.download}</span></button>
+            data-ready-save><Download size={21} aria-hidden="true"/><span>{t.save}</span></button>
           <button type="button" onClick={()=>chooseDelivery("telegram")} disabled={disabled}
-            data-ready-telegram><Send size={23} aria-hidden="true"/><span>{t.telegram}</span></button>
-          {signedIn?<Link href={myVideos} prefetch={false} target="_blank" rel="noopener noreferrer"
-            data-ready-house><UserRound size={23} aria-hidden="true"/><span>{t.house}</span></Link>:
-          <button type="button" onClick={()=>chooseDelivery("house")} data-ready-house>
-            <UserRound size={23} aria-hidden="true"/><span>{t.house}</span></button>}
+            data-ready-telegram><Send size={21} aria-hidden="true"/><span>{t.sendTelegram}</span></button>
         </div>
       </>:<>
         <div className={css.tierList} role="radiogroup" aria-label={t.videoChooseTitle}
@@ -415,19 +415,20 @@ export function MandalaVideoReady({
           {t.backPro}<ArrowRight size={17} aria-hidden="true"/>
         </button>:null}
       </>}
-      <h3 className={css.nextTitle}>{verified&&video?t.continue:t.videoIdeas}</h3>
+      <h3 className={css.nextTitle}>{completed?t.nextSteps:t.videoIdeas}</h3>
+      {completed?<p className={css.nextLead}>{t.nextLead}</p>:null}
       <div className={css.journey}>
         <button type="button" onClick={()=>selectOffer("meditation")} data-ready-meditation
           aria-expanded={activeOffer==="meditation"} aria-controls="ready-inline-offer">
           <div className={css.thumbnail}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/videos/holistic-house/film-collection-v2/meadow-morning.jpg" alt=""/>
+            <img src={completed?"/images/holistic-house/reiki-approved-sunrise-v3.webp":"/videos/holistic-house/film-collection-v2/meadow-morning.jpg"} alt=""/>
           </div>
           <Headphones size={22} aria-hidden="true"/>
-          <span><strong>{t.meditation}</strong><small>{t.meditationHint}</small></span>
+          <span><strong>{completed?t.meditationNext:t.meditation}</strong><small>{completed?t.meditationNextHint:t.meditationHint}</small></span>
           <ArrowRight size={21} aria-hidden="true"/>
         </button>
-        <button type="button" onClick={()=>selectOffer("ritual")} data-ready-ritual
+        {!completed?<button type="button" onClick={()=>selectOffer("ritual")} data-ready-ritual
           aria-expanded={activeOffer==="ritual"} aria-controls="ready-inline-offer">
           <div className={css.thumbnail}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -436,15 +437,15 @@ export function MandalaVideoReady({
           <Flower2 size={22} aria-hidden="true"/>
           <span><strong>{t.ritual}</strong><small>{t.ritualHint}</small></span>
           <ArrowRight size={21} aria-hidden="true"/>
-        </button>
+        </button>:null}
         <button type="button" onClick={()=>selectOffer("journey")} data-ready-journey
           aria-expanded={activeOffer==="journey"} aria-controls="ready-inline-offer">
           <div className={css.thumbnail}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/images/holistic-house/reiki-approved-sunrise-v3.webp" alt=""/>
+            <img src={completed?"/images/holistic-house/course-focus-mountain-boy.webp":"/images/holistic-house/reiki-approved-sunrise-v3.webp"} alt=""/>
           </div>
           <BookOpen size={22} aria-hidden="true"/>
-          <span><strong>{t.journey}</strong><small>{t.journeyHint}</small></span>
+          <span><strong>{completed?t.journeyNext:t.journey}</strong><small>{completed?t.journeyNextHint:t.journeyHint}</small></span>
           <ArrowRight size={21} aria-hidden="true"/>
         </button>
       </div>
@@ -522,6 +523,10 @@ export function MandalaVideoReady({
           {notice?<p role="status" className={css.note}>{notice}</p>:null}
         </>}
       </section>:null}
+      {completed?<button type="button" className={css.primary} disabled={disabled}
+        data-ready-generate-new onClick={onStartNewVideo}>
+        <Sparkles size={20} aria-hidden="true"/>{t.newVideo}<ArrowRight size={20} aria-hidden="true"/>
+      </button>:null}
     </>:null}
     {view==="login"?<div className={css.gateBackdrop} data-ready-save-gate-overlay
       onMouseDown={event=>{if(event.target===event.currentTarget)closeSaveGate();}}>
