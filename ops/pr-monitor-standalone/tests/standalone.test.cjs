@@ -12,9 +12,10 @@ test('one full PR Monitor page, no Commander parser and no startup spinner',()=>
  assert.doesNotMatch(page,/Загружаю проверенный монитор|document\.write/);
  assert.doesNotMatch(page,/src="\/project-management-nav\.js/);
 });
-test('full 29 JS scripts and original CSS self-hosted, all defer',()=>{
+test('full 30 JS references (29 distinct) and original CSS self-hosted, all defer',()=>{
  const scripts=[...page.matchAll(/<script\b[^>]*src="\/([^"?]+)/g)].map(m=>m[1]);
- assert.equal(scripts.length,29);assert.ok(scripts.every(n=>fs.existsSync(path.join(root,n)),n=>n));
+ assert.equal(scripts.length,30);assert.equal(new Set(scripts).size,29);
+ assert.ok(scripts.every(n=>fs.existsSync(path.join(root,n)),n=>n));
  assert.equal((page.match(/rel="stylesheet"/g)||[]).length,1);
  assert.ok(read('pr-monitor-yesterday.css').length>100000);
 });
@@ -41,7 +42,7 @@ test('strict production cohort shared by lifecycle view and merge velocity graph
  const code=read('pr-two-screen.js'),chart=read('pr-merge-velocity-ui.js');
  assert.match(code,/HH_STRICT_CREATED_MERGED_COHORT_V1_BEGIN/);
  assert.match(code,/window\.HHStrictCohort=strictCohort/);
- assert.match(code,/cohortRaw=data;chooseStrictPeriod\(cohortHours\)/);
+ assert.match(code,/cohortRaw=data;chooseStrictPeriod\(cohortHours,false\)/);
  assert.match(code,/cohortHours===24/);
  assert.match(code,/72 часа пока не покрыты/);
  assert.match(chart,/env\.fetch\('\/api\/pr-created-cohort'/);

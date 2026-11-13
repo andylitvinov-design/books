@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
-const root=path.resolve(__dirname,'..'),read=f=>fs.readFileSync(path.join(root,f),'utf8');
+const root=__dirname,read=f=>fs.readFileSync(path.join(root,f),'utf8');
 const html=read('index.html'),css=read('monitor.css'),js=read('monitor.js'),conf=JSON.parse(read('vercel.json'));
 const sandbox={module:{exports:{}}};new vm.Script(js).runInNewContext(sandbox);
 const {activity,speed,compactRecords,strictCohort,delay,SCHEMAS,URLS}=sandbox.module.exports;
@@ -51,9 +51,9 @@ test('compact per-PR list bounds untrusted data and keeps actual GitHub SHAs',()
  source.pr_timestamps.records='INVALID JSON';assert.equal(compactRecords(source).length,0);
 });
 
-test('PR to Merge median card is populated from verified stage cohort',()=>{
+test('PR to Merge mean and median are populated from the strict created-and-merged cohort',()=>{
  assert.match(js,/put\('k-median'/);
- assert.match(js,/population\.full\?\.n>0/);
+ assert.match(js,/strictCohort\(strictRaw,strictArch,strictHours\)/);
  assert.match(js,/put\('k-median-note'/);
 });
 
