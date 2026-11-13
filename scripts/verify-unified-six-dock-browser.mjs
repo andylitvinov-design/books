@@ -80,9 +80,16 @@ async function inspect(browserType,locale,width){
     const page=document.querySelector("[data-mytube-page]");
     return page && getComputedStyle(page).backgroundColor==="rgb(15, 15, 15)";
   },null,{timeout:20000});
-  const dockBackground=await dock.evaluate(el=>getComputedStyle(el).backgroundColor);
-  assert.match(dockBackground,/^rgba?\(15, 15, 15/,
-    id+" dark dock applies only to MyTube");
+  const dockPalette=await dock.evaluate(el=>{
+    const ai=el.querySelector('[data-unified-dock-item="ai"] svg');
+    const current=getComputedStyle(el);
+    return {background:current.backgroundImage,
+      aiBackground:ai?getComputedStyle(ai).backgroundImage:""};
+  });
+  assert.match(dockPalette.background,/radial-gradient/,
+    id+" approved mint waves on the shared ivory dock");
+  assert.match(dockPalette.aiBackground,/radial-gradient/,
+    id+" teal illuminated AI button visible above the dock");
   const moreFilters=page.locator("[data-mytube-filter-toggle]");
   const rail=page.locator("[data-mytube-category-rail]");
   const refined=page.locator("#mytube-refine-controls");
