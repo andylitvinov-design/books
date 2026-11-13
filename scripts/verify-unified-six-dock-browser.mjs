@@ -626,9 +626,16 @@ try{
  assert.equal(await canonicalTopics.count(),4,"chosen subcategory owns four exact canonical topics");
  await canonicalTopics.first().click();
  await chat.locator('[data-hh-video-chat-step="topic"]').waitFor({state:"visible"});
+ // A focused composer intentionally keeps the preceding assistant reply visible;
+ // options may extend below it. Check actual reply visibility, not scrollTop=end.
  await page.waitForFunction(()=>{
-   const el=document.querySelector('[data-hh-agent-preview] [role="log"]');
-   return !!el&&el.scrollHeight-el.scrollTop-el.clientHeight<12;
+   const thread=document.querySelector('[data-hh-agent-preview] [role="log"]');
+   const replies=thread?.querySelectorAll('[data-hh-chat-turn="assistant"]');
+   const reply=replies?.item(replies.length-1);
+   if(!thread||!reply)return false;
+   const viewport=thread.getBoundingClientRect(),bubble=reply.getBoundingClientRect();
+   return bubble.bottom<=viewport.bottom+2&&bubble.bottom>=viewport.top+44
+     &&bubble.left<viewport.right-8&&bubble.right>viewport.left+8;
  },null,{timeout:10000});
  assert.equal(await chat.locator("[data-hh-video-sign-in]").count(),0,
    "no login before the creative questionnaire");
@@ -750,8 +757,10 @@ try{
    const reply=replies?.[replies.length-1];
    if(!thread||!reply)return false;
    const bounds=thread.getBoundingClientRect(),bubble=reply.getBoundingClientRect();
-   const end=Math.max(0,thread.scrollHeight-thread.clientHeight);
-   return Math.abs(thread.scrollTop-end)<=3&&bubble.bottom<=bounds.bottom+2;
+   // The keyboard can align the reply above the composer without scrolling
+   // through subsequent options. Its ending must remain visible and unclipped.
+   return bubble.bottom<=bounds.bottom+2&&bubble.bottom>=bounds.top+44
+     &&bubble.left<bounds.right-8&&bubble.right>bounds.left+8;
  },null,{timeout:15000});
  assert.equal(await fullAssistantReply.evaluate(node=>getComputedStyle(node).flexShrink),"0",
    "iPhone keyboard must not shrink or clip the assistant reply");
