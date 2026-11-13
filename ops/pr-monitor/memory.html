@@ -5,13 +5,28 @@
 <title>Память проектов · Agent Commander</title>
 <link rel="stylesheet" href="/commander-shell.css?v=20261107-cc-v1">
 <link rel="stylesheet" href="/commander-memory.css?v=20261107-brain-v1">
+<link rel="stylesheet" href="/commander-agent-memory.css?v=20261112-digest-v1">
 <script src="/project-management-nav.js?v=20261107-brain-v1" defer></script>
 <script src="/commander-memory.js?v=20261107-brain-v1" defer></script>
 <script src="/commander-memory-page.js?v=20261107-brain-v1" defer></script>
+<script src="/commander-agent-memory-page.js?v=20261112-digest-v1" defer></script>
 </head><body><main class="hh-cc-page-main hh-cc-memory-main" aria-label="Память проектов">
 <section class="hh-cc-hero"><p class="hh-cc-eyebrow">✦ AGENT COMMANDER · AI PROJECTS BRAIN</p>
 <h1>Память проектов</h1>
 <p>Одна база знаний для агентов: паспорта, текущее состояние, решения и проверки. Публичное чтение из GitHub; без копирования второй базы.</p></section>
+<section id="hh-agent-digest-panel" class="hh-cc-panel hh-agent-digest-panel" aria-label="Приватная активность агентов">
+<div class="hh-agent-digest-header"><h2>Активность агентов · Memory Digest</h2><p>Результаты по проверяемым событиям и действиям агентов. Личные сообщения и записи клиентов сюда не копируются.</p></div>
+<div class="hh-agent-digest-filters">
+<label for="hh-agent-digest-project">Проект<select id="hh-agent-digest-project"><option value="">Все проекты</option><option value="agent-commander">Agent Commander</option><option value="holistic-house">Holistic House</option></select></label>
+<label for="hh-agent-digest-agent">Агент<select id="hh-agent-digest-agent"><option value="">Все агенты</option><option value="openrouter">OpenRouter Worker</option><option value="github-actions">GitHub Actions</option><option value="manual">Ручной запуск</option></select></label>
+<label for="hh-agent-digest-state">Состояние<select id="hh-agent-digest-state"><option value="">Все</option><option value="completed">Завершено</option><option value="blocked">Заблокировано</option><option value="working">В работе</option><option value="unknown">Не подтверждено</option></select></label>
+</div>
+<button id="hh-agent-digest-refresh" class="hh-agent-digest-refresh" type="button">Обновить активность</button>
+<p id="hh-agent-digest-status" class="hh-agent-digest-status" role="status" aria-live="polite">Подключаю приватную память…</p>
+<p id="hh-agent-digest-summary" class="hh-agent-digest-summary"></p>
+<div id="hh-agent-digest-list" class="hh-agent-digest-list" aria-label="Сводки агентов"></div>
+<p id="hh-agent-digest-login" class="hh-agent-digest-login" hidden><a href="/chats.html">Войти как владелец для просмотра активности</a></p>
+</section>
 <section class="hh-cc-panel hh-memory-card" aria-label="Выбор проекта">
 <label for="hh-memory-search">Найти проект по названию, синониму или репозиторию</label>
 <input id="hh-memory-search" type="search" autocomplete="off" placeholder="Например, Agent Commander или Reiki">
