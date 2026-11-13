@@ -556,6 +556,7 @@ test('canonical full PR monitor and separate fast page both retain v6 proof',()=
  const fast=fs.readFileSync(path.join(home,'pr-monitor-fast.html'),'utf8');
  const full=fs.readFileSync(path.join(home,'pr-monitor-full.html'),'utf8');
  const source=fs.readFileSync(path.join(home,'pr-error-funnel.js'),'utf8');
+ const bundledCss=fs.readFileSync(path.join(home,'pr-monitor-yesterday.css'),'utf8');
  // The main monitor retains actual controls, stage diagnostics and charts.
  // Never gate on a historical build comment or one retired chart asset.
  // The fast entry is separate, not a replacement for the full view.
@@ -575,7 +576,10 @@ test('canonical full PR monitor and separate fast page both retain v6 proof',()=
  assert.match(full,/pr-two-screen\.js\?v=/);
  assert.doesNotMatch(full,/pr-two-screen-boot\.js/);
  assert.equal((full.match(/pr-error-funnel\.js\?v=20261111-paginated-v6/g)||[]).length,1);
- assert.equal((full.match(/pr-error-funnel\.css\?v=20261111-paginated-v6/g)||[]).length,1);
+ assert.match(full,/pr-monitor-yesterday\.css\?v=20261111-restored/);
+ assert.match(bundledCss,/\/\* original \/pr-error-funnel\.css \*\//);
+ assert.match(bundledCss,/\.hh-error-funnel\{/);
+ assert.doesNotMatch(full,/pr-error-funnel\.css\?v=/);
  assert.match(boot,/pr-error-funnel\.js\?v=20261111-paginated-v6/);
  assert.match(boot,/pr-error-funnel\.css\?v=20261111-paginated-v6/);
  assert.doesNotMatch(boot,/pr-error-funnel\.js\?v=20261111-reasons-v5/);
