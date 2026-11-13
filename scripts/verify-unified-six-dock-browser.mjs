@@ -626,8 +626,14 @@ try{
  assert.equal(await canonicalTopics.count(),4,"chosen subcategory owns four exact canonical topics");
  await canonicalTopics.first().click();
  await chat.locator('[data-hh-video-chat-step="topic"]').waitFor({state:"visible"});
- // A focused composer intentionally keeps the preceding assistant reply visible;
- // options may extend below it. Check actual reply visibility, not scrollTop=end.
+ // The owner specifically reports losing the previous AI reply when tapping
+ // the composer. Exercise that actual interaction before asserting visibility:
+ // clicking an option is not a focused typing state on iPhone.
+ const focusedComposer=chat.locator("textarea");
+ await focusedComposer.focus();
+ assert.equal(await focusedComposer.evaluate(el=>document.activeElement===el),true,
+   "the real Messenger composer receives focus");
+ // Keep the substantive viewport/assistant visibility assertion below intact.
  await page.waitForFunction(()=>{
    const thread=document.querySelector('[data-hh-agent-preview] [role="log"]');
    const replies=thread?.querySelectorAll('[data-hh-ai-assistant-message]');
