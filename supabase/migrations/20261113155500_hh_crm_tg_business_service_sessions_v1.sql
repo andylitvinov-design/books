@@ -48,6 +48,20 @@ CREATE POLICY crm_tg_business_service_committing_proof
  USING(operation_id::text = current_setting('hh.tg_business_operation',true)
    AND stage='committing' AND consent_at IS NOT NULL
    AND consent_at>now()-interval '15 minutes');
+-- Backend is NOT granted broad mutation. A committed public enquiry and its
+-- session completion are one transaction; the exact, fresh consented operation
+-- is checked under FORCE RLS and the same advisory lock as STOP/Cancel.
+GRANT UPDATE(stage,reference_code,updated_at)
+ ON app_private.crm_tg_business_service_sessions TO hh_app_backend;
+CREATE POLICY crm_tg_business_service_atomic_finalize
+ ON app_private.crm_tg_business_service_sessions FOR UPDATE TO hh_app_backend
+ USING(operation_id::text = current_setting('hh.tg_business_operation',true)
+   AND stage='committing' AND consent_at IS NOT NULL
+   AND consent_at>now()-interval '15 minutes')
+ WITH CHECK(operation_id::text = current_setting('hh.tg_business_operation',true)
+   AND stage='submitted' AND reference_code IS NOT NULL
+   AND consent_at IS NOT NULL
+   AND consent_at>now()-interval '15 minutes');
 COMMENT ON TABLE app_private.crm_tg_business_service_sessions IS
  'Opt-in Telegram Business session: keyed hashes, public service/locale/format, no raw Telegram identity, message or medical information. Signed webhook only; confirmed server read is operation-scoped.';
 COMMIT;

@@ -213,3 +213,51 @@ test('only explicit confirmed provider session can create an existing encrypted 
  assert.doesNotMatch(migration,/GRANT (?:SELECT|INSERT|UPDATE|DELETE).* TO (?:anon|authenticated|public)/i);
  assert.doesNotMatch(source,/sendMarketing|SEND_PAID|orderStatus='paid'/);
 });
+
+
+test('warm service recognition and explicit, natural format preferences across RU/EN/ES',()=>{
+ const examples=[['мне удобнее онлайн','format','online'],['I prefer zoom','format','online'],
+   ['quiero presencial','format','inperson']];
+ for(const [text,kind,value] of examples){
+  const parsed=telegramBusinessClientChoice(text);
+  assert.equal(parsed?.kind,kind);assert.equal(parsed.value,value);
+ }
+ for(const lang of ['ru','en','es']){
+  const service=telegramBusinessServiceTitle('reiki',lang);
+  const intro=telegramBusinessConversationReply('format',{locale:lang,service:'reiki'});
+  const confirm=telegramBusinessConversationReply('confirm',{locale:lang,service:'reiki',format:'online'});
+  const receipt=telegramBusinessConversationReply('submitted',{locale:lang,service:'reiki',referenceCode:'HH-ABCDEF123456'});
+  assert.ok(intro.includes(service)&&confirm.includes(service)&&receipt.includes(service));
+  assert.ok(intro.length<240&&confirm.length<330&&receipt.length<270);
+  assert.ok(intro!==confirm&&confirm!==receipt);
+  assert.ok(receipt.includes('HH-ABCDEF123456'));
+  assert.doesNotMatch(intro,/OpenRouter|interview|интервью/i);
+ }
+ for(const text of ['да','yes','Confirm another appointment','I am anxious','/start'])
+  assert.equal(telegramBusinessClientChoice(text),null);
+});
+
+test('one atomic CRM transaction for enquiry + session, STOP/Cancel uses same lock',()=>{
+ const source=get('lib/crm/telegram-business-service.js');
+ const migration=get('supabase/migrations/20261113155500_hh_crm_tg_business_service_sessions_v1.sql');
+ const route=get('app/api/app/crm/messenger/webhook/[provider]/route.js');
+ const begin=source.indexOf('async function saveConfirmedEnquiry(');
+ const end=source.indexOf('export async function processTelegramBusinessConversation(',begin);
+ assert.ok(begin>0&&end>begin);
+ const backend=source.slice(begin,end);
+ assert.match(backend,/await lock\(db,intent.lock\)/);
+ assert.match(backend,/const finalize=async\(id,referenceCode\)=>/);
+ assert.match(backend,/return finalize\(id,ref\)/);
+ assert.match(backend,/return finalize\(prior.id,prior.reference_code\)/);
+ assert.match(backend,/and stage='committing' and consent_at is not null/);
+ assert.match(backend,/if\(marked.rowCount!==1\)throw new AppError/);
+ assert.doesNotMatch(source,/async function complete\(/);
+ assert.match(source,/row\?\.stage==='committing'&&row.operation_id===result.commit.operationId/);
+ assert.match(migration,/FORCE ROW LEVEL SECURITY/);
+ assert.match(migration,/GRANT UPDATE\(stage,reference_code,updated_at\)/);
+ assert.match(migration,/FOR UPDATE TO hh_app_backend/);
+ assert.match(migration,/WITH CHECK\(operation_id::text/);
+ assert.doesNotMatch(migration,/SECURITY DEFINER|GRANT UPDATE ON app_private.crm_tg_business_service_sessions TO hh_app_backend/);
+ assert.match(route,/if\(business.terminal\)/);
+ assert.match(route,/hh-tg-business-terminal-chat/);
+});

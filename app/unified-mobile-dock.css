@@ -12,10 +12,10 @@ body:has([data-hh-unified-dock]) [data-holistic-mobile-alternative],
 body:has([data-hh-unified-dock]) .hh-app.hh-messages-page,
 body:has([data-hh-unified-dock]) .hh-app,
 body:has([data-hh-unified-dock]) [data-practice-showcase]{
- padding-bottom:calc(var(--hh-unified-nav-height,77px) + 22px)!important;
+ padding-bottom:calc(var(--hh-unified-nav-height,94px) + 22px)!important;
 }
 body:has([data-hh-unified-dock]) [data-hh-unified-dock][data-keyboard-open="true"]{display:none}
-body:has([data-hh-unified-dock]) [data-video-director-chat-details]{scroll-margin-bottom:calc(var(--hh-unified-nav-height,77px) + 20px)}
+body:has([data-hh-unified-dock]) [data-video-director-chat-details]{scroll-margin-bottom:calc(var(--hh-unified-nav-height,94px) + 20px)}
 
 /* The mandala editor has its own compact top context and a shared global dock.
    The old end-of-page settings/header control must not appear as a second bar. */
@@ -24,20 +24,8 @@ body:has([data-hh-unified-dock]) [data-video-director-chat-details]{scroll-margi
 }
 
 
-/* MyTube dark-mode exception; never recolor Video Studio, Practice or CRM docks. */
-body:has([data-mytube-page]) [data-hh-unified-dock]{
-  background:rgba(15,15,15,.98);border-color:#303030;
-  box-shadow:0 -7px 22px rgba(0,0,0,.65)
-}
-body:has([data-mytube-page]) [data-unified-dock-item]{color:#aaa}
-body:has([data-mytube-page]) [data-unified-dock-item][aria-current="page"]{
-  background:#272727;color:#fff
-}
-body:has([data-mytube-page]) [data-unified-dock-item][aria-current="page"] svg{color:#ff0033}
-body:has([data-mytube-page]) [data-unified-dock-item]:hover{color:#f1f1f1}
-body:has([data-mytube-page]) [data-unified-dock-item]:focus-visible{
-  outline:2px solid #fff;outline-offset:-2px
-}
+/* Match the approved ivory/mint navigation on MyTube as well.
+   Keep existing MyTube content/player themes intact. */
 
 /* On iOS a real keyboard replaces the global dock. Do not keep its bottom
    reservation beneath the Messenger composer while the dock is hidden. */
@@ -55,16 +43,31 @@ body:has([data-mytube-page]) [data-unified-dock-item]:focus-visible{
    The existing free express review form remains the original public page. */
 @media(max-width:759px){
  body:has([data-hh-unified-dock][data-hh-home-route]){
-  padding-bottom:calc(var(--hh-unified-nav-height,77px) + 18px)
+  padding-bottom:calc(var(--hh-unified-nav-height,94px) + 18px)
  }
  body:has([data-hh-unified-dock]) [data-free-entry-landing="situation"]{
-  padding-bottom:calc(var(--hh-unified-nav-height,77px) + 18px)!important
+  padding-bottom:calc(var(--hh-unified-nav-height,94px) + 18px)!important
  }
 }
 /* Marketing pages keep their existing desktop header navigation. */
 @media(min-width:760px){
  [data-hh-unified-dock][data-hh-home-route]{display:none!important}
  body:has([data-free-entry-landing="situation"]) [data-hh-unified-dock]{display:none!important}
+}
+
+/* A floating AI orb reaches above the dock. Reserve actual document space
+   so the final form buttons/summary controls can scroll ABOVE its hitbox.
+   In particular, an expanded Services questionnaire must never trap its
+   last action beneath the 7-column nav. Messenger/immersive apps already
+   manage their own viewport/bottom reservation. */
+@media(max-width:759px){
+ body:has([data-hh-unified-dock]):not(:has(
+   .hh-messages-page,[data-mytube-page],[data-mandala-meditation-page],
+   [data-holistic-mobile-alternative],[data-practice-showcase],
+   [data-hh-home-route]
+ )){
+  padding-bottom:calc(var(--hh-unified-nav-height,94px) + 64px)!important;
+ }
 }
 
 /* Only detected keyboard hides dock; lingering input focus does not. */

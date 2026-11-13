@@ -65,8 +65,15 @@ export async function POST(request,{params}){
             await consumeRate(config,{op:'hh-tg-business-intent-message',
               connectionId:business.connectionId,chatId:business.to,
               messageId:business.messageId},1,7*86400)
-            await consumeRate(config,{op:'hh-tg-business-intent-chat',
-              connectionId:business.connectionId,chatId:business.to},3,86400)
+            // Reserve bounded receipt/STOP capacity beyond the 3 dialogue
+            // prompts. Abuse still uses event-idempotency and the global cap.
+            if(business.terminal){
+              await consumeRate(config,{op:'hh-tg-business-terminal-chat',
+                connectionId:business.connectionId,chatId:business.to},4,86400)
+            }else{
+              await consumeRate(config,{op:'hh-tg-business-intent-chat',
+                connectionId:business.connectionId,chatId:business.to},3,86400)
+            }
             await consumeRate(config,{op:'hh-tg-business-intent-global'},100,86400)
             await sendHolisticBusinessRequestReply({connectionId:business.connectionId,
               to:business.to,text:business.reply})

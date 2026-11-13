@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { ArrowRight, HeartHandshake, Mic, Sparkles } from "lucide-react";
+import { ArrowDown, ArrowRight, HeartHandshake, Mic, Sparkles } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import { inferAssistPreferences, nextAssistQuestion, rankAssistOffers } from "@/lib/assist/service-match.mjs";
 import type { AssistPreferences } from "@/lib/assist/service-match.mjs";
@@ -25,7 +25,7 @@ const signals: readonly [Exclude<Focus,"general">, RegExp][] = [
   ["relationships", /отношен|любов|партн|семь|одиноч|relationship|partner|love|family|relaci|pareja|familia/i],
   ["work", /работ|карьер|бизнес|деньг|финанс|work|career|business|money|trabajo|negocio|dinero/i],
   ["energy", /энерг|сил нет|тело|рейки|reiki|energ|body|cuerpo/i],
-  ["growth", /смысл|цель|путь|развит|самопозн|meaning|purpose|growth|goal|sentido|propósito/i],
+  ["growth", /смысл|цель|путь|развит|самопозн|meaning|purpose|growth|goal|\blost\b|\bdirection\b|desorient|perdid|rumbo|sentido|propósito|потерял|потеряна|не знаю куда|ориентир/i],
 ];
 const urgent = /суицид|убить себя|самоповрежд|покончить с собой|suicid|self.harm|kill myself|quiero morir|hacerme daño/i;
 const detect = (text: string): Focus => signals.find(([,re])=>re.test(text))?.[0] ?? "general";
@@ -75,9 +75,9 @@ const copy = {
 type Selection = {text:string;focus:Focus};
 type ChatTurn = {role:"user"|"assistant";text:string};
 const compactCopy = {
-  ru: {moreIssues:"Показать ещё проблемы",lessIssues:"Скрыть остальные",moreTools:"Больше инструментов",lessTools:"Скрыть инструменты",ready:"Подходящие варианты уже показаны ниже."},
-  en: {moreIssues:"More concerns",lessIssues:"Show fewer",moreTools:"More tools",lessTools:"Fewer tools",ready:"Your matching options are just below."},
-  es: {moreIssues:"Ver más problemas",lessIssues:"Mostrar menos",moreTools:"Más herramientas",lessTools:"Menos herramientas",ready:"Tus opciones aparecen debajo."},
+  ru: {moreIssues:"Показать ещё проблемы",lessIssues:"Скрыть остальные",moreTools:"Больше инструментов",lessTools:"Скрыть инструменты",viewMatches:"Посмотреть подходящие мне варианты"},
+  en: {moreIssues:"More concerns",lessIssues:"Show fewer",moreTools:"More tools",lessTools:"Fewer tools",viewMatches:"View my matching options"},
+  es: {moreIssues:"Ver más problemas",lessIssues:"Mostrar menos",moreTools:"Más herramientas",lessTools:"Menos herramientas",viewMatches:"Ver mis opciones recomendadas"},
 } as const;
 
 export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
@@ -136,6 +136,17 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
     setTurns(current=>[...current,{role:"assistant" as const,text:t.questions[question].prompt},{role:"user" as const,text:label}].slice(-12));
     setPreferences(current=>({...current,[question]:value}));
   }
+  // Navigate on an explicit tap only: selecting a preference must not jump the page.
+  function scrollToRecommendations() {
+    const target=document.getElementById("assist-recommendations");
+    if(!target)return;
+    inputRef.current?.blur();
+    target.focus({preventScroll:true});
+    target.scrollIntoView({
+      behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",
+      block:"start",
+    });
+  }
   function reset() {
     setSelection(null);setText("");setPreferences({});setTurns([]);
     setCritical(false);setExpandedIssues(false);
@@ -153,7 +164,10 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
               <p className={styles.questionPrompt}>{t.questions[question].prompt}</p>
               <div className={styles.answerOptions}>{t.questions[question].options.map(([label,value])=><button type="button" key={value} onClick={()=>chooseAnswer(value,label)}>{label}</button>)}</div>
               <button type="button" className={styles.skip} onClick={()=>chooseAnswer("any",t.skip)}>{t.skip}</button>
-            </div>:<p className={styles.chatReady}>{labels.ready}</p>}
+            </div>:<button type="button" className={styles.viewMatches} data-assist-view-matches
+              aria-controls="assist-recommendations" onClick={scrollToRecommendations}>
+              {labels.viewMatches}<ArrowDown size={19} aria-hidden="true"/>
+            </button>}
           </>}
         </>:<div className={styles.chatStart}>
           <div className={styles.greeting}>
@@ -185,8 +199,8 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
       {selection?<button type="button" className={styles.reset} data-assist-reset onClick={reset}>{t.change}</button>:null}
     </div>
     <p className={styles.privacy}>{t.privacy}</p>
-    {!crisis?<AssistTopRecommendations locale={locale} focus={selection?.focus??null}
-      matchingIds={selection?suggestions.map(({id})=>id):undefined} noMatchLabel={t.noOffers}/>:null}
+    {!crisis&&selection?<AssistTopRecommendations locale={locale} focus={selection.focus} preferences={preferences}
+      matchingIds={suggestions.map(({id})=>id)} noMatchLabel={t.noOffers}/>:null}
     <section className={styles.tools} aria-labelledby="assist-tools-title">
       <h2 id="assist-tools-title">{t.tools}</h2><p>{t.browse}</p>
       <div className={styles.toolGrid}>{toolList.slice(0,expandedTools?toolList.length:4).map((key)=>{
