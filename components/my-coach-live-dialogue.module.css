@@ -249,3 +249,123 @@
  .consentDetails{font-size:10px}
 }
 @media(max-width:699px) and (max-height:670px){.transcriptFeed{max-height:48px}.liveTranscript{padding:4px 8px}.textComposer .composer>label:first-child{display:none}}
+
+
+/* HH_MY_COACH_LIVE_MOCKUP_V2: approved Holistic House × live conversation mobile UI.
+   Real voice/consent/API state is owned by the existing speech loop. */
+.root[data-my-coach-immersive-session]{background:linear-gradient(180deg,#fbf6ef 0%,#f8f3e9 100%);color:#103f35}
+.sessionTopbar{padding-inline:18px}
+.sessionHero{height:clamp(325px,42vw,440px);border:2px solid #fffdf9;border-radius:30px;background:#cad6c7;box-shadow:0 13px 32px #233a2a24}
+.sessionHeroShade{background:linear-gradient(90deg,#10362bbd,#1b4f2d43 54%,transparent 83%),linear-gradient(0deg,#091e18b0,transparent 59%)}
+.sessionHeroCopy{top:23px;bottom:auto;left:22px;width:min(67%,430px);gap:6px;justify-content:flex-start}
+.sessionHeroCopy>p{display:none}
+.sessionHeroCopy h1{font-size:clamp(42px,7vw,66px);line-height:1.05}
+.sessionHeroCopy>small{font-size:15px;font-weight:700;line-height:1.32;max-width:230px}
+.sessionHeroBadge{padding:9px 12px;font-size:10px;letter-spacing:.025em;background:#0f684fdb}
+.sessionHero .currentCoachPrompt{position:absolute;z-index:2;left:20px;right:20px;bottom:17px;min-height:0;display:flex;gap:12px;align-items:center;padding:13px 15px;border:1px solid #ffffffad;border-radius:25px;background:linear-gradient(110deg,#1a4739cf,#234637ad);box-shadow:0 10px 30px #0c28182b;backdrop-filter:blur(13px);-webkit-backdrop-filter:blur(13px)}
+.sessionHero .currentCoachPrompt:after{content:none}
+.sessionHero .currentCoachCopy>span{font-size:11px;letter-spacing:.055em;color:#c8e9d8}
+.sessionHero .currentCoachCopy p{max-height:4em;overflow:hidden;color:#fff;font-size:clamp(15px,2.2vw,19px);font-weight:690;line-height:1.32;overflow-wrap:anywhere}
+.sessionHero .promptWave i{background:#b4edce}
+.sessionHero .replayInline{width:44px;height:44px;background:#f7fff6e8;border-color:#eefcf4;color:#0c674f}
+.sessionProgress{border-radius:999px;background:#fffdf8;box-shadow:0 3px 12px #193b2214}
+.sessionProgressSegments span{background:#e6e4dd}
+.sessionProgressSegments span[data-complete=true]{background:#098a67}
+.sessionDisclosure{font-size:11px;line-height:1.4}
+.voiceWorkspace{gap:8px}
+.liveTranscript{border:1px solid #e2e9df;border-radius:24px;background:#fffdfa;padding:14px 16px;box-shadow:0 4px 18px #254b2c12}
+.transcriptHeading{gap:10px;font-size:17px;color:#0f5444}
+.transcriptHeading svg{width:19px;height:19px}
+.transcriptFeed{gap:10px;max-height:190px;margin-top:12px}
+.transcriptCoach,.transcriptUser,.transcriptInterim{padding:10px 13px;border-radius:17px;background:#e9f3eb}
+.transcriptUser{margin-left:13%;background:#f2eee8}
+.transcriptInterim{background:#ebf9ef;border:1px dashed #6eb89a}
+.transcriptFeed strong{font-size:10px;letter-spacing:.045em;text-transform:uppercase}
+.transcriptFeed p{font-size:15px;line-height:1.38}
+.voiceControls{display:grid;grid-template-columns:minmax(60px,1fr) minmax(90px,1.35fr) minmax(60px,1fr) minmax(60px,1fr);align-items:center;justify-items:center;gap:10px;min-height:99px;margin:0;border:1px solid #e0e7db;border-radius:24px;background:#fffdf8;padding:9px 12px;box-shadow:0 4px 17px #1b433018}
+.captionsControl,.replayControl,.endControl{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;flex:none;min-width:0;width:66px;height:65px;padding:7px 4px;border:1px solid #e4e5dd;border-radius:19px;background:#fbfaf5;color:#155747;box-shadow:0 3px 11px #213c2a12;font-size:10px;line-height:1.12;font-weight:650;text-decoration:none;cursor:pointer}
+.captionsControl span,.replayControl span,.endControl span{font-size:10px;line-height:1.1;text-align:center;overflow-wrap:anywhere}
+.captionsControl[aria-pressed=false]{color:#62776d;background:#eff2ed}
+.endControl{color:#b43d3c;border-color:#eed2cd;background:#fff1ee}
+.captionsControl:focus-visible,.endControl:focus-visible{outline:3px solid #12836b;outline-offset:2px}
+.replayControl:disabled{opacity:.5}
+.voiceCenter :global([data-my-coach-voice] button){width:82px;height:82px;box-shadow:0 0 0 6px #9bdec044,0 7px 18px #05674730}
+.textComposer{border:1px solid #e3e4d9;border-radius:22px;background:#fffdf8}
+.composerInput{position:relative;min-width:0}
+.composerKeyboard{position:absolute;top:50%;left:7px;transform:translateY(-50%);width:35px;height:35px;border:0;border-radius:11px;background:transparent;color:#216e59;display:grid;place-items:center;cursor:pointer}
+.composerKeyboard:focus-visible{outline:2px solid #0c7960;outline-offset:2px}
+.textComposer .composerInput textarea{display:block;width:100%;padding-left:46px}
+.goalRow{border:1px solid #cde4d4;border-radius:99px;background:#edf6ed;box-shadow:0 3px 15px #3a54321b}
+.sessionBottomNav{display:none}
+@media(max-width:699px){
+ .root[data-my-coach-immersive-session]{height:100dvh;max-height:100dvh;overflow:hidden;gap:6px;padding:0}
+ .sessionTopbar{flex:none;min-height:49px;padding:5px 13px}
+ .sessionBrand{font-size:15px}.sessionBrandMark{width:30px;height:30px}
+ .chooseCoach{font-size:11px;line-height:1.15;min-height:40px;padding:5px 9px}
+ .sessionScroll{flex:1;min-height:0;gap:6px;overflow-x:hidden;overflow-y:auto;padding-bottom:8px;scrollbar-width:thin}
+ .sessionHero{flex:none;width:calc(100% - 24px);height:clamp(205px,33dvh,310px);border-radius:26px}
+ .sessionPortrait[data-persona]{background-size:auto 112%,cover;background-position:right 43%,center}
+ .sessionHeroShade{background:linear-gradient(90deg,#0d352c9d,#123c312c 59%,transparent 83%),linear-gradient(0deg,#0c2a20b5,transparent 56%)}
+ .sessionHeroCopy{top:14px;bottom:auto;left:14px;width:64%;gap:4px}
+ .sessionHeroCopy h1{font-size:clamp(32px,9vw,42px)}
+ .sessionHeroCopy>small{font-size:11px;line-height:1.22;max-width:145px}
+ .sessionHeroBadge{font-size:8px;padding:6px 9px;letter-spacing:0}
+ .sessionHero .currentCoachPrompt{left:11px;right:11px;bottom:10px;gap:7px;padding:9px 10px;border-radius:19px}
+ .sessionHero .currentCoachCopy>span{font-size:9px}
+ .sessionHero .currentCoachCopy p{font-size:clamp(13px,3.7vw,16px);line-height:1.25;max-height:3.75em}
+ .sessionHero .promptWave{width:20px;height:35px;gap:2px}
+ .sessionHero .promptWave i{width:3px}
+ .sessionHero .replayInline{width:36px;height:36px}
+ .sessionDisclosure{font-size:10px;line-height:1.28}
+ .sessionProgress{min-height:33px;padding:6px 11px;border-radius:18px}
+ .sessionProgressText strong{font-size:11px}.sessionProgressText span{font-size:10px}
+ .sessionDialogue{gap:5px}
+ .quickGoalCard{min-height:80px}
+ .voiceWorkspace{flex:none;gap:5px;width:calc(100% - 24px)}
+ .liveTranscript{padding:9px 11px;border-radius:18px}
+ .transcriptHeading{font-size:14px;gap:8px}
+ .transcriptHeading svg{width:17px;height:17px}
+ .transcriptFeed{max-height:103px;gap:6px;margin-top:7px;overflow-y:auto}
+ .transcriptCoach,.transcriptUser,.transcriptInterim{padding:7px 10px;border-radius:13px}
+ .transcriptFeed strong{font-size:10px}
+ .transcriptFeed p{font-size:13px;line-height:1.34}
+ .voiceControls{grid-template-columns:48px minmax(72px,1fr) 48px 48px;gap:7px;min-height:76px;padding:5px 8px;border-radius:18px}
+ .captionsControl,.replayControl,.endControl{width:48px;height:52px;gap:3px;border-radius:14px;padding:4px 2px}
+ .captionsControl svg,.replayControl svg,.endControl svg{width:20px;height:20px}
+ .captionsControl span,.replayControl span,.endControl span{font-size:9px}
+ .voiceCenter :global([data-my-coach-voice]){flex-wrap:nowrap}
+ .voiceCenter :global([data-my-coach-voice] button){width:68px;height:68px}
+ .voiceCenter :global([data-my-coach-voice] button svg){width:27px;height:27px}
+ .voiceWaveLeft{right:calc(50% + 43px)}.voiceWaveRight{left:calc(50% + 43px)}
+ .textComposer{max-height:min(23dvh,172px);padding:7px 9px;border-radius:17px}
+ .textComposer .composer{grid-template-columns:minmax(0,1fr) 46px;gap:5px}
+ .textComposer .composer>label:first-child{display:none}
+ .textComposer .composerInput{grid-column:1;grid-row:2}
+ .textComposer .composerInput textarea{min-height:45px;max-height:76px;padding:10px 10px 10px 43px;resize:none}
+ .textComposer .composer .send{grid-column:2;grid-row:2;min-width:44px;min-height:45px;width:46px}
+ .textComposer .composer .consent{grid-column:1/-1;grid-row:3;line-height:1.24;font-size:10px}
+ .goalRow{flex:none;width:calc(100% - 24px);min-height:44px;margin:0 auto 2px;padding:6px 12px;border-radius:24px}
+ .goalRow>span{font-size:12px}.goalRow input{font-size:13px}
+ .goalPrivacy{font-size:9px;line-height:1.1}
+ .sessionBottomNav{display:none}
+}
+@media(max-width:699px) and (max-height:700px){
+ .root[data-my-coach-immersive-session]{gap:4px}
+ .sessionHero{height:clamp(185px,28dvh,240px)}
+ .transcriptFeed{max-height:68px}
+ .voiceControls{min-height:69px;padding-top:3px;padding-bottom:3px}
+ .voiceCenter :global([data-my-coach-voice] button){width:59px;height:59px}
+ .goalRow{min-height:40px}
+ .goalPrivacy{display:none}
+}
+@media(max-width:340px){
+ .sessionHeroCopy h1{font-size:29px}
+ .sessionHeroBadge{font-size:7px}
+ .sessionHero .currentCoachCopy p{font-size:12px}
+ .voiceControls{gap:4px;padding-inline:5px}
+ .transcriptFeed p{font-size:12px}
+ .goalRow input{font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){
+ .sessionHero .currentCoachPrompt{backdrop-filter:none;-webkit-backdrop-filter:none}
+}

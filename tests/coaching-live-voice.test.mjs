@@ -235,3 +235,23 @@ test('My Coach speech is visible as text while recording and safely remains edit
   assert.match(css,/\.textComposer \.composer textarea/)
   assert.doesNotMatch(loop,/localStorage|sessionStorage|MediaRecorder|sendBeacon/)
 })
+
+
+test('approved holistic live-coach screen keeps portrait subtitles, responsive voice bar and real chat',()=>{
+  const ui=source('components/my-coach-live-dialogue.jsx')
+  const css=source('components/my-coach-live-dialogue.module.css')
+  for(const token of ['HH_MY_COACH_LIVE_MOCKUP_V2','data-coach-live-caption','data-coach-session-controls',
+    'aria-pressed={showCaptions}','setShowCaptions(visible=>!visible)','className={styles.endControl}',
+    'turns.length===0&&<section','{turns.map((turn,index)','className={styles.composerInput}',
+    'onClick={toggleComposer}','className={styles.textComposer} open']) assert.ok(ui.includes(token),token)
+  assert.match(css,/\\.sessionHero \\.currentCoachPrompt\\{position:absolute/)
+  assert.match(css,/\\.voiceControls\\{display:grid/)
+  assert.match(css,/\\.sessionBottomNav\\{display:none/)
+  assert.match(css,/\\.sessionPortrait\\[data-persona\\]\\{background-size:auto 112%/)
+  for(const token of ['onTranscript={setSpeechPreview}',
+    "onDraft={text=>{setDraft(text);setSpeechPreview('');setError('')}}",
+    "enabled={consent&&readiness.status!=='checking'&&!authRequired}",
+    "onRequestConsent={()=>{if(!voiceConsentRef.current?.open)voiceConsentRef.current?.showModal()}}"])
+    assert.ok(ui.includes(token),token)
+  assert.ok(ui.includes("href={'/'+lang+'/my-coach'}"),'end returns to coach chooser')
+})

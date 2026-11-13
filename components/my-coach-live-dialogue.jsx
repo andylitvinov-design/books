@@ -2,7 +2,7 @@
 
 import {useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
-import {ArrowRight,Heart,Home,Keyboard,Leaf,LockKeyhole,MessageCircle,Pencil,Send,ShieldCheck,Sparkles,Target,UserRound,Video,Volume2,Zap} from 'lucide-react'
+import {ArrowRight,Captions,Heart,Home,Keyboard,Leaf,LockKeyhole,MessageCircle,Pencil,PhoneOff,Send,ShieldCheck,Sparkles,Target,UserRound,Video,Volume2,Zap} from 'lucide-react'
 import {getCoachPersona,localCoachText,coachStagePrompt} from '@/lib/coaching/persona-registry.mjs'
 import {coachingBrainSafety,coachingBrainBoundary} from '@/lib/personal-coaching/coaching-brain.mjs'
 import {classifyWisdomRequest} from '@/lib/coaching/wisdom-retrieval.mjs'
@@ -68,9 +68,9 @@ const avatarNotice={
 }
 
 const sessionUi={
-en:{choose:'Choose another coach',mode:'AI COACH · LIVE DIALOGUE',step:'Step',of:'of',topics:'What would you like to explore?',stress:'Relieve stress',energy:'Restore energy',relationships:'Improve relationships',goal:'My goal',goalPlaceholder:'Add or edit your goal…',type:'Write a message',replay:'Hear the coach reply',voice:'Start voice conversation',home:'Home',coaching:'My Coach',practice:'Practices',video:'Video',profile:'Profile',disclosure:'A fictional AI coach, not a therapist. Your conversation is private to this tab and is not saved to your Cabinet.',guided:'Use the guided session instead',stages:['Clarify','Explore','Awareness','New perspective','Options','Next step'],stageQuestion:'Conversation progress',safety:'Safety pause',chooseTopic:'Choose a topic to add it to your draft. Nothing is sent until you press Send.',typedGoal:'Your goal stays in this tab and is not saved to your account.'},
-ru:{choose:'Выбрать другого коуча',mode:'AI-КОУЧ · ЖИВОЙ ДИАЛОГ',step:'Шаг',of:'из',topics:'Что хотите исследовать?',stress:'Снизить стресс',energy:'Вернуть энергию',relationships:'Улучшить отношения',goal:'Моя цель',goalPlaceholder:'Добавьте или измените цель…',type:'Написать сообщение',replay:'Прослушать ответ коуча',voice:'Начать голосовой разговор',home:'Главная',coaching:'Мой коуч',practice:'Практики',video:'Видео',profile:'Профиль',disclosure:'Вымышленный AI-коуч, не психотерапевт. Диалог остаётся в этой вкладке и не сохраняется в личном кабинете.',guided:'Перейти к пошаговой сессии',stages:['Прояснение','Исследование','Осознание','Новый взгляд','Варианты','Следующий шаг'],stageQuestion:'Прогресс разговора',safety:'Пауза для безопасности',chooseTopic:'Выберите тему — она добавится в черновик. Ничего не отправится без нажатия «Отправить».',typedGoal:'Цель остаётся в этой вкладке и не сохраняется в вашем аккаунте.'},
-es:{choose:'Elegir otro coach',mode:'COACH IA · DIÁLOGO EN VIVO',step:'Paso',of:'de',topics:'¿Qué te gustaría explorar?',stress:'Reducir el estrés',energy:'Recuperar energía',relationships:'Mejorar relaciones',goal:'Mi objetivo',goalPlaceholder:'Añade o edita tu objetivo…',type:'Escribir mensaje',replay:'Escuchar la respuesta',voice:'Iniciar conversación por voz',home:'Inicio',coaching:'Mi coach',practice:'Prácticas',video:'Vídeo',profile:'Perfil',disclosure:'Coach ficticio de IA, no terapeuta. La conversación permanece en esta pestaña y no se guarda en tu cuenta.',guided:'Usar la sesión guiada',stages:['Aclarar','Explorar','Conciencia','Nueva perspectiva','Opciones','Siguiente paso'],stageQuestion:'Progreso de la conversación',safety:'Pausa de seguridad',chooseTopic:'Elige un tema para añadirlo al borrador. Nada se envía hasta pulsar Enviar.',typedGoal:'Tu objetivo permanece en esta pestaña y no se guarda en tu cuenta.'}
+en:{choose:'Choose another coach',mode:'AI COACH · LIVE DIALOGUE',step:'Step',of:'of',topics:'What would you like to explore?',stress:'Relieve stress',energy:'Restore energy',relationships:'Improve relationships',goal:'My goal',goalPlaceholder:'Add or edit your goal…',type:'Write a message',captions:'Captions',sound:'Sound',end:'End',replay:'Hear the coach reply',voice:'Start voice conversation',home:'Home',coaching:'My Coach',practice:'Practices',video:'Video',profile:'Profile',disclosure:'A fictional AI coach, not a therapist. Your conversation is private to this tab and is not saved to your Cabinet.',guided:'Use the guided session instead',stages:['Clarify','Explore','Awareness','New perspective','Options','Next step'],stageQuestion:'Conversation progress',safety:'Safety pause',chooseTopic:'Choose a topic to add it to your draft. Nothing is sent until you press Send.',typedGoal:'Your goal stays in this tab and is not saved to your account.'},
+ru:{choose:'Выбрать другого коуча',mode:'AI-КОУЧ · ЖИВОЙ ДИАЛОГ',step:'Шаг',of:'из',topics:'Что хотите исследовать?',stress:'Снизить стресс',energy:'Вернуть энергию',relationships:'Улучшить отношения',goal:'Моя цель',goalPlaceholder:'Добавьте или измените цель…',type:'Написать сообщение',captions:'Субтитры',sound:'Звук',end:'Завершить',replay:'Прослушать ответ коуча',voice:'Начать голосовой разговор',home:'Главная',coaching:'Мой коуч',practice:'Практики',video:'Видео',profile:'Профиль',disclosure:'Вымышленный AI-коуч, не психотерапевт. Диалог остаётся в этой вкладке и не сохраняется в личном кабинете.',guided:'Перейти к пошаговой сессии',stages:['Прояснение','Исследование','Осознание','Новый взгляд','Варианты','Следующий шаг'],stageQuestion:'Прогресс разговора',safety:'Пауза для безопасности',chooseTopic:'Выберите тему — она добавится в черновик. Ничего не отправится без нажатия «Отправить».',typedGoal:'Цель остаётся в этой вкладке и не сохраняется в вашем аккаунте.'},
+es:{choose:'Elegir otro coach',mode:'COACH IA · DIÁLOGO EN VIVO',step:'Paso',of:'de',topics:'¿Qué te gustaría explorar?',stress:'Reducir el estrés',energy:'Recuperar energía',relationships:'Mejorar relaciones',goal:'Mi objetivo',goalPlaceholder:'Añade o edita tu objetivo…',type:'Escribir mensaje',captions:'Subtítulos',sound:'Sonido',end:'Salir',replay:'Escuchar la respuesta',voice:'Iniciar conversación por voz',home:'Inicio',coaching:'Mi coach',practice:'Prácticas',video:'Vídeo',profile:'Perfil',disclosure:'Coach ficticio de IA, no terapeuta. La conversación permanece en esta pestaña y no se guarda en tu cuenta.',guided:'Usar la sesión guiada',stages:['Aclarar','Explorar','Conciencia','Nueva perspectiva','Opciones','Siguiente paso'],stageQuestion:'Progreso de la conversación',safety:'Pausa de seguridad',chooseTopic:'Elige un tema para añadirlo al borrador. Nada se envía hasta pulsar Enviar.',typedGoal:'Tu objetivo permanece en esta pestaña y no se guarda en tu cuenta.'}
 }
 const transcriptUi={
   en:{heading:'Conversation · transcript',listening:'Listening',hint:'Your spoken words will appear here. Or type your reply below.',consentShort:'I agree to send my text to the eligible free AI; browser recognition may process my voice.',details:'Privacy and data processing'},
@@ -110,6 +110,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [selectedGoal,setSelectedGoal]=useState('')
   const [replaying,setReplaying]=useState(false)
   const [playbackNotice,setPlaybackNotice]=useState('')
+  const [showCaptions,setShowCaptions]=useState(true)
   const pending=useRef(null),end=useRef(null),composerRef=useRef(null),transcriptRef=useRef(null)
   const composerDetailsRef=useRef(null),voiceConsentRef=useRef(null),speechRef=useRef(null)
   useEffect(()=>()=>pending.current?.abort(),[])
@@ -287,6 +288,15 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           showPicker={false} size="large"
           phase={voiceState.phase==='speaking'?'speaking':paused?'paused':busy?'thinking':voiceState.phase} beat={voiceState.beat}/>
       </div>
+      {/* HH_MY_COACH_LIVE_MOCKUP_V2: current coach turn is a readable caption on the large live portrait. */}
+      {showCaptions&&<div className={styles.currentCoachPrompt} data-coach-live-caption>
+        <span className={styles.promptWave} aria-hidden="true"><i/><i/><i/><i/><i/><i/><i/></span>
+        <div className={styles.currentCoachCopy}><span>{name}</span><p>{latestCoachText}</p></div>
+        <button type="button" className={styles.replayInline} onClick={replayCoachReply}
+          disabled={voiceState.phase!=='idle'||replaying} aria-label={ui.replay} title={ui.replay}>
+          <Volume2 size={19} aria-hidden="true"/>
+        </button>
+      </div>}
     </section>
     <p className={styles.sessionDisclosure}>{ui.disclosure}</p>
     <section className={styles.sessionProgress} aria-label={ui.stageQuestion}>
@@ -298,24 +308,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           data-current={index===visibleStageIndex?'true':undefined}/>)}
       </div>
     </section>
-    <section className={styles.sessionDialogue} aria-label={ui.stageQuestion}>
-      <div className={styles.currentCoachPrompt}>
-        <span className={styles.promptWave} aria-hidden="true"><i/><i/><i/><i/><i/><i/><i/></span>
-        <div className={styles.currentCoachCopy}><span>{name}</span><p>{latestCoachText}</p></div>
-        <button type="button" className={styles.replayInline} onClick={replayCoachReply}
-          disabled={voiceState.phase!=='idle'||replaying} aria-label={ui.replay} title={ui.replay}>
-          <Volume2 size={19} aria-hidden="true"/>
-        </button>
-      </div>
-      {turns.length>1&&<details className={styles.conversationHistory}>
-        <summary>{lang==='ru'?'История разговора':lang==='es'?'Historial de conversación':'Conversation history'}</summary>
-        <div className={styles.historyMessages} role="log" aria-live="polite">
-          {turns.map((turn,index)=><div key={index} className={turn.role==='user'?styles.historyUser:styles.historyCoach}>
-            <strong>{turn.role==='user'?t.user:name}</strong><p>{turn.content}</p>
-          </div>)}
-          <div ref={end}/>
-        </div>
-      </details>}
+    {turns.length===0&&<section className={styles.sessionDialogue} aria-label={ui.stageQuestion}>
       <div className={styles.quickGoals}>
         <div className={styles.quickGoalsHeading}><strong>{ui.topics}</strong><span>{ui.chooseTopic}</span></div>
         <div className={styles.quickGoalGrid}>
@@ -327,7 +320,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           </button>)}
         </div>
       </div>
-    </section>
+    </section>}
     {editablePlan&&<label className={styles.plan}>{t.plan}<textarea value={editablePlan} maxLength={300} rows={2}
       onChange={event=>setEditablePlan(event.target.value)}/></label>}
     </div>
@@ -339,7 +332,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         </div>
         <div className={styles.transcriptFeed} ref={transcriptRef} role="log" aria-live="polite" aria-relevant="additions">
           {!turns.length&&<div className={styles.transcriptCoach}><strong>{name}</strong><p>{opening}</p></div>}
-          {turns.slice(-6).map((turn,index)=><div key={turns.length-6+index}
+          {turns.map((turn,index)=><div key={index}
             className={turn.role==='user'?styles.transcriptUser:styles.transcriptCoach}>
             <strong>{turn.role==='user'?t.user:name}</strong><p>{turn.content}</p>
           </div>)}
@@ -349,9 +342,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           {!turns.length&&!speechPreview&&<p className={styles.transcriptHint}>{captions.hint}</p>}
         </div>
       </section>
-      <div className={styles.voiceControls}>
-        <button type="button" className={styles.keyboardControl} onClick={toggleComposer}
-          aria-label={ui.type} title={ui.type}><Keyboard size={21} aria-hidden="true"/></button>
+      <div className={styles.voiceControls} data-coach-session-controls>
+        <button type="button" className={styles.captionsControl} aria-pressed={showCaptions}
+          onClick={()=>setShowCaptions(visible=>!visible)} aria-label={ui.captions} title={ui.captions}>
+          <Captions size={22} aria-hidden="true"/><span>{ui.captions}</span>
+        </button>
         <div className={styles.voiceCenter} data-voice-active={voiceState.phase!=='idle'?'true':undefined}>
           <span className={styles.voiceWaveLeft} aria-hidden="true"><i/><i/><i/><i/><i/></span>
           <MyCoachSpeechLoop ref={speechRef} locale={lang} enabled={consent&&readiness.status!=='checking'&&!authRequired}
@@ -363,8 +358,13 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         </div>
         <button type="button" className={styles.replayControl} onClick={replayCoachReply}
           disabled={!latestCoachText||voiceState.phase!=='idle'||replaying} aria-label={ui.replay} title={ui.replay}>
-          <Volume2 size={21} aria-hidden="true"/>
+          <Volume2 size={22} aria-hidden="true"/><span>{ui.sound}</span>
         </button>
+        <Link className={styles.endControl} href={'/'+lang+'/my-coach'}
+          aria-label={ui.end} title={ui.end}
+          onClick={()=>{pending.current?.abort();try{window.speechSynthesis?.cancel()}catch{}}}>
+          <PhoneOff size={22} aria-hidden="true"/><span>{ui.end}</span>
+        </Link>
       </div>
       {playbackNotice&&<p className={styles.playbackNotice} role="status">{playbackNotice}</p>}
       <details ref={composerDetailsRef} className={styles.textComposer} open>
@@ -376,9 +376,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           <span>{t.login}</span><Link href={'/'+lang+'/my-coach'}>{t.loginLink}<ArrowRight size={16}/></Link></div>:null}
         {!paused&&<form className={styles.composer} onSubmit={send}>
           <label htmlFor="hh-my-coach-live-input">{t.field}</label>
-          <textarea ref={composerRef} id="hh-my-coach-live-input" value={draft} maxLength={1200} rows={2}
+          <div className={styles.composerInput}>
+            <button type="button" className={styles.composerKeyboard} onClick={toggleComposer} aria-label={ui.type} title={ui.type}><Keyboard size={19} aria-hidden="true"/></button>
+            <textarea ref={composerRef} id="hh-my-coach-live-input" aria-label={t.field} value={draft} maxLength={1200} rows={2}
             placeholder={t.placeholder} disabled={busy||authRequired||readiness.status==='checking'}
-            onChange={event=>{setDraft(event.target.value);setError('')}}/>
+            onChange={event=>{setDraft(event.target.value);setError('')}}/></div>
           <label className={styles.consent}><input type="checkbox" checked={consent}
             disabled={busy||readiness.status==='checking'}
             onChange={event=>{setConsent(event.target.checked);if(!event.target.checked)pending.current?.abort()}}/>
