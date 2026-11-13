@@ -16,6 +16,7 @@ import { academyDisplayTitle, mediaForRecord, preferredAcademyRecords, youtubeId
 import { VideoDiscovery } from "@/components/video-discovery";
 import { buildPublishedVideoIndex } from "@/lib/video-discovery/catalog.mjs";
 import { classifyMyTubeFormat } from "@/lib/video-discovery/mytube-duration.mjs";
+import { originalPsiMasterPracticeMetadata } from "@/lib/video-discovery/mytube-practice-collections.mjs";
 import { rankPublicMyTubeVideo } from "@/lib/mandala/mytube-video-tagging.mjs";
 import { listMyTubeCategories } from "@/lib/mandala/mytube-content-taxonomy.mjs";
 
@@ -442,7 +443,7 @@ export function buildPublicVideoDiscoveryItems(
     sourceApproved:true,sourceLabel:"PsiMaster · архив",
     sourceGroup:"psimaster-original-meditations",
     contentType:video.id==="ZYGjw0PtvdM"?"energy_boost_practice":"soft_meditation",
-    topicTags:["energy","practices"],
+    topicTags:originalPsiMasterPracticeMetadata(video.id).topicTags,
   }));
   // One canonical public index, de-duplicated by YouTube ID. Unknown, private,
   // draft and unapproved clips never gain publication rights from this merge.
