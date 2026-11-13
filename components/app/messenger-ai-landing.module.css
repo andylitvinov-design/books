@@ -92,3 +92,7 @@
 @media(prefers-reduced-motion:reduce){
  .card{scroll-behavior:auto}
 }
+
+/* The single live message field follows the welcome question, before topic cards. */
+.inlineComposer{min-width:0;padding:7px 8px;border:1px solid #e9dfd1;border-radius:16px;
+ background:#fffcf7;box-sizing:border-box;box-shadow:0 2px 8px #443d3410}
