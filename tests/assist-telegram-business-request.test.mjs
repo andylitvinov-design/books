@@ -1,7 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {HOLISTIC_TELEGRAM_ACCOUNT,telegramServiceRequestDraft,telegramServiceRequestUrl,parseTelegramServiceDraft,telegramBusinessRequestFromUpdate,isHolisticBusinessConnection,telegramBusinessRequestReply} from '../lib/assist/telegram-business-request.mjs';
+import vm from 'node:vm';
+import {HOLISTIC_TELEGRAM_ACCOUNT,telegramServiceRequestDraft,telegramServiceRequestUrl,parseTelegramServiceDraft,telegramBusinessRequestFromUpdate,isHolisticBusinessConnection,telegramBusinessRequestReply,telegramBusinessMessageFromUpdate,
+ telegramBusinessClientChoice,telegramBusinessConversationReply,telegramBusinessServiceTitle} from '../lib/assist/telegram-business-request.mjs';
 const get=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 test('15 real service request drafts are filled into a normal user chat, no /start',()=>{
  assert.equal(HOLISTIC_TELEGRAM_ACCOUNT,'holistichouse');
@@ -55,12 +57,158 @@ test('Assist and signed Telegram webhook preserve bot diagnostics, prefill, limi
  assert.match(ui,/target="_blank"/);
  assert.match(ui,/data-assist-best-action=\{id\}/);
  assert.match(route,/verifyMessengerWebhook\(provider,raw,request.headers\)/);
- assert.match(route,/telegramBusinessRequestFromUpdate\(body\)/);
- assert.match(route,/HH_CRM_TG_CHAT_AUTOMATION_ENABLED==='true'/);
+ assert.match(route,/processTelegramBusinessConversation\(body,config\)/);
+ assert.match(get('lib/crm/telegram-business-service.js'),/HH_CRM_TG_CHAT_AUTOMATION_ENABLED!=='true'/);
  assert.match(route,/hh-tg-business-intent-message/);
  assert.match(route,/processTelegramDiagnostic\(diagnosticEvent,config\)/);
  assert.match(provider,/getBusinessConnection/);
  assert.match(provider,/business_connection_id:connectionId/);
  assert.match(provider,/business_connection','business_message/);
  assert.match(provider,/drop_pending_updates:false/);
+});
+
+
+test('customer confirmations are explicit: no long notes, accidental yes or arbitrary clinical information',()=>{
+ for(const [input,kind,format] of [
+  ['Онлайн','format','online'],['In person','format','inperson'],
+  ['por escrito','format','async'],['Подтвердить','confirm'],
+  ['Confirmar','confirm'],['/stop','stop'],['Отмена','cancel']]){
+   const choice=telegramBusinessClientChoice(input);
+   assert.equal(choice?.kind,kind,input);
+   if(format)assert.equal(choice.value,format);
+ }
+ for(const value of ['да','yes','I am anxious','symptoms and private history','/start',
+   'some sensitive patient notes','Confirm another appointment'])
+  assert.equal(telegramBusinessClientChoice(value),null);
+ for(const locale of ['ru','en','es']){
+  assert.ok(telegramBusinessServiceTitle('reiki',locale));
+  for(const [type,data] of [['format',{}],['confirm',{format:'online'}],
+    ['submitted',{referenceCode:'HH-ABCDEF123456'}],['cancelled',{}],['stopped',{}]]){
+    const msg=telegramBusinessConversationReply(type,{locale,service:'reiki',...data});
+    assert.ok(msg?.length>10&&msg.length<600,locale+':'+type);
+    assert.doesNotMatch(msg,/localhost|admin@|secret|data:|https?:/);
+  }
+ }
+ assert.equal(telegramBusinessConversationReply('submitted',
+  {locale:'ru',service:'reiki',referenceCode:'not verified'}),null);
+});
+test('subsequent private Telegram Business messages are accepted but forwarded/outgoing/malformed are rejected',()=>{
+ const follow=fixture();follow.business_message.text='Подтвердить';
+ assert.equal(telegramBusinessMessageFromUpdate(follow)?.request,null);
+ assert.equal(telegramBusinessMessageFromUpdate(follow)?.text,'Подтвердить');
+ for(const change of [
+   v=>{v.business_message.forward_origin={type:'user'}},
+   v=>{v.business_message.sender_business_bot={id:77}},
+   v=>{v.business_message.chat.type='group'},
+   v=>{v.business_message.from.id=999},
+   v=>{v.business_message.text='x'.repeat(801)},
+   v=>{v.business_message.date=0},
+   v=>{v.update_id=0.4},
+ ]){
+  const e=fixture();change(e);
+  assert.equal(telegramBusinessMessageFromUpdate(e),null);
+ }
+ assert.equal(telegramBusinessMessageFromUpdate({
+  update_id:77,edited_business_message:fixture().business_message}),null);
+});
+test('the actual locked state machine requires initial request, format and distinct Confirm; STOP is terminal',async()=>{
+ const source=get('lib/crm/telegram-business-service.js');
+ const body=source.slice(source.indexOf('async function lock('),
+   source.indexOf('// A real business order',source.indexOf('async function stage(')));
+ assert.ok(body.includes('async function stage('));
+ const reply=source.slice(source.indexOf('const response='),source.indexOf('function keys('));
+ let row=null;
+ const recorded=[];
+ const mock={
+  async query(sql,args=[]){
+   recorded.push({sql,args});
+   if(sql.includes('pg_catalog.pg_advisory_xact_lock'))return {rows:[]};
+   if(sql.startsWith('select * from app_private.crm_tg_business_service_sessions'))
+    return {rows:row?[{...row}]:[]};
+   if(sql.startsWith('insert into app_private.crm_tg_business_service_sessions')){
+    row={operation_id:args[2],practitioner_id:args[3],service_key:args[4],
+      locale:args[5],stage:'format',delivery_format:null,
+      consent_at:null,reference_code:null,last_update_id:args[6]};
+    return {rows:[]};
+   }
+   if(sql.startsWith('update app_private.crm_tg_business_service_sessions')){
+    if(sql.includes("stage='stopped'"))row.stage='stopped';
+    else if(sql.includes("stage='cancelled'"))row.stage='cancelled';
+    else if(sql.includes("stage='confirm'")){
+      row.stage='confirm';row.delivery_format=args[2];
+    }else if(sql.includes("stage='committing'")){
+      row.stage='committing';row.consent_at=new Date().toISOString();
+    }
+    row.last_update_id=args[sql.includes('delivery_format=$3')?3:2];
+    return {rows:[],rowCount:1};
+   }
+   throw new Error('UNRECOGNIZED SQL: '+sql.slice(0,65));
+  }
+ };
+ const context=vm.createContext({
+   randomUUID:()=> '11111111-1111-4111-8111-111111111111',
+   PRACTITIONER_ID:'246aa1a3-a371-5a83-9f4b-cd23ff027a76',
+   telegramBusinessClientChoice,telegramBusinessConversationReply,
+   webhookTransaction:async(_config,fn)=>fn(mock),
+   Date,Number,String,
+ },{codeGeneration:{strings:false,wasm:false}});
+ vm.runInContext(reply+body,context,{timeout:2000});
+ const k={business:'a'.repeat(64),user:'b'.repeat(64),lock:'synthetic-lock'};
+ const event=(text,updateId,request=null)=>({
+   connectionId:'synthetic-business-connection',chatId:'123456789',
+   messageId:updateId,updateId,text,request,
+ });
+ const initial=await context.stage(event('site request',21,{
+  service:'reiki',locale:'ru',name:'Сеанс Рейки'}),{},k);
+ assert.equal(initial.handled,true);
+ assert.equal(row.stage,'format');
+ assert.equal(row.consent_at,null);
+ const unknown=await context.stage(event('Private clinical note',22),{},k);
+ assert.equal(unknown.commit,undefined);
+ assert.equal(row.stage,'format');
+ const picked=await context.stage(event('онлайн',23),{},k);
+ assert.equal(row.stage,'confirm');
+ assert.ok(picked.reply.includes('Подтвердить'));
+ const confirmed=await context.stage(event('Подтвердить',24),{},k);
+ assert.equal(row.stage,'committing');
+ assert.ok(row.consent_at);
+ assert.equal(confirmed.commit.service,'reiki');
+ assert.equal(confirmed.commit.format,'online');
+ const replay=await context.stage(event('Подтвердить',24),{},k);
+ assert.equal(replay.commit,undefined);
+ const stopped=await context.stage(event('/stop',25),{},k);
+ assert.equal(row.stage,'stopped');
+ assert.equal(stopped.handled,true);
+ const attempts=recorded.length;
+ const afterStop=await context.stage(event('новая заявка',26,{service:'coaching',locale:'ru',name:'Терапия'}),{},k);
+ assert.equal(afterStop.commit,undefined);
+ assert.equal(row.stage,'stopped');
+ assert.equal(recorded.slice(attempts).some(x=>x.sql.startsWith('insert into ')),false);
+});
+test('only explicit confirmed provider session can create an existing encrypted CRM enquiry',()=>{
+ const source=get('lib/crm/telegram-business-service.js');
+ const migration=get('supabase/migrations/20261113155500_hh_crm_tg_business_service_sessions_v1.sql');
+ const provider=get('lib/crm/messenger-provider.js');
+ assert.match(source,/HH_CRM_TG_CHAT_AUTOMATION_ENABLED!=='true'/);
+ assert.match(source,/assertHolisticBusinessConnection\(\{connectionId:event.connectionId/);
+ assert.match(source,/stage='committing' and consent_at is not null and consent_at>now\(\)-interval '15 minutes'/);
+ assert.match(source,/operation_id=\$1 and business_hash=\$2 and user_hash=\$3/);
+ assert.match(source,/pg_catalog\.pg_advisory_xact_lock/);
+ assert.match(source,/if\(!result.commit\)return result/);
+ assert.match(source,/const saved=await saveConfirmedEnquiry\(config,result.commit\)/);
+ assert.match(source,/referenceCode:saved.referenceCode/);
+ assert.match(source,/seal\(message,ctx\('public_lead.message'\),config\)/);
+ assert.match(source,/seal\(contact,ctx\('public_lead.contact'\),config\)/);
+ assert.match(source,/contact_channel,operation_id,operation_hash/);
+ assert.match(source,/on conflict/); // keep this contract in future if idempotence moves to SQL
+ assert.match(provider,/getBusinessConnection/);
+ assert.match(provider,/isHolisticBusinessConnection/);
+ assert.match(provider,/business_connection_id:connectionId/);
+ assert.match(migration,/ENABLE ROW LEVEL SECURITY/);
+ assert.match(migration,/FORCE ROW LEVEL SECURITY/);
+ assert.match(migration,/consent_at>now\(\)-interval '15 minutes'/);
+ assert.match(migration,/GRANT SELECT,INSERT,UPDATE ON app_private\.crm_tg_business_service_sessions TO hh_app_inbox/);
+ assert.match(migration,/GRANT SELECT ON app_private\.crm_tg_business_service_sessions TO hh_app_backend/);
+ assert.doesNotMatch(migration,/GRANT (?:SELECT|INSERT|UPDATE|DELETE).* TO (?:anon|authenticated|public)/i);
+ assert.doesNotMatch(source,/sendMarketing|SEND_PAID|orderStatus='paid'/);
 });
