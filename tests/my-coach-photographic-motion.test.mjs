@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync,statSync} from 'node:fs'
+import {createHash} from 'node:crypto'
 import {COACH_PERSONAS} from '../lib/coaching/persona-registry.mjs'
 
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
@@ -53,4 +54,28 @@ test('selected main chat photo is persona-specific and preserves voice state and
   assert.match(style,/data-phase='speaking'/)
   assert.match(style,/data-phase='thinking'/)
   assert.match(style,/@media\(prefers-reduced-motion:reduce\)/)
+})
+
+
+test('eight fictional AI coaches have truly separate six-frame photos across public cards and heroes',()=>{
+ const animatedHashes=new Set(),stillHashes=new Set()
+ for(const id of names){
+  const animated=readFileSync(new URL(mediaDir+id+'-living.webp',import.meta.url))
+  const still=readFileSync(new URL(mediaDir+id+'-still.webp',import.meta.url))
+  animatedHashes.add(createHash('sha256').update(animated).digest('hex'))
+  stillHashes.add(createHash('sha256').update(still).digest('hex'))
+  assert.ok((animated.toString('ascii').match(/ANMF/g)||[]).length>=5,id+' must contain six real frames')
+ }
+ assert.equal(animatedHashes.size,names.length,'A coach must not share another coach animation')
+ assert.equal(stillHashes.size,names.length,'A coach must not share another coach still image')
+ const hero=source('components/my-coach-mira-landing.module.css')
+ for(const id of ['mira','max','sofia','alex']){
+  for(const selector of ['heroPortrait','railPortrait']){
+   assert.ok(hero.includes('.'+selector+'[data-persona='+id+']{'),'hero and rail must have specific coach overrides')
+  }
+  const animated="background-image:url('/images/holistic-house/my-coach-motion/"+id+"-living.webp')!important;"
+  const still="background-image:url('/images/holistic-house/my-coach-motion/"+id+"-still.webp')!important"
+  assert.ok(hero.includes(animated),'new first-screen animated coach face must match catalog: '+id)
+  assert.ok(hero.includes(still),'reduced-motion fallback must match catalog: '+id)
+ }
 })
