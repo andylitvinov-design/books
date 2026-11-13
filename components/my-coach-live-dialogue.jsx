@@ -72,6 +72,11 @@ en:{choose:'Choose another coach',mode:'AI COACH · LIVE DIALOGUE',step:'Step',o
 ru:{choose:'Выбрать другого коуча',mode:'AI-КОУЧ · ЖИВОЙ ДИАЛОГ',step:'Шаг',of:'из',topics:'Что хотите исследовать?',stress:'Снизить стресс',energy:'Вернуть энергию',relationships:'Улучшить отношения',goal:'Моя цель',goalPlaceholder:'Добавьте или измените цель…',type:'Написать сообщение',replay:'Прослушать ответ коуча',voice:'Начать голосовой разговор',home:'Главная',coaching:'Мой коуч',practice:'Практики',video:'Видео',profile:'Профиль',disclosure:'Вымышленный AI-коуч, не психотерапевт. Диалог остаётся в этой вкладке и не сохраняется в личном кабинете.',guided:'Перейти к пошаговой сессии',stages:['Прояснение','Исследование','Осознание','Новый взгляд','Варианты','Следующий шаг'],stageQuestion:'Прогресс разговора',safety:'Пауза для безопасности',chooseTopic:'Выберите тему — она добавится в черновик. Ничего не отправится без нажатия «Отправить».',typedGoal:'Цель остаётся в этой вкладке и не сохраняется в вашем аккаунте.'},
 es:{choose:'Elegir otro coach',mode:'COACH IA · DIÁLOGO EN VIVO',step:'Paso',of:'de',topics:'¿Qué te gustaría explorar?',stress:'Reducir el estrés',energy:'Recuperar energía',relationships:'Mejorar relaciones',goal:'Mi objetivo',goalPlaceholder:'Añade o edita tu objetivo…',type:'Escribir mensaje',replay:'Escuchar la respuesta',voice:'Iniciar conversación por voz',home:'Inicio',coaching:'Mi coach',practice:'Prácticas',video:'Vídeo',profile:'Perfil',disclosure:'Coach ficticio de IA, no terapeuta. La conversación permanece en esta pestaña y no se guarda en tu cuenta.',guided:'Usar la sesión guiada',stages:['Aclarar','Explorar','Conciencia','Nueva perspectiva','Opciones','Siguiente paso'],stageQuestion:'Progreso de la conversación',safety:'Pausa de seguridad',chooseTopic:'Elige un tema para añadirlo al borrador. Nada se envía hasta pulsar Enviar.',typedGoal:'Tu objetivo permanece en esta pestaña y no se guarda en tu cuenta.'}
 }
+const transcriptUi={
+  en:{heading:'Conversation · transcript',listening:'Listening',hint:'Your spoken words will appear here. Or type your reply below.',consentShort:'I agree to send my text to the eligible free AI; browser recognition may process my voice.',details:'Privacy and data processing'},
+  ru:{heading:'Диалог · расшифровка',listening:'Слушаю',hint:'Здесь появятся ваши слова. Можно также написать ответ ниже.',consentShort:'Согласен(на) отправлять текст бесплатной AI-модели; браузер может обрабатывать мой голос.',details:'Приватность и обработка данных'},
+  es:{heading:'Diálogo · transcripción',listening:'Escuchando',hint:'Aquí aparecerán tus palabras. También puedes escribir abajo.',consentShort:'Acepto enviar mi texto a la IA gratuita; el navegador puede procesar mi voz.',details:'Privacidad y procesamiento'},
+}
 const voiceGateText={
  en:{title:'Before voice conversation',cancel:'Not now',agree:'Agree and talk',playbackUnavailable:'Audio playback is unavailable in this browser. Try Safari or use text.'},
  ru:{title:'Перед голосовым разговором',cancel:'Не сейчас',agree:'Согласен и начать',playbackUnavailable:'В этом браузере не работает озвучивание. Попробуйте Safari или текстовый диалог.'},
@@ -93,6 +98,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const persona=getCoachPersona(personaId)
   const [consent,setConsent]=useState(false)
   const [draft,setDraft]=useState('')
+  const [speechPreview,setSpeechPreview]=useState('')
   const [turns,setTurns]=useState([])
   const [busy,setBusy]=useState(false)
   const [error,setError]=useState('')
@@ -104,7 +110,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [selectedGoal,setSelectedGoal]=useState('')
   const [replaying,setReplaying]=useState(false)
   const [playbackNotice,setPlaybackNotice]=useState('')
-  const pending=useRef(null),end=useRef(null),composerRef=useRef(null)
+  const pending=useRef(null),end=useRef(null),composerRef=useRef(null),transcriptRef=useRef(null)
   const composerDetailsRef=useRef(null),voiceConsentRef=useRef(null),speechRef=useRef(null)
   useEffect(()=>()=>pending.current?.abort(),[])
   useEffect(()=>{
@@ -127,11 +133,12 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     })
     return ()=>controller.abort()
   },[])
-  useEffect(()=>{if(turns.length)end.current?.scrollIntoView({block:'nearest',behavior:'auto'})},[turns])
+  useEffect(()=>{if(transcriptRef.current)transcriptRef.current.scrollTop=transcriptRef.current.scrollHeight},[turns,speechPreview])
   const name=persona?localCoachText(persona.name,lang):t.coach
   const opening=persona?localCoachText(persona.opening,lang):t.goal
   const ui=sessionUi[lang]||sessionUi.en
   const voiceGate=voiceGateText[lang]||voiceGateText.en
+  const captions=transcriptUi[lang]||transcriptUi.en
   const latestCoachTurn=[...turns].reverse().find(turn=>turn.role==='assistant')
   const latestCoachText=latestCoachTurn?.content||opening
   const currentStage=latestCoachTurn?.stage||'clarify'
@@ -178,8 +185,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   function toggleComposer(){
     const details=composerDetailsRef.current
     if(!details)return
-    details.open=!details.open
-    if(details.open)composerRef.current?.focus()
+    details.open=true
+    composerRef.current?.focus()
   }
 
   async function send(event){
@@ -215,6 +222,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       })
       if(mode==='safety'||(mode==='boundary'&&interruption?.boundary==='stop'))setPaused(true)
       setDraft('')
+      setSpeechPreview('')
       return {reply:answer,mode}
     }
     const controller=new AbortController()
@@ -247,6 +255,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         return updated.length>24?[updated[0],...updated.slice(-23)]:updated
       })
       setDraft('')
+      setSpeechPreview('')
       if(result.mode==='safety'||(result.mode==='boundary'&&result.boundary==='stop'))setPaused(true)
       if(result.mode==='ai'&&result.planSuggestion)setEditablePlan(result.planSuggestion)
       return {reply:answer,mode:result.mode}
@@ -323,6 +332,23 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       onChange={event=>setEditablePlan(event.target.value)}/></label>}
     </div>
     <section className={styles.voiceWorkspace} aria-label={ui.voice}>
+      <section className={styles.liveTranscript} aria-label={captions.heading} data-coach-live-transcript>
+        <div className={styles.transcriptHeading}><MessageCircle size={15} aria-hidden="true"/>
+          <strong>{captions.heading}</strong>
+          {voiceState.phase==='listening'&&<span role="status">{captions.listening}</span>}
+        </div>
+        <div className={styles.transcriptFeed} ref={transcriptRef} role="log" aria-live="polite" aria-relevant="additions">
+          {!turns.length&&<div className={styles.transcriptCoach}><strong>{name}</strong><p>{opening}</p></div>}
+          {turns.slice(-6).map((turn,index)=><div key={turns.length-6+index}
+            className={turn.role==='user'?styles.transcriptUser:styles.transcriptCoach}>
+            <strong>{turn.role==='user'?t.user:name}</strong><p>{turn.content}</p>
+          </div>)}
+          {speechPreview&&<div className={styles.transcriptInterim} aria-live="off">
+            <strong>{t.user} · {captions.listening}</strong><p>{speechPreview}</p>
+          </div>}
+          {!turns.length&&!speechPreview&&<p className={styles.transcriptHint}>{captions.hint}</p>}
+        </div>
+      </section>
       <div className={styles.voiceControls}>
         <button type="button" className={styles.keyboardControl} onClick={toggleComposer}
           aria-label={ui.type} title={ui.type}><Keyboard size={21} aria-hidden="true"/></button>
@@ -331,7 +357,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           <MyCoachSpeechLoop ref={speechRef} locale={lang} enabled={consent&&readiness.status!=='checking'&&!authRequired}
             canStart={!busy&&!paused&&!replaying&&readiness.status!=='checking'&&!authRequired} onTurn={sendMessage}
             onRequestConsent={()=>{if(!voiceConsentRef.current?.open)voiceConsentRef.current?.showModal()}}
-            onCancelTurn={()=>pending.current?.abort()} onVoiceStateChange={setVoiceState}/>
+            onCancelTurn={()=>pending.current?.abort()} onVoiceStateChange={setVoiceState}
+            onTranscript={setSpeechPreview} onDraft={text=>{setDraft(text);setSpeechPreview('');setError('')}}/>
           <span className={styles.voiceWaveRight} aria-hidden="true"><i/><i/><i/><i/><i/></span>
         </div>
         <button type="button" className={styles.replayControl} onClick={replayCoachReply}
@@ -340,9 +367,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         </button>
       </div>
       {playbackNotice&&<p className={styles.playbackNotice} role="status">{playbackNotice}</p>}
-      <details ref={composerDetailsRef} className={styles.textComposer}>
+      <details ref={composerDetailsRef} className={styles.textComposer} open>
         <summary>{ui.type}</summary>
-        {!authRequired&&<p className={styles.readiness} role="status">
+        {!authRequired&&readiness.status!=='verified'&&<p className={styles.readiness} role="status">
           {readiness.status==='checking'?t.verifying:readiness.status==='verified'?t.verified:t.unavailable+' '+(t[reasons[readiness.reason]]||t.retry)}
         </p>}
         {authRequired?<div className={styles.auth} role="status"><LockKeyhole size={20} aria-hidden="true"/>
@@ -355,14 +382,16 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           <label className={styles.consent}><input type="checkbox" checked={consent}
             disabled={busy||readiness.status==='checking'}
             onChange={event=>{setConsent(event.target.checked);if(!event.target.checked)pending.current?.abort()}}/>
-            <span>{t.consent}</span></label>
+            <span>{captions.consentShort}</span></label>
           <button className={styles.send} type="submit"
             disabled={!consent||busy||!draft.trim()||authRequired||readiness.status==='checking'}>
             {busy?t.sending:t.send}<ArrowRight size={18} aria-hidden="true"/>
           </button>
         </form>}
         {error&&<p className={styles.error} role="alert">{error}</p>}
-        <p className={styles.privacy}><ShieldCheck size={16} aria-hidden="true"/>{t.privacy}</p>
+        <details className={styles.consentDetails}><summary>{captions.details}</summary>
+          <p>{t.consent}</p><p className={styles.privacy}><ShieldCheck size={16} aria-hidden="true"/>{t.privacy}</p>
+        </details>
         {onGuided&&<button className={styles.guidedFallback} type="button" onClick={onGuided}>
           {ui.guided}<ArrowRight size={16} aria-hidden="true"/>
         </button>}

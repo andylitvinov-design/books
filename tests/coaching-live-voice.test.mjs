@@ -215,3 +215,23 @@ test('selected persona opens immersive My Coach session with real avatar, stages
   assert.ok(pageCss.includes('fullWidth:has([data-my-coach-immersive-session])'))
   assert.ok(ui.includes("readiness.status==='checking'"))
 })
+
+test('My Coach speech is visible as text while recording and safely remains editable on partial iOS results',()=>{
+  const ui=source('components/my-coach-live-dialogue.jsx')
+  const loop=source('components/my-coach-speech-loop.jsx')
+  const css=source('components/my-coach-live-dialogue.module.css')
+  for(const marker of ['data-coach-live-transcript','role="log" aria-live="polite"','speechPreview&&',
+    'onTranscript={setSpeechPreview}',"onDraft={text=>{setDraft(text);setSpeechPreview('');setError('')}}",
+    'className={styles.textComposer} open','captions.consentShort']){
+    assert.ok(ui.includes(marker),marker)
+  }
+  for(const marker of ['heardRef.current=(final||interim).slice(0,1200)',
+    'transcriptRef.current?.(heardRef.current)','const recovered=heardRef.current.trim()',
+    'draftRef.current?.(recovered)','draftRef.current?.(text)','void deliver(finished)']){
+    assert.ok(loop.includes(marker),marker)
+  }
+  assert.match(css,/\.liveTranscript/)
+  assert.match(css,/\.transcriptFeed\{[^}]*overflow-y:auto/)
+  assert.match(css,/\.textComposer \.composer textarea/)
+  assert.doesNotMatch(loop,/localStorage|sessionStorage|MediaRecorder|sendBeacon/)
+})
