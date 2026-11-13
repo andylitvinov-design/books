@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import test from "node:test";
+import {whatsappEnquiryUrl,telegramEnquiryUrlFromWhatsApp,TELEGRAM_USERNAME} from "../lib/whatsapp-enquiry.js";
+import {telegramServiceRequestUrl,telegramBusinessServiceTitle} from "../lib/assist/telegram-business-request.mjs";
 import {websiteMessengerOnly,websiteMessengerOnlyUi} from "../lib/crm/website-messenger-only.mjs";
 const read=p=>readFileSync(new URL("../"+p,import.meta.url),"utf8");
 test("messenger-only default and explicit emergency rollback",()=>{
@@ -14,15 +16,15 @@ test("messenger-only default and explicit emergency rollback",()=>{
 });
 test("website-only intake UI shows Telegram and WhatsApp with honest Send disclosure",()=>{
  const ui=read("components/mandatory-messenger-actions.tsx");
- for(const s of ["WhatsApp","Telegram","data-messenger-only-contact","Нажмите «Отправить»","Press Send inside the messenger","resolveTelegramFirstEntry","data-hh-messenger-art"])assert.ok(ui.includes(s),s);
+ for(const s of ["WhatsApp","Telegram","data-messenger-only-contact","Нажмите «Отправить»","Press Send inside the messenger","data-hh-messenger-art"])assert.ok(ui.includes(s),s);
  assert.doesNotMatch(ui,/mailto:|\/api\/service-enquiries|type="email"/);
- assert.match(ui,/bot\.kind==="review"\?t\.review:t\.bot/);
- assert.match(ui,/setBot\(null\)/);
+ assert.doesNotMatch(ui,/resolveTelegramFirstEntry|setBot|telegram-diagnostic/);
+ assert.ok(ui.includes("telegramEnquiryUrlFromWhatsApp(whatsappUrl)"));
  const chooser=read("components/contact-channel-chooser.tsx");
  assert.match(chooser,/collapsed=\{compactMessenger\|\|\(\(compactPhone\|\|compactTrigger\)&&!allowSecureExpressClaim\)\}/);
  const css=read("components/mandatory-messenger-actions.module.css");
  assert.match(css,/@media\(max-width:430px\)\{\.art\{height:44px\}\}/);
- assert.match(ui,/data-telegram-route=\{telegramUrl\?"manual":bot\?\.kind\|\|"manual"\}/);
+ assert.match(ui,/data-telegram-route=\{telegramUrl\?"manual":"service"\}/);
  for(const p of ["components/contact-channel-chooser.tsx","components/compact-lead-capture.tsx","components/business-website-enquiry.tsx","components/meditation-course-enquiry.tsx"]) {
    assert.match(read(p),/if \(websiteMessengerOnlyUi\(\)\) return /,p);
    assert.match(read(p),/MandatoryMessengerActions/,p);
@@ -90,4 +92,24 @@ test("Services request expands only two messaging buttons under the full service
  assert.equal((consultation.match(/compactPhone compactTrigger compactMessenger stayAfterSave/g)||[]).length,2);
  assert.match(consultationCss,/\.order \{ grid-column: 1 \/ -1;/);
  assert.match(magical,/className=\{styles\.booking\}/);
+});
+
+
+test("Services Telegram requests keep the selected product and never enter free-review interview",()=>{
+ assert.equal(TELEGRAM_USERNAME,'holistichouse');
+ for(const locale of ['ru','en','es'])for(const id of ['homeopathy','coaching','reiki','constellations','business']){
+  const title=telegramBusinessServiceTitle(id,locale);
+  const whatsapp=whatsappEnquiryUrl({locale,service:title,request:'Private question should stay out of Telegram'});
+  assert.equal(telegramEnquiryUrlFromWhatsApp(whatsapp),telegramServiceRequestUrl(id,locale));
+ }
+ const details=whatsappEnquiryUrl({locale:'en',service:'Extended video consultation',
+   request:'private request secret',topic:'sensitive symptom',context:'medical record and e-mail',option:'private time preference',pagePath:'/en/services'});
+ const handoff=telegramEnquiryUrlFromWhatsApp(details);
+ assert.ok(handoff.startsWith('https://t.me/holistichouse?text='));
+ const text=new URL(handoff).searchParams.get('text');
+ assert.match(text,/Extended video consultation/);
+ assert.doesNotMatch(text,/private request secret|sensitive symptom|medical record|e-mail|private time preference|HH-REQ|hhreview|hhtalk/);
+ assert.doesNotMatch(handoff,/AndyTherapist|holistichouse_bot|start=/);
+ for(const bad of ['https://wa.me/123?text=test','https://attacker.test/?text=Service%3A%20Fake'])
+   assert.throws(()=>telegramEnquiryUrlFromWhatsApp(bad));
 });

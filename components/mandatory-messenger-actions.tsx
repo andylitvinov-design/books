@@ -1,8 +1,6 @@
 "use client";
-import {useEffect,useState} from "react";
 import {MessageCircle,Send} from "lucide-react";
 import {telegramEnquiryUrlFromWhatsApp} from "@/lib/whatsapp-enquiry";
-import {resolveTelegramFirstEntry} from "@/lib/app/telegram-entry-url.mjs";
 import type {PublicLocale} from "@/lib/public-locales";
 import styles from "./mandatory-messenger-actions.module.css";
 const copy={
@@ -12,30 +10,17 @@ const copy={
 } as const;
 type Props={locale:PublicLocale;whatsappUrl:string;label?:string;telegramUrl?:string;collapsed?:boolean;compact?:boolean;id?:string;className?:string};
 export function MandatoryMessengerActions({locale,whatsappUrl,label,telegramUrl,collapsed=false,compact=false,id,className}:Props){
- const t=copy[locale], [bot,setBot]=useState<{href:string;kind:"review"|"direct"}|null>(null);
- // The verified diagnostic bot supports hhreview when directAvailable is OFF.
- // Opening a bot link alone never authenticates a client or stores a CRM lead.
- useEffect(()=>{
-  // Explicit consented course/service enquiries go to the owner with their
-  // selected course intact, never through the unrelated free-review bot.
-  if(telegramUrl){setBot(null);return;}
-  const abort=new AbortController();
-  setBot(null);
-  fetch("/api/public/telegram-diagnostic",{cache:"no-store",signal:abort.signal})
-   .then(r=>r.ok?r.json():null)
-   .then((payload:unknown)=>{
-    if(!abort.signal.aborted)setBot(resolveTelegramFirstEntry(payload,locale));
-   }).catch(()=>{if(!abort.signal.aborted)setBot(null);});
-  return ()=>abort.abort();
- },[locale,telegramUrl]);
+ const t=copy[locale];
+ // Every service/order request keeps its selected product; never launch the
+ // unrelated opt-in free-review Telegram bot from a purchasing button.
  const channels=<>
   {!compact&&<><img className={styles.art} data-hh-messenger-art src="/images/holistic-house/reiki-approved-sunrise-v3.webp" alt="" aria-hidden="true" width="600" height="100" loading="lazy"/>
   <p className={styles.intro}>{t.intro}</p></>}
   <div className={styles.actions} role="group" aria-label={t.title}>
    <a href={whatsappUrl} className={styles.whatsapp} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" data-messenger-only-channel="whatsapp"><MessageCircle size={19} aria-hidden="true"/>WhatsApp</a>
-   <a href={telegramUrl||bot?.href||telegramEnquiryUrlFromWhatsApp(whatsappUrl)} data-telegram-route={telegramUrl?"manual":bot?.kind||"manual"} className={styles.telegram} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" data-messenger-only-channel="telegram"><Send size={19} aria-hidden="true"/>Telegram</a>
+   <a href={telegramUrl||telegramEnquiryUrlFromWhatsApp(whatsappUrl)} data-telegram-route={telegramUrl?"manual":"service"} className={styles.telegram} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" data-messenger-only-channel="telegram"><Send size={19} aria-hidden="true"/>Telegram</a>
   </div>
-  {!compact&&<><p className={styles.note}>{t.note}</p>{!telegramUrl&&bot?<p className={styles.note} role="status">{bot.kind==="review"?t.review:t.bot}</p>:null}</>}
+  {!compact&&<p className={styles.note}>{t.note}</p>}
  </>;
  return <div id={id} className={[styles.root,!compact?className:""].filter(Boolean).join(" ")}
   data-messenger-only-contact data-compact-messenger={compact?"true":undefined} lang={locale}>
