@@ -1258,10 +1258,10 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           await expect(output).toBeHidden();
           await expect(page.locator("[data-video-save-direct]")).toBeHidden();
           await expect(readyView.locator("[data-ready-save]")).toBeVisible();
-          // Once the export becomes Ready, the optional generation/check-in
-          // modal must close so native Save/Telegram actions remain tappable.
-          await expect(page.locator('[data-video-effect-overlay]')).toHaveCount(0);
-          await expect(page.locator('[data-video-effect-reopen]')).toBeVisible();
+          // The during-render reflection cannot intercept the real Ready
+          // Save click; never force-click around an inaccessible overlay.
+          await expect(page.locator("[data-video-effect-overlay]"))
+            .toHaveCount(0,{timeout:10000});
           // Read native decoded media, not just a Ready label or simulated file.
           await expect.poll(()=>page.locator("[data-mandala-video-preview]").evaluate(video=>
             video instanceof HTMLVideoElement&&video.readyState>=2&&
@@ -1275,6 +1275,20 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           await readyView.locator("[data-ready-save]").click();
           await expect(readyView.locator("[data-ready-save-gate]")).toBeVisible();
           await expect(readyView.locator("[data-ready-save-gate-signin]")).toBeVisible();
+          await readyView.locator("[data-ready-save-close]").click();
+          await expect(readyView.locator("[data-ready-save-gate]")).toHaveCount(0);
+          // Exercise the real rendered MP4's DOM ended handler without a
+          // second paid render. Finishing playback must not auto-open the
+          // optional effects survey over Save / Telegram.
+          await page.locator("[data-mandala-video-preview]").evaluate(video=>{
+            if(!(video instanceof HTMLVideoElement)||video.readyState<2)
+              throw Error("REAL_MEDIA_MISSING_BEFORE_ENDED");
+            video.dispatchEvent(new Event("ended"));
+          });
+          await expect(page.locator("[data-video-effect-overlay]"))
+            .toHaveCount(0,{timeout:10000});
+          await readyView.locator("[data-ready-save]").click();
+          await expect(readyView.locator("[data-ready-save-gate]")).toBeVisible();
           await readyView.locator("[data-ready-save-close]").click();
           await expect(readyView.locator("[data-ready-save-gate]")).toHaveCount(0);
           // The original exact Blob is retained in this test tab by the

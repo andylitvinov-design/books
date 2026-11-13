@@ -140,7 +140,14 @@ test('failed Safari decode does not waste the free guest export',()=>{
 test('WebKit real encoded Ready guest route keeps Save gate and decoded MP4 proof',()=>{
   const browser=readFileSync(new URL('../scripts/verify-affirmation-voice-browser.mjs',import.meta.url),'utf8')
   const ready=readFileSync(new URL('../components/mandala-video-ready.tsx',import.meta.url),'utf8')
-  assert.equal(browser.split('readyView.locator("[data-ready-save]")').length-1,2)
+  assert.equal(browser.split('readyView.locator("[data-ready-save]")').length-1,3,
+    'Ready Save is visible and clicked both before and after real media ends');
+  const firstSave=browser.indexOf('await readyView.locator("[data-ready-save]").click()');
+  const ended=browser.indexOf('video.dispatchEvent(new Event("ended"))');
+  const secondSave=browser.lastIndexOf('await readyView.locator("[data-ready-save]").click()');
+  assert.ok(firstSave>=0&&ended>firstSave&&secondSave>ended,
+    'Guest Save must remain clickable after the encoded MP4 ends');
+  assert.match(browser,/toHaveCount\(0,\{timeout:10000\}\)/)
   assert.doesNotMatch(browser,/data-ready-download/)
   assert.match(ready,/onClick=\{\(\)=>chooseDelivery\("save"\)\}/)
   assert.match(ready,/data-ready-save>/)
