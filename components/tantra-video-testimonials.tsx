@@ -20,10 +20,19 @@ export function TantraVideoTestimonials(props: Props) {
   // original source be remounted. Reopening a disclosure alone never rebuilds.
   const [freshDecoder, setFreshDecoder] = useState<{source:string;time:number;token:number}|null>(null);
 
+  const pendingInternalRestores = useRef(new WeakMap<HTMLVideoElement, {
+    source: string; target: number; scriptedSeek: boolean;
+    observedSeek: boolean; cancel: () => void
+  }>());
   const retained = useRef(new WeakMap<HTMLVideoElement, { source: string; time: number; reconstructing: boolean; awaitingFrame?: boolean; generation?: number; confirmedFrames?: number; firstFrameMediaTime?: number; lastFrameMediaTime?: number; restoreMutedOnOpen?: boolean }>());
-  useEffect(() => () => { retained.current = new WeakMap(); }, []);
+  useEffect(() => () => {
+    retained.current = new WeakMap();
+    pendingInternalRestores.current = new WeakMap();
+  }, []);
 
   function pauseAndRemember(video: HTMLVideoElement) {
+    // Hiding the disclosure is not permission to replace or play a decoder.
+    pendingInternalRestores.current.get(video)?.cancel();
     // A native <details> close can notify us at both click-capture and toggle.
     // Do not call pause() again on an already paused player: WebKit/GStreamer
     // can demote its decoder after a redundant pause, leaving a later play()
@@ -68,7 +77,10 @@ export function TantraVideoTestimonials(props: Props) {
     // it is actually running. This preserves its position for a later user Play.
     const disclosure=typeof video.closest==="function"?video.closest("details"):null;
     disclosure?.querySelectorAll("video").forEach(other=>{
-      if(other!==video&&!other.paused)other.pause();
+      if (other === video) return;
+      // The user chose another source: cancel this video's pending recovery.
+      pendingInternalRestores.current.get(other)?.cancel();
+      if (!other.paused) other.pause();
     });
     const saved = retained.current.get(video);
     if (!saved || saved.awaitingFrame) return;
@@ -234,13 +246,21 @@ export function TantraVideoTestimonials(props: Props) {
           (!windowView.performance?.now || windowView.performance.now() - startAtReload < 12000);
         if (!Number.isFinite(resumeAt) || resumeAt <= 0 || !valid()) return;
         let pending = true;
+        const ownRestore = {
+          source:saved.source, target:resumeAt, scriptedSeek:false,
+          observedSeek:false, cancel:()=>{}
+        };
         const clear = () => {
           pending = false;
+          if (pendingInternalRestores.current.get(video)===ownRestore)
+            pendingInternalRestores.current.delete(video);
           video.removeEventListener("loadedmetadata", onMetadata);
           video.removeEventListener("seeked", onSeeked);
           video.removeEventListener("loadeddata", onDecodedWithoutSeek);
           video.removeEventListener("canplay", onDecodedWithoutSeek);
         };
+        ownRestore.cancel = clear;
+        pendingInternalRestores.current.set(video,ownRestore);
         const onSeeked = () => {
           if (!pending) return;
           clear();
@@ -274,6 +294,7 @@ export function TantraVideoTestimonials(props: Props) {
             video.addEventListener("seeked", onSeeked, { once: true });
             video.addEventListener("loadeddata", onDecodedWithoutSeek, { once: true });
             video.addEventListener("canplay", onDecodedWithoutSeek, { once: true });
+            ownRestore.scriptedSeek = true;
             video.currentTime = resumeAt; // exact retained position, no backward offset
           } catch { clear(); }
         };
@@ -290,12 +311,20 @@ export function TantraVideoTestimonials(props: Props) {
           // force a new play on disclosure open, an unmuted source, or a seek.
           if (typeof windowView.setTimeout === "function") {
             windowView.setTimeout(() => {
-              if (video.isConnected === false || video.currentSrc !== saved.source ||
-                  video.muted !== true || video.seeking || video.ended ||
+              // A proven WebKit/GStreamer freeze can leave the original
+              // script-issued saved-position seek pending forever. Do not
+              // mistake that ONE internal seek for a fresh user seek.
+              const ownFrozenSeek=video.seeking && ownRestore.scriptedSeek &&
+                ownRestore.observedSeek && Math.abs(video.currentTime-resumeAt)<=0.35;
+              if (!pending || pendingInternalRestores.current.get(video)!==ownRestore ||
+                  video.isConnected === false || video.currentSrc !== saved.source ||
+                  video.muted !== true || video.ended ||
+                  (video.seeking && !ownFrozenSeek) ||
                   (disclosure !== null && !disclosure.open)) return;
               if (Number.isFinite(video.currentTime) && video.currentTime > resumeAt + 0.22 &&
                   video.readyState >= 2 &&
                   (video.getVideoPlaybackQuality?.().totalVideoFrames ?? 0) > 0) return;
+              clear(); // release the original decoder once; no stale retry
               setFreshDecoder(previous => previous?.source === saved.source ? previous :
                 {source:saved.source,time:resumeAt,token:Date.now()});
             }, 6800);
@@ -306,13 +335,30 @@ export function TantraVideoTestimonials(props: Props) {
     }
   }
   function discardRecovery(event: SyntheticEvent<HTMLVideoElement>) {
-    // Real user native seeking always overrides a pending frame recovery.
-    retained.current.delete(event.currentTarget);
+    const video=event.currentTarget;
+    const restore=pendingInternalRestores.current.get(video);
+    // The FIRST exact seek after our own currentTime assignment is internal.
+    // Any later seek or different target is a new user action and cancels
+    // the prior authorization; mouse and keyboard interactions cancel too.
+    if (restore) {
+      const isOwn=restore.scriptedSeek && !restore.observedSeek &&
+        video.currentSrc===restore.source &&
+        Math.abs(video.currentTime-restore.target)<=0.35;
+      if (isOwn) restore.observedSeek=true;
+      else restore.cancel();
+    }
+    retained.current.delete(video);
   }
   function onNativeKeyDown(event: KeyboardEvent<HTMLVideoElement>) {
-    // Keyboard seek overrides saved state; Space/Enter play keeps it.
-    if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key))
+    // Keyboard seeking wins over any pending internal restore.
+    if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
+      pendingInternalRestores.current.get(event.currentTarget)?.cancel();
       discardRecovery(event);
+    }
+  }
+  function onNativePointerDown(event: SyntheticEvent<HTMLVideoElement>) {
+    // Observe but never prevent native controls or clicks.
+    pendingInternalRestores.current.get(event.currentTarget)?.cancel();
   }
   function onNativeLoadStart(event: SyntheticEvent<HTMLVideoElement>) {
     const video = event.currentTarget;
@@ -444,7 +490,7 @@ export function TantraVideoTestimonials(props: Props) {
                 if (player.readyState >= 2) prime();
               }}
               onPlay={onNativePlay} onPlaying={onNativePlay} onSeeking={discardRecovery}
-              onKeyDown={onNativeKeyDown}>
+              onPointerDownCapture={onNativePointerDown} onKeyDown={onNativeKeyDown}>
               <source src={video.src} type={video.type} />
             </video>
             <figcaption>{props.nativeLabel} {i + 1}{props.nativeSuffix}</figcaption>

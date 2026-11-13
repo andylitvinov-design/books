@@ -13,16 +13,16 @@ const parent = readFileSync(new URL('../components/tantra-reiki-testimonials.tsx
 const jsx = (type, props, key) => ({ type, props, key });
 const player = function AcademyVideoPlayer() {};
 function mount(props) {
-  let state = 0; let ref; let updates = 0; let cleanup; let effectMounted = false;
+  const states=[], refs=[]; let stateSlot=0, refSlot=0; let updates=0, cleanup; let effectMounted=false;
   const exports = {};
   const code = ts.transpileModule(source, { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   vm.runInNewContext(code, { exports, require(id) {
-    if (id === 'react') return { useEffect(effect) { if (!effectMounted) { effectMounted = true; cleanup = effect(); } }, useRef(value) { return ref ??= { current: value }; }, useState() { return [state, value => { state = typeof value === 'function' ? value(state) : value; updates++; }]; } };
+    if (id === 'react') return { useEffect(effect) { if (!effectMounted) { effectMounted = true; cleanup = effect(); } }, useRef(value) { const i=refSlot++; return refs[i] ??= {current:value}; }, useState(initial) { const i=stateSlot++; if(!(i in states)) states[i]=initial; return [states[i], value => { states[i] = typeof value === 'function' ? value(states[i]) : value; updates++; }]; } };
     if (id === 'react/jsx-runtime') return { jsx, jsxs: jsx };
     if (id === '@/components/academy-video-player') return { AcademyVideoPlayer: player };
     throw new Error('Unexpected import: ' + id);
   } });
-  return { render: () => exports.TantraVideoTestimonials(props), updates: () => updates, unmount: () => cleanup?.() };
+  return { render: () => { stateSlot=0; refSlot=0; return exports.TantraVideoTestimonials(props); }, updates: () => updates, unmount: () => cleanup?.() };
 }
 function flatten(node) { if (!node || typeof node !== 'object') return []; return [node, ...[node.props?.children].flat(Infinity).flatMap(flatten)]; }
 const videos = [1, 2].map(i => ({ src: `https://psitrends.com/images/example-${i}.mp4`, poster: `/images/p${i}.png`, type: 'video/mp4' }));
@@ -474,6 +474,79 @@ test('WebKit stalled same-source play never seeks a decoder without decoded fram
   assert.deepEqual(f.writes,[],'Repeated playing events cannot launch a fallback seek');
   assert.equal(callbacks.length,0,'Bounded observer cannot schedule infinite retries');
 });
+
+test('WebKit internal metadata seek can freeze once and only then remount a fresh user-authorized decoder',()=>{
+  const animation=[],timers=[],events=new Map();
+  let loads=0,plays=0;
+  const f=deferredWebKitFixture({
+    muted:true,readyState:4,
+    pause(){this.paused=true;},
+    load(){loads++;this.paused=true;this.readyState=1;},
+    play(){plays++;this.paused=false;return Promise.resolve();},
+    addEventListener(type,fn){events.set(type,fn);},
+    removeEventListener(type,fn){if(events.get(type)===fn)events.delete(type);},
+    ownerDocument:{defaultView:{
+      performance:{now(){return 0}},
+      requestAnimationFrame(fn){animation.push(fn);return animation.length;},
+      setTimeout(fn){timers.push(fn);return timers.length;},
+    }},
+  });
+  f.close();f.reopen();
+  assert.equal(loads,0,'No reload on disclosure reopening');
+  f.media.paused=false;f.handlers.onPlay(f.event);
+  animation.shift()(0);animation.shift()(1800);
+  assert.equal(loads,1,'An explicit stalled Play permits exactly one same-source reload');
+  assert.equal(timers.length,1);
+  f.media.readyState=2;
+  events.get('loadedmetadata')(); // the app now owns exactly one position restore
+  f.media.seeking=true;
+  f.handlers.onSeeking(f.event); // the internally scripted seek, not user input
+  const previous=f.model.updates();
+  timers.shift()();
+  assert.equal(f.model.updates(),previous+1,'A frozen own seek must use the single existing fresh decoder');
+  assert.equal(plays,0,'The original hidden decoder may not autoplay');
+  const video=flatten(f.model.render()).find(x=>x.type==='video');
+  assert.match(String(video.key),/:fresh-/,'Only the same source is remounted');
+  assert.equal(timers.length,0,'There is no repeated timer or decoder retry');
+});
+
+test('WebKit user pointer or keyboard seek cancels old same-source replacement authority',()=>{
+  for(const cancel of ['pointer','keyboard','different-seek','close']){
+    const animation=[],timers=[],events=new Map();
+    let plays=0;
+    const f=deferredWebKitFixture({
+      muted:true,readyState:4,
+      pause(){this.paused=true;},
+      load(){this.paused=true;this.readyState=1;},
+      play(){plays++;this.paused=false;return Promise.resolve();},
+      addEventListener(type,fn){events.set(type,fn);},
+      removeEventListener(type,fn){if(events.get(type)===fn)events.delete(type);},
+      ownerDocument:{defaultView:{
+        performance:{now(){return 0}},
+        requestAnimationFrame(fn){animation.push(fn);return animation.length;},
+        setTimeout(fn){timers.push(fn);return timers.length;},
+      }},
+    });
+    f.close();f.reopen();f.media.paused=false;f.handlers.onPlay(f.event);
+    animation.shift()(0);animation.shift()(1800);
+    f.media.readyState=2;events.get('loadedmetadata')();
+    f.media.seeking=true;f.handlers.onSeeking(f.event);
+    const before=f.model.updates();
+    if(cancel==='pointer')f.handlers.onPointerDownCapture(f.event);
+    if(cancel==='keyboard')f.handlers.onKeyDown({...f.event,key:'ArrowRight'});
+    if(cancel==='different-seek'){
+      f.setPosition(7.2);
+      f.handlers.onSeeking(f.event);
+    }
+    if(cancel==='close')f.close();
+    const updates=f.model.updates();
+    timers.shift()();
+    assert.equal(f.model.updates(),updates,'Old decoder cannot remount after '+cancel);
+    assert.equal(plays,0,'No autoplay after '+cancel);
+    assert.ok(f.model.updates()>=before);
+  }
+});
+
 test('WebKit stuck muted decoder reloads same-source metadata and resumes after exact seek once',()=>{
   const callbacks=[], events=new Map();
   let pauses=0,plays=0,loads=0;
