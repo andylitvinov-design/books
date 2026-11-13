@@ -125,5 +125,12 @@
         }
       ]
     }
-  ]
+  ],
+  "git": {
+    "deploymentEnabled": {
+      "codex/**": false,
+      "chatgpt/**": false,
+      "codex/bootstrap-books": true
+    }
+  }
 }

@@ -47,5 +47,12 @@
       "destination": "https://holistic-house-pr-observatory.vercel.app/",
       "permanent": false
     }
-  ]
+  ],
+  "git": {
+    "deploymentEnabled": {
+      "codex/**": false,
+      "chatgpt/**": false,
+      "codex/bootstrap-books": true
+    }
+  }
 }
