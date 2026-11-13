@@ -45,7 +45,7 @@ const cap=(active=0,queued=0)=>computeCapacity(
  Array.from({length:queued},(_,i)=>({name:'Some queued check '+i})),
  [{status:'in_progress'}]);
 const core=()=>({info(){},summary:{addHeading(){return this},addCodeBlock(){return this},async write(){}}});
-function fixture(items,{comments={},active=0,queued=0,recent=[],live=null}={}){
+function fixture(items,{comments={},active=0,queued=0,recent=[],live=null,legacyHistory=[]}={}){
  const calls={dispatched:[],reserved:[],acknowledged:[],read:[],removed:[],labels:[]};
  const github={rest:{pulls:{
   list:async({page})=>({data:page===1?items:[],headers:{'x-ratelimit-remaining':'2500'}}),
@@ -57,7 +57,8 @@ function fixture(items,{comments={},active=0,queued=0,recent=[],live=null}={}){
   updateComment:async arg=>{calls.acknowledged.push(arg);return {data:{body:arg.body}};},
   addLabels:async arg=>{calls.labels.push(arg);return {data:{}};},
   removeLabel:async arg=>{calls.removed.push(arg);return {data:{}};}
- },actions:{createWorkflowDispatch:async arg=>{calls.dispatched.push(arg);return {status:204};}}},
+ },actions:{createWorkflowDispatch:async arg=>{calls.dispatched.push(arg);return {status:204};},
+  listWorkflowRuns:async()=>({data:{total_count:legacyHistory.length,workflow_runs:legacyHistory}})}},
  request:async()=>({data:{workflow_runs:recent}})};
  return {github,calls,capacityFn:async()=>cap(active,queued)};
 }
@@ -1774,7 +1775,7 @@ test('previous DIRTY conflict handoff cannot starve manual cloud preflight',asyn
  assert.equal(f.calls.removed.length,0,'do not remove conflict/manual labels');
 });
 
-test('handled old PR does not cause another read-only worker until the next UTC hour',async()=>{
+test('handled old PR uses one verified fallback, never repeats its signed source task',async()=>{
  const old=[204,205,206].map(number=>pr(number,'repair',{
   mergeable:null,mergeable_state:'unknown',
   labels:[{name:'hh:repair-manual'},{name:'hh:conflict-repair-needed'}]
@@ -1788,8 +1789,10 @@ test('handled old PR does not cause another read-only worker until the next UTC 
  const handled=await run({github:f.github,core:core(),context,now:NOW,
   capacityFn:f.capacityFn});
  assert.equal(handled.blocked.ALREADY_HANDLED,1);
- assert.equal(handled.legacyDispatchAccepted,0);
- assert.equal(f.calls.dispatched.length,0);
+ assert.equal(handled.legacyDispatchAccepted,1,'one independent fallback can use a free UTC-hour slot');
+ assert.equal(f.calls.dispatched.length,1);
+ assert.notEqual(Number(f.calls.dispatched[0].inputs.pr_number),first.pr_number);
+ assert.ok(handled.candidates>=2);
  const next=planCandidates(old,NOW+3600000).filter(x=>x.lane==='legacy')[0];
  assert.ok(next);
  assert.notEqual(next.pr_number,first.pr_number);
@@ -1797,8 +1800,8 @@ test('handled old PR does not cause another read-only worker until the next UTC 
   capacityFn:f.capacityFn});
  assert.equal(later.legacyDispatchAccepted,1);
  assert.equal(later.repairDispatchAccepted,0);
- assert.equal(f.calls.dispatched.length,1);
- assert.equal(f.calls.dispatched[0].inputs.pr_number,String(next.pr_number));
+ assert.equal(f.calls.dispatched.length,2);
+ assert.equal(f.calls.dispatched[1].inputs.pr_number,String(next.pr_number));
 });
 
 test('one normal source repair and one manual preflight share the existing two worker slots',async()=>{
@@ -2175,4 +2178,54 @@ test('dispatched worker telemetry includes recency guard instead of all-time run
  const src=fs.readFileSync('scripts/ci-pr-queue-dispatcher.cjs','utf8');
  assert.match(src,/realRunner&&recentlyStartedRunner\(realRunner,now\)/);
  assert.doesNotMatch(src,/if\(realRunner\)\s*\{\s*summary\.runnerStartedConfirmed\+\+/);
+});
+
+
+test('historical/active workers consume the global legacy hourly slot, never duplicate dispatch',async()=>{
+ const old=[204,205,206].map(number=>pr(number,'repair',{
+  mergeable:null,mergeable_state:'unknown',
+  labels:[{name:'hh:repair-manual'},{name:'hh:conflict-repair-needed'}]
+ }));
+ const first=planCandidates(old,NOW).filter(x=>x.lane==='legacy')[0];
+ const bot={user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+  performed_via_github_app:{id:15368,slug:'github-actions'},
+  body:commentBody({...first,state:'PREPARED'})};
+ const recent={id:8888888,name:'HH PR source Repair Worker',
+  event:'workflow_dispatch',head_branch:'codex/bootstrap-books',
+  repository:{full_name:'andylitvinov-design/books'},
+  created_at:new Date(NOW-120000).toISOString()};
+ const f=fixture(old,{comments:{[first.pr_number]:[bot]},legacyHistory:[recent]});
+ const result=await run({github:f.github,core:core(),context,now:NOW,
+  capacityFn:f.capacityFn});
+ assert.equal(result.legacyDispatchAccepted,0);
+ assert.equal(f.calls.dispatched.length,0);
+ assert.equal(result.blocked.LEGACY_HOURLY_WORKER_ALREADY_DISPATCHED,1);
+ assert.equal(f.calls.reserved.length,0,'global hourly gate precedes reservation');
+});
+test('legacy hourly history fails closed on missing or unsorted worker evidence',()=>{
+ const {legacyHourlyWorkerSlot}=require('../scripts/ci-pr-queue-dispatcher.cjs');
+ const now=Date.parse('2026-11-13T03:35:00Z');
+ const run=at=>({id:99,name:'HH PR source Repair Worker',
+  event:'workflow_dispatch',head_branch:'codex/bootstrap-books',
+  repository:{full_name:'andylitvinov-design/books'},created_at:at});
+ assert.equal(legacyHourlyWorkerSlot({total_count:0,workflow_runs:[]},now),'FREE');
+ assert.equal(legacyHourlyWorkerSlot({total_count:1,workflow_runs:[
+  run('2026-11-13T03:02:00Z')]},now),'HOURLY_SLOT_USED');
+ assert.equal(legacyHourlyWorkerSlot({total_count:1,workflow_runs:[
+  run('2026-11-13T02:59:59Z')]},now),'FREE');
+ assert.equal(legacyHourlyWorkerSlot({total_count:1,workflow_runs:[]},now),'HISTORY_UNVERIFIED');
+ assert.equal(legacyHourlyWorkerSlot({total_count:1,workflow_runs:[
+  {...run('2026-11-13T02:59:59Z'),repository:{full_name:'evil/repo'}}]},now),'HISTORY_UNVERIFIED');
+ assert.equal(legacyHourlyWorkerSlot({total_count:2,workflow_runs:[
+  run('2026-11-13T02:50:00Z'),run('2026-11-13T02:55:00Z')]},now),'HISTORY_UNVERIFIED');
+ assert.equal(legacyHourlyWorkerSlot(null,now),'HISTORY_UNVERIFIED');
+});
+test('full candidate fallback is scoped to terminal legacy and still refuses manual source writes',()=>{
+ const fs=require('node:fs');
+ const s=fs.readFileSync('scripts/ci-pr-queue-dispatcher.cjs','utf8');
+ assert.match(s,/if\(wasLegacy&&!task\.manual_conflict_probe&&status==='ALREADY_HANDLED'\)/);
+ assert.match(s,/if\(wasLegacy&&!task\.manual_conflict_probe\)queueLegacyFallback\(\)/);
+ assert.match(s,/fallbacksAdded>=MAX_LEGACY_BACKUPS/);
+ assert.match(s,/legacyDispatchAttempted=true/);
+ assert.match(s,/legacyHourlyWorkerSlot\(response\?\.data,now\)/);
 });
