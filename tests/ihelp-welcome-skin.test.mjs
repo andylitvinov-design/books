@@ -72,3 +72,14 @@ test("topic taps fill an unsent draft, never auto-send or read private DOM",()=>
  assert.match(dialogCss,/@media\(max-width:760px\)/);
  assert.match(dialogCss,/@media\(max-width:355px\)/);
 });
+
+test("iHelp chat is loaded only after user opens its single dialog",()=>{
+ assert.match(dialog,/import dynamic from "next\/dynamic"/)
+ assert.match(dialog,/import type \{HolisticAgentQuickPrompt\} from "@\/components\/holistic-agent-chat"/)
+ assert.match(dialog,/const HolisticAgentChat = dynamic\(/)
+ assert.match(dialog,/import\("@\/components\/holistic-agent-chat"\)\.then\(module => module\.HolisticAgentChat\)/)
+ assert.match(dialog,/\{ ssr: false \}/)
+ assert.match(dialog,/mounted&&<div/)
+ assert.doesNotMatch(dialog,/import \{HolisticAgentChat/)
+ assert.equal((dialog.match(/<HolisticAgentChat\b/g)||[]).length,1)
+})
