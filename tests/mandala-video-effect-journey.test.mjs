@@ -52,6 +52,8 @@ test('render progress and the optional one-at-a-time check-in in a centered, dis
   assert.match(source,/data-video-effect-reopen/);
   assert.match(source,/videoEnded\|\|status==="failed"/);
   assert.match(source,/data-video-effect-watch/);
+  assert.match(source,/if\(status==="ready"&&!videoEnded\)setModalOpen\(false\)/,
+    'Ready must close its optional overlay before Save/Download or Telegram actions');
   assert.match(source,/onClick=\{\(\)=>chooseScore\(value\)\}/);
   assert.match(css,/\.overlay\{position:fixed;inset:0;z-index:11000/);
   assert.match(css,/\.modal\{box-sizing:border-box;width:min\(100%,440px\)/);
