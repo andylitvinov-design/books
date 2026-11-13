@@ -69,3 +69,11 @@
 }
 @media(max-width:350px){.card{grid-template-columns:93px minmax(0,1fr);padding:7px}.photo{min-height:176px}.info{padding-left:9px}.info h2{font-size:18px}.action,.request :global([data-contact-order]){font-size:12px}.entry{gap:8px;padding:10px}.entryMark{flex-basis:38px;height:38px}.entryAction{font-size:11px}}
 @media(prefers-reduced-motion:reduce){.action,.entry{scroll-behavior:auto}}
+/* Compact Spiritual Reading entry on Services only; preserve the full reading page. */
+@media(max-width:760px){
+.entry{box-sizing:border-box;width:calc(100% - 24px);max-width:520px;min-height:72px;margin:14px auto;padding:10px 12px;gap:10px;border:1px solid #dfcbae;border-radius:22px;background:#fffcf7;box-shadow:0 5px 16px rgb(72 49 27 / 7%)}
+.entryMark{flex-basis:42px;width:42px;height:42px}
+.entryWords strong{font-size:19px}
+.entryWords small{font-size:12px}
+.entryAction{font-size:12px}
+}

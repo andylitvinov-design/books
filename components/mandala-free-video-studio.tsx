@@ -8268,6 +8268,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               <button type="button" key={item.id} data-video-montage-tab={item.id}
                 aria-pressed={montagePanel===item.id} aria-controls="video-montage-active-panel"
                 disabled={recording||preparing}
+                // In mobile WebKit the synthesized click can be lost after a
+                // native touch changes panel geometry; commit on pointer-up.
+                // Desktop click and keyboard activation remain unchanged.
+                onPointerUp={event=>{
+                  if(event.pointerType!=="touch"||montagePanel===item.id)return;
+                  setMontagePanel(item.id);
+                  if(item.id==="audio")setBasicPanelTab("music");
+                }}
                 onClick={()=>{
                   setMontagePanel(item.id);
                   if(item.id==="audio")setBasicPanelTab("music");
@@ -8784,6 +8792,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             </fieldset>
             <button type="button" className={videoStyles.montageStepNext}
               data-video-montage-next="audio" disabled={recording||preparing}
+              onPointerUp={event=>{
+                if(event.pointerType==="touch"&&montagePanel==="effects"){
+                  setMontagePanel("audio");setBasicPanelTab("music");
+                }
+              }}
               onClick={()=>{setMontagePanel("audio");setBasicPanelTab("music");}}>
               <Music2 size={19} aria-hidden="true"/>
               <span>{locale==="ru"?"Далее · Аудио":
