@@ -139,7 +139,8 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       // Safari interim words are editable even without a later final event.
       if(visible)draftRef.current?.(appendSpokenAnswer(draftAtStartRef.current,visible,1200))
       if(final){
-        finished=final.slice(0,1200)
+        // Preserve interim words following a final segment in the same Safari event.
+        finished=visible
         lastHeardRef.current=finished
         try{recognition.stop()}catch{}
       }

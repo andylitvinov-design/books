@@ -225,8 +225,8 @@ test('My Coach speech is visible as text while recording and safely remains edit
     'className={styles.textComposer} open','captions.consentShort']){
     assert.ok(ui.includes(marker),marker)
   }
-  for(const marker of ['heardRef.current=visible',
-    'transcriptRef.current?.(heardRef.current)','const recovered=heardRef.current.trim()',
+  for(const marker of ['heardRef.current=visible','finished=visible',
+    'transcriptRef.current?.(visible)','const recovered=heardRef.current.trim()',
     'draftRef.current?.(appendSpokenAnswer(draftAtStartRef.current,recovered,1200))','draftRef.current?.(text)','void deliver(appendSpokenAnswer(draftAtStartRef.current,finished,1200))']){
     assert.ok(loop.includes(marker),marker)
   }
