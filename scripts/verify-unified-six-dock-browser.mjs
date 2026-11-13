@@ -80,9 +80,13 @@ async function inspect(browserType,locale,width){
     const page=document.querySelector("[data-mytube-page]");
     return page && getComputedStyle(page).backgroundColor==="rgb(15, 15, 15)";
   },null,{timeout:20000});
-  const dockBackground=await dock.evaluate(el=>getComputedStyle(el).backgroundColor);
-  assert.match(dockBackground,/^rgba?\(15, 15, 15/,
-    id+" dark dock applies only to MyTube");
+  const dockPalette=await dock.evaluate(el=>{
+    const aiIcon=el.querySelector('[data-unified-dock-item="ai"] svg');
+    return {panel:getComputedStyle(el).backgroundImage,
+      aiIcon:aiIcon?getComputedStyle(aiIcon).backgroundImage:""};
+  });
+  assert.match(dockPalette.panel,/radial-gradient/,id+" light ivory/mint dock on MyTube");
+  assert.match(dockPalette.aiIcon,/radial-gradient/,id+" elevated teal AI/Chat action");
   const moreFilters=page.locator("[data-mytube-filter-toggle]");
   const rail=page.locator("[data-mytube-category-rail]");
   const refined=page.locator("#mytube-refine-controls");
@@ -95,7 +99,7 @@ async function inspect(browserType,locale,width){
     id+" deeper taxonomy must not push videos down by default");
   assert.deepEqual(
     await page.locator("[data-mytube-format-tabs] button").evaluateAll(els=>els.map(el=>el.dataset.mytubeFormatMode)),
-    ["practices","courses","masters"],id+" exactly three approved MyTube content modes are visible");
+    ["practices","courses","masters","videos"],id+" exactly four approved MyTube content modes are visible");
   const filterBounds=await moreFilters.boundingBox();
   assert.ok(filterBounds&&filterBounds.height>=44&&filterBounds.height<=60,
     id+" single slim accessible taxonomy bar");
@@ -178,8 +182,8 @@ async function inspect(browserType,locale,width){
    await page.evaluate(()=>window.scrollTo({top:0,behavior:"instant"}));
    await page.screenshot({path:folder+"/mytube-webkit-ru-390.png",fullPage:false});
   }
-  // Three mutually exclusive modes; no invented videos required for acceptance.
-  for(const mode of ["practices","courses","masters"]){
+  // Four mutually exclusive modes; no invented videos required for acceptance.
+  for(const mode of ["practices","courses","masters","videos"]){
     const control=page.locator('[data-mytube-format-mode="'+mode+'"]');
     await control.click();
     assert.equal(await control.getAttribute("aria-pressed"),"true",id+" selected "+mode);
