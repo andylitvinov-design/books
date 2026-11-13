@@ -120,8 +120,8 @@ async function verifyWorkspaceHydration(browser,locale){
     assert.equal(await automaticStoryboard.locator("textarea").count(),0,
       "the Story tab must render its proposal, not ask the user to fill it out");
     if(storyboardShotCount>0){
-      assert.ok(storyboardShotCount===4||storyboardShotCount===6,
-        "verified storyboard has four or six source-backed scenes");
+      assert.ok(storyboardShotCount>0&&storyboardShotCount<=5,
+        "compact storyboard shows at most five verified scene summaries");
       await expect(automaticStoryboard.locator('[data-video-auto-storyboard-list]')).toBeVisible();
       await expect(cards.first()).toContainText(
         locale==="ru"?"Сцена 1":locale==="es"?"Escena 1":"Scene 1");

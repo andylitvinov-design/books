@@ -19,7 +19,7 @@ const copy = {
     benefits:["HD / Full HD","Voice & music","Your style","More creative freedom"],
     freeTitle:"Generate for free",freeText:"Create a story-based video with the basic editor.",
     proTitle:"Explore PRO",proText:"Choose professional options for your next video.",
-    goStory:"Go to Story",goPro:"Go to PRO",
+    goStory:"Continue free",goPro:"Go to PRO",
     priceNote:"Prices indicate video formats. Review the final options and total in PRO."
   },
   ru: {
@@ -32,7 +32,7 @@ const copy = {
     benefits:["HD / Full HD","Голос и музыка","Ваш стиль","Больше свободы"],
     freeTitle:"Создать бесплатно",freeText:"Соберите сюжетное видео в обычном редакторе.",
     proTitle:"Выбрать PRO",proText:"Настройте профессиональный формат вашего видео.",
-    goStory:"К сюжету",goPro:"Перейти в PRO",
+    goStory:"Продолжить бесплатно",goPro:"Перейти в PRO",
     priceNote:"Указаны цены форматов. Окончательный выбор и сумма — в PRO."
   },
   es: {
@@ -45,7 +45,7 @@ const copy = {
     benefits:["HD / Full HD","Voz y música","Tu estilo","Más libertad creativa"],
     freeTitle:"Generar gratis",freeText:"Crea un vídeo con la historia y el editor básico.",
     proTitle:"Explorar PRO",proText:"Elige opciones profesionales para tu vídeo.",
-    goStory:"Ir a Story",goPro:"Ir a PRO",
+    goStory:"Continuar gratis",goPro:"Ir a PRO",
     priceNote:"Precios de formatos de vídeo. Confirma las opciones y el total en PRO."
   }
 } as const;
