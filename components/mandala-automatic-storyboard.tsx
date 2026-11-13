@@ -12,6 +12,7 @@ type Locale="ru"|"en"|"es";
 type Shot={sceneId:string;startSeconds:number;durationSeconds:number};
 type Props={
  locale:Locale;goal:string;theme:string;durationSeconds:number;aspect:string;styleIndex:number;
+ selectedTopic?:{topicId:string;brief?:string}|null;
  pace:"slow"|"dynamic";personalization?:{currentState?:string;desiredState?:string;focus?:string}|null;
  appliedStoryKey?:string|null;
  phrases:readonly string[];transcript:object|null;approvedConcept:ApprovedVideoConcept|null;
@@ -58,7 +59,7 @@ const clock=(time:number)=>{
 };
 
 export function MandalaAutomaticStoryboard({
- locale,goal,theme,durationSeconds,aspect,styleIndex,pace,personalization,appliedStoryKey,
+ locale,goal,theme,durationSeconds,aspect,styleIndex,pace,personalization,appliedStoryKey,selectedTopic=null,
  phrases,transcript,approvedConcept,scenes,appliedShots,resolveMedia,disabled,onApply,onChooseQuality,fiveSceneShots
 }:Props){
  const t=words[locale];
@@ -67,10 +68,14 @@ export function MandalaAutomaticStoryboard({
  // Concept and Story get the SAME confirmed Goals/Ideas/phrases/transcript.
  const suggested=useMemo(()=>suggestVideoConcept({
   locale,goal,theme,styleIndex,phrases:phraseKey?phraseKey.split("\u001f"):[],
-  speechTranscript:transcript,personalization:JSON.parse(personalizationKey)
+  speechTranscript:transcript,personalization:JSON.parse(personalizationKey),
+  selectedTopicId:selectedTopic?.topicId||null,creativeBrief:selectedTopic?.brief||null
  }) as ApprovedVideoConcept,
- [locale,goal,theme,styleIndex,phraseKey,transcript,personalizationKey]);
- const concept=approvedConcept?.signature===suggested.signature?approvedConcept:suggested;
+ [locale,goal,theme,styleIndex,phraseKey,transcript,personalizationKey,
+  selectedTopic?.topicId,selectedTopic?.brief]);
+ const concept=approvedConcept?.signature===suggested.signature||
+  (approvedConcept?.baseSignature===suggested.signature&&
+   Boolean(approvedConcept?.creativeDirectionId))?approvedConcept:suggested;
  const guides=useMemo(()=>buildAlignedStorySceneGuides({
   locale,goal:concept.goal||goal,phrases:phraseKey?phraseKey.split("\u001f"):[],
   concept,count:Math.max(4,Math.ceil(durationSeconds/5)),pace
