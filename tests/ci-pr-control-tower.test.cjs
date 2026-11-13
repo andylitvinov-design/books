@@ -2111,7 +2111,7 @@ test('409 fallback never admits unverified or congested runners',async()=>{
 
 test('ghost-409 capacity counts only independently verified old terminal wrapper overhangs',async()=>{
  const now=Date.parse('2026-11-12T20:00:00Z');
- for(const [all,old,expected] of [[24,5,19],[24,4,20],[21,1,20]]){
+ for(const [all,old,expected] of [[24,5,19],[24,4,20],[21,1,20],[25,5,20],[30,10,20]]){
   const f=ghostFixture({activeCount:all,terminalOverhang:old});
   let reads=0;
   const getJobs=f.github.rest.actions.listJobsForWorkflowRun;
@@ -2136,7 +2136,7 @@ test('overhang rescue fails closed for uncertain, fresh or excessive wrappers/jo
   [{activeCount:24,terminalOverhang:3},'21 active wrappers remain'],
   [{activeCount:24,terminalOverhang:4,invalidTerminalJob:true},'stale time missing'],
   [{activeCount:24,terminalOverhang:5,badJobPage:true},'incomplete jobs page'],
-  [{activeCount:25,terminalOverhang:25},'over proof budget'],
+  [{activeCount:33,terminalOverhang:33},'over proof budget'],
   [{activeCount:24,terminalOverhang:5,jobStatus:'in_progress'},'real job pressure']
  ]){
   const f=ghostFixture(variation);
@@ -2157,4 +2157,22 @@ test('Watchdog passes only fully authenticated complete inventory to existing li
  assert.match(workflow,/inventorySnapshot:report\.prInventorySnapshot,watchdogEvidence:report/);
  assert.match(workflow,/HH_SNAPSHOT_HANDOFF_SKIPPED/);
  assert.doesNotMatch(workflow,/if\(!dryRun&&report\?\.inventoryComplete===true&&!report\?\.apiRateLimited&&/);
+});
+
+
+test('ghost-409 job read expansion never raises actual running-job capacity',async()=>{
+ const now=Date.parse('2026-11-12T20:00:00Z');
+ for(const [activeCount,old,status] of [[30,10,'in_progress'],[30,8,'completed'],[33,13,'completed']]){
+  const f=ghostFixture({activeCount,terminalOverhang:old,jobStatus:status});
+  const result=await GRC(f.github,'andylitvinov-design','books',f.p,now);
+  assert.equal(result.known,false,'no admission for real pressure or >32 '+activeCount);
+  assert.notEqual(admission('repair',result),'ADMIT');
+  assert.notEqual(admission('legacy',result),'ADMIT');
+ }
+});
+test('dispatched worker telemetry includes recency guard instead of all-time runner starts',()=>{
+ const fs=require('node:fs');
+ const src=fs.readFileSync('scripts/ci-pr-queue-dispatcher.cjs','utf8');
+ assert.match(src,/realRunner&&recentlyStartedRunner\(realRunner,now\)/);
+ assert.doesNotMatch(src,/if\(realRunner\)\s*\{\s*summary\.runnerStartedConfirmed\+\+/);
 });

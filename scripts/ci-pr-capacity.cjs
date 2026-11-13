@@ -66,10 +66,12 @@ function computeCapacity(active,queued,jobs){
 }
 
 const GHOST_REPAIR_MODE='GHOST_409_ONE_REPAIR';
-// Inspect at most the existing 24-run job-read budget. Admit a Repair only
-// when independently proven terminal overhangs leave <=20 real active wrappers.
-// Unknown or fresh in-progress runs still occupy capacity; four Core slots remain.
-// In-progress wrapper statuses alone never prove whether jobs are runnable.
+// Inspect up to 32 full workflow/job records only in the signed, jobless 409
+// overflow path. The ordinary CI/worker read budget remains 24. This additional
+// bounded *read-only* proof lets GitHub's 5+ terminal zombie wrappers be
+// discounted, but never widens the actual 20-live-wrapper/8-running-job cap.
+// Incomplete reads or unproven histories remain occupied, not free capacity.
+const GHOST_ACTIVE_INVENTORY_LIMIT=32;
 const GHOST_ACTIVE_PROOF_LIMIT=Math.min(LIMIT.maxJobReads,LIMIT.maxActiveRuns-4);
 async function verifiedGhostRepairCapacity(gh,owner,repo,p,now=Date.now()){
  const hold=reason=>({known:false,reason:'GHOST_'+reason});
@@ -118,7 +120,7 @@ async function verifiedGhostRepairCapacity(gh,owner,repo,p,now=Date.now()){
   const completeCapacity=([q,a,wq,wa])=>{
    const Q=q?.data?.total_count,A=a?.data?.total_count,active=a?.data?.workflow_runs;
    return Number.isSafeInteger(Q)&&Q>100&&Q<=250&&
-    Number.isSafeInteger(A)&&A>=0&&A<=LIMIT.maxJobReads&&
+    Number.isSafeInteger(A)&&A>=0&&A<=GHOST_ACTIVE_INVENTORY_LIMIT&&
     Array.isArray(active)&&active.length===A&&
     Array.isArray(wq?.data?.workflow_runs)&&wq.data.total_count===0&&
     Array.isArray(wa?.data?.workflow_runs)&&wa.data.total_count===0;
@@ -163,7 +165,7 @@ async function verifiedGhostRepairCapacity(gh,owner,repo,p,now=Date.now()){
    safeToDispatchOneLegacyPreflight:true,ghostProofRunId:p.run_id,
    activeRuns:effectiveActive,originalActiveRuns:A,
    capacityReadbacks,
-   verifiedTerminalOverhangRuns:verifiedOverhangs,
+   fullActiveJobPagesVerified:A,verifiedTerminalOverhangRuns:verifiedOverhangs,
    queuedRuns:Q,runningJobs,queuedJobs,unknownQueuedRuns:Q,
    coreQueuedRuns:null,coreQueuedJobs:null,
    activeWorker:Object.fromEntries([...new Set(Object.values(WORKFLOWS))].map(x=>[x,0]))};

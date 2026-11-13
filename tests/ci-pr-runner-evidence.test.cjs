@@ -88,3 +88,16 @@ test('old manually held legacy preflight confirms real runner without granting s
  assert.equal(wrong.status,'RUNNER_UNVERIFIED');
  assert.equal(f.calls.length,1);
 });
+
+
+test('runner receipt remains durable history but stale starts never inflate recent dispatch metric',()=>{
+ const {recentlyStartedRunner}=require('../scripts/ci-pr-runner-evidence.cjs');
+ const now=Date.parse('2026-11-13T01:13:00Z');
+ const receipt=at=>({runner:{started_at:at}});
+ assert.equal(recentlyStartedRunner(receipt('2026-11-13T01:04:00Z'),now),true);
+ assert.equal(recentlyStartedRunner(receipt('2026-11-13T00:57:59Z'),now),false);
+ assert.equal(recentlyStartedRunner(receipt('2026-11-08T01:13:00Z'),now),false);
+ assert.equal(recentlyStartedRunner(receipt('2026-11-13T01:14:01Z'),now),false);
+ assert.equal(recentlyStartedRunner(receipt(''),now),false);
+ assert.equal(recentlyStartedRunner(receipt('2026-11-13T01:12:59Z'),NaN),false);
+});

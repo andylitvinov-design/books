@@ -163,7 +163,8 @@ function buildMonitorSnapshot(report,context,watchdogLiveness=null){
     inspected:validCount(report.inspected,'inspected'),
     unknown_owner_locks:validCount(blocked.OWNER_LEASE_UNVERIFIED||0,'unknown_owner_locks'),
     dispatch_requests_accepted:validCount(report.dispatchAccepted,'dispatch_requests_accepted'),
-    // Historical compatibility name: ONLY trusted exact-task RUNNER_STARTED receipts.
+    // Historical compatibility name: ONLY recently started (<=15m) signed
+    // exact-task RUNNER_STARTED receipts, never stale historical executions.
     worker_dispatches:validCount(report.runnerStartedConfirmed,'runnerStartedConfirmed')
   };
   if((report.nonmanualRouted!==undefined||report.legacyPrepEligible!==undefined)&&
@@ -278,7 +279,7 @@ function renderSnapshot(snapshot){
   const fence=String.fromCharCode(96).repeat(3);
   return [MARKER,'## Watchdog direct handoff — public snapshot',
     'CI wake timing comes from authenticated exact-task receipt timestamps in the bounded inspected CI sample, not a global PR cohort. Missing duration is null, not zero; a wake receipt does not prove Core runner execution.',
-    'HTTP dispatch acceptance is NOT execution. worker_dispatches counts only trusted exact-task RUNNER_STARTED receipts observed in this sweep; it is not the number of HTTP requests. NO_ACTIONABLE_PR only means no eligible automated dispatch, NOT no blocked PRs. watchdog_sample is bounded deep-inspection evidence with overlapping categories; verified_blocked_lower_bound uses MAX, never SUM. blocker_progress tracks only exact-HEAD Watchdog cases sampled on prior verified sweeps: uninspected is NOT resolved, head change is NOT a fix, CI failure is NOT all required checks, absent LIVE proof is never success. backlog_label_hints are overlapping label-only evidence, NOT verified root causes. api_budget.tracked_requests covers instrumented calls in this run, NOT total user-hour requests. Source publication and LIVE require separate proof.',
+    'HTTP dispatch acceptance is NOT execution. worker_dispatches counts only trusted exact-task RUNNER_STARTED receipts started within the preceding 15 minutes and observed in the sampled sweep; it is not HTTP dispatch acceptance nor historical all-time starts. NO_ACTIONABLE_PR only means no eligible automated dispatch, NOT no blocked PRs. watchdog_sample is bounded deep-inspection evidence with overlapping categories; verified_blocked_lower_bound uses MAX, never SUM. blocker_progress tracks only exact-HEAD Watchdog cases sampled on prior verified sweeps: uninspected is NOT resolved, head change is NOT a fix, CI failure is NOT all required checks, absent LIVE proof is never success. backlog_label_hints are overlapping label-only evidence, NOT verified root causes. api_budget.tracked_requests covers instrumented calls in this run, NOT total user-hour requests. Source publication and LIVE require separate proof.',
     // Compact serialization preserves all exact PR timestamps within the existing
     // 58k public issue body budget; pretty JSON previously evicted the census.
     '',fence+'json',JSON.stringify(snapshot),fence,'',
