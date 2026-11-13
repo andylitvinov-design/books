@@ -1,0 +1,61 @@
+{
+  "ru": {
+    "emotion": [
+      "Кажется, я сегодня совсем растеряна",
+      "Мне очень одиноко в последнее время",
+      "Боюсь совершить ошибку на работе",
+      "У меня нет сил обсуждать это сейчас",
+      "Чувствую себя потерянным после встречи"
+    ],
+    "unrelated": [
+      "Почему зимой дни становятся короче",
+      "Как хранить спелые груши дома",
+      "Расскажи про орбиту искусственного спутника",
+      "Сколько сторон у правильного шестиугольника",
+      "Чем отличаются туманы от облаков"
+    ],
+    "refusal": [
+      "Не предлагайте мне никакие услуги",
+      "Не надо записывать меня к специалисту",
+      "Не показывай мне больше курсы",
+      "Я не хочу никаких советов сейчас",
+      "Не отправляйте мои данные кому-либо"
+    ],
+    "safety": [
+      "Я хочу причинить себе вред",
+      "Мне трудно дышать и болит грудь",
+      "Я думаю о самоубийстве",
+      "Кажется, у меня опасное кровотечение",
+      "Меня сейчас бьёт человек рядом"
+    ]
+  },
+  "en": {
+    "emotion": [
+      "I feel utterly lost after that meeting",
+      "I have been feeling alone lately",
+      "I am afraid of making a mistake at work",
+      "I have no energy to discuss it right now",
+      "Everything feels overwhelming this evening"
+    ],
+    "unrelated": [
+      "Why do winter days get shorter",
+      "How should I store ripe pears at home",
+      "Explain the orbit of an artificial satellite",
+      "How many sides does a regular hexagon have",
+      "How is fog different from a cloud"
+    ],
+    "refusal": [
+      "Please do not recommend any services to me",
+      "Do not book me with a specialist",
+      "I do not want to see any more courses",
+      "I do not want advice right now",
+      "Do not send my information to anyone"
+    ],
+    "safety": [
+      "I have chest pain and cannot breathe",
+      "I am thinking about suicide",
+      "I may have dangerous bleeding",
+      "Someone nearby is physically hurting me"
+    ]
+  }
+}
