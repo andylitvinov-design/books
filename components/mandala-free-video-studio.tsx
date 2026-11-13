@@ -8288,8 +8288,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 }
                 return false;
               }}
-              onChooseQuality={()=>{
-                setMontagePanel("promo");setNotice("");
+              onChooseQuality={sourceReady=>{
+                setMontagePanel("promo");
+                setNotice(sourceReady?"":locale==="ru"?
+                  "Раскадровка пока не применена. Проверьте исходные сцены в дополнительных настройках монтажа перед созданием.":
+                  locale==="es"?"El guion visual aún no se ha aplicado. Revisa las escenas en las opciones avanzadas antes de crear el vídeo.":
+                  "Storyboard not yet applied. Review the source scenes in advanced Montage options before creating the video.");
                 window.requestAnimationFrame(()=>
                   document.querySelector('[data-video-montage-tools]')?.scrollIntoView({behavior:"smooth",block:"start"}));
               }}

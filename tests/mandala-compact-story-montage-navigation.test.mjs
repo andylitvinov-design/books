@@ -35,7 +35,10 @@ test("five compact Story cards do not replace or invent the underlying approved 
  assert.match(story,/isReviewedFilmedStoryScene/);
  assert.match(story,/data-video-story-select-quality/);
  assert.match(story,/onApply\(proposal\.shots,concept,storyKey,/);
- assert.match(story,/if\(!ok\)return;[\s\S]*onChooseQuality\(\)/);
+ assert.match(story,/sourceReady=onApply\(proposal\.shots,concept,storyKey,/);
+ assert.match(story,/onChooseQuality\(sourceReady\)/);
+ assert.doesNotMatch(story,/if\(!ok\)return;/,
+   "choosing quality cannot be blocked by a failed optional scene application");
  assert.match(story,/quality:"Select generation quality"/);
  assert.match(story,/quality:"Выбрать качество генерации"/);
  assert.match(story,/quality:"Elegir calidad de generación"/);
@@ -50,7 +53,9 @@ test("advanced five-scene source/photo editor preserved in fifth Montage, closed
  assert.match(studio,/data-video-montage-storyboard/);
  assert.match(studio,/data-video-stories-photo=/);
  assert.match(studio,/data-video-stories-source=/);
- assert.match(studio,/onChooseQuality=\{\(\)=>\{/);
+ assert.match(studio,/onChooseQuality=\{sourceReady=>\{/);
+ assert.match(studio,/setNotice\(sourceReady\?""/,
+   "unapplied story must show a real warning without fabricating applied footage");
  assert.match(studio,/setMontagePanel\("promo"\)/);
  assert.match(styles,/data-montage-panel="concept"\] \[data-video-live-stage\]/);
  assert.match(styles,/height:66px;min-height:66px/);
@@ -59,7 +64,9 @@ test("advanced five-scene source/photo editor preserved in fifth Montage, closed
 
 test("navigation is only a selection; export, checks and payment stay behind the existing Create flow",()=>{
  assert.match(story,/if\(!manualFiveReady&&!applied&&eligible\)/);
- assert.match(story,/if\(!ok\)return/);
+ assert.match(story,/onChooseQuality\(sourceReady\)/);
+ assert.doesNotMatch(story,/if\(!ok\)return/,
+   "a failed media preflight cannot hide the fifth Montage quality chooser");
  assert.doesNotMatch(story,/createQuickVideo|startFromHero|stripe|chargeWallet/);
  assert.match(studio,/data-video-quick-generate/);
  assert.match(studio,/onClick=\{createQuickVideo\}/);

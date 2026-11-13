@@ -196,3 +196,13 @@ test("guided meditation choice commits before opening and omission on real WebKi
  assert.match(browser,/data-guided-eight-sessions/);
  assert.doesNotMatch(browser,/click\(\{force:true\}\)/);
 });
+
+test("first-video macOS WebKit uses a genuine portrait tap and still verifies React's committed selection",()=>{
+ const live=read("scripts/benchmarking/first-video-live-export.mjs");
+ assert.match(live,/if\(engine==='webkit'\)await portrait\.tap\(\)/);
+ assert.match(live,/else await portrait\.click\(\)/);
+ assert.match(live,/LIVE_VIDEO_PORTRAIT_SELECTION_NOT_REFLECTED/);
+ assert.match(live,/LIVE_VIDEO_PORTRAIT_SELECTION_STATE/);
+ assert.match(live,/getAttribute\('aria-pressed'\)==='true'/);
+ assert.doesNotMatch(live,/portrait\.click\(\{force:true\}\)/);
+});

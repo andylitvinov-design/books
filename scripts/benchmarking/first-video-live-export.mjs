@@ -229,7 +229,10 @@ try {
   row.quickPortraitButtonCount=await portrait.count();
   assert.equal(row.quickPortraitButtonCount,1,'MOBILE_ASPECT_CONTROL_MISSING');
   row.phase='portrait-real-click';
-  await portrait.click();
+  // WebKit's actual iPhone gesture is touch, as for the visible Style step.
+  // Do not replace the user's tap with a forced click or synthetic state.
+  if(engine==='webkit')await portrait.tap();
+  else await portrait.click();
   row.phase='portrait-selection-confirmation';
   // Verify React committed the selection on the actual visible, hydrated
   // first-video widget, not another hidden or detached mobile host.
@@ -239,7 +242,25 @@ try {
     )].some(root=>root.getClientRects().length>0&&
       root.querySelector('[data-first-video-quick-aspect="portrait"]')
         ?.getAttribute('aria-pressed')==='true'),undefined,{timeout:15000});
-  } catch {throw Error('LIVE_VIDEO_PORTRAIT_SELECTION_NOT_REFLECTED');}
+  } catch {
+    // Structural-only diagnostic: no prompts, audio, scene names, URLs or PII.
+    const state=await page.evaluate(()=>{
+      const roots=[...document.querySelectorAll('[data-first-free-video]')];
+      return {
+        workspace:document.querySelector('[data-mandala-free-video]')?.getAttribute('data-active-workspace')||null,
+        advancedOpen:Boolean(document.querySelector('[data-video-first-video-advanced]')?.open),
+        roots:roots.map(root=>({
+          hydrated:root.getAttribute('data-first-video-hydrated')==='true',
+          visible:root.getClientRects().length>0,
+          portraitPressed:root.querySelector('[data-first-video-quick-aspect="portrait"]')?.getAttribute('aria-pressed')||null,
+          selectedAspect:root.querySelector('[data-first-video-aspect]')?.value||null
+        }))
+      };
+    }).catch(()=>({status:'DOM_DIAGNOSTIC_UNAVAILABLE'}));
+    row.portraitSelectionState=state;
+    console.error('LIVE_VIDEO_PORTRAIT_SELECTION_STATE',JSON.stringify(state));
+    throw Error('LIVE_VIDEO_PORTRAIT_SELECTION_NOT_REFLECTED');
+  }
   // Advanced settings remain genuine native select interactions. Open the
   // disclosure only if closed; never force-select a hidden/disabled field.
   const filters=first.locator('[data-first-video-filters]');

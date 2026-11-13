@@ -20,7 +20,7 @@ type Props={
  resolveMedia:(id:string)=>{poster:string|null;title:string};
  disabled:boolean;
  onApply:(shots:readonly CategoryStoryboardShot[],concept:ApprovedVideoConcept,key:string,captions:string[])=>boolean;
- onChooseQuality:()=>void;
+ onChooseQuality:(sourceReady:boolean)=>void;
  fiveSceneShots?:readonly Shot[]|null;
  onPreview:(second:number)=>void;onOpenIdeas:()=>void;
 };
@@ -194,12 +194,15 @@ export function MandalaAutomaticStoryboard({
     data-video-auto-storyboard-apply={!manualFiveReady&&!applied&&eligible?true:undefined}
     disabled={disabled} onClick={()=>{
       // Only attach approved local footage. No render, charge or paid API call.
+      // The optional, strictly verified scene application may fail closed
+      // (missing matching footage). Quality selection is navigation, not
+      // proof that a scene was applied or permission to export/charge.
+      let sourceReady=manualFiveReady||applied;
       if(!manualFiveReady&&!applied&&eligible){
-        const ok=onApply(proposal.shots,concept,storyKey,
+        sourceReady=onApply(proposal.shots,concept,storyKey,
          guides.scenes.map(item=>item.sourcePhrase||""));
-        if(!ok)return;
       }
-      onChooseQuality();
+      onChooseQuality(sourceReady);
     }}>
     <Play size={17} aria-hidden="true"/>{t.quality}<ArrowRight size={19} aria-hidden="true"/>
   </button>
