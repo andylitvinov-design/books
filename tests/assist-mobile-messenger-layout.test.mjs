@@ -26,15 +26,16 @@ test("all clarification steps remain within one locally scrolling messenger",()=
 });
 test("recommendations rerank by declared preferences and stay compact below chat",()=>{
   assert.match(shell,/rankAssistOffers\(selection\.focus,preferences\)/);
-  assert.match(shell,/matchingIds=\{selection\?suggestions\.map/);
-  assert.match(top,/offerToEntry/);
+  assert.match(shell,/matchingIds=\{suggestions\.map/);
+  assert.match(top,/rankAssistProducts/);
   assert.match(top,/data-assist-recommendation/);
   assert.match(topCss,/\.list\{display:grid;grid-template-columns:1fr/);
-  assert.match(topCss,/\.thumbnail\{width:64px;height:65px;min-height:65px/);
+  assert.match(topCss,/\.product\{display:grid;grid-template-columns:67px/);
+  assert.match(shell,/preferences=\{preferences\}/);
   assert(shell.indexOf("styles.conversation")<shell.indexOf("<AssistTopRecommendations"));
 });
 test("guest privacy, crisis suppression, existing Telegram requests and locales preserved",()=>{
-  for(const value of ["ru: {moreIssues:","en: {moreIssues:","es: {moreIssues:","urgent.test(selection.text)","setCritical(true)","!crisis?<AssistTopRecommendations","data-assist-reset","data-assist-tool","data-assist-mobile"])
+  for(const value of ["ru: {moreIssues:","en: {moreIssues:","es: {moreIssues:","urgent.test(selection.text)","setCritical(true)","!crisis&&selection?<AssistTopRecommendations","data-assist-reset","data-assist-tool","data-assist-mobile"])
     assert(shell.includes(value),value);
   assert.match(top,/telegramServiceRequestUrl/);
   assert.doesNotMatch(shell,/localStorage|sessionStorage|fetch\(|sendBeacon|window\.location/);
