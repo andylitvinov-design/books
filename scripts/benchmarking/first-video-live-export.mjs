@@ -85,6 +85,27 @@ function rmsPcm(mediaFile) {
   }
   return Math.sqrt(energy / samples);
 }
+// The compact fourth Story is deliberately review-only. Advanced timeline
+// and source settings are in the fifth Montage tab; no hidden Story click.
+async function openMontageSettings(page) {
+  const montage=page.locator('[data-video-montage-tab="promo"]');
+  await montage.waitFor({state:'visible',timeout:20000});
+  await montage.click();
+  await page.waitForFunction(()=>
+    document.querySelector('[data-video-basic-editor]')?.getAttribute('data-montage-panel')==='promo',
+    undefined,{timeout:15000});
+  const advanced=page.locator('[data-video-stories-advanced]');
+  await advanced.waitFor({state:'visible',timeout:20000});
+  if(!await advanced.evaluate(node=>node.open))
+    await advanced.locator(':scope > summary').click();
+  const settings=advanced.locator('[data-video-stories-settings]');
+  await settings.waitFor({state:'visible',timeout:20000});
+  await settings.click();
+  await page.waitForFunction(()=>
+    document.querySelector('[data-video-basic-editor]')?.getAttribute('data-montage-panel')==='settings',
+    undefined,{timeout:15000});
+}
+
 let browser;
 let page;
 let mediaDir;
@@ -170,15 +191,13 @@ try {
   await concept.waitFor({state:'visible',timeout:15000});
   await concept.locator('[data-video-concept-approve]').click();
   await page.locator('[data-video-quick-control="editor"]').click();
-  await page.locator('[data-video-montage-tab="concept"]').click();
-  await page.locator('[data-video-story-open-settings]').click();
+  await openMontageSettings(page);
   await page.locator('[data-video-quick-control="phrases"]').click();
   await page.locator('[data-video-ideas-tab="concept"]').click();
   assert.equal(await page.locator('[data-video-concept-auto]').getAttribute('data-concept-approved'),
     'true','GUEST_APPROVAL_MUST_SURVIVE_TAB_NAVIGATION');
   await page.locator('[data-video-quick-control="editor"]').click();
-  await page.locator('[data-video-montage-tab="concept"]').click();
-  await page.locator('[data-video-story-open-settings]').click();
+  await openMontageSettings(page);
   const textTools=page.locator('[data-video-concept-text-tools]');
   await textTools.locator(':scope > summary').click();
   await textTools.evaluate(node=>{if(!node.open)throw Error('CONCEPT_TEXT_TOOLS_DID_NOT_OPEN')});

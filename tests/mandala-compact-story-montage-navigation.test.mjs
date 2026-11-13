@@ -8,6 +8,7 @@ const styles=readFileSync(new URL("../components/mandala-video-mobile.module.css
 const offer=readFileSync(new URL("../components/mandala-montage-pro-offer.tsx",import.meta.url),"utf8");
 const ideas=readFileSync(new URL("../components/mandala-video-ideas.tsx",import.meta.url),"utf8");
 const webkit=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
+const firstVideoSmoke=readFileSync(new URL("../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
 
 test("Style, Audio, Text, Story, Montage is the only five-step visible editor order",()=>{
  const start=studio.indexOf("<nav className={videoStyles.montageQuickTools} data-video-montage-tools");
@@ -100,4 +101,17 @@ test("Text shows only one review CTA, navigating forward to fourth Story without
  assert.ok(webkit.includes("await reviewStory.tap();"));
  assert.ok(webkit.includes("await expect(textFooter.locator(\"button\")).toHaveCount(1);"));
  assert.ok(webkit.includes("await expect(page.locator('[data-video-montage-tab=\"concept\"]')).toHaveAttribute"));
+});
+
+test("real first-video Safari export uses fifth Montage advanced settings twice, never a hidden Story CTA",()=>{
+ assert.equal((firstVideoSmoke.match(/await openMontageSettings\(page\);/g)||[]).length,2);
+ assert.doesNotMatch(firstVideoSmoke,/data-video-story-open-settings/);
+ assert.match(firstVideoSmoke,/page\.locator\('\[data-video-montage-tab="promo"\]'\)/);
+ assert.match(firstVideoSmoke,/page\.locator\('\[data-video-stories-advanced\]'\)/);
+ assert.match(firstVideoSmoke,/if\(!await advanced\.evaluate\(node=>node\.open\)\)/);
+ assert.match(firstVideoSmoke,/advanced\.locator\(':scope > summary'\)\.click\(\)/);
+ assert.match(firstVideoSmoke,/advanced\.locator\('\[data-video-stories-settings\]'\)/);
+ assert.match(firstVideoSmoke,/data-montage-panel'\)===\x27settings\x27/);
+ assert.match(firstVideoSmoke,/readRealGuestVideo\(page,\{timeout:80000\}\)/);
+ assert.match(firstVideoSmoke,/mediaTool\('ffmpeg'/);
 });
