@@ -8,6 +8,7 @@ import {ArrowRight,BookOpen,CheckCircle2,Clock3,Download,Flower2,FolderOpen,Head
 import type {PublicLocale} from "@/lib/public-locales";
 import type {VideoTheme} from "@/lib/mandala/holistic-video-themes";
 import type {GuidedMeditationFocus} from "./mandala-guided-course";
+import type {VideoDeliveryStatus} from "./mandala-video-delivery";
 import {selectResourcePractice} from "@/lib/mandala/resource-practice-selector.mjs";
 import {buildPersonalMeditationScript} from "@/lib/mandala/personal-meditation-script.mjs";
 import {buildPersonalImageryCourse} from "@/lib/mandala/personal-guided-course.mjs";
@@ -25,7 +26,8 @@ type Props={
   video:VideoFile|null;verified:boolean;checking:boolean;signedIn:boolean;
   loginUnavailable:boolean;disabled:boolean;meditationEditor:ReactNode;
   onOpenDelivery:()=>void;onRefreshLogin:()=>void;onOpenCourse:()=>void;onReturnToPro:()=>void;
-  onGenerateBasicVideo:()=>boolean;onStartNewVideo:()=>void;onVerifyPlayback:(player:HTMLVideoElement)=>void;basicFreeAvailable:boolean;
+  onGenerateBasicVideo:()=>boolean;onStartNewVideo:()=>void;onVerifyPlayback:(player:HTMLVideoElement)=>void;
+  onSaveDirect:()=>void;saveStatus:VideoDeliveryStatus;basicFreeAvailable:boolean;
   basicFreeIssue:"checking"|"unavailable"|"guest_used"|"insufficient"|null;basicCreditCost:number;
 };
 const COPY={
@@ -160,7 +162,8 @@ const COPY={
 export function MandalaVideoReady({
   locale,theme,wish,focus,aspect,video,verified,checking,signedIn,loginUnavailable,disabled,
   meditationEditor,onOpenDelivery,onRefreshLogin,onOpenCourse,onReturnToPro,
-  onGenerateBasicVideo,onStartNewVideo,onVerifyPlayback,basicFreeAvailable,basicFreeIssue,basicCreditCost
+  onGenerateBasicVideo,onStartNewVideo,onVerifyPlayback,onSaveDirect,saveStatus,
+  basicFreeAvailable,basicFreeIssue,basicCreditCost
 }:Props){
   const t=COPY[locale];
   const router=useRouter();
@@ -247,6 +250,7 @@ export function MandalaVideoReady({
       gateLauncherRef.current=document.activeElement instanceof HTMLElement?document.activeElement:null;
       setGateIntent(intent);setView("login");return;
     }
+    if(intent==="save"){onSaveDirect();return;}
     onOpenDelivery();
   }
   async function requestTelegramLink(){
@@ -371,11 +375,22 @@ export function MandalaVideoReady({
       </div>:null}
       {completed?<>
         <div className={css.actions} data-ready-save-choices>
-          <button type="button" onClick={()=>chooseDelivery("save")} disabled={disabled}
+          <button type="button" onClick={()=>chooseDelivery("save")}
+            disabled={disabled||saveStatus.busy} aria-busy={saveStatus.busy}
             data-ready-save><Download size={21} aria-hidden="true"/><span>{t.save}</span></button>
           <button type="button" onClick={()=>chooseDelivery("telegram")} disabled={disabled}
             data-ready-telegram><Send size={21} aria-hidden="true"/><span>{t.sendTelegram}</span></button>
         </div>
+        {saveStatus.notice?<div className={css.saveStatus} role="status" aria-live="polite"
+          data-ready-save-status>
+          <span>{saveStatus.busy&&saveStatus.uploadPercent!==null
+            ?saveStatus.notice+" "+saveStatus.uploadPercent+"%":saveStatus.notice}</span>
+          {saveStatus.savedId?<Link href={myVideos} target="_blank" rel="noopener noreferrer"
+            prefetch={false} data-ready-saved-video-link>{t.house}</Link>:null}
+          {saveStatus.cloudAvailable===false&&!saveStatus.savedId&&video?
+            <a href={video.url} download={"holistic-house-personal."+video.extension}
+              data-ready-download-fallback>{t.download}</a>:null}
+        </div>:null}
       </>:<>
         <div className={css.tierList} role="radiogroup" aria-label={t.videoChooseTitle}
           data-ready-video-tiers>
