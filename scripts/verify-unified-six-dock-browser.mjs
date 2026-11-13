@@ -630,7 +630,7 @@ try{
  // options may extend below it. Check actual reply visibility, not scrollTop=end.
  await page.waitForFunction(()=>{
    const thread=document.querySelector('[data-hh-agent-preview] [role="log"]');
-   const replies=thread?.querySelectorAll('[data-hh-chat-turn="assistant"]');
+   const replies=thread?.querySelectorAll('[data-hh-ai-assistant-message]');
    const reply=replies?.item(replies.length-1);
    if(!thread||!reply)return false;
    const viewport=thread.getBoundingClientRect(),bubble=reply.getBoundingClientRect();
