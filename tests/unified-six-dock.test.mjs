@@ -91,7 +91,8 @@ test("route-aware single dock, guest/signed-in consistency and private pages exc
   assert.equal(unifiedMobileDockActive("/"+locale+"/holistic-support/mandala"),"video");
   assert.equal(unifiedMobileDockActive("/"+locale+"/holistic-support/mandala","#video-director-chat"),"ai");
   assert.equal(unifiedMobileDockActive("/"+locale+"/holistic-support/mobile"),"practice");
-  assert.equal(unifiedMobileDockActive("/"+locale+"/practice"),"practice");
+  // Public Profile Work uses the Profile tab; the protected editor still uses Study.
+   assert.equal(unifiedMobileDockActive("/"+locale+"/practice"),"profile");
   assert.equal(unifiedMobileDockActive("/"+locale+"/app/practice"),"practice");
   assert.equal(unifiedMobileDockActive("/"+locale+"/app/messages"),"ai");
   assert.equal(unifiedMobileDockActive("/"+locale+"/app/portrait"),"profile");
