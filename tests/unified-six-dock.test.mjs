@@ -243,7 +243,7 @@ test("Video Mandala uses a compact, public mobile header and Reiki filters canno
 });
 
 
-test("MyTube keeps all real directions in one row and expands true subcategories only on demand",()=>{
+test("MyTube keeps one direction row with real meditation collections below it",()=>{
  const page=read("app/[locale]/mytube/page.tsx");
  const style=read("app/[locale]/mytube/mytube.module.css");
  const discovery=read("components/video-discovery.tsx");
@@ -263,7 +263,10 @@ test("MyTube keeps all real directions in one row and expands true subcategories
  assert.match(css,/\.mytube \.mytubeCategoryRail\{[^}]*grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/);
  assert.doesNotMatch(css.slice(css.indexOf("/* MyTube-only compact five-choice editorial taxonomy.")),/overflow-x:auto/);
  assert.match(discovery,/data-mytube-language-control/);
- assert.match(discovery,/mytubeCategoryId!=="all"&&<div className=\{styles\.mytubeSubcategoryRail\}/);
+ assert.doesNotMatch(discovery,/mytubeCategoryId!=="all"&&<div className=\{styles\.mytubeSubcategoryRail\}/);
+ assert.match(discovery,/data-mytube-practice-collections/);
+ assert.match(discovery,/data-mytube-practice-collection=\{collection.id\}/);
+ assert.match(css,/\.mytube \.mytubeCollectionGrid\{[^}]*grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
  assert.match(css,/\.mytube \.compactMoreButton\{/);
  assert.match(discovery,/data-mytube-format-mode=\{mode\}/);
  assert.match(browser,/rail\.evaluate\(el=>el\.scrollWidth<=el\.clientWidth\+2\)/);
