@@ -5,10 +5,15 @@ on:
   workflow_dispatch:
     inputs:
       emergency:
-        description: 'Emergency deploy now (bypass unchanged-SHA check)'
+        description: 'Emergency Deploy Now (may rebuild the same SHA)'
         type: boolean
         required: false
         default: false
+      cleanup_mode:
+        description: 'Old Vercel deployments: off, dry-run, or safely delete'
+        type: choice
+        options: ['off', 'dry-run', 'apply']
+        default: 'off'
 permissions:
   contents: read
 concurrency:
@@ -19,7 +24,7 @@ jobs:
     # A scheduled run must not consume a runner until both existing
     # credentials and the Vercel deploy hook have been verified and armed.
     # Manual emergency Deploy Now remains accessible while the gate is off.
-    if: ${{ github.event_name == 'workflow_dispatch' || vars.HH_VERCEL_HOURLY_ENABLED == 'true' }}
+    if: ${{ (github.event_name == 'schedule' && vars.HH_VERCEL_HOURLY_ENABLED == 'true') || (github.event_name == 'workflow_dispatch' && inputs.cleanup_mode == 'off') }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -27,13 +32,12 @@ jobs:
         id: gate
         env:
           VERCEL_TOKEN: ${{ secrets.HH_VERCEL_RELEASE_TOKEN }}
-          VERCEL_HOOK: ${{ secrets.HH_VERCEL_PRODUCTION_DEPLOY_HOOK }}
           EMERGENCY: ${{ inputs.emergency }}
         shell: bash
         run: |
           set -euo pipefail
-          if [[ -z "$VERCEL_TOKEN" || -z "$VERCEL_HOOK" ]]; then
-            echo 'Hourly batch not armed: both HH_VERCEL_RELEASE_TOKEN and HH_VERCEL_PRODUCTION_DEPLOY_HOOK are required.'
+          if [[ -z "$VERCEL_TOKEN" ]]; then
+            echo 'Hourly batch not armed: HH_VERCEL_RELEASE_TOKEN secret is required.'
             exit 1
           fi
           head_sha="$(git ls-remote https://github.com/andylitvinov-design/books.git refs/heads/codex/public-book-library | cut -f1)"
@@ -49,19 +53,41 @@ jobs:
               exit 0
             fi
           fi
+          echo "sha=$head_sha" >> "$GITHUB_OUTPUT"
           echo 'run=true' >> "$GITHUB_OUTPUT"
-      - name: Trigger one production build
+      - name: Deploy exact production SHA via existing Vercel Git connection
         if: steps.gate.outputs.run == 'true'
         env:
-          VERCEL_HOOK: ${{ secrets.HH_VERCEL_PRODUCTION_DEPLOY_HOOK }}
+          VERCEL_TOKEN: ${{ secrets.HH_VERCEL_RELEASE_TOKEN }}
+          EXPECTED_SHA: ${{ steps.gate.outputs.sha }}
+          EMERGENCY: ${{ inputs.emergency }}
         shell: bash
         run: |
           set -euo pipefail
-          case "$VERCEL_HOOK" in
-            https://api.vercel.com/v1/integrations/deploy/*) ;;
-            *) echo 'Unexpected deploy-hook URL'; exit 1 ;;
-          esac
-          # A deploy-hook POST is not idempotent; a timeout may mean accepted.
-          # Never retry uncertain POSTs and accidentally create extra builds.
-          curl -fsS --max-time 30 -X POST "$VERCEL_HOOK" >/dev/null
-          echo 'Vercel deployment requested; READY and LIVE must be verified separately.'
+          latest="$(git ls-remote https://github.com/andylitvinov-design/books.git refs/heads/codex/public-book-library | cut -f1)"
+          [[ "$latest" == "$EXPECTED_SHA" ]] || { echo 'Production advanced; next hourly run will publish latest SHA.'; exit 0; }
+          payload="$(jq -cn --arg sha "$EXPECTED_SHA" '{name:"codex-public-book-library",project:"prj_4jAwcx6lrKyUKZ3R9vgC5xwwyC0b",target:"production",gitSource:{type:"github",repoId:1229814825,ref:"codex/public-book-library",sha:$sha}}')"
+          url='https://api.vercel.com/v13/deployments?teamId=team_OSf690d0nxRHWVMXCElA8i95'
+          if [[ "$EMERGENCY" == "true" ]]; then url="$url&forceNew=1"; fi
+          # POST is NOT retried: timeout may mean Vercel accepted it.
+          response="$(curl -fsS --max-time 30 -X POST "$url" \
+            -H "Authorization: Bearer $VERCEL_TOKEN" \
+            -H 'Content-Type: application/json' --data "$payload")"
+          jq -e '.id | strings | startswith("dpl_")' <<< "$response" >/dev/null ||
+            { echo 'Vercel did not return a deployment ID'; exit 1; }
+          echo 'One exact-SHA production build requested; READY/LIVE must be checked separately.'
+  cleanup:
+    # Never delete on a schedule. Explicit owner dispatch ONLY.
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.cleanup_mode != 'off' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: codex/bootstrap-books
+          persist-credentials: false
+      - name: Inspect and optionally prune old unaliased deployments
+        env:
+          HH_VERCEL_RELEASE_TOKEN: ${{ secrets.HH_VERCEL_RELEASE_TOKEN }}
+          CLEANUP_MODE: ${{ inputs.cleanup_mode }}
+        run: node scripts/ci-vercel-deployment-prune.mjs "$CLEANUP_MODE"
