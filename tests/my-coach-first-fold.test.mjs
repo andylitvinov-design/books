@@ -62,3 +62,15 @@ test('owner-approved visual mock uses the original fictional portraits instead o
   assert.match(css,/heroStage\{height:clamp\(292px,42svh,305px\)\}/)
   assert.match(css,/railPortrait\{height:clamp\(77px,11svh,90px\)\}/)
 })
+
+test('mobile coach thumbnails preserve their photo proportions and the Mira CTA is centered', () => {
+  const jsx = read('components/my-coach-catalog.jsx')
+  const css = read('components/my-coach-mira-landing.module.css')
+  assert.match(jsx, /className=\{heroStyles\.railPhoto\}/)
+  assert.match(jsx, /width=\{288\}\s+height=\{320\}/)
+  assert.match(jsx, /aria-pressed=\{selected\.id === id\}/)
+  assert.match(css, /\.railPortrait\s*\{[^}]*aspect-ratio:4 \/ 5;/)
+  assert.match(css, /\.railPhoto\s*\{[^}]*object-fit:cover;/)
+  assert.match(css, /\.stageActions > \[data-my-coach-mira-quick-start\][\s\S]*?flex:0 1 88%;/)
+  assert.match(css, /\.stageActions\{justify-content:center\}/)
+})

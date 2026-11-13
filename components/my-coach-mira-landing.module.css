@@ -363,3 +363,38 @@
 @media(prefers-reduced-motion:reduce){
   .heroPortrait,.railPortrait{animation:none!important}
 }
+
+/* Owner iPhone feedback, 13 Nov 2026: prevent squeezed coach portraits.
+   Keep the approved originals; crop a 4:5 frame without distorting pixels.
+   This explicit final rule supersedes the legacy fixed-height rail styles. */
+.railPortrait{
+  height:auto!important;
+  aspect-ratio:4 / 5;
+  overflow:hidden;
+}
+.railPhoto{
+  position:absolute;
+  inset:0;
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  object-position:50% 37%;
+}
+@media(max-width:540px){
+  .stageActions{justify-content:center}
+  .stageActions > [data-my-coach-mira-quick-start],
+  .stageActions > .talkButton{
+    flex:0 1 88%;
+    width:88%!important;
+    max-width:350px;
+    min-width:0;
+  }
+}
+@media(max-width:355px){
+  .stageActions > [data-my-coach-mira-quick-start],
+  .stageActions > .talkButton{
+    flex-basis:93%;
+    width:93%!important;
+  }
+}
