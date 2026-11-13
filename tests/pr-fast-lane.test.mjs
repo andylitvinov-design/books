@@ -1382,7 +1382,7 @@ test('native AutoMerge skips synchronize; isolated janitor runs without duplicat
   assert.doesNotMatch(recovery,/workflow_run\.conclusion != 'success'/,
     'ordinary code failures must not allocate a retry runner');
   assert.ok(enable.includes('["hh-merge-check", ["hh-merge-check"]]'), 'unified gate must be recognized');
-  assert.match(core, /types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft, edited\]/,
+  assert.match(core, /types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/,
     'Core CI MUST still rerun for every source push');
   assert.doesNotMatch(enable, /--admin|--force|checkout@|continue-on-error:/);
 });
@@ -1499,11 +1499,12 @@ test('single hh-merge-check never passes without exact-current workflow Core and
   assert.doesNotMatch(source,/^  release-ready:|^  hh-core-verified:/m);
 });
 
-test('legacy PR CI backfill accepts PAT-authored edited event without skipping required checks',()=>{
+test('missing PR Core recovery requires genuine Ready event instead of incidental metadata edits',()=>{
   const source=workflow('hh-pr-core-release.yml');
   const match=source.match(/^  pull_request:\s*\n([\s\S]*?)(?=^  merge_group:)/m);
   assert.ok(match,'Core must stay attached to a genuine PR event');
-  assert.match(match[1],/\bedited\b/,'metadata edit must produce genuine pull_request CI');
+  assert.match(match[1],/\bready_for_review\b/,'signed Draft-to-Ready must create genuine PR CI');
+  assert.doesNotMatch(match[1],/\bedited\b/,'PR title/body edits must not allocate a full CI wave');
   assert.match(match[1],/branches: \['codex\/public-book-library'\]/);
   assert.doesNotMatch(match[1],/paths:|paths-ignore:/,
     'required CI must not be skipped by a path filter');
@@ -1511,7 +1512,7 @@ test('legacy PR CI backfill accepts PAT-authored edited event without skipping r
   const specialist=source.split(/^  hh-specialist:/m)[1]?.split(/^  hh-merge-check:/m)[0]??'';
   const gate=source.split(/^  hh-merge-check:/m)[1]??'';
   assert.match(scope,/github\.event\.pull_request\.draft == false/,
-    'real scope must execute on non-draft edited PR');
+    'real scope must execute on a non-draft Ready PR');
   assert.match(specialist,/if: \$\{\{ !cancelled\(\) && needs\.scope\.result == 'success' && github\.event_name == 'pull_request' && github\.event\.pull_request\.draft == false \}\}/);
   assert.match(gate,/if: \$\{\{ !cancelled\(\) && \(github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false\) \}\}/,
     'required status must run and reject failed Core/Specialist');

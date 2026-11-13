@@ -48,3 +48,20 @@
 .methods{background:#e9f1e9;border-radius:12px;padding:10px;font-size:14px}
 }
 @media(max-width:355px){.shelf{width:calc(100% - 16px)}.card{grid-template-columns:87px minmax(0,1fr);gap:8px;padding:9px}.portrait,.portrait img{min-height:147px}.card h4{font-size:18px}.body>p{font-size:13px}.actions{gap:4px}.secondary,.primary{font-size:12px;min-height:47px}.actions svg{width:14px}.modalHero{grid-template-columns:87px minmax(0,1fr)}.modalHero img{width:87px;height:108px}}
+
+/* Align Coaching with the mobile Services design system and 44px targets. */
+@media(max-width:760px){
+.shelf{width:calc(100% - 24px);max-width:520px;margin:14px auto;padding:12px;border:1px solid #dfcbae;border-radius:22px;background:#fffcf7;box-shadow:0 5px 16px rgb(72 49 27 / 7%)}
+.hero{min-height:112px;padding:12px;border-radius:16px;box-shadow:none}
+.hero span{font-size:11px}.hero h2{margin:6px 0;font-size:clamp(24px,6.5vw,28px)}.hero p{font-size:13px}
+.filters{margin:9px 0 12px;padding:10px;border-radius:16px;box-shadow:none}
+.filters label,.filters strong{font-size:12px}.selectWrap{margin:6px 0 10px}.selectWrap select{height:44px;padding:7px 36px 7px 12px;border-radius:12px;font-size:13px}.selectWrap svg{top:11px}
+.periods{gap:6px}.periods button{min-height:44px;border-radius:12px;font-size:12px}
+.choose{margin:0 2px 9px;font-size:21px}.cards{gap:8px}
+.card{grid-template-columns:88px minmax(0,1fr);gap:9px;padding:8px;border-radius:16px;box-shadow:none}
+.portrait,.portrait img{min-height:110px;border-radius:12px}.card h4{font-size:18px}
+.role,.aiRole{font-size:10px;margin-top:4px}.body>p{font-size:12px;margin:5px 0 7px}
+.secondary,.primary{min-height:44px;padding:7px 5px;border-radius:12px;font-size:12px}
+.more{min-height:44px;margin-top:11px;border-radius:13px;font-size:13px}
+}
+@media(max-width:350px){.shelf{width:calc(100% - 24px);padding:10px}.card{grid-template-columns:76px minmax(0,1fr);gap:7px}}
