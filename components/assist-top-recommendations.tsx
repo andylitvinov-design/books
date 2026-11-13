@@ -10,7 +10,7 @@ import styles from "./assist-top-recommendations.module.css";
 
 type Direction = "forMe" | "health" | "relationships" | "energy" | "learning" | "spiritual";
 type Focus = "stress" | "relationships" | "energy" | "health" | "work" | "growth" | "general" | null;
-type Entry = "homeopathy" | "coaching" | "reiki" | "tests" | "review" | "constellations" | "mandala" | "opora" | "academy" | "mysteries" | "talisman" | "business";
+type Entry = "mytube" | "aiCoach" | "masters" | "homeopathy" | "coaching" | "reiki" | "tests" | "review" | "constellations" | "mandala" | "opora" | "academy" | "mysteries" | "talisman" | "business";
 const directions: Direction[] = ["forMe", "health", "relationships", "energy", "learning", "spiritual"];
 
 const entries: Record<Entry, { path: string; image: string; direction: Exclude<Direction,"forMe">; kind: "session" | "explore" }> = {
@@ -26,6 +26,9 @@ const entries: Record<Entry, { path: string; image: string; direction: Exclude<D
   mysteries: { path: "academy/mysteries", image: "/library/maya-mysteries/media/post-244-1.jpg", direction: "spiritual", kind: "explore" },
   talisman: { path: "holistic-support/mobile", image: "/academy/reiki-yggdrasil/source/advanced-runes.png", direction: "spiritual", kind: "explore" },
   business: { path: "services/business-consulting", image: "/images/holistic-house/andy-about.png", direction: "relationships", kind: "session" },
+  mytube: { path: "mytube", image: "/images/holistic-house/reiki-approved-sunrise-v3.webp", direction: "learning", kind: "explore" },
+  aiCoach: { path: "my-coach", image: "/images/holistic-house/course-start-heron.webp", direction: "relationships", kind: "explore" },
+  masters: { path: "masters", image: "/images/holistic-house/andy-about.png", direction: "relationships", kind: "explore" },
 };
 const shelves: Record<Direction, readonly [Entry,Entry,Entry]> = {
   forMe: ["homeopathy","coaching","reiki"],
@@ -67,6 +70,9 @@ const copy = {
       mysteries: ["Древние мистерии","Мифы, традиции и архетипические курсы.","Учебные материалы о духовных традициях и символических практиках."],
       talisman: ["Талисманы","Исследуйте символы и личные смыслы.","Символический каталог Holistic Support, без обещания магического результата."],
       business: ["Бизнес-коучинг","Проясните рабочие цели и решения.","Личная консультация о задачах, ролях и выборе следующего шага."],
+      mytube: ["Видео MyTube","Короткие практики и видео по теме.","Смотрите опубликованные видео по вашему запросу."],
+      aiCoach: ["ИИ-коуч","Разговор с ИИ-помощником, не психотерапия.","Это ИИ для размышления, не специалист и не экстренная помощь."],
+      masters: ["Мастера","Выберите специалиста из опубликованного каталога.","Профили, подходы и доступные способы обращения."],
     },
   },
   en: {
@@ -87,6 +93,9 @@ const copy = {
       mysteries: ["Ancient mysteries","Explore myths, traditions and archetypes.","Study materials on spiritual traditions and symbolic practice."],
       talisman: ["Talismans","Explore personal meanings and symbols.","A symbolic catalogue, without promises of magical outcomes."],
       business: ["Business coaching","Clarify work goals and decisions.","A personal discussion about challenges, roles and next steps."],
+      mytube: ["MyTube videos","Short practices and topic videos.","Browse published topic videos without a consultation."],
+      aiCoach: ["AI coach","An AI reflection assistant, not psychotherapy.","This is an AI conversation, not a human specialist or emergency help."],
+      masters: ["Practitioners","Browse published practitioner profiles.","Compare published specialties and request details."],
     },
   },
   es: {
@@ -107,15 +116,29 @@ const copy = {
       mysteries: ["Misterios antiguos","Mitos, tradiciones y arquetipos.","Material educativo sobre tradiciones espirituales."],
       talisman: ["Talismanes","Símbolos y significados personales.","Un catálogo simbólico, sin promesas de resultados mágicos."],
       business: ["Coaching de negocios","Aclara objetivos y decisiones laborales.","Sesión sobre problemas prácticos, roles y próximos pasos."],
+      mytube: ["Vídeos MyTube","Prácticas cortas y vídeos por tema.","Explora vídeos publicados sobre tu consulta."],
+      aiCoach: ["Guía de IA","Asistente de IA para reflexionar, no psicoterapia.","No es un terapeuta humano ni un servicio de emergencia."],
+      masters: ["Profesionales","Explora perfiles publicados de especialistas.","Consulta sus áreas y condiciones antes de solicitar."],
     },
   },
 } as const;
 
-export function AssistTopRecommendations({ locale, focus }: { locale: PublicLocale; focus: Focus }) {
+const offerToEntry: Readonly<Record<string,Entry>> = {
+  tests:"tests",review:"review",opora:"opora",therapy:"coaching",
+  constellation:"constellations",business:"business",reiki:"reiki",
+  mandala:"mandala",talisman:"talisman",homeopathy:"homeopathy",
+  academy:"academy",mytube:"mytube",aiCoach:"aiCoach",masters:"masters",
+};
+export function AssistTopRecommendations({locale,focus,matchingIds,noMatchLabel}:{
+  locale:PublicLocale;focus:Focus;matchingIds?:readonly string[];noMatchLabel?:string;
+}) {
   const t = copy[locale];
   const [manuallySelected, setManuallySelected] = useState<Direction | null>(null);
   const active: Direction = manuallySelected ?? "forMe";
-  const ids = active === "forMe" && focus ? byFocus[focus] : shelves[active];
+  const fromMatcher=matchingIds?.flatMap(id=>offerToEntry[id]?[offerToEntry[id]]:[]);
+  const ids:readonly Entry[]=active==="forMe"&&fromMatcher!==undefined
+    ? [...new Set(fromMatcher)].slice(0,3)
+    : active==="forMe"&&focus?byFocus[focus]:shelves[active];
   return (
     <section className={styles.root} data-assist-best-three aria-labelledby="assist-best-three-title">
       <header className={styles.header}>
@@ -132,10 +155,11 @@ export function AssistTopRecommendations({ locale, focus }: { locale: PublicLoca
         })}
       </div>
       <div className={styles.list} data-assist-selected-direction={active}>
+        {ids.length===0?<p className={styles.empty} role="status">{noMatchLabel ?? t.start}</p>:null}
         {ids.map((id) => {
           const item = entries[id];
           const [name, short, extra] = t.cards[id];
-          return <article key={id} className={styles.card} data-assist-best-card={id}>
+          return <article key={id} className={styles.card} data-assist-best-card={id} data-assist-recommendation={id}>
             <div className={styles.thumbnail}>
               <Image src={item.image} alt="" fill unoptimized sizes="(max-width: 350px) 100px, (max-width: 760px) 145px, 180px" />
               <span className={styles.stamp} aria-hidden="true">✦</span>
