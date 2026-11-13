@@ -71,7 +71,7 @@ import {captionAnimationFrame,importSrtCaptionClips,exportSrtCaptionClips,CAPTIO
 import {audioTransientScores,recommendSmartAudioCuts,SMART_CUT_MAX_AUDIO_BYTES} from "@/lib/mandala/creative-editor-smart-cut.mjs";
 import {extractMyTubeWaveform,MYTUBE_WAVEFORM_MAX_FILE_BYTES,
   MYTUBE_WAVEFORM_MAX_AUDIO_SECONDS} from "@/lib/mandala/creative-editor-waveform.mjs";
-import {MYTUBE_MUSIC_BEDS,MYTUBE_BED_FADES,validateMyTubeMusicBed} from "@/lib/mandala/creative-editor-audio-lanes.mjs";
+import {MYTUBE_MUSIC_BEDS,MYTUBE_REVIEWED_MUSIC_BEDS,MYTUBE_BED_FADES,validateMyTubeMusicBed} from "@/lib/mandala/creative-editor-audio-lanes.mjs";
 import type {MyTubeMusicBed} from "@/lib/mandala/creative-editor-audio-lanes.mjs";
 import {paintMyTubeMotion,validateMyTubeMotion} from "@/lib/mandala/creative-editor-keyframes.mjs";
 import type {MyTubeMotion} from "@/lib/mandala/creative-editor-keyframes.mjs";
@@ -2680,7 +2680,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     return {approvedSceneIds:FREE_FILM_CATALOG.filter(scene=>scene.status==="approved")
       .map(scene=>scene.id),
       approvedPresetIds:FREE_FILM_PRESETS.map(preset=>preset.id),
-      approvedAudioIds:[...MYTUBE_MUSIC_BEDS]};
+      approvedAudioIds:[...MYTUBE_MUSIC_BEDS,...MYTUBE_REVIEWED_MUSIC_BEDS]};
   };
   const saveEditorDraft=()=>{
     if(recording||preparing||!usingFreeFilmCompilation||!cinematicPlan||!activeFreeFilmPreset)
@@ -3015,7 +3015,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // Three distinct suggestions; do not replace a consented voice.
   const voiceBedMode=attachedAudio?.kind==="file";
   const featuredMelodies=rankPersonalMusic({
-    tracks:voiceBedMode?mandalaAudioTracks.filter(track=>MYTUBE_MUSIC_BEDS.some(id=>id===track.id)):
+    tracks:voiceBedMode?curatedAudioTracks.filter(track=>MYTUBE_REVIEWED_MUSIC_BEDS.some(id=>id===track.id)):
       availableAudioTracks,
     ...musicContext,kind:"melody",mood:"all",pace:"all",
     voiceFriendly:voiceBedMode||musicContext.voiceFriendly,limit:3,
@@ -3699,6 +3699,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             attachedAudio.file,musicBed.id,soundVolume,musicBed.volumePercent,{
               seconds:duration,loop:attachedAudio.narration!==true&&attachedAudio.nonLoop!==true,
               startSeconds:effectiveAudioStartSeconds,fadeSeconds:musicBed.fadeSeconds,
+              approvedCuratedBedIds:MYTUBE_REVIEWED_MUSIC_BEDS,
               deferStart:true
             })
           :await startUploadedAudio(attachedAudio.file,soundVolume,{loop:attachedAudio.narration!==true&&attachedAudio.nonLoop!==true,startSeconds:effectiveAudioStartSeconds,deferStart:true})
@@ -4237,7 +4238,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     if(recording||preparing||micRecording)return;
     if(attachedAudio?.kind==="file"){
       if(!audioRights){setMusicWarning(ui.audioRightsHelp);return;}
-      if(!MYTUBE_MUSIC_BEDS.some(id=>id===choice)){
+      if(!MYTUBE_REVIEWED_MUSIC_BEDS.some(id=>id===choice)){
         setMusicWarning(locale==="ru"?"Для голоса выберите одну из предложенных фоновых мелодий.":
           locale==="es"?"Para voz, elige una melodía de fondo compatible.":
             "For voice, choose a compatible background melody.");
@@ -6435,7 +6436,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             }:null}
             musicBed={attachedAudio?.kind==="file"&&audioRights&&
               musicBed.id!=="none"&&!audioNeedsAttachment?{
-                label:MUSIC_BED_NAMES[musicBed.id][locale],
+                label:curatedAudioTracks.find(track=>track.id===musicBed.id)?.name[locale]||
+                  MUSIC_BED_NAMES[musicBed.id as keyof typeof MUSIC_BED_NAMES]?.[locale]||musicBed.id,
                 startSeconds:0,durationSeconds:duration
               }:null}
             playheadSeconds={previewPlaying?previewPlayhead:previewSeekSeconds}
@@ -8914,8 +8916,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   })}>
                   <option value="none">{locale==="ru"?"Без фона":locale==="es"?
                     "Sin fondo":"No music bed"}</option>
-                  {MYTUBE_MUSIC_BEDS.map(id=><option key={id} value={id}>
-                    {MUSIC_BED_NAMES[id][locale]}
+                  {MYTUBE_MUSIC_BEDS.some(id=>id===musicBed.id)&&<option value={musicBed.id}>
+                    {MUSIC_BED_NAMES[musicBed.id as keyof typeof MUSIC_BED_NAMES]?.[locale]||musicBed.id} · legacy
+                  </option>}
+                  {MYTUBE_REVIEWED_MUSIC_BEDS.map(id=><option key={id} value={id}>
+                    {curatedAudioTracks.find(track=>track.id===id)?.name[locale]||id}
                   </option>)}
                 </select>
               </label>
