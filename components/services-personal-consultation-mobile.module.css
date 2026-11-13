@@ -65,7 +65,7 @@
     cursor: pointer;
   }
   .action svg { flex: none; }
-  .order { width: 100%; margin-top: auto; min-width: 0; }
+  .order { grid-column: 1 / -1; width: 100%; margin-top: 1px; min-width: 0; }
   .order :global([data-contact-channel-chooser]) { min-width: 0; width: 100%; }
   .order :global([data-contact-order]) { width: 100%; min-height: 50px; margin: 0; padding: 9px 5px; gap: 4px; }
   .order :global([data-contact-order]) svg { width: 17px; height: 17px; }
@@ -82,3 +82,41 @@
   .order :global([data-contact-order]) { font-size: 15px; }
 }
 @media (prefers-reduced-motion: reduce) { .section * { scroll-behavior: auto!important; transition: none!important; } }
+/* Mobile Services design system: aligned panels, compact cards and real 44px actions. */
+@media(max-width:760px){
+.section{width:calc(100% - 24px);max-width:520px;margin:14px auto;padding:12px;border:1px solid #dfcbae;border-radius:22px;background:#fffcf7;box-shadow:0 5px 16px rgb(72 49 27 / 7%)}
+.heading{min-height:0;margin:0 2px 12px;padding:3px 51px 0 1px}
+.heading::after{right:1px;top:0;width:48px;height:48px}
+.heading h2{font-size:clamp(24px,6.5vw,28px);line-height:1.14}
+.heading p{margin-top:6px;font-size:13px;line-height:1.35}
+.cards{gap:8px}
+.card{grid-template-columns:minmax(78px,30%) minmax(0,1fr);gap:9px;padding:8px;border-color:#e6d8c7;border-radius:16px;background:#fffefa;box-shadow:none}
+.photo{min-height:122px;border-radius:12px}
+.content{gap:4px;padding:0}
+.freeTag{padding:3px 8px;font-size:11px}
+.content h3{font-size:clamp(16px,4.65vw,19px);line-height:1.13}
+.content p{gap:5px;margin:1px 0 4px;font-size:12.5px;line-height:1.3}
+.content p svg{width:16px;height:16px}
+.action,.order :global([data-contact-order]){min-height:44px;padding:7px 8px;border-radius:12px;font-size:13px;line-height:1.23}
+.order{margin-top:auto}
+.order :global([data-contact-order]){gap:4px}
+/* In messenger-only mode className styles the wrapper. Do not render
+   an additional green rectangle behind the actual summary button. */
+.order :global([data-messenger-only-contact]){display:block;width:100%;max-width:100%;min-height:0;margin:0;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;color:inherit}
+.order :global([data-messenger-only-contact] > details > summary){justify-content:center;min-height:44px;padding:7px 8px;border-radius:12px;background:linear-gradient(145deg,#197b73,#00574e);color:#fff;text-align:center;font-size:13px}
+.card:has(.order details[open]){grid-template-columns:minmax(0,1fr)}
+.card:has(.order details[open]) .photo{display:none}
+.order :global([data-messenger-only-contact] > details > div){min-width:0;max-width:100%;padding:9px;gap:7px;font-size:12px}
+.order :global([data-messenger-only-contact] [role="group"]){grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.order :global([data-messenger-only-contact] [role="group"] a){min-width:0;min-height:44px;padding:7px 4px;gap:4px;font-size:12px}
+.order :global([data-messenger-only-contact] [role="group"] a svg){width:15px}
+.note{margin:10px 3px 0;font-size:11px;line-height:1.4}
+}
+@media(max-width:350px){
+.section{width:calc(100% - 24px);padding:10px}
+.card{grid-template-columns:76px minmax(0,1fr);gap:7px;padding:7px}
+.photo{min-height:124px}
+.content h3{font-size:16px}
+.content p{font-size:12px}
+.action,.order :global([data-contact-order]){font-size:12px;padding:6px}
+}

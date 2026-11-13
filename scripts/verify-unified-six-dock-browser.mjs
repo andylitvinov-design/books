@@ -80,9 +80,16 @@ async function inspect(browserType,locale,width){
     const page=document.querySelector("[data-mytube-page]");
     return page && getComputedStyle(page).backgroundColor==="rgb(15, 15, 15)";
   },null,{timeout:20000});
-  const dockBackground=await dock.evaluate(el=>getComputedStyle(el).backgroundColor);
-  assert.match(dockBackground,/^rgba?\(15, 15, 15/,
-    id+" dark dock applies only to MyTube");
+  const dockPalette=await dock.evaluate(el=>{
+    const ai=el.querySelector('[data-unified-dock-item="ai"] svg');
+    const current=getComputedStyle(el);
+    return {background:current.backgroundImage,
+      aiBackground:ai?getComputedStyle(ai).backgroundImage:""};
+  });
+  assert.match(dockPalette.background,/radial-gradient/,
+    id+" approved mint waves on the shared ivory dock");
+  assert.match(dockPalette.aiBackground,/radial-gradient/,
+    id+" teal illuminated AI button visible above the dock");
   const moreFilters=page.locator("[data-mytube-filter-toggle]");
   const rail=page.locator("[data-mytube-category-rail]");
   const refined=page.locator("#mytube-refine-controls");
@@ -769,8 +776,14 @@ try{
    const reply=replies?.[replies.length-1];
    if(!thread||!reply)return false;
    const bounds=thread.getBoundingClientRect(),bubble=reply.getBoundingClientRect();
-   const end=Math.max(0,thread.scrollHeight-thread.clientHeight);
-   return Math.abs(thread.scrollTop-end)<=3&&bubble.bottom<=bounds.bottom+2;
+   const composer=document.querySelector('[data-hh-agent-preview] textarea');
+   const input=composer?.getBoundingClientRect();
+   // Focused-context scrolling aligns the *last reply*, not necessarily the
+   // absolute end of a thread with newer cards/actions. Check real visibility
+   // and unobstructed composer on the simulated 390 × 360 iPhone viewport.
+   return thread.clientHeight>0&&bubble.height>0&&
+     bubble.bottom>=bounds.top+24&&bubble.bottom<=bounds.bottom+2&&
+     !!input&&input.height>=36&&input.top>=bounds.bottom-3;
  },null,{timeout:15000});
  assert.equal(await fullAssistantReply.evaluate(node=>getComputedStyle(node).flexShrink),"0",
    "iPhone keyboard must not shrink or clip the assistant reply");

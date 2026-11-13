@@ -91,6 +91,7 @@ test("route-aware single dock, guest/signed-in consistency and private pages exc
   assert.equal(unifiedMobileDockActive("/"+locale+"/holistic-support/mandala"),"video");
   assert.equal(unifiedMobileDockActive("/"+locale+"/holistic-support/mandala","#video-director-chat"),"ai");
   assert.equal(unifiedMobileDockActive("/"+locale+"/holistic-support/mobile"),"practice");
+  // Public Work is the second Profile mode; only protected editor is Study.
   assert.equal(unifiedMobileDockActive("/"+locale+"/practice"),"profile");
   assert.equal(unifiedMobileDockActive("/"+locale+"/app/practice"),"practice");
   assert.equal(unifiedMobileDockActive("/"+locale+"/app/messages"),"ai");
@@ -134,7 +135,9 @@ test("one screenshot-1 style seven-button dock and protected old docks removed v
  assert.match(dock,/viewport\?\.addEventListener\("scroll", update/);
  assert.match(dock,/viewport\?\.removeEventListener\("scroll", update/);
  assert.match(dock,/hideForKeyboard/);
- assert.match(css,/min-height:52px/);
+ assert.match(css,/min-height:54px/);
+ assert.match(css,/min-height:94px/);
+ assert.match(css,/top:-38px;left:50%;transform:translateX\(-50%\)/);
  for(const former of ["data-support-mobile-bottom-nav","data-mandala-support-bottom-nav",
   ".hh-mobile-app-nav",".hh-practice-inner-dock","data-legacy-practice-bottom-nav",".mobile-bottom-navigation"])
   assert.ok(hide.includes(former),former);
