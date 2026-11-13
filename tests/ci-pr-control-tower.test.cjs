@@ -2145,3 +2145,16 @@ test('overhang rescue fails closed for uncertain, fresh or excessive wrappers/jo
   assert.notEqual(admission('repair',result),'ADMIT',reason);
  }
 });
+
+
+test('Watchdog passes only fully authenticated complete inventory to existing limited Dispatcher',()=>{
+ const fs=require('node:fs');
+ const workflow=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
+ const source=fs.readFileSync('scripts/ci-pr-ten-minute-watchdog.cjs','utf8');
+ assert.match(workflow,/\.canShareCompleteWatchdogInventory\(report\)/);
+ assert.match(workflow,/report\.prInventorySnapshot\.length===report\.open/);
+ assert.match(source,/canShareCompleteWatchdogInventory\(summary\)/);
+ assert.match(workflow,/inventorySnapshot:report\.prInventorySnapshot,watchdogEvidence:report/);
+ assert.match(workflow,/HH_SNAPSHOT_HANDOFF_SKIPPED/);
+ assert.doesNotMatch(workflow,/if\(!dryRun&&report\?\.inventoryComplete===true&&!report\?\.apiRateLimited&&/);
+});
