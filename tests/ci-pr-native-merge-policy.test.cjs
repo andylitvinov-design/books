@@ -160,3 +160,29 @@ test('isolated repair canaries are denied native auto-merge without blocking the
    title:'fix: ordinary verified source repair',head:{sha:HEAD,ref:'fix/public-card',repo:{full_name:OWNER+'/'+REPO}}}});
  assert.equal((await check(normal)).ok,true,'normal verified production PR stays eligible');
 });
+
+test('native ARM spends owner PAT only for protected merge, not read-only preflight', () => {
+  const source=fs.readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
+  const start=source.indexOf('      - name: Enable native auto-merge for this exact head');
+  const end=source.indexOf('  recover-interrupted-core:',start);
+  assert.ok(start>=0&&end>start,'existing native merge stage remains intact');
+  const arm=source.slice(start,end);
+  const dollar='$';
+  assert.ok(arm.includes('GH_TOKEN: '+dollar+'{{ github.token }}'),
+    'preflight must use the per-repository read token');
+  assert.ok(arm.includes('HH_AUTOMERGE_TOKEN: '+dollar+'{{ secrets.HH_AUTOMERGE_TOKEN }}'),
+    'the existing owner token stays available for one protected write');
+  assert.ok(!arm.includes('GH_TOKEN: '+dollar+'{{ secrets.HH_AUTOMERGE_TOKEN || github.token }}'),
+    'the scarce owner PAT must not fund ordinary gh list/view/api reads');
+  assert.ok(arm.includes('gh pr list --repo "$GH_REPO"'));
+  assert.ok(arm.includes('gh pr view "$PR_NUMBER"'));
+  assert.ok(arm.includes('gh api "repos/$GH_REPO/git/ref/heads/codex/public-book-library"'));
+  assert.match(arm,/if GH_TOKEN="\$\{HH_AUTOMERGE_TOKEN:-\$GH_TOKEN\}" gh pr merge "\$PR_NUMBER" --auto "\$merge_option" --match-head-commit "\$PR_HEAD"/,
+    'only the native protected --auto mutation may use the owner token');
+  assert.ok(!arm.includes('gh pr merge "$PR_NUMBER" --squash') &&
+    !arm.includes('gh pr merge "$PR_NUMBER" --merge'),
+    'stacked-safe method selector must remain authoritative');
+  assert.ok(arm.includes('PR_REQUIRES_CURRENT_BASE')&&
+    arm.includes('HH_EXPECTED_MERGE_METHOD')&&arm.includes('CI_AUTO_MERGE_SAFETY:')===false,
+    'base freshness and method verification are preserved');
+});
