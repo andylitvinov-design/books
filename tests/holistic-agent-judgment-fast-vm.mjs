@@ -35,9 +35,9 @@ async function execute(body,{valid=false,useRealJudgment=false,nativeEnabled=fal
  const imports=[...source.matchAll(/import\s*\{([^}]+)\}\s*from\s*["']([^"']+)["'];/g)];
  const byPath=new Map(imports.map(x=>[x[2],x[1].split(',').map(n=>n.trim()).filter(Boolean)]));
  for(const m of source.matchAll(/import\s+\w+\s+from\s*["']([^"']+)["'];/g))byPath.set(m[1],['default']);
- const module=new vm.SourceTextModule(source,{context});
- await module.link(async spec=>new vm.SyntheticModule(byPath.get(spec),function(){for(const name of byPath.get(spec))this.setExport(name,deps[name]??unexpected)},{context}));
- await module.evaluate();return {result:await module.namespace.POST({}),calls};
+ const routeModule=new vm.SourceTextModule(source,{context});
+ await routeModule.link(async spec=>new vm.SyntheticModule(byPath.get(spec),function(){for(const name of byPath.get(spec))this.setExport(name,deps[name]??unexpected)},{context}));
+ await routeModule.evaluate();return {result:await routeModule.namespace.POST({}),calls};
 }
 const input={locale:'en',message:'Hello',history:[],mode:'rules',ownedInferenceConsent:false,judgmentContext:'synthetic.signature',judgmentChoice:'a'};
 test('a fast greeting cannot bypass verification of a signed judgment continuation',async()=>{
