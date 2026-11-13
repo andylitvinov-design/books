@@ -101,7 +101,21 @@ try{
  assert.equal(await format.inputValue(),'motion');
  await page.locator('[data-video-stories-create]').click();
  const sceneList=page.locator('[data-video-stories-scene-list]');
- await sceneList.waitFor({state:'visible',timeout:20000});
+ try{
+   await sceneList.waitFor({state:'visible',timeout:20000});
+ }catch(error){
+   // Fail closed with structural diagnostics only; never expose the visitor's wish.
+   const state=await page.evaluate(()=>({
+     activePanel:document.querySelector('[data-video-basic-editor]')?.getAttribute('data-montage-panel')||null,
+     advancedOpen:Boolean(document.querySelector('[data-video-stories-advanced]')?.open),
+     chosenFormat:document.querySelector('[data-video-stories-format]')?.value||null,
+     sceneListPresent:Boolean(document.querySelector('[data-video-stories-scene-list]')),
+     emptyStatePresent:Boolean(document.querySelector('[data-video-stories-empty]')),
+     visibleOffers:document.querySelectorAll('[data-video-montage-pro-choice]').length,
+   })).catch(()=>({status:'DOM_DIAGNOSTIC_UNAVAILABLE'}));
+   console.error('STORIES_EDITOR_NO_SCENES_STATE '+JSON.stringify(state));
+   throw error;
+ }
  assert.equal(await sceneList.locator('[data-video-stories-scene]').count(),5);
  const ids=await sceneList.locator('[data-video-stories-source]').evaluateAll(nodes=>
    nodes.map(node=>node.value));
@@ -110,16 +124,11 @@ try{
  for(const id of ids)assert.ok(approved.has(id),'STORIES_UNREVIEWED_OR_GRAPHICAL_SOURCE:'+id);
  result.shotCount=ids.length;result.distinctSources=new Set(ids).size;
  result.verifiedRights=true;
- await page.locator('[data-video-montage-tab="audio"]').click();
- await page.locator('[data-video-montage-audio]').waitFor({state:'visible',timeout:20000});
- const create=page.locator('[data-video-quick-generate]');
- await create.waitFor({state:'visible',timeout:20000});
- await create.click({timeout:30000});
- const attach=page.locator('[data-video-audio-compact-attach]');
- if(await attach.isVisible()&&await attach.isEnabled()){
-   await attach.click();
-   await create.click({timeout:30000});
- }
+ // The user-approved fifth Montage has exactly three choices. Generate FREE
+ // from the actual in-card CTA, not a hidden legacy Audio / Create shortcut.
+ const free=page.locator('[data-video-montage-pro-choice="free"]');
+ await free.waitFor({state:'visible',timeout:20000});
+ await free.click({timeout:30000});
  const captured=await readRealGuestVideo(page,{timeout:150000});
  assert.equal(captured.extension,'mp4','STORIES_FINAL_H264_MP4_REQUIRED');
  assert.ok(captured.bytes.length>100000,'STORIES_MP4_EMPTY');

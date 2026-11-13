@@ -14,7 +14,7 @@ test("Montage opens on Style, preserves real recorder and five functional tabs w
   assert.match(studio,/if\(id==="editor"\)setMontagePanel\("effects"\)/);
   assert.match(studio,/aria-pressed=\{montagePanel===item.id\}/);
   assert.doesNotMatch(tabMarkup,/id:"settings"/);
-  assert.match(tabMarkup,/promo:\{ru:"Монтаж",en:"Montage",es:"Montaje"\}/);
+  assert.match(tabMarkup,/promo:\{ru:"Монтаж PRO",en:"Montage PRO",es:"Montaje PRO"\}/);
   assert.match(studio,/data-video-montage-preferences/);
   for(const field of ["format","duration","transitions","speed","quality"])
     assert.ok(studio.includes('data-video-montage-preference="'+field+'"'),field);
@@ -29,7 +29,7 @@ test("Montage opens on Style, preserves real recorder and five functional tabs w
   assert.match(studio,/onClick=\{createQuickVideo\}/);
   assert.match(studio,/Создать видео/);
   assert.equal((studio.match(/data-video-montage-export/g)||[]).length,0,"no duplicate export CTA");
-  assert.equal((studio.match(/<button[^>]*data-video-quick-generate/g)||[]).length,1,"one real Generate button; optional navigation may reference its selector");
+  assert.equal((studio.match(/data-video-quick-generate/g)||[]).length,1,"one real generate CTA");
 });
 test("The editable timeline, script, audio and draft tools are preserved, but not on initial screen",()=>{
   assert.match(studio,/data-video-montage-text hidden=\{montagePanel!=="text"\}/);
@@ -136,20 +136,20 @@ test("iPhone Style primes a newly mounted MP4 without fetching on first render",
   assert.doesNotMatch(browser,/\[data-video-director-style-controls\] \[data-mytube-style-filter\]/);
 });
 
-test("Montage PRO has precisely the owner-approved three offers and two navigation actions",()=>{
+test("Montage PRO shows three compact format choices and safe onward routes",()=>{
  const offer=readFileSync(new URL("../components/mandala-montage-pro-offer.tsx",import.meta.url),"utf8");
  const offerCss=readFileSync(new URL("../components/mandala-montage-pro-offer.module.css",import.meta.url),"utf8");
  assert.ok(studio.includes('montagePanel==="promo" ? <MandalaMontageProOffer'));
- assert.ok(studio.includes('onChooseQuality={()=>{'),"Story must open fifth Montage for quality");
- assert.ok(studio.includes('setActiveWorkspace("pro");setNotice("")'));
  assert.ok(studio.includes('hidden={montagePanel==="promo"}'));
  assert.ok(studio.includes('data-video-story-open-settings'));
  assert.ok(offer.includes('data-video-montage-pro-offer'));
- assert.deepEqual([...offer.matchAll(/id:"(greeting|cinematic|portrait)"/g)].map(match=>match[1]),
-   ["greeting","cinematic","portrait","greeting","cinematic","portrait","greeting","cinematic","portrait"]);
- assert.equal((offer.match(/data-video-montage-pro-free/g)||[]).length,1);
- assert.equal((offer.match(/data-video-montage-pro-explore/g)||[]).length,1);
- assert.doesNotMatch(offer,/Pro montage & effects|const tiers|data-video-pro-tier-panel/i);
+ assert.deepEqual([...offer.matchAll(/id:"(free|character|cinematic)"/g)].map(match=>match[1]),
+  ["free","character","cinematic","free","character","cinematic","free","character","cinematic"]);
+ assert.match(offer,/data-video-montage-pro-choice=\{item.id\}/);
+ for(const key of ["onChooseFree","onChooseCharacter","onChooseCinematic"])
+  assert.ok(offer.includes(key)&&studio.includes(key),key);
+ assert.doesNotMatch(offer,/freeCard|proCard|data-video-montage-pro-free|data-video-montage-pro-explore|priceNote/);
  assert.match(offerCss,/@media\(max-width:355px\)/);
  assert.match(css,/\[data-video-order-bar\]\[hidden\]\{display:none!important\}/);
+ assert.match(css,/data-montage-panel="promo"\] \.previewStage \.heroRail\{display:none!important\}/);
 });

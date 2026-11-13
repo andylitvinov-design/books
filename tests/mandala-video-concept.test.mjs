@@ -68,7 +68,7 @@ test("Ideas Concept owns the single editor and Montage retains its real timeline
   const navigation=source.slice(navStart,navEnd);
   assert.deepEqual([...navigation.matchAll(/id:"(effects|audio|text|promo|concept)",Icon:/g)]
     .map(match=>match[1]),["effects","audio","text","concept","promo"],
-    "Style → Audio → Text → Story → Montage without missing or repeated tabs");
+    "Style → Audio → Text → Story → Montage PRO without missing or repeated tabs");
   assert.match(source,/data-video-montage-next=\{montagePanel==="effects"\?"audio"/);
   assert.match(source,/onClick=\{continueMontageOrGenerate\}/);
   assert.match(source,/data-video-story-open-settings/);

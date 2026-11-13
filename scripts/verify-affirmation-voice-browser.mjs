@@ -507,42 +507,43 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(montageStyleTab).toBeVisible();
       await montageStyleTab.click();
       await expect(montageStyleTab).toHaveAttribute("aria-pressed","true",{timeout:15000});
-      // Owner-approved Montage PRO is the fifth tab with three clear
-      // offers and TWO navigation actions, not a checkout or a second renderer.
+      // Three in-card choices and no duplicate two-button offer below.
       const montageProTab=page.locator('[data-video-montage-tab="promo"]');
+      const montageStoryTab=page.locator('[data-video-montage-tab="concept"]');
+      const order=await page.locator('[data-video-montage-tools] [data-video-montage-tab]')
+        .evaluateAll(items=>items.map(item=>item.getAttribute("data-video-montage-tab")));
+      assert.deepEqual(order,["effects","audio","text","concept","promo"]);
+      await montageStoryTab.click();
+      await expect(montageStoryTab).toHaveAttribute("aria-pressed","true");
+      await expect(page.locator('[data-video-auto-storyboard-list]')).toBeVisible({timeout:20000});
+      await expect(page.locator('[data-video-story-select-quality]')).toBeVisible();
       await montageProTab.click();
       const montageProOffer=page.locator('[data-video-montage-pro-offer]');
       await expect(montageProOffer).toBeVisible();
       await expect(montageProOffer.locator('[data-video-pro-feature]')).toHaveCount(3);
-      await expect(montageProOffer.locator('[data-video-montage-pro-free]')).toBeVisible();
-      await expect(montageProOffer.locator('[data-video-montage-pro-explore]')).toBeVisible();
-      // Verify iPhone widths without replacing the live editor with a mock.
+      await expect(montageProOffer.locator('[data-video-montage-pro-choice]')).toHaveCount(3);
       for(const width of [320,390,430]){
         await page.setViewportSize({width,height:844});
         const geometry=await page.evaluate(()=>({
           viewport:document.documentElement.clientWidth,
-          document:document.documentElement.scrollWidth
+          document:document.documentElement.scrollWidth,
+          lastCardBottom:document.querySelector('[data-video-pro-feature="cinematic"]')?.getBoundingClientRect().bottom
         }));
         assert.ok(geometry.document<=geometry.viewport+2,
           'MONTAGE_PRO_NO_HORIZONTAL_OVERFLOW_'+width+' '+JSON.stringify(geometry));
+        assert.ok(typeof geometry.lastCardBottom==="number"&&geometry.lastCardBottom<844-65,
+          'MONTAGE_PRO_LAST_CARD_VISIBLE_'+width+' '+JSON.stringify(geometry));
       }
       await page.setViewportSize({width:390,height:844});
-      // Do not start recording until the user has chosen verified source, music
-      // and voice. The free CTA now calls the real gated renderer directly;
-      // this is covered by the renderer contract and later encoded-media flow.
-      const freeAction=montageProOffer.locator('[data-video-montage-pro-free]');
-      await expect(freeAction).toContainText(
-        locale==="ru"?"Создать видео бесплатно":locale==="es"?"Crear vídeo gratis":"Create free video");
-      await expect(freeAction).toBeEnabled();
-      const storyStep=page.locator('[data-video-montage-tab="concept"]');
-      await storyStep.click();
-      await expect(page.locator('[data-video-auto-storyboard-list]')).toBeVisible({timeout:20000});
-      await expect(page.locator('[data-video-story-select-quality]')).toBeVisible();
-      await montageProTab.click();
-      await montageProOffer.locator('[data-video-montage-pro-explore]').click();
+      // Free is verified by a real encoded export later in this same test.
+      // Don't start a second chargeable render just to test navigation here.
+      await expect(montageProOffer.locator('[data-video-montage-pro-choice="free"]')).toBeEnabled();
+      await montageProOffer.locator('[data-video-montage-pro-choice="character"]').click();
+      await expect(page.locator('[data-video-quick-control="effects"]')).toHaveAttribute('aria-pressed','true');
+      await editorTab.click();await montageProTab.click();
+      await montageProOffer.locator('[data-video-montage-pro-choice="cinematic"]').click();
       await expect(page.locator('[data-video-quick-control="pro"]')).toHaveAttribute('aria-pressed','true');
-      await editorTab.click();
-      await montageStyleTab.click();
+      await editorTab.click();await montageStyleTab.click();
       await expect(montageStyleTab).toHaveAttribute('aria-pressed','true');
       phase(engine,"montage-pro-offer-routes-passed");
       // Reproduce the owner's iPhone case before recording real voice.
@@ -1178,7 +1179,12 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         }));
         console.log("VOICE_E2E_MEDIA_CAPABILITIES "+engine+" "+JSON.stringify(mediaCapabilities));
         phase(engine,"start-media-recorder");
-        await generate.click();
+        // Use the actual Free format card as the trusted local render click.
+        // Ready is automatic ONLY after the real decoded MP4/credit gate passes.
+        await montageProTab.click();
+        await expect(montageProOffer.locator('[data-video-montage-pro-choice="free"]')).toBeEnabled();
+        await montageProOffer.locator('[data-video-montage-pro-choice="free"]').click();
+        phase(engine,"montage-free-render-requested");
         // The idle source remains preload=none until the user's actual Create
         // gesture; Safari must then start a physical decode, never a CSS-only
         // preview or an unverified download.
@@ -1520,8 +1526,12 @@ async function openMontageSettingsViaQuality(page){
   const montage=page.locator('[data-video-montage-tab="promo"]');
   await montage.click();
   const advanced=page.locator('[data-video-stories-advanced]');
-  await advanced.locator(':scope > summary').click();
+  await advanced.waitFor({state:"visible",timeout:20000});
+  if(!await advanced.evaluate(node=>node.open))
+    await advanced.locator(':scope > summary').click();
   const settings=advanced.locator('[data-video-stories-settings]');
   await settings.waitFor({state:"visible",timeout:20000});
   await settings.click();
+  await expect(page.locator('[data-video-basic-editor]'))
+    .toHaveAttribute("data-montage-panel","settings");
 }

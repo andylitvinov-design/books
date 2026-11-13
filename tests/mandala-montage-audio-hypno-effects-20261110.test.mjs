@@ -6,7 +6,7 @@ const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",
 const hypno=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.tsx",import.meta.url),"utf8");
 const css=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.module.css",import.meta.url),"utf8");
 
-test("Montage puts Audio after Style, then Text, Story and Montage",()=>{
+test("Montage puts Story before the final Montage PRO choice",()=>{
   const start=studio.indexOf("<nav className={videoStyles.montageQuickTools}");
   const nav=studio.slice(start,studio.indexOf("</nav>",start));
   assert.deepEqual([...nav.matchAll(/\{id:"(\w+)",Icon:/g)].map(m=>m[1]),

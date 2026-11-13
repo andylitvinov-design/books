@@ -98,7 +98,7 @@ test('real five-scene WebKit acceptance uses original UI, local-only requests, d
  const script=readFileSync(new URL('../scripts/benchmarking/verify-five-scene-stories-browser.mjs',import.meta.url),'utf8');
  for(const marker of ['data-video-story-select-quality','data-video-stories-advanced',
   'data-video-stories-format','data-video-stories-create','data-video-stories-scene-list',
-  'data-video-quick-generate','readRealGuestVideo','ffprobe','STORIES_H264_REQUIRED',
+  'data-video-montage-pro-choice="free"','readRealGuestVideo','ffprobe','STORIES_H264_REQUIRED',
   'STORIES_AAC_REQUIRED','STORIES_AUDIO_SILENT','STORIES_SCENE_FRAME_MISMATCH_',
   'STORIES_DUPLICATE_MEDIA','STORIES_BLACK_SCENE_'])
    assert.ok(script.includes(marker),marker);

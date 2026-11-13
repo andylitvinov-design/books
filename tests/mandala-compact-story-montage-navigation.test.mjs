@@ -18,7 +18,7 @@ test("Style, Audio, Text, Story, Montage is the only five-step visible editor or
  const positions=tokens.map(token=>nav.indexOf(token));
  assert.ok(positions.every(n=>n>=0),"all five tabs remain");
  assert.deepEqual(positions,[...positions].sort((a,b)=>a-b));
- assert.match(nav,/promo:\{ru:"Монтаж",en:"Montage",es:"Montaje"\}/);
+ assert.match(nav,/promo:\{ru:"Монтаж PRO",en:"Montage PRO",es:"Montaje PRO"\}/);
  assert.match(studio,/montagePanel==="text"\|\|montagePanel==="settings"\)\{\s*setMontagePanel\("concept"\)/);
  assert.match(studio,/montagePanel==="concept"\)\{\s*setMontagePanel\("promo"\)/);
 });
@@ -57,9 +57,14 @@ test("advanced five-scene source/photo editor preserved in fifth Montage, closed
  assert.match(studio,/setNotice\(sourceReady\?""/,
    "unapplied story must show a real warning without fabricating applied footage");
  assert.match(studio,/setMontagePanel\("promo"\)/);
+ assert.match(studio,/setMontagePanel\("promo"\);\s*setNotice\(locale==="ru"/,
+   "successfully compiled five licensed scenes remain in fifth Montage advanced editor");
  assert.match(styles,/data-montage-panel="concept"\] \[data-video-live-stage\]/);
  assert.match(styles,/height:66px;min-height:66px/);
- assert.match(offer,/goStory:"Create free video"/);
+ assert.match(offer,/data-video-montage-pro-choice=\{item.id\}/);
+ assert.match(offer,/onChooseFree/);
+ assert.match(offer,/onChooseCharacter/);
+ assert.match(offer,/onChooseCinematic/);
 });
 
 test("navigation is only a selection; export, checks and payment stay behind the existing Create flow",()=>{
@@ -70,8 +75,8 @@ test("navigation is only a selection; export, checks and payment stay behind the
  assert.doesNotMatch(story,/createQuickVideo|startFromHero|stripe|chargeWallet/);
  assert.match(studio,/data-video-quick-generate/);
  assert.match(studio,/onClick=\{createQuickVideo\}/);
- assert.match(studio,/onGoStory=\{createQuickVideo\}/,
-   "the fifth Montage free action must invoke the real renderer in the same user gesture");
+ assert.match(studio,/onChooseFree=\{\(\)=>\{[\s\S]*?createQuickVideo\(\)/,
+   "the fifth Montage free choice must invoke the real renderer within the same trusted gesture");
  assert.doesNotMatch(studio,/document\.querySelector\('\[data-video-quick-generate\]'\)/,
    "do not scroll visitors to the hidden Create button in Montage");
  assert.match(studio,/if\(narrationInvalid\)\{/);

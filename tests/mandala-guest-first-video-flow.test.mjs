@@ -18,32 +18,37 @@ test('first guest video does not need an account-bound XP hold, but signed-in vi
   assert.doesNotMatch(studio,/Sign in to create videos\./)
 })
 
-test('Montage advances Style, Audio, Text, Story and Montage then Hypno without charging',()=>{
+test('Montage follows Story then three format choice routes without an automatic debit',()=>{
  const handler=studio.slice(studio.indexOf('const continueMontageOrGenerate='),
-   studio.indexOf('// First mobile step is only',studio.indexOf('const continueMontageOrGenerate=')));
+  studio.indexOf('// First mobile step is only',studio.indexOf('const continueMontageOrGenerate=')));
  assert.ok(handler.includes('if(montagePanel==="effects"){'));
- assert.ok(handler.includes('setMontagePanel("text")'));
- assert.ok(handler.includes('setBasicPanelTab("music")'));
- assert.ok(handler.includes('setActiveWorkspace("effects")'));
  assert.ok(handler.includes('setMontagePanel("audio")'));
-  assert.ok(handler.includes('if(montagePanel==="audio"){'));
-  assert.ok(handler.includes('setMontagePanel("text")'),"Audio advances to the Text/affirmations editor");
-  assert.ok(handler.includes('setHypnoEntryGroup("effects")'),"optional Hypno preserved");
- assert.ok(!handler.includes('startFromHero()'));
- assert.ok(!handler.includes('createQuickVideo()'),"Add Effects must never encode or charge credits");
- const action=studio.indexOf('data-video-stage-actions="montage"');
- const nextStart=studio.indexOf('data-video-montage-next={montagePanel===',action);
- const directStart=studio.indexOf('data-video-quick-generate',action);
- assert.ok(action>0&&nextStart>action&&directStart>nextStart,
-   "the original Create button still follows the navigation control");
- const direct=studio.slice(directStart,studio.indexOf('</button>',directStart));
+ assert.ok(handler.includes('setBasicPanelTab("music")'));
+ assert.ok(handler.includes('setMontagePanel("text")'));
+ assert.ok(handler.includes('setMontagePanel("concept")'),"Text → Story");
+ assert.ok(handler.includes('setMontagePanel("promo")'),"Story → Montage PRO");
+ assert.doesNotMatch(handler,/setActiveWorkspace\("(?:effects|pro|ready)"\)/,"Next never auto-renders or skips a choice");
+ assert.doesNotMatch(handler,/startFromHero\(|createQuickVideo\(/);
+ const direct=studio.slice(studio.indexOf('data-video-quick-generate'),
+  studio.indexOf('</button>',studio.indexOf('data-video-quick-generate')));
+ const nextStart=studio.indexOf('data-video-montage-next={montagePanel==="effects"?"audio":montagePanel==="audio"?"text":');
  const next=studio.slice(nextStart,studio.indexOf('</button>',nextStart));
- assert.ok(direct.includes('onClick={createQuickVideo}'));
- assert.ok(next.includes('onClick={continueMontageOrGenerate}'));
- assert.ok(next.includes('montagePanel==="audio"?"text"'));
+ assert.ok(nextStart>0&&next.includes('onClick={continueMontageOrGenerate}'));
  assert.ok(next.includes('montagePanel==="text"||montagePanel==="settings"?"concept"'));
  assert.ok(next.includes('montagePanel==="concept"?"promo"'));
- assert.ok(studio.includes('if(!freeVideoSelected){'),"paid formats stay explicitly gated");
+ assert.ok(direct.includes('onClick={createQuickVideo}'),"original renderer retained");
+ const routeStart=studio.indexOf('montagePanel==="promo" ? <MandalaMontageProOffer');
+ const routes=studio.slice(routeStart,studio.indexOf('/> : null}',routeStart));
+ const free=routes.slice(routes.indexOf("onChooseFree={()=>"),routes.indexOf("onChooseCharacter={()=>"));
+ assert.ok(free.includes("createQuickVideo();"),"Free invokes the original guarded encoder");
+ assert.ok(!free.includes('setActiveWorkspace("ready")'),"Free cannot claim a Ready MP4 before validation");
+ assert.ok(studio.includes("Only a native, decodable exported video opens Ready automatically"));
+ assert.ok(studio.includes('playbackStatus!=="ready"||!creditConfirmed'));
+ for(const [choice,target] of [["Character","effects"],["Cinematic","pro"]]){
+  assert.ok(routes.includes('onChoose'+choice+'={()'),choice+" handler");
+  assert.ok(routes.includes('setActiveWorkspace("'+target+'")'),target+" real workspace");
+ }
+ assert.ok(studio.includes('if(!freeVideoSelected){'),"paid formats remain guarded");
  assert.ok(studio.includes('<MandalaVideoConcept locale={locale}'));
  assert.ok(studio.includes('onApprove={approved=>'));
  assert.ok(studio.includes('data-video-concept-text-tools'));

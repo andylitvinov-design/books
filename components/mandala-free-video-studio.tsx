@@ -5035,12 +5035,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     };
     if(applyAutoFilm(preset.id,20,edit,"portrait",true)){
       if(storyFormat==="motion"){setSpeed("dynamic");setMontageTransition("soft");}
-      setMontagePanel("concept");
+      // Keep the verified result visible in fifth Montage, where the five
+      // licensed scene selectors live inside the already-open Advanced details.
+      // Returning to fourth Story unmounts those controls and hides a valid result.
+      setMontagePanel("promo");
       setNotice(locale==="ru"
-        ?"Пять проверенных сцен собраны в вертикальную историю. Просмотрите кадры и нажмите «Создать видео» для локального MP4."
+        ?"Пять проверенных сцен собраны. Просмотрите кадры ниже и выберите бесплатное создание MP4."
         :locale==="es"
           ?(storyFormat==="motion"?"Cinco escenas reales filmadas están listas con montaje dinámico. Revisa el guion y crea el MP4 local.":"Cinco escenas de vídeo verificadas están listas. Revisa el guion y crea el MP4 local.")
-          :"Five verified scenes are ready. Review the storyboard and create the local MP4.");
+          :"Five verified scenes are ready in Montage. Review them below and choose free MP4 creation.");
     }
   };
   const replaceStoryboardSource=(index:number,sceneId:string)=>{
@@ -5539,7 +5542,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   };
 
   const continueMontageOrGenerate=()=>{
-    // No render or charge on navigation: Style → Audio → Text → Story → Montage.
+    // Style → Audio → Text → Story → Montage PRO; format choices navigate,
+    // but never charge or render without the destination workspace's checks.
     if(montagePanel==="effects"){
       setMontagePanel("audio");setBasicPanelTab("music");
     }else if(montagePanel==="audio"){
@@ -5549,8 +5553,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     }else if(montagePanel==="concept"){
       setMontagePanel("promo");
     }else{
-      // After Montage, only an explicit Next handoff opens optional Hypno effects.
-      setHypnoEntryGroup("effects");setActiveWorkspace("effects");
+      return;
     }
     setNotice("");setPreviewPlaying(false);
     window.requestAnimationFrame(()=>
@@ -6950,7 +6953,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               :activeWorkspace==="pro"
               ?(locale==="ru"?"Выберите улучшение или создайте видео бесплатно.":locale==="es"?"Elige una mejora o crea un vídeo gratis.":"Choose an upgrade or create a free video.")
               :activeWorkspace==="editor"&&montagePanel==="promo"
-              ?(locale==="ru"?"Персонаж для приветствия, качественные AI-сцены и ваш образ в видео.":locale==="es"?"Un presentador, escenas de IA y tu propia imagen en el vídeo.":"A greeting character, premium AI scenes and your own image.")
+              ?(locale==="ru"?"Бесплатное видео, AI-персонаж или кинематографический ролик.":locale==="es"?"Vídeo gratis, personaje IA o cine premium.":"Free video, AI character or premium cinema.")
               :(locale==="ru"?"Персональные видео, медитации и практики под ваш запрос.":
                 locale==="es"?"Vídeos, meditaciones y prácticas para tu objetivo.":
                 "Personal videos, meditations and practices for your goals.")}</p>
@@ -8271,7 +8274,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 }}>
                 <item.Icon size={19} aria-hidden="true"/>
                 <span>{({
-                  promo:{ru:"Монтаж",en:"Montage",es:"Montaje"},
+                  promo:{ru:"Монтаж PRO",en:"Montage PRO",es:"Montaje PRO"},
                   effects:{ru:"Стиль",en:"Style",es:"Estilo"},
                   text:{ru:"Текст",en:"Text",es:"Texto"},
                   audio:{ru:"Аудио",en:"Audio",es:"Audio"},
@@ -8282,13 +8285,31 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <div data-video-director-style-controls hidden={montagePanel!=="effects"} />
           <div id="video-montage-active-panel" className={videoStyles.montageActivePanel}>
           {montagePanel==="promo" ? <MandalaMontageProOffer
-            locale={locale} disabled={!studioHydrated||recording||preparing||narrationInvalid}
-            // A trusted user click invokes the original local renderer, not a
-            // hidden footer or simulated Ready page. Credit and consent gates
-            // remain inside createQuickVideo.
-            onGoStory={createQuickVideo}
-            onExplorePro={()=>{
-              setActiveWorkspace("pro");setNotice("");setIntroPlaying(false);
+            locale={locale} disabled={!studioHydrated||recording||preparing}
+            onChooseFree={()=>{
+              // Free starts the one real, credit/consent/rights-gated local renderer.
+              // Never show Ready before a decoded, verified MP4 exists.
+              if(!freeVideoSelected){
+                setPracticeType("video");setPracticeLevels(value=>({...value,video:"basic"}));
+                setStoryFormat("visual");
+                setNotice(locale==="ru"?"Бесплатное базовое видео выбрано. Нажмите «Создать» ещё раз.":
+                  locale==="es"?"Vídeo básico gratis seleccionado. Pulsa «Generar» otra vez.":
+                  "Free basic video selected. Tap Generate again to start.");
+                return;
+              }
+              setNotice("");setIntroPlaying(false);setPreviewPlaying(false);setStudioMode("pump");
+              createQuickVideo();
+            }}
+            onChooseCharacter={()=>{
+              setStoryFormat("talking_character");setProCatalogKind("character");
+              setHypnoEntryGroup("visual");setActiveWorkspace("effects");setNotice("");
+              setIntroPlaying(false);setPreviewPlaying(false);setStudioMode("pump");
+              window.requestAnimationFrame(()=>
+                document.getElementById("free-personal-video")?.scrollIntoView({behavior:"auto",block:"start"}));
+            }}
+            onChooseCinematic={()=>{
+              setStoryFormat("ai_cinematic");setActiveWorkspace("pro");setNotice("");
+              setIntroPlaying(false);setPreviewPlaying(false);setStudioMode("pump");
               window.requestAnimationFrame(()=>
                 document.getElementById("free-personal-video")?.scrollIntoView({behavior:"auto",block:"start"}));
             }}
@@ -9220,7 +9241,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </div>
           <div className={videoStyles.stageActionPair} data-video-stage-actions="montage">
             <button type="button" className={videoStyles.stageAddButton}
-              data-video-montage-next={montagePanel==="effects"?"audio":montagePanel==="audio"?"text":montagePanel==="text"||montagePanel==="settings"?"concept":montagePanel==="concept"?"promo":"hypno"}
+              data-video-montage-next={montagePanel==="effects"?"audio":montagePanel==="audio"?"text":montagePanel==="text"||montagePanel==="settings"?"concept":montagePanel==="concept"?"promo":"choose"}
               disabled={!studioHydrated||recording||preparing}
               onClick={continueMontageOrGenerate}>
               <Sparkles size={19} aria-hidden="true"/>
@@ -9231,8 +9252,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 montagePanel==="text"||montagePanel==="settings"?
                 (locale==="ru"?"Сюжет":locale==="es"?"Guion":"Story"):
                 montagePanel==="concept"?
-                (locale==="ru"?"Выбрать качество генерации":locale==="es"?"Elegir calidad":"Select generation quality"):
-                (locale==="ru"?"Гипноэффекты":locale==="es"?"Efectos hipno":"Hypno effects")}
+                (locale==="ru"?"Выбрать видео":locale==="es"?"Elegir vídeo":"Choose video"):
+                (locale==="ru"?"Выбрать формат":locale==="es"?"Elegir formato":"Choose format")}
               <ArrowRight size={18} aria-hidden="true"/>
             </button>
             <button type="button" className={videoStyles.quickGenerate} data-video-quick-generate
