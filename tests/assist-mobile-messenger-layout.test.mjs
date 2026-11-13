@@ -20,7 +20,7 @@ test("all clarification steps remain within one locally scrolling messenger",()=
   assert.match(shell,/data-assist-question=\{question\}/);
   assert.match(shell,/chooseAnswer\(value,label\)/);
   assert.match(shell,/setTurns\(current=>/);
-  assert.doesNotMatch(shell,/scrollIntoView|router\.push|window\.location/);
+  assert.doesNotMatch(shell,/router\.push|window\.location/);
   assert.doesNotMatch(shell,/className=\{styles\.results\}|<section id="assist-results"/);
   assert.match(shellCss,/\.messages\{display:flex;flex-direction:column;[^}]*overflow-y:auto/);
 });
@@ -40,4 +40,20 @@ test("guest privacy, crisis suppression, existing Telegram requests and locales 
   assert.match(top,/telegramServiceRequestUrl/);
   assert.doesNotMatch(shell,/localStorage|sessionStorage|fetch\(|sendBeacon|window\.location/);
   assert.match(shellCss,/\.form textarea\{min-height:42px\}/);
+});
+
+test("completed dialogue offers a large accessible CTA that scrolls to matching cards only on tap",()=>{
+  assert.match(shell,/data-assist-view-matches/);
+  assert.match(shell,/onClick=\{scrollToRecommendations\}/);
+  assert.match(shell,/aria-controls="assist-recommendations"/);
+  assert.match(shell,/document\.getElementById\("assist-recommendations"\)/);
+  assert.match(shell,/target\.focus\(\{preventScroll:true\}\)/);
+  assert.match(shell,/target\.scrollIntoView\(\{/);
+  assert.match(shell,/prefers-reduced-motion: reduce/);
+  assert.match(top,/id="assist-recommendations" tabIndex=\{-1\}/);
+  assert.match(topCss,/scroll-margin-top:calc\(14px \+ env\(safe-area-inset-top/);
+  assert.match(shellCss,/\.viewMatches\{[^}]*width:100%;min-height:56px/);
+  for(const label of ["Посмотреть подходящие мне варианты","View my matching options","Ver mis opciones recomendadas"])
+    assert(shell.includes(label),label);
+  assert.doesNotMatch(shell,/Your matching options are just below\.|Подходящие варианты уже показаны ниже\./);
 });
