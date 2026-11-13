@@ -1,6 +1,7 @@
 "use client";
 
-import {useEffect,useState} from "react";
+import {useEffect,useRef,useState} from "react";
+import {createPortal} from "react-dom";
 import type {PublicLocale} from "@/lib/public-locales";
 import {VIDEO_EFFECT_AREAS,completeVideoEffectScores,compareVideoEffectScores} from "@/lib/mandala/video-effect-measurement.mjs";
 import styles from "./mandala-video-effect-journey.module.css";
@@ -21,7 +22,7 @@ const TEXT={
     failed:"Видео не прошло проверку. Повторная оценка будет доступна после готового ролика.",
     results:"Что изменилось после просмотра",increased:"Выше",decreased:"Ниже",unchanged:"Без изменений",summary:"Из 7 показателей",improved:"выросли",fell:"снизились",stable:"не изменились",
     onlyAfter:"Ваше состояние после просмотра",noBaseline:"Без замера «до» численные изменения определить нельзя.",average:"Средняя оценка",disclaimer:"Это ваш субъективный замер сразу после просмотра, а не доказательство лечебного действия видео.",
-    privacy:"Ответы остаются только на этой странице и не отправляются в Telegram, аналитику или на сервер.",zero:"0",ten:"10",done:"Готово",restart:"Оценить другое видео — создайте новый ролик"
+    privacy:"Ответы остаются только на этой странице и не отправляются в Telegram, аналитику или на сервер.",zero:"0",ten:"10",done:"Готово",restart:"Оценить другое видео — создайте новый ролик",close:"Закрыть",optional:"Короткая оценка · необязательно",ready:"Видео готово",watch:"Посмотреть видео",open:"Открыть прогресс и вопросы",failedShort:"Ошибка видео"
   },
   en:{
     progress:"Your video is being generated",preparing:"Preparing the film scenes…",rendering:"Composing your video from the chosen scenes",verifying:"The video has been recorded. Checking playback…",
@@ -33,7 +34,7 @@ const TEXT={
     failed:"Video playback verification failed. You can repeat the check-in after a working video is ready.",
     results:"What changed after watching",increased:"Higher",decreased:"Lower",unchanged:"Unchanged",summary:"Out of 7 areas",improved:"increased",fell:"decreased",stable:"stayed the same",
     onlyAfter:"How you feel after watching",noBaseline:"Without a before score, numerical changes cannot be calculated.",average:"Average rating",disclaimer:"These are your subjective immediate ratings, not evidence that the video caused a therapeutic benefit.",
-    privacy:"Your answers stay on this page; they are not sent to Telegram, analytics or a server.",zero:"0",ten:"10",done:"Done",restart:"To assess another video, create a new one"
+    privacy:"Your answers stay on this page; they are not sent to Telegram, analytics or a server.",zero:"0",ten:"10",done:"Done",restart:"To assess another video, create a new one",close:"Close",optional:"Quick check-in · optional",ready:"Video ready",watch:"Watch video",open:"Open progress and questions",failedShort:"Video failed"
   },
   es:{
     progress:"Se está generando tu vídeo",preparing:"Preparando las escenas…",rendering:"Montando tu vídeo con las escenas elegidas",verifying:"Vídeo grabado. Comprobando la reproducción…",
@@ -45,7 +46,7 @@ const TEXT={
     failed:"Falló la comprobación del vídeo. Podrás repetir la evaluación cuando esté listo un vídeo válido.",
     results:"Qué cambió después del vídeo",increased:"Subió",decreased:"Bajó",unchanged:"Sin cambio",summary:"De 7 áreas",improved:"subieron",fell:"bajaron",stable:"se mantuvieron",
     onlyAfter:"Tu estado después del vídeo",noBaseline:"Sin evaluación inicial no podemos calcular cambios numéricos.",average:"Valoración media",disclaimer:"Son valoraciones subjetivas inmediatas; no demuestran un efecto terapéutico causado por el vídeo.",
-    privacy:"Tus respuestas se quedan en esta página: no se envían a Telegram, analíticas ni al servidor.",zero:"0",ten:"10",done:"Listo",restart:"Para evaluar otro vídeo, crea uno nuevo"
+    privacy:"Tus respuestas se quedan en esta página: no se envían a Telegram, analíticas ni al servidor.",zero:"0",ten:"10",done:"Listo",restart:"Para evaluar otro vídeo, crea uno nuevo",close:"Cerrar",optional:"Evaluación breve · opcional",ready:"Vídeo listo",watch:"Ver vídeo",open:"Abrir progreso y preguntas",failedShort:"Error del vídeo"
   },
 } as const;
 
@@ -58,6 +59,39 @@ export function MandalaVideoEffectJourney({locale,status,progress,videoStarted,v
   const [index,setIndex]=useState(0);
   const [reaction,setReaction]=useState<"yes"|"no"|"so-so"|null>(null);
   const [confirmedWatched,setConfirmedWatched]=useState(false);
+  // The per-export check-in must be immediately visible, not below Studio controls.
+  const [mounted,setMounted]=useState(false);
+  const [modalOpen,setModalOpen]=useState(true);
+  const dialogRef=useRef<HTMLDivElement>(null);
+  useEffect(()=>{setMounted(true);},[]);
+  useEffect(()=>{if(videoEnded||status==="failed")setModalOpen(true);},[videoEnded,status]);
+  const dialogVisible=mounted&&modalOpen&&status!=="idle";
+  useEffect(()=>{
+    if(!dialogVisible)return;
+    const previouslyFocused=document.activeElement instanceof HTMLElement?document.activeElement:null;
+    const previousOverflow=document.body.style.overflow;
+    document.body.style.overflow="hidden";
+    dialogRef.current?.focus({preventScroll:true});
+    function handleKey(event:KeyboardEvent){
+      if(event.key==="Escape"){event.preventDefault();setModalOpen(false);return;}
+      if(event.key!=="Tab")return;
+      const focusable=Array.from(dialogRef.current?.querySelectorAll<HTMLElement>(
+        "button:not(:disabled), a[href], input:not(:disabled), [tabindex]:not([tabindex='-1'])")||[]);
+      if(!focusable.length){event.preventDefault();dialogRef.current?.focus();return;}
+      const first=focusable[0],last=focusable[focusable.length-1];
+      if(event.shiftKey&&(document.activeElement===first||document.activeElement===dialogRef.current)){
+        event.preventDefault();last.focus();
+      }else if(!event.shiftKey&&(document.activeElement===last||document.activeElement===dialogRef.current)){
+        event.preventDefault();first.focus();
+      }
+    }
+    document.addEventListener("keydown",handleKey);
+    return()=>{
+      document.removeEventListener("keydown",handleKey);
+      document.body.style.overflow=previousOverflow;
+      previouslyFocused?.focus({preventScroll:true});
+    };
+  },[dialogVisible]);
   const hasBefore=completeVideoEffectScores(before);
   const viewed=videoStarted||videoEnded||confirmedWatched;
   const canPost=status==="ready";
@@ -81,8 +115,15 @@ export function MandalaVideoEffectJourney({locale,status,progress,videoStarted,v
     if(!canPost||!viewed)return;
     setIndex(0);setPhase("after");
   }
+  function showVideo(){
+    setModalOpen(false);
+    window.requestAnimationFrame(()=>{
+      document.querySelector<HTMLElement>("[data-mandala-video-preview]")
+        ?.scrollIntoView({block:"center",behavior:"smooth"});
+    });
+  }
   const renderedProgress=Math.max(0,Math.min(100,Math.round(Number.isFinite(progress)?progress:0)));
-  return <section className={styles.root} id="video-effect-journey" data-video-effect-journey data-video-effect-status={status} aria-label={t.invitation}>
+  const panel=<section className={styles.root} id="video-effect-journey" data-video-effect-journey data-video-effect-status={status} aria-label={t.invitation}>
     {status==="preparing"||status==="rendering"||status==="verifying"?<div className={styles.render}>
       <strong>{status==="verifying"
         ?(locale==="ru"?"Проверка готового видео":locale==="es"?"Comprobando el vídeo":"Checking your video")
@@ -93,7 +134,11 @@ export function MandalaVideoEffectJourney({locale,status,progress,videoStarted,v
         <span style={{width:renderedProgress+"%"}}/></div>:null}
       {status!=="preparing"?<small>{renderedProgress}%</small>:null}
     </div>:null}
-    <div className={styles.header}><h3>{t.invitation}</h3><span>{phase==="before"?t.before:t.after}</span></div>
+    {status==="ready"&&!viewed?<div className={styles.readyBanner} role="status">
+      <strong>{t.ready}</strong>
+      <button type="button" onClick={showVideo} data-video-effect-watch>{t.watch}</button>
+    </div>:null}
+    <div className={styles.header}><h3 id="video-effect-journey-title">{t.invitation}</h3><span>{phase==="before"?t.before:t.after}</span></div>
     {status==="failed"?<p role="alert">{t.failed}</p>:null}
     {phase==="before"&&beforeOrAfter&&status!=="failed"&&!viewed?<p className={styles.explain}>{t.beforeIntro}</p>:null}
     {phase==="before"&&viewed?<p className={styles.explain}>{t.missed}</p>:null}
@@ -146,4 +191,23 @@ export function MandalaVideoEffectJourney({locale,status,progress,videoStarted,v
     </div>:null}
     <p className={styles.privacy}>{t.privacy}</p>
   </section>;
-}
+  if(!mounted)return null;
+  return createPortal(modalOpen
+    ?<div className={styles.overlay} data-video-effect-overlay>
+      <div className={styles.modal} ref={dialogRef} role="dialog" aria-modal="true"
+        aria-labelledby="video-effect-journey-title" tabIndex={-1} data-video-effect-modal>
+        <div className={styles.modalTop}>
+          <span>{t.optional}</span>
+          <button type="button" className={styles.close} aria-label={t.close}
+            onClick={()=>setModalOpen(false)}>×</button>
+        </div>
+        {panel}
+      </div>
+    </div>
+    :<button type="button" className={styles.reopen} aria-label={t.open}
+      data-video-effect-reopen onClick={()=>setModalOpen(true)}>
+      <span aria-hidden="true">●</span>
+      {status==="ready"?t.ready:status==="failed"?t.failedShort:t.progress}
+      {status==="rendering"||status==="verifying"?" · "+renderedProgress+"%":null}
+    </button>,document.body);
+
