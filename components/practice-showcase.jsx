@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import Link from 'next/link'
 import {
   ArrowRight, BarChart3, BookOpen, ChevronRight, ClipboardList,
   FileText, Heart, Home, Leaf, LockKeyhole, MessageCircle, Play,
@@ -398,7 +399,14 @@ export default function PracticeShowcase({ locale = 'en' }) {
         <div className={styles.identityCopy}>
           <strong>{signedIn ? (name || t.emptyName) : t.defaultName}</strong>
           <small>{t.practitioner}</small>
-          <button type="button" onClick={() => void openAction('profile')}>{t.profile} <ArrowRight size={15}/></button>
+          <div className={styles.identityActions} data-work-profile-actions>
+            <button type="button" onClick={() => void openAction('profile')}>{t.profile} <ArrowRight size={15}/></button>
+            <Link href={'/' + locale + '/my-page'} prefetch={false}
+              className={styles.myPageAction} data-work-my-page>
+              <UserRound size={15} aria-hidden="true" />
+              {locale === 'ru' ? 'Моя страница' : locale === 'es' ? 'Mi página' : 'My Page'}
+            </Link>
+          </div>
         </div>
         <div className={styles.metrics}>
           <button type="button" className={styles.metricMint} onClick={() => void openAction('services')}>

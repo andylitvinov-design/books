@@ -113,6 +113,13 @@ for(const browserType of [chromium,webkit]){
             label+' existing universal My Page entry remains reachable')
           assert.equal(await myPage.isVisible(),true,
             label+' My Page link is present for guest and owner')
+          assert.equal(await root.locator('[data-practice-workspace-heading] [data-work-my-page]').count(),0,
+            label+' My Page must not crowd the My Space/Live/Work heading')
+          assert.equal(await root.locator('[data-work-profile-actions] [data-work-my-page]').count(),1,
+            label+' My Page stays beside Edit profile below film and four actions')
+          const pageRect=await myPage.boundingBox()
+          assert.ok(pageRect && pageRect.height>=30 && pageRect.width>0,
+            label+' My Page button stays usable on the narrow mobile card')
           assert.equal(await root.locator('[data-profile-mode="live"]').getAttribute('href'),
             '/'+(locale==='es'?'en':locale)+'/app/portrait',label+' reversible Live link')
           assert.equal(await root.locator('[data-work-profile-tab]').count(),6,label+' six compact tabs before video')
@@ -146,6 +153,10 @@ for(const browserType of [chromium,webkit]){
             label+' Work header → six tabs → video')
           assert.ok(g.video.bottom<=g.actions.y+3&&g.actions.bottom<=g.identity.y+3,
             label+' film → four actions → practitioner tools')
+          const pagePosition=await myPage.boundingBox()
+          assert.ok(pagePosition && pagePosition.y>=g.actions.bottom-3 &&
+            pagePosition.y+pagePosition.height<=g.identity.bottom+3,
+            label+' My Page appears below the video controls, INSIDE the profile card')
           assert.ok(g.identity.bottom<=g.grid.y+3&&g.grid.bottom<=g.offers.y+3,
             label+' profile → six service-creation tiles → offers')
           assert.ok(g.hero.height>150&&g.hero.height<330,label+' same mobile video proportions')

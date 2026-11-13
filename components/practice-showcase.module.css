@@ -289,3 +289,11 @@
 .modalTelegram{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:44px;margin-top:9px;padding:10px 13px;border:1px solid #a4d1c6;border-radius:15px;background:#f2faf5;color:#126d58;font:750 14px/1.25 system-ui,sans-serif!important}
 .modalTelegram svg{margin-left:auto}
 .signInModal .telegramNote{font:500 11px/1.45 system-ui,sans-serif;color:#66766c;margin:9px 0 0;text-align:left}
+
+/* My Page belongs with profile actions BELOW the scenic film, never in the Live/Work header. */
+.screen .identityActions{display:flex;align-items:center;align-content:center;flex-wrap:wrap;gap:3px 9px;width:100%;min-width:0}
+.screen .identityCopy .identityActions button{min-height:36px;padding:3px 0;text-align:left}
+.screen .identityCopy .myPageAction{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:36px;padding:5px 9px;border:1px solid #badbce;border-radius:11px;background:#eef8f2;color:#076950;font:750 clamp(10px,2.7vw,12px)/1.2 system-ui,sans-serif;text-decoration:none;white-space:normal;max-width:100%}
+.screen .identityCopy .myPageAction svg{flex:none}
+@media(max-width:590px){.screen .identityActions{gap:0 6px}.screen .identityCopy .identityActions button,.screen .identityCopy .myPageAction{min-height:32px}}
+@media(max-width:354px){.screen .identityCopy .myPageAction{padding:5px 6px;font-size:10px}}
