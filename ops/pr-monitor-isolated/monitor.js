@@ -50,7 +50,7 @@ function drawSpeed(d){const svg=el('chart-speed'),max=Math.max(1,...d.map(r=>r.c
 
 function renderStages(d){
  if(d?.schema!==SCHEMAS.stages||!d.stages||!d.population)throw Error('STAGE_SCHEMA');
- put('k-open',number(d.population.open));put('stages-period','24 часа · '+stamp(d.generated_at));
+ put('k-open',number(d.population.open));put('k-median',d.population.full?.n>0?delay(d.population.full.median):'—');put('k-median-note',d.population.full?.n>0?'Выборка '+number(d.population.full.n)+' PR · 24 ч':'Нет проверенного интервала');put('stages-period','24 часа · '+stamp(d.generated_at));
  const labels=[['prepare','Подготовка / HEAD'],['runner','Ожидание runner'],['ci','Core / Specialist CI'],['gate','Merge Gate'],['merge','Green → Merge']];
  const tbody=el('stage-rows');clear(tbody);
  for(const [key,label]of labels){

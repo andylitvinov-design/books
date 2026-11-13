@@ -50,3 +50,9 @@ test('compact per-PR list bounds untrusted data and keeps actual GitHub SHAs',()
  const a=compactRecords(source);assert.equal(a.length,2);assert.equal(a[0].number,22);assert.equal(a[0].sha,'aaaaaaaaaa');
  source.pr_timestamps.records='INVALID JSON';assert.equal(compactRecords(source).length,0);
 });
+
+test('PR to Merge median card is populated from verified stage cohort',()=>{
+ assert.match(js,/put\('k-median'/);
+ assert.match(js,/population\.full\?\.n>0/);
+ assert.match(js,/put\('k-median-note'/);
+});
