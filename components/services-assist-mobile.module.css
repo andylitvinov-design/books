@@ -16,6 +16,19 @@
 .results h2,.tools h2{margin:0 0 12px;font-size:23px;line-height:1.18;font-weight:750;letter-spacing:-.02em}
 .recommendations{display:grid;gap:9px}.rec{display:flex;align-items:center;gap:10px;min-height:84px;padding:12px;border:1px solid #e9dfd1;border-radius:17px;background:white;color:#143d3a;text-decoration:none}.rec>svg{flex:none;color:#067a67}.index{display:grid;place-items:center;flex:none;width:32px;height:32px;border-radius:50%;background:#e6f6f1;font-weight:800}.recText{display:grid;gap:3px;flex:1;min-width:0}.recText small{color:#067a67;font-size:11px;font-weight:800}.recText strong{font-size:16px}.recText>span{font-size:13px;color:#5d6a71}.reset{width:100%;min-height:44px;margin-top:12px;border:1px solid #067a67;border-radius:14px;background:#fffcf7;color:#067a67;font:700 14px Arial,Helvetica,sans-serif;cursor:pointer}.crisis{color:#763522;font-size:15px;line-height:1.5;font-weight:650}
 .tools{margin-top:24px}.tools>p{margin:-4px 0 13px;color:#5d6a71;font-size:14px}.toolGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.tool{display:flex;flex-direction:column;align-items:flex-start;gap:7px;min-height:110px;padding:13px;border:1px solid #e9dfd1;border-radius:19px;background:#fffcf7;color:#143d3a;text-decoration:none;box-shadow:0 6px 24px rgb(78 53 30 / 6%)}.tool>span{display:grid;place-items:center;width:27px;height:27px;border-radius:11px;background:#e6f6f1;color:#067a67;font-size:18px}.tool:nth-child(3n+2)>span{background:#fbf2de;color:#966a1f}.tool:nth-child(3n)>span{background:#fcecf2;color:#aa4068}.tool strong{font-size:15px;line-height:1.25}.tool small{margin-top:auto;font-size:12px;color:#5d6a71}.all{display:flex;align-items:center;justify-content:center;gap:10px;min-height:52px;margin-top:12px;border:1px solid #067a67;border-radius:16px;color:#067a67;font-size:15px;font-weight:750;text-decoration:none;background:#fffcf7}.caution{margin-top:17px}
+/* Support tools are category-navigation pills, not full service cards.
+   Specific selectors preserve the filter layout when adjacent messenger PR CSS merges. */
+.assist .tools{margin-top:16px}
+.assist .tools h2{margin:0 0 6px;font-size:18px;line-height:1.2}
+.assist .tools>p{margin:0 0 10px;font-size:12px;line-height:1.35}
+.assist .tools .toolGrid{display:flex;flex-wrap:wrap;align-items:stretch;gap:7px}
+.assist .tools .tool{display:inline-flex;flex:0 1 auto;align-items:center;justify-content:center;gap:0;width:auto;max-width:100%;min-height:44px;padding:8px 13px;border:1px solid #cbded4;border-radius:999px;background:#fffcf7;box-shadow:none;text-align:center;color:#176d5d;text-decoration:none}
+.assist .tools .tool:nth-child(3n+2){background:#fdf8ec;border-color:#e7dec9}
+.assist .tools .tool:nth-child(3n){background:#fbf3f6;border-color:#e9dce2}
+.assist .tools .tool>span,.assist .tools .tool small{display:none}
+.assist .tools .tool strong{display:block;margin:0;font-size:12.5px;font-weight:700;line-height:1.25;white-space:normal}
+.assist .tools .tool:is(:hover,:active){border-color:#067a67;background:#e6f6f1}
+.assist .tools .all{min-height:44px;margin-top:9px}
 .assist :is(button,a,textarea):focus-visible{outline:3px solid #176e6e;outline-offset:3px}
 }
 @media(max-width:350px){.assist{width:calc(100% - 20px)}.photo{height:124px}.intro h1{font-size:28px}.chips button{padding:8px;font-size:12px}.tool{padding:10px}.tool strong{font-size:14px}}
@@ -65,3 +78,81 @@
 .privacy{margin:6px 4px 10px;font-size:11px;line-height:1.35}
 }
 @media(max-width:350px){.chips{gap:5px}.chips button{min-height:46px;padding:5px 3px;font-size:10.8px}.conversation{padding:10px}.speech strong{font-size:14px}.form textarea{font-size:13px}}
+
+/* Single in-place messenger; two visible issue rows and a scrollable message log. */
+@media(max-width:760px){
+  .conversation{padding:11px;border-radius:23px;background:#fffcf7}
+  .messages{display:flex;flex-direction:column;gap:8px;max-height:292px;min-height:0;overflow-y:auto;overscroll-behavior-y:contain;padding:1px 2px 6px;scrollbar-width:thin;scrollbar-color:#b7d9cc transparent}
+  .chatStart{display:grid;gap:4px}
+  .greeting{margin:0 0 4px}
+  .quick{margin:0}
+  .chips{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+  .chips button{min-height:44px;font-size:11.5px}
+  .expand{display:flex;justify-content:center;align-items:center;gap:5px;width:100%;min-height:40px;padding:6px;border:0;background:transparent;color:#067a67;font:700 12px/1.2 Arial,Helvetica,sans-serif;cursor:pointer}
+  .turnUser,.turnAssistant{max-width:88%;padding:10px 13px;border-radius:17px;font-size:14px;line-height:1.35;white-space:pre-wrap;overflow-wrap:anywhere}
+  .turnUser{align-self:flex-end;border-bottom-right-radius:5px;background:#e4f4ed;color:#143d3a}
+  .turnAssistant{align-self:flex-start;border:1px solid #eee4d7;border-bottom-left-radius:5px;background:#f7f3eb;color:#143d3a}
+  .turnUser p,.turnAssistant p{margin:0}
+  .inlineQuestion{align-self:stretch;display:grid;gap:8px;padding:0 1px}
+  .questionPrompt{max-width:89%;margin:0;padding:10px 12px;border-radius:16px 16px 16px 5px;background:#f7f3eb;border:1px solid #eee4d7;font-size:14px;line-height:1.35;font-weight:750}
+  .answerOptions{display:flex;flex-wrap:wrap;gap:7px}
+  .answerOptions button{flex:0 1 auto;min-height:44px;padding:8px 12px;border:1px solid #b7d9cc;border-radius:22px;background:#fff;color:#143d3a;font:650 13px/1.25 Arial,Helvetica,sans-serif;text-align:center}
+  .inlineQuestion .skip{justify-self:start;margin:0;padding:7px 9px;min-height:34px}
+  .viewMatches{display:flex;align-items:center;justify-content:center;gap:10px;align-self:stretch;width:100%;min-height:56px;margin:4px 0 0;padding:11px 14px;border:1px solid #087a68;border-radius:16px;background:linear-gradient(135deg,#0a7565,#12907b);box-shadow:0 6px 16px rgb(6 122 103 / 14%);color:#fff;text-align:center;font:750 14.5px/1.3 Arial,Helvetica,sans-serif;cursor:pointer;transition:background .18s,box-shadow .18s,transform .18s}
+  .viewMatches svg{flex:none}
+  .viewMatches:is(:hover,:focus-visible){background:#086b5d;box-shadow:0 8px 18px rgb(6 122 103 / 19%)}
+  .viewMatches:active{transform:translateY(1px)}
+  .form{margin-top:7px;min-height:53px;box-shadow:none}
+  .form textarea{min-height:42px}
+  .reset{display:block;width:auto;min-height:35px;margin:3px 0 0 auto;padding:5px 9px;border:0;border-radius:8px;background:transparent;font-size:12px;color:#067a67}
+  .privacy{margin:6px 4px 9px;font-size:10.5px}
+  .tools{margin-top:13px}
+  .tools h2{margin:0 0 6px;font-size:19px}
+  .tools>p{margin:0 0 8px;font-size:12px}
+  .toolGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+  .tool{min-height:60px;display:grid;grid-template-columns:23px minmax(0,1fr);grid-template-rows:auto auto;gap:2px 7px;padding:8px;border-radius:14px;box-shadow:none}
+  .tool>span{grid-row:1/span 2;width:23px;height:23px;border-radius:9px;font-size:13px}
+  .tool strong{font-size:13px;line-height:1.25}
+  .tool small{grid-column:2;margin:0;font-size:10.5px}
+  .moreTools{width:100%;min-height:43px;margin-top:5px;border:0;background:transparent;color:#067a67;font:700 13px Arial,Helvetica,sans-serif;cursor:pointer}
+  .all{min-height:44px;margin-top:4px;font-size:13px}
+  .caution{font-size:11px}
+}
+@media(max-width:350px){
+  .messages{max-height:270px}
+  .answerOptions button{padding:8px 9px;font-size:12px}
+  .turnUser,.turnAssistant{font-size:13px}
+}
+
+/* Approved 13 Nov: the phone Services landing contains ONLY the new compact Assist
+   and recommendation shelves. Keep the original catalog on desktop and preserve
+   independent service detail/CRM routes. New Reiki/coach shelves mounted by
+   subsequent PRs in ServicesStudioOffers remain visible. */
+@media(max-width:760px){
+  .assistPage :global([data-services-showcase-hero]),
+  .assistPage :global([data-services-studio-free]),
+  .assistPage :global([data-services-studio-card]),
+  .assistPage :global([data-services-studio-paid] > header),
+  .assistPage :global([data-services-studio-paid] > div:last-child),
+  .assistPage :global(#consultation),
+  .assistPage :global([data-services-meet]),
+  .assistPage :global([data-personal-testimonials="services"]),
+  .assistPage :global(#method-videos),
+  .assistPage :global([data-services-directory-invitation]),
+  .assistPage :global([data-service-lead-capture]){
+    display:none!important;
+  }
+  /* The modern three-scenario video block is nested inside the legacy paid
+     grid. Preserve it without the preceding seven verbose service cards. */
+  .assistPage :global([data-services-studio-paid]){
+    width:calc(100% - 24px);
+    max-width:520px;
+    margin:0 auto;
+    scroll-margin-top:16px;
+  }
+  .assistPage :global([data-services-studio-paid] > div:not(:last-child)){
+    display:grid;
+    grid-template-columns:minmax(0,1fr);
+    gap:0;
+  }
+}

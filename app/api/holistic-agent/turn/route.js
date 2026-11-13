@@ -15,9 +15,10 @@ import { buildPortraitRecommendations } from "@/lib/profile/portrait-recommendat
 import { AXIS_REFS, publishedAxisOffers } from "@/lib/holistic-support/axis-offer-matcher.mjs";
 import { interpretSupportUtterance, explainUserQuestion } from "@/lib/holistic-support/guide-dialogue.mjs";
 import { ruleConversationReply } from "@/lib/holistic-support/rule-conversation.mjs";
+import { progressConversationTurn,progressDialogueReply } from "@/lib/holistic-support/dialogue-progression.mjs";
 import { nativeSecretaryTurn } from "@/lib/holistic-support/native-secretary.mjs";
-import { consultServiceQuestion } from "@/lib/assist/consultant-mind.mjs";
 import { resolveComplaintTurn } from "@/lib/holistic-support/complaint-mind.mjs";
+import { consultServiceQuestion, resolveConsultantSuggestion } from "@/lib/assist/consultant-mind.mjs";
 import { resolveWisdomRequest } from "@/lib/app/coaching-wisdom.js";
 import { resolveConversationFocus } from "@/lib/holistic-support/conversation-context.mjs";
 import { detectConversationLocale } from "@/lib/holistic-support/conversation-locale.mjs";
@@ -27,6 +28,8 @@ import { buildHolisticGuidedTurn } from "@/lib/holistic-support/holistic-guide-a
 import { prepareNaturalDialogue, finishNaturalDialogue } from "@/lib/holistic-support/natural-dialogue.mjs";
 import { generateOwnedOllama, validatedOllamaConfig } from "@/lib/holistic-support/owned-ollama.mjs";
 import { readMyAgentMemory } from "@/lib/holistic-support/agent-memory-store";
+import { createNativeDialogueSession, readNativeDialogueSession, advanceNativeDialogueMessage } from "@/lib/holistic-support/native-dialogue-session-store";
+import { nativeDialogueEventFromUtterance, understandConversationTurn } from "@/lib/holistic-support/conversation-intelligence.mjs";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,6 +40,7 @@ const LOCALES = new Set(["ru","en","es"]);
 const MODES = new Set(["rules","device","owned"]);
 const GUIDE_FORMATS = new Set(["video","audio","test","course","service"]);
 const SAFE_CONTENT_ID = /^[a-z][a-z0-9_-]*:[A-Za-z0-9_:-]{1,85}$/;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 // These factual, side-effect-free intents can answer promptly without running
 // the media catalogue; all origin, auth, rate and safety checks still apply.
 // Native first-party secretary is only an informational/social subset of the same chat.
@@ -44,10 +48,11 @@ const NATIVE_FAST_IDS = new Set(["hello","thanks","bye","identity","capabilities
 const NATIVE_INTENTS = new Set(["hello","thanks","bye","identity","capabilities","courses","services","pricing","human","booking","technical","privacy","status","smalltalk"]);
 const FAST_RULE_IDS = new Set([
   "hello","thanks","bye","restart","identity","capabilities","language",
-  "price","privacy","login","technical","orders","video_status",
+  "price","privacy","login","technical","orders","video_status","business_hours_unknown",
   "video_delivery","video_download","video_definition","human_help",
   // Reviewed factual FAQ: no orders, results, uploads, payments or network sends.
-  "conversation_greeting","conversation_small_talk","conversation_chat_invitation",
+  "conversation_greeting","conversation_small_talk","conversation_chat_invitation","conversation_rejection",
+  "conversation_goodbye","conversation_no_advice","conversation_concise_explanation",
   "chat_guest","chat_modes","chat_bug","chat_keyboard","chat_history",
   "chat_delete","chat_telegram","chat_whatsapp","video_render_queue",
   "video_export","video_license","video_orientation",
@@ -65,16 +70,53 @@ function publishedVideos(locale) {
     : englishGuidedMeditations.filter(item=>item.youtubeId)
       .map(item=>({...item,sourceLanguage:"en"}));
 }
+function confirmedNativeChoice(id,locale) {
+  if(typeof id!=="string" || !SAFE_CONTENT_ID.test(id))return null;
+  let title=null,kind=null;
+  if(id.startsWith("service:")) {
+    const core=coreServiceOffers(locale).find(item=>"service:"+item.id===id)?.title||null;
+    const consultant=resolveConsultantSuggestion(id,locale)?.title||null;
+    // Different catalogues can share an ID but show different titles.
+    if(core&&consultant&&core!==consultant)return {title:null};
+    title=core||consultant;
+  } else if(id.startsWith("youtube:")) {
+    const youtubeId=id.slice("youtube:".length);
+    const published=publishedVideos(locale).some(item=>(item.id||item.youtubeId)===youtubeId);
+    const reviewed=reviewedMeditationCandidates.videos.find(item=>item.youtube_id===youtubeId &&
+      item.source_kind==="original" && item.metadata_confidence==="owner_source");
+    if(published && reviewed)title=reviewed.title;
+  } else if(id.startsWith("test:") || id.startsWith("course:")) {
+    // Rebuild the public, locale-scoped catalogue; the session separately
+    // proves this exact ID was actually offered to this client.
+    const matches=publishedAxisOffers({locale,services:coreServiceOffers(locale),videos:publishedVideos(locale)})
+      .filter(item=>item.id===id && item.status==="published");
+    if(matches.length===1){
+      const item=matches[0],expectedKind=id.startsWith("test:")?"test":"course";
+      if(item.kind===expectedKind && (expectedKind!=="test" || item.href===`/${locale}/client/tests`)){
+        title=item.title;kind=expectedKind;
+      }
+    }
+  }
+  return typeof title==="string" && title.trim().length>0 && title.length<=180?{title:title.trim(),kind}:null;
+}
 function validatedAxes(value) {
   return Array.isArray(value) && value.length<=3 &&
     value.every(ref=>typeof ref==="string" && Object.hasOwn(AXIS_REFS,ref)) &&
     new Set(value).size===value.length;
 }
+function validNativeSession(value) {
+  return value && typeof value==="object" && !Array.isArray(value) &&
+    Object.keys(value).every(key=>["id","revision","turnId"].includes(key)) &&
+    (value.id===null || typeof value.id==="string" && UUID.test(value.id)) &&
+    Number.isSafeInteger(value.revision) && value.revision>=0 && value.revision<=256 &&
+    (value.id!==null || value.revision===0) &&
+    typeof value.turnId==="string" && UUID.test(value.turnId);
+}
 
 function inputOf(body) {
   onlyKeys(body,["locale","message","history","mode","ownedInferenceConsent","selectedGoal",
     "chosenAxes","usePrivateProfile","usePrivateHistory","preferredFormat","feedback","useAgentMemory",
-    "judgmentContext","judgmentChoice"]);
+    "judgmentContext","judgmentChoice","nativeSession"]);
   if (!LOCALES.has(body.locale) || typeof body.message !== "string" ||
     !body.message.trim() || body.message.length > 3000 ||
     !MODES.has(body.mode) || typeof body.ownedInferenceConsent !== "boolean" ||
@@ -87,6 +129,7 @@ function inputOf(body) {
     (body.preferredFormat !== undefined && body.preferredFormat !== null &&
       !GUIDE_FORMATS.has(body.preferredFormat)) ||
     (body.feedback !== undefined && !validFeedback(body.feedback)) ||
+    (body.nativeSession !== undefined && body.nativeSession !== null && !validNativeSession(body.nativeSession)) ||
     (body.judgmentContext !== undefined && body.judgmentContext !== null &&
       (typeof body.judgmentContext !== "string" || body.judgmentContext.length > 1600 ||
         !/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(body.judgmentContext))) ||
@@ -144,31 +187,187 @@ export async function POST(request) {
     const recentUnsafe = body.history.some(turn => turn.role==="user" &&
       preflight(turn.text,body.locale).status!=="clear");
     if (recentUnsafe && safety.status==="clear") safety.status="human_review";
-
-    // Complaint Mind is a reviewed, no-side-effect response layer. The prior
-    // actor, rate, safety and recent-unsafe gates always take precedence.
+    // Verify signed continuations before reading optional state or producing an
+    // early answer. Judgment is evaluated once for this exact safe turn.
+    const judgmentEligible=body.mode==="rules"&&safety.status==="clear"&&!recentUnsafe;
+    const judgmentContext=judgmentEligible&&body.judgmentContext
+      ?verifyJudgmentChoice({config,actor,token:body.judgmentContext,history:body.history}):null;
+    if(judgmentEligible&&body.judgmentContext&&!judgmentContext)throw new AppError("INVALID_JUDGMENT_CONTEXT",400);
+    const inspectedJudgment=judgmentEligible?planJudgmentTurn({message:body.message,locale:body.locale,safety,history:body.history,
+      pending:judgmentContext?.pending||null,choiceId:body.judgmentChoice||null}):null;
+    const judgmentPriority=inspectedJudgment!=null&&inspectedJudgment.status!=="abstain";
+    // This optional state is created only for verified, safe RU/EN turns with
+    // no safety handoff. The browser supplies IDs, never state.
+    let nativeFrame=null;
+    if(process.env.HH_NATIVE_DIALOGUE_STATE_ENABLED==="true" && body.nativeSession &&
+       ["ru","en"].includes(body.locale) &&
+       ["abstain","handled","clarify"].includes(inspectedJudgment?.status) &&
+       inspectedJudgment?.state!=="safety_handoff") {
+      const requested=body.nativeSession;
+      const created=requested.id===null?await createNativeDialogueSession(config,actor):null;
+      const id=created?.sessionId||requested.id;
+      const state=created?.state||await readNativeDialogueSession(config,actor,id,requested.revision);
+      nativeFrame={id,state,revision:requested.revision,turnId:requested.turnId};
+    }
+    // A valid old token cannot revive a choice superseded in this server-owned session.
+    if(nativeFrame&&judgmentContext&&nativeFrame.state.pendingJudgmentTurnId!==judgmentContext.turnId)
+      throw new AppError('INVALID_JUDGMENT_CONTEXT',400);
+    const stateEvent=nativeFrame?nativeDialogueEventFromUtterance({message:body.message,locale:body.locale,state:nativeFrame.state}):null;
+    const meditationDeclined=stateEvent?.type==='refuse_meditation' ||
+      (nativeFrame?.state.declinedMeditation?.value==='meditation' && stateEvent?.type!=='allow_meditation');
+    const finish=async (data,{pendingAdviceConfirmation=false}={})=>{
+      if(nativeFrame){
+        const clearChoices=['stop','new_question','cancel_to_talk','decline_booking','clear_topic','clear_goal_statement','refuse_advice','pause_topic','choose'].includes(stateEvent.type) ||
+          (stateEvent.type==='refuse_meditation'&&!stateEvent.mixed);
+        const hidden=new Set([...(body.feedback?.dismissedIds||[]),...(body.feedback?.completedIds||[])]);
+        const suggestions=(clearChoices?[]:(Array.isArray(data.suggestions)?data.suggestions:[]))
+          .filter(item=>typeof item?.id==='string'&&SAFE_CONTENT_ID.test(item.id)&&!hidden.has(item.id)&&
+            !(meditationDeclined&&item.id.startsWith('youtube:'))).slice(0,3);
+        const ids=suggestions.map(item=>item.id);
+        if(new Set(ids).size!==ids.length)throw new AppError('INVALID_AGENT_SUGGESTIONS',503);
+        data={...data,suggestions,...(data.decision?{decision:{...data.decision,suggestions}}:{})};
+        const requestedChoice=stateEvent.type==='choose'&&!judgmentPriority&&body.judgmentContext==null&&body.judgmentChoice==null
+          ?nativeFrame.state.lastOfferedChoices.filter(id=>!hidden.has(id))[stateEvent.ordinal-1]||null:null;
+        const verifiedChoice=requestedChoice?confirmedNativeChoice(requestedChoice,body.locale):null;
+        const outcome=await advanceNativeDialogueMessage(config,actor,nativeFrame.id,
+          {message:body.message,locale:body.locale,turnId:nativeFrame.turnId,expectedRevision:nativeFrame.revision},
+          {offeredChoiceIds:clearChoices||ids.length>0||data.decision?.status==='recommend'?ids:undefined,
+            excludedChoiceIds:[...hidden],...(stateEvent.type==='choose'?{verifiedChoiceIds:verifiedChoice?[requestedChoice]:[]}:{}),
+            pendingAdviceConfirmation,
+            pendingJudgmentTurnId:data.judgment?.token?data.judgment.turnId:null});
+        if(stateEvent.type==='choose' && !judgmentPriority && body.judgmentContext==null) {
+          const selected=outcome.choiceId===requestedChoice?verifiedChoice:null;
+          const reply=selected?(body.locale==='ru'?(selected.title?`Вы выбрали «${selected.title}».`:'Вы выбрали этот вариант.'):
+            (selected.title?`You chose “${selected.title}”.`:'You chose that option.')):
+            (body.locale==='ru'?"Не могу подтвердить этот вариант среди последних показанных. Уточните, пожалуйста, какой вы имеете в виду.":
+              "I cannot verify that option among the last shown choices. Which one do you mean?");
+          data={...data,reply,selectedChoiceId:selected?outcome.choiceId:null,
+            decision:{status:'clarify',message:reply,question:null,suggestions:[]}};
+        }
+        data={...data,nativeSession:{id:nativeFrame.id,revision:outcome.state.revision}};
+      }
+      return auth.apply(NextResponse.json(data,{headers:PRIVATE_HEADERS}));
+    };
+    // A verified current-session refusal applies to later emotional statements.
+    // Safety handoffs and signed continuations retain priority; factual and
+    // explicitly requested workflows continue through their normal owners.
+    if(nativeFrame&&nativeFrame.state.declinedAdvice?.value==='advice'&&
+       body.judgmentContext==null&&body.judgmentChoice==null&&stateEvent.type==='ordinary'){
+      const reviewed=understandConversationTurn({message:body.message,locale:body.locale,history:body.history});
+      if(['disclosure','ambivalence','uncertainty'].includes(reviewed?.act)){
+        const reply=/[?？]/u.test(body.message)?(body.locale==='ru'?'Ранее вы просили без советов. Сейчас хотите обсудить возможные шаги?':
+          'You asked for no advice earlier. Would you like to discuss possible steps now?'):
+          body.locale==='ru'?(nativeFrame.revision%2?'Я рядом и слушаю.':'Понимаю. Я слушаю вас.'):
+            (nativeFrame.revision%2?"I'm here and listening.":"I hear you. I'm listening.");
+        return await finish({status:'clarify',reply,modelUsed:false,source:'rules',memorySaved:false,userAuthorized:true,
+          suggestions:[],usedSavedTestEvidence:false,usedSavedVideoHistory:false,browserModelAllowed:false,
+          decision:{status:'clarify',message:reply,question:null,suggestions:[]}},{pendingAdviceConfirmation:/[?？]/u.test(body.message)});
+      }
+    }
+    if(nativeFrame&&body.judgmentContext==null&&body.judgmentChoice==null&&stateEvent.type==='retain_advice'){
+      const reply=body.locale==='ru'?'Хорошо, продолжим без советов. Я слушаю.':"All right, no advice. I'm listening.";
+      return await finish({status:'clarify',reply,modelUsed:false,source:'rules',memorySaved:false,userAuthorized:true,
+        suggestions:[],usedSavedTestEvidence:false,usedSavedVideoHistory:false,browserModelAllowed:false,
+        decision:{status:'clarify',message:reply,question:null,suggestions:[]}});
+    }
+    if(nativeFrame&&!judgmentPriority&&body.judgmentContext==null&&body.judgmentChoice==null&&
+       stateEvent.type==='allow_advice'&&nativeFrame.state.declinedAdvice?.value==='advice'){
+      const reply=body.locale==='ru'?'Хорошо, учту, что вы допускаете совет. О чём хотели бы поговорить?':
+        'Understood, advice is welcome now. What would you like to discuss?';
+      return await finish({status:'clarify',reply,modelUsed:false,source:'rules',memorySaved:false,userAuthorized:true,
+        suggestions:[],usedSavedTestEvidence:false,usedSavedVideoHistory:false,browserModelAllowed:false,
+        decision:{status:'clarify',message:reply,question:null,suggestions:[]}});
+    }
+    if(nativeFrame&&!judgmentPriority&&body.judgmentContext==null&&body.judgmentChoice==null&&
+       (stateEvent.type==='set_goal_statement'||stateEvent.type==='clear_goal_statement'||stateEvent.type==='recall_goal'||stateEvent.type==='set_topic'&&stateEvent.newTopic)){
+      const goal=stateEvent.type==='set_goal_statement'?stateEvent.value:nativeFrame.state.goalStatement?.value;
+      const topicLabels={ru:{relationships:'отношения',work:'работу',energy:'энергию',meaning:'смысл',goals:'цели'},
+        en:{relationships:'relationships',work:'work',energy:'energy',meaning:'meaning',goals:'goals'}};
+      let reply;
+      if(stateEvent.type==='clear_goal_statement')reply=body.locale==='ru'?'Хорошо, не буду удерживать эту цель в текущем разговоре.':
+        "Understood, I won't retain that goal in this conversation.";
+      else if(stateEvent.type==='set_topic')reply=body.locale==='ru'?`Хорошо, меняем тему на ${topicLabels.ru[stateEvent.value]}. Я слушаю.`:
+        `All right, let's switch to ${topicLabels.en[stateEvent.value]}. I'm listening.`;
+      else if(stateEvent.type==='set_goal_statement'){
+        if(stateEvent.corrected)reply=body.locale==='ru'?`Понял уточнение: «${goal}» С чего вы хотите начать?`:
+          `I understand the correction: “${goal}” Where would you like to start?`;
+        else if(nativeFrame.revision%2)reply=body.locale==='ru'?`Учту вашу цель: «${goal}» Что сейчас важнее всего?`:
+          `We can focus on “${goal}” What matters most right now?`;
+        else reply=body.locale==='ru'?`Понял: «${goal}» С чего вы хотите начать?`:
+          `I hear you: “${goal}” Where would you like to start?`;
+      }
+      else reply=goal?(body.locale==='ru'?`Вы назвали такую цель: «${goal}»`:`You described your goal as: “${goal}”`):
+        (body.locale==='ru'?'Я не могу восстановить сформулированную цель. Напомните, пожалуйста, что для вас важно?':
+          'I cannot recover a stated goal. Could you remind me what matters to you?');
+      return await finish({status:'clarify',reply,modelUsed:false,source:'rules',memorySaved:false,userAuthorized:true,
+        suggestions:[],usedSavedTestEvidence:false,usedSavedVideoHistory:false,browserModelAllowed:false,
+        decision:{status:'clarify',message:reply,question:null,suggestions:[]}});
+    }
+    if(stateEvent?.type==='choose' && !judgmentPriority && body.judgmentContext==null) {
+      return await finish({status:'clarify',reply:'',modelUsed:false,source:'rules',memorySaved:false,
+        userAuthorized:true,suggestions:[],usedSavedTestEvidence:false,usedSavedVideoHistory:false,browserModelAllowed:false});
+    }
+    if(nativeFrame&&!judgmentPriority&&body.judgmentContext==null&&body.judgmentChoice==null&&stateEvent.type==='explain_choice'){
+      const excluded=new Set([...(body.feedback?.dismissedIds||[]),...(body.feedback?.completedIds||[])]);
+      const selected=excluded.has(nativeFrame.state.selectedChoiceId)?null:confirmedNativeChoice(nativeFrame.state.selectedChoiceId,body.locale);
+      const reply=selected?.title?(selected.kind==='test'?(body.locale==='ru'?`Это раздел «${selected.title}», где можно выбрать тесты.`:
+        `This opens “${selected.title}”, where you can choose questionnaires.`):
+        (body.locale==='ru'?`Это вариант «${selected.title}»; подробности можно посмотреть на его странице.`:
+          `That is “${selected.title}”; you can see its details on its page.`)):
+        (body.locale==='ru'?'Я не могу подтвердить этот вариант; уточните, пожалуйста, о чём рассказать.':
+          'I cannot verify that option; please clarify what you would like to know.');
+      return await finish({status:'clarify',reply,modelUsed:false,source:'rules',memorySaved:false,userAuthorized:true,
+        suggestions:[],usedSavedTestEvidence:false,usedSavedVideoHistory:false,browserModelAllowed:false,
+        decision:{status:'clarify',message:reply,question:null,suggestions:[]}});
+    }
+    if(nativeFrame&&!judgmentPriority&&body.judgmentContext==null&&body.judgmentChoice==null&&
+       stateEvent.type==='ask_time'&&(nativeFrame.state.goal||nativeFrame.state.goalStatement)){
+      const reply=body.locale==='ru'?'Я не могу проверить свободное время. Какую встречу вы имеете в виду?':
+        'I cannot check available times here. Which meeting do you mean?';
+      return await finish({status:'clarify',reply,modelUsed:false,source:'rules',memorySaved:false,userAuthorized:true,
+        suggestions:[],usedSavedTestEvidence:false,usedSavedVideoHistory:false,browserModelAllowed:false,
+        decision:{status:'clarify',message:reply,question:null,suggestions:[]}});
+    }
+    if(nativeFrame && !judgmentPriority && body.judgmentContext==null && (['set_time','clear_time','cancel_to_talk','decline_booking','clear_topic','new_question'].includes(stateEvent.type) ||
+       stateEvent.type==='set_goal' && (stateEvent.topic||stateEvent.corrected))) {
+      const time={ru:{morning:'утром',afternoon:'днём',evening:'вечером'},en:{morning:'morning',afternoon:'afternoon',evening:'evening'}};
+      const replies={
+        set_time:{ru:stateEvent.bookingDeferred?`Вам удобнее ${time.ru[stateEvent.value]}. Пока не записываю вас.`:
+          `Вам удобнее ${time.ru[stateEvent.value]}. Я пока не могу проверить доступное время консультации.`,
+          en:stateEvent.bookingDeferred?`You prefer the ${time.en[stateEvent.value]}. I will not book anything yet.`:
+            `You prefer the ${time.en[stateEvent.value]}. I cannot check consultation availability here.`},
+        clear_time:{ru:'Понял, это время вам не подходит. Какое время удобнее?',en:"Understood, that time doesn't work for you. What time works better?"},
+        cancel_to_talk:{ru:'Хорошо, просто поговорим. Я слушаю.',en:"All right, let's just talk. I'm listening."},
+        decline_booking:{ru:'Хорошо, не буду вас записывать.',en:"Understood, I won't book anything."},
+        set_goal:{ru:stateEvent.corrected?'Понял, вы имели в виду консультацию, а не коучинг. Что вы хотели бы обсудить?':
+          'Вы рассматриваете консультацию. Что вы хотели бы на ней прояснить?',
+          en:stateEvent.corrected?'Understood, you mean a consultation rather than coaching. What would you like to discuss?':
+          'You are considering a consultation. What would you like to clarify in it?'},
+        clear_topic:{ru:'Понял, эту тему не продолжаем. Что вы хотели бы обсудить?',en:"Understood, we won't continue that topic. What would you like to discuss?"},
+        new_question:{ru:'Конечно. Какой у вас другой вопрос?',en:'Of course. What is your other question?'},
+      };
+      const reply=replies[stateEvent.type][body.locale];
+      return await finish({status:'clarify',reply,modelUsed:false,source:'rules',memorySaved:false,userAuthorized:true,
+        suggestions:[],usedSavedTestEvidence:false,usedSavedVideoHistory:false,browserModelAllowed:false,
+        decision:{status:'clarify',message:reply,question:null,suggestions:[]}});
+    }
+    // Preserve the production complaint path after the same safety and consent
+    // gates, while committing any verified state through the common finish path.
     const complaint=safety.status==="clear"&&!recentUnsafe &&
       body.judgmentContext==null && body.judgmentChoice==null &&
       body.usePrivateProfile!==true && body.usePrivateHistory!==true &&
       body.useAgentMemory!==true && body.preferredFormat==null &&
       (!body.chosenAxes || body.chosenAxes.length===0) &&
       ["rules","owned"].includes(body.mode)
-      ? resolveComplaintTurn({message:body.message,locale:body.locale,history:body.history})
-      : null;
-    if(complaint){
-      return auth.apply(NextResponse.json({
-        status:"clarify",reply:complaint.reply,source:complaint.source,
-        mindRole:null,modelUsed:false,memorySaved:false,userAuthorized:true,
-        suggestions:[],usedSavedTestEvidence:false,usedSavedVideoHistory:false,
-        browserModelAllowed:false,
-        decision:{status:"clarify",message:complaint.reply,question:null,suggestions:[]}
-      },{headers:PRIVATE_HEADERS}));
-    }
-
+      ? resolveComplaintTurn({message:body.message,locale:body.locale,history:body.history}) : null;
+    if(complaint)return await finish({status:'clarify',reply:complaint.reply,source:complaint.source,
+      mindRole:null,modelUsed:false,memorySaved:false,userAuthorized:true,suggestions:[],
+      usedSavedTestEvidence:false,usedSavedVideoHistory:false,browserModelAllowed:false,
+      decision:{status:'clarify',message:complaint.reply,question:null,suggestions:[]}});
     // Explicit opt-in to one wisdom reflection. This is a server-only DB
     // lookup after origin, session, throttles and safety checks. It never
     // overrides signed judgment choices or sends client text to other APIs.
-    if (body.mode==="rules" && safety.status==="clear" && !recentUnsafe &&
+    if (body.mode==="rules" && safety.status==="clear" && !recentUnsafe && !judgmentPriority &&
         body.judgmentContext==null && body.judgmentChoice==null &&
         body.usePrivateProfile!==true && body.usePrivateHistory!==true &&
         body.useAgentMemory!==true && body.preferredFormat==null) {
@@ -178,18 +377,18 @@ export async function POST(request) {
       });
       if(wisdom){
         const reply=[wisdom.reflection,wisdom.question].filter(Boolean).join("\n\n");
-        return auth.apply(NextResponse.json({
+        return await finish({
           status:"clarify",reply,modelUsed:false,source:"wisdom-library",
           memorySaved:false,userAuthorized:true,suggestions:[],
           usedSavedTestEvidence:false,usedSavedVideoHistory:false,
           browserModelAllowed:false,
           decision:{status:"clarify",message:reply,question:null,suggestions:[]},
-        },{headers:PRIVATE_HEADERS}));
+        });
       }
     }
-    // Source-checked Consultant Mind answers only explicitly requested service
-    // questions. All existing actor, consent, safety and throttling gates win.
-    const consultation=safety.status==="clear"&&!recentUnsafe &&
+    // Preserve the production source-grounded consultant; Judgment and all
+    // safety/consent gates remain authoritative before its factual reply.
+    const consultation=safety.status==="clear"&&!recentUnsafe&&!judgmentPriority &&
       body.judgmentContext==null && body.judgmentChoice==null &&
       body.usePrivateProfile!==true && body.usePrivateHistory!==true &&
       body.useAgentMemory!==true && body.preferredFormat==null &&
@@ -197,7 +396,7 @@ export async function POST(request) {
       ["rules","owned"].includes(body.mode)
       ? consultServiceQuestion({message:body.message,locale:body.locale,history:body.history})
       : null;
-    if(consultation)return auth.apply(NextResponse.json({
+    if(consultation)return await finish({
       status:consultation.status,reply:consultation.reply,
       mindRole:"consultant",modelUsed:false,source:"consultant-rules",
       memorySaved:false,userAuthorized:true,suggestions:consultation.suggestions,
@@ -205,17 +404,46 @@ export async function POST(request) {
       browserModelAllowed:false,
       decision:{status:consultation.status,message:consultation.reply,
         question:null,suggestions:consultation.suggestions},
-    },{headers:PRIVATE_HEADERS}));
+    });
+    if(nativeFrame&&!judgmentPriority&&body.judgmentContext==null&&body.judgmentChoice==null&&
+       stateEvent.type==='ask_price'&&(nativeFrame.state.goal||nativeFrame.state.goalStatement)){
+      const reply=body.locale==='ru'?'Я не могу подтвердить стоимость без выбранной услуги. Какую услугу вы имеете в виду?':
+        'I cannot confirm the price without a specific service. Which service do you mean?';
+      return await finish({status:'clarify',reply,modelUsed:false,source:'rules',memorySaved:false,userAuthorized:true,
+        suggestions:[],usedSavedTestEvidence:false,usedSavedVideoHistory:false,browserModelAllowed:false,
+        decision:{status:'clarify',message:reply,question:null,suggestions:[]}});
+    }
     // A short reviewed FAQ should not depend on media scans or paid inference.
     // Safety and authorization have already been verified for this exact turn.
-    const fastRule=body.mode==="rules"&&safety.status==="clear"&&!recentUnsafe
+    const fastRule=body.mode==="rules"&&safety.status==="clear"&&!recentUnsafe&&!judgmentPriority&&
+      body.judgmentContext==null&&body.judgmentChoice==null
       ? ruleConversationReply({message:body.message,locale:body.locale,history:body.history})
       : null;
+
+    // Keep brief emotional/relationship replies in the conversation instead of
+    // resetting a selected theme or prematurely showing service cards. Runs only
+    // after origin, verified actor, rate and safety checks; never reads private data.
+    const progressive=body.mode==="rules" && safety.status==="clear" && !recentUnsafe && !judgmentPriority &&
+      body.judgmentContext==null && body.judgmentChoice==null &&
+      body.usePrivateProfile!==true && body.usePrivateHistory!==true &&
+      body.useAgentMemory!==true && body.preferredFormat==null &&
+      (!body.chosenAxes || body.chosenAxes.length===0)
+      ? progressConversationTurn({message:body.message,locale:body.locale,history:body.history})
+      : null;
+    if(progressive){
+      return await finish({
+        status:"clarify",reply:progressive.reply,modelUsed:false,
+        source:"rules",memorySaved:false,userAuthorized:true,
+        suggestions:[],usedSavedTestEvidence:false,usedSavedVideoHistory:false,
+        browserModelAllowed:false,
+        decision:{status:"clarify",message:progressive.reply,question:null,suggestions:[]},
+      });
+    }
 
     // A first-party trained statistical model for simple secretary conversations.
     // The existing signed judgment, safety, user-consented memory, checkout and
     // media workflows remain authoritative. Never treat this as generative LLM.
-    const nativeReply=body.mode==="rules" && safety.status==="clear" && !recentUnsafe &&
+    const nativeReply=body.mode==="rules" && safety.status==="clear" && !recentUnsafe && !judgmentPriority &&
       body.judgmentContext==null && body.judgmentChoice==null &&
       body.usePrivateProfile!==true && body.usePrivateHistory!==true &&
       body.useAgentMemory!==true && body.preferredFormat==null &&
@@ -224,34 +452,28 @@ export async function POST(request) {
       ? nativeSecretaryTurn({message:body.message,locale:body.locale,history:body.history}) : null;
     if(nativeReply && NATIVE_INTENTS.has(nativeReply.intent) &&
        (!fastRule || NATIVE_FAST_IDS.has(fastRule.id))){
-      return auth.apply(NextResponse.json({
+      return await finish({
         status:"clarify",reply:nativeReply.reply,modelUsed:false,
         source:nativeReply.source,memorySaved:false,userAuthorized:true,
         suggestions:[],usedSavedTestEvidence:false,usedSavedVideoHistory:false,
         browserModelAllowed:false,
         decision:{status:"clarify",message:nativeReply.reply,question:null,suggestions:[]},
-      },{headers:PRIVATE_HEADERS}));
+      });
     }
     if(fastRule&&FAST_RULE_IDS.has(fastRule.id)){
-      return auth.apply(NextResponse.json({
+      return await finish({
         status:"clarify",reply:fastRule.reply,modelUsed:false,
         source:"rules",memorySaved:false,userAuthorized:true,
         suggestions:[],usedSavedTestEvidence:false,usedSavedVideoHistory:false,
         browserModelAllowed:false,
         decision:{status:"clarify",message:fastRule.reply,question:null,suggestions:[]},
-      },{headers:PRIVATE_HEADERS}));
+      });
     }
     // Tentative, nonclinical decision assistance only after owner, rate
     // and safety preflight. No profile read, storage, booking or inferred diagnosis.
     if (body.mode==="rules" && safety.status==="clear" && !recentUnsafe) {
-      const context=body.judgmentContext
-        ? verifyJudgmentChoice({config,actor,token:body.judgmentContext,history:body.history})
-        : null;
-      if(body.judgmentContext && !context)throw new AppError("INVALID_JUDGMENT_CONTEXT",400);
-      const judgment=planJudgmentTurn({
-        message:body.message,locale:body.locale,safety,history:body.history,
-        pending:context?.pending||null,choiceId:body.judgmentChoice||null,
-      });
+      const context=judgmentContext;
+      const judgment=inspectedJudgment;
       if(judgment.status!=="abstain") {
         const signed=judgment.pending ? signJudgmentChoice({
           config,actor,pending:judgment.pending,reply:judgment.reply,
@@ -261,14 +483,14 @@ export async function POST(request) {
           token:signed?.token||null,
           turnId:signed?.turnId||null,
           conversationRevision:signed?.conversationRevision||null};
-        return auth.apply(NextResponse.json({
+        return await finish({
           status:judgment.status==="handoff"?"safety_handoff":"clarify",
           reply:judgment.reply,modelUsed:false,source:"judgment-rules",
           memorySaved:false,userAuthorized:true,suggestions:[],
           usedSavedTestEvidence:false,usedSavedVideoHistory:false,
           browserModelAllowed:false,judgment:publicJudgment,
           decision:{status:"clarify",message:judgment.reply,question:null,suggestions:[]},
-        },{headers:PRIVATE_HEADERS}));
+        });
       }
     }
     // A client's boolean request is not consent or account proof. The server
@@ -319,6 +541,7 @@ export async function POST(request) {
       .filter(id=>typeof id==="string"&&/^[A-Za-z0-9_-]{11}$/.test(id)))];
     const trustedIds=new Set(publishedSourceIds);
     const meditationVideos=reviewedMeditationCandidates.videos.filter(item=>
+      !meditationDeclined &&
       item.source_kind==="original"&&item.metadata_confidence==="owner_source"&&
       trustedIds.has(item.youtube_id));
     // A chosen format is a hard user constraint, not a licence to fill empty
@@ -346,7 +569,7 @@ export async function POST(request) {
             verifiedPublicManifest:true} : null;
         }))).filter(Boolean)
       : [];
-    const decision=buildHolisticGuidedTurn({
+    const rawDecision=buildHolisticGuidedTurn({
       locale:body.locale,
       intent:{goal,rawUtterance:body.message,chosenAxes,
         enabledFormats,preferredFormat:body.preferredFormat||undefined,
@@ -360,6 +583,8 @@ export async function POST(request) {
       safety, catalogs:{services,axisOffers,publishedReikiAudio:publicAudio,
         meditationVideos,publishedSourceIds},
     });
+    const decision=meditationDeclined?{...rawDecision,suggestions:(rawDecision.suggestions||[])
+      .filter(item=>!item.id?.startsWith('youtube:'))}:rawDecision;
     const enabled=process.env.HH_AGENT_OWNED_ENABLED==="true";
     const configured=enabled && validatedOllamaConfig({
       endpoint:process.env.HH_AGENT_OLLAMA_ENDPOINT,
@@ -402,10 +627,17 @@ export async function POST(request) {
         signal:AbortSignal.timeout(16000),
       });
     }:undefined);
+    // Last-resort repetition gate for model/fallback text, only in ordinary
+    // safe clarification. This cannot change safety handoffs or model access.
+    const finalReply=safety.status==="clear" && !recentUnsafe &&
+      decision.status==="clarify"
+      ? progressDialogueReply({message:body.message,locale:body.locale,history:body.history,
+          reply:generated.text,intent:fastRule?.id||""})
+      : generated.text;
     const suggestions=(Array.isArray(decision.suggestions)?decision.suggestions:[])
       .slice(0,3).map(({id,kind,href,title})=>({id,kind,href,title}));
-    return auth.apply(NextResponse.json({
-      status:decision.status, reply:generated.text, modelUsed:generated.modelUsed,
+    return await finish({
+      status:decision.status, reply:finalReply, modelUsed:generated.modelUsed,
       mindRole:generated.modelUsed?envelope.mindRole:null,
       source:generated.provider, decision:{status:decision.status,message:decision.message,
         suggestions,question:decision.question||null},
@@ -414,7 +646,7 @@ export async function POST(request) {
       usedSavedVideoHistory:useHistory && completedIds.length>0,
       // Browser presentation may use a local model AFTER separate on-device opt-in.
       browserModelAllowed:experimentalEnabled && body.mode!=="owned" && safety.status==="clear" && !recentUnsafe,
-    },{headers:PRIVATE_HEADERS}));
+    });
   } catch (error) {
     const e=safeError(error);
     const response=NextResponse.json({error:e.code},{status:e.status,headers:PRIVATE_HEADERS});

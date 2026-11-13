@@ -881,7 +881,8 @@ test('core release checkout preserves ancestry jobs and pins exact base for boun
   assert.match(source, /git diff --no-renames --name-only -z/, 'scope must still diff actual base');
   assert.match(release, /git show/, 'immutable base specialist aggregate must remain');
   assert.match(release, /scripts\/ci-specialist-aggregate\.mjs/);
-  assert.match(release, /timeout-minutes: 45/);
+  assert.ok(release.includes("&& 12 || 45 }}"),
+    'strict or unknown route retains 45-minute Specialist timeout');
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
 });
 
@@ -1382,7 +1383,7 @@ test('native AutoMerge skips synchronize; isolated janitor runs without duplicat
   assert.doesNotMatch(recovery,/workflow_run\.conclusion != 'success'/,
     'ordinary code failures must not allocate a retry runner');
   assert.ok(enable.includes('["hh-merge-check", ["hh-merge-check"]]'), 'unified gate must be recognized');
-  assert.match(core, /types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft, edited\]/,
+  assert.match(core, /types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/,
     'Core CI MUST still rerun for every source push');
   assert.doesNotMatch(enable, /--admin|--force|checkout@|continue-on-error:/);
 });
@@ -1499,11 +1500,12 @@ test('single hh-merge-check never passes without exact-current workflow Core and
   assert.doesNotMatch(source,/^  release-ready:|^  hh-core-verified:/m);
 });
 
-test('legacy PR CI backfill accepts PAT-authored edited event without skipping required checks',()=>{
+test('missing PR Core recovery requires genuine Ready event instead of incidental metadata edits',()=>{
   const source=workflow('hh-pr-core-release.yml');
   const match=source.match(/^  pull_request:\s*\n([\s\S]*?)(?=^  merge_group:)/m);
   assert.ok(match,'Core must stay attached to a genuine PR event');
-  assert.match(match[1],/\bedited\b/,'metadata edit must produce genuine pull_request CI');
+  assert.match(match[1],/\bready_for_review\b/,'signed Draft-to-Ready must create genuine PR CI');
+  assert.doesNotMatch(match[1],/\bedited\b/,'PR title/body edits must not allocate a full CI wave');
   assert.match(match[1],/branches: \['codex\/public-book-library'\]/);
   assert.doesNotMatch(match[1],/paths:|paths-ignore:/,
     'required CI must not be skipped by a path filter');
@@ -1511,7 +1513,7 @@ test('legacy PR CI backfill accepts PAT-authored edited event without skipping r
   const specialist=source.split(/^  hh-specialist:/m)[1]?.split(/^  hh-merge-check:/m)[0]??'';
   const gate=source.split(/^  hh-merge-check:/m)[1]??'';
   assert.match(scope,/github\.event\.pull_request\.draft == false/,
-    'real scope must execute on non-draft edited PR');
+    'real scope must execute on a non-draft Ready PR');
   assert.match(specialist,/if: \$\{\{ !cancelled\(\) && needs\.scope\.result == 'success' && github\.event_name == 'pull_request' && github\.event\.pull_request\.draft == false \}\}/);
   assert.match(gate,/if: \$\{\{ !cancelled\(\) && \(github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false\) \}\}/,
     'required status must run and reject failed Core/Specialist');
@@ -1528,7 +1530,8 @@ test('short Core orchestration keeps lightweight aggregator and never skips real
   assert.match(scope, /^    runs-on: ubuntu-24\.04$/m);
   assert.match(scope, /^    timeout-minutes: 45$/m);
   assert.match(core, /^    runs-on: ubuntu-24\.04$/m);
-  assert.match(specialist, /^    runs-on: ubuntu-24\.04$/m);
+  assert.ok(specialist.includes("&& 'ubuntu-slim' || 'ubuntu-24.04' }}"),
+    'FULL, DOCK and unknown routes retain standard Ubuntu');
   assert.match(specialist, /^    needs: \[scope\]$/m, 'specialist must launch after successful Core');
   assert.match(specialist, /^    if: \$\{\{ !cancelled\(\) && needs\.scope\.result == 'success' && github\.event_name == 'pull_request' && github\.event\.pull_request\.draft == false \}\}$/m);
   assert.match(gate, /^    runs-on: ubuntu-slim$/m);
@@ -1630,7 +1633,7 @@ test('App R1 banner matrix runs REAL preinstalled Playwright only when applicabl
   const source=workflow('hh-app-r1.yml');
   const section=source.split('  course-banner-browser:\n')[1]?.split('\n  database:\n')[0];
   assert.ok(section,'course-banner-browser must exist');
-  assert.match(section,/runs-on: ubuntu-24\.04/);
+  assert.match(section,/runs-on: \$\{\{ matrix\.browser != 'none' && 'ubuntu-24\.04' \|\| 'ubuntu-slim' \}\}/);
   assert.match(section,/timeout-minutes: 15/);
   assert.match(section,/browser: \$\{\{ fromJSON\(needs\.impact\.outputs\.banner == 'true'/);
   assert.match(section,/if: needs\.impact\.outputs\.banner != 'true'/);

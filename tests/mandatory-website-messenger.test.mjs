@@ -19,10 +19,10 @@ test("website-only intake UI shows Telegram and WhatsApp with honest Send disclo
  assert.match(ui,/bot\.kind==="review"\?t\.review:t\.bot/);
  assert.match(ui,/setBot\(null\)/);
  const chooser=read("components/contact-channel-chooser.tsx");
- assert.match(chooser,/collapsed=\{\(compactPhone\|\|compactTrigger\)&&!allowSecureExpressClaim\}/);
+ assert.match(chooser,/collapsed=\{compactMessenger\|\|\(\(compactPhone\|\|compactTrigger\)&&!allowSecureExpressClaim\)\}/);
  const css=read("components/mandatory-messenger-actions.module.css");
  assert.match(css,/@media\(max-width:430px\)\{\.art\{height:44px\}\}/);
- assert.match(ui,/data-telegram-route=\{bot\?\.kind\|\|"manual"\}/);
+ assert.match(ui,/data-telegram-route=\{telegramUrl\?"manual":bot\?\.kind\|\|"manual"\}/);
  for(const p of ["components/contact-channel-chooser.tsx","components/compact-lead-capture.tsx","components/business-website-enquiry.tsx","components/meditation-course-enquiry.tsx"]) {
    assert.match(read(p),/if \(websiteMessengerOnlyUi\(\)\) return /,p);
    assert.match(read(p),/MandatoryMessengerActions/,p);
@@ -64,4 +64,30 @@ test("additional order and custom-quote journeys keep offer and never infer mess
   const gate=read("app/api/service-enquiries/route.js");
   assert.match(gate,/MESSENGER_VERIFICATION_REQUIRED/);
   assert.doesNotMatch(read("components/mandatory-messenger-actions.tsx"),/request:\s*(?:answers|report|medicalRecords)/);
+});
+
+test("Services request expands only two messaging buttons under the full service card",()=>{
+ const ui=read("components/mandatory-messenger-actions.tsx");
+ const css=read("components/mandatory-messenger-actions.module.css");
+ const chooser=read("components/contact-channel-chooser.tsx");
+ const spiritual=read("components/services-spiritual-reading.tsx");
+ const spiritualCss=read("components/services-spiritual-reading.module.css");
+ const magical=read("components/services-magical-help-mobile.tsx");
+ const consultation=read("components/services-personal-consultation-mobile.tsx");
+ const consultationCss=read("components/services-personal-consultation-mobile.module.css");
+ const courses=read("components/services-courses-shelf.tsx");
+ assert.match(ui,/data-compact-messenger=\{compact\?"true":undefined\}/);
+ assert.match(ui,/data-contact-order=\{compact\?"":undefined\}/);
+ assert.match(ui,/\{!compact&&<>\s*<img className=\{styles\.art\}/);
+ assert.match(ui,/\{!compact&&<>\s*<p className=\{styles\.note\}/);
+ assert.match(css,/\.root\[data-compact-messenger="true"\] \.actions\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+ assert.match(chooser,/compact=\{compactMessenger\}/);
+ for(const source of [spiritual,magical,consultation,courses])
+   assert.match(source,/compactMessenger/);
+ assert.equal((spiritual.match(/<SpiritualAction locale=/g)||[]).length,2);
+ assert.match(spiritualCss,/\.request\{grid-column:1\/-1;/);
+ assert.doesNotMatch(spiritualCss,/\.request :global\(\[data-contact-channel-chooser\]>div\[id\]\)\{position:absolute/);
+ assert.equal((consultation.match(/compactPhone compactTrigger compactMessenger stayAfterSave/g)||[]).length,2);
+ assert.match(consultationCss,/\.order \{ grid-column: 1 \/ -1;/);
+ assert.match(magical,/className=\{styles\.booking\}/);
 });
