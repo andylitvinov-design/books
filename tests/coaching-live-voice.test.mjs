@@ -244,10 +244,10 @@ test('approved holistic live-coach screen keeps portrait subtitles, responsive v
     'aria-pressed={showCaptions}','setShowCaptions(visible=>!visible)','className={styles.endControl}',
     'turns.length===0&&<section','{turns.map((turn,index)','className={styles.composerInput}',
     'onClick={toggleComposer}','className={styles.textComposer} open']) assert.ok(ui.includes(token),token)
-  assert.match(css,/\\.sessionHero \\.currentCoachPrompt\\{position:absolute/)
-  assert.match(css,/\\.voiceControls\\{display:grid/)
-  assert.match(css,/\\.sessionBottomNav\\{display:none/)
-  assert.match(css,/\\.sessionPortrait\\[data-persona\\]\\{background-size:auto 112%/)
+  assert.ok(css.includes('.sessionHero .currentCoachPrompt{position:absolute'))
+  assert.ok(css.includes('.voiceControls{display:grid'))
+  assert.ok(css.includes('.sessionBottomNav{display:none'))
+  assert.ok(css.includes('.sessionPortrait[data-persona]{background-size:auto 112%'))
   for(const token of ['onTranscript={setSpeechPreview}',
     "onDraft={text=>{setDraft(text);setSpeechPreview('');setError('')}}",
     "enabled={consent&&readiness.status!=='checking'&&!authRequired}",
