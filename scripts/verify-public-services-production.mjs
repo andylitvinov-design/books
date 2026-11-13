@@ -100,8 +100,9 @@ try {
     return page;
   };
 
-  // Mobile Assist replaces only the visible phone hero. The legacy cards,
-  // consultation/privacy flow, directory and desktop slider retain their own QA.
+  // On phones, the approved compact Assist shelves replace all old studio cards,
+  // large consultation captures and long legacy editorial sections. Desktop retains
+  // independent legacy regression; detail routes and CRM still have their own QA.
   const verifyMobileAssist = async (page, locale, width) => {
     const assist = page.locator("[data-assist-mobile]");
     const legacy = page.locator("[data-services-showcase-hero]");
@@ -109,6 +110,25 @@ try {
     await expect(assist).toHaveAttribute("lang", locale);
     await expect(legacy).toBeHidden();
     await expect(page.locator("#services-conversion-title")).toBeHidden();
+    // No hidden legacy card can remain visible or focusable below the compact UI.
+    const legacyPhoneSelectors = [
+      "#consultation", "[data-services-studio-free]", "[data-services-studio-card]",
+      "[data-services-studio-paid] > header", "[data-services-studio-paid] > div:last-child",
+      "[data-services-meet]", '[data-personal-testimonials="services"]',
+      "#method-videos", "[data-services-directory-invitation]", "[data-service-lead-capture]"
+    ];
+    for (const selector of legacyPhoneSelectors) {
+      await expect(page.locator(selector)).toBeHidden();
+    }
+    await expect(page.locator("[data-services-studio-card]:visible")).toHaveCount(0);
+    for (const selector of [
+      "[data-assist-personal-consultation]", "[data-assist-spiritual-entry]",
+      "[data-assist-video-generation]", "[data-assist-course-shelf]",
+      "[data-assist-magical-help]"
+    ]) {
+      await visible(page.locator(selector));
+    }
+
 
     const question = assist.locator("textarea#assist-question");
     const submit = assist.locator('form button[type="submit"]');
@@ -298,42 +318,49 @@ try {
             "Desktop Services first-screen actions must be usable at " + locale + "/" + width);
         }
       }
-      // Free-first studio: 3 no-payment paths, 6 personal offers and all
-      // independent consent/booking tests remain mandatory at every width.
+      // Keep legacy desktop assertions, but enforce compact-only visibility on phones.
       const free = page.locator('[data-services-studio-free]#free-insights');
       const paid = page.locator('[data-services-studio-paid]#solutions');
-      await visible(free.locator("h2#services-free-title"));
-      await visible(paid.locator("h2#services-personal-title"));
-      assert.equal(await free.locator('[data-services-studio-card]').count(), 3);
-      assert.equal(await paid.locator('[data-services-studio-card]').count(), 6);
-      const monthlySupport = paid.locator('[data-services-studio-card="monthly-support"]');
-      await visible(monthlySupport);
-      await expect(monthlySupport).toContainText(locale === "ru" ? "€200 / месяц" : locale === "es" ? "200 € / mes" : "€200 / month");
-      assert.equal(await monthlySupport.locator('[data-services-studio-action="monthly-support"]').getAttribute("href"),
-        "/" + locale + "/services/personal-support", "Approved monthly support must reach its own terms page");
-      assert.equal(await page.locator("#find-your-service").count(), 0,
-        "Detailed practitioner search belongs on the separate directory");
-      const testAction = free.locator('[data-services-studio-action="tests"]');
-      assert.equal(await testAction.getAttribute("href"), "/" + locale + "/tests");
-      await visible(free.locator('a[href="/' + locale + '/services/free-situation-review"]').first());
-      await visible(free.locator('a[href="/' + locale + '/services/dao-health-profile"]').first());
-      await visible(free.locator('a[href="/' + locale + '/courses/antistress"]'));
-      assert.equal(await page.locator("h1#services-conversion-title").count(), 1);
-      assert.equal(await page.evaluate(() => {
-        const selectors = ["#services-conversion-title", "#consultation", "#free-insights", "#solutions",
-          "[data-services-meet]", '[data-personal-testimonials="services"]',
-          "#method-videos", "[data-services-directory-invitation]"];
-        const sections = selectors.map(selector => [...document.querySelectorAll(selector)]);
-        if (sections.some(matches => matches.length !== 1)) return false;
-        return sections.every((matches, index) => index === 0 ||
-          Boolean(sections[index - 1][0].compareDocumentPosition(matches[0]) & Node.DOCUMENT_POSITION_FOLLOWING));
-      }), true, "Owner studio order: hero, booking, 3 free, personal offers, intro, reviews, methods, directory");
-      await expect(page.locator("#method-videos")).toHaveAttribute("open", "",
-        { timeout: 15000 });
-      // Method posters are visible, while third-party players stay opt-in.
-      assert.equal(await page.locator("#method-videos iframe").count(), 0,
-        "Method videos must not eagerly load third-party players");
-      await visible(page.locator('a[href="/' + locale + '/services/free-situation-review"]').first());
+      if (width > 760) {
+        await visible(free.locator("h2#services-free-title"));
+        await visible(paid.locator("h2#services-personal-title"));
+        assert.equal(await free.locator('[data-services-studio-card]').count(), 3);
+        assert.equal(await paid.locator('[data-services-studio-card]').count(), 6);
+        const monthlySupport = paid.locator('[data-services-studio-card="monthly-support"]');
+        await visible(monthlySupport);
+        await expect(monthlySupport).toContainText(locale === "ru" ? "€200 / месяц" : locale === "es" ? "200 € / mes" : "€200 / month");
+        assert.equal(await monthlySupport.locator('[data-services-studio-action="monthly-support"]').getAttribute("href"),
+          "/" + locale + "/services/personal-support", "Approved monthly support must reach its own terms page");
+        assert.equal(await page.locator("#find-your-service").count(), 0,
+          "Detailed practitioner search belongs on the separate directory");
+        const testAction = free.locator('[data-services-studio-action="tests"]');
+        assert.equal(await testAction.getAttribute("href"), "/" + locale + "/tests");
+        await visible(free.locator('a[href="/' + locale + '/services/free-situation-review"]').first());
+        await visible(free.locator('a[href="/' + locale + '/services/dao-health-profile"]').first());
+        await visible(free.locator('a[href="/' + locale + '/courses/antistress"]'));
+        assert.equal(await page.locator("h1#services-conversion-title").count(), 1);
+        assert.equal(await page.evaluate(() => {
+          const selectors = ["#services-conversion-title", "#consultation", "#free-insights", "#solutions",
+            "[data-services-meet]", '[data-personal-testimonials="services"]',
+            "#method-videos", "[data-services-directory-invitation]"];
+          const sections = selectors.map(selector => [...document.querySelectorAll(selector)]);
+          if (sections.some(matches => matches.length !== 1)) return false;
+          return sections.every((matches, index) => index === 0 ||
+            Boolean(sections[index - 1][0].compareDocumentPosition(matches[0]) & Node.DOCUMENT_POSITION_FOLLOWING));
+        }), true, "Owner studio order: hero, booking, 3 free, personal offers, intro, reviews, methods, directory");
+        await expect(page.locator("#method-videos")).toHaveAttribute("open", "",
+          { timeout: 15000 });
+        // Method posters are visible, while third-party players stay opt-in.
+        assert.equal(await page.locator("#method-videos iframe").count(), 0,
+          "Method videos must not eagerly load third-party players");
+        await visible(page.locator('a[href="/' + locale + '/services/free-situation-review"]').first());
+      } else {
+        await expect(free).toBeHidden();
+        await expect(paid.locator("h2#services-personal-title")).toBeHidden();
+        await expect(paid.locator("[data-services-studio-card]:visible")).toHaveCount(0);
+        await visible(paid.locator("[data-assist-video-generation]"));
+        assert.equal(await page.locator("#find-your-service").count(), 0);
+      }
       await assertNoDevIssueOverlay(page, locale + "/services/" + width);
       // RootLayout provides My Space: the canonical header opens an accessible
       // account dialog, not a direct Cabinet link. Never bypass sign-in here.
@@ -379,9 +406,9 @@ try {
         await page.screenshot({ path: output + "/services-" + locale + "-hero-" + width + ".png", fullPage: false });
       }
       if (width === 390) {
-        const insights = page.locator("[data-services-studio-free]#free-insights");
-        await insights.scrollIntoViewIfNeeded();
-        await insights.screenshot({ path: output + "/services-" + locale + "-free-insights-390.png" });
+        const compactConsultation = page.locator("[data-assist-personal-consultation]");
+        await compactConsultation.scrollIntoViewIfNeeded();
+        await compactConsultation.screenshot({ path: output + "/services-" + locale + "-compact-consultation-390.png" });
       }
       // Category slider and Online/Toronto choice: real client interactions,
       // never registering a lead, sending messages or initiating payment.
@@ -509,11 +536,11 @@ try {
   {
     const page = await createPage(390);
     await page.goto(origin + "/es/services", { waitUntil: "domcontentloaded" });
-    await visible(page.locator('[data-services-studio-free]'));
+    await expect(page.locator('[data-services-studio-free]')).toBeHidden();
     assert.equal(await page.locator('[data-services-studio-free] [data-services-studio-card]').count(), 3);
     assert.equal(await page.locator('[data-services-studio-paid] [data-services-studio-card]').count(), 6);
     const esMonthly = page.locator('[data-services-studio-paid] [data-services-studio-card="monthly-support"]');
-    await expect(esMonthly).toBeVisible();
+    await expect(esMonthly).toBeHidden();
     await expect(esMonthly).toContainText("200 € / mes");
     assert.equal(await esMonthly.locator('[data-services-studio-action="monthly-support"]').getAttribute("href"),
       "/es/services/personal-support", "Spanish support offer must lead to the terms page");

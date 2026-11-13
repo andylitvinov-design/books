@@ -65,3 +65,36 @@
 .privacy{margin:6px 4px 10px;font-size:11px;line-height:1.35}
 }
 @media(max-width:350px){.chips{gap:5px}.chips button{min-height:46px;padding:5px 3px;font-size:10.8px}.conversation{padding:10px}.speech strong{font-size:14px}.form textarea{font-size:13px}}
+
+/* Approved 13 Nov: the phone Services landing contains ONLY the new compact Assist
+   and recommendation shelves. Keep the original catalog on desktop and preserve
+   independent service detail/CRM routes. New Reiki/coach shelves mounted by
+   subsequent PRs in ServicesStudioOffers remain visible. */
+@media(max-width:760px){
+  .assistPage :global([data-services-showcase-hero]),
+  .assistPage :global([data-services-studio-free]),
+  .assistPage :global([data-services-studio-card]),
+  .assistPage :global([data-services-studio-paid] > header),
+  .assistPage :global([data-services-studio-paid] > div:last-child),
+  .assistPage :global(#consultation),
+  .assistPage :global([data-services-meet]),
+  .assistPage :global([data-personal-testimonials="services"]),
+  .assistPage :global(#method-videos),
+  .assistPage :global([data-services-directory-invitation]),
+  .assistPage :global([data-service-lead-capture]){
+    display:none!important;
+  }
+  /* The modern three-scenario video block is nested inside the legacy paid
+     grid. Preserve it without the preceding seven verbose service cards. */
+  .assistPage :global([data-services-studio-paid]){
+    width:calc(100% - 24px);
+    max-width:520px;
+    margin:0 auto;
+    scroll-margin-top:16px;
+  }
+  .assistPage :global([data-services-studio-paid] > div:not(:last-child)){
+    display:grid;
+    grid-template-columns:minmax(0,1fr);
+    gap:0;
+  }
+}
