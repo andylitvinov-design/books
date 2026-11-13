@@ -556,11 +556,13 @@ test('canonical full PR monitor and separate fast page both retain v6 proof',()=
  const fast=fs.readFileSync(path.join(home,'pr-monitor-fast.html'),'utf8');
  const full=fs.readFileSync(path.join(home,'pr-monitor-full.html'),'utf8');
  const source=fs.readFileSync(path.join(home,'pr-error-funnel.js'),'utf8');
- // The owner-facing canonical main monitor retains every original control
- // and diagnostic section. Fast is a separate lean entry, not a replacement.
+ const bundledCss=fs.readFileSync(path.join(home,'pr-monitor-yesterday.css'),'utf8');
+ // The main monitor retains actual controls, stage diagnostics and charts.
+ // Never gate on a historical build comment or one retired chart asset.
+ // The fast entry is separate, not a replacement for the full view.
  assert.equal(entry,full,'canonical main/full monitor must not diverge');
- assert.match(entry,/HH_PR_MONITOR_DIRECT_HTML_V1/);
- assert.match(entry,/pr-graphs-restore\.js\?v=20261112-two-charts-v1/);
+ assert.match(entry,/pr-two-screen\.js\?v=/);
+ assert.match(entry,/pr-compact-top\.js\?v=/);
  assert.match(entry,/ci-journey-dashboard\.js\?v=20261104-v1/);
  assert.match(entry,/pr-recommendations\.js\?v=20261111-v2/);
  assert.match(entry,/href="\/automations\.html"/);
@@ -571,10 +573,13 @@ test('canonical full PR monitor and separate fast page both retain v6 proof',()=
  assert.match(fast,/pr-monitor-fast\.js\?v=20261112-fast-v1/);
  assert.doesNotMatch(fast,/pr-two-screen-boot\.js/);
  assert.doesNotMatch(fast,/pr-error-funnel\.js\?v=/);
- assert.match(full,/HH_PR_MONITOR_DIRECT_HTML_V1/);
+ assert.match(full,/pr-two-screen\.js\?v=/);
  assert.doesNotMatch(full,/pr-two-screen-boot\.js/);
  assert.equal((full.match(/pr-error-funnel\.js\?v=20261111-paginated-v6/g)||[]).length,1);
- assert.equal((full.match(/pr-error-funnel\.css\?v=20261111-paginated-v6/g)||[]).length,1);
+ assert.match(full,/pr-monitor-yesterday\.css\?v=20261111-restored/);
+ assert.match(bundledCss,/\/\* original \/pr-error-funnel\.css \*\//);
+ assert.match(bundledCss,/\.hh-error-funnel\{/);
+ assert.doesNotMatch(full,/pr-error-funnel\.css\?v=/);
  assert.match(boot,/pr-error-funnel\.js\?v=20261111-paginated-v6/);
  assert.match(boot,/pr-error-funnel\.css\?v=20261111-paginated-v6/);
  assert.doesNotMatch(boot,/pr-error-funnel\.js\?v=20261111-reasons-v5/);

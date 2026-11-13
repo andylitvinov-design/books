@@ -16,6 +16,9 @@ const {PATHS:QUALITY_EVENT_PATHS,isTrustedQualityFailureEvent,qualityEventMatche
 const WORKER_PATH={repair:'hh-pr-repair-worker.yml',legacy:'hh-pr-repair-worker.yml',
  conflict:'hh-pr-repair-worker.yml',ci:'hh-pr-ci-worker.yml'};
 const MAX_DISPATCH=2, MAX_MANUAL_CONFLICT_HANDOFFS=2, MAX_INSPECT=16, MAX_CONFLICT_ONLY_INSPECT=6, MAX_API=55, MIN_RATE=250;
+// Only after a terminally handled hourly candidate: bounded alternative PR
+// checks, not additional worker executions or source authorisations.
+const MAX_LEGACY_BACKUPS=4, MAX_LEGACY_HOURLY_HISTORY=20;
 const RELEVANT=new Set(['HH PR 10-minute watchdog','HH PR source Repair Worker','HH zero-cost PR CI worker','HH PR core release gate',...Object.keys(QUALITY_EVENT_PATHS)]);
 function validOwnerRepairTarget(context,target){
  return !!(target&&typeof target==='object'&&!Array.isArray(target)&&
@@ -317,6 +320,40 @@ function trustedWatchdogSample(evidence,productionCount){
  return sample;
 }
 
+
+/**
+ * Fail closed on ambiguous existing Repair Worker history. GitHub lists
+ * workflow runs newest first: every current-UTC-hour dispatch, even failed or
+ * already completed, occupies the ONE allowed legacy preflight opportunity.
+ * A source repair in that hour conservatively reserves this same slot.
+ * Reads do not authorize a source write, a manual-hold removal or a merge.
+ */
+function legacyHourlyWorkerSlot(data,now){
+ if(!Number.isFinite(now)||now<0||!data||
+    !Number.isSafeInteger(data.total_count)||data.total_count<0||
+    !Array.isArray(data.workflow_runs)||
+    data.workflow_runs.length>MAX_LEGACY_HOURLY_HISTORY||
+    data.total_count<data.workflow_runs.length||
+    (data.total_count>0&&!data.workflow_runs.length)||
+    (data.total_count>data.workflow_runs.length&&
+     data.workflow_runs.length<MAX_LEGACY_HOURLY_HISTORY))
+  return 'HISTORY_UNVERIFIED';
+ const hourStart=Math.floor(now/3600000)*3600000;
+ let previous=Infinity;
+ for(const r of data.workflow_runs){
+  const created=Date.parse(r?.created_at||'');
+  if(!Number.isSafeInteger(r?.id)||r.id<1||
+     r.name!=='HH PR source Repair Worker'||
+     r.event!=='workflow_dispatch'||r.head_branch!==DEFAULT||
+     r.repository?.full_name!==REPO||
+     !Number.isFinite(created)||created>now+60000||
+     created>previous)return 'HISTORY_UNVERIFIED';
+  previous=created;
+  if(created>=hourStart)return 'HOURLY_SLOT_USED';
+ }
+ return 'FREE';
+}
+
 async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=snapshot,focusPrNumber=null,focusPrSnapshot=null,inventorySnapshot=null,watchdogEvidence=null,manualTarget=null}){
  const summary={schema:'HH_CONTROL_DISPATCH_V1',checkedAt:new Date(now).toISOString(),
   dryRun,discovered:0,production:0,actionable:0,candidates:0,
@@ -580,6 +617,42 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
    saturatedBy:capacity.saturatedBy||'CAPACITY_LIMIT',
    safeToDispatch:false};
  }
+ // A terminally handled or DIRTY legacy candidate must not strand the
+ // entire UTC-hour window. Inspect up to four OTHER existing PRs without
+ // creating any extra runner quota or changing labels/HEAD.
+ const ordered=[...candidates];
+ const candidateIds=new Set(ordered.map(t=>t?.pr_number).filter(Number.isSafeInteger));
+ const fallbackPool=manualTarget===null&&focusPrNumber===null?
+  production.filter(pr=>validLegacyPrep(pr)&&laneOf(pr)==='legacy')
+   .sort((a,b)=>{
+    // A historical conflict hint is more likely already handed off. Prefer
+    // safely readable non-hinted legacy PRs without inferring mergeability.
+    const hint=x=>(x.labels||[]).some(l=>l.name==='hh:conflict-repair-needed')?1:0;
+    const av=hint(a),bv=hint(b);
+    return av-bv||
+     (priorityFor(a,now).mergeRank||10)-(priorityFor(b,now).mergeRank||10)||
+     a.number-b.number;
+   }):[];
+ let fallbackCursor=0,fallbacksAdded=0,legacyDispatchAttempted=false;
+ let hourlyLegacyProof=null;
+ const queueLegacyFallback=()=>{
+  if(fallbacksAdded>=MAX_LEGACY_BACKUPS||legacyDispatchAttempted||
+     summary.legacyDispatchAccepted>0||quota.state.paused)return false;
+  while(fallbackCursor<fallbackPool.length){
+   const pr=fallbackPool[fallbackCursor++];
+   if(candidateIds.has(pr.number))continue;
+   const task=taskFor(pr,priorityFor(pr,now));
+   if(!task||task.lane!=='legacy')continue;
+   candidateIds.add(pr.number);
+   ordered.push(task);
+   summary.candidates=ordered.length;
+   fallbacksAdded++;
+   log('LEGACY_TERMINAL_FALLBACK_QUEUED #'+pr.number+
+    ' HEAD='+pr.head.sha.slice(0,12));
+   return true;
+  }
+  return false;
+ };
  // Both types of addressed Worker are per PR. Project the next queued run
  // immediately because the global Actions capacity snapshot is delayed.
  const occupyWorkerSlot=worker=>{
@@ -590,10 +663,10 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   }
  };
  // Preserve the source/CI-first plan. Conflict receipts are not code writes.
- const ordered=candidates;
  for(let task of ordered){
   if(summary.dispatchAccepted>=MAX_DISPATCH||quota.state.paused)break;
-  if(task?.lane==='legacy'&&summary.legacyDispatchAccepted>=1)continue;
+  if(task?.lane==='legacy'&&
+     (summary.legacyDispatchAccepted>=1||legacyDispatchAttempted))continue;
   currentTask=task;
   if(!task){blocked('UNCLASSIFIED');continue;}
   summary.inspected++;
@@ -649,6 +722,9 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
    (fresh.labels||[]).some(label=>label.name==='hh:conflict-repair-needed')&&
    laneOf(fresh)==='conflict';
   if(verifiedDirtyConflict){
+   // The chosen legacy candidate is a real DIRTY owner handoff, not the
+   // hourly read-only candidate. Continue to another independent PR.
+   if(wasLegacy&&!task.manual_conflict_probe)queueLegacyFallback();
    const converted=taskFor(fresh,priorityFor(fresh,now));
    if(converted?.lane!=='conflict'||converted.head_sha!==task.head_sha){
     blocked('DIRTY_CONFLICT_TASK_UNVERIFIED');continue;
@@ -735,6 +811,10 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
     continue;
    }
    blocked(status);
+   // Skip an exact-HEAD terminally processed legacy PR, not the next free
+   // independent backlog candidate. Never follow active/uncertain leases.
+   if(wasLegacy&&!task.manual_conflict_probe&&status==='ALREADY_HANDLED')
+    queueLegacyFallback();
    // A reserved/claimed HEAD with no terminal result must not be reported
    // as repaired. After a bounded grace, verify the worker is no longer
    // active and append one diagnostic receipt rather than redispatching
@@ -1059,6 +1139,27 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
     continue;
    }
   }
+  // Respect one existing cloud preflight opportunity per UTC hour across
+  // multiple Watchdog sweeps. An HTTP dispatch may be accepted before a
+  // runner starts; even a prior failed/completed worker reserves this hour.
+  // This is deliberately more conservative than an extra paid CI wave.
+  if(task.lane==='legacy'&&!dryRun){
+   if(hourlyLegacyProof===null){
+    try{
+     const response=await limited('legacy-hourly-worker-history',()=>
+      github.rest.actions.listWorkflowRuns({owner,repo,
+       workflow_id:WORKER_PATH.legacy,event:'workflow_dispatch',
+       per_page:MAX_LEGACY_HOURLY_HISTORY,page:1}));
+     hourlyLegacyProof=legacyHourlyWorkerSlot(response?.data,now);
+    }catch(error){hourlyLegacyProof='HISTORY_UNVERIFIED';}
+   }
+   if(hourlyLegacyProof!=='FREE'){
+    blocked(hourlyLegacyProof==='HOURLY_SLOT_USED'?
+     'LEGACY_HOURLY_WORKER_ALREADY_DISPATCHED':
+     'LEGACY_HOURLY_HISTORY_UNVERIFIED');
+    continue;
+   }
+  }
   // Global busy/cooldown history belongs to OTHER PRs. Only signed exact-HEAD
   // reservation history and per-PR workflow concurrency authorize execution.
   if(dryRun){summary.wouldDispatch++;summary.workerRuns.push({task_key:task.task_key,
@@ -1084,6 +1185,9 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
     task_key:task.task_key,reservation_run_id:String(context.runId||''),
     dry_run:'false'};
   try{
+   // Even an ambiguous provider response counts as the single attempt
+   // in this sweep. The next sweep rechecks authenticated run history.
+   if(task.lane==='legacy')legacyDispatchAttempted=true;
    const delivered=await limited('dispatch-worker',()=>github.rest.actions.createWorkflowDispatch({
     owner,repo,workflow_id:WORKER_PATH[task.lane],ref:DEFAULT,inputs}));
    // A successful HTTP 204 proves GitHub accepted the dispatch request;
@@ -1228,6 +1332,6 @@ async function wakeDirectionWatcher({github,core,context,now=Date.now(),dryRun=f
  }
  log();return state;
 }
-module.exports={trustedContext,validOwnerRepairTarget,planCandidates,run,wakeDirectionWatcher,workerBusyOrCooling,
+module.exports={trustedContext,validOwnerRepairTarget,planCandidates,legacyHourlyWorkerSlot,run,wakeDirectionWatcher,workerBusyOrCooling,
  DIRECTION_IDLE_MS,DIRECTION_WORKFLOW,verifiedSpecialistProductFailure,backlogLabelHints,
  signedCiWakeTiming};
