@@ -65,7 +65,7 @@
     cursor: pointer;
   }
   .action svg { flex: none; }
-  .order { width: 100%; margin-top: auto; min-width: 0; }
+  .order { grid-column: 1 / -1; width: 100%; margin-top: 1px; min-width: 0; }
   .order :global([data-contact-channel-chooser]) { min-width: 0; width: 100%; }
   .order :global([data-contact-order]) { width: 100%; min-height: 50px; margin: 0; padding: 9px 5px; gap: 4px; }
   .order :global([data-contact-order]) svg { width: 17px; height: 17px; }
