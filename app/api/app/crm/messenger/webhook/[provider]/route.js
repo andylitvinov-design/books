@@ -7,12 +7,13 @@ import { MESSENGER_CHANNELS } from '@/lib/crm/messenger-policy'
 import { operationHash } from '@/lib/app/crypto'
 import { telegramPromptFailureEvidence } from '@/lib/crm/telegram-prompt-diagnostics.mjs'
 import { verifyMessengerWebhook,verifyMessengerChallenge,normalizeMessengerUpdates,ingestMessengerUpdate,processTelegramDiagnostic,processWhatsAppAccountLink,processWhatsAppDiagnostic } from '@/lib/crm/messenger-webhook'
-import { sendTelegramDiagnosticPrompt, sendWhatsAppDiagnosticPrompt, ensureTelegramInlineWebhookUpdates, acknowledgeTelegramInlineCallback, sendTelegramCompanionMessage } from '@/lib/crm/messenger-provider'
+import { sendTelegramDiagnosticPrompt, sendWhatsAppDiagnosticPrompt, ensureTelegramInlineWebhookUpdates, acknowledgeTelegramInlineCallback, sendTelegramCompanionMessage, sendHolisticBusinessRequestReply } from '@/lib/crm/messenger-provider'
 import { telegramPresentationOnStart } from '@/lib/crm/telegram-presentation.mjs'
 import {processTelegramCompanion} from '@/lib/crm/telegram-companion-service'
 import {processTelegramAiV3,finishTelegramAiV3} from '@/lib/crm/telegram-ai-diagnostic-v3-service'
 import {shouldBootstrapTelegramNativeMenu} from '@/lib/crm/telegram-companion-native-commands.mjs'
 import { receiveOwnerTelegramVideoWebhook } from '@/lib/practitioners/owner-telegram-video-service'
+import { telegramBusinessRequestFromUpdate, telegramBusinessRequestReply } from '@/lib/assist/telegram-business-request.mjs'
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
 export const revalidate=0
@@ -53,6 +54,27 @@ export async function POST(request,{params}){
         return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
       }
     }
+    // Signed business_message from a customer contacting the separate owner's
+    // @holistichouse account. Never create an unconsented CRM lead here.
+    if(provider==='telegram'){
+      const draft=telegramBusinessRequestFromUpdate(body)
+      if(draft&&process.env.HH_CRM_TG_CHAT_AUTOMATION_ENABLED==='true'){
+        try{
+          await consumeRate(config,{op:'hh-tg-business-intent-message',
+            connectionId:draft.connectionId,chatId:draft.chatId,messageId:draft.messageId},1,7*86400)
+          await consumeRate(config,{op:'hh-tg-business-intent-chat',
+            connectionId:draft.connectionId,chatId:draft.chatId},3,86400)
+          await consumeRate(config,{op:'hh-tg-business-intent-global'},100,86400)
+          await sendHolisticBusinessRequestReply({connectionId:draft.connectionId,
+            to:draft.chatId,text:telegramBusinessRequestReply(draft)})
+        }catch{
+          // No automatic retry after uncertain provider status or budget cap.
+          // The original request is still visible in the owner's Telegram.
+          console.error('HH_TG_BUSINESS_REPLY_NOT_CONFIRMED')
+        }
+      }
+    }
+
     const updates=normalizeMessengerUpdates(provider,body)
     // A previously registered bot may subscribe to 'message' only. Upgrade
     // the SAME already-owned signed webhook before its next inline prompt.

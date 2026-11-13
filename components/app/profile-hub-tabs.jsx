@@ -133,7 +133,12 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
   return <section className={styles.hub} data-profile-hub-tabs data-profile-active={current}>
     <header className={styles.heading}>
       <div><p className={styles.eyebrow}>{t.label}</p><h2>{settingsMode ? s.pageTitle : t.title}</h2></div>
-      {!settingsMode && <ProfileModeSwitch locale={selected} active="live" />}
+      <div className={styles.profileHeadingActions}>
+        <Link href={'/'+selected+'/my-page'} prefetch={false} className={styles.myPageLink} data-profile-my-page>
+          {selected==='ru'?'Моя страница':selected==='es'?'Mi página':'My Page'}
+        </Link>
+        {!settingsMode && <ProfileModeSwitch locale={selected} active="live" />}
+      </div>
     </header>
     <nav className={settingsMode ? styles.settingsTabs : styles.tabs} aria-label={settingsMode ? s.menu : COPY[selected].navigation}>
       {settingsMode ? [

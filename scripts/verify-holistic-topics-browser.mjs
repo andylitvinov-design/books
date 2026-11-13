@@ -106,10 +106,18 @@ for (const engine of [chromium, webkit]) {
           const response = await page.goto(origin + "/" + locale + "/holistic-support",
             { waitUntil: "domcontentloaded", timeout: 60000 });
           assert.equal(response?.status(), 200, label + " HTTP status");
-          await page.waitForFunction(() => {
-            const button = document.querySelector('[data-holistic-topic="business"]');
-            return !!button && Object.keys(button).some(key => key.startsWith("__reactProps$"));
-          }, null, {timeout:15000});
+          // Slow WebKit hydration under concurrent browser suites is not a
+          // functional failure; preserve the React hydration assertion and
+          // allow one bounded 30-second wait with diagnostic page errors.
+          try {
+            await page.waitForFunction(() => {
+              const button = document.querySelector('[data-holistic-topic="business"]');
+              return !!button && Object.keys(button).some(key => key.startsWith("__reactProps$"));
+            }, null, {timeout:engine.name() === "webkit" ? 30000 : 15000});
+          } catch(error) {
+            throw new Error(label + " failed to hydrate topic controls: " + String(error) +
+              "; runtime errors: " + JSON.stringify(errors.slice(-5)));
+          }
           const root = page.locator("[data-holistic-topic-filter]");
           await root.waitFor({ state: "visible", timeout: 30000 });
           assert.equal(await root.locator('[role="tab"]').count(), 3, label + " exactly three topic filters");

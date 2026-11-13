@@ -3,6 +3,8 @@ export type TimedSpeechSegment={
 };
 export type TimedSpeechTranscript={
   text:string;durationSeconds:number;segments:TimedSpeechSegment[];
+  /** Device speech uses approximate event-clock positions, not verified word-level timestamps. */
+  timingSource?:"estimated"|"verified";
 };
 export type TimedVisualShot={
   sceneId:string;startSeconds:number;durationSeconds:number;endSeconds:number;

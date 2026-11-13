@@ -1,6 +1,7 @@
 export type MyTubePlotLocale = "ru" | "en" | "es";
 export type MyTubePlotMode =
-  | "grounded_dilemma" | "symbolic_quest" | "relational_mirror" | "branching_future";
+  | "grounded_dilemma" | "symbolic_quest" | "relational_mirror" | "branching_future"
+  | "documentary_observation" | "quiet_rehearsal";
 export interface MyTubePlot {
   id: string;
   scenarioId: string;
@@ -24,8 +25,8 @@ export const MYTUBE_PLOT_COUNTS: Readonly<{
   subcategories: 16;
   topics: 64;
   scenarios: 256;
-  plotsPerScenario: 4;
-  totalPlots: 1024;
+  plotsPerScenario: 6;
+  totalPlots: 1536;
   storyBeatsPerPlot: 4;
 }>;
 export function getMyTubePlotCount(scenarioId:string):number;

@@ -1,6 +1,6 @@
 "use client";
 
-import {useCallback,useEffect,useRef,useState} from "react";
+import {forwardRef,useCallback,useEffect,useImperativeHandle,useRef,useState} from "react";
 import Link from "next/link";
 import {Download,Send,RefreshCw,MessageCircle,CheckCircle2} from "lucide-react";
 import {appFetch} from "@/lib/app/client-fetch";
@@ -13,8 +13,13 @@ type State={
  telegram:{linkAvailable:boolean;linked:boolean;sendingAvailable:boolean;automatic:boolean;consentSaved:boolean};
  whatsapp:{manualShare:boolean;automatic:boolean};
 };
+export type VideoDeliveryStatus={
+ notice:string;busy:boolean;uploadPercent:number|null;savedId:string|null;cloudAvailable:boolean|null;
+};
+export type VideoDeliveryHandle={saveToLibrary:()=>Promise<void>};
 type Props={
  locale:PublicLocale;open:boolean;onClose:()=>void;
+ onStatusChange?:(status:VideoDeliveryStatus)=>void;
  blob:Blob;url:string;extension:"mp4"|"webm";mime:string;bytes:number;
  theme:string;aspect:"portrait"|"landscape"|"square";duration:number;
 };
@@ -34,6 +39,8 @@ const COPY={
   wait:"Подготавливаем приватную доставку…",
   uploading:"Загружаем видео частями: {percent}%. Не закрывайте вкладку.",
   uploadRetry:"Загрузка прервалась. Нажмите «Сохранить» ещё раз — продолжим тот же файл без новой записи.",
+  cloudSaveOff:"Сохранение в Мои видео пока не включено на сервере. MP4 остаётся на устройстве — можно скачать файл.",
+  signInRequired:"Войдите через Google в Мой дом и проверьте вход. Ваше видео остаётся здесь.",
   uploadExpired:"Срок загрузки истёк. Удалите незавершённую запись в «Моих видео» и повторите сохранение.",
   accepted:"Telegram принял видео к отправке. Это ещё не подтверждение получения или просмотра.",
   duplicate:"Отправка этого ролика уже обрабатывалась. Повторного сообщения не создаём.",
@@ -57,6 +64,8 @@ const COPY={
   wait:"Preparing private delivery…",
   uploading:"Uploading video in parts: {percent}%. Keep this tab open.",
   uploadRetry:"Upload interrupted. Tap Save again to resume the same file without reserving another video.",
+  cloudSaveOff:"Saving to My Videos is not enabled on the server yet. The MP4 stays here; you can download it.",
+  signInRequired:"Sign in with Google in My House, then check sign-in. Your video stays here.",
   uploadExpired:"Upload expired. Delete the unfinished entry in My Videos before trying again.",
   accepted:"Telegram accepted the video for sending. This does not confirm delivery or viewing.",
   duplicate:"A delivery attempt already exists for this video. No duplicate message was sent.",
@@ -80,6 +89,8 @@ const COPY={
   wait:"Preparando entrega privada…",
   uploading:"Subiendo el vídeo por partes: {percent} %. Mantén esta pestaña abierta.",
   uploadRetry:"Subida interrumpida. Pulsa Guardar para reanudar el mismo archivo sin crear otro registro.",
+  cloudSaveOff:"Guardar en Mis vídeos aún no está habilitado en el servidor. El MP4 permanece aquí; puedes descargarlo.",
+  signInRequired:"Inicia sesión con Google en Mi espacio y comprueba el acceso. Tu vídeo sigue aquí.",
   uploadExpired:"La carga caducó. Borra la entrada incompleta en Mis vídeos y vuelve a intentarlo.",
   accepted:"Telegram aceptó el vídeo para envío, pero no ha confirmado su entrega o visualización.",
   duplicate:"Este vídeo ya tiene un intento de envío. No enviamos duplicados.",
@@ -95,7 +106,9 @@ function errorCode(error:unknown){
  return typeof error==="object"&&error!==null&&"code" in error?String(error.code):"";
 }
 
-export function MandalaVideoDelivery({locale,open,onClose,blob,url,extension,mime,bytes,theme,aspect,duration}:Props){
+export const MandalaVideoDelivery=forwardRef<VideoDeliveryHandle,Props>(function MandalaVideoDelivery({
+ locale,open,onClose,onStatusChange,blob,url,extension,mime,bytes,theme,aspect,duration
+},ref){
  const t=COPY[locale]||COPY.en;
  const [state,setState]=useState<State|null>(null);
  const [session,setSession]=useState<"checking"|"signed_in"|"guest"|"unavailable">("checking");
@@ -106,6 +119,7 @@ export function MandalaVideoDelivery({locale,open,onClose,blob,url,extension,mim
  const [busy,setBusy]=useState(false);
  const [botUrl,setBotUrl]=useState("");
  const inFlight=useRef<Promise<string>|null>(null);
+ const savingRef=useRef(false);
  const autoAttempted=useRef(false);
  // A new video may auto-send only if opt-in was already active when this result loaded.
  // Turning on delivery beside an existing video must not upload that file silently.
@@ -173,16 +187,30 @@ export function MandalaVideoDelivery({locale,open,onClose,blob,url,extension,mim
   return task;
  }
  async function saveToLibrary(){
-  if(busy||session!=="signed_in"||!readyMp4)return;
+  // The explicit Ready Save click calls this same existing idempotent uploader.
+  // A double tap, expired session or disabled cloud must never create a new slot.
+  if(savingRef.current||busy)return;
+  if(savedId){setNotice(t.savedPrivate);return;}
+  if(!readyMp4){setNotice(t.unsupported);return;}
+  savingRef.current=true;
   setBusy(true);setUploadPercent(0);setNotice(t.wait);
   try{
+   const current=session==="signed_in"&&state?state:await refresh();
+   if(!current){setNotice(t.signInRequired);return;}
+   if(!current.cloudAvailable){setNotice(t.cloudSaveOff);return;}
    const id=await privateUpload();
    setSavedId(id);
-   setNotice(t.savedPrivate);setUploadPercent(null);
+   setNotice(t.savedPrivate);
   }catch(error){
-   setNotice(errorCode(error)==="PRIVATE_UPLOAD_EXPIRED"?t.uploadExpired:t.uploadRetry);
+   const code=errorCode(error);
+   setNotice(code==="SIGN_IN_REQUIRED"?t.signInRequired:
+     code==="FEATURE_UNAVAILABLE"?t.cloudSaveOff:
+     code==="PRIVATE_UPLOAD_EXPIRED"?t.uploadExpired:t.uploadRetry);
+  }finally{
+   savingRef.current=false;
+   setUploadPercent(null);
+   setBusy(false);
   }
-  finally{setBusy(false);}
  }
  async function sendViaBot(automatic:boolean){
   if(busy||!readyMp4)return;
@@ -246,7 +274,14 @@ export function MandalaVideoDelivery({locale,open,onClose,blob,url,extension,mim
   }catch{setNotice(t.error);}
   finally{setBusy(false);}
  }
- if(!open)return notice?<p className={css.notice} role="status" aria-live="polite" data-video-delivery-status>{notice}</p>:null;
+ // The display lives immediately beneath the two approved Ready actions,
+ // while the delivery chooser stays available for Telegram/device alternatives.
+ useImperativeHandle(ref,()=>({saveToLibrary}),[saveToLibrary]);
+ useEffect(()=>{
+  onStatusChange?.({notice,busy,uploadPercent,savedId,cloudAvailable:state?.cloudAvailable??null});
+ },[notice,busy,uploadPercent,savedId,state?.cloudAvailable,onStatusChange]);
+ if(!open)return onStatusChange?null:
+   notice?<p className={css.notice} role="status" aria-live="polite" data-video-delivery-status>{notice}</p>:null;
  const accountLocale=locale==="es"?"en":locale;
  return <section className={css.root} aria-label={t.title} data-video-messenger-delivery>
   <div className={css.heading}><h4>{t.title}</h4>
@@ -314,4 +349,4 @@ export function MandalaVideoDelivery({locale,open,onClose,blob,url,extension,mim
   {notice?<p className={css.notice} role="status" aria-live="polite">{notice}</p>:null}
   <small className={css.privacy}>{t.privacy}</small>
  </section>;
-}
+});
