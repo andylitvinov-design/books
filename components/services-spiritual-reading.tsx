@@ -102,7 +102,7 @@ function SpiritualAction({ locale, label, service }: { locale: PublicLocale; lab
   const t = copy[locale];
   const pagePath = "/" + locale + "/services/spiritual-reading";
   return <div className={styles.request}>
-    <ContactChannelChooser locale={locale} label={label} className={styles.action}
+    <ContactChannelChooser locale={locale} label={label} className={styles.action} compactMessenger
       event="service_request_start" whatsappUrl={whatsappEnquiryUrl({
         locale, service, request: t.enquiry, pagePath,
       })} attributes={{ "data-spiritual-enquiry": service }} />
@@ -145,16 +145,16 @@ export function SpiritualReadingPageContent({
           <div className={styles.info}>
             <h2>{t.taoTitle}</h2>
             <p className={styles.description}><Compass aria-hidden="true"/>{t.taoDescription}</p>
-            <SpiritualAction locale={locale} label={t.taoAction} service="Taoist Reading" />
           </div>
+          <SpiritualAction locale={locale} label={t.taoAction} service="Taoist Reading" />
         </article>
         <article className={styles.card} data-spiritual-service="tarot">
           <div className={styles.photo}><Image src="/images/holistic-house/mandala-gold-reference.webp" alt="" fill sizes="(max-width: 450px) 34vw, 210px" unoptimized /></div>
           <div className={styles.info}>
             <h2>{t.tarotTitle}</h2>
             <p className={styles.description}><Layers3 aria-hidden="true"/>{t.tarotDescription}</p>
-            <SpiritualAction locale={locale} label={t.tarotAction} service="Tarot Reading" />
           </div>
+          <SpiritualAction locale={locale} label={t.tarotAction} service="Tarot Reading" />
         </article>
         <article className={styles.card} data-spiritual-service="tarot-masters">
           <div className={styles.photo}>

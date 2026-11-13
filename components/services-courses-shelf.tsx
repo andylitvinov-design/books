@@ -115,7 +115,7 @@ export function ServicesCoursesShelf({ locale }: { locale: PublicLocale }) {
               <Info size={18} aria-hidden="true"/>{t.details}
             </Link>
             <div className={styles.orderWrap} data-assist-course-order={course.id}>
-              <ContactChannelChooser locale={locale} label={t.order} className={styles.order} compactTrigger
+              <ContactChannelChooser locale={locale} label={t.order} className={styles.order} compactTrigger compactMessenger
                 publicServiceTitle={item.title} publicTopic={item.title} event="service_request_start"
                 whatsappUrl={enquiryUrl} telegramEnquiryUrl={telegramEnquiryUrlFromWhatsApp(enquiryUrl)}
                 attributes={{"data-assist-course-order":course.id}}/>
