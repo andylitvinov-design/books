@@ -336,7 +336,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null,person
   const [duration,setDuration]=useState(0)
   const [style,setStyle]=useState('all')
   const [session,setSession]=useState(null)
-  const [liveChat,setLiveChat]=useState(false)
+  const [liveChat,setLiveChat]=useState(Boolean(selectedPersona))
   const [entryStep,setEntryStep]=useState('intro')
   const [checkin,setCheckin]=useState('')
   const [sessionTopic,setSessionTopic]=useState('')

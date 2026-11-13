@@ -1243,3 +1243,8 @@
   .personaWelcomeGreeting{font-size:16px}
 }
 @media(prefers-reduced-motion:reduce){.personaWelcomeFace{animation:none}}
+
+.root:has([data-my-coach-immersive-session]){width:100%;min-height:100dvh;margin:0;padding:0;background:#fbf5e9;overflow-x:clip}
+.root:has([data-my-coach-immersive-session]) .wrap{width:100%;max-width:100%;margin:0}
+.personaWelcome:has([data-my-coach-immersive-session]){display:block;width:100%;max-width:100%;min-height:100dvh;margin:0;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none}
+.personaWelcome:has([data-my-coach-immersive-session])>[data-my-coach-live-dialogue]{grid-column:auto;width:100%;min-width:0}

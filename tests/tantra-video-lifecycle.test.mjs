@@ -373,13 +373,53 @@ test('reopened WebKit decoder cannot be sought by repeated unadvanced preroll fr
   assert.deepEqual(f.writes,[],'A stuck frame-zero decoder cannot authorize another seek');
   assert.equal(f.callbacks.length,1,'Native controls remain available without a retry timer');
 });
-test('healthy same-source native replay advances two real frames without mutating time',()=>{
+test('healthy same-source replay requires distinct decoded frames AND an advancing native clock',()=>{
   const f=deferredWebKitFixture();f.close();f.reopen();
   f.media.paused=false;f.handlers.onPlay(f.event);
   f.frame(5.42);assert.deepEqual(f.writes,[]);assert.equal(f.callbacks.length,1);
   f.frame(5.46);assert.deepEqual(f.writes,[]);
-  assert.equal(f.callbacks.length,0,'Two correctly decoded frames finish recovery monitoring');
+  assert.equal(f.callbacks.length,1,'Two frame callbacks with a frozen clock cannot be healthy');
+  f.setPosition(5.62); // Actual native playback, not a synthetic frame-only report.
+  f.frame(5.62);assert.deepEqual(f.writes,[]);
+  assert.equal(f.callbacks.length,0,'Distinct frames AND advancing native clock finish monitoring');
 });
+
+test('WebKit decoded callbacks with frozen clock retain one bounded same-source recovery',()=>{
+  const animation=[], events=new Map();
+  let loads=0, plays=0;
+  const f=deferredWebKitFixture({
+    muted:true,readyState:4,
+    pause(){this.paused=true;},
+    load(){loads++;this.paused=true;this.readyState=1;},
+    play(){plays++;this.paused=false;return Promise.resolve();},
+    addEventListener(type,fn){events.set(type,fn);},
+    removeEventListener(type,fn){if(events.get(type)===fn)events.delete(type);},
+    ownerDocument:{defaultView:{requestAnimationFrame(fn){animation.push(fn);return animation.length;}}},
+  });
+  f.close();f.reopen();
+  assert.equal(loads,0,'No recovery is allowed on disclosure reopening');
+  const pausedPosition=f.media.currentTime;
+  f.media.paused=false;f.handlers.onPlay(f.event);
+  f.frame(5.42);f.frame(5.46);
+  assert.equal(f.callbacks.length,1,
+    'Two decoded frame callbacks without clock movement cannot release the stall observer');
+  assert.equal(f.media.currentTime,pausedPosition,'Native clock is genuinely stalled');
+  animation.shift()(0);
+  animation.shift()(1800);
+  assert.equal(loads,1,'Only the already user-triggered muted same-source recovery is allowed');
+  assert.equal(plays,0,'No autoplay or unsolicited provider playback');
+  assert.equal(f.media.paused,true,'Reload leaves the native video paused until metadata and seek proof');
+});
+
+test('repeated identical warmed WebKit frames cannot trigger a saved-position seek',()=>{
+  const f=deferredWebKitFixture();f.close();f.reopen();
+  f.media.paused=false;f.handlers.onPlay(f.event);
+  f.frame(0.066666);
+  for(let i=0;i<7;i++)f.frame(0.533333);
+  assert.deepEqual(f.writes,[],'One decoded warmed frame repeated cannot authorize a native seek');
+  assert.equal(f.callbacks.length,1,'Retain a single bounded video-frame observer');
+});
+
 test('real user seek, source replacement or paused media cancels a pending frame callback',()=>{
   for(const cancel of [
     f=>f.handlers.onSeeking(f.event),

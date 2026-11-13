@@ -16,6 +16,8 @@ import { AXIS_REFS, publishedAxisOffers } from "@/lib/holistic-support/axis-offe
 import { interpretSupportUtterance, explainUserQuestion } from "@/lib/holistic-support/guide-dialogue.mjs";
 import { ruleConversationReply } from "@/lib/holistic-support/rule-conversation.mjs";
 import { nativeSecretaryTurn } from "@/lib/holistic-support/native-secretary.mjs";
+import { consultServiceQuestion } from "@/lib/assist/consultant-mind.mjs";
+import { resolveComplaintTurn } from "@/lib/holistic-support/complaint-mind.mjs";
 import { resolveWisdomRequest } from "@/lib/app/coaching-wisdom.js";
 import { resolveConversationFocus } from "@/lib/holistic-support/conversation-context.mjs";
 import { detectConversationLocale } from "@/lib/holistic-support/conversation-locale.mjs";
@@ -45,6 +47,7 @@ const FAST_RULE_IDS = new Set([
   "price","privacy","login","technical","orders","video_status",
   "video_delivery","video_download","video_definition","human_help",
   // Reviewed factual FAQ: no orders, results, uploads, payments or network sends.
+  "conversation_greeting","conversation_small_talk","conversation_chat_invitation",
   "chat_guest","chat_modes","chat_bug","chat_keyboard","chat_history",
   "chat_delete","chat_telegram","chat_whatsapp","video_render_queue",
   "video_export","video_license","video_orientation",
@@ -141,6 +144,27 @@ export async function POST(request) {
     const recentUnsafe = body.history.some(turn => turn.role==="user" &&
       preflight(turn.text,body.locale).status!=="clear");
     if (recentUnsafe && safety.status==="clear") safety.status="human_review";
+
+    // Complaint Mind is a reviewed, no-side-effect response layer. The prior
+    // actor, rate, safety and recent-unsafe gates always take precedence.
+    const complaint=safety.status==="clear"&&!recentUnsafe &&
+      body.judgmentContext==null && body.judgmentChoice==null &&
+      body.usePrivateProfile!==true && body.usePrivateHistory!==true &&
+      body.useAgentMemory!==true && body.preferredFormat==null &&
+      (!body.chosenAxes || body.chosenAxes.length===0) &&
+      ["rules","owned"].includes(body.mode)
+      ? resolveComplaintTurn({message:body.message,locale:body.locale,history:body.history})
+      : null;
+    if(complaint){
+      return auth.apply(NextResponse.json({
+        status:"clarify",reply:complaint.reply,source:complaint.source,
+        mindRole:null,modelUsed:false,memorySaved:false,userAuthorized:true,
+        suggestions:[],usedSavedTestEvidence:false,usedSavedVideoHistory:false,
+        browserModelAllowed:false,
+        decision:{status:"clarify",message:complaint.reply,question:null,suggestions:[]}
+      },{headers:PRIVATE_HEADERS}));
+    }
+
     // Explicit opt-in to one wisdom reflection. This is a server-only DB
     // lookup after origin, session, throttles and safety checks. It never
     // overrides signed judgment choices or sends client text to other APIs.
@@ -163,6 +187,25 @@ export async function POST(request) {
         },{headers:PRIVATE_HEADERS}));
       }
     }
+    // Source-checked Consultant Mind answers only explicitly requested service
+    // questions. All existing actor, consent, safety and throttling gates win.
+    const consultation=safety.status==="clear"&&!recentUnsafe &&
+      body.judgmentContext==null && body.judgmentChoice==null &&
+      body.usePrivateProfile!==true && body.usePrivateHistory!==true &&
+      body.useAgentMemory!==true && body.preferredFormat==null &&
+      (!body.chosenAxes || body.chosenAxes.length===0) &&
+      ["rules","owned"].includes(body.mode)
+      ? consultServiceQuestion({message:body.message,locale:body.locale,history:body.history})
+      : null;
+    if(consultation)return auth.apply(NextResponse.json({
+      status:consultation.status,reply:consultation.reply,
+      mindRole:"consultant",modelUsed:false,source:"consultant-rules",
+      memorySaved:false,userAuthorized:true,suggestions:consultation.suggestions,
+      usedSavedTestEvidence:false,usedSavedVideoHistory:false,
+      browserModelAllowed:false,
+      decision:{status:consultation.status,message:consultation.reply,
+        question:null,suggestions:consultation.suggestions},
+    },{headers:PRIVATE_HEADERS}));
     // A short reviewed FAQ should not depend on media scans or paid inference.
     // Safety and authorization have already been verified for this exact turn.
     const fastRule=body.mode==="rules"&&safety.status==="clear"&&!recentUnsafe

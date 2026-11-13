@@ -20,7 +20,7 @@ export function TantraVideoTestimonials(props: Props) {
   // original source be remounted. Reopening a disclosure alone never rebuilds.
   const [freshDecoder, setFreshDecoder] = useState<{source:string;time:number;token:number}|null>(null);
 
-  const retained = useRef(new WeakMap<HTMLVideoElement, { source: string; time: number; reconstructing: boolean; awaitingFrame?: boolean; generation?: number; confirmedFrames?: number; restoreMutedOnOpen?: boolean }>());
+  const retained = useRef(new WeakMap<HTMLVideoElement, { source: string; time: number; reconstructing: boolean; awaitingFrame?: boolean; generation?: number; confirmedFrames?: number; firstFrameMediaTime?: number; lastFrameMediaTime?: number; restoreMutedOnOpen?: boolean }>());
   useEffect(() => () => { retained.current = new WeakMap(); }, []);
 
   function pauseAndRemember(video: HTMLVideoElement) {
@@ -84,6 +84,9 @@ export function TantraVideoTestimonials(props: Props) {
     }
     saved.awaitingFrame = true;
     saved.confirmedFrames = 0;
+    saved.firstFrameMediaTime = undefined;
+    saved.lastFrameMediaTime = undefined;
+    const playStartTime = video.currentTime;
     const generation = saved.generation ?? 0;
     const onFrame: VideoFrameRequestCallback = (_now, metadata) => {
       if (retained.current.get(video) !== saved ||
@@ -101,8 +104,15 @@ export function TantraVideoTestimonials(props: Props) {
         // Require several actual advancing decoded frames from the new
         // pipeline before one same-source position restoration. No timer,
         // autoplay, reload, blind retries or fake clock progress.
-        saved.confirmedFrames = (saved.confirmedFrames ?? 0) + 1;
-        if (saved.confirmedFrames < 4 || metadata.mediaTime < 0.5) {
+        // Repeated callbacks for the same preroll frame are not new decoded
+        // frames. Require distinct advancing mediaTime before a user-triggered
+        // saved-position seek can be attempted.
+        if (saved.lastFrameMediaTime === undefined ||
+            metadata.mediaTime > saved.lastFrameMediaTime + 0.02) {
+          saved.lastFrameMediaTime = metadata.mediaTime;
+          saved.confirmedFrames = (saved.confirmedFrames ?? 0) + 1;
+        }
+        if ((saved.confirmedFrames ?? 0) < 4 || metadata.mediaTime < 0.5) {
           try { video.requestVideoFrameCallback(onFrame); }
           catch { retained.current.delete(video); }
           return;
@@ -165,9 +175,20 @@ export function TantraVideoTestimonials(props: Props) {
         }
         return;
       }
-      saved.confirmedFrames = (saved.confirmedFrames ?? 0) + 1;
-      if (saved.confirmedFrames >= 2) {
-        retained.current.delete(video); // native resume is genuinely healthy
+      // WebKit/GStreamer can emit two frame callbacks while its native media
+      // clock stays frozen. Keep the old user-initiated stall observer alive
+      // until BOTH the media clock and distinct decoded frame timestamps move.
+      if (saved.firstFrameMediaTime === undefined)
+        saved.firstFrameMediaTime = metadata.mediaTime;
+      if (saved.lastFrameMediaTime === undefined ||
+          metadata.mediaTime > saved.lastFrameMediaTime + 0.02) {
+        saved.lastFrameMediaTime = metadata.mediaTime;
+        saved.confirmedFrames = (saved.confirmedFrames ?? 0) + 1;
+      }
+      if ((saved.confirmedFrames ?? 0) >= 2 &&
+          video.currentTime > playStartTime + 0.1 &&
+          metadata.mediaTime > saved.firstFrameMediaTime + 0.02) {
+        retained.current.delete(video); // observed native decoded playback AND clock advance
       } else {
         try { video.requestVideoFrameCallback(onFrame); }
         catch { retained.current.delete(video); }
@@ -190,7 +211,10 @@ export function TantraVideoTestimonials(props: Props) {
           video.currentSrc!==saved.source)return;
         if(startAt===null)startAt=now;
         if(now-startAt<1700){windowView.requestAnimationFrame(observeClock);return;}
-        if((saved.confirmedFrames??0)!==0 || video.currentTime>startedTime+0.1)return;
+        // Do not mistake decoder frame callbacks for actual playback if the
+        // HTMLMediaElement time has not advanced after the explicit user Play.
+        if ((saved.confirmedFrames ?? 0) >= 2 &&
+            video.currentTime > playStartTime + 0.1) return;
         retained.current.delete(video); // exactly one recovery after an explicit user Play
         // WebKit artifact 13349375114 proves that a PAUSE→PLAY on the same
         // backend emits "playing" but never delivers a subsequent frame.

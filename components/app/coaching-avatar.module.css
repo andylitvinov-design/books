@@ -78,3 +78,22 @@
 @media(prefers-reduced-motion:reduce){
  .frame[data-phase='thinking'] .head,.frame[data-phase='thinking'] .halo{animation:none!important}
 }
+
+/* Photographic avatar replaces the drawing only in explicitly selected AI
+   persona sessions. Other private coaching keeps the original SVG avatar. */
+.frame[data-photo-persona] .face{isolation:isolate}
+.livingPortrait{position:absolute;inset:0;z-index:2;display:block;border-radius:inherit;overflow:hidden;background:#e3e7de}
+.livingPortraitImage{display:block;width:100%;height:100%;object-fit:cover;object-position:center 22%}
+.frame[data-photo-persona][data-phase='speaking'] .livingPortrait{
+ animation:hh-photo-speech var(--beat-speed) ease-in-out infinite alternate}
+.frame[data-photo-persona][data-phase='thinking'] .livingPortrait{
+ animation:hh-photo-thought 2.7s ease-in-out infinite alternate}
+.frame[data-photo-persona][data-phase='listening'] .face:after,
+.frame[data-photo-persona][data-phase='speaking'] .face:after{
+ content:'';position:absolute;z-index:3;inset:2px;border-radius:inherit;pointer-events:none;
+ box-shadow:inset 0 0 0 2px #84d9be85}
+@keyframes hh-photo-speech{from{transform:translateY(0)}to{transform:translateY(-1.2px)}}
+@keyframes hh-photo-thought{from{transform:scale(1)}to{transform:scale(1.013)}}
+@media(prefers-reduced-motion:reduce){
+ .frame[data-photo-persona] .livingPortrait{animation:none!important;transform:none!important}
+}

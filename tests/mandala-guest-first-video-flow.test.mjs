@@ -94,8 +94,8 @@ test('PRO result uses full-size native video, never the previous 112px cropped v
   assert.match(css,/\.studio \.result\[hidden\]\{display:none!important\}/)
 })
 
-test('real encoded result opens the existing PRO workspace and retains in-page Blob',()=>{
-  const start=studio.indexOf('  // A completed local recording lives in the existing result pane.')
+test('real encoded result stays on Ready without losing the in-page Blob',()=>{
+  const start=studio.indexOf('  // A completed local recording stays in the Ready workspace.')
   const end=studio.indexOf('  // Auto-music must be ATTACHED',start)
   assert.ok(start>0&&end>start)
   const effect=studio.slice(start,end)
@@ -104,7 +104,7 @@ test('real encoded result opens the existing PRO workspace and retains in-page B
     let callback=null
     const win={requestAnimationFrame(fn){frames.push(fn);return frames.length},cancelAnimationFrame(){}}
     const document={getElementById(id){
-      assert.equal(id,'personal-video-result')
+      assert.equal(id,result.mode==='catalog'?'personal-video-result':'free-personal-video')
       return {scrollIntoView(options){assert.equal(options.behavior,'auto');state.scrolls++}}
     }}
     runInNewContext(effect,{
@@ -119,7 +119,7 @@ test('real encoded result opens the existing PRO workspace and retains in-page B
     while(frames.length)frames.shift()()
     return state
   }
-  assert.deepEqual(run({mode:'rendered',url:'blob:local'}),{workspace:'pro',mode:'pump',expanded:true,scrolls:1})
+  assert.deepEqual(run({mode:'rendered',url:'blob:local'}),{workspace:'ready',mode:'pump',expanded:true,scrolls:1})
   assert.equal(run({mode:'catalog',url:'/videos/holistic-house/unedited.mp4'}).workspace,null)
   assert.equal(run(null).scrolls,0)
 })
@@ -130,4 +130,17 @@ test('failed Safari decode does not waste the free guest export',()=>{
   const journey=readFileSync(new URL('../components/mandala-video-effect-journey.tsx',import.meta.url),'utf8')
   assert.match(journey,/status==="verifying"/)
   assert.match(journey,/Checking your video/)
+})
+
+test('WebKit real encoded Ready guest route keeps Save gate and decoded MP4 proof',()=>{
+  const browser=readFileSync(new URL('../scripts/verify-affirmation-voice-browser.mjs',import.meta.url),'utf8')
+  const ready=readFileSync(new URL('../components/mandala-video-ready.tsx',import.meta.url),'utf8')
+  assert.equal(browser.split('readyView.locator("[data-ready-save]")').length-1,2)
+  assert.doesNotMatch(browser,/data-ready-download/)
+  assert.match(ready,/onClick=\{\(\)=>chooseDelivery\("save"\)\}/)
+  assert.match(ready,/data-ready-save>/)
+  assert.match(ready,/if\(!signedIn\|\|intent==="telegram"\|\|intent==="house"\)/)
+  assert.match(browser,/data-ready-save-gate-signin/)
+  assert.match(browser,/GUEST_REAL_VIDEO_BLOB_UNAVAILABLE/)
+  assert.match(browser,/spawnSync\("ffprobe"/)
 })

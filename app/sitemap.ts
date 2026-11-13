@@ -5,6 +5,7 @@ import { getPrioritySitemapEntries } from '@/data/seo-priority-paths';
 import { PUBLIC_EVENTS } from '@/data/public-events';
 import { TOPIC_JOURNEYS } from '@/lib/assessments/topic-journeys';
 import { metadataBaseFor } from '@/data/site-metadata';
+import { getAttunementRouteParams } from '@/data/remedy-attunements';
 import { getAppConfig } from '@/lib/app/config';
 import { createPractitionerRepository } from '@/lib/practitioners/repository';
 import { createArticleRepository } from '@/lib/practitioners/article-repository';
@@ -62,7 +63,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       && Date.parse(event.startsAt) >= Date.now()
       && (event.registrationHref.startsWith('https://') || event.registrationHref.startsWith('/')))
       .map(event => '/' + locale + '/events/' + encodeURIComponent(event.id)));
-  const publicPaths = [...(['en','ru','es'] as const).map(locale => '/' + locale + '/events'), ...verifiedEventPages, ...topicJourneys, ...personalityProfileUrls, ...addedVisitorJourneys, ...(['en','ru','es'] as const).map(locale => '/' + locale + '/holistic-support'), '/en/toronto', '/ru/toronto', '/es/toronto', '/en/courses/antistress', '/ru/courses/antistress', '/es/courses/antistress', '/en/courses/methodology', '/ru/courses/methodology', '/es/courses/methodology', '/en/explore/relationships', '/ru/explore/relationships', '/en/books', '/ru/books', '/en/library', '/ru/library', '/es/library', '/en/library/distance-homeopathy', '/ru/library/distance-homeopathy', '/es/library/distance-homeopathy', '/en/wu-xing', '/ru/wu-xing', '/es/wu-xing', '/es', '/es/about', '/es/services', '/es/books', '/es/homeopathy', '/es/homeopathy/remedies', ...spanishRemedyPaths,  ...coreServiceUrls, ...(['en','ru','es'] as const).flatMap(locale => [`/${locale}/services/business-consulting`, ...['psychohomeopathy', 'imagery-therapy', 'systemic-constellations'].map(slug => `/${locale}/services/${slug}`)]), ...academyPaths];
+  const poemPaths = ["/ru/homeopathy/attunements", "/en/homeopathy/attunements",
+    ...getAttunementRouteParams().map(({locale,slug}) => `/${locale}/homeopathy/attunements/${slug}`)];
+  const publicPaths = [...poemPaths, ...(['en','ru','es'] as const).map(locale => '/' + locale + '/events'), ...verifiedEventPages, ...topicJourneys, ...personalityProfileUrls, ...addedVisitorJourneys, ...(['en','ru','es'] as const).map(locale => '/' + locale + '/holistic-support'), '/en/toronto', '/ru/toronto', '/es/toronto', '/en/courses/antistress', '/ru/courses/antistress', '/es/courses/antistress', '/en/courses/methodology', '/ru/courses/methodology', '/es/courses/methodology', '/en/explore/relationships', '/ru/explore/relationships', '/en/books', '/ru/books', '/en/library', '/ru/library', '/es/library', '/en/library/distance-homeopathy', '/ru/library/distance-homeopathy', '/es/library/distance-homeopathy', '/en/wu-xing', '/ru/wu-xing', '/es/wu-xing', '/es', '/es/about', '/es/services', '/es/books', '/es/homeopathy', '/es/homeopathy/remedies', ...spanishRemedyPaths,  ...coreServiceUrls, ...(['en','ru','es'] as const).flatMap(locale => [`/${locale}/services/business-consulting`, ...['psychohomeopathy', 'imagery-therapy', 'systemic-constellations'].map(slug => `/${locale}/services/${slug}`)]), ...academyPaths];
   const entries: MetadataRoute.Sitemap = publicPaths.map(path => ({
     url: base + path, changeFrequency: path.includes('/explore/') ? 'weekly' : 'monthly',
     priority: path === '/es' ? 0.8 : 0.6,
