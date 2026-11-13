@@ -296,4 +296,31 @@ test("real Safari encoded-Blob guest helper gates Save without relying on the re
   assert.match(helper,/window\.__hhTestRecordedVideoBlobs/);
   assert.match(helper,/assert\.equal\(downloads,0,'GUEST_DOWNLOAD_MUST_REQUIRE_LOGIN'\)/);
   assert.match(helper,/data-ready-save-gate-signin/);
+  assert.match(helper,/\[data-video-effect-overlay\]/);
+});
+
+
+test("verified signed-in Ready Save uploads directly through the existing signed private MP4 uploader",()=>{
+  const css=readFileSync(new URL("../components/mandala-video-ready.module.css",import.meta.url),"utf8");
+  assert.match(ready,/if\(!signedIn\|\|intent==="telegram"\|\|intent==="house"\)/);
+  assert.match(ready,/if\(intent==="save"\)\{onSaveDirect\(\);return;\}/);
+  assert.match(ready,/data-ready-save-status/);
+  assert.match(ready,/disabled=\{disabled\|\|saveStatus\.busy\}/);
+  assert.match(ready,/data-ready-download-fallback/);
+  assert.match(studio,/const deliveryRef=useRef<VideoDeliveryHandle\|null>\(null\)/);
+  assert.match(studio,/if\(deliveryRef\.current\)void deliveryRef\.current\.saveToLibrary\(\)/);
+  assert.match(studio,/onStatusChange=\{setReadySaveStatus\}/);
+  assert.match(delivery,/forwardRef<VideoDeliveryHandle,Props>/);
+  assert.match(delivery,/useImperativeHandle\(ref,\(\)=>\(\{saveToLibrary\}\)/);
+  assert.match(delivery,/if\(!current\.cloudAvailable\)\{setNotice\(t\.cloudSaveOff\);return;\}/);
+  assert.match(delivery,/savingRef\.current=true/);
+  assert.match(delivery,/const id=await privateUpload\(\)/);
+  assert.match(delivery,/setSavedId\(id\)/);
+  assert.match(css,/\.saveStatus\{display:flex/);
+  for(const loc of ["en","ru","es"]){
+    const i=delivery.indexOf(" "+loc+":{");
+    const e=loc==="en"?delivery.indexOf(" es:{",i):
+      loc==="ru"?delivery.indexOf(" en:{",i):delivery.indexOf("} as const;",i);
+    assert.ok(i>0&&e>i&&delivery.slice(i,e).includes("cloudSaveOff:"),loc+" clear cloud error");
+  }
 });

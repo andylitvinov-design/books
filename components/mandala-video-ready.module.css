@@ -284,3 +284,12 @@
  .root[data-ready-state="complete"] .journey{grid-template-columns:repeat(2,minmax(0,1fr))}
  .root[data-ready-state="complete"] .journey>button{grid-template-columns:110px minmax(0,1fr) 18px}
 }
+
+/* One signed-in Save action; nonblocking private upload/error receipt stays
+   beside the approved two buttons, never another full-screen chooser. */
+.saveStatus{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;
+ margin:0;padding:4px 3px;color:#285a49;
+ font:600 clamp(12px,3.15vw,14px)/1.4 Arial,Helvetica,sans-serif}
+.saveStatus span{flex:1 1 100%;overflow-wrap:anywhere}
+.saveStatus a{display:inline-flex;align-items:center;min-height:44px;color:#067a67;
+ font-weight:750;text-decoration:underline;text-underline-offset:3px}

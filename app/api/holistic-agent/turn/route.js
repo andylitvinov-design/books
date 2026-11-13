@@ -15,8 +15,10 @@ import { buildPortraitRecommendations } from "@/lib/profile/portrait-recommendat
 import { AXIS_REFS, publishedAxisOffers } from "@/lib/holistic-support/axis-offer-matcher.mjs";
 import { interpretSupportUtterance, explainUserQuestion } from "@/lib/holistic-support/guide-dialogue.mjs";
 import { ruleConversationReply } from "@/lib/holistic-support/rule-conversation.mjs";
+import { progressConversationTurn,progressDialogueReply } from "@/lib/holistic-support/dialogue-progression.mjs";
 import { nativeSecretaryTurn } from "@/lib/holistic-support/native-secretary.mjs";
 import { consultServiceQuestion } from "@/lib/assist/consultant-mind.mjs";
+import { resolveComplaintTurn } from "@/lib/holistic-support/complaint-mind.mjs";
 import { resolveWisdomRequest } from "@/lib/app/coaching-wisdom.js";
 import { resolveConversationFocus } from "@/lib/holistic-support/conversation-context.mjs";
 import { detectConversationLocale } from "@/lib/holistic-support/conversation-locale.mjs";
@@ -143,6 +145,27 @@ export async function POST(request) {
     const recentUnsafe = body.history.some(turn => turn.role==="user" &&
       preflight(turn.text,body.locale).status!=="clear");
     if (recentUnsafe && safety.status==="clear") safety.status="human_review";
+
+    // Complaint Mind is a reviewed, no-side-effect response layer. The prior
+    // actor, rate, safety and recent-unsafe gates always take precedence.
+    const complaint=safety.status==="clear"&&!recentUnsafe &&
+      body.judgmentContext==null && body.judgmentChoice==null &&
+      body.usePrivateProfile!==true && body.usePrivateHistory!==true &&
+      body.useAgentMemory!==true && body.preferredFormat==null &&
+      (!body.chosenAxes || body.chosenAxes.length===0) &&
+      ["rules","owned"].includes(body.mode)
+      ? resolveComplaintTurn({message:body.message,locale:body.locale,history:body.history})
+      : null;
+    if(complaint){
+      return auth.apply(NextResponse.json({
+        status:"clarify",reply:complaint.reply,source:complaint.source,
+        mindRole:null,modelUsed:false,memorySaved:false,userAuthorized:true,
+        suggestions:[],usedSavedTestEvidence:false,usedSavedVideoHistory:false,
+        browserModelAllowed:false,
+        decision:{status:"clarify",message:complaint.reply,question:null,suggestions:[]}
+      },{headers:PRIVATE_HEADERS}));
+    }
+
     // Explicit opt-in to one wisdom reflection. This is a server-only DB
     // lookup after origin, session, throttles and safety checks. It never
     // overrides signed judgment choices or sends client text to other APIs.
@@ -189,6 +212,26 @@ export async function POST(request) {
     const fastRule=body.mode==="rules"&&safety.status==="clear"&&!recentUnsafe
       ? ruleConversationReply({message:body.message,locale:body.locale,history:body.history})
       : null;
+
+    // Keep brief emotional/relationship replies in the conversation instead of
+    // resetting a selected theme or prematurely showing service cards. Runs only
+    // after origin, verified actor, rate and safety checks; never reads private data.
+    const progressive=body.mode==="rules" && safety.status==="clear" && !recentUnsafe &&
+      body.judgmentContext==null && body.judgmentChoice==null &&
+      body.usePrivateProfile!==true && body.usePrivateHistory!==true &&
+      body.useAgentMemory!==true && body.preferredFormat==null &&
+      (!body.chosenAxes || body.chosenAxes.length===0)
+      ? progressConversationTurn({message:body.message,locale:body.locale,history:body.history})
+      : null;
+    if(progressive){
+      return auth.apply(NextResponse.json({
+        status:"clarify",reply:progressive.reply,modelUsed:false,
+        source:"rules",memorySaved:false,userAuthorized:true,
+        suggestions:[],usedSavedTestEvidence:false,usedSavedVideoHistory:false,
+        browserModelAllowed:false,
+        decision:{status:"clarify",message:progressive.reply,question:null,suggestions:[]},
+      },{headers:PRIVATE_HEADERS}));
+    }
 
     // A first-party trained statistical model for simple secretary conversations.
     // The existing signed judgment, safety, user-consented memory, checkout and
@@ -380,10 +423,17 @@ export async function POST(request) {
         signal:AbortSignal.timeout(16000),
       });
     }:undefined);
+    // Last-resort repetition gate for model/fallback text, only in ordinary
+    // safe clarification. This cannot change safety handoffs or model access.
+    const finalReply=safety.status==="clear" && !recentUnsafe &&
+      decision.status==="clarify"
+      ? progressDialogueReply({message:body.message,locale:body.locale,history:body.history,
+          reply:generated.text,intent:fastRule?.id||""})
+      : generated.text;
     const suggestions=(Array.isArray(decision.suggestions)?decision.suggestions:[])
       .slice(0,3).map(({id,kind,href,title})=>({id,kind,href,title}));
     return auth.apply(NextResponse.json({
-      status:decision.status, reply:generated.text, modelUsed:generated.modelUsed,
+      status:decision.status, reply:finalReply, modelUsed:generated.modelUsed,
       mindRole:generated.modelUsed?envelope.mindRole:null,
       source:generated.provider, decision:{status:decision.status,message:decision.message,
         suggestions,question:decision.question||null},
