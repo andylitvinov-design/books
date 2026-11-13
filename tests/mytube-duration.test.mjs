@@ -50,11 +50,11 @@ test("MyTube segmented format filters keep unknown-duration videos visible",()=>
  assert.match(view,/matchesMyTubeShelf\(item,formatMode\)/);
  assert.match(view,/onChange=\{event=>setDurationRange\(event.target.value\)\}/);
  assert.doesNotMatch(view,/matchesMyTubeDuration\(item\.durationVerifiedSeconds/);
- // The owner now explicitly requires verified practices of at most 600 seconds.
+ // The owner explicitly allows independently verified practices of at most 900 seconds.
  // Reject guessed-duration UI, not the legitimate reviewed-practice explanation.
  assert.doesNotMatch(view,/durationUnknown|10 min or longer/);
- assert.match(read("lib/video-discovery/mytube-shelves.mjs"),/seconds<=600/);
- assert.match(css,/\.mytube \.mytubeFormatTabs\{[^}]*grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+ assert.match(read("lib/video-discovery/mytube-shelves.mjs"),/seconds<=MYTUBE_PRACTICE_MAX_SECONDS/);
+ assert.match(css,/\.mytube \.mytubeFormatTabs\{[^}]*grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
  assert.match(css,/\.mytube \.mytubeCategoryRail\{[^}]*grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/);
  assert.doesNotMatch(css.slice(css.indexOf("/* MyTube-only compact five-choice editorial taxonomy.")),/overflow-x:auto/);
  assert.match(hub,/mytubeFormat:classifyMyTubeFormat\(video\)/);
