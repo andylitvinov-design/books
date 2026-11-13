@@ -8,6 +8,7 @@ const { expect } = require((process.env.HH_PLAYWRIGHT_PACKAGE || "playwright") +
 import assert from "node:assert/strict";
 import { inferAssistPreferences } from "../lib/assist/service-match.mjs";
 import { rankAssistProducts } from "../lib/assist/product-recommendations.mjs";
+import { telegramServiceRequestUrl } from "../lib/assist/telegram-business-request.mjs";
 import { mkdir, writeFile } from "node:fs/promises";
 
 const origin = process.env.HH_PUBLIC_QA_ORIGIN || "http://127.0.0.1:3100";
@@ -171,24 +172,35 @@ try {
     const expectedStress = rankAssistProducts("stress", {});
     const actualStress = await bestCards.evaluateAll(nodes=>
       nodes.map(node=>node.getAttribute("data-assist-best-card")));
-    assert.deepEqual(actualStress, expectedStress,
+    assert.deepEqual(actualStress,expectedStress,
       "Matching real products, not directions, for the selected problem");
-    for (const key of expectedStress) {
-      const detail = shelf.locator('[data-assist-product-link="' + key + '"]');
-      await expect(detail).toHaveAttribute("href",new RegExp("^/" + locale + "/[a-z0-9/-]+$"));
-      const action = shelf.locator('[data-assist-best-action="' + key + '"]');
-      if (["therapy","constellation","business","reiki"].includes(key))
-        await expect(action).toHaveAttribute("href",/^https:\/\/t\.me\/holistichouse\?text=/);
-      else await expect(action).toHaveAttribute("href",new RegExp("^/" + locale + "/[a-z0-9/-]+$"));
+    // Preserve the previously approved exact Telegram link/locale assertion,
+    // now mapping concrete offered products onto the existing service codes.
+    const requestIds = {therapy:"coaching",constellation:"constellations",business:"business",reiki:"reiki"};
+    for(const key of expectedStress){
+      const detail=shelf.locator('[data-assist-product-link="'+key+'"]');
+      await expect(detail).toHaveAttribute("href",new RegExp("^/"+locale+"/[a-z0-9/-]+$"));
+      const action=shelf.locator('[data-assist-best-action="'+key+'"]');
+      const code=requestIds[key];
+      if(code){
+        const url=telegramServiceRequestUrl(code,locale);
+        assert.ok(url,"No unapproved Telegram request: "+key);
+        await expect(action).toHaveAttribute("href",url);
+        await expect(action).toHaveAttribute("target","_blank");
+        assert.equal(new URL(url).searchParams.get("text")?.split(String.fromCharCode(10)).at(-1),
+          "[HH-REQ:"+code+":"+locale+"]","Deep link contains no private problem text");
+      }else{
+        await expect(action).toHaveAttribute("href",new RegExp("^/"+locale+"/[a-z0-9/-]+$"));
+      }
       const box=await action.boundingBox();
-      assert.ok(box&&box.height>=44,"Mobile product action touch target: "+locale+"/"+width+"/"+key);
+      assert.ok(box&&box.height>=44,"Mobile product touch target: "+locale+"/"+width+"/"+key);
     }
 
     // A reply stays in the chat and reranks the service cards without a page jump.
     await log.locator('[data-assist-question="mode"] div button').nth(2).click();
     await expect(log.locator('[data-assist-message="user"]')).toHaveCount(2);
     await expect(log.locator('[data-assist-question="budget"]')).toHaveCount(1);
-    // A video-only preference must never turn a general video library into a bookable product.
+    // Video-only preferences are not a saleable product.
     await expect(bestCards).toHaveCount(0);
     await expect(shelf.locator('[role="status"]')).toBeVisible();
     await log.locator('[data-assist-question="budget"] div button').first().click();
