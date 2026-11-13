@@ -25,8 +25,8 @@ test("approved compact shelves and guest enquiry actions stay mounted", () => {
     "ServicesAssistMobile", "ServicesPersonalConsultationMobile",
     "SpiritualReadingEntry", "ServicesStudioOffers", "ServicesMagicalHelpMobile"
   ]) assert.ok(page.includes("<" + name + " locale="), "Missing approved shelf: " + name);
-  assert.match(acceptance, /for \\(const selector of legacyPhoneSelectors\\) \\{[\\s\\S]*?locator\\(selector \\+ ":visible"\\)\\)\\.toHaveCount\\(0\\)/);
-  assert.doesNotMatch(acceptance, /for \\(const selector of legacyPhoneSelectors\\) \\{\\s*await expect\\(page\\.locator\\(selector\\)\\)\\.toBeHidden/);
+  assert.ok(acceptance.includes('await expect(page.locator(selector + ":visible")).toHaveCount(0);'), "Browser acceptance must check zero visible legacy matches");
+  assert.ok(!acceptance.includes('await expect(page.locator(selector)).toBeHidden();'), "Never use strict single-element assertion for multiple cards");
   for (const selector of [
     "[data-assist-personal-consultation]", "[data-assist-spiritual-entry]",
     "[data-assist-video-generation]", "[data-assist-course-shelf]",
