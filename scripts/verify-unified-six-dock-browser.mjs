@@ -95,7 +95,7 @@ async function inspect(browserType,locale,width){
     id+" deeper taxonomy must not push videos down by default");
   assert.deepEqual(
     await page.locator("[data-mytube-format-tabs] button").evaluateAll(els=>els.map(el=>el.dataset.mytubeFormatMode)),
-    ["practices","courses","masters"],id+" exactly three approved MyTube content modes are visible");
+    ["practices","courses","masters","videos"],id+" four approved MyTube content modes are visible");
   const filterBounds=await moreFilters.boundingBox();
   assert.ok(filterBounds&&filterBounds.height>=44&&filterBounds.height<=60,
     id+" single slim accessible taxonomy bar");
@@ -178,8 +178,8 @@ async function inspect(browserType,locale,width){
    await page.evaluate(()=>window.scrollTo({top:0,behavior:"instant"}));
    await page.screenshot({path:folder+"/mytube-webkit-ru-390.png",fullPage:false});
   }
-  // Three mutually exclusive modes; no invented videos required for acceptance.
-  for(const mode of ["practices","courses","masters"]){
+  // Four mutually exclusive modes; no invented videos required for acceptance.
+  for(const mode of ["practices","courses","masters","videos"]){
     const control=page.locator('[data-mytube-format-mode="'+mode+'"]');
     await control.click();
     assert.equal(await control.getAttribute("aria-pressed"),"true",id+" selected "+mode);
@@ -205,19 +205,27 @@ async function inspect(browserType,locale,width){
   assert.equal(await refined.isVisible(),false,id+" deeper taxonomy hidden by default");
   const area=page.locator('[data-mytube-category="energy-confidence"]');
   await area.click();
-  await topicRail.waitFor({state:"visible",timeout:15000});
   assert.equal(await area.getAttribute("aria-pressed"),"true",id+" selected category");
-  const subcategories=topicRail.locator('[data-mytube-subcategory]:not([data-mytube-subcategory="all"])');
-  assert.equal(await subcategories.count(),4,id+" four real subcategories on demand");
+  assert.equal(await topicRail.count(),0,id+" removed second taxonomy menu stays absent");
   assert.equal(await refined.isVisible(),false,id+" no duplicate subcategory panel");
-  await subcategories.first().click();
-  await refined.waitFor({state:"visible",timeout:15000});
-  assert.equal(await subcategories.first().getAttribute("aria-pressed"),"true",id+" selected subcategory");
-  const topics=page.locator('[data-mytube-topics] [data-mytube-topic]:not([data-mytube-topic="all"])');
-  assert.equal(await topics.count(),4,id+" deeper topics remain accessible");
+  // Product collections are based only on approved PsiMaster originals.
+  // A CI fixture with no reviewed recordings must not invent placeholders.
+  const realCollections=page.locator('[data-mytube-practice-collection]');
+  const realCount=await realCollections.count();
+  if(realCount>0){
+    const firstCollection=realCollections.first();
+    await firstCollection.click();
+    assert.equal(await firstCollection.getAttribute("aria-pressed"),"true",
+      id+" real collection filters the existing feed");
+    await firstCollection.click();
+    assert.equal(await firstCollection.getAttribute("aria-pressed"),"false",
+      id+" tapping an active collection clears its filter");
+  }else{
+    assert.equal(await page.locator('[data-mytube-practice-collections]').count(),0,
+      id+" no made-up collection without published source");
+  }
   await page.locator('[data-mytube-category="all"]').click();
-  await topicRail.waitFor({state:"detached",timeout:15000});
-  assert.equal(await topicRail.count(),0,id+" subcategories disappear after All");
+  assert.equal(await topicRail.count(),0,id+" old taxonomy menu does not reappear");
   assert.equal(await refined.isVisible(),false,id+" related filters reset");
   await moreFilters.click();
   assert.equal(await moreFilters.getAttribute("aria-expanded"),"false",id+" advanced filters close");
