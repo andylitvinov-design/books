@@ -119,6 +119,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [editablePlan,setEditablePlan]=useState('')
   const [selectedGoal,setSelectedGoal]=useState('')
   const [replaying,setReplaying]=useState(false)
+  const [ratedCoachAnswer,setRatedCoachAnswer]=useState(null)
+  const [coachQualityPending,setCoachQualityPending]=useState(false)
+  const [coachQualityError,setCoachQualityError]=useState(false)
   const [playbackNotice,setPlaybackNotice]=useState('')
   const pending=useRef(null),end=useRef(null),composerRef=useRef(null),transcriptRef=useRef(null)
   const composerDetailsRef=useRef(null),voiceConsentRef=useRef(null),speechRef=useRef(null)
@@ -163,6 +166,21 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const captions=transcriptUi[lang]||transcriptUi.en
   const latestCoachTurn=[...turns].reverse().find(turn=>turn.role==='assistant')
   const latestCoachText=latestCoachTurn?.content||opening
+  async function rateCoachAnswer(signal){
+    if(!latestCoachTurn||coachQualityPending||ratedCoachAnswer===latestCoachText)return
+    setCoachQualityPending(true);setCoachQualityError(false)
+    try{
+      const response=await fetch('/api/holistic-agent/quality',{
+        method:'POST',credentials:'same-origin',cache:'no-store',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({channel:'my_coach',locale:lang,signal,consent:true}),
+      })
+      const result=await response.json().catch(()=>null)
+      if(response.status!==201||result?.saved!==true)throw Error('QUALITY_NOT_AVAILABLE')
+      setRatedCoachAnswer(latestCoachText)
+    }catch{setCoachQualityError(true)}
+    finally{setCoachQualityPending(false)}
+  }
   const currentStage=latestCoachTurn?.stage||'clarify'
   const legacyStageIndex={goal:0,reality:1,resources:2,options:4,action:5}
   const stageIndex=currentStage==='safety'?0:(legacyStageIndex[currentStage]??Math.max(0,stageKeys.indexOf(currentStage)))
@@ -316,6 +334,19 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       </div>}
     </section>
     <p className={styles.sessionDisclosure}>{ui.disclosure}</p>
+    {process.env.NEXT_PUBLIC_HH_LEARNING_OBSERVATORY_ENABLED==='true'&&latestCoachTurn&&<div className={styles.hiLearningRating} role="group" aria-label={
+      lang==='ru'?'Добровольная оценка вопроса коуча':lang==='es'?'Valoración voluntaria':'Voluntary coach reply rating'}>
+      <span>{lang==='ru'?'Анонимная оценка · без текста':lang==='es'?'Valoración anónima · sin texto':'Anonymous rating · no text'}</span>
+      {ratedCoachAnswer===latestCoachText?<small>{
+        lang==='ru'?'Сохранено':lang==='es'?'Guardado':'Saved'
+      }</small>:<>
+        <button type="button" disabled={coachQualityPending} onClick={()=>void rateCoachAnswer('helpful')}>👍 {lang==='ru'?'Полезно':lang==='es'?'Útil':'Helpful'}</button>
+        <button type="button" disabled={coachQualityPending} onClick={()=>void rateCoachAnswer('unhelpful')}>👎 {lang==='ru'?'Не помогло':lang==='es'?'No ayudó':'Not helpful'}</button>
+      </>}
+      {coachQualityError&&<small role="status">{
+        lang==='ru'?'Не сохранено':lang==='es'?'No guardado':'Not saved'
+      }</small>}
+    </div>}
     <section className={styles.sessionProgress} aria-label={ui.stageQuestion}>
       <div className={styles.sessionProgressText}><strong>{ui.step} {visibleStageIndex+1} {ui.of} 6</strong>
         <span>{currentStage==='safety'?ui.safety:ui.stages[visibleStageIndex]}</span></div>
