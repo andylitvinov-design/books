@@ -50,7 +50,9 @@ test('render progress and the optional one-at-a-time check-in in a centered, dis
   assert.match(source,/document\.body\.style\.overflow="hidden"/);
   assert.match(source,/event\.key==="Escape"/);
   assert.match(source,/data-video-effect-reopen/);
-  assert.match(source,/videoEnded\|\|status==="failed"/);
+  assert.match(source,/if\(status==="ready"\)\{setModalOpen\(false\);return;\}/);
+  assert.match(source,/if\(status==="failed"\)setModalOpen\(true\)/);
+  assert.doesNotMatch(source,/videoEnded\|\|status==="failed"/);
   assert.match(source,/data-video-effect-watch/);
   assert.match(source,/onClick=\{\(\)=>chooseScore\(value\)\}/);
   assert.match(css,/\.overlay\{position:fixed;inset:0;z-index:11000/);

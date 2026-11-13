@@ -1248,6 +1248,9 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
             video.videoWidth>0&&video.videoHeight>0&&!video.error),
             {timeout:20000}).toBe(true);
           // Guest Save/Download must invoke actual login gate, not a download.
+          // Keep the voluntary effects check-in from intercepting the verified
+          // Ready → Save → Google sign-in journey after a real media export.
+          await expect(page.locator("[data-video-effect-overlay]")).toHaveCount(0);
           await readyView.locator("[data-ready-save]").click();
           await expect(readyView.locator("[data-ready-save-gate]")).toBeVisible();
           await expect(readyView.locator("[data-ready-save-gate-signin]")).toBeVisible();

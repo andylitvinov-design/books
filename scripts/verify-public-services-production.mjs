@@ -124,13 +124,20 @@ try {
     await expect(directionTabs).toHaveCount(6);
     const bestCards = shelf.locator("[data-assist-best-card]");
     await expect(bestCards).toHaveCount(3);
-    for (const [key,route] of Object.entries({
-      homeopathy: "services/psychohomeopathy",
-      coaching: "services/imagery-therapy",
-      reiki: "services/remote-energy-support",
-    })) {
-      await expect(shelf.locator('[data-assist-best-action="' + key + '"]'))
-        .toHaveAttribute("href", "/" + locale + "/" + route);
+    // Request now opens the consented @holistichouse chat with a bounded
+    // service-only draft; no private details, booking or payment are implied.
+    for (const key of ["homeopathy", "coaching", "reiki"]) {
+      const action = shelf.locator('[data-assist-best-action="' + key + '"]');
+      const href = await action.getAttribute("href");
+      assert.ok(href && href.startsWith("https://t.me/holistichouse?text="));
+      const url = new URL(href);
+      assert.equal(url.origin,"https://t.me");
+      assert.equal(url.pathname,"/holistichouse");
+      const draft = url.searchParams.get("text") || "";
+      assert.match(draft,new RegExp("\\[HH-REQ:" + key + ":" + locale + "\\]$"));
+      assert.ok(draft.length >= 35 && draft.length <= 300,"Only a bounded service-only draft leaves the site");
+      await expect(action).toHaveAttribute("target","_blank");
+      await expect(action).toHaveAttribute("rel",/noopener noreferrer/);
     }
     await directionTabs.nth(1).click();
     await expect(shelf.locator("[data-assist-selected-direction]"))

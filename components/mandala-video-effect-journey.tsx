@@ -64,7 +64,12 @@ export function MandalaVideoEffectJourney({locale,status,progress,videoStarted,v
   const [modalOpen,setModalOpen]=useState(true);
   const dialogRef=useRef<HTMLDivElement>(null);
   useEffect(()=>{setMounted(true);},[]);
-  useEffect(()=>{if(videoEnded||status==="failed")setModalOpen(true);},[videoEnded,status]);
+  // Verified Ready actions must never be blocked by the optional check-in.
+  // Answers stay local; the visitor may reopen them deliberately at any time.
+  useEffect(()=>{
+    if(status==="ready"){setModalOpen(false);return;}
+    if(status==="failed")setModalOpen(true);
+  },[status]);
   const dialogVisible=mounted&&modalOpen&&status!=="idle";
   useEffect(()=>{
     if(!dialogVisible)return;
