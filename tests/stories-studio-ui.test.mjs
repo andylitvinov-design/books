@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
 const painter=studio.slice(studio.indexOf("function paintCinematicFrame("),studio.indexOf("function paintSingleVideoTextOverlay("));
-test("Stories preserve Concept and Hypno while Montage PRO replaces Settings tab",()=>{
+test("Stories preserve a one-screen Story and keep advanced scene editing in fifth Montage",()=>{
  const start=studio.indexOf("<nav className={videoStyles.montageQuickTools}");
  const nav=studio.slice(start,studio.indexOf("</nav>",start));
  assert.match(nav,/id:"concept",Icon:Film/);
@@ -14,7 +14,9 @@ test("Stories preserve Concept and Hypno while Montage PRO replaces Settings tab
  assert.match(nav,/concept:\{ru:"Сюжет",en:"Story",es:"Guion"\}/);
  assert.match(studio,/data-video-montage-concept/);
  assert.match(studio,/MandalaAutomaticStoryboard/);
- assert.match(studio,/montagePanel==="concept" \? <div className=\{videoStyles\.montagePreferences\} data-video-montage-storyboard/);
+ assert.match(studio,/montagePanel==="promo" \? <details className=\{videoStyles\.montageStoryAdvanced\}/);
+ assert.match(studio,/data-video-stories-advanced/);
+ assert.match(studio,/data-video-montage-storyboard/);
  assert.match(studio,/hypnoEntryGroup/);
 });
 test("all four story formats are selectable in the existing editor",()=>{
@@ -94,7 +96,8 @@ test("paid cinematic story never triggers Veo and the owner-only gate remains ex
 
 test('real five-scene WebKit acceptance uses original UI, local-only requests, distinct MP4 frames and audible H264/AAC',()=>{
  const script=readFileSync(new URL('../scripts/benchmarking/verify-five-scene-stories-browser.mjs',import.meta.url),'utf8');
- for(const marker of ['data-video-stories-format','data-video-stories-create','data-video-stories-scene-list',
+ for(const marker of ['data-video-story-select-quality','data-video-stories-advanced',
+  'data-video-stories-format','data-video-stories-create','data-video-stories-scene-list',
   'data-video-quick-generate','readRealGuestVideo','ffprobe','STORIES_H264_REQUIRED',
   'STORIES_AAC_REQUIRED','STORIES_AUDIO_SILENT','STORIES_SCENE_FRAME_MISMATCH_',
   'STORIES_DUPLICATE_MEDIA','STORIES_BLACK_SCENE_'])

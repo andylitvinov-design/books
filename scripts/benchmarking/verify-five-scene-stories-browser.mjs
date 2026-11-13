@@ -64,7 +64,14 @@ try{
  await storyTab.waitFor({state:'visible',timeout:20000});
  await storyTab.click();
  await page.locator('[data-video-montage-concept]').waitFor({state:'visible'});
- const format=page.locator('[data-video-stories-format]');
+ // Verify the approved one-screen Story CTA really selects fifth Montage.
+ await page.locator('[data-video-story-select-quality]').click();
+ const montageTab=page.locator('[data-video-montage-tab="promo"]');
+ assert.equal(await montageTab.getAttribute('aria-pressed'),'true',
+   'STORY_QUALITY_MUST_OPEN_MONTAGE');
+ const advanced=page.locator('[data-video-stories-advanced]');
+ await advanced.locator(':scope > summary').click();
+ const format=advanced.locator('[data-video-stories-format]');
  await format.waitFor({state:'visible'});
  await format.selectOption('motion');
  assert.equal(await format.inputValue(),'motion');
