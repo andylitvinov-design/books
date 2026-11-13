@@ -118,7 +118,10 @@ try {
       "#method-videos", "[data-services-directory-invitation]", "[data-service-lead-capture]"
     ];
     for (const selector of legacyPhoneSelectors) {
-      await expect(page.locator(selector)).toBeHidden();
+      // A selector may match nine legacy cards or multiple old enquiry forms.
+      // Check zero VISIBLE matches; Playwright's toBeHidden is strict about
+      // matching exactly one element and would fail before testing visibility.
+      await expect(page.locator(selector + ":visible")).toHaveCount(0);
     }
     await expect(page.locator("[data-services-studio-card]:visible")).toHaveCount(0);
     for (const selector of [
