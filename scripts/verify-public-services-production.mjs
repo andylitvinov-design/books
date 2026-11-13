@@ -116,6 +116,29 @@ try {
     await expect(submit).toBeDisabled();
     const topics = assist.locator('[data-assist-topic-suggestions] button[aria-pressed]');
     await expect(topics).toHaveCount(6);
+    const shelf = assist.locator("[data-assist-best-three]");
+    await visible(shelf.locator("#assist-best-three-title"));
+    const directionTabs = shelf.locator("button[data-assist-direction]");
+    await expect(directionTabs).toHaveCount(6);
+    const bestCards = shelf.locator("[data-assist-best-card]");
+    await expect(bestCards).toHaveCount(3);
+    for (const [key,route] of Object.entries({
+      homeopathy: "services/psychohomeopathy",
+      coaching: "services/imagery-therapy",
+      reiki: "services/remote-energy-support",
+    })) {
+      await expect(shelf.locator('[data-assist-best-action="' + key + '"]'))
+        .toHaveAttribute("href", "/" + locale + "/" + route);
+    }
+    await directionTabs.nth(1).click();
+    await expect(shelf.locator("[data-assist-selected-direction]"))
+      .toHaveAttribute("data-assist-selected-direction","health");
+    await expect(bestCards).toHaveCount(3);
+    await expect(shelf.locator('[data-assist-best-card="tests"]')).toHaveCount(1);
+    await directionTabs.first().click();
+    await expect(shelf.locator("[data-assist-selected-direction]"))
+      .toHaveAttribute("data-assist-selected-direction","forMe");
+    await expect(bestCards).toHaveCount(3);
     const tools = assist.locator("a[data-assist-tool]");
     await expect(tools).toHaveCount(8);
     const expectedTools = {
@@ -196,11 +219,13 @@ try {
     await submit.click();
     await visible(results.locator('[role="alert"]'));
     await expect(results.locator("a[data-assist-recommendation]")).toHaveCount(0);
+    await expect(shelf).toHaveCount(0); // No sales or symbolic offers in crisis state.
     await assertNoDevIssueOverlay(page, locale + "/services/assist/" + width);
     await assertViewport(page, locale + "/services/assist/" + width);
     await reset.click();
     await expect(question).toHaveValue("");
     await expect(submit).toBeDisabled();
+    await expect(shelf.locator("[data-assist-best-card]")).toHaveCount(3);
   };
 
   // Spanish Alchemy has its own route. Check its untouched default state too;
