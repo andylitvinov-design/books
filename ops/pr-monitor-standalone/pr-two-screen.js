@@ -24,7 +24,7 @@
   var stages = Object.create(null), cells = Object.create(null);
   var root, graphSlot, graphHint, comparison, prList, coverage, status, firstFoot, secondFoot;
   var sourceSnapshot = null, baseline = null, detailed = null, mounted = false;
-  var cohortLastFetchAt=0,cohortFetchBusy=false,cohortError=null;
+  var cohortLastFetchAt=0,cohortFetchBusy=false,cohortError=null,cohortRaw=null,cohortHours=24,strictSummary=null,archiveReadAt=0;
   var scheduled = false, detailBusy = false, observer = null;
   var queueSnapshot = null, queueFallback = null, queueError = null, archive = null, archivePending = false;
   var auditRequests = 0, auditBusy = false, auditCache = new Map();
@@ -45,6 +45,116 @@
     if (minutes < 60) return number.format(minutes) + ' мин';
     return number.format(minutes / 60) + ' ч';
   }
+/* HH_STRICT_CREATED_MERGED_COHORT_V1_BEGIN */
+function strictCohort(source, archive, hours) {
+  const SCHEMA='HH_STRICT_CREATED_MERGED_COHORT_V1';
+  const KEYS=['before_unknown','workflow_wait','runner_wait','checks',
+    'ci_wave_unknown','ci_other_unknown','after_unknown','no_archive_unknown'];
+  const CORE=['workflow_wait','runner_wait','checks','between_waves_unknown','other_unknown'];
+  const valid=x=>typeof x==='number'&&Number.isFinite(x)&&x>=0;
+  const ms=x=>{const v=Date.parse(typeof x==='string'?x:'');return Number.isFinite(v)?v:null};
+  const quant=(rows,q)=>{if(!rows.length)return null;const a=[...rows].sort((x,y)=>x-y),p=(a.length-1)*q,i=Math.floor(p),j=Math.ceil(p);return a[i]+(a[j]-a[i])*(p-i)};
+  if(![1,6,24,48].includes(hours))throw Error('COHORT_PERIOD_NOT_COVERED');
+  if(source?.schema!=='HH_PR_CREATED_COHORT_V1'||source.coverage?.complete!==true||
+     !Array.isArray(source.rows))throw Error('COHORT_INCOMPLETE');
+  const end=ms(source.generated_at);
+  if(end===null)throw Error('COHORT_TIME_INVALID');
+  const start=end-hours*3600000;
+  if(source.cohort_max_hours!=null&&Number(source.cohort_max_hours)<hours)
+    throw Error('COHORT_PERIOD_NOT_COVERED');
+  const base='codex/public-book-library',selected=[],seen=new Set();
+  for(const r of source.rows) {
+    if(r?.base!==base)continue;
+    const created=ms(r.created_at);
+    if(created===null||created<start||created>=end)continue;
+    if(!Number.isSafeInteger(r.number)||r.number<1||seen.has(r.number))
+      throw Error('COHORT_DUPLICATE_OR_INVALID_PR');
+    seen.add(r.number);
+    selected.push({pr:r.number,created,merged:ms(r.merged_at),state:r.state});
+  }
+  const rows=selected.filter(p=>p.merged!==null&&p.merged>=p.created&&p.merged>=start&&p.merged<=end)
+    .map(p=>({pr:p.pr,created_at:new Date(p.created).toISOString(),
+      merged_at:new Date(p.merged).toISOString(),minutes:(p.merged-p.created)/60000}));
+  const durations=rows.map(p=>p.minutes);
+  const n=rows.length,mean=n?durations.reduce((a,b)=>a+b,0)/n:null;
+  const byPr=new Map(),hasArchive=archive?.schema==='HH_CI_FIRST_LAST_ARCHIVE_V1'&&Array.isArray(archive.rows);
+  if(hasArchive)for(const row of archive.rows){
+    if(!Number.isSafeInteger(row?.pr)||row.pr<1)continue;
+    if(byPr.has(row.pr))byPr.set(row.pr,null);
+    else byPr.set(row.pr,row);
+  }
+  const sums=Object.fromEntries(KEYS.map(k=>[k,0]));
+  const samples=Object.fromEntries(KEYS.map(k=>[k,[]]));
+  let covered=0,partial=0,missing=0,invalid=0,totalWaves=0,totalRetries=0;
+  const paths=[];
+  for(const p of rows){
+    const created=ms(p.created_at),merged=ms(p.merged_at);
+    const candidate=byPr.get(p.pr),stage=candidate?.stages_ms;
+    const first=ms(candidate?.first_at),last=ms(candidate?.last_at);
+    const matches=hasArchive&&candidate&&first!==null&&last!==null&&
+      first>=created&&last<=merged&&last>=first&&
+      CORE.every(k=>valid(stage?.[k]))&&
+      Math.abs(CORE.reduce((a,k)=>a+stage[k],0)-(last-first))<=10;
+    const values=matches?{
+      before_unknown:(first-created)/60000,
+      workflow_wait:stage.workflow_wait/60000,
+      runner_wait:stage.runner_wait/60000,
+      checks:stage.checks/60000,
+      ci_wave_unknown:stage.between_waves_unknown/60000,
+      ci_other_unknown:stage.other_unknown/60000,
+      after_unknown:(merged-last)/60000,
+      no_archive_unknown:0
+    }:Object.fromEntries(KEYS.map(k=>[k,k==='no_archive_unknown'?p.minutes:0]));
+    if(matches){
+      covered++;
+      if(candidate.partial===true)partial++;
+      totalWaves+=Number.isSafeInteger(candidate.runs)?candidate.runs:0;
+      totalRetries+=Number.isSafeInteger(candidate.repeats)?candidate.repeats:0;
+    } else if(hasArchive&&byPr.has(p.pr))invalid++; else missing++;
+    for(const k of KEYS) {
+      sums[k]+=values[k];
+      if(matches&&k!=='no_archive_unknown')samples[k].push(values[k]);
+      if(!matches&&k==='no_archive_unknown')samples[k].push(values[k]);
+    }
+    const sum=KEYS.reduce((v,k)=>v+values[k],0);
+    if(Math.abs(sum-p.minutes)>.0001)throw Error('COHORT_STAGE_NON_ADDITIVE');
+    paths.push({pr:p.pr,minutes:p.minutes,covered:Boolean(matches),partial:matches?candidate.partial===true:null,
+      waves:matches?candidate.runs:null,retries:matches?candidate.repeats:null,
+      intervals:values,created_at:p.created_at,merged_at:p.merged_at});
+  }
+  const grand=KEYS.reduce((v,k)=>v+sums[k],0);
+  if(n&&Math.abs(grand/n-mean)>.0001)throw Error('COHORT_MEAN_NON_ADDITIVE');
+  const stageStats=Object.fromEntries(KEYS.map(k=>[k,{
+    contribution_mean_minutes:n?sums[k]/n:null,
+    measured_prs:samples[k].length,
+    p50_measured_minutes:quant(samples[k],.5),
+    p90_measured_minutes:quant(samples[k],.9)
+  }]));
+  const buckets=Array.from({length:6},(_,i)=>{
+    const left=start+(end-start)*i/6, right=start+(end-start)*(i+1)/6;
+    const durations=rows.filter(p=>{
+      const t=ms(p.merged_at);return t!==null&&t>=left&&(i===5?t<=right:t<right);
+    }).map(p=>p.minutes);
+    return {start:new Date(left).toISOString(),end:new Date(right).toISOString(),
+      count:durations.length,median_minutes:quant(durations,.5),
+      mean_minutes:durations.length?durations.reduce((a,b)=>a+b,0)/durations.length:null};
+  });
+  if(buckets.reduce((v,b)=>v+b.count,0)!==n)throw Error('COHORT_BINS_NON_ADDITIVE');
+  return {schema:SCHEMA,base,period_hours:hours,from:new Date(start).toISOString(),
+    to:new Date(end).toISOString(),source_generated_at:source.generated_at,
+    created_prs:selected.length,finished_prs:n,not_merged_in_period:selected.length-n,
+    n,mean_minutes:mean,p50_minutes:quant(durations,.5),p90_minutes:quant(durations,.9),
+    p95_minutes:quant(durations,.95),rows:rows.sort((a,b)=>b.minutes-a.minutes),
+    buckets,stages:stageStats,stage_keys:KEYS,
+    coverage:{created_history_complete:true,ci_archive_available:hasArchive,
+      ci_window_prs:covered,partial_ci_history_prs:partial,missing_ci_prs:missing,
+      invalid_ci_prs:invalid,history_complete:hasArchive&&archive.coverage?.history_complete===true,
+      counted_ci_waves:totalWaves,counted_ci_retries:totalRetries,
+      note:'CI covers saved Core runs only; gaps are unknown causes and mandatory other checks may be absent.'},
+    paths:paths.sort((a,b)=>b.minutes-a.minutes)};
+}
+/* HH_STRICT_CREATED_MERGED_COHORT_V1_END */
+  window.HHStrictCohort=strictCohort;
   function aggregate(win) {
     if (!win || !Array.isArray(win.rows)) return null;
     var start = time(win.from), end = time(win.to);
@@ -416,17 +526,17 @@
       }
     }finally{journeyComparisonPending=false;}
   }
-  async function readArchive() {
-    if(archivePending||archive)return;
+  async function readArchive(force) {
+    if(archivePending||(!force&&archive&&Date.now()-archiveReadAt<5*60000))return;
     archivePending=true;
     try {
-      var response=await fetch('/api/ci-journey-summary?hours=72',{cache:'default',
+      var response=await fetch('/api/ci-journey-summary?hours=72',{cache:'no-store',
         headers:{Accept:'application/json'}});
       if(!response.ok)throw Error('HTTP '+response.status);
       var data=await response.json();
       if(data.schema!=='HH_CI_FIRST_LAST_ARCHIVE_V1'||!Array.isArray(data.rows))
         throw Error('Архив CI не соответствует ожидаемому формату');
-      archive=data;updateComparison();
+      archive=data;archiveReadAt=Date.now();updateComparison();
     }catch(e){
       archiveNote.textContent='Архив CI: '+String(e.message||e).slice(0,110)+
         '. Нет данных ≠ 0.';
@@ -439,6 +549,18 @@
   }
   function build() {
     root = make('div','hh2-root'); root.id = ROOT_ID;
+    window.addEventListener('hh-pr-strict-period',event=>{
+      if(event?.detail?.origin==='graph'&&[1,6,24,72].includes(event.detail.hours)&&event.detail.hours!==cohortHours)
+        chooseStrictPeriod(event.detail.hours,false);
+    });
+    const style=make('style','',
+      '.hh2-strict-cohort{margin:9px 0;padding:10px;background:#102a40;border:1px solid #365b76;border-radius:10px}'+
+      '.hh2-strict-period{display:flex;gap:5px;flex-wrap:wrap;margin:3px 0 8px}'+
+      '.hh2-strict-period button{min-height:38px;padding:5px 10px;border-radius:8px;border:1px solid #48728e;background:#1d3a55;color:#e6f6ff}'+
+      '.hh2-strict-period button[aria-pressed=true]{background:#235f70;border-color:#78c8cf}'+
+      '.hh2-strict-values{font-weight:650;font-size:14px;line-height:1.5;margin:5px 0}'+
+      '.hh2-strict-freshness{font-size:11px;color:#b8cde0;margin:4px 0}');
+    root.append(style);
     var one = make('section','hh2-screen hh2-first'); one.id = 'hh2-overview';
     one.setAttribute('aria-label','Экран 1 — очередь CI, график и время до LIVE');
     var top = make('header','hh2-header');
@@ -481,6 +603,22 @@
       make('small','',STAGE_ONLY?'24ч · сравнение 7/14 дней · данные GitHub':'Подтверждённые этапы'));
     var back = make('a','hh2-link','↑ Сводка');back.href=STAGE_ONLY?'#hh-pr-merge-speed':'#hh2-overview';
     head2.append(title2,back);two.append(head2);
+    strictSummary=make('div','hh2-strict-cohort');
+    var controls=make('div','hh2-strict-period');
+    for(const h of [1,6,24,72]){
+      const button=make('button','hh2-button',h+' ч');
+      button.type='button';button.dataset.strictHours=String(h);
+      button.setAttribute('aria-pressed',String(h===cohortHours));
+      button.addEventListener('click',()=>chooseStrictPeriod(h));
+      controls.append(button);
+    }
+    strictSummary.append(controls,
+      make('p','hh2-strict-values','Читаю одну production-когорту Created→Merged…'),
+      make('p','hh2-strict-freshness','Период проверяется'));
+    strictSummary.append(make('p','hh2-sample','Каждый PR должен быть создан и смержен в одном периоде. '+
+      'Средний вклад этапов суммируется; P50 этапов нельзя складывать. '+
+      '72 часа пока не покрыты полным API. Merge ≠ LIVE.'));
+    two.append(strictSummary);
     comparison = make('div','hh2-compare');
     var compareTitle = make('div','hh2-stage-head');
     compareTitle.append(make('strong','','Этап · n/N'),make('strong','','Сейчас'),make('strong','','7 дней назад'),make('strong','','14 дней назад'));
@@ -660,6 +798,8 @@
       showQueue();
     }
     // Both screens read exactly the same created-and-merged PR cohort.
+    if(!baseline&&!STAGE_ONLY&&cells.avg){for(const id of ['avg','median','p95'])cells[id].querySelector('strong').textContent='—';
+      firstFoot.textContent=cohortError||'Для этого периода нет полной подтверждённой выборки.';}
     if (baseline && !STAGE_ONLY && cells.avg) {
       cells.avg.querySelector('strong').textContent=duration(baseline.mean);
       cells.median.querySelector('strong').textContent=duration(baseline.median);
@@ -672,11 +812,57 @@
         '. LIVE пока подтверждается отдельно.';
     }
   }
+
+function chooseStrictPeriod(hours,notify){
+  cohortHours=hours;
+  if(notify!==false&&typeof window.CustomEvent==='function')window.dispatchEvent(new CustomEvent('hh-pr-strict-period',{detail:{hours,origin:'stages'}}));
+  if(!cohortRaw){
+    baseline=null;renderStrictSummary();updateComparison();return;
+  }
+  try{
+    const m=strictCohort(cohortRaw,archive,hours);
+    baseline={n:m.n,mean:m.mean_minutes,median:m.p50_minutes,p50:m.p50_minutes,
+      p90:m.p90_minutes,p95:m.p95_minutes,rows:m.rows.map(p=>({...p,number:p.pr})),
+      from:m.from,to:m.to,complete:true,source:'live'};
+    cohortError=null;
+  }catch(e){
+    baseline=null;cohortError=hours>48?
+      'Период '+hours+' ч: исходный API гарантирует только 48 ч.':
+      String(e.message||e).slice(0,90);
+  }
+  chartAndMetrics();updateComparison();fillPRs();
+}
+function renderStrictSummary(){
+ if(!strictSummary)return;
+ const m=cohortRaw?(()=>{try{return strictCohort(cohortRaw,archive,cohortHours)}catch{return null}})():null;
+ const buttons=strictSummary.querySelectorAll('[data-strict-hours]');
+ buttons.forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.strictHours)===cohortHours)));
+ const out=strictSummary.querySelector('.hh2-strict-values');
+ const clock=strictSummary.querySelector('.hh2-strict-freshness');
+ if(!out||!clock)return;
+ if(!m){
+  out.textContent='Нет полной когорты для '+cohortHours+' ч. '+(cohortError||'Источник загружается')+
+    '. Неизвестно ≠ 0.';
+  clock.textContent='Полнота данных не подтверждена';
+  return;
+ }
+ const age=Date.now()-Date.parse(m.source_generated_at);
+ const freshness=!Number.isFinite(age)||age>75*60000?'УСТАРЕЛ':
+   age>15*60000?'ЗАДЕРЖКА ОБНОВЛЕНИЯ':'СВЕЖИЙ';
+ const fmt=duration;
+ out.textContent='Production · N='+m.n+'/'+m.created_prs+' созданных · среднее '+fmt(m.mean_minutes)+
+   ' · P50 '+fmt(m.p50_minutes)+' · P90 '+fmt(m.p90_minutes)+
+   ' · Core CI архив '+m.coverage.ci_window_prs+'/'+m.n+
+   ' (частичных '+m.coverage.partial_ci_history_prs+').';
+ clock.textContent=freshness+' · '+(m.to||'время неизвестно')+' · Toronto. Только созданные И смерженные в одном окне.';
+}
+
   function updateComparison() {
     if(!mounted)return;
-    if(baseline)stages.total.current.textContent=duration(baseline.mean);
+    stages.total.current.textContent=baseline?duration(baseline.mean):'—';
+    renderStrictSummary();
     const historical=aggregate(sourceSnapshot?.windows?.find(function(w){return w.id==='two_weeks_ago';}));
-    if(historical)stages.total.history.textContent=duration(historical.mean);
+    stages.total.history.textContent=cohortHours===24&&historical?duration(historical.mean):'—';
     if(!archive){
       for(const [key] of STAGES){
         stages[key].current.textContent='—';
@@ -687,11 +873,14 @@
         'Общее Created→Merged: '+duration(baseline.mean)+' / PR из '+baseline.n+
         ' PR. Загружаю Core CI архив для того же списка PR. Неизмеренные этапы не равны 0.':
         'Ожидаю единый список созданных и смерженных PR…';
-    }else applyArchive();
+    }else if(baseline)applyArchive();
+    else for(const [key] of STAGES){stages[key].current.textContent='—';stages[key].week.textContent='—';stages[key].history.textContent='—';}
+    if(cohortHours!==24){stages.total.week.textContent='—';stages.total.history.textContent='—';
+      for(const [key] of STAGES){stages[key].week.textContent='—';stages[key].history.textContent='—';}}
     const N=baseline?.n??'—';
     var cohortAge=Date.now()-Date.parse(baseline?.to||'');
     var freshness=!Number.isFinite(cohortAge)||cohortAge>75*60000?'УСТАРЕВШИЕ ДАННЫЕ':cohortAge>15*60000?'ЗАДЕРЖКА ОБНОВЛЕНИЯ':'СВЕЖИЙ СРЕЗ';
-    coverage.textContent='Production Created→Merged: '+N+' PR за 24 ч · '+freshness+
+    coverage.textContent='Production Created→Merged: '+N+' PR за '+cohortHours+' ч · '+freshness+
       ' · срез '+(baseline?.to||'неизвестен')+
       (cohortError?' · источник временно недоступен: '+cohortError:'')+
       '; историческая когорта: '+(historical?.n??'—')+
@@ -809,8 +998,9 @@
     }
   }
   function fillPRs() {
-    if (!baseline || !prList) return;
+    if (!prList) return;
     prList.replaceChildren();
+    if(!baseline){prList.append(make('p','hh2-placeholder','Для выбранного периода нет полной достоверной когорты.'));return;}
     if (!baseline.rows.length) {prList.append(make('p','hh2-placeholder','Нет подтверждённых PR в этой когорте.'));return;}
     var hint=make('p','hh2-meta','Полный список '+baseline.n+' PR за окно; каждый: Created → Merged. LIVE — только с независимой квитанцией.');
     prList.append(hint);
@@ -862,15 +1052,10 @@
       var data=await response.json();
       if(data.schema!=='HH_PR_CREATED_COHORT_V1'||!Array.isArray(data.rows)||
         !Number.isFinite(Date.parse(data.generated_at||''))||data.coverage?.complete!==true)throw Error('INCOMPLETE_COHORT');
-      var end=Date.parse(data.generated_at),begin=end-24*3600000;
-      var rows=data.rows.filter(function(p){return p.base==='codex/public-book-library';});
-      var result=aggregate({from:new Date(begin).toISOString(),
-        to:new Date(end).toISOString(),rows:rows,complete:data.coverage?.complete===true});
-      if(!result)throw Error('INCOMPLETE_COHORT');
-      result.source='live';baseline=result;cohortError=null;
-      chartAndMetrics();updateComparison();fillPRs();
+      cohortRaw=data;chooseStrictPeriod(cohortHours,false);
     }catch(e){
       cohortError=String(e.message||e).slice(0,80);
+      if(!cohortRaw)baseline=null;
       chartAndMetrics();updateComparison();
     }finally{cohortFetchBusy=false;}
   }
@@ -930,10 +1115,10 @@
     build();chartAndMetrics();void readJourneyComparison();if(!STAGE_ONLY)void readHistorical();void readCurrentCohort();
     if(!STAGE_ONLY)void readQueue();
     document.getElementById('refresh')?.addEventListener('click',()=>{
-      void readCurrentCohort();if(!STAGE_ONLY)void readQueue();
+      void readCurrentCohort();void readArchive(true);if(!STAGE_ONLY)void readQueue();
     });
     document.addEventListener('visibilitychange',()=>{
-      if(!document.hidden&&Date.now()-cohortLastFetchAt>=5*60000)void readCurrentCohort();
+      if(!document.hidden&&Date.now()-cohortLastFetchAt>=5*60000){void readCurrentCohort();void readArchive(false);}
       else chartAndMetrics();
     });
     observer=new MutationObserver(function (changes) {

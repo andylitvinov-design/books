@@ -36,3 +36,27 @@ test('current production cohort uses no-store, visible freshness and explicit ma
  assert.match(funnel,/Приватный CI Inbox не подключён/);
  assert.match(funnel,/holistic-house-agents-director\.vercel\.app\/commander-auth\.html/);
 });
+
+test('strict production cohort shared by lifecycle view and merge velocity graph',()=>{
+ const code=read('pr-two-screen.js'),chart=read('pr-merge-velocity-ui.js');
+ assert.match(code,/HH_STRICT_CREATED_MERGED_COHORT_V1_BEGIN/);
+ assert.match(code,/window\.HHStrictCohort=strictCohort/);
+ assert.match(code,/cohortRaw=data;chooseStrictPeriod\(cohortHours\)/);
+ assert.match(code,/cohortHours===24/);
+ assert.match(code,/72 часа пока не покрыты/);
+ assert.match(chart,/env\.fetch\('\/api\/pr-created-cohort'/);
+ assert.doesNotMatch(chart,/\/api\/pr-stage-timeline\?hours=/);
+ assert.match(chart,/STRICT_COHORT_MODEL_UNAVAILABLE/);
+ const begin=code.indexOf('/* HH_STRICT_CREATED_MERGED_COHORT_V1_BEGIN */'),
+       end=code.indexOf('/* HH_STRICT_CREATED_MERGED_COHORT_V1_END */',begin);
+ assert.ok(begin>0 && end>begin);
+ const fn=new Function(code.slice(begin,end)+';return strictCohort')();
+ const fixture={schema:'HH_PR_CREATED_COHORT_V1',generated_at:'2026-11-13T20:00:00Z',
+   coverage:{complete:true},cohort_max_hours:48,rows:[
+    {number:11,base:'codex/public-book-library',created_at:'2026-11-13T19:00:00Z',merged_at:'2026-11-13T19:10:00Z'},
+    {number:12,base:'codex/public-book-library',created_at:'2026-11-13T18:00:00Z',merged_at:'2026-11-13T19:10:00Z'}
+   ]};
+ assert.equal(fn(fixture,null,1).n,1);
+ assert.equal(fn(fixture,null,6).n,2);
+ assert.throws(()=>fn(fixture,null,72),/NOT_COVERED/);
+});

@@ -3,6 +3,8 @@ on:
   pull_request:
     branches: ['codex/bootstrap-books']
     paths:
+      - 'ops/pr-monitor-isolated/**'
+      - 'ops/pr-monitor-standalone/**'
       - 'ops/pr-monitor/commander-learning-model.cjs'
       - 'ops/pr-monitor/api/commander-learning.js'
       - 'ops/pr-monitor/commander-learning.js'
@@ -399,6 +401,12 @@ jobs:
         run: node --test ops/pr-monitor/tests/commander-codex.test.mjs
       - name: Standalone monitor legacy fallback contract
         run: node --test ops/pr-monitor/tests/vercel-fallback.test.cjs
+      - name: Strict Created-and-Merged PR cohort contracts (both independent monitors)
+        run: |
+          node --check ops/pr-monitor-isolated/monitor.js
+          node --check ops/pr-monitor-standalone/pr-two-screen.js
+          node --check ops/pr-monitor-standalone/pr-merge-velocity-ui.js
+          node --test ops/pr-monitor-isolated/test-contract.cjs ops/pr-monitor-standalone/tests/standalone.test.cjs
       - name: PR error funnel proof and diagnostic assignment contracts
         run: node --test ops/pr-monitor/tests/pr-error-funnel.test.cjs
       - name: PR attribution timeline evidence contracts

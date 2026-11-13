@@ -4,7 +4,7 @@ const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const root=path.resolve(__dirname,'..'),read=f=>fs.readFileSync(path.join(root,f),'utf8');
 const html=read('index.html'),css=read('monitor.css'),js=read('monitor.js'),conf=JSON.parse(read('vercel.json'));
 const sandbox={module:{exports:{}}};new vm.Script(js).runInNewContext(sandbox);
-const {activity,speed,compactRecords,delay,SCHEMAS,URLS}=sandbox.module.exports;
+const {activity,speed,compactRecords,strictCohort,delay,SCHEMAS,URLS}=sandbox.module.exports;
 test('one static CSS + one deferred JS; all eight main sections exist',()=>{
  assert.equal((html.match(/<script /g)||[]).length,1);
  assert.equal((html.match(/rel="stylesheet"/g)||[]).length,1);
@@ -13,8 +13,8 @@ test('one static CSS + one deferred JS; all eight main sections exist',()=>{
  assert.match(html,/holistic-house-agents-director\.vercel\.app/);
  assert.ok(css.length>6500);assert.match(css,/@media\(max-width:750px\)/);
 });
-test('strict public read-only origin and 6 explicit API allowlist rewrites',()=>{
- assert.equal(conf.rewrites.length,6);
+test('strict public read-only origin and 8 explicit API allowlist rewrites',()=>{
+ assert.equal(conf.rewrites.length,8);
  for(const [key,url]of Object.entries(URLS)){
   const route=conf.rewrites.find(x=>x.source===url.split('?')[0]);
   assert.ok(route,key);
@@ -65,4 +65,35 @@ test('production cohort and data freshness are explicit and comparable',()=>{
  assert.match(js,/среднее /);
  assert.match(js,/Есть устаревший источник/);
  assert.match(js,/Самый ранний срез/);
+});
+
+test('strict cohort: identical production time window, no old merges, additive CI stages',()=>{
+ const source={schema:SCHEMAS.cohort,generated_at:'2026-11-13T20:00:00Z',
+  cohort_max_hours:48,coverage:{complete:true},rows:[
+   {number:1,base:'codex/public-book-library',created_at:'2026-11-13T19:00:00Z',merged_at:'2026-11-13T19:10:00Z'},
+   {number:2,base:'codex/public-book-library',created_at:'2026-11-13T18:00:00Z',merged_at:'2026-11-13T19:10:00Z'},
+   {number:3,base:'codex/public-book-library',created_at:'2026-11-13T19:00:00Z',merged_at:null},
+   {number:4,base:'codex/bootstrap-books',created_at:'2026-11-13T19:00:00Z',merged_at:'2026-11-13T19:05:00Z'}
+ ]};
+ const archive={schema:SCHEMAS.archive,coverage:{history_complete:false},rows:[
+  {pr:1,first_at:'2026-11-13T19:01:00Z',last_at:'2026-11-13T19:09:00Z',
+   stages_ms:{workflow_wait:60000,runner_wait:60000,checks:240000,between_waves_unknown:120000,other_unknown:0},
+   runs:2,repeats:1,partial:true}
+ ]};
+ const one=strictCohort(source,archive,1);
+ assert.equal(one.n,1);assert.equal(one.created_prs,2);assert.equal(one.mean_minutes,10);
+ assert.equal(one.coverage.ci_window_prs,1);assert.equal(one.coverage.partial_ci_history_prs,1);
+ assert.equal(one.buckets.reduce((s,b)=>s+b.count,0),1);
+ assert.ok(Math.abs(one.stage_keys.reduce((s,k)=>s+one.stages[k].contribution_mean_minutes,0)-10)<1e-8);
+ assert.equal(strictCohort(source,archive,6).n,2);
+ assert.throws(()=>strictCohort(source,archive,72),/NOT_COVERED/);
+ source.coverage.complete=false;assert.throws(()=>strictCohort(source,archive,1),/INCOMPLETE/);
+});
+test('one header mean and P50 share strict cohort; missing archive is not zero',()=>{
+ assert.match(html,/id="strict-mean"/);
+ assert.match(html,/id="strict-stage-rows"/);
+ assert.match(js,/strictHours=Number\(b\.dataset\.cohortHours\)/);
+ assert.match(js,/renderStrictCohort/);
+ assert.match(js,/if\(key!=='cohort'\)fn\(data\)/);
+ assert.match(js,/data\?\.schema!==SCHEMAS\.stages/);
 });
