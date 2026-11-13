@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
-import {UNIFIED_DOCK_IDS,isUnifiedMobileDockHomePath,isUnifiedMobileDockPath,unifiedMobileDockActive,unifiedMobileDockHref} from "../lib/unified-mobile-dock.mjs";
+import {UNIFIED_DOCK_IDS,isUnifiedMobileDockHomePath,isUnifiedMobileDockAppPath,isUnifiedMobileDockEditorialPath,isUnifiedMobileDockPath,unifiedMobileDockActive,unifiedMobileDockHref} from "../lib/unified-mobile-dock.mjs";
 import {buildPublishedVideoIndex} from "../lib/video-discovery/catalog.mjs";
 import {rankDiscoveryVideos} from "../lib/video-discovery/ranker.mjs";
 
@@ -107,6 +107,32 @@ test("route-aware single dock, guest/signed-in consistency and private pages exc
  assert.equal(isUnifiedMobileDockPath("/ru/app/runs"),false);
  assert.equal(isUnifiedMobileDockPath("/ru/holistic-support/mandala-evil"),false);
 });
+test("public editorial journeys share the approved seven-item dock without private-route spillover",()=>{
+ const dock=read("components/unified-mobile-dock.tsx");
+ const legacy=read("components/mobile-bottom-navigation.tsx");
+ const css=read("components/unified-mobile-dock.module.css");
+ const global=read("app/unified-mobile-dock.css");
+ for(const locale of ["en","ru","es"]){
+   for(const suffix of ["about","library","articles","academy","tests","courses","explore/energy","events","my-page","u/visitor","shop"]){
+     const route="/"+locale+"/"+suffix;
+     assert.equal(isUnifiedMobileDockEditorialPath(route),true,route);
+     assert.equal(isUnifiedMobileDockPath(route),true,route);
+   }
+   for(const suffix of ["app/runs","client/private-selector","coaching","prescriptions","report","payments/checkout","cart/checkout"]){
+     assert.equal(isUnifiedMobileDockPath("/"+locale+"/"+suffix),false,suffix);
+   }
+   assert.equal(isUnifiedMobileDockPath("/"+locale+"/client/tests"),true);
+   assert.equal(isUnifiedMobileDockAppPath("/"+locale+"/mytube"),true);
+ }
+ assert.equal(isUnifiedMobileDockPath("/books/maya-tradition"),true);
+ assert.equal(isUnifiedMobileDockPath("/admin"),false);
+ assert.ok(dock.includes('data-hh-editorial-dock={editorialOnly || undefined}'));
+ assert.ok(css.includes('.dock[data-hh-editorial-dock="true"]{display:none}'));
+ assert.ok(legacy.includes("isUnifiedMobileDockPath(pathname)"));
+ assert.ok(global.includes("main[data-energywork-ai-learner]"));
+ assert.ok(global.includes(".mobile-bottom-navigation{display:none!important}"));
+});
+
 test("one screenshot-1 style seven-button dock and protected old docks removed visually",()=>{
  const page=read("app/layout.tsx");
  const dock=read("components/unified-mobile-dock.tsx");
