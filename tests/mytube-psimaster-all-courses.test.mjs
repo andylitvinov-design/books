@@ -68,3 +68,19 @@ test("MyTube shows course names and lessons immediately; category filters option
   assert.match(feed,/data-mytube-course-heading=\{courseInfo\.id\}/);
   assert.match(feed,/visibleLimit = mytubeShelf === "courses" \? filtered\.length/);
 });
+
+test("all verified PsiMaster planetary meditations complement the original Sun and Ajna set",()=>{
+  const planets=archived.filter(media=>media.logicalId==="videos/planetary-power"&&
+    media.status==="verified_legacy_public_embed");
+  assert.equal(planets.length,11,"entire original Planetary Power source is present");
+  const ids=new Set([...originalIds,...planets.map(media=>media.videoId)]);
+  assert.equal(ids.size,15,"deduplicate the two overlapping PsiMaster source channels");
+  for(const title of ["Марс","Меркурий","Юпитера","Сатурна","Круг денег"]){
+    assert.ok(planets.some(media=>media.lessonTitle.includes(title)),title);
+  }
+  const hub=read("components/library-hub.tsx");
+  assert.match(hub,/psimasterMedia/);
+  assert.match(hub,/media\.logicalId==="videos\/planetary-power"/);
+  assert.match(hub,/media\.status==="verified_legacy_public_embed"/);
+  assert.match(hub,/!curatedIds\.has\(media\.videoId\)/);
+});
