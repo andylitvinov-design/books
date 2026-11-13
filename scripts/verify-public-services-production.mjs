@@ -115,7 +115,9 @@ try {
     await visible(question);
     await expect(submit).toBeDisabled();
     const topics = assist.locator('[data-assist-topic-suggestions] button[aria-pressed]');
-    await expect(topics).toHaveCount(6);
+    await expect(topics).toHaveCount(12);
+    await visible(assist.locator("[data-assist-dialogue]"));
+    await expect(assist.locator("[data-assist-issue-suggestions] button")).toHaveCount(12);
     const shelf = assist.locator("[data-assist-best-three]");
     await visible(shelf.locator("#assist-best-three-title"));
     const directionTabs = shelf.locator("button[data-assist-direction]");
@@ -198,6 +200,10 @@ try {
     await expect(results).toHaveCount(0);
     await expect(question).toHaveValue("");
     await expect(submit).toBeDisabled();
+    // "Other" leads to free text without inventing a complaint.
+    await topics.last().click();
+    await expect(question).toBeFocused();
+    await expect(results).toHaveCount(0);
 
     // Free-text matching stays inside the browser; do not submit a lead.
     await question.fill(locale === "ru" ? "Меня тревожит стресс" :
