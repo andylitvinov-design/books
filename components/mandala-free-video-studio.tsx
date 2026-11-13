@@ -26,7 +26,7 @@ import {deriveAudioVideoConcept} from "@/lib/mandala/audio-concept-director.mjs"
 import {consumeVoiceStudioHandoff} from "@/lib/mandala/voice-studio-handoff.mjs";
 import {requestConsentedTimedTranscript} from "@/lib/mandala/consented-audio-stt";
 import type {TimedSpeechTranscript,AudioVisualPlan} from "@/lib/mandala/audio-visual-storyboard.mjs";
-import { MandalaVideoDelivery } from "./mandala-video-delivery";
+import { MandalaVideoDelivery, type VideoDeliveryHandle, type VideoDeliveryStatus } from "./mandala-video-delivery";
 import { MandalaVideoReady } from "./mandala-video-ready";
 import {appFetch} from "@/lib/app/client-fetch";
 import {paintVideoBrandStamp,resolveVideoExportVariant,canOfferOriginalVideoSource} from "@/lib/mandala/video-branding.mjs";
@@ -2551,6 +2551,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       setGuestFirstVideoUsed(true);
   },[result,playbackStatus]);
   const [deliveryChooserOpen,setDeliveryChooserOpen] = useState(false);
+  const deliveryRef=useRef<VideoDeliveryHandle|null>(null);
+  const [readySaveStatus,setReadySaveStatus]=useState<VideoDeliveryStatus>({
+    notice:"",busy:false,uploadPercent:null,savedId:null,cloudAvailable:null
+  });
+  // A new recorded Blob cannot inherit an old video's Saved status.
+  useEffect(()=>{
+    setReadySaveStatus({notice:"",busy:false,uploadPercent:null,savedId:null,cloudAvailable:null});
+  },[result?.url]);
   const [exportUnavailable, setExportUnavailable] = useState(false);
   // Browser-only non-personal diagnostic; the user opts in to lower-res retry.
   const [webkitRecoveryReason,setWebkitRecoveryReason] = useState<string|null>(null);
@@ -7155,6 +7163,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           }
           return createQuickVideo();
         }}
+        saveStatus={readySaveStatus}
+        onSaveDirect={()=>{
+          // Reuse the ONE already-mounted private uploader. No second save dialog
+          // or automatic public publishing of a personal therapy video.
+          if(deliveryRef.current)void deliveryRef.current.saveToLibrary();
+          else setDeliveryChooserOpen(true);
+        }}
         onOpenDelivery={()=>{
           setDeliveryChooserOpen(true);
           window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
@@ -7915,7 +7930,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       </section>
       
       {result&&result.mode!=="catalog"&&playbackStatus==="ready"&&creditConfirmed?
-        <MandalaVideoDelivery key={result.url} locale={locale} open={deliveryChooserOpen}
+        <MandalaVideoDelivery key={result.url} ref={deliveryRef} locale={locale} open={deliveryChooserOpen}
+          onStatusChange={setReadySaveStatus}
           onClose={()=>setDeliveryChooserOpen(false)}
           blob={result.blob} url={result.url} extension={result.extension}
           mime={result.mime} bytes={result.bytes} theme={theme}
