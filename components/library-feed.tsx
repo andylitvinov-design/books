@@ -6,6 +6,7 @@ import { ArrowRight, ArrowUpRight, BookOpen, Bookmark, BookmarkCheck, Film, Play
 import { Fragment, useMemo, useState } from "react";
 
 import type { PublicLocale } from "@/lib/public-locales";
+import { myTubeCourseInfo } from "@/lib/video-discovery/mytube-shelves.mjs";
 import type { MyTubeVideoTags } from "@/lib/mandala/mytube-video-tagging.mjs";
 import styles from "./library-feed.module.css";
 
@@ -142,7 +143,7 @@ export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = fa
   }, [items, kind, query, locale, videosOnly, guidesOnly, selectedSeries, seriesChoices, preserveOrder]);
   // A selected MyTube course is a complete ordered playlist, not a preview of
   // the first eight lessons. Keep normal pagination for other Library feeds.
-  const visibleLimit = mytubeShelf === "courses" ? filtered.length :
+  const visibleLimit = (mytubeShelf === "courses" || mytubeShelf === "practices") ? filtered.length :
     videosOnly && !preserveOrder && selectedSeries === "all"
       ? Math.max(limit, filtered.filter(item => Boolean(item.seriesId)).length) : limit;
   const visible = filtered.slice(0, visibleLimit);
@@ -201,8 +202,16 @@ export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = fa
         const matchingScenario=matchingTopic?.scenarios.find(s=>
           s.scenarioId===mytubeFocus?.scenarioId);
         const matchingScore=matchingScenario?.score??matchingTopic?.score;
+        const courseInfo=mytubeShelf==="courses"?myTubeCourseInfo(item):null;
+        const previousCourseInfo=mytubeShelf==="courses"&&index>0
+          ?myTubeCourseInfo(visible[index-1]):null;
         return <Fragment key={item.id}>
-          {item.seriesId && (index === 0 || visible[index - 1]?.seriesId !== item.seriesId) ? (
+          {courseInfo && courseInfo.id!==previousCourseInfo?.id ? (
+            <div className={styles.seriesHeading} data-mytube-course-heading={courseInfo.id}>
+              <div><span>{copy.mytubeCourse}</span><h3>{courseInfo.label}</h3></div>
+            </div>
+          ) : null}
+          {!courseInfo && item.seriesId && (index === 0 || visible[index - 1]?.seriesId !== item.seriesId) ? (
             <div className={styles.seriesHeading} data-library-video-series={item.seriesId}>
               <div><span>{copy.seriesTitle}</span><h3>{item.seriesTitle}</h3></div>
               {item.seriesHref ? <Link href={item.seriesHref}>{copy.seriesDetails}<ArrowUpRight size={14} aria-hidden="true" /></Link> : null}
@@ -268,6 +277,12 @@ export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = fa
             </p>
             )}
             {item.description && <p className={styles.description}>{item.description}</p>}
+            {mytubeShelf==="practices"&&item.sourceGroup==="psimaster-original-meditations"&&
+              !Number.isInteger(item.durationVerifiedSeconds)&&
+              <p className={styles.meta} data-mytube-duration-unverified>
+                {locale==="ru"?"Длительность ещё не подтверждена":
+                  locale==="es"?"Duración pendiente de verificar":"Duration not yet verified"}
+              </p>}
             {videoLayout==="mytube"&&matchingTopic&&<p className={styles.meta}
               data-mytube-ranking={matchingTopic.topicId}
               title={locale==="ru"?"Предварительная редакционная оценка, не проверенная вручную":

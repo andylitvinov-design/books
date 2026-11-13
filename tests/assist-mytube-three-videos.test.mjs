@@ -7,6 +7,7 @@ const component = readFileSync(new URL("../components/services-assist-mytube.tsx
 const route = readFileSync(new URL("../app/api/assist/public-mytube/route.ts", import.meta.url), "utf8");
 const mytube = readFileSync(new URL("../app/[locale]/mytube/page.tsx", import.meta.url), "utf8");
 const mobile = readFileSync(new URL("../components/services-assist-mobile.tsx", import.meta.url), "utf8");
+const browserQA = readFileSync(new URL("../scripts/verify-public-services-production.mjs", import.meta.url), "utf8");
 
 test("Assist offers three distinct topical, already published videos", () => {
   const titles = ["Quiet A", "Quiet B", "Quiet C", "Unrelated"];
@@ -34,4 +35,9 @@ test("public catalog and links preserve privacy, approval and actual playback", 
   assert.match(component, /mytube\?goal=/);
   assert.match(mytube, /data-mytube-assist-featured/);
   assert.match(mobile, /<ServicesAssistMyTube locale=\{locale\} focus=\{selection\.focus\} question=\{selection\.text\}/);
+  assert.match(mobile, /data-assist-topic-suggestions/);
+  assert.match(mobile, /data-assist-reset/);
+  assert.match(browserQA, /rankDiscoveryVideos\(publicVideos\.videos, \{ goal: "stress" \}\)/);
+  assert.match(browserQA, /videoUrl\.search, "\?locale=" \+ locale/);
+  assert.match(browserQA, /data-assist-mytube/);
 });

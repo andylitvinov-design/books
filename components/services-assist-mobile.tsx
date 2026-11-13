@@ -108,7 +108,7 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
       <button type="submit" disabled={!text.trim()}><Search size={18} aria-hidden="true"/>{t.submit}<ArrowRight size={18} aria-hidden="true"/></button>
       <small>{t.voice}</small>
     </form>
-    <div className={styles.quick}><p>{t.topics}</p><div className={styles.chips} role="group" aria-label={t.topics}>
+    <div className={styles.quick}><p>{t.topics}</p><div className={styles.chips} role="group" aria-label={t.topics} data-assist-topic-suggestions>
       {t.hints.map(([label,example,focus])=><button key={focus} type="button" aria-pressed={selection?.focus===focus}
         onClick={()=>{inputRef.current?.blur();setText(example);setSelection({text:example,focus:focus as Focus});setPreferences(inferAssistPreferences(example));}}>{label}</button>)}
     </div></div>
@@ -132,7 +132,7 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
         })}</div>
         <ServicesAssistMyTube locale={locale} focus={selection.focus} question={selection.text} />
       </>}
-      <button type="button" className={styles.reset} onClick={()=>{setSelection(null);setText("");setPreferences({});inputRef.current?.focus();}}>{t.change}</button>
+      <button type="button" className={styles.reset} data-assist-reset onClick={()=>{setSelection(null);setText("");setPreferences({});inputRef.current?.focus();}}>{t.change}</button>
     </section>:null}
     <section className={styles.tools} aria-labelledby="assist-tools-title">
       <h2 id="assist-tools-title">{t.tools}</h2><p>{t.browse}</p>

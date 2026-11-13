@@ -6,6 +6,8 @@ const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
 const { expect } = require((process.env.HH_PLAYWRIGHT_PACKAGE || "playwright") + "/test");
 import assert from "node:assert/strict";
+import { inferAssistPreferences, rankAssistOffers } from "../lib/assist/service-match.mjs";
+import { rankDiscoveryVideos } from "../lib/video-discovery/ranker.mjs";
 import { mkdir, writeFile } from "node:fs/promises";
 
 const origin = process.env.HH_PUBLIC_QA_ORIGIN || "http://127.0.0.1:3100";
@@ -113,7 +115,7 @@ try {
     const submit = assist.locator('form button[type="submit"]');
     await visible(question);
     await expect(submit).toBeDisabled();
-    const topics = assist.locator('[role="group"] button[aria-pressed]');
+    const topics = assist.locator('[data-assist-topic-suggestions] button[aria-pressed]');
     await expect(topics).toHaveCount(6);
     const tools = assist.locator("a[data-assist-tool]");
     await expect(tools).toHaveCount(8);
@@ -135,31 +137,76 @@ try {
       "Assist cannot silently collect contact details");
 
     // Real hydrated topic interaction: exactly three source-backed stress links.
+    // The public MyTube endpoint must be called with locale only, never with
+    // the client's personal question. Capture its real, read-only response.
+    const videoResponsePending = page.waitForResponse(response =>
+      response.url().includes("/api/assist/public-mytube?locale=" + locale) &&
+      response.request().method() === "GET", { timeout: 25000 });
     await topics.first().click();
     const results = assist.locator("#assist-results");
     await visible(results);
+    const videoResponse = await videoResponsePending;
+    const videoUrl = new URL(videoResponse.url());
+    assert.equal(videoUrl.pathname, "/api/assist/public-mytube");
+    assert.equal(videoUrl.search, "?locale=" + locale, "Private question must never enter MyTube URLs");
+    assert.equal(videoResponse.status(), 200, "Published MyTube discovery API must respond");
+    const publicVideos = await videoResponse.json();
+    assert.ok(Array.isArray(publicVideos?.videos), "Public MyTube catalog is an array");
+    const expectedVideos = rankDiscoveryVideos(publicVideos.videos, { goal: "stress" }).slice(0, 3);
+    const videoShelf = results.locator("[data-assist-mytube]");
+    await visible(videoShelf);
+    await expect(videoShelf.locator("[data-assist-mytube-more]"))
+      .toHaveAttribute("href", "/" + locale + "/mytube?goal=stress");
+    const videoCards = videoShelf.locator("[data-assist-mytube-card]");
+    await expect(videoCards).toHaveCount(expectedVideos.length, { timeout: 25000 });
+    assert.equal(new Set(expectedVideos.map(item => item.youtubeId)).size, expectedVideos.length,
+      "Recommended MyTube videos are distinct verified public records");
+    for (const video of expectedVideos) {
+      const card = videoShelf.locator('[data-assist-mytube-card="' + video.youtubeId + '"]');
+      await expect(card).toHaveCount(1);
+      const links = card.locator("a[href]");
+      await expect(links).toHaveCount(2);
+      for (const index of [0, 1]) {
+        await expect(links.nth(index)).toHaveAttribute("href", "/" + locale + "/mytube?video=" + video.youtubeId);
+      }
+      const actionBox = await links.last().boundingBox();
+      assert.ok(actionBox && actionBox.height >= 44, "MyTube watch touch target ≥44px");
+    }
+
     await expect(topics.first()).toHaveAttribute("aria-pressed", "true");
     await expect(results.locator("a[data-assist-recommendation]")).toHaveCount(3);
-    const stressRoutes = {
-      tests: "tests",
-      opora: "courses/antistress",
-      therapy: "services/imagery-therapy",
-    };
-    for (const [key, route] of Object.entries(stressRoutes)) {
+    // The production matcher now ranks by optional preferences; prove three
+    // real route-linked recommendations without assuming retired fixed cards.
+    const expectedStress = rankAssistOffers("stress",
+      inferAssistPreferences(await question.inputValue())).map(offer => offer.id);
+    const actualStress = await results.locator("a[data-assist-recommendation]").evaluateAll(
+      links => links.map(link => link.getAttribute("data-assist-recommendation")));
+    assert.deepEqual(actualStress, expectedStress, "Assist stress rankings match the tested client-only matcher");
+    for (const key of expectedStress) {
       const link = results.locator('a[data-assist-recommendation="' + key + '"]');
-      await expect(link).toHaveAttribute("href", "/" + locale + "/" + route);
+      await expect(link).toHaveAttribute("href", new RegExp("^/" + locale + "/[a-z0-9/-]+$"));
       const box = await link.boundingBox();
-      assert.ok(box && box.height >= 44, "Mobile Assist link touch target: " + locale + "/" + width + "/" + key);
+      assert.ok(box && box.height >= 44,
+        "Mobile Assist link touch target: " + locale + "/" + width + "/" + key);
     }
 
     // Switching intent must replace, not append, old recommendations.
     await topics.nth(4).click();
     await expect(topics.nth(4)).toHaveAttribute("aria-pressed", "true");
+    await expect(videoShelf.locator("[data-assist-mytube-more]"))
+      .toHaveAttribute("href", "/" + locale + "/mytube?goal=work");
     await expect(results.locator("a[data-assist-recommendation]")).toHaveCount(3);
-    await expect(results.locator('a[data-assist-recommendation="business"]'))
-      .toHaveAttribute("href", "/" + locale + "/services/business-consulting");
+    const expectedWork = rankAssistOffers("work",
+      inferAssistPreferences(await question.inputValue())).map(offer => offer.id);
+    const actualWork = await results.locator("a[data-assist-recommendation]").evaluateAll(
+      links => links.map(link => link.getAttribute("data-assist-recommendation")));
+    assert.deepEqual(actualWork, expectedWork, "Assist work ranking replaces previous stress cards");
+    if (expectedWork.includes("business")) {
+      await expect(results.locator('a[data-assist-recommendation="business"]'))
+        .toHaveAttribute("href", "/" + locale + "/services/business-consulting");
+    }
 
-    const reset = results.locator('button[type="button"]');
+    const reset = results.locator('button[data-assist-reset]');
     await reset.click();
     await expect(results).toHaveCount(0);
     await expect(question).toHaveValue("");
@@ -172,8 +219,12 @@ try {
     await submit.click();
     await visible(results);
     await expect(results.locator("a[data-assist-recommendation]")).toHaveCount(3);
-    await expect(results.locator('a[data-assist-recommendation="opora"]'))
-      .toHaveAttribute("href", "/" + locale + "/courses/antistress");
+    const expectedTypedStress = rankAssistOffers("stress",
+      inferAssistPreferences(await question.inputValue())).map(offer => offer.id);
+    const actualTypedStress = await results.locator("a[data-assist-recommendation]").evaluateAll(
+      links => links.map(link => link.getAttribute("data-assist-recommendation")));
+    assert.deepEqual(actualTypedStress, expectedTypedStress,
+      "Typed stress query applies the current ranked matcher, not obsolete fixed links");
 
     // Crisis never receives therapeutic sales recommendations.
     await question.fill(locale === "ru" ? "Хочу убить себя" :
@@ -181,6 +232,7 @@ try {
     await submit.click();
     await visible(results.locator('[role="alert"]'));
     await expect(results.locator("a[data-assist-recommendation]")).toHaveCount(0);
+    await expect(results.locator("[data-assist-mytube]")).toHaveCount(0);
     await assertNoDevIssueOverlay(page, locale + "/services/assist/" + width);
     await assertViewport(page, locale + "/services/assist/" + width);
     await reset.click();

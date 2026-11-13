@@ -22,12 +22,13 @@ test("exactly three exclusive MyTube sections without an All section",()=>{
    assert.ok(view.includes('"'+name+'"'),"translated label "+name);
  }
 });
-test("practice shelf is a strict approved meditation of verified 1–600s, not a teaser or talk",()=>{
+test("practice shelf is a strict approved meditation of verified 1–900s, not a teaser or talk",()=>{
  const base={id:"v",sourceGroup:"approved-meditations",sourceApproved:true,curation:"verified",
   editorial_status:"approved",embed_status:"confirmed",rights_status:"embed_approved",
-  contentType:"soft_meditation",durationVerifiedSeconds:600};
+  contentType:"soft_meditation",durationVerifiedSeconds:900};
  assert.equal(isMyTubeMeditationPractice(base),true);
- assert.equal(isMyTubeMeditationPractice({...base,durationVerifiedSeconds:601}),false);
+ assert.equal(isMyTubeMeditationPractice({...base,durationVerifiedSeconds:901}),false);
+ assert.equal(isMyTubeMeditationPractice({...base,durationVerifiedSeconds:601}),true);
  assert.equal(isMyTubeMeditationPractice({...base,durationVerifiedSeconds:null}),false);
  assert.equal(isMyTubeMeditationPractice({...base,contentType:"explanation"}),false);
  assert.equal(isMyTubeMeditationPractice({...base,editorial_status:"draft"}),false);
