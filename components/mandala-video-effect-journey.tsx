@@ -64,7 +64,12 @@ export function MandalaVideoEffectJourney({locale,status,progress,videoStarted,v
   const [modalOpen,setModalOpen]=useState(true);
   const dialogRef=useRef<HTMLDivElement>(null);
   useEffect(()=>{setMounted(true);},[]);
-  useEffect(()=>{if(videoEnded||status==="failed")setModalOpen(true);},[videoEnded,status]);
+  // Completion must never leave a voluntary check-in over Ready, Save or Telegram.
+  // Preserve the answers; visitors can explicitly reopen the check-in later.
+  useEffect(()=>{
+    if(status==="ready")setModalOpen(false);
+    else if(status==="failed")setModalOpen(true);
+  },[status]);
   const dialogVisible=mounted&&modalOpen&&status!=="idle";
   useEffect(()=>{
     if(!dialogVisible)return;

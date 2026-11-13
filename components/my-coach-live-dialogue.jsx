@@ -8,6 +8,7 @@ import {coachingBrainSafety,coachingBrainBoundary} from '@/lib/personal-coaching
 import {classifyWisdomRequest} from '@/lib/coaching/wisdom-retrieval.mjs'
 import styles from './my-coach-live-dialogue.module.css'
 import MyCoachSpeechLoop from './my-coach-speech-loop'
+import {detectedSpeechLocale} from '@/lib/personal-coaching/my-coach-dictation.mjs'
 import CoachingAvatar from '@/components/app/coaching-avatar'
 
 const copy={
@@ -73,9 +74,9 @@ ru:{choose:'Выбрать другого коуча',mode:'AI-КОУЧ · ЖИ�
 es:{choose:'Elegir otro coach',mode:'COACH IA · DIÁLOGO EN VIVO',step:'Paso',of:'de',topics:'¿Qué te gustaría explorar?',stress:'Reducir el estrés',energy:'Recuperar energía',relationships:'Mejorar relaciones',goal:'Mi objetivo',goalPlaceholder:'Añade o edita tu objetivo…',type:'Escribir mensaje',keyboardShort:'Texto',captions:'Activar o desactivar subtítulos',captionsShort:'CC',replayShort:'Repetir',end:'Terminar sesión',replay:'Escuchar la respuesta',voice:'Iniciar conversación por voz',home:'Inicio',coaching:'Mi coach',practice:'Prácticas',video:'Vídeo',profile:'Perfil',disclosure:'Coach ficticio de IA, no terapeuta. La conversación permanece en esta pestaña y no se guarda en tu cuenta.',guided:'Usar la sesión guiada',stages:['Aclarar','Explorar','Conciencia','Nueva perspectiva','Opciones','Siguiente paso'],stageQuestion:'Progreso de la conversación',safety:'Pausa de seguridad',chooseTopic:'Elige un tema para añadirlo al borrador. Nada se envía hasta pulsar Enviar.',typedGoal:'Tu objetivo permanece en esta pestaña y no se guarda en tu cuenta.'}
 }
 const transcriptUi={
-  en:{heading:'Conversation · transcript',listening:'Listening',hint:'Your spoken words will appear here. Or type your reply below.',consentShort:'I agree to send my text to the eligible free AI; browser recognition may process my voice.',details:'Privacy and data processing'},
-  ru:{heading:'Диалог · расшифровка',listening:'Слушаю',hint:'Здесь появятся ваши слова. Можно также написать ответ ниже.',consentShort:'Согласен(на) отправлять текст бесплатной AI-модели; браузер может обрабатывать мой голос.',details:'Приватность и обработка данных'},
-  es:{heading:'Diálogo · transcripción',listening:'Escuchando',hint:'Aquí aparecerán tus palabras. También puedes escribir abajo.',consentShort:'Acepto enviar mi texto a la IA gratuita; el navegador puede procesar mi voz.',details:'Privacidad y procesamiento'},
+  en:{heading:'Conversation · transcript',listening:'Listening',languageLabel:'Speech recognition language',autoLanguage:'Device · auto',hint:'Your spoken words will appear here. Or type your reply below.',consentShort:'I agree to send my text to the eligible free AI; browser recognition may process my voice.',details:'Privacy and data processing'},
+  ru:{heading:'Диалог · расшифровка',listening:'Слушаю',languageLabel:'Язык распознавания речи',autoLanguage:'Авто · устройство',hint:'Здесь появятся ваши слова. Можно также написать ответ ниже.',consentShort:'Согласен(на) отправлять текст бесплатной AI-модели; браузер может обрабатывать мой голос.',details:'Приватность и обработка данных'},
+  es:{heading:'Diálogo · transcripción',listening:'Escuchando',languageLabel:'Idioma de reconocimiento de voz',autoLanguage:'Auto · dispositivo',hint:'Aquí aparecerán tus palabras. También puedes escribir abajo.',consentShort:'Acepto enviar mi texto a la IA gratuita; el navegador puede procesar mi voz.',details:'Privacidad y procesamiento'},
 }
 const voiceGateText={
  en:{title:'Before voice conversation',cancel:'Not now',agree:'Agree and talk',playbackUnavailable:'Audio playback is unavailable in this browser. Try Safari or use text.'},
@@ -99,6 +100,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [consent,setConsent]=useState(false)
   const [draft,setDraft]=useState('')
   const [speechPreview,setSpeechPreview]=useState('')
+  const [speechLocale,setSpeechLocale]=useState('auto')
   const [showCaptions,setShowCaptions]=useState(true)
   const [turns,setTurns]=useState([])
   const [busy,setBusy]=useState(false)
@@ -196,6 +198,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   }
   async function sendMessage(raw){
     const message=String(raw||'').trim()
+    const responseLocale=detectedSpeechLocale(message,lang)
     if(!message||!consent||busy||paused||authRequired||readiness.status==='checking')return
     // Explicit quote requests use only the already-authenticated first-party
     // Wisdom Library. They do not require a free model or contact OpenRouter.
@@ -205,12 +208,12 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     if(readiness.status!=='verified'&&!wisdomRequested){
       // Local-only authored fallback. NEVER send private text to an unverified model.
       // Same editorial persona prompts, same browser-only conversation history.
-      const input={locale:lang,message,turns:turns.map(({role,content})=>({role,content}))}
+      const input={locale:responseLocale,message,turns:turns.map(({role,content})=>({role,content}))}
       const interruption=coachingBrainSafety(input)||coachingBrainBoundary(input)
       const stages=['goal','reality','resources','options','action']
       const userCount=turns.filter(item=>item.role==='user').length
       const stage=stages[Math.min(userCount,stages.length-1)]
-      const offlinePrompt=String(coachStagePrompt(personaId,stage,lang,settings)||t.goal)
+      const offlinePrompt=String(coachStagePrompt(personaId,stage,responseLocale,settings)||t.goal)
       const answer=(interruption?[interruption.reflection,interruption.question].filter(Boolean).join(' '):offlinePrompt).slice(0,900)
       const mode=interruption?.mode||'offline'
       setTurns(previous=>{
@@ -224,7 +227,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       if(mode==='safety'||(mode==='boundary'&&interruption?.boundary==='stop'))setPaused(true)
       setDraft('')
       setSpeechPreview('')
-      return {reply:answer,mode}
+      return {reply:answer,mode,locale:responseLocale}
     }
     const controller=new AbortController()
     pending.current?.abort()
@@ -235,7 +238,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         method:'POST',credentials:'same-origin',cache:'no-store',signal:controller.signal,
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
-          personaId,settings,locale:lang,consent:true,message,
+          personaId,settings,locale:responseLocale,consent:true,message,
           turns:(turns.length>10?[turns[0],...turns.slice(-9)]:turns)
             .map(({role,content})=>({role,content})), // Keep the first client-stated goal in context.
         }),
@@ -259,7 +262,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       setSpeechPreview('')
       if(result.mode==='safety'||(result.mode==='boundary'&&result.boundary==='stop'))setPaused(true)
       if(result.mode==='ai'&&result.planSuggestion)setEditablePlan(result.planSuggestion)
-      return {reply:answer,mode:result.mode}
+      return {reply:answer,mode:result.mode,locale:responseLocale}
     }catch{
       if(!controller.signal.aborted)setError(t.error)
       return null
@@ -340,6 +343,14 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       <section className={styles.liveTranscript} aria-label={captions.heading} data-coach-live-transcript>
         <div className={styles.transcriptHeading}><MessageCircle size={15} aria-hidden="true"/>
           <strong>{captions.heading}</strong>
+          <select className={styles.transcriptLanguage} aria-label={captions.languageLabel}
+            value={speechLocale} onChange={event=>setSpeechLocale(event.target.value)}
+            disabled={voiceState.phase!=='idle'}>
+            <option value="auto">{captions.autoLanguage}</option>
+            <option value="ru">RU</option>
+            <option value="en">EN</option>
+            {lang==='es'&&<option value="es">ES</option>}
+          </select>
           {voiceState.phase==='listening'&&<span role="status">{captions.listening}</span>}
         </div>
         <div className={styles.transcriptFeed} ref={transcriptRef} role="log" aria-live="polite" aria-relevant="additions">
@@ -363,11 +374,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           aria-label={ui.type} title={ui.type}><Keyboard size={21} aria-hidden="true"/><span>{ui.keyboardShort}</span></button>
         <div className={styles.voiceCenter} data-voice-active={voiceState.phase!=='idle'?'true':undefined}>
           <span className={styles.voiceWaveLeft} aria-hidden="true"><i/><i/><i/><i/><i/></span>
-          <MyCoachSpeechLoop ref={speechRef} locale={lang} enabled={consent&&readiness.status!=='checking'&&!authRequired}
+          <MyCoachSpeechLoop ref={speechRef} locale={lang} speechLocale={speechLocale} initialDraft={draft} enabled={consent&&readiness.status!=='checking'&&!authRequired}
             canStart={!busy&&!paused&&!replaying&&readiness.status!=='checking'&&!authRequired} onTurn={sendMessage}
             onRequestConsent={()=>{if(!voiceConsentRef.current?.open)voiceConsentRef.current?.showModal()}}
             onCancelTurn={()=>pending.current?.abort()} onVoiceStateChange={setVoiceState}
-            onTranscript={setSpeechPreview} onDraft={text=>{setDraft(text);setSpeechPreview('');setError('')}}/>
+            onTranscript={setSpeechPreview} onDraft={text=>{setDraft(text);setError('')}}/>
           <span className={styles.voiceWaveRight} aria-hidden="true"><i/><i/><i/><i/><i/></span>
         </div>
         <button type="button" className={styles.replayControl} onClick={replayCoachReply}

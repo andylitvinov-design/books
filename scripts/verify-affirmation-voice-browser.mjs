@@ -1254,6 +1254,10 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           await expect(output).toBeHidden();
           await expect(page.locator("[data-video-save-direct]")).toBeHidden();
           await expect(readyView.locator("[data-ready-save]")).toBeVisible();
+          // Once the export becomes Ready, the optional generation/check-in
+          // modal must close so native Save/Telegram actions remain tappable.
+          await expect(page.locator('[data-video-effect-overlay]')).toHaveCount(0);
+          await expect(page.locator('[data-video-effect-reopen]')).toBeVisible();
           // Read native decoded media, not just a Ready label or simulated file.
           await expect.poll(()=>page.locator("[data-mandala-video-preview]").evaluate(video=>
             video instanceof HTMLVideoElement&&video.readyState>=2&&

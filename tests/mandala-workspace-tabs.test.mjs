@@ -354,7 +354,7 @@ test("Ideas → Montage cancels stale scroll on a genuine quick-tab action",()=>
 });
 
 // Owner-approved UX: direct export and advancing to effects are independent.
-test("the video studio exposes two independent actions on every stage",()=>{
+test("Goal and Montage preserve creation guards while Text has one storyboard-review action",()=>{
  const ideas=readFileSync(new URL("../components/mandala-video-ideas.tsx",import.meta.url),"utf8");
  const hypno=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.tsx",import.meta.url),"utf8");
  for(const name of ["goal","montage"])assert.ok(studio.includes('data-video-stage-actions="'+name+'"'));
@@ -362,8 +362,14 @@ test("the video studio exposes two independent actions on every stage",()=>{
  assert.ok(studio.includes('data-video-continue-scenarios'));
  assert.ok(studio.includes('data-video-quick-generate'));
  assert.ok(studio.includes('onClick={continueMontageOrGenerate}'));
- assert.ok(ideas.includes('data-video-ideas-generate'));
- assert.ok(ideas.includes('data-video-ideas-create'));
+ const start=ideas.indexOf('data-video-stage-actions="ideas"');
+ const footer=ideas.slice(start,ideas.indexOf("</div>",start));
+ assert.ok(start>0,"Text footer is mounted");
+ assert.equal(footer.split("<button").length-1,1,"Text has one action");
+ assert.ok(footer.includes('data-video-ideas-create'));
+ assert.ok(!footer.includes('data-video-ideas-generate'),"Text cannot render before Story and Montage");
+ assert.ok(footer.includes("Проверить storyboard") && footer.includes("Review storyboard"));
+ assert.ok(studio.includes('setMontagePanel("concept");setPreviewPlaying(false);setNotice("");'));
  assert.ok(hypno.includes('data-hypno-create'));
  assert.ok(hypno.includes('data-hypno-add-effects'));
  assert.ok(!studio.includes('generateWithoutHypnoEffects'));

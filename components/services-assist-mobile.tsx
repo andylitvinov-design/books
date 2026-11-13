@@ -72,88 +72,132 @@ const copy = {
     crisis:"Si podrías hacerte daño o estás en peligro inmediato, contacta con emergencias o con una línea de crisis local ahora.",
   },
 } as const;
-type Selection = { text:string; focus:Focus };
+type Selection = {text:string;focus:Focus};
+type ChatTurn = {role:"user"|"assistant";text:string};
+const compactCopy = {
+  ru: {moreIssues:"Показать ещё проблемы",lessIssues:"Скрыть остальные",moreTools:"Больше инструментов",lessTools:"Скрыть инструменты",ready:"Подходящие варианты уже показаны ниже."},
+  en: {moreIssues:"More concerns",lessIssues:"Show fewer",moreTools:"More tools",lessTools:"Fewer tools",ready:"Your matching options are just below."},
+  es: {moreIssues:"Ver más problemas",lessIssues:"Mostrar menos",moreTools:"Más herramientas",lessTools:"Menos herramientas",ready:"Tus opciones aparecen debajo."},
+} as const;
 
 export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
-  const t = copy[locale];
-  const [text,setText] = useState("");
-  const [selection,setSelection] = useState<Selection|null>(null);
-  const [preferences,setPreferences] = useState<AssistPreferences>({});
-  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const t=copy[locale], labels=compactCopy[locale];
+  const [text,setText]=useState("");
+  const [selection,setSelection]=useState<Selection|null>(null);
+  const [preferences,setPreferences]=useState<AssistPreferences>({});
+  const [turns,setTurns]=useState<ChatTurn[]>([]);
+  const [expandedIssues,setExpandedIssues]=useState(false);
+  const [expandedTools,setExpandedTools]=useState(false);
+  const [critical,setCritical]=useState(false);
+  const inputRef=useRef<HTMLTextAreaElement>(null);
+  const chatRef=useRef<HTMLDivElement>(null);
+  const crisis=selection!==null&&(critical||urgent.test(selection.text));
+  const question=selection&&!crisis?nextAssistQuestion(preferences):null;
+  const suggestions=selection&&!crisis?rankAssistOffers(selection.focus,preferences):[];
+
+  // Only the message history scrolls; never jump the page to a second questionnaire.
   useEffect(()=>{
-    if(!selection) return;
-    const frame = requestAnimationFrame(()=>document.getElementById("assist-results")?.scrollIntoView({block:"start",behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"}));
+    if(!selection)return;
+    const frame=requestAnimationFrame(()=>{if(chatRef.current)chatRef.current.scrollTop=chatRef.current.scrollHeight;});
     return ()=>cancelAnimationFrame(frame);
-  },[selection]);
+  },[selection,question,turns]);
+
+  function beginRequest(value:string) {
+    const trimmed=value.trim().slice(0,280);
+    if(!trimmed)return;
+    const focus=detect(trimmed);
+    const unsafe=urgent.test(trimmed);
+    setSelection({text:trimmed,focus});
+    setPreferences(inferAssistPreferences(trimmed));
+    setCritical(unsafe);
+    setTurns(unsafe?[{role:"user",text:trimmed}]:[{role:"user",text:trimmed},{role:"assistant",text:t.reply[focus]}]);
+    setText("");
+    setExpandedIssues(false);
+    inputRef.current?.blur();
+  }
   function submit(event:FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const value = text.trim().slice(0,280);
-    if(!value) return;
-    inputRef.current?.blur();
-    setSelection({text:value,focus:detect(value)});
-    setPreferences(inferAssistPreferences(value));
+    const value=text.trim().slice(0,280);
+    if(!value)return;
+    if(!selection){beginRequest(value);return;}
+    // New typed messages stay in this messenger. Infer only explicitly stated preferences.
+    // Do not transmit the conversation to providers or add it to URLs/storage.
+    setTurns(current=>[...current,{role:"user" as const,text:value}].slice(-12));
+    setSelection(current=>current?{
+      text:(current.text+" "+value).slice(0,280),
+      focus:detect(value)==="general"?current.focus:detect(value),
+    }:current);
+    setPreferences(current=>({...current,...inferAssistPreferences(value)}));
+    if(urgent.test(value))setCritical(true);
+    setText("");
   }
-  const crisis = selection !== null && urgent.test(selection.text);
-  const question = selection && !crisis ? nextAssistQuestion(preferences) : null;
-  const suggestions = selection && !crisis ? rankAssistOffers(selection.focus,preferences) : [];
+  function chooseAnswer(value:string,label:string) {
+    if(!question)return;
+    setTurns(current=>[...current,{role:"assistant" as const,text:t.questions[question].prompt},{role:"user" as const,text:label}].slice(-12));
+    setPreferences(current=>({...current,[question]:value}));
+  }
+  function reset() {
+    setSelection(null);setText("");setPreferences({});setTurns([]);
+    setCritical(false);setExpandedIssues(false);
+    inputRef.current?.focus();
+  }
   return <section className={styles.assist} data-assist-mobile lang={locale} aria-labelledby="assist-title">
-    <div className={styles.photo} role="img" aria-label="Holistic House" />
+    <div className={styles.photo} role="img" aria-label="Holistic House"/>
     <header className={styles.intro}><p className={styles.eyebrow}><HeartHandshake size={15} aria-hidden="true"/>{t.eyebrow}</p><h1 id="assist-title">{t.title}</h1><p>{t.lead}</p></header>
     <div className={styles.conversation} data-assist-dialogue>
-      <div className={styles.greeting}>
-        <span className={styles.avatar} aria-hidden="true"><Sparkles size={20}/></span>
-        <div className={styles.speech}><strong>{t.ask}</strong><span>{t.choose}</span></div>
-      </div>
-      <div className={styles.quick}>
-        <div className={styles.chips} role="group" aria-label={t.topics} data-assist-topic-suggestions data-assist-issue-suggestions>
-          {t.hints.map(([label,example,focus])=><button key={label} type="button" aria-pressed={selection?.text===example && !!example}
-            onClick={()=>{
-              if(focus==="general"){setText("");setSelection(null);setPreferences({});inputRef.current?.focus();return;}
-              inputRef.current?.blur();setText(example);setSelection({text:example,focus:focus as Focus});setPreferences(inferAssistPreferences(example));
-            }}>{label}</button>)}
-        </div>
+      <div className={styles.messages} id="assist-results" ref={chatRef} role="log" aria-live="polite" aria-label={t.answer} aria-relevant="additions text" tabIndex={0}>
+        {selection?<>
+          {turns.map((turn,index)=><div key={index} className={turn.role==="user"?styles.turnUser:styles.turnAssistant} data-assist-message={turn.role}><p>{turn.text}</p></div>)}
+          {crisis?<p role="alert" className={styles.crisis}>{t.crisis}</p>:<>
+            {question?<div className={styles.inlineQuestion} data-assist-question={question}>
+              <p className={styles.questionPrompt}>{t.questions[question].prompt}</p>
+              <div className={styles.answerOptions}>{t.questions[question].options.map(([label,value])=><button type="button" key={value} onClick={()=>chooseAnswer(value,label)}>{label}</button>)}</div>
+              <button type="button" className={styles.skip} onClick={()=>chooseAnswer("any",t.skip)}>{t.skip}</button>
+            </div>:<p className={styles.chatReady}>{labels.ready}</p>}
+          </>}
+        </>:<div className={styles.chatStart}>
+          <div className={styles.greeting}>
+            <span className={styles.avatar} aria-hidden="true"><Sparkles size={20}/></span>
+            <div className={styles.speech}><strong>{t.ask}</strong><span>{t.choose}</span></div>
+          </div>
+          <div className={styles.quick}>
+            <div className={styles.chips} role="group" aria-label={t.topics} data-assist-topic-suggestions data-assist-issue-suggestions>
+              {t.hints.slice(0,expandedIssues?12:6).map(([label,example,focus])=><button key={label} type="button" aria-pressed={false}
+                onClick={()=>{
+                  if(focus==="general"){setText("");inputRef.current?.focus();return;}
+                  beginRequest(example);
+                }}>{label}</button>)}
+            </div>
+            <button type="button" className={styles.expand} aria-expanded={expandedIssues} onClick={()=>setExpandedIssues(current=>!current)}>
+              {expandedIssues?labels.lessIssues:labels.moreIssues}<span aria-hidden="true">{expandedIssues?" −":" +"}</span>
+            </button>
+          </div>
+        </div>}
       </div>
       <form className={styles.form} onSubmit={submit}>
         <label className={styles.srOnly} htmlFor="assist-question">{t.label}</label>
         <textarea id="assist-question" ref={inputRef} rows={1} value={text} maxLength={280} autoComplete="off"
-          placeholder={t.placeholder} onChange={event=>setText(event.target.value)}/>
-        <button type="button" className={styles.voiceButton} aria-label={t.voice} title={t.voice}
-          onClick={()=>inputRef.current?.focus()}><Mic size={20} aria-hidden="true"/></button>
-        <button type="submit" className={styles.sendButton} disabled={!text.trim()} aria-label={t.submit} title={t.submit}>
-          <ArrowRight size={21} aria-hidden="true"/>
-        </button>
+          placeholder={t.placeholder} onChange={event=>setText(event.target.value)}
+          onKeyDown={event=>{if(event.key==="Enter"&&!event.shiftKey&&!event.nativeEvent.isComposing){event.preventDefault();event.currentTarget.form?.requestSubmit();}}}/>
+        <button type="button" className={styles.voiceButton} aria-label={t.voice} title={t.voice} onClick={()=>inputRef.current?.focus()}><Mic size={20} aria-hidden="true"/></button>
+        <button type="submit" className={styles.sendButton} disabled={!text.trim()} aria-label={t.submit} title={t.submit}><ArrowRight size={21} aria-hidden="true"/></button>
       </form>
+      {selection?<button type="button" className={styles.reset} data-assist-reset onClick={reset}>{t.change}</button>:null}
     </div>
     <p className={styles.privacy}>{t.privacy}</p>
-    {!crisis ? <AssistTopRecommendations locale={locale} focus={selection?.focus ?? null} /> : null}
-    {selection?<section id="assist-results" className={styles.results} aria-live="polite" aria-labelledby="assist-results-title" tabIndex={-1}>
-      <div className={styles.bubble}><strong>{t.label}</strong><p>{selection.text}</p></div>
-      {crisis?<p role="alert" className={styles.crisis}>{t.crisis}</p>:<>
-        <p className={styles.reply}><Sparkles size={18} aria-hidden="true"/>{t.reply[selection.focus]}</p>
-        {question ? <div className={styles.question} data-assist-question={question}>
-          <p>{t.questions[question].prompt}</p>
-          <div className={styles.answerOptions}>{t.questions[question].options.map(([label,value])=><button type="button" key={value} onClick={()=>setPreferences(current=>({...current,[question]:value}))}>{label}</button>)}</div>
-          <button type="button" className={styles.skip} onClick={()=>setPreferences(current=>({...current,[question]:"any"}))}>{t.skip}</button>
-        </div> : <button type="button" className={styles.adjust} onClick={()=>setPreferences({})}>{t.adjust}</button>}
-        <h2 id="assist-results-title">{t.answer}</h2>
-        {suggestions.length===0 ? <p className={styles.noOffers}>{t.noOffers}</p> : null}
-        <div className={styles.recommendations}>{suggestions.map(({id:key},index)=>{
-          const card=t.cards[key];
-          return <Link className={styles.rec} href={"/"+locale+"/"+routes[key]} key={key} prefetch={false} data-assist-recommendation={key}>
-            <span className={styles.index}>{index+1}</span><span className={styles.recText}><small>{card[2]}</small><strong>{card[0]}</strong><span>{card[1]}</span></span><ArrowRight size={18} aria-hidden="true"/>
-          </Link>;
-        })}</div>
-      </>}
-      <button type="button" className={styles.reset} data-assist-reset onClick={()=>{setSelection(null);setText("");setPreferences({});inputRef.current?.focus();}}>{t.change}</button>
-    </section>:null}
+    {!crisis?<AssistTopRecommendations locale={locale} focus={selection?.focus??null}
+      matchingIds={selection?suggestions.map(({id})=>id):undefined} noMatchLabel={t.noOffers}/>:null}
     <section className={styles.tools} aria-labelledby="assist-tools-title">
       <h2 id="assist-tools-title">{t.tools}</h2><p>{t.browse}</p>
-      <div className={styles.toolGrid}>{toolList.map((key)=>{
+      <div className={styles.toolGrid}>{toolList.slice(0,expandedTools?toolList.length:4).map((key)=>{
         const card=t.cards[key];
         return <Link className={styles.tool} href={"/"+locale+"/"+routes[key]} key={key} prefetch={false} data-assist-tool={key}>
           <span aria-hidden="true">✦</span><strong>{card[0]}</strong><small>{card[2]}</small>
         </Link>;
       })}</div>
+      <button type="button" className={styles.moreTools} aria-expanded={expandedTools} onClick={()=>setExpandedTools(current=>!current)}>
+        {expandedTools?labels.lessTools:labels.moreTools}
+      </button>
       <Link className={styles.all} href={"/"+locale+"/services/catalog#service-listings"} prefetch={false}>{t.all}<ArrowRight size={18} aria-hidden="true"/></Link>
     </section>
     <p className={styles.caution}>{t.caution}</p>
