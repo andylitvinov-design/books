@@ -640,10 +640,25 @@ try{
  await agentComposer.waitFor({state:"visible"});
  assert.equal((await agentComposer.inputValue()).trim(),"",
    "clicking Video asks a question in chat, not a fake prepared send");
+ // Assert a fresh assistant turn, not one fixed/repetitive greeting.
+ const beforeGreeting=await chat.locator(
+   '[data-hh-ai-assistant-message], [data-hh-chat-turn="assistant"]').count();
  await agentComposer.fill("Привет Ау");
  await chat.locator('button[type="submit"]').click();
- await page.waitForFunction(()=>[...document.querySelectorAll('[data-hh-agent-preview] [role="log"] p')]
-   .some(node=>node.textContent?.includes("Я здесь!")),null,{timeout:10000});
+ await page.waitForFunction(previous=>{
+   const thread=document.querySelector('[data-hh-agent-preview] [role="log"]');
+   const replies=thread?.querySelectorAll(
+     '[data-hh-ai-assistant-message], [data-hh-chat-turn="assistant"]');
+   return Boolean(replies&&replies.length>previous&&
+     replies[replies.length-1]?.textContent?.trim());
+ },beforeGreeting,{timeout:15000});
+ await page.waitForFunction(()=>[...document.querySelectorAll(
+   '[data-hh-agent-preview] [data-hh-chat-turn="user"]')]
+   .some(node=>node.textContent?.includes("Привет Ау")),null,{timeout:10000});
+ const latestGreeting=chat.locator(
+   '[data-hh-ai-assistant-message], [data-hh-chat-turn="assistant"]').last();
+ assert.ok((await latestGreeting.innerText()).trim().length>1,
+   "a new visible, nonempty assistant answer follows the guest greeting");
  assert.equal(await chat.locator("video").count(),0,
    "no completed video is claimed before rendering");
 
