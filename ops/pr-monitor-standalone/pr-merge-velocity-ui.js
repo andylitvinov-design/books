@@ -76,9 +76,15 @@
     if(!force&&cache.has(selected)){render(cache.get(selected));return;}
     status.textContent='Загружаю подтверждённую когорту created+merged…';
     try {
-      const response=await env.fetch('/api/pr-created-cohort',{cache:'no-store',headers:{Accept:'application/json'}});
-      if(!response.ok)throw Error('API '+response.status);
-      const data=await response.json();
+      // Prefer the exact source snapshot already accepted by the main cohort table.
+      // This prevents a moving rolling-window boundary from changing graph membership.
+      let data=env.__HH_STRICT_COHORT_SOURCE__;
+      if(data?.schema!=='HH_PR_CREATED_COHORT_V1'||data.coverage?.complete!==true){
+        const response=await env.fetch('/api/pr-created-cohort',
+          {cache:'no-store',headers:{Accept:'application/json'}});
+        if(!response.ok)throw Error('API '+response.status);
+        data=await response.json();
+      }
       normalize(data,selected);
       if(seq!==sequence||selected!==hours)return;
       cache.set(selected,data);render(data);
@@ -114,6 +120,9 @@
     plot=el('div','hhv-graph',undefined,root);
     bins=el('div','hhv-buckets',undefined,root);
     foot=el('p','hhv-foot','Только подтверждённые события GitHub.',root);
+    env.addEventListener('hh-pr-strict-source',()=>{
+      cache.delete(hours);void load(false);
+    });
     env.addEventListener('hh-pr-strict-period',event=>{
       const next=event?.detail?.hours;
       if(event?.detail?.origin==='stages'&&[1,6,24,72].includes(next)&&next!==hours){

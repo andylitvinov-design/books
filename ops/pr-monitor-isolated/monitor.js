@@ -2,8 +2,8 @@
 /* HH_PR_DASHBOARD_ISOLATED_V1: verified read-only evidence, no timers, no DOM watchers */
 (function(env){
 const REPO='https://github.com/andylitvinov-design/books';
-const URLS=Object.freeze({flow:'/api/ci-runner-trends',speed:'/api/pr-stage-timeline?hours=24',stages:'/api/pr-stage-overview?hours=24&scope=production',cohort:'/api/pr-created-cohort',archive:'/api/ci-journey-summary?hours=72',ci:'/api/ci-insights',queue:'/api/control-tower-stats',repair:'/api/pr-three-kpis'});
-const SCHEMAS=Object.freeze({flow:'HH_CI_RUNNER_BINS_V2',speed:'HH_PR_STAGE_TIMELINE_V2',stages:'HH_PR_STAGE_OVERVIEW_V1',ci:'HH_CI_DEEP_MONITOR_V1',queue:'HH_CONTROL_DISPATCH_METRICS_V1',repair:'HH_PR_THREE_KPI_V1',cohort:'HH_PR_CREATED_COHORT_V1',archive:'HH_CI_FIRST_LAST_ARCHIVE_V1'});
+const URLS=Object.freeze({flow:'/api/ci-runner-trends',speed:'/api/pr-stage-timeline?hours=24',stages:'/api/pr-stage-overview?hours=24&scope=production',ci:'/api/ci-insights',queue:'/api/control-tower-stats',repair:'/api/pr-three-kpis',ciLive:'/api/ci-queue-detail',period:'/api/pr-merge-period',cohort:'/api/pr-created-cohort',archive:'/api/ci-journey-summary?hours=72'});
+const SCHEMAS=Object.freeze({flow:'HH_CI_RUNNER_BINS_V2',speed:'HH_PR_STAGE_TIMELINE_V2',stages:'HH_PR_STAGE_OVERVIEW_V1',ci:'HH_CI_DEEP_MONITOR_V1',queue:'HH_CONTROL_DISPATCH_METRICS_V1',repair:'HH_PR_THREE_KPI_V1',ciLive:'HH_PR_CI_QUEUE_DETAIL_V1',period:'HH_PR_MERGE_PERIOD_V1',cohort:'HH_PR_CREATED_COHORT_V1',archive:'HH_CI_FIRST_LAST_ARCHIVE_V1'});
 const safeNum=n=>typeof n==='number'&&Number.isFinite(n)&&n>=0;
 const safeInt=n=>Number.isSafeInteger(n)&&n>=0;
 const number=n=>safeInt(n)?n.toLocaleString('ru-RU'):'—';
@@ -29,6 +29,19 @@ function compactRecords(data){
  let rows;try{rows=JSON.parse(src)}catch{return[];}if(!Array.isArray(rows))return[];
  return rows.filter(r=>Array.isArray(r)&&r.length>=16&&safeInt(r[0])&&typeof r[1]==='string'&&/^[0-9a-f]{40}$/i.test(r[1])&&safeInt(r[4]))
  .sort((a,b)=>b[4]-a[4]).slice(0,15).map(r=>({number:r[0],sha:r[1].slice(0,10),updated:r[4],prod:r[2]===1,ready:safeInt(r[7])&&r[7]>0,triage:safeInt(r[8])&&r[8]>0,claimed:safeInt(r[9])&&r[9]>0}));
+}
+
+function periodSummary(d,hours){
+ if(![1,6,24].includes(hours)||d?.schema!==SCHEMAS.period||d.period_hours!==hours||d.coverage?.complete!==true||!isTime(d.observed_at)||!safeInt(d.current?.created)||!safeInt(d.current?.merged))throw Error('PERIOD_UNVERIFIED');
+ return{hours,created:d.current.created,merged:d.current.merged,at:d.observed_at};
+}
+function activeCI(d){
+ if(d?.schema!==SCHEMAS.ciLive||!isTime(d.generated_at)||!safeInt(d.counts?.workflows_running)||!safeInt(d.counts?.workflows_queued))throw Error('CI_LIVE_UNVERIFIED');
+ return{running:d.counts.workflows_running,queued:d.counts.workflows_queued,at:d.generated_at};
+}
+function openBacklog(d){
+ if(d?.schema!==SCHEMAS.queue||!isTime(d.checked_at)||!safeInt(d.counts?.discovered_open_prs))throw Error('BACKLOG_UNVERIFIED');
+ return{open:d.counts.discovered_open_prs,at:d.checked_at};
 }
 /* HH_STRICT_CREATED_MERGED_COHORT_V1_BEGIN */
 function strictCohort(source, archive, hours) {
@@ -139,13 +152,13 @@ function strictCohort(source, archive, hours) {
     paths:paths.sort((a,b)=>b.minutes-a.minutes)};
 }
 /* HH_STRICT_CREATED_MERGED_COHORT_V1_END */
-const publicHelpers={activity,speed,compactRecords,strictCohort,delay,number,SCHEMAS,URLS};
+const publicHelpers={activity,speed,compactRecords,strictCohort,delay,number,SCHEMAS,URLS,periodSummary,activeCI,openBacklog};
 if(typeof module==='object'&&module.exports)module.exports=publicHelpers;
 if(!env?.document||typeof env.fetch!=='function')return;
 const doc=env.document,el=id=>doc.getElementById(id);
 const dom=(tag,cls,txt)=>{const e=doc.createElement(tag);if(cls)e.className=cls;if(txt!==undefined)e.textContent=String(txt);return e};
 const svgNS='http://www.w3.org/2000/svg',colors=['#9bcfff','#78e3bd','#ffc681'];
-const snapshots={};let refreshing=false,strictRaw=null,strictArch=null,strictHours=24,strictUpdateError=null;
+const snapshots={};let refreshing=false,selectedPeriod=24,periodRequestSeq=0,strictRaw=null,strictArch=null,strictHours=24,strictUpdateError=null;
 function put(id,value){const e=el(id);if(e)e.textContent=String(value);}
 function anchor(num,title){const a=dom('a',null,title||('#'+num));a.href=REPO+'/pull/'+num;a.target='_blank';a.rel='noopener noreferrer';return a;}
 function sv(parent,tag,attrs={},txt){const e=doc.createElementNS(svgNS,tag);for(const [k,v]of Object.entries(attrs))e.setAttribute(k,String(v));if(txt!==undefined)e.textContent=String(txt);if(parent)parent.appendChild(e);return e;}
@@ -154,9 +167,8 @@ function plot(svg,values,max,color){let d='',joined=false;values.forEach((v,i)=>
 function clear(e){e.replaceChildren();}
 function td(row,text){const x=dom('td',null,text);row.appendChild(x);return x;}
 function item(root,label,value,note,url){const line=dom('div','list-item'),a=dom('div'),labelEl=dom(url?'a':'span',null,clampText(label,115));if(url){labelEl.href=url;labelEl.target='_blank';labelEl.rel='noopener noreferrer';}a.append(labelEl);if(note)a.append(dom('small','muted',clampText(note,185)));line.append(a,dom('b',null,value));root.append(line);}
-function drawFlow(d){const svg=el('chart-flow');const series=[d.rows.map(r=>r.created),d.rows.map(r=>r.merged),d.rows.map(r=>r.ci)];const prMax=Math.max(1,...series[0],...series[1]),ciMax=Math.max(1,...series[2].filter(safeNum));frame(svg,prMax);plot(svg,series[0],prMax,colors[0]);plot(svg,series[1],prMax,colors[1]);plot(svg,series[2],ciMax,colors[2]);if(d.ci!==null)sv(svg,'text',{x:350,y:28,fill:'#ffc681','font-size':10,'text-anchor':'end'},'CI '+number(ciMax));d.rows.forEach((r,i)=>sv(svg,'text',{x:44+i*58,y:168,fill:'#a6bdd4','font-size':10,'text-anchor':'middle'},hour(r.time)));put('flow-info',d.complete?'Серия подтверждена PR/CI источниками.':'Покрытие CI частичное; неизвестное = —.');put('k-created',number(d.created));put('k-merged',number(d.merged));put('k-ci',number(d.ci));}
+function drawFlow(d){const svg=el('chart-flow');const series=[d.rows.map(r=>r.created),d.rows.map(r=>r.merged),d.rows.map(r=>r.ci)];const prMax=Math.max(1,...series[0],...series[1]),ciMax=Math.max(1,...series[2].filter(safeNum));frame(svg,prMax);plot(svg,series[0],prMax,colors[0]);plot(svg,series[1],prMax,colors[1]);plot(svg,series[2],ciMax,colors[2]);if(d.ci!==null)sv(svg,'text',{x:350,y:28,fill:'#ffc681','font-size':10,'text-anchor':'end'},'CI '+number(ciMax));d.rows.forEach((r,i)=>sv(svg,'text',{x:44+i*58,y:168,fill:'#a6bdd4','font-size':10,'text-anchor':'middle'},hour(r.time)));put('flow-info',d.complete?'Серия подтверждена PR/CI источниками.':'Покрытие CI частичное; неизвестное = —.');put('k-ci',number(d.ci));}
 function drawSpeed(d){const svg=el('chart-speed'),max=Math.max(1,...d.map(r=>r.count)),maxDelay=Math.max(1,...d.map(r=>r.median).filter(safeNum));frame(svg,max);d.forEach((r,i)=>{const h=107*r.count/max;sv(svg,'rect',{x:44+i*58-10,y:(145-h).toFixed(1),width:20,height:h.toFixed(1),rx:2,fill:colors[1],opacity:'.8'});sv(svg,'text',{x:44+i*58,y:168,fill:'#a6bdd4','font-size':10,'text-anchor':'middle'},hour(r.time));});plot(svg,d.map(r=>r.median),maxDelay,colors[0]);const measured=d.reduce((n,r)=>n+r.n,0);put('speed-info','Замерено '+number(measured)+' Merge; синяя линия = P50 по отдельной шкале минут.');}
-
 
 const STRICT_STAGE_NAMES=[
  ['before_unknown','До первой сохранённой Core CI · неизвестная причина'],
@@ -244,9 +256,10 @@ async function refreshStrictCohort(){
  }catch(e){strictUpdateError=String(e.message||e).slice(0,70);renderStrictCohort();throw e;}
 }
 
+
 function renderStages(d){
  if(d?.schema!==SCHEMAS.stages||d.selection?.scope!=='production'||d.selection?.hours!==24||!d.stages||!d.population)throw Error('STAGE_PRODUCTION_SCHEMA');
- put('k-open',number(d.population.open));put('stages-period','Выборочная диагностика n='+number(d.coverage?.measured)+' · 24 часа · '+stamp(d.generated_at));
+ put('stages-period','Выборочная диагностика n='+number(d.coverage?.measured)+' · 24 часа · '+stamp(d.generated_at));
  const labels=[['prepare','Подготовка / HEAD'],['runner','Ожидание runner'],['ci','Core / Specialist CI'],['gate','Merge Gate'],['merge','Green → Merge']];
  const tbody=el('stage-rows');clear(tbody);
  for(const [key,label]of labels){
@@ -258,6 +271,35 @@ function renderStages(d){
  const detail=el('stage-detail');clear(detail);
  for(const [key,name]of names){const entry=dom('article');entry.append(dom('span',null,name),dom('b',null,d.details?.[key]?.n>0?delay(d.details[key].median):'—'));detail.append(entry);}
  snapshots.stages=d;updateRecommendations();
+}
+
+const recently=at=>isTime(at)&&Math.max(0,Date.now()-Date.parse(at))<75*60000;
+function overviewSources(){
+ const x=[['CI',snapshots.ciLive?.generated_at],['PR',snapshots.period?.observed_at],['Очередь',snapshots.queue?.checked_at]]
+ .filter(([,at])=>isTime(at)).map(([s,at])=>s+': '+stamp(at));
+ put('overview-provenance','CI — запуски workflow, не отдельные jobs. '+(x.length?x.join(' · '):'Источники ещё загружаются.'));
+}
+function renderCILive(d){
+ const v=activeCI(d),ok=recently(v.at);
+ put('k-ci-running',ok?number(v.running):'—');put('k-ci-queued',ok?number(v.queued):'—');
+ put('k-ci-running-note',ok?'GitHub Actions · workflow':'Срез CI устарел');put('k-ci-queued-note',ok?'GitHub Actions · workflow':'Срез CI устарел');
+ snapshots.ciLive=d;overviewSources();
+}
+function renderPeriod(d,hours){
+ const v=periodSummary(d,hours);if(selectedPeriod!==hours)return;
+ const ok=recently(v.at),label='За '+hours+' ч · все ветки';
+ put('k-created',ok?number(v.created):'—');put('k-merged',ok?number(v.merged):'—');
+ put('k-created-note',ok?label:'Источник устарел');
+ put('k-merged-note',ok?label+' · не LIVE':'Источник устарел');
+ snapshots.period=d;overviewSources();
+}
+async function selectPeriod(hours){
+ if(![1,6,24].includes(hours)||hours===selectedPeriod)return;
+ selectedPeriod=hours;strictHours=hours;renderStrictCohort();const seq=++periodRequestSeq;
+ for(const b of doc.querySelectorAll('[data-period]'))b.setAttribute('aria-pressed',String(Number(b.dataset.period)===hours));
+ put('k-created','—');put('k-merged','—');put('k-created-note','Получаю данные за '+hours+' ч');put('k-merged-note','Получаю данные за '+hours+' ч');
+ try{const data=await fetchSafe(URLS.period+'?hours='+hours,SCHEMAS.period);
+ if(seq===periodRequestSeq)renderPeriod(data,hours);}catch{if(seq===periodRequestSeq){put('k-created','—');put('k-merged','—');put('k-created-note','Данные недоступны');put('k-merged-note','Данные недоступны');}}
 }
 function renderCI(d){
  if(d?.schema!==SCHEMAS.ci)throw Error('CI_SCHEMA');
@@ -284,7 +326,11 @@ function renderQueue(d){
  if(d?.schema!==SCHEMAS.queue)throw Error('QUEUE_SCHEMA');
  const counts=d.counts||{};put('k-actionable',number(counts.actionable_prs));put('k-blocked',number(counts.blocked_total));
  put('k-worker',number(counts.worker_dispatches));put('k-production',number(counts.production_prs));
+ 
  put('queue-asof',d.checked_at?'Срез: '+stamp(d.checked_at):'Время среза неизвестно');
+ const b=openBacklog(d);
+ put('k-open',recently(b.at)?number(b.open):'—');
+ put('k-open-note',recently(b.at)?'Все ветки · '+stamp(b.at):'Срез очереди устарел');
  const root=el('queue-states');clear(root);
  const aliases={awaiting_core:'Ожидает Core',core_workflow_queued:'Core в очереди',core_runner_running:'Core выполняется',parent_blocked:'Блокировка базового PR',source_proof_missing:'Нет source proof',conflict_unverified:'Конфликт не проверен',manual_conflict_handoffs:'Ручная передача конфликта',already_handled:'Уже обработано',wake_undelivered:'Wake не доставлен'};
  const list=Object.entries(d.queue_states||{}).filter(([,n])=>safeInt(n)&&n>0).sort((a,b)=>b[1]-a[1]).slice(0,11);
@@ -301,7 +347,7 @@ function renderQueue(d){
   const tags=[];if(r.prod)tags.push('production');if(r.triage)tags.push('triage отметка');if(r.claimed)tags.push('worker claim');if(r.ready)tags.push('ready отметка');
   td(tr,tags.join(' · ')||'metadata');table.append(tr);
  }
- snapshots.queue=d;updateRecommendations();
+ snapshots.queue=d;overviewSources();updateRecommendations();
 }
 function renderRepair(d){
  if(d?.schema!==SCHEMAS.repair)throw Error('REPAIR_SCHEMA');
@@ -336,25 +382,28 @@ async function refresh(){
  if(refreshing)return;refreshing=true;el('refresh').disabled=true;
  put('status','Обновляю проверенные данные PR Monitor…');el('state-dot').className='status-dot';
  let complete=0,errors=0;const sourceTimes=[];
- const tasks=[['flow',d=>drawFlow(activity(d))],['cohort',renderStrictCohort],['stages',renderStages],['ci',renderCI],['queue',renderQueue],['repair',renderRepair]];
- const result=await Promise.allSettled(tasks.map(async([key,fn])=>{
-  const data=key==='cohort'?await refreshStrictCohort():await fetchSafe(URLS[key],SCHEMAS[key],key==='ci'?11000:8500);if(key!=='cohort')fn(data);
-  const at=key==='queue'?(data.checked_at||data.generated_at):data.generated_at;
+
+ const atStart=selectedPeriod;
+ const tasks=[['flow',d=>drawFlow(activity(d))],['cohort',renderStrictCohort],['stages',renderStages],['ci',renderCI],['queue',renderQueue],['repair',renderRepair],['ciLive',renderCILive],['period',d=>{if(selectedPeriod===atStart)renderPeriod(d,atStart);},URLS.period+'?hours='+atStart]];
+ const result=await Promise.allSettled(tasks.map(async([key,fn,route])=>{
+  const data=key==='cohort'?await refreshStrictCohort():await fetchSafe(route||URLS[key],SCHEMAS[key],key==='ci'?11000:8500);if(key!=='cohort')fn(data);
+  const at=key==='queue'?(data.checked_at||data.generated_at):key==='period'?data.observed_at:data.generated_at;
   sourceTimes.push(isTime(at)?Date.parse(at):null);complete++;
  }));
- for(let i=0;i<result.length;i++){if(result[i].status==='rejected'){errors++;const key=tasks[i][0];if(key==='flow')put('flow-info','Сейчас нет ответа данных PR/CI — нажмите «Обновить».');if(key==='cohort'&&!strictRaw)renderStrictCohort();if(key==='ci')put('ci-coverage','CI источник недоступен');}}
+ for(let i=0;i<result.length;i++){if(result[i].status==='rejected'){errors++;const key=tasks[i][0];if(key==='flow')put('flow-info','Сейчас нет ответа данных PR/CI — нажмите «Обновить».');if(key==='cohort'&&!strictRaw)renderStrictCohort();if(key==='ci')put('ci-coverage','CI источник недоступен');
+ if(key==='ciLive'){put('k-ci-running','—');put('k-ci-queued','—');put('k-ci-running-note','Источник недоступен');put('k-ci-queued-note','Источник недоступен');}
+ if(key==='queue'){put('k-open','—');put('k-open-note','Источник недоступен');}
+ if(key==='period'&&selectedPeriod===atStart){put('k-created','—');put('k-merged','—');put('k-created-note','Источник недоступен');put('k-merged-note','Источник недоступен');}}}
  const oldest=sourceTimes.length?Math.min(...sourceTimes.map(t=>t===null?-Infinity:t)):null;
  const age=oldest===null?Infinity:oldest===-Infinity?Infinity:Math.max(0,Date.now()-oldest);
  const stale=age>75*60000,delayed=age>15*60000;
  const freshness=stale?'Есть устаревший источник':delayed?'Некоторые источники обновляются с задержкой':'Источники свежие';
- put('status',errors?'Доступно '+complete+' из 6 источников, '+errors+' недоступны. '+freshness+'.':freshness+' · доступно '+complete+' из 6 источников.');
+ put('status',errors?'Доступно '+complete+' из 8 источников, '+errors+' недоступны. '+freshness+'.':freshness+' · доступно '+complete+' из 8 источников.');
  put('updated-at',Number.isFinite(oldest)?'Самый ранний срез · Торонто: '+stamp(oldest):'Время одного из источников неизвестно');
  el('state-dot').className='status-dot '+(complete===0?'bad':errors||delayed?'':'good');
  el('refresh').disabled=false;refreshing=false;updateRecommendations();
 }
 el('refresh').addEventListener('click',()=>{void refresh();});
-for(const b of doc.querySelectorAll('[data-cohort-hours]'))b.addEventListener('click',()=>{
- strictHours=Number(b.dataset.cohortHours);renderStrictCohort();
-});
+for(const b of doc.querySelectorAll('[data-period]'))b.addEventListener('click',()=>{void selectPeriod(Number(b.dataset.period));});
 void refresh();
 })(typeof window==='undefined'?null:window);

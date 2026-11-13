@@ -13,8 +13,8 @@ test('one static CSS + one deferred JS; all eight main sections exist',()=>{
  assert.match(html,/holistic-house-agents-director\.vercel\.app/);
  assert.ok(css.length>6500);assert.match(css,/@media\(max-width:750px\)/);
 });
-test('strict public read-only origin and 8 explicit API allowlist rewrites',()=>{
- assert.equal(conf.rewrites.length,8);
+test('strict public read-only origin and 10 explicit API allowlist rewrites',()=>{
+ assert.equal(conf.rewrites.length,10);
  for(const [key,url]of Object.entries(URLS)){
   const route=conf.rewrites.find(x=>x.source===url.split('?')[0]);
   assert.ok(route,key);
@@ -59,7 +59,7 @@ test('PR to Merge mean and median are populated from the strict created-and-merg
 
 test('production cohort and data freshness are explicit and comparable',()=>{
  assert.match(URLS.stages,/hours=24&scope=production/);
- assert.match(html,/Открыто из созданных · 24 ч/);
+ assert.match(html,/<span>Открытых PR<\/span>/);assert.match(html,/id="k-open-note"/);
  assert.match(html,/Production PR → Merge · P50/);
  assert.match(js,/d\.selection\?\.scope!=='production'/);
  assert.match(js,/среднее /);
@@ -92,8 +92,19 @@ test('strict cohort: identical production time window, no old merges, additive C
 test('one header mean and P50 share strict cohort; missing archive is not zero',()=>{
  assert.match(html,/id="strict-mean"/);
  assert.match(html,/id="strict-stage-rows"/);
- assert.match(js,/strictHours=Number\(b\.dataset\.cohortHours\)/);
+ assert.match(js,/strictHours=hours;renderStrictCohort\(\)/);
  assert.match(js,/renderStrictCohort/);
  assert.match(js,/if\(key!=='cohort'\)fn\(data\)/);
- assert.match(js,/data\?\.schema!==SCHEMAS\.stages/);
+ assert.match(js,/d\?\.schema!==SCHEMAS\.stages/);
+});
+
+test('preserve independently published LIVE operational top counters while adding strict cohort',()=>{
+ for(const id of ['k-ci-running','k-ci-queued','k-created-note','k-merged-note','k-open-note','strict-n'])
+  assert.ok(html.includes('id="'+id+'"'),id);
+ assert.match(html,/data-period="24" aria-pressed="true"/);
+ assert.match(js,/function renderCILive/);assert.match(js,/function renderPeriod/);
+ assert.match(js,/strictHours=hours;renderStrictCohort/);
+ assert.match(js,/URLS\.period\+'\?hours='/);
+ assert.match(js,/URLS\.cohort/);
+ assert.match(js,/strictCohort\(strictRaw,strictArch,strictHours\)/);
 });

@@ -1052,7 +1052,10 @@ function renderStrictSummary(){
       var data=await response.json();
       if(data.schema!=='HH_PR_CREATED_COHORT_V1'||!Array.isArray(data.rows)||
         !Number.isFinite(Date.parse(data.generated_at||''))||data.coverage?.complete!==true)throw Error('INCOMPLETE_COHORT');
-      cohortRaw=data;chooseStrictPeriod(cohortHours,false);
+      cohortRaw=data;window.__HH_STRICT_COHORT_SOURCE__=data;
+      chooseStrictPeriod(cohortHours,false);
+      if(typeof window.CustomEvent==='function')window.dispatchEvent(
+        new CustomEvent('hh-pr-strict-source',{detail:{generated_at:data.generated_at}}));
     }catch(e){
       cohortError=String(e.message||e).slice(0,80);
       if(!cohortRaw)baseline=null;

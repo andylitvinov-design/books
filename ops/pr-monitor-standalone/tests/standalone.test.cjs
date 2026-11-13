@@ -42,7 +42,8 @@ test('strict production cohort shared by lifecycle view and merge velocity graph
  const code=read('pr-two-screen.js'),chart=read('pr-merge-velocity-ui.js');
  assert.match(code,/HH_STRICT_CREATED_MERGED_COHORT_V1_BEGIN/);
  assert.match(code,/window\.HHStrictCohort=strictCohort/);
- assert.match(code,/cohortRaw=data;chooseStrictPeriod\(cohortHours,false\)/);
+ assert.match(code,/cohortRaw=data;window\.__HH_STRICT_COHORT_SOURCE__=data/);
+ assert.match(code,/chooseStrictPeriod\(cohortHours,false\)/);
  assert.match(code,/cohortHours===24/);
  assert.match(code,/72 часа пока не покрыты/);
  assert.match(chart,/env\.fetch\('\/api\/pr-created-cohort'/);
@@ -60,4 +61,12 @@ test('strict production cohort shared by lifecycle view and merge velocity graph
  assert.equal(fn(fixture,null,1).n,1);
  assert.equal(fn(fixture,null,6).n,2);
  assert.throws(()=>fn(fixture,null,72),/NOT_COVERED/);
+});
+
+test('the graph and lifecycle table reconcile the same frozen raw source snapshot',()=>{
+ const code=read('pr-two-screen.js'),graph=read('pr-merge-velocity-ui.js');
+ assert.match(code,/window\.__HH_STRICT_COHORT_SOURCE__=data/);
+ assert.match(code,/hh-pr-strict-source/);
+ assert.match(graph,/env\.__HH_STRICT_COHORT_SOURCE__/);
+ assert.match(graph,/cache\.delete\(hours\);void load\(false\)/);
 });
