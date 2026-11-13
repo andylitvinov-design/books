@@ -56,6 +56,7 @@ on:
       - 'tests/ci-pr-inprocess-snapshot.test.cjs'
       - 'tests/ci-pr-direct-handoff.test.cjs'
       - 'scripts/ci-pr-queue-dispatcher.cjs'
+      - 'scripts/ci-pr-capacity.cjs'
       - 'scripts/ci-pr-monitor-feed.cjs'
       - 'scripts/ci-pr-ci-daytime-signals.cjs'
       - 'tests/ci-pr-ci-daytime-signals.test.cjs'

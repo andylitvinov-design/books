@@ -1977,13 +1977,17 @@ function ghostFixture(o={}){
    listJobsForWorkflowRun:async({run_id})=>({data:run_id===900?
     {total_count:o.ghostJobs??0,jobs:o.ghostJobs?[{id:1,status:'queued'}]:[]}:
     {total_count:o.badJobPage&&run_id===300?2:1,
-     jobs:[{id:run_id+1000,status:o.jobStatus||'completed',
+     jobs:[{id:run_id+1000,status:o.jobStatus||
+       (typeof o.liveRunningJobs==='number'&&
+        run_id-300>=(o.terminalOverhang||0)&&
+        run_id-300-(o.terminalOverhang||0)<o.liveRunningJobs?
+        'in_progress':'completed'),
        conclusion:'success',
        completed_at:o.invalidTerminalJob&&run_id===300?'INVALID':
         run_id-300<(o.terminalOverhang||0)?
          '2026-11-11T17:00:00Z':'2026-11-12T19:59:00Z'}]}}),
    listWorkflowRunsForRepo:async({status})=>({data:status==='queued'?
-    {total_count:o.queueCount??137,workflow_runs:[]}:{
+    {total_count:o.queueCount??137,workflow_runs:o.newestQueued?[o.newestQueued]:[]}:{
      total_count:activeCount,workflow_runs:a}}),
    listWorkflowRuns:async({status})=>({data:{
     total_count:status==='queued'?(o.workerQueued??0):0,workflow_runs:[]}})
@@ -2351,4 +2355,36 @@ test('processed legacy receipts rotate to a free exact-HEAD task without duplica
   }
  }
  assert.equal(successes,1,'unprocessed item reachable without changing Worker quota');
+});
+
+test('verified old ghost queue allows exactly one source Repair with moderate real job pressure',async()=>{
+ const now=Date.parse('2026-11-12T20:00:00Z');
+ const oldQueue={id:9919,status:'queued',created_at:'2026-11-11T19:00:00Z'};
+ const opts={activeCount:19,terminalOverhang:5,liveRunningJobs:13,newestQueued:oldQueue};
+ const f=ghostFixture(opts);
+ const result=await GRC(f.github,'andylitvinov-design','books',f.p,now);
+ assert.equal(result.known,true,'complete merged ancestry and active job evidence');
+ assert.equal(result.verifiedTerminalOverhangRuns,5);
+ assert.equal(result.runningJobs,13);
+ assert.equal(result.elevatedRepairProof,true);
+ assert.equal(result.safeToDispatchOneLegacyPreflight,false);
+ assert.equal(admission('repair',result),'ADMIT');
+ assert.equal(admission('legacy',result),'GHOST_LEGACY_PREFLIGHT_UNVERIFIED');
+ assert.equal(admission('ci',result),'GHOST_REPAIR_ONLY');
+ assert.equal(admission('conflict',result),'GHOST_REPAIR_ONLY');
+ assert.equal(admission('repair',{...result,runningJobs:15}),'GHOST_WORKER_BUSY');
+ assert.equal(admission('repair',{...result,activeWorker:{
+  ...result.activeWorker,'HH PR source Repair Worker':1}}),'GHOST_WORKER_BUSY');
+ for(const changes of [
+  {newestQueued:{...oldQueue,created_at:'2026-11-12T19:50:00Z'}},
+  {newestQueued:{...oldQueue,status:'in_progress'}},
+  {newestQueued:null},
+  {activeCount:19,terminalOverhang:2,liveRunningJobs:13},
+  {activeCount:21,terminalOverhang:3,liveRunningJobs:13},
+  {activeCount:21,terminalOverhang:5,liveRunningJobs:15}
+ ]){
+  const item=ghostFixture({...opts,...changes});
+  const verdict=await GRC(item.github,'andylitvinov-design','books',item.p,now);
+  assert.equal(verdict.known,false,'fresh/unknown/overloaded jobs stay held '+JSON.stringify(changes));
+ }
 });
