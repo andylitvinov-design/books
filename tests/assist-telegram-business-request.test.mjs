@@ -146,6 +146,7 @@ test('the actual locked state machine requires initial request, format and disti
   }
  };
  const context=vm.createContext({
+   TABLE:'app_private.crm_tg_business_service_sessions',
    randomUUID:()=> '11111111-1111-4111-8111-111111111111',
    PRACTITIONER_ID:'246aa1a3-a371-5a83-9f4b-cd23ff027a76',
    telegramBusinessClientChoice,telegramBusinessConversationReply,

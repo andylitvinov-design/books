@@ -7,6 +7,7 @@ const { chromium } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
 const { expect } = require((process.env.HH_PLAYWRIGHT_PACKAGE || "playwright") + "/test");
 import assert from "node:assert/strict";
 import { inferAssistPreferences, rankAssistOffers } from "../lib/assist/service-match.mjs";
+import { telegramServiceRequestUrl } from "../lib/assist/telegram-business-request.mjs";
 import { mkdir, writeFile } from "node:fs/promises";
 
 const origin = process.env.HH_PUBLIC_QA_ORIGIN || "http://127.0.0.1:3100";
@@ -124,13 +125,19 @@ try {
     await expect(directionTabs).toHaveCount(6);
     const bestCards = shelf.locator("[data-assist-best-card]");
     await expect(bestCards).toHaveCount(3);
-    for (const [key,route] of Object.entries({
-      homeopathy: "services/psychohomeopathy",
-      coaching: "services/imagery-therapy",
-      reiki: "services/remote-energy-support",
-    })) {
-      await expect(shelf.locator('[data-assist-best-action="' + key + '"]'))
-        .toHaveAttribute("href", "/" + locale + "/" + route);
+    // Session Request must open the owner's human Telegram account with the
+    // exact selected public service already drafted: NEVER a second order page,
+    // bot /start or an automatic booking. Educational Explore remains on site.
+    for (const key of ["homeopathy", "coaching", "reiki"]) {
+      const cta = shelf.locator('[data-assist-best-action="' + key + '"]');
+      const target = telegramServiceRequestUrl(key, locale);
+      assert.ok(target?.startsWith("https://t.me/holistichouse?text="));
+      await expect(cta).toHaveAttribute("href", target);
+      await expect(cta).toHaveAttribute("target", "_blank");
+      await expect(cta).toHaveAttribute("rel", "noopener noreferrer");
+      const url = new URL(target);
+      assert.equal(url.searchParams.has("start"), false);
+      assert.equal(url.searchParams.get("text").includes("[HH-REQ:" + key + ":" + locale + "]"), true);
     }
     await directionTabs.nth(1).click();
     await expect(shelf.locator("[data-assist-selected-direction]"))
