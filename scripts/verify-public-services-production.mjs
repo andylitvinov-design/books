@@ -138,6 +138,27 @@ try {
     const question = conversation.locator("textarea#assist-question");
     const submit = conversation.locator('form button[type="submit"]');
     await visible(question);
+    // The owner saw the whole iPhone Services page zoom/crop when the keyboard
+    // appeared. A focused textarea below 16px triggers iOS Safari auto-zoom.
+    // Check computed text size AND viewport geometry, without disabling pinch zoom.
+    await question.focus();
+    const focusGeometry=await question.evaluate(element=>{
+      const input=element.getBoundingClientRect();
+      const form=element.form?.getBoundingClientRect();
+      return {fontSize:parseFloat(getComputedStyle(element).fontSize),
+        documentWidth:document.documentElement.scrollWidth,
+        viewportWidth:document.documentElement.clientWidth,
+        formLeft:form?.left??-1,formRight:form?.right??Infinity,
+        inputRight:input.right};
+    });
+    assert.ok(focusGeometry.fontSize>=16,
+      "iPhone keyboard must not zoom Services textarea: "+JSON.stringify(focusGeometry));
+    assert.ok(focusGeometry.formLeft>=-1 &&
+      focusGeometry.formRight<=focusGeometry.viewportWidth+1 &&
+      focusGeometry.inputRight<=focusGeometry.formRight+1 &&
+      focusGeometry.documentWidth<=focusGeometry.viewportWidth+1,
+      "Focused Services composer must fit phone width: "+JSON.stringify(focusGeometry));
+    await question.evaluate(element=>element.blur());
     await expect(submit).toBeDisabled();
     const topics = conversation.locator("[data-assist-issue-suggestions] button");
     const issueToggle = conversation.locator('button[aria-expanded]');

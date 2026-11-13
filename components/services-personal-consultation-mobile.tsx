@@ -80,13 +80,13 @@ export function ServicesPersonalConsultationMobile({ locale }: { locale: PublicL
           <div className={styles.content}>
             <h3>{t.remote.title}</h3>
             <p><Camera size={19} aria-hidden="true" />{t.remote.detail}</p>
-            <div className={styles.order} data-consultation-action="remote-photo">
+          </div>
+          <div className={styles.order} data-consultation-action="remote-photo">
               <ContactChannelChooser locale={locale}
                 whatsappUrl={whatsappEnquiryUrl({locale,service:remoteServiceTitle,request:t.remote.request,pagePath})}
                 publicServiceTitle={remoteServiceTitle} publicTopic="Remote photo-based personal reflection · contact only"
                 label={t.remote.action} className={styles.action}
-                compactPhone compactTrigger stayAfterSave />
-            </div>
+                compactPhone compactTrigger compactMessenger stayAfterSave />
           </div>
         </article>
         <article className={styles.card} data-consultation-choice="video">
@@ -96,13 +96,13 @@ export function ServicesPersonalConsultationMobile({ locale }: { locale: PublicL
           <div className={styles.content}>
             <h3>{t.live.title}</h3>
             <p><Video size={19} aria-hidden="true" />{t.live.detail}</p>
-            <div className={styles.order} data-consultation-action="video">
+          </div>
+          <div className={styles.order} data-consultation-action="video">
               <ContactChannelChooser locale={locale}
                 whatsappUrl={whatsappEnquiryUrl({locale,service:videoServiceTitle,request:t.live.request,pagePath})}
                 publicServiceTitle={videoServiceTitle} publicTopic="Personal video consultation · contact only"
                 label={t.live.action} className={styles.action}
-                compactPhone compactTrigger stayAfterSave />
-            </div>
+                compactPhone compactTrigger compactMessenger stayAfterSave />
           </div>
         </article>
       </div>

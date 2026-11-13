@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { ArrowRight, HeartHandshake, Mic, Sparkles } from "lucide-react";
+import { ArrowDown, ArrowRight, HeartHandshake, Mic, Sparkles } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import { inferAssistPreferences, nextAssistQuestion, rankAssistOffers } from "@/lib/assist/service-match.mjs";
 import type { AssistPreferences } from "@/lib/assist/service-match.mjs";
@@ -75,9 +75,9 @@ const copy = {
 type Selection = {text:string;focus:Focus};
 type ChatTurn = {role:"user"|"assistant";text:string};
 const compactCopy = {
-  ru: {moreIssues:"Показать ещё проблемы",lessIssues:"Скрыть остальные",moreTools:"Больше инструментов",lessTools:"Скрыть инструменты",ready:"Подходящие варианты уже показаны ниже."},
-  en: {moreIssues:"More concerns",lessIssues:"Show fewer",moreTools:"More tools",lessTools:"Fewer tools",ready:"Your matching options are just below."},
-  es: {moreIssues:"Ver más problemas",lessIssues:"Mostrar menos",moreTools:"Más herramientas",lessTools:"Menos herramientas",ready:"Tus opciones aparecen debajo."},
+  ru: {moreIssues:"Показать ещё проблемы",lessIssues:"Скрыть остальные",moreTools:"Больше инструментов",lessTools:"Скрыть инструменты",viewMatches:"Посмотреть подходящие мне варианты"},
+  en: {moreIssues:"More concerns",lessIssues:"Show fewer",moreTools:"More tools",lessTools:"Fewer tools",viewMatches:"View my matching options"},
+  es: {moreIssues:"Ver más problemas",lessIssues:"Mostrar menos",moreTools:"Más herramientas",lessTools:"Menos herramientas",viewMatches:"Ver mis opciones recomendadas"},
 } as const;
 
 export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
@@ -103,8 +103,8 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
     return ()=>cancelAnimationFrame(frame);
   },[selection,question,turns]);
 
-  // Keep the ordinary document flow: never float a composer over the last
-  // assistant message. Scroll only the amount obscured by the fixed mobile dock.
+  // Keep the input in document flow, moving only the obscured portion above
+  // the mobile dock. On iOS let the browser handle a focused textarea.
   useEffect(()=>{
     if(!selection)return;
     const viewport=window.visualViewport;
@@ -113,7 +113,6 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
       if(frame)cancelAnimationFrame(frame);
       frame=requestAnimationFrame(()=>{
         frame=0;
-        // iOS manages a focused textarea while the virtual keyboard is open.
         if(document.activeElement===inputRef.current)return;
         const form=formRef.current;
         if(!form)return;
@@ -170,6 +169,17 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
     setTurns(current=>[...current,{role:"assistant" as const,text:t.questions[question].prompt},{role:"user" as const,text:label}].slice(-12));
     setPreferences(current=>({...current,[question]:value}));
   }
+  // Navigate on an explicit tap only: selecting a preference must not jump the page.
+  function scrollToRecommendations() {
+    const target=document.getElementById("assist-recommendations");
+    if(!target)return;
+    inputRef.current?.blur();
+    target.focus({preventScroll:true});
+    target.scrollIntoView({
+      behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",
+      block:"start",
+    });
+  }
   function reset() {
     setSelection(null);setText("");setPreferences({});setTurns([]);
     setCritical(false);setExpandedIssues(false);
@@ -187,7 +197,10 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
               <p className={styles.questionPrompt}>{t.questions[question].prompt}</p>
               <div className={styles.answerOptions}>{t.questions[question].options.map(([label,value])=><button type="button" key={value} onClick={()=>chooseAnswer(value,label)}>{label}</button>)}</div>
               <button type="button" className={styles.skip} onClick={()=>chooseAnswer("any",t.skip)}>{t.skip}</button>
-            </div>:<p className={styles.chatReady}>{labels.ready}</p>}
+            </div>:<button type="button" className={styles.viewMatches} data-assist-view-matches
+              aria-controls="assist-recommendations" onClick={scrollToRecommendations}>
+              {labels.viewMatches}<ArrowDown size={19} aria-hidden="true"/>
+            </button>}
           </>}
         </>:<div className={styles.chatStart}>
           <div className={styles.greeting}>

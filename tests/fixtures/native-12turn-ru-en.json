@@ -1,0 +1,45 @@
+{
+  "schema": "hh-native-journeys-ru-en-v1",
+  "synthetic": true,
+  "privateClientData": false,
+  "scenarios": [
+    {
+      "id": "ru-work-coaching-13",
+      "locale": "ru",
+      "turns": [
+        {"id":"ru01","user":"У меня путаница с работой.","rule":"goal_clarify"},
+        {"id":"ru02","user":"Хочу спокойнее обсуждать задачи с руководителем.","rule":"explicit_goal"},
+        {"id":"ru03","user":"Можно вечером?","rule":"time_unconfirmed"},
+        {"id":"ru04","user":"А сколько это стоит?","rule":"price_grounded"},
+        {"id":"ru05","user":"Нет, не записывай меня, просто поговорим.","rule":"stop_actions"},
+        {"id":"ru06","user":"Точнее: нужна консультация, не коучинг.","rule":"correction"},
+        {"id":"ru07","user":"Тогда второй вариант.","rule":"choice_reference"},
+        {"id":"ru08","user":"Поясни одним предложением.","rule":"one_sentence"},
+        {"id":"ru09","user":"Не предлагай мне медитации.","rule":"stop_actions"},
+        {"id":"ru10","user":"Какую цель мы сейчас обсуждаем?","rule":"goal_recall"},
+        {"id":"ru11","user":"Меняем тему: хочу поговорить об отношениях.","rule":"topic_switch"},
+        {"id":"ru12","user":"Продолжим про отношения, но без советов.","rule":"no_advice"},
+        {"id":"ru13","user":"Спасибо, давай закончим.","rule":"close"}
+      ]
+    },
+    {
+      "id": "en-work-coaching-13",
+      "locale": "en",
+      "turns": [
+        {"id":"en01","user":"Work is confusing right now.","rule":"goal_clarify"},
+        {"id":"en02","user":"I want a calmer conversation with my manager.","rule":"explicit_goal"},
+        {"id":"en03","user":"Could we do it in the evening?","rule":"time_unconfirmed"},
+        {"id":"en04","user":"How much would that cost?","rule":"price_grounded"},
+        {"id":"en05","user":"No, don't book anything. Let's just talk.","rule":"stop_actions"},
+        {"id":"en06","user":"Correction: I mean a consultation, not coaching.","rule":"correction"},
+        {"id":"en07","user":"Then I prefer the second option.","rule":"choice_reference"},
+        {"id":"en08","user":"Explain that in a single sentence.","rule":"one_sentence"},
+        {"id":"en09","user":"Please don't suggest meditation.","rule":"stop_actions"},
+        {"id":"en10","user":"What goal are we discussing now?","rule":"goal_recall"},
+        {"id":"en11","user":"New topic: I want to talk about relationships.","rule":"topic_switch"},
+        {"id":"en12","user":"Let's stay on relationships, but no advice.","rule":"no_advice"},
+        {"id":"en13","user":"Thank you, let's finish here.","rule":"close"}
+      ]
+    }
+  ]
+}
