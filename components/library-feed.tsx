@@ -143,7 +143,7 @@ export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = fa
   }, [items, kind, query, locale, videosOnly, guidesOnly, selectedSeries, seriesChoices, preserveOrder]);
   // A selected MyTube course is a complete ordered playlist, not a preview of
   // the first eight lessons. Keep normal pagination for other Library feeds.
-  const visibleLimit = mytubeShelf === "courses" ? filtered.length :
+  const visibleLimit = (mytubeShelf === "courses" || mytubeShelf === "practices") ? filtered.length :
     videosOnly && !preserveOrder && selectedSeries === "all"
       ? Math.max(limit, filtered.filter(item => Boolean(item.seriesId)).length) : limit;
   const visible = filtered.slice(0, visibleLimit);
@@ -277,6 +277,12 @@ export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = fa
             </p>
             )}
             {item.description && <p className={styles.description}>{item.description}</p>}
+            {mytubeShelf==="practices"&&item.sourceGroup==="psimaster-original-meditations"&&
+              !Number.isInteger(item.durationVerifiedSeconds)&&
+              <p className={styles.meta} data-mytube-duration-unverified>
+                {locale==="ru"?"Длительность ещё не подтверждена":
+                  locale==="es"?"Duración pendiente de verificar":"Duration not yet verified"}
+              </p>}
             {videoLayout==="mytube"&&matchingTopic&&<p className={styles.meta}
               data-mytube-ranking={matchingTopic.topicId}
               title={locale==="ru"?"Предварительная редакционная оценка, не проверенная вручную":
