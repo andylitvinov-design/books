@@ -246,8 +246,8 @@
 
 
 /* Approved My Coach mock parity · 2026-11-12
-   Keep animation in the immersive session; the public first screen uses the
-   approved consistent photographic identity rather than unrelated motion crops. */
+   Use one face for the same fictional AI persona across the public first screen,
+   catalog, profile and immersive session; the motion is not lip sync. */
 .heroStage{
   background:linear-gradient(124deg,#304c3f 0%,#566a51 48%,#b99d79 100%);
 }
@@ -258,36 +258,36 @@
   mask-image:linear-gradient(90deg,transparent 0%,rgba(0,0,0,.32) 23%,#000 60%)!important;
 }
 .heroPortrait[data-persona=mira]{
-  background-image:url('/images/holistic-house/my-coach-mira-hires.webp')!important;
+  background-image:url('/images/holistic-house/my-coach-motion/mira-living.webp')!important;
   background-size:cover!important;
   background-position:50% 38%!important;
 }
 .heroPortrait[data-persona=alex]{
-  background-image:url('/images/holistic-house/my-coach-alex-rail.webp')!important;
+  background-image:url('/images/holistic-house/my-coach-motion/alex-living.webp')!important;
   background-size:cover!important;
   background-position:center 32%!important;
 }
 .heroPortrait[data-persona=sofia]{
-  background-image:url('/images/holistic-house/my-coach-sofia-rail.webp')!important;
+  background-image:url('/images/holistic-house/my-coach-motion/sofia-living.webp')!important;
   background-size:cover!important;
   background-position:center 32%!important;
 }
 .heroPortrait[data-persona=max]{
-  background-image:url('/images/holistic-house/my-coach-max-rail.webp')!important;
+  background-image:url('/images/holistic-house/my-coach-motion/max-living.webp')!important;
   background-size:cover!important;
   background-position:center 32%!important;
 }
 .railPortrait[data-persona=mira]{
-  background-image:url('/images/holistic-house/my-coach-mira-rail.webp')!important;
+  background-image:url('/images/holistic-house/my-coach-motion/mira-living.webp')!important;
 }
 .railPortrait[data-persona=alex]{
-  background-image:url('/images/holistic-house/my-coach-alex-rail.webp')!important;
+  background-image:url('/images/holistic-house/my-coach-motion/alex-living.webp')!important;
 }
 .railPortrait[data-persona=sofia]{
-  background-image:url('/images/holistic-house/my-coach-sofia-rail.webp')!important;
+  background-image:url('/images/holistic-house/my-coach-motion/sofia-living.webp')!important;
 }
 .railPortrait[data-persona=max]{
-  background-image:url('/images/holistic-house/my-coach-max-rail.webp')!important;
+  background-image:url('/images/holistic-house/my-coach-motion/max-living.webp')!important;
 }
 .railPortrait{
   background-color:#e6e8dd;
@@ -362,4 +362,49 @@
 }
 @media(prefers-reduced-motion:reduce){
   .heroPortrait,.railPortrait{animation:none!important}
+}
+
+/* Owner iPhone feedback, 13 Nov 2026: prevent squeezed coach portraits.
+   Keep the approved originals; crop a 4:5 frame without distorting pixels.
+   This explicit final rule supersedes the legacy fixed-height rail styles. */
+.railPortrait{
+  height:auto!important;
+  aspect-ratio:4 / 5;
+  overflow:hidden;
+}
+.railPhoto{
+  position:absolute;
+  inset:0;
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  object-position:50% 37%;
+}
+@media(max-width:540px){
+  .stageActions{justify-content:center}
+  .stageActions > [data-my-coach-mira-quick-start],
+  .stageActions > .talkButton{
+    flex:0 1 88%;
+    width:88%!important;
+    max-width:350px;
+    min-width:0;
+  }
+}
+@media(max-width:355px){
+  .stageActions > [data-my-coach-mira-quick-start],
+  .stageActions > .talkButton{
+    flex-basis:93%;
+    width:93%!important;
+  }
+}
+
+/* Top-four cinematic hero/rail overrides use the same images as all coach cards.
+   Older static overrides had hidden the original animation and could show a
+   different person. Keep reduced-motion nonanimated even with !important. */
+@media(prefers-reduced-motion:reduce){
+ .heroPortrait[data-persona=mira],.railPortrait[data-persona=mira]{background-image:url('/images/holistic-house/my-coach-motion/mira-still.webp')!important}
+ .heroPortrait[data-persona=max],.railPortrait[data-persona=max]{background-image:url('/images/holistic-house/my-coach-motion/max-still.webp')!important}
+ .heroPortrait[data-persona=sofia],.railPortrait[data-persona=sofia]{background-image:url('/images/holistic-house/my-coach-motion/sofia-still.webp')!important}
+ .heroPortrait[data-persona=alex],.railPortrait[data-persona=alex]{background-image:url('/images/holistic-house/my-coach-motion/alex-still.webp')!important}
 }
