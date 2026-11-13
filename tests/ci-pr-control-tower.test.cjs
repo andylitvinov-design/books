@@ -2193,7 +2193,7 @@ test('historical/active workers consume the global legacy hourly slot, never dup
  const recent={id:8888888,name:'HH PR source Repair Worker',
   event:'workflow_dispatch',head_branch:'codex/bootstrap-books',
   repository:{full_name:'andylitvinov-design/books'},
-  created_at:new Date(NOW-120000).toISOString()};
+  created_at:new Date(NOW).toISOString()};
  const f=fixture(old,{comments:{[first.pr_number]:[bot]},legacyHistory:[recent]});
  const result=await run({github:f.github,core:core(),context,now:NOW,
   capacityFn:f.capacityFn});
