@@ -1,5 +1,7 @@
 # AGENTS.md — Holistic House / Books
 
+**Vercel Sandbox cost guard (2026-11-13):** Before any Sandbox creation or agent test, apply the [cross-project sandbox discipline](https://github.com/andylitvinov-design/ai-projects-brain/blob/main/systems/agent-rules.md#vercel-sandbox-cost-guard--2026-11-13). Prefer GitHub/Vercel read-only connectors and existing CI, reuse at most one short-lived 1-vCPU/2-GB session per task, cap idle time, stop sessions in cleanup, and avoid repeated Playwright/OS dependency installation. Never bypass required tests or protected merge to reduce usage.
+
 ## Required cross-project CI wave policy
 
 Before any ChatGPT, Codex, Claude, Hermes or GitHub agent creates/updates a PR, **first read** the global [GLOBAL_PR_ONE_PUBLISH_V1](https://github.com/andylitvinov-design/ai-projects-brain/blob/main/systems/pr-one-publish-standard.md).
