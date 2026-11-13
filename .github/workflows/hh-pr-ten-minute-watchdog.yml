@@ -155,7 +155,9 @@ jobs:
         (github.event.inputs.completion_wake == 'true' ||
          github.event.inputs.direct_dispatch == 'true' ||
          github.event.inputs.pm_pr_number != ''))
-    runs-on: ubuntu-24.04
+    # Read-only GitHub API/Node orchestration: one-vCPU slim runner is
+    # sufficient and stays below its 15-minute hard cap.
+    runs-on: ubuntu-slim
     timeout-minutes: 8
     steps:
       - name: Read trusted watchdog from default branch
@@ -328,7 +330,9 @@ jobs:
     concurrency:
       group: hh-control-tower-single-writer
       cancel-in-progress: false
-    runs-on: ubuntu-24.04
+    # Read-only GitHub API/Node orchestration: one-vCPU slim runner is
+    # sufficient and stays below its 15-minute hard cap.
+    runs-on: ubuntu-slim
     timeout-minutes: 5
     permissions:
       contents: read
@@ -400,7 +404,9 @@ jobs:
       github.event_name == 'workflow_dispatch' &&
       github.event.inputs.completion_wake == 'true' &&
       github.event.inputs.dry_run != 'true'
-    runs-on: ubuntu-24.04
+    # Read-only GitHub API/Node orchestration: one-vCPU slim runner is
+    # sufficient and stays below its 15-minute hard cap.
+    runs-on: ubuntu-slim
     timeout-minutes: 3
     concurrency:
       group: hh-direct-worker-completion-${{ github.event.inputs.worker_run_id }}
@@ -463,7 +469,9 @@ jobs:
             github.event.workflow_run.conclusion != 'skipped'
           )
         )))
-    runs-on: ubuntu-24.04
+    # Read-only GitHub API/Node orchestration: one-vCPU slim runner is
+    # sufficient and stays below its 15-minute hard cap.
+    runs-on: ubuntu-slim
     timeout-minutes: 8
     concurrency:
       # Same writer group as pre-migration Control Tower protects rollout races.
@@ -549,7 +557,9 @@ jobs:
       github.repository == 'andylitvinov-design/books' &&
       github.event_name == 'push' &&
       github.ref == 'refs/heads/codex/bootstrap-books'
-    runs-on: ubuntu-24.04
+    # Read-only GitHub API/Node orchestration: one-vCPU slim runner is
+    # sufficient and stays below its 15-minute hard cap.
+    runs-on: ubuntu-slim
     timeout-minutes: 5
     steps:
       - name: Verify active workflows, repair disabled schedules and start one real cycle

@@ -401,3 +401,26 @@ test('watchdog contracts execute the immutable-base freshness suite once per CI 
   assert.equal((command.match(/tests\/ci-pr-base-freshness\.test\.cjs/g)||[]).length,1,
     'repeated test path wastes a runner without adding coverage');
 });
+
+test('all five bounded Watchdog event/schedule control jobs use the existing 1-vCPU slim runner',()=>{
+  const w=read('hh-pr-ten-minute-watchdog');
+  const jobs=[['reconcile',8],['conflict-event-handoff',5],['completion-wait',3],
+    ['direct-handoff',8],['reactivate-schedules',5]];
+  for(const [name,timeout] of jobs){
+    const marker='  '+name+':\n';
+    assert.equal(w.split(marker).length,2,'exactly one control job: '+name);
+    const source=w.split(marker)[1].split(/\n  [a-z][a-z0-9-]*:\n/)[0];
+    assert.match(source,/^    runs-on: ubuntu-slim$/m,name+' remains lightweight');
+    assert.ok(timeout<=15,'must respect the 15-minute slim hard cap');
+    assert.match(source,new RegExp('^    timeout-minutes: '+timeout+'$','m'),name+' timeout preserved');
+    assert.doesNotMatch(source,/npm ci|npm run build|docker|apt-get|sudo|playwright|ffmpeg/i,
+      name+' must not perform heavy compilation or privileged container operations');
+  }
+  assert.equal((w.match(/    runs-on: ubuntu-slim/g)||[]).length,jobs.length);
+  assert.match(w,/^  issue_comment:\n    types: \[created\]$/m);
+  assert.match(w,/group: hh-control-tower-single-writer/);
+  assert.match(w,/^  workflow_run:$/m);
+  assert.match(w,/^  pull_request_target:$/m);
+  assert.match(w,/HH PR 10-minute watchdog/);
+  assert.doesNotMatch(w,/continue-on-error:\s*true/);
+});
