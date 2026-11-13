@@ -162,7 +162,16 @@ try {
   assert.ok(await selectedTracks.count()<=3,
     'the compact music picker keeps its three-track rights and mix limit');
   await page.locator('[data-video-audio-compact-selected]').waitFor({state:'visible'});
-  const generate = page.locator('[data-video-quick-generate]');
+  // Audio no longer renders or charges. One actual CTA continues to Text,
+  // where the existing export still verifies the selected licensed music.
+  const addPhrases=page.locator('[data-video-audio-next-text]');
+  await addPhrases.waitFor({state:'visible'});
+  assert.equal(await page.locator('[data-video-quick-generate]').isVisible(),false,
+    'Audio offers no Record/Create Video button');
+  await addPhrases.click();
+  await page.locator('[data-video-montage-text]').waitFor({state:'visible',timeout:20000});
+  const generate = page.locator('[data-video-montage-text] [data-video-ideas-generate]');
+  await generate.waitFor({state:'visible',timeout:30000});
   await generate.click({timeout:30000});
   // The actual verified film moves to Ready; guests cannot use direct Save.
   // Reuse the first-party encoded Blob and prove the login gate instead.
