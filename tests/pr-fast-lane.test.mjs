@@ -1529,7 +1529,15 @@ test('short Core orchestration keeps lightweight aggregator and never skips real
   assert.match(scope, /^    runs-on: ubuntu-24\.04$/m);
   assert.match(scope, /^    timeout-minutes: 45$/m);
   assert.match(core, /^    runs-on: ubuntu-24\.04$/m);
-  assert.match(specialist, /^    runs-on: ubuntu-24\.04$/m);
+  // The immutable Core route is the only selector. Unknown routes fall back
+  // to the full runner and full timeout, never to an unverified fast path.
+  assert.equal(specialist.split("    runs-on: ${{ contains(fromJSON('[\"ASSETS\",\"TEXT\",\"CORE\"]'), needs.scope.outputs.route) && 'ubuntu-slim' || 'ubuntu-24.04' }}").length, 2);
+  assert.equal(specialist.split("    timeout-minutes: ${{ contains(fromJSON('[\"ASSETS\",\"TEXT\",\"CORE\"]'), needs.scope.outputs.route) && 15 || 45 }}").length, 2);
+  const light = new Set(['ASSETS','TEXT','CORE']);
+  for (const route of ['ASSETS','TEXT','CORE'])
+    assert.equal(light.has(route)?'ubuntu-slim':'ubuntu-24.04','ubuntu-slim');
+  for (const route of ['FULL','DOCK','UNKNOWN',''])
+    assert.equal(light.has(route)?'ubuntu-slim':'ubuntu-24.04','ubuntu-24.04');
   assert.match(specialist, /^    needs: \[scope\]$/m, 'specialist must launch after successful Core');
   assert.match(specialist, /^    if: \$\{\{ !cancelled\(\) && needs\.scope\.result == 'success' && github\.event_name == 'pull_request' && github\.event\.pull_request\.draft == false \}\}$/m);
   assert.match(gate, /^    runs-on: ubuntu-slim$/m);

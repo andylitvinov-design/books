@@ -477,8 +477,11 @@ jobs:
     # hh-merge-check still blocks Draft/failed Core/skipped or failed specialists.
     needs: [scope]
     if: ${{ !cancelled() && needs.scope.result == 'success' && github.event_name == 'pull_request' && github.event.pull_request.draft == false }}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    # BASE-owned scope certifies cheap routes. Unknown, FULL and DOCK remain
+    # on the original 4-vCPU runner with full Specialist timeout.
+    # Slim has Git/gh/Node but a hard 15-minute ceiling: only cheap routes use it.
+    runs-on: ${{ contains(fromJSON('["ASSETS","TEXT","CORE"]'), needs.scope.outputs.route) && 'ubuntu-slim' || 'ubuntu-24.04' }}
+    timeout-minutes: ${{ contains(fromJSON('["ASSETS","TEXT","CORE"]'), needs.scope.outputs.route) && 15 || 45 }}
     permissions:
       contents: read
       actions: read

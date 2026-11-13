@@ -20,6 +20,13 @@ This is the default, event-driven path and overrides older text below that sugge
 - When changing a Ready PR's target base, an `edited` event alone no longer starts Core. Require a genuine Ready transition or source synchronization, or use the existing verified missing-CI recovery if applicable, before attempting protected merge. Missing, failed, stale or skipped checks still block.
 - No new job, status, workflow, polling, expensive build, Vercel preview or branch-protection exemption is introduced. `hh-merge-check` still requires real Core and Specialist from the current source HEAD, with sensitive base freshness and external reviews/leases intact.
 
+## Short Specialist runner on trusted CORE/ASSETS/TEXT routes (13 November 2026)
+
+- Preserve the original Core-first `scope → hh-specialist → hh-merge-check` dependency and genuine exact-HEAD checks. The successful, BASE-owned `scope.outputs.route` is the **only** selector.
+- For `ASSETS`, `TEXT`, `CORE`, the lightweight Specialist verification uses GitHub's existing `ubuntu-slim` runner and a bounded 15-minute timeout. It retains HEAD/base verification, Node setup, `gh`-assisted ancestry, and the same unchanged specialist scope rule.
+- For `FULL`, `DOCK`, missing/unknown routes, keep `ubuntu-24.04` and a 45-minute timeout. Applicable security, auth, RLS, payments, consent, provider, browser and media checks are unchanged and cannot be replaced with a skipped job. No new workflow, required context, runtime dependency, paid runner, service, or cron is introduced.
+- Runner selection may improve capacity and minutes, but **do not claim** a measured speedup until a same-cohort, exact-HEAD jobs/queue comparison shows it. The `hh-merge-check` still blocks whenever Core/Specialist or required source evidence is missing, stale, failed, or skipped.
+
 ## Production and merge gates
 
 **Verified readback, 2 November 2026:** Classic Branch Protection and active ruleset #26269892 both require **only `hh-merge-check`** from GitHub Actions App 15368. The legacy `release-ready` and `hh-core-verified` wrappers are retired **after** that independently verified migration. This is the single required status, but it still fails closed unless real Core and BASE-trusted Specialist succeed for the exact PR HEAD. Deletion, non-fast-forward and review-thread protections remain enforced. Never remove `hh-specialist` or skip auth, payment, privacy, consent, RLS or applicable browser tests.
