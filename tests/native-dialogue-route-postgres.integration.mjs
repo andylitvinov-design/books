@@ -7,6 +7,7 @@ import pg from 'pg';
 import {AppError,onlyKeys} from '../lib/assessments/contracts.js';
 import {ruleConversationReply} from '../lib/holistic-support/rule-conversation.mjs';
 import {nativeSecretaryTurn} from '../lib/holistic-support/native-secretary.mjs';
+import {progressConversationTurn,progressDialogueReply} from '../lib/holistic-support/dialogue-progression.mjs';
 import {resolveComplaintTurn} from '../lib/holistic-support/complaint-mind.mjs';
 import {buildHolisticGuidedTurn} from '../lib/holistic-support/holistic-guide-adapter.mjs';
 import {AXIS_REFS} from '../lib/holistic-support/axis-offer-matcher.mjs';
@@ -43,7 +44,7 @@ async function execute(body,owner=a,{enabled=true,realLogic=false,suggestions,ax
   getAppConfig:()=>config,requireSameOrigin:()=>{},createRequestAuth:()=>({verified:async()=>owner,apply:x=>x}),
   createAppRepository:()=>({ensureAccount:async()=>{}}),consumeRate:async()=>{},PRIVATE_HEADERS:{},readBody:async()=>body,
   safeError:e=>({code:e.code||e.message,status:e.status||500}),detectConversationLocale,interpretSupportUtterance:realLogic?realInterpretSupportUtterance:()=>({kind:'none'}),
-  ruleConversationReply,nativeSecretaryTurn,resolveComplaintTurn,nativeDialogueEventFromUtterance,understandConversationTurn,planJudgmentTurn,signJudgmentChoice,verifyJudgmentChoice,
+  ruleConversationReply,nativeSecretaryTurn,resolveComplaintTurn,progressConversationTurn,progressDialogueReply,nativeDialogueEventFromUtterance,understandConversationTurn,planJudgmentTurn,signJudgmentChoice,verifyJudgmentChoice,
   createNativeDialogueSession,readNativeDialogueSession,advanceNativeDialogueMessage,
   coreServiceOffers:()=>serviceCatalog,
   resolveWisdomRequest:async()=>null,consultServiceQuestion,resolveConsultantSuggestion,resolveConversationFocus,englishGuidedMeditations:[],freeMeditationVideos:()=>[],

@@ -15,6 +15,7 @@ import { buildPortraitRecommendations } from "@/lib/profile/portrait-recommendat
 import { AXIS_REFS, publishedAxisOffers } from "@/lib/holistic-support/axis-offer-matcher.mjs";
 import { interpretSupportUtterance, explainUserQuestion } from "@/lib/holistic-support/guide-dialogue.mjs";
 import { ruleConversationReply } from "@/lib/holistic-support/rule-conversation.mjs";
+import { progressConversationTurn,progressDialogueReply } from "@/lib/holistic-support/dialogue-progression.mjs";
 import { nativeSecretaryTurn } from "@/lib/holistic-support/native-secretary.mjs";
 import { resolveComplaintTurn } from "@/lib/holistic-support/complaint-mind.mjs";
 import { consultServiceQuestion, resolveConsultantSuggestion } from "@/lib/assist/consultant-mind.mjs";
@@ -419,6 +420,26 @@ export async function POST(request) {
       ? ruleConversationReply({message:body.message,locale:body.locale,history:body.history})
       : null;
 
+    // Keep brief emotional/relationship replies in the conversation instead of
+    // resetting a selected theme or prematurely showing service cards. Runs only
+    // after origin, verified actor, rate and safety checks; never reads private data.
+    const progressive=body.mode==="rules" && safety.status==="clear" && !recentUnsafe && !judgmentPriority &&
+      body.judgmentContext==null && body.judgmentChoice==null &&
+      body.usePrivateProfile!==true && body.usePrivateHistory!==true &&
+      body.useAgentMemory!==true && body.preferredFormat==null &&
+      (!body.chosenAxes || body.chosenAxes.length===0)
+      ? progressConversationTurn({message:body.message,locale:body.locale,history:body.history})
+      : null;
+    if(progressive){
+      return await finish({
+        status:"clarify",reply:progressive.reply,modelUsed:false,
+        source:"rules",memorySaved:false,userAuthorized:true,
+        suggestions:[],usedSavedTestEvidence:false,usedSavedVideoHistory:false,
+        browserModelAllowed:false,
+        decision:{status:"clarify",message:progressive.reply,question:null,suggestions:[]},
+      });
+    }
+
     // A first-party trained statistical model for simple secretary conversations.
     // The existing signed judgment, safety, user-consented memory, checkout and
     // media workflows remain authoritative. Never treat this as generative LLM.
@@ -606,10 +627,17 @@ export async function POST(request) {
         signal:AbortSignal.timeout(16000),
       });
     }:undefined);
+    // Last-resort repetition gate for model/fallback text, only in ordinary
+    // safe clarification. This cannot change safety handoffs or model access.
+    const finalReply=safety.status==="clear" && !recentUnsafe &&
+      decision.status==="clarify"
+      ? progressDialogueReply({message:body.message,locale:body.locale,history:body.history,
+          reply:generated.text,intent:fastRule?.id||""})
+      : generated.text;
     const suggestions=(Array.isArray(decision.suggestions)?decision.suggestions:[])
       .slice(0,3).map(({id,kind,href,title})=>({id,kind,href,title}));
     return await finish({
-      status:decision.status, reply:generated.text, modelUsed:generated.modelUsed,
+      status:decision.status, reply:finalReply, modelUsed:generated.modelUsed,
       mindRole:generated.modelUsed?envelope.mindRole:null,
       source:generated.provider, decision:{status:decision.status,message:decision.message,
         suggestions,question:decision.question||null},

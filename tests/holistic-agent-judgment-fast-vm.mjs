@@ -8,6 +8,7 @@ import {resolveComplaintTurn} from '../lib/holistic-support/complaint-mind.mjs';
 import {planJudgmentTurn as realJudgment} from '../lib/holistic-support/judgment-mind.mjs';
 import {nativeDialogueEventFromUtterance,understandConversationTurn} from '../lib/holistic-support/conversation-intelligence.mjs';
 import {emptyNativeDialogueState,transitionNativeDialogueState} from '../lib/holistic-support/native-dialogue-state.mjs';
+import {progressConversationTurn,progressDialogueReply} from '../lib/holistic-support/dialogue-progression.mjs';
 
 async function execute(body,{valid=false,useRealJudgment=false,nativeEnabled=false,fixture={state:emptyNativeDialogueState()},suggestions=[],judgmentResult=null,consultation=null}={}){
  const source=readFileSync(new URL('../app/api/holistic-agent/turn/route.js',import.meta.url),'utf8');
@@ -19,7 +20,7 @@ async function execute(body,{valid=false,useRealJudgment=false,nativeEnabled=fal
   createAppRepository:()=>({ensureAccount:async()=>calls.push('account')}),consumeRate:async()=>calls.push('rate'),
   PRIVATE_HEADERS:{},readBody:async()=>body,safeError:e=>({code:e.code||e.message,status:e.status||500}),
   detectConversationLocale:(_,locale)=>locale,interpretSupportUtterance:()=>({kind:'none'}),nativeDialogueEventFromUtterance,understandConversationTurn,
-  resolveWisdomRequest:async()=>null,ruleConversationReply,nativeSecretaryTurn,resolveComplaintTurn,
+  resolveWisdomRequest:async()=>null,ruleConversationReply,nativeSecretaryTurn,resolveComplaintTurn,progressConversationTurn,progressDialogueReply,
   consultServiceQuestion:()=>{calls.push('consultant');return consultation},
   resolveConsultantSuggestion:(id)=>id==='service:therapy'?{id,title:'Guided imagery sessions'}:id==='service:business'?{id,title:'Business consulting'}:null,
   verifyJudgmentChoice:()=>{calls.push('verify');return valid?{pending:{},turnId:'cccccccc-cccc-4ccc-8ccc-cccccccccccc',conversationRevision:1}:null},
@@ -40,6 +41,18 @@ async function execute(body,{valid=false,useRealJudgment=false,nativeEnabled=fal
  await routeModule.evaluate();return {result:await routeModule.namespace.POST({}),calls};
 }
 const input={locale:'en',message:'Hello',history:[],mode:'rules',ownedInferenceConsent:false,judgmentContext:'synthetic.signature',judgmentChoice:'a'};
+test('production emotional progression respects Judgment and advances enabled server state',async()=>{
+ const nativeSession={id:null,revision:0,turnId:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'};
+ const body={locale:'ru',message:'Грустно',history:[],mode:'rules',ownedInferenceConsent:false,nativeSession};
+ const progressed=await execute(body,{nativeEnabled:true});
+ assert.equal(progressed.result.status,200);
+ assert.ok(progressed.calls.includes('state-advance'));
+ assert.equal(progressed.result.body.nativeSession.revision,1);
+ const judgment=await execute(body,{nativeEnabled:true,judgmentResult:{status:'clarify',reply:'Judgment owns this turn',pending:null}});
+ assert.equal(judgment.result.status,200);
+ assert.equal(judgment.result.body.reply,'Judgment owns this turn');
+ assert.ok(judgment.calls.includes('state-advance'));
+});
 test('a fast greeting cannot bypass verification of a signed judgment continuation',async()=>{
  const invalid=await execute(input);assert.equal(invalid.result.status,400);assert.equal(invalid.result.body.error,'INVALID_JUDGMENT_CONTEXT');assert.ok(invalid.calls.includes('verify'));
  const invalidWithoutChoice=await execute({...input,judgmentChoice:null});assert.equal(invalidWithoutChoice.result.status,400);assert.ok(invalidWithoutChoice.calls.includes('verify'));
