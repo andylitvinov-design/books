@@ -194,7 +194,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   function replayCoachReply(){
     if(!latestCoachText||voiceState.phase!=='idle'||replaying)return
     setPlaybackNotice('')
-    if(cloudAgreed&&['google_chirp3_hd','fish_free'].includes(cloudProvider)){
+    if(consent&&cloudAgreed&&cloudAvailable&&['google_chirp3_hd','fish_free'].includes(cloudProvider)){
       const controller=new AbortController()
       replayControllerRef.current=controller
       setReplaying(true)
@@ -474,7 +474,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             onChange={event=>{setDraft(event.target.value);setError('')}}/>
           <label className={styles.consent}><input type="checkbox" checked={consent}
             disabled={busy||readiness.status==='checking'}
-            onChange={event=>{setConsent(event.target.checked);if(!event.target.checked)pending.current?.abort()}}/>
+            onChange={event=>{setConsent(event.target.checked);if(!event.target.checked){pending.current?.abort();replayControllerRef.current?.abort();replayPlayerRef.current?.cancel();setReplaying(false);setCloudAgreed(false)}}}/>
             <span>{captions.consentShort}</span></label>
           <button className={styles.send} type="submit"
             disabled={!consent||busy||!draft.trim()||authRequired||readiness.status==='checking'}>

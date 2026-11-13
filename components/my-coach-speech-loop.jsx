@@ -129,7 +129,10 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   useEffect(()=>{
     if(!enabled&&activeRef.current)stopRef.current?.()
   },[enabled])
-  useEffect(()=>{if(!cloudAgreed&&cloudControllerRef.current)stopRef.current?.()},[cloudAgreed])
+  useEffect(()=>{
+    if((!cloudAgreed||!cloudAvailable)&&(cloudControllerRef.current||cloudPlayerRef.current))
+      stopRef.current?.()
+  },[cloudAgreed,cloudAvailable])
 
   function startListening(){
     if(!activeRef.current)return
@@ -314,8 +317,9 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
             cloudControllerRef.current=null
             cloudPlayerRef.current?.cancel()
             cloudPlayerRef.current=null
-            // iOS 27's known recognition recovery may still need its brief
-            // microphone cue after MP3. Do not assume audio playback primes WebKit.
+            // Keep iOS 27 WebKit's established short microphone-recovery cue.
+            // The MP3 playback itself is not proof that SpeechRecognition was reset.
+            iosCueSatisfiedRef.current=false
             afterSpeech()
           },
           onError:fallback,
