@@ -21,6 +21,15 @@ const MAX_DISPATCH=2, MAX_MANUAL_CONFLICT_HANDOFFS=2, MAX_INSPECT=16, MAX_CONFLI
 // Only after a terminally handled hourly candidate: bounded alternative PR
 // checks, not additional worker executions or source authorisations.
 const MAX_LEGACY_BACKUPS=4, MAX_LEGACY_HOURLY_HISTORY=20;
+// The first fixed fallback block can become entirely terminal. Rotate four
+// read-only fallback candidates per already existing 10-minute observation;
+// no additional Worker slot, CI wake or schedule is created. Ownership and
+// exact task receipt remain mandatory on EVERY selected candidate.
+function legacyFallbackStart(total,now){
+ if(!Number.isSafeInteger(total)||total<=0||
+    !Number.isFinite(now)||now<0)return 0;
+ return (Math.floor(now/600_000)*MAX_LEGACY_BACKUPS)%total;
+}
 const RELEVANT=new Set(['HH PR 10-minute watchdog','HH PR source Repair Worker','HH zero-cost PR CI worker','HH PR core release gate',...Object.keys(QUALITY_EVENT_PATHS)]);
 function validOwnerRepairTarget(context,target){
  return !!(target&&typeof target==='object'&&!Array.isArray(target)&&
@@ -650,13 +659,14 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
      (priorityFor(a,now).mergeRank||10)-(priorityFor(b,now).mergeRank||10)||
      a.number-b.number;
    }):[];
+ const fallbackStart=legacyFallbackStart(fallbackPool.length,now);
  let fallbackCursor=0,fallbacksAdded=0,legacyDispatchAttempted=false;
  let hourlyLegacyProof=null;
  const queueLegacyFallback=()=>{
   if(fallbacksAdded>=MAX_LEGACY_BACKUPS||legacyDispatchAttempted||
      summary.legacyDispatchAccepted>0||quota.state.paused)return false;
   while(fallbackCursor<fallbackPool.length){
-   const pr=fallbackPool[fallbackCursor++];
+   const pr=fallbackPool[(fallbackStart+fallbackCursor++)%fallbackPool.length];
    if(candidateIds.has(pr.number))continue;
    const task=taskFor(pr,priorityFor(pr,now));
    if(!task||task.lane!=='legacy')continue;
@@ -1350,6 +1360,6 @@ async function wakeDirectionWatcher({github,core,context,now=Date.now(),dryRun=f
  }
  log();return state;
 }
-module.exports={trustedContext,validOwnerRepairTarget,planCandidates,legacyHourlyWorkerSlot,run,wakeDirectionWatcher,workerBusyOrCooling,
+module.exports={trustedContext,validOwnerRepairTarget,planCandidates,legacyHourlyWorkerSlot,legacyFallbackStart,run,wakeDirectionWatcher,workerBusyOrCooling,
  DIRECTION_IDLE_MS,DIRECTION_WORKFLOW,verifiedSpecialistProductFailure,backlogLabelHints,
  signedCiWakeTiming};
