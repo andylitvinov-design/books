@@ -6,6 +6,8 @@ const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",
 const story=readFileSync(new URL("../components/mandala-automatic-storyboard.tsx",import.meta.url),"utf8");
 const styles=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
 const offer=readFileSync(new URL("../components/mandala-montage-pro-offer.tsx",import.meta.url),"utf8");
+const ideas=readFileSync(new URL("../components/mandala-video-ideas.tsx",import.meta.url),"utf8");
+const webkit=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
 
 test("Style, Audio, Text, Story, Montage is the only five-step visible editor order",()=>{
  const start=studio.indexOf("<nav className={videoStyles.montageQuickTools} data-video-montage-tools");
@@ -80,4 +82,22 @@ test("compact Story source branch runs mandatory macOS WebKit instead of skipped
  assert.ok(workflow.includes('codex/video-story-five-cards-quality-last-20261112 ]]; then'),
    "the same existing macOS runner must verify real five-scene H264/AAC Story output");
  assert.match(workflow,/verify-five-scene-stories-browser\.mjs/);
+});
+
+test("Text shows only one review CTA, navigating forward to fourth Story without rendering",()=>{
+ const start=ideas.indexOf('data-video-stage-actions="ideas"');
+ const footer=ideas.slice(start,ideas.indexOf("</div>",start));
+ assert.ok(start>0);
+ assert.equal(footer.split("<button").length-1,1);
+ assert.ok(footer.includes("data-video-ideas-create"));
+ assert.ok(!footer.includes("data-video-ideas-generate"));
+ assert.ok(!footer.includes("onGenerate"));
+ assert.ok(footer.includes("disabled={disabled||selectedCount<5}"));
+ for(const phrase of ["Проверить storyboard","Review storyboard","Revisar storyboard"])
+  assert.ok(footer.includes(phrase));
+ assert.ok(studio.includes('setMontagePanel("concept");setPreviewPlaying(false);setNotice("");'));
+ assert.ok(!studio.includes('onCreate={()=>{setMontagePanel("audio");setBasicPanelTab("music");setPreviewPlaying(false);}}'));
+ assert.ok(webkit.includes("await reviewStory.tap();"));
+ assert.ok(webkit.includes("await expect(textFooter.locator(\"button\")).toHaveCount(1);"));
+ assert.ok(webkit.includes("await expect(page.locator('[data-video-montage-tab=\"concept\"]')).toHaveAttribute"));
 });

@@ -18,7 +18,7 @@ type Props={
  locale:VideoLocale;theme:VideoTheme;requestText:string;active:boolean;disabled:boolean;settings:AffirmationSettings;
  profile?:VideoGoalProfile;
  generating:boolean;onChange:Dispatch<SetStateAction<AffirmationSettings>>;
- onPendingChange:Dispatch<SetStateAction<boolean>>;onPreview:()=>void;onCreate:()=>void;onGenerate:()=>void;status?:string;
+ onPendingChange:Dispatch<SetStateAction<boolean>>;onPreview:()=>void;onCreate:()=>void;status?:string;
  onRecord:()=>void;onResetPreview:()=>void;
 };
 
@@ -78,7 +78,7 @@ const scaleValues=["small","medium","large"] as const;
 const cleanPhrase=sanitizeIdeaPhrase;
 
 export function MandalaVideoIdeas({locale,theme,requestText,profile,active,disabled,settings,generating,
- onChange,onPendingChange,onPreview,onCreate,onGenerate,status,onRecord,onResetPreview}:Props){
+ onChange,onPendingChange,onPreview,onCreate,status,onRecord,onResetPreview}:Props){
  const t=wording[locale];
  const goalContext=useMemo(()=>resolveVideoIdeaContext({locale,request:requestText,theme}),[locale,requestText,theme]);
  const currentOptions=useMemo<Cluster[]>(()=>listCurrentEmotionClusters(locale),[locale]);
@@ -346,15 +346,10 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,active,disab
   </details>
 
   <div className={css.stageActions} data-video-stage-actions="ideas">
-  <button type="button" className={css.create} data-video-ideas-generate
-    disabled={disabled} onClick={onGenerate}>
-    <Play size={21} fill="currentColor" aria-hidden="true"/>
-    {locale==="ru"?"Создать видео":locale==="es"?"Generar vídeo":"Generate Video"}
-  </button>
-  <button type="button" className={css.addEffects} data-video-ideas-create
+  <button type="button" className={css.create} data-video-ideas-create
     disabled={disabled||selectedCount<5} onClick={onCreate}>
     <Sparkles size={19} aria-hidden="true"/>
-    {locale==="ru"?"Далее · Раскадровка":locale==="es"?"Siguiente · Guion visual":"Next · Storyboard"}
+    {locale==="ru"?"Проверить storyboard":locale==="es"?"Revisar storyboard":"Review storyboard"}
     <span aria-hidden="true">→</span>
   </button>
  </div>

@@ -78,6 +78,16 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(page.locator('[data-video-montage-tab="text"]'))
       .toHaveAttribute("aria-pressed","true");
     await expect(page.locator('[data-video-montage-text]')).toBeVisible();
+    // Only one real Text CTA; its WebKit touch opens fourth Story, not the renderer.
+    const textFooter=page.locator('[data-video-ideas-compact] [data-video-stage-actions="ideas"]');
+    await expect(textFooter.locator("button")).toHaveCount(1);
+    const reviewStory=textFooter.locator('[data-video-ideas-create]');
+    await expect(reviewStory).toBeEnabled();
+    await expect(reviewStory).toContainText(
+      locale==="ru"?"Проверить storyboard":locale==="es"?"Revisar storyboard":"Review storyboard");
+    await reviewStory.tap();
+    await expect(page.locator('[data-video-montage-tab="concept"]')).toHaveAttribute("aria-pressed","true");
+    await expect(page.locator('[data-video-montage-concept]')).toBeVisible();
     // Return to Ideas before testing the independent top-level Montage tap.
     await ideas.tap();
     await expect(studio).toHaveAttribute("data-active-workspace","phrases");
