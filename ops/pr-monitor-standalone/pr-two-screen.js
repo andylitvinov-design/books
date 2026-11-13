@@ -24,6 +24,7 @@
   var stages = Object.create(null), cells = Object.create(null);
   var root, graphSlot, graphHint, comparison, prList, coverage, status, firstFoot, secondFoot;
   var sourceSnapshot = null, baseline = null, detailed = null, mounted = false;
+  var cohortLastFetchAt=0,cohortFetchBusy=false,cohortError=null;
   var scheduled = false, detailBusy = false, observer = null;
   var queueSnapshot = null, queueFallback = null, queueError = null, archive = null, archivePending = false;
   var auditRequests = 0, auditBusy = false, auditCache = new Map();
@@ -663,8 +664,11 @@
       cells.avg.querySelector('strong').textContent=duration(baseline.mean);
       cells.median.querySelector('strong').textContent=duration(baseline.median);
        cells.p95.querySelector('strong').textContent=duration(baseline.p95);
-      firstFoot.textContent='Одна когорта Created→Merged: '+baseline.n+' PR · срез '+
-        (baseline.to||'—')+' · '+(baseline.source==='live'?'текущий API':'архив; может устареть')+
+      var age=Date.now()-Date.parse(baseline.to||'');
+      var freshness=!Number.isFinite(age)||age>75*60000?'УСТАРЕВШИЙ СРЕЗ':age>15*60000?'Срез с задержкой':'Свежий срез';
+      firstFoot.textContent='Production · 24 ч · '+baseline.n+' PR · '+freshness+
+        ' · '+(baseline.to||'время неизвестно')+' · '+(baseline.source==='live'?'GitHub API':'архив')+
+        (cohortError?' · ошибка обновления: '+cohortError:'')+
         '. LIVE пока подтверждается отдельно.';
     }
   }
@@ -685,8 +689,12 @@
         'Ожидаю единый список созданных и смерженных PR…';
     }else applyArchive();
     const N=baseline?.n??'—';
-    coverage.textContent='Единая когорта созданных и смерженных PR: '+N+
-      ' за 24 ч; историческая когорта: '+(historical?.n??'—')+
+    var cohortAge=Date.now()-Date.parse(baseline?.to||'');
+    var freshness=!Number.isFinite(cohortAge)||cohortAge>75*60000?'УСТАРЕВШИЕ ДАННЫЕ':cohortAge>15*60000?'ЗАДЕРЖКА ОБНОВЛЕНИЯ':'СВЕЖИЙ СРЕЗ';
+    coverage.textContent='Production Created→Merged: '+N+' PR за 24 ч · '+freshness+
+      ' · срез '+(baseline?.to||'неизвестен')+
+      (cohortError?' · источник временно недоступен: '+cohortError:'')+
+      '; историческая когорта: '+(historical?.n??'—')+
       '. Для исторических этапов двухнедельной давности нет сопоставимого CI-архива; «—» означает «не измерено», а не 0.';
     if(cells.live){
       cells.live.querySelector('strong').textContent='—';
@@ -845,24 +853,26 @@
     }
   }
   async function readCurrentCohort() {
+    if(cohortFetchBusy)return;
+    cohortFetchBusy=true;cohortLastFetchAt=Date.now();
     try {
-      var response=await fetch('/api/pr-created-cohort',{cache:'default',
+      var response=await fetch('/api/pr-created-cohort',{cache:'no-store',
         headers:{Accept:'application/json'}});
       if(!response.ok)throw Error('HTTP '+response.status);
       var data=await response.json();
       if(data.schema!=='HH_PR_CREATED_COHORT_V1'||!Array.isArray(data.rows)||
-        !Number.isFinite(Date.parse(data.generated_at||'')))throw Error('INVALID_COHORT');
+        !Number.isFinite(Date.parse(data.generated_at||''))||data.coverage?.complete!==true)throw Error('INCOMPLETE_COHORT');
       var end=Date.parse(data.generated_at),begin=end-24*3600000;
       var rows=data.rows.filter(function(p){return p.base==='codex/public-book-library';});
       var result=aggregate({from:new Date(begin).toISOString(),
         to:new Date(end).toISOString(),rows:rows,complete:data.coverage?.complete===true});
       if(!result)throw Error('INCOMPLETE_COHORT');
-      result.source='live';baseline=result;
+      result.source='live';baseline=result;cohortError=null;
       chartAndMetrics();updateComparison();fillPRs();
     }catch(e){
-      firstFoot.textContent='Текущая когорта недоступна: '+String(e.message||e)+
-        '. Архивный период обозначен отдельно, пропуски не считаются нулём.';
-    }
+      cohortError=String(e.message||e).slice(0,80);
+      chartAndMetrics();updateComparison();
+    }finally{cohortFetchBusy=false;}
   }
   async function readDetailed(button) {
     if (detailBusy) return;
@@ -918,10 +928,14 @@
   function start() {
     if (mounted || !document.body) return;
     build();chartAndMetrics();void readJourneyComparison();if(!STAGE_ONLY)void readHistorical();void readCurrentCohort();
-    if(!STAGE_ONLY){
-      void readQueue();
-      document.getElementById('refresh')?.addEventListener('click',()=>void readQueue());
-    }
+    if(!STAGE_ONLY)void readQueue();
+    document.getElementById('refresh')?.addEventListener('click',()=>{
+      void readCurrentCohort();if(!STAGE_ONLY)void readQueue();
+    });
+    document.addEventListener('visibilitychange',()=>{
+      if(!document.hidden&&Date.now()-cohortLastFetchAt>=5*60000)void readCurrentCohort();
+      else chartAndMetrics();
+    });
     observer=new MutationObserver(function (changes) {
       if (changes.some(function (m) { return !root.contains(m.target); }))
         schedule();

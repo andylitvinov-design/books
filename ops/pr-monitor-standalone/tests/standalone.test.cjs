@@ -23,3 +23,16 @@ test('cross-project links and public-only API bridge',()=>{
  assert.ok(cfg.rewrites.length>=20);
  assert.ok(cfg.rewrites.every(r=>!/(commander-|seo-auth|google-owner-auth)/.test(r.source)));
 });
+
+test('current production cohort uses no-store, visible freshness and explicit manual resume',()=>{
+ const js=read('pr-two-screen.js'), funnel=read('pr-error-funnel.js');
+ assert.match(js,/readCurrentCohort\(\)/);
+ assert.match(js,/cache:'no-store'/);
+ assert.match(js,/data\.coverage\?\.complete!==true/);
+ assert.match(js,/УСТАРЕВШИЙ СРЕЗ/);
+ assert.match(js,/visibilitychange/);
+ assert.match(js,/Production Created→Merged/);
+ assert.match(funnel,/CI_INBOX_HTTP_404/);
+ assert.match(funnel,/Приватный CI Inbox не подключён/);
+ assert.match(funnel,/holistic-house-agents-director\.vercel\.app\/commander-auth\.html/);
+});

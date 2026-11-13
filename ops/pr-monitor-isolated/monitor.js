@@ -2,7 +2,7 @@
 /* HH_PR_DASHBOARD_ISOLATED_V1: verified read-only evidence, no timers, no DOM watchers */
 (function(env){
 const REPO='https://github.com/andylitvinov-design/books';
-const URLS=Object.freeze({flow:'/api/ci-runner-trends',speed:'/api/pr-stage-timeline?hours=24',stages:'/api/pr-stage-overview',ci:'/api/ci-insights',queue:'/api/control-tower-stats',repair:'/api/pr-three-kpis'});
+const URLS=Object.freeze({flow:'/api/ci-runner-trends',speed:'/api/pr-stage-timeline?hours=24',stages:'/api/pr-stage-overview?hours=24&scope=production',ci:'/api/ci-insights',queue:'/api/control-tower-stats',repair:'/api/pr-three-kpis'});
 const SCHEMAS=Object.freeze({flow:'HH_CI_RUNNER_BINS_V2',speed:'HH_PR_STAGE_TIMELINE_V2',stages:'HH_PR_STAGE_OVERVIEW_V1',ci:'HH_CI_DEEP_MONITOR_V1',queue:'HH_CONTROL_DISPATCH_METRICS_V1',repair:'HH_PR_THREE_KPI_V1'});
 const safeNum=n=>typeof n==='number'&&Number.isFinite(n)&&n>=0;
 const safeInt=n=>Number.isSafeInteger(n)&&n>=0;
@@ -49,8 +49,8 @@ function drawFlow(d){const svg=el('chart-flow');const series=[d.rows.map(r=>r.cr
 function drawSpeed(d){const svg=el('chart-speed'),max=Math.max(1,...d.map(r=>r.count)),maxDelay=Math.max(1,...d.map(r=>r.median).filter(safeNum));frame(svg,max);d.forEach((r,i)=>{const h=107*r.count/max;sv(svg,'rect',{x:44+i*58-10,y:(145-h).toFixed(1),width:20,height:h.toFixed(1),rx:2,fill:colors[1],opacity:'.8'});sv(svg,'text',{x:44+i*58,y:168,fill:'#a6bdd4','font-size':10,'text-anchor':'middle'},hour(r.time));});plot(svg,d.map(r=>r.median),maxDelay,colors[0]);const measured=d.reduce((n,r)=>n+r.n,0);put('speed-info','Замерено '+number(measured)+' Merge; синяя линия = P50 по отдельной шкале минут.');}
 
 function renderStages(d){
- if(d?.schema!==SCHEMAS.stages||!d.stages||!d.population)throw Error('STAGE_SCHEMA');
- put('k-open',number(d.population.open));put('k-median',d.population.full?.n>0?delay(d.population.full.median):'—');put('k-median-note',d.population.full?.n>0?'Выборка '+number(d.population.full.n)+' PR · 24 ч':'Нет проверенного интервала');put('stages-period','24 часа · '+stamp(d.generated_at));
+ if(d?.schema!==SCHEMAS.stages||d.selection?.scope!=='production'||d.selection?.hours!==24||!d.stages||!d.population)throw Error('STAGE_PRODUCTION_SCHEMA');
+ put('k-open',number(d.population.open));put('k-median',d.population.full?.n>0?delay(d.population.full.median):'—');put('k-median-note',d.population.full?.n>0?'Production · n='+number(d.population.full.n)+' · среднее '+delay(d.population.full.mean):'Нет проверенного интервала');put('stages-period','Production · 24 часа · '+stamp(d.generated_at));
  const labels=[['prepare','Подготовка / HEAD'],['runner','Ожидание runner'],['ci','Core / Specialist CI'],['gate','Merge Gate'],['merge','Green → Merge']];
  const tbody=el('stage-rows');clear(tbody);
  for(const [key,label]of labels){
@@ -139,16 +139,21 @@ function fetchSafe(path,schema,timeoutMs=8500){
 async function refresh(){
  if(refreshing)return;refreshing=true;el('refresh').disabled=true;
  put('status','Обновляю проверенные данные PR Monitor…');el('state-dot').className='status-dot';
- let complete=0,errors=0,latest=null;
+ let complete=0,errors=0;const sourceTimes=[];
  const tasks=[['flow',d=>drawFlow(activity(d))],['speed',d=>drawSpeed(speed(d))],['stages',renderStages],['ci',renderCI],['queue',renderQueue],['repair',renderRepair]];
  const result=await Promise.allSettled(tasks.map(async([key,fn])=>{
   const data=await fetchSafe(URLS[key],SCHEMAS[key],key==='ci'?11000:8500);fn(data);
-  if(isTime(data.generated_at))latest=data.generated_at;complete++;
+  const at=key==='queue'?(data.checked_at||data.generated_at):data.generated_at;
+  sourceTimes.push(isTime(at)?Date.parse(at):null);complete++;
  }));
  for(let i=0;i<result.length;i++){if(result[i].status==='rejected'){errors++;const key=tasks[i][0];if(key==='flow')put('flow-info','Сейчас нет ответа данных PR/CI — нажмите «Обновить».');if(key==='speed')put('speed-info','Нет данных Merge — нажмите «Обновить».');if(key==='ci')put('ci-coverage','CI источник недоступен');}}
- put('status',errors?'Доступно '+complete+' из 6 источников. '+errors+' недоступны. Страница остаётся рабочей.':'Все 6 источников доступны. Данные обновлены.');
- if(latest)put('updated-at','Торонто: '+stamp(latest));
- el('state-dot').className='status-dot '+(complete>=4?'good':complete===0?'bad':'');
+ const oldest=sourceTimes.length?Math.min(...sourceTimes.map(t=>t===null?-Infinity:t)):null;
+ const age=oldest===null?Infinity:oldest===-Infinity?Infinity:Math.max(0,Date.now()-oldest);
+ const stale=age>75*60000,delayed=age>15*60000;
+ const freshness=stale?'Есть устаревший источник':delayed?'Некоторые источники обновляются с задержкой':'Источники свежие';
+ put('status',errors?'Доступно '+complete+' из 6 источников, '+errors+' недоступны. '+freshness+'.':freshness+' · доступно '+complete+' из 6 источников.');
+ put('updated-at',Number.isFinite(oldest)?'Самый ранний срез · Торонто: '+stamp(oldest):'Время одного из источников неизвестно');
+ el('state-dot').className='status-dot '+(complete===0?'bad':errors||delayed?'':'good');
  el('refresh').disabled=false;refreshing=false;updateRecommendations();
 }
 el('refresh').addEventListener('click',()=>{void refresh();});

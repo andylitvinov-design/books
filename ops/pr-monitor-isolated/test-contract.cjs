@@ -56,3 +56,13 @@ test('PR to Merge median card is populated from verified stage cohort',()=>{
  assert.match(js,/population\.full\?\.n>0/);
  assert.match(js,/put\('k-median-note'/);
 });
+
+test('production cohort and data freshness are explicit and comparable',()=>{
+ assert.match(URLS.stages,/hours=24&scope=production/);
+ assert.match(html,/Открыто из созданных · 24 ч/);
+ assert.match(html,/Production PR → Merge · P50/);
+ assert.match(js,/d\.selection\?\.scope!=='production'/);
+ assert.match(js,/среднее /);
+ assert.match(js,/Есть устаревший источник/);
+ assert.match(js,/Самый ранний срез/);
+});

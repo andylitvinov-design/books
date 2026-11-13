@@ -728,7 +728,10 @@
     }catch(err){
       if(String(err.message||err)==='OWNER_SESSION_REQUIRED'){
         message.replaceChildren('Для просмотра обработки ошибок войдите как владелец. ');
-        var login=el('a','','Войти в Commander');login.href='/commander-auth.html';message.append(login);
+        var login=el('a','','Войти в Commander');login.href='https://holistic-house-agents-director.vercel.app/commander-auth.html';message.append(login);
+      }else if(String(err.message||err)==='CI_INBOX_HTTP_404'){
+        message.textContent='Приватный CI Inbox не подключён к этому PR-домену (HTTP 404). '+
+          'Этапы назначения и коммитов не измерены; проверяйте их в Agents Director. Пропуск не равен нулю.';
       }else message.textContent='Достоверная статистика недоступна ('+
         String(err.message||err).slice(0,90)+'). Пропуск данных не равен нулю.';
     }finally{loading=false;refreshButton.disabled=false;select.disabled=false;}
