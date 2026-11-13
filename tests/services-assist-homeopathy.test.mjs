@@ -42,10 +42,16 @@ test('Assist inserts the panel only inside non-crisis suggestions', () => {
   assert.ok(crisis !== -1 && homeopathy > crisis && recommendations > homeopathy);
 });
 
-test('Assist reset locator is unambiguous even with three follow-up answer buttons', () => {
-  assert.match(assist, /data-assist-reset/);
+test('Assist topic selection and reset preserve ranked answers and the remedy panel', () => {
   const qa = read('scripts/verify-public-services-production.mjs');
-  assert.match(qa, /locator\('\[data-assist-reset\]'\)/);
-  assert.match(qa, /mytube: "mytube"/);
+  assert.match(assist, /data-assist-topic-suggestions/);
+  assert.match(assist, /data-assist-reset/);
+  assert.ok(qa.includes("const topics = assist.locator('[data-assist-topic-suggestions] button[aria-pressed]');"));
+  assert.ok(qa.includes("const reset = results.locator('button[data-assist-reset]');"));
+  assert.ok(qa.includes('rankAssistOffers("stress"'));
+  assert.ok(qa.includes('rankAssistOffers("work"'));
+  assert.ok(qa.includes('await expect(homeopathy.locator("a[data-assist-remedy]")).toHaveCount(3);'));
+  assert.ok(qa.includes('await expect(results.locator("[data-assist-homeopathy]")).toHaveCount(0);'));
+  assert.doesNotMatch(qa, /const stressRoutes\s*=/);
   assert.doesNotMatch(qa, /const reset = results\.locator\('button\[type="button"\]'\)/);
 });
