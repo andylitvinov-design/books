@@ -5273,6 +5273,10 @@
 .studio .therapyHeroPlayback{position:absolute;inset:0;z-index:3;opacity:0;pointer-events:none;background:#061b19;transition:opacity .16s ease}
 .studio .therapyHeroPlayback[data-playing="true"]{opacity:1;pointer-events:auto}
 .studio .therapyHeroVideo{display:block;width:100%;height:100%;object-fit:contain;background:#061b19}
+.studio .therapyHeroFallbackFrame{position:absolute;inset:0;z-index:2;display:block;width:100%;height:100%;border:0;background:#061b19}
+.studio .therapyHeroRecovery{position:absolute;z-index:3;top:5px;left:5px;display:flex;gap:4px;max-width:calc(100% - 100px)}
+.studio .therapyHeroRecovery button,.studio .therapyHeroRecovery a{display:inline-flex;align-items:center;justify-content:center;min-height:35px;max-width:110px;padding:4px 6px;border:1px solid #fff9;border-radius:8px;background:#123e35e8;color:#fff;font:750 clamp(9px,2.4vw,11px)/1.15 Arial,Helvetica,sans-serif;text-align:center;text-decoration:none;cursor:pointer}
+.studio .therapyHeroRecovery button:focus-visible,.studio .therapyHeroRecovery a:focus-visible{outline:3px solid #ffe18b;outline-offset:-3px}
 .studio .therapyHeroClose{position:absolute;z-index:4;top:5px;right:5px;display:flex;align-items:center;justify-content:center;min-height:44px;max-width:70%;padding:5px 8px;border:1px solid #ffffffb5;border-radius:9px;background:#124434f0;color:#fff;font:750 clamp(9px,2.4vw,11px)/1.15 Arial,Helvetica,sans-serif;cursor:pointer}
 .studio .therapyHeroError{position:absolute;z-index:5;inset:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:8px;border-radius:10px;background:#061b19e8;color:#fff;text-align:center;font:700 12px/1.25 Arial,Helvetica,sans-serif}
 .studio .therapyHeroError button,.studio .therapyHeroError a{padding:7px 10px;border:1px solid #fff;border-radius:8px;background:#fff;color:#124434;text-decoration:none;font:inherit;cursor:pointer}

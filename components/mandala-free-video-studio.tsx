@@ -2144,9 +2144,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // Spanish UI falls back to EN with an explicit English-audio label.
   const introVideo = locale==="ru" ? {
     src:"https://resource2.heygen.ai/movio/video/72e3e6f45c3664b0b8d75281b1b413a5/2e30e44294964059b57670860ee3828b/caption.mp4",
+    embed:"https://app.heygen.com/embeds/72e3e6f45c3664b0b8d75281b1b413a5",
     locale:"ru" as const,durationSeconds:96.862,
   } : {
     src:"https://resource2.heygen.ai/movio/video/8d998c778af3b563aa63233aa4fb4a06/89b101dc9dbb4fcea06aab3eb6ce5094/caption.mp4",
+    embed:"https://app.heygen.com/embeds/8d998c778af3b563aa63233aa4fb4a06",
     locale:"en" as const,durationSeconds:91.2457,
   };
   const introVideoRef=useRef<HTMLVideoElement>(null);
@@ -2157,17 +2159,34 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     stopMovieSound();premiumVideoRef.current?.pause();setPreviewPlaying(false);
     setStudioIntroOpen(false);setIntroDismissed(false);setIntroFailed(false);
     const media=introVideoRef.current;
-    if(media){media.currentTime=0;const task=media.play();if(task)void task.catch(()=>setIntroFailed(true));}
+    if(media){
+      // Safari can keep a failed HTMLMediaElement in an error state. Retry must
+      // explicitly reload it, not call play() on the same failed resource.
+      if(media.error||introFailed)media.load();
+      try{media.currentTime=0;}catch{/* No metadata yet; play still starts loading. */}
+      const task=media.play();
+      if(task)void task.catch(error=>{
+        // React cleanup/close can abort a pending play without a source failure.
+        if(error?.name!=="AbortError")setIntroFailed(true);
+      });
+    }
     setIntroPlaying(true);
   };
   const closeIntro=()=>{
     introVideoRef.current?.pause();
-    if(introVideoRef.current)introVideoRef.current.currentTime=0;
+    try{if(introVideoRef.current)introVideoRef.current.currentTime=0;}
+    catch{/* A failed iOS media element might not be seekable. */}
     setIntroPlaying(false);setIntroDismissed(true);setIntroFailed(false);
   };
   useEffect(()=>{
-    if(!introPlaying){const media=introVideoRef.current;if(media){media.pause();media.currentTime=0;}}
+    if(!introPlaying){const media=introVideoRef.current;if(media){
+      media.pause();try{media.currentTime=0;}catch{/* No metadata. */}
+    }}
   },[introPlaying]);
+  useEffect(()=>{
+    // Only the fallback player may produce audio after the native video fails.
+    if(introFailed)introVideoRef.current?.pause();
+  },[introFailed]);
   const [aspect, setAspect] = useState<Aspect>("landscape");
   const [quality, setQuality] = useState<Quality>("hd");
   const [duration, setDuration] = useState<(typeof durations)[number]>(30);
@@ -6965,25 +6984,33 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           data-intro-spoken-locale={introVideo.locale}>
           <div className={videoStyles.therapyHeroPlayback}
             data-video-therapy-intro={introPlaying?"playing":"ready"}
-            data-playing={introPlaying?"true":"false"}>
+            data-playing={introPlaying?"true":"false"}
+            data-intro-playback-source={introFailed?"heygen":"mp4"}>
             <video ref={introVideoRef} className={videoStyles.therapyHeroVideo}
               src={introVideo.src} controls={introPlaying} playsInline preload="none"
               poster="/images/video-studio-presentation-ru.jpg"
               aria-label={locale==="ru"?"Презентация Holistic House — русская озвучка":
                 locale==="es"?"Holistic House — presentación, audio en inglés":"Holistic House introduction — English audio"}
               tabIndex={introPlaying?0:-1} onError={()=>setIntroFailed(true)}
-              onLoadedData={()=>setIntroFailed(false)} onEnded={closeIntro}/>
+              onPlaying={()=>setIntroFailed(false)} onEnded={closeIntro}/>
             {introPlaying&&<button type="button" className={videoStyles.therapyHeroClose}
               data-video-therapy-intro-close onClick={closeIntro}>
               {locale==="ru"?"К моему видео":locale==="es"?"Volver a mi vídeo":"Back to my video"}
             </button>}
-            {introFailed&&<div className={videoStyles.therapyHeroError} role="alert">
-              <span>{locale==="ru"?"Не удалось загрузить видео":locale==="es"?"No se pudo cargar el vídeo":"Video could not be loaded"}</span>
-              <button type="button" onClick={playIntro}>{locale==="ru"?"Повторить":locale==="es"?"Reintentar":"Retry"}</button>
-              <a href={introVideo.src} target="_blank" rel="noopener noreferrer">
-                {locale==="ru"?"Открыть видео":"Open original video"}
-              </a>
-            </div>}
+            {introPlaying&&introFailed&&<>
+              <iframe className={videoStyles.therapyHeroFallbackFrame}
+                data-video-therapy-fallback="heygen"
+                src={introVideo.embed}
+                title={locale==="ru"?"Резервный проигрыватель русской презентации":locale==="es"?"Reproductor alternativo, audio en inglés":"Alternative player, English introduction"}
+                allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                allowFullScreen loading="eager"/>
+              <div className={videoStyles.therapyHeroRecovery} role="status">
+                <button type="button" onClick={playIntro}>{locale==="ru"?"Повторить MP4":locale==="es"?"Reintentar MP4":"Retry MP4"}</button>
+                <a href={introVideo.embed} target="_blank" rel="noopener noreferrer">
+                  {locale==="ru"?"Открыть отдельно":locale==="es"?"Abrir vídeo":"Open video"}
+                </a>
+              </div>
+            </>}
           </div>
           {!introPlaying&&<button type="button" className={videoStyles.therapyHeroLaunch}
             data-video-therapy-intro="ready" disabled={recording||preparing}
