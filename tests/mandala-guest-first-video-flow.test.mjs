@@ -131,3 +131,16 @@ test('failed Safari decode does not waste the free guest export',()=>{
   assert.match(journey,/status==="verifying"/)
   assert.match(journey,/Checking your video/)
 })
+
+test('WebKit real encoded Ready guest route keeps Save gate and decoded MP4 proof',()=>{
+  const browser=readFileSync(new URL('../scripts/verify-affirmation-voice-browser.mjs',import.meta.url),'utf8')
+  const ready=readFileSync(new URL('../components/mandala-video-ready.tsx',import.meta.url),'utf8')
+  assert.equal(browser.split('readyView.locator("[data-ready-save]")').length-1,2)
+  assert.doesNotMatch(browser,/data-ready-download/)
+  assert.match(ready,/onClick=\{\(\)=>chooseDelivery\("save"\)\}/)
+  assert.match(ready,/data-ready-save>/)
+  assert.match(ready,/if\(!signedIn\|\|intent==="telegram"\|\|intent==="house"\)/)
+  assert.match(browser,/data-ready-save-gate-signin/)
+  assert.match(browser,/GUEST_REAL_VIDEO_BLOB_UNAVAILABLE/)
+  assert.match(browser,/spawnSync\("ffprobe"/)
+})

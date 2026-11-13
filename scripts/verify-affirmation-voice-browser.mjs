@@ -1237,14 +1237,14 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
             .toHaveAttribute("data-video-result-mode","rendered");
           await expect(output).toBeHidden();
           await expect(page.locator("[data-video-save-direct]")).toBeHidden();
-          await expect(readyView.locator("[data-ready-download]")).toBeVisible();
+          await expect(readyView.locator("[data-ready-save]")).toBeVisible();
           // Read native decoded media, not just a Ready label or simulated file.
           await expect.poll(()=>page.locator("[data-mandala-video-preview]").evaluate(video=>
             video instanceof HTMLVideoElement&&video.readyState>=2&&
             video.videoWidth>0&&video.videoHeight>0&&!video.error),
             {timeout:20000}).toBe(true);
           // Guest Save/Download must invoke actual login gate, not a download.
-          await readyView.locator("[data-ready-download]").click();
+          await readyView.locator("[data-ready-save]").click();
           await expect(readyView.locator("[data-ready-save-gate]")).toBeVisible();
           await expect(readyView.locator("[data-ready-save-gate-signin]")).toBeVisible();
           await readyView.locator("[data-ready-save-close]").click();
