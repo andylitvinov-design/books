@@ -8,6 +8,7 @@ import { DaoHexagramLibrarySection } from "@/components/dao-hexagram-library-sec
 import type { PublicLocale } from "@/lib/public-locales";
 import { growthGuideFor } from "@/data/growth-guides";
 import { greekVideoSeries } from "@/data/academy/greek-video-series";
+import { freeMeditationVideos } from "@/data/academy/holistic-support-meditations";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
 import { academyDisplayTitle, mediaForRecord, preferredAcademyRecords, youtubeIdFromUrl } from "@/data/academy/catalog";
 import { VideoDiscovery } from "@/components/video-discovery";
@@ -404,9 +405,27 @@ export function buildPublicVideoDiscoveryItems(
       sourceLabel:"PsiMaster · архив",sourceGroup:series.logicalId,
       topicTags:discoveryTags[series.logicalId]||["practices"],
     })));
+  // These already-public ORIGINAL PsiMaster recordings are source-verified
+  // legacy YouTube embeds from the Academy manifest, not the independent
+  // candidate-only Supabase short-meditation table. Preserve original RU audio.
+  // Playback duration is not verified: never assert that these are under 10m.
+  // The "Online Energy-Practice Marathons" introduction is not a meditation.
+  const originalPsiMasterPractices:LibraryFeedItem[]=freeMeditationVideos("ru")
+    .filter(video=>video.id!=="95peObUizeE")
+    .map(video=>({
+      id:"psimaster-practice-"+video.id,kind:"video" as const,
+      title:video.title,description:video.description||"",
+      youtubeId:video.id,href:"https://www.youtube.com/watch?v="+video.id,
+      audioLanguage:"ru" as const,curation:"verified" as const,
+      sourceApproved:true,sourceLabel:"PsiMaster · архив",
+      sourceGroup:"psimaster-original-meditations",
+      contentType:video.id==="ZYGjw0PtvdM"?"energy_boost_practice":"soft_meditation",
+      topicTags:["energy","practices"],
+    }));
   // One canonical public index, de-duplicated by YouTube ID. Unknown, private,
   // draft and unapproved clips never gain publication rights from this merge.
   return buildPublishedVideoIndex([
+    ...originalPsiMasterPractices,
     ...siteIntroductions,
     ...seriesItems,
     ...approvedAcademyDiscoveryVideos(),
