@@ -235,3 +235,19 @@ test('My Coach speech is visible as text while recording and safely remains edit
   assert.match(css,/\.textComposer \.composer textarea/)
   assert.doesNotMatch(loop,/localStorage|sessionStorage|MediaRecorder|sendBeacon/)
 })
+
+test('approved live-session visual hierarchy keeps a real voice pipeline, readable transcript and functional mobile controls',()=>{
+  const ui=source('components/my-coach-live-dialogue.jsx')
+  const css=source('components/my-coach-live-dialogue.module.css')
+  for(const token of ['data-session-visual-v2','className={styles.heroSubtitle}',
+    'showCaptions&&','className={styles.captionsControl}','setShowCaptions(value=>!value)',
+    'className={styles.endControl}','className={styles.liveTranscript}','className={styles.voiceControls}',
+    'className={styles.textComposer} open','<details className={styles.quickGoals}>',
+    'onTurn={sendMessage}','onTranscript={setSpeechPreview}']) assert.ok(ui.includes(token),token)
+  for(const token of ['.heroSubtitle','.transcriptFeed','.sessionBottomNav{display:none}',
+    '.voiceCenter :global([data-my-coach-voice] button)','@media(max-width:350px)',
+    '@media(max-width:699px) and (max-height:680px)']) assert.ok(css.includes(token),token)
+  for(const term of ['Выбрать другого коуча','Elegir otro coach','Toggle subtitles','Завершить сессию','Terminar sesión'])
+    assert.ok(ui.includes(term),term)
+  assert.doesNotMatch(ui,/new MediaRecorder|localStorage\.setItem|sessionStorage\.setItem/)
+})
