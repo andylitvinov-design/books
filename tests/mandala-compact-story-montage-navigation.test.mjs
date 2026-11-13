@@ -122,3 +122,16 @@ test("real first-video Safari export uses fifth Montage advanced settings twice,
  assert.match(firstVideoSmoke,/readRealGuestVideo\(page,\{timeout:80000\}\)/);
  assert.match(firstVideoSmoke,/mediaTool\('ffmpeg'/);
 });
+
+test("physical WebKit Story quality tap commits fifth Montage without skipping media gates",()=>{
+ const browser=readFileSync(new URL("../scripts/benchmarking/verify-five-scene-stories-browser.mjs",import.meta.url),"utf8");
+ assert.match(studio,/onChooseQuality=\{sourceReady=>\{[\s\S]*?flushSync\(\(\)=>\{[\s\S]*?setMontagePanel\("promo"\)/);
+ assert.match(browser,/await quality\.tap\(\)/);
+ assert.match(browser,/tab\?\.getAttribute\('aria-pressed'\)==='true'/);
+ assert.match(browser,/panel\?\.getAttribute\('data-montage-panel'\)==='promo'/);
+ assert.match(browser,/STORY_QUALITY_PANEL_MUST_COMMIT/);
+ assert.match(browser,/STORY_MONTAGE_TRANSITION_STATE/);
+ assert.match(browser,/HH_STORIES_FIVE_SHOT_WEBKIT_PASS/);
+ assert.match(browser,/STORIES_H264_REQUIRED|STORIES_AAC_REQUIRED/);
+ assert.doesNotMatch(browser,/force:\s*true/);
+});

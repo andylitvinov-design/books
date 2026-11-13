@@ -8352,7 +8352,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 return false;
               }}
               onChooseQuality={sourceReady=>{
-                setMontagePanel("promo");
+                // Commit the user-selected fifth step in this real touch event.
+                // Source approval remains independent and cannot trigger billing.
+                flushSync(()=>{
+                  setActiveWorkspace("editor");
+                  setMontagePanel("promo");
+                });
                 setNotice(sourceReady?"":locale==="ru"?
                   "Раскадровка пока не применена. Проверьте исходные сцены в дополнительных настройках монтажа перед созданием.":
                   locale==="es"?"El guion visual aún no se ha aplicado. Revisa las escenas en las opciones avanzadas antes de crear el vídeo.":

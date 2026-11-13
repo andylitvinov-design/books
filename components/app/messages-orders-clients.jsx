@@ -2,7 +2,7 @@
 import {cloneElement,isValidElement,useCallback,useEffect,useMemo,useRef,useState} from 'react'
 import {useSearchParams} from 'next/navigation'
 import Link from 'next/link'
-import {ArrowLeft,ArrowRight,Bell,Clock3,Headphones,MessageCircle,PackageCheck,History,SquarePen,ShoppingBag,Leaf,Search,SlidersHorizontal,UsersRound,ChevronRight,Sparkles,Newspaper} from 'lucide-react'
+import {ArrowLeft,ArrowRight,Bell,Clock3,Headphones,MessageCircle,PackageCheck,History,SquarePen,ChevronDown,ShoppingBag,Leaf,Search,SlidersHorizontal,UsersRound,ChevronRight,Sparkles,Newspaper} from 'lucide-react'
 import PracticeRequestConversation from './practice-request-conversation'
 import MessengerAiWorkspace from './messenger-ai-workspace'
 import MessagesDailyBriefing from './messages-daily-briefing'
@@ -337,17 +337,6 @@ export default function MessagesOrdersClients({locale:routeLocale='en',children}
   )
   return <section ref={hubRef} className={styles.root} lang={locale} data-orders-clients-hub
     data-detail-open={detailMode||undefined} data-section={section}>
-    <div className={styles.languageBar} data-hh-messenger-language-switcher>
-      <span className={styles.languageLabel}>{locale==='ru'?'Язык':locale==='es'?'Idioma':'Language'}</span>
-      <div className={styles.languageOptions} role="group"
-        aria-label={locale==='ru'?'Язык мессенджера':locale==='es'?'Idioma del mensajero':'Messenger language'}>
-        {['en','ru','es'].map(language=><button key={language} type="button"
-          data-hh-messenger-language-option={language}
-          aria-label={language==='en'?'English':language==='ru'?'Русский':'Español'}
-          aria-pressed={locale===language} title={language==='en'?'English':language==='ru'?'Русский':'Español'}
-          onClick={()=>chooseLocale(language)}>{language.toUpperCase()}</button>)}
-      </div>
-    </div>
     <div className={styles.sections} role="tablist" aria-label={t.title} data-chat-top-tabs>
       <button type="button" role="tab" aria-controls="hh-ai-panel" aria-selected={section==='ai'}
         className={styles.aiTab} onClick={()=>chooseSection('ai')}>
@@ -375,22 +364,43 @@ export default function MessagesOrdersClients({locale:routeLocale='en',children}
       <div><h1>{locale==='ru'?'ИИ-ассистент':locale==='es'?'Asistente IA':'AI Assistant'}</h1>
         <p>{locale==='ru'?'Спросить · Исследовать · Учиться · Создавать':
           locale==='es'?'Preguntar · Explorar · Aprender · Crear':'Ask · Explore · Learn · Create'}</p></div>
-      <span className={styles.headerActions} data-hh-ai-assistant-actions>
+      <div className={styles.headerActions} data-hh-ai-assistant-actions>
+        <div className={styles.languagePicker} data-hh-messenger-language-switcher
+          role="group" aria-label={locale==='ru'?'Язык мессенджера':locale==='es'?'Idioma del mensajero':'Messenger language'}>
+          <div className={styles.languageOptions}>
+            {['en','ru','es'].map(language=><button key={language} type="button"
+              data-hh-messenger-language-option={language}
+              aria-label={language==='en'?'English':language==='ru'?'Русский':'Español'}
+              aria-pressed={locale===language}
+              title={language==='en'?'English':language==='ru'?'Русский':'Español'}
+              onClick={()=>chooseLocale(language)}>{language.toUpperCase()}</button>)}
+          </div>
+          <label className={styles.languageCompact}>
+            <span className={styles.visuallyHidden}>{locale==='ru'?'Язык':locale==='es'?'Idioma':'Language'}</span>
+            <select data-hh-messenger-language-select value={locale}
+              onChange={event=>chooseLocale(event.currentTarget.value)}>
+              <option value="en">EN</option>
+              <option value="ru">RU</option>
+              <option value="es">ES</option>
+            </select>
+            <ChevronDown size={15} aria-hidden="true"/>
+          </label>
+        </div>
         <button type="button" className={styles.notificationSettings}
           data-hh-ai-chat-history
           onClick={()=>{chooseSection('ai');window.dispatchEvent(new Event('hh:messenger-open-history'));}}
           aria-label={locale==='ru'?'История диалогов':locale==='es'?'Historial de conversaciones':'Conversation history'}
           title={locale==='ru'?'История':locale==='es'?'Historial':'History'}>
-          <History size={19} aria-hidden="true"/>
+          <History size={24} aria-hidden="true"/>
         </button>
         <button type="button" className={styles.refresh}
           data-hh-ai-new-chat
           onClick={()=>{chooseSection('ai');window.dispatchEvent(new Event('hh:messenger-new-chat'));}}
           aria-label={locale==='ru'?'Новый диалог':locale==='es'?'Nuevo chat':'New chat'}
           title={locale==='ru'?'Новый диалог':locale==='es'?'Nuevo chat':'New chat'}>
-          <SquarePen size={19} aria-hidden="true"/>
+          <SquarePen size={24} aria-hidden="true"/>
         </button>
-      </span>
+      </div>
     </header>
     <div id="hh-ai-panel" role="tabpanel" data-hh-messenger-ai hidden={section!=='ai'}>
       <MessengerAiWorkspace key={aiSession} locale={locale}

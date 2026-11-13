@@ -65,10 +65,34 @@ try{
  await storyTab.click();
  await page.locator('[data-video-montage-concept]').waitFor({state:'visible'});
  // Verify the approved one-screen Story CTA really selects fifth Montage.
- await page.locator('[data-video-story-select-quality]').click();
+ const quality=page.locator('[data-video-story-select-quality]');
+ // A real mobile WebKit touch must commit both the selected tab and its panel.
+ // A click returning before React commits is not evidence of navigation.
+ await quality.tap();
  const montageTab=page.locator('[data-video-montage-tab="promo"]');
+ try{
+   await page.waitForFunction(()=>{
+     const tab=document.querySelector('[data-video-montage-tab="promo"]');
+     const panel=document.querySelector('[data-video-basic-editor]');
+     return tab?.getAttribute('aria-pressed')==='true' &&
+       panel?.getAttribute('data-montage-panel')==='promo';
+   },undefined,{timeout:15000});
+ }catch(error){
+   // Safe structural telemetry only: no client text, media, URL or health data.
+   const state=await page.evaluate(()=>({
+     workspace:document.querySelector('[data-mandala-free-video]')?.getAttribute('data-active-workspace')||null,
+     panel:document.querySelector('[data-video-basic-editor]')?.getAttribute('data-montage-panel')||null,
+     activeTab:document.querySelector('[data-video-montage-tab][aria-pressed="true"]')?.getAttribute('data-video-montage-tab')||null,
+     qualityButtonVisible:Boolean(document.querySelector('[data-video-story-select-quality]')),
+     mediaUnready:Boolean(document.querySelector('[data-video-story-missing-relevant-media]'))
+   })).catch(()=>({status:'DOM_DIAGNOSTIC_UNAVAILABLE'}));
+   console.error('STORY_MONTAGE_TRANSITION_STATE '+JSON.stringify(state));
+   throw error;
+ }
  assert.equal(await montageTab.getAttribute('aria-pressed'),'true',
    'STORY_QUALITY_MUST_OPEN_MONTAGE');
+ assert.equal(await page.locator('[data-video-basic-editor]').getAttribute('data-montage-panel'),
+   'promo','STORY_QUALITY_PANEL_MUST_COMMIT');
  const advanced=page.locator('[data-video-stories-advanced]');
  await advanced.locator(':scope > summary').click();
  const format=advanced.locator('[data-video-stories-format]');
