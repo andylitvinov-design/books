@@ -1775,13 +1775,16 @@ test('BASE-owned Mandala WebKit list accepts 25-32 strict literal routes, never 
   const skip=(base,branch=out,changed=safe,current=base)=>optionalMandalaMacosSkip({
     base:new Map([[path,base]]),current:new Map([[path,current]])
   },branch,changed);
-  assert.equal(skip(original),true,'BASE 24-part contract remains valid');
-  assert.equal(skip(extended(1)),true,'25 static prefixes remain checkable');
-  assert.equal(skip(extended(8)),true,'32 static prefixes remain checkable');
-  assert.equal(skip(extended(9)),false,'33 prefixes exceed the fail-closed limit');
-  assert.equal(skip(extended(8),'fix/ci-webkit-budget-probe-7-check'),false,
+  const literalRoutes=guard.match(/(?:startsWith\(github\.head_ref, '[^']+'\)|github\.head_ref == '[^']+')/g)||[];
+  const toLimit=32-literalRoutes.length;
+  assert.ok(toLimit>=1 && toLimit<=8,'the reviewed BASE allowlist has 24-31 literal routes');
+  assert.equal(skip(original),true,'reviewed BASE literal routes remain checkable');
+  assert.equal(skip(extended(1)),true,'one additional literal prefix remains checkable');
+  assert.equal(skip(extended(toLimit)),true,'exactly 32 static predicates remain checkable');
+  assert.equal(skip(extended(toLimit+1)),false,'33 predicates fail closed');
+  assert.equal(skip(extended(toLimit),'fix/ci-webkit-budget-probe-'+(toLimit-1)+'-check'),false,
     'a matching WebKit branch must actually execute macOS');
-  assert.equal(skip(extended(8),out,['lib/mandala/audio-render.mjs']),false,
+  assert.equal(skip(extended(toLimit),out,['lib/mandala/audio-render.mjs']),false,
     'encoded audio source cannot skip macOS');
   assert.equal(skip(original,out,safe,extended(1)),false,
     'PR changing the trusted macOS guard cannot certify its own skip');

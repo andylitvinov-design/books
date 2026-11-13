@@ -5,11 +5,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, BookOpen, Heart, Leaf, Sparkles, Zap } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
+import { telegramServiceRequestUrl } from "@/lib/assist/telegram-business-request.mjs";
 import styles from "./assist-top-recommendations.module.css";
 
 type Direction = "forMe" | "health" | "relationships" | "energy" | "learning" | "spiritual";
 type Focus = "stress" | "relationships" | "energy" | "health" | "work" | "growth" | "general" | null;
-type Entry = "homeopathy" | "coaching" | "reiki" | "tests" | "review" | "constellations" | "mandala" | "opora" | "academy" | "mysteries" | "talisman" | "business";
+type Entry = "mytube" | "aiCoach" | "masters" | "homeopathy" | "coaching" | "reiki" | "tests" | "review" | "constellations" | "mandala" | "opora" | "academy" | "mysteries" | "talisman" | "business";
 const directions: Direction[] = ["forMe", "health", "relationships", "energy", "learning", "spiritual"];
 
 const entries: Record<Entry, { path: string; image: string; direction: Exclude<Direction,"forMe">; kind: "session" | "explore" }> = {
@@ -25,6 +26,9 @@ const entries: Record<Entry, { path: string; image: string; direction: Exclude<D
   mysteries: { path: "academy/mysteries", image: "/library/maya-mysteries/media/post-244-1.jpg", direction: "spiritual", kind: "explore" },
   talisman: { path: "holistic-support/mobile", image: "/academy/reiki-yggdrasil/source/advanced-runes.png", direction: "spiritual", kind: "explore" },
   business: { path: "services/business-consulting", image: "/images/holistic-house/andy-about.png", direction: "relationships", kind: "session" },
+  mytube: { path: "mytube", image: "/images/holistic-house/reiki-approved-sunrise-v3.webp", direction: "learning", kind: "explore" },
+  aiCoach: { path: "my-coach", image: "/images/holistic-house/course-start-heron.webp", direction: "relationships", kind: "explore" },
+  masters: { path: "masters", image: "/images/holistic-house/andy-about.png", direction: "relationships", kind: "explore" },
 };
 const shelves: Record<Direction, readonly [Entry,Entry,Entry]> = {
   forMe: ["homeopathy","coaching","reiki"],
@@ -52,7 +56,7 @@ const copy = {
     title: "Рекомендуемые услуги для вас", start: "Выберите проблему выше или опишите ваш запрос — рекомендации изменятся.", matched: "Подборка учитывает ваш запрос. Можно выбрать другое направление.",
     tabs: { forMe: "Для меня", health: "Здоровье", relationships: "Отношения", energy: "Энергия", learning: "Обучение", spiritual: "Духовный путь" },
     themes: "Направления рекомендаций", details: "Подробнее", request: "Заказать", explore: "Открыть", more: "Все сервисы Assist",
-    note: "«Заказать» открывает страницу заявки, а не подтверждённую запись или оплату. Символические методы не заменяют медицинскую помощь.",
+    note: "«Заказать» откроет чат @holistichouse с готовым текстом. Нажмите «Отправить» в Telegram: это не подтверждённая запись или оплата. Символические методы не заменяют медицинскую помощь.",
     cards: {
       homeopathy: ["Психогомеопатия","Авторский подход к исследованию состояния и переживаний.","Гомеопатия не имеет надёжных доказательств эффективности для лечения заболеваний. Перед выбором средства необходима консультация специалиста."],
       coaching: ["Коучинг / Терапия","Прояснить ситуацию и найти внутреннюю опору.","Личная работа с переживаниями и образами. Формат и условия встречи согласуются индивидуально."],
@@ -66,13 +70,16 @@ const copy = {
       mysteries: ["Древние мистерии","Мифы, традиции и архетипические курсы.","Учебные материалы о духовных традициях и символических практиках."],
       talisman: ["Талисманы","Исследуйте символы и личные смыслы.","Символический каталог Holistic Support, без обещания магического результата."],
       business: ["Бизнес-коучинг","Проясните рабочие цели и решения.","Личная консультация о задачах, ролях и выборе следующего шага."],
+      mytube: ["Видео MyTube","Короткие практики и видео по теме.","Смотрите опубликованные видео по вашему запросу."],
+      aiCoach: ["ИИ-коуч","Разговор с ИИ-помощником, не психотерапия.","Это ИИ для размышления, не специалист и не экстренная помощь."],
+      masters: ["Мастера","Выберите специалиста из опубликованного каталога.","Профили, подходы и доступные способы обращения."],
     },
   },
   en: {
     title: "Recommended services for you", start: "Choose an issue above or describe your situation to refine these suggestions.", matched: "Suggestions based on your request. You can explore other directions.",
     tabs: { forMe: "For me", health: "Health", relationships: "Relationships", energy: "Energy", learning: "Learning", spiritual: "Spiritual path" },
     themes: "Recommendation topics", details: "Details", request: "Request", explore: "Explore", more: "All Assist services",
-    note: "A request opens an enquiry page, not a confirmed booking or payment. Symbolic approaches do not replace medical care.",
+    note: "Request opens @holistichouse with a prepared message. Press Send in Telegram; this is not a confirmed booking or payment. Symbolic approaches do not replace medical care.",
     cards: {
       homeopathy: ["Psycho-homeopathy","Explore an author's approach to feelings and wellbeing.","Homeopathy lacks reliable evidence for treating health conditions. Consult a qualified professional before considering a remedy."],
       coaching: ["Coaching / Therapy","Clarify your situation and explore inner support.","Personal exploration of experiences and imagery. Session details are agreed individually."],
@@ -86,13 +93,16 @@ const copy = {
       mysteries: ["Ancient mysteries","Explore myths, traditions and archetypes.","Study materials on spiritual traditions and symbolic practice."],
       talisman: ["Talismans","Explore personal meanings and symbols.","A symbolic catalogue, without promises of magical outcomes."],
       business: ["Business coaching","Clarify work goals and decisions.","A personal discussion about challenges, roles and next steps."],
+      mytube: ["MyTube videos","Short practices and topic videos.","Browse published topic videos without a consultation."],
+      aiCoach: ["AI coach","An AI reflection assistant, not psychotherapy.","This is an AI conversation, not a human specialist or emergency help."],
+      masters: ["Practitioners","Browse published practitioner profiles.","Compare published specialties and request details."],
     },
   },
   es: {
     title: "Servicios recomendados para ti", start: "Elige un problema arriba o describe tu situación para adaptar las sugerencias.", matched: "Sugerencias basadas en tu consulta. Puedes explorar otras opciones.",
     tabs: { forMe: "Para mí", health: "Salud", relationships: "Relaciones", energy: "Energía", learning: "Aprendizaje", spiritual: "Camino espiritual" },
     themes: "Temas de recomendaciones", details: "Detalles", request: "Solicitar", explore: "Explorar", more: "Todos los servicios Assist",
-    note: "Solicitar abre una página de consulta, no una cita ni un pago confirmado. Los métodos simbólicos no sustituyen la atención médica.",
+    note: "Solicitar abre @holistichouse con un mensaje preparado. Pulsa Enviar en Telegram; no es una reserva ni un pago confirmado. Los métodos simbólicos no sustituyen la atención médica.",
     cards: {
       homeopathy: ["Psico-homeopatía","Conoce un enfoque de autor sobre experiencias y bienestar.","La homeopatía carece de pruebas fiables para tratar enfermedades. Consulta a un profesional antes de elegir un remedio."],
       coaching: ["Coaching / Terapia","Aclara tu situación y encuentra apoyo interior.","Exploración individual de experiencias e imágenes. Las condiciones se acuerdan antes de reservar."],
@@ -106,15 +116,29 @@ const copy = {
       mysteries: ["Misterios antiguos","Mitos, tradiciones y arquetipos.","Material educativo sobre tradiciones espirituales."],
       talisman: ["Talismanes","Símbolos y significados personales.","Un catálogo simbólico, sin promesas de resultados mágicos."],
       business: ["Coaching de negocios","Aclara objetivos y decisiones laborales.","Sesión sobre problemas prácticos, roles y próximos pasos."],
+      mytube: ["Vídeos MyTube","Prácticas cortas y vídeos por tema.","Explora vídeos publicados sobre tu consulta."],
+      aiCoach: ["Guía de IA","Asistente de IA para reflexionar, no psicoterapia.","No es un terapeuta humano ni un servicio de emergencia."],
+      masters: ["Profesionales","Explora perfiles publicados de especialistas.","Consulta sus áreas y condiciones antes de solicitar."],
     },
   },
 } as const;
 
-export function AssistTopRecommendations({ locale, focus }: { locale: PublicLocale; focus: Focus }) {
+const offerToEntry: Readonly<Record<string,Entry>> = {
+  tests:"tests",review:"review",opora:"opora",therapy:"coaching",
+  constellation:"constellations",business:"business",reiki:"reiki",
+  mandala:"mandala",talisman:"talisman",homeopathy:"homeopathy",
+  academy:"academy",mytube:"mytube",aiCoach:"aiCoach",masters:"masters",
+};
+export function AssistTopRecommendations({locale,focus,matchingIds,noMatchLabel}:{
+  locale:PublicLocale;focus:Focus;matchingIds?:readonly string[];noMatchLabel?:string;
+}) {
   const t = copy[locale];
   const [manuallySelected, setManuallySelected] = useState<Direction | null>(null);
   const active: Direction = manuallySelected ?? "forMe";
-  const ids = active === "forMe" && focus ? byFocus[focus] : shelves[active];
+  const fromMatcher=matchingIds?.flatMap(id=>offerToEntry[id]?[offerToEntry[id]]:[]);
+  const ids:readonly Entry[]=active==="forMe"&&fromMatcher!==undefined
+    ? [...new Set(fromMatcher)].slice(0,3)
+    : active==="forMe"&&focus?byFocus[focus]:shelves[active];
   return (
     <section className={styles.root} data-assist-best-three aria-labelledby="assist-best-three-title">
       <header className={styles.header}>
@@ -131,10 +155,11 @@ export function AssistTopRecommendations({ locale, focus }: { locale: PublicLoca
         })}
       </div>
       <div className={styles.list} data-assist-selected-direction={active}>
+        {ids.length===0?<p className={styles.empty} role="status">{noMatchLabel ?? t.start}</p>:null}
         {ids.map((id) => {
           const item = entries[id];
           const [name, short, extra] = t.cards[id];
-          return <article key={id} className={styles.card} data-assist-best-card={id}>
+          return <article key={id} className={styles.card} data-assist-best-card={id} data-assist-recommendation={id}>
             <div className={styles.thumbnail}>
               <Image src={item.image} alt="" fill unoptimized sizes="(max-width: 350px) 100px, (max-width: 760px) 145px, 180px" />
               <span className={styles.stamp} aria-hidden="true">✦</span>
@@ -148,8 +173,13 @@ export function AssistTopRecommendations({ locale, focus }: { locale: PublicLoca
                   <summary>{t.details}</summary>
                   <p>{extra}</p>
                 </details>
-                <Link className={styles.cta} href={"/" + locale + "/" + item.path} prefetch={false}
-                  data-assist-best-action={id}>{item.kind==="session" ? t.request : t.explore}<ArrowRight size={17} aria-hidden="true"/></Link>
+                {item.kind==="session"
+                  ? <a className={styles.cta} href={telegramServiceRequestUrl(id,locale) || "#"}
+                      target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer"
+                      aria-label={t.request + ": " + name + " — Telegram"}
+                      data-assist-best-action={id}>{t.request}<ArrowRight size={17} aria-hidden="true"/></a>
+                  : <Link className={styles.cta} href={"/" + locale + "/" + item.path} prefetch={false}
+                      data-assist-best-action={id}>{t.explore}<ArrowRight size={17} aria-hidden="true"/></Link>}
               </div>
             </div>
           </article>;

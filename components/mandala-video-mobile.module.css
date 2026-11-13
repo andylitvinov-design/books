@@ -5570,3 +5570,8 @@
 .studio[data-active-workspace="ready"] .quickBuilder>[data-video-result]:not([hidden])>video{
  display:block!important;width:2px!important;height:2px!important;
  min-width:2px!important;min-height:2px!important;margin:0!important}
+
+/* Ready keeps the 2px native video decoder alive, but legacy Result controls
+   must be display-hidden. Opacity:0 + inert alone are still Playwright-visible. */
+.studio[data-active-workspace="ready"] .quickBuilder>[data-video-result]:not([hidden]) [data-mandala-video-download],
+.studio[data-active-workspace="ready"] .quickBuilder>[data-video-result]:not([hidden]) [data-video-save-direct]{display:none!important}

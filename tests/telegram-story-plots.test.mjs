@@ -7,9 +7,9 @@ import {
   resolveTelegramStoryPlot,telegramStoryPlotCounts,
 } from '../lib/mandala/telegram-story-plots.mjs';
 
-test('Telegram plots reuse canonical 4x4x4x4 tree with four editorial variants each',()=>{
+test('Telegram plots reuse canonical 4x4x4x4 tree with six editorial variants each',()=>{
   assert.deepEqual(telegramStoryPlotCounts(),{
-    categories:4,subcategories:16,topics:64,scenarios:256,plots:1024,
+    categories:4,subcategories:16,topics:64,scenarios:256,plots:1536,
   });
   for(const locale of ['ru','en','es']){
     const ids=new Set();
@@ -18,7 +18,7 @@ test('Telegram plots reuse canonical 4x4x4x4 tree with four editorial variants e
         for(const topic of listTelegramStoryTopics(category.id,subcategory.id,locale)){
           for(const scenario of listTelegramStoryScenarios(topic.id,locale)){
             const plots=listTelegramStoryPlots(scenario.id,locale);
-            assert.equal(plots.length,4);
+            assert.equal(plots.length,6);
             for(const plot of plots){
               assert.equal(plot.categoryId,category.id);
               assert.equal(plot.subcategoryId,subcategory.id);
@@ -37,7 +37,7 @@ test('Telegram plots reuse canonical 4x4x4x4 tree with four editorial variants e
         }
       }
     }
-    assert.equal(ids.size,1024);
+    assert.equal(ids.size,1536);
   }
 });
 test('Invalid IDs never resolve to footage or another scenario',()=>{
@@ -56,9 +56,9 @@ test('Telegram plot IDs, labels, synopsis and all four story beats equal the liv
      for(const scenario of listTelegramStoryScenarios(topic.id,lang)){
       const site=await listMyTubePlots(scenario.id,lang);
       const bot=listTelegramStoryPlots(scenario.id,lang);
-      assert.equal(site.length,4,scenario.id);
+      assert.equal(site.length,6,scenario.id);
       assert.deepEqual(bot.map(p=>p.id),site.map(p=>p.id));
-      for(let i=0;i<4;i++){
+      for(let i=0;i<6;i++){
        assert.equal(bot[i].label,site[i].label);
        assert.equal(bot[i].synopsis,site[i].synopsis);
        assert.equal(bot[i].plotMode,site[i].plotMode);
@@ -75,5 +75,5 @@ test('Telegram plot IDs, labels, synopsis and all four story beats equal the liv
   }
  }
  assert.equal(compared,256*3);
- assert.equal(languageVariants,1024*3);
+ assert.equal(languageVariants,1536*3);
 });
