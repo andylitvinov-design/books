@@ -13,15 +13,15 @@ const topics = taxonomy.categories.flatMap((category) =>
     category, subcategory, topic,
   }))));
 
-test("MyTube has four separate plots inside every one of its 256 scenarios", async () => {
+test("MyTube has six separate plots inside every one of its 256 scenarios", async () => {
   const audit = await auditMyTubePlots();
   assert.equal(audit.ok, true, audit.errors.join("\n"));
   assert.deepEqual(audit.counts, {categories:4,scenarios:256,plots:1024,storyBeats:4096});
-  assert.equal(MYTUBE_PLOT_COUNTS.totalPlots, 1024);
-  assert.equal(MYTUBE_PLOT_COUNTS.plotsPerScenario, 4);
+  assert.equal(MYTUBE_PLOT_COUNTS.totalPlots, 1536);
+  assert.equal(MYTUBE_PLOT_COUNTS.plotsPerScenario, 6);
   for (const lang of LANGS) {
-    assert.equal(audit.uniquePlotTitles[lang], 1024);
-    assert.equal(audit.uniquePlotStoryboards[lang], 1024);
+    assert.equal(audit.uniquePlotTitles[lang], 1536);
+    assert.equal(audit.uniquePlotStoryboards[lang], 1536);
   }
 });
 
@@ -31,13 +31,13 @@ test("scenario -> four plots is stable, localized, and separate from scenario's 
     const original = listMyTubeScenarios(topic.id, "ru");
     assert.equal(original.length, 4);
     for (const scenario of topic.scenarios) {
-      assert.equal(getMyTubePlotCount(scenario.id), 4);
+      assert.equal(getMyTubePlotCount(scenario.id), 6);
       for (const lang of LANGS) {
         const plots = await listMyTubePlots(scenario.id, lang);
-        assert.equal(plots.length, 4, `${scenario.id}/${lang}`);
-        assert.deepEqual(plots.map((p) => p.id), [1,2,3,4].map((n) => `${scenario.id}-p${n}`));
+        assert.equal(plots.length, 6, `${scenario.id}/${lang}`);
+        assert.deepEqual(plots.map((p) => p.id), [1,2,3,4,5,6].map((n) => `${scenario.id}-p${n}`));
         assert.deepEqual(plots.map((p) => p.plotMode),
-          ["grounded_dilemma", "symbolic_quest", "relational_mirror", "branching_future"]);
+          ["grounded_dilemma", "symbolic_quest", "relational_mirror", "branching_future", "documentary_observation", "quiet_rehearsal"]);
         assert.equal(new Set(plots.map((p) => p.label)).size, 4);
         assert.equal(new Set(plots.map((p) => p.beats[0])).size, 4);
         for (const plot of plots) {
@@ -71,8 +71,8 @@ test("visual examples express four genuinely different plot mechanisms", async (
   for (const id of ["life-purpose-s1", "breakup-recovery-s2", "business-decisions-s3",
                     "burnout-s2", "panic-attacks-s1", "inner-child-s4"]) {
     const plots = await listMyTubePlots(id, "ru");
-    assert.equal(plots.length, 4);
-    assert.equal(new Set(plots.map((p) => p.plotMode)).size, 4);
+    assert.equal(plots.length, 6);
+    assert.equal(new Set(plots.map((p) => p.plotMode)).size, 6);
     assert.equal(new Set(plots.map((p) => p.synopsis)).size, 4);
     assert.ok(plots.some((p) => p.plotMode === "symbolic_quest"));
     assert.ok(plots.every((p) => !/гарантированное излечение|вылечит навсегда/i.test(p.synopsis)));
