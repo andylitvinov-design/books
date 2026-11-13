@@ -41,6 +41,30 @@ const {classifyRedCiError}=require('./ci-pr-red-ci-classifier.cjs');
 const {makeCoreTask,taskBody,taskStatus,taskLifecycle}=require('./ci-pr-error-task.cjs');
 const {isTrustedQualityFailureEvent,qualityEventMatchesPR}=require('./ci-pr-quality-event.cjs');
 
+
+/**
+ * A verified complete inventory is reusable even when only this Watchdog's
+ * deep-inspection API CALL budget was reached. It is not a GitHub rate limit:
+ * the dispatcher runs under its OWN smaller read/lease budget and re-verifies
+ * PR HEAD, worker status and exact-HEAD entitlement before every mutation.
+ * Never recover from an external rate reserve, GraphQL exhaustion, an
+ * incomplete inventory or an untrusted event-scope snapshot.
+ */
+function canShareCompleteWatchdogInventory(report) {
+ if(report?.inventoryComplete!==true||
+    report.inventoryScope!=='ALL_OPEN_PRS'||
+    !Number.isSafeInteger(report.open)||report.open<1||
+    !Number.isSafeInteger(report.production)||report.production<0||
+    report.production>report.open)return false;
+ if(report.apiRateLimited===false)return true;
+ return report.apiRateLimited===true &&
+   report.apiBudgetReason==='LOCAL_REQUEST_BUDGET' &&
+   Number.isSafeInteger(report.apiRequests) &&
+   report.apiRequests>0&&report.apiRequests<=MAX_API_CALLS &&
+   Number.isSafeInteger(report.apiRemaining) &&
+   report.apiRemaining>=2000;
+}
+
 /**
  * One GraphQL read obtains mergeability for all selected PRs instead of one
  * REST GET per PR. This uses the GITHUB_TOKEN GraphQL quota, not the owner PAT.
@@ -1410,7 +1434,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   summary.apiRateLimited=budget.exhausted;
   summary.apiRemaining=budget.remaining;
   summary.apiBudgetReason=budget.reason;
-  if(!eventFastPath&&!budget.exhausted&&summary.inventoryComplete&&directHandoffLocal){
+  if(!eventFastPath&&canShareCompleteWatchdogInventory(summary)&&directHandoffLocal){
     // Same-run memory only: no artifact, token, PR body or snapshot in logs.
     // The dispatcher still rechecks live HEAD/owner proof before mutations.
     const shared=all.map(pr=>{
@@ -1441,4 +1465,4 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   return summary;
 }
 
-module.exports = {eventOnlyPR,isTrustedQualityFailureEvent,qualityEventMatchesPR,classifyIndependentSpecialistChecks,run,selectCandidates,latestByName,gateIsGreen,verifiedRedSpecialist,needsFailedCoreCronBackstop,transientFailure,shouldRetryTransientCoreFailure,canRetryCi,canDispatchRepair,classifyMergeState,coreRunForCurrentPR,verifyCoreRunOnExactHead,bootstrapLegacyCore,hasActiveLease,buildLiveBatchQuery,normalizeLiveBatchPR,boundedRestFallback,classifyCoreFailureJobs,latestCompletedFailedGate,recordRepairHandoff,assessCronHealth,canRetireCiHint};
+module.exports = {eventOnlyPR,isTrustedQualityFailureEvent,qualityEventMatchesPR,classifyIndependentSpecialistChecks,run,selectCandidates,latestByName,gateIsGreen,verifiedRedSpecialist,needsFailedCoreCronBackstop,transientFailure,shouldRetryTransientCoreFailure,canRetryCi,canDispatchRepair,classifyMergeState,coreRunForCurrentPR,verifyCoreRunOnExactHead,bootstrapLegacyCore,hasActiveLease,buildLiveBatchQuery,normalizeLiveBatchPR,boundedRestFallback,classifyCoreFailureJobs,latestCompletedFailedGate,recordRepairHandoff,assessCronHealth,canRetireCiHint,canShareCompleteWatchdogInventory};

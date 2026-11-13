@@ -256,8 +256,16 @@ jobs:
             }
             // Reuse exactly this Watchdog's in-memory inventory. No second
             // all-open-PR read and no additional job, artifact or CI rerun.
-            if(!dryRun&&report?.inventoryComplete===true&&!report?.apiRateLimited&&
-               Array.isArray(report.prInventorySnapshot)){
+            // A *local* Watchdog inspection cap is not GitHub API exhaustion.
+            // The attached full inventory is reused once by the separately
+            // quota-guarded Dispatcher, after source HEAD/lease verification.
+            const sharingAllowed=!dryRun &&
+              require(process.env.GITHUB_WORKSPACE+
+                '/scripts/ci-pr-ten-minute-watchdog.cjs')
+                .canShareCompleteWatchdogInventory(report) &&
+              Array.isArray(report?.prInventorySnapshot) &&
+              report.prInventorySnapshot.length===report.open;
+            if(sharingAllowed){
               const {run:dispatch}=require(process.env.GITHUB_WORKSPACE+
                 '/scripts/ci-pr-queue-dispatcher.cjs');
               const routed=await dispatch({github,core,context,dryRun:false,
@@ -283,7 +291,7 @@ jobs:
                   String(error?.message||'unknown').slice(0,120));
               }
             }else core.info('HH_SNAPSHOT_HANDOFF_SKIPPED '+
-              (report?.apiRateLimited?'API_LIMITED':'NO_COMPLETE_SNAPSHOT_OR_DRY_RUN'));
+              (report?.apiRateLimited?'RATE_OR_INVENTORY_UNVERIFIED':'NO_COMPLETE_SNAPSHOT_OR_DRY_RUN'));
       - name: HH PM inbox using verified Github free secret (existing runner only)
         if: >-
           github.repository == 'andylitvinov-design/books' &&

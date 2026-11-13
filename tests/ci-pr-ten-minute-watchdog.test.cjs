@@ -2103,3 +2103,26 @@ test('queued non-cancellable 409 never calls force-cancel and only labels a jobl
  assert.equal(r.non_cancelable[0].code,'CANCEL_409_UNVERIFIED');
  assert.equal(r.cancel_attempts,1);
 });
+
+
+test('Watchdog local-only request budget may reuse a complete snapshot, never bypass GitHub rate reserve',()=>{
+ const {canShareCompleteWatchdogInventory:allowed}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+ const complete={inventoryComplete:true,inventoryScope:'ALL_OPEN_PRS',
+  open:115,production:110,apiRateLimited:true,
+  apiBudgetReason:'LOCAL_REQUEST_BUDGET',apiRequests:65,apiRemaining:4738};
+ assert.equal(allowed(complete),true,'the downstream Dispatcher has a separate protected quota');
+ assert.equal(allowed({...complete,apiRateLimited:false,apiBudgetReason:null}),true);
+ for(const bad of [
+   {...complete,apiBudgetReason:'GITHUB_RATE_RESERVE'},
+   {...complete,apiBudgetReason:'GRAPHQL_RATE_RESERVE'},
+   {...complete,apiBudgetReason:'SECONDARY_RATE_LIMIT'},
+   {...complete,inventoryComplete:false},
+   {...complete,inventoryScope:'VERIFIED_SINGLE_QUALITY_EVENT_PR'},
+   {...complete,open:null},
+   {...complete,production:116},
+   {...complete,apiRemaining:1500},
+   {...complete,apiRemaining:null},
+   {...complete,apiRequests:66},
+   {...complete,apiRateLimited:null}
+ ]) assert.equal(allowed(bad),false,JSON.stringify(bad));
+});
