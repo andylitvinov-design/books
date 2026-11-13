@@ -144,3 +144,48 @@
     left:7px;right:7px}
   .panel .actions button{font-size:11.5px}
 }
+
+/* Story-first mobile concept review: literary idea before hidden production details. */
+.directionChooser{display:grid;gap:10px;min-width:0;margin:0 0 14px}
+.directionEyebrow{display:flex;align-items:center;gap:5px;color:#20816a;
+  font:750 11.5px/1.3 Arial,Helvetica,sans-serif;letter-spacing:.015em}
+.directionChooser h4{margin:0;color:#173f34;font:800 19px/1.2 Arial,Helvetica,sans-serif}
+.directionChooser>p{margin:0;color:#60746a;font:500 13px/1.45 Arial,Helvetica,sans-serif}
+.directionGrid{display:grid;grid-template-columns:minmax(0,1fr);gap:9px}
+.directionOption{display:grid;gap:4px;text-align:left;min-width:0;width:100%;
+  padding:12px 14px;border:1px solid #d9e6da;border-radius:15px;
+  background:#fffdfa;color:#184a39;cursor:pointer;
+  box-shadow:0 2px 6px #17382f0b;transition:border-color .16s,background .16s}
+.directionOption[aria-pressed="true"]{background:linear-gradient(130deg,#e7f7ed,#f7fbf5);
+  border:2px solid #178765;padding:11px 13px;box-shadow:0 4px 14px #09745513}
+.directionOption:disabled{opacity:.55;cursor:not-allowed}
+.directionOptionTop{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.directionOptionTop strong{font:800 15px/1.3 Arial,Helvetica,sans-serif}
+.directionRadio{height:24px;width:24px;flex:0 0 24px;display:grid;place-items:center;
+  border-radius:50%;border:1px solid #b5d8c8;color:#fff}
+.directionOption[aria-pressed="true"] .directionRadio{background:#06886a;border-color:#06886a}
+.directionOption small{color:#29806a;font:650 11px/1.35 Arial,Helvetica,sans-serif}
+.directionIdea{color:#345347;font:500 13px/1.42 Arial,Helvetica,sans-serif;
+  overflow-wrap:anywhere}
+.conceptTitle{font:750 14px/1.35 Arial,Helvetica,sans-serif;color:#22785d}
+.parameters{display:block;overflow:hidden;border-radius:14px;border:1px solid #dbe6dc;
+  background:#f9fbf8;margin:14px 0 10px}
+.parameters summary{list-style:none;display:flex;align-items:center;
+  justify-content:space-between;gap:10px;min-height:48px;padding:12px 14px;
+  font:750 14px/1.35 Arial,Helvetica,sans-serif;color:#295e4d;cursor:pointer}
+.parameters summary::-webkit-details-marker{display:none}
+.parameters summary svg{transition:transform .15s}
+.parameters[open] summary svg{transform:rotate(180deg)}
+.parameters .parameterList{padding:0 10px 12px}
+.shotTitle{font-weight:800;color:#145e48}
+.shotAction{color:#315345}
+.shotEmotion{display:block;margin-top:4px;color:#74887e;font-size:11px}
+@media(min-width:600px){
+  .directionGrid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .directionOption{align-content:start}
+}
+@media(max-width:359px){
+ .directionOption{padding:11px}.directionOption[aria-pressed="true"]{padding:10px}
+ .directionOptionTop strong{font-size:14px}
+ .directionIdea{font-size:12.5px}
+}
