@@ -135,3 +135,21 @@ test('Living Coach reuses existing eight portraits and the onstart/onboundary sp
   }
   assert.doesNotMatch(avatar,/getUserMedia|MediaRecorder|fetch\(|localStorage|sessionStorage/)
 })
+
+test('mobile My Coach hero mouth remains visible when compact avatar is hidden', () => {
+  const hero=readFileSync(new URL('../components/my-coach-live-dialogue.module.css',import.meta.url),'utf8')
+  const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+  assert.ok(hero.includes('.sessionAvatar{display:none}'))
+  assert.ok(ui.includes('data-voice-phase={voiceState.phase}'))
+  assert.ok(ui.includes('data-session-visual-v2'))
+  assert.ok(hero.includes(".sessionHero[data-voice-phase='speaking'] .sessionPortrait[data-persona]::after"))
+  assert.ok(hero.includes('@media(max-width:699px) and (prefers-reduced-motion:no-preference)'))
+  assert.ok(hero.includes('aspect-ratio:328/456'))
+  assert.ok(hero.includes('animation:hh-hero-mouth-speaking'))
+  for (const persona of COACH_PERSONAS) {
+    const token=`data-persona=${persona.id}]{--hh-hero-mouth-image:url('/images/holistic-house/my-coach-motion/${persona.id}-still.webp');--hh-hero-mouth-y:`
+    const y=Number(hero.split(token)[1]?.split('%}')[0])
+    assert.ok(Number.isFinite(y)&&y>=55&&y<=59,`source lip region: ${persona.id} / ${y}`)
+  }
+  assert.doesNotMatch(hero,/getUserMedia|MediaRecorder|new WebSocket/)
+})
