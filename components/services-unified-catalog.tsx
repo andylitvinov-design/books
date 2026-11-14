@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { ArrowRight, BookOpen, BriefcaseBusiness, ChevronDown, Clapperboard, Compass, Flower2,
   GraduationCap, HandHeart, HeartHandshake, MonitorPlay, SlidersHorizontal, Sparkles,
@@ -82,6 +82,16 @@ const words = {
   },
 } as const;
 
+/** Existing Services deep links must open the content now that mobile panels collapse. */
+const panelFromHash: Record<string, ServicesPanelId> = {
+  consultation: "consultation",
+  "free-insights": "services",
+  solutions: "services",
+  "service-results": "services",
+  "method-videos": "mytube",
+  "meet-andrey": "about",
+};
+
 type CatalogContextValue = {
   locale: PublicLocale;
   expanded: ServicesPanelId | null;
@@ -91,6 +101,37 @@ const CatalogContext = createContext<CatalogContextValue | null>(null);
 
 export function ServicesCompactCatalog({ locale, children }: { locale: PublicLocale; children: ReactNode }) {
   const [expanded, setExpanded] = useState<ServicesPanelId | null>(null);
+  useEffect(() => {
+    let firstFrame = 0;
+    let secondFrame = 0;
+    const revealLinkedService = () => {
+      if (!window.matchMedia("(max-width: 760px)").matches) return;
+      const id = panelFromHash[window.location.hash.slice(1)];
+      if (!id) return;
+      setExpanded(id);
+      window.cancelAnimationFrame(firstFrame);
+      window.cancelAnimationFrame(secondFrame);
+      // Wait for React to reveal the panel before scrolling to a hidden anchor.
+      firstFrame = window.requestAnimationFrame(() => {
+        secondFrame = window.requestAnimationFrame(() => {
+          const panel = document.querySelector<HTMLElement>(
+            '[data-services-unified-panel="' + id + '"]'
+          );
+          panel?.scrollIntoView({
+            behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+            block: "start",
+          });
+        });
+      });
+    };
+    revealLinkedService();
+    window.addEventListener("hashchange", revealLinkedService);
+    return () => {
+      window.removeEventListener("hashchange", revealLinkedService);
+      window.cancelAnimationFrame(firstFrame);
+      window.cancelAnimationFrame(secondFrame);
+    };
+  }, []);
   return (
     <CatalogContext.Provider value={{ locale, expanded, toggle: id => setExpanded(value => value === id ? null : id) }}>
       <section className={styles.catalog} data-services-unified-catalog lang={locale} aria-labelledby="services-unified-heading">

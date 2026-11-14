@@ -47,3 +47,21 @@ test("mobile panels use accessible controls, desktop passthrough and real routes
   assert.match(css, /data-services-studio-card/);
   assert.match(css, /data-consultation-choice/);
 });
+
+test("existing public consultation and other deep links reveal the real mobile panel", () => {
+  const workspace = read("components/home-featured-workspace.tsx");
+  assert.match(workspace, /\/services#consultation/);
+  assert.match(page, /<PublicConsultationCta locale=\{locale as Locale\} id="consultation" serviceBooking wiseEnabled=\{wisePaymentsEnabled\(\)\} paypalPersonalEnabled=\{personalPayPalEnabled\(\)\} \/>/);
+  for (const [hash, panel] of [
+    ["consultation", "consultation"], ["free-insights", "services"],
+    ["solutions", "services"], ["method-videos", "mytube"],
+    ["meet-andrey", "about"],
+  ]) {
+    assert.ok(catalog.includes('' + JSON.stringify(hash).replace(/^"|"$/g, "") + ''),
+      "Missing public linked section: " + hash);
+    assert.ok(catalog.includes('"' + panel + '"'), "Missing panel: " + panel);
+  }
+  assert.match(catalog, /window\.addEventListener\("hashchange", revealLinkedService\)/);
+  assert.match(catalog, /panel\?\.scrollIntoView/);
+  assert.match(css, /scroll-margin-top:calc\(64px/);
+});

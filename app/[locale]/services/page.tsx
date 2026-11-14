@@ -93,8 +93,7 @@ export default async function ServicesPage({ params, searchParams }: PageProps) 
           <ServicesCompactPanel id="browse"><ServicesConversionHero locale={locale as Locale} /></ServicesCompactPanel>
           <ServicesCompactPanel id="reading"><SpiritualReadingEntry locale={locale as Locale} /></ServicesCompactPanel>
           <ServicesCompactPanel id="consultation">
-            <PublicConsultationCta locale={locale as Locale} id="consultation" serviceBooking
-              wiseEnabled={wisePaymentsEnabled()} paypalPersonalEnabled={personalPayPalEnabled()} />
+            <PublicConsultationCta locale={locale as Locale} id="consultation" serviceBooking wiseEnabled={wisePaymentsEnabled()} paypalPersonalEnabled={personalPayPalEnabled()} />
           </ServicesCompactPanel>
           <ServicesCompactPanel id="services"><ServicesStudioOffers locale={locale as Locale} splitExtras /></ServicesCompactPanel>
           <ServicesCompactPanel id="video"><ServicesVideoGenerationCard locale={locale as Locale} /></ServicesCompactPanel>

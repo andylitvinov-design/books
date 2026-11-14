@@ -59,37 +59,37 @@
 
   /* Re-enable every legacy section only inside its explicit user-opened panel.
      The existing source's mobile 'hide old cards' rules remain intact elsewhere. */
-  .content :global([data-assist-reiki-session]),
-  .content :global([data-assist-course-shelf]),
-  .content :global([data-assist-coach-therapist]),
-  .content :global([data-assist-video-generation]),
-  .content :global([data-assist-magical-help]),
-  .content :global([data-services-studio-free]),
-  .content :global([data-services-studio-paid]),
-  .content :global([data-services-meet]),
-  .content :global([data-personal-testimonials="services"]),
-  .content :global(#method-videos),
-  .content :global([data-services-directory-invitation]),
-  .content :global([data-service-lead-capture]),
-  .content :global(#consultation),
-  .content :global([data-services-showcase-hero]){
+  .catalog .content :global([data-assist-reiki-session]),
+  .catalog .content :global([data-assist-course-shelf]),
+  .catalog .content :global([data-assist-coach-therapist]),
+  .catalog .content :global([data-assist-video-generation]),
+  .catalog .content :global([data-assist-magical-help]),
+  .catalog .content :global([data-services-studio-free]),
+  .catalog .content :global([data-services-studio-paid]),
+  .catalog .content :global([data-services-meet]),
+  .catalog .content :global([data-personal-testimonials="services"]),
+  .catalog .content :global(#method-videos),
+  .catalog .content :global([data-services-directory-invitation]),
+  .catalog .content :global([data-service-lead-capture]),
+  .catalog .content :global(#consultation),
+  .catalog .content :global([data-services-showcase-hero]){
     display:block!important;width:100%!important;max-width:none!important;margin:0!important;box-shadow:none!important}
-  .content :global([data-services-studio-free][hidden]),
-  .content :global([data-services-studio-paid][hidden]){display:none!important}
-  .content :global([data-services-studio-paid] > header),
-  .content :global([data-services-studio-free] > header),
-  .content :global([data-services-studio-paid] > div:last-child){display:block!important}
-  .content :global([data-services-studio-card]:not([hidden])){display:grid!important}
-  .content :global([data-services-studio-card][hidden]){display:none!important}
-  .content :global([data-assist-course-shelf]),
-  .content :global([data-assist-reiki-session]),
-  .content :global([data-assist-magical-help]){padding:10px!important;border:none!important;border-radius:15px!important}
-  .content :global([data-assist-video-generation]){padding:10px!important;border:none!important;grid-column:auto}
-  .content :global([data-services-showcase-hero]){padding:0!important}
-  .content :global([data-services-studio-free]),
-  .content :global([data-services-studio-paid]){padding:0!important}
-  .content :global([data-services-studio-paid] h2),
-  .content :global([data-services-studio-free] h2){font-size:23px!important}
+  .catalog .content :global([data-services-studio-free][hidden]),
+  .catalog .content :global([data-services-studio-paid][hidden]){display:none!important}
+  .catalog .content :global([data-services-studio-paid] > header),
+  .catalog .content :global([data-services-studio-free] > header),
+  .catalog .content :global([data-services-studio-paid] > div:last-child){display:block!important}
+  .catalog .content :global([data-services-studio-card]:not([hidden])){display:grid!important}
+  .catalog .content :global([data-services-studio-card][hidden]){display:none!important}
+  .catalog .content :global([data-assist-course-shelf]),
+  .catalog .content :global([data-assist-reiki-session]),
+  .catalog .content :global([data-assist-magical-help]){padding:10px!important;border:none!important;border-radius:15px!important}
+  .catalog .content :global([data-assist-video-generation]){padding:10px!important;border:none!important;grid-column:auto}
+  .catalog .content :global([data-services-showcase-hero]){padding:0!important}
+  .catalog .content :global([data-services-studio-free]),
+  .catalog .content :global([data-services-studio-paid]){padding:0!important}
+  .catalog .content :global([data-services-studio-paid] h2),
+  .catalog .content :global([data-services-studio-free] h2){font-size:23px!important}
   .homeopathyLinks{display:grid;gap:8px}
   .homeopathyLinks a{display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:48px;padding:10px 13px;border:1px solid #d6e5db;border-radius:14px;color:#075a4c;background:#fffcf7;text-decoration:none;font:700 13px/1.25 Arial,Helvetica,sans-serif}
   .homeopathyLinks a svg{flex:none}
