@@ -234,11 +234,25 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
 }
 export type VoiceCompanion=ReturnType<typeof useVoiceCompanion>;
 
-export function VoiceCompanionControls({voice,locale,greeting,latestReply,onTranscript,onConversationTurn}:{
+export function VoiceCompanionControls({voice,locale,greeting,latestReply,onTranscript,onConversationTurn,privacyOnly=false}:{
  voice:VoiceCompanion;locale:PublicLocale;greeting:string;latestReply?:string;onTranscript:(text:string)=>void;
- onConversationTurn:(text:string)=>void;
+ onConversationTurn:(text:string)=>void;privacyOnly?:boolean;
 }){
  const t=voice.t;
+ // iHelp only requests consent. It does not expose browser voice choices.
+ if(privacyOnly)return <div data-hh-voice-companion data-hh-voice-permissions-only
+   aria-label={t.settings} style={{display:'grid',gap:9,padding:'8px 2px',minWidth:0}}>
+   <label style={{display:'flex',alignItems:'flex-start',gap:8,fontSize:13,overflowWrap:'anywhere'}}>
+    <input type="checkbox" checked={voice.playbackConsent}
+      onChange={e=>voice.setPlayback(e.target.checked)}/> {t.playConsent}
+   </label>
+   <label style={{display:'flex',alignItems:'flex-start',gap:8,fontSize:13,overflowWrap:'anywhere'}}>
+    <input type="checkbox" checked={voice.sttConsent}
+      onChange={e=>voice.setRecognitionConsent(e.target.checked)}/> {t.sttConsent}
+   </label>
+   {voice.notice&&<small role="status">{voice.notice}</small>}
+   <span hidden data-hh-voice-language={browserSpeechLanguage(voice.speechLocale)}/>
+ </div>;
  const controlStyle={minHeight:44,minWidth:44,border:"1px solid #E9DFD1",borderRadius:12,
    background:"#FFFCF7",color:"#143D3A",padding:"8px 12px"};
  return <div data-hh-voice-companion style={{display:'grid',gap:6,padding:'6px 0'}}>
