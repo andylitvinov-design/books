@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { SiteVideoPlayer } from "@/components/site-video-player";
+import { HomeYoutubeFacade } from "@/components/home-youtube-facade";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./personal-testimonials.module.css";
 
@@ -37,7 +37,7 @@ export function HomeTestimonialMore({
     items.map((item) => (
       <div className={styles.videoItem} key={item.id} data-testimonial-video-id={item.id}>
         {showLanguage ? <p className={styles.videoLanguageTag}>{item.language === "ru" ? "Русский · RU" : "English · EN"}</p> : null}
-        <SiteVideoPlayer
+        <HomeYoutubeFacade
           video={{ youtubeId: item.id, language: item.language, title: item.title }}
           locale={locale}
           compact
