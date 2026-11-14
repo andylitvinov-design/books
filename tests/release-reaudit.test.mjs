@@ -445,3 +445,18 @@ test('client landing locale pages use independent real browser pages and retain 
     "if (path === '/books/maya-tradition')"])
     assert.ok(verifier.includes(required), 'Do not skip original public/CSP/locale checks: ' + required);
 });
+
+test('private public-test discovery keeps the current unified seven-destination dock through real CSP back navigation', () => {
+  const verifier = read('scripts/verify-release-reaudit.mjs');
+  const first = verifier.slice(verifier.indexOf('const discoveryBottom ='), verifier.indexOf('const privateContext ='));
+  const back = verifier.slice(verifier.indexOf("historyPhase = 'back-to-private'"), verifier.indexOf("historyPhase = 'forward-to-public-home'"));
+  for (const scope of [first, back]) {
+    assert.ok(scope.includes("locator('[data-hh-unified-dock]')"), 'The real single shared dock must mount on private test discovery');
+    assert.ok(scope.includes("locator('[data-unified-dock-item]')).toHaveCount(7)"), 'All seven real dock links must remain present');
+    assert.ok(scope.includes("locator('[data-unified-dock-item=\"profile\"]')).toHaveAttribute('href', '/en/app/portrait')"), 'Profile still leads to the actual Cabinet');
+    assert.ok(scope.includes("locator('.mobile-bottom-navigation')).toHaveCount(0)"), 'No duplicate retired mobile bar');
+    assert.ok(!scope.includes("locator('.mobile-bottom-navigation')).toBeVisible()"), 'A retired bar cannot be required as the release condition');
+  }
+  assert.ok(verifier.includes("window.__cspViolations.includes('frame-src')"), 'Private media CSP denial remains a real browser gate');
+  assert.ok(verifier.includes('assert.deepEqual(unexpectedErrors, []'), 'Browser error failures remain enforced');
+});
