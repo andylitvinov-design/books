@@ -170,6 +170,28 @@ for(const browserType of [chromium,webkit]){
     assert.equal(aiGeometry.position,'fixed',key+' AI chat viewport pinned')
     assert.ok(aiGeometry.composerBottom<=aiGeometry.hubBottom+3,
       key+' visible composer '+JSON.stringify(aiGeometry))
+    // Both first-screen and ongoing chat use the same anchored plus menu.
+    // The portal must escape the clipped transcript on iPhone and remain
+    // inside the actual Safari visual viewport (also after keyboard resize).
+    const moreToggle=root.locator('#hh-ai-panel [data-hh-ai-more] summary').first()
+    await moreToggle.click()
+    const popup=page.locator('[data-hh-ai-composer-popup]')
+    await popup.waitFor({state:'visible',timeout:5000})
+    const popupBounds=await popup.evaluate(el=>{
+      const r=el.getBoundingClientRect(),v=window.visualViewport
+      return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,
+        vleft:v?.offsetLeft||0,vtop:v?.offsetTop||0,
+        vright:(v?.offsetLeft||0)+(v?.width||innerWidth),
+        vbottom:(v?.offsetTop||0)+(v?.height||innerHeight)}
+    })
+    assert.ok(popupBounds.left>=popupBounds.vleft-2&&
+      popupBounds.right<=popupBounds.vright+2&&
+      popupBounds.top>=popupBounds.vtop-2&&
+      popupBounds.bottom<=popupBounds.vbottom+2,
+      key+' plus popup stays on screen '+JSON.stringify(popupBounds))
+    if(width===390)await page.screenshot({path:dir+'/'+key+'-ai-plus.png',fullPage:false})
+    await page.keyboard.press('Escape')
+    assert.equal(await popup.count(),0,key+' Escape closes plus menu')
     const firstQuick=root.locator('[data-hh-ai-quick-action="video"]')
     await firstQuick.click()
     assert.ok((await aiComposer.inputValue()).length>20,key+' AI prompt prepared')

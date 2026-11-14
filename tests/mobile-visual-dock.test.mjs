@@ -101,3 +101,11 @@ test('signed visual dock helper has matching TypeScript declaration',()=>{
  assert.match(declaration,/export declare function visualDockBottomOffset\(input\?: VisualDockBottomOffsetInput\): number;/)
  assert.match(implementation,/export function visualDockBottomOffset\(/)
 });
+
+test('raised AI/Chat orb is visible outside the rounded iPhone dock, including Safari',()=>{
+  const css=read('components/unified-mobile-dock.module.css')
+  assert.match(css,/\.dock\{position:fixed;z-index:58;bottom:0/)
+  assert.match(css,/overflow:visible;box-sizing:border-box/)
+  assert.doesNotMatch(css,/backdrop-filter:blur\(16px\)/)
+  assert.match(css,/\.item\[data-unified-dock-item="ai"\] svg\{[\s\S]*?top:-38px/)
+})

@@ -125,6 +125,9 @@ test("Messenger hides big Voice strip and keeps the settings behind composer plu
  assert.match(chat,/data-hh-conversation-mic/);
  assert.match(chatCss,/\.composerMenu \.voiceSettings>summary/);
  assert.match(chatCss,/max-height:min\(65dvh,520px\);overflow-y:auto/);
+ assert.match(chat,/createPortal\(/);
+ assert.match(chat,/data-hh-ai-composer-popup/);
+ assert.match(chatCss,/\.composerMenu\{\s*position:fixed/);
 });
 
 test("EN RU ES, phone widths and syntax of edited React sources",()=>{
