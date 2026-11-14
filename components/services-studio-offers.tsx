@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Fragment } from "react";
 import { ServicesVideoGenerationCard } from "@/components/services-video-generation-card";
 import { ServicesCoursesShelf } from "@/components/services-courses-shelf";
+import { ServicesCoachTherapistMobile } from "@/components/services-coach-therapist-mobile";
 import { ArrowRight, ChevronDown, ClipboardCheck, ShieldCheck } from "lucide-react";
 
 import { ContactChannelChooser } from "@/components/contact-channel-chooser";
@@ -225,7 +226,7 @@ function ServiceCard({ offer, locale, index, hidden = false }: { offer: Offer; l
   );
 }
 
-export function ServicesStudioOffers({ locale }: { locale: PublicLocale }) {
+export function ServicesStudioOffers({ locale, splitExtras = false }: { locale: PublicLocale; splitExtras?: boolean }) {
   const { mode, topic } = useServicesExplorer();
   const t = text[locale];
   const core = coreServiceOffers(locale);
@@ -309,7 +310,7 @@ export function ServicesStudioOffers({ locale }: { locale: PublicLocale }) {
         <div className={styles.paidGrid}>
           {paid.map((offer, index) => <Fragment key={offer.id}>
     <ServiceCard offer={offer} locale={locale} index={index} hidden={!visible(offer.id)} />
-    {offer.id === "alchemy" && visible(offer.id) ? <ServicesVideoGenerationCard locale={locale} /> : null}
+    {!splitExtras && offer.id === "alchemy" && visible(offer.id) ? <ServicesVideoGenerationCard locale={locale} /> : null}
   </Fragment>)}
         </div>
         <div className={styles.paidFooter}>
@@ -317,7 +318,8 @@ export function ServicesStudioOffers({ locale }: { locale: PublicLocale }) {
           <p>{t.disclaimer}</p>
         </div>
       </section>
-      <ServicesCoursesShelf locale={locale} />
+      {!splitExtras ? <ServicesCoursesShelf locale={locale} /> : null}
+      {!splitExtras ? <ServicesCoachTherapistMobile locale={locale} /> : null}
     </>
   );
 }

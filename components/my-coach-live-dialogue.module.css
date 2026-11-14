@@ -326,3 +326,255 @@
   .root[data-session-visual-v2] .chooseCoach{font-size:10px;padding-inline:6px}
   .root[data-session-visual-v2] .transcriptFeed p{font-size:13px}
 }
+
+/* One-line dictation language correction, fits the existing mobile transcript. */
+.transcriptLanguage{margin-left:auto;max-width:104px;min-width:64px;min-height:30px;padding:3px 6px;border:1px solid #d5e5dd;border-radius:9px;background:#fbfefa;color:#226551;font-size:11px;line-height:1.3;font-weight:650;font-family:inherit;flex-shrink:0}
+.transcriptLanguage:focus-visible{outline:2px solid #16866c;outline-offset:2px}
+@media(max-width:390px){.transcriptLanguage{max-width:90px;font-size:10px}}
+
+.naturalVoiceRow{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;
+  padding:7px 12px;margin:0 2px 6px;border:1px solid #d5e7dc;
+  border-radius:13px;background:#f6faf6;color:#255f50;font-size:11px;line-height:1.35}
+.naturalVoiceRow label{display:inline-flex;align-items:center;gap:7px;font-weight:700}
+.naturalVoiceRow input{width:18px;height:18px;accent-color:#168467;flex-shrink:0}
+.naturalVoiceRow details{font-size:10px;color:#58766b}
+.naturalVoiceRow summary{cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.naturalVoiceRow details p{margin:7px 0 2px;max-width:52ch;line-height:1.45}
+.naturalVoiceRow :is(input,summary):focus-visible{outline:2px solid #168467;outline-offset:2px}
+
+/* Owner approved: one continuous mobile session (portrait -> mic -> transcript + composer).
+   Keep actual browser speech, language selection, replay, consent and no popup marketing. */
+.conversationPanel{display:grid;gap:10px;min-width:0;padding:13px 15px;border:1px solid #e1e9de;border-radius:25px;background:#fffdf9;box-shadow:0 7px 22px #2b4d3812}
+.conversationPanel .liveTranscript{min-width:0;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none}
+.conversationPanel .textComposer{min-width:0;padding:10px 0 0;border:0;border-top:1px solid #e9ece4;border-radius:0;background:transparent}
+.conversationPanel .transcriptFeed{max-height:min(36dvh,300px)}
+.quickGoals{width:min(calc(100% - 24px),900px);margin:0 auto}
+@media(max-width:699px){
+ .root[data-session-visual-v3]{height:auto;min-height:100dvh;max-height:none;overflow:visible;padding-bottom:calc(20px + env(safe-area-inset-bottom));gap:9px;overscroll-behavior:auto}
+ .root[data-session-visual-v3] .sessionScroll{display:contents}
+ .root[data-session-visual-v3] .sessionHero{height:clamp(268px,39dvh,360px);min-height:0;border-radius:30px;box-shadow:0 8px 25px #3b51361b}
+ .root[data-session-visual-v3] .sessionPortrait[data-persona]{background-size:auto 108%,cover;background-position:right center,center}
+ .root[data-session-visual-v3] .sessionHeroShade{background:linear-gradient(90deg,#102f25db 0%,#102d2580 41%,transparent 76%),linear-gradient(0deg,#0a261b56,transparent 65%)}
+ .root[data-session-visual-v3] .sessionHeroCopy{top:16px;left:16px;width:min(60%,230px);gap:5px}
+ .root[data-session-visual-v3] .sessionHeroCopy h1{font-size:clamp(38px,10vw,48px);line-height:1.08}
+ .root[data-session-visual-v3] .sessionHeroCopy>small{font-size:clamp(11px,3vw,13px);line-height:1.33}
+ .root[data-session-visual-v3] .sessionProgress{display:none}
+ .root[data-session-visual-v3] .voiceWorkspace{flex:none;display:flex;flex-direction:column;gap:10px;min-width:0;width:calc(100% - 24px)}
+ .root[data-session-visual-v3] .voiceControls{order:0;z-index:1;position:relative;min-height:107px;width:100%;margin:-34px auto 0;padding:10px 9px 8px;border:1px solid #ece6dc;border-radius:27px;background:#fffdf9;box-shadow:0 7px 25px #284a3714}
+ .root[data-session-visual-v3] .voiceCenter :global([data-my-coach-voice] button){width:92px;height:92px}
+ .root[data-session-visual-v3] .voiceCenter :global([data-my-coach-voice] button svg){width:36px;height:36px}
+ .root[data-session-visual-v3] .captionsControl,.root[data-session-visual-v3] .keyboardControl,.root[data-session-visual-v3] .replayControl,.root[data-session-visual-v3] .endControl{min-height:48px;max-width:57px;height:57px;border-radius:17px}
+ .root[data-session-visual-v3] .conversationPanel{order:1;width:100%;padding:12px 13px;border-radius:25px;box-shadow:0 6px 18px #28473510}
+ .root[data-session-visual-v3] .conversationPanel .transcriptHeading{gap:7px;flex-wrap:wrap;font-size:clamp(13px,3.5vw,15px)}
+ .root[data-session-visual-v3] .conversationPanel .transcriptFeed{min-height:90px;max-height:min(33dvh,285px);overflow-y:auto}
+ .root[data-session-visual-v3] .conversationPanel .textComposer{max-height:none;overflow:visible;padding:9px 0 0;border-radius:0}
+ .root[data-session-visual-v3] .conversationPanel .textComposer .composer textarea{min-height:53px;max-height:110px}
+ .root[data-session-visual-v3] .conversationPanel .transcriptFeed p{font-size:clamp(13px,3.5vw,15px);line-height:1.45}
+ .root[data-session-visual-v3] .quickGoals{width:calc(100% - 24px);display:block;border:1px solid #e4e9dd;border-radius:17px;background:#fffdf8;padding:0 11px}
+ .root[data-session-visual-v3] .sessionDisclosure{width:calc(100% - 36px);margin:2px auto 0;font-size:10px}
+ .root[data-session-visual-v3] .goalRow{flex:none;min-height:50px}
+ .root[data-session-visual-v3] .goalPrivacy{margin-bottom:2px}
+}
+@media(max-width:699px) and (max-height:680px){
+ .root[data-session-visual-v3] .sessionHero{height:clamp(238px,36dvh,280px);min-height:0}
+ .root[data-session-visual-v3] .conversationPanel .transcriptFeed{max-height:160px}
+}
+@media(max-width:350px){
+ .root[data-session-visual-v3] .sessionHero{height:250px}
+ .root[data-session-visual-v3] .voiceControls{gap:2px;padding-inline:4px}
+ .root[data-session-visual-v3] .voiceCenter :global([data-my-coach-voice] button){width:76px;height:76px}
+ .root[data-session-visual-v3] .captionsControl,.root[data-session-visual-v3] .keyboardControl,.root[data-session-visual-v3] .replayControl,.root[data-session-visual-v3] .endControl{max-width:48px}
+ .root[data-session-visual-v3] .sessionHeroCopy{width:61%}
+}
+
+/* The compact avatar is hidden on phones. Animate a feathered mouth layer
+   directly over the existing large 328x456 hero photo during real speech.
+   This is an approximation, not phoneme-accurate lip sync. */
+@media(max-width:699px) and (prefers-reduced-motion:no-preference){
+  .root[data-session-visual-v2] .sessionPortrait[data-persona=mira]{--hh-hero-mouth-image:url('/images/holistic-house/my-coach-motion/mira-still.webp');--hh-hero-mouth-y:57%}
+  .root[data-session-visual-v2] .sessionPortrait[data-persona=max]{--hh-hero-mouth-image:url('/images/holistic-house/my-coach-motion/max-still.webp');--hh-hero-mouth-y:58%}
+  .root[data-session-visual-v2] .sessionPortrait[data-persona=sofia]{--hh-hero-mouth-image:url('/images/holistic-house/my-coach-motion/sofia-still.webp');--hh-hero-mouth-y:56%}
+  .root[data-session-visual-v2] .sessionPortrait[data-persona=alex]{--hh-hero-mouth-image:url('/images/holistic-house/my-coach-motion/alex-still.webp');--hh-hero-mouth-y:58%}
+  .root[data-session-visual-v2] .sessionPortrait[data-persona=lea]{--hh-hero-mouth-image:url('/images/holistic-house/my-coach-motion/lea-still.webp');--hh-hero-mouth-y:57%}
+  .root[data-session-visual-v2] .sessionPortrait[data-persona=noah]{--hh-hero-mouth-image:url('/images/holistic-house/my-coach-motion/noah-still.webp');--hh-hero-mouth-y:57%}
+  .root[data-session-visual-v2] .sessionPortrait[data-persona=iris]{--hh-hero-mouth-image:url('/images/holistic-house/my-coach-motion/iris-still.webp');--hh-hero-mouth-y:57%}
+  .root[data-session-visual-v2] .sessionPortrait[data-persona=ray]{--hh-hero-mouth-image:url('/images/holistic-house/my-coach-motion/ray-still.webp');--hh-hero-mouth-y:58%}
+  .root[data-session-visual-v2] .sessionHero[data-voice-phase='speaking'] .sessionPortrait[data-persona]::after{
+    content:"";position:absolute;right:0;top:-9%;height:118%;aspect-ratio:328/456;
+    background-image:var(--hh-hero-mouth-image);background-position:center;
+    background-size:100% 100%;background-repeat:no-repeat;pointer-events:none;
+    transform-origin:50% var(--hh-hero-mouth-y,57%);
+    -webkit-mask-image:radial-gradient(ellipse 23% 7% at 50% var(--hh-hero-mouth-y,57%),#000 40%,transparent 95%);
+    mask-image:radial-gradient(ellipse 23% 7% at 50% var(--hh-hero-mouth-y,57%),#000 40%,transparent 95%);
+    animation:hh-hero-mouth-speaking .32s ease-in-out infinite alternate;
+  }
+  @keyframes hh-hero-mouth-speaking{from{transform:scaleY(1)}to{transform:scaleY(1.16)}}
+}
+
+
+/* iPhone voice-layout regression fix (Ray/Mira and every selected persona).
+   ASR text must live only in the transcript. State/error feedback is a bounded
+   overlay inside this card, never a sixth grid row or a narrow text column. */
+@media(max-width:699px){
+  .root[data-session-visual-v3] .voiceControls{
+    box-sizing:border-box;
+    width:100%;
+    max-width:100%;
+    min-width:0;
+    height:147px;
+    min-height:147px;
+    max-height:147px;
+    grid-template-rows:92px;
+    align-items:center;
+    padding:8px 6px 39px;
+    overflow:visible;
+  }
+  .root[data-session-visual-v3] .voiceCenter{
+    position:relative;
+    align-self:start;
+    height:92px;
+    min-height:0;
+    min-width:0;
+    max-width:100%;
+  }
+  .root[data-session-visual-v3] .voiceCenter :global([data-my-coach-voice]){
+    position:relative;
+    box-sizing:border-box;
+    display:flex;
+    flex-direction:column;
+    flex-wrap:nowrap;
+    justify-content:center;
+    align-items:center;
+    gap:0;
+    width:100%;
+    max-width:100%;
+    height:92px;
+    min-height:92px;
+    margin:0;
+    padding:0;
+    overflow:visible;
+  }
+  .root[data-session-visual-v3] .voiceCenter :global([data-my-coach-voice] .status),
+  .root[data-session-visual-v3] .voiceCenter :global([data-my-coach-voice] .note){
+    position:absolute;
+    top:calc(100% + 6px);
+    left:50%;
+    transform:translateX(-50%);
+    box-sizing:border-box;
+    max-width:min(330px,calc(100vw - 44px));
+    margin:0;
+    padding:0;
+    font-size:clamp(11px,3.3vw,13px);
+    line-height:1.25;
+    text-align:center;
+    overflow-wrap:anywhere;
+  }
+  .root[data-session-visual-v3] .voiceCenter :global([data-my-coach-voice] .status){
+    width:max-content;
+    white-space:nowrap;
+  }
+  .root[data-session-visual-v3] .voiceCenter :global([data-my-coach-voice] .note){
+    width:min(310px,calc(100vw - 46px));
+    max-height:34px;
+    overflow-y:auto;
+    scrollbar-width:thin;
+    white-space:normal;
+  }
+  .root[data-session-visual-v3] .conversationPanel{
+    box-sizing:border-box;
+    min-width:0;
+    max-width:100%;
+    overflow-wrap:anywhere;
+  }
+  .root[data-session-visual-v3] .conversationPanel .transcriptFeed{
+    min-width:0;
+    max-width:100%;
+    overflow-x:hidden;
+  }
+}
+
+
+/* iOS 27 speech-session fix: the conversation is a bounded scroll region.
+   Voice consent and text composer remain reachable; cloud/Fish options sit
+   after (not between) the transcript and composer. This does NOT trap the page. */
+@media(max-width:699px){
+ .root[data-session-visual-v3]{min-width:0;max-width:100%;overflow-x:clip}
+ .root[data-session-visual-v3] .voiceWorkspace{min-width:0;max-width:100%}
+ .root[data-session-visual-v3] .conversationPanel{
+   display:flex;
+   flex-direction:column;
+   max-height:min(38dvh,325px);
+   min-height:0;
+   overflow-y:auto;
+   overflow-x:hidden;
+   overscroll-behavior-y:contain;
+   scroll-padding-bottom:12px;
+   -webkit-overflow-scrolling:touch;
+ }
+ .root[data-session-visual-v3] .conversationPanel .liveTranscript{
+   display:flex;
+   flex:1 1 auto;
+   flex-direction:column;
+   min-height:112px;
+   overflow:hidden;
+ }
+ .root[data-session-visual-v3] .conversationPanel .transcriptHeading{flex:none}
+ .root[data-session-visual-v3] .conversationPanel .transcriptHeading >span[role=status]{display:none}
+ .root[data-session-visual-v3] .conversationPanel .transcriptFeed{
+   display:grid;
+   flex:1 1 auto;
+   align-content:start;
+   min-height:72px;
+   max-height:min(24dvh,190px);
+   overflow-y:auto;
+   overflow-x:hidden;
+   overscroll-behavior:contain;
+   scrollbar-width:thin;
+ }
+ .root[data-session-visual-v3] .conversationPanel .playbackNotice{order:1;flex:none}
+ .root[data-session-visual-v3] .conversationPanel .textComposer{
+   order:2;
+   flex:0 0 auto;
+   max-height:min(28dvh,200px);
+   overflow-y:auto;
+   overflow-x:hidden;
+   scrollbar-width:thin;
+   background:#fffdf9;
+ }
+ .root[data-session-visual-v3] .conversationPanel .naturalVoiceRow{
+   order:3;
+   flex:0 0 auto;
+   max-width:100%;
+   margin:0;
+   padding:7px 9px;
+   overflow-wrap:anywhere;
+ }
+ .root[data-session-visual-v3] .conversationPanel .naturalVoiceRow label{
+   min-width:0;
+   max-width:100%;
+ }
+}
+@media(max-width:699px) and (max-height:680px){
+ .root[data-session-visual-v3] .sessionHero{height:clamp(210px,33dvh,250px)}
+ .root[data-session-visual-v3] .conversationPanel{max-height:min(42dvh,288px)}
+ .root[data-session-visual-v3] .conversationPanel .transcriptFeed{max-height:130px}
+ .root[data-session-visual-v3] .conversationPanel .textComposer{max-height:150px}
+}
+
+/* Short, separately consented iPhone recording option. Never overlay the hero or mic. */
+.recordingModeRow{box-sizing:border-box;width:100%;max-width:100%;min-width:0;
+  padding:8px 12px;border:1px solid #cfe6dc;background:#f6faf7;
+  border-radius:15px;color:#225b4b;font-size:12px;line-height:1.4}
+.recordingModeRow summary{cursor:pointer;font-weight:750;font-size:12px}
+.recordingModeRow label{display:flex;gap:8px;align-items:flex-start;min-width:0;margin-top:7px;overflow-wrap:anywhere}
+.recordingModeRow input{accent-color:#14846c;width:18px;height:18px;flex:none}
+.recordingModeRow small{display:block;font-size:11px;color:#55776b;margin-top:5px}
+.recordingModeRow input:focus-visible,.recordingModeRow summary:focus-visible{outline:2px solid #0e8767;outline-offset:2px}
+@media(max-width:699px){.root[data-session-visual-v3] .recordingModeRow{order:1;margin:0}}
+/* Optional original wizard character voice: device-only, no external TTS transfer. */
+.wizardVoiceRow{display:grid;gap:4px;min-width:0;padding:8px 10px;border:1px solid #d8e7dc;border-radius:14px;background:#f5faf4;color:#215c4e;font-size:12px}
+.wizardVoiceRow label{display:flex;align-items:center;gap:9px;cursor:pointer;font-weight:700;line-height:1.35}
+.wizardVoiceRow input{width:18px;height:18px;flex:none;accent-color:#177b65}
+.wizardVoiceRow small{font-size:11px;line-height:1.35;color:#536f65}
+.wizardVoiceRow input:focus-visible{outline:2px solid #168467;outline-offset:2px}
+@media(max-width:699px){.root[data-session-visual-v3] .conversationPanel .wizardVoiceRow{order:4;flex:none;max-width:100%}}

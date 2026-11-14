@@ -20,10 +20,9 @@
 .action,.request :global([data-contact-order]){display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:55px;border:0;border-radius:999px;padding:11px 12px;background:linear-gradient(125deg,#318e8a,#005e58 70%,#003e3b);box-shadow:0 4px 9px rgba(0,81,79,.13);color:#fff!important;text-decoration:none;text-align:center;font:800 clamp(15px,2.9vw,20px)/1.25 Arial,sans-serif;cursor:pointer}
 .action svg,.request :global([data-contact-order]) svg{flex-shrink:0}
 .action:hover,.request :global([data-contact-order]):hover{filter:brightness(1.08)}
-.request{position:relative;width:100%;min-width:0}
+.request{grid-column:1/-1;position:static;width:100%;min-width:0;margin-top:9px}
 .request :global([data-contact-channel-chooser]){width:100%;min-width:0}
 .request :global([data-contact-order]>svg:first-child){display:none}
-.request :global([data-contact-channel-chooser]>div[id]){position:absolute;z-index:10;top:calc(100% + 7px);right:0;width:min(350px,calc(100vw - 34px));box-shadow:0 18px 36px #0b304033}
 .photoFaces{position:absolute;inset:auto 10px 15px;display:flex;align-items:center;justify-content:center}
 .face{display:grid;place-items:center;position:relative;overflow:hidden;width:55px;height:55px;border-radius:50%;margin-left:-8px;background:#f1e5d6;border:3px solid #fff;color:#b28d52;box-shadow:0 3px 12px #2e3d3740}
 .face img,.masterAvatar img{object-fit:cover}
@@ -70,3 +69,11 @@
 }
 @media(max-width:350px){.card{grid-template-columns:93px minmax(0,1fr);padding:7px}.photo{min-height:176px}.info{padding-left:9px}.info h2{font-size:18px}.action,.request :global([data-contact-order]){font-size:12px}.entry{gap:8px;padding:10px}.entryMark{flex-basis:38px;height:38px}.entryAction{font-size:11px}}
 @media(prefers-reduced-motion:reduce){.action,.entry{scroll-behavior:auto}}
+/* Compact Spiritual Reading entry on Services only; preserve the full reading page. */
+@media(max-width:760px){
+.entry{box-sizing:border-box;width:calc(100% - 24px);max-width:520px;min-height:72px;margin:14px auto;padding:10px 12px;gap:10px;border:1px solid #dfcbae;border-radius:22px;background:#fffcf7;box-shadow:0 5px 16px rgb(72 49 27 / 7%)}
+.entryMark{flex-basis:42px;width:42px;height:42px}
+.entryWords strong{font-size:19px}
+.entryWords small{font-size:12px}
+.entryAction{font-size:12px}
+}

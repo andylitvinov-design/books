@@ -134,7 +134,9 @@ test("one screenshot-1 style seven-button dock and protected old docks removed v
  assert.match(dock,/viewport\?\.addEventListener\("scroll", update/);
  assert.match(dock,/viewport\?\.removeEventListener\("scroll", update/);
  assert.match(dock,/hideForKeyboard/);
- assert.match(css,/min-height:52px/);
+ assert.match(css,/min-height:54px/);
+ assert.match(css,/min-height:94px/);
+ assert.match(css,/top:-38px;left:50%;transform:translateX\(-50%\)/);
  for(const former of ["data-support-mobile-bottom-nav","data-mandala-support-bottom-nav",
   ".hh-mobile-app-nav",".hh-practice-inner-dock","data-legacy-practice-bottom-nav",".mobile-bottom-navigation"])
   assert.ok(hide.includes(former),former);
@@ -243,7 +245,7 @@ test("Video Mandala uses a compact, public mobile header and Reiki filters canno
 });
 
 
-test("MyTube keeps all real directions in one row and expands true subcategories only on demand",()=>{
+test("MyTube keeps one direction row with real meditation collections below it",()=>{
  const page=read("app/[locale]/mytube/page.tsx");
  const style=read("app/[locale]/mytube/mytube.module.css");
  const discovery=read("components/video-discovery.tsx");
@@ -263,7 +265,10 @@ test("MyTube keeps all real directions in one row and expands true subcategories
  assert.match(css,/\.mytube \.mytubeCategoryRail\{[^}]*grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/);
  assert.doesNotMatch(css.slice(css.indexOf("/* MyTube-only compact five-choice editorial taxonomy.")),/overflow-x:auto/);
  assert.match(discovery,/data-mytube-language-control/);
- assert.match(discovery,/mytubeCategoryId!=="all"&&<div className=\{styles\.mytubeSubcategoryRail\}/);
+ assert.doesNotMatch(discovery,/mytubeCategoryId!=="all"&&<div className=\{styles\.mytubeSubcategoryRail\}/);
+ assert.match(discovery,/data-mytube-practice-collections/);
+ assert.match(discovery,/data-mytube-practice-collection=\{collection.id\}/);
+ assert.match(css,/\.mytube \.mytubeCollectionGrid\{[^}]*grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
  assert.match(css,/\.mytube \.compactMoreButton\{/);
  assert.match(discovery,/data-mytube-format-mode=\{mode\}/);
  assert.match(browser,/rail\.evaluate\(el=>el\.scrollWidth<=el\.clientWidth\+2\)/);

@@ -8,7 +8,10 @@ import {LibraryFeed, type LibraryFeedItem} from "@/components/library-feed";
 import type {PublicLocale} from "@/lib/public-locales";
 import {listMyTubeCategories,listMyTubeSubcategories,listMyTubeTopics,listMyTubeScenarios,getMyTubeTopic} from "@/lib/mandala/mytube-content-taxonomy.mjs";
 import {listMyTubeScenarioMotifs,listMyTubeStyles,videoMatchesMyTubeVisualFilter} from "@/lib/mandala/mytube-creative-choices.mjs";
-import {matchesMyTubeShelf,myTubeCourseInfo,listMyTubeCourseTypes,listMyTubeCourseTraditions,listMyTubeCourseSeries,sortMyTubeCourseLessons,sortMyTubeMasterPresentations} from "@/lib/video-discovery/mytube-shelves.mjs";
+import {matchesMyTubeShelf,sortMyTubeCourseLessons,sortMyTubeMasterPresentations} from "@/lib/video-discovery/mytube-shelves.mjs";
+import {MyTubeCoursePlaylists} from "@/components/mytube-course-playlists";
+import {MyTubeYoutubeContinuation} from "@/components/mytube-youtube-continuation";
+import {listMyTubePracticeCollections,matchesMyTubePracticeCollection} from "@/lib/video-discovery/mytube-practice-collections.mjs";
 import styles from "./video-discovery.module.css";
 
 type Order="for-you"|"series"|"newest";
@@ -19,7 +22,7 @@ const labels={
     title:"Видео для вашего развития",lead:"Выберите цель — мы подберём видео из проверенных публичных материалов, а не рекламной ленты.",
     goals:["Для меня","Спокойствие","Энергия","Отношения","Работа","Смысл","Практики"],
     areas:["Бизнес и деньги","Отношения","Энергия и здоровье","Развитие и смыслы"],
-    areaTitle:"Сфера жизни",focusTitle:"Что хотите развить?",all:"Любой вариант",advanced:"Дополнительные фильтры",refine:"Фильтры",collapse:"Скрыть фильтры",mytubeCategoryTitle:"Выберите направление",mytubeSubcategoryTitle:"Уточните потребность",mytubeTopicTitle:"Выберите конкретную тему",mytubeScenarioTitle:"Подходящий сценарий (предварительно)",mytubeAllScenarios:"Все сценарии",mytubeAny:"Все направления",mytubeAllSubcategories:"Все подкатегории",mytubeAllTopics:"Все темы",mytubeCategoryShort:"Категория",mytubeTopicShort:"Тема",mytubeCourses:"Курсы",mytubePractices:"Практики",mytubeMasters:"Мастера",mytubeVideos:"Видео",courseTypeLabel:"Тип курса",courseTraditionLabel:"Традиция",courseSeriesLabel:"Выберите курс",courseSelectType:"Выберите тип курса, чтобы открыть уроки.",courseSelectTradition:"Выберите традицию, чтобы открыть курсы.",courseNone:"Нет опубликованных курсов по выбранному направлению.",practiceNone:"Пока нет проверенных практик медитации длительностью до 15 минут.",masterNone:"Пока нет опубликованных видеопрезентаций мастеров.",courseTypes:{temple:"Храмовые традиции",reiki:"Рейки и энергия",psychology:"Психология",somatic:"Телесные практики",other:"Другие курсы"},courseTraditions:{greek:"Греческая традиция",egyptian:"Египетская традиция",maya:"Традиция майя",other:"Другие традиции"},
+    areaTitle:"Сфера жизни",focusTitle:"Что хотите развить?",all:"Любой вариант",advanced:"Дополнительные фильтры",refine:"Фильтры",collapse:"Скрыть фильтры",mytubeCategoryTitle:"Выберите направление",mytubeSubcategoryTitle:"Уточните потребность",mytubeTopicTitle:"Выберите конкретную тему",mytubeScenarioTitle:"Подходящий сценарий (предварительно)",mytubeAllScenarios:"Все сценарии",mytubeAny:"Все направления",mytubeAllSubcategories:"Все подкатегории",mytubeAllTopics:"Все темы",mytubeCategoryShort:"Категория",mytubeTopicShort:"Тема",mytubeCourses:"Курсы",mytubePractices:"Практики",mytubeMasters:"Мастера",mytubeVideos:"Видео",courseTypeLabel:"Тип курса",courseTraditionLabel:"Традиция",courseSeriesLabel:"Выберите курс",courseSelectType:"Выберите тип курса, чтобы открыть уроки.",courseSelectTradition:"Выберите традицию, чтобы открыть курсы.",courseNone:"Нет опубликованных курсов по выбранному направлению.",practiceNone:"Пока нет доступных опубликованных медитаций.",practiceCollectionsTitle:"Подборки медитаций",practiceFilteredNone:"В этой теме пока нет подходящих практик. Выберите другую подборку или «Все»." ,masterNone:"Пока нет опубликованных видеопрезентаций мастеров.",courseTypes:{temple:"Храмовые традиции",reiki:"Рейки и энергия",psychology:"Психология",somatic:"Телесные практики",other:"Другие курсы"},courseTraditions:{greek:"Греческая традиция",egyptian:"Египетская традиция",maya:"Традиция майя",other:"Другие традиции"},
     searchLabel:"Поиск видео",searchPlaceholder:"Поиск по названию, теме или автору…",
     sourceTitle:"Автор / источник",sourceAll:"Все источники",
     periodTitle:"Дата публикации",periodOptions:["За год","2020-е","2010-е","2000-е"],
@@ -39,7 +42,7 @@ const labels={
     title:"Videos for your growth",lead:"Choose a goal to discover reviewed public videos, not an advertising-driven feed.",
     goals:["For you","Calm","Energy","Relationships","Work","Meaning","Practices"],
     areas:["Business & Money","Relationships","Energy & Health","Personal Growth"],
-    areaTitle:"Life area",focusTitle:"What would you like to develop?",all:"Any",advanced:"More filters",refine:"Filters",collapse:"Hide filters",mytubeCategoryTitle:"Choose a direction",mytubeSubcategoryTitle:"Choose a need",mytubeTopicTitle:"Choose a specific topic",mytubeScenarioTitle:"Suggested story approach (provisional)",mytubeAllScenarios:"All scenarios",mytubeAny:"All directions",mytubeAllSubcategories:"All subcategories",mytubeAllTopics:"All topics",mytubeCategoryShort:"Category",mytubeTopicShort:"Topic",mytubeCourses:"Courses",mytubePractices:"Practices",mytubeMasters:"Masters",mytubeVideos:"Videos",courseTypeLabel:"Course type",courseTraditionLabel:"Tradition",courseSeriesLabel:"Choose a course",courseSelectType:"Choose a course type to see the lessons.",courseSelectTradition:"Choose a tradition to open its courses.",courseNone:"No published courses in this selection.",practiceNone:"No approved meditation practices under 15 minutes are available yet.",masterNone:"No published master introductions are available yet.",courseTypes:{temple:"Temple traditions",reiki:"Reiki & energy",psychology:"Psychology",somatic:"Body practices",other:"Other courses"},courseTraditions:{greek:"Greek tradition",egyptian:"Egyptian tradition",maya:"Maya tradition",other:"Other traditions"},
+    areaTitle:"Life area",focusTitle:"What would you like to develop?",all:"Any",advanced:"More filters",refine:"Filters",collapse:"Hide filters",mytubeCategoryTitle:"Choose a direction",mytubeSubcategoryTitle:"Choose a need",mytubeTopicTitle:"Choose a specific topic",mytubeScenarioTitle:"Suggested story approach (provisional)",mytubeAllScenarios:"All scenarios",mytubeAny:"All directions",mytubeAllSubcategories:"All subcategories",mytubeAllTopics:"All topics",mytubeCategoryShort:"Category",mytubeTopicShort:"Topic",mytubeCourses:"Courses",mytubePractices:"Practices",mytubeMasters:"Masters",mytubeVideos:"Videos",courseTypeLabel:"Course type",courseTraditionLabel:"Tradition",courseSeriesLabel:"Choose a course",courseSelectType:"Choose a course type to see the lessons.",courseSelectTradition:"Choose a tradition to open its courses.",courseNone:"No published courses in this selection.",practiceNone:"No published meditation practices available yet.",practiceCollectionsTitle:"Meditation collections",practiceFilteredNone:"No matching practices in this topic. Try another collection or All.",masterNone:"No published master introductions are available yet.",courseTypes:{temple:"Temple traditions",reiki:"Reiki & energy",psychology:"Psychology",somatic:"Body practices",other:"Other courses"},courseTraditions:{greek:"Greek tradition",egyptian:"Egyptian tradition",maya:"Maya tradition",other:"Other traditions"},
     searchLabel:"Search videos",searchPlaceholder:"Search by title, topic or creator…",
     sourceTitle:"Creator / source",sourceAll:"All sources",
     periodTitle:"Upload date",periodOptions:["Past year","2020s","2010s","2000s"],
@@ -59,7 +62,7 @@ const labels={
     title:"Vídeos para tu crecimiento",lead:"Elige un objetivo para descubrir vídeos públicos revisados, no una lista impulsada por anuncios.",
     goals:["Para mí","Calma","Energía","Relaciones","Trabajo","Sentido","Prácticas"],
     areas:["Negocios y dinero","Relaciones","Energía y salud","Crecimiento personal"],
-    areaTitle:"Área de vida",focusTitle:"¿Qué quieres desarrollar?",all:"Cualquiera",advanced:"Más filtros",refine:"Filtros",collapse:"Ocultar filtros",mytubeCategoryTitle:"Elige un área",mytubeSubcategoryTitle:"Elige una necesidad",mytubeTopicTitle:"Elige un tema concreto",mytubeScenarioTitle:"Enfoque narrativo sugerido (provisional)",mytubeAllScenarios:"Todos los guiones",mytubeAny:"Todas las áreas",mytubeAllSubcategories:"Todas las subcategorías",mytubeAllTopics:"Todos los temas",mytubeCategoryShort:"Categoría",mytubeTopicShort:"Tema",mytubeCourses:"Cursos",mytubePractices:"Prácticas",mytubeMasters:"Maestros",mytubeVideos:"Vídeos",courseTypeLabel:"Tipo de curso",courseTraditionLabel:"Tradición",courseSeriesLabel:"Elige un curso",courseSelectType:"Elige un tipo de curso para ver las lecciones.",courseSelectTradition:"Elige una tradición para ver los cursos.",courseNone:"No hay cursos publicados para esta selección.",practiceNone:"Todavía no hay meditaciones aprobadas de hasta 15 minutos.",masterNone:"Todavía no hay presentaciones publicadas de maestros.",courseTypes:{temple:"Tradiciones del templo",reiki:"Reiki y energía",psychology:"Psicología",somatic:"Prácticas corporales",other:"Otros cursos"},courseTraditions:{greek:"Tradición griega",egyptian:"Tradición egipcia",maya:"Tradición maya",other:"Otras tradiciones"},
+    areaTitle:"Área de vida",focusTitle:"¿Qué quieres desarrollar?",all:"Cualquiera",advanced:"Más filtros",refine:"Filtros",collapse:"Ocultar filtros",mytubeCategoryTitle:"Elige un área",mytubeSubcategoryTitle:"Elige una necesidad",mytubeTopicTitle:"Elige un tema concreto",mytubeScenarioTitle:"Enfoque narrativo sugerido (provisional)",mytubeAllScenarios:"Todos los guiones",mytubeAny:"Todas las áreas",mytubeAllSubcategories:"Todas las subcategorías",mytubeAllTopics:"Todos los temas",mytubeCategoryShort:"Categoría",mytubeTopicShort:"Tema",mytubeCourses:"Cursos",mytubePractices:"Prácticas",mytubeMasters:"Maestros",mytubeVideos:"Vídeos",courseTypeLabel:"Tipo de curso",courseTraditionLabel:"Tradición",courseSeriesLabel:"Elige un curso",courseSelectType:"Elige un tipo de curso para ver las lecciones.",courseSelectTradition:"Elige una tradición para ver los cursos.",courseNone:"No hay cursos publicados para esta selección.",practiceNone:"Todavía no hay meditaciones publicadas disponibles.",practiceCollectionsTitle:"Colecciones de meditación",practiceFilteredNone:"No hay prácticas de esta temática. Elige otra colección o Todas.",masterNone:"Todavía no hay presentaciones publicadas de maestros.",courseTypes:{temple:"Tradiciones del templo",reiki:"Reiki y energía",psychology:"Psicología",somatic:"Prácticas corporales",other:"Otros cursos"},courseTraditions:{greek:"Tradición griega",egyptian:"Tradición egipcia",maya:"Tradición maya",other:"Otras tradiciones"},
     searchLabel:"Buscar vídeos",searchPlaceholder:"Buscar por título, tema o autor…",
     sourceTitle:"Autor / fuente",sourceAll:"Todas las fuentes",
     periodTitle:"Fecha de publicación",periodOptions:["Último año","Década de 2020","Década de 2010","Década de 2000"],
@@ -101,17 +104,7 @@ export function VideoDiscovery({locale,videos,variant="library",subtitle}:{local
   const [period,setPeriod]=useState("all");
   const [durationRange,setDurationRange]=useState("all");
   const [formatMode,setFormatMode]=useState<MyTubeFormat>("practices");
-  const [courseType,setCourseType]=useState("all");
-  const [courseTradition,setCourseTradition]=useState("all");
-  const [courseSeriesId,setCourseSeriesId]=useState("all");
-  // The choices reflect only existing, verified public assets in the active audio language.
-  const courseVideos=useMemo(()=>videos.filter(item=>matchesMyTubeShelf(item,"courses")&&
-    (language==="all"||item.audioLanguage===language)),[videos,language]);
-  const courseTypes=listMyTubeCourseTypes(courseVideos);
-  const courseTraditions=courseType==="temple"?listMyTubeCourseTraditions(courseVideos,courseType):[];
-  const courseSeries=listMyTubeCourseSeries(courseVideos,courseType,courseTradition);
-  const activeCourseSeries=courseSeries.some(item=>item.id===courseSeriesId)
-    ?courseSeriesId:"all";
+  const [practiceCollectionId,setPracticeCollectionId]=useState("all");
   const [mytubeCategoryId,setMyTubeCategoryId]=useState("all");
   const [mytubeSubcategoryId,setMyTubeSubcategoryId]=useState("all");
   const [mytubeTopicId,setMyTubeTopicId]=useState("all");
@@ -164,12 +157,6 @@ export function VideoDiscovery({locale,videos,variant="library",subtitle}:{local
       // Editorial format uses published video intent; unknown length is eligible.
       if(variant==="mytube"){
         if(!matchesMyTubeShelf(item,formatMode))return false;
-        if(formatMode==="courses"){
-          const course=myTubeCourseInfo(item);
-          if(!course||(courseType!=="all"&&course.type!==courseType)||
-            (courseType==="temple"&&courseTradition!=="all"&&course.tradition!==courseTradition)||
-            (activeCourseSeries!=="all"&&course.id!==activeCourseSeries))return false;
-        }
       }
       if(needle && ![item.title,item.description,item.sourceLabel||"",item.author||"",item.seriesTitle||"",item.topicTags?.join(" ")||""]
           .join(" ").toLocaleLowerCase(locale).includes(needle))return false;
@@ -261,9 +248,17 @@ export function VideoDiscovery({locale,videos,variant="library",subtitle}:{local
       }
       return true;
     });
-  },[videos,search,source,period,durationRange,formatMode,courseType,courseTradition,activeCourseSeries,variant,locale,mytubeCategoryId,mytubeSubcategoryId,mytubeTopicId,mytubeScenarioId,mytubeMotifId,mytubeStyleId]);
+  },[videos,search,source,period,durationRange,formatMode,variant,locale,mytubeCategoryId,mytubeSubcategoryId,mytubeTopicId,mytubeScenarioId,mytubeMotifId,mytubeStyleId]);
+  const practiceCollections=useMemo(()=>formatMode==="practices"?
+    listMyTubePracticeCollections(sourceVideos,locale):[],[sourceVideos,locale,formatMode]);
+  const activePracticeCollection=practiceCollections.some(item=>item.id===practiceCollectionId)
+    ?practiceCollectionId:"all";
+  const collectionVideos=useMemo(()=>
+    variant==="mytube"&&formatMode==="practices"&&activePracticeCollection!=="all"
+      ?sourceVideos.filter(item=>matchesMyTubePracticeCollection(item,activePracticeCollection))
+      :sourceVideos,[sourceVideos,variant,formatMode,activePracticeCollection]);
   const ordered=useMemo(()=>{
-    const matches=rankDiscoveryVideos(sourceVideos,{
+    const matches=rankDiscoveryVideos(collectionVideos,{
       goal,area,contentType,direction,tradition,language,savedIds,hiddenIds,savedOnly,sort,
     });
     if(variant==="mytube"&&formatMode==="courses")return sortMyTubeCourseLessons(matches);
@@ -278,7 +273,7 @@ export function VideoDiscovery({locale,videos,variant="library",subtitle}:{local
     };
     return matches.map((item,index)=>({item,index,score:score(item)}))
       .sort((a,b)=>b.score-a.score||a.index-b.index).map(x=>x.item);
-  },[sourceVideos,goal,area,contentType,direction,tradition,language,savedIds,hiddenIds,savedOnly,sort,
+  },[collectionVideos,goal,area,contentType,direction,tradition,language,savedIds,hiddenIds,savedOnly,sort,
     variant,formatMode,mytubeCategoryId,mytubeSubcategoryId,mytubeTopicId,mytubeScenarioId]);
   // The compact bar displays the current 4-level editorial path without
   // occupying space needed by the video thumbnails. Only approved public
@@ -292,6 +287,13 @@ export function VideoDiscovery({locale,videos,variant="library",subtitle}:{local
     mytubeStyles.find(item=>item.id===mytubeStyleId)?.label,
   ].filter(Boolean).join(" › ")||t.mytubeAny;
   const index=VIDEO_GOALS.indexOf(goal);
+  // Show third-party recommendations only after the complete owned MyTube feed.
+  const youtubeContinuation=variant==="mytube"&&!savedOnly&&source==="all"&&!search.trim()
+    ?<MyTubeYoutubeContinuation
+      key={[formatMode,mytubeCategoryId,mytubeSubcategoryId,mytubeTopicId,activePracticeCollection,goal,language].join(":")}
+      locale={locale} shelf={formatMode} category={mytubeCategoryId}
+      collection={activePracticeCollection} goal={goal} language={language}
+      excludedIds={videos.map(item=>item.youtubeId||"").filter(Boolean)}/>:null;
   return <div className={[styles.wrapper,variant==="mytube"&&styles.mytube].filter(Boolean).join(" ")} data-hh-video-discovery="v1" data-discovery-variant={variant}>
     {variant==="mytube"&&<>
       <div className={styles.mytubeIntroBar}>
@@ -324,10 +326,10 @@ export function VideoDiscovery({locale,videos,variant="library",subtitle}:{local
         aria-label={t.formatTitle}>
         {(["practices","courses","masters","videos"] as const).map(mode=><button type="button" key={mode}
           data-mytube-format-mode={mode} aria-pressed={formatMode===mode}
-          onClick={()=>{setFormatMode(mode);setMyTubeCategoryId("all");setMyTubeSubcategoryId("all");
+          onClick={()=>{setFormatMode(mode);setPracticeCollectionId("all");setMyTubeCategoryId("all");setMyTubeSubcategoryId("all");
             setMyTubeTopicId("all");setMyTubeScenarioId("all");setMyTubeMotifId("all");
             setMyTubeStyleId("all");setContentType("all");setDirection("all");setTradition("all");
-            setDurationRange("all");setCourseType("all");setCourseTradition("all");setCourseSeriesId("all");
+            setDurationRange("all");
             // A filter from the previous shelf must not silently hide course episodes.
             setGoal("all");setArea("all");setLanguage("all");setSource("all");setPeriod("all");
             setSearch("");setSavedOnly(false);setHiddenIds([]);
@@ -339,79 +341,31 @@ export function VideoDiscovery({locale,videos,variant="library",subtitle}:{local
       <div className={styles.mytubeCategoryRail} data-mytube-category-row
         data-mytube-category-rail data-mytube-categories role="group" aria-label={t.mytubeCategoryTitle}>
         <button type="button" data-mytube-category="all" aria-pressed={mytubeCategoryId==="all"}
-          onClick={()=>{setMyTubeCategoryId("all");setMyTubeSubcategoryId("all");setMyTubeTopicId("all");setMyTubeScenarioId("all");setMyTubeMotifId("all");setMyTubeStyleId("all");}}>
+          onClick={()=>{setMyTubeCategoryId("all");setPracticeCollectionId("all");setMyTubeSubcategoryId("all");setMyTubeTopicId("all");setMyTubeScenarioId("all");setMyTubeMotifId("all");setMyTubeStyleId("all");}}>
           {t.durationAll}
         </button>
         {mytubeCategories.map(item=><button key={item.id} type="button"
           data-mytube-category={item.id} aria-pressed={mytubeCategoryId===item.id}
-          onClick={()=>{setMyTubeCategoryId(item.id);setMyTubeSubcategoryId("all");setMyTubeTopicId("all");setMyTubeScenarioId("all");setMyTubeMotifId("all");setMyTubeStyleId("all");}}>
+          onClick={()=>{setMyTubeCategoryId(item.id);setPracticeCollectionId("all");setMyTubeSubcategoryId("all");setMyTubeTopicId("all");setMyTubeScenarioId("all");setMyTubeMotifId("all");setMyTubeStyleId("all");}}>
           {item.label}
         </button>)}
       </div>
-      {mytubeCategoryId!=="all"&&<div className={styles.mytubeSubcategoryRail}
-        data-mytube-subcategory-row data-mytube-subcategory-rail data-mytube-subcategories
-        role="group" aria-label={t.mytubeSubcategoryTitle}>
-        <button type="button" data-mytube-subcategory="all" aria-pressed={mytubeSubcategoryId==="all"}
-          onClick={()=>{setMyTubeSubcategoryId("all");setMyTubeTopicId("all");setMyTubeScenarioId("all");setMyTubeMotifId("all");setMyTubeStyleId("all");}}>
-          {t.durationAll}
-        </button>
-        {mytubeSubcategories.map(item=><button key={item.id} type="button"
-          data-mytube-subcategory={item.id} aria-pressed={mytubeSubcategoryId===item.id}
-          title={item.chooseWhen}
-          onClick={()=>{setMyTubeSubcategoryId(item.id);setMyTubeTopicId("all");setMyTubeScenarioId("all");setMyTubeMotifId("all");setMyTubeStyleId("all");}}>
-          {item.label}
-        </button>)}
-      </div>}
-      </>}
-      {formatMode==="courses"&&<div className={styles.mytubeCourseNavigation}
-        data-mytube-course-navigation>
-        <div className={styles.mytubeCourseLevel}>
-          <strong>{t.courseTypeLabel}</strong>
-          <div className={styles.mytubeCourseChoices} role="group" aria-label={t.courseTypeLabel}>
-            <button type="button" data-mytube-course-type="all"
-              aria-pressed={courseType==="all"}
-              onClick={()=>{setCourseType("all");setCourseTradition("all");setCourseSeriesId("all");}}>
-              {t.durationAll}
-            </button>
-            {courseTypes.map(type=><button key={type} type="button"
-              data-mytube-course-type={type} aria-pressed={courseType===type}
-              onClick={()=>{setCourseType(type);setCourseTradition("all");setCourseSeriesId("all");}}>
-              {t.courseTypes[type as keyof typeof t.courseTypes]}
-            </button>)}
-          </div>
+      {practiceCollections.length>0&&<section className={styles.mytubePracticeCollections}
+        data-mytube-practice-collections aria-label={t.practiceCollectionsTitle}>
+        <strong className={styles.mytubeCollectionHeading}>{t.practiceCollectionsTitle}</strong>
+        <div className={styles.mytubeCollectionGrid} role="group" aria-label={t.practiceCollectionsTitle}>
+          {practiceCollections.map(collection=><button type="button" key={collection.id}
+            data-mytube-practice-collection={collection.id}
+            aria-pressed={activePracticeCollection===collection.id}
+            onClick={()=>setPracticeCollectionId(value=>value===collection.id?"all":collection.id)}>
+            <span className={styles.mytubeCollectionIcon} aria-hidden="true">{collection.icon}</span>
+            <span className={styles.mytubeCollectionLabel}>{collection.label}</span>
+            <span className={styles.mytubeCollectionCount}>{collection.count}</span>
+          </button>)}
         </div>
-        {courseType==="temple"&&<div className={styles.mytubeCourseLevel}>
-          <strong>{t.courseTraditionLabel}</strong>
-          <div className={styles.mytubeCourseChoices} role="group" aria-label={t.courseTraditionLabel}>
-            <button type="button" data-mytube-course-tradition="all"
-              aria-pressed={courseTradition==="all"}
-              onClick={()=>{setCourseTradition("all");setCourseSeriesId("all");}}>
-              {t.durationAll}
-            </button>
-            {courseTraditions.map(traditionId=><button key={traditionId} type="button"
-              data-mytube-course-tradition={traditionId}
-              aria-pressed={courseTradition===traditionId}
-              onClick={()=>{setCourseTradition(traditionId);setCourseSeriesId("all");}}>
-              {t.courseTraditions[traditionId as keyof typeof t.courseTraditions]}
-            </button>)}
-          </div>
-        </div>}
-        {courseSeries.length>0&&<div className={styles.mytubeCourseLevel}>
-          <strong>{t.courseSeriesLabel}</strong>
-          <div className={styles.mytubeCourseChoices} role="group" aria-label={t.courseSeriesLabel}>
-            <button type="button" data-mytube-course-series="all"
-              aria-pressed={activeCourseSeries==="all"} onClick={()=>setCourseSeriesId("all")}>
-              {locale==="ru"?"Все курсы":locale==="es"?"Todos los cursos":"All courses"}
-            </button>
-            {courseSeries.map(series=><button key={series.id} type="button"
-              data-mytube-course-series={series.id}
-              aria-pressed={activeCourseSeries===series.id}
-              onClick={()=>setCourseSeriesId(series.id)}>
-              {series.label} · {series.count}
-            </button>)}
-          </div>
-        </div>}
-      </div>}
+      </section>}
+      </>}
+
 
     </>}
     <section className={styles.panel} aria-label={t.title}>
@@ -570,19 +524,21 @@ export function VideoDiscovery({locale,videos,variant="library",subtitle}:{local
       {variant==="mytube" && <button type="button" className={styles.clearFilters}
         onClick={()=>{setArea("all");setGoal("all");setMyTubeCategoryId("all");setMyTubeSubcategoryId("all");setMyTubeTopicId("all");setMyTubeScenarioId("all");setMyTubeMotifId("all");setMyTubeStyleId("all");setContentType("all");setDirection("all");
           setTradition("all");setLanguage("all");setSource("all");setPeriod("all");
-          setDurationRange("all");setFormatMode("practices");setCourseType("all");setCourseTradition("all");setCourseSeriesId("all");setSearch("");setSort("for-you");setSavedOnly(false);}}>
+          setDurationRange("all");setFormatMode("practices");setPracticeCollectionId("all");setSearch("");setSort("for-you");setSavedOnly(false);}}>
         <RotateCcw size={15} aria-hidden="true"/>{t.resetFilters}
       </button>}
       <p className={styles.note}>{t.note}</p>
       </div>
     </section>
+    {variant==="mytube"&&formatMode==="courses" ?
+      <MyTubeCoursePlaylists locale={locale} items={ordered} savedVideoIds={savedIds} onToggleSaved={save} afterAllVisible={youtubeContinuation}/> : <>
     <div className={styles.results} aria-live="polite">
       <span>{variant==="mytube"?(formatMode==="practices"?t.mytubePractices:formatMode==="courses"?t.mytubeCourses:formatMode==="masters"?t.mytubeMasters:t.mytubeVideos):area!=="all"?t.areas[VIDEO_LIFE_AREAS.indexOf(area)]:index>0?t.result+": "+t.goals[index]:t.allResult}</span><span data-mytube-result-count={variant==="mytube"?"true":undefined}>{ordered.length}</span>
     </div>
     {ordered.length===0?<p className={styles.empty} data-mytube-empty={variant==="mytube"?"true":undefined}>
       {variant==="mytube"&&formatMode==="courses"?t.courseNone:
         variant==="mytube"&&formatMode==="masters"?t.masterNone:
-        variant==="mytube"&&formatMode==="practices"?t.practiceNone:t.empty}</p>:
+        variant==="mytube"&&formatMode==="practices"?(videos.some(item=>matchesMyTubeShelf(item,"practices"))?t.practiceFilteredNone:t.practiceNone):t.empty}</p>:
       <LibraryFeed locale={locale} items={ordered} videosOnly preserveOrder
         videoLayout={variant==="mytube"?"mytube":"default"}
         mytubeShelf={variant==="mytube"?formatMode:undefined}
@@ -592,5 +548,7 @@ export function VideoDiscovery({locale,videos,variant="library",subtitle}:{local
         }:undefined}
         savedVideoIds={savedIds} onToggleSaved={save} onDismissVideo={dismiss}
         saveText={t.save} unsaveText={t.unsave} dismissText={t.dismiss}/>}
+    </>}
+    {variant==="mytube"&&formatMode!=="courses"&&youtubeContinuation}
   </div>;
 }
