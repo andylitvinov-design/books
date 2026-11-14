@@ -597,12 +597,15 @@ test("Safari Voice gender and decoder reset preserve a real explicit choice, con
   const stop=source.indexOf("const voiceOptions=",begin);
   const segment=source.slice(begin,stop);
   assert.ok(begin>=0&&stop>begin);
+  // Match the actual native WebKit touch workflow, not retired locator aliases.
   for(const marker of [
-    'if(engine==="webkit")await maleForNarration.tap()',
-    'await expect(maleForNarration).toHaveAttribute("aria-pressed","true")',
-    "await expect(leonForNarration).toBeVisible()",
-    'if(engine==="webkit")await leonForNarration.tap()',
-    'await expect(leonForNarration).toHaveAttribute("aria-pressed","true")'
+    "const maleTab=chooser.locator",
+    "if(engine===\"webkit\")await maleTab.tap()",
+    "await expect(maleTab).toHaveAttribute(\"aria-pressed\",\"true\",{timeout:15000})",
+    "await expect(chooser.locator('[data-video-affirmation-voice-card=\"leon\"]')).toBeVisible({timeout:15000})",
+    "const leon=chooser.locator",
+    "if(engine===\"webkit\")await leon.tap()",
+    "await expect(leon).toHaveAttribute(\"aria-pressed\",\"true\")"
   ])assert.ok(segment.includes(marker),"real native voice choice: "+marker);
   assert.ok(source.includes('if(engine==="webkit")await voiceOptions.locator(":scope > summary").tap()'));
   assert.ok(source.includes('const narrationConsent=page.locator("[data-video-affirmation-voice-consent]")'));

@@ -373,7 +373,12 @@ test("Goal and Montage preserve creation guards while Text offers guarded video 
  assert.ok(footer.includes('disabled={disabled||selectedCount<5}'),"Storyboard retains minimum-five gate");
  assert.ok(footer.includes("Создать видео") && footer.includes("Generate Video") &&
   footer.includes("Раскадровка") && footer.includes("Storyboard"));
- assert.ok(studio.includes('onGenerate={createQuickVideo}'),"direct action preserves original guarded renderer");
+ assert.ok(studio.includes('onGenerate={openReadyForGeneration}'),"Text Generate opens Ready without recording");
+ assert.match(studio,/onGenerateBasicVideo=\{\(\)=>\{[\s\S]*?return createQuickVideo\(\)/,
+  "only the separate Ready Generate gesture reaches the original guarded renderer");
+ const ready=readFileSync(new URL("../components/mandala-video-ready.tsx",import.meta.url),"utf8");
+ assert.match(ready,/onClick=\{generateSelectedVideo\} data-ready-generate/,
+  "Ready must keep its own explicit generation button");
  assert.ok(studio.includes('setMontagePanel("concept");setPreviewPlaying(false);setNotice("");'));
  assert.ok(hypno.includes('data-hypno-create'));
  assert.ok(hypno.includes('data-hypno-add-effects'));
