@@ -219,7 +219,7 @@ test("disclosure acceptance retains provider privacy, real exported audio and st
     'Number(audioTrack.channels),2',
     'pcm.stdout.some(value=>value!==0)',
     '[data-video-narration-stale]',
-    'await expect(page.locator("[data-video-quick-generate]")).toBeDisabled()',
+    'await expect(page.locator("[data-video-quick-generate]")).toBeEnabled()',
   ])assert.ok(source.includes(assertion),assertion);
 });
 
@@ -425,14 +425,16 @@ test('dedicated Voice workspace keeps explicit consent opt-in and separate from 
   assert.match(voice,/const \[consent,setConsent\]=useState\(false\)/);
   assert.match(voice,/data-video-affirmation-voice-consent type="checkbox" checked=\{consent\}/);
   assert.match(source,/data-video-narration-reapproval/);
-  assert.match(source,/await expect\(page\.locator\('\[data-video-quick-generate\]'\)\)\.toBeDisabled/);
+  assert.match(source,/await expect\(page\.locator\('\[data-video-quick-generate\]'\)\)\.toBeEnabled/);
+ assert.match(read("components/mandala-free-video-studio.tsx"),/if\(narrationInvalid\)\{/);
 });
 
 test('stale narration safety remains checked after the phrase warning unmounts',()=>{
   const start=source.indexOf('the old WAV may remain attached, but must be unusable until narration is regenerated');
   const after=source.slice(start,source.indexOf('const voicePanel=',start));
   assert.match(after,/const stillHasOldVoice=/);
-  assert.match(after,/stillHasOldVoice[\s\S]*?toBeDisabled\(\)/);
+  assert.match(after,/stillHasOldVoice[\s\S]*?toBeEnabled\(\)/);
+ assert.match(read("components/mandala-free-video-studio.tsx"),/if\(narrationInvalid\)\{/);
   assert.match(after,/holistic-house-hypno-audio\.wav/);
   assert.match(after,/expectedFileName/);
 });

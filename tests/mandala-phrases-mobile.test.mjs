@@ -97,7 +97,7 @@ test("all phrase changes including catalog and idea are staged until explicit Ap
  assert.match(compact,/data-hypno-create-video disabled=\{disabled\|\|!settings\.enabled\|\|hasPendingEdits\}/);
  const direct=studio.slice(studio.indexOf("data-video-quick-generate"),
    studio.indexOf("</button>",studio.indexOf("data-video-quick-generate")));
- assert.ok(direct.includes('onClick={createQuickVideo}'));
+ assert.ok(direct.includes('onClick={openReadyForGeneration}'));
  for(const guard of ['if(!freeVideoSelected){','if(phrasePending){','if(narrationInvalid){'])
    assert.ok(studio.includes(guard),"approved phrase and paid-format guard: "+guard);
  assert.match(studio,/if\(phrasePending\)\{/);
@@ -222,7 +222,7 @@ test("choosing Ready preserves private audio state while the current Ideas edito
  assert.ok(browser.includes("data-video-affirmation-transcript-review"));
  assert.ok(browser.includes("data-video-narration-reapproval"),"removed spoken phrases require explicit narration reapproval");
  assert.ok(browser.includes("the old WAV may remain attached, but must be unusable until narration is regenerated"),"stale audio stays attached only as unusable media");
- assert.ok(browser.includes("await expect(page.locator('[data-video-quick-generate]')).toBeDisabled"));
+ assert.ok(browser.includes("await expect(page.locator('[data-video-quick-generate]')).toBeEnabled"));
  assert.doesNotMatch(browser,/approvalButton\.tap\(\)/,
    "the retired standalone Hypno approval button must not reappear");
 });
@@ -239,5 +239,5 @@ test("ten-phrase limit and stale spoken-audio guard use the current visible Mont
  assert.ok(script.includes("adding an unspoken phrase does not invalidate the actual WAV"));
  assert.ok(script.includes("data-video-narration-reapproval"));
  assert.ok(script.includes("the old WAV may remain attached, but must be unusable until narration is regenerated"));
- assert.ok(script.includes("await expect(page.locator('[data-video-quick-generate]')).toBeDisabled"));
+ assert.ok(script.includes("await expect(page.locator('[data-video-quick-generate]')).toBeEnabled"));
 });

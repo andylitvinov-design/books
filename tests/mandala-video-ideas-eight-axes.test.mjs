@@ -44,8 +44,8 @@ test("Ideas shortcut opens the single Montage Text editor without renderer or pa
   assert.match(studio,/data-video-concept-text-tools/);
  assert.match(action,/scrollIntoView/);
  assert.doesNotMatch(action,/createQuickVideo\(|createVideo\(|startFromHero\(/);
- assert.ok(studio.includes('data-video-ideas-open-montage-text') && studio.includes('onGenerate={createQuickVideo} status={notice}/>'),
-  'Ideas links to Montage Text and the same phrase editor has one guarded Create action');
+ assert.ok(studio.includes('data-video-ideas-open-montage-text') && studio.includes('onGenerate={openReadyForGeneration} status={notice}/>'),
+  'Ideas links to Montage Text and its Generate action navigates to Ready without a render');
  assert.match(cmp,/data-video-ideas-create[\s\S]*?disabled=\{disabled\|\|selectedCount<5\}/);
  assert.doesNotMatch(cmp,/canGenerate/,"moving to Montage must not depend on video readiness");
  assert.match(studio,/\{activeWorkspace==="video" \? <section className=\{videoStyles\.quickMusicSection\}/,
