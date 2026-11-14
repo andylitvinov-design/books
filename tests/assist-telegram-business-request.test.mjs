@@ -128,9 +128,9 @@ test('the actual locked state machine requires initial request, format and disti
    if(sql.startsWith('select * from app_private.crm_tg_business_service_sessions'))
     return {rows:row?[{...row}]:[]};
    if(sql.startsWith('insert into app_private.crm_tg_business_service_sessions')){
-    row={operation_id:args[2],practitioner_id:args[3],service_key:args[4],
-      locale:args[5],stage:'format',delivery_format:null,
-      consent_at:null,reference_code:null,last_update_id:args[6]};
+    row={operation_id:args[3],practitioner_id:args[4],service_key:args[5],
+      locale:args[6],telegram_peer_hash:args[2],stage:'format',delivery_format:null,
+      consent_at:null,reference_code:null,last_update_id:args[7]};
     return {rows:[]};
    }
    if(sql.startsWith('update app_private.crm_tg_business_service_sessions')){
@@ -156,7 +156,7 @@ test('the actual locked state machine requires initial request, format and disti
    Date,Number,String,
  },{codeGeneration:{strings:false,wasm:false}});
  vm.runInContext(reply+body,context,{timeout:2000});
- const k={business:'a'.repeat(64),user:'b'.repeat(64),lock:'synthetic-lock'};
+ const k={business:'a'.repeat(64),user:'b'.repeat(64),peer:'c'.repeat(64),lock:'synthetic-lock'};
  const event=(text,updateId,request=null)=>({
    connectionId:'synthetic-business-connection',chatId:'123456789',
    messageId:updateId,updateId,text,request,
@@ -251,9 +251,9 @@ test('one atomic CRM transaction for enquiry + session, STOP/Cancel uses same lo
  assert.ok(begin>0&&end>begin);
  const backend=source.slice(begin,end);
  assert.match(backend,/await lock\(db,intent.lock\)/);
- assert.match(backend,/const finalize=async\(id,referenceCode\)=>/);
- assert.match(backend,/return finalize\(id,ref\)/);
- assert.match(backend,/return finalize\(prior.id,prior.reference_code\)/);
+ assert.match(backend,/const finalize=async\(id,referenceCode,contactId\)=>/);
+ assert.match(backend,/return finalize\(id,ref,contactId\)/);
+ assert.match(backend,/return finalize\(prior.id,prior.reference_code,state.contact_id\|\|null\)/);
  assert.match(backend,/and stage='committing' and consent_at is not null/);
  assert.match(backend,/if\(marked.rowCount!==1\)throw new AppError/);
  assert.doesNotMatch(source,/async function complete\(/);
