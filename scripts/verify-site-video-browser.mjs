@@ -73,9 +73,8 @@ try {
   const context = await browser.newContext({ viewport: { width: 1365, height: 1000 }, serviceWorkers: 'block' })
   const page = await context.newPage()
   const pageErrors = []
-  // Retain every JavaScript error. Exactly one error from an isolated first
-  // Next DEV document that returned HTTP 500 may be classified as provisional
-  // AFTER the same URL recovers with HTTP 200. Never waive a LIVE/200 error.
+  // Preserve the actual error record. A single failed initial DEV document
+  // may be attributed as provisional only after an exact 200 retry.
   const recoveredFailedDevErrors = new Set()
   page.on('pageerror', error => pageErrors.push({ message: error.message, url: page.url() }))
   async function navigate(target) {
@@ -100,10 +99,9 @@ try {
       console.warn('First isolated DEV render returned 500 for '+target+
         '. Retrying exact document once; repeated 500 remains a hard failure.')
       await pause(350)
-      // The first DEV compilation may emit a pageerror tied to its rejected
-      // 500 document. Allow only the exact transient JSON parse failure for
-      // the same local document, and only after one successful 200 reload.
       const rejectedDocumentErrors = pageErrors.slice(errorCountBeforeDocument)
+      // Do not waive errors from a successfully loaded page, an unrelated
+      // host, a different JS exception or multiple failures.
       const exactIsolatedFirst500 = rejectedDocumentErrors.length <= 1 &&
         rejectedDocumentErrors.every(error =>
           error.message === 'Unexpected end of JSON input' &&
@@ -227,8 +225,35 @@ try {
         assert.ok(hrefs.includes('/' + locale + '/services/' + suffix), id + ' route not reachable from Services')
       }
       await page.setViewportSize({ width: 390, height: 844 })
-      await expect(intro.locator('button.site-video-play')).toBeVisible()
-      await expect(visibleGallery).toHaveAttribute('open', '')
+      // The owner-approved mobile Services page deliberately hides the legacy
+      // method-video gallery and intro; desktop above still verifies both.
+      // On phones validate the replacement three-scenario Personal video card
+      // and its real first-party studio destination, not a hidden old player.
+      await expect(intro.locator('button.site-video-play')).toBeHidden()
+      await expect(visibleGallery).toBeHidden()
+      const videoPanel = page.locator('[data-services-unified-panel="video"]')
+      const videoTrigger = videoPanel.locator(':scope > button')
+      await expect(videoTrigger).toBeVisible()
+      await expect(videoTrigger).toHaveAttribute('aria-expanded', 'false')
+      const mobileVideo = videoPanel.locator('[data-assist-video-generation]')
+      await expect(mobileVideo).toBeHidden()
+      // A dev SSR snapshot can paint before Next attaches client event
+      // handlers. Do not misclassify an unhydrated early click as an app
+      // state regression; require the real Next router hydration first.
+      await expect.poll(
+        () => page.evaluate(() => history.pushState.toString().includes("__NA")),
+        { timeout: 30000, message: 'Services video panel must hydrate before the click' },
+      ).toBe(true)
+      await videoTrigger.click()
+      await expect(videoTrigger).toHaveAttribute('aria-expanded', 'true')
+      await expect(mobileVideo).toBeVisible()
+      await expect(mobileVideo.locator('a[data-assist-video-scenario]')).toHaveCount(3)
+      const createVideo = mobileVideo.locator('a[data-assist-video-create]')
+      await expect(createVideo).toBeVisible()
+      await expect(createVideo).toHaveAttribute('href', '/' + locale + '/holistic-support/mandala')
+      const createBox = await createVideo.boundingBox()
+      assert.ok(createBox && createBox.height >= 44, 'Services mobile create-video action is finger-sized: ' + locale)
+      await expect(mobileVideo.locator('iframe')).toHaveCount(0)
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2), 'Services mobile overflow: ' + locale)
       await page.screenshot({ path: `${evidence}/services-${locale}-mobile-video.png`, fullPage: true })
       await page.setViewportSize({ width: 1365, height: 1000 })
@@ -364,9 +389,8 @@ try {
     await verifyAboutTestimonials(origin)
     pass('About original-language disclosures: Chromium and WebKit at 320/390/430 in EN/RU/ES')
   }
-  // Preserve all observed errors and exclude only the precisely attributed
-  // failed initial DEV document after its one successful exact-url reload.
-  // Errors on the recovered page and all production routes still fail closed.
+  // Provisional failures remain in pageErrors. All errors on actual accepted
+  // documents and every LIVE route still fail the original strict gate.
   assert.deepEqual(pageErrors.filter(error => !recoveredFailedDevErrors.has(error)), [],
     'Unexpected page JavaScript errors on accepted documents')
   pass('No page JavaScript errors on accepted documents')

@@ -24,7 +24,7 @@ const labels={
 async function assertPinnedSixDock(page, id, active) {
   const dock=page.locator("[data-hh-unified-dock]");
   await dock.waitFor({state:"visible",timeout:30000});
-  await page.waitForFunction(expected=>{
+  if(active)await page.waitForFunction(expected=>{
     const node=document.querySelector("[data-hh-unified-dock]");
     return !!node?.querySelector('[data-unified-dock-item="'+expected+'"][aria-current="page"]');
   },active,{timeout:15000});
@@ -80,9 +80,16 @@ async function inspect(browserType,locale,width){
     const page=document.querySelector("[data-mytube-page]");
     return page && getComputedStyle(page).backgroundColor==="rgb(15, 15, 15)";
   },null,{timeout:20000});
-  const dockBackground=await dock.evaluate(el=>getComputedStyle(el).backgroundColor);
-  assert.match(dockBackground,/^rgba?\(15, 15, 15/,
-    id+" dark dock applies only to MyTube");
+  const dockPalette=await dock.evaluate(el=>{
+    const ai=el.querySelector('[data-unified-dock-item="ai"] svg');
+    const current=getComputedStyle(el);
+    return {background:current.backgroundImage,
+      aiBackground:ai?getComputedStyle(ai).backgroundImage:""};
+  });
+  assert.match(dockPalette.background,/radial-gradient/,
+    id+" approved mint waves on the shared ivory dock");
+  assert.match(dockPalette.aiBackground,/radial-gradient/,
+    id+" teal illuminated AI button visible above the dock");
   const moreFilters=page.locator("[data-mytube-filter-toggle]");
   const rail=page.locator("[data-mytube-category-rail]");
   const refined=page.locator("#mytube-refine-controls");
@@ -290,6 +297,16 @@ async function inspect(browserType,locale,width){
       if(browserType===webkit && locale==="ru" && width===390)
         await page.screenshot({path:folder+"/"+active+"-webkit-ru-390-guest.png",fullPage:false});
       results.push({id:marker,pinned:true,route:path,authenticated:false});
+    }
+    if(width===390){
+      // Verify the identical sitewide dock on three ordinary editorial pages.
+      for(const section of ["about","library","tests",...(locale==="es"?[]:["client"])]){
+        const route=prefix+"/"+section;
+        await page.goto(origin+route,{waitUntil:"domcontentloaded",timeout:75000});
+        await assertPinnedSixDock(page,id+":editorial:"+section,null);
+        assert.equal(await page.locator("[data-hh-unified-dock]").getAttribute("data-hh-editorial-dock"),"true");
+        results.push({id:id+":editorial:"+section,pinned:true,route,authenticated:false});
+      }
     }
   }
   // Owner-approved 07 Nov Ideas → Voice Warm Peach color QA. Same real
@@ -769,8 +786,11 @@ try{
    const reply=replies?.[replies.length-1];
    if(!thread||!reply)return false;
    const bounds=thread.getBoundingClientRect(),bubble=reply.getBoundingClientRect();
-   const end=Math.max(0,thread.scrollHeight-thread.clientHeight);
-   return Math.abs(thread.scrollTop-end)<=3&&bubble.bottom<=bounds.bottom+2;
+   // The end of the latest answer must be visible above the composer.
+   // A user-action card can follow the answer, so requiring the entire
+   // transcript to be at its scroll tail rejects a usable, focused chat.
+   return thread.clientHeight>0&&bubble.height>0&&
+     bubble.bottom<=bounds.bottom+2&&bubble.bottom>=bounds.top+8;
  },null,{timeout:15000});
  assert.equal(await fullAssistantReply.evaluate(node=>getComputedStyle(node).flexShrink),"0",
    "iPhone keyboard must not shrink or clip the assistant reply");

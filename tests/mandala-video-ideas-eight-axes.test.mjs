@@ -29,7 +29,7 @@ test("one phrase editor supplies Montage Text with selected and manually edited 
  assert.match(cmp,/listMeaningAxes\(locale\)/);
  assert.doesNotMatch(cmp,/fetch\(|appFetch\(|localStorage|sessionStorage|navigator\.sendBeacon/);
  assert.match(studio,/data-video-montage-text hidden=\{montagePanel!=="text"\}/);
- assert.match(studio,/onCreate=\{\(\)=>\{setMontagePanel\("audio"\);setBasicPanelTab\("music"\);setPreviewPlaying\(false\);\}\}/);
+ assert.match(studio,/onCreate=\{\(\)=>\{\s*setMontagePanel\("concept"\);setPreviewPlaying\(false\);setNotice\(""\);/);
  assert.match(studio,/const workspaceTabs=\[\s*\{id:"video",Icon:Film\},\s*\{id:"phrases",Icon:Heart\},\s*\{id:"editor",Icon:Scissors\}/);
 });
 
@@ -44,8 +44,11 @@ test("Ideas shortcut opens the single Montage Text editor without renderer or pa
   assert.match(studio,/data-video-concept-text-tools/);
  assert.match(action,/scrollIntoView/);
  assert.doesNotMatch(action,/createQuickVideo\(|createVideo\(|startFromHero\(/);
- assert.ok(studio.includes('data-video-ideas-open-montage-text') && studio.includes('onGenerate={createQuickVideo} status={notice}/>'),
-  'Ideas links to Montage Text and the same phrase editor has one guarded Create action');
+ assert.ok(studio.includes('data-video-ideas-open-montage-text') &&
+   studio.includes('setMontagePanel("concept");setPreviewPlaying(false);setNotice("");') &&
+   cmp.includes("data-video-ideas-generate") &&
+   studio.includes("onGenerate={createQuickVideo}"),
+   'Montage Text offers a real guarded render and an independent Storyboard navigation');
  assert.match(cmp,/data-video-ideas-create[\s\S]*?disabled=\{disabled\|\|selectedCount<5\}/);
  assert.doesNotMatch(cmp,/canGenerate/,"moving to Montage must not depend on video readiness");
  assert.match(studio,/\{activeWorkspace==="video" \? <section className=\{videoStyles\.quickMusicSection\}/,
@@ -69,7 +72,7 @@ test("approved seven-choice Ideas mock retains five-minimum, real canvas text si
   assert.ok(cmp.includes(marker),marker);
  assert.match(cmp,/selectedCount<5/);
  assert.match(studio,/data-video-montage-text hidden=\{montagePanel!=="text"\}/);
- assert.match(studio,/onCreate=\{\(\)=>\{setMontagePanel\("audio"\);setBasicPanelTab\("music"\);setPreviewPlaying\(false\);\}\}/);
+ assert.match(studio,/onCreate=\{\(\)=>\{\s*setMontagePanel\("concept"\);setPreviewPlaying\(false\);setNotice\(""\);/);
  assert.match(cmp,/planIdeaSelection\(candidates,indices,suggested,signature\)/);
  const renderer=readFileSync(new URL("../lib/mandala/video-affirmations.ts",import.meta.url),"utf8");
  assert.match(renderer,/textScale\?: "small" \| "medium" \| "large"/);

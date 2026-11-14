@@ -8,6 +8,7 @@ const { expect } = require((process.env.HH_PLAYWRIGHT_PACKAGE || "playwright") +
 import assert from "node:assert/strict";
 import { inferAssistPreferences } from "../lib/assist/service-match.mjs";
 import { rankAssistProducts } from "../lib/assist/product-recommendations.mjs";
+import { rankDiscoveryVideos } from "../lib/video-discovery/ranker.mjs";
 import { telegramServiceRequestUrl } from "../lib/assist/telegram-business-request.mjs";
 import { mkdir, writeFile } from "node:fs/promises";
 
@@ -21,6 +22,13 @@ await mkdir(output, { recursive: true });
 const browser = await chromium.launch();
 const diagnostics = { runtime: "next-start production", console: [], pageErrors: [], devIssueOverlay: false };
 const responseEvidence = [];
+// Isolated CI: only these audited read-only endpoints may lack the database.
+const noDatabase503Paths = new Set([
+  "/api/catalog/ratings",
+  "/api/service-enquiries/booking-status",
+  "/api/app/bootstrap",
+  "/api/public/remote-energy-support-masters",
+]);
 let failure;
 try {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
@@ -50,9 +58,8 @@ try {
     page.on("response", response => {
       const url = new URL(response.url());
       if (response.request().method() === "GET" && response.status() === 503 &&
-          ["/api/catalog/ratings", "/api/service-enquiries/booking-status", "/api/app/bootstrap"].includes(url.pathname)) {
-        // Status and path are already verified above. Browser streams may
-        // close before body.json(), so do not misclassify empty reads.
+          url.origin === origin && url.pathname.startsWith("/api/")) {
+        // Record all first-party read failures, including any unexpected new endpoint.
         responseEvidence.push(url.pathname);
       }
     });
@@ -122,14 +129,89 @@ try {
     for (const selector of legacyPhoneSelectors) {
       await expect(page.locator(selector + ":visible")).toHaveCount(0);
     }
+    // The approved lower page is a compact, one-panel-at-a-time catalogue.
+    // The original messenger and the three real consultation cards stay visible.
+    await visible(page.locator("[data-assist-personal-consultation]"));
+    const catalog = page.locator("[data-services-unified-catalog]");
+    await visible(catalog);
+    // Browser acceptance must exercise hydrated React handlers, not
+    // accidentally tap static SSR buttons before Next router readiness.
+    await expect.poll(
+      () => page.evaluate(() => history.pushState.toString().includes("__NA")),
+      { timeout: 30000, message: 'Mobile Services catalogue must hydrate before interactions' },
+    ).toBe(true);
+    const panelIds = [
+      "reiki", "browse", "reading", "consultation", "services", "video", "courses",
+      "coach", "magical", "homeopathy", "about", "testimonials", "mytube", "directory",
+    ];
+    await expect(catalog.locator("[data-services-unified-panel]")).toHaveCount(panelIds.length);
+    for (const id of panelIds) {
+      const panel = catalog.locator('[data-services-unified-panel="' + id + '"]');
+      const toggle = panel.locator(':scope > button');
+      await visible(toggle);
+      await expect(toggle).toHaveAttribute("aria-expanded", "false");
+      const bounds = await toggle.boundingBox();
+      assert.ok(bounds && bounds.height >= 44 && bounds.x >= -1 && bounds.x + bounds.width <= width + 1,
+        "Compact service tile must fit the phone with a 44px target: " + locale + "/" + width + "/" + id);
+    }
     for (const selector of [
-      "[data-assist-personal-consultation]", "[data-assist-spiritual-entry]",
-      "[data-assist-video-generation]", "[data-assist-course-shelf]",
-      "[data-assist-magical-help]"
+      "[data-assist-spiritual-entry]", "[data-assist-video-generation]",
+      "[data-assist-course-shelf]", "[data-assist-magical-help]",
+      "[data-assist-reiki-session]", "[data-assist-coach-therapist]"
     ]) {
-      await visible(page.locator(selector));
+      await expect(page.locator(selector)).toHaveCount(1);
+      await expect(page.locator(selector)).toBeHidden();
+    }
+    if (width === 390) {
+      // Open the REAL previously published flows, not fake placeholder cards.
+      // Every service must become visible after its own explicit tap, then close.
+      const detailChecks = [
+        ["reiki", "[data-assist-reiki-session]"],
+        ["browse", "[data-services-showcase-hero]"],
+        ["reading", "[data-assist-spiritual-entry]"],
+        ["consultation", "#consultation"],
+        ["services", "[data-services-studio-paid]"],
+        ["video", "[data-assist-video-generation]"],
+        ["courses", "[data-assist-course-shelf]"],
+        ["coach", "[data-assist-coach-therapist]"],
+        ["magical", "[data-assist-magical-help]"],
+        ["homeopathy", 'a[href="/' + locale + '/services/psychohomeopathy"]'],
+        ["about", "[data-services-meet]"],
+        ["testimonials", '[data-personal-testimonials="services"]'],
+        ["mytube", "#method-videos"],
+        ["directory", "[data-services-directory-invitation]"],
+      ];
+      for (const [id, selector] of detailChecks) {
+        const panel = catalog.locator('[data-services-unified-panel="' + id + '"]');
+        const trigger = panel.locator(":scope > button");
+        await trigger.click();
+        await expect(trigger).toHaveAttribute("aria-expanded", "true");
+        await visible(panel.locator(selector));
+        await expect(catalog.locator('[data-services-unified-panel][data-expanded="true"]')).toHaveCount(1);
+        await assertViewport(page, locale + "/services/unified/" + id);
+        await trigger.click();
+        await expect(trigger).toHaveAttribute("aria-expanded", "false");
+        await expect(panel.locator(selector)).toBeHidden();
+      }
+      await expect(catalog.locator('[data-services-unified-panel][data-expanded="true"]')).toHaveCount(0);
     }
 
+
+    // Coach/Mira and Reiki are separate mobile categories, never extra chat steps.
+    const coach=page.locator("[data-assist-coach-therapist]");
+    await expect(coach).toHaveCount(1);
+    assert.ok(await coach.locator("[data-assist-coach-master]").count() >= 2,
+      "Andrey and AI Mira remain without optional published specialists");
+    await expect(coach.locator('[data-assist-coach-ai="mira"]')).toHaveCount(1);
+    await expect(coach.locator('select[data-assist-coach-topic]')).toHaveCount(1);
+
+    // The reiki picker is a distinct mounted mobile category, not another chat step.
+    const reiki=page.locator("[data-assist-reiki-session]");
+    await expect(reiki).toHaveCount(1);
+    await expect(reiki.locator('button[aria-pressed]')).toHaveCount(3);
+    await expect(reiki.locator('input[type="date"]')).toHaveCount(1);
+    await expect(reiki.locator('input[type="time"]')).toHaveCount(1);
+    await expect(reiki.locator('a[href*="holistic-support/mobile"]')).toHaveCount(1);
 
     const conversation = assist.locator("[data-assist-dialogue]");
     const log = conversation.locator("#assist-results");
@@ -138,6 +220,27 @@ try {
     const question = conversation.locator("textarea#assist-question");
     const submit = conversation.locator('form button[type="submit"]');
     await visible(question);
+    // The owner saw the whole iPhone Services page zoom/crop when the keyboard
+    // appeared. A focused textarea below 16px triggers iOS Safari auto-zoom.
+    // Check computed text size AND viewport geometry, without disabling pinch zoom.
+    await question.focus();
+    const focusGeometry=await question.evaluate(element=>{
+      const input=element.getBoundingClientRect();
+      const form=element.form?.getBoundingClientRect();
+      return {fontSize:parseFloat(getComputedStyle(element).fontSize),
+        documentWidth:document.documentElement.scrollWidth,
+        viewportWidth:document.documentElement.clientWidth,
+        formLeft:form?.left??-1,formRight:form?.right??Infinity,
+        inputRight:input.right};
+    });
+    assert.ok(focusGeometry.fontSize>=16,
+      "iPhone keyboard must not zoom Services textarea: "+JSON.stringify(focusGeometry));
+    assert.ok(focusGeometry.formLeft>=-1 &&
+      focusGeometry.formRight<=focusGeometry.viewportWidth+1 &&
+      focusGeometry.inputRight<=focusGeometry.formRight+1 &&
+      focusGeometry.documentWidth<=focusGeometry.viewportWidth+1,
+      "Focused Services composer must fit phone width: "+JSON.stringify(focusGeometry));
+    await question.evaluate(element=>element.blur());
     await expect(submit).toBeDisabled();
     const topics = conversation.locator("[data-assist-issue-suggestions] button");
     const issueToggle = conversation.locator('button[aria-expanded]');
@@ -178,15 +281,61 @@ try {
     assert.equal(await assist.locator('input[type="email"],input[type="tel"]').count(), 0,
       "Assist cannot silently collect contact details");
 
+    // The public MyTube endpoint accepts locale only; no private question text.
+    const publishedVideoPending=page.waitForResponse(response=>
+      response.url().includes("/api/assist/public-mytube?locale="+locale) &&
+      response.request().method()==="GET",{timeout:25000});
     // One issue enters a user bubble, followed by a helper reply and one question.
     await topics.first().click();
     await expect(conversation.locator("[data-assist-topic-suggestions]")).toHaveCount(0);
     await expect(log.locator('[data-assist-message="user"]')).toHaveCount(1);
-    await expect(log.locator('[data-assist-message="assistant"]')).toHaveCount(1);
+    // The approved messenger preserves its opening question before the visitor reply.
+    await expect(log.locator('[data-assist-message="assistant"]')).toHaveCount(2);
+    await expect(log.locator("[data-assist-message]").first()).toHaveAttribute("data-assist-message", "assistant");
+    await expect(log.locator("[data-assist-message]").nth(1)).toHaveAttribute("data-assist-message", "user");
     await expect(log.locator('[data-assist-question="mode"]')).toHaveCount(1);
     await expect(log.locator("a[data-assist-recommendation]")).toHaveCount(0);
     await expect(question).toHaveValue("");
     await visible(shelf.locator("#assist-best-three-title"));
+    const homeopathy=assist.locator("[data-assist-homeopathy]");
+    await visible(homeopathy);
+    await expect(homeopathy.locator("a[data-assist-remedy]")).toHaveCount(3);
+    const libraryLocale=locale==="es"?"en":locale;
+    for(const slug of ["gelsemium","ignatia-amara","nux-vomica"]){
+      const link=homeopathy.locator('a[data-assist-remedy="'+slug+'"]');
+      await expect(link).toHaveAttribute("href","/"+libraryLocale+"/homeopathy/remedies/"+slug);
+      await expect(link.locator("img")).toHaveAttribute("src",new RegExp("^/media/remedies/"+slug+"/message"));
+      const box=await link.boundingBox();
+      assert.ok(box&&box.height>=44,"Homeopathy library touch target");
+    }
+    await expect(homeopathy.locator('a[href="/'+locale+'/services/psychohomeopathy"]')).toHaveCount(1);
+    const publishedVideoResponse=await publishedVideoPending;
+    const publishedVideoUrl=new URL(publishedVideoResponse.url());
+    assert.equal(publishedVideoUrl.pathname,"/api/assist/public-mytube");
+    assert.equal(publishedVideoUrl.search,"?locale="+locale,
+      "No private question text is sent to MyTube");
+    assert.equal(publishedVideoResponse.status(),200);
+    const publicVideos=await publishedVideoResponse.json();
+    assert.ok(Array.isArray(publicVideos?.videos),"Published video catalog must be an array");
+    const expectedVideos=rankDiscoveryVideos(publicVideos.videos,{goal:"stress",sort:"for-you"}).slice(0,3);
+    const videoShelf=assist.locator("[data-assist-mytube]");
+    await visible(videoShelf);
+    await expect(videoShelf.locator("[data-assist-mytube-more]"))
+      .toHaveAttribute("href","/"+locale+"/mytube?goal=stress");
+    const videoCards=videoShelf.locator("[data-assist-mytube-card]");
+    await expect(videoCards).toHaveCount(expectedVideos.length,{timeout:25000});
+    assert.equal(new Set(expectedVideos.map(video=>video.youtubeId)).size,expectedVideos.length,
+      "MyTube recommendations must use distinct published YouTube identifiers");
+    for(const video of expectedVideos){
+      const card=videoShelf.locator('[data-assist-mytube-card="'+video.youtubeId+'"]');
+      await expect(card).toHaveCount(1);
+      const links=card.locator("a[href]");
+      await expect(links).toHaveCount(2);
+      for(const link of [links.first(),links.last()])
+        await expect(link).toHaveAttribute("href","/"+locale+"/mytube?video="+video.youtubeId);
+      const bounds=await links.last().boundingBox();
+      assert.ok(bounds&&bounds.height>=44,"MyTube Watch target must remain accessible");
+    }
     const expectedStress = rankAssistProducts("stress", {});
     const actualStress = await bestCards.evaluateAll(nodes=>
       nodes.map(node=>node.getAttribute("data-assist-best-card")));
@@ -282,6 +431,8 @@ try {
       locale === "es" ? "Quiero morir" : "I want to kill myself");
     await submit.click();
     await visible(log.locator('[role="alert"]'));
+    await expect(assist.locator("[data-assist-mytube]")).toHaveCount(0);
+    await expect(assist.locator("[data-assist-homeopathy]")).toHaveCount(0);
     await expect(shelf).toHaveCount(0);
     await expect(log.locator("a[data-assist-recommendation]")).toHaveCount(0);
     await assertNoDevIssueOverlay(page, locale + "/services/assist/" + width);
@@ -397,54 +548,79 @@ try {
         await expect(free).toBeHidden();
         await expect(paid.locator("h2#services-personal-title")).toBeHidden();
         await expect(paid.locator("[data-services-studio-card]:visible")).toHaveCount(0);
-        await visible(paid.locator("[data-assist-video-generation]"));
+        await expect(page.locator('[data-services-unified-panel="video"] [data-assist-video-generation]')).toBeHidden();
+        await visible(page.locator('[data-services-unified-panel="video"] > button'));
         assert.equal(await page.locator("#find-your-service").count(), 0);
       }
       await assertNoDevIssueOverlay(page, locale + "/services/" + width);
       // RootLayout provides My Space: the canonical header opens an accessible
       // account dialog, not a direct Cabinet link. Never bypass sign-in here.
+      // The owner retired the site header on mobile Services only.
+      // The desktop header and its real My Space and menu remain verified.
       const header = page.locator("header.house-header--services");
-      const cabinetEntry = header.locator("button.site-cabinet-entry");
-      await expect(cabinetEntry).toHaveCount(1);
-      await visible(cabinetEntry);
-      await expect(cabinetEntry).toHaveAttribute("aria-haspopup", "dialog");
-      await expect(cabinetEntry).toHaveAttribute("aria-controls", "home-personal-space-dialog");
-      await expect(cabinetEntry).toHaveAttribute("aria-expanded", "false");
-      const cabinetBounds = await cabinetEntry.boundingBox();
-      assert.ok(cabinetBounds && cabinetBounds.x >= 0 && cabinetBounds.x + cabinetBounds.width <= width + 1, "My Space entry must fit the visible header: " + locale + "/" + width);
-      await cabinetEntry.click();
-      const privateSpaceDialog = page.locator("dialog#home-personal-space-dialog");
-      await expect(privateSpaceDialog).toHaveAttribute("open", "");
-      await visible(privateSpaceDialog.locator("#hh-my-space-title"));
-      await expect(cabinetEntry).toHaveAttribute("aria-expanded", "true");
-      await privateSpaceDialog.locator('header button[type="button"]').first().click();
-      await expect(privateSpaceDialog).not.toHaveAttribute("open", "");
-      await expect(cabinetEntry).toHaveAttribute("aria-expanded", "false");
-      const siteMenu = header.locator("details.site-main-menu");
-      await expect(siteMenu).not.toHaveAttribute("open", "");
-      const menuTrigger = siteMenu.locator("summary.site-main-menu-trigger");
-      await visible(menuTrigger);
-      const menuBounds = await menuTrigger.boundingBox();
-      assert.ok(menuBounds && menuBounds.x >= 0 && menuBounds.x + menuBounds.width <= width + 1,
-        "Public site menu must fit the header: " + locale + "/" + width);
-      await siteMenu.locator("summary.site-main-menu-trigger").click();
-      await expect(siteMenu).toHaveAttribute("open", "");
-      // The canonical expanded-menu destination is the Library hub;
-      // /books remains a separate editorial route, not this menu entry.
-      const libraryEntry = siteMenu.locator('.site-main-menu-panel a[href="/' + locale + '/library"]');
-      await expect(libraryEntry).toHaveCount(1);
-      await visible(libraryEntry);
-      await expect(libraryEntry).toHaveText(locale === "ru" ? "Библиотека" : locale === "es" ? "Biblioteca" : "Library");
-      assert.equal(await libraryEntry.getAttribute("href"), "/" + locale + "/library", "Library opens the localized editorial hub");
-      const libraryBounds = await libraryEntry.boundingBox();
-      assert.ok(libraryBounds && libraryBounds.x >= 0 && libraryBounds.x + libraryBounds.width <= width + 1, "Library entry must fit the opened menu: " + locale + "/" + width);
-      await siteMenu.locator("summary.site-main-menu-trigger").click();
-      await expect(siteMenu).not.toHaveAttribute("open", "");
+      if (width <= 760) {
+        await expect(header).toBeHidden();
+        await visible(page.locator("[data-assist-first-tabs]"));
+        const dashboard = page.locator("[data-assist-study-dashboard]");
+        await visible(dashboard);
+        await expect(dashboard.locator('input[type="range"]')).toHaveCount(4);
+        for (const slider of await dashboard.locator('input[type="range"]').all()) {
+          await expect(slider).toHaveAttribute("min", "1");
+          await expect(slider).toHaveAttribute("max", "10");
+        }
+        await visible(dashboard.getByRole("button", { name: locale === "ru" ? "Подобрать" : locale === "es" ? "Buscar opciones" : "Find matches" }));
+      } else {
+  const cabinetEntry = header.locator("button.site-cabinet-entry");
+        await expect(cabinetEntry).toHaveCount(1);
+        await visible(cabinetEntry);
+        await expect(cabinetEntry).toHaveAttribute("aria-haspopup", "dialog");
+        await expect(cabinetEntry).toHaveAttribute("aria-controls", "home-personal-space-dialog");
+        await expect(cabinetEntry).toHaveAttribute("aria-expanded", "false");
+        const cabinetBounds = await cabinetEntry.boundingBox();
+        assert.ok(cabinetBounds && cabinetBounds.x >= 0 && cabinetBounds.x + cabinetBounds.width <= width + 1, "My Space entry must fit the visible header: " + locale + "/" + width);
+        await cabinetEntry.click();
+        const privateSpaceDialog = page.locator("dialog#home-personal-space-dialog");
+        await expect(privateSpaceDialog).toHaveAttribute("open", "");
+        await visible(privateSpaceDialog.locator("#hh-my-space-title"));
+        await expect(cabinetEntry).toHaveAttribute("aria-expanded", "true");
+        await privateSpaceDialog.locator('header button[type="button"]').first().click();
+        await expect(privateSpaceDialog).not.toHaveAttribute("open", "");
+        await expect(cabinetEntry).toHaveAttribute("aria-expanded", "false");
+        const siteMenu = header.locator("details.site-main-menu");
+        await expect(siteMenu).not.toHaveAttribute("open", "");
+        const menuTrigger = siteMenu.locator("summary.site-main-menu-trigger");
+        await visible(menuTrigger);
+        const menuBounds = await menuTrigger.boundingBox();
+        assert.ok(menuBounds && menuBounds.x >= 0 && menuBounds.x + menuBounds.width <= width + 1,
+          "Public site menu must fit the header: " + locale + "/" + width);
+        await siteMenu.locator("summary.site-main-menu-trigger").click();
+        await expect(siteMenu).toHaveAttribute("open", "");
+        // The canonical expanded-menu destination is the Library hub;
+        // /books remains a separate editorial route, not this menu entry.
+        const libraryEntry = siteMenu.locator('.site-main-menu-panel a[href="/' + locale + '/library"]');
+        await expect(libraryEntry).toHaveCount(1);
+        await visible(libraryEntry);
+        await expect(libraryEntry).toHaveText(locale === "ru" ? "Библиотека" : locale === "es" ? "Biblioteca" : "Library");
+        assert.equal(await libraryEntry.getAttribute("href"), "/" + locale + "/library", "Library opens the localized editorial hub");
+        const libraryBounds = await libraryEntry.boundingBox();
+        assert.ok(libraryBounds && libraryBounds.x >= 0 && libraryBounds.x + libraryBounds.width <= width + 1, "Library entry must fit the opened menu: " + locale + "/" + width);
+        await siteMenu.locator("summary.site-main-menu-trigger").click();
+        await expect(siteMenu).not.toHaveAttribute("open", "");
+      }
       await assertViewport(page, locale + "/services/" + width);
       if (width === 390 || width === 1188) {
         await page.screenshot({ path: output + "/services-" + locale + "-hero-" + width + ".png", fullPage: false });
       }
       if (width === 390) {
+        // The homepage's existing #consultation link must reveal real paid/express
+        // booking choices instead of landing on a hidden collapsed mobile panel.
+        await page.goto(origin + "/" + locale + "/services#consultation", { waitUntil: "domcontentloaded" });
+        const linkedPanel = page.locator('[data-services-unified-panel="consultation"]');
+        await expect(linkedPanel.locator(":scope > button")).toHaveAttribute("aria-expanded", "true");
+        await visible(linkedPanel.locator("#consultation"));
+        assert.ok(await linkedPanel.locator("[data-service-product]").count() >= 2,
+          "Deep link preserves express/paid consultation offers: " + locale);
+        await assertViewport(page, locale + "/services#consultation");
         const consultation = page.locator("[data-assist-personal-consultation]");
         await consultation.scrollIntoViewIfNeeded();
         await consultation.screenshot({ path: output + "/services-" + locale + "-compact-consultation-390.png" });
@@ -949,12 +1125,13 @@ try {
   // body after the browser resource has already closed. Only a real observed
   // GET 503 from these two audited read-only endpoints can be exempted.
   const unavailable = responseEvidence;
-  const unexpectedUnavailable = unavailable.filter(path =>
-    !['/api/catalog/ratings', '/api/service-enquiries/booking-status', '/api/app/bootstrap'].includes(path));
+  const unexpectedUnavailable = unavailable.filter(path => !noDatabase503Paths.has(path));
   assert.deepEqual(unexpectedUnavailable, [], 'Unexpected 503 API path');
   const expectedUnavailable = new Set();
   if (!process.env.HH_APP_SUPABASE_URL) {
-    for (const path of unavailable) expectedUnavailable.add(path);
+    for (const path of unavailable) {
+      if (noDatabase503Paths.has(path)) expectedUnavailable.add(path);
+    }
   }
   const unexpected = diagnostics.console.filter(entry => {
     if (entry.type !== 'error') return false;

@@ -111,3 +111,22 @@ test('isolated Next DEV first HTTP 500 may not poison accepted 200 document or b
   assert.doesNotMatch(publicSource,/^[ \t]*pageErrors\s*=\s*\[\]/m,
     'A transient first 500 must never erase errors from accepted documents');
 });
+
+test('compact mobile Services video panel is opened by a hydrated native button, not by showing retired desktop media',()=>{
+  const browser=readFileSync('scripts/verify-site-video-browser.mjs','utf8')
+  const css=readFileSync('components/services-assist-mobile.module.css','utf8')
+  assert.match(css,/\.assistPage :global\(\[data-services-meet\]\)/)
+  assert.match(css,/\.assistPage :global\(#method-videos\)/)
+  assert.match(browser,/const videoPanel = page\.locator\('\[data-services-unified-panel="video"\]'\)/)
+  assert.match(browser,/await expect\(intro\.locator\('button\.site-video-play'\)\)\.toBeHidden\(\)/)
+  assert.match(browser,/await expect\(visibleGallery\)\.toBeHidden\(\)/)
+  assert.match(browser,/await expect\(videoTrigger\)\.toHaveAttribute\('aria-expanded', 'false'\)/)
+  assert.match(browser,/await videoTrigger\.click\(\)/)
+  assert.match(browser,/await expect\(videoTrigger\)\.toHaveAttribute\('aria-expanded', 'true'\)/)
+  assert.match(browser,/await expect\(mobileVideo\)\.toBeVisible\(\)/)
+  assert.match(browser,/mobileVideo\.locator\('a\[data-assist-video-scenario\]'\)\)\.toHaveCount\(3\)/)
+  assert.match(browser,/await expect\(createVideo\)\.toHaveAttribute\('href', '\/' \+ locale \+ '\/holistic-support\/mandala'\)/)
+  assert.match(browser,/await expect\(mobileVideo\.locator\('iframe'\)\)\.toHaveCount\(0\)/)
+  assert.match(browser,/await expect\(intro\.locator\('button\.site-video-play'\)\)\.toBeVisible\(\)/)
+  assert.match(browser,/assert\.deepEqual\(pageErrors\.filter\(error => !recoveredFailedDevErrors\.has\(error\)\), \[\]/)
+});

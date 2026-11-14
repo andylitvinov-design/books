@@ -1,6 +1,6 @@
 "use client";
 
-import {useRef,useState} from "react";
+import {useRef,useState,type ReactNode} from "react";
 import Link from "next/link";
 import {BookOpen, CalendarDays, ClipboardCheck, Clapperboard, Flower2,
   MessageCircle, Play, X} from "lucide-react";
@@ -72,8 +72,8 @@ const ACTIONS=[
   {id:"ask",icon:MessageCircle},
 ] as const;
 
-export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk}:{
-  locale:PublicLocale;onCreateVideo:()=>void;onPractice:()=>void;onAsk:()=>void
+export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,composer}:{
+  locale:PublicLocale;onCreateVideo:()=>void;onPractice:()=>void;onAsk:()=>void;composer?:ReactNode
 }){
   const t=COPY[locale];
   // Spanish has no recorded master; use the existing English version with
@@ -140,6 +140,7 @@ export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk}:{
         width={42} height={42} alt="" loading="lazy"/>
       <strong>{t.question}</strong>
     </div>
+    {composer&&<div className={css.inlineComposer} data-hh-ai-inline-composer>{composer}</div>}
     <div className={css.cards} role="group" aria-label={t.choices} data-hh-ai-quick-actions>
       {ACTIONS.map(item=>{
         const Icon=item.icon;

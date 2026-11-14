@@ -402,3 +402,27 @@ test('client landing locale pages use independent real browser pages and retain 
     "if (path === '/books/maya-tradition')"])
     assert.ok(verifier.includes(required), 'Do not skip original public/CSP/locale checks: ' + required);
 });
+test('release re-audit decodes every visible poster but recognises only approved CSS-hidden phone Services media',()=>{
+  const verifier=read('scripts/verify-release-reaudit.mjs');
+  const css=read('components/services-assist-mobile.module.css');
+  assert.ok(verifier.includes("const compactMobileServices = width === 390 && /^\\/(en|ru|es)\\/services$/.test(path);"));
+  for(const selector of ['[data-services-meet]', '[data-personal-testimonials="services"]', '#method-videos'])
+    assert.ok(verifier.includes("'"+selector+"'"), 'Only reviewed mobile legacy region may be hidden: '+selector);
+  assert.match(css,/\.assistPage :global\(\[data-services-meet\]\)/);
+  assert.match(css,/\.assistPage :global\(#method-videos\)/);
+  assert.match(css,/display:none!important/);
+  assert.ok(verifier.includes('getComputedStyle(root).display === \'none\''));
+  assert.ok(verifier.includes('el.getClientRects().length === 0'));
+  assert.ok(verifier.includes("typeof proof.source === 'string' && proof.source.length > 0"));
+  assert.ok(verifier.includes('explicitlyHiddenLegacyPosters > 0'));
+  assert.ok(verifier.includes("const videoPanel = page.locator('[data-services-unified-panel=\"video\"]')"));
+  assert.ok(verifier.includes("await expect(videoChoices).toBeHidden();"));
+  assert.ok(verifier.includes("await videoTrigger.click();"));
+  assert.ok(verifier.includes("await expect(videoTrigger).toHaveAttribute('aria-expanded', 'true')"));
+  assert.ok(verifier.includes("videoChoices.locator('a[data-assist-video-scenario]')).toHaveCount(3)"));
+  assert.ok(verifier.includes("await expect(createVideo).toHaveAttribute('href', '/' + locale + '/holistic-support/mandala')"));
+  assert.ok(verifier.includes("await expect(videoChoices.locator('iframe')).toHaveCount(0)"));
+  assert.ok(verifier.includes('await decodeReadyPoster(image, expect)'), 'Visible and other-route posters still require real decoding');
+  assert.ok(verifier.includes('await expect(posters).toHaveCount(posterImages.length)'), 'Poster count must never be reduced');
+  assert.ok(verifier.includes("assert.deepEqual(errors, [], 'No page errors after public poster decoding and scrolling')"));
+});

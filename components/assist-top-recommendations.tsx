@@ -74,14 +74,20 @@ const copy = {
 } as const;
 
 export function AssistTopRecommendations({
-  locale,focus,preferences={},matchingIds,noMatchLabel,
+  locale,focus,preferences={},priorityIds=[],matchingIds,noMatchLabel,
 }:{
   locale:PublicLocale;focus:Focus;preferences?:AssistPreferences;
-  matchingIds?:readonly string[];noMatchLabel?:string;
+  priorityIds?:readonly string[];matchingIds?:readonly string[];noMatchLabel?:string;
 }){
   const t=copy[locale];
-  const productIds:readonly ProductId[]=matchingIds?.length===0?[]:rankAssistProducts(focus??"general",preferences) as ProductId[];
-  return <section className={styles.root} data-assist-best-three aria-labelledby="assist-best-three-title">
+  // Keep budget/mode/channel hard filters authoritative even if the same
+  // Consultant Mind just named a more relevant first choice.
+  const eligible=rankAssistProducts(focus??"general",preferences,20) as ProductId[];
+  const prioritized=priorityIds.filter((id):id is ProductId=>
+    Object.hasOwn(products,id)&&eligible.includes(id as ProductId));
+  const productIds:readonly ProductId[]=matchingIds?.length===0?[]:
+    [...new Set([...prioritized,...eligible])].slice(0,3);
+  return <section className={styles.root} id="assist-recommendations" tabIndex={-1} data-assist-best-three aria-labelledby="assist-best-three-title">
     <header className={styles.header}>
       <h2 id="assist-best-three-title">{t.heading}</h2>
       <p>{t.detail}</p>

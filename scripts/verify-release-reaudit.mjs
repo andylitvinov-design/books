@@ -299,15 +299,85 @@ async function exercise(engine, browserType, width) {
         assert.deepEqual(publicDiagnostics.lifecycle.filter(event => ['window-error', 'unhandled-rejection'].includes(event.type)), [], 'No uncaught errors in public documents');
         // Snapshot the expected elements so index shifts or removed posters
         // cannot reduce coverage. Each same element must load and strictly decode.
+        const compactMobileServices = width === 390 && /^\/(en|ru|es)\/services$/.test(path);
+        if (compactMobileServices) {
+          // The owner-approved compact Services mobile layout intentionally
+          // hides the legacy intro and method gallery and retains discoverable
+          // video options instead. Both remain fully decoded at 1365px.
+          await expect(page.locator('[data-assist-mobile]')).toBeVisible();
+          await expect(page.locator('[data-services-meet]')).toBeHidden();
+          await expect(page.locator('#method-videos')).toBeHidden();
+          const videoPanel = page.locator('[data-services-unified-panel="video"]');
+          const videoTrigger = videoPanel.locator(':scope > button');
+          await expect(videoTrigger).toBeVisible();
+          await expect(videoTrigger).toHaveAttribute('aria-expanded', 'false');
+          const videoChoices = videoPanel.locator('[data-assist-video-generation]');
+          await expect(videoChoices).toBeHidden();
+          // A hidden-by-default client panel must open through the real
+          // hydrated control, never by mutating DOM state from this audit.
+          await expect.poll(
+            () => page.evaluate(() => history.pushState.toString().includes('__NA')),
+            { timeout: 30000, message: 'Services compact video panel must hydrate before activation' },
+          ).toBe(true);
+          await videoTrigger.click();
+          await expect(videoTrigger).toHaveAttribute('aria-expanded', 'true');
+          await expect(videoChoices).toBeVisible();
+          await expect(videoChoices.locator('a[data-assist-video-scenario]')).toHaveCount(3);
+          const createVideo = videoChoices.locator('a[data-assist-video-create]');
+          await expect(createVideo).toBeVisible();
+          await expect(createVideo).toHaveAttribute('href', '/' + locale + '/holistic-support/mandala');
+          await expect(videoChoices.locator('iframe')).toHaveCount(0);
+        }
         const posters = page.locator('.site-video-poster');
         const posterImages = await posters.elementHandles();
         console.info('[release-reaudit] strict poster decode count=' + posterImages.length + ' ' + path);
+        let explicitlyHiddenLegacyPosters = 0;
         for (const [posterIndex, image] of posterImages.entries()) {
           await expect(posters).toHaveCount(posterImages.length);
+          if (compactMobileServices) {
+            // Browsers do not fetch/decode an img within display:none!important.
+            // Accept ONLY exact CSS-hidden legacy Services sections, with the
+            // original source still present; unexpected hidden posters remain
+            // subject to the strict real scroll/decode assertion below.
+            const proof = await image.evaluate(el => {
+              const approvedRoots = [
+                '[data-services-showcase-hero]',
+                '[data-services-studio-free]',
+                '[data-services-studio-card]',
+                '[data-services-studio-paid] > header',
+                '[data-services-studio-paid] > div:last-child',
+                '#consultation',
+                '[data-services-meet]',
+                '[data-personal-testimonials="services"]',
+                '#method-videos',
+                '[data-services-directory-invitation]',
+                '[data-service-lead-capture]',
+              ];
+              const ancestor = approvedRoots.map(selector => el.closest(selector))
+                .find(root => root && getComputedStyle(root).display === 'none');
+              return {
+                approvedHidden: !!ancestor && el.getClientRects().length === 0,
+                source: el.getAttribute('src') || el.getAttribute('srcset'),
+              };
+            });
+            if (proof.approvedHidden) {
+              assert.ok(typeof proof.source === 'string' && proof.source.length > 0,
+                'Approved mobile-hidden poster must retain its original source');
+              explicitlyHiddenLegacyPosters++;
+              await image.dispose();
+              continue;
+            }
+          }
           await decodeReadyPoster(image, expect);
           console.info('[release-reaudit] decoded poster ' + (posterIndex + 1) + '/' + posterImages.length + ' ' + path);
         }
         await expect(posters).toHaveCount(posterImages.length);
+        if (compactMobileServices) {
+          assert.ok(explicitlyHiddenLegacyPosters > 0,
+            'Mobile Services must prove the original approved CSS-hidden media while desktop still decodes it');
+          console.info('[release-reaudit] approved compact Services hidden legacy posters=' +
+            explicitlyHiddenLegacyPosters + ' / ' + posterImages.length + ' ' + path);
+        }
         if (['/en/about', '/es/about', '/books/maya-tradition'].includes(path)) {
           await page.evaluate(() => scrollTo(0, 0));
           console.info('[release-reaudit] capture screenshot ' + path);
