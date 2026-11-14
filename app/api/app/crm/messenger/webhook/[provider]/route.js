@@ -10,7 +10,7 @@ import { verifyMessengerWebhook,verifyMessengerChallenge,normalizeMessengerUpdat
 import { sendTelegramDiagnosticPrompt, sendWhatsAppDiagnosticPrompt, ensureTelegramInlineWebhookUpdates, acknowledgeTelegramInlineCallback, sendTelegramCompanionMessage, sendHolisticBusinessRequestReply, sendHolisticBusinessWelcomePhoto } from '@/lib/crm/messenger-provider'
 import { telegramPresentationOnStart } from '@/lib/crm/telegram-presentation.mjs'
 import {processTelegramCompanion} from '@/lib/crm/telegram-companion-service'
-import {processTelegramAiV3,finishTelegramAiV3} from '@/lib/crm/telegram-ai-diagnostic-v3-service'
+import {processTelegramAiV3,finishTelegramAiV3,finishTelegramWaveVoiceV3} from '@/lib/crm/telegram-ai-diagnostic-v3-service'
 import {shouldBootstrapTelegramNativeMenu} from '@/lib/crm/telegram-companion-native-commands.mjs'
 import { receiveOwnerTelegramVideoWebhook } from '@/lib/practitioners/owner-telegram-video-service'
 import {processTelegramBusinessConversation} from '@/lib/crm/telegram-business-service'
@@ -222,7 +222,9 @@ export async function POST(request,{params}){
           }
           if(aiIntake.generate)after(async()=>{
             try{
-              const ready=await finishTelegramAiV3(config,aiIntake.generate)
+              const ready=aiIntake.generate.voiceNote
+                ?await finishTelegramWaveVoiceV3(config,aiIntake.generate)
+                :await finishTelegramAiV3(config,aiIntake.generate)
               if(ready?.reply)await sendTelegramDiagnosticPrompt({
                 to:ready.to,text:ready.reply,keyboard:ready.keyboard,
                 locale:ready.locale,approvedPilotGuest:ready.approvedPilotGuest,
@@ -260,6 +262,8 @@ export async function POST(request,{params}){
         }
         // Diagnostic buttons must never fall through to ordinary CRM ingestion.
         if(event.callbackId)continue
+        // Never turn untranscribed private audio into a fake text CRM lead.
+        if(event.voiceNote)continue
       }
       await ingestMessengerUpdate(provider,event,config)
     }
