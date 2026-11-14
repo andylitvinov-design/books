@@ -706,10 +706,16 @@ try{
    const more=chat.locator('details[data-hh-ai-more]');
    await more.waitFor({state:"visible",timeout:15000});
    if(await more.evaluate(node=>!node.open)) await more.locator("summary").click();
-   const resetButtons=more.locator("button");
+   // The real popup is portalled to document.body so it stays within the
+   // visual viewport, outside the scroll-clipped chat <details> subtree.
+   const popup=page.locator('[data-hh-ai-composer-popup]');
+   await popup.waitFor({state:"visible",timeout:10000});
+   const resetButtons=popup.locator(':scope > button');
    await expect.poll(()=>resetButtons.count()).toBe(1);
    await resetButtons.first().click();
-   if(await more.evaluate(node=>node.open)) await more.locator("summary").click();
+   // Reset must close the portal and return to a genuine clean conversation.
+   await expect.poll(()=>popup.count()).toBe(0);
+   await expect.poll(()=>more.evaluate(node=>node.open)).toBe(false);
    await chat.locator('[data-hh-ai-landing]').waitFor({state:"visible",timeout:15000});
    await expect.poll(()=>chat.locator('[data-hh-chat-turn="user"]').count()).toBe(0);
  };
