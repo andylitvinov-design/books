@@ -1985,6 +1985,85 @@ test('stale merged queue cleanup does not let a verified jobless GitHub 409 star
 });
 
 
+
+test('mature queued ghost deletion is exact-merged, jobless, bounded, and GitHub-verified',async()=>{
+ const {runCleanup,oldEnoughForDelete}=require('../scripts/ci-pr-merged-queue-cleanup.cjs');
+ const full='andylitvinov-design/books',old='a'.repeat(40),next='b'.repeat(40);
+ const now=Date.parse('2026-11-26T16:00:00Z');
+ const item={id:991,status:'queued',event:'pull_request',run_attempt:1,
+  repository:{full_name:full},head_repository:{full_name:full},
+  head_branch:'feat/proven-merged',head_sha:old,
+  created_at:'2026-11-11T20:20:00Z',
+  updated_at:'2026-11-11T20:20:00Z',pull_requests:[]};
+ const merged={number:4321,state:'closed',merged:true,
+  created_at:'2026-11-10T10:00:00Z',merged_at:'2026-11-12T10:00:00Z',
+  base:{ref:'codex/public-book-library',repo:{full_name:full}},
+  head:{ref:'feat/proven-merged',sha:next,repo:{full_name:full}}};
+ const context={repo:{owner:'andylitvinov-design',repo:'books'},
+  ref:'refs/heads/codex/bootstrap-books',eventName:'schedule',payload:{}};
+ const inspect=async({date=now,jobCount=0,prOpen=false,drift=false,
+  deleteStatus=204,requestOnly=false,noAPI=false,readback404=true}={})=>{
+  let removed=false;const calls={deleted:[],cancelled:[],routes:[]};
+  const pr=prOpen?{...merged,state:'open',merged:false,merged_at:null}:merged;
+  const actions={
+   listWorkflowRunsForRepo:async()=>({data:{total_count:135,workflow_runs:[item]}}),
+   getWorkflowRun:async()=>{
+    if(removed&&readback404)throw Object.assign(Error('gone'),{status:404});
+    return {data:drift?{...item,updated_at:'2026-11-25T10:00:00Z'}:item};
+   },
+   listJobsForWorkflowRun:async()=>({data:{total_count:jobCount,
+    jobs:Array.from({length:jobCount},(_,id)=>({id:id+1}))}}),
+   cancelWorkflowRun:async()=>{calls.cancelled.push(item.id);return {status:202};}
+  };
+  const erase=async({run_id})=>{
+   calls.deleted.push(run_id);
+   if(deleteStatus!==204)throw Object.assign(Error('delete denied'),{status:deleteStatus});
+   removed=true;return {status:204};
+  };
+  if(!requestOnly&&!noAPI)actions.deleteWorkflowRun=erase;
+  const github={rest:{actions,
+   pulls:{list:async()=>({data:[pr]}),get:async()=>({data:pr})},
+   repos:{compareCommits:async()=>({data:{status:'ahead',
+    base_commit:{sha:old},merge_base_commit:{sha:old}}})}
+  }};
+  if(!noAPI)github.request=async(route,args)=>{
+   calls.routes.push(route);
+   assert.equal(route,'DELETE /repos/{owner}/{repo}/actions/runs/{run_id}');
+   return erase(args);
+  };
+  const result=await runCleanup({github,context,now:date,
+   observedQueued:135,observedRemaining:4500});
+  return {calls,result};
+ };
+ assert.equal(oldEnoughForDelete(item,Date.parse('2026-11-25T21:19:59Z')),false);
+ assert.equal(oldEnoughForDelete(item,Date.parse('2026-11-25T21:20:00Z')),true);
+ const good=await inspect();
+ assert.deepEqual(good.calls.deleted,[991]);
+ assert.deepEqual(good.calls.cancelled,[]);
+ assert.equal(good.result.delete_attempts,1);
+ assert.deepEqual(good.result.delete_verified.map(x=>x.run_id),[991]);
+ assert.equal(good.result.status,'DELETE_VERIFIED');
+ const requestFallback=await inspect({requestOnly:true});
+ assert.deepEqual(requestFallback.calls.deleted,[991]);
+ assert.equal(requestFallback.result.status,'DELETE_VERIFIED');
+ const refused=await inspect({deleteStatus:403});
+ assert.deepEqual(refused.result.delete_denied,[{run_id:991,status:403}]);
+ assert.equal(refused.result.status,'GITHUB_DELETE_SUPPORT_TRIAGE');
+ for(const opts of [{jobCount:1},{prOpen:true},{drift:true}]){
+  const hold=await inspect(opts);
+  assert.deepEqual(hold.calls.deleted,[],'unsafe deletion '+JSON.stringify(opts));
+ }
+ const early=await inspect({date:Date.parse('2026-11-25T21:19:59Z')});
+ assert.deepEqual(early.calls.deleted,[]);
+ assert.equal(early.calls.cancelled.length,1,'existing safe cancel path still applies');
+ const missing=await inspect({noAPI:true});
+ assert.deepEqual(missing.calls.deleted,[]);
+ assert.ok(missing.result.errors.includes('DELETE_API_UNAVAILABLE'));
+ const unverified=await inspect({readback404:false});
+ assert.deepEqual(unverified.result.delete_verified,[]);
+ assert.equal(unverified.result.status,'DELETE_204_READBACK_UNVERIFIED');
+});
+
 /* HH_GHOST_409_ONE_REPAIR_TEST */
 const {verifiedGhostRepairCapacity:GRC,GHOST_REPAIR_MODE:GRM}=require('../scripts/ci-pr-capacity.cjs');
 function ghostFixture(o={}){

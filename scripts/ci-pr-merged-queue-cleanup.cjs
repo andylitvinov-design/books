@@ -10,7 +10,8 @@ const FULL=OWNER+'/'+REPO, PROD='codex/public-book-library';
 const CONTROL='codex/bootstrap-books', SHA=/^[a-f0-9]{40}$/i;
 const GRACE=30*60*1000, THRESHOLD=100;
 const MAX_CANCELS=12,MAX_BRANCHES=12,MAX_COMPARES=14,MAX_JOBLESS_409=4;
-const MAX_FORCE_CANCELS=2;
+const MAX_FORCE_CANCELS=2,MAX_DELETE_ATTEMPTS=2;
+const DELETE_MIN_AGE_MS=14*24*60*60*1000+60*60*1000;
 const date=s=>{const x=Date.parse(s||'');return Number.isFinite(x)?x:null;};
 function queuedPRRun(run){
  return run&&Number.isSafeInteger(run.id)&&run.id>0&&
@@ -20,6 +21,12 @@ function queuedPRRun(run){
   run.head_branch!==PROD&&SHA.test(run.head_sha||'')&&
   date(run.created_at)!==null&&Array.isArray(run.pull_requests)&&
   run.pull_requests.length<=1;
+}
+function oldEnoughForDelete(run,now){
+ const created=date(run?.created_at),updated=date(run?.updated_at);
+ return queuedPRRun(run)&&Number.isFinite(now)&&created!==null&&
+  updated!==null&&updated>=created&&created<=now-DELETE_MIN_AGE_MS&&
+  updated<=now-60*60*1000;
 }
 function mergedProduction(pr,run,now){
  if(!pr||pr.state!=='closed'||pr.merged_at==null||
@@ -66,6 +73,8 @@ async function runCleanup({github,context,core={info(){},warning(){}},
   scanned:0,checked_branches:0,proved_shas:0,eligible:0,
   cancel_accepted:[],cancel_attempts:0,force_cancel_attempts:0,
   force_cancel_accepted:[],non_cancelable:[],
+  delete_attempts:0,delete_verified:[],delete_unverified:[],
+  delete_denied:[],delete_deferred:0,
   skipped:0,partial:true,errors:[]};
  if(!trustedContext(context))return {...out,status:'UNTRUSTED_CONTEXT'};
  if(!Number.isSafeInteger(observedQueued)||observedQueued<=THRESHOLD||
@@ -151,6 +160,73 @@ async function runCleanup({github,context,core={info(){},warning(){}},
    out.skipped++;continue;
   }
   out.eligible++;
+  // GitHub allows deleting unfinished runs older than two weeks. Only
+  // previously merged, uniquely associated production PR runs with proven
+  // ancestry and ZERO jobs reach this code. One-hour safety margin applies.
+  if(oldEnoughForDelete(item,now)){
+   if(out.delete_attempts>=MAX_DELETE_ATTEMPTS){
+    out.delete_deferred++;continue;
+   }
+   const deleteRun=typeof github.rest.actions.deleteWorkflowRun==='function'
+    ? args=>github.rest.actions.deleteWorkflowRun(args)
+    : typeof github.request==='function'
+      ? args=>github.request(
+        'DELETE /repos/{owner}/{repo}/actions/runs/{run_id}',args)
+      : null;
+   if(!deleteRun){
+    out.delete_deferred++;
+    out.errors.push('DELETE_API_UNAVAILABLE');
+    break;
+   }
+   let jobs,preDeleteRun;
+   try{
+    jobs=(await github.rest.actions.listJobsForWorkflowRun({
+     owner:OWNER,repo:REPO,run_id:item.id,per_page:5}))?.data;
+    preDeleteRun=(await github.rest.actions.getWorkflowRun({
+     owner:OWNER,repo:REPO,run_id:item.id}))?.data;
+   }catch(e){
+    out.errors.push('DELETE_PROOF_UNAVAILABLE:'+String(e?.status||'unknown'));
+    out.skipped++;continue;
+   }
+   if(jobs?.total_count!==0||!Array.isArray(jobs.jobs)||jobs.jobs.length!==0||
+      !oldEnoughForDelete(preDeleteRun,now)||
+      preDeleteRun.id!==item.id||
+      preDeleteRun.head_sha!==item.head_sha||
+      preDeleteRun.head_branch!==item.head_branch||
+      preDeleteRun.created_at!==item.created_at||
+      preDeleteRun.updated_at!==item.updated_at||
+      !mergedProduction(freshPR,preDeleteRun,now)||
+      !uniqueRunOwner(preDeleteRun,freshPR)){
+    out.skipped++;continue;
+   }
+   out.delete_attempts++;
+   try{
+    const deleted=await deleteRun({
+     owner:OWNER,repo:REPO,run_id:item.id});
+    if(deleted?.status!==204)
+     throw Object.assign(Error('DELETE_NOT_ACCEPTED'),{
+      status:deleted?.status||0});
+    const receipt={run_id:item.id,pr:pr.number,
+     old_head:item.head_sha.slice(0,12)};
+    // Readback: only a 404 proves removal, not a successful API request.
+    try{
+     await github.rest.actions.getWorkflowRun({
+      owner:OWNER,repo:REPO,run_id:item.id});
+     out.delete_unverified.push(receipt);
+    }catch(check){
+     if(Number(check?.status)===404)out.delete_verified.push(receipt);
+     else out.delete_unverified.push(receipt);
+    }
+   }catch(e){
+    const status=Number(e?.status||0);
+    out.delete_denied.push({run_id:item.id,status});
+    out.errors.push('DELETE_DENIED:'+String(status||'unknown'));
+    out.status='GITHUB_DELETE_SUPPORT_TRIAGE';
+    // Never repeat an API permission/state conflict in the same sweep.
+    if([403,404,409,422,429].includes(status))break;
+   }
+   continue;
+  }
   // Cap attempted API mutations, not successful cancellations. GitHub can
   // report zombie queued runs that reject every cancel with HTTP 409.
   out.cancel_attempts++;
@@ -224,8 +300,10 @@ async function runCleanup({github,context,core={info(){},warning(){}},
    if([403,404,422,429].includes(status))break;
   }
  }
- if(out.status!=='GITHUB_409_SUPPORT_TRIAGE')
-  out.status=out.errors.length?'PARTIAL_ERRORS':
+ if(!['GITHUB_409_SUPPORT_TRIAGE','GITHUB_DELETE_SUPPORT_TRIAGE'].includes(out.status))
+  out.status=out.delete_verified.length?'DELETE_VERIFIED':
+   out.delete_unverified.length?'DELETE_204_READBACK_UNVERIFIED':
+   out.errors.length?'PARTIAL_ERRORS':
    out.cancel_accepted.length?'CANCELLATION_ACCEPTED_NOT_TERMINAL':'NO_PROVEN_STALE_RUN';
  out.partial=out.partial||response.total_count>response.workflow_runs.length||
   out.cancel_attempts>=limit;
@@ -233,4 +311,4 @@ async function runCleanup({github,context,core={info(){},warning(){}},
  return out;
 }
 module.exports={queuedPRRun,mergedProduction,uniqueRunOwner,validComparison,
- trustedContext,runCleanup,MAX_CANCELS};
+ trustedContext,runCleanup,MAX_CANCELS,oldEnoughForDelete,DELETE_MIN_AGE_MS};
