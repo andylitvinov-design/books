@@ -59,7 +59,7 @@ function verifiedIndependentPublicRasterAdvance(compare,testedBase,liveBase,cand
  });
 }
 
-async function assessBaseFreshness({github,owner,repo,pr,verifiedRunBase,classifierBase,decideRoute}){
+async function assessBaseFreshness({github,owner,repo,pr,verifiedRunBase,classifierBase,decideRoute,baseAdvancePolicy}){
  const fail=reason=>({ok:false,reason});
  if(!Number.isSafeInteger(pr?.number)||pr.number<1||!SHA.test(pr.base?.sha||'')||
     !Number.isSafeInteger(pr.changed_files)||pr.changed_files<0||pr.changed_files>300)return fail('INVALID_PR_EVIDENCE');
@@ -101,14 +101,36 @@ async function assessBaseFreshness({github,owner,repo,pr,verifiedRunBase,classif
        owner,repo,base:verifiedRunBase,head:actual,per_page:100
      })).data;
     }catch{return fail(actual===pr.base.sha?'SENSITIVE_CI_BASE_STALE':'SENSITIVE_BASE_STALE');}
+    const paths=rows.map(row=>row.filename);
+    // Specialist already used this same protected production BASE's policy.
+    // Never let this control-plane verifier use a PR-controlled classifier or
+    // independently invent broader exemptions for runtime/security changes.
+    const required=['safeDocumentationAdvance','safeIndependentCiMaintenanceAdvance',
+      'verifiedIndependentPublicRasterAdvance'];
+    if(baseAdvancePolicy && required.some(name=>
+        typeof baseAdvancePolicy[name]!=='function'))
+      return fail('TRUSTED_BASE_ADVANCE_POLICY_INCOMPLETE');
+    const approved=name=>{
+      if(!baseAdvancePolicy)return false; // legacy direct callers are narrow
+      try{
+        return baseAdvancePolicy[name](comparison,verifiedRunBase,actual,paths)===true;
+      }catch{return false;}
+    };
     const detachedCi=rows.every(row=>ISOLATED_CI_ONLY.has(row.filename))&&
       verifiedDetachedCiMediaAdvance(comparison,verifiedRunBase,actual,rows);
+    // Keep existing local raster proof as a second independent conservative
+    // validator. The new protected helper must also accept it when provided.
     const independentRaster=pr.mergeable===true&&
-      verifiedIndependentPublicRasterAdvance(comparison,verifiedRunBase,actual,
-        rows.map(row=>row.filename));
-    if(!detachedCi&&!independentRaster)return fail('SENSITIVE_COMPARE_UNSAFE');
+      verifiedIndependentPublicRasterAdvance(comparison,verifiedRunBase,actual,paths)&&
+      (!baseAdvancePolicy||approved('verifiedIndependentPublicRasterAdvance'));
+    const documentationOnly=approved('safeDocumentationAdvance');
+    const independentMaintenance=approved('safeIndependentCiMaintenanceAdvance');
+    if(!detachedCi&&!independentRaster&&!documentationOnly&&!independentMaintenance)
+      return fail('SENSITIVE_COMPARE_UNSAFE');
     revalidatedReason=detachedCi?'ISOLATED_CI_PUBLIC_MEDIA_REVALIDATED':
-      'INDEPENDENT_PUBLIC_RASTER_REVALIDATED';
+      independentRaster?'INDEPENDENT_PUBLIC_RASTER_REVALIDATED':
+      documentationOnly?'INDEPENDENT_DOCS_BASE_REVALIDATED':
+      'INDEPENDENT_CI_MAINTENANCE_REVALIDATED';
    }
   }
   const finalBranch=(await github.rest.repos.getBranch({owner,repo,branch:'codex/public-book-library'})).data;
@@ -175,6 +197,17 @@ async function loadTrustedClassifier(workspace){
  url.searchParams.set('sha',classifierBase);
  const mod=await import(url.href);
  if(typeof mod.decideRoute!=='function')throw Error('CLASSIFIER_UNAVAILABLE');
- return {classifierBase,decideRoute:mod.decideRoute};
+ // Load only code from the SAME immutable protected checkout as routing.
+ // No new API calls or detached worker; native Specialist already uses this
+ // source of truth to judge harmless production-base changes.
+ const impactUrl=pathToFileURL(path.join(dir,'lib/ci/production-base-impact.mjs'));
+ impactUrl.searchParams.set('sha',classifierBase);
+ const impact=await import(impactUrl.href);
+ const names=['safeDocumentationAdvance','safeIndependentCiMaintenanceAdvance',
+   'verifiedIndependentPublicRasterAdvance'];
+ if(names.some(name=>typeof impact[name]!=='function'))
+   throw Error('PROTECTED_BASE_ADVANCE_POLICY_UNAVAILABLE');
+ const baseAdvancePolicy=Object.fromEntries(names.map(name=>[name,impact[name]]));
+ return {classifierBase,decideRoute:mod.decideRoute,baseAdvancePolicy};
 }
 module.exports={assessBaseFreshness,coreRunBase,coreRunBaseForCheck,loadTrustedClassifier,verifiedDetachedCiMediaAdvance,verifiedIndependentPublicRasterAdvance};
