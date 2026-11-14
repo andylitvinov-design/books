@@ -131,11 +131,19 @@ try {
     for (const selector of [
       "[data-assist-personal-consultation]", "[data-assist-spiritual-entry]",
       "[data-assist-video-generation]", "[data-assist-course-shelf]",
-      "[data-assist-magical-help]", "[data-assist-reiki-session]"
+      "[data-assist-magical-help]", "[data-assist-reiki-session]", "[data-assist-coach-therapist]"
     ]) {
       await visible(page.locator(selector));
     }
 
+
+    // Coach/Mira and Reiki are separate mobile categories, never extra chat steps.
+    const coach=page.locator("[data-assist-coach-therapist]");
+    await expect(coach).toHaveCount(1);
+    assert.ok(await coach.locator("[data-assist-coach-master]").count() >= 2,
+      "Andrey and AI Mira remain without optional published specialists");
+    await expect(coach.locator('[data-assist-coach-ai="mira"]')).toHaveCount(1);
+    await expect(coach.locator('select[data-assist-coach-topic]')).toHaveCount(1);
 
     // The reiki picker is a distinct mounted mobile category, not another chat step.
     const reiki=page.locator("[data-assist-reiki-session]");
@@ -152,6 +160,27 @@ try {
     const question = conversation.locator("textarea#assist-question");
     const submit = conversation.locator('form button[type="submit"]');
     await visible(question);
+    // The owner saw the whole iPhone Services page zoom/crop when the keyboard
+    // appeared. A focused textarea below 16px triggers iOS Safari auto-zoom.
+    // Check computed text size AND viewport geometry, without disabling pinch zoom.
+    await question.focus();
+    const focusGeometry=await question.evaluate(element=>{
+      const input=element.getBoundingClientRect();
+      const form=element.form?.getBoundingClientRect();
+      return {fontSize:parseFloat(getComputedStyle(element).fontSize),
+        documentWidth:document.documentElement.scrollWidth,
+        viewportWidth:document.documentElement.clientWidth,
+        formLeft:form?.left??-1,formRight:form?.right??Infinity,
+        inputRight:input.right};
+    });
+    assert.ok(focusGeometry.fontSize>=16,
+      "iPhone keyboard must not zoom Services textarea: "+JSON.stringify(focusGeometry));
+    assert.ok(focusGeometry.formLeft>=-1 &&
+      focusGeometry.formRight<=focusGeometry.viewportWidth+1 &&
+      focusGeometry.inputRight<=focusGeometry.formRight+1 &&
+      focusGeometry.documentWidth<=focusGeometry.viewportWidth+1,
+      "Focused Services composer must fit phone width: "+JSON.stringify(focusGeometry));
+    await question.evaluate(element=>element.blur());
     await expect(submit).toBeDisabled();
     const topics = conversation.locator("[data-assist-issue-suggestions] button");
     const issueToggle = conversation.locator('button[aria-expanded]');
