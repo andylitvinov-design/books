@@ -127,17 +127,20 @@ jobs:
         if: github.event.workflow_run.conclusion == 'failure'
         uses: actions/github-script@v7
         env:
-          HH_OWNER_TOKEN_PRESENT: ${{ secrets.HH_AUTOMERGE_TOKEN != '' }}
+          # The owner credential is used ONLY inside the guarded final source
+          # update helper, not to read Actions logs/checks/PR metadata.
+          HH_AUTOMERGE_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN }}
         with:
-          # The existing owner token is needed so that a real branch
-          # synchronize emits new pull_request checks. GITHUB_TOKEN alone
-          # can suppress those workflow events; never create a stale HEAD.
-          github-token: ${{ secrets.HH_AUTOMERGE_TOKEN || github.token }}
+          # GitHub's scoped workflow token reads exact-run Core, failed
+          # Specialist logs, protected BASE and external source-writer leases.
+          # The owner PAT is reserved for the single HEAD-CAS PUT mutation.
+          github-token: ${{ github.token }}
           script: |
             const {recoverBaseAdvanced}=require(process.env.GITHUB_WORKSPACE+
               '/scripts/ci-pr-base-advanced-recovery.cjs');
+            const token=process.env.HH_AUTOMERGE_TOKEN||'';
             const result=await recoverBaseAdvanced({github,context,
-              hasOwnerToken:process.env.HH_OWNER_TOKEN_PRESENT==='true'});
+              hasOwnerToken:Boolean(token),ownerToken:token,fetcher:fetch});
             core.info('HH_BASE_ADVANCED_RECOVERY '+JSON.stringify(result));
             if(result.status==='UPDATED')core.setOutput('updated','true');
             await core.summary.addHeading('Exact-head production BASE recovery')

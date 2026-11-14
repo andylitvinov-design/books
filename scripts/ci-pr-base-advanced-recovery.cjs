@@ -70,12 +70,58 @@ function sameSource(pr,source,head){
   !['conflicting','dirty'].includes(pr.mergeable_state) &&
   !(pr.labels||[]).some(l=>HOLDS.has(typeof l==='string'?l:l?.name));
 }
-async function recoverBaseAdvanced({github,context,hasOwnerToken=false,now=Date.now()}){
+// Split privileges: the workflow's GITHUB_TOKEN reads Core/leases/logs.
+// The owner PAT is confined to an identity-verified, expected-HEAD native
+// branch update. A partial/denied response never implies a new CI wave.
+async function ownerProtectedUpdate({fetcher,ownerToken,number,head,source,body}={}){
+ const fail=reason=>({ok:false,reason});
+ if(typeof fetcher!=='function'||typeof ownerToken!=='string'||!ownerToken||
+    !Number.isSafeInteger(number)||number<1||!SHA.test(head||'')||
+    typeof source!=='string'||!source||typeof body!=='string')
+   return fail('OWNER_UPDATE_ARGUMENTS_INVALID');
+ const endpoint='/repos/'+REPO+'/pulls/'+number;
+ const headers={Authorization:'Bearer '+ownerToken,Accept:'application/vnd.github+json',
+   'Content-Type':'application/json','X-GitHub-Api-Version':'2022-11-28'};
+ const query=async(method,path,payload)=>{
+  const response=await fetcher('https://api.github.com'+path,{
+   method,headers,redirect:'error',signal:AbortSignal.timeout(20000),
+   ...(payload?{body:JSON.stringify(payload)}:{})
+  });
+  if(!response||!Number.isSafeInteger(response.status))
+   return {ok:false,status:0};
+  if(!response.ok)return {ok:false,status:response.status};
+  let data;
+  try{data=await response.json();}catch{return {ok:false,status:0};}
+  return {ok:true,status:response.status,data};
+ };
+ try{
+  const identity=await query('GET','/user');
+  if(!identity.ok)return fail('OWNER_IDENTITY_HTTP_'+identity.status);
+  if(identity.data?.login!=='andylitvinov-design')
+   return fail('OWNER_TOKEN_IDENTITY_MISMATCH');
+  const pr=await query('GET',endpoint);
+  if(!pr.ok)return fail('OWNER_PR_READ_HTTP_'+pr.status);
+  if(pr.data?.number!==number||pr.data.state!=='open'||pr.data.draft!==false||
+     pr.data.base?.ref!==PROD||pr.data.head?.repo?.full_name!==REPO||
+     pr.data.head?.sha!==head||pr.data.head?.ref!==source||pr.data.body!==body||
+     pr.data.mergeable===false||pr.data.mergeable_state==='dirty')
+   return fail('OWNER_PAT_PR_CHANGED');
+  const updated=await query('PUT',endpoint+'/update-branch',{
+   expected_head_sha:head
+  });
+  if(!updated.ok)return fail('OWNER_BRANCH_UPDATE_HTTP_'+updated.status);
+  if(updated.status!==202)return fail('OWNER_BRANCH_UPDATE_NOT_ACCEPTED');
+  return {ok:true,reason:'PROTECTED_BASE_SYNC_REQUESTED_NEW_HEAD_REQUIRES_REAL_CI'};
+ }catch{return fail('OWNER_BRANCH_API_UNAVAILABLE');}
+}
+async function recoverBaseAdvanced({github,context,hasOwnerToken=false,
+ ownerToken='',fetcher=globalThis.fetch,now=Date.now()}){
  const outcome=(status,reason,number=null)=>({status,reason,prNumber:number,mergeAuthorized:false});
  if(!isTrustedFailure(context,now))return outcome('SKIPPED','UNTRUSTED_OR_NON_BASE_FAILURE');
  // GitHub Actions' ephemeral GITHUB_TOKEN suppresses subsequent push CI.
  // Without the already configured owner token, changing HEAD would strand CI.
- if(!hasOwnerToken)return outcome('SKIPPED','OWNER_TOKEN_REQUIRED_FOR_NEW_CI');
+ if(!hasOwnerToken||typeof ownerToken!=='string'||!ownerToken)
+  return outcome('SKIPPED','OWNER_TOKEN_REQUIRED_FOR_NEW_CI');
  const e=context.payload.workflow_run;
  const refs=(e.pull_requests||[]).filter(x=>Number.isSafeInteger(x?.number)&&x.number>0&&
   x.base?.ref===PROD&&SHA.test(x.base.sha||'')&&
@@ -143,16 +189,14 @@ async function recoverBaseAdvanced({github,context,hasOwnerToken=false,now=Date.
    return outcome('SKIPPED','HEAD_OR_BASE_CHANGED_BEFORE_UPDATE',number);
   // A normal merge of protected production into the PR head. GitHub performs
   // the expected_head_sha lease atomically; synchronize triggers genuine CI.
-  const update=await github.request(
-   'PUT /repos/{owner}/{repo}/pulls/{pull_number}/update-branch',{
-    owner,repo,pull_number:number,expected_head_sha:sourceSha
-   });
-  if(update?.status!==202)return outcome('SKIPPED','UPDATE_NOT_ACCEPTED',number);
-  return outcome('UPDATED','PROTECTED_BASE_SYNC_REQUESTED_NEW_HEAD_REQUIRES_REAL_CI',number);
+  const updated=await ownerProtectedUpdate({fetcher,ownerToken,
+   number,head:sourceSha,source:e.head_branch,body:pr.body});
+  if(!updated.ok)return outcome('SKIPPED',updated.reason,number);
+  return outcome('UPDATED',updated.reason,number);
  }catch(error){
   const code=Number(error?.status||0);
-  return outcome('SKIPPED',code?'GITHUB_API_'+code:'BASE_RECOVERY_EVIDENCE_UNAVAILABLE',number);
+  return outcome('SKIPPED',code?'READ_GITHUB_API_'+code:'BASE_RECOVERY_EVIDENCE_UNAVAILABLE',number);
  }
 }
 module.exports={isTrustedFailure,validatedJobEvidence,isActualBaseAdvancedLog,
- isVerifiedAdvance,sameSource,recoverBaseAdvanced};
+ isVerifiedAdvance,sameSource,ownerProtectedUpdate,recoverBaseAdvanced};
