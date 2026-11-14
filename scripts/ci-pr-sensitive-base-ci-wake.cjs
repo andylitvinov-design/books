@@ -100,6 +100,32 @@ async function run({github,context,token,number,head,oldBase,newBase,coreRunId,
   if(seen)return hold('ONE_WAKE_ALREADY_RECORDED_FOR_HEAD');
   if(externalOwnerLeaseStatus(comments,head,now)!=='FREE')
    return hold('SOURCE_OWNER_LEASE_NOT_FREE');
+  // The failed-Core recovery path already prevents repeated BASE-only merges.
+  // The successful-Core native merge coordinator must apply the SAME budget:
+  // otherwise alternating success/failure callbacks can still make multiple
+  // source HEADs and launch unnecessary full Core waves. Only a requested
+  // native update-branch consumes this budget; signed Ready preserves HEAD.
+  if(needsHeadUpdate){
+   const {classifyRecentBaseSyncs} = require('./ci-pr-base-advanced-recovery.cjs');
+   const count=pr.commits;
+   if(!Number.isSafeInteger(count)||count<1||count>1000)
+    return hold('BASE_SYNC_HISTORY_COUNT_UNVERIFIED');
+   if(count>=3){
+    // GitHub returns PR commits oldest -> newest; request only the final
+    // bounded page, and prove its length and exact current source HEAD.
+    const page=Math.ceil(count/100);
+    const history=(await github.rest.pulls.listCommits({
+     owner,repo,pull_number:number,per_page:100,page
+    })).data;
+    const required=count-100*(page-1);
+    if(!Array.isArray(history)||history.length!==required)
+     return hold('BASE_SYNC_HISTORY_INCOMPLETE');
+    const budget=classifyRecentBaseSyncs(history,head,now);
+    if(!budget.verified)return hold(budget.reason);
+    if(budget.hold)return {...hold(budget.reason),
+     recentSyncs:budget.count,retryAt:budget.retryAt};
+   }
+  }
  }catch{return hold('PREFLIGHT_EVIDENCE_UNAVAILABLE');}
  const ownerCall=async(method,path,body)=>{
   const response=await fetcher('https://api.github.com'+path,{
