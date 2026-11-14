@@ -175,7 +175,7 @@ test('My Coach persona dialogue speaks and listens on exactly the consented sess
     'recognition.interimResults=true','recognition.lang=chooseDictationLanguage',
     'void deliver(appendSpokenAnswer(draftAtStartRef.current,finished,1200))','turnRef.current?.(text)','window.SpeechSynthesisUtterance',
     'activeRef.current=false','document.visibilityState===\'hidden\'',
-    'recognition.abort()','onCancelTurn','aria-pressed={active}'])
+    'recognition.abort()','onCancelTurn','aria-pressed={active&&!ready}'])
     assert.ok(loop.includes(phrase),phrase)
   assert.match(conf,/const publicMyCoachVoiceSources = \["\/en\/coaching\/sessions", "\/ru\/coaching\/sessions", "\/es\/coaching\/sessions"\]/)
   assert.match(conf,/\.\.\.publicMyCoachVoiceSources\.map/)
@@ -290,4 +290,48 @@ test('iOS 27 Safari second-mic recovery does not cut the recognizer and primes a
    assert.ok(loop.includes(marker),marker)
  assert.ok(helper.includes('export function ios27NeedsSpeechRecovery'), 'WebKit 27 pure UA gate')
  assert.doesNotMatch(loop,/new MediaRecorder|localStorage|sessionStorage|sendBeacon/)
+})
+
+test('Safari MP3 autoplay denial is recoverable on one tap without another synthesis',async()=>{
+  const {startCoachingMp3Playback}=await import('../lib/personal-coaching/streamed-mp3-playback.mjs')
+  let plays=0,blocks=0,starts=0,errors=0,blobs=0,revokes=0
+  class FakeAudio {
+    play(){
+      plays++
+      if(plays===1)return Promise.reject(Object.assign(new Error('gesture'),{name:'NotAllowedError'}))
+      this.onplaying?.()
+      return Promise.resolve()
+    }
+    pause(){}
+    removeAttribute(){}
+    load(){}
+  }
+  const environment={Audio:FakeAudio,URL:{createObjectURL:()=> 'blob:coach',
+    revokeObjectURL:()=>revokes++}}
+  const player=startCoachingMp3Playback({body:{},blob:async()=>{blobs++;return new Blob(['ID3'])}},{
+    environment,onBlocked:()=>blocks++,onStart:()=>starts++,onError:()=>errors++
+  })
+  await player.run
+  assert.equal(blocks,1);assert.equal(starts,0);assert.equal(errors,0)
+  await player.resume()
+  assert.equal(starts,1);assert.equal(plays,2);assert.equal(blobs,1)
+  player.cancel();assert.equal(revokes,1)
+})
+
+test('My Coach has private default TTS, no stale transcription, and tap-to-recover',()=>{
+  const loop=source('components/my-coach-speech-loop.jsx')
+  const ui=source('components/my-coach-live-dialogue.jsx')
+  const media=source('lib/personal-coaching/streamed-mp3-playback.mjs')
+  for(const token of ['function speakOnDevice()', 'speakOnDevice()',
+    'utterance.onstart=',"setNotice('') // Clear the old user transcript",
+    "phaseRef.current==='ready'&&blockedResumeRef.current","cloudAgreed&&cloudAvailable"])
+    assert.ok(loop.includes(token),token)
+  for(const token of ['replayBlocked','void replayPlayerRef.current.resume()',
+    'new Utterance(latestCoachText.slice(0,900))','onBlocked:','replaySpeechRef.current',
+    'detectedSpeechLocale(latestCoachText,lang)'])
+    assert.ok(ui.includes(token),token)
+  assert.ok(media.includes('onBlocked'))
+  assert.ok(media.includes('return {cancel,resume,run,audio}'))
+  assert.ok(ui.includes('trainingUseConsent:true'))
+  assert.doesNotMatch(loop,/api\.fish\.audio|texttospeech\.googleapis\.com/)
 })

@@ -90,9 +90,9 @@ const naturalVoiceCopy={
  es:{label:'Voz natural · Fish Audio (puede usarse para entrenar modelos)',about:'Privacidad',disclosure:'Opcional. Solo se envía la respuesta del coach a Fish Audio. El servicio gratuito puede usarla para mejorar los modelos. Desactívala para temas sensibles.'},
 }
 const voiceGateText={
- en:{title:'Before voice conversation',cancel:'Not now',agree:'Agree and talk',playbackUnavailable:'Audio playback is unavailable in this browser. Try Safari or use text.'},
- ru:{title:'Перед голосовым разговором',cancel:'Не сейчас',agree:'Согласен и начать',playbackUnavailable:'В этом браузере не работает озвучивание. Попробуйте Safari или текстовый диалог.'},
- es:{title:'Antes de hablar por voz',cancel:'Ahora no',agree:'Aceptar y hablar',playbackUnavailable:'La reproducción de voz no está disponible aquí. Prueba Safari o escribe.'},
+ en:{title:'Before voice conversation',cancel:'Not now',agree:'Agree and talk',tapToHear:'Tap to hear the coach',playbackUnavailable:'Audio playback is unavailable in this browser. Try Safari or use text.'},
+ ru:{title:'Перед голосовым разговором',cancel:'Не сейчас',agree:'Согласен и начать',tapToHear:'Нажмите, чтобы услышать коуча',playbackUnavailable:'В этом браузере не работает озвучивание. Попробуйте Safari или текстовый диалог.'},
+ es:{title:'Antes de hablar por voz',cancel:'Ahora no',agree:'Aceptar y hablar',tapToHear:'Toca para escuchar al coach',playbackUnavailable:'La reproducción de voz no está disponible aquí. Prueba Safari o escribe.'},
 }
 const quickTopics=[{id:'stress',icon:Leaf,art:'stones'},{id:'energy',icon:Zap,art:'sunrise'},{id:'relationships',icon:Heart,art:'lotus'}]
 const stageKeys=['clarify','explore','awareness','reframe','choice','planning','commitment','integration']
@@ -126,10 +126,12 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [editablePlan,setEditablePlan]=useState('')
   const [selectedGoal,setSelectedGoal]=useState('')
   const [replaying,setReplaying]=useState(false)
+  const [replayBlocked,setReplayBlocked]=useState(false)
   const [playbackNotice,setPlaybackNotice]=useState('')
   const pending=useRef(null),end=useRef(null),composerRef=useRef(null),transcriptRef=useRef(null)
   const composerDetailsRef=useRef(null),voiceConsentRef=useRef(null),speechRef=useRef(null)
   const replayControllerRef=useRef(null),replayPlayerRef=useRef(null)
+  const replaySpeechRef=useRef(null),replayTimerRef=useRef(null)
   useEffect(()=>()=>pending.current?.abort(),[])
   useEffect(()=>{
     // This probe sends only a synthetic OK to the free-only ZDR gateway.
@@ -192,8 +194,13 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     setError('')
   }
   function replayCoachReply(){
+    if(replayBlocked&&replayPlayerRef.current){
+      setReplayBlocked(false);setReplaying(true);setPlaybackNotice('')
+      void replayPlayerRef.current.resume()
+      return
+    }
     if(!latestCoachText||voiceState.phase!=='idle'||replaying)return
-    setPlaybackNotice('')
+    setPlaybackNotice('');setReplayBlocked(false)
     if(consent&&cloudAgreed&&cloudAvailable&&['google_chirp3_hd','fish_free'].includes(cloudProvider)){
       const controller=new AbortController()
       replayControllerRef.current=controller
@@ -205,29 +212,68 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       void fetch('/api/app/my-coach/voice/synthesize',{
         method:'POST',credentials:'same-origin',cache:'no-store',signal:controller.signal,
         headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({provider:cloudProvider,personaId,locale:lang,text:spoken,
+        body:JSON.stringify({provider:cloudProvider,personaId,locale:detectedSpeechLocale(spoken,lang),text:spoken,
           voiceConsent:true,cloudVoiceConsent:true,
           ...(cloudProvider==='fish_free'?{trainingUseConsent:true}:{})}),
       }).then(response=>{
         if(!response.ok||!response.body)throw Error('TTS_UNAVAILABLE')
         if(controller.signal.aborted)return
         replayPlayerRef.current=startCoachingMp3Playback(response,{
-          onEnd:()=>{replayControllerRef.current=null;replayPlayerRef.current=null;setReplaying(false)},
-          onError:()=>{replayControllerRef.current=null;replayPlayerRef.current=null;setReplaying(false);setPlaybackNotice(voiceGate.playbackUnavailable)}
+          onStart:()=>{if(!controller.signal.aborted){setReplayBlocked(false);setReplaying(true);setPlaybackNotice('')}},
+          onBlocked:()=>{if(!controller.signal.aborted){setReplayBlocked(true);setReplaying(false);setPlaybackNotice(voiceGate.tapToHear)}},
+          onEnd:()=>{replayControllerRef.current=null;replayPlayerRef.current=null;setReplayBlocked(false);setReplaying(false)},
+          onError:()=>{replayControllerRef.current=null;replayPlayerRef.current=null;setReplayBlocked(false);setReplaying(false);setPlaybackNotice(voiceGate.playbackUnavailable)}
         })
       }).catch(()=>{if(!controller.signal.aborted){setReplaying(false);setPlaybackNotice(voiceGate.playbackUnavailable)}})
       return
     }
-    setPlaybackNotice(voiceGate.playbackUnavailable)
-    // No automatic low-quality device voice: keep the coach question visible.
+    // Free private-device replay works even if Fish/Google is not enabled.
+    const synth=window.speechSynthesis,Utterance=window.SpeechSynthesisUtterance
+    if(!synth?.speak||!Utterance){setPlaybackNotice(voiceGate.playbackUnavailable);return}
+    const utterance=new Utterance(latestCoachText.slice(0,900))
+    const spokenLocale=detectedSpeechLocale(latestCoachText,lang)
+    utterance.lang={en:'en-GB',ru:'ru-RU',es:'es-ES'}[spokenLocale]
+    utterance.rate=0.97
+    const voices=synth.getVoices?.()||[]
+    const chosen=voices.find(v=>v.lang?.toLowerCase()===utterance.lang.toLowerCase())||
+      voices.find(v=>v.lang?.toLowerCase().startsWith(spokenLocale+'-'))
+    if(chosen)utterance.voice=chosen
+    let started=false
+    const clear=()=>{
+      if(replayTimerRef.current)clearTimeout(replayTimerRef.current)
+      replayTimerRef.current=null;replaySpeechRef.current=null
+      setReplaying(false);setVoiceState({phase:'idle',beat:0})
+    }
+    utterance.onstart=()=>{
+      if(replaySpeechRef.current!==utterance)return
+      started=true
+      if(replayTimerRef.current)clearTimeout(replayTimerRef.current)
+      replayTimerRef.current=null
+      setVoiceState({phase:'speaking',beat:0})
+    }
+    utterance.onend=clear
+    utterance.onerror=()=>{clear();setPlaybackNotice(voiceGate.playbackUnavailable)}
+    try{
+      synth.cancel();replaySpeechRef.current=utterance;setReplaying(true)
+      synth.speak(utterance)
+      if(!started)replayTimerRef.current=setTimeout(()=>{
+        if(started||replaySpeechRef.current!==utterance)return
+        try{synth.cancel()}catch{}
+        clear();setPlaybackNotice(voiceGate.playbackUnavailable)
+      },3500)
+    }catch{clear();setPlaybackNotice(voiceGate.playbackUnavailable)}
   }
   useEffect(()=>{
     const stopReplay=()=>{
       replayControllerRef.current?.abort()
       replayPlayerRef.current?.cancel()
+      if(replayTimerRef.current)clearTimeout(replayTimerRef.current)
+      replayTimerRef.current=null
+      if(replaySpeechRef.current)try{window.speechSynthesis?.cancel()}catch{}
+      replaySpeechRef.current=null
       replayControllerRef.current=null
       replayPlayerRef.current=null
-      setReplaying(false)
+      setReplayBlocked(false);setReplaying(false)
     }
     const onHidden=()=>{if(document.hidden)stopReplay()}
     document.addEventListener('visibilitychange',onHidden)
@@ -237,6 +283,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       window.removeEventListener('pagehide',stopReplay)
       replayControllerRef.current?.abort()
       replayPlayerRef.current?.cancel()
+      if(replayTimerRef.current)clearTimeout(replayTimerRef.current)
+      if(replaySpeechRef.current)try{window.speechSynthesis?.cancel()}catch{}
+      replaySpeechRef.current=null
     }
   },[])
 
@@ -444,8 +493,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           <span className={styles.voiceWaveRight} aria-hidden="true"><i/><i/><i/><i/><i/></span>
         </div>
         <button type="button" className={styles.replayControl} onClick={replayCoachReply}
-          disabled={!latestCoachText||voiceState.phase!=='idle'||replaying} aria-label={ui.replay} title={ui.replay}>
-          <Volume2 size={21} aria-hidden="true"/><span>{ui.replayShort}</span>
+          disabled={!replayBlocked&&(!latestCoachText||voiceState.phase!=='idle'||replaying)} aria-label={replayBlocked?voiceGate.tapToHear:ui.replay} title={replayBlocked?voiceGate.tapToHear:ui.replay}>
+          <Volume2 size={21} aria-hidden="true"/><span>{replayBlocked?voiceGate.tapToHear:ui.replayShort}</span>
         </button>
         <Link className={styles.endControl} href={'/'+lang+'/my-coach'} aria-label={ui.end} title={ui.end}>
           <PhoneOff size={21} aria-hidden="true"/><span>{lang==='ru'?'Конец':lang==='es'?'Salir':'End'}</span>
@@ -474,7 +523,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             onChange={event=>{setDraft(event.target.value);setError('')}}/>
           <label className={styles.consent}><input type="checkbox" checked={consent}
             disabled={busy||readiness.status==='checking'}
-            onChange={event=>{setConsent(event.target.checked);if(!event.target.checked){pending.current?.abort();replayControllerRef.current?.abort();replayPlayerRef.current?.cancel();setReplaying(false);setCloudAgreed(false)}}}/>
+            onChange={event=>{setConsent(event.target.checked);if(!event.target.checked){pending.current?.abort();replayControllerRef.current?.abort();replayPlayerRef.current?.cancel();setReplayBlocked(false);setReplaying(false);setCloudAgreed(false)}}}/>
             <span>{captions.consentShort}</span></label>
           <button className={styles.send} type="submit"
             disabled={!consent||busy||!draft.trim()||authRequired||readiness.status==='checking'}>

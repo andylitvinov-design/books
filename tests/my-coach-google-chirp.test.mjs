@@ -93,7 +93,7 @@ test('hard-bounded first-party cost policy and existing owner-only My Coach UI',
  for(const needle of ['cloudControllerRef.current?.abort()','cloudPlayerRef.current?.cancel()',
    "cloudProvider==='google_chirp3_hd'","silence();changePhase('idle')"])
    assert.ok(speech.includes(needle),needle)
- assert.ok(ui.includes('replayControllerRef.current?.abort();replayPlayerRef.current?.cancel();setReplaying(false);setCloudAgreed(false)'))
+ assert.ok(ui.includes('replayControllerRef.current?.abort();replayPlayerRef.current?.cancel();setReplayBlocked(false);setReplaying(false);setCloudAgreed(false)'))
  assert.ok(ui.includes("document.addEventListener('visibilitychange',onHidden)"))
  assert.ok(ui.includes("window.addEventListener('pagehide',stopReplay)"))
  assert.ok(speech.includes('(!cloudAgreed||!cloudAvailable)&&(cloudControllerRef.current||cloudPlayerRef.current)'))
