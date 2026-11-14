@@ -67,6 +67,7 @@ import { isNativePsiAlchemy, isNativeHolisticHouse } from '@/lib/native/client'
 import courseQuizStyles from './course-quiz.module.css'
 import Course14DayOverview from '@/components/app/course-14-day-overview'
 import CourseGuestLanding from '@/components/app/course-guest-landing'
+import { ProfileCoursesSwitch, ProfileCoursesGuest } from '@/components/app/profile-courses-switch'
 import CabinetGuestOverview from '@/components/app/cabinet-guest-overview'
 import { ProfileHubTabs, ProfileResultsArchive } from '@/components/app/profile-hub-tabs'
 import ProfileSettingsDisclosure from '@/components/app/profile-settings-disclosure'
@@ -227,6 +228,9 @@ export default function AppWorkspace({ locale, path = [] }) {
     return () => { lifetime.mounted = false; lifetime.epoch += 1 }
   }, [])
   const stressSignup = page === 'course' && searchParams.get('program') === 'stress'
+  // Explicit discovery and OPORA previews select discovery, whereas a saved lesson remains in My courses.
+  const courseChoiceMode = stressSignup || (searchParams.get('view') === 'discover' && !searchParams.get('courseId'))
+    ? 'discover' : 'saved'
   // Tab changes can race an earlier bootstrap; never show a stale account snapshot.
   const loadEpoch = useRef(0)
   const load = useCallback(async ({ refresh = true } = {}) => {
@@ -597,14 +601,26 @@ export default function AppWorkspace({ locale, path = [] }) {
         <h1>{c.loading}</h1>
       </main>
     )
-  if (state !== 'ready' && page === 'course' && state !== 'unavailable')
+  // The guest/expired-session and failed-bootstrap course paths retain the My Space
+  // navigation and must not replace the saved-course index with an OPORA promotion.
+  if (state !== 'ready' && page === 'course')
     return (
-      <main className="hh-app hh-app--course-guest">
-        <CourseGuestLanding locale={locale} onStart={signin} busy={busy} stressSignup={stressSignup} compact
-          onTelegramStart={()=>signin('telegram')} telegramAvailable={telegramAvailable}
-          errorMessage={error ? message(error, c) : undefined}
-          onRetry={state === 'error' ? load : undefined}
-          legacyText={c.legacy} nonDiagnostic={c.nonDiagnostic} />
+      <main className="hh-app hh-app--course-guest" data-profile-courses-guest>
+        <ProfileHubTabs locale={locale} active="courses" />
+        <ProfileCoursesSwitch locale={locale} mode={courseChoiceMode} />
+        {stressSignup
+          ? <CourseGuestLanding locale={locale} onStart={signin} busy={busy}
+              stressSignup compact onTelegramStart={()=>signin('telegram')}
+              telegramAvailable={telegramAvailable}
+              errorMessage={signinAttempted.current && error ? message(error, c) : undefined}
+              onRetry={state === 'error' ? load : undefined}
+              legacyText={c.legacy} nonDiagnostic={c.nonDiagnostic} />
+          : <ProfileCoursesGuest locale={locale} mode={courseChoiceMode} busy={busy}
+              onSignin={()=>signin('google')} onTelegramSignin={()=>signin('telegram')}
+              telegramAvailable={telegramAvailable}
+              loadingError={state === 'error' || state === 'unavailable'}
+              onRetry={state === 'error' ? load : undefined}
+              errorMessage={signinAttempted.current && error ? message(error, c) : undefined} />}
       </main>
     )
   // Public Cabinet entry explains the personal and practitioner spaces only to
@@ -798,7 +814,10 @@ export default function AppWorkspace({ locale, path = [] }) {
           {page === 'portfolio' && <PortfolioPage data={data} locale={locale} />}
            {page === 'progress' && <MyProgress key={data.account.id} data={data} locale={locale} />}
           {page === 'my-coaching-plan' && <MyCoachingPlan key={data.account.id} accountId={data.account.id} locale={locale} />}
-          {page === 'course' && <MyCourse data={data} locale={locale} />}
+          {page === 'course' && <>
+             <ProfileCoursesSwitch locale={locale} mode={courseChoiceMode} />
+             <MyCourse data={data} locale={locale} />
+           </>}
           {page === 'business' && <BusinessCoaching key={data.account.id} accountId={data.account.id} locale={locale} />}
           {page === 'coaching' && (['egyptian','greek'].includes(recordId)
              ? <TraditionCoaching key={data.account.id + recordId} accountId={data.account.id}
