@@ -115,10 +115,14 @@ async function assertUnifiedBottomNavigation(page,{locale,label,active=null,visi
   assert.equal(items.length,7,label+': seven approved destinations')
   assert.ok(items.every(item=>typeof item.href==='string'&&item.href.startsWith('/')))
   const links=dock.locator('[data-unified-dock-item]')
+  // Client hydration can replace the empty public shell after the enclosing
+  // dock appeared. Wait for the REAL seven links before comparing contents:
+  // evaluateAll() returns [] immediately and would otherwise misreport a
+  // hydration race as missing navigation. This still fails if links stay absent.
+  await expect(links).toHaveCount(7)
   assert.deepEqual(await links.evaluateAll(nodes=>nodes.map(el=>({
     id:el.getAttribute('data-unified-dock-item'),href:el.getAttribute('href')}))),
     items,label+': exact global seven-dock destinations')
-  await expect(links).toHaveCount(7)
   await expect(dock.locator('[aria-current="page"]')).toHaveCount(active?1:0)
   if(active)await expect(dock.locator('[data-unified-dock-item="'+active+'"]')).toHaveAttribute('aria-current','page')
   if(visible){
