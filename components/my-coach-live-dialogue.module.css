@@ -342,6 +342,14 @@
 .naturalVoiceRow details p{margin:7px 0 2px;max-width:52ch;line-height:1.45}
 .naturalVoiceRow :is(input,summary):focus-visible{outline:2px solid #168467;outline-offset:2px}
 
+/* Optional anonymous rating near a coach reply, not a second conversation panel. */
+.hiLearningRating{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0;font-size:12px;line-height:1.45;color:#698091}
+.hiLearningRating button{border:1px solid #cbd8df;border-radius:8px;background:transparent;color:inherit;padding:5px 9px;font:inherit;cursor:pointer}
+.hiLearningRating button{min-height:44px}
+.hiLearningRating button:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+.hiLearningRating button:disabled{opacity:.55;cursor:default}
+.hiLearningRating button:hover:not(:disabled){background:#f3f7fa}
+
 /* Owner approved: one continuous mobile session (portrait -> mic -> transcript + composer).
    Keep actual browser speech, language selection, replay, consent and no popup marketing. */
 .conversationPanel{display:grid;gap:10px;min-width:0;padding:13px 15px;border:1px solid #e1e9de;border-radius:25px;background:#fffdf9;box-shadow:0 7px 22px #2b4d3812}
