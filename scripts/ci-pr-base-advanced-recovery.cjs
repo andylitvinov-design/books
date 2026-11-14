@@ -63,6 +63,40 @@ function isVerifiedAdvance(diff,tested,live){
   Array.isArray(diff.commits)&&diff.commits.length===diff.ahead_by&&
   diff.commits.at(-1)?.sha===live;
 }
+
+// BASE_ADVANCED may reappear every time fast-moving production advances.
+// Repeated BASE-only merges create new PR HEADs and restart mandatory CI
+// without repairing a failed source test. This is a bounded cost/progress
+// HOLD, never a passing CI result or protection/merge waiver.
+// The existing :10 task owner must revisit a held PR after the quiet period.
+const BASE_SYNC_LOOKBACK_MS=90*60*1000;
+const BASE_SYNC_MAX_RECENT_MERGES=2;
+const BASE_MERGE_SUBJECT=/^Merge (?:remote-tracking )?branch ['"](?:origin\/)?codex\/public-book-library['"] into \S+/;
+function classifyRecentBaseSyncs(commits,sourceSha,now=Date.now()){
+ const unknown=reason=>({verified:false,hold:true,reason,count:null,retryAt:null});
+ if(!SHA.test(sourceSha||'')||!Number.isFinite(now)||
+    !Array.isArray(commits)||!commits.length||commits.length>100)
+   return unknown('BASE_SYNC_HISTORY_UNVERIFIED');
+ if(commits.at(-1)?.sha!==sourceSha)
+   return unknown('BASE_SYNC_HISTORY_HEAD_CHANGED');
+ const recent=[];
+ for(const c of commits){
+  if(!SHA.test(c?.sha||'')||!Array.isArray(c.parents)||!c.commit||
+     typeof c.commit.message!=='string')
+   return unknown('BASE_SYNC_HISTORY_MALFORMED');
+  const subject=c.commit.message.split('\n')[0];
+  if(c.parents.length!==2||!BASE_MERGE_SUBJECT.test(subject))continue;
+  const at=Date.parse(c.commit.committer?.date||'');
+  if(!Number.isFinite(at)||at>now+2*60_000)
+   return unknown('BASE_SYNC_HISTORY_TIME_UNVERIFIED');
+  if(at>=now-BASE_SYNC_LOOKBACK_MS)recent.push(at);
+ }
+ const count=recent.length,hold=count>=BASE_SYNC_MAX_RECENT_MERGES;
+ return {verified:true,hold,reason:hold?'BASE_SYNC_REPEAT_BURST_HOLD':'BELOW_SYNC_BURST_BUDGET',
+  count,retryAt:hold?new Date(recent.sort((a,b)=>a-b)
+   [recent.length-BASE_SYNC_MAX_RECENT_MERGES]+BASE_SYNC_LOOKBACK_MS+1).toISOString():null};
+}
+
 function sameSource(pr,source,head){
  return pr?.state==='open'&&!pr.draft&&pr.base?.ref===PROD&&
   pr.head?.repo?.full_name===REPO&&pr.head.ref===source&&pr.head.sha===head&&
@@ -173,6 +207,26 @@ async function recoverBaseAdvanced({github,context,hasOwnerToken=false,
   })).data;
   if(!isVerifiedAdvance(diff,old,live))
    return outcome('SKIPPED','BASE_ANCESTRY_UNVERIFIED',number);
+  // Read bounded GitHub PR commit history, not labels. With two recent
+  // production-to-PR merges, a third automatic source HEAD is a churn hazard.
+  // Unknown/truncated history holds; the existing triage owner can retry after
+  // the returned quiet deadline with a fresh, signed exact-HEAD check.
+  const commitsTotal=pr.commits;
+  if(!Number.isSafeInteger(commitsTotal)||commitsTotal<1||commitsTotal>1000)
+   return outcome('SKIPPED','BASE_SYNC_HISTORY_COUNT_UNVERIFIED',number);
+  if(commitsTotal>=3){
+   const page=Math.ceil(commitsTotal/100);
+   const listed=(await github.rest.pulls.listCommits({
+    owner,repo,pull_number:number,per_page:100,page
+   })).data;
+   const expected=commitsTotal-100*(page-1);
+   if(!Array.isArray(listed)||listed.length!==expected)
+    return outcome('SKIPPED','BASE_SYNC_HISTORY_INCOMPLETE',number);
+   const burst=classifyRecentBaseSyncs(listed,sourceSha,now);
+   if(!burst.verified)return outcome('SKIPPED',burst.reason,number);
+   if(burst.hold)return {...outcome('SKIPPED',burst.reason,number),
+     recentSyncs:burst.count,retryAt:burst.retryAt};
+  }
   // Native update-branch is non-force and rejects a conflict. Do not overwrite
   // another owner/Repair worker's concurrent head while it holds a lease.
   let pages=0;
@@ -199,4 +253,4 @@ async function recoverBaseAdvanced({github,context,hasOwnerToken=false,
  }
 }
 module.exports={isTrustedFailure,validatedJobEvidence,isActualBaseAdvancedLog,
- isVerifiedAdvance,sameSource,ownerProtectedUpdate,recoverBaseAdvanced};
+ isVerifiedAdvance,classifyRecentBaseSyncs,sameSource,ownerProtectedUpdate,recoverBaseAdvanced};
