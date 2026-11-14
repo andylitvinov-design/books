@@ -114,17 +114,19 @@ try {
       assert.equal(await cart.locator('[data-cart-start-order]').count(), 1)
       assert.equal(await cart.locator('[data-cart-payment-step]').count(), 0)
       const startOrder = cart.locator('[data-cart-start-order]')
+      // Next may stream a visible button before its client event handler is
+      // attached. Confirm a real React onClick, as for shop filters above,
+      // and require exactly one customer click to reveal the actual contact UI.
+      await page.waitForFunction(() => {
+        const button = document.querySelector('[data-personal-service-cart] [data-cart-start-order]')
+        if (!button) return false
+        const reactKey = Object.keys(button).find(key => key.startsWith('__reactProps$'))
+        return Boolean(reactKey && typeof button[reactKey]?.onClick === 'function')
+      }, null, { timeout: 30000 })
       await startOrder.click()
       const contactForm = cart.locator('[data-cart-contact-form]')
-      try {
-        await contactForm.waitFor({ state: 'visible', timeout: 6000 })
-      } catch {
-        // A tap during Next hydration may be consumed before React attaches
-        // the handler. Retry once while the button still exists; fail closed
-        // if the real messenger-only contact panel never becomes visible.
-        if (await startOrder.isVisible()) await startOrder.click()
-        await contactForm.waitFor({ state: 'visible', timeout: 12000 })
-      }
+      await contactForm.waitFor({ state: 'visible', timeout: 12000 })
+      assert.equal(await startOrder.count(), 0, 'One genuine cart click opens the messenger choice')
       // In messenger-only mode the website must not accept a typed
       // phone/Google-only order or fabricate a CRM receipt.
       const card=contactForm.locator('[data-messenger-only-contact]');
