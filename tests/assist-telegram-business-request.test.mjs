@@ -164,6 +164,7 @@ test('the actual locked state machine requires initial request, format and disti
  const initial=await context.stage(event('site request',21,{
   service:'reiki',locale:'ru',name:'Сеанс Рейки'}),{},k);
  assert.equal(initial.handled,true);
+ assert.equal(initial.welcomePhoto,true,'the very first request introduces the avatar');
  assert.equal(row.stage,'format');
  assert.equal(row.consent_at,null);
  const unknown=await context.stage(event('Private clinical note',22),{},k);
@@ -171,6 +172,7 @@ test('the actual locked state machine requires initial request, format and disti
  assert.equal(row.stage,'format');
  const picked=await context.stage(event('онлайн',23),{},k);
  assert.equal(row.stage,'confirm');
+ assert.equal(picked.welcomePhoto,undefined,'follow-up dialogue has no repeated photo');
  assert.ok(picked.reply.includes('Подтвердить'));
  const confirmed=await context.stage(event('Подтвердить',24),{},k);
  assert.equal(row.stage,'committing');
@@ -179,6 +181,7 @@ test('the actual locked state machine requires initial request, format and disti
  assert.equal(confirmed.commit.format,'online');
  const replay=await context.stage(event('Подтвердить',24),{},k);
  assert.equal(replay.commit,undefined);
+ assert.equal(replay.welcomePhoto,undefined,'replayed update cannot repeat welcome image');
  const stopped=await context.stage(event('/stop',25),{},k);
  assert.equal(row.stage,'stopped');
  assert.equal(stopped.handled,true);
@@ -190,7 +193,7 @@ test('the actual locked state machine requires initial request, format and disti
 });
 test('only explicit confirmed provider session can create an existing encrypted CRM enquiry',()=>{
  const source=get('lib/crm/telegram-business-service.js');
- const migration=get('supabase/migrations/20261113155500_hh_crm_tg_business_service_sessions_v1.sql');
+ const migration=get('supabase/migrations/20261113222405_hh_crm_tg_business_service_sessions_v1.sql');
  const provider=get('lib/crm/messenger-provider.js');
  assert.match(source,/HH_CRM_TG_CHAT_AUTOMATION_ENABLED!=='true'/);
  assert.match(source,/assertHolisticBusinessConnection\(\{connectionId:event.connectionId/);
@@ -241,7 +244,7 @@ test('warm service recognition and explicit, natural format preferences across R
 
 test('one atomic CRM transaction for enquiry + session, STOP/Cancel uses same lock',()=>{
  const source=get('lib/crm/telegram-business-service.js');
- const migration=get('supabase/migrations/20261113155500_hh_crm_tg_business_service_sessions_v1.sql');
+ const migration=get('supabase/migrations/20261113222405_hh_crm_tg_business_service_sessions_v1.sql');
  const route=get('app/api/app/crm/messenger/webhook/[provider]/route.js');
  const begin=source.indexOf('async function saveConfirmedEnquiry(');
  const end=source.indexOf('export async function processTelegramBusinessConversation(',begin);
@@ -262,4 +265,30 @@ test('one atomic CRM transaction for enquiry + session, STOP/Cancel uses same lo
  assert.doesNotMatch(migration,/SECURITY DEFINER|GRANT UPDATE ON app_private.crm_tg_business_service_sessions TO hh_app_backend/);
  assert.match(route,/if\(business.terminal\)/);
  assert.match(route,/hh-tg-business-terminal-chat/);
+});
+
+// First business greeting is a provider PHOTO message (no caption), sent
+// sequentially before the usual localized service/format dialogue.
+test('first signed Telegram Business enquiry sends the existing female avatar exactly once before text',()=>{
+ const route=get('app/api/app/crm/messenger/webhook/[provider]/route.js');
+ const provider=get('lib/crm/messenger-provider.js');
+ const service=get('lib/crm/telegram-business-service.js');
+ assert.match(service,/return old\?reply:\{\.\.\.reply,welcomePhoto:true\}/);
+ assert.match(service,/if\(old&&Number\(old.last_update_id\)>=event.updateId\)return \{handled:true\}/);
+ assert.match(provider,/TELEGRAM_BUSINESS_WELCOME_PHOTO = 'https:\/\/holistichouse\.vercel\.app\/images\/holistic-house\/my-coach-mira-hires\.webp'/);
+ const begin=provider.indexOf('export async function sendHolisticBusinessWelcomePhoto(');
+ const end=provider.indexOf('export async function ensureTelegramWebhook(',begin);
+ assert.ok(begin>=0&&end>begin);
+ const welcome=provider.slice(begin,end);
+ assert.match(welcome,/await assertHolisticBusinessConnection\(/);
+ assert.match(welcome,/\/sendPhoto/);
+ assert.match(welcome,/business_connection_id:connectionId,chat_id:to/);
+ assert.match(welcome,/allow_paid_broadcast:false/);
+ assert.doesNotMatch(welcome,/caption:|parse_mode:|reply_markup:/);
+ const first=route.indexOf('if(business.welcomePhoto===true)');
+ const photo=route.indexOf('await sendHolisticBusinessWelcomePhoto(',first);
+ const message=route.indexOf('await sendHolisticBusinessRequestReply(',first);
+ assert.ok(first>0&&photo>first&&message>photo,'must await photo first, then send text');
+ assert.ok(route.indexOf('await sendHolisticBusinessWelcomePhoto(',photo+1)<0,'welcome only in first request branch');
+ assert.match(route,/HH_TG_BUSINESS_WELCOME_PHOTO_NOT_CONFIRMED/);
 });

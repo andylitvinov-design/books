@@ -8,6 +8,7 @@ const { expect } = require((process.env.HH_PLAYWRIGHT_PACKAGE || "playwright") +
 import assert from "node:assert/strict";
 import { inferAssistPreferences } from "../lib/assist/service-match.mjs";
 import { rankAssistProducts } from "../lib/assist/product-recommendations.mjs";
+import { rankDiscoveryVideos } from "../lib/video-discovery/ranker.mjs";
 import { telegramServiceRequestUrl } from "../lib/assist/telegram-business-request.mjs";
 import { mkdir, writeFile } from "node:fs/promises";
 
@@ -21,6 +22,13 @@ await mkdir(output, { recursive: true });
 const browser = await chromium.launch();
 const diagnostics = { runtime: "next-start production", console: [], pageErrors: [], devIssueOverlay: false };
 const responseEvidence = [];
+// Isolated CI: only these audited read-only endpoints may lack the database.
+const noDatabase503Paths = new Set([
+  "/api/catalog/ratings",
+  "/api/service-enquiries/booking-status",
+  "/api/app/bootstrap",
+  "/api/public/remote-energy-support-masters",
+]);
 let failure;
 try {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
@@ -50,9 +58,8 @@ try {
     page.on("response", response => {
       const url = new URL(response.url());
       if (response.request().method() === "GET" && response.status() === 503 &&
-          ["/api/catalog/ratings", "/api/service-enquiries/booking-status", "/api/app/bootstrap"].includes(url.pathname)) {
-        // Status and path are already verified above. Browser streams may
-        // close before body.json(), so do not misclassify empty reads.
+          url.origin === origin && url.pathname.startsWith("/api/")) {
+        // Record all first-party read failures, including any unexpected new endpoint.
         responseEvidence.push(url.pathname);
       }
     });
@@ -125,11 +132,27 @@ try {
     for (const selector of [
       "[data-assist-personal-consultation]", "[data-assist-spiritual-entry]",
       "[data-assist-video-generation]", "[data-assist-course-shelf]",
-      "[data-assist-magical-help]"
+      "[data-assist-magical-help]", "[data-assist-reiki-session]", "[data-assist-coach-therapist]"
     ]) {
       await visible(page.locator(selector));
     }
 
+
+    // Coach/Mira and Reiki are separate mobile categories, never extra chat steps.
+    const coach=page.locator("[data-assist-coach-therapist]");
+    await expect(coach).toHaveCount(1);
+    assert.ok(await coach.locator("[data-assist-coach-master]").count() >= 2,
+      "Andrey and AI Mira remain without optional published specialists");
+    await expect(coach.locator('[data-assist-coach-ai="mira"]')).toHaveCount(1);
+    await expect(coach.locator('select[data-assist-coach-topic]')).toHaveCount(1);
+
+    // The reiki picker is a distinct mounted mobile category, not another chat step.
+    const reiki=page.locator("[data-assist-reiki-session]");
+    await expect(reiki).toHaveCount(1);
+    await expect(reiki.locator('button[aria-pressed]')).toHaveCount(3);
+    await expect(reiki.locator('input[type="date"]')).toHaveCount(1);
+    await expect(reiki.locator('input[type="time"]')).toHaveCount(1);
+    await expect(reiki.locator('a[href*="holistic-support/mobile"]')).toHaveCount(1);
 
     const conversation = assist.locator("[data-assist-dialogue]");
     const log = conversation.locator("#assist-results");
@@ -138,6 +161,27 @@ try {
     const question = conversation.locator("textarea#assist-question");
     const submit = conversation.locator('form button[type="submit"]');
     await visible(question);
+    // The owner saw the whole iPhone Services page zoom/crop when the keyboard
+    // appeared. A focused textarea below 16px triggers iOS Safari auto-zoom.
+    // Check computed text size AND viewport geometry, without disabling pinch zoom.
+    await question.focus();
+    const focusGeometry=await question.evaluate(element=>{
+      const input=element.getBoundingClientRect();
+      const form=element.form?.getBoundingClientRect();
+      return {fontSize:parseFloat(getComputedStyle(element).fontSize),
+        documentWidth:document.documentElement.scrollWidth,
+        viewportWidth:document.documentElement.clientWidth,
+        formLeft:form?.left??-1,formRight:form?.right??Infinity,
+        inputRight:input.right};
+    });
+    assert.ok(focusGeometry.fontSize>=16,
+      "iPhone keyboard must not zoom Services textarea: "+JSON.stringify(focusGeometry));
+    assert.ok(focusGeometry.formLeft>=-1 &&
+      focusGeometry.formRight<=focusGeometry.viewportWidth+1 &&
+      focusGeometry.inputRight<=focusGeometry.formRight+1 &&
+      focusGeometry.documentWidth<=focusGeometry.viewportWidth+1,
+      "Focused Services composer must fit phone width: "+JSON.stringify(focusGeometry));
+    await question.evaluate(element=>element.blur());
     await expect(submit).toBeDisabled();
     const topics = conversation.locator("[data-assist-issue-suggestions] button");
     const issueToggle = conversation.locator('button[aria-expanded]');
@@ -178,6 +222,10 @@ try {
     assert.equal(await assist.locator('input[type="email"],input[type="tel"]').count(), 0,
       "Assist cannot silently collect contact details");
 
+    // The public MyTube endpoint accepts locale only; no private question text.
+    const publishedVideoPending=page.waitForResponse(response=>
+      response.url().includes("/api/assist/public-mytube?locale="+locale) &&
+      response.request().method()==="GET",{timeout:25000});
     // One issue enters a user bubble, followed by a helper reply and one question.
     await topics.first().click();
     await expect(conversation.locator("[data-assist-topic-suggestions]")).toHaveCount(0);
@@ -187,6 +235,33 @@ try {
     await expect(log.locator("a[data-assist-recommendation]")).toHaveCount(0);
     await expect(question).toHaveValue("");
     await visible(shelf.locator("#assist-best-three-title"));
+    const publishedVideoResponse=await publishedVideoPending;
+    const publishedVideoUrl=new URL(publishedVideoResponse.url());
+    assert.equal(publishedVideoUrl.pathname,"/api/assist/public-mytube");
+    assert.equal(publishedVideoUrl.search,"?locale="+locale,
+      "No private question text is sent to MyTube");
+    assert.equal(publishedVideoResponse.status(),200);
+    const publicVideos=await publishedVideoResponse.json();
+    assert.ok(Array.isArray(publicVideos?.videos),"Published video catalog must be an array");
+    const expectedVideos=rankDiscoveryVideos(publicVideos.videos,{goal:"stress",sort:"for-you"}).slice(0,3);
+    const videoShelf=assist.locator("[data-assist-mytube]");
+    await visible(videoShelf);
+    await expect(videoShelf.locator("[data-assist-mytube-more]"))
+      .toHaveAttribute("href","/"+locale+"/mytube?goal=stress");
+    const videoCards=videoShelf.locator("[data-assist-mytube-card]");
+    await expect(videoCards).toHaveCount(expectedVideos.length,{timeout:25000});
+    assert.equal(new Set(expectedVideos.map(video=>video.youtubeId)).size,expectedVideos.length,
+      "MyTube recommendations must use distinct published YouTube identifiers");
+    for(const video of expectedVideos){
+      const card=videoShelf.locator('[data-assist-mytube-card="'+video.youtubeId+'"]');
+      await expect(card).toHaveCount(1);
+      const links=card.locator("a[href]");
+      await expect(links).toHaveCount(2);
+      for(const link of [links.first(),links.last()])
+        await expect(link).toHaveAttribute("href","/"+locale+"/mytube?video="+video.youtubeId);
+      const bounds=await links.last().boundingBox();
+      assert.ok(bounds&&bounds.height>=44,"MyTube Watch target must remain accessible");
+    }
     const expectedStress = rankAssistProducts("stress", {});
     const actualStress = await bestCards.evaluateAll(nodes=>
       nodes.map(node=>node.getAttribute("data-assist-best-card")));
@@ -282,6 +357,7 @@ try {
       locale === "es" ? "Quiero morir" : "I want to kill myself");
     await submit.click();
     await visible(log.locator('[role="alert"]'));
+    await expect(assist.locator("[data-assist-mytube]")).toHaveCount(0);
     await expect(shelf).toHaveCount(0);
     await expect(log.locator("a[data-assist-recommendation]")).toHaveCount(0);
     await assertNoDevIssueOverlay(page, locale + "/services/assist/" + width);
@@ -949,12 +1025,13 @@ try {
   // body after the browser resource has already closed. Only a real observed
   // GET 503 from these two audited read-only endpoints can be exempted.
   const unavailable = responseEvidence;
-  const unexpectedUnavailable = unavailable.filter(path =>
-    !['/api/catalog/ratings', '/api/service-enquiries/booking-status', '/api/app/bootstrap'].includes(path));
+  const unexpectedUnavailable = unavailable.filter(path => !noDatabase503Paths.has(path));
   assert.deepEqual(unexpectedUnavailable, [], 'Unexpected 503 API path');
   const expectedUnavailable = new Set();
   if (!process.env.HH_APP_SUPABASE_URL) {
-    for (const path of unavailable) expectedUnavailable.add(path);
+    for (const path of unavailable) {
+      if (noDatabase503Paths.has(path)) expectedUnavailable.add(path);
+    }
   }
   const unexpected = diagnostics.console.filter(entry => {
     if (entry.type !== 'error') return false;

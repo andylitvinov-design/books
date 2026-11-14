@@ -2,12 +2,14 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
+import { consultServiceQuestion } from "@/lib/assist/consultant-mind.mjs";
 import { ArrowDown, ArrowRight, HeartHandshake, Mic, Sparkles } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import { inferAssistPreferences, nextAssistQuestion, rankAssistOffers } from "@/lib/assist/service-match.mjs";
 import type { AssistPreferences } from "@/lib/assist/service-match.mjs";
 import styles from "./services-assist-mobile.module.css";
 import { AssistTopRecommendations } from "./assist-top-recommendations";
+import { ServicesAssistMyTube } from "./services-assist-mytube";
 
 type Focus = "stress" | "relationships" | "energy" | "health" | "work" | "growth" | "general";
 const routes = {
@@ -27,7 +29,7 @@ const signals: readonly [Exclude<Focus,"general">, RegExp][] = [
   ["energy", /энерг|сил нет|тело|рейки|reiki|energ|body|cuerpo/i],
   ["growth", /смысл|цель|путь|развит|самопозн|meaning|purpose|growth|goal|\blost\b|\bdirection\b|desorient|perdid|rumbo|sentido|propósito|потерял|потеряна|не знаю куда|ориентир/i],
 ];
-const urgent = /суицид|убить себя|самоповрежд|покончить с собой|suicid|self.harm|kill myself|quiero morir|hacerme daño/i;
+const urgent = /суицид|убить себя|самоповрежд|покончить с собой|хочу умереть|боль в груди|не могу дышать|трудно дышать|suicid|self.harm|kill myself|i want to die|chest pain|cannot breathe|cant breathe|quiero morir|hacerme daño|dolor en el pecho|no puedo respirar/i;
 const detect = (text: string): Focus => signals.find(([,re])=>re.test(text))?.[0] ?? "general";
 const toolList: readonly Option[] = ["therapy","homeopathy","reiki","mandala","talisman","constellation","academy","masters"];
 
@@ -43,7 +45,7 @@ const copy = {
     questions:{"mode":{"prompt":"Как вам удобнее получить поддержку?","options":[["Со специалистом","human"],["С ИИ-консультантом","ai"],["Посмотреть видео","video"],["Самостоятельно","self"],["Пока не знаю","any"]]},"channel":{"prompt":"Как вам комфортнее общаться?","options":[["Очно","inperson"],["По видеосвязи","online"],["Заочно, без встречи","async"],["Неважно","any"]]},"budget":{"prompt":"Какой бюджет сейчас комфортен?","options":[["Только бесплатно","free"],["До €50","under50"],["До €100","under100"],["Можно обсудить","flexible"]]}},
     cards:{tests:["Тесты самочувствия","Бесплатная самопроверка и наблюдение за динамикой.","Бесплатно"],review:["Разбор ситуации","Короткая анкета и личный письменный ответ.","Бесплатно"],opora:["Курс ОПОРА","Пошаговые упражнения для работы со стрессом.","Курс"],therapy:["Образная психотерапия","Индивидуальная работа с переживаниями и образами.","Личная сессия"],constellation:["Расстановки","Исследование отношений и повторяющихся сценариев.","Личная сессия"],business:["Бизнес-консультация","Прояснение рабочих целей и практических решений.","Консультация"],reiki:["Сеансы Рейки","Энергетические и символические практики по желанию.","По запросу"],mandala:["Персональная мандала","Визуальная символическая практика для саморефлексии.","Практика"],talisman:["Талисманы","Символический каталог в Holistic Support.","Символика"],homeopathy:["Психогомеопатия","Авторский подход и его ограничения.","Ознакомиться"],masters:["Мастера","Опубликованные профили и услуги специалистов.","Каталог"],academy:["Рейки Академия","Обучающие программы и доступные практики.","Обучение"],mytube:["Видео MyTube","Короткие практики и тематические видео.","Видео"],aiCoach:["ИИ-коуч","Разговор с ИИ-помощником для размышления, не психотерапия.","ИИ"]},
     caution:"Гомеопатия не имеет надёжных доказательств эффективности для лечения заболеваний. Символические и энергетические практики не заменяют медицинскую или психологическую помощь.",
-    crisis:"Если вы можете причинить себе вред или находитесь в непосредственной опасности, обратитесь в местную экстренную или кризисную службу прямо сейчас.",
+    crisis:"Если вы можете причинить себе вред, испытываете опасные симптомы или находитесь в непосредственной опасности, обратитесь в местную экстренную или кризисную службу прямо сейчас.",
   },
   en: {
     eyebrow:"HOLISTIC HOUSE · SERVICES", title:"AI Assistant", lead:"Find the right support, service or specialist for your situation.", ask:"What would you like help with right now?", choose:"Choose a common issue or describe it in your own words.",
@@ -56,7 +58,7 @@ const copy = {
     questions:{"mode":{"prompt":"How would you like support?","options":[["Talk to a specialist","human"],["AI guide","ai"],["Watch a video","video"],["Explore on my own","self"],["Not sure","any"]]},"channel":{"prompt":"How would you like to connect?","options":[["In person","inperson"],["Video call","online"],["Written / no meeting","async"],["No preference","any"]]},"budget":{"prompt":"What budget feels comfortable?","options":[["Free only","free"],["Up to €50","under50"],["Up to €100","under100"],["Flexible","flexible"]]}},
     cards:{tests:["Wellbeing check-ins","Free self-checks and ways to observe changes.","Free"],review:["Situation review","Short form and personal written reply.","Free"],opora:["OPORA course","Step-by-step stress support exercises.","Course"],therapy:["Guided imagery therapy","One-to-one exploration of experiences and imagery.","Session"],constellation:["Constellations","Explore relationship patterns and perspectives.","Session"],business:["Business consulting","Clarify work goals and decisions.","Consultation"],reiki:["Reiki sessions","Optional symbolic and energy practices.","Enquire"],mandala:["Personal mandala","Visual symbolism for self-reflection.","Practice"],talisman:["Talismans","Symbolic catalogue in Holistic Support.","Symbolic"],homeopathy:["Psycho-homeopathy","Explore the author's approach and its limitations.","Learn more"],masters:["Practitioners","Browse published practitioner services.","Directory"],academy:["Reiki Academy","Explore learning programs and practices.","Learning"],mytube:["MyTube videos","Short practices and topic videos.","Video"],aiCoach:["AI coach","Talk to an AI reflection assistant, not psychotherapy.","AI"]},
     caution:"Homeopathy lacks reliable evidence for treating health conditions. Symbolic and energy practices do not replace medical or mental-health care.",
-    crisis:"If you may harm yourself or are in immediate danger, contact your local emergency or crisis service now.",
+    crisis:"If you may harm yourself, have urgent symptoms or are in immediate danger, contact your local emergency or crisis service now.",
   },
   es: {
     eyebrow:"HOLISTIC HOUSE · SERVICES", title:"AI Assistant", lead:"Encuentra el servicio o profesional adecuado para tu situación.", ask:"¿Con qué necesitas ayuda ahora?", choose:"Elige una dificultad o describe tu situación.",
@@ -69,7 +71,7 @@ const copy = {
     questions:{"mode":{"prompt":"¿Cómo prefieres recibir apoyo?","options":[["Con profesional","human"],["Guía de IA","ai"],["Ver un video","video"],["Por mi cuenta","self"],["No sé aún","any"]]},"channel":{"prompt":"¿Cómo prefieres conectarte?","options":[["En persona","inperson"],["Videollamada","online"],["Por escrito / sin cita","async"],["Me da igual","any"]]},"budget":{"prompt":"¿Qué presupuesto te resulta cómodo?","options":[["Solo gratis","free"],["Hasta €50","under50"],["Hasta €100","under100"],["Flexible","flexible"]]}},
     cards:{tests:["Pruebas de bienestar","Autoevaluaciones gratuitas para observar cambios.","Gratis"],review:["Revisión de situación","Formulario breve y respuesta escrita personal.","Gratis"],opora:["Curso OPORA","Ejercicios guiados para el estrés.","Curso"],therapy:["Terapia de imágenes guiadas","Exploración individual de experiencias e imágenes.","Sesión"],constellation:["Constelaciones","Explora patrones de relación y perspectivas.","Sesión"],business:["Consultoría de negocios","Aclara metas y decisiones prácticas.","Consulta"],reiki:["Sesiones de Reiki","Prácticas simbólicas y energéticas opcionales.","Consultar"],mandala:["Mandala personal","Práctica visual para autorreflexión.","Práctica"],talisman:["Talismanes","Catálogo simbólico en Holistic Support.","Simbólico"],homeopathy:["Psico-homeopatía","Conoce el enfoque del autor y sus límites.","Información"],masters:["Profesionales","Explora servicios profesionales publicados.","Catálogo"],academy:["Academia Reiki","Formación y prácticas disponibles.","Formación"],mytube:["Videos MyTube","Prácticas breves y videos temáticos.","Video"],aiCoach:["Guía IA","Conversación con IA para reflexionar, no psicoterapia.","IA"]},
     caution:"La homeopatía carece de pruebas fiables de eficacia para tratar enfermedades. Las prácticas simbólicas y energéticas no sustituyen la atención médica o psicológica.",
-    crisis:"Si podrías hacerte daño o estás en peligro inmediato, contacta con emergencias o con una línea de crisis local ahora.",
+    crisis:"Si podrías hacerte daño, tienes síntomas urgentes o estás en peligro inmediato, contacta con emergencias o con una línea de crisis local ahora.",
   },
 } as const;
 type Selection = {text:string;focus:Focus};
@@ -86,11 +88,13 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
   const [selection,setSelection]=useState<Selection|null>(null);
   const [preferences,setPreferences]=useState<AssistPreferences>({});
   const [turns,setTurns]=useState<ChatTurn[]>([]);
+  const [consultantPriority,setConsultantPriority]=useState<string[]>([]);
   const [expandedIssues,setExpandedIssues]=useState(false);
   const [expandedTools,setExpandedTools]=useState(false);
   const [critical,setCritical]=useState(false);
   const inputRef=useRef<HTMLTextAreaElement>(null);
   const chatRef=useRef<HTMLDivElement>(null);
+  const formRef=useRef<HTMLFormElement>(null);
   const crisis=selection!==null&&(critical||urgent.test(selection.text));
   const question=selection&&!crisis?nextAssistQuestion(preferences):null;
   const suggestions=selection&&!crisis?rankAssistOffers(selection.focus,preferences):[];
@@ -102,15 +106,51 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
     return ()=>cancelAnimationFrame(frame);
   },[selection,question,turns]);
 
+  // Keep the input in document flow, moving only the obscured portion above
+  // the mobile dock. On iOS let the browser handle a focused textarea.
+  useEffect(()=>{
+    if(!selection)return;
+    const viewport=window.visualViewport;
+    let frame=0;
+    const revealComposer=()=>{
+      if(frame)cancelAnimationFrame(frame);
+      frame=requestAnimationFrame(()=>{
+        frame=0;
+        if(document.activeElement===inputRef.current)return;
+        const form=formRef.current;
+        if(!form)return;
+        const viewportBottom=viewport?viewport.offsetTop+viewport.height:window.innerHeight;
+        const dock=document.querySelector<HTMLElement>('[data-hh-unified-dock]');
+        const dockRect=dock?.getBoundingClientRect();
+        const dockBottomLimit=dockRect&&dockRect.height>0?dockRect.top:viewportBottom;
+        const visibleBottom=Math.min(viewportBottom,dockBottomLimit)-12;
+        const overlap=form.getBoundingClientRect().bottom-visibleBottom;
+        if(overlap>1)window.scrollBy({top:Math.ceil(overlap),behavior:"smooth"});
+      });
+    };
+    revealComposer();
+    window.addEventListener("resize",revealComposer,{passive:true});
+    viewport?.addEventListener("resize",revealComposer,{passive:true});
+    return()=>{
+      if(frame)cancelAnimationFrame(frame);
+      window.removeEventListener("resize",revealComposer);
+      viewport?.removeEventListener("resize",revealComposer);
+    };
+  },[selection,question,turns]);
+
   function beginRequest(value:string) {
     const trimmed=value.trim().slice(0,280);
     if(!trimmed)return;
     const focus=detect(trimmed);
     const unsafe=urgent.test(trimmed);
+    // The exact same source-bounded Consultant Mind as authenticated AI chat.
+    // Pure local function: no user text leaves the browser or enters training.
+    const advice=unsafe?null:consultServiceQuestion({message:trimmed,locale,history:[]});
+    setConsultantPriority(advice?.suggestions.map(item=>item.id.replace(/^service:/,""))??[]);
     setSelection({text:trimmed,focus});
     setPreferences(inferAssistPreferences(trimmed));
     setCritical(unsafe);
-    setTurns(unsafe?[{role:"user",text:trimmed}]:[{role:"user",text:trimmed},{role:"assistant",text:t.reply[focus]}]);
+    setTurns(unsafe?[{role:"user",text:trimmed}]:[{role:"user",text:trimmed},{role:"assistant",text:advice?.reply??t.reply[focus]}]);
     setText("");
     setExpandedIssues(false);
     inputRef.current?.blur();
@@ -122,7 +162,12 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
     if(!selection){beginRequest(value);return;}
     // New typed messages stay in this messenger. Infer only explicitly stated preferences.
     // Do not transmit the conversation to providers or add it to URLs/storage.
-    setTurns(current=>[...current,{role:"user" as const,text:value}].slice(-12));
+    const unsafe=urgent.test(value);
+    const advice=unsafe||critical||urgent.test(selection.text)?null:
+      consultServiceQuestion({message:value,locale,history:turns.slice(-6)});
+    setTurns(current=>[...current,{role:"user" as const,text:value},
+      ...(advice?[{role:"assistant" as const,text:advice.reply}]:[])].slice(-12));
+    if(advice)setConsultantPriority(advice.suggestions.map(item=>item.id.replace(/^service:/,"")));
     setSelection(current=>current?{
       text:(current.text+" "+value).slice(0,280),
       focus:detect(value)==="general"?current.focus:detect(value),
@@ -148,7 +193,7 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
     });
   }
   function reset() {
-    setSelection(null);setText("");setPreferences({});setTurns([]);
+    setSelection(null);setText("");setPreferences({});setTurns([]);setConsultantPriority([]);
     setCritical(false);setExpandedIssues(false);
     inputRef.current?.focus();
   }
@@ -188,7 +233,7 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
           </div>
         </div>}
       </div>
-      <form className={styles.form} onSubmit={submit}>
+      <form ref={formRef} className={styles.form} data-assist-composer onSubmit={submit}>
         <label className={styles.srOnly} htmlFor="assist-question">{t.label}</label>
         <textarea id="assist-question" ref={inputRef} rows={1} value={text} maxLength={280} autoComplete="off"
           placeholder={t.placeholder} onChange={event=>setText(event.target.value)}
@@ -200,7 +245,8 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
     </div>
     <p className={styles.privacy}>{t.privacy}</p>
     {!crisis&&selection?<AssistTopRecommendations locale={locale} focus={selection.focus} preferences={preferences}
-      matchingIds={suggestions.map(({id})=>id)} noMatchLabel={t.noOffers}/>:null}
+      priorityIds={consultantPriority} matchingIds={suggestions.map(({id})=>id)} noMatchLabel={t.noOffers}/>:null}
+    {!crisis&&selection?<ServicesAssistMyTube locale={locale} focus={selection.focus} question={selection.text}/>:null}
     <section className={styles.tools} aria-labelledby="assist-tools-title">
       <h2 id="assist-tools-title">{t.tools}</h2><p>{t.browse}</p>
       <div className={styles.toolGrid}>{toolList.slice(0,expandedTools?toolList.length:4).map((key)=>{
