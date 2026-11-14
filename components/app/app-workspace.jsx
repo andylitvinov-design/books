@@ -612,7 +612,7 @@ export default function AppWorkspace({ locale, path = [] }) {
   // Course/test deep links retain the dedicated Google handoff flows above.
   if (state !== 'ready' && page === 'portrait' && !stressSignup)
     return (
-      <main className="hh-app hh-app--cabinet-guest">
+      <main className="hh-app hh-app--cabinet-guest" data-profile-page-shell="life">
         <ProfileHubTabs locale={locale} active="today" />
         <CabinetGuestOverview
           locale={locale} busy={busy} onSignin={()=>signin('google')}
@@ -706,8 +706,8 @@ export default function AppWorkspace({ locale, path = [] }) {
     <PostSignupInstallOffer key={'install:'+data.account.id} locale={locale}
       visible={data.account.onboardingState==='active' && installOfferAccountId===data.account.id}
       context={savedInstallContext ? 'saved' : 'signup'} onDismiss={dismissInstallOffer} />
-    <main className={documentReader ? 'hh-app hh-app--document-reader' : practiceInner ? 'hh-app hh-app--practice-inner' : 'hh-app'}>
-      {!documentReader && !practiceInner && <header className="hh-header">
+    <main className={documentReader ? 'hh-app hh-app--document-reader' : practiceInner ? 'hh-app hh-app--practice-inner' : page === 'portrait' ? 'hh-app hh-app--profile' : 'hh-app'} data-profile-page-shell={page === 'portrait' ? 'life' : undefined}>
+      {!documentReader && !practiceInner && page !== 'portrait' && <header className="hh-header">
         <Link href={root} prefetch={false} className="hh-brand">
           Holistic House<span>{nav.find(item => navIsActive(item.id))?.label || c.account}</span>
         </Link>
@@ -739,7 +739,7 @@ export default function AppWorkspace({ locale, path = [] }) {
           </div>
         </details>
       </header>}
-      {!documentReader && !practiceInner && page !== 'runs' && page !== 'settings' && (
+      {!documentReader && !practiceInner && page !== 'portrait' && page !== 'runs' && page !== 'settings' && (
         <nav className="hh-nav" aria-label={c.account}>
           {nav.map(({ id, label, href }) => (
             <InstantCabinetLink key={id} href={href} prefetch={false}

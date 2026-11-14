@@ -108,6 +108,8 @@ for(const browserType of [chromium,webkit]){
             label+' no old Master Network masthead or double finder/share gate')
           assert.equal(await root.locator('[data-profile-mode="work"]').getAttribute('aria-current'),
             'page',label+' Work active in Profile switch')
+          assert.equal(await page.locator('.hh-header, .hh-nav').count(),0,
+            label+' no legacy Holistic House / Practice / Account bar above Work')
           const myPage=root.locator('[data-work-my-page]')
           assert.equal(await myPage.getAttribute('href'),'/'+locale+'/my-page',
             label+' existing universal My Page entry remains reachable')
@@ -118,7 +120,7 @@ for(const browserType of [chromium,webkit]){
           assert.equal(await root.locator('[data-work-profile-actions] [data-work-my-page]').count(),1,
             label+' My Page stays beside Edit profile below film and four actions')
           const pageRect=await myPage.boundingBox()
-          assert.ok(pageRect && pageRect.height>=30 && pageRect.width>0,
+          assert.ok(pageRect && pageRect.height>=44 && pageRect.width>0,
             label+' My Page button stays usable on the narrow mobile card')
           assert.equal(await root.locator('[data-profile-mode="live"]').getAttribute('href'),
             '/'+(locale==='es'?'en':locale)+'/app/portrait',label+' reversible Live link')

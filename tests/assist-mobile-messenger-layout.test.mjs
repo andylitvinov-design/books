@@ -57,3 +57,20 @@ test("completed dialogue offers a large accessible CTA that scrolls to matching 
     assert(shell.includes(label),label);
   assert.doesNotMatch(shell,/Your matching options are just below\.|Подходящие варианты уже показаны ниже\./);
 });
+
+// Services virtual-keyboard regression: iOS Safari zooms an input below 16px,
+// shifting the entire page outside the visible phone viewport.
+test("Services composer stays at unzoomed iPhone scale and clears the mobile dock",()=>{
+  const banner=read("components/sitewide-antistress-banner.tsx");
+  for(const token of ["data-assist-composer","formRef=useRef<HTMLFormElement>(null)",
+    "window.visualViewport","dockRect.top","window.scrollBy(",
+    'document.activeElement===inputRef.current']) assert.ok(shell.includes(token),token);
+  assert.match(shellCss,/\.form\{display:flex;[^}]*width:100%;max-width:100%;min-width:0;/);
+  assert.match(shellCss,/\.conversation\{min-width:0;max-width:100%;/);
+  assert.match(shellCss,/\.form textarea\{flex:1;[^}]*font-size:16px;/);
+  assert.match(shellCss,/@media\(max-width:350px\)[^\n]*\.form textarea\{font-size:16px\}/);
+  assert.match(shellCss,/\.assistPage\{padding-bottom:calc\(var\(--hh-unified-nav-height,77px\) \+ 22px\)\}/);
+  assert.ok(banner.includes("The Services AI dialogue already handles personal situation review"));
+  assert.ok(banner.includes("services\\/?$/.test(pathname) ||"));
+  assert.doesNotMatch(shellCss,/\.conversation \.form\{[^}]*position:(?:sticky|fixed)/);
+});

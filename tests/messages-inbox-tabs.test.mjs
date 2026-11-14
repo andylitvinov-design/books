@@ -95,7 +95,15 @@ test('Work Requests opens existing messenger enquiries instead of the legacy pra
   const css=read('components/app/messages-simple-inbox.module.css')
   assert.ok(practice.includes("requests:'/' + locale + '/app/messages?section=clients&tab=requests',"))
   assert.ok(!practice.includes("requests:root + '?panel=requests'"))
-  assert.ok(practice.split("openAction('requests')").length-1>=3)
+  // Two Work navigation rows are rendered from shared data, not three copies
+  // of the literal openAction('requests') handler in one JSX file.
+  const workIntro=read('components/practice-work-profile-intro.jsx')
+  assert.ok(workIntro.includes("{ id:'requests', action:'requests', Icon:ClipboardList }"))
+  assert.ok(workIntro.includes("{ action:'requests', label:'requests', Icon:ClipboardList }"))
+  assert.match(workIntro,/TABS\.map/)
+  assert.match(workIntro,/ACTIONS\.map/)
+  assert.match(workIntro,/onClick=\{\(\) => onAction\(action\)\}/)
+  assert.ok(practice.includes("onClick={() => void openAction('requests')}"))
   assert.ok(inbox.includes("const requestFocus=embedded&&tab==='requests'"))
   assert.ok(inbox.includes("!requestFocus||inMessagesTab(row,'requests')"))
   assert.ok(inbox.includes("{requestFocus&&<div className={styles.requestFocus}"))
