@@ -12,6 +12,8 @@ import styles from './my-coach-catalog.module.css'
 import heroStyles from './my-coach-mira-landing.module.css'
 import MyCoachExpressStart from './my-coach-express-start'
 import { HeaderCreditProfile } from './header-credit-profile'
+import { MandatoryMessengerActions } from './mandatory-messenger-actions'
+import { whatsappEnquiryUrl, telegramEnquiryUrlFromWhatsApp } from '@/lib/whatsapp-enquiry'
 
 const words = {
   en: {
@@ -148,34 +150,43 @@ const miraCopy = {
 
 const humanCopy = {
   en: {
-    chooser: 'Choose coach type', ai: 'AI Coach', real: 'Real People',
+    chooser: 'Choose coach type', all: 'All', ai: 'AI Coach', real: 'Real People',
+    combinedIntro: 'Explore five AI coaches, then meet real practitioners.',
+    contactLabel: 'Contact Andrey through WhatsApp or Telegram',
+    contactRequest: 'I would like to request a personal psychotherapy and guided imagery session. Please let me know your availability and next steps.',
     intro: 'Meet a real practitioner for a personal therapy session.',
     name: 'Andrey Litvinov', role: 'Psychotherapy & guided imagery',
     tags: ['Therapy', 'Relationships', 'Inner clarity'],
     type: 'Real practitioner · Online · EN / RU',
-    about: 'About therapist', action: 'Request session',
+    about: 'About therapist', action: 'Message',
     bio: 'Individual sessions combine a Jung-oriented approach, Guided Affective Imagery, body-oriented psychotherapy and systemic constellations. We explore your situation together, at your pace.',
     note: 'Personal sessions are arranged by request. Date and availability are confirmed separately.',
     more: 'Explore other real practitioners',
   },
   ru: {
-    chooser: 'Тип специалиста', ai: 'AI-коучи', real: 'Реальные люди',
+    chooser: 'Тип специалиста', all: 'Все', ai: 'AI-коучи', real: 'Реальные люди',
+    combinedIntro: 'Сначала пять AI-коучей, затем реальные специалисты.',
+    contactLabel: 'Связаться с Андреем через WhatsApp или Telegram',
+    contactRequest: 'Хочу узнать о персональной сессии психотерапии и работы с образами. Подскажите, пожалуйста, доступное время и дальнейшие шаги.',
     intro: 'Выберите живого специалиста для индивидуальной терапевтической сессии.',
     name: 'Андрей Литвинов', role: 'Психотерапия и работа с образами',
     tags: ['Терапия', 'Отношения', 'Ясность'],
     type: 'Реальный специалист · Онлайн · RU / EN',
-    about: 'О терапевте', action: 'Запросить сессию',
+    about: 'О терапевте', action: 'Написать',
     bio: 'В индивидуальной работе объединяются юнгианский подход, направленное образное переживание, телесная психотерапия и системные расстановки. Мы вместе исследуем вашу ситуацию в комфортном темпе.',
     note: 'Личные сессии проводятся по запросу. Время и доступность подтверждаются отдельно.',
     more: 'Другие реальные специалисты',
   },
   es: {
-    chooser: 'Tipo de coach', ai: 'Coaches IA', real: 'Personas reales',
+    chooser: 'Tipo de coach', all: 'Todos', ai: 'Coaches IA', real: 'Personas reales',
+    combinedIntro: 'Primero cinco coaches IA; después, profesionales reales.',
+    contactLabel: 'Contactar con Andrey por WhatsApp o Telegram',
+    contactRequest: 'Quisiera solicitar una sesión personal de psicoterapia e imaginación guiada. ¿Qué disponibilidad hay y cuál es el siguiente paso?',
     intro: 'Conoce a un profesional real para una sesión de terapia individual.',
     name: 'Andrey Litvinov', role: 'Psicoterapia e imaginación guiada',
     tags: ['Terapia', 'Relaciones', 'Claridad'],
     type: 'Profesional real · En línea · EN / RU',
-    about: 'Sobre el terapeuta', action: 'Solicitar sesión',
+    about: 'Sobre el terapeuta', action: 'Escribir',
     bio: 'Las sesiones individuales combinan un enfoque junguiano, imaginación afectiva guiada, psicoterapia corporal y constelaciones sistémicas. Exploramos tu situación a tu propio ritmo.',
     note: 'Las sesiones se solicitan por separado; el horario y la disponibilidad se confirman después.',
     more: 'Explorar otros profesionales',
@@ -216,8 +227,9 @@ export default function MyCoachCatalog({ locale = 'en' }) {
   const [favoritesReady, setFavoritesReady] = useState(false)
   const [selectedId, setSelectedId] = useState('mira')
   const [expandedId, setExpandedId] = useState(null)
-  const [directoryMode, setDirectoryMode] = useState('ai')
+  const [directoryMode, setDirectoryMode] = useState('all')
   const [humanExpanded, setHumanExpanded] = useState(false)
+  const [humanContactOpen, setHumanContactOpen] = useState(false)
   const [settings, setSettings] = useState(() => normalizeCoachSettings('mira'))
   useEffect(() => {
     try {
@@ -247,6 +259,8 @@ export default function MyCoachCatalog({ locale = 'en' }) {
     const score = persona => (persona.topic === topic ? 3 : persona.related.includes(topic) ? 2 : 0)
     return score(b) - score(a)
   }) : list, [list, sortBy, topic])
+  // All is a concise overview; the AI-only tab keeps the full eight-persona directory.
+  const displayedCoaches = directoryMode === 'all' ? visibleList.slice(0, 5) : visibleList
   const selected = getCoachPersona(selectedId) || COACH_PERSONAS[0]
   const safeSettings = normalizeCoachSettings(selected.id, settings)
   const updateSettings = (field, value) => setSettings(previous =>
@@ -254,6 +268,12 @@ export default function MyCoachCatalog({ locale = 'en' }) {
   const startHref = coachSessionHref(lang, selected.id, safeSettings)
   const selectedName = localCoachText(selected.name, lang)
   const followupPreview = coachStagePrompt(selected.id, 'goal', lang, safeSettings)
+  // Reuse the website's service-specific, privacy-filtered messenger handoff.
+  // Opening a channel is not a booking or a saved CRM enquiry.
+  const humanMessageUrl = whatsappEnquiryUrl({
+    locale: lang, service: h.role, request: h.contactRequest,
+    pagePath: '/' + lang + '/services/imagery-therapy',
+  })
   const choose = (id) => {
     setExpandedId(open => open === id ? null : id)
     if (id !== selectedId) {
@@ -364,20 +384,24 @@ export default function MyCoachCatalog({ locale = 'en' }) {
       </section>
       <section className={heroStyles.directoryHeading} id="all-coaches" aria-label={hw.browse}>
         <a href="#my-coach-top" className={heroStyles.directoryBack} aria-label={hw.back}>‹</a>
-        <div><h2>My Coach</h2><p>{directoryMode === 'ai' ? hw.browse : h.intro}</p></div>
+        <div><h2>My Coach</h2><p>{directoryMode === 'human' ? h.intro : directoryMode === 'ai' ? hw.browse : h.combinedIntro}</p></div>
       </section>
 
       <div className={styles.coachKindSwitch} role="group" aria-label={h.chooser} data-my-coach-kind-switch>
+        <button type="button" className={directoryMode === 'all' ? styles.coachKindActive : styles.coachKind}
+          aria-pressed={directoryMode === 'all'} onClick={() => { setDirectoryMode('all'); setHumanContactOpen(false) }}>
+          <BookOpen size={17} aria-hidden="true" />{h.all}
+        </button>
         <button type="button" className={directoryMode === 'ai' ? styles.coachKindActive : styles.coachKind}
-          aria-pressed={directoryMode === 'ai'} onClick={() => setDirectoryMode('ai')}>
+          aria-pressed={directoryMode === 'ai'} onClick={() => { setDirectoryMode('ai'); setHumanContactOpen(false) }}>
           <Sparkles size={17} aria-hidden="true" />{h.ai}
         </button>
         <button type="button" className={directoryMode === 'human' ? styles.coachKindActive : styles.coachKind}
-          aria-pressed={directoryMode === 'human'} onClick={() => setDirectoryMode('human')}>
+          aria-pressed={directoryMode === 'human'} onClick={() => { setDirectoryMode('human'); setHumanContactOpen(false) }}>
           <Users size={17} aria-hidden="true" />{h.real}
         </button>
       </div>
-      <section className={styles.discover} aria-label={t.topics} hidden={directoryMode !== 'ai'}>
+      <section className={styles.discover} aria-label={t.topics} hidden={directoryMode === 'human'}>
         <div className={[styles.visualTopics, heroStyles.directoryTopics].join(' ')} role="group" aria-label={d.allTopics}>
           {visualTopics.map(item => {
             const label = item.id === 'all' ? d.allTopics : item.id === 'resilience' ? d.antistress
@@ -435,8 +459,8 @@ export default function MyCoachCatalog({ locale = 'en' }) {
             onClick={() => { setTopic('all'); setSearch(''); setPaceFilter('any'); setOnlyFavorites(false); setSortBy('all') }}>
             <RotateCcw size={15} aria-hidden="true" />{d.clear}</button>
         </div>
-        {visibleList.length ? <div className={styles.cardGrid}>
-          {visibleList.map(persona => {
+        {displayedCoaches.length ? <div className={styles.cardGrid}>
+          {displayedCoaches.map(persona => {
             const isSelected = selected.id === persona.id
             const isExpanded = expandedId === persona.id
             const isFavorite = favorites.includes(persona.id)
@@ -528,8 +552,9 @@ export default function MyCoachCatalog({ locale = 'en' }) {
         <p className={styles.disclosure} role="note"><ShieldCheck size={15} aria-hidden="true" />{t.aiNotice}</p>
       </section>
 
-      <section className={styles.humanDirectory} hidden={directoryMode !== 'human'} aria-label={h.real}
-        data-my-coach-real-people>
+      <section className={styles.humanDirectory} hidden={directoryMode === 'ai'} aria-label={h.real}
+        data-my-coach-real-people data-my-coach-combined={directoryMode === 'all' ? 'true' : undefined}>
+        {directoryMode === 'all' && <h2 className={styles.humanSectionHeading}>{h.real}</h2>}
         <div className={styles.cardGrid}>
           <article className={styles.cardSelected} data-my-coach-human-card="andrey-litvinov">
             <div className={styles.humanPortrait}>
@@ -544,8 +569,10 @@ export default function MyCoachCatalog({ locale = 'en' }) {
               <div className={styles.cardFooter}>
                 <button type="button" className={styles.viewProfile} onClick={() => setHumanExpanded(value => !value)}
                   aria-expanded={humanExpanded} aria-controls="my-coach-human-andrey-about">{h.about}</button>
-                <Link className={styles.cardButton} href={'/' + lang + '/services/imagery-therapy'}
-                  prefetch={false}>{h.action}<ArrowRight size={16} aria-hidden="true" /></Link>
+                <button type="button" className={styles.cardButton}
+                  data-my-coach-human-message-toggle aria-expanded={humanContactOpen}
+                  aria-controls="my-coach-human-andrey-channels"
+                  onClick={() => setHumanContactOpen(open => !open)}>{h.action}<ArrowRight size={16} aria-hidden="true" /></button>
               </div>
             </div>
             {humanExpanded && <div className={styles.humanProfile} id="my-coach-human-andrey-about">
@@ -553,6 +580,13 @@ export default function MyCoachCatalog({ locale = 'en' }) {
               <p>{h.note}</p>
             </div>}
           </article>
+          <div className={styles.humanContact} hidden={!humanContactOpen}
+            id="my-coach-human-andrey-channels" role="region" aria-label={h.contactLabel}
+            data-my-coach-human-message-menu>
+            <MandatoryMessengerActions locale={lang} whatsappUrl={humanMessageUrl}
+              telegramUrl={telegramEnquiryUrlFromWhatsApp(humanMessageUrl)}
+              label={h.contactLabel} compact />
+          </div>
         </div>
         <p className={styles.humanNote}>{h.note}</p>
         <Link className={styles.humanMore} href={'/' + lang + '/masters'}>{h.more}<ArrowRight size={16} aria-hidden="true" /></Link>

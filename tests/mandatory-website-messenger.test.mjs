@@ -129,3 +129,26 @@ test("cart messenger choice opens with native one-tap disclosure, without automa
  assert.match(qa,/syntheticEnquiries\.length,0/u);
  assert.match(qa,/data-cart-payment-step/u);
 });
+
+test("personal cart creates a trusted localized service draft before rendering Telegram",()=>{
+ const source=read("components/commerce/personal-cart.tsx");
+ assert.match(source,/import \{ whatsappEnquiryUrl \} from "@\/lib\/whatsapp-enquiry";/u);
+ assert.match(source,/const bookingUrl = whatsappEnquiryUrl\(\{ locale, service: description \|\| t\.service, request: bookingMessage, pagePath: "\/" \+ locale \+ "\/cart" \}\);/u);
+ assert.doesNotMatch(source,/const bookingUrl = "https:\/\/wa\.me\//u);
+ for (const locale of ["ru","en","es"]) {
+  const service="Personal consultation (30 min)";
+  const privateText="private health history and phone 555-1234";
+  const whatsapp=whatsappEnquiryUrl({locale,service,request:"Public selected session 30 min 50 EUR. "+privateText,
+   pagePath:"/"+locale+"/cart?items=express-consultation-30&token=private"});
+  const telegram=telegramEnquiryUrlFromWhatsApp(whatsapp);
+  const t=new URL(telegram),w=new URL(whatsapp);
+  assert.equal(w.origin,"https://wa.me");
+  assert.equal(t.origin,"https://t.me");
+  assert.equal(t.pathname,"/holistichouse");
+  assert.deepEqual([...t.searchParams.keys()],["text"]);
+  assert.match(t.searchParams.get("text")||"",/Personal consultation \(30 min\)/u);
+  assert.doesNotMatch(t.searchParams.get("text")||"",/private health history|555-1234|50 EUR|token=private|items=|diagnos|hhreview|hhtalk/iu);
+  assert.doesNotMatch(w.searchParams.get("text")||"",/token=private|items=express-consultation-30/u);
+  assert.match(w.searchParams.get("text")||"",/30 min 50 EUR/u);
+ }
+});

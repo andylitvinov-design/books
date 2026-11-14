@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ContactChannelChooser } from "@/components/contact-channel-chooser";
+import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import { ArrowRight, Check, CreditCard, MessageCircle, ShoppingBasket, Trash2 } from "lucide-react";
 import { formatServiceAmount, publicServiceCatalog, type ServiceLocale } from "@/lib/commerce/catalog";
 import { restoreServiceCart, restoreVideoCart, videoCartProduct, SERVICE_CART_STORAGE_KEY, VIDEO_CART_STORAGE_KEY, SERVICE_CART_UPDATED_EVENT } from "@/lib/commerce/cart";
@@ -219,7 +220,7 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
     : locale === "es"
       ? `Hola. Quiero confirmar el pago de ${receiptAmount} por ${description} vía ${paymentLabel}. Referencia: [introduce la referencia]. Confirma la recepción y el horario.`
       : `Hello! Please verify my ${receiptAmount} payment for ${description} via ${paymentLabel}. Transaction ID: [insert ID]. Please confirm receipt and session time.`;
-  const bookingUrl = "https://wa.me/14376066502?text=" + encodeURIComponent(bookingMessage);
+  const bookingUrl = whatsappEnquiryUrl({ locale, service: description || t.service, request: bookingMessage, pagePath: "/" + locale + "/cart" });
   const receiptUrl = "https://wa.me/14376066502?text=" + encodeURIComponent(receiptMessage);
 
   async function refreshSquareStatus() {
