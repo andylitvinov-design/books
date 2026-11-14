@@ -6,6 +6,7 @@ import { FreeMobileAppBanner } from '@/components/free-mobile-app-banner';
 import Link from 'next/link';
 import { PersonalTestimonials } from '@/components/personal-testimonials';
 import { HomeMoreDisclosure } from '@/components/home-more-disclosure';
+import { listMyTubeCategories } from '@/lib/mandala/mytube-content-taxonomy.mjs';
 import { PublicConsultationCta } from '@/components/public-consultation-cta';
 import { PublicSiteHeader } from '@/components/public-site-header';
 import { spanishMetadata } from '@/lib/spanish-metadata';
@@ -14,7 +15,7 @@ export default function SpanishHomePage() {
   return <main className="house-home house-home--services" lang="es">
     <PublicSiteHeader locale="es" />
     <HomeSectionCarousel locale="es" />
-    <HomeMoreDisclosure locale="es" />
+    <HomeMoreDisclosure locale="es" categories={listMyTubeCategories("es")} />
     <HomeFeaturedWorkspace locale="es" />
     <FreeMobileAppBanner locale="es" />
     <PersonalTestimonials locale="es" variant="home" />

@@ -13,7 +13,7 @@ const photos = {
   "opora": "/images/holistic-house/course-start-heron.webp",
   "academy": "/images/holistic-house/books-library.webp",
   "allTests": "/images/holistic-house/ideas-pine-reference.webp",
-  "profile": "/images/holistic-house/report-lighthouse-coast.webp",
+  "profile": "/images/holistic-house/report-lighthouse-coast.avif",
   "growth": "/images/holistic-house/course-focus-mountain-boy.webp",
   "review": "/images/holistic-house/portrait-static/andy-640-25ce838f1a6e.webp",
   "businessConstellations": "/images/holistic-house/video-posters/constellations-en-v1.webp",
