@@ -192,7 +192,8 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
         // continuous=false recognizer finish naturally after its final result.
         if(!ios27)try{recognition.stop()}catch{}
       }
-      setNotice((visible||interim).slice(0,240))
+      // Dictation is shown in the transcript, never echoed beneath the microphone.
+      if(visible||interim)setNotice('')
     }
     recognition.onerror=event=>{
       if(recognitionRef.current!==recognition)return
@@ -448,8 +449,8 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       <span>{retryMic?t.retryMic:ready?t.tapToHear:active?t.stop:t.start}</span>
       {phase==='speaking'&&<Volume2 size={17} aria-hidden="true"/>}
     </button>
-    {supported===false&&<p className={styles.note} role="status">{t.unsupported}</p>}
-    {active&&<span className={styles.status} role="status">
+    {supported===false&&!notice&&<p className={styles.note} role="status">{t.unsupported}</p>}
+    {active&&!notice&&<span className={styles.status} role="status">}
       {retryMic?t.retryMic:ready?t.tapToHear:phase==='loading'?t.preparing:phase==='starting'||phase==='listening'?t.listening:phase==='thinking'?t.thinking:t.speaking}
     </span>}
     {notice&&<p className={styles.note} role="status">{notice}</p>}

@@ -44,3 +44,26 @@ test('first mic tap obtains user-initiated explicit consent, then starts browser
  assert.doesNotMatch(loop,/api\.fish\.audio|new WebSocket|MediaRecorder/)
  for(const locale of ['en','ru','es'])assert.ok(loop.includes(locale+':{start:'),locale)
 })
+
+
+test('Safari dictation is displayed only in transcript while speech status never reflows mobile controls',()=>{
+ const loop=read('components/my-coach-speech-loop.jsx')
+ const css=read('components/my-coach-live-dialogue.module.css')
+ const ui=read('components/my-coach-live-dialogue.jsx')
+ const recognition=loop.slice(loop.indexOf('recognition.onresult=event=>{'),loop.indexOf('recognition.onerror=event=>{'))
+ assert.match(recognition,/transcriptRef\.current\?\.\(visible\)/,'interim and final words still reach the transcript')
+ assert.match(recognition,/if\(visible\|\|interim\)setNotice\(''\)/,'recognized words clear stale status')
+ assert.doesNotMatch(recognition,/setNotice\(\(visible\|\|interim\)\.slice/,'never echo the spoken text beneath the mic')
+ assert.match(loop,/\{active&&!notice&&<span className=\{styles\.status\}/,'status and notice are mutually exclusive')
+ assert.match(loop,/\{supported===false&&!notice&&<p className=\{styles\.note\}/,'unsupported-browser warnings do not repeat')
+ assert.match(ui,/onTranscript=\{setSpeechPreview\}/)
+ assert.match(ui,/onDraft=\{text=>\{setDraft\(text\);setError\(''\)\}\}/)
+ assert.match(css,/\.root\[data-session-visual-v3\] \.voiceControls\{[\s\S]*?height:147px;[\s\S]*?grid-template-rows:92px;/)
+ assert.match(css,/\.root\[data-session-visual-v3\] \.voiceCenter :global\(\[data-my-coach-voice\] \.status\)\{[\s\S]*?position:absolute;/)
+ assert.match(css,/\.root\[data-session-visual-v3\] \.voiceCenter :global\(\[data-my-coach-voice\] \.note\)\{[\s\S]*?max-height:34px;[\s\S]*?overflow-y:auto;/)
+ assert.match(css,/\.root\[data-session-visual-v3\] \.conversationPanel\{[\s\S]*?max-width:100%;/)
+ for(const width of [320,354,390,430]){
+   assert.ok(width>=320&&width<=699,'target viewport uses the guarded mobile CSS')
+   assert.ok(width-46>=274,'feedback container has nonzero safe width')
+ }
+})
