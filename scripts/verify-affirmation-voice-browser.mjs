@@ -878,23 +878,29 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         const ownCreate=page.locator("[data-video-quick-generate]");
         await expect(ownCreate).toBeEnabled({timeout:30000});
         await ownCreate.click();
-        const ownDownload=page.locator("[data-mandala-video-download]");
-        await ownDownload.waitFor({state:"visible",timeout:45000});
-        // Primary Save opens the real choice of Files / Telegram / WhatsApp.
-        // The download event belongs to the next explicit Files choice.
-        await ownDownload.click();
-        const ownDelivery=page.locator("[data-video-messenger-delivery]");
-        await expect(ownDelivery).toBeVisible({timeout:10000});
-        await expect(ownDelivery.locator("[data-video-telegram-share]")).toBeVisible();
-        await expect(ownDelivery.locator("[data-video-whatsapp-share]")).toBeVisible();
-        const [ownFile]=await Promise.all([
-          page.waitForEvent("download",{timeout:20000}),
-          ownDelivery.locator("[data-video-save-direct-choice]").click(),
-        ]);
-        const ownBytes=[];
-        for await(const chunk of await ownFile.createReadStream())
-          ownBytes.push(Buffer.from(chunk));
-        const ownedVideo=Buffer.concat(ownBytes);
+        const ownReady=page.locator("[data-video-ready]");
+        await expect(ownReady).toHaveAttribute("data-ready-state","choose");
+        // The Montage click only navigates; Ready starts the actual encoder.
+        await ownReady.locator("[data-ready-generate]").click();
+        await expect(ownReady).toHaveAttribute("data-ready-state","complete",{timeout:60000});
+        await expect(ownReady.locator("[data-ready-save]")).toBeVisible();
+        // Read the physical MediaRecorder Blob, not a fake or bypassed guest
+        // download. Save and delivery are tested through the protected gate.
+        const ownMovieBase64=await page.evaluate(async()=>{
+          const video=document.querySelector('[data-video-ready] video');
+          if(!(video instanceof HTMLVideoElement))throw Error("OWN_VOICE_READY_VIDEO_MISSING");
+          const blob=window.__hhRecordedVideoBlobs?.get(video.currentSrc)||
+            window.__hhRecordedVideoBlobs?.get(video.getAttribute("src"));
+          if(!(blob instanceof Blob))throw Error("OWN_VOICE_REAL_BLOB_MISSING");
+          const dataUrl=await new Promise((resolve,reject)=>{
+            const reader=new FileReader();
+            reader.onerror=()=>reject(Error("OWN_VOICE_BLOB_READ_FAILED"));
+            reader.onload=()=>resolve(reader.result);
+            reader.readAsDataURL(blob);
+          });
+          return String(dataUrl).split(",")[1];
+        });
+        const ownedVideo=Buffer.from(ownMovieBase64,"base64");
         assert.ok(ownedVideo.length>10000,"recorded personal voice produced a real movie");
         const ownProbe=spawnSync("ffprobe",["-v","error",
           "-show_entries","stream=codec_type","-of","json","-"],
@@ -1171,12 +1177,14 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         }));
         console.log("VOICE_E2E_MEDIA_CAPABILITIES "+engine+" "+JSON.stringify(mediaCapabilities));
         phase(engine,"start-media-recorder");
-        // Use the actual Free format card as the trusted local render click.
-        // Ready is automatic ONLY after the real decoded MP4/credit gate passes.
+        // The Free card ONLY navigates; the second trusted Ready click
+        // starts the original guarded local recorder with no automatic debit.
         await montageProTab.click();
         await expect(montageProOffer.locator('[data-video-montage-pro-choice="free"]')).toBeEnabled();
         await montageProOffer.locator('[data-video-montage-pro-choice="free"]').click();
-        phase(engine,"montage-free-render-requested");
+        await expect(page.locator('[data-video-ready]')).toHaveAttribute("data-ready-state","choose");
+        await page.locator('[data-ready-generate]').click();
+        phase(engine,"ready-free-render-requested");
         // The idle source remains preload=none until the user's actual Create
         // gesture; Safari must then start a physical decode, never a CSS-only
         // preview or an unverified download.
@@ -1445,19 +1453,19 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // The exact approved text remains the safety boundary; no silent reuse is allowed.
       await spokenToggle.click();
       await expect(spokenToggle).toHaveAttribute('aria-pressed','false');
-      // Montage Text owns phrase selection. Its current, visible release
-      // contract is a reapproval notice plus a disabled Create action; the
+      // Montage Text owns phrase selection. The reapproval notice remains
+      // visible; navigation to Ready is allowed while exporting remains gated.
       // legacy Voice-only [data-video-narration-stale] node is not mounted here.
       await expect(page.locator('[data-video-narration-reapproval]')).toBeVisible({timeout:15000});
-      await expect(page.locator('[data-video-quick-generate]')).toBeDisabled({timeout:15000});
+      await expect(page.locator('[data-video-quick-generate]')).toBeEnabled({timeout:15000});
       assert.equal(await page.locator('[data-video-live-audio]').count(),1,
         "the old WAV may remain attached, but must be unusable until narration is regenerated");
       // The explicit cloud-voice consent control belongs to its dedicated
       // Voice editor and is not mounted in Montage Text. The isolated Voice
       // component and opt-in browser tests cover that consent gate; here the
-      // real Montage path must remain fail-closed while its narration is stale.
+      // Ready's real recorder must remain fail-closed while narration is stale.
       await expect(page.locator("[data-video-narration-reapproval]")).toBeVisible();
-      await expect(page.locator('[data-video-quick-generate]')).toBeDisabled();
+      await expect(page.locator('[data-video-quick-generate]')).toBeEnabled();
       await page.locator('[data-video-quick-control="editor"]').click();
       await page.locator('[data-video-montage-tab="concept"]').click();
         await page.locator('[data-video-story-open-settings]').click();

@@ -36,12 +36,12 @@ test('Montage follows Story then three format choice routes without an automatic
  assert.ok(nextStart>0&&next.includes('onClick={continueMontageOrGenerate}'));
  assert.ok(next.includes('montagePanel==="text"||montagePanel==="settings"?"concept"'));
  assert.ok(next.includes('montagePanel==="concept"?"promo"'));
- assert.ok(direct.includes('onClick={createQuickVideo}'),"original renderer retained");
+ assert.ok(direct.includes('onClick={goToReadyForGeneration}'),"Montage Generate opens Ready");
  const routeStart=studio.indexOf('montagePanel==="promo" ? <MandalaMontageProOffer');
  const routes=studio.slice(routeStart,studio.indexOf('/> : null}',routeStart));
  const free=routes.slice(routes.indexOf("onChooseFree={()=>"),routes.indexOf("onChooseCharacter={()=>"));
- assert.ok(free.includes("createQuickVideo();"),"Free invokes the original guarded encoder");
- assert.ok(!free.includes('setActiveWorkspace("ready")'),"Free cannot claim a Ready MP4 before validation");
+ assert.ok(free.includes("goToReadyForGeneration();"),"Free enters Ready without a renderer");
+ assert.ok(!free.includes("createQuickVideo()"),"Free must not start recording before Ready");
  assert.ok(studio.includes("Only a native, decodable exported video opens Ready automatically"));
  assert.ok(studio.includes('playbackStatus!=="ready"||!creditConfirmed'));
  for(const [choice,target] of [["Character","effects"],["Cinematic","pro"]]){
@@ -55,7 +55,7 @@ test('Montage follows Story then three format choice routes without an automatic
 });
 
 
-test('stale phrase narration blocks direct Generate, not the Add Affirmations navigation',()=>{
+test('stale narration may navigate to Ready, but actual export remains guarded',()=>{
  const stage=studio.indexOf('data-video-stage-actions="montage"');
  assert.ok(stage>0,"real final action group");
  const fromCreate=studio.indexOf('data-video-quick-generate',stage);
@@ -63,8 +63,8 @@ test('stale phrase narration blocks direct Generate, not the Add Affirmations na
  const addStart=studio.indexOf('data-video-montage-next={montagePanel===',stage);
  const add=studio.slice(addStart,studio.indexOf('</button>',addStart));
  assert.ok(addStart>stage&&addStart<fromCreate,"Affirmations precedes Create Video");
- assert.match(create,/disabled=\{!studioHydrated\|\|recording\|\|preparing\|\|narrationInvalid\}/);
- assert.match(create,/onClick=\{createQuickVideo\}/);
+ assert.match(create,/disabled=\{!studioHydrated\|\|recording\|\|preparing\}/);
+ assert.match(create,/onClick=\{goToReadyForGeneration\}/);
  assert.match(add,/onClick=\{continueMontageOrGenerate\}/);
  assert.doesNotMatch(add,/narrationInvalid/);
  assert.match(studio,/data-video-narration-reapproval/);

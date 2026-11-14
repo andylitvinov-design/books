@@ -5,7 +5,7 @@ import styles from "./mandala-montage-pro-offer.module.css";
 type Locale = "en"|"ru"|"es";
 type Props={locale:Locale;disabled:boolean;onChooseFree:()=>void;onChooseCharacter:()=>void;onChooseCinematic:()=>void;};
 
-// Free triggers the existing guarded local renderer; verified media opens Ready.
+// Free opens Ready's explicit Generate choice; no renderer starts until that action.
 // €3/€5 are navigation only; the original PRO workflow keeps all payment guards.
 const copy={
  en:{title:"Choose your video type",hint:"Generate free or continue in a premium editor.",options:[

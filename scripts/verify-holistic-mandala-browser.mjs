@@ -2428,17 +2428,45 @@ const runEngine = async ([engine, browserType]) => {
           assert.deepEqual(await page.locator("[data-free-film-source]").evaluateAll(
             nodes=>nodes.map(node=>node.getAttribute("data-free-film-source"))),selectedSources);
           await workspaceNav.locator('[data-video-quick-control="editor"]').click();
+          // Montage only opens Ready. Capture the actual browser-local Blob
+          // for ffprobe; don't bypass the signed-in Save/download requirement.
+          await page.evaluate(()=>{
+            const create=URL.createObjectURL.bind(URL);
+            const files=new Map();
+            window.__hhMontageTestBlobs=files;
+            URL.createObjectURL=blob=>{
+              const url=create(blob);
+              if(blob instanceof Blob&&blob.type.startsWith("video/"))files.set(url,blob);
+              return url;
+            };
+          });
           const createMontage=page.locator('[data-video-quick-generate]');
           await expect(createMontage).toBeEnabled({timeout:60000});
           await createMontage.click();
-          const saveMontage=page.locator('[data-mandala-video-download]');
-          await saveMontage.waitFor({state:"visible",timeout:90000});
+          const readyMontage=page.locator('[data-video-ready]');
+          await expect(readyMontage).toHaveAttribute('data-ready-state','choose');
+          await expect(readyMontage.locator('[data-ready-generate]')).toBeVisible();
+          await readyMontage.locator('[data-ready-generate]').click();
+          await expect(readyMontage).toHaveAttribute('data-ready-state','complete',{timeout:90000});
+          await expect(readyMontage.locator('[data-ready-save]')).toBeVisible();
           assert.equal(await page.locator('[data-video-result]').getAttribute('data-video-result-mode'),
             'rendered',"a catalog source is not a personalized montage");
-          const [montageDownload]=await Promise.all([
-            page.waitForEvent('download',{timeout:25000}),saveMontage.click()]);
-          const montageBytes=await bufferFromStream(await montageDownload.createReadStream());
-          assert.ok(montageBytes.length>20000,"montage download must contain encoded media");
+          const movieBase64=await page.evaluate(async()=>{
+            const video=document.querySelector('[data-video-ready] video');
+            if(!(video instanceof HTMLVideoElement))throw Error('MONTAGE_READY_VIDEO_MISSING');
+            const blob=window.__hhMontageTestBlobs?.get(video.currentSrc)||
+              window.__hhMontageTestBlobs?.get(video.getAttribute('src'));
+            if(!(blob instanceof Blob))throw Error('MONTAGE_REAL_BLOB_MISSING');
+            const dataUrl=await new Promise((resolve,reject)=>{
+              const reader=new FileReader();
+              reader.onerror=()=>reject(Error('MONTAGE_REAL_BLOB_READ_FAILED'));
+              reader.onload=()=>resolve(reader.result);
+              reader.readAsDataURL(blob);
+            });
+            return String(dataUrl).split(',')[1];
+          });
+          const montageBytes=Buffer.from(movieBase64,'base64');
+          assert.ok(montageBytes.length>20000,"Ready-rendered montage contains encoded media");
           const mediaDir=mkdtempSync(join(tmpdir(),'hh-montage-'));
           try {
             const file=join(mediaDir,'montage');
