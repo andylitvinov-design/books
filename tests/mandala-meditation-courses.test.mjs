@@ -24,7 +24,10 @@ test("meditation-course workspace opens the existing working composer within the
   assert.match(composer,/buildPersonalMeditationScript\(\{/);
   assert.match(composer,/data-meditation-course-request/);
   assert.match(composer,/maxLength=\{160\}/);
-  assert.match(composer,/\{script\?\(coursePreview\?course.regenerate:t.regenerate\):t.generate\}/);
+  assert.match(composer,/aiBusy\?t\.aiBusy:script\?\(coursePreview\?course\.regenerate:t\.regenerate\):locale==="ru"/);
+  assert.match(composer,/generationMode==="ai"&&\(!imageryConsent\|\|!externalAiConsent\)/,
+    "optional AI must remain disabled until both privacy consents");
+  assert.match(composer,/Generate meditation text/);
   assert.match(css,/\.workspaceCourses\{/);
 });
 
@@ -51,8 +54,14 @@ test("one generated meditation unlocks exactly eight topic previews and an hones
   assert.match(src,/не проводят? оплату|не проводит оплату/);
   assert.match(css,/\.courseDays\{/);
   assert.match(css,/\.courseOffer\{/);
-  assert.doesNotMatch(src,/fetch\(|localStorage|sessionStorage|checkout\(|spendXP\(/,
-    "this preview must not contact AI, store private text or charge visitors");
+  assert.doesNotMatch(src,/localStorage|sessionStorage|checkout\(|spendXP\(/,
+    "meditation editing must not store private text or charge visitors");
+  assert.match(src,/if\(!safetyResponse&&generationMode==="ai"\)/);
+  assert.match(src,/const response=await fetch\("\/api\/holistic-support\/meditation-writer\/brief"/);
+  assert.match(src,/allowPersonalNotes:false/);
+  assert.match(src,/externalModelOptIn:true/);
+  assert.equal([...src.matchAll(/\bfetch\s*\(/g)].length,1,
+    "only the approved first-party, explicit-consent free writer may be called");
   for(const locale of ["ru","en","es"]){
     const example=locale==="ru"?"бережная внутренняя опора":locale==="en"?"gentle self support":"apoyo interior suave";
     const script=buildPersonalMeditationScript({locale,theme:"energy",wish:example,

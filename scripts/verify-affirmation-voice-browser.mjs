@@ -1033,8 +1033,14 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(page.locator("[data-video-affirmation-bed]")).toBeVisible({timeout:15000});
       await page.locator("[data-video-affirmation-bed]").selectOption("ocean");
       const narrationConsent=page.locator("[data-video-affirmation-voice-consent]");
-      await narrationConsent.check();
-      await expect(narrationConsent).toBeChecked();
+      // A real iPhone touch must reach the full labelled consent surface;
+      // the tiny input itself can be obscured by the fixed mobile dock.
+      // Never programmatically tick consent or bypass the disabled generate gate.
+      const narrationConsentLabel=narrationConsent.locator("..");
+      await narrationConsentLabel.scrollIntoViewIfNeeded();
+      if(engine==="webkit")await narrationConsentLabel.tap();
+      else await narrationConsent.check();
+      await expect(narrationConsent).toBeChecked({timeout:15000});
       const generateNarration=page.locator("[data-video-generate-affirmation-audio]");
       await expect(generateNarration).toBeEnabled();
       // Observe real user input on macOS without recording the approved text,
@@ -1106,6 +1112,9 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // The approved TTS track is already attached; both effects must render
       // locally into a real stereo WAV before the movie export starts.
       await page.locator('[data-video-quick-control="effects"]').click();
+      await page.locator('[data-therapy-subtab="practice"]').click();
+      await page.locator('[data-therapy-effects-toggle]').click();
+      // The original advanced effects engine remains under Therapy > Practice.
       // Hypno has three exclusive subtabs: Visual, Audio effects and Effects.
       // Verify the relocated effect presets in macOS WebKit before the audio mixer.
       const hypnoTabs=page.locator('[data-hypno-tabs]');
@@ -1518,14 +1527,31 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const stillHasOldVoice=soundtrackLabels.some(label=>
         label.includes("holistic-house-hypno-audio.wav")||label.includes(expectedFileName));
       if(stillHasOldVoice)await expect(page.locator("[data-video-quick-generate]")).toBeDisabled();
-      // Montage has no voice control. Enter Hypno Audio and expose the one
-      // consented voice editor before testing real provider invocation.
+      // Montage has no voice control. Open the visitor-controlled advanced
+      // Hypno effects inside Therapy > Practice before checking the real TTS.
       await page.locator('[data-video-quick-control="effects"]').click();
+      const therapyPractice=page.locator('[data-therapy-subtab="practice"]');
+      await therapyPractice.click();
+      await expect(therapyPractice).toHaveAttribute('aria-selected','true');
+      await expect(page.locator("[data-video-hypnocorrection-panel]")).toHaveCount(0);
+      const optionalEffects=page.locator('[data-therapy-advanced-effects]');
+      await optionalEffects.locator(':scope > summary').click();
+      await expect(optionalEffects).toHaveAttribute('open','');
       await expect(page.locator("[data-video-hypnocorrection-panel]")).toBeVisible();
-      await page.locator('[data-hypno-tab="audio"]').click();
-      await expect(page.locator('[data-hypno-group="audio"]')).toBeVisible();
-      await page.locator('[data-hypno-group="audio"] [data-hypno-card] button').first().click();
-      await expect(page.locator("[data-hypno-speech-settings]")).toBeVisible();
+      const hypnoAudioTab=page.locator('[data-hypno-tab="audio"]');
+      // Safari can swallow synthetic mouse clicks after a nested native
+      // disclosure; prove a real touch selected Audio before asserting content.
+      if(engine==="webkit")await hypnoAudioTab.tap();
+      else await hypnoAudioTab.click();
+      await expect(hypnoAudioTab).toHaveAttribute("aria-selected","true",{timeout:15000});
+      await expect(page.locator('[data-hypno-group="audio"]')).toBeVisible({timeout:15000});
+      const speechConfigure=page.locator('[data-hypno-group="audio"] [data-hypno-card] button').first();
+      await expect(speechConfigure).toBeEnabled();
+      // Clicking the configuration card as a desktop mouse is lost after a
+      // nested Safari disclosure. Exercise the real user touch instead.
+      if(engine==="webkit")await speechConfigure.tap();
+      else await speechConfigure.click();
+      await expect(page.locator("[data-hypno-speech-settings]")).toBeVisible({timeout:15000});
       const voicePanel=page.locator("[data-video-voice-studio]");
       await voicePanel.waitFor({state:"visible",timeout:25000});
       if(await voicePanel.getAttribute("open")===null)
@@ -1546,7 +1572,14 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const studioConsent=studio.locator('input[type="checkbox"]');
       await expect(studioConsent).not.toBeChecked({timeout:10000});
       await expect(studio.locator("[data-voice-studio-generate]")).toBeDisabled();
-      await studioConsent.check();
+      // Use a genuine label tap on touch WebKit: fixed bottom navigation can
+      // overlap the checkbox's 19px hit area after scrolling a long editor.
+      // Never set checked in page.evaluate, force a click, or waive consent.
+      const consentLabel=studioConsent.locator("..");
+      await consentLabel.scrollIntoViewIfNeeded();
+      if(engine==="webkit")await consentLabel.tap();
+      else await studioConsent.check();
+      await expect(studioConsent).toBeChecked();
       await studio.locator("[data-voice-studio-generate]").click();
       await studio.locator("[data-voice-studio-audio]").waitFor({state:"visible",timeout:30000});
       const typed=payloads.find(item=>item.mode==="short_text");
