@@ -3,7 +3,7 @@ const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const {
  isTrustedFailure,validatedJobEvidence,isActualBaseAdvancedLog,
- isVerifiedAdvance,recoverBaseAdvanced
+ isVerifiedAdvance,ownerProtectedUpdate,recoverBaseAdvanced
 }=require('../scripts/ci-pr-base-advanced-recovery.cjs');
 const HEAD='a'.repeat(40),OLD='b'.repeat(40),LIVE='c'.repeat(40);
 const REPO='andylitvinov-design/books';
@@ -32,14 +32,14 @@ function world(options={}){
  const pr={number:3510,state:'open',draft:false,mergeable:true,mergeable_state:'clean',
   base:{ref:'codex/public-book-library',sha:LIVE},
   head:{ref:'fix/sensitive-crm',sha:HEAD,repo:{full_name:REPO}},
-  labels:[],...options.pr};
+  labels:[],body:'Existing customer PR body',...options.pr};
  let updates=0,reads=0;
  const github={
   rest:{
    actions:{
-    getWorkflowRun:async()=>({data:{id:100,run_attempt:1,status:'completed',conclusion:'failure',
+    getWorkflowRun:async()=>{if(options.read403)throw Object.assign(Error('read denied'),{status:403});return {data:{id:100,run_attempt:1,status:'completed',conclusion:'failure',
      head_sha:HEAD,head_branch:'fix/sensitive-crm',path:'.github/workflows/hh-pr-core-release.yml',
-     ...options.run}}),
+     ...options.run}};},
     listJobsForWorkflowRun:async()=>({data:{total_count:jobs.length,jobs:options.jobs||jobs}})
    },
    pulls:{get:async()=>({data:(reads++,options.prAfter&&reads>=2?options.prAfter:pr)})},
@@ -54,14 +54,28 @@ function world(options={}){
   },
   request:async(path)=>{
    if(path.includes('/logs'))return {data:options.logs??MARKER};
-   if(path.startsWith('PUT ')){updates++;return {status:options.updateStatus??202};}
+   if(path.startsWith('PUT '))throw Error('Owner source write must not use read-only GitHub client');
    throw Error('Unexpected test API call '+path);
   }
  };
- return {context,github,updated:()=>updates,reads:()=>reads};
+ const ownerCalls=[];
+ const fetcher=async(url,request)=>{
+  const path=new URL(url).pathname;
+  ownerCalls.push({method:request.method,path,usesExpectedHead:request.body?.includes('expected_head_sha')||false});
+  const response=(status,data)=>({ok:status>=200&&status<300,status,json:async()=>data});
+  if(path==='/user')return response(200,{login:options.ownerLogin||'andylitvinov-design'});
+  if(path==='/repos/andylitvinov-design/books/pulls/3510'&&request.method==='GET')
+   return response(200,{...pr,...options.ownerPr});
+  if(path==='/repos/andylitvinov-design/books/pulls/3510/update-branch'&&request.method==='PUT'){
+   updates++;return response(options.updateStatus??202,{message:'mock update accepted'});
+  }
+  throw Error('Unexpected owner-only GitHub API route: '+request.method+' '+path);
+ };
+ return {context,github,fetcher,updated:()=>updates,reads:()=>reads,ownerCalls:()=>ownerCalls};
 }
 const run=w=>recoverBaseAdvanced({context:w.context,github:w.github,
- hasOwnerToken:true,now:Date.parse('2026-11-04T21:02:00Z')});
+ hasOwnerToken:true,ownerToken:'TEST_OWNER_TOKEN_NOT_SECRET',fetcher:w.fetcher,
+ now:Date.parse('2026-11-04T21:02:00Z')});
 test('accepts only recent trusted failed Core event on exact default branch',()=>{
  const w=world();
  assert.equal(isTrustedFailure(w.context,Date.parse('2026-11-04T21:02:00Z')),true);
@@ -131,7 +145,7 @@ test('changed HEAD under source lease, code review hold or base movement remains
  ]){
   const w=world(cases),r=await run(w);
   assert.equal(r.status,'SKIPPED');
-  assert.equal(w.updated()===0||r.reason==='UPDATE_NOT_ACCEPTED',true);
+  assert.equal(w.updated()===0||r.reason==='OWNER_BRANCH_UPDATE_HTTP_409',true);
  }
 });
 
@@ -205,4 +219,53 @@ test('every independent failed-Core intake and writer checkout pins the triggeri
   assert.match(checkout[1],/persist-credentials: false/);
  }
  assert.doesNotMatch(wf,/ref: codex\/bootstrap-books/);
+});
+
+test('owner-only write proves trusted PAT identity and keeps Actions reads on GITHUB_TOKEN',async()=>{
+ const w=world();
+ const result=await run(w);
+ assert.equal(result.status,'UPDATED');
+ const calls=w.ownerCalls();
+ assert.deepEqual(calls.map(x=>x.method),['GET','GET','PUT']);
+ assert.ok(calls.every(x=>!x.path.includes('/actions/')&&!x.path.includes('/logs')));
+ assert.equal(calls[2].usesExpectedHead,true);
+ assert.equal(w.updated(),1);
+});
+
+test('owner PAT HTTP 403 cannot be confused with a successful BASE update or a failed Core test',async()=>{
+ const w=world({updateStatus:403}),result=await run(w);
+ assert.equal(result.status,'SKIPPED');
+ assert.equal(result.reason,'OWNER_BRANCH_UPDATE_HTTP_403');
+ assert.equal(result.mergeAuthorized,false);
+ assert.equal(w.updated(),1,'only the verified one-shot PUT was attempted');
+});
+
+test('changed owner-view source HEAD or identity blocks update without consuming a CI wave',async()=>{
+ for(const options of [
+  {ownerLogin:'not-owner'},
+  {ownerPr:{head:{ref:'fix/sensitive-crm',sha:'f'.repeat(40),repo:{full_name:REPO}}}},
+  {ownerPr:{draft:true}},
+  {ownerPr:{body:'changed by another owner'}},
+ ]){
+  const w=world(options),result=await run(w);
+  assert.equal(result.status,'SKIPPED',JSON.stringify(options));
+  assert.equal(w.updated(),0);
+  assert.equal(result.reason,options.ownerLogin?'OWNER_TOKEN_IDENTITY_MISMATCH':'OWNER_PAT_PR_CHANGED');
+ }
+});
+
+test('GITHUB_TOKEN read-only API 403 remains distinct from owner source-write denial',async()=>{
+ const w=world({read403:true}),result=await run(w);
+ assert.equal(result.status,'SKIPPED');
+ assert.equal(result.reason,'READ_GITHUB_API_403');
+ assert.equal(w.ownerCalls().length,0,'owner PAT must not be used to read workflow history');
+ assert.equal(w.updated(),0);
+});
+
+test('owner mutation helper rejects incomplete identity without attempting protected write',async()=>{
+ const answer=await ownerProtectedUpdate({
+  ownerToken:'test',number:3510,head:HEAD,source:'fix/sensitive-crm',body:'body',
+  fetcher:async()=>({ok:false,status:403,json:async()=>({})})
+ });
+ assert.deepEqual(answer,{ok:false,reason:'OWNER_IDENTITY_HTTP_403'});
 });

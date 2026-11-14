@@ -495,3 +495,26 @@ test('Four short failure/repair control jobs use slim with every safety gate ret
   assert.match(repair,/HH_AUTOMERGE_TOKEN/);
   assert.doesNotMatch(direct,/continue-on-error:\s*true/);
 });
+
+test('failed-Core BASE recovery separates read-only workflow token from guarded owner branch update',()=>{
+ const workflow=read('hh-pr-direct-core-failure');
+ const span=workflow.split('      - name: Refresh exactly the proven BASE_ADVANCED PR\n')[1]
+   ?.split('      - name: Recover one infrastructure-only job inside existing failed-Core handoff\n')[0];
+ assert.ok(span,'BASE_ADVANCED recovery step must remain present');
+ assert.match(span,/github-token: \$\{\{ github\.token \}\}/,
+  'GITHUB_TOKEN must read Core, Specialist logs and source leases');
+ assert.match(span,/HH_AUTOMERGE_TOKEN: \$\{\{ secrets\.HH_AUTOMERGE_TOKEN \}\}/,
+  'owner credential is scoped only to the guarded mutation step');
+ assert.match(span,/hasOwnerToken:Boolean\(token\),ownerToken:token,fetcher:fetch/,
+  'the recovered PR HEAD needs an authenticated single owner writer');
+ assert.doesNotMatch(span,/github-token: \$\{\{ secrets\.HH_AUTOMERGE_TOKEN/,
+  'owner PAT must not inspect restricted Actions logs or consume its rate budget');
+ const code=require('node:fs').readFileSync('scripts/ci-pr-base-advanced-recovery.cjs','utf8');
+ assert.match(code,/expected_head_sha:head/);
+ assert.match(code,/OWNER_TOKEN_IDENTITY_MISMATCH/);
+ assert.match(code,/OWNER_BRANCH_UPDATE_HTTP_/);
+ assert.match(code,/externalOwnerLeaseStatus\(comments,sourceSha,now\)/);
+ assert.match(code,/validatedJobEvidence\(jobData\)/);
+ assert.match(code,/isActualBaseAdvancedLog\(logs\)/);
+ assert.doesNotMatch(code,/force:true|createCheckRun|check-runs\/.+POST/);
+});
