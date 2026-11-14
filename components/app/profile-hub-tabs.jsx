@@ -4,7 +4,7 @@ import { ProfileModeSwitch } from '../master-mode-switch'
 import { Activity, BookOpen, ClipboardList, FileClock, FileText, House, LockKeyhole, ListChecks, Route, UserRound, Settings2 } from 'lucide-react'
 import { assessmentHistoryTitle } from '@/lib/assessments/personal-guidance'
 import styles from './profile-hub-tabs.module.css'
-import { SiteVideoPlayer } from '../site-video-player'
+import { ProfilePresentationPlayer } from './profile-presentation-player'
 import { profilePresentationForLocale } from '@/lib/profile-presentation.mjs'
 
 const COPY = {
@@ -189,11 +189,9 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
       <div className={styles.hero} data-profile-video-hero>
         <h1 className={styles.srOnly}>{t.hero}</h1>
         <div className={styles.videoFrame}>
-          {presentation ? <div data-profile-presentation-locale={selected}
-            data-profile-presentation-source={presentation.youtubeId ? 'youtube' : 'heygen'}>
-            <SiteVideoPlayer key={selected} video={presentation} locale={selected}
-              minimal fallbackPoster={POSTER} />
-          </div> : <video controls playsInline preload="none" poster={POSTER} aria-label={t.video}>
+          {presentation ? <ProfilePresentationPlayer key={selected}
+            locale={selected} presentation={presentation} poster={POSTER} />
+          : <video controls playsInline preload="none" poster={POSTER} aria-label={t.video}>
             <source src={VIDEO} type="video/mp4" />
             <track kind="captions" src="/videos/holistic-house/profile-scenic.en.vtt" srcLang="en" label="English" />
           </video>}
