@@ -101,8 +101,8 @@ test('only relevant published practitioner offer qualifies for a requested goal'
  assert(r.buttons.some(x=>x.url.endsWith('/ru/services/systemic-constellations')));
 });
 test('CAD and USD ceilings never silently become a euro affordability claim',()=>{
- assert.equal(inferAssistPreferences('до $50 CAD').budget,undefined);
- assert.equal(inferAssistPreferences('up to USD 100').budget,undefined);
+ assert.equal(inferAssistPreferences('до $50 CAD').budget,'otherCurrency');
+ assert.equal(inferAssistPreferences('up to USD 100').budget,'otherCurrency');
  assert.equal(inferAssistPreferences('до €50').budget,'under50');
  assert.equal(inferAssistPreferences('up to €100').budget,'under100');
  const r=answer('Подбери сеанс Рейки до $50 CAD','ru',[sample()]);
