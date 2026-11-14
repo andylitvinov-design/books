@@ -279,9 +279,12 @@ export function MandalaAffirmationVoice({
     sampleControllerRef.current?.abort();
     sampleControllerRef.current=null;
     if(sampleAudioRef.current){
-      sampleAudioRef.current.pause();
-      sampleAudioRef.current.removeAttribute("src");
-      sampleAudioRef.current.load();
+      // Safari can reject decoder teardown after a failed or aborted sample.
+      // Voice selection must remain possible even when the preview fails.
+      const sample=sampleAudioRef.current;
+      try {sample.pause();} catch {}
+      try {sample.removeAttribute("src");} catch {}
+      try {sample.load();} catch {}
     }
     samplePendingPersistRef.current=null;
     setSampleUrl("");setSampleVoiceId("");setSampleBusyId("");setSampleMessage("");
@@ -542,9 +545,11 @@ export function MandalaAffirmationVoice({
         {(["female","male","own"] as const).map(id=><button type="button" key={id}
           data-video-affirmation-gender={id} aria-pressed={voiceGender===id} hidden={compact&&id==="own"}
           disabled={busy||disabled} onClick={()=>{
-            resetSample();setVoiceGender(id);
+            // React must commit the new gender even if a previous sample failed.
+            setVoiceGender(id);
             if(id!=="own")setVoiceId(id==="female"?"maya":"mark");
             setConsent(false);
+            resetSample();
           }}>{id==="female"?t.female:id==="male"?t.male:t.own}</button>)}
         </div>
       </div>

@@ -969,7 +969,12 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const chooser=page.locator("[data-video-affirmation-voice-select]");
       assert.equal(await chooser.locator("[data-video-affirmation-voice-card]").count(),3);
       await chooser.locator('[data-video-affirmation-gender="male"]').click();
+      // A click is not proof that WebKit committed the requested selection.
+      await expect(chooser.locator('[data-video-affirmation-gender="male"]'))
+        .toHaveAttribute("aria-pressed","true",{timeout:15000});
       assert.equal(await chooser.locator("[data-video-affirmation-voice-card]").count(),3);
+      await expect(chooser.locator('[data-video-affirmation-voice-card="leon"]'))
+        .toBeVisible({timeout:15000});
       await chooser.locator('[data-video-affirmation-voice-card="leon"]').click();
       await expect(chooser.locator('[data-video-affirmation-voice-card="leon"]')).toHaveAttribute("aria-pressed","true");
       await expect(page.locator("[data-video-affirmation-voice-consent]")).not.toBeChecked();
