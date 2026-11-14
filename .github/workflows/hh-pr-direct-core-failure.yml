@@ -38,6 +38,7 @@ jobs:
       id-token: write
     outputs:
       receipt_json: ${{ steps.send.outputs.receipt_json }}
+      stale_event: ${{ steps.send.outputs.stale_event }}
     steps:
       - name: Checkout only trusted default-branch event bridge
         uses: actions/checkout@v4
@@ -58,6 +59,16 @@ jobs:
             core.setOutput('receipt_json',JSON.stringify(receipt));
             await core.summary.addHeading('Core failure CI intake (independent of source writer)')
               .addCodeBlock(JSON.stringify(receipt,null,2)).write();
+            // A completed Core event for a superseded exact HEAD is benign.
+            // Every other rejected receipt still fails closed as before.
+            if(receipt?.outcome==='EVENT_PR_HEAD_MOVED'&&
+               receipt.sent===false&&
+               receipt.runId===context.payload.workflow_run?.id){
+              core.setOutput('stale_event','true');
+              core.info('HH_CORE_STALE_EVENT_NO_DISPATCH '+
+                JSON.stringify({run_id:receipt.runId,reason:receipt.outcome}));
+              return;
+            }
             const persistedAssociations=new Set([
               'MATCHED_CHAT_EVENT_RECORDED',
               'TASK_ASSIGNED_CHAT_RECORDED_NOT_DISPATCHED',
@@ -80,6 +91,7 @@ jobs:
     needs: ci_event_intake
     if: >-
       needs.ci_event_intake.result == 'success' &&
+      needs.ci_event_intake.outputs.stale_event != 'true' &&
       github.repository == 'andylitvinov-design/books' &&
       github.ref == 'refs/heads/codex/bootstrap-books' &&
       github.event.workflow_run.name == 'HH PR core release gate' &&
