@@ -42,7 +42,6 @@ test('delete only old, currently unaliased, exact-project production deployments
     wrongBranch: {meta: {...history[31].meta, githubCommitRef: 'main'}},
     noMeta: {meta: null},
     inProgress: {readyState: 'BUILDING'},
-    rollbackCandidate: {isRollbackCandidate: true},
     customEnvironment: {customEnvironmentId: 'env_other'},
   };
   for (const [label, change] of Object.entries(cases)) {
@@ -54,4 +53,9 @@ test('delete only old, currently unaliased, exact-project production deployments
     'unknown active aliases must block deletion');
   assert.equal(eligibleForDelete(make(84), {...opts, assignedAliases: null}), false,
     'null active aliases must block deletion');
+  assert.equal(eligibleForDelete(make(85, {isRollbackCandidate: true}), opts), true,
+    'old unaliased READY is eligible once 30 newer READY versions are protected');
+  assert.equal(eligibleForDelete(make(86, {isRollbackCandidate: true}), {
+    ...opts, protectedIds: new Set([...protectedIds, make(86).id]),
+  }), false, 'explicit protected rollback is never eligible');
 });

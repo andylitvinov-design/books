@@ -42,8 +42,11 @@ export function eligibleForDelete(d, {now, liveId, protectedIds, assignedAliases
     return false;
   // The detail.alias field is historical, not proof of a CURRENT assignment.
   // Fail closed unless the dedicated Vercel aliases endpoint confirms zero active aliases.
+  // Vercel marks historic READY deployments as rollback candidates even after
+  // they fall outside our retention window. Protect the 30 newest READY builds
+  // in protectedDeploymentIds instead of preventing *all* old READY cleanup.
   if (!Array.isArray(assignedAliases) || assignedAliases.length !== 0
-    || d.isRollbackCandidate === true || d.customEnvironmentId) return false;
+    || d.customEnvironmentId) return false;
   return true;
 }
 
