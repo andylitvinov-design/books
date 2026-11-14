@@ -6,6 +6,7 @@
  * Chromium is the default; opt-in macOS WebKit runs in CI. Neither is a physical iPhone.
  */
 import assert from 'node:assert/strict';
+import {expect} from '@playwright/test';
 import {spawnSync} from 'node:child_process';
 import {mkdirSync, writeFileSync, mkdtempSync, rmSync, readFileSync} from 'node:fs';
 import {resolve, join} from 'node:path';
@@ -339,12 +340,27 @@ try {
       assert.equal(item.src,verifiedSources.get(item.id), 'SOURCE_NOT_APPROVED_IN_CATALOGUE_'+item.id);
     }
   }
+  row.phase='first-video-sources-ready';
   const create = first.locator('[data-first-video-generate]');
   await page.waitForFunction(() => {
     const button = document.querySelector('[data-first-video-generate]');
     return Boolean(button && !button.disabled);
   }, undefined, {timeout: 40000});
   await create.click({timeout: 15000});
+  // First Video Create only navigates. A separate real Ready gesture starts
+  // the recorder, preserving exact source, audio, credit and privacy checks.
+  row.phase='first-video-navigation-ready';
+  await page.waitForFunction(() =>
+    document.querySelector('[data-mandala-free-video]')
+      ?.getAttribute('data-active-workspace')==='ready',
+    undefined,{timeout:15000});
+  const ready=page.locator('[data-video-ready]');
+  await expect(ready).toHaveAttribute('data-ready-state','choose');
+  const readyGenerate=ready.locator('[data-ready-generate]');
+  await expect(readyGenerate).toBeEnabled({timeout:15000});
+  if(engine==='webkit')await readyGenerate.tap();
+  else await readyGenerate.click();
+  row.phase='first-video-ready-encoded-export';
   // Guests watch the original encoded movie in Ready; protected Save is login-gated.
   // Read the real test-owned Blob without fake sign-in, download or provider calls.
   const captured=await readRealGuestVideo(page,{timeout:80000});

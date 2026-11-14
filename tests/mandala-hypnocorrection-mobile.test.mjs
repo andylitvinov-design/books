@@ -115,7 +115,7 @@ test("10 Nov Hypno uses three exclusive tabs including the moved visual presets"
   assert.match(css,/\.group\[hidden\]\{display:none!important\}/);
   assert.match(css,/@media\(max-width:359px\)/);
   assert.match(videoCss,/data-active-workspace="effects"\] \.quickBuilder>\[data-video-quick-section="1"\],[\s\S]*?display:none!important/);
-  assert.match(studio,/status=\{notice\} onCreate=\{createQuickVideo\}/);
+  assert.match(studio,/status=\{notice\} onCreate=\{openReadyForGeneration\}/);
   assert.match(studio,/data-hypno-stage-intro/);
   assert.match(videoCss,/\.hypnoStageTitle\{display:none\}/);
   assert.match(videoCss,/\.studio\[data-active-workspace="effects"\] \.previewStage \.heroRail\{display:none!important\}/);
@@ -128,7 +128,7 @@ test("Effects offers real Generate plus optional Visual/Audio step, without a Vo
  assert.ok(ui.includes("data-hypno-create"));
  assert.ok(ui.includes("data-hypno-add-effects"));
  assert.ok(ui.includes('onClick={()=>setActiveGroup(activeGroup==="visual"?"audio":activeGroup==="audio"?"effects":"visual")}'));
- assert.ok(studio.includes("status={notice} onCreate={createQuickVideo}"));
+ assert.ok(studio.includes("status={notice} onCreate={openReadyForGeneration}"));
  assert.ok(!studio.includes("generateWithoutHypnoEffects"));
  assert.ok(studio.includes("void createVideo()"),"must use the real protected video renderer");
 });

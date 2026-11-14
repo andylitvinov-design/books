@@ -57,5 +57,6 @@ test("Personalization exposes real Voice/My Voice consent through a visible acti
  assert.ok(script.includes("await advancedText.click()"));
  assert.ok(script.includes("await personalTab.click()"));
  assert.ok(script.includes("await myVoiceModeButton.click()"));
- assert.ok(script.includes("await narrationConsent.check()"));
+ assert.ok(script.includes('await narrationConsent.tap()'));
+ assert.ok(script.includes('await expect(narrationConsent).toHaveAttribute("aria-checked","false")'));
 });

@@ -28,7 +28,7 @@ test("Montage audio is an owner-approved compact panel, not a second generator",
   assert.ok(source.includes('data-montage-panel={activeWorkspace==="editor"?montagePanel:undefined}'));
   assert.ok(css.includes('.montageAudioHero'));
   assert.ok(source.includes('onClick={attachSelectedAudio}'));
-  assert.ok(source.includes('onClick={createQuickVideo}'));
+  assert.ok(source.includes('onClick={openReadyForGeneration}'));
 });
 test("Style, Add text, Audio, Montage PRO and real audio source actions remain",()=>{
   const start=source.indexOf('<nav className={videoStyles.montageQuickTools}');

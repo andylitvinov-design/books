@@ -1033,8 +1033,16 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(page.locator("[data-video-affirmation-bed]")).toBeVisible({timeout:15000});
       await page.locator("[data-video-affirmation-bed]").selectOption("ocean");
       const narrationConsent=page.locator("[data-video-affirmation-voice-consent]");
-      await narrationConsent.check();
-      await expect(narrationConsent).toBeChecked();
+      // Physical consent, revoke, then re-consent: never inject or synthesize opt-in.
+      if(engine==="webkit")await narrationConsent.tap();
+      else await narrationConsent.click();
+      await expect(narrationConsent).toHaveAttribute("aria-checked","true",{timeout:15000});
+      if(engine==="webkit")await narrationConsent.tap();
+      else await narrationConsent.click();
+      await expect(narrationConsent).toHaveAttribute("aria-checked","false");
+      if(engine==="webkit")await narrationConsent.tap();
+      else await narrationConsent.click();
+      await expect(narrationConsent).toHaveAttribute("aria-checked","true");
       const generateNarration=page.locator("[data-video-generate-affirmation-audio]");
       await expect(generateNarration).toBeEnabled();
       // Observe real user input on macOS without recording the approved text,
@@ -1056,7 +1064,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         const buttonDisabled=await page.locator("[data-video-generate-affirmation-audio]").isDisabled();
         const state=await page.evaluate(()=>({
           gesture:window.__hhVoiceSubmitProbe??null,
-          consented:document.querySelector("[data-video-affirmation-voice-consent]")?.checked===true,
+          consented:document.querySelector("[data-video-affirmation-voice-consent]")?.getAttribute("aria-checked")==="true",
           wordsLength:document.querySelector("[data-video-affirmation-spoken-text]")?.textContent?.trim().length??0,
           readyNodes:document.querySelectorAll("[data-video-affimations-audio-ready]").length,
           mountedPanels:document.querySelectorAll("[data-video-affirmation-voice]").length
@@ -1221,12 +1229,18 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         }));
         console.log("VOICE_E2E_MEDIA_CAPABILITIES "+engine+" "+JSON.stringify(mediaCapabilities));
         phase(engine,"start-media-recorder");
-        // Use the actual Free format card as the trusted local render click.
-        // Ready is automatic ONLY after the real decoded MP4/credit gate passes.
+        // The Free card only navigates to Ready. The separate Ready button
+        // starts the real local encoder with a second trusted user gesture.
         await montageProTab.click();
         await expect(montageProOffer.locator('[data-video-montage-pro-choice="free"]')).toBeEnabled();
         await montageProOffer.locator('[data-video-montage-pro-choice="free"]').click();
-        phase(engine,"montage-free-render-requested");
+        await expect(page.locator("[data-mandala-free-video]")).toHaveAttribute("data-active-workspace","ready");
+        await expect(page.locator("[data-video-ready]")).toHaveAttribute("data-ready-state","choose");
+        const readyGenerate=page.locator("[data-ready-generate]");
+        await expect(readyGenerate).toBeEnabled({timeout:30000});
+        phase(engine,"montage-free-navigated-ready");
+        await readyGenerate.click();
+        phase(engine,"ready-free-render-requested");
         // The idle source remains preload=none until the user's actual Create
         // gesture; Safari must then start a physical decode, never a CSS-only
         // preview or an unverified download.
@@ -1496,10 +1510,10 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await spokenToggle.click();
       await expect(spokenToggle).toHaveAttribute('aria-pressed','false');
       // Montage Text owns phrase selection. Its current, visible release
-      // contract is a reapproval notice plus a disabled Create action; the
-      // legacy Voice-only [data-video-narration-stale] node is not mounted here.
+      // contract is a reapproval notice; navigation to Ready remains enabled.
+      // Only the Ready renderer rejects stale, unapproved narration.
       await expect(page.locator('[data-video-narration-reapproval]')).toBeVisible({timeout:15000});
-      await expect(page.locator('[data-video-quick-generate]')).toBeDisabled({timeout:15000});
+      await expect(page.locator('[data-video-quick-generate]')).toBeEnabled({timeout:15000});
       assert.equal(await page.locator('[data-video-live-audio]').count(),1,
         "the old WAV may remain attached, but must be unusable until narration is regenerated");
       // The explicit cloud-voice consent control belongs to its dedicated
@@ -1507,7 +1521,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // component and opt-in browser tests cover that consent gate; here the
       // real Montage path must remain fail-closed while its narration is stale.
       await expect(page.locator("[data-video-narration-reapproval]")).toBeVisible();
-      await expect(page.locator('[data-video-quick-generate]')).toBeDisabled();
+      await expect(page.locator('[data-video-quick-generate]')).toBeEnabled();
       await page.locator('[data-video-quick-control="editor"]').click();
       await openMontageSettingsViaQuality(page);
       const montageAudioAfterExport=page.locator('[data-video-montage-open-audio]');
@@ -1517,7 +1531,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const soundtrackLabels=await page.locator("[data-video-live-audio]").allTextContents();
       const stillHasOldVoice=soundtrackLabels.some(label=>
         label.includes("holistic-house-hypno-audio.wav")||label.includes(expectedFileName));
-      if(stillHasOldVoice)await expect(page.locator("[data-video-quick-generate]")).toBeDisabled();
+      if(stillHasOldVoice)await expect(page.locator("[data-video-quick-generate]")).toBeEnabled();
       // Montage has no voice control. Enter Hypno Audio and expose the one
       // consented voice editor before testing real provider invocation.
       await page.locator('[data-video-quick-control="effects"]').click();
