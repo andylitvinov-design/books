@@ -140,6 +140,9 @@ test('master link uses only a verified approved practitioner, never a name guess
   assert.ok(middleware.includes(String.raw`/^[a-z0-9]{20}\.supabase\.co$/`));
   assert.match(middleware,/directMessageStorageOrigin/)
   assert.match(middleware,/directMessageStorageOrigin = \(\(\) => \{\s*if \(!ownerMessengerImages\) return ''/)
-  assert.match(middleware,/\+ directMessageStorageOrigin \+ externalVideoUploadOrigin/)
+  // Keep both the authenticated direct-media origin and the separately
+  // route-scoped signed personal-video origin; neither allows wildcard access.
+  assert.match(middleware,/const personalVideoStorage = personalVideoStorageCsp\(pathname,process\.env\)/);
+  assert.match(middleware,/\+ directMessageStorageOrigin \+ personalVideoStorage\.connect \+ externalVideoUploadOrigin/);
   assert.doesNotMatch(store,/master\.display_name=t\.sender_display_name/)
 })

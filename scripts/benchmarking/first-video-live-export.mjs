@@ -6,6 +6,7 @@
  * Chromium is the default; opt-in macOS WebKit runs in CI. Neither is a physical iPhone.
  */
 import assert from 'node:assert/strict';
+import {expect} from '@playwright/test';
 import {spawnSync} from 'node:child_process';
 import {mkdirSync, writeFileSync, mkdtempSync, rmSync, readFileSync} from 'node:fs';
 import {resolve, join} from 'node:path';
@@ -339,29 +340,31 @@ try {
       assert.equal(item.src,verifiedSources.get(item.id), 'SOURCE_NOT_APPROVED_IN_CATALOGUE_'+item.id);
     }
   }
+  row.phase='first-video-sources-ready';
   const create = first.locator('[data-first-video-generate]');
   await page.waitForFunction(() => {
     const button = document.querySelector('[data-first-video-generate]');
     return Boolean(button && !button.disabled);
   }, undefined, {timeout: 40000});
-  await create.click({timeout: 15000});
-  // First Video only navigates; the distinct Ready gesture starts real
-  // rendering after React has committed the chosen format and four sources.
+  // Match the user's actual iPhone gesture. WebKit may drop the synthetic
+  // desktop click while a first-video form is rekeying after draft changes.
+  // A native tap must navigate to Ready; this is never a render or credit hold.
+  if(engine==='webkit')await create.tap({timeout:15000});
+  else await create.click({timeout:15000});
+  // First Video Create only navigates. A separate real Ready gesture starts
+  // the recorder, preserving exact source, audio, credit and privacy checks.
   row.phase='first-video-navigation-ready';
-  await page.waitForFunction(()=>
+  await page.waitForFunction(() =>
     document.querySelector('[data-mandala-free-video]')
       ?.getAttribute('data-active-workspace')==='ready',
     undefined,{timeout:15000});
   const ready=page.locator('[data-video-ready]');
-  await ready.waitFor({state:'visible',timeout:15000});
-  assert.equal(await ready.getAttribute('data-ready-state'),'choose',
-    'FIRST_VIDEO_NAVIGATION_MUST_NOT_BE_AN_EXPORT');
+  await expect(ready).toHaveAttribute('data-ready-state','choose');
   const readyGenerate=ready.locator('[data-ready-generate]');
-  await readyGenerate.waitFor({state:'visible',timeout:15000});
-  assert.equal(await readyGenerate.isEnabled(),true,'READY_RENDER_MUST_BE_AVAILABLE');
-  row.phase='first-video-ready-generate';
+  await expect(readyGenerate).toBeEnabled({timeout:15000});
   if(engine==='webkit')await readyGenerate.tap();
   else await readyGenerate.click();
+  row.phase='first-video-ready-encoded-export';
   // Guests watch the original encoded movie in Ready; protected Save is login-gated.
   // Read the real test-owned Blob without fake sign-in, download or provider calls.
   const captured=await readRealGuestVideo(page,{timeout:80000});
