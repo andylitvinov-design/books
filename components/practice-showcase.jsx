@@ -5,17 +5,18 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import {
-  ArrowRight, BarChart3, Bell, BookOpen, ChevronRight, ClipboardList,
-  FileText, Heart, Home, Leaf, LockKeyhole, MessageCircle, Play, Plus,
+  ArrowRight, BarChart3, BookOpen, ChevronRight, ClipboardList,
+  FileText, Heart, Home, Leaf, LockKeyhole, MessageCircle, Play,
   Sparkles, UserRound, Users
 } from 'lucide-react'
 import { appFetch } from '@/lib/app/client-fetch'
 import styles from './practice-showcase.module.css'
-import { MasterModeSwitch, ProfileModeSwitch } from './master-mode-switch'
+import PracticeWorkProfileIntro from './practice-work-profile-intro'
 
 const COPY = {
   ru: {
-    title:'Кабинет практика', subtitle:'Управляйте своими практиками и услугами',
+    title:'Моё пространство',
+    spaceEyebrow:'МОЁ ПРОСТРАНСТВО · РАБОТА', workNavigation:'Разделы рабочего пространства', workTabs:{today:'Сегодня',services:'Услуги',clients:'Клиенты',requests:'Заявки',courses:'Курсы',materials:'Материалы'}, workQuickLabel:'Быстрые действия мастера', workQuick:{services:'Мои услуги',create:'Добавить услугу',course:'Создать курс',requests:'Заявки'}, telegramSignIn:'Войти через Telegram', telegramNote:'Если уже пользуетесь Google, сначала войдите через Google и привяжите Telegram в настройках.', subtitle:'Управляйте своими практиками и услугами',
     preview:'Публичный просмотр', yourProfile:'Ваш профиль', practitioner:'Практик Holistic House',
     profile:'Редактировать профиль', active:'Активно', offers:'услуг', requests:'Заявки',
     new:'новые', add:'Добавить', heroBadge:'ВАШИ ПРАКТИКИ',
@@ -45,7 +46,8 @@ const COPY = {
     resume:'Продолжить',dismissResume:'Остаться на главной',
   },
   en: {
-    title:'Practitioner workspace', subtitle:'Manage your practices and offerings',
+    title:'My Space',
+    spaceEyebrow:'MY SPACE · PROFESSIONAL GROWTH', workNavigation:'Sections of your work space', workTabs:{today:'Today',services:'Services',clients:'Clients',requests:'Requests',courses:'Courses',materials:'Materials'}, workQuickLabel:'Quick practitioner actions', workQuick:{services:'My services',create:'Add service',course:'Create course',requests:'Requests'}, telegramSignIn:'Continue with Telegram', telegramNote:'Already have a Google account here? Sign in with Google first, then link Telegram in Settings.', subtitle:'Manage your practices and offerings',
     preview:'Public preview', yourProfile:'Your profile', practitioner:'Holistic House practitioner',
     profile:'Edit profile', active:'Active', offers:'services', requests:'Requests',
     new:'new', add:'Add', heroBadge:'YOUR PRACTICE',
@@ -75,7 +77,8 @@ const COPY = {
     resume:'Continue',dismissResume:'Stay on home',
   },
   es: {
-    title:'Espacio profesional', subtitle:'Gestiona tus prácticas y servicios',
+    title:'Mi espacio',
+    spaceEyebrow:'MI ESPACIO · DESARROLLO PROFESIONAL', workNavigation:'Secciones de tu espacio de trabajo', workTabs:{today:'Hoy',services:'Servicios',clients:'Clientes',requests:'Solicitudes',courses:'Cursos',materials:'Materiales'}, workQuickLabel:'Acciones rápidas profesionales', workQuick:{services:'Mis servicios',create:'Añadir servicio',course:'Crear curso',requests:'Solicitudes'}, telegramSignIn:'Entrar con Telegram', telegramNote:'Si ya utilizas Google aquí, entra con Google y vincula Telegram después en Ajustes.', subtitle:'Gestiona tus prácticas y servicios',
     preview:'Vista pública', yourProfile:'Tu perfil', practitioner:'Profesional de Holistic House',
     profile:'Editar perfil', active:'Activos', offers:'servicios', requests:'Solicitudes',
     new:'nuevas', add:'Añadir', heroBadge:'TUS PRÁCTICAS',
@@ -171,7 +174,7 @@ function destination(locale, key) {
     courseList:root + '?panel=materials&materialTab=courses',
     masters:'/' + appLocale + '/masters',
     clients:root + '?panel=clients',
-    requests:root + '?panel=requests',
+    requests:'/' + locale + '/app/messages?section=clients&tab=requests',
     messages:'/' + appLocale + '/app/messages?section=clients&tab=chats',
     services:root + '?panel=services',
     materials:root + '?panel=materials',
@@ -209,6 +212,7 @@ export default function PracticeShowcase({ locale = 'en' }) {
   const [busy, setBusy] = useState('')
   const [pendingAction, setPendingAction] = useState('')
   const [nextAction, setNextAction] = useState('')
+  const [telegramAvailable, setTelegramAvailable] = useState(false)
   const signedIn = session === 'signed'
 
   const checkSession = useCallback(async (signal) => {
@@ -251,6 +255,16 @@ export default function PracticeShowcase({ locale = 'en' }) {
     return () => controller.abort()
   }, [checkSession, t.authCancelled])
 
+  // Only offer Telegram when the existing auth provider says it is configured.
+  useEffect(() => {
+    if (!pendingAction || signedIn) return undefined
+    const controller = new AbortController()
+    appFetch('auth/providers', undefined, undefined, {signal:controller.signal})
+      .then(providers => { if (!controller.signal.aborted) setTelegramAvailable(providers?.telegram === true) })
+      .catch(() => { if (!controller.signal.aborted) setTelegramAvailable(false) })
+    return () => controller.abort()
+  }, [pendingAction, signedIn])
+
   // The Google callback and Pro deep links must leave this same dashboard
   // on screen. An explicit Continue click (never an effect) opens an editor.
   useEffect(() => {
@@ -278,6 +292,12 @@ export default function PracticeShowcase({ locale = 'en' }) {
     // This selected tab is already the new practitioner page. It must never
     // request Google sign-in or send a visitor to the legacy Account landing.
     if (key === 'practice') {
+      // Re-selecting Today is still an action in the public Profile Work mode.
+      if (!signedIn) {
+        setNotice('')
+        setPendingAction('profile')
+        return
+      }
       setPendingAction('')
       window.scrollTo({ top: 0, behavior: 'smooth' })
       return
@@ -331,6 +351,20 @@ export default function PracticeShowcase({ locale = 'en' }) {
     }
   }
 
+  async function confirmTelegramSignIn() {
+    if (busy || !telegramAvailable) return
+    setBusy('telegram')
+    setNotice('')
+    try {
+      const result = await appFetch('auth/start', { locale, provider:'telegram', continueTo:'practice-preview' })
+      if (!result?.redirectUrl || !result.redirectUrl.startsWith('https://'))
+        throw new Error('INVALID_OAUTH_REDIRECT')
+      window.location.assign(result.redirectUrl)
+    } catch (error) {
+      setNotice(error?.status === 503 ? t.offline : t.authError)
+    } finally { setBusy('') }
+  }
+
   useEffect(() => {
     if (!pendingAction) return undefined
     const closeOnEscape = event => { if (event.key === 'Escape' && !busy) setPendingAction('') }
@@ -354,29 +388,7 @@ export default function PracticeShowcase({ locale = 'en' }) {
 
   return <div className={styles.screen} data-practice-showcase data-practice-design="unified-20261028" data-auth-state={session}>
     <div className={styles.shell}>
-      <header className={styles.networkHeader} data-master-network-heading>
-        <div>
-          <h1>{locale === 'ru' ? 'Сеть мастеров' : locale === 'es' ? 'Red de maestros' : 'Master Network'}</h1>
-          <p>{locale === 'ru' ? 'Найдите мастера или поделитесь своими услугами' : locale === 'es' ? 'Encuentra profesionales o comparte tus servicios' : 'Find a practitioner or share your services'}</p>
-        </div>
-        <button className={styles.notification} type="button" aria-label={t.requests} onClick={() => void openAction('requests')}>
-          <Bell size={23} aria-hidden="true" />
-          {signedIn && newRequests > 0 && <span className={styles.notificationDot} />}
-        </button>
-      </header>
-      <MasterModeSwitch locale={locale} active="share" />
-      <header className={styles.header} data-practice-workspace-heading>
-        <div>
-          <h1>{t.title}</h1>
-          <p>{t.subtitle}</p>
-        </div>
-        <div className={styles.workProfileActions}>
-           <Link href={'/'+locale+'/my-page'} prefetch={false} className={styles.myPageLink} data-work-my-page>
-             {locale==='ru'?'Моя страница':locale==='es'?'Mi página':'My Page'}
-           </Link>
-           <ProfileModeSwitch locale={locale} active="work" />
-         </div>
-      </header>
+      <PracticeWorkProfileIntro locale={locale} t={t} onAction={openAction} />
 
       <section className={styles.identity} aria-label={t.yourProfile}>
         <span className={styles.avatar} aria-hidden="true">{signedIn
@@ -387,7 +399,14 @@ export default function PracticeShowcase({ locale = 'en' }) {
         <div className={styles.identityCopy}>
           <strong>{signedIn ? (name || t.emptyName) : t.defaultName}</strong>
           <small>{t.practitioner}</small>
-          <button type="button" onClick={() => void openAction('profile')}>{t.profile} <ArrowRight size={15}/></button>
+          <div className={styles.identityActions} data-work-profile-actions>
+            <button type="button" onClick={() => void openAction('profile')}>{t.profile} <ArrowRight size={15}/></button>
+            <Link href={'/' + locale + '/my-page'} prefetch={false}
+              className={styles.myPageAction} data-work-my-page>
+              <UserRound size={15} aria-hidden="true" />
+              {locale === 'ru' ? 'Моя страница' : locale === 'es' ? 'Mi página' : 'My Page'}
+            </Link>
+          </div>
         </div>
         <div className={styles.metrics}>
           <button type="button" className={styles.metricMint} onClick={() => void openAction('services')}>
@@ -424,17 +443,6 @@ export default function PracticeShowcase({ locale = 'en' }) {
           </button>
         )}
       </div>
-
-      <section className={styles.hero}>
-        <div className={styles.heroContent}>
-          <span className={styles.heroBadge}><Sparkles size={17} aria-hidden="true"/> {t.heroBadge}</span>
-          <h2>{t.heroTitle}</h2>
-          <p>{t.heroLead}</p>
-          <button type="button" className={styles.heroButton} onClick={() => void openAction('create')}>
-            <Plus size={19} aria-hidden="true"/> {t.create} <ChevronRight size={19} aria-hidden="true"/>
-          </button>
-        </div>
-      </section>
 
       <section className={styles.offers}>
         <div className={styles.sectionTitle}>
@@ -479,6 +487,11 @@ export default function PracticeShowcase({ locale = 'en' }) {
         {notice && <p role="alert" className={styles.modalError}>{notice}</p>}
         <button type="button" autoFocus className={styles.modalPrimary} disabled={Boolean(busy)}
           onClick={() => void confirmSignIn()}>{t.signIn} <ArrowRight size={19} aria-hidden="true"/></button>
+        {telegramAvailable && <>
+          <button type="button" className={styles.modalTelegram} disabled={Boolean(busy)}
+            onClick={() => void confirmTelegramSignIn()}>{t.telegramSignIn} <ArrowRight size={19} aria-hidden="true"/></button>
+          <p className={styles.telegramNote}>{t.telegramNote}</p>
+        </>}
         <button type="button" className={styles.modalSecondary} disabled={Boolean(busy)}
           onClick={() => setPendingAction('')}>{t.lookAround}</button>
       </section>

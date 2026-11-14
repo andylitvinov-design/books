@@ -164,11 +164,12 @@ export default function MessagesSimpleInbox({
   // One canonical owner-scoped row set: filter by source, never duplicate a CRM lead.
   const chatsCount=filterInboxRows(rows,'chats').length
   const requestsCount=filterInboxRows(rows,'requests').length
-  const tabTotal=embedded?rows.length:tab==='requests'?requestsCount:chatsCount
+  const requestFocus=embedded&&tab==='requests'
+  const tabTotal=embedded&&!requestFocus?rows.length:tab==='requests'?requestsCount:chatsCount
   const {loading:tabLoading,unavailable:sourcesUnavailable}=inboxSourceStatus({websiteLoading,websiteUnavailable,
     crmLoading:crmState.loading,crmError:crmState.error})
   const displayed=embedded
-    ?rows.filter(row=>(!unreadOnly||row.unread>0)&&
+    ?rows.filter(row=>(!requestFocus||inMessagesTab(row,'requests'))&&(!unreadOnly||row.unread>0)&&
       [row.name,row.source,row.preview,row.item?.message,row.item?.question].some(value=>
         String(value||'').toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())))
     :filterInboxRows(rows,tab,search)
@@ -330,6 +331,12 @@ export default function MessagesSimpleInbox({
   return <section className={styles.shell} aria-label={t.title} data-simple-messages
     data-embedded={embedded||undefined} data-detail-open={openDetail?'true':'false'}>
     {offline&&<p className={styles.offline} role="status">{t.offline}</p>}
+    {requestFocus&&<div className={styles.requestFocus} role="group" aria-label={t.requestsTab}>
+      <strong>{t.requestsTab} · {requestsCount}</strong>
+      <button type="button" onClick={()=>switchTab('chats')}>
+        {locale==='ru'?'← Все сообщения':locale==='es'?'← Todos los mensajes':'← All messages'}
+      </button>
+    </div>}
     {!embedded&&<header className={styles.heading}>
       <div><h1>{t.title}</h1><span>{t.hint}{unreadCount>0?' · '+unreadCount:''}</span></div>
       <div className={styles.headingActions}>
@@ -385,7 +392,7 @@ export default function MessagesSimpleInbox({
             businessEnquiries={businessEnquiries}/>}
         <div className={styles.peopleScroll}>
           {tabLoading?<p className={styles.info} role="status">{t.loading}</p>:null}
-          {!tabTotal&&!tabLoading&&!sourcesUnavailable?<p className={styles.info}>{embedded?t.empty:tab==='requests'?t.emptyRequests:t.emptyChats}</p>:null}
+          {!tabTotal&&!tabLoading&&!sourcesUnavailable?<p className={styles.info}>{tab==='requests'?t.emptyRequests:embedded?t.empty:t.emptyChats}</p>:null}
           {tabTotal>0&&!displayed.length&&(search.trim()||unreadOnly)&&<p className={styles.info}>{t.noMatches}</p>}
           {crmState.error&&<p role="alert" className={styles.info}>{t.crmUnavailable}</p>}
           {websiteUnavailable&&<p role="alert" className={styles.info}>{t.unavailable}</p>}

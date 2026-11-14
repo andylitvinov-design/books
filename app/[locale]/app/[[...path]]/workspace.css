@@ -1777,3 +1777,6 @@
     display:none!important;
   }
 }
+
+/* Life has one compact My Space header; the old account masthead is retained on non-Profile routes. */
+.hh-app.hh-app--profile,.hh-app.hh-app--cabinet-guest{padding-top:0}

@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import InstantCabinetLink from './instant-cabinet-link'
 import { ProfileModeSwitch } from '../master-mode-switch'
-import { Activity, BookOpen, ClipboardList, FileClock, FileText, House, LockKeyhole, ListChecks, Route } from 'lucide-react'
+import { Activity, BookOpen, ClipboardList, FileClock, FileText, House, LockKeyhole, ListChecks, Route, UserRound, Settings2 } from 'lucide-react'
 import { assessmentHistoryTitle } from '@/lib/assessments/personal-guidance'
 import styles from './profile-hub-tabs.module.css'
 
@@ -133,12 +133,7 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
   return <section className={styles.hub} data-profile-hub-tabs data-profile-active={current}>
     <header className={styles.heading}>
       <div><p className={styles.eyebrow}>{t.label}</p><h2>{settingsMode ? s.pageTitle : t.title}</h2></div>
-      <div className={styles.profileHeadingActions}>
-        <Link href={'/'+selected+'/my-page'} prefetch={false} className={styles.myPageLink} data-profile-my-page>
-          {selected==='ru'?'Моя страница':selected==='es'?'Mi página':'My Page'}
-        </Link>
-        {!settingsMode && <ProfileModeSwitch locale={selected} active="live" />}
-      </div>
+      {!settingsMode && <ProfileModeSwitch locale={selected} active="live" />}
     </header>
     <nav className={settingsMode ? styles.settingsTabs : styles.tabs} aria-label={settingsMode ? s.menu : COPY[selected].navigation}>
       {settingsMode ? [
@@ -157,6 +152,16 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
           <span className={styles.resultBadge} aria-label={resultCount + ' ' + COPY[selected].count}>{resultCount}</span>}
       </InstantCabinetLink>)}
     </nav>
+    {current !== 'today' && !settingsMode && <div className={styles.myPageSubnav} data-profile-my-page-placement="below-tabs">
+      <Link href={'/' + selected + '/my-page'} prefetch={false} className={styles.myPageLink} data-profile-my-page>
+        <UserRound size={15} aria-hidden="true" />
+        {selected==='ru'?'Моя страница':selected==='es'?'Mi página':'My Page'}
+      </Link>
+      <Link href={root + '/settings'} prefetch={false} className={styles.myPageLink} data-profile-settings-link>
+        <Settings2 size={15} aria-hidden="true" />
+        {selected==='ru'?'Настройки':selected==='es'?'Ajustes':'Settings'}
+      </Link>
+    </div>}
     {(current === 'today' || settingsMode) && <>
       <div className={styles.hero} data-profile-video-hero>
         <h1 className={styles.srOnly}>{t.hero}</h1>
@@ -176,6 +181,16 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
           <InstantCabinetLink href={paths.state} prefetch={false}><Activity size={19} aria-hidden="true" />{t.actions[1]}</InstantCabinetLink>
           <InstantCabinetLink href={paths.courses} prefetch={false}><BookOpen size={19} aria-hidden="true" />{t.actions[2]}</InstantCabinetLink>
         </nav>}
+        <div className={styles.myPageBelowVideo} data-profile-my-page-placement="below-video-buttons">
+          <Link href={'/' + selected + '/my-page'} prefetch={false} className={styles.myPageLink} data-profile-my-page>
+            <UserRound size={15} aria-hidden="true" />
+            {selected==='ru'?'Моя страница':selected==='es'?'Mi página':'My Page'}
+          </Link>
+          <Link href={root + '/settings'} prefetch={false} className={styles.myPageLink} data-profile-settings-link>
+            <Settings2 size={15} aria-hidden="true" />
+            {selected==='ru'?'Настройки':selected==='es'?'Ajustes':'Settings'}
+          </Link>
+        </div>
         <p className={styles.srOnly}>{t.privacy}</p>
       </div>
     </>}

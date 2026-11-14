@@ -41,17 +41,17 @@
 .hub .videoFrame{overflow:hidden;border-radius:15px;background:#17334b}
 .hub .videoFrame video{display:block;width:100%;height:auto;max-height:210px;aspect-ratio:2/1;object-fit:cover}
 .hub .quickActions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:7px}
-.hub .quickActions a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:0;min-height:64px;padding:6px 3px;border:1px solid #cbe2d9;border-radius:13px;background:#f4faf6;color:#14523f;text-align:center;text-decoration:none;font:750 clamp(10.5px,2.65vw,13px)/1.17 system-ui,sans-serif;overflow-wrap:anywhere}
+.hub .quickActions a,.hub .quickActions button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:0;min-height:64px;padding:6px 3px;border:1px solid #cbe2d9;border-radius:13px;background:#f4faf6;color:#14523f;text-align:center;text-decoration:none;font:750 clamp(10.5px,2.65vw,13px)/1.17 system-ui,sans-serif;overflow-wrap:anywhere}
 .hub .quickActions .primaryQuickAction{background:#067a67;border-color:#067a67;color:#fff}
 .hub .quickActions svg{flex-shrink:0}
 .hub .sectionIntro{padding:11px 13px;background:#fff9f3;border:1px solid #e9dfd1;border-radius:17px}
 .hub .sectionIntro h1{font:700 clamp(23px,5vw,29px)/1.15 Georgia,serif;color:#143d3a;margin:0 0 5px}
 .hub .sectionIntro p{margin:0;font:400 14px/1.4 system-ui,sans-serif;color:#5d6a71}
-.hub .settings:focus-visible,.hub .quickActions a:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+.hub .settings:focus-visible,.hub .quickActions a:focus-visible,.hub .quickActions button:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
 .hub .srOnly{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 @media(max-width:430px){.hub .heading{flex-wrap:wrap;gap:6px}.hub .heading>div{flex:1 1 130px;min-width:0}.hub .heading h2{overflow-wrap:anywhere}.hub .settings{flex-shrink:0}.hub .videoFrame video{max-height:185px}}
-@media(max-width:360px){.hub .tabs{gap:3px}.hub .tab,.hub .current{padding:6px 1px;font-size:10px}.hub .tab svg,.hub .current svg{width:18px;height:18px}.hub .quickActions{gap:4px}.hub .quickActions a{font-size:10.5px;padding:6px 2px;min-height:68px}}
-@media(min-width:768px){.hub .hero{max-width:720px;margin:0 auto;padding:12px}.hub .videoFrame video{max-height:320px;aspect-ratio:16/9}.hub .quickActions a{flex-direction:row;min-height:52px;padding:9px 7px}}
+@media(max-width:360px){.hub .tabs{gap:3px}.hub .tab,.hub .current{padding:6px 1px;font-size:10px}.hub .tab svg,.hub .current svg{width:18px;height:18px}.hub .quickActions{gap:4px}.hub .quickActions a,.hub .quickActions button{font-size:10.5px;padding:6px 2px;min-height:68px}}
+@media(min-width:768px){.hub .hero{max-width:720px;margin:0 auto;padding:12px}.hub .videoFrame video{max-height:320px;aspect-ratio:16/9}.hub .quickActions a,.hub .quickActions button{flex-direction:row;min-height:52px;padding:9px 7px}}
 @media(prefers-reduced-motion:reduce){.hub .current{box-shadow:none}}
 
 /* Account settings — same real video as the personal hub, controls on both sides. */
@@ -92,3 +92,10 @@
 .myPageLink{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:8px 10px;background:#eaf7f1;border:1px solid #cbe4d5;border-radius:13px;color:#075d4d;text-decoration:none;font-size:12px;font-weight:750;white-space:nowrap}
 .myPageLink:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
 @media(max-width:430px){.profileHeadingActions{flex:0 1 auto;gap:4px}.myPageLink{padding:7px 8px;font-size:11px}}
+
+/* Public My Page belongs below the Life actions, not beside Live / Work. */
+.hub .myPageBelowVideo,.hub .myPageSubnav{display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-top:8px}
+.hub .myPageSubnav{margin-bottom:8px}
+.hub .myPageBelowVideo .myPageLink,.hub .myPageSubnav .myPageLink{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:7px 11px;border:1px solid #cbe4d5;border-radius:12px;background:#eaf7f1;color:#075d4d;font:750 12px/1.2 system-ui,sans-serif;text-decoration:none}
+.hub .myPageBelowVideo .myPageLink svg,.hub .myPageSubnav .myPageLink svg{flex:none}
+@media(max-width:360px){.hub .myPageBelowVideo,.hub .myPageSubnav{margin-top:6px}.hub .myPageBelowVideo .myPageLink,.hub .myPageSubnav .myPageLink{min-height:44px;padding:6px 9px;font-size:11px}}
