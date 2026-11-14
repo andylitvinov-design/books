@@ -99,7 +99,9 @@ jobs:
     concurrency:
       group: hh-direct-core-pr-${{ github.event.workflow_run.head_branch || github.event.workflow_run.id }}
       cancel-in-progress: false
-    runs-on: ubuntu-24.04
+    # Lightweight checked-in Node and GitHub API control; no compilation.
+    # Same permission, owner lease and timeout; slim hard cap is 15 minutes.
+    runs-on: ubuntu-slim
     timeout-minutes: 10
     steps:
       - name: Checkout trusted control branch, never untrusted PR code
@@ -282,7 +284,9 @@ jobs:
       github.event.workflow_run.event == 'pull_request' &&
       github.event.workflow_run.status == 'completed' &&
       github.event.workflow_run.conclusion == 'success'
-    runs-on: ubuntu-24.04
+    # Lightweight checked-in Node and GitHub API control; no compilation.
+    # Same permission, owner lease and timeout; slim hard cap is 15 minutes.
+    runs-on: ubuntu-slim
     timeout-minutes: 3
     concurrency:
       group: hh-pr-core-slot-wakeup

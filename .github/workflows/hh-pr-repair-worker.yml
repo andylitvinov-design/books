@@ -42,7 +42,9 @@ concurrency:
 jobs:
   claim:
     if: github.repository == 'andylitvinov-design/books' && github.ref == 'refs/heads/codex/bootstrap-books' && !(github.event_name == 'workflow_dispatch' && inputs.commander_source_task != '')
-    runs-on: ubuntu-24.04
+    # Lightweight checked-in Node and GitHub API control; no compilation.
+    # Same permission, owner lease and timeout; slim hard cap is 15 minutes.
+    runs-on: ubuntu-slim
     timeout-minutes: 5
     outputs:
       strategy: ${{ steps.select.outputs.strategy }}
@@ -1134,7 +1136,9 @@ jobs:
          (needs.claim.outputs.strategy == 'legacy' &&
           needs.claim.result == 'success'))
       )
-    runs-on: ubuntu-24.04
+    # Lightweight checked-in Node and GitHub API control; no compilation.
+    # Same permission, owner lease and timeout; slim hard cap is 15 minutes.
+    runs-on: ubuntu-slim
     timeout-minutes: 7
     permissions:
       contents: read
