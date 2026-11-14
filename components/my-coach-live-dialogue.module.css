@@ -503,7 +503,7 @@
  .root[data-session-visual-v3] .conversationPanel{
    display:flex;
    flex-direction:column;
-   max-height:min(53dvh,430px);
+   max-height:min(38dvh,325px);
    min-height:0;
    overflow-y:auto;
    overflow-x:hidden;
@@ -555,7 +555,8 @@
  }
 }
 @media(max-width:699px) and (max-height:680px){
- .root[data-session-visual-v3] .conversationPanel{max-height:min(50dvh,335px)}
+ .root[data-session-visual-v3] .sessionHero{height:clamp(210px,33dvh,250px)}
+ .root[data-session-visual-v3] .conversationPanel{max-height:min(42dvh,288px)}
  .root[data-session-visual-v3] .conversationPanel .transcriptFeed{max-height:130px}
  .root[data-session-visual-v3] .conversationPanel .textComposer{max-height:150px}
 }
