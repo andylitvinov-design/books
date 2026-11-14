@@ -30,7 +30,9 @@ jobs:
   reconcile:
     # Vercel callbacks verify LIVE only, never scan/merge PRs.
     if: github.event_name != 'repository_dispatch'
-    runs-on: ubuntu-24.04
+    # Existing bounded GitHub API and Node verification: use slim 1-vCPU
+    # runner, preserving all checks and the original 10-minute timeout.
+    runs-on: ubuntu-slim
     timeout-minutes: 10
     steps:
       - name: Checkout trusted default-branch merge policy
@@ -366,7 +368,9 @@ jobs:
        github.event_name == 'push' ||
        (github.event_name == 'repository_dispatch' &&
         github.event.client_payload.environment == 'production'))
-    runs-on: ubuntu-24.04
+    # Existing bounded GitHub API and Node verification: use slim 1-vCPU
+    # runner, preserving all checks and the original 8-minute timeout.
+    runs-on: ubuntu-slim
     timeout-minutes: 8
     # Serialize receipts across scheduled and Vercel-completion events.
     concurrency:

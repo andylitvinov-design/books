@@ -518,3 +518,27 @@ test('failed-Core BASE recovery separates read-only workflow token from guarded 
  assert.match(code,/isActualBaseAdvancedLog\(logs\)/);
  assert.doesNotMatch(code,/force:true|createCheckRun|check-runs\/.+POST/);
 });
+
+test('two hourly full-inventory API and LIVE receipt jobs reuse slim without weakening protected gates',()=>{
+ const source=read('hh-pr-full-inventory');
+ for(const [name,minutes] of [['reconcile',10],['verify-live',8]]){
+  const section=source.split('  '+name+':\n')[1]?.split(/\n  [a-z][a-z0-9-]*:\n/)[0];
+  assert.ok(section,name+' must retain the same job');
+  assert.match(section,/^    runs-on: ubuntu-slim$/m);
+  assert.match(section,new RegExp('^    timeout-minutes: '+minutes+'$','m'));
+  assert.ok(minutes<15,'slim execution must be bounded');
+  assert.match(section,/actions\/github-script@v7/);
+  assert.doesNotMatch(section,/npm ci|npm run build|npm install|playwright|docker|ffmpeg|sudo/i);
+ }
+ const reconcile=source.split('  reconcile:\n')[1]?.split('\n  verify-live:\n')[0];
+ const live=source.split('  verify-live:\n')[1];
+ assert.match(reconcile,/^\s+if: github\.event_name != 'repository_dispatch'$/m);
+ assert.match(reconcile,/required_status_checks/);
+ assert.match(reconcile,/hh-merge-check/);
+ assert.match(live,/group: hh-pr-live-receipt-single-writer/);
+ assert.match(live,/scripts\/ci-pr-live-verifier\.cjs/);
+ assert.match(live,/scripts\/ci-pr-release-kpi\.cjs/);
+ assert.match(live,/actions\/upload-artifact@v4/);
+ assert.match(source,/cron: '27 \* \* \* \*'/);
+ assert.doesNotMatch(source,/continue-on-error:\s*true/);
+});
