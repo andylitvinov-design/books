@@ -104,3 +104,34 @@ test('hard-bounded first-party cost policy and existing owner-only My Coach UI',
  assert.doesNotMatch(ui,/new\s+window\.SpeechSynthesisUtterance/)
  assert.ok(speech.includes('showTextOnly()'))
 })
+
+test('natural coach speech is opt-in at first microphone consent and narrates consented typed turns',()=>{
+ const ui=read('components/my-coach-live-dialogue.jsx')
+ const voice=read('components/my-coach-speech-loop.jsx')
+ assert.match(ui,/if\(authRequired\|\|readiness\.status==='checking'\)/)
+ assert.doesNotMatch(ui,/\[consent,authRequired,readiness\.status\]/,
+   'TTS availability probe does not require exposing or agreeing to send user text')
+ assert.match(ui,/className=\{styles\.voiceModalNatural\}/)
+ assert.match(ui,/checked=\{cloudAgreed\}/)
+ assert.match(ui,/onChange=\{event=>changeNaturalVoice\(event\.target\.checked\)\}/)
+ assert.match(ui,/setCloudAgreed\(Boolean\(checked\)\)/)
+ assert.match(ui,/replayPlayerRef\.current\?\.cancel\(\)/)
+ assert.match(ui,/const spokenText=typeof overrideText==='string'\?overrideText:latestCoachText/)
+ assert.match(ui,/const result=await sendMessage\(draft\.trim\(\)\)/)
+ assert.match(ui,/\['safety','boundary'\]\.includes\(result\.mode\)/)
+ assert.match(ui,/replayCoachReply\(result\.reply\)/)
+ assert.match(ui,/className=\{styles\.replayControl\} onClick=\{\(\)=>replayCoachReply\(\)\}/)
+ assert.match(voice,/cloudAgreed&&cloudAvailable/)
+ assert.doesNotMatch(ui,/new MediaRecorder|localStorage|sessionStorage/)
+});
+
+test('free Fish spoken turns have one bounded vendor call and no paid model fallback',()=>{
+ const route=read('app/api/app/my-coach/voice/synthesize/route.js')
+ const fish=read('lib/coaching/my-coach-fish-voice.mjs')
+ assert.match(route,/signal:AbortSignal\.any\(\[request\.signal,AbortSignal\.timeout\(15000\)\]\)/)
+ assert.match(route,/model:vendor\.model/)
+ assert.match(route,/my-coach-fish-minute/)
+ assert.match(route,/my-coach-fish-day/)
+ assert.match(fish,/model:'s2\.1-pro-free'/)
+ assert.doesNotMatch(route,/s2\.1-pro'|s2-pro'|setTimeout\(\(\)=>fetch/)
+});
