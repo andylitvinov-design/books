@@ -213,6 +213,49 @@ test('changing paid service choices derives a fresh WhatsApp URL; free choices o
   assert.doesNotMatch(capture, /preparedUrl|setPreparedUrl/);
 });
 
+test('Services re-audit waits for real hydration and decodes even hidden lazy posters', () => {
+  const verifier = read('scripts/verify-release-reaudit.mjs');
+  const helper = read('scripts/public-poster-readiness.mjs');
+  assert.match(verifier,/path\.endsWith\('\/services'\) \? 'domcontentloaded' : 'networkidle'/);
+  assert.match(verifier,/await settlePublicDocument\('before-assertions'\)/);
+  assert.match(verifier,/await decodeReadyPoster\(image, expect\)/);
+  assert.match(helper,/if \(await image\.isVisible\(\)\)/);
+  assert.match(helper,/el\.loading = 'eager'/);
+  assert.match(helper,/if \(await summary\.isVisible\(\)\)/);
+  assert.match(helper,/await details\.evaluate\(el => \{ el\.open = true; \}\)/);
+  assert.match(helper,/await expect\.poll/);
+  assert.match(helper,/el\.decode\(\)/);
+  assert.match(helper,/el\.currentSrc === selected/);
+  assert.doesNotMatch(helper,/return\s*;\s*\/\/.*hidden/);
+});
+
+test('Services release audit scopes simulated directory failure without weakening page or image gates', () => {
+  const verifier=read('scripts/verify-release-reaudit.mjs');
+  const reiki=read('components/assist-reiki-session.tsx');
+  assert.match(verifier,/context\.route\(\/\\\/api\\\/public\\\/remote-energy-support-masters/);
+  assert.match(verifier,/status: 503, contentType: 'application\/json'/);
+  assert.match(verifier,/\[data-assist-reiki-session\] \[role="status"\] button/);
+  assert.match(verifier,/await settlePublicDocument\('before-assertions'\)/);
+  assert.match(verifier,/await decodeReadyPoster\(image, expect\)/);
+  assert.match(verifier,/assert\.deepEqual\(errors, \[\]/);
+  assert.match(reiki,/const deadline = window\.setTimeout/);
+  assert.match(reiki,/setFailed\(true\);\s*controller\.abort\(\)/);
+  assert.match(reiki,/\}, 8000\)/);
+  assert.match(reiki,/\.finally\(\(\) => window\.clearTimeout\(deadline\)\)/);
+  assert.match(reiki,/return \(\) => \{ window\.clearTimeout\(deadline\); controller\.abort\(\); \}/);
+  assert.match(reiki,/onClick=\{\(\) => setRetry\(value => value \+ 1\)\}/);
+});
+
+test('Public Services master directory has a real bounded abort and an unavailable state', () => {
+  const gallery = read('components/holistic-support-master-gallery.tsx');
+  assert.match(gallery,/const deadline = window\.setTimeout/);
+  assert.match(gallery,/setFailed\(true\);\s*controller\.abort\(\)/);
+  assert.match(gallery,/\}, 8000\)/);
+  assert.match(gallery,/\.finally\(\(\) => window\.clearTimeout\(deadline\)\)/);
+  assert.match(gallery,/return \(\) => \{ window\.clearTimeout\(deadline\); controller\.abort\(\); \}/);
+  assert.match(gallery,/if \(!controller\.signal\.aborted\) setFailed\(true\)/);
+});
+
 test('long Maya readers wait for rendered content instead of global network idleness', () => {
   const verifier = read('scripts/verify-release-reaudit.mjs');
   const block = verifier.match(/check\('maya-reader-and-images'[\s\S]*?return \{ sourceVisible: true, \.\.\.language \};/)?.[0] ?? '';

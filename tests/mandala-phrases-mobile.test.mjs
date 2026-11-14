@@ -180,20 +180,21 @@ test("real WebKit voice acceptance expands the approved transcript before compar
 test("real WebKit voice acceptance expands advanced sound options before selecting a verified music bed",()=>{
   const browser=read("scripts/verify-affirmation-voice-browser.mjs");
   const voice=read("components/mandala-affirmation-voice.tsx");
-  assert.match(voice,/<details ref=\{bindVoiceAdvanced\} className=\{css\.voiceAdvanced\} data-video-affirmation-voice-advanced/);
-  assert.match(voice,/const bindVoiceAdvanced=useCallback/);
-  assert.match(voice,/voiceAdvancedNodeRef\.current=node/);
+  // WebKit can lose a native <details> toggle after React rerenders. A
+  // controlled disclosure must start closed and toggle only on user action.
+  assert.match(voice,/const \[voiceAdvancedOpen,setVoiceAdvancedOpen\]=useState\(false\)/);
+  assert.match(voice,/<details open=\{voiceAdvancedOpen\} className=\{css\.voiceAdvanced\} data-video-affirmation-voice-advanced/);
   assert.match(voice,/summary onClick=\{event=>\{/);
-  assert.match(voice,/voiceAdvancedOpenRef\.current=!node\.open/);
-  assert.doesNotMatch(voice,/event\.preventDefault\(\)/,
-    "allow native WebKit summary to perform one disclosure toggle");
-  assert.doesNotMatch(voice,/node\.open\s*=\s*!node\.open/,
-    "do not manually toggle the native disclosure twice");
-  assert.match(voice,/data-video-affirmation-bed/);
+  assert.match(voice,/event\.preventDefault\(\)/);
+  assert.match(voice,/setVoiceAdvancedOpen\(current=>!current\)/);
+  assert.doesNotMatch(voice,/node\.open\s*=/,"no competing imperative disclosure write");
+  // Real WebKit touch, real state transition, reversible close and reopen,
+  // selected sound bed and a decoded audio track remain strict release gates.
   assert.match(browser,/const voiceOptions=page\.locator\("\[data-video-affirmation-voice\] details"\)/);
   assert.match(browser,/if\(engine==="webkit"\)await voiceOptions\.locator\(":scope > summary"\)\.tap\(\)/);
   assert.match(browser,/else await voiceOptions\.locator\(":scope > summary"\)\.click\(\)/);
   assert.match(browser,/await expect\(voiceOptions\)\.toHaveAttribute\("open","",\{timeout:15000\}\)/);
+  assert.match(browser,/await expect\(voiceOptions\)\.not\.toHaveAttribute\("open",""\)/);
   assert.match(browser,/await expect\(page\.locator\("\[data-video-affirmation-bed\]"\)\)\.toBeVisible\(\{timeout:15000\}\)/);
   assert.match(browser,/await page\.locator\("\[data-video-affirmation-bed\]"\)\.selectOption\("ocean"\)/);
   assert.match(browser,/const audioTrack=streams\.find\(row=>row\.codec_type==="audio"\)/);

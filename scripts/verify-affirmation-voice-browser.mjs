@@ -1028,11 +1028,21 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         if(engine==="webkit")await voiceOptions.locator(":scope > summary").tap();
         else await voiceOptions.locator(":scope > summary").click();
       }
-      // Verify that Safari committed native disclosure, not only the click.
+      // Verify real WebKit gesture and reversible React-controlled disclosure.
+      await expect(voiceOptions).toHaveAttribute("open","",{timeout:15000});
+      const voiceSummary=voiceOptions.locator(":scope > summary");
+      if(engine==="webkit")await voiceSummary.tap(); else await voiceSummary.click();
+      await expect(voiceOptions).not.toHaveAttribute("open","");
+      if(engine==="webkit")await voiceSummary.tap(); else await voiceSummary.click();
       await expect(voiceOptions).toHaveAttribute("open","",{timeout:15000});
       await expect(page.locator("[data-video-affirmation-bed]")).toBeVisible({timeout:15000});
       await page.locator("[data-video-affirmation-bed]").selectOption("ocean");
       const narrationConsent=page.locator("[data-video-affirmation-voice-consent]");
+      await narrationConsent.check();
+      await expect(narrationConsent).toBeChecked();
+      await narrationConsent.uncheck();
+      await expect(narrationConsent).not.toBeChecked();
+      await expect(page.locator("[data-video-generate-affirmation-audio]")).toBeDisabled();
       await narrationConsent.check();
       await expect(narrationConsent).toBeChecked();
       const generateNarration=page.locator("[data-video-generate-affirmation-audio]");
