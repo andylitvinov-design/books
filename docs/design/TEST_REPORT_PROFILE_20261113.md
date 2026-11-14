@@ -1,0 +1,10 @@
+# Guest assessment report — My Space layout (13 Nov 2026)
+
+- **Actual route / identity:** `/en/client?result=<opaque guest result ID>` and `/ru/client?result=<opaque guest result ID>` are guest, same-browser authorized, completed-test results views; `?plan=` can display the completed battery. Not a practitioner editor or signed-in Cabinet.
+- **Owner screenshot:** IPIP Locus of Control: Chance on a phone. The original screen includes a full-width completed 100% progress block, then a large Mind–Body Monitor explanation before the actual test scores, and lacks the profile's common bottom navigation.
+- **Keep:** Holistic House site header, iHelp, actual score and original gauge and test date/language, explicit opt-in Google save, discuss, course / next-test actions and private result management. Never fabricate clinical interpretation or new scoring bands.
+- **Remove only from result/summary:** repeated large guest progress and the marketing/monitoring intro. Questions and context steps keep the original progress tracker.
+- **Restyle:** compact My Space · Reports context header, actual All tests button, warm ivory/mint surfaces, legible 22–31px title, scoped calm scale cards. Results start immediately below the public header. Do not mount another shell/header.
+- **Mobile:** responsive 320/354/390/430px and desktop. One-column result hero on phones, no horizontal clipping or hidden actions. Preserve iOS bottom safe-area; use existing global seven-item dock when route is enabled.
+- **Dock dependency:** PR #4566 already owns `/client` and `/client/tests` navigation and excludes private report invitations. Do not duplicate its route-matcher work in this PR; the bottom menu is only live once that PR's exact-HEAD CI, Specialist and protected merge complete.
+- **Acceptance:** route-matched EN/RU guest screenshot, 320/390/430 and WebKit, complete flow from test to report, source-scored gauge visible, optional Google auth save remains explicit; verify Vercel READY SHA and real mobile interactions separately. Screenshots must use synthetic results in public artifacts.
