@@ -300,7 +300,7 @@ async function inspect(browserType,locale,width){
     }
     if(width===390){
       // Verify the identical sitewide dock on three ordinary editorial pages.
-      for(const section of ["about","library","tests"]){
+      for(const section of ["about","library","tests",...(locale==="es"?[]:["client"])]){
         const route=prefix+"/"+section;
         await page.goto(origin+route,{waitUntil:"domcontentloaded",timeout:75000});
         await assertPinnedSixDock(page,id+":editorial:"+section,null);
@@ -786,8 +786,11 @@ try{
    const reply=replies?.[replies.length-1];
    if(!thread||!reply)return false;
    const bounds=thread.getBoundingClientRect(),bubble=reply.getBoundingClientRect();
-   const end=Math.max(0,thread.scrollHeight-thread.clientHeight);
-   return Math.abs(thread.scrollTop-end)<=3&&bubble.bottom<=bounds.bottom+2;
+   // The end of the latest answer must be visible above the composer.
+   // A user-action card can follow the answer, so requiring the entire
+   // transcript to be at its scroll tail rejects a usable, focused chat.
+   return thread.clientHeight>0&&bubble.height>0&&
+     bubble.bottom<=bounds.bottom+2&&bubble.bottom>=bounds.top+8;
  },null,{timeout:15000});
  assert.equal(await fullAssistantReply.evaluate(node=>getComputedStyle(node).flexShrink),"0",
    "iPhone keyboard must not shrink or clip the assistant reply");

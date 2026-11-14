@@ -125,6 +125,10 @@ test("public editorial journeys share the approved seven-item dock without priva
      assert.equal(isUnifiedMobileDockPath("/"+locale+"/"+suffix),false,suffix);
    }
    assert.equal(isUnifiedMobileDockPath("/"+locale+"/client/tests"),true);
+   assert.equal(isUnifiedMobileDockPath("/"+locale+"/client"),true);
+   assert.equal(isUnifiedMobileDockEditorialPath("/"+locale+"/client"),true);
+   assert.equal(isUnifiedMobileDockAppPath("/"+locale+"/client"),false);
+   assert.equal(isUnifiedMobileDockPath("/"+locale+"/client/private-record"),false);
    assert.equal(isUnifiedMobileDockAppPath("/"+locale+"/mytube"),true);
  }
  assert.equal(isUnifiedMobileDockPath("/books/maya-tradition"),true);
