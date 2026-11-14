@@ -9,7 +9,7 @@ import {classifyWisdomRequest} from '@/lib/coaching/wisdom-retrieval.mjs'
 import styles from './my-coach-live-dialogue.module.css'
 import MyCoachSpeechLoop from './my-coach-speech-loop'
 import {startCoachingMp3Playback} from '@/lib/personal-coaching/streamed-mp3-playback.mjs'
-import {detectedSpeechLocale} from '@/lib/personal-coaching/my-coach-dictation.mjs'
+import {detectedSpeechLocale,ios27NeedsSpeechRecovery} from '@/lib/personal-coaching/my-coach-dictation.mjs'
 import CoachingAvatar from '@/components/app/coaching-avatar'
 
 const copy={
@@ -58,6 +58,17 @@ const copy={
     protected:'No hay un modelo gratuito con privacidad verificada.',cost:'No se pudo verificar que el coste sea cero.',
     failed:'La respuesta IA no pasó la validación.',retry:'El servicio IA está temporalmente inaccesible.',goal:'Comienza por tu objetivo.',
   },
+}
+const recordingOptions={
+  en:{title:'Reliable voice recording',label:'Record full answers instead of live browser dictation',
+    consent:'I agree to send each short microphone recording to the existing free-only Groq Whisper transcription service. No recording is saved by Holistic House.',
+    help:'Tap the microphone to record, tap again to transcribe (maximum 18 seconds). If cloud quota is exhausted, typing still works.'},
+  ru:{title:'Надёжная запись речи',label:'Записывать всю фразу вместо распознавания браузера',
+    consent:'Я согласен(на) отправлять каждую короткую аудиозапись в уже подключённый бесплатный Groq Whisper для расшифровки. Holistic House не сохраняет записи.',
+    help:'Нажмите микрофон, скажите фразу и нажмите ещё раз (до 18 секунд). При исчерпании бесплатного лимита можно писать текст.'},
+  es:{title:'Grabación fiable',label:'Grabar respuestas completas en vez del dictado del navegador',
+    consent:'Acepto enviar cada audio corto al servicio gratuito existente Groq Whisper para transcribirlo. Holistic House no guarda grabaciones.',
+    help:'Toca el micrófono para grabar y otra vez para transcribir (máximo 18 segundos). Si se agota la cuota, puedes escribir.'},
 }
 const avatarVisuals={
   mira:'warm',max:'clear',sofia:'calm',alex:'clear',
@@ -121,6 +132,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [cloudProvider,setCloudProvider]=useState(null)
   const [wizardVoice,setWizardVoice]=useState(false)
   const [speechLocale,setSpeechLocale]=useState('auto')
+  const [recordedMode,setRecordedMode]=useState(false)
+  const [recordingConsent,setRecordingConsent]=useState(false)
   const [showCaptions,setShowCaptions]=useState(false)
   const [turns,setTurns]=useState([])
   const [busy,setBusy]=useState(false)
@@ -136,9 +149,16 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [playbackNotice,setPlaybackNotice]=useState('')
   const pending=useRef(null),composerRef=useRef(null),transcriptRef=useRef(null)
   const composerDetailsRef=useRef(null),voiceConsentRef=useRef(null),speechRef=useRef(null)
+  const recordingConsentRef=useRef(null)
   const replayControllerRef=useRef(null),replayPlayerRef=useRef(null)
   const replaySpeechRef=useRef(null),replayTimerRef=useRef(null)
   useEffect(()=>()=>pending.current?.abort(),[])
+  useEffect(()=>{
+    // Avoid the known WebKit 27 silent-result bug by selecting the reliable mode
+    // on affected iPhones, but NEVER automatically opt in to uploading audio.
+    if(ios27NeedsSpeechRecovery(window.navigator)&&window.MediaRecorder&&
+      window.navigator.mediaDevices?.getUserMedia)setRecordedMode(true)
+  },[])
   // Private shareable voice preset, not stored in the account or sent to providers.
   useEffect(()=>{
     try{if(new URLSearchParams(window.location.search).get('voice')==='wizard')setWizardVoice(true)}
@@ -205,6 +225,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     setError('')
   }
   function replayCoachReply(){
+    // A blocked audio element is already buffered: a Replay tap resumes it
+    // without consuming another cloud synthesis call or requesting microphone access.
+    if(speechRef.current?.resumeVoice?.())return
     if(replayBlocked&&replayPlayerRef.current){
       setReplayBlocked(false);setReplaying(true);setPlaybackNotice('')
       void replayPlayerRef.current.resume()
@@ -449,7 +472,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           aria-label={ui.type} title={ui.type}><Keyboard size={21} aria-hidden="true"/><span>{ui.keyboardShort}</span></button>
         <div className={styles.voiceCenter} data-voice-active={voiceState.phase!=='idle'?'true':undefined}>
           <span className={styles.voiceWaveLeft} aria-hidden="true"><i/><i/><i/><i/><i/></span>
-          <MyCoachSpeechLoop ref={speechRef} locale={lang} speechLocale={speechLocale} initialDraft={draft} cloudAvailable={cloudAvailable} cloudAgreed={cloudAgreed} cloudProvider={cloudProvider} personaId={personaId} wizardVoice={wizardVoice} enabled={consent&&readiness.status!=='checking'&&!authRequired}
+          <MyCoachSpeechLoop ref={speechRef} locale={lang} speechLocale={speechLocale} initialDraft={draft}
+            recordedMode={recordedMode} recordingConsent={recordingConsent}
+            onRequestRecordingConsent={()=>{recordingConsentRef.current?.scrollIntoView({block:'nearest'});recordingConsentRef.current?.focus()}}
+            cloudAvailable={cloudAvailable} cloudAgreed={cloudAgreed} cloudProvider={cloudProvider} personaId={personaId} wizardVoice={wizardVoice} enabled={consent&&readiness.status!=='checking'&&!authRequired}
             canStart={!busy&&!paused&&!replaying&&readiness.status!=='checking'&&!authRequired} onTurn={sendMessage}
             onRequestConsent={()=>{if(!voiceConsentRef.current?.open)voiceConsentRef.current?.showModal()}}
             onCancelTurn={()=>pending.current?.abort()} onVoiceStateChange={setVoiceState}
@@ -457,13 +483,26 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           <span className={styles.voiceWaveRight} aria-hidden="true"><i/><i/><i/><i/><i/></span>
         </div>
         <button type="button" className={styles.replayControl} onClick={replayCoachReply}
-          disabled={!replayBlocked&&(!latestCoachText||voiceState.phase!=='idle'||replaying)} aria-label={replayBlocked?voiceGate.tapToHear:ui.replay} title={replayBlocked?voiceGate.tapToHear:ui.replay}>
-          <Volume2 size={21} aria-hidden="true"/><span>{replayBlocked?voiceGate.tapToHear:ui.replayShort}</span>
+          disabled={!replayBlocked&&voiceState.phase!=='ready'&&(!latestCoachText||voiceState.phase!=='idle'||replaying)}
+          aria-label={replayBlocked||voiceState.phase==='ready'?voiceGate.tapToHear:ui.replay}
+          title={replayBlocked||voiceState.phase==='ready'?voiceGate.tapToHear:ui.replay}>
+          <Volume2 size={21} aria-hidden="true"/><span>{ui.replayShort}</span>
         </button>
         <Link className={styles.endControl} href={'/'+lang+'/my-coach'} aria-label={ui.end} title={ui.end}>
           <PhoneOff size={21} aria-hidden="true"/><span>{lang==='ru'?'Конец':lang==='es'?'Salir':'End'}</span>
         </Link>
       </div>
+      <details className={styles.recordingModeRow} open={recordedMode&&!recordingConsent}>
+        <summary>{recordingOptions[lang].title}</summary>
+        <label><input type="checkbox" checked={recordedMode} disabled={voiceState.phase!=='idle'}
+          onChange={event=>setRecordedMode(event.target.checked)}/>
+          <span>{recordingOptions[lang].label}</span></label>
+        {recordedMode&&<label><input ref={recordingConsentRef} type="checkbox" checked={recordingConsent}
+          disabled={voiceState.phase!=='idle'}
+          onChange={event=>setRecordingConsent(event.target.checked)}/>
+          <span>{recordingOptions[lang].consent}</span></label>}
+        <small>{recordingOptions[lang].help}</small>
+      </details>
       <div className={styles.conversationPanel}>
       <section className={styles.liveTranscript} aria-label={captions.heading} data-coach-live-transcript>
         <div className={styles.transcriptHeading}><MessageCircle size={15} aria-hidden="true"/>
