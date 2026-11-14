@@ -64,6 +64,26 @@ export async function GET(request) {
                 await drainSubscriberAiOutbox(config,process.env,{limit:3})
             }catch{console.error('HH_SUBSCRIBER_AI_HOUSEKEEPING_FAILED')}
           }
+          // Existing authorized daily housekeeping also recovers queued text /
+          // delivery when an after() execution ended unexpectedly. No new cron.
+          if(process.env.HH_AI_TELEGRAM_QUEUE_ENABLED==='true'){
+            try{
+              const {pruneAiQueue}=await import('@/lib/app/telegram-ai-queue')
+              const {runTelegramAiQueues,pruneTelegramAiTemporaryVideos}=
+                await import('@/lib/app/telegram-ai-worker')
+              await runTelegramAiQueues(config,{messages:2,videos:0,deliveries:2})
+              await pruneAiQueue(config)
+              await pruneTelegramAiTemporaryVideos(config)
+            }catch{console.error('HH_AI_QUEUE_HOUSEKEEPING_FAILED')}
+          }
+          // Always prune private AI render orphans, even after a feature
+          // rollback/STOP. This is the EXISTING CRON_SECRET daily task,
+          // not a new scheduled invocation or an unbounded bucket scan.
+          try{
+            const {pruneTelegramAiOrphanUploads}=
+              await import('@/lib/app/telegram-ai-worker')
+            await pruneTelegramAiOrphanUploads(config)
+          }catch{console.error('HH_AI_VIDEO_PRIVATE_ORPHAN_CLEANUP_FAILED')}
           return result
         } catch (error) {
           await recordAppHousekeepingFailure(config).catch(() => {})

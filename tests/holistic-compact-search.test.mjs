@@ -88,3 +88,19 @@ test("price-filtered results preserve verified practitioner booking and real con
   assert.doesNotMatch(chooser, /checkout|paymentIntent|paid=true/i);
   assert.doesNotMatch(api, /processPayment|chargeCustomer|sendMessage/i);
 });
+
+test("a new budget search prevents a late old directory response from restoring stale results", () => {
+  const component = read("components/holistic-inline-support-order.tsx");
+  assert.match(component, /const requestEpoch = useRef\(0\)/);
+  assert.match(component, /const epoch = \+\+requestEpoch\.current/);
+  assert.match(component, /requestEpoch\.current\+\+;\s*setMasters\(null\); setConsultations\(null\)/,
+    "invalidate pending results in the user click before effect cleanup");
+  assert.match(component, /!controller\.signal\.aborted && epoch === requestEpoch\.current\)\s*setConsultations/,
+    "old consultation responses cannot populate the new budget");
+  assert.match(component, /!controller\.signal\.aborted && epoch === requestEpoch\.current\)\s*setMasters/,
+    "old master responses cannot populate a changed service search");
+  assert.match(component, /!controller\.signal\.aborted && epoch === requestEpoch\.current\) setFailed/,
+    "stale request errors cannot replace a newer success");
+  assert.match(component, /matchesHolisticGoal\(offer\.areaKey, topic\) &&\s*matchesHolisticEuroBudget/,
+    "exact theme and EUR budget filtering remains active");
+});
