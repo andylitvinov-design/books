@@ -10,6 +10,7 @@ import {listMyTubeCategories,listMyTubeSubcategories,listMyTubeTopics,listMyTube
 import {listMyTubeScenarioMotifs,listMyTubeStyles,videoMatchesMyTubeVisualFilter} from "@/lib/mandala/mytube-creative-choices.mjs";
 import {matchesMyTubeShelf,sortMyTubeCourseLessons} from "@/lib/video-discovery/mytube-shelves.mjs";
 import {MyTubeCoursePlaylists} from "@/components/mytube-course-playlists";
+import {MyTubeYoutubeContinuation} from "@/components/mytube-youtube-continuation";
 import {listMyTubePracticeCollections,matchesMyTubePracticeCollection} from "@/lib/video-discovery/mytube-practice-collections.mjs";
 import styles from "./video-discovery.module.css";
 
@@ -285,6 +286,13 @@ export function VideoDiscovery({locale,videos,variant="library",subtitle}:{local
     mytubeStyles.find(item=>item.id===mytubeStyleId)?.label,
   ].filter(Boolean).join(" › ")||t.mytubeAny;
   const index=VIDEO_GOALS.indexOf(goal);
+  // Show third-party recommendations only after the complete owned MyTube feed.
+  const youtubeContinuation=variant==="mytube"&&!savedOnly&&source==="all"&&!search.trim()
+    ?<MyTubeYoutubeContinuation
+      key={[formatMode,mytubeCategoryId,mytubeSubcategoryId,mytubeTopicId,activePracticeCollection,goal,language].join(":")}
+      locale={locale} shelf={formatMode} category={mytubeCategoryId}
+      collection={activePracticeCollection} goal={goal} language={language}
+      excludedIds={videos.map(item=>item.youtubeId||"").filter(Boolean)}/>:null;
   return <div className={[styles.wrapper,variant==="mytube"&&styles.mytube].filter(Boolean).join(" ")} data-hh-video-discovery="v1" data-discovery-variant={variant}>
     {variant==="mytube"&&<>
       <div className={styles.mytubeIntroBar}>
@@ -522,7 +530,7 @@ export function VideoDiscovery({locale,videos,variant="library",subtitle}:{local
       </div>
     </section>
     {variant==="mytube"&&formatMode==="courses" ?
-      <MyTubeCoursePlaylists locale={locale} items={ordered} savedVideoIds={savedIds} onToggleSaved={save}/> : <>
+      <MyTubeCoursePlaylists locale={locale} items={ordered} savedVideoIds={savedIds} onToggleSaved={save} afterAllVisible={youtubeContinuation}/> : <>
     <div className={styles.results} aria-live="polite">
       <span>{variant==="mytube"?(formatMode==="practices"?t.mytubePractices:formatMode==="courses"?t.mytubeCourses:formatMode==="masters"?t.mytubeMasters:t.mytubeVideos):area!=="all"?t.areas[VIDEO_LIFE_AREAS.indexOf(area)]:index>0?t.result+": "+t.goals[index]:t.allResult}</span><span data-mytube-result-count={variant==="mytube"?"true":undefined}>{ordered.length}</span>
     </div>
@@ -540,5 +548,6 @@ export function VideoDiscovery({locale,videos,variant="library",subtitle}:{local
         savedVideoIds={savedIds} onToggleSaved={save} onDismissVideo={dismiss}
         saveText={t.save} unsaveText={t.unsave} dismissText={t.dismiss}/>}
     </>}
+    {variant==="mytube"&&formatMode!=="courses"&&youtubeContinuation}
   </div>;
 }
