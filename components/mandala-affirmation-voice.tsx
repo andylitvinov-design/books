@@ -284,9 +284,11 @@ export function MandalaAffirmationVoice({
     sampleControllerRef.current?.abort();
     sampleControllerRef.current=null;
     if(sampleAudioRef.current){
-      sampleAudioRef.current.pause();
-      sampleAudioRef.current.removeAttribute("src");
-      sampleAudioRef.current.load();
+      // A failed native decoder must never block a new explicit voice choice.
+      const sample=sampleAudioRef.current;
+      try {sample.pause();} catch {}
+      try {sample.removeAttribute("src");} catch {}
+      try {sample.load();} catch {}
     }
     samplePendingPersistRef.current=null;
     setSampleUrl("");setSampleVoiceId("");setSampleBusyId("");setSampleMessage("");
@@ -547,9 +549,11 @@ export function MandalaAffirmationVoice({
         {(["female","male","own"] as const).map(id=><button type="button" key={id}
           data-video-affirmation-gender={id} aria-pressed={voiceGender===id} hidden={compact&&id==="own"}
           disabled={busy||disabled} onClick={()=>{
-            resetSample();setVoiceGender(id);
+            // Commit the actual voice choice before Safari decoder teardown.
+            setVoiceGender(id);
             if(id!=="own")setVoiceId(id==="female"?"maya":"mark");
             setConsent(false);
+            resetSample();
           }}>{id==="female"?t.female:id==="male"?t.male:t.own}</button>)}
         </div>
       </div>

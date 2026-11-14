@@ -559,3 +559,36 @@ test("WebKit cached voice replay invokes one native play() per real tap, never a
   assert.match(browser,/await expect\.poll\(\(\)=>page\.evaluate\(\(\)=>window\.__hhPreviewReplayCount\)\)\.toBe\(1\)/);
   assert.match(browser,/replay must not spend a second free TTS request/);
 });
+
+test("Safari Voice gender and decoder reset preserve a real explicit choice, consent, and filmed-voice E2E",()=>{
+  const ui=read("components/mandala-affirmation-voice.tsx");
+  const start=ui.indexOf("data-video-affirmation-gender={id}");
+  const end=ui.indexOf("</button>",start);
+  assert.ok(start>0&&end>start);
+  const gender=ui.slice(start,end);
+  const select=gender.indexOf("setVoiceGender(id)");
+  const cleanup=gender.indexOf("resetSample()");
+  assert.ok(select>=0&&cleanup>select&&cleanup>gender.indexOf("setConsent(false)"),
+    "changing voice gender cannot be interrupted by Safari media decoder reset");
+  const r=ui.slice(ui.indexOf("function resetSample(){"),ui.indexOf("function previewDeviceSample(){"));
+  for(const op of ["pause\\(\\)","removeAttribute\\(\\\"src\\\"\\)","load\\(\\)"]){
+    assert.match(r,new RegExp("try \\{sample\\."+op+";\\} catch \\{\\}"));
+  }
+  const begin=source.indexOf('const chooser=page.locator("[data-video-affirmation-voice-select]")');
+  const stop=source.indexOf("const voiceOptions=",begin);
+  const segment=source.slice(begin,stop);
+  assert.ok(begin>=0&&stop>begin);
+  for(const marker of [
+    'if(engine==="webkit")await maleForNarration.tap()',
+    'await expect(maleForNarration).toHaveAttribute("aria-pressed","true")',
+    "await expect(leonForNarration).toBeVisible()",
+    'if(engine==="webkit")await leonForNarration.tap()',
+    'await expect(leonForNarration).toHaveAttribute("aria-pressed","true")'
+  ])assert.ok(segment.includes(marker),"real native voice choice: "+marker);
+  assert.ok(source.includes('if(engine==="webkit")await voiceOptions.locator(":scope > summary").tap()'));
+  assert.ok(source.includes('const narrationConsent=page.locator("[data-video-affirmation-voice-consent]")'));
+  assert.ok(source.includes('await expect(generateNarration).toBeEnabled()'));
+  assert.ok(source.includes('pcm.stdout.some(value=>value!==0)'),
+    "real audio evidence remains mandatory");
+  assert.doesNotMatch(segment,/force:true|\.evaluate\(/,"no fake touch state");
+});
