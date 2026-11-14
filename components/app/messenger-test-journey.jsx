@@ -29,6 +29,9 @@ const COPY = {
     openSpecial: 'Открыть этот тест', notDiagnostic: 'Результат предназначен для самонаблюдения, не для постановки диагноза.',
     answers: 'Варианты ответа', days: 'Выберите количество дней / балл', noMatches: 'По этому запросу нет доступных тестов.',
     recent: 'Ваши ответы', backToChat: 'Вернуться к диалогу',
+    savedLabel:'Незавершённый тест', suggestion:'Рекомендуем начать с этого', take:'Пройти тест',
+    browse:'Другие тесты', hideList:'Скрыть список', showNext:'Показать ещё',
+    questionUnit:'вопросов', minuteUnit:'мин', instructionsLabel:'Инструкции к тесту',
   },
   en: {
     title: 'Test in chat', select: 'Choose a test. I will ask one question at a time.',
@@ -45,6 +48,9 @@ const COPY = {
     openSpecial: 'Open this test', notDiagnostic: 'For self-reflection, not a medical diagnosis.',
     answers: 'Answer choices', days: 'Choose number of days / score', noMatches: 'No available tests match this search.',
     recent: 'Your answers', backToChat: 'Return to chat',
+    savedLabel:'Your unfinished test', suggestion:'Suggested to start', take:'Take test',
+    browse:'Explore other tests', hideList:'Hide test list', showNext:'Show more',
+    questionUnit:'questions', minuteUnit:'min', instructionsLabel:'Test instructions',
   },
   es: {
     title: 'Test en el chat', select: 'Elige un test. Haré una pregunta cada vez.',
@@ -61,6 +67,9 @@ const COPY = {
     openSpecial: 'Abrir test', notDiagnostic: 'Solo para reflexión personal; no es un diagnóstico médico.',
     answers: 'Opciones de respuesta', days: 'Selecciona días / puntuación', noMatches: 'No hay tests disponibles con ese nombre.',
     recent: 'Tus respuestas', backToChat: 'Volver al chat',
+    savedLabel:'Test pendiente', suggestion:'Sugerido para empezar', take:'Hacer test',
+    browse:'Explorar otros tests', hideList:'Ocultar lista', showNext:'Ver más',
+    questionUnit:'preguntas', minuteUnit:'min', instructionsLabel:'Instrucciones del test',
   },
 }
 
@@ -148,6 +157,44 @@ function timezone() {
   try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC' } catch { return 'UTC' }
 }
 
+
+/* Existing first-party photographs, shared with the Holistic House card family.
+   Decorative photos never encode private test answers or require remote media. */
+function testPortrait(item, focus) {
+  const topics = [item?.key || '', ...(item?.topics || [])].join(' ').toLowerCase()
+  if (focus === 'personality' || topics.includes('personality') || topics.includes('ipip'))
+    return '/images/holistic-house/support-mock-portrait.webp'
+  if (focus === 'relationships' || topics.includes('relationship'))
+    return '/images/holistic-house/reiki-approved-sunrise-v3.webp'
+  if (focus === 'work' || topics.includes('work'))
+    return '/images/holistic-house/report-lighthouse-coast.webp'
+  return '/images/holistic-house/course-start-heron.webp'
+}
+
+function TestCard({ item, locale, focus, label, action, onAction, disabled = false, progress = null, compact = false }) {
+  const t = COPY[locale] || COPY.en
+  const title = item?.title?.[locale] || item?.title?.en || item?.key || t.title
+  const description = item?.description?.[locale] || item?.description?.en || ''
+  const facts = [
+    Number.isFinite(item?.questionCount) ? item.questionCount + ' ' + t.questionUnit : null,
+    Number.isFinite(item?.durationMinutes) ? item.durationMinutes + ' ' + t.minuteUnit : null,
+    progress,
+  ].filter(Boolean).join(' · ')
+  return <article className={css.testCard + (compact ? ' ' + css.compactCard : '')}
+    data-hh-test-card={item?.key || 'saved'}>
+    <img src={testPortrait(item, focus)} alt="" width={80} height={94}
+      loading="lazy" decoding="async" className={css.testPhoto} />
+    <div className={css.testBody}>
+      {label && <span className={css.cardEyebrow}>{label}</span>}
+      <strong className={css.testTitle}>{title}</strong>
+      {facts && <small className={css.testMeta}>{facts}</small>}
+      {!compact && description && <p className={css.testDescription}>{description}</p>}
+      {action && <button type="button" className={css.testAction} disabled={disabled}
+        onClick={onAction}>{action}</button>}
+    </div>
+  </article>
+}
+
 /** @param {{ locale?: 'en'|'ru'|'es', focus?: keyof typeof FOCUS_TERMS|null, onAdvance?: (() => void)|null, onClose?: (() => void)|null, incomingTurn?: { seq: number, text: string }|null, suggestedKey?: string }} props */
 export default function MessengerTestJourney({ locale = 'en', focus = null, onAdvance = null, onClose = null, incomingTurn = null, suggestedKey = '' }) {
   const t = COPY[locale] || COPY.en
@@ -156,6 +203,7 @@ export default function MessengerTestJourney({ locale = 'en', focus = null, onAd
   const [adult, setAdult] = useState(false)
   const [search, setSearch] = useState('')
   const [expanded, setExpanded] = useState(false)
+  const [visibleCount, setVisibleCount] = useState(4)
   const [run, setRun] = useState(null)
   const [result, setResult] = useState(null)
   const [busy, setBusy] = useState(false)
@@ -196,12 +244,27 @@ export default function MessengerTestJourney({ locale = 'en', focus = null, onAd
     ].filter(Boolean).join(' ').toLowerCase()
     return FOCUS_TERMS[focus].some(term => info.includes(term))
   }) : []
-  // Suggestions shape the first screen; search still covers the full cleared catalogue.
-  const source = !search.trim() && !expanded && focusMatches.length ? focusMatches : ALL_TESTS
-  const filtered = source.filter(entry => {
+  // One action-led card on the first screen; the full eligible catalogue is opt-in.
+  const recommended = focusMatches.length ? focusMatches : ALL_TESTS
+  const featured = (focus === 'personality' ? recommended.find(entry => entry.item.key === 'mini-ipip-20') : null)
+    || (!focus ? recommended.find(entry => entry.item.key === 'hh-current-state') : null)
+    || recommended.find(entry => entry.item.questionCount <= 20 && entry.item.durationMinutes <= 5)
+    || recommended[0]
+  const ranked = [
+    ...(featured ? [featured] : []),
+    ...recommended.filter(entry => entry.item.key !== featured?.item.key),
+    ...ALL_TESTS.filter(entry => !recommended.some(option => option.item.key === entry.item.key)),
+  ]
+  const filtered = ranked.filter(entry => {
     const label = entry.item.title?.[locale] || entry.item.title?.en || entry.item.key
     return !search.trim() || (label + ' ' + entry.item.key).toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())
-  }).slice(0, search.trim() || expanded ? 200 : 4)
+  })
+  const restorableEntry = restorable && ALL_TESTS.find(entry =>
+    entry.definitions.some(def => def.id === restorable.definitionId))
+  const restorableDefinition = restorableEntry?.definitions.find(def => def.id === restorable?.definitionId)
+  const restorableProgress = restorableDefinition && restorable?.answers
+    ? chatProgress(restorableDefinition, restorable).answeredCount + '/' + restorableDefinition.questions.length
+    : null
 
   useEffect(() => {
     let live = true
@@ -223,6 +286,7 @@ export default function MessengerTestJourney({ locale = 'en', focus = null, onAd
   function changeTest(key) {
     if (busy) return
     setSelectedKey(key);setRun(null);setResult(null);setError('');setAdult(false);setAcknowledgedSafety(null)
+    setExpanded(false);setSearch('');setVisibleCount(4)
     setPaused(false);setCancelPending(false);setPendingAnswer(null);setNotice('')
     operation.current = null;completion.current = null;startId.current = null
     notify()
@@ -349,36 +413,46 @@ export default function MessengerTestJourney({ locale = 'en', focus = null, onAd
       {onClose && <button type="button" className={css.plain} onClick={onClose}>{t.backToChat}</button>}
     </div>
     {!run && <>
-      {restorable && <div className={css.recover} data-hh-test-block="test_resume">
-        <p className={css.assistant}>{extra.recovered}</p>
-        <button className={css.primary} type="button" disabled={busy} onClick={resumeSaved}>{extra.resume}</button>
-      </div>}
-      <p className={css.assistant}>{t.select}</p>
       {!selectedKey && <>
-        <label className={css.search}><span className={css.srOnly}>{t.find}</span>
-          <input value={search} placeholder={t.find} onChange={e=>setSearch(e.target.value)} />
-        </label>
-        <div className={css.tests} role="group" aria-label={t.more}>
-          {filtered.map(({ item })=><button type="button" key={item.key} onClick={()=>changeTest(item.key)}>
-            {item.title?.[locale] || item.title?.en || item.key}
-            <small>{item.questionCount} {t.question.toLowerCase()}</small>
-          </button>)}
-          {!filtered.length && <p>{t.noMatches}</p>}
-        </div>
-        {!search.trim() && !expanded && ALL_TESTS.length > 6 &&
-          <button type="button" className={css.plain} onClick={()=>setExpanded(true)}>{t.more} ({ALL_TESTS.length})</button>}
+        {!expanded && (restorable ?
+          <TestCard item={restorableEntry?.item} locale={locale} focus={focus}
+            label={t.savedLabel} action={busy ? t.loading : extra.continue}
+            onAction={resumeSaved} disabled={busy} progress={restorableProgress} compact /> :
+          featured && <TestCard item={featured.item} locale={locale} focus={focus}
+            label={t.suggestion} action={t.take}
+            onAction={()=>changeTest(featured.item.key)} disabled={busy} />)}
+        <button type="button" className={css.catalogToggle}
+          aria-expanded={expanded} aria-controls="hh-messenger-test-catalog"
+          onClick={()=>{setExpanded(current=>!current);setSearch('');setVisibleCount(4);notify()}}>
+          {expanded ? t.hideList : t.browse} <span aria-hidden="true">{expanded ? '−' : '＋'}</span>
+        </button>
+        {expanded && <div id="hh-messenger-test-catalog" className={css.browse} data-hh-test-catalog>
+          <label className={css.search}><span className={css.srOnly}>{t.find}</span>
+            <input value={search} placeholder={t.find}
+              onChange={e=>{setSearch(e.target.value);setVisibleCount(4)}} />
+          </label>
+          <div className={css.tests} role="group" aria-label={t.more}>
+            {filtered.slice(0,visibleCount).map(entry=><TestCard key={entry.item.key}
+              item={entry.item} locale={locale} focus={focus} compact
+              action={t.take} onAction={()=>changeTest(entry.item.key)} disabled={busy}/>)}
+            {!filtered.length && <p className={css.note}>{t.noMatches}</p>}
+          </div>
+          {filtered.length > visibleCount && <button type="button" className={css.plain}
+            onClick={()=>{setVisibleCount(count=>count+4);notify()}}>{t.showNext} ({filtered.length-visibleCount})</button>}
+        </div>}
       </>}
       {selectedKey && definition && <>
-        <button className={css.plain} type="button" onClick={()=>changeTest('')}>{t.back}</button>
-        <p className={css.assistant} lang={definition.instrumentLocale}>
-          {active.item.title?.[locale] || definition.title} · {definition.questions.length} {t.question.toLowerCase()}
-        </p>
+        <button className={css.backLink} type="button" onClick={()=>changeTest('')}>‹ {t.back}</button>
+        <TestCard item={active?.item} locale={locale} focus={focus} compact />
         {definition.instrumentLocale !== locale && <p className={css.note} role="note">{extra.language}<b>{definition.instrumentLocale.toUpperCase()}</b>. {locale === 'es' ? 'No es una traducción validada al español.' : locale === 'ru' ? 'Это не перевод и не русская версия методики.' : 'This is not a translated version.'}</p>}
         {hasTraumaAdministration(definition) ? <>
           <p className={css.note}>{t.special}</p>
-          <a className={css.primary} href={`/${locale === 'es' ? 'en' : locale}/client?startTests=${encodeURIComponent(definition.key)}`}>{t.openSpecial}</a>
+          <a className={css.primary} href={'/' + (locale === 'es' ? 'en' : locale) + '/client?startTests=' + encodeURIComponent(definition.key)}>{t.openSpecial}</a>
         </> : <>
-          {definition.instructions && <p className={css.note} lang={definition.instrumentLocale}>{definition.instructions}</p>}
+          {definition.instructions && <details className={css.instructions}>
+            <summary>{t.instructionsLabel}</summary>
+            <p lang={definition.instrumentLocale}>{definition.instructions}</p>
+          </details>}
           <label className={css.consent}><input type="checkbox" checked={adult} onChange={e=>setAdult(e.target.checked)} />{t.adult}</label>
           <p className={css.note}>{t.privacy}</p>
           <button className={css.primary} type="button" onClick={start} disabled={!adult || busy}>{busy ? t.loading : t.start}</button>
