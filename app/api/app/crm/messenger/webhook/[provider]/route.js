@@ -15,6 +15,7 @@ import {shouldBootstrapTelegramNativeMenu} from '@/lib/crm/telegram-companion-na
 import { receiveOwnerTelegramVideoWebhook } from '@/lib/practitioners/owner-telegram-video-service'
 import {processTelegramBusinessConversation} from '@/lib/crm/telegram-business-service'
 import {processTelegramBusinessSecretary,gateTelegramBusinessSecretaryOptOut} from '@/lib/crm/telegram-secretary-service'
+import {notifyConfirmedTelegramBusinessOwner} from '@/lib/crm/telegram-business-owner-notice'
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
 export const revalidate=0
@@ -67,6 +68,18 @@ export async function POST(request,{params}){
     if(provider==='telegram'){
       const business=await processTelegramBusinessConversation(body,config)
       if(business.handled){
+        // The CRM submission is already committed. Notify only the verified
+        // owner through the existing @Andydotbot opt-in transport; provider
+        // delivery must never affect the client's confirmation response.
+        if(business.terminal)after(async()=>{
+          try{
+            const notice=await notifyConfirmedTelegramBusinessOwner(config,body)
+            if(notice.attempted>0&&notice.accepted!==1)
+              console.error('HH_TG_BUSINESS_OWNER_NOTICE_UNCONFIRMED')
+          }catch{
+            console.error('HH_TG_BUSINESS_OWNER_NOTICE_FAILED')
+          }
+        })
         if(business.reply){
           try{
             await consumeRate(config,{op:'hh-tg-business-intent-message',
