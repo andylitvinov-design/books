@@ -16,6 +16,8 @@
   background:#fffcf7;box-shadow:0 2px 10px #193f2a10;color:#145c48;text-decoration:none;
   font-size:clamp(11px,2.5vw,14px);line-height:1.2;font-weight:750;text-align:center}
 .change svg{flex:none}
+.changeFull{display:inline}
+.changeCompact{display:none}
 .mediaSection{min-width:0}
 .mainVideo{position:relative;isolation:isolate;aspect-ratio:16/9;border-radius:26px;overflow:hidden;
   background:#164b3c;box-shadow:0 10px 26px #2b3c281b}
@@ -116,7 +118,9 @@
  .container{padding:9px 11px calc(80px + env(safe-area-inset-bottom))}
  .header{margin-bottom:12px}
  .brand img{width:32px;height:32px}
- .brand span{font-size:clamp(16px,5.2vw,24px)}
+ .brand span{font-size:clamp(16px,4.3vw,20px)}
+ .changeFull{display:none}
+ .changeCompact{display:inline}
  .change{max-width:52%;font-size:11px;padding:7px 9px}
  .change svg{width:15px}
  .mainVideo{border-radius:23px}
@@ -134,8 +138,9 @@
  .book svg{width:21px}
 }
 @media(max-width:345px){
- .brand span{font-size:16px}
- .change{font-size:10px}
+ .header{gap:5px}
+ .brand span{font-size:14px}
+ .change{font-size:10px;max-width:53%;padding:7px 8px;gap:4px}
  .videoIdentity strong{font-size:25px}
  .videoIdentity>span:last-child:not(.videoBadge){display:none}
  .book{gap:6px;font-size:14px;padding:11px}
