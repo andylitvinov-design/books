@@ -156,7 +156,7 @@ test('STOP persists even without prior order; new explicit queries cannot undo i
 test('STOP before Business intake, exact signed ingress and RLS not weakened',()=>{
  const route=f('app/api/app/crm/messenger/webhook/[provider]/route.js');
  const sender=f('lib/crm/messenger-provider.js');
- const sql=f('supabase/migrations/20261113221500_crm_tg_business_secretary_optouts.sql');
+ const sql=f('supabase/migrations/20261113232313_hh_crm_tg_business_secretary_optouts_v1.sql');
  const stop=route.indexOf('gateTelegramBusinessSecretaryOptOut(body,config)');
  const orders=route.indexOf('processTelegramBusinessConversation(body,config)');
  const rec=route.indexOf('processTelegramBusinessSecretary(body,config)');
