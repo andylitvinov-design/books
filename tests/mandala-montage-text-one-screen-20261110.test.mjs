@@ -16,7 +16,7 @@ test("Montage Text retains the original seven-phrase editor and all three phrase
   assert.ok(ui.includes(key),key);
  assert.ok(ui.includes("const allFive=[0,1,2,3,4]"));
  assert.ok(ui.includes("limit:7"));
- assert.ok(studio.includes('onGenerate={createQuickVideo} status={notice}/>'));
+ assert.ok(studio.includes('onGenerate={openReadyForGeneration} status={notice}/>'));
 });
 test("Text-only mobile UI hides size, note, refine, clear and outer duplicate CTA",()=>{
  assert.ok(layout.includes('[data-montage-panel="text"] .quickBuilder>[data-video-order-bar]'));

@@ -93,7 +93,9 @@ test("owner's iPhone mock uses ONE live player, one shared goal and four picture
  assert.match(director,/scenePoster\(option\.clips\[0\]\)/);
  assert.match(director,/scenePoster\(clip\)/);
  assert.match(director,/data-auto-video-create/);
- assert.match(studio,/onCreate=\{createQuickVideo\}/,"the button calls the existing local MediaRecorder path");
+ assert.match(studio,/onCreate=\{openReadyForGeneration\}/,"Create navigates to Ready before any media encoding");
+  assert.match(studio,/onGenerateBasicVideo=\{\(\)=>\{[\s\S]*?return createQuickVideo\(\)/,
+    "only the separate Ready Generate action may call the existing MediaRecorder");
  assert.match(studio,/canCreate=\{canStartSelectedFilm\}/,
    "The real iPhone Create control must remain tappable for audio/photo consent");
  assert.match(studio,/createFeedback=\{preparing\|\|exportUnavailable\?notice:""\}/,
@@ -227,7 +229,7 @@ test("Free help opens the ONE production AI Director without adding a second pla
  assert.match(director,/if\(onClarify\)\{onClarify\(\);return;\}/);
  assert.match(css,/\.directorChatDetails:not\(\[open\]\)\{display:none!important\}/);
  assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
- assert.match(studio,/onCreate=\{createQuickVideo\}/);
+ assert.match(studio,/onCreate=\{openReadyForGeneration\}/);
  assert.match(studio,/onConfirm=\{\(\{scenario\}\)=>\{/);
  assert.match(studio,/scenario\.readyToExecute/);
  assert.match(studio,/onGoalChange=\{next=>\{setWish\(next\.slice\(0,800\)\)/);
