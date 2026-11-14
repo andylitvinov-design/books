@@ -161,7 +161,7 @@ const humanCopy = {
     about: 'About therapist', action: 'Message',
     bio: 'Individual sessions combine a Jung-oriented approach, Guided Affective Imagery, body-oriented psychotherapy and systemic constellations. We explore your situation together, at your pace.',
     note: 'Personal sessions are arranged by request. Date and availability are confirmed separately.',
-    more: 'Explore other real practitioners',
+    more: 'Explore other real practitioners', session: 'Watch videos & ask a question',
   },
   ru: {
     chooser: 'Тип специалиста', all: 'Все', ai: 'AI-коучи', real: 'Реальные люди',
@@ -175,7 +175,7 @@ const humanCopy = {
     about: 'О терапевте', action: 'Написать',
     bio: 'В индивидуальной работе объединяются юнгианский подход, направленное образное переживание, телесная психотерапия и системные расстановки. Мы вместе исследуем вашу ситуацию в комфортном темпе.',
     note: 'Личные сессии проводятся по запросу. Время и доступность подтверждаются отдельно.',
-    more: 'Другие реальные специалисты',
+    more: 'Другие реальные специалисты', session: 'Смотреть видео и задать вопрос',
   },
   es: {
     chooser: 'Tipo de coach', all: 'Todos', ai: 'Coaches IA', real: 'Personas reales',
@@ -189,7 +189,7 @@ const humanCopy = {
     about: 'Sobre el terapeuta', action: 'Escribir',
     bio: 'Las sesiones individuales combinan un enfoque junguiano, imaginación afectiva guiada, psicoterapia corporal y constelaciones sistémicas. Exploramos tu situación a tu propio ritmo.',
     note: 'Las sesiones se solicitan por separado; el horario y la disponibilidad se confirman después.',
-    more: 'Explorar otros profesionales',
+    more: 'Explorar otros profesionales', session: 'Ver vídeos y hacer una pregunta',
   },
 }
 
@@ -574,6 +574,10 @@ export default function MyCoachCatalog({ locale = 'en' }) {
                   aria-controls="my-coach-human-andrey-channels"
                   onClick={() => setHumanContactOpen(open => !open)}>{h.action}<ArrowRight size={16} aria-hidden="true" /></button>
               </div>
+              <Link href={'/' + lang + '/my-coach/real/andy-litvinov'} className={styles.humanSessionLink}
+                prefetch={false} data-my-coach-human-dialogue-link>
+                {h.session}<ArrowRight size={16} aria-hidden="true" />
+              </Link>
             </div>
             {humanExpanded && <div className={styles.humanProfile} id="my-coach-human-andrey-about">
               <p>{h.bio}</p>
