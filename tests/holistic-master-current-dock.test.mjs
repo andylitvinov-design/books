@@ -29,3 +29,9 @@ test("The current navigation implementation supports all three locales and no du
   assert.match(legacy, /isUnifiedMobileDockPath\(pathname\)/);
   assert.match(script, /await unifiedDock\.locator\("\[data-unified-dock-item\]"\)\.count\(\), 7/);
 });
+
+test("unified locator is declared exactly once and reused after navigation",()=>{
+  const source=read("scripts/verify-holistic-master-browser.mjs");
+  assert.equal((source.match(/const unifiedDock = page\.locator/g)||[]).length,1);
+  assert.ok(source.includes("await unifiedDock.waitFor({state:'visible',timeout:15000});"));
+});

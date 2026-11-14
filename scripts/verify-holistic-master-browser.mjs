@@ -195,7 +195,7 @@ async function verify(engine, locale, width) {
       label + ": focus chips precede optional wishes");
     const findBox = await findOptions.boundingBox();
     // Services now uses the single unified mobile dock; do not wait for a removed legacy nav.
-    const unifiedDock = page.locator('[data-hh-unified-dock]');
+
     await unifiedDock.waitFor({state:'visible',timeout:15000});
     const bottomNav = await unifiedDock.boundingBox();
     assert.equal(await unifiedDock.locator('[data-unified-dock-item="services"]').getAttribute('aria-current'), 'page',
