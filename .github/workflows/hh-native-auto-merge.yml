@@ -410,7 +410,8 @@ jobs:
             // production commit must not silently turn that proof stale.
             core.setOutput("requires_current_base",String(
               freshness.reason==="SENSITIVE_BASE_VERIFIED" ||
-              freshness.reason==="ISOLATED_CI_PUBLIC_MEDIA_REVALIDATED"));
+              freshness.reason==="ISOLATED_CI_PUBLIC_MEDIA_REVALIDATED" ||
+              freshness.reason==="INDEPENDENT_PUBLIC_RASTER_REVALIDATED"));
       - name: Revalidate sensitive BASE with one protected sync or signed Ready
         if: >-
           github.event_name == 'workflow_run' &&
