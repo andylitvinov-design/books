@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {portraitMouthAperture,speechRms} from '../lib/coaching/living-portrait-motion.mjs'
+import {normalizeMyCoachFishRequest,myCoachFishConfig} from '../lib/coaching/my-coach-fish-voice.mjs'
 import {
   COACH_PERSONAS, COACH_PERSONA_VERSION, COACH_LOCALES, COACH_TOPICS, COACH_SAFETY_RULES,
   getCoachPersona, localCoachText, normalizeCoachSettings, resolveCoachSelection,
@@ -153,3 +154,35 @@ test('mobile My Coach hero mouth remains visible when compact avatar is hidden',
   }
   assert.doesNotMatch(hero,/getUserMedia|MediaRecorder|new WebSocket/)
 })
+
+
+// The real My Coach microphone and Replay code both send personaId to the
+// same Fish route. Previously the strict parser rejected this legitimate
+// field and every opted-in natural-voice request failed before TTS.
+test('Fish natural voice accepts the exact live/replay persona payload but no extra fields', () => {
+  const speech=readFileSync(new URL('../components/my-coach-speech-loop.jsx',import.meta.url),'utf8')
+  const dialog=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+  const route=readFileSync(new URL('../app/api/app/my-coach/voice/synthesize/route.js',import.meta.url),'utf8')
+  assert.match(speech,/body:JSON\.stringify\(\{provider:cloudProvider,locale:replyLocale,personaId,/)
+  assert.match(dialog,/body:JSON\.stringify\(\{provider:cloudProvider,personaId,/)
+  assert.match(route,/const \{provider:_,\.\.\.fishRaw\}=raw/)
+  assert.match(route,/normalizeMyCoachFishRequest\(fishRaw\)/)
+  const normal={locale:'ru',text:'Какой следующий шаг сейчас поможет?',voiceConsent:true,
+    cloudVoiceConsent:true,trainingUseConsent:true}
+  for (const {id} of COACH_PERSONAS) {
+    assert.deepEqual(normalizeMyCoachFishRequest({...normal,personaId:id}),
+      {locale:'ru',text:normal.text},id)
+  }
+  assert.deepEqual(normalizeMyCoachFishRequest(normal),
+    {locale:'ru',text:normal.text},'old clients without personaId stay supported')
+  for(const illegal of [
+    {personaId:'__proto__'},{personaId:'unknown'},{personaId:{id:'mira'}},
+    {personaId:null},{role:'system'},{accountId:'other'},{provider:'fish_free'},
+    {trainingUseConsent:false},{cloudVoiceConsent:false},
+  ])assert.throws(()=>normalizeMyCoachFishRequest({...normal,...illegal}),
+    /MY_COACH_FISH_TTS_INVALID/)
+  const enabled={HH_MY_COACH_FISH_TTS_ENABLED:'true',HH_MY_COACH_FISH_TTS_APPROVED:'true',
+    HH_MY_COACH_FISH_FREE_DATA_ACKNOWLEDGED:'true',HH_COACHING_FISH_API_KEY:'test-not-a-real-key'}
+  assert.equal(myCoachFishConfig(enabled,Date.parse('2026-11-14T12:00:00Z')).model,'s2.1-pro-free')
+  assert.equal(myCoachFishConfig({...enabled,HH_MY_COACH_FISH_FREE_DATA_ACKNOWLEDGED:'false'}),null)
+});

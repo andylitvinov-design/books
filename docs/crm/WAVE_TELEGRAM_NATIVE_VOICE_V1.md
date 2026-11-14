@@ -22,6 +22,26 @@ no new chatbot, model, database table, bucket, cron, payment or new provider.
    outside the existing encrypted V3 conversation context. Unconsented and
    forwarded voice messages never become fake generic CRM leads.
 
+**Additional consent and delivery safeguards (14 November security repair):**
+- The initial consent button is not authoritative by label alone. The backend
+  records the official Telegram bot's actual sent message ID only after
+  `sendMessage` returns an acknowledged ID; an inline approval must match
+  that message and the encrypted five-minute offer. Stale buttons from
+  before `/voice_off` cannot silently restore consent. An explicit fresh
+  typed `/voice_on` is always possible while AI-chat consent still holds.
+- The post-STT voice reply, including a failure notice, uses a one-shot
+  encrypted delivery marker and a final row/advisory lock held through the
+  existing bounded Telegram send. A committed STOP or `/voice_off`
+  suppresses delivery; an unknown Telegram outcome is never automatically
+  retried.
+- Every native `message.voice` is marked as voice even when forwarded or
+  invalid; untranscribed messages are never converted into fake generic CRM
+  text or contact creation.
+- Retain negative security tests for stale inline callbacks, a revoked
+  interleaved voice reply and forwarded voice fallthrough. Signed webhooks,
+  encrypted context, existing RLS, provider attestation and separate consent
+  remain mandatory; a passing mock is not a real Telegram provider test.
+
 **Feature gates (already-existing server environment):**
 - Verified signed CRM Telegram webhook with V3 schema, auth, private RLS and
   Wave enabled; client must explicitly consent to the AI chat first.

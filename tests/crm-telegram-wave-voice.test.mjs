@@ -1,9 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import vm from 'node:vm';
 import {validWaveTelegramVoiceMeta,waveTelegramVoiceReady,waveTelegramVoiceCopy,
   transcribeWaveTelegramVoice} from '../lib/crm/telegram-wave-voice.mjs';
-import {v3Context,v3ButtonsFor,V3_LABELS} from '../lib/crm/telegram-ai-diagnostic-v3.mjs';
+import {v3Context,v3ButtonsFor,v3VoiceOfferValid,V3_LABELS} from '../lib/crm/telegram-ai-diagnostic-v3.mjs';
 import {telegramInlineCallbackSelection,telegramInlineButtonForText}
   from '../lib/crm/telegram-inline-buttons.mjs';
 const source=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
@@ -11,12 +12,16 @@ const note={fileId:'abcdefghijklmnopqrstuvwxyz123456',bytes:300,seconds:3,mime:'
 const token='1234567:abcdefghijklmnopqrstuvwxyz1234567890',key='a'.repeat(32);
 test('native private bot voice metadata is forwarded, not fabricated as text',()=>{
  const parser=source('lib/crm/messenger-webhook.js');
- assert.match(parser,/const voiceNote=message\.voice/);
+ assert.match(parser,/const isTelegramVoice=Boolean\(message\.voice\)/);
+ assert.match(parser,/const voiceNote=isTelegramVoice&&!message\.forward_origin/);
+ assert.match(parser,/rawText:message\.text \? text : '',voiceNote,isTelegramVoice/);
  assert.match(parser,/!message\.forward_origin/);
  assert.match(parser,/rawText:message\.text \? text : '',voiceNote/);
  const route=source('app/api/app/crm/messenger/webhook/[provider]/route.js');
  assert.match(route,/finishTelegramWaveVoiceV3\(config,aiIntake\.generate\)/);
- assert.match(route,/if\(event\.voiceNote\)continue/);
+ assert.match(route,/if\(event\.isTelegramVoice\)continue/);
+ assert.match(route,/if\(aiIntake\.generate\.voiceNote\)/);
+ assert.match(route,/await deliverTelegramWaveVoiceV3\(config,aiIntake\.generate/);
 });
 test('voice input metadata and external free-provider authorization are bounded',()=>{
  assert.equal(validWaveTelegramVoiceMeta(note),true);
@@ -96,3 +101,116 @@ test('invalid OGG never reaches external STT',async()=>{
  }}),/WAVE_VOICE_STT_UNAVAILABLE/);
  assert.equal(calls,2);
 });
+
+
+test('official voice consent callback is fresh, message-bound and revoked/expired buttons fail closed',()=>{
+ const at=Date.parse('2026-11-14T12:00:00.000Z')
+ const fresh={voiceOfferUpdateId:42,voiceOfferMessageId:117,
+   voiceOfferAt:new Date(at).toISOString()}
+ assert.equal(v3VoiceOfferValid(fresh,117,at+3000),true)
+ for(const [state,id,now] of [
+   [fresh,118,at+3000],
+   [fresh,117,at+5*60*1000+1],
+   [fresh,117,at-1],
+   [{...fresh,voiceOfferMessageId:null},117,at+3000],
+   [{...fresh,voiceOfferAt:null},117,at+3000],
+   [{...fresh,voiceOfferUpdateId:null},117,at+3000],
+ ]) assert.equal(v3VoiceOfferValid(state,id,now),false)
+ const stored=v3Context({turns:[],pending:null,summary:null,...fresh,
+   voiceDeliveryPendingId:42})
+ assert.equal(v3VoiceOfferValid(stored,117,at+3000),true)
+ assert.equal(stored.voiceDeliveryPendingId,42)
+ assert.equal(v3Context({...stored,voiceOfferMessageId:null}).voiceOfferMessageId,undefined)
+})
+
+test('voice offer only binds after a provider-confirmed official message; never replay stale callback',()=>{
+ const service=source('lib/crm/telegram-ai-diagnostic-v3-service.js')
+ const route=source('app/api/app/crm/messenger/webhook/[provider]/route.js')
+ assert.match(service,/export async function bindTelegramWaveVoiceOffer\(/)
+ assert.match(service,/v3VoiceOfferValid\(ctx,event\.callbackMessageId\)/)
+ assert.match(service,/voiceOfferMessageId:null/)
+ assert.match(service,/voiceOfferUpdateId:null,voiceOfferAt:null,voiceOfferMessageId:null/)
+ assert.match(service,/voiceOfferMessageId:messageId/)
+ assert.match(service,/Date\.now\(\)-at>5\*60\*1000/)
+ assert.match(route,/if\(aiIntake\.voiceOffer\)await bindTelegramWaveVoiceOffer\(/)
+ assert.match(route,/delivered\.providerId/)
+})
+
+test('voice final answer and failure reply cannot outrun committed STOP or voice-off',()=>{
+ const service=source('lib/crm/telegram-ai-diagnostic-v3-service.js')
+ const route=source('app/api/app/crm/messenger/webhook/[provider]/route.js')
+ const deliver=service.slice(service.indexOf('export async function deliverTelegramWaveVoiceV3('))
+ const guard=deliver.indexOf('if(!voiceConsentValid(ctx)||ctx.voiceDeliveryPendingId!==job.updateId)')
+ const sender=deliver.indexOf('await send({to:reply.to')
+ assert.ok(guard>=0&&sender>guard,'check persisted consent and one-shot voice marker before send')
+ assert.match(deliver,/pg_advisory_xact_lock/)
+ assert.match(deliver,/await readRow\(/)
+ assert.match(deliver,/voiceDeliveryPendingId:null/)
+ assert.match(deliver,/HH_TG_VOICE_FINAL_SEND_UNCONFIRMED/)
+ assert.match(service,/voiceDeliveryPendingId:ctx\.pending\.voice===true\?job\.updateId:null/)
+ assert.match(service,/voiceDeliveryPendingId:job\.updateId/)
+ assert.match(route,/await deliverTelegramWaveVoiceV3\(config,aiIntake\.generate/)
+ assert.doesNotMatch(route,/if\(ready\?\.reply\)await sendTelegramDiagnosticPrompt/)
+})
+
+test('all native Telegram voice updates, including forwarded invalid audio, bypass generic CRM text ingestion',()=>{
+ const parser=source('lib/crm/messenger-webhook.js')
+ const route=source('app/api/app/crm/messenger/webhook/[provider]/route.js')
+ assert.match(parser,/const isTelegramVoice=Boolean\(message\.voice\)/)
+ assert.match(parser,/voiceNote=isTelegramVoice&&!message\.forward_origin&&!message\.is_automatic_forward/)
+ assert.match(parser,/rawText:message\.text \? text : '',voiceNote,isTelegramVoice/)
+ assert.match(route,/if\(event\.isTelegramVoice\)continue/)
+ assert.match(route,/await ingestMessengerUpdate\(provider,event,config\)/)
+})
+
+
+test('final single-attempt voice delivery is serialized, idempotent, STOP and revocation aware',async()=>{
+ const content=source('lib/crm/telegram-ai-diagnostic-v3-service.js')
+ const at=content.indexOf('export async function deliverTelegramWaveVoiceV3(')
+ assert.ok(at>0,'final voice delivery function exists')
+ const events=[]
+ const state={voiceConsentAt:new Date().toISOString(),voiceDeliveryPendingId:88}
+ let stopped=false
+ const row=()=>({flow_version:3,stage:stopped?'stopped':'interview',
+   ai_consent_at:state.voiceConsentAt,ai_context_id:'context'})
+ const env={
+   supported:()=>true,
+   webhookTransaction:async(_config,work)=>{
+     events.push('begin')
+     const result=await work({query:async()=>{events.push('sessionLock')}})
+     events.push('commit')
+     return result
+   },
+   readRow:async()=>{events.push('readLockedRow');return row()},
+   openContext:()=>({...state}),
+   voiceConsentValid:ctx=>Boolean(ctx.voiceConsentAt),
+   updateRow:async()=>{events.push('consumeOneShot');state.voiceDeliveryPendingId=null},
+   encryptContext:()=> 'sealed',
+   console:{error:()=>events.push('providerUnconfirmed')},
+ }
+ const deliver=vm.runInNewContext(
+   content.slice(at).replace(/^export /,'')+';deliverTelegramWaveVoiceV3',env)
+ const job={business:'b',user:'u',voiceNote:{fileId:'only-backend'},
+   contextId:'context',ownerId:'owner',updateId:88}
+ const reply={to:'private',reply:'Wave reply',locale:'ru',keyboard:[]}
+ let sends=0
+ const sender=async args=>{sends++;events.push('singleSend');assert.equal(args.text,'Wave reply')}
+ assert.equal(await deliver({},job,reply,sender,{}),true)
+ assert.equal(sends,1)
+ assert.ok(events.indexOf('sessionLock')>=0&&events.indexOf('sessionLock')<events.indexOf('singleSend'))
+ assert.ok(events.indexOf('consumeOneShot')<events.indexOf('singleSend'))
+ assert.ok(events.indexOf('singleSend')<events.indexOf('commit'),
+   'provider send finishes while STOP-serializing transaction is still open')
+ assert.equal(await deliver({},job,reply,sender,{}),false,'consumed reply never resends')
+ assert.equal(sends,1)
+ state.voiceDeliveryPendingId=88;state.voiceConsentAt=null
+ assert.equal(await deliver({},job,reply,sender,{}),false,'revoke blocks audio reply')
+ assert.equal(sends,1)
+ state.voiceConsentAt=new Date().toISOString();stopped=true
+ assert.equal(await deliver({},job,reply,sender,{}),false,'committed STOP blocks audio reply')
+ assert.equal(sends,1)
+ stopped=false
+ assert.equal(await deliver({},job,reply,async()=>{throw Error('uncertain')},{}),false,
+   'unknown Telegram status is a single consumed attempt')
+ assert.equal(state.voiceDeliveryPendingId,null)
+})

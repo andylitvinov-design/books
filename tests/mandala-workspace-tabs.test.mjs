@@ -9,13 +9,13 @@ test("exactly six real workspaces with all RU EN ES labels",()=>{
  const tabBlock=studio.match(/const workspaceTabs=\[([\s\S]*?)\] as const;/)?.[1];
  assert.ok(tabBlock,"workspace registry");
  const ids=[...tabBlock.matchAll(/id:"([a-z]+)"/g)].map(m=>m[1]);
- assert.deepEqual(ids,["video","phrases","editor","effects","pro","ready"]);
+ assert.deepEqual(ids,["video","phrases","editor","pro","ready","effects"]);
  for(const locale of ["ru","en","es"]){
    assert.match(studio,new RegExp(locale+":[\\s\\S]*?video:\\{tab:"));
    for(const id of ids)assert.match(studio,new RegExp(id+":\\{tab:"));
  }
  assert.match(studio,/phrases:\{tab:"Идеи",title:"Идеи для видео"/);
- assert.match(studio,/Гипноэффекты/);
+ assert.match(studio,/Therapy Studio/);
  assert.match(studio,/Курс практик/);
  assert.match(studio,/pro:\{tab:"PRO",title:"PRO генерация"/);
  assert.match(studio,/editor:\{tab:"Монтаж",title:"Быстрая генерация"/);
@@ -186,8 +186,8 @@ test("video studio lazily loads optional editor workspaces and collapsed tools",
 });
 
 test("final approved six tabs lead to exactly one real workspace each",()=>{
-  const expected=['tab:"Цель"','tab:"Идеи"','tab:"Гипноэффект"',
-    'tab:"Курс практик"','tab:"Монтаж"','tab:"PRO"'];
+  const expected=['tab:"Цель"','tab:"Идеи"','tab:"Монтаж"',
+    'tab:"PRO"','tab:"Ready"','tab:"Therapy"'];
   for(const label of expected)assert.ok(studio.includes(label),"missing "+label);
   assert.match(studio,/data-video-quick-control=\{item.id\}/);
   assert.match(studio,/setActiveWorkspace\(id\)/);
@@ -292,7 +292,8 @@ test("all six workspaces use the same in-flow navigation and one real export",()
  assert.match(editor,/data-video-montage-tab=\{item.id\}/);
  assert.match(editor,/data-video-montage-preferences/);
  assert.doesNotMatch(editor,/data-video-montage-export/, "the old second export button must stay removed");
- assert.match(studio,/onClick=\{createQuickVideo\}/,"the single real Generate CTA must reuse the original renderer");
+ assert.match(studio,/onClick=\{openReadyForGeneration\}/,"Montage Generate only opens Ready");
+  assert.match(studio,/return createQuickVideo\(\)/,"Ready retains the original guarded renderer");
  const mobileCss=css.slice(css.lastIndexOf("/* 04 Nov owner visual recovery"));
  assert.match(mobileCss,/\.studio\[data-active-workspace\] \.quickVideoNav button/);
  assert.match(css,/\.montageQuickTools\{[^}]*flex-wrap:nowrap/);
@@ -372,7 +373,12 @@ test("Goal and Montage preserve creation guards while Text offers guarded video 
  assert.ok(footer.includes('disabled={disabled||selectedCount<5}'),"Storyboard retains minimum-five gate");
  assert.ok(footer.includes("Создать видео") && footer.includes("Generate Video") &&
   footer.includes("Раскадровка") && footer.includes("Storyboard"));
- assert.ok(studio.includes('onGenerate={createQuickVideo}'),"direct action preserves original guarded renderer");
+ assert.ok(studio.includes('onGenerate={openReadyForGeneration}'),"Text Generate opens Ready without recording");
+ assert.match(studio,/onGenerateBasicVideo=\{\(\)=>\{[\s\S]*?return createQuickVideo\(\)/,
+  "only the separate Ready Generate gesture reaches the original guarded renderer");
+ const ready=readFileSync(new URL("../components/mandala-video-ready.tsx",import.meta.url),"utf8");
+ assert.match(ready,/onClick=\{generateSelectedVideo\} data-ready-generate/,
+  "Ready must keep its own explicit generation button");
  assert.ok(studio.includes('setMontagePanel("concept");setPreviewPlaying(false);setNotice("");'));
  assert.ok(hypno.includes('data-hypno-create'));
  assert.ok(hypno.includes('data-hypno-add-effects'));

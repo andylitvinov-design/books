@@ -161,6 +161,17 @@ async function exercise(engine, browserType, width) {
   // mutation is blocked before reaching either a local or deployed server.
   await context.route('**/api/**', route =>
     ['GET', 'HEAD'].includes(route.request().method()) ? route.continue() : route.abort());
+  // The cross-page privacy/visual audit cannot depend on a live external
+  // practitioner directory. Exercise its real error+Retry UI with a strict
+  // request-scoped 503; a dedicated Public Services browser suite validates
+  // successful real catalogue delivery separately. No private data or writes.
+  await context.route(/\/api\/public\/remote-energy-support-masters\?/, route => {
+    if (route.request().method() !== 'GET') return route.abort();
+    return route.fulfill({
+      status: 503, contentType: 'application/json',
+      body: JSON.stringify({ error: 'PRACTITIONERS_UNAVAILABLE' }),
+    });
+  });
   const publicDiagnostics = { pageErrors: [], requests: [], responses: [], failedRequests: [], checkpoints: [], lifecycle: [], statsResponses: [], statsFetch: [] };
   let publicPhase = 'initial';
   await context.addInitScript({ content: catalogStatsDiagnosticSource() });
@@ -277,11 +288,23 @@ async function exercise(engine, browserType, width) {
         console.info('[release-reaudit] public route ' + engine + '/' + width + ': ' + path);
         publicDiagnostics.checkpoints.push({ type: 'goto', path, from: page.url(), time: Date.now() });
         errors.length = 0;
-        const response = await page.goto(origin + path, { waitUntil: 'networkidle', timeout: 35000 });
+        // The Services catalog keeps requesting nonessential content after first paint.
+        // Use document readiness, then the existing full hydration, lifecycle,
+        // CSP, image-decoding and pending-request assertions below. No silent pass.
+        const response = await page.goto(origin + path, {
+          waitUntil: path.endsWith('/services') ? 'domcontentloaded' : 'networkidle',
+          timeout: 35000,
+        });
         console.info('[release-reaudit] navigated ' + engine + '/' + width + ': ' + path);
         assert.equal(response.status(), 200);
         await page.locator('main').first().waitFor();
         await settlePublicDocument('before-assertions');
+        if (path.endsWith('/services')) {
+          // Synthetic outage must still be handled by the actual on-screen
+          // component. No mock success and no silently hidden API failure.
+          await page.locator('[data-assist-reiki-session] [role="status"] button')
+            .first().waitFor({ state: 'attached', timeout: 10000 });
+        }
         const state = await page.evaluate(() => ({ lang: document.querySelector('main')?.lang, htmlLang: document.documentElement.lang, overflow: document.documentElement.scrollWidth - innerWidth, title: document.querySelector('h1')?.textContent, players: document.querySelectorAll('.site-video-player').length, iframesBeforeClick: document.querySelectorAll('.site-video-player iframe').length }));
         assert.equal(state.htmlLang, locale, 'Document language must match the visible page locale');
         assert.equal(state.lang || state.htmlLang, locale, 'Effective page language (including valid inheritance)');
@@ -624,14 +647,14 @@ async function exercise(engine, browserType, width) {
             document.body.append(frame);
           });
           await expect.poll(() => cspPage.evaluate(() => window.__cspViolations.includes('frame-src'))).toBe(true);
-          // Private test discovery keeps the six-dock navigation under private CSP.
-          // Check the actual private account separately, without altering this
-          // page's Back/Forward chain or reading an authenticated account.
-          const discoveryBottom = cspPage.locator('.mobile-bottom-navigation');
+          // Private test discovery uses the single seven-destination unified
+          // dock; the retired bottom navigation must NOT mount a second bar.
+          // Keep the real CSP, Profile destination and Back/Forward checks.
+          const discoveryBottom = cspPage.locator('[data-hh-unified-dock]');
           await expect(discoveryBottom).toBeVisible();
-          await expect(discoveryBottom.locator('[aria-current="page"]')).toHaveCount(1);
-          await expect(discoveryBottom.locator('[data-nav-item="profile"]')).toHaveAttribute('aria-current', 'page');
-          await expect(discoveryBottom.locator('[data-nav-item="profile"]')).toHaveAttribute('href', '/en/app/portrait');
+          await expect(discoveryBottom.locator('[data-unified-dock-item]')).toHaveCount(7);
+          await expect(discoveryBottom.locator('[data-unified-dock-item="profile"]')).toHaveAttribute('href', '/en/app/portrait');
+          await expect(cspPage.locator('.mobile-bottom-navigation')).toHaveCount(0);
           const privateContext = await cspBrowser.newContext({viewport:{width,height:900}, serviceWorkers: 'block'});
           await privateContext.route('**/api/**', route => ['GET', 'HEAD'].includes(route.request().method()) ? route.continue() : route.abort());
           const privatePage = await privateContext.newPage();
@@ -685,9 +708,11 @@ async function exercise(engine, browserType, width) {
           await expect(cspPage).toHaveURL(origin + '/en/client/tests');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'private');
           await waitForDocument();
-          await expect(cspPage.locator('.mobile-bottom-navigation')).toBeVisible();
-          await expect(cspPage.locator('.mobile-bottom-navigation [aria-current="page"]')).toHaveCount(1);
-          await expect(cspPage.locator('.mobile-bottom-navigation [data-nav-item="profile"]')).toHaveAttribute('aria-current', 'page');
+          const restoredDiscoveryBottom = cspPage.locator('[data-hh-unified-dock]');
+          await expect(restoredDiscoveryBottom).toBeVisible();
+          await expect(restoredDiscoveryBottom.locator('[data-unified-dock-item]')).toHaveCount(7);
+          await expect(restoredDiscoveryBottom.locator('[data-unified-dock-item="profile"]')).toHaveAttribute('href', '/en/app/portrait');
+          await expect(cspPage.locator('.mobile-bottom-navigation')).toHaveCount(0);
           historyPhase = 'forward-to-public-home';
           await cspPage.goForward({ waitUntil: 'domcontentloaded' });
           await assertCspPublicHome(cspPage);
