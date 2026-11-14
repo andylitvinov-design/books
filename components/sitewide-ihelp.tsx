@@ -4,12 +4,20 @@ import {useEffect,useRef,useState} from "react";
 import {usePathname} from "next/navigation";
 import Link from "next/link";
 import {MessageCircleQuestion, X} from "lucide-react";
-import {HolisticAgentChat, type HolisticAgentQuickPrompt} from "@/components/holistic-agent-chat";
+import dynamic from "next/dynamic";
+import type {HolisticAgentQuickPrompt} from "@/components/holistic-agent-chat";
 import {IHelpTopics, IHelpWelcome} from "@/components/ihelp-welcome";
 import {pageHelpFromRoute} from "@/lib/ihelp/page-context.mjs";
 import type {IHelpPageContext} from "@/lib/ihelp/page-context.mjs";
 import type {PublicLocale} from "@/lib/public-locales";
 import styles from "./sitewide-ihelp.module.css";
+
+// The heavyweight AI conversation is only needed after an explicit iHelp tap.
+// Preserve the one real chat instance, privacy gates and all conversation state.
+const HolisticAgentChat = dynamic(
+  () => import("@/components/holistic-agent-chat").then(module => module.HolisticAgentChat),
+  { ssr: false },
+);
 
 const UI={
  ru:{open:"Открыть iHelp — помощник по странице",close:"Закрыть iHelp",title:"iHelp",subtitle:"ИИ-помощник, не человек и не психотерапевт",ai:"ИИ",orders:"Заказы",clients:"Клиенты"},
