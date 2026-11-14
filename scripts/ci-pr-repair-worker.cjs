@@ -384,7 +384,7 @@ async function claim({github,core,context,number=0,expectedSha='',taskKey='',res
 }
 function validCandidate(candidate, sha) {
   return !!(candidate && candidate.head_sha === sha &&
-    (!candidate.repair_kind || ['lint','codex','free_ai'].includes(candidate.repair_kind)) &&
+    (!candidate.repair_kind || ['lint','codex','free_ai','budgeted_ai'].includes(candidate.repair_kind)) &&
     Array.isArray(candidate.files) &&
     candidate.files.length <= MAX_FILES && candidate.files.every(f=>
       f && typeof f.path === 'string' && PATH.test(f.path) &&
@@ -411,7 +411,7 @@ async function publish({github,core,context,prNumber,expectedSha,candidate,write
   const files = (await github.rest.pulls.listFiles({owner,repo,pull_number:prNumber,per_page:100,page:1})).data;
   const allowed = safeFiles(files);
   if (!allowed || candidate.files.some(f => !allowed.includes(f.path) ||
-       (candidate.repair_kind==='free_ai' && !safeFreeSourcePath(f.path))) ||
+       (['free_ai','budgeted_ai'].includes(candidate.repair_kind) && !safeFreeSourcePath(f.path))) ||
       new Set(candidate.files.map(f=>f.path)).size !== candidate.files.length)
     throw Error('HH_REPAIR_PUBLISH_UNSAFE_PATH');
   const verified = [];
@@ -496,13 +496,14 @@ async function publish({github,core,context,prNumber,expectedSha,candidate,write
      committed.parents[0]?.sha!==expectedSha)
     throw Error('HH_REPAIR_PUBLISH_PARENT_UNVERIFIED');
   const repairKind=candidate.repair_kind==='free_ai'?'free_ai':
+     candidate.repair_kind==='budgeted_ai'?'budgeted_ai':
      candidate.repair_kind==='codex'?'codex':'lint';
   const publishedStage=Number.isSafeInteger(context.runId)&&receipt?.task_key?
     stageLine({stage:'source_published',pr_number:prNumber,head_sha:expectedSha,
       run_id:context.runId,task_key:receipt.task_key,source:'verified_git_ref',
       new_sha:created.sha,at:new Date().toISOString()}):'';
   await github.rest.issues.createComment({owner,repo,issue_number:prNumber,body:
-    'HH Repair Worker: committed verified '+(repairKind==='free_ai'?'free-model source repair':repairKind==='codex'?'legacy source repair':'targeted ESLint autofix')+' ' + created.sha +
+    'HH Repair Worker: committed verified '+(repairKind==='free_ai'?'free-model source repair':repairKind==='budgeted_ai'?'budgeted Qwen source repair':repairKind==='codex'?'legacy source repair':'targeted ESLint autofix')+' ' + created.sha +
     ' for previous HEAD ' + expectedSha + '. Genuine PR synchronize should trigger Core CI; '+
     'AutoMerge is allowed only after exact-HEAD required checks pass.'+
     (receipt?'\n'+commentBody({...receipt,state:'PUBLISHED',
@@ -713,7 +714,7 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
   codeAvailable=false,codeResult='',codeStatus='',codeDetail='',
   codeVerifyResult='',codeVerifyStatus='',codeVerifyDetail='',publishResult='',
   publishStatus='',publishSha='',candidateStatus='',candidateDetail='',
-  candidateSnapshot='',modelAuditRaw='',modelAuditRunAttempt=0,dryRun=false}) {
+  candidateSnapshot='',modelAuditRaw='',modelAuditRunAttempt=0,paidStatus='',dryRun=false}) {
   const {owner,repo}=context.repo || {},fullRepo=owner+'/'+repo;
   const skip=reason=>{core.info('HH_REPAIR_OUTCOME SKIP '+reason);return {status:'skipped',reason};};
   if(dryRun || fullRepo!=='andylitvinov-design/books')return skip('AUDIT_OR_FOREIGN_REPO');
@@ -761,6 +762,14 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
     // A verified deterministic patch exists; the source publisher failed.
     // A skipped optional free-model step is NOT the causal failure.
     state='FAILED';reason='SOURCE_PUBLISH_JOB_FAILURE';
+  }else if(strategy==='code'&&paidStatus==='blocked'&&!codeAvailable){
+    state='MANUAL';reason='BUDGETED_AI_NOT_AVAILABLE_OR_POLICY_BLOCKED';
+  }else if(strategy==='code'&&paidStatus==='proposed'&&
+    codeVerifyStatus!=='ready'){
+    state='MANUAL';reason='BUDGETED_AI_CANDIDATE_NOT_VERIFIED';
+  }else if(strategy==='code'&&paidStatus==='proposed'&&
+    codeVerifyStatus==='ready'){
+    state='FAILED';reason='BUDGETED_AI_VERIFIED_BUT_NOT_PUBLISHED';
   }else if(strategy==='code'&&!codeAvailable){
     state='MANUAL';reason='FREE_AI_EXECUTOR_NOT_CONFIGURED';
   }else if(strategy==='code'&&codeResult==='skipped'){
@@ -889,7 +898,8 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
       (allowedLegacyDetails.has(candidateDetail)?candidateDetail:'PREFLIGHT_DETAIL_UNVERIFIED'):
     state==='MANUAL'||state==='FAILED'?
       agentDetail||(validCandidateDetails.has(candidateDetail)?candidateDetail:null):null;
-  const delivery=sourceDeliveryStatus({state,sourcePublished,codeAvailable});
+  const delivery=sourceDeliveryStatus({state,sourcePublished,
+    codeAvailable:codeAvailable||paidStatus==='proposed'});
   const modelAudit=normalizeModelAudit(modelAuditRaw,{number,expectedSha,
     runId:context.runId,runAttempt:modelAuditRunAttempt,taskKey});
   const modelRun=modelAudit?{...modelAudit,patch_present:codeStatus==='proposed'||modelAudit.patch_present,
@@ -905,12 +915,15 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
     legacy_snapshot_summary:state==='PREPARED'&&strategy==='legacy'&&
       detailCode==='SHALLOW_ANCESTRY_UNAVAILABLE'?
       parseLegacySnapshotSummary(candidateSnapshot):null,
-    repair_kind:publishStatus==='committed'&&candidateStatus!=='ready'?'free_ai':
+    repair_kind:publishStatus==='committed'&&candidateStatus!=='ready'?
+      (paidStatus==='proposed'?'budgeted_ai':'free_ai'):
       publishStatus==='committed'?'lint':null,
-    code_agent_configured:codeAvailable,code_provider:modelRun?.provider||null,
-    code_model:modelRun?.model||null,code_model_version:modelRun?.model_version||null,
+    code_agent_configured:codeAvailable||paidStatus==='proposed',
+    code_provider:modelRun?.provider||(paidStatus==='proposed'?'openrouter_budgeted':null),
+    code_model:modelRun?.model||(paidStatus==='proposed'?'qwen/qwen3-coder-next':null),
+    code_model_version:modelRun?.model_version||null,
     model_run:modelRun,code_job_result:codeResult||'skipped',
-    code_candidate_status:codeStatus||'skipped',
+    code_candidate_status:paidStatus==='proposed'?'proposed':codeStatus||'skipped',
     code_verify_result:codeVerifyResult||'skipped',
     code_verify_status:codeVerifyStatus||'skipped',
     claim_status:claimStatus||'unknown',claim_result:claimResult||'unknown',

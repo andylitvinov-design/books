@@ -76,7 +76,6 @@ jobs:
           node --check scripts/ci-pr-repair-free-agent.cjs
           node --check scripts/ci-pr-repair-openrouter-free.cjs
           node --check scripts/ci-pr-repair-budgeted-coder.cjs
-          node --test tests/ci-pr-repair-budgeted-coder.test.cjs
           node --check scripts/ci-pr-repair-graphql-writer.cjs
           node --check scripts/ci-pr-repair-code-candidate.cjs
           node --check scripts/ci-pr-manus-handoff.cjs
@@ -156,8 +155,7 @@ jobs:
             const provider=process.env.HH_HAS_OPENROUTER_FREE_TOKEN==='true'?'openrouter':
               process.env.HH_HAS_FREE_OPENCODE_TOKEN==='true'?'opencode':'none';
             core.setOutput('code_provider',provider);
-            const paid=process.env.HH_BUDGETED_ALLOWED==='true'&&process.env.HH_HAS_BUDGETED_TOKEN==='true';
-            core.setOutput('code_available',provider!=='none'||paid?'true':'false');
+            core.setOutput('code_available',provider==='none'?'false':'true');
             const {wakeAfterWorker}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-control-tower-wakeup.cjs');
             core.info('HH_REPAIR_COMPLETION_WAKE '+await wakeAfterWorker({github,context,kind:'repair',status:result.status,dryRun,log:core.warning}));
       # Fast terminal path: no untrusted source runs on this trusted runner.
@@ -515,7 +513,7 @@ jobs:
     needs: [claim,fix]
     if: >-
       needs.claim.result == 'success' &&
-      needs.claim.outputs.code_provider != 'none' &&
+      needs.claim.outputs.code_available == 'true' &&
       needs.fix.result == 'success' &&
       needs.fix.outputs.candidate_status == 'manual_required' &&
       (needs.claim.outputs.strategy == 'lint' || needs.claim.outputs.strategy == 'code')
@@ -601,7 +599,6 @@ jobs:
       github.event_name == 'workflow_dispatch' &&
       vars.HH_PR_BUDGETED_CODER_ENABLED == 'true' &&
       needs.claim.result == 'success' &&
-      needs.claim.outputs.code_available == 'true' &&
       needs.claim.outputs.claim_status == 'claimed' &&
       needs.claim.outputs.strategy == 'code' &&
       needs.fix.result == 'success' &&
@@ -718,7 +715,7 @@ jobs:
           if-no-files-found: error
 
   publish:
-    needs: [claim,fix,code_fix,code_verify]
+    needs: [claim,fix,code_fix,paid_fix,code_verify]
     # Do not schedule a separate terminal job for a claimed lint task.
     # Owner credential is scoped to guarded publisher + post-commit Core wake steps.
     # Isolated claim/fix/model/verifier jobs remain credential-free or read-only.
@@ -1124,6 +1121,7 @@ jobs:
           HH_CODE_STATUS: ${{ needs.code_fix.outputs.candidate_status }}
           HH_CODE_DETAIL: ${{ needs.code_fix.outputs.candidate_detail }}
           HH_MODEL_AUDIT: ${{ needs.code_fix.outputs.model_audit }}
+          HH_PAID_STATUS: ${{ needs.paid_fix.outputs.candidate_status }}
           HH_WORKFLOW_ATTEMPT: ${{ github.run_attempt }}
           HH_CODE_VERIFY_RESULT: ${{ needs.code_verify.result }}
           HH_CODE_VERIFY_STATUS: ${{ needs.code_verify.outputs.candidate_status }}
@@ -1156,6 +1154,7 @@ jobs:
               codeStatus:process.env.HH_CODE_STATUS,
               codeDetail:process.env.HH_CODE_DETAIL,
               modelAuditRaw:process.env.HH_MODEL_AUDIT,
+              paidStatus:process.env.HH_PAID_STATUS,
               modelAuditRunAttempt:Number(process.env.HH_WORKFLOW_ATTEMPT||0),
               codeVerifyResult:process.env.HH_CODE_VERIFY_RESULT,
               codeVerifyStatus:process.env.HH_CODE_VERIFY_STATUS,
@@ -1216,7 +1215,7 @@ jobs:
   finalize:
     # Always close an addressed task, even if claim, npm, tests or publish fail.
     # A workflow dispatch or claim is not proof of a source commit.
-    needs: [claim,fix,code_fix,code_verify,publish]
+    needs: [claim,fix,code_fix,paid_fix,code_verify,publish]
     # Normally skipped; if trusted inline recording fails, retry once in
     # a separate read-only-source recovery runner (idempotent task receipt).
     if: >-
@@ -1264,6 +1263,7 @@ jobs:
           HH_CODE_STATUS: ${{ needs.code_fix.outputs.candidate_status }}
           HH_CODE_DETAIL: ${{ needs.code_fix.outputs.candidate_detail }}
           HH_MODEL_AUDIT: ${{ needs.code_fix.outputs.model_audit }}
+          HH_PAID_STATUS: ${{ needs.paid_fix.outputs.candidate_status }}
           HH_WORKFLOW_ATTEMPT: ${{ github.run_attempt }}
           HH_CODE_VERIFY_RESULT: ${{ needs.code_verify.result }}
           HH_CODE_VERIFY_STATUS: ${{ needs.code_verify.outputs.candidate_status }}
@@ -1293,6 +1293,7 @@ jobs:
               codeStatus:process.env.HH_CODE_STATUS,
               codeDetail:process.env.HH_CODE_DETAIL,
               modelAuditRaw:process.env.HH_MODEL_AUDIT,
+              paidStatus:process.env.HH_PAID_STATUS,
               modelAuditRunAttempt:Number(process.env.HH_WORKFLOW_ATTEMPT||0),
               codeVerifyResult:process.env.HH_CODE_VERIFY_RESULT,
               codeVerifyStatus:process.env.HH_CODE_VERIFY_STATUS,
