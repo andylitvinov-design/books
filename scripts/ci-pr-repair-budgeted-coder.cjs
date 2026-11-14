@@ -194,6 +194,7 @@ async function propose({github,context,core,apiKey,env=process.env,fetcher=globa
  const payload={model:MODEL,messages,temperature:0,max_tokens:MAX_OUTPUT,
   response_format:{type:'json_object'},provider:{allow_fallbacks:false,
    max_price:{prompt:prices.input,completion:prices.output}},usage:{include:true}};
+ const modelStartedAt=new Date().toISOString();
  let completion;
  try{completion=await getJson(fetcher,'https://openrouter.ai/api/v1/chat/completions',{
   method:'POST',headers:{...auth,'Content-Type':'application/json'},body:JSON.stringify(payload)});}
@@ -208,13 +209,20 @@ async function propose({github,context,core,apiKey,env=process.env,fetcher=globa
   typeof completion.choices[0]?.message?.content!=='string')fail('COST_OR_RESPONSE_UNVERIFIED');
  const candidate=cleanCandidate(completion.choices[0].message.content,
   source,file,response.sha,scope.sha);
+ const modelResponseAt=new Date().toISOString();
  fs.writeFileSync('candidate-raw.json',JSON.stringify(candidate),{mode:0o600});
  await github.rest.issues.createComment({owner,repo,issue_number:ledgerIssue,
   body:receiptLine({pr:prNumber,sha:scope.sha,month,state:'SETTLED',
    reserved_usd:RESERVE,actual_usd:actual,run_id:runId})});
  core.info('HH_BUDGETED_CODER_CANDIDATE '+JSON.stringify({pr:prNumber,
   model:MODEL,cost_usd:actual,verified_by:'pending_independent_code_verify'}));
- return {status:'proposed',model:MODEL,charged_usd:actual};
+ return {status:'proposed',model:MODEL,charged_usd:actual,
+  audit:{schema:'HH_PR_BUDGETED_MODEL_RUN_V1',provider:'openrouter_budgeted',
+   model:MODEL,pr_number:prNumber,source_head:scope.sha,
+   task_key:env.REPAIR_TASK_KEY,run_id:runId,
+   run_attempt:Number(process.env.GITHUB_RUN_ATTEMPT||0),
+   model_call_started_at:modelStartedAt,response_received_at:modelResponseAt,
+   cost_usd:actual,result:'PATCH_PROPOSED'}};
 }
 if(require.main===module){
  if(process.argv[2]==='context'){
