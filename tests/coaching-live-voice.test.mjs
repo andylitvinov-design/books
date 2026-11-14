@@ -227,7 +227,7 @@ test('My Coach speech is visible as text while recording and safely remains edit
   }
   for(const marker of ['heardRef.current=visible','finished=visible',
     'transcriptRef.current?.(visible)','const recovered=heardRef.current.trim()',
-    'draftRef.current?.(appendSpokenAnswer(draftAtStartRef.current,recovered,1200))','draftRef.current?.(text)','void deliver(appendSpokenAnswer(draftAtStartRef.current,finished,1200))']){
+    'void deliver(appendSpokenAnswer(draftAtStartRef.current,recovered,1200))','draftRef.current?.(text)','void deliver(appendSpokenAnswer(draftAtStartRef.current,finished,1200))']){
     assert.ok(loop.includes(marker),marker)
   }
   assert.match(css,/\.liveTranscript/)
@@ -334,4 +334,32 @@ test('My Coach has private default TTS, no stale transcription, and tap-to-recov
   assert.ok(media.includes('return {cancel,resume,run,audio}'))
   assert.ok(ui.includes('trainingUseConsent:true'))
   assert.doesNotMatch(loop,/api\.fish\.audio|texttospeech\.googleapis\.com/)
+})
+
+test('iOS Safari naturally ending with interim-only speech commits another user turn exactly once',()=>{
+  const loop=source('components/my-coach-speech-loop.jsx')
+  const onend=loop.slice(loop.indexOf('    recognition.onend=()=>{'),loop.indexOf('    const startRecognition='))
+  assert.ok(onend.includes("if(finished.length>=3)void deliver(appendSpokenAnswer(draftAtStartRef.current,finished,1200))"))
+  assert.ok(onend.includes("if(recovered.length>=3){"))
+  assert.ok(onend.includes("void deliver(appendSpokenAnswer(draftAtStartRef.current,recovered,1200))"))
+  assert.ok(!onend.includes("draftRef.current?.(appendSpokenAnswer(draftAtStartRef.current,recovered,1200))"))
+  const stopped=loop.slice(loop.indexOf('  function stopVoice(){'),loop.indexOf('  stopRef.current=stopVoice'))
+  assert.ok(stopped.includes("draftRef.current?.(appendSpokenAnswer(draftAtStartRef.current,heardRef.current.trim(),1200))"))
+  assert.ok(!stopped.includes('void deliver('), 'explicit Stop keeps the words editable but does not send')
+})
+
+test('a silent iPhone recognizer offers one-tap retry while natural-voice consent remains accessible',()=>{
+  const loop=source('components/my-coach-speech-loop.jsx')
+  const ui=source('components/my-coach-live-dialogue.jsx')
+  assert.ok(loop.includes('setMicStalled(true)'))
+  assert.ok(loop.includes("micStalled&&phaseRef.current==='listening'"))
+  assert.ok(loop.includes('setMicStalled(false)'))
+  assert.ok(loop.includes("retryMic:'Перезапустить микрофон'"))
+  assert.ok(loop.includes('aria-label={retryMic?t.retryMic:'))
+  const checkbox=ui.slice(ui.indexOf('<label><input type="checkbox" checked={cloudAgreed}'),
+    ui.indexOf('<label><input type="checkbox" checked={cloudAgreed}')+180)
+  assert.ok(checkbox.includes('onChange={event=>setCloudAgreed(event.target.checked)}'))
+  assert.ok(!checkbox.includes('disabled='), 'active/ready STT cannot lock the Fish consent checkbox')
+  assert.ok(loop.includes('(!cloudAgreed||!cloudAvailable)&&(cloudControllerRef.current||cloudPlayerRef.current)'),
+    'revoking cloud consent still stops the private audio request')
 })

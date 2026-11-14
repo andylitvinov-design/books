@@ -10,7 +10,7 @@ import {startCoachingMp3Playback} from '@/lib/personal-coaching/streamed-mp3-pla
 const speechLanguages={en:'en-GB',ru:'ru-RU',es:'es-ES'}
 
 const words={
-  en:{start:'Talk by voice',stop:'Stop voice',listening:'Listening…',thinking:'Coach is thinking…',speaking:'Coach is speaking…',
+  en:{start:'Talk by voice',stop:'Stop voice',retryMic:'Retry microphone',listening:'Listening…',thinking:'Coach is thinking…',speaking:'Coach is speaking…',
     network:'Browser speech service is offline. Your words remain editable below.',noMicrophone:'No microphone found. Check device permissions.',language:'Browser speech does not support this language. Choose EN or RU.',
     unsupported:'Voice recognition is unavailable in this browser. Try opening this page in Safari, or type your message.',blocked:'Microphone denied. Check Safari/browser permissions.',
     short:'I did not catch that. Tap the microphone to try again.',review:'Voice saved as a draft. Review and send it below.',restart:'Tap the microphone for the next turn.',
@@ -18,7 +18,7 @@ const words={
     privacy:'Microphone audio may be processed by your browser’s speech-recognition provider. We do not store recordings. Press Stop at any time.',
     fallback:'Natural voice unavailable. The coach question stays visible.',tapToHear:'Tap to hear the coach',preparing:'Preparing voice…',
     iosCue:'Ready to listen.',iosPreparing:'Preparing iPhone microphone…',iosSilent:'Safari may not be hearing. Your draft is editable; try again or reopen Safari.'},
-  ru:{start:'Говорить голосом',stop:'Остановить голос',listening:'Слушаю…',thinking:'Коуч думает…',speaking:'Коуч говорит…',
+  ru:{start:'Говорить голосом',stop:'Остановить голос',retryMic:'Перезапустить микрофон',listening:'Слушаю…',thinking:'Коуч думает…',speaking:'Коуч говорит…',
     network:'Распознавание браузера недоступно. Ваши слова остаются в поле ответа.',noMicrophone:'Микрофон не найден. Проверьте настройки устройства.',language:'Браузер не поддерживает этот язык. Выберите RU или EN.',
     unsupported:'Голосовой ввод недоступен в этом браузере. Попробуйте открыть страницу в Safari или написать сообщение.',
     blocked:'Доступ к микрофону запрещён. Разрешите его в Safari или настройках браузера.',
@@ -27,7 +27,7 @@ const words={
     privacy:'Браузер может передавать аудио поставщику распознавания речи. Мы не сохраняем записи. Разговор можно остановить в любой момент.',
     fallback:'Естественный голос недоступен. Вопрос остаётся на экране.',tapToHear:'Нажмите, чтобы услышать коуча',preparing:'Готовлю голос…',
     iosCue:'Я вас слушаю.',iosPreparing:'Подготавливаю микрофон iPhone…',iosSilent:'Safari может не слышать речь. Текст можно отредактировать; попробуйте ещё раз или перезапустите Safari.'},
-  es:{start:'Hablar por voz',stop:'Detener voz',listening:'Escuchando…',thinking:'El coach piensa…',speaking:'El coach habla…',
+  es:{start:'Hablar por voz',stop:'Detener voz',retryMic:'Reiniciar micrófono',listening:'Escuchando…',thinking:'El coach piensa…',speaking:'El coach habla…',
     network:'El reconocimiento del navegador no está disponible. El texto dictado sigue abajo.',noMicrophone:'No se encontró un micrófono. Comprueba los permisos.',language:'El navegador no reconoce este idioma. Elige EN o RU.',
     unsupported:'El reconocimiento de voz no está disponible aquí. Prueba abrir la página en Safari o escribe tu mensaje.',
     blocked:'Micrófono bloqueado. Actívalo en Safari o en los ajustes del navegador.',
@@ -43,6 +43,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   const [phase,setPhase]=useState('idle')
   const [notice,setNotice]=useState('')
   const [supported,setSupported]=useState(null)
+  const [micStalled,setMicStalled]=useState(false)
   const phaseRef=useRef('idle')
   const activeRef=useRef(false)
   const recognitionRef=useRef(null)
@@ -102,6 +103,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     }
   }
   function stopVoice(){
+    setMicStalled(false)
     const cancelTurn=phaseRef.current==='thinking'
     if(['starting','listening'].includes(phaseRef.current)&&heardRef.current.trim().length>=3){
       draftRef.current?.(appendSpokenAnswer(draftAtStartRef.current,heardRef.current.trim(),1200))
@@ -141,6 +143,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
 
   function startListening(){
     if(!activeRef.current)return
+    setMicStalled(false)
     const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition
     const ios27=ios27NeedsSpeechRecovery(window.navigator)
     if(!Recognition){setSupported(false);stopVoice();setNotice(t.unsupported);return}
@@ -164,13 +167,16 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       if(ios27){
         if(iosResultTimerRef.current)clearTimeout(iosResultTimerRef.current)
         iosResultTimerRef.current=setTimeout(()=>{
-          if(recognitionRef.current===recognition&&activeRef.current&&!heardRef.current.trim())
+          if(recognitionRef.current===recognition&&activeRef.current&&!heardRef.current.trim()){
+            setMicStalled(true)
             setNotice(t.iosSilent)
+          }
         },9000)
       }
     }
     recognition.onresult=event=>{
       if(recognitionRef.current!==recognition||!activeRef.current)return
+      setMicStalled(false)
       if(phaseRef.current==='starting')changePhase('listening')
       if(iosResultTimerRef.current){clearTimeout(iosResultTimerRef.current);iosResultTimerRef.current=null}
       const {final,interim,visible}=readDictationResults(event.results,1200)
@@ -190,6 +196,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     }
     recognition.onerror=event=>{
       if(recognitionRef.current!==recognition)return
+      setMicStalled(false)
       recognitionRef.current=null
       if(event.error==='aborted'&&!activeRef.current)return
       if(heardRef.current.trim().length>=3)draftRef.current?.(appendSpokenAnswer(draftAtStartRef.current,heardRef.current.trim(),1200))
@@ -205,16 +212,20 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       if(recognitionRef.current!==recognition)return
       recognitionRef.current=null
       if(!activeRef.current)return
+      setMicStalled(false)
       if(finished.length>=3)void deliver(appendSpokenAnswer(draftAtStartRef.current,finished,1200))
       else{
         const recovered=heardRef.current.trim()
         if(recovered.length>=3){
+          // Safari sometimes ends after interim words without a final event.
+          // A natural recognizer end commits that one turn; Stop/error never do.
           lastHeardRef.current=recovered
-          draftRef.current?.(appendSpokenAnswer(draftAtStartRef.current,recovered,1200))
+          void deliver(appendSpokenAnswer(draftAtStartRef.current,recovered,1200))
+        }else{
+          transcriptRef.current?.('')
+          heardRef.current=''
+          silence();changePhase('idle');setNotice(t.short)
         }
-        transcriptRef.current?.('')
-        heardRef.current=''
-        silence();changePhase('idle');setNotice(recovered.length>=3?t.review:t.short)
       }
     }
     const startRecognition=()=>{
@@ -406,6 +417,15 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   }
 
   function toggle(){
+    if(micStalled&&phaseRef.current==='listening'){
+      // One deliberate iPhone tap restarts a recognizer stuck with no words.
+      stopVoice()
+      if(!canStart||!enabled)return
+      activeRef.current=true
+      generationRef.current+=1
+      startListening()
+      return
+    }
     if(phaseRef.current==='ready'&&blockedResumeRef.current){
       blockedResumeRef.current()
       return
@@ -419,18 +439,18 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     startListening()
   }
 
-  const active=phase!=='idle',ready=phase==='ready'
+  const active=phase!=='idle',ready=phase==='ready',retryMic=micStalled&&phase==='listening'
   return <div className={styles.root} data-my-coach-voice={phase}>
     <button type="button" className={styles.button}
       onClick={toggle} disabled={!active&&!canStart}
-      aria-pressed={active&&!ready} aria-label={ready?t.tapToHear:active?t.stop:t.start}>
+      aria-pressed={active&&!ready} aria-label={retryMic?t.retryMic:ready?t.tapToHear:active?t.stop:t.start}>
       {ready?<Volume2 size={19} aria-hidden="true"/>:active?<MicOff size={19} aria-hidden="true"/>:<Mic size={19} aria-hidden="true"/>}
-      <span>{ready?t.tapToHear:active?t.stop:t.start}</span>
+      <span>{retryMic?t.retryMic:ready?t.tapToHear:active?t.stop:t.start}</span>
       {phase==='speaking'&&<Volume2 size={17} aria-hidden="true"/>}
     </button>
     {supported===false&&<p className={styles.note} role="status">{t.unsupported}</p>}
     {active&&<span className={styles.status} role="status">
-      {ready?t.tapToHear:phase==='loading'?t.preparing:phase==='starting'||phase==='listening'?t.listening:phase==='thinking'?t.thinking:t.speaking}
+      {retryMic?t.retryMic:ready?t.tapToHear:phase==='loading'?t.preparing:phase==='starting'||phase==='listening'?t.listening:phase==='thinking'?t.thinking:t.speaking}
     </span>}
     {notice&&<p className={styles.note} role="status">{notice}</p>}
     <p className={styles.privacy} data-my-coach-voice-privacy>{t.privacy}</p>

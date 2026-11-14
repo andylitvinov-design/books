@@ -470,7 +470,6 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       </section>
       {cloudAvailable&&consent&&!authRequired&&<div className={styles.naturalVoiceRow}>
         <label><input type="checkbox" checked={cloudAgreed}
-          disabled={voiceState.phase!=='idle'}
           onChange={event=>setCloudAgreed(event.target.checked)}/>
           <span>{providerCopy.label}</span></label>
         <details><summary>{providerCopy.about}</summary>
