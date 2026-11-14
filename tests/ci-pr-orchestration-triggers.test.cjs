@@ -327,9 +327,10 @@ test('trusted PR synchronize cancels only ancestor-proven stale HEADs, never arm
   const enable=native.split('  enable:\n')[1]?.split('  recover-interrupted-core:\n')[0];
   const prune=native.split(/^  prune-head:\s*$/m)[1];
   assert.ok(enable && prune, 'both isolated jobs must remain');
-  assert.ok(native.includes('types: [opened, ready_for_review, synchronize]'));
-  assert.ok(!native.includes('types: [opened, reopened, ready_for_review, synchronize]'));
-  assert.ok(enable.includes("github.event.action != 'synchronize'"), 'new HEAD must not arm before Core success');
+  assert.ok(native.includes('types: [synchronize]'), 'only changed source wakes Native PR-target janitor');
+  assert.ok(!native.includes('types: [opened, ready_for_review, synchronize]'));
+  assert.ok(!enable.includes("github.event_name == 'pull_request_target'"),
+    'Native AutoMerge must not arm or run on opened/Ready before exact-HEAD Core');
   assert.ok(enable.includes("github.event.workflow_run.conclusion == 'success'"), 'post-Core ARM retained');
   assert.ok(prune.includes("github.event.action == 'synchronize'"));
   assert.ok(prune.includes("github.event.pull_request.base.ref == 'codex/public-book-library'"));
@@ -378,21 +379,36 @@ test('successful Core CI refills capacity through the direct event runner withou
 });
 
 
-test('opened and promoted-to-Ready PRs record readiness but defer heavyweight merge checks until Core succeeds',()=>{
-  const s=read('hh-native-auto-merge');
-  const ready=s.indexOf('source:opened?"pr_opened_ready":"ready_event_observed"');
-  const defer=s.indexOf('DEFER_READY_EVENT_UNTIL_EXACT_HEAD_CORE_SUCCESS');
-  const wait=s.indexOf('for (const delayMs of [1500, 3000, 5000, 8000])');
-  const core=s.indexOf('const currentRuns = [];');
-  assert.ok(ready>0 && defer>ready && wait>defer && core>wait,
-    'authenticated opened Ready receipt must precede early return before expensive merge polling');
-  assert.ok(s.includes("if: ${{ github.event_name != 'pull_request_target' || (github.event.action != 'opened' && github.event.action != 'ready_for_review') }}"),
-    'opened/Ready events do not consume a second production checkout');
-  assert.ok(s.includes('["opened","ready_for_review"].includes(context.payload.action)'),
-    'new Ready events defer to freshly completed Core rather than reusing an old green run');
-  assert.ok(s.includes("github.event.workflow_run.conclusion == 'success'"));
-  assert.ok(s.includes("steps.safety.outputs.eligible == 'true'"),
-    'mandatory protected merge guard must remain');
+test('opened/Ready telemetry shares Watchdog; native merge still waits for exact Core',()=>{
+  const native=read('hh-native-auto-merge');
+  const watchdog=read('hh-pr-ten-minute-watchdog');
+  const helper=readFileSync('scripts/ci-pr-conflict-event-handoff.cjs','utf8');
+  const enable=native.split('  enable:\n')[1]?.split('  recover-interrupted-core:\n')[0];
+  assert.ok(enable,'trusted native enable gate must remain');
+  assert.ok(native.includes('types: [synchronize]'),
+    'native PR-target only cancels superseded source-HEAD CI');
+  assert.ok(!enable.includes("github.event_name == 'pull_request_target'"),
+    'opened/Ready never arms native merge without new Core');
+  assert.ok(watchdog.includes('publishReadyStage({github,context})'),
+    'already running Watchdog PR event must preserve Ready evidence');
+  assert.ok(helper.includes("['opened','ready_for_review']"),
+    'only actual opened/Ready can be recorded');
+  assert.ok(helper.includes("source:opened?'pr_opened_ready':'ready_event_observed'"),
+    'original authentic source types preserved');
+  assert.ok(helper.includes('live.head?.sha!==eventPr.head.sha'),
+    'Ready receipt requires exact same source HEAD');
+  assert.ok(helper.includes("require('./ci-pr-stage-receipts.cjs')"),
+    'use authenticated timestamp format, never a fake check');
+  assert.ok(helper.includes('createComment'),
+    'Ready evidence remains a metadata-only comment');
+  assert.ok(native.includes("github.event.workflow_run.conclusion == 'success'"),
+    'Native AutoMerge remains event-driven on completed successful Core');
+  assert.ok(native.includes("steps.safety.outputs.eligible == 'true'"),
+    'mandatory protected lease/reviewer/Guard still checked');
+  assert.ok(native.includes('const currentRuns = [];'),
+    'exact-head Core history pagination retained');
+  assert.ok(!native.includes('DEFER_READY_EVENT_UNTIL_EXACT_HEAD_CORE_SUCCESS'),
+    'removed standalone Ready-only runner');
 });
 test('watchdog contracts execute the immutable-base freshness suite once per CI wave',()=>{
   const source=read('hh-pr-watchdog-contract-ci');

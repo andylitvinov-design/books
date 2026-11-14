@@ -21,6 +21,39 @@ function trustedConflictEvent(context){
   pr.state==='open'&&!pr.draft&&pr.base?.ref===PROD &&
   pr.head?.repo?.full_name===REPO&&SHA.test(pr.head?.sha||''));
 }
+// Exact-HEAD Ready timing piggybacks on the existing trusted PR-event runner.
+// This never dispatches CI, changes a source branch, authorizes merge or deploys.
+async function publishReadyStage({github,context}={}) {
+ const skipped=reason=>({status:'SKIPPED',reason});
+ if(!trustedConflictEvent(context)||
+    !['opened','ready_for_review'].includes(context.payload.action)||
+    !Number.isSafeInteger(context.runId)||context.runId<1)
+   return skipped('NOT_VERIFIED_READY_EVENT');
+ if(typeof github?.rest?.pulls?.get!=='function'||
+    typeof github?.rest?.issues?.createComment!=='function')
+   return skipped('GITHUB_API_UNAVAILABLE');
+ const {owner,repo}=context.repo,eventPr=context.payload.pull_request;
+ const live=(await github.rest.pulls.get({owner,repo,pull_number:eventPr.number})).data;
+ if(!live||live.number!==eventPr.number||live.state!=='open'||live.draft||
+    live.user?.login!==owner||live.base?.ref!==PROD||
+    live.head?.repo?.full_name!==REPO||
+    live.head?.sha!==eventPr.head.sha||live.head?.ref!==eventPr.head.ref)
+   return skipped('SOURCE_HEAD_OR_OWNER_CHANGED');
+ const opened=context.payload.action==='opened';
+ const {stageLine}=require('./ci-pr-stage-receipts.cjs');
+ const line=stageLine({stage:'ready',pr_number:eventPr.number,
+   head_sha:live.head.sha,run_id:context.runId,
+   at:opened?eventPr.created_at:new Date().toISOString(),
+   source:opened?'pr_opened_ready':'ready_event_observed'});
+ const posted=await github.rest.issues.createComment({
+   owner,repo,issue_number:eventPr.number,
+   body:line+'\nReady event observed on verified PR HEAD; not CI-green or merge proof.'
+ });
+ if(!Number.isSafeInteger(posted?.data?.id))
+   return {status:'WRITE_UNVERIFIED',prNumber:eventPr.number};
+ return {status:'RECORDED',prNumber:eventPr.number,headSha:live.head.sha};
+}
+
 function currentDirty(pr,eventPr){
  return Boolean(pr&&pr.number===eventPr.number&&pr.state==='open'&&!pr.draft&&
   pr.base?.ref===PROD&&pr.head?.repo?.full_name===REPO&&
@@ -90,4 +123,4 @@ async function run({github,core,context,dryRun=false,dispatchRun=null,readPr=nul
  }
  return result;
 }
-module.exports={trustedConflictEvent,currentDirty,run};
+module.exports={trustedConflictEvent,currentDirty,publishReadyStage,run};

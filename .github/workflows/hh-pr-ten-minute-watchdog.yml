@@ -361,6 +361,17 @@ jobs:
           script: |
             // Piggyback on THIS existing trusted event job; do not start
             // a separate workflow, CI check, queue scan or scheduled task.
+            // Preserve authenticated Ready timing in this ALREADY running
+            // conflict/label PR event runner; no new workflow or Core wave.
+            try {
+              const {publishReadyStage}=require(process.env.GITHUB_WORKSPACE+
+                '/scripts/ci-pr-conflict-event-handoff.cjs');
+              const ready=await publishReadyStage({github,context});
+              core.info('HH_PR_READY_STAGE_HANDOFF '+JSON.stringify(ready));
+            } catch(error) {
+              core.warning('HH_PR_READY_STAGE_UNAVAILABLE '+
+                String(error?.message||error).slice(0,150));
+            }
             const {run:seedDirection}=require(process.env.GITHUB_WORKSPACE+
               '/scripts/ci-pr-direction-event-label.cjs');
             try {
