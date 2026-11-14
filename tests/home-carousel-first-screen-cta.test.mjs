@@ -88,7 +88,9 @@ test("priced consultation is the visible first-slide action in EN/RU/ES without 
   assert.match(css, /\.hero\[data-home-section-carousel\] \.viewButton\[data-home-first-screen-cta="paid"\]/);
   assert.match(browser, /data-home-first-screen-cta="paid"/);
   assert.match(browser, /await paid\.waitFor\(\{ state: 'visible'/);
-  assert.match(browser, /book\.y \+ book\.height <= 844 - 72/);
+  assert.match(browser, /data-profile-video-hero/);
+  assert.match(browser, /data-my-space-topics/);
+  assert.doesNotMatch(browser, /book\.y \+ book\.height <= 844 - 72/);
   assert.doesNotMatch(browser, /data-home-quick-booking|data-home-quick-cta/);
   assert.doesNotMatch(carousel, /data-home-quick-booking|data-home-quick-cta/);
 });
