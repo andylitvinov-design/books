@@ -8,6 +8,7 @@ const { expect } = require((process.env.HH_PLAYWRIGHT_PACKAGE || "playwright") +
 import assert from "node:assert/strict";
 import { inferAssistPreferences } from "../lib/assist/service-match.mjs";
 import { rankAssistProducts } from "../lib/assist/product-recommendations.mjs";
+import { rankDiscoveryVideos } from "../lib/video-discovery/ranker.mjs";
 import { telegramServiceRequestUrl } from "../lib/assist/telegram-business-request.mjs";
 import { mkdir, writeFile } from "node:fs/promises";
 
@@ -221,6 +222,10 @@ try {
     assert.equal(await assist.locator('input[type="email"],input[type="tel"]').count(), 0,
       "Assist cannot silently collect contact details");
 
+    // The public MyTube endpoint accepts locale only; no private question text.
+    const publishedVideoPending=page.waitForResponse(response=>
+      response.url().includes("/api/assist/public-mytube?locale="+locale) &&
+      response.request().method()==="GET",{timeout:25000});
     // One issue enters a user bubble, followed by a helper reply and one question.
     await topics.first().click();
     await expect(conversation.locator("[data-assist-topic-suggestions]")).toHaveCount(0);
@@ -230,6 +235,33 @@ try {
     await expect(log.locator("a[data-assist-recommendation]")).toHaveCount(0);
     await expect(question).toHaveValue("");
     await visible(shelf.locator("#assist-best-three-title"));
+    const publishedVideoResponse=await publishedVideoPending;
+    const publishedVideoUrl=new URL(publishedVideoResponse.url());
+    assert.equal(publishedVideoUrl.pathname,"/api/assist/public-mytube");
+    assert.equal(publishedVideoUrl.search,"?locale="+locale,
+      "No private question text is sent to MyTube");
+    assert.equal(publishedVideoResponse.status(),200);
+    const publicVideos=await publishedVideoResponse.json();
+    assert.ok(Array.isArray(publicVideos?.videos),"Published video catalog must be an array");
+    const expectedVideos=rankDiscoveryVideos(publicVideos.videos,{goal:"stress",sort:"for-you"}).slice(0,3);
+    const videoShelf=assist.locator("[data-assist-mytube]");
+    await visible(videoShelf);
+    await expect(videoShelf.locator("[data-assist-mytube-more]"))
+      .toHaveAttribute("href","/"+locale+"/mytube?goal=stress");
+    const videoCards=videoShelf.locator("[data-assist-mytube-card]");
+    await expect(videoCards).toHaveCount(expectedVideos.length,{timeout:25000});
+    assert.equal(new Set(expectedVideos.map(video=>video.youtubeId)).size,expectedVideos.length,
+      "MyTube recommendations must use distinct published YouTube identifiers");
+    for(const video of expectedVideos){
+      const card=videoShelf.locator('[data-assist-mytube-card="'+video.youtubeId+'"]');
+      await expect(card).toHaveCount(1);
+      const links=card.locator("a[href]");
+      await expect(links).toHaveCount(2);
+      for(const link of [links.first(),links.last()])
+        await expect(link).toHaveAttribute("href","/"+locale+"/mytube?video="+video.youtubeId);
+      const bounds=await links.last().boundingBox();
+      assert.ok(bounds&&bounds.height>=44,"MyTube Watch target must remain accessible");
+    }
     const expectedStress = rankAssistProducts("stress", {});
     const actualStress = await bestCards.evaluateAll(nodes=>
       nodes.map(node=>node.getAttribute("data-assist-best-card")));
@@ -325,6 +357,7 @@ try {
       locale === "es" ? "Quiero morir" : "I want to kill myself");
     await submit.click();
     await visible(log.locator('[role="alert"]'));
+    await expect(assist.locator("[data-assist-mytube]")).toHaveCount(0);
     await expect(shelf).toHaveCount(0);
     await expect(log.locator("a[data-assist-recommendation]")).toHaveCount(0);
     await assertNoDevIssueOverlay(page, locale + "/services/assist/" + width);

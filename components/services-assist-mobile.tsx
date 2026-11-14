@@ -9,6 +9,7 @@ import { inferAssistPreferences, nextAssistQuestion, rankAssistOffers } from "@/
 import type { AssistPreferences } from "@/lib/assist/service-match.mjs";
 import styles from "./services-assist-mobile.module.css";
 import { AssistTopRecommendations } from "./assist-top-recommendations";
+import { ServicesAssistMyTube } from "./services-assist-mytube";
 
 type Focus = "stress" | "relationships" | "energy" | "health" | "work" | "growth" | "general";
 const routes = {
@@ -245,6 +246,7 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
     <p className={styles.privacy}>{t.privacy}</p>
     {!crisis&&selection?<AssistTopRecommendations locale={locale} focus={selection.focus} preferences={preferences}
       priorityIds={consultantPriority} matchingIds={suggestions.map(({id})=>id)} noMatchLabel={t.noOffers}/>:null}
+    {!crisis&&selection?<ServicesAssistMyTube locale={locale} focus={selection.focus} question={selection.text}/>:null}
     <section className={styles.tools} aria-labelledby="assist-tools-title">
       <h2 id="assist-tools-title">{t.tools}</h2><p>{t.browse}</p>
       <div className={styles.toolGrid}>{toolList.slice(0,expandedTools?toolList.length:4).map((key)=>{

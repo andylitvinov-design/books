@@ -386,3 +386,109 @@
  .root[data-session-visual-v3] .captionsControl,.root[data-session-visual-v3] .keyboardControl,.root[data-session-visual-v3] .replayControl,.root[data-session-visual-v3] .endControl{max-width:48px}
  .root[data-session-visual-v3] .sessionHeroCopy{width:61%}
 }
+
+/* The compact avatar is hidden on phones. Animate a feathered mouth layer
+   directly over the existing large 328x456 hero photo during real speech.
+   This is an approximation, not phoneme-accurate lip sync. */
+@media(max-width:699px) and (prefers-reduced-motion:no-preference){
+  .root[data-session-visual-v2] .sessionPortrait[data-persona=mira]{--hh-hero-mouth-image:url('/images/holistic-house/my-coach-motion/mira-still.webp');--hh-hero-mouth-y:57%}
+  .root[data-session-visual-v2] .sessionPortrait[data-persona=max]{--hh-hero-mouth-image:url('/images/holistic-house/my-coach-motion/max-still.webp');--hh-hero-mouth-y:58%}
+  .root[data-session-visual-v2] .sessionPortrait[data-persona=sofia]{--hh-hero-mouth-image:url('/images/holistic-house/my-coach-motion/sofia-still.webp');--hh-hero-mouth-y:56%}
+  .root[data-session-visual-v2] .sessionPortrait[data-persona=alex]{--hh-hero-mouth-image:url('/images/holistic-house/my-coach-motion/alex-still.webp');--hh-hero-mouth-y:58%}
+  .root[data-session-visual-v2] .sessionPortrait[data-persona=lea]{--hh-hero-mouth-image:url('/images/holistic-house/my-coach-motion/lea-still.webp');--hh-hero-mouth-y:57%}
+  .root[data-session-visual-v2] .sessionPortrait[data-persona=noah]{--hh-hero-mouth-image:url('/images/holistic-house/my-coach-motion/noah-still.webp');--hh-hero-mouth-y:57%}
+  .root[data-session-visual-v2] .sessionPortrait[data-persona=iris]{--hh-hero-mouth-image:url('/images/holistic-house/my-coach-motion/iris-still.webp');--hh-hero-mouth-y:57%}
+  .root[data-session-visual-v2] .sessionPortrait[data-persona=ray]{--hh-hero-mouth-image:url('/images/holistic-house/my-coach-motion/ray-still.webp');--hh-hero-mouth-y:58%}
+  .root[data-session-visual-v2] .sessionHero[data-voice-phase='speaking'] .sessionPortrait[data-persona]::after{
+    content:"";position:absolute;right:0;top:-9%;height:118%;aspect-ratio:328/456;
+    background-image:var(--hh-hero-mouth-image);background-position:center;
+    background-size:100% 100%;background-repeat:no-repeat;pointer-events:none;
+    transform-origin:50% var(--hh-hero-mouth-y,57%);
+    -webkit-mask-image:radial-gradient(ellipse 23% 7% at 50% var(--hh-hero-mouth-y,57%),#000 40%,transparent 95%);
+    mask-image:radial-gradient(ellipse 23% 7% at 50% var(--hh-hero-mouth-y,57%),#000 40%,transparent 95%);
+    animation:hh-hero-mouth-speaking .32s ease-in-out infinite alternate;
+  }
+  @keyframes hh-hero-mouth-speaking{from{transform:scaleY(1)}to{transform:scaleY(1.16)}}
+}
+
+
+/* iPhone voice-layout regression fix (Ray/Mira and every selected persona).
+   ASR text must live only in the transcript. State/error feedback is a bounded
+   overlay inside this card, never a sixth grid row or a narrow text column. */
+@media(max-width:699px){
+  .root[data-session-visual-v3] .voiceControls{
+    box-sizing:border-box;
+    width:100%;
+    max-width:100%;
+    min-width:0;
+    height:147px;
+    min-height:147px;
+    max-height:147px;
+    grid-template-rows:92px;
+    align-items:center;
+    padding:8px 6px 39px;
+    overflow:visible;
+  }
+  .root[data-session-visual-v3] .voiceCenter{
+    position:relative;
+    align-self:start;
+    height:92px;
+    min-height:0;
+    min-width:0;
+    max-width:100%;
+  }
+  .root[data-session-visual-v3] .voiceCenter :global([data-my-coach-voice]){
+    position:relative;
+    box-sizing:border-box;
+    display:flex;
+    flex-direction:column;
+    flex-wrap:nowrap;
+    justify-content:center;
+    align-items:center;
+    gap:0;
+    width:100%;
+    max-width:100%;
+    height:92px;
+    min-height:92px;
+    margin:0;
+    padding:0;
+    overflow:visible;
+  }
+  .root[data-session-visual-v3] .voiceCenter :global([data-my-coach-voice] .status),
+  .root[data-session-visual-v3] .voiceCenter :global([data-my-coach-voice] .note){
+    position:absolute;
+    top:calc(100% + 6px);
+    left:50%;
+    transform:translateX(-50%);
+    box-sizing:border-box;
+    max-width:min(330px,calc(100vw - 44px));
+    margin:0;
+    padding:0;
+    font-size:clamp(11px,3.3vw,13px);
+    line-height:1.25;
+    text-align:center;
+    overflow-wrap:anywhere;
+  }
+  .root[data-session-visual-v3] .voiceCenter :global([data-my-coach-voice] .status){
+    width:max-content;
+    white-space:nowrap;
+  }
+  .root[data-session-visual-v3] .voiceCenter :global([data-my-coach-voice] .note){
+    width:min(310px,calc(100vw - 46px));
+    max-height:34px;
+    overflow-y:auto;
+    scrollbar-width:thin;
+    white-space:normal;
+  }
+  .root[data-session-visual-v3] .conversationPanel{
+    box-sizing:border-box;
+    min-width:0;
+    max-width:100%;
+    overflow-wrap:anywhere;
+  }
+  .root[data-session-visual-v3] .conversationPanel .transcriptFeed{
+    min-width:0;
+    max-width:100%;
+    overflow-x:hidden;
+  }
+}

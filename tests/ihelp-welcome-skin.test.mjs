@@ -62,6 +62,24 @@ test("Messages iHelp reuses the same view and one protected AI conversation",()=
  assert.doesNotMatch(messages,/new WebSocket|createClient\(|\bfetch\(/);
 });
 
+test("iHelp has permissions-only voice settings, never a voice-type dropdown",()=>{
+ const chat=read("../components/holistic-agent-chat.tsx");
+ const controls=read("../components/voice-companion-controls.tsx");
+ assert.match(dialog,/<HolisticAgentChat locale=\{locale\} compact messengerView pageHelp=\{context\}/);
+ assert.match(chat,/privacyOnly=\{Boolean\(pageHelp\)\}/);
+ assert.match(chat,/pageHelp\?voice\.t\.settings/);
+ const a=controls.indexOf("if(privacyOnly)return");
+ const b=controls.indexOf("const controlStyle=",a);
+ assert.ok(a>0&&b>a);
+ const privacy=controls.slice(a,b);
+ assert.match(privacy,/data-hh-voice-permissions-only/);
+ assert.match(privacy,/setPlayback/);
+ assert.match(privacy,/setRecognitionConsent/);
+ assert.doesNotMatch(privacy,/<select|data-hh-voice-selector|data-hh-voice-preview/);
+ assert.match(chat,/data-hh-voice-message-upload/);
+ assert.match(chat,/data-hh-conversation-mic/);
+});
+
 test("topic taps fill an unsent draft, never auto-send or read private DOM",()=>{
  assert.match(dialog,/setQuickPrompt\(previous=>/);
  assert.match(read("../components/holistic-agent-chat.tsx"),/onCreateVideo={startContent}/);
