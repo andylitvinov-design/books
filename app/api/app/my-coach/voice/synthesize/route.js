@@ -79,7 +79,10 @@ export async function POST(request){
     await consumeRate(config,{op:'my-coach-fish-minute',actor:actor.id},5,60)
     await consumeRate(config,{op:'my-coach-fish-day',actor:actor.id},35,86400)
     const upstream=await fetch('https://api.fish.audio/v1/tts',{
-      method:'POST',cache:'no-store',signal:request.signal,
+      method:'POST',cache:'no-store',
+      // Bound free-tier vendor latency so the iPhone is never stuck waiting
+      // until Vercel kills the function. One attempt only: no duplicate quota.
+      signal:AbortSignal.any([request.signal,AbortSignal.timeout(15000)]),
       headers:{Authorization:`Bearer ${vendor.key}`,'Content-Type':'application/json',
         Accept:'audio/mpeg',model:vendor.model},
       body:JSON.stringify({text:input.text,format:'mp3'}),
