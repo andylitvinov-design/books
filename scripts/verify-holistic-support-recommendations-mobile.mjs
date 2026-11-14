@@ -207,9 +207,17 @@ for (const engine of [chromium, webkit]) {
             "fu-prosperity", label + " money is the lowest score");
           await viewer.locator("[data-support-talisman-next]").click();
           await viewer.locator('[data-support-talisman-thumb="fu-prosperity"]').click();
-          await viewer.locator("[data-support-talisman-request]").click();
+          const requestButton=viewer.locator("[data-support-talisman-request]");
+          // Real iPhone taps must open the existing native dialog, without a
+          // synthetic checkout request or a forced/progammatic button click.
+          if(engine.name()==="webkit")await requestButton.tap();
+          else await requestButton.click();
+          await page.waitForFunction(()=>
+            document.querySelector("[data-support-talisman-viewer]")
+              ?.getAttribute("data-talisman-request-open")==="true",
+            null,{timeout:10000});
           const modal = page.locator('dialog[aria-labelledby="support-talisman-order-title"]');
-          await modal.waitFor({ state:"visible" });
+          await modal.waitFor({ state:"visible",timeout:15000 });
           assert.equal(await modal.locator('[data-taoist-talisman-cart][data-inline="true"]').count(), 1,
             label + " existing protected quote UI, no new backend");
           assert.equal(await modal.locator('[data-cart-talisman="fu-prosperity"]').count(), 1,
