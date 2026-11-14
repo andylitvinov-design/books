@@ -32,7 +32,7 @@ test("one real iChat, one scroll log, 6 first-party actions and always-visible c
    assert.ok(landing.includes('id:"'+id+'"'),id);
  for(const path of ["tests","services","academy"])
    assert.ok(landing.includes('href:"'+path+'"'),path);
- assert.equal((landing.match(/<iframe\b/g)||[]).length,0);
+ assert.equal((landing.match(/<iframe\b/g)||[]).length,1);
  assert.equal((landing.match(/<video\b/g)||[]).length,1);
 });
 
@@ -67,14 +67,22 @@ test("approved HeyGen exports map EN and RU to distinct captioned MP4s, not YouT
  assert.match(landing,/durationSeconds:96\.862/);
  for(const phrase of ["English audio","Русская озвучка","Audio en inglés"])
    assert.ok(landing.includes(phrase),phrase);
- assert.doesNotMatch(landing,/youtube-nocookie|<iframe|approvedTelegramPresentation|autoplay=1/);
+ assert.doesNotMatch(landing,/youtube-nocookie|approvedTelegramPresentation|autoplay=1/);
  assert.doesNotMatch(landing,/src:"https:\/\/files2\.heygen\.ai/);
  assert.match(landing,/<video ref=\{videoRef\} src=\{introduction\.src\} controls playsInline preload="none"/);
- assert.match(landing,/videoRef\.current\?\.play\(\)/);
+ assert.match(landing,/const attempt=media\.play\(\)/);
  assert.match(landing,/videoRef\.current\?\.pause\(\)/);
- assert.match(landing,/onError=\{\(\)=>setFailed\(true\)\}/);
+ assert.match(landing,/onError=\{fail\}/);
+ assert.match(landing,/data-hh-ai-intro-fallback="heygen"/);
+ assert.match(landing,/playing&&failed&&<iframe/);
+ assert.match(landing,/media\.error\)media\.load\(\)/);
+ assert.match(landing,/window\.setTimeout/);
+ assert.match(landing,/error\?\.name!=="AbortError"/);
+ assert.match(landing,/onEnded=\{close\}/);
+ for(const id of ["8d998c778af3b563aa63233aa4fb4a06","72e3e6f45c3664b0b8d75281b1b413a5"])
+   assert.ok(landing.includes("https://app.heygen.com/embeds/"+id));
  assert.match(landing,/data-hh-ai-intro-play onClick=\{start\}/);
- assert.match(landing,/href=\{introduction\.src\} target="_blank" rel="noopener noreferrer"/);
+ assert.match(landing,/href=\{introduction\.embed\} target="_blank" rel="noopener noreferrer"/);
  assert.match(landingCss,/\.hero\[data-playing="true"\] \.player/);
  assert.match(landingCss,/\.player video\{/);
 });
@@ -148,6 +156,10 @@ test("Messenger and Goal Studio alone permit direct HeyGen CDN MP4; other privat
    assert.equal(exactMessenger.test(path)||exactStudio.test(path),false,path);
  assert.match(middleware,/directMessageStorageOrigin \+ \(\(messengerIntroductionVideo\|\|studioIntroductionVideo\) \? ' https:\/\/resource2\.heygen\.ai' : ''\)/);
  assert.doesNotMatch(middleware,/messengerIntroductionEmbed/);
+ assert.match(middleware,/messengerIntroductionVideo \? "frame-src https:\/\/app\.heygen\.com"/);
+ assert.doesNotMatch(middleware,/frame-src https:\/\/app\.heygen\.com https:\/\/resource2/);
+ assert.match(landingCss,/\.player\[data-backup="true"\] video/);
+ assert.match(landingCss,/\.player iframe/);
  assert.match(middleware,/practitionerDraftPreview \? "frame-src blob:" : "frame-src 'none'"/);
 });
 

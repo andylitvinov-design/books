@@ -24,15 +24,17 @@
  opacity:0;visibility:hidden;pointer-events:none}
 .hero[data-playing="true"] .player{opacity:1;visibility:visible;pointer-events:auto}
 .player video{display:block;width:100%;height:100%;object-fit:contain;background:#101d1b}
-.videoError{position:absolute;left:10px;right:10px;top:50%;z-index:6;
- transform:translateY(-50%);display:flex;align-items:center;justify-content:center;
- flex-wrap:wrap;gap:8px;padding:15px 10px;border-radius:12px;
- color:#fff;background:#102c2ae8;font:650 12px/1.35 system-ui,sans-serif}
-.videoError button,.videoError a{padding:8px 10px;border:1px solid #ffffff99;
+.player[data-backup="true"] video{display:none}
+.player iframe{display:block;width:100%;height:100%;border:0;background:#101d1b}
+.videoError{position:absolute;left:7px;right:59px;top:7px;z-index:6;
+ display:flex;align-items:center;justify-content:flex-start;
+ flex-wrap:wrap;gap:5px;padding:5px 7px;border-radius:10px;
+ color:#fff;background:#102c2ae8;font:650 11px/1.25 system-ui,sans-serif}
+.videoError button,.videoError a{padding:6px 8px;border:1px solid #ffffff99;
  border-radius:9px;background:#fff;color:#153d38;text-decoration:none;
  cursor:pointer;font:inherit}
 .videoError button:focus-visible,.videoError a:focus-visible{outline:3px solid #fff;outline-offset:2px}
-.dismiss{position:absolute;top:7px;right:7px;display:grid;place-items:center;
+.dismiss{position:absolute;z-index:8;top:7px;right:7px;display:grid;place-items:center;
  width:44px;height:44px;border:1px solid #fff7;border-radius:50%;
  color:#fff;background:#102c2acc;cursor:pointer}
 .question{display:flex;align-items:center;gap:10px;min-width:0}
