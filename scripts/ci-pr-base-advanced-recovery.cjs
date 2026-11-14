@@ -3,7 +3,7 @@
 // tests passed. Native update-branch creates a new PR HEAD and triggers the
 // normal exact-HEAD Core/Specialist suite. Never mark an old run green.
 const {externalOwnerLeaseStatus,readCompleteIssueComments,trustedControlComment}=require('./ci-pr-task-state.cjs');
-const {MARKER:READY_MARKER,verifiedLooseReleaseGate}=require('./ci-pr-sensitive-base-ci-wake.cjs');
+const {MARKER:READY_MARKER}=require('./ci-pr-sensitive-base-ci-wake.cjs');
 const REPO='andylitvinov-design/books',PROD='codex/public-book-library';
 const SHA=/^[0-9a-f]{40}$/i;
 const CORE_PATH='.github/workflows/hh-pr-core-release.yml';
@@ -63,6 +63,18 @@ function isVerifiedAdvance(diff,tested,live){
   diff.total_commits===diff.ahead_by&&
   Array.isArray(diff.commits)&&diff.commits.length===diff.ahead_by&&
   diff.commits.at(-1)?.sha===live;
+}
+
+// Read-only ancestry proof: a same-source SHA can be rechecked without a
+// branch-sync ONLY when GitHub proves the current protected production commit
+// is an ancestor of that exact source HEAD. Loose rules or PR.base are not proof.
+function verifiedSourceContainsBase(diff,live,source){
+ return SHA.test(live||'')&&SHA.test(source||'')&&live!==source&&
+  diff?.status==='ahead'&&diff.base_commit?.sha===live&&
+  diff.merge_base_commit?.sha===live&&diff.behind_by===0&&
+  Number.isInteger(diff.ahead_by)&&diff.ahead_by>0&&diff.ahead_by<=100&&
+  diff.total_commits===diff.ahead_by&&Array.isArray(diff.commits)&&
+  diff.commits.length===diff.ahead_by&&diff.commits.at(-1)?.sha===source;
 }
 
 // BASE_ADVANCED may reappear every time fast-moving production advances.
@@ -273,25 +285,51 @@ async function recoverBaseAdvanced({github,context,hasOwnerToken=false,
   })).data;
   if(!isVerifiedAdvance(diff,old,live))
    return outcome('SKIPPED','BASE_ANCESTRY_UNVERIFIED',number);
-  // Read bounded GitHub PR commit history, not labels. With two recent
-  // production-to-PR merges, a third automatic source HEAD is a churn hazard.
-  // Unknown/truncated history holds; the existing triage owner can retry after
-  // the returned quiet deadline with a fresh, signed exact-HEAD check.
-  const commitsTotal=pr.commits;
-  if(!Number.isSafeInteger(commitsTotal)||commitsTotal<1||commitsTotal>1000)
-   return outcome('SKIPPED','BASE_SYNC_HISTORY_COUNT_UNVERIFIED',number);
-  if(commitsTotal>=3){
-   const page=Math.ceil(commitsTotal/100);
-   const listed=(await github.rest.pulls.listCommits({
-    owner,repo,pull_number:number,per_page:100,page
-   })).data;
-   const expected=commitsTotal-100*(page-1);
-   if(!Array.isArray(listed)||listed.length!==expected)
-    return outcome('SKIPPED','BASE_SYNC_HISTORY_INCOMPLETE',number);
-   const burst=classifyRecentBaseSyncs(listed,sourceSha,now);
-   if(!burst.verified)return outcome('SKIPPED',burst.reason,number);
-   if(burst.hold)return {...outcome('SKIPPED',burst.reason,number),
+  // Delayed failure callbacks must not trigger redundant Core after a newer
+  // source-HEAD wave already appeared. Require the most recent exact event
+  // rather than merely trusting an older completed failed run ID.
+  const newestRuns=(await github.rest.actions.listWorkflowRuns({
+   owner,repo,workflow_id:'hh-pr-core-release.yml',branch:e.head_branch,
+   event:'pull_request',per_page:1
+  })).data?.workflow_runs;
+  if(!Array.isArray(newestRuns)||newestRuns.length!==1||
+     newestRuns[0]?.id!==e.id||newestRuns[0]?.head_sha!==e.head_sha||
+     newestRuns[0]?.status!=='completed'||newestRuns[0]?.conclusion!=='failure'||
+     newestRuns[0]?.run_attempt!==e.run_attempt)
+   return outcome('SKIPPED','NEWER_OR_UNVERIFIED_CORE_WAVE',number);
+  // The already-tested PR source may include the current BASE even though
+  // an older synthetic run failed BASE_ADVANCED. Only that verified case
+  // allows same-HEAD Ready; diverged sources require one protected sync.
+  const manual=(pr.labels||[]).some(label=>
+    (typeof label==='string'?label:label?.name)==='hh:repair-manual');
+  let sourceContainsLiveBase=false;
+  if(!manual){
+   try{
+    const relative=(await github.rest.repos.compareCommits({
+     owner,repo,base:live,head:sourceSha,per_page:100
+    })).data;
+    sourceContainsLiveBase=verifiedSourceContainsBase(relative,live,sourceSha);
+   }catch{/* Unverified ancestry cannot authorize same-HEAD Ready. */}
+  }
+  if(!sourceContainsLiveBase){
+   // Avoid repeated new source HEADs: retain the existing bounded history
+   // budget only when update-branch will actually be necessary.
+   const commitsTotal=pr.commits;
+   if(!Number.isSafeInteger(commitsTotal)||commitsTotal<1||commitsTotal>1000)
+    return outcome('SKIPPED','BASE_SYNC_HISTORY_COUNT_UNVERIFIED',number);
+   if(commitsTotal>=3){
+    const page=Math.ceil(commitsTotal/100);
+    const listed=(await github.rest.pulls.listCommits({
+     owner,repo,pull_number:number,per_page:100,page
+    })).data;
+    const expected=commitsTotal-100*(page-1);
+    if(!Array.isArray(listed)||listed.length!==expected)
+     return outcome('SKIPPED','BASE_SYNC_HISTORY_INCOMPLETE',number);
+    const burst=classifyRecentBaseSyncs(listed,sourceSha,now);
+    if(!burst.verified)return outcome('SKIPPED',burst.reason,number);
+    if(burst.hold)return {...outcome('SKIPPED',burst.reason,number),
      recentSyncs:burst.count,retryAt:burst.retryAt};
+   }
   }
   // Native update-branch is non-force and rejects a conflict. Do not overwrite
   // another owner/Repair worker's concurrent head while it holds a lease.
@@ -307,20 +345,10 @@ async function recoverBaseAdvanced({github,context,hasOwnerToken=false,
   if(!sameSource(fresh.data,e.head_branch,sourceSha)||
      production.data?.protected!==true||production.data?.commit?.sha!==live)
    return outcome('SKIPPED','HEAD_OR_BASE_CHANGED_BEFORE_UPDATE',number);
-  // A verified loose protected ruleset permits re-checking this immutable
-  // source SHA against the new production merge through Ready. Manual Repair
-  // ownership and unknown policies retain the existing native update path.
-  const manual=(pr.labels||[]).some(l=>
-    (typeof l==='string'?l:l?.name)==='hh:repair-manual');
-  if(!manual&&await verifiedLooseReleaseGate(github,owner,repo)){
-   const latest=(await github.rest.actions.listWorkflowRuns({
-    owner,repo,workflow_id:'hh-pr-core-release.yml',branch:e.head_branch,
-    event:'pull_request',per_page:1
-   })).data?.workflow_runs;
-   if(!Array.isArray(latest)||latest.length!==1||
-      latest[0].id!==e.id||latest[0].head_sha!==e.head_sha||
-      latest[0].status!=='completed'||latest[0].conclusion!=='failure')
-    return outcome('SKIPPED','NEWER_OR_UNVERIFIED_CORE_WAVE',number);
+  // A real same-HEAD Ready is safe only after positive source ancestry
+  // proves the newest protected BASE is inside that exact source HEAD.
+  // Draft -> Ready alone may reuse an old synthetic merge (incident #4594).
+  if(sourceContainsLiveBase){
    const existingIntent=rows=>rows.some(c=>trustedControlComment(c)&&
     String(c.body||'').includes('<!-- '+READY_MARKER+
       ' pr='+number+' head='+sourceSha+' '));
@@ -365,4 +393,4 @@ async function recoverBaseAdvanced({github,context,hasOwnerToken=false,
  }
 }
 module.exports={isTrustedFailure,validatedJobEvidence,isActualBaseAdvancedLog,
- isVerifiedAdvance,classifyRecentBaseSyncs,sameSource,ownerProtectedUpdate,ownerProtectedReadyRevalidation,recoverBaseAdvanced};
+ isVerifiedAdvance,verifiedSourceContainsBase,classifyRecentBaseSyncs,sameSource,ownerProtectedUpdate,ownerProtectedReadyRevalidation,recoverBaseAdvanced};

@@ -39,7 +39,8 @@ function world(options={}){
   rest:{
    actions:{
     listWorkflowRuns:async()=>({data:{workflow_runs:[{
-     id:options.newerCore?101:100,head_sha:HEAD,status:'completed',conclusion:'failure'
+     id:options.newerCore?101:100,head_sha:options.latestHeadMismatch?'f'.repeat(40):event.head_sha,
+     status:'completed',conclusion:'failure',run_attempt:event.run_attempt
     }]}}),
     getWorkflowRun:async()=>{if(options.read403)throw Object.assign(Error('read denied'),{status:403});return {data:{id:100,run_attempt:1,status:'completed',conclusion:'failure',
      head_sha:HEAD,head_branch:'fix/sensitive-crm',path:'.github/workflows/hh-pr-core-release.yml',
@@ -53,9 +54,20 @@ function world(options={}){
    repos:{
     getBranch:async()=>({data:{protected:true,commit:{sha:LIVE},...options.branch}}),
     getCommit:async()=>({data:options.mergeCommit||{sha:'f'.repeat(40),parents:[]}}),
-    compareCommits:async()=>({data:{status:'ahead',ahead_by:1,behind_by:0,
-     total_commits:1,commits:[{sha:LIVE}],
-     base_commit:{sha:OLD},merge_base_commit:{sha:OLD},...options.compare}})
+    compareCommits:async({base,head})=>{
+     if(base===LIVE&&head===HEAD){
+      if(options.badSourceRelation)throw Error('relative comparison unavailable');
+      if(options.sourceAlreadyContainsLive)
+       return {data:{status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+        commits:[{sha:HEAD}],base_commit:{sha:LIVE},merge_base_commit:{sha:LIVE},
+        ...options.sourceCompare}};
+      return {data:{status:'diverged',ahead_by:1,behind_by:1,total_commits:2,
+       commits:[{sha:HEAD}],base_commit:{sha:LIVE},merge_base_commit:{sha:OLD}}};
+     }
+     return {data:{status:'ahead',ahead_by:1,behind_by:0,
+      total_commits:1,commits:[{sha:LIVE}],
+      base_commit:{sha:OLD},merge_base_commit:{sha:OLD},...options.compare}};
+    }
    },
    issues:{listComments:async()=>({data:comments}),
     createComment:async({body})=>{
@@ -128,6 +140,25 @@ test('exact independent Core + failed specialist and merge evidence is mandatory
  assert.equal(isActualBaseAdvancedLog(MARKER.replace('BASE_ADVANCED','GENERIC_FAILURE')),false);
  assert.equal(isActualBaseAdvancedLog('CI_SPECIALIST_FAIL_CLOSED: PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED'),false);
 });
+test('verified current protected BASE must be an ancestor of the immutable source HEAD',()=>{
+ const {verifiedSourceContainsBase}=require('../scripts/ci-pr-base-advanced-recovery.cjs');
+ const good={status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+  base_commit:{sha:LIVE},merge_base_commit:{sha:LIVE},commits:[{sha:HEAD}]};
+ assert.equal(verifiedSourceContainsBase(good,LIVE,HEAD),true);
+ for(const bad of [
+  {...good,status:'diverged'},
+  {...good,behind_by:1},
+  {...good,base_commit:{sha:OLD}},
+  {...good,merge_base_commit:{sha:OLD}},
+  {...good,total_commits:2},
+  {...good,commits:[]},
+  {...good,commits:[{sha:OLD}]},
+  {...good,ahead_by:101},
+ ])
+  assert.equal(verifiedSourceContainsBase(bad,LIVE,HEAD),false);
+ assert.equal(verifiedSourceContainsBase(good,LIVE,LIVE),false);
+});
+
 test('new production must be fully proven descendant, never diverged or incomplete',()=>{
  const d={status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
   base_commit:{sha:OLD},merge_base_commit:{sha:OLD},commits:[{sha:LIVE}]};
@@ -145,41 +176,69 @@ test('verified failure creates one native non-force base update, never a synthet
  assert.equal(w.updated(),1);
 });
 
-test('verified loose protected BASE drift requests one true same-source Ready Core, never new source HEAD',async()=>{
- const w=world({looseRuleset:true,pr:{node_id:'PR_abcdef01'}});
- const result=await run(w);
- assert.equal(result.status,'READY_RECHECK_REQUESTED');
- assert.equal(result.reason,'SAME_HEAD_CURRENT_BASE_CORE_RECHECK_REQUESTED');
- assert.equal(result.mergeAuthorized,false);
- assert.equal(result.ciVerified,false);
- assert.equal(result.sourceHeadPreserved,true);
- assert.equal(w.updated(),0,'no base-only source sync or new preview');
- assert.deepEqual(w.mutations,['convertPullRequestToDraft','markPullRequestReadyForReview']);
- assert.equal(w.getDraft(),false);
- assert.equal(w.comments.length,1,'signed one-shot intent written after PAT identity proof');
- const repeat=await run(w);
- assert.equal(repeat.reason,'ONE_WAKE_ALREADY_RECORDED_FOR_HEAD');
- assert.deepEqual(w.mutations,['convertPullRequestToDraft','markPullRequestReadyForReview']);
+test('regression #4594: loose production rules must not recheck stale synthetic merge',async()=>{
+ for(const opt of [{looseRuleset:true},{strictRuleset:true},{}]){
+  const w=world({...opt,pr:{node_id:'PR_abcdef01'}}),result=await run(w);
+  assert.equal(result.status,'UPDATED');
+  assert.equal(w.updated(),1);
+  assert.deepEqual(w.mutations,[],'no useless Ready on unchanged old merge ref');
+  assert.equal(w.comments.length,0);
+ }
 });
-test('manual-owned, strict or unverified protected BASE changes keep the proven native non-force update',async()=>{
- for(const opts of [
-  {looseRuleset:true,pr:{labels:[{name:'hh:repair-manual'}]}},
-  {strictRuleset:true},
-  {}
+test('verified source containing current protected BASE requests one true same-HEAD Core',async()=>{
+ for(const opt of [{looseRuleset:true},{strictRuleset:true},{}]){
+  const w=world({...opt,sourceAlreadyContainsLive:true,
+   pr:{node_id:'PR_abcdef01',commits:1001}}),result=await run(w);
+  assert.equal(result.status,'READY_RECHECK_REQUESTED');
+  assert.equal(result.reason,'SAME_HEAD_CURRENT_BASE_CORE_RECHECK_REQUESTED');
+  assert.equal(result.mergeAuthorized,false);
+  assert.equal(result.ciVerified,false);
+  assert.equal(result.sourceHeadPreserved,true);
+  assert.equal(w.updated(),0);
+  assert.deepEqual(w.mutations,['convertPullRequestToDraft','markPullRequestReadyForReview']);
+  assert.equal(w.getDraft(),false);
+  assert.equal(w.comments.length,1);
+  assert.equal((await run(w)).reason,'ONE_WAKE_ALREADY_RECORDED_FOR_HEAD');
+ }
+});
+test('manual source ownership forbids automatic Ready even if source contains BASE',async()=>{
+ const w=world({looseRuleset:true,sourceAlreadyContainsLive:true,
+  pr:{labels:[{name:'hh:repair-manual'}]}});
+ assert.equal((await run(w)).status,'UPDATED');
+ assert.equal(w.updated(),1);
+ assert.deepEqual(w.mutations,[]);
+});
+test('an older BASE_ADVANCED callback cannot publish a new HEAD after a newer Core exists',async()=>{
+ for(const opts of [{newerCore:true},{latestHeadMismatch:true}]){
+  const w=world(opts),result=await run(w);
+  assert.equal(result.status,'SKIPPED');
+  assert.equal(result.reason,'NEWER_OR_UNVERIFIED_CORE_WAVE');
+  assert.equal(w.updated(),0);
+  assert.deepEqual(w.mutations,[]);
+  assert.equal(w.ownerCalls().length,0);
+ }
+});
+
+test('uncertain / diverged / incomplete relation never authorizes Ready',async()=>{
+ for(const bad of [
+  {sourceCompare:{status:'diverged'}},
+  {sourceCompare:{behind_by:1}},
+  {sourceCompare:{commits:[]}},
+  {sourceCompare:{base_commit:{sha:OLD}}},
+  {badSourceRelation:true}
  ]){
-  const w=world(opts);
-  const result=await run(w);
+  const w=world({...bad,sourceAlreadyContainsLive:true,
+    pr:{node_id:'PR_abcdef01'}}),result=await run(w);
   assert.equal(result.status,'UPDATED');
   assert.equal(w.updated(),1);
   assert.deepEqual(w.mutations,[]);
-  assert.equal(w.comments.length,0);
  }
 });
 test('newer Core, unverified owner or failed intent never converts Ready PR to Draft',async()=>{
  for(const [opts,reason] of [
-  [{looseRuleset:true,newerCore:true},'NEWER_OR_UNVERIFIED_CORE_WAVE'],
-  [{looseRuleset:true,ownerLogin:'not-owner'},'OWNER_TOKEN_IDENTITY_MISMATCH'],
-  [{looseRuleset:true,intentDenied:true},'OWNER_READY_RECHECK_UNAVAILABLE']
+  [{sourceAlreadyContainsLive:true,newerCore:true},'NEWER_OR_UNVERIFIED_CORE_WAVE'],
+  [{sourceAlreadyContainsLive:true,ownerLogin:'not-owner'},'OWNER_TOKEN_IDENTITY_MISMATCH'],
+  [{sourceAlreadyContainsLive:true,intentDenied:true},'OWNER_READY_RECHECK_UNAVAILABLE']
  ]){
   const w=world({pr:{node_id:'PR_abcdef01'},...opts});
   const result=await run(w);
