@@ -1,0 +1,91 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import {coachDialoguePolicy,repeatedCoachQuestion,nonRepeatingOfflineCoachText,sharedCoachMindInstruction} from '../lib/coaching/unified-coach-policy.mjs'
+import {conversationalCoachMessages,parseConversationalCoachReply} from '../lib/coaching/conversational-persona.mjs'
+import {normalizeGenerativeCoachInput} from '../lib/coaching/generative-persona.mjs'
+import {offlineCoachingBrainReply} from '../lib/personal-coaching/coaching-brain.mjs'
+
+const cases={
+ en:{
+  accept_correction:['You misunderstood my point.','That is not what I meant.','Let me correct that.','I meant something else.','That is not what I said.'],
+  reset_topic:["Let's talk about something else.","Can we change the subject?","A different topic, please.","Instead let's discuss relationships.","I'd rather talk about my family."],
+  answer_first:['What do you think?','What should I do?','Can you suggest an idea?','How would you approach this?','What are my options?'],
+  close_gently:['thanks','thank you','Thanks!','Thank you!','Thanks.'],
+  reduce_scope:["I don't know",'not sure','hard to say','I do not know','Not sure.'],
+  acknowledge_without_commitment:['yes','yeah','yep','sure','ok']
+ },
+ ru:{
+  accept_correction:['Вы меня не поняли.','Я имел в виду другое.','Я хотела сказать другое.','Нет, не так.','Ты меня не понял.'],
+  reset_topic:['Давайте сменим тему.','Хочу сменить тему.','Давай поговорим о другом.','Вернёмся к другой теме.','Давайте обсудим другое.'],
+  answer_first:['Что ты думаешь?','Что вы предлагаете?','Какие есть варианты?','Посоветуй.','Что мне делать?'],
+  close_gently:['спасибо','благодарю','спасибо.','благодарю!','Спасибо!'],
+  reduce_scope:['не знаю','пока не знаю','не уверена','затрудняюсь ответить','Не знаю.'],
+  acknowledge_without_commitment:['да','ага','угу','конечно','да.']
+ }
+}
+test('one shared Coach Mind instruction; Spanish keeps legacy persona copy',()=>{
+ assert.match(sharedCoachMindInstruction('ru'),/Coach Mind/)
+ assert.match(sharedCoachMindInstruction('en'),/Coach Mind/)
+ assert.equal(sharedCoachMindInstruction('es'),'')
+})
+test('60 authored RU/EN turn decisions based on client meaning, not message count',()=>{
+ for(const [locale,group] of Object.entries(cases)){
+  assert.equal(Object.values(group).reduce((n,rows)=>n+rows.length,0),30)
+  for(const [expected,rows] of Object.entries(group))for(const message of rows){
+   const p=coachDialoguePolicy({locale,message,turns:[]})
+   assert.equal(p.nextMove,expected,locale+': '+message)
+   assert.equal(p.role,'coach')
+   assert.notEqual(p.phase,'review')
+  }
+ }
+})
+test('20 long synthetic contexts do not auto-progress or ask a third question',()=>{
+ for(const locale of ['en','ru'])for(let scenario=0;scenario<10;scenario++){
+  const turns=[]
+  for(let i=0;i<12+scenario;i++)turns.push({
+   role:i%2?'assistant':'user',
+   content:i%2?(locale==='ru'?'Что для вас важно?':'What matters to you?'):
+     (locale==='ru'?'Я пока думаю о моей ситуации.':'I am thinking about my situation.')
+  })
+  turns.push({role:'assistant',content:locale==='ru'?'Что сейчас нужно?':'What would help now?'})
+  const input={locale,message:locale==='ru'?'Я ещё думаю.':'I am still thinking.',turns}
+  assert.equal(coachDialoguePolicy(input).allowQuestion,false)
+  assert.notEqual(coachDialoguePolicy(input).phase,'review')
+  assert.doesNotMatch(nonRepeatingOfflineCoachText(input,'What matters to you?'),/[?？]/u)
+ }
+})
+test('duplicate questions are rejected even when preceded by another sentence',()=>{
+ const input={locale:'ru',message:'Я хочу прояснить цели.',
+  turns:[{role:'assistant',content:'Что вы хотите изменить?'}]}
+ assert.equal(repeatedCoachQuestion('Давайте обсудим цель. Что вы хотите изменить?',input.turns),true)
+ assert.equal(repeatedCoachQuestion('Какой выбор вам доступен?',input.turns),false)
+ assert.throws(()=>parseConversationalCoachReply(JSON.stringify({
+  message:'Давайте обсудим цель. Что вы хотите изменить?'
+ }),input,'grow','explore'),/COACHING_BRAIN_RESPONSE_INVALID/)
+ assert.equal(parseConversationalCoachReply(JSON.stringify({
+  message:'Можно начать с того, что уже известно, и двигаться небольшими шагами.'
+ }),input,'grow','explore').mode,'ai')
+})
+test('existing persona inherits shared role; user text remains in user data slot',()=>{
+ const parsed=normalizeGenerativeCoachInput({
+  personaId:'mira',locale:'ru',consent:true,
+  message:'Что ты думаешь о моей цели?',turns:[],
+  settings:{warmth:5,directness:2,pace:'slow',depth:'balanced'}
+ })
+ const rows=conversationalCoachMessages(parsed.input,parsed.persona,'grow','clarify',{type:'none'})
+ assert.equal(rows.length,3)
+ assert.match(rows[0].content,/Coach Mind/)
+ assert.match(rows[1].content,/next move=answer_first/)
+ assert.equal(rows[2].role,'user')
+ assert.ok(!rows[0].content.includes(parsed.input.message))
+})
+test('offline reply has no fabricated model or client action',()=>{
+ const input={locale:'en',message:'I want to clarify this.',turns:[
+  {role:'user',content:'I am thinking.'},
+  {role:'assistant',content:'Could you describe one specific example of what is happening?'}
+ ]}
+ const x=offlineCoachingBrainReply(input,'grow','explore')
+ assert.equal(x.mode,'offline')
+ assert.equal(x.planSuggestion,'')
+ assert.equal(repeatedCoachQuestion(x.question,input.turns),false)
+})
