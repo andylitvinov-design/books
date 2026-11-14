@@ -53,6 +53,7 @@ async function assertAnonymousPrivateNavigation(page) {
   await expect(guest.locator('a[href="/en/client/tests"]')).toBeVisible();
   await expect(page.locator('[data-profile-tests-first], [data-my-tests-dashboard], [data-profile-results-archive]')).toHaveCount(0);
   await expect(page.locator('.mobile-bottom-navigation')).toHaveCount(0);
+  await expect(page.locator('[data-hh-unified-dock] [data-unified-dock-item="profile"]')).toHaveAttribute('aria-current', 'page');
 }
 
 async function verifyCspBfcache() {
@@ -630,14 +631,15 @@ async function exercise(engine, browserType, width) {
             document.body.append(frame);
           });
           await expect.poll(() => cspPage.evaluate(() => window.__cspViolations.includes('frame-src'))).toBe(true);
-          // Private test discovery keeps the six-dock navigation under private CSP.
-          // Check the actual private account separately, without altering this
-          // page's Back/Forward chain or reading an authenticated account.
-          const discoveryBottom = cspPage.locator('.mobile-bottom-navigation');
+          // Private discovery uses the published seven-item dock. No item
+          // claims the active page on /client/tests; Profile is a destination.
+          // Preserve actual private CSP, Back/Forward and guest isolation tests.
+          const discoveryBottom = cspPage.locator('[data-hh-unified-dock]');
           await expect(discoveryBottom).toBeVisible();
-          await expect(discoveryBottom.locator('[aria-current="page"]')).toHaveCount(1);
-          await expect(discoveryBottom.locator('[data-nav-item="profile"]')).toHaveAttribute('aria-current', 'page');
-          await expect(discoveryBottom.locator('[data-nav-item="profile"]')).toHaveAttribute('href', '/en/app/portrait');
+          await expect(discoveryBottom.locator('[data-unified-dock-item]')).toHaveCount(7);
+          await expect(discoveryBottom.locator('[aria-current="page"]')).toHaveCount(0);
+          await expect(discoveryBottom.locator('[data-unified-dock-item="profile"]')).toHaveAttribute('href', '/en/app/portrait');
+          await expect(cspPage.locator('.mobile-bottom-navigation')).toHaveCount(0);
           const privateContext = await cspBrowser.newContext({viewport:{width,height:900}, serviceWorkers: 'block'});
           await privateContext.route('**/api/**', route => ['GET', 'HEAD'].includes(route.request().method()) ? route.continue() : route.abort());
           const privatePage = await privateContext.newPage();
@@ -691,9 +693,11 @@ async function exercise(engine, browserType, width) {
           await expect(cspPage).toHaveURL(origin + '/en/client/tests');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'private');
           await waitForDocument();
-          await expect(cspPage.locator('.mobile-bottom-navigation')).toBeVisible();
-          await expect(cspPage.locator('.mobile-bottom-navigation [aria-current="page"]')).toHaveCount(1);
-          await expect(cspPage.locator('.mobile-bottom-navigation [data-nav-item="profile"]')).toHaveAttribute('aria-current', 'page');
+          const restoredDock = cspPage.locator('[data-hh-unified-dock]');
+          await expect(restoredDock).toBeVisible();
+          await expect(restoredDock.locator('[data-unified-dock-item]')).toHaveCount(7);
+          await expect(restoredDock.locator('[aria-current="page"]')).toHaveCount(0);
+          await expect(restoredDock.locator('[data-unified-dock-item="profile"]')).toHaveAttribute('href', '/en/app/portrait');
           historyPhase = 'forward-to-public-home';
           await cspPage.goForward({ waitUntil: 'domcontentloaded' });
           await assertCspPublicHome(cspPage);

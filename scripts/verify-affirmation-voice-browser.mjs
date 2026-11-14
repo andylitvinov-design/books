@@ -1033,8 +1033,13 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(page.locator("[data-video-affirmation-bed]")).toBeVisible({timeout:15000});
       await page.locator("[data-video-affirmation-bed]").selectOption("ocean");
       const narrationConsent=page.locator("[data-video-affirmation-voice-consent]");
-      await narrationConsent.check();
-      await expect(narrationConsent).toBeChecked();
+      // Keep explicit user opt-in: Safari uses the real visible label touch.
+      // Never force the checkbox, set checked in JS or bypass the disabled CTA.
+      const narrationConsentLabel=narrationConsent.locator("..");
+      await narrationConsentLabel.scrollIntoViewIfNeeded();
+      if(engine==="webkit")await narrationConsentLabel.tap();
+      else await narrationConsent.check();
+      await expect(narrationConsent).toBeChecked({timeout:15000});
       const generateNarration=page.locator("[data-video-generate-affirmation-audio]");
       await expect(generateNarration).toBeEnabled();
       // Observe real user input on macOS without recording the approved text,

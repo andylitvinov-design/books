@@ -572,3 +572,20 @@ test("WebKit cached voice replay invokes one native play() per real tap, never a
   assert.match(browser,/await expect\.poll\(\(\)=>page\.evaluate\(\(\)=>window\.__hhPreviewReplayCount\)\)\.toBe\(1\)/);
   assert.match(browser,/replay must not spend a second free TTS request/);
 });
+
+test("Safari narration requires actual label consent and a reachable mobile tap target",()=>{
+ const ui=read("components/mandala-affirmation-voice.tsx");
+ const css=read("components/mandala-affirmation-voice.module.css");
+ const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+ assert.ok(ui.includes("const [consent,setConsent]=useState(false)"));
+ assert.ok(ui.includes('data-video-affirmation-voice-consent type="checkbox" checked={consent}'));
+ assert.ok(ui.includes("onChange={e=>setConsent(e.currentTarget.checked)}"));
+ assert.ok(ui.includes("disabled={!languageAvailable||!speechText||!consent"));
+ assert.ok(css.includes('min-height:44px;margin:0;padding:8px 0;scroll-margin-block-end:calc(130px + env(safe-area-inset-bottom))'));
+ assert.ok(browser.includes('const narrationConsentLabel=narrationConsent.locator("..")'));
+ assert.ok(browser.includes('await narrationConsentLabel.scrollIntoViewIfNeeded()'));
+ assert.ok(browser.includes('if(engine==="webkit")await narrationConsentLabel.tap()'));
+ assert.ok(browser.includes('await expect(narrationConsent).toBeChecked({timeout:15000})'));
+ assert.ok(!browser.includes('narrationConsent.check({force:true'));
+ assert.ok(!browser.includes('narrationConsent.evaluate('));
+});

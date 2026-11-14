@@ -416,3 +416,20 @@ test('client landing locale pages use independent real browser pages and retain 
     "if (path === '/books/maya-tradition')"])
     assert.ok(verifier.includes(required), 'Do not skip original public/CSP/locale checks: ' + required);
 });
+test("private CSP history uses the published seven-item dock with correct Profile destination",async()=>{
+ const script=read("scripts/verify-release-reaudit.mjs");
+ const {isUnifiedMobileDockPath,unifiedMobileDockActive,unifiedMobileDockHref,UNIFIED_DOCK_IDS}
+  =await import("../lib/unified-mobile-dock.mjs");
+ assert.equal(isUnifiedMobileDockPath("/en/client/tests"),true);
+ assert.equal(unifiedMobileDockActive("/en/client/tests"),null);
+ assert.equal(isUnifiedMobileDockPath("/en/app/portrait"),true);
+ assert.equal(unifiedMobileDockActive("/en/app/portrait"),"profile");
+ assert.equal(unifiedMobileDockHref("en","profile"),"/en/app/portrait");
+ assert.equal(UNIFIED_DOCK_IDS.length,7);
+ assert.ok(script.includes("const discoveryBottom = cspPage.locator('[data-hh-unified-dock]')"));
+ assert.ok(script.includes("await expect(discoveryBottom.locator('[data-unified-dock-item]')).toHaveCount(7)"));
+ assert.ok(script.includes("await expect(restoredDock.locator('[aria-current=\"page\"]')).toHaveCount(0)"));
+ assert.ok(script.includes("await cspPage.goBack({ waitUntil: 'domcontentloaded' })"));
+ assert.ok(script.includes("await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'private')"));
+ assert.ok(!script.includes("locator('.mobile-bottom-navigation')).toBeVisible()"));
+});
