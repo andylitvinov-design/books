@@ -1919,8 +1919,8 @@ test('stale merged queue cleanup does not let a verified jobless GitHub 409 star
   head:{ref:'feat/proven-merged',sha:next,repo:{full_name:full}}};
  const context={repo:{owner:'andylitvinov-design',repo:'books'},
   ref:'refs/heads/codex/bootstrap-books',eventName:'workflow_dispatch',payload:{inputs:{}}};
- const check=async(jobless)=>{
-  const items=[item(991),item(992)],cancelled=[];
+ const check=async(jobless,forceStatus=null)=>{
+  const items=[item(991),item(992)],cancelled=[],forced=[];
   const github={rest:{
    actions:{
     listWorkflowRunsForRepo:async()=>({data:{total_count:137,workflow_runs:items}}),
@@ -1936,9 +1936,14 @@ test('stale merged queue cleanup does not let a verified jobless GitHub 409 star
    repos:{compareCommits:async()=>({data:{status:'ahead',
     base_commit:{sha:old},merge_base_commit:{sha:old}}})}
   }};
+  if(forceStatus!==null)github.rest.actions.forceCancelWorkflowRun=async({run_id})=>{
+   forced.push(run_id);
+   if(forceStatus!==202)throw Object.assign(new Error('force rejected'),{status:forceStatus});
+   return {status:202};
+  };
   const result=await runCleanup({github,context,observedQueued:137,
    observedRemaining:4500,now});
-  return {cancelled,result};
+  return {cancelled,forced,result};
  };
  const verified=await check(true);
  assert.deepEqual(verified.cancelled,[991,992]);
@@ -1949,6 +1954,17 @@ test('stale merged queue cleanup does not let a verified jobless GitHub 409 star
  assert.deepEqual(unverified.cancelled,[991]);
  assert.deepEqual(unverified.result.cancel_accepted,[]);
  assert.equal(unverified.result.non_cancelable[0].code,'CANCEL_409_UNVERIFIED');
+ const forcedAccepted=await check(true,202);
+ assert.deepEqual(forcedAccepted.forced,[991]);
+ assert.deepEqual(forcedAccepted.result.force_cancel_accepted.map(x=>x.run_id),[991]);
+ assert.deepEqual(forcedAccepted.result.cancel_accepted.map(x=>x.run_id),[991,992]);
+ assert.equal(forcedAccepted.result.status,'CANCELLATION_ACCEPTED_NOT_TERMINAL');
+ const forceRejected=await check(true,409);
+ assert.deepEqual(forceRejected.forced,[991]);
+ assert.equal(forceRejected.result.non_cancelable[0].force_cancel_status,409);
+ assert.equal(forceRejected.result.status,'GITHUB_409_SUPPORT_TRIAGE');
+ const jobExists=await check(false,202);
+ assert.deepEqual(jobExists.forced,[],'never force-cancel a live or unknown job');
 });
 
 

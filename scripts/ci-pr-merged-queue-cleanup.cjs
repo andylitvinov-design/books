@@ -10,6 +10,7 @@ const FULL=OWNER+'/'+REPO, PROD='codex/public-book-library';
 const CONTROL='codex/bootstrap-books', SHA=/^[a-f0-9]{40}$/i;
 const GRACE=30*60*1000, THRESHOLD=100;
 const MAX_CANCELS=12,MAX_BRANCHES=12,MAX_COMPARES=14,MAX_JOBLESS_409=4;
+const MAX_FORCE_CANCELS=2;
 const date=s=>{const x=Date.parse(s||'');return Number.isFinite(x)?x:null;};
 function queuedPRRun(run){
  return run&&Number.isSafeInteger(run.id)&&run.id>0&&
@@ -63,7 +64,8 @@ async function runCleanup({github,context,core={info(){},warning(){}},
  observedQueued,observedRemaining,now=Date.now(),maxCancels=MAX_CANCELS}={}){
  const out={schema:'HH_STALE_MERGED_QUEUE_CLEANUP_V1',status:'HOLD',
   scanned:0,checked_branches:0,proved_shas:0,eligible:0,
-  cancel_accepted:[],cancel_attempts:0,non_cancelable:[],
+  cancel_accepted:[],cancel_attempts:0,force_cancel_attempts:0,
+  force_cancel_accepted:[],non_cancelable:[],
   skipped:0,partial:true,errors:[]};
  if(!trustedContext(context))return {...out,status:'UNTRUSTED_CONTEXT'};
  if(!Number.isSafeInteger(observedQueued)||observedQueued<=THRESHOLD||
@@ -158,12 +160,10 @@ async function runCleanup({github,context,core={info(){},warning(){}},
     old_head:item.head_sha.slice(0,12)});
   }catch(error){
    const status=Number(error?.status||0);
-   out.errors.push('CANCEL_DENIED:'+String(status||'unknown'));
    out.partial=true;
    if(status===409){
-    // GitHub's documented backend mismatch can show queued with 0 jobs,
-    // while both cancel and force-cancel return 409. Do NOT flood retries
-    // or force-cancel ambiguous runs; preserve a precise support receipt.
+    // An incident may strand a first-attempt run at queued with zero jobs.
+    // Only after the regular cancel fails, try GitHub's documented fallback.
     let runAfter=null,jobs=null;
     try{
      const [runResult,jobResult]=await Promise.all([
@@ -173,19 +173,47 @@ async function runCleanup({github,context,core={info(){},warning(){}},
      ]);
      runAfter=runResult.data;jobs=jobResult.data;
     }catch(e){out.errors.push('JOBLESS_409_PROOF_UNAVAILABLE:'+String(e?.status||'unknown'));}
-    const jobless=runAfter?.id===item.id&&runAfter.status==='queued'&&
+    const jobless=queuedPRRun(runAfter)&&runAfter.id===item.id&&
+      runAfter.head_sha===item.head_sha&&
+      runAfter.head_branch===item.head_branch&&
+      runAfter.created_at===item.created_at&&
+      mergedProduction(freshPR,runAfter,now)&&
+      uniqueRunOwner(runAfter,freshPR)&&
       jobs?.total_count===0&&Array.isArray(jobs.jobs)&&jobs.jobs.length===0;
+    // NEVER force-cancel an open PR, unproved ancestry, changed run,
+    // active job, manual rerun, or a run outside the verified merged scope.
+    // At most two attempts per signed sweep; a 202 is accepted, not terminal.
+    let forceStatus=null;
+    if(jobless&&out.force_cancel_attempts<MAX_FORCE_CANCELS&&
+       typeof github.rest.actions.forceCancelWorkflowRun==='function'){
+     out.force_cancel_attempts++;
+     try{
+      const response=await github.rest.actions.forceCancelWorkflowRun({
+       owner:OWNER,repo:REPO,run_id:item.id});
+      if(response?.status!==202)
+       throw Object.assign(new Error('FORCE_CANCEL_NOT_ACCEPTED'),{
+        status:response?.status||0});
+      const accepted={run_id:item.id,pr:pr.number,
+       old_head:item.head_sha.slice(0,12)};
+      out.force_cancel_accepted.push(accepted);
+      out.cancel_accepted.push({...accepted,method:'force-cancel'});
+      continue;
+     }catch(e){
+      forceStatus=Number(e?.status||0);
+      out.errors.push('FORCE_CANCEL_DENIED:'+String(forceStatus||'unknown'));
+     }
+    }
+    out.errors.push('CANCEL_DENIED:409');
     out.non_cancelable.push({run_id:item.id,pr:pr.number,
      code:jobless?'QUEUED_WITH_ZERO_JOBS_CANCEL_409':'CANCEL_409_UNVERIFIED',
+     force_cancel_attempted:forceStatus!==null,
+     force_cancel_status:forceStatus,
      url:'https://github.com/'+FULL+'/actions/runs/'+item.id});
     out.status='GITHUB_409_SUPPORT_TRIAGE';
-    // Continue only after an exact readback proves GitHub queued/zero-jobs
-    // for this failed cancellation; unverified 409 remains a hard stop.
-    // Never force-cancel, and bound jobless 409 attempts per existing sweep.
     if(!jobless||out.non_cancelable.length>=MAX_JOBLESS_409)break;
     continue;
    }
-   // Permission/rate/resolution conflicts stop, never retry in the same run.
+   out.errors.push('CANCEL_DENIED:'+String(status||'unknown'));
    if([403,404,422,429].includes(status))break;
   }
  }
