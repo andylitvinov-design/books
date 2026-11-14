@@ -18,6 +18,7 @@ import { ruleConversationReply } from "@/lib/holistic-support/rule-conversation.
 import { progressConversationTurn,progressDialogueReply } from "@/lib/holistic-support/dialogue-progression.mjs";
 import { nativeSecretaryTurn } from "@/lib/holistic-support/native-secretary.mjs";
 import { resolveComplaintTurn } from "@/lib/holistic-support/complaint-mind.mjs";
+import { reviewPracticeBoundary } from "@/lib/holistic-support/practice-boundary.mjs";
 import { consultServiceQuestion, resolveConsultantSuggestion } from "@/lib/assist/consultant-mind.mjs";
 import { resolveWisdomRequest } from "@/lib/app/coaching-wisdom.js";
 import { resolveConversationFocus } from "@/lib/holistic-support/conversation-context.mjs";
@@ -158,6 +159,8 @@ function preflight(text,locale) {
     if (interpretSupportUtterance(text.slice(i,i+240),locale).kind==="safety")
       return {status:"urgent"};
   }
+  // Nonclinical stop/worsening cannot proceed into Consultant, Judgment or Qwen.
+  if(reviewPracticeBoundary(text,locale))return {status:"human_review"};
   return {status:"clear"};
 }
 export async function POST(request) {
@@ -454,7 +457,9 @@ export async function POST(request) {
        (!fastRule || NATIVE_FAST_IDS.has(fastRule.id))){
       return await finish({
         status:"clarify",reply:nativeReply.reply,modelUsed:false,
-        source:nativeReply.source,memorySaved:false,userAuthorized:true,
+        source:nativeReply.source,nativeModelUsed:true,
+        nativeModelKind:nativeReply.modelKind,nativeModelVersion:nativeReply.modelVersion,
+        memorySaved:false,userAuthorized:true,
         suggestions:[],usedSavedTestEvidence:false,usedSavedVideoHistory:false,
         browserModelAllowed:false,
         decision:{status:"clarify",message:nativeReply.reply,question:null,suggestions:[]},

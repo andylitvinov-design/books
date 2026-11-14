@@ -4,7 +4,7 @@ import {useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
 import {ArrowRight,Heart,Home,Keyboard,Leaf,Captions,PhoneOff,LockKeyhole,MessageCircle,Pencil,Send,ShieldCheck,Sparkles,Target,UserRound,Video,Volume2,Zap} from 'lucide-react'
 import {getCoachPersona,localCoachText,coachStagePrompt} from '@/lib/coaching/persona-registry.mjs'
-import {coachingBrainSafety,coachingBrainBoundary} from '@/lib/personal-coaching/coaching-brain.mjs'
+import {coachingBrainSafety,coachingBrainBoundary,coachingBrainStageDecision,offlineCoachingBrainReply,selectCoachingBrainMethod} from '@/lib/personal-coaching/coaching-brain.mjs'
 import {classifyWisdomRequest} from '@/lib/coaching/wisdom-retrieval.mjs'
 import styles from './my-coach-live-dialogue.module.css'
 import MyCoachSpeechLoop from './my-coach-speech-loop'
@@ -229,17 +229,22 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       // Same editorial persona prompts, same browser-only conversation history.
       const input={locale:responseLocale,message,turns:turns.map(({role,content})=>({role,content}))}
       const interruption=coachingBrainSafety(input)||coachingBrainBoundary(input)
-      const stages=['goal','reality','resources','options','action']
-      const userCount=turns.filter(item=>item.role==='user').length
-      const stage=stages[Math.min(userCount,stages.length-1)]
-      const offlinePrompt=String(coachStagePrompt(personaId,stage,responseLocale,settings)||t.goal)
-      const answer=(interruption?[interruption.reflection,interruption.question].filter(Boolean).join(' '):offlinePrompt).slice(0,900)
-      const mode=interruption?.mode||'offline'
+      // Use the shared evidence-led protocol, never advance on message count.
+      // This stays in the browser; unverified models receive no client text.
+      const semanticStage=coachingBrainStageDecision(input).stage
+      const legacyStage={clarify:'goal',explore:'reality',awareness:'resources',
+        reframe:'options',choice:'options',planning:'action',commitment:'action',integration:'action'}
+      const stage=legacyStage[semanticStage]||'goal'
+      const offlineReply=interruption||offlineCoachingBrainReply(input,selectCoachingBrainMethod(input),semanticStage)
+      const offlinePrompt=String(offlineReply.question||coachStagePrompt(personaId,stage,responseLocale,settings)||t.goal)
+      const answer=(interruption?[offlineReply.reflection,offlinePrompt].filter(Boolean).join(' '):offlinePrompt).slice(0,900)
+      const mode=offlineReply.mode||'offline'
       setTurns(previous=>{
         const updated=[...previous,{role:'user',content:message},{
-          role:'assistant',content:answer,reflection:interruption?.reflection||'',
-          question:interruption?.question||offlinePrompt,
-          mode,reason:'model_unavailable',stage:interruption?.stage||stage,
+          role:'assistant',content:answer,reflection:offlineReply.reflection||'',
+          question:offlinePrompt,
+          mode,reason:mode==='offline'?(readiness.reason||'model_unavailable'):'',
+          stage:offlineReply.stage||semanticStage,
         }]
         return updated.length>24?[updated[0],...updated.slice(-23)]:updated
       })
