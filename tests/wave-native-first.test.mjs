@@ -7,7 +7,7 @@ const reply=(message,locale='ru',history=[])=>waveNativeTurn({message,locale,his
 
 test('Wave Native resolves ordinary simple chat locally in RU/EN/ES',()=>{
  assert.equal(WAVE_NATIVE_ROUTER_VERSION,'wave-native-first-v1');
- for(const [message,locale] of [['О Qwen','ru'],['What is your name?','en'],['¿Quién eres?','es'],['Что ты умеешь?','ru'],['What is OpenRouter?','en'],['Поговорим?','ru']]){
+ for(const [message,locale] of [['О Qwen','ru'],['What is your name?','en'],['¿Quién eres?','es'],['Что ты умеешь?','ru'],['What is OpenRouter?','en'],['Где найти курсы?','ru'],['Поговорим?','ru']]){
    const result=reply(message,locale);
    assert.ok(result?.reply,locale+': '+message);
    assert.equal(result.externalCalled,false);
