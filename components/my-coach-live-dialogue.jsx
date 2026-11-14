@@ -16,7 +16,7 @@ const copy={
   en:{
     badge:'Generative AI dialogue · when available',title:'Let’s talk',
     disclosure:'I’m a fictional AI coach, not a therapist. No questionnaires here — just a conversation. You choose the pace and direction.',
-    consent:'I agree to send the messages I type in this conversation to OpenRouter and an eligible free model. Nothing is sent until you press Send or explicitly start voice mode. Browser speech recognition may send microphone audio to its provider. Do not share passwords or document numbers.',
+    consent:'I agree to send this conversation text to GroqCloud GPT-OSS (only after the site verifies the free tier and account-level Zero Data Retention), or a verified free OpenRouter fallback. Nothing is sent until I press Send or start voice mode. Browser speech recognition may send microphone audio to its provider. Do not share passwords or document numbers.',
     field:'Your message',placeholder:'What’s on your mind?…',
     send:'Send',sending:'Thinking…',verifying:'Checking the free model before sending any personal text…',verified:'Free privacy-checked AI is ready.',user:'You',coach:'AI coach',ai:'Model response',wisdom:'Wisdom Library',offline:'Offline coaching question',crisis:'Safety pause',
     plan:'Possible next step — your choice',evidence:'Based on your words',back:'Back to coach',guided:'Use the guided session instead',
@@ -31,7 +31,7 @@ const copy={
   ru:{
     badge:'Генеративный AI-диалог · при доступности модели',title:'Давай поговорим',
     disclosure:'Я AI-персонаж, не психотерапевт. Здесь нет анкеты — просто разговор в вашем темпе, а направление выбираете вы.',
-    consent:'Я согласен(на) отправлять сообщения этого диалога в OpenRouter и подходящую бесплатную модель. До нажатия «Отправить» или включения голосового режима сообщения не передаются. Браузер может отправлять звук поставщику распознавания речи. Не вводите пароли и номера документов.',
+    consent:'Я согласен(на) отправлять текст этого разговора в GroqCloud GPT-OSS (только после проверки бесплатного тарифа и Zero Data Retention для аккаунта) либо в проверенную бесплатную модель OpenRouter. До нажатия «Отправить» или начала голосового режима ничего не передаётся. Браузер может отправлять звук поставщику распознавания речи. Не вводите пароли и номера документов.',
     field:'Ваше сообщение',placeholder:'Что сейчас у вас на уме?…',
     send:'Отправить',sending:'Думаю…',verifying:'Проверяем бесплатную модель без передачи ваших сообщений…',verified:'Бесплатная AI-модель проверена и готова.',user:'Вы',coach:'AI-коуч',ai:'Ответ модели',wisdom:'Библиотека мудрости',offline:'Офлайн-вопрос коуча',crisis:'Пауза для безопасности',
     plan:'Возможный следующий шаг — решаете вы',evidence:'Основание — ваши слова',back:'Назад к коучу',guided:'Пройти пошаговую программу',
@@ -46,7 +46,7 @@ const copy={
   es:{
     badge:'Diálogo generativo de IA · sujeto a disponibilidad',title:'Hablemos',
     disclosure:'Soy un personaje ficticio de IA, no terapeuta. Sin cuestionarios: podemos charlar con naturalidad, a tu ritmo.',
-    consent:'Acepto enviar los mensajes que escriba en este diálogo a OpenRouter y un modelo gratuito apto. No se envía nada hasta pulsar Enviar o activar el modo de voz. El navegador puede enviar audio al proveedor de reconocimiento. No incluyas contraseñas ni números de documentos.',
+    consent:'Consiento enviar el texto de este diálogo a GroqCloud GPT-OSS (solo tras verificar el nivel gratuito y Zero Data Retention de la cuenta) o a un modelo gratuito verificado de OpenRouter. No se envía nada hasta pulsar Enviar o iniciar el modo de voz. El navegador puede procesar mi voz. No incluyas contraseñas ni números de documentos.',
     field:'Tu mensaje',placeholder:'¿Qué tienes en mente?…',
     send:'Enviar',sending:'Pensando…',verifying:'Verificando el modelo gratuito sin enviar tus mensajes…',verified:'El modelo gratuito con privacidad verificada está listo.',user:'Tú',coach:'Coach IA',ai:'Respuesta del modelo',wisdom:'Biblioteca de sabiduría',offline:'Pregunta preparada',crisis:'Pausa de seguridad',
     plan:'Posible siguiente paso — tú decides',evidence:'Basado en tus palabras',back:'Volver al coach',guided:'Usar sesión guiada',
