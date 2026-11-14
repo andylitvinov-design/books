@@ -20,7 +20,9 @@ const ACCEPTED=new Set(["audio/mpeg","audio/mp3","audio/mp4","audio/x-m4a",
   "audio/wav","audio/x-wav","audio/aac","audio/webm","audio/ogg",
   "video/mp4","application/ogg"]);
 const EXTENSION=/\.(mp3|mp4|m4a|wav|webm|ogg|aac)$/i;
-const LANGUAGE=new Set(["ru","en","es"]);
+// The coach's EN page can still receive Russian speech. Only explicit
+// "auto" omits Groq Whisper's language hint; all file/consent/quota gates remain.
+const LANGUAGE=new Set(["ru","en","es","auto"]);
 const GROQ_TRANSCRIPT_URL="https://api.groq.com/openai/v1/audio/transcriptions";
 
 export async function POST(request){
@@ -54,7 +56,7 @@ export async function POST(request){
     multipart.set("model","whisper-large-v3-turbo");
     multipart.set("response_format","verbose_json");
     multipart.set("timestamp_granularities[]","segment");
-    multipart.set("language",language);
+    if(language!=="auto")multipart.set("language",language);
     const provider=await fetch(GROQ_TRANSCRIPT_URL,{
       method:"POST",cache:"no-store",redirect:"error",
       signal:AbortSignal.timeout(18000),

@@ -207,9 +207,22 @@ for (const engine of [chromium, webkit]) {
             "fu-prosperity", label + " money is the lowest score");
           await viewer.locator("[data-support-talisman-next]").click();
           await viewer.locator('[data-support-talisman-thumb="fu-prosperity"]').click();
-          await viewer.locator("[data-support-talisman-request]").click();
+          // This mobile fixture has real touch: use a genuine tap after
+          // scrolling the selected order button into view (not a force click).
+          const talismanRequestButton = viewer.locator("[data-support-talisman-request]");
+          await talismanRequestButton.scrollIntoViewIfNeeded();
+          await talismanRequestButton.tap({timeout:12000});
+          // Verify that the onClick really committed the exact approved
+          // catalogue ID before asserting the modal. A lost touch or storage
+          // failure is a real regression and must not be treated as green.
+          await page.waitForFunction(()=>{
+            try{
+              const cart=JSON.parse(window.sessionStorage.getItem("hh:taoist-talisman-cart:v1")||"null");
+              return Array.isArray(cart)&&cart.includes("fu-prosperity");
+            }catch{return false}
+          },null,{timeout:12000});
           const modal = page.locator('dialog[aria-labelledby="support-talisman-order-title"]');
-          await modal.waitFor({ state:"visible" });
+          await modal.waitFor({ state:"visible",timeout:12000 });
           assert.equal(await modal.locator('[data-taoist-talisman-cart][data-inline="true"]').count(), 1,
             label + " existing protected quote UI, no new backend");
           assert.equal(await modal.locator('[data-cart-talisman="fu-prosperity"]').count(), 1,

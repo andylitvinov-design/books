@@ -8,6 +8,30 @@ import {chooseDictationLanguage,readDictationResults,detectedSpeechLocale,ios27N
 import {startCoachingMp3Playback} from '@/lib/personal-coaching/streamed-mp3-playback.mjs'
 
 const speechLanguages={en:'en-GB',ru:'ru-RU',es:'es-ES'}
+const recordingWords={
+  en:{consent:'Allow a short recording to be transcribed first.',preparing:'Preparing reliable microphone…',
+    recording:'Recording your answer. Tap the mic again to transcribe.',transcribing:'Transcribing your full answer…',
+    recordNext:'Tap the microphone for your next answer.',failed:'Recording unavailable. Type your answer or use browser recognition.',
+    empty:'No voice was captured. Tap to record again.',upload:'Free speech transcription unavailable. Your typed answer remains editable.',
+    stalled:'Safari stopped updating your words. Switch to Reliable recording below, or restart the mic.'},
+  ru:{consent:'Разрешите отправку короткой записи для распознавания.',preparing:'Готовлю надёжную запись…',
+    recording:'Запись ответа. Нажмите микрофон ещё раз для распознавания.',transcribing:'Распознаю всю фразу…',
+    recordNext:'Нажмите микрофон, чтобы записать следующий ответ.',failed:'Запись недоступна. Напишите ответ или выберите распознавание браузера.',
+    empty:'Голос не записался. Попробуйте ещё раз.',upload:'Бесплатная расшифровка недоступна. Введённый текст сохранён.',
+    stalled:'Safari перестал добавлять слова. Выберите «Надёжная запись» ниже либо перезапустите микрофон.'},
+  es:{consent:'Autoriza primero transcribir una grabación corta.',preparing:'Preparando grabación fiable…',
+    recording:'Grabando tu respuesta. Toca el micrófono otra vez para transcribir.',transcribing:'Transcribiendo la frase completa…',
+    recordNext:'Toca el micrófono para grabar la siguiente respuesta.',failed:'Grabación no disponible. Escribe tu respuesta o usa el navegador.',
+    empty:'No se grabó voz. Inténtalo de nuevo.',upload:'Transcripción gratuita no disponible. Tu texto escrito sigue editable.',
+    stalled:'Safari dejó de añadir palabras. Usa Grabación fiable abajo o reinicia el micrófono.'},
+}
+const chooseRecordingType=Recorder=>{
+  for(const [mimeType,type,extension] of [
+    ['audio/mp4','audio/mp4','m4a'],['audio/webm;codecs=opus','audio/webm','webm'],
+    ['audio/webm','audio/webm','webm'],['audio/ogg;codecs=opus','audio/ogg','ogg'],
+  ])if(Recorder.isTypeSupported?.(mimeType))return {mimeType,type,extension}
+  return null
+}
 
 const words={
   en:{start:'Talk by voice',stop:'Stop voice',retryMic:'Retry microphone',listening:'Listening…',thinking:'Coach is thinking…',speaking:'Coach is speaking…',
@@ -38,8 +62,8 @@ const words={
     iosCue:'Te escucho ahora.',iosPreparing:'Preparando el micrófono del iPhone…',iosSilent:'Safari puede haber dejado de escuchar. Tu texto se puede editar; prueba de nuevo o reinicia Safari.'},
 }
 
-const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speechLocale='auto',initialDraft='',enabled=false,canStart=true,cloudAvailable=false,cloudAgreed=false,cloudProvider=null,personaId='mira',wizardVoice=false,onTurn,onCancelTurn,onVoiceStateChange,onRequestConsent,onTranscript,onDraft},ref){
-  const lang=words[locale]?locale:'en',t=words[lang]
+const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speechLocale='auto',initialDraft='',enabled=false,canStart=true,cloudAvailable=false,cloudAgreed=false,cloudProvider=null,personaId='mira',wizardVoice=false,recordedMode=false,recordingConsent=false,onRequestRecordingConsent,onTurn,onCancelTurn,onVoiceStateChange,onRequestConsent,onTranscript,onDraft},ref){
+  const lang=words[locale]?locale:'en',t=words[lang],r=recordingWords[lang]
   const [phase,setPhase]=useState('idle')
   const [notice,setNotice]=useState('')
   const [supported,setSupported]=useState(null)
@@ -47,6 +71,9 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   const phaseRef=useRef('idle')
   const activeRef=useRef(false)
   const recognitionRef=useRef(null)
+  const recorderRef=useRef(null),transcriptionControllerRef=useRef(null)
+  const recordedModeRef=useRef(recordedMode),recordingConsentRef=useRef(recordingConsent)
+  recordedModeRef.current=recordedMode;recordingConsentRef.current=recordingConsent
   const cloudControllerRef=useRef(null)
   const cloudPlayerRef=useRef(null)
   const speakingRef=useRef(false)
@@ -85,6 +112,16 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     iosCueTimerRef.current=null
     iosResultTimerRef.current=null
     iosCueSatisfiedRef.current=false
+    transcriptionControllerRef.current?.abort()
+    transcriptionControllerRef.current=null
+    const recorded=recorderRef.current
+    recorderRef.current=null
+    if(recorded){
+      if(recorded.timer)clearTimeout(recorded.timer)
+      recorded.recorder.onstop=null;recorded.recorder.ondataavailable=null;recorded.recorder.onerror=null
+      try{if(recorded.recorder.state!=='inactive')recorded.recorder.stop()}catch{}
+      try{recorded.stream.getTracks().forEach(track=>track.stop())}catch{}
+    }
     cloudControllerRef.current?.abort()
     cloudControllerRef.current=null
     cloudPlayerRef.current?.cancel()
@@ -119,13 +156,24 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   useImperativeHandle(ref,()=>({
     startWithConsent(){
       if(activeRef.current||!canStart)return
+      if(recordedModeRef.current&&!recordingConsentRef.current){
+        setNotice(r.consent);onRequestRecordingConsent?.();return
+      }
       activeRef.current=true
       generationRef.current+=1
       startListening()
     },
+    // Replay is an explicit user gesture: resume Safari-blocked device or MP3 audio
+    // without re-synthesizing the same paid/free-quota-limited coach question.
+    resumeVoice(){
+      if(phaseRef.current!=='ready'||!blockedResumeRef.current)return false
+      blockedResumeRef.current()
+      return true
+    },
   }))
   useEffect(()=>{
-    setSupported(Boolean(window.SpeechRecognition||window.webkitSpeechRecognition))
+    setSupported(Boolean(window.SpeechRecognition||window.webkitSpeechRecognition||
+      (window.MediaRecorder&&window.navigator.mediaDevices?.getUserMedia)))
     const onHidden=()=>{if(document.visibilityState==='hidden')stopRef.current?.()}
     document.addEventListener('visibilitychange',onHidden)
     return ()=>{
@@ -137,13 +185,110 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     if(!enabled&&activeRef.current)stopRef.current?.()
   },[enabled])
   useEffect(()=>{
+    if(activeRef.current)stopRef.current?.()
+  },[recordedMode,recordingConsent])
+  useEffect(()=>{
     if((!cloudAgreed||!cloudAvailable)&&(cloudControllerRef.current||cloudPlayerRef.current))
       stopRef.current?.()
   },[cloudAgreed,cloudAvailable])
 
+  // iOS Web Speech can become silent after one fragment. This alternative
+  // captures the WHOLE answer and only uploads after a separate consent checkbox
+  // and a user-initiated stop (or the strict 18-second maximum).
+  async function startRecordedTurn(){
+    const Recorder=window.MediaRecorder
+    const getUserMedia=window.navigator.mediaDevices?.getUserMedia?.bind(window.navigator.mediaDevices)
+    if(!recordingConsentRef.current||!Recorder||!getUserMedia){
+      silence();changePhase('idle');setNotice(recordingConsentRef.current?r.failed:r.consent)
+      return
+    }
+    const generation=generationRef.current
+    draftAtStartRef.current=currentDraftRef.current.trim()
+    heardRef.current='';transcriptRef.current?.('')
+    changePhase('starting');setNotice(r.preparing)
+    let stream
+    try{
+      stream=await getUserMedia({audio:{echoCancellation:true,noiseSuppression:true},video:false})
+      if(!activeRef.current||generationRef.current!==generation){
+        stream.getTracks().forEach(track=>track.stop());return
+      }
+      const format=chooseRecordingType(Recorder)
+      const recorder=new Recorder(stream,format?{mimeType:format.mimeType}:undefined)
+      const actual=String(recorder.mimeType||format?.mimeType||'').toLowerCase()
+      const type=actual.startsWith('audio/mp4')?'audio/mp4':
+        actual.startsWith('audio/webm')?'audio/webm':
+        actual.startsWith('audio/ogg')?'audio/ogg':null
+      if(!type)throw Error('UNSUPPORTED_AUDIO_FORMAT')
+      const extension=type==='audio/mp4'?'m4a':type==='audio/webm'?'webm':'ogg'
+      const recorded={recorder,stream,chunks:[],timer:null,stopping:false}
+      recorderRef.current=recorded
+      recorder.ondataavailable=event=>{if(event.data?.size)recorded.chunks.push(event.data)}
+      recorder.onerror=()=>{
+        if(recorderRef.current!==recorded)return
+        silence();changePhase('idle');setNotice(r.failed)
+      }
+      recorder.onstop=()=>{
+        if(recorded.timer)clearTimeout(recorded.timer)
+        stream.getTracks().forEach(track=>track.stop())
+        if(recorderRef.current!==recorded)return
+        recorderRef.current=null
+        if(!activeRef.current||generationRef.current!==generation)return
+        if(!recorded.chunks.length){silence();changePhase('idle');setNotice(r.empty);return}
+        const file=new File(recorded.chunks,'coach-answer.'+extension,{type})
+        if(!file.size||file.size>4*1024*1024){
+          silence();changePhase('idle');setNotice(r.upload);return
+        }
+        const body=new FormData()
+        body.set('file',file,file.name)
+        body.set('locale',['ru','en','es'].includes(speechLocale)?speechLocale:'auto')
+        body.set('consent','yes')
+        const controller=new AbortController()
+        transcriptionControllerRef.current=controller
+        changePhase('transcribing');setNotice(r.transcribing)
+        void fetch('/api/holistic-support/audio-storyboard',{
+          method:'POST',body,credentials:'same-origin',cache:'no-store',signal:controller.signal,
+        }).then(async response=>{
+          const result=await response.json().catch(()=>null)
+          if(!response.ok||!result?.transcript?.text)throw Error('FREE_STT_UNAVAILABLE')
+          return String(result.transcript.text).trim().slice(0,1200)
+        }).then(text=>{
+          if(controller.signal.aborted||!activeRef.current||generationRef.current!==generation)return
+          transcriptionControllerRef.current=null
+          if(!text){silence();changePhase('idle');setNotice(r.empty);return}
+          const combined=appendSpokenAnswer(draftAtStartRef.current,text,1200)
+          lastHeardRef.current=text
+          draftRef.current?.(combined)
+          void deliver(combined)
+        }).catch(()=>{
+          if(controller.signal.aborted||generationRef.current!==generation)return
+          transcriptionControllerRef.current=null
+          silence();changePhase('idle');setNotice(r.upload)
+        })
+      }
+      recorder.start(250)
+      recorded.timer=setTimeout(()=>stopRecordedTurn(),18000)
+      changePhase('recording');setNotice(r.recording)
+    }catch{
+      if(stream)try{stream.getTracks().forEach(track=>track.stop())}catch{}
+      if(generationRef.current!==generation)return
+      silence();changePhase('idle');setNotice(r.failed)
+    }
+  }
+  function stopRecordedTurn(){
+    const recorded=recorderRef.current
+    if(!recorded||recorded.stopping)return
+    recorded.stopping=true
+    if(recorded.timer)clearTimeout(recorded.timer)
+    changePhase('transcribing');setNotice(r.transcribing)
+    try{recorded.recorder.stop()}catch{
+      silence();changePhase('idle');setNotice(r.failed)
+    }
+  }
+
   function startListening(){
     if(!activeRef.current)return
     setMicStalled(false)
+    if(recordedModeRef.current){void startRecordedTurn();return}
     const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition
     const ios27=ios27NeedsSpeechRecovery(window.navigator)
     if(!Recognition){setSupported(false);stopVoice();setNotice(t.unsupported);return}
@@ -192,6 +337,14 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
         // iOS 27 Safari can become deaf after an explicit stop(). Let this
         // continuous=false recognizer finish naturally after its final result.
         if(!ios27)try{recognition.stop()}catch{}
+      }
+      // A first interim word can be the last event iOS 27 ever sends.
+      // Re-arm after EVERY result; do not misrepresent a frozen recognizer as live.
+      if(ios27&&visible){
+        iosResultTimerRef.current=setTimeout(()=>{
+          if(recognitionRef.current!==recognition||!activeRef.current)return
+          setMicStalled(true);changePhase('stalled');setNotice(r.stalled)
+        },6500)
       }
       // Dictation is shown in the transcript, never echoed beneath the microphone.
       if(visible||interim)setNotice('')
@@ -298,6 +451,9 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       if(!live())return
       if(result.mode==='safety'||result.mode==='boundary'){
         silence();changePhase('idle');return
+      }
+      if(recordedModeRef.current){
+        silence();changePhase('idle');setNotice(r.recordNext);return
       }
       startListening()
     }
@@ -420,6 +576,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   }
 
   function toggle(){
+    if(phaseRef.current==='recording'){stopRecordedTurn();return}
     if(phaseRef.current==='stalled'){
       // One deliberate iPhone tap restarts a recognizer stuck with no words.
       stopVoice()
@@ -437,23 +594,27 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     if(!canStart)return
     if(supported===false){setNotice(t.unsupported);return}
     if(!enabled){onRequestConsent?.();return}
+    if(recordedModeRef.current&&!recordingConsentRef.current){
+      onRequestRecordingConsent?.();setNotice(r.consent);return
+    }
     activeRef.current=true
     generationRef.current+=1
     startListening()
   }
 
   const active=phase!=='idle',ready=phase==='ready',retryMic=micStalled&&phase==='stalled'
+  const recording=phase==='recording',transcribing=phase==='transcribing'
   return <div className={styles.root} data-my-coach-voice={phase}>
     <button type="button" className={styles.button}
       onClick={toggle} disabled={!active&&!canStart}
-      aria-pressed={active&&!ready} aria-label={retryMic?t.retryMic:ready?t.tapToHear:active?t.stop:t.start}>
+      aria-pressed={active&&!ready} aria-label={recording?r.recording:transcribing?r.transcribing:retryMic?t.retryMic:ready?t.tapToHear:active?t.stop:t.start}>
       {ready?<Volume2 size={19} aria-hidden="true"/>:active?<MicOff size={19} aria-hidden="true"/>:<Mic size={19} aria-hidden="true"/>}
-      <span>{retryMic?t.retryMic:ready?t.tapToHear:active?t.stop:t.start}</span>
+      <span>{recording?t.stop:transcribing?t.thinking:retryMic?t.retryMic:ready?t.tapToHear:active?t.stop:t.start}</span>
       {phase==='speaking'&&<Volume2 size={17} aria-hidden="true"/>}
     </button>
     {supported===false&&!notice&&<p className={styles.note} role="status">{t.unsupported}</p>}
     {active&&!notice&&<span className={styles.status} role="status">
-      {retryMic?t.retryMic:ready?t.tapToHear:phase==='loading'?t.preparing:phase==='starting'||phase==='listening'?t.listening:phase==='thinking'?t.thinking:t.speaking}
+      {recording?r.recording:transcribing?r.transcribing:retryMic?t.retryMic:ready?t.tapToHear:phase==='loading'?t.preparing:phase==='starting'||phase==='listening'?t.listening:phase==='thinking'?t.thinking:t.speaking}
     </span>}
     {notice&&<p className={styles.note} role="status">{notice}</p>}
     <p className={styles.privacy} data-my-coach-voice-privacy>{t.privacy}</p>

@@ -40,8 +40,9 @@ test('first mic tap obtains user-initiated explicit consent, then starts browser
  assert.match(loop,/disabled=\{!active&&!canStart\}/)
  assert.match(loop,/recognition\.start\(\)/)
  assert.match(ui,/if\(!message\|\|!consent\|\|busy\|\|paused\|\|authRequired/)
- assert.doesNotMatch(ui,/MediaRecorder|localStorage|sessionStorage/)
- assert.doesNotMatch(loop,/api\.fish\.audio|new WebSocket|MediaRecorder/)
+ assert.doesNotMatch(ui,/localStorage|sessionStorage/)
+ assert.doesNotMatch(loop,/api\.fish\.audio|new WebSocket/)
+ assert.match(loop,/recordingConsentRef\.current/,'recording requires consent')
  for(const locale of ['en','ru','es'])assert.ok(loop.includes(locale+':{start:'),locale)
 })
 
@@ -82,4 +83,14 @@ test('mobile Fish consent cannot push the current chat/composer outside a bounde
  assert.ok(ui.indexOf('className={styles.voiceControls}')<ui.indexOf('className={styles.liveTranscript}'))
  assert.ok(ui.includes('className={styles.naturalVoiceRow}'),'Fish option remains available')
  assert.ok(ui.includes('ref={composerDetailsRef} className={styles.textComposer} open'),'editable reply is still open')
+})
+
+test('Replay explicitly rescues Safari-blocked coach audio without re-synthesizing it',()=>{
+ const ui=read('components/my-coach-live-dialogue.jsx')
+ const loop=read('components/my-coach-speech-loop.jsx')
+ assert.match(loop,/resumeVoice\(\)\{/)
+ assert.match(loop,/blockedResumeRef\.current\(\)/)
+ assert.match(ui,/if\(speechRef\.current\?\.resumeVoice\?\.\(\)\)return/)
+ assert.match(ui,/voiceState\.phase!=='ready'/)
+ assert.match(ui,/voiceState\.phase==='ready'\?voiceGate\.tapToHear/)
 })
