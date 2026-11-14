@@ -85,6 +85,34 @@ function rmsPcm(mediaFile) {
   }
   return Math.sqrt(energy / samples);
 }
+// The compact fourth Story is deliberately review-only. Advanced timeline
+// and source settings are in the fifth Montage tab; no hidden Story click.
+async function openMontageSettings(page) {
+  const montage=page.locator('[data-video-montage-tab="promo"]');
+  await montage.waitFor({state:'visible',timeout:20000});
+  row.phase='fifth-montage-native-selection';
+  if(engine==='webkit')await montage.tap();
+  else await montage.click();
+  await page.waitForFunction(()=>
+    document.querySelector('[data-video-basic-editor]')?.getAttribute('data-montage-panel')==='promo',
+    undefined,{timeout:15000});
+  const advanced=page.locator('[data-video-stories-advanced]');
+  await advanced.waitFor({state:'visible',timeout:20000});
+  if(!await advanced.evaluate(node=>node.open)){
+    row.phase='fifth-montage-advanced-options';
+    if(engine==='webkit')await advanced.locator(':scope > summary').tap();
+    else await advanced.locator(':scope > summary').click();
+  }
+  const settings=advanced.locator('[data-video-stories-settings]');
+  await settings.waitFor({state:'visible',timeout:20000});
+  row.phase='fifth-montage-settings';
+  if(engine==='webkit')await settings.tap();
+  else await settings.click();
+  await page.waitForFunction(()=>
+    document.querySelector('[data-video-basic-editor]')?.getAttribute('data-montage-panel')==='settings',
+    undefined,{timeout:15000});
+}
+
 let browser;
 let page;
 let mediaDir;
@@ -133,11 +161,16 @@ try {
   // Use the real visitor actions; do not bypass hydration, rights, or editor.
   const continueToIdeas=page.locator('[data-video-continue-scenarios]');
   await continueToIdeas.waitFor({state:'visible',timeout:40000});
-  await continueToIdeas.click();
+  row.phase='goals-to-ideas-native-tap';
+  if(engine==='webkit')await continueToIdeas.tap();
+  else await continueToIdeas.click();
   const ideas=page.locator('[data-video-quick-control="phrases"]');
   assert.equal(await ideas.getAttribute('aria-pressed'),'true','GOALS_MUST_OPEN_IDEAS');
   const editorTab=page.locator('[data-video-quick-control="editor"]');
-  await editorTab.click();
+  row.phase='ideas-to-editor-native-tap';
+  if(engine==='webkit')await editorTab.tap();
+  else await editorTab.click();
+  row.phase='editor-workspace-commit';
   await page.waitForFunction(()=>
     document.querySelector('[data-video-quick-control="editor"]')
       ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
@@ -145,7 +178,10 @@ try {
     'true','MONTAGE_MUST_START_WITH_STYLE');
   const montageStyle=page.locator('[data-video-montage-tab="effects"]');
   await montageStyle.waitFor({state:'visible',timeout:20000});
-  await montageStyle.click();
+  row.phase='montage-style-native-tap';
+  if(engine==='webkit')await montageStyle.tap();
+  else await montageStyle.click();
+  row.phase='montage-style-commit';
   await page.waitForFunction(()=>{
     const studio=document.querySelector('[data-mandala-free-video]');
     const style=document.querySelector('[data-video-montage-tab="effects"]');
@@ -158,39 +194,58 @@ try {
   // Only a physical Next action advances the real Style → Audio stage.
   const styleNext=page.locator('[data-video-montage-effects] [data-video-montage-next="audio"]');
   await styleNext.waitFor({state:'visible',timeout:15000});
-  await styleNext.click();
+  row.phase='style-to-audio-native-tap';
+  if(engine==='webkit')await styleNext.tap();
+  else await styleNext.click();
+  row.phase='style-to-audio-commit';
   await page.waitForFunction(()=>document.querySelector('[data-video-montage-tab="audio"]')
     ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
   assert.equal(await page.locator('[data-video-montage-tab="audio"]').getAttribute('aria-pressed'),
     'true','VISIBLE_STYLE_NEXT_MUST_OPEN_AUDIO');
   // Concept is reviewed in Ideas, not in the removed Montage Concept panel.
-  await page.locator('[data-video-quick-control="phrases"]').click();
-  await page.locator('[data-video-ideas-tab="concept"]').click();
+  row.phase='editor-to-ideas-native-tap';
+  if(engine==='webkit')await page.locator('[data-video-quick-control="phrases"]').tap();
+  else await page.locator('[data-video-quick-control="phrases"]').click();
+  row.phase='ideas-concept-native-tap';
+  if(engine==='webkit')await page.locator('[data-video-ideas-tab="concept"]').tap();
+  else await page.locator('[data-video-ideas-tab="concept"]').click();
   const concept=page.locator('[data-video-ideas-concept-panel]');
   await concept.waitFor({state:'visible',timeout:15000});
-  await concept.locator('[data-video-concept-approve]').click();
-  await page.locator('[data-video-quick-control="editor"]').click();
-  await page.locator('[data-video-montage-tab="concept"]').click();
-  await page.locator('[data-video-story-open-settings]').click();
-  await page.locator('[data-video-quick-control="phrases"]').click();
-  await page.locator('[data-video-ideas-tab="concept"]').click();
+  row.phase='concept-approve-native-tap';
+  if(engine==='webkit')await concept.locator('[data-video-concept-approve]').tap();
+  else await concept.locator('[data-video-concept-approve]').click();
+  row.phase='ideas-to-editor-return-native-tap';
+  if(engine==='webkit')await page.locator('[data-video-quick-control="editor"]').tap();
+  else await page.locator('[data-video-quick-control="editor"]').click();
+  await openMontageSettings(page);
+  row.phase='editor-to-ideas-native-tap';
+  if(engine==='webkit')await page.locator('[data-video-quick-control="phrases"]').tap();
+  else await page.locator('[data-video-quick-control="phrases"]').click();
+  row.phase='ideas-concept-native-tap';
+  if(engine==='webkit')await page.locator('[data-video-ideas-tab="concept"]').tap();
+  else await page.locator('[data-video-ideas-tab="concept"]').click();
   assert.equal(await page.locator('[data-video-concept-auto]').getAttribute('data-concept-approved'),
     'true','GUEST_APPROVAL_MUST_SURVIVE_TAB_NAVIGATION');
-  await page.locator('[data-video-quick-control="editor"]').click();
-  await page.locator('[data-video-montage-tab="concept"]').click();
-  await page.locator('[data-video-story-open-settings]').click();
+  row.phase='ideas-to-editor-return-native-tap';
+  if(engine==='webkit')await page.locator('[data-video-quick-control="editor"]').tap();
+  else await page.locator('[data-video-quick-control="editor"]').click();
+  await openMontageSettings(page);
   const textTools=page.locator('[data-video-concept-text-tools]');
   await textTools.locator(':scope > summary').click();
   await textTools.evaluate(node=>{if(!node.open)throw Error('CONCEPT_TEXT_TOOLS_DID_NOT_OPEN')});
   const addVideo=page.locator('[data-video-timeline-add-video]');
   await addVideo.waitFor({state:'visible',timeout:20000});
-  await addVideo.click();
+  row.phase='add-source-native-tap';
+  if(engine==='webkit')await addVideo.tap();
+  else await addVideo.click();
+  row.phase='source-editor-open-commit';
   await page.waitForFunction(()=>
     document.querySelector('[data-mandala-free-video]')?.getAttribute('data-video-scenario-open')==='true',
     undefined,{timeout:15000});
   await page.waitForFunction(() =>
     document.querySelector('[data-mandala-free-video]')?.getAttribute('data-video-advanced-open')==='true',
     undefined,{timeout:15000});
+  row.phase='source-advanced-section-visibility';
   const advanced=page.locator('[data-video-first-video-advanced]');
   await advanced.waitFor({state:'visible',timeout:40000});
   if(await advanced.getAttribute('open')===null)
@@ -210,7 +265,10 @@ try {
   row.quickPortraitButtonCount=await portrait.count();
   assert.equal(row.quickPortraitButtonCount,1,'MOBILE_ASPECT_CONTROL_MISSING');
   row.phase='portrait-real-click';
-  await portrait.click();
+  // WebKit's actual iPhone gesture is touch, as for the visible Style step.
+  // Do not replace the user's tap with a forced click or synthetic state.
+  if(engine==='webkit')await portrait.tap();
+  else await portrait.click();
   row.phase='portrait-selection-confirmation';
   // Verify React committed the selection on the actual visible, hydrated
   // first-video widget, not another hidden or detached mobile host.
@@ -220,7 +278,25 @@ try {
     )].some(root=>root.getClientRects().length>0&&
       root.querySelector('[data-first-video-quick-aspect="portrait"]')
         ?.getAttribute('aria-pressed')==='true'),undefined,{timeout:15000});
-  } catch {throw Error('LIVE_VIDEO_PORTRAIT_SELECTION_NOT_REFLECTED');}
+  } catch {
+    // Structural-only diagnostic: no prompts, audio, scene names, URLs or PII.
+    const state=await page.evaluate(()=>{
+      const roots=[...document.querySelectorAll('[data-first-free-video]')];
+      return {
+        workspace:document.querySelector('[data-mandala-free-video]')?.getAttribute('data-active-workspace')||null,
+        advancedOpen:Boolean(document.querySelector('[data-video-first-video-advanced]')?.open),
+        roots:roots.map(root=>({
+          hydrated:root.getAttribute('data-first-video-hydrated')==='true',
+          visible:root.getClientRects().length>0,
+          portraitPressed:root.querySelector('[data-first-video-quick-aspect="portrait"]')?.getAttribute('aria-pressed')||null,
+          selectedAspect:root.querySelector('[data-first-video-aspect]')?.value||null
+        }))
+      };
+    }).catch(()=>({status:'DOM_DIAGNOSTIC_UNAVAILABLE'}));
+    row.portraitSelectionState=state;
+    console.error('LIVE_VIDEO_PORTRAIT_SELECTION_STATE',JSON.stringify(state));
+    throw Error('LIVE_VIDEO_PORTRAIT_SELECTION_NOT_REFLECTED');
+  }
   // Advanced settings remain genuine native select interactions. Open the
   // disclosure only if closed; never force-select a hidden/disabled field.
   const filters=first.locator('[data-first-video-filters]');

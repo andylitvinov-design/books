@@ -31,6 +31,8 @@ export type LibraryFeedItem = {
   sourceGroup?: string;
   sourceLabel?: string;
   mytubeSection?: "masters";
+  /** Editorial AI-assisted origin, reviewed for public presentation sources. */
+  aiAssisted?: boolean;
   durationVerifiedSeconds?: number;
   mytubeFormat?: "shorts" | "study";
   sourceApproved?: boolean;

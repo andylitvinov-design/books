@@ -354,7 +354,7 @@ test("Ideas → Montage cancels stale scroll on a genuine quick-tab action",()=>
 });
 
 // Owner-approved UX: direct export and advancing to effects are independent.
-test("the video studio exposes two independent actions on every stage",()=>{
+test("Goal and Montage preserve creation guards while Text offers guarded video and storyboard actions",()=>{
  const ideas=readFileSync(new URL("../components/mandala-video-ideas.tsx",import.meta.url),"utf8");
  const hypno=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.tsx",import.meta.url),"utf8");
  for(const name of ["goal","montage"])assert.ok(studio.includes('data-video-stage-actions="'+name+'"'));
@@ -362,8 +362,18 @@ test("the video studio exposes two independent actions on every stage",()=>{
  assert.ok(studio.includes('data-video-continue-scenarios'));
  assert.ok(studio.includes('data-video-quick-generate'));
  assert.ok(studio.includes('onClick={continueMontageOrGenerate}'));
- assert.ok(ideas.includes('data-video-ideas-generate'));
- assert.ok(ideas.includes('data-video-ideas-create'));
+ const start=ideas.indexOf('data-video-stage-actions="ideas"');
+ const footer=ideas.slice(start,ideas.indexOf("</div>",start));
+ assert.ok(start>0,"Text footer is mounted");
+ assert.equal(footer.split("<button").length-1,2,"Text has two independent actions");
+ assert.ok(footer.indexOf('data-video-ideas-generate')<footer.indexOf('data-video-ideas-create'),
+  "direct video action is left of Storyboard");
+ assert.ok(footer.includes('onClick={onGenerate}') && footer.includes('onClick={onCreate}'));
+ assert.ok(footer.includes('disabled={disabled||selectedCount<5}'),"Storyboard retains minimum-five gate");
+ assert.ok(footer.includes("Создать видео") && footer.includes("Generate Video") &&
+  footer.includes("Раскадровка") && footer.includes("Storyboard"));
+ assert.ok(studio.includes('onGenerate={createQuickVideo}'),"direct action preserves original guarded renderer");
+ assert.ok(studio.includes('setMontagePanel("concept");setPreviewPlaying(false);setNotice("");'));
  assert.ok(hypno.includes('data-hypno-create'));
  assert.ok(hypno.includes('data-hypno-add-effects'));
  assert.ok(!studio.includes('generateWithoutHypnoEffects'));

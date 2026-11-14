@@ -409,7 +409,9 @@ export function MandalaMultiTrackTimeline({
     </div>
     </div>
     <div className={css.addBar}>
-      <button type="button" disabled={disabled} onClick={onAddVideo}
+      <button type="button" disabled={disabled}
+        onPointerUp={event=>{if(event.pointerType==="touch"&&!disabled)onAddVideo();}}
+        onClick={onAddVideo}
         data-video-timeline-add-video><Plus size={16}/><Film size={15}/>{t.addVideo}</button>
       <button type="button" disabled={disabled} onClick={onOpenAudio}
         data-video-timeline-add-audio><Plus size={16}/><Music2 size={15}/>{t.addAudio}</button>
