@@ -5,6 +5,7 @@ import test from 'node:test'
 import ts from 'typescript'
 import { NextRequest, NextResponse } from 'next/server.js'
 import * as redirects from '../lib/canonical-redirect.js'
+import { personalVideoStorageCsp } from '../lib/app/personal-video-storage-csp.mjs'
 
 function middlewareModule(refreshAdminAuth) {
   const source = readFileSync(new URL('../middleware.ts', import.meta.url), 'utf8')
@@ -12,6 +13,7 @@ function middlewareModule(refreshAdminAuth) {
     'next/server': { NextResponse },
     './lib/canonical-redirect': redirects,
     './lib/app/admin-auth-refresh': { refreshAdminAuth },
+    './lib/app/personal-video-storage-csp.mjs': { personalVideoStorageCsp },
   }
   const runtime = { exports: {}, Headers, crypto: globalThis.crypto, process: { env: {} }, require(name) {
     assert.ok(Object.hasOwn(modules, name), name)

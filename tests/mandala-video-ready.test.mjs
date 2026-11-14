@@ -364,3 +364,18 @@ test("personal video CSP permits only signed Supabase API + resumable storage on
   assert.match(middleware,/directMessageStorageOrigin \+ personalVideoStorage\.media/);
   assert.doesNotMatch(middleware,/connect-src[^\n]*https:\/\/\*\.supabase\.co/);
 });
+
+test("First Video navigates to Ready before its separate trusted render, preserving guest and credit guards",()=>{
+  const source=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  const browser=readFileSync(new URL("../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
+  const first=source.slice(source.indexOf("<MandalaFirstVideoStart"),source.indexOf("/> : null}",source.indexOf("<MandalaFirstVideoStart")));
+  assert.match(first,/setActiveWorkspace\("ready"\)/);
+  assert.match(first,/setPracticeLevels\(current=>\(\{\.\.\.current,video:"basic"\}\)\)/);
+  assert.doesNotMatch(first,/createQuickVideo\(\)/,"first action must not encode or debit");
+  const ready=source.slice(source.indexOf("onGenerateBasicVideo="),source.indexOf("saveStatus=",source.indexOf("onGenerateBasicVideo=")));
+  assert.match(ready,/return createQuickVideo\(\)/,"explicit Ready action still uses original credit and consent gates");
+  assert.match(browser,/FIRST_VIDEO_NAVIGATION_MUST_NOT_BE_AN_EXPORT/);
+  assert.match(browser,/READY_RENDER_MUST_BE_AVAILABLE/);
+  assert.match(browser,/readyGenerate\.tap\(\)/);
+  assert.match(browser,/readRealGuestVideo\(page,\{timeout:80000\}\)/,"real encoded Blob and guest Save gate remain required");
+});
