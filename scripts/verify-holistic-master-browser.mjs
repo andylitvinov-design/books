@@ -14,11 +14,11 @@ if (!/^http:\/\/(?:127\.0\.0\.1|localhost):\d+$/.test(origin))
 const output = "artifacts/holistic-support-mobile";
 await mkdir(output, {recursive: true});
 const copy = {
-  en: { title: "Holistic Support", tab: "Holistic Support", accessible: "Holistic Support",
+  en: { title: "Holistic Support", tab: "Study", accessible: "Study",
     question: "How can I find clarity this week?", intention: "I want calm before an important decision." },
-  ru: { title: "Холистическая поддержка", tab: "Поддержка", accessible: "Холистическая поддержка",
+  ru: { title: "Холистическая поддержка", tab: "Обучение", accessible: "Обучение",
     question: "Как прояснить мой выбор на этой неделе?", intention: "Хочу больше спокойствия перед важным решением." },
-  es: { title: "Apoyo holístico", tab: "Apoyo holístico", accessible: "Apoyo holístico",
+  es: { title: "Apoyo holístico", tab: "Estudiar", accessible: "Estudiar",
     question: "¿Cómo aclarar mi situación esta semana?", intention: "Quiero calma antes de una decisión importante." },
 };
 const evidence = [];
@@ -60,11 +60,25 @@ async function verify(engine, locale, width) {
     assert.ok((await scenic.evaluate(node => getComputedStyle(node, "::before").backgroundImage))
       .includes("ideas-pine-sharp.avif"), label + ": approved pine photograph");
 
-    const tab = page.locator('.mobile-bottom-navigation [data-nav-item="temple"]');
+    // Holistic Support is now an editorial route under the single, current
+    // seven-destination dock. The legacy Temple footer must not duplicate it.
+    const unifiedDock = page.locator('[data-hh-unified-dock]');
+    await unifiedDock.waitFor({state: "visible", timeout: 15000});
+    const tab = unifiedDock.locator('[data-unified-dock-item="practice"]');
     await tab.waitFor({state: "visible"});
     assert.equal((await tab.innerText()).trim(), copy[locale].tab);
     assert.equal(await tab.getAttribute("aria-label"), copy[locale].accessible);
-    assert.equal(await tab.getAttribute("aria-current"), "page");
+    assert.equal(await tab.getAttribute("href"), "/" + locale + "/holistic-support/mobile",
+      label + ": Study enters the published Holistic Support practice");
+    assert.equal(await tab.getAttribute("aria-current"), null,
+      label + ": no false active tab on the editorial overview route");
+    assert.equal(await page.locator(".mobile-bottom-navigation:visible").count(), 0,
+      label + ": no duplicated legacy footer");
+    assert.equal(await unifiedDock.locator("[data-unified-dock-item]").count(), 7,
+      label + ": seven actual navigation choices remain");
+    const navTarget = await tab.boundingBox();
+    assert.ok(navTarget && navTarget.height >= 44 && navTarget.width >= 44,
+      label + ": current Study action remains finger-sized");
 
 
     // The current meditation section exposes source-backed recordings and an
