@@ -363,3 +363,23 @@ test('a silent iPhone recognizer offers one-tap retry while natural-voice consen
   assert.ok(loop.includes('(!cloudAgreed||!cloudAvailable)&&(cloudControllerRef.current||cloudPlayerRef.current)'),
     'revoking cloud consent still stops the private audio request')
 })
+
+test('My Coach Replay animates large portrait only on actual device or cloud audio playback',()=>{
+  const page=source('components/my-coach-live-dialogue.jsx')
+  const replay=page.split('function replayCoachReply(){')[1]?.split('  useEffect(()=>{')[0]
+  assert.ok(replay,'Replay handler exists in existing voice session')
+  const cloud=replay.split('replayPlayerRef.current=startCoachingMp3Playback(response,{')[1]?.split('\n        })')[0]
+  assert.ok(cloud,'existing consented MP3 player reused')
+  const started=cloud.split('onStart:()=>{')[1]?.split('onBlocked:')[0]||''
+  assert.match(started,/replayControllerRef\.current===controller/)
+  assert.match(started,/setVoiceState\(\{phase:'speaking',beat:0\}\)/)
+  for(const [event,next] of [['onBlocked:', 'onEnd:'],['onEnd:', 'onError:'],['onError:', null]]){
+    const section=cloud.split(event)[1]?.split(next||'NO_DELIMITER')[0]||''
+    assert.match(section,/setVoiceState\(\{phase:'idle',beat:0\}\)/,event+' restores idle')
+  }
+  assert.match(replay,/utterance\.onstart=\(\)=>\{[\s\S]*?setVoiceState\(\{phase:'speaking',beat:0\}\)/)
+  assert.match(replay,/utterance\.onboundary=event=>\{/)
+  assert.match(page,/onHidden=\(\)=>\{if\(document.hidden\)\{stopReplay\(\);setVoiceState\(\{phase:'idle',beat:0\}\)\}\}/)
+  assert.match(replay,/\.catch\(\(\)=>\{if\(!controller\.signal\.aborted&&replayControllerRef\.current===controller\)/)
+  assert.doesNotMatch(replay,/getUserMedia|MediaRecorder|OPENROUTER_API_KEY|HH_GOOGLE_TTS_SERVICE_ACCOUNT_JSON/)
+})

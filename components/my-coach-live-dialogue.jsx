@@ -219,12 +219,12 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         if(!response.ok||!response.body)throw Error('TTS_UNAVAILABLE')
         if(controller.signal.aborted)return
         replayPlayerRef.current=startCoachingMp3Playback(response,{
-          onStart:()=>{if(!controller.signal.aborted){setReplayBlocked(false);setReplaying(true);setPlaybackNotice('')}},
-          onBlocked:()=>{if(!controller.signal.aborted){setReplayBlocked(true);setReplaying(false);setPlaybackNotice(voiceGate.tapToHear)}},
-          onEnd:()=>{replayControllerRef.current=null;replayPlayerRef.current=null;setReplayBlocked(false);setReplaying(false)},
-          onError:()=>{replayControllerRef.current=null;replayPlayerRef.current=null;setReplayBlocked(false);setReplaying(false);setPlaybackNotice(voiceGate.playbackUnavailable)}
+          onStart:()=>{if(!controller.signal.aborted&&replayControllerRef.current===controller){setReplayBlocked(false);setReplaying(true);setPlaybackNotice('');setVoiceState({phase:'speaking',beat:0})}},
+          onBlocked:()=>{if(!controller.signal.aborted&&replayControllerRef.current===controller){setReplayBlocked(true);setReplaying(false);setPlaybackNotice(voiceGate.tapToHear);setVoiceState({phase:'idle',beat:0})}},
+          onEnd:()=>{if(replayControllerRef.current!==controller)return;replayControllerRef.current=null;replayPlayerRef.current=null;setReplayBlocked(false);setReplaying(false);setVoiceState({phase:'idle',beat:0})},
+          onError:()=>{if(replayControllerRef.current!==controller)return;replayControllerRef.current=null;replayPlayerRef.current=null;setReplayBlocked(false);setReplaying(false);setVoiceState({phase:'idle',beat:0});setPlaybackNotice(voiceGate.playbackUnavailable)}
         })
-      }).catch(()=>{if(!controller.signal.aborted){setReplaying(false);setPlaybackNotice(voiceGate.playbackUnavailable)}})
+      }).catch(()=>{if(!controller.signal.aborted&&replayControllerRef.current===controller){replayControllerRef.current=null;setReplaying(false);setVoiceState({phase:'idle',beat:0});setPlaybackNotice(voiceGate.playbackUnavailable)}})
       return
     }
     // Free private-device replay works even if Fish/Google is not enabled.
@@ -251,6 +251,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       replayTimerRef.current=null
       setVoiceState({phase:'speaking',beat:0})
     }
+    utterance.onboundary=event=>{
+      if(replaySpeechRef.current!==utterance||!started)return
+      if(event.name&&event.name!=='word'&&event.name!=='sentence')return
+      setVoiceState(previous=>previous.phase==='speaking'?{phase:'speaking',beat:previous.beat+1}:previous)
+    }
     utterance.onend=clear
     utterance.onerror=()=>{clear();setPlaybackNotice(voiceGate.playbackUnavailable)}
     try{
@@ -275,7 +280,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       replayPlayerRef.current=null
       setReplayBlocked(false);setReplaying(false)
     }
-    const onHidden=()=>{if(document.hidden)stopReplay()}
+    const onHidden=()=>{if(document.hidden){stopReplay();setVoiceState({phase:'idle',beat:0})}}
     document.addEventListener('visibilitychange',onHidden)
     window.addEventListener('pagehide',stopReplay)
     return()=>{
