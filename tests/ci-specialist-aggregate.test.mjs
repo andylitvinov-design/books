@@ -1,4 +1,4 @@
-import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance } from '../lib/ci/production-base-impact.mjs';
+import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance } from '../lib/ci/production-base-impact.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readdirSync, readFileSync } from 'node:fs';
@@ -2206,4 +2206,103 @@ test('Axis Ready PR requires practical writer job despite planner workflow chang
   assert.equal(inspectJobs([axis,writerJob],file,[],required),2);
   assert.throws(()=>inspectJobs([axis,{...writerJob,conclusion:'skipped'}],file,[],required),
     /UNSUCCESSFUL_SPECIALIST_JOB/, 'a skipped writer cannot satisfy protected Specialist');
+});
+
+
+test('inert raster production-base advance is ancestry-proven, conflict-independent and never generic path disjointness', () => {
+  const old = 'a'.repeat(40), newest = 'b'.repeat(40);
+  const diff = (paths, overrides = {}) => ({
+    status:'ahead', ahead_by:1, behind_by:0, total_commits:1,
+    base_commit:{sha:old}, merge_base_commit:{sha:old},
+    commits:[{sha:newest}],
+    files:paths.map(filename=>({filename,status:'modified'})), ...overrides,
+  });
+  const checked = paths => verifiedIndependentPublicRasterAdvance(
+    diff(paths),old,newest,['lib/crm/contact.js']);
+  assert.equal(checked(['public/images/welcome.webp']), true);
+  assert.equal(checked(['public/photos/team/person.png']), true);
+  for(const path of ['public/images/fraud.svg','public/images/script.js',
+    'public/images/../private.png','.github/workflows/core.yml',
+    'app/api/payment/route.ts','supabase/migrations/123.sql','package-lock.json',
+    'components/mandala-video.tsx','public/images/page.css']) {
+    assert.equal(checked([path]),false,path);
+  }
+  assert.equal(verifiedIndependentPublicRasterAdvance(
+    diff(['public/images/banner.png']),old,newest,['public/images/banner.png']),false);
+  for(const bad of [{status:'diverged'},{behind_by:1},{commits:[]},
+    {total_commits:2},{files:[]},
+    {files:[{filename:'public/images/a.png',status:'removed'}]},
+    {files:[{filename:'public/images/a.png',status:'renamed',previous_filename:'public/images/b.png'}]}]) {
+    assert.equal(verifiedIndependentPublicRasterAdvance(
+      diff(['public/images/a.png'],bad),old,newest,['lib/crm/contact.js']),false);
+  }
+});
+
+test('additive coaching build registration drops unrelated specialists', () => {
+  const app = '.github/workflows/hh-app-r1.yml';
+  const coach = '.github/workflows/hh-personal-coaching-session.yml';
+  const audio = '.github/workflows/hh-live-audio-ci.yml';
+  const ia = '.github/workflows/ia-v2.yml';
+  const opora = '.github/workflows/opora-module-ci.yml';
+  const publicServices = '.github/workflows/hh-public-services-production.yml';
+  const workflow = patterns => "on:\n  pull_request:\n    branches: ['codex/public-book-library']\n    paths:\n" +
+    patterns.map(pattern => "      - '" + pattern + "'\n").join('');
+  const sources = new Map([
+    [app, workflow(['package.json', 'lib/app/**'])],
+    [coach, workflow(['tests/coaching-live-voice.test.mjs', 'lib/personal-coaching/**'])],
+    [audio, workflow(['package.json', 'app/api/live-audio/**'])],
+    [ia, workflow(['package.json', 'lib/security/**'])],
+    [opora, workflow(['package.json', 'data/opora/**'])],
+    [publicServices, workflow(['package.json', 'components/public-consultation-cta.tsx'])],
+  ]);
+  const original = {
+    scripts: {
+      'test:coaching:release': 'node --test tests/coaching-life-plan.test.mjs tests/coaching-report.test.mjs',
+      prebuild: 'node --check scripts/source-check.mjs && npm run test:coaching:release',
+    },
+    dependencies: { next: '15.0.0' },
+  };
+  const proposed = structuredClone(original);
+  const added = 'tests/coach-spoken-text.test.mjs';
+  proposed.scripts['test:coaching:release'] =
+    'node --test ' + added + ' ' + original.scripts['test:coaching:release'].slice('node --test '.length);
+  const changed = ['package.json', added, 'lib/coaching/coach-spoken-text.mjs',
+    'tests/coaching-live-voice.test.mjs'];
+  const classify = (next = proposed, paths = changed, prior = original) => classifyPackageImpact({
+    changed: paths, basePackage: JSON.stringify(prior), currentPackage: JSON.stringify(next),
+  });
+  const impact = classify();
+  assert.deepEqual(impact, {
+    mode: 'scoped', reason: 'ADDITIVE_COACHING_BUILD_TEST', workflows: [app],
+  });
+  const before = expectedWorkflows({base:sources, current:sources, changed});
+  const after = expectedWorkflows({base:sources, current:sources, changed,
+    packageImpact:impact});
+  assert.equal(before.length, 6, 'package changes previously triggered six independent suites');
+  assert.deepEqual(after, [app, coach],
+    'retain App and coaching owners but not unrelated billing, audio, IA and OPORA owners');
+  assert.ok(after.length * 2 <= before.length, 'more than halve the routed suites');
+  const missingOwner = new Map(sources);
+  missingOwner.delete(app);
+  assert.throws(() => expectedWorkflows({base:missingOwner, current:sources, changed,
+    packageImpact:impact}), /PACKAGE_ROUTE_OWNER_UNAVAILABLE/);
+  assert.equal(classify(proposed, changed.filter(path => path !== added)).mode, 'full');
+  assert.equal(classify(proposed, [...changed, 'package-lock.json']).mode, 'full');
+  const mutate = (change) => {
+    const bad = structuredClone(proposed);
+    change(bad);
+    assert.equal(classify(bad).mode, 'full', 'unsafe manifest/script change must remain full');
+  };
+  mutate(bad => { bad.dependencies.next = '16.0.0'; });
+  mutate(bad => { bad.scripts.prebuild = 'echo skip'; });
+  mutate(bad => { bad.scripts['test:coaching:release'] += ' && echo bypass'; });
+  mutate(bad => { bad.scripts['test:coaching:release'] =
+    bad.scripts['test:coaching:release'].replace(added, 'tests/billing-bypass.test.mjs'); });
+  mutate(bad => { bad.scripts['test:coaching:release'] =
+    bad.scripts['test:coaching:release'].replace('tests/coaching-report.test.mjs', 'tests/unrelated.test.mjs'); });
+  const noBuild = structuredClone(original);
+  noBuild.scripts.prebuild = 'echo skip';
+  const proposedNoBuild = structuredClone(proposed);
+  proposedNoBuild.scripts.prebuild = 'echo skip';
+  assert.equal(classify(proposedNoBuild, changed, noBuild).mode, 'full');
 });

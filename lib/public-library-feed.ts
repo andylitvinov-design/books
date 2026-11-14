@@ -1,7 +1,7 @@
 import "server-only";
 
 import { getAppConfig } from "@/lib/app/config";
-import { listPublicLibraryVideos } from "@/lib/clients/material-library";
+import { listPublicLibraryVideos } from "@/lib/clients/public-library-videos";
 import { createArticleRepository } from "@/lib/practitioners/article-repository";
 import type { LibraryPublicArticle, LibraryPublicVideo } from "@/components/library-hub";
 import type { PublicLocale } from "@/lib/public-locales";

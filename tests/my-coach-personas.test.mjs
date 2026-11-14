@@ -1,5 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import {readFileSync} from 'node:fs'
+import {portraitMouthAperture,speechRms} from '../lib/coaching/living-portrait-motion.mjs'
+import {normalizeMyCoachFishRequest,myCoachFishConfig} from '../lib/coaching/my-coach-fish-voice.mjs'
 import {
   COACH_PERSONAS, COACH_PERSONA_VERSION, COACH_LOCALES, COACH_TOPICS, COACH_SAFETY_RULES,
   getCoachPersona, localCoachText, normalizeCoachSettings, resolveCoachSelection,
@@ -91,3 +94,95 @@ test('coach style changes voluntary follow-up copy, not authored question count'
   assert.equal(personaMethodFit('max', 'appreciative_inquiry_v1'), 0)
   assert.equal(personaMethodFit('alex', ''), 0)
 })
+
+test('Living Coach mouth activates only after real speech, and boundary pulses decay', () => {
+  for (const phase of ['idle','listening','thinking','paused'])
+    assert.equal(portraitMouthAperture({phase,beat:7,amplitude:.3}),0)
+  assert.equal(portraitMouthAperture({phase:'speaking',beat:5,amplitude:0}),0)
+  assert.equal(portraitMouthAperture({phase:'speaking',beat:5,amplitude:.1}),.5)
+  assert.equal(portraitMouthAperture({phase:'speaking',beat:5,amplitude:4}),1)
+  assert.ok(portraitMouthAperture({phase:'speaking',beat:2,lastBoundaryAgoMs:0,nowMs:0})>
+    portraitMouthAperture({phase:'speaking',beat:2,lastBoundaryAgoMs:900,nowMs:0}))
+  assert.equal(speechRms(new Uint8Array(128).fill(128)),0)
+  assert.ok(speechRms(new Uint8Array([0,255]))>.99)
+  assert.equal(speechRms([NaN]),0)
+})
+
+test('Living Coach reuses existing eight portraits and the onstart/onboundary speech loop', () => {
+  const avatar=readFileSync(new URL('../components/app/coaching-avatar.jsx',import.meta.url),'utf8')
+  const css=readFileSync(new URL('../components/app/coaching-avatar.module.css',import.meta.url),'utf8')
+  const speech=readFileSync(new URL('../components/my-coach-speech-loop.jsx',import.meta.url),'utf8')
+  for (const token of ['ref={frameRef}','speakingPhoto','speechRms(samples)',
+    'createMediaStreamSource(playbackStream)','document.visibilityState!==\'hidden\'',
+    'window.cancelAnimationFrame(raf)','audioContext.close()',
+    'prefers-reduced-motion: reduce','-still.webp','-living.webp'])
+    assert.ok(avatar.includes(token),token)
+  assert.ok(speech.includes('utterance.onstart='))
+  assert.ok(speech.includes('utterance.onboundary='))
+  assert.ok(speech.includes('utterance.onend='))
+  assert.ok(speech.includes('generationRef.current!==generation'))
+  assert.match(css,/\.livingPortraitMouth/)
+  assert.match(css,/-webkit-mask-image/)
+  assert.match(css,/@media\(prefers-reduced-motion:reduce\)/)
+  for (const persona of COACH_PERSONAS)
+    assert.ok(css.includes(`data-photo-persona='${persona.id}'`),persona.id)
+  // These photos are 328x456 cropped to square at 22% vertical object-position.
+  // Mask centering at uncropped source coordinates would move the nose, not lips.
+  for (const persona of COACH_PERSONAS) {
+    const selector=`data-photo-persona='${persona.id}']{--photo-mouth-y:`
+    const y=Number(css.split(selector)[1]?.split('%}')[0])
+    assert.ok(Number.isFinite(y)&&y>=68&&y<=74,
+      `mouth outside cropped lip region: ${persona.id} / ${y}`)
+  }
+  assert.doesNotMatch(avatar,/getUserMedia|MediaRecorder|fetch\(|localStorage|sessionStorage/)
+})
+
+test('mobile My Coach hero mouth remains visible when compact avatar is hidden', () => {
+  const hero=readFileSync(new URL('../components/my-coach-live-dialogue.module.css',import.meta.url),'utf8')
+  const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+  assert.ok(hero.includes('.sessionAvatar{display:none}'))
+  assert.ok(ui.includes('data-voice-phase={voiceState.phase}'))
+  assert.ok(ui.includes('data-session-visual-v2'))
+  assert.ok(hero.includes(".sessionHero[data-voice-phase='speaking'] .sessionPortrait[data-persona]::after"))
+  assert.ok(hero.includes('@media(max-width:699px) and (prefers-reduced-motion:no-preference)'))
+  assert.ok(hero.includes('aspect-ratio:328/456'))
+  assert.ok(hero.includes('animation:hh-hero-mouth-speaking'))
+  for (const persona of COACH_PERSONAS) {
+    const token=`data-persona=${persona.id}]{--hh-hero-mouth-image:url('/images/holistic-house/my-coach-motion/${persona.id}-still.webp');--hh-hero-mouth-y:`
+    const y=Number(hero.split(token)[1]?.split('%}')[0])
+    assert.ok(Number.isFinite(y)&&y>=55&&y<=59,`source lip region: ${persona.id} / ${y}`)
+  }
+  assert.doesNotMatch(hero,/getUserMedia|MediaRecorder|new WebSocket/)
+})
+
+
+// The real My Coach microphone and Replay code both send personaId to the
+// same Fish route. Previously the strict parser rejected this legitimate
+// field and every opted-in natural-voice request failed before TTS.
+test('Fish natural voice accepts the exact live/replay persona payload but no extra fields', () => {
+  const speech=readFileSync(new URL('../components/my-coach-speech-loop.jsx',import.meta.url),'utf8')
+  const dialog=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+  const route=readFileSync(new URL('../app/api/app/my-coach/voice/synthesize/route.js',import.meta.url),'utf8')
+  assert.match(speech,/body:JSON\.stringify\(\{provider:cloudProvider,locale:replyLocale,personaId,/)
+  assert.match(dialog,/body:JSON\.stringify\(\{provider:cloudProvider,personaId,/)
+  assert.match(route,/const \{provider:_,\.\.\.fishRaw\}=raw/)
+  assert.match(route,/normalizeMyCoachFishRequest\(fishRaw\)/)
+  const normal={locale:'ru',text:'Какой следующий шаг сейчас поможет?',voiceConsent:true,
+    cloudVoiceConsent:true,trainingUseConsent:true}
+  for (const {id} of COACH_PERSONAS) {
+    assert.deepEqual(normalizeMyCoachFishRequest({...normal,personaId:id}),
+      {locale:'ru',text:normal.text},id)
+  }
+  assert.deepEqual(normalizeMyCoachFishRequest(normal),
+    {locale:'ru',text:normal.text},'old clients without personaId stay supported')
+  for(const illegal of [
+    {personaId:'__proto__'},{personaId:'unknown'},{personaId:{id:'mira'}},
+    {personaId:null},{role:'system'},{accountId:'other'},{provider:'fish_free'},
+    {trainingUseConsent:false},{cloudVoiceConsent:false},
+  ])assert.throws(()=>normalizeMyCoachFishRequest({...normal,...illegal}),
+    /MY_COACH_FISH_TTS_INVALID/)
+  const enabled={HH_MY_COACH_FISH_TTS_ENABLED:'true',HH_MY_COACH_FISH_TTS_APPROVED:'true',
+    HH_MY_COACH_FISH_FREE_DATA_ACKNOWLEDGED:'true',HH_COACHING_FISH_API_KEY:'test-not-a-real-key'}
+  assert.equal(myCoachFishConfig(enabled,Date.parse('2026-11-14T12:00:00Z')).model,'s2.1-pro-free')
+  assert.equal(myCoachFishConfig({...enabled,HH_MY_COACH_FISH_FREE_DATA_ACKNOWLEDGED:'false'}),null)
+});

@@ -1,6 +1,6 @@
 export type AssistMode = "human"|"ai"|"video"|"self"|"any";
 export type AssistChannel = "inperson"|"online"|"async"|"any";
-export type AssistBudget = "free"|"under50"|"under100"|"flexible"|"any";
+export type AssistBudget = "free"|"under50"|"under100"|"flexible"|"any"|"otherCurrency";
 export type AssistQuestion = "mode"|"channel"|"budget";
 export type AssistPreferences = {mode?:AssistMode;channel?:AssistChannel;budget?:AssistBudget};
 export type AssistOfferId = "tests"|"review"|"opora"|"therapy"|"constellation"|"business"|"reiki"|"mandala"|"talisman"|"homeopathy"|"masters"|"academy"|"mytube"|"aiCoach";

@@ -104,8 +104,16 @@
    an additional green rectangle behind the actual summary button. */
 .order :global([data-messenger-only-contact]){display:block;width:100%;max-width:100%;min-height:0;margin:0;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;color:inherit}
 .order :global([data-messenger-only-contact] > details > summary){justify-content:center;min-height:44px;padding:7px 8px;border-radius:12px;background:linear-gradient(145deg,#197b73,#00574e);color:#fff;text-align:center;font-size:13px}
-.card:has(.order details[open]){grid-template-columns:minmax(0,1fr)}
-.card:has(.order details[open]) .photo{display:none}
+/* Keep each service photo visible and anchor the Request CTA on the right.
+   The native details toggle stays in that column; its expanded choices sit
+   below the entire picture + description row. */
+.card:has([data-compact-messenger="true"]){position:relative;grid-template-rows:minmax(0,1fr) auto}
+.card:has([data-compact-messenger="true"]) > .photo{grid-column:1;grid-row:1 / 3}
+.card:has([data-compact-messenger="true"]) > .content{grid-column:2;grid-row:1}
+.card:has([data-compact-messenger="true"]) > .order{grid-column:2;grid-row:2;margin:0;align-self:end}
+/* Reserve space for both messenger buttons without replacing the card content. */
+.card:has([data-compact-messenger="true"] details[open]){padding-bottom:82px}
+.card:has([data-compact-messenger="true"] details[open]) .order :global([data-messenger-only-contact] > details[open] > div){position:absolute;left:8px;right:8px;bottom:8px;margin:0}
 .order :global([data-messenger-only-contact] > details > div){min-width:0;max-width:100%;padding:9px;gap:7px;font-size:12px}
 .order :global([data-messenger-only-contact] [role="group"]){grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
 .order :global([data-messenger-only-contact] [role="group"] a){min-width:0;min-height:44px;padding:7px 4px;gap:4px;font-size:12px}

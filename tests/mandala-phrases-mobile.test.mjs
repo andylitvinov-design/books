@@ -95,9 +95,11 @@ test("all phrase changes including catalog and idea are staged until explicit Ap
  assert.doesNotMatch(compact,/<MandalaVideoAffirmations /);
  assert.match(compact,/onPendingChange\?\.\(hasPendingEdits\)/);
  assert.match(compact,/data-hypno-create-video disabled=\{disabled\|\|!settings\.enabled\|\|hasPendingEdits\}/);
- const direct=studio.slice(studio.indexOf("data-video-quick-generate"),
-   studio.indexOf("</button>",studio.indexOf("data-video-quick-generate")));
- assert.ok(direct.includes('onClick={createQuickVideo}'));
+ const action=studio.indexOf('data-video-stage-actions="montage"');
+ const directStart=studio.indexOf("data-video-quick-generate",action);
+ assert.ok(action>0&&directStart>action,"the original Create button remains in the real Montage action bar");
+ const direct=studio.slice(directStart,studio.indexOf("</button>",directStart));
+ assert.ok(direct.includes('onClick={openReadyForGeneration}'));
  for(const guard of ['if(!freeVideoSelected){','if(phrasePending){','if(narrationInvalid){'])
    assert.ok(studio.includes(guard),"approved phrase and paid-format guard: "+guard);
  assert.match(studio,/if\(phrasePending\)\{/);
@@ -189,7 +191,8 @@ test("real WebKit voice acceptance expands advanced sound options before selecti
     "do not manually toggle the native disclosure twice");
   assert.match(voice,/data-video-affirmation-bed/);
   assert.match(browser,/const voiceOptions=page\.locator\("\[data-video-affirmation-voice\] details"\)/);
-  assert.match(browser,/await voiceOptions\.locator\(":scope > summary"\)\.click\(\)/);
+  assert.match(browser,/if\(engine==="webkit"\)await voiceOptions\.locator\(":scope > summary"\)\.tap\(\)/);
+  assert.match(browser,/else await voiceOptions\.locator\(":scope > summary"\)\.click\(\)/);
   assert.match(browser,/await expect\(voiceOptions\)\.toHaveAttribute\("open","",\{timeout:15000\}\)/);
   assert.match(browser,/await expect\(page\.locator\("\[data-video-affirmation-bed\]"\)\)\.toBeVisible\(\{timeout:15000\}\)/);
   assert.match(browser,/await page\.locator\("\[data-video-affirmation-bed\]"\)\.selectOption\("ocean"\)/);
@@ -222,7 +225,7 @@ test("choosing Ready preserves private audio state while the current Ideas edito
  assert.ok(browser.includes("data-video-affirmation-transcript-review"));
  assert.ok(browser.includes("data-video-narration-reapproval"),"removed spoken phrases require explicit narration reapproval");
  assert.ok(browser.includes("the old WAV may remain attached, but must be unusable until narration is regenerated"),"stale audio stays attached only as unusable media");
- assert.ok(browser.includes("await expect(page.locator('[data-video-quick-generate]')).toBeDisabled"));
+ assert.ok(browser.includes("await expect(page.locator('[data-video-quick-generate]')).toBeEnabled"));
  assert.doesNotMatch(browser,/approvalButton\.tap\(\)/,
    "the retired standalone Hypno approval button must not reappear");
 });
@@ -239,5 +242,5 @@ test("ten-phrase limit and stale spoken-audio guard use the current visible Mont
  assert.ok(script.includes("adding an unspoken phrase does not invalidate the actual WAV"));
  assert.ok(script.includes("data-video-narration-reapproval"));
  assert.ok(script.includes("the old WAV may remain attached, but must be unusable until narration is regenerated"));
- assert.ok(script.includes("await expect(page.locator('[data-video-quick-generate]')).toBeDisabled"));
+ assert.ok(script.includes("await expect(page.locator('[data-video-quick-generate]')).toBeEnabled"));
 });

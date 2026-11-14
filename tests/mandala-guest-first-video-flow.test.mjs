@@ -36,12 +36,12 @@ test('Montage follows Story then three format choice routes without an automatic
  assert.ok(nextStart>0&&next.includes('onClick={continueMontageOrGenerate}'));
  assert.ok(next.includes('montagePanel==="text"||montagePanel==="settings"?"concept"'));
  assert.ok(next.includes('montagePanel==="concept"?"promo"'));
- assert.ok(direct.includes('onClick={createQuickVideo}'),"original renderer retained");
+ assert.ok(direct.includes('onClick={openReadyForGeneration}'),"Montage navigates without rendering");
  const routeStart=studio.indexOf('montagePanel==="promo" ? <MandalaMontageProOffer');
  const routes=studio.slice(routeStart,studio.indexOf('/> : null}',routeStart));
  const free=routes.slice(routes.indexOf("onChooseFree={()=>"),routes.indexOf("onChooseCharacter={()=>"));
- assert.ok(free.includes("createQuickVideo();"),"Free invokes the original guarded encoder");
- assert.ok(!free.includes('setActiveWorkspace("ready")'),"Free cannot claim a Ready MP4 before validation");
+ assert.ok(free.includes("openReadyForGeneration();"),"Free opens Ready in one click");
+ assert.ok(!free.includes("createQuickVideo();"),"Free cannot encode inside Montage");
  assert.ok(studio.includes("Only a native, decodable exported video opens Ready automatically"));
  assert.ok(studio.includes('playbackStatus!=="ready"||!creditConfirmed'));
  for(const [choice,target] of [["Character","effects"],["Cinematic","pro"]]){
@@ -55,7 +55,7 @@ test('Montage follows Story then three format choice routes without an automatic
 });
 
 
-test('stale phrase narration blocks direct Generate, not the Add Affirmations navigation',()=>{
+test('stale phrase narration blocks Ready export but not Montage navigation',()=>{
  const stage=studio.indexOf('data-video-stage-actions="montage"');
  assert.ok(stage>0,"real final action group");
  const fromCreate=studio.indexOf('data-video-quick-generate',stage);
@@ -63,8 +63,8 @@ test('stale phrase narration blocks direct Generate, not the Add Affirmations na
  const addStart=studio.indexOf('data-video-montage-next={montagePanel===',stage);
  const add=studio.slice(addStart,studio.indexOf('</button>',addStart));
  assert.ok(addStart>stage&&addStart<fromCreate,"Affirmations precedes Create Video");
- assert.match(create,/disabled=\{!studioHydrated\|\|recording\|\|preparing\|\|narrationInvalid\}/);
- assert.match(create,/onClick=\{createQuickVideo\}/);
+ assert.match(create,/disabled=\{!studioHydrated\|\|recording\|\|preparing\}/);
+ assert.match(create,/onClick=\{openReadyForGeneration\}/);
  assert.match(add,/onClick=\{continueMontageOrGenerate\}/);
  assert.doesNotMatch(add,/narrationInvalid/);
  assert.match(studio,/data-video-narration-reapproval/);
@@ -106,9 +106,15 @@ test('PRO result uses full-size native video, never the previous 112px cropped v
 
 test('real encoded result stays on Ready without losing the in-page Blob',()=>{
   const start=studio.indexOf('  // A completed local recording stays in the Ready workspace.')
-  const end=studio.indexOf('  // Auto-music must be ATTACHED',start)
-  assert.ok(start>0&&end>start)
-  const effect=studio.slice(start,end)
+  // Bound the contract to the actual React effect, not a volatile comment
+  // describing automatic music. This must execute the real Ready transition.
+  const terminal='  }, [result]);'
+  const end=studio.indexOf(terminal,start)
+  assert.ok(start>0&&end>start,'the encoded-result Ready effect remains mounted')
+  const effect=studio.slice(start,end+terminal.length)
+  const automaticMusic=studio.slice(end+terminal.length)
+  assert.match(automaticMusic,/\|\|result\|\|preparing\|\|recording\|\|/, 
+    'a finished video must not be invalidated by late automatic soundtrack selection')
   function run(result){
     const frames=[],state={workspace:null,mode:null,expanded:false,scrolls:0}
     let callback=null
@@ -161,3 +167,24 @@ test('WebKit real encoded Ready guest route keeps Save gate and decoded MP4 proo
   assert.match(browser,/GUEST_REAL_VIDEO_BLOB_UNAVAILABLE/)
   assert.match(browser,/spawnSync\("ffprobe"/)
 })
+
+test("native WebKit recovers bounded mid-shot licensed source drift without stale frames",()=>{
+ const source=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+ const start=source.indexOf("function freeFilmVideoAt(");
+ const end=source.indexOf("function updateFreeFilmReadiness()",start);
+ assert.ok(start>0&&end>start);
+ const frame=source.slice(start,end);
+ assert.match(frame,/const assessment=assessLicensedSourceFrame\(video,frame\)/);
+ assert.match(frame,/if\(assessment\.status==="drift"&&!video\.seeking\)/);
+ assert.match(frame,/now-last>=180/);
+ assert.match(frame,/video\.currentTime=frame\.expectedSourceSeconds/);
+ assert.match(frame,/if\(assessment\.status!=="ready"\)return null/);
+ assert.match(frame,/if\(video\.paused&&advancePlayback\)/);
+ assert.doesNotMatch(frame,/assessment\.status==="drift"&&!video\.seeking&&\(enteringShot\|\|!advancePlayback\)/);
+ const render=source.slice(source.indexOf("renderFrame:time=>"));
+ assert.match(render,/freeFilmVideoAt\(time,true\)/);
+ assert.match(render,/if\(usingFreeFilmCompilation&&!frame&&!hasStoryboardPhotoAt\(time\)\)return false/);
+ assert.match(source,/const hasStoryboardPhotoAt=\(seconds:number\)=>\{/);
+ assert.match(source,/stock\?\.complete&&stock\.naturalWidth>=600&&stock\.naturalHeight>=600/);
+ assert.match(source,/licensed_scene_frame_unavailable/);
+});

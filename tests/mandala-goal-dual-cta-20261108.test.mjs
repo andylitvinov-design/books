@@ -20,10 +20,11 @@ test("Goal reuses one existing Generate and one separate personalization action"
  assert.doesNotMatch(goal,/data-video-goal-generate|onClick=\{createQuickVideo\}/,"no duplicate renderer CTA");
 });
 
-test("Goal applies real recipient scenes before trusted click export; pricing is transparent",()=>{
+test("Goal applies real recipient scenes before Ready; export remains protected",()=>{
  assert.match(studio,/const generateFromGoal=\(\)=>\{[\s\S]*?flushSync\(\(\)=>\{goalValid=goalContinueRef\.current\?\.\(\)!==false;\}\)/);
- assert.match(studio,/if\(!goalValid\)return false;[\s\S]*?freshGoalCreateRef\.current\(\)/);
- assert.match(studio,/freshGoalCreateRef\.current=createQuickVideo/);
+ assert.match(studio,/if\(!goalValid\)return false;[\s\S]*?return openReadyForGeneration\(\)/);
+ assert.match(studio,/const openReadyForGeneration = \(\) => \{/);
+ assert.match(studio,/return createQuickVideo\(\)/);
  assert.match(studio,/const createQuickVideo = \(\) => \{[\s\S]*?return startFromHero\(\)/);
  assert.match(studio,/void createVideo\(\)/);
  assert.match(studio,/creditCatalog\.priceCredits/);
