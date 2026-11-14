@@ -91,3 +91,35 @@ test('status replies require an explicit status or item reference in RU/EN',()=>
  assert.equal(nativeSecretaryAllowsIntent('otro texto','es','status'),true);
  assert.equal(nativeSecretaryAllowsIntent('hello','en','hello'),true);
 });
+
+// A social prefix with a new request must not swallow the actual request.
+test('compound RU/EN social openers delegate substantive requests to context',()=>{
+ for(const [locale,message] of [
+  ['en','Hello, can you show courses?'],
+  ['en','Hi there, I need help choosing a service'],
+  ['en','Thanks for your help, but I need to ask about another service'],
+  ['en','Thank you, could you help me with a course?'],
+  ['ru','Привет! Мне нужна консультация'],
+  ['ru','Здравствуйте, подскажите, где найти курсы'],
+  ['ru','Спасибо за помощь, но есть другой вопрос'],
+  ['ru','Благодарю, а теперь подскажите про занятия'],
+ ]){
+  assert.equal(nativeSecretaryAllowsUtterance(message),false,message);
+  assert.equal(nativeSecretaryTurn({message,locale}),null,message);
+ }
+ for(const message of ['hello there','hi','Привет','Здравствуйте','спасибо','Спасибо большое','thanks','Thank you for your help','gracias','Hola, quiero un curso'])
+  assert.equal(nativeSecretaryAllowsUtterance(message),true,message);
+});
+
+test('only authenticated native responses expose classifier provenance',()=>{
+ const source=readFileSync(new URL('../app/api/holistic-agent/turn/route.js',import.meta.url),'utf8');
+ const branch=source.split('if(nativeReply && NATIVE_INTENTS.has(nativeReply.intent) &&')[1]?.split('if(fastRule&&FAST_RULE_IDS.has(fastRule.id))')[0]||'';
+ assert.match(branch,/source:nativeReply\.source,nativeModelUsed:true/);
+ assert.match(branch,/nativeModelKind:nativeReply\.modelKind,nativeModelVersion:nativeReply\.modelVersion/);
+ assert.match(branch,/modelUsed:false/); // no generative model even when native classifier ran
+ const result=nativeSecretaryTurn({message:'hello there',locale:'en'});
+ assert.ok(result?.modelVersion?.startsWith('hh-native-intent-'));
+ assert.equal(result.modelUsed,false);
+ assert.equal(result.memorySaved,false);
+ assert.equal(result.actionExecuted,false);
+});
