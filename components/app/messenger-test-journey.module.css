@@ -1,6 +1,13 @@
 .panel{width:100%;box-sizing:border-box;min-width:0;display:grid;gap:8px;padding:5px 1px;color:#213d35;font:500 13px/1.45 system-ui,sans-serif}
-.header{display:flex;align-items:center;justify-content:space-between;gap:7px}
+.header{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;min-width:0}
 .header strong{font-size:14px;color:#164b3f}
+.headerActions{display:flex;align-items:center;gap:9px;flex-wrap:wrap;min-width:0}
+.libraryLink{display:inline-flex;align-items:center;min-height:44px;font:650 11px/1.3 system-ui,sans-serif;color:#13735b;text-decoration:underline;text-underline-offset:3px}
+.filterRow{display:flex;flex-wrap:wrap;gap:5px;min-width:0;margin:2px 0}
+.filterChip{box-sizing:border-box;min-height:44px;padding:8px 11px;border-radius:999px;border:1px solid #e6ded6;background:#fffdf9;color:#385e53;font:650 12px/1.25 system-ui,sans-serif;cursor:pointer}
+.filterChip[aria-pressed="true"]{background:#e6f6f1;color:#075d4a;border:2px solid #0e8268;padding:7px 10px}
+.empty{display:grid;gap:7px;justify-items:start;padding:8px}
+
 .assistant{display:block;max-width:95%;margin:0;padding:10px 13px;border-radius:14px 14px 14px 4px;background:#f1eafd;color:#44326b;line-height:1.5;overflow-wrap:anywhere}
 .user{display:block;margin:6px 0 0 auto;max-width:90%;width:fit-content;padding:8px 12px;border-radius:14px 14px 4px 14px;background:#e1f4e6;color:#183e31;line-height:1.5;overflow-wrap:anywhere}
 .search input,.choices select{min-height:44px;width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid #d5e2da;border-radius:11px;font:500 15px/1.4 system-ui,sans-serif;color:#183e31;background:#fff}
@@ -9,7 +16,7 @@
 .testCard{box-sizing:border-box;display:grid;grid-template-columns:78px minmax(0,1fr);gap:11px;
  min-width:0;width:100%;padding:9px;border:1px solid #dbe7dd;border-radius:17px;background:#fffcf8;
  box-shadow:0 3px 10px #315a4310}
-.testPhoto{width:78px;height:100%;min-height:100px;max-height:156px;object-fit:cover;border-radius:12px;background:#edf3ed}
+.testPhoto{width:78px;height:100%;min-height:100px;max-height:156px;object-fit:cover;border-radius:12px;background:#edf3ed;align-self:stretch}
 .testBody{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0}
 .cardEyebrow{font:650 11px/1.25 system-ui,sans-serif;color:#19745d}
 .testTitle{min-width:0;color:#1b4f40;font:700 14px/1.3 system-ui,sans-serif;
@@ -21,10 +28,9 @@
  border-radius:12px;background:#0b8568;color:#fff;font:700 12px/1.3 system-ui,sans-serif;cursor:pointer}
 .testAction:disabled{opacity:.55;cursor:not-allowed}
 .compactCard .testPhoto{min-height:89px;max-height:130px}
-.catalogToggle,.backLink{display:inline-flex;align-items:center;justify-content:space-between;gap:8px;
+.backLink{display:inline-flex;align-items:center;justify-content:space-between;gap:8px;
  width:fit-content;min-height:42px;padding:6px 3px;border:0;background:transparent;color:#13735b;
  font:700 12px/1.3 system-ui,sans-serif;cursor:pointer}
-.catalogToggle span{font-size:20px;font-weight:400}
 .backLink{justify-content:flex-start}
 .instructions{border:1px solid #e5e7dd;border-radius:12px;padding:0 10px;background:#fffdf8}
 .instructions summary{cursor:pointer;min-height:40px;display:flex;align-items:center;color:#27634f;font-weight:600}
@@ -40,7 +46,7 @@
 .primary,.plain,.safety button,.error button{cursor:pointer;display:inline-flex;justify-content:center;align-items:center;min-height:43px;padding:10px 13px;border-radius:11px;font:700 12px/1.3 system-ui,sans-serif;text-align:center;text-decoration:none}
 .primary{background:#087b61;border:1px solid #087b61;color:white}
 .plain{background:white;border:1px solid #c8ded1;color:#17634d}
-.header .plain{min-height:42px;font-size:11px;padding:6px 10px}
+.header .plain{min-height:44px;font-size:11px;padding:6px 10px}
 .primary:disabled,.plain:disabled{opacity:.55;cursor:not-allowed}
 .note{font-size:11px;line-height:1.5;color:#6b6d68;margin:0}
 .progress{height:5px;border-radius:99px;background:#e7ece6;overflow:hidden}
