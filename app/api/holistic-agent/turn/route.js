@@ -454,7 +454,9 @@ export async function POST(request) {
        (!fastRule || NATIVE_FAST_IDS.has(fastRule.id))){
       return await finish({
         status:"clarify",reply:nativeReply.reply,modelUsed:false,
-        source:nativeReply.source,memorySaved:false,userAuthorized:true,
+        source:nativeReply.source,nativeModelUsed:true,
+        nativeModelKind:nativeReply.modelKind,nativeModelVersion:nativeReply.modelVersion,
+        memorySaved:false,userAuthorized:true,
         suggestions:[],usedSavedTestEvidence:false,usedSavedVideoHistory:false,
         browserModelAllowed:false,
         decision:{status:"clarify",message:nativeReply.reply,question:null,suggestions:[]},

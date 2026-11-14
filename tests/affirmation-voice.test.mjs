@@ -323,6 +323,19 @@ test("all six selected Gemini voices synthesize precisely the selected phrase, n
   }),{gemini:true,openrouterFree:false,openrouter:false});
 });
 
+test("Safari consent is an explicit reversible activation, never a default opt-in",()=>{
+  const ui=source("components/mandala-affirmation-voice.tsx");
+  const browser=source("scripts/verify-affirmation-voice-browser.mjs");
+  assert.match(ui,/const \[consent,setConsent\]=useState\(false\)/);
+  assert.match(ui,/onClick=\{\(\)=>setConsent\(current=>!current\)\}/);
+  assert.match(ui,/event\.nativeEvent\.type!=="click"/);
+  assert.match(ui,/disabled=\{!languageAvailable\|\|!speechText\|\|!consent/);
+  assert.match(browser,/await narrationConsent\.check\(\);/);
+  assert.match(browser,/await narrationConsent\.uncheck\(\);/);
+  assert.match(browser,/toBeDisabled\(\)/);
+  assert.match(ui,/if\(textChanged\)setConsent\(false\)/);
+});
+
 test("mobile one-phrase selection uses approved lines only, revokes consent and stale audio",()=>{
   const ui=read("components/mandala-affirmation-voice.tsx");
   const parent=read("components/mandala-free-video-studio.tsx");

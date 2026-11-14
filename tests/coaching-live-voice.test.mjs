@@ -200,8 +200,11 @@ test('selected persona opens immersive My Coach session with real avatar, stages
   assert.ok(discovery.includes('useState(Boolean(selectedPersona))'))
   assert.ok(page.includes('{!personaSelection&&<div className={styles.header}'))
   for(const token of ['data-my-coach-immersive-session','sessionHero','sessionPortrait','sessionAvatar',
-    'CoachingAvatar locale={lang}','sessionProgressSegments','currentCoachPrompt','quickGoalCard',
+    'CoachingAvatar locale={lang}','sessionProgressSegments','latestCoachText','quickGoalCard',
     'sessionBottomNav','goalRow','onVoiceStateChange={setVoiceState}']) assert.ok(ui.includes(token),token)
+  // The live question is now the latest rendered assistant turn, not an obsolete prompt variable.
+  assert.ok(ui.includes("const latestCoachText=latestCoachTurn?.content||opening"));
+  assert.ok(ui.includes("<p>{latestCoachText.length>160?latestCoachText.slice(0,157).trimEnd()+'…':latestCoachText}</p>"));
   for(const token of ['stageKeys.indexOf(currentStage)','onClick={replayCoachReply}',
     'onClick={()=>chooseTopic(id)}','composerRef.current?.focus()',
     'coachingBrainSafety(input)||coachingBrainBoundary(input)']) assert.ok(ui.includes(token),token)

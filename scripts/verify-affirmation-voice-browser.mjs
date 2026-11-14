@@ -989,6 +989,13 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const narrationConsent=page.locator("[data-video-affirmation-voice-consent]");
       await narrationConsent.check();
       await expect(narrationConsent).toBeChecked();
+      // Real Safari/keyboard consent must be both reversible and opt-in.
+      // An unchecked box still blocks the narration provider request.
+      await narrationConsent.uncheck();
+      await expect(narrationConsent).not.toBeChecked();
+      await expect(page.locator("[data-video-generate-affirmation-audio]")).toBeDisabled();
+      await narrationConsent.check();
+      await expect(narrationConsent).toBeChecked();
       const generateNarration=page.locator("[data-video-generate-affirmation-audio]");
       await expect(generateNarration).toBeEnabled();
       // Observe real user input on macOS without recording the approved text,
