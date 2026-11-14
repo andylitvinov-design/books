@@ -183,12 +183,19 @@ async function runCleanup({github,context,core={info(){},warning(){}},
     // NEVER force-cancel an open PR, unproved ancestry, changed run,
     // active job, manual rerun, or a run outside the verified merged scope.
     // At most two attempts per signed sweep; a 202 is accepted, not terminal.
+    // github-script's Octokit may omit the named force-cancel method even
+    // when its authenticated generic request supports the official endpoint.
+    const forceCancel=typeof github.rest.actions.forceCancelWorkflowRun==='function'
+      ? args=>github.rest.actions.forceCancelWorkflowRun(args)
+      : typeof github.request==='function'
+        ? args=>github.request(
+          'POST /repos/{owner}/{repo}/actions/runs/{run_id}/force-cancel',args)
+        : null;
     let forceStatus=null;
-    if(jobless&&out.force_cancel_attempts<MAX_FORCE_CANCELS&&
-       typeof github.rest.actions.forceCancelWorkflowRun==='function'){
+    if(jobless&&out.force_cancel_attempts<MAX_FORCE_CANCELS&&forceCancel){
      out.force_cancel_attempts++;
      try{
-      const response=await github.rest.actions.forceCancelWorkflowRun({
+      const response=await forceCancel({
        owner:OWNER,repo:REPO,run_id:item.id});
       if(response?.status!==202)
        throw Object.assign(new Error('FORCE_CANCEL_NOT_ACCEPTED'),{

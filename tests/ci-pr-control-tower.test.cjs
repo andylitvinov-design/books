@@ -1919,7 +1919,7 @@ test('stale merged queue cleanup does not let a verified jobless GitHub 409 star
   head:{ref:'feat/proven-merged',sha:next,repo:{full_name:full}}};
  const context={repo:{owner:'andylitvinov-design',repo:'books'},
   ref:'refs/heads/codex/bootstrap-books',eventName:'workflow_dispatch',payload:{inputs:{}}};
- const check=async(jobless,forceStatus=null)=>{
+ const check=async(jobless,forceStatus=null,viaRequest=false)=>{
   const items=[item(991),item(992)],cancelled=[],forced=[];
   const github={rest:{
    actions:{
@@ -1936,11 +1936,20 @@ test('stale merged queue cleanup does not let a verified jobless GitHub 409 star
    repos:{compareCommits:async()=>({data:{status:'ahead',
     base_commit:{sha:old},merge_base_commit:{sha:old}}})}
   }};
-  if(forceStatus!==null)github.rest.actions.forceCancelWorkflowRun=async({run_id})=>{
-   forced.push(run_id);
-   if(forceStatus!==202)throw Object.assign(new Error('force rejected'),{status:forceStatus});
-   return {status:202};
-  };
+  if(forceStatus!==null){
+   const force=async({run_id})=>{
+    forced.push(run_id);
+    if(forceStatus!==202)throw Object.assign(new Error('force rejected'),{status:forceStatus});
+    return {status:202};
+   };
+   if(viaRequest)github.request=async(route,args)=>{
+    assert.equal(route,'POST /repos/{owner}/{repo}/actions/runs/{run_id}/force-cancel');
+    assert.equal(args.owner,'andylitvinov-design');
+    assert.equal(args.repo,'books');
+    return force(args);
+   };
+   else github.rest.actions.forceCancelWorkflowRun=force;
+  }
   const result=await runCleanup({github,context,observedQueued:137,
    observedRemaining:4500,now});
   return {cancelled,forced,result};
@@ -1963,6 +1972,14 @@ test('stale merged queue cleanup does not let a verified jobless GitHub 409 star
  assert.deepEqual(forceRejected.forced,[991]);
  assert.equal(forceRejected.result.non_cancelable[0].force_cancel_status,409);
  assert.equal(forceRejected.result.status,'GITHUB_409_SUPPORT_TRIAGE');
+ // Production github-script does not expose the named Octokit method.
+ // The official REST path must still be called, not silently skipped.
+ const fallbackAccepted=await check(true,202,true);
+ assert.deepEqual(fallbackAccepted.forced,[991]);
+ assert.deepEqual(fallbackAccepted.result.force_cancel_accepted.map(x=>x.run_id),[991]);
+ const fallbackRejected=await check(true,409,true);
+ assert.deepEqual(fallbackRejected.forced,[991]);
+ assert.equal(fallbackRejected.result.non_cancelable[0].force_cancel_status,409);
  const jobExists=await check(false,202);
  assert.deepEqual(jobExists.forced,[],'never force-cancel a live or unknown job');
 });
