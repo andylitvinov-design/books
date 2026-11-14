@@ -2390,7 +2390,7 @@ test('processed legacy receipts rotate to a free exact-HEAD task without duplica
  assert.equal(successes,1,'unprocessed item reachable without changing Worker quota');
 });
 
-test('verified old ghost queue allows exactly one source Repair with moderate real job pressure',async()=>{
+test('verified old ghost queue admits one existing source or read-only legacy worker under moderate job pressure',async()=>{
  const now=Date.parse('2026-11-12T20:00:00Z');
  const oldQueue={id:9919,status:'queued',created_at:'2026-11-11T19:00:00Z'};
  const opts={activeCount:19,terminalOverhang:5,liveRunningJobs:13,newestQueued:oldQueue};
@@ -2400,13 +2400,16 @@ test('verified old ghost queue allows exactly one source Repair with moderate re
  assert.equal(result.verifiedTerminalOverhangRuns,5);
  assert.equal(result.runningJobs,13);
  assert.equal(result.elevatedRepairProof,true);
- assert.equal(result.safeToDispatchOneLegacyPreflight,false);
+ assert.equal(result.safeToDispatchOneLegacyPreflight,true);
  assert.equal(admission('repair',result),'ADMIT');
- assert.equal(admission('legacy',result),'GHOST_LEGACY_PREFLIGHT_UNVERIFIED');
+ assert.equal(admission('legacy',result),'ADMIT');
  assert.equal(admission('ci',result),'GHOST_REPAIR_ONLY');
  assert.equal(admission('conflict',result),'GHOST_REPAIR_ONLY');
  assert.equal(admission('repair',{...result,runningJobs:15}),'GHOST_WORKER_BUSY');
+ assert.equal(admission('legacy',{...result,runningJobs:15}),'GHOST_WORKER_BUSY');
  assert.equal(admission('repair',{...result,activeWorker:{
+  ...result.activeWorker,'HH PR source Repair Worker':1}}),'GHOST_WORKER_BUSY');
+ assert.equal(admission('legacy',{...result,activeWorker:{
   ...result.activeWorker,'HH PR source Repair Worker':1}}),'GHOST_WORKER_BUSY');
  for(const changes of [
   {newestQueued:{...oldQueue,created_at:'2026-11-12T19:50:00Z'}},

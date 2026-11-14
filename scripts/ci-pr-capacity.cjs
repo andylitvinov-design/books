@@ -98,8 +98,9 @@ function staleMergedQueueSamples(runs,now){
 // discounted, but never widens the actual 20-live-wrapper/8-running-job cap.
 // Incomplete reads or unproven histories remain occupied, not free capacity.
 const GHOST_ACTIVE_INVENTORY_LIMIT=32;
-// Trusted overflow: only ONE existing source Repair under verified stale-queue
-// pressure. Core/CI bootstrap, legacy, conflict and merge keep their strict gates.
+// Trusted overflow: at most ONE existing Repair Worker (source or read-only
+// legacy preflight) under verified stale-queue pressure; Core/CI bootstrap,
+// conflict and protected merge retain their strict gates.
 const GHOST_ELEVATED_REPAIR_MAX_RUNNING=14;
 const GHOST_ELEVATED_REPAIR_MAX_ACTIVE=16;
 const GHOST_RECENT_QUEUE_GRACE_MS=24*60*60*1000;
@@ -207,8 +208,9 @@ async function verifiedGhostRepairCapacity(gh,owner,repo,p,now=Date.now()){
    Number.isFinite(Date.parse(newestQueued[0].created_at||''))&&
    Date.parse(newestQueued[0].created_at)<=now-GHOST_RECENT_QUEUE_GRACE_MS;
   // A merged/jobless ghost AND 3+ hour-old terminal wrappers must be proven.
-  // Only one existing source Repair can use this moderate-pressure branch;
-  // other lanes never treat a count-only 137 queue as free runner capacity.
+  // Only one existing Repair Worker (source or read-only legacy preflight) may
+  // use this moderate-pressure branch. Independent exact-HEAD, owner and
+  // hourly legacy limits remain unchanged; optional CI stays blocked.
   const elevatedRepair=!normalPressure&&queueStale&&
    verifiedOverhangs>=3&&effectiveActive<=GHOST_ELEVATED_REPAIR_MAX_ACTIVE&&
    runningJobs<=GHOST_ELEVATED_REPAIR_MAX_RUNNING&&queuedJobs===0;
@@ -219,7 +221,7 @@ async function verifiedGhostRepairCapacity(gh,owner,repo,p,now=Date.now()){
    safeToDispatchOneRepair:true,
    // One existing legacy manual queue preflight can use the same verified
    // free Ubuntu slot. Manual stays manual; exact-head write gates remain.
-   safeToDispatchOneLegacyPreflight:normalPressure,
+   safeToDispatchOneLegacyPreflight:normalPressure||elevatedRepair,
    elevatedRepairProof:elevatedRepair,ghostProofRunId:p.run_id,
    activeRuns:effectiveActive,originalActiveRuns:A,
    capacityReadbacks,
@@ -275,10 +277,11 @@ function admission(lane,capacity){
   if(lane!=='repair'&&lane!=='legacy')return 'GHOST_REPAIR_ONLY';
   if(lane==='legacy'&&capacity.safeToDispatchOneLegacyPreflight!==true)
    return 'GHOST_LEGACY_PREFLIGHT_UNVERIFIED';
-  const elevated=lane==='repair'&&capacity.elevatedRepairProof===true&&
+  const elevated=(lane==='repair'||lane==='legacy')&&capacity.elevatedRepairProof===true&&
    capacity.activeRuns<=GHOST_ELEVATED_REPAIR_MAX_ACTIVE&&
    capacity.runningJobs<=GHOST_ELEVATED_REPAIR_MAX_RUNNING&&
-   capacity.queuedJobs===0&&capacity.safeToDispatchOneLegacyPreflight===false;
+   capacity.queuedJobs===0&&
+    (lane!=='legacy'||capacity.safeToDispatchOneLegacyPreflight===true);
   if(capacity.activeRuns>GHOST_ACTIVE_PROOF_LIMIT||capacity.queuedRuns>250||
      ((capacity.runningJobs>8||capacity.queuedJobs>2)&&!elevated)||
      capacity.activeWorker?.[WORKFLOWS.repair]!==0)return 'GHOST_WORKER_BUSY';
