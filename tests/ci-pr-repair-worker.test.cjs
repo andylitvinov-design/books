@@ -1249,13 +1249,18 @@ test('manual, rerouted, waiting and retry outcomes always have an owner and next
   ['REJECTED','WAITING_INPUT','repository-owner'],
   ['FAILED','REROUTED','agents-director-maintainer','unknown'],
   ['FAILED','MANUAL_REQUIRED','repository-owner','claimed'],
-  ['PREPARED','REROUTED','source-repair-owner'],
+  ['PREPARED','REROUTED','semantic-repair-queue'],
   ['UNKNOWN_STATE','UNCLASSIFIED','ci-diagnostic-triage']
  ];
  for(const [state,status,role,claim_status='unknown'] of cases){
   const result=buildTaskOutcome({...base,state,claim_status});
   assert.equal(result.status,status);
   assert.equal(result.responsible_role,role);
+  if(state==='PREPARED'){
+    assert.equal(result.next_action,'ASSIGN_SEMANTIC_SOURCE_REPAIR_AGENT');
+    assert.equal(result.source_published,false);
+    assert.equal(result.terminal,false);
+  }
   assert.ok(result.next_action);
   assert.ok(Number.isFinite(Date.parse(result.next_check_at)));
   assert.equal(validateTaskOutcome(result),true);
