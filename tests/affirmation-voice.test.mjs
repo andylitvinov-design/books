@@ -612,5 +612,10 @@ test("Safari Voice gender and decoder reset preserve a real explicit choice, con
   assert.ok(source.includes('await expect(generateNarration).toBeEnabled()'));
   assert.ok(source.includes('pcm.stdout.some(value=>value!==0)'),
     "real audio evidence remains mandatory");
-  assert.doesNotMatch(segment,/force:true|\.evaluate\(/,"no fake touch state");
+  // Read-only page.evaluate telemetry on a failed native tap is acceptable;
+  // no forced click or direct locator state injection is permitted.
+  assert.match(segment,/const state=await page\.evaluate\(\(\)=>\(\{/,
+    "failed real Safari gestures retain read-only debug evidence");
+  assert.doesNotMatch(segment,/force:true|(?:maleTab|leon)\.evaluate\(/,
+    "voice choice must not be forced or programmatically toggled");
 });

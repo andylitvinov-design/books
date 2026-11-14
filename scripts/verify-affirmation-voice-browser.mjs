@@ -1241,6 +1241,10 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         phase(engine,"montage-free-navigated-ready");
         await readyGenerate.click();
         phase(engine,"ready-free-render-requested");
+        // No unsolicited optional survey should cover the intentional export.
+        // The existing pill offers an explicit way to open the check-in.
+        await expect(page.locator("[data-video-effect-overlay]")).toHaveCount(0);
+        await expect(page.locator("[data-video-effect-reopen]")).toBeVisible({timeout:20000});
         // The idle source remains preload=none until the user's actual Create
         // gesture; Safari must then start a physical decode, never a CSS-only
         // preview or an unverified download.

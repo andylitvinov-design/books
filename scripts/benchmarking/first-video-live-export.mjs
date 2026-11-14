@@ -346,7 +346,11 @@ try {
     const button = document.querySelector('[data-first-video-generate]');
     return Boolean(button && !button.disabled);
   }, undefined, {timeout: 40000});
-  await create.click({timeout: 15000});
+  // Match the user's actual iPhone gesture. WebKit may drop the synthetic
+  // desktop click while a first-video form is rekeying after draft changes.
+  // A native tap must navigate to Ready; this is never a render or credit hold.
+  if(engine==='webkit')await create.tap({timeout:15000});
+  else await create.click({timeout:15000});
   // First Video Create only navigates. A separate real Ready gesture starts
   // the recorder, preserving exact source, audio, credit and privacy checks.
   row.phase='first-video-navigation-ready';

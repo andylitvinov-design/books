@@ -37,3 +37,13 @@ test("Ready verifies video before completion and preserves guarded export",()=>{
  assert.match(studio,/if\(uploadedAudio&&!audioRights\)\{/);
  assert.match(studio,/if\(!canGenerate\)\{/);
 });
+
+test("first-video WebKit uses a real iPhone tap before a separately guarded Ready generation",()=>{
+ const browser=readFileSync(new URL("../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
+ assert.match(browser,/if\(engine==='webkit'\)await create\.tap\(\{timeout:15000\}\)/);
+ assert.match(browser,/document\.querySelector\('\[data-mandala-free-video\]'\)[\s\S]*?getAttribute\('data-active-workspace'\)==='ready'/);
+ assert.match(browser,/await expect\(ready\)\.toHaveAttribute\('data-ready-state','choose'\)/);
+ assert.match(browser,/await readyGenerate\.tap\(\)/);
+ assert.match(browser,/readRealGuestVideo\(page/);
+ assert.doesNotMatch(browser,/create\.click\(\{force:true/);
+});
