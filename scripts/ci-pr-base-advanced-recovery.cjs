@@ -2,7 +2,8 @@
 // Recover only a proven, stale protected production base after real Core source
 // tests passed. Native update-branch creates a new PR HEAD and triggers the
 // normal exact-HEAD Core/Specialist suite. Never mark an old run green.
-const {externalOwnerLeaseStatus,readCompleteIssueComments}=require('./ci-pr-task-state.cjs');
+const {externalOwnerLeaseStatus,readCompleteIssueComments,trustedControlComment}=require('./ci-pr-task-state.cjs');
+const {MARKER:READY_MARKER,verifiedLooseReleaseGate}=require('./ci-pr-sensitive-base-ci-wake.cjs');
 const REPO='andylitvinov-design/books',PROD='codex/public-book-library';
 const SHA=/^[0-9a-f]{40}$/i;
 const CORE_PATH='.github/workflows/hh-pr-core-release.yml';
@@ -148,6 +149,71 @@ async function ownerProtectedUpdate({fetcher,ownerToken,number,head,source,body}
   return {ok:true,reason:'PROTECTED_BASE_SYNC_REQUESTED_NEW_HEAD_REQUIRES_REAL_CI'};
  }catch{return fail('OWNER_BRANCH_API_UNAVAILABLE');}
 }
+
+// A single real ready_for_review Core validates the current synthetic merge
+// WITHOUT publishing a new source HEAD, when the protected ruleset is loose.
+// The owner token must prove identity and an unchanged source before mutation.
+async function ownerProtectedReadyRevalidation({
+ fetcher,ownerToken,number,head,source,body,onBeforeMutation
+}={}){
+ const fail=reason=>({ok:false,reason});
+ if(typeof fetcher!=='function'||typeof ownerToken!=='string'||!ownerToken||
+    !Number.isSafeInteger(number)||number<1||!SHA.test(head||'')||
+    typeof source!=='string'||!source||typeof body!=='string'||
+    typeof onBeforeMutation!=='function')return fail('READY_ARGUMENTS_INVALID');
+ const endpoint='/repos/'+REPO+'/pulls/'+number;
+ const headers={Authorization:'Bearer '+ownerToken,Accept:'application/vnd.github+json',
+  'Content-Type':'application/json','X-GitHub-Api-Version':'2022-11-28'};
+ const query=async(method,path,payload)=>{
+  const response=await fetcher('https://api.github.com'+path,{method,headers,
+   redirect:'error',signal:AbortSignal.timeout(20000),
+   ...(payload?{body:JSON.stringify(payload)}:{})});
+  if(!response?.ok||!Number.isSafeInteger(response.status))
+   throw Error('OWNER_HTTP_'+(response?.status||0));
+  const data=await response.json();
+  if(data==null||typeof data!=='object')throw Error('OWNER_RESPONSE_INVALID');
+  return data;
+ };
+ const same=(p,draft,id=null)=>p?.number===number&&p.state==='open'&&
+  p.draft===draft&&p.base?.ref===PROD&&
+  p.head?.sha===head&&p.head?.ref===source&&
+  p.head?.repo?.full_name===REPO&&p.body===body&&
+  (id===null||p.node_id===id);
+ try{
+  if((await query('GET','/user'))?.login!=='andylitvinov-design')
+   return fail('OWNER_TOKEN_IDENTITY_MISMATCH');
+  const first=await query('GET',endpoint),id=first?.node_id;
+  if(!same(first,false)||typeof id!=='string'||!/^PR_[A-Za-z0-9_-]+$/.test(id))
+   return fail('OWNER_PR_CHANGED');
+  // A source/base/lease recheck and signed one-shot intent MUST precede Draft.
+  await onBeforeMutation(first);
+  if(!same(await query('GET',endpoint),false,id))
+   return fail('OWNER_PR_CHANGED_BEFORE_DRAFT');
+  const mutate=async name=>{
+   const response=await query('POST','/graphql',{query:'mutation($id:ID!){'+name+
+    '(input:{pullRequestId:$id}){pullRequest{id isDraft}}}',variables:{id}});
+   const node=response?.data?.[name]?.pullRequest;
+   if(response?.errors?.length||node?.id!==id||
+      node.isDraft!==(name==='convertPullRequestToDraft'))
+    throw Error('DRAFT_READY_MUTATION_UNVERIFIED');
+  };
+  await mutate('convertPullRequestToDraft');
+  if(!same(await query('GET',endpoint),true,id))
+   return fail('DRAFT_READBACK_UNVERIFIED');
+  for(let attempt=0;attempt<2;attempt++){
+   try{await mutate('markPullRequestReadyForReview');}catch{/* readback decides */}
+   const next=await query('GET',endpoint);
+   if(same(next,false,id))
+    return {ok:true,reason:'SAME_HEAD_CURRENT_BASE_CORE_RECHECK_REQUESTED'};
+   if(!same(next,true,id))return fail('READY_HEAD_OR_BODY_CHANGED');
+  }
+  return fail('READY_RESTORE_REQUIRED');
+ }catch(error){
+  const message=String(error?.message||'');
+  return fail(message.startsWith('OWNER_HTTP_')?message:'OWNER_READY_RECHECK_UNAVAILABLE');
+ }
+}
+
 async function recoverBaseAdvanced({github,context,hasOwnerToken=false,
  ownerToken='',fetcher=globalThis.fetch,now=Date.now()}){
  const outcome=(status,reason,number=null)=>({status,reason,prNumber:number,mergeAuthorized:false});
@@ -241,6 +307,52 @@ async function recoverBaseAdvanced({github,context,hasOwnerToken=false,
   if(!sameSource(fresh.data,e.head_branch,sourceSha)||
      production.data?.protected!==true||production.data?.commit?.sha!==live)
    return outcome('SKIPPED','HEAD_OR_BASE_CHANGED_BEFORE_UPDATE',number);
+  // A verified loose protected ruleset permits re-checking this immutable
+  // source SHA against the new production merge through Ready. Manual Repair
+  // ownership and unknown policies retain the existing native update path.
+  const manual=(pr.labels||[]).some(l=>
+    (typeof l==='string'?l:l?.name)==='hh:repair-manual');
+  if(!manual&&await verifiedLooseReleaseGate(github,owner,repo)){
+   const latest=(await github.rest.actions.listWorkflowRuns({
+    owner,repo,workflow_id:'hh-pr-core-release.yml',branch:e.head_branch,
+    event:'pull_request',per_page:1
+   })).data?.workflow_runs;
+   if(!Array.isArray(latest)||latest.length!==1||
+      latest[0].id!==e.id||latest[0].head_sha!==e.head_sha||
+      latest[0].status!=='completed'||latest[0].conclusion!=='failure')
+    return outcome('SKIPPED','NEWER_OR_UNVERIFIED_CORE_WAVE',number);
+   const existingIntent=rows=>rows.some(c=>trustedControlComment(c)&&
+    String(c.body||'').includes('<!-- '+READY_MARKER+
+      ' pr='+number+' head='+sourceSha+' '));
+   if(existingIntent(comments))
+    return outcome('SKIPPED','ONE_WAKE_ALREADY_RECORDED_FOR_HEAD',number);
+   const ready=await ownerProtectedReadyRevalidation({
+    fetcher,ownerToken,number,head:sourceSha,source:e.head_branch,body:pr.body,
+    onBeforeMutation:async()=>{
+     const [livePR,liveBranch]=await Promise.all([
+      github.rest.pulls.get({owner,repo,pull_number:number}),
+      github.rest.repos.getBranch({owner,repo,branch:PROD})
+     ]);
+     if(!sameSource(livePR.data,e.head_branch,sourceSha)||
+        liveBranch.data?.protected!==true||liveBranch.data?.commit?.sha!==live)
+      throw Error('SOURCE_OR_BASE_CHANGED_BEFORE_READY');
+     let pages=0;
+     const recent=await readCompleteIssueComments(github,owner,repo,number,
+      async(_name,call)=>{if(++pages>10)throw Error('COMMENT_RECHECK_LIMIT');return call();});
+     if(!Array.isArray(recent)||existingIntent(recent)||
+        externalOwnerLeaseStatus(recent,sourceSha,now)!=='FREE')
+      throw Error('LEASE_OR_INTENT_CHANGED');
+     await github.rest.issues.createComment({owner,repo,issue_number:number,
+      body:'<!-- '+READY_MARKER+' pr='+number+' head='+sourceSha+
+       ' from='+old+' to='+live+' core='+e.id+' -->\n'+
+       'One same-HEAD Ready event requested for real current-BASE Core and Specialist. '+
+       'Not source changed, CI PASS, merged or LIVE.'});
+    }
+   });
+   if(!ready.ok)return outcome('SKIPPED',ready.reason,number);
+   return {...outcome('READY_RECHECK_REQUESTED',ready.reason,number),
+    sourceHeadPreserved:true,ciVerified:false};
+  }
   // A normal merge of protected production into the PR head. GitHub performs
   // the expected_head_sha lease atomically; synchronize triggers genuine CI.
   const updated=await ownerProtectedUpdate({fetcher,ownerToken,
@@ -253,4 +365,4 @@ async function recoverBaseAdvanced({github,context,hasOwnerToken=false,
  }
 }
 module.exports={isTrustedFailure,validatedJobEvidence,isActualBaseAdvancedLog,
- isVerifiedAdvance,classifyRecentBaseSyncs,sameSource,ownerProtectedUpdate,recoverBaseAdvanced};
+ isVerifiedAdvance,classifyRecentBaseSyncs,sameSource,ownerProtectedUpdate,ownerProtectedReadyRevalidation,recoverBaseAdvanced};

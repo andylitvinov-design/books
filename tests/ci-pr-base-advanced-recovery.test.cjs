@@ -33,10 +33,14 @@ function world(options={}){
   base:{ref:'codex/public-book-library',sha:LIVE},
   head:{ref:'fix/sensitive-crm',sha:HEAD,repo:{full_name:REPO}},
   labels:[],body:'Existing customer PR body',commits:1,...options.pr};
- let updates=0,reads=0;
+ let updates=0,reads=0,draft=false;
+ const mutations=[],comments=options.comments||[];
  const github={
   rest:{
    actions:{
+    listWorkflowRuns:async()=>({data:{workflow_runs:[{
+     id:options.newerCore?101:100,head_sha:HEAD,status:'completed',conclusion:'failure'
+    }]}}),
     getWorkflowRun:async()=>{if(options.read403)throw Object.assign(Error('read denied'),{status:403});return {data:{id:100,run_attempt:1,status:'completed',conclusion:'failure',
      head_sha:HEAD,head_branch:'fix/sensitive-crm',path:'.github/workflows/hh-pr-core-release.yml',
      ...options.run}};},
@@ -53,10 +57,26 @@ function world(options={}){
      total_commits:1,commits:[{sha:LIVE}],
      base_commit:{sha:OLD},merge_base_commit:{sha:OLD},...options.compare}})
    },
-   issues:{listComments:async()=>({data:options.comments||[]})}
+   issues:{listComments:async()=>({data:comments}),
+    createComment:async({body})=>{
+     if(options.intentDenied)throw Error('intent denied');
+     comments.push({id:comments.length+1,body,
+      user:{login:'github-actions[bot]',id:41898282,type:'Bot'},
+      performed_via_github_app:{id:15368,slug:'github-actions'}});
+     return {data:{id:comments.length}};
+    }}
   },
   request:async(path)=>{
    if(path.includes('/logs'))return {data:options.logs??MARKER};
+   if(path.includes('/rulesets/')){
+    if(!options.looseRuleset&&!options.strictRuleset)throw Error('rules unavailable');
+    return {data:{id:26269892,enforcement:'active',
+     conditions:{ref_name:{include:['refs/heads/codex/public-book-library']}},
+     rules:[{type:'pull_request',parameters:{required_review_thread_resolution:true}},
+      {type:'required_status_checks',parameters:{
+       strict_required_status_checks_policy:options.strictRuleset===true}}]
+    }};
+   }
    if(path.startsWith('PUT '))throw Error('Owner source write must not use read-only GitHub client');
    throw Error('Unexpected test API call '+path);
   }
@@ -68,13 +88,20 @@ function world(options={}){
   const response=(status,data)=>({ok:status>=200&&status<300,status,json:async()=>data});
   if(path==='/user')return response(200,{login:options.ownerLogin||'andylitvinov-design'});
   if(path==='/repos/andylitvinov-design/books/pulls/3510'&&request.method==='GET')
-   return response(200,{...pr,...options.ownerPr});
+   return response(200,{...pr,draft,...options.ownerPr});
   if(path==='/repos/andylitvinov-design/books/pulls/3510/update-branch'&&request.method==='PUT'){
    updates++;return response(options.updateStatus??202,{message:'mock update accepted'});
   }
+  if(path==='/graphql'&&request.method==='POST'){
+   const mutation=JSON.parse(request.body).query.includes('convertPullRequestToDraft')?
+    'convertPullRequestToDraft':'markPullRequestReadyForReview';
+   draft=mutation==='convertPullRequestToDraft';
+   mutations.push(mutation);
+   return response(200,{data:{[mutation]:{pullRequest:{id:pr.node_id,isDraft:draft}}}});
+  }
   throw Error('Unexpected owner-only GitHub API route: '+request.method+' '+path);
  };
- return {context,github,fetcher,updated:()=>updates,reads:()=>reads,ownerCalls:()=>ownerCalls};
+ return {context,github,fetcher,updated:()=>updates,reads:()=>reads,ownerCalls:()=>ownerCalls,mutations,comments,getDraft:()=>draft};
 }
 const run=w=>recoverBaseAdvanced({context:w.context,github:w.github,
  hasOwnerToken:true,ownerToken:'TEST_OWNER_TOKEN_NOT_SECRET',fetcher:w.fetcher,
@@ -117,6 +144,52 @@ test('verified failure creates one native non-force base update, never a synthet
  assert.equal(result.mergeAuthorized,false);
  assert.equal(w.updated(),1);
 });
+
+test('verified loose protected BASE drift requests one true same-source Ready Core, never new source HEAD',async()=>{
+ const w=world({looseRuleset:true,pr:{node_id:'PR_abcdef01'}});
+ const result=await run(w);
+ assert.equal(result.status,'READY_RECHECK_REQUESTED');
+ assert.equal(result.reason,'SAME_HEAD_CURRENT_BASE_CORE_RECHECK_REQUESTED');
+ assert.equal(result.mergeAuthorized,false);
+ assert.equal(result.ciVerified,false);
+ assert.equal(result.sourceHeadPreserved,true);
+ assert.equal(w.updated(),0,'no base-only source sync or new preview');
+ assert.deepEqual(w.mutations,['convertPullRequestToDraft','markPullRequestReadyForReview']);
+ assert.equal(w.getDraft(),false);
+ assert.equal(w.comments.length,1,'signed one-shot intent written after PAT identity proof');
+ const repeat=await run(w);
+ assert.equal(repeat.reason,'ONE_WAKE_ALREADY_RECORDED_FOR_HEAD');
+ assert.deepEqual(w.mutations,['convertPullRequestToDraft','markPullRequestReadyForReview']);
+});
+test('manual-owned, strict or unverified protected BASE changes keep the proven native non-force update',async()=>{
+ for(const opts of [
+  {looseRuleset:true,pr:{labels:[{name:'hh:repair-manual'}]}},
+  {strictRuleset:true},
+  {}
+ ]){
+  const w=world(opts);
+  const result=await run(w);
+  assert.equal(result.status,'UPDATED');
+  assert.equal(w.updated(),1);
+  assert.deepEqual(w.mutations,[]);
+  assert.equal(w.comments.length,0);
+ }
+});
+test('newer Core, unverified owner or failed intent never converts Ready PR to Draft',async()=>{
+ for(const [opts,reason] of [
+  [{looseRuleset:true,newerCore:true},'NEWER_OR_UNVERIFIED_CORE_WAVE'],
+  [{looseRuleset:true,ownerLogin:'not-owner'},'OWNER_TOKEN_IDENTITY_MISMATCH'],
+  [{looseRuleset:true,intentDenied:true},'OWNER_READY_RECHECK_UNAVAILABLE']
+ ]){
+  const w=world({pr:{node_id:'PR_abcdef01'},...opts});
+  const result=await run(w);
+  assert.equal(result.status,'SKIPPED');
+  assert.equal(result.reason,reason);
+  assert.equal(w.updated(),0);
+  assert.deepEqual(w.mutations,[]);
+ }
+});
+
 test('no owner PAT, real Core failure, unverified log or unsupported ancestry never mutates',async()=>{
  for(const cases of [
   {logs:'Real source assertion failed'},

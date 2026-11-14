@@ -11,6 +11,28 @@ const OWNER='andylitvinov-design',REPO='books',FULL=OWNER+'/'+REPO;
 const PROD='codex/public-book-library';
 const CORE='HH PR core release gate',MARKER='HH_SENSITIVE_BASE_CI_REVALIDATE_V1';
 const SHA=/^[0-9a-f]{40}$/i;
+
+// Exact-head Ready validation is used only for the observed loose protected
+// release rule; unknown or strict settings keep the existing branch-sync path.
+async function verifiedLooseReleaseGate(github,owner,repo){
+ try{
+  if(owner!==OWNER||repo!==REPO||typeof github?.request!=='function')return false;
+  const response=await github.request('GET /repos/{owner}/{repo}/rulesets/{ruleset_id}',{
+   owner,repo,ruleset_id:26269892
+  });
+  const rule=response?.data;
+  if(rule?.id!==26269892||rule.enforcement!=='active'||
+     !rule.conditions?.ref_name?.include?.includes('refs/heads/'+PROD)||
+     !Array.isArray(rule.rules))return false;
+  const checks=rule.rules.filter(item=>item.type==='required_status_checks');
+  const reviews=rule.rules.filter(item=>item.type==='pull_request');
+  return checks.length===1&&
+    checks[0].parameters?.strict_required_status_checks_policy===false&&
+    reviews.length===1&&
+    reviews[0].parameters?.required_review_thread_resolution===true;
+ }catch{return false;}
+}
+
 const HELD=new Set(['hh:hold','hh:repair-manual','hh:blocked',
  'hh:worker-claimed','hh:direction-override:invalid','hh:repair-needed']);
 function candidate(pr,expectedHead){
@@ -43,6 +65,7 @@ async function run({github,context,token,number,head,oldBase,newBase,coreRunId,
   return hold('OWNER_TOKEN_NOT_CONFIGURED');
  const {owner,repo}=context.repo;
  let pr,branch,latest,comparison,children,comments,needsHeadUpdate=false;
+ let sameHeadCurrentBaseRecheck=false;
  try{
   pr=(await github.rest.pulls.get({owner,repo,pull_number:number})).data;
   if(!candidate(pr,head))return hold('PR_HOLD_OR_CHANGED_HEAD');
@@ -79,6 +102,12 @@ async function run({github,context,token,number,head,oldBase,newBase,coreRunId,
   }else if(relative.status==='ahead'&&relative.merge_base_commit.sha===newBase){
     needsHeadUpdate=false;
   }else return hold('SOURCE_BASE_RELATION_NOT_SAFE');
+  if(needsHeadUpdate && await verifiedLooseReleaseGate(github,owner,repo)){
+   // A real ready_for_review Core checks current merge BASE on the same HEAD.
+   // No BASE-only source commit, second deploy preview or green check spoofing.
+   needsHeadUpdate=false;
+   sameHeadCurrentBaseRecheck=true;
+  }
   latest=(await github.rest.actions.listWorkflowRuns({owner,repo,
    workflow_id:'hh-pr-core-release.yml',branch:pr.head.ref,
    event:'pull_request',per_page:20})).data;
@@ -161,7 +190,7 @@ async function run({github,context,token,number,head,oldBase,newBase,coreRunId,
    body:'<!-- '+MARKER+' pr='+number+' head='+head+
     ' from='+oldBase+' to='+newBase+' core='+coreRunId+' -->\n'+
     'Necessary current-base CI revalidation requested by trusted coordinator. '+
-    'One protected update or Ready event only, with real new HEAD CI required. '+
+    'One protected update or same-HEAD Ready event; current-BASE Core remains mandatory. '+
     'Not a completed source update, CI PASS, merge or LIVE.'});
  }catch{return hold('SIGNED_WAKE_INTENT_NOT_WRITTEN');}
 
@@ -221,7 +250,8 @@ async function run({github,context,token,number,head,oldBase,newBase,coreRunId,
   if(!same(state,true))return hold('READY_HEAD_OR_BODY_CHANGED');
  }
  if(!restored)return hold('READY_RESTORE_REQUIRED');
- return {...result,status:'WAKE_REQUESTED',reason:'AWAITING_NEW_EXACT_HEAD_CORE',
+ return {...result,status:'WAKE_REQUESTED',
+  reason:sameHeadCurrentBaseRecheck?'AWAITING_SAME_HEAD_CURRENT_BASE_CORE':'AWAITING_NEW_EXACT_HEAD_CORE',
   metadataEventRequested:true};
 }
-module.exports={run,candidate,MARKER};
+module.exports={run,candidate,MARKER,verifiedLooseReleaseGate};
