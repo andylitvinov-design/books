@@ -1609,10 +1609,16 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(page.locator("[data-hypno-speech-settings]")).toBeVisible({timeout:15000});
       const voicePanel=page.locator("[data-video-voice-studio]");
       await voicePanel.waitFor({state:"visible",timeout:25000});
-      if(await voicePanel.getAttribute("open")===null)
-        await voicePanel.locator(":scope > summary").click();
+      const voiceSummary=voicePanel.locator(":scope > summary");
+      await expect(voiceSummary).toBeVisible();
+      if(await voicePanel.getAttribute("open")===null){
+        if(engine==="webkit")await voiceSummary.tap();
+        else await voiceSummary.click();
+      }
+      // The real gesture must commit React lazy editor state, not just HTML open.
+      await expect(voicePanel).toHaveAttribute("open","",{timeout:15000});
       const studio=voicePanel.locator("[data-voice-studio]");
-      await studio.waitFor({state:"visible"});
+      await studio.waitFor({state:"visible",timeout:25000});
       assert.equal(await studio.locator("[data-voice-id]").count(),6);
       await studio.locator("[data-voice-studio-generate]").click();
       await studio.locator("[data-voice-studio-audio]").waitFor({state:"visible",timeout:30000});
