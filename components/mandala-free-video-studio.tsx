@@ -111,6 +111,7 @@ import videoStyles from "./mandala-video-mobile.module.css";
 // First-screen player and Auto Video Director remain eager. Optional workspaces
 // and collapsed tools download on interaction, reducing initial JS on mobile.
 const MandalaHypnocorrectionMobile = dynamic(() => import("./mandala-hypnocorrection-mobile").then(module => module.MandalaHypnocorrectionMobile));
+const MandalaTherapyStudio = dynamic(() => import("./mandala-therapy-studio").then(module => module.MandalaTherapyStudio));
 const MandalaGuidedCourse = dynamic(() => import("./mandala-guided-course").then(module => module.MandalaGuidedCourse));
 const MandalaCinematicDirector = dynamic(() => import("./mandala-cinematic-director").then(module => module.MandalaCinematicDirector));
 const MandalaAutomaticStoryboard = dynamic(() => import("./mandala-automatic-storyboard").then(module => module.MandalaAutomaticStoryboard));
@@ -241,7 +242,7 @@ const workspaceCopy = {
  ru:{
   video:{tab:"Цель",title:"Цель видео",desc:"Реальные видеосюжеты, атмосфера и оформление."},
   phrases:{tab:"Идеи",title:"Идеи для видео",desc:"Мой запрос, фразы поддержки и, по желанию, голос и музыка."},
-  effects:{tab:"Гипноэффект",title:"Гипноэффекты",desc:"Мягкие визуальные и звуковые эффекты с честной пометкой экспериментальных функций."},
+  effects:{tab:"Therapy",title:"Therapy Studio",desc:"Медитация, голос и курс из восьми последовательных практик."},
   practices:{tab:"Курс практик",title:"Курсы и практики",desc:"Выберите фокус, создайте медитацию, практику и личную программу из восьми сессий."},
   pro:{tab:"PRO",title:"PRO генерация",desc:"Персонажи, сюжеты, места и профессиональный режиссёрский бриф."},
   ready:{tab:"Ready",title:"Видео готово",desc:"Просмотр, сохранение и развитие практики."},
@@ -250,7 +251,7 @@ const workspaceCopy = {
  en:{
   video:{tab:"Goal",title:"Video goal",desc:"Real film scenes, atmosphere and visual direction."},
   phrases:{tab:"Ideas",title:"Video ideas",desc:"Your intention, support phrases and optional voice or music."},
-  effects:{tab:"Hypno effect",title:"Hypno effects",desc:"Optional gentle visual and sound effects, with experimental features labelled."},
+  effects:{tab:"Therapy",title:"Therapy Studio",desc:"A guided meditation, a voice, and eight connected practice sessions."},
   practices:{tab:"Practice course",title:"Courses & practices",desc:"Choose your focus, create a meditation and practice, then explore eight guided sessions."},
   pro:{tab:"PRO",title:"PRO generation",desc:"Characters, stories, locations and advanced direction."},
   ready:{tab:"Ready",title:"Your video is ready",desc:"Preview, save and continue your practice."},
@@ -259,7 +260,7 @@ const workspaceCopy = {
  es:{
   video:{tab:"Objetivo",title:"Objetivo del vídeo",desc:"Escenas reales, ambiente y estilo visual."},
   phrases:{tab:"Ideas",title:"Ideas para vídeo",desc:"Tu intención, frases de apoyo y voz o música opcionales."},
-  effects:{tab:"Efecto hipno",title:"Efectos de hipnosis",desc:"Efectos suaves y opcionales claramente identificados."},
+  effects:{tab:"Therapy",title:"Therapy Studio",desc:"Una meditación, una voz y un curso de ocho sesiones relacionadas."},
   practices:{tab:"Curso práctico",title:"Cursos y prácticas",desc:"Elige tu enfoque, crea una meditación y una práctica, y descubre ocho sesiones guiadas."},
   pro:{tab:"PRO",title:"Generación PRO",desc:"Personajes, historias, lugares y dirección avanzada."},
   ready:{tab:"Ready",title:"Tu vídeo está listo",desc:"Mira, guarda y continúa tu práctica."},
@@ -269,13 +270,13 @@ const workspaceCopy = {
 // One row, six real existing workspace destinations. No anchor-only navigation.
 const workspaceTabs=[
  {id:"video",Icon:Film},{id:"phrases",Icon:Heart},
- {id:"editor",Icon:Scissors},{id:"effects",Icon:Sparkles},
- {id:"pro",Icon:Zap},{id:"ready",Icon:Check}
+ {id:"editor",Icon:Scissors},{id:"pro",Icon:Zap},
+ {id:"ready",Icon:Check},{id:"effects",Icon:Leaf}
 ] as const;
 const mobileWorkspaceCopy={
- ru:{video:"Цель",editor:"Монтаж",phrases:"Идеи",effects:"Гипно",practices:"Курс",pro:"PRO",ready:"Ready"},
- en:{video:"Goal",editor:"Montage",phrases:"Ideas",effects:"Hypno",practices:"Course",pro:"PRO",ready:"Ready"},
- es:{video:"Objetivo",editor:"Montaje",phrases:"Ideas",effects:"Hipno",practices:"Curso",pro:"PRO",ready:"Ready"}
+ ru:{video:"Цель",editor:"Монтаж",phrases:"Идеи",effects:"Therapy",practices:"Курс",pro:"PRO",ready:"Ready"},
+ en:{video:"Goal",editor:"Montage",phrases:"Ideas",effects:"Therapy",practices:"Course",pro:"PRO",ready:"Ready"},
+ es:{video:"Objetivo",editor:"Montaje",phrases:"Ideas",effects:"Therapy",practices:"Curso",pro:"PRO",ready:"Ready"}
 } as const;
 
 const studioCopy = {
@@ -2488,6 +2489,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [readyFreeFilmKey,setReadyFreeFilmKey] = useState("");
   const freeFilmPlayerRefs=useRef<Record<string,HTMLVideoElement>>({});
   const activeFreeFilmShotRef=useRef<string|null>(null);
+  // Bounded WebKit native MP4 drift recovery; never accept unlicensed/stale frames.
+  const lastLicensedSeekRef=useRef<Record<string,number>>({});
   const [courseMeditationDraft,setCourseMeditationDraft] = useState("");
   // A deferred opener must never override a later explicit "Do not add" choice.
   const meditationDisclosureEpochRef=useRef(0);
@@ -3463,6 +3466,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         if(id!==shot.sceneId && !other.paused)other.pause();
       });
       activeFreeFilmShotRef.current=shot.sceneId;
+      delete lastLicensedSeekRef.current[shot.sceneId];
     }
     let frame;
     try{
@@ -3485,12 +3489,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       }catch{/* Decoder wait below fails closed if re-priming cannot recover. */}
       return null;
     }
-    if(assessment.status==="drift"&&!video.seeking&&(enteringShot||!advancePlayback)){
-      // Stage entry is a *bounded* seek, not a seek on every encoded frame.
-      // Rendering waits for the native decoder to finish, else the existing
-      // 500ms media gap watchdog cancels the exported film.
-      try{video.pause();video.currentTime=frame.expectedSourceSeconds;}
-      catch{/* The existing media timeout handles an unseekable source. */}
+    if(assessment.status==="drift"&&!video.seeking){
+      // The Safari WebCodecs source may freeze midway through a shot even
+      // with readyState=4. Recenter only on verified source-clock drift,
+      // throttling attempts to avoid a seek storm during local export.
+      // assessLicensedSourceFrame must still return "ready" before drawing.
+      const now=performance.now();
+      const last=lastLicensedSeekRef.current[shot.sceneId]??-Infinity;
+      if(enteringShot||!advancePlayback||now-last>=180){
+        lastLicensedSeekRef.current[shot.sceneId]=now;
+        try{video.pause();video.currentTime=frame.expectedSourceSeconds;}
+        catch{/* Existing decoder timeout fails closed for unseekable film. */}
+      }
       return null;
     }
     if(assessment.status!=="ready")return null;
@@ -7141,15 +7151,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </button>
       </aside>
       {activeWorkspace==="effects" ? <aside className={videoStyles.hypnoStageTitle}
-        data-hypno-stage-intro aria-label={locale==="ru"?"Гипноэффекты":locale==="es"?"Efectos hipnóticos":"Hypno effects"}>
-        <Sparkles size={23} aria-hidden="true"/>
-        <div>
-          <h3>{locale==="ru"?"Гипноэффекты":locale==="es"?"Efectos hipnóticos":"Hypno effects"}</h3>
-          <p>{locale==="ru"?"Выберите мягкие дополнительные эффекты для видео.":
-            locale==="es"?"Elige capas suaves opcionales para tu vídeo.":
-            "Choose optional gentle layers for your video."}</p>
-        </div>
-      </aside> : null}
+        data-hypno-stage-intro aria-label="Therapy Studio"><Leaf size={23} aria-hidden="true"/>
+        <div><h3>Therapy Studio</h3><p>{locale==="ru"?"Медитация, голос и курс практик.":
+         locale==="es"?"Meditaciones, voz y prácticas.":"Meditation, voice and guided practice."}</p></div>
+       </aside> : null}
       {activeWorkspace==="editor" && montagePanel==="audio" ? (
         <aside className={videoStyles.montageAudioHero} data-video-audio-intro>
           <Music2 size={27} aria-hidden="true"/>
@@ -7567,8 +7572,29 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       </section>
       <section className={videoStyles.quickPhraseSection} data-workspace-section="effects"
         data-video-effects-panel aria-label={workspaceCopy[locale].effects.title}>
-        {activeWorkspace==="effects" ? <div id="video-hypnocorrection-mobile" data-video-hypnocorrection-panel>
-          <MandalaHypnocorrectionMobile locale={locale} initialGroup={hypnoEntryGroup} disabled={recording||preparing||hypnoAudioBusy}
+        {activeWorkspace==="effects" ? <MandalaTherapyStudio locale={locale}
+          disabled={recording||preparing||hypnoAudioBusy}
+          editor={isCourse=><MandalaPersonalMeditation key={isCourse?"course":"single"}
+            coursePreview={isCourse} approvedVideoConcept={approvedVideoConcept}
+            locale={locale} theme={theme} wish={wish}
+            scene={sceneName} caption={caption} sound={attachedAudio?appliedAudioName:""}
+            audioSrc={attachedAudio?.kind==="file"?(audioRights?uploadedAudio?.url||null:null):
+              attachedAudio?.kind==="preset"?presetAudioUrl(attachedAudio.id):
+                attachedAudio?.kind==="presets"?presetAudioUrl(attachedAudio.ids[0]):null}
+            pace={speed} brightness={brightness}
+            affirmations={affirmationLines} affirmationsEnabled={affirmations.enabled}
+            focus={meditationFocus} disabled={recording||preparing}
+            onNarrationReady={attachMeditationNarration}
+            onNarrationInvalidated={()=>setAttachedAudio(current=>
+              current?.kind==="file"&&current.nonLoop?null:current)}/>}
+          voiceEditor={hypnoVoiceEditor}
+          onVideoPhrases={()=>{
+            setActiveWorkspace("phrases");setIdeasSubtab("personalization");setStudioMode("pump");
+            window.requestAnimationFrame(()=>document.querySelector("[data-video-legacy-phrase-editor]")
+              ?.scrollIntoView({behavior:"smooth",block:"nearest"}));
+          }}
+          advancedEffects={<div id="video-hypnocorrection-mobile" data-video-hypnocorrection-panel>
+            <MandalaHypnocorrectionMobile locale={locale} initialGroup={hypnoEntryGroup} disabled={recording||preparing||hypnoAudioBusy}
             affirmations={affirmations} onAffirmationsChange={setAffirmations}
             light={hypnoLight} onLightChange={next=>{setHypnoLight(next);setPreviewPlaying(false);}}
             posters={{
@@ -7611,7 +7637,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 visibility:current.visibility.includes("large")?current.visibility:[...current.visibility,"large"]}));
               setPreviewPlaying(false);
             }}/>
-        </div> : null}
+          </div>}/>
+          : null}
       </section>
       {activeWorkspace==="video" ? <section className={videoStyles.quickMusicSection} data-workspace-section="video" data-video-quick-audio-choices aria-labelledby="quick-music-heading">
         <div className={videoStyles.quickSectionHeading}>

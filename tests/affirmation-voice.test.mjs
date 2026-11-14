@@ -619,3 +619,28 @@ test("Safari Voice gender and decoder reset preserve a real explicit choice, con
   assert.doesNotMatch(segment,/force:true|(?:maleTab|leon)\.evaluate\(/,
     "voice choice must not be forced or programmatically toggled");
 });
+
+test("Safari native reversible consent and Therapy Audio require real user touches",()=>{
+  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+  const css=read("components/mandala-affirmation-voice.module.css");
+  const ui=read("components/mandala-affirmation-voice.tsx");
+  assert.match(css,/\.panel\[data-voice-layout="compact"\] \.consent\{[^}]*min-height:44px/);
+  assert.match(ui,/const \[consent,setConsent\]=useState\(false\)/);
+  assert.match(ui,/data-video-affirmation-voice-consent role="checkbox" aria-checked=\{consent\}/);
+  assert.match(browser,/if\(engine==="webkit"\)await narrationConsent\.tap\(\)/);
+  assert.match(browser,/toHaveAttribute\("aria-checked","false"\)/);
+  assert.match(browser,/toHaveAttribute\("aria-checked","true"/);
+  assert.match(browser,/const therapyEffectsPractice=page\.locator/);
+  assert.match(browser,/await therapyEffectsPractice\.tap\(\)/);
+  assert.match(browser,/await expect\(page\.locator\('\[data-therapy-advanced-effects\]'\)\)\.toHaveAttribute\("open",""\)/);
+  assert.doesNotMatch(browser,/narrationConsent\.check\(\{force:true\}\)|narrationConsent\.evaluate\(/);
+});
+test("Therapy optional audio configuration stays gated by real WebKit native gestures",()=>{
+  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+  const ui=read("components/mandala-hypnocorrection-mobile.tsx");
+  assert.match(ui,/onConfigure=\{\(\)=>setShowSpeechSettings\(value=>!value\)\}/);
+  assert.match(browser,/const speechConfigure=page\.locator\('\[data-hypno-group="audio"\] \[data-hypno-card\] button'\)\.first\(\)/);
+  assert.match(browser,/if\(engine==="webkit"\)await speechConfigure\.tap\(\)/);
+  assert.match(browser,/await expect\(page\.locator\("\[data-hypno-speech-settings\]"\)\)\.toBeVisible\(\{timeout:15000\}\)/);
+  assert.doesNotMatch(browser,/speechConfigure\.click\(\{force:true\}\)|speechConfigure\.evaluate\(/);
+});
