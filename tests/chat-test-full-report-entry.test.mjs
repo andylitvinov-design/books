@@ -47,3 +47,13 @@ test('OAuth return opens the owner-scoped detailed report before optional onboar
   assert.match(account, /<PersonalResultReport result=\{result\}/)
   assert.match(account, /<TestResultDiscussion key=\{result\.id/)
 })
+
+
+test('completed chat result opens the private report automatically after the user selects View result', () => {
+  assert.match(chat, /<ChatFullReportEntry resultId=\{result\.id\} locale=\{locale\} autoOpen/)
+  assert.match(entry, /autoOpen = false/)
+  assert.match(entry, /openedAutomatically\.current === resultId/)
+  assert.match(entry, /void openFullReport\(\)/)
+  assert.match(entry, /\[autoOpen, resultId, openFullReport\]/)
+  assert.match(chat, /data-hh-test-view-result disabled=\{busy \|\| !!operation\.current\} onClick=\{finish\}/)
+})

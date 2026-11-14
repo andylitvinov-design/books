@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import styles from './chat-full-report-entry.module.css'
 
@@ -53,7 +53,7 @@ async function appRequest(path, body) {
   return value
 }
 
-export function ChatFullReportEntry({ resultId, locale = 'en' }) {
+export function ChatFullReportEntry({ resultId, locale = 'en', autoOpen = false }) {
   const c = COPY[locale] || COPY.en
   const accountLocale = locale === 'es' ? 'en' : locale
   const [intentId, setIntentId] = useState('')
@@ -61,6 +61,7 @@ export function ChatFullReportEntry({ resultId, locale = 'en' }) {
   const [error, setError] = useState('')
   const [telegramAvailable, setTelegramAvailable] = useState(false)
   const inFlight = useRef(false)
+  const openedAutomatically = useRef(null)
   const dialogRef = useRef(null)
   const currentResultId = useRef(resultId)
   currentResultId.current = resultId
@@ -112,7 +113,7 @@ export function ChatFullReportEntry({ resultId, locale = 'en' }) {
     }
   }, [intentId])
 
-  async function openFullReport() {
+  const openFullReport = useCallback(async () => {
     if (!resultId || inFlight.current) return
     inFlight.current = true
     setBusy(true)
@@ -139,7 +140,16 @@ export function ChatFullReportEntry({ resultId, locale = 'en' }) {
       inFlight.current = false
       setBusy(false)
     }
-  }
+  }, [resultId, accountLocale, c.error])
+
+  // "View result" in the completed chat is an explicit user action.
+  // Open the same private report immediately after server-side scoring,
+  // instead of requiring a second click through a short guest preview.
+  useEffect(() => {
+    if (!autoOpen || !resultId || openedAutomatically.current === resultId) return
+    openedAutomatically.current = resultId
+    void openFullReport()
+  }, [autoOpen, resultId, openFullReport])
 
   async function signIn(provider = 'google') {
     if (!intentId || inFlight.current || (provider === 'telegram' && !telegramAvailable)) return

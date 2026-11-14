@@ -1,0 +1,109 @@
+/* Single responsive presentation layer for the approved Services lower-page redesign.
+   Existing dialogue and service handlers are deliberately untouched. */
+.page{--svc-canvas:#fbf5e9;--svc-surface:#fffcf7;--svc-border:#e9dfd1;--svc-green:#067a67;--svc-navy:#17334b}
+.catalog,.grid,.panel,.content{display:contents}
+.catalogHeading,.preview{display:none}
+@media(max-width:760px){
+  .page{background:#fbf5e9;overflow-x:clip}
+  .catalog{display:block;box-sizing:border-box;width:calc(100% - 24px);max-width:520px;margin:10px auto 20px;color:#143d3a}
+  .catalog *,.featured *{box-sizing:border-box}
+  .catalogHeading{display:block;margin:0 2px 12px}
+  .catalogHeading h2{margin:0;color:var(--svc-navy);font:700 clamp(22px,6.3vw,28px)/1.15 Georgia,"Times New Roman",serif;letter-spacing:-.025em}
+  .catalogHeading p{margin:5px 0 0;color:#5d6a71;font:13px/1.35 Arial,Helvetica,sans-serif}
+  .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;align-items:start}
+  .panel{display:block;min-width:0;border:1px solid var(--svc-border);border-radius:19px;background:var(--svc-surface);box-shadow:0 3px 12px #60432b10;overflow:hidden}
+  .preview{display:grid;grid-template-columns:41px minmax(0,1fr) 13px;align-items:center;gap:7px;width:100%;min-width:0;min-height:91px;padding:9px 7px;border:0;background:transparent;text-align:left;cursor:pointer;color:#143d3a}
+  .previewText{display:grid;gap:3px;min-width:0}
+  .previewText strong{color:var(--svc-navy);font:700 clamp(12px,3.5vw,15px)/1.17 Arial,Helvetica,sans-serif;overflow-wrap:anywhere}
+  .previewText small{color:#5d6a71;font:11px/1.25 Arial,Helvetica,sans-serif;overflow-wrap:anywhere}
+  .icon{display:grid;place-items:center;flex:none;width:41px;height:46px;border-radius:14px;background:#eaf8ef;color:#08736b}
+  .panel:nth-child(4n + 2) .icon{background:#fbf2de;color:#966a1f}
+  .panel:nth-child(4n + 3) .icon{background:#fcecf2;color:#aa4068}
+  .panel:nth-child(4n) .icon{background:#f2ecfb;color:#7753b1}
+  .chevron{justify-self:center;transform:rotate(-90deg);color:#067a67;transition:transform .16s ease}
+  .content{display:none}
+  .panel[data-expanded="true"]{grid-column:1/-1;box-shadow:0 5px 18px #60432b16}
+  .panel[data-expanded="true"] .preview{grid-template-columns:55px minmax(0,1fr) 18px;min-height:74px;padding:10px}
+  .panel[data-expanded="true"] .icon{width:55px;height:54px}
+  .panel[data-expanded="true"] .previewText strong{font-size:19px;font-family:Georgia,"Times New Roman",serif}
+  .panel[data-expanded="true"] .previewText small{font-size:12px}
+  .panel[data-expanded="true"] .chevron{transform:rotate(0)}
+  .panel[data-expanded="true"] .content{display:block;padding:10px;border-top:1px solid var(--svc-border);min-width:0}
+  .preview:focus-visible,.homeopathyLinks a:focus-visible{outline:3px solid #176e6e;outline-offset:-3px}
+
+  /* Approved three featured cards: photo left, info and Request right; no photo loss on expand. */
+  .featured :global([data-assist-personal-consultation]){width:calc(100% - 24px);max-width:520px;margin:6px auto 18px;padding:0;border:none;border-radius:0;background:transparent;box-shadow:none}
+  .featured :global([data-assist-personal-consultation] > header){min-height:0;margin:0 2px 10px;padding:0 54px 0 0}
+  .featured :global([data-assist-personal-consultation] > header h2){font-size:clamp(23px,6.5vw,29px)}
+  .featured :global([data-assist-personal-consultation] > header p){font-size:13px}
+  .featured :global([data-assist-personal-consultation] > div){gap:9px}
+  .featured :global([data-consultation-choice]){display:grid;grid-template-columns:84px minmax(0,1fr)!important;grid-template-rows:auto auto;column-gap:11px;row-gap:6px;align-items:start;padding:9px;border:1px solid #e9dfd1;border-radius:19px;background:#fffcf7;box-shadow:0 3px 12px #60432b10}
+  .featured :global([data-consultation-choice] > div:first-child){grid-column:1;grid-row:1/span 2;min-height:103px;height:100%;border-radius:13px;overflow:hidden}
+  .featured :global([data-consultation-choice] > div:nth-child(2)){grid-column:2;grid-row:1;gap:4px}
+  .featured :global([data-consultation-choice] h3){font-size:clamp(17px,4.3vw,20px)}
+  .featured :global([data-consultation-choice] p){font-size:12px;margin:0 0 3px}
+  .featured :global([data-consultation-choice] [data-consultation-action]){grid-column:2;grid-row:2;min-width:0;margin:0;width:100%}
+  .featured :global([data-consultation-choice]:has(details[open]) > div:first-child){display:block!important;grid-row:1!important;min-height:92px}
+  .featured :global([data-consultation-choice]:has(details[open]) [data-consultation-action]){grid-column:1/-1;grid-row:2}
+  .featured :global([data-consultation-choice] [data-contact-order]){min-height:44px!important}
+  .featured :global([data-consultation-choice] [data-messenger-only-contact] > details > div){max-width:100%}
+
+  /* Recommendation cards and browse links share the same compact treatment. */
+  .page :global([data-assist-best-three]){margin:10px auto 14px}
+  .page :global([data-assist-best-three] > a){display:none}
+  .page :global([data-assist-best-three] article){border-radius:18px}
+  .page :global([data-assist-best-three] article strong){font-size:clamp(14px,3.8vw,17px)}
+  .page :global([data-assist-best-three] article a){min-height:44px}
+  .page :global([data-assist-best-three] p[role="status"]){font-size:12px;padding:10px}
+  .page :global([data-assist-mobile]){margin-bottom:12px}
+
+  /* Re-enable every legacy section only inside its explicit user-opened panel.
+     The existing source's mobile 'hide old cards' rules remain intact elsewhere. */
+  .catalog .content :global([data-assist-reiki-session]),
+  .catalog .content :global([data-assist-course-shelf]),
+  .catalog .content :global([data-assist-coach-therapist]),
+  .catalog .content :global([data-assist-video-generation]),
+  .catalog .content :global([data-assist-magical-help]),
+  .catalog .content :global([data-services-studio-free]),
+  .catalog .content :global([data-services-studio-paid]),
+  .catalog .content :global([data-services-meet]),
+  .catalog .content :global([data-personal-testimonials="services"]),
+  .catalog .content :global(#method-videos),
+  .catalog .content :global([data-services-directory-invitation]),
+  .catalog .content :global([data-service-lead-capture]),
+  .catalog .content :global(#consultation),
+  .catalog .content :global([data-services-showcase-hero]){
+    display:block!important;width:100%!important;max-width:none!important;margin:0!important;box-shadow:none!important}
+  .catalog .content :global([data-services-studio-free][hidden]),
+  .catalog .content :global([data-services-studio-paid][hidden]){display:none!important}
+  .catalog .content :global([data-services-studio-paid] > header),
+  .catalog .content :global([data-services-studio-free] > header),
+  .catalog .content :global([data-services-studio-paid] > div:last-child){display:block!important}
+  .catalog .content :global([data-services-studio-card]:not([hidden])){display:grid!important}
+  .catalog .content :global([data-services-studio-card][hidden]){display:none!important}
+  .catalog .content :global([data-assist-course-shelf]),
+  .catalog .content :global([data-assist-reiki-session]),
+  .catalog .content :global([data-assist-magical-help]){padding:10px!important;border:none!important;border-radius:15px!important}
+  .catalog .content :global([data-assist-video-generation]){padding:10px!important;border:none!important;grid-column:auto}
+  .catalog .content :global([data-services-showcase-hero]){padding:0!important}
+  .catalog .content :global([data-services-studio-free]),
+  .catalog .content :global([data-services-studio-paid]){padding:0!important}
+  .catalog .content :global([data-services-studio-paid] h2),
+  .catalog .content :global([data-services-studio-free] h2){font-size:23px!important}
+  .homeopathyLinks{display:grid;gap:8px}
+  .homeopathyLinks a{display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:48px;padding:10px 13px;border:1px solid #d6e5db;border-radius:14px;color:#075a4c;background:#fffcf7;text-decoration:none;font:700 13px/1.25 Arial,Helvetica,sans-serif}
+  .homeopathyLinks a svg{flex:none}
+  .page :global(.services-disclaimer){margin:12px auto;font-size:11px;max-width:520px;padding:0 12px}
+  .page :global([data-services-unified-panel] :is(a,button,input,select,summary)):focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+}
+@media(max-width:350px){
+  .grid{grid-template-columns:minmax(0,1fr)}
+  .preview{min-height:70px;grid-template-columns:46px minmax(0,1fr) 17px;padding:9px}
+  .icon{width:46px;height:47px}
+  .previewText strong{font-size:15px}
+  .previewText small{font-size:12px}
+  .panel[data-expanded="true"]{grid-column:auto}
+  .featured :global([data-consultation-choice]){grid-template-columns:73px minmax(0,1fr)!important;gap:7px}
+  .featured :global([data-consultation-choice] > div:first-child){min-height:100px}
+}
+@media(prefers-reduced-motion:reduce){.chevron{transition:none}}
