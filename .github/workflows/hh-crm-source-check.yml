@@ -6,6 +6,8 @@ on:
     branches: [codex/public-book-library]
     paths:
       - 'lib/crm/**'
+      - 'components/dao-telegram-handoff.*'
+      - 'tests/dao-wisdom-instagram-funnel.test.mjs'
       - 'lib/business-consulting/**'
       - 'components/app/business-enquiry-other-reply.jsx'
       - 'tests/business-enquiry-reply-handoffs.test.mjs'
@@ -139,7 +141,7 @@ jobs:
       - name: Verify owner-only Telegram pilot link without recipient disclosure
         run: node --test tests/crm-telegram-owner-pilot-links.test.mjs
       - name: First-person Telegram coaching conversation EN RU ES, old-session preservation and RLS
-        run: node --test tests/crm-telegram-natural-conversation-v2.test.mjs tests/crm-telegram-diagnostic.test.mjs tests/coaching-telegram-handoff.test.mjs tests/crm-telegram-webapp-intake.test.mjs tests/crm-telegram-coaching-chunks.test.mjs
+        run: node --test tests/crm-telegram-natural-conversation-v2.test.mjs tests/crm-telegram-diagnostic.test.mjs tests/coaching-telegram-handoff.test.mjs tests/crm-telegram-webapp-intake.test.mjs tests/crm-telegram-coaching-chunks.test.mjs tests/dao-wisdom-instagram-funnel.test.mjs
       - name: Verify EN/RU/ES free-review Telegram deep links and signed WhatsApp manual locale handoff
         run: node --conditions=react-server --test tests/crm-express-review-language-channels.test.mjs
       - name: Lint localized express review channel entry and strict WhatsApp marker

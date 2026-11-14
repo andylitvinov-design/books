@@ -6,6 +6,9 @@ import { PublicSiteHeader } from "@/components/public-site-header";
 import { CompactLeadCapture } from "@/components/compact-lead-capture";
 import { PersonalExpressEnquiry } from "@/components/personal-express-enquiry";
 import { TelegramDiagnosticEntry } from "@/components/telegram-diagnostic-entry";
+import { channelTransportReady } from "@/lib/crm/messenger-policy";
+import { telegramDaoPublicUrl, telegramDiagnosticPublicUrl } from "@/lib/crm/telegram-diagnostic.mjs";
+import { DaoTelegramHandoff } from "@/components/dao-telegram-handoff";
 import { FreeSituationReviewForm } from "@/components/free-situation-review-form";
 import { SiteVideoPlayer } from "@/components/site-video-player";
 import { getServiceVideoMedia } from "@/data/service-video-library";
@@ -468,6 +471,12 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
   const images = art[kind];
   const captureId = kind === "dao" ? "request-free-wu-xing" : kind === "situation" ? "request-free-review" : "start-free";
   const testsHref = "/" + locale + "/client/tests";
+  // Existing server-only production readiness: no browser request is aborted
+  // during fast history navigation on WebKit, yet absent transport fails closed.
+  const daoTelegramUrl = kind === "dao" &&
+    channelTransportReady("telegram", process.env) &&
+    (["en", "ru", "es"] as const).every(language => !!telegramDiagnosticPublicUrl(language, process.env))
+      ? telegramDaoPublicUrl(locale, process.env) : null;
   const final = finalCopy[locale][kind];
   // Existing approved, already-published introductions only. Dedicated express-review
   // scripts remain drafts; no HeyGen render, upload or publication is implied.
@@ -513,7 +522,7 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
               </>}
             <div className={styles.actions}>
               {kind === "tests" ? <Link className={styles.primary} href={testsHref} prefetch={false}>{t.cta}<ArrowRight size={19} aria-hidden="true" /></Link> :
-                <a className={styles.primary} href={kind === "situation" ? "#request-free-review" : "#" + captureId}>{t.cta}<ArrowRight size={19} aria-hidden="true" /></a>}
+                <a className={styles.primary} href={kind === "situation" ? "#request-free-review" : kind === "dao" ? "#dao-free-start" : "#" + captureId}>{t.cta}<ArrowRight size={19} aria-hidden="true" /></a>}
               <a className={styles.secondary} href="#what-you-get">{kind === "dao" ? t.secondary : common.details}</a>
             </div>
             {kind === "dao" ? <p className={styles.daoSafety}><ShieldCheck size={15} aria-hidden="true" />{t.value}</p> : null}
@@ -541,6 +550,12 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
           </section>
         ) : null}
 
+        {kind === "dao" ? <div id="dao-free-start" data-dao-instagram-entry>
+          <DaoTelegramHandoff locale={locale} approvedUrl={daoTelegramUrl} />
+          <p><a href="#request-free-wu-xing">{locale === "ru" ? "Или отправьте запрос через защищённую форму ниже" :
+            locale === "es" ? "O envía tu solicitud con el formulario seguro a continuación" :
+              "Or send your request through the secure form below"}</a></p>
+        </div> : null}
         {kind === "situation" ? <TelegramDiagnosticEntry locale={locale} /> : null}
 
         {kind === "situation" ? (

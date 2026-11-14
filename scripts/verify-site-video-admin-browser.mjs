@@ -182,8 +182,40 @@ try{
     await authenticateOwner(adminContext)
     const editor = await adminContext.newPage()
     editor.on('pageerror', error => pageErrors.push('owner editor: '+String(error.stack || error.message).slice(0,1600)))
+    let nativeReelCspVerified = false
     async function openEditor(target = editor) {
-      await target.goto(`${origin}/admin/videos`)
+      const editorResponse = await target.goto(`${origin}/admin/videos`)
+      assert.equal(editorResponse?.status(), 200, 'Protected video editor must load for verified owner')
+      const editorPolicy = editorResponse.headers()['content-security-policy'] || ''
+      const editorMediaSource = editorPolicy.split(';').map(value => value.trim()).find(value => value.startsWith('media-src '))
+      assert.equal(editorMediaSource, "media-src 'self' blob:", 'Only local video preview blobs are authorized on /admin/videos')
+      if (!nativeReelCspVerified) {
+        // Exercise actual owner-authenticated browser file selection and decode:
+        // source-only assertions cannot detect a CSP block on video blob: URLs.
+        const publicResponse = await publicContext.request.get(`${origin}/en/services`)
+        assert.equal(publicResponse.status(), 200)
+        const publicMediaSource = (publicResponse.headers()['content-security-policy'] || '')
+          .split(';').map(value => value.trim()).find(value => value.startsWith('media-src '))
+        assert.equal(publicMediaSource, "media-src 'self'", 'Do not broaden media-src on public service pages')
+        const nativeKit = target.locator('[data-native-reel-kit]')
+        await expect(nativeKit).toBeVisible()
+        const nativeFileInput = nativeKit.locator('#native-reel-file')
+        await nativeFileInput.setInputFiles({
+          name: 'ci-local-preview.mp4', mimeType: 'video/mp4',
+          buffer: readFileSync(new URL('../public/videos/holistic-house/film-collection-v3/lake-mist-dawn.mp4', import.meta.url)),
+        })
+        const video = nativeKit.locator('video')
+        await expect(video).toHaveCount(1)
+        assert.match(await video.getAttribute('src'), /^blob:/)
+        await expect.poll(async () => video.evaluate(element =>
+          element.readyState >= 1 && element.videoWidth > 0 && element.videoHeight > 0 &&
+          Number.isFinite(element.duration) && element.duration > 0
+        ), { timeout: 15000, message: 'Owner-selected MP4 metadata must load under actual /admin/videos CSP' }).toBe(true)
+        await nativeFileInput.setInputFiles([])
+        await expect(video).toHaveCount(0)
+        nativeReelCspVerified = true
+        pass('Real authenticated video-admin blob preview decodes locally; public media CSP stays restrictive')
+      }
       // Prove that the editor has hydrated before exercising the separately
       // hydrated header's EN/RU event; an SSR-only click is not an E2E action.
       const videoLanguage = target.locator('.site-video-language-picker button')

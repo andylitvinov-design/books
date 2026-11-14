@@ -20,10 +20,19 @@ export function TantraVideoTestimonials(props: Props) {
   // original source be remounted. Reopening a disclosure alone never rebuilds.
   const [freshDecoder, setFreshDecoder] = useState<{source:string;time:number;token:number}|null>(null);
 
-  const retained = useRef(new WeakMap<HTMLVideoElement, { source: string; time: number; reconstructing: boolean; awaitingFrame?: boolean; generation?: number; confirmedFrames?: number; restoreMutedOnOpen?: boolean }>());
-  useEffect(() => () => { retained.current = new WeakMap(); }, []);
+  const pendingInternalRestores = useRef(new WeakMap<HTMLVideoElement, {
+    source: string; target: number; scriptedSeek: boolean;
+    observedSeek: boolean; cancel: () => void
+  }>());
+  const retained = useRef(new WeakMap<HTMLVideoElement, { source: string; time: number; reconstructing: boolean; awaitingFrame?: boolean; generation?: number; confirmedFrames?: number; firstFrameMediaTime?: number; lastFrameMediaTime?: number; restoreMutedOnOpen?: boolean }>());
+  useEffect(() => () => {
+    retained.current = new WeakMap();
+    pendingInternalRestores.current = new WeakMap();
+  }, []);
 
   function pauseAndRemember(video: HTMLVideoElement) {
+    // Hiding the disclosure is not permission to replace or play a decoder.
+    pendingInternalRestores.current.get(video)?.cancel();
     // A native <details> close can notify us at both click-capture and toggle.
     // Do not call pause() again on an already paused player: WebKit/GStreamer
     // can demote its decoder after a redundant pause, leaving a later play()
@@ -68,7 +77,10 @@ export function TantraVideoTestimonials(props: Props) {
     // it is actually running. This preserves its position for a later user Play.
     const disclosure=typeof video.closest==="function"?video.closest("details"):null;
     disclosure?.querySelectorAll("video").forEach(other=>{
-      if(other!==video&&!other.paused)other.pause();
+      if (other === video) return;
+      // The user chose another source: cancel this video's pending recovery.
+      pendingInternalRestores.current.get(other)?.cancel();
+      if (!other.paused) other.pause();
     });
     const saved = retained.current.get(video);
     if (!saved || saved.awaitingFrame) return;
@@ -84,6 +96,9 @@ export function TantraVideoTestimonials(props: Props) {
     }
     saved.awaitingFrame = true;
     saved.confirmedFrames = 0;
+    saved.firstFrameMediaTime = undefined;
+    saved.lastFrameMediaTime = undefined;
+    const playStartTime = video.currentTime;
     const generation = saved.generation ?? 0;
     const onFrame: VideoFrameRequestCallback = (_now, metadata) => {
       if (retained.current.get(video) !== saved ||
@@ -101,8 +116,15 @@ export function TantraVideoTestimonials(props: Props) {
         // Require several actual advancing decoded frames from the new
         // pipeline before one same-source position restoration. No timer,
         // autoplay, reload, blind retries or fake clock progress.
-        saved.confirmedFrames = (saved.confirmedFrames ?? 0) + 1;
-        if (saved.confirmedFrames < 4 || metadata.mediaTime < 0.5) {
+        // Repeated callbacks for the same preroll frame are not new decoded
+        // frames. Require distinct advancing mediaTime before a user-triggered
+        // saved-position seek can be attempted.
+        if (saved.lastFrameMediaTime === undefined ||
+            metadata.mediaTime > saved.lastFrameMediaTime + 0.02) {
+          saved.lastFrameMediaTime = metadata.mediaTime;
+          saved.confirmedFrames = (saved.confirmedFrames ?? 0) + 1;
+        }
+        if ((saved.confirmedFrames ?? 0) < 4 || metadata.mediaTime < 0.5) {
           try { video.requestVideoFrameCallback(onFrame); }
           catch { retained.current.delete(video); }
           return;
@@ -165,9 +187,20 @@ export function TantraVideoTestimonials(props: Props) {
         }
         return;
       }
-      saved.confirmedFrames = (saved.confirmedFrames ?? 0) + 1;
-      if (saved.confirmedFrames >= 2) {
-        retained.current.delete(video); // native resume is genuinely healthy
+      // WebKit/GStreamer can emit two frame callbacks while its native media
+      // clock stays frozen. Keep the old user-initiated stall observer alive
+      // until BOTH the media clock and distinct decoded frame timestamps move.
+      if (saved.firstFrameMediaTime === undefined)
+        saved.firstFrameMediaTime = metadata.mediaTime;
+      if (saved.lastFrameMediaTime === undefined ||
+          metadata.mediaTime > saved.lastFrameMediaTime + 0.02) {
+        saved.lastFrameMediaTime = metadata.mediaTime;
+        saved.confirmedFrames = (saved.confirmedFrames ?? 0) + 1;
+      }
+      if ((saved.confirmedFrames ?? 0) >= 2 &&
+          video.currentTime > playStartTime + 0.1 &&
+          metadata.mediaTime > saved.firstFrameMediaTime + 0.02) {
+        retained.current.delete(video); // observed native decoded playback AND clock advance
       } else {
         try { video.requestVideoFrameCallback(onFrame); }
         catch { retained.current.delete(video); }
@@ -190,7 +223,10 @@ export function TantraVideoTestimonials(props: Props) {
           video.currentSrc!==saved.source)return;
         if(startAt===null)startAt=now;
         if(now-startAt<1700){windowView.requestAnimationFrame(observeClock);return;}
-        if((saved.confirmedFrames??0)!==0 || video.currentTime>startedTime+0.1)return;
+        // Do not mistake decoder frame callbacks for actual playback if the
+        // HTMLMediaElement time has not advanced after the explicit user Play.
+        if ((saved.confirmedFrames ?? 0) >= 2 &&
+            video.currentTime > playStartTime + 0.1) return;
         retained.current.delete(video); // exactly one recovery after an explicit user Play
         // WebKit artifact 13349375114 proves that a PAUSE→PLAY on the same
         // backend emits "playing" but never delivers a subsequent frame.
@@ -210,13 +246,21 @@ export function TantraVideoTestimonials(props: Props) {
           (!windowView.performance?.now || windowView.performance.now() - startAtReload < 12000);
         if (!Number.isFinite(resumeAt) || resumeAt <= 0 || !valid()) return;
         let pending = true;
+        const ownRestore = {
+          source:saved.source, target:resumeAt, scriptedSeek:false,
+          observedSeek:false, cancel:()=>{}
+        };
         const clear = () => {
           pending = false;
+          if (pendingInternalRestores.current.get(video)===ownRestore)
+            pendingInternalRestores.current.delete(video);
           video.removeEventListener("loadedmetadata", onMetadata);
           video.removeEventListener("seeked", onSeeked);
           video.removeEventListener("loadeddata", onDecodedWithoutSeek);
           video.removeEventListener("canplay", onDecodedWithoutSeek);
         };
+        ownRestore.cancel = clear;
+        pendingInternalRestores.current.set(video,ownRestore);
         const onSeeked = () => {
           if (!pending) return;
           clear();
@@ -250,6 +294,7 @@ export function TantraVideoTestimonials(props: Props) {
             video.addEventListener("seeked", onSeeked, { once: true });
             video.addEventListener("loadeddata", onDecodedWithoutSeek, { once: true });
             video.addEventListener("canplay", onDecodedWithoutSeek, { once: true });
+            ownRestore.scriptedSeek = true;
             video.currentTime = resumeAt; // exact retained position, no backward offset
           } catch { clear(); }
         };
@@ -266,12 +311,20 @@ export function TantraVideoTestimonials(props: Props) {
           // force a new play on disclosure open, an unmuted source, or a seek.
           if (typeof windowView.setTimeout === "function") {
             windowView.setTimeout(() => {
-              if (video.isConnected === false || video.currentSrc !== saved.source ||
-                  video.muted !== true || video.seeking || video.ended ||
+              // A proven WebKit/GStreamer freeze can leave the original
+              // script-issued saved-position seek pending forever. Do not
+              // mistake that ONE internal seek for a fresh user seek.
+              const ownFrozenSeek=video.seeking && ownRestore.scriptedSeek &&
+                ownRestore.observedSeek && Math.abs(video.currentTime-resumeAt)<=0.35;
+              if (!pending || pendingInternalRestores.current.get(video)!==ownRestore ||
+                  video.isConnected === false || video.currentSrc !== saved.source ||
+                  video.muted !== true || video.ended ||
+                  (video.seeking && !ownFrozenSeek) ||
                   (disclosure !== null && !disclosure.open)) return;
               if (Number.isFinite(video.currentTime) && video.currentTime > resumeAt + 0.22 &&
                   video.readyState >= 2 &&
                   (video.getVideoPlaybackQuality?.().totalVideoFrames ?? 0) > 0) return;
+              clear(); // release the original decoder once; no stale retry
               setFreshDecoder(previous => previous?.source === saved.source ? previous :
                 {source:saved.source,time:resumeAt,token:Date.now()});
             }, 6800);
@@ -282,13 +335,30 @@ export function TantraVideoTestimonials(props: Props) {
     }
   }
   function discardRecovery(event: SyntheticEvent<HTMLVideoElement>) {
-    // Real user native seeking always overrides a pending frame recovery.
-    retained.current.delete(event.currentTarget);
+    const video=event.currentTarget;
+    const restore=pendingInternalRestores.current.get(video);
+    // The FIRST exact seek after our own currentTime assignment is internal.
+    // Any later seek or different target is a new user action and cancels
+    // the prior authorization; mouse and keyboard interactions cancel too.
+    if (restore) {
+      const isOwn=restore.scriptedSeek && !restore.observedSeek &&
+        video.currentSrc===restore.source &&
+        Math.abs(video.currentTime-restore.target)<=0.35;
+      if (isOwn) restore.observedSeek=true;
+      else restore.cancel();
+    }
+    retained.current.delete(video);
   }
   function onNativeKeyDown(event: KeyboardEvent<HTMLVideoElement>) {
-    // Keyboard seek overrides saved state; Space/Enter play keeps it.
-    if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key))
+    // Keyboard seeking wins over any pending internal restore.
+    if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
+      pendingInternalRestores.current.get(event.currentTarget)?.cancel();
       discardRecovery(event);
+    }
+  }
+  function onNativePointerDown(event: SyntheticEvent<HTMLVideoElement>) {
+    // Observe but never prevent native controls or clicks.
+    pendingInternalRestores.current.get(event.currentTarget)?.cancel();
   }
   function onNativeLoadStart(event: SyntheticEvent<HTMLVideoElement>) {
     const video = event.currentTarget;
@@ -367,22 +437,60 @@ export function TantraVideoTestimonials(props: Props) {
                 if (!player.isConnected || !disclosure?.open ||
                     player.currentSrc !== replacement.source ||
                     !Number.isFinite(player.duration) || replacement.time >= player.duration) return;
-                // Fresh source, same retained position, muted, and only after
-                // a proven stalled explicit Play. True frame/clock progress is
-                // still required by WebKit browser acceptance.
+                // Artifact 13887168375: after a stalled explicit user Play,
+                // WebKit's NEW decoder emitted loadedmetadata and then stayed
+                // seeking=true forever when asked to seek BEFORE a real frame.
+                // Prime only the same public, already-user-requested MUTED
+                // source. Require an actually presented frame >0.5s before
+                // the one retained-position seek. Never do this on disclosure
+                // open, and never weaken the independent decoded-frame E2E.
                 player.muted = true;
-                player.addEventListener("seeked", () => {
-                  if (!player.isConnected || !disclosure.open ||
-                      player.currentSrc !== replacement.source ||
-                      player.seeking || player.ended || !player.paused ||
-                      Math.abs(player.currentTime - replacement.time) > 0.35) return;
-                  void player.play().catch(() => {/* Native controls remain available. */});
-                }, {once:true});
-                try {player.currentTime = replacement.time;}
-                catch {/* Native controls remain available if a seek is rejected. */}
+                const view = player.ownerDocument.defaultView;
+                const started = view?.performance?.now() ?? 0;
+                const active = () => player.isConnected && disclosure.open &&
+                  player.currentSrc === replacement.source && player.muted &&
+                  !player.ended && !player.error &&
+                  (!view?.performance?.now || view.performance.now() - started < 12000);
+                let startedPriming = false;
+                let restored = false;
+                const warmFrame: VideoFrameRequestCallback = (_now, metadata) => {
+                  if (!active() || restored) return;
+                  if (Number.isFinite(metadata.mediaTime) && metadata.mediaTime >= 0.5 &&
+                      player.videoWidth > 0 && player.videoHeight > 0 &&
+                      player.readyState >= 2 && !player.seeking) {
+                    restored = true;
+                    player.addEventListener("seeked", () => {
+                      if (!active() || player.seeking ||
+                          Math.abs(player.currentTime - replacement.time) > 0.35) return;
+                      // A prior explicit user Play authorized this muted
+                      // reconstruction. A playing decoder needs no new play.
+                      if (player.paused) void player.play().catch(() => {
+                        // Failure stays visible to native controls and E2E.
+                      });
+                    }, {once:true});
+                    try { player.currentTime = replacement.time; }
+                    catch { /* Do not retry blind seeks or fake progression. */ }
+                    return;
+                  }
+                  try { player.requestVideoFrameCallback(warmFrame); }
+                  catch { /* Real browser acceptance reports absent frames. */ }
+                };
+                const prime = () => {
+                  if (startedPriming || !active() || player.readyState < 2 ||
+                      typeof player.requestVideoFrameCallback !== "function") return;
+                  startedPriming = true;
+                  try {
+                    player.requestVideoFrameCallback(warmFrame);
+                    void player.play().catch(() => {
+                      // No second automatic attempt after a rejected Play.
+                    });
+                  } catch { /* Leave native user controls intact. */ }
+                };
+                player.addEventListener("loadeddata", prime, {once:true});
+                if (player.readyState >= 2) prime();
               }}
               onPlay={onNativePlay} onPlaying={onNativePlay} onSeeking={discardRecovery}
-              onKeyDown={onNativeKeyDown}>
+              onPointerDownCapture={onNativePointerDown} onKeyDown={onNativeKeyDown}>
               <source src={video.src} type={video.type} />
             </video>
             <figcaption>{props.nativeLabel} {i + 1}{props.nativeSuffix}</figcaption>

@@ -13,16 +13,16 @@ const parent = readFileSync(new URL('../components/tantra-reiki-testimonials.tsx
 const jsx = (type, props, key) => ({ type, props, key });
 const player = function AcademyVideoPlayer() {};
 function mount(props) {
-  let state = 0; let ref; let updates = 0; let cleanup; let effectMounted = false;
+  const states=[], refs=[]; let stateSlot=0, refSlot=0; let updates=0, cleanup; let effectMounted=false;
   const exports = {};
   const code = ts.transpileModule(source, { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   vm.runInNewContext(code, { exports, require(id) {
-    if (id === 'react') return { useEffect(effect) { if (!effectMounted) { effectMounted = true; cleanup = effect(); } }, useRef(value) { return ref ??= { current: value }; }, useState() { return [state, value => { state = typeof value === 'function' ? value(state) : value; updates++; }]; } };
+    if (id === 'react') return { useEffect(effect) { if (!effectMounted) { effectMounted = true; cleanup = effect(); } }, useRef(value) { const i=refSlot++; return refs[i] ??= {current:value}; }, useState(initial) { const i=stateSlot++; if(!(i in states)) states[i]=initial; return [states[i], value => { states[i] = typeof value === 'function' ? value(states[i]) : value; updates++; }]; } };
     if (id === 'react/jsx-runtime') return { jsx, jsxs: jsx };
     if (id === '@/components/academy-video-player') return { AcademyVideoPlayer: player };
     throw new Error('Unexpected import: ' + id);
   } });
-  return { render: () => exports.TantraVideoTestimonials(props), updates: () => updates, unmount: () => cleanup?.() };
+  return { render: () => { stateSlot=0; refSlot=0; return exports.TantraVideoTestimonials(props); }, updates: () => updates, unmount: () => cleanup?.() };
 }
 function flatten(node) { if (!node || typeof node !== 'object') return []; return [node, ...[node.props?.children].flat(Infinity).flatMap(flatten)]; }
 const videos = [1, 2].map(i => ({ src: `https://psitrends.com/images/example-${i}.mp4`, poster: `/images/p${i}.png`, type: 'video/mp4' }));
@@ -99,8 +99,8 @@ test('disclosure cleanup never launches provider commands or playback; muted rec
   }
   assert.doesNotMatch(source,/fetch\(|postMessage\(|autoplay=|innerHTML|contentWindow|location\./,
     'No provider commands, automatic iframe playback or CSP mutation in this component');
-  assert.equal((source.match(/\.play\(/g)||[]).length,2,
-    'Only the bounded same-node recovery and one explicitly triggered fresh-decoder resume may call native play');
+  assert.equal((source.match(/\.play\(/g)||[]).length,3,
+    'Only one original decoder resume plus two source-guarded fresh-decoder plays after explicit user activation are allowed');
   const recovery=source.split('function onNativePlay(')[1]?.split('function discardRecovery(')[0];
   assert.ok(recovery,'The user-play observer must own the sole recovery');
   assert.match(recovery,/if \(video\.muted !== true \|\| video\.readyState < 2 \|\|/,
@@ -109,6 +109,23 @@ test('disclosure cleanup never launches provider commands or playback; muted rec
     'Only exact source and native seeked can resume muted user-requested playback');
   assert.match(recovery,/video\.pause\(\);[\s\S]*video\.preload = "metadata";[\s\S]*video\.load\(\);/,
     'Only one guarded same-source metadata reconstruction is allowed after proven stall');
+  // On a verified muted stall after the user's Play, a fresh same-source node
+  // may need one frame-priming Play and one post-seek resume. They are not
+  // disclosure-open autoplay, unbounded retry or a provider command.
+  assert.equal((recovery.match(/\.play\(/g) || []).length, 1,
+    'The original decoder gets exactly one bounded native resume');
+  const freshDecoderBranch = source.split('onLoadedMetadata={event => {')[1]?.split('onPlay={onNativePlay}')[0];
+  assert.ok(freshDecoderBranch, 'Fresh-decoder logic must remain scoped to native metadata');
+  assert.equal((freshDecoderBranch.match(/\.play\(/g) || []).length, 2,
+    'Fresh replacement has only one muted priming Play and one seek-confirmed resume');
+  assert.match(source, /setFreshDecoder\(previous => previous\?\.source === saved\.source \? previous :\s*\{source:saved\.source,time:resumeAt,token:Date\.now\(\)\}\)/,
+    'A stalled user-activated decoder alone may request one same-source replacement');
+  assert.match(freshDecoderBranch, /if \(!replacement\) \{ onNativeMetadata\(event\); return; \}/);
+  assert.match(freshDecoderBranch, /if \(!player\.isConnected \|\| !disclosure\?\.open \|\|[\s\S]*?player\.currentSrc !== replacement\.source/);
+  assert.match(freshDecoderBranch, /const active = \(\) => player\.isConnected && disclosure\.open &&[\s\S]*?player\.muted &&/);
+  assert.match(freshDecoderBranch, /const prime = \(\) => \{\s*if \(startedPriming \|\| !active\(\) \|\| player\.readyState < 2 \|\|/);
+  assert.match(freshDecoderBranch, /player\.requestVideoFrameCallback\(warmFrame\);\s*void player\.play\(\)\.catch/);
+  assert.match(freshDecoderBranch, /if \(player\.paused\) void player\.play\(\)\.catch/);
   assert.match(source, /<summary onClickCapture=\{onSummaryClickCapture\}>\{props.summary\}<\/summary>/);
   assert.match(source, /onToggle=\{onToggle\}/);
 });
@@ -356,13 +373,53 @@ test('reopened WebKit decoder cannot be sought by repeated unadvanced preroll fr
   assert.deepEqual(f.writes,[],'A stuck frame-zero decoder cannot authorize another seek');
   assert.equal(f.callbacks.length,1,'Native controls remain available without a retry timer');
 });
-test('healthy same-source native replay advances two real frames without mutating time',()=>{
+test('healthy same-source replay requires distinct decoded frames AND an advancing native clock',()=>{
   const f=deferredWebKitFixture();f.close();f.reopen();
   f.media.paused=false;f.handlers.onPlay(f.event);
   f.frame(5.42);assert.deepEqual(f.writes,[]);assert.equal(f.callbacks.length,1);
   f.frame(5.46);assert.deepEqual(f.writes,[]);
-  assert.equal(f.callbacks.length,0,'Two correctly decoded frames finish recovery monitoring');
+  assert.equal(f.callbacks.length,1,'Two frame callbacks with a frozen clock cannot be healthy');
+  f.setPosition(5.62); // Actual native playback, not a synthetic frame-only report.
+  f.frame(5.62);assert.deepEqual(f.writes,[]);
+  assert.equal(f.callbacks.length,0,'Distinct frames AND advancing native clock finish monitoring');
 });
+
+test('WebKit decoded callbacks with frozen clock retain one bounded same-source recovery',()=>{
+  const animation=[], events=new Map();
+  let loads=0, plays=0;
+  const f=deferredWebKitFixture({
+    muted:true,readyState:4,
+    pause(){this.paused=true;},
+    load(){loads++;this.paused=true;this.readyState=1;},
+    play(){plays++;this.paused=false;return Promise.resolve();},
+    addEventListener(type,fn){events.set(type,fn);},
+    removeEventListener(type,fn){if(events.get(type)===fn)events.delete(type);},
+    ownerDocument:{defaultView:{requestAnimationFrame(fn){animation.push(fn);return animation.length;}}},
+  });
+  f.close();f.reopen();
+  assert.equal(loads,0,'No recovery is allowed on disclosure reopening');
+  const pausedPosition=f.media.currentTime;
+  f.media.paused=false;f.handlers.onPlay(f.event);
+  f.frame(5.42);f.frame(5.46);
+  assert.equal(f.callbacks.length,1,
+    'Two decoded frame callbacks without clock movement cannot release the stall observer');
+  assert.equal(f.media.currentTime,pausedPosition,'Native clock is genuinely stalled');
+  animation.shift()(0);
+  animation.shift()(1800);
+  assert.equal(loads,1,'Only the already user-triggered muted same-source recovery is allowed');
+  assert.equal(plays,0,'No autoplay or unsolicited provider playback');
+  assert.equal(f.media.paused,true,'Reload leaves the native video paused until metadata and seek proof');
+});
+
+test('repeated identical warmed WebKit frames cannot trigger a saved-position seek',()=>{
+  const f=deferredWebKitFixture();f.close();f.reopen();
+  f.media.paused=false;f.handlers.onPlay(f.event);
+  f.frame(0.066666);
+  for(let i=0;i<7;i++)f.frame(0.533333);
+  assert.deepEqual(f.writes,[],'One decoded warmed frame repeated cannot authorize a native seek');
+  assert.equal(f.callbacks.length,1,'Retain a single bounded video-frame observer');
+});
+
 test('real user seek, source replacement or paused media cancels a pending frame callback',()=>{
   for(const cancel of [
     f=>f.handlers.onSeeking(f.event),
@@ -417,6 +474,79 @@ test('WebKit stalled same-source play never seeks a decoder without decoded fram
   assert.deepEqual(f.writes,[],'Repeated playing events cannot launch a fallback seek');
   assert.equal(callbacks.length,0,'Bounded observer cannot schedule infinite retries');
 });
+
+test('WebKit internal metadata seek can freeze once and only then remount a fresh user-authorized decoder',()=>{
+  const animation=[],timers=[],events=new Map();
+  let loads=0,plays=0;
+  const f=deferredWebKitFixture({
+    muted:true,readyState:4,
+    pause(){this.paused=true;},
+    load(){loads++;this.paused=true;this.readyState=1;},
+    play(){plays++;this.paused=false;return Promise.resolve();},
+    addEventListener(type,fn){events.set(type,fn);},
+    removeEventListener(type,fn){if(events.get(type)===fn)events.delete(type);},
+    ownerDocument:{defaultView:{
+      performance:{now(){return 0}},
+      requestAnimationFrame(fn){animation.push(fn);return animation.length;},
+      setTimeout(fn){timers.push(fn);return timers.length;},
+    }},
+  });
+  f.close();f.reopen();
+  assert.equal(loads,0,'No reload on disclosure reopening');
+  f.media.paused=false;f.handlers.onPlay(f.event);
+  animation.shift()(0);animation.shift()(1800);
+  assert.equal(loads,1,'An explicit stalled Play permits exactly one same-source reload');
+  assert.equal(timers.length,1);
+  f.media.readyState=2;
+  events.get('loadedmetadata')(); // the app now owns exactly one position restore
+  f.media.seeking=true;
+  f.handlers.onSeeking(f.event); // the internally scripted seek, not user input
+  const previous=f.model.updates();
+  timers.shift()();
+  assert.equal(f.model.updates(),previous+1,'A frozen own seek must use the single existing fresh decoder');
+  assert.equal(plays,0,'The original hidden decoder may not autoplay');
+  const video=flatten(f.model.render()).find(x=>x.type==='video');
+  assert.match(String(video.key),/:fresh-/,'Only the same source is remounted');
+  assert.equal(timers.length,0,'There is no repeated timer or decoder retry');
+});
+
+test('WebKit user pointer or keyboard seek cancels old same-source replacement authority',()=>{
+  for(const cancel of ['pointer','keyboard','different-seek','close']){
+    const animation=[],timers=[],events=new Map();
+    let plays=0;
+    const f=deferredWebKitFixture({
+      muted:true,readyState:4,
+      pause(){this.paused=true;},
+      load(){this.paused=true;this.readyState=1;},
+      play(){plays++;this.paused=false;return Promise.resolve();},
+      addEventListener(type,fn){events.set(type,fn);},
+      removeEventListener(type,fn){if(events.get(type)===fn)events.delete(type);},
+      ownerDocument:{defaultView:{
+        performance:{now(){return 0}},
+        requestAnimationFrame(fn){animation.push(fn);return animation.length;},
+        setTimeout(fn){timers.push(fn);return timers.length;},
+      }},
+    });
+    f.close();f.reopen();f.media.paused=false;f.handlers.onPlay(f.event);
+    animation.shift()(0);animation.shift()(1800);
+    f.media.readyState=2;events.get('loadedmetadata')();
+    f.media.seeking=true;f.handlers.onSeeking(f.event);
+    const before=f.model.updates();
+    if(cancel==='pointer')f.handlers.onPointerDownCapture(f.event);
+    if(cancel==='keyboard')f.handlers.onKeyDown({...f.event,key:'ArrowRight'});
+    if(cancel==='different-seek'){
+      f.setPosition(7.2);
+      f.handlers.onSeeking(f.event);
+    }
+    if(cancel==='close')f.close();
+    const updates=f.model.updates();
+    timers.shift()();
+    assert.equal(f.model.updates(),updates,'Old decoder cannot remount after '+cancel);
+    assert.equal(plays,0,'No autoplay after '+cancel);
+    assert.ok(f.model.updates()>=before);
+  }
+});
+
 test('WebKit stuck muted decoder reloads same-source metadata and resumes after exact seek once',()=>{
   const callbacks=[], events=new Map();
   let pauses=0,plays=0,loads=0;

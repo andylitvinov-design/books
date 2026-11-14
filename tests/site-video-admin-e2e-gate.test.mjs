@@ -78,3 +78,55 @@ test('site-video publish invalidates public pages but does not remount active ed
   assert.match(ui,/<div aria-live="polite" aria-atomic="true">/);
   assert.match(source,/await expect\(target\.locator\('\[aria-live="polite"\]'\)\)\.toContainText\('Video published to the selected page\.', \{ timeout: 30_000 \}\)/);
 });
+
+test('owner Reel local preview is checked by real authenticated browser and narrowly scoped media CSP',()=>{
+  const middleware=readFileSync('middleware.ts','utf8')
+  assert.match(middleware,/const videoManager = pathname === '\/admin\/videos'/)
+  assert.match(middleware,/\(\(videoManager\|\|ownerRecorderPage\|\|deliveryOrigin/)
+  assert.match(source,/editorResponse = await target\.goto/)
+  assert.match(source,/const editorMediaSource = editorPolicy/)
+  assert.match(source,/media-src 'self' blob:/)
+  assert.match(source,/publicMediaSource, "media-src 'self'"/)
+  assert.match(source,/nativeFileInput\.setInputFiles/)
+  assert.match(source,/film-collection-v3\/lake-mist-dawn\.mp4/)
+  assert.match(source,/element\.videoWidth > 0/)
+  assert.match(source,/await nativeFileInput\.setInputFiles\(\[\]\)/)
+})
+
+
+test('isolated Next DEV first HTTP 500 may not poison accepted 200 document or bypass genuine JavaScript errors',()=>{
+  assert.match(publicSource,/const recoveredFailedDevErrors = new Set\(\)/,
+    'Every temporary error must be explicitly attributed, not globally reset');
+  assert.match(publicSource,/const errorCountBeforeDocument = pageErrors.length/);
+  assert.match(publicSource,/if \(!live && response\?\.status\(\) === 500\)/);
+  assert.match(publicSource,/const rejectedDocumentUrl = response\.url\(\)/);
+  assert.match(publicSource,/rejectedDocumentErrors\.length <= 1/);
+  assert.match(publicSource,/error\.message === 'Unexpected end of JSON input'/);
+  assert.match(publicSource,/error\.url === rejectedDocumentUrl/);
+  assert.match(publicSource,/new URL\(error\.url\)\.origin === origin/);
+  assert.match(publicSource,/response = await page\.reload\(options\)/);
+  assert.match(publicSource,/if \(response\?\.status\(\) === 200\)/);
+  assert.match(publicSource,/recoveredFailedDevErrors\.add\(error\)/);
+  assert.match(publicSource,/assert\.deepEqual\(pageErrors\.filter\(error => !recoveredFailedDevErrors\.has\(error\)\), \[\]/);
+  assert.doesNotMatch(publicSource,/^[ \t]*pageErrors\s*=\s*\[\]/m,
+    'A transient first 500 must never erase errors from accepted documents');
+});
+
+test('compact mobile Services video panel is opened by a hydrated native button, not by showing retired desktop media',()=>{
+  const browser=readFileSync('scripts/verify-site-video-browser.mjs','utf8')
+  const css=readFileSync('components/services-assist-mobile.module.css','utf8')
+  assert.match(css,/\.assistPage :global\(\[data-services-meet\]\)/)
+  assert.match(css,/\.assistPage :global\(#method-videos\)/)
+  assert.match(browser,/const videoPanel = page\.locator\('\[data-services-unified-panel="video"\]'\)/)
+  assert.match(browser,/await expect\(intro\.locator\('button\.site-video-play'\)\)\.toBeHidden\(\)/)
+  assert.match(browser,/await expect\(visibleGallery\)\.toBeHidden\(\)/)
+  assert.match(browser,/await expect\(videoTrigger\)\.toHaveAttribute\('aria-expanded', 'false'\)/)
+  assert.match(browser,/await videoTrigger\.click\(\)/)
+  assert.match(browser,/await expect\(videoTrigger\)\.toHaveAttribute\('aria-expanded', 'true'\)/)
+  assert.match(browser,/await expect\(mobileVideo\)\.toBeVisible\(\)/)
+  assert.match(browser,/mobileVideo\.locator\('a\[data-assist-video-scenario\]'\)\)\.toHaveCount\(3\)/)
+  assert.match(browser,/await expect\(createVideo\)\.toHaveAttribute\('href', '\/' \+ locale \+ '\/holistic-support\/mandala'\)/)
+  assert.match(browser,/await expect\(mobileVideo\.locator\('iframe'\)\)\.toHaveCount\(0\)/)
+  assert.match(browser,/await expect\(intro\.locator\('button\.site-video-play'\)\)\.toBeVisible\(\)/)
+  assert.match(browser,/assert\.deepEqual\(pageErrors\.filter\(error => !recoveredFailedDevErrors\.has\(error\)\), \[\]/)
+});

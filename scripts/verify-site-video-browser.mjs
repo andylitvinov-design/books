@@ -73,8 +73,12 @@ try {
   const context = await browser.newContext({ viewport: { width: 1365, height: 1000 }, serviceWorkers: 'block' })
   const page = await context.newPage()
   const pageErrors = []
+  // Preserve the actual error record. A single failed initial DEV document
+  // may be attributed as provisional only after an exact 200 retry.
+  const recoveredFailedDevErrors = new Set()
   page.on('pageerror', error => pageErrors.push({ message: error.message, url: page.url() }))
   async function navigate(target) {
+    const errorCountBeforeDocument = pageErrors.length
     const options = { waitUntil: 'domcontentloaded', timeout: 60000 }
     const destination = new URL(target, origin)
     const previous = new URL(page.url())
@@ -91,10 +95,24 @@ try {
     // FIRST dynamic compilation. One identical-document retry must return 200;
     // never soften a LIVE request or skip genuine route verification.
     if (!live && response?.status() === 500) {
+      const rejectedDocumentUrl = response.url()
       console.warn('First isolated DEV render returned 500 for '+target+
         '. Retrying exact document once; repeated 500 remains a hard failure.')
       await pause(350)
+      const rejectedDocumentErrors = pageErrors.slice(errorCountBeforeDocument)
+      // Do not waive errors from a successfully loaded page, an unrelated
+      // host, a different JS exception or multiple failures.
+      const exactIsolatedFirst500 = rejectedDocumentErrors.length <= 1 &&
+        rejectedDocumentErrors.every(error =>
+          error.message === 'Unexpected end of JSON input' &&
+          error.url === rejectedDocumentUrl &&
+          new URL(error.url).origin === origin)
+      assert.ok(exactIsolatedFirst500,
+        'An isolated first 500 cannot excuse unrelated page JavaScript errors')
       response = await page.reload(options)
+      if (response?.status() === 200) {
+        for (const error of rejectedDocumentErrors) recoveredFailedDevErrors.add(error)
+      }
     }
     assert.ok(response, `No document response for ${target}`)
     assert.equal(response.status(), 200, target)
@@ -371,8 +389,11 @@ try {
     await verifyAboutTestimonials(origin)
     pass('About original-language disclosures: Chromium and WebKit at 320/390/430 in EN/RU/ES')
   }
-  assert.deepEqual(pageErrors, [], 'Unexpected page JavaScript errors')
-  pass('No page JavaScript errors')
+  // Provisional failures remain in pageErrors. All errors on actual accepted
+  // documents and every LIVE route still fail the original strict gate.
+  assert.deepEqual(pageErrors.filter(error => !recoveredFailedDevErrors.has(error)), [],
+    'Unexpected page JavaScript errors on accepted documents')
+  pass('No page JavaScript errors on accepted documents')
   writeFileSync(`${evidence}/${live ? 'live' : 'local'}-results.json`, JSON.stringify({ mode: live ? 'read-only production' : 'isolated Redis browser', passed: results, skipped: skippedResults }, null, 2))
   console.log(`VERIFIED: ${results.length} scenario groups`)
 } catch (error) {

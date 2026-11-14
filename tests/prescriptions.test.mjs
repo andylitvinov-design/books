@@ -170,7 +170,12 @@ test('fails closed for a missing, malformed, or tampered REST-KV encryption enve
   await store.save(record)
   const key = `prescription:record:${record.id}`
   const envelope = JSON.parse(harness.values.get(key))
-  envelope.ciphertext = `${envelope.ciphertext.slice(0, -2)}AA`
+  // Flip a real ciphertext byte so the GCM integrity check always sees corruption.
+  // Replacing the random base64 suffix with 'AA' can occasionally leave it unchanged.
+  const ciphertextBytes = Buffer.from(envelope.ciphertext, 'base64')
+  assert.ok(ciphertextBytes.length > 0)
+  ciphertextBytes[0] ^= 0x01
+  envelope.ciphertext = ciphertextBytes.toString('base64')
   harness.values.set(key, JSON.stringify(envelope))
   assert.equal(await store.findBySelector(selector), undefined)
 })
