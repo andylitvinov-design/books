@@ -117,6 +117,26 @@ test("Text displays two independent actions and a guarded Storyboard navigation"
  assert.ok(webkit.includes("await expect(page.locator('[data-video-montage-tab=\"concept\"]')).toHaveAttribute"));
 });
 
+test("iPhone Add video opens the real original four-MP4 catalog before export",()=>{
+ const timeline=readFileSync(new URL("../components/mandala-multitrack-timeline.tsx",import.meta.url),"utf8");
+ const browser=readFileSync(new URL("../scripts/benchmarking/verify-original-motion-export.mjs",import.meta.url),"utf8");
+ assert.ok(timeline.includes('onPointerUp={event=>{if(event.pointerType==="touch"&&!disabled)onAddVideo();}}'));
+ assert.ok(timeline.includes('onClick={onAddVideo}'),"desktop and keyboard retain real handler");
+ for(const token of [
+  "if (engine === 'webkit') await addVideo.tap();",
+  "studio?.getAttribute('data-active-workspace') === 'video'",
+  "studio?.getAttribute('data-video-advanced-open') === 'true'",
+  "catalog.getClientRects().length>0",
+  "HH_ORIGINAL_MOTION_CATALOG_NOT_OPEN",
+  "if (engine === 'webkit') await preset.tap();",
+  "if (engine === 'webkit') await generate.tap({timeout:30000});",
+  "await readRealGuestVideo(page,{timeout: 150000})",
+  "assert.ok(scores[i] > 0.6",
+  "assert.ok(Math.sqrt(power / (pcm.length / 2)) > 0.003",
+ ])assert.ok(browser.includes(token),token);
+ assert.doesNotMatch(browser,/click\(\{force:\s*true/);
+});
+
 test("real first-video Safari export uses fifth Montage advanced settings twice, never a hidden Story CTA",()=>{
  assert.equal((firstVideoSmoke.match(/await openMontageSettings\(page\);/g)||[]).length,2);
  assert.doesNotMatch(firstVideoSmoke,/data-video-story-open-settings/);
