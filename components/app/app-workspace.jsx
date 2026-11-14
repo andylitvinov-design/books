@@ -228,7 +228,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     return () => { lifetime.mounted = false; lifetime.epoch += 1 }
   }, [])
   const stressSignup = page === 'course' && searchParams.get('program') === 'stress'
-  // Explicit discovery and OPORA previews select discovery, whereas a saved lesson remains in My courses.
+  // Discovery and OPORA previews are public; a saved lesson belongs to My courses.
   const courseChoiceMode = stressSignup || (searchParams.get('view') === 'discover' && !searchParams.get('courseId'))
     ? 'discover' : 'saved'
   // Tab changes can race an earlier bootstrap; never show a stale account snapshot.
@@ -601,16 +601,15 @@ export default function AppWorkspace({ locale, path = [] }) {
         <h1>{c.loading}</h1>
       </main>
     )
-  // The guest/expired-session and failed-bootstrap course paths retain the My Space
-  // navigation and must not replace the saved-course index with an OPORA promotion.
+  // Guest/expired-session/failed-bootstrap course screens stay inside My Space.
   if (state !== 'ready' && page === 'course')
     return (
       <main className="hh-app hh-app--course-guest" data-profile-courses-guest>
         <ProfileHubTabs locale={locale} active="courses" />
         <ProfileCoursesSwitch locale={locale} mode={courseChoiceMode} />
         {stressSignup
-          ? <CourseGuestLanding locale={locale} onStart={signin} busy={busy}
-              stressSignup compact onTelegramStart={()=>signin('telegram')}
+          ? <CourseGuestLanding locale={locale} onStart={signin} busy={busy} stressSignup={stressSignup} compact
+              onTelegramStart={()=>signin('telegram')}
               telegramAvailable={telegramAvailable}
               errorMessage={signinAttempted.current && error ? message(error, c) : undefined}
               onRetry={state === 'error' ? load : undefined}
@@ -814,10 +813,8 @@ export default function AppWorkspace({ locale, path = [] }) {
           {page === 'portfolio' && <PortfolioPage data={data} locale={locale} />}
            {page === 'progress' && <MyProgress key={data.account.id} data={data} locale={locale} />}
           {page === 'my-coaching-plan' && <MyCoachingPlan key={data.account.id} accountId={data.account.id} locale={locale} />}
-          {page === 'course' && <>
-             <ProfileCoursesSwitch locale={locale} mode={courseChoiceMode} />
-             <MyCourse data={data} locale={locale} />
-           </>}
+          {page === 'course' && <ProfileCoursesSwitch locale={locale} mode={courseChoiceMode} />}
+           {page === 'course' && <MyCourse data={data} locale={locale} />}
           {page === 'business' && <BusinessCoaching key={data.account.id} accountId={data.account.id} locale={locale} />}
           {page === 'coaching' && (['egyptian','greek'].includes(recordId)
              ? <TraditionCoaching key={data.account.id + recordId} accountId={data.account.id}
@@ -1047,7 +1044,10 @@ function SaveContinuation({ data, locale, reload, onComplete }) {
         ? consumeSessionSaveTarget(intentId,locale,window.location.origin,window.sessionStorage)
         : null
       const destination=next||savedGuestDiscussionTarget(savedResourcePath(locale,saved.sourceKind,saved.resource.id),saved.sourceKind,intentId)
-      if(onComplete)onComplete(destination)
+      // A completed guest test opens directly in the existing full private report.
+      // Skip optional post-signup install and WhatsApp offers for this result.
+      if(saved.sourceKind === 'guest_result') router.replace(destination)
+      else if(onComplete)onComplete(destination)
       else router.replace(destination)
     } catch (e) {
       setError(
@@ -1080,7 +1080,8 @@ function SaveContinuation({ data, locale, reload, onComplete }) {
         ? consumeSessionSaveTarget(intentId,locale,window.location.origin,window.sessionStorage)
         : null
       const destination=next||savedGuestDiscussionTarget(savedResourcePath(locale,intent.sourceKind,intent.resourceId),intent.sourceKind,intentId)
-      if(onComplete)onComplete(destination)
+      if(intent.sourceKind === 'guest_result') router.replace(destination)
+      else if(onComplete)onComplete(destination)
       else router.replace(destination)
       return
     }
