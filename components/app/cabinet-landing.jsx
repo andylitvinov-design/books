@@ -4,13 +4,14 @@ import { hasTraumaAdministration, traumaContextReady } from '@/lib/assessments/t
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { ChevronRight } from 'lucide-react'
+import { ArrowLeft, Check, ChevronRight, FileText } from 'lucide-react'
 import { ClientCabinetEntry } from '@/components/client-cabinet-entry'
 import { PublicTestExplorer } from '@/components/app/public-test-explorer'
 import { GuestScaleInterpretation } from '@/components/app/guest-scale-interpretation'
 import { TEST_DISCUSSION_INTENT_KEY } from '@/lib/assessments/test-result-discussion.mjs'
 import { GuestTestJourneyProgress } from '@/components/app/guest-test-journey-progress'
 import guestActions from './guest-result-actions.module.css'
+import reportStyles from './test-report-profile.module.css'
 import { Asrs6SourceNotice, Asrs6ChoiceMarker, asrs6ChoiceClass } from '@/components/app/asrs6-source-notice'
 import { TestFinishActions } from '@/components/app/test-finish-actions'
 import { TestRatingCard } from '@/components/app/test-rating-card'
@@ -1007,10 +1008,29 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
       )}
 
 
-      {phase !== 'catalog' && <section className="cabinet-guest-tests" id="cabinet-tests" aria-labelledby="guest-tests-title">
-        <GuestTestJourneyProgress locale={locale} plan={activePlan}
-          definition={definition} answeredCount={answeredCount} phase={phase} />
-        {phase === 'questions' && definition ? (
+      {phase !== 'catalog' && <section
+        className={`cabinet-guest-tests ${phase === 'result' || phase === 'summary' ? reportStyles.reportLayout : ''}`}
+        id="cabinet-tests" aria-labelledby="guest-tests-title"
+        data-my-space-test-report={phase === 'result' || phase === 'summary' ? phase : undefined}>
+        {phase !== 'result' && phase !== 'summary' && <GuestTestJourneyProgress locale={locale} plan={activePlan}
+          definition={definition} answeredCount={answeredCount} phase={phase} />}
+        {phase === 'result' || phase === 'summary' ? (
+          <header className={reportStyles.reportContext}>
+            <div className={reportStyles.headingText}>
+              <p className={reportStyles.kicker}><FileText size={15} aria-hidden="true" />
+                {locale === 'ru' ? 'МОЁ ПРОСТРАНСТВО · ОТЧЁТЫ' : locale === 'es' ? 'MI ESPACIO · INFORMES' : 'MY SPACE · REPORTS'}
+              </p>
+              <h2 id="guest-tests-title">{phase === 'result' ? c.result : locale === 'ru' ? 'Обзор тестов' : locale === 'es' ? 'Resumen de pruebas' : 'Test overview'}</h2>
+              <span className={reportStyles.status}><Check size={15} aria-hidden="true" />
+                {locale === 'ru' ? 'Тест завершён' : locale === 'es' ? 'Prueba completada' : 'Test completed'}
+              </span>
+            </div>
+            <button className={reportStyles.backButton} type="button" disabled={busy} onClick={resetToCatalog}>
+              <ArrowLeft size={16} aria-hidden="true" />
+              {locale === 'ru' ? 'Все тесты' : locale === 'es' ? 'Todos los tests' : 'All tests'}
+            </button>
+          </header>
+        ) : phase === 'questions' && definition ? (
           <header className="cabinet-tests-heading cabinet-tests-heading--compact">
             <h2 id="guest-tests-title">{definitionTitle(definition, locale)}</h2>
           </header>
@@ -1160,7 +1180,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
         )}
 
         {phase === 'result' && guestResult && definition && (
-          <article className="cabinet-guest-result cabinet-result-page">
+          <article className={`cabinet-guest-result cabinet-result-page ${reportStyles.resultCard}`} data-my-space-result-card>
             <header className="cabinet-result-hero">
               <div>
                 <p className="about-kicker">{c.result}</p>
@@ -1221,7 +1241,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
           </article>
         )}
         {phase === 'summary' && activePlan && (
-          <article className="cabinet-guest-result cabinet-result-page">
+          <article className={`cabinet-guest-result cabinet-result-page ${reportStyles.resultCard}`} data-my-space-result-card>
             <header className="cabinet-result-hero"><div><p className="about-kicker">{locale === 'ru' ? 'Набор завершён' : 'Set complete'}</p><h3>{locale === 'ru' ? 'Ваш общий обзор' : 'Your combined overview'}</h3><p className="cabinet-result-intro">{locale === 'ru' ? 'Здесь собраны отдельные результаты без единого медицинского балла или диагноза.' : 'This brings together your separate results without creating a single medical score or diagnosis.'}</p></div></header>
             <section className="cabinet-result-section"><div className="cabinet-result-section-heading"><div><p className="about-kicker">{locale === 'ru' ? 'Пройдено' : 'Completed'}</p><h4>{planResults.length} {locale === 'ru' ? 'тестов' : 'tests'}</h4></div></div><div className="cabinet-test-list">{planResults.map((result) => <article className="cabinet-test-row cabinet-battery-result-row" key={result.id}><span className="cabinet-test-row-copy"><strong>{definitionTitle(getAssessmentDefinition(result.definitionKey, result.definitionVersion, result.instrumentLocale), locale)}</strong><small>{result.dimensions.length} {locale === 'ru' ? 'показателей' : 'measurements'} · {new Date(result.measurementAt).toLocaleString(locale)}</small><button className="cabinet-save-result" type="button" disabled={busy} onClick={() => saveToCabinet(result)}>{c.save}</button></span></article>)}</div></section>
             <footer className="cabinet-result-footer"><p className="cabinet-test-note">{locale === 'ru' ? 'Каждый тест имеет отдельный результат. Вы можете по желанию сохранить конкретные результаты в личном кабинете через Google.' : 'Each test has a separate result. Choose which results to save to your private Cabinet with Google.'}</p><div className="cabinet-test-actions"><button className="cabinet-text-button" type="button" onClick={resetToCatalog}>{c.restart}</button></div></footer>

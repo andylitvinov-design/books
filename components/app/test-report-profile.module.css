@@ -1,0 +1,116 @@
+/* One completed guest assessment = the existing My Space design language.
+   Source-scored scales and the explicit Google save contract are unchanged. */
+.reportLayout {
+  box-sizing: border-box;
+  width: min(100%, 1050px);
+  min-width: 0;
+  margin: 8px auto 20px;
+  padding: 0 0 max(22px, env(safe-area-inset-bottom));
+  color: var(--hh-light-ink, #143d3a);
+}
+.reportContext {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-width: 0;
+  padding: 13px 16px;
+  border: 1px solid var(--hh-light-border, #e9dfd1);
+  border-radius: 18px;
+  background: var(--hh-light-surface, #fffcf7);
+}
+.headingText { flex: 1 1 auto; min-width: 0; }
+.kicker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 4px;
+  color: #067a67;
+  font: 800 11px/1.3 system-ui, -apple-system, sans-serif;
+  letter-spacing: .07em;
+}
+.reportLayout .headingText h2 {
+  margin: 0;
+  color: #143d3a;
+  font: 700 clamp(22px, 5vw, 28px)/1.2 Georgia, serif;
+  letter-spacing: -.02em;
+}
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 5px;
+  color: #22755e;
+  font: 650 12px/1.25 system-ui, -apple-system, sans-serif;
+}
+.backButton {
+  display: inline-flex;
+  flex: 0 0 auto;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid #cbe2d9;
+  border-radius: 12px;
+  background: #f4faf6;
+  color: #14523f;
+  font: 750 12px/1.2 system-ui, -apple-system, sans-serif;
+  cursor: pointer;
+}
+.backButton:hover { background: #e8f5ed; }
+.backButton:disabled { cursor: wait; opacity: .55; }
+.backButton:focus-visible { outline: 3px solid #176e6e; outline-offset: 2px; }
+.reportLayout .resultCard {
+  box-sizing: border-box;
+  min-width: 0;
+  width: 100%;
+  margin: 8px 0 0;
+  padding: clamp(13px, 2.9vw, 24px);
+  gap: clamp(12px, 2.5vw, 18px);
+  border: 1px solid var(--hh-light-border, #e9dfd1);
+  border-radius: 20px;
+  background: var(--hh-light-surface, #fffcf7);
+  box-shadow: 0 5px 18px rgba(54, 62, 47, .055);
+}
+.reportLayout .resultCard :global(.cabinet-result-hero) {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding-bottom: 12px;
+  border-color: #e3e8dd;
+}
+.reportLayout .resultCard :global(.cabinet-result-hero) h3 {
+  max-width: 100%;
+  margin: 4px 0 2px;
+  color: #143d3a;
+  font: 700 clamp(22px, 5.8vw, 31px)/1.17 Georgia, serif;
+  overflow-wrap: anywhere;
+  letter-spacing: -.02em;
+}
+.reportLayout .resultCard :global(.about-kicker) { color: #067a67; }
+.reportLayout .resultCard :global(.cabinet-result-meta) {
+  justify-content: flex-start;
+  gap: 6px;
+}
+.reportLayout .resultCard :global(.cabinet-result-meta) span {
+  min-height: 32px;
+  padding: 5px 10px;
+  border-color: #d9e5d9;
+  background: #f6faf6;
+  color: #54685f;
+  font-size: 12px;
+}
+.reportLayout .resultCard :global(.cabinet-result-footer) { border-color: #e3e8dd; }
+@media (max-width: 600px) {
+  .reportContext { align-items: flex-start; padding: 11px 12px; gap: 8px; }
+  .reportLayout .resultCard :global(.cabinet-result-hero) { grid-template-columns: minmax(0, 1fr); }
+  .reportLayout .resultCard :global(.cabinet-result-meta) { flex-wrap: wrap; }
+  .reportLayout .resultCard { border-radius: 17px; }
+}
+@media (max-width: 354px) {
+  .reportContext { flex-wrap: wrap; }
+  .backButton { width: 100%; }
+  .kicker { font-size: 10px; }
+}
