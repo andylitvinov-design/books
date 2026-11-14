@@ -95,6 +95,9 @@ test("route-aware single dock, guest/signed-in consistency and private pages exc
   assert.equal(unifiedMobileDockActive("/"+locale+"/app/practice"),"practice");
   assert.equal(unifiedMobileDockActive("/"+locale+"/app/messages"),"ai");
   assert.equal(unifiedMobileDockActive("/"+locale+"/app/portrait"),"profile");
+  assert.equal(unifiedMobileDockActive("/"+locale+"/client"),"profile");
+  assert.equal(unifiedMobileDockActive("/"+locale+"/client/tests"),"profile");
+  assert.equal(unifiedMobileDockActive("/"+locale+"/client/private-record"),null);
   assert.equal(unifiedMobileDockActive("/"+locale+"/masters"),null);
   assert.equal(unifiedMobileDockActive("/"+locale+"/my-coach"),"coach");
    assert.equal(unifiedMobileDockActive("/"+locale+"/masters"),null);
@@ -138,6 +141,10 @@ test("public editorial journeys share the approved seven-item dock without priva
  assert.ok(legacy.includes("isUnifiedMobileDockPath(pathname)"));
  assert.ok(global.includes("main[data-energywork-ai-learner]"));
  assert.ok(global.includes(".mobile-bottom-navigation{display:none!important}"));
+ const ia=read("scripts/verify-ia-v2.mjs");
+ assert.match(ia,/assertUnifiedBottomNavigation\(page,\{locale,label,active:'profile',visible:width<760,editorial:true\}\)/);
+ assert.match(ia,/assertUnifiedBottomNavigation\(sp,\{locale:'ru',label:'webkit\/ru\/library\/390',editorial:true\}\)/);
+ assert.doesNotMatch(ia,/assertPublicBottomNavigation|visibleMobileLabel/);
 });
 
 test("one screenshot-1 style seven-button dock and protected old docks removed visually",()=>{
