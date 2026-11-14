@@ -109,41 +109,33 @@ test('one signed stale BASE update requests native protected branch sync, not du
  assert.equal(w.updates.length,1);
 });
 
-test('verified loose protected gate rechecks diverged current BASE on unchanged source HEAD',async()=>{
- const w=world({looseRuleset:true}),result=await run(w.args);
- assert.equal(result.status,'WAKE_REQUESTED');
- assert.equal(result.reason,'AWAITING_SAME_HEAD_CURRENT_BASE_CORE');
- assert.equal(result.metadataEventRequested,true);
- assert.equal(result.headUpdateRequested,false);
- assert.equal(result.sourceChanged,false);
- assert.equal(result.ciVerified,false);
- assert.deepEqual(w.updates,[],'never update source branch solely for BASE drift');
- assert.deepEqual(w.mutations,['convertPullRequestToDraft','markPullRequestReadyForReview']);
- assert.equal(w.getDraft(),false,'Ready must be restored');
- assert.equal(w.comments.length,1,'single signed intent survives event retries');
- assert.equal((await run(w.args)).reason,'ONE_WAKE_ALREADY_RECORDED_FOR_HEAD');
+test('regression #4594: loose rules cannot validate an old synthetic merge with Draft Ready',async()=>{
+ for(const rule of [{looseRuleset:true},{strictRuleset:true},{}]){
+  const w=world(rule),result=await run(w.args);
+  assert.equal(result.status,'BASE_SYNC_REQUESTED');
+  assert.equal(result.headUpdateRequested,true);
+  assert.equal(result.metadataEventRequested,false);
+  assert.equal(result.ciVerified,false);
+  assert.equal(result.sourceChanged,false);
+  assert.deepEqual(w.updates,[{expected_head_sha:HEAD}],
+   'diverged source requires exactly one protected update-branch');
+  assert.deepEqual(w.mutations,[],'no duplicate Core on old synthetic merge parent');
+  assert.equal((await run(w.args)).reason,'ONE_WAKE_ALREADY_RECORDED_FOR_HEAD');
+  assert.equal(w.updates.length,1);
+ }
 });
-test('strict/unknown/failed current release rules retain protected native source-sync path',async()=>{
- const {verifiedLooseReleaseGate}=require('../scripts/ci-pr-sensitive-base-ci-wake.cjs');
- const strict=world({strictRuleset:true});
- assert.equal(await verifiedLooseReleaseGate(strict.args.github,'andylitvinov-design','books'),false);
- const result=await run(strict.args);
- assert.equal(result.status,'BASE_SYNC_REQUESTED');
- assert.deepEqual(strict.mutations,[]);
- assert.deepEqual(strict.updates,[{expected_head_sha:HEAD}]);
- const unknown=world();
- assert.equal(await verifiedLooseReleaseGate(unknown.args.github,'andylitvinov-design','books'),false);
- assert.equal((await run(unknown.args)).status,'BASE_SYNC_REQUESTED');
-});
-
-test('HEAD already containing live BASE retains source and requests signed Ready once',async()=>{
- const w=world({alreadyCurrent:true}),result=await run(w.args);
- assert.equal(result.status,'WAKE_REQUESTED');
- assert.equal(result.metadataEventRequested,true);
- assert.equal(result.headUpdateRequested,false);
- assert.deepEqual(w.updates,[]);
- assert.deepEqual(w.mutations,['convertPullRequestToDraft','markPullRequestReadyForReview']);
- assert.equal(w.getDraft(),false);
+test('when source already contains current BASE, same-HEAD Ready avoids a new branch commit',async()=>{
+ for(const rule of [{looseRuleset:true},{strictRuleset:true},{}]){
+  const w=world({...rule,alreadyCurrent:true}),result=await run(w.args);
+  assert.equal(result.status,'WAKE_REQUESTED');
+  assert.equal(result.reason,'AWAITING_SAME_HEAD_ALREADY_CONTAINS_BASE_CORE');
+  assert.equal(result.metadataEventRequested,true);
+  assert.equal(result.headUpdateRequested,false);
+  assert.deepEqual(w.updates,[]);
+  assert.deepEqual(w.mutations,['convertPullRequestToDraft','markPullRequestReadyForReview']);
+  assert.equal(w.getDraft(),false);
+  assert.equal((await run(w.args)).reason,'ONE_WAKE_ALREADY_RECORDED_FOR_HEAD');
+ }
 });
 test('unknown/divergent ancestral source and concurrent writer states fail closed',async()=>{
  for(const options of [{badSource:true},{badRelation:true},{movedBase:true},
