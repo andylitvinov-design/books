@@ -456,7 +456,7 @@
 }
 .root[data-compact][data-chat-skin="messenger"] .composerMore summary::-webkit-details-marker{display:none}
 .composerMenu{
-  position:fixed;z-index:120;box-sizing:border-box;
+  /* Body portal must sit ABOVE the fixed Messages hub (z-index 1200/4000)\n     so the composer underneath cannot intercept real iPhone taps. */\n  position:fixed;z-index:5000;box-sizing:border-box;
   display:grid;gap:6px;width:min(300px,calc(100vw - 24px));
   max-height:min(65dvh,520px);overflow-y:auto;overscroll-behavior:contain;
   padding:10px;border:1px solid #e6dfd5;border-radius:16px;

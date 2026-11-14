@@ -346,18 +346,15 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,active,disab
   </details>
 
   <div className={css.stageActions} data-video-stage-actions="ideas">
-  <button type="button" className={css.create} data-video-ideas-generate
-    disabled={disabled} onClick={onGenerate}>
-    <Play size={21} fill="currentColor" aria-hidden="true"/>
-    {locale==="ru"?"Создать видео":locale==="es"?"Generar vídeo":"Generate Video"}
-  </button>
-  <button type="button" className={css.addEffects} data-video-ideas-create
-    disabled={disabled||selectedCount<5} onClick={onCreate}>
-    <Sparkles size={19} aria-hidden="true"/>
-    {locale==="ru"?"Далее · Раскадровка":locale==="es"?"Siguiente · Guion visual":"Next · Storyboard"}
-    <span aria-hidden="true">→</span>
-  </button>
- </div>
+   <button type="button" className={css.create} data-video-ideas-generate
+     disabled={disabled||generating} onClick={onGenerate}>
+     {locale==="ru"?"Создать видео":locale==="es"?"Generar vídeo":"Generate Video"}
+   </button>
+   <button type="button" className={css.addEffects} data-video-ideas-create
+     disabled={disabled||selectedCount<5} onClick={onCreate}>
+     {locale==="ru"?"Раскадровка":locale==="es"?"Guion visual":"Storyboard"}
+   </button>
+  </div>
  {status?<p className={css.stageStatus} role="status" aria-live="polite">{status}</p>:null}
  <p className={css.privacy}>{t.privacy}</p>
  </section>;

@@ -40,8 +40,9 @@ test('first mic tap obtains user-initiated explicit consent, then starts browser
  assert.match(loop,/disabled=\{!active&&!canStart\}/)
  assert.match(loop,/recognition\.start\(\)/)
  assert.match(ui,/if\(!message\|\|!consent\|\|busy\|\|paused\|\|authRequired/)
- assert.doesNotMatch(ui,/MediaRecorder|localStorage|sessionStorage/)
- assert.doesNotMatch(loop,/api\.fish\.audio|new WebSocket|MediaRecorder/)
+ assert.doesNotMatch(ui,/localStorage|sessionStorage/)
+ assert.doesNotMatch(loop,/api\.fish\.audio|new WebSocket/)
+ assert.match(loop,/recordingConsentRef\.current/,'recording requires consent')
  for(const locale of ['en','ru','es'])assert.ok(loop.includes(locale+':{start:'),locale)
 })
 
@@ -66,4 +67,30 @@ test('Safari dictation is displayed only in transcript while speech status never
    assert.ok(width>=320&&width<=699,'target viewport uses the guarded mobile CSS')
    assert.ok(width-46>=274,'feedback container has nonzero safe width')
  }
+})
+
+
+test('mobile Fish consent cannot push the current chat/composer outside a bounded conversation viewport',()=>{
+ const css=read('components/my-coach-live-dialogue.module.css')
+ const ui=read('components/my-coach-live-dialogue.jsx')
+ assert.match(css,/\.root\[data-session-visual-v3\] \.conversationPanel\{[\s\S]*?max-height:min\(38dvh,325px\);/)
+ assert.match(css,/\.root\[data-session-visual-v3\] \.sessionHero\{height:clamp\(210px,33dvh,250px\)\}/)
+ assert.match(css,/\.root\[data-session-visual-v3\] \.conversationPanel\{max-height:min\(42dvh,288px\)\}/)
+ assert.match(css,/\.root\[data-session-visual-v3\] \.conversationPanel \.transcriptFeed\{[\s\S]*?overflow-y:auto;/)
+ assert.match(css,/\.root\[data-session-visual-v3\] \.conversationPanel \.textComposer\{[\s\S]*?order:2;[\s\S]*?overflow-y:auto;/)
+ assert.match(css,/\.root\[data-session-visual-v3\] \.conversationPanel \.naturalVoiceRow\{[\s\S]*?order:3;/)
+ assert.match(css,/\.root\[data-session-visual-v3\] \.conversationPanel \.transcriptHeading >span\[role=status\]\{display:none\}/)
+ assert.ok(ui.indexOf('className={styles.voiceControls}')<ui.indexOf('className={styles.liveTranscript}'))
+ assert.ok(ui.includes('className={styles.naturalVoiceRow}'),'Fish option remains available')
+ assert.ok(ui.includes('ref={composerDetailsRef} className={styles.textComposer} open'),'editable reply is still open')
+})
+
+test('Replay explicitly rescues Safari-blocked coach audio without re-synthesizing it',()=>{
+ const ui=read('components/my-coach-live-dialogue.jsx')
+ const loop=read('components/my-coach-speech-loop.jsx')
+ assert.match(loop,/resumeVoice\(\)\{/)
+ assert.match(loop,/blockedResumeRef\.current\(\)/)
+ assert.match(ui,/if\(speechRef\.current\?\.resumeVoice\?\.\(\)\)return/)
+ assert.match(ui,/voiceState\.phase!=='ready'/)
+ assert.match(ui,/voiceState\.phase==='ready'\?voiceGate\.tapToHear/)
 })
