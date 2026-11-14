@@ -113,20 +113,21 @@ try {
       assert.equal(await cart.locator('[data-cart-order-registration][data-cart-order-ready="false"]').count(), 1)
       assert.equal(await cart.locator('[data-cart-start-order]').count(), 1)
       assert.equal(await cart.locator('[data-cart-payment-step]').count(), 0)
-      const startOrder = cart.locator('[data-cart-start-order]')
-      // Next may stream a visible button before its client event handler is
-      // attached. Confirm a real React onClick, as for shop filters above,
-      // and require exactly one customer click to reveal the actual contact UI.
-      await page.waitForFunction(() => {
-        const button = document.querySelector('[data-personal-service-cart] [data-cart-start-order]')
-        if (!button) return false
-        const reactKey = Object.keys(button).find(key => key.startsWith('__reactProps$'))
-        return Boolean(reactKey && typeof button[reactKey]?.onClick === 'function')
-      }, null, { timeout: 30000 })
+      const disclosure = cart.locator('[data-cart-order-disclosure]')
+      const startOrder = disclosure.locator('[data-cart-start-order]')
+      const contactForm = disclosure.locator('[data-cart-contact-form]')
+      assert.equal(await disclosure.getAttribute('open'), null,
+        'Before the customer taps, messenger choices are collapsed')
+      // A native summary must open with one real WebKit tap even during hydration.
       await startOrder.click()
-      const contactForm = cart.locator('[data-cart-contact-form]')
       await contactForm.waitFor({ state: 'visible', timeout: 12000 })
-      assert.equal(await startOrder.count(), 0, 'One genuine cart click opens the messenger choice')
+      assert.equal(await disclosure.getAttribute('open'), '',
+        'One real tap opens the Telegram/WhatsApp choice')
+      assert.equal(await startOrder.count(), 1, 'Summary stays available to close')
+      await startOrder.click()
+      await contactForm.waitFor({ state: 'hidden', timeout: 8000 })
+      await startOrder.click()
+      await contactForm.waitFor({ state: 'visible', timeout: 8000 })
       // In messenger-only mode the website must not accept a typed
       // phone/Google-only order or fabricate a CRM receipt.
       const card=contactForm.locator('[data-messenger-only-contact]');

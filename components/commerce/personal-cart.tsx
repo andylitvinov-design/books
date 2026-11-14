@@ -366,18 +366,18 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
           </div>
           {orderReady ? <p className={styles.orderDone} role="status" data-cart-order-saved>
             <Check size={18} aria-hidden="true" />{t.orderSaved} · {orderReceipt?.referenceCode}
-          </p> : <>
-            {!orderOpen && <button type="button" className={styles.orderButton}
-              data-cart-start-order aria-expanded={orderOpen} onClick={() => setOrderOpen(true)}>
+          </p> : <details className={styles.orderDisclosure} data-cart-order-disclosure
+            open={orderOpen} onToggle={event => setOrderOpen(event.currentTarget.open)}>
+            <summary className={styles.orderButton} data-cart-start-order>
               {t.orderAction}<ArrowRight size={19} aria-hidden="true" />
-            </button>}
-            {orderOpen && <div className={styles.orderForm} data-cart-contact-form>
+            </summary>
+            <div className={styles.orderForm} data-cart-contact-form>
               <ContactChannelChooser locale={locale} whatsappUrl={bookingUrl} quick cartContact
                 stayAfterSave publicServiceTitle={description || t.service}
                 publicTopic={t.orderTopic} resetKey={cartKey}
                 onSaved={referenceCode => setOrderReceipt({ cartKey, referenceCode })} />
-            </div>}
-          </>}
+            </div>
+          </details>}
         </section>
         {showPayment && <div className={styles.stepHeading} data-cart-payment-step>
           <span className={styles.stepNumber}>2</span>

@@ -113,3 +113,19 @@ test("Services Telegram requests keep the selected product and never enter free-
  for(const bad of ['https://wa.me/123?text=test','https://attacker.test/?text=Service%3A%20Fake'])
    assert.throws(()=>telegramEnquiryUrlFromWhatsApp(bad));
 });
+
+test("cart messenger choice opens with native one-tap disclosure, without automatic CRM write",()=>{
+ const src=read("components/commerce/personal-cart.tsx");
+ const css=read("components/commerce/personal-cart.module.css");
+ const qa=read("scripts/verify-storefront-shop-browser.mjs");
+ assert.match(src,/<details className=\{styles\.orderDisclosure\} data-cart-order-disclosure/u);
+ assert.match(src,/open=\{orderOpen\} onToggle=\{event => setOrderOpen\(event\.currentTarget\.open\)\}/u);
+ assert.match(src,/<summary className=\{styles\.orderButton\} data-cart-start-order>/u);
+ assert.match(src,/<ContactChannelChooser locale=\{locale\} whatsappUrl=\{bookingUrl\} quick cartContact/u);
+ assert.doesNotMatch(src,/data-cart-start-order aria-expanded=\{orderOpen\}/u);
+ assert.match(css,/\.orderDisclosure>\.orderButton::-webkit-details-marker\{display:none\}/u);
+ assert.match(qa,/await contactForm\.waitFor\(\{ state: 'visible', timeout: 12000 \}\)/u);
+ assert.match(qa,/await contactForm\.waitFor\(\{ state: 'hidden', timeout: 8000 \}\)/u);
+ assert.match(qa,/syntheticEnquiries\.length,0/u);
+ assert.match(qa,/data-cart-payment-step/u);
+});
