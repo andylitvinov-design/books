@@ -393,7 +393,8 @@ jobs:
             if(!freshness.ok){
               // Only a PROVEN stale base can request a legitimate new Core.
               // Unverified timestamps, old HEADs and unchanged bases cannot.
-              if(['SENSITIVE_BASE_STALE','SENSITIVE_CI_BASE_STALE'].includes(freshness.reason)&&
+              if(['SENSITIVE_BASE_STALE','SENSITIVE_CI_BASE_STALE',
+                  'SENSITIVE_COMPARE_UNSAFE'].includes(freshness.reason)&&
                  /^[a-f0-9]{40}$/.test(observedRunBase||'')&&
                  /^[a-f0-9]{40}$/.test(observedProtectedBase||'')&&
                  observedRunBase!==observedProtectedBase){
@@ -411,7 +412,9 @@ jobs:
             core.setOutput("requires_current_base",String(
               freshness.reason==="SENSITIVE_BASE_VERIFIED" ||
               freshness.reason==="ISOLATED_CI_PUBLIC_MEDIA_REVALIDATED" ||
-              freshness.reason==="INDEPENDENT_PUBLIC_RASTER_REVALIDATED"));
+              freshness.reason==="INDEPENDENT_PUBLIC_RASTER_REVALIDATED" ||
+              freshness.reason==="INDEPENDENT_DOCS_BASE_REVALIDATED" ||
+              freshness.reason==="INDEPENDENT_CI_MAINTENANCE_REVALIDATED"));
       - name: Revalidate sensitive BASE with one protected sync or signed Ready
         if: >-
           github.event_name == 'workflow_run' &&

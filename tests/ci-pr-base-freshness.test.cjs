@@ -201,3 +201,67 @@ test('AutoMerge accepts verified independent raster target advances without HEAD
  mock.rest.repos.compareCommits=async()=>({data:comparison('public/images/banner.png',{status:'diverged'})});
  assert.equal((await assessBaseFreshness(options)).reason,'SENSITIVE_COMPARE_UNSAFE');
 });
+
+
+test('AutoMerge shares immutable production Specialist non-runtime BASE exceptions',async()=>{
+ const diff=(filename,opts={})=>({
+   status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+   base_commit:{sha:old},merge_base_commit:{sha:old},
+   commits:[{sha:head}],files:[{filename,status:'modified'}],...opts
+ });
+ const github=api('lib/billing/stripe-provider.js');
+ let current=diff('docs/examples/basic-guide.md');
+ github.rest.repos.compareCommits=async ({base,target,head:destination})=>{
+   assert.equal(base,old);assert.equal(destination,head);
+   return {data:current};
+ };
+ let proofs=0;
+ const policy={
+   safeDocumentationAdvance:(comparison,expected,live,paths)=>{
+     proofs++;
+     assert.equal(expected,old);assert.equal(live,head);
+     assert.deepEqual(paths,['lib/billing/stripe-provider.js']);
+     return comparison.status==='ahead'&&comparison.base_commit.sha===old&&
+       comparison.merge_base_commit.sha===old&&comparison.behind_by===0&&
+       comparison.commits.length===1&&comparison.commits[0].sha===head&&
+       comparison.files.length===1&&
+       comparison.files[0].filename==='docs/examples/basic-guide.md'&&
+       comparison.files[0].status==='modified';
+   },
+   safeIndependentCiMaintenanceAdvance:comparison=>comparison.files.length===1&&
+     comparison.files[0].filename==='tests/pr-fast-lane.test.mjs'&&
+     comparison.status==='ahead'&&comparison.commits.at(-1)?.sha===head,
+   verifiedIndependentPublicRasterAdvance:()=>false
+ };
+ const options={github,owner:'o',repo:'r',pr:{...pr,mergeable:true},
+   verifiedRunBase:old,baseAdvancePolicy:policy};
+ const docs=await assessBaseFreshness(options);
+ assert.equal(docs.ok,true);assert.equal(docs.reason,'INDEPENDENT_DOCS_BASE_REVALIDATED');
+ assert.equal(proofs,1);
+ current=diff('tests/pr-fast-lane.test.mjs');
+ const maintenance=await assessBaseFreshness(options);
+ assert.equal(maintenance.reason,'INDEPENDENT_CI_MAINTENANCE_REVALIDATED');
+ current=diff('app/api/payment/route.ts');
+ const runtime=await assessBaseFreshness(options);
+ assert.equal(runtime.ok,false);assert.equal(runtime.reason,'SENSITIVE_COMPARE_UNSAFE');
+ current=diff('docs/examples/basic-guide.md',{status:'diverged'});
+ assert.equal((await assessBaseFreshness(options)).reason,'SENSITIVE_COMPARE_UNSAFE');
+ current=diff('docs/examples/basic-guide.md',{files:[{filename:'docs/examples/basic-guide.md',status:'removed'}]});
+ assert.equal((await assessBaseFreshness(options)).reason,'SENSITIVE_COMPARE_UNSAFE');
+ assert.equal((await assessBaseFreshness({...options,
+   baseAdvancePolicy:{safeDocumentationAdvance:()=>true}})).reason,'TRUSTED_BASE_ADVANCE_POLICY_INCOMPLETE');
+ assert.equal((await assessBaseFreshness({...options,
+   baseAdvancePolicy:{...policy,safeDocumentationAdvance:()=>{throw Error('bad policy')}}})).reason,
+   'SENSITIVE_COMPARE_UNSAFE');
+});
+test('trusted production-base policy is loaded from the same pinned SHA and missing policy cannot waive a gate',()=>{
+ const s=require('node:fs').readFileSync('scripts/ci-pr-base-freshness.cjs','utf8');
+ const workflow=require('node:fs').readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
+ assert.ok(s.includes("path.join(dir,'lib/ci/production-base-impact.mjs')"));
+ assert.ok(s.includes("impactUrl.searchParams.set('sha',classifierBase)"));
+ assert.ok(s.includes("throw Error('PROTECTED_BASE_ADVANCE_POLICY_UNAVAILABLE')"));
+ assert.ok(workflow.includes("'SENSITIVE_COMPARE_UNSAFE'].includes(freshness.reason)"));
+ for(const signal of ['INDEPENDENT_DOCS_BASE_REVALIDATED',
+   'INDEPENDENT_CI_MAINTENANCE_REVALIDATED'])
+   assert.ok(workflow.includes('freshness.reason==="'+signal+'"'));
+});
