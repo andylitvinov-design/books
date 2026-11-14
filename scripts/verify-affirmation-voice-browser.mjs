@@ -1545,8 +1545,13 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       else await hypnoAudioTab.click();
       await expect(hypnoAudioTab).toHaveAttribute("aria-selected","true",{timeout:15000});
       await expect(page.locator('[data-hypno-group="audio"]')).toBeVisible({timeout:15000});
-      await page.locator('[data-hypno-group="audio"] [data-hypno-card] button').first().click();
-      await expect(page.locator("[data-hypno-speech-settings]")).toBeVisible();
+      const speechConfigure=page.locator('[data-hypno-group="audio"] [data-hypno-card] button').first();
+      await expect(speechConfigure).toBeEnabled();
+      // Clicking the configuration card as a desktop mouse is lost after a
+      // nested Safari disclosure. Exercise the real user touch instead.
+      if(engine==="webkit")await speechConfigure.tap();
+      else await speechConfigure.click();
+      await expect(page.locator("[data-hypno-speech-settings]")).toBeVisible({timeout:15000});
       const voicePanel=page.locator("[data-video-voice-studio]");
       await voicePanel.waitFor({state:"visible",timeout:25000});
       if(await voicePanel.getAttribute("open")===null)

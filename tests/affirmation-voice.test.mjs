@@ -590,3 +590,14 @@ test("Safari real-touch speech consent and optional Therapy Audio remain interac
   assert.match(browser,/await expect\(page\.locator\('\[data-hypno-group="audio"\]'\)\)\.toBeVisible/);
   assert.doesNotMatch(browser,/narrationConsent\.check\(\{force:true\}\)|narrationConsent\.evaluate\(/);
 });
+
+test("WebKit Therapy speech settings open with real consented native touch",()=>{
+  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+  const ui=read("components/mandala-hypnocorrection-mobile.tsx");
+  assert.match(ui,/onConfigure=\{\(\)=>setShowSpeechSettings\(value=>!value\)\}/);
+  assert.match(browser,/const speechConfigure=page\.locator\('\[data-hypno-group="audio"\] \[data-hypno-card\] button'\)\.first\(\)/);
+  assert.match(browser,/if\(engine==="webkit"\)await speechConfigure\.tap\(\)/);
+  assert.match(browser,/else await speechConfigure\.click\(\)/);
+  assert.match(browser,/await expect\(page\.locator\("\[data-hypno-speech-settings\]"\)\)\.toBeVisible\(\{timeout:15000\}\)/);
+  assert.doesNotMatch(browser,/speechConfigure\.click\(\{force:true\}\)|speechConfigure\.evaluate\(/);
+});
