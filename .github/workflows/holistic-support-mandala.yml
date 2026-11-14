@@ -584,7 +584,7 @@ jobs:
           # Actual WebKit MP4/audio release acceptance still runs unchanged.
           node --test tests/video-studio-question-registry.test.mjs tests/mandala-video-goal-media-coverage.test.mjs tests/mandala-approved-mobile-studio.test.mjs tests/video-reels-ci-routing.test.mjs
   voice-webkit-macos:
-    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'feat/meditation-writer-') || startsWith(github.head_ref, 'codex/stories-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'codex/montage-audio-') || startsWith(github.head_ref, 'fix/montage-audio-') || startsWith(github.head_ref, 'codex/video-story-first-') || github.head_ref == 'codex/video-story-five-cards-quality-last-20261112' || startsWith(github.head_ref, 'codex/video-reels-') || startsWith(github.head_ref, 'codex/video-concept-') || startsWith(github.head_ref, 'feat/video-chat-context-understanding-') || github.head_ref == 'codex/ready-signed-video-resumable-20261107' || startsWith(github.head_ref, 'fix/voice-picker-') || startsWith(github.head_ref, 'fix/webkit-') || startsWith(github.head_ref, 'feat/video-120-scenario-media-bindings-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'codex/mandala-cancel-stale-head-cache-') || startsWith(github.head_ref, 'feat/hh-goal-tree-') || startsWith(github.head_ref, 'feat/video-') || github.head_ref == 'feat/ideas-personalization-concept-20261108' || startsWith(github.head_ref, 'feat/voice-timed-storyboard-') || startsWith(github.head_ref, 'feat/mytube-unified-six-bottom-') || startsWith(github.head_ref, 'feat/mytube-six-dock-production-') || github.head_ref == 'fix/mandala-compact-goals-montage-20261103' || github.head_ref == 'codex/professional-growth-templates-20261031') }}
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'feat/meditation-writer-') || startsWith(github.head_ref, 'codex/stories-') || startsWith(github.head_ref, 'codex/video-business-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'codex/montage-audio-') || startsWith(github.head_ref, 'fix/montage-audio-') || startsWith(github.head_ref, 'codex/video-story-first-') || github.head_ref == 'codex/video-story-five-cards-quality-last-20261112' || startsWith(github.head_ref, 'codex/video-reels-') || startsWith(github.head_ref, 'codex/video-concept-') || startsWith(github.head_ref, 'feat/video-chat-context-understanding-') || github.head_ref == 'codex/ready-signed-video-resumable-20261107' || startsWith(github.head_ref, 'fix/voice-picker-') || startsWith(github.head_ref, 'fix/webkit-') || startsWith(github.head_ref, 'feat/video-120-scenario-media-bindings-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'codex/mandala-cancel-stale-head-cache-') || startsWith(github.head_ref, 'feat/hh-goal-tree-') || startsWith(github.head_ref, 'feat/video-') || github.head_ref == 'feat/ideas-personalization-concept-20261108' || startsWith(github.head_ref, 'feat/voice-timed-storyboard-') || startsWith(github.head_ref, 'feat/mytube-unified-six-bottom-') || startsWith(github.head_ref, 'feat/mytube-six-dock-production-') || github.head_ref == 'fix/mandala-compact-goals-montage-20261103' || github.head_ref == 'codex/professional-growth-templates-20261031') }}
     needs: [webkit_preflight]
     runs-on: macos-15
     timeout-minutes: 25
@@ -697,6 +697,13 @@ jobs:
               HH_LIVE_VIDEO_PLAYWRIGHT="$RUNNER_TEMP/voice-playwright/node_modules/playwright/index.mjs" \
               node scripts/benchmarking/verify-five-scene-stories-browser.mjs
           fi
+          # Verify six different licensed business photographs in a genuinely
+          # encoded, audible 30-second MP4 on the existing protected Mac runner.
+          if [[ "${GITHUB_HEAD_REF:-}" == codex/video-business-* ]]; then
+            HH_BUSINESS_PHOTO_E2E_ENGINE=webkit \
+              HH_LIVE_VIDEO_PLAYWRIGHT="$RUNNER_TEMP/voice-playwright/node_modules/playwright/index.mjs" \
+              node scripts/benchmarking/verify-business-photo-stories-browser.mjs
+          fi
       - name: Preserve anonymous WebKit encoded video evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -705,5 +712,6 @@ jobs:
           path: |
             artifacts/benchmarking/first-video-live-export.json
             artifacts/benchmarking/five-scene-stories-webkit.json
+            artifacts/benchmarking/business-photo-stories-webkit.json
           if-no-files-found: warn
           retention-days: 7
