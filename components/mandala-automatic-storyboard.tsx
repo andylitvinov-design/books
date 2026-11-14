@@ -3,7 +3,9 @@ import {useMemo} from "react";
 import {ArrowRight,Film,Play} from "lucide-react";
 import {suggestVideoConcept} from "@/lib/mandala/auto-video-concept.mjs";
 import {buildAlignedStorySceneGuides} from "@/lib/mandala/storyboard-content-alignment.mjs";
-import {planReviewedFilmedStory,isReviewedFilmedStorySequence,isReviewedFilmedStoryScene} from "@/lib/mandala/reviewed-filmed-story.mjs";
+import {planReviewedFilmedStory,planReviewedStoryWithPhotos,isReviewedFilmedStorySequence,
+ isReviewedStoryWithPhotosSequence,isReviewedFilmedStoryScene} from "@/lib/mandala/reviewed-filmed-story.mjs";
+import {STORY_PHOTO_BY_ID,isTrustedStoryPhoto} from "@/lib/mandala/story-photo-library.mjs";
 import type {CategoryStoryboardShot} from "@/lib/mandala/category-video-storyboard.mjs";
 import type {ApprovedVideoConcept} from "./mandala-video-concept";
 import styles from "./mandala-video-mobile.module.css";
@@ -84,25 +86,36 @@ export function MandalaAutomaticStoryboard({
   concept.signature,phraseKey,styleIndex,pace,durationSeconds,"portrait",theme,
   concept.avoidImagery||[],personalizationKey
  ]);
- const proposal=useMemo(()=>planReviewedFilmedStory({
-  categoryId:concept.categoryId,locale,aspect:"portrait",durationSeconds,scenes,
-  styleId:concept.styleId,pace,goal:concept.goal||goal,
-  phrases:phraseKey?phraseKey.split("\u001f"):[],sceneGuides:guides.scenes,
-  excludedVisuals:concept.avoidImagery||[]
- }),[concept,locale,durationSeconds,scenes,pace,goal,phraseKey,guides]);
+ const proposal=useMemo(()=>{
+  const parameters={
+   categoryId:concept.categoryId,locale,aspect:"portrait" as const,durationSeconds,scenes,
+   styleId:concept.styleId,pace,goal:concept.goal||goal,
+   phrases:phraseKey?phraseKey.split("\u001f"):[],sceneGuides:guides.scenes,
+   excludedVisuals:concept.avoidImagery||[]
+  };
+  return guides.professional&&concept.categoryId==="goals-money"
+    ?planReviewedStoryWithPhotos({...parameters,concept})
+    :planReviewedFilmedStory(parameters);
+ },[concept,locale,durationSeconds,scenes,pace,goal,phraseKey,guides]);
  const filmedProposalReady=proposal.ok&&proposal.shots.length===guides.scenes.length;
  const currentMatchesProposal=filmedProposalReady&&appliedShots?.length===proposal.shots.length&&
   appliedShots.every((shot,index)=>shot.sceneId===proposal.shots[index].sceneId&&
    Math.abs(shot.startSeconds-proposal.shots[index].startMs/1000)<.01);
  const applied=Boolean(currentMatchesProposal&&appliedStoryKey===storyKey&&
-   isReviewedFilmedStorySequence({shots:appliedShots,scenes,
-    aspect:aspect as "portrait"|"landscape"|"square"}));
+  (isReviewedFilmedStorySequence({shots:appliedShots,scenes,
+    aspect:aspect as "portrait"|"landscape"|"square"})||
+   isReviewedStoryWithPhotosSequence({shots:appliedShots,scenes,
+    aspect:aspect as "portrait"|"landscape"|"square"})));
  const replacingGraphics=Boolean(appliedShots?.length&&!applied);
  const sceneCatalog=new Map(scenes.filter((scene):scene is {id:string}=>Boolean(
    scene&&typeof scene==="object"&&"id" in scene&&typeof scene.id==="string"))
    .map(scene=>[scene.id,scene]));
- const eligible=filmedProposalReady&&proposal.shots.every(
-   shot=>isReviewedFilmedStoryScene(sceneCatalog.get(shot.sceneId),"portrait"));
+ const eligible=filmedProposalReady&&proposal.shots.every(shot=>{
+  const photo=STORY_PHOTO_BY_ID.get(shot.sceneId);
+  return photo?isTrustedStoryPhoto(photo):
+    isReviewedFilmedStoryScene(sceneCatalog.get(shot.sceneId),"portrait");
+ });
+ const proposalHasPhotos=proposal.ok&&proposal.shots.some(shot=>STORY_PHOTO_BY_ID.has(shot.sceneId));
  const shots=eligible?proposal.shots.map(shot=>({
   sceneId:shot.sceneId,startSeconds:shot.startMs/1000,
   durationSeconds:shot.durationMs/1000,stage:shot.stage
@@ -146,7 +159,10 @@ export function MandalaAutomaticStoryboard({
   data-storyboard-source={manualFiveReady||applied?"montage":replacingGraphics?"filmed-replacement":"ideas"}
   data-storyboard-scenes={compactCards.length}
   data-storyboard-clips={manualFiveReady?fiveSceneShots?.length||0:guides.scenes.length}
-  data-reviewed-filmed-only="true" data-storyboard-aligned-to-settings={manualFiveReady||applied}
+  data-storyboard-source-ids={eligible?proposal.shots.map(shot=>shot.sceneId).join(","):""}
+  data-reviewed-filmed-only={!proposalHasPhotos}
+  data-reviewed-media-only="true" data-photo-fallback={proposalHasPhotos?"licensed":undefined}
+  data-storyboard-aligned-to-settings={manualFiveReady||applied}
   data-storyboard-media-ready={manualFiveReady||eligible}>
   <div className={styles.storyAutoHead}>
    <p className={styles.storyAutoMeta}>
@@ -161,13 +177,16 @@ export function MandalaAutomaticStoryboard({
   <ol className={styles.storyAutoList} data-video-auto-storyboard-list>
    {compactCards.map((item,index)=>{
     const {guide,shot,from,to}=item;
-    const media=shot?resolveMedia(shot.sceneId):null;
+    const photo=shot?STORY_PHOTO_BY_ID.get(shot.sceneId):null;
+    const media=photo?{poster:photo.src,title:photo.labels[locale]}:
+      shot?resolveMedia(shot.sceneId):null;
     const emotion=guides.professional?professionalArc[locale][Math.min(3,guide.stage-1)]:
       concept.emotionalProgram?.[Math.min(3,guide.stage-1)];
     const generic=/^(?:step|шаг|paso)\s*\d+$/i.test(guide.title);
     const title=generic?(emotion||media?.title||lead):guide.title;
     return <li key={index} className={styles.storyAutoCard}
-      data-video-story-scene={index+1} data-video-story-media-matched={Boolean(shot)}>
+      data-video-story-scene={index+1} data-video-story-media-matched={Boolean(shot)}
+      data-story-media-kind={photo?"photo":shot?"video":"missing"}>
      <div className={styles.storyAutoPoster}>
       {media?.poster? /* eslint-disable-next-line @next/next/no-img-element */
        <img src={media.poster} alt={media.title} loading="lazy"/>:
@@ -180,7 +199,7 @@ export function MandalaAutomaticStoryboard({
      <div className={styles.storyAutoBody}>
       <span className={styles.srOnly}>{t.scene} {index+1} · {clock(from)}–{clock(to)}</span>
       <strong>{title}</strong>
-      <p>{media?.title||guide.visual}</p>
+      <p>{media?.title||guide.visual}{photo?" · "+(locale==="ru"?"Фото":locale==="es"?"Foto":"Photo"):null}</p>
      </div>
     </li>;
    })}

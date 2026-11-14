@@ -80,6 +80,12 @@ test("The primary Order button opens the existing consented quote cart, never fa
   assert.match(viewer, /readBrowserTalismanCart\(\)/);
   assert.match(viewer, /saveBrowserTalismanCart/);
   assert.match(viewer, /setOrderOpen\(true\)/);
+  assert.match(viewer,/if\(dialog&&!dialog\.open\)dialog\.showModal\(\)/,
+    "a real user Order gesture opens the native dialog before React rerenders");
+  assert.match(viewer,/data-talisman-request-open=\{orderOpen\?"true":"false"\}/,
+    "browser can verify actual React order state");
+  assert.match(viewer,/if \(!saveBrowserTalismanCart\(/,
+    "an unavailable or rejected cart must not open an order dialog");
   assert.match(viewer, /<TaoistTalismanCart locale=\{locale\} inline/);
   for (const label of ["Request talisman", "Заказать талисман", "Solicitar talismán"]) {
     assert.ok(viewer.includes(label), label);
