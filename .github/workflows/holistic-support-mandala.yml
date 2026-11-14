@@ -78,6 +78,8 @@ on:
       - 'tests/wav-pcm-mixer.test.mjs'
       - 'tests/mandala-webcodecs-mp4.test.mjs'
       - 'scripts/verify-affirmation-voice-browser.mjs'
+      - 'scripts/verify-live-voice-provider.mjs'
+      - 'tests/voice-live-provider-smoke.test.mjs'
       - 'scripts/verify-live-selected-voice-phrase.mjs'
       - 'scripts/verify-live-selected-phrase.mjs'
       - 'tests/voice-selected-phrase-free.test.mjs'
@@ -707,3 +709,30 @@ jobs:
             artifacts/benchmarking/five-scene-stories-webkit.json
           if-no-files-found: warn
           retention-days: 7
+  # Explicit owner-scoped, exactly three fixed non-PII free samples. New source
+  # branch matches the existing BASE-trusted fix/video-* macOS policy.
+  real-voice-provider-smoke:
+    name: Real free TTS WAV for RU EN ES (owner opt-in)
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && startsWith(github.head_ref, 'fix/video-real-tts-proof-') && github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    permissions:
+      contents: read
+    concurrency:
+      group: hh-real-voice-samples-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate no-PII synthetic receipt contract
+        run: |
+          node --check scripts/verify-live-voice-provider.mjs
+          node --test tests/voice-live-provider-smoke.test.mjs
+      - name: Verify actual three-language no-charge WAV response from LIVE
+        env:
+          HH_VOICE_LIVE_SMOKE_OWNER_APPROVED: 'true'
+        run: node scripts/verify-live-voice-provider.mjs
