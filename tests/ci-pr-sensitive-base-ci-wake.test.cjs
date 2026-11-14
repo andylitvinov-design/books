@@ -46,6 +46,18 @@ function world(opts={}){
     return {data:{id:comments.length}};
    }}
  }};
+ github.request=async (_route)=>{
+  if(!opts.looseRuleset&&!opts.strictRuleset)throw Error('ruleset unavailable');
+  return {data:{
+   id:26269892,enforcement:'active',
+   conditions:{ref_name:{include:['refs/heads/codex/public-book-library'],exclude:[]}},
+   rules:[
+    {type:'pull_request',parameters:{required_review_thread_resolution:true}},
+    {type:'required_status_checks',parameters:{
+     strict_required_status_checks_policy:opts.strictRuleset===true}}
+   ]
+  }};
+ };
  const fetcher=async(url,request)=>{
   if(url.endsWith('/user'))return {ok:true,json:async()=>({login:'andylitvinov-design'})};
   if(url.endsWith('/pulls/4303'))return {ok:true,json:async()=>({...pr,draft})};
@@ -96,6 +108,34 @@ test('one signed stale BASE update requests native protected branch sync, not du
  assert.equal(repeat.reason,'ONE_WAKE_ALREADY_RECORDED_FOR_HEAD');
  assert.equal(w.updates.length,1);
 });
+
+test('verified loose protected gate rechecks diverged current BASE on unchanged source HEAD',async()=>{
+ const w=world({looseRuleset:true}),result=await run(w.args);
+ assert.equal(result.status,'WAKE_REQUESTED');
+ assert.equal(result.reason,'AWAITING_SAME_HEAD_CURRENT_BASE_CORE');
+ assert.equal(result.metadataEventRequested,true);
+ assert.equal(result.headUpdateRequested,false);
+ assert.equal(result.sourceChanged,false);
+ assert.equal(result.ciVerified,false);
+ assert.deepEqual(w.updates,[],'never update source branch solely for BASE drift');
+ assert.deepEqual(w.mutations,['convertPullRequestToDraft','markPullRequestReadyForReview']);
+ assert.equal(w.getDraft(),false,'Ready must be restored');
+ assert.equal(w.comments.length,1,'single signed intent survives event retries');
+ assert.equal((await run(w.args)).reason,'ONE_WAKE_ALREADY_RECORDED_FOR_HEAD');
+});
+test('strict/unknown/failed current release rules retain protected native source-sync path',async()=>{
+ const {verifiedLooseReleaseGate}=require('../scripts/ci-pr-sensitive-base-ci-wake.cjs');
+ const strict=world({strictRuleset:true});
+ assert.equal(await verifiedLooseReleaseGate(strict.args.github,'andylitvinov-design','books'),false);
+ const result=await run(strict.args);
+ assert.equal(result.status,'BASE_SYNC_REQUESTED');
+ assert.deepEqual(strict.mutations,[]);
+ assert.deepEqual(strict.updates,[{expected_head_sha:HEAD}]);
+ const unknown=world();
+ assert.equal(await verifiedLooseReleaseGate(unknown.args.github,'andylitvinov-design','books'),false);
+ assert.equal((await run(unknown.args)).status,'BASE_SYNC_REQUESTED');
+});
+
 test('HEAD already containing live BASE retains source and requests signed Ready once',async()=>{
  const w=world({alreadyCurrent:true}),result=await run(w.args);
  assert.equal(result.status,'WAKE_REQUESTED');
