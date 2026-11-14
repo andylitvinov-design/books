@@ -209,7 +209,23 @@ for (const engine of [chromium, webkit]) {
           await viewer.locator('[data-support-talisman-thumb="fu-prosperity"]').click();
           await viewer.locator("[data-support-talisman-request]").click();
           const modal = page.locator('dialog[aria-labelledby="support-talisman-order-title"]');
-          await modal.waitFor({ state:"visible" });
+          try {
+            await modal.waitFor({ state:"visible", timeout:12000 });
+          } catch (reason) {
+            // Keep the *real* visibility gate. Record safe structural evidence
+            // rather than publishing guest selections, session tokens or contacts.
+            const state = await viewer.evaluate(element => {
+              const dialog = element.querySelector('dialog[aria-labelledby="support-talisman-order-title"]');
+              return {
+                dialogOpen: Boolean(dialog?.open),
+                dialogConnected: Boolean(dialog?.isConnected),
+                shownError: Boolean(element.querySelector('[role="alert"]')),
+                cartPresent: Boolean(dialog?.querySelector('[data-taoist-talisman-cart]')),
+              };
+            });
+            throw new Error(label + " talisman quote was not visible: " +
+              JSON.stringify(state) + " / " + String(reason));
+          }
           assert.equal(await modal.locator('[data-taoist-talisman-cart][data-inline="true"]').count(), 1,
             label + " existing protected quote UI, no new backend");
           assert.equal(await modal.locator('[data-cart-talisman="fu-prosperity"]').count(), 1,

@@ -80,6 +80,13 @@ test("The primary Order button opens the existing consented quote cart, never fa
   assert.match(viewer, /readBrowserTalismanCart\(\)/);
   assert.match(viewer, /saveBrowserTalismanCart/);
   assert.match(viewer, /setOrderOpen\(true\)/);
+  // The native dialog is opened from the real click event, with the
+  // React effect reserved for validated Google-return reentry.
+  assert.match(viewer, /if \(!showOrderDialog\(\)\) \{/);
+  assert.match(viewer, /if \(!dialog\.open\) dialog\.showModal\(\)/);
+  assert.match(viewer, /if \(orderOpen && !showOrderDialog\(\)\)/);
+  assert.match(viewer, /setDialogError\(true\)/);
+  assert.match(viewer, /\{dialogError && <p className=\{styles\.error\} role="alert">/);
   assert.match(viewer, /<TaoistTalismanCart locale=\{locale\} inline/);
   for (const label of ["Request talisman", "Заказать талисман", "Solicitar talismán"]) {
     assert.ok(viewer.includes(label), label);

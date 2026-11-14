@@ -40,6 +40,7 @@ const translations = {
     instructions: "Swipe the main image or choose a design below.",
     note: "Illustrative designs, not ready-to-ship products. Price, availability and delivery are confirmed before payment. No promised results.",
     basketError: "Cannot save this choice on your device. Enable temporary site storage to continue.",
+    dialogError: "Cannot open the request window. Please try again.",
     orderTitle: "Talisman checkout", close: "Close request",
     categoriesTitle: "Talismans", categoryLead: "Choose your intention", categoryAll: "All categories",
     nextCategory: "More categories", filtersLabel: "Talisman filters",
@@ -63,6 +64,7 @@ const translations = {
     instructions: "Листайте изображение или выберите символ ниже.",
     note: "Иллюстрации символов, не готовые изделия. Цена, наличие и доставка подтверждаются до оплаты. Без обещания результата.",
     basketError: "Не удалось сохранить выбор. Разрешите временное хранение данных сайта.",
+    dialogError: "Не удалось открыть окно заказа. Повторите попытку.",
     orderTitle: "Оформление талисманов", close: "Закрыть заявку",
     categoriesTitle: "Талисманы", categoryLead: "Выбери направление энергии", categoryAll: "Все категории",
     nextCategory: "Другие категории", filtersLabel: "Фильтры талисманов",
@@ -86,6 +88,7 @@ const translations = {
     instructions: "Desliza la imagen o elige un diseño de abajo.",
     note: "Diseños ilustrativos, no productos listos para envío. Precio y entrega se confirman antes de pagar. Sin promesas de resultados.",
     basketError: "No se pudo guardar el diseño. Permite el almacenamiento temporal.",
+    dialogError: "No se pudo abrir la solicitud. Inténtalo de nuevo.",
     orderTitle: "Finalizar compra del talismán", close: "Cerrar solicitud",
     categoriesTitle: "Talismanes", categoryLead: "Elige tu intención", categoryAll: "Todas las categorías",
     nextCategory: "Más categorías", filtersLabel: "Filtros de talismanes",
@@ -115,6 +118,7 @@ export function HolisticSupportTalismanViewer({
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [orderOpen, setOrderOpen] = useState(false);
   const [basketError, setBasketError] = useState(false);
+  const [dialogError, setDialogError] = useState(false);
   const [masterOpen, setMasterOpen] = useState(false);
   const [allCategoriesOpen, setAllCategoriesOpen] = useState(false);
   const [tradition, setTradition] = useState<"all" | "daoist">("all");
@@ -129,10 +133,25 @@ export function HolisticSupportTalismanViewer({
     if (consumeBrowserTalismanGoogleReturn()) setOrderOpen(true);
   }, []);
 
+  // WebKit may commit the React state after the touch has ended. Show the
+  // native modal in the explicit user action itself, not only in an effect.
+  // The effect remains necessary for the deliberate Google OAuth return.
+  const showOrderDialog = () => {
+    const dialog = dialogRef.current;
+    if (!dialog) return false;
+    try {
+      if (!dialog.open) dialog.showModal();
+      return dialog.open;
+    } catch { return false; }
+  };
+
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
-    if (orderOpen && !dialog.open) dialog.showModal();
+    if (orderOpen && !showOrderDialog()) {
+      setOrderOpen(false);
+      setDialogError(true);
+    }
     if (!orderOpen && dialog.open) dialog.close();
   }, [orderOpen]);
 
@@ -187,6 +206,13 @@ export function HolisticSupportTalismanViewer({
       return;
     }
     setBasketError(false);
+    // Immediate native opening preserves the real phone tap and does not
+    // create a quote, payment or CRM request until the customer confirms.
+    if (!showOrderDialog()) {
+      setDialogError(true);
+      return;
+    }
+    setDialogError(false);
     setOrderOpen(true);
   };
 
@@ -294,6 +320,7 @@ export function HolisticSupportTalismanViewer({
         </div>
       </section>}
       {basketError && <p className={styles.error} role="alert">{t.basketError}</p>}
+      {dialogError && <p className={styles.error} role="alert">{t.dialogError}</p>}
       {detailsOpen && <p id="talisman-design-details" className={styles.expandedDetails}>
         {selected[locale].description} {t.note}
       </p>}
