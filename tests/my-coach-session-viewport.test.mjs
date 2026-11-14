@@ -116,3 +116,22 @@ test('one-tap iPhone reliable recording has no extra checkboxes and never bypass
  assert.ok(css.includes('.recordingModeHint'))
  assert.doesNotMatch(css,/\.recordingModeRow\{/)
 });
+
+test('browser speech mode explains speech-provider and AI transcript transfer before a microphone tap',()=>{
+ const ui=read('components/my-coach-live-dialogue.jsx')
+ const loop=read('components/my-coach-speech-loop.jsx')
+ assert.match(ui,/const browserVoiceNotice=\{/)
+ for(const phrase of [
+   'browser may process audio with its speech provider',
+   'Браузер может передавать звук своему сервису распознавания',
+   'El navegador puede procesar audio con su proveedor de voz',
+ ])assert.ok(ui.includes(phrase),phrase)
+ assert.ok(ui.includes('data-browser-voice-notice={!recordedMode?'))
+ assert.ok(ui.includes('data-reliable-voice-notice={recordedMode?'))
+ assert.ok(ui.includes('recordedMode?recordingNotice[lang]:browserVoiceNotice[lang]'))
+ assert.match(ui,/onTurn=\{text=>sendMessage\(text,\{voiceTurn:true\}\)\}/)
+ assert.match(ui,/if\(!message\|\|\(!consent&&!voiceTurn\)\|\|busy\|\|paused\)return/)
+ assert.match(loop,/if\(!recordingConsentRef\.current\|\|!Recorder\|\|!getUserMedia\)/)
+ assert.ok(ui.includes('canStart={!busy&&!paused&&!replaying}'))
+ assert.doesNotMatch(ui,/checked=\{recordingConsent\}|checked=\{recordedMode\}/)
+})

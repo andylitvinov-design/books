@@ -65,6 +65,11 @@ const recordingNotice={
   ru:'Нажмите микрофон для записи (до 18 секунд) и ещё раз для расшифровки. Нажатием вы соглашаетесь передать короткую запись бесплатному Groq Whisper, а её текст — доступной бесплатной AI-модели коуча. Записи не сохраняются.',
   es:'Toca el micrófono para grabar (hasta 18 segundos) y otra vez para transcribir. Al tocarlo, aceptas enviar el audio a Groq Whisper gratuito y su texto a una IA gratuita disponible. No guardamos grabaciones.',
 }
+const browserVoiceNotice={
+  en:'Tap the microphone to use browser dictation. Your browser may process audio with its speech provider; during voice mode, recognized words can be sent to a verified free AI coach when you are signed in. Stop the microphone to end voice input.',
+  ru:'Нажмите микрофон для распознавания речи в браузере. Браузер может передавать звук своему сервису распознавания; во время голосового диалога распознанный текст может отправляться проверенной бесплатной AI-модели после входа. Остановите микрофон, чтобы завершить ввод.',
+  es:'Toca el micrófono para el dictado del navegador. El navegador puede procesar audio con su proveedor de voz; durante el diálogo, el texto reconocido puede enviarse a una IA gratuita verificada si has iniciado sesión. Detén el micrófono para finalizar.',
+}
 const avatarVisuals={
   mira:'warm',max:'clear',sofia:'calm',alex:'clear',
   lea:'calm',noah:'warm',iris:'warm',ray:'clear',
@@ -514,9 +519,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           <p>{providerCopy.disclosure}</p></details>
       </div>}
       {playbackNotice&&<p className={styles.playbackNotice} role="status">{playbackNotice}</p>}
-      {recordedMode&&<p className={styles.recordingModeHint} data-reliable-voice-notice>
-        {recordingNotice[lang]}
-      </p>}
+      <p className={styles.recordingModeHint}
+        data-reliable-voice-notice={recordedMode?'true':undefined}
+        data-browser-voice-notice={!recordedMode?'true':undefined}>
+        {recordedMode?recordingNotice[lang]:browserVoiceNotice[lang]}
+      </p>
       <div className={styles.conversationPanel}>
       <section className={styles.liveTranscript} aria-label={captions.heading} data-coach-live-transcript>
         <div className={styles.transcriptHeading}><MessageCircle size={15} aria-hidden="true"/>
