@@ -88,7 +88,7 @@ test("shared widescreen preview and mutually exclusive format accordion keep pai
     source.indexOf("</button>",source.indexOf("data-video-quick-generate")));
   const addEffects=source.slice(source.indexOf('data-video-montage-next={montagePanel==="effects"?"audio":montagePanel==="audio"?"text":montagePanel==="text"||montagePanel==="settings"?"concept":montagePanel==="concept"?"promo":"choose"}'),
     source.indexOf("</button>",source.indexOf('data-video-montage-next={montagePanel==="effects"?"audio":montagePanel==="audio"?"text":montagePanel==="text"||montagePanel==="settings"?"concept":montagePanel==="concept"?"promo":"choose"}')));
-  assert.ok(direct.includes('onClick={createQuickVideo}'),"Create must use the original real renderer");
+  assert.ok(direct.includes('onClick={openReadyForGeneration}'),"Montage opens Ready before encoding");
   assert.ok(addEffects.includes('onClick={continueMontageOrGenerate}'),"Add must only advance");
   assert.match(source,/if\(montagePanel==="audio"\)\{[\s\S]*?setMontagePanel\("text"\)/,
     "Audio Add returns to the existing affirmations editor");
