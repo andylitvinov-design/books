@@ -1,6 +1,6 @@
 "use client";
 
-import {useRef,useState,type ReactNode} from "react";
+import {useEffect,useRef,useState,type ReactNode} from "react";
 import Link from "next/link";
 import {BookOpen, CalendarDays, ClipboardCheck, Clapperboard, Flower2,
   MessageCircle, Play, X} from "lucide-react";
@@ -13,10 +13,12 @@ import css from "./messenger-ai-landing.module.css";
 const INTRO={
   en:{
     src:"https://resource2.heygen.ai/movio/video/8d998c778af3b563aa63233aa4fb4a06/89b101dc9dbb4fcea06aab3eb6ce5094/caption.mp4",
+    embed:"https://app.heygen.com/embeds/8d998c778af3b563aa63233aa4fb4a06",
     durationSeconds:91.2457,
   },
   ru:{
     src:"https://resource2.heygen.ai/movio/video/72e3e6f45c3664b0b8d75281b1b413a5/2e30e44294964059b57670860ee3828b/caption.mp4",
+    embed:"https://app.heygen.com/embeds/72e3e6f45c3664b0b8d75281b1b413a5",
     durationSeconds:96.862,
   },
 } as const;
@@ -29,7 +31,7 @@ const COPY={
     watch:"Watch the Holistic House introduction (English audio)",
     videoLanguage:"English audio",
     close:"Close introduction video",
-    error:"Video could not be loaded.",
+    error:"Video could not be loaded.",backup:"Alternative player is ready.",
     retry:"Try again",openOriginal:"Open original video",
     choices:"Choose how to begin",
     test:"Take a test",video:"Create a video",practice:"Do a practice",
@@ -42,7 +44,7 @@ const COPY={
     watch:"Посмотреть презентацию Holistic House (русская озвучка)",
     videoLanguage:"Русская озвучка",
     close:"Закрыть видеопрезентацию",
-    error:"Не удалось загрузить видео.",
+    error:"Не удалось загрузить видео.",backup:"Резервный плеер готов.",
     retry:"Повторить",openOriginal:"Открыть исходное видео",
     choices:"Выберите, с чего начать",
     test:"Пройти тест",video:"Создать видео",practice:"Выбрать практику",
@@ -55,7 +57,7 @@ const COPY={
     watch:"Ver la introducción de Holistic House (audio en inglés)",
     videoLanguage:"Audio en inglés",
     close:"Cerrar vídeo de presentación",
-    error:"No se pudo cargar el vídeo.",
+    error:"No se pudo cargar el vídeo.",backup:"Reproductor alternativo disponible.",
     retry:"Reintentar",openOriginal:"Abrir el vídeo original",
     choices:"Elige cómo empezar",
     test:"Hacer un test",video:"Crear un vídeo",practice:"Hacer una práctica",
@@ -82,41 +84,75 @@ export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,compos
   const videoRef=useRef<HTMLVideoElement>(null);
   const [playing,setPlaying]=useState(false);
   const [failed,setFailed]=useState(false);
+  const [nativeStarted,setNativeStarted]=useState(false);
 
+  // Safari can leave a native media element black without reporting an error.
+  // Start a same-master fallback only after an explicit Play tap.
+  useEffect(()=>{
+    if(!playing||failed||nativeStarted)return;
+    const timer=window.setTimeout(()=>{
+      videoRef.current?.pause();
+      setFailed(true);
+    },8000);
+    return()=>window.clearTimeout(timer);
+  },[playing,failed,nativeStarted]);
+
+  const fail=()=>{
+    videoRef.current?.pause();
+    setFailed(true);
+  };
   const start=()=>{
+    setNativeStarted(false);
     setFailed(false);
     setPlaying(true);
-    // The video node already exists with preload=none: calling play() inside
-    // the actual tap keeps iPhone Safari's user activation for sound.
-    const attempt=videoRef.current?.play();
-    if(attempt)void attempt.catch(()=>{ /* Native controls permit a second tap. */ });
+    const media=videoRef.current;
+    if(!media)return;
+    if(media.error)media.load();
+    const attempt=media.play();
+    // AbortError is expected if the user closes the player during loading.
+    if(attempt)void attempt.catch(error=>{
+      if(error?.name!=="AbortError")fail();
+    });
   };
   const close=()=>{
     videoRef.current?.pause();
-    if(videoRef.current)videoRef.current.currentTime=0;
+    try{if(videoRef.current)videoRef.current.currentTime=0;}
+    catch{/* Safari may reject seeking before metadata is available. */}
     setPlaying(false);
     setFailed(false);
+    setNativeStarted(false);
   };
   const retry=()=>{
+    setNativeStarted(false);
     setFailed(false);
-    videoRef.current?.load();
-    const attempt=videoRef.current?.play();
-    if(attempt)void attempt.catch(()=>{ /* Keep native user-controlled playback. */ });
+    const media=videoRef.current;
+    if(!media)return;
+    // A failed HTMLMediaElement needs load(), not another play() alone.
+    media.load();
+    const attempt=media.play();
+    if(attempt)void attempt.catch(error=>{
+      if(error?.name!=="AbortError")fail();
+    });
   };
 
   return <section className={css.root} data-hh-ai-landing aria-label={t.title}>
     <div className={css.hero} data-hh-ai-video-hero data-playing={playing?"true":"false"}>
-      <div className={css.player} aria-hidden={!playing}>
+      <div className={css.player} aria-hidden={!playing} data-backup={failed?"true":"false"}>
         <video ref={videoRef} src={introduction.src} controls playsInline preload="none"
           poster="/images/holistic-house/reiki-approved-sunrise-v3.webp"
           aria-label={t.watch} tabIndex={playing?0:-1}
-          onError={()=>setFailed(true)} onPlaying={()=>setFailed(false)}/>
+          onError={fail} onPlaying={()=>{setNativeStarted(true);setFailed(false);}}
+          onEnded={close}/>
+        {playing&&failed&&<iframe className={css.backup} data-hh-ai-intro-fallback="heygen"
+          src={introduction.embed} title={t.watch}
+          allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+          allowFullScreen loading="eager" referrerPolicy="strict-origin-when-cross-origin"/>}
         {playing&&<button type="button" className={css.dismiss} onClick={close}
           aria-label={t.close}><X size={19} aria-hidden="true"/></button>}
-        {playing&&failed&&<div className={css.videoError} role="alert">
-          <span>{t.error}</span>
+        {playing&&failed&&<div className={css.videoError} role="status">
+          <span>{t.backup}</span>
           <button type="button" onClick={retry}>{t.retry}</button>
-          <a href={introduction.src} target="_blank" rel="noopener noreferrer">{t.openOriginal}</a>
+          <a href={introduction.embed} target="_blank" rel="noopener noreferrer">{t.openOriginal}</a>
         </div>}
       </div>
       {!playing&&<>
