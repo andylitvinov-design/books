@@ -29,7 +29,8 @@ test("video recorder keeps legacy durations and adds the 15-second brief option 
   assert.match(source, /type Aspect = "square" \| "portrait" \| "landscape"/);
   for (const key of ['"glow"', '"energy"', '"prosperity"', '"temple"']) assert.ok(source.includes(key));
   for (const language of ["en:", "ru:", "es:"]) assert.ok(source.includes(language));
-  assert.match(source, /onClick=\{\(\)=>void createVideo\(\)\}/);
+  assert.match(source, /data-mandala-video-generate[\s\S]*?onClick=\{openReadyForGeneration\}/);
+   assert.match(source, /onGenerateBasicVideo=\{\(\)=>\{[\s\S]*?return createQuickVideo\(\)/);
   assert.match(source, /data-mandala-video-download/);
   assert.match(source, /playsInline/);
   assert.match(source, /recorder\.ondataavailable/);
@@ -225,8 +226,8 @@ test("only loads the first master MP4 after Play/Create, without deadlocking Cre
   assert.match(studio,/if\(!\(await masterPreparation\)\)[\s\S]*?setExportUnavailable\(true\)/);
   assert.match(studio,/const canGenerate = Boolean\(source\) &&/);
   assert.doesNotMatch(studio,/const canGenerate = Boolean\(source\) && \(!activeFilm \|\| premiumReady\)/);
-  assert.match(studio,/onClick=\{createQuickVideo\}/);
-  assert.match(studio,/onClick=\{\(\)=>void createVideo\(\)\}/);
+  assert.match(studio,/onClick=\{openReadyForGeneration\}/);
+  assert.match(studio,/data-mandala-video-generate[\s\S]*?onClick=\{openReadyForGeneration\}/);
   const { ensureDecodedVideoOnUserIntent }=await import("../lib/mandala/intent-video-loading.mjs");
   class FakeVideo extends EventTarget {
     readyState=0;videoWidth=0;videoHeight=0;error=null;networkState=1;muted=false;

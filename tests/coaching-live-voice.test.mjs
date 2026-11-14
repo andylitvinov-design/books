@@ -200,7 +200,7 @@ test('selected persona opens immersive My Coach session with real avatar, stages
   assert.ok(discovery.includes('useState(Boolean(selectedPersona))'))
   assert.ok(page.includes('{!personaSelection&&<div className={styles.header}'))
   for(const token of ['data-my-coach-immersive-session','sessionHero','sessionPortrait','sessionAvatar',
-    'CoachingAvatar locale={lang}','sessionProgressSegments','currentCoachPrompt','quickGoalCard',
+    'CoachingAvatar locale={lang}','sessionProgressSegments','conversationPanel','quickGoalCard',
     'sessionBottomNav','goalRow','onVoiceStateChange={setVoiceState}']) assert.ok(ui.includes(token),token)
   for(const token of ['stageKeys.indexOf(currentStage)','onClick={replayCoachReply}',
     'onClick={()=>chooseTopic(id)}','composerRef.current?.focus()',

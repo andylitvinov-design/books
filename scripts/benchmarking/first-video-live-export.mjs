@@ -6,6 +6,7 @@
  * Chromium is the default; opt-in macOS WebKit runs in CI. Neither is a physical iPhone.
  */
 import assert from 'node:assert/strict';
+import {expect} from '@playwright/test';
 import {spawnSync} from 'node:child_process';
 import {mkdirSync, writeFileSync, mkdtempSync, rmSync, readFileSync} from 'node:fs';
 import {resolve, join} from 'node:path';
@@ -129,8 +130,10 @@ try {
       document.querySelector('[data-mandala-free-video]')?.getAttribute('data-video-studio-hydrated')==='true',
       undefined,{timeout:40000});
   }
-  // Visitor route: Goals → Ideas → Montage Style → Settings deep Concept → verified timeline.
+  // Real visitor route: Goal → Ideas → Montage → actual storyboard Add Video
+  // → original first-video composer → explicit Ready Generate and encoded MP4.
   // Use the real visitor actions; do not bypass hydration, rights, or editor.
+  row.phase='goals-to-ideas';
   const continueToIdeas=page.locator('[data-video-continue-scenarios]');
   await continueToIdeas.waitFor({state:'visible',timeout:40000});
   await continueToIdeas.click();
@@ -156,13 +159,16 @@ try {
   },undefined,{timeout:15000});
   assert.equal(await editorTab.getAttribute('aria-pressed'),'true','MONTAGE_TAB_MUST_ACTIVATE');
   // Only a physical Next action advances the real Style → Audio stage.
+  row.phase='montage-style-to-audio';
   const styleNext=page.locator('[data-video-montage-effects] [data-video-montage-next="audio"]');
   await styleNext.waitFor({state:'visible',timeout:15000});
-  await styleNext.click();
+  if(engine==='webkit')await styleNext.tap();
+  else await styleNext.click();
   await page.waitForFunction(()=>document.querySelector('[data-video-montage-tab="audio"]')
     ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
   assert.equal(await page.locator('[data-video-montage-tab="audio"]').getAttribute('aria-pressed'),
     'true','VISIBLE_STYLE_NEXT_MUST_OPEN_AUDIO');
+  row.phase='approve-ideas-concept';
   // Concept is reviewed in Ideas, not in the removed Montage Concept panel.
   await page.locator('[data-video-quick-control="phrases"]').click();
   await page.locator('[data-video-ideas-tab="concept"]').click();
@@ -179,23 +185,30 @@ try {
   await page.locator('[data-video-quick-control="editor"]').click();
   await page.locator('[data-video-montage-tab="concept"]').click();
   await page.locator('[data-video-story-open-settings]').click();
+  row.phase='montage-open-text-tools';
   const textTools=page.locator('[data-video-concept-text-tools]');
   await textTools.locator(':scope > summary').click();
   await textTools.evaluate(node=>{if(!node.open)throw Error('CONCEPT_TEXT_TOOLS_DID_NOT_OPEN')});
   const addVideo=page.locator('[data-video-timeline-add-video]');
   await addVideo.waitFor({state:'visible',timeout:20000});
-  await addVideo.click();
+  row.phase='montage-add-video-tap';
+  if(engine==='webkit')await addVideo.tap();
+  else await addVideo.click();
+  row.phase='montage-add-video-open-scenario';
   await page.waitForFunction(()=>
     document.querySelector('[data-mandala-free-video]')?.getAttribute('data-video-scenario-open')==='true',
     undefined,{timeout:15000});
+  row.phase='montage-add-video-open-advanced';
   await page.waitForFunction(() =>
     document.querySelector('[data-mandala-free-video]')?.getAttribute('data-video-advanced-open')==='true',
     undefined,{timeout:15000});
+  row.phase='advanced-first-video-visible';
   const advanced=page.locator('[data-video-first-video-advanced]');
   await advanced.waitFor({state:'visible',timeout:40000});
   if(await advanced.getAttribute('open')===null)
     await advanced.locator(':scope > summary').click();
   assert.equal(await advanced.count(),1,'FIRST_VIDEO_ADVANCED_SECTION_MISSING');
+  row.phase='advanced-first-video-hydrated';
   const first = page.locator('[data-first-free-video][data-first-video-hydrated="true"]');
   await first.waitFor({state: 'visible', timeout: 40000});
   await first.locator('[data-first-video-wish]').fill('Тихое утро на солнечном лугу');
@@ -263,12 +276,27 @@ try {
       assert.equal(item.src,verifiedSources.get(item.id), 'SOURCE_NOT_APPROVED_IN_CATALOGUE_'+item.id);
     }
   }
+  row.phase='first-video-sources-ready';
   const create = first.locator('[data-first-video-generate]');
   await page.waitForFunction(() => {
     const button = document.querySelector('[data-first-video-generate]');
     return Boolean(button && !button.disabled);
   }, undefined, {timeout: 40000});
   await create.click({timeout: 15000});
+  // First Video Create only navigates. A separate real Ready gesture starts
+  // the recorder, preserving exact source, audio, credit and privacy checks.
+  row.phase='first-video-navigation-ready';
+  await page.waitForFunction(() =>
+    document.querySelector('[data-mandala-free-video]')
+      ?.getAttribute('data-active-workspace')==='ready',
+    undefined,{timeout:15000});
+  const ready=page.locator('[data-video-ready]');
+  await expect(ready).toHaveAttribute('data-ready-state','choose');
+  const readyGenerate=ready.locator('[data-ready-generate]');
+  await expect(readyGenerate).toBeEnabled({timeout:15000});
+  if(engine==='webkit')await readyGenerate.tap();
+  else await readyGenerate.click();
+  row.phase='first-video-ready-encoded-export';
   // Guests watch the original encoded movie in Ready; protected Save is login-gated.
   // Read the real test-owned Blob without fake sign-in, download or provider calls.
   const captured=await readRealGuestVideo(page,{timeout:80000});

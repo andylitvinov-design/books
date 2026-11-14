@@ -798,7 +798,8 @@ export function HolisticSupportMobile({ locale, videos, courses = [], learningIt
   const scene = choice === "meditation" || choice === "pump";
 
   return (
-    <main className={styles.page} data-holistic-mobile-alternative lang={locale}>
+    <main className={styles.page} data-holistic-mobile-alternative
+      data-support-tool-hydrated={photoHydrated?"true":"false"} lang={locale}>
       <div className={styles.container}>
         <header className={styles.compactAppHeader} data-support-app-header>
           <Link href={"/" + locale + "/holistic-support/mobile"} prefetch={false} className={styles.compactBrand}>
@@ -896,6 +897,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], learningIt
               {choices.filter(item => item.id !== "pump").map(({ id, Icon }) => (
                 <button key={id} type="button" data-support-tool={id}
                   className={styles.toolButton} aria-pressed={choice === id}
+                  disabled={!photoHydrated}
                   onClick={() => changeChoice(id)} aria-label={t.options[id]}>
                   <Icon size={30} strokeWidth={1.65} aria-hidden="true" />
                   <span className={styles.toolLong}>{t.options[id]}</span><span className={styles.toolCompact}>{t.optionsCompact[id]}</span><span className={styles.toolMicro}>{t.optionsMicro[id as keyof typeof t.optionsMicro]}</span>
