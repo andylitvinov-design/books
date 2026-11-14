@@ -9,7 +9,7 @@ const CLIENT='HH_PM_GOOGLE_CLIENT_ID';
 const OWNER_EMAIL_HASH='21e4f271e694b4a15ba466421033f55877ffafd5ff9b50b88c93903a64f7990b';
 const CERTS='https://www.googleapis.com/oauth2/v3/certs';
 const SESSION='hh_seo_owner',CHALLENGE='hh_pm_google_nonce',RETURN='hh_pm_google_return',LIFETIME=14*86400;
-const SAFE_RETURN=new Set(['/chats.html','/task-editor.html','/project-management-public.html']);
+const SAFE_RETURN=new Set(['/chats.html','/task-editor.html','/project-management-public.html','/ci-errors.html']);
 const safeReturn=s=>SAFE_RETURN.has(s)?s:'/chats.html';
 const respond=(res,code,body)=>{res.statusCode=code;res.setHeader('Content-Type','application/json; charset=utf-8');res.end(JSON.stringify(body))};
 function envReady(){
@@ -88,7 +88,7 @@ module.exports=async function(req,res){
  if(!envReady())return respond(res,503,{error:'GOOGLE_SSO_NOT_CONFIGURED'});
  if(req.method==='GET'){
   const nonce=crypto.randomBytes(24).toString('base64url');
-  const u=new URL(req.url||'/api/google-owner-auth','https://holistic-house-pr-monitor.vercel.app');
+  const u=new URL(req.url||'/api/google-owner-auth','https://holistic-house-agents-director.vercel.app');
   const target=safeReturn(u.searchParams.get('return'));
   // Google iOS Redirect UX submits a cross-site form POST; challenge cookies must
   // survive that top-level redirect. Server still enforces nonce, CSRF and signature.

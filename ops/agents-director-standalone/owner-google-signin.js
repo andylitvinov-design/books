@@ -1,7 +1,7 @@
 (function(win,doc){
  'use strict';
  const MAIN='https://holistichouse.vercel.app';
- const allowed=new Set(['/agents.html','/pr-monitor.html','/task-editor.html','/chats.html','/projects.html','/memory.html']);
+ const allowed=new Set(['/agents.html','/pr-monitor.html','/task-editor.html','/chats.html','/projects.html','/memory.html','/ci-errors.html']);
  function nextPath(){
   try{
    const u=new URL(win.location.href),path=u.pathname;

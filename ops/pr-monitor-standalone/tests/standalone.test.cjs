@@ -70,3 +70,30 @@ test('the graph and lifecycle table reconcile the same frozen raw source snapsho
  assert.match(graph,/env\.__HH_STRICT_COHORT_SOURCE__/);
  assert.match(graph,/cache\.delete\(hours\);void load\(false\)/);
 });
+
+test('owner CI funnel uses protected Agent Director origin, never public Observatory',()=>{
+ const ownerRoot=path.resolve(root,'..','agents-director-standalone');
+ const ownerRead=f=>fs.readFileSync(path.join(ownerRoot,f),'utf8');
+ const monitor=read('pr-error-funnel.js'),privatePanel=ownerRead('pr-error-funnel.js');
+ const page=ownerRead('ci-errors.html');
+ const privateStore=ownerRead('lib/commander-private-store.js');
+ assert.match(monitor,/PUBLIC_OWNER_PORTAL=true/);
+ assert.match(monitor,/if\(PUBLIC_OWNER_PORTAL\)\{showOwnerPortal\(\);return;\}/);
+ assert.match(monitor,/window\.location\.assign\(OWNER_PORTAL\)/);
+ assert.match(monitor,/Открыть статистику и обновить данные в Agents Director/);
+ assert.match(page,/\/pr-error-funnel\.js/);
+ assert.match(page,/\/pr-error-funnel\.css/);
+ assert.match(page,/noindex,nofollow,noarchive/);
+ assert.match(privatePanel,/\/api\/commander-chats\?action=ci_events/);
+ assert.doesNotMatch(privatePanel,/PUBLIC_OWNER_PORTAL=true/);
+ assert.match(privatePanel,/\[1,6,24,168,336,720\]/);
+ assert.match(privateStore,/const HOST='holistic-house-agents-director\.vercel\.app'/);
+ assert.doesNotMatch(privateStore,/const HOST='holistic-house-pr-monitor\.vercel\.app'/);
+ const {isOriginAllowed}=require(path.join(ownerRoot,'lib','commander-private-store.js'));
+ assert.equal(isOriginAllowed({headers:{host:'holistic-house-agents-director.vercel.app',origin:'https://holistic-house-agents-director.vercel.app','sec-fetch-site':'same-origin'}}),true);
+ assert.equal(isOriginAllowed({headers:{host:'holistic-house-agents-director.vercel.app',origin:'https://attacker.example','sec-fetch-site':'cross-site'}}),false);
+ assert.equal(isOriginAllowed({headers:{host:'holistic-house-pr-observatory.vercel.app',origin:'https://holistic-house-pr-observatory.vercel.app','sec-fetch-site':'same-origin'}}),false);
+ assert.match(ownerRead('commander-auth.js'),/\/ci-errors\.html/);
+ assert.match(ownerRead('owner-google-signin.js'),/\/ci-errors\.html/);
+ assert.match(ownerRead('chats.html'),/href="\/ci-errors\.html"/);
+});
