@@ -209,6 +209,8 @@ test('General chat pre-consent danger is answered safely, without diagnostic or 
   assert.match(service,/const urgent=v3ChatPreConsentSafetyReply\(raw,lang\)/);
   assert.match(service,/urgent\?\[\]:v3ButtonsFor\(lang,'chat_consent'\)/);
   assert.match(service,/action==='chatlater'\|\|action==='decline'/);
+  assert.match(service,/const urgentDuringChat=v3ChatPreConsentSafetyReply\(prior.ctx.pending.text,prior.locale\)/);
+  assert.match(service,/if\(urgentDuringChat\)\{\s*result=\{text:urgentDuringChat,freeCostVerified:true\}/);
 });
 
 test('Telegram chat uses shared Reaction, Conversation and Reasoning Mind signals',()=>{
