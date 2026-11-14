@@ -292,7 +292,7 @@ test("all six workspaces use the same in-flow navigation and one real export",()
  assert.match(editor,/data-video-montage-tab=\{item.id\}/);
  assert.match(editor,/data-video-montage-preferences/);
  assert.doesNotMatch(editor,/data-video-montage-export/, "the old second export button must stay removed");
- assert.match(studio,/onClick=\{createQuickVideo\}/,"the single real Generate CTA must reuse the original renderer");
+ assert.match(studio,/onClick=\{goToReadyForGeneration\}/,"Montage Generate must navigate to Ready");
  const mobileCss=css.slice(css.lastIndexOf("/* 04 Nov owner visual recovery"));
  assert.match(mobileCss,/\.studio\[data-active-workspace\] \.quickVideoNav button/);
  assert.match(css,/\.montageQuickTools\{[^}]*flex-wrap:nowrap/);

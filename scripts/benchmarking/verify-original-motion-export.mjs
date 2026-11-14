@@ -164,7 +164,12 @@ try {
   await page.locator('[data-video-audio-compact-selected]').waitFor({state:'visible'});
   const generate = page.locator('[data-video-quick-generate]');
   await generate.click({timeout:30000});
-  // The actual verified film moves to Ready; guests cannot use direct Save.
+  const ready=page.locator('[data-video-ready]');
+  await ready.waitFor({state:'visible'});
+  assert.equal(await ready.getAttribute('data-ready-state'),'choose',
+    'Montage Generate navigates only; no recording or debit');
+  await ready.locator('[data-ready-generate]').click({timeout:30000});
+  // Only the Ready click records; guests cannot use direct Save.
   // Reuse the first-party encoded Blob and prove the login gate instead.
   let captured;
   try{

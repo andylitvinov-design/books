@@ -2547,6 +2547,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // A nonempty MediaRecorder blob does NOT prove Safari can decode it.
   const [playbackStatus, setPlaybackStatus] = useState<"checking"|"ready"|"failed">("checking");
   const [result, setResult] = useState<Result | null>(null);
+  // Opening Ready to generate never discards a previously verified local movie.
+  const [readyGenerationPending,setReadyGenerationPending]=useState(false);
   useEffect(()=>{
     // Consume the anonymous local trial only once a real encoded Blob exists.
     // A failed preflight/export does not consume it.
@@ -2578,6 +2580,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     if(!player||player.error||player.readyState<2||player.videoWidth<1||player.videoHeight<1)return;
     if(shownReadyResultRef.current===result.url)return;
     shownReadyResultRef.current=result.url;
+    setReadyGenerationPending(false);
     setStudioMode("pump");setActiveWorkspace("ready");
     window.requestAnimationFrame(()=>document.getElementById("free-personal-video")
       ?.scrollIntoView({block:"start",behavior:"auto"}));
@@ -5491,6 +5494,21 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     }));
   };
 
+  // Goal/Montage Generate is navigation only. Ready holds the explicit
+  // guarded render request: no recorder, credits or check-in may start here.
+  const goToReadyForGeneration=()=>{
+    if(recording||preparing)return false;
+    quickNavTokenRef.current++;
+    setReadyGenerationPending(true);
+    setActiveWorkspace("ready");setStudioMode("pump");
+    setIntroPlaying(false);setPreviewPlaying(false);setTherapyJumpRequested(false);
+    setNotice("");
+    window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+      document.getElementById("free-personal-video")
+        ?.scrollIntoView({behavior:"auto",block:"start"})));
+    return true;
+  };
+
   const createQuickVideo = () => {
     // The direct shortcut must preserve the approved paid-format gate.
     if(!freeVideoSelected){
@@ -5578,17 +5596,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       });
     }));
   };
-  // Generate only on this explicit click. Recipient-specific footage is
-  // applied first; React commits it before we use the real local encoder.
-  // A current callback keeps that encoder inside the trusted iOS gesture.
-  const freshGoalCreateRef=useRef<()=>boolean>(()=>false);
-  useLayoutEffect(()=>{freshGoalCreateRef.current=createQuickVideo;});
+  // Apply the selected Goal before advancing. Generation only starts from Ready.
   const generateFromGoal=()=>{
     if(!studioHydrated||recording||preparing)return false;
     let goalValid=true;
     flushSync(()=>{goalValid=goalContinueRef.current?.()!==false;});
     if(!goalValid)return false;
-    return freshGoalCreateRef.current();
+    return goToReadyForGeneration();
   };
 
   const openVideoScenarioStep = () => {
@@ -6464,6 +6478,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const activateQuickWorkspace=(id:(typeof workspaceTabs)[number]["id"])=>{
     quickNavTokenRef.current++;
     setActiveWorkspace(id);
+    if(id==="ready")setReadyGenerationPending(false);
     if(id==="editor")setMontagePanel("effects");
     if(id==="effects")setHypnoEntryGroup("visual");
     setIntroPlaying(false);
@@ -6842,7 +6857,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             setPreviewPlaying(false);
             return true;
           }}
-          onCreate={createQuickVideo}
+          onCreate={goToReadyForGeneration}
           onOpenResult={()=>{
             // The result lives on the Studio page, not inside the modal.
             // Close the optional iHelp overlay and reveal the real MP4 viewer.
@@ -7181,11 +7196,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       
       {activeWorkspace==="ready"?<MandalaVideoReady
         locale={locale} theme={theme} wish={wish} focus={meditationFocus} aspect={aspect}
-        video={result&&result.mode!=="catalog"?{
+        video={!readyGenerationPending&&result&&result.mode!=="catalog"?{
           url:result.url,extension:result.extension,bytes:result.bytes,duration
         }:null}
-        verified={Boolean(result&&result.mode!=="catalog"&&playbackStatus==="ready"&&creditConfirmed)}
-        checking={Boolean(result&&playbackStatus==="checking")}
+        verified={Boolean(!readyGenerationPending&&result&&result.mode!=="catalog"&&playbackStatus==="ready"&&creditConfirmed)}
+        checking={Boolean(!readyGenerationPending&&result&&playbackStatus==="checking")}
         signedIn={creditSession==="signed_in"}
         loginUnavailable={creditSession==="unavailable"}
         disabled={recording||preparing}
@@ -7301,7 +7316,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               disabled={recording||preparing} previewPlaying={previewPlaying}
               onPlanChange={setFreeVideoPlan}
               onPreview={()=>{if(previewPlaying){stopMovieSound();setPreviewPlaying(false);}else openAffirmationPreview();}}/>
-            <button type="button" data-free-video-create disabled={!canGenerate} onClick={createQuickVideo}>
+            <button type="button" data-free-video-create disabled={!studioHydrated||recording||preparing} onClick={goToReadyForGeneration}>
               {locale==="ru"?"Создать анимацию":locale==="es"?"Crear animación":"Create animated video"}
             </button>
           </> : null}
@@ -7319,8 +7334,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           onWishChange={value=>{setWish(value);setSuggestion("");}}
           onApply={applyFirstVideoDraft}
           onCreate={()=>{
-            firstVideoRequestRef.current=canGenerate;
-            createQuickVideo();
+            firstVideoRequestRef.current=false;
+            goToReadyForGeneration();
           }}
           onCancel={()=>{
             const job=jobRef.current;
@@ -7507,7 +7522,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             onOpenScenes={()=>openQuickDetailed("video-templates")}
             onPickPhoto={()=>{setBackgroundOnly(false);onPickPhoto();}}
             onRemovePhoto={()=>setBackgroundOnly(true)}
-            status={notice} onCreate={createQuickVideo}
+            status={notice} onCreate={goToReadyForGeneration}
             onWavePreset={()=>{
               setHypnoLight({enabled:true,...recommendHypnoLight(theme,wish)});
               setAffirmations(current=>({...current,enabled:true,
@@ -7642,7 +7657,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           }}
           onApply={(presetId,seconds,edit,options)=>
             applyAutoFilm(presetId,seconds,edit,aspect,options?.keepGoalFlow)}
-          onCreate={createQuickVideo}
+          onCreate={goToReadyForGeneration}
           canCreate={canStartSelectedFilm} rendering={recording||preparing}
           createFeedback={preparing||exportUnavailable?notice:""}/>
       <nav className={videoStyles.quickPracticeShortcuts} data-video-practice-shortcuts
@@ -8284,18 +8299,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           {montagePanel==="promo" ? <MandalaMontageProOffer
             locale={locale} disabled={!studioHydrated||recording||preparing}
             onChooseFree={()=>{
-              // Free starts the one real, credit/consent/rights-gated local renderer.
-              // Never show Ready before a decoded, verified MP4 exists.
+              // Free only opens Ready. The actual recorder and credit guards
+              // remain behind Ready's deliberate Generate action.
               if(!freeVideoSelected){
                 setPracticeType("video");setPracticeLevels(value=>({...value,video:"basic"}));
                 setStoryFormat("visual");
-                setNotice(locale==="ru"?"Бесплатное базовое видео выбрано. Нажмите «Создать» ещё раз.":
-                  locale==="es"?"Vídeo básico gratis seleccionado. Pulsa «Generar» otra vez.":
-                  "Free basic video selected. Tap Generate again to start.");
-                return;
               }
-              setNotice("");setIntroPlaying(false);setPreviewPlaying(false);setStudioMode("pump");
-              createQuickVideo();
+              goToReadyForGeneration();
             }}
             onChooseCharacter={()=>{
               setStoryFormat("talking_character");setProCatalogKind("character");
@@ -8598,7 +8608,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
                 document.querySelector<HTMLElement>('[data-video-own-voice-record]')?.scrollIntoView({behavior:"smooth",block:"center"})));
             }}
-            onCreate={()=>{setMontagePanel("audio");setBasicPanelTab("music");setPreviewPlaying(false);}} onGenerate={createQuickVideo} status={notice}/>
+            onCreate={()=>{setMontagePanel("audio");setBasicPanelTab("music");setPreviewPlaying(false);}} onGenerate={goToReadyForGeneration} status={notice}/>
           </div>
           {montagePanel==="settings" ? <div className={videoStyles.montagePane} data-video-montage-text-tools>
           <details className={videoStyles.montageAdvancedTools} data-video-concept-text-tools>
@@ -9228,7 +9238,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               <ArrowRight size={18} aria-hidden="true"/>
             </button>
             <button type="button" className={videoStyles.quickGenerate} data-video-quick-generate
-              disabled={!studioHydrated||recording||preparing||narrationInvalid} onClick={createQuickVideo}>
+              disabled={!studioHydrated||recording||preparing} onClick={goToReadyForGeneration}>
               {recording||preparing?<span aria-hidden="true">◌</span>:<Play size={20} fill="currentColor" aria-hidden="true"/>}
               {recording||preparing?quick.creating:
                 locale==="ru"?"Создать видео":locale==="es"?"Crear vídeo":"Create Video"}
@@ -9572,7 +9582,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       {studioMode==="pump"&&activeWorkspace!=="effects" ? <>
       <div className={videoStyles.postHeroActions} data-video-hero-actions>
         <button type="button" className={videoStyles.heroCreate}
-          data-video-hero-create disabled={recording||preparing} onClick={startFromHero}>
+          data-video-hero-create disabled={recording||preparing} onClick={goToReadyForGeneration}>
           <Play size={18} fill="currentColor" aria-hidden="true"/>{ui.create}
         </button>
       </div>
@@ -9667,7 +9677,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </div>
       ):(
         <button type="button" className={videoStyles.generate} data-mandala-video-generate
-          disabled={!canGenerate} onClick={()=>void createVideo()}>
+          disabled={!studioHydrated||recording||preparing} onClick={goToReadyForGeneration}>
           <Play size={21} fill="currentColor" aria-hidden="true"/>
           {creditCatalog?.chargeRequired
             ?creditSession==="guest"
