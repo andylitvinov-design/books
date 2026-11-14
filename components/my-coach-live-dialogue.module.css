@@ -492,3 +492,70 @@
     overflow-x:hidden;
   }
 }
+
+
+/* iOS 27 speech-session fix: the conversation is a bounded scroll region.
+   Voice consent and text composer remain reachable; cloud/Fish options sit
+   after (not between) the transcript and composer. This does NOT trap the page. */
+@media(max-width:699px){
+ .root[data-session-visual-v3]{min-width:0;max-width:100%;overflow-x:clip}
+ .root[data-session-visual-v3] .voiceWorkspace{min-width:0;max-width:100%}
+ .root[data-session-visual-v3] .conversationPanel{
+   display:flex;
+   flex-direction:column;
+   max-height:min(53dvh,430px);
+   min-height:0;
+   overflow-y:auto;
+   overflow-x:hidden;
+   overscroll-behavior-y:contain;
+   scroll-padding-bottom:12px;
+   -webkit-overflow-scrolling:touch;
+ }
+ .root[data-session-visual-v3] .conversationPanel .liveTranscript{
+   display:flex;
+   flex:1 1 auto;
+   flex-direction:column;
+   min-height:112px;
+   overflow:hidden;
+ }
+ .root[data-session-visual-v3] .conversationPanel .transcriptHeading{flex:none}
+ .root[data-session-visual-v3] .conversationPanel .transcriptHeading >span[role=status]{display:none}
+ .root[data-session-visual-v3] .conversationPanel .transcriptFeed{
+   display:grid;
+   flex:1 1 auto;
+   align-content:start;
+   min-height:72px;
+   max-height:min(24dvh,190px);
+   overflow-y:auto;
+   overflow-x:hidden;
+   overscroll-behavior:contain;
+   scrollbar-width:thin;
+ }
+ .root[data-session-visual-v3] .conversationPanel .playbackNotice{order:1;flex:none}
+ .root[data-session-visual-v3] .conversationPanel .textComposer{
+   order:2;
+   flex:0 0 auto;
+   max-height:min(28dvh,200px);
+   overflow-y:auto;
+   overflow-x:hidden;
+   scrollbar-width:thin;
+   background:#fffdf9;
+ }
+ .root[data-session-visual-v3] .conversationPanel .naturalVoiceRow{
+   order:3;
+   flex:0 0 auto;
+   max-width:100%;
+   margin:0;
+   padding:7px 9px;
+   overflow-wrap:anywhere;
+ }
+ .root[data-session-visual-v3] .conversationPanel .naturalVoiceRow label{
+   min-width:0;
+   max-width:100%;
+ }
+}
+@media(max-width:699px) and (max-height:680px){
+ .root[data-session-visual-v3] .conversationPanel{max-height:min(50dvh,335px)}
+ .root[data-session-visual-v3] .conversationPanel .transcriptFeed{max-height:130px}
+ .root[data-session-visual-v3] .conversationPanel .textComposer{max-height:150px}
+}

@@ -67,3 +67,17 @@ test('Safari dictation is displayed only in transcript while speech status never
    assert.ok(width-46>=274,'feedback container has nonzero safe width')
  }
 })
+
+
+test('mobile Fish consent cannot push the current chat/composer outside a bounded conversation viewport',()=>{
+ const css=read('components/my-coach-live-dialogue.module.css')
+ const ui=read('components/my-coach-live-dialogue.jsx')
+ assert.match(css,/\.root\[data-session-visual-v3\] \.conversationPanel\{[\s\S]*?max-height:min\(53dvh,430px\);/)
+ assert.match(css,/\.root\[data-session-visual-v3\] \.conversationPanel \.transcriptFeed\{[\s\S]*?overflow-y:auto;/)
+ assert.match(css,/\.root\[data-session-visual-v3\] \.conversationPanel \.textComposer\{[\s\S]*?order:2;[\s\S]*?overflow-y:auto;/)
+ assert.match(css,/\.root\[data-session-visual-v3\] \.conversationPanel \.naturalVoiceRow\{[\s\S]*?order:3;/)
+ assert.match(css,/\.root\[data-session-visual-v3\] \.conversationPanel \.transcriptHeading >span\[role=status\]\{display:none\}/)
+ assert.ok(ui.indexOf('className={styles.voiceControls}')<ui.indexOf('className={styles.liveTranscript}'))
+ assert.ok(ui.includes('className={styles.naturalVoiceRow}'),'Fish option remains available')
+ assert.ok(ui.includes('ref={composerDetailsRef} className={styles.textComposer} open'),'editable reply is still open')
+})
