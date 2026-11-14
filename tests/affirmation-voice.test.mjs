@@ -572,3 +572,21 @@ test("WebKit cached voice replay invokes one native play() per real tap, never a
   assert.match(browser,/await expect\.poll\(\(\)=>page\.evaluate\(\(\)=>window\.__hhPreviewReplayCount\)\)\.toBe\(1\)/);
   assert.match(browser,/replay must not spend a second free TTS request/);
 });
+
+
+test("Safari real-touch speech consent and optional Therapy Audio remain interactive above mobile dock",()=>{
+  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+  const css=read("components/mandala-affirmation-voice.module.css");
+  const ui=read("components/mandala-affirmation-voice.tsx");
+  assert.match(css,/\.panel\[data-voice-layout="compact"\] \.consent\{[^}]*min-height:44px/);
+  assert.match(css,/scroll-margin-block-end:calc\(130px \+ env\(safe-area-inset-bottom\)\)/);
+  assert.match(ui,/<label className=\{css\.consent\}>\s*<input data-video-affirmation-voice-consent/);
+  assert.match(browser,/const narrationConsentLabel=narrationConsent\.locator\("\.\."\);/);
+  assert.match(browser,/await narrationConsentLabel\.scrollIntoViewIfNeeded\(\)/);
+  assert.match(browser,/if\(engine==="webkit"\)await narrationConsentLabel\.tap\(\)/);
+  assert.match(browser,/await expect\(narrationConsent\)\.toBeChecked\(\{timeout:15000\}\)/);
+  assert.match(browser,/if\(engine==="webkit"\)await hypnoAudioTab\.tap\(\)/);
+  assert.match(browser,/await expect\(hypnoAudioTab\)\.toHaveAttribute\("aria-selected","true"/);
+  assert.match(browser,/await expect\(page\.locator\('\[data-hypno-group="audio"\]'\)\)\.toBeVisible/);
+  assert.doesNotMatch(browser,/narrationConsent\.check\(\{force:true\}\)|narrationConsent\.evaluate\(/);
+});

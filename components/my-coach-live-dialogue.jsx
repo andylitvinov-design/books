@@ -187,7 +187,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   },[])
   useEffect(()=>{if(transcriptRef.current)transcriptRef.current.scrollTop=transcriptRef.current.scrollHeight},[turns,speechPreview])
   useEffect(()=>{
-    if(!consent||authRequired||readiness.status==='checking'){
+    // Availability is metadata only. No coach/client text reaches the TTS vendor
+    // until the customer separately checks the natural-voice consent box.
+    if(authRequired||readiness.status==='checking'){
       setCloudAvailable(false);setCloudAgreed(false);setCloudProvider(null);return
     }
     const controller=new AbortController()
@@ -201,7 +203,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       }
     }).catch(()=>{if(!controller.signal.aborted)setCloudAvailable(false)})
     return ()=>controller.abort()
-  },[consent,authRequired,readiness.status])
+  },[authRequired,readiness.status])
   const name=persona?localCoachText(persona.name,lang):t.coach
   const opening=persona?localCoachText(persona.opening,lang):t.goal
   const ui=sessionUi[lang]||sessionUi.en
@@ -225,7 +227,18 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     setDraft(previous=>previous.trim()?previous:(goalPrompts[id]||''))
     setError('')
   }
-  function replayCoachReply(){
+  function changeNaturalVoice(checked){
+    setCloudAgreed(Boolean(checked))
+    if(checked){setWizardVoice(false);return}
+    // Withdrawal of cloud consent stops pending voice samples immediately.
+    replayControllerRef.current?.abort()
+    replayPlayerRef.current?.cancel()
+    replayControllerRef.current=null;replayPlayerRef.current=null
+    setReplayBlocked(false);setReplaying(false);setPlaybackNotice('')
+  }
+  function replayCoachReply(overrideText){
+    // A typed turn may contain the new answer before React commits transcript.
+    const spokenText=typeof overrideText==='string'?overrideText:latestCoachText
     // A blocked audio element is already buffered: a Replay tap resumes it
     // without consuming another cloud synthesis call or requesting microphone access.
     if(speechRef.current?.resumeVoice?.())return
@@ -234,16 +247,16 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       void replayPlayerRef.current.resume()
       return
     }
-    if(!latestCoachText||voiceState.phase!=='idle'||replaying)return
+    if(!spokenText||voiceState.phase!=='idle'||replaying)return
     setPlaybackNotice('');setReplayBlocked(false)
     if(consent&&cloudAgreed&&cloudAvailable&&['google_chirp3_hd','fish_free'].includes(cloudProvider)){
       const controller=new AbortController()
       replayControllerRef.current=controller
       setReplaying(true)
-      const question=latestCoachText.match(/[^.!?\n]+[?？]/gu)?.at(-1)?.trim()
+      const question=spokenText.match(/[^.!?\n]+[?？]/gu)?.at(-1)?.trim()
       const spoken=cloudProvider==='google_chirp3_hd'?
-        (question&&question.length<=500?question:latestCoachText.slice(0,500)):
-        latestCoachText.slice(0,900)
+        (question&&question.length<=500?question:spokenText.slice(0,500)):
+        spokenText.slice(0,900)
       void fetch('/api/app/my-coach/voice/synthesize',{
         method:'POST',credentials:'same-origin',cache:'no-store',signal:controller.signal,
         headers:{'Content-Type':'application/json'},
@@ -265,8 +278,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     // Free private-device replay works even if Fish/Google is not enabled.
     const synth=window.speechSynthesis,Utterance=window.SpeechSynthesisUtterance
     if(!synth?.speak||!Utterance){setPlaybackNotice(voiceGate.playbackUnavailable);return}
-    const utterance=new Utterance(latestCoachText.slice(0,900))
-    const spokenLocale=detectedSpeechLocale(latestCoachText,lang)
+    const utterance=new Utterance(spokenText.slice(0,900))
+    const spokenLocale=detectedSpeechLocale(spokenText,lang)
     utterance.lang={en:'en-GB',ru:'ru-RU',es:'es-ES'}[spokenLocale]
     utterance.rate=wizardVoice?0.93:0.97
     utterance.pitch=wizardVoice?1.08:1
@@ -346,7 +359,12 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
 
   async function send(event){
     event.preventDefault()
-    return sendMessage(draft.trim())
+    const result=await sendMessage(draft.trim())
+    // Text turns use the same natural TTS path as microphone turns only after
+    // explicit voice consent. Never send safety/boundary replies to a vendor.
+    if(result?.reply&&consent&&cloudAvailable&&cloudAgreed&&
+       !['safety','boundary'].includes(result.mode))replayCoachReply(result.reply)
+    return result
   }
   async function sendMessage(raw){
     const message=String(raw||'').trim()
@@ -483,7 +501,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             onTranscript={setSpeechPreview} onDraft={text=>{setDraft(text);setError('')}}/>
           <span className={styles.voiceWaveRight} aria-hidden="true"><i/><i/><i/><i/><i/></span>
         </div>
-        <button type="button" className={styles.replayControl} onClick={replayCoachReply}
+        <button type="button" className={styles.replayControl} onClick={()=>replayCoachReply()}
           disabled={!replayBlocked&&voiceState.phase!=='ready'&&(!latestCoachText||voiceState.phase!=='idle'||replaying)}
           aria-label={replayBlocked||voiceState.phase==='ready'?voiceGate.tapToHear:ui.replay}
           title={replayBlocked||voiceState.phase==='ready'?voiceGate.tapToHear:ui.replay}>
@@ -493,6 +511,14 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           <PhoneOff size={21} aria-hidden="true"/><span>{lang==='ru'?'Конец':lang==='es'?'Salir':'End'}</span>
         </Link>
       </div>
+      {cloudAvailable&&consent&&!authRequired&&<div className={styles.naturalVoiceRow}>
+        <label><input type="checkbox" checked={cloudAgreed}
+          onChange={event=>changeNaturalVoice(event.target.checked)}/>
+          <span>{providerCopy.label}</span></label>
+        <details><summary>{providerCopy.about}</summary>
+          <p>{providerCopy.disclosure}</p></details>
+      </div>}
+      {playbackNotice&&<p className={styles.playbackNotice} role="status">{playbackNotice}</p>}
       <details className={styles.recordingModeRow} open={recordedMode&&!recordingConsent}>
         <summary>{recordingOptions[lang].title}</summary>
         <label><input type="checkbox" checked={recordedMode} disabled={voiceState.phase!=='idle'}
@@ -530,14 +556,6 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           {!turns.length&&!speechPreview&&<p className={styles.transcriptHint}>{captions.hint}</p>}
         </div>
       </section>
-      {cloudAvailable&&consent&&!authRequired&&<div className={styles.naturalVoiceRow}>
-        <label><input type="checkbox" checked={cloudAgreed}
-          onChange={event=>{setCloudAgreed(event.target.checked);if(event.target.checked)setWizardVoice(false)}}/>
-          <span>{providerCopy.label}</span></label>
-        <details><summary>{providerCopy.about}</summary>
-          <p>{providerCopy.disclosure}</p></details>
-      </div>}
-      {playbackNotice&&<p className={styles.playbackNotice} role="status">{playbackNotice}</p>}
       <details ref={composerDetailsRef} className={styles.textComposer} open>
         <summary>{ui.type}</summary>
         {!authRequired&&readiness.status!=='verified'&&<p className={styles.readiness} role="status">
@@ -598,6 +616,12 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     <dialog ref={voiceConsentRef} className={styles.voiceConsentDialog} aria-labelledby="hh-coach-voice-consent-title">
       <h2 id="hh-coach-voice-consent-title">{voiceGate.title}</h2>
       <p>{t.consent}</p>
+      {cloudAvailable&&<div className={styles.voiceModalNatural}>
+        <label><input type="checkbox" checked={cloudAgreed}
+          onChange={event=>changeNaturalVoice(event.target.checked)}/>
+          <span>{providerCopy.label}</span></label>
+        <p>{providerCopy.disclosure}</p>
+      </div>}
       <div className={styles.voiceConsentActions}>
         <button type="button" onClick={()=>voiceConsentRef.current?.close()}>{voiceGate.cancel}</button>
         <button type="button" onClick={approveVoiceConsent}>{voiceGate.agree}</button>

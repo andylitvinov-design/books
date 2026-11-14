@@ -157,7 +157,7 @@
 .panel[data-voice-layout="compact"] .deviceSampleGroup{margin:6px 0}
 .panel[data-voice-layout="compact"] .deviceSampleGroup small{display:block;line-height:1.4}
 .panel[data-voice-layout="compact"] .consentRow{display:grid;gap:2px;margin:0}
-.panel[data-voice-layout="compact"] .consent{align-items:center;gap:9px;min-height:36px;margin:0;font:500 clamp(11px,2.9vw,13px)/1.28 system-ui;color:#465F56}
+.panel[data-voice-layout="compact"] .consent{align-items:center;gap:9px;min-height:44px;margin:0;padding:8px 0;scroll-margin-block-end:calc(130px + env(safe-area-inset-bottom));font:500 clamp(11px,2.9vw,13px)/1.28 system-ui;color:#465F56}
 .panel[data-voice-layout="compact"] .consentDetails{margin:0 0 0 28px;color:#376D59;font-size:12px}
 .panel[data-voice-layout="compact"] .consentDetails>summary{display:inline-flex;align-items:center;min-height:25px;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
 .panel[data-voice-layout="compact"] .consentDetails p{margin:4px 0 8px;padding:9px;border-radius:10px;background:#F5ECDC;font-size:12px;line-height:1.4}

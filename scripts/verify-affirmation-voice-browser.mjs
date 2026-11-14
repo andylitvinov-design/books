@@ -1033,8 +1033,14 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(page.locator("[data-video-affirmation-bed]")).toBeVisible({timeout:15000});
       await page.locator("[data-video-affirmation-bed]").selectOption("ocean");
       const narrationConsent=page.locator("[data-video-affirmation-voice-consent]");
-      await narrationConsent.check();
-      await expect(narrationConsent).toBeChecked();
+      // A real iPhone touch must reach the full labelled consent surface;
+      // the tiny input itself can be obscured by the fixed mobile dock.
+      // Never programmatically tick consent or bypass the disabled generate gate.
+      const narrationConsentLabel=narrationConsent.locator("..");
+      await narrationConsentLabel.scrollIntoViewIfNeeded();
+      if(engine==="webkit")await narrationConsentLabel.tap();
+      else await narrationConsent.check();
+      await expect(narrationConsent).toBeChecked({timeout:15000});
       const generateNarration=page.locator("[data-video-generate-affirmation-audio]");
       await expect(generateNarration).toBeEnabled();
       // Observe real user input on macOS without recording the approved text,
@@ -1532,8 +1538,13 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await optionalEffects.locator(':scope > summary').click();
       await expect(optionalEffects).toHaveAttribute('open','');
       await expect(page.locator("[data-video-hypnocorrection-panel]")).toBeVisible();
-      await page.locator('[data-hypno-tab="audio"]').click();
-      await expect(page.locator('[data-hypno-group="audio"]')).toBeVisible();
+      const hypnoAudioTab=page.locator('[data-hypno-tab="audio"]');
+      // Safari can swallow synthetic mouse clicks after a nested native
+      // disclosure; prove a real touch selected Audio before asserting content.
+      if(engine==="webkit")await hypnoAudioTab.tap();
+      else await hypnoAudioTab.click();
+      await expect(hypnoAudioTab).toHaveAttribute("aria-selected","true",{timeout:15000});
+      await expect(page.locator('[data-hypno-group="audio"]')).toBeVisible({timeout:15000});
       await page.locator('[data-hypno-group="audio"] [data-hypno-card] button').first().click();
       await expect(page.locator("[data-hypno-speech-settings]")).toBeVisible();
       const voicePanel=page.locator("[data-video-voice-studio]");
