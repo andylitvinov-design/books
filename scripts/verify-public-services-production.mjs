@@ -129,12 +129,71 @@ try {
     for (const selector of legacyPhoneSelectors) {
       await expect(page.locator(selector + ":visible")).toHaveCount(0);
     }
+    // The approved lower page is a compact, one-panel-at-a-time catalogue.
+    // The original messenger and the three real consultation cards stay visible.
+    await visible(page.locator("[data-assist-personal-consultation]"));
+    const catalog = page.locator("[data-services-unified-catalog]");
+    await visible(catalog);
+    // Browser acceptance must exercise hydrated React handlers, not
+    // accidentally tap static SSR buttons before Next router readiness.
+    await expect.poll(
+      () => page.evaluate(() => history.pushState.toString().includes("__NA")),
+      { timeout: 30000, message: 'Mobile Services catalogue must hydrate before interactions' },
+    ).toBe(true);
+    const panelIds = [
+      "reiki", "browse", "reading", "consultation", "services", "video", "courses",
+      "coach", "magical", "homeopathy", "about", "testimonials", "mytube", "directory",
+    ];
+    await expect(catalog.locator("[data-services-unified-panel]")).toHaveCount(panelIds.length);
+    for (const id of panelIds) {
+      const panel = catalog.locator('[data-services-unified-panel="' + id + '"]');
+      const toggle = panel.locator(':scope > button');
+      await visible(toggle);
+      await expect(toggle).toHaveAttribute("aria-expanded", "false");
+      const bounds = await toggle.boundingBox();
+      assert.ok(bounds && bounds.height >= 44 && bounds.x >= -1 && bounds.x + bounds.width <= width + 1,
+        "Compact service tile must fit the phone with a 44px target: " + locale + "/" + width + "/" + id);
+    }
     for (const selector of [
-      "[data-assist-personal-consultation]", "[data-assist-spiritual-entry]",
-      "[data-assist-video-generation]", "[data-assist-course-shelf]",
-      "[data-assist-magical-help]", "[data-assist-reiki-session]", "[data-assist-coach-therapist]"
+      "[data-assist-spiritual-entry]", "[data-assist-video-generation]",
+      "[data-assist-course-shelf]", "[data-assist-magical-help]",
+      "[data-assist-reiki-session]", "[data-assist-coach-therapist]"
     ]) {
-      await visible(page.locator(selector));
+      await expect(page.locator(selector)).toHaveCount(1);
+      await expect(page.locator(selector)).toBeHidden();
+    }
+    if (width === 390) {
+      // Open the REAL previously published flows, not fake placeholder cards.
+      // Every service must become visible after its own explicit tap, then close.
+      const detailChecks = [
+        ["reiki", "[data-assist-reiki-session]"],
+        ["browse", "[data-services-showcase-hero]"],
+        ["reading", "[data-assist-spiritual-entry]"],
+        ["consultation", "#consultation"],
+        ["services", "[data-services-studio-paid]"],
+        ["video", "[data-assist-video-generation]"],
+        ["courses", "[data-assist-course-shelf]"],
+        ["coach", "[data-assist-coach-therapist]"],
+        ["magical", "[data-assist-magical-help]"],
+        ["homeopathy", 'a[href="/' + locale + '/services/psychohomeopathy"]'],
+        ["about", "[data-services-meet]"],
+        ["testimonials", '[data-personal-testimonials="services"]'],
+        ["mytube", "#method-videos"],
+        ["directory", "[data-services-directory-invitation]"],
+      ];
+      for (const [id, selector] of detailChecks) {
+        const panel = catalog.locator('[data-services-unified-panel="' + id + '"]');
+        const trigger = panel.locator(":scope > button");
+        await trigger.click();
+        await expect(trigger).toHaveAttribute("aria-expanded", "true");
+        await visible(panel.locator(selector));
+        await expect(catalog.locator('[data-services-unified-panel][data-expanded="true"]')).toHaveCount(1);
+        await assertViewport(page, locale + "/services/unified/" + id);
+        await trigger.click();
+        await expect(trigger).toHaveAttribute("aria-expanded", "false");
+        await expect(panel.locator(selector)).toBeHidden();
+      }
+      await expect(catalog.locator('[data-services-unified-panel][data-expanded="true"]')).toHaveCount(0);
     }
 
 
@@ -486,7 +545,8 @@ try {
         await expect(free).toBeHidden();
         await expect(paid.locator("h2#services-personal-title")).toBeHidden();
         await expect(paid.locator("[data-services-studio-card]:visible")).toHaveCount(0);
-        await visible(paid.locator("[data-assist-video-generation]"));
+        await expect(page.locator('[data-services-unified-panel="video"] [data-assist-video-generation]')).toBeHidden();
+        await visible(page.locator('[data-services-unified-panel="video"] > button'));
         assert.equal(await page.locator("#find-your-service").count(), 0);
       }
       await assertNoDevIssueOverlay(page, locale + "/services/" + width);
@@ -534,6 +594,15 @@ try {
         await page.screenshot({ path: output + "/services-" + locale + "-hero-" + width + ".png", fullPage: false });
       }
       if (width === 390) {
+        // The homepage's existing #consultation link must reveal real paid/express
+        // booking choices instead of landing on a hidden collapsed mobile panel.
+        await page.goto(origin + "/" + locale + "/services#consultation", { waitUntil: "domcontentloaded" });
+        const linkedPanel = page.locator('[data-services-unified-panel="consultation"]');
+        await expect(linkedPanel.locator(":scope > button")).toHaveAttribute("aria-expanded", "true");
+        await visible(linkedPanel.locator("#consultation"));
+        assert.ok(await linkedPanel.locator("[data-service-product]").count() >= 2,
+          "Deep link preserves express/paid consultation offers: " + locale);
+        await assertViewport(page, locale + "/services#consultation");
         const consultation = page.locator("[data-assist-personal-consultation]");
         await consultation.scrollIntoViewIfNeeded();
         await consultation.screenshot({ path: output + "/services-" + locale + "-compact-consultation-390.png" });

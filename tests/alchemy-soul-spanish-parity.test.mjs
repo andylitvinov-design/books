@@ -58,7 +58,18 @@ test("Spanish Services shares the concise personal studio with EN/RU and origina
   const videos = read("components/services-studio-extras.tsx");
   const offers = read("data/core-service-offers.ts");
   const reviews = read("components/personal-testimonials.tsx");
-  assert.match(es, /<ServicesStudioOffers locale="es" \/>/);
+  // The same real Studio offers are present once inside the owner-approved
+  // compact catalogue; nested course/coach/video shelves split out to avoid
+  // duplicate services while preserving all Spanish routes and actions.
+  assert.match(es, /<ServicesCompactCatalog locale="es">/);
+  assert.match(es, /<ServicesCompactPanel id="services"><ServicesStudioOffers locale="es" splitExtras \/><\/ServicesCompactPanel>/);
+  assert.match(studio, /splitExtras = false/);
+  assert.match(studio, /!splitExtras \? <ServicesCoursesShelf/);
+  assert.match(studio, /!splitExtras \? <ServicesCoachTherapistMobile/);
+  for (const name of ["ServicesVideoGenerationCard", "ServicesCoursesShelf", "ServicesCoachTherapistMobile"]) {
+    assert.equal(es.split("<" + name + ' locale="es"').length - 1, 1,
+      "Spanish Services should render each separate mobile shelf exactly once: " + name);
+  }
   assert.match(es, /<ServicesIntroMedia locale="es" \/>/);
   assert.match(es, /<PersonalTestimonials locale="es" variant="services" \/>/);
   assert.match(es, /<ServicesMethodVideos locale="es" \/>/);
