@@ -229,6 +229,23 @@ test('Services re-audit waits for real hydration and decodes even hidden lazy po
   assert.doesNotMatch(helper,/return\s*;\s*\/\/.*hidden/);
 });
 
+test('Services release audit scopes simulated directory failure without weakening page or image gates', () => {
+  const verifier=read('scripts/verify-release-reaudit.mjs');
+  const reiki=read('components/assist-reiki-session.tsx');
+  assert.match(verifier,/context\.route\(\/\\\/api\\\/public\\\/remote-energy-support-masters/);
+  assert.match(verifier,/status: 503, contentType: 'application\/json'/);
+  assert.match(verifier,/\[data-assist-reiki-session\] \[role="status"\] button/);
+  assert.match(verifier,/await settlePublicDocument\('before-assertions'\)/);
+  assert.match(verifier,/await decodeReadyPoster\(image, expect\)/);
+  assert.match(verifier,/assert\.deepEqual\(errors, \[\]/);
+  assert.match(reiki,/const deadline = window\.setTimeout/);
+  assert.match(reiki,/setFailed\(true\);\s*controller\.abort\(\)/);
+  assert.match(reiki,/\}, 8000\)/);
+  assert.match(reiki,/\.finally\(\(\) => window\.clearTimeout\(deadline\)\)/);
+  assert.match(reiki,/return \(\) => \{ window\.clearTimeout\(deadline\); controller\.abort\(\); \}/);
+  assert.match(reiki,/onClick=\{\(\) => setRetry\(value => value \+ 1\)\}/);
+});
+
 test('Public Services master directory has a real bounded abort and an unavailable state', () => {
   const gallery = read('components/holistic-support-master-gallery.tsx');
   assert.match(gallery,/const deadline = window\.setTimeout/);

@@ -61,5 +61,5 @@
   .item[data-unified-dock-item="ai"] span{font-size:10px;padding:3px 5px;top:26px}
   .item[data-unified-dock-item="ai"]::after{top:-20px;font-size:11px}
 }
-@media(min-width:760px){.dock{width:min(92%,850px);border-radius:30px 30px 0 0}}
+@media(min-width:760px){.dock{width:min(92%,850px);border-radius:30px 30px 0 0}.dock[data-hh-editorial-dock="true"]{display:none}}
 @media(prefers-reduced-motion:reduce){.dock,.item{transition:none}}

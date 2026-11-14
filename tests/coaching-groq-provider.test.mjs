@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {coachingGroqConfig,verifiedGroqCoachingReply,GROQ_COACH_MODEL} from '../lib/coaching/groq-coach-provider.mjs'
 import {normalizeGenerativeCoachInput} from '../lib/coaching/generative-persona.mjs'
 import {parseConversationalCoachReply,conversationalCoachMessages} from '../lib/coaching/conversational-persona.mjs'
+import {coachDialoguePolicy} from '../lib/coaching/unified-coach-policy.mjs'
 const key='gsk_'+('x'.repeat(38))
 const enabled={HH_COACHING_GROQ_ENABLED:'true',HH_COACHING_GROQ_ZDR_CONFIRMED:'true',
   HH_COACHING_GROQ_FREE_TIER_CONFIRMED:'true',HH_FIRST_VIDEO_GROQ_API_KEY:key}
@@ -157,4 +158,40 @@ test('structured model still rejects a fabricated plan and extraneous fields',()
   assert.throws(()=>parseConversationalCoachReply(JSON.stringify({
     message:'I can help you think this through.',planSuggestion:'',evidenceQuote:'',diagnosis:'depression'
   }),input,'grow','explore'),/COACHING_BRAIN_RESPONSE_INVALID/)
+})
+
+
+test('explicit no-advice persists across later user turns until a new opt-in, across EN/RU/ES',()=>{
+  for(const [locale,boundary,followup,reinvite] of [
+    ['en','Please, no advice.','I want to write an email tomorrow, but I am still processing.','Now please give me advice.'],
+    ['ru','Без советов, пожалуйста.','Я хочу написать письмо завтра, но пока просто размышляю.','Теперь можно совет.'],
+    ['es','Sin consejos, por favor.','Quiero escribir un correo mañana, pero aún estoy pensándolo.','Ahora quiero consejos.'],
+  ]){
+    const turns=[{role:'user',content:boundary},
+      {role:'assistant',content:locale==='ru'?'Можем просто обсудить.':'We can just talk.'}]
+    const input=makeCoachInput(followup,turns,locale)
+    assert.equal(coachDialoguePolicy(input).noAdvice,true,locale)
+    const quote=locale==='en'?'write an email tomorrow':
+      locale==='ru'?'написать письмо завтра':'escribir un correo mañana'
+    const answer=locale==='ru'?'Это можно обдумать без спешки.':
+      locale==='es'?'Podemos pensarlo sin prisas.':'We can take time to think that through.'
+    const parsed=parseConversationalCoachReply(coachJson(answer,quote,quote),input,'grow','explore')
+    assert.equal(parsed.planSuggestion,'',locale)
+    assert.equal(parsed.evidenceQuote,'',locale)
+    const resumed=makeCoachInput(reinvite,[...turns,
+      {role:'user',content:followup},{role:'assistant',content:answer}],locale)
+    assert.equal(coachDialoguePolicy(resumed).noAdvice,false,locale)
+  }
+})
+
+test('assistant messages and inferred mood never silently create or revoke no-advice',()=>{
+  const userOnly=makeCoachInput('My manager changed the deadline.',[
+    {role:'assistant',content:'We can talk without advice.'}
+  ])
+  assert.equal(coachDialoguePolicy(userOnly).noAdvice,false)
+  const persisted=makeCoachInput('I am unsure.',[
+    {role:'user',content:'Do not give advice.'},
+    {role:'assistant',content:'I will offer advice now.'}
+  ])
+  assert.equal(coachDialoguePolicy(persisted).noAdvice,true)
 })
