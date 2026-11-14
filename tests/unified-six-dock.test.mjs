@@ -95,9 +95,6 @@ test("route-aware single dock, guest/signed-in consistency and private pages exc
   assert.equal(unifiedMobileDockActive("/"+locale+"/app/practice"),"practice");
   assert.equal(unifiedMobileDockActive("/"+locale+"/app/messages"),"ai");
   assert.equal(unifiedMobileDockActive("/"+locale+"/app/portrait"),"profile");
-  assert.equal(unifiedMobileDockActive("/"+locale+"/client"),"profile");
-  assert.equal(unifiedMobileDockActive("/"+locale+"/client/tests"),"profile");
-  assert.equal(unifiedMobileDockActive("/"+locale+"/client/private-record"),null);
   assert.equal(unifiedMobileDockActive("/"+locale+"/masters"),null);
   assert.equal(unifiedMobileDockActive("/"+locale+"/my-coach"),"coach");
    assert.equal(unifiedMobileDockActive("/"+locale+"/masters"),null);
@@ -141,10 +138,6 @@ test("public editorial journeys share the approved seven-item dock without priva
  assert.ok(legacy.includes("isUnifiedMobileDockPath(pathname)"));
  assert.ok(global.includes("main[data-energywork-ai-learner]"));
  assert.ok(global.includes(".mobile-bottom-navigation{display:none!important}"));
- const ia=read("scripts/verify-ia-v2.mjs");
- assert.match(ia,/assertUnifiedBottomNavigation\(page,\{locale,label,active:'profile',visible:width<760,editorial:true\}\)/);
- assert.match(ia,/assertUnifiedBottomNavigation\(sp,\{locale:'ru',label:'webkit\/ru\/library\/390',editorial:true\}\)/);
- assert.doesNotMatch(ia,/assertPublicBottomNavigation|visibleMobileLabel/);
 });
 
 test("one screenshot-1 style seven-button dock and protected old docks removed visually",()=>{
@@ -331,3 +324,26 @@ test("Shorts / Study are exclusive editorial shelves and unknown lengths remain 
  assert.equal(matchesMyTubeFormat(cards[1],"all"),true);
 });
 
+
+test("IA browser acceptance tests the current seven-slot dock on public and guest test routes",()=>{
+ const ia=read("scripts/verify-ia-v2.mjs");
+ assert.doesNotMatch(ia,/assertPublicBottomNavigation|expectedMobileNavigation|visibleMobileLabel/);
+ assert.doesNotMatch(ia,/\.mobile-bottom-navigation \[data-nav-item="home"\]/);
+ assert.match(ia,/const legacy=page\.locator\('\.mobile-bottom-navigation'\)/);
+ assert.match(ia,/await expect\(legacy\)\.toHaveCount\(0\)/);
+ assert.match(ia,/const items=UNIFIED_DOCK_IDS\.map\(id=>\(\{id,href:unifiedMobileDockHref\(locale,id\)\}\)\)/);
+ assert.match(ia,/assert\.equal\(items\.length,7/);
+ assert.match(ia,/await expect\(links\)\.toHaveCount\(7\)/);
+ assert.match(ia,/box\.width>=44&&box\.height>=44/);
+ assert.match(ia,/await link\.press\('Tab'\)/);
+ assert.match(ia,/verifyPublicHeaderMatrix\(page, 'chromium'\)/);
+ assert.match(ia,/verifyPublicDiscoveryNavigation\(page, 'chromium'\)/);
+ assert.match(ia,/verifyPublicHeaderMatrix\(sp, 'webkit'\)/);
+ assert.match(ia,/verifyPublicDiscoveryNavigation\(sp, 'webkit'\)/);
+ assert.match(ia,/await assertUnifiedBottomNavigation\(sp,\{locale:'ru',label:'webkit\/ru\/library\/390',visible:true\}\)/);
+ assert.match(ia,/Global seven-slot dock overlaps final Library content/);
+ for(const locale of ["ru","en","es"]){
+   assert.ok(isUnifiedMobileDockEditorialPath("/"+locale+"/library"));
+   assert.ok(isUnifiedMobileDockPath("/"+locale+"/client/tests"));
+ }
+});

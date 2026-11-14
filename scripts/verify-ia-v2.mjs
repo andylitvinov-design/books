@@ -102,19 +102,15 @@ async function go(page, path) {
   return response
 }
 
-// A single seven-item dock now owns app AND ordinary editorial routes.
-// The approved Home and free-review routes use a NEW single seven-item app dock,
-// not the editorial public footer. Assert the real rendered destination list,
+
+// Home, all public editorial pages and guest tests share one real seven-item app dock,
+// not the retired public footer. Assert the real rendered destination list,
 // visible tap geometry, keyboard order and absence of a second overlapping dock.
-async function assertUnifiedBottomNavigation(page,{locale,label,active=null,visible=true,editorial=false}){
+async function assertUnifiedBottomNavigation(page,{locale,label,active=null,visible=true}){
   const dock=page.locator('[data-hh-unified-dock]')
   const legacy=page.locator('.mobile-bottom-navigation')
   await expect(dock).toHaveCount(1)
   await expect(legacy).toHaveCount(0)
-  // Editorial routes must not bring back the retired public footer. The same
-  // global dock stays in DOM at desktop widths but is CSS-hidden there.
-  if(editorial)await expect(dock).toHaveAttribute('data-hh-editorial-dock','true')
-  else await expect(dock).not.toHaveAttribute('data-hh-editorial-dock','true')
   const items=UNIFIED_DOCK_IDS.map(id=>({id,href:unifiedMobileDockHref(locale,id)}))
   assert.equal(items.length,7,label+': seven approved destinations')
   assert.ok(items.every(item=>typeof item.href==='string'&&item.href.startsWith('/')))
@@ -328,9 +324,10 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
         await expect(trigger).toBeFocused()
         await inViewport(trigger, label + '/language-after-escape')
         await header.screenshot({ path: evidence + '/header-' + engine + '-' + locale + '-' + surface + '-' + width + '.png' })
-        const bottom=await assertUnifiedBottomNavigation(page,{
-          locale,label,visible:width<760,editorial:surface!=='home'
-        })
+        // All editorial pages use the same dock as Home. Keep the complete
+        // locale-specific destination list, absence of the retired footer,
+        // 44px touch geometry, keyboard Tab order and desktop hide assertion.
+        const bottom=await assertUnifiedBottomNavigation(page,{locale,label,visible:width<760})
         if(width<760)await bottom.screenshot({path:evidence+'/bottom-'+engine+'-'+locale+'-'+surface+'-'+width+'.png'})
         await verifySiteMenu(page, header, { locale, surface, label, expectedMenu, inViewport })
         pass('Public navigation: ' + label)
@@ -359,7 +356,11 @@ async function verifyPublicDiscoveryNavigation(page, engine, locales = ['en', 'r
         assert.match(response.headers()['x-robots-tag'], /noindex/, label)
         assert.equal(response.headers()['referrer-policy'], 'no-referrer', label)
         await expect(page.locator('body')).toHaveAttribute('data-csp-class', 'private')
-        await assertUnifiedBottomNavigation(page,{locale,label,active:'profile',visible:width<760,editorial:true})
+        // Guest /client and /client/tests keep private CSP and the one global
+        // dock. Opening the public test catalogue is not a signed-in Profile.
+        const bottom=await assertUnifiedBottomNavigation(page,{locale,label,visible:width<760})
+        await expect(bottom.locator('[data-unified-dock-item="profile"]')).toHaveAttribute(
+          'href','/'+(locale==='es'?'en':locale)+'/app/portrait')
         assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), label + ': discovery overflow')
       }
     }
@@ -385,7 +386,7 @@ async function verifyPublicDiscoveryNavigation(page, engine, locales = ['en', 'r
       await assertUnifiedBottomNavigation(page,{locale,label:engine+'/'+locale+'/alchemy/390',active:'services'})
     }
   await resizePublicViewport(page, originalViewport)
-  pass(engine + ': public client and client/tests share one unified seven-slot navigation with Profile selected, keyboard order, responsive bounds and private headers in ' + locales.join('/'))
+  pass(engine + ': public client and client/tests discovery retain a single seven-slot dock and protected Profile link, keyboard order, responsive bounds and private headers in ' + locales.join('/'))
 }
 
 try {
@@ -487,29 +488,29 @@ try {
     for (const width of [320, 360, 390, 430, 768, 1280]) {
       await page.setViewportSize({ width, height: 900 })
       assert.equal((await go(page, `/${locale}/library`)).status(), 200)
-      const expected=getSiteNavigation(locale)
-      const nav=page.locator('.site-navigation')
-      await verifyDirectNavigation(nav,{locale,surface:'library',expected,label:locale+'/library/'+width})
-      const current=nav.locator('.site-main-menu-panel a[aria-current="page"]')
+      const expected = getSiteNavigation(locale)
+      const siteNav=page.locator('.site-navigation')
+      await verifyDirectNavigation(siteNav,{locale,surface:'library',expected,label:locale+'/library/'+width})
+      const current=siteNav.locator('.site-main-menu-panel a[aria-current="page"]')
       await expect(current).toHaveCount(1)
       await expect(current).toHaveAttribute('href','/'+locale+'/library')
       const bottom=await assertUnifiedBottomNavigation(page,{
-        locale,label:locale+'/library/'+width,visible:width<760,editorial:true
+        locale,label:locale+'/library/'+width,visible:width<760,
       })
-      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1),`Overflow: ${locale}/${width}`)
+      await expect(bottom.locator('[data-unified-dock-item="profile"]')).toHaveAttribute(
+        'href','/'+(locale==='es'?'en':locale)+'/app/portrait')
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), `Overflow: ${locale}/${width}`)
       if(width<760){
-        // The last real library note must scroll above the fixed dock, not sit
-        // beneath the elevated AI control.
         const last=page.locator('.library-note')
         await last.scrollIntoViewIfNeeded()
         const box=await last.boundingBox(),bar=await bottom.boundingBox()
         assert.ok(box&&bar&&box.y+box.height<=bar.y+2,
-          locale+'/library/'+width+': dock overlaps the final note')
+          'Global seven-slot dock overlaps final Library content: '+locale+'/'+width)
       }
       await page.screenshot({ path: `${evidence}/library-${locale}-${width}.png`, fullPage: true })
     }
   }
-  pass('Desktop Cabinet entry and one unified seven-slot editorial dock EN/RU/ES, 320–1280px, privacy, tap targets and bottom clearance')
+  pass('Desktop Cabinet entry and global seven-slot mobile dock with Profile hrefs EN/RU/ES, 320–1280px, tap targets and bottom spacing')
   await verifyPublicHeaderMatrix(page, 'chromium')
   await verifyPublicDiscoveryNavigation(page, 'chromium')
   for (const path of ['/en/books', '/ru/books', '/es/books', '/en/homeopathy', '/ru/homeopathy', '/es/homeopathy', '/en/services', '/ru/services', '/es/services', '/en/about', '/ru/about', '/es/about']) assert.equal((await go(page, path)).status(), 200, path)
@@ -729,7 +730,7 @@ try {
   pass('WebKit 390px: secure original report viewer remains readable with exactly two measurements')
   if(!messengerOnly){
     await go(sp, '/ru/library')
-    await assertUnifiedBottomNavigation(sp,{locale:'ru',label:'webkit/ru/library/390',editorial:true})
+    await assertUnifiedBottomNavigation(sp,{locale:'ru',label:'webkit/ru/library/390',visible:true})
     assert.ok(await sp.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1))
     await sp.screenshot({ path: `${evidence}/library-ru-webkit.png`, fullPage: true })
     pass('WebKit narrow navigation')
