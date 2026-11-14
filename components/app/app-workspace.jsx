@@ -1028,7 +1028,10 @@ function SaveContinuation({ data, locale, reload, onComplete }) {
         ? consumeSessionSaveTarget(intentId,locale,window.location.origin,window.sessionStorage)
         : null
       const destination=next||savedGuestDiscussionTarget(savedResourcePath(locale,saved.sourceKind,saved.resource.id),saved.sourceKind,intentId)
-      if(onComplete)onComplete(destination)
+      // A completed guest test opens directly in the existing full private report.
+      // Skip optional post-signup install and WhatsApp offers for this result.
+      if(saved.sourceKind === 'guest_result') router.replace(destination)
+      else if(onComplete)onComplete(destination)
       else router.replace(destination)
     } catch (e) {
       setError(
@@ -1061,7 +1064,8 @@ function SaveContinuation({ data, locale, reload, onComplete }) {
         ? consumeSessionSaveTarget(intentId,locale,window.location.origin,window.sessionStorage)
         : null
       const destination=next||savedGuestDiscussionTarget(savedResourcePath(locale,intent.sourceKind,intent.resourceId),intent.sourceKind,intentId)
-      if(onComplete)onComplete(destination)
+      if(intent.sourceKind === 'guest_result') router.replace(destination)
+      else if(onComplete)onComplete(destination)
       else router.replace(destination)
       return
     }

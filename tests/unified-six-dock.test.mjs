@@ -324,3 +324,26 @@ test("Shorts / Study are exclusive editorial shelves and unknown lengths remain 
  assert.equal(matchesMyTubeFormat(cards[1],"all"),true);
 });
 
+
+test("IA browser acceptance tests the current seven-slot dock on public and guest test routes",()=>{
+ const ia=read("scripts/verify-ia-v2.mjs");
+ assert.doesNotMatch(ia,/assertPublicBottomNavigation|expectedMobileNavigation|visibleMobileLabel/);
+ assert.doesNotMatch(ia,/\.mobile-bottom-navigation \[data-nav-item="home"\]/);
+ assert.match(ia,/const legacy=page\.locator\('\.mobile-bottom-navigation'\)/);
+ assert.match(ia,/await expect\(legacy\)\.toHaveCount\(0\)/);
+ assert.match(ia,/const items=UNIFIED_DOCK_IDS\.map\(id=>\(\{id,href:unifiedMobileDockHref\(locale,id\)\}\)\)/);
+ assert.match(ia,/assert\.equal\(items\.length,7/);
+ assert.match(ia,/await expect\(links\)\.toHaveCount\(7\)/);
+ assert.match(ia,/box\.width>=44&&box\.height>=44/);
+ assert.match(ia,/await link\.press\('Tab'\)/);
+ assert.match(ia,/verifyPublicHeaderMatrix\(page, 'chromium'\)/);
+ assert.match(ia,/verifyPublicDiscoveryNavigation\(page, 'chromium'\)/);
+ assert.match(ia,/verifyPublicHeaderMatrix\(sp, 'webkit'\)/);
+ assert.match(ia,/verifyPublicDiscoveryNavigation\(sp, 'webkit'\)/);
+ assert.match(ia,/await assertUnifiedBottomNavigation\(sp,\{locale:'ru',label:'webkit\/ru\/library\/390',visible:true\}\)/);
+ assert.match(ia,/Global seven-slot dock overlaps final Library content/);
+ for(const locale of ["ru","en","es"]){
+   assert.ok(isUnifiedMobileDockEditorialPath("/"+locale+"/library"));
+   assert.ok(isUnifiedMobileDockPath("/"+locale+"/client/tests"));
+ }
+});
