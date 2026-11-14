@@ -20,7 +20,7 @@ export default function ProfileGuestAuthDialog({locale='en',open=false,busy=fals
    onCancel={event=>{event.preventDefault();if(!busy)onDismiss?.()}}
    onClick={event=>{if(event.target===event.currentTarget&&!busy)onDismiss?.()}}>
    <div className={styles.content}>
-     <button type="button" className={styles.x} onClick={onDismiss} disabled={busy} aria-label={t.close}><X size={18} aria-hidden="true"/></button>
+     <button type="button" className={styles.x} onClick={onDismiss} disabled={busy} aria-label={locale === 'ru' ? 'Закрыть окно' : locale === 'es' ? 'Cerrar ventana' : 'Close dialog'}><X size={18} aria-hidden="true"/></button>
      <div className={styles.icon}><LockKeyhole size={25} aria-hidden="true"/></div>
      <h2 id="profile-guest-auth-title">{t.title}</h2>
      <p className={styles.intro}>{t.detail}</p>
