@@ -81,17 +81,18 @@ function trustedLegacySourceRetry(pr,comments,changedFiles){
  // On the SAME HEAD, only a documented no-model/no-source outcome qualifies.
  const records=parseRecords((comments||[]).filter(trustedControlComment));
  if(!records)return false;
- const sameHeadWithoutModel=r=>r.head_sha===sha&&
-   ((r.reason_code==='FREE_AI_EXECUTOR_NOT_CONFIGURED'&&r.code_job_result==='skipped')||
-    (r.outcome==='NO_VERIFIED_SOURCE_CHANGE'&&r.code_job_result===undefined));
+ // Require a real signed older-head MANUAL outcome. Same-head terminal
+ // states are already consumed by reservationStatus(); treating a no-model
+ // MANUAL on the same HEAD as a fresh retry would bypass that queue fence.
+ // Such unresolved work stays in the semantic handoff queue, not a new
+ // unreserved model attempt.
  if(!records.some(r=>r.pr_number===pr.number&&r.state==='MANUAL'&&
-   SHA.test(r.head_sha||'')&&(r.head_sha!==sha||sameHeadWithoutModel(r))))
-   return false;
- // Never retry a model on a failed/uncertain same-HEAD attempt. In particular,
- // a claim or green read-only PREPARED outcome is not a completed model call.
+   SHA.test(r.head_sha||'')&&r.head_sha!==sha))return false;
+ // New HEAD must have its OWN verified Core failure and must not already
+ // contain a terminal repair outcome or an attempted/uncertain model call.
  return !records.some(r=>r.pr_number===pr.number&&r.head_sha===sha&&(
-   ['PUBLISHED','VERIFY_REQUIRED','FAILED'].includes(r.state)||
-   (r.state==='MANUAL'&&!sameHeadWithoutModel(r))||
+   ['PREPARED','PUBLISHED','VERIFY_REQUIRED','FAILED','MANUAL',
+    'REJECTED','UNCONFIRMED'].includes(r.state)||
    r.source_published===true||
    r.model_run?.model_call_started_at||
    (typeof r.code_job_result==='string'&&
@@ -984,6 +985,30 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
         String(error.message||error).slice(0,90));
     }
   }
+  // A legacy preflight is a diagnostic, not an executor ACK. Persist the
+  // next semantic repair task in this SAME authenticated outcome comment.
+  // The :10 router and :40 developer reconcile it via the existing #1419
+  // incident ledger; none of these fields assert a model call or code write.
+  if(state==='PREPARED'&&strategy==='legacy'&&sameHead&&
+     claimStatus==='claimed'){
+    const next=result.follow_up_task;
+    if(!next||next.event_kind!=='REPAIR_WORKER_FAILED'||
+       next.parent_task_key!==taskKey||next.head_sha!==expectedSha||
+       next.pr_number!==number||next.delivery_status!=='CREATED_NOT_EXECUTED')
+      throw Error('HH_LEGACY_SEMANTIC_QUEUE_RECEIPT_MISSING');
+    result.semantic_queue={
+      schema:'HH_SEMANTIC_REPAIR_QUEUE_V1',task_id:next.task_id,
+      parent_task_key:taskKey,pr_number:number,head_sha:expectedSha,
+      source_worker_run_id:String(runId),state:'QUEUED_NOT_ACCEPTED',
+      assigned_executor_id:null,executor_accepted_at:null,
+      model_call_started_at:null,patch_verified_at:null,
+      source_published:false,new_sha:null,
+      responsible_role:next.responsible_role,
+      reason_code:next.reason_code,next_action:next.next_action,
+      created_at:result.created_at,next_check_at:next.next_check_at,
+      lease_required:true,source_write_authorized:false
+    };
+  }
   // Learning is strictly advisory: only the already verified remote source
   // commit earns a case. The SAME existing finalizer comment carries it.
   // No additional GitHub write, provider call, CI run or source permission.
@@ -1045,4 +1070,4 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
   return result;
 }
 
-module.exports={claim,publish,finalize,sourceDeliveryStatus,finalizeFailedFix,prioritizedRepairCandidates,currentRepairHead,eligible,legacyPrepEligible,trustedLegacySourceRetry,validBranch,safeFiles,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,verifiedCoreCodeFailure,claimedRepairMissingSourceProof,parseLegacySnapshotSummary,normalizeModelAudit,trustedLegacySourceRetry,PROD,SOURCE,CONFLICT,MARKER};
+module.exports={claim,publish,finalize,sourceDeliveryStatus,finalizeFailedFix,prioritizedRepairCandidates,currentRepairHead,eligible,legacyPrepEligible,trustedLegacySourceRetry,validBranch,safeFiles,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,verifiedCoreCodeFailure,claimedRepairMissingSourceProof,parseLegacySnapshotSummary,normalizeModelAudit,PROD,SOURCE,CONFLICT,MARKER};

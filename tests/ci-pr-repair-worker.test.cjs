@@ -1448,7 +1448,8 @@ test('legacy routing promotes only a safe complete diff to OpenRouter code repai
  const legacy=pr({labels:[{name:'hh:repair-manual'},{name:'hh:repair-needed'}]});
  const trusted={user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
   performed_via_github_app:{id:15368,slug:'github-actions'}};
- const manual={...trusted,body:commentBody({...taskFor(legacy,{tier:'P1'}),
+ const older=pr({labels:legacy.labels,head:{...legacy.head,sha:newSha}});
+ const manual={...trusted,body:commentBody({...taskFor(older,{tier:'P1'}),
   state:'MANUAL',reason_code:'FREE_AI_EXECUTOR_NOT_CONFIGURED',
   code_job_result:'skipped'})};
  const proof={...trusted,body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+
@@ -1456,6 +1457,12 @@ test('legacy routing promotes only a safe complete diff to OpenRouter code repai
  const comments=[manual,proof];
  const files=[{filename:'lib/a.ts',status:'modified'}];
  assert.equal(trustedLegacySourceRetry(legacy,comments,files),true);
+ // Same-HEAD MANUAL, even without a model call, is NOT a new reservation.
+ // It must remain visible to the semantic queue rather than retry blindly.
+ const sameHeadManual={...manual,body:commentBody({
+  ...taskFor(legacy,{tier:'P1'}),state:'MANUAL',
+  reason_code:'FREE_AI_EXECUTOR_NOT_CONFIGURED',code_job_result:'skipped'})};
+ assert.equal(trustedLegacySourceRetry(legacy,[sameHeadManual,proof],files),false);
  const f=fixture({pr:legacy,comments});core.outputs={};
  const ok=await claim({github:f.github,core,
   context:{...context,eventName:'schedule'},hasToken:true,hasOpenRouter:true,number:11});
@@ -1498,4 +1505,12 @@ test('legacy diagnostic sends an honest, non-executed semantic handoff',async()=
  assert.equal(result.follow_up_task?.assignment_status,'OWNER_REVIEW_REQUIRED');
  assert.equal(result.follow_up_task?.source_write_authorized,false);
  assert.equal(result.follow_up_task?.delivery_status,'CREATED_NOT_EXECUTED');
+ assert.equal(result.semantic_queue?.schema,'HH_SEMANTIC_REPAIR_QUEUE_V1');
+ assert.equal(result.semantic_queue?.state,'QUEUED_NOT_ACCEPTED');
+ assert.equal(result.semantic_queue?.head_sha,sha);
+ assert.equal(result.semantic_queue?.assigned_executor_id,null);
+ assert.equal(result.semantic_queue?.model_call_started_at,null);
+ assert.equal(result.semantic_queue?.new_sha,null);
+ assert.equal(result.semantic_queue?.source_write_authorized,false);
+ assert.equal(result.outcome?.next_action,'ASSIGN_SEMANTIC_SOURCE_REPAIR_AGENT');
 });

@@ -75,21 +75,23 @@ test('no manual source retry without real bot history, clean HEAD and non-sensit
   performed_via_github_app:{id:15368,slug:'github-actions'}};
  const prior={...bot,body:'<!-- HH_PR_TASK_V1 -->\n```json\n'+
   JSON.stringify({schema:'HH_PR_TASK_V1',task_key:'c'.repeat(32),
-   head_sha:OLD,state:'MANUAL',lane:'repair'})+'\n```'};
+   pr_number:204,head_sha:OLD,state:'MANUAL',lane:'repair'})+'\n```'};
  const source={...bot,body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+
   HEAD+' -->\nFailed jobs: core-lint-types-build.\n'};
+ const safeDiff=[{filename:'components/reiki-hero.jsx',status:'modified'}];
+ const unsafeDiff=[{filename:'components/auth/private.ts',status:'modified'}];
  assert.equal(worker.trustedLegacySourceRetry(clean,[prior,source],
-  ['components/reiki-hero.jsx']),true,
+  safeDiff),true,
   'a verified old worker MANUAL, new Core source failure and clean safe HEAD can repair');
  assert.equal(worker.trustedLegacySourceRetry(clean,[prior,source],
-  ['components/auth/private.ts']),false,'sensitive files always stop');
+  unsafeDiff),false,'sensitive files always stop');
  assert.equal(worker.trustedLegacySourceRetry(dirty,[prior,source],
-  ['components/reiki-hero.jsx']),false,'dirty conflicts never get automatic source repair');
+  safeDiff),false,'dirty conflicts never get automatic source repair');
  assert.equal(worker.trustedLegacySourceRetry({...clean,labels:[
   ...clean.labels,{name:'hh:release-gate-review'}]},[prior,source],
-  ['components/reiki-hero.jsx']),false,'independent release hold cannot be bypassed');
+  safeDiff),false,'independent release hold cannot be bypassed');
  assert.equal(worker.trustedLegacySourceRetry(clean,[{...prior,user:{login:'forged'}},source],
-  ['components/reiki-hero.jsx']),false,'untrusted old receipt cannot authorize new source');
+  safeDiff),false,'untrusted old receipt cannot authorize new source');
 });
 test('cloud worker records PREPARED without demanding a fake source SHA',()=>{
  assert.equal(worker.claimedRepairMissingSourceProof({
