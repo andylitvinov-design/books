@@ -133,6 +133,12 @@ try {
     await visible(page.locator("[data-assist-personal-consultation]"));
     const catalog = page.locator("[data-services-unified-catalog]");
     await visible(catalog);
+    // Browser acceptance must exercise hydrated React handlers, not
+    // accidentally tap static SSR buttons before Next router readiness.
+    await expect.poll(
+      () => page.evaluate(() => history.pushState.toString().includes("__NA")),
+      { timeout: 30000, message: 'Mobile Services catalogue must hydrate before interactions' },
+    ).toBe(true);
     const panelIds = [
       "reiki", "browse", "reading", "consultation", "services", "video", "courses",
       "coach", "magical", "homeopathy", "about", "testimonials", "mytube", "directory",
