@@ -11,13 +11,19 @@ function world(opts={}){
   head:{sha:HEAD,ref:'codex/reasoning-mind-20261110',
    repo:{full_name:'andylitvinov-design/books'}},
   mergeable:true,mergeable_state:'blocked',auto_merge:null,
-  labels:[],body:'existing public PR body',node_id:'PR_abcdef01'};
+  labels:[],body:'existing public PR body',commits:opts.commitsCount??2,node_id:'PR_abcdef01'};
  const diff=(status,base,mergeBase,extra={})=>({
   status,base_commit:{sha:base},merge_base_commit:{sha:mergeBase},...extra});
  const github={rest:{
   pulls:{get:async()=>{prReads++;return {data:opts.changeAfterIntent&&prReads>=3?
    {...pr,head:{...pr.head,sha:'f'.repeat(40)}}:{...pr,draft}};},
-   list:async()=>({data:[]})},
+   list:async()=>({data:[]}),
+   listCommits:async({per_page,page})=>{
+    if(opts.commitsApiFailure)throw Error('READ_HISTORY_FAILED');
+    if(per_page!==100||page!==Math.ceil((opts.commitsCount??2)/100))
+     throw Error('UNBOUNDED_HISTORY_QUERY');
+    return {data:opts.historyPage??[]};
+   }},
   repos:{getBranch:async()=>({data:{protected:true,commit:{sha:opts.movedBase?'f'.repeat(40):NEW}}}),
    compareCommits:async ({base,head})=>{
     if(base===OLD&&head===NEW)return {data:diff('ahead',OLD,OLD,{behind_by:0})};
@@ -136,4 +142,65 @@ test('BASE advance record and code keep exact required gate; no force or fake gr
  assert.match(workflow,/Verify effective review, resolved threads and free owner lease/);
  assert.match(code,/expected_head_sha:head/);
  assert.doesNotMatch(code,/force:true|createCheckRun|check-runs\/|\/merges/);
+});
+
+const syncCommit=(sha,at)=>({sha,parents:[{sha:OLD},{sha:OLD}],
+ commit:{message:"Merge branch 'codex/public-book-library' into codex/reasoning-mind-20261110",
+  committer:{date:at}}});
+const sourceCommit=sha=>({sha,parents:[{sha:OLD}],
+ commit:{message:'fix: meaningful real source change',committer:{date:'2026-11-11T00:45:00Z'}}});
+test('success-side BASE recovery refuses a third recent production merge before any owner write',async()=>{
+ const history=[sourceCommit('1'.repeat(40)),
+  syncCommit('2'.repeat(40),'2026-11-11T00:10:00Z'),
+  syncCommit('3'.repeat(40),'2026-11-11T00:30:00Z'),sourceCommit(HEAD)];
+ const w=world({commitsCount:4,historyPage:history});
+ const result=await run(w.args);
+ assert.equal(result.status,'HOLD');
+ assert.equal(result.reason,'BASE_SYNC_REPEAT_BURST_HOLD');
+ assert.equal(result.recentSyncs,2);
+ assert.ok(Number.isFinite(Date.parse(result.retryAt)));
+ assert.equal(result.headUpdateRequested,false);
+ assert.equal(result.ciVerified,false);
+ assert.deepEqual(w.updates,[],'no new HEAD and no new Core wave');
+ assert.deepEqual(w.mutations,[],'cannot Draft/Ready to sneak around the hold');
+ assert.deepEqual(w.comments,[],'do not write misleading one-shot intent');
+});
+test('one verified production-base merge still permits exactly one protected update and real Core',async()=>{
+ const history=[syncCommit('2'.repeat(40),'2026-11-11T00:10:00Z'),
+  sourceCommit('3'.repeat(40)),sourceCommit(HEAD)];
+ const w=world({commitsCount:3,historyPage:history}),result=await run(w.args);
+ assert.equal(result.status,'BASE_SYNC_REQUESTED');
+ assert.equal(result.ciVerified,false);
+ assert.equal(result.sourceChanged,false,'202 accepted is not completed update');
+ assert.deepEqual(w.updates,[{expected_head_sha:HEAD}]);
+ assert.equal(w.comments.length,1);
+});
+test('successful Core base recovery holds on incomplete, changed or unverifiable history',async()=>{
+ const complete=[syncCommit('2'.repeat(40),'2026-11-11T00:20:00Z'),
+  sourceCommit('3'.repeat(40)),sourceCommit(HEAD)];
+ const variants=[
+  {commitsCount:3,historyPage:complete.slice(1),reason:'BASE_SYNC_HISTORY_INCOMPLETE'},
+  {commitsCount:3,historyPage:[...complete.slice(0,-1),sourceCommit('f'.repeat(40))],
+   reason:'BASE_SYNC_HISTORY_HEAD_CHANGED'},
+  {commitsCount:3,historyPage:[null,...complete.slice(1)],reason:'BASE_SYNC_HISTORY_MALFORMED'},
+  {commitsCount:3,commitsApiFailure:true,reason:'PREFLIGHT_EVIDENCE_UNAVAILABLE'},
+  {commitsCount:1001,reason:'BASE_SYNC_HISTORY_COUNT_UNVERIFIED'},
+  {commitsCount:0,reason:'BASE_SYNC_HISTORY_COUNT_UNVERIFIED'},
+ ];
+ for(const {reason,...opts} of variants){
+  const w=world(opts),result=await run(w.args);
+  assert.equal(result.status,'HOLD');
+  assert.equal(result.reason,reason,JSON.stringify(opts).slice(0,90));
+  assert.equal(result.ciVerified,false);
+  assert.equal(w.updates.length,0);
+  assert.equal(w.comments.length,0);
+ }
+});
+test('source already contains protected BASE: signed Ready does not consume a source-sync budget',async()=>{
+ const w=world({alreadyCurrent:true,commitsCount:1001});
+ const result=await run(w.args);
+ assert.equal(result.status,'WAKE_REQUESTED');
+ assert.equal(result.headUpdateRequested,false);
+ assert.deepEqual(w.updates,[]);
+ assert.deepEqual(w.mutations,['convertPullRequestToDraft','markPullRequestReadyForReview']);
 });
