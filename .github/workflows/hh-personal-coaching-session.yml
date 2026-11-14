@@ -16,6 +16,7 @@ on:
       - 'components/coaching-report-preview*'
       - 'components/app/coaching-live-voice*'
       - 'tests/coaching-live-voice.test.mjs'
+      - 'tests/coach-*.test.mjs'
       - 'tests/coaching-fish-tts.test.mjs'
       - 'tests/personal-coaching-client-context.test.mjs'
       - 'tests/coaching-reconnect.test.mjs'

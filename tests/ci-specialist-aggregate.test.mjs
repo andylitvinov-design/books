@@ -2237,3 +2237,60 @@ test('inert raster production-base advance is ancestry-proven, conflict-independ
       diff(['public/images/a.png'],bad),old,newest,['lib/crm/contact.js']),false);
   }
 });
+
+test('additive coaching release test narrows unrelated package specialists, not real owners', () => {
+  const before = {
+    name:'books', dependencies:{next:'15.0.0'}, scripts:{
+      prebuild:'npm run test:coaching:release && next build',
+      'test:coaching:release':'node --test tests/coaching-brain.test.mjs tests/coaching-live-voice.test.mjs',
+      build:'next build',
+    },
+  };
+  const after=structuredClone(before);
+  const fresh='tests/coach-spoken-text.test.mjs';
+  after.scripts['test:coaching:release']='node --test '+fresh+' '+before.scripts['test:coaching:release'].slice('node --test '.length);
+  const changed=['package.json',fresh,'components/my-coach-live-dialogue.jsx'];
+  const check=(manifest, paths=changed)=>classifyPackageImpact({
+    changed:paths,basePackage:JSON.stringify(before),currentPackage:JSON.stringify(manifest),
+  });
+  const impact=check(after);
+  const coaching='.github/workflows/hh-personal-coaching-session.yml';
+  assert.deepEqual(impact,{mode:'scoped',reason:'ADDITIVE_COACHING_RELEASE_TEST',workflows:[coaching]});
+  const workflow=paths=>"on:\n  pull_request:\n    paths:\n"+paths.map(p=>"      - '"+p+"'\n").join('');
+  const suites=new Map([
+    [coaching,workflow(['package.json','tests/coach-*.test.mjs','lib/personal-coaching/**'])],
+    ['.github/workflows/hh-app-r1.yml',workflow(['package.json','lib/app/**'])],
+    ['.github/workflows/ia-v2.yml',workflow(['package.json','lib/security/**'])],
+    ['.github/workflows/hh-private-audio-e2e.yml',workflow(['package.json','lib/clients/**'])],
+    ['.github/workflows/hh-live-audio-ci.yml',workflow(['package.json','lib/live-audio/**'])],
+    ['.github/workflows/holistic-support-mandala.yml',workflow(['package.json','lib/mandala/**'])],
+  ]);
+  assert.equal(expectedWorkflows({base:suites,current:suites,changed}).length,6);
+  assert.deepEqual(expectedWorkflows({base:suites,current:suites,changed,packageImpact:impact}),[coaching]);
+  assert.deepEqual(expectedWorkflows({base:suites,current:suites,
+    changed:[...changed,'lib/security/owner.js'],packageImpact:impact}),
+    [coaching,'.github/workflows/ia-v2.yml'],'actual security code must still require IA');
+  const missingOwner=new Map(suites);
+  missingOwner.set(coaching,workflow(['lib/personal-coaching/**']));
+  assert.throws(()=>expectedWorkflows({base:missingOwner,current:suites,changed,packageImpact:impact}),
+    /PACKAGE_ROUTE_OWNER_NOT_TRIGGERED/);
+  assert.throws(()=>expectedWorkflows({base:suites,current:missingOwner,changed,packageImpact:impact}),
+    /PACKAGE_ROUTE_OWNER_NOT_TRIGGERED/);
+  const unsafe=structuredClone(after);unsafe.dependencies.next='16.0.0';
+  assert.equal(check(unsafe).mode,'full');
+  const missing=structuredClone(after);missing.scripts.prebuild='next build';
+  assert.equal(check(missing).mode,'full');
+  const rewritten=structuredClone(before);rewritten.scripts['test:coaching:release']='echo bypass';
+  assert.equal(check(rewritten).mode,'full');
+  const removed=structuredClone(after);removed.scripts['test:coaching:release']='node --test '+fresh;
+  assert.equal(check(removed).mode,'full');
+  const second=structuredClone(after);second.scripts.build='echo done';
+  assert.equal(check(second).mode,'full');
+  const other=structuredClone(before);other.scripts['test:coaching:release']=
+    'node --test tests/other.test.mjs '+before.scripts['test:coaching:release'].slice('node --test '.length);
+  assert.equal(check(other).mode,'full');
+  assert.equal(check(after,['package.json']).mode,'full','new test must itself be part of the PR');
+  assert.equal(check(after,[...changed,'package-lock.json']).mode,'full');
+  const appended=structuredClone(before);appended.scripts['test:coaching:release']+=' '+fresh;
+  assert.equal(check(appended).mode,'scoped','append-only is also safe');
+});
