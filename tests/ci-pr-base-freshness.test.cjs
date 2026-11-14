@@ -172,3 +172,32 @@ test('hourly Core-base fallback uses existing GitHub token and no scheduled work
  assert.equal((hourly.match(/verifiedRunBase:rows=>baseEvidence\.coreRunBaseForCheck/g)||[]).length,2);
  assert.equal((hourly.match(/token:process\.env\.HH_CORE_BASE_TOKEN/g)||[]).length,2);
 });
+
+
+test('AutoMerge accepts verified independent raster target advances without HEAD sync',async()=>{
+ const mock=api('lib/billing/stripe-provider.js');
+ const comparison=(filename,overrides={})=>({
+  status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+  base_commit:{sha:old},merge_base_commit:{sha:old},
+  commits:[{sha:head}],files:[{filename,status:'modified'}],...overrides,
+ });
+ let count=0;
+ mock.rest.repos.compareCommits=async ({base,head:target})=>{
+   assert.equal(base,old);assert.equal(target,head);count++;
+   return {data:comparison('public/images/new-master.webp')};
+ };
+ const options={github:mock,owner:'o',repo:'r',pr:{...pr,mergeable:true},verifiedRunBase:old};
+ const allowed=await assessBaseFreshness(options);
+ assert.equal(allowed.ok,true);
+ assert.equal(allowed.reason,'INDEPENDENT_PUBLIC_RASTER_REVALIDATED');
+ assert.equal(count,1);
+ for(const filename of ['public/images/bad.svg','.github/workflows/core.yml',
+   'app/api/checkout/route.ts','supabase/migrations/0001.sql','package-lock.json']){
+   mock.rest.repos.compareCommits=async()=>({data:comparison(filename)});
+   assert.equal((await assessBaseFreshness(options)).reason,'SENSITIVE_COMPARE_UNSAFE',filename);
+ }
+ mock.rest.repos.compareCommits=async()=>({data:comparison('public/images/banner.png')});
+ assert.equal((await assessBaseFreshness({...options,pr:{...pr,mergeable:null}})).reason,'SENSITIVE_COMPARE_UNSAFE');
+ mock.rest.repos.compareCommits=async()=>({data:comparison('public/images/banner.png',{status:'diverged'})});
+ assert.equal((await assessBaseFreshness(options)).reason,'SENSITIVE_COMPARE_UNSAFE');
+});
