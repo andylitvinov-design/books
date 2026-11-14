@@ -545,6 +545,7 @@
     renderSkeleton();
     select.addEventListener('change',load);
     refreshButton.addEventListener('click',function(){
+      if(PUBLIC_OWNER_PORTAL){window.location.assign(OWNER_PORTAL);return;}
       commentsCache.clear();commitCache.clear();void load();
     });
     void load();
@@ -660,8 +661,32 @@
       ' PR (это не равно коммиту). В выборке есть закрытые и тестовые PR. '+(note||'')+
       (data.complete?'':' Неполное покрытие: показаны минимально подтверждённые значения, не все события.'));
   }
+  // This independently deployed Observatory has intentionally NO owner session or CI Inbox.
+  // Owner-specific events live behind the private Agent Director same-origin session.
+  // Never make a known-404 request, and never report unavailable events as zero.
+  var PUBLIC_OWNER_PORTAL=true;
+  var OWNER_PORTAL='https://holistic-house-agents-director.vercel.app/ci-errors.html';
+  function showOwnerPortal(){
+    grid.replaceChildren();
+    drill.replaceChildren();
+    blockerPanel.replaceChildren();
+    blockerPanel.append(el('summary','','Причины остановки доступны в защищённом кабинете'));
+    insight.textContent='Этапы назначения и публикации доступны только после проверки сессии владельца. Данные PR/CI из публичных источников остаются доступны в других разделах монитора.';
+    message.replaceChildren('Закрытый CI Inbox не подключён к публичному адресу. ',
+      el('span','','Это не означает, что ошибок или исправлений было ноль. '));
+    var a=el('a','hh-error-owner-link','Открыть статистику и обновить данные в Agents Director');
+    a.href=OWNER_PORTAL;
+    a.rel='noopener noreferrer';
+    message.append(a);
+    select.disabled=true;
+    select.title='Период выбирается после входа в Agents Director';
+    refreshButton.textContent='Открыть данные';
+    refreshButton.title='Открыть защищённую статистику с кнопкой обновления';
+  }
   async function load(){
-    if(loading||!panel)return;loading=true;
+    if(!panel)return;
+    if(PUBLIC_OWNER_PORTAL){showOwnerPortal();return;}
+    if(loading)return;loading=true;
     refreshButton.disabled=true;select.disabled=true;
     message.textContent='Сверяю задачи с подписанными квитанциями Worker и GitHub…';
     renderSkeleton();
@@ -728,7 +753,10 @@
     }catch(err){
       if(String(err.message||err)==='OWNER_SESSION_REQUIRED'){
         message.replaceChildren('Для просмотра обработки ошибок войдите как владелец. ');
-        var login=el('a','','Войти в Commander');login.href='/commander-auth.html';message.append(login);
+        var login=el('a','','Войти в Commander');login.href='https://holistic-house-agents-director.vercel.app/commander-auth.html';message.append(login);
+      }else if(String(err.message||err)==='CI_INBOX_HTTP_404'){
+        message.textContent='Приватный CI Inbox не подключён к этому PR-домену (HTTP 404). '+
+          'Этапы назначения и коммитов не измерены; проверяйте их в Agents Director. Пропуск не равен нулю.';
       }else message.textContent='Достоверная статистика недоступна ('+
         String(err.message||err).slice(0,90)+'). Пропуск данных не равен нулю.';
     }finally{loading=false;refreshButton.disabled=false;select.disabled=false;}

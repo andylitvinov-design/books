@@ -56,6 +56,22 @@
     {
       "source": "/api/pr-three-kpis",
       "destination": "https://holistic-house-pr-monitor.vercel.app/api/pr-three-kpis"
+    },
+    {
+      "source": "/api/pr-created-cohort",
+      "destination": "https://holistic-house-pr-monitor.vercel.app/api/pr-created-cohort"
+    },
+    {
+      "source": "/api/ci-journey-summary",
+      "destination": "https://holistic-house-pr-monitor.vercel.app/api/ci-journey-summary"
+    },
+    {
+      "source": "/api/ci-queue-detail",
+      "destination": "https://holistic-house-pr-monitor.vercel.app/api/ci-queue-detail"
+    },
+    {
+      "source": "/api/pr-merge-period",
+      "destination": "https://holistic-house-pr-monitor.vercel.app/api/pr-merge-period"
     }
   ]
 }

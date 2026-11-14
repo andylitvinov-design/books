@@ -21,33 +21,57 @@
   <button type="button" id="refresh" class="refresh">↻ Обновить</button>
  </section>
  <div class="freshness"><span class="status-dot" id="state-dot"></span><span id="status" role="status" aria-live="polite">Страница открыта. Получаю подтверждённые данные…</span><span id="updated-at"></span></div>
- <nav class="section-nav" aria-label="Разделы PR Monitor">
-  <a href="#graphs">Графики</a><a href="#stages">Этапы</a><a href="#ci">CI</a><a href="#queue">Очередь</a><a href="#prs">PR</a><a href="#repair">Ремонт</a><a href="#issues">Ошибки</a>
- </nav>
- <section class="metrics" aria-label="Основные показатели">
-  <article><span>Новые PR / час</span><strong id="k-created">—</strong><small>Создание PR</small></article>
-  <article><span>Merge / час</span><strong id="k-merged">—</strong><small>Факт GitHub merge</small></article>
-  <article><span>Открытых PR</span><strong id="k-open">—</strong><small>По последней проверке</small></article>
-  <article><span>PR → Merge · P50</span><strong id="k-median">—</strong><small id="k-median-note">Измеренный интервал</small></article>
+
+ <div class="period-toolbar"><strong>Период</strong><div class="period-buttons" role="group" aria-label="Период статистики PR"><button type="button" class="period-button" data-period="1" aria-pressed="false">1 ч</button><button type="button" class="period-button" data-period="6" aria-pressed="false">6 ч</button><button type="button" class="period-button" data-period="24" aria-pressed="true">24 ч</button></div></div>
+ <section class="metrics overview-metrics" aria-label="Основные показатели PR и CI">
+  <article><span>CI выполняются</span><strong id="k-ci-running">—</strong><small id="k-ci-running-note">GitHub Actions · workflow</small></article>
+  <article><span>CI ожидают</span><strong id="k-ci-queued">—</strong><small id="k-ci-queued-note">GitHub Actions · workflow</small></article>
+  <article><span>Открытых PR</span><strong id="k-open">—</strong><small id="k-open-note">Все ветки · очередь GitHub</small></article>
+  <article><span>Создано PR</span><strong id="k-created">—</strong><small id="k-created-note">За 24 часа · все ветки</small></article>
+  <article><span>Смержено PR</span><strong id="k-merged">—</strong><small id="k-merged-note">За 24 часа · не LIVE</small></article>
+  <article><span>Production PR → Merge · P50</span><strong id="k-median">—</strong><small id="k-median-note">Когорта созданных за 24 ч</small></article>
  </section>
+ <p class="overview-provenance" id="overview-provenance">CI — число workflow, не jobs; время источников уточняется.</p>
+ <nav class="section-nav" aria-label="Разделы PR Monitor">
+ <a href="#strict">Точная когорта</a><a href="#graphs">Графики</a><a href="#stages">Этапы</a><a href="#ci">CI</a><a href="#queue">Очередь</a><a href="#prs">PR</a><a href="#repair">Ремонт</a><a href="#issues">Ошибки</a>
+ </nav>
  <section class="chart-grid" id="graphs" aria-label="Динамика PR и CI">
   <article class="panel chart"><div class="panel-heading"><div><p class="eyebrow">ДИНАМИКА</p><h2>Создание PR и CI</h2></div><span class="small">6 × 1 час</span></div>
    <div class="legend"><span><b class="square blue"></b>Созданы</span><span><b class="square green"></b>Merge</span><span><b class="square yellow"></b>Запуски CI</span></div>
    <svg id="chart-flow" viewBox="0 0 360 180" role="img" aria-label="Часовая динамика новых PR, объединений и запусков CI"><text x="180" y="92" fill="#abc4d7" font-size="12" text-anchor="middle">Ожидаю измерения…</text></svg>
    <p id="flow-info" class="note">Недоступные значения будут показаны как «—», не как ноль.</p>
   </article>
-  <article class="panel chart"><div class="panel-heading"><div><p class="eyebrow">СКОРОСТЬ</p><h2>PR → Merge</h2></div><span class="small">Последние 24 часа</span></div>
+  <article class="panel chart"><div class="panel-heading"><div><p class="eyebrow">СКОРОСТЬ</p><h2>PR → Merge</h2></div><span class="small" id="strict-speed-period">Выбранный период: 24 ч</span></div>
    <div class="legend"><span><b class="square green"></b>Merge / интервал</span><span><b class="square blue"></b>P50 до Merge</span></div>
    <svg id="chart-speed" viewBox="0 0 360 180" role="img" aria-label="Merge по интервалам и медиана времени до объединения"><text x="180" y="92" fill="#abc4d7" font-size="12" text-anchor="middle">Ожидаю измерения…</text></svg>
    <p id="speed-info" class="note">Измеряется по подтверждённым событиям GitHub.</p>
   </article>
  </section>
- <section class="panel" id="stages" aria-labelledby="stages-title">
-  <div class="panel-heading"><div><p class="eyebrow">ПОЛНЫЙ ПУТЬ PR</p><h2 id="stages-title">Этапы прохождения и задержки</h2></div><span id="stages-period" class="small">24 часа</span></div>
+ <section class="panel" id="strict" aria-labelledby="strict-title">
+  <div class="panel-heading"><div><p class="eyebrow">ЕДИНАЯ КОГОРТА · PRODUCTION</p>
+    <h2 id="strict-title">Created → Merge · реальные интервалы</h2></div>
+    <span class="small" id="strict-source">Читаю GitHub…</span></div>
+  <p class="note">Для выбора периода используйте переключатель вверху страницы. Для 72 ч нет полной истории.</p>
+  <div class="metrics compact">
+    <article><span>Среднее Created → Merge</span><strong id="strict-mean">—</strong></article>
+    <article><span>Медиана P50</span><strong id="strict-p50">—</strong></article>
+    <article><span>P90</span><strong id="strict-p90">—</strong></article>
+    <article><span>Смержены внутри окна</span><strong id="strict-n">—</strong></article>
+  </div>
+  <p id="strict-note" class="note">Только PR, созданные И смерженные внутри периода. Остальные исключены из длительности.</p>
+  <div class="table-scroll"><table><thead><tr><th>Этап</th><th>Средний вклад / PR</th>
+    <th>Охват</th><th>P50 наблюд.</th></tr></thead>
+    <tbody id="strict-stage-rows"><tr><td colspan="4">Загружаю сопоставимый архив…</td></tr></tbody></table></div>
+  <p class="caution">* Для 72 часов источник пока не подтверждает полный охват.
+    Паузы между сохранёнными Core CI не доказывают, кто ожидал или исправлял.
+    Merge не равен LIVE.</p>
+</section>
+<section class="panel" id="stages" aria-labelledby="stages-title">
+  <div class="panel-heading"><div><p class="eyebrow">ВЫБОРОЧНАЯ CI-ДИАГНОСТИКА</p><h2 id="stages-title">Выборочные замеры этапов CI (не полная когорта)</h2></div><span id="stages-period" class="small">24 часа</span></div>
   <div class="stage-flow" aria-label="Этапы"> <span>Created</span><span>Подготовка</span><span>Runner</span><span>Core / Specialist CI</span><span>Gate</span><span>Merge</span><span>LIVE*</span></div>
   <div class="table-scroll"><table><thead><tr><th>Этап</th><th>PR с замером</th><th>P50</th><th>P90</th><th>Ожидают</th></tr></thead><tbody id="stage-rows"><tr><td colspan="5">Получаю подтверждённые интервалы…</td></tr></tbody></table></div>
   <div class="subheading">Подэтапы CI и очередей</div><div id="stage-detail" class="mini-grid"><p>Core, Specialist, Preflight, Gate — данные загружаются…</p></div>
-  <p class="caution">* Merge и LIVE — разные события. Без квитанции production-публикации LIVE не считается подтверждённым.</p>
+  <p class="caution">Выборка CI ниже не заменяет средние по полной когорте выше. * Merge и LIVE — разные события. Без квитанции production-публикации LIVE не считается подтверждённым.</p>
  </section>
  <section class="panel" id="ci" aria-labelledby="ci-title">
   <div class="panel-heading"><div><p class="eyebrow">GITHUB ACTIONS</p><h2 id="ci-title">CI: нагрузка, ошибки и ожидание runner</h2></div><span class="small" id="ci-coverage">Источник проверяется</span></div>

@@ -8,24 +8,21 @@
   const valid = x => typeof x === 'number' && Number.isFinite(x) && x >= 0;
   const num = new Intl.NumberFormat('ru-RU', {maximumFractionDigits: 1});
   const duration = x => !valid(x) ? '—' : x < 1 ? num.format(x*60)+' сек' : x < 60 ? num.format(x)+' мин' : num.format(x/60)+' ч';
-  function normalize(raw, hours) {
-    if (raw?.schema !== 'HH_PR_STAGE_TIMELINE_V2' || raw.period_hours !== hours ||
-        !Array.isArray(raw.buckets) || raw.buckets.length !== 6) throw Error('Непроверенная серия PR');
-    return raw.buckets.map(b => {
-      const a=Date.parse(b?.start), z=Date.parse(b?.end), n=b?.total?.n, median=b?.total?.median_minutes;
-      if (!Number.isFinite(a) || !Number.isFinite(z) || z<=a ||
-          !Number.isSafeInteger(b?.count) || b.count<0 ||
-          !Number.isSafeInteger(n) || n<0 || n>b.count ||
-          (n>0 && !valid(median))) throw Error('Некорректное покрытие/интервалы');
-      return {start:b.start, count:b.count, n, p50:n>0?median:null, perHour:b.count*6/hours};
-    });
+  function normalize(raw, hours, cohortFn) {
+    const fn=cohortFn || env?.HHStrictCohort;
+    if(typeof fn!=='function')throw Error('STRICT_COHORT_MODEL_UNAVAILABLE');
+    const m=fn(raw,null,hours);
+    return m.buckets.map(b=>({
+      start:b.start,count:b.count,n:b.count,p50:b.median_minutes,
+      perHour:b.count*6/hours
+    }));
   }
   if (typeof module === 'object' && module.exports) module.exports = {normalize, duration};
   if (!env?.document || env.__hhPrVelocityV2) return;
   env.__hhPrVelocityV2 = true;
   const doc=env.document, cache=new Map();
   const clock=new Intl.DateTimeFormat('ru-RU',{timeZone:'America/Toronto',hour:'2-digit',minute:'2-digit',hour12:false});
-  let hours=6, sequence=0, root, plot, bins, status, foot, buttons;
+  let hours=24, sequence=0, root, plot, bins, status, foot, buttons;
   function el(tag,cls,txt,parent) {
     const x=doc.createElement(tag);if(cls)x.className=cls;if(txt!==undefined)x.textContent=String(txt);
     if(parent)parent.appendChild(x);return x;
@@ -71,17 +68,23 @@
       el('small','','Merge '+r.count+' · '+num.format(r.perHour)+'/ч',item);
       el('small','','P50 '+duration(r.p50)+' · n='+r.n,item);
     });
-    status.textContent=rows.some(r=>r.n)?'6 интервалов':'Нет измеренных слияний за выбранный период';
-    foot.textContent='Группировка по времени merge. P50 = создан → merge. Неизвестно ≠ 0. CI/HEAD показываются отдельно при наличии архива.';
+    status.textContent=rows.some(r=>r.n)?'6 интервалов · одна когорта':'За выбранный период нет завершённых новых PR';
+    foot.textContent='Production: только созданные И смерженные в этом интервале. P50 того же набора PR; неизвестно ≠ 0. Паузы CI в отдельной таблице.';
   }
   async function load(force) {
     const selected=hours, seq=++sequence;
     if(!force&&cache.has(selected)){render(cache.get(selected));return;}
-    status.textContent='Загружаю данные GitHub…';
+    status.textContent='Загружаю подтверждённую когорту created+merged…';
     try {
-      const response=await env.fetch('/api/pr-stage-timeline?hours='+selected,{cache:'default',headers:{Accept:'application/json'}});
-      if(!response.ok)throw Error('API '+response.status);
-      const data=await response.json();
+      // Prefer the exact source snapshot already accepted by the main cohort table.
+      // This prevents a moving rolling-window boundary from changing graph membership.
+      let data=env.__HH_STRICT_COHORT_SOURCE__;
+      if(data?.schema!=='HH_PR_CREATED_COHORT_V1'||data.coverage?.complete!==true){
+        const response=await env.fetch('/api/pr-created-cohort',
+          {cache:'no-store',headers:{Accept:'application/json'}});
+        if(!response.ok)throw Error('API '+response.status);
+        data=await response.json();
+      }
       normalize(data,selected);
       if(seq!==sequence||selected!==hours)return;
       cache.set(selected,data);render(data);
@@ -89,7 +92,7 @@
       if(seq!==sequence)return;
       plot.replaceChildren(el('p','hhv-error','График задержек: нет проверенных данных. Нажмите «Обновить».'));
       bins.replaceChildren();status.textContent='Данные недоступны';
-      foot.textContent=String(e.message||e).slice(0,90)+' · отсутствие данных не равно нулю.';
+      foot.textContent=(selected>48?'Нет полного источника для 72 часов. ':String(e.message||e).slice(0,90))+' · отсутствие данных не равно нулю.';
     }
   }
   function mount() {
@@ -104,7 +107,8 @@
     buttons=PERIODS.map(p=>{
       const button=el('button','',p+'ч',controls);button.type='button';
       button.dataset.hours=String(p);button.setAttribute('aria-pressed',String(p===hours));
-      button.addEventListener('click',()=>{hours=p;buttons.forEach(b=>b.setAttribute('aria-pressed',String(b===button)));void load(false);});
+      button.addEventListener('click',()=>{hours=p;buttons.forEach(b=>b.setAttribute('aria-pressed',String(b===button)));void load(false);
+        if(typeof env.CustomEvent==='function')env.dispatchEvent(new CustomEvent('hh-pr-strict-period',{detail:{hours,origin:'graph'}}));});
       return button;
     });
     const refresh=el('button','hhv-refresh','Обновить',header);refresh.type='button';
@@ -116,6 +120,16 @@
     plot=el('div','hhv-graph',undefined,root);
     bins=el('div','hhv-buckets',undefined,root);
     foot=el('p','hhv-foot','Только подтверждённые события GitHub.',root);
+    env.addEventListener('hh-pr-strict-source',()=>{
+      cache.delete(hours);void load(false);
+    });
+    env.addEventListener('hh-pr-strict-period',event=>{
+      const next=event?.detail?.hours;
+      if(event?.detail?.origin==='stages'&&[1,6,24,72].includes(next)&&next!==hours){
+        hours=next;buttons.forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.hours)===hours)));
+        void load(false);
+      }
+    });
     void load(false);
   }
   if(doc.readyState==='loading')doc.addEventListener('DOMContentLoaded',mount,{once:true});

@@ -1,6 +1,6 @@
 'use strict';
 const COOKIE='hh_commander_supabase_auth';
-const HOST='holistic-house-pr-monitor.vercel.app';
+const HOST='holistic-house-agents-director.vercel.app';
 const STORE_URL='https://shervdixkaxurnaecioe.supabase.co/functions/v1/agent-commander-private-store-v1';
 
 class StoreError extends Error {

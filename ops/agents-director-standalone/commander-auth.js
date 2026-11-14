@@ -1,6 +1,6 @@
 (() => {
   const MAIN='https://holistichouse.vercel.app'
-  const MONITOR='https://holistic-house-pr-monitor.vercel.app'
+  const MONITOR='https://holistic-house-agents-director.vercel.app'
   const status=document.getElementById('commander-auth-status')
   let sessionToken='',sessionRefreshToken=''
 
@@ -9,7 +9,7 @@
     try{
       const u=new URL(value,MONITOR)
       if(u.origin!==MONITOR||u.hash||u.pathname.includes('//'))return '/agents.html'
-      const allowed=new Set(['/agents.html','/pr-monitor.html','/task-editor.html','/chats.html','/projects.html','/memory.html'])
+      const allowed=new Set(['/agents.html','/pr-monitor.html','/task-editor.html','/chats.html','/projects.html','/memory.html','/ci-errors.html'])
       if(!allowed.has(u.pathname))return '/agents.html'
       if(u.pathname==='/chats.html'){
         const entries=[...u.searchParams.entries()]
