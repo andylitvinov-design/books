@@ -2454,6 +2454,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [readyFreeFilmKey,setReadyFreeFilmKey] = useState("");
   const freeFilmPlayerRefs=useRef<Record<string,HTMLVideoElement>>({});
   const activeFreeFilmShotRef=useRef<string|null>(null);
+  // Bounded WebKit native MP4 drift recovery; never accept unlicensed/stale frames.
+  const lastLicensedSeekRef=useRef<Record<string,number>>({});
   const [courseMeditationDraft,setCourseMeditationDraft] = useState("");
   // A deferred opener must never override a later explicit "Do not add" choice.
   const meditationDisclosureEpochRef=useRef(0);
@@ -3417,6 +3419,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         if(id!==shot.sceneId && !other.paused)other.pause();
       });
       activeFreeFilmShotRef.current=shot.sceneId;
+      delete lastLicensedSeekRef.current[shot.sceneId];
     }
     let frame;
     try{
@@ -3439,12 +3442,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       }catch{/* Decoder wait below fails closed if re-priming cannot recover. */}
       return null;
     }
-    if(assessment.status==="drift"&&!video.seeking&&(enteringShot||!advancePlayback)){
-      // Stage entry is a *bounded* seek, not a seek on every encoded frame.
-      // Rendering waits for the native decoder to finish, else the existing
-      // 500ms media gap watchdog cancels the exported film.
-      try{video.pause();video.currentTime=frame.expectedSourceSeconds;}
-      catch{/* The existing media timeout handles an unseekable source. */}
+    if(assessment.status==="drift"&&!video.seeking){
+      // The Safari WebCodecs source may freeze midway through a shot even
+      // with readyState=4. Recenter only on verified source-clock drift,
+      // throttling attempts to avoid a seek storm during local export.
+      // assessLicensedSourceFrame must still return "ready" before drawing.
+      const now=performance.now();
+      const last=lastLicensedSeekRef.current[shot.sceneId]??-Infinity;
+      if(enteringShot||!advancePlayback||now-last>=180){
+        lastLicensedSeekRef.current[shot.sceneId]=now;
+        try{video.pause();video.currentTime=frame.expectedSourceSeconds;}
+        catch{/* Existing decoder timeout fails closed for unseekable film. */}
+      }
       return null;
     }
     if(assessment.status!=="ready")return null;

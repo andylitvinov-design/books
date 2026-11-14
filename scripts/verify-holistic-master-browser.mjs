@@ -64,6 +64,9 @@ async function verify(engine, locale, width) {
     // rest of the site. Verify its real visible navigation, not the removed
     // legacy "Temple" footer. All follow-on meditation/energy checks still run.
     const dock = page.locator('[data-hh-unified-dock]');
+    // Keep the one stable locator across editorial and Services views,
+    // preserving the distinct authored dock assertions.
+    const unifiedDock = page.locator('[data-hh-unified-dock]');
     await dock.waitFor({state:"visible",timeout:30000});
     const dockIds=await dock.locator('[data-unified-dock-item]').evaluateAll(nodes=>
       nodes.map(node=>node.getAttribute('data-unified-dock-item')));
@@ -78,6 +81,11 @@ async function verify(engine, locale, width) {
     assert.equal(await study.getAttribute("aria-label"),copy[locale].accessible);
     assert.equal(await study.getAttribute("href"),"/"+locale+"/holistic-support/mobile",
       label+": current Study destination opens existing public practice");
+    const navTarget = await study.boundingBox();
+    assert.ok(navTarget && navTarget.height >= 44 && navTarget.width >= 44,
+      label + ": Study action remains finger-sized");
+    assert.equal(await unifiedDock.locator("[data-unified-dock-item]").count(), 7,
+      label + ": all seven nav destinations remain visible");
     assert.equal(await dock.locator('[aria-current="page"]').count(),0,
       label+": support overview does not pretend a different tab is selected");
 
@@ -196,7 +204,6 @@ async function verify(engine, locale, width) {
       label + ": focus chips precede optional wishes");
     const findBox = await findOptions.boundingBox();
     // Services now uses the single unified mobile dock; do not wait for a removed legacy nav.
-    const unifiedDock = page.locator('[data-hh-unified-dock]');
     await unifiedDock.waitFor({state:'visible',timeout:15000});
     const bottomNav = await unifiedDock.boundingBox();
     assert.equal(await unifiedDock.locator('[data-unified-dock-item="services"]').getAttribute('aria-current'), 'page',
