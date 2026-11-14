@@ -450,7 +450,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       {phase==='speaking'&&<Volume2 size={17} aria-hidden="true"/>}
     </button>
     {supported===false&&!notice&&<p className={styles.note} role="status">{t.unsupported}</p>}
-    {active&&!notice&&<span className={styles.status} role="status">}
+    {active&&!notice&&<span className={styles.status} role="status">
       {retryMic?t.retryMic:ready?t.tapToHear:phase==='loading'?t.preparing:phase==='starting'||phase==='listening'?t.listening:phase==='thinking'?t.thinking:t.speaking}
     </span>}
     {notice&&<p className={styles.note} role="status">{notice}</p>}
