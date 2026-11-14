@@ -11,6 +11,7 @@ import { buildMotivatorMessage } from '@/lib/assessments/motivator-mind.mjs'
 import { hasTraumaAdministration } from '@/lib/assessments/trauma-administration'
 import { safetySignal, SAFETY_COPY } from '@/lib/assessments/safety'
 import { Asrs6SourceNotice, Asrs6ChoiceMarker, asrs6ChoiceClass } from '@/components/app/asrs6-source-notice'
+import { ChatFullReportEntry } from './chat-full-report-entry'
 import css from './messenger-test-journey.module.css'
 
 const COPY = {
@@ -474,8 +475,7 @@ export default function MessengerTestJourney({ locale = 'en', focus = null, onAd
         </> : <p>{discussion?.reviewNote || extra.cannotInterpret}</p>}
         <p className={css.note}>{t.notDiagnostic}</p>
       </div>
-      <a className={css.primary} href={`/${locale === 'es' ? 'en' : locale}/client?result=${encodeURIComponent(result.id)}`}>{extra.report}</a>
-      <a className={css.plain} href={`/${locale === 'es' ? 'en' : locale}/client?result=${encodeURIComponent(result.id)}`}>{extra.save}</a>
+       <ChatFullReportEntry resultId={result.id} locale={locale} />
       <button className={css.plain} type="button" onClick={()=>changeTest('')}>{t.again}</button>
       <p className={css.note}>{t.notDiagnostic}</p>
     </>}
