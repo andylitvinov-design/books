@@ -11,8 +11,8 @@ test("all three home locales show a unified photo-left section directory instead
   const home = read("components/holistic-house-home.tsx");
   const spanish = read("app/es/page.tsx");
   const more = read("components/home-more-disclosure.tsx");
-  assert.match(home, /<HomeMoreDisclosure locale=\{locale\} \/>/);
-  assert.match(spanish, /<HomeMoreDisclosure locale="es" \/>/);
+  assert.match(home, /<HomeMoreDisclosure locale=\{locale\} categories=\{listMyTubeCategories\(locale\)\} \/>/);
+  assert.match(spanish, /<HomeMoreDisclosure locale="es" categories=\{listMyTubeCategories\("es"\)\} \/>/);
   assert.match(more, /data-home-topic-filters/);
   assert.match(more, /data-home-topic-filter="temple"/);
   assert.match(more, /ssr: false/);
