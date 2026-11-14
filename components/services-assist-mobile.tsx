@@ -92,7 +92,7 @@ const firstScreenCopy = {
     helps:"2. Что помогает", methods:{meditation:"Медитация",session:"Сессия",talisman:"Талисман",reiki:"Рейки",courses:"Курсы",masters:"Мастера",mandala:"Видеомандала"},
     hello:"Привет! Я ваш Holistic Assistant.", avatar:"Аватар помощника Holistic House",
     softTopics:["Снизить стресс","Больше энергии","Отношения и любовь","Лучше спать","Работа и деньги","Душевное равновесие"],
-    matchRequests:{energy:"У меня мало энергии, хочу найти подходящую поддержку",money:"Меня беспокоят вопросы денег и работы, хочу найти поддержку",relationships:"Хочу разобраться в отношениях и найти поддержку",confidence:"Мне не хватает уверенности, хочу разобраться и найти поддержку"},
+    matchRequests:{energy:"У меня мало энергии, хочу найти подходящую поддержку",money:"Меня беспокоят вопросы денег и работы, хочу найти поддержку",relationships:"Хочу разобраться в отношениях и найти поддержку",confidence:"Хочу найти смысл и уверенность, прояснить свой путь"},
   },
   en: {
     navigation: "Support sections", services: "Services", ideas: "Ideas",
@@ -102,7 +102,7 @@ const firstScreenCopy = {
     helps:"2. Choose what helps", methods:{meditation:"Meditation",session:"Session",talisman:"Talisman",reiki:"Reiki support",courses:"Courses",masters:"Masters",mandala:"Video mandala"},
     hello:"Hi! I'm your Holistic Assistant.", avatar:"Holistic House guide avatar",
     softTopics:["Reduce stress","More energy","Relationships & love","Better sleep","Work & money","Emotional balance"],
-    matchRequests:{energy:"I have low energy and want to explore support options",money:"I want help with work or money worries",relationships:"I want to explore relationship support",confidence:"I want to work on confidence and find support"},
+    matchRequests:{energy:"I have low energy and want to explore support options",money:"I want help with work or money worries",relationships:"I want to explore relationship support",confidence:"I want personal growth, confidence, and clear direction"},
   },
   es: {
     navigation: "Secciones de apoyo", services: "Servicios", ideas: "Ideas",
@@ -112,7 +112,7 @@ const firstScreenCopy = {
     helps:"2. Elige qué te ayuda", methods:{meditation:"Meditación",session:"Sesión",talisman:"Talismán",reiki:"Apoyo Reiki",courses:"Cursos",masters:"Guías",mandala:"Video mandala"},
     hello:"¡Hola! Soy tu asistente Holistic.", avatar:"Avatar del guía de Holistic House",
     softTopics:["Menos estrés","Más energía","Relaciones y amor","Dormir mejor","Trabajo y dinero","Equilibrio emocional"],
-    matchRequests:{energy:"Tengo poca energía y quiero encontrar opciones de apoyo",money:"Quiero ayuda con asuntos de trabajo o dinero",relationships:"Quiero explorar apoyo para mis relaciones",confidence:"Quiero trabajar mi confianza y encontrar apoyo"},
+    matchRequests:{energy:"Tengo poca energía y quiero encontrar opciones de apoyo",money:"Quiero ayuda con asuntos de trabajo o dinero",relationships:"Quiero explorar apoyo para mis relaciones",confidence:"Quiero crecimiento personal, propósito y confianza"},
   },
 } as const;
 

@@ -36,3 +36,11 @@ test("WhatsApp-style locally scrolling dialogue retains safe real matching and s
   assert.doesNotMatch(component,/localStorage|sessionStorage|fetch\(|sendBeacon/);
   assert.match(styles,/\.conversation \.chips button\{display:flex/);
 });
+
+test("all locales map confidence requests to growth rather than accidentally matching the English verb work",()=>{
+  assert.match(component,/confidence:"I want personal growth, confidence, and clear direction"/);
+  assert.match(component,/confidence:"Хочу найти смысл и уверенность/);
+  assert.match(component,/confidence:"Quiero crecimiento personal, propósito/);
+  for(const selector of [".goalLink",".testsLink",".helpShortcuts a",".mandalaLink"])
+    assert.ok(styles.includes(selector),selector);
+});
