@@ -200,8 +200,11 @@ test('selected persona opens immersive My Coach session with real avatar, stages
   assert.ok(discovery.includes('useState(Boolean(selectedPersona))'))
   assert.ok(page.includes('{!personaSelection&&<div className={styles.header}'))
   for(const token of ['data-my-coach-immersive-session','sessionHero','sessionPortrait','sessionAvatar',
-    'CoachingAvatar locale={lang}','sessionProgressSegments','currentCoachPrompt','quickGoalCard',
+    'CoachingAvatar locale={lang}','sessionProgressSegments','latestCoachText','quickGoalCard',
     'sessionBottomNav','goalRow','onVoiceStateChange={setVoiceState}']) assert.ok(ui.includes(token),token)
+  // Keep real assistant text, and stage-aware fallback question, under test.
+  assert.match(ui,/const latestCoachText=latestCoachTurn\?\.content\|\|opening/)
+  assert.match(ui,/coachStagePrompt\(personaId,stage,responseLocale,settings\)/)
   for(const token of ['stageKeys.indexOf(currentStage)','onClick={replayCoachReply}',
     'onClick={()=>chooseTopic(id)}','composerRef.current?.focus()',
     'coachingBrainSafety(input)||coachingBrainBoundary(input)']) assert.ok(ui.includes(token),token)
