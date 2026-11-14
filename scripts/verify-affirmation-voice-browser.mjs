@@ -1038,13 +1038,20 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(page.locator("[data-video-affirmation-bed]")).toBeVisible({timeout:15000});
       await page.locator("[data-video-affirmation-bed]").selectOption("ocean");
       const narrationConsent=page.locator("[data-video-affirmation-voice-consent]");
-      await narrationConsent.check();
-      await expect(narrationConsent).toBeChecked();
-      await narrationConsent.uncheck();
-      await expect(narrationConsent).not.toBeChecked();
+      const consentLabel=narrationConsent.locator("..");
+      await consentLabel.scrollIntoViewIfNeeded();
+      // Use actual native iOS label taps (a real 44px touch target), not
+      // forced checkbox state/evaluate. Verify explicit reversible consent.
+      if(engine==="webkit")await consentLabel.tap();
+      else await narrationConsent.check();
+      await expect(narrationConsent).toBeChecked({timeout:15000});
+      if(engine==="webkit")await consentLabel.tap();
+      else await narrationConsent.uncheck();
+      await expect(narrationConsent).not.toBeChecked({timeout:15000});
       await expect(page.locator("[data-video-generate-affirmation-audio]")).toBeDisabled();
-      await narrationConsent.check();
-      await expect(narrationConsent).toBeChecked();
+      if(engine==="webkit")await consentLabel.tap();
+      else await narrationConsent.check();
+      await expect(narrationConsent).toBeChecked({timeout:15000});
       const generateNarration=page.locator("[data-video-generate-affirmation-audio]");
       await expect(generateNarration).toBeEnabled();
       // Observe real user input on macOS without recording the approved text,

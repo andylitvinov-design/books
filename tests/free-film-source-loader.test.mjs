@@ -215,3 +215,22 @@ test("single-source intent never restarts a loading decoder or accepts a corrupt
   failed.fail();
   assert.equal(await second,false,"readyState without width must fail closed");
 });
+
+
+test("licensed mixed storyboard may rewind only its actual filmed subset",async()=>{
+  // The Studio separately verifies allowlisted photo identities and JPEG.decode.
+  // The default four-MP4 contract remains strict for every other caller.
+  const {videos,refs}=setup();
+  await assert.rejects(prepareFourFilmSources(shots.slice(0,2),refs),
+    /invalid_four_scene_montage/);
+  const onlyTwo=prepareFourFilmSources(shots.slice(0,2),refs,{
+    adaptive:true,verifiedMixedPhotoSubset:true,timeoutMs:200
+  });
+  videos.slice(0,2).forEach(v=>v.ready());
+  assert.deepEqual(await onlyTwo,{ready:2,total:2});
+  assert.equal(videos[2].plays,0,"unused film never starts");
+  assert.deepEqual(await prepareFourFilmSources([],{},
+    {adaptive:true,verifiedMixedPhotoSubset:true,timeoutMs:200}),{ready:0,total:0});
+  await assert.rejects(prepareFourFilmSources([],{},{adaptive:true}),
+    /invalid_four_scene_montage/);
+});

@@ -624,18 +624,11 @@ export function MandalaAffirmationVoice({
     </details>
     <div className={css.consentRow}><label className={css.consent}>
       <input data-video-affirmation-voice-consent type="checkbox" checked={consent}
+        // Consent always starts unchecked and is only set from the native
+        // input's actual user change event. The enclosing 44px label provides
+        // a reliable iOS touch target without synthesizing or forcing consent.
         disabled={busy||disabled||approvalPending||!speechText}
-        // WebKit may dispatch a native checkbox click without committing its
-        // checked state before React's synthesized change. Treat an explicit
-        // user activation as the source of truth; it also supports Space and
-        // screen-reader activation. Never pre-check or grant implicit consent.
-        onClick={()=>setConsent(current=>!current)}
-        onChange={event=>{
-          // React synthesizes checkbox "change" from the same native click.
-          // Do not overwrite that deliberate toggle with Safari's stale DOM
-          // checked value. Non-click changes still synchronize normally.
-          if(event.nativeEvent.type!=="click")setConsent(event.currentTarget.checked);
-        }}/>
+        onChange={event=>setConsent(event.currentTarget.checked)}/>
       <span>{compact?t.consentBrief:t.consent}</span>
     </label>
     {compact?<details className={css.consentDetails}><summary>{t.privacyDetails}</summary>

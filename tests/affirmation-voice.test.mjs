@@ -339,20 +339,24 @@ test("all six selected Gemini voices synthesize precisely the selected phrase, n
   }),{gemini:true,openrouterFree:false,openrouter:false});
 });
 
-test("Safari consent is an explicit reversible activation, never a default opt-in",()=>{
+test("Safari consent requires a native, reversible gesture and a 44px label, never implicit opt-in",()=>{
   const ui=read("components/mandala-affirmation-voice.tsx");
+  const css=read("components/mandala-affirmation-voice.module.css");
   const browser=source;
-  assert.match(ui,/const \[consent,setConsent\]=useState\(false\)/);
-  assert.match(ui,/onClick=\{\(\)=>setConsent\(current=>!current\)\}/);
-  assert.match(ui,/event\.nativeEvent\.type!=="click"/);
-  assert.match(ui,/open=\{voiceAdvancedOpen\}/);
-  assert.match(ui,/setVoiceAdvancedOpen\(current=>!current\)/);
-  assert.match(ui,/event\.preventDefault\(\)/);
-  assert.match(ui,/disabled=\{!languageAvailable\|\|!speechText\|\|!consent/);
-  assert.match(browser,/await narrationConsent\.check\(\);/);
-  assert.match(browser,/await narrationConsent\.uncheck\(\);/);
-  assert.match(browser,/toBeDisabled\(\)/);
-  assert.match(ui,/if\(textChanged\)setConsent\(false\)/);
+  assert.ok(ui.includes('const [consent,setConsent]=useState(false)'),"consent starts unchecked");
+  assert.ok(ui.includes('onChange={event=>setConsent(event.currentTarget.checked)}'),"actual user change controls opt-in");
+  assert.ok(!ui.includes('onClick={()=>setConsent(current=>!current)}'),"no double React/browser toggling");
+  assert.ok(css.includes('min-height:44px;margin:0;padding:8px 0;scroll-margin-block-end:calc(130px + env(safe-area-inset-bottom))'),"mobile label has real 44px tap target");
+  assert.ok(ui.includes('open={voiceAdvancedOpen}') && ui.includes('setVoiceAdvancedOpen(current=>!current)'),"native options remain reversible");
+  assert.ok(ui.includes('disabled={!languageAvailable||!speechText||!consent'),"request fails closed until user consents");
+  const stage=browser.slice(browser.indexOf('const narrationConsent=page.locator('),browser.indexOf('const generateNarration=page.locator(',browser.indexOf('const narrationConsent=page.locator(')));
+  assert.ok(stage.includes('const consentLabel=narrationConsent.locator("..")'),"actual parent label used");
+  assert.equal((stage.match(/if\(engine==="webkit"\)await consentLabel\.tap\(\)/g)||[]).length,3,"three real WebKit taps validate checked, unchecked, checked");
+  assert.ok(stage.includes('else await narrationConsent.check()') && stage.includes('else await narrationConsent.uncheck()'),"Chromium performs native checkbox operations");
+  assert.ok(stage.includes('await expect(narrationConsent).not.toBeChecked({timeout:15000})'),"consent can be withdrawn");
+  assert.ok(stage.includes('toBeDisabled()'),"withdrawn consent blocks voice generation");
+  assert.doesNotMatch(stage,/force:true|\.evaluate\(/,"never force checkbox state");
+  assert.ok(ui.includes('if(textChanged)setConsent(false)'),"new spoken text revokes consent");
 });
 
 test("mobile one-phrase selection uses approved lines only, revokes consent and stale audio",()=>{

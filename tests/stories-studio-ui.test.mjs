@@ -67,7 +67,10 @@ test("local still replaces only its assigned shot in both preview and final Canv
  assert.match(studio,/if\(still\?\.complete&&still\.naturalWidth>0/);
  assert.match(studio,/hasStoryboardPhotoAt\(frameTime\)/);
  assert.match(studio,/hasStoryboardPhotoAt\(0\)/);
- assert.equal((studio.match(/activeMontageStyleId,styleFilmRef\.current,storyboardPhotos\)/g)||[]).length,5);
+ assert.match(studio,/const activeStoryboardPhotos=\(\)=>\(\{\.\.\.storyboardPhotos,\.\.\.freeFilmPhotoRefs\.current\}\)/,
+   "manual scene photos and verified licensed stock stills share the one Canvas painter");
+ assert.equal((studio.match(/activeMontageStyleId,styleFilmRef\.current,activeStoryboardPhotos\(\)\)/g)||[]).length,5,
+   "the same verified photo map must serve preview, first-frame check, WebCodecs and MediaRecorder");
 });
 test("storyboard source replacement and reordering retain the existing safe source checks",()=>{
  assert.match(studio,/const replaceStoryboardSource=/);
