@@ -11,6 +11,7 @@ import { buildMotivatorMessage } from '@/lib/assessments/motivator-mind.mjs'
 import { hasTraumaAdministration } from '@/lib/assessments/trauma-administration'
 import { safetySignal, SAFETY_COPY } from '@/lib/assessments/safety'
 import { Asrs6SourceNotice, Asrs6ChoiceMarker, asrs6ChoiceClass } from '@/components/app/asrs6-source-notice'
+import { TEST_KINDS, testKindFor, HOBBY_TEST_KEYS } from '@/lib/assessments/test-kinds'
 import css from './messenger-test-journey.module.css'
 
 const COPY = {
@@ -33,6 +34,9 @@ const COPY = {
     savedLabel:'Незавершённый тест', suggestion:'Рекомендуем начать с этого', take:'Пройти тест',
     browse:'Другие тесты', hideList:'Скрыть список', showNext:'Показать ещё',
     questionUnit:'вопросов', minuteUnit:'мин', instructionsLabel:'Инструкции к тесту',
+    matches:'Подходящие тесты', library:'Вся библиотека', filterLabel:'Типы тестов',
+    filters:{all:'Все',monitoring:'Анкеты',professional:'Pro',hobby:'Хобби',typology:'Типологии'},
+    resetFilters:'Сбросить фильтры', genericDescription:'Опросник из библиотеки Holistic House.',
   },
   en: {
     title: 'Test in chat', select: 'Choose a test. I will ask one question at a time.',
@@ -53,6 +57,9 @@ const COPY = {
     savedLabel:'Your unfinished test', suggestion:'Suggested to start', take:'Take test',
     browse:'Explore other tests', hideList:'Hide test list', showNext:'Show more',
     questionUnit:'questions', minuteUnit:'min', instructionsLabel:'Test instructions',
+    matches:'Matching tests', library:'Full library', filterLabel:'Test types',
+    filters:{all:'All',monitoring:'Check-ins',professional:'Pro',hobby:'Hobby',typology:'Typologies'},
+    resetFilters:'Clear filters', genericDescription:'A questionnaire from the Holistic House library.',
   },
   es: {
     title: 'Test en el chat', select: 'Elige un test. Haré una pregunta cada vez.',
@@ -73,6 +80,9 @@ const COPY = {
     savedLabel:'Test pendiente', suggestion:'Sugerido para empezar', take:'Hacer test',
     browse:'Explorar otros tests', hideList:'Ocultar lista', showNext:'Ver más',
     questionUnit:'preguntas', minuteUnit:'min', instructionsLabel:'Instrucciones del test',
+    matches:'Pruebas para ti', library:'Biblioteca completa', filterLabel:'Tipos de pruebas',
+    filters:{all:'Todas',monitoring:'Cuestionarios',professional:'Pro',hobby:'Hobby',typology:'Tipologías'},
+    resetFilters:'Quitar filtros', genericDescription:'Un cuestionario de la biblioteca Holistic House.',
   },
 }
 
@@ -125,6 +135,12 @@ const FOCUS_TERMS = {
   relationships: ['relationship', 'attachment', 'intimacy', 'love', 'compassion'],
   work: ['work', 'career', 'professional', 'financial', 'resource', 'burnout'],
 }
+
+// Reuse the catalogue's rights-aware discovery classification. "Pro" means a
+// sourced instrument, never proof of psychometric or clinical validation.
+const TEST_FILTERS = ['all', ...TEST_KINDS.map(kind => kind.key), 'typology']
+const TYPOLOGY_KEYS = new Set(HOBBY_TEST_KEYS.filter(key =>
+  ['hh-socionics-32','hh-enneagram-36','hh-disc-style-20','hh-temperaments-16'].includes(key)))
 
 const ALL_TESTS = MONITORING_CATALOG.filter(item =>
   item.startable === true && item.rightsStatus === 'cleared' && item.guestEligible === true && item.key !== 'phq-9'
@@ -191,7 +207,7 @@ function TestCard({ item, locale, focus, label, action, onAction, disabled = fal
       {label && <span className={css.cardEyebrow}>{label}</span>}
       <strong className={css.testTitle}>{title}</strong>
       {facts && <small className={css.testMeta}>{facts}</small>}
-      {!compact && description && <p className={css.testDescription}>{description}</p>}
+      <p className={css.testDescription}>{description || t.genericDescription}</p>
       {action && <button type="button" className={css.testAction} disabled={disabled}
         onClick={onAction}>{action}</button>}
     </div>
@@ -205,8 +221,8 @@ export default function MessengerTestJourney({ locale = 'en', focus = null, onAd
   const [selectedKey, setSelectedKey] = useState('')
   const [adult, setAdult] = useState(false)
   const [search, setSearch] = useState('')
-  const [expanded, setExpanded] = useState(false)
-  const [visibleCount, setVisibleCount] = useState(4)
+  const [testFilter, setTestFilter] = useState('all')
+  const [visibleCount, setVisibleCount] = useState(3)
   const [run, setRun] = useState(null)
   const [result, setResult] = useState(null)
   const [busy, setBusy] = useState(false)
@@ -247,7 +263,7 @@ export default function MessengerTestJourney({ locale = 'en', focus = null, onAd
     ].filter(Boolean).join(' ').toLowerCase()
     return FOCUS_TERMS[focus].some(term => info.includes(term))
   }) : []
-  // One action-led card on the first screen; the full eligible catalogue is opt-in.
+  // Match the selected topic first; render the eligible catalogue directly.
   const recommended = focusMatches.length ? focusMatches : ALL_TESTS
   const featured = (focus === 'personality' ? recommended.find(entry => entry.item.key === 'mini-ipip-20') : null)
     || (!focus ? recommended.find(entry => entry.item.key === 'hh-current-state') : null)
@@ -258,16 +274,24 @@ export default function MessengerTestJourney({ locale = 'en', focus = null, onAd
     ...recommended.filter(entry => entry.item.key !== featured?.item.key),
     ...ALL_TESTS.filter(entry => !recommended.some(option => option.item.key === entry.item.key)),
   ]
-  const filtered = ranked.filter(entry => {
-    const label = entry.item.title?.[locale] || entry.item.title?.en || entry.item.key
-    return !search.trim() || (label + ' ' + entry.item.key).toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())
-  })
   const restorableEntry = restorable && ALL_TESTS.find(entry =>
     entry.definitions.some(def => def.id === restorable.definitionId))
   const restorableDefinition = restorableEntry?.definitions.find(def => def.id === restorable?.definitionId)
   const restorableProgress = restorableDefinition && restorable?.answers
     ? chatProgress(restorableDefinition, restorable).answeredCount + '/' + restorableDefinition.questions.length
     : null
+  const filtered = ranked.filter(entry => {
+    if (restorableEntry?.item.key === entry.item.key) return false
+    const kind = testKindFor({
+      key: entry.item.key, catalog: entry.item, definition: pickDefinition(entry, locale),
+    })
+    if (testFilter === 'typology' && !TYPOLOGY_KEYS.has(entry.item.key)) return false
+    if (testFilter !== 'all' && testFilter !== 'typology' && kind !== testFilter) return false
+    const query = search.trim().toLocaleLowerCase()
+    const text = [entry.item.key, entry.item.title?.[locale], entry.item.title?.en,
+      entry.item.description?.[locale], entry.item.description?.en].filter(Boolean).join(' ').toLocaleLowerCase()
+    return !query || text.includes(query)
+  })
 
   useEffect(() => {
     let live = true
@@ -289,7 +313,7 @@ export default function MessengerTestJourney({ locale = 'en', focus = null, onAd
   function changeTest(key) {
     if (busy) return
     setSelectedKey(key);setRun(null);setResult(null);setError('');setAdult(false);setAcknowledgedSafety(null)
-    setExpanded(false);setSearch('');setVisibleCount(4)
+    setVisibleCount(3)
     setPaused(false);setCancelPending(false);setPendingAnswer(null);setNotice('')
     operation.current = null;completion.current = null;startId.current = null
     notify()
@@ -412,37 +436,49 @@ export default function MessengerTestJourney({ locale = 'en', focus = null, onAd
     setPendingAnswer({ ...candidate, questionId: question.id, revision: run.revision })
   }, [incomingTurn, run, definition, question, paused, cancelPending, result, state.complete, signal])
   return <section className={css.panel} aria-label={t.title} data-hh-messenger-test-chat>
-    <div className={css.header}><strong>{t.title}</strong>
-      {onClose && <button type="button" className={css.plain} onClick={onClose}>{t.backToChat}</button>}
+    <div className={css.header}><strong>{selectedKey || run ? t.title : t.matches}</strong>
+      <div className={css.headerActions}>
+        <a className={css.libraryLink} href={'/' + locale + '/tests'}>{t.library}</a>
+        {onClose && <button type="button" className={css.plain} onClick={onClose}>{t.backToChat}</button>}
+      </div>
     </div>
     {!run && <>
       {!selectedKey && <>
-        {!expanded && (restorable ?
-          <TestCard item={restorableEntry?.item} locale={locale} focus={focus}
-            label={t.savedLabel} action={busy ? t.loading : extra.continue}
-            onAction={resumeSaved} disabled={busy} progress={restorableProgress} compact /> :
-          featured && <TestCard item={featured.item} locale={locale} focus={focus}
-            label={t.suggestion} action={t.take}
-            onAction={()=>changeTest(featured.item.key)} disabled={busy} />)}
-        <button type="button" className={css.catalogToggle}
-          aria-expanded={expanded} aria-controls="hh-messenger-test-catalog"
-          onClick={()=>{setExpanded(current=>!current);setSearch('');setVisibleCount(4);notify()}}>
-          {expanded ? t.hideList : t.browse} <span aria-hidden="true">{expanded ? '−' : '＋'}</span>
-        </button>
-        {expanded && <div id="hh-messenger-test-catalog" className={css.browse} data-hh-test-catalog>
-          <label className={css.search}><span className={css.srOnly}>{t.find}</span>
-            <input value={search} placeholder={t.find}
-              onChange={e=>{setSearch(e.target.value);setVisibleCount(4)}} />
+        {restorable && <TestCard item={restorableEntry?.item} locale={locale} focus={focus}
+          label={t.savedLabel} action={busy ? t.loading : extra.continue}
+          onAction={resumeSaved} disabled={busy} progress={restorableProgress} compact />}
+        <div className={css.filterRow} role="group" aria-label={t.filterLabel}
+          data-hh-test-kind-filters>
+          {TEST_FILTERS.map(kind=><button type="button" key={kind}
+            className={css.filterChip} aria-pressed={testFilter===kind}
+            title={TEST_KINDS.find(entry=>entry.key===kind)?.description?.[locale] || t.filters[kind]}
+            onClick={()=>{setTestFilter(kind);setVisibleCount(3)}}>
+            {t.filters[kind]}
+          </button>)}
+        </div>
+        <div id="hh-messenger-test-catalog" className={css.browse} data-hh-test-catalog>
+          <label className={css.search}>
+            <span className={css.srOnly}>{t.find}</span>
+            <input type="search" value={search} placeholder={t.find}
+              onChange={e=>{setSearch(e.target.value);setVisibleCount(3)}} />
           </label>
           <div className={css.tests} role="group" aria-label={t.more}>
             {filtered.slice(0,visibleCount).map(entry=><TestCard key={entry.item.key}
-              item={entry.item} locale={locale} focus={focus} compact
+              item={entry.item} locale={locale} focus={focus}
+              label={testFilter==='all' && !search && entry.item.key===featured?.item.key ? t.suggestion : null}
               action={t.take} onAction={()=>changeTest(entry.item.key)} disabled={busy}/>)}
-            {!filtered.length && <p className={css.note}>{t.noMatches}</p>}
+            {!filtered.length && <div className={css.empty}>
+              <p className={css.note}>{t.noMatches}</p>
+              <button type="button" className={css.plain} onClick={()=>{
+                setTestFilter('all');setSearch('');setVisibleCount(3)
+              }}>{t.resetFilters}</button>
+            </div>}
           </div>
           {filtered.length > visibleCount && <button type="button" className={css.plain}
-            onClick={()=>{setVisibleCount(count=>count+4);notify()}}>{t.showNext} ({filtered.length-visibleCount})</button>}
-        </div>}
+            onClick={()=>setVisibleCount(count=>count+4)}>
+            {t.showNext} ({filtered.length-visibleCount})
+          </button>}
+        </div>
       </>}
       {selectedKey && definition && <>
         <button className={css.backLink} type="button" onClick={()=>changeTest('')}>‹ {t.back}</button>
