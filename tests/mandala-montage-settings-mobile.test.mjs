@@ -26,7 +26,7 @@ test("Montage opens on Style, preserves real recorder and five functional tabs w
   assert.doesNotMatch(studio,/data-video-montage-preference="style"/);
   for(const label of ["Choose your style","Add Text","Añadir texto","Добавить текст"])
     assert.ok(studio.includes(label),label);
-  assert.match(studio,/onClick=\{createQuickVideo\}/);
+  assert.match(studio,/onClick=\{openReadyForGeneration\}/);
   assert.match(studio,/Создать видео/);
   assert.equal((studio.match(/data-video-montage-export/g)||[]).length,0,"no duplicate export CTA");
   assert.equal((studio.match(/data-video-quick-generate/g)||[]).length,1,"one real generate CTA");
@@ -56,7 +56,7 @@ test("The editable timeline, script, audio and draft tools are preserved, but no
   assert.match(css,/\.studio\[data-active-workspace="editor"\] \.previewStage \.heroRail\{display:none!important\}/);
 });
 
-test("Montage auto recommendation is attached before the direct renderer and never forces Audio",()=>{
+test("Montage recommendation remains attached for the Ready renderer without forcing Audio",()=>{
   const selector=studio.slice(studio.indexOf("// Auto-music must be ATTACHED"),
     studio.indexOf("// A paused film",studio.indexOf("// Auto-music must be ATTACHED")));
   assert.match(selector,/activeWorkspace!=="editor"/);
@@ -68,7 +68,7 @@ test("Montage auto recommendation is attached before the direct renderer and nev
   const handler=studio.slice(studio.indexOf("const createQuickVideo ="),
     studio.indexOf("const openVideoScenarioStep ="));
   assert.match(handler,/return startFromHero\(\)/);
-  assert.match(studio,/onClick=\{createQuickVideo\}/);
+  assert.match(studio,/onClick=\{openReadyForGeneration\}/);
 });
 
 test("Montage iPhone retains the compact header, real six selectors and on-screen CTA",()=>{
