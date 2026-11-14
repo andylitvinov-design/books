@@ -468,7 +468,8 @@ test('failed fix finalizer cannot escalate a forged, foreign, leased or moved HE
 test('source-fix terminal finalizer is restricted to failed fix jobs in the trusted workflow',()=>{
  const yml=require('node:fs').readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
  assert.ok(yml.includes('  finalize:'));
- assert.ok(yml.includes('needs: [claim,fix,code_fix,code_verify,publish]'));
+ assert.ok(yml.includes('needs: [claim,fix,code_fix,paid_fix,code_verify,publish]'));
+  assert.ok(yml.includes('HH_PAID_STATUS: ${{ needs.paid_fix.outputs.candidate_status }}'));
  assert.ok(yml.includes('always()'));
  assert.ok(yml.includes('worker.finalize({github,core,context,'));
 });
@@ -566,7 +567,8 @@ test('verified deterministic candidate plus failed GitHub publisher is NOT label
 test('workflow guarantees a finalizer after code verification and publishing',()=>{
  const wf=require('node:fs').readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
  assert.match(wf,/  finalize:\n/);
- assert.match(wf,/needs: \[claim,fix,code_fix,code_verify,publish\]/);
+ assert.match(wf,/needs: \[claim,fix,code_fix,paid_fix,code_verify,publish\]/);
+  assert.match(wf,/paidStatus:process.env.HH_PAID_STATUS/);
  assert.match(wf,/always\(\)/);
  assert.match(wf,/HH_REPAIR_FINAL_OUTCOME/);
  assert.match(wf,/claim_status/);
