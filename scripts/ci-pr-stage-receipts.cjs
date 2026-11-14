@@ -2,10 +2,12 @@
 // HH_PR_STAGE_V1: authenticated, HEAD-scoped timestamps stored in existing
 // GitHub PR comments. No new cron, workflow, runner, services, or PAT.
 const SHA=/^[a-f0-9]{40}$/i,TASK=/^[a-f0-9]{32}$/i;
-const STAGES=new Set(['ready','triage','claimed','repair_started','patch_verified','source_published']);
+const STAGES=new Set(['ready','triage','claimed','repair_started',
+ 'code_executor_started','model_response_observed','patch_verified','source_published']);
 const SOURCES=new Set(['pr_opened_ready','ready_event_observed','ready_for_review_readback',
  'trusted_core_failure','repair_worker_claim','ci_worker_claim',
- 'github_actions_fix_step','github_actions_patch_verification_step','verified_git_ref']);
+ 'github_actions_fix_step','github_actions_patch_verification_step','verified_git_ref',
+ 'github_actions_ai_job','verified_model_response']);
 const iso=x=>typeof x==='string'&&/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(x)&&Number.isFinite(Date.parse(x));
 function validate(x){
  if(!x||!STAGES.has(x.stage)||!Number.isSafeInteger(x.pr_number)||x.pr_number<=0||
@@ -14,6 +16,8 @@ function validate(x){
  if(x.task_key!=null&&!TASK.test(x.task_key))return false;
  if(x.stage==='claimed'&&!TASK.test(x.task_key||''))return false;
  if(x.stage==='repair_started'&&(x.source!=='github_actions_fix_step'||!TASK.test(x.task_key||'')))return false;
+ if(x.stage==='code_executor_started'&&(x.source!=='github_actions_ai_job'||!TASK.test(x.task_key||'')))return false;
+ if(x.stage==='model_response_observed'&&(x.source!=='verified_model_response'||!TASK.test(x.task_key||'')))return false;
  if(x.stage==='patch_verified'&&(x.source!=='github_actions_patch_verification_step'||!TASK.test(x.task_key||'')))return false;
  if(x.stage==='source_published'&&(x.source!=='verified_git_ref'||
    !SHA.test(x.new_sha||'')||x.new_sha===x.head_sha||!TASK.test(x.task_key||'')))return false;

@@ -208,7 +208,8 @@ function extractAssistantText(content,{hasReasoning=false}={}){
   return value;
 }
 async function requestFreePatch({prompt,key,model='auto',role='repair',
-  fetchImpl=global.fetch,onVerifiedModel=undefined,onResponseShape=undefined}={}){
+  fetchImpl=global.fetch,onVerifiedModel=undefined,onResponseShape=undefined,
+  onVerifiedResponse=undefined}={}){
   if(model!=='auto'&&model!==FREE_ROUTER_MODEL)selectedModel(model); // never allow paid or unknown aliases
   if(typeof key!=='string'||!key.trim())
     throw Error('FREE_AI_OPENROUTER_KEY_NOT_CONFIGURED');
@@ -265,6 +266,10 @@ async function requestFreePatch({prompt,key,model='auto',role='repair',
      Object.values(completion?.usage?.cost_details||{}).some(value=>
        value!==null&&value!==undefined&&(!Number.isFinite(Number(value))||Number(value)!==0)))
     throw Error('FREE_AI_OPENROUTER_BILLING_NONZERO');
+  // Only a verified zero-cost provider response confirms a real model call.
+  // This is not patch verification and grants no source-writing permission.
+  if(typeof onVerifiedResponse==='function')
+    onVerifiedResponse({provider:'openrouter',model:completion.model,zeroCost:true});
   if(!Array.isArray(completion?.choices)||completion.choices.length!==1)
     throw Error('FREE_AI_OPENROUTER_RESPONSE_CHOICE_COUNT_INVALID '+JSON.stringify(responseShape(completion)));
   const choice=completion.choices[0],message=choice?.message;
