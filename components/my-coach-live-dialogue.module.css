@@ -578,3 +578,25 @@
 .wizardVoiceRow small{font-size:11px;line-height:1.35;color:#536f65}
 .wizardVoiceRow input:focus-visible{outline:2px solid #168467;outline-offset:2px}
 @media(max-width:699px){.root[data-session-visual-v3] .conversationPanel .wizardVoiceRow{order:4;flex:none;max-width:100%}}
+
+/* Natural voice is a real, opt-in choice visible beside the microphone.
+   Unlike the previous below-composer placement it cannot disappear inside
+   the independently scrolling transcript card on mobile Safari. */
+.voiceModalNatural{display:grid;gap:7px;margin-top:13px;padding:11px;
+  border:1px solid #cde3d7;border-radius:13px;background:#f5faf6}
+.voiceModalNatural label{display:flex;align-items:flex-start;gap:9px;min-width:0;
+  color:#1d5f4c;font-size:13px;font-weight:700;line-height:1.4}
+.voiceModalNatural input{flex:none;width:19px;height:19px;accent-color:#168467}
+.voiceModalNatural p{font-size:12px;line-height:1.45;overflow-wrap:anywhere}
+@media(max-width:699px){
+  .root[data-session-visual-v3] .voiceWorkspace > .naturalVoiceRow{
+    order:1;box-sizing:border-box;width:100%;max-width:100%;
+    margin:0;padding:8px 11px;font-size:12px;min-height:44px;
+  }
+  .root[data-session-visual-v3] .voiceWorkspace > .naturalVoiceRow label{
+    min-width:0;max-width:100%;overflow-wrap:anywhere;
+  }
+  .root[data-session-visual-v3] .voiceWorkspace > .playbackNotice{
+    order:1;margin:0;padding:4px 9px;
+  }
+}
