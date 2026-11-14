@@ -123,3 +123,22 @@ test('Messages wellness specialists start on Ready after a stacked Draft is reta
       name + ': Specialist must still fail closed on a true product regression');
   }
 });
+
+
+test('Core suppresses metadata-only waves but keeps exact-HEAD and signed Ready recovery events', () => {
+  const workflow = source('hh-pr-core-release.yml');
+  const events = workflow.match(/^  pull_request:\n(?:(?: {4}[^\n]*\n)*)/m)?.[0] ?? '';
+  const raw = events.match(/^    types: \[([^\]]+)\]$/m)?.[1];
+  assert.ok(raw, 'Core must declare explicit pull_request event types');
+  const types = raw.split(',').map(value => value.trim());
+  assert.deepEqual(types, [
+    'opened', 'synchronize', 'reopened', 'ready_for_review', 'converted_to_draft',
+  ]);
+  assert.ok(!types.includes('edited'), 'PR body/title edits must not restart Core');
+  assert.match(workflow, /HH PR core release gate/);
+  assert.match(workflow, /^  hh-specialist:\s*$/m);
+  assert.match(workflow, /^  hh-merge-check:\s*$/m);
+  assert.match(workflow, /needs: \[scope, hh-specialist\]/);
+  assert.match(workflow, /\(github\.event\.action == 'synchronize' \|\| github\.event\.action == 'converted_to_draft'\)/);
+  assert.doesNotMatch(workflow, /continue-on-error:\s*true/);
+});

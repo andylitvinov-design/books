@@ -14,7 +14,7 @@ const dict={
   speak:"Spoken meditation",speakHint:"Preview your text and choose a voice before creating audio.",speakButton:"Choose voice & narrate",
   phrases:"Phrases for video",phrasesHint:"Prepare short, meaningful phrases in the existing Ideas editor.",phrasesButton:"Create video phrases",
   effects:"Optional visual and audio effects",effectsHint:"Preserved original settings; no video is rendered when these are opened.",
-  safety:"Gentle reflective practice, not medical treatment. Eight-session mode initially creates a plan and the first editable script."},
+  safety:"Gentle reflective practice, not medical treatment. Eight-session mode starts with a plan and one script; other scripts are created locally only on request."},
  ru:{title:"Therapy Studio",tag:"ЛИЧНЫЕ ПРАКТИКИ",intro:"Создайте медитацию или курс из восьми последовательных практик.",
   single:"Одна практика",singleHint:"Одна медитация",course:"Курс из 8 сессий",courseHint:"Восемь связанных тем",
   meditation:"Медитация",voice:"Голос",practice:"Практика",voiceTitle:"Голос для видеофраз",voiceHint:"Выберите или запишите свой разрешённый голос.",
@@ -23,7 +23,7 @@ const dict={
   speak:"Озвученная медитация",speakHint:"Проверьте текст и выберите голос перед озвучкой.",speakButton:"Выбрать голос и озвучить",
   phrases:"Фразы для видео",phrasesHint:"Подготовьте фразы в существующем редакторе Ideas.",phrasesButton:"Создать фразы для видео",
   effects:"Дополнительные видео- и аудиоэффекты",effectsHint:"Старые настройки сохранены; открытие не запускает рендер.",
-  safety:"Мягкая практика для рефлексии, не лечение. Курс сначала создаёт план из 8 сессий и текст первой медитации."},
+  safety:"Мягкая практика для рефлексии, не лечение. Курс начинается с плана и первого текста; остальные создаются локально только по запросу."},
  es:{title:"Therapy Studio",tag:"PRÁCTICAS PERSONALES",intro:"Crea una meditación o un curso de ocho sesiones conectadas.",
   single:"Una práctica",singleHint:"Una meditación",course:"Curso de 8 sesiones",courseHint:"Ocho temas relacionados",
   meditation:"Meditación",voice:"Voz",practice:"Práctica",voiceTitle:"Voz para frases de vídeo",voiceHint:"Elige o graba una voz con permiso.",
@@ -32,7 +32,7 @@ const dict={
   speak:"Meditación narrada",speakHint:"Revisa tu texto y elige una voz antes de narrar.",speakButton:"Elegir voz y narrar",
   phrases:"Frases para vídeo",phrasesHint:"Prepara frases cortas en el editor Ideas existente.",phrasesButton:"Crear frases para vídeo",
   effects:"Efectos opcionales de audio y vídeo",effectsHint:"Controles originales conservados, sin render automático.",
-  safety:"Práctica reflexiva, no tratamiento médico. El curso primero crea un plan de ocho temas y el primer guion."}
+  safety:"Práctica reflexiva, no tratamiento médico. El curso comienza con un plan y el primer guion; los demás se crean localmente solo si los solicitas."}
 } as const;
 export function MandalaTherapyStudio({locale,disabled,editor,voiceEditor,advancedEffects,onVideoPhrases}:Props){
  const [pane,setPane]=useState<Pane>("meditation");

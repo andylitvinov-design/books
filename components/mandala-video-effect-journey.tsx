@@ -64,12 +64,13 @@ export function MandalaVideoEffectJourney({locale,status,progress,videoStarted,v
   const [modalOpen,setModalOpen]=useState(true);
   const dialogRef=useRef<HTMLDivElement>(null);
   useEffect(()=>{setMounted(true);},[]);
-  // Verified Ready actions must never be blocked by the optional check-in.
-  // Answers stay local; the visitor may reopen them deliberately at any time.
+  // Keep the optional check-in during rendering, but Ready never re-opens
+  // an unsolicited overlay — not immediately after export, nor after playback
+  // ends. The existing "Open progress and questions" pill remains user-invoked.
   useEffect(()=>{
-    if(status==="ready"){setModalOpen(false);return;}
-    if(status==="failed")setModalOpen(true);
-  },[status]);
+    if(status==="ready")setModalOpen(false);
+    else if(status==="failed")setModalOpen(true);
+  },[videoEnded,status]);
   const dialogVisible=mounted&&modalOpen&&status!=="idle";
   useEffect(()=>{
     if(!dialogVisible)return;

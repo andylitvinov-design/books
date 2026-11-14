@@ -37,6 +37,8 @@ export async function readRealGuestVideo(page,{timeout=120000}={}){
   },{timeout,intervals:[250,500,1000]}).toBe(true);
   await expect(ready).toHaveAttribute('data-ready-view','home');
   await expect(result).toHaveAttribute('data-video-result-mode','rendered');
+  // Real native guest Save must not be occluded by the optional check-in.
+  await expect(page.locator('[data-video-effect-overlay]')).toHaveCount(0,{timeout:12000});
   await expect(page.locator('[data-mandala-video-download]')).toBeHidden();
   await expect.poll(()=>renderedPlayer.evaluate(video=>
     video instanceof HTMLVideoElement&&video.currentSrc.startsWith('blob:')&&

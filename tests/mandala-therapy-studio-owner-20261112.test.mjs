@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {test} from "node:test";
+import {buildMandalaWriterRequest} from "../lib/holistic-support/meditation-writer/mandala-bridge.mjs";
 const read=p=>readFileSync(new URL("../"+p,import.meta.url),"utf8");
 const parent=read("components/mandala-free-video-studio.tsx");
 const ui=read("components/mandala-therapy-studio.tsx");
@@ -54,8 +55,8 @@ test("Mobile visuals have roomy touch targets and correct eight-draft disclosure
  assert.match(css,/min-height:74px/);
  assert.match(css,/min-height:50px/);
  assert.match(css,/@media\(max-width:355px\)/);
- assert.match(ui,/Eight-session mode initially creates a plan and the first editable script/);
- assert.match(ui,/Курс сначала создаёт план из 8 сессий и текст первой медитации/);
+ assert.match(ui,/Eight-session mode starts with a plan and one script/);
+ assert.match(ui,/Курс начинается с плана и первого текста/);
 });
 
 test("Therapy WebKit preserves voice and reviewed recording rights",()=>{
@@ -64,4 +65,48 @@ test("Therapy WebKit preserves voice and reviewed recording rights",()=>{
  assert.ok(browser.includes("data-phrase-music-guidance=\"voice\""));
  assert.ok(browser.includes("data-therapy-subtab=\"practice\""));
  assert.ok(browser.includes("data-therapy-effects-toggle"));
+});
+
+test("Therapy uses the existing consented writer only for a verified seven-part AI draft",()=>{
+ const api=read("app/api/holistic-support/meditation-writer/brief/route.js");
+ const bridge=read("lib/holistic-support/meditation-writer/mandala-bridge.mjs");
+ assert.match(parent,/approvedVideoConcept=\{approvedVideoConcept\}/);
+ assert.match(writer,/buildMandalaWriterRequest\(/);
+ assert.match(writer,/approvedVideoConcept\?\.signature/);
+ assert.match(writer,/approvedVideoConcept\?\.sceneOutline/);
+ assert.match(writer,/allowPersonalNotes:false/);
+ assert.match(writer,/data-meditation-ai-opt-in/);
+ assert.match(writer,/resourceImageryOptIn:true,generationMode:"llm"/);
+ assert.match(writer,/externalModelOptIn:true,providerPreference:"auto"/);
+ assert.match(writer,/fetch\("\/api\/holistic-support\/meditation-writer\/brief"/);
+ assert.match(writer,/data\.modelUsed!==true/);
+ assert.match(writer,/data\.segments\.length!==7/);
+ assert.match(writer,/writerOrigin==="openrouter_free"/);
+ assert.match(writer,/writerOrigin==="gemini_free"/);
+ assert.match(api,/requiresEditorialReview:true/);
+ assert.match(api,/freeWriterProviders\(process\.env,providerPreference\)/);
+ assert.match(bridge,/MOTIFS=new Set/);
+ assert.doesNotMatch(writer,/x-goog-api-key|api\.openrouter\.ai|generativelanguage\.googleapis\.com/);
+ const safe=buildMandalaWriterRequest({locale:"en",theme:"relationships",
+   selectedGoals:["relationships"],motifId:"comfortable_corner",durationMinutes:10,
+   styleId:"grounded_practical",avoidElements:["water"]});
+ assert.equal(safe.status,"ready");
+ assert.equal(safe.request.motifId,"comfortable_corner");
+ assert.deepEqual(safe.request.avoidElements,["water"]);
+ assert.equal(safe.privateNotesAvailableToExternalFreeModel,false);
+ assert.equal(safe.externalProviderCalled,false);
+ const forged=buildMandalaWriterRequest({locale:"en",theme:"relationships",
+   selectedGoals:["relationships"],motifId:"unreviewed_script_injection"});
+ assert.equal(forged.status,"invalid");
+});
+
+test("course generates all eight local texts only on individual requests",()=>{
+ assert.match(writer,/function openCourseSession\(dayNumber:number\)/);
+ assert.match(writer,/dayNumber<1\|\|dayNumber>8/);
+ assert.match(writer,/data-meditation-course-create-day=\{day.number\}/);
+ assert.match(writer,/setCourseScripts\(current=>/);
+ assert.match(writer,/scene:day.motif/);
+ assert.match(writer,/isMeditationSafetyResponse\(output,locale\)/);
+ assert.match(writer,/Sessions 2–8 are an explicit local request/);
+ assert.doesNotMatch(ui,/autoPay|autoRender|autoGenerate/);
 });

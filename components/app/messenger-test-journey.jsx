@@ -20,7 +20,8 @@ const COPY = {
     resume: 'Продолжить сохранённый тест', adult: 'Мне исполнилось 18 лет. Я согласен(на) на временное сохранение ответов для прохождения теста.',
     privacy: 'Без входа в Google. Результат гостевой сессии временный; сохранить его в кабинете можно по вашему выбору.',
     back: 'Назад к выбору', previous: 'Предыдущий вопрос', question: 'Вопрос',
-    saving: 'Сохраняю ответ…', complete: 'Вы ответили на все вопросы.', finish: 'Показать результат',
+    saving: 'Сохраняю ответ…', complete: 'Вы ответили на все вопросы.', completionTitle: 'Поздравляем! 🎉',
+    completionHint: 'Теперь можно посмотреть свой результат и рекомендации.', completionCount: 'вопросов пройдено', finish: 'Посмотреть результат',
     result: 'Готово! Ваши ответы оценены по исходной методике.', view: 'Посмотреть результат и шкалы',
     again: 'Выбрать другой тест', loading: 'Загружаю…', retry: 'Повторить',
     error: 'Не получилось сохранить ответ. Повторите действие — ранее сохранённые ответы не потеряны.',
@@ -36,7 +37,8 @@ const COPY = {
     resume: 'Resume saved test', adult: 'I am 18 or older and agree to temporary storage of my answers for this test.',
     privacy: 'No Google login required. Guest results are temporary; saving to your account is optional.',
     back: 'Back to tests', previous: 'Previous question', question: 'Question',
-    saving: 'Saving your answer…', complete: 'You have answered every question.', finish: 'View result',
+    saving: 'Saving your answer…', complete: 'You have answered every question.', completionTitle: 'Congratulations! 🎉',
+    completionHint: 'You can now explore your results and recommendations.', completionCount: 'questions answered', finish: 'View result',
     result: 'Done! Your answers were scored using the original methodology.', view: 'See results and scales',
     again: 'Choose another test', loading: 'Loading…', retry: 'Retry',
     error: 'Your answer could not be saved. Retry; your previously saved answers remain available.',
@@ -52,7 +54,8 @@ const COPY = {
     resume: 'Continuar test guardado', adult: 'Tengo al menos 18 años y acepto el almacenamiento temporal de mis respuestas para este test.',
     privacy: 'No necesitas Google. El resultado temporal solo se guarda en tu cuenta si lo decides.',
     back: 'Volver a los tests', previous: 'Pregunta anterior', question: 'Pregunta',
-    saving: 'Guardando respuesta…', complete: 'Has respondido a todas las preguntas.', finish: 'Ver resultado',
+    saving: 'Guardando respuesta…', complete: 'Has respondido a todas las preguntas.', completionTitle: '¡Felicidades! 🎉',
+    completionHint: 'Ahora puedes ver tus resultados y recomendaciones.', completionCount: 'preguntas respondidas', finish: 'Ver resultado',
     result: '¡Listo! Las respuestas se evaluaron con el método original.', view: 'Ver resultados y escalas',
     again: 'Elegir otro test', loading: 'Cargando…', retry: 'Reintentar',
     error: 'No pudimos guardar la respuesta. Reinténtalo; tus respuestas guardadas permanecen disponibles.',
@@ -386,11 +389,11 @@ export default function MessengerTestJourney({ locale = 'en', focus = null, onAd
       </>}
     </>}
     {run && !result && definition && <>
-      <div className={css.controls} role="group" aria-label={t.title}>
+      {(!state.complete || paused || cancelPending) && <div className={css.controls} role="group" aria-label={t.title}>
         {paused ? <button type="button" className={css.plain} onClick={()=>setPaused(false)}>{extra.continue}</button> :
           <button type="button" className={css.plain} onClick={()=>{setPaused(true);setPendingAnswer(null)}}>{extra.pause}</button>}
         <button type="button" className={css.plain} onClick={()=>setCancelPending(true)}>{extra.cancel}</button>
-      </div>
+      </div>}
       {cancelPending && <div className={css.confirmation} role="alertdialog" aria-label={extra.confirmCancel}>
         <p>{extra.confirmCancel}</p>
         <div className={css.controls}>
@@ -399,12 +402,14 @@ export default function MessengerTestJourney({ locale = 'en', focus = null, onAd
         </div>
       </div>}
       {paused && <p className={css.assistant} data-hh-test-block="test_pause">{extra.paused}</p>}
+      {!state.complete && <>
       <div className={css.progress} role="progressbar" aria-valuenow={state.answeredCount} aria-valuemin={0} aria-valuemax={state.total} aria-label={t.question}>
         <span style={{width:(state.total?state.answeredCount / state.total * 100:0)+'%'}} />
       </div>
       <small className={css.counter}>{t.question} {Math.min(state.index + 1, state.total)} / {state.total} · {state.answeredCount} / {state.total}</small>
+      </>}
       <Asrs6SourceNotice definition={definition} startedAt={run.startedAt} locale={locale} />
-      {transcript.length > 0 && <div className={css.history} aria-label={t.recent}>
+      {!state.complete && transcript.length > 0 && <div className={css.history} aria-label={t.recent}>
         {transcript.map(item=><div key={item.id} className={css.exchange}>
           <p className={css.assistant} lang={definition.instrumentLocale}>{item.text}</p>
           <p className={css.user} lang={definition.instrumentLocale}>{chatAnswerLabel(definition, item, run.answers[item.id])}</p>
@@ -440,10 +445,16 @@ export default function MessengerTestJourney({ locale = 'en', focus = null, onAd
             {question.anchors[0]} — {question.anchors.at(-1)}
           </small>}
         </fieldset>
-      </> : !paused && !cancelPending ? <>
-        <p className={css.assistant}>{t.complete}</p>
-        <button type="button" className={css.primary} disabled={busy} onClick={finish}>{busy ? t.loading : t.finish}</button>
-      </> : null}
+      </> : !paused && !cancelPending ? <div className={css.completionCard} data-hh-test-block="test_complete">
+        <span className={css.completionMark} aria-hidden="true">✓</span>
+        <small className={css.completionCount}>{state.answeredCount} / {state.total} · {t.completionCount}</small>
+        <strong className={css.completionTitle} role="status">{t.completionTitle}</strong>
+        <p className={css.completionMessage}>{t.complete} {t.completionHint}</p>
+        <button type="button" className={css.completionCta} data-hh-test-view-result disabled={busy || !!operation.current} onClick={finish}>
+          <span>{busy ? t.loading : t.finish}</span><span aria-hidden="true">→</span>
+        </button>
+        {state.index > 0 && <button className={css.completionBack} type="button" disabled={busy || !!operation.current} onClick={previous}>{t.previous}</button>}
+      </div> : null}
       {notice && <p className={css.assistant} data-hh-test-block="test_clarification">{notice}</p>}
       {pendingAnswer && !busy && !paused && pendingAnswer.questionId === question?.id &&
         pendingAnswer.revision === run.revision && <div className={css.confirmation} data-hh-test-block="test_confirmed_answer">
@@ -453,8 +464,8 @@ export default function MessengerTestJourney({ locale = 'en', focus = null, onAd
             <button type="button" className={css.plain} onClick={()=>setPendingAnswer(null)}>{extra.reject}</button>
           </div>
         </div>}
-      {state.index > 0 && !paused && !cancelPending && <button className={css.plain} type="button" disabled={busy || !!operation.current} onClick={previous}>{t.previous}</button>}
-      {busy && <p className={css.note} role="status">{t.saving}</p>}
+      {state.index > 0 && !state.complete && !paused && !cancelPending && <button className={css.plain} type="button" disabled={busy || !!operation.current} onClick={previous}>{t.previous}</button>}
+      {busy && !state.complete && <p className={css.note} role="status">{t.saving}</p>}
       <p className={css.note}>{t.notDiagnostic}</p>
     </>}
     {result && <>
