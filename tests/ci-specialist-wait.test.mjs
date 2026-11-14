@@ -474,7 +474,7 @@ test('real sensitive Specialist accepts only mergeable, proved unrelated public 
     pr:async()=>current,target:async()=>updated,compare:async()=>compare,
     changed:async()=>{throw Error('must retain trusted tested checkout rows');},
     runs:async()=>[run('completed','success')],
-    jobs:async()=>[{name:'mobile',status:'completed',conclusion:'success'}],
+    jobs:async()=>[{name:'test',status:'completed',conclusion:'success'}],
   };
   const pinned={...sources,changedRows:[{filename:'lib/crm/a.js',status:'modified'}]};
   const accepted=await verify(api,ctx,pinned,{maxWaitMs:0});
