@@ -14,11 +14,11 @@ if (!/^http:\/\/(?:127\.0\.0\.1|localhost):\d+$/.test(origin))
 const output = "artifacts/holistic-support-mobile";
 await mkdir(output, {recursive: true});
 const copy = {
-  en: { title: "Holistic Support", tab: "Holistic Support", accessible: "Holistic Support",
+  en: { title: "Holistic Support", tab: "Study", accessible: "Study",
     question: "How can I find clarity this week?", intention: "I want calm before an important decision." },
-  ru: { title: "Холистическая поддержка", tab: "Поддержка", accessible: "Холистическая поддержка",
+  ru: { title: "Холистическая поддержка", tab: "Обучение", accessible: "Обучение",
     question: "Как прояснить мой выбор на этой неделе?", intention: "Хочу больше спокойствия перед важным решением." },
-  es: { title: "Apoyo holístico", tab: "Apoyo holístico", accessible: "Apoyo holístico",
+  es: { title: "Apoyo holístico", tab: "Estudiar", accessible: "Estudiar",
     question: "¿Cómo aclarar mi situación esta semana?", intention: "Quiero calma antes de una decisión importante." },
 };
 const evidence = [];
@@ -60,11 +60,26 @@ async function verify(engine, locale, width) {
     assert.ok((await scenic.evaluate(node => getComputedStyle(node, "::before").backgroundImage))
       .includes("ideas-pine-sharp.avif"), label + ": approved pine photograph");
 
-    const tab = page.locator('.mobile-bottom-navigation [data-nav-item="temple"]');
-    await tab.waitFor({state: "visible"});
-    assert.equal((await tab.innerText()).trim(), copy[locale].tab);
-    assert.equal(await tab.getAttribute("aria-label"), copy[locale].accessible);
-    assert.equal(await tab.getAttribute("aria-current"), "page");
+    // Holistic Support now uses the same public seven-destination dock as the
+    // rest of the site. Verify its real visible navigation, not the removed
+    // legacy "Temple" footer. All follow-on meditation/energy checks still run.
+    const dock = page.locator('[data-hh-unified-dock]');
+    await dock.waitFor({state:"visible",timeout:30000});
+    const dockIds=await dock.locator('[data-unified-dock-item]').evaluateAll(nodes=>
+      nodes.map(node=>node.getAttribute('data-unified-dock-item')));
+    assert.deepEqual(dockIds,["mytube","video","coach","ai","services","practice","profile"],
+      label+": one original seven-destination navigation");
+    assert.equal(await page.locator('.mobile-bottom-navigation:visible').count(),0,
+      label+": no duplicate legacy mobile navigation");
+    const study=dock.locator('[data-unified-dock-item="practice"]');
+    await study.waitFor({state:"visible",timeout:15000});
+    assert.equal((await study.innerText()).trim(),copy[locale].tab,
+      label+": current Study destination has correct translation");
+    assert.equal(await study.getAttribute("aria-label"),copy[locale].accessible);
+    assert.equal(await study.getAttribute("href"),"/"+locale+"/holistic-support/mobile",
+      label+": current Study destination opens existing public practice");
+    assert.equal(await dock.locator('[aria-current="page"]').count(),0,
+      label+": support overview does not pretend a different tab is selected");
 
 
     // The current meditation section exposes source-backed recordings and an
