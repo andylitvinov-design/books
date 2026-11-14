@@ -28,6 +28,15 @@ test('guest and account My Space add topics after the existing shared video and 
   assert.match(hub, /preload="none"/)
 })
 
+test('browser acceptance detects published EN/RU facades and the ES scenic video without autoplay', () => {
+  const browser = read('scripts/verify-home-consultation-first-screen.mjs')
+  assert.match(browser, /data-profile-presentation-locale/)
+  assert.match(browser, /site-video-frame/)
+  assert.match(browser, /site-video-play/)
+  assert.match(browser, /locator\('iframe'\)\.count\(\)/)
+  assert.match(browser, /presentation language matches the selected site locale/)
+})
+
 test('all six categories, three verified free starts, seven-stage path and mobile sizes are present', () => {
   const component = read('components/my-space-topics.jsx')
   const css = read('components/my-space-topics.module.css')

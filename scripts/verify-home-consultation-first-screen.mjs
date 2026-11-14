@@ -48,7 +48,23 @@ for (const engine of [chromium, webkit]) {
           // four navigation actions beneath it, then six main categories.
           // The retained consultation carousel is now further down the page.
           const firstTabs = page.locator('[data-profile-tab="today"]');
-          const firstVideo = page.locator('[data-profile-video-hero] video');
+          // EN/RU now use the approved presentation's click-to-play facade,
+          // while ES retains the accessible scenic <video> fallback.
+          const firstVideo = page.locator(
+            '[data-profile-video-hero] .site-video-frame, [data-profile-video-hero] video'
+          ).first();
+          if (locale === 'en' || locale === 'ru') {
+            const localized = page.locator('[data-profile-presentation-locale]');
+            assert.equal(await localized.getAttribute('data-profile-presentation-locale'), locale,
+              label + ': presentation language matches the selected site locale');
+            assert.equal(await localized.locator('.site-video-play').count(), 1,
+              label + ': approved presentation has a real play action before playback');
+            assert.equal(await localized.locator('iframe').count(), 0,
+              label + ': presentation does not auto-play or mount third-party playback');
+          } else {
+            assert.equal(await firstVideo.getAttribute('controls'), '',
+              label + ': Spanish fallback is a controllable scenic player');
+          }
           const firstQuick = page.locator('[data-profile-quick-actions]');
           const firstTopics = page.locator('[data-my-space-topics]');
           const [tabBox, videoBox, quickBox, topicBox] = await Promise.all([
