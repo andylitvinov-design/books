@@ -3,7 +3,7 @@ on:
   pull_request_target:
     # Synchronize only wakes the separate stale-HEAD janitor job. Native
     # auto-merge itself still waits for a successful Core CI completion.
-    types: [opened, ready_for_review, synchronize]
+    types: [synchronize]
     branches: ['codex/public-book-library']
   # Reviewer changes are an event-driven wakeup, never a new poller.
   pull_request_review:
@@ -26,10 +26,6 @@ jobs:
   enable:
     name: event-driven exact-head auto-merge reevaluation
     if: >-
-      (github.event_name == 'pull_request_target' &&
-       github.event.action != 'synchronize' &&
-       github.event.pull_request.draft == false &&
-       github.event.pull_request.head.repo.full_name == github.repository) ||
       (github.event_name == 'pull_request_review' &&
        github.event.pull_request.draft == false &&
        github.event.pull_request.base.ref == 'codex/public-book-library' &&
@@ -53,9 +49,7 @@ jobs:
           ref: codex/bootstrap-books
           persist-credentials: false
       - name: Checkout protected production classifier
-        # Opened and promoted-to-Ready PRs only write a trusted Ready receipt.
-        # Their newly triggered Core wave owns subsequent release evaluation.
-        if: ${{ github.event_name != 'pull_request_target' || (github.event.action != 'opened' && github.event.action != 'ready_for_review') }}
+        # Only real Core-success and review events reach this job.
         uses: actions/checkout@v4
         with:
           ref: codex/public-book-library
@@ -79,8 +73,7 @@ jobs:
             // from its branch. Never infer this from unrelated PR events.
             let allowUnassociatedCore = false;
             const log = message => core.info("CI_AUTO_MERGE: " + message);
-            if (context.eventName === "pull_request_target" ||
-                context.eventName === "pull_request_review") {
+            if (context.eventName === "pull_request_review") {
               const source = context.payload.pull_request;
               if (!source || source.head?.repo?.full_name !== fullRepo ||
                   source.base?.ref !== "codex/public-book-library") return;
@@ -118,40 +111,8 @@ jobs:
             } else return;
             if (!Number.isInteger(number)) return;
             let pr = (await github.rest.pulls.get({owner, repo, pull_number: number})).data;
-            // Record Ready only on an authenticated opened / ready_for_review
-            // event. Existing pull_request_target runner, no extra CI or job.
-            // Telemetry is best-effort and cannot change merge authorization.
-            if (context.eventName === "pull_request_target" &&
-                ["opened","ready_for_review"].includes(context.payload.action) &&
-                pr.state === "open" && pr.draft === false &&
-                pr.base?.ref === "codex/public-book-library" &&
-                pr.head?.repo?.full_name === fullRepo &&
-                pr.head?.sha === expectedHead && Number.isSafeInteger(context.runId)) {
-              try {
-                const {stageLine}=require(process.env.GITHUB_WORKSPACE+
-                  "/scripts/ci-pr-stage-receipts.cjs");
-                const source=context.payload.pull_request;
-                const opened=context.payload.action==="opened";
-                const at=opened?source.created_at:new Date().toISOString();
-                const receipt=stageLine({stage:"ready",pr_number:number,
-                  head_sha:pr.head.sha,run_id:context.runId,at,
-                  source:opened?"pr_opened_ready":"ready_event_observed"});
-                await github.rest.issues.createComment({owner,repo,issue_number:number,
-                  body:receipt+"\nReady event observed on verified PR HEAD; not CI-green or merge proof."});
-              } catch (error) {
-                log("READY_TIMESTAMP_RECEIPT_UNAVAILABLE #"+number+" "+
-                  String(error.message||error).slice(0,120));
-              }
-            }
-            // Opening or promoting a PR to Ready starts a new exact-HEAD Core.
-            // Preserve the authenticated Ready receipt above, then defer heavy
-            // mergeability and Core-history reads to successful workflow_run.
-            // Do not arm from an old green run while the new wave is pending.
-            if (context.eventName === "pull_request_target" &&
-                ["opened","ready_for_review"].includes(context.payload.action)) {
-              log("DEFER_READY_EVENT_UNTIL_EXACT_HEAD_CORE_SUCCESS");
-              return;
-            }
+            // Ready timestamps now share the already running trusted Watchdog
+            // PR-event runner; no separate Native AutoMerge Ready runner.
             // Mergeability may be temporarily unknown immediately after Core CI.
             // Recover inside the successful event, not in the next hourly Sweep.
             for (const delayMs of [1500, 3000, 5000, 8000]) {
