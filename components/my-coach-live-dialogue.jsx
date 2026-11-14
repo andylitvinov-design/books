@@ -6,6 +6,7 @@ import {ArrowRight,Heart,Home,Keyboard,Leaf,Captions,PhoneOff,LockKeyhole,Messag
 import {getCoachPersona,localCoachText,coachStagePrompt} from '@/lib/coaching/persona-registry.mjs'
 import {coachingBrainSafety,coachingBrainBoundary,coachingBrainStageDecision,offlineCoachingBrainReply,selectCoachingBrainMethod} from '@/lib/personal-coaching/coaching-brain.mjs'
 import {classifyWisdomRequest} from '@/lib/coaching/wisdom-retrieval.mjs'
+import {coachTurnWindow} from '@/lib/coaching/coach-turn-window.mjs'
 import styles from './my-coach-live-dialogue.module.css'
 import MyCoachSpeechLoop from './my-coach-speech-loop'
 import {startCoachingMp3Playback} from '@/lib/personal-coaching/streamed-mp3-playback.mjs'
@@ -355,7 +356,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           mode,reason:mode==='offline'?(readiness.reason||'model_unavailable'):'',
           stage:offlineReply.stage||semanticStage,
         }]
-        return updated.length>24?[updated[0],...updated.slice(-23)]:updated
+        return coachTurnWindow(updated,24)
       })
       if(mode==='safety'||(mode==='boundary'&&interruption?.boundary==='stop'))setPaused(true)
       setDraft('')
@@ -372,8 +373,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
           personaId,settings,locale:responseLocale,consent:true,message,
-          turns:(turns.length>10?[turns[0],...turns.slice(-9)]:turns)
-            .map(({role,content})=>({role,content})), // Keep the first client-stated goal in context.
+          turns:coachTurnWindow(turns,10)
+            .map(({role,content})=>({role,content})), // Preserve the latest client-stated active goal, not a greeting.
         }),
       })
       if(response.status===401){setAuthRequired(true);return}
@@ -389,7 +390,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           reason:result.offlineReason||'',stage:result.stage||'',
           suggestion:result.planSuggestion||'',evidence:result.evidenceQuote||'',
         }]
-        return updated.length>24?[updated[0],...updated.slice(-23)]:updated
+        return coachTurnWindow(updated,24)
       })
       setDraft('')
       setSpeechPreview('')
