@@ -972,7 +972,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       assert.equal(await chooser.locator("[data-video-affirmation-voice-card]").count(),3);
       await chooser.locator('[data-video-affirmation-voice-card="leon"]').click();
       await expect(chooser.locator('[data-video-affirmation-voice-card="leon"]')).toHaveAttribute("aria-pressed","true");
-      await expect(page.locator("[data-video-affirmation-voice-consent]")).not.toBeChecked();
+      await expect(page.locator("[data-video-affirmation-voice-consent]")).toHaveAttribute("aria-checked","false");
       const voiceOptions=page.locator("[data-video-affirmation-voice] details")
         .filter({has:page.locator("[data-video-affirmation-bed]")});
       if(await voiceOptions.getAttribute("open")===null)
@@ -982,8 +982,16 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(page.locator("[data-video-affirmation-bed]")).toBeVisible({timeout:15000});
       await page.locator("[data-video-affirmation-bed]").selectOption("ocean");
       const narrationConsent=page.locator("[data-video-affirmation-voice-consent]");
-      await narrationConsent.check();
-      await expect(narrationConsent).toBeChecked();
+      // Actual browser gesture, with revocation: no synthetic state injection.
+      if(engine==="webkit")await narrationConsent.tap();
+      else await narrationConsent.click();
+      await expect(narrationConsent).toHaveAttribute("aria-checked","true",{timeout:15000});
+      if(engine==="webkit")await narrationConsent.tap();
+      else await narrationConsent.click();
+      await expect(narrationConsent).toHaveAttribute("aria-checked","false");
+      if(engine==="webkit")await narrationConsent.tap();
+      else await narrationConsent.click();
+      await expect(narrationConsent).toHaveAttribute("aria-checked","true");
       const generateNarration=page.locator("[data-video-generate-affirmation-audio]");
       await expect(generateNarration).toBeEnabled();
       // Observe real user input on macOS without recording the approved text,
@@ -1005,7 +1013,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         const buttonDisabled=await page.locator("[data-video-generate-affirmation-audio]").isDisabled();
         const state=await page.evaluate(()=>({
           gesture:window.__hhVoiceSubmitProbe??null,
-          consented:document.querySelector("[data-video-affirmation-voice-consent]")?.checked===true,
+          consented:document.querySelector("[data-video-affirmation-voice-consent]")?.getAttribute("aria-checked")==="true",
           wordsLength:document.querySelector("[data-video-affirmation-spoken-text]")?.textContent?.trim().length??0,
           readyNodes:document.querySelectorAll("[data-video-affimations-audio-ready]").length,
           mountedPanels:document.querySelectorAll("[data-video-affirmation-voice]").length

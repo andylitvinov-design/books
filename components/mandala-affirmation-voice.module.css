@@ -14,8 +14,11 @@
 .controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:11px 0}
 .controls label{display:grid;gap:6px;min-width:0;color:#466f56;font-size:11px;font-weight:780}
 .controls select{box-sizing:border-box;width:100%;min-width:0;min-height:44px;padding:8px 5px;border:1px solid #d4e6da;border-radius:10px;background:#fff;color:#205740;font:650 12px/1.4 system-ui,-apple-system,sans-serif}
-.consent{display:flex;gap:8px;align-items:start;margin:11px 0;font-size:11px;line-height:1.55;color:#54725f}
-.consent input{width:19px;height:19px;flex:none;margin:0;accent-color:#08795a}
+.consent{display:flex;gap:8px;align-items:start;width:100%;min-height:36px;margin:11px 0;padding:0;border:0;background:transparent;text-align:left;font:500 11px/1.55 system-ui,-apple-system,sans-serif;color:#54725f;cursor:pointer}
+.consent:disabled{opacity:.55;cursor:not-allowed}
+.consent:focus-visible{outline:3px solid #08795a;outline-offset:3px;border-radius:5px}
+.consentMark{display:grid;place-items:center;width:19px;height:19px;flex:none;margin:0;border:1.5px solid #9abda9;border-radius:5px;background:#fff;color:#fff;font:800 15px/1 system-ui}
+.consent[aria-checked="true"] .consentMark{border-color:#08795a;background:#08795a}
 .action{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;min-height:49px;border:1px solid #087e5e;border-radius:11px;background:#087e5e;color:white;padding:9px 12px;font:850 13px/1.4 system-ui,-apple-system,sans-serif;cursor:pointer}
 .action:disabled{opacity:.5;cursor:not-allowed}
 .result{margin-top:12px;padding:11px;border:1px solid #b8dcc5;border-radius:11px;background:#fff}

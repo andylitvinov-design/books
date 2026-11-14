@@ -458,3 +458,32 @@ test('multiple in-progress Specialist workflows keep normal thirty-second pollin
   assert.equal(result.executed.length,2);
   assert.deepEqual(sleeps,[30_000,30_000]);
 });
+
+
+test('real sensitive Specialist accepts only mergeable, proved unrelated public raster target advances', async () => {
+  const updated='c'.repeat(40);
+  let current={...pr,mergeable:true,mergeable_state:'behind',
+    base:{...pr.base,sha:updated}};
+  const completeCompare=(filename='public/images/new-editor-banner.webp')=>({
+    status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+    base_commit:{sha:base},merge_base_commit:{sha:base},
+    commits:[{sha:updated}],files:[{filename,status:'modified'}],
+  });
+  let compare=completeCompare();
+  const api={
+    pr:async()=>current,target:async()=>updated,compare:async()=>compare,
+    changed:async()=>{throw Error('must retain trusted tested checkout rows');},
+    runs:async()=>[run('completed','success')],
+    jobs:async()=>[{name:'test',status:'completed',conclusion:'success'}],
+  };
+  const pinned={...sources,changedRows:[{filename:'lib/crm/a.js',status:'modified'}]};
+  const accepted=await verify(api,ctx,pinned,{maxWaitMs:0});
+  assert.equal(accepted.head,head);
+  current={...current,mergeable:false,mergeable_state:'dirty'};
+  await assert.rejects(()=>verify(api,ctx,pinned,{maxWaitMs:0}),/MERGE_CONFLICT/);
+  current={...current,mergeable:null,mergeable_state:'unknown'};
+  await assert.rejects(()=>verify(api,ctx,pinned,{maxWaitMs:0}),/PRODUCTION_BASE_CHANGED/);
+  current={...current,mergeable:true,mergeable_state:'behind'};
+  compare=completeCompare('app/api/payment/route.ts');
+  await assert.rejects(()=>verify(api,ctx,pinned,{maxWaitMs:0}),/PRODUCTION_BASE_CHANGED/);
+});

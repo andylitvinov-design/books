@@ -109,6 +109,11 @@ export function MandalaAffirmationVoice({
   const [voiceLevel,setVoiceLevel]=useState(90);
   const [musicLevel,setMusicLevel]=useState(12);
   const [consent,setConsent]=useState(false);
+  // Mobile Safari in touch emulation can report a native input click without
+  // toggling the checkbox. Use one real accessible button gesture, mirroring
+  // the already-verified guest consent, and never grant permission on mount.
+  const consentTouchStart=useRef<{x:number;y:number}|null>(null);
+  const lastConsentTouchAt=useRef(0);
   const [available,setAvailable]=useState(false);
   const [availableLanguages,setAvailableLanguages]=useState<string[]>([]);
   const languageAvailable=available&&availableLanguages.includes(language);
@@ -631,11 +636,37 @@ export function MandalaAffirmationVoice({
     </div>
     <small className={css.hint}>{levels.balanced}</small>
     </details>
-    <div className={css.consentRow}><label className={css.consent}>
-      <input data-video-affirmation-voice-consent type="checkbox" checked={consent}
-        disabled={busy||disabled||approvalPending||!speechText} onChange={e=>setConsent(e.currentTarget.checked)}/>
+    <div className={css.consentRow}><button className={css.consent} type="button"
+      data-video-affirmation-voice-consent role="checkbox" aria-checked={consent}
+      disabled={busy||disabled||approvalPending||!speechText}
+      onTouchStart={event=>{
+        const finger=event.touches.length===1?event.touches[0]:null;
+        consentTouchStart.current=finger?{x:finger.clientX,y:finger.clientY}:null;
+      }}
+      onTouchMove={event=>{
+        const start=consentTouchStart.current,finger=event.touches[0];
+        if(!start||event.touches.length!==1||!finger||
+          Math.hypot(finger.clientX-start.x,finger.clientY-start.y)>14)
+          consentTouchStart.current=null;
+      }}
+      onTouchCancel={()=>{consentTouchStart.current=null;}}
+      onTouchEnd={event=>{
+        const start=consentTouchStart.current,finger=event.changedTouches[0];
+        consentTouchStart.current=null;
+        if(!start||event.changedTouches.length!==1||!finger||
+          Math.hypot(finger.clientX-start.x,finger.clientY-start.y)>14)return;
+        lastConsentTouchAt.current=Date.now();
+        setConsent(previous=>!previous);
+      }}
+      onClick={()=>{
+        // Suppress Safari's compatibility click for the *same* real touch.
+        // Keyboard and pointer clicks still toggle and can revoke consent.
+        if(Date.now()-lastConsentTouchAt.current>=700)
+          setConsent(previous=>!previous);
+      }}>
+      <span className={css.consentMark} aria-hidden="true">{consent?"✓":""}</span>
       <span>{compact?t.consentBrief:t.consent}</span>
-    </label>
+    </button>
     {compact?<details className={css.consentDetails}><summary>{t.privacyDetails}</summary>
       <p>{t.consent}</p></details>:null}</div>
     <button type="button" className={css.action} data-video-generate-affirmation-audio

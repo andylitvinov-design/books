@@ -423,7 +423,11 @@ test("browser stale-audio check removes the spoken phrase through the visible Mo
 test('dedicated Voice workspace keeps explicit consent opt-in and separate from Montage',()=>{
   const voice=read("components/mandala-affirmation-voice.tsx");
   assert.match(voice,/const \[consent,setConsent\]=useState\(false\)/);
-  assert.match(voice,/data-video-affirmation-voice-consent type="checkbox" checked=\{consent\}/);
+  assert.match(voice,/data-video-affirmation-voice-consent role="checkbox" aria-checked=\{consent\}/);
+ assert.match(voice,/const \[consent,setConsent\]=useState\(false\)/);
+ assert.match(voice,/lastConsentTouchAt\.current=Date\.now\(\)/);
+ assert.match(source,/narrationConsent\.tap\(\)/);
+ assert.match(source,/toHaveAttribute\("aria-checked","false"\)/);
   assert.match(source,/data-video-narration-reapproval/);
   assert.match(source,/await expect\(page\.locator\('\[data-video-quick-generate\]'\)\)\.toBeEnabled/);
  assert.match(read("components/mandala-free-video-studio.tsx"),/if\(narrationInvalid\)\{/);

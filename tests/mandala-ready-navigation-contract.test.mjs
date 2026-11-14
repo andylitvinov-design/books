@@ -20,7 +20,14 @@ test("Goal and Montage Generate only navigate to Ready",()=>{
  assert.match(foot,/onClick=\{openReadyForGeneration\}/);
 });
 test("Ready verifies video before completion and preserves guarded export",()=>{
- assert.match(studio,/readyResultVerified=Boolean\(result&&result\.mode!=="catalog"&&playbackStatus==="ready"&&creditConfirmed\)/);
+ assert.match(studio,/readyResultVerified=Boolean\(!readyGenerationPending&&result&&result\.mode!=="catalog"&&playbackStatus==="ready"&&creditConfirmed\)/);
+ assert.match(studio,/video=\{!readyGenerationPending&&result/);
+ assert.match(studio,/setReadyGenerationPending\(true\)/);
+ assert.match(studio,/setReadyGenerationPending\(false\)/);
+ assert.match(studio,/data-free-video-create[^\n]*onClick=\{openReadyForGeneration\}/);
+ assert.match(studio,/data-video-hero-create[^\n]*onClick=\{openReadyForGeneration\}/);
+ assert.match(studio,/data-mandala-video-generate[\s\S]*?onClick=\{openReadyForGeneration\}/);
+ assert.match(studio,/onCreate=\{openReadyForGeneration\}/);
  assert.match(studio,/activeWorkspace==="ready"&&!readyResultVerified/);
  assert.match(ready,/data-ready-state=\{completed\?"complete":"choose"\}/);
  assert.match(ready,/onClick=\{generateSelectedVideo\} data-ready-generate/);
