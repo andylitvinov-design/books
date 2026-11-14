@@ -352,13 +352,13 @@ test('a silent iPhone recognizer offers one-tap retry while natural-voice consen
   const loop=source('components/my-coach-speech-loop.jsx')
   const ui=source('components/my-coach-live-dialogue.jsx')
   assert.ok(loop.includes('setMicStalled(true)'))
-  assert.ok(loop.includes("micStalled&&phaseRef.current==='listening'"))
+  assert.ok(loop.includes("phaseRef.current==='stalled'"))
   assert.ok(loop.includes('setMicStalled(false)'))
   assert.ok(loop.includes("retryMic:'Перезапустить микрофон'"))
   assert.ok(loop.includes('aria-label={retryMic?t.retryMic:'))
   const checkbox=ui.slice(ui.indexOf('<label><input type="checkbox" checked={cloudAgreed}'),
     ui.indexOf('<label><input type="checkbox" checked={cloudAgreed}')+180)
-  assert.ok(checkbox.includes('onChange={event=>setCloudAgreed(event.target.checked)}'))
+  assert.ok(checkbox.includes('onChange={event=>{setCloudAgreed(event.target.checked);if(event.target.checked)setWizardVoice(false)}}'))
   assert.ok(!checkbox.includes('disabled='), 'active/ready STT cannot lock the Fish consent checkbox')
   assert.ok(loop.includes('(!cloudAgreed||!cloudAvailable)&&(cloudControllerRef.current||cloudPlayerRef.current)'),
     'revoking cloud consent still stops the private audio request')
@@ -383,3 +383,22 @@ test('My Coach Replay animates large portrait only on actual device or cloud aud
   assert.match(replay,/\.catch\(\(\)=>\{if\(!controller\.signal\.aborted&&replayControllerRef\.current===controller\)/)
   assert.doesNotMatch(replay,/getUserMedia|MediaRecorder|OPENROUTER_API_KEY|HH_GOOGLE_TTS_SERVICE_ACCOUNT_JSON/)
 })
+
+test('Original wizard option is local-only with approved British device-voice settings',()=>{
+ const loop=source('components/my-coach-speech-loop.jsx')
+ const ui=source('components/my-coach-live-dialogue.jsx')
+ const css=source('components/my-coach-live-dialogue.module.css')
+ for(const token of ['wizardVoice={wizardVoice}','wizardVoice?0.93:0.97',
+  'wizardVoice?1.08:1', 'setCloudAgreed(false)',
+  "new URLSearchParams(window.location.search).get('voice')==='wizard'",
+  "Storybook wizard voice", "Голос сказочного волшебника",
+  "Voz de mago de cuento"])
+  assert.ok((loop+'\n'+ui).includes(token),token)
+ assert.ok(ui.includes('not a Harry Potter film actor or dub'))
+ assert.ok(css.includes('.wizardVoiceRow'))
+ assert.ok(!loop.includes('reference_id'))
+ assert.match(loop,/changePhase\('loading'\) \/\/ Reply is ready/)
+ assert.match(loop,/if\(ios27&&hasRecognizedRef\.current&&/)
+ assert.match(loop,/changePhase\('stalled'\)/)
+ assert.match(loop,/phaseRef\.current==='stalled'/)
+});

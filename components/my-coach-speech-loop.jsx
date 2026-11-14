@@ -38,7 +38,7 @@ const words={
     iosCue:'Te escucho ahora.',iosPreparing:'Preparando el micrófono del iPhone…',iosSilent:'Safari puede haber dejado de escuchar. Tu texto se puede editar; prueba de nuevo o reinicia Safari.'},
 }
 
-const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speechLocale='auto',initialDraft='',enabled=false,canStart=true,cloudAvailable=false,cloudAgreed=false,cloudProvider=null,personaId='mira',onTurn,onCancelTurn,onVoiceStateChange,onRequestConsent,onTranscript,onDraft},ref){
+const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speechLocale='auto',initialDraft='',enabled=false,canStart=true,cloudAvailable=false,cloudAgreed=false,cloudProvider=null,personaId='mira',wizardVoice=false,onTurn,onCancelTurn,onVoiceStateChange,onRequestConsent,onTranscript,onDraft},ref){
   const lang=words[locale]?locale:'en',t=words[lang]
   const [phase,setPhase]=useState('idle')
   const [notice,setNotice]=useState('')
@@ -169,6 +169,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
         iosResultTimerRef.current=setTimeout(()=>{
           if(recognitionRef.current===recognition&&activeRef.current&&!heardRef.current.trim()){
             setMicStalled(true)
+            changePhase('stalled')
             setNotice(t.iosSilent)
           }
         },9000)
@@ -177,7 +178,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     recognition.onresult=event=>{
       if(recognitionRef.current!==recognition||!activeRef.current)return
       setMicStalled(false)
-      if(phaseRef.current==='starting')changePhase('listening')
+      if(['starting','stalled'].includes(phaseRef.current))changePhase('listening')
       if(iosResultTimerRef.current){clearTimeout(iosResultTimerRef.current);iosResultTimerRef.current=null}
       const {final,interim,visible}=readDictationResults(event.results,1200)
       heardRef.current=visible
@@ -234,12 +235,11 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       try{recognition.start();hasRecognizedRef.current=true}
       catch{recognitionRef.current=null;silence();changePhase('idle');setNotice(t.restart)}
     }
-    const cueAlreadyPlayed=iosCueSatisfiedRef.current
     iosCueSatisfiedRef.current=false
-    // WebKit bug 321436: after Fish MP3 or a prior recognition turn, give
-    // iOS 27 Safari a short speech-synthesis cue before re-opening its mic.
-    // Browser TTS itself counts as the cue, so never speak twice.
-    if(ios27&&hasRecognizedRef.current&&!cueAlreadyPlayed&&
+    // WebKit #321436: even after coach device/Fish speech, every iOS 27
+    // follow-up recognizer gets its own completed short voice cue.
+    // Never stop a recognizer with useful interim words before natural onend.
+    if(ios27&&hasRecognizedRef.current&&
        window.speechSynthesis?.speak&&window.SpeechSynthesisUtterance){
       const cue=new window.SpeechSynthesisUtterance(t.iosCue)
       cue.lang=recognition.lang
@@ -286,6 +286,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     }
     heardRef.current=''
     transcriptRef.current?.('')
+    changePhase('loading') // Reply is ready; synthesis is pending, not model thinking.
     const reply=String(result.reply).slice(0,900)
     // Speak the final focused question rather than forwarding long personal reflections.
     const questions=reply.match(/[^.!?\n]+[?？]/gu)||[]
@@ -313,7 +314,8 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       if(!synth?.speak||!Utterance){showTextOnly();return}
       const utterance=new Utterance(speakable||reply)
       utterance.lang=speechLanguages[replyLocale]||speechLanguages[lang]
-      utterance.rate=0.97
+      utterance.rate=wizardVoice?0.93:0.97
+      utterance.pitch=wizardVoice?1.08:1
       const voices=synth.getVoices?.()||[]
       const voice=voices.find(v=>v.lang?.toLowerCase()===utterance.lang.toLowerCase())||
         voices.find(v=>v.lang?.toLowerCase().startsWith(replyLocale+'-'))
@@ -418,7 +420,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   }
 
   function toggle(){
-    if(micStalled&&phaseRef.current==='listening'){
+    if(phaseRef.current==='stalled'){
       // One deliberate iPhone tap restarts a recognizer stuck with no words.
       stopVoice()
       if(!canStart||!enabled)return
@@ -440,7 +442,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     startListening()
   }
 
-  const active=phase!=='idle',ready=phase==='ready',retryMic=micStalled&&phase==='listening'
+  const active=phase!=='idle',ready=phase==='ready',retryMic=micStalled&&phase==='stalled'
   return <div className={styles.root} data-my-coach-voice={phase}>
     <button type="button" className={styles.button}
       onClick={toggle} disabled={!active&&!canStart}

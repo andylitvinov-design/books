@@ -94,6 +94,11 @@ const voiceGateText={
  ru:{title:'Перед голосовым разговором',cancel:'Не сейчас',agree:'Согласен и начать',tapToHear:'Нажмите, чтобы услышать коуча',playbackUnavailable:'В этом браузере не работает озвучивание. Попробуйте Safari или текстовый диалог.'},
  es:{title:'Antes de hablar por voz',cancel:'Ahora no',agree:'Aceptar y hablar',tapToHear:'Toca para escuchar al coach',playbackUnavailable:'La reproducción de voz no está disponible aquí. Prueba Safari o escribe.'},
 }
+const wizardVoiceCopy={
+  en:{label:'Storybook wizard voice · original British style',note:'Free device voice. An original character sound, not a Harry Potter film actor or dub.'},
+  ru:{label:'Голос сказочного волшебника · британский стиль',note:'Бесплатный голос устройства. Оригинальный характер, не голос актёра или дубляжа Гарри Поттера.'},
+  es:{label:'Voz de mago de cuento · estilo británico original',note:'Voz gratuita del dispositivo. No imita a un actor ni doblaje de Harry Potter.'},
+}
 const quickTopics=[{id:'stress',icon:Leaf,art:'stones'},{id:'energy',icon:Zap,art:'sunrise'},{id:'relationships',icon:Heart,art:'lotus'}]
 const stageKeys=['clarify','explore','awareness','reframe','choice','planning','commitment','integration']
 
@@ -114,6 +119,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [cloudAvailable,setCloudAvailable]=useState(false)
   const [cloudAgreed,setCloudAgreed]=useState(false)
   const [cloudProvider,setCloudProvider]=useState(null)
+  const [wizardVoice,setWizardVoice]=useState(false)
   const [speechLocale,setSpeechLocale]=useState('auto')
   const [showCaptions,setShowCaptions]=useState(false)
   const [turns,setTurns]=useState([])
@@ -133,6 +139,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const replayControllerRef=useRef(null),replayPlayerRef=useRef(null)
   const replaySpeechRef=useRef(null),replayTimerRef=useRef(null)
   useEffect(()=>()=>pending.current?.abort(),[])
+  // Private shareable voice preset, not stored in the account or sent to providers.
+  useEffect(()=>{
+    try{if(new URLSearchParams(window.location.search).get('voice')==='wizard')setWizardVoice(true)}
+    catch{}
+  },[])
   useEffect(()=>{
     // This probe sends only a synthetic OK to the free-only ZDR gateway.
     // The client's message and history remain untouched until consent + Send.
@@ -233,7 +244,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     const utterance=new Utterance(latestCoachText.slice(0,900))
     const spokenLocale=detectedSpeechLocale(latestCoachText,lang)
     utterance.lang={en:'en-GB',ru:'ru-RU',es:'es-ES'}[spokenLocale]
-    utterance.rate=0.97
+    utterance.rate=wizardVoice?0.93:0.97
+    utterance.pitch=wizardVoice?1.08:1
     const voices=synth.getVoices?.()||[]
     const chosen=voices.find(v=>v.lang?.toLowerCase()===utterance.lang.toLowerCase())||
       voices.find(v=>v.lang?.toLowerCase().startsWith(spokenLocale+'-'))
@@ -437,7 +449,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           aria-label={ui.type} title={ui.type}><Keyboard size={21} aria-hidden="true"/><span>{ui.keyboardShort}</span></button>
         <div className={styles.voiceCenter} data-voice-active={voiceState.phase!=='idle'?'true':undefined}>
           <span className={styles.voiceWaveLeft} aria-hidden="true"><i/><i/><i/><i/><i/></span>
-          <MyCoachSpeechLoop ref={speechRef} locale={lang} speechLocale={speechLocale} initialDraft={draft} cloudAvailable={cloudAvailable} cloudAgreed={cloudAgreed} cloudProvider={cloudProvider} personaId={personaId} enabled={consent&&readiness.status!=='checking'&&!authRequired}
+          <MyCoachSpeechLoop ref={speechRef} locale={lang} speechLocale={speechLocale} initialDraft={draft} cloudAvailable={cloudAvailable} cloudAgreed={cloudAgreed} cloudProvider={cloudProvider} personaId={personaId} wizardVoice={wizardVoice} enabled={consent&&readiness.status!=='checking'&&!authRequired}
             canStart={!busy&&!paused&&!replaying&&readiness.status!=='checking'&&!authRequired} onTurn={sendMessage}
             onRequestConsent={()=>{if(!voiceConsentRef.current?.open)voiceConsentRef.current?.showModal()}}
             onCancelTurn={()=>pending.current?.abort()} onVoiceStateChange={setVoiceState}
@@ -480,7 +492,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       </section>
       {cloudAvailable&&consent&&!authRequired&&<div className={styles.naturalVoiceRow}>
         <label><input type="checkbox" checked={cloudAgreed}
-          onChange={event=>setCloudAgreed(event.target.checked)}/>
+          onChange={event=>{setCloudAgreed(event.target.checked);if(event.target.checked)setWizardVoice(false)}}/>
           <span>{providerCopy.label}</span></label>
         <details><summary>{providerCopy.about}</summary>
           <p>{providerCopy.disclosure}</p></details>
@@ -515,6 +527,13 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           {ui.guided}<ArrowRight size={16} aria-hidden="true"/>
         </button>}
       </details>
+      <div className={styles.wizardVoiceRow}>
+        <label><input type="checkbox" checked={wizardVoice}
+          disabled={voiceState.phase!=='idle'||replaying}
+          onChange={event=>{setWizardVoice(event.target.checked);if(event.target.checked)setCloudAgreed(false)}}/>
+          <span>{wizardVoiceCopy[lang].label}</span></label>
+        <small>{wizardVoiceCopy[lang].note}</small>
+      </div>
       </div>
     </section>
     <label className={styles.goalRow}><Target size={22} aria-hidden="true"/><span>{ui.goal}</span>
