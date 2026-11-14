@@ -56,12 +56,19 @@ try{
    {waitUntil:"domcontentloaded",timeout:60000});
  assert.equal(response?.status(),200,"BUSINESS_LOCAL_APP_NOT_200");
  await page.locator('[data-video-studio-hydrated="true"]').waitFor({timeout:60000});
- const details=page.locator("[data-video-wish-disclosure]");
- await details.locator(":scope > summary").tap();
- const wish=page.locator("[data-video-wish]");
+ // Enter a concrete workplace story through the visible Goal controls, not
+ // the old hidden Hypno wish disclosure inside advanced Montage settings.
+ const businessGoal=page.locator('[data-auto-video-category="goals-money"]');
+ await businessGoal.waitFor({state:"visible",timeout:15000});
+ await businessGoal.tap();
+ await page.waitForFunction(()=>document.querySelector('[data-auto-video-category="goals-money"]')
+   ?.getAttribute("aria-pressed")==="true",null,{timeout:15000});
+ const wish=page.locator("[data-auto-video-input]");
  await wish.waitFor({state:"visible",timeout:15000});
- // A literal career/salary action, not a generic 'growth' theme.
+ // A literal career/salary action, not generic 'growth' theme.
  await wish.fill("I want my work recognized and to discuss money, salary and pay with my manager at an office meeting");
+ await page.waitForFunction(()=>document.querySelector("[data-auto-video-input]")
+   ?.value?.includes("salary and pay"),null,{timeout:10000});
  await page.locator("[data-video-continue-scenarios]").tap();
  await page.locator('[data-video-quick-control="editor"]').tap();
  const storyTab=page.locator('[data-video-montage-tab="concept"]');
