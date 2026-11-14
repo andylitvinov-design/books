@@ -38,7 +38,7 @@ const COPY = {
     authError:'Не удалось открыть Google-вход. Попробуйте ещё раз.',
     offline:'Не удалось проверить вход. Попробуйте ещё раз.',
     loginPrompt:'Нажмите на нужное действие — откроется вход через Google.',
-    promptTitle:'Войти в кабинет практика?', promptText:'Для создания услуг и работы с заявками нужна авторизация через Google. После входа вы вернётесь к этому же дизайну.', lookAround:'Продолжить просмотр',
+    promptTitle:'Войти в кабинет практика?', promptText:'Войдите через Google или Telegram, чтобы продолжить выбранное действие. После входа вы вернётесь в Work.', lookAround:'Продолжить просмотр',
     countUnknown:'—', defaultName:'Ваш профиль', emptyName:'Заполните профиль',
     loading:'Проверяем вход…', moderation:'Новые материалы остаются черновиками до проверки и публикации.',
     example:'Пример оформления', editTitle:'Мой профиль', next:'Открыть',
@@ -69,7 +69,7 @@ const COPY = {
     authError:'Google sign-in is unavailable. Please try again.',
     offline:'Could not check your session. Try again.',
     loginPrompt:'Choose an action to continue with Google.',
-    promptTitle:'Sign in to your workspace?', promptText:'Google sign-in is required to create services and manage requests. Afterwards, you will return to this same screen.', lookAround:'Keep exploring',
+    promptTitle:'Sign in to your workspace?', promptText:'Sign in with Google or Telegram to continue your selected action. You will return to Work afterwards.', lookAround:'Keep exploring',
     countUnknown:'—', defaultName:'Your profile', emptyName:'Complete your profile',
     loading:'Checking sign-in…', moderation:'New materials remain drafts until approved for publication.',
     example:'Layout preview', editTitle:'My profile', next:'Open',
@@ -100,7 +100,7 @@ const COPY = {
     authError:'No se puede iniciar sesión con Google. Inténtalo de nuevo.',
     offline:'No se ha podido comprobar tu sesión. Inténtalo de nuevo.',
     loginPrompt:'Selecciona una acción para continuar con Google.',
-    promptTitle:'¿Acceder a tu espacio?', promptText:'Inicia sesión con Google para crear servicios y gestionar solicitudes. Después volverás a esta misma pantalla.', lookAround:'Seguir explorando',
+    promptTitle:'¿Acceder a tu espacio?', promptText:'Entra con Google o Telegram para continuar con la acción elegida. Después volverás a Work.', lookAround:'Seguir explorando',
     countUnknown:'—', defaultName:'Tu perfil', emptyName:'Completa tu perfil',
     loading:'Comprobando sesión…', moderation:'Los nuevos materiales quedan como borradores hasta su aprobación.',
     example:'Vista de ejemplo', editTitle:'Mi perfil', next:'Abrir',
@@ -287,6 +287,17 @@ export default function PracticeShowcase({ locale = 'en' }) {
     window.history.replaceState(window.history.state, '', url.pathname+url.search+url.hash)
   }
 
+  // Links within Work require a verified session, except the public Life/Work switch.
+  function interceptGuestWorkLink(event) {
+    if (signedIn) return
+    const target=event.target?.closest?.('a[href]')
+    if (!target || target.closest('[data-profile-mode-switch]')) return
+    event.preventDefault()
+    event.stopPropagation()
+    setNotice('')
+    setPendingAction('profile')
+  }
+
   function openAction(key) {
     if (busy) return
     // This selected tab is already the new practitioner page. It must never
@@ -304,6 +315,11 @@ export default function PracticeShowcase({ locale = 'en' }) {
     }
     // Public exploration and the approved showcase never demand a Google session.
     if (['home','masters','community'].includes(key)) {
+      if (!signedIn) {
+        setNotice('')
+        setPendingAction(key)
+        return
+      }
       router.push(destination(locale, key))
       return
     }
@@ -386,7 +402,7 @@ export default function PracticeShowcase({ locale = 'en' }) {
   const metric = signedIn && practice ? String(active) : t.countUnknown
   const requestMetric = signedIn && practice ? String(newRequests) : t.countUnknown
 
-  return <div className={styles.screen} data-practice-showcase data-practice-design="unified-20261028" data-auth-state={session}>
+  return <div onClickCapture={interceptGuestWorkLink} className={styles.screen} data-practice-showcase data-practice-design="unified-20261028" data-auth-state={session}>
     <div className={styles.shell}>
       <PracticeWorkProfileIntro locale={locale} t={t} onAction={openAction} />
 
@@ -487,11 +503,14 @@ export default function PracticeShowcase({ locale = 'en' }) {
         {notice && <p role="alert" className={styles.modalError}>{notice}</p>}
         <button type="button" autoFocus className={styles.modalPrimary} disabled={Boolean(busy)}
           onClick={() => void confirmSignIn()}>{t.signIn} <ArrowRight size={19} aria-hidden="true"/></button>
-        {telegramAvailable && <>
-          <button type="button" className={styles.modalTelegram} disabled={Boolean(busy)}
-            onClick={() => void confirmTelegramSignIn()}>{t.telegramSignIn} <ArrowRight size={19} aria-hidden="true"/></button>
-          <p className={styles.telegramNote}>{t.telegramNote}</p>
-        </>}
+        <button type="button" className={styles.modalTelegram}
+          disabled={Boolean(busy) || !telegramAvailable}
+          onClick={() => void confirmTelegramSignIn()}>{t.telegramSignIn} <ArrowRight size={19} aria-hidden="true"/></button>
+        <p className={styles.telegramNote}>{telegramAvailable ? t.telegramNote : (
+          locale === 'ru' ? 'Вход через Telegram пока не подключён. Используйте Google.' :
+          locale === 'es' ? 'Telegram aún no está conectado. Usa Google.' :
+          'Telegram sign-in is not enabled yet. Use Google.'
+        )}</p>
         <button type="button" className={styles.modalSecondary} disabled={Boolean(busy)}
           onClick={() => setPendingAction('')}>{t.lookAround}</button>
       </section>
