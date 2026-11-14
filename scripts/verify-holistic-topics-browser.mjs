@@ -17,34 +17,57 @@ const evidence = [];
 // Wait for the exact synthetic result identities, including EUR/CAD exclusion.
 async function waitForConsultationFixtures(page, locale, ids, label) {
   const expected = ids.map(id => "/" + locale + "/services/fixture/" + id).sort();
-  // Capture the exact verified links in the same browser task that checks
-  // their 900-ms stability. A second Playwright locator query could race a
-  // legitimate React clear/repaint after the wait and report [] despite the
-  // already verified settled snapshot (observed in WebKit RU 430 on #4509).
-  const verified = await page.waitForFunction(async wanted => {
-    const exactLinks = () => {
-      const results = document.querySelector("#holistic-inline-results");
-      if (!results || results.hidden) return null;
-      const articles = [...results.querySelectorAll("article")];
-      const links = articles.flatMap(article => [...article.querySelectorAll("a[href]")])
-        .map(link => link.getAttribute("href")).sort();
-      return articles.length === wanted.length &&
-        links.length === wanted.length &&
-        links.every((href, index) => href === wanted[index]) ? links : null;
-    };
-    if (!exactLinks()) return false;
-    // Keep the full stable-window check: stale, wrong-currency, or missing
-    // fixtures must continue to fail the existing exact-identity assertion.
-    await new Promise(resolve => setTimeout(resolve, 900));
-    return exactLinks() || false;
-  }, expected, { timeout: 20000 });
-  try {
-    const actual = await verified.jsonValue();
-    assert.deepEqual(actual, expected,
-      label + " only the requested published EUR fixture; CAD and stale results excluded");
-  } finally {
-    await verified.dispose();
-  }
+  // Playwright waitForFunction must use a synchronous predicate. In WebKit the
+  // previous async predicate yielded a JSHandle to false before results settled.
+  // Wait for an uninterrupted 900-ms exact DOM state in one page.evaluate task,
+  // not a separate post-wait locator that can race React's next commit.
+  const actual = await page.evaluate(wanted => {
+    const results = document.querySelector("#holistic-inline-results");
+    if (!results) throw new Error("Public consultation results container missing");
+    return new Promise((resolve, reject) => {
+      let settled = null;
+      let deadline = null;
+      const exactLinks = () => {
+        if (results.hidden) return null;
+        const articles = [...results.querySelectorAll("article")];
+        const links = articles.flatMap(article => [...article.querySelectorAll("a[href]")])
+          .map(link => link.getAttribute("href")).sort();
+        return articles.length === wanted.length &&
+          links.length === wanted.length &&
+          links.every((href, index) => href === wanted[index]) ? links : null;
+      };
+      const cleanup = () => {
+        observer.disconnect();
+        if (settled !== null) clearTimeout(settled);
+        if (deadline !== null) clearTimeout(deadline);
+      };
+      const check = () => {
+        if (!exactLinks()) {
+          if (settled !== null) clearTimeout(settled);
+          settled = null;
+          return;
+        }
+        if (settled !== null) return;
+        settled = setTimeout(() => {
+          settled = null;
+          // This is the same DOM task as the final accepted snapshot.
+          // Missing, stale or wrong-currency items cannot satisfy it.
+          const links = exactLinks();
+          if (links) { cleanup(); resolve(links); }
+          else check();
+        }, 900);
+      };
+      const observer = new MutationObserver(check);
+      observer.observe(results, { childList: true, subtree: true, attributes: true });
+      deadline = setTimeout(() => {
+        cleanup();
+        reject(new Error("Consultation fixtures did not remain exact for 900 ms"));
+      }, 20000);
+      check();
+    });
+  }, expected);
+  assert.deepEqual(actual, expected,
+    label + " only the requested published EUR fixture; CAD and stale results excluded");
 }
 
 // The user must perform a NEW search against the isolated public directory.
