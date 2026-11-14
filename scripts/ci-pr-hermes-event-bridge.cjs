@@ -146,8 +146,15 @@ async function sendWorkflowFailure({
   const { owner, repo } = context.repo;
   const association = await resolveExactPR({ github, owner, repo, workflowRun });
   if (!association.ok) {
-    const result = { outcome: association.reason, sent: false, runId: workflowRun?.id || null };
-    core?.warning?.('COMMANDER_CI_EVENT_BRIDGE ' + JSON.stringify(result));
+    // An obsolete Core failure must never become a source-writing repair task.
+    // The newer PR HEAD will independently receive its own mandatory checks.
+    const stale = association.reason === 'EVENT_PR_HEAD_MOVED';
+    const result = {
+      outcome: association.reason, sent: false, runId: workflowRun?.id || null,
+      stale
+    };
+    if (stale) core?.info?.('COMMANDER_CI_EVENT_BRIDGE ' + JSON.stringify(result));
+    else core?.warning?.('COMMANDER_CI_EVENT_BRIDGE ' + JSON.stringify(result));
     return result;
   }
 

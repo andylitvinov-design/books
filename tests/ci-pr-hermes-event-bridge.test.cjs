@@ -60,6 +60,36 @@ test('stale, ambiguous and moved associations fail closed', async () => {
   assert.equal(ambiguous.reason, 'NO_UNIQUE_EXACT_HEAD_PR');
 });
 
+test('superseded exact-head Core event is acknowledged without Commander task or source dispatch', async () => {
+  const moved = makePR({ head: { ...makePR().head, sha: 'd'.repeat(40) } });
+  let sent = 0;
+  const infos = [], warnings = [];
+  const result = await sendWorkflowFailure({
+    github: { rest: { pulls: { get: async () => ({ data: moved }) } } },
+    context: {
+      repo: { owner: 'andylitvinov-design', repo: 'books' },
+      payload: { workflow_run: makeRun() }
+    },
+    core: { info: x => infos.push(x), warning: x => warnings.push(x) },
+    oidcToken: 'x'.repeat(180),
+    fetchImpl: async () => { sent++; throw Error('must never call Commander on stale HEAD'); }
+  });
+  assert.equal(result.outcome, 'EVENT_PR_HEAD_MOVED');
+  assert.equal(result.sent, false);
+  assert.equal(result.stale, true);
+  assert.equal(result.runId, 123);
+  assert.equal(sent, 0);
+  assert.equal(warnings.length, 0);
+  assert.equal(infos.length, 1);
+  const fs = require('node:fs'), path = require('node:path');
+  const workflow = fs.readFileSync(path.join(__dirname,
+    '../.github/workflows/hh-pr-direct-core-failure.yml'), 'utf8');
+  assert.match(workflow, /stale_event: \$\{\{ steps\.send\.outputs\.stale_event \}\}/);
+  assert.match(workflow, /receipt\?\.outcome==='EVENT_PR_HEAD_MOVED'/);
+  assert.match(workflow, /needs\.ci_event_intake\.outputs\.stale_event != 'true'/);
+  assert.match(workflow, /if\(receipt\.accepted!==true\|\|!persistedAssociations\.has\(receipt\.association\)\)/);
+});
+
 test('failure diagnostics are bounded and classified without logs or source contents', () => {
   const result = buildDiagnostics([{ name: 'typecheck', conclusion: 'failure', steps: [
     { name: 'tsc --noEmit', conclusion: 'failure' }, { name: 'build', conclusion: 'success' }
