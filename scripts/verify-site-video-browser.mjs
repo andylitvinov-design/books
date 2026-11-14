@@ -213,7 +213,21 @@ try {
       // and its real first-party studio destination, not a hidden old player.
       await expect(intro.locator('button.site-video-play')).toBeHidden()
       await expect(visibleGallery).toBeHidden()
-      const mobileVideo = page.locator('[data-assist-video-generation]')
+      const videoPanel = page.locator('[data-services-unified-panel="video"]')
+      const videoTrigger = videoPanel.locator(':scope > button')
+      await expect(videoTrigger).toBeVisible()
+      await expect(videoTrigger).toHaveAttribute('aria-expanded', 'false')
+      const mobileVideo = videoPanel.locator('[data-assist-video-generation]')
+      await expect(mobileVideo).toBeHidden()
+      // A dev SSR snapshot can paint before Next attaches client event
+      // handlers. Do not misclassify an unhydrated early click as an app
+      // state regression; require the real Next router hydration first.
+      await expect.poll(
+        () => page.evaluate(() => history.pushState.toString().includes("__NA")),
+        { timeout: 30000, message: 'Services video panel must hydrate before the click' },
+      ).toBe(true)
+      await videoTrigger.click()
+      await expect(videoTrigger).toHaveAttribute('aria-expanded', 'true')
       await expect(mobileVideo).toBeVisible()
       await expect(mobileVideo.locator('a[data-assist-video-scenario]')).toHaveCount(3)
       const createVideo = mobileVideo.locator('a[data-assist-video-create]')

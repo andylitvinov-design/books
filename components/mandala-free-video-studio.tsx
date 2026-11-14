@@ -95,6 +95,7 @@ import type { MoneySceneId } from "@/lib/mandala/money-flow-effects";
 import { orderRecordingMimes, proceduralMp4Route, selectWebCodecsForRecording, shouldAutoRecoverSafariPlayback } from "@/lib/mandala/recording-codecs.mjs";
 import { prepareFourFilmSources } from "@/lib/mandala/free-film-source-loader.mjs";
 import {verifiedCategorySource,verifiedSceneAspect,canonicalSourceMasterKey} from "@/lib/mandala/category-video-storyboard.mjs";
+import {STORY_PHOTO_BY_ID,isTrustedStoryPhoto} from "@/lib/mandala/story-photo-library.mjs";
 import { ensureDecodedVideoOnUserIntent } from "@/lib/mandala/intent-video-loading.mjs";
 import { resolveLicensedSourceFrame, assessLicensedSourceFrame,validateLicensedSourcePlayback } from "@/lib/mandala/free-film-source-clock.mjs";
 
@@ -1030,7 +1031,19 @@ function compileFreeFilmPreset(
     clipIds=filled.clipIds;
     adaptive=filled.usedVariableTiming||clipIds.length!==4;
   }
-  if(!validateMontageClips([...clipIds],FREE_FILM_CATALOG,
+  const hasLicensedPhotos=clipIds.some(id=>STORY_PHOTO_BY_ID.has(id));
+  if(hasLicensedPhotos){
+    if(aspect!=="portrait"||clipIds.length<4||clipIds.length>12||
+      new Set(clipIds).size!==clipIds.length||clipIds.some(id=>{
+        const photo=STORY_PHOTO_BY_ID.get(id);
+        if(photo)return !isTrustedStoryPhoto(photo);
+        const film=FREE_FILM_CATALOG_BY_ID.get(id);
+        const verified=verifiedCategorySource(film);
+        return !film||!verified||!isSafeMontageScene(film,[...(edit?.excludedMotifs??[])])||
+          !verifiedSceneAspect(verified,aspect);
+      }))throw Error("invalid_story_photo_replacement");
+    adaptive=true;
+  }else if(!validateMontageClips([...clipIds],FREE_FILM_CATALOG,
     [...(edit?.excludedMotifs??[])],aspect,adaptive))
     throw Error("invalid_free_film_replacement");
   if(edit&&(!Array.isArray(edit.captionTexts)||edit.captionTexts.length!==clipIds.length||
@@ -1056,43 +1069,55 @@ function compileFreeFilmPreset(
     ?allocateVariableFilmTimeline(durationSeconds,[...clipIds],edit?.durationSecondsByStage??null)
     :allocateSourceBoundedFilmTimeline(durationSeconds,[...clipIds],
       verified.map(scene=>scene?.durationSeconds??NaN),edit?.durationSecondsByStage??null);
-  if(verified.some((scene,index)=>!scene||!verifiedSceneAspect(scene,aspect)||
-    !Number.isFinite(scene.durationSeconds)||
-    scene.durationSeconds<timings[index].durationSeconds))
-    throw Error("UNVERIFIED_FOOTAGE_ASPECT_DURATION_OR_REUSE");
+  if(verified.some((scene,index)=>{
+    const photo=STORY_PHOTO_BY_ID.get(clipIds[index]);
+    return photo? !isTrustedStoryPhoto(photo)||aspect!=="portrait"||
+        timings[index].durationSeconds>photo.durationSeconds:
+      !scene||!verifiedSceneAspect(scene,aspect)||
+        !Number.isFinite(scene.durationSeconds)||
+        scene.durationSeconds<timings[index].durationSeconds;
+  }))throw Error("UNVERIFIED_FOOTAGE_ASPECT_DURATION_OR_REUSE");
   if(semantic&&!semantic.shots.every((shot,index)=>{
-    const source=verified[index];
-    if(!source)return false;
-    const mediaTags=new Set([...(source.tags||[]),...(source.motifs||[]),
-      source.label?.en||"",source.description?.en||""].join(" ")
+    const source=verified[index],photo=STORY_PHOTO_BY_ID.get(clipIds[index]);
+    if(!source&&!photo)return false;
+    const mediaTags=new Set([...(source?.tags||[]),...(source?.motifs||[]),
+      ...(photo?.tags||[]),source?.label?.en||"",source?.description?.en||""].join(" ")
       .toLowerCase().match(/[a-z][a-z0-9]{2,}/g)||[]);
     return shot.requiredTags.some(tag=>mediaTags.has(tag));
   }))throw Error("emotional_stage_media_tag_mismatch");
-  const originKeys=verified.map(scene=>canonicalSourceMasterKey(scene));
+  const originKeys=verified.map((scene,index)=>{
+    const photo=STORY_PHOTO_BY_ID.get(clipIds[index]);
+    return photo?"photo:"+photo.id:canonicalSourceMasterKey(scene);
+  });
   if(originKeys.some(key=>!key)||new Set(originKeys).size!==clipIds.length)
     throw Error("UNVERIFIED_FOOTAGE_ASPECT_DURATION_OR_REUSE");
   // Cropped copies of the SAME filmed source can have different file hashes.
   // Enforce every declared master key, not only the chosen canonical key.
-  const allOrigins=verified.flatMap(scene=>Array.from(new Set(
-    Array.isArray(scene?.originMasterKeys)&&scene.originMasterKeys.length
-      ?scene.originMasterKeys:[canonicalSourceMasterKey(scene)])));
+  const allOrigins=verified.flatMap((scene,index)=>{
+    const photo=STORY_PHOTO_BY_ID.get(clipIds[index]);
+    if(photo)return ["photo:"+photo.id];
+    return Array.from(new Set(
+      Array.isArray(scene?.originMasterKeys)&&scene.originMasterKeys.length
+      ?scene.originMasterKeys:[canonicalSourceMasterKey(scene)]));
+  });
   const visualGroups=verified.map(scene=>scene?.perceptualGroupId)
     .filter((id):id is string=>typeof id==="string"&&Boolean(id));
   if(new Set(allOrigins).size!==allOrigins.length||
      new Set(visualGroups).size!==visualGroups.length)
     throw Error("UNVERIFIED_FOOTAGE_ASPECT_DURATION_OR_REUSE");
   const base=buildCinematicStoryboard({
-    theme:preset.theme,locale,style:"nature",aspect,durationSeconds:20
+    theme:preset.theme,locale,style:hasLicensedPhotos?"warm":"nature",aspect,durationSeconds:20
   });
   if(base.shots.length!==4)throw Error("invalid_free_film_base_shot_count");
   const count=clipIds.length;
   const shots=timings.map((timing,i)=>{
     const frame=base.shots[Math.min(3,Math.floor(i*4/count))];
-    const sceneId=timing.sceneId,shotTheme=FREE_FILM_CLIP_THEMES[sceneId];
-    if(!shotTheme||!firstPartyFilmFor(shotTheme,sceneId))
+    const sceneId=timing.sceneId,photo=STORY_PHOTO_BY_ID.get(sceneId);
+    const shotTheme=FREE_FILM_CLIP_THEMES[sceneId]||(photo?preset.theme:null);
+    if(!shotTheme||(!photo&&!firstPartyFilmFor(shotTheme,sceneId)))
       throw Error("unavailable_free_film_clip");
     return {...frame,id:"licensed-cut-"+(i+1),number:i+1,sceneId,theme:shotTheme,
-      visualCue:preset.label.en,
+      visualCue:photo?.labels.en||preset.label.en,
       startSeconds:timing.startSeconds,durationSeconds:timing.durationSeconds,
       overlayText:normalizeStageCaption(captions[i]),providerPrompt:"",
       ...(semantic?{emotionalStageId:semantic.shots[i].strategyId,
@@ -2427,8 +2452,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // Scene photographs stay in this browser session only; no upload or provider handoff.
   const storyboardPhotoAssetsRef=useRef<Record<string,{image:HTMLImageElement;url:string;name:string;width:number;height:number}>>({});
   const [storyboardPhotoRevision,setStoryboardPhotoRevision]=useState(0);
+  const freeFilmPhotoRefs=useRef<Record<string,HTMLImageElement>>({});
+  const [freeFilmPhotoRevision,setFreeFilmPhotoRevision]=useState(0);
+  useEffect(()=>{
+    // A new film plan cannot inherit decoded stock images from a previous story.
+    freeFilmPhotoRefs.current={};
+    setFreeFilmPhotoRevision(value=>value+1);
+  },[cinematicPlan]);
   const storyboardPhotos=useMemo(()=>Object.fromEntries(Object.entries(storyboardPhotoAssetsRef.current)
     .map(([key,value])=>[key,value.image])),[storyboardPhotoRevision]);
+  // The one existing compositor draws user-selected and verified stock stills;
+  // fetch completion during Create must not leave the encoder with a stale snapshot.
+  const activeStoryboardPhotos=()=>({...storyboardPhotos,...freeFilmPhotoRefs.current});
   useEffect(()=>()=>{
     Object.values(storyboardPhotoAssetsRef.current).forEach(asset=>URL.revokeObjectURL(asset.url));
     storyboardPhotoAssetsRef.current={};
@@ -2547,6 +2582,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // A nonempty MediaRecorder blob does NOT prove Safari can decode it.
   const [playbackStatus, setPlaybackStatus] = useState<"checking"|"ready"|"failed">("checking");
   const [result, setResult] = useState<Result | null>(null);
+  // A new Ready generation choice must not discard the previously verified
+  // local Blob. The old video is still available via the manual Ready tab.
+  const [readyGenerationPending,setReadyGenerationPending]=useState(false);
   useEffect(()=>{
     // Consume the anonymous local trial only once a real encoded Blob exists.
     // A failed preflight/export does not consume it.
@@ -2578,6 +2616,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     if(!player||player.error||player.readyState<2||player.videoWidth<1||player.videoHeight<1)return;
     if(shownReadyResultRef.current===result.url)return;
     shownReadyResultRef.current=result.url;
+    setReadyGenerationPending(false);
     setStudioMode("pump");setActiveWorkspace("ready");
     window.requestAnimationFrame(()=>document.getElementById("free-personal-video")
       ?.scrollIntoView({block:"start",behavior:"auto"}));
@@ -2601,23 +2640,27 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   },[selectedStyleFilm?.src,previewPlaying,preparing,recording]);
   const usingFreeFilmCompilation=creationMode==="catalog"&&cinematicPlan?.version===FREE_FILM_PLAN_VERSION;
   const freeFilmShots=usingFreeFilmCompilation
-    ? cinematicPlan.shots.map(shot=>({
-        sceneId:shot.sceneId,theme:shot.theme,
-        film:firstPartyFilmFor(shot.theme,shot.sceneId)
-      }))
+    ? cinematicPlan.shots.map(shot=>{
+        const source=STORY_PHOTO_BY_ID.get(shot.sceneId);
+        const photo=source&&isTrustedStoryPhoto(source)?source:null;
+        return {sceneId:shot.sceneId,theme:shot.theme,
+          film:photo?null:firstPartyFilmFor(shot.theme,shot.sceneId),photo};
+      })
     : [];
   const freeFilmKey=usingFreeFilmCompilation
-    ? JSON.stringify(freeFilmShots.map(shot=>[shot.theme,shot.sceneId])) : "";
+    ? JSON.stringify(freeFilmShots.map(shot=>[shot.theme,shot.sceneId,Boolean(shot.photo)])) : "";
   const freeFilmReady=Boolean(freeFilmKey && readyFreeFilmKey===freeFilmKey);
   // Safari may postpone decoding hidden MP4 until a trusted Create gesture.
   // Presence of all four verified catalogue sources unlocks the button;
   // the actual decoded-frame check remains mandatory during export.
   const freeFilmSourcesListed=freeFilmShots.length>=4&&freeFilmShots.length<=12&&
     freeFilmShots.every((shot,index)=>{
+      if(shot.photo)return aspect==="portrait"&&isTrustedStoryPhoto(shot.photo)&&
+        cinematicPlan!.shots[index].durationSeconds<=shot.photo.durationSeconds;
       const verified=verifiedCategorySource(FREE_FILM_CATALOG_BY_ID.get(shot.sceneId));
       return Boolean(shot.film&&verified&&verifiedSceneAspect(verified,aspect)&&
         verified.durationSeconds>=cinematicPlan!.shots[index].durationSeconds);
-    })&&new Set(freeFilmShots.map(shot=>
+    })&&new Set(freeFilmShots.map(shot=>shot.photo?"photo:"+shot.photo.id:
       canonicalSourceMasterKey(verifiedCategorySource(FREE_FILM_CATALOG_BY_ID.get(shot.sceneId))))).size===freeFilmShots.length;
   // If iOS rejects a finalized Canvas recording, preserve a real, public,
   // licensed MP4 source as an explicitly UNEDITED escape hatch. Never present
@@ -2629,7 +2672,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     /^\/videos\/holistic-house\/[a-z0-9_-]+(?:\/[a-z0-9_-]+)*\.mp4$/.test(originalFallbackCandidate)
     ? originalFallbackCandidate : null;
   const freeFilmPoster=usingFreeFilmCompilation&&freeFilmShots[0]
-    ? firstPartyFilmFor(freeFilmShots[0].theme,freeFilmShots[0].sceneId)?.poster:null;
+    ? freeFilmShots[0].photo?.src||
+      firstPartyFilmFor(freeFilmShots[0].theme,freeFilmShots[0].sceneId)?.poster:null;
   const aspectFilmPresets:readonly FreeFilmPreset[]=FREE_FILM_PRESETS.map(preset=>aspect==="portrait"&&preset.portraitClips
     ?{...preset,clips:preset.portraitClips}:preset);
   const freeFilmOptions=showAllFreeFilms?aspectFilmPresets:
@@ -3166,13 +3210,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     });
     return () => { window.cancelAnimationFrame(firstFrame); window.cancelAnimationFrame(nextFrame); };
   }, [result]);
-  // Auto-music must be ATTACHED before the Montage Generate tap and Ready Basic.
-  // Previously Ready suggested a track but left it unattached; Create then
-  // opened the large Audio overlay instead of rendering. Uploaded tracks,
-  // manual choices, silence and rights checks retain their existing gates.
+  // Auto-music is attached BEFORE a trusted Generate gesture, not during
+  // export or after a completed MP4. A late recommendation changes the
+  // source signature, aborts the encoder and revokes the only real result.
+  // Uploaded audio, manual music and rights checks stay authoritative.
   useEffect(() => {
     if(!audioAuto||uploadedAudio||attachedAudio?.kind==="file"||
-       attachedAudio?.kind==="presets")return;
+       attachedAudio?.kind==="presets"||result||preparing||recording||
+       preparingRef.current||jobRef.current||webCodecJobRef.current)return;
     const recommended=recommendedAudioId||"none";
     setMusic(current=>current===recommended?current:recommended);
     if(activeWorkspace!=="editor"&&activeWorkspace!=="ready")return;
@@ -3182,7 +3227,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       return current?.kind==="preset"&&current.id===recommended?
         current:{kind:"preset",id:recommended};
     });
-  },[audioAuto,uploadedAudio,recommendedAudioId,activeWorkspace,attachedAudio?.kind]);
+  },[audioAuto,uploadedAudio,recommendedAudioId,activeWorkspace,
+    attachedAudio?.kind,result,preparing,recording]);
   // A paused film, hidden tab or unmount must not leave a soundtrack playing.
   useEffect(()=>{if(!previewPlaying)stopMovieSound();},[previewPlaying,stopMovieSound]);
   useEffect(()=>()=>stopMovieSound(),[stopMovieSound]);
@@ -3391,8 +3437,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     const elapsed=cinematicPreviewSeconds(cinematicPlan,Math.max(0,seconds));
     const shot=cinematicPlan.shots.find(item=>elapsed>=item.startSeconds&&
       elapsed<item.startSeconds+item.durationSeconds)||cinematicPlan.shots.at(-1);
-    const photo=shot?storyboardPhotoAssetsRef.current[shot.sceneId]?.image:undefined;
-    return Boolean(photo?.complete&&photo.naturalWidth>0&&photo.naturalHeight>0);
+    const manual=shot?storyboardPhotoAssetsRef.current[shot.sceneId]?.image:undefined;
+    if(manual?.complete&&manual.naturalWidth>0&&manual.naturalHeight>0)return true;
+    const stock=shot?freeFilmPhotoRefs.current[shot.sceneId]:undefined;
+    return Boolean(stock?.complete&&stock.naturalWidth>=600&&stock.naturalHeight>=600);
   };
   function freeFilmVideoAt(seconds:number,advancePlayback=false):HTMLVideoElement|null {
     if(cinematicPlan?.version!==FREE_FILM_PLAN_VERSION)return null;
@@ -3400,7 +3448,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     const shot=cinematicPlan.shots.find(s=>elapsed>=s.startSeconds &&
       elapsed<s.startSeconds+s.durationSeconds)||cinematicPlan.shots.at(-1);
     if(!shot)return null;
-    const still=storyboardPhotoAssetsRef.current[shot.sceneId]?.image;
+    const still=storyboardPhotoAssetsRef.current[shot.sceneId]?.image||
+      freeFilmPhotoRefs.current[shot.sceneId];
     if(still?.complete&&still.naturalWidth>0&&still.naturalHeight>0){
       Object.values(freeFilmPlayerRefs.current).forEach(other=>{if(!other.paused)other.pause();});
       activeFreeFilmShotRef.current="photo:"+shot.sceneId;
@@ -3456,20 +3505,20 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       setReadyFreeFilmKey("");return;
     }
     const ready=cinematicPlan.shots.every(shot=>{
-      const photo=storyboardPhotoAssetsRef.current[shot.sceneId]?.image;
-      if(photo?.complete&&photo.naturalWidth>0&&photo.naturalHeight>0)return true;
+      const manual=storyboardPhotoAssetsRef.current[shot.sceneId]?.image;
+      if(manual?.complete&&manual.naturalWidth>0&&manual.naturalHeight>0)return true;
+      const stock=freeFilmPhotoRefs.current[shot.sceneId];
+      if(stock?.complete&&stock.naturalWidth>=600&&stock.naturalHeight>=600)return true;
       const video=freeFilmPlayerRefs.current[shot.sceneId];
       return Boolean(video&&video.readyState>=2&&video.videoWidth>0&&video.videoHeight>0);
     });
-    setReadyFreeFilmKey(ready?JSON.stringify(cinematicPlan.shots.map(shot=>[
-      shot.theme,shot.sceneId,Boolean(storyboardPhotoAssetsRef.current[shot.sceneId]?.image.complete)
-    ])):"");
+    setReadyFreeFilmKey(ready?freeFilmKey:"");
   }
   useEffect(()=>{
     activeFreeFilmShotRef.current=null;
     updateFreeFilmReadiness();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[cinematicPlan,storyboardPhotoRevision]);
+  },[cinematicPlan,storyboardPhotoRevision,freeFilmPhotoRevision,freeFilmKey]);
   useEffect(()=>{
     if(previewPlaying||recording||preparing)return;
     Object.values(freeFilmPlayerRefs.current).forEach(video=>video.pause());
@@ -3500,7 +3549,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
          (cinematicPlan?.shots[0]?.durationSeconds??5));
        if(!usingFreeFilmCompilation||scrubFrame||hasStoryboardPhotoAt(previewSeekSeconds)||styleFirstBeat){
         paintCinematicFrame(ctx,image,effect,previewSeekSeconds,aspect,moneyScene,visibleCaption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,scrubFrame,currentFreeVideoPlan,
-          creationMode==="generated"&&!backgroundOnly&&photoConsent&&Boolean(photoUrl)?image:null,activeMontageStyleId,styleFilmRef.current,storyboardPhotos);
+          creationMode==="generated"&&!backgroundOnly&&photoConsent&&Boolean(photoUrl)?image:null,activeMontageStyleId,styleFilmRef.current,activeStoryboardPhotos());
         paintHypnoLightOverlay(ctx,previewSeekSeconds,hypnoLight);
         paintStoryMotifs(ctx,previewSeekSeconds,appliedStory);
         paintFreeGreeting(ctx,previewSeekSeconds,duration,greetingCharacter,aspect,greetingSceneKey,theme);
@@ -3526,7 +3575,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
              (cinematicPlan?.shots[0]?.durationSeconds??5));
            if(!usingFreeFilmCompilation||stockFrame||hasStoryboardPhotoAt(frameSecond)||styleBeatReady){
             paintCinematicFrame(ctx,image,effect,frameSecond,aspect,moneyScene,visibleCaption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,stockFrame,currentFreeVideoPlan,
-        creationMode==="generated"&&!backgroundOnly&&photoConsent&&Boolean(photoUrl)?image:null,activeMontageStyleId,styleFilmRef.current,storyboardPhotos);
+        creationMode==="generated"&&!backgroundOnly&&photoConsent&&Boolean(photoUrl)?image:null,activeMontageStyleId,styleFilmRef.current,activeStoryboardPhotos());
             paintStoryMotifs(ctx,frameSecond,appliedStory);
             paintFreeGreeting(ctx,elapsed,duration,greetingCharacter,aspect,greetingSceneKey,theme);
             paintHypnoLightOverlay(ctx,frameSecond,hypnoLight);
@@ -3687,7 +3736,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     try {
       // Both first-party decoders start from the SAME user Create gesture.
       // Never wait for hidden autoplay to unlock the button.
-      const stylePreparation=selectedStyleFilm
+      const stylePreparation=selectedStyleFilm&&!freeFilmShots.some(shot=>shot.photo)
         ? styleFilmRef.current
           ? ensureDecodedVideoOnUserIntent(styleFilmRef.current,{timeoutMs:20000})
           : Promise.resolve(false)
@@ -3698,8 +3747,31 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           : Promise.resolve(false)
         : Promise.resolve(true);
       // Prime the four licensed scene decoders before awaiting audio.
+      const mixedPhotos=freeFilmShots.filter(shot=>Boolean(shot.photo));
       const filmPreparation=usingFreeFilmCompilation
-        ? prepareFourFilmSources(freeFilmShots,freeFilmPlayerRefs.current,{
+        ? mixedPhotos.length ? Promise.all([
+            prepareFourFilmSources(freeFilmShots.filter(shot=>!shot.photo),
+              freeFilmPlayerRefs.current,{timeoutMs:20000,adaptive:true,
+                verifiedMixedPhotoSubset:true}),
+            Promise.all(mixedPhotos.map(async shot=>{
+              const photo=shot.photo;
+              if(!photo||!isTrustedStoryPhoto(photo))
+                throw Error("unverified_story_photo");
+              let image=freeFilmPhotoRefs.current[photo.id];
+              if(!image){
+                image=new Image();
+                image.decoding="async";
+                image.src=photo.src; // Same-origin allowlisted photo proxy; no client data.
+              }
+              await image.decode();
+              const resolved=new URL(image.currentSrc||image.src,window.location.href);
+              if(resolved.origin!==window.location.origin||!image.complete||
+                 image.naturalWidth<600||image.naturalHeight<600)
+                throw Error("licensed_story_photo_decode_failed");
+              freeFilmPhotoRefs.current[photo.id]=image;
+            })).then(()=>setFreeFilmPhotoRevision(value=>value+1))
+          ]).then(()=>true,()=>false)
+          : prepareFourFilmSources(freeFilmShots,freeFilmPlayerRefs.current,{
             timeoutMs:20000,adaptive:freeFilmShots.length!==4,
             onProgress:(ready:number,total:number)=>setNotice(locale==="ru"
               ?`Подготавливаем видеосцены: ${ready} из ${total}…`
@@ -3729,11 +3801,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       }
       if(!(await filmPreparation)){
         if(sourceRef.current!==snapshotKey||!aliveRef.current)return;
-        setNotice(locale==="ru"
-          ?"Не удалось загрузить все четыре MP4. Проверьте соединение и нажмите «Создать видео» ещё раз."
-          :locale==="es"
-          ?"No se pudieron cargar los cuatro MP4. Comprueba tu conexión y vuelve a pulsar Crear vídeo."
-          :"Not all four MP4 clips could be decoded. Check your connection and tap Create video again.");
+        setNotice(mixedPhotos.length
+          ?locale==="ru"?"Не удалось проверить лицензированное фото или видео. Экспорт не выполнен."
+           :locale==="es"?"No se pudo decodificar una foto o un vídeo con licencia. No se exportó."
+           :"A licensed photo or video failed genuine decoding. No export was created."
+          :locale==="ru"?"Не удалось загрузить все четыре MP4. Проверьте соединение и нажмите «Создать видео» ещё раз."
+           :locale==="es"?"No se pudieron cargar los cuatro MP4. Comprueba tu conexión y vuelve a pulsar Crear vídeo."
+           :"Not all four MP4 clips could be decoded. Check your connection and tap Create video again.");
         setExportUnavailable(true);
         return;
       }
@@ -3760,7 +3834,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         if(!master || master.readyState < 2)throw new Error("HD MP4 scene not loaded");
         await master.play();
       }
-      if(selectedStyleFilm){
+      if(selectedStyleFilm&&!freeFilmShots.some(shot=>shot.photo)){
         const styleVideo=styleFilmRef.current;
         if(!styleVideo||styleVideo.readyState<2||styleVideo.videoWidth<1)
           throw new Error("selected_style_mp4_not_decoded");
@@ -3824,7 +3898,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       const firstStockFrame=freeFilmVideoAt(0,false);
       if(usingFreeFilmCompilation&&!firstStockFrame&&!hasStoryboardPhotoAt(0))throw new Error("licensed_video_frame_unavailable");
       paintCinematicFrame(ctx,image,effect,0,aspect,moneyScene,visibleCaption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,firstStockFrame,currentFreeVideoPlan,
-        creationMode==="generated"&&!backgroundOnly&&photoConsent&&Boolean(photoUrl)?image:null,activeMontageStyleId,styleFilmRef.current,storyboardPhotos);
+        creationMode==="generated"&&!backgroundOnly&&photoConsent&&Boolean(photoUrl)?image:null,activeMontageStyleId,styleFilmRef.current,activeStoryboardPhotos());
       paintStoryMotifs(ctx,0,appliedStory);
       paintFreeGreeting(ctx,0,duration,greetingCharacter,aspect,greetingSceneKey,theme);
       paintHypnoLightOverlay(ctx,0,hypnoLight);
@@ -3886,10 +3960,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               setProgress(Math.min(99,p));},
             renderFrame:time=>{
               const frame=freeFilmVideoAt(time,true);
-              if(usingFreeFilmCompilation&&!frame)return false;
+              // A verified decoded photograph is a legitimate scene frame.
+              // Missing both real sources must still abort the MP4 encoder.
+              if(usingFreeFilmCompilation&&!frame&&!hasStoryboardPhotoAt(time))return false;
               paintCinematicFrame(ctx,image,effect,time,aspect,moneyScene,visibleCaption,
                 theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,frame,currentFreeVideoPlan,
-                creationMode==="generated"&&!backgroundOnly&&photoConsent&&Boolean(photoUrl)?image:null,activeMontageStyleId,styleFilmRef.current,storyboardPhotos);
+                creationMode==="generated"&&!backgroundOnly&&photoConsent&&Boolean(photoUrl)?image:null,activeMontageStyleId,styleFilmRef.current,activeStoryboardPhotos());
               paintStoryMotifs(ctx,time,appliedStory);
               paintFreeGreeting(ctx,time,duration,greetingCharacter,aspect,greetingSceneKey,theme);
               paintHypnoLightOverlay(ctx,time,hypnoLight);
@@ -4109,7 +4185,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           }
           stockGapSince=0;
           paintCinematicFrame(ctx,image,effect,frameTime,aspect,moneyScene,visibleCaption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,stockFrame,currentFreeVideoPlan,
-        creationMode==="generated"&&!backgroundOnly&&photoConsent&&Boolean(photoUrl)?image:null,activeMontageStyleId,styleFilmRef.current,storyboardPhotos);
+        creationMode==="generated"&&!backgroundOnly&&photoConsent&&Boolean(photoUrl)?image:null,activeMontageStyleId,styleFilmRef.current,activeStoryboardPhotos());
           paintStoryMotifs(ctx,frameTime,appliedStory);
           paintFreeGreeting(ctx,frameTime,duration,greetingCharacter,aspect,greetingSceneKey,theme);
           paintHypnoLightOverlay(ctx,frameTime,hypnoLight);
@@ -5035,12 +5111,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     };
     if(applyAutoFilm(preset.id,20,edit,"portrait",true)){
       if(storyFormat==="motion"){setSpeed("dynamic");setMontageTransition("soft");}
-      setMontagePanel("concept");
+      // Keep the verified result visible in fifth Montage, where the five
+      // licensed scene selectors live inside the already-open Advanced details.
+      // Returning to fourth Story unmounts those controls and hides a valid result.
+      setMontagePanel("promo");
       setNotice(locale==="ru"
-        ?"Пять проверенных сцен собраны в вертикальную историю. Просмотрите кадры и нажмите «Создать видео» для локального MP4."
+        ?"Пять проверенных сцен собраны. Просмотрите кадры ниже и выберите бесплатное создание MP4."
         :locale==="es"
           ?(storyFormat==="motion"?"Cinco escenas reales filmadas están listas con montaje dinámico. Revisa el guion y crea el MP4 local.":"Cinco escenas de vídeo verificadas están listas. Revisa el guion y crea el MP4 local.")
-          :"Five verified scenes are ready. Review the storyboard and create the local MP4.");
+          :"Five verified scenes are ready in Montage. Review them below and choose free MP4 creation.");
     }
   };
   const replaceStoryboardSource=(index:number,sceneId:string)=>{
@@ -5491,6 +5570,21 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     }));
   };
 
+  // Goal and Montage Generate only open Ready. This action starts no encoder,
+  // check-in or credit transaction; the separate Ready Generate click does.
+  const openReadyForGeneration = () => {
+    if(!studioHydrated||recording||preparing||preparingRef.current||jobRef.current||webCodecJobRef.current)return false;
+    ++quickNavTokenRef.current;
+    stopSoundPreview();stopMovieSound();
+    setIntroPlaying(false);setPreviewPlaying(false);setNotice("");
+    setPracticeType("video");setPracticeLevels(current=>({...current,video:"basic"}));
+    setReadyGenerationPending(true);
+    setStudioMode("pump");setActiveWorkspace("ready");
+    window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+      document.getElementById("free-personal-video")?.scrollIntoView({behavior:"auto",block:"start"})));
+    return true;
+  };
+
   const createQuickVideo = () => {
     // The direct shortcut must preserve the approved paid-format gate.
     if(!freeVideoSelected){
@@ -5578,17 +5672,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       });
     }));
   };
-  // Generate only on this explicit click. Recipient-specific footage is
-  // applied first; React commits it before we use the real local encoder.
-  // A current callback keeps that encoder inside the trusted iOS gesture.
-  const freshGoalCreateRef=useRef<()=>boolean>(()=>false);
-  useLayoutEffect(()=>{freshGoalCreateRef.current=createQuickVideo;});
+  // Apply the selected Goal scenes, then open Ready without rendering.
   const generateFromGoal=()=>{
     if(!studioHydrated||recording||preparing)return false;
     let goalValid=true;
     flushSync(()=>{goalValid=goalContinueRef.current?.()!==false;});
     if(!goalValid)return false;
-    return freshGoalCreateRef.current();
+    return openReadyForGeneration();
   };
 
   const openVideoScenarioStep = () => {
@@ -6464,6 +6554,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const activateQuickWorkspace=(id:(typeof workspaceTabs)[number]["id"])=>{
     quickNavTokenRef.current++;
     setActiveWorkspace(id);
+    if(id==="ready")setReadyGenerationPending(false);
     if(id==="editor")setMontagePanel("effects");
     if(id==="effects")setHypnoEntryGroup("visual");
     setIntroPlaying(false);
@@ -6553,6 +6644,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               stopMovieSound();setPreviewPlaying(false);
             }}/>
   );
+  // Visiting Ready alone is not proof of a verified exported movie.
+  const readyResultVerified=Boolean(!readyGenerationPending&&result&&result.mode!=="catalog"&&playbackStatus==="ready"&&creditConfirmed);
   // The only workspace tab rail stays in the same place above the ONE player
   // for every mode; portal relocation previously changed geometry and focus.
   return (
@@ -6842,7 +6935,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             setPreviewPlaying(false);
             return true;
           }}
-          onCreate={createQuickVideo}
+          onCreate={openReadyForGeneration}
           onOpenResult={()=>{
             // The result lives on the Studio page, not inside the modal.
             // Close the optional iHelp overlay and reveal the real MP4 viewer.
@@ -7175,17 +7268,21 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       {activeWorkspace!=="video" ? <header className={videoStyles.workspaceHeading} id="video-workspace-panel"
         data-video-workspace-heading role="region" aria-live="polite" aria-label={workspaceCopy[locale][activeWorkspace].title}>
         <small>HOLISTIC HOUSE · VIDEO STUDIO</small>
-        <h3>{workspaceCopy[locale][activeWorkspace].title}</h3>
-        <p>{workspaceCopy[locale][activeWorkspace].desc}</p>
+        <h3>{activeWorkspace==="ready"&&!readyResultVerified
+          ?locale==="ru"?"Готово к созданию видео":locale==="es"?"Listo para generar el vídeo":"Ready to generate your video"
+          :workspaceCopy[locale][activeWorkspace].title}</h3>
+        <p>{activeWorkspace==="ready"&&!readyResultVerified
+          ?locale==="ru"?"Выберите формат и запустите создание видео здесь.":locale==="es"?"Elige el formato y empieza la generación aquí.":"Choose a format and start video generation here."
+          :workspaceCopy[locale][activeWorkspace].desc}</p>
       </header> : <span id="video-workspace-panel" className={videoStyles.srOnly}/>}
       
       {activeWorkspace==="ready"?<MandalaVideoReady
         locale={locale} theme={theme} wish={wish} focus={meditationFocus} aspect={aspect}
-        video={result&&result.mode!=="catalog"?{
+        video={!readyGenerationPending&&result&&result.mode!=="catalog"?{
           url:result.url,extension:result.extension,bytes:result.bytes,duration
         }:null}
-        verified={Boolean(result&&result.mode!=="catalog"&&playbackStatus==="ready"&&creditConfirmed)}
-        checking={Boolean(result&&playbackStatus==="checking")}
+        verified={Boolean(!readyGenerationPending&&result&&result.mode!=="catalog"&&playbackStatus==="ready"&&creditConfirmed)}
+        checking={Boolean(!readyGenerationPending&&result&&playbackStatus==="checking")}
         signedIn={creditSession==="signed_in"}
         loginUnavailable={creditSession==="unavailable"}
         disabled={recording||preparing}
@@ -7301,7 +7398,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               disabled={recording||preparing} previewPlaying={previewPlaying}
               onPlanChange={setFreeVideoPlan}
               onPreview={()=>{if(previewPlaying){stopMovieSound();setPreviewPlaying(false);}else openAffirmationPreview();}}/>
-            <button type="button" data-free-video-create disabled={!canGenerate} onClick={createQuickVideo}>
+            <button type="button" data-free-video-create disabled={!studioHydrated||recording||preparing} onClick={openReadyForGeneration}>
               {locale==="ru"?"Создать анимацию":locale==="es"?"Crear animación":"Create animated video"}
             </button>
           </> : null}
@@ -7319,8 +7416,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           onWishChange={value=>{setWish(value);setSuggestion("");}}
           onApply={applyFirstVideoDraft}
           onCreate={()=>{
-            firstVideoRequestRef.current=canGenerate;
-            createQuickVideo();
+            firstVideoRequestRef.current=false;
+            openReadyForGeneration();
           }}
           onCancel={()=>{
             const job=jobRef.current;
@@ -7507,7 +7604,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             onOpenScenes={()=>openQuickDetailed("video-templates")}
             onPickPhoto={()=>{setBackgroundOnly(false);onPickPhoto();}}
             onRemovePhoto={()=>setBackgroundOnly(true)}
-            status={notice} onCreate={createQuickVideo}
+            status={notice} onCreate={openReadyForGeneration}
             onWavePreset={()=>{
               setHypnoLight({enabled:true,...recommendHypnoLight(theme,wish)});
               setAffirmations(current=>({...current,enabled:true,
@@ -7642,7 +7739,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           }}
           onApply={(presetId,seconds,edit,options)=>
             applyAutoFilm(presetId,seconds,edit,aspect,options?.keepGoalFlow)}
-          onCreate={createQuickVideo}
+          onCreate={openReadyForGeneration}
           canCreate={canStartSelectedFilm} rendering={recording||preparing}
           createFeedback={preparing||exportUnavailable?notice:""}/>
       <nav className={videoStyles.quickPracticeShortcuts} data-video-practice-shortcuts
@@ -8265,6 +8362,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               <button type="button" key={item.id} data-video-montage-tab={item.id}
                 aria-pressed={montagePanel===item.id} aria-controls="video-montage-active-panel"
                 disabled={recording||preparing}
+                // In mobile WebKit the synthesized click can be lost after a
+                // native touch changes panel geometry; commit on pointer-up.
+                // Desktop click and keyboard activation remain unchanged.
+                onPointerUp={event=>{
+                  if(event.pointerType!=="touch"||montagePanel===item.id)return;
+                  setMontagePanel(item.id);
+                  if(item.id==="audio")setBasicPanelTab("music");
+                }}
                 onClick={()=>{
                   setMontagePanel(item.id);
                   if(item.id==="audio")setBasicPanelTab("music");
@@ -8284,18 +8389,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           {montagePanel==="promo" ? <MandalaMontageProOffer
             locale={locale} disabled={!studioHydrated||recording||preparing}
             onChooseFree={()=>{
-              // Free starts the one real, credit/consent/rights-gated local renderer.
-              // Never show Ready before a decoded, verified MP4 exists.
-              if(!freeVideoSelected){
-                setPracticeType("video");setPracticeLevels(value=>({...value,video:"basic"}));
-                setStoryFormat("visual");
-                setNotice(locale==="ru"?"Бесплатное базовое видео выбрано. Нажмите «Создать» ещё раз.":
-                  locale==="es"?"Vídeo básico gratis seleccionado. Pulsa «Generar» otra vez.":
-                  "Free basic video selected. Tap Generate again to start.");
-                return;
-              }
-              setNotice("");setIntroPlaying(false);setPreviewPlaying(false);setStudioMode("pump");
-              createQuickVideo();
+              // One click selects Basic and opens Ready; generation begins there.
+              setStoryFormat("visual");
+              openReadyForGeneration();
             }}
             onChooseCharacter={()=>{
               setStoryFormat("talking_character");setProCatalogKind("character");
@@ -8312,21 +8408,23 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             }}
           /> : null}
           {montagePanel==="concept" ? <section className={videoStyles.montagePane}
-            data-video-montage-concept aria-label={locale==="ru"?"Видеоконцепт и раскадровка":
-              locale==="es"?"Concepto visual y storyboard":"Video concept and storyboard"}>
+            data-video-montage-concept aria-label={locale==="ru"?"Простая раскадровка":
+              locale==="es"?"Guion visual simple":"Simple storyboard"}>
             <div className={videoStyles.quickSectionHeading}>
-              <div><h3>{locale==="ru"?"Видеоконцепт и раскадровка":
-                locale==="es"?"Concepto visual y storyboard":"Video concept & storyboard"}</h3>
-                <p>{locale==="ru"?"Соберите последовательность сцен и выберите визуальный материал для каждого кадра. Текстовый концепт остаётся отдельно в разделе «Идеи».":
-                  locale==="es"?"Ordena las escenas y elige el material visual de cada toma. El concepto textual permanece en Ideas.":
-                  "Build a sequence of scenes and choose the visual source for each shot. The written concept remains separately in Ideas."}</p></div>
+              <div><h3>{locale==="ru"?"Простая раскадровка":
+                locale==="es"?"Guion visual simple":"Simple storyboard"}</h3></div>
             </div>
-            {cinematicPlan?.version===FREE_FILM_PLAN_VERSION ? null : <MandalaAutomaticStoryboard
+            <MandalaAutomaticStoryboard
               locale={locale} goal={wish} theme={theme} durationSeconds={duration}
               aspect={aspect} styleIndex={quickStyleIndex} pace={speed}
               personalization={ideasProfileConfirmed?summarizeVideoGoalProfile(ideasProfile,locale):null}
               selectedTopic={selectedConceptTopic}
               appliedStoryKey={appliedStoryKey} phrases={affirmationLines}
+              fiveSceneShots={cinematicPlan?.version===FREE_FILM_PLAN_VERSION?
+                cinematicPlan.shots.map(shot=>({
+                  sceneId:shot.sceneId,startSeconds:shot.startSeconds,
+                  durationSeconds:shot.durationSeconds
+                })):null}
               transcript={voiceTranscript} approvedConcept={approvedVideoConcept}
               scenes={FREE_FILM_CATALOG}
               appliedShots={cinematicPlan?.shots.map(shot=>({
@@ -8348,7 +8446,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               }}
               onApply={(shots,concept,key,captions)=>{
                 const preset=aspectFilmPresets.find(option=>option.theme===theme);
-                if(!preset)return;
+                if(!preset)return false;
                 const edit:FreeFilmCompilationEdit={
                   clipIds:shots.map(shot=>shot.sceneId),
                   durationSecondsByStage:shots.map(shot=>shot.durationMs/1000),
@@ -8363,10 +8461,26 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                     :locale==="es"
                     ?"Guion visual aplicado. Revisa las escenas antes de crear el vídeo."
                     :"Storyboard applied. Review the scenes before creating the video.");
+                  return true;
                 }
+                return false;
+              }}
+              onChooseQuality={sourceReady=>{
+                // Commit the user-selected fifth step in this real touch event.
+                // Source approval remains independent and cannot trigger billing.
+                flushSync(()=>{
+                  setActiveWorkspace("editor");
+                  setMontagePanel("promo");
+                });
+                setNotice(sourceReady?"":locale==="ru"?
+                  "Раскадровка пока не применена. Проверьте исходные сцены в дополнительных настройках монтажа перед созданием.":
+                  locale==="es"?"El guion visual aún no se ha aplicado. Revisa las escenas en las opciones avanzadas antes de crear el vídeo.":
+                  "Storyboard not yet applied. Review the source scenes in advanced Montage options before creating the video.");
+                window.requestAnimationFrame(()=>
+                  document.querySelector('[data-video-montage-tools]')?.scrollIntoView({behavior:"smooth",block:"start"}));
               }}
               onOpenIdeas={()=>{setActiveWorkspace("phrases");setIdeasSubtab("concept");}}
-            />}
+            />
             <button type="button" className={videoStyles.quickEdit}
               data-video-story-open-settings disabled={recording||preparing}
               onClick={()=>{setMontagePanel("settings");setMontageStyleSettingsOpen(false);}}>
@@ -8374,7 +8488,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               {locale==="ru"?"Настройки видео":locale==="es"?"Ajustes de vídeo":"Video settings"}
             </button>
           </section> : null}
-          {montagePanel==="concept" ? <div className={videoStyles.montagePreferences} data-video-montage-storyboard>
+          {montagePanel==="promo" ? <details className={videoStyles.montageStoryAdvanced}
+            data-video-stories-advanced>
+            <summary>{locale==="ru"?"Дополнительные настройки раскадровки":
+              locale==="es"?"Opciones avanzadas del storyboard":"Advanced storyboard options"}</summary>
+            <div className={videoStyles.montagePreferences} data-video-montage-storyboard>
             <div className={videoStyles.montagePreferencesHeader}>
               <ListVideo size={22} aria-hidden="true"/>
               <div>
@@ -8479,7 +8597,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               </button>
             </div>
             <p className={videoStyles.quickTierNote}>{locale==="ru"?"Подбор сцен и монтаж выполняются локально. Неподходящие или неподтверждённые материалы не подменяются случайными.":"Scene selection and montage run locally. Missing or unverified media is never replaced with unrelated assets."}</p>
-          </div> : null}
+          </div></details> : null}
           {montagePanel==="settings" ? <div className={videoStyles.montagePreferences} data-video-montage-preferences>
             <div className={videoStyles.montagePreferencesHeader}>
               <SlidersHorizontal size={22} aria-hidden="true"/>
@@ -8589,6 +8707,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             settings={affirmations}
             generating={recording||preparing} onChange={setAffirmations}
             onPendingChange={setPhrasePending} onPreview={openAffirmationPreview}
+            onGenerate={openReadyForGeneration}
             onResetPreview={()=>{setPreviewPlaying(false);setPreviewSeekSeconds(0);setPreviewPlayhead(0);}}
             onRecord={()=>{
               setActiveWorkspace("phrases");
@@ -8598,7 +8717,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
                 document.querySelector<HTMLElement>('[data-video-own-voice-record]')?.scrollIntoView({behavior:"smooth",block:"center"})));
             }}
-            onCreate={()=>{setMontagePanel("audio");setBasicPanelTab("music");setPreviewPlaying(false);}} onGenerate={createQuickVideo} status={notice}/>
+            onCreate={()=>{
+              setMontagePanel("concept");setPreviewPlaying(false);setNotice("");
+              window.requestAnimationFrame(()=>
+                document.querySelector("[data-video-montage-tools]")?.scrollIntoView({block:"start",behavior:"smooth"}));
+            }} status={notice}/>
           </div>
           {montagePanel==="settings" ? <div className={videoStyles.montagePane} data-video-montage-text-tools>
           <details className={videoStyles.montageAdvancedTools} data-video-concept-text-tools>
@@ -8755,6 +8878,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             </fieldset>
             <button type="button" className={videoStyles.montageStepNext}
               data-video-montage-next="audio" disabled={recording||preparing}
+              onPointerUp={event=>{
+                if(event.pointerType==="touch"&&montagePanel==="effects"){
+                  setMontagePanel("audio");setBasicPanelTab("music");
+                }
+              }}
               onClick={()=>{setMontagePanel("audio");setBasicPanelTab("music");}}>
               <Music2 size={19} aria-hidden="true"/>
               <span>{locale==="ru"?"Далее · Аудио":
@@ -9228,7 +9356,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               <ArrowRight size={18} aria-hidden="true"/>
             </button>
             <button type="button" className={videoStyles.quickGenerate} data-video-quick-generate
-              disabled={!studioHydrated||recording||preparing||narrationInvalid} onClick={createQuickVideo}>
+              disabled={!studioHydrated||recording||preparing} onClick={openReadyForGeneration}>
               {recording||preparing?<span aria-hidden="true">◌</span>:<Play size={20} fill="currentColor" aria-hidden="true"/>}
               {recording||preparing?quick.creating:
                 locale==="ru"?"Создать видео":locale==="es"?"Crear vídeo":"Create Video"}
@@ -9572,7 +9700,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       {studioMode==="pump"&&activeWorkspace!=="effects" ? <>
       <div className={videoStyles.postHeroActions} data-video-hero-actions>
         <button type="button" className={videoStyles.heroCreate}
-          data-video-hero-create disabled={recording||preparing} onClick={startFromHero}>
+          data-video-hero-create disabled={recording||preparing} onClick={openReadyForGeneration}>
           <Play size={18} fill="currentColor" aria-hidden="true"/>{ui.create}
         </button>
       </div>
@@ -9667,7 +9795,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </div>
       ):(
         <button type="button" className={videoStyles.generate} data-mandala-video-generate
-          disabled={!canGenerate} onClick={()=>void createVideo()}>
+          disabled={!studioHydrated||recording||preparing} onClick={openReadyForGeneration}>
           <Play size={21} fill="currentColor" aria-hidden="true"/>
           {creditCatalog?.chargeRequired
             ?creditSession==="guest"

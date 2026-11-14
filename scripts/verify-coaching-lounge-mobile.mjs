@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import { mkdir, writeFile } from "node:fs/promises";
 import { runMobileBrowserCases } from "./ci-mobile-browser-batch.mjs";
+import { verifyHumanSpecialistMobile } from "./verify-my-coach-human-specialist-browser.mjs";
 
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
@@ -183,3 +184,6 @@ await runMobileBrowserCases([
 ], verify);
 await writeFile(output + "/acceptance.json", JSON.stringify(evidence, null, 2));
 console.log("Coaching mobile browser acceptance passed: " + evidence.length + " combinations");
+// Reuse this already authorized manual Chromium/WebKit process for the new
+// human specialist view. No new Actions workflow or release checks.
+await verifyHumanSpecialistMobile();

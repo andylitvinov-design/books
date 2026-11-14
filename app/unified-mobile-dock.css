@@ -75,3 +75,9 @@ body:has([data-hh-unified-dock]) [data-video-director-chat-details]{scroll-margi
  body:has(.hh-messages-page [data-keyboard-open="true"]) [data-hh-unified-dock]{display:none!important}
  body:has(.hh-messages-page [data-keyboard-open="true"]) .hh-app.hh-messages-page{padding-bottom:0!important}
 }
+
+/* Immersive learning/coach players keep their own viewport controls. */
+@media(max-width:759px){
+ body:has(main[data-energywork-ai-learner]) [data-hh-unified-dock],
+ body:has([data-my-coach-immersive-session]) [data-hh-unified-dock]{display:none!important}
+}

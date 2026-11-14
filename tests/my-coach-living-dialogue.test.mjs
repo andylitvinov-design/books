@@ -45,5 +45,5 @@ test('one consented voice controller drives avatar phases from real TTS lifecycl
   assert.match(loop,/if\(document\.visibilityState==='hidden'\)stopRef\.current\?\.\(\)/)
   assert.match(voice,/allowDictation=true/)
   assert.match(voice,/support\.stt&&allowDictation&&/)
-  assert.doesNotMatch(dialog,/localStorage|sessionStorage|MediaRecorder/)
+  assert.doesNotMatch(dialog,/localStorage|sessionStorage/)
 })

@@ -24,13 +24,18 @@ test('Library defaults to Latest news feed with videos, articles and guides whil
 
 test('Only explicitly approved public YouTube resources are included, not client private storage',()=>{
   const lib=source('lib/clients/material-library.js')
+  const publicVideos=source('lib/clients/public-library-videos.js')
+  const publicFeed=source('lib/public-library-feed.ts')
   const pubApi=source('app/api/admin/materials/[id]/route.js')
   const mediaApi=source('app/api/admin/materials/[id]/media/route.js')
   const migration=source('supabase/migrations/20261018014000_hh_public_materials_library_feed.sql')
   const ownerUI=source('components/practitioner-materials-cabinet.jsx')
-  assert.match(lib,/where kind='youtube' and status='ready' and public_locale=\$1 and published_at is not null/)
-  assert.match(lib,/parseSessionYouTubeUrl\(row.url\)/)
-  assert.doesNotMatch(lib.slice(lib.indexOf('export async function listPublicLibraryVideos')),/object_key|storage\.from|privateMediaObjectStream/)
+  assert.match(publicVideos,/where kind='youtube' and status='ready' and public_locale=\$1 and published_at is not null/)
+  assert.match(publicVideos,/parseSessionYouTubeUrl\(row.url\)/)
+  assert.doesNotMatch(publicVideos,/object_key|storage\.from|privateMediaObjectStream/)
+  assert.match(lib,/export \{ listPublicLibraryVideos \} from "\.\/public-library-videos\.js"/)
+  assert.match(publicFeed,/from "@\/lib\/clients\/public-library-videos"/)
+  assert.doesNotMatch(publicVideos,/session-delivery-storage|private-video-object-store|privateMediaObjectStream/)
   assert.match(pubApi,/ownerMaterialRequest/)
   assert.match(pubApi,/data.reviewed!==true/)
   assert.match(ownerUI,/window.confirm/)
@@ -50,4 +55,16 @@ test('News feed includes approved existing video mirrors without new upload or g
   assert.match(hub,/sort\(\(a, b\)/)
   assert.match(hub,/publishedVideos\.map/)
   assert.match(hub,/articles\.map/)
+})
+
+// Public Views other than Latest do not initialize the public database readers.
+test("Library keeps book/Dao views out of the public feed and approved-video readers",()=>{
+  const page=source("app/[locale]/library/page.tsx")
+  assert.doesNotMatch(page,/^import \{ loadPublicLibraryFeed \}/m)
+  assert.match(page,/view === "books" \|\| view === "dao"/)
+  assert.match(page,/await import\("@\/lib\/public-library-feed"\)/)
+  assert.match(page,/view === "videos"[\s\S]*await import\("@\/lib\/video-discovery\/approved-meditations"\)/)
+  const legacy=source("app/[locale]/services/psychohomeopathy/page.tsx")
+  assert.match(legacy,/permanentRedirect\("\/" \+ locale \+ "\/services\/alchemy-of-soul"\)/)
+  assert.doesNotMatch(legacy,/PersonalServiceLanding/)
 })

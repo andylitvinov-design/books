@@ -2,14 +2,17 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { consultServiceQuestion } from "@/lib/assist/consultant-mind.mjs";
-import { ArrowDown, ArrowRight, HeartHandshake, Mic, Sparkles } from "lucide-react";
+import { waveNativeTurn } from "@/lib/holistic-support/wave-native-router.mjs";
+import { ArrowDown, ArrowRight, BatteryCharging, BookOpen, BriefcaseBusiness, Coins, Filter, Flower2, HandHeart, Heart, HeartHandshake, Leaf, MessageCircle, Mic, Moon, Play, Sparkles, Sprout, TestTubeDiagonal, Zap } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import { inferAssistPreferences, nextAssistQuestion, rankAssistOffers } from "@/lib/assist/service-match.mjs";
 import type { AssistPreferences } from "@/lib/assist/service-match.mjs";
 import styles from "./services-assist-mobile.module.css";
 import { AssistTopRecommendations } from "./assist-top-recommendations";
 import { ServicesAssistMyTube } from "./services-assist-mytube";
+import { ServicesAssistHomeopathy } from "./services-assist-homeopathy";
 
 type Focus = "stress" | "relationships" | "energy" | "health" | "work" | "growth" | "general";
 const routes = {
@@ -35,7 +38,7 @@ const toolList: readonly Option[] = ["therapy","homeopathy","reiki","mandala","t
 
 const copy = {
   ru: {
-    eyebrow:"HOLISTIC HOUSE · SERVICES", title:"AI Assistant", lead:"Помогу подобрать подходящую услугу или специалиста для вашей ситуации.", ask:"С чем вы хотели бы обратиться?", choose:"Выберите проблему или опишите её своими словами.",
+    eyebrow:"HOLISTIC HOUSE · SERVICES", title:"Wave", lead:"Помогу подобрать подходящую услугу или специалиста для вашей ситуации.", ask:"С чем вы хотели бы обратиться?", choose:"Выберите проблему или опишите её своими словами.",
     placeholder:"Опишите вашу ситуацию или цель…", submit:"Показать рекомендации", topics:"Частые обращения",
     hints:[["Стресс / тревога","Меня беспокоят стресс и тревога","stress"],["Мало сил","Чувствую усталость и недостаток энергии","energy"],["Конфликты в паре","У меня конфликт в отношениях с партнером","relationships"],["Плохой сон","Мне трудно спать и расслабиться","stress"],["Работа / деньги","Меня тревожат работа и деньги","work"],["Душевная боль","Мне тяжело эмоционально, хочется поддержки","stress"],["Ссоры в семье","Есть напряжение и конфликты в семье","relationships"],["Нет ясности в жизни","Я потерял направление и смысл","growth"],["Симптомы в теле","Меня беспокоят физические симптомы и самочувствие","health"],["Сложно решиться","Мне трудно принять важное решение","growth"],["Нужна практика","Хочу освоить практику для поддержки себя","growth"],["Другое…","","general"]],
     privacy:"Подбор работает в вашем браузере: текст не сохраняется и не отправляется внешнему ИИ.", voice:"Открыть клавиатуру для диктовки голосом",
@@ -48,7 +51,7 @@ const copy = {
     crisis:"Если вы можете причинить себе вред, испытываете опасные симптомы или находитесь в непосредственной опасности, обратитесь в местную экстренную или кризисную службу прямо сейчас.",
   },
   en: {
-    eyebrow:"HOLISTIC HOUSE · SERVICES", title:"AI Assistant", lead:"Find the right support, service or specialist for your situation.", ask:"What would you like help with right now?", choose:"Choose a common issue or describe it in your own words.",
+    eyebrow:"HOLISTIC HOUSE · SERVICES", title:"Wave", lead:"Find the right support, service or specialist for your situation.", ask:"What would you like help with right now?", choose:"Choose a common issue or describe it in your own words.",
     placeholder:"Describe your situation or goal…", submit:"See recommendations", topics:"Common concerns",
     hints:[["Stress / anxiety","I feel stressed and anxious","stress"],["Low energy","I feel tired and low on energy","energy"],["Relationship conflict","I have conflict with my partner","relationships"],["Sleep problems","I struggle with sleep and relaxation","stress"],["Work or money","I am worried about work and money","work"],["Emotional pain","I am in emotional pain and need support","stress"],["Family tension","I am dealing with tension in my family","relationships"],["Feeling lost","I feel lost and lack a sense of direction","growth"],["Body symptoms","I am concerned about physical symptoms","health"],["Hard decisions","I am struggling to make a decision","growth"],["Need a practice","I want to learn a supportive practice","growth"],["Other…","","general"]],
     privacy:"Matching happens in your browser. Your text is not stored or sent to external AI.", voice:"Open keyboard to use voice dictation",
@@ -61,7 +64,7 @@ const copy = {
     crisis:"If you may harm yourself, have urgent symptoms or are in immediate danger, contact your local emergency or crisis service now.",
   },
   es: {
-    eyebrow:"HOLISTIC HOUSE · SERVICES", title:"AI Assistant", lead:"Encuentra el servicio o profesional adecuado para tu situación.", ask:"¿Con qué necesitas ayuda ahora?", choose:"Elige una dificultad o describe tu situación.",
+    eyebrow:"HOLISTIC HOUSE · SERVICES", title:"Wave", lead:"Encuentra el servicio o profesional adecuado para tu situación.", ask:"¿Con qué necesitas ayuda ahora?", choose:"Elige una dificultad o describe tu situación.",
     placeholder:"Describe tu situación o tu objetivo…", submit:"Ver recomendaciones", topics:"Problemas frecuentes",
     hints:[["Estrés / ansiedad","Siento estrés y ansiedad","stress"],["Poca energía","Me siento cansado y sin energía","energy"],["Conflicto de pareja","Tengo conflictos en mi relación de pareja","relationships"],["Problemas de sueño","Me cuesta dormir y relajarme","stress"],["Trabajo / dinero","Me preocupan el trabajo y el dinero","work"],["Dolor emocional","Siento dolor emocional y necesito apoyo","stress"],["Tensión familiar","Tengo tensiones y conflictos en mi familia","relationships"],["Sin rumbo","Me siento perdido y sin dirección","growth"],["Síntomas físicos","Me preocupan síntomas físicos y mi salud","health"],["Decisión difícil","Me cuesta tomar una decisión importante","growth"],["Busco una práctica","Quiero aprender una práctica de apoyo","growth"],["Otro…","","general"]],
     privacy:"La selección ocurre en tu navegador. El texto no se guarda ni se envía a una IA externa.", voice:"Abrir teclado para usar dictado de voz",
@@ -74,6 +77,47 @@ const copy = {
     crisis:"Si podrías hacerte daño, tienes síntomas urgentes o estás en peligro inmediato, contacta con emergencias o con una línea de crisis local ahora.",
   },
 } as const;
+
+type CheckinKey = "energy" | "money" | "relationships" | "confidence";
+const checkinKeys: readonly CheckinKey[] = ["energy", "money", "relationships", "confidence"];
+const checkinIcons = { energy: Zap, money: Coins, relationships: Heart, confidence: Flower2 } as const;
+const quickTopicIcons = [Leaf, BatteryCharging, Heart, Moon, BriefcaseBusiness, Sprout] as const;
+
+// The Study-inspired three-column intake is local to this browser page; no scores,
+// profile information or message history are persisted or sent to an API.
+const firstScreenCopy = {
+  ru: {
+    navigation: "Разделы помощи", services: "Услуги", ideas: "Идеи",
+    checkin: "1. Оцени себя сейчас", scoreGuide: "От 1 до 10",
+    scores: {energy:"Тело и энергия",money:"Деньги",relationships:"Отношения",confidence:"Уверенность"},
+    goal:"Фильтр целей", tests:"Тесты", focus:"Фокус", chooseFocus:"Выберите сферу", match:"Подобрать",
+    helps:"2. Что помогает", methods:{meditation:"Медитация",session:"Сессия",talisman:"Талисман",reiki:"Рейки",courses:"Курсы",masters:"Мастера",mandala:"Видеомандала"},
+    hello:"Привет! Я ваш Holistic Assistant.", avatar:"Аватар помощника Holistic House",
+    softTopics:["Снизить стресс","Больше энергии","Отношения и любовь","Лучше спать","Работа и деньги","Душевное равновесие"],
+    matchRequests:{energy:"У меня мало энергии, хочу найти подходящую поддержку",money:"Меня беспокоят вопросы денег и работы, хочу найти поддержку",relationships:"Хочу разобраться в отношениях и найти поддержку",confidence:"Хочу найти смысл и уверенность, прояснить свой путь"},
+  },
+  en: {
+    navigation: "Support sections", services: "Services", ideas: "Ideas",
+    checkin: "1. Check in with yourself", scoreGuide: "Rate from 1 to 10",
+    scores: {energy:"Body & energy",money:"Money",relationships:"Relationships",confidence:"Confidence"},
+    goal:"Goal filter", tests:"Tests", focus:"Focus", chooseFocus:"Choose a focus", match:"Find matches",
+    helps:"2. Choose what helps", methods:{meditation:"Meditation",session:"Session",talisman:"Talisman",reiki:"Reiki support",courses:"Courses",masters:"Masters",mandala:"Video mandala"},
+    hello:"Hi! I'm your Holistic Assistant.", avatar:"Holistic House guide avatar",
+    softTopics:["Reduce stress","More energy","Relationships & love","Better sleep","Work & money","Emotional balance"],
+    matchRequests:{energy:"I have low energy and want to explore support options",money:"I want help with work or money worries",relationships:"I want to explore relationship support",confidence:"I want personal growth, confidence, and clear direction"},
+  },
+  es: {
+    navigation: "Secciones de apoyo", services: "Servicios", ideas: "Ideas",
+    checkin: "1. Evalúa cómo estás", scoreGuide: "De 1 a 10",
+    scores: {energy:"Cuerpo y energía",money:"Dinero",relationships:"Relaciones",confidence:"Confianza"},
+    goal:"Filtro de metas", tests:"Tests", focus:"Enfoque", chooseFocus:"Elige un área", match:"Buscar opciones",
+    helps:"2. Elige qué te ayuda", methods:{meditation:"Meditación",session:"Sesión",talisman:"Talismán",reiki:"Apoyo Reiki",courses:"Cursos",masters:"Guías",mandala:"Video mandala"},
+    hello:"¡Hola! Soy tu asistente Holistic.", avatar:"Avatar del guía de Holistic House",
+    softTopics:["Menos estrés","Más energía","Relaciones y amor","Dormir mejor","Trabajo y dinero","Equilibrio emocional"],
+    matchRequests:{energy:"Tengo poca energía y quiero encontrar opciones de apoyo",money:"Quiero ayuda con asuntos de trabajo o dinero",relationships:"Quiero explorar apoyo para mis relaciones",confidence:"Quiero crecimiento personal, propósito y confianza"},
+  },
+} as const;
+
 type Selection = {text:string;focus:Focus};
 type ChatTurn = {role:"user"|"assistant";text:string};
 const compactCopy = {
@@ -83,7 +127,7 @@ const compactCopy = {
 } as const;
 
 export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
-  const t=copy[locale], labels=compactCopy[locale];
+  const t=copy[locale], labels=compactCopy[locale], ui=firstScreenCopy[locale];
   const [text,setText]=useState("");
   const [selection,setSelection]=useState<Selection|null>(null);
   const [preferences,setPreferences]=useState<AssistPreferences>({});
@@ -92,12 +136,15 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
   const [expandedIssues,setExpandedIssues]=useState(false);
   const [expandedTools,setExpandedTools]=useState(false);
   const [critical,setCritical]=useState(false);
+  const [checkinScores,setCheckinScores]=useState<Record<CheckinKey,number>>({energy:5,money:5,relationships:5,confidence:5});
+  const [editedCheckins,setEditedCheckins]=useState<CheckinKey[]>([]);
   const inputRef=useRef<HTMLTextAreaElement>(null);
   const chatRef=useRef<HTMLDivElement>(null);
   const formRef=useRef<HTMLFormElement>(null);
   const crisis=selection!==null&&(critical||urgent.test(selection.text));
   const question=selection&&!crisis?nextAssistQuestion(preferences):null;
   const suggestions=selection&&!crisis?rankAssistOffers(selection.focus,preferences):[];
+  const selectedFocus=editedCheckins.length?editedCheckins.reduce((best,key)=>checkinScores[key]<checkinScores[best]?key:best):null;
 
   // Only the message history scrolls; never jump the page to a second questionnaire.
   useEffect(()=>{
@@ -138,6 +185,10 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
     };
   },[selection,question,turns]);
 
+  function findCheckinMatches() {
+    if(!selectedFocus){inputRef.current?.focus();return;}
+    beginRequest(ui.matchRequests[selectedFocus]);
+  }
   function beginRequest(value:string) {
     const trimmed=value.trim().slice(0,280);
     if(!trimmed)return;
@@ -145,12 +196,13 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
     const unsafe=urgent.test(trimmed);
     // The exact same source-bounded Consultant Mind as authenticated AI chat.
     // Pure local function: no user text leaves the browser or enters training.
-    const advice=unsafe?null:consultServiceQuestion({message:trimmed,locale,history:[]});
+    const native=unsafe?null:waveNativeTurn({message:trimmed,locale,history:[]});
+    const advice=unsafe||native?null:consultServiceQuestion({message:trimmed,locale,history:[]});
     setConsultantPriority(advice?.suggestions.map(item=>item.id.replace(/^service:/,""))??[]);
     setSelection({text:trimmed,focus});
     setPreferences(inferAssistPreferences(trimmed));
     setCritical(unsafe);
-    setTurns(unsafe?[{role:"user",text:trimmed}]:[{role:"user",text:trimmed},{role:"assistant",text:advice?.reply??t.reply[focus]}]);
+    setTurns(unsafe?[{role:"assistant",text:t.ask},{role:"user",text:trimmed}]:[{role:"assistant",text:t.ask},{role:"user",text:trimmed},{role:"assistant",text:native?.reply??advice?.reply??t.reply[focus]}]);
     setText("");
     setExpandedIssues(false);
     inputRef.current?.blur();
@@ -163,10 +215,14 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
     // New typed messages stay in this messenger. Infer only explicitly stated preferences.
     // Do not transmit the conversation to providers or add it to URLs/storage.
     const unsafe=urgent.test(value);
-    const advice=unsafe||critical||urgent.test(selection.text)?null:
+    const native=unsafe||critical||urgent.test(selection.text)?null:
+      waveNativeTurn({message:value,locale,history:turns.slice(-6)});
+    const advice=unsafe||critical||urgent.test(selection.text)||native?null:
       consultServiceQuestion({message:value,locale,history:turns.slice(-6)});
     setTurns(current=>[...current,{role:"user" as const,text:value},
-      ...(advice?[{role:"assistant" as const,text:advice.reply}]:[])].slice(-12));
+      ...(native?[{role:"assistant" as const,text:native.reply}]:
+        advice?[{role:"assistant" as const,text:advice.reply}]:[])].slice(-12));
+    if(native){setText("");return;}
     if(advice)setConsultantPriority(advice.suggestions.map(item=>item.id.replace(/^service:/,"")));
     setSelection(current=>current?{
       text:(current.text+" "+value).slice(0,280),
@@ -198,8 +254,62 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
     inputRef.current?.focus();
   }
   return <section className={styles.assist} data-assist-mobile lang={locale} aria-labelledby="assist-title">
-    <div className={styles.photo} role="img" aria-label="Holistic House"/>
-    <header className={styles.intro}><p className={styles.eyebrow}><HeartHandshake size={15} aria-hidden="true"/>{t.eyebrow}</p><h1 id="assist-title">{t.title}</h1><p>{t.lead}</p></header>
+    <nav className={styles.assistTabs} data-assist-first-tabs aria-label={ui.navigation}>
+      <span className={styles.activeTab} aria-current="page"><Sparkles size={17} aria-hidden="true"/>{t.title}</span>
+      <Link href={"/"+locale+"/services/catalog#service-listings"} prefetch={false}>{ui.services}</Link>
+      <Link href={"/"+locale+"/temple-insights"} prefetch={false}>{ui.ideas}</Link>
+    </nav>
+    <div className={styles.intakeGrid} data-assist-study-dashboard>
+      <section className={styles.intakeCheckin} aria-labelledby="assist-checkin-title">
+        <h2 id="assist-checkin-title">{ui.checkin}</h2>
+        <p className={styles.checkinGuide}>{ui.scoreGuide}</p>
+        <div className={styles.checkinRows}>
+          {checkinKeys.map(key=>{
+            const Icon=checkinIcons[key];
+            return <label className={styles.checkinRow} data-tone={key} key={key}>
+              <span className={styles.checkinLabel}><Icon size={14} aria-hidden="true"/>{ui.scores[key]}</span>
+              <span className={styles.checkinBar}>
+                <input type="range" min="1" max="10" step="1" value={checkinScores[key]}
+                  aria-label={ui.scores[key]} aria-valuetext={checkinScores[key]+" / 10"}
+                  onChange={event=>{
+                    const value=Number(event.currentTarget.value);
+                    setCheckinScores(current=>({...current,[key]:value}));
+                    setEditedCheckins(current=>current.includes(key)?current:[...current,key]);
+                  }}/>
+                <output aria-live="off">{checkinScores[key]}</output>
+              </span>
+            </label>;
+          })}
+        </div>
+        <Link className={styles.goalLink} href={"/"+locale+"/holistic-support/mobile"} prefetch={false}><Filter size={15} aria-hidden="true"/>{ui.goal}</Link>
+      </section>
+      <div className={styles.intakeProfile}>
+        <div className={styles.profileAvatar}><Image src="/images/holistic-house/support-reference-avatar.webp" alt={ui.avatar}
+          width={116} height={116} className={styles.avatarImage} sizes="(max-width:760px) 105px, 1px"/></div>
+        <Link className={styles.testsLink} href={"/"+locale+"/tests"} prefetch={false}><TestTubeDiagonal size={15} aria-hidden="true"/>{ui.tests}</Link>
+        <div className={styles.focusCard}><span>{ui.focus}</span><strong>{selectedFocus?ui.scores[selectedFocus]:ui.chooseFocus}</strong></div>
+        <button type="button" className={styles.findMatches} onClick={findCheckinMatches}><Sparkles size={16} aria-hidden="true"/>{ui.match}</button>
+      </div>
+      <section className={styles.intakeHelp} aria-labelledby="assist-helps-title">
+        <h2 id="assist-helps-title">{ui.helps}</h2>
+        <div className={styles.helpGrid}>
+          <Link href={"/"+locale+"/meditations"} prefetch={false}><Play size={23} aria-hidden="true"/>{ui.methods.meditation}</Link>
+          <Link href={"/"+locale+"/services/personal-support"} prefetch={false}><MessageCircle size={23} aria-hidden="true"/>{ui.methods.session}</Link>
+          <Link href={"/"+locale+"/holistic-support/mobile"} prefetch={false}><Sparkles size={23} aria-hidden="true"/>{ui.methods.talisman}</Link>
+          <Link href={"/"+locale+"/services/remote-energy-support"} prefetch={false}><HandHeart size={23} aria-hidden="true"/>{ui.methods.reiki}</Link>
+        </div>
+        <div className={styles.helpShortcuts}>
+          <Link href={"/"+locale+"/academy/reiki"} prefetch={false}><BookOpen size={13} aria-hidden="true"/>{ui.methods.courses}</Link>
+          <Link href={"/"+locale+"/masters"} prefetch={false}>{ui.methods.masters}</Link>
+        </div>
+        <Link className={styles.mandalaLink} href={"/"+locale+"/holistic-support/mandala"} prefetch={false}>{ui.methods.mandala}</Link>
+      </section>
+    </div>
+    <header className={styles.hero}>
+      <p className={styles.eyebrow}><HeartHandshake size={15} aria-hidden="true"/>{t.eyebrow}</p>
+      <h1 id="assist-title">{t.title}</h1>
+      <p>{t.lead}</p>
+    </header>
     <div className={styles.conversation} data-assist-dialogue>
       <div className={styles.messages} id="assist-results" ref={chatRef} role="log" aria-live="polite" aria-label={t.answer} aria-relevant="additions text" tabIndex={0}>
         {selection?<>
@@ -216,16 +326,19 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
           </>}
         </>:<div className={styles.chatStart}>
           <div className={styles.greeting}>
-            <span className={styles.avatar} aria-hidden="true"><Sparkles size={20}/></span>
-            <div className={styles.speech}><strong>{t.ask}</strong><span>{t.choose}</span></div>
+            <span className={styles.avatar} aria-hidden="true"><Image src="/images/holistic-house/support-reference-avatar.webp" alt="" width={38} height={38} className={styles.chatAvatarImage}/></span>
+            <div className={styles.speech}><strong>{ui.hello}</strong><span>{t.ask}</span><small>{t.choose}</small></div>
           </div>
           <div className={styles.quick}>
             <div className={styles.chips} role="group" aria-label={t.topics} data-assist-topic-suggestions data-assist-issue-suggestions>
-              {t.hints.slice(0,expandedIssues?12:6).map(([label,example,focus])=><button key={label} type="button" aria-pressed={false}
-                onClick={()=>{
-                  if(focus==="general"){setText("");inputRef.current?.focus();return;}
-                  beginRequest(example);
-                }}>{label}</button>)}
+              {t.hints.slice(0,expandedIssues?12:6).map(([label,example,focus],index)=>{
+                const Icon=quickTopicIcons[index]??Sprout;
+                return <button key={label} type="button" aria-pressed={false}
+                  onClick={()=>{
+                    if(focus==="general"){setText("");inputRef.current?.focus();return;}
+                    beginRequest(example);
+                  }}><span className={styles.topicIcon} aria-hidden="true"><Icon size={18}/></span><span>{ui.softTopics[index]??label}</span></button>;
+              })}
             </div>
             <button type="button" className={styles.expand} aria-expanded={expandedIssues} onClick={()=>setExpandedIssues(current=>!current)}>
               {expandedIssues?labels.lessIssues:labels.moreIssues}<span aria-hidden="true">{expandedIssues?" −":" +"}</span>
@@ -247,6 +360,7 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
     {!crisis&&selection?<AssistTopRecommendations locale={locale} focus={selection.focus} preferences={preferences}
       priorityIds={consultantPriority} matchingIds={suggestions.map(({id})=>id)} noMatchLabel={t.noOffers}/>:null}
     {!crisis&&selection?<ServicesAssistMyTube locale={locale} focus={selection.focus} question={selection.text}/>:null}
+    {!crisis&&selection?<ServicesAssistHomeopathy locale={locale}/>:null}
     <section className={styles.tools} aria-labelledby="assist-tools-title">
       <h2 id="assist-tools-title">{t.tools}</h2><p>{t.browse}</p>
       <div className={styles.toolGrid}>{toolList.slice(0,expandedTools?toolList.length:4).map((key)=>{

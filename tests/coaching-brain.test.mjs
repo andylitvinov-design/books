@@ -545,3 +545,40 @@ test('offline coaching notices explicitly named constraints instead of asking ag
     'motivational_interviewing','explore')
   assert.equal((fallback.question.match(/[?？]/gu)||[]).length,1)
 })
+
+test('social greetings preserve rapport instead of imposing goal metrics RU/EN/ES',()=>{
+ for(const [locale,message,expected] of [
+  ['ru','Привет как дела','Привет'],
+  ['ru','Здравствуйте, как ваши дела?','Привет'],
+  ['en','Hi, how are you?','Hello'],
+  ['en','Hello there!','Hello'],
+  ['es','Hola, ¿cómo estás?','Hola'],
+  ['es','Buenas tardes','Hola']
+ ]){
+  const input=normalizeCoachingBrainInput(req({locale,message}))
+  assert.equal(understandCoachingTurn(input).act,'greeting')
+  assert.deepEqual(coachingBrainStageDecision(input),{stage:'clarify',reasonCode:'social_opening_no_goal'})
+  const r=offlineCoachingBrainReply(input,'grow','clarify')
+  assert.equal(r.mode,'offline')
+  assert.equal(r.planSuggestion,'')
+  assert.ok(r.question.includes(expected))
+  assert.doesNotMatch(r.question,/measure|outcome|измер|результат|objetivo medible/i)
+  assert.match(coachingBrainMessages(input,'grow','clarify')[1].content,/Greeting only/)
+  assert.throws(()=>parseCoachingBrainReply(JSON.stringify({
+   reflection:'We can talk about your goals.',
+   question:'How would you measure success?'
+  }),input,'grow','clarify'),/COACHING_BRAIN_RESPONSE_INVALID/)
+ }
+ assert.notEqual(understandCoachingTurn({locale:'ru',message:'Привет! Я хочу обсудить работу.',turns:[]}).act,'greeting')
+})
+
+test('My Coach local unavailable-model path uses semantic Coach Mind instead of turn-count questionnaire',()=>{
+ const ui=source('components/my-coach-live-dialogue.jsx')
+ assert.match(ui,/coachingBrainStageDecision\(input\)/)
+ assert.match(ui,/offlineCoachingBrainReply\(input,selectCoachingBrainMethod\(input\),semanticStage\)/)
+ assert.match(ui,/mode,reason:mode==='offline'/)
+ assert.match(ui,/stage:offlineReply\.stage\|\|semanticStage/)
+ assert.doesNotMatch(ui,/const userCount=turns\.filter/)
+ assert.match(ui,/coachingBrainSafety\(input\)\|\|coachingBrainBoundary\(input\)/)
+ assert.match(ui,/readiness\.status!=='verified'&&!wisdomRequested/)
+})
