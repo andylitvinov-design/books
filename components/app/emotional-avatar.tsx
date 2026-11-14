@@ -159,6 +159,8 @@ export default function EmotionalAvatar({messages,busy,status,locale,compact,ico
   const voiceSelector=<label className={styles.voiceSelector}><span>{t.voice}</span><select aria-label={t.voice} value={selectedVoiceURI} onChange={event=>setSelectedVoiceURI(event.target.value)}>
     <option value="">{t.defaultVoice}</option>{deviceVoices.map(voice=><option key={voice.voiceURI} value={voice.voiceURI}>{voice.name}</option>)}
   </select>{deviceVoices.length===0&&<small>{t.noLocalVoice}</small>}</label>;
+  // The compact chat composer contains playback only. The voice picker
+  // belongs in Settings and must not return when Companion is disabled.
   if(iconOnly)return <div className={styles.iconVoiceControls}>
     <button type="button" className={styles.iconOnly}
       data-hh-speech-control aria-label={actuallySpeaking?t.stop:t.listen}
@@ -166,7 +168,6 @@ export default function EmotionalAvatar({messages,busy,status,locale,compact,ico
       disabled={!canSpeak||!latestReply||busy} onClick={toggleVoice}>
       {actuallySpeaking?<VolumeX size={21} aria-hidden="true"/>:<Volume2 size={21} aria-hidden="true"/>}
     </button>
-    {!externalSpeech&&<details className={styles.voiceDetails}><summary aria-label={t.voice} title={t.voice}>Aa</summary>{voiceSelector}</details>}
   </div>;
   if(!state.visible)return <div className={styles.hidden} data-hh-emotional-avatar-hidden>
     <button type="button" onClick={()=>dispatch({type:'SHOW'})}>{t.show}</button>
