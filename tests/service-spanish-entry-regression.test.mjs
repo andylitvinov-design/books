@@ -16,7 +16,7 @@ test('the real dedicated Spanish services route renders a complete existing conv
   assert.match(es, /import assistStyles from "@\/components\/services-assist-mobile\.module\.css"/)
   assert.match(es, /<ServicesConversionHero locale="es"\s*\/>/)
   assert.match(es, /<PublicConsultationCta locale="es" id="consultation" serviceBooking/)
-  assert.match(es, /<ServicesStudioOffers locale="es"\s*\/>/)
+  assert.match(es, /<ServicesStudioOffers locale="es" splitExtras\s*\/>/)
   assert.match(es, /<PersonalTestimonials locale="es" variant="services"\s*\/>/)
   assert.match(es, /<CompactLeadCapture locale="es"/)
   assert.match(es, /La homeopatía no tiene evidencia fiable/)
