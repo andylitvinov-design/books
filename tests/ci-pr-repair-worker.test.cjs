@@ -468,7 +468,8 @@ test('failed fix finalizer cannot escalate a forged, foreign, leased or moved HE
 test('source-fix terminal finalizer is restricted to failed fix jobs in the trusted workflow',()=>{
  const yml=require('node:fs').readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
  assert.ok(yml.includes('  finalize:'));
- assert.ok(yml.includes('needs: [claim,fix,code_fix,code_verify,publish]'));
+ assert.ok(yml.includes('needs: [claim,fix,code_fix,paid_fix,code_verify,publish]'));
+  assert.ok(yml.includes('HH_PAID_STATUS: ${{ needs.paid_fix.outputs.candidate_status }}'));
  assert.ok(yml.includes('always()'));
  assert.ok(yml.includes('worker.finalize({github,core,context,'));
 });
@@ -566,7 +567,8 @@ test('verified deterministic candidate plus failed GitHub publisher is NOT label
 test('workflow guarantees a finalizer after code verification and publishing',()=>{
  const wf=require('node:fs').readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
  assert.match(wf,/  finalize:\n/);
- assert.match(wf,/needs: \[claim,fix,code_fix,code_verify,publish\]/);
+ assert.match(wf,/needs: \[claim,fix,code_fix,paid_fix,code_verify,publish\]/);
+  assert.match(wf,/paidStatus:process.env.HH_PAID_STATUS/);
  assert.match(wf,/always\(\)/);
  assert.match(wf,/HH_REPAIR_FINAL_OUTCOME/);
  assert.match(wf,/claim_status/);
@@ -640,7 +642,9 @@ test('missing owner token and interrupted claim may not unlock a source reservat
 test('existing Repair Worker workflow carries reservation identity without source tokens',()=>{
  const wf=require('node:fs').readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
  assert.ok(wf.includes('reservation_run_id:'));
- assert.equal((wf.match(/ref: \$\{\{ github\.sha \}\}/g)||[]).length,7);
+ assert.equal((wf.match(/ref: \$\{\{ github\.sha \}\}/g)||[]).length,8);
+ assert.match(wf,/  paid_fix:\n[\s\S]*?ref: \$\{\{ github\.sha \}\}/);
+ assert.ok(wf.includes('hh-pr-budgeted-model-single-writer'));
  assert.ok(wf.includes('  commander-source-task:'));
  assert.ok(wf.includes("github.actor == 'andylitvinov-design'"));
  assert.ok(wf.includes("inputs.commander_source_task != ''"));
@@ -958,15 +962,17 @@ test('direct Core failures reach deterministic checks and then free AI without p
  assert.doesNotMatch(wf,/force: true/);
 });
 
-test('free AI publisher rejects sensitive path even if PR lists it',async()=>{
- const f=fixture();
- f.github.rest.pulls.listFiles=async()=>({data:[{filename:'lib/private/records.ts',status:'modified'}]});
- const candidate={head_sha:sha,repair_kind:'free_ai',files:[{
-   path:'lib/private/records.ts',original_sha:newSha,
-   base64:Buffer.from('export {};').toString('base64')}]};
- await assert.rejects(publish({github:f.github,core,context,prNumber:11,
-   expectedSha:sha,candidate,writer:f.writer}),/HH_REPAIR_PUBLISH_UNSAFE_PATH/);
- assert.equal(f.log.commit,0);
+test('free and budgeted AI publishers reject sensitive path even if PR lists it',async()=>{
+ for(const repairKind of ['free_ai','budgeted_ai']){
+  const f=fixture();
+  f.github.rest.pulls.listFiles=async()=>({data:[{filename:'lib/private/records.ts',status:'modified'}]});
+  const candidate={head_sha:sha,repair_kind:repairKind,files:[{
+    path:'lib/private/records.ts',original_sha:newSha,
+    base64:Buffer.from('export {};').toString('base64')}]};
+  await assert.rejects(publish({github:f.github,core,context,prNumber:11,
+    expectedSha:sha,candidate,writer:f.writer}),/HH_REPAIR_PUBLISH_UNSAFE_PATH/);
+  assert.equal(f.log.commit,0);
+ }
 });
 
 
