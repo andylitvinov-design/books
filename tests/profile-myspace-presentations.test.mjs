@@ -46,9 +46,9 @@ test('RU/EN switch preserves profile sections and video is click-to-play', async
   for (const section of ['tests', 'state', 'path', 'courses', 'reports']) {
     assert.ok(component.includes("current === '" + section + "'"), section)
   }
-  assert.match(component, /<SiteVideoPlayer key=\{selected\} video=\{presentation\} locale=\{selected\}/)
-  assert.match(component, /minimal fallbackPoster=\{POSTER\}/)
-  assert.match(component, /data-profile-presentation-source/)
+  assert.match(component, /<ProfilePresentationPlayer key=\{selected\}/)
+  assert.match(component, /locale=\{selected\} presentation=\{presentation\} poster=\{POSTER\}/)
+  assert.match(await read('components/app/profile-presentation-player.jsx'), /data-profile-presentation-source/)
   assert.match(styles, /\.languageSwitch a\[aria-current=page\]/)
   assert.match(styles, /min-height:40px/)
   assert.doesNotMatch(component + styles, /https?:\/\/files2\.heygen\.ai|Expires=|Signature=/)
