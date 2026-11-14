@@ -14,7 +14,13 @@ export async function openPosterDisclosures(image) {
     try {
       const summary = await details.$(':scope > summary');
       if (!summary) throw new Error('Poster disclosure has no summary');
-      try { await summary.click(); } finally { await summary.dispose(); }
+      try {
+        // Responsive testimonials may intentionally hide this disclosure on
+        // phone widths. Do not claim a user click on an invisible summary.
+        // Reveal only the existing disclosure for strict image loading/decode.
+        if (await summary.isVisible()) await summary.click();
+        else await details.evaluate(el => { el.open = true; });
+      } finally { await summary.dispose(); }
       if (!await details.evaluate(el => el.open)) throw new Error('Poster disclosure did not open');
     } finally { await candidate.dispose(); }
   }

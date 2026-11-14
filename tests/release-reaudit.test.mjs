@@ -221,10 +221,22 @@ test('Services re-audit waits for real hydration and decodes even hidden lazy po
   assert.match(verifier,/await decodeReadyPoster\(image, expect\)/);
   assert.match(helper,/if \(await image\.isVisible\(\)\)/);
   assert.match(helper,/el\.loading = 'eager'/);
+  assert.match(helper,/if \(await summary\.isVisible\(\)\)/);
+  assert.match(helper,/await details\.evaluate\(el => \{ el\.open = true; \}\)/);
   assert.match(helper,/await expect\.poll/);
   assert.match(helper,/el\.decode\(\)/);
   assert.match(helper,/el\.currentSrc === selected/);
   assert.doesNotMatch(helper,/return\s*;\s*\/\/.*hidden/);
+});
+
+test('Public Services master directory has a real bounded abort and an unavailable state', () => {
+  const gallery = read('components/holistic-support-master-gallery.tsx');
+  assert.match(gallery,/const deadline = window\.setTimeout/);
+  assert.match(gallery,/setFailed\(true\);\s*controller\.abort\(\)/);
+  assert.match(gallery,/\}, 8000\)/);
+  assert.match(gallery,/\.finally\(\(\) => window\.clearTimeout\(deadline\)\)/);
+  assert.match(gallery,/return \(\) => \{ window\.clearTimeout\(deadline\); controller\.abort\(\); \}/);
+  assert.match(gallery,/if \(!controller\.signal\.aborted\) setFailed\(true\)/);
 });
 
 test('long Maya readers wait for rendered content instead of global network idleness', () => {

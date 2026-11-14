@@ -389,6 +389,14 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
 
   useEffect(() => {
     const controller = new AbortController();
+    // Give slow public practitioners lookups a bounded budget. Timeout is a
+    // visible unavailable/retry state, never a fabricated empty directory.
+    const deadline = window.setTimeout(() => {
+      if (!controller.signal.aborted) {
+        setFailed(true);
+        controller.abort();
+      }
+    }, 8000);
     setFailed(false); setMasters(null); setOffers(null); setSelectedId(null);
     const url = "/api/public/remote-energy-support-masters?locale=" + locale +
       (consultations ? "&kind=consultation" : kind === "healing" ? "&kind=reiki" : "");
@@ -404,8 +412,9 @@ export function HolisticSupportMasterGallery({ locale, kind }: {
         if (!Array.isArray(data?.masters)) throw new Error("INVALID_MASTER_DIRECTORY");
         setMasters(data.masters.filter(validMaster));
       }
-    }).catch(() => { if (!controller.signal.aborted) setFailed(true); });
-    return () => controller.abort();
+    }).catch(() => { if (!controller.signal.aborted) setFailed(true); })
+      .finally(() => window.clearTimeout(deadline));
+    return () => { window.clearTimeout(deadline); controller.abort(); };
   }, [locale, consultations, kind, attempt]);
 
   // Reopen the same approved master after the existing Google OAuth redirect.

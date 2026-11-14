@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { AudioLines, Check, Download, LoaderCircle, Play, Volume2 } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -151,14 +151,9 @@ export function MandalaAffirmationVoice({
   const onInvalidateRef=useRef(onInvalidate);
   onInvalidateRef.current=onInvalidate;
   const originRef=useRef({speechText,voiceId,language});
-  // Safari can defer the native <details> toggle until after React commits.
-  // Preserve a visitor's real open state across a voice card or locale rerender.
-  const voiceAdvancedOpenRef=useRef(false);
-  const voiceAdvancedNodeRef=useRef<HTMLDetailsElement|null>(null);
-  const bindVoiceAdvanced=useCallback((node:HTMLDetailsElement|null)=>{
-    voiceAdvancedNodeRef.current=node;
-    if(node)node.open=voiceAdvancedOpenRef.current;
-  },[]);
+  // A React-controlled disclosure avoids WebKit's delayed native toggle race.
+  // Only explicit user activation can open this settings panel.
+  const [voiceAdvancedOpen,setVoiceAdvancedOpen]=useState(false);
   useEffect(()=>onPreferencesChange({voiceId,language,bed}),[voiceId,language,bed,onPreferencesChange]);
   const onGeneratingRef=useRef(onGenerating);
   onGeneratingRef.current=onGenerating;
@@ -589,19 +584,10 @@ export function MandalaAffirmationVoice({
         disabled={disabled||busy} approvalPending={approvalPending} onAttach={onAttach} onDetach={onDetachLocal}/>
     </div>
     {!ownVoiceOnly&&voiceGender!=="own" ? <>
-    <details ref={bindVoiceAdvanced} className={css.voiceAdvanced} data-video-affirmation-voice-advanced
-      onToggle={event=>{
-        if(event.currentTarget===voiceAdvancedNodeRef.current)
-          voiceAdvancedOpenRef.current=event.currentTarget.open;
-      }}>
+    <details open={voiceAdvancedOpen} className={css.voiceAdvanced} data-video-affirmation-voice-advanced>
       <summary onClick={event=>{
-        // Native summary toggling must be the *only* DOM toggle. WebKit may
-        // commit its default action after React's event handler; toggling
-        // node.open here as well can immediately close a genuine user tap.
-        // Save the intended next state early for a concurrent React remount.
-        const node=event.currentTarget.parentElement;
-        if(node instanceof HTMLDetailsElement)
-          voiceAdvancedOpenRef.current=!node.open;
+        event.preventDefault();
+        setVoiceAdvancedOpen(current=>!current);
       }}>{locale==="ru"?"Дополнительные настройки озвучки":locale==="es"?"Opciones de narración":"Voice options"}</summary>
     {compact?deviceSampleControl:null}
     <div className={css.controls}>
