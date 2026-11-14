@@ -230,7 +230,10 @@ try {
     await topics.first().click();
     await expect(conversation.locator("[data-assist-topic-suggestions]")).toHaveCount(0);
     await expect(log.locator('[data-assist-message="user"]')).toHaveCount(1);
-    await expect(log.locator('[data-assist-message="assistant"]')).toHaveCount(1);
+    // The approved messenger preserves its opening question before the visitor reply.
+    await expect(log.locator('[data-assist-message="assistant"]')).toHaveCount(2);
+    await expect(log.locator("[data-assist-message]").first()).toHaveAttribute("data-assist-message", "assistant");
+    await expect(log.locator("[data-assist-message]").nth(1)).toHaveAttribute("data-assist-message", "user");
     await expect(log.locator('[data-assist-question="mode"]')).toHaveCount(1);
     await expect(log.locator("a[data-assist-recommendation]")).toHaveCount(0);
     await expect(question).toHaveValue("");
@@ -479,43 +482,58 @@ try {
       await assertNoDevIssueOverlay(page, locale + "/services/" + width);
       // RootLayout provides My Space: the canonical header opens an accessible
       // account dialog, not a direct Cabinet link. Never bypass sign-in here.
+      // The owner retired the site header on mobile Services only.
+      // The desktop header and its real My Space and menu remain verified.
       const header = page.locator("header.house-header--services");
-      const cabinetEntry = header.locator("button.site-cabinet-entry");
-      await expect(cabinetEntry).toHaveCount(1);
-      await visible(cabinetEntry);
-      await expect(cabinetEntry).toHaveAttribute("aria-haspopup", "dialog");
-      await expect(cabinetEntry).toHaveAttribute("aria-controls", "home-personal-space-dialog");
-      await expect(cabinetEntry).toHaveAttribute("aria-expanded", "false");
-      const cabinetBounds = await cabinetEntry.boundingBox();
-      assert.ok(cabinetBounds && cabinetBounds.x >= 0 && cabinetBounds.x + cabinetBounds.width <= width + 1, "My Space entry must fit the visible header: " + locale + "/" + width);
-      await cabinetEntry.click();
-      const privateSpaceDialog = page.locator("dialog#home-personal-space-dialog");
-      await expect(privateSpaceDialog).toHaveAttribute("open", "");
-      await visible(privateSpaceDialog.locator("#hh-my-space-title"));
-      await expect(cabinetEntry).toHaveAttribute("aria-expanded", "true");
-      await privateSpaceDialog.locator('header button[type="button"]').first().click();
-      await expect(privateSpaceDialog).not.toHaveAttribute("open", "");
-      await expect(cabinetEntry).toHaveAttribute("aria-expanded", "false");
-      const siteMenu = header.locator("details.site-main-menu");
-      await expect(siteMenu).not.toHaveAttribute("open", "");
-      const menuTrigger = siteMenu.locator("summary.site-main-menu-trigger");
-      await visible(menuTrigger);
-      const menuBounds = await menuTrigger.boundingBox();
-      assert.ok(menuBounds && menuBounds.x >= 0 && menuBounds.x + menuBounds.width <= width + 1,
-        "Public site menu must fit the header: " + locale + "/" + width);
-      await siteMenu.locator("summary.site-main-menu-trigger").click();
-      await expect(siteMenu).toHaveAttribute("open", "");
-      // The canonical expanded-menu destination is the Library hub;
-      // /books remains a separate editorial route, not this menu entry.
-      const libraryEntry = siteMenu.locator('.site-main-menu-panel a[href="/' + locale + '/library"]');
-      await expect(libraryEntry).toHaveCount(1);
-      await visible(libraryEntry);
-      await expect(libraryEntry).toHaveText(locale === "ru" ? "Библиотека" : locale === "es" ? "Biblioteca" : "Library");
-      assert.equal(await libraryEntry.getAttribute("href"), "/" + locale + "/library", "Library opens the localized editorial hub");
-      const libraryBounds = await libraryEntry.boundingBox();
-      assert.ok(libraryBounds && libraryBounds.x >= 0 && libraryBounds.x + libraryBounds.width <= width + 1, "Library entry must fit the opened menu: " + locale + "/" + width);
-      await siteMenu.locator("summary.site-main-menu-trigger").click();
-      await expect(siteMenu).not.toHaveAttribute("open", "");
+      if (width <= 760) {
+        await expect(header).toBeHidden();
+        await visible(page.locator("[data-assist-first-tabs]"));
+        const dashboard = page.locator("[data-assist-study-dashboard]");
+        await visible(dashboard);
+        await expect(dashboard.locator('input[type="range"]')).toHaveCount(4);
+        for (const slider of await dashboard.locator('input[type="range"]').all()) {
+          await expect(slider).toHaveAttribute("min", "1");
+          await expect(slider).toHaveAttribute("max", "10");
+        }
+        await visible(dashboard.getByRole("button", { name: locale === "ru" ? "Подобрать" : locale === "es" ? "Buscar opciones" : "Find matches" }));
+      } else {
+  const cabinetEntry = header.locator("button.site-cabinet-entry");
+        await expect(cabinetEntry).toHaveCount(1);
+        await visible(cabinetEntry);
+        await expect(cabinetEntry).toHaveAttribute("aria-haspopup", "dialog");
+        await expect(cabinetEntry).toHaveAttribute("aria-controls", "home-personal-space-dialog");
+        await expect(cabinetEntry).toHaveAttribute("aria-expanded", "false");
+        const cabinetBounds = await cabinetEntry.boundingBox();
+        assert.ok(cabinetBounds && cabinetBounds.x >= 0 && cabinetBounds.x + cabinetBounds.width <= width + 1, "My Space entry must fit the visible header: " + locale + "/" + width);
+        await cabinetEntry.click();
+        const privateSpaceDialog = page.locator("dialog#home-personal-space-dialog");
+        await expect(privateSpaceDialog).toHaveAttribute("open", "");
+        await visible(privateSpaceDialog.locator("#hh-my-space-title"));
+        await expect(cabinetEntry).toHaveAttribute("aria-expanded", "true");
+        await privateSpaceDialog.locator('header button[type="button"]').first().click();
+        await expect(privateSpaceDialog).not.toHaveAttribute("open", "");
+        await expect(cabinetEntry).toHaveAttribute("aria-expanded", "false");
+        const siteMenu = header.locator("details.site-main-menu");
+        await expect(siteMenu).not.toHaveAttribute("open", "");
+        const menuTrigger = siteMenu.locator("summary.site-main-menu-trigger");
+        await visible(menuTrigger);
+        const menuBounds = await menuTrigger.boundingBox();
+        assert.ok(menuBounds && menuBounds.x >= 0 && menuBounds.x + menuBounds.width <= width + 1,
+          "Public site menu must fit the header: " + locale + "/" + width);
+        await siteMenu.locator("summary.site-main-menu-trigger").click();
+        await expect(siteMenu).toHaveAttribute("open", "");
+        // The canonical expanded-menu destination is the Library hub;
+        // /books remains a separate editorial route, not this menu entry.
+        const libraryEntry = siteMenu.locator('.site-main-menu-panel a[href="/' + locale + '/library"]');
+        await expect(libraryEntry).toHaveCount(1);
+        await visible(libraryEntry);
+        await expect(libraryEntry).toHaveText(locale === "ru" ? "Библиотека" : locale === "es" ? "Biblioteca" : "Library");
+        assert.equal(await libraryEntry.getAttribute("href"), "/" + locale + "/library", "Library opens the localized editorial hub");
+        const libraryBounds = await libraryEntry.boundingBox();
+        assert.ok(libraryBounds && libraryBounds.x >= 0 && libraryBounds.x + libraryBounds.width <= width + 1, "Library entry must fit the opened menu: " + locale + "/" + width);
+        await siteMenu.locator("summary.site-main-menu-trigger").click();
+        await expect(siteMenu).not.toHaveAttribute("open", "");
+      }
       await assertViewport(page, locale + "/services/" + width);
       if (width === 390 || width === 1188) {
         await page.screenshot({ path: output + "/services-" + locale + "-hero-" + width + ".png", fullPage: false });
