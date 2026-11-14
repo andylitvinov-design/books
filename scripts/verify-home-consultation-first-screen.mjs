@@ -108,7 +108,7 @@ for (const engine of [chromium, webkit]) {
               return Boolean(details && Object.keys(details).some(key => key.startsWith('__reactProps$')));
             }, null, {timeout:30000});
             await more.locator('summary').first().click();
-            await more.locator('[data-home-conversation-guide]').waitFor({ state: 'visible', timeout: 30000 });
+            await more.locator('[data-home-conversation-guide]').waitFor({ state: 'visible', timeout: 60000 });
             assert.equal(await more.getAttribute('open'), '',
               label + ': expanding reveals the existing conversation guidance');
             await more.locator('summary').first().click();

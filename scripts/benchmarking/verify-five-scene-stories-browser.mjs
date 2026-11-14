@@ -128,8 +128,41 @@ try{
  // from the actual in-card CTA, not a hidden legacy Audio / Create shortcut.
  const free=page.locator('[data-video-montage-pro-choice="free"]');
  await free.waitFor({state:'visible',timeout:20000});
- await free.click({timeout:30000});
- const captured=await readRealGuestVideo(page,{timeout:150000});
+ // Use a trusted native iPhone-style touch. Desktop click may not unlock
+ // the Safari video/audio decoder within the original user gesture.
+ await free.tap({timeout:30000});
+ const safeExportState=()=>page.evaluate(()=>{
+   const studio=document.querySelector('[data-mandala-free-video]');
+   const masters=[...document.querySelectorAll('[data-free-film-source]')];
+   return {
+     workspace:studio?.getAttribute('data-active-workspace')||null,
+     panel:studio?.getAttribute('data-montage-panel')||null,
+     sourceCount:masters.length,
+     sourceDecoded:masters.filter(v=>v instanceof HTMLVideoElement&&v.readyState>=2&&v.videoWidth>0&&!v.error).length,
+     sourceErrors:masters.filter(v=>v instanceof HTMLVideoElement&&Boolean(v.error)).length,
+     progressVisible:Boolean(document.querySelector('[data-video-effect-overlay],[data-video-effect-reopen]')),
+     renderResult:Boolean(document.querySelector('[data-mandala-video-preview]')),
+     createDisabled:Boolean(document.querySelector('[data-video-montage-pro-choice="free"]')?.disabled),
+   };
+ });
+ // A genuine accepted Create gesture enters existing renderer progress or
+ // yields a Ready media result. Fail early on a missing native event.
+ try{
+   await page.waitForFunction(()=>Boolean(
+     document.querySelector('[data-video-effect-overlay],[data-video-effect-reopen],[data-mandala-video-preview]')),
+     undefined,{timeout:20000});
+ }catch(error){
+   console.error('STORIES_FREE_NATIVE_TAP_NOT_STARTED '+JSON.stringify(await safeExportState()));
+   throw error;
+ }
+ let captured;
+ try{
+   captured=await readRealGuestVideo(page,{timeout:150000});
+ }catch(error){
+   // Never log the visitor's text, health data, media bytes, tokens or URL.
+   console.error('STORIES_FREE_RENDER_NOT_READY '+JSON.stringify(await safeExportState()));
+   throw error;
+ }
  assert.equal(captured.extension,'mp4','STORIES_FINAL_H264_MP4_REQUIRED');
  assert.ok(captured.bytes.length>100000,'STORIES_MP4_EMPTY');
  result.needsLoginForSave=captured.authGateVerified;

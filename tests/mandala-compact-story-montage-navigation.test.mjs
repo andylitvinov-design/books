@@ -138,5 +138,10 @@ test("physical WebKit Story quality tap commits fifth Montage without skipping m
  assert.match(browser,/STORY_MONTAGE_TRANSITION_STATE/);
  assert.match(browser,/HH_STORIES_FIVE_SHOT_WEBKIT_PASS/);
  assert.match(browser,/STORIES_H264_REQUIRED|STORIES_AAC_REQUIRED/);
+ assert.match(browser,/await free\.tap\(\{timeout:30000\}\)/);
+ assert.doesNotMatch(browser,/await free\.click\(/);
+ assert.match(browser,/STORIES_FREE_NATIVE_TAP_NOT_STARTED/);
+ assert.match(browser,/STORIES_FREE_RENDER_NOT_READY/);
+ assert.match(browser,/readRealGuestVideo\(page,\{timeout:150000\}\)/);
  assert.doesNotMatch(browser,/force:\s*true/);
 });
