@@ -56,6 +56,7 @@ jobs:
       claim_reason: ${{ steps.select.outputs.claim_reason }}
       code_available: ${{ steps.select.outputs.code_available }}
       code_provider: ${{ steps.select.outputs.code_provider }}
+      budgeted_available: ${{ steps.select.outputs.budgeted_available }}
       no_fix_finalized: ${{ steps.finalize_no_fix.outcome }}
       audit_only: ${{ steps.select.outputs.audit_only }}
       legacy_production_sha: ${{ steps.select.outputs.legacy_production_sha }}
@@ -70,6 +71,7 @@ jobs:
       - name: Check trusted repair worker syntax
         run: |
           node --check scripts/ci-pr-repair-worker.cjs
+          node --check scripts/ci-pr-repair-execution-evidence.cjs
           node --check scripts/ci-pr-runner-evidence.cjs
           node --check scripts/ci-pr-repair-test-scope.cjs
           node --check scripts/ci-pr-repair-deterministic.cjs
@@ -157,6 +159,10 @@ jobs:
               process.env.HH_HAS_FREE_OPENCODE_TOKEN==='true'?'opencode':'none';
             core.setOutput('code_provider',provider);
             core.setOutput('code_available',provider==='none'?'false':'true');
+            // An enabled credential is configuration, not a model invocation.
+            const budgeted=process.env.HH_BUDGETED_ALLOWED==='true'&&
+              process.env.HH_HAS_BUDGETED_TOKEN==='true';
+            core.setOutput('budgeted_available',String(budgeted));
             const {wakeAfterWorker}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-control-tower-wakeup.cjs');
             core.info('HH_REPAIR_COMPLETION_WAKE '+await wakeAfterWorker({github,context,kind:'repair',status:result.status,dryRun,log:core.warning}));
       # Fast terminal path: no untrusted source runs on this trusted runner.
@@ -618,6 +624,7 @@ jobs:
       issues: write
     outputs:
       candidate_status: ${{ steps.infer.outputs.candidate_status }}
+      model_audit: ${{ steps.infer.outputs.model_audit }}
     env:
       HH_PR_BUDGETED_CODER_ENABLED: ${{ vars.HH_PR_BUDGETED_CODER_ENABLED }}
       REPAIR_SHA: ${{ needs.claim.outputs.sha }}
@@ -647,6 +654,7 @@ jobs:
                 apiKey:process.env.HH_PR_CODER_OPENROUTER_API_KEY,
                 contextPath:'hh-paid-context/paid-repair-context.json'});
               core.setOutput('candidate_status',result.status);
+              if(result.audit)core.setOutput('model_audit',JSON.stringify(result.audit));
             } catch(error) {
               core.setOutput('candidate_status','blocked');
               core.warning('HH_BUDGETED_CODER_BLOCKED '+
@@ -1118,11 +1126,15 @@ jobs:
           HH_FIX_RESULT: ${{ needs.fix.result }}
           HH_REPAIR_STRATEGY: ${{ needs.claim.outputs.strategy }}
           HH_CODE_AVAILABLE: ${{ needs.claim.outputs.code_available }}
+          HH_CONFIGURED_PROVIDER: ${{ needs.claim.outputs.code_provider }}
+          HH_BUDGETED_AVAILABLE: ${{ needs.claim.outputs.budgeted_available }}
           HH_CODE_RESULT: ${{ needs.code_fix.result }}
           HH_CODE_STATUS: ${{ needs.code_fix.outputs.candidate_status }}
           HH_CODE_DETAIL: ${{ needs.code_fix.outputs.candidate_detail }}
           HH_MODEL_AUDIT: ${{ needs.code_fix.outputs.model_audit }}
           HH_PAID_STATUS: ${{ needs.paid_fix.outputs.candidate_status }}
+          HH_PAID_RESULT: ${{ needs.paid_fix.result }}
+          HH_PAID_MODEL_AUDIT: ${{ needs.paid_fix.outputs.model_audit }}
           HH_WORKFLOW_ATTEMPT: ${{ github.run_attempt }}
           HH_CODE_VERIFY_RESULT: ${{ needs.code_verify.result }}
           HH_CODE_VERIFY_STATUS: ${{ needs.code_verify.outputs.candidate_status }}
@@ -1151,11 +1163,15 @@ jobs:
               fixResult:process.env.HH_FIX_RESULT,
               strategy:process.env.HH_REPAIR_STRATEGY||'lint',
               codeAvailable:process.env.HH_CODE_AVAILABLE==='true',
+              configuredProvider:process.env.HH_CONFIGURED_PROVIDER,
+              budgetedAvailable:process.env.HH_BUDGETED_AVAILABLE==='true',
               codeResult:process.env.HH_CODE_RESULT,
               codeStatus:process.env.HH_CODE_STATUS,
               codeDetail:process.env.HH_CODE_DETAIL,
               modelAuditRaw:process.env.HH_MODEL_AUDIT,
               paidStatus:process.env.HH_PAID_STATUS,
+              paidResult:process.env.HH_PAID_RESULT,
+              paidModelAuditRaw:process.env.HH_PAID_MODEL_AUDIT,
               modelAuditRunAttempt:Number(process.env.HH_WORKFLOW_ATTEMPT||0),
               codeVerifyResult:process.env.HH_CODE_VERIFY_RESULT,
               codeVerifyStatus:process.env.HH_CODE_VERIFY_STATUS,
@@ -1260,11 +1276,15 @@ jobs:
           HH_FIX_RESULT: ${{ needs.fix.result }}
           HH_REPAIR_STRATEGY: ${{ needs.claim.outputs.strategy }}
           HH_CODE_AVAILABLE: ${{ needs.claim.outputs.code_available }}
+          HH_CONFIGURED_PROVIDER: ${{ needs.claim.outputs.code_provider }}
+          HH_BUDGETED_AVAILABLE: ${{ needs.claim.outputs.budgeted_available }}
           HH_CODE_RESULT: ${{ needs.code_fix.result }}
           HH_CODE_STATUS: ${{ needs.code_fix.outputs.candidate_status }}
           HH_CODE_DETAIL: ${{ needs.code_fix.outputs.candidate_detail }}
           HH_MODEL_AUDIT: ${{ needs.code_fix.outputs.model_audit }}
           HH_PAID_STATUS: ${{ needs.paid_fix.outputs.candidate_status }}
+          HH_PAID_RESULT: ${{ needs.paid_fix.result }}
+          HH_PAID_MODEL_AUDIT: ${{ needs.paid_fix.outputs.model_audit }}
           HH_WORKFLOW_ATTEMPT: ${{ github.run_attempt }}
           HH_CODE_VERIFY_RESULT: ${{ needs.code_verify.result }}
           HH_CODE_VERIFY_STATUS: ${{ needs.code_verify.outputs.candidate_status }}
@@ -1290,11 +1310,15 @@ jobs:
               fixResult:process.env.HH_FIX_RESULT,
               strategy:process.env.HH_REPAIR_STRATEGY||'lint',
               codeAvailable:process.env.HH_CODE_AVAILABLE==='true',
+              configuredProvider:process.env.HH_CONFIGURED_PROVIDER,
+              budgetedAvailable:process.env.HH_BUDGETED_AVAILABLE==='true',
               codeResult:process.env.HH_CODE_RESULT,
               codeStatus:process.env.HH_CODE_STATUS,
               codeDetail:process.env.HH_CODE_DETAIL,
               modelAuditRaw:process.env.HH_MODEL_AUDIT,
               paidStatus:process.env.HH_PAID_STATUS,
+              paidResult:process.env.HH_PAID_RESULT,
+              paidModelAuditRaw:process.env.HH_PAID_MODEL_AUDIT,
               modelAuditRunAttempt:Number(process.env.HH_WORKFLOW_ATTEMPT||0),
               codeVerifyResult:process.env.HH_CODE_VERIFY_RESULT,
               codeVerifyStatus:process.env.HH_CODE_VERIFY_STATUS,

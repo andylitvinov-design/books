@@ -18,6 +18,7 @@ const {pickQueueCandidates,priorityFor} = require('./ci-pr-priority.cjs');
 const {safeSourcePath: safeFreeSourcePath,assessCompleteFreeRepairScope}=require('./ci-pr-repair-free-agent.cjs');
 const {taskFor,commentBody,readCompleteIssueComments,externalOwnerLeaseStatus,parseRecords,trustedControlComment,reservationStatus}=require('./ci-pr-task-state.cjs');
 const {stageLine}=require('./ci-pr-stage-receipts.cjs');
+const {buildRepairExecutionEvidence}=require('./ci-pr-repair-execution-evidence.cjs');
 const {buildTaskOutcome}=require('./ci-pr-task-outcome.cjs');
 const {makeWorkerFollowUp}=require('./ci-pr-error-task.cjs');
 
@@ -687,12 +688,12 @@ function normalizeModelAudit(raw,{number,expectedSha,runId,runAttempt,taskKey}={
  v.source_head!==expectedSha||v.executor_type!=='free_ci_patch_proposer'||!['openrouter','opencode'].includes(v.provider)||
  (Number.isSafeInteger(Number(runId))&&Number(runId)>0&&String(v.run_id)!==String(runId))||
  (Number.isSafeInteger(Number(runAttempt))&&Number(runAttempt)>0&&v.run_attempt!==Number(runAttempt))||
- !Number.isInteger(v.attempt_count)||v.attempt_count<0||v.attempt_count>1||typeof v.started_at!=='string'||
+ !Number.isInteger(v.attempt_count)||v.attempt_count<0||v.attempt_count>2||typeof v.started_at!=='string'||
  !Number.isFinite(Date.parse(v.started_at))||typeof v.result!=='string'||!/^[A-Z0-9_]{3,60}$/.test(v.result))return null;
  const model=typeof v.model==='string'?v.model:null;
- if(model&&!(v.provider==='openrouter'?/^[A-Za-z0-9][A-Za-z0-9_.-]*\/[A-Za-z0-9][A-Za-z0-9_.-]*:free$/.test(model):
+ if(model&&!(v.provider==='openrouter'?(model==='openrouter/free'||/^[A-Za-z0-9][A-Za-z0-9_.-]*\/[A-Za-z0-9][A-Za-z0-9_.-]*:free$/.test(model)):
  /^opencode\/[A-Za-z0-9][A-Za-z0-9_.-]*-free$/.test(model)))return null;
- if(v.attempt_count===1&&(!model||typeof v.model_call_started_at!=='string'||!Number.isFinite(Date.parse(v.model_call_started_at))))return null;
+ if(v.attempt_count>=1&&(!model||typeof v.model_call_started_at!=='string'||!Number.isFinite(Date.parse(v.model_call_started_at))))return null;
  // Untrusted free-model job metadata is audit-only, never publication authority.
  // A forged, cross-task or partial prompt receipt is excluded fail-closed.
  const prompt=v.prompt_receipt;
@@ -709,13 +710,25 @@ function normalizeModelAudit(raw,{number,expectedSha,runId,runAttempt,taskKey}={
      typeof v.prompt_prepared_at!=='string'||
      !Number.isFinite(Date.parse(v.prompt_prepared_at))||
      !['PREPARED','ATTEMPTED_UNCONFIRMED','RESPONSE_OBSERVED'].includes(delivery)||
-     (delivery!=='PREPARED'&&v.attempt_count!==1)||
+     (delivery!=='PREPARED'&&![1,2].includes(v.attempt_count))||
      (delivery==='RESPONSE_OBSERVED'&&
        (!v.response_received_at||!Number.isFinite(Date.parse(v.response_received_at))))||
      (delivery==='PREPARED'&&v.attempt_count!==0))return null;
  }else if(delivery&&delivery!=='NOT_PREPARED')return null;
+ const providerModel=typeof v.provider_model==='string'?v.provider_model:null;
+ if(providerModel&&(v.provider!=='openrouter'||
+   !/^[A-Za-z0-9][A-Za-z0-9_.-]*[/][A-Za-z0-9][A-Za-z0-9_.-]*:free$/.test(providerModel)))return null;
+ const retry=v.retry_prompt_receipt;
+ if(v.attempt_count===2&&(v.provider!=='openrouter'||
+   v.retry_reason!=='TRUNCATED_EXACT_SOURCE_SINGLE_LINE'||!retry||
+   retry.schema!=='HH_PR_PROMPT_RECEIPT_V1'||
+   !/^[a-f0-9]{32}$/i.test(retry.prompt_id||'')||retry.task_key!==taskKey||
+   retry.template_version!=='HH_PR_FREE_REPAIR_PROMPT_V1'||
+   retry.ruleset_version!==require('./ci-pr-error-rules.v1.json').version||
+   !/^[a-f0-9]{64}$/i.test(retry.context_hash||'')||
+   !/^[a-f0-9]{64}$/i.test(retry.prompt_sha256||'')))return null;
  const failure=typeof v.failure_reason==='string'&&/^FREE_AI_[A-Z0-9_:-]{4,120}$/.test(v.failure_reason)?v.failure_reason:null;
- return {schema:v.schema,provider:v.provider,model,model_version:typeof v.model_version==='string'?v.model_version.slice(0,120):null,
+ return {schema:v.schema,provider:v.provider,model,provider_model:providerModel,model_version:typeof v.model_version==='string'?v.model_version.slice(0,120):null,
  catalog_model_created:Number.isSafeInteger(v.catalog_model_created)?v.catalog_model_created:null,executor_type:v.executor_type,
  pr_number:number,source_head:expectedSha,run_id:/^[0-9]{1,24}$/.test(String(v.run_id||''))?String(v.run_id):null,
  run_attempt:Number.isInteger(v.run_attempt)&&v.run_attempt>0?v.run_attempt:null,started_at:v.started_at,
@@ -728,17 +741,42 @@ function normalizeModelAudit(raw,{number,expectedSha,runId,runAttempt,taskKey}={
    ruleset_version:prompt.ruleset_version,context_hash:prompt.context_hash,
    prompt_sha256:prompt.prompt_sha256}:null,
  prompt_prepared_at:prompt?v.prompt_prepared_at:null,
+ retry_prompt_receipt:v.attempt_count===2?{prompt_id:retry.prompt_id,
+  task_key:retry.task_key,context_hash:retry.context_hash,prompt_sha256:retry.prompt_sha256}:null,
  prompt_delivery_status:prompt?delivery:'NOT_RECORDED',
  response_shape:v.provider==='openrouter'?
    normalizedOpenRouterResponseShape(v.response_shape):null};
 }
 
+function normalizeBudgetedModelAudit(raw,{number,expectedSha,runId,runAttempt,taskKey}={}){
+ let v=raw;
+ if(typeof raw==='string'){if(raw.length>2000)return null;try{v=JSON.parse(raw);}catch{return null;}}
+ if(!v||typeof v!=='object'||Array.isArray(v)||
+  v.schema!=='HH_PR_BUDGETED_MODEL_RUN_V1'||v.provider!=='openrouter_budgeted'||
+  v.model!=='qwen/qwen3-coder-next'||v.result!=='PATCH_PROPOSED'||
+  v.pr_number!==number||v.source_head!==expectedSha||v.task_key!==taskKey||
+  String(v.run_id)!==String(runId)||v.run_attempt!==Number(runAttempt)||
+  !Number.isSafeInteger(v.run_attempt)||v.run_attempt<1||
+  typeof v.cost_usd!=='number'||!Number.isFinite(v.cost_usd)||
+  v.cost_usd<0||v.cost_usd>0.02||
+  typeof v.model_call_started_at!=='string'||!Number.isFinite(Date.parse(v.model_call_started_at))||
+  typeof v.response_received_at!=='string'||!Number.isFinite(Date.parse(v.response_received_at))||
+  Date.parse(v.response_received_at)<Date.parse(v.model_call_started_at))return null;
+ return {schema:v.schema,provider:v.provider,model:v.model,result:v.result,
+  pr_number:number,source_head:expectedSha,task_key:taskKey,
+  run_id:String(v.run_id),run_attempt:v.run_attempt,cost_usd:v.cost_usd,
+  model_call_started_at:v.model_call_started_at,
+  response_received_at:v.response_received_at};
+}
+
 async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
   claimStatus='',claimReason='',claimResult='',fixResult='',strategy='lint',
-  codeAvailable=false,codeResult='',codeStatus='',codeDetail='',
+  codeAvailable=false,configuredProvider='',budgetedAvailable=false,
+  codeResult='',codeStatus='',codeDetail='',
   codeVerifyResult='',codeVerifyStatus='',codeVerifyDetail='',publishResult='',
   publishStatus='',publishSha='',candidateStatus='',candidateDetail='',
-  candidateSnapshot='',modelAuditRaw='',modelAuditRunAttempt=0,paidStatus='',dryRun=false}) {
+  candidateSnapshot='',modelAuditRaw='',modelAuditRunAttempt=0,
+  paidStatus='',paidResult='skipped',paidModelAuditRaw='',dryRun=false}) {
   const {owner,repo}=context.repo || {},fullRepo=owner+'/'+repo;
   const skip=reason=>{core.info('HH_REPAIR_OUTCOME SKIP '+reason);return {status:'skipped',reason};};
   if(dryRun || fullRepo!=='andylitvinov-design/books')return skip('AUDIT_OR_FOREIGN_REPO');
@@ -850,7 +888,7 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
     }else core.warning('HH_REPAIR_RETRY_PROOF_MISSING '+
       (claimed?'SOURCE_CLAIM_PRESENT':'RESERVATION_NOT_VERIFIED'));
   }
-  let failedStep=null,repairStartedAt=null,patchVerifiedAt=null;
+  let failedStep=null,repairStartedAt=null,patchVerifiedAt=null,codeJobStartedAt=null,paidJobStartedAt=null;
   // Proof is the actual fix-step start time from this trusted workflow run,
   // not dispatcher reservation, task claim, or later finalizer execution.
   if(Number.isSafeInteger(context.runId)&&
@@ -869,6 +907,17 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
       }
       if(claimStatus==='claimed'){
         const runAttempt=Number(process.env.GITHUB_RUN_ATTEMPT||'0');
+        for(const [jobName,target] of [['code_fix','free'],['paid_fix','paid']]){
+          const job=Number.isSafeInteger(runAttempt)&&runAttempt>0?jobs.find(j=>
+            j.name===jobName&&
+            (j.run_attempt===runAttempt||(runAttempt===1&&j.run_attempt==null))&&
+            ['completed','in_progress'].includes(j.status)&&
+            typeof j.started_at==='string'&&Number.isFinite(Date.parse(j.started_at))):null;
+          if(job&&Date.parse(job.started_at)<=Date.now()+60000){
+            if(target==='free')codeJobStartedAt=new Date(job.started_at).toISOString();
+            else paidJobStartedAt=new Date(job.started_at).toISOString();
+          }
+        }
         const fix=Number.isSafeInteger(runAttempt)&&runAttempt>0?jobs.find(j=>
           j.name==='fix'&&j.run_attempt===runAttempt&&Array.isArray(j.steps)):null;
         const step=fix?.steps.find(x=>
@@ -930,6 +979,15 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
    verification_result:codeVerifyStatus==='ready'&&codeVerifyResult==='success'?'PASSED':
     codeVerifyStatus==='manual_required'?'REJECTED':codeVerifyStatus||'NOT_RUN',
    published_commit_sha:sourcePublished?newSha:null}:null;
+  const paidModelRun=normalizeBudgetedModelAudit(paidModelAuditRaw,{number,expectedSha,
+    runId:context.runId,runAttempt:modelAuditRunAttempt,taskKey});
+  const repairKind=publishStatus==='committed'&&candidateStatus!=='ready'?
+    (paidStatus==='proposed'?'budgeted_ai':'free_ai'):
+    publishStatus==='committed'?'lint':null;
+  const execution=buildRepairExecutionEvidence({claimStatus,configuredProvider,
+    codeAvailable,budgetedAvailable,codeResult,codeStatus,codeJobStartedAt,modelRun,
+    paidResult,paidStatus,paidJobStartedAt,paidModelRun,
+    codeVerifyResult,codeVerifyStatus,sourcePublished,publishedSha:newSha,repairKind});
   const claimedLegacy=comments.some(c=>trustedControlComment(c)&&
     parseRecords([c])?.some(r=>r.lane==='legacy'&&r.state==='CLAIMED'&&
       r.task_key===taskKey&&r.pr_number===number&&r.head_sha===expectedSha&&
@@ -944,12 +1002,12 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
     legacy_snapshot_summary:state==='PREPARED'&&strategy==='legacy'&&
       detailCode==='SHALLOW_ANCESTRY_UNAVAILABLE'?
       parseLegacySnapshotSummary(candidateSnapshot):null,
-    repair_kind:publishStatus==='committed'&&candidateStatus!=='ready'?
-      (paidStatus==='proposed'?'budgeted_ai':'free_ai'):
-      publishStatus==='committed'?'lint':null,
-    code_agent_configured:codeAvailable||paidStatus==='proposed',
-    code_provider:modelRun?.provider||(paidStatus==='proposed'?'openrouter_budgeted':null),
-    code_model:modelRun?.model||(paidStatus==='proposed'?'qwen/qwen3-coder-next':null),
+    repair_kind:repairKind,
+    code_agent_configured:codeAvailable||budgetedAvailable,
+    code_provider_configured:execution.configured_provider,
+    budgeted_provider_configured:execution.budgeted_provider_configured,
+    code_provider:execution.actual_provider,code_model:execution.actual_model,
+    ai_execution:execution,paid_model_run:paidModelRun,
     code_model_version:modelRun?.model_version||null,
     model_run:modelRun,code_job_result:codeResult||'skipped',
     code_candidate_status:paidStatus==='proposed'?'proposed':codeStatus||'skipped',
@@ -1020,6 +1078,16 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
     core?.warning?.('HH_REPAIR_LEARNING_UNAVAILABLE '+
       String(error?.message||'unknown').slice(0,80));
   }
+  const executorStage=execution.executor_started_at&&
+    Number.isSafeInteger(context.runId)&&context.runId>0?
+    stageLine({stage:'code_executor_started',pr_number:number,head_sha:expectedSha,
+      run_id:context.runId,task_key:taskKey,at:execution.executor_started_at,
+      source:'github_actions_ai_job'}):'';
+  const responseStage=execution.model_response_confirmed&&
+    Number.isSafeInteger(context.runId)&&context.runId>0?
+    stageLine({stage:'model_response_observed',pr_number:number,head_sha:expectedSha,
+      run_id:context.runId,task_key:taskKey,at:execution.model_response_at,
+      source:'verified_model_response'}):'';
   const repairStage=repairStartedAt&&claimStatus==='claimed'?
     stageLine({stage:'repair_started',pr_number:number,head_sha:expectedSha,
       run_id:context.runId,task_key:taskKey,at:repairStartedAt,
@@ -1030,7 +1098,9 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
       run_id:context.runId,task_key:taskKey,at:patchVerifiedAt,
       source:'github_actions_patch_verification_step'}):'';
   await github.rest.issues.createComment({owner,repo,issue_number:number,
-    body:marker+'\n'+commentBody(result)+(repairStage?'\n'+repairStage:'')+
+    body:marker+'\n'+commentBody(result)+(executorStage?'\n'+executorStage:'')+
+      (responseStage?'\n'+responseStage:'')+
+      (repairStage?'\n'+repairStage:'')+
       (verifiedPatchStage?'\n'+verifiedPatchStage:'')});
   // No destructive operation, source overwrite, force push or CI bypass.
   // An attempted failed source fix needs a coding agent; retire its queue
@@ -1070,4 +1140,4 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
   return result;
 }
 
-module.exports={claim,publish,finalize,sourceDeliveryStatus,finalizeFailedFix,prioritizedRepairCandidates,currentRepairHead,eligible,legacyPrepEligible,trustedLegacySourceRetry,validBranch,safeFiles,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,verifiedCoreCodeFailure,claimedRepairMissingSourceProof,parseLegacySnapshotSummary,normalizeModelAudit,PROD,SOURCE,CONFLICT,MARKER};
+module.exports={claim,publish,finalize,sourceDeliveryStatus,finalizeFailedFix,prioritizedRepairCandidates,currentRepairHead,eligible,legacyPrepEligible,trustedLegacySourceRetry,validBranch,safeFiles,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,verifiedCoreCodeFailure,claimedRepairMissingSourceProof,parseLegacySnapshotSummary,normalizeModelAudit,normalizeBudgetedModelAudit,PROD,SOURCE,CONFLICT,MARKER};

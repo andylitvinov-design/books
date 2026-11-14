@@ -677,7 +677,7 @@ async function verifyFreeModelPrice({fetchImpl=global.fetch,model=MODEL,timeoutM
 
 async function propose(){
  const provider=String(process.env.HH_OPENROUTER_FREE_API_KEY||'').trim()?'openrouter':'opencode';
- const audit={schema:'HH_FREE_AI_MODEL_RUN_V1',provider,model:null,model_version:null,catalog_model_created:null,
+ const audit={schema:'HH_FREE_AI_MODEL_RUN_V1',provider,model:null,provider_model:null,model_version:null,catalog_model_created:null,
   executor_type:'free_ci_patch_proposer',pr_number:Number(process.env.REPAIR_PR)||null,
   source_head:String(process.env.REPAIR_SHA||''),run_id:String(process.env.GITHUB_RUN_ID||''),
   run_attempt:Number(process.env.GITHUB_RUN_ATTEMPT||0)||null,started_at:new Date().toISOString(),
@@ -708,9 +708,13 @@ async function propose(){
     prompt:nextPrompt,key,model:process.env.HH_OPENROUTER_FREE_MODEL||'auto',role:'repair',
     onVerifiedModel:r=>{modelUsed=r.model;audit.provider='openrouter';audit.model=r.model;
      audit.model_version=r.model_version||null;audit.catalog_model_created=r.catalog_created||null;
-     audit.model_call_started_at=new Date().toISOString();audit.attempt_count=retry?2:1;
+     audit.model_call_started_at=new Date().toISOString();audit.response_received_at=null;
+     audit.provider_model=null;audit.response_shape=null;audit.attempt_count=retry?2:1;
      audit.prompt_delivery_status='ATTEMPTED_UNCONFIRMED';audit.result='MODEL_CALL_STARTED';persist();},
-    onResponseShape:shape=>{audit.response_shape=shape;persist();}});
+    onResponseShape:shape=>{audit.response_shape=shape;persist();},
+    onVerifiedResponse:proof=>{audit.provider_model=proof.model;
+     audit.response_received_at=new Date().toISOString();
+     audit.prompt_delivery_status='RESPONSE_OBSERVED';audit.result='MODEL_RESPONSE_RECEIVED';persist();}});
    try{reply=await invoke(prompt);}
    catch(error){
     const focused=error?.message==='FREE_AI_OPENROUTER_PATCH_RESPONSE_TRUNCATED'&&
