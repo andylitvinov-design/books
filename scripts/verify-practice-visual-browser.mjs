@@ -33,7 +33,8 @@ const measure=page=>page.evaluate(()=>{
   }
   const el=selector=>root?.querySelector(selector)
   const all=selector=>[...root.querySelectorAll(selector)].map(rect)
-  const video=el('[data-work-video-hero] video')
+  const scenic=el('[data-work-video-hero] video')
+  const video=el('[data-work-video-hero] .site-video-frame') || scenic
   // The unified seven-item dock is the only visible navigation on public Work.
   // The legacy five-item Practice nav remains in the DOM but is hidden by the shell.
   const bottom=document.querySelector('[data-hh-unified-dock]')
@@ -48,8 +49,8 @@ const measure=page=>page.evaluate(()=>{
     tabRects:all('[data-work-profile-tab]'),
     hero:rect(el('[data-work-video-hero]')),
     video:rect(video),
-    videoPoster:video?.getAttribute('poster'),
-    videoObjectFit:video?getComputedStyle(video).objectFit:null,
+    videoPoster:scenic?.getAttribute('poster'),
+    videoObjectFit:scenic?getComputedStyle(scenic).objectFit:null,
     actions:rect(el('[data-work-profile-quick-actions]')),
     actionRects:all('[data-work-quick-action]'),
     identity:rect(el('[class*="identity"]')),
@@ -143,12 +144,30 @@ for(const browserType of [chromium,webkit]){
             label+' visible sitewide seven-button dock')
           assert.equal(await unifiedDock.locator('[data-unified-dock-item="profile"]').getAttribute('aria-current'),
             'page',label+' Profile selected on public Work')
-          const video=root.locator('[data-work-video-hero] video')
-          assert.equal(await video.count(),1,label+' actual accessible scenic film')
-          assert.match(await video.locator('source').getAttribute('src'),/sun-autumn-hills\.mp4/,
-            label+' exact shared Live film')
-          assert.match(g.videoPoster||'',/sun-autumn-hills\.jpg/,label+' real film poster')
-          assert.equal(g.videoObjectFit,'cover',label+' shared visual crop')
+          const localeNav=root.locator('[data-practice-workspace-heading] [data-profile-language-switch]')
+          assert.equal(await localeNav.locator('a').count(),2,label+' RU/EN switch')
+          for(const language of ['ru','en'])
+            assert.equal(await localeNav.locator('a[lang="'+language+'"]').getAttribute('href'),
+              '/'+language+'/practice',label+' Work language route')
+          const presentation=root.locator('[data-work-video-hero] [data-profile-presentation-locale]')
+          if(locale==='ru'||locale==='en'){
+            assert.equal(await presentation.count(),1,label+' localized presentation player')
+            assert.equal(await presentation.getAttribute('data-profile-presentation-source'),
+              locale==='ru'?'youtube':'heygen',label+' verified media source')
+            assert.equal(await presentation.locator('.site-video-frame').count(),1,label+' video frame')
+            assert.equal(await presentation.locator('button.site-video-play').count(),1,
+              label+' publicly playable presentation poster')
+            assert.equal(await root.locator('[data-work-video-hero] video').count(),0,
+              label+' RU/EN must not use scenic placeholder')
+          }else{
+            assert.equal(await presentation.count(),0,label+' no invented ES presentation')
+            const scenic=root.locator('[data-work-video-hero] video')
+            assert.equal(await scenic.count(),1,label+' ES scenic fallback')
+            assert.match(await scenic.locator('source').getAttribute('src'),/sun-autumn-hills\.mp4/,
+              label+' source-backed scenic fallback')
+            assert.match(g.videoPoster||'',/sun-autumn-hills\.jpg/,label+' real poster')
+            assert.equal(g.videoObjectFit,'cover',label+' scenic crop')
+          }
           for(const key of ['header','switch','tabs','hero','video','actions','identity','grid','offers','dock'])
             assert.ok(g[key]&&g[key].width>0,label+' missing region '+key+': '+JSON.stringify(g))
           assert.ok(g.header.bottom<=g.tabs.y+3&&g.tabs.bottom<=g.hero.y+3,
@@ -161,7 +180,9 @@ for(const browserType of [chromium,webkit]){
             label+' My Page appears below the video controls, INSIDE the profile card')
           assert.ok(g.identity.bottom<=g.grid.y+3&&g.grid.bottom<=g.offers.y+3,
             label+' profile → six service-creation tiles → offers')
-          assert.ok(g.hero.height>150&&g.hero.height<330,label+' same mobile video proportions')
+          const maxHeroHeight=locale==='es'?330:370
+          assert.ok(g.hero.height>150&&g.hero.height<maxHeroHeight,
+            label+' compact mobile video proportions, including accessible presentation controls')
           assert.ok(g.documentWidth<=g.viewport+3,label+' unexpected horizontal overflow: '+JSON.stringify(g))
           for(const [name,rects] of [
             ['tabs',g.tabRects],['quick',g.actionRects],['tiles',g.tileRects],['offers',g.offerRects]
@@ -193,6 +214,15 @@ for(const browserType of [chromium,webkit]){
             await dialog.waitFor({state:'visible',timeout:5000})
             await page.keyboard.press('Escape')
             await dialog.waitFor({state:'hidden',timeout:5000})
+            if(locale==='ru'||locale==='en'){
+              const targetLanguage=locale==='ru'?'en':'ru'
+              await root.locator('[data-profile-language-switch] a[lang="'+targetLanguage+'"]').click()
+              await page.waitForURL(url=>url.pathname==='/'+targetLanguage+'/practice',{timeout:35000})
+              assert.equal(await page.locator('[data-practice-showcase] [role="dialog"]:visible').count(),0,
+                label+' guest language choice must not open authentication')
+              await page.locator('[data-work-video-hero] [data-profile-presentation-locale="'+targetLanguage+'"]')
+                .waitFor({state:'visible',timeout:15000})
+            }
           }
           assert.deepEqual(errors,[],label+' no browser runtime exceptions')
           report.push({label,ok:true,geometry:g,fixture:'synthetic, no real OAuth or provider'})

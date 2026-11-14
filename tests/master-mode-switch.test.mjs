@@ -81,7 +81,14 @@ test("Live / Work is a reversible profile-header switch to real service publishi
   assert.match(profile, /data-profile-my-page/);
   assert.doesNotMatch(profile, /className=\{styles\.settings\}/);
   assert.match(workIntro, /<ProfileModeSwitch locale=\{locale\} active="work" \/>/);
-  assert.doesNotMatch(workIntro, /data-work-my-page|myPageLink|profileHeadingActions/);
+  assert.doesNotMatch(workIntro, /data-work-my-page|myPageLink/);
+  assert.match(workIntro, /className=\{styles\.profileHeadingActions\}/);
+  assert.match(workIntro, /data-profile-language-switch/);
+  assert.match(workIntro, /href=\{'\/' \+ language \+ '\/practice'\}/);
+  assert.match(practice, /target\.closest\('\[data-profile-language-switch\]'\)/);
+  assert.match(workIntro, /profilePresentationForLocale\(locale\)/);
+  assert.match(workIntro, /<SiteVideoPlayer key=\{locale\} video=\{presentation\} locale=\{locale\}/);
+  assert.match(workIntro, /data-profile-presentation-source=\{presentation\.youtubeId/);
   assert.match(practice, /data-work-profile-actions/);
   assert.match(practice, /className=\{styles\.myPageAction\} data-work-my-page/);
   assert.match(practice, /href=\{'\/' \+ locale \+ '\/my-page'\}/);

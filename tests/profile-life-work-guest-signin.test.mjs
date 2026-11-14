@@ -33,6 +33,7 @@ test('guest Work action buttons and links require sign-in; Telegram is OIDC-gate
  assert.match(work,/onClickCapture=\{interceptGuestWorkLink\}/)
  assert.match(work,/if \(\['home','masters','community'\]\.includes\(key\)\) \{\s*if \(!signedIn\)/)
  assert.match(work,/target\.closest\('\[data-profile-mode-switch\]'\)/)
+ assert.match(work,/target\.closest\('\[data-profile-language-switch\]'\)/)
  assert.match(work,/setPendingAction\('profile'\)/)
  assert.match(work,/onClick=\{\(\) => void confirmTelegramSignIn\(\)\}/)
  assert.match(work,/disabled=\{Boolean\(busy\) \|\| !telegramAvailable\}/)
