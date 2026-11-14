@@ -8,6 +8,8 @@ export type WaveNativeReply = Readonly<{
   source:typeof WAVE_NATIVE_ROUTER_VERSION;
   modelUsed:false;
   externalCalled:false;
+  phase?:'clarify'|'propose'|'try'|'checkin'|'alternate'|'pause'|'reflect'|'complete'|'reframe';
+  situationCode?:string|null;
 }>;
 export declare function waveNativeTurn(input?:{
   message?:string;
