@@ -6,6 +6,7 @@ import styles from './my-coach-speech-loop.module.css'
 import {appendSpokenAnswer} from '@/lib/personal-coaching/speech-text.js'
 import {chooseDictationLanguage,readDictationResults,detectedSpeechLocale,ios27NeedsSpeechRecovery} from '@/lib/personal-coaching/my-coach-dictation.mjs'
 import {startCoachingMp3Playback} from '@/lib/personal-coaching/streamed-mp3-playback.mjs'
+import {coachSpokenText} from '@/lib/coaching/coach-spoken-text.mjs'
 
 const speechLanguages={en:'en-GB',ru:'ru-RU',es:'es-ES'}
 const recordingWords={
@@ -441,10 +442,9 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     transcriptRef.current?.('')
     changePhase('loading') // Reply is ready; synthesis is pending, not model thinking.
     const reply=String(result.reply).slice(0,900)
-    // Speak the final focused question rather than forwarding long personal reflections.
-    const questions=reply.match(/[^.!?\n]+[?？]/gu)||[]
-    const speakable=(questions.slice().reverse().find(item=>item.trim().length<=500)||
-      reply.slice(0,500)).trim()
+    // An audible reply must include the answer/acknowledgement, not only its last question.
+    // The Google excerpt only applies to its separately-consented 500-char path.
+    const speakable=coachSpokenText(reply).text
     const replyLocale=detectedSpeechLocale(reply,detectedSpeechLocale(text,lang))
     const live=()=>activeRef.current&&generationRef.current===generation
     const afterSpeech=()=>{
@@ -468,7 +468,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       if(!live())return
       const synth=window.speechSynthesis,Utterance=window.SpeechSynthesisUtterance
       if(!synth?.speak||!Utterance){showTextOnly();return}
-      const utterance=new Utterance(speakable||reply)
+      const utterance=new Utterance(reply)
       utterance.lang=speechLanguages[replyLocale]||speechLanguages[lang]
       utterance.rate=wizardVoice?0.93:0.97
       utterance.pitch=wizardVoice?1.08:1
