@@ -50,3 +50,25 @@ test('iOS 27 Safari recovery targets only affected WebKit and preserves RU/EN co
    assert.ok(sourceCode.includes(part),part)
  assert.doesNotMatch(sourceCode,/MediaRecorder|sendBeacon|localStorage|sessionStorage/)
 })
+
+
+test('iOS 27 repeat-turn recovery always primes every following recognition, including after Fish playback',()=>{
+ const code=source('components/my-coach-speech-loop.jsx')
+ const start=code.slice(code.indexOf('function startListening(){'),code.indexOf('async function deliver(text){'))
+ assert.match(start,/if\(ios27&&hasRecognizedRef\.current&&/,'cue required for every iOS 27 subsequent session')
+ assert.doesNotMatch(start,/!cueAlreadyPlayed/,'prior TTS cannot skip the next cue')
+ assert.match(start,/cue\.onend=finishCue/)
+ assert.match(start,/recognition\.continuous=false/)
+ assert.match(start,/if\(!ios27\)try\{recognition\.stop\(\)\}catch\{\}/)
+ assert.match(start,/if\(recovered\.length>=3\)\{[\s\S]*?void deliver\(appendSpokenAnswer\(draftAtStartRef\.current,recovered,1200\)\)/)
+ assert.match(start,/changePhase\('stalled'\)/)
+ assert.match(code,/if\(phaseRef\.current==='stalled'\)\{/)
+ assert.match(code,/retryMic\?t\.retryMic:ready\?t\.tapToHear:active\?t\.stop:t\.start/)
+ assert.match(code,/iosResultTimerRef\.current=setTimeout/)
+ assert.doesNotMatch(code,/new MediaRecorder|new WebSocket|localStorage|sessionStorage/)
+ for(const phrase of ['Как ты себя чувствуешь','Мне спокойнее','Я хочу продолжить разговор']){
+   const result=readDictationResults([{isFinal:false,0:{transcript:phrase}}])
+   assert.equal(result.visible,phrase)
+   assert.equal(appendSpokenAnswer('',result.visible,1200),phrase)
+ }
+})

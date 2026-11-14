@@ -362,3 +362,13 @@
 }
 @media(max-width:345px){.coachKind,.coachKindActive{font-size:10px;gap:3px}.coachKind svg,.coachKindActive svg{width:13px;height:13px}}
 @media(prefers-reduced-motion:reduce){.coachKind,.coachKindActive{transition:none}}
+
+/* Approved real specialist video + human dialogue page, separate from fictional AI sessions. */
+.humanSessionLink{display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  min-height:44px;max-width:100%;margin-top:8px;padding:9px 13px;
+  border:1px solid #0d7b5d;border-radius:999px;background:#e9f6ee;
+  color:#096448;font:750 13px/1.3 system-ui;text-align:center;text-decoration:none}
+.humanSessionLink svg{flex:none}
+.humanSessionLink:hover{background:#d5eee1}
+.humanSessionLink:focus-visible{outline:3px solid #176e6e;outline-offset:3px}
+@media(max-width:540px){.humanSessionLink{font-size:12px;min-height:44px;width:100%;box-sizing:border-box}}
