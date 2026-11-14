@@ -366,7 +366,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         </div>
         <div className={styles.transcriptFeed} ref={transcriptRef} role="log" aria-live="polite" aria-relevant="additions">
           {!turns.length&&<div className={styles.transcriptCoach}><strong>{name}</strong><p>{opening}</p></div>}
-          {turns.slice(-6).map((turn,index)=><div key={turns.length-6+index}
+          {turns.map((turn,index)=><div key={index}
             className={turn.role==='user'?styles.transcriptUser:styles.transcriptCoach}>
             <strong>{turn.role==='user'?t.user:name}</strong><p>{turn.content}</p>
           </div>)}

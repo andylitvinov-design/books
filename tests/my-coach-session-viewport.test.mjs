@@ -12,6 +12,8 @@ test('approved mobile session flows from larger portrait to real mic and exactly
  assert.equal((ui.match(/className=\{styles\.liveTranscript\}/g)||[]).length,1)
  assert.equal((ui.match(/className=\{styles\.conversationPanel\}/g)||[]).length,1)
  assert.equal((ui.match(/className=\{styles\.voiceControls\}/g)||[]).length,1)
+ assert.match(ui,/turns\.map\(\(turn,index\)=>/)
+ assert.doesNotMatch(ui,/turns\.slice\(-6\)/)
  assert.doesNotMatch(ui,/className=\{styles\.(?:currentCoachPrompt|conversationHistory)\}/)
  const hero=ui.indexOf('className={styles.sessionHero}')
  const mic=ui.indexOf('className={styles.voiceControls}')
