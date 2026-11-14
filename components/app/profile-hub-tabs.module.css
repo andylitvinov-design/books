@@ -92,3 +92,20 @@
 .myPageLink{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:8px 10px;background:#eaf7f1;border:1px solid #cbe4d5;border-radius:13px;color:#075d4d;text-decoration:none;font-size:12px;font-weight:750;white-space:nowrap}
 .myPageLink:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
 @media(max-width:430px){.profileHeadingActions{flex:0 1 auto;gap:4px}.myPageLink{padding:7px 8px;font-size:11px}}
+
+/* My Space's locale control sits unobtrusively above the existing Live / Work switch. */
+.profileHeadingActions{flex-direction:column;align-items:flex-end;justify-content:center;gap:6px}
+.languageSwitch{display:inline-flex;align-items:center;gap:2px;padding:2px;background:#f5faf7;border:1px solid #d2e6dd;border-radius:14px}
+.languageSwitch a{display:grid;place-items:center;min-height:40px;min-width:40px;padding:0 7px;border-radius:11px;color:#14523f;text-decoration:none;font:750 12px/1 system-ui,sans-serif}
+.languageSwitch a[aria-current=page]{background:#067a67;color:#fff}
+.languageSwitch a:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+.profileSecondaryAction{display:flex;justify-content:flex-end;padding:3px 2px 0}
+.profileSecondaryAction .myPageLink{min-height:40px;padding:7px 11px}
+.hub .videoFrame :global(.site-video-player){width:100%;margin:0;border:0;border-radius:15px;background:transparent;box-shadow:none}
+.hub .videoFrame :global(.site-video-frame){aspect-ratio:2/1;overflow:hidden;border-radius:15px}
+.hub .videoFrame :global(.site-video-play){background:#17334b url("/videos/holistic-house/film-collection-v3/sun-autumn-hills.jpg") center/cover no-repeat}
+.hub .videoFrame :global(.site-video-play-icon){background:#fffcf7;color:#067a67;border-color:#fff}
+.hub .videoFrame :global(.site-video-caption){padding:0 6px;min-height:0}
+.hub .videoFrame :global(.site-video-watch-link){color:#14523f}
+@media(max-width:430px){.hub .heading>.profileHeadingActions{flex:0 0 auto;margin-left:auto;min-width:0}}
+@media(min-width:768px){.hub .videoFrame :global(.site-video-frame){aspect-ratio:16/9}}
