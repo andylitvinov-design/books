@@ -200,7 +200,7 @@ test('selected persona opens immersive My Coach session with real avatar, stages
   assert.ok(discovery.includes('useState(Boolean(selectedPersona))'))
   assert.ok(page.includes('{!personaSelection&&<div className={styles.header}'))
   for(const token of ['data-my-coach-immersive-session','sessionHero','sessionPortrait','sessionAvatar',
-    'CoachingAvatar locale={lang}','sessionProgressSegments','currentCoachPrompt','quickGoalCard',
+    'CoachingAvatar locale={lang}','sessionProgressSegments','conversationPanel','quickGoalCard',
     'sessionBottomNav','goalRow','onVoiceStateChange={setVoiceState}']) assert.ok(ui.includes(token),token)
   for(const token of ['stageKeys.indexOf(currentStage)','onClick={replayCoachReply}',
     'onClick={()=>chooseTopic(id)}','composerRef.current?.focus()',
@@ -239,7 +239,7 @@ test('My Coach speech is visible as text while recording and safely remains edit
 test('approved live-session visual hierarchy keeps a real voice pipeline, readable transcript and functional mobile controls',()=>{
   const ui=source('components/my-coach-live-dialogue.jsx')
   const css=source('components/my-coach-live-dialogue.module.css')
-  for(const token of ['data-session-visual-v2','className={styles.heroSubtitle}',
+  for(const token of ['data-session-visual-v2','data-session-visual-v3','className={styles.heroSubtitle}',
     'showCaptions&&','className={styles.captionsControl}','setShowCaptions(value=>!value)',
     'className={styles.endControl}','className={styles.liveTranscript}','className={styles.voiceControls}',
     'className={styles.textComposer} open','<details className={styles.quickGoals}>',
