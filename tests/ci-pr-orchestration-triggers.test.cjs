@@ -460,3 +460,38 @@ test('bounded AutoMerge/Dispatcher/API workers use slim without changing their f
   assert.match(repair,/^    runs-on: ubuntu-24\.04$/m,'source repair remains full Ubuntu');
   assert.doesNotMatch(native,/continue-on-error:\s*true/);
 });
+
+// Trusted control jobs, not the Code Fix/Verify/Publisher or OIDC inbox,
+// may use the same existing one-vCPU runner as the deployed CI Worker.
+test('Four short failure/repair control jobs use slim with every safety gate retained',()=>{
+  const cases=[
+    ['hh-pr-direct-core-failure',[['direct-core-failure',10],['core-slot-wakeup',3]]],
+    ['hh-pr-repair-worker',[['claim',5],['finalize',7]]],
+  ];
+  for(const [workflow,jobs] of cases){
+    const source=read(workflow);
+    for(const [job,minutes] of jobs){
+      const section=source.split('  '+job+':\n')[1]?.split(/\n  [a-z_][a-z0-9_-]*:\n/)[0];
+      assert.ok(section,workflow+'/'+job+' job is present');
+      assert.match(section,/^    runs-on: ubuntu-slim$/m,'runner regression '+workflow+'/'+job);
+      assert.match(section,new RegExp('^    timeout-minutes: '+minutes+'$','m'));
+      assert.ok(minutes<15,'slim maximum is respected');
+      assert.match(section,/actions\/github-script@v7/);
+      assert.doesNotMatch(section,/npm ci|npm run build|playwright|ffmpeg|docker|apt-get|sudo/i);
+    }
+  }
+  const repair=read('hh-pr-repair-worker');
+  for(const job of ['fix','code_fix','code_verify','publish']){
+    const section=repair.split('  '+job+':\n')[1]?.split(/\n  [a-z_][a-z0-9_-]*:\n/)[0];
+    assert.ok(section,job+' source jobs are still present');
+    assert.match(section,/^    runs-on: ubuntu-24\.04$/m,
+      'source writing, build verification and publishing stay on full Ubuntu');
+  }
+  const direct=read('hh-pr-direct-core-failure');
+  const intake=direct.split('  ci_event_intake:\n')[1]?.split(/\n  [a-z_][a-z0-9_-]*:\n/)[0];
+  assert.match(intake,/^    runs-on: ubuntu-24\.04$/m,'OIDC intake stays on original runner');
+  assert.match(direct,/github.event.workflow_run.conclusion == 'failure'/);
+  assert.match(direct,/recoverBaseAdvanced/,'exact-HEAD BASE recovery remains guarded');
+  assert.match(repair,/HH_AUTOMERGE_TOKEN/);
+  assert.doesNotMatch(direct,/continue-on-error:\s*true/);
+});
