@@ -3,7 +3,7 @@ const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const {
  isTrustedFailure,validatedJobEvidence,isActualBaseAdvancedLog,
- isVerifiedAdvance,ownerProtectedUpdate,recoverBaseAdvanced
+ isVerifiedAdvance,classifyRecentBaseSyncs,ownerProtectedUpdate,recoverBaseAdvanced
 }=require('../scripts/ci-pr-base-advanced-recovery.cjs');
 const HEAD='a'.repeat(40),OLD='b'.repeat(40),LIVE='c'.repeat(40);
 const REPO='andylitvinov-design/books';
@@ -32,7 +32,7 @@ function world(options={}){
  const pr={number:3510,state:'open',draft:false,mergeable:true,mergeable_state:'clean',
   base:{ref:'codex/public-book-library',sha:LIVE},
   head:{ref:'fix/sensitive-crm',sha:HEAD,repo:{full_name:REPO}},
-  labels:[],body:'Existing customer PR body',...options.pr};
+  labels:[],body:'Existing customer PR body',commits:1,...options.pr};
  let updates=0,reads=0;
  const github={
   rest:{
@@ -42,7 +42,10 @@ function world(options={}){
      ...options.run}};},
     listJobsForWorkflowRun:async()=>({data:{total_count:jobs.length,jobs:options.jobs||jobs}})
    },
-   pulls:{get:async()=>({data:(reads++,options.prAfter&&reads>=2?options.prAfter:pr)})},
+   pulls:{
+    get:async()=>({data:(reads++,options.prAfter&&reads>=2?options.prAfter:pr)}),
+    listCommits:async()=>({data:options.commitList??[]})
+   },
    repos:{
     getBranch:async()=>({data:{protected:true,commit:{sha:LIVE},...options.branch}}),
     getCommit:async()=>({data:options.mergeCommit||{sha:'f'.repeat(40),parents:[]}}),
@@ -268,4 +271,58 @@ test('owner mutation helper rejects incomplete identity without attempting prote
   fetcher:async()=>({ok:false,status:403,json:async()=>({})})
  });
  assert.deepEqual(answer,{ok:false,reason:'OWNER_IDENTITY_HTTP_403'});
+});
+
+
+test('real GitHub HEAD-anchored base-merge history counts only bounded repeated production syncs',()=>{
+ const now=Date.parse('2026-11-04T21:30:00Z'),head=HEAD;
+ const c=(sha,message,date,parents=2)=>({
+  sha,parents:Array.from({length:parents},()=>({sha:'d'.repeat(40)})),
+  commit:{message,committer:{date}}
+ });
+ const rows=[
+  c('e'.repeat(40),'feat(video): fix actual application bug','2026-11-04T21:10:00Z',1),
+  c('f'.repeat(40),"Merge branch 'codex/public-book-library' into fix/foo",'2026-11-04T21:12:00Z'),
+  c(head,"Merge branch 'codex/public-book-library' into fix/foo",'2026-11-04T21:18:00Z')
+ ];
+ const burst=classifyRecentBaseSyncs(rows,head,now);
+ assert.equal(burst.verified,true);assert.equal(burst.hold,true);assert.equal(burst.count,2);
+ assert.match(burst.retryAt,/2026-11-04T22:42:00/);
+
+ const four=[...rows.slice(0,2),c('1'.repeat(40),
+  "Merge branch 'codex/public-book-library' into fix/foo",'2026-11-04T21:23:00Z'),
+  c(head,"Merge branch 'codex/public-book-library' into fix/foo",'2026-11-04T21:27:00Z')];
+ assert.equal(classifyRecentBaseSyncs(four,head,now).count,3);
+ assert.match(classifyRecentBaseSyncs(four,head,now).retryAt,/2026-11-04T22:53:00/,
+  'retry deadline must clear enough merges to fall BELOW threshold, not just the oldest');
+
+ const realFix=[...rows.slice(0,2),{...rows[2],commit:{...rows[2].commit,message:'fix: actual failing source code'}}];
+ assert.equal(classifyRecentBaseSyncs(realFix,head,now).hold,false);
+ assert.equal(classifyRecentBaseSyncs([...rows.slice(0,2),{...rows[2],sha:'1'.repeat(40)}],head,now).verified,false);
+ assert.equal(classifyRecentBaseSyncs(rows,head,now+92*60_000).hold,false,
+  'a quiet period expires the burst, without declaring old Core green');
+});
+test('confirmed BASE_ADVANCED with repeated recent base merges must not write another CI HEAD',async()=>{
+ const item=(sha,date)=>({sha,parents:[{sha:OLD},{sha:HEAD}],
+  commit:{message:"Merge branch 'codex/public-book-library' into fix/sensitive-crm",committer:{date}}});
+ const w=world({pr:{commits:3},commitList:[
+  {sha:'d'.repeat(40),parents:[{sha:OLD}],commit:{message:'source',committer:{date:'2026-11-04T21:00:00Z'}}},
+  item('e'.repeat(40),'2026-11-04T21:00:40Z'),
+  item(HEAD,'2026-11-04T21:01:20Z')
+ ]});
+ const res=await run(w);
+ assert.equal(res.status,'SKIPPED');assert.equal(res.reason,'BASE_SYNC_REPEAT_BURST_HOLD');
+ assert.equal(res.recentSyncs,2);assert.match(res.retryAt,/2026-11-04T22:30:40/);
+ assert.equal(res.mergeAuthorized,false);assert.equal(w.updated(),0);
+});
+test('incomplete/unverified BASE history cannot silently authorize another source update',async()=>{
+ for(const opts of [
+  {pr:{commits:3},commitList:[]},
+  {pr:{commits:3},commitList:[{sha:HEAD}]},
+  {pr:{commits:0}}
+ ]){
+  const w=world(opts),res=await run(w);
+  assert.equal(res.status,'SKIPPED');assert.equal(w.updated(),0);
+  assert.match(res.reason,/BASE_SYNC_HISTORY/);
+ }
 });
