@@ -142,7 +142,7 @@ test("Ideas Personalization and Concept retain a single opt-in Voice/My Voice We
  const disclosure=browser.indexOf('await advancedText.click()',back);
  const voice=browser.indexOf('await voiceModeButton.click()',disclosure);
  const my=browser.indexOf('await myVoiceModeButton.click()',voice);
- const consent=browser.indexOf('await narrationConsent.check()',my);
+ const consent=browser.indexOf('await narrationConsent.tap()',my);
  assert.ok(modes>=0&&personal>modes&&concept>personal&&back>concept&&
    disclosure>back&&voice>disclosure&&my>voice&&consent>my,
    "actual user opens Personalization and the protected voice editor before consenting");

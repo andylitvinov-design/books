@@ -5,18 +5,18 @@ import styles from "./mandala-montage-pro-offer.module.css";
 type Locale = "en"|"ru"|"es";
 type Props={locale:Locale;disabled:boolean;onChooseFree:()=>void;onChooseCharacter:()=>void;onChooseCinematic:()=>void;};
 
-// Free triggers the existing guarded local renderer; verified media opens Ready.
-// €3/€5 are navigation only; the original PRO workflow keeps all payment guards.
+// Free opens Ready without rendering. Only the explicit Ready Generate action
+// starts the guarded encoder; €3/€5 retain their existing protected routes.
 const copy={
- en:{title:"Choose your video type",hint:"Generate free or continue in a premium editor.",options:[
+ en:{title:"Choose your video type",hint:"Free opens Ready; premium choices open their editors.",options:[
   {id:"free",title:"Free video",description:"A simple story-based video.",price:"Free",button:"Generate"},
   {id:"character",title:"Video + AI character",description:"A generated character for your story.",price:"€3",button:"Choose"},
   {id:"cinematic",title:"Premium cinematic video",description:"High-quality scenes with cinematic effects.",price:"€5",button:"Choose"}]},
- ru:{title:"Выберите формат видео",hint:"Создайте бесплатно или продолжите в PRO.",options:[
+ ru:{title:"Выберите формат видео",hint:"Бесплатный вариант откроет Ready; платные — свои редакторы.",options:[
   {id:"free",title:"Бесплатное видео",description:"Простой ролик с сюжетом.",price:"0 €",button:"Создать"},
   {id:"character",title:"Видео + AI-персонаж",description:"Сгенерированный персонаж по запросу.",price:"3 €",button:"Выбрать"},
   {id:"cinematic",title:"Кинематографическое видео",description:"Качественные сцены с киноэффектами.",price:"5 €",button:"Выбрать"}]},
- es:{title:"Elige el tipo de vídeo",hint:"Genera gratis o continúa en la edición PRO.",options:[
+ es:{title:"Elige el tipo de vídeo",hint:"Gratis abre Ready; las opciones premium abren sus editores.",options:[
   {id:"free",title:"Vídeo gratis",description:"Un vídeo sencillo con historia.",price:"Gratis",button:"Generar"},
   {id:"character",title:"Vídeo + personaje IA",description:"Un personaje generado para tu historia.",price:"3 €",button:"Elegir"},
   {id:"cinematic",title:"Vídeo cinematográfico",description:"Escenas de calidad con efecto cine.",price:"5 €",button:"Elegir"}]}

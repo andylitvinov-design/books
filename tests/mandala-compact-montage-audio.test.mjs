@@ -28,7 +28,7 @@ test("Montage audio is an owner-approved compact panel, not a second generator",
   assert.ok(source.includes('data-montage-panel={activeWorkspace==="editor"?montagePanel:undefined}'));
   assert.ok(css.includes('.montageAudioHero'));
   assert.ok(source.includes('onClick={attachSelectedAudio}'));
-  assert.ok(source.includes('onClick={createQuickVideo}'));
+  assert.ok(source.includes('onClick={openReadyForGeneration}'));
 });
 test("Style, Add text, Audio, Montage PRO and real audio source actions remain",()=>{
   const start=source.indexOf('<nav className={videoStyles.montageQuickTools}');
@@ -78,4 +78,23 @@ test("physical original-motion WebKit exports selected licensed music without re
   assert.match(browser,/assert\.ok\(probe\.streams\.some\(s => s\.codec_type === 'audio'\)\)/);
   assert.match(browser,/Math\.sqrt\(power \/ \(pcm\.length \/ 2\)\) > 0\.003/,"real exported audio must decode and be audible");
   assert.match(browser,/sceneCorrelations:/,"preserve four physical footage comparisons");
+});
+
+test("Audio two-button route never performs premature render and keeps a single-row soundtrack",()=>{
+  const studio=source;
+  const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
+  const from=studio.indexOf('data-video-stage-actions="montage"');
+  const actions=studio.slice(from,studio.indexOf("data-video-narration-reapproval",from));
+  assert.ok(from>0,"reuse one existing Montage footer, no second button component");
+  assert.match(actions,/onClick=\{continueMontageOrGenerate\}/);
+  assert.match(actions,/onClick=\{openReadyForGeneration\}/);
+  assert.doesNotMatch(actions,/onClick=\{createQuickVideo\}/);
+  assert.match(studio,/const openReadyForGeneration\s*=/);
+  assert.match(css,/grid-auto-flow:column;grid-auto-columns:clamp\(84px,27vw,112px\)/);
+  assert.match(css,/max-width:100%;overflow-x:auto;overflow-y:hidden/);
+  assert.match(css,/\[data-video-order-bar\] \.quickOrderSummary\{\s*display:none!important/);
+  assert.match(css,/\[data-video-stage-actions="montage"\]>\.quickGenerate/);
+  assert.match(css,/order:0;min-height:49px;background:#fffcf7!important/);
+  assert.match(css,/order:1;min-height:49px;border:1px solid #087e61!important/);
+  assert.match(studio,/filteredAudio\.slice\(0,12\)/);
 });
