@@ -33,6 +33,26 @@ test('Correction, no-advice and no-time requests are respected',()=>{
  const other=session('ru');other('Не знаю что делать');
  assert.match(other('А если нет времени?')?.reply||'',/времени/);
 });
+test('No-advice preference persists until explicit renewed interest in three languages',()=>{
+ for(const [locale,decline,resume,problem] of [
+  ['ru','Не хочу советов','Теперь хочу совет','Я устал'],
+  ['en',"I don't want advice",'Now I want advice','I feel tired'],
+  ['es','No quiero consejos','Ahora quiero consejos','Estoy cansado']
+ ]){
+  const talk=session(locale);
+  assert.ok(talk(decline)?.reply);
+  const listen=talk(problem);assert.equal(listen?.phase,'listen',locale);
+  assert.ok(!/можно сделать|you could|puedes hacer/iu.test(listen.reply));
+  assert.equal(talk(resume)?.phase,'resume',locale);
+  assert.equal(talk(problem)?.phase,'clarify',locale);
+ }
+});
+test('Short informal greetings stay first-party',()=>{
+ for(const [message,locale] of [['Ку','ru'],['Приветик','ru'],['Hi Wave','en'],['Hola Wave','es']]){
+  const r=waveNativeTurn({message,locale});
+  assert.equal(r?.externalCalled,false);assert.match(r.reply,/Wave/);
+ }
+});
 test('Eight reviewed problem areas have source-grounded first-stage answers',()=>{
  for(const text of ['Ничего не успеваю','Мне трудно начать','Мы поссорились','Мне одиноко',
    'Я постоянно себя ругаю','Не знаю что делать','Я устал','Мне тревожно'])
