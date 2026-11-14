@@ -483,10 +483,15 @@ test("post-export stale narration refusal reopens mounted Audio and consented Vo
  const selected=source.indexOf("await expect(page.locator('[data-video-montage-audio]')).toBeVisible()",tap);
  const disabled=source.indexOf("const stillHasOldVoice=",selected);
  const voice=source.indexOf('const voicePanel=page.locator("[data-video-voice-studio]")',disabled);
- const expand=source.indexOf('await voicePanel.locator(":scope > summary").click()',voice);
- assert.ok(start>=0&&audio>start&&tap>audio&&selected>tap&&disabled>selected&&voice>disabled&&expand>voice,
-   "stale WAV must be blocked before visitor can reopen consented Voice");
- assert.doesNotMatch(source.slice(audio,expand),/data-video-montage-settings|data-video-basic-tab/);
+ const summary=source.indexOf('const voiceSummary=voicePanel.locator(":scope > summary")',voice);
+ const safariTap=source.indexOf('if(engine==="webkit")await voiceSummary.tap()',summary);
+ const desktopClick=source.indexOf('else await voiceSummary.click()',safariTap);
+ const opened=source.indexOf('await expect(voicePanel).toHaveAttribute("open","",{timeout:15000})',desktopClick);
+ const mounted=source.indexOf('await studio.waitFor({state:"visible",timeout:25000})',opened);
+ assert.ok(start>=0&&audio>start&&tap>audio&&selected>tap&&disabled>selected&&voice>disabled&&
+   summary>voice&&safariTap>summary&&desktopClick>safariTap&&opened>desktopClick&&mounted>opened,
+   "stale WAV must be blocked before visitor opens real Safari/desktop Voice and mounted editor");
+ assert.doesNotMatch(source.slice(audio,mounted),/data-video-montage-settings|data-video-basic-tab/);
 });
 
 test("WebKit release follows fifth Montage advanced settings, Audio, and voice disclosure",()=>{
@@ -500,7 +505,11 @@ test("WebKit release follows fifth Montage advanced settings, Audio, and voice d
  assert.match(source,/await durationSelect\.selectOption\("10"\)/);
  assert.match(source,/await expect\(page\.locator\('\[data-video-montage-audio\]'\)\)\.toBeVisible\(\)/);
  assert.match(source,/const voicePanel=page\.locator\("\[data-video-voice-studio\]"\)/);
- assert.match(source,/voicePanel\.locator\(":scope > summary"\)\.click\(\)/);
+ assert.match(source,/const voiceSummary=voicePanel\.locator\(\":scope > summary\"\)/);
+ assert.match(source,/if\(engine===\"webkit\"\)await voiceSummary\.tap\(\)/);
+ assert.match(source,/else await voiceSummary\.click\(\)/);
+ assert.match(source,/await expect\(voicePanel\)\.toHaveAttribute\(\"open\",\"\",\{timeout:15000\}\)/);
+ assert.match(source,/await studio\.waitFor\(\{state:\"visible\",timeout:25000\}\)/);
  assert.doesNotMatch(source,/data-video-montage-settings|data-video-basic-tab=|data-video-audio-length="/);
 });
 

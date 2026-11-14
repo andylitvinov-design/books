@@ -179,7 +179,10 @@ test("video studio lazily loads optional editor workspaces and collapsed tools",
   // Voice can now be activated by a deep link and its one live details
   // panel owns the same state as the lazily mounted studio.
   assert.match(studio, /data-video-voice-studio open=\{voiceStudioActivated\}/);
-  assert.match(studio, /onToggle=\{event=>setVoiceStudioActivated\(event\.currentTarget\.open\)\}/);
+  assert.match(studio,/event\.preventDefault\(\)/);
+  assert.match(studio,/setVoiceStudioActivated\(current=>!current\)/);
+  assert.doesNotMatch(studio,/onToggle=\{event=>setVoiceStudioActivated/,
+    "lazy Cloud Voice is controlled only by real user summary click, not delayed WebKit onToggle");
   assert.match(studio, /\{voiceStudioActivated\?<MandalaCloudVoiceStudio/);
   assert.match(studio, /useState<StudioWorkspace>\("video"\)/);
   assert.match(studio, /<MandalaAutoVideoDirector/);

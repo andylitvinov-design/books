@@ -14,6 +14,9 @@ import {processTelegramAiV3,finishTelegramAiV3} from '@/lib/crm/telegram-ai-diag
 import {shouldBootstrapTelegramNativeMenu} from '@/lib/crm/telegram-companion-native-commands.mjs'
 import { receiveOwnerTelegramVideoWebhook } from '@/lib/practitioners/owner-telegram-video-service'
 import {processTelegramBusinessConversation} from '@/lib/crm/telegram-business-service'
+import {telegramBusinessMessageFromUpdate} from '@/lib/assist/telegram-business-request.mjs'
+import {parseHiTelegramRating} from '@/lib/holistic-support/hi-learning-policy.mjs'
+import {insertHiLearningQuality} from '@/lib/holistic-support/hi-learning-store'
 import {processTelegramBusinessSecretary,gateTelegramBusinessSecretaryOptOut} from '@/lib/crm/telegram-secretary-service'
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
@@ -41,6 +44,37 @@ export async function POST(request,{params}){
   try{
     const config=getAppConfig()
     const body=JSON.parse(raw.toString('utf8'))
+    // Quality feedback is separate from Business ordering; never infer consent
+    // from a service request or collect ordinary Telegram messages.
+    if(provider==='telegram'&&process.env.HH_LEARNING_OBSERVATORY_ENABLED==='true'){
+      const event=telegramBusinessMessageFromUpdate(body)
+      const rating=event?parseHiTelegramRating(event.text):null
+      if(rating){
+        try{
+          // Existing HMAC rate bucket deduplicates retried signed Telegram updates;
+          // raw Telegram identifiers never reach the learning tables.
+          await consumeRate(config,{op:'hi-learning-tg-update',connection:event.connectionId,
+            updateId:event.updateId},1,86400)
+          await consumeRate(config,{op:'hi-learning-tg-chat',connection:event.connectionId,
+            chatId:event.chatId},3,86400)
+          await consumeRate(config,{op:'hi-learning-tg-global'},80,86400)
+          const result=await insertHiLearningQuality(config,{
+            channel:'telegram',locale:rating.locale,signal:rating.signal,consent:true,
+          },{trustedTelegram:true})
+          if(result.saved){
+            const thanks=rating.locale==='ru'?'Спасибо. Сохранена только анонимная оценка, без текста сообщения.':
+              rating.locale==='es'?'Gracias. Solo se guardó la valoración anónima, sin el mensaje.':
+              'Thank you. Only the anonymous rating was saved, not your message.'
+            await sendHolisticBusinessRequestReply({connectionId:event.connectionId,
+              to:event.chatId,text:thanks})
+          }
+        }catch{
+          // Do not log Telegram text, IDs, credentials, or quality records.
+          console.error('HH_TG_LEARNING_FEEDBACK_UNAVAILABLE')
+        }
+        return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
+      }
+    }
     if(provider==='telegram'){
       const video=await receiveOwnerTelegramVideoWebhook(config,body,{channel:'crm'})
       if(video.handled){
