@@ -415,6 +415,31 @@ try {
     assert.deepEqual(actualTyped,typedRanking,
       "Typed question applies live deterministic matching without storing the text");
 
+    // Source-backed match on actual RU/EN/ES free-text input, not a fabricated diagnosis.
+    await reset.click();
+    await question.fill(locale==="ru" ? "Стеснение в груди при волнении, дрожь при общении, запор на фоне стресса"
+      :locale==="es" ? "Temblor en compañía, opresión en el pecho y estreñimiento por tensión"
+      :"Chest tightness when anxious, trembling in company and stress related constipation");
+    await submit.click();
+    await visible(homeopathy);
+    await expect(assist.locator("[data-assist-homeopathy-mind]")).toHaveCount(1);
+    await expect(homeopathy.locator('a[data-assist-remedy="ambra-grisea"]')).toHaveCount(1);
+    const sourceProfileKeys=await homeopathy.locator("a[data-assist-remedy]").evaluateAll(nodes=>
+      nodes.map(node=>node.getAttribute("data-assist-remedy")));
+    assert.ok(sourceProfileKeys.length>=1 && sourceProfileKeys.length<=3 &&
+      !sourceProfileKeys.includes("gelsemium"), "Ranked homeopathy archive evidence must replace the static showcase");
+
+    // A medical red flag must suppress paid recommendations and all tool links.
+    await reset.click();
+    await question.fill(locale==="ru" ? "Боль в груди и трудно дышать"
+      :locale==="es" ? "No puedo respirar" : "Chest pain and trouble breathing");
+    await submit.click();
+    await visible(log.locator('[role="alert"]'));
+    await expect(assist.locator("[data-assist-homeopathy]")).toHaveCount(0);
+    await expect(assist.locator("[data-assist-mytube]")).toHaveCount(0);
+    await expect(shelf).toHaveCount(0);
+    await expect(assist.locator("a[data-assist-tool]")).toHaveCount(0);
+
     // The owner's real life-direction example must produce purchasable/requestable offers.
     await reset.click();
     await question.fill(locale==="ru"?"Я потерял направление и не знаю куда двигаться":

@@ -13,6 +13,7 @@ import styles from "./services-assist-mobile.module.css";
 import { AssistTopRecommendations } from "./assist-top-recommendations";
 import { ServicesAssistMyTube } from "./services-assist-mytube";
 import { ServicesAssistHomeopathy } from "./services-assist-homeopathy";
+import { containsUrgentSymptoms } from "@/lib/remedies/assist-matcher.mjs";
 
 type Focus = "stress" | "relationships" | "energy" | "health" | "work" | "growth" | "general";
 const routes = {
@@ -49,6 +50,7 @@ const copy = {
     cards:{tests:["Тесты самочувствия","Бесплатная самопроверка и наблюдение за динамикой.","Бесплатно"],review:["Разбор ситуации","Короткая анкета и личный письменный ответ.","Бесплатно"],opora:["Курс ОПОРА","Пошаговые упражнения для работы со стрессом.","Курс"],therapy:["Образная психотерапия","Индивидуальная работа с переживаниями и образами.","Личная сессия"],constellation:["Расстановки","Исследование отношений и повторяющихся сценариев.","Личная сессия"],business:["Бизнес-консультация","Прояснение рабочих целей и практических решений.","Консультация"],reiki:["Сеансы Рейки","Энергетические и символические практики по желанию.","По запросу"],mandala:["Персональная мандала","Визуальная символическая практика для саморефлексии.","Практика"],talisman:["Талисманы","Символический каталог в Holistic Support.","Символика"],homeopathy:["Психогомеопатия","Авторский подход и его ограничения.","Ознакомиться"],masters:["Мастера","Опубликованные профили и услуги специалистов.","Каталог"],academy:["Рейки Академия","Обучающие программы и доступные практики.","Обучение"],mytube:["Видео MyTube","Короткие практики и тематические видео.","Видео"],aiCoach:["ИИ-коуч","Разговор с ИИ-помощником для размышления, не психотерапия.","ИИ"]},
     caution:"Гомеопатия не имеет надёжных доказательств эффективности для лечения заболеваний. Символические и энергетические практики не заменяют медицинскую или психологическую помощь.",
     crisis:"Если вы можете причинить себе вред, испытываете опасные симптомы или находитесь в непосредственной опасности, обратитесь в местную экстренную или кризисную службу прямо сейчас.",
+    medicalUrgent:"Некоторые симптомы требуют срочной медицинской оценки. Не выбирайте лечение по каталогу — обратитесь за медицинской помощью.",
   },
   en: {
     eyebrow:"HOLISTIC HOUSE · SERVICES", title:"Wave", lead:"Find the right support, service or specialist for your situation.", ask:"What would you like help with right now?", choose:"Choose a common issue or describe it in your own words.",
@@ -62,6 +64,7 @@ const copy = {
     cards:{tests:["Wellbeing check-ins","Free self-checks and ways to observe changes.","Free"],review:["Situation review","Short form and personal written reply.","Free"],opora:["OPORA course","Step-by-step stress support exercises.","Course"],therapy:["Guided imagery therapy","One-to-one exploration of experiences and imagery.","Session"],constellation:["Constellations","Explore relationship patterns and perspectives.","Session"],business:["Business consulting","Clarify work goals and decisions.","Consultation"],reiki:["Reiki sessions","Optional symbolic and energy practices.","Enquire"],mandala:["Personal mandala","Visual symbolism for self-reflection.","Practice"],talisman:["Talismans","Symbolic catalogue in Holistic Support.","Symbolic"],homeopathy:["Psycho-homeopathy","Explore the author's approach and its limitations.","Learn more"],masters:["Practitioners","Browse published practitioner services.","Directory"],academy:["Reiki Academy","Explore learning programs and practices.","Learning"],mytube:["MyTube videos","Short practices and topic videos.","Video"],aiCoach:["AI coach","Talk to an AI reflection assistant, not psychotherapy.","AI"]},
     caution:"Homeopathy lacks reliable evidence for treating health conditions. Symbolic and energy practices do not replace medical or mental-health care.",
     crisis:"If you may harm yourself, have urgent symptoms or are in immediate danger, contact your local emergency or crisis service now.",
+    medicalUrgent:"Some symptoms may require urgent medical evaluation. Do not choose treatment through the catalogue; seek medical care.",
   },
   es: {
     eyebrow:"HOLISTIC HOUSE · SERVICES", title:"Wave", lead:"Encuentra el servicio o profesional adecuado para tu situación.", ask:"¿Con qué necesitas ayuda ahora?", choose:"Elige una dificultad o describe tu situación.",
@@ -75,6 +78,7 @@ const copy = {
     cards:{tests:["Pruebas de bienestar","Autoevaluaciones gratuitas para observar cambios.","Gratis"],review:["Revisión de situación","Formulario breve y respuesta escrita personal.","Gratis"],opora:["Curso OPORA","Ejercicios guiados para el estrés.","Curso"],therapy:["Terapia de imágenes guiadas","Exploración individual de experiencias e imágenes.","Sesión"],constellation:["Constelaciones","Explora patrones de relación y perspectivas.","Sesión"],business:["Consultoría de negocios","Aclara metas y decisiones prácticas.","Consulta"],reiki:["Sesiones de Reiki","Prácticas simbólicas y energéticas opcionales.","Consultar"],mandala:["Mandala personal","Práctica visual para autorreflexión.","Práctica"],talisman:["Talismanes","Catálogo simbólico en Holistic Support.","Simbólico"],homeopathy:["Psico-homeopatía","Conoce el enfoque del autor y sus límites.","Información"],masters:["Profesionales","Explora servicios profesionales publicados.","Catálogo"],academy:["Academia Reiki","Formación y prácticas disponibles.","Formación"],mytube:["Videos MyTube","Prácticas breves y videos temáticos.","Video"],aiCoach:["Guía IA","Conversación con IA para reflexionar, no psicoterapia.","IA"]},
     caution:"La homeopatía carece de pruebas fiables de eficacia para tratar enfermedades. Las prácticas simbólicas y energéticas no sustituyen la atención médica o psicológica.",
     crisis:"Si podrías hacerte daño, tienes síntomas urgentes o estás en peligro inmediato, contacta con emergencias o con una línea de crisis local ahora.",
+    medicalUrgent:"Algunos síntomas requieren atención médica urgente. No elijas un tratamiento del catálogo; busca atención médica.",
   },
 } as const;
 
@@ -141,7 +145,8 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
   const inputRef=useRef<HTMLTextAreaElement>(null);
   const chatRef=useRef<HTMLDivElement>(null);
   const formRef=useRef<HTMLFormElement>(null);
-  const crisis=selection!==null&&(critical||urgent.test(selection.text));
+  const medicalRisk=selection!==null&&containsUrgentSymptoms(selection.text);
+  const crisis=selection!==null&&(critical||urgent.test(selection.text)||medicalRisk);
   const question=selection&&!crisis?nextAssistQuestion(preferences):null;
   const suggestions=selection&&!crisis?rankAssistOffers(selection.focus,preferences):[];
   const selectedFocus=editedCheckins.length?editedCheckins.reduce((best,key)=>checkinScores[key]<checkinScores[best]?key:best):null;
@@ -314,7 +319,7 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
       <div className={styles.messages} id="assist-results" ref={chatRef} role="log" aria-live="polite" aria-label={t.answer} aria-relevant="additions text" tabIndex={0}>
         {selection?<>
           {turns.map((turn,index)=><div key={index} className={turn.role==="user"?styles.turnUser:styles.turnAssistant} data-assist-message={turn.role}><p>{turn.text}</p></div>)}
-          {crisis?<p role="alert" className={styles.crisis}>{t.crisis}</p>:<>
+          {crisis?<p role="alert" className={styles.crisis}>{medicalRisk&&!urgent.test(selection!.text)&&!critical?t.medicalUrgent:t.crisis}</p>:<>
             {question?<div className={styles.inlineQuestion} data-assist-question={question}>
               <p className={styles.questionPrompt}>{t.questions[question].prompt}</p>
               <div className={styles.answerOptions}>{t.questions[question].options.map(([label,value])=><button type="button" key={value} onClick={()=>chooseAnswer(value,label)}>{label}</button>)}</div>
@@ -360,8 +365,8 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
     {!crisis&&selection?<AssistTopRecommendations locale={locale} focus={selection.focus} preferences={preferences}
       priorityIds={consultantPriority} matchingIds={suggestions.map(({id})=>id)} noMatchLabel={t.noOffers}/>:null}
     {!crisis&&selection?<ServicesAssistMyTube locale={locale} focus={selection.focus} question={selection.text}/>:null}
-    {!crisis&&selection?<ServicesAssistHomeopathy locale={locale}/>:null}
-    <section className={styles.tools} aria-labelledby="assist-tools-title">
+    {!crisis&&selection?<ServicesAssistHomeopathy locale={locale} query={selection.text}/>:null}
+    {!crisis?<section className={styles.tools} aria-labelledby="assist-tools-title">
       <h2 id="assist-tools-title">{t.tools}</h2><p>{t.browse}</p>
       <div className={styles.toolGrid}>{toolList.slice(0,expandedTools?toolList.length:4).map((key)=>{
         const card=t.cards[key];
@@ -373,7 +378,7 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
         {expandedTools?labels.lessTools:labels.moreTools}
       </button>
       <Link className={styles.all} href={"/"+locale+"/services/catalog#service-listings"} prefetch={false}>{t.all}<ArrowRight size={18} aria-hidden="true"/></Link>
-    </section>
+    </section>:null}
     <p className={styles.caution}>{t.caution}</p>
   </section>;
 }
