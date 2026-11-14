@@ -150,6 +150,24 @@ test("real first-video Safari export uses fifth Montage advanced settings twice,
  assert.match(firstVideoSmoke,/mediaTool\('ffmpeg'/);
 });
 
+test("automatic soundtrack cannot invalidate a completed MP4 or active encode",()=>{
+ const start=studio.indexOf("// Auto-music is attached BEFORE a trusted Generate gesture");
+ const end=studio.indexOf("// A paused film, hidden tab or unmount",start);
+ assert.ok(start>=0&&end>start);
+ const effect=studio.slice(start,end);
+ assert.match(effect,/attachedAudio\?\.kind==="presets"\|\|result\|\|preparing\|\|recording\|\|/);
+ assert.match(effect,/preparingRef\.current\|\|jobRef\.current\|\|webCodecJobRef\.current\)return/);
+ assert.match(effect,/setAttachedAudio\(current=>/,"existing recommendation applies only before Create");
+ assert.match(studio,/webCodecJobRef\.current\?\.abort\(\);[\s\S]*?setResult\(null\);/);
+ const browser=readFileSync(new URL("../scripts/benchmarking/verify-five-scene-stories-browser.mjs",import.meta.url),"utf8");
+ assert.match(browser,/sawRecordedResult:false,lostRecordedResult:false/);
+ assert.match(browser,/renderTrace:window\.__hhFiveSceneResultTrace\|\|null/);
+ assert.match(browser,/safeEncoderCodes/);
+ assert.match(browser,/STORIES_FREE_RENDER_NOT_READY/);
+ assert.match(browser,/readRealGuestVideo\(page,\{timeout:150000\}\)/);
+ assert.match(browser,/STORIES_H264_REQUIRED|STORIES_AAC_REQUIRED/);
+});
+
 test("physical WebKit Story quality tap commits fifth Montage without skipping media gates",()=>{
  const browser=readFileSync(new URL("../scripts/benchmarking/verify-five-scene-stories-browser.mjs",import.meta.url),"utf8");
  assert.match(studio,/onChooseQuality=\{sourceReady=>\{[\s\S]*?flushSync\(\(\)=>\{[\s\S]*?setMontagePanel\("promo"\)/);

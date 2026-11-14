@@ -52,8 +52,14 @@ try{
    return url.origin===origin&&['GET','HEAD'].includes(request.method())
      ?route.continue():route.abort('blockedbyclient');
  });
- const page=await context.newPage(),errors=[];
+ const page=await context.newPage(),errors=[],safeEncoderCodes=[];
  page.on('pageerror',err=>errors.push(err.name));
+ // Only collect the renderer's known fixed diagnostic codes; never the media,
+ // prompts, client phrases, URLs, tokens, console stack or arbitrary messages.
+ page.on('console',message=>{
+   const fixed=message.text().match(/^(HH_WEBKIT_MP4_EXPORT_FAILURE|HH_SAFARI_FINAL_PLAYBACK):([A-Z0-9_]+)$/);
+   if(fixed)safeEncoderCodes.push(fixed[1]+':'+fixed[2]);
+ });
  const response=await page.goto(origin+'/ru/holistic-support/mandala',
    {waitUntil:'domcontentloaded',timeout:60000});
  assert.equal(response?.status(),200,'STORIES_LOCAL_APP_NOT_200');
@@ -128,6 +134,19 @@ try{
  // from the actual in-card CTA, not a hidden legacy Audio / Create shortcut.
  const free=page.locator('[data-video-montage-pro-choice="free"]');
  await free.waitFor({state:'visible',timeout:20000});
+ // Track whether a genuine recorded result was mounted then invalidated:
+ // a Ready workspace without a real MP4 must fail, never be accepted.
+ await page.evaluate(()=>{
+   const trace={sawRecordedResult:false,lostRecordedResult:false};
+   const check=()=>{
+     const exists=Boolean(document.querySelector('[data-mandala-video-preview]'));
+     if(exists)trace.sawRecordedResult=true;
+     else if(trace.sawRecordedResult)trace.lostRecordedResult=true;
+   };
+   new MutationObserver(check).observe(document.body,{childList:true,subtree:true});
+   window.__hhFiveSceneResultTrace=trace;
+   check();
+ });
  // Use a trusted native iPhone-style touch. Desktop click may not unlock
  // the Safari video/audio decoder within the original user gesture.
  await free.tap({timeout:30000});
@@ -142,6 +161,7 @@ try{
      sourceErrors:masters.filter(v=>v instanceof HTMLVideoElement&&Boolean(v.error)).length,
      progressVisible:Boolean(document.querySelector('[data-video-effect-overlay],[data-video-effect-reopen]')),
      renderResult:Boolean(document.querySelector('[data-mandala-video-preview]')),
+     renderTrace:window.__hhFiveSceneResultTrace||null,
      createDisabled:Boolean(document.querySelector('[data-video-montage-pro-choice="free"]')?.disabled),
    };
  });
@@ -160,7 +180,9 @@ try{
    captured=await readRealGuestVideo(page,{timeout:150000});
  }catch(error){
    // Never log the visitor's text, health data, media bytes, tokens or URL.
-   console.error('STORIES_FREE_RENDER_NOT_READY '+JSON.stringify(await safeExportState()));
+   console.error('STORIES_FREE_RENDER_NOT_READY '+JSON.stringify({
+     ...await safeExportState(),safeEncoderCodes,
+   }));
    throw error;
  }
  assert.equal(captured.extension,'mp4','STORIES_FINAL_H264_MP4_REQUIRED');

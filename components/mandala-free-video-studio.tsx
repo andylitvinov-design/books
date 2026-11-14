@@ -3166,13 +3166,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     });
     return () => { window.cancelAnimationFrame(firstFrame); window.cancelAnimationFrame(nextFrame); };
   }, [result]);
-  // Auto-music must be ATTACHED before the Montage Generate tap and Ready Basic.
-  // Previously Ready suggested a track but left it unattached; Create then
-  // opened the large Audio overlay instead of rendering. Uploaded tracks,
-  // manual choices, silence and rights checks retain their existing gates.
+  // Auto-music is attached BEFORE a trusted Generate gesture, not during
+  // export or after a completed MP4. A late recommendation changes the
+  // source signature, aborts the encoder and revokes the only real result.
+  // Uploaded audio, manual music and rights checks stay authoritative.
   useEffect(() => {
     if(!audioAuto||uploadedAudio||attachedAudio?.kind==="file"||
-       attachedAudio?.kind==="presets")return;
+       attachedAudio?.kind==="presets"||result||preparing||recording||
+       preparingRef.current||jobRef.current||webCodecJobRef.current)return;
     const recommended=recommendedAudioId||"none";
     setMusic(current=>current===recommended?current:recommended);
     if(activeWorkspace!=="editor"&&activeWorkspace!=="ready")return;
@@ -3182,7 +3183,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       return current?.kind==="preset"&&current.id===recommended?
         current:{kind:"preset",id:recommended};
     });
-  },[audioAuto,uploadedAudio,recommendedAudioId,activeWorkspace,attachedAudio?.kind]);
+  },[audioAuto,uploadedAudio,recommendedAudioId,activeWorkspace,
+    attachedAudio?.kind,result,preparing,recording]);
   // A paused film, hidden tab or unmount must not leave a soundtrack playing.
   useEffect(()=>{if(!previewPlaying)stopMovieSound();},[previewPlaying,stopMovieSound]);
   useEffect(()=>()=>stopMovieSound(),[stopMovieSound]);
