@@ -97,7 +97,8 @@ jobs:
     needs: impact
     # CI-only changes are validated by Core + actionlint + focused routing tests.
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.draft == false) && needs.impact.result == 'success' }}
-    runs-on: ubuntu-latest
+    # Full App assertions retain the original runner; a proven no-op uses one lightweight shell check.
+    runs-on: ${{ needs.impact.outputs.profile == 'true' && 'ubuntu-latest' || 'ubuntu-slim' }}
     timeout-minutes: 20
     steps:
       - name: Confirm App R1 profile was safely routed away
@@ -173,7 +174,8 @@ jobs:
         browser: ${{ fromJSON(needs.impact.outputs.banner == 'true' && '["chromium","webkit"]' || '["none"]') }}
     # Standard free runner; pin distro and launch the prebuilt browser image
     # only in the actual browser step. The 'none' route stays lightweight.
-    runs-on: ubuntu-24.04
+    # The "none" matrix runs no browser tools; real Chromium/WebKit stay on ubuntu-24.04.
+    runs-on: ${{ matrix.browser != 'none' && 'ubuntu-24.04' || 'ubuntu-slim' }}
     timeout-minutes: 15
     env:
       HH_TEST_BROWSER: ${{ matrix.browser }}
@@ -235,11 +237,13 @@ jobs:
   database:
     needs: impact
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.draft == false) && needs.impact.result == 'success' }}
-    runs-on: ubuntu-latest
+    # SQL/RLS still use a Docker-capable runner; the proof-only no-op uses ubuntu-slim.
+    runs-on: ${{ needs.impact.outputs.database == 'true' && 'ubuntu-latest' || 'ubuntu-slim' }}
     timeout-minutes: 15
     services:
       postgres:
-        image: postgres:17-alpine
+        # Empty image disables the unneeded service on a verified no-database path.
+        image: ${{ needs.impact.outputs.database == 'true' && 'postgres:17-alpine' || '' }}
         env:
           POSTGRES_DB: hh_app_test
           POSTGRES_PASSWORD: synthetic-ci-admin

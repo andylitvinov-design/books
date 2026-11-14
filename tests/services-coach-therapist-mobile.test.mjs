@@ -28,3 +28,13 @@ test("approved public profiles and responsive targets",()=>{
   assert.match(css,/\.shelf\{display:none\}/);
   assert.match(css,/min-height:48px/);
 });
+
+test("compact Coach and independent Reiki pass mobile source contracts",()=>{
+  const qa=readFileSync("scripts/verify-public-services-production.mjs","utf8");
+  assert.match(css,/max-width:520px/);
+  assert.match(css,/border-radius:22px/);
+  assert.match(css,/min-height:44px/);
+  assert.match(qa,/data-assist-coach-therapist/);
+  assert.match(qa,/data-assist-reiki-session/);
+  assert.match(qa,/api\/public\/remote-energy-support-masters/);
+});

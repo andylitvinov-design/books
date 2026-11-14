@@ -881,7 +881,8 @@ test('core release checkout preserves ancestry jobs and pins exact base for boun
   assert.match(source, /git diff --no-renames --name-only -z/, 'scope must still diff actual base');
   assert.match(release, /git show/, 'immutable base specialist aggregate must remain');
   assert.match(release, /scripts\/ci-specialist-aggregate\.mjs/);
-  assert.match(release, /timeout-minutes: 45/);
+  assert.ok(release.includes("&& 12 || 45 }}"),
+    'strict or unknown route retains 45-minute Specialist timeout');
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
 });
 
@@ -1529,7 +1530,8 @@ test('short Core orchestration keeps lightweight aggregator and never skips real
   assert.match(scope, /^    runs-on: ubuntu-24\.04$/m);
   assert.match(scope, /^    timeout-minutes: 45$/m);
   assert.match(core, /^    runs-on: ubuntu-24\.04$/m);
-  assert.match(specialist, /^    runs-on: ubuntu-24\.04$/m);
+  assert.ok(specialist.includes("&& 'ubuntu-slim' || 'ubuntu-24.04' }}"),
+    'FULL, DOCK and unknown routes retain standard Ubuntu');
   assert.match(specialist, /^    needs: \[scope\]$/m, 'specialist must launch after successful Core');
   assert.match(specialist, /^    if: \$\{\{ !cancelled\(\) && needs\.scope\.result == 'success' && github\.event_name == 'pull_request' && github\.event\.pull_request\.draft == false \}\}$/m);
   assert.match(gate, /^    runs-on: ubuntu-slim$/m);
@@ -1631,7 +1633,7 @@ test('App R1 banner matrix runs REAL preinstalled Playwright only when applicabl
   const source=workflow('hh-app-r1.yml');
   const section=source.split('  course-banner-browser:\n')[1]?.split('\n  database:\n')[0];
   assert.ok(section,'course-banner-browser must exist');
-  assert.match(section,/runs-on: ubuntu-24\.04/);
+  assert.match(section,/runs-on: \$\{\{ matrix\.browser != 'none' && 'ubuntu-24\.04' \|\| 'ubuntu-slim' \}\}/);
   assert.match(section,/timeout-minutes: 15/);
   assert.match(section,/browser: \$\{\{ fromJSON\(needs\.impact\.outputs\.banner == 'true'/);
   assert.match(section,/if: needs\.impact\.outputs\.banner != 'true'/);

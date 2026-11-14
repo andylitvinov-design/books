@@ -21,7 +21,7 @@ await mkdir(output, { recursive: true });
 const browser = await chromium.launch();
 const diagnostics = { runtime: "next-start production", console: [], pageErrors: [], devIssueOverlay: false };
 const responseEvidence = [];
-// CI without a database: these four read-only endpoints may explicitly return 503.
+// Isolated CI: only these audited read-only endpoints may lack the database.
 const noDatabase503Paths = new Set([
   "/api/catalog/ratings",
   "/api/service-enquiries/booking-status",
@@ -58,6 +58,7 @@ try {
       const url = new URL(response.url());
       if (response.request().method() === "GET" && response.status() === 503 &&
           url.origin === origin && url.pathname.startsWith("/api/")) {
+        // Record all first-party read failures, including any unexpected new endpoint.
         responseEvidence.push(url.pathname);
       }
     });
@@ -130,18 +131,27 @@ try {
     for (const selector of [
       "[data-assist-personal-consultation]", "[data-assist-spiritual-entry]",
       "[data-assist-video-generation]", "[data-assist-course-shelf]",
-      "[data-assist-magical-help]", "[data-assist-coach-therapist]"
+      "[data-assist-magical-help]", "[data-assist-reiki-session]", "[data-assist-coach-therapist]"
     ]) {
       await visible(page.locator(selector));
     }
 
 
+    // Coach/Mira and Reiki are separate mobile categories, never extra chat steps.
     const coach=page.locator("[data-assist-coach-therapist]");
     await expect(coach).toHaveCount(1);
     assert.ok(await coach.locator("[data-assist-coach-master]").count() >= 2,
-      "Andrey and Mira must remain available even if optional published masters are absent");
+      "Andrey and AI Mira remain without optional published specialists");
     await expect(coach.locator('[data-assist-coach-ai="mira"]')).toHaveCount(1);
     await expect(coach.locator('select[data-assist-coach-topic]')).toHaveCount(1);
+
+    // The reiki picker is a distinct mounted mobile category, not another chat step.
+    const reiki=page.locator("[data-assist-reiki-session]");
+    await expect(reiki).toHaveCount(1);
+    await expect(reiki.locator('button[aria-pressed]')).toHaveCount(3);
+    await expect(reiki.locator('input[type="date"]')).toHaveCount(1);
+    await expect(reiki.locator('input[type="time"]')).toHaveCount(1);
+    await expect(reiki.locator('a[href*="holistic-support/mobile"]')).toHaveCount(1);
 
     const conversation = assist.locator("[data-assist-dialogue]");
     const log = conversation.locator("#assist-results");
