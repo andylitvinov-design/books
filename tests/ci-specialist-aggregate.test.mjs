@@ -1,4 +1,4 @@
-import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance } from '../lib/ci/production-base-impact.mjs';
+import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance } from '../lib/ci/production-base-impact.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readdirSync, readFileSync } from 'node:fs';
@@ -2206,4 +2206,34 @@ test('Axis Ready PR requires practical writer job despite planner workflow chang
   assert.equal(inspectJobs([axis,writerJob],file,[],required),2);
   assert.throws(()=>inspectJobs([axis,{...writerJob,conclusion:'skipped'}],file,[],required),
     /UNSUCCESSFUL_SPECIALIST_JOB/, 'a skipped writer cannot satisfy protected Specialist');
+});
+
+
+test('inert raster production-base advance is ancestry-proven, conflict-independent and never generic path disjointness', () => {
+  const old = 'a'.repeat(40), newest = 'b'.repeat(40);
+  const diff = (paths, overrides = {}) => ({
+    status:'ahead', ahead_by:1, behind_by:0, total_commits:1,
+    base_commit:{sha:old}, merge_base_commit:{sha:old},
+    commits:[{sha:newest}],
+    files:paths.map(filename=>({filename,status:'modified'})), ...overrides,
+  });
+  const checked = paths => verifiedIndependentPublicRasterAdvance(
+    diff(paths),old,newest,['lib/crm/contact.js']);
+  assert.equal(checked(['public/images/welcome.webp']), true);
+  assert.equal(checked(['public/photos/team/person.png']), true);
+  for(const path of ['public/images/fraud.svg','public/images/script.js',
+    'public/images/../private.png','.github/workflows/core.yml',
+    'app/api/payment/route.ts','supabase/migrations/123.sql','package-lock.json',
+    'components/mandala-video.tsx','public/images/page.css']) {
+    assert.equal(checked([path]),false,path);
+  }
+  assert.equal(verifiedIndependentPublicRasterAdvance(
+    diff(['public/images/banner.png']),old,newest,['public/images/banner.png']),false);
+  for(const bad of [{status:'diverged'},{behind_by:1},{commits:[]},
+    {total_commits:2},{files:[]},
+    {files:[{filename:'public/images/a.png',status:'removed'}]},
+    {files:[{filename:'public/images/a.png',status:'renamed',previous_filename:'public/images/b.png'}]}]) {
+    assert.equal(verifiedIndependentPublicRasterAdvance(
+      diff(['public/images/a.png'],bad),old,newest,['lib/crm/contact.js']),false);
+  }
 });
