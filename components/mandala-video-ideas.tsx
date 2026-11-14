@@ -172,6 +172,10 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,active,disab
  const selectedCount=chosen.length;
  const textSizeIndex=Math.max(0,scaleValues.indexOf(settings.textScale??"medium"));
  const apply=(candidates:string[],indices:number[])=>{
+  // Mark this signature initialized before a real click can be overwritten by
+  // a delayed activation effect when iOS/WebKit enters Montage → Text.
+  // Editing phrases always wins over stale automatic bootstrap suggestions.
+  lastApplied.current=signature;
   // The editor and renderer receive a single projection of the selected text.
   // Stop an old playback frame before repainting at 0 with the new phrases.
   const plan=planIdeaSelection(candidates,indices,suggested,signature);
@@ -342,18 +346,15 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,active,disab
   </details>
 
   <div className={css.stageActions} data-video-stage-actions="ideas">
-  <button type="button" className={css.create} data-video-ideas-generate
-    disabled={disabled} onClick={onGenerate}>
-    <Play size={21} fill="currentColor" aria-hidden="true"/>
-    {locale==="ru"?"Создать видео":locale==="es"?"Generar vídeo":"Generate Video"}
-  </button>
-  <button type="button" className={css.addEffects} data-video-ideas-create
-    disabled={disabled||selectedCount<5} onClick={onCreate}>
-    <Sparkles size={19} aria-hidden="true"/>
-    {locale==="ru"?"Добавить эффекты":locale==="es"?"Añadir efectos":"Add Effects"}
-    <span aria-hidden="true">→</span>
-  </button>
- </div>
+   <button type="button" className={css.create} data-video-ideas-generate
+     disabled={disabled||generating} onClick={onGenerate}>
+     {locale==="ru"?"Создать видео":locale==="es"?"Generar vídeo":"Generate Video"}
+   </button>
+   <button type="button" className={css.addEffects} data-video-ideas-create
+     disabled={disabled||selectedCount<5} onClick={onCreate}>
+     {locale==="ru"?"Раскадровка":locale==="es"?"Guion visual":"Storyboard"}
+   </button>
+  </div>
  {status?<p className={css.stageStatus} role="status" aria-live="polite">{status}</p>:null}
  <p className={css.privacy}>{t.privacy}</p>
  </section>;

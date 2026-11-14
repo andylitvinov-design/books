@@ -85,3 +85,27 @@ test("Preserve one voice recorder, optional effects and compact mobile layout",(
     assert.ok(browser.includes(marker),marker);
   assert.match(browser,/for\(const width of \[320,354,390,430\]\)/);
 });
+
+
+test("Concept uses canonical selected filters and numeric energy, while WebKit phrase clicks win over delayed bootstrap",()=>{
+  const auto=read("components/mandala-auto-video-director.tsx");
+  const concept=read("components/mandala-video-concept.tsx");
+  const engine=read("lib/mandala/auto-video-concept.mjs");
+  const semantic=read("lib/mandala/video-concept-semantic.mjs");
+  assert.match(auto,/if\(!onConceptTopicChange\)return;/);
+  assert.match(auto,/onConceptTopicChange\(current&&current\.category\.id===selectedCategoryId/);
+  assert.match(auto,/const label=found\.topic\.label\[locale\]/);
+  assert.doesNotMatch(auto,/requestDraft\.trim\(\)\|\|found\.topic\.label\[locale\]/);
+  assert.match(studio,/onConceptTopicChange=\{setSelectedConceptTopic\}/);
+  assert.match(studio,/selectedTopic=\{selectedConceptTopic\}/);
+  assert.match(concept,/selectedTopicId:selectedTopic\?\.topicId/);
+  assert.match(personal,/energyStart:value\.energy,energyTarget:value\.desiredLevel/);
+  assert.match(engine,/selectedTopicId:explicitTopic\?\.topic\.id/);
+  assert.match(semantic,/put\(p,"pace",dynamic\?"dynamic"/);
+  const applyStart=ideas.indexOf("const apply=(candidates:string[],indices:number[])=>");
+  const projectionStart=ideas.indexOf("const plan=planIdeaSelection",applyStart);
+  assert.ok(applyStart>=0&&projectionStart>applyStart);
+  assert.match(ideas.slice(applyStart,projectionStart),/lastApplied\.current=signature/);
+  assert.match(browser,/await unselectedToggle\.click\(\)/);
+  assert.match(browser,/toHaveAttribute\('aria-pressed','true'\)/);
+});

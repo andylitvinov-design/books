@@ -524,3 +524,41 @@ test('Core Mandala fast contracts run only as fallback when the BASE/HEAD Specia
     assert.ok(mandala.includes(name),'Specialist focused unit coverage must retain '+name);
   }
 });
+
+test('Stories Studio PR must execute real WebKit and four-format acceptance, never silently skip media gates', () => {
+  const s=workflow('holistic-support-mandala.yml');
+  assert.match(s, /'lib\/mandala\/stories-studio\.\*'/);
+  assert.match(s, /'tests\/stories-studio-\*\.test\.mjs'/);
+  assert.match(s, /node --test tests\/stories-studio-contract\.test\.mjs tests\/stories-studio-ui\.test\.mjs/);
+  const webkit=s.slice(s.indexOf('  voice-webkit-macos:'),s.indexOf('    needs: [webkit_preflight]',s.indexOf('  voice-webkit-macos:')));
+  assert.match(webkit, /startsWith\(github\.head_ref, 'codex\/stories-'\)/);
+  const linux=s.slice(s.indexOf('      - name: Build\n'),s.indexOf('  webkit_preflight:'));
+  assert.match(linux, /startsWith\(github\.head_ref, 'codex\/stories-'\)/);
+});
+
+
+test('Stories physical five-scene MP4 is mandatory in the macOS WebKit release path',()=>{
+  const s=workflow('holistic-support-mandala.yml');
+  assert.match(s,/scripts\/benchmarking\/verify-five-scene-stories-browser\.mjs/);
+  const mac=s.slice(s.indexOf('  voice-webkit-macos:'));
+  assert.match(mac,/if \[\[ "\$\{GITHUB_HEAD_REF:-\}" == codex\/stories-\* \|\| "\$\{GITHUB_HEAD_REF:-\}" == codex\/video-story-five-cards-quality-last-20261112 \]\]/);
+  assert.match(mac,/HH_STORIES_E2E_ENGINE=webkit/);
+  assert.match(mac,/node scripts\/benchmarking\/verify-five-scene-stories-browser\.mjs/);
+  assert.match(mac,/artifacts\/benchmarking\/five-scene-stories-webkit\.json/);
+  assert.doesNotMatch(mac,/continue-on-error:\s*true/);
+});
+
+test('Axis private planner trigger accepts catch-all routes without GitHub character classes', () => {
+  const source = workflow('hh-profile-axis-matching.yml');
+  assert.ok(source.includes("      - 'app/api/app/**/route.js'"));
+  assert.ok(!source.includes("      - 'app/api/app/[...path]/route.js'"));
+  const trigger = parsePrTrigger(source, '.github/workflows/hh-profile-axis-matching.yml');
+  for (const path of ['app/api/app/[...path]/route.js', 'app/api/app/[[...path]]/route.js'])
+    assert.equal(matchesTrigger(trigger, [path], 'codex/public-book-library'), true);
+  assert.equal(matchesTrigger(trigger, ['docs/unrelated.md'], 'codex/public-book-library'), false);
+  assert.match(source, /tests\/intelligence-plan\.test\.mjs/);
+  assert.ok(source.includes('node --conditions=react-server --test tests/app-auth-pkce.integration.mjs'));
+  assert.ok(source.includes('github.event.pull_request.draft == false'));
+  assert.doesNotMatch(source, /continue-on-error:\s*true/);
+});
+

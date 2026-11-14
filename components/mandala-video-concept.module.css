@@ -57,45 +57,54 @@
 @media(prefers-reduced-motion:reduce){.panel *{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
 
 
-/* 08 Nov — compact Concept: four meaningful decisions, not eleven fake links. */
-.summary{display:grid;gap:9px;min-width:0}
-.contextLine{display:flex;align-items:flex-start;justify-content:space-between;gap:9px;
-  font:500 12px/1.35 Arial,Helvetica,sans-serif;color:#425f53;min-width:0}
-.contextLine span{min-width:0;overflow-wrap:anywhere}
-.contextLine strong{color:#175443}
-.contextLine small{flex:0 1 46%;color:#688076;font:500 11px/1.35 Arial,Helvetica,sans-serif;overflow-wrap:anywhere}
-.mainIdea{display:grid;gap:6px;background:linear-gradient(145deg,#eaf7ef,#f5faf5);
-  border:1px solid #cfe6d6;border-radius:15px;padding:12px 14px;min-width:0}
-.mainIdea>span{font:750 10px/1.3 Arial,Helvetica,sans-serif;letter-spacing:.045em;
-  text-transform:uppercase;color:#37725f}
-.mainIdea>strong{font:750 clamp(15px,3.6vw,18px)/1.32 Arial,Helvetica,sans-serif;
-  color:#1d483a;overflow-wrap:anywhere}
-.compactGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;min-width:0}
-.conceptTile{display:flex;align-items:flex-start;gap:9px;min-width:0;min-height:76px;
-  border:1px solid #e5e7df;border-radius:14px;padding:9px;background:#fff;
-  box-shadow:0 2px 7px #40351e08}
-.conceptTile .rowIcon{width:32px;height:32px;border-radius:10px;flex:0 0 32px}
-.conceptTile .rowIcon svg{width:17px;height:17px}
-.tileCopy{display:grid;align-content:start;gap:3px;min-width:0}
-.tileCopy>span{font:700 11px/1.2 Arial,Helvetica,sans-serif;color:#6a7970}
-.tileCopy>strong{font:750 12.5px/1.28 Arial,Helvetica,sans-serif;
-  color:#173f33;overflow-wrap:anywhere}
-.tileCopy>small{font:500 10px/1.25 Arial,Helvetica,sans-serif;color:#778a7f}
-.journey{display:grid;gap:8px;margin-top:10px}
-.journey h4{font:800 14px/1.25 Arial,Helvetica,sans-serif;color:#214c40;margin:0}
-.journey ol{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;
-  margin:0;padding:0;list-style:none}
-.journey li{display:flex;align-items:center;gap:7px;min-height:47px;
-  padding:7px 9px;border:1px solid #e2e9df;border-radius:11px;
-  background:#f7faf5;color:#2d5447;font:650 11.5px/1.25 Arial,Helvetica,sans-serif;
-  overflow-wrap:anywhere;min-width:0}
+/* One specific key idea, one editable narrative, one vertical detail list. */
+.mainIdeaCard{display:grid;grid-template-columns:minmax(0,1fr);gap:7px;min-width:0;
+  padding:14px 15px;margin-bottom:11px;border:1px solid #b5dfcf;border-radius:16px;
+  background:linear-gradient(125deg,#e2f5ed,#f2faf4)}
+.mainIdeaCard h4{margin:0;color:#26725e;font:800 11.5px/1.3 Arial,Helvetica,sans-serif;
+  text-transform:uppercase;letter-spacing:.045em}
+.mainIdeaCard strong{color:#184739;font:800 clamp(16px,4.4vw,19px)/1.35 Arial,Helvetica,sans-serif;
+  overflow-wrap:anywhere}
+
+.narrativeCard{display:grid;gap:10px;padding:14px;border:1px solid #cee4d6;
+  border-radius:16px;background:linear-gradient(145deg,#eaf7ef,#f7faf6);min-width:0}
+.narrativeHeading{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.narrativeHeading h4{font:800 15px/1.25 Arial,Helvetica,sans-serif;color:#1d4939;margin:0}
+.narrativeEdit{display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  min-height:44px;border:1px solid #bcdaca;border-radius:11px;padding:8px 11px;
+  background:#fff;color:#176b53;font:750 12.5px/1.3 Arial,Helvetica,sans-serif;cursor:pointer}
+.narrativeCopy{margin:0;font:500 14.5px/1.55 Arial,Helvetica,sans-serif;
+  color:#244b3d;white-space:pre-wrap;overflow-wrap:anywhere}
+.narrativeInput{width:100%;min-width:0;min-height:138px;resize:vertical;padding:12px;
+  border:1px solid #93cdb5;border-radius:12px;background:#fff;color:#173c30;
+  font:500 15px/1.5 Arial,Helvetica,sans-serif}
+.narrativeButtons{display:flex;flex-wrap:wrap;gap:8px}
+.narrativeButtons button{display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  min-height:44px;border:1px solid #a8d5c1;border-radius:11px;padding:8px 13px;
+  background:#fff;color:#155b48;font:750 13px/1.3 Arial,Helvetica,sans-serif;cursor:pointer}
+.narrativeButtons button:first-child{background:#087e61;color:#fff;border-color:#087e61}
+.narrativeButtons button:disabled,.narrativeEdit:disabled{opacity:.55;cursor:not-allowed}
+.editor{grid-template-columns:minmax(0,1fr);margin-top:12px}
+.editor label:nth-child(3),.editor label:nth-child(6),.editor label:nth-child(7){grid-column:auto}
+.parameters{display:grid;gap:8px;min-width:0;margin-top:13px}
+.parameters h4{font:800 15px/1.25 Arial,Helvetica,sans-serif;color:#214c40;margin:0 2px}
+.parameterList{display:grid;grid-template-columns:minmax(0,1fr);gap:7px;
+  list-style:none;margin:0;padding:0;min-width:0}
+.parameterList>li{display:grid;grid-template-columns:minmax(0,1fr);gap:5px;min-width:0;
+  padding:11px 12px;background:#fff;border:1px solid #e5e9e2;border-radius:12px}
+.parameterLabel{display:flex;align-items:baseline;justify-content:space-between;
+  flex-wrap:wrap;gap:5px 12px;min-width:0}
+.parameterLabel strong{font:750 12px/1.3 Arial,Helvetica,sans-serif;color:#1e5c49}
+.parameterLabel small{font:500 10.5px/1.3 Arial,Helvetica,sans-serif;color:#73887e}
+.parameterValue{font:600 13.5px/1.45 Arial,Helvetica,sans-serif;color:#233d34;
+  overflow-wrap:anywhere;white-space:pre-wrap}
+.emotionSteps{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;
+  list-style:none;margin:4px 0 0;padding:0;min-width:0}
+.emotionSteps li{display:flex;align-items:center;gap:8px;min-height:38px;
+  padding:7px 9px;border:1px solid #e2e9df;border-radius:10px;
+  background:#f7faf5;color:#2d5447;font:650 12px/1.3 Arial,Helvetica,sans-serif;overflow-wrap:anywhere}
 .journeyNumber{display:grid;place-items:center;width:23px;height:23px;border-radius:50%;
   background:#deefe7;color:#087e62;font-weight:800;flex:0 0 23px}
-.parameterList{display:grid;gap:4px;list-style:decimal;margin:0;padding:3px 16px 14px 34px}
-.parameterList li{padding:7px 2px;border-bottom:1px solid #edf0e8;font:500 12px/1.4 Arial,Helvetica,sans-serif;
-  overflow-wrap:anywhere;color:#3b5a50}
-.parameterList li strong{color:#183f34}
-.parameterList li small{color:#6e8278;white-space:normal}
 .panel .headline{padding:2px 2px 10px;gap:8px}
 .panel .headline h3{font-size:clamp(18px,4.4vw,21px);margin:4px 0}
 .panel .headline p{font-size:12.5px;line-height:1.35;max-width:34ch}
@@ -120,10 +129,6 @@
     background:rgba(255,252,247,.98);border:1px solid #d5e5d9;border-radius:16px;
     box-shadow:0 5px 26px #173d3329;backdrop-filter:blur(8px)}
   .panel .headline{align-items:start}
-  .compactGrid{gap:7px}
-  .conceptTile{padding:8px;gap:7px;min-height:75px}
-  .journey ol{gap:6px}
-  .journey li{min-height:45px}
 }
 /* Installed iOS standalone uses viewport-fit:cover; do not put the heading
    underneath the status bar. Other Safari displays keep normal page spacing. */
@@ -132,13 +137,55 @@
 }
 @media(max-width:359px){
   .panel{padding-inline:8px}
-  .contextLine{display:grid;gap:3px}
-  .contextLine small{max-width:none}
-  .conceptTile{min-height:79px;padding:7px 6px;gap:5px}
-  .conceptTile .rowIcon{width:27px;height:27px;flex-basis:27px}
-  .tileCopy>strong{font-size:11.7px}
-  .journey li{font-size:11px;padding:6px}
+  .narrativeCard{padding:11px}
+  .narrativeCopy{font-size:14px}
+  .parameterList>li{padding:9px 10px}
   .panel .actions{grid-template-columns:minmax(0,1fr) minmax(95px,.56fr);
     left:7px;right:7px}
   .panel .actions button{font-size:11.5px}
+}
+
+/* Story-first mobile concept review: literary idea before hidden production details. */
+.directionChooser{display:grid;gap:10px;min-width:0;margin:0 0 14px}
+.directionEyebrow{display:flex;align-items:center;gap:5px;color:#20816a;
+  font:750 11.5px/1.3 Arial,Helvetica,sans-serif;letter-spacing:.015em}
+.directionChooser h4{margin:0;color:#173f34;font:800 19px/1.2 Arial,Helvetica,sans-serif}
+.directionChooser>p{margin:0;color:#60746a;font:500 13px/1.45 Arial,Helvetica,sans-serif}
+.directionGrid{display:grid;grid-template-columns:minmax(0,1fr);gap:9px}
+.directionOption{display:grid;gap:4px;text-align:left;min-width:0;width:100%;
+  padding:12px 14px;border:1px solid #d9e6da;border-radius:15px;
+  background:#fffdfa;color:#184a39;cursor:pointer;
+  box-shadow:0 2px 6px #17382f0b;transition:border-color .16s,background .16s}
+.directionOption[aria-pressed="true"]{background:linear-gradient(130deg,#e7f7ed,#f7fbf5);
+  border:2px solid #178765;padding:11px 13px;box-shadow:0 4px 14px #09745513}
+.directionOption:disabled{opacity:.55;cursor:not-allowed}
+.directionOptionTop{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.directionOptionTop strong{font:800 15px/1.3 Arial,Helvetica,sans-serif}
+.directionRadio{height:24px;width:24px;flex:0 0 24px;display:grid;place-items:center;
+  border-radius:50%;border:1px solid #b5d8c8;color:#fff}
+.directionOption[aria-pressed="true"] .directionRadio{background:#06886a;border-color:#06886a}
+.directionOption small{color:#29806a;font:650 11px/1.35 Arial,Helvetica,sans-serif}
+.directionIdea{color:#345347;font:500 13px/1.42 Arial,Helvetica,sans-serif;
+  overflow-wrap:anywhere}
+.conceptTitle{font:750 14px/1.35 Arial,Helvetica,sans-serif;color:#22785d}
+.parameters{display:block;overflow:hidden;border-radius:14px;border:1px solid #dbe6dc;
+  background:#f9fbf8;margin:14px 0 10px}
+.parameters summary{list-style:none;display:flex;align-items:center;
+  justify-content:space-between;gap:10px;min-height:48px;padding:12px 14px;
+  font:750 14px/1.35 Arial,Helvetica,sans-serif;color:#295e4d;cursor:pointer}
+.parameters summary::-webkit-details-marker{display:none}
+.parameters summary svg{transition:transform .15s}
+.parameters[open] summary svg{transform:rotate(180deg)}
+.parameters .parameterList{padding:0 10px 12px}
+.shotTitle{font-weight:800;color:#145e48}
+.shotAction{color:#315345}
+.shotEmotion{display:block;margin-top:4px;color:#74887e;font-size:11px}
+@media(min-width:600px){
+  .directionGrid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .directionOption{align-content:start}
+}
+@media(max-width:359px){
+ .directionOption{padding:11px}.directionOption[aria-pressed="true"]{padding:10px}
+ .directionOptionTop strong{font-size:14px}
+ .directionIdea{font-size:12.5px}
 }

@@ -80,7 +80,9 @@ export function summarizeVideoGoalProfile(value:VideoGoalProfile,locale:VideoLoc
  const desired=value.desired.map(id=>desiredChoices.find(c=>c.id===id)?.[locale]).filter(Boolean).join(" · ");
  const axes=listMeaningAxes(locale);
  const focus=value.axes.map(id=>axes.find(c=>c.id===id)?.label).filter(Boolean).join(" · ");
- return {currentState:current,desiredState:desired,focus};
+ return {currentState:current,desiredState:desired,focus,
+  currentIds:[...value.current],desiredIds:[...value.desired],focusIds:[...value.axes],
+  energyStart:value.energy,energyTarget:value.desiredLevel};
 }
 
 export function MandalaVideoPersonalization({locale,value,onChange,onBack,onContinue,disabled}:{

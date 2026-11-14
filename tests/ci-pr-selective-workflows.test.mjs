@@ -21,7 +21,6 @@ const ownerWorkflows = [
   "hh-ideas-coaching-public.yml",
   "hh-live-seo-audit.yml",
   "hh-live-audio-ci.yml",
-  "hh-personal-coaching-session.yml",
   "hh-public-performance-audit.yml",
   "hh-support-guided-recommendations.yml",
   "holistic-house-native.yml",
@@ -38,7 +37,10 @@ const ownerWorkflows = [
   "practice-visual-browser.yml",
   "practice-google-browser.yml"
 ];
-const highRiskSelfChecks = ["opora-module-ci.yml","hh-public-test-collections.yml","hh-kling-video.yml","practitioner-presentations.yml","pro-reiki-master-paths.yml","hh-reports-development-program.yml","hh-support-mobile-mock-browser.yml","hh-public-journey-wave1.yml"];
+// The private Coaching Brain workflow must self-trigger on changes to its own
+// validation policy; Core, Guard and actionlint still verify that YAML.
+// It is a required security/privacy owner, unlike the optional fan-out jobs.
+const highRiskSelfChecks = ["hh-personal-coaching-session.yml","opora-module-ci.yml","hh-public-test-collections.yml","hh-kling-video.yml","practitioner-presentations.yml","pro-reiki-master-paths.yml","hh-reports-development-program.yml","hh-support-mobile-mock-browser.yml","hh-public-journey-wave1.yml"];
 const contractFile = 'docs/operations/CI_OWNER_ROUTE_MIGRATION_20261104.md';
 const legacyTrigger = 'tests/ci-pr-selective-workflows.test.mjs';
 const source = name => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
@@ -120,4 +122,23 @@ test('Messages wellness specialists start on Ready after a stacked Draft is reta
     assert.doesNotMatch(source, /continue-on-error:\s*true/,
       name + ': Specialist must still fail closed on a true product regression');
   }
+});
+
+
+test('Core suppresses metadata-only waves but keeps exact-HEAD and signed Ready recovery events', () => {
+  const workflow = source('hh-pr-core-release.yml');
+  const events = workflow.match(/^  pull_request:\n(?:(?: {4}[^\n]*\n)*)/m)?.[0] ?? '';
+  const raw = events.match(/^    types: \[([^\]]+)\]$/m)?.[1];
+  assert.ok(raw, 'Core must declare explicit pull_request event types');
+  const types = raw.split(',').map(value => value.trim());
+  assert.deepEqual(types, [
+    'opened', 'synchronize', 'reopened', 'ready_for_review', 'converted_to_draft',
+  ]);
+  assert.ok(!types.includes('edited'), 'PR body/title edits must not restart Core');
+  assert.match(workflow, /HH PR core release gate/);
+  assert.match(workflow, /^  hh-specialist:\s*$/m);
+  assert.match(workflow, /^  hh-merge-check:\s*$/m);
+  assert.match(workflow, /needs: \[scope, hh-specialist\]/);
+  assert.match(workflow, /\(github\.event\.action == 'synchronize' \|\| github\.event\.action == 'converted_to_draft'\)/);
+  assert.doesNotMatch(workflow, /continue-on-error:\s*true/);
 });

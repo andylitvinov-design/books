@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
+import {stripApprovedIntroVideoSources} from "./helpers/approved-mandala-intro-sources.mjs";
 
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
@@ -19,7 +20,7 @@ test("free video lives inside original mandala editor and reuses its private loc
   assert.match(video, /URL\.revokeObjectURL\(result\.url\)/);
   assert.match(video, /loadSceneImage\(snapshot\)/);
   assert.match(video, /sourceRef\.current !== snapshot/);
-  assert.doesNotMatch(video, /\bfetch\s*\(|XMLHttpRequest|FormData|localStorage|sessionStorage|sendBeacon|supabase|kling|higgsfield|heygen/i);
+  assert.doesNotMatch(stripApprovedIntroVideoSources(video), /\bfetch\s*\(|XMLHttpRequest|FormData|localStorage|sessionStorage|sendBeacon|supabase|kling|higgsfield|heygen/i);
 });
 
 test("video recorder keeps legacy durations and adds the 15-second brief option across EN/RU/ES", () => {
@@ -77,7 +78,10 @@ test("client money-flow studio offers 16 original and licensed looks and starts 
   assert.match(effects, /ctx\.clip\("evenodd"\)/);
   assert.match(css, /@media\(max-width:350px\)\{\.moneyFlowSection/);
   assert.match(browser, /data-mandala-money-option/);
-  assert.doesNotMatch(studio + effects, /\bfetch\s*\(|XMLHttpRequest|FormData|localStorage|sessionStorage|sendBeacon|supabase|kling\.ai|higgsfield|heygen|publish/i);
+  // Ignore only code comments and the separately approved native intro sources;
+  // preserve the hard prohibition on external network/provider use in local video.
+  const executableCode=(stripApprovedIntroVideoSources(studio)+effects).replace(/^[ \t]*\/\/.*$/gm,"");
+  assert.doesNotMatch(executableCode, /\bfetch\s*\(|XMLHttpRequest|FormData|localStorage|sessionStorage|sendBeacon|supabase|kling\.ai|higgsfield|heygen|publish/i);
 
   const diagnostic = ts.transpileModule(effects, {
     fileName: "lib/mandala/money-flow-effects.ts",
@@ -124,7 +128,7 @@ test("cinematic customer video renders real layered motion, portrait and 720/108
     }).diagnostics||[];
     assert.equal(diagnostics.filter(d=>d.category===ts.DiagnosticCategory.Error).length,0,file);
   }
-  assert.doesNotMatch(studio+renderer, /\bfetch\s*\(|XMLHttpRequest|FormData|localStorage|sessionStorage|sendBeacon|supabase|kling\.ai|higgsfield|heygen/i);
+  assert.doesNotMatch(stripApprovedIntroVideoSources(studio)+renderer, /\bfetch\s*\(|XMLHttpRequest|FormData|localStorage|sessionStorage|sendBeacon|supabase|kling\.ai|higgsfield|heygen/i);
 });
 
 

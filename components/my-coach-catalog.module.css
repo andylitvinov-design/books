@@ -270,3 +270,105 @@
   .heroLead{max-width:205px}
 }
 @media(prefers-reduced-motion:reduce){.root *{scroll-behavior:auto!important;transition:none!important}}
+
+/* Inline coach details: the disclosure belongs to its own card, not a second section below the directory. */
+.card .profile,.cardSelected .profile{grid-column:1/-1;min-width:0;margin:3px 0 0;padding:clamp(14px,2.2vw,23px);border-radius:16px;
+  border:1px solid #dce9df;background:#fbfdf9;box-shadow:inset 0 1px 0 #ffffffb5}
+.card .profileHead,.cardSelected .profileHead{gap:13px}
+.card .profileAbout,.cardSelected .profileAbout{margin:14px 0;font-size:15px}
+.card .profileFacts,.cardSelected .profileFacts{gap:8px}
+.card .profileFacts>div,.cardSelected .profileFacts>div{padding:12px}
+.card .opening,.card .preview,.cardSelected .opening,.cardSelected .preview{margin-top:14px;padding:14px 16px}
+.card .settings,.cardSelected .settings{margin-top:14px;padding:15px}
+.card .settingsGrid,.cardSelected .settingsGrid{gap:15px;margin-top:15px}
+.card .primary,.cardSelected .primary{min-height:48px;margin-top:16px}
+@media(max-width:540px){
+  .card .profile,.cardSelected .profile{padding:12px}
+  .card .profileHead,.cardSelected .profileHead{gap:10px}
+  .card .profileHead .avatarLarge,.cardSelected .profileHead .avatarLarge{width:58px;height:58px}
+  .card .profileHead h2,.cardSelected .profileHead h2{font-size:23px}
+  .card .profileFacts,.cardSelected .profileFacts{grid-template-columns:1fr}
+  .card .settingsGrid,.cardSelected .settingsGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+/* Responsive real account + credit control, without hiding the coach CTA. */
+@media(max-width:540px){
+ .brandHeader{gap:5px}
+ .brand{font-size:16px;letter-spacing:-.04em;white-space:nowrap}
+ .brandMark{width:26px;height:26px}
+ .brandActions{gap:4px;flex:0 0 auto}
+}
+@media(max-width:380px){.brand>span:last-child{display:none}}
+
+/* Animated photographic fictional coaches, using locally hosted WebP assets.
+   Never replace the real human practitioner's portrait. */
+.cardPortrait[data-persona=mira],.avatarLarge[data-persona=mira]{background-image:url('/images/holistic-house/my-coach-motion/mira-living.webp');background-size:cover;background-position:center 23%;background-repeat:no-repeat;font-size:0}
+.cardPortrait[data-persona=max],.avatarLarge[data-persona=max]{background-image:url('/images/holistic-house/my-coach-motion/max-living.webp');background-size:cover;background-position:center 23%;background-repeat:no-repeat;font-size:0}
+.cardPortrait[data-persona=sofia],.avatarLarge[data-persona=sofia]{background-image:url('/images/holistic-house/my-coach-motion/sofia-living.webp');background-size:cover;background-position:center 23%;background-repeat:no-repeat;font-size:0}
+.cardPortrait[data-persona=alex],.avatarLarge[data-persona=alex]{background-image:url('/images/holistic-house/my-coach-motion/alex-living.webp');background-size:cover;background-position:center 23%;background-repeat:no-repeat;font-size:0}
+.cardPortrait[data-persona=lea],.avatarLarge[data-persona=lea]{background-image:url('/images/holistic-house/my-coach-motion/lea-living.webp');background-size:cover;background-position:center 23%;background-repeat:no-repeat;font-size:0}
+.cardPortrait[data-persona=noah],.avatarLarge[data-persona=noah]{background-image:url('/images/holistic-house/my-coach-motion/noah-living.webp');background-size:cover;background-position:center 23%;background-repeat:no-repeat;font-size:0}
+.cardPortrait[data-persona=iris],.avatarLarge[data-persona=iris]{background-image:url('/images/holistic-house/my-coach-motion/iris-living.webp');background-size:cover;background-position:center 23%;background-repeat:no-repeat;font-size:0}
+.cardPortrait[data-persona=ray],.avatarLarge[data-persona=ray]{background-image:url('/images/holistic-house/my-coach-motion/ray-living.webp');background-size:cover;background-position:center 23%;background-repeat:no-repeat;font-size:0}
+.cardPortrait[data-persona] .avatarSymbol{display:none}
+@media(prefers-reduced-motion:reduce){
+.cardPortrait[data-persona=mira],.avatarLarge[data-persona=mira]{background-image:url('/images/holistic-house/my-coach-motion/mira-still.webp')}
+.cardPortrait[data-persona=max],.avatarLarge[data-persona=max]{background-image:url('/images/holistic-house/my-coach-motion/max-still.webp')}
+.cardPortrait[data-persona=sofia],.avatarLarge[data-persona=sofia]{background-image:url('/images/holistic-house/my-coach-motion/sofia-still.webp')}
+.cardPortrait[data-persona=alex],.avatarLarge[data-persona=alex]{background-image:url('/images/holistic-house/my-coach-motion/alex-still.webp')}
+.cardPortrait[data-persona=lea],.avatarLarge[data-persona=lea]{background-image:url('/images/holistic-house/my-coach-motion/lea-still.webp')}
+.cardPortrait[data-persona=noah],.avatarLarge[data-persona=noah]{background-image:url('/images/holistic-house/my-coach-motion/noah-still.webp')}
+.cardPortrait[data-persona=iris],.avatarLarge[data-persona=iris]{background-image:url('/images/holistic-house/my-coach-motion/iris-still.webp')}
+.cardPortrait[data-persona=ray],.avatarLarge[data-persona=ray]{background-image:url('/images/holistic-house/my-coach-motion/ray-still.webp')}
+}
+
+/* Human practitioners share the AI card design without impersonating AI personas. */
+.coachKindSwitch{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;max-width:500px;
+  padding:5px;margin:0 0 16px;background:#eef3ed;border:1px solid #dce5da;border-radius:999px}
+.coachKind,.coachKindActive{display:flex;align-items:center;justify-content:center;gap:8px;min-width:0;min-height:44px;
+  border-radius:999px;border:1px solid transparent;background:transparent;color:#345f50;
+  font:750 14px/1.15 system-ui;cursor:pointer;transition:background .15s ease}
+.coachKindActive{background:linear-gradient(135deg,#29a17f,#087255);color:#fff;
+  box-shadow:0 3px 12px #0d765323}
+.coachKind svg,.coachKindActive svg{flex-shrink:0}
+.discover[hidden],.humanDirectory[hidden]{display:none!important}
+.humanDirectory{min-width:0}
+.humanDirectory[data-my-coach-combined="true"]{border-top:1px solid #e9dfd1;margin-top:21px;padding-top:18px}
+.humanSectionHeading{color:#145b49;font:750 clamp(19px,2.4vw,23px)/1.2 system-ui;margin:0 0 13px}
+.humanContact{grid-column:1/-1;width:100%;min-width:0;max-width:700px;margin-top:-4px}
+.humanContact[hidden]{display:none!important}
+.humanContact :global([data-messenger-only-contact] > div > strong){display:none}
+.humanContact :global([data-compact-messenger="true"] > div){border-color:#cfe6d9}
+
+.humanDirectory .cardGrid{grid-template-columns:minmax(0,700px)}
+.humanPortrait{overflow:hidden;border-radius:17px;min-width:0;min-height:152px;
+  background:#dce9dd}
+.humanPortrait img{display:block;width:100%;height:100%;object-fit:cover;object-position:center 23%}
+.humanProfile{grid-column:1/-1;padding:13px 16px;background:#f2f7f1;border:1px solid #dfe8df;
+  border-radius:14px;color:#395b50;font:500 14px/1.55 system-ui}
+.humanProfile p{margin:0}
+.humanProfile p+p{margin-top:9px}
+.humanNote{color:#5c7168;font:500 12px/1.45 system-ui;margin:14px 2px 10px}
+.humanMore{display:inline-flex;align-items:center;gap:6px;padding:8px 2px;
+  color:#1d7157;font:700 13px system-ui;text-decoration:none}
+.humanDirectory .cardButton{min-height:42px;padding:10px 13px}
+@media(max-width:540px){
+ .coachKindSwitch{max-width:none;margin:0 0 12px;padding:4px}
+ .coachKind,.coachKindActive{font-size:clamp(11px,3.1vw,13px);min-height:44px;gap:5px;padding:0 4px}
+ .coachKind svg,.coachKindActive svg{width:15px;height:15px}
+ .humanPortrait{min-height:131px;border-radius:13px}
+ .humanProfile{padding:11px;font-size:13px}
+ .humanDirectory .cardButton{min-height:40px;font-size:11px}
+}
+@media(max-width:345px){.coachKind,.coachKindActive{font-size:10px;gap:3px}.coachKind svg,.coachKindActive svg{width:13px;height:13px}}
+@media(prefers-reduced-motion:reduce){.coachKind,.coachKindActive{transition:none}}
+
+/* Approved real specialist video + human dialogue page, separate from fictional AI sessions. */
+.humanSessionLink{display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  min-height:44px;max-width:100%;margin-top:8px;padding:9px 13px;
+  border:1px solid #0d7b5d;border-radius:999px;background:#e9f6ee;
+  color:#096448;font:750 13px/1.3 system-ui;text-align:center;text-decoration:none}
+.humanSessionLink svg{flex:none}
+.humanSessionLink:hover{background:#d5eee1}
+.humanSessionLink:focus-visible{outline:3px solid #176e6e;outline-offset:3px}
+@media(max-width:540px){.humanSessionLink{font-size:12px;min-height:44px;width:100%;box-sizing:border-box}}

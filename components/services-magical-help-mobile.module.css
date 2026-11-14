@@ -1,0 +1,83 @@
+.section{display:none}
+@media(max-width:760px){
+.section,.section *{box-sizing:border-box}
+.section{display:block;width:calc(100% - 24px);max-width:540px;margin:26px auto 32px;color:#17334b;font:16px/1.45 Arial,Helvetica,sans-serif;overflow-wrap:anywhere;scroll-margin-top:16px}
+.header{position:relative;isolation:isolate;min-height:123px;margin:0 2px 15px;padding:9px 73px 9px 4px}
+.header::after{content:"";position:absolute;z-index:-1;right:0;top:0;width:100px;height:110px;background:url("/images/holistic-house/assessment-lotus.svg") center/contain no-repeat;opacity:.52;pointer-events:none}
+.eyebrow{display:flex;align-items:center;gap:7px;margin:0 0 10px;color:#b38c41;font-size:12px;font-weight:800;letter-spacing:.07em}
+.header h2{margin:0;color:#10243d;font:700 clamp(29px,8vw,38px)/1.1 Georgia,"Times New Roman",serif;letter-spacing:-.025em}
+.lead{margin:9px 0 0;color:#5b5664;font-size:15px;line-height:1.35}
+.cards{display:grid;gap:12px}
+.card{display:grid;grid-template-columns:minmax(90px,35%) minmax(0,1fr);gap:11px;min-width:0;padding:11px;border:1px solid #e6d6c1;border-radius:23px;background:#fffcf7;box-shadow:0 6px 20px rgb(72 49 27 / 8%)}
+.picture{position:relative;overflow:hidden;min-width:0;min-height:148px;border-radius:17px;background:radial-gradient(circle at 50% 42%,#f8eac6,#dfccb1)}
+.photo{object-fit:cover;object-position:center}
+.pictureSymbol{position:absolute;right:9px;bottom:9px;filter:drop-shadow(0 2px 4px #55350b);color:#fff0b2}
+.cardText{display:flex;flex-direction:column;min-width:0;gap:7px;padding:2px 0 0}
+.cardText h3{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin:0;color:#10243d;font:700 clamp(18px,5.1vw,24px)/1.12 Georgia,"Times New Roman",serif;letter-spacing:-.018em}
+.cardText h3 svg{color:#ba944d;flex:none}
+.cardText p{margin:0;color:#535461;font-size:14px;line-height:1.34}
+.details{display:inline-flex;align-items:center;gap:4px;align-self:flex-start;margin-top:auto;min-height:30px;color:#006b65;font-size:13px;font-weight:750;text-underline-offset:3px}
+.booking{grid-column:1/-1;min-width:0;margin-top:0}
+.cta,.booking :global([data-contact-order]){display:flex;align-items:center;justify-content:center;gap:10px;min-height:52px;width:100%;padding:11px 14px;border:0;border-radius:999px;background:linear-gradient(135deg,#13847a,#005651);color:#fff!important;font:750 16px/1.25 Arial,Helvetica,sans-serif;text-decoration:none;text-align:center;box-shadow:none}
+.cta svg,.booking :global([data-contact-order] svg){flex:none}
+.booking :global([data-contact-order] span){flex:0 1 auto}
+.booking :global([data-contact-order] > svg:first-child){display:none}
+.booking :global([data-contact-channel-chooser]){width:100%;min-width:0}
+.more{display:grid;grid-template-columns:66px minmax(0,1fr) 22px;align-items:center;gap:10px;min-height:110px;margin-top:13px;padding:13px;border:1px solid #e6d6c1;border-radius:23px;background:#fffcf7;color:#10243d;text-decoration:none;box-shadow:0 6px 20px rgb(72 49 27 / 8%)}
+.masterIcon{display:grid;place-items:center;width:64px;height:64px;border:1px solid #dbc3a0;border-radius:50%;background:radial-gradient(circle,#fff9ea,#e0ede6);color:#b18c45}
+.moreText{display:grid;gap:4px;min-width:0}
+.moreText strong{font:700 clamp(18px,5.1vw,23px)/1.13 Georgia,"Times New Roman",serif}
+.moreText small{color:#5b5664;font-size:13px;line-height:1.35}
+.moreArrow{color:#006b65}
+.note{margin:11px 4px 0;color:#706b67;font-size:12px;line-height:1.45}
+.section :is(a,button):focus-visible{outline:3px solid #176e6e;outline-offset:3px}
+}
+@media(max-width:350px){
+.section{width:calc(100% - 20px)}
+.header{padding-right:60px}
+.header::after{width:80px;height:85px}
+.card{grid-template-columns:92px minmax(0,1fr);gap:9px;padding:9px}
+.picture{min-height:159px;border-radius:14px}
+.cardText h3{font-size:18px}
+.cardText p{font-size:12.5px}
+.cta,.booking :global([data-contact-order]){font-size:14px;min-height:48px}
+.more{grid-template-columns:54px minmax(0,1fr) 18px;padding:10px;gap:8px}
+.masterIcon{width:54px;height:54px}
+.moreText strong{font-size:17px}
+.moreText small{font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){.section *{transition:none!important}}
+/* Spiritual-support category adopts the same mobile panel proportions. */
+@media(max-width:760px){
+.section{width:calc(100% - 24px);max-width:520px;margin:14px auto;padding:12px;border:1px solid #dfcbae;border-radius:22px;background:#fffcf7;box-shadow:0 5px 16px rgb(72 49 27 / 7%)}
+.header{min-height:0;margin:0 2px 12px;padding:3px 50px 0 1px}
+.header::after{right:0;width:48px;height:48px}
+.eyebrow{margin-bottom:5px;font-size:10px}
+.header h2{font-size:clamp(24px,6.5vw,28px)}
+.lead{margin-top:6px;font-size:13px}
+.cards{gap:8px}
+.card{grid-template-columns:minmax(78px,30%) minmax(0,1fr);gap:9px;padding:8px;border-radius:16px;background:#fffefa;box-shadow:none}
+.picture{min-height:120px;border-radius:12px}
+.cardText{gap:4px;padding:0}
+.cardText h3{font-size:clamp(16px,4.65vw,19px)}
+.cardText p{font-size:12px;line-height:1.3}
+.details{min-height:28px;font-size:12px}
+.booking{margin-top:0}
+.cta,.booking :global([data-contact-order]){min-height:44px;padding:7px 9px;border-radius:12px;font-size:13px}
+.booking :global([data-messenger-only-contact]){display:block;min-height:0;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;color:inherit}
+.booking :global([data-messenger-only-contact] > details > summary){justify-content:center;min-height:44px;padding:7px 9px;border-radius:12px;background:linear-gradient(135deg,#13847a,#005651);color:white;text-align:center;font-size:13px}
+.booking :global([data-messenger-only-contact] [role="group"]){grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.booking :global([data-messenger-only-contact] [role="group"] a){min-width:0;min-height:44px;padding:7px 4px;font-size:12px}
+.more{grid-template-columns:46px minmax(0,1fr) 18px;gap:9px;min-height:72px;margin-top:9px;padding:9px;border-radius:16px;box-shadow:none}
+.masterIcon{width:46px;height:46px}
+.moreText strong{font-size:17px}
+.moreText small{font-size:12px}
+.note{margin-top:9px;font-size:11px}
+}
+@media(max-width:350px){
+.section{width:calc(100% - 24px);padding:10px}
+.card{grid-template-columns:76px minmax(0,1fr);gap:7px;padding:7px}
+.picture{min-height:122px}
+.cardText h3{font-size:16px}
+.cardText p{font-size:11px}
+}

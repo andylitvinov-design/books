@@ -53,9 +53,7 @@ try {
   await page.waitForFunction(()=>
     document.querySelector('[data-video-montage-style="3"]')
       ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
-  const settings=page.locator('[data-video-montage-tab="settings"]');
-  await settings.waitFor({state:'visible',timeout:20000});
-  await settings.click();
+  await openMontageSettings(page);
   const sourceFormat=page.locator('[data-video-montage-preference="format"]');
   await sourceFormat.waitFor({state:'visible',timeout:20000});
   await sourceFormat.selectOption('portrait');
@@ -66,43 +64,71 @@ try {
   await sourceDuration.selectOption('20');
   assert.equal(await sourceDuration.inputValue(),'20',
     'four real source-backed 5-second scenes require 20s before selecting a preset');
-  // Style's native Next opens Text. The existing verified source timeline is
+  // Style's native Next opens Audio. The existing verified source timeline is
   // reachable through Settings → advanced Concept, not a fifth visible tab.
   const styleTab=page.locator('[data-video-montage-tab="effects"]');
   await styleTab.waitFor({state:'visible',timeout:20000});
   await styleTab.click();
-  const styleNext=page.locator('[data-video-montage-effects] [data-video-montage-next="text"]');
+  const styleNext=page.locator('[data-video-montage-effects] [data-video-montage-next="audio"]');
   await styleNext.waitFor({state:'visible',timeout:20000});
   await styleNext.click();
-  await page.waitForFunction(()=>document.querySelector('[data-video-montage-tab="text"]')
+  await page.waitForFunction(()=>document.querySelector('[data-video-montage-tab="audio"]')
     ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
-  assert.equal(await page.locator('[data-video-montage-tab="text"]').getAttribute('aria-pressed'),
-    'true','VISIBLE_STYLE_NEXT_MUST_OPEN_TEXT');
+  assert.equal(await page.locator('[data-video-montage-tab="audio"]').getAttribute('aria-pressed'),
+    'true','VISIBLE_STYLE_NEXT_MUST_OPEN_AUDIO');
   await page.locator('[data-video-quick-control="phrases"]').click();
   await page.locator('[data-video-ideas-tab="concept"]').click();
   const conceptPanel=page.locator('[data-video-ideas-concept-panel]');
   await conceptPanel.waitFor({state:'visible',timeout:15000});
   await conceptPanel.locator('[data-video-concept-approve]').click();
   await page.locator('[data-video-quick-control="editor"]').click();
-  const settingsTab=page.locator('[data-video-montage-tab="settings"]');
-  await settingsTab.click();
+  await openMontageSettings(page);
   await page.locator('[data-video-quick-control="phrases"]').click();
   await page.locator('[data-video-ideas-tab="concept"]').click();
   assert.equal(await page.locator('[data-video-concept-auto]').getAttribute('data-concept-approved'),
     'true','APPROVED_CONCEPT_MUST_PERSIST');
   await page.locator('[data-video-quick-control="editor"]').click();
-  await settingsTab.click();
+  await openMontageSettings(page);
   const textTools=page.locator('[data-video-concept-text-tools]');
   await textTools.locator(':scope > summary').click();
   assert.equal(await textTools.getAttribute('open'),'','TIMELINE_DISCLOSURE_MUST_OPEN');
   const addVideo=page.locator('[data-video-timeline-add-video]');
   await addVideo.waitFor({state:'visible',timeout:20000});
-  await addVideo.click();
-  await page.locator('[data-free-film-compilation-catalog]').waitFor({state:'visible'});
+  // Native touch must commit the real visitor's opt-in. Desktop click can be
+  // lost when Safari unmounts the timeline while switching workspaces.
+  if (engine === 'webkit') await addVideo.tap();
+  else await addVideo.click();
+  try {
+    await page.waitForFunction(() => {
+      const studio=document.querySelector('[data-mandala-free-video]');
+      const catalog=document.querySelector('[data-free-film-compilation-catalog]');
+      return studio?.getAttribute('data-active-workspace') === 'video'
+        && studio?.getAttribute('data-video-advanced-open') === 'true'
+        && !!catalog && catalog.getClientRects().length>0;
+    },undefined,{timeout:15000});
+    await page.locator('[data-free-film-compilation-catalog]').waitFor({state:'visible',timeout:15000});
+  } catch(error) {
+    // Safe structural diagnostics, never print a wish, media, customer or token.
+    const state=await page.evaluate(() => {
+      const studio=document.querySelector('[data-mandala-free-video]');
+      const catalog=document.querySelector('[data-free-film-compilation-catalog]');
+      return {workspace:studio?.getAttribute('data-active-workspace')||null,
+        advanced:studio?.getAttribute('data-video-advanced-open')||null,
+        scenario:studio?.getAttribute('data-video-scenario-open')||null,
+        catalogPresent:Boolean(catalog),
+        catalogVisible:Boolean(catalog?.getClientRects().length)};
+    }).catch(()=>({diagnosticsUnavailable:true}));
+    console.error('HH_ORIGINAL_MOTION_CATALOG_NOT_OPEN '+JSON.stringify({engine,state}));
+    throw error;
+  }
   const preset = page.locator('[data-free-film-preset="motion-film-goal-achievement"]');
   const more = page.locator('[data-free-film-more]');
-  if (await more.getAttribute('aria-expanded') !== 'true') await more.click();
-  await preset.click();
+  if (await more.getAttribute('aria-expanded') !== 'true') {
+    if (engine === 'webkit') await more.tap();
+    else await more.click();
+  }
+  if (engine === 'webkit') await preset.tap();
+  else await preset.click();
   // React can commit the selected original-motion plan after Playwright's
   // pointer action resolves. Wait for the actual selection, not a fixed delay;
   // fail closed with diagnostic evidence if the real application never commits.
@@ -127,30 +153,38 @@ try {
   assert.equal(await preset.getAttribute('aria-pressed'), 'true');
   assert.deepEqual(await page.locator('[data-free-film-source]').evaluateAll(nodes => nodes.map(node => node.dataset.freeFilmSource)), ids);
   await page.locator('[data-video-quick-control="editor"]').click();
-  // Match the real post-#3676 Montage. Format/duration live in Settings.
-  await settingsTab.waitFor({state:'visible'});
-  await settingsTab.click();
-  assert.equal(await settingsTab.getAttribute('aria-pressed'),'true');
+  // Match the real post-#3676 Montage. Format/duration remain available via Montage → Advanced storyboard → Video settings.
+  await openMontageSettings(page);
+  assert.equal(await page.locator('[data-video-basic-editor]').getAttribute('data-montage-panel'),'settings');
   const duration=page.locator('[data-video-montage-preference="duration"]');
   await duration.waitFor({state:'visible'});
   await duration.selectOption('20');
   assert.equal(await duration.inputValue(),'20');
-  await settingsTab.click();
+  await openMontageSettings(page);
   const audioTab=page.locator('[data-video-montage-open-audio]');
   await audioTab.click();
   await page.locator('[data-video-montage-audio]').waitFor({state:'visible'});
-  await page.locator('[data-video-montage-audio]').waitFor({state:'visible'});
-  const generate = page.locator('[data-video-quick-generate]');
-  await generate.click({ timeout: 30000 });
-  // The compact Audio attach control is the real, visible user action.
-  // Some pre-approved music is already attached; in that case export
-  // continues without an unnecessary second click or duplicate track.
-  const attach=page.locator('[data-video-audio-compact-attach]');
-  await attach.waitFor({state:'visible',timeout:15000});
-  if(await attach.isEnabled()){
-    await attach.click();
-    await generate.click();
+  // The optional "Attach" button exists ONLY after a user uploads their own
+  // audio and accepts the rights declaration. Never wait for that upload-only
+  // control when testing a pre-approved licensed soundtrack.
+  const selectedTracks=page.locator('[data-video-audio-compact-select][aria-pressed="true"]');
+  if(await selectedTracks.count()===0){
+    const availableTrack=page.locator('[data-video-audio-compact-select]:not([disabled])').first();
+    await availableTrack.waitFor({state:'visible',timeout:15000});
+    if(engine==='webkit')await availableTrack.tap();
+    else await availableTrack.click();
+    await page.waitForFunction(()=>Array.from(
+      document.querySelectorAll('[data-video-audio-compact-select]')
+    ).some(node=>node.getAttribute('aria-pressed')==='true'),undefined,{timeout:15000});
   }
+  assert.ok(await selectedTracks.count()>=1,
+    'a genuinely selected licensed soundtrack must reach the editor before export');
+  assert.ok(await selectedTracks.count()<=3,
+    'the compact music picker keeps its three-track rights and mix limit');
+  await page.locator('[data-video-audio-compact-selected]').waitFor({state:'visible'});
+  const generate = page.locator('[data-video-quick-generate]');
+  if (engine === 'webkit') await generate.tap({timeout:30000});
+  else await generate.click({timeout:30000});
   // The actual verified film moves to Ready; guests cannot use direct Save.
   // Reuse the first-party encoded Blob and prove the login gate instead.
   let captured;
@@ -216,4 +250,15 @@ try {
 } finally {
   await browser.close();
   await rm(dir, { recursive: true, force: true });
+}
+
+
+async function openMontageSettings(page){
+  // The fifth Montage preserves detailed scene, timeline and format controls.
+  await page.locator('[data-video-montage-tab="promo"]').click();
+  const advanced=page.locator('[data-video-stories-advanced]');
+  await advanced.locator(':scope > summary').click();
+  const settings=advanced.locator('[data-video-stories-settings]');
+  await settings.waitFor({state:'visible',timeout:20000});
+  await settings.click();
 }

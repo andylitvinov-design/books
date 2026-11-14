@@ -57,3 +57,67 @@
  .head,.eyes,.halo,.mouthTalk{animation:none!important}
  .frame[data-phase='speaking'] .mouthTalk{opacity:1;transform:scaleY(1)}
 }
+
+/* Enlarged, selectable-persona conversation: real separate mouth, blink and head layers. */
+.avatarName{display:block;color:#285d50;font-size:17px;line-height:1.2}
+.frame[data-avatar-size='large']{height:128px;min-height:128px;max-height:128px;
+ margin:0;padding:6px 12px 6px 6px;border-radius:19px}
+.frame[data-avatar-size='large'] .face{width:112px;height:112px;flex-basis:112px;border-radius:17px}
+.frame[data-phase='thinking'] .head{animation:hh-coach-thought 2.1s ease-in-out infinite alternate}
+.frame[data-phase='thinking'] .halo{animation:hh-coach-glow 2.1s ease-in-out infinite alternate}
+@keyframes hh-coach-thought{from{transform:translateY(0) rotate(-.6deg)}to{transform:translateY(1px) rotate(2.2deg)}}
+@media(max-width:560px){
+ .frame[data-avatar-size='large']{height:109px;min-height:109px;max-height:109px;gap:9px;padding:5px}
+ .frame[data-avatar-size='large'] .face{width:95px;height:95px;flex-basis:95px}
+ .avatarName{font-size:14px}
+}
+@media(max-width:350px){
+ .frame[data-avatar-size='large']{height:98px;min-height:98px;max-height:98px}
+ .frame[data-avatar-size='large'] .face{width:83px;height:83px;flex-basis:83px}
+}
+@media(prefers-reduced-motion:reduce){
+ .frame[data-phase='thinking'] .head,.frame[data-phase='thinking'] .halo{animation:none!important}
+}
+
+/* Photographic avatar replaces the drawing only in explicitly selected AI
+   persona sessions. Other private coaching keeps the original SVG avatar. */
+.frame[data-photo-persona] .face{isolation:isolate}
+.livingPortrait{position:absolute;inset:0;z-index:2;display:block;border-radius:inherit;overflow:hidden;background:#e3e7de}
+.livingPortraitBase{display:block;width:100%;height:100%}
+.livingPortraitImage{display:block;width:100%;height:100%;object-fit:cover;object-position:center 22%}
+/* Feathered first-party photo patch: approximate visible mouth motion,
+   intentionally NOT true viseme/phoneme lip-sync. No new asset or provider. */
+/* 328x456 assets are center/22%-cropped into a square: source lips at
+   ~56-58% of original height appear near 69-72% of rendered crop. */
+.frame[data-photo-persona]{--photo-mouth-y:70%;--photo-mouth-scale:1}
+.frame[data-photo-persona='mira']{--photo-mouth-y:70%}
+.frame[data-photo-persona='max']{--photo-mouth-y:71%}
+.frame[data-photo-persona='sofia']{--photo-mouth-y:69%}
+.frame[data-photo-persona='alex']{--photo-mouth-y:71%}
+.frame[data-photo-persona='lea']{--photo-mouth-y:70%}
+.frame[data-photo-persona='noah']{--photo-mouth-y:70%}
+.frame[data-photo-persona='iris']{--photo-mouth-y:70%}
+.frame[data-photo-persona='ray']{--photo-mouth-y:72%}
+.livingPortraitMouth{
+ position:absolute;inset:0;z-index:2;display:block;width:100%;height:100%;
+ pointer-events:none;object-fit:cover;object-position:center 22%;
+ transform-origin:50% var(--photo-mouth-y);
+ transform:scaleY(var(--photo-mouth-scale,1));
+ -webkit-mask-image:radial-gradient(ellipse 23% 9% at 50% var(--photo-mouth-y),#000 44%,transparent 95%);
+ mask-image:radial-gradient(ellipse 23% 9% at 50% var(--photo-mouth-y),#000 44%,transparent 95%);
+ will-change:transform
+}
+.frame[data-photo-persona][data-photo-speaking='true'] .livingPortrait{
+ animation:hh-photo-speech var(--beat-speed) ease-in-out infinite alternate}
+.frame[data-photo-persona][data-phase='thinking'] .livingPortrait{
+ animation:hh-photo-thought 2.7s ease-in-out infinite alternate}
+.frame[data-photo-persona][data-phase='listening'] .face:after,
+.frame[data-photo-persona][data-phase='speaking'] .face:after{
+ content:'';position:absolute;z-index:3;inset:2px;border-radius:inherit;pointer-events:none;
+ box-shadow:inset 0 0 0 2px #84d9be85}
+@keyframes hh-photo-speech{from{transform:translateY(0)}to{transform:translateY(-1.2px)}}
+@keyframes hh-photo-thought{from{transform:scale(1)}to{transform:scale(1.013)}}
+@media(prefers-reduced-motion:reduce){
+ .frame[data-photo-persona] .livingPortrait{animation:none!important;transform:none!important}
+ .livingPortraitMouth{display:none!important;transform:none!important}
+}

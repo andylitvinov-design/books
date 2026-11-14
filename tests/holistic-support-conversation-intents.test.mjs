@@ -178,3 +178,43 @@ test("owned-language-model prompt receives a bounded reasoning brief, never priv
   assert.match(serialized, /recent_user_turn_context/);
   assert.doesNotMatch(serialized, /chainOfThought|privateReasoning/);
 });
+
+test("natural disclosures survive language normalization and ordinary wording variations", () => {
+  const cases = [
+    ["Сегодня был тяжелый день", "ru"],
+    ["У меня был сложный день", "ru"],
+    ["День выдался трудным", "ru"],
+    ["Мне сегодня не по себе", "ru"],
+    ["Today was a rough day", "en"],
+    ["It has been a long day", "en"],
+    ["I just need someone to listen", "en"],
+    ["Hoy fue un día difícil", "es"],
+    ["Ha sido un día duro", "es"],
+    ["Solo quiero hablar", "es"],
+  ];
+  for (const [message, locale] of cases) {
+    const result = understandConversationTurn({ message, locale });
+    assert.equal(result.act, "disclosure", locale + ": " + message);
+    assert.ok(result.replyFallback, locale + ": " + message);
+  }
+  // A request to chat alone does not establish an emotional disclosure.
+  assert.equal(understandConversationTurn({message:"Хочу просто поговорить",locale:"ru"}).act,"chat_invitation");
+});
+
+test("social chat turns receive natural replies without triggering actions", () => {
+  for (const [message, locale, act] of [
+    ["Привет", "ru", "greeting"], ["Спасибо", "ru", "thanks"],
+    ["Пока", "ru", "goodbye"], ["Да", "ru", "affirmation"],
+    ["Нет", "ru", "rejection"], ["Hello", "en", "greeting"],
+    ["Thank you", "en", "thanks"], ["No", "en", "rejection"],
+    ["Hola", "es", "greeting"], ["Gracias", "es", "thanks"],
+    ["No", "es", "rejection"],
+  ]) {
+    const result = ruleConversationReply({ message, locale });
+    assert.equal(result.understanding.act, act, locale + ": " + message);
+    assert.ok(["conversation-intelligence", "reviewed-rules"].includes(result.source));
+    assert.ok(result.reply);
+  }
+  const yes = ruleConversationReply({ message: "Yes", locale: "en" });
+  assert.match(yes.reply, /does not trigger actions/);
+});

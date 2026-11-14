@@ -9,11 +9,10 @@ test("Safari MP4 frame renderer receives the procedural plan and consent-gated p
   const source=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
   const webCodecsRender=source.match(/renderFrame:time=>\{([\s\S]*?)return true;/)?.[1];
   assert.ok(webCodecsRender,"Safari MP4 frame renderer is present");
-  assert.match(webCodecsRender,/paintCinematicFrame\([\s\S]*?cinematicPlan,videoFrame,currentFreeVideoPlan,/);
-  assert.match(webCodecsRender,/const frame=videoFrame\|\|freeFilmPhotoAt\(time\)/,
-    "only a decoded filmed source or a decoded licensed still may supply the frame");
-  assert.match(webCodecsRender,/if\(usingFreeFilmCompilation&&!frame\)return false/,
-    "an absent video AND photo must stop export rather than draw procedural filler");
+  assert.match(webCodecsRender,/paintCinematicFrame\([\s\S]*?cinematicPlan,frame,currentFreeVideoPlan,/);
+  assert.match(webCodecsRender,/if\(usingFreeFilmCompilation&&!frame&&!hasStoryboardPhotoAt\(time\)\)return false/);
+  assert.match(source,/await image\.decode\(\)/);
+  assert.match(source,/activeStoryboardPhotos\(\)/);
   assert.match(webCodecsRender,/creationMode==="generated"&&!backgroundOnly&&photoConsent&&Boolean\(photoUrl\)\?image:null/);
 });
 

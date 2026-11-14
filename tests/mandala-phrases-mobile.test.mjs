@@ -95,8 +95,10 @@ test("all phrase changes including catalog and idea are staged until explicit Ap
  assert.doesNotMatch(compact,/<MandalaVideoAffirmations /);
  assert.match(compact,/onPendingChange\?\.\(hasPendingEdits\)/);
  assert.match(compact,/data-hypno-create-video disabled=\{disabled\|\|!settings\.enabled\|\|hasPendingEdits\}/);
- const direct=studio.slice(studio.indexOf("data-video-quick-generate"),
-   studio.indexOf("</button>",studio.indexOf("data-video-quick-generate")));
+ const action=studio.indexOf('data-video-stage-actions="montage"');
+ const directStart=studio.indexOf("data-video-quick-generate",action);
+ assert.ok(action>0&&directStart>action,"the original Create button remains in the real Montage action bar");
+ const direct=studio.slice(directStart,studio.indexOf("</button>",directStart));
  assert.ok(direct.includes('onClick={createQuickVideo}'));
  for(const guard of ['if(!freeVideoSelected){','if(phrasePending){','if(narrationInvalid){'])
    assert.ok(studio.includes(guard),"approved phrase and paid-format guard: "+guard);
@@ -189,7 +191,8 @@ test("real WebKit voice acceptance expands advanced sound options before selecti
     "do not manually toggle the native disclosure twice");
   assert.match(voice,/data-video-affirmation-bed/);
   assert.match(browser,/const voiceOptions=page\.locator\("\[data-video-affirmation-voice\] details"\)/);
-  assert.match(browser,/await voiceOptions\.locator\(":scope > summary"\)\.click\(\)/);
+  assert.match(browser,/if\(engine==="webkit"\)await voiceOptions\.locator\(":scope > summary"\)\.tap\(\)/);
+  assert.match(browser,/else await voiceOptions\.locator\(":scope > summary"\)\.click\(\)/);
   assert.match(browser,/await expect\(voiceOptions\)\.toHaveAttribute\("open","",\{timeout:15000\}\)/);
   assert.match(browser,/await expect\(page\.locator\("\[data-video-affirmation-bed\]"\)\)\.toBeVisible\(\{timeout:15000\}\)/);
   assert.match(browser,/await page\.locator\("\[data-video-affirmation-bed\]"\)\.selectOption\("ocean"\)/);

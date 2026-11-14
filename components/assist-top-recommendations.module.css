@@ -1,0 +1,21 @@
+.root{margin:9px -1px 15px;scroll-margin-top:calc(14px + env(safe-area-inset-top, 0px));color:#143d3a}
+.header{margin:4px 2px 9px;text-align:left}
+.header h2{margin:0;color:#17334b;font:700 clamp(22px,5.5vw,26px)/1.15 Georgia,"Times New Roman",serif;letter-spacing:-.02em}
+.header p{margin:5px 0 0;color:#5d6a71;font:13px/1.35 Arial,Helvetica,sans-serif}
+.list{display:grid;grid-template-columns:1fr;gap:8px}
+.card{display:grid;grid-template-columns:minmax(0,1fr) 87px;gap:8px;align-items:center;min-width:0;padding:7px;border:1px solid #e9dfd1;border-radius:18px;background:#fffcf7;box-shadow:0 3px 10px #60432b12}
+.product{display:grid;grid-template-columns:67px minmax(0,1fr);align-items:center;gap:9px;min-width:0;color:#143d3a!important;text-decoration:none!important}
+.thumbnail{position:relative;display:block;width:67px;height:74px;overflow:hidden;border-radius:12px;background:#f5ecdc}
+.thumbnail img{object-fit:cover;object-position:center}
+.content{display:flex;min-width:0;flex-direction:column;gap:3px}
+.content strong{color:#17334b;font:700 15px/1.17 Georgia,"Times New Roman",serif}
+.description{color:#5d6a71;font:12px/1.28 Arial,Helvetica,sans-serif}
+.price{color:#096856;font:700 11px/1.3 Arial,Helvetica,sans-serif}
+.action{display:flex;align-items:center;justify-content:center;gap:3px;min-width:0;min-height:44px;padding:6px 7px;border-radius:999px;background:#067a67;color:#fff!important;text-align:center;text-decoration:none!important;font:700 12px/1.1 Arial,Helvetica,sans-serif}
+.action svg{flex:none}
+.all{display:flex;align-items:center;justify-content:center;gap:9px;min-height:46px;margin-top:10px;padding:8px 12px;border:1.5px solid #087063;border-radius:999px;background:#fffcf7;color:#075247!important;text-decoration:none!important;font:700 13px/1.2 Arial,Helvetica,sans-serif}
+.note{margin:8px 3px 0;color:#5d6a71;font:11px/1.35 Arial,Helvetica,sans-serif}
+.empty{margin:0;padding:14px;border:1px solid #e9dfd1;border-radius:14px;background:#fffcf7;color:#5d6a71;font:13px/1.35 Arial,Helvetica,sans-serif}
+.root :is(a,button):focus-visible{outline:3px solid #176e6e;outline-offset:3px}
+@media(max-width:350px){.card{grid-template-columns:minmax(0,1fr) 72px;gap:6px;padding:6px}.product{grid-template-columns:53px minmax(0,1fr);gap:7px}.thumbnail{width:53px;height:68px}.content strong{font-size:13px}.description{font-size:11px}.price{font-size:10.5px}.action{padding:5px 3px;font-size:11px}.action svg{width:12px;height:12px}}
+@media(min-width:761px){.header h2{font-size:27px}.card{grid-template-columns:minmax(0,1fr) 105px;padding:11px}.product{grid-template-columns:100px minmax(0,1fr);gap:16px}.thumbnail{width:100px;height:80px}.content strong{font-size:19px}.description{font-size:14px}.price{font-size:13px}}

@@ -1,0 +1,11 @@
+export type AssistMode = "human"|"ai"|"video"|"self"|"any";
+export type AssistChannel = "inperson"|"online"|"async"|"any";
+export type AssistBudget = "free"|"under50"|"under100"|"flexible"|"any"|"otherCurrency";
+export type AssistQuestion = "mode"|"channel"|"budget";
+export type AssistPreferences = {mode?:AssistMode;channel?:AssistChannel;budget?:AssistBudget};
+export type AssistOfferId = "tests"|"review"|"opora"|"therapy"|"constellation"|"business"|"reiki"|"mandala"|"talisman"|"homeopathy"|"masters"|"academy"|"mytube"|"aiCoach";
+export const ASSIST_OFFER_CATALOG: Readonly<Record<AssistOfferId,{topics:readonly string[];modes:readonly string[];channels:readonly string[];cost:"free"|"unknown"|"priced";priceOptions?:readonly {minutes:number;eur:number}[];family:string;discoverOnly?:boolean}>>;
+export function inferAssistPreferences(text:string):AssistPreferences;
+export function nextAssistQuestion(preferences?:AssistPreferences):AssistQuestion|null;
+export function rankAssistOffers(focus?:string,preferences?:AssistPreferences,limit?:number):{id:AssistOfferId;score:number}[];
+export function assistPriceLabel(id:AssistOfferId,locale?:"ru"|"en"|"es"):string;

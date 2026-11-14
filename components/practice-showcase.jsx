@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import Link from 'next/link'
 import {
   ArrowRight, BarChart3, Bell, BookOpen, ChevronRight, ClipboardList,
   FileText, Heart, Home, Leaf, LockKeyhole, MessageCircle, Play, Plus,
@@ -10,7 +11,7 @@ import {
 } from 'lucide-react'
 import { appFetch } from '@/lib/app/client-fetch'
 import styles from './practice-showcase.module.css'
-import { MasterModeSwitch } from './master-mode-switch'
+import { MasterModeSwitch, ProfileModeSwitch } from './master-mode-switch'
 
 const COPY = {
   ru: {
@@ -369,6 +370,12 @@ export default function PracticeShowcase({ locale = 'en' }) {
           <h1>{t.title}</h1>
           <p>{t.subtitle}</p>
         </div>
+        <div className={styles.workProfileActions}>
+           <Link href={'/'+locale+'/my-page'} prefetch={false} className={styles.myPageLink} data-work-my-page>
+             {locale==='ru'?'Моя страница':locale==='es'?'Mi página':'My Page'}
+           </Link>
+           <ProfileModeSwitch locale={locale} active="work" />
+         </div>
       </header>
 
       <section className={styles.identity} aria-label={t.yourProfile}>

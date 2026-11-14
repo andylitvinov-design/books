@@ -1,17 +1,20 @@
 import type {
-  CategoryStoryboardPlan, CategoryStoryboardOptions, CategoryVideoAspect
+ CategoryStoryboardPlan, CategoryStoryboardOptions, CategoryVideoAspect
 } from "./category-video-storyboard.mjs";
+import type {AlignedStoryGuide} from "./storyboard-content-alignment.mjs";
 export declare function isReviewedFilmedStoryScene(
-  scene:unknown,aspect?:CategoryVideoAspect
+ scene:unknown,aspect?:CategoryVideoAspect
 ):boolean;
 export declare function isReviewedFilmedStorySequence(options:{
-  shots:readonly {sceneId:string;startSeconds:number;durationSeconds:number}[]|null;
-  scenes:readonly unknown[];aspect?:CategoryVideoAspect;
+ shots:readonly {sceneId:string;startSeconds:number;durationSeconds:number}[]|null;
+ scenes:readonly unknown[];aspect?:CategoryVideoAspect;
 }):boolean;
 export declare function planReviewedFilmedStory(
-  options?:CategoryStoryboardOptions
+ options?:CategoryStoryboardOptions&{
+ goal?:string;phrases?:readonly string[];sceneGuides?:readonly AlignedStoryGuide[];
+ excludedVisuals?:readonly string[];pace?:"slow"|"dynamic";
+ }
 ):CategoryStoryboardPlan;
-
 /** Scene-aware business Story fallback. A photo is never itself an MP4. */
 export interface ReviewedStoryConcept {
  readonly categoryId?:string;
@@ -30,7 +33,7 @@ export interface ReviewedMixedStoryboardPlan extends CategoryStoryboardPlan {
  readonly sourcePolicy?:string;
 }
 export declare function planReviewedStoryWithPhotos(
- options?:CategoryStoryboardOptions & {concept?:ReviewedStoryConcept|null}
+ options?:CategoryStoryboardOptions & {concept?:ReviewedStoryConcept|null;goal?:string;phrases?:readonly string[];sceneGuides?:readonly import('./storyboard-content-alignment.mjs').AlignedStoryGuide[];excludedVisuals?:readonly string[];pace?:'slow'|'dynamic'}
 ):ReviewedMixedStoryboardPlan;
 export declare function isReviewedStoryWithPhotosSequence(options:{
  shots:readonly {sceneId:string;startSeconds:number;durationSeconds:number}[]|null;

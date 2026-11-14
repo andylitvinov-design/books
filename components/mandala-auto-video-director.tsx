@@ -2,9 +2,10 @@
 
 import {useCallback,useEffect,useMemo,useRef,useState,type ReactNode} from "react";
 import {createPortal} from "react-dom";
-import {Check,Sparkles,Target,Play,ArrowRight,Sun,Heart,Sprout,BriefcaseBusiness,Gift,AudioLines,Leaf,Zap,Moon,Star} from "lucide-react";
+import {Check,Sparkles,Target,Play,ArrowRight,Sun,Heart,Sprout,BriefcaseBusiness,Gift,AudioLines,Film,Leaf,Zap,Moon,Star} from "lucide-react";
 import {AUTO_VIDEO_GOALS,recommendAutoVideo} from "@/lib/mandala/auto-video-director.mjs";
 import {recommendMyTubeTopicStoryClips} from "@/lib/mandala/mytube-video-tagging.mjs";
+import {searchApprovedVideoScenes,videoSceneTagLabel} from "@/lib/mandala/video-scene-search.mjs";
 import {recommendMyTubePlotMontage} from "@/lib/mandala/mytube-plot-montage.mjs";
 import {planEmotionDrivenVideo} from "@/lib/mandala/video-emotional-scene-plan.mjs";
 import {planMyTubeCategory,verifiedCategorySource,verifiedSceneAspect,canonicalSourceMasterKey} from "@/lib/mandala/category-video-storyboard.mjs";
@@ -25,8 +26,7 @@ import {allocateFreeFilmTimeline,allocateAdaptiveFilmTimeline,allocateVariableFi
 import {STAGE_CAPTION_LIMIT,normalizeStageCaption} from "@/lib/mandala/stage-caption-track.mjs";
 import {montageReplacementOptions,validateMontageClips} from "@/lib/mandala/video-montage-sources.mjs";
 import {recommendPromptShotPlan} from "@/lib/mandala/prompt-shot-director.mjs";
-import {recommendScenarioMelodies} from "@/lib/mandala/scenario-soundtracks.mjs";
-import {scenarioAudioTracks} from "@/lib/mandala/scenario-audio-catalog.mjs";
+import {recommendCuratedAudio} from "@/lib/mandala/curated-audio-recommendations.mjs";
 import type {VideoTheme} from "@/lib/mandala/holistic-video-themes";
 import type {PublicLocale} from "@/lib/public-locales";
 import css from "./mandala-auto-video-director.module.css";
@@ -58,6 +58,7 @@ type Props={
   recipientAudioPanel?:ReactNode;audioStoryboardReady?:boolean;onAudioToMontage?:()=>void;
   onAudioSelectionChange?:(active:boolean)=>void;
   onGoalChange:(value:string)=>void;
+  onConceptTopicChange?:(selection:{categoryId:string;subcategoryId:string;topicId:string;brief?:string}|null)=>void;
   onCategoryChange?:(theme:VideoTheme)=>void;
   onAspectChange?:(value:"landscape"|"portrait"|"square")=>void;
   onContinue?:()=>void;onClarify?:()=>void;helpOpen?:boolean;
@@ -91,7 +92,7 @@ const copy={
    selectedGoal:"Выбранная цель",
    promptShotNotice:"Видеосцены подобраны отдельно под вашу цель из существующей библиотеки — без платной генерации.",
    promptShotPartial:"Некоторые образы из запроса не найдены. Проверьте кадры перед подтверждением.",
-   melodyOptions:"Четыре мелодии для вашего сценария",melodyHint:"Выбранная мелодия включается в видео; звук можно отключить.",
+   melodyOptions:"Проверенная музыка для видео",melodyHint:"Выбранная мелодия включается в видео; звук можно отключить.",
    captionTrack:"Текст по сценам",captionHint:"Необязательно: одна надпись на каждом этапе. Текст показывается в вашем видео, а не отправляется в ИИ.",soundTrack:"Музыка и голос",soundMissing:"Звук не прикреплён",soundSettings:"Настроить звук",
    timeline:"Монтажная шкала",openMontage:"Открыть монтаж (необязательно)",montageHelp:"Измените порядок и длительность сцен, затем подтвердите сценарий.",reorder:"Порядок сцены",less:"Укоротить",more:"Удлинить",audioHint:"Музыка, голос и фразы настраиваются в существующих разделах видеостудии.",replaceScene:"Заменить клип",replacementHint:"Доступны только проверенные видео из каталога.",
  },
@@ -112,7 +113,7 @@ const copy={
    selectedGoal:"Selected goal",
    promptShotNotice:"Each shot was selected from the existing film library for your goal; no paid generation.",
    promptShotPartial:"Some requested imagery is unavailable. Please check each shot before confirming.",
-   melodyOptions:"Four melodies for your story",melodyHint:"Selected music is included in the video; you can change or mute it.",
+   melodyOptions:"Reviewed music for your video",melodyHint:"Selected music is included in the video; you can change or mute it.",
    captionTrack:"Scene captions",captionHint:"Optional: one caption per stage. Your text appears in the video and is not sent to AI.",soundTrack:"Music and voice",soundMissing:"No audio attached",soundSettings:"Edit sound",
    timeline:"Montage timeline",openMontage:"Open montage (optional)",montageHelp:"Adjust shot order and durations, then confirm the storyboard.",reorder:"Reorder shot",less:"Shorten",more:"Lengthen",audioHint:"Music, voice and captions remain in the existing studio sections.",replaceScene:"Replace clip",replacementHint:"Only licensed catalogue videos are available.",
  },
@@ -133,7 +134,7 @@ const copy={
    selectedGoal:"Objetivo elegido",
    promptShotNotice:"Cada escena se seleccionó de la biblioteca existente según tu objetivo, sin generación de pago.",
    promptShotPartial:"Algunas imágenes solicitadas no están disponibles. Revisa las escenas antes de confirmar.",
-   melodyOptions:"Cuatro melodías para tu historia",melodyHint:"La melodía elegida se incluye en el vídeo; puedes cambiarla o silenciarla.",
+   melodyOptions:"Música revisada para tu vídeo",melodyHint:"La melodía elegida se incluye en el vídeo; puedes cambiarla o silenciarla.",
    captionTrack:"Texto por escena",captionHint:"Opcional: un texto por etapa. Se muestra en el vídeo, sin enviarlo a IA.",soundTrack:"Música y voz",soundMissing:"Sin audio adjunto",soundSettings:"Ajustar audio",
    timeline:"Línea de montaje",openMontage:"Abrir montaje (opcional)",montageHelp:"Cambia el orden y la duración; después confirma el guion.",reorder:"Ordenar escena",less:"Acortar",more:"Alargar",audioHint:"Música, voz y frases se ajustan en las secciones actuales.",replaceScene:"Cambiar clip",replacementHint:"Solo están disponibles vídeos aprobados del catálogo.",
  }
@@ -181,7 +182,7 @@ const themeLabels={
 
 export function MandalaAutoVideoDirector({
  locale,goal,theme,aspect,presets,scenes,disabled,activePresetId,clipLabel,
- audioAttached=false,audioTrackLabel="",audioTrackId=null,onPickAudio,onOpenAudio,recipientAudioPanel,audioStoryboardReady=false,onAudioToMontage,onAudioSelectionChange,onGoalChange,onCategoryChange,onAspectChange,onContinue,goalContinueRef,onClarify,helpOpen=false,onShowAll,onInvalidate,onApply,onCreate,canCreate=false,rendering=false,createFeedback=""
+ audioAttached=false,audioTrackLabel="",audioTrackId=null,onPickAudio,onOpenAudio,recipientAudioPanel,audioStoryboardReady=false,onAudioToMontage,onAudioSelectionChange,onGoalChange,onConceptTopicChange,onCategoryChange,onAspectChange,onContinue,goalContinueRef,onClarify,helpOpen=false,onShowAll,onInvalidate,onApply,onCreate,canCreate=false,rendering=false,createFeedback=""
 }:Props){
  const t=copy[locale];
  // A licensed four-shot sample is visible before any click; no recording begins automatically.
@@ -247,6 +248,7 @@ export function MandalaAutoVideoDirector({
  const [refineText,setRefineText]=useState("");
  const [promptClassification,setPromptClassification]=useState<ReturnType<typeof classifyMyTubeRequest>|null>(null);
  const [promptDesignedFor,setPromptDesignedFor]=useState<string|null>(null);
+ const [sceneTagQuery,setSceneTagQuery]=useState("");
  const [timelineEdits,setTimelineEdits]=useState<{
    presetId:string;totalSeconds:number;clipIds:string[];durations:number[];captions:string[];userEdited?:boolean;
  }|null>(null);
@@ -277,6 +279,16 @@ export function MandalaAutoVideoDirector({
  const taxonomySubcategories=listMyTubeSubcategories(selectedCategoryId,locale);
  const taxonomyTopics=selectedSubcategoryId?listMyTubeTopics(selectedCategoryId,selectedSubcategoryId,locale):[];
  const selectedTaxonomyTopic=selectedTopicId?getMyTubeTopic(selectedTopicId):null;
+ // The explicitly picked canonical taxonomy is the source of truth for Ideas.
+ // A stale optional request must never override this verified path.
+ useEffect(()=>{
+   if(!onConceptTopicChange)return;
+   const current=selectedTopicId?getMyTubeTopic(selectedTopicId):null;
+   onConceptTopicChange(current&&current.category.id===selectedCategoryId&&
+     current.subcategory.id===selectedSubcategoryId?
+     {categoryId:selectedCategoryId,subcategoryId:selectedSubcategoryId,topicId:selectedTopicId,
+      brief:requestDraft.trim().slice(0,800)}:null);
+ },[selectedCategoryId,selectedSubcategoryId,selectedTopicId,requestDraft,onConceptTopicChange]);
  const taxonomyMeanings=selectedTopicId?listMyTubeMeaningAxes(selectedTopicId,locale):[];
  const taxonomyScenarios=selectedTopicId&&selectedMeaningAxisId&&selectedMotifId?
    listMyTubeMotifScenarios(selectedTopicId,selectedMeaningAxisId,selectedMotifId,locale):[];
@@ -296,8 +308,8 @@ export function MandalaAutoVideoDirector({
    chosen&&validateMontageClips([...chosen.clips],scenes,proposal?.excludedMotifs||[],aspect)&&
    !selectedMotifId&&!selectedStyleId);
  const fallbackEnabled=Boolean(symbolicPlotFallback&&fallbackSourcesValid);
- const dedicatedMelodies=chosen?scenarioAudioTracks(chosen.id):[];
- const melodyOptions=dedicatedMelodies.length===4?dedicatedMelodies:chosen?recommendScenarioMelodies(chosen):[];
+ // Professional, licensed physical MP3s only; no oscillator score as an option.
+ const melodyOptions=recommendCuratedAudio({theme,kind:"melody"}).slice(0,4);
  const sceneById=new Map(scenes.map(item=>[item.id,item]));
  const sceneLabel=(id:string)=>sceneById.get(id)?.label[locale]||clipLabel(id);
  const scenePoster=(id:string)=>sceneById.get(id)?.poster||null;
@@ -433,11 +445,40 @@ export function MandalaAutoVideoDirector({
    (STSE_DRAFTS_ENABLED&&stseScenario?.newExpansion)||(selectedPlotId&&
    !semanticReady&&!selectedPlotMedia?.hasFourApprovedSources&&!fallbackEnabled)||creativeSelectionUnavailable);
  const topicSceneScores=new Map((topicMediaCoverage?.candidates||[]).map(item=>[item.sceneId,item.score]));
- const availableReplacements=stageClipIds.map(currentId=>
-   montageReplacementOptions({scenes,currentId,selectedIds:stageClipIds,
-     excludedMotifs:proposal?.excludedMotifs||[],limit:12,targetAspect:aspect})
-     .sort((a,b)=>(topicSceneScores.get(b.id)||0)-(topicSceneScores.get(a.id)||0))
-     .slice(0,6));
+  // Querying the original request is free and happens after Design, not on
+  // every keystroke in the first-screen Goal. A separate query is optional.
+  const selectedSearchQuery=sceneTagQuery.trim()||
+    (promptDesignedFor===goal?goal:"");
+  const excludedSceneMotifs=(proposal?.excludedMotifs||[]).join("|");
+  const tagSearch=useMemo(()=>selectedSearchQuery?searchApprovedVideoScenes({
+    scenes,query:selectedSearchQuery,aspect,locale,limit:100,
+    excludedMotifs:excludedSceneMotifs?excludedSceneMotifs.split("|"):[],
+  }):null,[scenes,selectedSearchQuery,aspect,locale,excludedSceneMotifs]);
+  const tagScores=new Map((tagSearch?.items||[]).map(row=>[row.sceneId,row.score]));
+  const availableReplacements=stageClipIds.map((currentId,index)=>{
+    const ordinary=montageReplacementOptions({scenes,currentId,selectedIds:stageClipIds,
+      excludedMotifs:proposal?.excludedMotifs||[],limit:12,targetAspect:aspect})
+      .sort((a,b)=>(topicSceneScores.get(b.id)||0)-(topicSceneScores.get(a.id)||0));
+    if(!tagSearch)return ordinary.slice(0,6);
+    const tagged=tagSearch.items.flatMap(row=>{
+      const scene=sceneById.get(row.sceneId);
+      if(!scene||scene.id===currentId||stageClipIds.includes(scene.id))return [];
+      const source=verifiedCategorySource(scene);
+      if(!source||!verifiedSceneAspect(source,aspect)||
+        source.durationSeconds<stageDurations[index])return [];
+      return [scene];
+    });
+    // Explicit search is strict: do not append unrelated replacements.
+    // Without an explicit query retain the old fallback + rank by user goal.
+    const pool=sceneTagQuery.trim()?tagged:[...tagged,...ordinary];
+    const seen=new Set<string>();
+    return pool.filter(scene=>{
+      if(seen.has(scene.id))return false;
+      seen.add(scene.id);return true;
+    }).sort((a,b)=>(tagScores.get(b.id)||0)-(tagScores.get(a.id)||0)||
+      (topicSceneScores.get(b.id)||0)-(topicSceneScores.get(a.id)||0)||
+      a.id.localeCompare(b.id)).slice(0,6);
+  });
  // The one visible Goal CTA stages this plan; it never exports or charges.
  const prepareGoalForIdeas=():boolean=>{
    if(videoAudience!=="others")return true;
@@ -449,8 +490,8 @@ export function MandalaAutoVideoDirector({
      onAudioToMontage?.();return false;
    }
    if(!recipientKindId){
-     setRecipientContinueError(locale==="ru"?"Выберите подарок, поздравление или презентацию.":
-       locale==="es"?"Elige regalo, felicitación o presentación.":"Choose Gift, Greeting or Presentation first.");
+     setRecipientContinueError(locale==="ru"?"Выберите Reels, подарок, поздравление, презентацию или видео по аудио.":
+       locale==="es"?"Elige Reels, regalo, felicitación, presentación o vídeo desde audio.":"Choose Video Reels, Gift, Greeting, Presentation or Video from audio.");
      return false;
    }
    if(!chosen||!physicalClipReady||plotLacksApprovedClips){
@@ -555,7 +596,7 @@ export function MandalaAutoVideoDirector({
    setProposal(recommendAutoVideo({goal:nextGoal,goalId:nextIds[0],locale,
      fallbackTheme:selectedTheme,preferredTheme:selectedTheme,presets,scenes}));
  };
- // All three modes use the existing licensed four-shot planner and Canvas export.
+ // All recipient formats reuse the existing licensed scene planner and Canvas export.
  // No second renderer, remote API, contact database or paid generation.
  const resetAudienceStory=()=>{
    setRequestNeedsChoice(false);
@@ -649,7 +690,9 @@ export function MandalaAutoVideoDirector({
    const found=getMyTubeTopic(topicId);
    if(!found||found.category.id!==selectedCategoryId)return;
    const nextTheme=legacyThemeForSubcategory[found.subcategory.id]||theme;
-   const label=requestDraft.trim()||found.topic.label[locale];
+   // Preserve optional user prose in requestDraft but publish the explicit topic
+   // as the canonical Studio goal, avoiding stale unrelated wishes (e.g. Sex).
+   const label=found.topic.label[locale];
    onInvalidate?.();onCategoryChange?.(nextTheme);onGoalChange(label);
    const recommended=recommendAutoVideo({goal:label,locale,fallbackTheme:nextTheme,
      preferredTheme:nextTheme,presets,scenes});
@@ -979,6 +1022,9 @@ export function MandalaAutoVideoDirector({
    </div>:null}
  </div>;
  const recipientFormatCards=[
+  {id:"reels",art:"stress",Icon:Film,
+   title:locale==="ru"?"Видео Reels":locale==="es"?"Video Reels":"Video Reels",
+   desc:locale==="ru"?"Короткий ролик · 9:16":locale==="es"?"Vídeo corto · 9:16":"Short vertical film · 9:16"},
   {id:"greeting",art:"love",Icon:Gift,
    title:locale==="ru"?"Поздравление или подарок":locale==="es"?"Felicitación o regalo":"Greeting or gift",
    desc:locale==="ru"?"Тёплое видео для близких":locale==="es"?"Vídeo para seres queridos":"A film for loved ones"},
@@ -1038,7 +1084,7 @@ export function MandalaAutoVideoDirector({
          const Icon=item.Icon;
          const selected=item.id==="audio_visual"?recipientAudioMode:item.id==="greeting"
           ?!recipientAudioMode&&(recipientKindId==="gift"||recipientKindId==="greeting")
-          :!recipientAudioMode&&recipientKindId==="presentation";
+          :!recipientAudioMode&&recipientKindId===item.id;
          return <button type="button" key={item.id} data-auto-video-recipient-kind={item.id}
            aria-pressed={selected} disabled={disabled}
            onClick={()=>item.id==="audio_visual"?chooseRecipientAudio():chooseRecipientVideo(item.id)}>
@@ -1066,7 +1112,12 @@ export function MandalaAutoVideoDirector({
            {listRecipientVideoKinds(locale).find(v=>v.id===kind)?.label}
          </button>)}
        </div>:null}
-     {recipientAudioMode?recipientAudioPanel:recipientKindId?<div className={css.recipientOccasions}>
+     {recipientAudioMode?recipientAudioPanel:recipientKindId==="reels"?
+       <p className={css.recipientHint}>{locale==="ru"
+         ?"Создадим короткое видео Reels из проверенных кадров. Тему можно уточнить в поле пожелания выше.":
+         locale==="es"?"Crearemos tu Reel con clips verificados. Puedes indicar el tema arriba.":
+         "Create a Reel using verified clips. Add your topic in the wish field above."}</p>:
+       recipientKindId?<div className={css.recipientOccasions}>
        <p className={css.popularHeading}>{locale==="ru"?"Уточните назначение":
          locale==="es"?"Elige una ocasión":"Choose an occasion"}</p>
        <div className={css.recipientOptionChoices} role="group" aria-label={
@@ -1081,9 +1132,9 @@ export function MandalaAutoVideoDirector({
          :locale==="es"?"Propondremos escenas simbólicas y textos que puedes editar durante el montaje."
          :"We'll suggest symbolic footage and editable video captions."}</p>
      </div>:<p className={css.recipientHint}>{locale==="ru"
-       ?"Выберите подарок, поздравление или видеопрезентацию."
-       :locale==="es"?"Elige regalo, felicitación o videopresentación."
-       :"Choose Gift, Greeting or Video presentation."}</p>}
+       ?"Выберите Video Reels, подарок, поздравление, видеопрезентацию или видео по аудио."
+       :locale==="es"?"Elige Video Reels, regalo, felicitación, presentación o vídeo desde audio."
+       :"Choose Video Reels, Gift, Greeting, Presentation or Video from audio."}</p>}
    </div>}
    {videoAudience==="others"&&recipientContinueError?<p role="status" data-video-recipient-continue-error>{recipientContinueError}</p>:null}
  </div>;
@@ -1282,14 +1333,14 @@ export function MandalaAutoVideoDirector({
      </p>:null}
    </div>:null}
    {selectedScenarioId&&plotsLoading?<p className={css.notice} data-mytube-plots-loading aria-live="polite">
-     {locale==="ru"?"Открываем четыре сюжета сценария…":locale==="es"?"Cargando cuatro tramas del escenario…":"Loading four plots for this scenario…"}
+     {locale==="ru"?"Открываем шесть сюжетов сценария…":locale==="es"?"Cargando seis tramas del escenario…":"Loading six plots for this scenario…"}
    </p>:null}
-   {selectedScenarioId&&!plotsLoading&&taxonomyPlots.length===4?
+   {selectedScenarioId&&!plotsLoading&&taxonomyPlots.length===6?
      <div className={css.storyChoices} role="group" data-mytube-plot-choices
-       aria-label={locale==="ru"?"Четыре разных сюжета выбранного сценария":locale==="es"?"Cuatro tramas diferentes":"Four distinct plots"}>
+       aria-label={locale==="ru"?"Шесть разных сюжетов выбранного сценария":locale==="es"?"Seis tramas diferentes":"Six distinct plots"}>
        <p className={css.variantsTitle}>
-         {locale==="ru"?"Сюжеты: выберите одну из четырёх самостоятельных историй":
-          locale==="es"?"Tramas: elige una de las cuatro historias":"Plots: choose one of four separate stories"}
+         {locale==="ru"?"Сюжеты: выберите одну из шести самостоятельных историй":
+          locale==="es"?"Tramas: elige una de las seis historias":"Plots: choose one of six separate stories"}
        </p>
        {taxonomyPlots.map((plot,index)=><button type="button" key={plot.id} data-mytube-plot={plot.id}
          aria-pressed={selectedPlotId===plot.id} disabled={disabled}
@@ -1305,11 +1356,11 @@ export function MandalaAutoVideoDirector({
        locale==="es"?"Este nuevo guion espera revisión editorial y vídeo autorizado. La exportación está desactivada.":
          "This new script awaits editorial review and licensed footage binding. Export is disabled."}
    </p>:null}
-   {selectedScenarioId&&!plotsLoading&&plotData?.scenarioId===selectedScenarioId&&taxonomyPlots.length!==4?
+   {selectedScenarioId&&!plotsLoading&&plotData?.scenarioId===selectedScenarioId&&taxonomyPlots.length!==6?
      <p className={css.warning} data-mytube-plots-unavailable>
-       {locale==="ru"?"Четыре сюжета пока недоступны; сценарий остаётся без выбранного сюжета.":
-        locale==="es"?"Las cuatro tramas no están disponibles; no se ha elegido ninguna.":
-        "Four plots are unavailable; no plot has been selected."}
+       {locale==="ru"?"Шесть сюжетов пока недоступны; сценарий остаётся без выбранного сюжета.":
+        locale==="es"?"Las seis tramas no están disponibles; no se ha elegido ninguna.":
+        "Six plots are unavailable; no plot has been selected."}
      </p>:null}
    {selectedTaxonomyPlot?<div className={selectedPlotMedia?.hasFourApprovedSources?css.notice:css.warning}
      role="status" data-mytube-plot-media-status
@@ -1501,7 +1552,7 @@ export function MandalaAutoVideoDirector({
              {scenePoster(clip)?<img src={scenePoster(clip)!} alt="" loading="lazy" className={css.shotPoster}/>:null}
              <b>{index+1}. {t.stages[Math.min(3,Math.floor(index*4/stageClipIds.length))]} · {stageDurations[index]} s</b><span>{sceneLabel(clip)}</span>
              {scene?<small className={css.clipDescription}>{scene.description[locale]}</small>:null}
-             {scene?<small className={css.clipTags}>{themeLabels[locale][scene.theme as VideoTheme]||scene.theme} · {scene.tags.slice(0,3).join(" · ")}</small>:null}
+             {scene?<small className={css.clipTags}>{themeLabels[locale][scene.theme as VideoTheme]||scene.theme} · {scene.tags.slice(0,3).map(tag=>videoSceneTagLabel(tag,locale)).join(" · ")}</small>:null}
            </li>;
          })}
        </ol>
@@ -1527,6 +1578,25 @@ export function MandalaAutoVideoDirector({
        <details className={css.montageDetails} data-auto-video-montage>
          <summary>{t.openMontage}</summary>
          <p className={css.notice}>{t.montageHelp}</p>
+          <label data-video-scene-tag-finder style={{display:"block",marginBottom:12}}>
+            <span style={{display:"block",marginBottom:6}}>{locale==="ru"?
+              "Найти сцены по тегам":locale==="es"?"Buscar escenas por etiquetas":"Find scenes by tags"}</span>
+            <input type="search" data-video-scene-tag-query
+              value={sceneTagQuery} maxLength={160} disabled={disabled}
+              placeholder={locale==="ru"?"Солнечный лес без воды":locale==="es"?
+                "Bosque soleado sin agua":"Sunny forest without water"}
+              aria-label={locale==="ru"?"Поиск сцен по тегам":locale==="es"?
+                "Buscar escenas por etiquetas":"Search scenes by tags"}
+              onChange={event=>setSceneTagQuery(event.currentTarget.value)}
+              style={{width:"100%",minWidth:0,minHeight:40}}/>
+          </label>
+          {sceneTagQuery.trim()?<p role="status" aria-live="polite" data-video-scene-tag-results>
+            {tagSearch?.status==="ok"?(locale==="ru"?"Найдено по метаданным: ":
+              locale==="es"?"Coincidencias de metadatos: ":"Metadata matches: ")+tagSearch.total:
+              (locale==="ru"?"Среди одобренных сцен совпадений нет. Уточните запрос.":
+              locale==="es"?"No hay escenas aprobadas que coincidan. Ajusta tu búsqueda.":
+              "No approved tagged scene matches; refine your search.")}
+          </p>:null}
          <div className={css.montageRows}>
            {stageClipIds.map((clip,index)=><div className={css.montageRow} key={clip}>
              <span className={css.montageName}>

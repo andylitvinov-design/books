@@ -86,15 +86,47 @@ test("existing nonbusiness reviewed footage is preserved and new photo proxy fai
  assert.match(route,/redirect:"error"/);
  assert.match(route,/MAX_BYTES/);
  assert.match(route,/image\/jpeg/);
- assert.match(code,/paintStoryPhotoFrame/);
- assert.match(code,/freeFilmPhotoAt/);
+ assert.match(code,/paintStoryboardStill/);
+ assert.match(code,/activeStoryboardPhotos/);
  assert.match(code,/freeFilmPhotoRefs/);
  assert.match(code,/STORY_PHOTO_BY_ID/);
- assert.match(code,/image\.decode\(\)/);
- assert.match(code,/data-free-story-photo/);
- assert.match(code,/freeFilmPhotoAt\(frameTime\)/);
- assert.match(code,/freeFilmPhotoAt\(time\)/);
+ assert.match(code,/await image\.decode\(\)/);
+ assert.match(code,/verifiedMixedPhotoSubset:true/);
+ assert.match(code,/hasStoryboardPhotoAt\(frameTime\)/);
+ assert.match(code,/!frame&&!hasStoryboardPhotoAt\(time\)/);
  assert.match(ui,/planReviewedStoryWithPhotos/);
  assert.match(ui,/isReviewedStoryWithPhotosSequence/);
  assert.match(ui,/data-story-media-kind/);
+});
+
+test("generic personal growth does not become workplace photos in RU/EN/ES",()=>{
+ const personal=[
+   ["en","I want personal growth and inner peace"],
+   ["ru","Я хочу личностного роста и внутреннего спокойствия"],
+   ["es","Quiero crecimiento personal y paz interior"]
+ ];
+ for(const [locale,goal] of personal){
+   const plan=planReviewedStoryWithPhotos({
+     concept:{categoryId:"goals-money",goal,sceneOutline:[],avoidImagery:[]},
+     categoryId:"goals-money",locale,aspect:"portrait",durationSeconds:30,scenes
+   });
+   assert.equal(plan.mediaMix.photo,0,"personal goals do not request stock office workers");
+   assert.ok(!plan.shots?.some(shot=>STORY_PHOTO_BY_ID.has(shot.sceneId)));
+ }
+});
+
+test("requested people exclusion never inserts a stock employee",()=>{
+ const result=chooseBusinessStoryPhoto({
+   description:"Salary negotiation",stage:3,avoid:["no people"]
+ });
+ assert.equal(result,null);
+});
+
+test("encoded video may paint real decoded photos but cannot fake a missing scene",()=>{
+ assert.match(code,/await image\.decode\(\)/);
+ assert.match(code,/image\.naturalWidth<600/);
+ assert.match(code,/resolved\.origin!==window\.location\.origin/);
+ assert.match(code,/!frame&&!hasStoryboardPhotoAt\(time\)/);
+ assert.match(code,/paintCinematicFrame/);
+ assert.match(code,/activeStoryboardPhotos/);
 });

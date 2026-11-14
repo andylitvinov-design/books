@@ -1,16 +1,19 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import {Mic, Paperclip, Plus, Send, X} from "lucide-react";
 import {MessengerAiLanding} from "@/components/app/messenger-ai-landing";
 import {MessengerSixProjects,messengerProject} from "@/components/app/messenger-six-projects";
+import {sessionGoalChoices,sessionCopy,sessionGoalForText,sessionOfferIds,sessionOfferDescription} from "@/lib/holistic-support/session-goal-intake.mjs";
 import type {MessengerProjectId,MessengerProjectOption,MessengerTestFocus} from "@/components/app/messenger-six-projects";
 import { prepareNaturalDialogue, finishNaturalDialogue } from "@/lib/holistic-support/natural-dialogue.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
 import { AXIS_REFS } from "@/lib/holistic-support/axis-offer-matcher.mjs";
 import { ruleConversationReply } from "@/lib/holistic-support/rule-conversation.mjs";
+import { reviewPracticeBoundary } from "@/lib/holistic-support/practice-boundary.mjs";
 import { detectConversationLocale } from "@/lib/holistic-support/conversation-locale.mjs";
 import { planJudgmentTurn } from "@/lib/holistic-support/judgment-mind.mjs";
+import { newNativeSessionTurn, advanceNativeClientSession } from "@/lib/holistic-support/native-dialogue-client-session.mjs";
 import { testOfferFromText } from "@/lib/assessments/conversational-test-protocol.mjs";
 import type { JudgmentPending, JudgmentChoiceId } from "@/lib/holistic-support/judgment-mind.mjs";
 import { publicVideoGoalForMessage } from "@/lib/video-discovery/ranker.mjs";
@@ -26,8 +29,10 @@ import {
   changeMessengerVideoPhraseStyle,encodeMessengerVideoHandoff,
 } from "@/lib/mandala/video-chat-messenger-flow.mjs";
 import {stageVoiceStudioHandoff} from "@/lib/mandala/voice-studio-handoff.mjs";
+import {transcribeDeviceAudioFile} from "@/lib/mandala/device-audio-stt.mjs";
 import type {TimedSpeechTranscript} from "@/lib/mandala/audio-visual-storyboard.mjs";
 import styles from "./holistic-agent-chat.module.css";
+import {useVoiceCompanion,VoiceCompanionControls} from "./voice-companion-controls";
 import dynamic from "next/dynamic";
 import EmotionalAvatar from "@/components/app/emotional-avatar";
 
@@ -56,7 +61,8 @@ type JudgmentView = {status:string;state:string;choices:{id:JudgmentChoiceId;lab
   token?:string|null;pending?:JudgmentPending|null};
 type AgentReply = { judgment?:JudgmentView|null;status:string;reply:string;modelUsed:boolean;source:string;
   suggestions:{id:string;kind:string;title:string;href:string}[];decision:AgentDecision;
-  browserModelAllowed:boolean; usedSavedTestEvidence?:boolean; usedSavedVideoHistory?:boolean };
+  browserModelAllowed:boolean; usedSavedTestEvidence?:boolean; usedSavedVideoHistory?:boolean;
+  nativeSession?:{id:string;revision:number} };
 
 function recommendationPortrait(item:AgentReply["suggestions"][number]):string {
   const title=item.title.toLowerCase();
@@ -149,8 +155,8 @@ const copy = {
 
 const messengerStarter = {
  ru:{
-  welcome:"Приветствую! Могу помочь с поддерживающим видео, практикой, тестом или личной экспресс-диагностикой. Выберите вариант или напишите свой вопрос.",
-  hello:"Я здесь! Можем создать видео, подобрать практику, выбрать тест или обратиться за личной экспресс-диагностикой. Что вам актуально?",
+  welcome:"Привет! 🙂 Здесь можно просто поговорить или вместе разобраться с вопросом. С чего тебе хочется начать?",
+  hello:"Привет! 🙂 Как проходит твой день?",
 
   video:"Создать контент",videoSub:"Видео · аудио · медитации · послания",
   contentIntent:"Хочу создать контент",
@@ -181,8 +187,8 @@ const messengerStarter = {
   safety:"Если вам или кому-то рядом угрожает непосредственная опасность, обратитесь в экстренную службу. Я могу помочь найти доступные материалы, когда это безопасно.",
  },
  en:{
-  welcome:"Welcome! I can help with a supportive video, a practice for now, a test or a personal express review. Choose an option or write your question.",
-  hello:"I'm here! We can create a video, choose a practice, explore a test or request a personal express review. What matters to you now?",
+  welcome:"Hi! 🙂 We can simply chat or think something through together. Where would you like to begin?",
+  hello:"Hi! 🙂 How's your day going?",
 
   video:"Create content",videoSub:"Video · audio · meditations · messages",
   contentIntent:"I want to create content",
@@ -260,6 +266,7 @@ function isCasualGreeting(raw:string):boolean {
 // Video choices are local, but urgent/human-review text must still use the
 // existing authenticated safety preflight, not the category-choice reducer.
 function requiresProtectedReply(text:string,locale:PublicLocale):boolean {
+  if(reviewPracticeBoundary(text,locale))return true;
   if(/(?:не хочу (?:больше )?жить(?:[.!?]|$)|i do not want to live(?:[.!?]|$)|i dont want to live(?:[.!?]|$)|ya no quiero vivir(?:[.!?]|$)|мне стало хуже|после упражнения хуже|хочу остановиться|мне страшно продолжать|i feel worse|please stop|after the exercise i feel worse|me siento peor|no quiero continuar)/iu.test(text))
     return true;
   for(let i=0;i<text.length;i+=180)
@@ -281,6 +288,9 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   useEffect(()=>setLocale(routeLocale),[routeLocale]);
   const t=copy[locale];
   const starter=messengerStarter[locale];
+  const voiceEnabled=process.env.NEXT_PUBLIC_HH_VOICE_COMPANION_WEB==="true";
+  // No browser speech, device voice discovery or local preferences when OFF.
+  const voice=useVoiceCompanion(locale,voiceEnabled);
   const [mode,setMode]=useState<Mode>("rules");
   const [agree,setAgree]=useState(false);
   const [axisRef,setAxisRef]=useState("");
@@ -321,6 +331,9 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   const [guideLink,setGuideLink]=useState<"tests"|null>(null);
   const [testChatOpen,setTestChatOpen]=useState(false);
   const [projectFlow,setProjectFlow]=useState<MessengerProjectId|null>(null);
+  const [sessionStep,setSessionStep]=useState<"goal"|"outcome"|null>(null);
+  const [sessionGoal,setSessionGoal]=useState<string|null>(null);
+  const [sessionOffers,setSessionOffers]=useState<MessengerProjectOption[]>([]);
   const [testFocus,setTestFocus]=useState<MessengerTestFocus|null>(null);
   const [testChatTurn,setTestChatTurn]=useState<{seq:number;text:string}|null>(null);
   const [testSuggestedKey,setTestSuggestedKey]=useState("");
@@ -333,6 +346,19 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   const [showVideoSignIn,setShowVideoSignIn]=useState(false);
   const [needsPrivateSignIn,setNeedsPrivateSignIn]=useState(false);
   const [messages,setMessages]=useState<Message[]>([]);
+  // A spoken answer and its displayed message are the SAME canonical AI turn.
+  const lastSpeechTurn=useRef<Message|null>(null);
+  useEffect(()=>{
+    const latest=messages[messages.length-1]||null;
+    if(latest===lastSpeechTurn.current)return;
+    lastSpeechTurn.current=latest;
+    if(!voiceEnabled)return;
+    if(latest?.role==="user"){voice.stop();return;}
+    if(latest?.role==="assistant"){
+      voice.stop();
+      if(voice.autoRead||voice.conversing)voice.speak(latest.text);
+    }
+  },[messages,voiceEnabled,voice.autoRead,voice.conversing,voice.speak,voice.stop]);
   const lastAnswerRef=useRef<{message:string;history:Array<{role:"user"|"assistant";text:string}>;decision:AgentDecision;locale:PublicLocale}|null>(null);
   const alternativeAbortRef=useRef<AbortController|null>(null);
   const [alternativeBusy,setAlternativeBusy]=useState(false);
@@ -354,21 +380,26 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   const [source,setSource]=useState("");
   const [busy,setBusy]=useState(false);
   const controller=useRef<AbortController|null>(null);
+  const nativeSession=useRef<{id:string;revision:number}|null>(null);
+  useEffect(()=>{nativeSession.current=null;},[authenticated]);
   const composerRef=useRef<HTMLTextAreaElement|null>(null);
   const threadRef=useRef<HTMLDivElement|null>(null);
   const followTail=useRef(true);
   const programmaticScrollTop=useRef<number|null>(null);
+  const composerFocused=useRef(false);
   const [newBelow,setNewBelow]=useState(false);
   const privateTranscript=usePrivateChatHistory({authenticated,onRestore:entries=>{
-    // The archive is restored only on explicit user action, never on login.
-    // Cancel an in-flight answer and any owned device speech before replacing state.
-    controller.current?.abort();voiceAbortRef.current?.abort();
-    window.dispatchEvent(new Event("hh:voice-companion-stop"));
+    // Explicit restore cancels both pending AI and device speech, and must not
+    // auto-read historical replies when the Voice Companion is on.
+    controller.current?.abort();voiceAbortRef.current?.abort();voice.stopDialogue();
+    nativeSession.current=null;
     const previous:Message[]=entries.flatMap(item=>[
       {role:"user" as const,text:item.user},
       {role:"assistant" as const,text:item.assistant},
     ]).slice(-30);
+    lastSpeechTurn.current=previous[previous.length-1]||null;
     setMessages(previous);setDraft("");setChoices([]);setJudgmentView(null);
+    setSessionStep(null);setSessionGoal(null);setSessionOffers([]);
     const restoredLocale=detectConversationLocale(entries.at(-1)?.user,locale) as PublicLocale;
     if(messengerView&&restoredLocale!==locale){setLocale(restoredLocale);onConversationLocaleChange?.(restoredLocale);}
     judgmentClickLock.current=false;setVideoStep(null);setGuidedTrack(null);
@@ -396,34 +427,51 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       setTestSuggestedKey(candidate);setTestChatOpen(true);setEntryOpen(false);
     }
   },[compact]);
+  // Focused iPhone composer: preserve the most recent AI reply or first
+  // welcome question in the visible transcript, without moving the page.
+  const revealFocusedContext=useCallback(()=>{
+    if(!compact||!messengerView||!composerFocused.current)return;
+    const thread=threadRef.current;
+    if(!thread)return;
+    const aiReplies=thread.querySelectorAll('[data-hh-ai-assistant-message]');
+    const turns=thread.querySelectorAll('[data-hh-chat-turn]');
+    const anchor=aiReplies.item(aiReplies.length-1)||
+      (messages.length===0?thread.querySelector('[data-hh-ai-inline-composer]'):null)||
+      thread.querySelector('[data-hh-ai-landing-question]')||
+      thread.querySelector('[data-hh-ai-welcome]')||
+      turns.item(turns.length-1);
+    if(!anchor)return;
+    const viewport=thread.getBoundingClientRect();
+    const bubble=anchor.getBoundingClientRect();
+    const breathingRoom=12;
+    // Preserve the reader's position if the end of the last AI turn is visible.
+    // Align a hidden turn just above the fixed composer after keyboard resize.
+    if(bubble.bottom<=viewport.bottom-breathingRoom&&bubble.bottom>=viewport.top+44)return;
+    const maxScroll=Math.max(0,thread.scrollHeight-thread.clientHeight);
+    const target=Math.max(0,Math.min(maxScroll,
+      thread.scrollTop+bubble.bottom-viewport.bottom+breathingRoom));
+    if(Math.abs(thread.scrollTop-target)<1)return;
+    programmaticScrollTop.current=target;
+    thread.scrollTop=target;
+    setNewBelow(false);
+  },[compact,messengerView,messages.length]);
   useEffect(()=>{
     const thread=threadRef.current;
     if(!thread)return;
     const revealLatest=()=>{
       if(messengerView&&messages.length===0){
-        // The illustrated first screen opens at its hero, not its last card.
-        // Do not scroll the page or push the pinned composer below the dock.
-        thread.scrollTop=0;
+        // Hero first on load, welcome question while the keyboard is open.
+        if(composerFocused.current)revealFocusedContext();
+        else thread.scrollTop=0;
         setNewBelow(false);
         return;
       }
       if(followTail.current){
-        // Keep the latest user question and assistant answer above short recommendation cards.
-        // Only scroll the transcript, not the Safari visual viewport or pinned composer.
-        if(messengerView&&messages.length>0&&choices.length>0){
-          const turns=thread.querySelectorAll<HTMLElement>('[data-hh-chat-turn="user"]');
-          const latest=turns[turns.length-1];
-          if(latest){
-            const offset=latest.getBoundingClientRect().top-thread.getBoundingClientRect().top;
-            const maxScroll=Math.max(0,thread.scrollHeight-thread.clientHeight);
-            const target=Math.min(maxScroll,Math.max(0,thread.scrollTop+offset-6));
-            programmaticScrollTop.current=target;
-            thread.scrollTop=target;
-          }else thread.scrollTop=thread.scrollHeight;
-        }else{
-          programmaticScrollTop.current=null;
-          thread.scrollTop=thread.scrollHeight;
-        }
+        // Keep the latest complete AI reply visible, not just the preceding user turn.
+        // Scroll only the transcript: never move the pinned composer or Safari viewport.
+        const target=Math.max(0,thread.scrollHeight-thread.clientHeight);
+        programmaticScrollTop.current=target;
+        thread.scrollTop=target;
         setNewBelow(false);
       }else if(messages.length)setNewBelow(true);
     };
@@ -432,7 +480,44 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     const frame=window.requestAnimationFrame(revealLatest);
     return ()=>window.cancelAnimationFrame(frame);
   },[messages.length,status,choices.length,judgmentView,videoStep,videoDraft,contentStep,contentVoice,
-    videoPendingCategory,showVideoSignIn,needsPrivateSignIn,entryOpen,guideLink,testRevision,testChatOpen,testChatTurn,projectFlow,messengerView]);
+    videoPendingCategory,showVideoSignIn,needsPrivateSignIn,entryOpen,guideLink,testRevision,testChatOpen,testChatTurn,projectFlow,sessionStep,sessionOffers.length,messengerView,revealFocusedContext]);
+  useEffect(()=>{
+    if(!compact||!messengerView)return;
+    const thread=threadRef.current;
+    if(!thread)return;
+    let frame=0;
+    const revealVisibleReply=()=>{
+      window.cancelAnimationFrame(frame);
+      frame=window.requestAnimationFrame(()=>{
+        // The keyboard resizes before the first text message too. A reader
+        // manually browsing old turns may still scroll without being pulled.
+        if(composerFocused.current){
+          if(followTail.current)revealFocusedContext();
+          return;
+        }
+        if(!messages.length||!followTail.current)return;
+        const target=Math.max(0,thread.scrollHeight-thread.clientHeight);
+        programmaticScrollTop.current=target;
+        thread.scrollTop=target;
+        setNewBelow(false);
+      });
+    };
+    // The keyboard changes iPhone's visual viewport after the textarea is focused;
+    // observing the transcript also catches the subsequent flex layout resize.
+    const observer=new ResizeObserver(revealVisibleReply);
+    observer.observe(thread);
+    const viewport=window.visualViewport;
+    viewport?.addEventListener("resize",revealVisibleReply);
+    viewport?.addEventListener("scroll",revealVisibleReply);
+    window.addEventListener("resize",revealVisibleReply);
+    return ()=>{
+      window.cancelAnimationFrame(frame);
+      observer.disconnect();
+      viewport?.removeEventListener("resize",revealVisibleReply);
+      viewport?.removeEventListener("scroll",revealVisibleReply);
+      window.removeEventListener("resize",revealVisibleReply);
+    };
+  },[compact,messengerView,messages.length,revealFocusedContext]);
   useEffect(()=>{
     if(!compact)return;
     const input=composerRef.current;
@@ -552,7 +637,8 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     if(id==="ai-video"){startContent();return;}
     const entry=messengerProject(locale,id);
     followTail.current=true;setNewBelow(false);setEntryOpen(false);
-    setProjectFlow(id);setTestFocus(null);setTestChatOpen(false);
+    setProjectFlow(id);setSessionStep(id==="sessions"?"goal":null);
+    setSessionGoal(null);setSessionOffers([]);setTestFocus(null);setTestChatOpen(false);
     setGuideLink(null);setPageHelpLink(null);setGuidedTrack(null);
     setContentStep(null);setContentBrief("");setContentVoice(false);
     setVideoStep(null);setVideoPendingCategory(null);setShowVideoSignIn(false);
@@ -561,8 +647,30 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     setMessages(prev=>[...prev,{role:"user" as const,text:entry.title},
       {role:"assistant" as const,text:entry.question}].slice(-30));
   }
+  function selectSessionGoal(option:{id:string;label:string}) {
+    if(busy||projectFlow!=="sessions"||sessionStep!=="goal")return;
+    followTail.current=true;setNewBelow(false);setDraft("");
+    setSessionGoal(option.id);setSessionStep("outcome");setSessionOffers([]);
+    setMessages(prev=>[...prev,{role:"user" as const,text:option.label},
+      {role:"assistant" as const,text:sessionCopy(locale).detail}].slice(-30));
+    composerRef.current?.focus({preventScroll:true});
+  }
+  function finishSessionIntake(text:string,goal:string,language:PublicLocale) {
+    const options=messengerProject(language,"sessions").options;
+    const selected=sessionOfferIds(goal)
+      .map(id=>options.find(option=>option.id===id))
+      .filter((option):option is MessengerProjectOption=>
+        Boolean(option&&option.kind==="link"&&option.href?.startsWith("/")&&!option.href.startsWith("//")));
+    followTail.current=true;setNewBelow(false);
+    setSessionStep(null);setSessionGoal(null);setProjectFlow(null);setSessionOffers(selected);
+    setStatus("");setSource("");setChoices([]);setDraft("");setPageHelpLink(null);
+    const results=sessionCopy(language).results;
+    const summary=results[goal as keyof typeof results]||results.personal;
+    setMessages(prev=>[...prev,{role:"user" as const,text},
+      {role:"assistant" as const,text:summary}].slice(-30));
+  }
   function selectProjectOption(option:MessengerProjectOption) {
-    if(busy||!projectFlow)return;
+    if(busy||!projectFlow||projectFlow==="sessions")return;
     const entry=messengerProject(locale,projectFlow);
     if(!entry.options.some(value=>value.id===option.id))return;
     followTail.current=true;setNewBelow(false);setProjectFlow(null);
@@ -587,7 +695,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   function startContent(language:PublicLocale=locale) {
     if(busy)return;
     followTail.current=true;setNewBelow(false);setEntryOpen(false);
-    setProjectFlow(null);setTestFocus(null);
+    setProjectFlow(null);setSessionStep(null);setSessionGoal(null);setSessionOffers([]);setTestFocus(null);
     setContentStep("kind");setContentBrief("");setContentVoice(false);
     videoUndo.current=null;
     setGuidedTrack(null);setVideoStep(null);setVideoPendingCategory(null);
@@ -642,7 +750,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   }
   function startGuided(kind:"video"|"meditation"|"hint") {
     if(busy)return;
-    setProjectFlow(null);setTestFocus(null);
+    setProjectFlow(null);setSessionStep(null);setSessionGoal(null);setSessionOffers([]);setTestFocus(null);
     setContentStep(null);setContentBrief("");setContentVoice(false);
     followTail.current=true;setNewBelow(false);
     setFormat(kind==="video"?"video":kind==="meditation"?"audio":"test");
@@ -681,18 +789,27 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     const abort=new AbortController();voiceAbortRef.current=abort;
     setVoiceBusy(true);setVoiceError("");
     try{
-      const body=new FormData();
-      body.append("file",file,file.name);
-      body.append("locale",locale);body.append("consent","yes");
-      const response=await fetch("/api/holistic-support/audio-storyboard",{
-        method:"POST",body,cache:"no-store",credentials:"same-origin",signal:abort.signal
-      });
-      const data=await response.json() as {transcript?:TimedSpeechTranscript;error?:string};
-      if(!response.ok||!data.transcript)throw Error(data.error||"VOICE_STT_UNAVAILABLE");
+      // A verified installed browser language pack keeps the uploaded file on
+      // the device; unavailable browsers use the already consented free bridge.
+      let transcript:TimedSpeechTranscript;
+      try{
+        transcript=await transcribeDeviceAudioFile(file,locale,abort.signal);
+      }catch{
+        if(abort.signal.aborted)return;
+        const body=new FormData();
+        body.append("file",file,file.name);
+        body.append("locale",locale);body.append("consent","yes");
+        const response=await fetch("/api/holistic-support/audio-storyboard",{
+          method:"POST",body,cache:"no-store",credentials:"same-origin",signal:abort.signal
+        });
+        const data=await response.json() as {transcript?:TimedSpeechTranscript;error?:string};
+        if(!response.ok||!data.transcript)throw Error(data.error||"VOICE_STT_UNAVAILABLE");
+        transcript=data.transcript;
+      }
       if(voiceAbortRef.current!==abort)return;
-      const stored=await stageVoiceStudioHandoff(file,data.transcript);
+      const stored=await stageVoiceStudioHandoff(file,transcript);
       if(voiceAbortRef.current!==abort)return;
-      setVoiceTranscript(data.transcript);setVoiceHandoffReady(stored);
+      setVoiceTranscript(transcript);setVoiceHandoffReady(stored);
       setVideoStep(null);setGuidedTrack("video");
       setMessages(old=>[...old,
         {role:"user" as const,text:(locale==="ru"?"Голосовое сообщение: ":"Voice message: ")+file.name},
@@ -709,9 +826,9 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       if(abort.signal.aborted)return;
       const code=error instanceof Error?error.message:"";
       setVoiceError(code==="AUDIO_STT_FREE_PROVIDER_NOT_CONFIGURED"?
-        (locale==="ru"?"Бесплатное распознавание пока не подключено. Аудио не отправлялось провайдеру.":
+        (locale==="ru"?"Распознавание файла недоступно в этом браузере, а бесплатный серверный сервис не настроен. Воспользуйтесь голосовым вводом или напишите сообщение.":
           locale==="es"?"El reconocimiento gratuito no está configurado. No se envió el audio.":
-            "Free transcription is not configured. Audio was not sent to a provider.") :
+            "Automatic file transcription is unavailable here. Try the live microphone or type your message; no paid service was used.") :
         (locale==="ru"?"Не удалось распознать голос с таймкодами. Проверьте файл и подключение.":
           locale==="es"?"No se pudo transcribir con tiempos. Comprueba el archivo y la conexión.":
             "Timed transcription failed. Check the file and connection."));
@@ -727,6 +844,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       ?detectConversationLocale(text,locale) as PublicLocale:locale;
     if(turnLocale!==locale){setLocale(turnLocale);onConversationLocaleChange?.(turnLocale);}
     const turnStarter=messengerStarter[turnLocale],turnCopy=copy[turnLocale];
+    const boundaryReply=reviewPracticeBoundary(text,turnLocale)?.reply||turnStarter.safety;
     if(!text||busy||(mode==="owned"&&!agree&&!(compact&&(testChatOpen||testOfferFromText(text))))||
       (judgmentChoice!==null&&judgmentClickLock.current))return;
     alternativeAbortRef.current?.abort();alternativeAbortRef.current=null;
@@ -743,7 +861,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       if(requiresProtectedReply(text,turnLocale)){
         setTestChatOpen(false);setTestChatTurn(null);setTestSuggestedKey("");
         // Never record a sensitive test utterance in general agent history.
-        setMessages(prev=>[...prev,{role:"assistant" as const,text:turnStarter.safety}].slice(-30));
+        setMessages(prev=>[...prev,{role:"assistant" as const,text:boundaryReply}].slice(-30));
       }else{
         setTestChatTurn(prev=>({seq:(prev?.seq||0)+1,text}));
         // Confirmed answers render from the owned test-run record below;
@@ -771,13 +889,14 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       }
     }
     if(compact&&isCasualGreeting(text)){
-      setProjectFlow(null);setPageHelpLink(null);
+      setProjectFlow(null);setSessionStep(null);setSessionGoal(null);setSessionOffers([]);setPageHelpLink(null);
       setJudgmentView(null);judgmentClickLock.current=false;
       setContentStep(null);setContentVoice(false);setContentBrief("");
       followTail.current=true;setNewBelow(false);setStatus("");setSource("");setChoices([]);setDraft("");
       setMessages(prev=>[...prev,{role:"user" as const,text},
-        {role:"assistant" as const,text:/[а-яё]/iu.test(text)?messengerStarter.ru.hello:
-          /^(?:hola|buenas)/i.test(text)?messengerStarter.es.hello:turnStarter.hello}].slice(-30));
+        {role:"assistant" as const,text:ruleConversationReply({message:text,locale:turnLocale,history:messages.slice(-6)})?.reply||
+          (/[а-яё]/iu.test(text)?messengerStarter.ru.hello:
+            /^(?:hola|buenas)/i.test(text)?messengerStarter.es.hello:turnStarter.hello)}].slice(-30));
       return;
     }
     if(compact&&isContentCreationIntent(text)){setTestChatOpen(false);setTestChatTurn(null);setTestSuggestedKey("");startContent(turnLocale);return;}
@@ -825,7 +944,23 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       setJudgmentView(null);
       setVideoStep(null);setGuidedTrack(null);setVideoPendingCategory(null);
     }
+    // Sessions asks for a goal before exposing any service. An unclear first
+    // free-text answer gets one optional outcome question before a shortlist.
+    if(compact&&judgmentChoice===null&&projectFlow==="sessions"&&sessionStep&&
+      !isContentCreationIntent(text)&&!isVideoCreationIntent(text)&&!requiresProtectedReply(text,turnLocale)){
+      const goal=sessionGoal||sessionGoalForText(text);
+      if(sessionStep==="goal"&&(!goal||text.length<36)){
+        followTail.current=true;setNewBelow(false);setDraft("");setChoices([]);
+        setSessionGoal(goal);setSessionStep("outcome");
+        setMessages(prev=>[...prev,{role:"user" as const,text},
+          {role:"assistant" as const,text:sessionCopy(turnLocale).detail}].slice(-30));
+      }else{
+        finishSessionIntake(text,goal||"personal",turnLocale);
+      }
+      return;
+    }
     setEntryOpen(false);setContentStep(null);setProjectFlow(null);setPageHelpLink(null);
+    setSessionStep(null);setSessionGoal(null);setSessionOffers([]);
     // Keep every user turn intact for server safety preflight (UI max 2,000).
     // Bound unusually long assistant replies without altering user risk cues.
     const prior=messages.slice(-6).map(row=>({
@@ -838,7 +973,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       const candidate=planJudgmentTurn({message:text,locale:turnLocale,
         safety:{status:"clear"},history:prior,pending:judgmentView?.pending,choiceId:judgmentChoice});
       const handled=candidate.status!=="abstain";
-      const answer=requiresProtectedReply(text,turnLocale)?turnStarter.safety:
+      const answer=requiresProtectedReply(text,turnLocale)?boundaryReply:
         handled?candidate.reply:guestAnswer(text,prior,turnLocale);
       setJudgmentView(requiresProtectedReply(text,turnLocale)?null:
         handled?candidate as JudgmentView:null);
@@ -851,6 +986,9 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     controller.current=abort;setBusy(true);setStatus("");setChoices([]);setDraft("");
     setMessages(prev=>[...prev,{role:"user" as const,text}]);
     try {
+      const stateTurn=authenticated&&mode==="rules"&&turnLocale!=="es"&&typeof crypto.randomUUID==="function"
+        ?newNativeSessionTurn(nativeSession.current,crypto.randomUUID()):null;
+      if(!stateTurn)nativeSession.current=null;
       const response=await fetch("/api/holistic-agent/turn",{
         method:"POST",credentials:"same-origin",signal:abort.signal,
         headers:{"Content-Type":"application/json"},
@@ -863,10 +1001,21 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
           useAgentMemory:authenticated&&useAgentMemory,
           judgmentContext:judgmentView?.token||null,
           judgmentChoice,
+          ...(stateTurn?{nativeSession:stateTurn}:{}),
           feedback:{dismissedIds,completedIds}}),
       });
-      if(!response.ok)throw Error(response.status===401?"SIGN_IN_REQUIRED":response.status===503?"MODE_UNAVAILABLE":"CHAT_UNAVAILABLE");
+      if(!response.ok){
+        if(stateTurn&&(response.status===404||response.status===409))nativeSession.current=null;
+        throw Error(response.status===401?"SIGN_IN_REQUIRED":response.status===503?"MODE_UNAVAILABLE":"CHAT_UNAVAILABLE");
+      }
       const data=await response.json() as AgentReply;
+      if(abort.signal.aborted)return;
+      if(stateTurn){
+        // A safety/Judgment turn may intentionally omit the session. Do not
+        // reuse state that did not observe that turn on a subsequent request.
+        nativeSession.current=null;
+        nativeSession.current=advanceNativeClientSession(stateTurn,data.nativeSession);
+      }
       let reply=data.reply,used=data.source||"none";
       if(mode==="device"&&data.browserModelAllowed&&!abort.signal.aborted){
         try {
@@ -902,15 +1051,20 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       }
       setMessages(prev=>[...prev,{role:"assistant" as const,text:reply}].slice(-30));
       if(authenticated)void privateTranscript.savePair(text,reply);
-      setSource(used==="browser"?turnCopy.used:used==="owned"?turnCopy.backend:turnCopy.simple);
+      // Social replies are already AI-labelled: omit the mechanical
+      // "source: algorithm" footer only for this small-talk subset.
+      const socialRule=used==="rules"?ruleConversationReply({message:text,locale:turnLocale,history:prior}):null;
+      const friendlyTurn=Boolean(socialRule&&typeof socialRule.id==="string"&&["conversation_greeting","conversation_small_talk","conversation_chat_invitation"].includes(socialRule.id));
+      setSource(friendlyTurn?"":used==="browser"?turnCopy.used:used==="owned"?turnCopy.backend:turnCopy.simple);
     } catch (error) {
       if(!abort.signal.aborted){
+        if(voice.conversing)voice.stopDialogue();
         const reason=error instanceof Error?error.message:"";
         if(reason==="SIGN_IN_REQUIRED"&&compact&&mode==="rules"){
           // Expired session: answer from public rules; private API stays protected.
           const candidate=planJudgmentTurn({message:text,locale:turnLocale,
             safety:{status:"clear"},history:prior,pending:null});
-          const answer=requiresProtectedReply(text,turnLocale)?turnStarter.safety:
+          const answer=requiresProtectedReply(text,turnLocale)?boundaryReply:
             candidate.status!=="abstain"?candidate.reply:guestAnswer(text,prior,turnLocale);
           setJudgmentView(!requiresProtectedReply(text,turnLocale)&&candidate.status!=="abstain"?
             candidate as JudgmentView:null);
@@ -987,7 +1141,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     event.preventDefault();
     void sendTurn(draft);
   }
-  function resetConversation(){alternativeAbortRef.current?.abort();alternativeAbortRef.current=null;lastAnswerRef.current=null;setAlternativeBusy(false);controller.current?.abort();selectVoiceMessage(null);followTail.current=true;setNewBelow(false);setMessages([]);setPageHelpLink(null);setChoices([]);setJudgmentView(null);judgmentClickLock.current=false;setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setProjectFlow(null);setTestFocus(null);setContentStep(null);setContentVoice(false);setContentBrief("");setFormat("");setGuideLink(null);setTestChatOpen(false);setTestChatTurn(null);setTestSuggestedKey("");setTestRevision(0);setGuidedTrack(null);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);setVideoStep(null);videoUndo.current=null;setVideoPendingCategory(null);setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);setRecorderOpen(false);}
+  function resetConversation(){nativeSession.current=null;voice.stopDialogue();lastSpeechTurn.current=null;alternativeAbortRef.current?.abort();alternativeAbortRef.current=null;lastAnswerRef.current=null;setAlternativeBusy(false);controller.current?.abort();selectVoiceMessage(null);followTail.current=true;setNewBelow(false);setMessages([]);setPageHelpLink(null);setChoices([]);setJudgmentView(null);judgmentClickLock.current=false;setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setProjectFlow(null);setSessionStep(null);setSessionGoal(null);setSessionOffers([]);setTestFocus(null);setContentStep(null);setContentVoice(false);setContentBrief("");setFormat("");setGuideLink(null);setTestChatOpen(false);setTestChatTurn(null);setTestSuggestedKey("");setTestRevision(0);setGuidedTrack(null);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);setVideoStep(null);videoUndo.current=null;setVideoPendingCategory(null);setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);setRecorderOpen(false);}
 
   useEffect(()=>{
     const startNewConversation=()=>resetConversation();
@@ -1022,12 +1176,22 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       }}/>
   </label>:null;
   const resetControl=<button type="button" onClick={resetConversation}>{t.reset}</button>;
+  const voiceControls=voiceEnabled?<VoiceCompanionControls voice={voice} locale={locale}
+    privacyOnly={Boolean(pageHelp)}
+    greeting={pageHelp?.greeting??starter.welcome}
+    latestReply={[...messages].reverse().find(item=>item.role==="assistant")?.text}
+    onTranscript={text=>setDraft(prev=>((prev?prev+" ":"")+text).slice(0,2000))}
+    onConversationTurn={text=>{
+      if(busy||mode==="owned"&&!agree){setDraft(text);voice.stopDialogue();return;}
+      if(requiresProtectedReply(text,locale))voice.stopDialogue();
+      setDraft(text);void sendTurn(text);
+    }}/>:null;
 
   const settings = (
     <details className={compact?styles.compactSettings:styles.expandedSettings} open={!compact}>
       <summary>{compact?(locale==="ru"?"Настройки":locale==="es"?"Ajustes":"Settings"):(locale==="ru"?"Режим ответа и конфиденциальность":locale==="es"?"Modo y privacidad":"Response mode and privacy")}</summary>
     <label className={styles.mode}>{t.mode}
-      <select value={mode} onChange={event=>{setMode(event.target.value as Mode);setStatus("");}}>
+      <select value={mode} onChange={event=>{voice.stopDialogue();setMode(event.target.value as Mode);setStatus("");}}>
         <option value="rules">{t.rules}</option>
         <option value="device">{t.device}</option>
         <option value="owned">{t.owned}</option>
@@ -1065,6 +1229,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       <input type="checkbox" checked={agree} onChange={event=>setAgree(event.target.checked)}/>
       {t.consent}
     </label>}
+    {voiceControls}
     </details>
   );
   const availableSuggestions=choices.filter(x=>!dismissedIds.includes(x.id)&&!completedIds.includes(x.id));
@@ -1086,6 +1251,54 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       </div>
     </div>
   </article>;
+  const showLandingComposer=compact&&messengerView&&!pageHelp&&!messages.length;
+  const composer=(
+    <form onSubmit={submit} className={styles.form}>
+      <textarea ref={composerRef} value={draft} onChange={e=>setDraft(e.target.value)} placeholder={t.placeholder}
+        onFocus={()=>{
+          if(!compact||!messengerView)return;
+          composerFocused.current=true;
+          followTail.current=true;
+          window.requestAnimationFrame(revealFocusedContext);
+        }}
+        onBlur={()=>{composerFocused.current=false;}}
+        maxLength={contentStep==="brief"?160:2000} rows={compact?1:3} disabled={busy} aria-label={t.placeholder}/>
+      <div className={styles.actions}>
+        {messengerView?<details className={styles.composerMore} data-hh-ai-more>
+          <summary aria-label={locale==="ru"?"Дополнительные действия":locale==="es"?"Más acciones":"More actions"}><Plus size={19} aria-hidden="true"/></summary>
+          <div className={styles.composerMenu}>
+            {voiceAttachment}
+            {voiceEnabled&&<details className={styles.voiceSettings} data-hh-voice-settings>
+              <summary>{pageHelp?voice.t.settings:(locale==="ru"?"Настройки голоса":locale==="es"?"Ajustes de voz":"Voice settings")}</summary>
+              {voiceControls}
+            </details>}
+            {resetControl}
+          </div>
+        </details>:voiceAttachment}
+        {messengerView&&!pageHelp&&voiceEnabled&&<button type="button"
+          className={styles.recorderToggle} data-hh-conversation-mic
+          onClick={()=>voice.conversing?voice.stopDialogue():voice.startDialogue(text=>{
+            if(busy||(mode==="owned"&&!agree)){setDraft(text);voice.stopDialogue();return;}
+            if(requiresProtectedReply(text,locale))voice.stopDialogue();
+            setDraft(text);void sendTurn(text);
+          })}
+          disabled={!voice.conversing&&(!voice.recognitionSupported||!voice.sttConsent||!voice.supported||!voice.playbackConsent)}
+          aria-pressed={voice.conversing}
+          aria-label={voice.conversing?(locale==="ru"?"Завершить голосовой разговор":locale==="es"?"Terminar conversación":"End voice conversation"):
+            (locale==="ru"?"Начать голосовой разговор":locale==="es"?"Hablar por voz":"Talk by voice")}
+          title={locale==="ru"?"Голосовой разговор":locale==="es"?"Conversación por voz":"Voice conversation"}>
+          <Mic size={20} aria-hidden="true"/>
+        </button>}
+        {messengerView&&<EmotionalAvatar messages={messages} busy={busy}
+          status={status} locale={locale} compact={compact} iconOnly companionVoice={voiceEnabled?voice:undefined}/>}
+        {!messengerView&&resetControl}
+        <button type="submit" disabled={busy||!draft.trim()||(mode==="owned"&&!agree&&!(compact&&(testChatOpen||testOfferFromText(draft))))}
+          aria-label={messengerView?(busy?t.loading:t.send):undefined}>{messengerView?<Send size={20} aria-hidden="true"/>:busy?t.loading:t.send}</button>
+        {busy&&<button type="button" onClick={()=>{voice.stopDialogue();controller.current?.abort();}}
+          aria-label={messengerView?t.cancel:undefined}>{messengerView?<X size={19} aria-hidden="true"/>:t.cancel}</button>}
+      </div>
+    </form>
+  );
   return <section className={styles.root} data-hh-agent-preview lang={locale} data-compact={compact||undefined}
     data-video-auth-status={compact?(authenticated?"authenticated":authStatus):undefined}
     data-page-help={pageHelp?"true":undefined} data-has-messages={messages.length>0||undefined}
@@ -1095,7 +1308,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     {authenticated&&!messengerView&&<HolisticAgentMemoryPanel locale={locale}
       onUse={items=>setUseAgentMemory(items.length>0)}/>}
     {authenticated&&<SecureDialogueHistory history={privateTranscript} locale={locale}/>}
-    {!messengerView&&<EmotionalAvatar messages={messages} busy={busy} status={status} locale={locale} compact={compact}/>}
+    {!messengerView&&<EmotionalAvatar messages={messages} busy={busy} status={status} locale={locale} compact={compact} companionVoice={voiceEnabled?voice:undefined}/>}
     <div ref={threadRef} className={styles.thread} role="log" aria-live="polite"
       onScroll={event=>{const el=event.currentTarget;
         if(programmaticScrollTop.current!==null){
@@ -1107,7 +1320,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         followTail.current=atBottom;
         if(atBottom)setNewBelow(false)}}>
       {compact&&messengerView&&!pageHelp&&!messages.length&&<>
-        <MessengerAiLanding locale={locale} onCreateVideo={()=>startContent()}
+        <MessengerAiLanding locale={locale} composer={composer} onCreateVideo={()=>startContent()}
           onPractice={()=>startGuided("meditation")} onAsk={()=>composerRef.current?.focus({preventScroll:true})}/>
         <MessengerSixProjects locale={locale} onSelect={startProject}/>
       </>}
@@ -1118,9 +1331,18 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
           <img src="/images/holistic-house/reiki-approved-sunrise-v3.webp"
             width={37} height={37} loading="lazy" alt="" className={styles.messagePortrait}/>
           <p className={styles.assistant}>{m.variant==="alternative"&&<strong className={styles.alternativeLabel}>{locale==="ru"?"Альтернативный ответ · AI на устройстве":locale==="es"?"Respuesta alternativa · IA en el dispositivo":"Alternative answer · On-device AI"}{"\n"}</strong>}{m.text}</p>
+          {voiceEnabled&&<button type="button" data-hh-voice-turn={index}
+            aria-label={voice.t.play} title={voice.t.play}
+            disabled={!voice.playbackConsent||!voice.supported}
+            onClick={()=>voice.speak(m.text)}
+            style={{minWidth:32,minHeight:32,marginInlineStart:6,border:"1px solid #E9DFD1",borderRadius:10,background:"#FFFCF7",color:"#143D3A"}}>🔊</button>}
         </div>:
         <p key={index} data-hh-chat-turn={m.role} className={m.role==="user"?styles.user:styles.assistant}>
-          {m.variant==="alternative"&&<strong className={styles.alternativeLabel}>{locale==="ru"?"Альтернативный ответ · AI на устройстве":locale==="es"?"Respuesta alternativa · IA en el dispositivo":"Alternative answer · On-device AI"}{"\n"}</strong>}{m.text}</p>)}
+          {m.variant==="alternative"&&<strong className={styles.alternativeLabel}>{locale==="ru"?"Альтернативный ответ · AI на устройстве":locale==="es"?"Respuesta alternativa · IA en el dispositivo":"Alternative answer · On-device AI"}{"\n"}</strong>}{m.text}{voiceEnabled&&<button type="button" data-hh-voice-turn={index}
+            aria-label={voice.t.play} title={voice.t.play}
+            disabled={!voice.playbackConsent||!voice.supported}
+            onClick={()=>voice.speak(m.text)}
+            style={{minWidth:32,minHeight:32,marginInlineStart:6,border:"1px solid #E9DFD1",borderRadius:10,background:"#FFFCF7",color:"#143D3A"}}>🔊</button>}</p>)}
       {lastAnswerRef.current&&messages[messages.length-1]?.role==="assistant"&&<div className={styles.answerActions} data-hh-alternative-actions>
         <strong>{locale==="ru"?"Ответ не подошёл?":locale==="es"?"¿No te convence la respuesta?":"Not quite the answer you wanted?"}</strong>
         <button type="button" disabled={alternativeBusy||busy} onClick={()=>void requestAlternativeAnswer("different")}>
@@ -1133,13 +1355,28 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       </div>}
       {alternativeBusy&&<p role="status" className={styles.muted}>{locale==="ru"?"Готовлю альтернативный ответ на устройстве…":locale==="es"?"Preparando otra respuesta en el dispositivo…":"Preparing an alternative on your device…"}</p>}
       {alternativeError&&<p role="status" className={styles.muted}>{alternativeError}</p>}
-      {compact&&messengerView&&projectFlow&&<div className={styles.projectOptions}
+      {compact&&messengerView&&projectFlow==="sessions"&&sessionStep==="goal"&&
+        <div className={styles.projectOptions} role="group" data-hh-session-goal-options
+          aria-label={messengerProject(locale,"sessions").question}>
+          {sessionGoalChoices(locale).map((option:{id:string;label:string;description:string})=><button type="button"
+            key={option.id} disabled={busy} data-hh-session-goal-choice={option.id}
+            onClick={()=>selectSessionGoal(option)}><strong>{option.label}</strong>
+            <small>{option.description}</small></button>)}
+        </div>}
+      {compact&&messengerView&&projectFlow&&projectFlow!=="sessions"&&<div className={styles.projectOptions}
         role="group" data-hh-project-step={projectFlow}
         aria-label={messengerProject(locale,projectFlow).question}>
         {messengerProject(locale,projectFlow).options.slice(0,4).map(option=><button type="button"
           key={option.id} disabled={busy} data-hh-project-choice={option.id}
           onClick={()=>selectProjectOption(option)}><strong>{option.label}</strong><small>{option.description}</small></button>)}
       </div>}
+      {compact&&messengerView&&sessionOffers.length>0&&
+        <div className={styles.projectOptions} role="group" data-hh-session-offers
+          aria-label={sessionCopy(locale).offersLabel}>
+          {sessionOffers.map(option=><a key={option.id} data-hh-session-offer={option.id}
+            href={"/"+locale+option.href}><strong>{option.label}</strong>
+            <small>{sessionOfferDescription(locale,option.id)}</small></a>)}
+        </div>}
       {compact&&pageHelpLink&&<a className={styles.testLink} data-hh-ihelp-link href={pageHelpLink.href}>{pageHelpLink.label} · {t.option}</a>}
       {compact&&guideLink==="tests"&&<a className={styles.testLink} data-hh-ai-tests-link
         href={"/"+locale+"/tests"}>{starter.testsLink}</a>}
@@ -1147,7 +1384,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         incomingTurn={testChatTurn} suggestedKey={testSuggestedKey}
         onAdvance={()=>setTestRevision(value=>value+1)} onClose={()=>{
           setTestChatOpen(false);setTestChatTurn(null);setTestSuggestedKey("");setTestFocus(null);setGuideLink(null);
-        }}/>} 
+        }}/>}
       {compact&&entryOpen&&pageHelp&&<div className={styles.startActions} role="group"
         aria-label={starter.actions} data-hh-ihelp-actions>
         {pageHelp.actions.map(action=><button type="button" key={action.id}
@@ -1354,29 +1591,11 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         </a>}
       </div>}
     </section>}
-    <form onSubmit={submit} className={styles.form}>
-      <textarea ref={composerRef} value={draft} onChange={e=>setDraft(e.target.value)} placeholder={t.placeholder}
-        maxLength={contentStep==="brief"?160:2000} rows={compact?1:3} disabled={busy} aria-label={t.placeholder}/>
-      <div className={styles.actions}>
-        {messengerView?<details className={styles.composerMore} data-hh-ai-more>
-          <summary aria-label={locale==="ru"?"Дополнительные действия":locale==="es"?"Más acciones":"More actions"}><Plus size={19} aria-hidden="true"/></summary>
-          <div className={styles.composerMenu}>{voiceAttachment}{resetControl}</div>
-        </details>:voiceAttachment}
-        {messengerView&&!pageHelp&&<button type="button" className={styles.recorderToggle}
-          onClick={()=>setRecorderOpen(value=>!value)} aria-pressed={recorderOpen}
-          aria-label={locale==="ru"?"Записать голос для видео":locale==="es"?"Grabar audio para vídeo":"Record audio for video"}
-          title={locale==="ru"?"Записать голос для видео":locale==="es"?"Grabar audio para vídeo":"Record audio for video"}>
-          <Mic size={20} aria-hidden="true"/>
-        </button>}
-        {messengerView&&<EmotionalAvatar messages={messages} busy={busy}
-          status={status} locale={locale} compact={compact} iconOnly/>}
-        {!messengerView&&resetControl}
-        <button type="submit" disabled={busy||!draft.trim()||(mode==="owned"&&!agree&&!(compact&&(testChatOpen||testOfferFromText(draft))))}
-          aria-label={messengerView?(busy?t.loading:t.send):undefined}>{messengerView?<Send size={20} aria-hidden="true"/>:busy?t.loading:t.send}</button>
-        {busy&&<button type="button" onClick={()=>controller.current?.abort()}
-          aria-label={messengerView?t.cancel:undefined}>{messengerView?<X size={19} aria-hidden="true"/>:t.cancel}</button>}
-      </div>
-    </form>
+    {compact&&!messengerView&&voiceEnabled&&<details className={styles.compactSettings} data-hh-voice-settings>
+      <summary>{locale==="ru"?"Настройки голоса":locale==="es"?"Ajustes de voz":"Voice settings"}</summary>
+      {voiceControls}
+    </details>}
+    {!showLandingComposer&&composer}
     {compact&&!contentVoice&&(!messengerView||recorderOpen)&&<MessengerAudioVideo locale={locale}
       initialGoal={videoDraft.goal||""} disabled={busy} autoOpen={messengerView&&recorderOpen}/>}
     {!compact&&<details className={styles.programPanel} data-hh-eight-session-preview>

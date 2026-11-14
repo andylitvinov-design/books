@@ -86,14 +86,14 @@ test("Goals CTA, Montage Add video, Messenger handoff and media e2es use the rea
   for(const file of [voice,live,motion])
     assert.match(file,/data-video-continue-scenarios/);
   for(const file of [live,motion]){
-    assert.match(file,/data-video-montage-tab="text"/);
+    assert.match(file,/data-video-montage-tab="audio"/);
     assert.match(file,/data-video-montage-effects/);
-    assert.match(file,/data-video-montage-next="text"/);
-    assert.match(file,/VISIBLE_STYLE_NEXT_MUST_OPEN_TEXT/);
-    assert.match(file,/await page\.waitForFunction\(\(\)=>[\s\S]*?data-video-montage-tab="text"/,
+    assert.match(file,/data-video-montage-next="audio"/);
+    assert.match(file,/VISIBLE_STYLE_NEXT_MUST_OPEN_AUDIO/);
+    assert.match(file,/await page\.waitForFunction\(\(\)=>[\s\S]*?data-video-montage-tab="audio"/,
       "real WebKit must await a committed Text tab, not inspect pre-commit React state");
-    assert.doesNotMatch(file,/await page\.locator\('\[data-video-montage-tab="text"\]'\)\.click\(\)/,
-      "the protected browser must use the current visible Style -> Text Next CTA");
+    assert.doesNotMatch(file,/await page\.locator\('\[data-video-montage-tab="audio"\]'\)\.click\(\)/,
+      "the protected browser must use the current visible Style -> Audio Next CTA");
     assert.match(file,/data-video-timeline-add-video/);
     assert.doesNotMatch(file,/await (?:allStories|page\.locator\('\[data-auto-video-all-scenes\]'\))\.click\(\)/);
   }
@@ -195,4 +195,36 @@ test("guided meditation choice commits before opening and omission on real WebKi
  assert.match(browser,/audio\?\.open===false/);
  assert.match(browser,/data-guided-eight-sessions/);
  assert.doesNotMatch(browser,/click\(\{force:true\}\)/);
+});
+
+test("first-video macOS WebKit uses a genuine portrait tap and still verifies React's committed selection",()=>{
+ const live=read("scripts/benchmarking/first-video-live-export.mjs");
+ assert.match(live,/if\(engine==='webkit'\)await portrait\.tap\(\)/);
+ assert.match(live,/else await portrait\.click\(\)/);
+ assert.match(live,/LIVE_VIDEO_PORTRAIT_SELECTION_NOT_REFLECTED/);
+ assert.match(live,/LIVE_VIDEO_PORTRAIT_SELECTION_STATE/);
+ assert.match(live,/getAttribute\('aria-pressed'\)==='true'/);
+ assert.doesNotMatch(live,/portrait\.click\(\{force:true\}\)/);
+});
+
+test("real iPhone WebKit navigation uses native touch and verifies committed panes before local export",()=>{
+ const source=read("scripts/benchmarking/first-video-live-export.mjs");
+ const studio=read("components/mandala-free-video-studio.tsx");
+ for(const expected of [
+   "if(engine==='webkit')await continueToIdeas.tap();",
+   "if(engine==='webkit')await editorTab.tap();",
+   "if(engine==='webkit')await montageStyle.tap();",
+   "if(engine==='webkit')await styleNext.tap();",
+   "if(engine==='webkit')await montage.tap();",
+   "if(engine==='webkit')await settings.tap();",
+   "row.phase='editor-workspace-commit';",
+   "row.phase='montage-style-commit';",
+   "row.phase='style-to-audio-commit';",
+   "row.phase='source-editor-open-commit';"
+ ]) assert.ok(source.includes(expected),expected);
+ assert.match(studio,/onPointerUp=\{event=>\{[\s\S]*?event\.pointerType!=="touch"\|\|montagePanel===item\.id/);
+ assert.match(source,/getAttribute\('aria-pressed'\)==='true'/);
+ assert.match(source,/data-first-video-generate/);
+ assert.match(source,/readRealGuestVideo\(page,\{timeout:80000\}\)/);
+ assert.doesNotMatch(source,/force:\s*true|createFakeVideo|skipWebkit/);
 });

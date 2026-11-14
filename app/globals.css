@@ -5972,3 +5972,8 @@
 @media(max-width:720px){
  body:has([data-personal-express-enquiry][data-expanded="true"]) [data-first-party-consent]{display:none}
 }
+
+/* Selected My Coach conversation is an immersive app route: hide only the public marketing shell. */
+body:has([data-my-coach-immersive-session]) .mobile-bottom-navigation,
+body:has([data-my-coach-immersive-session]) [data-sitewide-antistress-banner],
+body:has([data-my-coach-immersive-session]) .launcher{display:none!important}

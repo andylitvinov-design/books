@@ -1,0 +1,130 @@
+.section { display: none; }
+@media (max-width: 760px) {
+  .section {
+    box-sizing: border-box;
+    display: block;
+    width: calc(100% - 24px);
+    max-width: 520px;
+    margin: 22px auto 28px;
+    color: #17334b;
+    font-family: Arial, Helvetica, sans-serif;
+    scroll-margin-top: 16px;
+  }
+  .section * { box-sizing: border-box; }
+  .heading { position: relative; min-height: 86px; margin: 0 3px 14px; padding: 7px 46px 0 0; }
+  .heading::after {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 62px;
+    height: 62px;
+    background: url("/images/holistic-house/assessment-lotus.svg") center / contain no-repeat;
+    opacity: .52;
+  }
+  .heading h2 { margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: clamp(26px, 7.1vw, 32px); font-weight: 700; line-height: 1.13; letter-spacing: -.025em; }
+  .heading p { margin: 9px 0 0; color: #686569; font-size: 17px; line-height: 1.3; }
+  .cards { display: grid; gap: 12px; }
+  .card {
+    display: grid;
+    grid-template-columns: minmax(86px, 33%) minmax(0, 1fr);
+    gap: 11px;
+    align-items: stretch;
+    padding: 11px;
+    border: 1px solid #dec7a8;
+    border-radius: 24px;
+    background: #fffcf7;
+    box-shadow: 0 7px 18px rgb(73 46 24 / 8%);
+    min-width: 0;
+  }
+  .photo { position: relative; min-height: 152px; border-radius: 18px; overflow: hidden; background: #e7e5d9; }
+  .photo img { object-fit: cover; }
+  .content { min-width: 0; display: flex; flex-direction: column; align-items: stretch; gap: 6px; padding: 1px 0 0; }
+  .freeTag { align-self: flex-start; padding: 4px 11px; border-radius: 999px; color: #005b52; background: #e2f1e9; font-weight: 750; font-size: 14px; line-height: 1.3; }
+  .content h3 { margin: 0; color: #11243f; font: 700 19px/1.13 Georgia, "Times New Roman", serif; overflow-wrap: anywhere; }
+  .content p { display: flex; align-items: flex-start; gap: 6px; margin: 2px 0 7px; color: #56535d; font-size: 15px; line-height: 1.29; }
+  .content p svg { flex: none; color: #b78932; margin-top: 1px; }
+  .action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-width: 0;
+    width: 100%;
+    min-height: 50px;
+    margin-top: auto;
+    padding: 9px 10px;
+    border: 0;
+    border-radius: 15px;
+    text-align: center;
+    text-decoration: none;
+    background: linear-gradient(145deg,#197b73,#00574e);
+    color: white;
+    font: 700 17px/1.25 Arial, Helvetica, sans-serif;
+    cursor: pointer;
+  }
+  .action svg { flex: none; }
+  .order { grid-column: 1 / -1; width: 100%; margin-top: 1px; min-width: 0; }
+  .order :global([data-contact-channel-chooser]) { min-width: 0; width: 100%; }
+  .order :global([data-contact-order]) { width: 100%; min-height: 50px; margin: 0; padding: 9px 5px; gap: 4px; }
+  .order :global([data-contact-order]) svg { width: 17px; height: 17px; }
+  .section :is(a,button,input):focus-visible { outline: 3px solid #176e6e; outline-offset: 3px; }
+  .note { margin: 12px 6px 0; color: #686569; font-size: 12px; line-height: 1.45; text-align: center; }
+}
+@media (max-width: 350px) {
+  .section { width: calc(100% - 20px); }
+  .card { grid-template-columns: 82px minmax(0,1fr); gap: 9px; padding: 9px; border-radius: 20px; }
+  .photo { min-height: 158px; border-radius: 15px; }
+  .content h3 { font-size: 17px; }
+  .content p { font-size: 14px; }
+  .action { font-size: 15px; min-height: 48px; padding: 8px 5px; }
+  .order :global([data-contact-order]) { font-size: 15px; }
+}
+@media (prefers-reduced-motion: reduce) { .section * { scroll-behavior: auto!important; transition: none!important; } }
+/* Mobile Services design system: aligned panels, compact cards and real 44px actions. */
+@media(max-width:760px){
+.section{width:calc(100% - 24px);max-width:520px;margin:14px auto;padding:12px;border:1px solid #dfcbae;border-radius:22px;background:#fffcf7;box-shadow:0 5px 16px rgb(72 49 27 / 7%)}
+.heading{min-height:0;margin:0 2px 12px;padding:3px 51px 0 1px}
+.heading::after{right:1px;top:0;width:48px;height:48px}
+.heading h2{font-size:clamp(24px,6.5vw,28px);line-height:1.14}
+.heading p{margin-top:6px;font-size:13px;line-height:1.35}
+.cards{gap:8px}
+.card{grid-template-columns:minmax(78px,30%) minmax(0,1fr);gap:9px;padding:8px;border-color:#e6d8c7;border-radius:16px;background:#fffefa;box-shadow:none}
+.photo{min-height:122px;border-radius:12px}
+.content{gap:4px;padding:0}
+.freeTag{padding:3px 8px;font-size:11px}
+.content h3{font-size:clamp(16px,4.65vw,19px);line-height:1.13}
+.content p{gap:5px;margin:1px 0 4px;font-size:12.5px;line-height:1.3}
+.content p svg{width:16px;height:16px}
+.action,.order :global([data-contact-order]){min-height:44px;padding:7px 8px;border-radius:12px;font-size:13px;line-height:1.23}
+.order{margin-top:auto}
+.order :global([data-contact-order]){gap:4px}
+/* In messenger-only mode className styles the wrapper. Do not render
+   an additional green rectangle behind the actual summary button. */
+.order :global([data-messenger-only-contact]){display:block;width:100%;max-width:100%;min-height:0;margin:0;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;color:inherit}
+.order :global([data-messenger-only-contact] > details > summary){justify-content:center;min-height:44px;padding:7px 8px;border-radius:12px;background:linear-gradient(145deg,#197b73,#00574e);color:#fff;text-align:center;font-size:13px}
+/* Keep each service photo visible and anchor the Request CTA on the right.
+   The native details toggle stays in that column; its expanded choices sit
+   below the entire picture + description row. */
+.card:has([data-compact-messenger="true"]){position:relative;grid-template-rows:minmax(0,1fr) auto}
+.card:has([data-compact-messenger="true"]) > .photo{grid-column:1;grid-row:1 / 3}
+.card:has([data-compact-messenger="true"]) > .content{grid-column:2;grid-row:1}
+.card:has([data-compact-messenger="true"]) > .order{grid-column:2;grid-row:2;margin:0;align-self:end}
+/* Reserve space for both messenger buttons without replacing the card content. */
+.card:has([data-compact-messenger="true"] details[open]){padding-bottom:82px}
+.card:has([data-compact-messenger="true"] details[open]) .order :global([data-messenger-only-contact] > details[open] > div){position:absolute;left:8px;right:8px;bottom:8px;margin:0}
+.order :global([data-messenger-only-contact] > details > div){min-width:0;max-width:100%;padding:9px;gap:7px;font-size:12px}
+.order :global([data-messenger-only-contact] [role="group"]){grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.order :global([data-messenger-only-contact] [role="group"] a){min-width:0;min-height:44px;padding:7px 4px;gap:4px;font-size:12px}
+.order :global([data-messenger-only-contact] [role="group"] a svg){width:15px}
+.note{margin:10px 3px 0;font-size:11px;line-height:1.4}
+}
+@media(max-width:350px){
+.section{width:calc(100% - 24px);padding:10px}
+.card{grid-template-columns:76px minmax(0,1fr);gap:7px;padding:7px}
+.photo{min-height:124px}
+.content h3{font-size:16px}
+.content p{font-size:12px}
+.action,.order :global([data-contact-order]){font-size:12px;padding:6px}
+}

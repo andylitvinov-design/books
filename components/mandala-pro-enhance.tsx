@@ -3,7 +3,7 @@ import {useState} from "react";
 import {useRouter} from "next/navigation";
 import {createVideoCartSelection,VIDEO_CART_STORAGE_KEY,SERVICE_CART_UPDATED_EVENT} from "@/lib/commerce/cart";
 import type {ReactNode} from "react";
-import {ArrowRight, Camera, Check, ChevronDown, Clapperboard, Film, Sparkles, UsersRound} from "lucide-react";
+import {ArrowRight, Camera, Check, ChevronDown, Clapperboard, Film, Sparkles} from "lucide-react";
 import type {StoryAddonKind} from "@/lib/mandala/story-addon-catalog";
 import styles from "./mandala-pro-enhance.module.css";
 
@@ -19,7 +19,7 @@ const copy={
   photoTitle:"Анимировать моё фото",photoDesc:"Фото используется с вашего разрешения. Предпросмотр доступен в редакторе.",
   photoButton:"Загрузить фото",photoChosen:"Фото выбрано",photoPending:"Подготовка фото…",
   characterTitle:"Анимированные персонажи",characterDesc:"Выберите подходящего персонажа из существующего каталога.",
-  showCharacters:"Выбрать персонажа",hideCharacters:"Свернуть список",
+  showCharacters:"Выбрать персонажа",hideCharacters:"Свернуть список",moreScenes:"Дополнительные сюжеты и места",
   proTitle:"Ролик по вашему сценарию",proDesc:"Опишите, каким должен быть весь фильм: сцены, настроение, герои, переходы и финал.",
   wishLabel:"Ваши пожелания",wishPlaceholder:"Например: первые 5 секунд — рассвет у моря, затем встреча двух людей, мягкий свет, спокойный финал…",
   proTools:"Дополнительные режиссёрские настройки",privacy:"Текст остаётся в редакторе. Он не отправляется платному AI-сервису автоматически.",
@@ -37,7 +37,7 @@ const copy={
   photoTitle:"Animate my photo",photoDesc:"Only use a photo you have permission to use. Preview it in the editor.",
   photoButton:"Upload photo",photoChosen:"Photo selected",photoPending:"Preparing photo…",
   characterTitle:"Animated characters",characterDesc:"Choose a character from our existing catalog.",
-  showCharacters:"Choose a character",hideCharacters:"Hide characters",
+  showCharacters:"Choose a character",hideCharacters:"Hide characters",moreScenes:"Other stories and places",
   proTitle:"A video made to your brief",proDesc:"Describe your full film: scenes, mood, characters, transitions and ending.",
   wishLabel:"Your directions",wishPlaceholder:"For example: first 5 seconds — seaside sunrise, then two people meet, soft golden light and a peaceful ending…",
   proTools:"Advanced director settings",privacy:"Your brief stays in the editor. It is not automatically sent to a paid AI service.",
@@ -55,7 +55,7 @@ const copy={
   photoTitle:"Animar mi foto",photoDesc:"Utiliza solo fotos autorizadas. Puedes ver una vista previa.",
   photoButton:"Subir foto",photoChosen:"Foto seleccionada",photoPending:"Preparando foto…",
   characterTitle:"Personajes animados",characterDesc:"Elige un personaje del catálogo existente.",
-  showCharacters:"Elegir personaje",hideCharacters:"Ocultar personajes",
+  showCharacters:"Elegir personaje",hideCharacters:"Ocultar personajes",moreScenes:"Otras historias y lugares",
   proTitle:"Un vídeo a tu medida",proDesc:"Describe todo el vídeo: escenas, emoción, personajes, transiciones y final.",
   wishLabel:"Tus indicaciones",wishPlaceholder:"Por ejemplo: primero un amanecer junto al mar, después dos personas se encuentran, luz suave y un final tranquilo…",
   proTools:"Opciones avanzadas del director",privacy:"El texto permanece en el editor. No se envía automáticamente a un proveedor de IA de pago.",
@@ -88,13 +88,9 @@ export function MandalaProEnhance({
  onProWishChange,freeButtonLabel,onChooseCatalog,standardEditor,proTools,children
 }:Props){
  const router=useRouter();
- const [tier,setTier]=useState<Tier>("standard");
- const [charactersOpen,setCharactersOpen]=useState(false);
+ const [tier,setTier]=useState<Tier>("extra");
  const t=copy[locale];
- const chooseTier=(next:Tier)=>{
-   setTier(next);
-   if(next==="extra"){onChooseCatalog("character");setCharactersOpen(true);}
- };
+ const chooseTier=(next:Tier)=>setTier(next);
  const addToCart=()=>{
    const id=tier==="extra"?"video-extra":tier==="pro"?"video-pro":null;
    if(!id||disabled)return;
@@ -108,46 +104,31 @@ export function MandalaProEnhance({
  const description=tier==="standard"?t.standardDesc:tier==="extra"?t.extraDesc:t.proDesc;
  return <section className={styles.panel} data-video-pro-enhance data-workspace-section="pro"
    data-pro-tier={tier} aria-label={t.title}>
-   <nav className={styles.tiers} role="tablist" aria-label={t.title} data-video-pro-tiers>
-     {tiers.map(item=><button type="button" role="tab" key={item} id={"pro-tab-"+item}
-       aria-selected={tier===item} aria-controls="pro-tier-panel"
-       disabled={disabled} data-video-pro-tier={item}
-       onClick={()=>chooseTier(item)}>
-       <strong>{t.tabs[item]}</strong><span>{t.prices[item]}</span>
-     </button>)}
-   </nav>
    <section id="pro-tier-panel" role="tabpanel" aria-labelledby={"pro-tab-"+tier}
      className={styles.section} data-video-pro-tier-panel={tier}>
-     <header className={styles.heading}>
+     {tier!=="extra"?<header className={styles.heading}>
        <Clapperboard size={23} aria-hidden="true"/>
        <div><h3>{heading}</h3><p>{description}</p></div>
-     </header>
+     </header>:null}
      {tier==="standard"?<div className={styles.editor} data-video-pro-standard-editor>
        {standardEditor}
+       <details className={styles.moreScenes} data-video-pro-other-stories
+         onToggle={event=>{if(event.currentTarget.open)onChooseCatalog("story");}}>
+         <summary>{t.moreScenes}<ChevronDown size={17} aria-hidden="true"/></summary>
+         <div className={styles.scenesCatalog}>{children}</div>
+       </details>
      </div>:null}
-     {tier==="extra"?<div className={styles.extra} data-video-pro-extra-options>
-       <div className={styles.feature}>
-         <span className={styles.featureIcon}><Camera size={24} aria-hidden="true"/></span>
-         <div><strong>{t.photoTitle}</strong><p>{t.photoDesc}</p>
-           {photoSelected?<small className={styles.selected}><Check size={14} aria-hidden="true"/>{t.photoChosen}</small>:null}
-         </div>
-         <button type="button" className={styles.secondaryButton}
-           disabled={disabled||photoPending} data-video-pro-upload-photo onClick={onPickPhoto}>
-           {photoPending?t.photoPending:t.photoButton}
-         </button>
+     {tier==="extra"?<div className={styles.photoRow} data-video-pro-extra-options>
+       <span className={styles.featureIcon}><Camera size={22} aria-hidden="true"/></span>
+       <div className={styles.photoCopy}>
+         <strong>{t.photoTitle}</strong>
+         <p>{t.photoDesc}</p>
+         {photoSelected?<small className={styles.selected}><Check size={13} aria-hidden="true"/>{t.photoChosen}</small>:null}
        </div>
-       <div className={styles.character}>
-         <div className={styles.featureHeading}><UsersRound size={22} aria-hidden="true"/>
-           <div><strong>{t.characterTitle}</strong><p>{t.characterDesc}</p></div>
-         </div>
-         <button type="button" className={styles.catalogToggle} data-video-pro-choose-character
-           disabled={disabled} aria-expanded={charactersOpen}
-           onClick={()=>{onChooseCatalog("character");setCharactersOpen(open=>!open);}}>
-           {charactersOpen?t.hideCharacters:t.showCharacters}
-           <ChevronDown size={17} aria-hidden="true"/>
-         </button>
-         {charactersOpen?<div className={styles.catalog} data-video-pro-character-catalog>{children}</div>:null}
-       </div>
+       <button type="button" className={styles.secondaryButton}
+         disabled={disabled||photoPending} data-video-pro-upload-photo onClick={onPickPhoto}>
+         {photoPending?t.photoPending:t.photoButton}
+       </button>
      </div>:null}
      {tier==="pro"?<div className={styles.proBrief} data-video-pro-custom-brief>
        <label htmlFor="video-pro-brief"><Sparkles size={18} aria-hidden="true"/>{t.wishLabel}</label>
@@ -162,6 +143,14 @@ export function MandalaProEnhance({
        </details>:null}
      </div>:null}
    </section>
+   <nav className={styles.tiers} role="tablist" aria-label={t.title} data-video-pro-tiers>
+     {tiers.map(item=><button type="button" role="tab" key={item} id={"pro-tab-"+item}
+       aria-selected={tier===item} aria-controls="pro-tier-panel"
+       disabled={disabled} data-video-pro-tier={item}
+       onClick={()=>chooseTier(item)}>
+       <strong>{t.tabs[item]}</strong><span>{t.prices[item]}</span>
+     </button>)}
+   </nav>
    {tier==="standard"?<small className={styles.creditsNote}>{t.creditsInfo}</small>:
      <p className={styles.notice} role="status" data-video-pro-paid-unavailable>{t.unavailable}</p>}
    <div className={styles.actions} data-video-pro-actions>

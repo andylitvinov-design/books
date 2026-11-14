@@ -80,9 +80,16 @@ async function inspect(browserType,locale,width){
     const page=document.querySelector("[data-mytube-page]");
     return page && getComputedStyle(page).backgroundColor==="rgb(15, 15, 15)";
   },null,{timeout:20000});
-  const dockBackground=await dock.evaluate(el=>getComputedStyle(el).backgroundColor);
-  assert.match(dockBackground,/^rgba?\(15, 15, 15/,
-    id+" dark dock applies only to MyTube");
+  const dockPalette=await dock.evaluate(el=>{
+    const ai=el.querySelector('[data-unified-dock-item="ai"] svg');
+    const current=getComputedStyle(el);
+    return {background:current.backgroundImage,
+      aiBackground:ai?getComputedStyle(ai).backgroundImage:""};
+  });
+  assert.match(dockPalette.background,/radial-gradient/,
+    id+" approved mint waves on the shared ivory dock");
+  assert.match(dockPalette.aiBackground,/radial-gradient/,
+    id+" teal illuminated AI button visible above the dock");
   const moreFilters=page.locator("[data-mytube-filter-toggle]");
   const rail=page.locator("[data-mytube-category-rail]");
   const refined=page.locator("#mytube-refine-controls");
@@ -95,7 +102,7 @@ async function inspect(browserType,locale,width){
     id+" deeper taxonomy must not push videos down by default");
   assert.deepEqual(
     await page.locator("[data-mytube-format-tabs] button").evaluateAll(els=>els.map(el=>el.dataset.mytubeFormatMode)),
-    ["all","shorts","courses","study"],id+" four functional editorial shelves are visible");
+    ["practices","courses","masters","videos"],id+" four approved MyTube content modes are visible");
   const filterBounds=await moreFilters.boundingBox();
   assert.ok(filterBounds&&filterBounds.height>=44&&filterBounds.height<=60,
     id+" single slim accessible taxonomy bar");
@@ -178,15 +185,17 @@ async function inspect(browserType,locale,width){
    await page.evaluate(()=>window.scrollTo({top:0,behavior:"instant"}));
    await page.screenshot({path:folder+"/mytube-webkit-ru-390.png",fullPage:false});
   }
-  for(const mode of ["shorts","courses","study","all"]){
+  // Four mutually exclusive modes; no invented videos required for acceptance.
+  for(const mode of ["practices","courses","masters","videos"]){
     const control=page.locator('[data-mytube-format-mode="'+mode+'"]');
     await control.click();
-    assert.equal(await control.getAttribute("aria-pressed"),"true",id+" active "+mode);
-    if(locale==="en" && (mode==="shorts"||mode==="study")){
-      await page.waitForFunction(()=>Number(document.querySelector("[data-mytube-result-count]")?.textContent)>0,
-        null,{timeout:15000});
-    }
+    assert.equal(await control.getAttribute("aria-pressed"),"true",id+" selected "+mode);
+    assert.equal(await page.locator('[data-mytube-course-navigation]').isVisible(),mode==="courses",
+      id+" course-type navigation belongs only to Courses");
   }
+  // Four-category taxonomy is a Practices subfilter; restore it before testing.
+  await page.locator('[data-mytube-format-mode="practices"]').click();
+  await rail.waitFor({state:"visible",timeout:15000});
   await moreFilters.click();
   assert.equal(await moreFilters.getAttribute("aria-expanded"),"true",id+" icon expands filters");
   await moreControls.waitFor({state:"visible",timeout:15000});
@@ -203,19 +212,27 @@ async function inspect(browserType,locale,width){
   assert.equal(await refined.isVisible(),false,id+" deeper taxonomy hidden by default");
   const area=page.locator('[data-mytube-category="energy-confidence"]');
   await area.click();
-  await topicRail.waitFor({state:"visible",timeout:15000});
   assert.equal(await area.getAttribute("aria-pressed"),"true",id+" selected category");
-  const subcategories=topicRail.locator('[data-mytube-subcategory]:not([data-mytube-subcategory="all"])');
-  assert.equal(await subcategories.count(),4,id+" four real subcategories on demand");
+  assert.equal(await topicRail.count(),0,id+" removed second taxonomy menu stays absent");
   assert.equal(await refined.isVisible(),false,id+" no duplicate subcategory panel");
-  await subcategories.first().click();
-  await refined.waitFor({state:"visible",timeout:15000});
-  assert.equal(await subcategories.first().getAttribute("aria-pressed"),"true",id+" selected subcategory");
-  const topics=page.locator('[data-mytube-topics] [data-mytube-topic]:not([data-mytube-topic="all"])');
-  assert.equal(await topics.count(),4,id+" deeper topics remain accessible");
+  // Product collections are based only on approved PsiMaster originals.
+  // A CI fixture with no reviewed recordings must not invent placeholders.
+  const realCollections=page.locator('[data-mytube-practice-collection]');
+  const realCount=await realCollections.count();
+  if(realCount>0){
+    const firstCollection=realCollections.first();
+    await firstCollection.click();
+    assert.equal(await firstCollection.getAttribute("aria-pressed"),"true",
+      id+" real collection filters the existing feed");
+    await firstCollection.click();
+    assert.equal(await firstCollection.getAttribute("aria-pressed"),"false",
+      id+" tapping an active collection clears its filter");
+  }else{
+    assert.equal(await page.locator('[data-mytube-practice-collections]').count(),0,
+      id+" no made-up collection without published source");
+  }
   await page.locator('[data-mytube-category="all"]').click();
-  await topicRail.waitFor({state:"detached",timeout:15000});
-  assert.equal(await topicRail.count(),0,id+" subcategories disappear after All");
+  assert.equal(await topicRail.count(),0,id+" old taxonomy menu does not reappear");
   assert.equal(await refined.isVisible(),false,id+" related filters reset");
   await moreFilters.click();
   assert.equal(await moreFilters.getAttribute("aria-expanded"),"false",id+" advanced filters close");
@@ -630,10 +647,25 @@ try{
  await agentComposer.waitFor({state:"visible"});
  assert.equal((await agentComposer.inputValue()).trim(),"",
    "clicking Video asks a question in chat, not a fake prepared send");
+ // Assert a fresh assistant turn, not one fixed/repetitive greeting.
+ const beforeGreeting=await chat.locator(
+   '[data-hh-ai-assistant-message], [data-hh-chat-turn="assistant"]').count();
  await agentComposer.fill("Привет Ау");
  await chat.locator('button[type="submit"]').click();
- await page.waitForFunction(()=>[...document.querySelectorAll('[data-hh-agent-preview] [role="log"] p')]
-   .some(node=>node.textContent?.includes("Я здесь!")),null,{timeout:10000});
+ await page.waitForFunction(previous=>{
+   const thread=document.querySelector('[data-hh-agent-preview] [role="log"]');
+   const replies=thread?.querySelectorAll(
+     '[data-hh-ai-assistant-message], [data-hh-chat-turn="assistant"]');
+   return Boolean(replies&&replies.length>previous&&
+     replies[replies.length-1]?.textContent?.trim());
+ },beforeGreeting,{timeout:15000});
+ await page.waitForFunction(()=>[...document.querySelectorAll(
+   '[data-hh-agent-preview] [data-hh-chat-turn="user"]')]
+   .some(node=>node.textContent?.includes("Привет Ау")),null,{timeout:10000});
+ const latestGreeting=chat.locator(
+   '[data-hh-ai-assistant-message], [data-hh-chat-turn="assistant"]').last();
+ assert.ok((await latestGreeting.innerText()).trim().length>1,
+   "a new visible, nonempty assistant answer follows the guest greeting");
  assert.equal(await chat.locator("video").count(),0,
    "no completed video is claimed before rendering");
 
@@ -685,8 +717,15 @@ try{
    await resetViaMore();
    await chat.locator('[data-hh-ai-project="'+id+'"]').waitFor({state:"visible",timeout:15000});
    await chat.locator('[data-hh-ai-project="'+id+'"]').click();
-   await chat.locator('[data-hh-project-step="'+id+'"]').waitFor({state:"visible",timeout:15000});
-   assert.ok(await chat.locator('[data-hh-project-choice]').count()<=4,
+   // Sessions has a goal-first two-step intake; other projects use one-step choices.
+   const options=id==="sessions"?
+     chat.locator("[data-hh-session-goal-options]"):
+     chat.locator('[data-hh-project-step="'+id+'"]');
+   await options.waitFor({state:"visible",timeout:15000});
+   const choices=id==="sessions"?
+     chat.locator("[data-hh-session-goal-choice]"):
+     chat.locator("[data-hh-project-choice]");
+   assert.ok(await choices.count()<=4,
      id+" must expose no more than four short choices");
  };
  await openProject("practice");
@@ -716,11 +755,34 @@ try{
    "MyTube uses the existing topic-filtered catalogue in Russian");
 
  await openProject("sessions");
- await chat.locator('[data-hh-project-choice="free-review"]').click();
- const sessionLink=chat.locator('[data-hh-ihelp-link]');
+ await chat.locator('[data-hh-session-goal-choice="personal"]').click();
+ const sessionComposer=chat.locator("textarea");
+ await sessionComposer.fill("Хочу разобраться в сложном личном выборе и понять, как поступить дальше.");
+ await chat.locator('button[type="submit"]').click();
+ const sessionLink=chat.locator('[data-hh-session-offer="free-review"]');
  await sessionLink.waitFor({state:"visible",timeout:15000});
  assert.equal(await sessionLink.getAttribute("href"),"/ru/services/free-situation-review",
-   "Sessions links to the existing free situation-review route in Russian");
+   "Sessions asks for a goal and outcome before offering the free review route in Russian");
+
+ // iPhone keyboard regression: after the goal-first Sessions dialogue and the
+ // actual assistant's response, keep the whole reply visible above the composer.
+ const fullAssistantReply=chat.locator('[data-hh-ai-assistant-message]').last();
+ await fullAssistantReply.waitFor({state:"visible",timeout:15000});
+ await sessionComposer.focus();
+ await page.setViewportSize({width:390,height:360});
+ await page.waitForFunction(()=>{
+   const thread=document.querySelector('[data-hh-agent-preview] [role="log"]');
+   const replies=thread?.querySelectorAll('[data-hh-ai-assistant-message]');
+   const reply=replies?.[replies.length-1];
+   if(!thread||!reply)return false;
+   const bounds=thread.getBoundingClientRect(),bubble=reply.getBoundingClientRect();
+   const end=Math.max(0,thread.scrollHeight-thread.clientHeight);
+   return Math.abs(thread.scrollTop-end)<=3&&bubble.bottom<=bounds.bottom+2;
+ },null,{timeout:15000});
+ assert.equal(await fullAssistantReply.evaluate(node=>getComputedStyle(node).flexShrink),"0",
+   "iPhone keyboard must not shrink or clip the assistant reply");
+ await page.setViewportSize({width:390,height:844});
+ results.push({journey:"Sessions goal-first → keyboard viewport → full AI reply visible",passed:true});
 
  await page.locator("[data-chat-top-tabs]").waitFor({state:"visible",timeout:30000});
  await page.locator('[data-chat-top-tabs] button[aria-controls="hh-orders-panel"]').click();
@@ -780,23 +842,29 @@ try{
  await unifiedProfile.click();
  await page.waitForURL(/\/ru\/app\/portrait\/?$/,{timeout:45000});
  await page.locator('[data-profile-hub-tabs]').waitFor({state:"visible",timeout:45000});
- assert.equal(await page.locator('[data-profile-tab="tests"][aria-current="page"]').count(),1,
-   "guest Profile intentionally opens its public Tests-first section");
- // The protected #3909 profile has six real sections; old View/Create tabs
- // and /personality-profiles were replaced. Test the visible DOM and navigation,
- // not a hidden fallback or loosened count.
+ // #4301 restored My Space / Today as the canonical Profile landing.
+ // A signed-out visitor sees the public Cabinet overview and may deliberately
+ // open guest Tests; the old auto-opened Tests-first page is no longer mounted.
+ assert.equal(await page.locator('[data-profile-tab="today"][aria-current="page"]').count(),1,
+   "guest Profile opens the current My Space Today tab, not the retired Tests-first view");
+ const guestOverview=page.locator('[data-cabinet-guest-overview="true"]');
+ await guestOverview.waitFor({state:"visible",timeout:45000});
+ const publicTests=guestOverview.locator('a[href="/ru/client/tests"]');
+ await publicTests.waitFor({state:"visible",timeout:15000});
+ assert.equal(await page.locator('[data-profile-tests-first]').count(),0,
+   "retired standalone test-first component must not replace the My Space overview");
+ // The same six canonical tabs remain visible, but private tabs are explicit
+ // account routes rather than in-page guest anchors.
  assert.deepEqual(await page.locator('[data-profile-hub-tabs] [data-profile-tab]').evaluateAll(
    links=>links.map(link=>link.dataset.profileTab)),
    ["today","tests","state","path","courses","reports"],
-   "the guest and signed-in My Space show the same six canonical sections");
- await page.locator('[data-profile-tab="tests"]').click();
- await page.waitForFunction(()=>location.hash==="#profile-free-tests",{},{timeout:15000});
- await page.locator('[data-profile-hub-tabs][data-profile-active="tests"]').waitFor({state:"visible",timeout:45000});
- assert.equal(await page.locator('[data-profile-tab="tests"][aria-current="page"]').count(),1);
+   "My Space retains six canonical sections for guest and signed-in users");
  assert.equal(await page.locator('[data-hh-unified-dock] [data-unified-dock-item="profile"][aria-current="page"]').count(),1);
  assert.equal(await page.locator('.mobile-bottom-navigation:visible').count(),0);
- assert.equal(await page.locator('[data-profile-hub-tabs] [data-profile-tab]').count(),6);
- results.push({journey:"Public Profile → six-tab My Space Today → protected Tests with one seven-tab dock",passed:true});
+ await publicTests.click();
+ await page.waitForURL(/\/ru\/client\/tests\/?$/, {timeout:45000});
+ await page.locator('main[lang="ru"]').waitFor({state:"visible",timeout:45000});
+ results.push({journey:"Public Profile → My Space Today guest overview → explicit public Tests without forced login",passed:true});
 
 }finally{await browser.close();}
 writeFileSync(folder+"/results.json",JSON.stringify(results,null,2));
