@@ -17,30 +17,34 @@ const evidence = [];
 // Wait for the exact synthetic result identities, including EUR/CAD exclusion.
 async function waitForConsultationFixtures(page, locale, ids, label) {
   const expected = ids.map(id => "/" + locale + "/services/fixture/" + id).sort();
-  await page.waitForFunction(async wanted => {
-    const isExact = () => {
+  // Capture the exact verified links in the same browser task that checks
+  // their 900-ms stability. A second Playwright locator query could race a
+  // legitimate React clear/repaint after the wait and report [] despite the
+  // already verified settled snapshot (observed in WebKit RU 430 on #4509).
+  const verified = await page.waitForFunction(async wanted => {
+    const exactLinks = () => {
       const results = document.querySelector("#holistic-inline-results");
-      if (!results || results.hidden) return false;
+      if (!results || results.hidden) return null;
       const articles = [...results.querySelectorAll("article")];
       const links = articles.flatMap(article => [...article.querySelectorAll("a[href]")])
         .map(link => link.getAttribute("href")).sort();
       return articles.length === wanted.length &&
         links.length === wanted.length &&
-        links.every((href, index) => href === wanted[index]);
+        links.every((href, index) => href === wanted[index]) ? links : null;
     };
-    if (!isExact()) return false;
-    // The real directory can clear and refill results after the first paint.
-    // Require exact IDs to remain continuously present across the delayed
-    // fixture fetch and following React commit, not merely for two frames.
-    // On busy shared CI the React commit for the second filtered fetch may
-    // finish after the first visible match. Require a longer continuously
-    // exact result state; stale or mismatched fixtures still fail closed.
+    if (!exactLinks()) return false;
+    // Keep the full stable-window check: stale, wrong-currency, or missing
+    // fixtures must continue to fail the existing exact-identity assertion.
     await new Promise(resolve => setTimeout(resolve, 900));
-    return isExact();
+    return exactLinks() || false;
   }, expected, { timeout: 20000 });
-  const actual = await page.locator("#holistic-inline-results article a[href]")
-    .evaluateAll(links => links.map(link => link.getAttribute("href")).sort());
-  assert.deepEqual(actual, expected, label + " only the requested published EUR fixture; CAD and stale results excluded");
+  try {
+    const actual = await verified.jsonValue();
+    assert.deepEqual(actual, expected,
+      label + " only the requested published EUR fixture; CAD and stale results excluded");
+  } finally {
+    await verified.dispose();
+  }
 }
 
 // The user must perform a NEW search against the isolated public directory.
