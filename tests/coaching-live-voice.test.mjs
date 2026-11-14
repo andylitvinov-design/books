@@ -161,6 +161,8 @@ test('My Coach persona dialogue speaks and listens on exactly the consented sess
   const css=source('components/my-coach-speech-loop.module.css')
   assert.match(ui,/MyCoachSpeechLoop/)
   assert.match(ui,/const result=await sendMessage\(draft.trim\(\)\)/)
+  assert.ok(ui.includes("!['safety','boundary'].includes(result.mode))replayCoachReply(result.reply)"),
+    'typed-turn narration requires consent and never sends safety/boundary content')
   assert.match(ui,/onTurn=\{sendMessage\}/)
   assert.match(ui,/enabled=\{consent&&readiness.status!=='checking'&&!authRequired\}/)
   assert.match(ui,/Local-only authored fallback/)
@@ -168,10 +170,9 @@ test('My Coach persona dialogue speaks and listens on exactly the consented sess
   assert.match(ui,/if\(mode==='safety'\|\|\(mode==='boundary'/)
   assert.match(ui,/coachStagePrompt\(personaId,stage,responseLocale,settings\)/)
   const sendFunction=ui.slice(ui.indexOf('async function sendMessage(raw){'))
-  const offlineGate=sendFunction.indexOf("if(readiness.status!=='verified'&&!wisdomRequested){")
-  const onlineCall=sendFunction.indexOf("fetch('/api/app/my-coach/turn'")
-  assert.ok(offlineGate>=0&&onlineCall>offlineGate,
-    'offline authored fallback must preempt any eligible AI provider')
+  assert.ok(sendFunction.indexOf("if(readiness.status!=='verified'&&!wisdomRequested){") <
+    sendFunction.indexOf("fetch('/api/app/my-coach/turn'"),
+    'unverified models never receive client text; first-party wisdom requests remain authenticated')
   assert.match(ui,/Browser speech recognition may send microphone audio/)
   assert.match(ui,/Браузер может отправлять звук поставщику распознавания речи/)
   for(const phrase of ['window.SpeechRecognition||window.webkitSpeechRecognition',
@@ -236,10 +237,17 @@ test('My Coach speech is visible as text while recording and safely remains edit
   assert.match(css,/\.liveTranscript/)
   assert.match(css,/\.transcriptFeed\{[^}]*overflow-y:auto/)
   assert.match(css,/\.textComposer \.composer textarea/)
+  // MediaRecorder is allowed only in the separately consented, strictly bounded
+  // iOS fallback: no browser persistence or unsolicited audio transport.
   assert.doesNotMatch(loop,/localStorage|sessionStorage|sendBeacon/)
-  // #4617 introduced short local recording only after an independent explicit opt-in.
-  assert.match(loop,/if\(!recordingConsentRef\.current\|\|!Recorder\|\|!getUserMedia\)/)
-  assert.match(loop,/recordedModeRef\.current&&!recordingConsentRef\.current/)
+  for(const marker of [
+    "if(!recordingConsentRef.current||!Recorder||!getUserMedia)",
+    "body.set('consent','yes')",
+    "recorded.timer=setTimeout(()=>stopRecordedTurn(),18000)",
+    "file.size>4*1024*1024",
+    "stream.getTracks().forEach(track=>track.stop())",
+    "method:'POST',body,credentials:'same-origin',cache:'no-store',signal:controller.signal",
+  ])assert.ok(loop.includes(marker),'consented ephemeral iOS recording: '+marker)
 })
 
 test('approved live-session visual hierarchy keeps a real voice pipeline, readable transcript and functional mobile controls',()=>{
@@ -274,9 +282,9 @@ test('My Coach Fish TTS is only available with opt-in free access and never leak
   assert.throws(()=>normalizeMyCoachFishRequest({locale:'en',text:'hello',voiceConsent:true,
     cloudVoiceConsent:true,trainingUseConsent:false}),/MY_COACH_FISH_TTS_INVALID/)
   for(const part of ['requireSameOrigin','auth.verified()','consumeRate',
+    'signal:AbortSignal.any([request.signal,AbortSignal.timeout(15000)])',
+    'signal:AbortSignal.any([request.signal,AbortSignal.timeout(19000)])',
     'PRIVATE_HEADERS','s2.1-pro-free'])assert.ok(route.includes(part),part)
-  assert.match(route,/signal:AbortSignal\.any\(\[request\.signal,AbortSignal\.timeout\(19000\)\]\)/)
-  assert.match(route,/signal:AbortSignal\.any\(\[request\.signal,AbortSignal\.timeout\(15000\)\]\)/)
   for(const part of ['startCoachingMp3Playback','cloudControllerRef.current?.abort()',
     'cloudPlayerRef.current?.cancel()','cloudAgreed&&cloudAvailable',
     "cloudProvider==='fish_free'?{trainingUseConsent:true}:{}"])assert.ok(speech.includes(part),part)
@@ -363,13 +371,18 @@ test('a silent iPhone recognizer offers one-tap retry while natural-voice consen
   assert.ok(loop.includes("phaseRef.current==='stalled'"))
   assert.ok(loop.includes('setMicStalled(false)'))
   assert.ok(loop.includes("retryMic:'Перезапустить микрофон'"))
-  assert.ok(loop.includes('aria-label={recording?r.recording:transcribing?r.transcribing:retryMic?t.retryMic:'))
+  assert.ok(loop.includes('aria-label={recording?r.recording:transcribing?r.transcribing:retryMic?t.retryMic:'),
+    'microphone retry remains labelled in the recorded/transcribing state machine')
+  assert.ok(loop.includes("if(recordedModeRef.current&&!recordingConsentRef.current)"),
+    'recorded mode still requires separate microphone consent')
   const checkbox=ui.slice(ui.indexOf('<label><input type="checkbox" checked={cloudAgreed}'),
     ui.indexOf('<label><input type="checkbox" checked={cloudAgreed}')+180)
-  assert.ok(checkbox.includes('onChange={event=>changeNaturalVoice(event.target.checked)}'))
-  assert.match(ui,/function changeNaturalVoice\(checked\)\{[\s\S]*?setCloudAgreed\(Boolean\(checked\)\)/)
-  assert.match(ui,/if\(checked\)\{setWizardVoice\(false\);return\}/)
-  assert.match(ui,/replayControllerRef\.current\?\.abort\(\)/)
+  assert.ok(checkbox.includes('onChange={event=>changeNaturalVoice(event.target.checked)}'),
+    'natural voice uses the same consent-controlled state transition')
+  for(const token of ['function changeNaturalVoice(checked){',
+    'setCloudAgreed(Boolean(checked))','if(checked){setWizardVoice(false);return}',
+    'replayControllerRef.current?.abort()', 'replayPlayerRef.current?.cancel()'])
+    assert.ok(ui.includes(token),'revoking voice consent cancels audio: '+token)
   assert.ok(!checkbox.includes('disabled='), 'active/ready STT cannot lock the Fish consent checkbox')
   assert.ok(loop.includes('(!cloudAgreed||!cloudAvailable)&&(cloudControllerRef.current||cloudPlayerRef.current)'),
     'revoking cloud consent still stops the private audio request')

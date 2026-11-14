@@ -4,6 +4,8 @@ import { ProfileModeSwitch } from '../master-mode-switch'
 import { Activity, BookOpen, ClipboardList, FileClock, FileText, House, LockKeyhole, ListChecks, Route } from 'lucide-react'
 import { assessmentHistoryTitle } from '@/lib/assessments/personal-guidance'
 import styles from './profile-hub-tabs.module.css'
+import { SiteVideoPlayer } from '../site-video-player'
+import { profilePresentationForLocale } from '@/lib/profile-presentation.mjs'
 
 const COPY = {
   ru: {
@@ -130,13 +132,29 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
   const current = active === 'view' ? 'today' : active === 'results' ? 'reports' : active
   const settingsMode = current === 'settings'
   const s = SETTINGS_HUB_COPY[selected]
+  // Switch real locale routes while retaining the current profile section.
+  // Language navigation works for visitors; only account actions require sign-in.
+  const languageHref = language => {
+    const targetRoot = '/' + language + '/app'
+    if (settingsMode) return targetRoot + '/settings'
+    if (current === 'tests') return targetRoot + '/tests'
+    if (current === 'state') return targetRoot + '/monitoring'
+    if (current === 'path') return targetRoot + '/portrait?space=path'
+    if (current === 'courses') return targetRoot + '/course?view=courses'
+    if (current === 'reports') return targetRoot + '/portrait?space=reports'
+    return targetRoot + '/portrait'
+  }
+  const presentation = profilePresentationForLocale(selected)
   return <section className={styles.hub} data-profile-hub-tabs data-profile-active={current}>
     <header className={styles.heading}>
       <div><p className={styles.eyebrow}>{t.label}</p><h2>{settingsMode ? s.pageTitle : t.title}</h2></div>
       <div className={styles.profileHeadingActions}>
-        <Link href={'/'+selected+'/my-page'} prefetch={false} className={styles.myPageLink} data-profile-my-page>
-          {selected==='ru'?'Моя страница':selected==='es'?'Mi página':'My Page'}
-        </Link>
+        <nav className={styles.languageSwitch} aria-label={selected === 'ru' ? 'Язык сайта' : 'Site language'}
+          data-profile-language-switch>
+          {['ru', 'en'].map(language => <Link key={language} href={languageHref(language)} prefetch={false}
+            lang={language} hrefLang={language} aria-current={selected === language ? 'page' : undefined}
+            data-profile-language={language}>{language.toUpperCase()}</Link>)}
+        </nav>
         {!settingsMode && <ProfileModeSwitch locale={selected} active="live" />}
       </div>
     </header>
@@ -161,10 +179,14 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
       <div className={styles.hero} data-profile-video-hero>
         <h1 className={styles.srOnly}>{t.hero}</h1>
         <div className={styles.videoFrame}>
-          <video controls playsInline preload="none" poster={POSTER} aria-label={t.video}>
+          {presentation ? <div data-profile-presentation-locale={selected}
+            data-profile-presentation-source={presentation.youtubeId ? 'youtube' : 'heygen'}>
+            <SiteVideoPlayer key={selected} video={presentation} locale={selected}
+              minimal fallbackPoster={POSTER} />
+          </div> : <video controls playsInline preload="none" poster={POSTER} aria-label={t.video}>
             <source src={VIDEO} type="video/mp4" />
             <track kind="captions" src="/videos/holistic-house/profile-scenic.en.vtt" srcLang="en" label="English" />
-          </video>
+          </video>}
         </div>
         {settingsMode ? <nav className={styles.settingsQuickActions} data-profile-settings-actions aria-label={s.menu}>
           <a href="#hh-settings-account">{s.detail}</a>
@@ -179,6 +201,11 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
         <p className={styles.srOnly}>{t.privacy}</p>
       </div>
     </>}
+    <div className={styles.profileSecondaryAction}>
+      <Link href={'/'+selected+'/my-page'} prefetch={false} className={styles.myPageLink} data-profile-my-page>
+        {selected==='ru'?'Моя страница':selected==='es'?'Mi página':'My Page'}
+      </Link>
+    </div>
     {settingsMode && <section className={styles.settingsOverview} data-profile-settings-overview aria-label={s.account}>
       <div className={styles.settingsIdentity} id="hh-settings-overview-account">
         <div className={styles.settingsCardHeading}>
