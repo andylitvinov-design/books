@@ -3,9 +3,10 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {
   TELEGRAM_AI_DIAGNOSTIC_V3,V3_LABELS,V3_COPY,V3_BUTTONS,v3StartLocale,
-  v3CanStart,v3ModelKey,v3Context,v3ButtonsFor,v3IsStop,v3Action,v3CanCallModel,v3DailyReplyCount,v3WantsGeneralChat,V3_CHAT_COPY,v3ChatPreConsentSafetyReply,
+  v3CanStart,v3CanChat,v3ModelKey,v3Context,v3ButtonsFor,v3IsStop,v3Action,v3CanCallModel,v3DailyReplyCount,v3WantsGeneralChat,V3_CHAT_COPY,v3ChatPreConsentSafetyReply,
 } from '../lib/crm/telegram-ai-diagnostic-v3.mjs';
 import {v3Generate,v3ModelMessages} from '../lib/crm/telegram-ai-diagnostic-v3-model.mjs';
+import {waveTelegramLocalReply} from '../lib/crm/telegram-wave-local-reply.mjs';
 
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const env={
@@ -225,4 +226,50 @@ test('Telegram chat uses shared Reaction, Conversation and Reasoning Mind signal
   assert.match(prompt[0].content,/contradictionSignals/);
   assert.equal(prompt.at(-1).content,turns.at(-1).text);
   assert.ok(prompt.length<=10,'owned Ollama max messages remains respected');
+});
+
+test('Wave is the only client-facing assistant name; legacy chat buttons keep working',()=>{
+  for(const locale of ['ru','en','es']){
+    assert.match(V3_CHAT_COPY[locale].intro,/Wave/);
+    assert.match(V3_CHAT_COPY[locale].intro,/OpenRouter/);
+    assert.doesNotMatch(V3_CHAT_COPY[locale].intro,/Qwen/i);
+    assert.match(V3_COPY[locale].intro,/Wave/);
+    assert.match(V3_LABELS[locale].chatagree,/Wave/);
+  }
+  assert.equal(v3Action({rawText:'Начать диалог с ИИ'}),'chatagree');
+  assert.equal(v3Action({rawText:'Поговорить с Wave'}),'chatagree');
+  assert.equal(v3Action({rawText:'Chat with Wave'}),'chatagree');
+  assert.equal(v3Action({rawText:'Hablar con Wave'}),'chatagree');
+  assert.match(v3ModelMessages({kind:'chat',locale:'ru',turns:[{role:'user',text:'Привет'}]})[0].content,/Wave/);
+});
+
+test('Wave local chat remains consent-gated and is independent of any model key',()=>{
+  const local={...env,HH_CRM_TG_AI_V3_SCHEMA_READY:'true',
+    HH_COUNCIL_OPENROUTER_API_KEY:'',HH_AGENT_OWNED_ENABLED:'false'};
+  assert.equal(v3CanStart(local),false,'diagnostic external inference still needs a verified key');
+  assert.equal(v3CanChat(local),true,'local-only chat can still answer after consent');
+  assert.equal(v3CanChat({...local,HH_CRM_TG_AI_V3_ENABLED:'false'}),false);
+  assert.equal(v3CanChat({...local,HH_CRM_TG_AI_V3_SCHEMA_READY:'false'}),false);
+  assert.equal(v3CanChat({...local,VERCEL_ENV:'preview'}),false);
+  const service=source('lib/crm/telegram-ai-diagnostic-v3-service.js');
+  assert.match(service,/const generalStart=chatAllowed/);
+  assert.match(service,/purposeReady=general\?chatAllowed:allowed/);
+  assert.match(service,/if\(!row.ai_consent_at\|\|!\(ctx.conversationKind==='general'\?chatAllowed:allowed\)\)/);
+  assert.match(service,/waveTelegramLocalReply\(\{locale:prior.locale,turns\}\)/);
+  assert.match(service,/wave_telegram_inference/);
+});
+
+test('Wave fallback preserves short-turn context, handles model identity and stays safe',()=>{
+  const incoming=(text,history=[],locale='ru')=>waveTelegramLocalReply({
+    locale,turns:[...history,{role:'user',text}]});
+  assert.match(incoming('Поговорим?'),/поболта|пообща|разговар/i);
+  assert.match(incoming('О Qwen'),/Wave/);
+  assert.match(incoming('О Qwen'),/Qwen/);
+  assert.match(incoming('What is your name?',[],'en'),/Wave/);
+  assert.match(incoming('Quiero morir',[],'es'),/emergencia/);
+  assert.match(incoming('Не хочу больше жить'),/экстренн/);
+  assert.match(incoming('Объясни квантовую физику'),/Wave/);
+  assert.doesNotMatch(incoming('Объясни квантовую физику'),/квантовая физика —/);
+  assert.ok(incoming('Поговорим?').length<700);
+  assert.equal(incoming('Спасибо',[{role:'assistant',text:'Привет'}]).length>0,true);
 });
