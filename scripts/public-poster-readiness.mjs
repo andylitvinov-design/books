@@ -26,7 +26,19 @@ export async function decodeReadyPoster(image, expect) {
   try {
     await openPosterDisclosures(image);
     const source = await image.evaluate(el => ({ src: el.getAttribute('src'), srcset: el.getAttribute('srcset') }));
-    await image.scrollIntoViewIfNeeded({ timeout: 7000 });
+    if (await image.isVisible()) {
+      await image.scrollIntoViewIfNeeded({ timeout: 7000 });
+    } else {
+      // The same <img> can be hidden by a responsive carousel while still
+      // appearing in the DOM. Safari will not fetch a hidden lazy poster.
+      // Change ONLY lazy-load scheduling, never its src/srcset/layout; below
+      // still requires this original element to load and decode successfully.
+      await image.evaluate(el => {
+        if (!el.isConnected || el.loading !== 'lazy')
+          throw new Error('Hidden poster cannot be audited as a native lazy image');
+        el.loading = 'eager';
+      });
+    }
     let selected;
     await expect.poll(async () => {
       const current = await image.evaluate((el, expected) => {

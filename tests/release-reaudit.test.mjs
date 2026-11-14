@@ -213,6 +213,20 @@ test('changing paid service choices derives a fresh WhatsApp URL; free choices o
   assert.doesNotMatch(capture, /preparedUrl|setPreparedUrl/);
 });
 
+test('Services re-audit waits for real hydration and decodes even hidden lazy posters', () => {
+  const verifier = read('scripts/verify-release-reaudit.mjs');
+  const helper = read('scripts/public-poster-readiness.mjs');
+  assert.match(verifier,/path\.endsWith\('\/services'\) \? 'domcontentloaded' : 'networkidle'/);
+  assert.match(verifier,/await settlePublicDocument\('before-assertions'\)/);
+  assert.match(verifier,/await decodeReadyPoster\(image, expect\)/);
+  assert.match(helper,/if \(await image\.isVisible\(\)\)/);
+  assert.match(helper,/el\.loading = 'eager'/);
+  assert.match(helper,/await expect\.poll/);
+  assert.match(helper,/el\.decode\(\)/);
+  assert.match(helper,/el\.currentSrc === selected/);
+  assert.doesNotMatch(helper,/return\s*;\s*\/\/.*hidden/);
+});
+
 test('long Maya readers wait for rendered content instead of global network idleness', () => {
   const verifier = read('scripts/verify-release-reaudit.mjs');
   const block = verifier.match(/check\('maya-reader-and-images'[\s\S]*?return \{ sourceVisible: true, \.\.\.language \};/)?.[0] ?? '';

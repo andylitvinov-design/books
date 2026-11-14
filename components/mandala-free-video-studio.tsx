@@ -7324,8 +7324,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           onWishChange={value=>{setWish(value);setSuggestion("");}}
           onApply={applyFirstVideoDraft}
           onCreate={()=>{
-            firstVideoRequestRef.current=canGenerate;
-            createQuickVideo();
+            // Apply the full first-video draft before a separate trusted user
+            // gesture starts recording. This avoids Safari's stale React state
+            // and never reserves XP or renders during navigation.
+            if(!canGenerate||recording||preparing)return;
+            firstVideoRequestRef.current=true;
+            setPracticeType("video");
+            setPracticeLevels(current=>({...current,video:"basic"}));
+            setStudioMode("pump");setActiveWorkspace("ready");
+            window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+              document.getElementById("free-personal-video")?.scrollIntoView({
+                behavior:"auto",block:"start"
+              })));
           }}
           onCancel={()=>{
             const job=jobRef.current;

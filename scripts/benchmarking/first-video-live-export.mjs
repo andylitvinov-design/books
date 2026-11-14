@@ -345,6 +345,23 @@ try {
     return Boolean(button && !button.disabled);
   }, undefined, {timeout: 40000});
   await create.click({timeout: 15000});
+  // First Video only navigates; the distinct Ready gesture starts real
+  // rendering after React has committed the chosen format and four sources.
+  row.phase='first-video-navigation-ready';
+  await page.waitForFunction(()=>
+    document.querySelector('[data-mandala-free-video]')
+      ?.getAttribute('data-active-workspace')==='ready',
+    undefined,{timeout:15000});
+  const ready=page.locator('[data-video-ready]');
+  await ready.waitFor({state:'visible',timeout:15000});
+  assert.equal(await ready.getAttribute('data-ready-state'),'choose',
+    'FIRST_VIDEO_NAVIGATION_MUST_NOT_BE_AN_EXPORT');
+  const readyGenerate=ready.locator('[data-ready-generate]');
+  await readyGenerate.waitFor({state:'visible',timeout:15000});
+  assert.equal(await readyGenerate.isEnabled(),true,'READY_RENDER_MUST_BE_AVAILABLE');
+  row.phase='first-video-ready-generate';
+  if(engine==='webkit')await readyGenerate.tap();
+  else await readyGenerate.click();
   // Guests watch the original encoded movie in Ready; protected Save is login-gated.
   // Read the real test-owned Blob without fake sign-in, download or provider calls.
   const captured=await readRealGuestVideo(page,{timeout:80000});

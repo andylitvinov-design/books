@@ -277,7 +277,13 @@ async function exercise(engine, browserType, width) {
         console.info('[release-reaudit] public route ' + engine + '/' + width + ': ' + path);
         publicDiagnostics.checkpoints.push({ type: 'goto', path, from: page.url(), time: Date.now() });
         errors.length = 0;
-        const response = await page.goto(origin + path, { waitUntil: 'networkidle', timeout: 35000 });
+        // The Services catalog keeps requesting nonessential content after first paint.
+        // Use document readiness, then the existing full hydration, lifecycle,
+        // CSP, image-decoding and pending-request assertions below. No silent pass.
+        const response = await page.goto(origin + path, {
+          waitUntil: path.endsWith('/services') ? 'domcontentloaded' : 'networkidle',
+          timeout: 35000,
+        });
         console.info('[release-reaudit] navigated ' + engine + '/' + width + ': ' + path);
         assert.equal(response.status(), 200);
         await page.locator('main').first().waitFor();
