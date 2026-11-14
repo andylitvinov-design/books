@@ -571,3 +571,14 @@ test('social greetings preserve rapport instead of imposing goal metrics RU/EN/E
  }
  assert.notEqual(understandCoachingTurn({locale:'ru',message:'Привет! Я хочу обсудить работу.',turns:[]}).act,'greeting')
 })
+
+test('My Coach local unavailable-model path uses semantic Coach Mind instead of turn-count questionnaire',()=>{
+ const ui=source('components/my-coach-live-dialogue.jsx')
+ assert.match(ui,/coachingBrainStageDecision\(input\)/)
+ assert.match(ui,/offlineCoachingBrainReply\(input,selectCoachingBrainMethod\(input\),semanticStage\)/)
+ assert.match(ui,/mode,reason:mode==='offline'/)
+ assert.match(ui,/stage:offlineReply\.stage\|\|semanticStage/)
+ assert.doesNotMatch(ui,/const userCount=turns\.filter/)
+ assert.match(ui,/coachingBrainSafety\(input\)\|\|coachingBrainBoundary\(input\)/)
+ assert.match(ui,/readiness\.status!=='verified'&&!wisdomRequested/)
+})
