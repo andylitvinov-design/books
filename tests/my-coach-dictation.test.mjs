@@ -63,7 +63,7 @@ test('iOS 27 repeat-turn recovery always primes every following recognition, inc
  assert.match(start,/if\(recovered\.length>=3\)\{[\s\S]*?void deliver\(appendSpokenAnswer\(draftAtStartRef\.current,recovered,1200\)\)/)
  assert.match(start,/changePhase\('stalled'\)/)
  assert.match(code,/if\(phaseRef\.current==='stalled'\)\{/)
- assert.match(code,/retryMic:t\.retryMic:active\?t\.stop:t\.start/)
+ assert.match(code,/retryMic\?t\.retryMic:ready\?t\.tapToHear:active\?t\.stop:t\.start/)
  assert.match(code,/iosResultTimerRef\.current=setTimeout/)
  assert.doesNotMatch(code,/new MediaRecorder|new WebSocket|localStorage|sessionStorage/)
  for(const phrase of ['Как ты себя чувствуешь','Мне спокойнее','Я хочу продолжить разговор']){

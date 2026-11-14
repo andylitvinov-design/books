@@ -560,3 +560,11 @@
  .root[data-session-visual-v3] .conversationPanel .transcriptFeed{max-height:130px}
  .root[data-session-visual-v3] .conversationPanel .textComposer{max-height:150px}
 }
+
+/* Optional original wizard character voice: device-only, no external TTS transfer. */
+.wizardVoiceRow{display:grid;gap:4px;min-width:0;padding:8px 10px;border:1px solid #d8e7dc;border-radius:14px;background:#f5faf4;color:#215c4e;font-size:12px}
+.wizardVoiceRow label{display:flex;align-items:center;gap:9px;cursor:pointer;font-weight:700;line-height:1.35}
+.wizardVoiceRow input{width:18px;height:18px;flex:none;accent-color:#177b65}
+.wizardVoiceRow small{font-size:11px;line-height:1.35;color:#536f65}
+.wizardVoiceRow input:focus-visible{outline:2px solid #168467;outline-offset:2px}
+@media(max-width:699px){.root[data-session-visual-v3] .conversationPanel .wizardVoiceRow{order:4;flex:none;max-width:100%}}
