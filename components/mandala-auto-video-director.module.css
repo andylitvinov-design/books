@@ -907,3 +907,14 @@
  .recipientFormatBody{padding-right:24px;column-gap:5px}
  .recipientFormatSelected{right:6px;width:22px;height:22px}
 }
+
+/* Local personal 4-beat brief: closed by default; no extra input or second player. */
+.personalBrief{grid-column:1/-1;min-width:0;width:100%;margin-top:7px;padding:10px 12px;border:1px solid #d7e7dc;border-radius:14px;background:#fffdf9;color:#315447}
+.personalBrief summary{cursor:pointer;font-weight:750;font-size:13px;min-height:27px}
+.personalBrief ol{list-style:none;padding:0;margin:9px 0;display:grid;grid-template-columns:minmax(0,1fr);gap:6px}
+.personalBrief li{padding:8px 9px;border:1px solid #e4e9df;border-radius:10px;background:#fff;overflow-wrap:anywhere}
+.personalBrief li strong,.personalBrief li span,.personalBrief li small{display:block;line-height:1.35}
+.personalBrief li span{color:#34644d;font-size:12px;margin-top:3px}
+.personalBrief li small{color:#697b70;font-size:11px;margin-top:2px}
+.personalBrief pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:190px;overflow:auto;font:500 11px/1.35 ui-monospace,SFMono-Regular,Menlo,monospace;margin:7px 0;padding:9px;border:1px solid #eee8de;border-radius:9px}
+.personalBrief>small{display:block;color:#60766a;font-size:11px}

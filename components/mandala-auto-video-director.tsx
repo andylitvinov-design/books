@@ -13,6 +13,7 @@ import {listMyTubePlots} from "@/lib/mandala/mytube-scenario-plots.mjs";
 import type {MyTubePlot} from "@/lib/mandala/mytube-scenario-plots.mjs";
 import {listMyTubeCategories,listMyTubeSubcategories,listMyTubeTopics,getMyTubeTopic} from "@/lib/mandala/mytube-content-taxonomy.mjs";
 import {classifyMyTubeRequest} from "@/lib/mandala/mytube-prompt-classifier.mjs";
+import {buildPersonalVideoBrief} from "@/lib/mandala/mytube-personal-video-brief.mjs";
 import {listRecipientVideoKinds,listRecipientVideoOccasions,getRecipientVideoKind,
   buildRecipientVideoBrief,classifyRecipientVideoWish,buildRecipientVideoCaptions}
   from "@/lib/mandala/video-recipient-catalog.mjs";
@@ -319,20 +320,36 @@ export function MandalaAutoVideoDirector({
  const effectiveCategoryId=videoAudience==="others"&&recipientKindId
    ?getRecipientVideoKind(recipientKindId)?.sourceCategoryId||selectedCategoryId
    :selectedCategoryId;
+ // The exact visitor wording stays in one existing editor state, never persisted or sent to a provider.
+ const clientWish=requestDraft.trim();
+ const videoBrief=useMemo(()=>buildPersonalVideoBrief({
+   clientWish,categoryId:effectiveCategoryId,subcategoryId:selectedSubcategoryId,
+   topicId:selectedTopicId,locale,
+   scenarioLabel:taxonomyScenarios.find(row=>row.id===selectedScenarioId)?.label||"",
+   plotLabel:selectedTaxonomyPlot?.label||"",
+   meaningLabel:taxonomyMeanings.find(row=>row.id===selectedMeaningAxisId)?.label||"",
+   motifLabel:suggestedVisualMotifs.find(row=>row.id===selectedMotifId)?.label||"",
+   excludedMotifs:proposal?.excludedMotifs||[]
+ }),[clientWish,effectiveCategoryId,selectedSubcategoryId,selectedTopicId,locale,
+   selectedScenarioId,selectedTaxonomyPlot?.label,selectedMeaningAxisId,selectedMotifId,
+   proposal?.excludedMotifs]);
  const categoryPlan=useMemo(()=>planMyTubeCategory({
    categoryId:effectiveCategoryId,locale,aspect,
    durationSeconds:length,styleId:selectedStyleId||null,
    excludedMotifs:proposal?.excludedMotifs||[],scenes,
- }),[effectiveCategoryId,locale,aspect,length,selectedStyleId,proposal?.excludedMotifs,scenes]);
+   stageVisualTags:clientWish?videoBrief.stages.map(stage=>stage.visualTags):[]
+ }),[effectiveCategoryId,locale,aspect,length,selectedStyleId,proposal?.excludedMotifs,
+   scenes,clientWish,videoBrief]);
  const activeTimelineEdits=chosen&&timelineEdits?.presetId===chosen.id&&
    timelineEdits.totalSeconds===length?timelineEdits:null;
  // One local licensed source is chosen for EACH storyboard beat, not merely
  // the fixed four clips attached to the nearest old template. Switching to a
  // different template is an intentional override; editing clips wins over both.
  const promptShotPlan=useMemo(()=>recommendPromptShotPlan({
-   goal,theme:proposal?.theme||theme,scenes,
+   goal:clientWish?videoBrief.prompt:goal,theme:proposal?.theme||theme,scenes,
+   stageGoals:clientWish?videoBrief.stages.map(stage=>stage.sceneQuery):[],
    excludedMotifs:proposal?.excludedMotifs||[],baseClipIds:chosen?.clips||[],
- }),[goal,theme,scenes,proposal,chosen]);
+ }),[goal,theme,scenes,proposal,chosen,clientWish,videoBrief]);
  const personalizedShotIds=(!overrideId&&promptShotPlan.mode==="personalized"&&
    promptShotPlan.canExport)?promptShotPlan.clipIds:null;
  // An explicitly confirmed emotional vector plus meaning + motif + scenario
@@ -351,11 +368,12 @@ export function MandalaAutoVideoDirector({
    plot:selectedTaxonomyPlot,emotional:confirmedTransition,
    durationSeconds:length,aspect,locale,scenes,
    excludedMotifs:proposal?.excludedMotifs||[],styleId:selectedStyleId||null,
+   personalVisualTags:clientWish?videoBrief.visualTags:[],
    allowAbstractMotion:false
  }):null,[semanticRequired,selectedTopicId,selectedMeaningAxisId,selectedMotifId,
    selectedScenarioId,selectedTaxonomyPlot,confirmedTransition?.currentStateId,
    confirmedTransition?.desiredStateId,confirmedTransition?.intensity,
-   confirmedTransition?.energy,length,aspect,locale,scenes,proposal?.excludedMotifs,selectedStyleId]);
+   confirmedTransition?.energy,length,aspect,locale,scenes,proposal?.excludedMotifs,selectedStyleId,clientWish,videoBrief]);
  const semanticReady=Boolean(semanticPlan?.ok);
  const categoryClipIds=categoryPlan.ok&&!selectedTopicId&&!selectedScenarioId&&!selectedPlotId?
    categoryPlan.shots.map((shot:{sceneId:string})=>shot.sceneId):null;
@@ -410,7 +428,8 @@ export function MandalaAutoVideoDirector({
    return caption;
  });
  const timelineKey=JSON.stringify([chosen?.id,length,stageClipIds,stageDurations,
-   stageCaptions,selectedMeaningAxisId,selectedMotifId,selectedStyleId,aspect,
+   stageCaptions,clientWish,selectedCategoryId,selectedSubcategoryId,selectedTopicId,
+   selectedScenarioId,selectedPlotId,selectedMeaningAxisId,selectedMotifId,selectedStyleId,aspect,
    meaningHandoff?.ideaBrief?.confirmedIdeaId||null,meaningHandoff?.ideaBrief?.ideaText||null]);
  const topicMediaCoverage=selectedTopicId?recommendMyTubeTopicStoryClips({
    topicId:selectedTopicId,scenarioId:selectedScenarioId||null,scenes,
@@ -549,14 +568,46 @@ export function MandalaAutoVideoDirector({
    motifId:string|null=selectedMotifId||null,styleId:string|null=selectedStyleId||null,
    meaningAxisId:string|null=selectedMeaningAxisId||null)=>{
    if(!recommended.presetId)return null;
-   const clipIds=plot?recommendMyTubePlotMontage({
-     plot,scenes,excludedMotifs:recommended.excludedMotifs,motifId,styleId,targetAspect:aspect,
-   }).clipIds:recommendMyTubeTopicStoryClips({
+   const topicMedia=recommendMyTubeTopicStoryClips({
      topicId,scenarioId,scenes,excludedMotifs:recommended.excludedMotifs,motifId,styleId,
-     meaningAxisId,targetAspect:aspect,
-   }).clipIds;
-   if(clipIds.length!==4)return null;
+     meaningAxisId,targetAspect:aspect
+   });
+   const originalIds=plot?recommendMyTubePlotMontage({
+     plot,scenes,excludedMotifs:recommended.excludedMotifs,motifId,styleId,targetAspect:aspect
+   }).clipIds:topicMedia.clipIds;
+   if(originalIds.length!==4)return null;
    const desiredSeconds=requestedSeconds||recommended.durationSeconds;
+   const stageSeconds=allocateAdaptiveFilmTimeline(desiredSeconds,originalIds)
+     .map(shot=>shot.durationSeconds);
+   const topic=getMyTubeTopic(topicId);
+   const topicBrief=buildPersonalVideoBrief({
+     clientWish,locale,categoryId:topic?.category.id||effectiveCategoryId,
+     subcategoryId:topic?.subcategory.id||selectedSubcategoryId,topicId,
+     scenarioLabel:scenarioId||"",plotLabel:plot?.label||"",
+     excludedMotifs:recommended.excludedMotifs
+   });
+   // Rank only reviewed physical clips inside the selected topic; never invent an action shot.
+   const topicIds=new Set((topicMedia.candidates||[]).map(row=>row.sceneId));
+   const candidates=scenes.filter(scene=>{
+     if(!topicIds.has(scene.id))return false;
+     const verified=verifiedCategorySource(scene);
+     return Boolean(verified&&verifiedSceneAspect(verified,aspect)&&
+       verified.durationSeconds>=Math.max(...stageSeconds));
+   });
+   const ranked=clientWish&&!plot&&candidates.length>=4?recommendPromptShotPlan({
+     goal:topicBrief.prompt,stageGoals:topicBrief.stages.map(stage=>stage.sceneQuery),
+     theme:recommended.theme,scenes:candidates,baseClipIds:originalIds,
+     excludedMotifs:recommended.excludedMotifs
+   }):null;
+   const rankedIds=ranked?.mode==="personalized"&&ranked.canExport?ranked.clipIds:null;
+   const verified=rankedIds?.length===4&&
+     validateMontageClips([...rankedIds],scenes,recommended.excludedMotifs,aspect)&&
+     rankedIds.every((id,index)=>{
+       const source=verifiedCategorySource(scenes.find(scene=>scene.id===id));
+       return Boolean(source&&verifiedSceneAspect(source,aspect)&&
+         source.durationSeconds>=stageSeconds[index]);
+     });
+   const clipIds=verified&&rankedIds?rankedIds:originalIds;
    return {presetId:presetOverride||recommended.presetId,totalSeconds:desiredSeconds,
      clipIds,durations:allocateAdaptiveFilmTimeline(desiredSeconds,clipIds)
        .map(shot=>shot.durationSeconds),
@@ -924,6 +975,19 @@ export function MandalaAutoVideoDirector({
    <span>{locale==="ru"?"Подобрать":locale==="es"?"Elegir":"Match"}</span>
    <ArrowRight size={17} aria-hidden="true"/>
   </button>
+  {videoAudience==="self"&&clientWish?<details className={css.personalBrief}
+    data-video-personal-brief>
+    <summary>{locale==="ru"?"Личный план: 4 этапа":locale==="es"?"Plan personal: 4 etapas":"Personal plan: 4 beats"}</summary>
+    <ol>{videoBrief.stages.map(stage=><li key={stage.index}>
+      <strong>{stage.index}. {stage.title}</strong>
+      <span>{stage.emotionalDirection}</span>
+      <small>{stage.sceneQuery}</small>
+    </li>)}</ol>
+    <pre>{videoBrief.prompt}</pre>
+    <small>{locale==="ru"?"Только локальный подбор: подтверждённые, неповторяющиеся видеокадры.":
+      locale==="es"?"Plan local con clips aprobados y sin duplicados.":
+      "Local-only planning using approved, non-repeating footage."}</small>
+  </details>:null}
   {promptDesignedFor===goal?<div className={css.requestAnalysis}
    data-video-request-analysis data-confidence={promptClassification?.confidence||"unresolved"}
    role="status" aria-live="polite">
