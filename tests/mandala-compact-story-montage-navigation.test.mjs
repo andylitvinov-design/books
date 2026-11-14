@@ -97,21 +97,23 @@ test("compact Story source branch runs mandatory macOS WebKit instead of skipped
  assert.match(workflow,/verify-five-scene-stories-browser\.mjs/);
 });
 
-test("Text shows only one review CTA, navigating forward to fourth Story without rendering",()=>{
+test("Text displays two independent actions and a guarded Storyboard navigation",()=>{
  const start=ideas.indexOf('data-video-stage-actions="ideas"');
  const footer=ideas.slice(start,ideas.indexOf("</div>",start));
  assert.ok(start>0);
- assert.equal(footer.split("<button").length-1,1);
- assert.ok(footer.includes("data-video-ideas-create"));
- assert.ok(!footer.includes("data-video-ideas-generate"));
- assert.ok(!footer.includes("onGenerate"));
+ assert.equal(footer.split("<button").length-1,2);
+ assert.ok(footer.indexOf("data-video-ideas-generate")<footer.indexOf("data-video-ideas-create"));
+ assert.ok(footer.includes("onClick={onGenerate}"));
+ assert.ok(footer.includes("onClick={onCreate}"));
  assert.ok(footer.includes("disabled={disabled||selectedCount<5}"));
- for(const phrase of ["Проверить storyboard","Review storyboard","Revisar storyboard"])
-  assert.ok(footer.includes(phrase));
+ for(const phrase of ["Создать видео","Generate Video","Generar vídeo","Раскадровка","Storyboard","Guion visual"])
+  assert.ok(footer.includes(phrase),phrase);
+ assert.match(studio,/onGenerate=\{createQuickVideo\}/);
  assert.ok(studio.includes('setMontagePanel("concept");setPreviewPlaying(false);setNotice("");'));
  assert.ok(!studio.includes('onCreate={()=>{setMontagePanel("audio");setBasicPanelTab("music");setPreviewPlaying(false);}}'));
  assert.ok(webkit.includes("await reviewStory.tap();"));
- assert.ok(webkit.includes("await expect(textFooter.locator(\"button\")).toHaveCount(1);"));
+ assert.ok(webkit.includes('await expect(textFooter.locator("button")).toHaveCount(2);'));
+ assert.ok(webkit.includes('for(const width of [320,354,390,430])'));
  assert.ok(webkit.includes("await expect(page.locator('[data-video-montage-tab=\"concept\"]')).toHaveAttribute"));
 });
 

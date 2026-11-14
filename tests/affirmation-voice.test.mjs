@@ -176,7 +176,8 @@ test("voice browser opens Ideas and applies six visible Montage styles with deco
    "real visitor must open Ideas refinement, select one of six visible Montage styles and decode an MP4");
  assert.match(flow,/await expect\(allStories\)\.toBeHidden\(\)/);
  assert.doesNotMatch(flow,/await allStories\.click\(\)|\.click\(\{force:true\}\)/);
- assert.match(source,/voiceOptions\.locator\(":scope > summary"\)\.click\(\)[\s\S]*?data-video-affirmation-bed/);
+ assert.match(source,/voiceOptions\.locator\(":scope > summary"\)\.tap\(\)[\s\S]*?data-video-affirmation-bed/);
+ assert.match(source,/else await voiceOptions\.locator\(":scope > summary"\)\.click\(\)/);
 });
 
 test("voice browser selects the visible montage workspace before recording",()=>{

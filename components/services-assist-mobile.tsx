@@ -9,6 +9,7 @@ import { inferAssistPreferences, nextAssistQuestion, rankAssistOffers } from "@/
 import type { AssistPreferences } from "@/lib/assist/service-match.mjs";
 import styles from "./services-assist-mobile.module.css";
 import { AssistTopRecommendations } from "./assist-top-recommendations";
+import { ServicesAssistMyTube } from "./services-assist-mytube";
 
 type Focus = "stress" | "relationships" | "energy" | "health" | "work" | "growth" | "general";
 const routes = {
@@ -93,6 +94,7 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
   const [critical,setCritical]=useState(false);
   const inputRef=useRef<HTMLTextAreaElement>(null);
   const chatRef=useRef<HTMLDivElement>(null);
+  const formRef=useRef<HTMLFormElement>(null);
   const crisis=selection!==null&&(critical||urgent.test(selection.text));
   const question=selection&&!crisis?nextAssistQuestion(preferences):null;
   const suggestions=selection&&!crisis?rankAssistOffers(selection.focus,preferences):[];
@@ -102,6 +104,38 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
     if(!selection)return;
     const frame=requestAnimationFrame(()=>{if(chatRef.current)chatRef.current.scrollTop=chatRef.current.scrollHeight;});
     return ()=>cancelAnimationFrame(frame);
+  },[selection,question,turns]);
+
+  // Keep the input in document flow, moving only the obscured portion above
+  // the mobile dock. On iOS let the browser handle a focused textarea.
+  useEffect(()=>{
+    if(!selection)return;
+    const viewport=window.visualViewport;
+    let frame=0;
+    const revealComposer=()=>{
+      if(frame)cancelAnimationFrame(frame);
+      frame=requestAnimationFrame(()=>{
+        frame=0;
+        if(document.activeElement===inputRef.current)return;
+        const form=formRef.current;
+        if(!form)return;
+        const viewportBottom=viewport?viewport.offsetTop+viewport.height:window.innerHeight;
+        const dock=document.querySelector<HTMLElement>('[data-hh-unified-dock]');
+        const dockRect=dock?.getBoundingClientRect();
+        const dockBottomLimit=dockRect&&dockRect.height>0?dockRect.top:viewportBottom;
+        const visibleBottom=Math.min(viewportBottom,dockBottomLimit)-12;
+        const overlap=form.getBoundingClientRect().bottom-visibleBottom;
+        if(overlap>1)window.scrollBy({top:Math.ceil(overlap),behavior:"smooth"});
+      });
+    };
+    revealComposer();
+    window.addEventListener("resize",revealComposer,{passive:true});
+    viewport?.addEventListener("resize",revealComposer,{passive:true});
+    return()=>{
+      if(frame)cancelAnimationFrame(frame);
+      window.removeEventListener("resize",revealComposer);
+      viewport?.removeEventListener("resize",revealComposer);
+    };
   },[selection,question,turns]);
 
   function beginRequest(value:string) {
@@ -199,7 +233,7 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
           </div>
         </div>}
       </div>
-      <form className={styles.form} onSubmit={submit}>
+      <form ref={formRef} className={styles.form} data-assist-composer onSubmit={submit}>
         <label className={styles.srOnly} htmlFor="assist-question">{t.label}</label>
         <textarea id="assist-question" ref={inputRef} rows={1} value={text} maxLength={280} autoComplete="off"
           placeholder={t.placeholder} onChange={event=>setText(event.target.value)}
@@ -212,6 +246,7 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
     <p className={styles.privacy}>{t.privacy}</p>
     {!crisis&&selection?<AssistTopRecommendations locale={locale} focus={selection.focus} preferences={preferences}
       priorityIds={consultantPriority} matchingIds={suggestions.map(({id})=>id)} noMatchLabel={t.noOffers}/>:null}
+    {!crisis&&selection?<ServicesAssistMyTube locale={locale} focus={selection.focus} question={selection.text}/>:null}
     <section className={styles.tools} aria-labelledby="assist-tools-title">
       <h2 id="assist-tools-title">{t.tools}</h2><p>{t.browse}</p>
       <div className={styles.toolGrid}>{toolList.slice(0,expandedTools?toolList.length:4).map((key)=>{

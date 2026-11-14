@@ -78,13 +78,33 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(page.locator('[data-video-montage-tab="text"]'))
       .toHaveAttribute("aria-pressed","true");
     await expect(page.locator('[data-video-montage-text]')).toBeVisible();
-    // Only one real Text CTA; its WebKit touch opens fourth Story, not the renderer.
+    // Two separate actions: the existing guarded render and navigation-only storyboard.
     const textFooter=page.locator('[data-video-ideas-compact] [data-video-stage-actions="ideas"]');
-    await expect(textFooter.locator("button")).toHaveCount(1);
+    await expect(textFooter.locator("button")).toHaveCount(2);
+    const generateText=textFooter.locator('[data-video-ideas-generate]');
     const reviewStory=textFooter.locator('[data-video-ideas-create]');
+    await expect(generateText).toBeEnabled();
+    await expect(generateText).toContainText(
+      locale==="ru"?"Создать видео":locale==="es"?"Generar vídeo":"Generate Video");
     await expect(reviewStory).toBeEnabled();
     await expect(reviewStory).toContainText(
-      locale==="ru"?"Проверить storyboard":locale==="es"?"Revisar storyboard":"Review storyboard");
+      locale==="ru"?"Раскадровка":locale==="es"?"Guion visual":"Storyboard");
+    for(const width of [320,354,390,430]){
+      await page.setViewportSize({width,height:840});
+      const layout=await textFooter.evaluate(footer=>{
+        const buttons=[...footer.querySelectorAll("button")].map(node=>node.getBoundingClientRect());
+        const row=footer.getBoundingClientRect();
+        return {top:buttons.map(b=>b.top),widths:buttons.map(b=>b.width),bottom:row.bottom,
+          viewport:document.documentElement.clientWidth,doc:document.documentElement.scrollWidth};
+      });
+      assert.ok(layout.top.length===2&&Math.abs(layout.top[0]-layout.top[1])<3,
+        "Text actions remain in one iPhone row: "+width+" "+JSON.stringify(layout));
+      assert.ok(layout.widths.every(w=>w>=90),
+        "both Text actions remain readable: "+width+" "+JSON.stringify(layout));
+      assert.ok(layout.doc<=layout.viewport+2,
+        "Text actions do not overflow horizontally: "+width+" "+JSON.stringify(layout));
+    }
+    await page.setViewportSize({width:390,height:840});
     await reviewStory.tap();
     await expect(page.locator('[data-video-montage-tab="concept"]')).toHaveAttribute("aria-pressed","true");
     await expect(page.locator('[data-video-montage-concept]')).toBeVisible();
@@ -984,8 +1004,10 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(page.locator("[data-video-affirmation-voice-consent]")).not.toBeChecked();
       const voiceOptions=page.locator("[data-video-affirmation-voice] details")
         .filter({has:page.locator("[data-video-affirmation-bed]")});
-      if(await voiceOptions.getAttribute("open")===null)
-        await voiceOptions.locator(":scope > summary").click();
+      if(await voiceOptions.getAttribute("open")===null){
+        if(engine==="webkit")await voiceOptions.locator(":scope > summary").tap();
+        else await voiceOptions.locator(":scope > summary").click();
+      }
       // Verify that Safari committed native disclosure, not only the click.
       await expect(voiceOptions).toHaveAttribute("open","",{timeout:15000});
       await expect(page.locator("[data-video-affirmation-bed]")).toBeVisible({timeout:15000});

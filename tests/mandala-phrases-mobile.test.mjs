@@ -191,7 +191,8 @@ test("real WebKit voice acceptance expands advanced sound options before selecti
     "do not manually toggle the native disclosure twice");
   assert.match(voice,/data-video-affirmation-bed/);
   assert.match(browser,/const voiceOptions=page\.locator\("\[data-video-affirmation-voice\] details"\)/);
-  assert.match(browser,/await voiceOptions\.locator\(":scope > summary"\)\.click\(\)/);
+  assert.match(browser,/if\(engine==="webkit"\)await voiceOptions\.locator\(":scope > summary"\)\.tap\(\)/);
+  assert.match(browser,/else await voiceOptions\.locator\(":scope > summary"\)\.click\(\)/);
   assert.match(browser,/await expect\(voiceOptions\)\.toHaveAttribute\("open","",\{timeout:15000\}\)/);
   assert.match(browser,/await expect\(page\.locator\("\[data-video-affirmation-bed\]"\)\)\.toBeVisible\(\{timeout:15000\}\)/);
   assert.match(browser,/await page\.locator\("\[data-video-affirmation-bed\]"\)\.selectOption\("ocean"\)/);

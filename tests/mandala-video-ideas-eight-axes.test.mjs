@@ -46,8 +46,9 @@ test("Ideas shortcut opens the single Montage Text editor without renderer or pa
  assert.doesNotMatch(action,/createQuickVideo\(|createVideo\(|startFromHero\(/);
  assert.ok(studio.includes('data-video-ideas-open-montage-text') &&
    studio.includes('setMontagePanel("concept");setPreviewPlaying(false);setNotice("");') &&
-   !cmp.includes("data-video-ideas-generate"),
-   'Ideas opens Montage Text, whose sole review action opens fourth Story without rendering');
+   cmp.includes("data-video-ideas-generate") &&
+   studio.includes("onGenerate={createQuickVideo}"),
+   'Montage Text offers a real guarded render and an independent Storyboard navigation');
  assert.match(cmp,/data-video-ideas-create[\s\S]*?disabled=\{disabled\|\|selectedCount<5\}/);
  assert.doesNotMatch(cmp,/canGenerate/,"moving to Montage must not depend on video readiness");
  assert.match(studio,/\{activeWorkspace==="video" \? <section className=\{videoStyles\.quickMusicSection\}/,
