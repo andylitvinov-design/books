@@ -75,6 +75,8 @@ jobs:
           node --check scripts/ci-pr-repair-deterministic.cjs
           node --check scripts/ci-pr-repair-free-agent.cjs
           node --check scripts/ci-pr-repair-openrouter-free.cjs
+          node --check scripts/ci-pr-repair-budgeted-coder.cjs
+          node --test tests/ci-pr-repair-budgeted-coder.test.cjs
           node --check scripts/ci-pr-repair-graphql-writer.cjs
           node --check scripts/ci-pr-repair-code-candidate.cjs
           node --check scripts/ci-pr-manus-handoff.cjs
@@ -89,6 +91,8 @@ jobs:
           # Only a separately provisioned free-tier OpenCode key can enable inference.
           HH_HAS_FREE_OPENCODE_TOKEN: ${{ secrets.HH_OPENCODE_FREE_API_KEY != '' }}
           HH_HAS_OPENROUTER_FREE_TOKEN: ${{ secrets.HH_OPENROUTER_FREE_API_KEY != '' }}
+          HH_BUDGETED_ALLOWED: ${{ vars.HH_PR_BUDGETED_CODER_ENABLED == 'true' }}
+          HH_HAS_BUDGETED_TOKEN: ${{ secrets.HH_PR_CODER_OPENROUTER_API_KEY != '' }}
         with:
           github-token: ${{ github.token }}
           script: |
@@ -152,7 +156,8 @@ jobs:
             const provider=process.env.HH_HAS_OPENROUTER_FREE_TOKEN==='true'?'openrouter':
               process.env.HH_HAS_FREE_OPENCODE_TOKEN==='true'?'opencode':'none';
             core.setOutput('code_provider',provider);
-            core.setOutput('code_available',provider==='none'?'false':'true');
+            const paid=process.env.HH_BUDGETED_ALLOWED==='true'&&process.env.HH_HAS_BUDGETED_TOKEN==='true';
+            core.setOutput('code_available',provider!=='none'||paid?'true':'false');
             const {wakeAfterWorker}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-control-tower-wakeup.cjs');
             core.info('HH_REPAIR_COMPLETION_WAKE '+await wakeAfterWorker({github,context,kind:'repair',status:result.status,dryRun,log:core.warning}));
       # Fast terminal path: no untrusted source runs on this trusted runner.
@@ -478,6 +483,24 @@ jobs:
             status:candidateStatus,detail_code:result.detail_code,scope:result.scope,
             source_files:result.files.map(file=>file.path)}));
           NODE
+      - name: Preserve safe compiler evidence for optional budgeted Qwen repair
+        if: >-
+          vars.HH_PR_BUDGETED_CODER_ENABLED == 'true' &&
+          steps.fresh_head.outputs.current == 'true' &&
+          needs.claim.outputs.strategy == 'code' &&
+          steps.build_candidate.outputs.candidate_status == 'manual_required'
+        run: node .hh-trusted/scripts/ci-pr-repair-budgeted-coder.cjs context
+      - uses: actions/upload-artifact@v4
+        if: >-
+          vars.HH_PR_BUDGETED_CODER_ENABLED == 'true' &&
+          steps.fresh_head.outputs.current == 'true' &&
+          needs.claim.outputs.strategy == 'code' &&
+          steps.build_candidate.outputs.candidate_status == 'manual_required'
+        with:
+          name: hh-paid-repair-context
+          path: paid-repair-context.json
+          retention-days: 1
+          if-no-files-found: error
       - uses: actions/upload-artifact@v4
         if: steps.fresh_head.outputs.current == 'true' && needs.claim.outputs.strategy != 'legacy'
         with:
@@ -492,7 +515,7 @@ jobs:
     needs: [claim,fix]
     if: >-
       needs.claim.result == 'success' &&
-      needs.claim.outputs.code_available == 'true' &&
+      needs.claim.outputs.code_provider != 'none' &&
       needs.fix.result == 'success' &&
       needs.fix.outputs.candidate_status == 'manual_required' &&
       (needs.claim.outputs.strategy == 'lint' || needs.claim.outputs.strategy == 'code')
@@ -567,15 +590,88 @@ jobs:
           retention-days: 1
           if-no-files-found: error
 
-  code_verify:
+  # Only trusted-branch code receives the dedicated $4.50/month-capped key.
+  # This job NEVER checks out or runs untrusted PR HEAD and never publishes.
+  paid_fix:
     needs: [claim,fix,code_fix]
+    if: >-
+      always() &&
+      github.repository == 'andylitvinov-design/books' &&
+      github.ref == 'refs/heads/codex/bootstrap-books' &&
+      github.event_name == 'workflow_dispatch' &&
+      vars.HH_PR_BUDGETED_CODER_ENABLED == 'true' &&
+      needs.claim.result == 'success' &&
+      needs.claim.outputs.code_available == 'true' &&
+      needs.claim.outputs.claim_status == 'claimed' &&
+      needs.claim.outputs.strategy == 'code' &&
+      needs.fix.result == 'success' &&
+      needs.fix.outputs.candidate_status == 'manual_required' &&
+      (needs.code_fix.result == 'skipped' ||
+       (needs.code_fix.result == 'success' &&
+        needs.code_fix.outputs.candidate_status == 'no_change'))
+    concurrency:
+      group: hh-pr-budgeted-model-single-writer
+      cancel-in-progress: false
+    runs-on: ubuntu-slim
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: write
+    outputs:
+      candidate_status: ${{ steps.infer.outputs.candidate_status }}
+    env:
+      HH_PR_BUDGETED_CODER_ENABLED: ${{ vars.HH_PR_BUDGETED_CODER_ENABLED }}
+      REPAIR_SHA: ${{ needs.claim.outputs.sha }}
+      REPAIR_PR: ${{ needs.claim.outputs.pr_number }}
+      REPAIR_TASK_KEY: ${{ needs.claim.outputs.task_key }}
+      REPAIR_FILES_JSON: ${{ needs.claim.outputs.files_json }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: hh-paid-repair-context
+          path: hh-paid-context
+      - id: infer
+        name: Guarded OpenRouter Qwen one-line proposal and signed budget receipt
+        uses: actions/github-script@v7
+        env:
+          HH_PR_CODER_OPENROUTER_API_KEY: ${{ secrets.HH_PR_CODER_OPENROUTER_API_KEY }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const {propose}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-repair-budgeted-coder.cjs');
+            try {
+              const result=await propose({github,context,core,
+                apiKey:process.env.HH_PR_CODER_OPENROUTER_API_KEY,
+                contextPath:'hh-paid-context/paid-repair-context.json'});
+              core.setOutput('candidate_status',result.status);
+            } catch(error) {
+              core.setOutput('candidate_status','blocked');
+              core.warning('HH_BUDGETED_CODER_BLOCKED '+
+                String(error.message||error).replace(/[^A-Z0-9_]/gi,'_').slice(0,110));
+            }
+      - uses: actions/upload-artifact@v4
+        if: steps.infer.outputs.candidate_status == 'proposed'
+        with:
+          name: hh-paid-code-repair-raw
+          path: candidate-raw.json
+          retention-days: 1
+          if-no-files-found: error
+  code_verify:
+    needs: [claim,fix,code_fix,paid_fix]
     if: >-
       always() &&
       needs.claim.result == 'success' &&
       needs.fix.result == 'success' &&
       ((needs.fix.outputs.candidate_status == 'ready') ||
        (needs.code_fix.result == 'success' &&
-        needs.code_fix.outputs.candidate_status == 'proposed'))
+        needs.code_fix.outputs.candidate_status == 'proposed') ||
+       (needs.paid_fix.result == 'success' &&
+        needs.paid_fix.outputs.candidate_status == 'proposed'))
     runs-on: ubuntu-24.04
     timeout-minutes: 16
     permissions:
@@ -606,7 +702,7 @@ jobs:
         run: npm ci --ignore-scripts --no-audit --no-fund
       - uses: actions/download-artifact@v4
         with:
-          name: ${{ needs.fix.outputs.candidate_status == 'ready' && 'hh-repair-candidate' || 'hh-code-repair-raw' }}
+          name: ${{ needs.fix.outputs.candidate_status == 'ready' && 'hh-repair-candidate' || (needs.paid_fix.outputs.candidate_status == 'proposed' && 'hh-paid-code-repair-raw' || 'hh-code-repair-raw') }}
           path: hh-code-candidate
       - id: verify
         name: Independently verify exact SHA, direct tests, lint, TS and diff
@@ -806,7 +902,7 @@ jobs:
               }
               const t=await call('POST',base+'/git/trees',{base_tree:treeSha,tree});
               const commit=await call('POST',base+'/git/commits',{
-                message:'fix(ci): '+(candidate.repair_kind==='free_ai'?'verified free-model source repair':candidate.repair_kind==='codex'?'verified legacy code repair':'verified deterministic source repair')+' for PR #'+number,
+                message:'fix(ci): '+(candidate.repair_kind==='free_ai'?'verified free-model source repair':candidate.repair_kind==='budgeted_ai'?'verified budgeted-model source repair':candidate.repair_kind==='codex'?'verified legacy code repair':'verified deterministic source repair')+' for PR #'+number,
                 tree:t.sha,parents:[expectedSha]});
               if(!/^[a-f0-9]{40}$/i.test(commit.sha||''))throw Error('No commit SHA');
               const still=await call('GET',base+ref);

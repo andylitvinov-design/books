@@ -52,7 +52,7 @@ function buildRawCandidate(root,scope){
 }
 function validateCandidate(candidate,scope){
  if(!candidate||candidate.head_sha!==scope.sha||
-   candidate.repair_kind!=='free_ai'||!Array.isArray(candidate.files)||
+   !['free_ai','budgeted_ai'].includes(candidate.repair_kind)||!Array.isArray(candidate.files)||
    candidate.files.length<1||candidate.files.length>MAX)
   throw Error('FREE_AI_INVALID_CANDIDATE_METADATA');
  const seen=new Set();
@@ -126,7 +126,7 @@ function verify(){
   if(deterministic&&raw.detail_code!=='VERIFIED_SOURCE_PATCH')
     throw Error('FREE_AI_DETERMINISTIC_NOT_PREVERIFIED');
   const entries=validateCandidate(deterministic?{...raw,repair_kind:'free_ai'}:raw,scope);
-  if(deterministic)output.repair_kind='lint';
+  output.repair_kind=deterministic?'lint':raw.repair_kind;
   for(const f of entries){
    const abs=sourceFile(root,f.path);
    if(git('rev-parse','HEAD:'+f.path).trim()!==f.original_sha)
@@ -162,7 +162,8 @@ function verify(){
     throw Error('FREE_AI_CHECKS_CHANGED_CANDIDATE');
   }
   output.files=entries;
-  output.detail_code=deterministic?'VERIFIED_DETERMINISTIC_SOURCE_PATCH':'VERIFIED_CODE_SOURCE_PATCH';
+  output.detail_code=deterministic?'VERIFIED_DETERMINISTIC_SOURCE_PATCH':
+   raw.repair_kind==='budgeted_ai'?'VERIFIED_BUDGETED_SOURCE_PATCH':'VERIFIED_CODE_SOURCE_PATCH';
  }catch(error){
   output.detail_code=String(error.message||'FREE_AI_VERIFY_FAILED').split('\n')[0].slice(0,120)
     .replace(/[^a-zA-Z0-9_:.-]/g,'_');
