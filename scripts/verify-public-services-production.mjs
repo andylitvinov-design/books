@@ -21,6 +21,13 @@ await mkdir(output, { recursive: true });
 const browser = await chromium.launch();
 const diagnostics = { runtime: "next-start production", console: [], pageErrors: [], devIssueOverlay: false };
 const responseEvidence = [];
+// Isolated CI: only these audited read-only endpoints may lack the database.
+const noDatabase503Paths = new Set([
+  "/api/catalog/ratings",
+  "/api/service-enquiries/booking-status",
+  "/api/app/bootstrap",
+  "/api/public/remote-energy-support-masters",
+]);
 let failure;
 try {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
@@ -50,9 +57,8 @@ try {
     page.on("response", response => {
       const url = new URL(response.url());
       if (response.request().method() === "GET" && response.status() === 503 &&
-          ["/api/catalog/ratings", "/api/service-enquiries/booking-status", "/api/app/bootstrap"].includes(url.pathname)) {
-        // Status and path are already verified above. Browser streams may
-        // close before body.json(), so do not misclassify empty reads.
+          url.origin === origin && url.pathname.startsWith("/api/")) {
+        // Record all first-party read failures, including any unexpected new endpoint.
         responseEvidence.push(url.pathname);
       }
     });
@@ -125,11 +131,19 @@ try {
     for (const selector of [
       "[data-assist-personal-consultation]", "[data-assist-spiritual-entry]",
       "[data-assist-video-generation]", "[data-assist-course-shelf]",
-      "[data-assist-magical-help]"
+      "[data-assist-magical-help]", "[data-assist-reiki-session]"
     ]) {
       await visible(page.locator(selector));
     }
 
+
+    // The reiki picker is a distinct mounted mobile category, not another chat step.
+    const reiki=page.locator("[data-assist-reiki-session]");
+    await expect(reiki).toHaveCount(1);
+    await expect(reiki.locator('button[aria-pressed]')).toHaveCount(3);
+    await expect(reiki.locator('input[type="date"]')).toHaveCount(1);
+    await expect(reiki.locator('input[type="time"]')).toHaveCount(1);
+    await expect(reiki.locator('a[href*="holistic-support/mobile"]')).toHaveCount(1);
 
     const conversation = assist.locator("[data-assist-dialogue]");
     const log = conversation.locator("#assist-results");
@@ -970,12 +984,13 @@ try {
   // body after the browser resource has already closed. Only a real observed
   // GET 503 from these two audited read-only endpoints can be exempted.
   const unavailable = responseEvidence;
-  const unexpectedUnavailable = unavailable.filter(path =>
-    !['/api/catalog/ratings', '/api/service-enquiries/booking-status', '/api/app/bootstrap'].includes(path));
+  const unexpectedUnavailable = unavailable.filter(path => !noDatabase503Paths.has(path));
   assert.deepEqual(unexpectedUnavailable, [], 'Unexpected 503 API path');
   const expectedUnavailable = new Set();
   if (!process.env.HH_APP_SUPABASE_URL) {
-    for (const path of unavailable) expectedUnavailable.add(path);
+    for (const path of unavailable) {
+      if (noDatabase503Paths.has(path)) expectedUnavailable.add(path);
+    }
   }
   const unexpected = diagnostics.console.filter(entry => {
     if (entry.type !== 'error') return false;
