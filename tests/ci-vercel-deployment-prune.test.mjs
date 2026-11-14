@@ -26,16 +26,16 @@ test('keep 30 READY production rollback versions and 10 newest deployments', () 
     /INSUFFICIENT_ROLLBACK_EVIDENCE/);
 });
 
-test('delete only old, unaliased, exact-project production deployments', () => {
+test('delete only old, currently unaliased, exact-project production deployments', () => {
   const protectedIds = protectedDeploymentIds(history);
-  const opts = {now, protectedIds, liveId: history[0].id};
+  const opts = {now, protectedIds, liveId: history[0].id, assignedAliases: []};
   assert.equal(eligibleForDelete(history[31], opts), true);
+  assert.equal(eligibleForDelete(make(81, {alias: ['holistichouse.vercel.app']}), opts), true,
+    'stale historical aliases are not current assignments');
   const cases = {
     live: {id: history[0].id},
     rollback: {id: history[25].id},
     preview: {target: 'preview'},
-    customAlias: {alias: ['rollback.example.com']},
-    missingAlias: {alias: undefined},
     recent: {created: now - 2 * 86400000},
     unknownProject: {projectId: 'prj_other'},
     unknownRepo: {meta: {...history[31].meta, githubRepo: 'other'}},
@@ -48,4 +48,10 @@ test('delete only old, unaliased, exact-project production deployments', () => {
   for (const [label, change] of Object.entries(cases)) {
     assert.equal(eligibleForDelete(make(80, change), opts), false, label);
   }
+  assert.equal(eligibleForDelete(make(82), {...opts, assignedAliases: ['active.example.com']}), false,
+    'current custom alias must block deletion');
+  assert.equal(eligibleForDelete(make(83), {...opts, assignedAliases: undefined}), false,
+    'unknown active aliases must block deletion');
+  assert.equal(eligibleForDelete(make(84), {...opts, assignedAliases: null}), false,
+    'null active aliases must block deletion');
 });
