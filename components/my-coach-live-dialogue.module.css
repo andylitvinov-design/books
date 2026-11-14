@@ -561,6 +561,16 @@
  .root[data-session-visual-v3] .conversationPanel .textComposer{max-height:150px}
 }
 
+/* Short, separately consented iPhone recording option. Never overlay the hero or mic. */
+.recordingModeRow{box-sizing:border-box;width:100%;max-width:100%;min-width:0;
+  padding:8px 12px;border:1px solid #cfe6dc;background:#f6faf7;
+  border-radius:15px;color:#225b4b;font-size:12px;line-height:1.4}
+.recordingModeRow summary{cursor:pointer;font-weight:750;font-size:12px}
+.recordingModeRow label{display:flex;gap:8px;align-items:flex-start;min-width:0;margin-top:7px;overflow-wrap:anywhere}
+.recordingModeRow input{accent-color:#14846c;width:18px;height:18px;flex:none}
+.recordingModeRow small{display:block;font-size:11px;color:#55776b;margin-top:5px}
+.recordingModeRow input:focus-visible,.recordingModeRow summary:focus-visible{outline:2px solid #0e8767;outline-offset:2px}
+@media(max-width:699px){.root[data-session-visual-v3] .recordingModeRow{order:1;margin:0}}
 /* Optional original wizard character voice: device-only, no external TTS transfer. */
 .wizardVoiceRow{display:grid;gap:4px;min-width:0;padding:8px 10px;border:1px solid #d8e7dc;border-radius:14px;background:#f5faf4;color:#215c4e;font-size:12px}
 .wizardVoiceRow label{display:flex;align-items:center;gap:9px;cursor:pointer;font-weight:700;line-height:1.35}
@@ -568,3 +578,25 @@
 .wizardVoiceRow small{font-size:11px;line-height:1.35;color:#536f65}
 .wizardVoiceRow input:focus-visible{outline:2px solid #168467;outline-offset:2px}
 @media(max-width:699px){.root[data-session-visual-v3] .conversationPanel .wizardVoiceRow{order:4;flex:none;max-width:100%}}
+
+/* Natural voice is a real, opt-in choice visible beside the microphone.
+   Unlike the previous below-composer placement it cannot disappear inside
+   the independently scrolling transcript card on mobile Safari. */
+.voiceModalNatural{display:grid;gap:7px;margin-top:13px;padding:11px;
+  border:1px solid #cde3d7;border-radius:13px;background:#f5faf6}
+.voiceModalNatural label{display:flex;align-items:flex-start;gap:9px;min-width:0;
+  color:#1d5f4c;font-size:13px;font-weight:700;line-height:1.4}
+.voiceModalNatural input{flex:none;width:19px;height:19px;accent-color:#168467}
+.voiceModalNatural p{font-size:12px;line-height:1.45;overflow-wrap:anywhere}
+@media(max-width:699px){
+  .root[data-session-visual-v3] .voiceWorkspace > .naturalVoiceRow{
+    order:1;box-sizing:border-box;width:100%;max-width:100%;
+    margin:0;padding:8px 11px;font-size:12px;min-height:44px;
+  }
+  .root[data-session-visual-v3] .voiceWorkspace > .naturalVoiceRow label{
+    min-width:0;max-width:100%;overflow-wrap:anywhere;
+  }
+  .root[data-session-visual-v3] .voiceWorkspace > .playbackNotice{
+    order:1;margin:0;padding:4px 9px;
+  }
+}

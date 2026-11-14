@@ -67,3 +67,13 @@ test('signed webhook schedules a post-commit owner notification, without changin
  assert.match(route,/HH_TG_BUSINESS_OWNER_NOTICE_UNCONFIRMED/);
  assert.match(route,/sendHolisticBusinessRequestReply/);
 })
+
+
+test('all 15 approved Telegram service labels are permitted in neutral owner notices',()=>{
+ const catalogue=readFileSync(new URL('../lib/analytics/enquiry-public-catalog.mjs',import.meta.url),'utf8')
+ const fixed=readFileSync(new URL('../lib/assist/telegram-business-request.mjs',import.meta.url),'utf8')
+ const labels=[...fixed.matchAll(/(?:homeopathy|coaching|reiki|constellations|business):'([^']+)'/g)].map(x=>x[1])
+ assert.equal(labels.length,15)
+ for(const label of labels)
+  assert.ok(catalogue.includes("'"+label+"'"),'Missing verified public title: '+label)
+})

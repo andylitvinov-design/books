@@ -84,8 +84,9 @@ test("Montage iPhone retains the compact header, real six selectors and on-scree
 
 test("Original motion WebKit export reaches legacy preferences via Story and keeps Audio controls",()=>{
  const motion=readFileSync(new URL("../scripts/benchmarking/verify-original-motion-export.mjs",import.meta.url),"utf8");
- assert.match(motion,/data-video-story-open-settings/);
- assert.match(motion,/data-video-montage-tab="concept"/);
+ assert.match(motion,/data-video-stories-advanced/);
+ assert.match(motion,/data-video-stories-settings/);
+ assert.match(motion,/data-video-montage-tab="promo"/);
  assert.match(motion,/data-video-montage-preference="duration"/);
  assert.match(motion,/await duration\.selectOption\('20'\)/);
  assert.match(motion,/data-video-montage-open-audio/);

@@ -54,13 +54,18 @@ test('20 long synthetic contexts do not auto-progress or ask a third question',(
   assert.doesNotMatch(nonRepeatingOfflineCoachText(input,'What matters to you?'),/[?？]/u)
  }
 })
-test('duplicate questions are rejected even when preceded by another sentence',()=>{
+test('a repeated question is never shown; a substantive safe statement may survive',()=>{
  const input={locale:'ru',message:'Я хочу прояснить цели.',
   turns:[{role:'assistant',content:'Что вы хотите изменить?'}]}
- assert.equal(repeatedCoachQuestion('Давайте обсудим цель. Что вы хотите изменить?',input.turns),true)
+ const model='Давайте обсудим цель. Что вы хотите изменить?'
+ assert.equal(repeatedCoachQuestion(model,input.turns),true)
  assert.equal(repeatedCoachQuestion('Какой выбор вам доступен?',input.turns),false)
+ const repaired=parseConversationalCoachReply(JSON.stringify({message:model}),input,'grow','explore')
+ assert.equal(repaired.mode,'ai')
+ assert.equal(repaired.message,'Давайте обсудим цель.')
+ assert.doesNotMatch(repaired.message,/[?？]/u)
  assert.throws(()=>parseConversationalCoachReply(JSON.stringify({
-  message:'Давайте обсудим цель. Что вы хотите изменить?'
+  message:'Что вы хотите изменить?'
  }),input,'grow','explore'),/COACHING_BRAIN_RESPONSE_INVALID/)
  assert.equal(parseConversationalCoachReply(JSON.stringify({
   message:'Можно начать с того, что уже известно, и двигаться небольшими шагами.'
