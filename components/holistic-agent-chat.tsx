@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type FormEvent } from "react";
+import { createPortal } from "react-dom";
 import {Mic, Paperclip, Plus, Send, X} from "lucide-react";
 import {MessengerAiLanding} from "@/components/app/messenger-ai-landing";
 import {MessengerSixProjects,messengerProject} from "@/components/app/messenger-six-projects";
@@ -12,6 +13,7 @@ import { AXIS_REFS } from "@/lib/holistic-support/axis-offer-matcher.mjs";
 import { ruleConversationReply } from "@/lib/holistic-support/rule-conversation.mjs";
 import { reviewPracticeBoundary } from "@/lib/holistic-support/practice-boundary.mjs";
 import { detectConversationLocale } from "@/lib/holistic-support/conversation-locale.mjs";
+import { positionComposerPopover } from "@/lib/holistic-support/composer-popover-placement.mjs";
 import { planJudgmentTurn } from "@/lib/holistic-support/judgment-mind.mjs";
 import { newNativeSessionTurn, advanceNativeClientSession } from "@/lib/holistic-support/native-dialogue-client-session.mjs";
 import { testOfferFromText } from "@/lib/assessments/conversational-test-protocol.mjs";
@@ -383,6 +385,68 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   const nativeSession=useRef<{id:string;revision:number}|null>(null);
   useEffect(()=>{nativeSession.current=null;},[authenticated]);
   const composerRef=useRef<HTMLTextAreaElement|null>(null);
+  const composerMoreRef=useRef<HTMLDetailsElement|null>(null);
+  const composerMenuRef=useRef<HTMLDivElement|null>(null);
+  const composerMenuId=useId();
+  const [composerMenuOpen,setComposerMenuOpen]=useState(false);
+  const [composerMenuPlacement,setComposerMenuPlacement]=useState({
+    left:12,top:12,width:280,maxHeight:380,
+  });
+  const alignComposerMenu=useCallback(()=>{
+    const anchor=composerMoreRef.current?.querySelector("summary")?.getBoundingClientRect();
+    if(!anchor)return;
+    const viewport=window.visualViewport;
+    const next=positionComposerPopover({
+      anchor:{left:anchor.left,top:anchor.top,bottom:anchor.bottom},
+      viewport:{width:viewport?.width??window.innerWidth,
+        height:viewport?.height??window.innerHeight,
+        offsetLeft:viewport?.offsetLeft??0,offsetTop:viewport?.offsetTop??0},
+      contentHeight:composerMenuRef.current?.scrollHeight??230,
+    });
+    setComposerMenuPlacement(previous=>
+      previous.left===next.left&&previous.top===next.top&&
+      previous.width===next.width&&previous.maxHeight===next.maxHeight?previous:next);
+  },[]);
+  useLayoutEffect(()=>{
+    if(!composerMenuOpen)return;
+    alignComposerMenu();
+    const viewport=window.visualViewport;
+    const close=(event:PointerEvent)=>{
+      const target=event.target as Node;
+      if(composerMoreRef.current?.contains(target)||composerMenuRef.current?.contains(target))return;
+      composerMoreRef.current?.removeAttribute("open");
+      setComposerMenuOpen(false);
+    };
+    const escape=(event:KeyboardEvent)=>{
+      if(event.key!=="Escape")return;
+      composerMoreRef.current?.removeAttribute("open");
+      setComposerMenuOpen(false);
+      composerMoreRef.current?.querySelector<HTMLElement>("summary")?.focus({preventScroll:true});
+    };
+    window.addEventListener("resize",alignComposerMenu,{passive:true});
+    window.addEventListener("scroll",alignComposerMenu,{passive:true});
+    viewport?.addEventListener("resize",alignComposerMenu,{passive:true});
+    viewport?.addEventListener("scroll",alignComposerMenu,{passive:true});
+    document.addEventListener("pointerdown",close);
+    document.addEventListener("keydown",escape);
+    return ()=>{
+      window.removeEventListener("resize",alignComposerMenu);
+      window.removeEventListener("scroll",alignComposerMenu);
+      viewport?.removeEventListener("resize",alignComposerMenu);
+      viewport?.removeEventListener("scroll",alignComposerMenu);
+      document.removeEventListener("pointerdown",close);
+      document.removeEventListener("keydown",escape);
+    };
+  },[composerMenuOpen,alignComposerMenu]);
+  // The welcome composer is replaced by the ongoing chat after the first turn.
+  const previousMessageCount=useRef(messages.length);
+  useEffect(()=>{
+    if(previousMessageCount.current===0&&messages.length>0){
+      composerMoreRef.current?.removeAttribute("open");
+      setComposerMenuOpen(false);
+    }
+    previousMessageCount.current=messages.length;
+  },[messages.length]);
   const threadRef=useRef<HTMLDivElement|null>(null);
   const followTail=useRef(true);
   const programmaticScrollTop=useRef<number|null>(null);
@@ -1175,7 +1239,9 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         event.currentTarget.value="";
       }}/>
   </label>:null;
-  const resetControl=<button type="button" onClick={resetConversation}>{t.reset}</button>;
+  const resetControl=<button type="button" onClick={()=>{
+    composerMoreRef.current?.removeAttribute("open");setComposerMenuOpen(false);resetConversation();
+  }}>{t.reset}</button>;
   const voiceControls=voiceEnabled?<VoiceCompanionControls voice={voice} locale={locale}
     privacyOnly={Boolean(pageHelp)}
     greeting={pageHelp?.greeting??starter.welcome}
@@ -1264,16 +1330,24 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         onBlur={()=>{composerFocused.current=false;}}
         maxLength={contentStep==="brief"?160:2000} rows={compact?1:3} disabled={busy} aria-label={t.placeholder}/>
       <div className={styles.actions}>
-        {messengerView?<details className={styles.composerMore} data-hh-ai-more>
-          <summary aria-label={locale==="ru"?"Дополнительные действия":locale==="es"?"Más acciones":"More actions"}><Plus size={19} aria-hidden="true"/></summary>
-          <div className={styles.composerMenu}>
-            {voiceAttachment}
-            {voiceEnabled&&<details className={styles.voiceSettings} data-hh-voice-settings>
-              <summary>{pageHelp?voice.t.settings:(locale==="ru"?"Настройки голоса":locale==="es"?"Ajustes de voz":"Voice settings")}</summary>
-              {voiceControls}
-            </details>}
-            {resetControl}
-          </div>
+        {messengerView?<details ref={composerMoreRef} className={styles.composerMore}
+          data-hh-ai-more onToggle={event=>setComposerMenuOpen(event.currentTarget.open)}>
+          <summary aria-label={locale==="ru"?"Дополнительные действия":locale==="es"?"Más acciones":"More actions"}
+            aria-controls={composerMenuOpen?composerMenuId:undefined}
+            onClick={alignComposerMenu}><Plus size={19} aria-hidden="true"/></summary>
+          {composerMenuOpen&&typeof document!=="undefined"&&createPortal(
+            <div ref={composerMenuRef} id={composerMenuId}
+              className={styles.composerMenu} data-hh-ai-composer-popup
+              role="group" aria-label={locale==="ru"?"Дополнительные действия":locale==="es"?"Más acciones":"More actions"}
+              style={{left:composerMenuPlacement.left,top:composerMenuPlacement.top,
+                width:composerMenuPlacement.width,maxHeight:composerMenuPlacement.maxHeight}}>
+              {voiceAttachment}
+              {voiceEnabled&&<details className={styles.voiceSettings} data-hh-voice-settings>
+                <summary>{pageHelp?voice.t.settings:(locale==="ru"?"Настройки голоса":locale==="es"?"Ajustes de voz":"Voice settings")}</summary>
+                {voiceControls}
+              </details>}
+              {resetControl}
+            </div>,document.body)}
         </details>:voiceAttachment}
         {messengerView&&!pageHelp&&voiceEnabled&&<button type="button"
           className={styles.recorderToggle} data-hh-conversation-mic
