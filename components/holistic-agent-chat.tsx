@@ -12,6 +12,7 @@ import { AXIS_REFS } from "@/lib/holistic-support/axis-offer-matcher.mjs";
 import { ruleConversationReply } from "@/lib/holistic-support/rule-conversation.mjs";
 import { reviewPracticeBoundary } from "@/lib/holistic-support/practice-boundary.mjs";
 import { detectConversationLocale } from "@/lib/holistic-support/conversation-locale.mjs";
+import {animateMessengerComposerPlaceholder} from "@/lib/holistic-support/messenger-composer-placeholder.mjs";
 import { planJudgmentTurn } from "@/lib/holistic-support/judgment-mind.mjs";
 import { newNativeSessionTurn, advanceNativeClientSession } from "@/lib/holistic-support/native-dialogue-client-session.mjs";
 import { testOfferFromText } from "@/lib/assessments/conversational-test-protocol.mjs";
@@ -383,6 +384,15 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   const nativeSession=useRef<{id:string;revision:number}|null>(null);
   useEffect(()=>{nativeSession.current=null;},[authenticated]);
   const composerRef=useRef<HTMLTextAreaElement|null>(null);
+  // Idle-only, native placeholder animation; do not re-render the dialogue on every letter.
+  const animateComposer=messengerView&&!pageHelp&&!busy&&!draft;
+  const landingComposerVisible=messages.length===0;
+  useEffect(()=>{
+    const input=composerRef.current;
+    if(!input)return;
+    if(!animateComposer){input.placeholder=t.placeholder;return;}
+    return animateMessengerComposerPlaceholder(input,locale,t.placeholder);
+  },[animateComposer,locale,t.placeholder,landingComposerVisible]);
   const threadRef=useRef<HTMLDivElement|null>(null);
   const followTail=useRef(true);
   const programmaticScrollTop=useRef<number|null>(null);
