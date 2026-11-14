@@ -106,9 +106,15 @@ test('PRO result uses full-size native video, never the previous 112px cropped v
 
 test('real encoded result stays on Ready without losing the in-page Blob',()=>{
   const start=studio.indexOf('  // A completed local recording stays in the Ready workspace.')
-  const end=studio.indexOf('  // Auto-music must be ATTACHED',start)
-  assert.ok(start>0&&end>start)
-  const effect=studio.slice(start,end)
+  // Bound the contract to the actual React effect, not a volatile comment
+  // describing automatic music. This must execute the real Ready transition.
+  const terminal='  }, [result]);'
+  const end=studio.indexOf(terminal,start)
+  assert.ok(start>0&&end>start,'the encoded-result Ready effect remains mounted')
+  const effect=studio.slice(start,end+terminal.length)
+  const automaticMusic=studio.slice(end+terminal.length)
+  assert.match(automaticMusic,/\|\|result\|\|preparing\|\|recording\|\|/, 
+    'a finished video must not be invalidated by late automatic soundtrack selection')
   function run(result){
     const frames=[],state={workspace:null,mode:null,expanded:false,scrolls:0}
     let callback=null
