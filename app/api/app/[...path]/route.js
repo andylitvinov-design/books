@@ -52,7 +52,9 @@ import {
   parseGuestCookie,
   setGuestCookie,
 } from '@/lib/app/guest-session'
-import { consumeRate } from '@/lib/app/database'
+import { consumeRate,transaction } from '@/lib/app/database'
+import { operationHash } from '@/lib/app/crypto'
+import { verifiedTelegramSubject } from '@/lib/app/telegram-business-identity.mjs'
 import { createBillingService } from '@/lib/billing/service'
 import {
   clearSaveIntentCookie,
@@ -473,6 +475,67 @@ async function handle(request, { params }) {
         path:'/api/app/auth',maxAge:600,httpOnly:true,secure:!config.test,sameSite:'lax',
       })
       return response
+    }
+
+    // Business messages are not Auth sessions. The client explicitly requests
+    // association AFTER Supabase verifies the official Telegram OIDC identity.
+    if (joined === 'auth/telegram-business-link' && method === 'POST') {
+      const actor=await auth.verified()
+      if(request.headers.get('x-hh-account-id')!==actor.id)
+        throw new AppError('ACCOUNT_CHANGED',409)
+      const body=await readBody(request,1024)
+      onlyKeys(body,['confirm'])
+      if(body.confirm!==true)throw new AppError('IDENTITY_LINK_CONSENT_REQUIRED',400)
+      const {data,error}=await auth.client.auth.getUserIdentities()
+      const subject=!error?verifiedTelegramSubject(data?.identities):null
+      if(!subject)throw new AppError('TELEGRAM_IDENTITY_REQUIRED',428)
+      await consumeRate(config,{op:'telegram-business-identity-link',account:actor.id},6,600)
+      const peerHash=operationHash({scope:'hh-telegram-business-peer',id:subject},config)
+      const linked=await transaction(config,actor,async db=>{
+        await db.query("select set_config('hh.telegram_verified_peer_hash',$1,true)",[peerHash])
+        const updated=await db.query(
+          "update app_private.crm_tg_business_service_sessions "+
+          "set account_id=$1,linked_at=coalesce(linked_at,now()) "+
+          "where telegram_peer_hash=$2 and contact_id is not null and stage='submitted' "+
+          "and account_id is null returning contact_id",
+          [actor.id,peerHash])
+        return updated.rowCount
+      })
+      return json({linked,verified:true})
+    }
+    if (joined === 'auth/telegram-business-unlink' && method === 'POST') {
+      const actor=await auth.verified()
+      if(request.headers.get('x-hh-account-id')!==actor.id)
+        throw new AppError('ACCOUNT_CHANGED',409)
+      const body=await readBody(request,1024)
+      onlyKeys(body,['confirm'])
+      if(body.confirm!==true)throw new AppError('IDENTITY_UNLINK_CONSENT_REQUIRED',400)
+      const unlinked=await transaction(config,actor,async db=>{
+        const result=await db.query(
+          'update app_private.crm_tg_business_service_sessions '+
+          'set account_id=null,linked_at=null where account_id=$1 returning contact_id',
+          [actor.id])
+        return result.rowCount
+      })
+      return json({unlinked})
+    }
+    if (joined === 'auth/telegram-business-enquiries' && method === 'GET') {
+      const actor=await auth.verified()
+      if(request.headers.get('x-hh-account-id')!==actor.id)
+        throw new AppError('ACCOUNT_CHANGED',409)
+      const enquiries=await transaction(config,actor,async db=>{
+        const result=await db.query(
+          "select distinct e.id,e.reference_code,e.service_title,e.locale,e.status,e.created_at "+
+          "from app.public_service_enquiries e "+
+          "join app_private.public_enquiry_contact_links l on l.enquiry_id=e.id "+
+          "join app_private.crm_tg_business_service_sessions s on s.contact_id=l.contact_id "+
+          "where s.account_id=$1 and l.evidence='verified_telegram_business_enquiry' "+
+          "order by e.created_at desc,e.id desc limit 100",[actor.id])
+        return result.rows.map(row=>({referenceCode:row.reference_code,
+          serviceTitle:row.service_title,locale:row.locale,status:row.status,
+          createdAt:row.created_at}))
+      })
+      return json({enquiries})
     }
     if (joined === 'auth/contact-profile' && method === 'GET') {
       // Verified server-side Google identity only. Never create a lead, infer
