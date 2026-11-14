@@ -1,4 +1,4 @@
-import { SiteVideoPlayer } from "@/components/site-video-player";
+import { HomeYoutubeFacade } from "@/components/home-youtube-facade";
 import { approvedTelegramPresentation } from "@/lib/crm/telegram-presentation.mjs";
 import { videoKey, type PublishedSiteVideo } from "@/lib/site-videos/model";
 import { getPublishedSiteVideo } from "@/lib/site-videos/public";
@@ -78,7 +78,7 @@ export async function HomePresentationVideoSection({ locale }: { locale: "en" | 
         <p className="service-home-kicker">{text.kicker}</p>
         <h2 id="home-presentation-video-title">{text.title}</h2>
       </header>
-      <SiteVideoPlayer video={video} locale={locale} />
+      <HomeYoutubeFacade video={video} locale={locale} />
     </section>
   );
 }

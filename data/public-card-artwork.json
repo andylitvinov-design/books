@@ -338,6 +338,13 @@
       "thumb": "/images/holistic-house/static-card-media/e04bca8a7b75698d-w256.webp",
       "feature": "/images/holistic-house/static-card-media/e04bca8a7b75698d-w960.webp"
     },
+    "/images/holistic-house/report-lighthouse-coast.webp": {
+      "source": "public/images/holistic-house/report-lighthouse-coast.webp",
+      "sha": "89a86ea0b56778e7bafdfcaa0696d00551c1397f",
+      "bytes": 535684,
+      "thumb": "/images/holistic-house/static-card-media/89a86ea0b56778e7-w256.webp",
+      "feature": "/images/holistic-house/static-card-media/89a86ea0b56778e7-w960.webp"
+    },
     "/images/holistic-house/books-library.webp": {
       "source": "public/images/holistic-house/books-library.webp",
       "sha": "cce4a98b2ba7b6a2fd4f129add48d84f2373a1c9",
