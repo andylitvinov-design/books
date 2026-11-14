@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import {ArrowUpRight, Bookmark, BookmarkCheck, ChevronDown, Film, Play, X} from "lucide-react";
-import {useMemo, useState} from "react";
+import {type ReactNode, useMemo, useState} from "react";
 import type {LibraryFeedItem} from "@/components/library-feed";
 import type {PublicLocale} from "@/lib/public-locales";
 import {myTubeCourseInfo, sortMyTubeCourseLessons} from "@/lib/video-discovery/mytube-shelves.mjs";
@@ -70,8 +70,9 @@ function groupedPlaylists(items:LibraryFeedItem[]):Group[]{
   return [...found.values()].map(group=>({...group,lessons:sortMyTubeCourseLessons(group.lessons)}));
 }
 
-export function MyTubeCoursePlaylists({locale,items,savedVideoIds,onToggleSaved}:{
+export function MyTubeCoursePlaylists({locale,items,savedVideoIds,onToggleSaved,afterAllVisible}:{
   locale:PublicLocale;items:LibraryFeedItem[];savedVideoIds:string[];onToggleSaved:(id:string)=>void;
+  afterAllVisible?:ReactNode;
 }){
   const t=copy[locale];
   const [category,setCategory]=useState<Category|null>(null);
@@ -180,5 +181,6 @@ export function MyTubeCoursePlaylists({locale,items,savedVideoIds,onToggleSaved}
         <ChevronDown size={17} aria-hidden="true" className={showAll?styles.rotated:""}/>
       </button>}
     </div>
+    {(filtered.length<=6||showAll)&&afterAllVisible}
   </section>;
 }

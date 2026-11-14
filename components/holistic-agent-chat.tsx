@@ -10,6 +10,7 @@ import { prepareNaturalDialogue, finishNaturalDialogue } from "@/lib/holistic-su
 import type { PublicLocale } from "@/lib/public-locales";
 import { AXIS_REFS } from "@/lib/holistic-support/axis-offer-matcher.mjs";
 import { ruleConversationReply } from "@/lib/holistic-support/rule-conversation.mjs";
+import { reviewPracticeBoundary } from "@/lib/holistic-support/practice-boundary.mjs";
 import { detectConversationLocale } from "@/lib/holistic-support/conversation-locale.mjs";
 import { planJudgmentTurn } from "@/lib/holistic-support/judgment-mind.mjs";
 import { newNativeSessionTurn, advanceNativeClientSession } from "@/lib/holistic-support/native-dialogue-client-session.mjs";
@@ -265,6 +266,7 @@ function isCasualGreeting(raw:string):boolean {
 // Video choices are local, but urgent/human-review text must still use the
 // existing authenticated safety preflight, not the category-choice reducer.
 function requiresProtectedReply(text:string,locale:PublicLocale):boolean {
+  if(reviewPracticeBoundary(text,locale))return true;
   if(/(?:не хочу (?:больше )?жить(?:[.!?]|$)|i do not want to live(?:[.!?]|$)|i dont want to live(?:[.!?]|$)|ya no quiero vivir(?:[.!?]|$)|мне стало хуже|после упражнения хуже|хочу остановиться|мне страшно продолжать|i feel worse|please stop|after the exercise i feel worse|me siento peor|no quiero continuar)/iu.test(text))
     return true;
   for(let i=0;i<text.length;i+=180)
@@ -842,6 +844,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       ?detectConversationLocale(text,locale) as PublicLocale:locale;
     if(turnLocale!==locale){setLocale(turnLocale);onConversationLocaleChange?.(turnLocale);}
     const turnStarter=messengerStarter[turnLocale],turnCopy=copy[turnLocale];
+    const boundaryReply=reviewPracticeBoundary(text,turnLocale)?.reply||turnStarter.safety;
     if(!text||busy||(mode==="owned"&&!agree&&!(compact&&(testChatOpen||testOfferFromText(text))))||
       (judgmentChoice!==null&&judgmentClickLock.current))return;
     alternativeAbortRef.current?.abort();alternativeAbortRef.current=null;
@@ -858,7 +861,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       if(requiresProtectedReply(text,turnLocale)){
         setTestChatOpen(false);setTestChatTurn(null);setTestSuggestedKey("");
         // Never record a sensitive test utterance in general agent history.
-        setMessages(prev=>[...prev,{role:"assistant" as const,text:turnStarter.safety}].slice(-30));
+        setMessages(prev=>[...prev,{role:"assistant" as const,text:boundaryReply}].slice(-30));
       }else{
         setTestChatTurn(prev=>({seq:(prev?.seq||0)+1,text}));
         // Confirmed answers render from the owned test-run record below;
@@ -970,7 +973,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       const candidate=planJudgmentTurn({message:text,locale:turnLocale,
         safety:{status:"clear"},history:prior,pending:judgmentView?.pending,choiceId:judgmentChoice});
       const handled=candidate.status!=="abstain";
-      const answer=requiresProtectedReply(text,turnLocale)?turnStarter.safety:
+      const answer=requiresProtectedReply(text,turnLocale)?boundaryReply:
         handled?candidate.reply:guestAnswer(text,prior,turnLocale);
       setJudgmentView(requiresProtectedReply(text,turnLocale)?null:
         handled?candidate as JudgmentView:null);
@@ -1061,7 +1064,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
           // Expired session: answer from public rules; private API stays protected.
           const candidate=planJudgmentTurn({message:text,locale:turnLocale,
             safety:{status:"clear"},history:prior,pending:null});
-          const answer=requiresProtectedReply(text,turnLocale)?turnStarter.safety:
+          const answer=requiresProtectedReply(text,turnLocale)?boundaryReply:
             candidate.status!=="abstain"?candidate.reply:guestAnswer(text,prior,turnLocale);
           setJudgmentView(!requiresProtectedReply(text,turnLocale)&&candidate.status!=="abstain"?
             candidate as JudgmentView:null);
@@ -1173,6 +1176,16 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       }}/>
   </label>:null;
   const resetControl=<button type="button" onClick={resetConversation}>{t.reset}</button>;
+  const voiceControls=voiceEnabled?<VoiceCompanionControls voice={voice} locale={locale}
+    privacyOnly={Boolean(pageHelp)}
+    greeting={pageHelp?.greeting??starter.welcome}
+    latestReply={[...messages].reverse().find(item=>item.role==="assistant")?.text}
+    onTranscript={text=>setDraft(prev=>((prev?prev+" ":"")+text).slice(0,2000))}
+    onConversationTurn={text=>{
+      if(busy||mode==="owned"&&!agree){setDraft(text);voice.stopDialogue();return;}
+      if(requiresProtectedReply(text,locale))voice.stopDialogue();
+      setDraft(text);void sendTurn(text);
+    }}/>:null;
 
   const settings = (
     <details className={compact?styles.compactSettings:styles.expandedSettings} open={!compact}>
@@ -1216,6 +1229,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       <input type="checkbox" checked={agree} onChange={event=>setAgree(event.target.checked)}/>
       {t.consent}
     </label>}
+    {voiceControls}
     </details>
   );
   const availableSuggestions=choices.filter(x=>!dismissedIds.includes(x.id)&&!completedIds.includes(x.id));
@@ -1252,7 +1266,14 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       <div className={styles.actions}>
         {messengerView?<details className={styles.composerMore} data-hh-ai-more>
           <summary aria-label={locale==="ru"?"Дополнительные действия":locale==="es"?"Más acciones":"More actions"}><Plus size={19} aria-hidden="true"/></summary>
-          <div className={styles.composerMenu}>{voiceAttachment}{resetControl}</div>
+          <div className={styles.composerMenu}>
+            {voiceAttachment}
+            {voiceEnabled&&<details className={styles.voiceSettings} data-hh-voice-settings>
+              <summary>{pageHelp?voice.t.settings:(locale==="ru"?"Настройки голоса":locale==="es"?"Ajustes de voz":"Voice settings")}</summary>
+              {voiceControls}
+            </details>}
+            {resetControl}
+          </div>
         </details>:voiceAttachment}
         {messengerView&&!pageHelp&&voiceEnabled&&<button type="button"
           className={styles.recorderToggle} data-hh-conversation-mic
@@ -1570,15 +1591,10 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         </a>}
       </div>}
     </section>}
-    {voiceEnabled&&<VoiceCompanionControls voice={voice} locale={locale}
-      greeting={pageHelp?.greeting??starter.welcome}
-      latestReply={[...messages].reverse().find(item=>item.role==="assistant")?.text}
-      onTranscript={text=>setDraft(prev=>((prev?prev+" ":"")+text).slice(0,2000))}
-      onConversationTurn={text=>{
-        if(busy||mode==="owned"&&!agree){setDraft(text);voice.stopDialogue();return;}
-        if(requiresProtectedReply(text,locale))voice.stopDialogue();
-        setDraft(text);void sendTurn(text);
-      }}/>}
+    {compact&&!messengerView&&voiceEnabled&&<details className={styles.compactSettings} data-hh-voice-settings>
+      <summary>{locale==="ru"?"Настройки голоса":locale==="es"?"Ajustes de voz":"Voice settings"}</summary>
+      {voiceControls}
+    </details>}
     {!showLandingComposer&&composer}
     {compact&&!contentVoice&&(!messengerView||recorderOpen)&&<MessengerAudioVideo locale={locale}
       initialGoal={videoDraft.goal||""} disabled={busy} autoOpen={messengerView&&recorderOpen}/>}

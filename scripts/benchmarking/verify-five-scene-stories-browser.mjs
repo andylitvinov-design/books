@@ -52,8 +52,14 @@ try{
    return url.origin===origin&&['GET','HEAD'].includes(request.method())
      ?route.continue():route.abort('blockedbyclient');
  });
- const page=await context.newPage(),errors=[];
+ const page=await context.newPage(),errors=[],safeEncoderCodes=[];
  page.on('pageerror',err=>errors.push(err.name));
+ // Only collect the renderer's known fixed diagnostic codes; never the media,
+ // prompts, client phrases, URLs, tokens, console stack or arbitrary messages.
+ page.on('console',message=>{
+   const fixed=message.text().match(/^(HH_WEBKIT_MP4_EXPORT_FAILURE|HH_SAFARI_FINAL_PLAYBACK):([A-Z0-9_]+)$/);
+   if(fixed)safeEncoderCodes.push(fixed[1]+':'+fixed[2]);
+ });
  const response=await page.goto(origin+'/ru/holistic-support/mandala',
    {waitUntil:'domcontentloaded',timeout:60000});
  assert.equal(response?.status(),200,'STORIES_LOCAL_APP_NOT_200');
@@ -64,13 +70,58 @@ try{
  await storyTab.waitFor({state:'visible',timeout:20000});
  await storyTab.click();
  await page.locator('[data-video-montage-concept]').waitFor({state:'visible'});
- const format=page.locator('[data-video-stories-format]');
+ // Verify the approved one-screen Story CTA really selects fifth Montage.
+ const quality=page.locator('[data-video-story-select-quality]');
+ // A real mobile WebKit touch must commit both the selected tab and its panel.
+ // A click returning before React commits is not evidence of navigation.
+ await quality.tap();
+ const montageTab=page.locator('[data-video-montage-tab="promo"]');
+ try{
+   await page.waitForFunction(()=>{
+     const tab=document.querySelector('[data-video-montage-tab="promo"]');
+     const panel=document.querySelector('[data-video-basic-editor]');
+     return tab?.getAttribute('aria-pressed')==='true' &&
+       panel?.getAttribute('data-montage-panel')==='promo';
+   },undefined,{timeout:15000});
+ }catch(error){
+   // Safe structural telemetry only: no client text, media, URL or health data.
+   const state=await page.evaluate(()=>({
+     workspace:document.querySelector('[data-mandala-free-video]')?.getAttribute('data-active-workspace')||null,
+     panel:document.querySelector('[data-video-basic-editor]')?.getAttribute('data-montage-panel')||null,
+     activeTab:document.querySelector('[data-video-montage-tab][aria-pressed="true"]')?.getAttribute('data-video-montage-tab')||null,
+     qualityButtonVisible:Boolean(document.querySelector('[data-video-story-select-quality]')),
+     mediaUnready:Boolean(document.querySelector('[data-video-story-missing-relevant-media]'))
+   })).catch(()=>({status:'DOM_DIAGNOSTIC_UNAVAILABLE'}));
+   console.error('STORY_MONTAGE_TRANSITION_STATE '+JSON.stringify(state));
+   throw error;
+ }
+ assert.equal(await montageTab.getAttribute('aria-pressed'),'true',
+   'STORY_QUALITY_MUST_OPEN_MONTAGE');
+ assert.equal(await page.locator('[data-video-basic-editor]').getAttribute('data-montage-panel'),
+   'promo','STORY_QUALITY_PANEL_MUST_COMMIT');
+ const advanced=page.locator('[data-video-stories-advanced]');
+ await advanced.locator(':scope > summary').click();
+ const format=advanced.locator('[data-video-stories-format]');
  await format.waitFor({state:'visible'});
  await format.selectOption('motion');
  assert.equal(await format.inputValue(),'motion');
  await page.locator('[data-video-stories-create]').click();
  const sceneList=page.locator('[data-video-stories-scene-list]');
- await sceneList.waitFor({state:'visible',timeout:20000});
+ try{
+   await sceneList.waitFor({state:'visible',timeout:20000});
+ }catch(error){
+   // Fail closed with structural diagnostics only; never expose the visitor's wish.
+   const state=await page.evaluate(()=>({
+     activePanel:document.querySelector('[data-video-basic-editor]')?.getAttribute('data-montage-panel')||null,
+     advancedOpen:Boolean(document.querySelector('[data-video-stories-advanced]')?.open),
+     chosenFormat:document.querySelector('[data-video-stories-format]')?.value||null,
+     sceneListPresent:Boolean(document.querySelector('[data-video-stories-scene-list]')),
+     emptyStatePresent:Boolean(document.querySelector('[data-video-stories-empty]')),
+     visibleOffers:document.querySelectorAll('[data-video-montage-pro-choice]').length,
+   })).catch(()=>({status:'DOM_DIAGNOSTIC_UNAVAILABLE'}));
+   console.error('STORIES_EDITOR_NO_SCENES_STATE '+JSON.stringify(state));
+   throw error;
+ }
  assert.equal(await sceneList.locator('[data-video-stories-scene]').count(),5);
  const ids=await sceneList.locator('[data-video-stories-source]').evaluateAll(nodes=>
    nodes.map(node=>node.value));
@@ -79,17 +130,61 @@ try{
  for(const id of ids)assert.ok(approved.has(id),'STORIES_UNREVIEWED_OR_GRAPHICAL_SOURCE:'+id);
  result.shotCount=ids.length;result.distinctSources=new Set(ids).size;
  result.verifiedRights=true;
- await page.locator('[data-video-montage-tab="audio"]').click();
- await page.locator('[data-video-montage-audio]').waitFor({state:'visible',timeout:20000});
- const create=page.locator('[data-video-quick-generate]');
- await create.waitFor({state:'visible',timeout:20000});
- await create.click({timeout:30000});
- const attach=page.locator('[data-video-audio-compact-attach]');
- if(await attach.isVisible()&&await attach.isEnabled()){
-   await attach.click();
-   await create.click({timeout:30000});
+ // The user-approved fifth Montage has exactly three choices. Generate FREE
+ // from the actual in-card CTA, not a hidden legacy Audio / Create shortcut.
+ const free=page.locator('[data-video-montage-pro-choice="free"]');
+ await free.waitFor({state:'visible',timeout:20000});
+ // Track whether a genuine recorded result was mounted then invalidated:
+ // a Ready workspace without a real MP4 must fail, never be accepted.
+ await page.evaluate(()=>{
+   const trace={sawRecordedResult:false,lostRecordedResult:false};
+   const check=()=>{
+     const exists=Boolean(document.querySelector('[data-mandala-video-preview]'));
+     if(exists)trace.sawRecordedResult=true;
+     else if(trace.sawRecordedResult)trace.lostRecordedResult=true;
+   };
+   new MutationObserver(check).observe(document.body,{childList:true,subtree:true});
+   window.__hhFiveSceneResultTrace=trace;
+   check();
+ });
+ // Use a trusted native iPhone-style touch. Desktop click may not unlock
+ // the Safari video/audio decoder within the original user gesture.
+ await free.tap({timeout:30000});
+ const safeExportState=()=>page.evaluate(()=>{
+   const studio=document.querySelector('[data-mandala-free-video]');
+   const masters=[...document.querySelectorAll('[data-free-film-source]')];
+   return {
+     workspace:studio?.getAttribute('data-active-workspace')||null,
+     panel:studio?.getAttribute('data-montage-panel')||null,
+     sourceCount:masters.length,
+     sourceDecoded:masters.filter(v=>v instanceof HTMLVideoElement&&v.readyState>=2&&v.videoWidth>0&&!v.error).length,
+     sourceErrors:masters.filter(v=>v instanceof HTMLVideoElement&&Boolean(v.error)).length,
+     progressVisible:Boolean(document.querySelector('[data-video-effect-overlay],[data-video-effect-reopen]')),
+     renderResult:Boolean(document.querySelector('[data-mandala-video-preview]')),
+     renderTrace:window.__hhFiveSceneResultTrace||null,
+     createDisabled:Boolean(document.querySelector('[data-video-montage-pro-choice="free"]')?.disabled),
+   };
+ });
+ // A genuine accepted Create gesture enters existing renderer progress or
+ // yields a Ready media result. Fail early on a missing native event.
+ try{
+   await page.waitForFunction(()=>Boolean(
+     document.querySelector('[data-video-effect-overlay],[data-video-effect-reopen],[data-mandala-video-preview]')),
+     undefined,{timeout:20000});
+ }catch(error){
+   console.error('STORIES_FREE_NATIVE_TAP_NOT_STARTED '+JSON.stringify(await safeExportState()));
+   throw error;
  }
- const captured=await readRealGuestVideo(page,{timeout:150000});
+ let captured;
+ try{
+   captured=await readRealGuestVideo(page,{timeout:150000});
+ }catch(error){
+   // Never log the visitor's text, health data, media bytes, tokens or URL.
+   console.error('STORIES_FREE_RENDER_NOT_READY '+JSON.stringify({
+     ...await safeExportState(),safeEncoderCodes,
+   }));
+   throw error;
+ }
  assert.equal(captured.extension,'mp4','STORIES_FINAL_H264_MP4_REQUIRED');
  assert.ok(captured.bytes.length>100000,'STORIES_MP4_EMPTY');
  result.needsLoginForSave=captured.authGateVerified;

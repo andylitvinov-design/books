@@ -17,7 +17,9 @@ import { interpretSupportUtterance, explainUserQuestion } from "@/lib/holistic-s
 import { ruleConversationReply } from "@/lib/holistic-support/rule-conversation.mjs";
 import { progressConversationTurn,progressDialogueReply } from "@/lib/holistic-support/dialogue-progression.mjs";
 import { nativeSecretaryTurn } from "@/lib/holistic-support/native-secretary.mjs";
+import { waveNativeTurn,WAVE_NATIVE_ROUTER_VERSION } from "@/lib/holistic-support/wave-native-router.mjs";
 import { resolveComplaintTurn } from "@/lib/holistic-support/complaint-mind.mjs";
+import { reviewPracticeBoundary } from "@/lib/holistic-support/practice-boundary.mjs";
 import { consultServiceQuestion, resolveConsultantSuggestion } from "@/lib/assist/consultant-mind.mjs";
 import { resolveWisdomRequest } from "@/lib/app/coaching-wisdom.js";
 import { resolveConversationFocus } from "@/lib/holistic-support/conversation-context.mjs";
@@ -158,6 +160,8 @@ function preflight(text,locale) {
     if (interpretSupportUtterance(text.slice(i,i+240),locale).kind==="safety")
       return {status:"urgent"};
   }
+  // Nonclinical stop/worsening cannot proceed into Consultant, Judgment or Qwen.
+  if(reviewPracticeBoundary(text,locale))return {status:"human_review"};
   return {status:"clear"};
 }
 export async function POST(request) {
@@ -364,6 +368,22 @@ export async function POST(request) {
       mindRole:null,modelUsed:false,memorySaved:false,userAuthorized:true,suggestions:[],
       usedSavedTestEvidence:false,usedSavedVideoHistory:false,browserModelAllowed:false,
       decision:{status:'clarify',message:complaint.reply,question:null,suggestions:[]}});
+    // Native Wave precedes catalog lookups and optional remote inference for
+    // narrow conversation/FAQ intents. Safety, signed choices, consent and
+    // existing stateful journeys above this point remain authoritative.
+    const waveReply=body.mode==="rules" && safety.status==="clear" && !recentUnsafe &&
+      !judgmentPriority && body.judgmentContext==null && body.judgmentChoice==null &&
+      body.usePrivateProfile!==true && body.usePrivateHistory!==true &&
+      body.useAgentMemory!==true && body.preferredFormat==null &&
+      (!body.chosenAxes||body.chosenAxes.length===0)
+      ?waveNativeTurn({message:body.message,locale:body.locale,history:body.history}):null;
+    if(waveReply)return await finish({
+      status:"clarify",reply:waveReply.reply,modelUsed:false,
+      source:WAVE_NATIVE_ROUTER_VERSION,
+      memorySaved:false,userAuthorized:true,suggestions:[],
+      usedSavedTestEvidence:false,usedSavedVideoHistory:false,browserModelAllowed:false,
+      decision:{status:"clarify",message:waveReply.reply,question:null,suggestions:[]},
+    });
     // Explicit opt-in to one wisdom reflection. This is a server-only DB
     // lookup after origin, session, throttles and safety checks. It never
     // overrides signed judgment choices or sends client text to other APIs.
@@ -454,7 +474,9 @@ export async function POST(request) {
        (!fastRule || NATIVE_FAST_IDS.has(fastRule.id))){
       return await finish({
         status:"clarify",reply:nativeReply.reply,modelUsed:false,
-        source:nativeReply.source,memorySaved:false,userAuthorized:true,
+        source:nativeReply.source,nativeModelUsed:true,
+        nativeModelKind:nativeReply.modelKind,nativeModelVersion:nativeReply.modelVersion,
+        memorySaved:false,userAuthorized:true,
         suggestions:[],usedSavedTestEvidence:false,usedSavedVideoHistory:false,
         browserModelAllowed:false,
         decision:{status:"clarify",message:nativeReply.reply,question:null,suggestions:[]},
