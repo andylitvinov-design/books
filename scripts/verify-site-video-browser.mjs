@@ -207,8 +207,35 @@ try {
         assert.ok(hrefs.includes('/' + locale + '/services/' + suffix), id + ' route not reachable from Services')
       }
       await page.setViewportSize({ width: 390, height: 844 })
-      await expect(intro.locator('button.site-video-play')).toBeVisible()
-      await expect(visibleGallery).toHaveAttribute('open', '')
+      // The owner-approved mobile Services page deliberately hides the legacy
+      // method-video gallery and intro; desktop above still verifies both.
+      // On phones validate the replacement three-scenario Personal video card
+      // and its real first-party studio destination, not a hidden old player.
+      await expect(intro.locator('button.site-video-play')).toBeHidden()
+      await expect(visibleGallery).toBeHidden()
+      const videoPanel = page.locator('[data-services-unified-panel="video"]')
+      const videoTrigger = videoPanel.locator(':scope > button')
+      await expect(videoTrigger).toBeVisible()
+      await expect(videoTrigger).toHaveAttribute('aria-expanded', 'false')
+      const mobileVideo = videoPanel.locator('[data-assist-video-generation]')
+      await expect(mobileVideo).toBeHidden()
+      // A dev SSR snapshot can paint before Next attaches client event
+      // handlers. Do not misclassify an unhydrated early click as an app
+      // state regression; require the real Next router hydration first.
+      await expect.poll(
+        () => page.evaluate(() => history.pushState.toString().includes("__NA")),
+        { timeout: 30000, message: 'Services video panel must hydrate before the click' },
+      ).toBe(true)
+      await videoTrigger.click()
+      await expect(videoTrigger).toHaveAttribute('aria-expanded', 'true')
+      await expect(mobileVideo).toBeVisible()
+      await expect(mobileVideo.locator('a[data-assist-video-scenario]')).toHaveCount(3)
+      const createVideo = mobileVideo.locator('a[data-assist-video-create]')
+      await expect(createVideo).toBeVisible()
+      await expect(createVideo).toHaveAttribute('href', '/' + locale + '/holistic-support/mandala')
+      const createBox = await createVideo.boundingBox()
+      assert.ok(createBox && createBox.height >= 44, 'Services mobile create-video action is finger-sized: ' + locale)
+      await expect(mobileVideo.locator('iframe')).toHaveCount(0)
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2), 'Services mobile overflow: ' + locale)
       await page.screenshot({ path: `${evidence}/services-${locale}-mobile-video.png`, fullPage: true })
       await page.setViewportSize({ width: 1365, height: 1000 })

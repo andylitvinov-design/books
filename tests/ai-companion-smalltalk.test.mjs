@@ -63,7 +63,9 @@ test("mobile and authenticated API use one verified core without bypassing safet
   const rate=api.indexOf('await consumeRate(config,{op:"holistic-agent-turn"');
   const safety=api.indexOf("const safety = preflight(body.message");
   const fast=api.indexOf("const fastRule=");
-  const judgment=api.indexOf("const judgment=planJudgmentTurn(");
-  assert.ok(auth>=0&&rate>auth&&safety>rate&&fast>safety&&judgment>fast);
+  const judgment=api.indexOf("const inspectedJudgment=");
+  assert.ok(auth>=0&&rate>auth&&safety>rate&&judgment>safety&&fast>judgment);
+  assert.match(api,/const judgment=inspectedJudgment;/);
+  assert.equal((api.match(/\bplanJudgmentTurn\(/g)||[]).length,1);
   assert.ok(api.includes("if(fastRule&&FAST_RULE_IDS.has(fastRule.id))"));
 });

@@ -278,3 +278,9 @@
  .screen .networkHeader h1{font-size:clamp(25px,6.8vw,30px)}
  .screen .networkHeader p{font-size:12px}
 }
+
+/* All users get a personal public page, professional services remain opt-in Work. */
+.workProfileActions{display:flex;justify-content:flex-end;align-items:center;gap:7px;flex-wrap:wrap}
+.myPageLink{display:inline-flex;min-height:44px;align-items:center;justify-content:center;border-radius:13px;padding:8px 11px;text-decoration:none;border:1px solid #d5e8df;background:#eff8f2;color:#075f4f;font-size:12px;font-weight:780;white-space:nowrap}
+.myPageLink:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+@media(max-width:420px){.workProfileActions{gap:4px}.myPageLink{padding:7px 9px;font-size:11px}}

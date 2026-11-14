@@ -149,6 +149,7 @@ export function ServicesMagicalHelpMobile({ locale }: { locale: PublicLocale }) 
                     locale={locale}
                     label={item.action}
                     className={styles.cta}
+                    compactMessenger
                     event="service_request_start"
                     publicServiceTitle={item.title}
                     whatsappUrl={whatsappEnquiryUrl({

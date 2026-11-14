@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
-import {UNIFIED_DOCK_IDS,isUnifiedMobileDockHomePath,isUnifiedMobileDockPath,unifiedMobileDockActive,unifiedMobileDockHref} from "../lib/unified-mobile-dock.mjs";
+import {UNIFIED_DOCK_IDS,isUnifiedMobileDockHomePath,isUnifiedMobileDockAppPath,isUnifiedMobileDockEditorialPath,isUnifiedMobileDockPath,unifiedMobileDockActive,unifiedMobileDockHref} from "../lib/unified-mobile-dock.mjs";
 import {buildPublishedVideoIndex} from "../lib/video-discovery/catalog.mjs";
 import {rankDiscoveryVideos} from "../lib/video-discovery/ranker.mjs";
 
@@ -107,6 +107,39 @@ test("route-aware single dock, guest/signed-in consistency and private pages exc
  assert.equal(isUnifiedMobileDockPath("/ru/app/runs"),false);
  assert.equal(isUnifiedMobileDockPath("/ru/holistic-support/mandala-evil"),false);
 });
+test("public editorial journeys share the approved seven-item dock without private-route spillover",()=>{
+ const declaration=read("lib/unified-mobile-dock.d.mts");
+ assert.ok(declaration.includes("isUnifiedMobileDockAppPath"));
+ assert.ok(declaration.includes("isUnifiedMobileDockEditorialPath"));
+ const dock=read("components/unified-mobile-dock.tsx");
+ const legacy=read("components/mobile-bottom-navigation.tsx");
+ const css=read("components/unified-mobile-dock.module.css");
+ const global=read("app/unified-mobile-dock.css");
+ for(const locale of ["en","ru","es"]){
+   for(const suffix of ["about","library","articles","academy","tests","courses","explore/energy","events","my-page","u/visitor","shop"]){
+     const route="/"+locale+"/"+suffix;
+     assert.equal(isUnifiedMobileDockEditorialPath(route),true,route);
+     assert.equal(isUnifiedMobileDockPath(route),true,route);
+   }
+   for(const suffix of ["app/runs","client/private-selector","coaching","prescriptions","report","payments/checkout","cart/checkout"]){
+     assert.equal(isUnifiedMobileDockPath("/"+locale+"/"+suffix),false,suffix);
+   }
+   assert.equal(isUnifiedMobileDockPath("/"+locale+"/client/tests"),true);
+   assert.equal(isUnifiedMobileDockPath("/"+locale+"/client"),true);
+   assert.equal(isUnifiedMobileDockEditorialPath("/"+locale+"/client"),true);
+   assert.equal(isUnifiedMobileDockAppPath("/"+locale+"/client"),false);
+   assert.equal(isUnifiedMobileDockPath("/"+locale+"/client/private-record"),false);
+   assert.equal(isUnifiedMobileDockAppPath("/"+locale+"/mytube"),true);
+ }
+ assert.equal(isUnifiedMobileDockPath("/books/maya-tradition"),true);
+ assert.equal(isUnifiedMobileDockPath("/admin"),false);
+ assert.ok(dock.includes('data-hh-editorial-dock={editorialOnly || undefined}'));
+ assert.ok(css.includes('.dock[data-hh-editorial-dock="true"]{display:none}'));
+ assert.ok(legacy.includes("isUnifiedMobileDockPath(pathname)"));
+ assert.ok(global.includes("main[data-energywork-ai-learner]"));
+ assert.ok(global.includes(".mobile-bottom-navigation{display:none!important}"));
+});
+
 test("one screenshot-1 style seven-button dock and protected old docks removed visually",()=>{
  const page=read("app/layout.tsx");
  const dock=read("components/unified-mobile-dock.tsx");
@@ -134,7 +167,9 @@ test("one screenshot-1 style seven-button dock and protected old docks removed v
  assert.match(dock,/viewport\?\.addEventListener\("scroll", update/);
  assert.match(dock,/viewport\?\.removeEventListener\("scroll", update/);
  assert.match(dock,/hideForKeyboard/);
- assert.match(css,/min-height:52px/);
+ assert.match(css,/min-height:54px/);
+ assert.match(css,/min-height:94px/);
+ assert.match(css,/top:-38px;left:50%;transform:translateX\(-50%\)/);
  for(const former of ["data-support-mobile-bottom-nav","data-mandala-support-bottom-nav",
   ".hh-mobile-app-nav",".hh-practice-inner-dock","data-legacy-practice-bottom-nav",".mobile-bottom-navigation"])
   assert.ok(hide.includes(former),former);
@@ -243,7 +278,7 @@ test("Video Mandala uses a compact, public mobile header and Reiki filters canno
 });
 
 
-test("MyTube keeps all real directions in one row and expands true subcategories only on demand",()=>{
+test("MyTube keeps one direction row with real meditation collections below it",()=>{
  const page=read("app/[locale]/mytube/page.tsx");
  const style=read("app/[locale]/mytube/mytube.module.css");
  const discovery=read("components/video-discovery.tsx");
@@ -263,7 +298,10 @@ test("MyTube keeps all real directions in one row and expands true subcategories
  assert.match(css,/\.mytube \.mytubeCategoryRail\{[^}]*grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/);
  assert.doesNotMatch(css.slice(css.indexOf("/* MyTube-only compact five-choice editorial taxonomy.")),/overflow-x:auto/);
  assert.match(discovery,/data-mytube-language-control/);
- assert.match(discovery,/mytubeCategoryId!=="all"&&<div className=\{styles\.mytubeSubcategoryRail\}/);
+ assert.doesNotMatch(discovery,/mytubeCategoryId!=="all"&&<div className=\{styles\.mytubeSubcategoryRail\}/);
+ assert.match(discovery,/data-mytube-practice-collections/);
+ assert.match(discovery,/data-mytube-practice-collection=\{collection.id\}/);
+ assert.match(css,/\.mytube \.mytubeCollectionGrid\{[^}]*grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
  assert.match(css,/\.mytube \.compactMoreButton\{/);
  assert.match(discovery,/data-mytube-format-mode=\{mode\}/);
  assert.match(browser,/rail\.evaluate\(el=>el\.scrollWidth<=el\.clientWidth\+2\)/);

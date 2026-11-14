@@ -24,7 +24,7 @@ const labels={
 async function assertPinnedSixDock(page, id, active) {
   const dock=page.locator("[data-hh-unified-dock]");
   await dock.waitFor({state:"visible",timeout:30000});
-  await page.waitForFunction(expected=>{
+  if(active)await page.waitForFunction(expected=>{
     const node=document.querySelector("[data-hh-unified-dock]");
     return !!node?.querySelector('[data-unified-dock-item="'+expected+'"][aria-current="page"]');
   },active,{timeout:15000});
@@ -80,9 +80,16 @@ async function inspect(browserType,locale,width){
     const page=document.querySelector("[data-mytube-page]");
     return page && getComputedStyle(page).backgroundColor==="rgb(15, 15, 15)";
   },null,{timeout:20000});
-  const dockBackground=await dock.evaluate(el=>getComputedStyle(el).backgroundColor);
-  assert.match(dockBackground,/^rgba?\(15, 15, 15/,
-    id+" dark dock applies only to MyTube");
+  const dockPalette=await dock.evaluate(el=>{
+    const ai=el.querySelector('[data-unified-dock-item="ai"] svg');
+    const current=getComputedStyle(el);
+    return {background:current.backgroundImage,
+      aiBackground:ai?getComputedStyle(ai).backgroundImage:""};
+  });
+  assert.match(dockPalette.background,/radial-gradient/,
+    id+" approved mint waves on the shared ivory dock");
+  assert.match(dockPalette.aiBackground,/radial-gradient/,
+    id+" teal illuminated AI button visible above the dock");
   const moreFilters=page.locator("[data-mytube-filter-toggle]");
   const rail=page.locator("[data-mytube-category-rail]");
   const refined=page.locator("#mytube-refine-controls");
@@ -95,7 +102,7 @@ async function inspect(browserType,locale,width){
     id+" deeper taxonomy must not push videos down by default");
   assert.deepEqual(
     await page.locator("[data-mytube-format-tabs] button").evaluateAll(els=>els.map(el=>el.dataset.mytubeFormatMode)),
-    ["practices","courses","masters"],id+" exactly three approved MyTube content modes are visible");
+    ["practices","courses","masters","videos"],id+" four approved MyTube content modes are visible");
   const filterBounds=await moreFilters.boundingBox();
   assert.ok(filterBounds&&filterBounds.height>=44&&filterBounds.height<=60,
     id+" single slim accessible taxonomy bar");
@@ -178,8 +185,8 @@ async function inspect(browserType,locale,width){
    await page.evaluate(()=>window.scrollTo({top:0,behavior:"instant"}));
    await page.screenshot({path:folder+"/mytube-webkit-ru-390.png",fullPage:false});
   }
-  // Three mutually exclusive modes; no invented videos required for acceptance.
-  for(const mode of ["practices","courses","masters"]){
+  // Four mutually exclusive modes; no invented videos required for acceptance.
+  for(const mode of ["practices","courses","masters","videos"]){
     const control=page.locator('[data-mytube-format-mode="'+mode+'"]');
     await control.click();
     assert.equal(await control.getAttribute("aria-pressed"),"true",id+" selected "+mode);
@@ -205,19 +212,27 @@ async function inspect(browserType,locale,width){
   assert.equal(await refined.isVisible(),false,id+" deeper taxonomy hidden by default");
   const area=page.locator('[data-mytube-category="energy-confidence"]');
   await area.click();
-  await topicRail.waitFor({state:"visible",timeout:15000});
   assert.equal(await area.getAttribute("aria-pressed"),"true",id+" selected category");
-  const subcategories=topicRail.locator('[data-mytube-subcategory]:not([data-mytube-subcategory="all"])');
-  assert.equal(await subcategories.count(),4,id+" four real subcategories on demand");
+  assert.equal(await topicRail.count(),0,id+" removed second taxonomy menu stays absent");
   assert.equal(await refined.isVisible(),false,id+" no duplicate subcategory panel");
-  await subcategories.first().click();
-  await refined.waitFor({state:"visible",timeout:15000});
-  assert.equal(await subcategories.first().getAttribute("aria-pressed"),"true",id+" selected subcategory");
-  const topics=page.locator('[data-mytube-topics] [data-mytube-topic]:not([data-mytube-topic="all"])');
-  assert.equal(await topics.count(),4,id+" deeper topics remain accessible");
+  // Product collections are based only on approved PsiMaster originals.
+  // A CI fixture with no reviewed recordings must not invent placeholders.
+  const realCollections=page.locator('[data-mytube-practice-collection]');
+  const realCount=await realCollections.count();
+  if(realCount>0){
+    const firstCollection=realCollections.first();
+    await firstCollection.click();
+    assert.equal(await firstCollection.getAttribute("aria-pressed"),"true",
+      id+" real collection filters the existing feed");
+    await firstCollection.click();
+    assert.equal(await firstCollection.getAttribute("aria-pressed"),"false",
+      id+" tapping an active collection clears its filter");
+  }else{
+    assert.equal(await page.locator('[data-mytube-practice-collections]').count(),0,
+      id+" no made-up collection without published source");
+  }
   await page.locator('[data-mytube-category="all"]').click();
-  await topicRail.waitFor({state:"detached",timeout:15000});
-  assert.equal(await topicRail.count(),0,id+" subcategories disappear after All");
+  assert.equal(await topicRail.count(),0,id+" old taxonomy menu does not reappear");
   assert.equal(await refined.isVisible(),false,id+" related filters reset");
   await moreFilters.click();
   assert.equal(await moreFilters.getAttribute("aria-expanded"),"false",id+" advanced filters close");
@@ -282,6 +297,16 @@ async function inspect(browserType,locale,width){
       if(browserType===webkit && locale==="ru" && width===390)
         await page.screenshot({path:folder+"/"+active+"-webkit-ru-390-guest.png",fullPage:false});
       results.push({id:marker,pinned:true,route:path,authenticated:false});
+    }
+    if(width===390){
+      // Verify the identical sitewide dock on three ordinary editorial pages.
+      for(const section of ["about","library","tests",...(locale==="es"?[]:["client"])]){
+        const route=prefix+"/"+section;
+        await page.goto(origin+route,{waitUntil:"domcontentloaded",timeout:75000});
+        await assertPinnedSixDock(page,id+":editorial:"+section,null);
+        assert.equal(await page.locator("[data-hh-unified-dock]").getAttribute("data-hh-editorial-dock"),"true");
+        results.push({id:id+":editorial:"+section,pinned:true,route,authenticated:false});
+      }
     }
   }
   // Owner-approved 07 Nov Ideas → Voice Warm Peach color QA. Same real
@@ -632,10 +657,25 @@ try{
  await agentComposer.waitFor({state:"visible"});
  assert.equal((await agentComposer.inputValue()).trim(),"",
    "clicking Video asks a question in chat, not a fake prepared send");
+ // Assert a fresh assistant turn, not one fixed/repetitive greeting.
+ const beforeGreeting=await chat.locator(
+   '[data-hh-ai-assistant-message], [data-hh-chat-turn="assistant"]').count();
  await agentComposer.fill("Привет Ау");
  await chat.locator('button[type="submit"]').click();
- await page.waitForFunction(()=>[...document.querySelectorAll('[data-hh-agent-preview] [role="log"] p')]
-   .some(node=>node.textContent?.includes("Я здесь!")),null,{timeout:10000});
+ await page.waitForFunction(previous=>{
+   const thread=document.querySelector('[data-hh-agent-preview] [role="log"]');
+   const replies=thread?.querySelectorAll(
+     '[data-hh-ai-assistant-message], [data-hh-chat-turn="assistant"]');
+   return Boolean(replies&&replies.length>previous&&
+     replies[replies.length-1]?.textContent?.trim());
+ },beforeGreeting,{timeout:15000});
+ await page.waitForFunction(()=>[...document.querySelectorAll(
+   '[data-hh-agent-preview] [data-hh-chat-turn="user"]')]
+   .some(node=>node.textContent?.includes("Привет Ау")),null,{timeout:10000});
+ const latestGreeting=chat.locator(
+   '[data-hh-ai-assistant-message], [data-hh-chat-turn="assistant"]').last();
+ assert.ok((await latestGreeting.innerText()).trim().length>1,
+   "a new visible, nonempty assistant answer follows the guest greeting");
  assert.equal(await chat.locator("video").count(),0,
    "no completed video is claimed before rendering");
 
@@ -746,8 +786,11 @@ try{
    const reply=replies?.[replies.length-1];
    if(!thread||!reply)return false;
    const bounds=thread.getBoundingClientRect(),bubble=reply.getBoundingClientRect();
-   const end=Math.max(0,thread.scrollHeight-thread.clientHeight);
-   return Math.abs(thread.scrollTop-end)<=3&&bubble.bottom<=bounds.bottom+2;
+   // The end of the latest answer must be visible above the composer.
+   // A user-action card can follow the answer, so requiring the entire
+   // transcript to be at its scroll tail rejects a usable, focused chat.
+   return thread.clientHeight>0&&bubble.height>0&&
+     bubble.bottom<=bounds.bottom+2&&bubble.bottom>=bounds.top+8;
  },null,{timeout:15000});
  assert.equal(await fullAssistantReply.evaluate(node=>getComputedStyle(node).flexShrink),"0",
    "iPhone keyboard must not shrink or clip the assistant reply");

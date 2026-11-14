@@ -4,9 +4,16 @@ import { notFound, redirect } from "next/navigation";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { ServicesConversionHero } from "@/components/services-conversion-hero";
 import { ServicesAssistMobile } from "@/components/services-assist-mobile";
+import { ServicesPersonalConsultationMobile } from "@/components/services-personal-consultation-mobile";
+import { AssistReikiSession } from "@/components/assist-reiki-session";
 import { ServicesMagicalHelpMobile } from "@/components/services-magical-help-mobile";
 import assistStyles from "@/components/services-assist-mobile.module.css";
 import { ServicesExplorerProvider } from "@/components/services-explorer-state";
+import { ServicesCompactCatalog, ServicesCompactPanel, ServicesHomeopathyLinks } from "@/components/services-unified-catalog";
+import { ServicesVideoGenerationCard } from "@/components/services-video-generation-card";
+import { ServicesCoursesShelf } from "@/components/services-courses-shelf";
+import { ServicesCoachTherapistMobile } from "@/components/services-coach-therapist-mobile";
+import compactStyles from "@/components/services-unified-catalog.module.css";
 import { ServicesStudioOffers } from "@/components/services-studio-offers";
 import { SpiritualReadingEntry } from "@/components/services-spiritual-reading";
 import { ServicesIntroMedia, ServicesMethodVideos, ServicesDirectoryInvitation } from "@/components/services-studio-extras";
@@ -73,22 +80,38 @@ export default async function ServicesPage({ params, searchParams }: PageProps) 
   if ((await searchParams)?.catalog === "1") redirect("/" + locale + "/services/catalog#service-listings");
   const current = copy[locale as Locale];
   return (
-    <main className={"services-shell services-shell--studio " + assistStyles.assistPage} lang={locale}>
+    <main className={"services-shell services-shell--studio " + assistStyles.assistPage + " " + compactStyles.page} lang={locale}>
       <PublicSiteHeader locale={locale} showAssessmentStrip={false} />
       <ServicesExplorerProvider>
+        {/* Unmodified, original dialogue and browser-only recommendation algorithm. */}
         <ServicesAssistMobile locale={locale as Locale} />
-        <ServicesConversionHero locale={locale as Locale} />
-        <SpiritualReadingEntry locale={locale as Locale} />
-        <PublicConsultationCta locale={locale as Locale} id="consultation" serviceBooking wiseEnabled={wisePaymentsEnabled()} paypalPersonalEnabled={personalPayPalEnabled()} />
-        <ServicesStudioOffers locale={locale as Locale} />
-        <ServicesMagicalHelpMobile locale={locale as Locale} />
+        <div className={compactStyles.featured} data-services-featured>
+          <ServicesPersonalConsultationMobile locale={locale as Locale} />
+        </div>
+        <ServicesCompactCatalog locale={locale as Locale}>
+          <ServicesCompactPanel id="reiki"><AssistReikiSession locale={locale as Locale} /></ServicesCompactPanel>
+          <ServicesCompactPanel id="browse"><ServicesConversionHero locale={locale as Locale} /></ServicesCompactPanel>
+          <ServicesCompactPanel id="reading"><SpiritualReadingEntry locale={locale as Locale} /></ServicesCompactPanel>
+          <ServicesCompactPanel id="consultation">
+            <PublicConsultationCta locale={locale as Locale} id="consultation" serviceBooking wiseEnabled={wisePaymentsEnabled()} paypalPersonalEnabled={personalPayPalEnabled()} />
+          </ServicesCompactPanel>
+          <ServicesCompactPanel id="services"><ServicesStudioOffers locale={locale as Locale} splitExtras /></ServicesCompactPanel>
+          <ServicesCompactPanel id="video"><ServicesVideoGenerationCard locale={locale as Locale} /></ServicesCompactPanel>
+          <ServicesCompactPanel id="courses"><ServicesCoursesShelf locale={locale as Locale} /></ServicesCompactPanel>
+          <ServicesCompactPanel id="coach"><ServicesCoachTherapistMobile locale={locale as Locale} /></ServicesCompactPanel>
+          <ServicesCompactPanel id="magical"><ServicesMagicalHelpMobile locale={locale as Locale} /></ServicesCompactPanel>
+          <ServicesCompactPanel id="homeopathy"><ServicesHomeopathyLinks locale={locale as Locale} /></ServicesCompactPanel>
+          <ServicesCompactPanel id="about"><ServicesIntroMedia locale={locale as Locale} /></ServicesCompactPanel>
+          <ServicesCompactPanel id="testimonials"><PersonalTestimonials locale={locale as Locale} variant="services" /></ServicesCompactPanel>
+          <ServicesCompactPanel id="mytube"><ServicesMethodVideos locale={locale as Locale} /></ServicesCompactPanel>
+          <ServicesCompactPanel id="directory">
+            <ServicesDirectoryInvitation locale={locale as Locale} />
+            <CompactLeadCapture locale={locale as Locale} serviceTitle="Personal service selection with Andrey"
+              title={current.footerTitle} lead={current.footerLead} />
+          </ServicesCompactPanel>
+        </ServicesCompactCatalog>
       </ServicesExplorerProvider>
-      <ServicesIntroMedia locale={locale as Locale} />
-      <PersonalTestimonials locale={locale as Locale} variant="services" />
-      <ServicesMethodVideos locale={locale as Locale} />
-      <ServicesDirectoryInvitation locale={locale as Locale} />
       <p className="remedy-disclaimer services-disclaimer">{current.note}</p>
-      <CompactLeadCapture locale={locale as Locale} serviceTitle="Personal service selection with Andrey" title={current.footerTitle} lead={current.footerLead} />
     </main>
   );
 }

@@ -186,7 +186,7 @@ test("hydration progresses Goals → Ideas through a real tap without hidden leg
 
 test("physical voice WebKit checks real Settings and Audio, exclusive Hypno tabs and Voice",()=>{
  const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
- const settings=browser.indexOf('const montageSettingsTab=page.locator');
+ const settings=browser.indexOf('await openMontageSettingsViaQuality(page);');
  const selectDuration=browser.indexOf('await durationSelect.selectOption("10")',settings);
  const openAudio=browser.indexOf('await montageAudio.click()',selectDuration);
  const phrases=browser.indexOf("const phrases=page.locator",openAudio);
@@ -328,7 +328,7 @@ test("guest real encoded video must keep Save behind sign-in and preserve physic
  assert.match(browser,/!video\.currentSrc\.startsWith\("blob:"\)/);
  assert.match(browser,/guest-real-encoded-mp4-auth-gate-verified/);
  assert.match(browser,/data-video-ready/);
- assert.match(browser,/data-ready-download/);
+ assert.match(browser,/data-ready-save/);
  assert.match(browser,/data-ready-save-gate/);
  assert.match(browser,/ready-real-encoded-mp4-auth-gate-verified/);
  assert.match(browser,/__hhRecordedVideoBlobs/);

@@ -82,8 +82,9 @@ export function ServicesAssistHomeopathy({ locale, query = "" }: { locale: Publi
   const result = matchRemedyDescriptions(query, locale);
   // Explicit topic-only prompts use the approved, clearly non-personalised library examples.
   // Real free text is either matched to source symptoms or receives an honest abstention.
-  const featured = ["Хочу уменьшить стресс и тревогу", "I need help with stress and anxiety",
-    "Busco apoyo con estrés y ansiedad"].includes(query.trim());
+  const featured = ["Хочу уменьшить стресс и тревогу", "Меня беспокоят стресс и тревога",
+    "I need help with stress and anxiety", "I feel stressed and anxious",
+    "Busco apoyo con estrés y ansiedad", "Siento estrés y ansiedad"].includes(query.trim());
   const matched = result.status === "matches" && !featured;
   const cards = matched ? result.matches.map(({ slug, matchedSymptoms }) => ({
     slug,
@@ -131,7 +132,7 @@ export function ServicesAssistHomeopathy({ locale, query = "" }: { locale: Publi
       <div className={styles.bookingContent}>
         <h4>{t.consultation}</h4><p className={styles.name}>{t.master}</p>
         <p className={styles.details}>{t.details}</p>
-        <Link href="#consultation" className={styles.cta} prefetch={false}>
+        <Link href={"/" + locale + "/services/psychohomeopathy"} className={styles.cta} prefetch={false}>
           {t.action}<ArrowRight size={17} aria-hidden="true" />
         </Link>
         <small>{t.note}</small>

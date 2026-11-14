@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
-import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance } from '../lib/ci/production-base-impact.mjs';
+import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance } from '../lib/ci/production-base-impact.mjs';
 import { classifyStaticUiText, scopedCssIsSafe } from '../lib/ci/fast-static-ui-text.mjs';
 import {
   TARGET, WORKFLOW_PREFIX, expectedWorkflows, classifyPackageImpact, resolveExpectedSpecialists,
@@ -196,7 +196,10 @@ export function optionalMandalaMacosSkip(files, branch, changed) {
   const fixed = "github.event_name == 'pull_request' && github.event.pull_request.draft == false && (";
   if (!guard?.startsWith(fixed) || !guard.endsWith(')')) return false;
   const predicates = guard.slice(fixed.length, -1).split(' || ');
-  if (!predicates.length || predicates.length > 24) return false;
+  // Bound the immutable BASE-owned literal list, including newly required
+  // WebKit branch routes (24 in BASE, 25 after fix/montage-audio). No dynamic
+  // expressions, changed macOS job, or encoded-media skip gains permission.
+  if (!predicates.length || predicates.length > 32) return false;
   // Trusted BASE guards may include literal startsWith prefixes and one
   // literal exact branch. Reject every computed or unknown expression.
   const rules = predicates.map(item => {
@@ -484,9 +487,18 @@ export async function verify(api,ctx,files,options={}) {
       // Specialist, dependency or security policy changes.
       const unrelatedCiMaintenance = pinnedChangeRows &&
         safeIndependentCiMaintenanceAdvance(diff, ctx.base, liveBaseSha, changed);
+      // Reuse unchanged source checks if the newer protected BASE contains
+      // nothing but independently proven public raster assets. GitHub must
+      // report this PR as actually mergeable: no guessed/null conflict state.
+      const inertPublicImages = pinnedChangeRows && live.mergeable === true &&
+        changedRows.every(row => ['A','M','added','modified'].includes(row.status)) &&
+        verifiedIndependentPublicRasterAdvance(diff, ctx.base, liveBaseSha, changed);
       if (!documentationOnly && !independentlyRevalidated &&
-          !isolatedCiPolicy && !unrelatedCiMaintenance) {
+          !isolatedCiPolicy && !unrelatedCiMaintenance && !inertPublicImages) {
         throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
+      }
+      if (inertPublicImages) {
+        console.log('CI_BASE_ADVANCE_REUSED: only independent public raster assets advanced; exact-HEAD checks retained');
       }
       if (unrelatedCiMaintenance) {
         console.log('CI_BASE_ADVANCE_REUSED: exact-HEAD checks retained after unrelated protected CI maintenance; no second CI wave');

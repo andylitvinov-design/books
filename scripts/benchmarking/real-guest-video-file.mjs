@@ -37,6 +37,8 @@ export async function readRealGuestVideo(page,{timeout=120000}={}){
   },{timeout,intervals:[250,500,1000]}).toBe(true);
   await expect(ready).toHaveAttribute('data-ready-view','home');
   await expect(result).toHaveAttribute('data-video-result-mode','rendered');
+  // Real native guest Save must not be occluded by the optional check-in.
+  await expect(page.locator('[data-video-effect-overlay]')).toHaveCount(0,{timeout:12000});
   await expect(page.locator('[data-mandala-video-download]')).toBeHidden();
   await expect.poll(()=>renderedPlayer.evaluate(video=>
     video instanceof HTMLVideoElement&&video.currentSrc.startsWith('blob:')&&
@@ -51,7 +53,9 @@ export async function readRealGuestVideo(page,{timeout=120000}={}){
   const onDownload=()=>{downloads++;};
   page.on('download',onDownload);
   try{
-    await ready.locator('[data-ready-download]').click();
+    // The approved Ready has two primary actions; Save is the explicit auth gate.
+    // Do not click a removed Download button or weaken the decoded Blob checks.
+    await ready.locator('[data-ready-save]').click();
     await gate.waitFor({state:'visible',timeout:10000});
     await ready.locator('[data-ready-save-gate-signin]').waitFor({state:'visible',timeout:10000});
     await ready.locator('[data-ready-save-close]').click();

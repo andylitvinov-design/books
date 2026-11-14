@@ -6,6 +6,7 @@ import { ArrowRight, ArrowUpRight, BookOpen, Bookmark, BookmarkCheck, Film, Play
 import { Fragment, useMemo, useState } from "react";
 
 import type { PublicLocale } from "@/lib/public-locales";
+import { myTubeCourseInfo } from "@/lib/video-discovery/mytube-shelves.mjs";
 import type { MyTubeVideoTags } from "@/lib/mandala/mytube-video-tagging.mjs";
 import styles from "./library-feed.module.css";
 
@@ -29,6 +30,9 @@ export type LibraryFeedItem = {
   curation?: "verified" | "published";
   sourceGroup?: string;
   sourceLabel?: string;
+  mytubeSection?: "masters";
+  /** Editorial AI-assisted origin, reviewed for public presentation sources. */
+  aiAssisted?: boolean;
   durationVerifiedSeconds?: number;
   mytubeFormat?: "shorts" | "study";
   sourceApproved?: boolean;
@@ -53,7 +57,7 @@ const words = {
     watch: "Watch", close: "Close video", original: "Watch on YouTube",
     read: "Read", open: "Open", more: "Show more",
     empty: "No materials match your search.",
-    seriesTitle: "Video blogs by channel", allSeries: "All videos", seriesDetails: "Open complete series", episode: "Episode", mytubeShort: "Brief", mytubeStudy: "Lesson", mytubePractice: "Practice", mytubeCourse: "Course", mytubeMaster: "Master",
+    seriesTitle: "Video blogs by channel", allSeries: "All videos", seriesDetails: "Open complete series", episode: "Episode", mytubeShort: "Brief", mytubeStudy: "Lesson", mytubePractice: "Practice", mytubeCourse: "Course", mytubeMaster: "Master", mytubeVideo: "Video",
   },
   ru: {
     latest: "Новые публикации", videos: "Видео", guides: "Книги и методички",
@@ -63,7 +67,7 @@ const words = {
     watch: "Смотреть", close: "Закрыть видео", original: "Открыть на YouTube",
     read: "Читать", open: "Открыть", more: "Показать ещё",
     empty: "По вашему запросу материалов нет.",
-    seriesTitle: "Видеоблоги по каналам", allSeries: "Все видео", seriesDetails: "Открыть весь цикл", episode: "Выпуск", mytubeShort: "Краткое", mytubeStudy: "Обучение", mytubePractice: "Практика", mytubeCourse: "Курс", mytubeMaster: "Мастер",
+    seriesTitle: "Видеоблоги по каналам", allSeries: "Все видео", seriesDetails: "Открыть весь цикл", episode: "Выпуск", mytubeShort: "Краткое", mytubeStudy: "Обучение", mytubePractice: "Практика", mytubeCourse: "Курс", mytubeMaster: "Мастер", mytubeVideo: "Видео",
   },
   es: {
     latest: "Nuevas publicaciones", videos: "Vídeos", guides: "Libros y guías",
@@ -73,7 +77,7 @@ const words = {
     watch: "Ver", close: "Cerrar vídeo", original: "Ver en YouTube",
     read: "Leer", open: "Abrir", more: "Mostrar más",
     empty: "No se encontraron materiales.",
-    seriesTitle: "Videoblogs por canal", allSeries: "Todos los vídeos", seriesDetails: "Abrir serie completa", episode: "Episodio", mytubeShort: "Breve", mytubeStudy: "Clase", mytubePractice: "Práctica", mytubeCourse: "Curso", mytubeMaster: "Maestro",
+    seriesTitle: "Videoblogs por canal", allSeries: "Todos los vídeos", seriesDetails: "Abrir serie completa", episode: "Episodio", mytubeShort: "Breve", mytubeStudy: "Clase", mytubePractice: "Práctica", mytubeCourse: "Curso", mytubeMaster: "Maestro", mytubeVideo: "Vídeo",
   },
 } as const;
 
@@ -96,7 +100,7 @@ export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = fa
   timeline?: boolean;
   preserveOrder?: boolean;
   videoLayout?: "default" | "mytube";
-  mytubeShelf?: "practices" | "courses" | "masters";
+  mytubeShelf?: "practices" | "courses" | "masters" | "videos";
   mytubeFocus?: {categoryId?:string;subcategoryId?:string;topicId?:string;scenarioId?:string};
   savedVideoIds?: string[];
   onToggleSaved?: (id: string) => void;
@@ -142,7 +146,7 @@ export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = fa
   }, [items, kind, query, locale, videosOnly, guidesOnly, selectedSeries, seriesChoices, preserveOrder]);
   // A selected MyTube course is a complete ordered playlist, not a preview of
   // the first eight lessons. Keep normal pagination for other Library feeds.
-  const visibleLimit = mytubeShelf === "courses" ? filtered.length :
+  const visibleLimit = (mytubeShelf === "courses" || mytubeShelf === "practices" || mytubeShelf === "videos" || mytubeShelf === "masters") ? filtered.length :
     videosOnly && !preserveOrder && selectedSeries === "all"
       ? Math.max(limit, filtered.filter(item => Boolean(item.seriesId)).length) : limit;
   const visible = filtered.slice(0, visibleLimit);
@@ -201,8 +205,16 @@ export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = fa
         const matchingScenario=matchingTopic?.scenarios.find(s=>
           s.scenarioId===mytubeFocus?.scenarioId);
         const matchingScore=matchingScenario?.score??matchingTopic?.score;
+        const courseInfo=mytubeShelf==="courses"?myTubeCourseInfo(item):null;
+        const previousCourseInfo=mytubeShelf==="courses"&&index>0
+          ?myTubeCourseInfo(visible[index-1]):null;
         return <Fragment key={item.id}>
-          {item.seriesId && (index === 0 || visible[index - 1]?.seriesId !== item.seriesId) ? (
+          {courseInfo && courseInfo.id!==previousCourseInfo?.id ? (
+            <div className={styles.seriesHeading} data-mytube-course-heading={courseInfo.id}>
+              <div><span>{copy.mytubeCourse}</span><h3>{courseInfo.label}</h3></div>
+            </div>
+          ) : null}
+          {!courseInfo && item.seriesId && (index === 0 || visible[index - 1]?.seriesId !== item.seriesId) ? (
             <div className={styles.seriesHeading} data-library-video-series={item.seriesId}>
               <div><span>{copy.seriesTitle}</span><h3>{item.seriesTitle}</h3></div>
               {item.seriesHref ? <Link href={item.seriesHref}>{copy.seriesDetails}<ArrowUpRight size={14} aria-hidden="true" /></Link> : null}
@@ -260,7 +272,7 @@ export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = fa
             )}
             {videoLayout === "mytube" && (
             <p className={styles.meta}>
-              <span className={styles.kind}>{mytubeShelf ? (mytubeShelf==="practices"?copy.mytubePractice:mytubeShelf==="courses"?copy.mytubeCourse:copy.mytubeMaster) : item.mytubeFormat === "shorts" ? copy.mytubeShort : item.mytubeFormat === "study" ? copy.mytubeStudy : copy[item.kind]}</span>
+              <span className={styles.kind}>{mytubeShelf ? (mytubeShelf==="practices"?copy.mytubePractice:mytubeShelf==="courses"?copy.mytubeCourse:mytubeShelf==="masters"?copy.mytubeMaster:copy.mytubeVideo) : item.mytubeFormat === "shorts" ? copy.mytubeShort : item.mytubeFormat === "study" ? copy.mytubeStudy : copy[item.kind]}</span>
               {item.seriesOrder != null && <span>{copy.episode} {item.seriesOrder}</span>}
               {date && <span>{date}</span>}
               {item.author && <span className={styles.author}>{item.author}</span>}
@@ -268,6 +280,12 @@ export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = fa
             </p>
             )}
             {item.description && <p className={styles.description}>{item.description}</p>}
+            {mytubeShelf==="practices"&&item.sourceGroup==="psimaster-original-meditations"&&
+              !Number.isInteger(item.durationVerifiedSeconds)&&
+              <p className={styles.meta} data-mytube-duration-unverified>
+                {locale==="ru"?"Длительность ещё не подтверждена":
+                  locale==="es"?"Duración pendiente de verificar":"Duration not yet verified"}
+              </p>}
             {videoLayout==="mytube"&&matchingTopic&&<p className={styles.meta}
               data-mytube-ranking={matchingTopic.topicId}
               title={locale==="ru"?"Предварительная редакционная оценка, не проверенная вручную":

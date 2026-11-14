@@ -19,6 +19,18 @@
 @media(max-width:350px){.panel{padding:11px 9px}.remedy{gap:7px}.remedy img{width:63px;height:76px}.remedyCopy strong{font-size:16px}.booking{grid-template-columns:74px minmax(0,1fr);gap:8px;padding:8px}.portrait{width:74px;height:105px}.bookingContent h4{font-size:16px}}
 @media(prefers-reduced-motion:reduce){.panel *{scroll-behavior:auto!important;transition:none!important}}
 
+/* Consistent mobile Services presentation, keeping the three approved image cards. */
+@media(max-width:760px){
+.panel{margin:14px 0;padding:12px;border:1px solid #dfcbae;border-radius:22px;background:#fffcf7;box-shadow:0 5px 16px rgb(72 49 27 / 7%)}
+.heading{gap:8px}.heading h3{font-size:clamp(24px,6.5vw,28px)}
+.lead{margin:8px 0 10px;font-size:12.5px}.cards{gap:7px}
+.remedy{min-height:74px;padding:6px;gap:8px;box-shadow:none;border-radius:13px}
+.remedy img{width:67px;height:68px;border-radius:10px}.remedyCopy strong{font-size:16px}.remedyCopy>span{font-size:11.5px}
+.safety{margin:9px 0;padding:9px;font-size:11px}
+.booking{grid-template-columns:72px minmax(0,1fr);gap:9px;padding:8px;border-radius:14px}
+.portrait{width:72px;height:99px}.bookingContent h4{font-size:17px}.details{font-size:11.5px}
+.cta{min-height:44px;padding:8px;border-radius:12px;font-size:12px}
+}
 .remedyWrap{display:grid;gap:3px;min-width:0}
 .evidence{font-weight:750;color:#966a1f!important;text-decoration:none!important}
 .poem{display:inline-flex;gap:6px;align-items:center;min-height:42px;padding:2px 9px;color:#067a67;font-size:12px;font-weight:750;text-decoration:underline;text-underline-offset:2px}

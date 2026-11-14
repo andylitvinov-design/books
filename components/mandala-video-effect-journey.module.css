@@ -52,3 +52,42 @@
   border-color:var(--hh-studio-deep,#006B4B);
   color:#FFFFFF
 }
+
+/* Viewport-centered generation and voluntary check-in; safe-area-aware over the dock. */
+.overlay{position:fixed;inset:0;z-index:11000;display:flex;align-items:center;justify-content:center;
+  padding:calc(12px + env(safe-area-inset-top)) 12px calc(12px + env(safe-area-inset-bottom));
+  background:rgba(13,35,38,.52);backdrop-filter:blur(3px)}
+.modal{box-sizing:border-box;width:min(100%,440px);max-height:calc(100vh - 32px);
+  max-height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 28px);
+  overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+  padding:12px 16px 16px;border:1px solid #eadfd9;border-radius:22px;
+  background:#fffcfa;color:#142b3d;box-shadow:0 24px 65px rgba(11,32,29,.3)}
+.modal:focus{outline:none}
+.modal .root{margin:0;padding:0;border:0;border-radius:0;max-width:none;background:transparent;box-shadow:none}
+.modalTop{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.modalTop span{font-size:12px;font-weight:650;color:#547567}
+.close{width:42px;height:42px;flex:0 0 42px;border:1px solid #e1d8ce;border-radius:50%;
+  background:#fff;color:#234b40;font-size:25px;line-height:1;cursor:pointer}
+.readyBanner{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 12px;
+  padding:9px 11px;border:1px solid #c9e2d4;border-radius:13px;background:#eef7f1}
+.readyBanner strong{font-size:14px;color:#1b684f}
+.readyBanner button{min-height:44px;border:0;border-radius:10px;padding:8px 11px;
+  background:#087e61;color:white;font-size:13px;font-weight:700;cursor:pointer}
+.modal .rating button.selected,.modal .choices button.selected,.modal .primary{
+  background:#087e61;border-color:#006b4b;color:#fff}
+.reopen{position:fixed;right:12px;bottom:calc(86px + env(safe-area-inset-bottom));z-index:10990;
+  max-width:calc(100vw - 24px);display:flex;align-items:center;gap:8px;
+  min-height:46px;padding:10px 14px;border:1px solid #b5dccb;border-radius:999px;
+  background:#fffcfa;color:#155a49;box-shadow:0 6px 22px rgba(0,0,0,.18);
+  font-size:13px;font-weight:700;cursor:pointer}
+.reopen span{color:#078363;font-size:12px}
+.close:focus-visible,.reopen:focus-visible,.readyBanner button:focus-visible{
+  outline:3px solid #edb85b;outline-offset:2px}
+@media(max-width:380px){
+  .modal{padding:10px 13px 12px}
+  .modal .header h3{font-size:18px}
+  .modal .explain{font-size:13px;line-height:1.4}
+  .modal .rating button{min-height:40px}
+}
+@media(max-height:600px){.modal .explain{font-size:13px;margin:6px 0 8px}
+  .modal .questionHead{margin-bottom:7px}}
