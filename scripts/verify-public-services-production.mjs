@@ -238,6 +238,18 @@ try {
     await expect(log.locator("a[data-assist-recommendation]")).toHaveCount(0);
     await expect(question).toHaveValue("");
     await visible(shelf.locator("#assist-best-three-title"));
+    const homeopathy=assist.locator("[data-assist-homeopathy]");
+    await visible(homeopathy);
+    await expect(homeopathy.locator("a[data-assist-remedy]")).toHaveCount(3);
+    const libraryLocale=locale==="es"?"en":locale;
+    for(const slug of ["gelsemium","ignatia-amara","nux-vomica"]){
+      const link=homeopathy.locator('a[data-assist-remedy="'+slug+'"]');
+      await expect(link).toHaveAttribute("href","/"+libraryLocale+"/homeopathy/remedies/"+slug);
+      await expect(link.locator("img")).toHaveAttribute("src",new RegExp("^/media/remedies/"+slug+"/message"));
+      const box=await link.boundingBox();
+      assert.ok(box&&box.height>=44,"Homeopathy library touch target");
+    }
+    await expect(homeopathy.locator('a[href="/'+locale+'/services/psychohomeopathy"]')).toHaveCount(1);
     const publishedVideoResponse=await publishedVideoPending;
     const publishedVideoUrl=new URL(publishedVideoResponse.url());
     assert.equal(publishedVideoUrl.pathname,"/api/assist/public-mytube");
@@ -361,6 +373,7 @@ try {
     await submit.click();
     await visible(log.locator('[role="alert"]'));
     await expect(assist.locator("[data-assist-mytube]")).toHaveCount(0);
+    await expect(assist.locator("[data-assist-homeopathy]")).toHaveCount(0);
     await expect(shelf).toHaveCount(0);
     await expect(log.locator("a[data-assist-recommendation]")).toHaveCount(0);
     await assertNoDevIssueOverlay(page, locale + "/services/assist/" + width);
