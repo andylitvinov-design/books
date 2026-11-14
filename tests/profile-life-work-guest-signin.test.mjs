@@ -17,6 +17,7 @@ test('guest Life actions open a modal; mode switch bypasses gate',()=>{
  const dialog=read('components/app/profile-guest-auth-dialog.jsx')
  assert.match(source,/onClickCapture=\{interceptGuestProfileAction\}/)
  assert.match(source,/target\.closest\('\[data-profile-mode-switch\]'\)/)
+ assert.match(source,/target\.closest\('\[data-profile-language-switch\]'\)/)
  assert.match(source,/target\.closest\('\[data-profile-auth-dialog\]'\)/)
  assert.match(source,/event\.preventDefault\(\)/)
  assert.match(source,/<ProfileGuestAuthDialog/)

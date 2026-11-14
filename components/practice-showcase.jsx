@@ -402,7 +402,7 @@ export default function PracticeShowcase({ locale = 'en' }) {
   const metric = signedIn && practice ? String(active) : t.countUnknown
   const requestMetric = signedIn && practice ? String(newRequests) : t.countUnknown
 
-  return <div onClickCapture={interceptGuestWorkLink} className={styles.screen} data-practice-showcase data-practice-design="unified-20261028" data-auth-state={session}>
+  return <div className={styles.screen} data-practice-showcase onClickCapture={interceptGuestWorkLink} data-practice-design="unified-20261028" data-auth-state={session}>
     <div className={styles.shell}>
       <PracticeWorkProfileIntro locale={locale} t={t} onAction={openAction} />
 
