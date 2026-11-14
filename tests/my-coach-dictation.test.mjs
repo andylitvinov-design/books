@@ -32,7 +32,8 @@ test('Mic shows real listening state and writes interim results to the actual fo
  const ui=source('components/my-coach-live-dialogue.jsx')
  for(const s of ['readDictationResults(event.results,1200)','draftRef.current?.(appendSpokenAnswer(draftAtStartRef.current,visible,1200))','recognition.onstart=',"changePhase('starting')",'lastHeardRef.current=finished',"event.error==='network'"])assert.ok(loop.includes(s),s)
  for(const s of ["onDraft={text=>{setDraft(text);setError('')}}",'speechLocale={speechLocale}','initialDraft={draft}','value={speechLocale}','responseLocale=detectedSpeechLocale(message,lang)','locale:responseLocale,consent:true,message'])assert.ok(ui.includes(s),s)
- assert.doesNotMatch(loop,/new MediaRecorder|sendBeacon|localStorage|sessionStorage/)
+ assert.doesNotMatch(loop,/sendBeacon|localStorage|sessionStorage/)
+ assert.match(loop,/if\(!recordingConsentRef\.current\|\|!Recorder\|\|!getUserMedia\)/)
 })
 
 test('iOS 27 Safari recovery targets only affected WebKit and preserves RU/EN conversation',()=>{
@@ -48,7 +49,7 @@ test('iOS 27 Safari recovery targets only affected WebKit and preserves RU/EN co
    'hasRecognizedRef.current','iosResultTimerRef.current=setTimeout',
    'draftRef.current?.(appendSpokenAnswer(draftAtStartRef.current,visible,1200))'])
    assert.ok(sourceCode.includes(part),part)
- assert.doesNotMatch(sourceCode,/MediaRecorder|sendBeacon|localStorage|sessionStorage/)
+ assert.doesNotMatch(sourceCode,/sendBeacon|localStorage|sessionStorage/)
 })
 
 
@@ -65,10 +66,38 @@ test('iOS 27 repeat-turn recovery always primes every following recognition, inc
  assert.match(code,/if\(phaseRef\.current==='stalled'\)\{/)
  assert.match(code,/retryMic\?t\.retryMic:ready\?t\.tapToHear:active\?t\.stop:t\.start/)
  assert.match(code,/iosResultTimerRef\.current=setTimeout/)
- assert.doesNotMatch(code,/new MediaRecorder|new WebSocket|localStorage|sessionStorage/)
+ assert.doesNotMatch(code,/new WebSocket|localStorage|sessionStorage/)
  for(const phrase of ['Как ты себя чувствуешь','Мне спокойнее','Я хочу продолжить разговор']){
    const result=readDictationResults([{isFinal:false,0:{transcript:phrase}}])
    assert.equal(result.visible,phrase)
    assert.equal(appendSpokenAnswer('',result.visible,1200),phrase)
  }
+})
+
+test('reliable iPhone recording has separate consent, bounded duration and reuses the existing free STT bridge',()=>{
+ const loop=source('components/my-coach-speech-loop.jsx')
+ const ui=source('components/my-coach-live-dialogue.jsx')
+ const route=source('app/api/holistic-support/audio-storyboard/route.js')
+ assert.match(loop,/if\(!recordingConsentRef\.current\|\|!Recorder\|\|!getUserMedia\)/)
+ assert.match(loop,/recorder\.start\(250\)/)
+ assert.match(loop,/setTimeout\(\(\)=>stopRecordedTurn\(\),18000\)/)
+ assert.match(loop,/body\.set\('consent','yes'\)/)
+ assert.match(loop,/body\.set\('locale',\['ru','en','es'\]\.includes\(speechLocale\)\?speechLocale:'auto'\)/)
+ assert.match(loop,/fetch\('\/api\/holistic-support\/audio-storyboard'/)
+ assert.match(loop,/void deliver\(combined\)/)
+ assert.match(loop,/transcriptionControllerRef\.current\?\.abort\(\)/)
+ assert.match(ui,/checked=\{recordingConsent\}/)
+ assert.match(ui,/ios27NeedsSpeechRecovery\(window\.navigator\)/)
+ assert.match(ui,/speechRef\.current\?\.resumeVoice\?\.\(\)/)
+ assert.match(route,/if\(language!=="auto"\)multipart\.set\("language",language\)/)
+ assert.match(route,/audio-stt-free-global-day/)
+ assert.doesNotMatch(loop,/localStorage|sessionStorage|new WebSocket/)
+})
+test('Safari partial-fragment watchdog re-arms after every new transcript result',()=>{
+ const loop=source('components/my-coach-speech-loop.jsx')
+ const handler=loop.slice(loop.indexOf('recognition.onresult=event=>{'),loop.indexOf('recognition.onerror=event=>{'))
+ assert.match(handler,/iosResultTimerRef\.current=setTimeout\(\(\)=>\{/)
+ assert.match(handler,/6500/)
+ assert.match(handler,/changePhase\('stalled'\)/)
+ assert.match(handler,/draftRef\.current\?\.\(appendSpokenAnswer/)
 })
