@@ -89,7 +89,18 @@ const run = async (locale, width) => {
     const path = "/" + locale + "/holistic-support/mobile";
     const response = await page.goto(origin+path,{waitUntil:"domcontentloaded",timeout:60000});
     assert.equal(response?.status(),200,"Public mobile support route");
-    await page.locator('[data-support-tool="talisman"]').click();
+    // SSR shows a button before React hydration. Await the existing photo/UI
+    // hydration effect so an iPhone Safari tap cannot be silently discarded.
+    await page.locator('[data-holistic-mobile-alternative][data-support-tool-hydrated="true"]')
+      .waitFor({state:"visible",timeout:25000});
+    const talismanTool=page.locator('[data-support-tool="talisman"]');
+    await talismanTool.waitFor({state:"visible"});
+    assert.equal(await talismanTool.isEnabled(),true,"HYDRATED_TALISMAN_TOOL_REQUIRED");
+    await talismanTool.tap();
+    await page.waitForFunction(()=>
+      document.querySelector('[data-support-tool="talisman"]')
+        ?.getAttribute('aria-pressed')==='true',
+      undefined,{timeout:15000});
     const viewer = page.locator("[data-support-talisman-viewer]");
     await viewer.waitFor({state:"visible"});
     // Published catalog ratings load only after the full catalog opens.

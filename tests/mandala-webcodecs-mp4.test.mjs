@@ -351,7 +351,7 @@ test("WebKit traverses Ideas Personalization and Concept before consented Voice/
  const record=browser.indexOf('const recordEntry=page.locator',my);
  const tap=browser.indexOf('await recordEntry.click()',record);
  const phrase=browser.indexOf('const phraseSelector=page.locator',tap);
- const consent=browser.indexOf('await narrationConsent.check()',phrase);
+ const consent=browser.indexOf('await narrationConsent.tap()',phrase);
  assert.ok(modes>=0&&personal>modes&&concept>personal&&back>concept&&
    opened>back&&voice>opened&&my>voice&&record>my&&tap>record&&
    phrase>tap&&consent>phrase,"real WebKit route must use visible controls before TTS consent");
