@@ -74,4 +74,22 @@ if(process.argv.includes('--verify-trace')){
    process.exit(1)
  }
  console.log('HH_OWNER_VIDEO_FFMPEG_TRACE_READY')
+ // The signed CRM webhook only redirects owner /video to Dot. If a future
+ // import brings the renderer back, stop the release instead of silently
+ // replicating FFmpeg in a second retained Vercel Function.
+ const crmTraceFile=join(process.cwd(),
+   '.next/server/app/api/app/crm/messenger/webhook/[provider]/route.js.nft.json')
+ let crmPaths
+ try{crmPaths=JSON.parse(readFileSync(crmTraceFile,'utf8')).files}
+ catch{console.error('HH_CRM_VIDEO_TRACE_MISSING');process.exit(1)}
+ if(!Array.isArray(crmPaths)){
+   console.error('HH_CRM_VIDEO_TRACE_INVALID')
+   process.exit(1)
+ }
+ if(crmPaths.some(file=>typeof file==='string'&&
+   file.replaceAll('\\','/').endsWith('/node_modules/ffmpeg-static/ffmpeg'))){
+   console.error('HH_CRM_VIDEO_DUPLICATE_FFMPEG_TRACE')
+   process.exit(1)
+ }
+ console.log('HH_CRM_VIDEO_FFMPEG_EXCLUDED')
 }

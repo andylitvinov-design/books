@@ -12,7 +12,7 @@ import { telegramPresentationOnStart } from '@/lib/crm/telegram-presentation.mjs
 import {processTelegramCompanion} from '@/lib/crm/telegram-companion-service'
 import {processTelegramAiV3,finishTelegramAiV3} from '@/lib/crm/telegram-ai-diagnostic-v3-service'
 import {shouldBootstrapTelegramNativeMenu} from '@/lib/crm/telegram-companion-native-commands.mjs'
-import { receiveOwnerTelegramVideoWebhook } from '@/lib/practitioners/owner-telegram-video-service'
+import { receiveOwnerTelegramCrmVideoRedirect } from '@/lib/practitioners/owner-telegram-video-crm-redirect.mjs'
 import {processTelegramBusinessConversation} from '@/lib/crm/telegram-business-service'
 import {processTelegramBusinessSecretary,gateTelegramBusinessSecretaryOptOut} from '@/lib/crm/telegram-secretary-service'
 export const runtime='nodejs'
@@ -42,16 +42,12 @@ export async function POST(request,{params}){
     const config=getAppConfig()
     const body=JSON.parse(raw.toString('utf8'))
     if(provider==='telegram'){
-      const video=await receiveOwnerTelegramVideoWebhook(config,body,{channel:'crm'})
+      const video=await receiveOwnerTelegramCrmVideoRedirect(config,body)
       if(video.handled){
         // The verified private owner command may be the first update needing
         // callback_query delivery for the one-time YouTube publish button.
         if(/^\/(?:video(?:_done|_retry|_cancel)?(?:@[A-Za-z0-9_]+)?|start(?:@[A-Za-z0-9_]+)?\s+video)$/i.test(String(body.message?.text||'').trim()))
           await ensureTelegramInlineWebhookUpdates().catch(()=>{})
-        if(video.background)after(async()=>{
-          try{await video.background()}
-          catch{console.error('HH_OWNER_VIDEO_CRM_AFTER_FAILED')}
-        })
         return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
       }
     }
