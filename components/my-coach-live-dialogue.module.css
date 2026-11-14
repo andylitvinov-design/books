@@ -492,3 +492,79 @@
     overflow-x:hidden;
   }
 }
+
+
+/* iOS 27 speech-session fix: the conversation is a bounded scroll region.
+   Voice consent and text composer remain reachable; cloud/Fish options sit
+   after (not between) the transcript and composer. This does NOT trap the page. */
+@media(max-width:699px){
+ .root[data-session-visual-v3]{min-width:0;max-width:100%;overflow-x:clip}
+ .root[data-session-visual-v3] .voiceWorkspace{min-width:0;max-width:100%}
+ .root[data-session-visual-v3] .conversationPanel{
+   display:flex;
+   flex-direction:column;
+   max-height:min(38dvh,325px);
+   min-height:0;
+   overflow-y:auto;
+   overflow-x:hidden;
+   overscroll-behavior-y:contain;
+   scroll-padding-bottom:12px;
+   -webkit-overflow-scrolling:touch;
+ }
+ .root[data-session-visual-v3] .conversationPanel .liveTranscript{
+   display:flex;
+   flex:1 1 auto;
+   flex-direction:column;
+   min-height:112px;
+   overflow:hidden;
+ }
+ .root[data-session-visual-v3] .conversationPanel .transcriptHeading{flex:none}
+ .root[data-session-visual-v3] .conversationPanel .transcriptHeading >span[role=status]{display:none}
+ .root[data-session-visual-v3] .conversationPanel .transcriptFeed{
+   display:grid;
+   flex:1 1 auto;
+   align-content:start;
+   min-height:72px;
+   max-height:min(24dvh,190px);
+   overflow-y:auto;
+   overflow-x:hidden;
+   overscroll-behavior:contain;
+   scrollbar-width:thin;
+ }
+ .root[data-session-visual-v3] .conversationPanel .playbackNotice{order:1;flex:none}
+ .root[data-session-visual-v3] .conversationPanel .textComposer{
+   order:2;
+   flex:0 0 auto;
+   max-height:min(28dvh,200px);
+   overflow-y:auto;
+   overflow-x:hidden;
+   scrollbar-width:thin;
+   background:#fffdf9;
+ }
+ .root[data-session-visual-v3] .conversationPanel .naturalVoiceRow{
+   order:3;
+   flex:0 0 auto;
+   max-width:100%;
+   margin:0;
+   padding:7px 9px;
+   overflow-wrap:anywhere;
+ }
+ .root[data-session-visual-v3] .conversationPanel .naturalVoiceRow label{
+   min-width:0;
+   max-width:100%;
+ }
+}
+@media(max-width:699px) and (max-height:680px){
+ .root[data-session-visual-v3] .sessionHero{height:clamp(210px,33dvh,250px)}
+ .root[data-session-visual-v3] .conversationPanel{max-height:min(42dvh,288px)}
+ .root[data-session-visual-v3] .conversationPanel .transcriptFeed{max-height:130px}
+ .root[data-session-visual-v3] .conversationPanel .textComposer{max-height:150px}
+}
+
+/* Optional original wizard character voice: device-only, no external TTS transfer. */
+.wizardVoiceRow{display:grid;gap:4px;min-width:0;padding:8px 10px;border:1px solid #d8e7dc;border-radius:14px;background:#f5faf4;color:#215c4e;font-size:12px}
+.wizardVoiceRow label{display:flex;align-items:center;gap:9px;cursor:pointer;font-weight:700;line-height:1.35}
+.wizardVoiceRow input{width:18px;height:18px;flex:none;accent-color:#177b65}
+.wizardVoiceRow small{font-size:11px;line-height:1.35;color:#536f65}
+.wizardVoiceRow input:focus-visible{outline:2px solid #168467;outline-offset:2px}
+@media(max-width:699px){.root[data-session-visual-v3] .conversationPanel .wizardVoiceRow{order:4;flex:none;max-width:100%}}

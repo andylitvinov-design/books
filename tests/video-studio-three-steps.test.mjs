@@ -196,3 +196,35 @@ test("guided meditation choice commits before opening and omission on real WebKi
  assert.match(browser,/data-guided-eight-sessions/);
  assert.doesNotMatch(browser,/click\(\{force:true\}\)/);
 });
+
+test("first-video macOS WebKit uses a genuine portrait tap and still verifies React's committed selection",()=>{
+ const live=read("scripts/benchmarking/first-video-live-export.mjs");
+ assert.match(live,/if\(engine==='webkit'\)await portrait\.tap\(\)/);
+ assert.match(live,/else await portrait\.click\(\)/);
+ assert.match(live,/LIVE_VIDEO_PORTRAIT_SELECTION_NOT_REFLECTED/);
+ assert.match(live,/LIVE_VIDEO_PORTRAIT_SELECTION_STATE/);
+ assert.match(live,/getAttribute\('aria-pressed'\)==='true'/);
+ assert.doesNotMatch(live,/portrait\.click\(\{force:true\}\)/);
+});
+
+test("real iPhone WebKit navigation uses native touch and verifies committed panes before local export",()=>{
+ const source=read("scripts/benchmarking/first-video-live-export.mjs");
+ const studio=read("components/mandala-free-video-studio.tsx");
+ for(const expected of [
+   "if(engine==='webkit')await continueToIdeas.tap();",
+   "if(engine==='webkit')await editorTab.tap();",
+   "if(engine==='webkit')await montageStyle.tap();",
+   "if(engine==='webkit')await styleNext.tap();",
+   "if(engine==='webkit')await montage.tap();",
+   "if(engine==='webkit')await settings.tap();",
+   "row.phase='editor-workspace-commit';",
+   "row.phase='montage-style-commit';",
+   "row.phase='style-to-audio-commit';",
+   "row.phase='source-editor-open-commit';"
+ ]) assert.ok(source.includes(expected),expected);
+ assert.match(studio,/onPointerUp=\{event=>\{[\s\S]*?event\.pointerType!=="touch"\|\|montagePanel===item\.id/);
+ assert.match(source,/getAttribute\('aria-pressed'\)==='true'/);
+ assert.match(source,/data-first-video-generate/);
+ assert.match(source,/readRealGuestVideo\(page,\{timeout:80000\}\)/);
+ assert.doesNotMatch(source,/force:\s*true|createFakeVideo|skipWebkit/);
+});
