@@ -65,3 +65,18 @@ test("existing public consultation and other deep links reveal the real mobile p
   assert.match(catalog, /panel\?\.scrollIntoView/);
   assert.match(css, /scroll-margin-top:calc\(64px/);
 });
+
+test("Spanish Services uses the exact same mobile catalogue as EN/RU", () => {
+  const spanish = read("app/es/services/page.tsx");
+  const expected = [...page.matchAll(/<ServicesCompactPanel id="([^"]+)"/g)].map(x => x[1]);
+  const actual = [...spanish.matchAll(/<ServicesCompactPanel id="([^"]+)"/g)].map(x => x[1]);
+  assert.deepEqual(actual, expected, "Do not strand ES on the obsolete page after a mobile redesign");
+  assert.ok(spanish.indexOf("<ServicesAssistMobile") < spanish.indexOf("<ServicesCompactCatalog"),
+    "Spanish messenger remains at the top of Services");
+  assert.match(spanish, /<PublicConsultationCta locale="es" id="consultation" serviceBooking wiseEnabled=\{wisePaymentsEnabled\(\)\} paypalPersonalEnabled=\{personalPayPalEnabled\(\)\} \/>/);
+  assert.equal((spanish.match(/<ServicesCoursesShelf /g) || []).length, 1);
+  assert.equal((spanish.match(/<ServicesCoachTherapistMobile /g) || []).length, 1);
+  assert.equal((spanish.match(/<ServicesVideoGenerationCard /g) || []).length, 1);
+  assert.equal((spanish.match(/<CompactLeadCapture /g) || []).length, 1);
+  assert.match(spanish, /<ServicesStudioOffers locale="es" splitExtras \/>/);
+});
