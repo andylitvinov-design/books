@@ -15,3 +15,7 @@ Validation: authored RU/EN cases, 20 long synthetic contexts, duplicate-guard, o
 
 Related epics: https://github.com/andylitvinov-design/books/issues/4016 and https://github.com/andylitvinov-design/books/issues/4367
 Release contract: https://github.com/andylitvinov-design/ai-projects-brain/blob/main/systems/pr-one-publish-standard.md
+
+## P0 first-turn social repair (13 Nov 2026)
+
+An owner screenshot showed My Coach Alex responding to "Привет как дела" by asking how to measure an unstated goal. Added greeting-only RU/EN/ES classification, shared Coach Mind rapport guidance, an output guard against premature goal metrics, and a clearly offline-labelled authored greeting. After the user states a real goal the established coaching protocol resumes; no invented user state, new model, API, consent bypass, voice/UI changes or expenses. Real signed-in multi-turn inference remains a separate acceptance gate.

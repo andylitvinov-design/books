@@ -545,3 +545,29 @@ test('offline coaching notices explicitly named constraints instead of asking ag
     'motivational_interviewing','explore')
   assert.equal((fallback.question.match(/[?？]/gu)||[]).length,1)
 })
+
+test('social greetings preserve rapport instead of imposing goal metrics RU/EN/ES',()=>{
+ for(const [locale,message,expected] of [
+  ['ru','Привет как дела','Привет'],
+  ['ru','Здравствуйте, как ваши дела?','Привет'],
+  ['en','Hi, how are you?','Hello'],
+  ['en','Hello there!','Hello'],
+  ['es','Hola, ¿cómo estás?','Hola'],
+  ['es','Buenas tardes','Hola']
+ ]){
+  const input=normalizeCoachingBrainInput(req({locale,message}))
+  assert.equal(understandCoachingTurn(input).act,'greeting')
+  assert.deepEqual(coachingBrainStageDecision(input),{stage:'clarify',reasonCode:'social_opening_no_goal'})
+  const r=offlineCoachingBrainReply(input,'grow','clarify')
+  assert.equal(r.mode,'offline')
+  assert.equal(r.planSuggestion,'')
+  assert.ok(r.question.includes(expected))
+  assert.doesNotMatch(r.question,/measure|outcome|измер|результат|objetivo medible/i)
+  assert.match(coachingBrainMessages(input,'grow','clarify')[1].content,/Greeting only/)
+  assert.throws(()=>parseCoachingBrainReply(JSON.stringify({
+   reflection:'We can talk about your goals.',
+   question:'How would you measure success?'
+  }),input,'grow','clarify'),/COACHING_BRAIN_RESPONSE_INVALID/)
+ }
+ assert.notEqual(understandCoachingTurn({locale:'ru',message:'Привет! Я хочу обсудить работу.',turns:[]}).act,'greeting')
+})

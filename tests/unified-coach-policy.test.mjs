@@ -89,3 +89,46 @@ test('offline reply has no fabricated model or client action',()=>{
  assert.equal(x.planSuggestion,'')
  assert.equal(repeatedCoachQuestion(x.question,input.turns),false)
 })
+
+test('greetings are social, validated AI replies cannot invent a measured goal',()=>{
+ for(const [locale,message,valid] of [
+  ['ru','Привет как дела','Привет! Я виртуальный коуч. Можно просто поговорить.'],
+  ['ru','Добрый вечер!','Добрый вечер! Можем спокойно пообщаться.'],
+  ['en','Hi, how are you?','Hello! I am an AI coach. We can simply chat.'],
+  ['en','Good morning!','Good morning! We can chat at your own pace.'],
+  ['es','Hola, ¿cómo estás?','¡Hola! Soy tu coach virtual. Podemos conversar con calma.'],
+  ['es','Buenas tardes','Buenas tardes, podemos conversar con calma si quieres.']
+ ]){
+   const input={locale,message,turns:[]}
+   assert.equal(coachDialoguePolicy(input).nextMove,'respond_socially')
+   assert.equal(coachDialoguePolicy(input).phase,'contract')
+   assert.equal(offlineCoachingBrainReply(input,'grow','clarify').mode,'offline')
+   assert.equal(parseConversationalCoachReply(JSON.stringify({message:valid}),input,'grow','clarify').mode,'ai')
+   for(const bad of ['По чему вы сможете измерить желаемый результат?',
+        'How would you measure success?', '¿Cuál es tu objetivo medible?'])
+     assert.throws(()=>parseConversationalCoachReply(JSON.stringify({message:bad}),input,'grow','clarify'),
+       /COACHING_BRAIN_RESPONSE_INVALID/)
+ }
+})
+test('15-plus-turn session respects new goal, explicit correction, questions and no-advice',()=>{
+ const turns=[{role:'user',content:'Привет как дела'},
+   {role:'assistant',content:'Привет! Можно просто пообщаться.'}]
+ const fixtures=[
+   ['Я застрял на работе.','reflect_then_explore'],
+   ['Я хочу обсудить проблемы на работе.','reflect_then_explore'],
+   ['Я боюсь ошибиться.','reflect_then_explore'],
+   ['Нет, я не боюсь, мне не хватает времени.','accept_correction'],
+   ['Что ты думаешь?','answer_first'],
+   ['Без советов, пожалуйста.','listen_without_advice'],
+ ]
+ for(let i=0;i<12;i++){
+   const [message,expected]=fixtures[i%fixtures.length]
+   const policy=coachDialoguePolicy({locale:'ru',message,turns})
+   if(['accept_correction','answer_first','listen_without_advice'].includes(expected))
+     assert.equal(policy.nextMove,expected)
+   assert.notEqual(policy.nextMove,'respond_socially')
+   turns.push({role:'user',content:message},{role:'assistant',content:'Можно обсуждать это без спешки.'})
+ }
+ assert.ok(turns.length>=15)
+ assert.notEqual(coachDialoguePolicy({locale:'ru',message:'Я ещё думаю.',turns}).phase,'review')
+})
