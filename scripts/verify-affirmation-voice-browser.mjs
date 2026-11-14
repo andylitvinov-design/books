@@ -997,10 +997,30 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const transcript=expectedSpeech;
       const chooser=page.locator("[data-video-affirmation-voice-select]");
       assert.equal(await chooser.locator("[data-video-affirmation-voice-card]").count(),3);
-      await chooser.locator('[data-video-affirmation-gender="male"]').click();
-      assert.equal(await chooser.locator("[data-video-affirmation-voice-card]").count(),3);
-      await chooser.locator('[data-video-affirmation-voice-card="leon"]').click();
-      await expect(chooser.locator('[data-video-affirmation-voice-card="leon"]')).toHaveAttribute("aria-pressed","true");
+      // The same real touch path already passed on the earlier compact
+      // Voice pane. Desktop-style click can lose the state change in WebKit.
+      const maleTab=chooser.locator('[data-video-affirmation-gender="male"]');
+      await expect(maleTab).toBeEnabled();
+      if(engine==="webkit")await maleTab.tap();
+      else await maleTab.click();
+      try{
+        await expect(maleTab).toHaveAttribute("aria-pressed","true",{timeout:15000});
+        await expect(chooser.locator("[data-video-affirmation-voice-card]")).toHaveCount(3);
+        await expect(chooser.locator('[data-video-affirmation-voice-card="leon"]')).toBeVisible({timeout:15000});
+      }catch(error){
+        // Structural, non-sensitive telemetry: never print a user's phrase.
+        const state=await page.evaluate(()=>({
+          activeGender:document.querySelector('[data-video-affirmation-gender][aria-pressed="true"]')
+            ?.getAttribute("data-video-affirmation-gender")||null,
+          visibleVoiceIds:[...document.querySelectorAll('[data-video-affirmation-voice-card]')]
+            .map(node=>node.getAttribute("data-video-affirmation-voice-card")),
+        })).catch(()=>({diagnosticsUnavailable:true}));
+        throw new Error("VOICE_MALE_SELECTION_NOT_COMMITTED "+JSON.stringify(state),{cause:error});
+      }
+      const leon=chooser.locator('[data-video-affirmation-voice-card="leon"]');
+      if(engine==="webkit")await leon.tap();
+      else await leon.click();
+      await expect(leon).toHaveAttribute("aria-pressed","true");
       await expect(page.locator("[data-video-affirmation-voice-consent]")).not.toBeChecked();
       const voiceOptions=page.locator("[data-video-affirmation-voice] details")
         .filter({has:page.locator("[data-video-affirmation-bed]")});

@@ -180,6 +180,21 @@ test("voice browser opens Ideas and applies six visible Montage styles with deco
  assert.match(source,/else await voiceOptions\.locator\(":scope > summary"\)\.click\(\)/);
 });
 
+test("WebKit selects a real male narration voice with native touch before consented export",()=>{
+  const start=source.indexOf("const transcript=expectedSpeech;");
+  const end=source.indexOf("const voiceOptions=",start);
+  const stage=source.slice(start,end);
+  assert.ok(start>=0&&end>start,"inspect the post-own-voice narration selection, not earlier sample");
+  assert.match(stage,/if\(engine==="webkit"\)await maleTab\.tap\(\)/);
+  assert.match(stage,/await expect\(maleTab\)\.toHaveAttribute\("aria-pressed","true"/);
+  assert.match(stage,/data-video-affirmation-voice-card="leon"/);
+  assert.match(stage,/\.toBeVisible\(\{timeout:15000\}\)/);
+  assert.match(stage,/if\(engine==="webkit"\)await leon\.tap\(\)/);
+  assert.match(stage,/await expect\(leon\)\.toHaveAttribute\("aria-pressed","true"\)/);
+  assert.match(stage,/VOICE_MALE_SELECTION_NOT_COMMITTED/);
+  assert.doesNotMatch(stage,/force:\s*true|node\.click\(\)/);
+});
+
 test("voice browser selects the visible montage workspace before recording",()=>{
   assert.match(source,/phase\(engine,"offline-remix-ready"\)[\s\S]*?data-video-quick-control="editor"[\s\S]*?expect\(generate\)\.toBeVisible/);
 });
