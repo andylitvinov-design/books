@@ -233,7 +233,17 @@ test('My Coach speech is visible as text while recording and safely remains edit
   assert.match(css,/\.liveTranscript/)
   assert.match(css,/\.transcriptFeed\{[^}]*overflow-y:auto/)
   assert.match(css,/\.textComposer \.composer textarea/)
-  assert.doesNotMatch(loop,/localStorage|sessionStorage|MediaRecorder|sendBeacon/)
+  // MediaRecorder is allowed only in the separately consented, strictly bounded
+  // iOS fallback: no browser persistence or unsolicited audio transport.
+  assert.doesNotMatch(loop,/localStorage|sessionStorage|sendBeacon/)
+  for(const marker of [
+    "if(!recordingConsentRef.current||!Recorder||!getUserMedia)",
+    "body.set('consent','yes')",
+    "recorded.timer=setTimeout(()=>stopRecordedTurn(),18000)",
+    "file.size>4*1024*1024",
+    "stream.getTracks().forEach(track=>track.stop())",
+    "method:'POST',body,credentials:'same-origin',cache:'no-store',signal:controller.signal",
+  ])assert.ok(loop.includes(marker),'consented ephemeral iOS recording: '+marker)
 })
 
 test('approved live-session visual hierarchy keeps a real voice pipeline, readable transcript and functional mobile controls',()=>{
@@ -355,7 +365,10 @@ test('a silent iPhone recognizer offers one-tap retry while natural-voice consen
   assert.ok(loop.includes("phaseRef.current==='stalled'"))
   assert.ok(loop.includes('setMicStalled(false)'))
   assert.ok(loop.includes("retryMic:'Перезапустить микрофон'"))
-  assert.ok(loop.includes('aria-label={retryMic?t.retryMic:'))
+  assert.ok(loop.includes('aria-label={recording?r.recording:transcribing?r.transcribing:retryMic?t.retryMic:'),
+    'microphone retry remains labelled in the recorded/transcribing state machine')
+  assert.ok(loop.includes("if(recordedModeRef.current&&!recordingConsentRef.current)"),
+    'recorded mode still requires separate microphone consent')
   const checkbox=ui.slice(ui.indexOf('<label><input type="checkbox" checked={cloudAgreed}'),
     ui.indexOf('<label><input type="checkbox" checked={cloudAgreed}')+180)
   assert.ok(checkbox.includes('onChange={event=>{setCloudAgreed(event.target.checked);if(event.target.checked)setWizardVoice(false)}}'))
