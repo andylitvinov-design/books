@@ -102,37 +102,9 @@ async function go(page, path) {
   return response
 }
 
-function expectedMobileNavigation(locale) { return getCompactNavigation(locale) }
-function visibleMobileLabel(locale, id) {
-  const names = {
-    en: {home:'Home',analysis:'Free Analysis',courses:'Courses',profile:'My Profile',alchemy:'Psychic Alchemy',pro:'Pro',temple:'Holistic Support'},
-    ru: {home:'Домой',analysis:'Разбор',courses:'Курсы',profile:'Профиль',alchemy:'Алхимия души',pro:'Pro',temple:'Поддержка'},
-    es: {home:'Inicio',analysis:'Análisis',courses:'Cursos',profile:'Mi perfil',alchemy:'Alquimia del Alma',pro:'Pro',temple:'Apoyo holístico'},
-  }
-  return names[locale][id]
-}
 
-async function assertPublicBottomNavigation(bottom, { locale, surface, label }) {
-  const expected = expectedMobileNavigation(locale)
-  const links = bottom.locator('[data-nav-item]')
-  assert.deepEqual(await links.evaluateAll(elements => elements.map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), expected.map(({ id, href }) => ({ id, href })), label + ': exact seven bottom destinations')
-  await expect(links).toHaveCount(7)
-  const visible = await bottom.isVisible()
-  for (let index = 0; index < expected.length; index++) {
-    await expect(links.nth(index)).toHaveText(visibleMobileLabel(locale, expected[index].id))
-    if (visible) await expect(links.nth(index)).toHaveAccessibleName(expected[index].ariaLabel)
-  }
-  const active = ({home:'home',analysis:'analysis',courses:'courses',academy:'courses',pro:'pro',profile:'profile',alchemy:'alchemy',temple:'temple',
-    'temple-support':'temple','services/free-situation-review':'analysis',
-    'services/alchemy-of-soul':'alchemy','services/psychohomeopathy':'alchemy',
-    'client':'profile','client/tests':'profile','personality-profiles':'profile','temple-insights':'temple','holistic-support':'temple'})[surface]
-  await expect(bottom.locator('[aria-current="page"]')).toHaveCount(active ? 1 : 0)
-  if (active) await expect(bottom.locator('[data-nav-item="' + active + '"]')).toHaveAttribute('aria-current', 'page')
-  return expected
-}
-
-// The approved Home and free-review routes use a NEW single seven-item app dock,
-// not the editorial public footer. Assert the real rendered destination list,
+// Home, all public editorial pages and guest tests share one real seven-item app dock,
+// not the retired public footer. Assert the real rendered destination list,
 // visible tap geometry, keyboard order and absence of a second overlapping dock.
 async function assertUnifiedBottomNavigation(page,{locale,label,active=null,visible=true}){
   const dock=page.locator('[data-hh-unified-dock]')
@@ -352,37 +324,11 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
         await expect(trigger).toBeFocused()
         await inViewport(trigger, label + '/language-after-escape')
         await header.screenshot({ path: evidence + '/header-' + engine + '-' + locale + '-' + surface + '-' + width + '.png' })
-        if(surface==='home'){
-          const bottom=await assertUnifiedBottomNavigation(page,{locale,label,visible:width<760})
-          if(width<760)await bottom.screenshot({path:evidence+'/bottom-'+engine+'-'+locale+'-'+surface+'-'+width+'.png'})
-        }else{
-          const bottom = page.locator('.mobile-bottom-navigation')
-          const expectedBottom = await assertPublicBottomNavigation(bottom, { locale, surface, label })
-          const bottomLinks = bottom.locator('[data-nav-item]')
-          assert.deepEqual(await bottomLinks.evaluateAll(elements => elements.map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), expectedBottom.map(item => ({ id: item.id, href: item.href })), label + ': exact seven bottom destinations')
-          await expect(bottomLinks).toHaveCount(7)
-          await expect(bottom.locator('[aria-current="page"]')).toHaveCount(surface === 'home' ? 1 : 0)
-          if (surface === 'home') await expect(bottom.locator('[data-nav-item="home"]')).toHaveAttribute('aria-current', 'page')
-          if (width < 768) {
-            await inViewport(bottom, label + '/bottom-navigation')
-            await bottomLinks.first().focus()
-            let previousRight = 0
-            for (let index = 0; index < expectedBottom.length; index++) {
-              const link = bottomLinks.nth(index)
-              await inViewport(link, label + '/bottom-' + expectedBottom[index].id)
-              await expect(link).toHaveAccessibleName(expectedBottom[index].ariaLabel)
-              await expect(link).toBeFocused()
-              const box = await link.boundingBox()
-              assert.ok(box.x >= previousRight - 1, label + ': bottom navigation items must not overlap')
-              previousRight = box.x + box.width
-              if (index < expectedBottom.length - 1) await link.press('Tab')
-            }
-            assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'Bottom navigation overflow: ' + label)
-            await bottom.screenshot({ path: evidence + '/bottom-' + engine + '-' + locale + '-' + surface + '-' + width + '.png' })
-          } else {
-            await expect(bottom).toBeHidden()
-          }
-        }
+        // All editorial pages use the same dock as Home. Keep the complete
+        // locale-specific destination list, absence of the retired footer,
+        // 44px touch geometry, keyboard Tab order and desktop hide assertion.
+        const bottom=await assertUnifiedBottomNavigation(page,{locale,label,visible:width<760})
+        if(width<760)await bottom.screenshot({path:evidence+'/bottom-'+engine+'-'+locale+'-'+surface+'-'+width+'.png'})
         await verifySiteMenu(page, header, { locale, surface, label, expectedMenu, inViewport })
         pass('Public navigation: ' + label)
       }
@@ -410,23 +356,11 @@ async function verifyPublicDiscoveryNavigation(page, engine, locales = ['en', 'r
         assert.match(response.headers()['x-robots-tag'], /noindex/, label)
         assert.equal(response.headers()['referrer-policy'], 'no-referrer', label)
         await expect(page.locator('body')).toHaveAttribute('data-csp-class', 'private')
-        const bottom = page.locator('.mobile-bottom-navigation')
-        const expected = await assertPublicBottomNavigation(bottom, { locale, surface: 'profile', label })
-        if (width < 768) {
-          await expect(bottom).toBeVisible()
-          const links = bottom.locator('[data-nav-item]')
-          await links.first().focus()
-          let previousRight = 0
-          for (let index = 0; index < expected.length; index++) {
-            const link = links.nth(index)
-            await expect(link).toBeVisible()
-            await expect(link).toBeFocused()
-            const box = await link.boundingBox()
-            assert.ok(box && box.width >= 44 && box.height >= 44 && box.x >= previousRight - 1 && box.x + box.width <= width + 1 && box.y >= -1 && box.y + box.height <= 901, label + ': visible non-overlapping 44px mobile control')
-            previousRight = box.x + box.width
-            if (index < expected.length - 1) await link.press('Tab')
-          }
-        } else await expect(bottom).toBeHidden()
+        // Guest /client and /client/tests keep private CSP and the one global
+        // dock. Opening the public test catalogue is not a signed-in Profile.
+        const bottom=await assertUnifiedBottomNavigation(page,{locale,label,visible:width<760})
+        await expect(bottom.locator('[data-unified-dock-item="profile"]')).toHaveAttribute(
+          'href','/'+(locale==='es'?'en':locale)+'/app/portrait')
         assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), label + ': discovery overflow')
       }
     }
@@ -452,7 +386,7 @@ async function verifyPublicDiscoveryNavigation(page, engine, locales = ['en', 'r
       await assertUnifiedBottomNavigation(page,{locale,label:engine+'/'+locale+'/alchemy/390',active:'services'})
     }
   await resizePublicViewport(page, originalViewport)
-  pass(engine + ': public client and client/tests discovery retain seven-slot navigation with My Profile active on free tests, keyboard order, responsive bounds and private headers in ' + locales.join('/'))
+  pass(engine + ': public client and client/tests discovery retain a single seven-slot dock and protected Profile link, keyboard order, responsive bounds and private headers in ' + locales.join('/'))
 }
 
 try {
@@ -555,40 +489,28 @@ try {
       await page.setViewportSize({ width, height: 900 })
       assert.equal((await go(page, `/${locale}/library`)).status(), 200)
       const expected = getSiteNavigation(locale)
-      for (const selector of ['.site-navigation', '.mobile-bottom-navigation']) {
-        const nav = page.locator(selector)
-        if (selector === '.site-navigation') {
-          await verifyDirectNavigation(nav, { locale, surface: 'library', expected, label: locale + '/library/' + width })
-          const current = nav.locator('.site-main-menu-panel a[aria-current="page"]')
-          await expect(current).toHaveCount(1)
-          await expect(current).toHaveAttribute('href', '/' + locale + '/library')
-        } else {
-          // Library remains in the expanded menu; it is not among the seven fixed tabs.
-          const expectedItems = await assertPublicBottomNavigation(nav, { locale, surface: 'library', label: locale + '/library/' + width })
-          assert.deepEqual(await nav.locator('[data-nav-item]').evaluateAll(elements => elements.map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), expectedItems.map(x => ({ id: x.id, href: x.href })))
-          await expect(nav.locator('[data-nav-item]')).toHaveCount(7)
-          await expect(nav.locator('[aria-current="page"]')).toHaveCount(0)
-          // Both the old seven-item footer and the new app dock now open the
-          // same protected profile hub; the public profile builder stays in
-          // its Create sub-tab. Spanish private accounts use the EN fallback.
-          await expect(nav.locator('[data-nav-item="profile"]')).toHaveAttribute(
-            'href', '/' + (locale === 'es' ? 'en' : locale) + '/app/portrait')
-        }
-      }
+      const siteNav=page.locator('.site-navigation')
+      await verifyDirectNavigation(siteNav,{locale,surface:'library',expected,label:locale+'/library/'+width})
+      const current=siteNav.locator('.site-main-menu-panel a[aria-current="page"]')
+      await expect(current).toHaveCount(1)
+      await expect(current).toHaveAttribute('href','/'+locale+'/library')
+      const bottom=await assertUnifiedBottomNavigation(page,{
+        locale,label:locale+'/library/'+width,visible:width<760,
+      })
+      await expect(bottom.locator('[data-unified-dock-item="profile"]')).toHaveAttribute(
+        'href','/'+(locale==='es'?'en':locale)+'/app/portrait')
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), `Overflow: ${locale}/${width}`)
-      const bottom = page.locator('.mobile-bottom-navigation')
-      if (await bottom.isVisible()) {
-        for (const link of await bottom.locator('[data-nav-item]').all()) {
-          const box = await link.boundingBox(); assert.ok(box.width >= 44 && box.height >= 44)
-        }
-        const last = page.locator('.library-note'); await last.scrollIntoViewIfNeeded()
-        const box = await last.boundingBox(), bar = await bottom.boundingBox()
-        assert.ok(box.y + box.height <= bar.y + 2, 'Bottom navigation overlaps final content')
+      if(width<760){
+        const last=page.locator('.library-note')
+        await last.scrollIntoViewIfNeeded()
+        const box=await last.boundingBox(),bar=await bottom.boundingBox()
+        assert.ok(box&&bar&&box.y+box.height<=bar.y+2,
+          'Global seven-slot dock overlaps final Library content: '+locale+'/'+width)
       }
       await page.screenshot({ path: `${evidence}/library-${locale}-${width}.png`, fullPage: true })
     }
   }
-  pass('Desktop Cabinet entry and seven-slot mobile navigation with My Profile EN/RU/ES, active states, 320–1280px, tap targets and bottom spacing')
+  pass('Desktop Cabinet entry and global seven-slot mobile dock with Profile hrefs EN/RU/ES, 320–1280px, tap targets and bottom spacing')
   await verifyPublicHeaderMatrix(page, 'chromium')
   await verifyPublicDiscoveryNavigation(page, 'chromium')
   for (const path of ['/en/books', '/ru/books', '/es/books', '/en/homeopathy', '/ru/homeopathy', '/es/homeopathy', '/en/services', '/ru/services', '/es/services', '/en/about', '/ru/about', '/es/about']) assert.equal((await go(page, path)).status(), 200, path)
@@ -808,7 +730,7 @@ try {
   pass('WebKit 390px: secure original report viewer remains readable with exactly two measurements')
   if(!messengerOnly){
     await go(sp, '/ru/library')
-    await expect(sp.locator('.mobile-bottom-navigation [data-nav-item="home"]')).toBeVisible()
+    await assertUnifiedBottomNavigation(sp,{locale:'ru',label:'webkit/ru/library/390',visible:true})
     assert.ok(await sp.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1))
     await sp.screenshot({ path: `${evidence}/library-ru-webkit.png`, fullPage: true })
     pass('WebKit narrow navigation')
