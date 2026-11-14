@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {
   TELEGRAM_AI_DIAGNOSTIC_V3,V3_LABELS,V3_COPY,V3_BUTTONS,v3StartLocale,
-  v3CanStart,v3ModelKey,v3Context,v3ButtonsFor,v3IsStop,v3Action,v3CanCallModel,v3DailyReplyCount,
+  v3CanStart,v3ModelKey,v3Context,v3ButtonsFor,v3IsStop,v3Action,v3CanCallModel,v3DailyReplyCount,v3WantsGeneralChat,V3_CHAT_COPY,
 } from '../lib/crm/telegram-ai-diagnostic-v3.mjs';
 import {v3Generate,v3ModelMessages} from '../lib/crm/telegram-ai-diagnostic-v3-model.mjs';
 
@@ -175,4 +175,22 @@ test('Consent is explained once; follow-up nudges do not repeat the privacy wall
   assert.ok(service.includes("allowed?copy.nudge:copy.notReady"));
   assert.ok(service.includes("ai_consent_at=now()"));
   assert.ok(service.includes("row&&Number(row.last_update_id)>=updateId"));
+});
+
+test('free Telegram conversation is consent gated and shares Secretary/Coach',()=>{
+ for(const locale of ['ru','en','es']){
+  assert.deepEqual(v3ButtonsFor(locale,'chat_consent'),
+    [[V3_LABELS[locale].chatagree,V3_LABELS[locale].chatlater]]);
+  assert.match(V3_CHAT_COPY[locale].intro,/OpenRouter/);
+  assert.match(V3_CHAT_COPY[locale].intro,/\/stop/);
+ }
+ assert.equal(v3WantsGeneralChat('Привет'),true);
+ assert.equal(v3WantsGeneralChat('Поговорим?'),true);
+ assert.equal(v3WantsGeneralChat('Да, начать'),false);
+ assert.equal(v3WantsGeneralChat('/start hhreview_ru'),false);
+ assert.equal(v3Context({conversationKind:'general',turns:[]}).conversationKind,'general');
+ assert.equal(v3Action({inlineAction:'v3:chatagree'}),'chatagree');
+ assert.match(v3ModelMessages({kind:'chat',locale:'ru',turns:[{role:'user',text:'Привет'}]})[0].content,/Secretary Mind/);
+ assert.match(v3ModelMessages({kind:'chat',locale:'ru',turns:[{role:'user',text:'Хочу разобраться в отношениях'}]})[0].content,/Coach Mind/);
+ assert.match(source('lib/crm/telegram-ai-diagnostic-v3-service.js'),/generalStart/);
 });
