@@ -402,3 +402,18 @@ test('Original wizard option is local-only with approved British device-voice se
  assert.match(loop,/changePhase\('stalled'\)/)
  assert.match(loop,/phaseRef\.current==='stalled'/)
 });
+
+test('spoken My Coach answer retains the useful reflection rather than only the last question',()=>{
+ const loop=source('components/my-coach-speech-loop.jsx')
+ const ui=source('components/my-coach-live-dialogue.jsx')
+ assert.match(loop,/const speakable=coachSpokenText\(reply\)\.text/)
+ assert.match(loop,/new Utterance\(reply\)/)
+ assert.doesNotMatch(loop,/questions\.slice\(\)\.reverse\(\)\.find/)
+ assert.match(ui,/coachSpokenText\(spokenText\)\.text/)
+ assert.doesNotMatch(ui,/const question=spokenText\.match/)
+ assert.match(ui,/Longer replies are abbreviated for speech/)
+ assert.match(ui,/полный текст остаётся на экране/)
+ assert.match(ui,/transcripción completa sigue visible/)
+ assert.match(loop,/cloudAgreed&&cloudAvailable/)
+ assert.match(ui,/consent&&cloudAgreed&&cloudAvailable/)
+})

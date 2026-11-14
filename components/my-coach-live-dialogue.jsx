@@ -10,6 +10,7 @@ import {coachTurnWindow} from '@/lib/coaching/coach-turn-window.mjs'
 import styles from './my-coach-live-dialogue.module.css'
 import MyCoachSpeechLoop from './my-coach-speech-loop'
 import {startCoachingMp3Playback} from '@/lib/personal-coaching/streamed-mp3-playback.mjs'
+import {coachSpokenText} from '@/lib/coaching/coach-spoken-text.mjs'
 import {detectedSpeechLocale,ios27NeedsSpeechRecovery} from '@/lib/personal-coaching/my-coach-dictation.mjs'
 import CoachingAvatar from '@/components/app/coaching-avatar'
 
@@ -92,9 +93,9 @@ const transcriptUi={
   es:{heading:'Diálogo · transcripción',listening:'Escuchando',languageLabel:'Idioma de reconocimiento de voz',autoLanguage:'Auto · dispositivo',hint:'Aquí aparecerán tus palabras. También puedes escribir abajo.',consentShort:'Acepto enviar mi texto a la IA gratuita; el navegador puede procesar mi voz.',details:'Privacidad y procesamiento'},
 }
 const googleChirpCopy={
-  en:{label:'Natural voice · Google Chirp 3 HD',about:'Privacy',disclosure:'Optional. Only the coach’s spoken question is sent to Google Cloud Text-to-Speech for synthesis. Google may process this text. No audio or text is saved by Holistic House. Use text-only for private topics if you prefer.'},
-  ru:{label:'Естественный голос · Google Chirp 3 HD',about:'Приватность',disclosure:'Необязательно. Только озвучиваемый вопрос коуча отправляется в Google Cloud Text-to-Speech. Google обрабатывает этот текст для создания голоса. Holistic House не сохраняет аудио. Для личных тем можно оставить текстовый режим.'},
-  es:{label:'Voz natural · Google Chirp 3 HD',about:'Privacidad',disclosure:'Opcional. Solo la pregunta hablada del coach se envía a Google Cloud Text-to-Speech para generar voz. Holistic House no guarda el audio ni el texto. Puedes seguir solo con texto.'}
+  en:{label:'Natural voice · Google Chirp 3 HD',about:'Privacy',disclosure:'Optional. Up to the first 500 characters of the coach’s reply are sent to Google Cloud Text-to-Speech. Longer replies are abbreviated for speech; the full transcript stays visible. Google may process this text. No audio or text is saved by Holistic House. Use text-only for private topics if you prefer.'},
+  ru:{label:'Естественный голос · Google Chirp 3 HD',about:'Приватность',disclosure:'Необязательно. В Google Cloud Text-to-Speech передаётся до 500 первых символов ответа коуча. Длинный ответ озвучивается сокращённо; полный текст остаётся на экране. Google обрабатывает этот текст для создания голоса. Holistic House не сохраняет аудио. Для личных тем можно оставить текстовый режим.'},
+  es:{label:'Voz natural · Google Chirp 3 HD',about:'Privacidad',disclosure:'Opcional. Se envían a Google Cloud Text-to-Speech hasta los primeros 500 caracteres de la respuesta. La voz abrevia los textos largos; la transcripción completa sigue visible. Holistic House no guarda el audio ni el texto. Puedes seguir solo con texto.'}
 }
 const naturalVoiceCopy={
  en:{label:'Natural voice · Fish Audio (reply may train models)',about:'Privacy',disclosure:'Optional. Only the coach’s reply goes to Fish Audio. The free service may use text to improve models. Turn off for sensitive topics.'},
@@ -253,10 +254,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       const controller=new AbortController()
       replayControllerRef.current=controller
       setReplaying(true)
-      const question=spokenText.match(/[^.!?\n]+[?？]/gu)?.at(-1)?.trim()
+      // The transcript is the truth. Chirp receives the bounded opening excerpt,
+      // not a question selected from the end of an otherwise helpful reply.
       const spoken=cloudProvider==='google_chirp3_hd'?
-        (question&&question.length<=500?question:spokenText.slice(0,500)):
-        spokenText.slice(0,900)
+        coachSpokenText(spokenText).text:spokenText.slice(0,900)
       void fetch('/api/app/my-coach/voice/synthesize',{
         method:'POST',credentials:'same-origin',cache:'no-store',signal:controller.signal,
         headers:{'Content-Type':'application/json'},
