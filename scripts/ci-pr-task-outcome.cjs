@@ -47,8 +47,8 @@ function buildTaskOutcome(input={}){
       status='REROUTED';responsible_role='pr-head-reconciler';
       next_action='REINSPECT_NEW_HEAD_AND_OWNER';next_check_at=plusMinutes(now,5);break;
     case 'PREPARED':
-      status='REROUTED';responsible_role='source-repair-owner';
-      next_action='HANDOFF_EXISTING_SOURCE_OWNER';next_check_at=plusMinutes(now,15);break;
+      status='REROUTED';responsible_role='semantic-repair-queue';
+      next_action='ASSIGN_SEMANTIC_SOURCE_REPAIR_AGENT';next_check_at=plusMinutes(now,15);break;
     case 'REJECTED':
       status='WAITING_INPUT';responsible_role='repository-owner';
       next_action='VERIFY_CLAIM_PERMISSION_AND_LEASE';next_check_at=plusMinutes(now,30);break;
