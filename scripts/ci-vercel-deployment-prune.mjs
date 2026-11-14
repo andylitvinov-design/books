@@ -1,8 +1,9 @@
 // Explicit owner workflow_dispatch cleanup only. Never run this from a cron.
-// Fail closed if any project, production alias or rollback evidence is unclear.
+// Fail closed if any project, current aliases or rollback evidence is unclear.
 const TEAM = 'team_OSf690d0nxRHWVMXCElA8i95';
 const PROJECT = 'prj_4jAwcx6lrKyUKZ3R9vgC5xwwyC0b';
 const BRANCH = 'codex/public-book-library';
+const LIVE_ALIAS = 'holistichouse.vercel.app';
 const ORIGIN = 'https://api.vercel.com';
 const DAY = 86400000;
 const RETAIN_DAYS = 7;
@@ -31,7 +32,7 @@ export function protectedDeploymentIds(recent) {
   return ids;
 }
 
-export function eligibleForDelete(d, {now, liveId, protectedIds}) {
+export function eligibleForDelete(d, {now, liveId, protectedIds, assignedAliases}) {
   if (!d || !validId(d.id) || protectedIds.has(d.id) || d.id === liveId
     || projectId(d) !== PROJECT || d.target !== 'production'
     || !isExpectedSource(d) || !['READY','ERROR','CANCELED'].includes(state(d)))
@@ -39,9 +40,10 @@ export function eligibleForDelete(d, {now, liveId, protectedIds}) {
   const created = stamp(d);
   if (!Number.isSafeInteger(created) || created <= 0 || created > now - RETAIN_DAYS * DAY)
     return false;
-  // Unknown alias and missing metadata are NEVER deletion proof.
-  if (!Array.isArray(d.alias) || d.alias.length || d.isRollbackCandidate === true
-    || d.customEnvironmentId) return false;
+  // The detail.alias field is historical, not proof of a CURRENT assignment.
+  // Fail closed unless the dedicated Vercel aliases endpoint confirms zero active aliases.
+  if (!Array.isArray(assignedAliases) || assignedAliases.length !== 0
+    || d.isRollbackCandidate === true || d.customEnvironmentId) return false;
   return true;
 }
 
@@ -60,6 +62,21 @@ async function request(token, path, method = 'GET') {
   return response.json();
 }
 
+async function verifiedLiveId(token) {
+  const live = await request(token, '/v13/deployments/' + LIVE_ALIAS);
+  if (!validId(live?.id) || live.target !== 'production'
+    || state(live) !== 'READY' || projectId(live) !== PROJECT
+    || !Array.isArray(live.alias) || !live.alias.includes(LIVE_ALIAS))
+    throw Error('PRODUCTION_ALIAS_UNVERIFIED');
+  return live.id;
+}
+
+async function assignedAliases(token, id) {
+  const result = await request(token, '/v2/deployments/' + id + '/aliases');
+  if (!Array.isArray(result?.aliases)) throw Error('CURRENT_ALIASES_UNVERIFIED');
+  return result.aliases;
+}
+
 async function main() {
   const mode = process.argv[2] || 'dry-run';
   if (mode !== 'dry-run' && mode !== 'apply') throw Error('UNKNOWN_CLEANUP_MODE');
@@ -70,12 +87,8 @@ async function main() {
     '/v6/deployments?projectId=' + PROJECT + '&target=production&limit=100');
   if (!Array.isArray(recent?.deployments)) throw Error('DEPLOYMENT_HISTORY_UNAVAILABLE');
   const protectedIds = protectedDeploymentIds(recent.deployments);
-  const live = await request(token, '/v13/deployments/holistichouse.vercel.app');
-  const liveId = live?.id;
-  if (!validId(liveId) || live.target !== 'production'
-    || projectId(live) !== PROJECT || !Array.isArray(live.alias)
-    || !live.alias.includes('holistichouse.vercel.app'))
-    throw Error('PRODUCTION_ALIAS_UNVERIFIED');
+  const liveId = await verifiedLiveId(token);
+  protectedIds.add(liveId);
 
   let until = now - RETAIN_DAYS * DAY;
   let scanned = 0;
@@ -95,13 +108,19 @@ async function main() {
       seen.add(item.id);
       scanned++;
       if (protectedIds.has(item.id) || item.id === liveId) continue;
-      // Re-fetch and verify alias, branch, age, project, state before DELETE.
       const detail = await request(token, '/v13/deployments/' + item.id);
-      if (!eligibleForDelete(detail, {now, liveId, protectedIds})) continue;
+      const aliases = await assignedAliases(token, item.id);
+      if (!eligibleForDelete(detail, {now, liveId, protectedIds, assignedAliases: aliases})) continue;
       eligible++;
+      console.log('HH_VERCEL_PRUNE_CANDIDATE id=' + item.id + ' created=' + stamp(detail));
       if (mode === 'apply') {
+        // Re-check CURRENT LIVE and alias assignment immediately before DELETE.
         // No concurrent deletes or retries after uncertain provider outcomes.
-        await request(token, '/v13/deployments/' + detail.id, 'DELETE');
+        if (await verifiedLiveId(token) !== liveId) throw Error('LIVE_CHANGED_DURING_CLEANUP');
+        const freshAliases = await assignedAliases(token, item.id);
+        if (!eligibleForDelete(detail, {now, liveId, protectedIds, assignedAliases: freshAliases}))
+          throw Error('CANDIDATE_CHANGED_DURING_CLEANUP');
+        await request(token, '/v13/deployments/' + item.id, 'DELETE');
         deleted++;
       }
     }
