@@ -254,21 +254,35 @@ test('owner Messenger preserves one chat with six in-chat entries and locale con
  assert.equal((landing.match(/\{id:"(?:test|video|practice|session|course|ask)"/g)||[]).length,6)
  assert.match(landing,/data-hh-ai-choice=\{item\.id\}/)
  assert.match(landing,/onClick=\{item\.id==="video"\?onCreateVideo:/)
- // The hero is a native MP4 player, starts only after the explicit tap,
- // and keeps audio language, error recovery and close/pause behavior visible.
+ // Hero is a poster-first native MP4. The exact user gesture alone starts
+ // playback; Safari failure recovery must not turn into unrequested autoplay.
  assert.match(landing,/data-hh-ai-intro-play onClick=\{start\}/);
  assert.match(landing,/const start=\(\)=>\{/);
- assert.match(landing,/videoRef\.current\?\.play\(\)/);
+ assert.match(landing,/setNativeStarted\(false\);\s*setFailed\(false\);\s*setPlaying\(true\)/);
+ assert.match(landing,/const media=videoRef\.current;\s*if\(!media\)return;/);
+ assert.match(landing,/if\(media\.error\)media\.load\(\)/);
+ assert.match(landing,/const attempt=media\.play\(\)/);
+ assert.match(landing,/if\(error\?\.name!=="AbortError"\)fail\(\)/);
  assert.match(landing,/<video ref=\{videoRef\} src=\{introduction\.src\} controls playsInline preload="none"/);
- assert.match(landing,/onError=\{\(\)=>setFailed\(true\)\}/);
+ assert.match(landing,/onError=\{fail\} onPlaying=\{\(\)=>\{setNativeStarted\(true\);setFailed\(false\);\}\}/);
  assert.match(landing,/const close=\(\)=>\{/);
  assert.match(landing,/videoRef\.current\?\.pause\(\)/);
+ assert.match(landing,/setPlaying\(false\);\s*setFailed\(false\);\s*setNativeStarted\(false\)/);
  assert.match(landing,/onClick=\{close\}/);
  assert.match(landing,/const retry=\(\)=>\{/);
+ assert.match(landing,/media\.load\(\);\s*const attempt=media\.play\(\)/);
  assert.match(landing,/onClick=\{retry\}/);
- assert.doesNotMatch(landing,/youtube-nocookie|<iframe|autoPlay|autoplay|useEffect\(/);
- assert.equal((landing.match(/setPlaying\(true\)/g)||[]).length,1,'only user-activated start may reveal the native player');
- assert.match(landing,/const start=\(\)=>\{\s*setFailed\(false\);\s*setPlaying\(true\);/);
+ // The fallback must be for the SAME owner's selected language, appear only
+ // after deliberate Play and a proven native playback failure/stall.
+ assert.match(landing,/if\(!playing\|\|failed\|\|nativeStarted\)return/);
+ assert.match(landing,/window\.setTimeout\(\(\)=>\{[\s\S]*?setFailed\(true\);\s*\},8000\)/);
+ assert.match(landing,/\{playing&&failed&&<iframe/);
+ assert.match(landing,/data-hh-ai-intro-fallback="heygen"/);
+ assert.match(landing,/src=\{introduction\.embed\}/);
+ assert.match(landing,/referrerPolicy="strict-origin-when-cross-origin"/);
+ assert.match(landing,/onClick=\{retry\}/);
+ assert.doesNotMatch(landing,/youtube-nocookie|<video[^>]*\sautoPlay\b/i);
+ assert.equal((landing.match(/setPlaying\(true\)/g)||[]).length,1,'only explicit Play may reveal the native media player');
  assert.match(landing,/videoLanguage:"English audio"/);
  assert.match(landing,/videoLanguage:"Русская озвучка"/);
  assert.match(landing,/videoLanguage:"Audio en inglés"/);
