@@ -662,3 +662,11 @@
 .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions button{
  min-width:44px;min-height:44px;padding:8px
 }
+
+/* Only shown inside the conversation after an actual answer. No tracking until tapped. */
+.hiLearningRating{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:7px 0;color:#5d7485;font-size:12px}
+.hiLearningRating button{border:1px solid #cbd8df;border-radius:8px;background:transparent;color:inherit;font:inherit;padding:5px 9px;cursor:pointer}
+.hiLearningRating button{min-height:44px}
+.hiLearningRating button:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+.hiLearningRating button:disabled{opacity:.55;cursor:default}
+.hiLearningRating button:hover:not(:disabled){background:#edf5f7}

@@ -344,6 +344,9 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   const [showVideoSignIn,setShowVideoSignIn]=useState(false);
   const [needsPrivateSignIn,setNeedsPrivateSignIn]=useState(false);
   const [messages,setMessages]=useState<Message[]>([]);
+  const [ratedLearningReply,setRatedLearningReply]=useState<string|null>(null);
+  const [qualityPending,setQualityPending]=useState(false);
+  const [qualityFailure,setQualityFailure]=useState(false);
   // A spoken answer and its displayed message are the SAME canonical AI turn.
   const lastSpeechTurn=useRef<Message|null>(null);
   useEffect(()=>{
@@ -386,6 +389,25 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   const programmaticScrollTop=useRef<number|null>(null);
   const composerFocused=useRef(false);
   const [newBelow,setNewBelow]=useState(false);
+  // An explicit tap is the ONLY consent to anonymous quality statistics.
+  // Conversation text and response text never leave via this feedback call.
+  async function rateLearningReply(signal:"helpful"|"unhelpful"){
+    const latest=messages[messages.length-1];
+    if(latest?.role!=="assistant"||qualityPending||ratedLearningReply===latest.text)return;
+    setQualityPending(true);setQualityFailure(false);
+    try{
+      const channel=window.location.pathname.split("/").includes("services")?"services":"messenger";
+      const response=await fetch("/api/holistic-agent/quality",{
+        method:"POST",credentials:"same-origin",cache:"no-store",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({channel,locale,signal,consent:true}),
+      });
+      const result=await response.json().catch(()=>null);
+      if(response.status!==201||result?.saved!==true)throw Error("LEARNING_FEEDBACK_UNAVAILABLE");
+      setRatedLearningReply(latest.text);
+    }catch{setQualityFailure(true);}
+    finally{setQualityPending(false);}
+  }
   const privateTranscript=usePrivateChatHistory({authenticated,onRestore:entries=>{
     // Explicit restore cancels both pending AI and device speech, and must not
     // auto-read historical replies when the Voice Companion is on.
@@ -1510,6 +1532,22 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       </button>
     </div>}
     {source&&<p className={messengerView?styles.sourceBadge:styles.muted}>{t.source}: {source}</p>}
+    {process.env.NEXT_PUBLIC_HH_LEARNING_OBSERVATORY_ENABLED==="true"&&messages[messages.length-1]?.role==="assistant"&&
+      <div className={styles.hiLearningRating} role="group" aria-label={
+        locale==="ru"?"Добровольная анонимная оценка ответа":
+        locale==="es"?"Valoración anónima y voluntaria":"Voluntary anonymous answer rating"}>
+        <span>{locale==="ru"?"Оценить без передачи текста":
+          locale==="es"?"Valorar sin enviar mensajes":"Rate without sending messages"}</span>
+        {ratedLearningReply===messages[messages.length-1].text?<small>{
+          locale==="ru"?"Спасибо, оценка сохранена":locale==="es"?"Gracias, valoración guardada":"Thanks, rating saved"
+        }</small>:<>
+          <button type="button" disabled={qualityPending} onClick={()=>void rateLearningReply("helpful")}>👍 {locale==="ru"?"Полезно":locale==="es"?"Útil":"Helpful"}</button>
+          <button type="button" disabled={qualityPending} onClick={()=>void rateLearningReply("unhelpful")}>👎 {locale==="ru"?"Не помогло":locale==="es"?"No ayudó":"Not helpful"}</button>
+        </>}
+        {qualityFailure&&<small role="status">{
+          locale==="ru"?"Оценка не сохранена":locale==="es"?"No se guardó la valoración":"Rating not saved"
+        }</small>}
+      </div>}
     {evidenceUsed&&<p className={styles.muted} role="status">{t.evidenceUsed}</p>}
     {historyUsed&&<p className={styles.muted} role="status">{t.historyUsed}</p>}
     {availableSuggestions.length>0&&
