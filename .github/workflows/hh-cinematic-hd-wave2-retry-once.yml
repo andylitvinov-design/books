@@ -1,0 +1,60 @@
+name: HH cinematic HLS seek-zero retry for failed sources - one time
+on:
+  push:
+    branches: [codex/cinematic-hd-footage-wave2-20261105]
+    paths:
+      - '.github/workflows/hh-cinematic-hd-wave2-retry-once.yml'
+permissions:
+  contents: read
+concurrency:
+  group: hh-cinematic-wave2-retry-once
+  cancel-in-progress: false
+jobs:
+  retry-10:
+    if: github.ref == 'refs/heads/codex/cinematic-hd-footage-wave2-20261105'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install free FFmpeg and FFprobe if needed
+        run: |
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends ffmpeg
+          fi
+      - name: Validate source, read-only safety, and retry only ten broken HLS positions
+        env:
+          HH_CINEMATIC_RETRY_ZERO: '1'
+        run: |
+          node --check scripts/review-dareful-cinematic-wave2-20261105.mjs
+          node --test tests/cinematic-hd-footage-wave2-contract.test.mjs
+          node scripts/review-dareful-cinematic-wave2-20261105.mjs
+      - name: Reject incomplete retry reports or any source publication
+        run: |
+          node --input-type=module -e '
+            import {readFileSync} from "node:fs";
+            const r=JSON.parse(readFileSync("artifacts/cinematic-dareful-wave2-retry-20261105/report.json","utf8"));
+            if(r.reviewedSourceCandidates!==10||r.sources.length!==10||
+               r.publicationStatus!=="ALL_UNAPPROVED_REVIEW_ONLY"||
+               r.sources.some(s=>s.readyForPublication!==false||s.editorialApproval!==false))
+              process.exit(1);
+          '
+          git diff --exit-code -- public/ data/video-catalog/scene-taxonomy.json data/video-catalog/free-stock-scenes.json
+      - name: Archive private actual moving HD video and visual contact sheets (never public)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hh-cinematic-hd-wave2-seekzero-retry-20261105
+          path: |
+            artifacts/cinematic-dareful-wave2-retry-20261105/*.mp4
+            artifacts/cinematic-dareful-wave2-retry-20261105/*.jpg
+            artifacts/cinematic-dareful-wave2-retry-20261105/report.json
+            artifacts/cinematic-dareful-wave2-retry-20261105/README.md
+          retention-days: 5
+          compression-level: 6
+          if-no-files-found: warn
