@@ -60,16 +60,10 @@ const copy={
     failed:'La respuesta IA no pasó la validación.',retry:'El servicio IA está temporalmente inaccesible.',goal:'Comienza por tu objetivo.',
   },
 }
-const recordingOptions={
-  en:{title:'Reliable voice recording',label:'Record full answers instead of live browser dictation',
-    consent:'I agree to send each short microphone recording to the existing free-only Groq Whisper transcription service. No recording is saved by Holistic House.',
-    help:'Tap the microphone to record, tap again to transcribe (maximum 18 seconds). If cloud quota is exhausted, typing still works.'},
-  ru:{title:'Надёжная запись речи',label:'Записывать всю фразу вместо распознавания браузера',
-    consent:'Я согласен(на) отправлять каждую короткую аудиозапись в уже подключённый бесплатный Groq Whisper для расшифровки. Holistic House не сохраняет записи.',
-    help:'Нажмите микрофон, скажите фразу и нажмите ещё раз (до 18 секунд). При исчерпании бесплатного лимита можно писать текст.'},
-  es:{title:'Grabación fiable',label:'Grabar respuestas completas en vez del dictado del navegador',
-    consent:'Acepto enviar cada audio corto al servicio gratuito existente Groq Whisper para transcribirlo. Holistic House no guarda grabaciones.',
-    help:'Toca el micrófono para grabar y otra vez para transcribir (máximo 18 segundos). Si se agota la cuota, puedes escribir.'},
+const recordingNotice={
+  en:'Tap the microphone to record (up to 18 seconds); tap again to transcribe. By tapping, you agree to send this short audio to free-only Groq Whisper and its transcript to an eligible free AI coach. We do not store recordings.',
+  ru:'Нажмите микрофон для записи (до 18 секунд) и ещё раз для расшифровки. Нажатием вы соглашаетесь передать короткую запись бесплатному Groq Whisper, а её текст — доступной бесплатной AI-модели коуча. Записи не сохраняются.',
+  es:'Toca el micrófono para grabar (hasta 18 segundos) y otra vez para transcribir. Al tocarlo, aceptas enviar el audio a Groq Whisper gratuito y su texto a una IA gratuita disponible. No guardamos grabaciones.',
 }
 const avatarVisuals={
   mira:'warm',max:'clear',sofia:'calm',alex:'clear',
@@ -134,7 +128,6 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [wizardVoice,setWizardVoice]=useState(false)
   const [speechLocale,setSpeechLocale]=useState('auto')
   const [recordedMode,setRecordedMode]=useState(false)
-  const [recordingConsent,setRecordingConsent]=useState(false)
   const [showCaptions,setShowCaptions]=useState(false)
   const [turns,setTurns]=useState([])
   const [busy,setBusy]=useState(false)
@@ -150,7 +143,6 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [playbackNotice,setPlaybackNotice]=useState('')
   const pending=useRef(null),composerRef=useRef(null),transcriptRef=useRef(null)
   const composerDetailsRef=useRef(null),voiceConsentRef=useRef(null),speechRef=useRef(null)
-  const recordingConsentRef=useRef(null)
   const replayControllerRef=useRef(null),replayPlayerRef=useRef(null)
   const replaySpeechRef=useRef(null),replayTimerRef=useRef(null)
   useEffect(()=>()=>pending.current?.abort(),[])
@@ -366,16 +358,20 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
        !['safety','boundary'].includes(result.mode))replayCoachReply(result.reply)
     return result
   }
-  async function sendMessage(raw){
+  async function sendMessage(raw,{voiceTurn=false}={}){
     const message=String(raw||'').trim()
     const responseLocale=detectedSpeechLocale(message,lang)
-    if(!message||!consent||busy||paused||authRequired||readiness.status==='checking')return
+    // Tapping the mic affirms the inline disclosure. Typed turns keep their
+    // separate checkbox. Never contact a model if consent is absent.
+    if(!message||(!consent&&!voiceTurn)||busy||paused)return
     // Explicit quote requests use only the already-authenticated first-party
     // Wisdom Library. They do not require a free model or contact OpenRouter.
     const wisdomRequested=Boolean(classifyWisdomRequest({
       locale:lang,message,turns:turns.map(({role,content})=>({role,content})),
     }))
-    if(readiness.status!=='verified'&&!wisdomRequested){
+    if(authRequired||(readiness.status!=='verified'&&!wisdomRequested)){
+      // Guests and temporarily unavailable AI still get private local coaching;
+      // microphone recognition must not wait for model readiness.
       // Local-only authored fallback. NEVER send private text to an unverified model.
       // Same editorial persona prompts, same browser-only conversation history.
       const input={locale:responseLocale,message,turns:turns.map(({role,content})=>({role,content}))}
@@ -492,10 +488,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         <div className={styles.voiceCenter} data-voice-active={voiceState.phase!=='idle'?'true':undefined}>
           <span className={styles.voiceWaveLeft} aria-hidden="true"><i/><i/><i/><i/><i/></span>
           <MyCoachSpeechLoop ref={speechRef} locale={lang} speechLocale={speechLocale} initialDraft={draft}
-            recordedMode={recordedMode} recordingConsent={recordingConsent}
-            onRequestRecordingConsent={()=>{recordingConsentRef.current?.scrollIntoView({block:'nearest'});recordingConsentRef.current?.focus()}}
-            cloudAvailable={cloudAvailable} cloudAgreed={cloudAgreed} cloudProvider={cloudProvider} personaId={personaId} wizardVoice={wizardVoice} enabled={consent&&readiness.status!=='checking'&&!authRequired}
-            canStart={!busy&&!paused&&!replaying&&readiness.status!=='checking'&&!authRequired} onTurn={sendMessage}
+            recordedMode={recordedMode}
+            cloudAvailable={cloudAvailable} cloudAgreed={cloudAgreed} cloudProvider={cloudProvider} personaId={personaId} wizardVoice={wizardVoice} enabled={true}
+            canStart={!busy&&!paused&&!replaying} onTurn={text=>sendMessage(text,{voiceTurn:true})}
             onRequestConsent={()=>{if(!voiceConsentRef.current?.open)voiceConsentRef.current?.showModal()}}
             onCancelTurn={()=>pending.current?.abort()} onVoiceStateChange={setVoiceState}
             onTranscript={setSpeechPreview} onDraft={text=>{setDraft(text);setError('')}}/>
@@ -519,17 +514,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           <p>{providerCopy.disclosure}</p></details>
       </div>}
       {playbackNotice&&<p className={styles.playbackNotice} role="status">{playbackNotice}</p>}
-      <details className={styles.recordingModeRow} open={recordedMode&&!recordingConsent}>
-        <summary>{recordingOptions[lang].title}</summary>
-        <label><input type="checkbox" checked={recordedMode} disabled={voiceState.phase!=='idle'}
-          onChange={event=>setRecordedMode(event.target.checked)}/>
-          <span>{recordingOptions[lang].label}</span></label>
-        {recordedMode&&<label><input ref={recordingConsentRef} type="checkbox" checked={recordingConsent}
-          disabled={voiceState.phase!=='idle'}
-          onChange={event=>setRecordingConsent(event.target.checked)}/>
-          <span>{recordingOptions[lang].consent}</span></label>}
-        <small>{recordingOptions[lang].help}</small>
-      </details>
+      {recordedMode&&<p className={styles.recordingModeHint} data-reliable-voice-notice>
+        {recordingNotice[lang]}
+      </p>}
       <div className={styles.conversationPanel}>
       <section className={styles.liveTranscript} aria-label={captions.heading} data-coach-live-transcript>
         <div className={styles.transcriptHeading}><MessageCircle size={15} aria-hidden="true"/>

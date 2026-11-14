@@ -29,23 +29,24 @@ test('approved mobile session flows from larger portrait to real mic and exactly
  assert.match(css,/@media\(max-width:350px\)/)
 })
 
-test('first mic tap obtains user-initiated explicit consent, then starts browser recognition in approval click',()=>{
+test('first microphone tap starts regardless of login/probe and preserves per-tap recording disclosure',()=>{
  const ui=read('components/my-coach-live-dialogue.jsx'),loop=read('components/my-coach-speech-loop.jsx')
- for(const phrase of ['ru:{title:','en:{title:','es:{title:','t.consent','showModal()','function approveVoiceConsent()','setConsent(true)','speechRef.current?.startWithConsent()'])assert.ok(ui.includes(phrase),phrase)
- assert.match(ui,/onRequestConsent=\{\(\)=>/)
+ assert.match(ui,/enabled=\{true\}/)
+ assert.match(ui,/canStart=\{!busy&&!paused&&!replaying\}/)
+ assert.match(ui,/onTurn=\{text=>sendMessage\(text,\{voiceTurn:true\}\)\}/)
+ assert.match(ui,/if\(!message\|\|\(!consent&&!voiceTurn\)\|\|busy\|\|paused\)return/)
+ assert.ok(ui.includes("if(authRequired||(readiness.status!=='verified'&&!wisdomRequested))"),
+   'guests and unavailable AI use private local coaching')
  assert.match(loop,/forwardRef\(function MyCoachSpeechLoop/)
  assert.match(loop,/useImperativeHandle\(ref,\(\)=>\(\{/)
  assert.match(loop,/if\(!enabled\)\{onRequestConsent\?\.\(\);return\}/)
- assert.match(loop,/if\(supported===false\)\{setNotice\(t.unsupported\);return\}/)
+ assert.match(loop,/if\(supported===false\)\{setNotice\(t\.unsupported\);return\}/)
  assert.match(loop,/disabled=\{!active&&!canStart\}/)
  assert.match(loop,/recognition\.start\(\)/)
- assert.match(ui,/if\(!message\|\|!consent\|\|busy\|\|paused\|\|authRequired/)
- assert.doesNotMatch(ui,/localStorage|sessionStorage/)
+ assert.doesNotMatch(ui,/localStorage|sessionStorage|checked=\{recordedMode\}|checked=\{recordingConsent\}/)
  assert.doesNotMatch(loop,/api\.fish\.audio|new WebSocket/)
- assert.match(loop,/recordingConsentRef\.current/,'recording requires consent')
  for(const locale of ['en','ru','es'])assert.ok(loop.includes(locale+':{start:'),locale)
 })
-
 
 test('Safari dictation is displayed only in transcript while speech status never reflows mobile controls',()=>{
  const loop=read('components/my-coach-speech-loop.jsx')
@@ -97,3 +98,21 @@ test('Replay explicitly rescues Safari-blocked coach audio without re-synthesizi
  assert.match(ui,/voiceState\.phase!=='ready'/)
  assert.match(ui,/voiceState\.phase==='ready'\?voiceGate\.tapToHear/)
 })
+
+test('one-tap iPhone reliable recording has no extra checkboxes and never bypasses server consent',()=>{
+ const ui=read('components/my-coach-live-dialogue.jsx')
+ const loop=read('components/my-coach-speech-loop.jsx')
+ const css=read('components/my-coach-live-dialogue.module.css')
+ assert.ok(ui.includes('data-reliable-voice-notice'))
+ for(const text of ['Groq Whisper','Нажатием вы соглашаетесь','Al tocarlo, aceptas'])
+   assert.ok(ui.includes(text),text)
+ assert.doesNotMatch(ui,/checked=\{recordingConsent\}|checked=\{recordedMode\}|onRequestRecordingConsent=/)
+ assert.ok(ui.includes('canStart={!busy&&!paused&&!replaying}'))
+ assert.ok(ui.includes('enabled={true}'))
+ assert.ok(loop.includes('recordingConsentRef.current=false'))
+ assert.ok(loop.includes('if(recordedModeRef.current)recordingConsentRef.current=true'))
+ assert.ok(loop.includes("if(!recordingConsentRef.current||!Recorder||!getUserMedia)"))
+ assert.ok(loop.includes("body.set('consent','yes')"))
+ assert.ok(css.includes('.recordingModeHint'))
+ assert.doesNotMatch(css,/\.recordingModeRow\{/)
+});
