@@ -614,6 +614,40 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(choices.nth(1)).toHaveAttribute("aria-pressed","true");
       await expect(page.locator('[data-video-audio-compact-selected]')).toContainText("2/3");
       await expect(page.locator('[data-video-stage-actions="montage"] [data-video-quick-generate]')).toBeVisible();
+      // Real DOM geometry of the owner-approved Audio first-fold layout.
+      // Two actions share one row, Create is the outlined LEFT choice, Text the
+      // emerald RIGHT choice. A short horizontal music rail must never push
+      // the footer into a second tall section or cause page-wide x-overflow.
+      for(const width of [320,354,390,430]){
+        await page.setViewportSize({width,height:840});
+        const audioLayout=await page.evaluate(()=>{
+          const audio=document.querySelector('[data-video-montage-audio]');
+          const actions=document.querySelector('[data-video-stage-actions="montage"]');
+          const create=actions?.querySelector('[data-video-quick-generate]');
+          const next=actions?.querySelector('[data-video-montage-next="text"]');
+          const tile=audio?.querySelector('[data-video-audio-compact-track]');
+          if(!audio||!actions||!create||!next||!tile)return null;
+          const a=audio.getBoundingClientRect(),f=actions.getBoundingClientRect();
+          const c=create.getBoundingClientRect(),n=next.getBoundingClientRect();
+          const t=tile.getBoundingClientRect();
+          return {span:f.bottom-a.top,tileHeight:t.height,
+            createLeft:c.left,createTop:c.top,createWidth:c.width,
+            nextLeft:n.left,nextTop:n.top,nextWidth:n.width,
+            documentWidth:document.documentElement.scrollWidth,
+            viewportWidth:document.documentElement.clientWidth};
+        });
+        assert.ok(audioLayout&&audioLayout.span<570,
+          'AUDIO_COMPACT_FIRST_FOLD_SPAN_'+width+' '+JSON.stringify(audioLayout));
+        assert.ok(audioLayout.tileHeight<=86&&audioLayout.tileHeight>=70,
+          'AUDIO_COMPACT_TRACK_HEIGHT_'+width+' '+JSON.stringify(audioLayout));
+        assert.ok(audioLayout.createLeft<audioLayout.nextLeft&&
+          Math.abs(audioLayout.createTop-audioLayout.nextTop)<=3&&
+          audioLayout.createWidth>=90&&audioLayout.nextWidth>=90,
+          'AUDIO_TWO_ACTIONS_CREATE_LEFT_TEXT_RIGHT_'+width+' '+JSON.stringify(audioLayout));
+        assert.ok(audioLayout.documentWidth<=audioLayout.viewportWidth+2,
+          'AUDIO_NO_PAGE_OVERFLOW_'+width+' '+JSON.stringify(audioLayout));
+      }
+      await page.setViewportSize({width:390,height:840});
       await page.locator('[data-video-audio-compact-silent]').click();
       await page.locator('[data-video-quick-control="phrases"]').click();
       const phrases=page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]');
