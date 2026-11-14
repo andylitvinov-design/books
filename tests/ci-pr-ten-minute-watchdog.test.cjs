@@ -859,7 +859,7 @@ test('native AutoMerge paginates trusted Core history and preserves exact-head e
       head_branch:pr.head.ref,pull_requests:[{number:42,base:{ref:pr.base.ref}}]
     }};
     const context={repo:{owner:'andylitvinov-design',repo:'books'},
-      eventName:eventRunId===null?'pull_request_target':'workflow_run',payload};
+      eventName:eventRunId===null?'pull_request_review':'workflow_run',payload};
     await preflight(gh,{info:message=>notes.push(message),
       setOutput:(key,value)=>outputs[key]=value},context);
     return {ok:outputs.eligible==='true',calls,notes};
