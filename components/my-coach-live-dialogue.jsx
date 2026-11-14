@@ -15,7 +15,7 @@ const copy={
   en:{
     badge:'Generative AI dialogue · when available',title:'Let’s talk',
     disclosure:'I’m a fictional AI coach, not a therapist. No questionnaires here — just a conversation. You choose the pace and direction.',
-    consent:'I agree to send this conversation text to GroqCloud GPT-OSS (only after the site verifies the free tier and account-level Zero Data Retention), or a verified free OpenRouter fallback. Nothing is sent until I press Send or start voice mode. Browser speech recognition may process my audio. Do not share passwords or document numbers.',
+    consent:'I agree to send this conversation text to GroqCloud GPT-OSS (only after the site verifies the free tier and account-level Zero Data Retention), or a verified free OpenRouter fallback. Nothing is sent until I press Send or start voice mode. Browser speech recognition may send microphone audio to its provider. Do not share passwords or document numbers.',
     field:'Your message',placeholder:'What’s on your mind?…',
     send:'Send',sending:'Thinking…',verifying:'Checking the free model before sending any personal text…',verified:'Free privacy-checked AI is ready.',user:'You',coach:'AI coach',ai:'Model response',wisdom:'Wisdom Library',offline:'Offline coaching question',crisis:'Safety pause',
     plan:'Possible next step — your choice',evidence:'Based on your words',back:'Back to coach',guided:'Use the guided session instead',
@@ -30,7 +30,7 @@ const copy={
   ru:{
     badge:'Генеративный AI-диалог · при доступности модели',title:'Давай поговорим',
     disclosure:'Я AI-персонаж, не психотерапевт. Здесь нет анкеты — просто разговор в вашем темпе, а направление выбираете вы.',
-    consent:'Я согласен(на) отправлять текст этого разговора в GroqCloud GPT-OSS (только после проверки бесплатного тарифа и Zero Data Retention для аккаунта) либо в проверенную бесплатную модель OpenRouter. До нажатия «Отправить» или начала голосового режима ничего не передаётся. Браузер может обрабатывать мой голос. Не вводите пароли и номера документов.',
+    consent:'Я согласен(на) отправлять текст этого разговора в GroqCloud GPT-OSS (только после проверки бесплатного тарифа и Zero Data Retention для аккаунта) либо в проверенную бесплатную модель OpenRouter. До нажатия «Отправить» или начала голосового режима ничего не передаётся. Браузер может отправлять звук поставщику распознавания речи. Не вводите пароли и номера документов.',
     field:'Ваше сообщение',placeholder:'Что сейчас у вас на уме?…',
     send:'Отправить',sending:'Думаю…',verifying:'Проверяем бесплатную модель без передачи ваших сообщений…',verified:'Бесплатная AI-модель проверена и готова.',user:'Вы',coach:'AI-коуч',ai:'Ответ модели',wisdom:'Библиотека мудрости',offline:'Офлайн-вопрос коуча',crisis:'Пауза для безопасности',
     plan:'Возможный следующий шаг — решаете вы',evidence:'Основание — ваши слова',back:'Назад к коучу',guided:'Пройти пошаговую программу',
