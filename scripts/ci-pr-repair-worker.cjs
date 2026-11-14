@@ -15,7 +15,7 @@ const MAX_CANDIDATES = 4;
 const MAX_READS = 36;
 const RATE_RESERVE = 100;
 const {pickQueueCandidates,priorityFor} = require('./ci-pr-priority.cjs');
-const {safeSourcePath: safeFreeSourcePath}=require('./ci-pr-repair-free-agent.cjs');
+const {safeSourcePath: safeFreeSourcePath,assessCompleteFreeRepairScope}=require('./ci-pr-repair-free-agent.cjs');
 const {taskFor,commentBody,readCompleteIssueComments,externalOwnerLeaseStatus,parseRecords,trustedControlComment,reservationStatus}=require('./ci-pr-task-state.cjs');
 const {stageLine}=require('./ci-pr-stage-receipts.cjs');
 const {buildTaskOutcome}=require('./ci-pr-task-outcome.cjs');
@@ -63,20 +63,40 @@ function legacyPrepEligible(pr,fullRepo){
 // A manual label may be retired ONLY for an old worker-generated manual
 // outcome, a NEW source HEAD with an actual signed Core failure, clean base,
 // a no-sensitive-files allowlist and no independent release gate.
-function trustedLegacySourceRetry(pr,comments,files){
+function trustedLegacySourceRetry(pr,comments,changedFiles){
  const sha=pr?.head?.sha;
  if(!SHA.test(sha||'')||!legacyPrepEligible(pr,REPO)||
-  pr.mergeable!==true||!['clean','blocked','behind'].includes(pr.mergeable_state)||
-  pr.labels?.some(l=>['hh:release-gate-review','hh:specialist-repair-needed',
-    CONFLICT].includes(l.name))||
-  !pr.labels?.some(l=>l.name===SOURCE)||
-  !Array.isArray(files)||!files.length||files.length>MAX_FILES||
-  !files.every(safeFreeSourcePath)||
-  !hasVerifiedSourceHandoff(comments,sha)||!verifiedCoreCodeFailure(comments,sha))
-  return false;
- return comments.some(c=>trustedControlComment(c)&&
-  parseRecords([c])?.some(r=>r.state==='MANUAL'&&
-   SHA.test(r.head_sha||'')&&r.head_sha!==sha));
+   pr.mergeable!==true||!['clean','blocked','behind'].includes(pr.mergeable_state)||
+   pr.labels?.some(l=>['hh:release-gate-review','hh:specialist-repair-needed',
+     CONFLICT].includes(l.name))||
+   !pr.labels?.some(l=>l.name===SOURCE)||
+   !hasVerifiedSourceHandoff(comments,sha)||
+   !verifiedCoreCodeFailure(comments,sha))return false;
+ // Check the COMPLETE PR diff, not the first eight filtered code paths.
+ // A single hidden protected or sensitive file prohibits automatic promotion.
+ const scope=assessCompleteFreeRepairScope(changedFiles);
+ if(!scope.allowed||!scope.files.every(safeFreeSourcePath))return false;
+ // A manual marker is never implicitly waived. Only a signed worker-issued
+ // MANUAL outcome may authorize one subsequent, now-configured model attempt.
+ // On the SAME HEAD, only a documented no-model/no-source outcome qualifies.
+ const records=parseRecords((comments||[]).filter(trustedControlComment));
+ if(!records)return false;
+ const sameHeadWithoutModel=r=>r.head_sha===sha&&
+   ((r.reason_code==='FREE_AI_EXECUTOR_NOT_CONFIGURED'&&r.code_job_result==='skipped')||
+    (r.outcome==='NO_VERIFIED_SOURCE_CHANGE'&&r.code_job_result===undefined));
+ if(!records.some(r=>r.pr_number===pr.number&&r.state==='MANUAL'&&
+   SHA.test(r.head_sha||'')&&(r.head_sha!==sha||sameHeadWithoutModel(r))))
+   return false;
+ // Never retry a model on a failed/uncertain same-HEAD attempt. In particular,
+ // a claim or green read-only PREPARED outcome is not a completed model call.
+ return !records.some(r=>r.pr_number===pr.number&&r.head_sha===sha&&(
+   ['PUBLISHED','VERIFY_REQUIRED','FAILED'].includes(r.state)||
+   (r.state==='MANUAL'&&!sameHeadWithoutModel(r))||
+   r.source_published===true||
+   r.model_run?.model_call_started_at||
+   (typeof r.code_job_result==='string'&&
+     !['skipped','unknown'].includes(r.code_job_result))||
+   ['proposed','ready'].includes(r.code_candidate_status)));
 }
 function activeSweepLease(comments,sha,now){
  // The trusted Dispatcher and Repair must see the same exact-HEAD owner.
@@ -164,7 +184,7 @@ function prioritizedRepairCandidates(source,conflicts,now,max=MAX_CANDIDATES){
   return [...first,...manual];
 }
 
-async function claim({github,core,context,number=0,expectedSha='',taskKey='',reservationRunId='',dryRun=false,hasToken=false,now=Date.now()}) {
+async function claim({github,core,context,number=0,expectedSha='',taskKey='',reservationRunId='',dryRun=false,hasToken=false,hasOpenRouter=false,now=Date.now()}) {
   const {owner,repo} = context.repo, fullRepo = owner + '/' + repo;
   const log = message => core.info('HH_REPAIR: ' + message);
   const skip = reason => { log('SKIP ' + reason); return {status:'skipped',reason}; };
@@ -277,10 +297,10 @@ async function claim({github,core,context,number=0,expectedSha='',taskKey='',res
       log('SKIP_SOURCE_WITHOUT_VERIFIED_FAILED_CORE_BUILD #' + pr.number);
       continue;
     }
-    let files = [];
+    let files = [], changedFiles = [];
     if (!conflict) {
-      const response = (await limited('changed-files',()=>github.rest.pulls.listFiles({owner,repo,pull_number:pr.number,per_page:100,page:1}))).data;
-      files = safeFiles(response);
+      changedFiles = (await limited('changed-files',()=>github.rest.pulls.listFiles({owner,repo,pull_number:pr.number,per_page:100,page:1}))).data;
+      files = safeFiles(changedFiles);
       if (!files || (files.length === 0 && !legacy)) continue;
     }
     if (remaining !== null && remaining < RATE_RESERVE) return skip('GITHUB_API_RESERVE');
@@ -288,7 +308,9 @@ async function claim({github,core,context,number=0,expectedSha='',taskKey='',res
       log('WOULD_CLAIM #' + pr.number + ' owner=' + pr.user.login + ' SHA=' + pr.head.sha);
       return {status:'dry_run',number:pr.number,sha:pr.head.sha,files};
     }
-    const safeRetry=legacy&&hasToken&&trustedLegacySourceRetry(pr,comments,files);
+    const safeRetry=legacy&&hasToken&&hasOpenRouter&&
+      trustedLegacySourceRetry(pr,comments,changedFiles);
+    if(safeRetry)files=assessCompleteFreeRepairScope(changedFiles).files;
     const strategy=legacy?(safeRetry?'code':'legacy'):
       !conflict&&verifiedCoreCodeFailure(comments,pr.head.sha)?'code':'lint';
     if(!legacy&&!hasToken)return skip('HH_AUTOMERGE_TOKEN_MISSING');
@@ -337,6 +359,7 @@ async function claim({github,core,context,number=0,expectedSha='',taskKey='',res
       owner_run_id:String(context.runId||'unknown'),run_url:workerRunUrl,
       executor_run_id:String(context.runId||'unknown'),
       worker_started:true,source_published:false,
+      promoted_from_legacy:safeRetry,
       outcome:'CLAIM_ONLY_NO_SOURCE_WRITE'}):'';
     const claimStage=Number.isSafeInteger(context.runId)&&receipt?.task_key?
       stageLine({stage:'claimed',pr_number:pr.number,head_sha:pr.head.sha,
@@ -467,7 +490,7 @@ async function publish({github,core,context,prNumber,expectedSha,candidate,write
   if(legacy){
     // Original signed exact-run legacy authorization stays mandatory.
     const receipts=parseRecords((comments||[]).filter(trustedControlComment));
-    if(!writerLeaseFree||!trustedLegacySourceRetry(pr,comments,allowed)||
+    if(!writerLeaseFree||!trustedLegacySourceRetry(pr,comments,files)||
        !receipts?.some(r=>r.lane==='legacy'&&r.state==='CLAIMED'&&
         r.head_sha===expectedSha&&r.owner_run_id===String(context.runId))||
        candidate.files.some(f=>!safeFreeSourcePath(f.path)))
@@ -614,7 +637,7 @@ function sourceDeliveryStatus({state,sourcePublished,codeAvailable}) {
       next_action:'VERIFY_EXACT_HEAD_REQUIRED_CI'};
   if(state==='PREPARED')
     return {delivery_status:'READ_ONLY_PREFLIGHT_NO_SOURCE',
-      next_action:'HANDOFF_EXISTING_SOURCE_OWNER'};
+      next_action:'ASSIGN_SEMANTIC_SOURCE_REPAIR_AGENT'};
   if(state==='SUPERSEDED')
     return {delivery_status:'SUPERSEDED_NO_SOURCE',
       next_action:'REINSPECT_NEW_HEAD_AND_OWNER'};
@@ -906,9 +929,14 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
    verification_result:codeVerifyStatus==='ready'&&codeVerifyResult==='success'?'PASSED':
     codeVerifyStatus==='manual_required'?'REJECTED':codeVerifyStatus||'NOT_RUN',
    published_commit_sha:sourcePublished?newSha:null}:null;
+  const claimedLegacy=comments.some(c=>trustedControlComment(c)&&
+    parseRecords([c])?.some(r=>r.lane==='legacy'&&r.state==='CLAIMED'&&
+      r.task_key===taskKey&&r.pr_number===number&&r.head_sha===expectedSha&&
+      r.owner_run_id===runId));
   const result={schema:'HH_PR_TASK_V1',task_key:taskKey,pr_number:number,
     ...delivery,verified_source_fix:state==='PUBLISHED'&&sourcePublished===true,
-    head_sha:expectedSha,lane:strategy==='legacy'?'legacy':'repair',
+    head_sha:expectedSha,lane:claimedLegacy||strategy==='legacy'?'legacy':'repair',
+    promoted_from_legacy:claimedLegacy&&strategy==='code',
     state,reason_code:reason,strategy,
     source_published:sourcePublished,new_sha:newSha,failed_step:failedStep,
     detail_code:detailCode,
@@ -941,12 +969,14 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
 
   // A failed Worker forms a secondary strategy/task in this SAME signed
   // finalizer receipt. It cannot rerun an unchanged HEAD or authorize a write.
-  if(['FAILED','MANUAL','REJECTED','VERIFY_REQUIRED'].includes(state)&&
+  if((['FAILED','MANUAL','REJECTED','VERIFY_REQUIRED'].includes(state)||
+      (state==='PREPARED'&&strategy==='legacy'&&sameHead&&claimStatus==='claimed'))&&
      Number.isSafeInteger(context.runId)&&context.runId>0){
     try{
       result.follow_up_task=makeWorkerFollowUp({
         pr_number:number,head_sha:expectedSha,task_key:taskKey,
-        owner_run_id:runId,state,reason_code:reason,
+        owner_run_id:runId,state:state==='PREPARED'?'MANUAL':state,
+        reason_code:state==='PREPARED'?'LEGACY_SEMANTIC_REVIEW_REQUIRED':reason,
         detail_code:/^[A-Z0-9_]{3,120}$/.test(detailCode||'')?detailCode:null,
         now:Date.parse(result.created_at)});
     }catch(error){
@@ -1015,4 +1045,4 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
   return result;
 }
 
-module.exports={claim,publish,finalize,sourceDeliveryStatus,finalizeFailedFix,prioritizedRepairCandidates,currentRepairHead,eligible,legacyPrepEligible,trustedLegacySourceRetry,validBranch,safeFiles,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,verifiedCoreCodeFailure,claimedRepairMissingSourceProof,parseLegacySnapshotSummary,normalizeModelAudit,PROD,SOURCE,CONFLICT,MARKER};
+module.exports={claim,publish,finalize,sourceDeliveryStatus,finalizeFailedFix,prioritizedRepairCandidates,currentRepairHead,eligible,legacyPrepEligible,trustedLegacySourceRetry,validBranch,safeFiles,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,verifiedCoreCodeFailure,claimedRepairMissingSourceProof,parseLegacySnapshotSummary,normalizeModelAudit,trustedLegacySourceRetry,PROD,SOURCE,CONFLICT,MARKER};

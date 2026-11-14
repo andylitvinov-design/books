@@ -113,7 +113,8 @@ jobs:
               expectedSha:String(context.payload.inputs?.expected_sha || ''),
               taskKey:String(context.payload.inputs?.task_key || ''),
               reservationRunId:String(context.payload.inputs?.reservation_run_id || ''),dryRun,
-              hasToken:process.env.HH_HAS_OWNER_TOKEN==='true'});
+              hasToken:process.env.HH_HAS_OWNER_TOKEN==='true',
+              hasOpenRouter:process.env.HH_HAS_OPENROUTER_FREE_TOKEN==='true'});
             core.setOutput('claim_status',result.status);
             // One signed REST comparison, only after a real legacy claim.
             // Read-only provenance; cannot authorize a source patch or merge.

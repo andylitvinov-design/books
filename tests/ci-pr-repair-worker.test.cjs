@@ -1,7 +1,7 @@
 'use strict';
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-const {eligible,safeFiles,claim,publish,finalize,finalizeFailedFix,prioritizedRepairCandidates,currentRepairHead,validBranch,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,verifiedCoreCodeFailure,MARKER}=require('../scripts/ci-pr-repair-worker.cjs');
+const {eligible,safeFiles,claim,publish,finalize,finalizeFailedFix,prioritizedRepairCandidates,currentRepairHead,validBranch,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,verifiedCoreCodeFailure,trustedLegacySourceRetry,MARKER}=require('../scripts/ci-pr-repair-worker.cjs');
 const {taskFor,commentBody,reservation,reservationStatus,externalOwnerLeaseStatus}=require('../scripts/ci-pr-task-state.cjs');
 const {stageLine,parseComment,timelineStages}=require('../scripts/ci-pr-stage-receipts.cjs');
 const {buildTaskOutcome,validateTaskOutcome}=require('../scripts/ci-pr-task-outcome.cjs');
@@ -1186,7 +1186,7 @@ test('repair delivery statuses never infer source publication from green read-on
  const {sourceDeliveryStatus}=require('../scripts/ci-pr-repair-worker.cjs');
  const prepared=sourceDeliveryStatus({state:'PREPARED',sourcePublished:false,codeAvailable:false});
  assert.deepEqual(prepared,{delivery_status:'READ_ONLY_PREFLIGHT_NO_SOURCE',
-   next_action:'HANDOFF_EXISTING_SOURCE_OWNER'});
+   next_action:'ASSIGN_SEMANTIC_SOURCE_REPAIR_AGENT'});
  assert.equal(sourceDeliveryStatus({state:'MANUAL',sourcePublished:false,
    codeAvailable:false}).delivery_status,'NO_FREE_CODE_EXECUTOR_NO_SOURCE');
  assert.equal(sourceDeliveryStatus({state:'SUPERSEDED',sourcePublished:false})
@@ -1209,7 +1209,7 @@ test('read-only legacy finalization remains PREPARED and emits no-source deliver
  assert.equal(result.source_published,false);
  assert.equal(result.verified_source_fix,false);
  assert.equal(result.delivery_status,'READ_ONLY_PREFLIGHT_NO_SOURCE');
- assert.equal(result.next_action,'HANDOFF_EXISTING_SOURCE_OWNER');
+ assert.equal(result.next_action,'ASSIGN_SEMANTIC_SOURCE_REPAIR_AGENT');
  assert.equal(f.log.commit,0);
 });
 
@@ -1439,4 +1439,63 @@ test('safe OpenRouter response-shape metadata survives task finalization without
  assert.equal(normalizeModelAudit({...raw,provider:'opencode',
   model:'opencode/glm-5.3-flash-free'},task).response_shape,null,
   'OpenRouter response shape must not be attributed to another provider');
+});
+
+
+// Legacy preflight may become a single protected code attempt only after
+// authenticated Core diagnosis and a worker-issued no-model MANUAL outcome.
+test('legacy routing promotes only a safe complete diff to OpenRouter code repair',async()=>{
+ const legacy=pr({labels:[{name:'hh:repair-manual'},{name:'hh:repair-needed'}]});
+ const trusted={user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+  performed_via_github_app:{id:15368,slug:'github-actions'}};
+ const manual={...trusted,body:commentBody({...taskFor(legacy,{tier:'P1'}),
+  state:'MANUAL',reason_code:'FREE_AI_EXECUTOR_NOT_CONFIGURED',
+  code_job_result:'skipped'})};
+ const proof={...trusted,body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+
+  ' -->\nFailed jobs: core-lint-types-build.\n'};
+ const comments=[manual,proof];
+ const files=[{filename:'lib/a.ts',status:'modified'}];
+ assert.equal(trustedLegacySourceRetry(legacy,comments,files),true);
+ const f=fixture({pr:legacy,comments});core.outputs={};
+ const ok=await claim({github:f.github,core,
+  context:{...context,eventName:'schedule'},hasToken:true,hasOpenRouter:true,number:11});
+ assert.equal(ok.status,'claimed');
+ assert.equal(ok.strategy,'code');
+ assert.equal(core.outputs.strategy,'code');
+ assert.match(f.log.commentBodies.at(-1),/"promoted_from_legacy":true/);
+ const unavailable=fixture({pr:legacy,comments});
+ const noKey=await claim({github:unavailable.github,core,
+  context:{...context,eventName:'schedule'},hasToken:true,hasOpenRouter:false,number:11});
+ assert.equal(noKey.strategy,'legacy','no key means read-only rather than paid fallback');
+ const scenarios=[
+  {name:'foreign manual author',comments:[{...manual,user:{login:'outsider'}},proof],files},
+  {name:'sensitive hidden ninth file',comments,files:[...files,
+   {filename:'app/api/secret.ts',status:'modified'}]},
+  {name:'oversized diff',comments,files:[...files,...Array.from({length:99},
+   (_,i)=>({filename:'docs/test'+i+'.md',status:'added'}))]},
+  {name:'model already tried on same head',comments:[...comments,{...trusted,
+   body:commentBody({...taskFor(legacy,{tier:'P1'}),state:'FAILED',
+    code_job_result:'failure',reason_code:'FREE_AI_OPENROUTER_REQUEST_REJECTED'})}],files},
+  {name:'only Specialist failed',comments:[manual,{...proof,
+   body:proof.body.replace('core-lint-types-build','hh-specialist')}],files},
+ ];
+ for(const item of scenarios)
+  assert.equal(trustedLegacySourceRetry(legacy,item.comments,item.files),false,item.name);
+ assert.equal(trustedLegacySourceRetry({...legacy,mergeable:false,mergeable_state:'dirty'},comments,files),false);
+ assert.equal(trustedLegacySourceRetry({...legacy,labels:[...legacy.labels,{name:'hh:hold'}]},comments,files),false);
+});
+
+test('legacy diagnostic sends an honest, non-executed semantic handoff',async()=>{
+ const f=fixture();
+ const result=await finalize({github:f.github,core:outcomeCore,context:outcomeContext,
+  number:11,expectedSha:sha,taskKey:receiptKey,claimStatus:'claimed',
+  claimResult:'success',strategy:'legacy',fixResult:'success',
+  candidateStatus:'prepared',candidateDetail:'GIT_TREE_CONFLICT',publishResult:'skipped'});
+ assert.equal(result.state,'PREPARED');
+ assert.equal(result.source_published,false);
+ assert.equal(result.follow_up_task?.category,'MERGE_CONFLICT');
+ assert.equal(result.follow_up_task?.responsible_role,'semantic-conflict-resolver');
+ assert.equal(result.follow_up_task?.assignment_status,'OWNER_REVIEW_REQUIRED');
+ assert.equal(result.follow_up_task?.source_write_authorized,false);
+ assert.equal(result.follow_up_task?.delivery_status,'CREATED_NOT_EXECUTED');
 });

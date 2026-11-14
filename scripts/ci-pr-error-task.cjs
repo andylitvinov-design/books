@@ -126,6 +126,7 @@ function makeWorkerFollowUp({pr_number,head_sha,task_key,owner_run_id,
      !CODE.test(reason_code||'')||(detail_code!==null&&!CODE.test(detail_code))||
      !Number.isFinite(now)||now<=0)throw Error('UNVERIFIED_WORKER_ERROR_TASK');
   const publisherFailure=reason_code==='SOURCE_PUBLISH_JOB_FAILURE';
+  const legacySemantic=reason_code==='LEGACY_SEMANTIC_REVIEW_REQUIRED';
   // Verified source-publication errors take precedence over an older
   // deterministic candidate detail such as VERIFIED_SOURCE_PATCH.
   const cause=publisherFailure?reason_code:(detail_code||reason_code);
@@ -144,6 +145,7 @@ function makeWorkerFollowUp({pr_number,head_sha,task_key,owner_run_id,
     'FREE_AI_TYPECHECK_LINE_NOT_IN_SOURCE'
   ]).has(cause);
   const cat=publisherFailure?'AUTOMATION_PROCESS':
+    legacySemantic?(detail_code==='GIT_TREE_CONFLICT'?'MERGE_CONFLICT':'SOURCE_CODE'):
     unsafeSourceScope?'SOURCE_CODE':
     reproductionMissing?'TEST_FAILURE':
     /^(?:FREE_AI_|CODEX_)/.test(cause)||/^FREE_AI_/.test(reason_code)?'AI_EXECUTOR':
@@ -151,7 +153,10 @@ function makeWorkerFollowUp({pr_number,head_sha,task_key,owner_run_id,
     'MERGE_CONFLICT':
     /^(?:CLAIM_|NO_CLAIM_|DISPATCH_|RESERVATION_|FINALIZER_)/.test(cause)?
     'AUTOMATION_PROCESS':'UNKNOWN';
-  const st=publisherFailure?
+  const st=legacySemantic?
+    {code:cat==='MERGE_CONFLICT'?'SEMANTIC_CONFLICT_TRIAGE':'SEMANTIC_SOURCE_REPAIR_HANDOFF',
+      action:cat==='MERGE_CONFLICT'?'ASSIGN_SEMANTIC_CONFLICT_OWNER':'ASSIGN_SEMANTIC_SOURCE_REPAIR_AGENT',minutes:30}:
+    publisherFailure?
     {code:'PUBLISHER_DIAGNOSTIC_HOLD',
       action:'CHECK_PUBLISH_TOKEN_QUOTA_PERMISSIONS_AND_EXACT_HEAD',minutes:15}:
     unsafeSourceScope?
@@ -166,7 +171,9 @@ function makeWorkerFollowUp({pr_number,head_sha,task_key,owner_run_id,
     pr_number,head_sha:head_sha.toLowerCase(),parent_task_key:task_key,
     owner_run_id:String(owner_run_id),category:cat,ruleset_version:rules.version,
     reason_code:cause,strategy_code:st.code,
-    responsible_role:unsafeSourceScope?'source-repair-owner':
+    responsible_role:legacySemantic?(cat==='MERGE_CONFLICT'?
+      'semantic-conflict-resolver':'semantic-source-repair-agent'):
+      unsafeSourceScope?'source-repair-owner':
       reproductionMissing?'ci-diagnostic-triage':rules.categories[cat].responsible_role,
     executor_id:OWNER_EXECUTOR,executor_kind:'owner_review',
     assignment_status:'OWNER_REVIEW_REQUIRED',
