@@ -7,6 +7,8 @@ const client = readFileSync('components/my-coach-human-specialist.tsx','utf8')
 const css = readFileSync('components/my-coach-human-specialist.module.css','utf8')
 const catalog = readFileSync('components/my-coach-catalog.jsx','utf8')
 const catalogCss = readFileSync('components/my-coach-catalog.module.css','utf8')
+const browser = readFileSync('scripts/verify-my-coach-human-specialist-browser.mjs','utf8')
+const existingBrowser = readFileSync('scripts/verify-coaching-lounge-mobile.mjs','utf8')
 
 test('My Coach real-person card links to the dedicated published human specialist view in all locales',()=>{
   assert.match(catalog,/data-my-coach-human-dialogue-link/)
@@ -49,7 +51,7 @@ test('The question composer uses the existing verified private messaging route; 
   assert.match(client,/\/api\/app\/direct-messages/)
   assert.match(client,/headers:\{'content-type':'application\/json','x-hh-account-id':accountId\}/)
   assert.match(client,/action:'start',slug/)
-  assert.match(client,/action:'send',threadId:id,operationId:operation\.current\.id,text/)
+  assert.match(client,/action:'send',threadId:id,operationId:committedId,text/)
   assert.match(client,/result\.saved!==true/)
   assert.match(client,/safeMessages\(detail\.messages\)/)
   assert.match(client,/role="status"/)
@@ -67,4 +69,42 @@ test('The consultation CTA routes to an existing published service or a practiti
   assert.match(page,/getPublicServiceDetailHref\(locale,slug,service\.slug\)/)
   assert.match(page,/practitioner-services/)
   assert.match(css,/\.book\{[^}]*min-height:58px/)
+})
+
+test('Public specialist recordings survive unavailable optional private app configuration',()=>{
+  assert.match(page,/let config: ReturnType<typeof getAppConfig> \| null = null/)
+  assert.match(page,/try \{ config = getAppConfig\(\) \} catch/)
+  assert.match(page,/config \? createPractitionerRepository\(config\).getPublicPractitioner\(slug,locale\) : Promise.resolve\(null\)/)
+  assert.match(page,/profile\?\.videoPresentation && config/)
+  assert.match(page,/getPublishedSiteVideos\(\)/)
+})
+
+test('Remote YouTube thumbnail failure recovers the original local practitioner image',()=>{
+  assert.match(client,/function VideoArtwork\(/)
+  assert.match(client,/onError=\{\(\)=>setCurrent\(previous=>previous!==fallback&&fallback\?fallback:''\)\}/)
+  assert.match(client,/fallback=\{photo\}/)
+  assert.match(client,/loading="eager"/)
+  assert.match(css,/\.changeCompact\{display:none\}/)
+  assert.match(css,/\.changeFull\{display:none\}/)
+  assert.match(client,/chooseShort:'Другой специалист'/)
+})
+
+test('Only acknowledged CRM messages appear immediately; failed history refresh never erases them',()=>{
+  assert.match(client,/if\(result.saved!==true\)throw new Error\('MESSAGE_NOT_SAVED'\)/)
+  assert.match(client,/id:committedId,mine:true,text,createdAt:new Date\(\).toISOString\(\),committed:true/)
+  assert.match(client,/const confirmed = previous.filter\(message=>message.committed===true&&!ids.has\(message.id\)\)/)
+  assert.match(client,/const remote = safeMessages\(result.messages\)/)
+})
+
+test('Existing manual Coaching browser gate exercises real specialist mobile interactions safely',()=>{
+  assert.match(existingBrowser,/await verifyHumanSpecialistMobile\(\)/)
+  assert.match(browser,/runMobileBrowserCases\(/)
+  assert.match(browser,/browserType:webkit/)
+  assert.match(browser,/browserType:chromium/)
+  assert.match(browser,/data-human-video-stage/)
+  assert.match(browser,/data-human-video-reel/)
+  assert.match(browser,/page.route\('\*\*\/api\/app\/direct-messages\*'/)
+  assert.match(browser,/assert.equal\(posted,0/)
+  assert.match(browser,/no document overflow/)
+  assert.match(browser,/artifacts\/coaching-mobile\/human-specialist/)
 })

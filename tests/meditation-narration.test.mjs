@@ -72,5 +72,10 @@ test("website writer has a real action, not pretend MP3 export or external AI ca
   assert.match(file,/data-meditation-method/);
   assert.match(file,/data-meditation-length/);
   assert.match(file,/data-meditation-download/);
-  assert.ok(!/\bfetch\s*\(|localStorage|sessionStorage|openai\.com|api\/generate/.test(file));
+  assert.deepEqual([...file.matchAll(/\bfetch\s*\(\s*"([^"]+)"/g)].map(match=>match[1]),
+    ["/api/holistic-support/meditation-writer/brief"],
+    "the only optional writer call must stay inside the first-party API");
+  assert.match(file,/if\(!safetyResponse&&generationMode==="ai"\)/);
+  assert.match(file,/generationMode==="ai"&&\(!imageryConsent\|\|!externalAiConsent\)/);
+  assert.ok(!/localStorage|sessionStorage|openai\.com|api\/generate/.test(file));
 });

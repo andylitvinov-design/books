@@ -17,7 +17,7 @@ export type SpecialistVideo = {
   poster: string
   durationSeconds: number | null
 }
-type Message = {id:string;mine:boolean;text:string;createdAt:string}
+type Message = {id:string;mine:boolean;text:string;createdAt:string;committed?:boolean}
 type Thread = {threadId:string;accountId:string;messages:Message[];requiresMessengerVerification?:boolean;legacyReadOnly?:boolean}
 type Props = {
   locale: Locale
@@ -33,7 +33,7 @@ type Props = {
 }
 const textByLocale = {
   en: {
-    choose:'Choose another specialist', badge:'REAL SPECIALIST · VIDEOS',
+    choose:'Choose another specialist', chooseShort:'Change specialist', badge:'REAL SPECIALIST · VIDEOS',
     recorded:'Recorded introduction · not a live video call', noVideo:'No published videos yet',
     more:'More videos by this specialist', noMore:'More videos will appear after publication.',
     ask:'Ask the specialist', empty:'Ask a question below. Only actual messages with this practitioner will appear here.',
@@ -51,7 +51,7 @@ const textByLocale = {
     master:'Specialist profile', overview:'Watch original videos'
   },
   ru: {
-    choose:'Выбрать другого специалиста',badge:'ЖИВОЙ СПЕЦИАЛИСТ · ВИДЕО',
+    choose:'Выбрать другого специалиста',chooseShort:'Другой специалист',badge:'ЖИВОЙ СПЕЦИАЛИСТ · ВИДЕО',
     recorded:'Записи специалиста · это не прямой видеозвонок',noVideo:'Опубликованных видео пока нет',
     more:'Другие видео специалиста',noMore:'Новые видео появятся после публикации.',
     ask:'Задать вопрос специалисту',empty:'Напишите вопрос ниже. Здесь будут только настоящие сообщения из переписки со специалистом.',
@@ -69,7 +69,7 @@ const textByLocale = {
     master:'Профиль специалиста',overview:'Оригинальные видеоматериалы'
   },
   es: {
-    choose:'Elegir otro profesional',badge:'PROFESIONAL REAL · VÍDEOS',
+    choose:'Elegir otro profesional',chooseShort:'Otro profesional',badge:'PROFESIONAL REAL · VÍDEOS',
     recorded:'Vídeos grabados · no es una videollamada en directo',noVideo:'Aún no hay vídeos publicados',
     more:'Más vídeos del profesional',noMore:'Habrá más vídeos después de su publicación.',
     ask:'Pregunta al profesional',empty:'Escribe tu pregunta. Aquí solo aparecen los mensajes reales de tu conversación.',
@@ -97,6 +97,17 @@ function safeMessages(value:unknown): Message[] {
   return value.filter((v):v is Message => Boolean(v && typeof v==='object'
     && typeof v.id==='string' && typeof v.mine==='boolean'
     && typeof v.text==='string' && typeof v.createdAt==='string')).slice(-30)
+}
+/** A blocked third-party YouTube poster must not hide a published practitioner's
+ * own profile photo, and failure of that local photo falls back to the frame. */
+function VideoArtwork({src,fallback,className,loading='lazy'}:{
+  src:string;fallback:string;className?:string;loading?:'lazy'|'eager'
+}) {
+  const [current,setCurrent] = useState(src || fallback)
+  useEffect(()=>setCurrent(src || fallback),[src,fallback])
+  if(!current)return null
+  return <img src={current} loading={loading} className={className} alt="" aria-hidden="true"
+    onError={()=>setCurrent(previous=>previous!==fallback&&fallback?fallback:'')} />
 }
 export default function HumanSpecialistDialogue({locale,slug,name,role,photo,videos,bookingHref,isOwner,canMessage}:Props) {
   const t = textByLocale[locale]
@@ -158,7 +169,14 @@ export default function HumanSpecialistDialogue({locale,slug,name,role,photo,vid
       {credentials:'same-origin',cache:'no-store'})
     const result = (await response.json().catch(()=>({}))) as Partial<Thread>
     if(!response.ok || result.accountId!==ownerId || result.threadId!==id) throw new Error('INBOX_UNAVAILABLE')
-    setMessages(safeMessages(result.messages))
+    const remote = safeMessages(result.messages)
+    // Keep only server-acknowledged messages until they appear in the
+    // fetched history; pending/unconfirmed messages are never invented.
+    setMessages(previous => {
+      const ids = new Set(remote.map(message=>message.id))
+      const confirmed = previous.filter(message=>message.committed===true&&!ids.has(message.id))
+      return [...remote,...confirmed].slice(-30)
+    })
     setMode(result.requiresMessengerVerification||result.legacyReadOnly?'verify':'ready')
   }
   async function post(body:Record<string,unknown>) {
@@ -188,8 +206,13 @@ export default function HumanSpecialistDialogue({locale,slug,name,role,photo,vid
         setThreadId(id)
       }
       if(operation.current?.text!==text)operation.current={text,id:crypto.randomUUID()}
-      const result = await post({action:'send',threadId:id,operationId:operation.current.id,text})
+      const committedId = operation.current.id
+      const result = await post({action:'send',threadId:id,operationId:committedId,text})
       if(result.saved!==true)throw new Error('MESSAGE_NOT_SAVED')
+      // The real server has acknowledged this exact idempotency key. Display
+      // the committed turn immediately, even if the subsequent GET is delayed.
+      setMessages(previous=>previous.some(message=>message.id===committedId)?previous:
+        [...previous,{id:committedId,mine:true,text,createdAt:new Date().toISOString(),committed:true}].slice(-30))
       operation.current=null
       setDraft('')
       setNotice(t.sent)
@@ -225,7 +248,9 @@ export default function HumanSpecialistDialogue({locale,slug,name,role,photo,vid
           <span>Holistic House</span>
         </Link>
         <Link href={'/'+locale+'/my-coach#all-coaches'} className={styles.change}>
-          <ArrowLeft size={19} aria-hidden="true"/>{t.choose}
+          <ArrowLeft size={19} aria-hidden="true"/>
+          <span className={styles.changeFull}>{t.choose}</span>
+          <span className={styles.changeCompact}>{t.chooseShort}</span>
         </Link>
       </header>
 
@@ -241,8 +266,8 @@ export default function HumanSpecialistDialogue({locale,slug,name,role,photo,vid
             : <button type="button" className={styles.stagePoster}
                 onClick={()=>{if(activeVideo)setPlaying(true)}} disabled={!activeVideo}
                 aria-label={activeVideo?locale==='ru'?'Воспроизвести '+activeVideo.title:locale==='es'?'Reproducir '+activeVideo.title:'Play '+activeVideo.title:t.noVideo}>
-                {(activeVideo?.poster||photo) && <img className={styles.stageImage}
-                  src={activeVideo?.poster||photo} alt="" aria-hidden="true"/>}
+                {(activeVideo?.poster||photo) && <VideoArtwork key={activeVideo?.id||'empty'}
+                  src={activeVideo?.poster||''} fallback={photo} className={styles.stageImage} loading="eager"/>}
                 <span className={styles.videoShade}/>
                 <span className={styles.videoIdentity}>
                   <span className={styles.videoBadge}>{t.badge}</span>
@@ -261,7 +286,7 @@ export default function HumanSpecialistDialogue({locale,slug,name,role,photo,vid
               aria-pressed={selected===index} onClick={()=>{setSelected(index);setPlaying(false)}}
               data-human-video-thumb={video.id}>
               <span className={styles.thumbFrame}>
-                {(video.poster||photo)&&<img loading="lazy" src={video.poster||photo} alt="" aria-hidden="true"/>}
+                {(video.poster||photo)&&<VideoArtwork src={video.poster} fallback={photo}/>}
                 <span className={styles.thumbPlay} aria-hidden="true">▶</span>
                 {duration(video.durationSeconds)&&<small className={styles.duration}>{duration(video.durationSeconds)}</small>}
               </span>

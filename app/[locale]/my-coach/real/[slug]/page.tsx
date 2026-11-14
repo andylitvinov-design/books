@@ -70,9 +70,13 @@ export default async function HumanSpecialistPage({params}: PageProps) {
   if (!languages.includes(rawLocale as Locale) || !/^[a-z0-9][a-z0-9-]{1,79}$/.test(slug)) notFound()
   const locale = rawLocale as Locale
   const isOwner = slug === 'andy-litvinov'
-  const config = getAppConfig()
+  // Public education must remain available when optional private CRM/app
+  // configuration is missing. Never turn an offline private service into a
+  // 500 for the specialist's publicly published recordings.
+  let config: ReturnType<typeof getAppConfig> | null = null
+  try { config = getAppConfig() } catch { /* Private app not configured here. */ }
   const [profileResult, videosResult] = await Promise.allSettled([
-    createPractitionerRepository(config).getPublicPractitioner(slug,locale),
+    config ? createPractitionerRepository(config).getPublicPractitioner(slug,locale) : Promise.resolve(null),
     getPublishedSiteVideos(),
   ])
   const practitioner: PublicPractitioner | null = profileResult.status === 'fulfilled'
@@ -88,7 +92,7 @@ export default async function HumanSpecialistPage({params}: PageProps) {
   const bio = profile?.shortBio || profile?.fullBio || (isOwner ? owner.bio : '')
   const photo = profile?.photoPath || (isOwner ? '/images/holistic-house/andy-about.png' : '')
   const sourceVideos: RawVideo[] = []
-  if (profile?.videoPresentation) {
+  if (profile?.videoPresentation && config) {
     try {
       const url = publicPresentationUrl(profile.videoPresentation,config.supabaseUrl)
       if (url) sourceVideos.push({title:locale==='ru'?'Знакомство со специалистом':locale==='es'?'Presentación del profesional':'Meet your specialist',

@@ -263,6 +263,8 @@ test('Wave fallback preserves short-turn context, handles model identity and sta
   const incoming=(text,history=[],locale='ru')=>waveTelegramLocalReply({
     locale,turns:[...history,{role:'user',text}]});
   assert.match(incoming('Поговорим?'),/поболта|пообща|разговар/i);
+  assert.match(incoming("Let's chat",[],'en'),/chat/i);
+  assert.match(incoming('Hablemos',[],'es'),/conversar/);
   assert.match(incoming('О Qwen'),/Wave/);
   assert.match(incoming('О Qwen'),/Qwen/);
   assert.match(incoming('What is your name?',[],'en'),/Wave/);
