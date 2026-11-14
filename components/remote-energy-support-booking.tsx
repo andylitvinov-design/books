@@ -394,6 +394,29 @@ export function RemoteEnergySupportBooking({
       setDuration(budgetOptions[0].duration);
     }
   }, [selectedServiceId, budgetOptions, duration]);
+
+  // Assist Reiki passes only a preferred slot and moderated duration, not a booking.
+  // Always revalidate the current published master and price; no implied payment.
+  useEffect(() => {
+    if (mode !== "standalone" || !preferredPractitioner) return;
+    const params = new URLSearchParams(window.location.search);
+    const requestedDuration = Number(params.get("duration"));
+    const published = masters.find(master => master.slug === preferredPractitioner);
+    if (![10, 20, 30].includes(requestedDuration) || !published?.priceOptions.some(option =>
+      option.duration === requestedDuration && Number.isFinite(option.price) && option.price > 0)) return;
+    setDuration(requestedDuration);
+    const requestedDay = params.get("date") || "";
+    const requestedTime = params.get("time") || "";
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(requestedDay) ||
+        !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(requestedTime)) return;
+    const stamp = new Date(requestedDay + "T" + requestedTime + ":00").getTime();
+    if (Number.isFinite(stamp) && stamp > Date.now() + 5 * 60 * 1000 &&
+        stamp <= Date.now() + 90 * 24 * 60 * 60 * 1000) {
+      setDay(requestedDay);
+      setTime(requestedTime);
+    }
+  }, [masters, mode, preferredPractitioner]);
+
   useEffect(() => {
     if (methods.length && !methods.includes(method)) setMethod(methods[0]);
   }, [methods, method]);

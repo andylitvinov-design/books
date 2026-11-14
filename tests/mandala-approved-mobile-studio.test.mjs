@@ -86,8 +86,8 @@ test("shared widescreen preview and mutually exclusive format accordion keep pai
   assert.match(source,/freeVideoSelected = practiceType==="video" && practiceLevels\.video==="basic"/);
   const direct=source.slice(source.indexOf("data-video-quick-generate"),
     source.indexOf("</button>",source.indexOf("data-video-quick-generate")));
-  const addEffects=source.slice(source.indexOf('data-video-montage-next={montagePanel==="effects"?"audio":montagePanel==="audio"?"text":montagePanel==="text"?"promo":montagePanel==="promo"||montagePanel==="settings"?"concept":"hypno"}'),
-    source.indexOf("</button>",source.indexOf('data-video-montage-next={montagePanel==="effects"?"audio":montagePanel==="audio"?"text":montagePanel==="text"?"promo":montagePanel==="promo"||montagePanel==="settings"?"concept":"hypno"}')));
+  const addEffects=source.slice(source.indexOf('data-video-montage-next={montagePanel==="effects"?"audio":montagePanel==="audio"?"text":montagePanel==="text"||montagePanel==="settings"?"concept":montagePanel==="concept"?"promo":"choose"}'),
+    source.indexOf("</button>",source.indexOf('data-video-montage-next={montagePanel==="effects"?"audio":montagePanel==="audio"?"text":montagePanel==="text"||montagePanel==="settings"?"concept":montagePanel==="concept"?"promo":"choose"}')));
   assert.ok(direct.includes('onClick={createQuickVideo}'),"Create must use the original real renderer");
   assert.ok(addEffects.includes('onClick={continueMontageOrGenerate}'),"Add must only advance");
   assert.match(source,/if\(montagePanel==="audio"\)\{[\s\S]*?setMontagePanel\("text"\)/,
@@ -289,7 +289,13 @@ test("approved compact iPhone hierarchy has one working hero Play, safe extras a
   const proTiers=read("components/mandala-pro-enhance.tsx");
   assert.match(proTiers,/data-video-pro-tiers/);
   assert.match(proTiers,/data-video-pro-standard-editor/);
-  assert.match(proTiers,/data-video-pro-choose-character/);
+  const inlineGreeting=read("components/mandala-free-greeting.tsx");
+  assert.match(source,/activeWorkspace==="pro"\?<MandalaFreeGreeting/);
+  assert.match(inlineGreeting,/data-greeting-choices=\{mode\}/);
+  assert.match(inlineGreeting,/data-greeting-mode="greeting"/);
+  assert.match(inlineGreeting,/data-greeting-mode="support"/);
+  assert.match(inlineGreeting,/onClick=\{\(\)=>onSelect\(entry\.id\)\}/);
+  assert.doesNotMatch(proTiers,/data-video-pro-choose-character|data-video-pro-character-catalog/);
   assert.match(source,/openQuickDetailed\("video-settings"\)/);
   assert.match(source,/openQuickDetailed\("video-audio"\)/);
   assert.match(css,/\.quickBrandBar\{display:none\}/);

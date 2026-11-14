@@ -184,7 +184,7 @@ const cases=[
  [
   "Мне одиноко",
   "ru",
-  "relationship"
+  "complaint_loneliness"
  ],
  [
   "Не хватает уверенности",
@@ -283,7 +283,7 @@ const cases=[
  [
   "I am lonely",
   "en",
-  "relationship",
+  "complaint_loneliness",
   "en"
  ],
  [
@@ -434,7 +434,11 @@ test("dictionary v2 covers 50+ meaningful intents and RU/EN/ES free-form utteran
    const reply=ask(message,locale,history||[]);
    assert.equal(reply?.id,expected,message);
    assert.equal(reply.locale,language||locale,message+" locale");
-   assert.equal(reply.source,"reviewed-rules",message);
+   assert.equal(reply.source,expected==="conversation_disclosure"?"conversation-intelligence":expected.startsWith("complaint_")?"complaint-mind":"reviewed-rules",message);
+   if(expected==="conversation_disclosure"){
+     assert.match(reply.reply,language==="en"?/thank you|heard/i:/спасибо|выслуш/i,message);
+     assert.doesNotMatch(reply.reply,/диагноз|записал|booked|diagnos/i,message);
+   }
    assert.ok(reply.reply.length>=20&&reply.reply.length<500,message+" quality");
    assert.ok(!reply.reply.includes(message)&&reply.reply.length<500 || reply.reply.length>=20,
      "never echo a long private utterance");
@@ -697,11 +701,11 @@ const extendedV3Cases=[
     "Как удалить переписку?"
   ],
   [
-    "chat_bug",
+    "complaint_technical",
     "Чат не отвечает"
   ],
   [
-    "chat_keyboard",
+    "complaint_technical",
     "Клавиатура закрывает поле ввода"
   ],
   [
@@ -885,7 +889,7 @@ test("v3 has 117 reviewed intents; new vocabulary follows the user's actual subj
   const reply=ask(text,language);
   assert.equal(reply?.id,intent,text);
   assert.equal(reply.locale,language,text+" language");
-  assert.equal(reply.source,"reviewed-rules");
+  assert.equal(reply.source,intent.startsWith("complaint_")?"complaint-mind":"reviewed-rules");
   assert.ok(reply.reply.length>=20&&reply.reply.length<500,text+" quality");
  }
 });

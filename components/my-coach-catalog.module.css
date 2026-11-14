@@ -321,3 +321,44 @@
 .cardPortrait[data-persona=iris],.avatarLarge[data-persona=iris]{background-image:url('/images/holistic-house/my-coach-motion/iris-still.webp')}
 .cardPortrait[data-persona=ray],.avatarLarge[data-persona=ray]{background-image:url('/images/holistic-house/my-coach-motion/ray-still.webp')}
 }
+
+/* Human practitioners share the AI card design without impersonating AI personas. */
+.coachKindSwitch{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;max-width:500px;
+  padding:5px;margin:0 0 16px;background:#eef3ed;border:1px solid #dce5da;border-radius:999px}
+.coachKind,.coachKindActive{display:flex;align-items:center;justify-content:center;gap:8px;min-width:0;min-height:44px;
+  border-radius:999px;border:1px solid transparent;background:transparent;color:#345f50;
+  font:750 14px/1.15 system-ui;cursor:pointer;transition:background .15s ease}
+.coachKindActive{background:linear-gradient(135deg,#29a17f,#087255);color:#fff;
+  box-shadow:0 3px 12px #0d765323}
+.coachKind svg,.coachKindActive svg{flex-shrink:0}
+.discover[hidden],.humanDirectory[hidden]{display:none!important}
+.humanDirectory{min-width:0}
+.humanDirectory[data-my-coach-combined="true"]{border-top:1px solid #e9dfd1;margin-top:21px;padding-top:18px}
+.humanSectionHeading{color:#145b49;font:750 clamp(19px,2.4vw,23px)/1.2 system-ui;margin:0 0 13px}
+.humanContact{grid-column:1/-1;width:100%;min-width:0;max-width:700px;margin-top:-4px}
+.humanContact[hidden]{display:none!important}
+.humanContact :global([data-messenger-only-contact] > div > strong){display:none}
+.humanContact :global([data-compact-messenger="true"] > div){border-color:#cfe6d9}
+
+.humanDirectory .cardGrid{grid-template-columns:minmax(0,700px)}
+.humanPortrait{overflow:hidden;border-radius:17px;min-width:0;min-height:152px;
+  background:#dce9dd}
+.humanPortrait img{display:block;width:100%;height:100%;object-fit:cover;object-position:center 23%}
+.humanProfile{grid-column:1/-1;padding:13px 16px;background:#f2f7f1;border:1px solid #dfe8df;
+  border-radius:14px;color:#395b50;font:500 14px/1.55 system-ui}
+.humanProfile p{margin:0}
+.humanProfile p+p{margin-top:9px}
+.humanNote{color:#5c7168;font:500 12px/1.45 system-ui;margin:14px 2px 10px}
+.humanMore{display:inline-flex;align-items:center;gap:6px;padding:8px 2px;
+  color:#1d7157;font:700 13px system-ui;text-decoration:none}
+.humanDirectory .cardButton{min-height:42px;padding:10px 13px}
+@media(max-width:540px){
+ .coachKindSwitch{max-width:none;margin:0 0 12px;padding:4px}
+ .coachKind,.coachKindActive{font-size:clamp(11px,3.1vw,13px);min-height:44px;gap:5px;padding:0 4px}
+ .coachKind svg,.coachKindActive svg{width:15px;height:15px}
+ .humanPortrait{min-height:131px;border-radius:13px}
+ .humanProfile{padding:11px;font-size:13px}
+ .humanDirectory .cardButton{min-height:40px;font-size:11px}
+}
+@media(max-width:345px){.coachKind,.coachKindActive{font-size:10px;gap:3px}.coachKind svg,.coachKindActive svg{width:13px;height:13px}}
+@media(prefers-reduced-motion:reduce){.coachKind,.coachKindActive{transition:none}}

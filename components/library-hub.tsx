@@ -16,6 +16,7 @@ import { academyDisplayTitle, mediaForRecord, preferredAcademyRecords, youtubeId
 import { VideoDiscovery } from "@/components/video-discovery";
 import { buildPublishedVideoIndex } from "@/lib/video-discovery/catalog.mjs";
 import { classifyMyTubeFormat } from "@/lib/video-discovery/mytube-duration.mjs";
+import { originalPsiMasterPracticeMetadata } from "@/lib/video-discovery/mytube-practice-collections.mjs";
 import { rankPublicMyTubeVideo } from "@/lib/mandala/mytube-video-tagging.mjs";
 import { listMyTubeCategories } from "@/lib/mandala/mytube-content-taxonomy.mjs";
 
@@ -392,6 +393,10 @@ export function buildPublicVideoDiscoveryItems(
         sourceGroup:"site-introduction",
       }];
     }));
+  // Publicly registered owner presentations already appear on the Services
+  // and other landing pages. Their verified YouTube IDs, not vague titles or
+  // arbitrary owner uploads, identify the existing Masters shelf.
+  const approvedSiteMasterIds=new Set(siteIntroductions.map(video=>video.youtubeId));
   // Russian numbered teaching series are playable on EN/ES MyTube too.
   const seriesItems:LibraryFeedItem[]=greekVideoSeries("ru")
     .flatMap(series=>series.lessons.map(lesson=>({
@@ -438,7 +443,7 @@ export function buildPublicVideoDiscoveryItems(
     sourceApproved:true,sourceLabel:"PsiMaster · архив",
     sourceGroup:"psimaster-original-meditations",
     contentType:video.id==="ZYGjw0PtvdM"?"energy_boost_practice":"soft_meditation",
-    topicTags:["energy","practices"],
+    topicTags:originalPsiMasterPracticeMetadata(video.id).topicTags,
   }));
   // One canonical public index, de-duplicated by YouTube ID. Unknown, private,
   // draft and unapproved clips never gain publication rights from this merge.
@@ -450,7 +455,14 @@ export function buildPublicVideoDiscoveryItems(
     ...approvedMeditations,
     ...feedItems.filter(item=>item.kind==="video"&&item.sourceGroup!=="site-introduction"),
   ]).map(video=>({...video,mytubeFormat:classifyMyTubeFormat(video),
-    ...rankPublicMyTubeVideo(video,{locale})}));
+    ...rankPublicMyTubeVideo(video,{locale}),
+    // Mark AFTER YouTube-ID deduplication: a merged duplicate must retain its
+    // existing source approval, and must never move a course/meditation here.
+    ...(approvedSiteMasterIds.has(video.youtubeId)&&video.sourceApproved===true&&
+      !video.seriesId&&!Number.isInteger(video.seriesOrder)&&
+      !Number.isInteger(video.mytubeLessonOrder)
+      ?{mytubeSection:"masters" as const,author:"Andy"}:{}),
+  }));
 }
 
 export function LibraryHub({ locale, view = "latest", publishedVideos = [], articles = [], approvedMeditations = [] }: {

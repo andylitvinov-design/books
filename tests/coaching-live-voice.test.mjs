@@ -166,21 +166,21 @@ test('My Coach persona dialogue speaks and listens on exactly the consented sess
   assert.match(ui,/Local-only authored fallback/)
   assert.match(ui,/coachingBrainSafety\(input\)\|\|coachingBrainBoundary\(input\)/)
   assert.match(ui,/if\(mode==='safety'\|\|\(mode==='boundary'/)
-  assert.match(ui,/coachStagePrompt\(personaId,stage,lang,settings\)/)
+  assert.match(ui,/coachStagePrompt\(personaId,stage,responseLocale,settings\)/)
   const sendFunction=ui.slice(ui.indexOf('async function sendMessage(raw){'))
   assert.ok(sendFunction.indexOf("if(readiness.status!=='verified'){") < sendFunction.indexOf("fetch('/api/app/my-coach/turn'"), 'offline turn never reaches external provider')
   assert.match(ui,/Browser speech recognition may send microphone audio/)
   assert.match(ui,/Браузер может отправлять звук поставщику распознавания речи/)
   for(const phrase of ['window.SpeechRecognition||window.webkitSpeechRecognition',
-    'recognition.interimResults=true','recognition.lang=langs[lang]',
-    'void deliver(finished)','turnRef.current?.(text)','window.SpeechSynthesisUtterance',
+    'recognition.interimResults=true','recognition.lang=chooseDictationLanguage',
+    'void deliver(appendSpokenAnswer(draftAtStartRef.current,finished,1200))','turnRef.current?.(text)','window.SpeechSynthesisUtterance',
     'activeRef.current=false','document.visibilityState===\'hidden\'',
     'recognition.abort()','onCancelTurn','aria-pressed={active}'])
     assert.ok(loop.includes(phrase),phrase)
   assert.match(conf,/const publicMyCoachVoiceSources = \["\/en\/coaching\/sessions", "\/ru\/coaching\/sessions", "\/es\/coaching\/sessions"\]/)
   assert.match(conf,/\.\.\.publicMyCoachVoiceSources\.map/)
   assert.match(conf,/microphone=\(self\)/)
-  assert.doesNotMatch(loop,/\/api\/app\/coaching\/voice\/synthesize|api\.fish\.audio|Fish Audio|fetch\(/)
+  assert.doesNotMatch(loop,/\/api\/app\/coaching\/voice\/synthesize|api\.fish\.audio|HH_COACHING_FISH_API_KEY|reference_id/)
   assert.match(css,/\.button\[aria-pressed="true"\]/)
   const ts=(await import('typescript')).default
   for(const file of ['components/my-coach-live-dialogue.jsx','components/my-coach-speech-loop.jsx','next.config.ts']){
@@ -214,4 +214,80 @@ test('selected persona opens immersive My Coach session with real avatar, stages
   assert.ok(discoveryCss.includes('personaWelcome:has([data-my-coach-immersive-session])'))
   assert.ok(pageCss.includes('fullWidth:has([data-my-coach-immersive-session])'))
   assert.ok(ui.includes("readiness.status==='checking'"))
+})
+
+test('My Coach speech is visible as text while recording and safely remains editable on partial iOS results',()=>{
+  const ui=source('components/my-coach-live-dialogue.jsx')
+  const loop=source('components/my-coach-speech-loop.jsx')
+  const css=source('components/my-coach-live-dialogue.module.css')
+  for(const marker of ['data-coach-live-transcript','role="log" aria-live="polite"','speechPreview&&',
+    'onTranscript={setSpeechPreview}',"onDraft={text=>{setDraft(text);setError('')}}",
+    'className={styles.textComposer} open','captions.consentShort']){
+    assert.ok(ui.includes(marker),marker)
+  }
+  for(const marker of ['heardRef.current=visible','finished=visible',
+    'transcriptRef.current?.(visible)','const recovered=heardRef.current.trim()',
+    'draftRef.current?.(appendSpokenAnswer(draftAtStartRef.current,recovered,1200))','draftRef.current?.(text)','void deliver(appendSpokenAnswer(draftAtStartRef.current,finished,1200))']){
+    assert.ok(loop.includes(marker),marker)
+  }
+  assert.match(css,/\.liveTranscript/)
+  assert.match(css,/\.transcriptFeed\{[^}]*overflow-y:auto/)
+  assert.match(css,/\.textComposer \.composer textarea/)
+  assert.doesNotMatch(loop,/localStorage|sessionStorage|MediaRecorder|sendBeacon/)
+})
+
+test('approved live-session visual hierarchy keeps a real voice pipeline, readable transcript and functional mobile controls',()=>{
+  const ui=source('components/my-coach-live-dialogue.jsx')
+  const css=source('components/my-coach-live-dialogue.module.css')
+  for(const token of ['data-session-visual-v2','className={styles.heroSubtitle}',
+    'showCaptions&&','className={styles.captionsControl}','setShowCaptions(value=>!value)',
+    'className={styles.endControl}','className={styles.liveTranscript}','className={styles.voiceControls}',
+    'className={styles.textComposer} open','<details className={styles.quickGoals}>',
+    'onTurn={sendMessage}','onTranscript={setSpeechPreview}']) assert.ok(ui.includes(token),token)
+  for(const token of ['.heroSubtitle','.transcriptFeed','.sessionBottomNav{display:none}',
+    '.voiceCenter :global([data-my-coach-voice] button)','@media(max-width:350px)',
+    '@media(max-width:699px) and (max-height:680px)']) assert.ok(css.includes(token),token)
+  for(const term of ['Выбрать другого коуча','Elegir otro coach','Toggle subtitles','Завершить сессию','Terminar sesión'])
+    assert.ok(ui.includes(term),term)
+  assert.doesNotMatch(ui,/new MediaRecorder|localStorage\.setItem|sessionStorage\.setItem/)
+})
+
+test('My Coach Fish TTS is only available with opt-in free access and never leaks keys',async()=>{
+  const route=source('app/api/app/my-coach/voice/synthesize/route.js')
+  const speech=source('components/my-coach-speech-loop.jsx')
+  const page=source('components/my-coach-live-dialogue.jsx')
+  const css=source('components/my-coach-live-dialogue.module.css')
+  const {myCoachFishConfig,normalizeMyCoachFishRequest}=await import('../lib/coaching/my-coach-fish-voice.mjs')
+  const env={HH_MY_COACH_FISH_TTS_ENABLED:'true',HH_MY_COACH_FISH_TTS_APPROVED:'true',
+    HH_MY_COACH_FISH_FREE_DATA_ACKNOWLEDGED:'true',HH_COACHING_FISH_API_KEY:'fake-test-key'}
+  assert.equal(myCoachFishConfig(env,Date.parse('2026-11-30T12:00:00Z')).model,'s2.1-pro-free')
+  assert.equal(myCoachFishConfig(env,Date.parse('2026-12-01T00:00:00Z')),null)
+  assert.equal(myCoachFishConfig({...env,HH_MY_COACH_FISH_TTS_ENABLED:'false'},Date.parse('2026-11-30T12:00:00Z')),null)
+  assert.deepEqual(normalizeMyCoachFishRequest({locale:'ru',text:'Привет',voiceConsent:true,
+    cloudVoiceConsent:true,trainingUseConsent:true}),{locale:'ru',text:'Привет'})
+  assert.throws(()=>normalizeMyCoachFishRequest({locale:'en',text:'hello',voiceConsent:true,
+    cloudVoiceConsent:true,trainingUseConsent:false}),/MY_COACH_FISH_TTS_INVALID/)
+  for(const part of ['requireSameOrigin','auth.verified()','consumeRate','signal:request.signal',
+    'PRIVATE_HEADERS','s2.1-pro-free'])assert.ok(route.includes(part),part)
+  for(const part of ['startCoachingMp3Playback','cloudControllerRef.current?.abort()',
+    'cloudPlayerRef.current?.cancel()','cloudAgreed&&cloudAvailable',
+    'cloudVoiceConsent:true,trainingUseConsent:true'])assert.ok(speech.includes(part),part)
+  for(const part of ['checked={cloudAgreed}','naturalVoiceCopy[lang].disclosure',
+    'setCloudAgreed(false)'])assert.ok(page.includes(part),part)
+  assert.ok(page.includes('reply may train models'))
+  assert.ok(page.includes('ответ может использоваться для обучения'))
+  assert.match(css,/\.naturalVoiceRow/)
+  assert.doesNotMatch(speech,/api\.fish\.audio|HH_COACHING_FISH_API_KEY|reference_id/)
+})
+
+test('iOS 27 Safari second-mic recovery does not cut the recognizer and primes after MP3',()=>{
+ const loop=source('components/my-coach-speech-loop.jsx')
+ const helper=source('lib/personal-coaching/my-coach-dictation.mjs')
+ for(const marker of ['ios27NeedsSpeechRecovery(window.navigator)',
+   'if(!ios27)try{recognition.stop()}catch{}',
+   'cue.onend=finishCue','iosCueTimerRef.current=setTimeout',
+   'iosResultTimerRef.current=setTimeout','iosCueSatisfiedRef.current'])
+   assert.ok(loop.includes(marker),marker)
+ assert.ok(helper.includes('export function ios27NeedsSpeechRecovery'), 'WebKit 27 pure UA gate')
+ assert.doesNotMatch(loop,/new MediaRecorder|localStorage|sessionStorage|sendBeacon/)
 })

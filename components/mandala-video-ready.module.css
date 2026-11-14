@@ -228,3 +228,126 @@
   border-color:var(--hh-studio-deep,#006B4B);
   color:#FFFFFF
 }
+
+/* Owner-approved Ready completion: subtle status, real full-size video, two save actions. */
+.root[data-ready-state="complete"]{gap:10px;padding:clamp(10px,2.6vw,16px)}
+.readyStatus{display:flex;align-items:center;gap:9px;min-height:37px;margin:0;
+ padding:7px 10px;border-radius:14px;background:#eaf3e9;color:#16543d;
+ font:750 clamp(12px,3.4vw,15px)/1.2 Arial,Helvetica,sans-serif}
+.readyStatus>svg{flex:none;color:#0d8163}
+.readyStatus strong{flex:1;min-width:0}
+.readyTime{display:inline-flex;align-items:center;gap:5px;flex:none;
+ border:1px solid #dce8dc;border-radius:999px;background:#fffcf8;padding:4px 8px;
+ color:#275b48;font:750 12px/1.2 Arial,Helvetica,sans-serif}
+.root[data-ready-state="complete"] .selectedVideo{width:100%;aspect-ratio:16/9;max-height:none;
+ border-radius:19px;box-shadow:0 3px 11px rgba(22,58,45,.09)}
+.root[data-ready-state="complete"] .selectedVideo[data-aspect="portrait"]{
+ width:min(100%,390px);aspect-ratio:9/16;margin-inline:auto;max-height:70svh}
+.root[data-ready-state="complete"] .selectedVideo[data-aspect="square"]{
+ width:min(100%,520px);aspect-ratio:1/1;margin-inline:auto}
+.root[data-ready-state="complete"] .selectedVideo video{width:100%;height:100%;
+ max-height:none;object-fit:contain}
+.root[data-ready-state="complete"] .actions{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+:global([data-mandala-mode="video"]) .root[data-ready-state="complete"] .actions>button{
+ display:flex;flex-direction:row;align-items:center;justify-content:center;gap:7px;
+ min-height:49px;padding:10px 7px;border:1px solid #cce5d5;border-radius:15px;
+ background:#ebf6ef;color:#125b43;box-shadow:0 2px 6px rgba(36,83,61,.06);
+ font:750 clamp(11px,3.1vw,15px)/1.25 Arial,Helvetica,sans-serif;text-align:center}
+:global([data-mandala-mode="video"]) .root[data-ready-state="complete"] .actions>button[data-ready-telegram]{
+ background:#e9f5fc;color:#086b9e;border-color:#bcdff3}
+.root[data-ready-state="complete"] .actions button svg{flex:none;width:21px;height:21px;
+ color:currentColor}
+.root[data-ready-state="complete"] .nextTitle{font:750 clamp(21px,5.5vw,26px)/1.16 Georgia,serif;
+ margin:6px 0 0;letter-spacing:-.018em}
+.nextLead{margin:-5px 0 1px;color:#63746a;font:500 13px/1.4 Arial,Helvetica,sans-serif}
+.root[data-ready-state="complete"] .journey{grid-template-columns:minmax(0,1fr);gap:9px}
+.root[data-ready-state="complete"] .journey>button{
+ grid-template-columns:clamp(108px,29vw,180px) minmax(0,1fr) 19px;
+ min-height:107px;padding:9px;gap:12px;border-radius:19px;box-shadow:0 2px 8px rgba(53,63,42,.045)}
+.root[data-ready-state="complete"] .journey>button>svg:nth-child(2){display:none}
+.root[data-ready-state="complete"] .journey .thumbnail{height:90px;border-radius:14px}
+.root[data-ready-state="complete"] .journey strong{font-size:clamp(13px,3.8vw,17px);line-height:1.24}
+.root[data-ready-state="complete"] .journey small{font-size:clamp(11px,3.2vw,14px);line-height:1.35}
+.root[data-ready-state="complete"] .journey>button>svg:last-child{color:#137b5c}
+.root[data-ready-state="complete"] [data-ready-generate-new]{margin-top:5px;
+ min-height:54px;font-size:clamp(15px,4vw,18px);border-radius:17px}
+@media(max-width:350px){
+ .root[data-ready-state="complete"] .journey>button{
+ grid-template-columns:98px minmax(0,1fr) 17px;gap:8px;min-height:94px;padding:7px}
+ .root[data-ready-state="complete"] .journey .thumbnail{height:80px}
+ .root[data-ready-state="complete"] .actions{gap:6px}
+ :global([data-mandala-mode="video"]) .root[data-ready-state="complete"] .actions>button{
+ padding:8px 4px;gap:4px;font-size:11px}
+ .root[data-ready-state="complete"] .actions button svg{width:18px;height:18px}
+}
+@media(min-width:760px){
+ .root[data-ready-state="complete"] .journey{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .root[data-ready-state="complete"] .journey>button{grid-template-columns:110px minmax(0,1fr) 18px}
+}
+
+/* One signed-in Save action; nonblocking private upload/error receipt stays
+   beside the approved two buttons, never another full-screen chooser. */
+.saveStatus{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;
+ margin:0;padding:4px 3px;color:#285a49;
+ font:600 clamp(12px,3.15vw,14px)/1.4 Arial,Helvetica,sans-serif}
+.saveStatus span{flex:1 1 100%;overflow-wrap:anywhere}
+.saveStatus a{display:inline-flex;align-items:center;min-height:44px;color:#067a67;
+ font-weight:750;text-decoration:underline;text-underline-offset:3px}
+/* HH_READY_COMPACT_CHOOSE_20261113: pre-render Ready is a short choice step,
+   not a second full-sized video player. Keep the verified result UI untouched.
+   The first Generate button remains in normal flow, clear of the mobile dock. */
+@media(max-width:600px){
+ .root[data-ready-state="choose"]{gap:8px;padding:10px 11px 12px;
+  margin:3px 0 12px;border-radius:20px}
+ .root[data-ready-state="choose"] .selectedVideo{height:64px;aspect-ratio:auto;
+  border-radius:14px}
+ .root[data-ready-state="choose"] .selectedVideo .example img{
+  object-position:center 52%;opacity:.74}
+ .root[data-ready-state="choose"] .selectedVideo .example span{
+  inset:auto 8px 7px;padding:6px 9px;border-radius:9px;
+  font-size:11px;line-height:1.2}
+ .root[data-ready-state="choose"] .title{gap:2px}
+ .root[data-ready-state="choose"] .title h2{
+  font-size:clamp(21px,5.7vw,26px);line-height:1.12}
+ .root[data-ready-state="choose"] .title p{font-size:12px;line-height:1.3}
+ .root[data-ready-state="choose"] .tierList{gap:6px}
+ .root[data-ready-state="choose"] .tierOption{
+  grid-template-columns:18px 61px minmax(0,1fr) auto;
+  min-height:76px;gap:8px;padding:7px 9px;border-radius:15px}
+ .root[data-ready-state="choose"] .tierOption[data-selected="true"]{
+  padding:6px 8px}
+ .root[data-ready-state="choose"] .tierOption>img{
+  height:58px;border-radius:10px}
+ .root[data-ready-state="choose"] .tierCopy{gap:3px}
+ .root[data-ready-state="choose"] .tierCopy strong{
+  font-size:clamp(13px,3.5vw,15px);line-height:1.22}
+ .root[data-ready-state="choose"] .tierCopy small{
+  font-size:clamp(11px,2.9vw,12px);line-height:1.26}
+ .root[data-ready-state="choose"] .tierPrice{padding:5px 7px;font-size:11px}
+ .root[data-ready-state="choose"] .primary{
+  min-height:50px;border-radius:15px;font-size:15px}
+ .root[data-ready-state="choose"] .nextTitle{
+  margin-top:3px;font-size:clamp(18px,4.7vw,22px)}
+ .root[data-ready-state="choose"] .journey{gap:7px}
+ .root[data-ready-state="choose"] .journey>button{min-height:78px;padding:7px}
+ .root[data-ready-state="choose"] .thumbnail{height:62px}
+}
+@media(max-width:350px){
+ .root[data-ready-state="choose"] .selectedVideo{height:54px}
+ .root[data-ready-state="choose"] .tierOption{
+  grid-template-columns:16px 52px minmax(0,1fr) auto;
+  min-height:70px;gap:5px;padding:6px 7px}
+ .root[data-ready-state="choose"] .tierOption[data-selected="true"]{
+  padding:5px 6px}
+ .root[data-ready-state="choose"] .tierOption>img{height:51px}
+ .root[data-ready-state="choose"] .tierPrice{font-size:10px;padding:4px 5px}
+ .root[data-ready-state="choose"] .tierCopy strong{font-size:12px}
+ .root[data-ready-state="choose"] .tierCopy small{font-size:11px}
+}
+@media(max-width:430px) and (max-height:730px){
+ .root[data-ready-state="choose"] .selectedVideo{height:43px}
+ .root[data-ready-state="choose"] .title p{display:none}
+ .root[data-ready-state="choose"] .tierOption{min-height:64px}
+ .root[data-ready-state="choose"] .tierOption>img{height:47px}
+ .root[data-ready-state="choose"] .primary{min-height:46px}
+}

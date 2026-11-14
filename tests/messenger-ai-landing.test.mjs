@@ -110,6 +110,23 @@ test("existing voice recording, upload and consent remain reachable only by user
  assert.match(page,/--hh-messenger-height/);
 });
 
+test("Messenger hides big Voice strip and keeps the settings behind composer plus",()=>{
+ const a=chat.indexOf('data-hh-ai-more');
+ const b=chat.indexOf('</details>:voiceAttachment}',a);
+ assert.ok(a>0&&b>a);
+ const menu=chat.slice(a,b);
+ assert.match(menu,/data-hh-voice-settings/);
+ assert.match(menu,/\{voiceControls\}/);
+ assert.match(menu,/\{voiceAttachment\}/);
+ assert.equal((chat.match(/<VoiceCompanionControls\b/g)||[]).length,1);
+ assert.match(chat,/privacyOnly=\{Boolean\(pageHelp\)\}/);
+ assert.match(chat,/\{compact&&!messengerView&&voiceEnabled&&<details className=\{styles.compactSettings\} data-hh-voice-settings>/);
+ assert.match(chat,/\{!compact&&settings\}/);
+ assert.match(chat,/data-hh-conversation-mic/);
+ assert.match(chatCss,/\.composerMenu \.voiceSettings>summary/);
+ assert.match(chatCss,/max-height:min\(65dvh,520px\);overflow-y:auto/);
+});
+
 test("EN RU ES, phone widths and syntax of edited React sources",()=>{
  for(const lang of ["en","ru","es"])assert.match(landing,new RegExp(lang+":\\{"));
  for(const id of ["test","video","practice","session","course","ask"])
@@ -149,4 +166,19 @@ test("Messenger and Goal Studio alone permit direct HeyGen CDN MP4; other privat
  assert.match(middleware,/directMessageStorageOrigin \+ \(\(messengerIntroductionVideo\|\|studioIntroductionVideo\) \? ' https:\/\/resource2\.heygen\.ai' : ''\)/);
  assert.doesNotMatch(middleware,/messengerIntroductionEmbed/);
  assert.match(middleware,/practitionerDraftPreview \? "frame-src blob:" : "frame-src 'none'"/);
+});
+
+
+test("initial AI Assistant places its single live composer immediately under the welcome question",()=>{
+ assert.ok(chat.includes("const showLandingComposer=compact&&messengerView&&!pageHelp&&!messages.length"));
+ assert.ok(chat.includes("<MessengerAiLanding locale={locale} composer={composer}"));
+ assert.ok(chat.includes("{!showLandingComposer&&composer}"));
+ assert.equal((chat.match(/<form onSubmit=\{submit\} className=\{styles.form\}>/g)||[]).length,1);
+ assert.ok(landing.indexOf("data-hh-ai-landing-question")<landing.indexOf("data-hh-ai-inline-composer"));
+ assert.ok(landing.indexOf("data-hh-ai-inline-composer")<landing.indexOf("data-hh-ai-quick-actions"));
+ assert.ok(chat.includes("messages.length===0?thread.querySelector('[data-hh-ai-inline-composer]'):null"));
+ assert.ok(landing.includes("composer?:ReactNode"));
+ assert.ok(chatCss.includes("data-hh-ai-inline-composer"));
+ assert.ok(landingCss.includes(".inlineComposer{"));
+ assert.ok(chatCss.includes("min-width:44px;min-height:44px"));
 });

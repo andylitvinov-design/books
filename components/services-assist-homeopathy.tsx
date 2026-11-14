@@ -94,7 +94,7 @@ export function ServicesAssistHomeopathy({ locale }: { locale: PublicLocale }) {
       <div className={styles.bookingContent}>
         <h4>{t.consultation}</h4><p className={styles.name}>{t.master}</p>
         <p className={styles.details}>{t.details}</p>
-        <Link href="#consultation" className={styles.cta} prefetch={false}>
+        <Link href={"/" + locale + "/services/psychohomeopathy"} className={styles.cta} prefetch={false}>
           {t.action}<ArrowRight size={17} aria-hidden="true" />
         </Link>
         <small>{t.note}</small>
