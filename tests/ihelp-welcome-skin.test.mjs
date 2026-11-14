@@ -80,6 +80,19 @@ test("iHelp has permissions-only voice settings, never a voice-type dropdown",()
  assert.match(chat,/data-hh-conversation-mic/);
 });
 
+test("iHelp compact fallback speaker never shows a voice-type dropdown",()=>{
+ const avatar=read("../components/app/emotional-avatar.tsx");
+ const chat=read("../components/holistic-agent-chat.tsx");
+ const a=avatar.indexOf("if(iconOnly)return");
+ const b=avatar.indexOf("if(!state.visible)",a);
+ assert.ok(a>0&&b>a);
+ const toolbar=avatar.slice(a,b);
+ assert.match(toolbar,/data-hh-speech-control/);
+ assert.doesNotMatch(toolbar,/<details|voiceDetails|voiceSelector|>Aa</);
+ assert.match(chat,/messengerView&&<EmotionalAvatar[\s\S]*?iconOnly/);
+ assert.match(chat,/privacyOnly=\{Boolean\(pageHelp\)\}/);
+});
+
 test("topic taps fill an unsent draft, never auto-send or read private DOM",()=>{
  assert.match(dialog,/setQuickPrompt\(previous=>/);
  assert.match(read("../components/holistic-agent-chat.tsx"),/onCreateVideo={startContent}/);
