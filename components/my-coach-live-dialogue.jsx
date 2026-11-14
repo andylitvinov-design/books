@@ -108,7 +108,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [cloudAvailable,setCloudAvailable]=useState(false)
   const [cloudAgreed,setCloudAgreed]=useState(false)
   const [speechLocale,setSpeechLocale]=useState('auto')
-  const [showCaptions,setShowCaptions]=useState(true)
+  const [showCaptions,setShowCaptions]=useState(false)
   const [turns,setTurns]=useState([])
   const [busy,setBusy]=useState(false)
   const [error,setError]=useState('')
@@ -120,7 +120,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [selectedGoal,setSelectedGoal]=useState('')
   const [replaying,setReplaying]=useState(false)
   const [playbackNotice,setPlaybackNotice]=useState('')
-  const pending=useRef(null),end=useRef(null),composerRef=useRef(null),transcriptRef=useRef(null)
+  const pending=useRef(null),composerRef=useRef(null),transcriptRef=useRef(null)
   const composerDetailsRef=useRef(null),voiceConsentRef=useRef(null),speechRef=useRef(null)
   useEffect(()=>()=>pending.current?.abort(),[])
   useEffect(()=>{
@@ -289,7 +289,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       if(pending.current===controller){pending.current=null;setBusy(false)}
     }
   }
-  return <section className={styles.root} lang={lang} data-my-coach-live-dialogue={personaId} data-my-coach-immersive-session data-session-visual-v2>
+  return <section className={styles.root} lang={lang} data-my-coach-live-dialogue={personaId} data-my-coach-immersive-session data-session-visual-v2 data-session-visual-v3>
     <header className={styles.sessionTopbar}>
       <Link className={styles.sessionBrand} href={'/'+lang+'/coaching/sessions'} aria-label="Holistic House">
         <span className={styles.sessionBrandMark} aria-hidden="true">✿</span><span>Holistic House</span>
@@ -315,7 +315,6 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         <p>{latestCoachText.length>160?latestCoachText.slice(0,157).trimEnd()+'…':latestCoachText}</p>
       </div>}
     </section>
-    <p className={styles.sessionDisclosure}>{ui.disclosure}</p>
     <section className={styles.sessionProgress} aria-label={ui.stageQuestion}>
       <div className={styles.sessionProgressText}><strong>{ui.step} {visibleStageIndex+1} {ui.of} 6</strong>
         <span>{currentStage==='safety'?ui.safety:ui.stages[visibleStageIndex]}</span></div>
@@ -325,65 +324,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           data-current={index===visibleStageIndex?'true':undefined}/>)}
       </div>
     </section>
-    <section className={styles.sessionDialogue} aria-label={ui.stageQuestion}>
-      <div className={styles.currentCoachPrompt}>
-        <span className={styles.promptWave} aria-hidden="true"><i/><i/><i/><i/><i/><i/><i/></span>
-        <div className={styles.currentCoachCopy}><span>{name}</span><p>{latestCoachText}</p></div>
-        <button type="button" className={styles.replayInline} onClick={replayCoachReply}
-          disabled={voiceState.phase!=='idle'||replaying} aria-label={ui.replay} title={ui.replay}>
-          <Volume2 size={19} aria-hidden="true"/>
-        </button>
-      </div>
-      {turns.length>1&&<details className={styles.conversationHistory}>
-        <summary>{lang==='ru'?'История разговора':lang==='es'?'Historial de conversación':'Conversation history'}</summary>
-        <div className={styles.historyMessages} role="log" aria-live="polite">
-          {turns.map((turn,index)=><div key={index} className={turn.role==='user'?styles.historyUser:styles.historyCoach}>
-            <strong>{turn.role==='user'?t.user:name}</strong><p>{turn.content}</p>
-          </div>)}
-          <div ref={end}/>
-        </div>
-      </details>}
-      {!turns.length&&<details className={styles.quickGoals}>
-        <summary className={styles.quickGoalsHeading}><strong>{ui.topics}</strong><span>{ui.chooseTopic}</span></summary>
-        <div className={styles.quickGoalGrid}>
-          {quickTopics.map(({id,icon:Icon,art})=><button key={id} type="button"
-            className={styles.quickGoalCard} data-art={art} aria-pressed={selectedGoal===goalLabels[id]}
-            onClick={()=>chooseTopic(id)}>
-            <span className={styles.quickGoalArt} aria-hidden="true"/>
-            <span className={styles.quickGoalLabel}><Icon size={19} aria-hidden="true"/>{goalLabels[id]}</span>
-          </button>)}
-        </div>
-      </details>}
-    </section>
-    {editablePlan&&<label className={styles.plan}>{t.plan}<textarea value={editablePlan} maxLength={300} rows={2}
-      onChange={event=>setEditablePlan(event.target.value)}/></label>}
     </div>
     <section className={styles.voiceWorkspace} aria-label={ui.voice}>
-      <section className={styles.liveTranscript} aria-label={captions.heading} data-coach-live-transcript>
-        <div className={styles.transcriptHeading}><MessageCircle size={15} aria-hidden="true"/>
-          <strong>{captions.heading}</strong>
-          <select className={styles.transcriptLanguage} aria-label={captions.languageLabel}
-            value={speechLocale} onChange={event=>setSpeechLocale(event.target.value)}
-            disabled={voiceState.phase!=='idle'}>
-            <option value="auto">{captions.autoLanguage}</option>
-            <option value="ru">RU</option>
-            <option value="en">EN</option>
-            {lang==='es'&&<option value="es">ES</option>}
-          </select>
-          {voiceState.phase==='listening'&&<span role="status">{captions.listening}</span>}
-        </div>
-        <div className={styles.transcriptFeed} ref={transcriptRef} role="log" aria-live="polite" aria-relevant="additions">
-          {!turns.length&&<div className={styles.transcriptCoach}><strong>{name}</strong><p>{opening}</p></div>}
-          {turns.slice(-6).map((turn,index)=><div key={turns.length-6+index}
-            className={turn.role==='user'?styles.transcriptUser:styles.transcriptCoach}>
-            <strong>{turn.role==='user'?t.user:name}</strong><p>{turn.content}</p>
-          </div>)}
-          {speechPreview&&<div className={styles.transcriptInterim} aria-live="off">
-            <strong>{t.user} · {captions.listening}</strong><p>{speechPreview}</p>
-          </div>}
-          {!turns.length&&!speechPreview&&<p className={styles.transcriptHint}>{captions.hint}</p>}
-        </div>
-      </section>
       <div className={styles.voiceControls}>
         <button type="button" className={styles.captionsControl} onClick={()=>setShowCaptions(value=>!value)}
           aria-pressed={showCaptions} aria-label={ui.captions} title={ui.captions}>
@@ -408,6 +350,32 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           <PhoneOff size={21} aria-hidden="true"/><span>{lang==='ru'?'Конец':lang==='es'?'Salir':'End'}</span>
         </Link>
       </div>
+      <div className={styles.conversationPanel}>
+      <section className={styles.liveTranscript} aria-label={captions.heading} data-coach-live-transcript>
+        <div className={styles.transcriptHeading}><MessageCircle size={15} aria-hidden="true"/>
+          <strong>{captions.heading}</strong>
+          <select className={styles.transcriptLanguage} aria-label={captions.languageLabel}
+            value={speechLocale} onChange={event=>setSpeechLocale(event.target.value)}
+            disabled={voiceState.phase!=='idle'}>
+            <option value="auto">{captions.autoLanguage}</option>
+            <option value="ru">RU</option>
+            <option value="en">EN</option>
+            {lang==='es'&&<option value="es">ES</option>}
+          </select>
+          {voiceState.phase==='listening'&&<span role="status">{captions.listening}</span>}
+        </div>
+        <div className={styles.transcriptFeed} ref={transcriptRef} role="log" aria-live="polite" aria-relevant="additions">
+          {!turns.length&&<div className={styles.transcriptCoach}><strong>{name}</strong><p>{opening}</p></div>}
+          {turns.map((turn,index)=><div key={index}
+            className={turn.role==='user'?styles.transcriptUser:styles.transcriptCoach}>
+            <strong>{turn.role==='user'?t.user:name}</strong><p>{turn.content}</p>
+          </div>)}
+          {speechPreview&&<div className={styles.transcriptInterim} aria-live="off">
+            <strong>{t.user} · {captions.listening}</strong><p>{speechPreview}</p>
+          </div>}
+          {!turns.length&&!speechPreview&&<p className={styles.transcriptHint}>{captions.hint}</p>}
+        </div>
+      </section>
       {cloudAvailable&&consent&&!authRequired&&<div className={styles.naturalVoiceRow}>
         <label><input type="checkbox" checked={cloudAgreed}
           disabled={voiceState.phase!=='idle'}
@@ -446,12 +414,27 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           {ui.guided}<ArrowRight size={16} aria-hidden="true"/>
         </button>}
       </details>
+      </div>
     </section>
     <label className={styles.goalRow}><Target size={22} aria-hidden="true"/><span>{ui.goal}</span>
       <input aria-label={ui.goal} value={selectedGoal} maxLength={180} placeholder={ui.goalPlaceholder}
         onChange={event=>setSelectedGoal(event.target.value)}/><Pencil size={17} aria-hidden="true"/>
     </label>
     <small className={styles.goalPrivacy}>{ui.typedGoal}</small>
+    {editablePlan&&<label className={styles.plan}>{t.plan}<textarea value={editablePlan} maxLength={300} rows={2}
+      onChange={event=>setEditablePlan(event.target.value)}/></label>}
+    <p className={styles.sessionDisclosure}>{ui.disclosure}</p>
+      {!turns.length&&<details className={styles.quickGoals}>
+        <summary className={styles.quickGoalsHeading}><strong>{ui.topics}</strong><span>{ui.chooseTopic}</span></summary>
+        <div className={styles.quickGoalGrid}>
+          {quickTopics.map(({id,icon:Icon,art})=><button key={id} type="button"
+            className={styles.quickGoalCard} data-art={art} aria-pressed={selectedGoal===goalLabels[id]}
+            onClick={()=>chooseTopic(id)}>
+            <span className={styles.quickGoalArt} aria-hidden="true"/>
+            <span className={styles.quickGoalLabel}><Icon size={19} aria-hidden="true"/>{goalLabels[id]}</span>
+          </button>)}
+        </div>
+      </details>}
     <dialog ref={voiceConsentRef} className={styles.voiceConsentDialog} aria-labelledby="hh-coach-voice-consent-title">
       <h2 id="hh-coach-voice-consent-title">{voiceGate.title}</h2>
       <p>{t.consent}</p>

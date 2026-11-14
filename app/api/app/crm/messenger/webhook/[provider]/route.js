@@ -7,7 +7,7 @@ import { MESSENGER_CHANNELS } from '@/lib/crm/messenger-policy'
 import { operationHash } from '@/lib/app/crypto'
 import { telegramPromptFailureEvidence } from '@/lib/crm/telegram-prompt-diagnostics.mjs'
 import { verifyMessengerWebhook,verifyMessengerChallenge,normalizeMessengerUpdates,ingestMessengerUpdate,processTelegramDiagnostic,processWhatsAppAccountLink,processWhatsAppDiagnostic } from '@/lib/crm/messenger-webhook'
-import { sendTelegramDiagnosticPrompt, sendWhatsAppDiagnosticPrompt, ensureTelegramInlineWebhookUpdates, acknowledgeTelegramInlineCallback, sendTelegramCompanionMessage, sendHolisticBusinessRequestReply } from '@/lib/crm/messenger-provider'
+import { sendTelegramDiagnosticPrompt, sendWhatsAppDiagnosticPrompt, ensureTelegramInlineWebhookUpdates, acknowledgeTelegramInlineCallback, sendTelegramCompanionMessage, sendHolisticBusinessRequestReply, sendHolisticBusinessWelcomePhoto } from '@/lib/crm/messenger-provider'
 import { telegramPresentationOnStart } from '@/lib/crm/telegram-presentation.mjs'
 import {processTelegramCompanion} from '@/lib/crm/telegram-companion-service'
 import {processTelegramAiV3,finishTelegramAiV3} from '@/lib/crm/telegram-ai-diagnostic-v3-service'
@@ -82,6 +82,15 @@ export async function POST(request,{params}){
                 connectionId:business.connectionId,chatId:business.to},3,86400)
             }
             await consumeRate(config,{op:'hh-tg-business-intent-global'},100,86400)
+            // The first client-authored service enquiry shows the fixed avatar
+            // as its own Telegram message before any reply, never as a caption.
+            // Unknown photo acceptance cannot block the actual service dialogue
+            // or cause an automatic duplicate send on webhook retry.
+            if(business.welcomePhoto===true){
+              try{await sendHolisticBusinessWelcomePhoto({
+                connectionId:business.connectionId,to:business.to,
+              })}catch{console.error('HH_TG_BUSINESS_WELCOME_PHOTO_NOT_CONFIRMED')}
+            }
             await sendHolisticBusinessRequestReply({connectionId:business.connectionId,
               to:business.to,text:business.reply})
           }catch{
