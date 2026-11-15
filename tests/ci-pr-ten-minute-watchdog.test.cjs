@@ -2126,3 +2126,103 @@ test('Watchdog local-only request budget may reuse a complete snapshot, never by
    {...complete,apiRateLimited:null}
  ]) assert.equal(allowed(bad),false,JSON.stringify(bad));
 });
+
+test('bounded Watchdog cleanup cancels proven old-HEAD jobless run of an open Ready PR only',async()=>{
+ const old='a'.repeat(40),head='b'.repeat(40),full='andylitvinov-design/books';
+ const assoc=[{number:4370,base:{ref:'codex/public-book-library'},
+  head:{ref:'feat/live-speech',repo:{full_name:full}}}];
+ const f=cleanupFixture({state:'open',runAssoc:assoc});
+ f.github.rest.repos.compareCommits=async()=>({data:{
+  status:'ahead',base_commit:{sha:old},merge_base_commit:{sha:old},
+  ahead_by:2,behind_by:0,total_commits:2
+ }});
+ const r=await mergedCleanup.runCleanup({github:f.github,context:f.context,
+  observedQueued:139,observedRemaining:4700,now:Date.parse('2026-11-12T18:00:00Z')});
+ assert.equal(r.status,'CANCELLATION_ACCEPTED_NOT_TERMINAL');
+ assert.deepEqual(f.calls.cancel,[1001]);assert.equal(r.eligible,1);
+ assert.equal(r.delete_attempts,0,'open PR can never take merged-run deletion path');
+ assert.equal(f.calls.prs,2,'open proof re-reads active PR after zero-job evidence');
+});
+test('open-PR cleanup rejects changed HEAD, holds, draft, ambiguity, jobs and incomplete ancestry',async()=>{
+ const old='a'.repeat(40),head='b'.repeat(40),full='andylitvinov-design/books';
+ const assoc=[{number:4370,base:{ref:'codex/public-book-library'},
+  head:{ref:'feat/live-speech',repo:{full_name:full}}}];
+ const create=(options={})=>{
+  const f=cleanupFixture({state:'open',runAssoc:assoc,...options});
+  f.github.rest.repos.compareCommits=async()=>({data:{
+   status:options.compareStatus||'ahead',base_commit:{sha:old},
+   merge_base_commit:{sha:options.compareBase||old},
+   ahead_by:options.aheadBy??2,behind_by:options.behindBy??0,
+   total_commits:options.totalCommits??2
+  }});
+  return f;
+ };
+ const options=[
+  {compareStatus:'diverged'},{compareBase:'f'.repeat(40)},
+  {aheadBy:0},{behindBy:1},{totalCommits:0},
+  {runAssoc:[]},{unique:false},{runStatus:'in_progress'},{attempt:2},
+  {sha:old}
+ ];
+ for(const option of options){
+  const f=create(option);
+  const r=await mergedCleanup.runCleanup({github:f.github,context:f.context,
+   observedQueued:139,observedRemaining:4700,now:Date.parse('2026-11-12T18:00:00Z')});
+  assert.deepEqual(f.calls.cancel,[],JSON.stringify(option));assert.equal(r.eligible,0);
+ }
+ for(const change of [
+  p=>({...p,draft:true}),
+  p=>({...p,labels:[{name:'hh:hold'}]}),
+  p=>({...p,head:{...p.head,sha:old}})
+ ]){
+  const f=create();
+  const candidate=change(f.pr);
+  f.github.rest.pulls.list=async()=>({data:[candidate]});
+  f.github.rest.pulls.get=async()=>({data:candidate});
+  const r=await mergedCleanup.runCleanup({github:f.github,context:f.context,
+   observedQueued:139,observedRemaining:4700,now:Date.parse('2026-11-12T18:00:00Z')});
+  assert.deepEqual(f.calls.cancel,[]);assert.equal(r.eligible,0);
+ }
+ const job=create();
+ job.github.rest.actions.listJobsForWorkflowRun=async()=>({data:{
+  total_count:1,jobs:[{id:33,status:'queued'}]
+ }});
+ const r=await mergedCleanup.runCleanup({github:job.github,context:job.context,
+  observedQueued:139,observedRemaining:4700,now:Date.parse('2026-11-12T18:00:00Z')});
+ assert.equal(r.eligible,0);assert.deepEqual(job.calls.cancel,[]);
+ const moved=create();let reads=0;
+ moved.github.rest.pulls.get=async()=>({data:
+  (++reads===1)?moved.pr:{...moved.pr,head:{...moved.pr.head,sha:'c'.repeat(40)}}
+ });
+ const changed=await mergedCleanup.runCleanup({github:moved.github,context:moved.context,
+  observedQueued:139,observedRemaining:4700,now:Date.parse('2026-11-12T18:00:00Z')});
+ assert.equal(changed.eligible,0);assert.deepEqual(moved.calls.cancel,[]);
+});
+test('open-PR verified 409 jobless still requires final PR reread before bounded force cancel',async()=>{
+ const old='a'.repeat(40),full='andylitvinov-design/books';
+ const assoc=[{number:4370,base:{ref:'codex/public-book-library'},
+  head:{ref:'feat/live-speech',repo:{full_name:full}}}];
+ const f=cleanupFixture({state:'open',runAssoc:assoc});
+ f.github.rest.repos.compareCommits=async()=>({data:{
+  status:'ahead',base_commit:{sha:old},merge_base_commit:{sha:old},
+  ahead_by:2,behind_by:0,total_commits:2
+ }});
+ let forced=0;
+ f.github.rest.actions.cancelWorkflowRun=async()=>{throw Object.assign(Error('409'),{status:409});};
+ f.github.rest.actions.forceCancelWorkflowRun=async()=>{forced++;return {status:202};};
+ const r=await mergedCleanup.runCleanup({github:f.github,context:f.context,
+  observedQueued:139,observedRemaining:4700,now:Date.parse('2026-11-12T18:00:00Z')});
+ assert.equal(forced,1);assert.equal(r.force_cancel_accepted.length,1);
+ assert.equal(r.status,'CANCELLATION_ACCEPTED_NOT_TERMINAL');
+ const changed=cleanupFixture({state:'open',runAssoc:assoc});
+ changed.github.rest.repos.compareCommits=f.github.rest.repos.compareCommits;
+ changed.github.rest.actions.cancelWorkflowRun=f.github.rest.actions.cancelWorkflowRun;
+ changed.github.rest.actions.forceCancelWorkflowRun=async()=>{throw Error('unsafe force');};
+ let reads=0;
+ changed.github.rest.pulls.get=async()=>{reads++;return {data:reads<=2?changed.pr:{
+  ...changed.pr,head:{...changed.pr.head,sha:'c'.repeat(40)}
+ }};};
+ const blocked=await mergedCleanup.runCleanup({github:changed.github,context:changed.context,
+  observedQueued:139,observedRemaining:4700,now:Date.parse('2026-11-12T18:00:00Z')});
+ assert.equal(blocked.force_cancel_accepted.length,0);
+ assert.equal(blocked.non_cancelable[0].code,'CANCEL_409_UNVERIFIED');
+});

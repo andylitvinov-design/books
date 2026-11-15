@@ -163,6 +163,7 @@ on:
       - '.github/workflows/hh-pr-closed-run-cleanup.yml'
       - 'scripts/ci-pr-closed-run-cleanup.cjs'
       - 'tests/ci-pr-closed-run-cleanup.test.cjs'
+      - 'scripts/ci-pr-merged-queue-cleanup.cjs'
       - '.github/workflows/hh-pr-watchdog-contract-ci.yml'
       - '.github/workflows/hh-pr-ci-worker.yml'
       - '.github/workflows/hh-pr-repair-worker.yml'
@@ -310,6 +311,7 @@ jobs:
           node --check tests/ci-pr-slot-wakeup.test.cjs
           node --check tests/ci-pr-ten-minute-watchdog.test.cjs
           node --check scripts/ci-pr-closed-run-cleanup.cjs
+          node --check scripts/ci-pr-merged-queue-cleanup.cjs
           node --check tests/ci-pr-closed-run-cleanup.test.cjs
           node --check scripts/ci-pr-ci-worker.cjs
           node --check scripts/ci-pr-core-metadata-wake.cjs
