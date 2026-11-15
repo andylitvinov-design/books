@@ -161,3 +161,14 @@ test("Therapy main selects have physical 44px height for iPhone WebKit, not just
  const browser=read("scripts/verify-therapy-studio-mobile-browser.mjs");
  assert.match(browser,/targets\.every\(\(\[w,h\]\)=>w>=44&&h>=44\)/);
 });
+
+// WebKit must target the two visible top-level Practice actions by stable ID:
+// the old last() selected a hidden optional Hypno-effects descendant.
+test("Therapy Practice browser targets only visible explicit voice and phrase actions",()=>{
+ const browser=read("scripts/verify-therapy-studio-mobile-browser.mjs");
+ assert.match(ui,/data-therapy-action="voice"/);
+ assert.match(ui,/data-therapy-action="phrases"/);
+ assert.match(browser,/shell\.locator\('\[data-therapy-action="voice"\]'\)\.tap\(\)/);
+ assert.match(browser,/shell\.locator\('\[data-therapy-action="phrases"\]'\)\.tap\(\)/);
+ assert.doesNotMatch(browser,/\[data-therapy-practice\] button'\)\.last\(\)/);
+});

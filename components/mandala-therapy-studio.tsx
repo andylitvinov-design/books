@@ -67,9 +67,9 @@ export function MandalaTherapyStudio({locale,disabled,editor,voiceEditor,advance
    {pane==="practice"?<section className={css.practice} data-therapy-practice>
     <h4>{t.practiceTitle}</h4><p>{t.practiceHint}</p>
     <div className={css.option}><span><AudioLines size={23}/></span><div><strong>{t.speak}</strong><p>{t.speakHint}</p></div>
-      <button type="button" disabled={disabled} onClick={()=>setPane("voice")}>{t.speakButton}<ChevronRight size={18}/></button></div>
+      <button type="button" data-therapy-action="voice" disabled={disabled} onClick={()=>setPane("voice")}>{t.speakButton}<ChevronRight size={18}/></button></div>
     <div className={css.option}><span><Film size={23}/></span><div><strong>{t.phrases}</strong><p>{t.phrasesHint}</p></div>
-      <button type="button" disabled={disabled} onClick={onVideoPhrases}>{t.phrasesButton}<ChevronRight size={18}/></button></div>
+      <button type="button" data-therapy-action="phrases" disabled={disabled} onClick={onVideoPhrases}>{t.phrasesButton}<ChevronRight size={18}/></button></div>
     <details className={css.advanced} data-therapy-advanced-effects onToggle={event=>setEffectsOpen(event.currentTarget.open)}>
       <summary data-therapy-effects-toggle><Sparkles size={19}/>{t.effects}<ChevronDown size={17}/></summary>
       <p>{t.effectsHint}</p>{effectsOpen?advancedEffects:null}

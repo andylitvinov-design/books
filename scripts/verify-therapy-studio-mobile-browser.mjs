@@ -116,10 +116,10 @@ try{
    await effects.locator('summary').tap();
    await expect(effects).toHaveAttribute('open','');
    await expect(page.locator('[data-video-hypnocorrection-panel]')).toBeVisible();
-   await shell.locator('[data-therapy-practice] button').first().tap();
+   await shell.locator('[data-therapy-action="voice"]').tap();
    await expect(voice).toHaveAttribute('aria-selected','true');
    await practice.tap();
-   await shell.locator('[data-therapy-practice] button').last().tap();
+   await shell.locator('[data-therapy-action="phrases"]').tap();
    await expect(studio).toHaveAttribute('data-active-workspace','phrases');
    assert.deepEqual(posts,[],'No external provider or video renderer POST for local Therapy');
    assert.deepEqual(errors,[],'No browser page exceptions');
