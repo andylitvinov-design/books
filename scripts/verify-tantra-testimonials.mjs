@@ -253,9 +253,15 @@ async function startVisibleNative(disclosure, index, scenario = {}) {
       if (!genuineSameSourceStall && !pendingNoMetadata) throw clockFailure;
       observation.nativeStall = { firstFailure: clockFailure.message, before: stalled,
         recoveryRequests: 1, metadataReload: pendingNoMetadata };
-      // A metadata-less pending decoder needs one real HTMLMediaElement load.
-      // Keep the source unchanged; still demand a NEW real media clock/frame.
-      await video.evaluate(el => { el.pause(); if (el.readyState === 0) el.load(); });
+      // Only a decoder that had NO metadata BEFORE recovery may be reloaded.
+      // A healthy WebKit stream can transiently report readyState=0 after
+      // pause() during another participant's disclosure/seek. Reloading then
+      // destroys its buffered position and can strand the native MP4 at 0.
+      // Preserve the source and still require fresh real media clock/frames.
+      await video.evaluate((el,needsInitialMetadata)=>{
+        el.pause();
+        if(needsInitialMetadata)el.load();
+      },pendingNoMetadata);
       await expect.poll(() => video.evaluate(el => el.paused), { timeout: 5000 }).toBe(true);
       await video.evaluate(requestNativePlayback);
       await expect.poll(() => video.evaluate(el => el.paused), { timeout: 5000 }).toBe(false);

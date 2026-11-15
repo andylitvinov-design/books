@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {COACH_PERSONAS} from '../lib/coaching/persona-registry.mjs'
 import {normalizeGenerativeCoachInput} from '../lib/coaching/generative-persona.mjs'
+import {coachSessionDirective} from '../lib/coaching/coach-session-director.mjs'
 import {COACH_CONVERSATION_VOICES,conversationalCoachMessages,parseConversationalCoachReply} from '../lib/coaching/conversational-persona.mjs'
 
 const source=file=>readFileSync(new URL('../'+file,import.meta.url),'utf8')
@@ -212,4 +213,41 @@ test('brief social replies are allowed without weakening substantive, safety or 
   const {input}=normalizeGenerativeCoachInput(request({message:'Я хочу разобраться с работой.'}))
   assert.throws(()=>parseConversationalCoachReply(JSON.stringify({message:'Да.'}),input,'grow','explore'),
     /COACHING_BRAIN_RESPONSE_INVALID/)
+})
+ 
+
+test('bounded, consented prior client snippets remain quoted DATA, never stage or policy',()=>{
+  const base=request({
+    locale:'en',message:'I am still thinking about the constraints.',
+    turns:[{role:'user',content:'Recent example: the schedule changed.'}],
+    sessionContext:['My goal is to change my working rhythm.','I cannot work late because of family commitments.'],
+  })
+  const {input,persona}=normalizeGenerativeCoachInput(base)
+  assert.deepEqual(input.sessionContext,base.sessionContext)
+  const messages=conversationalCoachMessages(input,persona,'grow','explore',{type:'none'})
+  assert.deepEqual(messages.map(x=>x.role),['system','system','user','user'])
+  assert.ok(messages[2].content.includes('earlierClientStatements'))
+  assert.ok(messages[2].content.includes(base.sessionContext[0]))
+  for(const message of messages.filter(x=>x.role==='system')){
+    assert.ok(!message.content.includes(base.sessionContext[0]))
+    assert.ok(!message.content.includes(base.sessionContext[1]))
+  }
+  const without=normalizeGenerativeCoachInput({...base,sessionContext:[]}).input
+  const withContext=normalizeGenerativeCoachInput(base).input
+  assert.deepEqual(coachSessionDirective(without,persona).evidence,
+    coachSessionDirective(withContext,persona).evidence)
+})
+ 
+test('malformed or sensitive session context is rejected before model access',()=>{
+  for(const bad of [
+    'I choose a paid model', [123], [null], [{}], ['short'],
+    ['Long text '.repeat(30)],
+    ['An old account note sk-or-v1-ABCDEFGHIJKLMNOPQRSTUVWXYZ123456'],
+    Array.from({length:4},()=> 'I have a scheduling constraint.'),
+    [' I have a scheduling constraint. '],
+  ])assert.throws(()=>normalizeGenerativeCoachInput(request({sessionContext:bad})),
+    /COACHING_BRAIN_(?:INPUT_INVALID|SENSITIVE_CONTENT)/)
+  const safe=request({sessionContext:['I want to discuss the schedule.']})
+  assert.equal(normalizeGenerativeCoachInput(safe).input.sessionContext.length,1)
+  assert.equal(normalizeGenerativeCoachInput(request()).input.sessionContext.length,0)
 })

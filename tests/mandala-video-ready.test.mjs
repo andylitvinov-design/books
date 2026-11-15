@@ -345,3 +345,21 @@ test("personal signed MP4 CSP is confined to exact origin, EN/RU/ES pages and a 
   assert.match(middleware,/humanSpecialistVideoPage/);
   assert.doesNotMatch(middleware,/connect-src[^\n]*https:\/\/\*\.supabase\.co/);
 });
+
+test("Add video keeps the existing hydrated first-video editor visible across Safari workspace transitions",()=>{
+  const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
+  const source=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  const exportBrowser=readFileSync(new URL("../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
+  const decoder=readFileSync(new URL("../scripts/verify-tantra-testimonials.mjs",import.meta.url),"utf8");
+  assert.match(source,/data-video-advanced-open=\{\(showAdvancedVideo\|\|videoScenarioOpen\)\?"true":"false"\}/);
+  assert.match(source,/const openVideoScenarioStep = \(\) => \{[\s\S]*?setVideoScenarioOpen\(true\);[\s\S]*?setShowAdvancedVideo\(true\);/);
+  assert.match(source,/onAddVideo=\{\(\)=>\{[\s\S]*?openVideoScenarioStep\(\);/);
+  assert.match(css,/data-video-advanced-open="false"\] \.quickBuilder>\[data-video-first-video-advanced\]/);
+  assert.match(exportBrowser,/data-first-free-video\]\[data-first-video-hydrated="true"\]/);
+  // Third-party native WebKit decoder recovery must not throw away healthy metadata.
+  assert.match(decoder,/if\(needsInitialMetadata\)el\.load\(\)/);
+  assert.match(decoder,/\,pendingNoMetadata\)/);
+  assert.doesNotMatch(decoder,/if \(el\.readyState === 0\) el\.load\(\)/);
+  assert.match(decoder,/frame\.mediaTime > before\.time \+ 0\.35/);
+  assert.match(decoder,/sample\.error, null/);
+});

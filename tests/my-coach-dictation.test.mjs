@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
-import {detectedSpeechLocale,chooseDictationLanguage,readDictationResults,ios27NeedsSpeechRecovery} from '../lib/personal-coaching/my-coach-dictation.mjs'
+import {detectedSpeechLocale,chooseDictationLanguage,readDictationResults,ios27NeedsSpeechRecovery,hasCoachSpokenAnswer} from '../lib/personal-coaching/my-coach-dictation.mjs'
 import {appendSpokenAnswer} from '../lib/personal-coaching/speech-text.js'
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 test('Auto follows device language and remembered transcript; manual RU/EN override works',()=>{
@@ -211,4 +211,21 @@ test('five synthetic speech fragments remain distinct across recognition turn pa
   assert.deepEqual(recognized,phrases)
   assert.equal(new Set(recognized).size,5)
   // This is text parsing coverage, not a physical Safari five-turn voice E2E.
+})
+
+test('short yes/no/number answers are complete coaching turns, not missing speech',()=>{
+ for(const words of ['Да','Да!','Не','Нет','No','NO!','Sí','¿Sí?','Si','ok','OK','5','42','yes','угу'])
+  assert.equal(hasCoachSpokenAnswer(words),true,words)
+ for(const noise of ['',' ','.','?','а','я','I','…','!!','  ,  '])
+  assert.equal(hasCoachSpokenAnswer(noise),false,noise)
+ const sourceText=source('components/my-coach-speech-loop.jsx')
+ const onend=sourceText.slice(sourceText.indexOf('recognition.onend=()=>{'),
+  sourceText.indexOf('const startRecognition=()=>{'))
+ assert.ok(onend.includes('if(hasCoachSpokenAnswer(finished))'))
+ assert.ok(onend.includes('if(hasCoachSpokenAnswer(recovered))'))
+ const iosWatchdog=sourceText.slice(sourceText.indexOf('if(ios27&&visible){'),
+  sourceText.indexOf('// Dictation is shown'))
+ assert.ok(iosWatchdog.includes('hasCoachSpokenAnswer(heard)'))
+ assert.doesNotMatch(iosWatchdog,/restartSilentRecognition\(recognition\)|recognition\.abort\(\)/,
+  'iOS never aborts a recognized short utterance before natural onend')
 })
