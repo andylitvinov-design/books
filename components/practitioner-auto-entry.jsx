@@ -34,6 +34,7 @@ const ADMIN_DESTINATIONS = Object.freeze({
   seo: '/admin/seo',
   acquisition: '/admin/acquisition',
   youtubeConnect: '/api/admin/telegram-video/youtube/start',
+  youtubeConnectEn: '/api/admin/telegram-video/youtube/start?target=en',
 })
 
 export function PractitionerAutoEntry({ locale = 'en', authFailed = false, destination = 'cabinet' }) {
