@@ -5,12 +5,13 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowRight, BookOpen, Heart, RotateCcw, Search, ShieldCheck, SlidersHorizontal, Sparkles, Users, MoreHorizontal, Zap, Leaf, Flower2 } from 'lucide-react'
 import {
-  COACH_PERSONAS, COACH_TOPICS, coachSessionHref, coachStagePrompt, getCoachPersona,
+  PUBLIC_COACH_PERSONA_IDS, PUBLIC_COACH_PERSONAS, PUBLIC_COACH_TOPICS, coachSessionHref, coachStagePrompt, getCoachPersona,
   localCoachText, normalizeCoachSettings,
 } from '@/lib/coaching/persona-registry.mjs'
 import styles from './my-coach-catalog.module.css'
 import heroStyles from './my-coach-mira-landing.module.css'
 import MyCoachExpressStart from './my-coach-express-start'
+import MyCoachMotionMedia from './my-coach-motion-media'
 import { HeaderCreditProfile } from './header-credit-profile'
 import { MandatoryMessengerActions } from './mandatory-messenger-actions'
 import { whatsappEnquiryUrl, telegramEnquiryUrlFromWhatsApp } from '@/lib/whatsapp-enquiry'
@@ -19,7 +20,7 @@ const words = {
   en: {
     eyebrow: 'HOLISTIC HOUSE · MY COACH',
     title: 'Find your AI coach',
-    intro: 'Eight distinct coaching personas. Choose the approach that fits your situation, then adjust how your coach asks questions.',
+    intro: 'Four distinct coaching personas. Choose the approach that fits your situation, then adjust how your coach asks questions.',
     aiNotice: 'These are fictional AI personas, not real practitioners. Coaching supports reflection; it does not replace medical or mental health care.',
     search: 'Search coaches and topics', searchPlaceholder: 'E.g. relationships, decisions, habits',
     all: 'All coaches', favorites: 'Favorites', noResults: 'No coaches match. Clear the filters to see everyone.',
@@ -31,7 +32,7 @@ const words = {
     light: 'Practical', deep: 'Reflective', reset: 'Reset style',
     preview: 'Preview of a follow-up question', start: 'Start guided coaching',
     viewProfile: 'Explore coach', favorite: 'Add to favorites', unfavorite: 'Remove from favorites',
-    chosen: 'Selected', available: '8 characters', change: 'Change your coach anytime',
+    chosen: 'Selected', available: '4 characters', change: 'Change your coach anytime',
     sessionNote: 'After sign-in and your explicit consent, a generative text dialogue is offered when a verified free privacy-preserving model is configured. Reviewed guided questions remain available as a fallback; two-way AI voice is not enabled.',
     back: 'Coaching Lounge', human: 'Human specialists', privacy: 'Search and choices stay in this browser; favorites save only persona IDs on this device.',
     safety: 'One question at a time · No diagnoses · Your decisions remain yours',
@@ -39,7 +40,7 @@ const words = {
   ru: {
     eyebrow: 'HOLISTIC HOUSE · MY COACH',
     title: 'Выберите своего AI-коуча',
-    intro: 'Восемь разных AI-персонажей. Выберите подходящий стиль и настройте, как коуч будет задавать вопросы.',
+    intro: 'Четыре разных AI-персонажа. Выберите подходящий стиль и настройте, как коуч будет задавать вопросы.',
     aiNotice: 'Это вымышленные AI-персонажи, а не реальные специалисты. Коучинг помогает размышлять, но не заменяет медицинскую или психотерапевтическую помощь.',
     search: 'Поиск по коучам и темам', searchPlaceholder: 'Например: отношения, решение, привычки',
     all: 'Все коучи', favorites: 'Избранные', noResults: 'По запросу никого нет. Сбросьте фильтры, чтобы увидеть всех.',
@@ -51,7 +52,7 @@ const words = {
     light: 'Практично', deep: 'Глубоко', reset: 'Вернуть стиль',
     preview: 'Пример дополнительного вопроса', start: 'Начать коучинг-сессию',
     viewProfile: 'Открыть профиль', favorite: 'В избранное', unfavorite: 'Убрать из избранного',
-    chosen: 'Выбран', available: '8 персонажей', change: 'Коуча можно сменить в любой момент',
+    chosen: 'Выбран', available: '4 персонажа', change: 'Коуча можно сменить в любой момент',
     sessionNote: 'После входа и вашего согласия доступен генеративный текстовый диалог, если настроена проверенная бесплатная модель с защитой данных. Программа с проверенными вопросами остаётся запасным вариантом. Двусторонний AI-голос не подключён.',
     back: 'Гостиная коучинга', human: 'Реальные специалисты', privacy: 'Поиск остаётся в браузере; в избранном на устройстве сохраняются только ID персонажей.',
     safety: 'Один вопрос за раз · Без диагнозов · Решение остаётся за вами',
@@ -59,7 +60,7 @@ const words = {
   es: {
     eyebrow: 'HOLISTIC HOUSE · MY COACH',
     title: 'Elige tu coach de IA',
-    intro: 'Ocho personajes diferentes. Elige el estilo apropiado y adapta cómo hace las preguntas.',
+    intro: 'Cuatro personajes diferentes. Elige el estilo apropiado y adapta cómo hace las preguntas.',
     aiNotice: 'Son personajes ficticios de IA, no profesionales reales. El coaching ayuda a reflexionar, pero no sustituye la atención clínica.',
     search: 'Buscar coaches y temas', searchPlaceholder: 'Ej.: relaciones, decisiones, hábitos',
     all: 'Todos los coaches', favorites: 'Favoritos', noResults: 'No hay resultados. Borra los filtros para verlos todos.',
@@ -71,7 +72,7 @@ const words = {
     light: 'Práctico', deep: 'Reflexivo', reset: 'Restablecer estilo',
     preview: 'Ejemplo de pregunta de seguimiento', start: 'Empezar coaching guiado',
     viewProfile: 'Ver perfil', favorite: 'Añadir favorito', unfavorite: 'Quitar favorito',
-    chosen: 'Seleccionado', available: '8 personajes', change: 'Cambia de coach cuando quieras',
+    chosen: 'Seleccionado', available: '4 personajes', change: 'Cambia de coach cuando quieras',
     sessionNote: 'Tras iniciar sesión y dar consentimiento, se ofrece diálogo de texto generativo si hay un modelo gratuito con privacidad verificada. Las preguntas guiadas siguen disponibles. La voz bidireccional no está activada.',
     back: 'Sala de coaching', human: 'Profesionales reales', privacy: 'La búsqueda queda en este navegador; solo se guardan los ID de favoritos en el dispositivo.',
     safety: 'Una pregunta por turno · Sin diagnósticos · Tú decides',
@@ -151,7 +152,7 @@ const miraCopy = {
 const humanCopy = {
   en: {
     chooser: 'Choose coach type', all: 'All', ai: 'AI Coach', real: 'Real People',
-    combinedIntro: 'Explore five AI coaches, then meet real practitioners.',
+    combinedIntro: 'Explore four AI coaches, then meet real practitioners.',
     contactLabel: 'Contact Andrey through WhatsApp or Telegram',
     contactRequest: 'I would like to request a personal psychotherapy and guided imagery session. Please let me know your availability and next steps.',
     intro: 'Meet a real practitioner for a personal therapy session.',
@@ -165,7 +166,7 @@ const humanCopy = {
   },
   ru: {
     chooser: 'Тип специалиста', all: 'Все', ai: 'AI-коучи', real: 'Реальные люди',
-    combinedIntro: 'Сначала пять AI-коучей, затем реальные специалисты.',
+    combinedIntro: 'Сначала четыре AI-коуча, затем реальные специалисты.',
     contactLabel: 'Связаться с Андреем через WhatsApp или Telegram',
     contactRequest: 'Хочу узнать о персональной сессии психотерапии и работы с образами. Подскажите, пожалуйста, доступное время и дальнейшие шаги.',
     intro: 'Выберите живого специалиста для индивидуальной терапевтической сессии.',
@@ -179,7 +180,7 @@ const humanCopy = {
   },
   es: {
     chooser: 'Tipo de coach', all: 'Todos', ai: 'Coaches IA', real: 'Personas reales',
-    combinedIntro: 'Primero cinco coaches IA; después, profesionales reales.',
+    combinedIntro: 'Primero cuatro coaches IA; después, profesionales reales.',
     contactLabel: 'Contactar con Andrey por WhatsApp o Telegram',
     contactRequest: 'Quisiera solicitar una sesión personal de psicoterapia e imaginación guiada. ¿Qué disponibilidad hay y cuál es el siguiente paso?',
     intro: 'Conoce a un profesional real para una sesión de terapia individual.',
@@ -199,7 +200,6 @@ const visualTopics = [
   { id: 'resilience', image: 'calm' },
   { id: 'relationships', image: 'love' },
   { id: 'career', image: 'goals' },
-  { id: 'meaning', image: 'growth' },
   { id: 'habits', image: 'habits' },
 ]
 const categoryIcon = {
@@ -234,7 +234,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
   useEffect(() => {
     try {
       const ids = JSON.parse(window.localStorage.getItem(FAVORITES_KEY) || '[]')
-      if (Array.isArray(ids)) setFavorites(ids.filter(id => typeof id === 'string' && getCoachPersona(id)).slice(0, 8))
+      if (Array.isArray(ids)) setFavorites(ids.filter(id => typeof id === 'string' && PUBLIC_COACH_PERSONA_IDS.includes(id)).slice(0, 8))
     } catch { /* Private browsing may disable localStorage: favorites remain in memory. */ }
     setFavoritesReady(true)
   }, [])
@@ -243,7 +243,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
     try { window.localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites)) }
     catch { /* Local choice stays usable even when storage is unavailable. */ }
   }, [favorites, favoritesReady])
-  const list = useMemo(() => COACH_PERSONAS.filter(persona => {
+  const list = useMemo(() => PUBLIC_COACH_PERSONAS.filter(persona => {
     if (topic !== 'all' && persona.topic !== topic && !persona.related.includes(topic)) return false
     if (onlyFavorites && !favorites.includes(persona.id)) return false
     if (paceFilter !== 'any' && persona.defaults.pace !== paceFilter) return false
@@ -259,9 +259,9 @@ export default function MyCoachCatalog({ locale = 'en' }) {
     const score = persona => (persona.topic === topic ? 3 : persona.related.includes(topic) ? 2 : 0)
     return score(b) - score(a)
   }) : list, [list, sortBy, topic])
-  // All is a concise overview; the AI-only tab keeps the full eight-persona directory.
-  const displayedCoaches = directoryMode === 'all' ? visibleList.slice(0, 5) : visibleList
-  const selected = getCoachPersona(selectedId) || COACH_PERSONAS[0]
+  // All and AI-only views are limited to the four public pilot identities.
+  const displayedCoaches = directoryMode === 'all' ? visibleList.slice(0, 4) : visibleList
+  const selected = getCoachPersona(selectedId) || PUBLIC_COACH_PERSONAS[0]
   const safeSettings = normalizeCoachSettings(selected.id, settings)
   const updateSettings = (field, value) => setSettings(previous =>
     normalizeCoachSettings(selected.id, { ...previous, [field]: value }))
@@ -314,7 +314,9 @@ export default function MyCoachCatalog({ locale = 'en' }) {
           <p className={heroStyles.tagline}>{hw.tagline}</p>
         </div>
         <div className={heroStyles.heroStage} data-my-coach-hero={selected.id}>
-          <div className={heroStyles.heroPortrait} data-persona={selected.id} aria-hidden="true" />
+          <div className={heroStyles.heroPortrait} data-persona={selected.id} aria-hidden="true">
+            <MyCoachMotionMedia personaId={selected.id} phase="greeting" context="hero" />
+          </div>
           <div className={heroStyles.stageTop}>
             <span className={heroStyles.liveLabel}><span className={heroStyles.liveDot} />{hw.badge}</span>
           </div>
@@ -333,7 +335,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
             <div className={[styles.quickTopics, heroStyles.quickTopics].join(' ')} role="group" aria-label={t.topics}>
               {[
                 { id: 'resilience', label: d.energy }, { id: 'relationships', label: d.love },
-                { id: 'career', label: d.goals }, { id: 'meaning', label: d.meaning },
+                { id: 'career', label: d.goals }, { id: 'habits', label: d.habits },
               ].map(item => {
                 const Icon = categoryIcon[item.id] || Sparkles
                 return <button type="button" key={item.id} aria-pressed={topic === item.id}
@@ -350,7 +352,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
           <a href="#all-coaches">{hw.all} <ArrowRight size={18} aria-hidden="true" /></a>
         </div>
         <div className={heroStyles.coachRail} role="group" aria-label={hw.choose}>
-          {['mira','alex','sofia','max'].map(id => {
+          {PUBLIC_COACH_PERSONA_IDS.map(id => {
             const persona = getCoachPersona(id)
             if (!persona) return null
             return <button type="button" key={id} className={heroStyles.railCard}
@@ -362,7 +364,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
                     srcSet={`/images/holistic-house/my-coach-motion/${id}-still.webp`} />
                   <img
                     className={heroStyles.railPhoto}
-                    src={`/images/holistic-house/my-coach-motion/${id}-living.webp`}
+                    src={`/images/holistic-house/my-coach-motion/${id}-still.webp`}
                     alt=""
                     width={288}
                     height={320}
@@ -444,7 +446,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
           <div className={styles.topicRail} role="group" aria-label={t.topics}>
             <button type="button" aria-pressed={topic === 'all'} className={topic === 'all' ? styles.topicActive : styles.topicChip}
               onClick={() => setTopic('all')}>{d.allTopics}</button>
-            {COACH_TOPICS.map(key => <button type="button" key={key} aria-pressed={topic === key}
+            {PUBLIC_COACH_TOPICS.map(key => <button type="button" key={key} aria-pressed={topic === key}
               className={topic === key ? styles.topicActive : styles.topicChip} onClick={() => setTopic(key)}>{categories[key]}</button>)}
           </div>
           <label className={styles.paceFilter}><span>{d.pace}</span>
@@ -467,6 +469,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
             return <article key={persona.id} className={isSelected ? styles.cardSelected : styles.card}
               data-my-coach-card={persona.id}>
               <div className={styles.cardPortrait} data-persona={persona.id} aria-hidden="true">
+                <MyCoachMotionMedia personaId={persona.id} phase="idle" context="card" />
                 <span className={styles.avatarSymbol} data-palette={persona.palette}>{persona.symbol}</span>
               </div>
               <div className={styles.cardBody}>
@@ -495,7 +498,10 @@ export default function MyCoachCatalog({ locale = 'en' }) {
                 <section id={'my-coach-profile-' + persona.id} className={styles.profile} aria-label={t.profile}
         data-my-coach-selected={selected.id}>
         <div className={styles.profileHead}>
-          <div className={styles.avatarLarge} data-persona={selected.id} data-palette={selected.palette} aria-hidden="true">{selected.symbol}</div>
+          <div className={styles.avatarLarge} data-persona={selected.id} data-palette={selected.palette} aria-hidden="true">
+            <MyCoachMotionMedia personaId={selected.id} phase="greeting" context="avatar" />
+            {selected.symbol}
+          </div>
           <div>
             <span className={styles.profileEyebrow}>{t.profile}</span>
             <h2>{selectedName}</h2>

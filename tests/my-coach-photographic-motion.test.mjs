@@ -47,7 +47,7 @@ test('selected main chat photo is persona-specific and preserves voice state and
   const style=source('components/app/coaching-avatar.module.css')
   assert.match(dialog,/personaId=\{personaId\} displayName=\{name\}/)
   assert.match(avatar,/COACH_PERSONAS\.some\(p=>p\.id===personaId\)/)
-  assert.match(avatar,/<picture className=\{styles\.livingPortrait\}>/)
+  assert.match(avatar,/<picture className=\{styles\.livingPortraitBase\}>/)
   assert.match(avatar,/unoptimized loading="eager"/)
   assert.match(avatar,/prefers-reduced-motion: reduce/)
   assert.match(avatar,/data-photo-persona=\{photoId\|\|undefined\}/)
@@ -83,10 +83,10 @@ test('eight fictional AI coaches have truly separate six-frame photos across pub
 test('foreground swipe-rail photos match each coach and respect reduced motion',()=>{
   const jsx=source('components/my-coach-catalog.jsx')
   const css=source('components/my-coach-mira-landing.module.css')
-  assert.ok(jsx.includes('src={`/images/holistic-house/my-coach-motion/${id}-living.webp`}'))
+  assert.ok(jsx.includes('src={`/images/holistic-house/my-coach-motion/${id}-still.webp`}'))
   assert.ok(jsx.includes('srcSet={`/images/holistic-house/my-coach-motion/${id}-still.webp`}'))
   assert.ok(jsx.includes('<source media="(prefers-reduced-motion: reduce)" type="image/webp"'))
   assert.ok(!jsx.includes('my-coach-${id}-rail.webp'),
-    'legacy rail <img> overlay must not obscure the persona-specific animated background')
+    'legacy animated rail <img> must be replaced by the stable static poster')
   assert.match(css,/\.railPhoto\s*\{[^}]*object-fit:cover;/)
 })
