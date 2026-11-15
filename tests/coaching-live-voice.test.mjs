@@ -444,7 +444,12 @@ test('spoken My Coach answer retains the useful reflection rather than only the 
  assert.match(ui,/полный текст остаётся на экране/)
  assert.match(ui,/transcripción completa sigue visible/)
  assert.match(loop,/cloudAgreed&&cloudAvailable/)
- assert.match(ui,/consent&&cloudAgreed&&cloudAvailable/)
+ // Separate privacy choices: a voice-only visitor can enable natural voice
+ // without accepting the unrelated typed-message consent.
+ assert.ok(ui.includes("if(cloudAgreed&&cloudAvailable&&['google_chirp3_hd','fish_free'].includes(cloudProvider))"))
+ assert.ok(ui.includes("const [cloudAgreed,setCloudAgreed]=useState(false)"))
+ assert.ok(ui.includes("{cloudAvailable&&!authRequired&&<div className={styles.naturalVoiceRow}>"))
+ assert.ok(ui.includes("changeNaturalVoice(event.target.checked)"))
 })
 
 test('iPhone buffered MP3 animates from decoded actual waveform without another service call',async()=>{
