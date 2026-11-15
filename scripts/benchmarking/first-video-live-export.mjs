@@ -221,8 +221,12 @@ try {
   const concept=page.locator('[data-video-ideas-concept-panel]');
   await concept.waitFor({state:'visible',timeout:15000});
   row.phase='concept-approve-native-tap';
-  if(engine==='webkit')await concept.locator('[data-video-concept-approve]').tap();
-  else await concept.locator('[data-video-concept-approve]').click();
+  const conceptApprove=concept.locator('[data-video-concept-approve]');
+  await conceptApprove.waitFor({state:'visible',timeout:15000});
+  assert.equal(await conceptApprove.isEnabled(),true,
+    'FREE_GUEST_SAMPLE_CONCEPT_APPROVAL_MUST_NOT_REQUIRE_UNCONFIRMED_FILM_INTENT');
+  if(engine==='webkit')await conceptApprove.tap();
+  else await conceptApprove.click();
   row.phase='ideas-to-editor-return-native-tap';
   if(engine==='webkit')await page.locator('[data-video-quick-control="editor"]').tap();
   else await page.locator('[data-video-quick-control="editor"]').click();

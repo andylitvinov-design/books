@@ -16,6 +16,7 @@ import {suggestVideoConcept,reviseVideoConcept,videoConceptIsValid}
 import type {PublicLocale} from "@/lib/public-locales";
 import {buildVideoConceptNarrative} from "@/lib/mandala/video-concept-narrative.mjs";
 import {getVideoCreativeDirections,applyVideoCreativeDirection} from "@/lib/mandala/video-creative-directions.mjs";
+import {reviewConceptQuality} from "@/lib/mandala/cinematic-concept-v3.mjs";
 import css from "./mandala-video-concept.module.css";
 
 export type ApprovedVideoConcept={
@@ -28,8 +29,13 @@ export type ApprovedVideoConcept={
   semanticConfidence?:string;semanticPurpose?:string|null;semanticAudience?:string|null;
   conceptText?:string;energyStart?:number|null;energyTarget?:number|null;
   baseSignature?:string;creativeDirectionId?:string;creativeTitle?:string;creativeMode?:string;
-  creativeSymbol?:string;
-  storySource?:string;storyboard?:Array<{title:string;action:string;emotion:string;keywords:string[]}>;
+  creativeSymbol?:string;creativePitch?:string;creativeSchemaVersion?:string;
+  creativeReview?:{score:number;hardFailures:string[];status:"pass"|"revise"|"needs_input"};
+  psychologicalBrief?:{family:string;[key:string]:unknown};
+  userEditedFields?:string[];
+  storySource?:string;storyboard?:Array<{title:string;action:string;emotion:string;keywords:string[];
+    startSeconds?:number;endSeconds?:number;visualSubject?:string;shotType?:string;
+    continuityKeys?:string[];sourceStatus?:string}>;
   avoidImagery?:string[];speechBeatsSource?:string;personalizationFocus?:string|null;
   parameters?:Record<string,{value:string|string[]|null;status:string;source:string}>;
 };
@@ -98,11 +104,11 @@ const COPY={
 } as const;
 const DIRECTION_UI={
   ru:{title:"Выберите историю",lead:"Три разных сюжета по вашей цели. Выберите тот, который откликается.",
-    badge:"Режиссёрские варианты",settings:"Творческие настройки"},
+    badge:"Режиссёрские варианты",settings:"Творческие настройки",ideaEdit:"Изменить идею",ideaSave:"Сохранить идею",quality:"Уточните цель, чтобы получить три законченные истории. Сырой сценарий нельзя одобрить."},
   en:{title:"Choose your story",lead:"Three different films inspired by your goal. Choose the one that feels right.",
-    badge:"Creative directions",settings:"Creative settings"},
+    badge:"Creative directions",settings:"Creative settings",ideaEdit:"Edit idea",ideaSave:"Save idea",quality:"Refine your goal to receive three complete film stories. An unfinished draft cannot be approved."},
   es:{title:"Elige tu historia",lead:"Tres relatos distintos basados en tu objetivo. Elige el que más te inspire.",
-    badge:"Propuestas creativas",settings:"Ajustes creativos"}
+    badge:"Propuestas creativas",settings:"Ajustes creativos",ideaEdit:"Editar idea",ideaSave:"Guardar idea",quality:"Concreta tu objetivo para recibir tres historias completas. Un borrador incompleto no se puede aprobar."}
 } as const;
 export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speechTranscript=null,ownerFields,profile=null,selectedTopic=null,durationSeconds=30,approvedConcept,signedIn,
   loginUnavailable,disabled,onRefreshLogin,onApprove,onOpenGoal,onOpenStyle}:Props){
@@ -124,6 +130,9 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
     applyVideoCreativeDirection(suggested,selectedDirection) as ApprovedVideoConcept:suggested,
     [suggested,selectedDirection]);
   const [custom,setCustom]=useState<ApprovedVideoConcept|null>(null);
+  const [draftByDirection,setDraftByDirection]=useState<Record<string,ApprovedVideoConcept>>({});
+  const [ideaEditing,setIdeaEditing]=useState(false);
+  const [ideaDraft,setIdeaDraft]=useState("");
   const [textEditing,setTextEditing]=useState(false);
   const [textDraft,setTextDraft]=useState("");
   const [editing,setEditing]=useState(false);
@@ -133,7 +142,45 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
   const editButtonRef=useRef<HTMLButtonElement>(null);
   const modalRef=useRef<HTMLDivElement>(null);
   const concept=(custom&&custom.signature===directed.signature)?custom:
+    draftByDirection[directed.signature]||
     (approvedConcept&&approvedConcept.signature===directed.signature?approvedConcept:directed);
+  // Auto-selected default phrase suggestions are not confirmation that a
+  // visitor supplied a personal goal. The free guest example remains
+  // approvable; specific user requests still require a complete film.
+  const hasExplicitFilmIntent=Boolean(goal.trim()||selectedTopic?.topicId||profile||
+    speechTranscript?.text?.trim());
+  const isStoryFilm=hasExplicitFilmIntent&&concept.hasPersonalInput&&
+    concept.source!=="audio_transcript"&&
+    !["practice","celebration","presentation","audio_visual"].includes(concept.semanticPurpose||"");
+  // Check edited text again. The original automatic PASS does not authorize
+  // an arbitrary later manual rewrite, unsafe promise or arrow-chain idea.
+  const editedReview=concept.creativeSchemaVersion==="hh-creative-concept-v3"&&
+    concept.userEditedFields?.length&&concept.storyboard?.length===6?
+    reviewConceptQuality({
+      title:concept.creativeTitle,
+      idea:concept.mainMessage,pitch:concept.creativePitch||"",
+      story:concept.conceptText||"",
+      symbol:concept.creativeSymbol,
+      activeSymbol:{name:concept.creativeSymbol},
+      emotionalBeats:concept.emotionalProgram,
+      storyboard:concept.storyboard.map((shot,index)=>({
+        ...shot,index:index+1,visualAction:shot.action,
+        visualSubject:shot.visualSubject||"human_action",
+        startSeconds:index*5,endSeconds:(index+1)*5,
+        continuityKeys:shot.continuityKeys||["hero","action"],
+        sourceStatus:"editorial_unverified",sourceVerified:false
+      })),
+      turningPoint:concept.storyboard[3].action,
+      endingImage:concept.storyboard[5].action,
+      mediaBindingStatus:"editorial_only_unverified",
+      sourceStatus:"editorial_unverified",
+      psychologicalBrief:concept.psychologicalBrief||{family:"editorial"}
+    },{locale,goal:concept.goal,avoidImagery:concept.avoidImagery||[]}):null;
+  const passV3=concept.creativeSchemaVersion==="hh-creative-concept-v3"&&
+    concept.creativeReview?.status==="pass"&&concept.storyboard?.length===6&&
+    (!editedReview||editedReview.status==="pass");
+  const passCurated=concept.storySource==="curated_editorial"&&concept.storyboard?.length===6;
+  const creativeReady=!isStoryFilm||passV3||passCurated;
   const taxonomy=getMyTubeTaxonomy();
   const categories=taxonomy.categories;
   const category=categories.find(c=>c.id===concept.categoryId)||categories[0];
@@ -175,8 +222,11 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
   const chooseDirection=(id:string)=>{
     if(id===selectedDirection?.id)return;
     setChosenDirectionId(id);
-    setCustom(null);setApprovedSignature(null);setHasLocalEdits(false);
-    setTextEditing(false);setEditing(false);
+    setCustom(null);setApprovedSignature(null);
+    const direction=directions.find(d=>d.id===id);
+    const nextKey=direction?applyVideoCreativeDirection(suggested,direction).signature:null;
+    setHasLocalEdits(Boolean(nextKey&&draftByDirection[nextKey]));
+    setTextEditing(false);setIdeaEditing(false);setEditing(false);
   };
   const change=(patch:Partial<ApprovedVideoConcept>)=>{
     const next=reviseVideoConcept(concept,patch,locale) as ApprovedVideoConcept;
@@ -195,22 +245,44 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
           visualActions:{value:[...next.sceneOutline],status:"manual",source:"editor"}};
       }
     }
-    setCustom(next);setApprovedSignature(null);setHasLocalEdits(true);
+    if("mainMessage" in patch){
+      next.userEditedFields=[...new Set([...(concept.userEditedFields||[]),"mainMessage"])];
+    }
+    if(Object.keys(patch).some(key=>["categoryId","subcategoryId","topicId","scenarioId"].includes(key))){
+      next.creativeReview={score:0,status:"needs_input",hardFailures:["topic_requires_regeneration"]};
+    }
+    setCustom(next);setDraftByDirection(rows=>({...rows,[next.signature]:next}));
+    setApprovedSignature(null);setHasLocalEdits(true);
+  };
+  const startIdeaEdit=()=>{setIdeaDraft(concept.mainMessage);setIdeaEditing(true);};
+  const saveIdeaEdit=()=>{
+    const idea=ideaDraft.trim();
+    if(!idea||idea.includes("→"))return;
+    if(idea!==concept.mainMessage){
+      const next={...concept,mainMessage:idea,
+        userEditedFields:[...new Set([...(concept.userEditedFields||[]),"mainMessage"])]};
+      setCustom(next);setDraftByDirection(rows=>({...rows,[next.signature]:next}));
+      setApprovedSignature(null);setHasLocalEdits(true);
+    }
+    setIdeaEditing(false);
   };
   const startTextEdit=()=>{setTextDraft(narrativeText);setTextEditing(true);};
   const saveTextEdit=()=>{
     const text=textDraft.trim();
     if(!text)return;
     if(text!==narrativeText){
-      setCustom({...concept,conceptText:text});
+      const next={...concept,conceptText:text,
+        userEditedFields:[...new Set([...(concept.userEditedFields||[]),"conceptText"])]};
+      setCustom(next);setDraftByDirection(rows=>({...rows,[next.signature]:next}));
       setApprovedSignature(null);setHasLocalEdits(true);
     }
     setTextEditing(false);
   };
   const submit=()=>{
-    if(textEditing||!videoConceptIsValid(concept))return;
+    if(textEditing||ideaEditing||!creativeReady||!videoConceptIsValid(concept))return;
     const approvedToSave={...concept,conceptText:narrativeText};
     setCustom(approvedToSave);
+    setDraftByDirection(rows=>({...rows,[approvedToSave.signature]:approvedToSave}));
     setApprovedSignature(concept.signature);
     setHasLocalEdits(false);
     setEditing(false);
@@ -332,13 +404,30 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
            </span>
            <small>{direction.mode}</small>
            <span className={css.directionIdea}>{direction.idea}</span>
+           {("pitch" in direction&&direction.pitch)?
+             <span className={css.directionPitch}>{String(direction.pitch)}</span>:null}
          </button>)}
        </div>
      </section>:null}
     <section className={css.mainIdeaCard} aria-label={t.story}>
-      <h4>{t.story}</h4>
+      <div className={css.mainIdeaHeading}>
+        <h4>{t.story}</h4>
+        {!ideaEditing?<button type="button" className={css.ideaEdit}
+          data-video-main-idea-edit disabled={disabled||textEditing||editing}
+          onClick={startIdeaEdit}><Pencil size={15}/>{DIRECTION_UI[locale].ideaEdit}</button>:null}
+      </div>
+      {ideaEditing?<div className={css.ideaEditor}>
+        <textarea data-video-main-idea-input maxLength={450} rows={3} autoFocus
+          aria-label={t.story} value={ideaDraft} disabled={disabled}
+          onChange={event=>setIdeaDraft(event.currentTarget.value)}/>
+        <div className={css.narrativeButtons}>
+          <button type="button" onClick={saveIdeaEdit} disabled={disabled||!ideaDraft.trim()||ideaDraft.includes("→")}>
+            <Check size={16}/>{DIRECTION_UI[locale].ideaSave}</button>
+          <button type="button" onClick={()=>setIdeaEditing(false)}>{t.textCancel}</button>
+        </div>
+      </div>:null}
       {concept.creativeTitle?<span className={css.conceptTitle}>{concept.creativeTitle}</span>:null}
-      <strong data-video-concept-main-idea="true">{concept.mainMessage}</strong>
+      {!ideaEditing?<strong data-video-concept-main-idea="true">{concept.mainMessage}</strong>:null}
     </section>
     <section className={css.narrativeCard} data-video-concept-text>
       <div className={css.narrativeHeading}>
@@ -359,6 +448,9 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
         </div>
       </>:<p className={css.narrativeCopy} data-video-concept-paragraph>{narrativeText}</p>}
     </section>
+    {!creativeReady?<p className={css.example} role="status" data-video-concept-quality-needed>
+      {DIRECTION_UI[locale].quality} <button type="button" onClick={onOpenGoal}>{t.noGoal}</button>
+    </p>:null}
     {editing&&signedIn ? <div className={css.editor} data-video-concept-editor>
       <label>{t.category}
         <select value={category.id} disabled={disabled} onChange={e=>change({
@@ -399,6 +491,26 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
       <button type="button" className={css.styleLink} onClick={onOpenStyle}
         disabled={disabled}><Sparkles size={17}/>{t.editStyle}<ArrowRight size={16}/></button>
     </div> : null}
+    <details className={css.beats} data-video-concept-shot-sketch open>
+      <summary>{word("Предложенная раскадровка","Suggested storyboard","Guion gráfico propuesto")}
+        {" · "}{durationSeconds}{word(" сек","s"," s")} · {sketch.length} {word("кадров","shots","tomas")}
+        <ChevronDown size={17} aria-hidden="true"/></summary>
+      <ol className={css.parameterList}>{sketch.map(shot=><li key={shot.number}>
+        <strong>{timecode(shot.startSeconds)}–{timecode(shot.endSeconds)}</strong> ·
+        {" "}{shot.title?<span className={css.shotTitle}>{shot.title}</span>:
+          shotKinds[shot.shotKind]}: <span className={css.shotAction}>{shot.beat}</span>
+        {shot.emotion?<small className={css.shotEmotion}>{shot.emotion}</small>:null}
+      </li>)}</ol>
+      <p className={css.status}>{word(
+        "Это план сцен, не подтверждение наличия разных видеоматериалов. Подбор и проверка MP4 — в Монтаже.",
+        "This is an editorial shot plan, not verified footage. Montage checks distinct source clips.",
+        "Es un plan creativo, no metraje verificado. Montaje comprueba clips distintos."
+      )}</p>
+    </details>
+    <details className={css.beats} data-video-concept-beats>
+      <summary>{t.stages}<ChevronDown size={17} aria-hidden="true"/></summary>
+      <ol>{concept.sceneOutline.map((beat,index)=><li key={index}>{beat}</li>)}</ol>
+    </details>
     {concept.parameters?<details className={css.parameters} data-video-concept-all-parameters>
       <summary><strong>{DIRECTION_UI[locale].settings}</strong><ChevronDown size={19} aria-hidden="true"/></summary>
       <ol className={css.parameterList}>{allParameterRows.map(row=>{
@@ -434,7 +546,7 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
     </p>:null}
     <div className={css.actions} data-video-concept-action-rail>
       <button type="button" className={css.approve} data-video-concept-approve
-        disabled={disabled||textEditing||!videoConceptIsValid(concept)} onClick={submit}>
+        disabled={disabled||textEditing||ideaEditing||!creativeReady||!videoConceptIsValid(concept)} onClick={submit}>
         <Check size={21}/><span>{editing?t.save:t.approve}</span><ArrowRight size={18}/>
       </button>
       <button type="button" ref={editButtonRef} className={css.edit}
@@ -451,26 +563,6 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
           {!signedIn&&!editing?<small>{t.editHelp}</small>:null}</span>
       </button>
     </div>
-    <details className={css.beats} data-video-concept-beats>
-      <summary>{t.stages}<ChevronDown size={17} aria-hidden="true"/></summary>
-      <ol>{concept.sceneOutline.map((beat,index)=><li key={index}>{beat}</li>)}</ol>
-    </details>
-    <details className={css.beats} data-video-concept-shot-sketch>
-      <summary>{word("Предложенная раскадровка","Suggested storyboard","Guion gráfico propuesto")}
-        {" · "}{durationSeconds}{word(" сек","s"," s")} · {sketch.length} {word("кадров","shots","tomas")}
-        <ChevronDown size={17} aria-hidden="true"/></summary>
-      <ol className={css.parameterList}>{sketch.map(shot=><li key={shot.number}>
-        <strong>{timecode(shot.startSeconds)}–{timecode(shot.endSeconds)}</strong> ·
-        {" "}{shot.title?<span className={css.shotTitle}>{shot.title}</span>:
-          shotKinds[shot.shotKind]}: <span className={css.shotAction}>{shot.beat}</span>
-        {shot.emotion?<small className={css.shotEmotion}>{shot.emotion}</small>:null}
-      </li>)}</ol>
-      <p className={css.status}>{word(
-        "Это план сцен, не подтверждение наличия разных видеоматериалов. Подбор и проверка MP4 — в Монтаже.",
-        "This is an editorial shot plan, not verified footage. Montage checks distinct source clips.",
-        "Es un plan creativo, no metraje verificado. Montaje comprueba clips distintos."
-      )}</p>
-    </details>
     {concept.source==="audio_transcript"?<p className={css.status} data-video-concept-from-audio role="status">
       {locale==="ru"?"Все смысловые параметры предложены по расшифровке речи. Слова и монтаж можно проверить отдельно.":
         locale==="es"?"Los parámetros se propusieron a partir del audio. Revisa el texto y el montaje por separado.":

@@ -181,6 +181,36 @@ async function verifyWorkspaceHydration(browser,locale){
     await ideasConceptTab.tap();
     const concept=page.locator("[data-video-ideas-concept-panel]");
     await expect(concept).toBeVisible();
+    // Concept Intelligence v3: a specific goal has a real narrative and three
+    // distinct, touch-operable choices, never a catalog arrow-chain.
+    const directionCards=concept.locator("[data-video-concept-direction]");
+    if(await directionCards.count()===3){
+      const ideaText=await directionCards.first().textContent();
+      assert.doesNotMatch(ideaText||"",/→|The story opens with/i);
+      const firstStory=await concept.locator("[data-video-concept-paragraph]").textContent();
+      await directionCards.nth(1).tap();
+      await expect(directionCards.nth(1)).toHaveAttribute("aria-pressed","true");
+      const alternative=await concept.locator("[data-video-concept-paragraph]").textContent();
+      assert.notEqual(firstStory,alternative,"switching a card changes the actual story");
+      await directionCards.first().tap();
+      await expect(directionCards.first()).toHaveAttribute("aria-pressed","true");
+    }
+    // One-screen responsive guard: fixed rail must remain reachable and above
+    // the bottom navigation/FAB without horizontal overflow on iPhone sizes.
+    for(const width of [320,375,390,430]){
+      await page.setViewportSize({width,height:840});
+      const measure=await concept.evaluate((element)=>{
+        const rail=element.querySelector("[data-video-concept-action-rail]");
+        const root=element.querySelector("[data-video-concept-auto]");
+        if(!rail||!root)return null;
+        const a=rail.getBoundingClientRect(),b=root.getBoundingClientRect();
+        return {left:a.left,right:a.right,bottom:a.bottom,bodyLeft:b.left,bodyRight:b.right};
+      });
+      assert.ok(measure&&measure.left>=-1&&measure.right<=width+1&&
+        measure.bodyRight<=width+1&&measure.bottom<810,
+        "Concept stays within mobile viewport at width "+width);
+    }
+    await page.setViewportSize({width:390,height:840});
     const headline=concept.locator("[data-video-concept-main-idea]");
     const narrative=concept.locator("[data-video-concept-paragraph]");
     await expect(headline).toBeVisible();

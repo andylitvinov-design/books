@@ -118,7 +118,12 @@ test("required Hypno three tabs, relocated effects and guided kind remain browse
   assert.match(guided,/await expect\(kind\)\.toHaveAttribute\("aria-pressed","true",\{timeout:15000\}\)/);
   assert.match(guided,/GUIDED_KIND_DID_NOT_COMMIT/);
   assert.match(exportFlow,/const montageStyle=page\.locator/);
-  assert.match(exportFlow,/await concept\.locator\('\[data-video-concept-approve\]'\)\.click\(\)/);
+  // The real first-video browser route uses a checked, native tap/click
+  // locator rather than the retired inline click expression.
+  assert.match(exportFlow,/const conceptApprove=concept\.locator\('\[data-video-concept-approve\]'\)/);
+  assert.match(exportFlow,/await conceptApprove\.isEnabled\(\)/);
+  assert.match(exportFlow,/if\(engine==='webkit'\)await conceptApprove\.tap\(\)/);
+  assert.match(exportFlow,/else await conceptApprove\.click\(\)/);
   assert.match(exportFlow,/FOUR_DISTINCT_SOURCES_REQUIRED/);
 });
 

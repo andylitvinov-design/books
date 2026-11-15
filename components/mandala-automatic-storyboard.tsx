@@ -110,11 +110,19 @@ export function MandalaAutomaticStoryboard({
  const sceneCatalog=new Map(scenes.filter((scene):scene is {id:string}=>Boolean(
    scene&&typeof scene==="object"&&"id" in scene&&typeof scene.id==="string"))
    .map(scene=>[scene.id,scene]));
- const eligible=filmedProposalReady&&proposal.shots.every(shot=>{
-  const photo=STORY_PHOTO_BY_ID.get(shot.sceneId);
-  return photo?isTrustedStoryPhoto(photo):
-    isReviewedFilmedStoryScene(sceneCatalog.get(shot.sceneId),"portrait");
- });
+ // Metadata/title/tag relevance does not prove that a camera clip depicts a
+ // newly authored action. Keep the script in Montage, but do not auto-apply
+ // unrelated footage until shot-level event evidence has been reviewed.
+ const v3RequiresActionProof=concept.creativeSchemaVersion==="hh-creative-concept-v3";
+ // Reviewed planner explicitly reports depictedEventVerified:false today.
+ // Treat all v3 matches as editorial until independent real shot-level proof
+ // exists; generic metadata must not be coerced into a verified action.
+ const eligible=filmedProposalReady&&!v3RequiresActionProof&&
+  proposal.shots.every(shot=>{
+   const photo=STORY_PHOTO_BY_ID.get(shot.sceneId);
+   return photo?isTrustedStoryPhoto(photo):
+     isReviewedFilmedStoryScene(sceneCatalog.get(shot.sceneId),"portrait");
+  });
  const proposalHasPhotos=proposal.ok&&proposal.shots.some(shot=>STORY_PHOTO_BY_ID.has(shot.sceneId));
  const shots=eligible?proposal.shots.map(shot=>({
   sceneId:shot.sceneId,startSeconds:shot.startMs/1000,
@@ -143,7 +151,7 @@ export function MandalaAutomaticStoryboard({
 
  // Exactly five mobile summary cards; the verified six 5-second footage cuts
  // remain intact at 30 seconds. The last card represents both closing cuts.
- const manualFiveReady=Boolean(fiveSceneShots?.length===5&&
+ const manualFiveReady=Boolean(!v3RequiresActionProof&&fiveSceneShots?.length===5&&
   fiveSceneShots.every(shot=>isReviewedFilmedStoryScene(sceneCatalog.get(shot.sceneId),"portrait")));
  const visibleCount=manualFiveReady?5:Math.min(5,guides.scenes.length);
  const compactCards=Array.from({length:visibleCount},(_,index)=>{
@@ -163,7 +171,8 @@ export function MandalaAutomaticStoryboard({
   data-reviewed-filmed-only={!proposalHasPhotos}
   data-reviewed-media-only="true" data-photo-fallback={proposalHasPhotos?"licensed":undefined}
   data-storyboard-aligned-to-settings={manualFiveReady||applied}
-  data-storyboard-media-ready={manualFiveReady||eligible}>
+  data-storyboard-media-ready={manualFiveReady||eligible}
+  data-storyboard-action-proof={v3RequiresActionProof?"editorial_unverified":"legacy"}>
   <div className={styles.storyAutoHead}>
    <p className={styles.storyAutoMeta}>
     <Film size={14} aria-hidden="true"/>{compactCards.length} {locale==="ru"?"сцен":locale==="es"?"escenas":"scenes"}
