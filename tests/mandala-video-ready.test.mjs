@@ -353,3 +353,17 @@ test("credit hold times out instead of leaving a signed-in iPhone in Preparing",
     assert.equal(aborted,true,"the hung browser request must be aborted");
   }finally{globalThis.fetch=originalFetch;}
 });
+
+test("Add Video keeps the optional source editor closed on landing and opens it on user navigation",()=>{
+  assert.match(studio,/const \[firstVideoAdvancedOpen,setFirstVideoAdvancedOpen\] = useState\(false\)/);
+  assert.match(studio,/open=\{firstVideoAdvancedOpen\}/);
+  assert.match(studio,/setFirstVideoAdvancedOpen\(opened\)/,
+    "real native summary toggle owns open and close");
+  const from=studio.indexOf("const openQuickDetailed=");
+  const to=studio.indexOf("const openVideoScenarioStep",from);
+  assert.ok(from>0&&to>from);
+  assert.match(studio.slice(from,to),
+    /if\(anchor==="video-templates"\)\{[\s\S]*?setFirstVideoAdvancedOpen\(true\)/,
+    "Add Video reveals the real first-party source editor before Safari can lose a second tap");
+  assert.match(studio,/data-video-first-video-advanced>/);
+});

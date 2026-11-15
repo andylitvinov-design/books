@@ -2042,6 +2042,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [videoScenarioOpen,setVideoScenarioOpen] = useState(false);
   const goalContinueRef=useRef<(()=>boolean)|null>(null);
   const [firstVideoAdvancedActivated,setFirstVideoAdvancedActivated] = useState(false);
+  // Keep the optional source editor compact until the user explicitly opens
+  // it or follows Add video. React owns this disclosure across WebKit rerenders.
+  const [firstVideoAdvancedOpen,setFirstVideoAdvancedOpen] = useState(false);
   const [voiceStudioActivated,setVoiceStudioActivated] = useState(false);
   const [phraseCatalogActivated,setPhraseCatalogActivated] = useState(false);
   const [studioMode,setStudioMode] = useState<"pump"|"therapy">("pump");
@@ -5532,6 +5535,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       if(hash==="video-templates"){
         setVideoScenarioOpen(true);
         setFirstVideoAdvancedActivated(true);
+        setFirstVideoAdvancedOpen(true);
       }
       if(hash==="video-audio"){setMontagePanel("audio");setBasicPanelTab("music");}
       if(hash==="video-settings"){setMontagePanel("settings");setMontageStyleSettingsOpen(true);}
@@ -5565,9 +5569,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     if(anchor==="video-audio"){setMontagePanel("audio");setBasicPanelTab("music");setAudioLibraryOpen(true);}
     if(anchor==="video-settings"){setMontagePanel("settings");setMontageStyleSettingsOpen(true);}
     if(anchor==="video-templates"){
-      // A visitor choosing All styles must see the original 4-shot catalogue.
+      // Add Video / all styles must reveal the real mounted source editor.
       setVideoScenarioOpen(true);
       setFirstVideoAdvancedActivated(true);
+      setFirstVideoAdvancedOpen(true);
     }
     if(anchor==="voice-studio"){setHypnoEntryGroup("audio");setVoiceStudioActivated(true);}
     // The compact Video surface hides the full audio gallery by default.
@@ -5761,6 +5766,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setVideoScenarioOpen(true);
     setShowAdvancedVideo(true);
     setFirstVideoAdvancedActivated(true);
+    setFirstVideoAdvancedOpen(true);
     setActiveWorkspace("video");
     window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
       document.querySelector("[data-free-film-compilation-catalog]")?.scrollIntoView({
@@ -7520,7 +7526,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <MandalaSmartAnimation locale={locale}/>
         </details>
         <details className={videoStyles.quickExtras} data-workspace-section="video"
-          onToggle={event=>{if(event.currentTarget.open)setFirstVideoAdvancedActivated(true);}}
+          open={firstVideoAdvancedOpen}
+          onToggle={event=>{
+            const opened=event.currentTarget.open;
+            setFirstVideoAdvancedOpen(opened);
+            if(opened)setFirstVideoAdvancedActivated(true);
+          }}
           data-video-first-video-advanced>
           <summary>{locale==="ru"?"Дополнительно: видео по подробному описанию":locale==="es"?"Avanzado: vídeo desde descripción":"Advanced: video from description"}</summary>
         {/* Compact first-video tool follows the third Style section,
