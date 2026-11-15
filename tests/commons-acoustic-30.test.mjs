@@ -9,6 +9,18 @@ import {validateAcoustic30,auditAcoustic30,recordingLicense,
 const source=fileURLToPath(new URL("../scripts/stage-commons-acoustic-30.mjs",import.meta.url));
 const approved=validateAcoustic30(queue);
 
+test("curation uses independently listed real high-quality originals, not low-bitrate copies",()=>{
+ const rows=new Map(queue.candidates.map(x=>[x.id,x]));
+ assert.equal(rows.get("curated-bach-goldberg-aria").fileName,"Goldberg Variations 01 Aria.ogg");
+ for(const id of ["curated-chopin-nocturne-15-2","curated-chopin-nocturne-55-2",
+   "curated-chopin-cello-sonata-largo","curated-chopin-etude-tristesse"]){
+   const row=rows.get(id);
+   assert.ok(row?.sourcePageStatus?.includes("official_commons_category"));
+   assert.ok(row.fileName.endsWith(".flac"));
+ }
+ assert.ok(new Set(queue.candidates.map(row=>row.performer)).size>=7);
+ assert.ok(queue.candidates.every(row=>row.generatorEligible===false));
+});
 test("30 genuinely distinct composition/performance candidate pages, never synthetic generators",()=>{
  assert.equal(approved.length,30);
  assert.equal(new Set(approved.map(r=>r.id)).size,30);
