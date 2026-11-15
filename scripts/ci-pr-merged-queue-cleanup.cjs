@@ -2,9 +2,11 @@
 // HH_STALE_MERGED_QUEUE_CLEANUP_V1
 // Called only inside the EXISTING scheduled or trusted reconcile Watchdog run when the recorded
 // Actions queue is over 100. Never starts CI, edits source, or merges a PR.
-// Restrict cancellation to first-attempt QUEUED pull_request runs whose
-// original source SHA is proven ancestral to the final SHA of one unique,
-// already MERGED production PR. Open/held/unmerged/manual reruns stay untouched.
+// Restrict cancellation to first-attempt QUEUED pull_request runs with verified
+// ancestry and unique production PR ownership. Existing merged PRs retain the
+// 14-day jobless deletion path; open Ready PRs qualify ONLY when their stale
+// source/merge run is jobless and an independently newer source HEAD is proven.
+// No current-HEAD, Draft, held, manual-rerun, or source-write/merge mutation.
 const OWNER='andylitvinov-design', REPO='books';
 const FULL=OWNER+'/'+REPO, PROD='codex/public-book-library';
 const CONTROL='codex/bootstrap-books', SHA=/^[a-f0-9]{40}$/i;
@@ -39,6 +41,33 @@ function mergedProduction(pr,run,now){
  const created=date(pr.created_at),merged=date(pr.merged_at),at=date(run.created_at);
  return created!==null&&merged!==null&&at!==null&&
   created<=at&&at<=merged&&merged<=now-GRACE;
+}
+function staleOpenProduction(pr,run,now){
+ // Complement the already-merged cleanup only for orphaned, jobless old-HEAD
+ // checks of a single still-open same-repository production PR.
+ if(!pr||pr.state!=='open'||pr.draft===true||pr.merged===true||
+    pr.merged_at!=null||pr.base?.ref!==PROD||
+    pr.base?.repo?.full_name!==FULL||
+    pr.head?.repo?.full_name!==FULL||pr.head?.ref!==run.head_branch||
+    !SHA.test(pr.head.sha||'')||pr.head.sha===run.head_sha||
+    run.pull_requests?.length!==1||!uniqueRunOwner(run,pr))return false;
+ const labels=Array.isArray(pr.labels)
+   ?pr.labels.map(label=>typeof label==='string'?label:label?.name):[];
+ if(labels.some(label=>['hold','hh:hold','hh:repair-manual','hh:security-hold'].includes(label)))
+   return false;
+ const created=date(pr.created_at),queued=date(run.created_at);
+ return created!==null&&queued!==null&&created<=queued&&queued<=now-GRACE;
+}
+function validOpenAncestry(compare,run){
+ // A loose branch ruleset and a matching branch name are NOT ancestry proof.
+ // In particular, reject diverged, behind, missing/partial or mutable compares.
+ return compare?.status==='ahead'&&
+   compare.base_commit?.sha?.toLowerCase()===run.head_sha.toLowerCase()&&
+   compare.merge_base_commit?.sha?.toLowerCase()===run.head_sha.toLowerCase()&&
+   compare.behind_by===0&&
+   Number.isSafeInteger(compare.ahead_by)&&compare.ahead_by>0&&
+   Number.isSafeInteger(compare.total_commits)&&
+   compare.total_commits>=compare.ahead_by;
 }
 function uniqueRunOwner(run,pr){
  if(run.pull_requests.length===0)return true; // unique historical branch AND SHA ancestry separately required
@@ -118,10 +147,12 @@ async function runCleanup({github,context,core={info(){},warning(){}},
    }
    branches.set(item.head_branch,pr);
   }
-  if(!mergedProduction(pr,item,now)||!uniqueRunOwner(item,pr)){
+  const mergedScope=mergedProduction(pr,item,now);
+  const openScope=staleOpenProduction(pr,item,now);
+  if(!(mergedScope||openScope)||!uniqueRunOwner(item,pr)){
    out.skipped++;continue;
   }
-  const key=item.head_sha+':'+pr.head.sha;
+  const key=(openScope?'OPEN:':'MERGED:')+item.head_sha+':'+pr.head.sha;
   let proven=commits.get(key);
   if(proven===undefined){
    if(out.proved_shas>=MAX_COMPARES){out.partial=true;break;}
@@ -129,7 +160,7 @@ async function runCleanup({github,context,core={info(){},warning(){}},
    try{
     const result=(await github.rest.repos.compareCommits({owner:OWNER,repo:REPO,
       base:item.head_sha,head:pr.head.sha})).data;
-    proven=validComparison(result,item,pr);
+    proven=openScope?validOpenAncestry(result,item):validComparison(result,item,pr);
    }catch(error){
     proven=false;
     out.errors.push('ANCESTRY_UNAVAILABLE:'+String(error?.status||'unknown'));
@@ -148,22 +179,54 @@ async function runCleanup({github,context,core={info(){},warning(){}},
    out.errors.push('FINAL_READBACK:'+String(error?.status||'unknown'));
    out.partial=true;break;
   }
+  const freshScope=mergedScope?
+    freshPR?.merged===true&&freshPR.merged_at===pr.merged_at&&
+      mergedProduction(freshPR,freshRun,now)
+    :freshPR?.merged===false&&staleOpenProduction(freshPR,freshRun,now);
   if(!queuedPRRun(freshRun)||freshRun.id!==item.id||
      freshRun.head_sha!==item.head_sha||
      freshRun.head_branch!==item.head_branch||
      freshRun.created_at!==item.created_at||
-     freshPR?.number!==pr.number||freshPR.merged!==true||
-     freshPR.head?.sha!==pr.head.sha||
-     freshPR.merged_at!==pr.merged_at||
-     !mergedProduction(freshPR,freshRun,now)||
-     !uniqueRunOwner(freshRun,freshPR)){
+     freshPR?.number!==pr.number||freshPR.head?.sha!==pr.head.sha||
+     !freshScope||!uniqueRunOwner(freshRun,freshPR)){
    out.skipped++;continue;
+  }
+  if(openScope){
+   // Never cancel a queued OPEN PR workflow that might contain a real job.
+   // Re-read both immutable run identity and current PR after listing jobs;
+   // stale snapshots and missing zero-job proof are not authorization.
+   let evidence,verifiedRun,verifiedPR;
+   try{
+    const [j,r,p]=await Promise.all([
+     github.rest.actions.listJobsForWorkflowRun({
+      owner:OWNER,repo:REPO,run_id:item.id,per_page:5}),
+     github.rest.actions.getWorkflowRun({
+      owner:OWNER,repo:REPO,run_id:item.id}),
+     github.rest.pulls.get({
+      owner:OWNER,repo:REPO,pull_number:pr.number})
+    ]);
+    evidence=j?.data;verifiedRun=r?.data;verifiedPR=p?.data;
+   }catch(error){
+    out.errors.push('OPEN_JOBLESS_PROOF_UNAVAILABLE:'+String(error?.status||'unknown'));
+    out.skipped++;continue;
+   }
+   if(evidence?.total_count!==0||!Array.isArray(evidence.jobs)||
+      evidence.jobs.length!==0||!queuedPRRun(verifiedRun)||
+      verifiedRun.id!==item.id||verifiedRun.head_sha!==item.head_sha||
+      verifiedRun.head_branch!==item.head_branch||
+      verifiedRun.created_at!==item.created_at||
+      verifiedPR?.number!==pr.number||verifiedPR.merged!==false||
+      verifiedPR.head?.sha!==pr.head.sha||
+      !staleOpenProduction(verifiedPR,verifiedRun,now)||
+      !uniqueRunOwner(verifiedRun,verifiedPR)){
+    out.skipped++;continue;
+   }
   }
   out.eligible++;
   // GitHub allows deleting unfinished runs older than two weeks. Only
   // previously merged, uniquely associated production PR runs with proven
   // ancestry and ZERO jobs reach this code. One-hour safety margin applies.
-  if(oldEnoughForDelete(item,now)){
+  if(mergedScope&&oldEnoughForDelete(item,now)){
    if(out.delete_attempts>=MAX_DELETE_ATTEMPTS){
     out.delete_deferred++;continue;
    }
@@ -240,21 +303,27 @@ async function runCleanup({github,context,core={info(){},warning(){}},
    if(status===409){
     // An incident may strand a first-attempt run at queued with zero jobs.
     // Only after the regular cancel fails, try GitHub's documented fallback.
-    let runAfter=null,jobs=null;
+    let runAfter=null,jobs=null,prAfter=null;
     try{
-     const [runResult,jobResult]=await Promise.all([
+     const [runResult,jobResult,prResult]=await Promise.all([
       github.rest.actions.getWorkflowRun({owner:OWNER,repo:REPO,run_id:item.id}),
       github.rest.actions.listJobsForWorkflowRun({
-       owner:OWNER,repo:REPO,run_id:item.id,per_page:5})
+       owner:OWNER,repo:REPO,run_id:item.id,per_page:5}),
+      openScope?github.rest.pulls.get({
+       owner:OWNER,repo:REPO,pull_number:pr.number})
+       :Promise.resolve({data:freshPR})
      ]);
-     runAfter=runResult.data;jobs=jobResult.data;
+     runAfter=runResult.data;jobs=jobResult.data;prAfter=prResult.data;
     }catch(e){out.errors.push('JOBLESS_409_PROOF_UNAVAILABLE:'+String(e?.status||'unknown'));}
+    const afterScope=openScope?
+      prAfter?.merged===false&&prAfter.head?.sha===pr.head.sha&&
+        staleOpenProduction(prAfter,runAfter,now)
+      :mergedProduction(prAfter,runAfter,now);
     const jobless=queuedPRRun(runAfter)&&runAfter.id===item.id&&
       runAfter.head_sha===item.head_sha&&
       runAfter.head_branch===item.head_branch&&
       runAfter.created_at===item.created_at&&
-      mergedProduction(freshPR,runAfter,now)&&
-      uniqueRunOwner(runAfter,freshPR)&&
+      afterScope&&uniqueRunOwner(runAfter,prAfter)&&
       jobs?.total_count===0&&Array.isArray(jobs.jobs)&&jobs.jobs.length===0;
     // NEVER force-cancel an open PR, unproved ancestry, changed run,
     // active job, manual rerun, or a run outside the verified merged scope.
@@ -310,5 +379,6 @@ async function runCleanup({github,context,core={info(){},warning(){}},
  core.info('HH_STALE_MERGED_QUEUE_CLEANUP '+JSON.stringify(out));
  return out;
 }
-module.exports={queuedPRRun,mergedProduction,uniqueRunOwner,validComparison,
- trustedContext,runCleanup,MAX_CANCELS,oldEnoughForDelete,DELETE_MIN_AGE_MS};
+module.exports={queuedPRRun,mergedProduction,staleOpenProduction,validOpenAncestry,
+ uniqueRunOwner,validComparison,trustedContext,runCleanup,MAX_CANCELS,
+ oldEnoughForDelete,DELETE_MIN_AGE_MS};
