@@ -2,6 +2,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync,existsSync} from "node:fs";
 import {suggestMeaningPhrases} from "../lib/mandala/video-meaning-phrases.mjs";
+import {appendPersonalVideoClosingPhrase,personalVideoClosingPhrase,normalizePersonalVideoName}
+  from "../lib/mandala/video-goal-idea-phrases.mjs";
+import {planIdeaSelection} from "../lib/mandala/video-idea-selection.mjs";
 
 const read=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 const studio=read("components/mandala-free-video-studio.tsx");
@@ -108,4 +111,50 @@ test("Concept uses canonical selected filters and numeric energy, while WebKit p
   assert.match(ideas.slice(applyStart,projectionStart),/lastApplied\.current=signature/);
   assert.match(browser,/await unselectedToggle\.click\(\)/);
   assert.match(browser,/toHaveAttribute\('aria-pressed','true'\)/);
+});
+
+test("Preferred name appears in last suggested AND fifth selected video phrase in RU/EN/ES",()=>{
+  const sample=[
+    "I can pause","I can choose","I am learning","I can rest",
+    "I can grow","My pace matters","A gentler day is possible",
+  ];
+  for(const [locale,name,expected] of [
+    ["ru","Андрей","Андрей, я в тебя верю"],
+    ["en","Andy","Andy, I believe in you"],
+    ["es","Andrés","Andrés, creo en ti"],
+  ]){
+    assert.equal(personalVideoClosingPhrase(locale,name),expected);
+    const suggested=appendPersonalVideoClosingPhrase(sample,locale,name);
+    assert.equal(suggested.length,7);
+    assert.equal(suggested.at(-1),expected);
+    const chosen=[0,1,2,3,suggested.length-1];
+    const plan=planIdeaSelection(suggested,chosen,suggested,"profile-with-name");
+    assert.equal(plan.settingsPatch.presetOverride.at(-1),expected);
+    assert.equal(plan.editor.chosen.at(-1),6);
+  }
+  assert.deepEqual(appendPersonalVideoClosingPhrase(sample,"en",""),sample,
+    "blank name keeps the existing seven proposals unchanged");
+  assert.equal(personalVideoClosingPhrase("en","<b>Mary Jane</b>"),"Mary Jane, I believe in you");
+  assert.equal(normalizePersonalVideoName("Alice 123"),"Alice");
+  assert.ok(personalVideoClosingPhrase("en","A".repeat(70)).length<=36,
+    "the full supportive closing must fit the current subtitle/voice limit");
+  assert.ok(personalVideoClosingPhrase("ru","Александра-Екатерина").endsWith("я в тебя верю"));
+});
+
+test("Name question stays in browser and personal closing follows the existing video projection",()=>{
+  assert.match(personal,/name:"",current:\["fatigue"\]/);
+  assert.match(personal,/data-video-personalization-name-question/);
+  assert.match(personal,/data-video-personalization-name type="text"/);
+  for(const line of ["Как вас зовут?","What is your name?","¿Cómo te llamas?"])
+    assert.ok(personal.includes(line),line);
+  assert.match(ideas,/personalClosingPhrase=personalVideoClosingPhrase\(locale,profile\?\.name\)/);
+  assert.match(ideas,/appendPersonalVideoClosingPhrase\(pool,locale,profile\?\.name\)/);
+  assert.match(ideas,/initialChosen=personalClosingPhrase\?/);
+  assert.match(ideas,/options\[options\.length-1\]===personalClosingPhrase/);
+  assert.match(ideas,/ideasDraft:plan\.editor/);
+  assert.ok(css.includes(".nameCard input:focus-visible"));
+  const summary=personal.slice(personal.indexOf("export function summarizeVideoGoalProfile"),
+    personal.indexOf("export function MandalaVideoPersonalization"));
+  assert.ok(!summary.includes("value.name"),
+    "the preferred name never enters the concept/service personalization summary");
 });
