@@ -1,7 +1,7 @@
 name: HH hourly Vercel production batch
 on:
   schedule:
-    - cron: '0 * * * *'
+    - cron: '17 * * * *'
   workflow_dispatch:
     inputs:
       emergency:
