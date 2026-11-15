@@ -186,3 +186,35 @@ test('Fish natural voice accepts the exact live/replay persona payload but no ex
   assert.equal(myCoachFishConfig(enabled,Date.parse('2026-11-14T12:00:00Z')).model,'s2.1-pro-free')
   assert.equal(myCoachFishConfig({...enabled,HH_MY_COACH_FISH_FREE_DATA_ACKNOWLEDGED:'false'}),null)
 });
+
+
+test('natural voice is independently opt-in for the first microphone-only turn, not locked behind text-composer consent',()=>{
+  const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+  const voice=readFileSync(new URL('../components/my-coach-speech-loop.jsx',import.meta.url),'utf8')
+  // Mic mode is deliberately one tap; typed turns keep their separate checkbox.
+  assert.match(ui,/enabled=\{true\}/)
+  assert.match(ui,/onTurn=\{text=>sendMessage\(text,\{voiceTurn:true\}\)\}/)
+  assert.match(ui,/if\(!message\|\|\(!consent&&!voiceTurn\)\|\|busy\|\|paused\)return/)
+  assert.match(ui,/disabled=\{!consent\|\|busy\|\|!draft\.trim\(\)\|\|authRequired/)
+  // The cloud choice must appear immediately after controls for authenticated
+  // voice-only visitors. It must not depend on their typed-text consent.
+  assert.match(ui,/\{cloudAvailable&&!authRequired&&<div className=\{styles\.naturalVoiceRow\}>/)
+  assert.doesNotMatch(ui,/\{cloudAvailable&&consent&&!authRequired&&/)
+  assert.ok(ui.indexOf('className={styles.voiceControls}')<
+    ui.indexOf('className={styles.naturalVoiceRow}'))
+  assert.ok(ui.indexOf('className={styles.naturalVoiceRow}')<
+    ui.indexOf('className={styles.liveTranscript}'))
+  assert.match(ui,/checked=\{cloudAgreed\}/)
+  assert.match(ui,/changeNaturalVoice\(event\.target\.checked\)/)
+  // The coach's Replay and voice loop use the independent vendor opt-in.
+  assert.match(ui,/if\(cloudAgreed&&cloudAvailable&&\['google_chirp3_hd','fish_free'\]\.includes\(cloudProvider\)\)/)
+  assert.match(voice,/if\(cloudAgreed&&cloudAvailable&&\['google_chirp3_hd','fish_free'\]\.includes\(cloudProvider\)/)
+  assert.match(ui,/voiceConsent:true,cloudVoiceConsent:true/)
+  assert.match(ui,/trainingUseConsent:true/)
+  // Cloud speech is never automatically selected or sent when unchecked.
+  assert.match(ui,/const \[cloudAgreed,setCloudAgreed\]=useState\(false\)/)
+  assert.match(ui,/setCloudAgreed\(Boolean\(checked\)\)/)
+  assert.match(ui,/replayPlayerRef\.current\?\.cancel\(\)/)
+  for(const locale of ['en:','ru:','es:'])assert.ok(ui.includes(locale))
+  assert.doesNotMatch(ui,/localStorage|sessionStorage/)
+})
