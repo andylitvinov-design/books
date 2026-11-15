@@ -156,8 +156,20 @@ try {
         await expect(presentation).toHaveCount(1)
         await expect(presentation).toHaveAttribute('data-video-locale', 'ru')
         await expect(presentation.locator('iframe')).toHaveCount(0)
+        // This secondary player is below the initial Home fold. A DEV
+        // DOMContentLoaded response may precede React hydration, leaving
+        // its intentionally inert SSR Play button disabled. Simulate the
+        // real visitor scrolling into view and prove hydration rather than
+        // pressing an unbound control or waiving the playback assertion.
+        await presentation.scrollIntoViewIfNeeded()
+        if (!live) await page.waitForLoadState('load', { timeout: 60000 })
+        await expect.poll(
+          () => page.evaluate(() => history.pushState.toString().includes('__NA')),
+          { timeout: 30000, message: 'RU presentation requires a hydrated Next router' },
+        ).toBe(true)
         const play = presentation.locator('button.site-video-play')
-        await expect(play).toBeEnabled({ timeout: 30000 })
+        await expect(play).toHaveAttribute('aria-busy', 'false', { timeout: 30000 })
+        await expect(play).toBeEnabled()
         await play.click()
         await expect(presentation.locator('iframe')).toHaveAttribute('src', /^https:\/\/www\.youtube-nocookie\.com\/embed\/G0Db6yOCMto\?/, { timeout: 10000 })
         russianPresentationVerified = true
