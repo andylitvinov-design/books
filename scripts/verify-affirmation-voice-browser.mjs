@@ -1291,13 +1291,20 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         phase(engine,"montage-free-navigated-ready");
         await readyGenerate.click();
         phase(engine,"ready-free-render-requested");
-        // The original self-check is inline below the live progress bar, not a popup.
+        // The real seven-image 0–10 stepper from #4733 is inline during export.
+        // Verify the user's actual score tap advances one distinct question.
+        // Do not substitute the removed four-slider check-in or a mock media Blob.
         await expect(page.locator("[data-ready-generating]")).toBeVisible({timeout:20000});
-        await expect(page.locator("[data-ready-checkin] [data-video-checkin]")).toBeVisible({timeout:20000});
-        // No unsolicited optional survey should cover the intentional export.
-        // The existing pill offers an explicit way to open the check-in.
+        const readyCheckIn=page.locator("[data-ready-checkin] [data-ready-sequential-checkin]");
+        await expect(readyCheckIn).toBeVisible({timeout:6000});
+        await expect(readyCheckIn.locator("[data-ready-checkin-score]")).toHaveCount(11);
+        await expect(readyCheckIn).toContainText("1 / 7");
+        await readyCheckIn.locator('[data-ready-checkin-score="5"]').click();
+        await expect(readyCheckIn).toContainText("2 / 7");
+        // Ready keeps the answered stepper inline even if encoding finishes;
+        // the legacy optional floating poll/pill must never cover the player.
         await expect(page.locator("[data-video-effect-overlay]")).toHaveCount(0);
-        await expect(page.locator("[data-video-effect-reopen]")).toBeVisible({timeout:20000});
+        await expect(page.locator("[data-video-effect-reopen]")).toBeHidden();
         // The idle source remains preload=none until the user's actual Create
         // gesture; Safari must then start a physical decode, never a CSS-only
         // preview or an unverified download.
@@ -1390,7 +1397,9 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           // The optional progress/check-in overlay must get out of the way
           // automatically when verified Ready appears, without bypassing the UI.
           await expect(page.locator("[data-video-effect-overlay]")).toHaveCount(0);
-          await expect(page.locator("[data-video-effect-reopen]")).toBeVisible();
+          await expect(page.locator("[data-video-effect-reopen]")).toBeHidden();
+          await expect(readyCheckIn).toBeVisible();
+          await expect(readyCheckIn).toContainText("2 / 7");
           await readyView.locator("[data-ready-save]").click();
           await expect(readyView.locator("[data-ready-save-gate]")).toBeVisible();
           await expect(readyView.locator("[data-ready-save-gate-signin]")).toBeVisible();

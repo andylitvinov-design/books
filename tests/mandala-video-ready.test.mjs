@@ -235,7 +235,8 @@ test("approved Ready result has a thin status, full video and two secure primary
   const studioCss=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
   assert.match(ready,/data-ready-state=\{completed\?"complete":"choose"\}/);
   assert.match(ready,/data-ready-status/);
-  assert.match(ready,/\{completed\?<p className=\{css\.readyStatus\}/);
+  assert.match(ready,/data-ready-status-phase=\{completed\?"complete":rendering\?"rendering":checking\?"verifying":"idle"\}/);
+  assert.match(ready,/<strong>\{completed\?t\.ready:pendingStatus\}<\/strong>/);
   assert.match(ready,/data-ready-save><Download/);
   assert.match(ready,/data-ready-telegram><Send/);
   assert.match(ready,/data-ready-generate-new onClick=\{onStartNewVideo\}/);

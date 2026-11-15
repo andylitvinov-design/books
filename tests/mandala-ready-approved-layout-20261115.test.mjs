@@ -47,3 +47,16 @@ test("only verified exported files show Save; legacy export notices and portal p
   assert.match(effectCss,/body:has\(\[data-active-workspace="ready"\]\) \.reopen\{display:none\}/);
   for(const locale of ["en","ru","es"]) assert.match(ready,new RegExp("  "+locale+":\\{"));
 });
+
+test("browser release tests exercise the current 7-card wizard and inline-only English pending video",()=>{
+  const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
+  const publicQa=readFileSync(new URL("../scripts/verify-home-consultation-first-screen.mjs",import.meta.url),"utf8");
+  assert.match(browser,/\[data-ready-checkin\] \[data-ready-sequential-checkin\]/);
+  assert.match(browser,/data-ready-checkin-score="5"/);
+  assert.match(browser,/await expect\(readyCheckIn\)\.toContainText\("2 \/ 7"\)/);
+  assert.doesNotMatch(browser,/\[data-ready-checkin\] \[data-video-checkin\]/);
+  assert.match(browser,/await expect\(page\.locator\("\[data-video-effect-reopen\]"\)\)\.toBeHidden\(\)/);
+  assert.match(publicQa,/pending\.getByRole\('status'\)\.innerText\(\)/);
+  assert.match(publicQa,/pending English video must not redirect, autoplay or fake Play/);
+  assert.doesNotMatch(publicQa,/a\[href="https:\/\/www\.youtube\.com\/@aatapro"\]/);
+});
