@@ -74,6 +74,7 @@ export function classifyCspNavigationCancellation(error, { engine, readiness, or
     // attributable to the old document, even when the wording is identical.
     if (!nextDocument || error.time >= Math.floor(nextDocument.time) || nextDocument.url !== navigation.destination) continue;
     const pageHide = lifecycle.find(event => event.type === 'pagehide' && event.documentProbe === navigation.documentProbe && event.time >= navigation.time && event.time < nextDocument.time);
+    let postHideTelegram = false;
     if (telegramTeardown) {
       // Source-backed WebKit-only cancellation, never an allowed CSP violation:
       // require a matching old-document anonymous fetch and a real pagehide
@@ -82,12 +83,20 @@ export function classifyCspNavigationCancellation(error, { engine, readiness, or
         && item.path === '/api/public/telegram-diagnostic' && item.rsc === false
         && item.documentProbe === source.documentProbe
         && item.time >= navigation.time - 1000 && item.time <= error.time);
-      if (!oldFetch || !pageHide || error.time >= Math.floor(pageHide.time)
+      // A second verified old-document WebKit abort in #43669083441
+      // surfaced 1ms AFTER pagehide, before the new document was initialized.
+      // Require the old document's exact anonymous fetch (after hard-navigation
+      // start, before pagehide), a <=10ms lag, and zero actual CSP violations.
+      const pageHideTime = Math.floor(pageHide?.time ?? NaN);
+      postHideTelegram = Boolean(oldFetch && pageHide
+        && oldFetch.time >= navigation.time && oldFetch.time <= pageHideTime
+        && error.time > pageHideTime && error.time - pageHideTime <= 10);
+      if (!oldFetch || !pageHide || (error.time >= pageHideTime && !postHideTelegram)
         || lifecycle.some(item => item.type === 'policy-violation'
           && item.documentProbe === source.documentProbe
           && item.time >= navigation.time - 1000 && item.time <= nextDocument.time)) continue;
     }
-    if (!pageHide || error.time > Math.floor(pageHide.time)) {
+    if (!pageHide || (error.time > Math.floor(pageHide.time) && !postHideTelegram)) {
       // No broad console-error ignore: prove the request, exact timeline,
       // required cross-policy document and lack of real CSP violations.
       if (!aboutForward || pageHide || error.time - Math.floor(navigation.time) > 1500
@@ -104,7 +113,7 @@ export function classifyCspNavigationCancellation(error, { engine, readiness, or
         fetchStartTime: oldRequest.time, navigationTime: navigation.time, errorTime: error.time,
         nextDocumentTime: nextDocument.time };
     }
-    return { kind: 'webkit-hard-navigation-fetch-cancellation', requestUrl: url.href, sourceDocument: source.documentProbe, destinationDocument: nextDocument.documentProbe, navigationTime: navigation.time, errorTime: error.time, pageHideTime: pageHide.time, nextDocumentTime: nextDocument.time };
+    return { kind: postHideTelegram ? 'webkit-traced-telegram-post-pagehide' : 'webkit-hard-navigation-fetch-cancellation', requestUrl: url.href, sourceDocument: source.documentProbe, destinationDocument: nextDocument.documentProbe, navigationTime: navigation.time, errorTime: error.time, pageHideTime: pageHide.time, nextDocumentTime: nextDocument.time };
   }
   return null;
 }

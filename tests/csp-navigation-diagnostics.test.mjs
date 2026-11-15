@@ -215,3 +215,38 @@ test('Telegram anonymous GET is allowed ONLY when exact old Tantra document abor
   for(const time of [99,110,125])
     assert.equal(classifyCspNavigationCancellation({...err,time},info),null);
 });
+
+test('WebKit late Telegram teardown needs verified fetch and <=10ms post-pagehide evidence',()=>{
+  // Run #43669083441: old document pagehide=8666, second error=8667, new init=8711.
+  const tantra=origin+'/en/academy/reiki/tantra-reiki',about=origin+'/en/about';
+  const trace=[
+    {type:'init',time:1000,documentProbe:'tantra',url:tantra},
+    {type:'navigate',time:1195,documentProbe:'tantra',url:tantra,documentClass:'tantra-media',sameDocument:true,navigationType:'traverse',destination:about},
+    {type:'navigate',time:1200,documentProbe:'tantra',url:about,documentClass:'tantra-media',sameDocument:false,navigationType:'replace',destination:about},
+    {type:'pagehide',time:1400,documentProbe:'tantra'},
+    {type:'init',time:1445,documentProbe:'about',url:about},
+  ];
+  const seen=[{type:'fetch-start',path:'/api/public/telegram-diagnostic',rsc:false,documentProbe:'tantra',time:1392}];
+  const err={...diagnostic(origin+'/api/public/telegram-diagnostic',1401),phase:'back-from-tantra'};
+  const info={...detail,lifecycle:trace,fetchTelemetry:seen};
+  assert.equal(classifyCspNavigationCancellation(err,info)?.kind,'webkit-traced-telegram-post-pagehide');
+  for(const override of [
+    {engine:'chromium'},{readiness:'loaded-history'},{fetchTelemetry:[]},
+    {fetchTelemetry:[{...seen[0],documentProbe:'other'}]},
+    {fetchTelemetry:[{...seen[0],time:1199}]},
+    {fetchTelemetry:[{...seen[0],time:1401}]},
+    {fetchTelemetry:[{...seen[0],path:'/api/admin/private'}]},
+    {lifecycle:trace.filter(e=>e.type!=='pagehide')},
+    {lifecycle:trace.filter(e=>e.type!=='navigate'||e.sameDocument)},
+    {lifecycle:trace.filter(e=>e.type!=='init'||e.documentProbe!=='about')},
+    {lifecycle:[...trace,{type:'policy-violation',documentProbe:'tantra',time:1400}]},
+    {lifecycle:[...trace,{type:'window-error',documentProbe:'tantra',time:1400}]},
+    {lifecycle:trace.map(e=>e.type==='init'&&e.documentProbe==='tantra'?{...e,url:about}:e)},
+    {lifecycle:trace.map(e=>e.type==='init'&&e.documentProbe==='about'?{...e,time:1401}:e)},
+  ]) assert.equal(classifyCspNavigationCancellation(err,{...info,...override}),null);
+  for(const time of [1199,1400,1411,1445,1500])
+    assert.equal(classifyCspNavigationCancellation({...err,time},info),null,'time '+time);
+  for(const url of [origin+'/api/public/telegram-diagnostic?x=1',origin+'/api/admin/private','https://other.test/api/public/telegram-diagnostic'])
+    assert.equal(classifyCspNavigationCancellation({...err,stack:diagnostic(url,1401).stack},info),null);
+  assert.equal(classifyCspNavigationCancellation({...err,phase:'initial'},info),null);
+});
