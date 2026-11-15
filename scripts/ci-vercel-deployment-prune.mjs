@@ -86,10 +86,34 @@ async function main() {
   const token = process.env.HH_VERCEL_RELEASE_TOKEN;
   if (!token) throw Error('HH_VERCEL_RELEASE_TOKEN_NOT_CONFIGURED');
   const now = Date.now();
-  const recent = await request(token,
-    '/v6/deployments?projectId=' + PROJECT + '&target=production&limit=100');
-  if (!Array.isArray(recent?.deployments)) throw Error('DEPLOYMENT_HISTORY_UNAVAILABLE');
-  const protectedIds = protectedDeploymentIds(recent.deployments);
+  // Vercel may return a short first page even when older READY builds exist.
+  // Gather bounded, strictly older pages before establishing rollback evidence.
+  const recentDeployments = [];
+  const recentSeen = new Set();
+  let recentUntil = now;
+  let readyCount = 0;
+  for (let page = 0; page < MAX_PAGES && readyCount < 30; page++) {
+    const response = await request(token,
+      '/v6/deployments?projectId=' + PROJECT + '&target=production&limit=100&until=' + recentUntil);
+    if (!Array.isArray(response?.deployments) || !response.pagination)
+      throw Error('DEPLOYMENT_HISTORY_UNAVAILABLE');
+    for (const item of response.deployments) {
+      if (!validId(item.id) || recentSeen.has(item.id)) continue;
+      recentSeen.add(item.id);
+      recentDeployments.push(item);
+      if (item.target === 'production' && state(item) === 'READY') readyCount++;
+    }
+    console.log('HH_VERCEL_ROLLBACK_SCAN page=' + (page + 1)
+      + ' records=' + recentDeployments.length + ' ready=' + readyCount);
+    if (readyCount >= 30 || response.deployments.length === 0) break;
+    const next = Number(response.pagination.next);
+    if (!Number.isSafeInteger(next) || next <= 0 || next >= recentUntil)
+      throw Error('ROLLBACK_HISTORY_PAGINATION_UNVERIFIED');
+    recentUntil = next;
+  }
+  if (readyCount < 30) throw Error('INSUFFICIENT_ROLLBACK_EVIDENCE ready='
+    + readyCount + ' scanned=' + recentDeployments.length);
+  const protectedIds = protectedDeploymentIds(recentDeployments);
   const liveId = await verifiedLiveId(token);
   protectedIds.add(liveId);
 
