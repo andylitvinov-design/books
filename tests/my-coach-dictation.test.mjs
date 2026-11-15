@@ -115,3 +115,21 @@ test('Safari fragment watchdog and silence settle commit once automatically',()=
   assert.ok(handler.includes('void deliver(appendSpokenAnswer'))
   assert.ok(!handler.includes('changePhase(\'stalled\')'))
 })
+
+
+test('iOS 27 keeps recognized Safari voice sessions alive until natural onend',()=>{
+ const loop=source('components/my-coach-speech-loop.jsx')
+ const onresult=loop.slice(loop.indexOf('recognition.onresult=event=>{'),loop.indexOf('recognition.onerror=event=>{'))
+ const iosFallback=onresult.slice(onresult.indexOf('if(ios27&&visible){'),onresult.indexOf('// Dictation is shown'))
+ assert.match(iosFallback,/draftRef\.current\?\.\(appendSpokenAnswer\(draftAtStartRef\.current,heard,1200\)\)/)
+ assert.match(iosFallback,/transcriptRef\.current\?\.\(''\)/)
+ assert.match(iosFallback,/setNotice\(t\.iosAwaitEnd\)/)
+ assert.doesNotMatch(iosFallback,/recognition\.abort\(\)|void deliver\(/,'never cut recognized iOS voice or auto-send before natural end')
+ const settle=onresult.slice(onresult.indexOf('if(visible){'),onresult.length)
+ assert.match(settle,/if\(!ios27\)\{[\s\S]*?settleTimerRef\.current=setTimeout\(/)
+ assert.match(loop,/recognition\.continuous=false/)
+ const naturalEnd=loop.slice(loop.indexOf('recognition.onend=()=>{'),loop.indexOf('const startRecognition=()=>{'))
+ assert.match(naturalEnd,/void deliver\(appendSpokenAnswer\(draftAtStartRef\.current,recovered,1200\)\)/)
+ assert.ok(loop.includes('cue.onend=finishCue'),'every subsequent Safari session still waits for the short recovery cue')
+ for(const marker of ['iosAwaitEnd:',"setNotice(t.iosAwaitEnd)"])assert.ok(loop.includes(marker))
+});
