@@ -2,8 +2,8 @@
 
 import {useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
-import {ArrowRight,Heart,Home,Keyboard,Leaf,Captions,PhoneOff,LockKeyhole,MessageCircle,Pencil,Send,ShieldCheck,Sparkles,Target,UserRound,Video,Volume2,Zap} from 'lucide-react'
-import {getCoachPersona,localCoachText,coachStagePrompt} from '@/lib/coaching/persona-registry.mjs'
+import {ArrowRight,Heart,Home,Keyboard,Leaf,Captions,PhoneOff,LockKeyhole,MessageCircle,Pencil,Send,ShieldCheck,Sparkles,Target,UserRound,Video,Volume2,Play,LoaderCircle,Zap} from 'lucide-react'
+import {getCoachPersona,localCoachText,coachStagePrompt,PUBLIC_COACH_PERSONA_IDS} from '@/lib/coaching/persona-registry.mjs'
 import {getCoachPresentation} from '@/lib/coaching/persona-presentations.mjs'
 import {coachTimeboxState} from '@/lib/coaching/session-timebox.mjs'
 import {coachingBrainSafety,coachingBrainBoundary,coachingBrainStageDecision,offlineCoachingBrainReply,selectCoachingBrainMethod} from '@/lib/personal-coaching/coaching-brain.mjs'
@@ -15,7 +15,9 @@ import MyCoachSpeechLoop from './my-coach-speech-loop'
 import {startCoachingMp3Playback,unlockCoachingAudioContext,shouldUseCoachingWebAudio} from '@/lib/personal-coaching/streamed-mp3-playback.mjs'
 import {coachSpokenText} from '@/lib/coaching/coach-spoken-text.mjs'
 import {detectedSpeechLocale} from '@/lib/personal-coaching/my-coach-dictation.mjs'
+import {coachIntroAudioPath,startDirectCoachIntroAudio} from '@/lib/personal-coaching/direct-coach-intro-audio.mjs'
 import CoachingAvatar from '@/components/app/coaching-avatar'
+import MyCoachMotionMedia from '@/components/my-coach-motion-media'
 
 const copy={
   en:{
@@ -238,6 +240,12 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const captions=transcriptUi[lang]||transcriptUi.en
   const latestCoachTurn=[...turns].reverse().find(turn=>turn.role==='assistant')
   const latestCoachText=latestCoachTurn?.content||introduction
+  // Hero Play is the main session entry. It invokes the same imperative
+  // voice runner synchronously, keeping Safari's user-activation gesture.
+  function startSessionFromPortrait(){
+    if(busy||paused||replaying||voiceState.phase!=='idle')return
+    speechRef.current?.startSession?.(introduction,{naturalVoice:true})
+  }
   async function rateCoachAnswer(signal){
     if(!latestCoachTurn||coachQualityPending||ratedCoachAnswer===latestCoachText)return
     setCoachQualityPending(true);setCoachQualityError(false)
@@ -319,14 +327,30 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       setVoiceState({phase:'idle',beat:0})
       setPlaybackNotice(voiceGate.naturalUnavailable)
     }
+    if(replayingIntro){
+      const introUrl=coachIntroAudioPath(personaId,lang)
+      if(!introUrl){fail();return}
+      try{
+        replayPlayerRef.current=startDirectCoachIntroAudio(introUrl,{
+          onStart:()=>{
+            if(controller.signal.aborted||replayControllerRef.current!==controller)return
+            setReplayBlocked(false);setReplaying(true);setPlaybackNotice('')
+            setVoiceState({phase:'speaking',beat:0})
+          },
+          onEnd:()=>{
+            if(replayControllerRef.current!==controller)return
+            replayControllerRef.current=null;replayPlayerRef.current=null
+            setReplayBlocked(false);setReplaying(false)
+            setVoiceState({phase:'idle',beat:0})
+          },
+          onBlocked:fail,onError:fail,
+        })
+      }catch{fail()}
+      return
+    }
     const spoken=cloudProvider==='google_chirp3_hd'?
       coachSpokenText(spokenText).text:spokenText.slice(0,900)
-    const url=replayingIntro?
-      '/api/coaching/intro?'+new URLSearchParams({coach:personaId,locale:lang}):
-      '/api/app/my-coach/voice/synthesize'
-    void fetch(url,replayingIntro?{
-      method:'GET',credentials:'omit',cache:'force-cache',signal:controller.signal
-    }:{
+    void fetch('/api/app/my-coach/voice/synthesize',{
       method:'POST',credentials:'same-origin',cache:'no-store',signal:controller.signal,
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({provider:cloudProvider,personaId,locale:detectedSpeechLocale(spoken,lang),text:spoken,
@@ -511,6 +535,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       if(pending.current===controller){pending.current=null;setBusy(false)}
     }
   }
+  const motionPhase=paused?'idle':voiceState.phase==='speaking'?'speaking':
+    voiceState.phase==='listening'?'listening':!introComplete?'greeting':'idle'
   return <section ref={sessionRootRef} className={styles.root} lang={lang} data-my-coach-live-dialogue={personaId} data-my-coach-immersive-session data-session-visual-v2 data-session-visual-v3 data-session-visual-v4 data-coach-session-started={sessionClockStarted?'true':'false'} data-coach-showcase={introComplete?'false':'true'}>
     <header className={styles.sessionTopbar}>
       <Link className={styles.sessionBrand} href={'/'+lang+'/coaching/sessions'} aria-label="Holistic House">
@@ -520,7 +546,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     </header>
     <div className={styles.sessionScroll} data-coaching-session-scroll>
     <section ref={portraitHeroRef} className={styles.sessionHero} aria-label={name} data-voice-phase={voiceState.phase}>
-      <div className={styles.sessionPortrait} data-persona={personaId} role="img" aria-label={name}/>
+      <div className={styles.sessionPortrait} data-persona={personaId}
+        data-coach-motion-video={PUBLIC_COACH_PERSONA_IDS.includes(personaId)?'true':undefined}
+        role="img" aria-label={name}>
+        <MyCoachMotionMedia personaId={personaId} phase={motionPhase} context="session" />
+      </div>
       <div className={styles.sessionHeroShade} aria-hidden="true"/>
       <div className={styles.sessionHeroCopy}>
         <span className={styles.sessionHeroBadge}><Sparkles size={14} aria-hidden="true"/>{ui.mode}</span>
@@ -534,6 +564,15 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           showPicker={false} size="large"
           phase={voiceState.phase==='speaking'?'speaking':paused?'paused':busy?'thinking':voiceState.phase} beat={voiceState.beat}/>
       </div>
+      {!introComplete&&['idle','loading'].includes(voiceState.phase)&&
+        <button type="button" className={styles.heroPlayControl}
+          data-coach-hero-play aria-label={lang==='ru'?'Начать голосовую сессию с презентацией коуча':lang==='es'?'Iniciar la sesión y escuchar al coach':'Play coach introduction and start session'}
+          title={lang==='ru'?'Начать сессию':lang==='es'?'Iniciar sesión':'Start session'}
+          disabled={voiceState.phase==='loading'||busy||paused||replaying}
+          onClick={startSessionFromPortrait}>
+          {voiceState.phase==='loading'?<LoaderCircle size={40} aria-hidden="true"/>:
+            <Play size={42} fill="currentColor" aria-hidden="true"/>}
+        </button>}
       {showCaptions&&<div className={styles.heroSubtitle} aria-hidden="true">
         <span className={styles.promptWave}><i/><i/><i/><i/><i/></span>
         <p>{latestCoachText.length>160?latestCoachText.slice(0,157).trimEnd()+'…':latestCoachText}</p>

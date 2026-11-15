@@ -57,6 +57,16 @@ export function classifyCspNavigationCancellation(error, { engine, readiness, or
       && navigation.documentClass === 'public-video' && navigation.navigationType === 'traverse'
       && ((error.phase === 'forward-to-public' && navigation.destination === new URL('/en/about', origin).href)
         || (error.phase === 'back-to-private' && navigation.destination === new URL('/en/client', origin).href));
+    // WebKit rapid history: old private Tests initiated this exact home RSC
+    // fetch while forwarding to the public home, then cancelled before pagehide.
+    // Never classify arbitrary CSP errors or new-document requests as teardown.
+    const testsHomePrefetch = prefetch && url.pathname === '/' && error.phase === 'forward-to-public-home'
+      && source.url === new URL('/en/client/tests', origin).href
+      && navigation.documentClass === 'private' && navigation.navigationType === 'traverse'
+      && navigation.destination === new URL('/', origin).href
+      && fetchTelemetry.some(item => item.type === 'fetch-start'
+        && item.path === '/' && item.rsc === true && item.documentProbe === source.documentProbe
+        && item.time >= navigation.time && item.time <= error.time);
     // Observed after Back from About to the public home: its interrupted
     // router is replaced while an About-page client-link prefetch is pending.
     // Require that exact same-document traversal followed by hard replacement;
@@ -68,12 +78,17 @@ export function classifyCspNavigationCancellation(error, { engine, readiness, or
         && event.time <= navigation.time && event.sameDocument === true && event.navigationType === 'traverse'
         && event.url === new URL('/en/about', origin).href && event.documentClass === 'public-video'
         && event.destination === navigation.destination))) continue;
-    if (sourcePath !== (bootstrap ? '/en/client' : '/en/about') && !clientHomePrefetch && !homeReviewPrefetch && !tantraBack) continue;
+    if (sourcePath !== (bootstrap ? '/en/client' : '/en/about') && !clientHomePrefetch && !homeReviewPrefetch && !tantraBack && !testsHomePrefetch) continue;
     const nextDocument = lifecycle.find(event => event.type === 'init' && event.time > navigation.time && event.documentProbe !== navigation.documentProbe);
     // Reject errors at/after the new document's first millisecond. They are not
     // attributable to the old document, even when the wording is identical.
     if (!nextDocument || error.time >= Math.floor(nextDocument.time) || nextDocument.url !== navigation.destination) continue;
     const pageHide = lifecycle.find(event => event.type === 'pagehide' && event.documentProbe === navigation.documentProbe && event.time >= navigation.time && event.time < nextDocument.time);
+    // Reject true policy violations and errors at/after old-document pagehide.
+    if (testsHomePrefetch && (!pageHide || error.time >= Math.floor(pageHide.time)
+      || lifecycle.some(event => event.type === 'policy-violation'
+        && event.documentProbe === source.documentProbe
+        && event.time >= navigation.time && event.time <= nextDocument.time))) continue;
     let postHideTelegram = false;
     if (telegramTeardown) {
       // Source-backed WebKit-only cancellation, never an allowed CSP violation:

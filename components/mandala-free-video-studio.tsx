@@ -2608,6 +2608,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // A new Ready generation choice must not discard the previously verified
   // local Blob. The old video is still available via the manual Ready tab.
   const [readyGenerationPending,setReadyGenerationPending]=useState(false);
+  // A new exported Blob must reach the visible Ready player before playback verification.
+  // Safari may never decode the hidden legacy verifier on the Ready workspace.
+  // Save and credit confirmations still require native playback and server proof.
+  useEffect(()=>{
+    if(result?.url&&result.mode!=="catalog")setReadyGenerationPending(false);
+  },[result]);
   useEffect(()=>{
     // Consume the anonymous local trial only once a real encoded Blob exists.
     // A failed preflight/export does not consume it.
@@ -6678,6 +6684,31 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               stopMovieSound();setPreviewPlaying(false);
             }}/>
   );
+  // One questionnaire/state for the Goal page and Ready's in-progress export.
+  const renderCheckIn=(headingId:string)=>(
+          <section className={videoStyles.assessmentCard} data-video-checkin aria-labelledby={headingId}>
+            <h2 id={headingId}>{supportUi.check}</h2>
+            <p>{supportUi.scoreGuide}</p>
+            <div className={videoStyles.assessmentScales}>
+              {checkOrder.map(key=>{
+                const Icon=key==="energy"?Zap:key==="money"?Coins:key==="relationships"?Heart:Target;
+                return <label className={videoStyles.assessmentScale} key={key} data-tone={key}>
+                  <span>{ui.themes[key]}</span>
+                  <span className={videoStyles.scaleControls}>
+                    <Icon size={16} aria-hidden="true"/>
+                    <input type="range" min={1} max={10} step={1} value={scores[key]}
+                      aria-label={ui.themes[key]}
+                      onChange={event=>{const value=Number(event.currentTarget.value);setTouchedScores(prev=>({...prev,[key]:value}));setScores(prev=>({...prev,[key]:value}));}}/>
+                    <output>{scores[key]}</output>
+                  </span>
+                </label>;
+              })}
+            </div>
+            <Link className={videoStyles.supportTestLink} href={"/"+locale+"/holistic-support/mobile?view=tests"} prefetch={false}>
+              <BarChart3 size={17} aria-hidden="true"/>{supportUi.test}
+            </Link>
+          </section>
+  );
   // Visiting Ready alone is not proof of a verified exported movie.
   const readyResultVerified=Boolean(!readyGenerationPending&&result&&result.mode!=="catalog"&&playbackStatus==="ready"&&creditConfirmed);
   // The only workspace tab rail stays in the same place above the ONE player
@@ -7320,6 +7351,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         }:null}
         verified={Boolean(!readyGenerationPending&&result&&result.mode!=="catalog"&&playbackStatus==="ready"&&creditConfirmed)}
         checking={Boolean(!readyGenerationPending&&result&&playbackStatus==="checking")}
+        rendering={recording||preparing} renderProgress={progress}
+        progressQuestionnaire={renderCheckIn("ready-assessment-heading")}
+        generationNotice={notice}
         signedIn={creditSession==="signed_in"}
         loginUnavailable={creditSession==="unavailable"}
         disabled={recording||preparing}
@@ -7613,7 +7647,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         {activeWorkspace==="effects" ? <MandalaTherapyStudio locale={locale}
           disabled={recording||preparing||hypnoAudioBusy}
           editor={isCourse=><MandalaPersonalMeditation key={isCourse?"course":"single"}
-            coursePreview={isCourse} approvedVideoConcept={approvedVideoConcept}
+            coursePreview={isCourse} compactTherapy approvedVideoConcept={approvedVideoConcept}
             locale={locale} theme={theme} wish={wish}
             scene={sceneName} caption={caption} sound={attachedAudio?appliedAudioName:""}
             audioSrc={attachedAudio?.kind==="file"?(audioRights?uploadedAudio?.url||null:null):
@@ -8441,7 +8475,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 }}>
                 <item.Icon size={19} aria-hidden="true"/>
                 <span>{({
-                  promo:{ru:"Монтаж PRO",en:"Montage PRO",es:"Montaje PRO"},
+                  promo:{ru:"Extra",en:"Extra",es:"Extra"},
                   effects:{ru:"Стиль",en:"Style",es:"Estilo"},
                   text:{ru:"Текст",en:"Text",es:"Texto"},
                   audio:{ru:"Аудио",en:"Audio",es:"Audio"},
@@ -8547,13 +8581,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               onOpenIdeas={()=>{setActiveWorkspace("phrases");setIdeasSubtab("concept");}}
             />
             <button type="button" className={videoStyles.quickEdit}
-              data-video-story-open-settings disabled={recording||preparing}
+              data-video-story-open-settings
+              aria-label={locale==="ru"?"Настройки видео":locale==="es"?"Ajustes de vídeo":"Video settings"}
+              disabled={recording||preparing}
               onClick={()=>{setMontagePanel("settings");setMontageStyleSettingsOpen(false);}}>
               <SlidersHorizontal size={17} aria-hidden="true"/>
               {locale==="ru"?"Настройки видео":locale==="es"?"Ajustes de vídeo":"Video settings"}
             </button>
           </section> : null}
-          {montagePanel==="promo" ? <details className={videoStyles.montageStoryAdvanced}
+          {montagePanel==="settings" ? <details className={videoStyles.montageStoryAdvanced}
             data-video-stories-advanced>
             <summary>{locale==="ru"?"Дополнительные настройки раскадровки":
               locale==="es"?"Opciones avanzadas del storyboard":"Advanced storyboard options"}</summary>
@@ -9582,28 +9618,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </div>
       </nav>
       <div className={videoStyles.supportTop} data-video-support-layout>
-        <section className={videoStyles.assessmentCard} aria-labelledby="video-assessment-heading">
-          <h2 id="video-assessment-heading">{supportUi.check}</h2>
-          <p>{supportUi.scoreGuide}</p>
-          <div className={videoStyles.assessmentScales}>
-            {checkOrder.map(key=>{
-              const Icon=key==="energy"?Zap:key==="money"?Coins:key==="relationships"?Heart:Target;
-              return <label className={videoStyles.assessmentScale} key={key} data-tone={key}>
-                <span>{ui.themes[key]}</span>
-                <span className={videoStyles.scaleControls}>
-                  <Icon size={16} aria-hidden="true"/>
-                  <input type="range" min={1} max={10} step={1} value={scores[key]}
-                    aria-label={ui.themes[key]}
-                    onChange={event=>{const value=Number(event.currentTarget.value);setTouchedScores(prev=>({...prev,[key]:value}));setScores(prev=>({...prev,[key]:value}));}}/>
-                  <output>{scores[key]}</output>
-                </span>
-              </label>;
-            })}
-          </div>
-          <Link className={videoStyles.supportTestLink} href={"/"+locale+"/holistic-support/mobile?view=tests"} prefetch={false}>
-            <BarChart3 size={17} aria-hidden="true"/>{supportUi.test}
-          </Link>
-        </section>
+        {activeWorkspace==="video"?renderCheckIn("video-assessment-heading"):null}
 
         <section className={videoStyles.centerProfile} aria-label={ui.stepPhoto}>
           <label className={videoStyles.photoPortrait+" "+videoStyles.nativePhotoControl} data-video-profile-photo-picker aria-disabled={recording||preparing}>

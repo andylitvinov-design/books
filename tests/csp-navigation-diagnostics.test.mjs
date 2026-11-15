@@ -250,3 +250,46 @@ test('WebKit late Telegram teardown needs verified fetch and <=10ms post-pagehid
     assert.equal(classifyCspNavigationCancellation({...err,stack:diagnostic(url,1401).stack},info),null);
   assert.equal(classifyCspNavigationCancellation({...err,phase:'initial'},info),null);
 });
+
+test('WebKit rapid Forward from Tests to home needs exact old RSC fetch provenance', () => {
+  // Run 43722642549 / 390px: navigate 5924, fetch 5947, diagnostic 5953,
+  // pagehide 5990 and next home document 6002 (relative times below).
+  const old=origin+'/en/client/tests', home=origin+'/';
+  const life=[
+    {type:'init',time:1000,documentProbe:'tests',url:old},
+    {type:'navigate',time:1024,documentProbe:'tests',documentClass:'private',sameDocument:false,
+      navigationType:'traverse',destination:home},
+    {type:'pagehide',time:1090,documentProbe:'tests'},
+    {type:'init',time:1102,documentProbe:'home',url:home},
+  ];
+  const fetches=[{type:'fetch-start',path:'/',rsc:true,documentProbe:'tests',time:1047}];
+  const state={...detail,lifecycle:life,fetchTelemetry:fetches};
+  const error={...diagnostic(home+'?_rsc=KDPtKEcIGJvAs2D9',1053),phase:'forward-to-public-home'};
+  assert.equal(classifyCspNavigationCancellation(error,state)?.kind,'webkit-hard-navigation-fetch-cancellation');
+  for (const phase of [undefined,'initial','back-to-public-home','forward-to-tantra'])
+    assert.equal(classifyCspNavigationCancellation({...error,phase},state),null);
+  for (const variant of [{engine:'chromium'},{readiness:'loaded-history'},
+    {fetchTelemetry:[]},{fetchTelemetry:[{...fetches[0],path:'/api/private'}]},
+    {fetchTelemetry:[{...fetches[0],rsc:false}]},
+    {fetchTelemetry:[{...fetches[0],documentProbe:'other'}]},
+    {fetchTelemetry:[{...fetches[0],time:1023}]},
+    {fetchTelemetry:[{...fetches[0],time:1054}]},
+    {lifecycle:life.filter(e=>e.type!=='pagehide')},
+    {lifecycle:life.filter(e=>e.type!=='navigate')},
+    {lifecycle:life.filter(e=>e.type!=='init'||e.documentProbe!=='home')},
+    {lifecycle:[...life,{type:'policy-violation',documentProbe:'tests',time:1052}]},
+    {lifecycle:[...life,{type:'window-error',documentProbe:'tests',time:1052}]},
+    {lifecycle:life.map(e=>e.type==='init'&&e.documentProbe==='tests'?{...e,url:origin+'/en/client'}:e)},
+    {lifecycle:life.map(e=>e.type==='navigate'?{...e,navigationType:'push'}:e)},
+    {lifecycle:life.map(e=>e.type==='navigate'?{...e,documentClass:'public-video'}:e)},
+    {lifecycle:life.map(e=>e.type==='navigate'?{...e,sameDocument:true}:e)},
+    {lifecycle:life.map(e=>e.type==='navigate'?{...e,destination:origin+'/en/about'}:e)},
+    {lifecycle:life.map(e=>e.type==='pagehide'?{...e,time:1052}:e)},
+    {lifecycle:life.map(e=>e.type==='init'&&e.documentProbe==='home'?{...e,url:origin+'/en/about'}:e)},
+  ]) assert.equal(classifyCspNavigationCancellation(error,{...state,...variant}),null);
+  for(const time of [1023,1090,1102,1150])
+    assert.equal(classifyCspNavigationCancellation({...error,time},state),null,'time '+time);
+  for(const url of [home,home+'?_rsc=',home+'?_rsc=x&other=1',
+    origin+'/en/about?_rsc=x','https://other.test/?_rsc=x'])
+    assert.equal(classifyCspNavigationCancellation({...error,stack:diagnostic(url,1053).stack},state),null,url);
+});
