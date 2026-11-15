@@ -100,8 +100,8 @@
 .hub .myPageBelowVideo .myPageLink svg,.hub .myPageSubnav .myPageLink svg{flex:none}
 @media(max-width:360px){.hub .myPageBelowVideo,.hub .myPageSubnav{margin-top:6px}.hub .myPageBelowVideo .myPageLink,.hub .myPageSubnav .myPageLink{min-height:44px;padding:6px 9px;font-size:11px}}
 
-/* My Space's locale control sits unobtrusively above the existing Live / Work switch. */
-.profileHeadingActions{flex-direction:column;align-items:flex-end;justify-content:center;gap:6px}
+/* RU / EN sits immediately LEFT of Life / Work in one shared horizontal header control row. */
+.profileHeadingActions{flex-direction:row;align-items:center;justify-content:flex-end;flex-wrap:nowrap;gap:6px}
 .languageSwitch{display:inline-flex;align-items:center;gap:2px;padding:2px;background:#f5faf7;border:1px solid #d2e6dd;border-radius:14px}
 .languageSwitch a{display:grid;place-items:center;min-height:40px;min-width:40px;padding:0 7px;border-radius:11px;color:#14523f;text-decoration:none;font:750 12px/1 system-ui,sans-serif}
 .languageSwitch a[aria-current=page]{background:#067a67;color:#fff}
