@@ -1,0 +1,22 @@
+.page{max-width:1120px;margin:0 auto;padding:28px clamp(16px,4vw,48px) 72px;color:#143d3a;background:#fbf5e9;min-height:100vh;font:15px/1.55 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.hero{background:linear-gradient(120deg,#102c44,#284965);color:#fff;border-radius:18px;padding:26px 30px;box-shadow:0 8px 28px #102c4417}
+.eyebrow{text-transform:uppercase;letter-spacing:.13em;font-size:11px;font-weight:750;color:#c0d4e0}
+.hero h1{font-size:clamp(25px,4vw,35px);letter-spacing:-.045em;margin:5px 0 6px;font-weight:680}
+.hero p{max-width:750px;margin:8px 0;color:#e5eff7}
+.meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.meta span{font-size:12px;padding:4px 11px;border:1px solid #ffffff44;border-radius:50px}
+.section{margin:22px 0 0;padding:22px;border:1px solid #e9dfd1;background:#fffcf7;border-radius:16px}
+.section h2{margin:0 0 18px;font-size:18px;letter-spacing:-.02em;color:#183a54}
+.empty{color:#677a8c;font-size:14px;line-height:1.6}
+.warning{padding:12px;color:#714b00;border:1px solid #e8d39b;border-radius:10px}
+.tableScroll{overflow-x:auto}
+.tableScroll table{width:100%;border-collapse:collapse;font-size:13px;text-align:left;white-space:nowrap}
+.tableScroll th{font-weight:650;color:#567086;background:#f6f9fb;padding:10px;border-bottom:1px solid #dce7ee}
+.tableScroll td{padding:11px 10px;border-bottom:1px solid #ebf0f3}
+.version{font-family:ui-monospace,SFMono-Regular,monospace;font-size:12px;max-width:290px;overflow:hidden;text-overflow:ellipsis}
+.daily{display:grid;gap:10px;max-width:550px}
+.day{display:grid;grid-template-columns:100px minmax(80px,1fr) 42px;gap:14px;align-items:center;font-size:13px;color:#455f72}
+.day meter{width:100%;height:11px}
+.day strong{text-align:right;font-variant-numeric:tabular-nums}
+.note{color:#607687;font-size:13px;margin-top:20px}
+@media(max-width:550px){.hero{padding:22px 18px}.section{padding:18px 13px}.meta span{font-size:11px}.day{grid-template-columns:88px minmax(60px,1fr) 35px;gap:8px}}
