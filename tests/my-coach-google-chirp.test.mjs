@@ -102,7 +102,7 @@ test('hard-bounded first-party cost policy and single Play voice introduction',(
  assert.doesNotMatch(speech,/texttospeech\.googleapis\.com|oauth2\.googleapis\.com/)
  assert.ok(speech.includes('iosCueSatisfiedRef.current=false'))
  assert.ok(speech.includes('introPlayerRef.current=startCoachingMp3Playback'))
- assert.ok(speech.includes('voice/intro?'))
+ assert.ok(speech.includes('/api/coaching/intro?'))
  assert.ok(!speech.includes('speakOnDevice()'))
 })
 test('one explicit Play gesture authorizes the configured natural voice, not a checkbox',()=>{

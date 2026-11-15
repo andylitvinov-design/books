@@ -410,7 +410,7 @@ test('quality-first coach never offers the old robotic wizard/device voice',()=>
  assert.ok(!loop.includes('speakOnDevice()'))
  assert.ok(!loop.includes('new Utterance(reply)'))
  assert.ok(loop.includes('cue.volume=0'),'silent Safari recognition cue is not spoken to visitor')
- assert.ok(loop.includes('voice/intro?'))
+ assert.ok(loop.includes('/api/coaching/intro?'))
  assert.ok(loop.includes("mode:'intro'"))
  assert.ok(loop.includes('startCoachingMp3Playback'))
 })

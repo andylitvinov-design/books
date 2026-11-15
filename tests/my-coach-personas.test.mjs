@@ -288,7 +288,7 @@ test('the eight approved presentations flow directly into the same live dialogue
   assert.ok(ui.includes('replayingIntro'))
   assert.ok(ui.includes('onBlocked:fail'))
   assert.ok(voice.includes('introPlayerRef.current=startCoachingMp3Playback'))
-  assert.ok(voice.includes('voice/intro?'))
+  assert.ok(voice.includes('/api/coaching/intro?'))
   assert.ok(!ui.includes('coachPresentationVoice'))
   assert.ok(!voice.includes('coachPresentationVoice'))
   assert.ok(ui.includes('data-session-visual-v4'))
