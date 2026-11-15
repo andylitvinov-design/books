@@ -39,7 +39,7 @@ export function MandalaTherapyStudio({locale,disabled,editor,voiceEditor,advance
  const [isCourse,setIsCourse]=useState(false);
  const [effectsOpen,setEffectsOpen]=useState(false);
  const t=dict[locale];
- return <div className={css.shell} data-therapy-studio>
+ return <div className={css.shell} data-therapy-studio data-therapy-course={isCourse?"true":"false"}>
   <header className={css.hero}><span className={css.eyebrow}><Leaf size={17}/>{t.tag}</span><h3>{t.title}</h3><p>{t.intro}</p></header>
   <div className={css.format} data-therapy-format-switch role="group" aria-label="Practice format">
    <button type="button" data-therapy-format="single" disabled={disabled} aria-pressed={!isCourse} onClick={()=>{setIsCourse(false);setPane("meditation");}}>

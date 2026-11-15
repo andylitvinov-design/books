@@ -32,6 +32,8 @@ type Props = {
   focus:GuidedMeditationFocus;disabled:boolean;
   /** Optional standalone entry: one meditation + eight-day outline, without a purchase. */
   coursePreview?:boolean;
+  /** Compact Therapy first screen; no change to generator, privacy, consent. */
+  compactTherapy?:boolean;
   /** Only the approved creative concept; no private draft is sent to AI. */
   approvedVideoConcept?:ApprovedVideoConcept|null;
   /** A locally composed user-approved course script. Never sent to a provider automatically. */
@@ -161,7 +163,7 @@ const courseCopy={
 } as const;
 
 export function MandalaPersonalMeditation({
-  locale,theme,wish,scene,sound,caption,audioSrc,pace,brightness,affirmations,affirmationsEnabled,focus,disabled,coursePreview=false,approvedVideoConcept=null,seedScript,onNarrationReady,onNarrationInvalidated
+  locale,theme,wish,scene,sound,caption,audioSrc,pace,brightness,affirmations,affirmationsEnabled,focus,disabled,coursePreview=false,compactTherapy=false,approvedVideoConcept=null,seedScript,onNarrationReady,onNarrationInvalidated
 }:Props) {
   const t=copy[locale];
   const course=courseCopy[locale];
@@ -459,6 +461,22 @@ export function MandalaPersonalMeditation({
     document.body.appendChild(link);link.click();link.remove();
     window.setTimeout(()=>URL.revokeObjectURL(url),3000);
   };
+  // Optional choices remain editable in their existing disclosure.
+  const contextPills=(
+        <div className={css.chips}>
+          <span>{t.theme}: {themeLabels[locale][coursePreview&&courseFocus&&!stale?courseFocus:actualTheme]}</span>
+          <span>{t.scene}: {scene}</span>
+          <span>{t.sound}: {sound||t.quiet}</span>
+          <span>{t.phrases}: {affirmationsEnabled?affirmations.length:0}</span>
+        </div>
+  );
+  const extraField=(
+    <label className={css.extra}>{t.extra}
+                <textarea rows={2} maxLength={160} value={extra} disabled={disabled}
+                  data-meditation-extra placeholder={t.placeholder}
+                  onChange={event=>setExtra(event.currentTarget.value)}/>
+              </label>
+  );
   return (
     <section className={css.panel} id="personal-meditation" data-video-personal-meditation
       aria-labelledby="personal-meditation-heading">
@@ -474,15 +492,15 @@ export function MandalaPersonalMeditation({
           placeholder={course.placeholder} value={courseRequest}
           onChange={event=>setCourseRequest(event.currentTarget.value)}/>
       </label>:null}
-      <div className={css.context} data-meditation-context aria-label={t.filters}>
-        <small>{t.filters}</small>
-        <div className={css.chips}>
-          <span>{t.theme}: {themeLabels[locale][coursePreview&&courseFocus&&!stale?courseFocus:actualTheme]}</span>
-          <span>{t.scene}: {scene}</span>
-          <span>{t.sound}: {sound||t.quiet}</span>
-          <span>{t.phrases}: {affirmationsEnabled?affirmations.length:0}</span>
-        </div>
-      </div>
+      {compactTherapy?
+        <details className={css.context} data-meditation-context aria-label={t.filters}>
+          <summary>{t.filters} · {themeLabels[locale][coursePreview&&courseFocus&&!stale?courseFocus:actualTheme]}</summary>
+          {contextPills}
+        </details>:
+        <div className={css.context} data-meditation-context aria-label={t.filters}>
+          <small>{t.filters}</small>
+          {contextPills}
+        </div>}
       <div className={css.quickGrid} data-meditation-main-filters>
             <label>{t.meditationTheme}
               <select data-meditation-topic value={meditationTheme} disabled={disabled}
@@ -508,14 +526,11 @@ export function MandalaPersonalMeditation({
           </select>
         </label>
       </div>
-          <label className={css.extra}>{t.extra}
-            <textarea rows={2} maxLength={160} value={extra} disabled={disabled}
-              data-meditation-extra placeholder={t.placeholder}
-              onChange={event=>setExtra(event.currentTarget.value)}/>
-          </label>
+      {!compactTherapy?extraField:null}
       <details className={css.customize} data-meditation-accents>
         <summary><Sparkles size={16} aria-hidden="true"/>{t.customize}<ChevronDown size={16} aria-hidden="true"/></summary>
         <div className={css.customBody}>
+          {compactTherapy?extraField:null}
           <p>{t.selected}</p>
           <div className={css.accentChips} role="group" aria-label={t.customize}>
             {accents.map(id=><button key={id} type="button" disabled={disabled}
