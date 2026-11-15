@@ -6,6 +6,7 @@ import {
   FilePenLine, GraduationCap, LockKeyhole, ShieldCheck, Sparkles, Users,
 } from 'lucide-react'
 import styles from './cabinet-guest-overview.module.css'
+import { MySpaceTopics } from '@/components/my-space-topics'
 
 const TEXT = {
   en: {
@@ -122,6 +123,7 @@ export default function CabinetGuestOverview({
   const t = TEXT[selectedLocale]
 
   return (
+    <><MySpaceTopics locale={selectedLocale} />
     <section className={styles.shell} aria-labelledby="cabinet-guest-title" data-cabinet-guest-overview="true">
       <header className={styles.hero}>
         <div className={styles.heroGlow} aria-hidden="true" />
@@ -195,6 +197,6 @@ export default function CabinetGuestOverview({
         <p className={styles.privacy}><LockKeyhole size={17} aria-hidden="true" />{t.privacy}</p>
         <p className={styles.previous}>{t.legacyLead} <Link href={'/' + selectedLocale + '/client'} prefetch={false}>{t.legacy}<ArrowRight size={15} aria-hidden="true" /></Link></p>
       </footer>
-    </section>
+    </section></>
   )
 }
