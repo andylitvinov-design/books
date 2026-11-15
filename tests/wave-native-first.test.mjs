@@ -14,9 +14,9 @@ test('Wave Native resolves ordinary simple chat locally in RU/EN/ES',()=>{
    assert.equal(result.modelUsed,false);
    assert.equal(result.source,WAVE_NATIVE_ROUTER_VERSION);
  }
- assert.match(reply('О Qwen').reply,/Wave/);
+ assert.match(reply('О Qwen').reply,/Ali/);
  assert.match(reply('О Qwen').reply,/домашн/);
- assert.match(reply('What is OpenRouter?','en').reply,/Wave/);
+ assert.match(reply('What is OpenRouter?','en').reply,/Ali/);
 });
 
 test('Wave Native abstains on complex and safety-sensitive questions',()=>{
@@ -62,4 +62,10 @@ test('Services keeps real catalogue suggestions but answers ordinary social turn
  assert.ok(ui.includes('waveNativeTurn({message:trimmed,locale,history:[]})'));
  assert.ok(ui.includes('waveNativeTurn({message:value,locale,history:turns.slice(-6)})'));
  assert.ok(ui.includes('advice?.suggestions'));
+});
+
+test('Ali identity retains RU/EN/ES and legacy Wave aliases',()=>{
+ for(const [message,locale] of [['Кто такой Али','ru'],['Кто такой Wave','ru'],['Are you Ali','en'],['Are you Wave','en'],['Eres Ali','es'],['Eres Wave','es']]){
+  const ans=waveNativeTurn({message,locale});assert.ok(ans,message);assert.match(ans.reply,/Ali/);assert.equal(ans.externalCalled,false);
+ }
 });

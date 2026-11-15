@@ -10,10 +10,7 @@
     {"path": "/api/internal/video-scout-hourly", "schedule": "17 * * * *"}
   ],
   "git": {
-    "deploymentEnabled": {
-      "**": false,
-      "codex/public-book-library": true
-    }
+    "deploymentEnabled": false
   },
   "ignoreCommand": "node scripts/vercel-ignore-build.mjs"
 }

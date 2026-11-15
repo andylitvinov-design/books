@@ -86,27 +86,35 @@ function rmsPcm(mediaFile) {
   }
   return Math.sqrt(energy / samples);
 }
-// The compact fourth Story is deliberately review-only. Advanced timeline
-// and source settings are in the fifth Montage tab; no hidden Story click.
+// Extra contains only the three video offers. Original source and advanced
+// storyboard settings remain in Story's visible, accessible settings action.
 async function openMontageSettings(page) {
-  const montage=page.locator('[data-video-montage-tab="promo"]');
-  await montage.waitFor({state:'visible',timeout:20000});
-  row.phase='fifth-montage-native-selection';
-  if(engine==='webkit')await montage.tap();
-  else await montage.click();
+  const story=page.locator('[data-video-montage-tab="concept"]');
+  await story.waitFor({state:'visible',timeout:20000});
+  row.phase='story-native-selection';
+  if(engine==='webkit')await story.tap();
+  else await story.click();
   await page.waitForFunction(()=>
-    document.querySelector('[data-video-basic-editor]')?.getAttribute('data-montage-panel')==='promo',
+    document.querySelector('[data-video-basic-editor]')?.getAttribute('data-montage-panel')==='concept',
+    undefined,{timeout:15000});
+  const openSettings=page.locator('[data-video-story-open-settings]');
+  row.phase='story-settings-native-selection';
+  await openSettings.waitFor({state:'visible',timeout:20000});
+  if(engine==='webkit')await openSettings.tap();
+  else await openSettings.click();
+  await page.waitForFunction(()=>
+    document.querySelector('[data-video-basic-editor]')?.getAttribute('data-montage-panel')==='settings',
     undefined,{timeout:15000});
   const advanced=page.locator('[data-video-stories-advanced]');
   await advanced.waitFor({state:'visible',timeout:20000});
   if(!await advanced.evaluate(node=>node.open)){
-    row.phase='fifth-montage-advanced-options';
+    row.phase='story-advanced-options';
     if(engine==='webkit')await advanced.locator(':scope > summary').tap();
     else await advanced.locator(':scope > summary').click();
   }
   const settings=advanced.locator('[data-video-stories-settings]');
   await settings.waitFor({state:'visible',timeout:20000});
-  row.phase='fifth-montage-settings';
+  row.phase='story-video-settings';
   if(engine==='webkit')await settings.tap();
   else await settings.click();
   await page.waitForFunction(()=>

@@ -160,62 +160,45 @@ test("the three reused local writers return goal-aware texts for EN, RU and ES",
 });
 
 
-test("Ready offers exactly three compact selectable video formats above existing ideas",()=>{
-  const css=readFileSync(new URL("../components/mandala-video-ready.module.css",import.meta.url),"utf8");
-  assert.match(ready,/type VideoTier="basic"\|"photo"\|"character"/);
-  assert.match(ready,/data-ready-video-tiers/);
-  assert.match(ready,/role="radiogroup"/);
-  assert.match(ready,/type="radio" name="ready-video-tier"/);
-  assert.match(ready,/data-ready-video-tier=\{tier.id\}/);
-  assert.match(ready,/checked=\{videoTier===tier.id\}/);
-  assert.match(ready,/setVideoTier\(tier.id\);setVideoGenerationNotice\(""\)/);
-  assert.match(ready,/price:"€3"/);
-  assert.match(ready,/price:"€5"/);
+test("Ready has one Free Generate immediately below the preview; Extra owns paid formats",()=>{
+  const offer=readFileSync(new URL("../components/mandala-montage-pro-offer.tsx",import.meta.url),"utf8");
+  assert.doesNotMatch(ready,/data-ready-video-tiers|data-ready-video-tier=|name="ready-video-tier"/);
+  assert.doesNotMatch(ready,/createVideoCartSelection|VIDEO_CART_STORAGE_KEY|useRouter/);
+  assert.match(studio,/promo:\{ru:"Extra",en:"Extra",es:"Extra"\}/);
+  assert.match(studio,/montagePanel==="promo" \? <MandalaMontageProOffer/);
+  assert.match(studio,/montagePanel==="settings" \? <details className=\{videoStyles\.montageStoryAdvanced\}/);
+  assert.match(offer,/data-video-montage-pro-offer/);
+  const preview=ready.indexOf("{header}");
+  const generate=ready.indexOf('data-ready-generate>');
+  const ideas=ready.indexOf('className={css.nextTitle}');
+  assert.ok(preview>0&&generate>preview&&ideas>generate,"Ready preview → Free Generate → ideas");
   assert.match(ready,/onClick=\{generateSelectedVideo\} data-ready-generate/);
-  assert.ok(ready.indexOf("data-ready-video-tiers")<ready.indexOf("data-ready-meditation"));
-  assert.match(ready,/data-ready-meditation/);
-  assert.match(ready,/data-ready-ritual/);
-  assert.match(ready,/data-ready-journey/);
-  assert.match(css,/\.tierList\{display:grid;gap:7px\}/);
-  assert.match(css,/\.tierOption\{/);
-  assert.match(css,/@media\(max-width:350px\)/);
-  for(const locale of ["en","ru","es"]){
-    const start=ready.indexOf("  "+locale+":{",ready.indexOf("const COPY={"));
-    const end=locale==="en"?ready.indexOf("  ru:{",start):
-      locale==="ru"?ready.indexOf("  es:{",start):ready.indexOf("} as const;",start);
-    for(const key of ["videoChooseTitle","videoBasic","videoPhoto","videoCharacter",
-      "videoFree","videoPaidInfo","videoCartAction","videoFreeHold","videoGenerate","videoIdeas"])
-      assert.ok(ready.slice(start,end).includes(key+":"),locale+" "+key);
-  }
-});
-
-test("Free uses the original generator; paid Ready tiers reuse the fixed-SKU manual cart",()=>{
-  assert.match(ready,/if\(videoTier!=="basic"\)/);
-  assert.match(ready,/const id=videoTier==="photo"\?"video-extra":"video-pro"/);
-  assert.match(ready,/createVideoCartSelection\(id\)/);
-  assert.match(ready,/window\.sessionStorage\.setItem\(VIDEO_CART_STORAGE_KEY,JSON\.stringify\(selection\)\)/);
-  assert.match(ready,/window\.dispatchEvent\(new Event\(SERVICE_CART_UPDATED_EVENT\)\)/);
-  assert.match(ready,/router\.push\("\/"\+locale\+"\/cart\?video="\+id\)/);
-  assert.match(ready,/data-ready-video-payment-disclosure/);
-  assert.match(ready,/videoTier==="basic"\?t\.videoGenerate:t\.videoCartAction/);
-  assert.match(ready,/if\(!basicFreeAvailable\)/);
   assert.match(ready,/onGenerateBasicVideo\(\)/);
-  assert.doesNotMatch(ready,/fetch\(.*pay|fetch\(.*billing|window\.location\s*=/);
-  assert.doesNotMatch(ready,/createVideoCartSelection\(id,\s*(wish|focus|anchor)/);
-  assert.match(studio,/basicFreeAvailable=\{basicVideoAccess\.allowed\}/);
-  assert.match(studio,/basicFreeIssue=\{basicVideoAccess\.reason\}/);
-  assert.match(studio,/basicCreditCost=\{basicVideoAccess\.chargeCredits\}/);
+  assert.match(studio,/return createQuickVideo\(\)/);
   assert.match(studio,/readyBasicVideoAccess\(/);
   assert.match(ready,/data-ready-video-credit-cost/);
   assert.match(ready,/data-ready-sign-in-credits/);
-  assert.match(studio,/onGenerateBasicVideo=\{\(\)=>\{/);
-  assert.match(studio,/if\(!freeVideoSelected\)\{/);
-  assert.match(studio,/return createQuickVideo\(\)/);
+  assert.match(ready,/if\(!basicFreeAvailable\)/);
+  assert.match(ready,/data-ready-generating/);
+  assert.match(ready,/data-ready-checkin/);
+  assert.match(ready,/progressQuestionnaire/);
+  assert.match(ready,/rendering\?t\.generating/);
   const prices=Object.fromEntries(VIDEO_CART_PRODUCTS.map(item=>[item.id,item.amountMinor]));
   assert.deepEqual(prices,{"video-extra":300,"video-pro":500});
   assert.deepEqual(createVideoCartSelection("video-extra"),{id:"video-extra",brief:""});
   assert.deepEqual(createVideoCartSelection("video-pro"),{id:"video-pro",brief:""});
   assert.equal(createVideoCartSelection("video-unknown"),null);
+});
+
+test("Safari-visible Ready player unlocks new encoded Blob before final credit-confirmed state",()=>{
+  assert.match(studio,/if\(result\?\.url&&result\.mode!=="catalog"\)setReadyGenerationPending\(false\)/);
+  assert.match(studio,/checking=\{Boolean\(!readyGenerationPending&&result&&playbackStatus==="checking"\)\}/);
+  assert.match(studio,/progressQuestionnaire=\{renderCheckIn\("ready-assessment-heading"\)\}/);
+  assert.match(studio,/activeWorkspace==="video"\?renderCheckIn\("video-assessment-heading"\):null/);
+  assert.match(ready,/data-video-file=\{video\?"true":undefined\}/);
+  assert.match(ready,/onCanPlay=\{event=>onVerifyPlayback\(event\.currentTarget\)\}/);
+  assert.match(ready,/\{completed\?<button type="button" data-ready-generate-new onClick=\{onStartNewVideo\}>/);
+  assert.match(studio,/playbackStatus==="ready"&&creditConfirmed/);
 });
 
 test("WebKit voice advanced settings use native one-tap disclosure without a double toggle",()=>{
@@ -326,22 +309,19 @@ test("verified signed-in Ready Save uploads directly through the existing signed
   }
 });
 
-test("personal video CSP permits only signed Supabase API + resumable storage on Video Studio/My Videos",()=>{
+test("personal signed MP4 CSP is confined to exact origin, EN/RU/ES pages and a server flag",()=>{
   const env={HH_PERSONAL_VIDEO_CLOUD_SAVE_ENABLED:"true",
     HH_APP_SUPABASE_URL:"https://abcdefghijklmnopqrst.supabase.co"};
   const api="https://abcdefghijklmnopqrst.supabase.co";
   const tus="https://abcdefghijklmnopqrst.storage.supabase.co";
-  for(const lang of ["ru","en","es"]){
-    const studio=personalVideoStorageCsp("/"+lang+"/holistic-support/mandala",env);
-    assert.equal(studio.connect," "+api+" "+tus);
-    assert.equal(studio.media,"","studio should render only its local Blob movie");
-    const cabinet=personalVideoStorageCsp("/"+lang+"/app/videos",env);
-    assert.equal(cabinet.connect," "+api+" "+tus);
-    assert.equal(cabinet.media," blob: "+api,
-      "the My Videos cabinet needs local file metadata and private signed MP4 playback");
+  for(const locale of ["en","ru","es"]){
+    assert.deepEqual(personalVideoStorageCsp("/"+locale+"/holistic-support/mandala",env),
+      {connect:" "+api+" "+tus,media:""});
+    assert.deepEqual(personalVideoStorageCsp("/"+locale+"/app/videos",env),
+      {connect:" "+api+" "+tus,media:" blob: "+api});
   }
-  for(const path of ["/ru/app/messages","/ru/app/practice","/ru/app/videos/other",
-    "/ru/holistic-support/mobile","/api/app/personal-videos","/admin/videos"]){
+  for(const path of ["/en/app/messages","/ru/app/practice","/en/app/videos/another",
+      "/ru/holistic-support/mobile","/api/app/personal-videos","/admin/videos"]){
     assert.deepEqual(personalVideoStorageCsp(path,env),{connect:"",media:""},path);
   }
   assert.deepEqual(personalVideoStorageCsp("/ru/holistic-support/mandala",
@@ -362,20 +342,6 @@ test("personal video CSP permits only signed Supabase API + resumable storage on
   assert.match(middleware,/personalVideoStorageCsp\(pathname,process\.env\)/);
   assert.match(middleware,/"connect-src 'self'".*personalVideoStorage\.connect/);
   assert.match(middleware,/directMessageStorageOrigin \+ personalVideoStorage\.media/);
+  assert.match(middleware,/humanSpecialistVideoPage/);
   assert.doesNotMatch(middleware,/connect-src[^\n]*https:\/\/\*\.supabase\.co/);
-});
-
-test("First Video navigates to Ready before its separate trusted render, preserving guest and credit guards",()=>{
-  const source=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
-  const browser=readFileSync(new URL("../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
-  const first=source.slice(source.indexOf("<MandalaFirstVideoStart"),source.indexOf("/> : null}",source.indexOf("<MandalaFirstVideoStart")));
-  assert.match(first,/setActiveWorkspace\("ready"\)/);
-  assert.match(first,/setPracticeLevels\(current=>\(\{\.\.\.current,video:"basic"\}\)\)/);
-  assert.doesNotMatch(first,/createQuickVideo\(\)/,"first action must not encode or debit");
-  const ready=source.slice(source.indexOf("onGenerateBasicVideo="),source.indexOf("saveStatus=",source.indexOf("onGenerateBasicVideo=")));
-  assert.match(ready,/return createQuickVideo\(\)/,"explicit Ready action still uses original credit and consent gates");
-  assert.match(browser,/FIRST_VIDEO_NAVIGATION_MUST_NOT_BE_AN_EXPORT/);
-  assert.match(browser,/READY_RENDER_MUST_BE_AVAILABLE/);
-  assert.match(browser,/readyGenerate\.tap\(\)/);
-  assert.match(browser,/readRealGuestVideo\(page,\{timeout:80000\}\)/,"real encoded Blob and guest Save gate remain required");
 });
