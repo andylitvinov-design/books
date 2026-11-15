@@ -10,6 +10,13 @@ const RETAIN_DAYS = 7;
 const MAX_DELETE = 35;
 const MAX_PAGES = 5;
 const validId = id => typeof id === 'string' && /^dpl_[A-Za-z0-9]{10,}$/.test(id);
+// Vercel v6 list returns "uid"; v13 detail returns "id". Reject ambiguity.
+export function deploymentId(value) {
+  if (!value || typeof value !== 'object') return null;
+  if (value.uid != null && value.id != null && value.uid !== value.id) return null;
+  const id = value.uid ?? value.id;
+  return validId(id) ? id : null;
+}
 const state = d => d.readyState || d.state || null;
 const projectId = d => d.projectId ?? d.project?.id;
 const stamp = d => Number(d.createdAt ?? d.created);
@@ -20,11 +27,12 @@ const isExpectedSource = d => d.meta?.githubOrg === 'andylitvinov-design'
 
 export function protectedDeploymentIds(recent) {
   if (!Array.isArray(recent)) throw Error('DEPLOYMENT_HISTORY_UNAVAILABLE');
-  const ids = new Set(recent.slice(0, 10).map(d => d.id).filter(validId));
+  const ids = new Set(recent.slice(0, 10).map(deploymentId).filter(Boolean));
   let ready = 0;
   for (const d of recent) {
-    if (d.target === 'production' && state(d) === 'READY' && validId(d.id) && ready < 30) {
-      ids.add(d.id);
+    const id = deploymentId(d);
+    if (d.target === 'production' && state(d) === 'READY' && id && ready < 30) {
+      ids.add(id);
       ready++;
     }
   }
@@ -45,8 +53,9 @@ export function appendRollbackEvidencePage(response, collected, currentUntil) {
     throw Error('DEPLOYMENT_HISTORY_UNAVAILABLE');
   let readyCount = collected.readyCount;
   for (const item of response.deployments) {
-    if (!validId(item?.id) || collected.recentSeen.has(item.id)) continue;
-    collected.recentSeen.add(item.id);
+    const id = deploymentId(item);
+    if (!id || collected.recentSeen.has(id)) continue;
+    collected.recentSeen.add(id);
     collected.recentDeployments.push(item);
     if (item.target === 'production' && state(item) === 'READY') readyCount++;
   }
@@ -59,7 +68,8 @@ export function appendRollbackEvidencePage(response, collected, currentUntil) {
 }
 
 export function eligibleForDelete(d, {now, liveId, protectedIds, assignedAliases}) {
-  if (!d || !validId(d.id) || protectedIds.has(d.id) || d.id === liveId
+  const id = deploymentId(d);
+  if (!id || protectedIds.has(id) || id === liveId
     || projectId(d) !== PROJECT || d.target !== 'production'
     || !isExpectedSource(d) || !['READY','ERROR','CANCELED'].includes(state(d)))
     return false;
@@ -93,11 +103,12 @@ async function request(token, path, method = 'GET') {
 
 async function verifiedLiveId(token) {
   const live = await request(token, '/v13/deployments/' + LIVE_ALIAS);
-  if (!validId(live?.id) || live.target !== 'production'
+  const id = deploymentId(live);
+  if (!id || live.target !== 'production'
     || state(live) !== 'READY' || projectId(live) !== PROJECT
     || !Array.isArray(live.alias) || !live.alias.includes(LIVE_ALIAS))
     throw Error('PRODUCTION_ALIAS_UNVERIFIED');
-  return live.id;
+  return id;
 }
 
 async function assignedAliases(token, id) {
@@ -125,6 +136,7 @@ async function main() {
       response, {recentDeployments, recentSeen, readyCount}, recentUntil);
     readyCount = result.readyCount;
     console.log('HH_VERCEL_ROLLBACK_SCAN page=' + (page + 1)
+      + ' raw=' + response.deployments.length
       + ' records=' + recentDeployments.length + ' ready=' + readyCount);
     if (result.done) break;
     recentUntil = result.nextUntil;
@@ -149,23 +161,24 @@ async function main() {
     if (!history.deployments.length) break;
     for (const item of history.deployments) {
       if (eligible >= MAX_DELETE) break;
-      if (!validId(item.id) || seen.has(item.id)) continue;
-      seen.add(item.id);
+      const id = deploymentId(item);
+      if (!id || seen.has(id)) continue;
+      seen.add(id);
       scanned++;
-      if (protectedIds.has(item.id) || item.id === liveId) continue;
-      const detail = await request(token, '/v13/deployments/' + item.id);
-      const aliases = await assignedAliases(token, item.id);
+      if (protectedIds.has(id) || id === liveId) continue;
+      const detail = await request(token, '/v13/deployments/' + id);
+      const aliases = await assignedAliases(token, id);
       if (!eligibleForDelete(detail, {now, liveId, protectedIds, assignedAliases: aliases})) continue;
       eligible++;
-      console.log('HH_VERCEL_PRUNE_CANDIDATE id=' + item.id + ' created=' + stamp(detail));
+      console.log('HH_VERCEL_PRUNE_CANDIDATE id=' + id + ' created=' + stamp(detail));
       if (mode === 'apply') {
         // Re-check CURRENT LIVE and alias assignment immediately before DELETE.
         // No concurrent deletes or retries after uncertain provider outcomes.
         if (await verifiedLiveId(token) !== liveId) throw Error('LIVE_CHANGED_DURING_CLEANUP');
-        const freshAliases = await assignedAliases(token, item.id);
+        const freshAliases = await assignedAliases(token, id);
         if (!eligibleForDelete(detail, {now, liveId, protectedIds, assignedAliases: freshAliases}))
           throw Error('CANDIDATE_CHANGED_DURING_CLEANUP');
-        await request(token, '/v13/deployments/' + item.id, 'DELETE');
+        await request(token, '/v13/deployments/' + id, 'DELETE');
         deleted++;
       }
     }
