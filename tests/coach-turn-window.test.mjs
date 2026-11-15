@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {coachTurnWindow} from '../lib/coaching/coach-turn-window.mjs'
+import {coachGoalTurn} from '../lib/coaching/goal-turn.mjs'
 const user=content=>({role:'user',content})
 const coach=content=>({role:'assistant',content})
 const filler=(n,locale='ru')=>Array.from({length:n},(_,i)=>i%2?coach(locale==='ru'?'Можем обсудить конкретный случай.':'We can discuss one example.'):user(locale==='ru'?'Это уточнение '+i+'.':'A detail '+i+'.'))
@@ -91,4 +92,67 @@ test('A goal on the tail boundary survives when an older no-advice preference is
 test('At most one turn can be kept for a size-one window',()=>{
  const turns=[user('I want to build a plan.'),user('No advice.'),...filler(20,'en')]
  assert.deepEqual(coachTurnWindow(turns,1),turns.slice(-1))
+})
+
+
+test('EN/RU/ES authored goal travels only with the next explicitly sent visible user turn',()=>{
+ const checks=[
+  ['en','Switch careers','I am weighing two options','My goal: Switch careers\nI am weighing two options'],
+  ['ru','Улучшить отношения','Мне трудно начать разговор','Моя цель: Улучшить отношения\nМне трудно начать разговор'],
+  ['es','Mejorar mi relación','Quiero hablar con calma','Mi objetivo: Mejorar mi relación\nQuiero hablar con calma'],
+ ]
+ for(const [locale,goal,message,expected] of checks){
+  const row=coachGoalTurn({locale,goal,message})
+  assert.deepEqual(row,{message:expected,goalIncluded:true,goal,clearGoal:false,deferredGoal:false})
+  assert.equal(coachGoalTurn({locale,goal,message,lastSharedGoal:goal}).message,message)
+  const history=[user(expected),coach('Thank you.'),...filler(22,'en')]
+  assert.ok(coachTurnWindow(history,10).some(row=>row.content===expected),
+    'old user-authored goal remains in bounded in-tab context')
+ }
+})
+
+test('new topic resets the old selected goal instead of silently transmitting it',()=>{
+ const sample=coachGoalTurn({locale:'ru',goal:'Работа',lastSharedGoal:'Работа',
+  message:'Давайте сменим тему.',turns:[user('Моя цель: Работа'),coach('Обсудим работу.')]})
+ assert.equal(sample.message,'Давайте сменим тему.')
+ assert.equal(sample.clearGoal,true)
+ assert.equal(sample.goalIncluded,false)
+})
+
+test('explicit stop, crisis, unconsented library retrieval and empty text never attach a goal',()=>{
+ for(const [message,locale] of [
+  ['Please stop this conversation','en'],['Остановим разговор','ru'],
+  ['I might kill myself','en'],['Quiero morir','es'],
+ ]){
+  const data=coachGoalTurn({goal:'Work',message,locale})
+  assert.equal(data.message,message)
+  assert.equal(data.goalIncluded,false)
+ }
+ const skip=coachGoalTurn({goal:'Work',message:'Find me a quote from the library',skip:true})
+ assert.equal(skip.goalIncluded,false)
+ assert.equal(skip.message,'Find me a quote from the library')
+ assert.equal(coachGoalTurn({goal:'Work',message:'  '}).goalIncluded,false)
+})
+
+test('long user speech is never truncated or silently augmented past the server limit',()=>{
+ const message='I'.repeat(1199)
+ const row=coachGoalTurn({locale:'en',goal:'A better daily routine',message})
+ assert.equal(row.message,message)
+ assert.equal(row.deferredGoal,true)
+ assert.equal(row.goalIncluded,false)
+ assert.equal(coachGoalTurn({locale:'en',goal:'x'.repeat(181),message:'Hello'}).goalIncluded,false)
+})
+
+test('My Coach UI sends an authored goal visibly and does not create account persistence',async()=>{
+ const fs=await import('node:fs')
+ const ui=fs.readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const body=ui.slice(ui.indexOf('async function sendMessage(raw'))
+ assert.match(body,/const goalTurn=coachGoalTurn\(/)
+ assert.ok(body.indexOf('const wisdomRequested=')<body.indexOf('goalTurn=coachGoalTurn'))
+ assert.match(body,/skip:wisdomRequested/)
+ assert.match(body,/message=goalTurn\.message/)
+ assert.equal((body.match(/commitGoalTurn\(\)/g)||[]).length,2)
+ assert.match(body,/lastSharedGoalRef\.current=goalTurn\.goal/)
+ assert.match(ui,/Your goal is added to your next sent message/)
+ assert.doesNotMatch(ui,/localStorage|sessionStorage|sendBeacon/)
 })

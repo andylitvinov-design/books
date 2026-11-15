@@ -444,5 +444,7 @@ test('spoken My Coach answer retains the useful reflection rather than only the 
  assert.match(ui,/полный текст остаётся на экране/)
  assert.match(ui,/transcripción completa sigue visible/)
  assert.match(loop,/cloudAgreed&&cloudAvailable/)
- assert.match(ui,/consent&&cloudAgreed&&cloudAvailable/)
+ assert.match(ui,/if\(cloudAgreed&&cloudAvailable&&\['google_chirp3_hd','fish_free'\]\.includes\(cloudProvider\)\)/)
+ assert.doesNotMatch(ui,/if\(consent&&cloudAgreed&&cloudAvailable/)
+ assert.match(ui,/voiceConsent:true,cloudVoiceConsent:true/)
 })
