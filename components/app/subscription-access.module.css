@@ -61,3 +61,12 @@
 @media(max-width:620px){.planGrid{grid-template-columns:minmax(0,1fr)}}
 
 .sessionBenefit{display:grid;gap:12px;padding:16px;border:1px solid #b3c6b8;border-radius:14px;background:#f6f9f2}
+
+/* Settings' old four-card announcement duplicates the new user-invoked chooser. */
+
+.settings{gap:9px;padding:14px;margin-bottom:10px}
+.settings h2{font-size:clamp(20px,3.2vw,24px)}
+.settingsExtra{border-top:1px solid #e5ded1;padding-top:7px}
+.settingsExtra>summary{min-height:44px;display:flex;align-items:center;cursor:pointer;color:#315d4c;font-weight:700}
+.settingsExtra>p,.settingsExtra>ul{margin:9px 0 0}
+@media(max-width:620px){.settings{padding:13px;border-radius:17px}}

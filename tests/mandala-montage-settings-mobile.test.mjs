@@ -82,6 +82,20 @@ test("Montage iPhone retains the compact header, real six selectors and on-scree
   assert.match(studio,/data-video-montage-auto-sound/);
 });
 
+test("The real WebKit first-video verifier uses Story settings, not Extra's hidden disclosure",()=>{
+ const firstVideo=readFileSync(new URL("../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
+ const start=firstVideo.indexOf("async function openMontageSettings(page)");
+ const end=firstVideo.indexOf("\nlet browser;",start);
+ assert.ok(start>0&&end>start,"real browser uses existing Story editor");
+ const navigate=firstVideo.slice(start,end);
+ assert.match(navigate,/data-video-montage-tab="concept"/);
+ assert.match(navigate,/data-video-story-open-settings/);
+ assert.match(navigate,/data-video-stories-advanced/);
+ assert.match(navigate,/data-video-stories-settings/);
+ assert.doesNotMatch(navigate,/data-video-montage-tab="promo"/);
+ assert.match(studio,/montagePanel==="settings" \? <details className=\{videoStyles\.montageStoryAdvanced\}/);
+});
+
 test("Original motion WebKit export reaches legacy preferences via Story and keeps Audio controls",()=>{
  const motion=readFileSync(new URL("../scripts/benchmarking/verify-original-motion-export.mjs",import.meta.url),"utf8");
  assert.match(motion,/data-video-stories-advanced/);
