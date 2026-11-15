@@ -124,3 +124,23 @@ test("Owner Therapy mobile: one introduction and compact controls, no feature re
  assert.match(css,/\[data-meditation-generate\]\{min-height:52px/);
  assert.match(ui,/data-therapy-advanced-effects/);
 });
+
+test("Therapy mobile guest path is tested in the existing WebKit release gate",()=>{
+ const browser=read("scripts/verify-therapy-studio-mobile-browser.mjs");
+ const ci=read(".github/workflows/holistic-support-mandala.yml");
+ assert.match(browser,/\['en','ru','es'\]/);
+ assert.match(browser,/\[320,354,390,430\]/);
+ assert.match(browser,/data-video-studio-hydrated/);
+ assert.match(browser,/data-therapy-format="course"/);
+ assert.match(browser,/data-meditation-eight-day-plan/);
+ assert.match(browser,/data-therapy-subtab="voice"/);
+ assert.match(browser,/data-video-hypnocorrection-panel/);
+ assert.match(browser,/No external provider or video renderer POST/);
+ assert.match(browser,/No iPhone horizontal overflow/);
+ assert.match(ci,/node --check scripts\/verify-therapy-studio-mobile-browser\.mjs/);
+ assert.match(ci,/HH_THERAPY_BROWSER_ENGINE=webkit/);
+ assert.match(ci,/artifacts\/therapy-mobile\/\*\.png/);
+ assert.match(ui,/aria-label=\{t\.formatA11y\}/);
+ assert.match(ui,/aria-label=\{t\.stepsA11y\}/);
+ assert.match(css,/\[data-meditation-context\] summary::after/);
+});

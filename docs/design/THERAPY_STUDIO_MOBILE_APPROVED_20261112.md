@@ -23,3 +23,11 @@ Node unit and targeted tests; lint, typecheck, build; macOS WebKit video/audio/e
 ## AI LIVE verification (separate from local script acceptance)
 - Require exact-HEAD tests plus real authenticated provider request before claiming free AI LIVE. Vercel BRIEF + PRODUCTION_APPROVED flags must remain OFF until confirmed free quota/credentials, privacy and server acceptance. Running with unavailable flags visibly falls back to local authoring.
 - Tests must cover guest local authoring, no pre-consent requests, real 7-segment provider provenance, 401/403/422/429/503/fallback, concurrent edits and cancelled requests, 8 individual local scripts, no duplicate editor, and unchanged WebKit voice/Hypno consent and real MP4 gates.
+
+## Mobile acceptance completion · 15 Nov 2026
+
+Reference identity: `/{en,ru,es}/holistic-support/mandala`, guest, top workspace Therapy, subtab Meditation, single-practice mode, iPhone CSS widths 320/354/390/430. The screenshots supplied by the owner represent the same guest editor screen before the compact #4697 correction, not the distinct authenticated course dashboard or Ready render state.
+
+The live source from #4697 removed the redundant second phone hero, reduced cards and made inherited context / personal emphasis optional. This follow-up restores a visible expand chevron in iOS Safari and localizes accessible names for format and three steps. It adds route-matched functional/browser assertions to the **existing macOS WebKit job**, including one player, form order, 44px targets, page overflow, synthetic screenshot captures, guest local script, eight local course themes, Voice / Practice and zero unconsented provider/render requests. No workflow, runner, paid provider or media generator is added.
+
+Acceptance is **not equivalent** to provider narration, real phone hardware, billing, authenticated cloud Save, full eight mastered videos or visual pixel matching without the approved original image at identical content crop. Report actual successful CI run, merge and independently served Vercel SHA separately.

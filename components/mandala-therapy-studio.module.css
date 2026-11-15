@@ -93,3 +93,19 @@
  .scriptHost [data-video-personal-meditation]{padding:10px}
  .scriptHost [data-meditation-main-filters] select{font-size:12px}
 }
+
+/* The native <summary> marker disappears in Safari when it is display:flex.
+   Restore an explicit disclosure chevron in the one compact Therapy composer. */
+@media(max-width:759px){
+ .scriptHost [data-meditation-context] summary{gap:8px;list-style:none}
+ .scriptHost [data-meditation-context] summary::-webkit-details-marker{display:none}
+ .scriptHost [data-meditation-context] summary::after{
+  content:"";flex:none;display:block;width:8px;height:8px;margin:0 4px 4px auto;
+  border-right:2px solid #087e62;border-bottom:2px solid #087e62;
+  transform:rotate(45deg);transition:transform .16s ease
+ }
+ .scriptHost [data-meditation-context][open] summary::after{transform:rotate(225deg);margin-bottom:0;margin-top:4px}
+}
+@media(prefers-reduced-motion:reduce){
+ .scriptHost [data-meditation-context] summary::after{transition:none}
+}

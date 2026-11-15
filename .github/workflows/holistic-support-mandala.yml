@@ -78,6 +78,7 @@ on:
       - 'tests/wav-pcm-mixer.test.mjs'
       - 'tests/mandala-webcodecs-mp4.test.mjs'
       - 'scripts/verify-affirmation-voice-browser.mjs'
+      - 'scripts/verify-therapy-studio-mobile-browser.mjs'
       - 'scripts/verify-live-selected-voice-phrase.mjs'
       - 'scripts/verify-live-selected-phrase.mjs'
       - 'tests/voice-selected-phrase-free.test.mjs'
@@ -573,6 +574,7 @@ jobs:
         run: |
           set -euo pipefail
           node --check scripts/verify-affirmation-voice-browser.mjs
+          node --check scripts/verify-therapy-studio-mobile-browser.mjs
           node --check scripts/benchmarking/first-video-live-export.mjs
           node --check scripts/benchmarking/verify-original-motion-export.mjs
           node --check scripts/benchmarking/verify-five-scene-stories-browser.mjs
@@ -678,6 +680,13 @@ jobs:
           done
           if [ "$ready" -ne 1 ]; then cat /tmp/hh-voice-macos-next.log; exit 1; fi
           node scripts/verify-affirmation-voice-browser.mjs
+          # Reuse this required macOS runner for the Therapy screenshot/UX gate;
+          # do not run extra jobs or this suite on unrelated Video PRs.
+          if [[ "${GITHUB_HEAD_REF:-}" == feat/video-therapy-* ]]; then
+            HH_THERAPY_BROWSER_ENGINE=webkit \
+              HH_THERAPY_SCREENSHOT_DIR=artifacts/therapy-mobile \
+              node scripts/verify-therapy-studio-mobile-browser.mjs
+          fi
           # Exercise the actual mobile consent label with WebKit only.
           HH_PRACTICES_BROWSER_ENGINE=webkit HH_PRACTICES_CONSENT_ONLY=1 \
             node scripts/verify-practices-mobile-browser.mjs
@@ -711,6 +720,7 @@ jobs:
           name: hh-webkit-four-scene-${{ github.sha }}
           path: |
             artifacts/benchmarking/first-video-live-export.json
+            artifacts/therapy-mobile/*.png
             artifacts/benchmarking/five-scene-stories-webkit.json
             artifacts/benchmarking/business-photo-stories-webkit.json
           if-no-files-found: warn
