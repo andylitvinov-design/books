@@ -5,6 +5,7 @@ import Link from 'next/link'
 import {ArrowRight,Heart,Home,Keyboard,Leaf,Captions,PhoneOff,LockKeyhole,MessageCircle,Pencil,Send,ShieldCheck,Sparkles,Target,UserRound,Video,Volume2,Zap} from 'lucide-react'
 import {getCoachPersona,localCoachText,coachStagePrompt} from '@/lib/coaching/persona-registry.mjs'
 import {getCoachPresentation,coachPresentationVoice} from '@/lib/coaching/persona-presentations.mjs'
+import {coachTimeboxState} from '@/lib/coaching/session-timebox.mjs'
 import {coachingBrainSafety,coachingBrainBoundary,coachingBrainStageDecision,offlineCoachingBrainReply,selectCoachingBrainMethod} from '@/lib/personal-coaching/coaching-brain.mjs'
 import {classifyWisdomRequest} from '@/lib/coaching/wisdom-retrieval.mjs'
 import {coachTurnWindow} from '@/lib/coaching/coach-turn-window.mjs'
@@ -123,6 +124,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [speechLocale,setSpeechLocale]=useState('auto')
   const [showCaptions,setShowCaptions]=useState(false)
   const [turns,setTurns]=useState([])
+  const [sessionClockStarted,setSessionClockStarted]=useState(false)
+  const [introComplete,setIntroComplete]=useState(false)
+  const [activeSessionSeconds,setActiveSessionSeconds]=useState(0)
   const [busy,setBusy]=useState(false)
   const [error,setError]=useState('')
   const [authRequired,setAuthRequired]=useState(false)
@@ -144,6 +148,23 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const portraitHeroRef=useRef(null),sessionRootRef=useRef(null)
   const replaySpeechRef=useRef(null),replayTimerRef=useRef(null)
   const replayAudioContextRef=useRef(null)
+  // Foreground active minutes, never a forced cutoff or an API request.
+  useEffect(()=>{
+    if(!sessionClockStarted)return
+    let last=window.performance.now()
+    const tick=()=>{
+      const now=window.performance.now()
+      if(document.visibilityState==='visible'){
+        const delta=Math.min(15,Math.max(0,(now-last)/1000))
+        setActiveSessionSeconds(seconds=>Math.min(7200,seconds+delta))
+      }
+      last=now
+    }
+    const onVisibility=()=>{last=window.performance.now()}
+    const id=window.setInterval(tick,15000)
+    document.addEventListener('visibilitychange',onVisibility)
+    return()=>{window.clearInterval(id);document.removeEventListener('visibilitychange',onVisibility)}
+  },[sessionClockStarted])
   useEffect(()=>{
     // The iOS software keyboard resizes the visual viewport but not always
     // CSS 100dvh. Keep the composer anchored to actual visible pixels.
@@ -209,7 +230,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   },[authRequired,readiness.status])
   const name=persona?localCoachText(persona.name,lang):t.coach
   const opening=persona?localCoachText(persona.opening,lang):t.goal
-  const authoredIntroduction=getCoachPresentation(personaId,lang)?.text
+  const coachPresentation=getCoachPresentation(personaId,lang)
+  const sessionTimebox=coachTimeboxState(sessionClockStarted?Math.floor(activeSessionSeconds):null)
+  const authoredIntroduction=coachPresentation?.text
   const introduction=authoredIntroduction||(persona?({
     en:`Hello, I'm ${name}, your AI coach. I focus on ${localCoachText(persona.role,lang).toLowerCase()}. ${localCoachText(persona.description,lang)} My approach: ${localCoachText(persona.approach,lang)} ${opening}`,
     ru:`Здравствуйте! Я ${name}, ваш AI-коуч. Моё направление — ${localCoachText(persona.role,lang).toLowerCase()}. ${localCoachText(persona.description,lang)} Мой подход: ${localCoachText(persona.approach,lang)} ${opening}`,
@@ -446,6 +469,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     // Tapping the mic affirms the inline disclosure. Typed turns keep their
     // separate checkbox. Never contact a model if consent is absent.
     if(!message||busy||paused)return
+    setSessionClockStarted(true);setIntroComplete(true)
     // Explicit quote requests use only the already-authenticated first-party
     // Wisdom Library. They do not require a free model or contact OpenRouter.
     const wisdomRequested=Boolean(classifyWisdomRequest({
@@ -481,7 +505,16 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       const stage=legacyStage[semanticStage]||'goal'
       const offlineReply=interruption||offlineCoachingBrainReply(input,selectCoachingBrainMethod(input),semanticStage)
       const offlinePrompt=String(offlineReply.question||coachStagePrompt(personaId,stage,responseLocale,settings)||t.goal)
-      const answer=(interruption?[offlineReply.reflection,offlinePrompt].filter(Boolean).join(' '):offlinePrompt).slice(0,900)
+      // Offline mode cannot invent an outcome. Only an explicit client request
+      // to wrap up gets an authored reflection question; safety goes first.
+      const requestedWrap=/(?:подвед[её]м? итог|подвести итог|заверш(?:им|ить)|summari[sz]e|wrap up|close the session|resumir|cerrar la sesi[oó]n)/iu.test(message)
+      const reflectiveClose={
+        ru:'Мы можем завершить бережно. Что сегодня стало для вас яснее, что осталось открытым и хотите ли вы сами выбрать один следующий шаг?',
+        en:'We can close gently. What became clearer today, what remains open, and would you like to choose a next step of your own?',
+        es:'Podemos cerrar con calma. ¿Qué te quedó más claro, qué sigue abierto y quieres elegir un próximo paso por tu cuenta?'
+      }[responseLocale]
+      const answer=(interruption?[offlineReply.reflection,offlinePrompt].filter(Boolean).join(' '):
+        requestedWrap&&sessionTimebox.offerWrapUp?reflectiveClose:offlinePrompt).slice(0,900)
       const mode=offlineReply.mode||'offline'
       setTurns(previous=>{
         const updated=[...previous,{role:'user',content:message},{
@@ -508,6 +541,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
           personaId,settings,locale:responseLocale,consent:true,message,
+          elapsedSeconds:sessionClockStarted?Math.floor(activeSessionSeconds):0,
           turns:coachTurnWindow(turns,10)
             .map(({role,content})=>({role,content})), // Preserve the latest client-stated active goal, not a greeting.
         }),
@@ -540,7 +574,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       if(pending.current===controller){pending.current=null;setBusy(false)}
     }
   }
-  return <section ref={sessionRootRef} className={styles.root} lang={lang} data-my-coach-live-dialogue={personaId} data-my-coach-immersive-session data-session-visual-v2 data-session-visual-v3 data-session-visual-v4>
+  return <section ref={sessionRootRef} className={styles.root} lang={lang} data-my-coach-live-dialogue={personaId} data-my-coach-immersive-session data-session-visual-v2 data-session-visual-v3 data-session-visual-v4 data-coach-session-started={sessionClockStarted?'true':'false'} data-coach-showcase={introComplete?'false':'true'}>
     <header className={styles.sessionTopbar}>
       <Link className={styles.sessionBrand} href={'/'+lang+'/coaching/sessions'} aria-label="Holistic House">
         <span className={styles.sessionBrandMark} aria-hidden="true">✿</span><span>Holistic House</span>
@@ -556,6 +590,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         <p>{localCoachText(persona?.role,lang)||t.coach}</p><h1>{name}</h1>
         <small>{localCoachText(persona?.approach,lang)||localCoachText(persona?.description,lang)}</small>
       </div>
+      {coachPresentation&&!showCaptions&&<span className={styles.coachStyleChip}
+        data-coach-avatar-style={personaId}>{coachPresentation.style}</span>}
       <div className={styles.sessionAvatar}>
         <CoachingAvatar locale={lang} avatarId={avatarVisuals[personaId]||'warm'} personaId={personaId} displayName={name}
           showPicker={false} size="large"
@@ -577,6 +613,21 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     </section>
     </div>
     <section className={styles.voiceWorkspace} aria-label={ui.voice}>
+      {sessionClockStarted&&sessionTimebox.offerWrapUp&&turns.length>0&&
+        <div className={styles.sessionTimeboxNotice} role="status"
+          data-coach-timebox-phase={sessionTimebox.phase}>
+          <span>{sessionTimebox.targetReached?
+            ({ru:'20 минут — удобный момент подвести итог или продолжить.',en:'20 minutes — you can close gently or continue.',es:'20 minutos: puedes cerrar con calma o continuar.'}[lang]):
+            ({ru:'Приближаемся к завершению мини-сессии.',en:'Approaching the close of our short session.',es:'Nos acercamos al cierre de la sesión breve.'}[lang])}</span>
+          <button type="button" onClick={()=>{
+            setDraft(previous=>previous.trim()?previous:({
+              ru:'Давайте подведём итог: что я прояснил, что осталось открытым и какой шаг я сам готов выбрать?',
+              en:'Can we reflect on what became clearer, what remains open, and any next step I might choose?',
+              es:'¿Podemos resumir lo que aclaré, lo que queda abierto y qué paso quiero elegir yo?'
+            }[lang]))
+            toggleComposer()
+          }}>{({ru:'Подвести итог',en:'Reflect & close',es:'Resumir y cerrar'}[lang])}</button>
+        </div>}
       <div className={styles.voiceControls}>
         <button type="button" className={styles.captionsControl} onClick={()=>setShowCaptions(value=>!value)}
           aria-pressed={showCaptions} aria-label={ui.captions} title={ui.captions}>
@@ -587,10 +638,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         <div className={styles.voiceCenter} data-voice-active={voiceState.phase!=='idle'?'true':undefined}>
           <span className={styles.voiceWaveLeft} aria-hidden="true"><i/><i/><i/><i/><i/></span>
           <MyCoachSpeechLoop ref={speechRef} locale={lang} speechLocale={speechLocale} initialDraft={draft}
-            introduction={introduction} onSessionStart={()=>setCloudAgreed(true)}
+            introduction={introduction} onSessionStart={()=>{setCloudAgreed(true);setSessionClockStarted(true)}}
             cloudAvailable={cloudAvailable} cloudAgreed={cloudAgreed} cloudProvider={cloudProvider} personaId={personaId} wizardVoice={wizardVoice} enabled={true}
             canStart={!busy&&!paused&&!replaying} onTurn={text=>sendMessage(text,{voiceTurn:true})}
-            onCancelTurn={()=>pending.current?.abort()} onVoiceStateChange={setVoiceState} onVoiceLevel={setPortraitLevel}
+            onCancelTurn={()=>pending.current?.abort()} onVoiceStateChange={state=>{setVoiceState(state);if(state.phase==='listening')setIntroComplete(true)}} onVoiceLevel={setPortraitLevel}
             onTranscript={setSpeechPreview} onDraft={text=>{setDraft(text);setError('')}}/>
           <span className={styles.voiceWaveRight} aria-hidden="true"><i/><i/><i/><i/><i/></span>
         </div>
