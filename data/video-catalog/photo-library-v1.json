@@ -1,0 +1,1000 @@
+{
+  "schemaVersion": 1,
+  "version": "hh-photo-library-v1",
+  "description": "Source-verified photo collection for concept and storyboard fallback. Records become eligible only after the importer has downloaded, dimension-checked and hashed a first-party copy.",
+  "selectionPolicy": {
+    "videoFirst": true,
+    "photoWhen": "No suitable approved video for this exact scene/topic/aspect/rights constraint.",
+    "noRemoteRendererUrls": true,
+    "noPosterPromotion": true,
+    "photoClassOnly": "Direct photographic images; no generated artwork, video posters, UI art or illustrations.",
+    "perTopicMinimum": 4,
+    "targetAspects": [
+      "portrait",
+      "landscape"
+    ],
+    "generatedImagesClass": "generated_image_separate_from_photograph"
+  },
+  "assets": [
+    {
+      "id": "sunrise-through-trees",
+      "class": "photograph",
+      "status": "source_verified_pending_import",
+      "title": {
+        "en": "Sunrise Through Trees",
+        "ru": "Рассвет сквозь деревья",
+        "es": "Sunrise Through Trees"
+      },
+      "description": {
+        "en": "A real dawn photograph, with sunlight breaking through mature trees.",
+        "ru": "A real dawn photograph, with sunlight breaking through mature trees.",
+        "es": "A real dawn photograph, with sunlight breaking through mature trees."
+      },
+      "tags": [
+        "forest",
+        "sunlight",
+        "dawn",
+        "warmth",
+        "calm",
+        "grounding",
+        "nature",
+        "breath"
+      ],
+      "categories": [
+        "body",
+        "energy",
+        "stress"
+      ],
+      "topicIds": [
+        "body-breath",
+        "body-release",
+        "stress-fast-calm",
+        "stress-safety",
+        "stress-release",
+        "energy-morning",
+        "energy-fresh-start"
+      ],
+      "aspect": "portrait",
+      "allowedAspects": [
+        "portrait"
+      ],
+      "photographer": "Hyie01",
+      "sourcePageUrl": "https://commons.wikimedia.org/wiki/File:Sunrise_through_trees.jpg",
+      "sourceFileUrl": "https://upload.wikimedia.org/wikipedia/commons/1/11/Sunrise_through_trees.jpg",
+      "licenseId": "CC0-1.0",
+      "attribution": "Hyie01 / Wikimedia Commons — CC0 1.0",
+      "sourceDimensions": "2304x4096",
+      "expectedSha1": null,
+      "downloadStatus": "pending",
+      "localPath": "/images/video-library/sunrise-through-trees.jpg",
+      "visualReview": "source-page-reviewed; frame-review-pending",
+      "rightsStatus": "source-license-verified"
+    },
+    {
+      "id": "forest-sun",
+      "class": "photograph",
+      "status": "source_verified_pending_import",
+      "title": {
+        "en": "Sun in a Forest",
+        "ru": "Солнце в лесу",
+        "es": "Sun in a Forest"
+      },
+      "description": {
+        "en": "Sunlight filtered through a forest canopy.",
+        "ru": "Sunlight filtered through a forest canopy.",
+        "es": "Sunlight filtered through a forest canopy."
+      },
+      "tags": [
+        "forest",
+        "sun",
+        "sunlight",
+        "trees",
+        "grounding",
+        "calm",
+        "green",
+        "stability"
+      ],
+      "categories": [
+        "body",
+        "energy",
+        "stress"
+      ],
+      "topicIds": [
+        "body-release",
+        "body-comfort",
+        "body-confidence",
+        "stress-release",
+        "stress-safety",
+        "energy-inner-strength",
+        "energy-purpose"
+      ],
+      "aspect": "portrait",
+      "allowedAspects": [
+        "portrait"
+      ],
+      "photographer": "TGCGG",
+      "sourcePageUrl": "https://commons.wikimedia.org/wiki/File:Forest-sun.jpg",
+      "sourceFileUrl": "https://upload.wikimedia.org/wikipedia/commons/0/0a/Forest-sun.jpg",
+      "licenseId": "CC0-1.0",
+      "attribution": "TGCGG / Wikimedia Commons — CC0 1.0",
+      "sourceDimensions": "2448x3264",
+      "expectedSha1": null,
+      "downloadStatus": "pending",
+      "localPath": "/images/video-library/forest-sun.jpg",
+      "visualReview": "source-page-reviewed; frame-review-pending",
+      "rightsStatus": "source-license-verified"
+    },
+    {
+      "id": "wild-forest-landscape",
+      "class": "photograph",
+      "status": "source_verified_pending_import",
+      "title": {
+        "en": "Wild Forest Landscape",
+        "ru": "Пейзаж дикого леса",
+        "es": "Wild Forest Landscape"
+      },
+      "description": {
+        "en": "A wide natural forest scene with filtered daylight.",
+        "ru": "A wide natural forest scene with filtered daylight.",
+        "es": "A wide natural forest scene with filtered daylight."
+      },
+      "tags": [
+        "forest",
+        "trees",
+        "sunlight",
+        "nature",
+        "open",
+        "renewal",
+        "wilderness",
+        "growth"
+      ],
+      "categories": [
+        "body",
+        "energy",
+        "stress"
+      ],
+      "topicIds": [
+        "body-release",
+        "stress-release",
+        "stress-safety",
+        "energy-purpose",
+        "energy-fresh-start"
+      ],
+      "aspect": "landscape",
+      "allowedAspects": [
+        "landscape"
+      ],
+      "photographer": "SpessiG",
+      "sourcePageUrl": "https://commons.wikimedia.org/wiki/File:Landscape_of_a_wild_forest.jpg",
+      "sourceFileUrl": "https://upload.wikimedia.org/wikipedia/commons/c/c9/Landscape_of_a_wild_forest.jpg",
+      "licenseId": "CC0-1.0",
+      "attribution": "SpessiG / Wikimedia Commons — CC0 1.0",
+      "sourceDimensions": "3136x2091",
+      "expectedSha1": "77503952fb9f6245d2c5c0f70eb6f2f92ea87399",
+      "downloadStatus": "pending",
+      "localPath": "/images/video-library/wild-forest-landscape.jpg",
+      "visualReview": "source-page-reviewed; frame-review-pending",
+      "rightsStatus": "source-license-verified"
+    },
+    {
+      "id": "sunrise-in-forest",
+      "class": "photograph",
+      "status": "source_verified_pending_import",
+      "title": {
+        "en": "Sunrise in Forest",
+        "ru": "Восход солнца в лесу",
+        "es": "Sunrise in Forest"
+      },
+      "description": {
+        "en": "A direct photograph of sunrise rays through forest trees.",
+        "ru": "A direct photograph of sunrise rays through forest trees.",
+        "es": "A direct photograph of sunrise rays through forest trees."
+      },
+      "tags": [
+        "sunrise",
+        "forest",
+        "light",
+        "morning",
+        "hope",
+        "renewal",
+        "warmth"
+      ],
+      "categories": [
+        "body",
+        "energy",
+        "stress"
+      ],
+      "topicIds": [
+        "body-breath",
+        "stress-fast-calm",
+        "energy-morning",
+        "energy-vitality",
+        "energy-fresh-start"
+      ],
+      "aspect": "landscape",
+      "allowedAspects": [
+        "landscape"
+      ],
+      "photographer": "C. E. Price",
+      "sourcePageUrl": "https://commons.wikimedia.org/wiki/File:Sunrise_in_forest.jpg",
+      "sourceFileUrl": "https://upload.wikimedia.org/wikipedia/commons/6/6e/Sunrise_in_forest.jpg",
+      "licenseId": "Public-Domain",
+      "attribution": "C. E. Price / public-domain-image.com — Public Domain",
+      "sourceDimensions": "1500x1200",
+      "expectedSha1": null,
+      "downloadStatus": "pending",
+      "localPath": "/images/video-library/sunrise-in-forest.jpg",
+      "visualReview": "source-page-reviewed; frame-review-pending",
+      "rightsStatus": "source-license-verified"
+    },
+    {
+      "id": "sun-in-forest",
+      "class": "photograph",
+      "status": "source_verified_pending_import",
+      "title": {
+        "en": "Sun Above the Forest",
+        "ru": "Солнце над лесом",
+        "es": "Sun Above the Forest"
+      },
+      "description": {
+        "en": "Bright sky and sunlight over a forest canopy.",
+        "ru": "Bright sky and sunlight over a forest canopy.",
+        "es": "Bright sky and sunlight over a forest canopy."
+      },
+      "tags": [
+        "sun",
+        "forest",
+        "sky",
+        "blue",
+        "trees",
+        "light",
+        "freedom",
+        "vitality",
+        "clarity"
+      ],
+      "categories": [
+        "body",
+        "energy",
+        "stress"
+      ],
+      "topicIds": [
+        "body-confidence",
+        "stress-after-day",
+        "energy-morning",
+        "energy-vitality",
+        "energy-inner-strength",
+        "energy-purpose"
+      ],
+      "aspect": "landscape",
+      "allowedAspects": [
+        "landscape"
+      ],
+      "photographer": "Raviarts",
+      "sourcePageUrl": "https://commons.wikimedia.org/wiki/File:Sun_in_forest.jpg",
+      "sourceFileUrl": "https://upload.wikimedia.org/wikipedia/commons/5/5c/Sun_in_forest.jpg",
+      "licenseId": "CC0-1.0",
+      "attribution": "Raviarts / Wikimedia Commons — CC0 1.0",
+      "sourceDimensions": "4032x2432",
+      "expectedSha1": "71f4147198835ca5e3f270d10f3c72c1ea7639ba",
+      "downloadStatus": "pending",
+      "localPath": "/images/video-library/sun-in-forest.jpg",
+      "visualReview": "source-page-reviewed; frame-review-pending",
+      "rightsStatus": "source-license-verified"
+    },
+    {
+      "id": "flower-macro",
+      "class": "photograph",
+      "status": "source_verified_pending_import",
+      "title": {
+        "en": "Flower Macro",
+        "ru": "Цветок крупным планом",
+        "es": "Flower Macro"
+      },
+      "description": {
+        "en": "A real macro photograph of a flower and organic texture.",
+        "ru": "A real macro photograph of a flower and organic texture.",
+        "es": "A real macro photograph of a flower and organic texture."
+      },
+      "tags": [
+        "flower",
+        "macro",
+        "tenderness",
+        "care",
+        "growth",
+        "nature",
+        "softness",
+        "beauty"
+      ],
+      "categories": [
+        "love",
+        "energy",
+        "stress"
+      ],
+      "topicIds": [
+        "love-heart",
+        "love-self",
+        "energy-inspiration",
+        "energy-fresh-start",
+        "body-care"
+      ],
+      "aspect": "landscape",
+      "allowedAspects": [
+        "landscape"
+      ],
+      "photographer": "LorelMan",
+      "sourcePageUrl": "https://commons.wikimedia.org/wiki/File:Flower_photo_normal.jpg",
+      "sourceFileUrl": "https://upload.wikimedia.org/wikipedia/commons/8/8b/Flower_photo_normal.jpg",
+      "licenseId": "CC0-1.0",
+      "attribution": "LorelMan / Wikimedia Commons — CC0 1.0",
+      "sourceDimensions": "3888x2592",
+      "expectedSha1": "1c44a2472beaffc738fc4f2b691ca4c035a5659f",
+      "downloadStatus": "pending",
+      "localPath": "/images/video-library/flower-macro.jpg",
+      "visualReview": "source-page-reviewed; frame-review-pending",
+      "rightsStatus": "source-license-verified"
+    },
+    {
+      "id": "flower-garden",
+      "class": "photograph",
+      "status": "source_verified_pending_import",
+      "title": {
+        "en": "Flower in a Garden",
+        "ru": "Цветок в саду",
+        "es": "Flower in a Garden"
+      },
+      "description": {
+        "en": "A garden flower surrounded by green leaves.",
+        "ru": "A garden flower surrounded by green leaves.",
+        "es": "A garden flower surrounded by green leaves."
+      },
+      "tags": [
+        "flower",
+        "garden",
+        "green",
+        "tenderness",
+        "care",
+        "growth",
+        "freshness",
+        "renewal"
+      ],
+      "categories": [
+        "love",
+        "energy",
+        "stress"
+      ],
+      "topicIds": [
+        "love-heart",
+        "love-self",
+        "energy-inspiration",
+        "energy-fresh-start",
+        "body-care",
+        "stress-safety"
+      ],
+      "aspect": "portrait",
+      "allowedAspects": [
+        "portrait"
+      ],
+      "photographer": "Miragracious",
+      "sourcePageUrl": "https://commons.wikimedia.org/wiki/File:Flower_in_a_garden.jpg",
+      "sourceFileUrl": "https://upload.wikimedia.org/wikipedia/commons/5/5a/Flower_in_a_garden.jpg",
+      "licenseId": "CC0-1.0",
+      "attribution": "Miragracious / Wikimedia Commons — CC0 1.0",
+      "sourceDimensions": "1920x2560",
+      "expectedSha1": null,
+      "downloadStatus": "pending",
+      "localPath": "/images/video-library/flower-garden.jpg",
+      "visualReview": "source-page-reviewed; frame-review-pending",
+      "rightsStatus": "source-license-verified"
+    },
+    {
+      "id": "ocean-sunrise",
+      "class": "photograph",
+      "status": "source_verified_pending_import",
+      "title": {
+        "en": "Sunrise over the Ocean",
+        "ru": "Рассвет над океаном",
+        "es": "Sunrise over the Ocean"
+      },
+      "description": {
+        "en": "Warm sunrise reflected across open ocean water.",
+        "ru": "Warm sunrise reflected across open ocean water.",
+        "es": "Warm sunrise reflected across open ocean water."
+      },
+      "tags": [
+        "ocean",
+        "sea",
+        "sunrise",
+        "sun",
+        "water",
+        "horizon",
+        "calm",
+        "warmth",
+        "release",
+        "space"
+      ],
+      "categories": [
+        "body",
+        "energy",
+        "stress"
+      ],
+      "topicIds": [
+        "body-release",
+        "body-comfort",
+        "stress-anxiety",
+        "stress-release",
+        "stress-fast-calm",
+        "energy-morning",
+        "energy-vitality"
+      ],
+      "aspect": "landscape",
+      "allowedAspects": [
+        "landscape"
+      ],
+      "photographer": "Hommie09",
+      "sourcePageUrl": "https://commons.wikimedia.org/wiki/File:Sunrise_Over_the_Ocean.jpg",
+      "sourceFileUrl": "https://upload.wikimedia.org/wikipedia/commons/4/4d/Sunrise_Over_the_Ocean.jpg",
+      "licenseId": "CC0-1.0",
+      "attribution": "Hommie09 / Wikimedia Commons — CC0 1.0",
+      "sourceDimensions": "4000x3000",
+      "expectedSha1": null,
+      "downloadStatus": "pending",
+      "localPath": "/images/video-library/ocean-sunrise.jpg",
+      "visualReview": "source-page-reviewed; frame-review-pending",
+      "rightsStatus": "source-license-verified"
+    },
+    {
+      "id": "adult-couple-holding-hands",
+      "class": "photograph",
+      "status": "source_verified_pending_import",
+      "title": {
+        "en": "Adult Couple Holding Hands",
+        "ru": "Пара держится за руки",
+        "es": "Adult Couple Holding Hands"
+      },
+      "description": {
+        "en": "A natural, close-cropped photograph of two adults holding hands while walking.",
+        "ru": "A natural, close-cropped photograph of two adults holding hands while walking.",
+        "es": "A natural, close-cropped photograph of two adults holding hands while walking."
+      },
+      "tags": [
+        "relationships",
+        "couple",
+        "connection",
+        "trust",
+        "closeness",
+        "support",
+        "hands",
+        "companionship"
+      ],
+      "categories": [
+        "love",
+        "stress"
+      ],
+      "topicIds": [
+        "love-closeness",
+        "love-trust",
+        "love-dialogue",
+        "love-boundaries",
+        "stress-safety"
+      ],
+      "aspect": "landscape",
+      "allowedAspects": [
+        "landscape"
+      ],
+      "photographer": "Alice Donovan Rouse",
+      "sourcePageUrl": "https://commons.wikimedia.org/wiki/File:Adult_couple_holding_hands.jpg",
+      "sourceFileUrl": "https://upload.wikimedia.org/wikipedia/commons/9/9f/Adult_couple_holding_hands.jpg",
+      "licenseId": "CC0-1.0",
+      "attribution": "Alice Donovan Rouse / Wikimedia Commons — CC0 1.0",
+      "sourceDimensions": "6016x4016",
+      "expectedSha1": null,
+      "downloadStatus": "pending",
+      "localPath": "/images/video-library/adult-couple-holding-hands.jpg",
+      "visualReview": "source-page-reviewed; frame-review-pending",
+      "rightsStatus": "source-license-verified"
+    },
+    {
+      "id": "couple-holding-hands-freestocks",
+      "class": "photograph",
+      "status": "source_verified_pending_import",
+      "title": {
+        "en": "Couple Holding Hands",
+        "ru": "Пара держится за руки",
+        "es": "Couple Holding Hands"
+      },
+      "description": {
+        "en": "A close-up gesture of mutual affection and support; no faces shown.",
+        "ru": "A close-up gesture of mutual affection and support; no faces shown.",
+        "es": "A close-up gesture of mutual affection and support; no faces shown."
+      },
+      "tags": [
+        "relationships",
+        "hands",
+        "affection",
+        "trust",
+        "closeness",
+        "intimacy",
+        "safety",
+        "connection"
+      ],
+      "categories": [
+        "love",
+        "stress"
+      ],
+      "topicIds": [
+        "love-closeness",
+        "love-trust",
+        "love-dialogue",
+        "love-boundaries",
+        "stress-safety"
+      ],
+      "aspect": "landscape",
+      "allowedAspects": [
+        "landscape"
+      ],
+      "photographer": "freestocks.org",
+      "sourcePageUrl": "https://commons.wikimedia.org/wiki/File:Couple_holding_hands_(28619046534).jpg",
+      "sourceFileUrl": "https://upload.wikimedia.org/wikipedia/commons/c/c3/Couple_holding_hands_%2828619046534%29.jpg",
+      "licenseId": "CC0-1.0",
+      "attribution": "freestocks.org / Wikimedia Commons — CC0 1.0",
+      "sourceDimensions": "5472x3648",
+      "expectedSha1": null,
+      "downloadStatus": "pending",
+      "localPath": "/images/video-library/couple-holding-hands-freestocks.jpg",
+      "visualReview": "source-page-reviewed; frame-review-pending",
+      "rightsStatus": "source-license-verified"
+    },
+    {
+      "id": "thai-woman-meditating",
+      "class": "photograph",
+      "status": "source_verified_pending_import",
+      "title": {
+        "en": "Quiet Meditation in Nature",
+        "ru": "Спокойная медитация на природе",
+        "es": "Quiet Meditation in Nature"
+      },
+      "description": {
+        "en": "A real photograph of a woman sitting calmly in meditation outdoors.",
+        "ru": "A real photograph of a woman sitting calmly in meditation outdoors.",
+        "es": "A real photograph of a woman sitting calmly in meditation outdoors."
+      },
+      "tags": [
+        "meditation",
+        "woman",
+        "breathing",
+        "calm",
+        "presence",
+        "nature",
+        "mindfulness",
+        "grounding"
+      ],
+      "categories": [
+        "body",
+        "energy",
+        "stress"
+      ],
+      "topicIds": [
+        "body-breath",
+        "body-release",
+        "stress-anxiety",
+        "stress-fast-calm",
+        "stress-safety",
+        "energy-inner-strength"
+      ],
+      "aspect": "portrait",
+      "allowedAspects": [
+        "portrait"
+      ],
+      "photographer": "Kochphon (Honey) Onshawee",
+      "sourcePageUrl": "https://commons.wikimedia.org/wiki/File:Thai_woman_meditating.jpg",
+      "sourceFileUrl": "https://upload.wikimedia.org/wikipedia/commons/6/64/Thai_woman_meditating.jpg",
+      "licenseId": "CC0-1.0",
+      "attribution": "Kochphon (Honey) Onshawee / Wikimedia Commons — CC0 1.0",
+      "sourceDimensions": "1248x1617",
+      "expectedSha1": null,
+      "downloadStatus": "pending",
+      "localPath": "/images/video-library/thai-woman-meditating.jpg",
+      "visualReview": "source-page-reviewed; frame-review-pending",
+      "rightsStatus": "source-license-verified"
+    },
+    {
+      "id": "business-meeting-plenary",
+      "class": "photograph",
+      "status": "source_verified_pending_import",
+      "title": {
+        "en": "Business Meeting and Presentation",
+        "ru": "Деловая встреча и презентация",
+        "es": "Business Meeting and Presentation"
+      },
+      "description": {
+        "en": "A real photographed public meeting with speakers, audience context and presentation screens.",
+        "ru": "A real photographed public meeting with speakers, audience context and presentation screens.",
+        "es": "A real photographed public meeting with speakers, audience context and presentation screens."
+      },
+      "tags": [
+        "business",
+        "meeting",
+        "presentation",
+        "collaboration",
+        "leadership",
+        "public-speaking",
+        "professional"
+      ],
+      "categories": [
+        "business"
+      ],
+      "topicIds": [
+        "work-support",
+        "work-speaking",
+        "work-decision",
+        "work-opportunity"
+      ],
+      "aspect": "landscape",
+      "allowedAspects": [
+        "landscape"
+      ],
+      "photographer": "Androide rockero",
+      "sourcePageUrl": "https://commons.wikimedia.org/wiki/File:Plenary_and_Interactive_session_-_Engagement_%26_WLUG_Business_meeting.jpg",
+      "sourceFileUrl": "https://upload.wikimedia.org/wikipedia/commons/3/36/Plenary_and_Interactive_session_-_Engagement_%26_WLUG_Business_meeting.jpg",
+      "licenseId": "CC0-1.0",
+      "attribution": "Androide rockero / Wikimedia Commons — CC0 1.0",
+      "sourceDimensions": "4032x3024",
+      "expectedSha1": "5870dae87bb957bd4dcdde2809e499072a56084c",
+      "downloadStatus": "pending",
+      "localPath": "/images/video-library/business-meeting-plenary.jpg",
+      "visualReview": "source-page-reviewed; frame-review-pending",
+      "rightsStatus": "source-license-verified"
+    },
+    {
+      "id": "cozy-living-room-window",
+      "class": "photograph",
+      "status": "source_verified_pending_import",
+      "title": {
+        "en": "Cozy Living Room with Natural Light",
+        "ru": "Уютная гостиная с естественным светом",
+        "es": "Cozy Living Room with Natural Light"
+      },
+      "description": {
+        "en": "A quiet, warm living room with soft daylight and an inviting chair.",
+        "ru": "A quiet, warm living room with soft daylight and an inviting chair.",
+        "es": "A quiet, warm living room with soft daylight and an inviting chair."
+      },
+      "tags": [
+        "home",
+        "interior",
+        "cozy",
+        "rest",
+        "safety",
+        "sunlight",
+        "quiet",
+        "shelter",
+        "recovery"
+      ],
+      "categories": [
+        "stress",
+        "body"
+      ],
+      "topicIds": [
+        "stress-fast-calm",
+        "stress-after-day",
+        "stress-safety",
+        "body-comfort",
+        "body-sleep"
+      ],
+      "aspect": "portrait",
+      "allowedAspects": [
+        "portrait"
+      ],
+      "photographer": "Shixart1985",
+      "sourcePageUrl": "https://commons.wikimedia.org/wiki/File:Cozy_living_room_with_tropical_patterned_armchair_and_natural_light_from_large_windows.jpg",
+      "sourceFileUrl": "https://upload.wikimedia.org/wikipedia/commons/6/6d/Cozy_living_room_with_tropical_patterned_armchair_and_natural_light_from_large_windows.jpg",
+      "licenseId": "CC-BY-2.0",
+      "attribution": "Shixart1985 / CC BY 2.0 — https://creativecommons.org/licenses/by/2.0/",
+      "sourceDimensions": "4016x6016",
+      "expectedSha1": null,
+      "downloadStatus": "pending",
+      "localPath": "/images/video-library/cozy-living-room-window.jpg",
+      "visualReview": "source-page-reviewed; frame-review-pending",
+      "rightsStatus": "source-license-verified"
+    },
+    {
+      "id": "modern-living-room-lake",
+      "class": "photograph",
+      "status": "source_verified_pending_import",
+      "title": {
+        "en": "Modern Living Room beside a Lake",
+        "ru": "Современная гостиная у озера",
+        "es": "Modern Living Room beside a Lake"
+      },
+      "description": {
+        "en": "A quiet home interior with wide windows and a lake view.",
+        "ru": "A quiet home interior with wide windows and a lake view.",
+        "es": "A quiet home interior with wide windows and a lake view."
+      },
+      "tags": [
+        "home",
+        "interior",
+        "calm",
+        "safety",
+        "rest",
+        "sunlight",
+        "water",
+        "window",
+        "shelter"
+      ],
+      "categories": [
+        "stress",
+        "body"
+      ],
+      "topicIds": [
+        "stress-fast-calm",
+        "stress-after-day",
+        "stress-safety",
+        "body-comfort",
+        "body-sleep"
+      ],
+      "aspect": "landscape",
+      "allowedAspects": [
+        "landscape"
+      ],
+      "photographer": "Shixart1985",
+      "sourcePageUrl": "https://commons.wikimedia.org/wiki/File:Modern_living_room_with_large_windows_showing_view_of_trees_and_lake_in_daylight.jpg",
+      "sourceFileUrl": "https://upload.wikimedia.org/wikipedia/commons/7/7c/Modern_living_room_with_large_windows_showing_view_of_trees_and_lake_in_daylight.jpg",
+      "licenseId": "CC-BY-2.0",
+      "attribution": "Shixart1985 / CC BY 2.0 — https://creativecommons.org/licenses/by/2.0/",
+      "sourceDimensions": "5525x3688",
+      "expectedSha1": null,
+      "downloadStatus": "pending",
+      "localPath": "/images/video-library/modern-living-room-lake.jpg",
+      "visualReview": "source-page-reviewed; frame-review-pending",
+      "rightsStatus": "source-license-verified"
+    },
+    {
+      "id": "work-writing-notebook",
+      "class": "photograph",
+      "status": "source_verified_pending_import",
+      "title": {
+        "en": "Writing and Planning at a Desk",
+        "ru": "Планирование и записи за столом",
+        "es": "Writing and Planning at a Desk"
+      },
+      "description": {
+        "en": "A person writes in a notebook beside a laptop in natural daylight.",
+        "ru": "A person writes in a notebook beside a laptop in natural daylight.",
+        "es": "A person writes in a notebook beside a laptop in natural daylight."
+      },
+      "tags": [
+        "work",
+        "focus",
+        "writing",
+        "notebook",
+        "planning",
+        "organization",
+        "productivity",
+        "ideas",
+        "career",
+        "creativity"
+      ],
+      "categories": [
+        "business",
+        "energy"
+      ],
+      "topicIds": [
+        "work-focus",
+        "work-support",
+        "work-decision",
+        "work-opportunity",
+        "energy-inspiration",
+        "energy-fresh-start"
+      ],
+      "aspect": "landscape",
+      "allowedAspects": [
+        "landscape"
+      ],
+      "photographer": "Nenad Stojković",
+      "sourcePageUrl": "https://commons.wikimedia.org/wiki/File:Person_writing_in_a_notebook_while_sitting_at_a_desk.jpg",
+      "sourceFileUrl": "https://upload.wikimedia.org/wikipedia/commons/d/d6/Person_writing_in_a_notebook_while_sitting_at_a_desk.jpg",
+      "licenseId": "CC-BY-2.0",
+      "attribution": "Nenad Stojković / CC BY 2.0 — https://creativecommons.org/licenses/by/2.0/",
+      "sourceDimensions": "6048x4032",
+      "expectedSha1": null,
+      "downloadStatus": "pending",
+      "localPath": "/images/video-library/work-writing-notebook.jpg",
+      "visualReview": "source-page-reviewed; frame-review-pending",
+      "rightsStatus": "source-license-verified"
+    },
+    {
+      "id": "woman-stretching-park",
+      "class": "photograph",
+      "status": "source_verified_pending_import",
+      "title": {
+        "en": "Gentle Stretching in a Park",
+        "ru": "Мягкая растяжка в парке",
+        "es": "Gentle Stretching in a Park"
+      },
+      "description": {
+        "en": "A woman stretching outdoors before gentle exercise.",
+        "ru": "A woman stretching outdoors before gentle exercise.",
+        "es": "A woman stretching outdoors before gentle exercise."
+      },
+      "tags": [
+        "movement",
+        "stretching",
+        "woman",
+        "vitality",
+        "energy",
+        "nature",
+        "sunlight",
+        "confidence",
+        "body-neutral"
+      ],
+      "categories": [
+        "body",
+        "energy",
+        "stress"
+      ],
+      "topicIds": [
+        "body-release",
+        "body-care",
+        "body-confidence",
+        "energy-vitality",
+        "energy-morning",
+        "energy-fresh-start",
+        "stress-release"
+      ],
+      "aspect": "landscape",
+      "allowedAspects": [
+        "landscape"
+      ],
+      "photographer": "Shixart1985",
+      "sourcePageUrl": "https://commons.wikimedia.org/wiki/File:Woman_stretches_outdoors_in_a_park_during_a_sunny_day_while_preparing_for_exercise.jpg",
+      "sourceFileUrl": "https://upload.wikimedia.org/wikipedia/commons/5/5a/Woman_stretches_outdoors_in_a_park_during_a_sunny_day_while_preparing_for_exercise.jpg",
+      "licenseId": "CC-BY-2.0",
+      "attribution": "Shixart1985 / CC BY 2.0 — https://creativecommons.org/licenses/by/2.0/",
+      "sourceDimensions": "6048x4032",
+      "expectedSha1": null,
+      "downloadStatus": "pending",
+      "localPath": "/images/video-library/woman-stretching-park.jpg",
+      "visualReview": "source-page-reviewed; frame-review-pending",
+      "rightsStatus": "source-license-verified"
+    },
+    {
+      "id": "woman-reading-couch",
+      "class": "photograph",
+      "status": "source_verified_pending_import",
+      "title": {
+        "en": "Quiet Reading at Home",
+        "ru": "Тихое чтение дома",
+        "es": "Quiet Reading at Home"
+      },
+      "description": {
+        "en": "A woman reads on a sofa in warm natural light.",
+        "ru": "A woman reads on a sofa in warm natural light.",
+        "es": "A woman reads on a sofa in warm natural light."
+      },
+      "tags": [
+        "reading",
+        "home",
+        "quiet",
+        "rest",
+        "recovery",
+        "safety",
+        "self-care",
+        "interior",
+        "light"
+      ],
+      "categories": [
+        "stress",
+        "body",
+        "energy"
+      ],
+      "topicIds": [
+        "stress-fast-calm",
+        "stress-after-day",
+        "stress-safety",
+        "body-sleep",
+        "body-comfort",
+        "love-self"
+      ],
+      "aspect": "landscape",
+      "allowedAspects": [
+        "landscape"
+      ],
+      "photographer": "Shixart1985",
+      "sourcePageUrl": "https://commons.wikimedia.org/wiki/File:Woman_reading_a_book_while_sitting_on_a_couch_in_a_cozy_indoor_space.jpg",
+      "sourceFileUrl": "https://upload.wikimedia.org/wikipedia/commons/c/c8/Woman_reading_and_working_on_laptop_at_home.jpg",
+      "licenseId": "CC-BY-2.0",
+      "attribution": "Shixart1985 / CC BY 2.0 — https://creativecommons.org/licenses/by/2.0/",
+      "sourceDimensions": "6048x4032",
+      "expectedSha1": null,
+      "downloadStatus": "pending",
+      "localPath": "/images/video-library/woman-reading-couch.jpg",
+      "visualReview": "source-page-reviewed; frame-review-pending",
+      "rightsStatus": "source-license-verified"
+    }
+  ],
+  "exclusions": [
+    {
+      "path": "public/videos/holistic-house/original-motion-v1/*.jpg",
+      "class": "procedural_motion_poster",
+      "reason": "684 project-generated abstract-motion posters are not photographs."
+    },
+    {
+      "path": "public/videos/holistic-house/money-films-v1/*.jpg",
+      "class": "video_poster",
+      "reason": "Brand/graphic treatment; retain only as video poster."
+    },
+    {
+      "path": "public/videos/holistic-house/film-collection-v2/*.jpg",
+      "class": "video_poster",
+      "reason": "Brand overlay; not a clean standalone photo."
+    },
+    {
+      "path": "public/videos/holistic-house/film-collection-v3/*-caption.jpg",
+      "class": "video_poster",
+      "reason": "Caption/attribution strip is baked into frame; not a standalone photograph."
+    }
+  ],
+  "priorityGaps": [
+    {
+      "priority": "P0",
+      "category": "love",
+      "topics": [
+        "love-closeness",
+        "love-trust",
+        "love-dialogue",
+        "love-boundaries"
+      ],
+      "need": "12 more distinct real adult couple/family/friendship/boundaries and reconciliation photos; multiple camera distances."
+    },
+    {
+      "priority": "P0",
+      "category": "business",
+      "topics": [
+        "work-support",
+        "work-decision",
+        "work-opportunity",
+        "work-speaking",
+        "money-stability"
+      ],
+      "need": "12 more collaboration, meeting, leadership, city/workspace and problem-solving photos."
+    },
+    {
+      "priority": "P1",
+      "category": "stress",
+      "topics": [
+        "stress-anxiety",
+        "stress-fast-calm",
+        "stress-after-day",
+        "stress-release",
+        "stress-safety"
+      ],
+      "need": "8 more interiors, window light, rest, shelter, rain, quiet routines and supportive presence."
+    },
+    {
+      "priority": "P1",
+      "category": "energy",
+      "topics": [
+        "energy-vitality",
+        "energy-morning",
+        "energy-inspiration",
+        "energy-inner-strength",
+        "energy-fresh-start"
+      ],
+      "need": "8 movement, morning routines, nature activity and body-neutral confidence photos."
+    },
+    {
+      "priority": "P2",
+      "category": "body",
+      "topics": [
+        "body-release",
+        "body-sleep",
+        "body-breath",
+        "body-comfort",
+        "body-care",
+        "body-confidence"
+      ],
+      "need": "8 gentle stretching, sleep, breathing, self-care and body-neutral activity photos."
+    }
+  ]
+}
