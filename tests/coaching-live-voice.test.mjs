@@ -334,7 +334,7 @@ test('My Coach has private default TTS, no stale transcription, and tap-to-recov
   for(const token of ["setNotice('') // Clear the old user transcript",
     "phaseRef.current==='ready'&&blockedResumeRef.current",
     "(naturalVoice||cloudAgreed)&&cloudAvailable",
-    "introPlayerRef.current=startCoachingMp3Playback",
+    "introPlayerRef.current=startDirectCoachIntroAudio",
     "cue.volume=0"])
     assert.ok(loop.includes(token),token)
   for(const token of ['replayBlocked','void replayPlayerRef.current.resume()',
@@ -410,7 +410,7 @@ test('quality-first coach never offers the old robotic wizard/device voice',()=>
  assert.ok(!loop.includes('speakOnDevice()'))
  assert.ok(!loop.includes('new Utterance(reply)'))
  assert.ok(loop.includes('cue.volume=0'),'silent Safari recognition cue is not spoken to visitor')
- assert.ok(loop.includes('/api/coaching/intro?'))
+ assert.ok(loop.includes('coachIntroAudioPath(personaId,lang)'))
  assert.ok(loop.includes("mode:'intro'"))
  assert.ok(loop.includes('startCoachingMp3Playback'))
 })
@@ -420,7 +420,7 @@ test('spoken My Coach reply retains the reflection and start introduction',()=>{
  const ui=source('components/my-coach-live-dialogue.jsx')
  assert.match(loop,/const speakable=coachSpokenText\(reply\)\.text/)
  assert.doesNotMatch(loop,/new Utterance\(reply\)/)
- assert.ok(loop.includes('introPlayerRef.current=startCoachingMp3Playback'))
+ assert.ok(loop.includes('introPlayerRef.current=startDirectCoachIntroAudio'))
  assert.doesNotMatch(loop,/questions\.slice\(\)\.reverse\(\)\.find/)
  assert.ok(ui.includes('coachSpokenText(spokenText).text'))
  assert.ok(ui.includes('getCoachPresentation(personaId,lang)?.text'))
