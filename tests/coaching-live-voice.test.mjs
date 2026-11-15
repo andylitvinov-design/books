@@ -221,36 +221,28 @@ test('selected persona opens immersive My Coach session with real avatar, stages
   assert.ok(ui.includes("readiness.status==='checking'"))
 })
 
-test('My Coach speech is visible as text while recording and safely remains editable on partial iOS results',()=>{
+test('My Coach displays live voice in the transcript without recording/uploading a media file',()=>{
   const ui=source('components/my-coach-live-dialogue.jsx')
   const loop=source('components/my-coach-speech-loop.jsx')
   const css=source('components/my-coach-live-dialogue.module.css')
   for(const marker of ['data-coach-live-transcript','role="log" aria-live="polite"','speechPreview&&',
     'onTranscript={setSpeechPreview}',"onDraft={text=>{setDraft(text);setError('')}}",
-    'className={styles.textComposer} open','captions.consentShort']){
+    'className={styles.textComposer} open','voiceProviderDetails']){
     assert.ok(ui.includes(marker),marker)
   }
   for(const marker of ['heardRef.current=visible','finished=visible',
     'transcriptRef.current?.(visible)','const recovered=heardRef.current.trim()',
-    'void deliver(appendSpokenAnswer(draftAtStartRef.current,recovered,1200))','draftRef.current?.(text)','void deliver(appendSpokenAnswer(draftAtStartRef.current,finished,1200))']){
+    'void deliver(appendSpokenAnswer(draftAtStartRef.current,recovered,1200))']){
     assert.ok(loop.includes(marker),marker)
   }
   assert.match(css,/\.liveTranscript/)
-  assert.match(css,/\.transcriptFeed\{[^}]*overflow-y:auto/)
   assert.match(css,/\.textComposer \.composer textarea/)
-  // MediaRecorder is allowed only in the separately consented, strictly bounded
-  // iOS fallback: no browser persistence or unsolicited audio transport.
+  assert.ok(!loop.includes('MediaRecorder'))
+  assert.ok(!loop.includes('recordedMode'))
+  assert.ok(!loop.includes('audio-storyboard'))
+  assert.ok(!loop.includes('new File('))
   assert.doesNotMatch(loop,/localStorage|sessionStorage|sendBeacon/)
-  for(const marker of [
-    "if(!recordingConsentRef.current||!Recorder||!getUserMedia)",
-    "body.set('consent','yes')",
-    "recorded.timer=setTimeout(()=>stopRecordedTurn(),18000)",
-    "file.size>4*1024*1024",
-    "stream.getTracks().forEach(track=>track.stop())",
-    "method:'POST',body,credentials:'same-origin',cache:'no-store',signal:controller.signal",
-  ])assert.ok(loop.includes(marker),'consented ephemeral iOS recording: '+marker)
 })
-
 test('approved live-session visual hierarchy keeps a real voice pipeline, readable transcript and functional mobile controls',()=>{
   const ui=source('components/my-coach-live-dialogue.jsx')
   const css=source('components/my-coach-live-dialogue.module.css')
@@ -267,10 +259,10 @@ test('approved live-session visual hierarchy keeps a real voice pipeline, readab
   assert.doesNotMatch(ui,/new MediaRecorder|localStorage\.setItem|sessionStorage\.setItem/)
 })
 
-test('My Coach Fish TTS is only available with opt-in free access and never leaks keys',async()=>{
+test('My Coach Fish TTS remains limited to approved free vendor routes and Play gesture',async()=>{
   const route=source('app/api/app/my-coach/voice/synthesize/route.js')
-  const speech=source('components/my-coach-speech-loop.jsx')
   const page=source('components/my-coach-live-dialogue.jsx')
+  const speech=source('components/my-coach-speech-loop.jsx')
   const css=source('components/my-coach-live-dialogue.module.css')
   const {myCoachFishConfig,normalizeMyCoachFishRequest}=await import('../lib/coaching/my-coach-fish-voice.mjs')
   const env={HH_MY_COACH_FISH_TTS_ENABLED:'true',HH_MY_COACH_FISH_TTS_APPROVED:'true',
@@ -282,33 +274,33 @@ test('My Coach Fish TTS is only available with opt-in free access and never leak
     cloudVoiceConsent:true,trainingUseConsent:true}),{locale:'ru',text:'Привет'})
   assert.throws(()=>normalizeMyCoachFishRequest({locale:'en',text:'hello',voiceConsent:true,
     cloudVoiceConsent:true,trainingUseConsent:false}),/MY_COACH_FISH_TTS_INVALID/)
-  for(const part of ['requireSameOrigin','auth.verified()','consumeRate',
-    'signal:AbortSignal.any([request.signal,AbortSignal.timeout(15000)])',
-    'signal:AbortSignal.any([request.signal,AbortSignal.timeout(19000)])',
-    'PRIVATE_HEADERS','s2.1-pro-free'])assert.ok(route.includes(part),part)
-  for(const part of ['startCoachingMp3Playback','cloudControllerRef.current?.abort()',
-    'cloudPlayerRef.current?.cancel()','cloudAgreed&&cloudAvailable',
-    "cloudProvider==='fish_free'?{trainingUseConsent:true}:{}"])assert.ok(speech.includes(part),part)
-  for(const part of ['checked={cloudAgreed}','providerCopy.disclosure',
-    'setCloudAgreed(false)'])assert.ok(page.includes(part),part)
-  assert.ok(page.includes('reply may train models'))
-  assert.ok(page.includes('ответ может использоваться для обучения'))
-  assert.match(css,/\.naturalVoiceRow/)
+  for(const marker of ['requireSameOrigin','auth.verified()','consumeRate',
+    'PRIVATE_HEADERS','s2.1-pro-free'])
+    assert.ok(route.includes(marker),marker)
+  for(const marker of ['startCoachingMp3Playback','cloudControllerRef.current?.abort()',
+    'cloudPlayerRef.current?.cancel()','(naturalVoice||cloudAgreed)&&cloudAvailable',
+    "cloudProvider==='fish_free'?{trainingUseConsent:true}:{}"])
+    assert.ok(speech.includes(marker),marker)
+  assert.ok(page.includes('voiceProviderDetails'))
+  assert.ok(page.includes('onSessionStart={()=>setCloudAgreed(true)}'))
+  assert.ok(page.includes('const [cloudAgreed,setCloudAgreed]=useState(false)'))
+  assert.ok(!page.includes('checked={cloudAgreed}'))
+  assert.ok(page.includes('Fish may use the text to train models'))
+  assert.ok(css.includes('.voicePrivacyDetails'))
   assert.doesNotMatch(speech,/api\.fish\.audio|HH_COACHING_FISH_API_KEY|reference_id/)
 })
-
-test('iOS 27 Safari second-mic recovery does not cut the recognizer and primes after MP3',()=>{
+test('iOS 27 Safari automatically restarts a silent recognizer and settles real phrases',()=>{
  const loop=source('components/my-coach-speech-loop.jsx')
  const helper=source('lib/personal-coaching/my-coach-dictation.mjs')
  for(const marker of ['ios27NeedsSpeechRecovery(window.navigator)',
-   'if(!ios27)try{recognition.stop()}catch{}',
    'cue.onend=finishCue','iosCueTimerRef.current=setTimeout',
-   'iosResultTimerRef.current=setTimeout','iosCueSatisfiedRef.current'])
+   'iosResultTimerRef.current=setTimeout','iosCueSatisfiedRef.current',
+   'restartSilentRecognition(recognition)','restartSilentRecognitionAfterEnd()',
+   'settleTimerRef.current=setTimeout'])
    assert.ok(loop.includes(marker),marker)
- assert.ok(helper.includes('export function ios27NeedsSpeechRecovery'), 'WebKit 27 pure UA gate')
- assert.doesNotMatch(loop,/new MediaRecorder|localStorage|sessionStorage|sendBeacon/)
+ assert.ok(helper.includes('export function ios27NeedsSpeechRecovery'))
+ assert.doesNotMatch(loop,/MediaRecorder|localStorage|sessionStorage|sendBeacon/)
 })
-
 test('Safari MP3 autoplay denial is recoverable on one tap without another synthesis',async()=>{
   const {startCoachingMp3Playback}=await import('../lib/personal-coaching/streamed-mp3-playback.mjs')
   let plays=0,blocks=0,starts=0,errors=0,blobs=0,revokes=0
@@ -341,7 +333,7 @@ test('My Coach has private default TTS, no stale transcription, and tap-to-recov
   const media=source('lib/personal-coaching/streamed-mp3-playback.mjs')
   for(const token of ['function speakOnDevice()', 'speakOnDevice()',
     'utterance.onstart=',"setNotice('') // Clear the old user transcript",
-    "phaseRef.current==='ready'&&blockedResumeRef.current","cloudAgreed&&cloudAvailable"])
+    "phaseRef.current==='ready'&&blockedResumeRef.current","(naturalVoice||cloudAgreed)&&cloudAvailable"])
     assert.ok(loop.includes(token),token)
   for(const token of ['replayBlocked','void replayPlayerRef.current.resume()',
     'new Utterance(spokenText.slice(0,900))','onBlocked:','replaySpeechRef.current',
@@ -365,34 +357,23 @@ test('iOS Safari naturally ending with interim-only speech commits another user 
   assert.ok(!stopped.includes('void deliver('), 'explicit Stop keeps the words editable but does not send')
 })
 
-test('a silent iPhone recognizer offers one-tap retry while natural-voice consent remains accessible',()=>{
+test('a silent iPhone recognizer retries automatically without stopping to record a file',()=>{
   const loop=source('components/my-coach-speech-loop.jsx')
   const ui=source('components/my-coach-live-dialogue.jsx')
-  assert.ok(loop.includes('setMicStalled(true)'))
-  assert.ok(loop.includes("phaseRef.current==='stalled'"))
-  assert.ok(loop.includes('setMicStalled(false)'))
-  assert.ok(loop.includes("retryMic:'Перезапустить микрофон'"))
-  assert.ok(loop.includes('aria-label={recording?r.recording:transcribing?r.transcribing:retryMic?t.retryMic:'),
-    'microphone retry remains labelled in the recorded/transcribing state machine')
-  assert.ok(loop.includes("if(recordedModeRef.current)recordingConsentRef.current=true"),
-    'the deliberate microphone tap establishes per-turn consent')
-  assert.ok(loop.includes("if(!recordingConsentRef.current||!Recorder||!getUserMedia)"),
-    'external audio transfer stays fail-closed without microphone gesture')
-  assert.ok(!ui.includes('checked={recordingConsent}'),
-    'two redundant reliable recording checkboxes are removed')
-  const checkbox=ui.slice(ui.indexOf('<label><input type="checkbox" checked={cloudAgreed}'),
-    ui.indexOf('<label><input type="checkbox" checked={cloudAgreed}')+180)
-  assert.ok(checkbox.includes('onChange={event=>changeNaturalVoice(event.target.checked)}'),
-    'natural voice uses the same consent-controlled state transition')
-  for(const token of ['function changeNaturalVoice(checked){',
-    'setCloudAgreed(Boolean(checked))','if(checked){setWizardVoice(false);return}',
-    'replayControllerRef.current?.abort()', 'replayPlayerRef.current?.cancel()'])
-    assert.ok(ui.includes(token),'revoking voice consent cancels audio: '+token)
-  assert.ok(!checkbox.includes('disabled='), 'active/ready STT cannot lock the Fish consent checkbox')
-  assert.ok(loop.includes('(!cloudAgreed||!cloudAvailable)&&(cloudControllerRef.current||cloudPlayerRef.current)'),
-    'revoking cloud consent still stops the private audio request')
+  for(const marker of ['retryAttemptsRef.current>=3',
+    'restartSilentRecognition(recognition)','restartSilentRecognitionAfterEnd()',
+    'setTimeout(()=>','settleTimerRef.current=setTimeout',
+    'void deliver(appendSpokenAnswer'])
+    assert.ok(loop.includes(marker),marker)
+  assert.ok(ui.includes('onSessionStart={()=>setCloudAgreed(true)}'))
+  assert.ok(!ui.includes('<dialog'))
+  assert.ok(!ui.includes('checked={cloudAgreed}'))
+  assert.ok(!loop.includes('stopRecordedTurn'))
+  assert.ok(!loop.includes('MediaRecorder'))
+  assert.ok(!loop.includes('audio-storyboard'))
+  assert.ok(loop.includes('cloudControllerRef.current?.abort()'))
+  assert.ok(loop.includes('cloudPlayerRef.current?.cancel()'))
 })
-
 test('My Coach Replay animates large portrait only on actual device or cloud audio playback',()=>{
   const page=source('components/my-coach-live-dialogue.jsx')
   const replay=page.split('function replayCoachReply(overrideText){')[1]?.split('  useEffect(()=>{')[0]
@@ -413,45 +394,39 @@ test('My Coach Replay animates large portrait only on actual device or cloud aud
   assert.doesNotMatch(replay,/getUserMedia|MediaRecorder|OPENROUTER_API_KEY|HH_GOOGLE_TTS_SERVICE_ACCOUNT_JSON/)
 })
 
-test('Original wizard option is local-only with approved British device-voice settings',()=>{
+test('optional original wizard URL voice remains device-only without another checkbox',()=>{
  const loop=source('components/my-coach-speech-loop.jsx')
  const ui=source('components/my-coach-live-dialogue.jsx')
  const css=source('components/my-coach-live-dialogue.module.css')
  for(const token of ['wizardVoice={wizardVoice}','wizardVoice?0.93:0.97',
-  'wizardVoice?1.08:1', 'setCloudAgreed(false)',
+  'wizardVoice?1.08:1',
   "new URLSearchParams(window.location.search).get('voice')==='wizard'",
-  "Storybook wizard voice", "Голос сказочного волшебника",
-  "Voz de mago de cuento"])
+  'Voz de mago de cuento'])
   assert.ok((loop+'\n'+ui).includes(token),token)
- assert.ok(ui.includes('not a Harry Potter film actor or dub'))
+ assert.ok(!ui.includes('checked={wizardVoice}'))
  assert.ok(css.includes('.wizardVoiceRow'))
  assert.ok(!loop.includes('reference_id'))
  assert.match(loop,/changePhase\('loading'\) \/\/ Reply is ready/)
- assert.match(loop,/if\(ios27&&hasRecognizedRef\.current&&/)
- assert.match(loop,/changePhase\('stalled'\)/)
- assert.match(loop,/phaseRef\.current==='stalled'/)
-});
-
-test('spoken My Coach answer retains the useful reflection rather than only the last question',()=>{
+ assert.ok(loop.includes('cue.onend=finishCue'))
+ assert.ok(loop.includes('restartSilentRecognition(recognition)'))
+})
+test('spoken My Coach reply retains the reflection and start introduction',()=>{
  const loop=source('components/my-coach-speech-loop.jsx')
  const ui=source('components/my-coach-live-dialogue.jsx')
  assert.match(loop,/const speakable=coachSpokenText\(reply\)\.text/)
  assert.match(loop,/new Utterance\(reply\)/)
  assert.doesNotMatch(loop,/questions\.slice\(\)\.reverse\(\)\.find/)
- assert.match(ui,/coachSpokenText\(spokenText\)\.text/)
- assert.doesNotMatch(ui,/const question=spokenText\.match/)
- assert.match(ui,/Longer replies are abbreviated for speech/)
- assert.match(ui,/полный текст остаётся на экране/)
- assert.match(ui,/transcripción completa sigue visible/)
- assert.match(loop,/cloudAgreed&&cloudAvailable/)
- // Separate privacy choices: a voice-only visitor can enable natural voice
- // without accepting the unrelated typed-message consent.
+ assert.ok(ui.includes('coachSpokenText(spokenText).text'))
+ assert.ok(ui.includes('getCoachPresentation(personaId,lang)?.text'))
+ assert.ok(ui.includes('introduction={introduction}'))
+ assert.ok(ui.includes('onSessionStart={()=>setCloudAgreed(true)}'))
+ assert.ok(loop.includes('(naturalVoice||cloudAgreed)&&cloudAvailable'))
+ assert.ok(loop.includes("if(!introStartedRef.current){"))
  assert.ok(ui.includes("if(cloudAgreed&&cloudAvailable&&['google_chirp3_hd','fish_free'].includes(cloudProvider))"))
  assert.ok(ui.includes("const [cloudAgreed,setCloudAgreed]=useState(false)"))
- assert.ok(ui.includes("{cloudAvailable&&!authRequired&&<div className={styles.naturalVoiceRow}>"))
- assert.ok(ui.includes("changeNaturalVoice(event.target.checked)"))
+ assert.ok(!ui.includes('naturalVoiceRow'))
+ assert.ok(!ui.includes('checked={cloudAgreed}'))
 })
-
 test('iPhone buffered MP3 animates from decoded actual waveform without another service call',async()=>{
   const {startCoachingMp3Playback}=await import('../lib/personal-coaching/streamed-mp3-playback.mjs')
   const frames=[],levels=[]

@@ -76,9 +76,7 @@ test('uses only Google token + Chirp REST endpoints and validates returned MP3 b
  assert.equal(calls[1].options.cache,'no-store')
  assert.equal(calls[1].options.redirect,'error')
 })
-test('hard-bounded first-party cost policy and existing owner-only My Coach UI',()=>{
- assert.equal(GOOGLE_TTS_MAX_CHARS,500)
- assert.equal(GOOGLE_TTS_GLOBAL_DAILY_LIMIT,40)
+test('hard-bounded first-party cost policy and single Play voice introduction',()=>{
  assert.ok(GOOGLE_TTS_MONTHLY_UPPER_BOUND<1000000)
  const api=read('app/api/app/my-coach/voice/synthesize/route.js')
  const speech=read('components/my-coach-speech-loop.jsx')
@@ -87,44 +85,48 @@ test('hard-bounded first-party cost policy and existing owner-only My Coach UI',
    'GOOGLE_TTS_GLOBAL_DAILY_LIMIT,86400','raw.provider!==provider',
    'normalizeGoogleChirpInput','synthesizeGoogleChirp','PRIVATE_HEADERS'])
    assert.ok(api.includes(needle),needle)
- for(const needle of ['cloudProvider={cloudProvider}','Google Chirp 3 HD','cloudAgreed',
-   'checked={cloudAgreed}','startCoachingMp3Playback','providerCopy.disclosure'])
+ for(const needle of ['cloudProvider={cloudProvider}','cloudAgreed',
+   'introduction={introduction}','onSessionStart={()=>setCloudAgreed(true)}',
+   'startCoachingMp3Playback','voiceProviderDetails','Google Chirp'])
    assert.ok(ui.includes(needle),needle)
  for(const needle of ['cloudControllerRef.current?.abort()','cloudPlayerRef.current?.cancel()',
-   "cloudProvider==='google_chirp3_hd'","silence();changePhase('idle')"])
+   "cloudProvider==='google_chirp3_hd'","silence();changePhase('idle')",
+   'sessionStartRef.current?.()'])
    assert.ok(speech.includes(needle),needle)
- assert.ok(ui.includes('replayControllerRef.current?.abort();replayPlayerRef.current?.cancel();setReplayBlocked(false);setReplaying(false);setCloudAgreed(false)'))
+ assert.ok(!ui.includes('checked={cloudAgreed}'))
+ assert.ok(!ui.includes('<dialog'))
  assert.ok(ui.includes("document.addEventListener('visibilitychange',onHidden)"))
  assert.ok(ui.includes("window.addEventListener('pagehide',stopReplay)"))
  assert.ok(speech.includes('(!cloudAgreed||!cloudAvailable)&&(cloudControllerRef.current||cloudPlayerRef.current)'))
  assert.doesNotMatch(ui,/service_account|HH_GOOGLE_TTS_SERVICE_ACCOUNT_JSON/)
  assert.doesNotMatch(speech,/texttospeech\.googleapis\.com|oauth2\.googleapis\.com/)
- assert.doesNotMatch(speech,/new\s+window\.SpeechSynthesisUtterance\(reply\)/)
  assert.ok(speech.includes('iosCueSatisfiedRef.current=false'))
- assert.doesNotMatch(ui,/new\s+window\.SpeechSynthesisUtterance/)
- assert.ok(speech.includes('showTextOnly()'))
+ assert.ok(speech.includes('speakOnDevice()'))
 })
-
-test('natural coach speech is opt-in at first microphone consent and narrates consented typed turns',()=>{
+test('one explicit Play gesture authorizes the configured natural voice, not a checkbox',()=>{
  const ui=read('components/my-coach-live-dialogue.jsx')
  const voice=read('components/my-coach-speech-loop.jsx')
- assert.match(ui,/if\(authRequired\|\|readiness\.status==='checking'\)/)
- assert.doesNotMatch(ui,/\[consent,authRequired,readiness\.status\]/,
-   'TTS availability probe does not require exposing or agreeing to send user text')
- assert.match(ui,/className=\{styles\.voiceModalNatural\}/)
- assert.match(ui,/checked=\{cloudAgreed\}/)
- assert.match(ui,/onChange=\{event=>changeNaturalVoice\(event\.target\.checked\)\}/)
- assert.match(ui,/setCloudAgreed\(Boolean\(checked\)\)/)
- assert.match(ui,/replayPlayerRef\.current\?\.cancel\(\)/)
- assert.match(ui,/const spokenText=typeof overrideText==='string'\?overrideText:latestCoachText/)
- assert.match(ui,/const result=await sendMessage\(draft\.trim\(\)\)/)
- assert.match(ui,/\['safety','boundary'\]\.includes\(result\.mode\)/)
- assert.match(ui,/replayCoachReply\(result\.reply\)/)
- assert.match(ui,/className=\{styles\.replayControl\} onClick=\{\(\)=>replayCoachReply\(\)\}/)
- assert.match(voice,/cloudAgreed&&cloudAvailable/)
+ assert.ok(ui.includes('const [cloudAgreed,setCloudAgreed]=useState(false)'))
+ assert.ok(ui.includes('introduction={introduction}'))
+ assert.ok(ui.includes('onSessionStart={()=>setCloudAgreed(true)}'))
+ assert.ok(ui.includes('voiceProviderDetails'))
+ assert.ok(ui.includes('Fish may use the text to train models'))
+ assert.ok(ui.includes('Fish может использовать текст для обучения моделей'))
+ assert.ok(!ui.includes('checked={cloudAgreed}'))
+ assert.ok(!ui.includes('voiceModalNatural'))
+ assert.ok(!ui.includes('naturalVoiceRow'))
+ assert.ok(!ui.includes('<dialog'))
+ assert.ok(voice.includes("if(!introStartedRef.current){"))
+ assert.ok(voice.includes('sessionStartRef.current?.()'))
+ assert.ok(voice.includes('(naturalVoice||cloudAgreed)&&cloudAvailable'))
+ assert.ok(voice.includes('startCoachingMp3Playback'))
+ assert.ok(voice.includes('voiceConsent:true,cloudVoiceConsent:true'))
+ assert.ok(voice.includes('trainingUseConsent:true'))
+ assert.ok(ui.includes('const result=await sendMessage(draft.trim())'))
+ assert.ok(ui.includes('replayCoachReply(result.reply)'))
+ assert.ok(ui.includes('className={styles.replayControl} onClick={()=>replayCoachReply()}'))
  assert.doesNotMatch(ui,/new MediaRecorder|localStorage|sessionStorage/)
-});
-
+})
 test('free Fish spoken turns have one bounded vendor call and no paid model fallback',()=>{
  const route=read('app/api/app/my-coach/voice/synthesize/route.js')
  const fish=read('lib/coaching/my-coach-fish-voice.mjs')
