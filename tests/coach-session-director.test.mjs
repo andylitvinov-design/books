@@ -5,7 +5,7 @@ import {COACH_PERSONAS} from '../lib/coaching/persona-registry.mjs'
 import {conversationalCoachMessages} from '../lib/coaching/conversational-persona.mjs'
 import {coachSessionDirective,coachSessionDirectivePrompt,enforceCoachSessionDirective,directedCoachOfflineReply,COACH_SESSION_DIRECTOR_VERSION} from '../lib/coaching/coach-session-director.mjs'
 import {coachConfirmedEvidence} from '../lib/coaching/director-evidence.mjs'
-import {COACH_METHOD_IDS,selectCoachMethodStep,approvedMethodQuestion,vetoMethodStepQuestion} from '../lib/coaching/method-protocol-v4.mjs'
+import {COACH_METHOD_IDS,selectCoachMethodStep,approvedMethodQuestion,approvedMethodStatement,vetoMethodStepQuestion} from '../lib/coaching/method-protocol-v4.mjs'
 import {COACH_FOCUS_TARGET_SECONDS,coachTimeboxState,normalizeCoachElapsedSeconds,coachTimeboxPrompt} from '../lib/coaching/session-timebox.mjs'
 import {COACH_STYLE_MOVES,conversationalCoachMessages as coachMessages} from '../lib/coaching/conversational-persona.mjs'
 import {readFileSync} from 'node:fs'
@@ -392,7 +392,7 @@ test('Director v4 guards method-specific steps and never skips earlier client mi
   assert.equal(limited.stage,'goal')
   assert.equal(limited.readiness.ready,false,'unconfirmed prerequisite still blocks readiness')
   assert.ok(limited.readiness.missing.includes('goalConfirmed'))
-  assert.deepEqual(limited.supportedStages,[])
+  assert.deepEqual(limited.supportedStages,['topic'],'TGROW topic is confirmed but goal remains unconfirmed')
 })
 
 test('Old facts do not return after a topic change in previous conversation history',()=>{
@@ -512,4 +512,14 @@ test('Method step constraints reset after correction; method-specific veto saves
     ...d,interventionId:'clarify_wish',allowQuestion:true
   })
   assert.equal(checked.message,'Тема для вас важна.')
+})
+
+test('Every new method move has an honest localized provider-free lead',()=>{
+  for(const move of ['clarify_topic','clarify_wish','imagine_outcome','explore_internal_obstacle',
+    'explore_if_then','ask_scale','explore_know_how','explore_exceptions','explore_strengths','explore_positive_experience']){
+    for(const locale of ['en','ru','es']){
+      assert.ok(approvedMethodStatement(locale,move).length>=15,locale+':'+move)
+      assert.ok(approvedMethodQuestion(locale,move).length>=15,locale+':'+move)
+    }
+  }
 })
