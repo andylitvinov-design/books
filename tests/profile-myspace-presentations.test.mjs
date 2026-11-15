@@ -53,3 +53,42 @@ test('RU/EN switch preserves profile sections and video is click-to-play', async
   assert.match(styles, /min-height:40px/)
   assert.doesNotMatch(component + styles, /https?:\/\/files2\.heygen\.ai|Expires=|Signature=/)
 })
+
+test('My Space uses a 16:9 video and visible fallback when EN YouTube has no verified upload', async () => {
+  const [player, styles, presentation] = await Promise.all([
+    read('components/site-video-player.tsx'),
+    read('components/app/profile-hub-tabs.module.css'),
+    read('components/app/profile-presentation-player.jsx'),
+  ])
+  assert.match(player, /const directFallbackLink = isHeygen && !playbackYouTubeId && Boolean\(fallbackPoster\) && !internalOnly/)
+  assert.match(player, /fallbackPoster && !approvedPoster && !localPosterFailed/)
+  assert.match(player, /isHeygen && \(!fallbackPoster \|\| localPosterFailed\)/)
+  assert.match(player, /data-video-direct-watch=\{directFallbackLink \? "heygen-fallback" : undefined\}/)
+  assert.match(player, /mirrorLink \|\| externalLink/)
+  assert.match(player, /showRecovery && !directFallbackLink/)
+  assert.match(styles, /site-video-frame\)\{aspect-ratio:16\/9/)
+  assert.match(presentation, /const youtubeReady=locale==='en'/)
+  assert.match(presentation, /video=\{source\} locale=\{locale\} minimal fallbackPoster=\{poster\}/)
+})
+
+
+test('RU/EN sits to the left of Life/Work in a single responsive row on both Profile views', async () => {
+  const [css, life, work, browser] = await Promise.all([
+    read('components/app/profile-hub-tabs.module.css'),
+    read('components/app/profile-hub-tabs.jsx'),
+    read('components/practice-work-profile-intro.jsx'),
+    read('scripts/verify-practice-visual-browser.mjs'),
+  ])
+  const finalRowRule = [...css.matchAll(/^\.profileHeadingActions\{([^}]*)\}/gm)].at(-1)?.[1] || ''
+  assert.match(finalRowRule, /flex-direction:\s*row(?:;|$)/)
+  assert.match(finalRowRule, /flex-wrap:\s*nowrap(?:;|$)/)
+  assert.match(finalRowRule, /align-items:\s*center(?:;|$)/)
+  for (const [view, source] of [['Life', life], ['Work', work]]) {
+    const controls = source.match(/<div className=\{styles\.profileHeadingActions\}>([\s\S]*?)<\/div>/)?.[1] || ''
+    const localeIndex = controls.indexOf('data-profile-language-switch')
+    const modeIndex = controls.indexOf('<ProfileModeSwitch')
+    assert.ok(localeIndex >= 0 && modeIndex > localeIndex, view + ': language precedes Life / Work')
+  }
+  assert.match(browser, /g\.languageModeDirection/)
+  assert.match(browser, /g\.language\.right\s*<=\s*g\.switch\.x/)
+})
