@@ -7,6 +7,7 @@ import {appendSpokenAnswer} from '@/lib/personal-coaching/speech-text.js'
 import {chooseDictationLanguage,readDictationResults,detectedSpeechLocale,ios27NeedsSpeechRecovery} from '@/lib/personal-coaching/my-coach-dictation.mjs'
 import {startCoachingMp3Playback,primeCoachingAudioGesture,unlockCoachingAudioContext,shouldUseCoachingWebAudio} from '@/lib/personal-coaching/streamed-mp3-playback.mjs'
 import {coachSpokenText} from '@/lib/coaching/coach-spoken-text.mjs'
+import {coachIntroAudioPath,startDirectCoachIntroAudio} from '@/lib/personal-coaching/direct-coach-intro-audio.mjs'
 
 const words={
   en:{start:'Talk by voice',stop:'Stop voice',retryMic:'Retry microphone',listening:'Listening…',thinking:'Coach is thinking…',speaking:'Speaking…',
@@ -16,7 +17,7 @@ const words={
     failed:'Could not complete this voice turn. Please try again or type.',
     privacy:'Microphone audio may be processed by your browser’s speech-recognition provider. We do not store recordings. Press Stop at any time.',
     fallback:'Natural coach voice is unavailable right now. Please try again or use text.',tapToHear:'Tap to hear the coach',preparing:'Preparing voice…',
-    iosCue:'Ready to listen.',iosPreparing:'Preparing iPhone microphone…',iosSilent:'Safari may not be hearing. Your draft is editable; try again or reopen Safari.'},
+    iosCue:'Ready to listen.',iosPreparing:'Preparing iPhone microphone…',iosSilent:'Safari may not be hearing. Your draft is editable; try again or reopen Safari.',iosAwaitEnd:'Text ready. Waiting for Safari to finish…'},
   ru:{start:'Говорить голосом',stop:'Остановить голос',retryMic:'Перезапустить микрофон',listening:'Слушаю…',thinking:'Коуч думает…',speaking:'Говорит…',
     network:'Распознавание браузера недоступно. Ваши слова остаются в поле ответа.',noMicrophone:'Микрофон не найден. Проверьте настройки устройства.',language:'Браузер не поддерживает этот язык. Выберите RU или EN.',
     unsupported:'Голосовой ввод недоступен в этом браузере. Попробуйте открыть страницу в Safari или написать сообщение.',
@@ -25,7 +26,7 @@ const words={
     failed:'Голосовой ответ недоступен. Попробуйте ещё раз или напишите сообщение.',
     privacy:'Браузер может передавать аудио поставщику распознавания речи. Мы не сохраняем записи. Разговор можно остановить в любой момент.',
     fallback:'Качественный голос коуча сейчас недоступен. Попробуйте ещё раз или напишите ответ.',tapToHear:'Нажмите, чтобы услышать коуча',preparing:'Готовлю голос…',
-    iosCue:'Я вас слушаю.',iosPreparing:'Подготавливаю микрофон iPhone…',iosSilent:'Safari может не слышать речь. Текст можно отредактировать; попробуйте ещё раз или перезапустите Safari.'},
+    iosCue:'Я вас слушаю.',iosPreparing:'Подготавливаю микрофон iPhone…',iosSilent:'Safari может не слышать речь. Текст можно отредактировать; попробуйте ещё раз или перезапустите Safari.',iosAwaitEnd:'Текст готов. Ждём завершения Safari…'},
   es:{start:'Hablar por voz',stop:'Detener voz',retryMic:'Reiniciar micrófono',listening:'Escuchando…',thinking:'El coach piensa…',speaking:'Hablando…',
     network:'El reconocimiento del navegador no está disponible. El texto dictado sigue abajo.',noMicrophone:'No se encontró un micrófono. Comprueba los permisos.',language:'El navegador no reconoce este idioma. Elige EN o RU.',
     unsupported:'El reconocimiento de voz no está disponible aquí. Prueba abrir la página en Safari o escribe tu mensaje.',
@@ -34,7 +35,7 @@ const words={
     failed:'No se pudo completar el turno de voz. Inténtalo de nuevo o escribe.',
     privacy:'El navegador puede enviar audio al proveedor de reconocimiento. No almacenamos grabaciones. Detén la conversación cuando quieras.',
     fallback:'La voz natural del coach no está disponible. Vuelve a intentarlo o escribe.',tapToHear:'Toca para escuchar al coach',preparing:'Preparando voz…',
-    iosCue:'Te escucho ahora.',iosPreparing:'Preparando el micrófono del iPhone…',iosSilent:'Safari puede haber dejado de escuchar. Tu texto se puede editar; prueba de nuevo o reinicia Safari.'},
+    iosCue:'Te escucho ahora.',iosPreparing:'Preparando el micrófono del iPhone…',iosSilent:'Safari puede haber dejado de escuchar. Tu texto se puede editar; prueba de nuevo o reinicia Safari.',iosAwaitEnd:'Texto listo. Esperando el final de Safari…'},
 }
 
 const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speechLocale='auto',initialDraft='',enabled=false,canStart=true,cloudAvailable=false,cloudAgreed=false,cloudProvider=null,personaId='mira',introduction='',onSessionStart,onTurn,onCancelTurn,onVoiceStateChange,onVoiceLevel,onRequestConsent,onTranscript,onDraft},ref){
@@ -49,6 +50,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   const cloudControllerRef=useRef(null)
   const cloudPlayerRef=useRef(null)
   const introControllerRef=useRef(null),introPlayerRef=useRef(null)
+  const microphonePermissionRef=useRef(null)
   const primedAudioRef=useRef(null),audioContextRef=useRef(null)
   const speakingRef=useRef(false)
   const speechTimerRef=useRef(null),blockedResumeRef=useRef(null),utteranceRef=useRef(null)
@@ -129,9 +131,28 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     changePhase('idle')
   }
   stopRef.current=stopVoice
+
+  // Request iPhone mic permission in the very SAME Play gesture, without
+  // recording or uploading audio. Immediately release the temporary stream;
+  // the actual Web Speech recognizer starts AFTER the coach finishes.
+  function primeMicrophonePermission(){
+    if(microphonePermissionRef.current)return
+    const getUserMedia=window.navigator.mediaDevices?.getUserMedia
+    if(!getUserMedia)return
+    try{
+      const request=window.navigator.mediaDevices.getUserMedia({audio:true})
+      microphonePermissionRef.current=request
+      void request.then(stream=>{
+        for(const track of stream.getTracks())track.stop()
+      }).catch(()=>{microphonePermissionRef.current=null})
+    }catch{microphonePermissionRef.current=null}
+  }
+
   useImperativeHandle(ref,()=>({
     startSession(introduction,{naturalVoice=false}={}){
       if(activeRef.current||!enabled||!canStart)return false
+      // The hero Play must grant the same voice consent as the toolbar Play.
+      sessionStartRef.current?.()
       activeRef.current=true
       introStartedRef.current=true
       generationRef.current+=1
@@ -142,6 +163,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       // Play is the single deliberate gesture that starts coach audio followed
       // by browser recognition. No recording, upload or second mic tap.
       void speakCoachReply({reply:String(introduction||'').slice(0,900),mode:'intro'},'',generationRef.current,naturalVoice)
+      primeMicrophonePermission()
       return true
     },
     startWithConsent(){
@@ -285,17 +307,17 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
         // iOS 27 Safari can become deaf after an explicit stop(). Let this
         // continuous=false recognizer finish naturally after its final result.
       }
-      // Safari's final or interim event may be its last; commit after silence.
+      // iOS 27 WebKit #321436: a recognized session must end naturally.
+      // After a long silence, keep the text editable; NEVER abort a recognizer
+      // that has heard words or subsequent sessions can become permanently deaf.
       if(ios27&&visible){
         iosResultTimerRef.current=setTimeout(()=>{
           if(recognitionRef.current!==recognition||!activeRef.current)return
           const heard=heardRef.current.trim()
           if(heard.length>=3){
-            recognitionRef.current=null
-            recognition.onresult=null;recognition.onend=null;recognition.onerror=null
-            try{recognition.abort()}catch{}
-            lastHeardRef.current=heard
-            void deliver(appendSpokenAnswer(draftAtStartRef.current,heard,1200))
+            draftRef.current?.(appendSpokenAnswer(draftAtStartRef.current,heard,1200))
+            transcriptRef.current?.('') // One visible copy in the editable Text field
+            setNotice(t.iosAwaitEnd)
           }else restartSilentRecognition(recognition)
         },6500)
       }
@@ -304,19 +326,21 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       if(visible){
         retryAttemptsRef.current=0
         if(settleTimerRef.current)clearTimeout(settleTimerRef.current)
-        const heardNow=visible.trim()
-        // iOS can emit final/interim words without ever firing onend.
-        // A silence window commits the complete answer once, automatically.
-        settleTimerRef.current=setTimeout(()=>{
-          if(recognitionRef.current!==recognition||!activeRef.current)return
-          const heard=heardRef.current.trim()
-          if(heard.length<3||heard!==heardNow)return
-          recognitionRef.current=null
-          recognition.onresult=null;recognition.onend=null;recognition.onerror=null
-          try{recognition.abort()}catch{}
-          lastHeardRef.current=heard
-          void deliver(appendSpokenAnswer(draftAtStartRef.current,heard,1200))
-        },final?1700:2300)
+        // Only non-iOS-27 browsers use the early automatic settle fallback.
+        // On iOS 27, wait for natural onend to preserve the next voice turn.
+        if(!ios27){
+          const heardNow=visible.trim()
+          settleTimerRef.current=setTimeout(()=>{
+            if(recognitionRef.current!==recognition||!activeRef.current)return
+            const heard=heardRef.current.trim()
+            if(heard.length<3||heard!==heardNow)return
+            recognitionRef.current=null
+            recognition.onresult=null;recognition.onend=null;recognition.onerror=null
+            try{recognition.abort()}catch{}
+            lastHeardRef.current=heard
+            void deliver(appendSpokenAnswer(draftAtStartRef.current,heard,1200))
+          },final?1700:2300)
+        }
       }
     }
     recognition.onerror=event=>{
@@ -464,20 +488,20 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     // the public, globally rate-limited Fish S2.1 free route. No client audio,
     // client transcript or arbitrary text is exposed through this endpoint.
     if(result.mode==='intro'){
+      const url=coachIntroAudioPath(personaId,lang)
+      if(!url){showTextOnly();return}
       const controller=new AbortController()
       introControllerRef.current=controller
       try{
-        const response=await fetch('/api/coaching/intro?'+new URLSearchParams({
-          coach:personaId,locale:lang
-        }),{method:'GET',credentials:'omit',cache:'force-cache',signal:controller.signal})
-        if(!response.ok||!response.body)throw Error('COACH_INTRO_MP3_UNAVAILABLE')
-        if(!live()||controller.signal.aborted)return
-        introPlayerRef.current=startCoachingMp3Playback(response,{
-          audioElement:primedAudioRef.current,audioContext:audioContextRef.current,
-          onLevel:level=>{if(live())levelRef.current?.(level)},
-          onStart:()=>{if(live()){setNotice('');changePhase('speaking')}},
+        // Direct MediaElement.play() executes in the original user gesture.
+        // Safari streams audio progressively instead of waiting for a
+        // complete MP3 Blob and WebAudio decode.
+        introPlayerRef.current=startDirectCoachIntroAudio(url,{
+          onStart:()=>{
+            if(live()&&!controller.signal.aborted){setNotice('');changePhase('speaking')}
+          },
           onEnd:()=>{
-            if(!live())return
+            if(!live()||controller.signal.aborted)return
             introControllerRef.current=null
             introPlayerRef.current?.cancel()
             introPlayerRef.current=null
@@ -486,7 +510,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
           onBlocked:()=>{if(live())showTextOnly()},
           onError:()=>{if(live())showTextOnly()},
         })
-      }catch{if(live()&&!controller.signal.aborted)showTextOnly()}
+      }catch{if(live())showTextOnly()}
       return
     }
     if((naturalVoice||cloudAgreed)&&cloudAvailable&&['google_chirp3_hd','fish_free'].includes(cloudProvider)&&!['safety','boundary'].includes(result.mode)){
@@ -567,6 +591,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       primedAudioRef.current=audioContextRef.current?null:primeCoachingAudioGesture()
       changePhase('loading')
       void speakCoachReply({reply:String(introduction||'').slice(0,900),mode:'intro'},'',generationRef.current,true)
+      primeMicrophonePermission()
       return
     }
     if(supported===false){setNotice(t.unsupported);return}

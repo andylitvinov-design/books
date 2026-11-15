@@ -114,6 +114,8 @@ const isDistractionSensitivePage = (pathname: string) =>
   /^\/(?:ru|en|es)\/app\/coaching(?:\/|$)/.test(pathname) ||
   /^\/(?:ru|en|es)\/coaching\/?$/.test(pathname) ||
   /^\/(?:ru|en|es)\/my-coach\/?$/.test(pathname) ||
+  // Human coaching dialogue is first-screen video + chat, not a marketing landing.
+  /^\/(?:ru|en|es)\/my-coach\/real\/[a-z0-9-]+\/?$/.test(pathname) ||
   (/^\/(?:ru|en|es)\/client(?:\/|$)/.test(pathname) && !/^\/(?:en|ru)\/client(?:\/tests)?\/?$/.test(pathname)) ||
   /^\/(?:ru|en|es)\/(?:report|prescriptions)(?:\/|$)/.test(pathname) ||
   /^\/(?:ru|en|es)\/app\/(?:course|runs|results|documents|settings|privacy)(?:\/|$)/.test(pathname);
