@@ -152,3 +152,25 @@ test('hands-free voice uses live consent and never ends on a natural TTS outage'
   assert.ok(live.includes('afterSpeech()'),'a successful spoken reply must also auto-listen')
   assert.ok(loop.includes('cue.onend=finishCue'),'iOS 27 WebKit recovery remains')
 })
+
+test('model-turn failure re-arms microphone without re-tapping or retrying an external model',()=>{
+  const loop=source('components/my-coach-speech-loop.jsx')
+  const deliver=loop.slice(loop.indexOf('async function deliver(text){'),
+    loop.indexOf('async function speakCoachReply('))
+  assert.ok(deliver.includes('if(!activeRef.current||generationRef.current!==generation)return'),
+    'End/cancel during the network turn must suppress any microphone restart')
+  const failure=deliver.slice(deliver.indexOf('if(!result?.reply){'),
+    deliver.indexOf("heardRef.current=''",deliver.indexOf('if(!result?.reply){')))
+  for(const statement of ['currentDraftRef.current=text',"draftRef.current?.(text)",
+    "transcriptRef.current?.('')",'startListening()',"setNotice(t.failed)"])
+    assert.ok(failure.includes(statement),statement)
+  assert.doesNotMatch(failure,/silence\(\)|changePhase\('idle'\)|turnRef\.current|fetch\(|speakCoachReply\(/,
+    'an unavailable model must not end the voice session or repeat a provider request')
+  assert.ok(loop.includes("if(result.mode==='safety'||result.mode==='boundary'){"),
+    'explicit safety/boundary stops still end the voice session')
+  assert.ok(loop.includes("const afterSpeech=()=>{"),
+    'successful spoken turns still resume listening automatically')
+  for(const text of ['The microphone is listening again','Микрофон снова слушает',
+    'El micrófono vuelve a escuchar'])
+    assert.ok(loop.includes(text),text)
+})
