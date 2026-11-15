@@ -76,7 +76,9 @@
  .scriptHost [data-meditation-main-filters] label:first-child{grid-column:1;grid-row:1}
  .scriptHost [data-meditation-main-filters] label:nth-child(2){grid-column:1/-1;grid-row:2}
  .scriptHost [data-meditation-main-filters] label:nth-child(3){grid-column:2;grid-row:1}
- .scriptHost [data-meditation-main-filters] select{min-height:44px;width:100%;padding:7px 9px;font-size:13px;text-overflow:ellipsis;white-space:nowrap}
+ /* WebKit's native select can ignore min-height and render 23px. An explicit
+    height makes the three actual input controls touchable on 320px iPhone. */
+ .scriptHost [data-meditation-main-filters] select{height:44px;min-height:44px;box-sizing:border-box;width:100%;padding:7px 9px;font-size:13px;text-overflow:ellipsis;white-space:nowrap}
  .scriptHost [data-meditation-accents]{margin:8px 0}
  .scriptHost [data-meditation-accents] summary{min-height:44px;padding:8px 10px;font-size:12px}
  .scriptHost [data-meditation-accents] .extra{margin:9px 0}

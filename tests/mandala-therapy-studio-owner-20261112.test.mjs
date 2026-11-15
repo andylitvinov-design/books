@@ -152,3 +152,12 @@ test("Therapy WebKit uses robust native context chip selectors",()=>{
  assert.match(browser,/contextPanel\.locator\('div > span'\)/);
  assert.doesNotMatch(browser,/contextPanel\.locator\('\.chips span'\)/);
 });
+
+// macOS WebKit E2E proved Safari's native <select> ignores min-height alone:
+// real 320px Therapy controls measured 23px before the explicit height fix.
+test("Therapy main selects have physical 44px height for iPhone WebKit, not just min-height",()=>{
+ const cssText=read("components/mandala-therapy-studio.module.css");
+ assert.match(cssText,/\[data-meditation-main-filters\] select\{height:44px;min-height:44px;box-sizing:border-box/);
+ const browser=read("scripts/verify-therapy-studio-mobile-browser.mjs");
+ assert.match(browser,/targets\.every\(\(\[w,h\]\)=>w>=44&&h>=44\)/);
+});

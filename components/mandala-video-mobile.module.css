@@ -5645,12 +5645,20 @@
    display:none!important}
  .studio[data-active-workspace="editor"][data-montage-panel="concept"] [data-video-stage-actions="montage"]{
    display:none!important}
+ /* One discreet settings icon belongs in the Story heading, not below
+    Extra's three choices. Keep 44px touch access without adding a row. */
  .studio[data-active-workspace="editor"][data-montage-panel="concept"] [data-video-story-open-settings]{
-   display:none!important}
+   display:inline-flex!important;position:absolute;top:5px;right:5px;z-index:2;
+   align-items:center;justify-content:center;width:44px;height:44px;min-height:44px;
+   padding:8px!important;overflow:hidden;font-size:0!important;
+   border:1px solid #c9ddd0;border-radius:12px;background:#fffdfa;
+   color:#11694f}
+ .studio[data-active-workspace="editor"][data-montage-panel="concept"] [data-video-story-open-settings] svg{
+   width:20px;height:20px;flex:none}
  .studio[data-active-workspace="editor"][data-montage-panel="concept"] .montagePane{
-   padding:10px!important;gap:8px!important;border-radius:16px}
+   position:relative;padding:10px!important;gap:8px!important;border-radius:16px}
  .studio[data-active-workspace="editor"][data-montage-panel="concept"] .quickSectionHeading{
-   margin:0!important;padding:0!important}
+   margin:0!important;padding:0 48px 0 0!important}
  .studio[data-active-workspace="editor"][data-montage-panel="concept"] .quickSectionHeading h3{
    font-size:19px!important;line-height:1.2!important;margin:0!important}
  .studio[data-active-workspace="editor"][data-montage-panel="concept"] .storyAutoRoot{gap:8px}
