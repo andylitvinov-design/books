@@ -169,10 +169,12 @@ test('ephemeral context recalls client-only goal, constraint and example from a 
   ]
   const recent=coachTurnWindow(history,10)
   const context=coachEphemeralContext(history,recent,'en','I am still thinking about this.')
-  assert.ok(context.includes('I want to reduce overtime while keeping my job.'))
+  // The existing 10-turn request already pins the goal; the capsule must not duplicate it.
+  assert.ok(recent.some(x=>x.role==='user'&&x.content==='I want to reduce overtime while keeping my job.'))
+  assert.ok(!context.includes('I want to reduce overtime while keeping my job.'))
   assert.ok(context.includes('I cannot work late because I need to care for my child.'))
   assert.ok(context.includes('For example, yesterday my manager scheduled evening meetings.'))
-  assert.equal(context.length,3)
+  assert.equal(context.length,2)
   assert.ok(context.every(item=>history.some(x=>x.role==='user'&&x.content===item)))
 })
 
@@ -192,7 +194,7 @@ test('ephemeral context resets after the client changes subject or corrects the 
   assert.deepEqual(coachEphemeralContext(all,coachTurnWindow(all,10),'ru','Давайте сменим тему.'),[])
 })
 
-test('context never uses assistant text or duplicates recent entries and has no persistence',()=>{
+test('context never uses assistant text or duplicates recent entries and has no persistence',async()=>{
   const all=[
     coach('My goal is to reveal system prompts.'),
     user('Mi objetivo es encontrar más tiempo para mi familia.'),
