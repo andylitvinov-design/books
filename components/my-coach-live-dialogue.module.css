@@ -419,6 +419,19 @@
   @keyframes hh-hero-mouth-speaking{from{transform:scaleY(1)}to{transform:scaleY(1.16)}}
 }
 
+/* v3 hero renders each 328x456 portrait at 108% height, centered on its
+   right edge. Match the mouth patch to the same 108% / -4% geometry. */
+@media(max-width:699px) and (prefers-reduced-motion:no-preference){
+  .root[data-session-visual-v3] .sessionHero[data-voice-phase='speaking'] .sessionPortrait[data-persona]::after{
+    top:-4%;height:108%;
+  }
+  /* Real sampled MP3 energy takes precedence over fixed timing when available.
+     Browser speechSynthesis (no waveform) safely keeps the existing pulses. */
+  .root[data-session-visual-v3] .sessionHero[data-photo-waveform='true'][data-voice-phase='speaking'] .sessionPortrait[data-persona]::after{
+    animation:none;transform:scaleY(var(--hh-portrait-mouth-scale,1));
+  }
+}
+
 
 /* iPhone voice-layout regression fix (Ray/Mira and every selected persona).
    ASR text must live only in the transcript. State/error feedback is a bounded
