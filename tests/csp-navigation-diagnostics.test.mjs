@@ -293,3 +293,61 @@ test('WebKit rapid Forward from Tests to home needs exact old RSC fetch provenan
     origin+'/en/about?_rsc=x','https://other.test/?_rsc=x'])
     assert.equal(classifyCspNavigationCancellation({...error,stack:diagnostic(url,1053).stack},state),null,url);
 });
+
+test('English My Space metadata cancellation needs the exact old-home fetch plus proven WebKit About teardown',()=>{
+  // Run 43742140905 / 390px: home init=3369, pageshow=3700,
+  // navigate=3723, diagnostic=3869, pagehide=3872,
+  // About init=3881, About DOMContentLoaded=4005.
+  const home=origin+'/',about=origin+'/en/about';
+  const life=[
+    {type:'init',time:1000,documentProbe:'home',url:home},
+    {type:'pageshow',time:1331,documentProbe:'home',documentClass:'public-video'},
+    {type:'navigate',time:1354,documentProbe:'home',documentClass:'public-video',
+      navigationType:'traverse',sameDocument:false,destination:about},
+    {type:'pagehide',time:1503,documentProbe:'home'},
+    {type:'init',time:1512,documentProbe:'about',url:about},
+    {type:'domcontentloaded',time:1636,documentProbe:'about',documentClass:'public-video'},
+  ];
+  const fetches=[{type:'fetch-start',path:'/api/public/english-intro-video',
+    rsc:false,documentProbe:'home',time:1338}];
+  const state={...detail,lifecycle:life,fetchTelemetry:fetches};
+  const diagnosticError={...diagnostic(origin+'/api/public/english-intro-video',1500),
+    phase:'forward-to-public'};
+  assert.equal(classifyCspNavigationCancellation(diagnosticError,state)?.kind,
+    'webkit-traced-english-intro-teardown');
+  for(const phase of [undefined,'initial','forward-to-tantra','forward-to-public-home','back-to-private']){
+    assert.equal(classifyCspNavigationCancellation({...diagnosticError,phase},state),null);
+  }
+  for(const override of [{engine:'chromium'},{readiness:'loaded-history'},
+    {fetchTelemetry:[]},{fetchTelemetry:[{...fetches[0],path:'/api/private'}]},
+    {fetchTelemetry:[{...fetches[0],rsc:true}]},
+    {fetchTelemetry:[{...fetches[0],documentProbe:'about'}]},
+    {fetchTelemetry:[{...fetches[0],time:999}]},
+    {fetchTelemetry:[{...fetches[0],time:1501}]},
+    {lifecycle:life.filter(e=>e.type!=='pagehide')},
+    {lifecycle:life.filter(e=>e.type!=='pageshow')},
+    {lifecycle:life.filter(e=>e.type!=='domcontentloaded')},
+    {lifecycle:life.filter(e=>e.type!=='navigate')},
+    {lifecycle:life.map(e=>e.type==='navigate'?{...e,documentClass:'private'}:e)},
+    {lifecycle:life.map(e=>e.type==='navigate'?{...e,navigationType:'push'}:e)},
+    {lifecycle:life.map(e=>e.type==='navigate'?{...e,sameDocument:true}:e)},
+    {lifecycle:life.map(e=>e.type==='navigate'?{...e,destination:origin+'/en/client'}:e)},
+    {lifecycle:life.map(e=>e.type==='init'&&e.documentProbe==='home'?{...e,url:about}:e)},
+    {lifecycle:life.map(e=>e.type==='pagehide'?{...e,time:1499}:e)},
+    {lifecycle:life.map(e=>e.type==='init'&&e.documentProbe==='about'?{...e,time:1713}:e)},
+    {lifecycle:[...life,{type:'policy-violation',documentProbe:'home',time:1498}]},
+    {lifecycle:[...life,{type:'window-error',documentProbe:'home',time:1498}]},
+  ]) assert.equal(classifyCspNavigationCancellation(diagnosticError,
+    {...state,...override}),null,JSON.stringify(override));
+  for(const ms of [1353,1450,1504,1512,1700]){
+    assert.equal(classifyCspNavigationCancellation({...diagnosticError,time:ms},state),null,'time '+ms);
+  }
+  for(const url of ['/api/public/english-intro-video?session=private',
+    '/api/public/english-intro-video?_rsc=foo',
+    '/api/public/english-intro-video/other','/api/admin/private',
+    '/api/public/telegram-diagnostic','/api/app/guest/bootstrap',
+    '/en/about?_rsc=x','https://other.test/api/public/english-intro-video']){
+    assert.equal(classifyCspNavigationCancellation({...diagnosticError,
+      stack:diagnostic(url.startsWith('http')?url:origin+url,1500).stack},state),null,url);
+  }
+});

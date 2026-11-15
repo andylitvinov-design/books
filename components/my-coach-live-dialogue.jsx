@@ -519,6 +519,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           hypothesis:result.hypothesis||'',mode:result.mode,
           reason:result.offlineReason||'',stage:result.stage||'',
           suggestion:result.planSuggestion||'',evidence:result.evidenceQuote||'',
+          inference:result.mode==='ai'&&['groq','openrouter'].includes(result.inference?.provider)&&
+            typeof result.inference?.model==='string'&&result.inference.model.length<=128
+            ?result.inference:null,
         }]
         return coachTurnWindow(updated,24)
       })
@@ -653,7 +656,15 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           {!turns.length&&<div className={styles.transcriptCoach}><strong>{name}</strong><p>{introduction}</p></div>}
           {turns.map((turn,index)=><div key={index}
             className={turn.role==='user'?styles.transcriptUser:styles.transcriptCoach}>
-            <strong>{turn.role==='user'?t.user:name}</strong><p>{turn.content}</p>
+            <strong>{turn.role==='user'?t.user:name}
+              {turn.role==='assistant'&&turn.inference?.model&&
+                <span className={styles.responseSource} data-coach-answer-source={turn.inference.provider}>
+                  {' · '}{turn.inference.provider==='groq'?'Groq':'OpenRouter'} · {turn.inference.model}
+                  {turn.inference.reasoningEffort?' · '+turn.inference.reasoningEffort:''}
+                </span>}
+              {turn.role==='assistant'&&turn.mode==='offline'&&
+                <span className={styles.responseSource}> · {t.offline}</span>}
+            </strong><p>{turn.content}</p>
           </div>)}
           {speechPreview&&<div className={styles.transcriptInterim} aria-live="off">
             <strong>{t.user} · {captions.listening}</strong><p>{speechPreview}</p>

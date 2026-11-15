@@ -15,11 +15,14 @@ export function classifyCspNavigationCancellation(error, { engine, readiness, or
     && [...url.searchParams.keys()].length === 1 && url.searchParams.has('_rsc') && !!url.searchParams.get('_rsc');
   // Only the exact anonymous GET may be traced during verified old-document teardown.
   const telegramTeardown = url.pathname === '/api/public/telegram-diagnostic' && !url.search;
+  // The EN homepage starts this anonymous metadata GET. WebKit can surface
+  // cancellation when that exact old document is replaced by public About.
+  const englishIntroTeardown = url.pathname === '/api/public/english-intro-video' && !url.search;
   const tantraPrefetch = (['/', '/en/academy', '/en/academy/principles-of-energywork/learn'].includes(url.pathname)
       && [...url.searchParams.keys()].length === 1 && !!url.searchParams.get('_rsc'))
     || (url.pathname === '/en/client/tests' && [...url.searchParams.keys()].length === 2
       && url.searchParams.get('focus') === 'tantra' && !!url.searchParams.get('_rsc'));
-  if (!bootstrap && !prefetch && !clientPrefetch && !tantraPrefetch && !telegramTeardown) return null;
+  if (!bootstrap && !prefetch && !clientPrefetch && !tantraPrefetch && !telegramTeardown && !englishIntroTeardown) return null;
   for (const navigation of lifecycle) {
     if (navigation.type !== 'navigate' || navigation.sameDocument !== false || Math.floor(navigation.time) > error.time) continue;
     const source = lifecycle.find(event => event.type === 'init' && event.documentProbe === navigation.documentProbe);
@@ -60,6 +63,19 @@ export function classifyCspNavigationCancellation(error, { engine, readiness, or
     // WebKit rapid history: old private Tests initiated this exact home RSC
     // fetch while forwarding to the public home, then cancelled before pagehide.
     // Never classify arbitrary CSP errors or new-document requests as teardown.
+    const englishIntroCancel = englishIntroTeardown && error.phase === 'forward-to-public'
+      && source.url === new URL('/', origin).href
+      && navigation.documentClass === 'public-video'
+      && navigation.navigationType === 'traverse'
+      && navigation.destination === new URL('/en/about', origin).href
+      && lifecycle.some(event => event.type === 'pageshow'
+        && event.documentProbe === source.documentProbe
+        && event.documentClass === 'public-video'
+        && event.time >= source.time && event.time <= navigation.time)
+      && fetchTelemetry.some(item => item.type === 'fetch-start'
+        && item.path === '/api/public/english-intro-video' && item.rsc === false
+        && item.documentProbe === source.documentProbe
+        && item.time >= source.time && item.time <= error.time);
     const testsHomePrefetch = prefetch && url.pathname === '/' && error.phase === 'forward-to-public-home'
       && source.url === new URL('/en/client/tests', origin).href
       && navigation.documentClass === 'private' && navigation.navigationType === 'traverse'
@@ -78,7 +94,7 @@ export function classifyCspNavigationCancellation(error, { engine, readiness, or
         && event.time <= navigation.time && event.sameDocument === true && event.navigationType === 'traverse'
         && event.url === new URL('/en/about', origin).href && event.documentClass === 'public-video'
         && event.destination === navigation.destination))) continue;
-    if (sourcePath !== (bootstrap ? '/en/client' : '/en/about') && !clientHomePrefetch && !homeReviewPrefetch && !tantraBack && !testsHomePrefetch) continue;
+    if (sourcePath !== (bootstrap ? '/en/client' : '/en/about') && !clientHomePrefetch && !homeReviewPrefetch && !tantraBack && !testsHomePrefetch && !englishIntroCancel) continue;
     const nextDocument = lifecycle.find(event => event.type === 'init' && event.time > navigation.time && event.documentProbe !== navigation.documentProbe);
     // Reject errors at/after the new document's first millisecond. They are not
     // attributable to the old document, even when the wording is identical.
@@ -89,6 +105,29 @@ export function classifyCspNavigationCancellation(error, { engine, readiness, or
       || lifecycle.some(event => event.type === 'policy-violation'
         && event.documentProbe === source.documentProbe
         && event.time >= navigation.time && event.time <= nextDocument.time))) continue;
+    if (englishIntroTeardown) {
+      // Real run 43742140905 WebKit/390: old home fetch, Forward to About,
+      // diagnostic 3ms before old pagehide, and new document 12ms later.
+      // Without exact first-party provenance or in case of any policy violation,
+      // this is a fatal error rather than a generic console ignore.
+      const pageHideTime = Math.floor(pageHide?.time ?? NaN);
+      const nextInitTime = Math.floor(nextDocument.time);
+      if (!englishIntroCancel || !pageHide || error.time < Math.floor(navigation.time)
+        || error.time - Math.floor(navigation.time) > 1000
+        || error.time > pageHideTime || pageHideTime - error.time > 50
+        || nextInitTime < error.time || nextInitTime - error.time > 200
+        || !lifecycle.some(event => event.type === 'domcontentloaded'
+          && event.documentProbe === nextDocument.documentProbe
+          && event.documentClass === 'public-video' && event.time >= nextDocument.time)
+        || lifecycle.some(event => event.type === 'policy-violation'
+          && event.documentProbe === source.documentProbe
+          && event.time >= source.time && event.time <= nextDocument.time)) continue;
+      return { kind: 'webkit-traced-english-intro-teardown',
+        requestUrl: url.href, sourceDocument: source.documentProbe,
+        destinationDocument: nextDocument.documentProbe,
+        navigationTime: navigation.time, errorTime: error.time,
+        pageHideTime: pageHide.time, nextDocumentTime: nextDocument.time };
+    }
     let postHideTelegram = false;
     if (telegramTeardown) {
       // Source-backed WebKit-only cancellation, never an allowed CSP violation:
