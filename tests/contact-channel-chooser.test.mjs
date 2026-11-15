@@ -6,21 +6,29 @@ import { whatsappEnquiryUrl, telegramEnquiryUrlFromWhatsApp, TELEGRAM_USERNAME }
 
 const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
-test("Telegram prefill preserves all verified enquiry details in EN/RU/ES, without source query strings", () => {
+test("Telegram service handoff retains public title, not client text, prices or source queries", () => {
   for (const locale of ["en", "ru", "es"]) {
     const wa = whatsappEnquiryUrl({
       locale, service: "Tantra Reiki Level 1",
-      request: "Please confirm the full initiation and the available start date",
+      request: "Please confirm the full initiation and available date — private",
       option: "Personal initiation · €50 / 30 min",
-      topic: "Energy practice",
+      topic: "Energy practice and sensitive context",
+      context: "Confidential history",
       pagePath: "/" + locale + "/academy/reiki/tantra-reiki/free-initiation?private=do-not-send",
     });
     const tg = new URL(telegramEnquiryUrlFromWhatsApp(wa));
+    const body = tg.searchParams.get("text") || "";
     assert.equal(tg.origin, "https://t.me");
     assert.equal(tg.pathname, "/" + TELEGRAM_USERNAME);
-    assert.equal(tg.searchParams.get("text"), new URL(wa).searchParams.get("text"));
-    assert.match(tg.searchParams.get("text") || "", /Tantra Reiki Level 1/);
-    assert.doesNotMatch(tg.searchParams.get("text") || "", /do-not-send/);
+    assert.match(body, /Tantra Reiki Level 1/);
+    assert.doesNotMatch(body, /private|available date|€50|Energy practice|sensitive context|Confidential history|\/academy\/|do-not-send|HH-REQ|hhreview/);
+    assert.equal(tg.searchParams.has("start"), false);
+    assert.ok(body.length < 260, "Only a bounded public service description belongs in the draft");
+    // The original WhatsApp draft may retain voluntary client details; its
+    // text is NOT a Telegram consent, request submission or medical record.
+    assert.ok(new URL(wa).searchParams.get("text")?.includes("Selected option:") ||
+      new URL(wa).searchParams.get("text")?.includes("Выбранный вариант:") ||
+      new URL(wa).searchParams.get("text")?.includes("Opción elegida:"));
   }
 });
 
