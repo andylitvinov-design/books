@@ -64,7 +64,9 @@ test('Play selects an available coach voice without separate checkbox or microph
   assert.ok(loop.includes('trainingUseConsent:true'))
   assert.ok(loop.includes('cloudVoiceConsent:true'))
   assert.ok(loop.includes('startCoachingMp3Playback(response'))
-  assert.ok(loop.includes('speakOnDevice()'))
+  assert.ok(loop.includes('introPlayerRef.current=startCoachingMp3Playback'))
+  assert.ok(loop.includes('/api/coaching/intro?'))
+  assert.ok(!loop.includes('speakOnDevice()'))
   assert.ok(!loop.includes('api.fish.audio'))
 })
 
@@ -82,6 +84,7 @@ test('phone composition keeps transcript and editable reply in the viewport',()=
   assert.ok(css.includes('.root[data-session-visual-v4] .conversationPanel .textComposer{'))
   assert.ok(css.includes('max-height:min(24dvh,190px)'))
   assert.ok(css.includes('overscroll-behavior:contain'))
+  assert.ok(css.includes('height:clamp(155px,25dvh,222px)'),'portrait is not unnecessarily shrunk')
   assert.ok(css.includes('display:none;'))
   for(const width of [320,354,390,430])assert.ok(width>=320&&width<=699)
 })
@@ -133,14 +136,17 @@ test('the iPhone microphone and status are always in one stable control row',()=
     assert.ok(width-20>270,'room for five aligned controls at '+width+' CSS px')
 });
 
-test('one Play speaks on-device immediately and typed replies keep unlocked sound',()=>{
+test('one Play starts natural MP3 directly and typed turns keep unlocked sound',()=>{
   const page=source('components/my-coach-live-dialogue.jsx')
   const loop=source('components/my-coach-speech-loop.jsx')
   const audio=source('lib/personal-coaching/streamed-mp3-playback.mjs')
   const intro=loop.indexOf("if(result.mode==='intro'){")
   const remote=loop.indexOf("if((naturalVoice||cloudAgreed)&&cloudAvailable")
-  assert.ok(intro>0&&intro<remote,'first welcome uses synchronous voice from the Play gesture')
-  assert.match(loop.slice(intro,remote),/speakOnDevice\(\)/)
+  assert.ok(intro>0&&intro<remote,'first welcome requests public authored natural MP3 before model replies')
+  assert.match(loop.slice(intro,remote),/introPlayerRef\.current=startCoachingMp3Playback/)
+  assert.ok(!loop.includes('new Utterance(reply)'))
+  assert.ok(!page.includes('new Utterance(spokenText'))
+  assert.ok(page.includes('voiceGate.naturalUnavailable'))
   for(const part of [
     'unlockCoachingAudioContext()','pauseForTypedTurn(){','speakReply(result){',
     'audioContext:audioContextRef.current','data-coach-microphone-icon'
