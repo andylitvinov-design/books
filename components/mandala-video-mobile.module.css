@@ -5455,12 +5455,15 @@
 .storyboardScene label{display:grid;gap:5px;font-size:11px;font-weight:750}
 .storyboardScene select,.storyboardPhotoControls input{width:100%;min-width:0;min-height:42px;padding:8px;border:1px solid #c9d9cf;border-radius:9px;background:#fff;color:#25493c}
 .storyboardSceneActions,.storyboardPhotoControls{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
-.storyboardSceneActions button,.storyboardPhotoControls button{min-height:40px;padding:7px 10px;border:1px solid #c9d9cf;border-radius:9px;background:#f4f7f2;color:#315545;font-size:12px;font-weight:750}
+.storyboardSceneActions button,.storyboardPhotoControls button{min-height:44px;padding:7px 10px;border:1px solid #c9d9cf;border-radius:9px;background:#f4f7f2;color:#315545;font-size:12px;font-weight:750}
+.storyboardSceneActions [data-video-stories-remix]{display:inline-flex;align-items:center;gap:6px;background:#e8f6ef;border-color:#addac5;color:#096b52}
+.storyboardSceneActions [data-video-stories-remix]:disabled{opacity:.52;cursor:not-allowed}
 .storyboardPhotoControls{display:grid;gap:5px;padding:8px;border:1px dashed #bdd2c4;border-radius:10px;background:#f7faf5}
 .storyboardPhotoControls span,.storyboardPhotoControls small{font-size:11px;color:#536d5e}
 .storyboardEmpty{display:grid;justify-items:start;gap:8px;padding:16px;border:1px dashed #c8d9cd;border-radius:14px;background:#f7faf5;color:#466354}
 .storyboardFooterActions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-.storyboardFooterActions button{display:inline-flex;align-items:center;gap:6px;min-height:42px;padding:8px 11px;border:1px solid #c8d9ce;border-radius:10px;background:#f7faf5;color:#315645;font-weight:750}
+.storyboardFooterActions button{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:8px 11px;border:1px solid #c8d9ce;border-radius:10px;background:#f7faf5;color:#315645;font-weight:750}
+.storyboardFooterActions [data-video-stories-to-extra]{background:var(--hh-studio-primary);border-color:var(--hh-studio-primary);color:white}
 .montagePreferences [data-video-stories-paid-gate]{padding:9px 11px;border:1px solid #e3d3ac;border-radius:10px;background:#fff9e9;color:#705b31;font-size:12px;line-height:1.45}
 @media(min-width:760px){.storyboardSceneList{grid-template-columns:repeat(2,minmax(0,1fr))}}
 

@@ -114,3 +114,27 @@ test('real five-scene WebKit acceptance uses original UI, local-only requests, d
  assert.match(script,/url\.origin===origin/);
  assert.doesNotMatch(script,/method:\s*['"]POST|api\/instagram|api\/payment/);
 });
+
+test("one verified Story scene can change without rebuilding the other four or invoking a paid provider",()=>{
+ const start=studio.indexOf("const replaceStoryboardSource=");
+ const end=studio.indexOf("async function transcribeVideoVoice",start);
+ const replace=studio.slice(start,end);
+ assert.match(replace,/const remixStoryboardSource=\(index:number,choices:readonly \{id:string\}\[\]\)=>/);
+ assert.match(replace,/choices\.find\(item=>item\.id!==previous\)/);
+ assert.match(replace,/replaceStoryboardSource\(index,alternative\.id\)/);
+ assert.match(replace,/plan\.shots\.map\(\(shot,i\)=>i===index\?/);
+ assert.match(replace,/plan\.sceneChoices\.map\(\(choice,i\)=>i===index\?/);
+ assert.match(replace,/verifiedSceneAspect\(verified,aspect\)/);
+ assert.match(replace,/canonicalSourceMasterKey\(verified\)/);
+ assert.match(replace,/setResult\(null\)/);
+ assert.doesNotMatch(replace,/fetch\(|appFetch\(|paidProviderRequests|postVideoCreditAction/);
+ assert.match(studio,/data-video-stories-remix=\{index\}/);
+ assert.match(studio,/!choices\.some\(item=>item\.id!==shot\.sceneId\)/);
+ assert.match(studio,/data-video-stories-to-extra/);
+ assert.match(mobile,/data-video-stories-remix/);
+ assert.match(mobile,/min-height:44px/);
+ const storyAction=studio.slice(studio.indexOf("const createFiveSceneStory="),studio.indexOf("const replaceStoryboardSource="));
+ assert.match(storyAction,/setMontagePanel\("settings"\)/,
+   "keep the actual scene editors visible until the user explicitly chooses quality");
+ assert.doesNotMatch(storyAction,/setMontagePanel\("promo"\)/);
+});
