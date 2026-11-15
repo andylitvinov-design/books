@@ -4,6 +4,8 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {portraitMouthAperture,speechRms,speechPcmEnvelope} from '../lib/coaching/living-portrait-motion.mjs'
 import {normalizeMyCoachFishRequest,myCoachFishConfig} from '../lib/coaching/my-coach-fish-voice.mjs'
+import {COACH_PRESENTATIONS,getCoachPresentation,coachPresentationVoice}
+  from '../lib/coaching/persona-presentations.mjs'
 import {
   COACH_PERSONAS, COACH_PERSONA_VERSION, COACH_LOCALES, COACH_TOPICS, COACH_SAFETY_RULES,
   getCoachPersona, localCoachText, normalizeCoachSettings, resolveCoachSelection,
@@ -235,4 +237,73 @@ test('natural voice is independently opt-in for the first microphone-only turn, 
   assert.match(ui,/replayPlayerRef\.current\?\.cancel\(\)/)
   for(const locale of ['en:','ru:','es:'])assert.ok(ui.includes(locale))
   assert.doesNotMatch(ui,/localStorage|sessionStorage/)
+})
+
+test('each of eight AI personae introduces its own approach and unique speech style in EN/RU/ES',()=>{
+  assert.deepEqual(Object.keys(COACH_PRESENTATIONS).sort(),COACH_PERSONAS.map(p=>p.id).sort())
+  for(const locale of COACH_LOCALES){
+    const voices=new Set(),introductions=new Set(),styles=new Set()
+    for(const persona of COACH_PERSONAS){
+      const intro=getCoachPresentation(persona.id,locale)
+      assert.ok(intro&&intro.text.length>=130&&intro.text.length<=500,persona.id+'/'+locale)
+      assert.ok(intro.text.includes(localCoachText(persona.name,locale)),persona.id+'/'+locale+' introduces own name')
+      assert.ok(intro.text.includes('?'),persona.id+'/'+locale+' begins with one real question')
+      assert.ok(intro.style.length>15,persona.id+'/'+locale+' names its communication style')
+      assert.ok(!introductions.has(intro.text),persona.id+' introduction is original')
+      assert.ok(!styles.has(intro.style),persona.id+' accent is distinct')
+      introductions.add(intro.text);styles.add(intro.style)
+      voices.add(intro.voice.rate+'/'+intro.voice.pitch)
+      const behavior=buildCoachBehaviorPolicy(persona.id,{},locale)
+      assert.ok(behavior.systemInstructions.includes(intro.style),persona.id+' model keeps its style')
+    }
+    assert.equal(introductions.size,8)
+    assert.equal(styles.size,8)
+    assert.equal(voices.size,8)
+  }
+  assert.equal(getCoachPresentation('__proto__'),null)
+  assert.equal(getCoachPresentation('unknown'),null)
+  assert.equal(coachPresentationVoice('__proto__','ru',[]),null)
+})
+
+test('speech profiles select available localized device voices, never an outside audio provider',()=>{
+  const voices=[
+    {name:'local-one',lang:'ru-RU',localService:true},
+    {name:'local-two',lang:'ru-RU',localService:true},
+    {name:'cloud-other',lang:'ru-RU',localService:false},
+    {name:'English voice',lang:'en-GB',localService:true}
+  ]
+  for(const persona of COACH_PERSONAS){
+    const profile=coachPresentationVoice(persona.id,'ru',voices)
+    assert.equal(profile.lang,'ru-RU')
+    assert.ok(profile.voice.localService)
+    assert.ok(profile.rate>=0.85&&profile.rate<=1.12)
+    assert.ok(profile.pitch>=0.88&&profile.pitch<=1.2)
+    assert.equal(coachPresentationVoice(persona.id,'es',[]).voice,null)
+    assert.equal(coachPresentationVoice(persona.id,'en',voices).voice.name,'English voice')
+  }
+})
+
+test('My Coach opens a real one-tap audio presentation before the complex dialogue workspace',()=>{
+  const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+  const intro=readFileSync(new URL('../components/my-coach-voice-introduction.jsx',import.meta.url),'utf8')
+  const css=readFileSync(new URL('../components/my-coach-live-dialogue.module.css',import.meta.url),'utf8')
+  const introCss=readFileSync(new URL('../components/my-coach-voice-introduction.module.css',import.meta.url),'utf8')
+  assert.match(ui,/const \[introductionComplete,setIntroductionComplete\]=useState\(false\)/)
+  assert.match(ui,/\{!introductionComplete&&<MyCoachVoiceIntroduction/)
+  assert.match(ui,/onReady=\{\(\)=>setIntroductionComplete\(true\)\}/)
+  assert.match(ui,/\{introductionComplete&&<section className=\{styles\.sessionProgress\}/)
+  assert.match(ui,/\{introductionComplete&&<>/)
+  assert.match(intro,/data-my-coach-audio-introduction=\{personaId\}/)
+  assert.match(intro,/data-my-coach-start-audio-intro/)
+  assert.match(intro,/const synth=window\.speechSynthesis,Utterance=window\.SpeechSynthesisUtterance/)
+  assert.match(intro,/synth\.speak\(utterance\)/)
+  assert.match(intro,/utterance\.onend=\(\)=>\{if\(speech\.current===utterance\)finish\(\)\}/)
+  assert.match(intro,/utterance\.onerror=\(\)=>\{if\(speech\.current===utterance\)fail\(\)\}/)
+  assert.match(intro,/onClick=\{start\}/)
+  assert.match(intro,/onClick=\{finish\}/)
+  assert.match(ui,/const profile=coachPresentationVoice\(personaId,spokenLocale,voices\)/)
+  assert.doesNotMatch(intro,/fetch\(|MediaRecorder|getUserMedia|trainingUseConsent|api\/app\/my-coach/)
+  assert.match(css,/data-introduction-complete='false'/)
+  assert.match(introCss,/@media\(max-width:699px\)/)
+  assert.match(introCss,/min-height:55px/)
 })

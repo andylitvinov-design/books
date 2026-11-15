@@ -4,6 +4,8 @@ import {useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
 import {ArrowRight,Heart,Home,Keyboard,Leaf,Captions,PhoneOff,LockKeyhole,MessageCircle,Pencil,Send,ShieldCheck,Sparkles,Target,UserRound,Video,Volume2,Zap} from 'lucide-react'
 import {getCoachPersona,localCoachText,coachStagePrompt} from '@/lib/coaching/persona-registry.mjs'
+import {coachPresentationVoice} from '@/lib/coaching/persona-presentations.mjs'
+import MyCoachVoiceIntroduction from '@/components/my-coach-voice-introduction'
 import {coachingBrainSafety,coachingBrainBoundary,coachingBrainStageDecision,offlineCoachingBrainReply,selectCoachingBrainMethod} from '@/lib/personal-coaching/coaching-brain.mjs'
 import {classifyWisdomRequest} from '@/lib/coaching/wisdom-retrieval.mjs'
 import {coachTurnWindow} from '@/lib/coaching/coach-turn-window.mjs'
@@ -137,6 +139,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [recordedMode,setRecordedMode]=useState(false)
   const [showCaptions,setShowCaptions]=useState(false)
   const [turns,setTurns]=useState([])
+  const [introductionComplete,setIntroductionComplete]=useState(false)
   const [busy,setBusy]=useState(false)
   const [error,setError]=useState('')
   const [authRequired,setAuthRequired]=useState(false)
@@ -158,6 +161,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const portraitHeroRef=useRef(null)
   const replaySpeechRef=useRef(null),replayTimerRef=useRef(null)
   useEffect(()=>()=>pending.current?.abort(),[])
+  useEffect(()=>setIntroductionComplete(false),[personaId])
   useEffect(()=>{
     // Avoid the known WebKit 27 silent-result bug by selecting the reliable mode
     // on affected iPhones, but NEVER automatically opt in to uploading audio.
@@ -325,6 +329,15 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     const chosen=voices.find(v=>v.lang?.toLowerCase()===utterance.lang.toLowerCase())||
       voices.find(v=>v.lang?.toLowerCase().startsWith(spokenLocale+'-'))
     if(chosen)utterance.voice=chosen
+    // Keep authored personas' distinctive pace and tone throughout the
+    // conversation, not only during their spoken introductions.
+    if(!wizardVoice){
+      const profile=coachPresentationVoice(personaId,spokenLocale,voices)
+      if(profile){
+        utterance.rate=profile.rate;utterance.pitch=profile.pitch
+        if(profile.voice)utterance.voice=profile.voice
+      }
+    }
     let started=false
     const clear=()=>{
       if(replayTimerRef.current)clearTimeout(replayTimerRef.current)
@@ -504,7 +517,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       if(pending.current===controller){pending.current=null;setBusy(false)}
     }
   }
-  return <section className={styles.root} lang={lang} data-my-coach-live-dialogue={personaId} data-my-coach-immersive-session data-session-visual-v2 data-session-visual-v3>
+  return <section className={styles.root} lang={lang} data-my-coach-live-dialogue={personaId} data-my-coach-immersive-session data-session-visual-v2 data-session-visual-v3 data-introduction-complete={introductionComplete?'true':'false'}>
     <header className={styles.sessionTopbar}>
       <Link className={styles.sessionBrand} href={'/'+lang+'/coaching/sessions'} aria-label="Holistic House">
         <span className={styles.sessionBrandMark} aria-hidden="true">✿</span><span>Holistic House</span>
@@ -530,7 +543,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         <p>{latestCoachText.length>160?latestCoachText.slice(0,157).trimEnd()+'…':latestCoachText}</p>
       </div>}
     </section>
-    <section className={styles.sessionProgress} aria-label={ui.stageQuestion}>
+    {!introductionComplete&&<MyCoachVoiceIntroduction personaId={personaId} locale={lang} name={name}
+      onReady={()=>setIntroductionComplete(true)} onVoiceStateChange={setVoiceState}/>}
+    {introductionComplete&&<section className={styles.sessionProgress} aria-label={ui.stageQuestion}>
       <div className={styles.sessionProgressText}><strong>{ui.step} {visibleStageIndex+1} {ui.of} 6</strong>
         <span>{currentStage==='safety'?ui.safety:ui.stages[visibleStageIndex]}</span></div>
       <div className={styles.sessionProgressSegments} role="progressbar" aria-label={ui.stageQuestion}
@@ -538,8 +553,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         {ui.stages.map((label,index)=><span key={label} data-complete={index<=visibleStageIndex?'true':undefined}
           data-current={index===visibleStageIndex?'true':undefined}/>)}
       </div>
-    </section>
+    </section>}
     </div>
+    {introductionComplete&&<>
     <section className={styles.voiceWorkspace} aria-label={ui.voice}>
       <div className={styles.voiceControls}>
         <button type="button" className={styles.captionsControl} onClick={()=>setShowCaptions(value=>!value)}
@@ -701,5 +717,6 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       <Link href={'/'+lang+'/holistic-support/mandala'}><Video size={21} aria-hidden="true"/><span>{ui.video}</span></Link>
       <Link href={'/'+(lang==='es'?'en':lang)+'/app/portrait'}><UserRound size={21} aria-hidden="true"/><span>{ui.profile}</span></Link>
     </nav>
+    </>}
   </section>
 }
