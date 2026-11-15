@@ -332,15 +332,14 @@
 .generateProgress{border:0;background:none;padding:0 2px;margin:-6px 0 2px;gap:0}
 .generateProgress progress{display:block;height:5px;border-radius:999px;overflow:hidden}
 .progressQuestionnaire{margin:0;max-width:100%}
-.root[data-ready-state="complete"] > [data-ready-generate-new]{margin:10px 0 2px}
-.root[data-ready-state="complete"] > [data-ready-generate-new]>button{display:flex;align-items:center;justify-content:center;gap:12px;
-  width:100%;min-height:53px;padding:11px 17px;border:1px solid #08775c;border-radius:17px;
-  background:linear-gradient(110deg,#178e70,#006a4d);color:#fff;
-  box-shadow:0 3px 11px rgba(22,58,45,.09);cursor:pointer;
+.root[data-ready-state="complete"] > [data-ready-generate-new]{display:flex;align-items:center;justify-content:center;gap:12px;
+  margin:10px 0 2px;width:100%;min-height:53px;padding:11px 17px;
+  border:1px solid #08775c;border-radius:17px;background:linear-gradient(110deg,#178e70,#006a4d);
+  color:#fff;box-shadow:0 3px 11px rgba(22,58,45,.09);cursor:pointer;
   font:800 clamp(14px,4vw,18px)/1.25 Arial,Helvetica,sans-serif}
-.root[data-ready-state="complete"] > [data-ready-generate-new]>button strong{flex:1;text-align:center}
-.root[data-ready-state="complete"] > [data-ready-generate-new]>button svg{flex:none}
-.root[data-ready-state="complete"] > [data-ready-generate-new]>button:focus-visible{outline:3px solid #176e6e;outline-offset:3px}
+.root[data-ready-state="complete"] > [data-ready-generate-new] strong{flex:1;text-align:center}
+.root[data-ready-state="complete"] > [data-ready-generate-new] svg{flex:none}
+.root[data-ready-state="complete"] > [data-ready-generate-new]:focus-visible{outline:3px solid #176e6e;outline-offset:3px}
 @media(max-width:600px){
   .root[data-ready-state="complete"] .journey>button,
   .root[data-ready-state="choose"] .journey>button{
