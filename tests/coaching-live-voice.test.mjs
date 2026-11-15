@@ -353,8 +353,8 @@ test('My Coach has private default TTS, no stale transcription, and tap-to-recov
 test('iOS Safari naturally ending with interim-only speech commits another user turn exactly once',()=>{
   const loop=source('components/my-coach-speech-loop.jsx')
   const onend=loop.slice(loop.indexOf('    recognition.onend=()=>{'),loop.indexOf('    const startRecognition='))
-  assert.ok(onend.includes("if(finished.length>=3)void deliver(appendSpokenAnswer(draftAtStartRef.current,finished,1200))"))
-  assert.ok(onend.includes("if(recovered.length>=3){"))
+  assert.ok(onend.includes("if(hasCoachSpokenAnswer(finished))void deliver(appendSpokenAnswer(draftAtStartRef.current,finished,1200))"))
+  assert.ok(onend.includes("if(hasCoachSpokenAnswer(recovered)){"))
   assert.ok(onend.includes("void deliver(appendSpokenAnswer(draftAtStartRef.current,recovered,1200))"))
   assert.ok(!onend.includes("draftRef.current?.(appendSpokenAnswer(draftAtStartRef.current,recovered,1200))"))
   const stopped=loop.slice(loop.indexOf('  function stopVoice(){'),loop.indexOf('  stopRef.current=stopVoice'))
