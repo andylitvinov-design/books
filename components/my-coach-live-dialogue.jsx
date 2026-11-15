@@ -11,7 +11,7 @@ import {coachTurnWindow} from '@/lib/coaching/coach-turn-window.mjs'
 import {coachGoalTurn} from '@/lib/coaching/goal-turn.mjs'
 import styles from './my-coach-live-dialogue.module.css'
 import MyCoachSpeechLoop from './my-coach-speech-loop'
-import {startCoachingMp3Playback} from '@/lib/personal-coaching/streamed-mp3-playback.mjs'
+import {startCoachingMp3Playback,unlockCoachingAudioContext,shouldUseCoachingWebAudio} from '@/lib/personal-coaching/streamed-mp3-playback.mjs'
 import {coachSpokenText} from '@/lib/coaching/coach-spoken-text.mjs'
 import {detectedSpeechLocale} from '@/lib/personal-coaching/my-coach-dictation.mjs'
 import CoachingAvatar from '@/components/app/coaching-avatar'
@@ -141,8 +141,28 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const pending=useRef(null),composerRef=useRef(null),transcriptRef=useRef(null)
   const composerDetailsRef=useRef(null),speechRef=useRef(null)
   const replayControllerRef=useRef(null),replayPlayerRef=useRef(null)
-  const portraitHeroRef=useRef(null)
+  const portraitHeroRef=useRef(null),sessionRootRef=useRef(null)
   const replaySpeechRef=useRef(null),replayTimerRef=useRef(null)
+  const replayAudioContextRef=useRef(null)
+  useEffect(()=>{
+    // The iOS software keyboard resizes the visual viewport but not always
+    // CSS 100dvh. Keep the composer anchored to actual visible pixels.
+    const root=sessionRootRef.current,viewport=window.visualViewport
+    const sync=()=>{
+      const height=viewport?.height||window.innerHeight
+      if(root&&Number.isFinite(height)&&height>250)
+        root.style.setProperty('--hh-coach-visible-height',Math.floor(height)+'px')
+    }
+    sync()
+    viewport?.addEventListener('resize',sync)
+    viewport?.addEventListener('scroll',sync)
+    window.addEventListener('resize',sync)
+    return()=>{
+      viewport?.removeEventListener('resize',sync)
+      viewport?.removeEventListener('scroll',sync)
+      window.removeEventListener('resize',sync)
+    }
+  },[])
   useEffect(()=>()=>pending.current?.abort(),[])
   // Private shareable voice preset, not stored in the account or sent to providers.
   useEffect(()=>{
@@ -245,6 +265,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   useEffect(()=>{
     if(voiceState.phase!=='speaking')setPortraitLevel(null)
   },[voiceState.phase,personaId])
+  function ensureReplayAudioOutput(){
+    if(shouldUseCoachingWebAudio(window.navigator)&&
+      (!replayAudioContextRef.current||replayAudioContextRef.current.state==='closed'))
+      replayAudioContextRef.current=unlockCoachingAudioContext()
+  }
   function replayCoachReply(overrideText){
     // A typed turn may contain the new answer before React commits transcript.
     const spokenText=typeof overrideText==='string'?overrideText:latestCoachText
@@ -259,6 +284,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     // Typed Send stops any listening loop first; its reply must still speak,
     // even before React commits the idle phase in the current render.
     if(!spokenText||replaying)return
+    ensureReplayAudioOutput()
     setPlaybackNotice('');setReplayBlocked(false)
     // Voice-only turns already have an in-page privacy notice. Fish/Chirp has
     // its own independent, unchecked consent; the text-composer checkbox is
@@ -281,16 +307,36 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         if(!response.ok||!response.body)throw Error('TTS_UNAVAILABLE')
         if(controller.signal.aborted)return
         replayPlayerRef.current=startCoachingMp3Playback(response,{
+          audioContext:replayAudioContextRef.current,
           onLevel:level=>{if(!controller.signal.aborted&&replayControllerRef.current===controller)setPortraitLevel(level)},
           onStart:()=>{if(!controller.signal.aborted&&replayControllerRef.current===controller){setReplayBlocked(false);setReplaying(true);setPlaybackNotice('');setVoiceState({phase:'speaking',beat:0})}},
-          onBlocked:()=>{if(!controller.signal.aborted&&replayControllerRef.current===controller){setReplayBlocked(true);setReplaying(false);setPlaybackNotice(voiceGate.tapToHear);setVoiceState({phase:'idle',beat:0})}},
+          onBlocked:()=>{
+            if(controller.signal.aborted||replayControllerRef.current!==controller)return
+            replayControllerRef.current=null
+            replayPlayerRef.current?.cancel();replayPlayerRef.current=null
+            setReplayBlocked(false);setReplaying(false)
+            replayCoachReplyOnDevice(spokenText)
+          },
           onEnd:()=>{if(replayControllerRef.current!==controller)return;replayControllerRef.current=null;replayPlayerRef.current=null;setReplayBlocked(false);setReplaying(false);setVoiceState({phase:'idle',beat:0})},
-          onError:()=>{if(replayControllerRef.current!==controller)return;replayControllerRef.current=null;replayPlayerRef.current=null;setReplayBlocked(false);setReplaying(false);setVoiceState({phase:'idle',beat:0});setPlaybackNotice(voiceGate.playbackUnavailable)}
+          onError:()=>{
+            if(replayControllerRef.current!==controller)return
+            replayControllerRef.current=null;replayPlayerRef.current=null
+            setReplayBlocked(false);setReplaying(false)
+            replayCoachReplyOnDevice(spokenText)
+          }
         })
-      }).catch(()=>{if(!controller.signal.aborted&&replayControllerRef.current===controller){replayControllerRef.current=null;setReplaying(false);setVoiceState({phase:'idle',beat:0});setPlaybackNotice(voiceGate.playbackUnavailable)}})
+      }).catch(()=>{
+        if(!controller.signal.aborted&&replayControllerRef.current===controller){
+          replayControllerRef.current=null;setReplaying(false)
+          replayCoachReplyOnDevice(spokenText)
+        }
+      })
       return
     }
-    // Free private-device replay works even if Fish/Google is not enabled.
+    replayCoachReplyOnDevice(spokenText)
+  }
+  function replayCoachReplyOnDevice(spokenText){
+    // Independent local fallback. Never sends a second provider request.
     const synth=window.speechSynthesis,Utterance=window.SpeechSynthesisUtterance
     if(!synth?.speak||!Utterance){setPlaybackNotice(voiceGate.playbackUnavailable);return}
     const utterance=new Utterance(spokenText.slice(0,900))
@@ -350,6 +396,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       replaySpeechRef.current=null
       replayControllerRef.current=null
       replayPlayerRef.current=null
+      const context=replayAudioContextRef.current
+      replayAudioContextRef.current=null
+      if(context)try{void context.close?.().catch?.(()=>{})}catch{}
       setReplayBlocked(false);setReplaying(false)
     }
     const onHidden=()=>{if(document.hidden){stopReplay();setVoiceState({phase:'idle',beat:0})}}
@@ -363,6 +412,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       if(replayTimerRef.current)clearTimeout(replayTimerRef.current)
       if(replaySpeechRef.current)try{window.speechSynthesis?.cancel()}catch{}
       replaySpeechRef.current=null
+      if(replayAudioContextRef.current)
+        try{void replayAudioContextRef.current.close?.().catch?.(()=>{})}catch{}
+      replayAudioContextRef.current=null
     }
   },[])
 
@@ -375,11 +427,17 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
 
   async function send(event){
     event.preventDefault()
-    speechRef.current?.stop?.()
+    // Preserve Safari's unlocked audio output through the asynchronous model
+    // round trip. The old stop() destroyed it and left typed replies silent.
+    const liveVoice=speechRef.current?.pauseForTypedTurn?.()===true
+    if(!liveVoice)ensureReplayAudioOutput()
     const result=await sendMessage(draft.trim())
-    // Text turns use the same natural TTS path as microphone turns only after
-    // explicit voice consent. Never send safety/boundary replies to a vendor.
-    if(result?.reply&&!['safety','boundary'].includes(result.mode))replayCoachReply(result.reply)
+    if(result?.reply){
+      const spokeInSession=liveVoice&&speechRef.current?.speakReply?.(result)
+      if(!spokeInSession&&!['safety','boundary'].includes(result.mode))
+        replayCoachReply(result.reply)
+      if(liveVoice&&!spokeInSession)speechRef.current?.resumeAfterTypedFailure?.()
+    }else if(liveVoice)speechRef.current?.resumeAfterTypedFailure?.()
     return result
   }
   async function sendMessage(raw,{voiceTurn=false}={}){
@@ -482,7 +540,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       if(pending.current===controller){pending.current=null;setBusy(false)}
     }
   }
-  return <section className={styles.root} lang={lang} data-my-coach-live-dialogue={personaId} data-my-coach-immersive-session data-session-visual-v2 data-session-visual-v3 data-session-visual-v4>
+  return <section ref={sessionRootRef} className={styles.root} lang={lang} data-my-coach-live-dialogue={personaId} data-my-coach-immersive-session data-session-visual-v2 data-session-visual-v3 data-session-visual-v4>
     <header className={styles.sessionTopbar}>
       <Link className={styles.sessionBrand} href={'/'+lang+'/coaching/sessions'} aria-label="Holistic House">
         <span className={styles.sessionBrandMark} aria-hidden="true">✿</span><span>Holistic House</span>
@@ -592,12 +650,14 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           </button>
         </form>}
         {error&&<p className={styles.error} role="alert">{error}</p>}
+        <details className={styles.sessionMore}><summary>{lang==='ru'?'Дополнительно':lang==='es'?'Más opciones':'More options'}</summary>
         <details className={styles.consentDetails}><summary>{captions.details}</summary>
           <p>{t.consent}</p><p className={styles.privacy}><ShieldCheck size={16} aria-hidden="true"/>{t.privacy}</p>
         </details>
         {onGuided&&<button className={styles.guidedFallback} type="button" onClick={onGuided}>
           {ui.guided}<ArrowRight size={16} aria-hidden="true"/>
         </button>}
+        </details>
       </details>
       </div>
     </section>
