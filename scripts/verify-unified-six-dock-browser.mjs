@@ -874,10 +874,22 @@ try{
    "My Space retains six canonical sections for guest and signed-in users");
  assert.equal(await page.locator('[data-hh-unified-dock] [data-unified-dock-item="profile"][aria-current="page"]').count(),1);
  assert.equal(await page.locator('.mobile-bottom-navigation:visible').count(),0);
+ // In Profile, every account action is gated on an explicit guest click.
+ // The sitewide public test catalogue remains accessible outside My Space.
  await publicTests.click();
- await page.waitForURL(/\/ru\/client\/tests\/?$/, {timeout:45000});
- await page.locator('main[lang="ru"]').waitFor({state:"visible",timeout:45000});
- results.push({journey:"Public Profile → My Space Today guest overview → explicit public Tests without forced login",passed:true});
+ const login=page.locator('dialog[data-profile-auth-dialog]');
+ await login.waitFor({state:"visible",timeout:45000});
+ assert.equal(await login.getByRole('button',{name:'Продолжить через Google'}).isVisible(),true,
+   'Profile guest action offers the existing Google OAuth entry');
+ assert.match(page.url(),/\/ru\/app\/portrait\/?$/,
+   'clicking a Profile action keeps the guest on Life until authenticated');
+ await login.getByRole('button',{name:'Продолжить просмотр'}).click();
+ await login.waitFor({state:'hidden',timeout:15000});
+ // The mode switch itself never prompts or creates a private account.
+ await page.locator('[data-profile-mode="work"]').click();
+ await page.waitForURL(/\/ru\/practice\/?$/,{timeout:45000});
+ await page.locator('[data-practice-showcase]').waitFor({state:'visible',timeout:45000});
+ results.push({journey:"Public Profile → guest action opens OAuth choice → dismiss → free Life/Work mode switch",passed:true});
 
 }finally{await browser.close();}
 writeFileSync(folder+"/results.json",JSON.stringify(results,null,2));
