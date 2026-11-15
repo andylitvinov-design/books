@@ -102,8 +102,52 @@ test('blocked Safari MP3 can resume without requesting more Fish or Chirp quota'
   const loop=source('components/my-coach-speech-loop.jsx')
   assert.ok(loop.includes('resumeVoice(){'))
   assert.ok(loop.includes('blockedResumeRef.current()'))
-  assert.ok(loop.includes('void player.resume()'))
+  assert.ok(loop.includes('audioContext:audioContextRef.current'))
+  assert.ok(loop.includes('pauseForTypedTurn(){'))
+  assert.ok(loop.includes('speakReply(result){'))
   assert.ok(page.includes('speechRef.current?.resumeVoice?.()'))
   assert.ok(page.includes('void replayPlayerRef.current.resume()'))
   assert.ok(page.includes('onBlocked:'))
 })
+
+test('the iPhone microphone and status are always in one stable control row',()=>{
+  const page=source('components/my-coach-live-dialogue.jsx')
+  const loop=source('components/my-coach-speech-loop.jsx')
+  const css=source('components/my-coach-live-dialogue.module.css')
+  const latest=css.slice(css.lastIndexOf('/* Owner screenshot 2026-11-14:'))
+  assert.ok(latest.length>1000,'fixed semantic status and mobile viewport override exist')
+  for(const token of [
+    'data-coach-microphone-icon','data-coach-speaker-indicator',
+    'data-coach-voice-status','<Mic size={19}',
+  ])assert.ok(loop.includes(token),token)
+  assert.ok(latest.includes('[data-coach-voice-status]'))
+  assert.ok(latest.includes('top:calc(100% + 1px)'))
+  assert.ok(latest.includes('margin:0 auto;padding:3px 5px 14px'))
+  assert.ok(latest.includes('min-height:0;max-height:none'))
+  assert.ok(page.includes('ref={sessionRootRef}'))
+  assert.ok(page.includes("viewport?.addEventListener('resize',sync)"))
+  assert.ok(page.includes("'--hh-coach-visible-height'"))
+  assert.ok(latest.includes('var(--hh-coach-visible-height,100dvh)'))
+  assert.ok(page.includes('className={styles.sessionMore}'))
+  for(const width of [320,354,390,430])
+    assert.ok(width-20>270,'room for five aligned controls at '+width+' CSS px')
+});
+
+test('one Play speaks on-device immediately and typed replies keep unlocked sound',()=>{
+  const page=source('components/my-coach-live-dialogue.jsx')
+  const loop=source('components/my-coach-speech-loop.jsx')
+  const audio=source('lib/personal-coaching/streamed-mp3-playback.mjs')
+  const intro=loop.indexOf("if(result.mode==='intro'){")
+  const remote=loop.indexOf("if((naturalVoice||cloudAgreed)&&cloudAvailable")
+  assert.ok(intro>0&&intro<remote,'first welcome uses synchronous voice from the Play gesture')
+  assert.match(loop.slice(intro,remote),/speakOnDevice\(\)/)
+  for(const part of [
+    'unlockCoachingAudioContext()','pauseForTypedTurn(){','speakReply(result){',
+    'audioContext:audioContextRef.current','data-coach-microphone-icon'
+  ])assert.ok(loop.includes(part),part)
+  assert.ok(page.includes('const liveVoice=speechRef.current?.pauseForTypedTurn?.()===true'))
+  assert.ok(page.includes('speechRef.current?.speakReply?.(result)'))
+  assert.ok(page.includes('audioContext:replayAudioContextRef.current'))
+  assert.ok(audio.includes('audioContext.decodeAudioData'))
+  assert.doesNotMatch(loop,/MediaRecorder|audio-storyboard|\bFormData\b/)
+});
