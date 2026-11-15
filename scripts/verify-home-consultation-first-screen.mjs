@@ -44,8 +44,42 @@ for (const engine of [chromium, webkit]) {
           assert.ok(card && book && review, label + ': slider, paid CTA and free diagnosis are rendered');
           assert.ok(book.y >= card.y && book.y + book.height <= card.y + card.height,
             label + ': consultation CTA stays inside the first slider');
-          assert.ok(book.y >= 0 && book.y + book.height <= 844 - 72,
-            label + ': consultation CTA fits above mobile bottom navigation without scrolling');
+          // The owner's new front page is My Space: six tabs above video,
+          // four navigation actions beneath it, then six main categories.
+          // The retained consultation carousel is now further down the page.
+          const firstTabs = page.locator('[data-profile-tab="today"]');
+          // EN/RU now use the approved presentation's click-to-play facade,
+          // while ES retains the accessible scenic <video> fallback.
+          const firstVideo = page.locator(
+            '[data-profile-video-hero] .site-video-frame, [data-profile-video-hero] video'
+          ).first();
+          if (locale === 'en' || locale === 'ru') {
+            const localized = page.locator('[data-profile-presentation-locale]');
+            assert.equal(await localized.getAttribute('data-profile-presentation-locale'), locale,
+              label + ': presentation language matches the selected site locale');
+            assert.equal(await localized.locator('.site-video-play').count(), 1,
+              label + ': approved presentation has a real play action before playback');
+            assert.equal(await localized.locator('iframe').count(), 0,
+              label + ': presentation does not auto-play or mount third-party playback');
+          } else {
+            assert.equal(await firstVideo.getAttribute('controls'), '',
+              label + ': Spanish fallback is a controllable scenic player');
+          }
+          const firstQuick = page.locator('[data-profile-quick-actions]');
+          const firstTopics = page.locator('[data-my-space-topics]');
+          const [tabBox, videoBox, quickBox, topicBox] = await Promise.all([
+            firstTabs.boundingBox(), firstVideo.boundingBox(),
+            firstQuick.boundingBox(), firstTopics.boundingBox(),
+          ]);
+          assert.ok(tabBox && videoBox && quickBox && topicBox,
+            label + ': My Space navigation, video and six directions render');
+          assert.ok(tabBox.y + tabBox.height <= videoBox.y + 1 &&
+            videoBox.y + videoBox.height <= quickBox.y + 1 &&
+            quickBox.y + quickBox.height <= topicBox.y + 1,
+            label + ': navigation above video, actions below, topics after');
+          assert.equal(await firstTopics.locator('[data-my-space-topic]').count(), 6,
+            label + ': all six editorial directions have real links');
+          assert.ok(videoBox.y < 844 - 72, label + ': video starts on the first mobile screen');
           assert.ok(book.height >= 44 && review.height >= 44, label + ': finger-sized tap areas');
           assert.equal((await paid.innerText()).trim().replace(/\s+/g, ' '), paidCopy,
             label + ': exact localized €50 CTA');
