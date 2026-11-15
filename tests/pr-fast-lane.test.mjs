@@ -574,7 +574,10 @@ test('CI-only fast lane retains exact policy checks and refuses broad source ski
   assert.match(core,/node scripts\/ci-specialist-aggregate\.mjs/);
   assert.ok(actionlint.includes("'tests/ci-workflow-globs.test.mjs'"),'Changing the CI syntax regression must launch its own check');
   for(const forbidden of ['package.json','package-lock.json','app/api/app','app/api/auth','supabase/migrations','AGENTS.md']) {
-    const classifier=core.split('case "$f" in').slice(-1)[0].split('*) ci_only=false')[0];
+    // Isolate the CI-only allowlist itself: unrelated later shell cases (for
+    // example lint fallbacks) must not be mistaken for release routing.
+    const classifier=core.split('# CI-only allowlist')[1]?.split('*) ci_only=false')[0];
+    assert.ok(classifier?.includes('case "$f" in'),'Missing bounded CI-only allowlist');
     // A pinned CI-only parser may have its own nested package.json/lock;
     // still forbid the root dependency manifests from using CI-only mode.
     const rootManifest = forbidden === 'package.json' || forbidden === 'package-lock.json';
