@@ -67,3 +67,19 @@ test("Ready replaces four sliders only in the generating panel; Goal owns its ex
   assert.match(css,/repeat\(5,minmax\(0,1fr\)\)/);
   assert.match(css,/min-height:46px/);
 });
+
+test("real macOS WebKit verifies the seven-card Ready self-check during an actual export",()=>{
+  const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
+  const watch=browser.indexOf("window.__hhReadyCheckInObserver=new MutationObserver(scan)");
+  const click=browser.indexOf("await readyGenerate.click()",watch);
+  assert.ok(watch>=0&&click>watch,"watch real Ready DOM before trusted Generate click");
+  assert.match(browser,/\[data-ready-checkin\] \[data-ready-sequential-checkin\]/);
+  assert.match(browser,/\[data-ready-checkin-score\]/);
+  assert.match(browser,/\[data-ready-generating\]/);
+  assert.match(browser,/observation\.scoreButtons,11/);
+  assert.match(browser,/\[data-ready-checkin\]"\)\)\.toHaveCount\(0\)/);
+  assert.doesNotMatch(browser,/\[data-ready-checkin\] \[data-video-checkin\]/,
+    "no stale four-slider selector after the approved seven-question design");
+  assert.doesNotMatch(browser,/\[data-video-effect-reopen\]/,
+    "the removed floating survey pill is not a valid acceptance criterion");
+});

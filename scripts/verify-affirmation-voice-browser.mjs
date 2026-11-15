@@ -1289,15 +1289,44 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           "Ready Generate must sit directly beneath the video");
         await expect(readyGenerate).toBeEnabled({timeout:30000});
         phase(engine,"montage-free-navigated-ready");
+        // Observe the real seven-step check-in before the trusted Generate tap.
+        // Fast local exports can finish and unmount the reflection before the
+        // next Playwright assertion; transient DOM evidence must not be lost.
+        await page.evaluate(()=>{
+          const evidence={progress:false,step:false,scoreButtons:0,photo:false};
+          window.__hhReadyInlineCheckInEvidence=evidence;
+          const scan=()=>{
+            const progress=document.querySelector('[data-ready-generating]');
+            const step=document.querySelector('[data-ready-checkin] [data-ready-sequential-checkin]');
+            const scoreButtons=step?.querySelectorAll('[data-ready-checkin-score]').length??0;
+            const photo=Boolean(step?.querySelector('img[src^="/videos/holistic-house/film-collection-v2/"]'));
+            if(progress)evidence.progress=true;
+            if(progress&&step&&scoreButtons===11&&photo){
+              evidence.step=true;evidence.scoreButtons=scoreButtons;evidence.photo=true;
+              window.__hhReadyCheckInObserver?.disconnect();
+            }
+          };
+          window.__hhReadyCheckInObserver?.disconnect();
+          window.__hhReadyCheckInObserver=new MutationObserver(scan);
+          window.__hhReadyCheckInObserver.observe(document.body,{childList:true,subtree:true});
+          scan();
+        });
         await readyGenerate.click();
         phase(engine,"ready-free-render-requested");
-        // The original self-check is inline below the live progress bar, not a popup.
-        await expect(page.locator("[data-ready-generating]")).toBeVisible({timeout:20000});
-        await expect(page.locator("[data-ready-checkin] [data-video-checkin]")).toBeVisible({timeout:20000});
-        // No unsolicited optional survey should cover the intentional export.
-        // The existing pill offers an explicit way to open the check-in.
+        await expect.poll(()=>page.evaluate(()=>
+          Boolean(window.__hhReadyInlineCheckInEvidence?.progress&&
+            window.__hhReadyInlineCheckInEvidence?.step)),
+          {timeout:20000,intervals:[100,250,500]}).toBe(true);
+        const observation=await page.evaluate(()=>{
+          window.__hhReadyCheckInObserver?.disconnect();
+          return window.__hhReadyInlineCheckInEvidence;
+        });
+        assert.equal(observation.scoreButtons,11,
+          "Ready shows all 0–10 score choices during real encoding");
+        assert.equal(observation.photo,true,
+          "Ready check-in displays an existing first-party scene photograph");
+        // No unsolicited optional survey/overlay may cover the export.
         await expect(page.locator("[data-video-effect-overlay]")).toHaveCount(0);
-        await expect(page.locator("[data-video-effect-reopen]")).toBeVisible({timeout:20000});
         // The idle source remains preload=none until the user's actual Create
         // gesture; Safari must then start a physical decode, never a CSS-only
         // preview or an unverified download.
@@ -1390,7 +1419,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           // The optional progress/check-in overlay must get out of the way
           // automatically when verified Ready appears, without bypassing the UI.
           await expect(page.locator("[data-video-effect-overlay]")).toHaveCount(0);
-          await expect(page.locator("[data-video-effect-reopen]")).toBeVisible();
+          await expect(page.locator("[data-ready-checkin]")).toHaveCount(0);
           await readyView.locator("[data-ready-save]").click();
           await expect(readyView.locator("[data-ready-save-gate]")).toBeVisible();
           await expect(readyView.locator("[data-ready-save-gate-signin]")).toBeVisible();
