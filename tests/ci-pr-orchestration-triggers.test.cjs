@@ -6,7 +6,7 @@ const read=name=>readFileSync('.github/workflows/'+name+'.yml','utf8');
 test('watchdog has independent cron; failed Core is a direct event workflow',()=>{
   const s=read('hh-pr-ten-minute-watchdog');
   const direct=read('hh-pr-direct-core-failure');
-  assert.ok(s.includes("cron: '7,17,27,37,47,57 * * * *'"));
+  assert.ok(s.includes("cron: '7,27,47 * * * *'"));
   for(const tag of ['HH watchdog / dry run','HH watchdog / completion wake',
     'HH watchdog / direct handoff','HH watchdog / reconcile'])
     assert.ok(s.includes(tag),'Watchdog must distinguish real reconcile from no-op dispatch '+tag);
@@ -52,7 +52,7 @@ test('source Repair Worker is addressed only; no empty cron consumes its publish
 });
 test('CI scheduled recovery retains cron but cannot reserve addressed worker lease',()=>{
  const s=read('hh-pr-ci-worker');
- assert.ok(s.includes("cron: '3,33 * * * *'"));
+ assert.ok(s.includes("cron: '3 * * * *'"));
  assert.ok(!s.includes("cron: '3,13,23,33,43,53 * * * *'"));
  assert.ok(s.includes('workflow_dispatch:'));
  assert.ok(s.includes('cancel-in-progress: false'));
@@ -141,9 +141,9 @@ test('successful Core event has exactly one live rate-bounded slot wakeup owner'
   assert.ok(direct.includes('actions: write'));
 });
 
-test('separate Direction Watcher classifies all open PRs with a ten-minute fallback',()=>{
+test('separate Direction Watcher classifies all open PRs with a twenty-minute fallback',()=>{
   const s=read('hh-pr-direction-watcher');
-  assert.ok(s.includes("cron: '1,11,21,31,41,51 * * * *'"));
+  assert.ok(s.includes("cron: '1,21,41 * * * *'"));
   assert.ok(s.includes("branches: ['codex/bootstrap-books']"));
   assert.ok(s.includes("node --test tests/ci-pr-priority.test.cjs tests/ci-pr-direction-watcher.test.cjs"));
   // Several trusted rollouts use read or write PR permission; both are
@@ -557,4 +557,31 @@ test('two hourly full-inventory API and LIVE receipt jobs reuse slim without wea
  assert.match(live,/actions\/upload-artifact@v4/);
  assert.match(source,/cron: '27 \* \* \* \*'/);
  assert.doesNotMatch(source,/continue-on-error:\s*true/);
+});
+
+
+test('background control schedules halve native runner ticks without weakening event-driven PR gates',()=>{
+ const watchdog=read('hh-pr-ten-minute-watchdog');
+ const direction=read('hh-pr-direction-watcher');
+ const ci=read('hh-pr-ci-worker');
+ const cronTicks=source=>{
+   const match=source.match(/^    - cron: '([^']+)'$/m);
+   assert.ok(match,'existing schedule absent');
+   const parts=match[1].trim().split(/\s+/);
+   assert.equal(parts.length,5);
+   return parts[0].split(',').length;
+ };
+ assert.equal(cronTicks(watchdog),3);
+ assert.equal(cronTicks(direction),3);
+ assert.equal(cronTicks(ci),1);
+ assert.equal([watchdog,direction,ci].reduce((sum,s)=>sum+cronTicks(s),0),7,
+   'these three native backup schedules must use 7, not 14, ticks/hour');
+ assert.match(watchdog,/^  pull_request_target:\n    types: \[opened, reopened, synchronize, ready_for_review\]/m);
+ assert.match(watchdog,/^  workflow_run:\n/m);
+ assert.match(watchdog,/^  workflow_dispatch:\n/m);
+ assert.match(watchdog,/group: hh-control-tower-single-writer/);
+ assert.match(direction,/^  workflow_dispatch:\n/m);
+ assert.match(ci,/^  workflow_dispatch:\n/m);
+ assert.match(ci,/reservation_run_id:/);
+ assert.match(ci,/HH_CI_SCHEDULE_FALLBACK/);
 });

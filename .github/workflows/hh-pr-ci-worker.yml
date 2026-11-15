@@ -1,9 +1,9 @@
 name: HH zero-cost PR CI worker
 on:
   schedule:
-    - cron: '3,33 * * * *'
-  # Existing ten-minute Watchdog and signed events own primary routing.
-  # Two 30-minute backup ticks replace six idle Worker cron runs per hour.
+    - cron: '3 * * * *'
+  # Existing event-driven Watchdog and signed PR events own primary routing.
+  # One hourly guarded backstop replaces two semi-hourly idle CI Worker runs.
   workflow_dispatch:
     inputs:
       dry_run:
