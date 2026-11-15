@@ -1,7 +1,8 @@
 import Link from 'next/link'
+import { SiteNavigation } from '@/components/site-navigation'
 import InstantCabinetLink from './instant-cabinet-link'
 import { ProfileModeSwitch } from '../master-mode-switch'
-import { Activity, BookOpen, ClipboardList, FileClock, FileText, House, LockKeyhole, ListChecks, Route, UserRound, Settings2 } from 'lucide-react'
+import { Activity, BookOpen, ClipboardList, FileClock, FileText, House, LockKeyhole, ListChecks, Route, UserRound, Settings2, ChevronDown } from 'lucide-react'
 import { assessmentHistoryTitle } from '@/lib/assessments/personal-guidance'
 import styles from './profile-hub-tabs.module.css'
 import { ProfilePresentationPlayer } from './profile-presentation-player'
@@ -135,6 +136,8 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
   // Switch real locale routes while retaining the current profile section.
   // Language navigation works for visitors; only account actions require sign-in.
   const languageHref = language => {
+    // Public entry must remain public; the protected Profile keeps its current section.
+    if (publicEntry) return language === 'en' ? '/' : '/' + language
     const targetRoot = '/' + language + '/app'
     if (settingsMode) return targetRoot + '/settings'
     if (current === 'tests') return targetRoot + '/tests'
@@ -147,15 +150,29 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
   const presentation = profilePresentationForLocale(selected)
   return <section className={styles.hub} data-profile-hub-tabs data-profile-active={current}>
     <header className={styles.heading}>
-      <div><p className={styles.eyebrow}>{t.label}</p><h2>{settingsMode ? s.pageTitle : t.title}</h2></div>
+      <div className={styles.headingTitle}>
+        <p className={styles.eyebrow}>{t.label}</p>
+        <h2 aria-label={settingsMode ? s.pageTitle : t.title}>
+          <span className={styles.titleFull}>{settingsMode ? s.pageTitle : t.title}</span>
+          <span className={styles.titleCompact}>{settingsMode ? (selected === 'ru' ? 'Профиль' : selected === 'es' ? 'Perfil' : 'Profile') : 'My Space'}</span>
+        </h2>
+      </div>
       <div className={styles.profileHeadingActions}>
-        <nav className={styles.languageSwitch} aria-label={selected === 'ru' ? 'Язык сайта' : 'Site language'}
-          data-profile-language-switch>
-          {['ru', 'en'].map(language => <Link key={language} href={languageHref(language)} prefetch={false}
-            lang={language} hrefLang={language} aria-current={selected === language ? 'page' : undefined}
-            data-profile-language={language}>{language.toUpperCase()}</Link>)}
-        </nav>
+        <details className={styles.languageSwitch} data-profile-language-switch>
+          <summary aria-label={selected === 'ru' ? 'Выбрать язык сайта' : 'Choose site language'}>
+            {selected.toUpperCase()}<ChevronDown size={13} aria-hidden="true" />
+          </summary>
+          <div className={styles.languageOptions}>
+            {(publicEntry ? ['ru', 'en', 'es'] : ['ru', 'en']).map(language =>
+              <Link key={language} href={languageHref(language)} prefetch={false}
+                lang={language} hrefLang={language} aria-current={selected === language ? 'page' : undefined}
+                data-profile-language={language}>{language.toUpperCase()}</Link>)}
+          </div>
+        </details>
         {!settingsMode && <ProfileModeSwitch locale={selected} active="live" />}
+        <div className={styles.headingNav} data-profile-chrome-navigation>
+          <SiteNavigation locale={selected} compact />
+        </div>
       </div>
     </header>
     <nav className={settingsMode ? styles.settingsTabs : styles.tabs} aria-label={settingsMode ? s.menu : COPY[selected].navigation}>

@@ -202,6 +202,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     const target=event.target?.closest?.('button,a,[role="button"]')
     if (!target || target.closest('[data-profile-mode-switch]') ||
       target.closest('[data-profile-language-switch]') ||
+      target.closest('[data-profile-chrome-navigation]') ||
       target.closest('[data-profile-auth-dialog]')) return
     event.preventDefault()
     event.stopPropagation()
