@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import test from "node:test";
+import {whatsappEnquiryUrl,telegramEnquiryUrlFromWhatsApp,TELEGRAM_USERNAME} from "../lib/whatsapp-enquiry.js";
+import {telegramServiceRequestUrl,telegramBusinessServiceTitle} from "../lib/assist/telegram-business-request.mjs";
 import {websiteMessengerOnly,websiteMessengerOnlyUi} from "../lib/crm/website-messenger-only.mjs";
 const read=p=>readFileSync(new URL("../"+p,import.meta.url),"utf8");
 test("messenger-only default and explicit emergency rollback",()=>{
@@ -14,15 +16,15 @@ test("messenger-only default and explicit emergency rollback",()=>{
 });
 test("website-only intake UI shows Telegram and WhatsApp with honest Send disclosure",()=>{
  const ui=read("components/mandatory-messenger-actions.tsx");
- for(const s of ["WhatsApp","Telegram","data-messenger-only-contact","Нажмите «Отправить»","Press Send inside the messenger","resolveTelegramFirstEntry","data-hh-messenger-art"])assert.ok(ui.includes(s),s);
+ for(const s of ["WhatsApp","Telegram","data-messenger-only-contact","Нажмите «Отправить»","Press Send inside the messenger","data-hh-messenger-art"])assert.ok(ui.includes(s),s);
  assert.doesNotMatch(ui,/mailto:|\/api\/service-enquiries|type="email"/);
- assert.match(ui,/bot\.kind==="review"\?t\.review:t\.bot/);
- assert.match(ui,/setBot\(null\)/);
+ assert.doesNotMatch(ui,/resolveTelegramFirstEntry|setBot|telegram-diagnostic/);
+ assert.ok(ui.includes("telegramEnquiryUrlFromWhatsApp(whatsappUrl)"));
  const chooser=read("components/contact-channel-chooser.tsx");
  assert.match(chooser,/collapsed=\{compactMessenger\|\|\(\(compactPhone\|\|compactTrigger\)&&!allowSecureExpressClaim\)\}/);
  const css=read("components/mandatory-messenger-actions.module.css");
  assert.match(css,/@media\(max-width:430px\)\{\.art\{height:44px\}\}/);
- assert.match(ui,/data-telegram-route=\{telegramUrl\?"manual":bot\?\.kind\|\|"manual"\}/);
+ assert.match(ui,/data-telegram-route=\{telegramUrl\?"manual":"service"\}/);
  for(const p of ["components/contact-channel-chooser.tsx","components/compact-lead-capture.tsx","components/business-website-enquiry.tsx","components/meditation-course-enquiry.tsx"]) {
    assert.match(read(p),/if \(websiteMessengerOnlyUi\(\)\) return /,p);
    assert.match(read(p),/MandatoryMessengerActions/,p);
@@ -90,4 +92,63 @@ test("Services request expands only two messaging buttons under the full service
  assert.equal((consultation.match(/compactPhone compactTrigger compactMessenger stayAfterSave/g)||[]).length,2);
  assert.match(consultationCss,/\.order \{ grid-column: 1 \/ -1;/);
  assert.match(magical,/className=\{styles\.booking\}/);
+});
+
+
+test("Services Telegram requests keep the selected product and never enter free-review interview",()=>{
+ assert.equal(TELEGRAM_USERNAME,'holistichouse');
+ for(const locale of ['ru','en','es'])for(const id of ['homeopathy','coaching','reiki','constellations','business']){
+  const title=telegramBusinessServiceTitle(id,locale);
+  const whatsapp=whatsappEnquiryUrl({locale,service:title,request:'Private question should stay out of Telegram'});
+  assert.equal(telegramEnquiryUrlFromWhatsApp(whatsapp),telegramServiceRequestUrl(id,locale));
+ }
+ const details=whatsappEnquiryUrl({locale:'en',service:'Extended video consultation',
+   request:'private request secret',topic:'sensitive symptom',context:'medical record and e-mail',option:'private time preference',pagePath:'/en/services'});
+ const handoff=telegramEnquiryUrlFromWhatsApp(details);
+ assert.ok(handoff.startsWith('https://t.me/holistichouse?text='));
+ const text=new URL(handoff).searchParams.get('text');
+ assert.match(text,/Extended video consultation/);
+ assert.doesNotMatch(text,/private request secret|sensitive symptom|medical record|e-mail|private time preference|HH-REQ|hhreview|hhtalk/);
+ assert.doesNotMatch(handoff,/AndyTherapist|holistichouse_bot|start=/);
+ for(const bad of ['https://wa.me/123?text=test','https://attacker.test/?text=Service%3A%20Fake'])
+   assert.throws(()=>telegramEnquiryUrlFromWhatsApp(bad));
+});
+
+test("cart messenger choice opens with native one-tap disclosure, without automatic CRM write",()=>{
+ const src=read("components/commerce/personal-cart.tsx");
+ const css=read("components/commerce/personal-cart.module.css");
+ const qa=read("scripts/verify-storefront-shop-browser.mjs");
+ assert.match(src,/<details className=\{styles\.orderDisclosure\} data-cart-order-disclosure/u);
+ assert.match(src,/open=\{orderOpen\} onToggle=\{event => setOrderOpen\(event\.currentTarget\.open\)\}/u);
+ assert.match(src,/<summary className=\{styles\.orderButton\} data-cart-start-order>/u);
+ assert.match(src,/<ContactChannelChooser locale=\{locale\} whatsappUrl=\{bookingUrl\} quick cartContact/u);
+ assert.doesNotMatch(src,/data-cart-start-order aria-expanded=\{orderOpen\}/u);
+ assert.match(css,/\.orderDisclosure>\.orderButton::-webkit-details-marker\{display:none\}/u);
+ assert.match(qa,/await contactForm\.waitFor\(\{ state: 'visible', timeout: 12000 \}\)/u);
+ assert.match(qa,/await contactForm\.waitFor\(\{ state: 'hidden', timeout: 8000 \}\)/u);
+ assert.match(qa,/syntheticEnquiries\.length,0/u);
+ assert.match(qa,/data-cart-payment-step/u);
+});
+
+test("personal cart creates a trusted localized service draft before rendering Telegram",()=>{
+ const source=read("components/commerce/personal-cart.tsx");
+ assert.match(source,/import \{ whatsappEnquiryUrl \} from "@\/lib\/whatsapp-enquiry";/u);
+ assert.match(source,/const bookingUrl = whatsappEnquiryUrl\(\{ locale, service: description \|\| t\.service, request: bookingMessage, pagePath: "\/" \+ locale \+ "\/cart" \}\);/u);
+ assert.doesNotMatch(source,/const bookingUrl = "https:\/\/wa\.me\//u);
+ for (const locale of ["ru","en","es"]) {
+  const service="Personal consultation (30 min)";
+  const privateText="private health history and phone 555-1234";
+  const whatsapp=whatsappEnquiryUrl({locale,service,request:"Public selected session 30 min 50 EUR. "+privateText,
+   pagePath:"/"+locale+"/cart?items=express-consultation-30&token=private"});
+  const telegram=telegramEnquiryUrlFromWhatsApp(whatsapp);
+  const t=new URL(telegram),w=new URL(whatsapp);
+  assert.equal(w.origin,"https://wa.me");
+  assert.equal(t.origin,"https://t.me");
+  assert.equal(t.pathname,"/holistichouse");
+  assert.deepEqual([...t.searchParams.keys()],["text"]);
+  assert.match(t.searchParams.get("text")||"",/Personal consultation \(30 min\)/u);
+  assert.doesNotMatch(t.searchParams.get("text")||"",/private health history|555-1234|50 EUR|token=private|items=|diagnos|hhreview|hhtalk/iu);
+  assert.doesNotMatch(w.searchParams.get("text")||"",/token=private|items=express-consultation-30/u);
+  assert.match(w.searchParams.get("text")||"",/30 min 50 EUR/u);
+ }
 });

@@ -50,3 +50,12 @@ test('account has its own session list, reader, independent PDF and per-file aut
   assert.match(source('components/app/personal-analysis-panel.jsx'),/SavedSessionsPanel/)
   assert.match(source('components/app/app-workspace.jsx'),/savedSessions=\{data.savedSessions \|\| \[\]\}/)
 })
+
+test('foreign account save maps only the insert RLS conflict without weakening ownership',()=>{
+  const service=source('lib/app/client-session-save-flow.js')
+  const insertion=service.slice(service.indexOf('if(!saved){'),service.indexOf('if(!saved)throw new AppError'))
+  assert.match(insertion,/on conflict\(source_session_id\) do nothing returning \*/)
+  assert.match(insertion,/catch\(error\)[\s\S]*?error\?\.code==='42501'[\s\S]*?SAVE_UNAVAILABLE/)
+  assert.doesNotMatch(insertion,/on conflict\(source_session_id\) do update/i)
+  assert.match(service,/where account_id=\$1 and source_session_id=\$2 and legacy_client_id=\$3 returning \*/)
+})

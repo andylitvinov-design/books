@@ -1,5 +1,7 @@
 import test from 'node:test'
 import './coach-session-director.test.mjs'
+import './my-coach-five-turn-flow.test.mjs'
+import './my-coach-dictation.test.mjs'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {portraitMouthAperture,speechRms,speechPcmEnvelope} from '../lib/coaching/living-portrait-motion.mjs'
