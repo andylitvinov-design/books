@@ -486,15 +486,21 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       }
       if(goalTurn.deferredGoal)setError(ui.goalDeferred)
     }
-    const needsVerifiedModel=readiness.status!=='verified'&&!wisdomRequested
+    // Client safety and explicit stop always win over a synthetic retry.
+    // The local guard sends no client text to a provider and cannot wait for it.
+    const currentInput={locale:responseLocale,message,
+      turns:turns.map(({role,content})=>({role,content}))}
+    const localInterruption=readiness.status!=='verified'
+      ?(coachingBrainSafety(currentInput)||coachingBrainBoundary(currentInput)):null
+    const needsVerifiedModel=readiness.status!=='verified'&&!wisdomRequested&&!localInterruption
     const modelReady=!needsVerifiedModel||await retryCoachModelAfterOutage()
-    if(authRequired||(!modelReady&&!wisdomRequested)){
+    if(localInterruption||authRequired||(!modelReady&&!wisdomRequested)){
       // Guests and temporarily unavailable AI still get private local coaching;
       // microphone recognition must not wait for model readiness.
       // Local-only authored fallback. NEVER send private text to an unverified model.
       // Same editorial persona prompts, same browser-only conversation history.
-      const input={locale:responseLocale,message,turns:turns.map(({role,content})=>({role,content}))}
-      const interruption=coachingBrainSafety(input)||coachingBrainBoundary(input)
+      const input=currentInput
+      const interruption=localInterruption||coachingBrainSafety(input)||coachingBrainBoundary(input)
       // Use the shared evidence-led protocol, never advance on message count.
       // This stays in the browser; unverified models receive no client text.
       const semanticStage=coachingBrainStageDecision(input).stage

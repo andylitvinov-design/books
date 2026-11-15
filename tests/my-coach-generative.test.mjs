@@ -276,3 +276,14 @@ test('later user turns reverify a recovered free model without a button or new v
   assert.match(ui,/body:'\{\}'/)
   assert.doesNotMatch(ui,/localStorage|sessionStorage|sendBeacon/)
 })
+
+test('when AI is unavailable, crisis and stop are handled before any recovery probe',()=>{
+  const ui=source('components/my-coach-live-dialogue.jsx')
+  const turn=ui.slice(ui.indexOf('async function sendMessage(raw'))
+  assert.ok(turn.indexOf('const localInterruption=')>0)
+  assert.ok(turn.indexOf('const localInterruption=')<turn.indexOf('const modelReady='))
+  assert.match(turn,/coachingBrainSafety\(currentInput\)\|\|coachingBrainBoundary\(currentInput\)/)
+  assert.match(turn,/!wisdomRequested&&!localInterruption/)
+  assert.match(turn,/if\(localInterruption\|\|authRequired\|\|\(!modelReady&&!wisdomRequested\)\)/)
+  assert.match(turn,/const interruption=localInterruption\|\|coachingBrainSafety\(input\)/)
+})
