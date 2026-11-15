@@ -170,10 +170,15 @@ test('My Coach persona dialogue speaks and listens on exactly the consented sess
   assert.match(ui,/if\(mode==='safety'\|\|\(mode==='boundary'/)
   assert.match(ui,/coachStagePrompt\(personaId,stage,responseLocale,settings\)/)
   const sendFunction=ui.slice(ui.indexOf('async function sendMessage(raw,{voiceTurn=false}={}){'))
-  assert.ok(sendFunction.indexOf("if(authRequired||(readiness.status!=='verified'&&!wisdomRequested)){") >= 0 &&
-    sendFunction.indexOf("if(authRequired||(readiness.status!=='verified'&&!wisdomRequested)){") <
-    sendFunction.indexOf("fetch('/api/app/my-coach/turn'"),
-    'unverified models never receive client text; first-party wisdom requests remain authenticated')
+  const interruptionGate=sendFunction.indexOf("const localInterruption=readiness.status!=='verified'")
+  const verifiedGate=sendFunction.indexOf("const needsVerifiedModel=readiness.status!=='verified'&&!wisdomRequested&&!localInterruption")
+  const safeFallback=sendFunction.indexOf("if(localInterruption||authRequired||(!modelReady&&!wisdomRequested)){")
+  const clientSubmission=sendFunction.indexOf("fetch('/api/app/my-coach/turn'")
+  assert.ok(interruptionGate>=0&&verifiedGate>interruptionGate&&safeFallback>verifiedGate&&
+    safeFallback<clientSubmission&&sendFunction.includes('await retryCoachModelAfterOutage()'),
+    'unverified client text must be handled locally or wait for a synthetic, consented provider recheck')
+  assert.ok(ui.includes("body:'{}'")&&ui.includes("fetch('/api/app/my-coach/probe'"),
+    'the provider probe contains no private user text or transcript')
   assert.match(ui,/Browser speech recognition may send microphone audio/)
   assert.match(ui,/Браузер может отправлять звук поставщику распознавания речи/)
   for(const phrase of ['window.SpeechRecognition||window.webkitSpeechRecognition',
