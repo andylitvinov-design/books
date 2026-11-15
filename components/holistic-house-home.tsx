@@ -5,6 +5,8 @@ import { Suspense } from "react";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { HomepageContactCta } from "@/components/homepage-contact-cta";
 import { HomeSectionCarousel } from "@/components/home-section-carousel";
+import { MySpaceTopics } from "@/components/my-space-topics";
+import { ProfileHubTabs } from "@/components/app/profile-hub-tabs";
 import { HomeMoreDisclosure } from "@/components/home-more-disclosure";
 import { HomeFeaturedWorkspace } from "@/components/home-featured-workspace";
 import { HomePresentationVideoSection } from "@/components/home-presentation-video-section";
@@ -62,6 +64,9 @@ export function HolisticHouseHome({ locale = "en" }: HolisticHouseHomeProps) {
         </Link>
         <SiteNavigation locale={locale} />
       </header>
+
+      <ProfileHubTabs locale={locale} publicEntry />
+      <MySpaceTopics locale={locale} publicHome />
 
       <HomeSectionCarousel locale={locale} />
       <HomeMoreDisclosure locale={locale} />

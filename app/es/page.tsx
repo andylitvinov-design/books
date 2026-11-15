@@ -1,6 +1,8 @@
 import Image from 'next/image';
 import { StaticPortrait } from '@/components/static-portrait';
 import { HomeSectionCarousel } from '@/components/home-section-carousel';
+import { MySpaceTopics } from '@/components/my-space-topics';
+import { ProfileHubTabs } from '@/components/app/profile-hub-tabs';
 import { HomeFeaturedWorkspace } from '@/components/home-featured-workspace';
 import { FreeMobileAppBanner } from '@/components/free-mobile-app-banner';
 import Link from 'next/link';
@@ -13,6 +15,8 @@ export const metadata = spanishMetadata('/es', 'Sesiones personales en Toronto y
 export default function SpanishHomePage() {
   return <main className="house-home house-home--services" lang="es">
     <PublicSiteHeader locale="es" />
+    <ProfileHubTabs locale="es" publicEntry />
+    <MySpaceTopics locale="es" publicHome />
     <HomeSectionCarousel locale="es" />
     <HomeMoreDisclosure locale="es" />
     <HomeFeaturedWorkspace locale="es" />

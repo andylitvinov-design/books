@@ -38,7 +38,7 @@ const toolList: readonly Option[] = ["therapy","homeopathy","reiki","mandala","t
 
 const copy = {
   ru: {
-    eyebrow:"HOLISTIC HOUSE · SERVICES", title:"Wave", lead:"Помогу подобрать подходящую услугу или специалиста для вашей ситуации.", ask:"С чем вы хотели бы обратиться?", choose:"Выберите проблему или опишите её своими словами.",
+    eyebrow:"HOLISTIC HOUSE · SERVICES", title:"Ali", lead:"Помогу подобрать подходящую услугу или специалиста для вашей ситуации.", ask:"С чем вы хотели бы обратиться?", choose:"Выберите проблему или опишите её своими словами.",
     placeholder:"Опишите вашу ситуацию или цель…", submit:"Показать рекомендации", topics:"Частые обращения",
     hints:[["Стресс / тревога","Меня беспокоят стресс и тревога","stress"],["Мало сил","Чувствую усталость и недостаток энергии","energy"],["Конфликты в паре","У меня конфликт в отношениях с партнером","relationships"],["Плохой сон","Мне трудно спать и расслабиться","stress"],["Работа / деньги","Меня тревожат работа и деньги","work"],["Душевная боль","Мне тяжело эмоционально, хочется поддержки","stress"],["Ссоры в семье","Есть напряжение и конфликты в семье","relationships"],["Нет ясности в жизни","Я потерял направление и смысл","growth"],["Симптомы в теле","Меня беспокоят физические симптомы и самочувствие","health"],["Сложно решиться","Мне трудно принять важное решение","growth"],["Нужна практика","Хочу освоить практику для поддержки себя","growth"],["Другое…","","general"]],
     privacy:"Подбор работает в вашем браузере: текст не сохраняется и не отправляется внешнему ИИ.", voice:"Открыть клавиатуру для диктовки голосом",
@@ -51,7 +51,7 @@ const copy = {
     crisis:"Если вы можете причинить себе вред, испытываете опасные симптомы или находитесь в непосредственной опасности, обратитесь в местную экстренную или кризисную службу прямо сейчас.",
   },
   en: {
-    eyebrow:"HOLISTIC HOUSE · SERVICES", title:"Wave", lead:"Find the right support, service or specialist for your situation.", ask:"What would you like help with right now?", choose:"Choose a common issue or describe it in your own words.",
+    eyebrow:"HOLISTIC HOUSE · SERVICES", title:"Ali", lead:"Find the right support, service or specialist for your situation.", ask:"What would you like help with right now?", choose:"Choose a common issue or describe it in your own words.",
     placeholder:"Describe your situation or goal…", submit:"See recommendations", topics:"Common concerns",
     hints:[["Stress / anxiety","I feel stressed and anxious","stress"],["Low energy","I feel tired and low on energy","energy"],["Relationship conflict","I have conflict with my partner","relationships"],["Sleep problems","I struggle with sleep and relaxation","stress"],["Work or money","I am worried about work and money","work"],["Emotional pain","I am in emotional pain and need support","stress"],["Family tension","I am dealing with tension in my family","relationships"],["Feeling lost","I feel lost and lack a sense of direction","growth"],["Body symptoms","I am concerned about physical symptoms","health"],["Hard decisions","I am struggling to make a decision","growth"],["Need a practice","I want to learn a supportive practice","growth"],["Other…","","general"]],
     privacy:"Matching happens in your browser. Your text is not stored or sent to external AI.", voice:"Open keyboard to use voice dictation",
@@ -64,7 +64,7 @@ const copy = {
     crisis:"If you may harm yourself, have urgent symptoms or are in immediate danger, contact your local emergency or crisis service now.",
   },
   es: {
-    eyebrow:"HOLISTIC HOUSE · SERVICES", title:"Wave", lead:"Encuentra el servicio o profesional adecuado para tu situación.", ask:"¿Con qué necesitas ayuda ahora?", choose:"Elige una dificultad o describe tu situación.",
+    eyebrow:"HOLISTIC HOUSE · SERVICES", title:"Ali", lead:"Encuentra el servicio o profesional adecuado para tu situación.", ask:"¿Con qué necesitas ayuda ahora?", choose:"Elige una dificultad o describe tu situación.",
     placeholder:"Describe tu situación o tu objetivo…", submit:"Ver recomendaciones", topics:"Problemas frecuentes",
     hints:[["Estrés / ansiedad","Siento estrés y ansiedad","stress"],["Poca energía","Me siento cansado y sin energía","energy"],["Conflicto de pareja","Tengo conflictos en mi relación de pareja","relationships"],["Problemas de sueño","Me cuesta dormir y relajarme","stress"],["Trabajo / dinero","Me preocupan el trabajo y el dinero","work"],["Dolor emocional","Siento dolor emocional y necesito apoyo","stress"],["Tensión familiar","Tengo tensiones y conflictos en mi familia","relationships"],["Sin rumbo","Me siento perdido y sin dirección","growth"],["Síntomas físicos","Me preocupan síntomas físicos y mi salud","health"],["Decisión difícil","Me cuesta tomar una decisión importante","growth"],["Busco una práctica","Quiero aprender una práctica de apoyo","growth"],["Otro…","","general"]],
     privacy:"La selección ocurre en tu navegador. El texto no se guarda ni se envía a una IA externa.", voice:"Abrir teclado para usar dictado de voz",
