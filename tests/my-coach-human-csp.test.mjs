@@ -18,7 +18,7 @@ function createMiddleware(env={HH_APP_SUPABASE_URL:PROJECT_ORIGIN,NODE_ENV:'prod
     './lib/app/admin-auth-refresh':{refreshAdminAuth:async()=>[]},
   }
   const runtime={
-    exports:{}, Headers, crypto:globalThis.crypto,
+    exports:{}, Headers, URL, crypto:globalThis.crypto,
     process:{env}, require(name){
       assert.ok(Object.hasOwn(modules,name),'unexpected module '+name)
       return modules[name]
