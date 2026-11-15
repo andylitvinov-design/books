@@ -265,7 +265,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     }
     if(!spokenText||voiceState.phase!=='idle'||replaying)return
     setPlaybackNotice('');setReplayBlocked(false)
-    if(consent&&cloudAgreed&&cloudAvailable&&['google_chirp3_hd','fish_free'].includes(cloudProvider)){
+    // Voice-only turns already have an in-page privacy notice. Fish/Chirp has
+    // its own independent, unchecked consent; the text-composer checkbox is
+    // not a prerequisite for speaking an authored coach reply.
+    if(cloudAgreed&&cloudAvailable&&['google_chirp3_hd','fish_free'].includes(cloudProvider)){
       const controller=new AbortController()
       replayControllerRef.current=controller
       setReplaying(true)
@@ -530,7 +533,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           <PhoneOff size={21} aria-hidden="true"/><span>{lang==='ru'?'Конец':lang==='es'?'Salir':'End'}</span>
         </Link>
       </div>
-      {cloudAvailable&&consent&&!authRequired&&<div className={styles.naturalVoiceRow}>
+      {/* Visible from the very first microphone turn, even when the typed
+          composer consent is unchecked. Cloud speech is opt-in only. */}
+      {cloudAvailable&&!authRequired&&<div className={styles.naturalVoiceRow}>
         <label><input type="checkbox" checked={cloudAgreed}
           onChange={event=>changeNaturalVoice(event.target.checked)}/>
           <span>{providerCopy.label}</span></label>
