@@ -6,6 +6,7 @@ import { once } from 'node:events'
 import { createServer } from 'node:https'
 import { mkdirSync, readFileSync, writeFileSync, createWriteStream } from 'node:fs'
 import { promisify } from 'node:util'
+import {classifyIsolatedVideoRedisCommand} from './helpers/isolate-video-redis-command.mjs'
 import { chromium, expect } from '@playwright/test'
 import { verifyAboutTestimonials } from './verify-about-testimonials-browser.mjs'
 import {assertMessengerOnlyCapture} from './helpers/messenger-only-contract.mjs'
@@ -35,6 +36,15 @@ try {
         const command = JSON.parse(raw)
         assert.ok(Array.isArray(command))
         assert.ok(['HGET', 'HGETALL', 'EVAL'].includes(command[0]))
+        const redisScope=classifyIsolatedVideoRedisCommand(command)
+        assert.notEqual(redisScope,'deny')
+        if(redisScope==='synthetic-missing'){
+          // Do not fabricate a signed-in YouTube channel. A missing optional
+          // YouTube record is not an error in the site-video test adapter.
+          response.writeHead(200,{'Content-Type':'application/json'})
+          response.end(JSON.stringify({result:null}))
+          return
+        }
         assert.equal(command[command[0] === 'EVAL' ? 3 : 1], namespace)
         const { stdout } = await exec('redis-cli', ['-h', '127.0.0.1', '-p', '6379', '--json', ...command.map(String)], { maxBuffer: 4 * 1024 * 1024 })
         response.writeHead(200, { 'Content-Type': 'application/json' })
