@@ -1,6 +1,7 @@
 import test from 'node:test'
 import './crm-telegram-direct-chat.test.mjs'
 import './crm-telegram-direct-flow.test.mjs'
+import './crm-wave-continuity.test.mjs'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import {
