@@ -2,12 +2,6 @@ name: HH hourly Vercel production batch
 on:
   schedule:
     - cron: '17 * * * *'
-  # One-off owner-approved storage cleanup is allowed only on a uniquely
-  # named protected control-branch merge touching this exact workflow.
-  # No additional recurring task or paid service is created.
-  push:
-    branches: ['codex/bootstrap-books']
-    paths: ['.github/workflows/hh-hourly-vercel-production.yml']
   workflow_dispatch:
     inputs:
       emergency:
@@ -85,12 +79,8 @@ jobs:
             { echo 'Vercel did not return a deployment ID'; exit 1; }
           echo 'One exact-SHA production build requested; READY/LIVE must be checked separately.'
   cleanup:
-    # Delete only with explicit owner dispatch or this single uniquely named control merge.
-    if: >-
-      (github.event_name == 'workflow_dispatch' && inputs.cleanup_mode != 'off') ||
-      (github.event_name == 'push' &&
-       github.ref == 'refs/heads/codex/bootstrap-books' &&
-       startsWith(github.event.head_commit.message, 'ci(vercel): owner-approved final storage prune 20261115-r3'))
+    # Owner-dispatched cleanup only. Scheduled runs never delete deployments.
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.cleanup_mode != 'off' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -98,16 +88,8 @@ jobs:
         with:
           ref: codex/bootstrap-books
           persist-credentials: false
-      - name: Verify safeguards and dry-run before one-time owner cleanup
-        if: ${{ github.event_name == 'push' }}
-        env:
-          HH_VERCEL_RELEASE_TOKEN: ${{ secrets.HH_VERCEL_RELEASE_TOKEN }}
-        run: |
-          set -euo pipefail
-          node --test tests/ci-vercel-deployment-prune.test.mjs
-          node scripts/ci-vercel-deployment-prune.mjs dry-run
       - name: Inspect and optionally prune old unaliased deployments
         env:
           HH_VERCEL_RELEASE_TOKEN: ${{ secrets.HH_VERCEL_RELEASE_TOKEN }}
-          CLEANUP_MODE: ${{ github.event_name == 'push' && 'apply' || inputs.cleanup_mode }}
+          CLEANUP_MODE: ${{ inputs.cleanup_mode }}
         run: node scripts/ci-vercel-deployment-prune.mjs "$CLEANUP_MODE"
