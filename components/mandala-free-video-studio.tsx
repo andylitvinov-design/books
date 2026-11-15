@@ -1313,7 +1313,7 @@ function recordingMimes(withAudio: boolean, preferWebm = false, forceMp4ForRetry
 
 // A stalled WebKit media promise must never leave the Ready export spinner forever.
 async function withLocalMediaDeadline<T>(task:Promise<T>,timeoutMs:number):Promise<T>{
-  let timeout:ReturnType<typeof setTimeout>|undefined;
+  let timeout:number|undefined;
   try{
     return await Promise.race([task,new Promise<never>((_,reject)=>{
       timeout=window.setTimeout(()=>reject(new Error("local_media_timeout")),timeoutMs);
