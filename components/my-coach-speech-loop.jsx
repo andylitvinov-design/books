@@ -364,7 +364,10 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
         void deliver(appendSpokenAnswer(draftAtStartRef.current,heard,1200))
         return
       }
-      if(['no-speech','aborted'].includes(event.error)){
+      if(['no-speech','aborted','network'].includes(event.error)){
+        // A temporary browser STT network error must not cancel the one-Play
+        // session. Existing bounded recognition retries never retry AI/TTS.
+        // Microphone permission and capture errors still fail closed.
         restartSilentRecognition(recognition);return
       }
       silence();changePhase('idle')
