@@ -13,6 +13,7 @@ import {buildPersonalMeditationScript} from "@/lib/mandala/personal-meditation-s
 import {buildPersonalImageryCourse} from "@/lib/mandala/personal-guided-course.mjs";
 import {appFetch} from "@/lib/app/client-fetch";
 import css from "./mandala-video-ready.module.css";
+import {ReadyGenerationCheckIn} from "./mandala-video-ready-checkin";
 
 type VideoFile={url:string;extension:"mp4"|"webm";bytes:number;duration:number};
 type View="home"|"login";
@@ -162,7 +163,7 @@ const COPY={
 
 export function MandalaVideoReady({
   locale,theme,wish,focus,aspect,video,verified,checking,rendering,renderProgress,
-  progressQuestionnaire,generationNotice,signedIn,loginUnavailable,disabled,
+  generationNotice,signedIn,loginUnavailable,disabled,
   meditationEditor,onOpenDelivery,onRefreshLogin,onOpenCourse,onReturnToPro,
   onGenerateBasicVideo,onStartNewVideo,onVerifyPlayback,onSaveDirect,saveStatus,
   basicFreeAvailable,basicFreeIssue,basicCreditCost
@@ -170,6 +171,8 @@ export function MandalaVideoReady({
   const t=COPY[locale];
   const [view,setView]=useState<View>("home");
   const [videoGenerationNotice,setVideoGenerationNotice]=useState("");
+  const [checkinEngaged,setCheckinEngaged]=useState(false);
+  const [checkinDismissed,setCheckinDismissed]=useState(false);
   useEffect(()=>{if(basicFreeAvailable)setVideoGenerationNotice("");},[basicFreeAvailable]);
   // Three continuation offers expand within Ready; the login dialog is independent.
   const [activeOffer,setActiveOffer]=useState<Offer|null>(null);
@@ -324,6 +327,7 @@ export function MandalaVideoReady({
     }
     if(onGenerateBasicVideo()){
       setVideoGenerationNotice("");setActiveOffer(null);setGeneratedOffer(null);
+      setCheckinEngaged(false);setCheckinDismissed(false);
     }else setVideoGenerationNotice(t.videoSetup);
   }
   const completed=Boolean(verified&&video);
@@ -366,8 +370,12 @@ export function MandalaVideoReady({
         {rendering?<progress max={100} value={Math.min(100,Math.max(0,renderProgress))}
           aria-label={t.generating}/>:null}
       </div>:null}
-      {waiting&&!completed?<div className={css.progressQuestionnaire}
-        data-ready-checkin>{progressQuestionnaire}</div>:null}
+      {!checkinDismissed&&((waiting&&!completed)||checkinEngaged)?
+        <div className={css.progressQuestionnaire} data-ready-checkin>
+          <ReadyGenerationCheckIn locale={locale}
+            onFirstAnswer={()=>setCheckinEngaged(true)}
+            onDismiss={()=>setCheckinDismissed(true)}/>
+        </div>:null}
       {(videoGenerationNotice||generationNotice)&&!rendering?
         <p className={css.tierNotice} role="status" data-ready-video-tier-notice>
           {videoGenerationNotice||generationNotice}</p>:null}

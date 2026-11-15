@@ -5,7 +5,7 @@ import {COACH_PERSONAS} from '../lib/coaching/persona-registry.mjs'
 import {conversationalCoachMessages} from '../lib/coaching/conversational-persona.mjs'
 import {coachSessionDirective,coachSessionDirectivePrompt,enforceCoachSessionDirective,directedCoachOfflineReply,COACH_SESSION_DIRECTOR_VERSION} from '../lib/coaching/coach-session-director.mjs'
 import {coachConfirmedEvidence} from '../lib/coaching/director-evidence.mjs'
-import {newCoachSession,sealCoachSession,openCoachSession,advanceCoachSession,COACH_SESSION_COOKIE} from '../lib/coaching/session-authority.mjs'
+import {newCoachSession,sealCoachSession,openCoachSession,advanceCoachSession,recordCoachSemanticEvidence,COACH_SESSION_COOKIE} from '../lib/coaching/session-authority.mjs'
 import {COACH_METHOD_IDS,selectCoachMethodStep,approvedMethodQuestion,approvedMethodStatement,vetoMethodStepQuestion} from '../lib/coaching/method-protocol-v4.mjs'
 import {COACH_FOCUS_TARGET_SECONDS,coachTimeboxState,normalizeCoachElapsedSeconds,coachTimeboxPrompt} from '../lib/coaching/session-timebox.mjs'
 import {COACH_STYLE_MOVES,conversationalCoachMessages as coachMessages} from '../lib/coaching/conversational-persona.mjs'
@@ -105,7 +105,7 @@ test('existing production My Coach route invokes directive without new model or 
   assert.match(server,/enforceCoachSessionDirective/)
   assert.match(messages,/coachSessionDirectivePrompt/)
   assert.match(server,/verifiedGroqCoachingReply/)
-  assert.match(messages,/EXACTLY three string keys/)
+  assert.match(messages,/clientEvidence/)
 })
 
 test('20-minute focus guide is time-aware without forcing exit or fabricating completion',()=>{
@@ -655,4 +655,25 @@ test('Original coach Play remains one gesture and starts the server session befo
   assert.match(ui,/await serverSessionStartRef\.current\.promise/)
   assert.match(ui,/data-coach-hero-play/)
   assert.doesNotMatch(ui,/MediaRecorder|audio\/webm/)
+})
+
+test('Same-call semantic hints enter only verified soft server flags without storing quote',()=>{
+  const actor={id:'00000000-0000-4000-8000-000000000010',
+    claims:{session_id:'00000000-0000-4000-8000-000000000020'}}
+  const original=newCoachSession(actor,'mira',Date.now()-3000)
+  const source='Yesterday I had a very difficult conversation at work'
+  const result=recordCoachSemanticEvidence(original,source,
+    {kind:'concrete_example',quote:source})
+  assert.equal(result.evidence.keyFactsCaptured,true)
+  assert.equal(result.evidence.clientActionApproved,false)
+  assert.equal(JSON.stringify(result).includes(source),false)
+  const forged=recordCoachSemanticEvidence(original,source,
+    {kind:'desired_outcome',quote:'a sentence never said by client'})
+  assert.equal(forged,original)
+  const corrected=recordCoachSemanticEvidence(original,'Нет, я имел в виду другое.',
+    {kind:'goal_focus',quote:'Нет, я имел в виду другое.'})
+  assert.equal(corrected,original)
+  const doubtful=recordCoachSemanticEvidence(original,'Maybe I can give up this job tomorrow',
+    {kind:'goal_focus',quote:'Maybe I can give up this job tomorrow'})
+  assert.equal(doubtful,original)
 })
