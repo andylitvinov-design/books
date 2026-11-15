@@ -3,7 +3,7 @@
 import {useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
 import {ArrowRight,Heart,Home,Keyboard,Leaf,Captions,PhoneOff,LockKeyhole,MessageCircle,Pencil,Send,ShieldCheck,Sparkles,Target,UserRound,Video,Volume2,Play,LoaderCircle,Zap} from 'lucide-react'
-import {getCoachPersona,localCoachText,coachStagePrompt} from '@/lib/coaching/persona-registry.mjs'
+import {getCoachPersona,localCoachText,coachStagePrompt,PUBLIC_COACH_PERSONA_IDS} from '@/lib/coaching/persona-registry.mjs'
 import {getCoachPresentation} from '@/lib/coaching/persona-presentations.mjs'
 import {coachTimeboxState} from '@/lib/coaching/session-timebox.mjs'
 import {coachingBrainSafety,coachingBrainBoundary,coachingBrainStageDecision,offlineCoachingBrainReply,selectCoachingBrainMethod} from '@/lib/personal-coaching/coaching-brain.mjs'
@@ -17,6 +17,7 @@ import {coachSpokenText} from '@/lib/coaching/coach-spoken-text.mjs'
 import {detectedSpeechLocale} from '@/lib/personal-coaching/my-coach-dictation.mjs'
 import {coachIntroAudioPath,startDirectCoachIntroAudio} from '@/lib/personal-coaching/direct-coach-intro-audio.mjs'
 import CoachingAvatar from '@/components/app/coaching-avatar'
+import MyCoachMotionMedia from '@/components/my-coach-motion-media'
 
 const copy={
   en:{
@@ -534,6 +535,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       if(pending.current===controller){pending.current=null;setBusy(false)}
     }
   }
+  const motionPhase=paused?'idle':voiceState.phase==='speaking'?'speaking':
+    voiceState.phase==='listening'?'listening':!introComplete?'greeting':'idle'
   return <section ref={sessionRootRef} className={styles.root} lang={lang} data-my-coach-live-dialogue={personaId} data-my-coach-immersive-session data-session-visual-v2 data-session-visual-v3 data-session-visual-v4 data-coach-session-started={sessionClockStarted?'true':'false'} data-coach-showcase={introComplete?'false':'true'}>
     <header className={styles.sessionTopbar}>
       <Link className={styles.sessionBrand} href={'/'+lang+'/coaching/sessions'} aria-label="Holistic House">
@@ -543,7 +546,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     </header>
     <div className={styles.sessionScroll} data-coaching-session-scroll>
     <section ref={portraitHeroRef} className={styles.sessionHero} aria-label={name} data-voice-phase={voiceState.phase}>
-      <div className={styles.sessionPortrait} data-persona={personaId} role="img" aria-label={name}/>
+      <div className={styles.sessionPortrait} data-persona={personaId}
+        data-coach-motion-video={PUBLIC_COACH_PERSONA_IDS.includes(personaId)?'true':undefined}
+        role="img" aria-label={name}>
+        <MyCoachMotionMedia personaId={personaId} phase={motionPhase} context="session" />
+      </div>
       <div className={styles.sessionHeroShade} aria-hidden="true"/>
       <div className={styles.sessionHeroCopy}>
         <span className={styles.sessionHeroBadge}><Sparkles size={14} aria-hidden="true"/>{ui.mode}</span>

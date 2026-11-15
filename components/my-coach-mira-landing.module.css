@@ -408,3 +408,10 @@
  .heroPortrait[data-persona=sofia],.railPortrait[data-persona=sofia]{background-image:url('/images/holistic-house/my-coach-motion/sofia-still.webp')!important}
  .heroPortrait[data-persona=alex],.railPortrait[data-persona=alex]{background-image:url('/images/holistic-house/my-coach-motion/alex-still.webp')!important}
 }
+
+/* 4-coach pilot: native silent video replaces six-frame WebP jerk. */
+.heroPortrait{overflow:hidden}
+.heroPortrait[data-persona=mira],.railPortrait[data-persona=mira]{background-image:url('/images/holistic-house/my-coach-motion/mira-still.webp')!important}
+.heroPortrait[data-persona=max],.railPortrait[data-persona=max]{background-image:url('/images/holistic-house/my-coach-motion/max-still.webp')!important}
+.heroPortrait[data-persona=sofia],.railPortrait[data-persona=sofia]{background-image:url('/images/holistic-house/my-coach-motion/sofia-still.webp')!important}
+.heroPortrait[data-persona=alex],.railPortrait[data-persona=alex]{background-image:url('/images/holistic-house/my-coach-motion/alex-still.webp')!important}
