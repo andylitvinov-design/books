@@ -510,13 +510,11 @@ export function MandalaVideoReady({
           {notice?<p role="status" className={css.note}>{notice}</p>:null}
         </>}
       </section>:null}
-      {completed?<div className={css.newVideoAction}>
-        <button type="button" data-ready-generate-new onClick={onStartNewVideo}>
-          <Sparkles size={23} aria-hidden="true"/>
-          <strong>{t.newVideo}</strong>
-          <ArrowRight size={22} aria-hidden="true"/>
-        </button>
-      </div>:null}
+      {completed?<button type="button" data-ready-generate-new onClick={onStartNewVideo}>
+        <Sparkles size={23} aria-hidden="true"/>
+        <strong>{t.newVideo}</strong>
+        <ArrowRight size={22} aria-hidden="true"/>
+      </button>:null}
       </>:null}
     </>:null}
     {view==="login"?<div className={css.gateBackdrop} data-ready-save-gate-overlay

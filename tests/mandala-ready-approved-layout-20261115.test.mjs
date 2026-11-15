@@ -31,9 +31,9 @@ test("finished Ready follows reference order: real video, save/Telegram, two car
   assert.ok(status>0&&preview>status&&save>preview&&med>save&&course>med&&newVideo>course);
   assert.match(ready,/src=\{completed\?"\/images\/holistic-house\/ready-save-sunrise-portrait\.jpg"/);
   assert.match(ready,/src=\{completed\?"\/images\/holistic-house\/messenger-zen-stones\.svg"/);
-  assert.match(ready,/\{completed\?<div className=\{css\.newVideoAction\}>/);
+  assert.match(ready,/\{completed\?<button type="button" data-ready-generate-new onClick=\{onStartNewVideo\}>/);
   assert.doesNotMatch(ready,/<div className=\{css\.journey\}>\s*\{completed\?<button/);
-  assert.match(css,/\.newVideoAction>button\{display:flex/);
+  assert.match(css,/\.root\[data-ready-state="complete"\] > \[data-ready-generate-new\]\{display:flex/);
   assert.match(css,/\.root\[data-ready-state="complete"\] \.actions\{grid-template-columns:repeat\(2/);
 });
 
