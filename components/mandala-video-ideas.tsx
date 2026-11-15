@@ -5,7 +5,7 @@ import type {Dispatch,SetStateAction} from "react";
 import {ArrowDown,Check,ChevronDown,Heart,Mic,Pencil,Play,Plus,RefreshCw,SlidersHorizontal,Sparkles,Target,Zap} from "lucide-react";
 import {listMeaningAxes} from "@/lib/mandala/meaning-emotion/idea-engine.mjs";
 import {listCurrentEmotionClusters,listDesiredEmotionClusters} from "@/lib/mandala/meaning-emotion/emotional-vector-matrix.mjs";
-import {resolveVideoIdeaContext,suggestVideoGoalPhrases} from "@/lib/mandala/video-goal-idea-phrases.mjs";
+import {resolveVideoIdeaContext,suggestVideoGoalPhrases,personalizedVideoClosingPhrase} from "@/lib/mandala/video-goal-idea-phrases.mjs";
 import {isIdeaEditorSnapshot,planIdeaSelection,sanitizeIdeaPhrase} from "@/lib/mandala/video-idea-selection.mjs";
 import {goalCurrentMeaningId,goalDesiredMeaningId,DEFAULT_VIDEO_GOAL_PROFILE,type VideoGoalProfile} from "./mandala-video-personalization";
 import type {AffirmationSettings} from "@/lib/mandala/video-affirmations";
@@ -113,6 +113,7 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,active,disab
  // Preserve the canonical Goal classifier. Explicit local Personalization
  // answers refine its suggestions without losing Love/relationship relevance.
  const profileKey=JSON.stringify(profile??null);
+ const closingPhrase=personalizedVideoClosingPhrase(locale,profile?.name);
  const hasCurrentChoice=Boolean(profile&&
   JSON.stringify(profile.current)!==JSON.stringify(DEFAULT_VIDEO_GOAL_PROFILE.current));
  const hasDesiredChoice=Boolean(profile&&
@@ -145,7 +146,9 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,active,disab
    });
    for(const line of next)if(!pool.includes(line))pool.push(line);
   }
-  return pool.slice(0,7);
+  const visible=pool.slice(0,7);
+  if(closingPhrase&&visible.length>=5)visible[visible.length-1]=closingPhrase;
+  return visible;
   // Personal answers are represented by their stable serialized values.
   // eslint-disable-next-line react-hooks/exhaustive-deps
  },[locale,requestText,theme,goalContext.key,profileKey,selectionGoalKey,
@@ -163,7 +166,11 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,active,disab
    return;
   }
   // A genuine change in Goal refinement deliberately starts new suggestions.
-  const initial=planIdeaSelection(suggested,allFive,suggested,signature);
+  // The named ending must be fifth in the actual Canvas/export sequence,
+  // not merely the unselected seventh suggestion.
+  const initialChosen=closingPhrase&&suggested[suggested.length-1]===closingPhrase
+   ?[0,1,2,3,suggested.length-1]:allFive;
+  const initial=planIdeaSelection(suggested,initialChosen,suggested,signature);
   setOptions(initial.editor.options);setChosen(initial.editor.chosen);
   onChange(old=>({...old,...initial.settingsPatch,ideasDraft:initial.editor,
    motion:"rise",visibility:old.visibility.length?old.visibility:["large"]}));
@@ -229,7 +236,14 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,active,disab
    excluded:options,limit:Math.min(3,14-options.length),
   });
   setMoreClicks(n=>n+1);
-  if(candidates.length)apply([...options,...candidates],chosen);
+  if(candidates.length){
+   // "More" inserts ahead of an unedited personal ending, preserving its
+   // place as the last selected phrase and the editor's existing IDs.
+   const closingIsLast=Boolean(closingPhrase&&options[options.length-1]===closingPhrase);
+   const insertAt=closingIsLast?options.length-1:options.length;
+   const optionsNext=[...options.slice(0,insertAt),...candidates,...options.slice(insertAt)];
+   apply(optionsNext,chosen.map(index=>index>=insertAt?index+candidates.length:index));
+  }
  };
  const toggleAxis=(id:string)=>{
   setSelectedAxes(old=>old.includes(id)?(old.length===1?old:old.filter(x=>x!==id)):[...old,id]);

@@ -3,6 +3,12 @@
 .step{display:block;margin:0 0 6px;color:#078667;font:750 12px/1.25 system-ui,sans-serif}
 .intro h2{margin:0 0 6px!important;color:#143d3a;font:750 clamp(25px,6.8vw,33px)/1.08 Georgia,serif!important}
 .intro p{margin:0!important;color:#5d6a71;font:400 clamp(14px,3.65vw,16px)/1.4 system-ui,sans-serif}
+.nameCard{display:grid;gap:6px;min-width:0;padding:12px 15px;border:1px solid #e9dfd1;border-radius:19px;background:#fffcf7;box-shadow:0 4px 14px #60462d0d}
+.namePrompt{font:750 16px/1.3 system-ui,sans-serif;color:#143d3a}
+.nameHint{margin:0!important;color:#65716b;font:400 12px/1.4 system-ui,sans-serif}
+.nameCard input{display:block;min-width:0;width:100%;min-height:44px;padding:10px 13px;border:1px solid #cbded1;border-radius:12px;background:#fff;color:#163e35;font:500 16px/1.25 system-ui,sans-serif}
+.nameCard input::placeholder{color:#87928c}
+.nameCard input:disabled{opacity:.6}
 .card{position:relative;isolation:isolate;min-width:0;padding:18px 15px 13px;border:1px solid #e9dfd1;border-radius:27px;background:#fffcf7;box-shadow:0 6px 22px #60462d14;overflow:hidden}
 .card:before{content:"";position:absolute;z-index:0;top:0;right:0;width:56%;height:120px;background-position:center;background-size:cover;border-radius:0 26px 0 45px;pointer-events:none}
 .card[data-personalization-kind="current"]:before{background-image:linear-gradient(90deg,#fffcf7 3%,#fffcf7aa 40%,#ffffff14 100%),linear-gradient(0deg,#fffcf7 0%,transparent 65%),url("/videos/holistic-house/film-collection-v2/morning-dew.jpg")}
