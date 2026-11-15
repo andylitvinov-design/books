@@ -2,19 +2,20 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 const read=path=>readFile(new URL('../'+path,import.meta.url),'utf8')
-const [picker,style,subscription,subscriptionStyle,billing]=await Promise.all([
+const [picker,style,subscription,subscriptionStyle,billing,globals]=await Promise.all([
   read('components/app/subscription-compact-picker.jsx'),
   read('components/app/subscription-compact-picker.module.css'),
   read('components/app/subscription-access.jsx'),
   read('components/app/subscription-access.module.css'),
-  read('lib/billing/public-plan.js')
+  read('lib/billing/public-plan.js'),
+  read('app/globals.css')
 ])
 test('one user-invoked dialog replaces repeated inline pricing',()=>{
   assert.match(picker,/<dialog\b/)
   assert.match(picker,/\.showModal\(\)/)
   assert.match(picker,/window\.location\.hash==='#hh-settings-plans'/)
   assert.match(subscription,/<SubscriptionCompactPicker locale=\{locale\}/)
-  assert.match(subscriptionStyle,/:global\(\[data-profile-active="settings"\] #hh-settings-overview-plans\)\{display:none\}/)
+  assert.match(globals,/\[data-profile-active="settings"\] #hh-settings-overview-plans\{display:none\}/)
   assert.doesNotMatch(subscription.slice(subscription.indexOf('export function SubscriptionSettings()')),/<PlanSelection t=\{t\}/)
 })
 test('four announced plans stay display-only, without unsafe legacy charge',()=>{
