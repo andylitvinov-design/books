@@ -143,7 +143,7 @@ test('long user speech is never truncated or silently augmented past the server 
  assert.equal(coachGoalTurn({locale:'en',goal:'x'.repeat(181),message:'Hello'}).goalIncluded,false)
 })
 
-test('My Coach UI sends an authored goal visibly and does not create account persistence',()=>{
+test('My Coach UI sends an authored goal visibly and does not create account persistence',async()=>{
  const fs=await import('node:fs')
  const ui=fs.readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
  const body=ui.slice(ui.indexOf('async function sendMessage(raw'))
