@@ -63,7 +63,7 @@ const words={
     iosCue:'Te escucho ahora.',iosPreparing:'Preparando el micrófono del iPhone…',iosSilent:'Safari puede haber dejado de escuchar. Tu texto se puede editar; prueba de nuevo o reinicia Safari.'},
 }
 
-const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speechLocale='auto',initialDraft='',enabled=false,canStart=true,cloudAvailable=false,cloudAgreed=false,cloudProvider=null,personaId='mira',wizardVoice=false,recordedMode=false,onTurn,onCancelTurn,onVoiceStateChange,onRequestConsent,onTranscript,onDraft},ref){
+const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speechLocale='auto',initialDraft='',enabled=false,canStart=true,cloudAvailable=false,cloudAgreed=false,cloudProvider=null,personaId='mira',wizardVoice=false,recordedMode=false,onTurn,onCancelTurn,onVoiceStateChange,onVoiceLevel,onRequestConsent,onTranscript,onDraft},ref){
   const lang=words[locale]?locale:'en',t=words[lang],r=recordingWords[lang]
   const [phase,setPhase]=useState('idle')
   const [notice,setNotice]=useState('')
@@ -85,7 +85,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   const iosCueSatisfiedRef=useRef(false)
   const generationRef=useRef(0)
   const turnRef=useRef(onTurn),cancelRef=useRef(onCancelTurn),stopRef=useRef(null)
-  const voiceStateRef=useRef(onVoiceStateChange)
+  const voiceStateRef=useRef(onVoiceStateChange),levelRef=useRef(onVoiceLevel)
   const beatRef=useRef(0)
   const heardRef=useRef('')
   const lastHeardRef=useRef('')
@@ -98,10 +98,11 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   turnRef.current=onTurn
   cancelRef.current=onCancelTurn
   voiceStateRef.current=onVoiceStateChange
+  levelRef.current=onVoiceLevel
 
   function changePhase(next){
     phaseRef.current=next
-    if(next!=='speaking')beatRef.current=0
+    if(next!=='speaking'){beatRef.current=0;levelRef.current?.(null)}
     setPhase(next)
     voiceStateRef.current?.({phase:next,beat:beatRef.current})
   }
@@ -541,6 +542,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
         if(!response.ok||!response.body)throw Error('CLOUD_TTS_UNAVAILABLE')
         if(!live()||controller.signal.aborted)return
         cloudPlayerRef.current=startCoachingMp3Playback(response,{
+          onLevel:level=>{if(live())levelRef.current?.(level)},
           onStart:()=>{
             if(!live())return
             blockedResumeRef.current=null;setNotice('');changePhase('speaking')

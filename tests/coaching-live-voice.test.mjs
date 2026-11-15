@@ -444,5 +444,52 @@ test('spoken My Coach answer retains the useful reflection rather than only the 
  assert.match(ui,/полный текст остаётся на экране/)
  assert.match(ui,/transcripción completa sigue visible/)
  assert.match(loop,/cloudAgreed&&cloudAvailable/)
- assert.match(ui,/consent&&(?:cloudAgreed&&cloudAvailable|cloudAvailable&&cloudAgreed)/)
+ // Separate privacy choices: a voice-only visitor can enable natural voice
+ // without accepting the unrelated typed-message consent.
+ assert.ok(ui.includes("if(cloudAgreed&&cloudAvailable&&['google_chirp3_hd','fish_free'].includes(cloudProvider))"))
+ assert.ok(ui.includes("const [cloudAgreed,setCloudAgreed]=useState(false)"))
+ assert.ok(ui.includes("{cloudAvailable&&!authRequired&&<div className={styles.naturalVoiceRow}>"))
+ assert.ok(ui.includes("changeNaturalVoice(event.target.checked)"))
+})
+
+test('iPhone buffered MP3 animates from decoded actual waveform without another service call',async()=>{
+  const {startCoachingMp3Playback}=await import('../lib/personal-coaching/streamed-mp3-playback.mjs')
+  const frames=[],levels=[]
+  let blobs=0,starts=0
+  const samples=new Float32Array(4000)
+  samples.fill(.25,2000)
+  class FakeAudio {
+    constructor(){this.currentTime=.75;this.paused=false}
+    play(){this.onplaying?.();return Promise.resolve()}
+    pause(){}
+    removeAttribute(){}
+    load(){}
+  }
+  class Offline {
+    decodeAudioData(){return Promise.resolve({
+      sampleRate:4000,getChannelData:()=>samples
+    })}
+  }
+  const environment={
+    Audio:FakeAudio,OfflineAudioContext:Offline,
+    requestAnimationFrame:callback=>{frames.push(callback);return frames.length},
+    cancelAnimationFrame:()=>{},
+    URL:{createObjectURL:()=> 'blob:coach',revokeObjectURL:()=>{}}
+  }
+  const player=startCoachingMp3Playback({
+    body:{},blob:async()=>{blobs++;return new Blob(['ID3'])}
+  },{environment,onStart:()=>starts++,onLevel:level=>levels.push(level)})
+  await player.run
+  await new Promise(resolve=>setTimeout(resolve,0))
+  assert.equal(starts,1)
+  assert.equal(blobs,1,'no extra provider call or second audio download')
+  assert.ok(frames.length>0)
+  frames.shift()(100)
+  assert.ok(levels.some(level=>level>.9),'audible PCM drives the mouth')
+  player.cancel()
+  assert.equal(levels.at(-1),null,'Stop resets moving mouth')
+  const page=source('components/my-coach-live-dialogue.jsx')
+  const loop=source('components/my-coach-speech-loop.jsx')
+  assert.match(page,/onLevel:level=>\{if\(!controller\.signal\.aborted/)
+  assert.match(loop,/onLevel:level=>\{if\(live\(\)\)levelRef\.current\?\.\(level\)/)
 })
