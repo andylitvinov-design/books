@@ -1,7 +1,7 @@
 name: HH hourly Vercel production batch
 on:
   schedule:
-    - cron: '17 * * * *'
+    - cron: '0 * * * *' # top of every hour in Toronto and UTC (including DST)
   workflow_dispatch:
     inputs:
       emergency:
@@ -49,6 +49,16 @@ jobs:
             if ! printf '%s' "$response" | jq -e '.deployments | type == "array"' >/dev/null; then
               echo 'Unable to verify current Vercel production deployments; refusing speculative build.'
               exit 1
+            fi
+            # Never schedule a second production build in a rolling 60-minute window.
+            # This is defense-in-depth against manual non-emergency dispatches,
+            # GitHub cron delays, and already-existing Vercel production builds.
+            # Emergency Deploy Now deliberately remains outside this limit.
+            cutoff_ms="$(( $(date -u +%s) * 1000 - 3600000 ))"
+            if printf '%s' "$response" | jq -e --argjson cutoff "$cutoff_ms" \
+              '[.deployments[] | select((.created // .createdAt // 0) >= $cutoff and .target == "production" and ((.readyState // .state) != "BLOCKED"))] | length > 0' >/dev/null; then
+              echo 'Production deployment created within the last 60 minutes; skip routine build.'
+              exit 0
             fi
             if printf '%s' "$response" | jq -e --arg sha "$head_sha" '[.deployments[] | (.readyState // .state) as $status | select(.meta.githubCommitSha == $sha and ($status == "READY" or $status == "BUILDING" or $status == "QUEUED" or $status == "INITIALIZING"))] | length > 0' >/dev/null; then
               echo "Already deployed or in progress: $head_sha"
