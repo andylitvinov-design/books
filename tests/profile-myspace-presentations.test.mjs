@@ -53,3 +53,20 @@ test('RU/EN switch preserves profile sections and video is click-to-play', async
   assert.match(styles, /min-height:40px/)
   assert.doesNotMatch(component + styles, /https?:\/\/files2\.heygen\.ai|Expires=|Signature=/)
 })
+
+test('My Space uses a 16:9 video and visible fallback when EN YouTube has no verified upload', async () => {
+  const [player, styles, presentation] = await Promise.all([
+    read('components/site-video-player.tsx'),
+    read('components/app/profile-hub-tabs.module.css'),
+    read('components/app/profile-presentation-player.jsx'),
+  ])
+  assert.match(player, /const directFallbackLink = isHeygen && !playbackYouTubeId && Boolean\(fallbackPoster\) && !internalOnly/)
+  assert.match(player, /fallbackPoster && !approvedPoster && !localPosterFailed/)
+  assert.match(player, /isHeygen && \(!fallbackPoster \|\| localPosterFailed\)/)
+  assert.match(player, /data-video-direct-watch=\{directFallbackLink \? "heygen-fallback" : undefined\}/)
+  assert.match(player, /mirrorLink \|\| externalLink/)
+  assert.match(player, /showRecovery && !directFallbackLink/)
+  assert.match(styles, /site-video-frame\)\{aspect-ratio:16\/9/)
+  assert.match(presentation, /const youtubeReady=locale==='en'/)
+  assert.match(presentation, /video=\{source\} locale=\{locale\} minimal fallbackPoster=\{poster\}/)
+})

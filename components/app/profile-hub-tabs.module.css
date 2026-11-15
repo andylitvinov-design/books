@@ -109,7 +109,7 @@
 .profileSecondaryAction{display:flex;justify-content:flex-end;padding:3px 2px 0}
 .profileSecondaryAction .myPageLink{min-height:40px;padding:7px 11px}
 .hub .videoFrame :global(.site-video-player){width:100%;margin:0;border:0;border-radius:15px;background:transparent;box-shadow:none}
-.hub .videoFrame :global(.site-video-frame){aspect-ratio:2/1;overflow:hidden;border-radius:15px}
+.hub .videoFrame :global(.site-video-frame){aspect-ratio:16/9;overflow:hidden;border-radius:15px}
 .hub .videoFrame :global(.site-video-play){background:#17334b url("/videos/holistic-house/film-collection-v3/sun-autumn-hills.jpg") center/cover no-repeat}
 .hub .videoFrame :global(.site-video-play-icon){background:#fffcf7;color:#067a67;border-color:#fff}
 .hub .videoFrame :global(.site-video-caption){padding:0 6px;min-height:0}
