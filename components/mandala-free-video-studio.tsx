@@ -7647,7 +7647,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         {activeWorkspace==="effects" ? <MandalaTherapyStudio locale={locale}
           disabled={recording||preparing||hypnoAudioBusy}
           editor={isCourse=><MandalaPersonalMeditation key={isCourse?"course":"single"}
-            coursePreview={isCourse} approvedVideoConcept={approvedVideoConcept}
+            coursePreview={isCourse} compactTherapy approvedVideoConcept={approvedVideoConcept}
             locale={locale} theme={theme} wish={wish}
             scene={sceneName} caption={caption} sound={attachedAudio?appliedAudioName:""}
             audioSrc={attachedAudio?.kind==="file"?(audioRights?uploadedAudio?.url||null:null):
@@ -8581,7 +8581,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               onOpenIdeas={()=>{setActiveWorkspace("phrases");setIdeasSubtab("concept");}}
             />
             <button type="button" className={videoStyles.quickEdit}
-              data-video-story-open-settings disabled={recording||preparing}
+              data-video-story-open-settings
+              aria-label={locale==="ru"?"Настройки видео":locale==="es"?"Ajustes de vídeo":"Video settings"}
+              disabled={recording||preparing}
               onClick={()=>{setMontagePanel("settings");setMontageStyleSettingsOpen(false);}}>
               <SlidersHorizontal size={17} aria-hidden="true"/>
               {locale==="ru"?"Настройки видео":locale==="es"?"Ajustes de vídeo":"Video settings"}
