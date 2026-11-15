@@ -4,6 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import dynamic from "next/dynamic";
 import { MandalaSmartAnimation } from "./mandala-smart-animation";
 import Link from "next/link";
+import {StudioMusicPicker} from "./studio-music-picker";
 import { flushSync } from "react-dom";
 import { ArrowRight, Brain, BarChart3, Camera, Check, ChevronDown, ChevronRight, ListVideo, RefreshCw, Coins, Download, Film, HandHeart, Headphones, Heart, HeartPulse, Leaf, Sprout, Music2, AudioLines, Clock3, Smile, Paperclip, Search, Mic, Pause, Play, Share2, Scissors, SlidersHorizontal, Sparkles, Target, TestTubeDiagonal, Zap, X, Save, FolderOpen, Type, MessageCircleQuestion } from "lucide-react";
 import { moneyScenes } from "@/lib/mandala/money-flow-effects";
@@ -2390,12 +2391,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   },[]);
   const audioInputRef = useRef<HTMLInputElement>(null);
   const [uploadedAudio,setUploadedAudio] = useState<{file:File;url:string}|null>(null);
-  const [studioMusicOpen,setStudioMusicOpen]=useState(false);
-  const [studioMusicBusy,setStudioMusicBusy]=useState(false);
-  const [studioMusicError,setStudioMusicError]=useState("");
-  const [studioMusicCategory,setStudioMusicCategory]=useState("all");
-  const [studioMusicTracks,setStudioMusicTracks]=useState<Array<{id:string;title:string;mime:string;bytes:number;category:string}>>([]);
-  const [studioMusicPreview,setStudioMusicPreview]=useState<{id:string;url:string}|null>(null);
   const [importedAudioSeconds,setImportedAudioSeconds]=useState<number|null>(null);
   const messengerAudioHandoffRef=useRef<{locale:PublicLocale;promise:ReturnType<typeof consumeMessengerAudio>}|null>(null);
   const uploadedAudioRef = useRef<{file:File;url:string}|null>(null);
@@ -4438,60 +4433,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     // Other Studio modes retain their existing rights gate.
     if(recipientAudioSelected)setAudioRights(true);
     return entry;
-  }
-  async function openStudioMusicLibrary(){
-    if(studioMusicOpen){setStudioMusicOpen(false);return;}
-    setStudioMusicOpen(true);await refreshStudioMusicLibrary();
-  }
-  async function refreshStudioMusicLibrary(){
-    setStudioMusicBusy(true);setStudioMusicError("");
-    try{
-      const response=await fetch("/api/app/studio-music",{cache:"no-store",credentials:"same-origin"});
-      if(!response.ok)throw Error("MUSIC_UNAVAILABLE");
-      const data=await response.json();
-      if(!Array.isArray(data.items))throw Error("MUSIC_UNAVAILABLE");
-      setStudioMusicTracks(data.items.filter((x:any)=>
-        typeof x.id==="string"&&typeof x.title==="string"&&
-        ["audio/mpeg","audio/mp4","audio/wav"].includes(x.mime)&&
-        Number.isSafeInteger(x.bytes)&&x.bytes>0&&x.bytes<=15*1024*1024));
-    }catch{setStudioMusicError(locale==="ru"?"Библиотека временно недоступна.":locale==="es"?
-      "Biblioteca no disponible.":"Music library unavailable.");}
-    finally{setStudioMusicBusy(false)}
-  }
-  async function readStudioMusic(item:{id:string;title:string;mime:string;bytes:number;category:string},attach=false){
-    if(recording||preparing||studioMusicBusy)return;
-    setStudioMusicBusy(true);setStudioMusicError("");
-    try{
-      const response=await fetch("/api/app/studio-music",{method:"POST",
-        headers:{"Content-Type":"application/json"},credentials:"same-origin",
-        cache:"no-store",body:JSON.stringify({action:"open",assetId:item.id})});
-      if(!response.ok)throw Error("MUSIC_SOURCE_UNAVAILABLE");
-      const info=await response.json();
-      if(info.id!==item.id||info.bytes!==item.bytes||info.mime!==item.mime||
-         typeof info.url!=="string")throw Error("MUSIC_SOURCE_INVALID");
-      const origin=new URL(info.url);
-      if(origin.protocol!=="https:"||origin.username||origin.password)throw Error("MUSIC_SOURCE_INVALID");
-      if(!attach){
-        setStudioMusicPreview({id:item.id,url:origin.href});return;
-      }
-      const download=await fetch(origin.href,{cache:"no-store"});
-      if(!download.ok)throw Error("MUSIC_DOWNLOAD_FAILED");
-      const blob=await download.blob();
-      if(blob.size!==item.bytes)throw Error("MUSIC_DOWNLOAD_INCOMPLETE");
-      const ext=item.mime==="audio/mpeg"?"mp3":item.mime==="audio/mp4"?"m4a":"wav";
-      const file=new File([blob],item.title.slice(0,95).replace(/[/\\]/g,"-")+"."+ext,
-        {type:item.mime});
-      const selected=chooseAudioFile(file);
-      if(!selected)throw Error("MUSIC_NOT_SUPPORTED");
-      // The owner already reviewed commercial sync AND public raw playback rights.
-      // Do not upload, transcribe or submit the file to an external AI service.
-      setAudioRights(true);setAttachedAudio({kind:"file",file:selected.file,id:selected.url});
-      setMusicWarning("");setAudioAuto(false);setStudioMusicPreview(null);
-      setNotice(locale==="ru"?"Музыка из библиотеки добавлена к ролику.":locale==="es"?
-        "Música de la biblioteca añadida al vídeo.":"Library music attached to the video.");
-    }catch{setStudioMusicError(locale==="ru"?"Не удалось открыть эту запись.":locale==="es"?
-      "No se pudo abrir esta pista.":"Could not open this music track.");}
-    finally{setStudioMusicBusy(false)}
   }
   // React StrictMode can replay effects: reuse ONE promise so its first
   // cleanup cannot consume and discard the Messenger's one-use File.
@@ -9162,55 +9103,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   onChange={event=>{chooseAudioFile(event.currentTarget.files?.[0]);event.currentTarget.value="";}}/>
               </label>
             </div>
-            <div data-video-studio-music-library style={{margin:"10px 0",border:"1px solid #d6ded2",borderRadius:15,padding:"10px 12px",background:"#fbfff9"}}>
-              <div style={{display:"flex",flexWrap:"wrap",alignItems:"center",justifyContent:"space-between",gap:8}}>
-                <button type="button" data-video-studio-music-open disabled={recording||preparing}
-                  onClick={()=>void openStudioMusicLibrary()}
-                  style={{border:"1px solid #80c3ae",borderRadius:12,padding:"9px 13px",background:"#e9fff5",color:"#08735d",fontWeight:700}}>
-                  {studioMusicOpen?(locale==="ru"?"Скрыть библиотеку":locale==="es"?"Cerrar biblioteca":"Hide library"):
-                    (locale==="ru"?"♫ Моя музыкальная библиотека":locale==="es"?"♫ Mi biblioteca musical":"♫ My music library")}
-                </button>
-                <a href="/admin/music-library" style={{color:"#08735d",textDecoration:"underline",fontSize:12}}>
-                  {locale==="ru"?"Загрузить 30 треков":locale==="es"?"Subir 30 pistas":"Upload 30 tracks"}
-                </a>
-              </div>
-              {studioMusicOpen&&<div style={{display:"grid",gap:8,marginTop:10}}>
-                <div style={{display:"flex",gap:7,flexWrap:"wrap",alignItems:"center"}}>
-                  <select aria-label={locale==="ru"?"Категория музыки":"Music category"}
-                    value={studioMusicCategory} onChange={e=>setStudioMusicCategory(e.currentTarget.value)}
-                    style={{padding:7,borderRadius:10,border:"1px solid #becfc2"}}>
-                    {(["all","wellbeing","focus","calm","energy","love"] as const).map(k=>
-                      <option key={k} value={k}>{{all:locale==="ru"?"Все":"All",
-                        wellbeing:locale==="ru"?"Восстановление":"Wellbeing",
-                        focus:locale==="ru"?"Фокус":"Focus",
-                        calm:locale==="ru"?"Спокойствие":"Calm",
-                        energy:locale==="ru"?"Энергия":"Energy",
-                        love:locale==="ru"?"Любовь":"Love"}[k]}</option>)}
-                  </select>
-                  <button type="button" onClick={()=>void refreshStudioMusicLibrary()} disabled={studioMusicBusy}>
-                    {locale==="ru"?"Обновить":locale==="es"?"Actualizar":"Refresh"}
-                  </button>
-                  <small>{studioMusicTracks.length}</small>
-                </div>
-                {studioMusicError&&<p role="alert">{studioMusicError}</p>}
-                {!studioMusicBusy&&studioMusicTracks.length===0&&<small>
-                  {locale==="ru"?"Опубликованных композиций пока нет. Добавьте их через загрузку.":locale==="es"?
-                    "Aún no hay pistas publicadas.":"No published music yet. Upload tracks first."}
-                </small>}
-                {studioMusicTracks.filter(x=>studioMusicCategory==="all"||x.category===studioMusicCategory).map(item=>
-                  <div key={item.id} style={{display:"flex",gap:7,alignItems:"center",flexWrap:"wrap",padding:7,border:"1px solid #e4e8df",borderRadius:10}}>
-                    <span style={{fontSize:13,fontWeight:650,flex:"1 1 110px"}}>{item.title}</span>
-                    <button type="button" disabled={studioMusicBusy} onClick={()=>void readStudioMusic(item,false)}>
-                      {locale==="ru"?"Слушать":locale==="es"?"Escuchar":"Listen"}
-                    </button>
-                    <button type="button" disabled={studioMusicBusy||recording||preparing}
-                      onClick={()=>void readStudioMusic(item,true)}>
-                      {locale==="ru"?"В ролик":locale==="es"?"Usar":"Use"}
-                    </button>
-                    {studioMusicPreview?.id===item.id&&<audio controls preload="none" src={studioMusicPreview.url} style={{width:"100%",maxWidth:300}}/>}
-                  </div>)}
-              </div>}
-            </div>
+            <StudioMusicPicker locale={locale} disabled={recording||preparing||micRecording}
+              onSelect={(file:File)=>{
+                const selected=chooseAudioFile(file);
+                if(!selected)return;
+                setAudioRights(true);
+                setAttachedAudio({kind:"file",file:selected.file,id:selected.url});
+                setAudioAuto(false);
+                setMusicWarning("");
+              }}/>
             <div className={videoStyles.audioCompactSelection} data-video-audio-compact-selected
               role="status" aria-live="polite"><Check size={16} aria-hidden="true"/>
               <span>{uploadedAudio?uploadedAudio.file.name:attachedPresetIds.length?appliedAudioName:

@@ -23,18 +23,23 @@ test("upload is 30-file browser batch, private new bucket, with bounded storage"
  assert.doesNotMatch(ui,/service_role|sb_secret_/);
 });
 
-test("every published source can be attached to the existing Video Studio movie path",()=>{
+test("published source playback remains outside protected local Video Studio editor",()=>{
  const studio=read("components/mandala-free-video-studio.tsx");
- assert.match(studio,/data-video-studio-music-library/);
- assert.match(studio,/fetch\("\/api\/app\/studio-music"/);
- assert.match(studio,/readStudioMusic\(item,true\)/);
- assert.match(studio,/blob\.size!==item\.bytes/);
+ const picker=read("components/studio-music-picker.jsx");
+ assert.match(studio,/import \{StudioMusicPicker\}/);
+ assert.match(studio,/<StudioMusicPicker locale=\{locale\}/);
  assert.match(studio,/const selected=chooseAudioFile\(file\)/);
  assert.match(studio,/setAttachedAudio\(\{kind:"file",file:selected\.file,id:selected\.url\}\)/);
  assert.match(studio,/setAudioRights\(true\)/);
  assert.match(studio,/startUploadedAudio\(/);
+ assert.doesNotMatch(studio,/\bfetch\s*\(|XMLHttpRequest|FormData|sendBeacon/);
+ assert.equal((studio.match(/<audio\b/g)||[]).length,1);
+ assert.match(picker,/data-video-studio-music-library/);
+ assert.match(picker,/fetch\("\/api\/app\/studio-music"/);
+ assert.match(picker,/void getRecording\(row,true\)/);
+ assert.match(picker,/buffer\.size!==row\.bytes/);
+ assert.match(picker,/onSelect\(file\)/);
 });
-
 test("filename, declared MIME and file byte limits are validated at the origin",()=>{
  assert.deepEqual(studioMusicFileInfo("piano.MP3","audio/mpeg",1024),
   {ext:"mp3",mime:"audio/mpeg",bytes:1024});
