@@ -5147,10 +5147,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     };
     if(applyAutoFilm(preset.id,20,edit,"portrait",true)){
       if(storyFormat==="motion"){setSpeed("dynamic");setMontageTransition("soft");}
-      // Keep the verified result visible in fifth Montage, where the five
-      // licensed scene selectors live inside the already-open Advanced details.
-      // Returning to fourth Story unmounts those controls and hides a valid result.
-      setMontagePanel("promo");
+      // Keep the five scene inspectors visible after creation; changing to
+      // Extra here unmounted them before the user could review or replace shots.
+      // The explicit quality CTA below advances only when the user chooses it.
+      setMontagePanel("settings");
       setNotice(locale==="ru"
         ?"Пять проверенных сцен собраны. Просмотрите кадры ниже и выберите бесплатное создание MP4."
         :locale==="es"
@@ -5158,18 +5158,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           :"Five verified scenes are ready in Montage. Review them below and choose free MP4 creation.");
     }
   };
-  const replaceStoryboardSource=(index:number,sceneId:string)=>{
-    if(recording||preparing)return;
+  const replaceStoryboardSource=(index:number,sceneId:string):boolean=>{
+    if(recording||preparing)return false;
     const current=cinematicPlan,candidate=FREE_FILM_CATALOG_BY_ID.get(sceneId);
     const verified=candidate?verifiedCategorySource(candidate):null;
     if(current?.version!==FREE_FILM_PLAN_VERSION||!candidate||!verified||
       !STORY_REVIEWED_THEME_COMPATIBILITY[theme].includes(candidate.theme as VideoTheme)||
       !isReviewedFilmedStoryScene(candidate,aspect)||
       !verifiedSceneAspect(verified,aspect)||
-      verified.durationSeconds<(current.shots[index]?.durationSeconds||Infinity))return;
+      verified.durationSeconds<(current.shots[index]?.durationSeconds||Infinity))return false;
     const key=canonicalSourceMasterKey(verified);
     if(!key||current.shots.some((shot,i)=>i!==index&&
-      canonicalSourceMasterKey(verifiedCategorySource(FREE_FILM_CATALOG_BY_ID.get(shot.sceneId)))===key))return;
+      canonicalSourceMasterKey(verifiedCategorySource(FREE_FILM_CATALOG_BY_ID.get(shot.sceneId)))===key))return false;
     recordBeforeEditorChange("storyboard-source:"+index);
     setCinematicPlan(plan=>plan?.version!==FREE_FILM_PLAN_VERSION?plan:{
       ...plan,shots:plan.shots.map((shot,i)=>i===index?{
@@ -5182,6 +5182,20 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       }:choice)
     });
     setResult(null);setReadyFreeFilmKey("");setPreviewPlaying(false);stopMovieSound();
+    return true;
+  };
+  // Free, per-scene alternative: no provider call, no full-story rebuild.
+  // All eligible choices already passed footage, rights, aspect and uniqueness checks.
+  const remixStoryboardSource=(index:number,choices:readonly {id:string}[])=>{
+    const previous=cinematicPlan?.shots[index]?.sceneId;
+    if(!previous||recording||preparing)return;
+    const alternative=choices.find(item=>item.id!==previous);
+    if(!alternative||!replaceStoryboardSource(index,alternative.id))return;
+    setNotice(locale==="ru"
+      ?"Заменён только кадр "+(index+1)+". Остальные сцены сохранены. Проверьте, подходит ли новая съёмка сюжету."
+      :locale==="es"
+        ?"Solo se cambió la escena "+(index+1)+". Las demás se mantienen. Comprueba que el clip encaje con la historia."
+        :"Only scene "+(index+1)+" changed. Other scenes remain untouched. Check that the new footage fits your story.");
   };
   async function transcribeVideoVoice(){
     const entry=uploadedAudioRef.current;
@@ -8673,6 +8687,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                     </button>
                   </div>:null}
                   <div className={videoStyles.storyboardSceneActions}>
+                    <button type="button" data-video-stories-remix={index}
+                      disabled={recording||preparing||!choices.some(item=>item.id!==shot.sceneId)}
+                      onClick={()=>remixStoryboardSource(index,choices)}
+                      title={locale==="ru"?"Только эта сцена · без платной генерации":locale==="es"?"Solo esta escena · sin generación de pago":"This scene only · no paid generation"}>
+                      <RefreshCw size={16} aria-hidden="true"/>
+                      {locale==="ru"?"Другой кадр":locale==="es"?"Otro clip":"Try another clip"}
+                    </button>
                     <button type="button" data-video-stories-move="up" disabled={recording||preparing||index===0}
                       onClick={()=>moveTimelineShot(index,index-1)}>{locale==="ru"?"↑ Выше":"↑ Up"}</button>
                     <button type="button" data-video-stories-move="down" disabled={recording||preparing||index===cinematicPlan.shots.length-1}
@@ -8695,6 +8716,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               <button type="button" data-video-stories-preview disabled={!cinematicPlan||recording||preparing}
                 onClick={()=>{setPreviewPlaying(value=>!value);setPreviewSeekSeconds(0);setPreviewPlayhead(0);}}>
                 {previewPlaying?(locale==="ru"?"Пауза":"Pause"):(locale==="ru"?"Предпросмотр":"Preview")}
+              </button>
+              <button type="button" data-video-stories-to-extra
+                disabled={!cinematicPlan||recording||preparing}
+                onClick={()=>{setPreviewPlaying(false);setMontagePanel("promo");}}>
+                {locale==="ru"?"К выбору качества":locale==="es"?"Elegir calidad":"Choose quality"}
+                <ArrowRight size={16} aria-hidden="true"/>
               </button>
             </div>
             <p className={videoStyles.quickTierNote}>{locale==="ru"?"Подбор сцен и монтаж выполняются локально. Неподходящие или неподтверждённые материалы не подменяются случайными.":"Scene selection and montage run locally. Missing or unverified media is never replaced with unrelated assets."}</p>
