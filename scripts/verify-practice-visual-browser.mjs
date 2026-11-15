@@ -35,6 +35,7 @@ const measure=page=>page.evaluate(()=>{
   const all=selector=>[...root.querySelectorAll(selector)].map(rect)
   const scenic=el('[data-work-video-hero] video')
   const video=el('[data-work-video-hero] .site-video-frame') || scenic
+  const headerControls=el('[data-practice-workspace-heading] [class*="profileHeadingActions"]')
   // The unified seven-item dock is the only visible navigation on public Work.
   // The legacy five-item Practice nav remains in the DOM but is hidden by the shell.
   const bottom=document.querySelector('[data-hh-unified-dock]')
@@ -44,6 +45,8 @@ const measure=page=>page.evaluate(()=>{
     state:root.dataset.authState,
     heading:el('[data-practice-workspace-heading] h2')?.textContent?.trim(),
     header:rect(el('[data-practice-workspace-heading]')),
+    language:rect(el('[data-practice-workspace-heading] [data-profile-language-switch]')),
+    languageModeDirection:headerControls?getComputedStyle(headerControls).flexDirection:null,
     switch:rect(el('[data-profile-mode-switch]')),
     tabs:rect(el('[data-work-profile-tabs]')),
     tabRects:all('[data-work-profile-tab]'),
@@ -149,6 +152,14 @@ for(const browserType of [chromium,webkit]){
           for(const language of ['ru','en'])
             assert.equal(await localeNav.locator('a[lang="'+language+'"]').getAttribute('href'),
               '/'+language+'/practice',label+' Work language route')
+          assert.equal(g.languageModeDirection,'row',label+' RU/EN and Life/Work stay in one row')
+          assert.ok(g.language && g.switch && g.language.width>0,label+' both profile switches exist')
+          assert.ok(Math.abs((g.language.y+g.language.height/2)-(g.switch.y+g.switch.height/2))<=4,
+            label+' RU/EN and Life/Work have aligned vertical centers')
+          assert.ok(g.language.right<=g.switch.x+2,
+            label+' RU/EN is strictly LEFT of Life/Work, never above it')
+          assert.ok(g.language.x>=-3 && g.switch.right<=g.viewport+3,
+            label+' header controls fit iPhone width')
           const presentation=root.locator('[data-work-video-hero] [data-profile-presentation-locale]')
           if(locale==='ru'||locale==='en'){
             assert.equal(await presentation.count(),1,label+' localized presentation player')

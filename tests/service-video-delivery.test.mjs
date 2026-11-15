@@ -108,7 +108,10 @@ test("six identity-verified public intro videos use YouTube on Play while retain
     assert.ok(player.includes(id), "published mirror not accessible: " + id);
   }
   assert.match(player, /existingYouTubeMirrors/);
-  assert.ok(player.includes("{mirrorLink && <div className={styles.quickWatch}>{mirrorLink}</div>}"));
+  // Both approved YouTube mirrors and the fallback for an unpaired EN master must be visible.
+  assert.match(player, /\(mirrorLink \|\| \(directFallbackLink && externalLink\)\)/);
+  assert.match(player, /\{mirrorLink \|\| externalLink\}/);
+  assert.match(player, /data-video-direct-watch=\{directFallbackLink \? "heygen-fallback" : undefined\}/);
   assert.match(player, /const playbackYouTubeId = mirrorId \|\| video\.youtubeId/);
   assert.match(player, /youtube-nocookie\.com\/embed\/\$\{playbackYouTubeId\}/);
   assert.match(player, /https:\/\/app\.heygen\.com\/embeds\//);
