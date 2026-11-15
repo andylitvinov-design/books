@@ -5709,3 +5709,10 @@
    must be display-hidden. Opacity:0 + inert alone are still Playwright-visible. */
 .studio[data-active-workspace="ready"] .quickBuilder>[data-video-result]:not([hidden]) [data-mandala-video-download],
 .studio[data-active-workspace="ready"] .quickBuilder>[data-video-result]:not([hidden]) [data-video-save-direct]{display:none!important}
+
+/* Ready owns the single status/progress block; suppress legacy editor
+   notices and duplicate empty-result preview, never the actual video. */
+.studio[data-active-workspace="ready"] .quickHint,
+.studio[data-active-workspace="ready"] .notice,
+.studio[data-active-workspace="ready"] .warning,
+.studio[data-active-workspace="ready"] [data-video-result-empty]{display:none}
