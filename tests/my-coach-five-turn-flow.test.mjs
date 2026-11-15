@@ -7,7 +7,7 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {runInNewContext} from 'node:vm'
 import {chooseDictationLanguage,detectedSpeechLocale,ios27NeedsSpeechRecovery,
-  readDictationResults} from '../lib/personal-coaching/my-coach-dictation.mjs'
+  readDictationResults,hasCoachSpokenAnswer} from '../lib/personal-coaching/my-coach-dictation.mjs'
 import {appendSpokenAnswer} from '../lib/personal-coaching/speech-text.js'
 
 const source=readFileSync(new URL('../components/my-coach-speech-loop.jsx',import.meta.url),'utf8')
@@ -57,7 +57,7 @@ function createSession({ttsFailures=[],respond}={}){
     ...hooks,window:fakeWindow,document:fakeDocument,
     setTimeout:schedule,clearTimeout:cancel,queueMicrotask,AbortController,
     chooseDictationLanguage,detectedSpeechLocale,ios27NeedsSpeechRecovery,
-    readDictationResults,appendSpokenAnswer,
+    readDictationResults,appendSpokenAnswer,hasCoachSpokenAnswer,
     coachSpokenText:text=>({text}),
     coachIntroAudioPath:(persona,locale)=>'/api/coaching/intro/'+locale+'/'+persona,
     startDirectCoachIntroAudio:(_path,{onStart,onEnd})=>{
@@ -98,6 +98,9 @@ function createSession({ttsFailures=[],respond}={}){
     get cues(){return cues},
     flushShortTimers(){
       for(const [key,t] of [...timers])if(t.ms<=500){timers.delete(key);t.fn()}
+    },
+    flushDelay(ms){
+      for(const [key,t] of [...timers])if(t.ms===ms){timers.delete(key);t.fn()}
     },
   }
 }
@@ -156,4 +159,26 @@ test('safety reply stops the speech loop rather than prompting for another user 
   assert.equal(session.voices.length,1,'no automatic listening after safety stop')
   assert.equal(session.phases.at(-1),'idle')
   assert.deepEqual(session.inputs,['Мне сейчас небезопасно'])
+})
+
+test('iOS 27 naturally ends short yes/no turns without poisoning the next mic',async()=>{
+ const session=createSession()
+ session.ref.current.startSession('Здравствуйте! Я Мира.',{naturalVoice:true})
+ const noiseMic=await nextMic(session,1)
+ noiseMic.onresult?.({results:[{isFinal:false,0:{transcript:'а'}}]})
+ session.flushDelay(6500)
+ assert.equal(noiseMic.aborted,false,'one-letter interim must not abort a heard iOS recognizer')
+ noiseMic.onend?.()
+ session.flushShortTimers()
+ let mic=await nextMic(session,2)
+ for(const [index,answer] of ['Да','No','Sí','42'].entries()){
+  mic.hear(answer)
+  mic=await nextMic(session,index+3)
+ }
+ assert.deepEqual(session.inputs,['Да','No','Sí','42'])
+ assert.equal(session.starts,1,'one Play starts all short utterances')
+ assert.equal(session.ttsCalls,4,'four replies with no duplicate syntheses')
+ assert.equal(session.cues,4,'short responses preserve WebKit recovery cues')
+ session.ref.current.stop()
+ assert.equal(mic.aborted,true)
 })
