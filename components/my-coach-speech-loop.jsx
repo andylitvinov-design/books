@@ -51,6 +51,8 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   // state on each turn; a closure over Play-time props can silence turn two.
   const voiceConfigRef=useRef({cloudAgreed,cloudAvailable,cloudProvider})
   voiceConfigRef.current={cloudAgreed,cloudAvailable,cloudProvider}
+  // A provider change must cancel only the in-flight TTS, not the voice session.
+  const providerUnavailableRef=useRef(null)
   const cloudControllerRef=useRef(null)
   const cloudPlayerRef=useRef(null)
   const introControllerRef=useRef(null),introPlayerRef=useRef(null)
@@ -97,6 +99,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     if(retryTimerRef.current)clearTimeout(retryTimerRef.current)
     if(settleTimerRef.current)clearTimeout(settleTimerRef.current)
     retryTimerRef.current=null;settleTimerRef.current=null;retryAttemptsRef.current=0
+    providerUnavailableRef.current=null
     cloudControllerRef.current?.abort()
     cloudControllerRef.current=null
     cloudPlayerRef.current?.cancel()
@@ -190,6 +193,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       }
       for(const key of [retryTimerRef,settleTimerRef,iosResultTimerRef,iosCueTimerRef])
         if(key.current){clearTimeout(key.current);key.current=null}
+      providerUnavailableRef.current=null
       cloudControllerRef.current?.abort()
       cloudControllerRef.current=null
       cloudPlayerRef.current?.cancel()
@@ -240,8 +244,10 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     if(!enabled&&activeRef.current)stopRef.current?.()
   },[enabled])
   useEffect(()=>{
+    // A provider outage/revoked consent interrupts only outbound audio.
+    // Preserve the original Play activation and return to hands-free listening.
     if((!cloudAgreed||!cloudAvailable)&&(cloudControllerRef.current||cloudPlayerRef.current))
-      stopRef.current?.()
+      providerUnavailableRef.current?.()
   },[cloudAgreed,cloudAvailable])
 
   // If Web Speech ends without words, transparently try a fresh recognizer.
@@ -493,6 +499,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       // An unavailable natural voice must never end the active conversation.
       // Keep the visible text and first-gesture Safari audio unlock; release
       // only the failed player, then listen for the next user turn automatically.
+      providerUnavailableRef.current=null
       introControllerRef.current?.abort()
       introControllerRef.current=null
       introPlayerRef.current?.cancel()
@@ -542,6 +549,9 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     if((naturalVoice||voiceAgreed)&&voiceAvailable&&['google_chirp3_hd','fish_free'].includes(voiceProvider)&&!['safety','boundary'].includes(result.mode)){
       const controller=new AbortController()
       cloudControllerRef.current=controller
+      providerUnavailableRef.current=()=>{
+        if(live()&&!controller.signal.aborted)showTextOnly()
+      }
       const fallback=()=>{
         if(!live()||controller.signal.aborted)return
         cloudPlayerRef.current?.cancel()
@@ -581,6 +591,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
           },
           onEnd:()=>{
             if(!live())return
+            providerUnavailableRef.current=null
             cloudControllerRef.current=null
             cloudPlayerRef.current?.cancel()
             cloudPlayerRef.current=null

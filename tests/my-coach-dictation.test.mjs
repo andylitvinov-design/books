@@ -174,3 +174,41 @@ test('model-turn failure re-arms microphone without re-tapping or retrying an ex
     'El micrófono vuelve a escuchar'])
     assert.ok(loop.includes(text),text)
 })
+
+test('provider status changes during a natural voice reply preserve the active mic',()=>{
+  const loop=source('components/my-coach-speech-loop.jsx')
+  const effect=loop.slice(loop.indexOf('  useEffect(()=>{\n    // A provider outage/revoked consent'),
+    loop.indexOf('  // If Web Speech ends without words'))
+  assert.ok(effect.includes("providerUnavailableRef.current?.()"))
+  assert.doesNotMatch(effect,/stopRef\.current\?\.\(\)|silence\(\)|changePhase\('idle'\)/)
+  const speech=loop.slice(loop.indexOf('async function speakCoachReply('),loop.indexOf('function toggle(){'))
+  const callback=speech.slice(speech.indexOf('providerUnavailableRef.current=()=>{'),
+    speech.indexOf('const fallback=()=>{'))
+  assert.ok(callback.includes('if(live()&&!controller.signal.aborted)showTextOnly()'))
+  const fallback=speech.slice(speech.indexOf('function showTextOnly(){'),
+    speech.indexOf('// Never synthesize'))
+  assert.ok(fallback.includes('providerUnavailableRef.current=null'))
+  assert.ok(fallback.includes('startListening()'))
+  assert.ok(speech.includes('providerUnavailableRef.current=null\n            cloudControllerRef.current=null'))
+  for(const marker of ["if(result.mode==='safety'||result.mode==='boundary')",
+    'recognition.continuous=false','cue.onend=finishCue'])
+    assert.ok(loop.includes(marker),marker)
+})
+
+test('five synthetic speech fragments remain distinct across recognition turn parsing',()=>{
+  const phrases=['Хочу обсудить мои цели','Я чувствую тревогу','Это происходит на работе',
+    'Мне важно выбрать шаг','Завтра попробую это']
+  const recognized=[]
+  for(const phrase of phrases){
+    const interim=readDictationResults([{isFinal:false,0:{transcript:phrase}}])
+    const final=readDictationResults([{isFinal:true,0:{transcript:phrase}}])
+    const repeated=readDictationResults([{isFinal:true,0:{transcript:phrase}}])
+    assert.equal(interim.visible,phrase)
+    assert.equal(final.visible,phrase)
+    assert.equal(repeated.visible,phrase)
+    recognized.push(appendSpokenAnswer('',final.visible,1200))
+  }
+  assert.deepEqual(recognized,phrases)
+  assert.equal(new Set(recognized).size,5)
+  // This is text parsing coverage, not a physical Safari five-turn voice E2E.
+})
