@@ -149,3 +149,20 @@ test('existing owned-only Qwen protection and role guard both survive a conflict
  assert.equal(es.mindRole,'general');
  assert.doesNotMatch(es.modelRequest.messages[0].content,/Secretary Mind|Coach Mind/);
 });
+
+test('short RU/EN turns preserve client-only Coach context and procrastination',()=>{
+ for(const [locale,message,prior] of [
+  ['ru','А потом?','Моя цель — сменить работу'],
+  ['ru','Почему?','Я не могу принять решение'],
+  ['en','And then?','My goal is to change jobs']
+ ])assert.equal(routeMindRole({locale,message,history:[{role:'user',text:prior},
+   {role:'assistant',text:'OK'}]}).role,'coach');
+ assert.equal(routeMindRole({locale:'ru',message:'Я постоянно прокрастинирую'}).role,'coach');
+ assert.equal(routeMindRole({locale:'en',message:'I keep procrastinating'}).role,'coach');
+ for(const [locale,message,prior] of [
+  ['ru','А потом?','Сколько стоит консультация?'],
+  ['en','And then?','How much does a session cost?']
+ ])assert.equal(routeMindRole({locale,message,history:[{role:'user',text:prior}]}).role,'secretary');
+ assert.equal(routeMindRole({locale:'ru',message:'А потом?',history:[
+  {role:'assistant',text:'Моя цель — сменить работу'}]}).role,'secretary');
+});
