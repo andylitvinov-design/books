@@ -1,4 +1,5 @@
 import test from 'node:test'
+import './coach-semantic-evidence.test.mjs'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {coachingGroqConfig,verifiedGroqCoachingReply,coachGroqReasoningEffort,GROQ_COACH_MODEL} from '../lib/coaching/groq-coach-provider.mjs'

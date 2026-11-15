@@ -134,7 +134,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [editablePlan,setEditablePlan]=useState('')
   const [selectedGoal,setSelectedGoal]=useState('')
   const lastSharedGoalRef=useRef('')
-  const semanticHintsRef=useRef([]) // short-lived in-tab hints, never localStorage or report data
+  const semanticHintsRef=useRef([]) // short-lived in-tab hints only; not persisted or exported
   const [replaying,setReplaying]=useState(false)
   const [ratedCoachAnswer,setRatedCoachAnswer]=useState(null)
   const [coachQualityPending,setCoachQualityPending]=useState(false)
