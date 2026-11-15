@@ -4468,6 +4468,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     sttAbortRef.current?.abort();sttAbortRef.current=null;
     setSttBusy(false);setSttError("");setManualTranscript("");
     setVoiceTranscript(null);setVoiceVisualPlan(null);setAudioPlanApplied(false);
+    setMusicMvReport(null);
     stopSoundPreview();
     if(uploadedAudioRef.current)URL.revokeObjectURL(uploadedAudioRef.current.url);
     uploadedAudioRef.current=null;
@@ -8589,6 +8590,22 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               <div><h3>{locale==="ru"?"Простая раскадровка":
                 locale==="es"?"Guion visual simple":"Simple storyboard"}</h3></div>
             </div>
+            {musicMvReport?<div className={videoStyles.montageMovedNote}
+              data-video-music-mv-treatment role="status">
+              <strong>Music Video Director · {musicMvReport.bpm===null
+                ?locale==="ru"?"темп не определён":locale==="es"?"tempo no detectado":"tempo not detected"
+                :`~${musicMvReport.bpm} BPM`}</strong>
+              <p>{locale==="ru"
+                ?"Визуальная тема и история основаны на вашей цели, не на выдуманном содержании музыки. Монтаж учитывает реальные звуковые акценты только там, где это подтверждено анализом."
+                :locale==="es"
+                ?"La historia parte de tu objetivo; el ritmo musical se usa solo cuando hay evidencia acústica."
+                :"The storyline follows your chosen goal. Musical cuts use detected audio attacks only when verified."}</p>
+              <p>{musicMvReport.status==="audio_aligned"
+                ?locale==="ru"?"Видеопереходы подстроены под музыку. Проверьте кадры.":
+                  locale==="es"?"Cortes ajustados al ritmo. Revisa los planos.":"Music-aligned cuts. Review the shots."
+                :locale==="ru"?"Видеосцены подобраны; исходные переходы сохранены.":
+                  locale==="es"?"Escenas elegidas; cortes originales conservados.":"Storyboard selected; original cuts preserved."}</p>
+            </div>:null}
             <MandalaAutomaticStoryboard
               locale={locale} goal={wish} theme={theme} durationSeconds={duration}
               aspect={aspect} styleIndex={quickStyleIndex} pace={speed}
@@ -8968,8 +8985,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <summary>{locale==="ru"?"Ещё инструменты · SRT, монтаж, черновики":locale==="es"?"Más herramientas · SRT y borradores":"More tools · SRT & drafts"}</summary>
           <div className={videoStyles.editorDraftTools} data-video-editor-smart-tools>
             <button type="button" data-video-smart-audio-cut
-              disabled={recording||preparing||smartCutBusy||!usingFreeFilmCompilation||
-                attachedAudio?.kind!=="file"}
+              disabled={recording||preparing||smartCutBusy||!attachedAudio||
+                attachedAudio.kind==="presets"||(attachedAudio.kind==="file"&&!audioRights)}
               onClick={()=>void smartCutFromAudio()}>
               <Music2 size={16} aria-hidden="true"/>
               {smartCutBusy?(locale==="ru"?"Анализ ритма…":locale==="es"?
