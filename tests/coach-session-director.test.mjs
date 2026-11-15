@@ -195,7 +195,7 @@ test('Director owns the mandatory next move without forcing a questionnaire',()=
   assert.doesNotMatch(prompt,/forced action plan|mandatory questionnaire/i)
   const question=inputFor('alex','Что ты думаешь?')
   const answerPrompt=coachSessionDirectivePrompt(coachSessionDirective(question.input,question.persona))
-  assert.match(answerPrompt,/Respond to the latest client utterance first/)
+  assert.match(answerPrompt,/Priority: answer the LATEST client request first/)
   assert.match(answerPrompt,/direct questions/)
 })
 
@@ -325,7 +325,8 @@ test('Provider-free answers are also directed; speech never chooses the next tec
   assert.equal(offline.evidenceQuote,'')
   assert.match(offline.reflection,/Начнём|важно|слушаю|вы|эпизод/u)
   assert.match(server,/directedCoachOfflineReply\(input,directive,reason\)/)
-  assert.match(server,/parseConversationalCoachReply\(reply.text,input,method,directive.stage\)/)
+  assert.match(server,/const stage=directive\?\.stage\|\|coachingBrainStage\(input\)/)
+  assert.match(server,/parseConversationalCoachReply\(reply.text,input,method,stage\)/)
   assert.match(server,/if\(persona&&error\?\.message==='COACHING_BRAIN_RESPONSE_INVALID'\)break/)
   assert.match(server,/enforceCoachSessionDirective\(parsed,directive\)/)
   assert.match(voice,/result=await turnRef.current\?\.\(text\)/)
