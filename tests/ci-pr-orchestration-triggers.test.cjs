@@ -635,3 +635,32 @@ test('hourly Vercel dedupes exact SHA across v6 readyState and state',()=>{
    'protect latest source HEAD before Vercel release');
  assert.match(workflow,/cancel-in-progress: false/);
 });
+
+
+test('normal Vercel production batch allows at most one requested deployment per UTC hour',()=>{
+ const workflow=read('hh-hourly-vercel-production');
+ const {spawnSync}=require('node:child_process');
+ const marker='jq -e --argjson hour_start_ms "$hour_start_ms" \'';
+ const start=workflow.indexOf(marker);
+ assert.ok(start>=0,'UTC-hour deployment guard must be present');
+ const filter=workflow.slice(start+marker.length).split("'")[0];
+ const hour=1794765600000;
+ const check=(records,expected)=>{
+  const result=spawnSync('jq',['-e','--argjson','hour_start_ms',String(hour),filter],{
+    input:JSON.stringify({deployments:records}),encoding:'utf8',timeout:5000,
+  });
+  assert.equal(result.error,undefined,'jq available on trusted runner');
+  assert.equal(result.status,expected?0:1,result.stderr);
+  assert.equal(result.stdout.trim(),expected?'true':'false');
+ };
+ check([],false);
+ check([{target:'preview',created:hour+1,state:'READY'}],false);
+ check([{target:'production',created:hour-1,state:'READY'}],false);
+ check([{target:'production',created:hour+1,state:'READY'}],true);
+ check([{target:'production',createdAt:hour+1,state:'BUILDING'}],true);
+ check([{target:'production',created:hour+1,state:'ERROR'}],true);
+ assert.ok(workflow.includes('type == "number"'),'unknown API timestamps must fail closed');
+ assert.match(workflow,/hhReleaseController:"github-actions-hourly"/);
+ assert.match(workflow,/hhReleaseHourUtc:\$hour/);
+ assert.match(workflow,/if \[\[ "\$EMERGENCY" != "true" \]\]; then/);
+});

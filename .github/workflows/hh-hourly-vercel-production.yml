@@ -54,6 +54,17 @@ jobs:
               echo "Already deployed or in progress: $head_sha"
               exit 0
             fi
+            # One NORMAL production request per UTC hour, across changing SHAs.
+            # Fail closed on missing Vercel timestamps; emergency bypass is separate.
+            if ! printf '%s' "$response" | jq -e '[.deployments[] | ((.created // .createdAt) | type == "number")] | all' >/dev/null; then
+              echo 'Vercel production timestamps unverified; refusing speculative hourly release.'
+              exit 1
+            fi
+            hour_start_ms="$(( ($(date -u +%s) / 3600) * 3600000 ))"
+            if printf '%s' "$response" | jq -e --argjson hour_start_ms "$hour_start_ms" '[.deployments[] | select(.target == "production" and ((.created // .createdAt) >= $hour_start_ms))] | length > 0' >/dev/null; then
+              echo 'Production already requested this UTC hour; defer pending changes to next hourly run.'
+              exit 0
+            fi
           fi
           echo "sha=$head_sha" >> "$GITHUB_OUTPUT"
           echo 'run=true' >> "$GITHUB_OUTPUT"
@@ -68,7 +79,8 @@ jobs:
           set -euo pipefail
           latest="$(git ls-remote https://github.com/andylitvinov-design/books.git refs/heads/codex/public-book-library | cut -f1)"
           [[ "$latest" == "$EXPECTED_SHA" ]] || { echo 'Production advanced; next hourly run will publish latest SHA.'; exit 0; }
-          payload="$(jq -cn --arg sha "$EXPECTED_SHA" '{name:"codex-public-book-library",project:"prj_4jAwcx6lrKyUKZ3R9vgC5xwwyC0b",target:"production",gitSource:{type:"github",repoId:1229814825,ref:"codex/public-book-library",sha:$sha}}')"
+          release_hour="$(date -u +%Y%m%d%H)"
+          payload="$(jq -cn --arg sha "$EXPECTED_SHA" --arg hour "$release_hour" --arg emergency "$EMERGENCY" '{name:"codex-public-book-library",project:"prj_4jAwcx6lrKyUKZ3R9vgC5xwwyC0b",target:"production",gitSource:{type:"github",repoId:1229814825,ref:"codex/public-book-library",sha:$sha},meta:{hhReleaseController:"github-actions-hourly",hhReleaseHourUtc:$hour,hhReleaseEmergency:$emergency}}')"
           url='https://api.vercel.com/v13/deployments?teamId=team_OSf690d0nxRHWVMXCElA8i95'
           if [[ "$EMERGENCY" == "true" ]]; then url="$url&forceNew=1"; fi
           # POST is NOT retried: timeout may mean Vercel accepted it.
