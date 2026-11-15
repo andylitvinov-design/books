@@ -62,13 +62,29 @@ test('The question composer uses the existing verified private messaging route; 
   assert.doesNotMatch(client,/exampleMessages|sampleReply|fakeChat|demoThread/)
 })
 
-test('The consultation CTA routes to an existing published service or a practitioner service listing',()=>{
+test('Owner consultation asks for a future day and time before showing Telegram and WhatsApp',()=>{
   assert.match(client,/data-human-specialist-book/)
+  assert.match(client,/aria-expanded=\{bookingOpen\}/)
+  assert.match(client,/data-human-specialist-booking-fields/)
+  assert.match(client,/type="date" required min=\{minBookingDay\}/)
+  assert.match(client,/type="time" required step=\{900\}/)
+  assert.match(client,/validFuturePreference\(preferredDay,preferredTime\)/)
+  assert.match(client,/bookingReady&&bookingWhatsApp&&/)
+  assert.match(client,/data-human-specialist-booking-channels/)
+  assert.match(client,/telegramEnquiryUrlFromWhatsApp\(bookingWhatsApp\)/)
+  assert.match(client,/href=\{bookingWhatsApp\}/)
+  assert.match(client,/bookingTimezone = bookingReady/)
+  assert.match(client,/t\.bookingUnconfirmed/)
+  // Profiles not owned by Andrey retain their own published service route.
+  assert.match(client,/isOwner \? <>/)
   assert.match(client,/href=\{bookingHref\}/)
   assert.match(page,/services\/imagery-therapy/)
   assert.match(page,/getPublicServiceDetailHref\(locale,slug,service\.slug\)/)
   assert.match(page,/practitioner-services/)
   assert.match(css,/\.book\{[^}]*min-height:58px/)
+  assert.match(css,/\.bookingButtons\{[^}]*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
+  assert.match(browser,/day alone cannot open booking messengers/)
+  assert.match(browser,/choosing a preferred slot never posts to CRM/)
 })
 
 test('Public specialist recordings survive unavailable optional private app configuration',()=>{
