@@ -135,9 +135,32 @@ try{
  for(const id of ids)assert.ok(approved.has(id),'STORIES_UNREVIEWED_OR_GRAPHICAL_SOURCE:'+id);
  result.shotCount=ids.length;result.distinctSources=new Set(ids).size;
  result.verifiedRights=true;
- // Return from the Story editing view to Extra's existing Free offer;
- // the previously built five-scene plan remains attached for the renderer.
- await montageTab.click();
+ // Exercise the real mobile single-scene alternate when the licensed catalog
+ // offers an eligible option. A disabled alternate is honest, not a fake render.
+ const remixButtons=sceneList.locator('[data-video-stories-remix]');
+ assert.equal(await remixButtons.count(),5,'STORIES_SCENE_REMIX_CONTROLS_MISSING');
+ let changeIndex=-1;
+ for(let i=0;i<5;i++)if(await remixButtons.nth(i).isEnabled()){changeIndex=i;break;}
+ if(changeIndex>=0){
+   await remixButtons.nth(changeIndex).click();
+   await page.waitForFunction(({index,previous})=>{
+     const values=[...document.querySelectorAll('[data-video-stories-source]')].map(node=>node.value);
+     return values.length===5&&values[index]!==previous;
+   },{index:changeIndex,previous:ids[changeIndex]},{timeout:15000});
+   const changed=await sceneList.locator('[data-video-stories-source]').evaluateAll(nodes=>
+     nodes.map(node=>node.value));
+   assert.equal(new Set(changed).size,5,'STORIES_REMIX_DUPLICATED_MEDIA');
+   assert.ok(approved.has(changed[changeIndex]),'STORIES_REMIX_UNREVIEWED_SOURCE');
+   for(let i=0;i<5;i++)if(i!==changeIndex)
+     assert.equal(changed[i],ids[i],'STORIES_REMIX_CHANGED_UNRELATED_SCENE_'+i);
+   result.singleSceneRemix={status:'VERIFIED',index:changeIndex,unchanged:4};
+ }else result.singleSceneRemix={status:'NO_ELIGIBLE_ALTERNATIVE'};
+ // Explicit user approval advances from visible Story editors to Extra,
+ // preserving the five licensed source IDs for the existing real renderer.
+ const toExtra=sceneList.locator('[data-video-stories-to-extra]');
+ // The action belongs to the settings footer (a sibling of the scene list).
+ await page.locator('[data-video-stories-to-extra]').click();
+ await montageTab.waitFor({state:'visible',timeout:15000});
  await page.locator('[data-video-montage-pro-offer]').waitFor({state:'visible'});
  // Generate FREE from the actual in-card CTA, not a hidden legacy shortcut.
  const free=page.locator('[data-video-montage-pro-choice="free"]');
