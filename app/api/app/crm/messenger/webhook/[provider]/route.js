@@ -10,7 +10,7 @@ import { verifyMessengerWebhook,verifyMessengerChallenge,normalizeMessengerUpdat
 import { sendTelegramDiagnosticPrompt, sendWhatsAppDiagnosticPrompt, ensureTelegramInlineWebhookUpdates, acknowledgeTelegramInlineCallback, sendTelegramCompanionMessage, sendHolisticBusinessRequestReply, sendHolisticBusinessWelcomePhoto } from '@/lib/crm/messenger-provider'
 import { telegramPresentationOnStart } from '@/lib/crm/telegram-presentation.mjs'
 import {processTelegramCompanion} from '@/lib/crm/telegram-companion-service'
-import {processTelegramAiV3,finishTelegramAiV3} from '@/lib/crm/telegram-ai-diagnostic-v3-service'
+import {processTelegramAiV3,finishTelegramAiV3,finishTelegramWaveVoiceV3,bindTelegramWaveVoiceOffer,deliverTelegramWaveVoiceV3} from '@/lib/crm/telegram-ai-diagnostic-v3-service'
 import {shouldBootstrapTelegramNativeMenu} from '@/lib/crm/telegram-companion-native-commands.mjs'
 import { receiveOwnerTelegramVideoWebhook } from '@/lib/practitioners/owner-telegram-video-service'
 import {processTelegramBusinessConversation} from '@/lib/crm/telegram-business-service'
@@ -245,10 +245,14 @@ export async function POST(request,{params}){
               messageId:event.callbackMessageId})}catch{}
           }
           if(aiIntake.reply){
-            try{await sendTelegramDiagnosticPrompt({
-              to:aiIntake.to,text:aiIntake.reply,keyboard:aiIntake.keyboard,
-              locale:aiIntake.locale,approvedPilotGuest:aiIntake.approvedPilotGuest,
-            })}catch(error){
+            try{
+              const delivered=await sendTelegramDiagnosticPrompt({
+                to:aiIntake.to,text:aiIntake.reply,keyboard:aiIntake.keyboard,
+                locale:aiIntake.locale,approvedPilotGuest:aiIntake.approvedPilotGuest,
+              })
+              if(aiIntake.voiceOffer)await bindTelegramWaveVoiceOffer(
+                config,aiIntake.voiceOffer,delivered.providerId)
+            }catch(error){
               const evidence=telegramPromptFailureEvidence(event.eventId,error,
                 value=>operationHash(value,config))
               console.error('HH_CRM_TG_V3_PROMPT_SEND_FAILED',evidence)
@@ -256,11 +260,20 @@ export async function POST(request,{params}){
           }
           if(aiIntake.generate)after(async()=>{
             try{
-              const ready=await finishTelegramAiV3(config,aiIntake.generate)
-              if(ready?.reply)await sendTelegramDiagnosticPrompt({
-                to:ready.to,text:ready.reply,keyboard:ready.keyboard,
-                locale:ready.locale,approvedPilotGuest:ready.approvedPilotGuest,
-              })
+              const ready=aiIntake.generate.voiceNote
+                ?await finishTelegramWaveVoiceV3(config,aiIntake.generate)
+                :await finishTelegramAiV3(config,aiIntake.generate)
+              if(ready?.reply){
+                if(aiIntake.generate.voiceNote){
+                  // Final consent + STOP check and ONE send under the same
+                  // signed session lock; never reply after a committed revoke.
+                  await deliverTelegramWaveVoiceV3(config,aiIntake.generate,
+                    ready,sendTelegramDiagnosticPrompt)
+                }else await sendTelegramDiagnosticPrompt({
+                  to:ready.to,text:ready.reply,keyboard:ready.keyboard,
+                  locale:ready.locale,approvedPilotGuest:ready.approvedPilotGuest,
+                })
+              }
             }catch{
               // Never log client text, credentials, model prompt or Telegram IDs.
               console.error('HH_CRM_TG_V3_AI_AFTER_FAILED')
@@ -294,6 +307,8 @@ export async function POST(request,{params}){
         }
         // Diagnostic buttons must never fall through to ordinary CRM ingestion.
         if(event.callbackId)continue
+        // Never turn untranscribed private audio into a fake text CRM lead.
+        if(event.isTelegramVoice)continue
       }
       await ingestMessengerUpdate(provider,event,config)
     }
