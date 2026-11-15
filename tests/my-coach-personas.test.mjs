@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
-import {portraitMouthAperture,speechRms} from '../lib/coaching/living-portrait-motion.mjs'
+import {portraitMouthAperture,speechRms,speechPcmEnvelope} from '../lib/coaching/living-portrait-motion.mjs'
 import {normalizeMyCoachFishRequest,myCoachFishConfig} from '../lib/coaching/my-coach-fish-voice.mjs'
 import {
   COACH_PERSONAS, COACH_PERSONA_VERSION, COACH_LOCALES, COACH_TOPICS, COACH_SAFETY_RULES,
@@ -187,6 +187,23 @@ test('Fish natural voice accepts the exact live/replay persona payload but no ex
   assert.equal(myCoachFishConfig({...enabled,HH_MY_COACH_FISH_FREE_DATA_ACKNOWLEDGED:'false'}),null)
 });
 
+test('Downloaded MP3 can drive a bounded, silent-safe 20Hz portrait envelope',()=>{
+  const samples=new Float32Array(4000)
+  samples.fill(.25,2000)
+  const envelope=speechPcmEnvelope(samples,4000)
+  assert.equal(envelope.length,20)
+  assert.equal(envelope[0],0)
+  assert.ok(envelope.at(-1)>.9)
+  assert.equal(speechPcmEnvelope(samples,0).length,0)
+  assert.equal(speechPcmEnvelope([],4000).length,0)
+  const css=readFileSync(new URL('../components/my-coach-live-dialogue.module.css',import.meta.url),'utf8')
+  assert.match(css,/\.root\[data-session-visual-v3\] \.sessionHero\[data-voice-phase='speaking'\] \.sessionPortrait\[data-persona\]::after\{[\s\S]*?top:-4%;height:108%/)
+  assert.match(css,/data-photo-waveform='true'/)
+  assert.match(css,/animation:none;transform:scaleY\(var\(--hh-portrait-mouth-scale,1\)\)/)
+  const hero=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+  assert.match(hero,/ref=\{portraitHeroRef\}/)
+  assert.match(hero,/onVoiceLevel=\{setPortraitLevel\}/)
+})
 
 test('natural voice is independently opt-in for the first microphone-only turn, not locked behind text-composer consent',()=>{
   const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
