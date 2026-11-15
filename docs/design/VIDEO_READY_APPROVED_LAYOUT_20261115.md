@@ -20,12 +20,12 @@
 
 ## Existing interactions and security boundaries
 - Before generating, the sole Generate button sits under the same full-width poster and still uses the existing credit/format/manual-confirm guard. No auto render on arriving from Montage.
-- During actual local encoding: status + a single slim progress bar; original four-domain check-in remains inline below the preview; no optional floating poll/pill or duplicated global notice. A pending poster is explicitly not a playable file.
+- During actual local encoding: status + a single slim progress bar; approved seven-question 0–10 image check-in from protected #4733 remains inline below the preview, stays after export if the user started it and can be dismissed after the summary; no optional floating poll/pill or duplicated global notice. A pending poster is explicitly not a playable file.
 - Completed: show real media controls; verified/credit-confirmed result alone enables Save to private My Videos and explicit Telegram link flow. No simulated video, download, upload, credit debit or delivery.
 - Preserve native video decode verification, localized EN/RU/ES text, on-demand meditation and eight-session script generation, user-invoked sign-in gate, and separate More Ideas/ritual for pre-export.
 - Browser scope: 320/354/390/430px plus tablet and desktop; respect safe areas, 44px touch targets, focus and no scroll blocking. The one-row bottom navigation and Therapy workspace are **not** reverted to the stale Hypno tab shown in the older mock.
 
 ## Verification / release evidence
 - Pre-publication static assertions: component phase, Save guard, offer/button order, responsive CSS, no duplicate in-video message. Real Playwright/WebKit screenshot, overlap/heatmap, physical iPhone player, private Save and provider Telegram E2E: **not executed by this source preparation**.
-- Existing overlapping export-only PR #4729 owns Safari media activation and credit hold; this UI patch must not overwrite its author or files. Protected Core/Specialist/Browser and hourly Vercel deployment gates remain mandatory.
+- Protected #4733's seven-image local-only, opt-in check-in is preserved. Existing overlapping export-only PR #4729 owns Safari media activation and credit hold; this UI patch must not overwrite its author or files. Protected Core/Specialist/Browser and hourly Vercel deployment gates remain mandatory.
 - Visual: **CODE READY / BROWSER QA PENDING**. Functional iPhone E2E: **PENDING**. Live: **NOT CLAIMED**.

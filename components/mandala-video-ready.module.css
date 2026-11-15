@@ -308,6 +308,70 @@
  .root[data-ready-state="choose"] .primary{min-height:46px}
 }
 
+
+/* Ready: image-led sequential 0–10 check-in while the actual on-device export runs. */
+.readyCheckIn{display:grid;gap:10px;min-width:0;padding:13px;border:1px solid #e6d9c8;
+  border-radius:19px;background:#fffcf7;box-shadow:0 3px 15px rgba(67,57,37,.055);
+  color:#143d3a;font-family:Arial,Helvetica,sans-serif}
+.checkinTop{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.checkinEyebrow{font-size:14px;font-weight:800;color:#11674e}
+.checkinCount{font-size:13px;font-weight:800;white-space:nowrap;color:#6b715d}
+.checkinProgress{width:100%;height:6px;overflow:hidden;border:0;border-radius:20px;
+  background:#ede5da;accent-color:#078366}
+.checkinProgress::-webkit-progress-bar{background:#ede5da;border-radius:20px}
+.checkinProgress::-webkit-progress-value{background:#078366;border-radius:20px}
+.checkinProgress::-moz-progress-bar{background:#078366;border-radius:20px}
+.checkinBody,.checkinSummary{display:grid;gap:9px;min-width:0}
+.checkinPicture{position:relative;overflow:hidden;height:clamp(120px,34vw,186px);
+  border-radius:16px;background:#eae6d9}
+.checkinPicture img{display:block;width:100%;height:100%;object-fit:cover}
+.checkinPicture:after{content:"";position:absolute;inset:35% 0 0;
+  background:linear-gradient(transparent,rgba(11,39,29,.53));pointer-events:none}
+.checkinPhotoLabel{position:absolute;z-index:1;bottom:11px;left:12px;
+  padding:6px 11px;border-radius:999px;background:rgba(255,252,247,.94);
+  color:#175342;font-size:13px;font-weight:800}
+.readyCheckIn[data-checkin-tone="relationships"] .checkinPhotoLabel{color:#9e3565;background:#ffebf2}
+.readyCheckIn[data-checkin-tone="security"] .checkinPhotoLabel{color:#805616;background:#fff1d8}
+.readyCheckIn[data-checkin-tone="meaning"] .checkinPhotoLabel{color:#704a96;background:#f3eafb}
+.checkinQuestion{margin:0;color:#143d3a;font:800 clamp(18px,4.7vw,23px)/1.3 Arial,Helvetica,sans-serif}
+.checkinQuestion:focus{outline:none}
+.checkinGuidance{margin:0;color:#657169;font:500 13px/1.45 Arial,Helvetica,sans-serif}
+.checkinNumbers{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;min-width:0}
+.checkinNumbers button{display:grid;place-items:center;min-width:0;min-height:46px;
+  padding:0 3px;border:1px solid #cfe1d4;border-radius:12px;background:#eff8f3;
+  color:#155740;font:800 16px/1 Arial,Helvetica,sans-serif;cursor:pointer;
+  touch-action:manipulation}
+.checkinNumbers button:nth-child(6n+1){background:#f7f2ea}
+.checkinNumbers button:active{background:#087a61;color:#fff;transform:scale(.96)}
+.checkinNumbers button:focus-visible,.checkinPrevious:focus-visible,
+.checkinFinishActions>*:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+.checkinEnds{display:flex;justify-content:space-between;gap:10px;
+  color:#6a736f;font:600 11px/1.3 Arial,Helvetica,sans-serif}
+.checkinPrevious{justify-self:start;min-height:44px;padding:6px 12px;
+  border:1px solid #cddccc;border-radius:12px;background:#fffefa;
+  color:#246651;font:750 13px/1.2 Arial,Helvetica,sans-serif;cursor:pointer}
+.checkinResults{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.checkinResults>div{display:flex;align-items:center;justify-content:space-between;gap:7px;
+  padding:9px;border-radius:11px;background:#f2f7f2;color:#254f40;font-size:12px}
+.checkinResults strong{white-space:nowrap;color:#087456}
+.checkinPrivacy{margin:0;color:#68736e;font:500 12px/1.45 Arial,Helvetica,sans-serif}
+.checkinFinishActions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.checkinFinishActions>*{display:grid;place-items:center;min-height:44px;
+  padding:8px;text-align:center;border:1px solid #c8dacf;border-radius:12px;
+  background:#f1f8f1;color:#125740;text-decoration:none;font:750 12px/1.3 Arial,Helvetica,sans-serif}
+.checkinFinishActions .checkinDone{grid-column:1/-1;background:#087a61;color:#fff;
+  border-color:#087a61;cursor:pointer}
+.checkinFinishActions .checkinAgain{cursor:pointer}
+@media(max-width:360px){
+  .readyCheckIn{padding:10px;gap:8px}
+  .checkinPicture{height:119px}
+  .checkinNumbers{grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}
+  .checkinNumbers button{min-height:46px}
+  .checkinResults{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){.checkinNumbers button{transform:none!important}}
+
+
 /* Approved iPhone Ready reference: one 16:9 preview, compact status and two continuation cards.
    A pending export shares the layout but never claims to be a playable file. */
 .root[data-ready-state="choose"]{gap:10px;padding:clamp(10px,2.6vw,16px)}

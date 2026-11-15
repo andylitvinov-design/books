@@ -18,7 +18,8 @@ test("Ready keeps one approved status and full-aspect preview in every phase",()
   assert.match(css,/aspect-ratio:16\/9/);
   assert.match(ready,/\{!completed&&!waiting\?<button type="button" className=\{css\.primary\}/);
   assert.match(ready,/\{waiting&&!completed&&rendering\?<div className=\{css\.generateProgress\} data-ready-generating>/);
-  assert.match(ready,/data-ready-checkin>\{progressQuestionnaire\}/);
+  assert.match(ready,/<ReadyGenerationCheckIn locale=\{locale\}/);
+  assert.doesNotMatch(ready,/data-ready-checkin>\{progressQuestionnaire\}/);
 });
 
 test("finished Ready follows reference order: real video, save/Telegram, two cards, new-video CTA",()=>{
