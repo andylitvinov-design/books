@@ -47,6 +47,17 @@ test("composition-specific license proof is required for modern music",()=>{
     compositionLicenseEvidence:"https://commons.wikimedia.org/wiki/File:Example.ogg"});
   assert.equal(passed.compositionRights,"licensed_for_commercial_sync");
 });
+test("Commons originals require human listening quality score at least 4 out of 5",()=>{
+ const candidate={...valid(),sourceFile:"original-piano.flac",
+   recordingLicense:"CC0-1.0",originalCommonsSha1:"f".repeat(40),
+   qualityScore:4.5};
+ assert.equal(validateReviewedAudioMetadata(candidate).recordingLicense,"CC0-1.0");
+ for(const qualityScore of [undefined,null,-1,0,3.5,3.99,5.1,NaN,"5"])
+   assert.throws(()=>validateReviewedAudioMetadata({...candidate,qualityScore}),
+     /human_acoustic_quality_review_required/);
+ assert.throws(()=>validateReviewedAudioMetadata({...candidate,originalCommonsSha1:"bogus"}),
+   /commons_source_sha1_required/);
+});
 test("published curated entries are actual hashed, same-origin MP3s with attribution, not hypothetical imports",()=>{
   const data=JSON.parse(readFileSync(new URL("../data/video-catalog/curated-audio-imports.json",import.meta.url),"utf8"));
   assert.equal(data.version,"hh-curated-audio-imports-v1");

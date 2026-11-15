@@ -17,13 +17,16 @@
     "humanListening": "Must be separately rated >=4/5 for beauty, natural timbre, coherence, mixing, noise",
     "existingPublishedRegistryUnchanged": true,
     "existingUserVideoLegacyUnaffected": true,
-    "unapprovedNewTracksPublic": false
+    "unapprovedNewTracksPublic": false,
+    "sourceFidelity": "Prefer verified original lossless FLAC or higher-quality Ogg; reject low-bitrate preview copies and misleading re-encodes",
+    "sourceVerification": "All 30 source filenames are indexed in their Wikimedia Commons categories or individual media file pages. This is NOT proof of downloaded sound or completed rights/quality review.",
+    "editorialGate": "Independent human audition score 4/5 or higher plus source SHA1/SHA256 and both composition/recording rights; unchanged generatorEligible=false until physical import"
   },
   "candidates": [
     {
       "id": "curated-bach-goldberg-aria",
-      "fileName": "Kimiko Ishizaka - 01 - Aria.ogg",
-      "sourcePage": "https://commons.wikimedia.org/wiki/File:Kimiko_Ishizaka_-_01_-_Aria.ogg",
+      "fileName": "Goldberg Variations 01 Aria.ogg",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Goldberg_Variations_01_Aria.ogg",
       "title": "Goldberg Variations: Aria",
       "name": {
         "ru": "Бах — Ария из Гольдберг-вариаций",
@@ -43,13 +46,14 @@
       ],
       "pace": "slow",
       "voiceSafe": true,
-      "series": "Open Goldberg Variations",
+      "series": "Open Goldberg Variations — original high-bitrate Ogg",
       "sourceType": "commons_original_recording_candidate",
       "recordingRights": "VERIFY_COMMONS_CC0_OR_PDM",
       "compositionRights": "public_domain",
       "musicalEditorialStatus": "pending_human_audition",
       "ingestStatus": "not_downloaded",
-      "generatorEligible": false
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
     },
     {
       "id": "curated-bach-goldberg-01",
@@ -79,7 +83,8 @@
       "compositionRights": "public_domain",
       "musicalEditorialStatus": "pending_human_audition",
       "ingestStatus": "not_downloaded",
-      "generatorEligible": false
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
     },
     {
       "id": "curated-bach-goldberg-02",
@@ -110,7 +115,8 @@
       "compositionRights": "public_domain",
       "musicalEditorialStatus": "pending_human_audition",
       "ingestStatus": "not_downloaded",
-      "generatorEligible": false
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
     },
     {
       "id": "curated-bach-goldberg-03",
@@ -140,37 +146,41 @@
       "compositionRights": "public_domain",
       "musicalEditorialStatus": "pending_human_audition",
       "ingestStatus": "not_downloaded",
-      "generatorEligible": false
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
     },
     {
-      "id": "curated-bach-goldberg-04",
-      "fileName": "Goldberg Variations BWV 988 05 Variatio 4 a 1 Clav.flac",
-      "sourcePage": "https://commons.wikimedia.org/wiki/File:Goldberg_Variations_BWV_988_05_Variatio_4_a_1_Clav.flac",
-      "title": "Goldberg Variations: Variation 4",
+      "id": "curated-chopin-etude-tristesse",
+      "fileName": "Chopin - 12 Études, Op. 10 - No. 3 in E major 'Tristesse' (Edward Neeman).flac",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Chopin_-_12_%C3%89tudes%2C_Op._10_-_No._3_in_E_major_'Tristesse'_(Edward_Neeman).flac",
+      "title": "Étude Op.10 No.3 — Tristesse",
       "name": {
-        "ru": "Бах — Гольдберг-вариация №4",
-        "en": "Bach — Goldberg Variation 4",
-        "es": "Bach — Variación Goldberg 4"
+        "ru": "Шопен — Этюд «Печаль»",
+        "en": "Chopin — Tristesse Étude",
+        "es": "Chopin — Estudio «Tristeza»"
       },
-      "performer": "Kimiko Ishizaka",
-      "composer": "Johann Sebastian Bach",
+      "performer": "Edward Neeman",
+      "composer": "Frédéric Chopin",
       "instrument": "piano",
       "categories": [
-        "business",
-        "energy"
+        "body",
+        "stress",
+        "love"
       ],
       "moods": [
-        "uplift"
+        "calm",
+        "focus"
       ],
-      "pace": "active",
-      "voiceSafe": false,
-      "series": "Open Goldberg Variations",
+      "pace": "slow",
+      "voiceSafe": true,
+      "series": "Set Chopin Free",
       "sourceType": "commons_original_recording_candidate",
       "recordingRights": "VERIFY_COMMONS_CC0_OR_PDM",
       "compositionRights": "public_domain",
       "musicalEditorialStatus": "pending_human_audition",
       "ingestStatus": "not_downloaded",
-      "generatorEligible": false
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
     },
     {
       "id": "curated-bach-goldberg-05",
@@ -200,7 +210,8 @@
       "compositionRights": "public_domain",
       "musicalEditorialStatus": "pending_human_audition",
       "ingestStatus": "not_downloaded",
-      "generatorEligible": false
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
     },
     {
       "id": "curated-bach-goldberg-06",
@@ -231,7 +242,8 @@
       "compositionRights": "public_domain",
       "musicalEditorialStatus": "pending_human_audition",
       "ingestStatus": "not_downloaded",
-      "generatorEligible": false
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
     },
     {
       "id": "curated-bach-goldberg-07",
@@ -261,7 +273,8 @@
       "compositionRights": "public_domain",
       "musicalEditorialStatus": "pending_human_audition",
       "ingestStatus": "not_downloaded",
-      "generatorEligible": false
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
     },
     {
       "id": "curated-bach-goldberg-08",
@@ -291,7 +304,8 @@
       "compositionRights": "public_domain",
       "musicalEditorialStatus": "pending_human_audition",
       "ingestStatus": "not_downloaded",
-      "generatorEligible": false
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
     },
     {
       "id": "curated-bach-goldberg-09",
@@ -321,7 +335,8 @@
       "compositionRights": "public_domain",
       "musicalEditorialStatus": "pending_human_audition",
       "ingestStatus": "not_downloaded",
-      "generatorEligible": false
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
     },
     {
       "id": "curated-bach-goldberg-10",
@@ -351,37 +366,40 @@
       "compositionRights": "public_domain",
       "musicalEditorialStatus": "pending_human_audition",
       "ingestStatus": "not_downloaded",
-      "generatorEligible": false
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
     },
     {
-      "id": "curated-bach-goldberg-11",
-      "fileName": "Goldberg Variations BWV 988 12 Variatio 11 a 2 Clav.flac",
-      "sourcePage": "https://commons.wikimedia.org/wiki/File:Goldberg_Variations_BWV_988_12_Variatio_11_a_2_Clav.flac",
-      "title": "Goldberg Variations: Variation 11",
+      "id": "curated-chopin-cello-sonata-largo",
+      "fileName": "Chopin - Cello Sonata in G minor, Op. 65 - III. Largo (Christopher Harding, Yeonjin Kim).flac",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Chopin_-_Cello_Sonata_in_G_minor%2C_Op._65_-_III._Largo_(Christopher_Harding%2C_Yeonjin_Kim).flac",
+      "title": "Cello Sonata Op.65 III — Largo",
       "name": {
-        "ru": "Бах — Гольдберг-вариация №11",
-        "en": "Bach — Goldberg Variation 11",
-        "es": "Bach — Variación Goldberg 11"
+        "ru": "Шопен — Соната для виолончели, Largo",
+        "en": "Chopin — Cello Sonata: Largo",
+        "es": "Chopin — Sonata para violonchelo: Largo"
       },
-      "performer": "Kimiko Ishizaka",
-      "composer": "Johann Sebastian Bach",
-      "instrument": "piano",
+      "performer": "Christopher Harding and Yeonjin Kim",
+      "composer": "Frédéric Chopin",
+      "instrument": "cello",
       "categories": [
-        "energy",
-        "business"
+        "body",
+        "love",
+        "stress"
       ],
       "moods": [
-        "uplift"
+        "calm"
       ],
-      "pace": "active",
-      "voiceSafe": false,
-      "series": "Open Goldberg Variations",
+      "pace": "slow",
+      "voiceSafe": true,
+      "series": "Set Chopin Free",
       "sourceType": "commons_original_recording_candidate",
       "recordingRights": "VERIFY_COMMONS_CC0_OR_PDM",
       "compositionRights": "public_domain",
       "musicalEditorialStatus": "pending_human_audition",
       "ingestStatus": "not_downloaded",
-      "generatorEligible": false
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
     },
     {
       "id": "curated-bach-goldberg-12",
@@ -411,7 +429,8 @@
       "compositionRights": "public_domain",
       "musicalEditorialStatus": "pending_human_audition",
       "ingestStatus": "not_downloaded",
-      "generatorEligible": false
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
     },
     {
       "id": "curated-bach-goldberg-14",
@@ -441,7 +460,8 @@
       "compositionRights": "public_domain",
       "musicalEditorialStatus": "pending_human_audition",
       "ingestStatus": "not_downloaded",
-      "generatorEligible": false
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
     },
     {
       "id": "curated-bach-goldberg-17",
@@ -471,19 +491,20 @@
       "compositionRights": "public_domain",
       "musicalEditorialStatus": "pending_human_audition",
       "ingestStatus": "not_downloaded",
-      "generatorEligible": false
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
     },
     {
-      "id": "curated-chopin-nocturne-15-3",
-      "fileName": "Chopin Nocturne in G minor, Op 15 no 3 Olga Gurevich.ogg",
-      "sourcePage": "https://commons.wikimedia.org/wiki/File:Chopin_Nocturne_in_G_minor%2C_Op_15_no_3_Olga_Gurevich.ogg",
-      "title": "Chopin: Nocturne Op.15 No.3",
+      "id": "curated-chopin-nocturne-15-2",
+      "fileName": "Chopin - Nocturne No. 5 in F-sharp major, Op. 15 No. 2 (Luke Faulkner).flac",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Chopin_-_Nocturne_No._5_in_F-sharp_major%2C_Op._15_No._2_(Luke_Faulkner).flac",
+      "title": "Nocturne No.5 — Op.15 No.2",
       "name": {
-        "ru": "Шопен — Ноктюрн Op.15 No.3",
-        "en": "Chopin — Nocturne Op.15 No.3",
-        "es": "Chopin — Nocturno Op.15 No.3"
+        "ru": "Шопен — Ноктюрн №5",
+        "en": "Chopin — Nocturne No.5",
+        "es": "Chopin — Nocturno n.º 5"
       },
-      "performer": "Olga Gurevich",
+      "performer": "Luke Faulkner",
       "composer": "Frédéric Chopin",
       "instrument": "piano",
       "categories": [
@@ -495,25 +516,26 @@
       ],
       "pace": "slow",
       "voiceSafe": true,
-      "series": "Set Chopin Free / Wikimedia Commons",
+      "series": "Set Chopin Free",
       "sourceType": "commons_original_recording_candidate",
       "recordingRights": "VERIFY_COMMONS_CC0_OR_PDM",
       "compositionRights": "public_domain",
       "musicalEditorialStatus": "pending_human_audition",
       "ingestStatus": "not_downloaded",
-      "generatorEligible": false
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
     },
     {
-      "id": "curated-chopin-nocturne-37-2",
-      "fileName": "Chopin Nocturne Op 37 no 2 in G major Olga Gurevich.ogg",
-      "sourcePage": "https://commons.wikimedia.org/wiki/File:Chopin_Nocturne_Op_37_no_2_in_G_major_Olga_Gurevich.ogg",
-      "title": "Chopin: Nocturne Op.37 No.2",
+      "id": "curated-chopin-nocturne-55-2",
+      "fileName": "Chopin - Nocturne No. 16 in E-flat major, Op. 55 No. 2 (Xuan He).flac",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Chopin_-_Nocturne_No._16_in_E-flat_major%2C_Op._55_No._2_(Xuan_He).flac",
+      "title": "Nocturne No.16 — Op.55 No.2",
       "name": {
-        "ru": "Шопен — Ноктюрн Op.37 No.2",
-        "en": "Chopin — Nocturne Op.37 No.2",
-        "es": "Chopin — Nocturno Op.37 No.2"
+        "ru": "Шопен — Ноктюрн №16",
+        "en": "Chopin — Nocturne No.16",
+        "es": "Chopin — Nocturno n.º 16"
       },
-      "performer": "Olga Gurevich",
+      "performer": "Xuan He",
       "composer": "Frédéric Chopin",
       "instrument": "piano",
       "categories": [
@@ -525,13 +547,14 @@
       ],
       "pace": "slow",
       "voiceSafe": true,
-      "series": "Set Chopin Free / Wikimedia Commons",
+      "series": "Set Chopin Free",
       "sourceType": "commons_original_recording_candidate",
       "recordingRights": "VERIFY_COMMONS_CC0_OR_PDM",
       "compositionRights": "public_domain",
       "musicalEditorialStatus": "pending_human_audition",
       "ingestStatus": "not_downloaded",
-      "generatorEligible": false
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
     },
     {
       "id": "curated-chopin-nocturne-72-1",
@@ -561,7 +584,8 @@
       "compositionRights": "public_domain",
       "musicalEditorialStatus": "pending_human_audition",
       "ingestStatus": "not_downloaded",
-      "generatorEligible": false
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
     },
     {
       "id": "curated-chopin-nocturne-55-1",
@@ -591,7 +615,8 @@
       "compositionRights": "public_domain",
       "musicalEditorialStatus": "pending_human_audition",
       "ingestStatus": "not_downloaded",
-      "generatorEligible": false
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
     },
     {
       "id": "curated-chopin-nocturne-62-2",
@@ -621,7 +646,8 @@
       "compositionRights": "public_domain",
       "musicalEditorialStatus": "pending_human_audition",
       "ingestStatus": "not_downloaded",
-      "generatorEligible": false
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
     },
     {
       "id": "curated-chopin-nocturne-27-1",
@@ -651,7 +677,8 @@
       "compositionRights": "public_domain",
       "musicalEditorialStatus": "pending_human_audition",
       "ingestStatus": "not_downloaded",
-      "generatorEligible": false
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
     },
     {
       "id": "curated-chopin-nocturne-62-1",
@@ -681,7 +708,8 @@
       "compositionRights": "public_domain",
       "musicalEditorialStatus": "pending_human_audition",
       "ingestStatus": "not_downloaded",
-      "generatorEligible": false
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
     },
     {
       "id": "curated-chopin-waltz-69-2",
@@ -711,7 +739,8 @@
       "compositionRights": "public_domain",
       "musicalEditorialStatus": "pending_human_audition",
       "ingestStatus": "not_downloaded",
-      "generatorEligible": false
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
     },
     {
       "id": "curated-chopin-waltz-70-2",
@@ -741,7 +770,8 @@
       "compositionRights": "public_domain",
       "musicalEditorialStatus": "pending_human_audition",
       "ingestStatus": "not_downloaded",
-      "generatorEligible": false
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
     },
     {
       "id": "curated-chopin-waltz-b56",
@@ -771,7 +801,8 @@
       "compositionRights": "public_domain",
       "musicalEditorialStatus": "pending_human_audition",
       "ingestStatus": "not_downloaded",
-      "generatorEligible": false
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
     },
     {
       "id": "curated-chopin-waltz-34-2",
@@ -801,7 +832,8 @@
       "compositionRights": "public_domain",
       "musicalEditorialStatus": "pending_human_audition",
       "ingestStatus": "not_downloaded",
-      "generatorEligible": false
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
     },
     {
       "id": "curated-chopin-waltz-70-3",
@@ -831,7 +863,8 @@
       "compositionRights": "public_domain",
       "musicalEditorialStatus": "pending_human_audition",
       "ingestStatus": "not_downloaded",
-      "generatorEligible": false
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
     },
     {
       "id": "curated-satie-gymnopedie-1",
@@ -862,7 +895,8 @@
       "compositionRights": "public_domain",
       "musicalEditorialStatus": "pending_human_audition",
       "ingestStatus": "not_downloaded",
-      "generatorEligible": false
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
     },
     {
       "id": "curated-satie-gymnopedie-3",
@@ -892,7 +926,8 @@
       "compositionRights": "public_domain",
       "musicalEditorialStatus": "pending_human_audition",
       "ingestStatus": "not_downloaded",
-      "generatorEligible": false
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
     },
     {
       "id": "curated-bach-cello-1",
@@ -923,7 +958,8 @@
       "compositionRights": "public_domain",
       "musicalEditorialStatus": "pending_human_audition",
       "ingestStatus": "not_downloaded",
-      "generatorEligible": false
+      "generatorEligible": false,
+      "sourcePageStatus": "listed_in_official_commons_category_2026_11_15"
     }
   ]
 }

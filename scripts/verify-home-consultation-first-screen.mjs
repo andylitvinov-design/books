@@ -50,15 +50,45 @@ for (const engine of [chromium, webkit]) {
           const firstTabs = page.locator('[data-profile-tab="today"]');
           // EN/RU now use the approved presentation's click-to-play facade,
           // while ES retains the accessible scenic <video> fallback.
+          // Pending English YouTube is an honest 16:9 poster + channel link,
+          // not a fake playable video. Preserve the other real player states.
           const firstVideo = page.locator(
+            '[data-profile-video-hero] [data-profile-presentation-source="youtube-pending"], ' +
             '[data-profile-video-hero] .site-video-frame, [data-profile-video-hero] video'
           ).first();
           if (locale === 'en' || locale === 'ru') {
             const localized = page.locator('[data-profile-presentation-locale]');
             assert.equal(await localized.getAttribute('data-profile-presentation-locale'), locale,
               label + ': presentation language matches the selected site locale');
-            assert.equal(await localized.locator('.site-video-play').count(), 1,
-              label + ': approved presentation has a real play action before playback');
+            if (locale === 'en') {
+              // The approved English channel is YouTube-only. Wait for the exact
+              // public receipt lookup: verified upload → native Play, otherwise
+              // honest, accessible pending state with a real @aatapro link.
+              await page.waitForFunction(() => {
+                const node=document.querySelector('[data-profile-presentation-locale="en"]');
+                return node?.getAttribute('data-profile-presentation-source')==='youtube' ||
+                  node?.getAttribute('data-profile-youtube-status')==='awaiting-verified-upload';
+              },undefined,{timeout:15000});
+            }
+            const source = await localized.getAttribute('data-profile-presentation-source');
+            if (locale === 'en' && source === 'youtube-pending') {
+              assert.equal(await localized.getAttribute('data-profile-youtube-status'),
+                'awaiting-verified-upload',label + ': unverified YouTube cannot claim playback');
+              const channel = localized.locator('a[href="https://www.youtube.com/@aatapro"]');
+              assert.equal(await channel.count(), 1,
+                label + ': pending presentation opens the approved English channel');
+              assert.equal(await channel.getAttribute('target'), '_blank',
+                label + ': open channel without discarding the local page');
+              assert.equal(await channel.getAttribute('rel'), 'noopener noreferrer',
+                label + ': secure outbound channel link');
+              const linkBox=await channel.boundingBox();
+              assert.ok(linkBox && linkBox.height>=44,label + ': pending channel CTA is tappable');
+              assert.equal(await localized.locator('.site-video-play').count(), 0,
+                label + ': no fake Play while YouTube is unverified');
+            } else {
+              assert.equal(await localized.locator('.site-video-play').count(), 1,
+                label + ': verified presentation has a genuine Play action');
+            }
             assert.equal(await localized.locator('iframe').count(), 0,
               label + ': presentation does not auto-play or mount third-party playback');
           } else {
