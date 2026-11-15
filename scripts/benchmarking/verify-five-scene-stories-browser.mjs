@@ -99,6 +99,9 @@ try{
    'STORY_QUALITY_MUST_OPEN_MONTAGE');
  assert.equal(await page.locator('[data-video-basic-editor]').getAttribute('data-montage-panel'),
    'promo','STORY_QUALITY_PANEL_MUST_COMMIT');
+ // Extra must contain only offers. Return to Story → settings for the preserved advanced editor.
+ await storyTab.click();
+ await page.locator('[data-video-story-open-settings]').click();
  const advanced=page.locator('[data-video-stories-advanced]');
  await advanced.locator(':scope > summary').click();
  const format=advanced.locator('[data-video-stories-format]');

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
 const painter=studio.slice(studio.indexOf("function paintCinematicFrame("),studio.indexOf("function paintSingleVideoTextOverlay("));
-test("Stories preserve a one-screen Story and keep advanced scene editing in fifth Montage",()=>{
+test("Stories preserve one-screen Story; Extra has choices and advanced editing lives in Story settings",()=>{
  const start=studio.indexOf("<nav className={videoStyles.montageQuickTools}");
  const nav=studio.slice(start,studio.indexOf("</nav>",start));
  assert.match(nav,/id:"concept",Icon:Film/);
@@ -14,7 +14,7 @@ test("Stories preserve a one-screen Story and keep advanced scene editing in fif
  assert.match(nav,/concept:\{ru:"Сюжет",en:"Story",es:"Guion"\}/);
  assert.match(studio,/data-video-montage-concept/);
  assert.match(studio,/MandalaAutomaticStoryboard/);
- assert.match(studio,/montagePanel==="promo" \? <details className=\{videoStyles\.montageStoryAdvanced\}/);
+ assert.match(studio,/montagePanel==="settings" \? <details className=\{videoStyles\.montageStoryAdvanced\}/);
  assert.match(studio,/data-video-stories-advanced/);
  assert.match(studio,/data-video-montage-storyboard/);
  assert.match(studio,/hypnoEntryGroup/);
