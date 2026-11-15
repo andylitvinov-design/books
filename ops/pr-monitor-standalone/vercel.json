@@ -1,5 +1,5 @@
 {
-  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- .",
+  "ignoreCommand": "node skip-unrelated-build.mjs",
   "version": 2,
   "cleanUrls": false,
   "rewrites": [
