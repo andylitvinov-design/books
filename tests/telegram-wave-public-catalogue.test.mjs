@@ -64,3 +64,15 @@ test('V3 catalogue short circuit follows consent verification and precedes exter
  assert.match(code,/!row\.ai_consent_at\|\|row\.ai_context_id!==job\.contextId/);
  assert.match(code,/ctx\.pending\?\.id!==job\.updateId/);
 });
+
+
+test('published-course short circuit retains independent voice STOP and opt-in guards',()=>{
+ const sourceText=readFileSync(new URL('../lib/crm/telegram-ai-diagnostic-v3-service.js',import.meta.url),'utf8');
+ assert.match(sourceText,/v3VoiceOfferValid\(ctx,event\.callbackMessageId\)/);
+ assert.match(sourceText,/export async function deliverTelegramWaveVoiceV3\(/);
+ assert.match(sourceText,/voiceDeliveryPendingId:ctx\.pending\.voice===true\?job\.updateId:null/);
+ assert.match(sourceText,/const publicCatalogue=prior\.ctx\.conversationKind/);
+ const dangerFirst=sourceText.indexOf('const urgentDuringChat=');
+ const catalogue=sourceText.indexOf('const publicCatalogue=prior.ctx.conversationKind');
+ assert.ok(dangerFirst>=0&&catalogue>dangerFirst,'crisis handling precedes catalogue matching');
+});

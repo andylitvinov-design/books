@@ -5,6 +5,7 @@ import {PrescriptionAdminHeader} from '@/components/prescription-admin-header'
 import {YoutubePhoneUploader} from '@/components/youtube-phone-uploader'
 import AdminYoutubePublications from '@/components/admin-youtube-publications'
 import HeygenEnYoutubePublisher from '@/components/heygen-en-youtube-publisher'
+import HeygenEnYoutubeCatalog from '@/components/heygen-en-youtube-catalog'
 import {requireAdminRequest} from '@/lib/prescriptions/admin'
 import {ownerVideoOauthConfigured} from '@/lib/practitioners/owner-telegram-video-oauth-config.mjs'
 import {meditationApprovedHandoff} from '@/lib/practitioners/meditation-studio-service'
@@ -152,7 +153,8 @@ export default async function YoutubeUploadPage({searchParams}) {
           'Connect AATA Pro · server-side YouTube upload'}
       </Link>}
     </section>
-    <HeygenEnYoutubePublisher locale={locale}
+    <HeygenEnYoutubeCatalog locale={locale}/>
+    <HeygenEnYoutubePublisher key={heygenVideoId||'manual'} locale={locale}
       initialVideoId={heygenVideoId}
       initialTitle={initialHeygenTitle}
       initialDescription={initialHeygenDescription}/>

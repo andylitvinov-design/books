@@ -10,10 +10,13 @@ import { verifyMessengerWebhook,verifyMessengerChallenge,normalizeMessengerUpdat
 import { sendTelegramDiagnosticPrompt, sendWhatsAppDiagnosticPrompt, ensureTelegramInlineWebhookUpdates, acknowledgeTelegramInlineCallback, sendTelegramCompanionMessage, sendHolisticBusinessRequestReply, sendHolisticBusinessWelcomePhoto } from '@/lib/crm/messenger-provider'
 import { telegramPresentationOnStart } from '@/lib/crm/telegram-presentation.mjs'
 import {processTelegramCompanion} from '@/lib/crm/telegram-companion-service'
-import {processTelegramAiV3,finishTelegramAiV3} from '@/lib/crm/telegram-ai-diagnostic-v3-service'
+import {processTelegramAiV3,finishTelegramAiV3,finishTelegramWaveVoiceV3,bindTelegramWaveVoiceOffer,deliverTelegramWaveVoiceV3} from '@/lib/crm/telegram-ai-diagnostic-v3-service'
 import {shouldBootstrapTelegramNativeMenu} from '@/lib/crm/telegram-companion-native-commands.mjs'
 import { receiveOwnerTelegramVideoWebhook } from '@/lib/practitioners/owner-telegram-video-service'
 import {processTelegramBusinessConversation} from '@/lib/crm/telegram-business-service'
+import {telegramBusinessMessageFromUpdate} from '@/lib/assist/telegram-business-request.mjs'
+import {parseHiTelegramRating} from '@/lib/holistic-support/hi-learning-policy.mjs'
+import {insertHiLearningQuality} from '@/lib/holistic-support/hi-learning-store'
 import {processTelegramBusinessSecretary,gateTelegramBusinessSecretaryOptOut} from '@/lib/crm/telegram-secretary-service'
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
@@ -41,6 +44,37 @@ export async function POST(request,{params}){
   try{
     const config=getAppConfig()
     const body=JSON.parse(raw.toString('utf8'))
+    // Quality feedback is separate from Business ordering; never infer consent
+    // from a service request or collect ordinary Telegram messages.
+    if(provider==='telegram'&&process.env.HH_LEARNING_OBSERVATORY_ENABLED==='true'){
+      const event=telegramBusinessMessageFromUpdate(body)
+      const rating=event?parseHiTelegramRating(event.text):null
+      if(rating){
+        try{
+          // Existing HMAC rate bucket deduplicates retried signed Telegram updates;
+          // raw Telegram identifiers never reach the learning tables.
+          await consumeRate(config,{op:'hi-learning-tg-update',connection:event.connectionId,
+            updateId:event.updateId},1,86400)
+          await consumeRate(config,{op:'hi-learning-tg-chat',connection:event.connectionId,
+            chatId:event.chatId},3,86400)
+          await consumeRate(config,{op:'hi-learning-tg-global'},80,86400)
+          const result=await insertHiLearningQuality(config,{
+            channel:'telegram',locale:rating.locale,signal:rating.signal,consent:true,
+          },{trustedTelegram:true})
+          if(result.saved){
+            const thanks=rating.locale==='ru'?'Спасибо. Сохранена только анонимная оценка, без текста сообщения.':
+              rating.locale==='es'?'Gracias. Solo se guardó la valoración anónima, sin el mensaje.':
+              'Thank you. Only the anonymous rating was saved, not your message.'
+            await sendHolisticBusinessRequestReply({connectionId:event.connectionId,
+              to:event.chatId,text:thanks})
+          }
+        }catch{
+          // Do not log Telegram text, IDs, credentials, or quality records.
+          console.error('HH_TG_LEARNING_FEEDBACK_UNAVAILABLE')
+        }
+        return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
+      }
+    }
     if(provider==='telegram'){
       const video=await receiveOwnerTelegramVideoWebhook(config,body,{channel:'crm'})
       if(video.handled){
@@ -211,10 +245,14 @@ export async function POST(request,{params}){
               messageId:event.callbackMessageId})}catch{}
           }
           if(aiIntake.reply){
-            try{await sendTelegramDiagnosticPrompt({
-              to:aiIntake.to,text:aiIntake.reply,keyboard:aiIntake.keyboard,
-              locale:aiIntake.locale,approvedPilotGuest:aiIntake.approvedPilotGuest,
-            })}catch(error){
+            try{
+              const delivered=await sendTelegramDiagnosticPrompt({
+                to:aiIntake.to,text:aiIntake.reply,keyboard:aiIntake.keyboard,
+                locale:aiIntake.locale,approvedPilotGuest:aiIntake.approvedPilotGuest,
+              })
+              if(aiIntake.voiceOffer)await bindTelegramWaveVoiceOffer(
+                config,aiIntake.voiceOffer,delivered.providerId)
+            }catch(error){
               const evidence=telegramPromptFailureEvidence(event.eventId,error,
                 value=>operationHash(value,config))
               console.error('HH_CRM_TG_V3_PROMPT_SEND_FAILED',evidence)
@@ -222,11 +260,20 @@ export async function POST(request,{params}){
           }
           if(aiIntake.generate)after(async()=>{
             try{
-              const ready=await finishTelegramAiV3(config,aiIntake.generate)
-              if(ready?.reply)await sendTelegramDiagnosticPrompt({
-                to:ready.to,text:ready.reply,keyboard:ready.keyboard,
-                locale:ready.locale,approvedPilotGuest:ready.approvedPilotGuest,
-              })
+              const ready=aiIntake.generate.voiceNote
+                ?await finishTelegramWaveVoiceV3(config,aiIntake.generate)
+                :await finishTelegramAiV3(config,aiIntake.generate)
+              if(ready?.reply){
+                if(aiIntake.generate.voiceNote){
+                  // Final consent + STOP check and ONE send under the same
+                  // signed session lock; never reply after a committed revoke.
+                  await deliverTelegramWaveVoiceV3(config,aiIntake.generate,
+                    ready,sendTelegramDiagnosticPrompt)
+                }else await sendTelegramDiagnosticPrompt({
+                  to:ready.to,text:ready.reply,keyboard:ready.keyboard,
+                  locale:ready.locale,approvedPilotGuest:ready.approvedPilotGuest,
+                })
+              }
             }catch{
               // Never log client text, credentials, model prompt or Telegram IDs.
               console.error('HH_CRM_TG_V3_AI_AFTER_FAILED')
@@ -260,6 +307,8 @@ export async function POST(request,{params}){
         }
         // Diagnostic buttons must never fall through to ordinary CRM ingestion.
         if(event.callbackId)continue
+        // Never turn untranscribed private audio into a fake text CRM lead.
+        if(event.isTelegramVoice)continue
       }
       await ingestMessengerUpdate(provider,event,config)
     }

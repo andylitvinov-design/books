@@ -21,7 +21,7 @@ test("Safari movie retains the real Canvas scene, story, hypno and stage caption
     "paintHypnoLightOverlay(ctx,time,hypnoLight)",
     "paintSingleVideoTextOverlay(ctx,time,singleTextSource,affirmationLines,affirmations,duration,cinematicPlan,timelineTextClips)",
     "paintStageCaptionOverlay(ctx,time,plan,clips)",
-    "if(usingFreeFilmCompilation&&!frame)return false",
+    "if(usingFreeFilmCompilation&&!frame&&!hasStoryboardPhotoAt(time))return false",
   ])assert.ok(studio.includes(marker),marker);
 });
 test("No customer upload, fake video or unbounded output",()=>{
@@ -113,7 +113,7 @@ test("Safari failure exposes a safe code and an explicit lighter same-renderer r
   assert.match(studio,/onClick=\{\(\)=>void createVideo\(false,false,true\)\}/);
   assert.match(studio,/code==="webcodecs_aac_unsupported"/);
   assert.match(studio,/setNotice\(hint\+" \("\+code\+"\)\."\)/);
-  assert.match(studio,/if\(usingFreeFilmCompilation&&!frame\)return false/);
+  assert.match(studio,/if\(usingFreeFilmCompilation&&!frame&&!hasStoryboardPhotoAt\(time\)\)return false/);
   assert.match(studio,/audio:files.length\?\{files,volume:soundVolume\}:undefined/);
   assert.doesNotMatch(studio,/safeWebkitRetry\s*\?\s*null\s*:\s*attachedAudio/);
 });
@@ -351,7 +351,7 @@ test("WebKit traverses Ideas Personalization and Concept before consented Voice/
  const record=browser.indexOf('const recordEntry=page.locator',my);
  const tap=browser.indexOf('await recordEntry.click()',record);
  const phrase=browser.indexOf('const phraseSelector=page.locator',tap);
- const consent=browser.indexOf('await narrationConsent.check()',phrase);
+ const consent=browser.indexOf('await narrationConsent.tap()',phrase);
  assert.ok(modes>=0&&personal>modes&&concept>personal&&back>concept&&
    opened>back&&voice>opened&&my>voice&&record>my&&tap>record&&
    phrase>tap&&consent>phrase,"real WebKit route must use visible controls before TTS consent");

@@ -1,10 +1,10 @@
 .wrapper {
   width: 100%;
   padding: clamp(14px, 2.2vw, 22px);
-  border: 1px solid #dce4ed;
+  border: 1px solid var(--hh-light-border, #e9dfd1);
   border-radius: 20px;
-  background: #f9fbfc;
-  color: #233d59;
+  background: #f4faf6;
+  color: var(--hh-light-ink, #143d3a);
 }
 .header {
   text-align: center;
@@ -12,14 +12,14 @@
 }
 .eyebrow {
   margin: 0 0 5px;
-  color: #8c3952;
+  color: #067a67;
   font-size: .71rem;
   font-weight: 800;
   letter-spacing: .14em;
 }
 .header h4 {
   margin: 0;
-  color: #162c4a;
+  color: #143d3a;
   font-size: clamp(1.35rem, 2.1vw, 1.6rem);
   line-height: 1.25;
 }
@@ -35,9 +35,9 @@
   align-items: center;
   min-width: 0;
   padding: 14px 10px;
-  border: 1px solid #dfe6ed;
+  border: 1px solid #dce9df;
   border-radius: 16px;
-  background: #fff;
+  background: #fffefa;
   box-shadow: 0 3px 12px rgba(22, 44, 74, .045);
   text-align: center;
 }
@@ -47,7 +47,7 @@
   justify-content: center;
   min-height: 2.35em;
   margin: 0 0 8px;
-  color: #172f50;
+  color: #143d3a;
   font-size: .94rem;
   font-weight: 730;
   line-height: 1.22;
@@ -63,15 +63,15 @@
 }
 .gaugeSlot figure { margin: 0 auto; }
 .fallbackScore {
-  color: #162f4d;
+  color: #143d3a;
   font-size: 1.5rem;
   font-weight: 780;
   font-variant-numeric: tabular-nums;
 }
-.fallbackScore span { font-size: .85rem; color: #677686; font-weight: 550; }
+.fallbackScore span { font-size: .85rem; color: #5d6a71; font-weight: 550; }
 .band {
   margin: 6px 0 0;
-  color: #784358;
+  color: #665d60;
   font-size: .78rem;
   line-height: 1.35;
 }
