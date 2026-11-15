@@ -200,7 +200,7 @@ test('Director owns the mandatory next move without forcing a questionnaire',()=
 })
 
 test('Director v2 locks one selected move for all eight methods, but never overrides client correction',()=>{
-  assert.equal(COACH_SESSION_DIRECTOR_VERSION,'hh-coach-session-director-v2')
+  assert.equal(COACH_SESSION_DIRECTOR_VERSION,'hh-coach-session-director-v3')
   for(const p of COACH_PERSONAS){
     for(const locale of ['en','ru','es']){
       const intro=inputFor(p.id,locale==='ru'?'Привет!':'Hi!',[],locale)
@@ -364,4 +364,77 @@ test('Provider-free answers are also directed; speech never chooses the next tec
   assert.match(voice,/result=await turnRef.current\?\.\(text\)/)
   assert.match(voice,/void speakCoachReply\(result,text,generation\)/)
   assert.doesNotMatch(voice,/coachSessionDirective\(|directedCoachOfflineReply\(/)
+})
+
+test('Director v3 caps lexical stage and never skips earlier client milestones',()=>{
+  const turns=[
+    user('Моя цель — выбрать подходящий проект.'),
+    user('Вчера на работе было трудно, потому что не хватало времени.'),
+    user('Один вариант — встреча, другой — написать письмо.')
+  ]
+  const s=inputFor('noah','Я сделаю черновик завтра.',turns)
+  const d=coachSessionDirective(s.input,s.persona)
+  assert.equal(d.provisionalPhase,'review')
+  assert.equal(d.stageLimit,'action')
+  assert.equal(d.stage,'action')
+  assert.equal(d.evidence.feasibilityChecked,false)
+  assert.equal(d.canOfferAction,false)
+  assert.equal(d.supportedStages.includes('action'),false)
+  const premature=inputFor('alex','Я рассматриваю один вариант, могу попробовать или подождать.',[
+    user('Я хочу разобраться с этой ситуацией.'),
+    user('Вчера на работе было трудно, потому что не хватало времени.')
+  ])
+  const limited=coachSessionDirective(premature.input,premature.persona)
+  assert.equal(limited.evidence.goalConfirmed,false)
+  assert.equal(limited.stageLimit,'reality')
+  assert.equal(limited.stage,'reality')
+  assert.equal(limited.readiness.ready,false,'unconfirmed prerequisite still blocks readiness')
+  assert.ok(limited.readiness.missing.includes('goalConfirmed'))
+  assert.deepEqual(limited.supportedStages,[])
+})
+
+test('Old facts do not return after a topic change in previous conversation history',()=>{
+  const evidence=coachConfirmedEvidence({locale:'ru',turns:[
+    user('Моя цель — разобраться с работой.'),
+    user('Вчера было трудно, потому что не хватало времени.'),
+    user('Один вариант — письмо, другой — встреча.'),
+    coach('Что вам ближе?'),
+    user('Давайте сменим тему.'),
+    coach('О чём поговорим?'),
+    user('Я хочу поговорить о семье.')
+  ],message:'Я хочу прояснить новый запрос.'})
+  assert.equal(evidence.keyFactsCaptured,false)
+  assert.equal(evidence.constraintsReviewed,false)
+  assert.equal(evidence.optionsExplored,false)
+  assert.equal(evidence.goalConfirmed,false)
+})
+
+test('A clearly off-stage options question is removed in RU EN ES without losing natural reflection',()=>{
+  for(const [locale,statement,question] of [
+    ['ru','Я хочу разобраться с работой.','Какие варианты вы сами видите?'],
+    ['en','I want to understand a work issue.','What are your options?'],
+    ['es','Quiero entender mi trabajo.','¿Qué opciones ves?']
+  ]){
+    const s=inputFor('mira',statement,[],locale)
+    const d=coachSessionDirective(s.input,s.persona)
+    assert.equal(d.interventionId,'ground_in_example')
+    const draft={mode:'ai',message:'Это требует внимания. '+question,planSuggestion:'',evidenceQuote:''}
+    const checked=enforceCoachSessionDirective(draft,d)
+    assert.equal(checked.message,'Это требует внимания.')
+  }
+  const s=inputFor('mira','Мне важно разобраться с работой.')
+  const d=coachSessionDirective(s.input,s.persona)
+  assert.throws(()=>enforceCoachSessionDirective({mode:'ai',message:'Вы уже решили и обязались.'},d),
+    /COACHING_BRAIN_RESPONSE_INVALID/)
+})
+
+test('At minute 17 the Director invites wrap-up instead of another stage',()=>{
+  const s=inputFor('alex','Моя цель — понять, как мне поступить.',[],'ru')
+  s.input.elapsedSeconds=1020
+  const d=coachSessionDirective(s.input,s.persona)
+  assert.equal(d.timebox.offerWrapUp,true)
+  assert.equal(d.interventionId,'invite_reflective_close')
+  assert.equal(d.canOfferAction,false)
+  const safe=enforceCoachSessionDirective({mode:'ai',message:'Какие варианты вы сами видите?',planSuggestion:'',evidenceQuote:''},d)
+  assert.equal(safe.message,'Хотите подвести итог, сделать паузу или продолжить?')
 })
