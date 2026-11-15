@@ -294,7 +294,7 @@ test('Model phrase freedom is bounded by the Director-owned question and safety 
   const checked=enforceCoachSessionDirective(offTopic,d)
   assert.equal(checked.mode,'ai')
   assert.equal(d.interventionId,'ground_in_example')
-  assert.match(checked.message,/конкретный случай\?/u)
+  assert.equal(checked.message,'Кажется, здесь важна ясность.')
   assert.doesNotMatch(checked.message,/завтра\?/u)
   assert.equal(checked.planSuggestion,'')
   assert.equal(checked.evidenceQuote,'')
@@ -302,6 +302,38 @@ test('Model phrase freedom is bounded by the Director-owned question and safety 
   const aligned={mode:'ai',message:'Это важная тема. Можете описать недавний конкретный случай?',
     planSuggestion:'',evidenceQuote:''}
   assert.equal(enforceCoachSessionDirective(aligned,d),aligned,'natural aligned phrase is preserved')
+
+  // Reflective questions can express the permitted discovery move without
+  // using its keyword dictionary. They must keep the model's own wording.
+  for(const [locale,userMessage,answer] of [
+    ['ru','Я хочу разобраться с рабочим вопросом.',
+      'Это звучит непросто. А что вы почувствовали после разговора?'],
+    ['en','I want to clarify a work situation.',
+      'That conversation sounds difficult. How did it land for you?'],
+    ['es','Quiero aclarar una situación laboral.',
+      'Esa conversación parece difícil. ¿Cómo lo viviste?'],
+  ]){
+    const {input,persona}=inputFor('alex',userMessage,[],locale)
+    const directive=coachSessionDirective(input,persona)
+    assert.equal(directive.interventionId,'ground_in_example')
+    const candidate={mode:'ai',message:answer,planSuggestion:'',evidenceQuote:''}
+    assert.equal(enforceCoachSessionDirective(candidate,directive),candidate,
+      'Keep novel, useful language instead of a canned method question: '+locale)
+  }
+  // Positive evidence of a premature action request still invokes the gate.
+  for(const [locale,userMessage,question] of [
+    ['ru','Я хочу разобраться с рабочим вопросом.','Какой шаг вы сделаете завтра?'],
+    ['en','I want to clarify a work situation.','What step will you take tomorrow?'],
+    ['es','Quiero aclarar una situación laboral.','¿Qué paso darás mañana?'],
+  ]){
+    const {input,persona}=inputFor('alex',userMessage,[],locale)
+    const directive=coachSessionDirective(input,persona)
+    const draft={mode:'ai',message:question,planSuggestion:'',evidenceQuote:''}
+    const checked=enforceCoachSessionDirective(draft,directive)
+    assert.notEqual(checked.message,question,'Do not push early commitment: '+locale)
+    assert.ok(checked.message.length>=12,'Retain an authored in-phase fallback: '+locale)
+  }
+
   for(const bad of [
     {mode:'ai',message:'Вы должны решить и действовать прямо сейчас.'},
     {mode:'ai',message:'Время вышло, сессия закончена.'},
