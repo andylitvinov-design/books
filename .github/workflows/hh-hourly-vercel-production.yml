@@ -42,13 +42,15 @@ jobs:
           fi
           head_sha="$(git ls-remote https://github.com/andylitvinov-design/books.git refs/heads/codex/public-book-library | cut -f1)"
           [[ "$head_sha" =~ ^[a-f0-9]{40}$ ]] || exit 1
+          # Vercel v6 can expose state rather than readyState; both must dedupe.
+          # Keep one bounded GET for the latest 100 production deployments.
           if [[ "$EMERGENCY" != "true" ]]; then
-            response="$(curl -fsS --retry 2 --max-time 20 -H "Authorization: Bearer $VERCEL_TOKEN" 'https://api.vercel.com/v6/deployments?teamId=team_OSf690d0nxRHWVMXCElA8i95&projectId=prj_4jAwcx6lrKyUKZ3R9vgC5xwwyC0b&target=production&limit=20')"
+            response="$(curl -fsS --retry 2 --max-time 20 -H "Authorization: Bearer $VERCEL_TOKEN" 'https://api.vercel.com/v6/deployments?teamId=team_OSf690d0nxRHWVMXCElA8i95&projectId=prj_4jAwcx6lrKyUKZ3R9vgC5xwwyC0b&target=production&limit=100')"
             if ! printf '%s' "$response" | jq -e '.deployments | type == "array"' >/dev/null; then
               echo 'Unable to verify current Vercel production deployments; refusing speculative build.'
               exit 1
             fi
-            if printf '%s' "$response" | jq -e --arg sha "$head_sha" '[.deployments[] | select(.meta.githubCommitSha == $sha and (.readyState == "READY" or .readyState == "BUILDING" or .readyState == "QUEUED" or .readyState == "INITIALIZING"))] | length > 0' >/dev/null; then
+            if printf '%s' "$response" | jq -e --arg sha "$head_sha" '[.deployments[] | (.readyState // .state) as $status | select(.meta.githubCommitSha == $sha and ($status == "READY" or $status == "BUILDING" or $status == "QUEUED" or $status == "INITIALIZING"))] | length > 0' >/dev/null; then
               echo "Already deployed or in progress: $head_sha"
               exit 0
             fi

@@ -598,3 +598,40 @@ test('background control schedules halve native runner ticks without weakening e
  assert.match(ci,/reservation_run_id:/);
  assert.match(ci,/HH_CI_SCHEDULE_FALLBACK/);
 });
+
+
+test('hourly Vercel dedupes exact SHA across v6 readyState and state',()=>{
+ const workflow=read('hh-hourly-vercel-production');
+ const {spawnSync}=require('node:child_process');
+ const match=workflow.match(/jq -e --arg sha "\$head_sha" '([^']+)'/);
+ assert.ok(match,'SHA-scoped Vercel duplicate filter missing');
+ const filter=match[1];
+ assert.match(filter,/\(\.readyState \/\/ \.state\) as \$status/);
+ const sha='a'.repeat(40),different='b'.repeat(40);
+ const sample=(commit,status)=>({meta:{githubCommitSha:commit},...status});
+ const check=(records,expected)=>{
+   const out=spawnSync('jq',['-e','--arg','sha',sha,filter],{
+     input:JSON.stringify({deployments:records}),encoding:'utf8',timeout:5000,
+   });
+   assert.equal(out.error,undefined,'jq must be available in existing hosted runner');
+   assert.equal(out.status,expected?0:1,out.stderr);
+   assert.equal(out.stdout.trim(),expected?'true':'false');
+ };
+ check([sample(sha,{readyState:'READY'})],true);
+ check([sample(sha,{state:'READY'})],true);
+ check([sample(sha,{state:'BUILDING'})],true);
+ check([sample(sha,{readyState:'QUEUED'})],true);
+ check([sample(sha,{state:'INITIALIZING'})],true);
+ check([sample(different,{state:'READY'})],false);
+ check([sample(sha,{state:'ERROR'})],false);
+ check([sample(sha,{state:'CANCELED'})],false);
+ check([{meta:{},state:'READY'}],false);
+ check([],false);
+ assert.match(workflow,/target=production&limit=100/,
+   'a single bounded GET covers recent production deployments');
+ assert.match(workflow,/cron: '17 \* \* \* \*'/);
+ assert.match(workflow,/if \[\[ "\$EMERGENCY" != "true" \]\]; then/);
+ assert.match(workflow,/\[\[ "\$latest" == "\$EXPECTED_SHA" \]\]/,
+   'protect latest source HEAD before Vercel release');
+ assert.match(workflow,/cancel-in-progress: false/);
+});
