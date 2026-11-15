@@ -160,15 +160,20 @@ test('My Coach persona dialogue speaks and listens on exactly the consented sess
   const conf=source('next.config.ts')
   const css=source('components/my-coach-speech-loop.module.css')
   assert.match(ui,/MyCoachSpeechLoop/)
-  assert.match(ui,/return sendMessage\(draft.trim\(\)\)/)
-  assert.match(ui,/onTurn=\{sendMessage\}/)
-  assert.match(ui,/enabled=\{consent&&readiness.status!=='checking'&&!authRequired\}/)
+  assert.match(ui,/const result=await sendMessage\(draft.trim\(\)\)/)
+  assert.ok(ui.includes("!['safety','boundary'].includes(result.mode))replayCoachReply(result.reply)"),
+    'typed-turn narration requires consent and never sends safety/boundary content')
+  assert.match(ui,/onTurn=\{text=>sendMessage\(text,\{voiceTurn:true\}\)\}/)
+  assert.match(ui,/enabled=\{true\}/)
   assert.match(ui,/Local-only authored fallback/)
   assert.match(ui,/coachingBrainSafety\(input\)\|\|coachingBrainBoundary\(input\)/)
   assert.match(ui,/if\(mode==='safety'\|\|\(mode==='boundary'/)
   assert.match(ui,/coachStagePrompt\(personaId,stage,responseLocale,settings\)/)
-  const sendFunction=ui.slice(ui.indexOf('async function sendMessage(raw){'))
-  assert.ok(sendFunction.indexOf("if(readiness.status!=='verified'){") < sendFunction.indexOf("fetch('/api/app/my-coach/turn'"), 'offline turn never reaches external provider')
+  const sendFunction=ui.slice(ui.indexOf('async function sendMessage(raw,{voiceTurn=false}={}){'))
+  assert.ok(sendFunction.indexOf("if(authRequired||(readiness.status!=='verified'&&!wisdomRequested)){") >= 0 &&
+    sendFunction.indexOf("if(authRequired||(readiness.status!=='verified'&&!wisdomRequested)){") <
+    sendFunction.indexOf("fetch('/api/app/my-coach/turn'"),
+    'unverified models never receive client text; first-party wisdom requests remain authenticated')
   assert.match(ui,/Browser speech recognition may send microphone audio/)
   assert.match(ui,/Браузер может отправлять звук поставщику распознавания речи/)
   for(const phrase of ['window.SpeechRecognition||window.webkitSpeechRecognition',
@@ -202,7 +207,7 @@ test('selected persona opens immersive My Coach session with real avatar, stages
   for(const token of ['data-my-coach-immersive-session','sessionHero','sessionPortrait','sessionAvatar',
     'CoachingAvatar locale={lang}','sessionProgressSegments','conversationPanel','quickGoalCard',
     'sessionBottomNav','goalRow','onVoiceStateChange={setVoiceState}']) assert.ok(ui.includes(token),token)
-  for(const token of ['stageKeys.indexOf(currentStage)','onClick={replayCoachReply}',
+  for(const token of ['stageKeys.indexOf(currentStage)','onClick={()=>replayCoachReply()}',
     'onClick={()=>chooseTopic(id)}','composerRef.current?.focus()',
     'coachingBrainSafety(input)||coachingBrainBoundary(input)']) assert.ok(ui.includes(token),token)
   for(const token of ['my-coach-portraits.avif','reiki-approved-sunrise-v3.webp',
@@ -233,7 +238,17 @@ test('My Coach speech is visible as text while recording and safely remains edit
   assert.match(css,/\.liveTranscript/)
   assert.match(css,/\.transcriptFeed\{[^}]*overflow-y:auto/)
   assert.match(css,/\.textComposer \.composer textarea/)
-  assert.doesNotMatch(loop,/localStorage|sessionStorage|MediaRecorder|sendBeacon/)
+  // MediaRecorder is allowed only in the separately consented, strictly bounded
+  // iOS fallback: no browser persistence or unsolicited audio transport.
+  assert.doesNotMatch(loop,/localStorage|sessionStorage|sendBeacon/)
+  for(const marker of [
+    "if(!recordingConsentRef.current||!Recorder||!getUserMedia)",
+    "body.set('consent','yes')",
+    "recorded.timer=setTimeout(()=>stopRecordedTurn(),18000)",
+    "file.size>4*1024*1024",
+    "stream.getTracks().forEach(track=>track.stop())",
+    "method:'POST',body,credentials:'same-origin',cache:'no-store',signal:controller.signal",
+  ])assert.ok(loop.includes(marker),'consented ephemeral iOS recording: '+marker)
 })
 
 test('approved live-session visual hierarchy keeps a real voice pipeline, readable transcript and functional mobile controls',()=>{
@@ -243,7 +258,7 @@ test('approved live-session visual hierarchy keeps a real voice pipeline, readab
     'showCaptions&&','className={styles.captionsControl}','setShowCaptions(value=>!value)',
     'className={styles.endControl}','className={styles.liveTranscript}','className={styles.voiceControls}',
     'className={styles.textComposer} open','<details className={styles.quickGoals}>',
-    'onTurn={sendMessage}','onTranscript={setSpeechPreview}']) assert.ok(ui.includes(token),token)
+    'onTurn={text=>sendMessage(text,{voiceTurn:true})}','onTranscript={setSpeechPreview}']) assert.ok(ui.includes(token),token)
   for(const token of ['.heroSubtitle','.transcriptFeed','.sessionBottomNav{display:none}',
     '.voiceCenter :global([data-my-coach-voice] button)','@media(max-width:350px)',
     '@media(max-width:699px) and (max-height:680px)']) assert.ok(css.includes(token),token)
@@ -267,7 +282,9 @@ test('My Coach Fish TTS is only available with opt-in free access and never leak
     cloudVoiceConsent:true,trainingUseConsent:true}),{locale:'ru',text:'Привет'})
   assert.throws(()=>normalizeMyCoachFishRequest({locale:'en',text:'hello',voiceConsent:true,
     cloudVoiceConsent:true,trainingUseConsent:false}),/MY_COACH_FISH_TTS_INVALID/)
-  for(const part of ['requireSameOrigin','auth.verified()','consumeRate','signal:request.signal',
+  for(const part of ['requireSameOrigin','auth.verified()','consumeRate',
+    'signal:AbortSignal.any([request.signal,AbortSignal.timeout(15000)])',
+    'signal:AbortSignal.any([request.signal,AbortSignal.timeout(19000)])',
     'PRIVATE_HEADERS','s2.1-pro-free'])assert.ok(route.includes(part),part)
   for(const part of ['startCoachingMp3Playback','cloudControllerRef.current?.abort()',
     'cloudPlayerRef.current?.cancel()','cloudAgreed&&cloudAvailable',
@@ -327,8 +344,8 @@ test('My Coach has private default TTS, no stale transcription, and tap-to-recov
     "phaseRef.current==='ready'&&blockedResumeRef.current","cloudAgreed&&cloudAvailable"])
     assert.ok(loop.includes(token),token)
   for(const token of ['replayBlocked','void replayPlayerRef.current.resume()',
-    'new Utterance(latestCoachText.slice(0,900))','onBlocked:','replaySpeechRef.current',
-    'detectedSpeechLocale(latestCoachText,lang)'])
+    'new Utterance(spokenText.slice(0,900))','onBlocked:','replaySpeechRef.current',
+    'detectedSpeechLocale(spokenText,lang)'])
     assert.ok(ui.includes(token),token)
   assert.ok(media.includes('onBlocked'))
   assert.ok(media.includes('return {cancel,resume,run,audio}'))
@@ -355,10 +372,22 @@ test('a silent iPhone recognizer offers one-tap retry while natural-voice consen
   assert.ok(loop.includes("phaseRef.current==='stalled'"))
   assert.ok(loop.includes('setMicStalled(false)'))
   assert.ok(loop.includes("retryMic:'Перезапустить микрофон'"))
-  assert.ok(loop.includes('aria-label={retryMic?t.retryMic:'))
+  assert.ok(loop.includes('aria-label={recording?r.recording:transcribing?r.transcribing:retryMic?t.retryMic:'),
+    'microphone retry remains labelled in the recorded/transcribing state machine')
+  assert.ok(loop.includes("if(recordedModeRef.current)recordingConsentRef.current=true"),
+    'the deliberate microphone tap establishes per-turn consent')
+  assert.ok(loop.includes("if(!recordingConsentRef.current||!Recorder||!getUserMedia)"),
+    'external audio transfer stays fail-closed without microphone gesture')
+  assert.ok(!ui.includes('checked={recordingConsent}'),
+    'two redundant reliable recording checkboxes are removed')
   const checkbox=ui.slice(ui.indexOf('<label><input type="checkbox" checked={cloudAgreed}'),
     ui.indexOf('<label><input type="checkbox" checked={cloudAgreed}')+180)
-  assert.ok(checkbox.includes('onChange={event=>{setCloudAgreed(event.target.checked);if(event.target.checked)setWizardVoice(false)}}'))
+  assert.ok(checkbox.includes('onChange={event=>changeNaturalVoice(event.target.checked)}'),
+    'natural voice uses the same consent-controlled state transition')
+  for(const token of ['function changeNaturalVoice(checked){',
+    'setCloudAgreed(Boolean(checked))','if(checked){setWizardVoice(false);return}',
+    'replayControllerRef.current?.abort()', 'replayPlayerRef.current?.cancel()'])
+    assert.ok(ui.includes(token),'revoking voice consent cancels audio: '+token)
   assert.ok(!checkbox.includes('disabled='), 'active/ready STT cannot lock the Fish consent checkbox')
   assert.ok(loop.includes('(!cloudAgreed||!cloudAvailable)&&(cloudControllerRef.current||cloudPlayerRef.current)'),
     'revoking cloud consent still stops the private audio request')
@@ -366,7 +395,7 @@ test('a silent iPhone recognizer offers one-tap retry while natural-voice consen
 
 test('My Coach Replay animates large portrait only on actual device or cloud audio playback',()=>{
   const page=source('components/my-coach-live-dialogue.jsx')
-  const replay=page.split('function replayCoachReply(){')[1]?.split('  useEffect(()=>{')[0]
+  const replay=page.split('function replayCoachReply(overrideText){')[1]?.split('  useEffect(()=>{')[0]
   assert.ok(replay,'Replay handler exists in existing voice session')
   const cloud=replay.split('replayPlayerRef.current=startCoachingMp3Playback(response,{')[1]?.split('\n        })')[0]
   assert.ok(cloud,'existing consented MP3 player reused')
@@ -402,3 +431,65 @@ test('Original wizard option is local-only with approved British device-voice se
  assert.match(loop,/changePhase\('stalled'\)/)
  assert.match(loop,/phaseRef\.current==='stalled'/)
 });
+
+test('spoken My Coach answer retains the useful reflection rather than only the last question',()=>{
+ const loop=source('components/my-coach-speech-loop.jsx')
+ const ui=source('components/my-coach-live-dialogue.jsx')
+ assert.match(loop,/const speakable=coachSpokenText\(reply\)\.text/)
+ assert.match(loop,/new Utterance\(reply\)/)
+ assert.doesNotMatch(loop,/questions\.slice\(\)\.reverse\(\)\.find/)
+ assert.match(ui,/coachSpokenText\(spokenText\)\.text/)
+ assert.doesNotMatch(ui,/const question=spokenText\.match/)
+ assert.match(ui,/Longer replies are abbreviated for speech/)
+ assert.match(ui,/полный текст остаётся на экране/)
+ assert.match(ui,/transcripción completa sigue visible/)
+ assert.match(loop,/cloudAgreed&&cloudAvailable/)
+ // Separate privacy choices: a voice-only visitor can enable natural voice
+ // without accepting the unrelated typed-message consent.
+ assert.ok(ui.includes("if(cloudAgreed&&cloudAvailable&&['google_chirp3_hd','fish_free'].includes(cloudProvider))"))
+ assert.ok(ui.includes("const [cloudAgreed,setCloudAgreed]=useState(false)"))
+ assert.ok(ui.includes("{cloudAvailable&&!authRequired&&<div className={styles.naturalVoiceRow}>"))
+ assert.ok(ui.includes("changeNaturalVoice(event.target.checked)"))
+})
+
+test('iPhone buffered MP3 animates from decoded actual waveform without another service call',async()=>{
+  const {startCoachingMp3Playback}=await import('../lib/personal-coaching/streamed-mp3-playback.mjs')
+  const frames=[],levels=[]
+  let blobs=0,starts=0
+  const samples=new Float32Array(4000)
+  samples.fill(.25,2000)
+  class FakeAudio {
+    constructor(){this.currentTime=.75;this.paused=false}
+    play(){this.onplaying?.();return Promise.resolve()}
+    pause(){}
+    removeAttribute(){}
+    load(){}
+  }
+  class Offline {
+    decodeAudioData(){return Promise.resolve({
+      sampleRate:4000,getChannelData:()=>samples
+    })}
+  }
+  const environment={
+    Audio:FakeAudio,OfflineAudioContext:Offline,
+    requestAnimationFrame:callback=>{frames.push(callback);return frames.length},
+    cancelAnimationFrame:()=>{},
+    URL:{createObjectURL:()=> 'blob:coach',revokeObjectURL:()=>{}}
+  }
+  const player=startCoachingMp3Playback({
+    body:{},blob:async()=>{blobs++;return new Blob(['ID3'])}
+  },{environment,onStart:()=>starts++,onLevel:level=>levels.push(level)})
+  await player.run
+  await new Promise(resolve=>setTimeout(resolve,0))
+  assert.equal(starts,1)
+  assert.equal(blobs,1,'no extra provider call or second audio download')
+  assert.ok(frames.length>0)
+  frames.shift()(100)
+  assert.ok(levels.some(level=>level>.9),'audible PCM drives the mouth')
+  player.cancel()
+  assert.equal(levels.at(-1),null,'Stop resets moving mouth')
+  const page=source('components/my-coach-live-dialogue.jsx')
+  const loop=source('components/my-coach-speech-loop.jsx')
+  assert.match(page,/onLevel:level=>\{if\(!controller\.signal\.aborted/)
+  assert.match(loop,/onLevel:level=>\{if\(live\(\)\)levelRef\.current\?\.\(level\)/)
+})

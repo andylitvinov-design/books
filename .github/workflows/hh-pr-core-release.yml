@@ -438,10 +438,20 @@ jobs:
             fi
           fi
           files=()
+          # ESLint config, TypeScript config and dependency changes can
+          # invalidate lint results across unchanged sources. Keep the
+          # original whole-repository lint on these exact changes.
+          full_lint=false
           while IFS= read -r -d '' f; do
+            case "$f" in
+              eslint.config.*|.eslintrc*|package.json|package-lock.json|tsconfig.json)
+                full_lint=true ;;
+            esac
             if [[ "$f" =~ \.(cjs|mjs|js|jsx|ts|tsx)$ && -f "$f" ]]; then files+=("$f"); fi
           done < <(git diff --name-only -z "$BASE_SHA" HEAD)
-          if (( ${#files[@]} > 0 )); then
+          if [[ "$full_lint" == true ]]; then
+            npm run lint
+          elif (( ${#files[@]} > 0 )); then
             npx --no-install eslint "${files[@]}"
           else
             echo 'No changed JS/TS files to lint'
@@ -467,7 +477,11 @@ jobs:
         if: ${{ (github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT' && steps.fast.outputs.route != 'DOCK')) && (steps.diff.outputs.ci_only != 'true') }}
         # CI-only changes still run Core lint and guard-unit; a full app build
         # adds no coverage for workflow/router/test changes.
-        run: npm run build
+        # Changed-file ESLint is already a hard gate above. Preserve full
+        # lint when config or dependency manifests change, but avoid repeating
+        # repository-wide lint inside Next for ordinary source PRs. npm prebuild
+        # regressions, full Next production build and TypeScript still run.
+        run: npm run build -- --no-lint
   hh-specialist:
     name: hh-specialist
     # Wait for real Core success before polling independent exact-HEAD specialists.
