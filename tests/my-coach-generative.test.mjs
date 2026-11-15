@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {COACH_PERSONAS} from '../lib/coaching/persona-registry.mjs'
+import {coachModelProbeRetryAllowed} from '../lib/coaching/coach-model-recovery.mjs'
 import {normalizeGenerativeCoachInput} from '../lib/coaching/generative-persona.mjs'
 import {coachSessionDirective} from '../lib/coaching/coach-session-director.mjs'
 import {COACH_CONVERSATION_VOICES,conversationalCoachMessages,parseConversationalCoachReply} from '../lib/coaching/conversational-persona.mjs'
@@ -250,4 +251,39 @@ test('malformed or sensitive session context is rejected before model access',()
   const safe=request({sessionContext:['I want to discuss the schedule.']})
   assert.equal(normalizeGenerativeCoachInput(safe).input.sessionContext.length,1)
   assert.equal(normalizeGenerativeCoachInput(request()).input.sessionContext.length,0)
+})
+
+test('automatic AI recheck is on-demand only, bounded after transient failure and rate limits',()=>{
+  const failed={status:'unavailable',reason:'model_unavailable'}
+  const limited={status:'unavailable',reason:'rate_limited'}
+  assert.equal(coachModelProbeRetryAllowed({status:'verified'},0,600000),false)
+  assert.equal(coachModelProbeRetryAllowed({status:'checking'},0,600000),false)
+  assert.equal(coachModelProbeRetryAllowed(failed,500000,589999),false)
+  assert.equal(coachModelProbeRetryAllowed(failed,500000,590000),true)
+  assert.equal(coachModelProbeRetryAllowed(limited,500000,1099999),false)
+  assert.equal(coachModelProbeRetryAllowed(limited,500000,1100000),true)
+  assert.equal(coachModelProbeRetryAllowed(failed,0,900000),true)
+  assert.equal(coachModelProbeRetryAllowed(failed,Number.NaN,900000),false)
+})
+
+test('later user turns reverify a recovered free model without a button or new vendor',()=>{
+  const ui=source('components/my-coach-live-dialogue.jsx')
+  assert.match(ui,/async function retryCoachModelAfterOutage\(\)/)
+  assert.match(ui,/coachModelProbeRetryAllowed\(readiness,modelProbeRef\.current\.lastAttempt,Date\.now\(\)\)/)
+  assert.match(ui,/const modelReady=!needsVerifiedModel\|\|await retryCoachModelAfterOutage\(\)/)
+  assert.match(ui,/if\(authRequired\|\|\(!modelReady&&!wisdomRequested\)\)/)
+  assert.match(ui,/result\.mode==='offline'&&result\.offlineReason/)
+  assert.match(ui,/body:'\{\}'/)
+  assert.doesNotMatch(ui,/localStorage|sessionStorage|sendBeacon/)
+})
+
+test('when AI is unavailable, crisis and stop are handled before any recovery probe',()=>{
+  const ui=source('components/my-coach-live-dialogue.jsx')
+  const turn=ui.slice(ui.indexOf('async function sendMessage(raw'))
+  assert.ok(turn.indexOf('const localInterruption=')>0)
+  assert.ok(turn.indexOf('const localInterruption=')<turn.indexOf('const modelReady='))
+  assert.match(turn,/coachingBrainSafety\(currentInput\)\|\|coachingBrainBoundary\(currentInput\)/)
+  assert.match(turn,/!wisdomRequested&&!localInterruption/)
+  assert.match(turn,/if\(localInterruption\|\|authRequired\|\|\(!modelReady&&!wisdomRequested\)\)/)
+  assert.match(turn,/const interruption=localInterruption\|\|coachingBrainSafety\(input\)/)
 })
