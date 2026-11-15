@@ -2226,3 +2226,44 @@ test('open-PR verified 409 jobless still requires final PR reread before bounded
  assert.equal(blocked.force_cancel_accepted.length,0);
  assert.equal(blocked.non_cancelable[0].code,'CANCEL_409_UNVERIFIED');
 });
+
+
+test('Vercel cleanup paginates rollback evidence with bounded cursors and no destructive side effects', async()=>{
+ const {appendRollbackEvidencePage,protectedDeploymentIds,eligibleForDelete}=
+   await import('../scripts/ci-vercel-deployment-prune.mjs');
+ const now=1794700000000;
+ const project='prj_4jAwcx6lrKyUKZ3R9vgC5xwwyC0b';
+ const make=(n,status='READY')=>({
+   id:'dpl_'+String(n).padStart(16,'0'),projectId:project,
+   target:'production',readyState:status,created:now-(n+12)*86400000,
+   meta:{githubOrg:'andylitvinov-design',githubRepo:'books',
+     githubCommitRef:'codex/public-book-library',githubCommitSha:'a'.repeat(40)},
+ });
+ const collected={recentDeployments:[],recentSeen:new Set(),readyCount:0};
+ const before=appendRollbackEvidencePage({
+   deployments:[...Array.from({length:20},(_,i)=>make(i)),make(0)],
+   pagination:{next:now-1000}},collected,now);
+ assert.deepEqual(before,{done:false,readyCount:20,nextUntil:now-1000},
+   'duplicate rows do not inflate rollback versions');
+ const after=appendRollbackEvidencePage({
+   deployments:Array.from({length:16},(_,i)=>make(i+20)),
+   pagination:{next:now-2000}},{
+     ...collected,readyCount:before.readyCount,
+   },before.nextUntil);
+ assert.deepEqual(after,{done:true,readyCount:36,nextUntil:null});
+ assert.equal(collected.recentDeployments.length,36);
+ const guarded=protectedDeploymentIds(collected.recentDeployments);
+ assert.equal(guarded.size,30);
+ for(let i=0;i<30;i++)assert.ok(guarded.has(make(i).id));
+ assert.equal(eligibleForDelete(make(25),{
+   now,liveId:make(0).id,protectedIds:guarded,assignedAliases:[],
+ }),false,'saved rollback READY is never a delete candidate');
+ assert.throws(()=>appendRollbackEvidencePage({
+   deployments:[make(50)],pagination:{next:now}},{
+   recentDeployments:[],recentSeen:new Set(),readyCount:0},now),
+   /ROLLBACK_HISTORY_PAGINATION_UNVERIFIED/);
+ assert.throws(()=>appendRollbackEvidencePage({
+   deployments:[make(50)]}, {
+   recentDeployments:[],recentSeen:new Set(),readyCount:0},now),
+   /DEPLOYMENT_HISTORY_UNAVAILABLE/);
+});

@@ -32,6 +32,32 @@ export function protectedDeploymentIds(recent) {
   return ids;
 }
 
+
+// Pure bounded paginator: no API calls, deployment DELETE, or clock dependence.
+// A repeated page, missing timestamp cursor or malformed response never
+// authorizes cleanup. The caller remains responsible for the 30-READY gate.
+export function appendRollbackEvidencePage(response, collected, currentUntil) {
+  if (!Array.isArray(response?.deployments) || !response.pagination ||
+      !Array.isArray(collected?.recentDeployments) ||
+      !(collected?.recentSeen instanceof Set) ||
+      !Number.isSafeInteger(collected?.readyCount) ||
+      !Number.isSafeInteger(currentUntil) || currentUntil <= 0)
+    throw Error('DEPLOYMENT_HISTORY_UNAVAILABLE');
+  let readyCount = collected.readyCount;
+  for (const item of response.deployments) {
+    if (!validId(item?.id) || collected.recentSeen.has(item.id)) continue;
+    collected.recentSeen.add(item.id);
+    collected.recentDeployments.push(item);
+    if (item.target === 'production' && state(item) === 'READY') readyCount++;
+  }
+  if (readyCount >= 30 || response.deployments.length === 0)
+    return {done:true, readyCount, nextUntil:null};
+  const nextUntil = Number(response.pagination.next);
+  if (!Number.isSafeInteger(nextUntil) || nextUntil <= 0 || nextUntil >= currentUntil)
+    throw Error('ROLLBACK_HISTORY_PAGINATION_UNVERIFIED');
+  return {done:false, readyCount, nextUntil};
+}
+
 export function eligibleForDelete(d, {now, liveId, protectedIds, assignedAliases}) {
   if (!d || !validId(d.id) || protectedIds.has(d.id) || d.id === liveId
     || projectId(d) !== PROJECT || d.target !== 'production'
@@ -95,21 +121,13 @@ async function main() {
   for (let page = 0; page < MAX_PAGES && readyCount < 30; page++) {
     const response = await request(token,
       '/v6/deployments?projectId=' + PROJECT + '&target=production&limit=100&until=' + recentUntil);
-    if (!Array.isArray(response?.deployments) || !response.pagination)
-      throw Error('DEPLOYMENT_HISTORY_UNAVAILABLE');
-    for (const item of response.deployments) {
-      if (!validId(item.id) || recentSeen.has(item.id)) continue;
-      recentSeen.add(item.id);
-      recentDeployments.push(item);
-      if (item.target === 'production' && state(item) === 'READY') readyCount++;
-    }
+    const result = appendRollbackEvidencePage(
+      response, {recentDeployments, recentSeen, readyCount}, recentUntil);
+    readyCount = result.readyCount;
     console.log('HH_VERCEL_ROLLBACK_SCAN page=' + (page + 1)
       + ' records=' + recentDeployments.length + ' ready=' + readyCount);
-    if (readyCount >= 30 || response.deployments.length === 0) break;
-    const next = Number(response.pagination.next);
-    if (!Number.isSafeInteger(next) || next <= 0 || next >= recentUntil)
-      throw Error('ROLLBACK_HISTORY_PAGINATION_UNVERIFIED');
-    recentUntil = next;
+    if (result.done) break;
+    recentUntil = result.nextUntil;
   }
   if (readyCount < 30) throw Error('INSUFFICIENT_ROLLBACK_EVIDENCE ready='
     + readyCount + ' scanned=' + recentDeployments.length);
