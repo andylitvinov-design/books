@@ -87,8 +87,30 @@ export async function verifyHumanSpecialistMobile() {
       await root.locator('[data-human-specialist-channels]').waitFor({state:'visible'})
       assert.equal(posted,0,label+': guest attempt never posts to CRM')
       const cta=root.locator('[data-human-specialist-book]')
-      assert.equal(await cta.getAttribute('href'),'/' + locale + '/services/imagery-therapy',
-        label+': genuine consultation CTA')
+      assert.equal(await cta.getAttribute('href'),null,label+': owner booking opens an inline form')
+      await cta.tap()
+      const booking=root.locator('[data-human-specialist-booking-fields]')
+      await booking.waitFor({state:'visible'})
+      const channels=booking.locator('[data-human-specialist-booking-channels]')
+      assert.equal(await channels.count(),0,label+': no messenger before choosing a day and time')
+      const futureDay=await page.evaluate(()=>{
+        const date=new Date();date.setDate(date.getDate()+14)
+        return date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0')+'-'+String(date.getDate()).padStart(2,'0')
+      })
+      await booking.locator('input[type="date"]').fill(futureDay)
+      assert.equal(await channels.count(),0,label+': day alone cannot open booking messengers')
+      await booking.locator('input[type="time"]').fill('14:30')
+      await channels.waitFor({state:'visible'})
+      const telegram=await channels.locator('a').first().getAttribute('href')
+      const whatsapp=await channels.locator('a').nth(1).getAttribute('href')
+      assert.ok(telegram?.startsWith('https://t.me/AndyTherapist?text='),label+': known specialist Telegram link')
+      assert.ok(whatsapp?.startsWith('https://wa.me/14376066502?text='),label+': known specialist WhatsApp link')
+      for(const href of [telegram,whatsapp]) {
+        const text=new URL(href).searchParams.get('text') || ''
+        assert.ok(text.includes(futureDay) && text.includes('14:30'),
+          label+': request preserves day and time across messenger channels')
+      }
+      assert.equal(posted,0,label+': choosing a preferred slot never posts to CRM')
       assert.equal(await root.locator('a[href="/'+locale+'/my-coach#all-coaches"]').count(),1,
         label+': return to the coach directory')
       const layout=await page.evaluate(()=>({
