@@ -4,7 +4,7 @@ import {useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
 import {ArrowRight,Heart,Home,Keyboard,Leaf,Captions,PhoneOff,LockKeyhole,MessageCircle,Pencil,Send,ShieldCheck,Sparkles,Target,UserRound,Video,Volume2,Zap} from 'lucide-react'
 import {getCoachPersona,localCoachText,coachStagePrompt} from '@/lib/coaching/persona-registry.mjs'
-import {getCoachPresentation,coachPresentationVoice} from '@/lib/coaching/persona-presentations.mjs'
+import {getCoachPresentation} from '@/lib/coaching/persona-presentations.mjs'
 import {coachTimeboxState} from '@/lib/coaching/session-timebox.mjs'
 import {coachingBrainSafety,coachingBrainBoundary,coachingBrainStageDecision,offlineCoachingBrainReply,selectCoachingBrainMethod} from '@/lib/personal-coaching/coaching-brain.mjs'
 import {classifyWisdomRequest} from '@/lib/coaching/wisdom-retrieval.mjs'
@@ -92,14 +92,9 @@ const voiceProviderDetails={
   es:'Play inicia el diálogo. El navegador puede procesar el micrófono para reconocer voz. Si hay voz natural disponible, el texto del coach se envía a Google Chirp o Fish Audio; Fish puede usar ese texto para entrenar modelos. Holistic House no guarda ninguna grabación del micrófono.',
 }
 const voiceGateText={
- en:{title:'Before voice conversation',cancel:'Not now',agree:'Agree and talk',tapToHear:'Tap to hear the coach',playbackUnavailable:'Audio playback is unavailable in this browser. Try Safari or use text.'},
- ru:{title:'Перед голосовым разговором',cancel:'Не сейчас',agree:'Согласен и начать',tapToHear:'Нажмите, чтобы услышать коуча',playbackUnavailable:'В этом браузере не работает озвучивание. Попробуйте Safari или текстовый диалог.'},
- es:{title:'Antes de hablar por voz',cancel:'Ahora no',agree:'Aceptar y hablar',tapToHear:'Toca para escuchar al coach',playbackUnavailable:'La reproducción de voz no está disponible aquí. Prueba Safari o escribe.'},
-}
-const wizardVoiceCopy={
-  en:{label:'Storybook wizard voice · original British style',note:'Free device voice. An original character sound, not a Harry Potter film actor or dub.'},
-  ru:{label:'Голос сказочного волшебника · британский стиль',note:'Бесплатный голос устройства. Оригинальный характер, не голос актёра или дубляжа Гарри Поттера.'},
-  es:{label:'Voz de mago de cuento · estilo británico original',note:'Voz gratuita del dispositivo. No imita a un actor ni doblaje de Harry Potter.'},
+ en:{title:'Before voice conversation',cancel:'Not now',agree:'Agree and talk',tapToHear:'Tap to hear the coach',playbackUnavailable:'Audio playback is unavailable in this browser. Try Safari or use text.',naturalUnavailable:'Quality coach voice is temporarily unavailable. Try again or type your message.'},
+ ru:{title:'Перед голосовым разговором',cancel:'Не сейчас',agree:'Согласен и начать',tapToHear:'Нажмите, чтобы услышать коуча',playbackUnavailable:'В этом браузере не работает озвучивание. Попробуйте Safari или текстовый диалог.',naturalUnavailable:'Качественный голос коуча временно недоступен. Попробуйте ещё раз или напишите сообщение.'},
+ es:{title:'Antes de hablar por voz',cancel:'Ahora no',agree:'Aceptar y hablar',tapToHear:'Toca para escuchar al coach',playbackUnavailable:'La reproducción de voz no está disponible aquí. Prueba Safari o escribe.',naturalUnavailable:'La voz natural del coach no está disponible ahora. Vuelve a intentarlo o escribe.'},
 }
 const quickTopics=[{id:'stress',icon:Leaf,art:'stones'},{id:'energy',icon:Zap,art:'sunrise'},{id:'relationships',icon:Heart,art:'lotus'}]
 const stageKeys=['clarify','explore','awareness','reframe','choice','planning','commitment','integration']
@@ -120,7 +115,6 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [cloudAvailable,setCloudAvailable]=useState(false)
   const [cloudAgreed,setCloudAgreed]=useState(false)
   const [cloudProvider,setCloudProvider]=useState(null)
-  const [wizardVoice,setWizardVoice]=useState(false)
   const [speechLocale,setSpeechLocale]=useState('auto')
   const [showCaptions,setShowCaptions]=useState(false)
   const [turns,setTurns]=useState([])
@@ -146,9 +140,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const composerDetailsRef=useRef(null),speechRef=useRef(null)
   const replayControllerRef=useRef(null),replayPlayerRef=useRef(null)
   const portraitHeroRef=useRef(null),sessionRootRef=useRef(null)
-  const replaySpeechRef=useRef(null),replayTimerRef=useRef(null)
   const replayAudioContextRef=useRef(null)
-  // Foreground active minutes, never a forced cutoff or an API request.
+  // The 20-minute format counts active foreground seconds, not wall-clock
+  // time while Safari is backgrounded. No stored state or forced cutoff.
   useEffect(()=>{
     if(!sessionClockStarted)return
     let last=window.performance.now()
@@ -161,10 +155,16 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       last=now
     }
     const onVisibility=()=>{last=window.performance.now()}
-    const id=window.setInterval(tick,15000)
+    const timer=window.setInterval(tick,15000)
     document.addEventListener('visibilitychange',onVisibility)
-    return()=>{window.clearInterval(id);document.removeEventListener('visibilitychange',onVisibility)}
+    return()=>{window.clearInterval(timer);document.removeEventListener('visibilitychange',onVisibility)}
   },[sessionClockStarted])
+  useEffect(()=>{
+    // Preserve the current exact Play/MP3 and microphone handlers untouched.
+    // The voice loop publishes loading on first Play and listening after intro.
+    if(voiceState.phase==='loading'||voiceState.phase==='listening')setSessionClockStarted(true)
+    if(voiceState.phase==='listening')setIntroComplete(true)
+  },[voiceState.phase])
   useEffect(()=>{
     // The iOS software keyboard resizes the visual viewport but not always
     // CSS 100dvh. Keep the composer anchored to actual visible pixels.
@@ -185,11 +185,6 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     }
   },[])
   useEffect(()=>()=>pending.current?.abort(),[])
-  // Private shareable voice preset, not stored in the account or sent to providers.
-  useEffect(()=>{
-    try{if(new URLSearchParams(window.location.search).get('voice')==='wizard')setWizardVoice(true)}
-    catch{}
-  },[])
   useEffect(()=>{
     // This probe sends only a synthetic OK to the free-only ZDR gateway.
     // The client's message and history remain untouched until consent + Send.
@@ -230,9 +225,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   },[authRequired,readiness.status])
   const name=persona?localCoachText(persona.name,lang):t.coach
   const opening=persona?localCoachText(persona.opening,lang):t.goal
-  const coachPresentation=getCoachPresentation(personaId,lang)
+  const coachStyle=getCoachPresentation(personaId,lang)?.style
   const sessionTimebox=coachTimeboxState(sessionClockStarted?Math.floor(activeSessionSeconds):null)
-  const authoredIntroduction=coachPresentation?.text
+  const authoredIntroduction=getCoachPresentation(personaId,lang)?.text
   const introduction=authoredIntroduction||(persona?({
     en:`Hello, I'm ${name}, your AI coach. I focus on ${localCoachText(persona.role,lang).toLowerCase()}. ${localCoachText(persona.description,lang)} My approach: ${localCoachText(persona.approach,lang)} ${opening}`,
     ru:`Здравствуйте! Я ${name}, ваш AI-коуч. Моё направление — ${localCoachText(persona.role,lang).toLowerCase()}. ${localCoachText(persona.description,lang)} Мой подход: ${localCoachText(persona.approach,lang)} ${opening}`,
@@ -294,131 +289,77 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       replayAudioContextRef.current=unlockCoachingAudioContext()
   }
   function replayCoachReply(overrideText){
-    // A typed turn may contain the new answer before React commits transcript.
+    // Replay is always high-quality remote audio. Never replace it with
+    // native speechSynthesis even if Fish or Google fails.
     const spokenText=typeof overrideText==='string'?overrideText:latestCoachText
-    // A blocked audio element is already buffered: a Replay tap resumes it
-    // without consuming another cloud synthesis call or requesting microphone access.
     if(speechRef.current?.resumeVoice?.())return
     if(replayBlocked&&replayPlayerRef.current){
       setReplayBlocked(false);setReplaying(true);setPlaybackNotice('')
       void replayPlayerRef.current.resume()
       return
     }
-    // Typed Send stops any listening loop first; its reply must still speak,
-    // even before React commits the idle phase in the current render.
     if(!spokenText||replaying)return
-    ensureReplayAudioOutput()
+    ensureReplayAudioOutput() // Reuse Web Audio unlocked in this Replay/Send gesture.
     setPlaybackNotice('');setReplayBlocked(false)
-    // Voice-only turns already have an in-page privacy notice. Fish/Chirp has
-    // its own independent, unchecked consent; the text-composer checkbox is
-    // not a prerequisite for speaking an authored coach reply.
-    if(cloudAgreed&&cloudAvailable&&['google_chirp3_hd','fish_free'].includes(cloudProvider)){
-      const controller=new AbortController()
-      replayControllerRef.current=controller
-      setReplaying(true)
-      // The transcript is the truth. Chirp receives the bounded opening excerpt,
-      // not a question selected from the end of an otherwise helpful reply.
-      const spoken=cloudProvider==='google_chirp3_hd'?
-        coachSpokenText(spokenText).text:spokenText.slice(0,900)
-      void fetch('/api/app/my-coach/voice/synthesize',{
-        method:'POST',credentials:'same-origin',cache:'no-store',signal:controller.signal,
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({provider:cloudProvider,personaId,locale:detectedSpeechLocale(spoken,lang),text:spoken,
-          voiceConsent:true,cloudVoiceConsent:true,
-          ...(cloudProvider==='fish_free'?{trainingUseConsent:true}:{})}),
-      }).then(response=>{
-        if(!response.ok||!response.body)throw Error('TTS_UNAVAILABLE')
-        if(controller.signal.aborted)return
-        replayPlayerRef.current=startCoachingMp3Playback(response,{
-          audioContext:replayAudioContextRef.current,
-          onLevel:level=>{if(!controller.signal.aborted&&replayControllerRef.current===controller)setPortraitLevel(level)},
-          onStart:()=>{if(!controller.signal.aborted&&replayControllerRef.current===controller){setReplayBlocked(false);setReplaying(true);setPlaybackNotice('');setVoiceState({phase:'speaking',beat:0})}},
-          onBlocked:()=>{
-            if(controller.signal.aborted||replayControllerRef.current!==controller)return
-            replayControllerRef.current=null
-            replayPlayerRef.current?.cancel();replayPlayerRef.current=null
-            setReplayBlocked(false);setReplaying(false)
-            replayCoachReplyOnDevice(spokenText)
-          },
-          onEnd:()=>{if(replayControllerRef.current!==controller)return;replayControllerRef.current=null;replayPlayerRef.current=null;setReplayBlocked(false);setReplaying(false);setVoiceState({phase:'idle',beat:0})},
-          onError:()=>{
-            if(replayControllerRef.current!==controller)return
-            replayControllerRef.current=null;replayPlayerRef.current=null
-            setReplayBlocked(false);setReplaying(false)
-            replayCoachReplyOnDevice(spokenText)
-          }
-        })
-      }).catch(()=>{
-        if(!controller.signal.aborted&&replayControllerRef.current===controller){
-          replayControllerRef.current=null;setReplaying(false)
-          replayCoachReplyOnDevice(spokenText)
-        }
-      })
+    const replayingIntro=typeof overrideText!=='string'&&!latestCoachTurn
+    const dynamicAllowed=cloudAgreed&&cloudAvailable&&
+      ['google_chirp3_hd','fish_free'].includes(cloudProvider)
+    if(!replayingIntro&&!dynamicAllowed){
+      setPlaybackNotice(voiceGate.naturalUnavailable)
       return
     }
-    replayCoachReplyOnDevice(spokenText)
-  }
-  function replayCoachReplyOnDevice(spokenText){
-    // Independent local fallback. Never sends a second provider request.
-    const synth=window.speechSynthesis,Utterance=window.SpeechSynthesisUtterance
-    if(!synth?.speak||!Utterance){setPlaybackNotice(voiceGate.playbackUnavailable);return}
-    const utterance=new Utterance(spokenText.slice(0,900))
-    const spokenLocale=detectedSpeechLocale(spokenText,lang)
-    utterance.lang={en:'en-GB',ru:'ru-RU',es:'es-ES'}[spokenLocale]
-    utterance.rate=wizardVoice?0.93:0.97
-    utterance.pitch=wizardVoice?1.08:1
-    const voices=synth.getVoices?.()||[]
-    const chosen=voices.find(v=>v.lang?.toLowerCase()===utterance.lang.toLowerCase())||
-      voices.find(v=>v.lang?.toLowerCase().startsWith(spokenLocale+'-'))
-    if(chosen)utterance.voice=chosen
-    // Preserve the released eight-persona tone and pacing in device fallback.
-    if(!wizardVoice){
-      const profile=coachPresentationVoice(personaId,spokenLocale,voices)
-      if(profile){
-        utterance.rate=profile.rate;utterance.pitch=profile.pitch
-        if(profile.voice)utterance.voice=profile.voice
-      }
+    const controller=new AbortController()
+    replayControllerRef.current=controller
+    setReplaying(true)
+    const fail=()=>{
+      if(controller.signal.aborted||replayControllerRef.current!==controller)return
+      replayControllerRef.current=null
+      replayPlayerRef.current?.cancel();replayPlayerRef.current=null
+      setReplayBlocked(false);setReplaying(false)
+      setVoiceState({phase:'idle',beat:0})
+      setPlaybackNotice(voiceGate.naturalUnavailable)
     }
-    let started=false
-    const clear=()=>{
-      if(replayTimerRef.current)clearTimeout(replayTimerRef.current)
-      replayTimerRef.current=null;replaySpeechRef.current=null
-      setReplaying(false);setVoiceState({phase:'idle',beat:0})
-    }
-    utterance.onstart=()=>{
-      if(replaySpeechRef.current!==utterance)return
-      started=true
-      if(replayTimerRef.current)clearTimeout(replayTimerRef.current)
-      replayTimerRef.current=null
-      setVoiceState({phase:'speaking',beat:0})
-    }
-    utterance.onboundary=event=>{
-      if(replaySpeechRef.current!==utterance||!started)return
-      if(event.name&&event.name!=='word'&&event.name!=='sentence')return
-      setVoiceState(previous=>previous.phase==='speaking'?{phase:'speaking',beat:previous.beat+1}:previous)
-    }
-    utterance.onend=clear
-    utterance.onerror=()=>{clear();setPlaybackNotice(voiceGate.playbackUnavailable)}
-    try{
-      synth.cancel();replaySpeechRef.current=utterance;setReplaying(true)
-      synth.speak(utterance)
-      if(!started)replayTimerRef.current=setTimeout(()=>{
-        if(started||replaySpeechRef.current!==utterance)return
-        try{synth.cancel()}catch{}
-        clear();setPlaybackNotice(voiceGate.playbackUnavailable)
-      },3500)
-    }catch{clear();setPlaybackNotice(voiceGate.playbackUnavailable)}
+    const spoken=cloudProvider==='google_chirp3_hd'?
+      coachSpokenText(spokenText).text:spokenText.slice(0,900)
+    const url=replayingIntro?
+      '/api/coaching/intro?'+new URLSearchParams({coach:personaId,locale:lang}):
+      '/api/app/my-coach/voice/synthesize'
+    void fetch(url,replayingIntro?{
+      method:'GET',credentials:'omit',cache:'force-cache',signal:controller.signal
+    }:{
+      method:'POST',credentials:'same-origin',cache:'no-store',signal:controller.signal,
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({provider:cloudProvider,personaId,locale:detectedSpeechLocale(spoken,lang),text:spoken,
+        voiceConsent:true,cloudVoiceConsent:true,
+        ...(cloudProvider==='fish_free'?{trainingUseConsent:true}:{})}),
+    }).then(response=>{
+      if(!response.ok||!response.body)throw Error('NATURAL_TTS_UNAVAILABLE')
+      if(controller.signal.aborted||replayControllerRef.current!==controller)return
+      replayPlayerRef.current=startCoachingMp3Playback(response,{
+        audioContext:replayAudioContextRef.current,
+        onLevel:level=>{if(!controller.signal.aborted&&replayControllerRef.current===controller)setPortraitLevel(level)},
+        onStart:()=>{
+          if(!controller.signal.aborted&&replayControllerRef.current===controller){
+            setReplayBlocked(false);setReplaying(true);setPlaybackNotice('')
+            setVoiceState({phase:'speaking',beat:0})
+          }
+        },
+        onBlocked:fail,
+        onEnd:()=>{
+          if(replayControllerRef.current!==controller)return
+          replayControllerRef.current=null;replayPlayerRef.current=null
+          setReplayBlocked(false);setReplaying(false)
+          setVoiceState({phase:'idle',beat:0})
+        },
+        onError:fail,
+      })
+    }).catch(fail)
   }
   useEffect(()=>{
     const stopReplay=()=>{
       replayControllerRef.current?.abort()
       replayPlayerRef.current?.cancel()
-      if(replayTimerRef.current)clearTimeout(replayTimerRef.current)
-      replayTimerRef.current=null
-      if(replaySpeechRef.current)try{window.speechSynthesis?.cancel()}catch{}
-      replaySpeechRef.current=null
-      replayControllerRef.current=null
-      replayPlayerRef.current=null
+      replayControllerRef.current=null;replayPlayerRef.current=null
       const context=replayAudioContextRef.current
       replayAudioContextRef.current=null
       if(context)try{void context.close?.().catch?.(()=>{})}catch{}
@@ -432,9 +373,6 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       window.removeEventListener('pagehide',stopReplay)
       replayControllerRef.current?.abort()
       replayPlayerRef.current?.cancel()
-      if(replayTimerRef.current)clearTimeout(replayTimerRef.current)
-      if(replaySpeechRef.current)try{window.speechSynthesis?.cancel()}catch{}
-      replaySpeechRef.current=null
       if(replayAudioContextRef.current)
         try{void replayAudioContextRef.current.close?.().catch?.(()=>{})}catch{}
       replayAudioContextRef.current=null
@@ -505,12 +443,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       const stage=legacyStage[semanticStage]||'goal'
       const offlineReply=interruption||offlineCoachingBrainReply(input,selectCoachingBrainMethod(input),semanticStage)
       const offlinePrompt=String(offlineReply.question||coachStagePrompt(personaId,stage,responseLocale,settings)||t.goal)
-      // Offline mode cannot invent an outcome. Only an explicit client request
-      // to wrap up gets an authored reflection question; safety goes first.
+      // Offline: only an explicit client request can prompt a reflective close.
       const requestedWrap=/(?:подвед[её]м? итог|подвести итог|заверш(?:им|ить)|summari[sz]e|wrap up|close the session|resumir|cerrar la sesi[oó]n)/iu.test(message)
       const reflectiveClose={
-        ru:'Мы можем завершить бережно. Что сегодня стало для вас яснее, что осталось открытым и хотите ли вы сами выбрать один следующий шаг?',
-        en:'We can close gently. What became clearer today, what remains open, and would you like to choose a next step of your own?',
+        ru:'Мы можем завершить бережно. Что сегодня стало яснее, что осталось открытым и хотите ли вы сами выбрать следующий шаг?',
+        en:'We can close gently. What became clearer, what remains open, and would you like to choose a next step of your own?',
         es:'Podemos cerrar con calma. ¿Qué te quedó más claro, qué sigue abierto y quieres elegir un próximo paso por tu cuenta?'
       }[responseLocale]
       const answer=(interruption?[offlineReply.reflection,offlinePrompt].filter(Boolean).join(' '):
@@ -590,8 +527,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         <p>{localCoachText(persona?.role,lang)||t.coach}</p><h1>{name}</h1>
         <small>{localCoachText(persona?.approach,lang)||localCoachText(persona?.description,lang)}</small>
       </div>
-      {coachPresentation&&!showCaptions&&<span className={styles.coachStyleChip}
-        data-coach-avatar-style={personaId}>{coachPresentation.style}</span>}
+      {coachStyle&&!showCaptions&&<span className={styles.coachStyleChip}
+        data-coach-avatar-style={personaId}>{coachStyle}</span>}
       <div className={styles.sessionAvatar}>
         <CoachingAvatar locale={lang} avatarId={avatarVisuals[personaId]||'warm'} personaId={personaId} displayName={name}
           showPicker={false} size="large"
@@ -614,10 +551,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     </div>
     <section className={styles.voiceWorkspace} aria-label={ui.voice}>
       {sessionClockStarted&&sessionTimebox.offerWrapUp&&turns.length>0&&
-        <div className={styles.sessionTimeboxNotice} role="status"
-          data-coach-timebox-phase={sessionTimebox.phase}>
+        <div className={styles.sessionTimeboxNotice} role="status" data-coach-timebox-phase={sessionTimebox.phase}>
           <span>{sessionTimebox.targetReached?
-            ({ru:'20 минут — удобный момент подвести итог или продолжить.',en:'20 minutes — you can close gently or continue.',es:'20 minutos: puedes cerrar con calma o continuar.'}[lang]):
+            ({ru:'20 минут — можно подвести итог или продолжить.',en:'20 minutes — you can close gently or continue.',es:'20 minutos: puedes cerrar con calma o continuar.'}[lang]):
             ({ru:'Приближаемся к завершению мини-сессии.',en:'Approaching the close of our short session.',es:'Nos acercamos al cierre de la sesión breve.'}[lang])}</span>
           <button type="button" onClick={()=>{
             setDraft(previous=>previous.trim()?previous:({
@@ -638,10 +574,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         <div className={styles.voiceCenter} data-voice-active={voiceState.phase!=='idle'?'true':undefined}>
           <span className={styles.voiceWaveLeft} aria-hidden="true"><i/><i/><i/><i/><i/></span>
           <MyCoachSpeechLoop ref={speechRef} locale={lang} speechLocale={speechLocale} initialDraft={draft}
-            introduction={introduction} onSessionStart={()=>{setCloudAgreed(true);setSessionClockStarted(true)}}
-            cloudAvailable={cloudAvailable} cloudAgreed={cloudAgreed} cloudProvider={cloudProvider} personaId={personaId} wizardVoice={wizardVoice} enabled={true}
+            introduction={introduction} onSessionStart={()=>setCloudAgreed(true)}
+            cloudAvailable={cloudAvailable} cloudAgreed={cloudAgreed} cloudProvider={cloudProvider} personaId={personaId} enabled={true}
             canStart={!busy&&!paused&&!replaying} onTurn={text=>sendMessage(text,{voiceTurn:true})}
-            onCancelTurn={()=>pending.current?.abort()} onVoiceStateChange={state=>{setVoiceState(state);if(state.phase==='listening')setIntroComplete(true)}} onVoiceLevel={setPortraitLevel}
+            onCancelTurn={()=>pending.current?.abort()} onVoiceStateChange={setVoiceState} onVoiceLevel={setPortraitLevel}
             onTranscript={setSpeechPreview} onDraft={text=>{setDraft(text);setError('')}}/>
           <span className={styles.voiceWaveRight} aria-hidden="true"><i/><i/><i/><i/><i/></span>
         </div>
