@@ -10,6 +10,7 @@ import {coachingBrainSafety,coachingBrainBoundary,coachingBrainStageDecision,off
 import {classifyWisdomRequest} from '@/lib/coaching/wisdom-retrieval.mjs'
 import {coachTurnWindow} from '@/lib/coaching/coach-turn-window.mjs'
 import {coachEphemeralContext} from '@/lib/coaching/coach-ephemeral-context.mjs'
+import {coachModelProbeRetryAllowed} from '@/lib/coaching/coach-model-recovery.mjs'
 import {coachGoalTurn} from '@/lib/coaching/goal-turn.mjs'
 import styles from './my-coach-live-dialogue.module.css'
 import MyCoachSpeechLoop from './my-coach-speech-loop'
@@ -133,6 +134,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [editablePlan,setEditablePlan]=useState('')
   const [selectedGoal,setSelectedGoal]=useState('')
   const lastSharedGoalRef=useRef('')
+  const modelProbeRef=useRef({lastAttempt:0,inFlight:false})
   const [replaying,setReplaying]=useState(false)
   const [ratedCoachAnswer,setRatedCoachAnswer]=useState(null)
   const [coachQualityPending,setCoachQualityPending]=useState(false)
@@ -202,9 +204,14 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       return result
     }).then(result=>{
       if(controller.signal.aborted)return
-      setReadiness({status:result?.status==='verified'?'verified':'unavailable',reason:result?.reason||''})
+      const next={status:result?.status==='verified'?'verified':'unavailable',reason:result?.reason||''}
+      if(next.status!=='verified')modelProbeRef.current.lastAttempt=Date.now()
+      setReadiness(next)
     }).catch(()=>{
-      if(!controller.signal.aborted)setReadiness({status:'unavailable',reason:'model_unavailable'})
+      if(!controller.signal.aborted){
+        modelProbeRef.current.lastAttempt=Date.now()
+        setReadiness({status:'unavailable',reason:'model_unavailable'})
+      }
     })
     return ()=>controller.abort()
   },[])
@@ -426,6 +433,32 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     }else if(liveVoice)speechRef.current?.resumeAfterTypedFailure?.()
     return result
   }
+  async function retryCoachModelAfterOutage(){
+    // A synthetic readiness recheck is allowed only on a new submitted user turn,
+    // never in the background. It sends no client message or conversation history.
+    if(authRequired||!coachModelProbeRetryAllowed(readiness,modelProbeRef.current.lastAttempt,Date.now())||
+      modelProbeRef.current.inFlight)return false
+    modelProbeRef.current.inFlight=true
+    modelProbeRef.current.lastAttempt=Date.now()
+    try{
+      const response=await fetch('/api/app/my-coach/probe',{
+        method:'POST',credentials:'same-origin',cache:'no-store',
+        headers:{'Content-Type':'application/json'},body:'{}',
+      })
+      if(response.status===401){setAuthRequired(true);return false}
+      const result=await response.json().catch(()=>null)
+      const next=response.ok&&result?.schema==='HH_COACHING_BRAIN_PROBE_V1'
+        ?{status:result.status==='verified'?'verified':'unavailable',reason:result.reason||''}
+        :{status:'unavailable',reason:'model_unavailable'}
+      setReadiness(next)
+      return next.status==='verified'
+    }catch{
+      setReadiness({status:'unavailable',reason:'model_unavailable'})
+      return false
+    }finally{
+      modelProbeRef.current.inFlight=false
+    }
+  }
   async function sendMessage(raw,{voiceTurn=false}={}){
     let message=String(raw||'').trim()
     const responseLocale=detectedSpeechLocale(message,lang)
@@ -453,7 +486,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       }
       if(goalTurn.deferredGoal)setError(ui.goalDeferred)
     }
-    if(authRequired||(readiness.status!=='verified'&&!wisdomRequested)){
+    const needsVerifiedModel=readiness.status!=='verified'&&!wisdomRequested
+    const modelReady=!needsVerifiedModel||await retryCoachModelAfterOutage()
+    if(authRequired||(!modelReady&&!wisdomRequested)){
       // Guests and temporarily unavailable AI still get private local coaching;
       // microphone recognition must not wait for model readiness.
       // Local-only authored fallback. NEVER send private text to an unverified model.
@@ -530,6 +565,12 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       setDraft('')
       setSpeechPreview('')
       commitGoalTurn()
+      // An unsuccessful in-flight model must not strand the same hands-free
+      // voice session in repeated failed calls or permanent offline mode.
+      if(result.mode==='offline'&&result.offlineReason){
+        modelProbeRef.current.lastAttempt=Date.now()
+        setReadiness({status:'unavailable',reason:result.offlineReason})
+      }
       if(result.mode==='safety'||(result.mode==='boundary'&&result.boundary==='stop'))setPaused(true)
       if(result.mode==='ai'&&result.planSuggestion)setEditablePlan(result.planSuggestion)
       return {reply:answer,mode:result.mode,locale:responseLocale}
