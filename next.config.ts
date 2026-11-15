@@ -149,6 +149,8 @@ const nextConfig: NextConfig = {
   // Vercel redirects these images to pinned public sources; do not bundle
   // the ~211 MB original corpus into each retained Function deployment.
   outputFileTracingExcludes: {
+    // The signed CRM /video handler only hands off to Dot; never trace the native encoder.
+    "/api/app/crm/messenger/webhook/*": ["./node_modules/ffmpeg-static/ffmpeg"],
     // Public-only artwork is served statically, never read by document PDFs.
     "/*": ["./public/images/reiki-originals/**/*", "./public/images/holistic-house/portrait-static/**/*", "./public/images/holistic-house/static-card-media/**/*"],
     "/media/**": [
@@ -164,9 +166,7 @@ const nextConfig: NextConfig = {
     // Sharp 0.35 loads libvips from an optional native package. Next tracing
     // otherwise bundles the .node file without libvips-cpp.so into the Function.
     // Include only for this small private upload route, never all routes.
-    // Photo/audio rendering is confined to the authenticated owner Telegram webhook.
-    // Only this Function traces the pinned FFmpeg binary (no external render API).
-    "/api/app/crm/messenger/webhook/*": ["./node_modules/ffmpeg-static/ffmpeg"],
+    // CRM video commands use a lightweight redirect; no FFmpeg here.
     // Owner-private Dot /audio → /video uses its existing signed webhook.
     // The same pinned FFmpeg binary must be available in this function too.
     "/api/app/notification-channels/telegram/webhook": ["./node_modules/ffmpeg-static/ffmpeg"],
