@@ -1148,6 +1148,15 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // The approved TTS track is already attached; both effects must render
       // locally into a real stereo WAV before the movie export starts.
       await page.locator('[data-video-quick-control="effects"]').click();
+      const therapyEffectsPractice=page.locator('[data-therapy-subtab="practice"]');
+      if(engine==="webkit")await therapyEffectsPractice.tap();
+      else await therapyEffectsPractice.click();
+      await expect(therapyEffectsPractice).toHaveAttribute("aria-selected","true");
+      const therapyEffectsSummary=page.locator('[data-therapy-effects-toggle]');
+      if(engine==="webkit")await therapyEffectsSummary.tap();
+      else await therapyEffectsSummary.click();
+      await expect(page.locator('[data-therapy-advanced-effects]')).toHaveAttribute("open","");
+      // The original advanced effects engine remains under Therapy > Practice.
       // Hypno has three exclusive subtabs: Visual, Audio effects and Effects.
       // Verify the relocated effect presets in macOS WebKit before the audio mixer.
       const hypnoTabs=page.locator('[data-hypno-tabs]');
@@ -1570,20 +1579,46 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const stillHasOldVoice=soundtrackLabels.some(label=>
         label.includes("holistic-house-hypno-audio.wav")||label.includes(expectedFileName));
       if(stillHasOldVoice)await expect(page.locator("[data-video-quick-generate]")).toBeEnabled();
-      // Montage has no voice control. Enter Hypno Audio and expose the one
-      // consented voice editor before testing real provider invocation.
-      await page.locator('[data-video-quick-control="effects"]').click();
+      // User opens optional audio effects through Therapy > Practice.
+      // All controls are real visible gestures; no synthetic consent/provider state.
+      const therapyWorkspace=page.locator('[data-video-quick-control="effects"]');
+      if(engine==="webkit")await therapyWorkspace.tap();
+      else await therapyWorkspace.click();
+      const therapyPractice=page.locator('[data-therapy-subtab="practice"]');
+      await expect(therapyPractice).toBeVisible();
+      if(engine==="webkit")await therapyPractice.tap();
+      else await therapyPractice.click();
+      await expect(therapyPractice).toHaveAttribute("aria-selected","true");
+      const optionalEffects=page.locator('[data-therapy-advanced-effects]');
+      const effectsSummary=optionalEffects.locator(':scope > summary');
+      if(await optionalEffects.getAttribute("open")===null){
+        if(engine==="webkit")await effectsSummary.tap();
+        else await effectsSummary.click();
+      }
+      await expect(optionalEffects).toHaveAttribute("open","");
       await expect(page.locator("[data-video-hypnocorrection-panel]")).toBeVisible();
-      await page.locator('[data-hypno-tab="audio"]').click();
-      await expect(page.locator('[data-hypno-group="audio"]')).toBeVisible();
-      await page.locator('[data-hypno-group="audio"] [data-hypno-card] button').first().click();
-      await expect(page.locator("[data-hypno-speech-settings]")).toBeVisible();
+      const hypnoAudioTab=page.locator('[data-hypno-tab="audio"]');
+      if(engine==="webkit")await hypnoAudioTab.tap();
+      else await hypnoAudioTab.click();
+      await expect(hypnoAudioTab).toHaveAttribute("aria-selected","true",{timeout:15000});
+      await expect(page.locator('[data-hypno-group="audio"]')).toBeVisible({timeout:15000});
+      const speechConfigure=page.locator('[data-hypno-group="audio"] [data-hypno-card] button').first();
+      await expect(speechConfigure).toBeEnabled();
+      if(engine==="webkit")await speechConfigure.tap();
+      else await speechConfigure.click();
+      await expect(page.locator("[data-hypno-speech-settings]")).toBeVisible({timeout:15000});
       const voicePanel=page.locator("[data-video-voice-studio]");
       await voicePanel.waitFor({state:"visible",timeout:25000});
-      if(await voicePanel.getAttribute("open")===null)
-        await voicePanel.locator(":scope > summary").click();
+      const voiceSummary=voicePanel.locator(":scope > summary");
+      await expect(voiceSummary).toBeVisible();
+      if(await voicePanel.getAttribute("open")===null){
+        if(engine==="webkit")await voiceSummary.tap();
+        else await voiceSummary.click();
+      }
+      // The real gesture must commit React lazy editor state, not just HTML open.
+      await expect(voicePanel).toHaveAttribute("open","",{timeout:15000});
       const studio=voicePanel.locator("[data-voice-studio]");
-      await studio.waitFor({state:"visible"});
+      await studio.waitFor({state:"visible",timeout:25000});
       assert.equal(await studio.locator("[data-voice-id]").count(),6);
       await studio.locator("[data-voice-studio-generate]").click();
       await studio.locator("[data-voice-studio-audio]").waitFor({state:"visible",timeout:30000});
@@ -1598,7 +1633,14 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const studioConsent=studio.locator('input[type="checkbox"]');
       await expect(studioConsent).not.toBeChecked({timeout:10000});
       await expect(studio.locator("[data-voice-studio-generate]")).toBeDisabled();
-      await studioConsent.check();
+      // Use a genuine label tap on touch WebKit: fixed bottom navigation can
+      // overlap the checkbox's 19px hit area after scrolling a long editor.
+      // Never set checked in page.evaluate, force a click, or waive consent.
+      const consentLabel=studioConsent.locator("..");
+      await consentLabel.scrollIntoViewIfNeeded();
+      if(engine==="webkit")await consentLabel.tap();
+      else await studioConsent.check();
+      await expect(studioConsent).toBeChecked();
       await studio.locator("[data-voice-studio-generate]").click();
       await studio.locator("[data-voice-studio-audio]").waitFor({state:"visible",timeout:30000});
       const typed=payloads.find(item=>item.mode==="short_text");

@@ -151,3 +151,23 @@ test('full IA public matrices retain all languages and viewports with isolated p
     "await verifyPublicDiscoveryNavigation(sp, 'webkit')",
   ]) assert.ok(source.includes(entry), entry + ' must remain in actual browser acceptance')
 })
+
+
+test('IA seven-link dock waits for real hydration before strict href, focus and geometry checks', () => {
+  const source=readFileSync(new URL('../scripts/verify-ia-v2.mjs',import.meta.url),'utf8')
+  const start=source.indexOf('async function assertUnifiedBottomNavigation')
+  const end=source.indexOf('async function verifyDirectNavigation',start)
+  assert.ok(start>=0&&end>start,'actual shared browser helper still exists')
+  const helper=source.slice(start,end)
+  const wait=helper.indexOf('await expect(links).toHaveCount(7)')
+  const snapshot=helper.indexOf('assert.deepEqual(await links.evaluateAll')
+  assert.ok(wait>=0&&snapshot>wait,'wait for seven real hydrated links BEFORE immediate snapshot')
+  assert.match(helper,/await expect\(dock\)\.toHaveCount\(1\)/)
+  assert.match(helper,/await expect\(legacy\)\.toHaveCount\(0\)/)
+  assert.match(helper,/await links\.first\(\)\.focus\(\)/)
+  assert.match(helper,/await expect\(link\)\.toBeFocused\(\)/)
+  assert.match(helper,/await expect\(link\)\.toHaveAccessibleName\(/)
+  assert.match(helper,/box\.width>=44&&box\.height>=44/)
+  assert.match(helper,/await expect\(dock\)\.toBeVisible\(\)/)
+  assert.match(helper,/await expect\(dock\)\.toBeHidden\(\)/)
+})

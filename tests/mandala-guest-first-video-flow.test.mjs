@@ -167,3 +167,24 @@ test('WebKit real encoded Ready guest route keeps Save gate and decoded MP4 proo
   assert.match(browser,/GUEST_REAL_VIDEO_BLOB_UNAVAILABLE/)
   assert.match(browser,/spawnSync\("ffprobe"/)
 })
+
+test("native WebKit recovers bounded mid-shot licensed source drift without stale frames",()=>{
+ const source=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+ const start=source.indexOf("function freeFilmVideoAt(");
+ const end=source.indexOf("function updateFreeFilmReadiness()",start);
+ assert.ok(start>0&&end>start);
+ const frame=source.slice(start,end);
+ assert.match(frame,/const assessment=assessLicensedSourceFrame\(video,frame\)/);
+ assert.match(frame,/if\(assessment\.status==="drift"&&!video\.seeking\)/);
+ assert.match(frame,/now-last>=180/);
+ assert.match(frame,/video\.currentTime=frame\.expectedSourceSeconds/);
+ assert.match(frame,/if\(assessment\.status!=="ready"\)return null/);
+ assert.match(frame,/if\(video\.paused&&advancePlayback\)/);
+ assert.doesNotMatch(frame,/assessment\.status==="drift"&&!video\.seeking&&\(enteringShot\|\|!advancePlayback\)/);
+ const render=source.slice(source.indexOf("renderFrame:time=>"));
+ assert.match(render,/freeFilmVideoAt\(time,true\)/);
+ assert.match(render,/if\(usingFreeFilmCompilation&&!frame&&!hasStoryboardPhotoAt\(time\)\)return false/);
+ assert.match(source,/const hasStoryboardPhotoAt=\(seconds:number\)=>\{/);
+ assert.match(source,/stock\?\.complete&&stock\.naturalWidth>=600&&stock\.naturalHeight>=600/);
+ assert.match(source,/licensed_scene_frame_unavailable/);
+});

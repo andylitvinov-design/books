@@ -6,6 +6,7 @@ import styles from './my-coach-speech-loop.module.css'
 import {appendSpokenAnswer} from '@/lib/personal-coaching/speech-text.js'
 import {chooseDictationLanguage,readDictationResults,detectedSpeechLocale,ios27NeedsSpeechRecovery} from '@/lib/personal-coaching/my-coach-dictation.mjs'
 import {startCoachingMp3Playback} from '@/lib/personal-coaching/streamed-mp3-playback.mjs'
+import {coachSpokenText} from '@/lib/coaching/coach-spoken-text.mjs'
 
 const speechLanguages={en:'en-GB',ru:'ru-RU',es:'es-ES'}
 const recordingWords={
@@ -62,7 +63,7 @@ const words={
     iosCue:'Te escucho ahora.',iosPreparing:'Preparando el micrófono del iPhone…',iosSilent:'Safari puede haber dejado de escuchar. Tu texto se puede editar; prueba de nuevo o reinicia Safari.'},
 }
 
-const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speechLocale='auto',initialDraft='',enabled=false,canStart=true,cloudAvailable=false,cloudAgreed=false,cloudProvider=null,personaId='mira',wizardVoice=false,recordedMode=false,recordingConsent=false,onRequestRecordingConsent,onTurn,onCancelTurn,onVoiceStateChange,onRequestConsent,onTranscript,onDraft},ref){
+const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speechLocale='auto',initialDraft='',enabled=false,canStart=true,cloudAvailable=false,cloudAgreed=false,cloudProvider=null,personaId='mira',wizardVoice=false,recordedMode=false,onTurn,onCancelTurn,onVoiceStateChange,onVoiceLevel,onRequestConsent,onTranscript,onDraft},ref){
   const lang=words[locale]?locale:'en',t=words[lang],r=recordingWords[lang]
   const [phase,setPhase]=useState('idle')
   const [notice,setNotice]=useState('')
@@ -72,8 +73,8 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   const activeRef=useRef(false)
   const recognitionRef=useRef(null)
   const recorderRef=useRef(null),transcriptionControllerRef=useRef(null)
-  const recordedModeRef=useRef(recordedMode),recordingConsentRef=useRef(recordingConsent)
-  recordedModeRef.current=recordedMode;recordingConsentRef.current=recordingConsent
+  const recordedModeRef=useRef(recordedMode),recordingConsentRef=useRef(false)
+  recordedModeRef.current=recordedMode
   const cloudControllerRef=useRef(null)
   const cloudPlayerRef=useRef(null)
   const speakingRef=useRef(false)
@@ -84,7 +85,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   const iosCueSatisfiedRef=useRef(false)
   const generationRef=useRef(0)
   const turnRef=useRef(onTurn),cancelRef=useRef(onCancelTurn),stopRef=useRef(null)
-  const voiceStateRef=useRef(onVoiceStateChange)
+  const voiceStateRef=useRef(onVoiceStateChange),levelRef=useRef(onVoiceLevel)
   const beatRef=useRef(0)
   const heardRef=useRef('')
   const lastHeardRef=useRef('')
@@ -97,10 +98,11 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   turnRef.current=onTurn
   cancelRef.current=onCancelTurn
   voiceStateRef.current=onVoiceStateChange
+  levelRef.current=onVoiceLevel
 
   function changePhase(next){
     phaseRef.current=next
-    if(next!=='speaking')beatRef.current=0
+    if(next!=='speaking'){beatRef.current=0;levelRef.current?.(null)}
     setPhase(next)
     voiceStateRef.current?.({phase:next,beat:beatRef.current})
   }
@@ -127,6 +129,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     cloudPlayerRef.current?.cancel()
     cloudPlayerRef.current=null
     activeRef.current=false
+    recordingConsentRef.current=false
     generationRef.current+=1
     const recognition=recognitionRef.current
     recognitionRef.current=null
@@ -156,9 +159,8 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   useImperativeHandle(ref,()=>({
     startWithConsent(){
       if(activeRef.current||!canStart)return
-      if(recordedModeRef.current&&!recordingConsentRef.current){
-        setNotice(r.consent);onRequestRecordingConsent?.();return
-      }
+      // Consent must originate from the user's microphone tap.
+      if(recordedModeRef.current)recordingConsentRef.current=true
       activeRef.current=true
       generationRef.current+=1
       startListening()
@@ -186,7 +188,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   },[enabled])
   useEffect(()=>{
     if(activeRef.current)stopRef.current?.()
-  },[recordedMode,recordingConsent])
+  },[recordedMode])
   useEffect(()=>{
     if((!cloudAgreed||!cloudAvailable)&&(cloudControllerRef.current||cloudPlayerRef.current))
       stopRef.current?.()
@@ -441,10 +443,9 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     transcriptRef.current?.('')
     changePhase('loading') // Reply is ready; synthesis is pending, not model thinking.
     const reply=String(result.reply).slice(0,900)
-    // Speak the final focused question rather than forwarding long personal reflections.
-    const questions=reply.match(/[^.!?\n]+[?？]/gu)||[]
-    const speakable=(questions.slice().reverse().find(item=>item.trim().length<=500)||
-      reply.slice(0,500)).trim()
+    // An audible reply must include the answer/acknowledgement, not only its last question.
+    // The Google excerpt only applies to its separately-consented 500-char path.
+    const speakable=coachSpokenText(reply).text
     const replyLocale=detectedSpeechLocale(reply,detectedSpeechLocale(text,lang))
     const live=()=>activeRef.current&&generationRef.current===generation
     const afterSpeech=()=>{
@@ -468,7 +469,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       if(!live())return
       const synth=window.speechSynthesis,Utterance=window.SpeechSynthesisUtterance
       if(!synth?.speak||!Utterance){showTextOnly();return}
-      const utterance=new Utterance(speakable||reply)
+      const utterance=new Utterance(reply)
       utterance.lang=speechLanguages[replyLocale]||speechLanguages[lang]
       utterance.rate=wizardVoice?0.93:0.97
       utterance.pitch=wizardVoice?1.08:1
@@ -541,6 +542,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
         if(!response.ok||!response.body)throw Error('CLOUD_TTS_UNAVAILABLE')
         if(!live()||controller.signal.aborted)return
         cloudPlayerRef.current=startCoachingMp3Playback(response,{
+          onLevel:level=>{if(live())levelRef.current?.(level)},
           onStart:()=>{
             if(!live())return
             blockedResumeRef.current=null;setNotice('');changePhase('speaking')
@@ -594,9 +596,9 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     if(!canStart)return
     if(supported===false){setNotice(t.unsupported);return}
     if(!enabled){onRequestConsent?.();return}
-    if(recordedModeRef.current&&!recordingConsentRef.current){
-      onRequestRecordingConsent?.();setNotice(r.consent);return
-    }
+    // User explicitly tapped the microphone after the visible Groq notice.
+    // No provider audio transfer occurs on mount, probe or a React re-render.
+    if(recordedModeRef.current)recordingConsentRef.current=true
     activeRef.current=true
     generationRef.current+=1
     startListening()
