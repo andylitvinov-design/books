@@ -362,9 +362,10 @@ test("iPhone encoder recovery preserves real media, truthful playback state and 
   assert.doesNotMatch(src,/recorder\.start\(500\)/);
 });
 
-test("six one-tap creative templates compile to real free RU/EN/ES video storyboards",()=>{
+test("nine one-tap creative templates compile to real free RU/EN/ES video storyboards",()=>{
   const ids=["morning-light","gentle-pause","inner-confidence",
-    "heart-connection","quiet-evening","work-possibilities"];
+    "heart-connection","quiet-evening","work-possibilities",
+    "choice-story","guide-introduction","forest-breath"];
   assert.deepEqual(VIDEO_QUICK_TEMPLATES.map(template=>template.id),ids);
   assert.ok(Object.isFrozen(VIDEO_QUICK_TEMPLATES));
   for(const template of VIDEO_QUICK_TEMPLATES){
