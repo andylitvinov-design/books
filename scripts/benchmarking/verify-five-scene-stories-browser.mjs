@@ -99,7 +99,12 @@ try{
    'STORY_QUALITY_MUST_OPEN_MONTAGE');
  assert.equal(await page.locator('[data-video-basic-editor]').getAttribute('data-montage-panel'),
    'promo','STORY_QUALITY_PANEL_MUST_COMMIT');
+ // Story quality still enters the fifth Extra offer; detailed scene editing
+ // has intentionally moved to Story > Video settings, not beneath Extra cards.
+ await storyTab.click();
+ await page.locator('[data-video-story-open-settings]').click();
  const advanced=page.locator('[data-video-stories-advanced]');
+ await advanced.waitFor({state:'visible',timeout:20000});
  await advanced.locator(':scope > summary').click();
  const format=advanced.locator('[data-video-stories-format]');
  await format.waitFor({state:'visible'});
@@ -130,8 +135,11 @@ try{
  for(const id of ids)assert.ok(approved.has(id),'STORIES_UNREVIEWED_OR_GRAPHICAL_SOURCE:'+id);
  result.shotCount=ids.length;result.distinctSources=new Set(ids).size;
  result.verifiedRights=true;
- // The user-approved fifth Montage has exactly three choices. Generate FREE
- // from the actual in-card CTA, not a hidden legacy Audio / Create shortcut.
+ // Return from the Story editing view to Extra's existing Free offer;
+ // the previously built five-scene plan remains attached for the renderer.
+ await montageTab.click();
+ await page.locator('[data-video-montage-pro-offer]').waitFor({state:'visible'});
+ // Generate FREE from the actual in-card CTA, not a hidden legacy shortcut.
  const free=page.locator('[data-video-montage-pro-choice="free"]');
  await free.waitFor({state:'visible',timeout:20000});
  // Track whether a genuine recorded result was mounted then invalidated:
