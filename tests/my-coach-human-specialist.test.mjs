@@ -108,3 +108,23 @@ test('Existing manual Coaching browser gate exercises real specialist mobile int
   assert.match(browser,/no document overflow/)
   assert.match(browser,/artifacts\/coaching-mobile\/human-specialist/)
 })
+
+test('First-viewport specialist layout uses real media, compact controls and a labelled secretary lane',()=>{
+  const ribbon = readFileSync('components/sitewide-antistress-banner.tsx','utf8')
+  const ihelp = readFileSync('components/sitewide-ihelp.tsx','utf8')
+  assert.match(client,/data-human-specialist-quick-actions/)
+  assert.match(client,/data-human-video-details/)
+  assert.match(client,/data-human-channel="secretary"/)
+  assert.match(client,/data-human-channel="human"/)
+  assert.match(client,/data-human-secretary-reply/)
+  assert.match(client,/Ali · AI-секретарь/)
+  assert.match(client,/ruleConversationReply\(\{message:text,locale,history\}\)/)
+  assert.match(client,/if\(channel==='secretary'\)/)
+  assert.match(client,/Automatic replies · your question is not sent to the specialist/)
+  assert.match(css,/\.quickActions\{[^}]*display:grid/)
+  assert.match(css,/\.dialogue \.thread\{[^}]*flex:1/)
+  assert.match(css,/--hh-unified-nav-height/)
+  assert.match(css,/height:var\(--human-view-height,100dvh\)/)
+  assert.match(ribbon,/my-coach\\\/real/)
+  assert.match(ihelp,/my-coach\\\/real/)
+});

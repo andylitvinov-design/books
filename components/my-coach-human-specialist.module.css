@@ -147,3 +147,72 @@
  .book svg{width:19px}
 }
 @media(prefers-reduced-motion:reduce){.page *{scroll-behavior:auto!important;transition:none!important}}
+
+
+/* Compact first-viewport human coach: one real video, two quick actions,
+   and an independently scrollable assistant/human conversation. */
+.quickActions{position:relative;z-index:4;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.23fr);gap:9px;min-width:0;margin:8px 0 11px}
+.reelSection{position:relative;margin:0;min-width:0}
+.reelHeading{display:flex;align-items:center;justify-content:center;gap:7px;box-sizing:border-box;min-height:58px;height:100%;
+  margin:0;padding:9px 10px;border:1px solid #a6cdbd;border-radius:16px;background:#fffcf7;
+  color:#185744;font-size:14px;font-weight:800;cursor:pointer;list-style:none}
+.reelHeading::-webkit-details-marker{display:none}
+.reelHeading svg{flex:none}
+.reelHeading svg:last-child{margin-left:auto;transition:transform .18s ease}
+.reelSection[open] .reelHeading svg:last-child{transform:rotate(180deg)}
+.reelHeading small{font-size:12px;color:#47786a}
+.reelPopover{position:absolute;z-index:25;left:0;top:calc(100% + 7px);box-sizing:border-box;
+  width:min(84vw,610px);padding:9px 8px 0;border:1px solid #c9dfd3;border-radius:18px;
+  background:#fffcf7;box-shadow:0 10px 34px #163c3240}
+.reelSection:not([open]) .reelPopover{display:none}
+.quickActions .book{min-width:0;min-height:58px;border-radius:16px;box-shadow:none;font-size:14px;padding:9px 8px;gap:7px}
+.quickActions .book span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.quickActions .book svg{flex:none}
+.dialogue{display:flex;flex-direction:column;min-height:0}
+.channelTabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:0 0 7px;flex:none}
+.channelTabs button{display:grid;place-items:center;box-sizing:border-box;min-width:0;min-height:40px;
+  padding:7px 8px;border:1px solid #d6dfd6;border-radius:12px;background:#f6f5ee;color:#44645a;
+  font:750 12px/1.2 system-ui;cursor:pointer}
+.channelTabs button[aria-selected=true]{border-color:#168263;background:#e4f3e9;color:#075e49}
+.secretaryInfo{margin:7px 2px 0;line-height:1.25;font-size:11px;color:#527267;text-align:center}
+.dialogue .thread{min-height:60px}
+.dialogue .theirBubble{background:#e8f3ee}
+.dialogue .myBubble{background:#f6eee5}
+.dialogue .messageForm{flex:none}
+@media(max-width:760px){
+ .page{height:var(--human-view-height,100dvh);min-height:0;overflow:hidden}
+ .container{display:flex;flex-direction:column;box-sizing:border-box;height:100%;max-height:100%;
+   gap:6px;padding:8px 11px calc(var(--hh-unified-nav-height,80px) + 9px)}
+ .header{flex:none;min-height:45px;margin:0 0 2px}
+ .mediaSection{flex:none;min-width:0}
+ .mainVideo{aspect-ratio:16/9}
+ .recordedNote{margin:5px 2px 1px;font-size:11px;line-height:1.2}
+ .quickActions{flex:none;margin:3px 0 2px;gap:7px}
+ .reelHeading{min-height:45px;font-size:13px;padding:7px 9px}
+ .quickActions .book{min-height:45px;font-size:13px}
+ .reelPopover{width:min(calc(100vw - 22px),610px)}
+ .dialogue{flex:1;min-height:0;margin:0;padding:9px 10px 10px;overflow-x:hidden;overflow-y:auto;border-radius:20px}
+ .dialogue h2{flex:none;margin:0 0 6px;font-size:17px;line-height:1.15}
+ .dialogue h2 svg{width:19px;height:19px}
+ .channelTabs{margin:0 0 6px;gap:6px}
+ .channelTabs button{min-height:36px;font-size:12px;padding:5px 6px}
+ .dialogue .thread{flex:1;min-height:35px;max-height:none;overflow-y:auto;gap:6px;padding:2px 0 4px;overscroll-behavior:contain}
+ .dialogue .theirBubble,.dialogue .myBubble{padding:8px 10px;gap:2px;border-radius:14px}
+ .dialogue .theirBubble p,.dialogue .myBubble p{font-size:13px;line-height:1.35}
+ .dialogue .theirBubble strong{font-size:11px}
+ .dialogue .emptyMessage{font-size:12px;padding:9px 10px;margin:0}
+ .messageForm{align-items:stretch;margin-top:5px;gap:6px}
+ .messageForm textarea{height:44px;min-height:44px;max-height:76px;resize:none;padding:10px 12px;font-size:16px;line-height:1.25}
+ .send{width:44px;min-height:44px;border-radius:13px}
+ .secretaryInfo{font-size:10px;margin:5px 0 0}
+ .messageNotice,.chatHint,.secondaryLink,.channelToggle,.refresh{margin-top:2px;font-size:11px;line-height:1.25}
+ .secondaryLink,.channelToggle,.refresh{min-height:30px;padding:4px 0}
+ .messengerChoices{margin-top:3px;padding:8px}
+}
+@media(max-width:345px) and (max-height:700px){
+ .container{padding-top:4px;gap:4px}
+ .header{min-height:40px}
+ .recordedNote{font-size:10px}
+ .dialogue{padding:7px}
+ .reelHeading,.quickActions .book{min-height:43px}
+}
