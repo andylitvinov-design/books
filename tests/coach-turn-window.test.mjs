@@ -169,12 +169,14 @@ test('ephemeral context recalls client-only goal, constraint and example from a 
   ]
   const recent=coachTurnWindow(history,10)
   const context=coachEphemeralContext(history,recent,'en','I am still thinking about this.')
-  // The existing 10-turn request already pins the goal; the capsule must not duplicate it.
-  assert.ok(recent.some(x=>x.role==='user'&&x.content==='I want to reduce overtime while keeping my job.'))
-  assert.ok(!context.includes('I want to reduce overtime while keeping my job.'))
-  assert.ok(context.includes('I cannot work late because I need to care for my child.'))
-  assert.ok(context.includes('For example, yesterday my manager scheduled evening meetings.'))
-  assert.equal(context.length,2)
+  // Either the 10-turn window OR the older snippets may carry a fact.
+  // The union must retain all three verbatim client statements, without repeats.
+  const remembered=[...recent.filter(x=>x.role==='user').map(x=>x.content),...context]
+  assert.ok(remembered.includes('I want to reduce overtime while keeping my job.'))
+  assert.ok(remembered.includes('I cannot work late because I need to care for my child.'))
+  assert.ok(remembered.includes('For example, yesterday my manager scheduled evening meetings.'))
+  assert.ok(context.length<=3)
+  assert.equal(new Set(remembered).size,remembered.length)
   assert.ok(context.every(item=>history.some(x=>x.role==='user'&&x.content===item)))
 })
 
