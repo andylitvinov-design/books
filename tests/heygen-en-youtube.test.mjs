@@ -145,7 +145,7 @@ test('server OAuth persists EN target independently and cannot reuse RU seal',()
 
 test('first-time English OAuth can pair only the Google-owned @aatapro channel',async()=>{
  const good=async url=>{
-   assert.match(url,/channels\\?part=id&/)
+   assert.match(url,/channels\?part=id&/)
    assert.match(url,/mine=true|forHandle=%40aatapro/)
    return okJson({items:[{id:CHANNEL}]})
  }
@@ -176,10 +176,10 @@ test('single Google connect never skips owner PKCE or English grant isolation',(
  const paired=callback.indexOf("history.pairEnglish({id:channel,name:'AATA Pro',handle:'@aatapro'})")
  const granted=callback.indexOf("saveOwnerVideoYoutubeConsent(config,token.refresh_token,channel,{visibility:editing,target:'en'})")
  assert.ok(state>0&&verified>state&&paired>verified&&granted>paired)
- assert.match(page,/href="\\/api\\/admin\\/telegram-video\\/youtube\\/start\\?target=en"/)
- assert.doesNotMatch(page,/telegramVideoConfigured&&initialChannels\\.en&&<Link/)
- assert.match(api,/requireSameOrigin\\(request,config\\)/)
+ assert.match(page,/href="\/api\/admin\/telegram-video\/youtube\/start\?target=en"/)
+ assert.doesNotMatch(page,/telegramVideoConfigured&&initialChannels\.en&&<Link/)
+ assert.match(api,/requireSameOrigin\(request,config\)/)
  assert.match(api,/rightsConfirmed/)
  assert.match(api,/privacyConfirmed/)
- assert.match(callback,/const channel=await verifyYoutubeRuOwner\\(token.access_token\\)/)
+ assert.match(callback,/const channel=await verifyYoutubeRuOwner\(token.access_token\)/)
 })
