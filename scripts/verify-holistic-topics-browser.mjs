@@ -210,10 +210,19 @@ for (const engine of [chromium, webkit]) {
           await waitForConsultationFixtures(page, locale, ["eur20", "eur100"], label + " EUR 100");
           assert.equal(await finder.locator('#holistic-inline-results article').count(), 2,
             label + " EUR 100 includes 2 EUR offers, not CAD");
-          await finder.locator('[data-support-theme="relationships"]').click();
-          await finder.locator('[data-support-budget="free"]').click();
-          await page.waitForFunction(() => document.querySelector('[data-support-budget="free"]')
-            ?.getAttribute("aria-pressed") === "true", null, {timeout:15000});
+          // Wait for Relationships to commit before the real budget touch;
+          // selecting two independent React controls without this wait can
+          // race the topic transition under concurrent mobile WebKit load.
+          const relationshipsTheme=finder.locator('[data-support-theme="relationships"]');
+          await relationshipsTheme.click();
+          await page.waitForFunction(() => document.querySelector(
+            '#holistic-inline-order [data-support-theme="relationships"]')
+              ?.getAttribute('aria-pressed')==='true',null,{timeout:15000});
+          const freeBudget=finder.locator('[data-support-budget="free"]');
+          await freeBudget.click();
+          await page.waitForFunction(() => document.querySelector(
+            '#holistic-inline-order [data-support-budget="free"]')
+              ?.getAttribute('aria-pressed')==='true',null,{timeout:15000});
           await searchConsultationFixtures(page, finder);
           await waitForConsultationFixtures(page, locale, ["free"], label + " free");
           assert.equal(await finder.locator('#holistic-inline-results article').count(), 1,
