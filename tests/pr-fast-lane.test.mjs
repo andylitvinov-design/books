@@ -574,7 +574,10 @@ test('CI-only fast lane retains exact policy checks and refuses broad source ski
   assert.match(core,/node scripts\/ci-specialist-aggregate\.mjs/);
   assert.ok(actionlint.includes("'tests/ci-workflow-globs.test.mjs'"),'Changing the CI syntax regression must launch its own check');
   for(const forbidden of ['package.json','package-lock.json','app/api/app','app/api/auth','supabase/migrations','AGENTS.md']) {
-    const classifier=core.split('case "$f" in').slice(-1)[0].split('*) ci_only=false')[0];
+    // Isolate the CI-only allowlist itself: unrelated later shell cases (for
+    // example lint fallbacks) must not be mistaken for release routing.
+    const classifier=core.split('# CI-only allowlist')[1]?.split('*) ci_only=false')[0];
+    assert.ok(classifier?.includes('case "$f" in'),'Missing bounded CI-only allowlist');
     // A pinned CI-only parser may have its own nested package.json/lock;
     // still forbid the root dependency manifests from using CI-only mode.
     const rootManifest = forbidden === 'package.json' || forbidden === 'package-lock.json';
@@ -920,6 +923,25 @@ test('native auto-merge preserves stacked-child ancestry while keeping squash fo
   assert.match(source, /Unable to determine if workflow can be created or updated due to timeout/);
   assert.ok(source.includes('.headRefOid == env.PR_HEAD and .autoMergeRequest.mergeMethod == env.HH_EXPECTED_MERGE_METHOD'));
   assert.doesNotMatch(source.split(/^  prune-head:\s*$/m)[0], /checkout@|--admin|--delete-branch/);
+});
+
+test('Core lint executes once with a full safety fallback before mandatory Next build', () => {
+  const core=workflow('hh-pr-core-release.yml');
+  const scope=core.split('  scope:\n')[1]?.split('  hh-specialist:\n')[0] || '';
+  const lintStep=scope.indexOf('name: Lint changed JS/TS sources on PR; full lint for manual/merge queue');
+  const buildStep=scope.indexOf('name: Exact proposed release production build and TypeScript check');
+  assert.ok(lintStep >= 0 && buildStep > lintStep, 'Hard-gated ESLint precedes production build');
+  assert.match(scope, /npx --no-install eslint "\$\{files\[@\]\}"/);
+  assert.match(scope, /if \[\[ "\$full_lint" == true \]\]; then\s+npm run lint/);
+  for (const sensitive of ['eslint.config.*','.eslintrc*','package.json','package-lock.json','tsconfig.json']) {
+    assert.ok(scope.includes(sensitive), 'Missing whole-repository lint fallback: '+sensitive);
+  }
+  assert.match(scope, /run: npm run build -- --no-lint/);
+  assert.match(scope, /steps\.diff\.outputs\.ci_only != 'true'/);
+  const gate=core.split('  hh-merge-check:\n')[1] || '';
+  assert.match(gate, /SCOPE_RESULT/);
+  assert.match(gate, /SPECIALIST_RESULT/);
+  assert.match(gate, /SCOPE_RESULT.*success &&.*SPECIALIST_RESULT.*success/);
 });
 
 test('core production build is the single TypeScript gate and cannot ignore errors', () => {
