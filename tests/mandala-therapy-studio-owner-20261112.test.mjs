@@ -110,3 +110,17 @@ test("course generates all eight local texts only on individual requests",()=>{
  assert.match(writer,/Sessions 2–8 are an explicit local request/);
  assert.doesNotMatch(ui,/autoPay|autoRender|autoGenerate/);
 });
+
+test("Owner Therapy mobile: one introduction and compact controls, no feature removal",()=>{
+ assert.match(ui,/data-therapy-course=\{isCourse\?"true":"false"\}/);
+ assert.match(parent,/coursePreview=\{isCourse\} compactTherapy approvedVideoConcept/);
+ assert.match(writer,/compactTherapy\?:boolean/);
+ assert.match(writer,/compactTherapy\?extraField:null/);
+ assert.match(writer,/!compactTherapy\?extraField:null/);
+ assert.match(writer,/<details className=\{css\.context\} data-meditation-context/);
+ assert.match(css,/\.hero\{display:none\}/);
+ assert.match(css,/\.main\{padding:0;border:0/);
+ assert.match(css,/\[data-meditation-main-filters\] label:nth-child\(2\)\{grid-column:1\/-1/);
+ assert.match(css,/\[data-meditation-generate\]\{min-height:52px/);
+ assert.match(ui,/data-therapy-advanced-effects/);
+});
