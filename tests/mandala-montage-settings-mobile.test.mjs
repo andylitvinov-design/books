@@ -14,7 +14,7 @@ test("Montage opens on Style, preserves real recorder and five functional tabs w
   assert.match(studio,/if\(id==="editor"\)setMontagePanel\("effects"\)/);
   assert.match(studio,/aria-pressed=\{montagePanel===item.id\}/);
   assert.doesNotMatch(tabMarkup,/id:"settings"/);
-  assert.match(tabMarkup,/promo:\{ru:"Монтаж PRO",en:"Montage PRO",es:"Montaje PRO"\}/);
+  assert.match(tabMarkup,/promo:\{ru:"Extra",en:"Extra",es:"Extra"\}/);
   assert.match(studio,/data-video-montage-preferences/);
   for(const field of ["format","duration","transitions","speed","quality"])
     assert.ok(studio.includes('data-video-montage-preference="'+field+'"'),field);
@@ -85,8 +85,10 @@ test("Montage iPhone retains the compact header, real six selectors and on-scree
 test("Original motion WebKit export reaches legacy preferences via Story and keeps Audio controls",()=>{
  const motion=readFileSync(new URL("../scripts/benchmarking/verify-original-motion-export.mjs",import.meta.url),"utf8");
  assert.match(motion,/data-video-stories-advanced/);
+ assert.match(studio,/montagePanel==="settings" \? <details className=\{videoStyles\.montageStoryAdvanced\}/);
  assert.match(motion,/data-video-stories-settings/);
- assert.match(motion,/data-video-montage-tab="promo"/);
+ assert.match(motion,/data-video-montage-tab="concept"/);
+ assert.match(motion,/data-video-story-open-settings/);
  assert.match(motion,/data-video-montage-preference="duration"/);
  assert.match(motion,/await duration\.selectOption\('20'\)/);
  assert.match(motion,/data-video-montage-open-audio/);
