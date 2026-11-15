@@ -37,3 +37,59 @@
 .safety{margin:9px 5px;color:#728078;font:500 11px/1.5 system-ui,sans-serif}
 .shell button:disabled{opacity:.55;cursor:not-allowed}.shell button:focus-visible,.shell summary:focus-visible{outline:3px solid #dda750;outline-offset:2px}
 @media(max-width:355px){.hero{padding:15px 11px}.hero p{max-width:80%}.format button{gap:5px;padding:8px 6px}.format button svg{width:19px;height:19px}.format button small{font-size:10px}.tabs button{gap:4px;font-size:11px}.tabs button svg{width:17px;height:17px}}
+
+/* Owner mobile correction 15 Nov: video preview is the ONE visible Therapy hero;
+   old photo banner is retained on desktop but does not repeat the iPhone title. */
+@media(max-width:759px){
+ .shell{margin:2px 0 8px}
+ .hero{display:none}
+ .format{gap:5px;margin:0 0 9px;padding:4px;border-radius:17px}
+ .format button{min-height:60px;padding:8px 6px;gap:6px;border-radius:13px}
+ .format button strong{font-size:clamp(11.5px,3.55vw,15px);line-height:1.18;overflow-wrap:normal}
+ .format button small{font-size:10px;line-height:1.2}
+ .format button svg{width:19px;height:19px}
+ .tabs{gap:5px;margin-bottom:8px}
+ .tabs button{min-height:45px;padding:7px 3px;border-radius:13px;font-size:clamp(11px,3.3vw,14px)}
+ .tabs button svg{width:17px;height:17px}
+ .main{padding:0;border:0;border-radius:0;background:transparent;box-shadow:none}
+ .scriptHost [data-video-personal-meditation]{
+  margin:0;padding:12px;border:1px solid #e7dfd2;
+  border-radius:19px;background:#fffdf9;box-shadow:0 3px 12px #6c4d3020
+ }
+ .scriptHost [data-video-personal-meditation]>header{gap:8px}
+ .scriptHost [data-video-personal-meditation]>header>span{width:35px;height:35px;border-radius:11px}
+ .scriptHost [data-video-personal-meditation]>header h3{font-size:18px;line-height:1.15;margin-top:2px}
+ .scriptHost [data-video-personal-meditation]>header small{font-size:9px;letter-spacing:.035em}
+ .shell[data-therapy-course="false"] .scriptHost [data-video-personal-meditation]>p:first-of-type{display:none}
+ .shell[data-therapy-course="true"] .scriptHost [data-video-personal-meditation]>p:first-of-type{margin:7px 0;font-size:11px;line-height:1.35}
+ .scriptHost [data-meditation-context]{padding:0;margin:9px 0 0;background:#fbfaf6;border-color:#dce6dd}
+ .scriptHost [data-meditation-context] summary{
+  display:flex;align-items:center;min-height:44px;padding:9px 11px;
+  color:#3b6952;font:750 11px/1.3 system-ui,sans-serif;cursor:pointer;
+  overflow-wrap:anywhere
+ }
+ .scriptHost [data-meditation-context] summary::marker{color:#087e62}
+ .scriptHost [data-meditation-context] .chips{padding:0 9px 9px}
+ .scriptHost [data-meditation-context] .chips span{font-size:10px;padding:5px 7px}
+ .scriptHost [data-meditation-main-filters]{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:9px 0}
+ .scriptHost [data-meditation-main-filters] label{gap:4px;font-size:11px}
+ .scriptHost [data-meditation-main-filters] label:first-child{grid-column:1;grid-row:1}
+ .scriptHost [data-meditation-main-filters] label:nth-child(2){grid-column:1/-1;grid-row:2}
+ .scriptHost [data-meditation-main-filters] label:nth-child(3){grid-column:2;grid-row:1}
+ .scriptHost [data-meditation-main-filters] select{min-height:44px;width:100%;padding:7px 9px;font-size:13px;text-overflow:ellipsis;white-space:nowrap}
+ .scriptHost [data-meditation-accents]{margin:8px 0}
+ .scriptHost [data-meditation-accents] summary{min-height:44px;padding:8px 10px;font-size:12px}
+ .scriptHost [data-meditation-accents] .extra{margin:9px 0}
+ .scriptHost [data-meditation-accents] .extra textarea{min-height:66px}
+ .scriptHost [data-meditation-writer-choices]{gap:7px;margin:8px 0}
+ .scriptHost [data-meditation-writer-choices] button{min-height:44px;padding:7px;font-size:11.5px}
+ .scriptHost [data-meditation-generate]{min-height:52px;padding:10px;font-size:13px}
+ .safety{margin:7px 4px;font-size:10.5px}
+}
+@media(max-width:355px){
+ .format button{min-height:61px;padding:7px 5px}
+ .format button strong{font-size:11.5px}
+ .tabs button{font-size:11px}
+ .scriptHost [data-video-personal-meditation]{padding:10px}
+ .scriptHost [data-meditation-main-filters] select{font-size:12px}
+}
