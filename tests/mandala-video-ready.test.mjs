@@ -307,3 +307,49 @@ test("verified signed-in Ready Save uploads directly through the existing signed
     assert.ok(i>0&&e>i&&delivery.slice(i,e).includes("cloudSaveOff:"),loc+" clear cloud error");
   }
 });
+
+test("Ready primes Safari media on trusted Create before awaiting account credit hold",()=>{
+  const begin=studio.indexOf("async function createVideo(");
+  const end=studio.indexOf("  function stopSoundPreview()",begin);
+  assert.ok(begin>0&&end>begin);
+  const create=studio.slice(begin,end);
+  const at=(fragment)=>{
+    const position=create.indexOf(fragment);
+    assert.ok(position>=0,"Missing render step: "+fragment);
+    return position;
+  };
+  const primedVideo=at("const stylePreparation=");
+  const primedAudio=at("const audioPreparation =");
+  const audioStarted=at("musicSession=audioPreparation?await withLocalMediaDeadline");
+  const sceneCheck=at("if(!(await filmPreparation))");
+  const masterStarted=at("await withLocalMediaDeadline(master.play(),12000)");
+  const creditHold=at('const hold=await videoCreditRequest("hold"');
+  const encoder=at("const canvas = canvasRef.current;");
+  assert.ok(primedVideo<primedAudio&&primedAudio<audioStarted&&audioStarted<sceneCheck);
+  assert.ok(sceneCheck<masterStarted&&masterStarted<creditHold&&creditHold<encoder,
+    "No network hold/capability call may steal the original Safari tap before decoders start");
+  assert.ok(at('appFetch("video-export/capabilities"')>masterStarted);
+  assert.match(studio,/async function withLocalMediaDeadline<T>/);
+  assert.match(studio,/image_load_timeout/);
+  assert.match(create,/await withLocalMediaDeadline\(image\.decode\(\),20000\)/);
+  assert.match(create,/setExportUnavailable\(true\)/);
+});
+
+test("credit hold times out instead of leaving a signed-in iPhone in Preparing",async()=>{
+  const {postVideoCreditAction}=await import("../lib/video-credits/client.mjs");
+  const originalFetch=globalThis.fetch;
+  let aborted=false;
+  try{
+    globalThis.fetch=(url,init)=>{
+      assert.equal(url,"/api/app/video-credits/hold");
+      assert.equal(init.method,"POST");
+      assert.equal(init.credentials,"same-origin");
+      return new Promise((_resolve,reject)=>init.signal.addEventListener("abort",()=>{
+        aborted=true;reject(new Error("AbortError"));
+      },{once:true}));
+    };
+    await assert.rejects(postVideoCreditAction("hold",{operationId:"synthetic-hold"},{timeoutMs:40}),
+      /VIDEO_CREDITS_UNAVAILABLE/);
+    assert.equal(aborted,true,"the hung browser request must be aborted");
+  }finally{globalThis.fetch=originalFetch;}
+});
