@@ -2172,7 +2172,7 @@ test('open-PR cleanup rejects changed HEAD, holds, draft, ambiguity, jobs and in
  for(const change of [
   p=>({...p,draft:true}),
   p=>({...p,labels:[{name:'hh:hold'}]}),
-  p=>({...p,head:{...p.head,sha:'c'.repeat(40)}})
+  p=>({...p,head:{...p.head,sha:old}})
  ]){
   const f=create();
   const candidate=change(f.pr);
