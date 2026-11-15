@@ -198,3 +198,14 @@ test("initial AI Assistant places its single live composer immediately under the
 test('AI welcome introduces Ali in RU/EN/ES',()=>{
  for(const title of ["I'm Ali, your Holistic Guide",'Я Ali — ИИ-помощник Holistic House','Soy Ali, tu guía de IA Holistic House'])assert.ok(landing.includes(title),title);
 });
+
+test('Chat title and disclosures introduce Ali without human or therapy impersonation',()=>{
+ for(const phrase of ['Разговор с Ali','Chat with Ali','Habla con Ali','Я Ali — ИИ-помощник Holistic House, не человек и не психотерапевт.',"I'm Ali, Holistic House's AI guide, not a human or a therapist.",'Soy Ali, el asistente de IA de Holistic House, no una persona ni terapeuta.'])
+  assert.ok(chat.includes(phrase),phrase);
+});
+
+test('Services assistant identifies as Ali in RU/EN/ES',()=>{
+ const services=read('components/services-assist-mobile.tsx');
+ assert.equal((services.match(/title:"Ali"/g)||[]).length,3);
+ assert.doesNotMatch(services,/title:"Wave"/);
+});

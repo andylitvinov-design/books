@@ -228,19 +228,22 @@ test('Telegram chat uses shared Reaction, Conversation and Reasoning Mind signal
   assert.ok(prompt.length<=10,'owned Ollama max messages remains respected');
 });
 
-test('Wave is the only client-facing assistant name; legacy chat buttons keep working',()=>{
+test('Ali is the only client-facing assistant name; legacy Wave chat buttons keep working',()=>{
   for(const locale of ['ru','en','es']){
-    assert.match(V3_CHAT_COPY[locale].intro,/Wave/);
+    assert.match(V3_CHAT_COPY[locale].intro,/Ali/);
     assert.match(V3_CHAT_COPY[locale].intro,/OpenRouter/);
     assert.doesNotMatch(V3_CHAT_COPY[locale].intro,/Qwen/i);
-    assert.match(V3_COPY[locale].intro,/Wave/);
-    assert.match(V3_LABELS[locale].chatagree,/Wave/);
+    assert.match(V3_COPY[locale].intro,/Ali/);
+    assert.match(V3_LABELS[locale].chatagree,/Ali/);
   }
   assert.equal(v3Action({rawText:'Начать диалог с ИИ'}),'chatagree');
   assert.equal(v3Action({rawText:'Поговорить с Wave'}),'chatagree');
   assert.equal(v3Action({rawText:'Chat with Wave'}),'chatagree');
   assert.equal(v3Action({rawText:'Hablar con Wave'}),'chatagree');
-  assert.match(v3ModelMessages({kind:'chat',locale:'ru',turns:[{role:'user',text:'Привет'}]})[0].content,/Wave/);
+  assert.equal(v3Action({rawText:'Поговорить с Али'}),'chatagree');
+  assert.equal(v3Action({rawText:'Chat with Ali'}),'chatagree');
+  assert.equal(v3Action({rawText:'Hablar con Ali'}),'chatagree');
+  assert.match(v3ModelMessages({kind:'chat',locale:'ru',turns:[{role:'user',text:'Привет'}]})[0].content,/Ali/);
 });
 
 test('Wave local chat remains consent-gated and is independent of any model key',()=>{
@@ -265,12 +268,12 @@ test('Wave fallback preserves short-turn context, handles model identity and sta
   assert.match(incoming('Поговорим?'),/поболта|пообща|разговар/i);
   assert.match(incoming("Let's chat",[],'en'),/chat/i);
   assert.match(incoming('Hablemos',[],'es'),/conversar/);
-  assert.match(incoming('О Qwen'),/Wave/);
+  assert.match(incoming('О Qwen'),/Ali/);
   assert.match(incoming('О Qwen'),/Qwen/);
-  assert.match(incoming('What is your name?',[],'en'),/Wave/);
+  assert.match(incoming('What is your name?',[],'en'),/Ali/);
   assert.match(incoming('Quiero morir',[],'es'),/emergencia/);
   assert.match(incoming('Не хочу больше жить'),/экстренн/);
-  assert.match(incoming('Объясни квантовую физику'),/Wave/);
+  assert.match(incoming('Объясни квантовую физику'),/Ali/);
   assert.doesNotMatch(incoming('Объясни квантовую физику'),/квантовая физика —/);
   assert.ok(incoming('Поговорим?').length<700);
   assert.equal(incoming('Спасибо',[{role:'assistant',text:'Привет'}]).length>0,true);
