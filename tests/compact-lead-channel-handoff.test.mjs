@@ -50,13 +50,19 @@ test("messenger drafts carry only public service and reference, no submitted con
     const telegram = telegramEnquiryUrlFromWhatsApp(whatsapp);
     assert.equal(new URL(whatsapp).origin, "https://wa.me");
     assert.equal(new URL(telegram).hostname, "t.me");
-    for (const url of [whatsapp, telegram]) {
-      const message = new URL(url).searchParams.get("text") || "";
-      assert.ok(message.includes(id));
-      assert.ok(message.includes("Personal session"));
-      assert.ok(!message.includes("private=never-send"));
-      assert.ok(!message.includes("@example.com"));
-    }
+    const waText = new URL(whatsapp).searchParams.get("text") || "";
+    const tgUrl = new URL(telegram);
+    const tgText = tgUrl.searchParams.get("text") || "";
+    // WhatsApp may include a voluntary reference; the public Telegram handoff
+    // intentionally carries only the selected service, not client identifiers.
+    assert.ok(waText.includes(id));
+    assert.ok(waText.includes("Personal session"));
+    assert.equal(tgUrl.pathname, "/holistichouse");
+    assert.deepEqual([...tgUrl.searchParams.keys()], ["text"]);
+    assert.ok(tgText.includes("Personal session"));
+    assert.doesNotMatch(tgText, /HH-13B822F68D70|private=never-send|@example.com|Reference:|Context:/i);
+    assert.notEqual(tgText, waText);
+    assert.ok(!waText.includes("private=never-send"));
   }
 });
 
