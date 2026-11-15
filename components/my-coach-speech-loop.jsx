@@ -5,7 +5,7 @@ import {Mic,MicOff,Play,Volume2} from 'lucide-react'
 import styles from './my-coach-speech-loop.module.css'
 import {appendSpokenAnswer} from '@/lib/personal-coaching/speech-text.js'
 import {chooseDictationLanguage,readDictationResults,detectedSpeechLocale,ios27NeedsSpeechRecovery} from '@/lib/personal-coaching/my-coach-dictation.mjs'
-import {startCoachingMp3Playback} from '@/lib/personal-coaching/streamed-mp3-playback.mjs'
+import {startCoachingMp3Playback,primeCoachingAudioGesture} from '@/lib/personal-coaching/streamed-mp3-playback.mjs'
 import {coachSpokenText} from '@/lib/coaching/coach-spoken-text.mjs'
 import {coachPresentationVoice} from '@/lib/coaching/persona-presentations.mjs'
 
@@ -50,6 +50,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   const retryTimerRef=useRef(null),settleTimerRef=useRef(null),retryAttemptsRef=useRef(0)
   const cloudControllerRef=useRef(null)
   const cloudPlayerRef=useRef(null)
+  const primedAudioRef=useRef(null)
   const speakingRef=useRef(false)
   const speechTimerRef=useRef(null),blockedResumeRef=useRef(null),utteranceRef=useRef(null)
   const iosCueTimerRef=useRef(null)
@@ -127,6 +128,8 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       activeRef.current=true
       introStartedRef.current=true
       generationRef.current+=1
+      // Prime the original HTMLAudioElement in the Play gesture.
+      primedAudioRef.current=primeCoachingAudioGesture()
       changePhase('loading')
       // Play is the single deliberate gesture that starts coach audio followed
       // by browser recognition. No recording, upload or second mic tap.
@@ -487,6 +490,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
         if(!response.ok||!response.body)throw Error('CLOUD_TTS_UNAVAILABLE')
         if(!live()||controller.signal.aborted)return
         cloudPlayerRef.current=startCoachingMp3Playback(response,{
+          audioElement:primedAudioRef.current,
           onLevel:level=>{if(live())levelRef.current?.(level)},
           onStart:()=>{
             if(!live())return
@@ -494,13 +498,13 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
           },
           onBlocked:()=>{
             if(!live())return
-            blockedResumeRef.current=()=>{
-              const player=cloudPlayerRef.current
-              if(!player||!live())return
-              setNotice('');changePhase('loading')
-              void player.resume() // genuine user gesture; no re-fetch
-            }
-            changePhase('ready');setNotice(t.tapToHear)
+            // Safari must not demand a second Replay tap after the one Play.
+            // If even the unlocked MP3 is rejected, try device narration.
+            cloudPlayerRef.current?.cancel()
+            cloudPlayerRef.current=null
+            cloudControllerRef.current=null
+            blockedResumeRef.current=null
+            speakOnDevice()
           },
           onEnd:()=>{
             if(!live())return
@@ -537,6 +541,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       activeRef.current=true
       introStartedRef.current=true
       generationRef.current+=1
+      primedAudioRef.current=primeCoachingAudioGesture()
       changePhase('loading')
       void speakCoachReply({reply:String(introduction||'').slice(0,900),mode:'intro'},'',generationRef.current,true)
       return
