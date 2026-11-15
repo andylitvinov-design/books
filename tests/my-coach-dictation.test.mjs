@@ -133,3 +133,22 @@ test('iOS 27 keeps recognized Safari voice sessions alive until natural onend',(
  assert.ok(loop.includes('cue.onend=finishCue'),'every subsequent Safari session still waits for the short recovery cue')
  for(const marker of ['iosAwaitEnd:',"setNotice(t.iosAwaitEnd)"])assert.ok(loop.includes(marker))
 });
+
+test('hands-free voice uses live consent and never ends on a natural TTS outage',()=>{
+  const loop=source('components/my-coach-speech-loop.jsx')
+  assert.ok(loop.includes('voiceConfigRef.current={cloudAgreed,cloudAvailable,cloudProvider}'))
+  const live=loop.slice(loop.indexOf('async function speakCoachReply('),loop.indexOf('function toggle(){'))
+  assert.match(live,/cloudProvider:voiceProvider}=voiceConfigRef\.current/)
+  assert.ok(live.includes('(naturalVoice||voiceAgreed)&&voiceAvailable'))
+  for(const marker of ['provider:voiceProvider',"voiceProvider==='google_chirp3_hd'",
+    "voiceProvider==='fish_free'"])assert.ok(live.includes(marker),marker)
+  const fallback=live.slice(live.indexOf('function showTextOnly(){'),live.indexOf('// Never synthesize'))
+  assert.ok(fallback.includes("if(result.mode==='safety'||result.mode==='boundary')"),
+    'safety and boundary stops retain their original guard')
+  assert.ok(fallback.includes('afterSpeech()'))
+  assert.ok(fallback.includes('startListening()'))
+  assert.ok(fallback.includes('setNotice(t.fallback)'))
+  assert.doesNotMatch(fallback,/silence\(\)|changePhase\('idle'\)|introStartedRef\.current=false/)
+  assert.ok(live.includes('afterSpeech()'),'a successful spoken reply must also auto-listen')
+  assert.ok(loop.includes('cue.onend=finishCue'),'iOS 27 WebKit recovery remains')
+})

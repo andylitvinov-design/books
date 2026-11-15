@@ -278,8 +278,8 @@ test('My Coach Fish TTS remains limited to approved free vendor routes and Play 
     'PRIVATE_HEADERS','s2.1-pro-free'])
     assert.ok(route.includes(marker),marker)
   for(const marker of ['startCoachingMp3Playback','cloudControllerRef.current?.abort()',
-    'cloudPlayerRef.current?.cancel()','(naturalVoice||cloudAgreed)&&cloudAvailable',
-    "cloudProvider==='fish_free'?{trainingUseConsent:true}:{}"])
+    'cloudPlayerRef.current?.cancel()','(naturalVoice||voiceAgreed)&&voiceAvailable',
+    "voiceProvider==='fish_free'?{trainingUseConsent:true}:{}"])
     assert.ok(speech.includes(marker),marker)
   assert.ok(page.includes('voiceProviderDetails'))
   assert.ok(page.includes('onSessionStart={()=>setCloudAgreed(true)}'))
@@ -333,7 +333,7 @@ test('My Coach has private default TTS, no stale transcription, and tap-to-recov
   const media=source('lib/personal-coaching/streamed-mp3-playback.mjs')
   for(const token of ["setNotice('') // Clear the old user transcript",
     "phaseRef.current==='ready'&&blockedResumeRef.current",
-    "(naturalVoice||cloudAgreed)&&cloudAvailable",
+    "(naturalVoice||voiceAgreed)&&voiceAvailable",
     "introPlayerRef.current=startDirectCoachIntroAudio",
     "cue.volume=0"])
     assert.ok(loop.includes(token),token)
@@ -426,7 +426,7 @@ test('spoken My Coach reply retains the reflection and start introduction',()=>{
  assert.ok(ui.includes('getCoachPresentation(personaId,lang)?.text'))
  assert.ok(ui.includes('introduction={introduction}'))
  assert.ok(ui.includes('onSessionStart={()=>setCloudAgreed(true)}'))
- assert.ok(loop.includes('(naturalVoice||cloudAgreed)&&cloudAvailable'))
+ assert.ok(loop.includes('(naturalVoice||voiceAgreed)&&voiceAvailable'))
  assert.ok(loop.includes("if(!introStartedRef.current){"))
  assert.ok(ui.includes("const dynamicAllowed=cloudAgreed&&cloudAvailable&&"))
  assert.ok(ui.includes("const [cloudAgreed,setCloudAgreed]=useState(false)"))
