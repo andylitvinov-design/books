@@ -7613,7 +7613,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         {activeWorkspace==="effects" ? <MandalaTherapyStudio locale={locale}
           disabled={recording||preparing||hypnoAudioBusy}
           editor={isCourse=><MandalaPersonalMeditation key={isCourse?"course":"single"}
-            coursePreview={isCourse} approvedVideoConcept={approvedVideoConcept}
+            coursePreview={isCourse} compactTherapy approvedVideoConcept={approvedVideoConcept}
             locale={locale} theme={theme} wish={wish}
             scene={sceneName} caption={caption} sound={attachedAudio?appliedAudioName:""}
             audioSrc={attachedAudio?.kind==="file"?(audioRights?uploadedAudio?.url||null:null):
