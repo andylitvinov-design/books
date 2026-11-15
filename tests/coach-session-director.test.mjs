@@ -388,11 +388,15 @@ test('Director v4 guards method-specific steps and never skips earlier client mi
   ])
   const limited=coachSessionDirective(premature.input,premature.persona)
   assert.equal(limited.evidence.goalConfirmed,false)
-  assert.equal(limited.stageLimit,'goal')
-  assert.equal(limited.stage,'goal')
-  assert.equal(limited.readiness.ready,false,'unconfirmed prerequisite still blocks readiness')
-  assert.ok(limited.readiness.missing.includes('goalConfirmed'))
-  assert.deepEqual(limited.supportedStages,['topic'],'TGROW topic is confirmed but goal remains unconfirmed')
+  assert.equal(limited.methodStepId,'tgrow:way_forward')
+  assert.equal(limited.evidence.goalConfirmed,false)
+  assert.equal(limited.evidence.workingFocusEstablished,true)
+  assert.equal(limited.stageLimit,'action')
+  assert.equal(limited.stage,'action')
+  assert.equal(limited.readiness.ready,false,'no client-authorized action yet')
+  assert.ok(limited.readiness.missing.includes('clientActionApproved'))
+  assert.deepEqual(limited.supportedStages,['topic','goal','reality','options'],
+    'client facts unlock a working focus but not a plan')
 })
 
 test('Old facts do not return after a topic change in previous conversation history',()=>{
@@ -522,4 +526,22 @@ test('Every new method move has an honest localized provider-free lead',()=>{
       assert.ok(approvedMethodQuestion(locale,move).length>=15,locale+':'+move)
     }
   }
+})
+
+test('A natural five-turn request can progress without the literal phrase my goal',()=>{
+  const turns=[user('Я хочу понять, почему трудно сосредоточиться.'),
+    user('Вчера после обеда я потерял концентрацию.'),
+    user('Потому что мне мешает шум на работе.'),
+    user('Один вариант — сменить место, другой — меньше встреч.')]
+  const current=inputFor('mira','Я сделаю эксперимент завтра, это реально.',turns)
+  const d=coachSessionDirective(current.input,current.persona)
+  assert.equal(d.evidence.goalRestated,true)
+  assert.equal(d.evidence.goalConfirmed,false,'never invent explicit goal confirmation')
+  assert.equal(d.evidence.workingFocusEstablished,true)
+  assert.equal(d.methodStepId,'grow:review','the working focus must not trap the session in goal intake')
+  const restart=inputFor('mira','Нет, я имел в виду другое.',turns)
+  const reset=coachSessionDirective(restart.input,restart.persona)
+  assert.equal(reset.evidence.workingFocusEstablished,false)
+  assert.equal(reset.methodStepId,'grow:goal')
+  assert.equal(reset.interventionId,'repair_misunderstanding')
 })

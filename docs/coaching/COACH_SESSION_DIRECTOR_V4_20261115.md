@@ -22,6 +22,11 @@ not merely the common GROW-like phase:
 - Appreciative Inquiry: discover, dream, design, deliver, review
 
 Method steps have specific missing-evidence requirements and intervention IDs.
+A goal self-stated by the client and followed by a concrete client-authored
+example forms only a **working focus**. It allows non-robotic exploration
+without inventing explicit final goal confirmation. Correction/topic change
+invalidates that working focus. It never constitutes plan consent.
+
 The next step is the first incomplete step; old confirmed flags do not allow
 skipping earlier gates. Client correction/topic changes reset earlier evidence
 via the existing `director-evidence.mjs` window. Method-specific questions are
