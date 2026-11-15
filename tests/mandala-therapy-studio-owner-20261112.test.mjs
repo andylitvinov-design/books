@@ -144,3 +144,11 @@ test("Therapy mobile guest path is tested in the existing WebKit release gate",(
  assert.match(ui,/aria-label=\{t\.stepsA11y\}/);
  assert.match(css,/\[data-meditation-context\] summary::after/);
 });
+
+// CSS Modules hash class names at runtime; use a semantic structure selector.
+// A raw '.chips' lookup would fail a real Safari run even with all context data present.
+test("Therapy WebKit uses robust native context chip selectors",()=>{
+ const browser=read("scripts/verify-therapy-studio-mobile-browser.mjs");
+ assert.match(browser,/contextPanel\.locator\('div > span'\)/);
+ assert.doesNotMatch(browser,/contextPanel\.locator\('\.chips span'\)/);
+});

@@ -72,7 +72,7 @@ try{
    await expect(shell.locator('[data-meditation-extra]')).toBeHidden();
    await contextPanel.locator('summary').tap();
    await expect(contextPanel).toHaveAttribute('open','');
-   await expect(contextPanel.locator('.chips span')).toHaveCount(4);
+   await expect(contextPanel.locator('div > span')).toHaveCount(4);
    await contextPanel.locator('summary').tap();
    const accents=shell.locator('[data-meditation-accents]');
    await accents.locator('summary').tap();
