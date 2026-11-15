@@ -144,6 +144,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const replayControllerRef=useRef(null),replayPlayerRef=useRef(null)
   const portraitHeroRef=useRef(null),sessionRootRef=useRef(null)
   const replayAudioContextRef=useRef(null)
+  const serverSessionStartRef=useRef({personaId:null,promise:null})
+  // Local display counts active foreground time; the signed server clock
+  // independently owns the Director's session timebox.
   // The 20-minute format counts active foreground seconds, not wall-clock
   // time while Safari is backgrounded. No stored state or forced cutoff.
   useEffect(()=>{
@@ -243,6 +246,16 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const latestCoachText=latestCoachTurn?.content||introduction
   // Hero Play is the main session entry. It invokes the same imperative
   // voice runner synchronously, keeping Safari's user-activation gesture.
+  function requestServerCoachSession(){
+    const previous=serverSessionStartRef.current
+    if(previous.personaId===personaId&&previous.promise)return
+    const promise=fetch('/api/app/my-coach/session',{
+      method:'POST',credentials:'same-origin',cache:'no-store',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({personaId}),
+    }).then(response=>response.ok).catch(()=>false)
+    serverSessionStartRef.current={personaId,promise}
+  }
   function startSessionFromPortrait(){
     if(busy||paused||replaying||voiceState.phase!=='idle')return
     speechRef.current?.startSession?.(introduction,{naturalVoice:true})
@@ -498,6 +511,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     pending.current=controller
     setBusy(true);setError('')
     try{
+      // The Play click already started the model-independent server timer;
+      // await its cookie only before submitting the first client turn.
+      if(serverSessionStartRef.current.personaId===personaId)
+        await serverSessionStartRef.current.promise
       const response=await fetch('/api/app/my-coach/turn',{
         method:'POST',credentials:'same-origin',cache:'no-store',signal:controller.signal,
         headers:{'Content-Type':'application/json'},
@@ -515,6 +532,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       if(controller.signal.aborted)return
       const answer=assistantText(result)
       if(!answer||answer.length>900)throw Error('COACH_REPLY_UNAVAILABLE')
+      if(Number.isSafeInteger(result.sessionElapsedSeconds))
+        setActiveSessionSeconds(result.sessionElapsedSeconds)
       setTurns(previous=>{
         const updated=[...previous,{role:'user',content:message},{
           role:'assistant',content:answer,reflection:result.reflection,question:result.question,
@@ -618,7 +637,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         <div className={styles.voiceCenter} data-voice-active={voiceState.phase!=='idle'?'true':undefined}>
           <span className={styles.voiceWaveLeft} aria-hidden="true"><i/><i/><i/><i/><i/></span>
           <MyCoachSpeechLoop ref={speechRef} locale={lang} speechLocale={speechLocale} initialDraft={draft}
-            introduction={introduction} onSessionStart={()=>setCloudAgreed(true)}
+            introduction={introduction} onSessionStart={()=>{setCloudAgreed(true);requestServerCoachSession()}}
             cloudAvailable={cloudAvailable} cloudAgreed={cloudAgreed} cloudProvider={cloudProvider} personaId={personaId} enabled={true}
             canStart={!busy&&!paused&&!replaying} onTurn={text=>sendMessage(text,{voiceTurn:true})}
             onCancelTurn={()=>pending.current?.abort()} onVoiceStateChange={setVoiceState} onVoiceLevel={setPortraitLevel}

@@ -17,6 +17,8 @@ import { listLabReports, saveLabReport, deleteLabReport } from '@/lib/app/lab-re
 import { readBusinessCoaching, saveBusinessCoaching } from '@/lib/app/business-coaching'
 import { readPersonalCoaching, savePersonalCoaching, readTraditionCoaching, saveTraditionCoaching, readTraditionCoachingSummaries } from '@/lib/app/personal-coaching'
 import {personalCoachingBrainTurn,personalCoachingBrainProbe,myCoachGenerativeTurn,myCoachGenerativeProbe} from '@/lib/app/coaching-brain'
+import {getCoachPersona} from '@/lib/coaching/persona-registry.mjs'
+import {COACH_SESSION_COOKIE,newCoachSession,openCoachSession,sealCoachSession,COACH_SESSION_TTL_SECONDS} from '@/lib/coaching/session-authority.mjs'
 import { readCoachingReportDraft } from '@/lib/app/coaching-report-v2'
 import { listCoachingReports, exportCoachingReports, readCoachingReport, saveCoachingReport, deleteCoachingReport } from '@/lib/app/coaching-report-store'
 import { readCoachingLifePlan, updateCoachingLifePlanArea, importCoachingReportActions } from '@/lib/app/coaching-life-plan'
@@ -868,13 +870,42 @@ async function handle(request, { params }) {
     // The gateway invokes it only when an actual provider request is attempted.
     const reserveCoachingFreeCall=()=>consumeRate(config,
       {op:'coaching-openrouter-shared-daily'},40,86400)
-    // Signed-in, stateless dialogue for the selected My Coach persona. Client
-    // history is not stored; auth, same-origin protection and DB throttles apply.
+    // One explicit Play starts a server-timed encrypted HttpOnly session.
+    // Store only allowlisted stage indicators, NEVER raw voice or transcript.
+    if (joined === 'my-coach/session') {
+      if (method !== 'POST') throw new AppError('NOT_FOUND',404)
+      const body=await readBody(request,512)
+      onlyKeys(body,['personaId'])
+      if(!getCoachPersona(body?.personaId))
+        throw new AppError('COACHING_BRAIN_INPUT_INVALID',400)
+      await consumeRate(config,{op:'my-coach-session-start',actor:actor.id},12,3600)
+      const session=newCoachSession(actor,body.personaId)
+      const response=json({started:true,targetSeconds:1200})
+      response.cookies.set(COACH_SESSION_COOKIE,sealCoachSession(session,config,actor),{
+        httpOnly:true,secure:!config.test,sameSite:'lax',
+        path:'/api/app/my-coach',maxAge:COACH_SESSION_TTL_SECONDS
+      })
+      return response
+    }
+    // The client turn is authoritative only AFTER this authenticated route
+    // receives it. Previous browser-supplied history is model context alone.
     if (joined === 'my-coach/turn') {
       if (method !== 'POST') throw new AppError('NOT_FOUND',404)
+      const body=await readBody(request,16384)
+      if(!getCoachPersona(body?.personaId))
+        throw new AppError('COACHING_BRAIN_INPUT_INVALID',400)
       await consumeRate(config,{op:'my-coach-generative-turn',actor:actor.id},40,3600)
-      return json(await myCoachGenerativeTurn(await readBody(request,16384),
-        {signal:request.signal,reserveModelCall:reserveCoachingFreeCall,config,actor}))
+      const session=openCoachSession(request.cookies.get(COACH_SESSION_COOKIE)?.value,
+        config,actor,body.personaId)||newCoachSession(actor,body.personaId)
+      const completed=await myCoachGenerativeTurn(body,
+        {signal:request.signal,reserveModelCall:reserveCoachingFreeCall,config,actor,sessionState:session})
+      const {__coachSession,...publicReply}=completed
+      const response=json(publicReply)
+      response.cookies.set(COACH_SESSION_COOKIE,sealCoachSession(__coachSession,config,actor),{
+        httpOnly:true,secure:!config.test,sameSite:'lax',
+        path:'/api/app/my-coach',maxAge:COACH_SESSION_TTL_SECONDS
+      })
+      return response
     }
     // A synthetic preflight proves verified ZDR free-model access before any
     // visitor text can reach a provider. The call is authenticated and bounded.

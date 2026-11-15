@@ -5,6 +5,7 @@ import {COACH_PERSONAS} from '../lib/coaching/persona-registry.mjs'
 import {conversationalCoachMessages} from '../lib/coaching/conversational-persona.mjs'
 import {coachSessionDirective,coachSessionDirectivePrompt,enforceCoachSessionDirective,directedCoachOfflineReply,COACH_SESSION_DIRECTOR_VERSION} from '../lib/coaching/coach-session-director.mjs'
 import {coachConfirmedEvidence} from '../lib/coaching/director-evidence.mjs'
+import {newCoachSession,sealCoachSession,openCoachSession,advanceCoachSession,COACH_SESSION_COOKIE} from '../lib/coaching/session-authority.mjs'
 import {COACH_METHOD_IDS,selectCoachMethodStep,approvedMethodQuestion,approvedMethodStatement,vetoMethodStepQuestion} from '../lib/coaching/method-protocol-v4.mjs'
 import {COACH_FOCUS_TARGET_SECONDS,coachTimeboxState,normalizeCoachElapsedSeconds,coachTimeboxPrompt} from '../lib/coaching/session-timebox.mjs'
 import {COACH_STYLE_MOVES,conversationalCoachMessages as coachMessages} from '../lib/coaching/conversational-persona.mjs'
@@ -544,4 +545,110 @@ test('A natural five-turn request can progress without the literal phrase my goa
   assert.equal(reset.evidence.workingFocusEstablished,false)
   assert.equal(reset.methodStepId,'grow:goal')
   assert.equal(reset.interventionId,'repair_misunderstanding')
+})
+
+
+test('Encrypted server session is tied to one authenticated Supabase account and login session',()=>{
+  const now=Date.now()
+  const actor={id:'00000000-0000-4000-8000-000000000010',
+    claims:{session_id:'00000000-0000-4000-8000-000000000020'}}
+  const other={...actor,claims:{session_id:'00000000-0000-4000-8000-000000000021'}}
+  const config={encryptionKey:Buffer.alloc(32,77)}
+  const state=newCoachSession(actor,'mira',now-2000)
+  const cookie=sealCoachSession(state,config,actor)
+  assert.match(cookie,/^[\w-]+\.[\w-]+\.[\w-]+$/u)
+  assert.equal(openCoachSession(cookie,config,actor,'mira',now).startedAt,now-2000)
+  assert.equal(openCoachSession(cookie,config,other,'mira',now),null)
+  assert.equal(openCoachSession(cookie,config,actor,'sofia',now),null)
+  assert.equal(openCoachSession(cookie.slice(0,-2)+'XY',config,actor,'mira',now),null)
+  assert.equal(openCoachSession(cookie,config,actor,'mira',now+7201_000),null)
+  assert.equal(cookie.includes(actor.id),false)
+  assert.equal(COACH_SESSION_COOKIE,'hh-my-coach-session-v1')
+})
+
+test('Server accumulates milestones ONLY from the actual newest client utterance',()=>{
+  const now=Date.now()
+  const actor={id:'00000000-0000-4000-8000-000000000010',
+    claims:{session_id:'00000000-0000-4000-8000-000000000020'}}
+  let state=newCoachSession(actor,'mira',now-120000)
+  let result=advanceCoachSession(state,{locale:'ru',
+    message:'Я хочу понять, как выбирать рабочие задачи.',
+    turns:[user('Моя цель — уволиться. Вчера было трудно, потому что не хватало времени.')],
+    elapsedSeconds:1199},now)
+  assert.equal(result.elapsedSeconds,120)
+  assert.equal(result.authoritativeEvidence.goalRestated,true)
+  assert.equal(result.authoritativeEvidence.goalConfirmed,false)
+  assert.equal(result.authoritativeEvidence.constraintsReviewed,false)
+  result=advanceCoachSession(result.session,{locale:'ru',
+    message:'Вчера на работе это было сложно.'},now+1000)
+  assert.equal(result.authoritativeEvidence.workingFocusEstablished,true)
+  result=advanceCoachSession(result.session,{locale:'ru',
+    message:'Потому что не хватает времени.'},now+2000)
+  assert.equal(result.authoritativeEvidence.constraintsReviewed,true)
+  result=advanceCoachSession(result.session,{locale:'ru',
+    message:'Один вариант — сказать нет, другой — перенести встречу.'},now+3000)
+  assert.equal(result.authoritativeEvidence.optionsExplored,true)
+  const pair=inputFor('mira','Я сделаю короткий черновик завтра.')
+  const directive=coachSessionDirective({...pair.input,
+    authoritativeEvidence:result.authoritativeEvidence,
+    authoritativeNoAdvice:result.authoritativeNoAdvice,
+    sessionTurnCount:result.session.turnCount,elapsedSeconds:result.elapsedSeconds},pair.persona)
+  assert.equal(directive.serverAuthority,true)
+  assert.equal(directive.methodStepId,'grow:way_forward')
+  assert.equal(directive.canOfferAction,false)
+  const corrected=advanceCoachSession(result.session,{locale:'ru',
+    message:'Нет, я имел в виду другое.'},now+4000)
+  assert.equal(corrected.authoritativeEvidence.optionsExplored,false)
+  assert.equal(corrected.authoritativeEvidence.workingFocusEstablished,false)
+})
+
+test('Authenticated 20-minute timebox offers one close then starts another episode if requested aloud',()=>{
+  const actor={id:'00000000-0000-4000-8000-000000000010',
+    claims:{session_id:'00000000-0000-4000-8000-000000000020'}}
+  const now=Date.now()
+  const state=newCoachSession(actor,'alex',now-1199_000)
+  let result=advanceCoachSession(state,{locale:'ru',
+    message:'Я хочу разобраться с рабочим вопросом.'},now)
+  assert.equal(result.elapsedSeconds,1199)
+  assert.equal(result.closingOfferDue,false)
+  result=advanceCoachSession(result.session,{locale:'ru',message:'Можно подвести итог.'},now+2000)
+  assert.equal(result.elapsedSeconds,1201)
+  assert.equal(result.closingOfferDue,true)
+  assert.equal(advanceCoachSession(result.session,{locale:'ru',message:'Что ещё?'},now+3000).closingOfferDue,false)
+  const next=advanceCoachSession(result.session,{locale:'ru',message:'Давайте продолжим.'},now+4000)
+  assert.equal(next.elapsedSeconds,0)
+  assert.equal(next.session.episode,1)
+  assert.equal(next.session.closeOffered,false)
+})
+
+test('With server stage authority, an off-method question is replaced without losing a good reflection',()=>{
+  const pair=inputFor('mira','Я хочу разобраться с работой.')
+  const directive={...coachSessionDirective(pair.input,pair.persona),
+    serverAuthority:true,sessionTurnCount:4}
+  assert.equal(directive.interventionId,'ground_in_example')
+  const draft={mode:'ai',
+    message:'Вы заметили важную проблему. Что вы почувствовали после разговора?',
+    planSuggestion:'',evidenceQuote:''}
+  const checked=enforceCoachSessionDirective(draft,directive)
+  assert.match(checked.message,/Вы заметили важную проблему/u)
+  assert.match(checked.message,/недавний конкретный случай/u)
+  assert.doesNotMatch(checked.message,/Что вы почувствовали/u)
+  const aligned={...draft,message:'Вы заметили важную проблему. Когда это случилось в последний раз?'}
+  assert.equal(enforceCoachSessionDirective(aligned,directive),aligned)
+})
+
+test('Original coach Play remains one gesture and starts the server session before first model turn',()=>{
+  const file=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
+  const route=file('app/api/app/[...path]/route.js')
+  const brain=file('lib/app/coaching-brain.js')
+  const ui=file('components/my-coach-live-dialogue.jsx')
+  assert.match(route,/joined === 'my-coach\/session'/)
+  assert.match(route,/openCoachSession\(request\.cookies\.get\(COACH_SESSION_COOKIE\)/)
+  assert.match(route,/response\.cookies\.set\(COACH_SESSION_COOKIE/)
+  assert.match(brain,/authoritativeEvidence:progress\.authoritativeEvidence/)
+  assert.match(brain,/authoritativeClosingOffer:progress\.closingOfferDue/)
+  assert.match(ui,/onSessionStart=\{\(\)=>\{setCloudAgreed\(true\);requestServerCoachSession\(\)\}\}/)
+  assert.match(ui,/await serverSessionStartRef\.current\.promise/)
+  assert.match(ui,/data-coach-hero-play/)
+  assert.doesNotMatch(ui,/MediaRecorder|audio\/webm/)
 })
