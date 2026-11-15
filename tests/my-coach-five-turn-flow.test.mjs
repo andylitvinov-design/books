@@ -182,3 +182,28 @@ test('iOS 27 naturally ends short yes/no turns without poisoning the next mic',a
  session.ref.current.stop()
  assert.equal(mic.aborted,true)
 })
+
+test('one Play sustains TEN synthetic iOS 27 client/coach turns with bounded TTS failures',async()=>{
+  const session=createSession({ttsFailures:[2,7]})
+  assert.equal(session.ref.current.startSession('Здравствуйте! Я Мира.',{naturalVoice:true}),true)
+  let mic=await nextMic(session,1)
+  const phrases=Array.from({length:10},(_,index)=>'Ход клиента номер '+(index+1))
+  for(let i=0;i<phrases.length;i++){
+    mic.hear(phrases[i])
+    mic=await nextMic(session,i+2)
+  }
+  assert.equal(session.starts,1,'no second Play after beginning')
+  assert.equal(session.intros,1,'one authored introduction per session')
+  assert.deepEqual(session.inputs,phrases,'all ten distinct user phrases delivered once')
+  assert.equal(session.ttsCalls,10,'no hidden provider retries')
+  assert.equal(session.spoken,8,'failed natural audio does not freeze later turns')
+  assert.equal(session.cues,10,'each subsequent Safari mic start follows one recovery cue')
+  session.ref.current.stop()
+  assert.equal(mic.aborted,true)
+  assert.equal(session.phases.at(-1),'idle')
+})
+test('The existing mobile timebox pauses with the deliberate Pause control',()=>{
+  const source=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+  assert.match(source,/document\.visibilityState==='visible'&&!paused/)
+  assert.match(source,/\},\[sessionClockStarted,paused\]\)/)
+})
