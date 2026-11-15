@@ -90,7 +90,7 @@ jobs:
       (github.event_name == 'workflow_dispatch' && inputs.cleanup_mode != 'off') ||
       (github.event_name == 'push' &&
        github.ref == 'refs/heads/codex/bootstrap-books' &&
-       startsWith(github.event.head_commit.message, 'ci(vercel): owner-approved one-time storage prune 20261115'))
+       startsWith(github.event.head_commit.message, 'ci(vercel): owner-approved verified storage prune 20261115-r2'))
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
