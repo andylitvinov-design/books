@@ -4,7 +4,7 @@ import {forwardRef,useEffect,useImperativeHandle,useRef,useState} from 'react'
 import {Mic,Play,Volume2} from 'lucide-react'
 import styles from './my-coach-speech-loop.module.css'
 import {appendSpokenAnswer} from '@/lib/personal-coaching/speech-text.js'
-import {chooseDictationLanguage,readDictationResults,detectedSpeechLocale,ios27NeedsSpeechRecovery} from '@/lib/personal-coaching/my-coach-dictation.mjs'
+import {chooseDictationLanguage,readDictationResults,detectedSpeechLocale,ios27NeedsSpeechRecovery,hasCoachSpokenAnswer} from '@/lib/personal-coaching/my-coach-dictation.mjs'
 import {startCoachingMp3Playback,primeCoachingAudioGesture,unlockCoachingAudioContext,shouldUseCoachingWebAudio} from '@/lib/personal-coaching/streamed-mp3-playback.mjs'
 import {coachSpokenText} from '@/lib/coaching/coach-spoken-text.mjs'
 import {coachIntroAudioPath,startDirectCoachIntroAudio} from '@/lib/personal-coaching/direct-coach-intro-audio.mjs'
@@ -127,7 +127,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   }
   function stopVoice(){
     const cancelTurn=phaseRef.current==='thinking'
-    if(['starting','listening'].includes(phaseRef.current)&&heardRef.current.trim().length>=3){
+    if(['starting','listening'].includes(phaseRef.current)&&hasCoachSpokenAnswer(heardRef.current)){
       draftRef.current?.(appendSpokenAnswer(draftAtStartRef.current,heardRef.current.trim(),1200))
       setNotice(t.review)
     }else setNotice('')
@@ -324,11 +324,13 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
         iosResultTimerRef.current=setTimeout(()=>{
           if(recognitionRef.current!==recognition||!activeRef.current)return
           const heard=heardRef.current.trim()
-          if(heard.length>=3){
+          if(hasCoachSpokenAnswer(heard)){
             draftRef.current?.(appendSpokenAnswer(draftAtStartRef.current,heard,1200))
             transcriptRef.current?.('') // One visible copy in the editable Text field
-            setNotice(t.iosAwaitEnd)
-          }else restartSilentRecognition(recognition)
+          }
+          // Safari must end every recognition naturally, even one-letter noise.
+          // Aborting after onresult poisons the next iOS 27 microphone session.
+          setNotice(t.iosAwaitEnd)
         },6500)
       }
       // Dictation is shown in the transcript, never echoed beneath the microphone.
@@ -343,7 +345,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
           settleTimerRef.current=setTimeout(()=>{
             if(recognitionRef.current!==recognition||!activeRef.current)return
             const heard=heardRef.current.trim()
-            if(heard.length<3||heard!==heardNow)return
+            if(!hasCoachSpokenAnswer(heard)||heard!==heardNow)return
             recognitionRef.current=null
             recognition.onresult=null;recognition.onend=null;recognition.onerror=null
             try{recognition.abort()}catch{}
@@ -356,7 +358,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     recognition.onerror=event=>{
       if(recognitionRef.current!==recognition)return
       const heard=heardRef.current.trim()
-      if(heard.length>=3&&!['not-allowed','service-not-allowed'].includes(event.error)){
+      if(hasCoachSpokenAnswer(heard)&&!['not-allowed','service-not-allowed'].includes(event.error)){
         recognitionRef.current=null
         recognition.onresult=null;recognition.onend=null;recognition.onerror=null
         if(settleTimerRef.current)clearTimeout(settleTimerRef.current)
@@ -393,10 +395,10 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       if(recognitionRef.current!==recognition)return
       recognitionRef.current=null
       if(!activeRef.current)return
-        if(finished.length>=3)void deliver(appendSpokenAnswer(draftAtStartRef.current,finished,1200))
+        if(hasCoachSpokenAnswer(finished))void deliver(appendSpokenAnswer(draftAtStartRef.current,finished,1200))
       else{
         const recovered=heardRef.current.trim()
-        if(recovered.length>=3){
+        if(hasCoachSpokenAnswer(recovered)){
           // Safari sometimes ends after interim words without a final event.
           // A natural recognizer end commits that one turn; Stop/error never do.
           lastHeardRef.current=recovered
