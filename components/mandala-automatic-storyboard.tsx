@@ -213,6 +213,7 @@ export function MandalaAutomaticStoryboard({
       <span>{index+1}</span>
      </div>
      <div className={styles.storyAutoBody}>
+      <span className={styles.srOnly}>{t.scene} {index+1}</span>
       <small data-storyboard-scene-time>{clock(from)}–{clock(to)}</small>
       <strong>{title}</strong>
       <p data-storyboard-scene-action>{guide.visual}</p>

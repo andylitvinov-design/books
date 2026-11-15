@@ -50,8 +50,8 @@ for (const engine of [chromium, webkit]) {
           const firstTabs = page.locator('[data-profile-tab="today"]');
           // EN/RU now use the approved presentation's click-to-play facade,
           // while ES retains the accessible scenic <video> fallback.
-          // Pending English YouTube is an honest 16:9 poster + channel link,
-          // not a fake playable video. Preserve the other real player states.
+          // Pending English YouTube is a first-party 16:9 state in My Space.
+          // No external channel CTA and no fake Play, even before verification.
           const firstVideo = page.locator(
             '[data-profile-video-hero] [data-profile-presentation-source="youtube-pending"], ' +
             '[data-profile-video-hero] .site-video-frame, [data-profile-video-hero] video'
@@ -61,9 +61,8 @@ for (const engine of [chromium, webkit]) {
             assert.equal(await localized.getAttribute('data-profile-presentation-locale'), locale,
               label + ': presentation language matches the selected site locale');
             if (locale === 'en') {
-              // The approved English channel is YouTube-only. Wait for the exact
-              // public receipt lookup: verified upload → native Play, otherwise
-              // honest, accessible pending state with a real @aatapro link.
+              // English playback is verified YouTube-only, always inside My Space.
+              // The pending state has a real status message but no external link.
               await page.waitForFunction(() => {
                 const node=document.querySelector('[data-profile-presentation-locale="en"]');
                 return node?.getAttribute('data-profile-presentation-source')==='youtube' ||
@@ -74,15 +73,9 @@ for (const engine of [chromium, webkit]) {
             if (locale === 'en' && source === 'youtube-pending') {
               assert.equal(await localized.getAttribute('data-profile-youtube-status'),
                 'awaiting-verified-upload',label + ': unverified YouTube cannot claim playback');
-              const channel = localized.locator('a[href="https://www.youtube.com/@aatapro"]');
-              assert.equal(await channel.count(), 1,
-                label + ': pending presentation opens the approved English channel');
-              assert.equal(await channel.getAttribute('target'), '_blank',
-                label + ': open channel without discarding the local page');
-              assert.equal(await channel.getAttribute('rel'), 'noopener noreferrer',
-                label + ': secure outbound channel link');
-              const linkBox=await channel.boundingBox();
-              assert.ok(linkBox && linkBox.height>=44,label + ': pending channel CTA is tappable');
+              await expect(localized.getByRole('status')).toBeVisible();
+              assert.equal(await localized.locator('a[href^="https://www.youtube.com"],a[target="_blank"]').count(),0,
+                label + ': pending presentation stays inside My Space with no outbound YouTube link');
               assert.equal(await localized.locator('.site-video-play').count(), 0,
                 label + ': no fake Play while YouTube is unverified');
             } else {
