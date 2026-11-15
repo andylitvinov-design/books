@@ -688,23 +688,27 @@ jobs:
     concurrency:
       group: hh-ci-prune-head-${{ github.event.pull_request.number || github.run_id }}
       cancel-in-progress: true
-    runs-on: ubuntu-24.04
+    # API-only janitor: slim runner avoids full Ubuntu and repeated suite
+    # installs on every source push. The unchanged PR-policy tests still run
+    # in protected production CI when this cleanup module is modified.
+    runs-on: ubuntu-slim
     timeout-minutes: 12
     permissions:
       contents: read
       pull-requests: read
       actions: write
     steps:
-      - name: Checkout trusted production only
+      - name: Checkout only trusted production janitor (no PR HEAD)
         uses: actions/checkout@v4
         with:
           ref: codex/public-book-library
           persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - name: Test exact-HEAD cancellation policy before mutation
-        run: node --test tests/ci-prune-stale-runs.test.mjs
+          fetch-depth: 1
+          sparse-checkout: |
+            scripts/ci-prune-stale-runs.mjs
+          sparse-checkout-cone-mode: false
+      - name: Syntax-check protected production janitor
+        run: node --check scripts/ci-prune-stale-runs.mjs
       - name: Cancel ancestor-proven superseded queued or running PR HEADs
         env:
           GITHUB_TOKEN: ${{ github.token }}
