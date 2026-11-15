@@ -47,6 +47,10 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   const activeRef=useRef(false)
   const recognitionRef=useRef(null)
   const retryTimerRef=useRef(null),settleTimerRef=useRef(null),retryAttemptsRef=useRef(0)
+  // Web Speech callbacks created on first Play must use fresh provider/consent
+  // state on each turn; a closure over Play-time props can silence turn two.
+  const voiceConfigRef=useRef({cloudAgreed,cloudAvailable,cloudProvider})
+  voiceConfigRef.current={cloudAgreed,cloudAvailable,cloudProvider}
   const cloudControllerRef=useRef(null)
   const cloudPlayerRef=useRef(null)
   const introControllerRef=useRef(null),introPlayerRef=useRef(null)
@@ -474,11 +478,25 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
 
     function showTextOnly(){
       if(!live())return
-      const wasIntroduction=result.mode==='intro'
-      silence()
-      if(wasIntroduction)introStartedRef.current=false
+      // Sensitive safety/boundary replies still terminate the speaking loop,
+      // even when premium TTS is unavailable. Do not auto-prompt after a stop.
+      if(result.mode==='safety'||result.mode==='boundary'){
+        afterSpeech()
+        return
+      }
+      // An unavailable natural voice must never end the active conversation.
+      // Keep the visible text and first-gesture Safari audio unlock; release
+      // only the failed player, then listen for the next user turn automatically.
+      introControllerRef.current?.abort()
+      introControllerRef.current=null
+      introPlayerRef.current?.cancel()
+      introPlayerRef.current=null
+      cloudControllerRef.current?.abort()
+      cloudControllerRef.current=null
+      cloudPlayerRef.current?.cancel()
+      cloudPlayerRef.current=null
+      startListening()
       setNotice(t.fallback)
-      changePhase('idle')
     }
 
     // Never synthesize an audible coach turn with speechSynthesis:
@@ -513,7 +531,9 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       }catch{if(live())showTextOnly()}
       return
     }
-    if((naturalVoice||cloudAgreed)&&cloudAvailable&&['google_chirp3_hd','fish_free'].includes(cloudProvider)&&!['safety','boundary'].includes(result.mode)){
+    const {cloudAgreed:voiceAgreed,cloudAvailable:voiceAvailable,
+      cloudProvider:voiceProvider}=voiceConfigRef.current
+    if((naturalVoice||voiceAgreed)&&voiceAvailable&&['google_chirp3_hd','fish_free'].includes(voiceProvider)&&!['safety','boundary'].includes(result.mode)){
       const controller=new AbortController()
       cloudControllerRef.current=controller
       const fallback=()=>{
@@ -528,10 +548,10 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
         const response=await fetch('/api/app/my-coach/voice/synthesize',{
           method:'POST',credentials:'same-origin',cache:'no-store',signal:controller.signal,
           headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({provider:cloudProvider,locale:replyLocale,personaId,
-            text:cloudProvider==='google_chirp3_hd'?speakable:reply,
+          body:JSON.stringify({provider:voiceProvider,locale:replyLocale,personaId,
+            text:voiceProvider==='google_chirp3_hd'?speakable:reply,
             voiceConsent:true,cloudVoiceConsent:true,
-            ...(cloudProvider==='fish_free'?{trainingUseConsent:true}:{})}),
+            ...(voiceProvider==='fish_free'?{trainingUseConsent:true}:{})}),
         })
         if(!response.ok||!response.body)throw Error('CLOUD_TTS_UNAVAILABLE')
         if(!live()||controller.signal.aborted)return
