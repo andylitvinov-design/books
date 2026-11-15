@@ -126,6 +126,7 @@ on:
       - 'tests/ci-pr-kpi*.test.cjs tests/ci-pr-api-budget.test.cjs'
       - 'tests/ci-pr-live-verifier.test.cjs'
       - 'tests/ci-pr-orchestration-triggers.test.cjs'
+      - '.github/workflows/hh-hourly-vercel-production.yml'
       - '.github/workflows/hh-native-auto-merge.yml'
       - 'scripts/ci-pr-base-freshness.cjs'
       - 'scripts/ci-pr-core-tested-base-logs.cjs'
