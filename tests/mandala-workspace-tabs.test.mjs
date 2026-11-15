@@ -9,13 +9,13 @@ test("exactly six real workspaces with all RU EN ES labels",()=>{
  const tabBlock=studio.match(/const workspaceTabs=\[([\s\S]*?)\] as const;/)?.[1];
  assert.ok(tabBlock,"workspace registry");
  const ids=[...tabBlock.matchAll(/id:"([a-z]+)"/g)].map(m=>m[1]);
- assert.deepEqual(ids,["video","phrases","editor","effects","pro","ready"]);
+ assert.deepEqual(ids,["video","phrases","editor","pro","ready","effects"]);
  for(const locale of ["ru","en","es"]){
    assert.match(studio,new RegExp(locale+":[\\s\\S]*?video:\\{tab:"));
    for(const id of ids)assert.match(studio,new RegExp(id+":\\{tab:"));
  }
  assert.match(studio,/phrases:\{tab:"Идеи",title:"Идеи для видео"/);
- assert.match(studio,/Гипноэффекты/);
+ assert.match(studio,/Therapy Studio/);
  assert.match(studio,/Курс практик/);
  assert.match(studio,/pro:\{tab:"PRO",title:"PRO генерация"/);
  assert.match(studio,/editor:\{tab:"Монтаж",title:"Быстрая генерация"/);
@@ -179,15 +179,18 @@ test("video studio lazily loads optional editor workspaces and collapsed tools",
   // Voice can now be activated by a deep link and its one live details
   // panel owns the same state as the lazily mounted studio.
   assert.match(studio, /data-video-voice-studio open=\{voiceStudioActivated\}/);
-  assert.match(studio, /onToggle=\{event=>setVoiceStudioActivated\(event\.currentTarget\.open\)\}/);
+  assert.match(studio,/event\.preventDefault\(\)/);
+  assert.match(studio,/setVoiceStudioActivated\(current=>!current\)/);
+  assert.doesNotMatch(studio,/onToggle=\{event=>setVoiceStudioActivated/,
+    "lazy Cloud Voice is controlled only by real user summary click, not delayed WebKit onToggle");
   assert.match(studio, /\{voiceStudioActivated\?<MandalaCloudVoiceStudio/);
   assert.match(studio, /useState<StudioWorkspace>\("video"\)/);
   assert.match(studio, /<MandalaAutoVideoDirector/);
 });
 
 test("final approved six tabs lead to exactly one real workspace each",()=>{
-  const expected=['tab:"Цель"','tab:"Идеи"','tab:"Гипноэффект"',
-    'tab:"Курс практик"','tab:"Монтаж"','tab:"PRO"'];
+  const expected=['tab:"Цель"','tab:"Идеи"','tab:"Монтаж"',
+    'tab:"PRO"','tab:"Ready"','tab:"Therapy"'];
   for(const label of expected)assert.ok(studio.includes(label),"missing "+label);
   assert.match(studio,/data-video-quick-control=\{item.id\}/);
   assert.match(studio,/setActiveWorkspace\(id\)/);

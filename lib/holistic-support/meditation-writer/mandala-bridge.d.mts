@@ -6,6 +6,7 @@ export type MandalaWriterBridgeInput={
  selectedGoals?:string[];
  currentState?:string;desiredState?:string;
  allowPersonalNotes?:boolean;durationMinutes?:5|10|15;
+ motifId?:"gentle_nature"|"supportive_object"|"comfortable_corner"|"small_light";
  styleId?:"gentle_simple"|"grounded_practical"|"poetic_contained"|"contemplative";
  avoidElements?:string[];
 };
