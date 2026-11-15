@@ -1069,7 +1069,7 @@ function compileFreeFilmPreset(
   }
   const captions=edit?.captionTexts??Array.from({length:clipIds.length},()=>"");
   const verified=clipIds.map(id=>verifiedCategorySource(FREE_FILM_CATALOG_BY_ID.get(id)));
-  const timings=edit?.musicAligned===true
+  const timings:readonly {sceneId:string;startSeconds:number;durationSeconds:number}[]=edit?.musicAligned===true
     ?allocateMusicAlignedFilmTimeline(durationSeconds,[...clipIds],edit.durationSecondsByStage??null)
     :adaptive
     ?allocateVariableFilmTimeline(durationSeconds,[...clipIds],edit?.durationSecondsByStage??null)
