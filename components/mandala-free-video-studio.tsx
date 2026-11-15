@@ -58,7 +58,7 @@ import type { AffirmationSettings } from "@/lib/mandala/video-affirmations";
 import { suggestPersonalVideoScene, captionFromWish, graphemeTrim } from "@/lib/mandala/personal-video-intent.mjs";
 import { cinematicPreviewSeconds, buildCinematicStoryboard } from "@/lib/mandala/cinematic-director.mjs";
 import { FIRST_VIDEO_FOOD_CANVAS_PLAN_VERSION } from "@/lib/mandala/first-video-director.mjs";
-import { allocateFreeFilmTimeline, allocateAdaptiveFilmTimeline, allocateSourceBoundedFilmTimeline, allocateVariableFilmTimeline, shiftAdaptiveFilmBoundary, shiftVariableFilmBoundary, reframeCinematicPlan } from "@/lib/mandala/free-film-timeline.mjs";
+import { allocateFreeFilmTimeline, allocateAdaptiveFilmTimeline, allocateSourceBoundedFilmTimeline, allocateMusicAlignedFilmTimeline, allocateVariableFilmTimeline, shiftAdaptiveFilmBoundary, shiftVariableFilmBoundary, reframeCinematicPlan } from "@/lib/mandala/free-film-timeline.mjs";
 import {validateMontageClips,isSafeMontageScene} from "@/lib/mandala/video-montage-sources.mjs";
 import {isReviewedFilmedStoryScene} from "@/lib/mandala/reviewed-filmed-story.mjs";
 import {autoFillApprovedFilm} from "@/lib/mandala/auto-fill-approved-film.mjs";
@@ -996,6 +996,7 @@ type EmotionalVideoEdit={pathId:string;emotionalAxisId:string;pace:"gentle"|"ste
 type FreeFilmCompilationEdit={
   clipIds:readonly string[];durationSecondsByStage:readonly number[];
   captionTexts:readonly string[];excludedMotifs?:readonly string[];
+  musicAligned?:boolean;
   semanticScenePlan?:EmotionalVideoEdit;
 };
 function compileFreeFilmPreset(
@@ -1068,7 +1069,9 @@ function compileFreeFilmPreset(
   }
   const captions=edit?.captionTexts??Array.from({length:clipIds.length},()=>"");
   const verified=clipIds.map(id=>verifiedCategorySource(FREE_FILM_CATALOG_BY_ID.get(id)));
-  const timings=adaptive
+  const timings=edit?.musicAligned===true
+    ?allocateMusicAlignedFilmTimeline(durationSeconds,[...clipIds],edit.durationSecondsByStage??null)
+    :adaptive
     ?allocateVariableFilmTimeline(durationSeconds,[...clipIds],edit?.durationSecondsByStage??null)
     :allocateSourceBoundedFilmTimeline(durationSeconds,[...clipIds],
       verified.map(scene=>scene?.durationSeconds??NaN),edit?.durationSecondsByStage??null);
@@ -2948,19 +2951,21 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         const prior=recommendSmartAudioCuts(duration,proposedFilm.shots,peaks);
         if(prior.status==="audio_aligned")proposal=prior;
       }
+      let validatedMusicFilm:CinematicStoryboard|null=null;
       if(proposal?.status==="audio_aligned"){
         try{
-          compileFreeFilmPreset(preset,locale,duration,aspect,{
+          validatedMusicFilm=compileFreeFilmPreset(preset,locale,duration,aspect,{
             clipIds:proposal.shots.map(shot=>shot.sceneId),
             durationSecondsByStage:proposal.shots.map(shot=>shot.durationSeconds),
-            captionTexts:proposedFilm.shots.map(shot=>shot.overlayText||"")
+            captionTexts:proposedFilm.shots.map(shot=>shot.overlayText||""),
+            musicAligned:true
           });
         }catch{proposal=null;}
       }
-      const nextFilm=proposal?.status==="audio_aligned"?
+      const nextFilm=validatedMusicFilm?
         {...proposedFilm,shots:proposedFilm.shots.map((shot,index)=>({
-          ...shot,startSeconds:proposal.shots[index].startSeconds,
-          durationSeconds:proposal.shots[index].durationSeconds
+          ...shot,startSeconds:validatedMusicFilm!.shots[index].startSeconds,
+          durationSeconds:validatedMusicFilm!.shots[index].durationSeconds
         }))} as CinematicStoryboard:proposedFilm;
       if(sourceRef.current!==sourceSignature)return;
       if(usingFreeFilmCompilation&&cinematicPlan)recordBeforeEditorChange("music-to-mv");

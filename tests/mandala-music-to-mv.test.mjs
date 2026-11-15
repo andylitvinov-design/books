@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {analyzeMusicRhythm,planMusicVideoCuts} from "../lib/mandala/music-to-mv.mjs";
+import {allocateMusicAlignedFilmTimeline,allocateSourceBoundedFilmTimeline} from "../lib/mandala/free-film-timeline.mjs";
 const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
 const rhythmTrack=({seconds=20,sampleRate=8000,bpm=120,offset=.37}={})=>{
   const pcm=new Float32Array(seconds*sampleRate);
@@ -58,4 +59,34 @@ test("Music MV is an upgrade of the existing audio/montage and keeps export and 
   assert.match(studio,/setCinematicPlan\(nextFilm\)/);
   assert.doesNotMatch(studio.slice(studio.indexOf("const smartCutFromAudio="),
     studio.indexOf("const freeFilmClipLabel=")),/api\/heygen|api\/runway|api\/higgsfield|fetch\("https:\/\//);
+});
+
+test("verified music cuts retain subsecond beat timing without changing legacy manual timing",()=>{
+  const rhythm=analyzeMusicRhythm(rhythmTrack(),8000,20);
+  const plan=planMusicVideoCuts(20,shots,rhythm);
+  assert.equal(plan.status,"audio_aligned");
+  assert.ok(plan.shots.some(x=>!Number.isInteger(x.durationSeconds)));
+  const ids=plan.shots.map(x=>x.sceneId);
+  const lengths=plan.shots.map(x=>x.durationSeconds);
+  assert.throws(()=>allocateSourceBoundedFilmTimeline(20,ids,[20,20,20,20],lengths),
+    /invalid_adaptive_film_timing/);
+  const aligned=allocateMusicAlignedFilmTimeline(20,ids,lengths);
+  assert.deepEqual(aligned.map(x=>x.sceneId),ids);
+  assert.deepEqual(aligned.map(x=>x.startSeconds),plan.shots.map(x=>x.startSeconds));
+  assert.deepEqual(aligned.map(x=>x.durationSeconds),lengths);
+  assert.equal(aligned.at(-1).startSeconds+aligned.at(-1).durationSeconds,20);
+  assert.match(studio,/musicAligned:true/);
+  assert.match(studio,/allocateMusicAlignedFilmTimeline\(durationSeconds/);
+  assert.match(studio,/scene\.durationSeconds<timings\[index\]\.durationSeconds/);
+});
+test("explicit subsecond timings fail closed for gaps, too-short scenes and tampered precision",()=>{
+  const ids=shots.map(x=>x.sceneId);
+  assert.throws(()=>allocateMusicAlignedFilmTimeline(20,ids,[5.333,4.667,5,5]),
+    /invalid_music_aligned_film_timing/);
+  assert.throws(()=>allocateMusicAlignedFilmTimeline(20,ids,[1.99,8.01,5,5]),
+    /invalid_music_aligned_film_timing/);
+  assert.throws(()=>allocateMusicAlignedFilmTimeline(20,ids,[5,5,5,4.99]),
+    /invalid_music_aligned_film_timing/);
+  assert.throws(()=>allocateMusicAlignedFilmTimeline(20,[ids[0],ids[0],...ids.slice(2)],[5,5,5,5]),
+    /invalid_free_film_timeline/);
 });
