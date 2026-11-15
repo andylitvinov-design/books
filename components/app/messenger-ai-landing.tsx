@@ -25,7 +25,7 @@ const INTRO={
 
 const COPY={
   en:{
-    hi:"Hi!",title:"I'm your AI Holistic Guide",
+    hi:"Hi!",title:"I'm Ali, your Holistic Guide",
     lead:"Ask, explore, learn and create with me.",
     question:"What would you like to do today?",
     watch:"Watch the Holistic House introduction (English audio)",
@@ -38,7 +38,7 @@ const COPY={
     session:"Request a session",course:"Learn a course",ask:"Ask a question",
   },
   ru:{
-    hi:"Привет!",title:"Я ваш ИИ-помощник Holistic House",
+    hi:"Привет!",title:"Я Ali — ИИ-помощник Holistic House",
     lead:"Спрашивайте, исследуйте, учитесь и создавайте.",
     question:"Чем вы хотите заняться сегодня?",
     watch:"Посмотреть презентацию Holistic House (русская озвучка)",
@@ -51,7 +51,7 @@ const COPY={
     session:"Запросить сессию",course:"Изучить курс",ask:"Задать вопрос",
   },
   es:{
-    hi:"¡Hola!",title:"Soy tu guía de IA Holistic House",
+    hi:"¡Hola!",title:"Soy Ali, tu guía de IA Holistic House",
     lead:"Pregunta, explora, aprende y crea conmigo.",
     question:"¿Qué te gustaría hacer hoy?",
     watch:"Ver la introducción de Holistic House (audio en inglés)",
