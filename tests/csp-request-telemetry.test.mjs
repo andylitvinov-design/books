@@ -169,3 +169,14 @@ test('Telegram cancellation telemetry records only its exact anonymous public pa
   assert.equal(observation.events()[0].path,'/api/public/telegram-diagnostic');
   assert.doesNotMatch(JSON.stringify(observation.events()),/token|https?:|scope/);
 });
+
+test('English video request instrumentation logs only a fixed, anonymous route',()=>{
+ const endpoint='/api/public/english-intro-video';
+ assert.deepEqual(sanitizeCspRequest(endpoint,origin),{path:endpoint,rsc:false});
+ for(const item of [endpoint+'?token=secret',endpoint+'?_rsc=x',endpoint+'/admin',endpoint+'?scope=private'])
+   assert.equal(sanitizeCspRequest(item,origin),null);
+ const observed=fixture(()=>Promise.resolve(null));
+ observed.env.fetch(endpoint,{credentials:'omit'});
+ assert.equal(observed.events()[0].path,endpoint);
+ assert.doesNotMatch(JSON.stringify(observed.events()),/secret|token|https?:|scope/);
+});

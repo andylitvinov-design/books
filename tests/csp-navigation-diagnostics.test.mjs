@@ -215,3 +215,29 @@ test('Telegram anonymous GET is allowed ONLY when exact old Tantra document abor
   for(const time of [99,110,125])
     assert.equal(classifyCspNavigationCancellation({...err,time},info),null);
 });
+
+test('English intro teardown requires old Home fetch, pagehide and correct public navigation',()=>{
+ const origin='http://127.0.0.1:3123',destination=origin+'/en/about';
+ const lifecycle=[
+   {type:'init',time:1,documentProbe:'home',url:origin+'/'},
+   {type:'navigate',time:100,documentProbe:'home',documentClass:'public-video',sameDocument:false,navigationType:'traverse',destination},
+   {type:'pagehide',time:140,documentProbe:'home'},
+   {type:'init',time:150,documentProbe:'about',url:destination},
+ ];
+ const oldFetch={type:'fetch-start',path:'/api/public/english-intro-video',rsc:false,documentProbe:'home',time:93};
+ const info={engine:'webkit',readiness:'rapid-history',origin,lifecycle,fetchTelemetry:[oldFetch]};
+ const error={time:125,phase:'forward-to-public',stack:'Fetch API cannot load '+origin+'/api/public/english-intro-video due to access control checks.\\n    at fetch'};
+ assert.equal(classifyCspNavigationCancellation(error,info)?.kind,'webkit-hard-navigation-fetch-cancellation');
+ for(const changed of [{fetchTelemetry:[]},{fetchTelemetry:[{...oldFetch,documentProbe:'other'}]},
+ {fetchTelemetry:[{...oldFetch,rsc:true}]},{lifecycle:lifecycle.filter(x=>x.type!=='pagehide')},
+ {lifecycle:[...lifecycle,{type:'policy-violation',documentProbe:'home',time:120}]},
+ {lifecycle:lifecycle.map(x=>x.type==='navigate'?{...x,navigationType:'push'}:x)},
+ {lifecycle:lifecycle.map(x=>x.type==='navigate'?{...x,destination:origin+'/en/services'}:x)},
+ {engine:'chromium'},{readiness:'loaded-history'}])
+   assert.equal(classifyCspNavigationCancellation(error,{...info,...changed}),null);
+ for(const changed of [{phase:'back-to-private'},{time:99},{time:141},{time:151},
+   {stack:'Error: real CSP violation'},
+   {stack:'Fetch API cannot load '+origin+'/api/public/english-intro-video?token=x due to access control checks.'},
+   {stack:'Fetch API cannot load https://other.test/api/public/english-intro-video due to access control checks.'}])
+   assert.equal(classifyCspNavigationCancellation({...error,...changed},info),null);
+});
