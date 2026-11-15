@@ -1,7 +1,7 @@
 name: HH PR direction watcher
 on:
   schedule:
-    - cron: '1,11,21,31,41,51 * * * *'
+    - cron: '1,21,41 * * * *'
   workflow_dispatch:
     inputs:
       dry_run:
