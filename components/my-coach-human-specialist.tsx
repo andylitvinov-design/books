@@ -236,7 +236,7 @@ export default function HumanSpecialistDialogue({locale,slug,name,role,photo,vid
     if(channel==='secretary') {
       // Reuse the existing guest AI rule composer: no CRM send, paid model,
       // private specialist thread, or implication that a human replied.
-      const history = secretaryMessages.slice(-6).map(row=>({
+      const history: Array<{role:'user'|'assistant';text:string}> = secretaryMessages.slice(-6).map(row=>({
         role:row.mine?'user':'assistant',text:row.text,
       }))
       const reviewed = ruleConversationReply({message:text,locale,history})
