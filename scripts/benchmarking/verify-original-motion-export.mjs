@@ -262,8 +262,9 @@ try {
 
 
 async function openMontageSettings(page){
-  // The fifth Montage preserves detailed scene, timeline and format controls.
-  await page.locator('[data-video-montage-tab="promo"]').click();
+  // The Extra choices remain compact; additional storyboard controls live under Story settings.
+  await page.locator('[data-video-montage-tab="concept"]').click();
+  await page.locator('[data-video-story-open-settings]').click();
   const advanced=page.locator('[data-video-stories-advanced]');
   await advanced.locator(':scope > summary').click();
   const settings=advanced.locator('[data-video-stories-settings]');

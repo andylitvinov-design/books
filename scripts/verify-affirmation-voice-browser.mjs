@@ -1659,8 +1659,8 @@ clearTimeout(watchdog);
 // Access detailed video settings through the new fifth Montage step.
 // Story stays one-screen with its single quality-selection CTA.
 async function openMontageSettingsViaQuality(page){
-  const montage=page.locator('[data-video-montage-tab="promo"]');
-  await montage.click();
+  await page.locator('[data-video-montage-tab="concept"]').click();
+  await page.locator('[data-video-story-open-settings]').click();
   const advanced=page.locator('[data-video-stories-advanced]');
   await advanced.waitFor({state:"visible",timeout:20000});
   if(!await advanced.evaluate(node=>node.open))
