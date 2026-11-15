@@ -45,8 +45,9 @@ type Props={
   profile?:VideoGoalProfile|null;durationSeconds?:number;
   selectedTopic?:{categoryId:string;subcategoryId:string;topicId:string;brief?:string}|null;
   ownerFields?:Partial<Record<"references"|"delivery"|"wordsAndVoice"|"soundtrack"|"timelineBinding"|"creationMode",string|null>>;
-  phrases:string[];approvedConcept:ApprovedVideoConcept|null; signedIn:boolean;loginUnavailable:boolean;disabled:boolean;
+  phrases:string[];approvedConcept:ApprovedVideoConcept|null;draftConcept?:ApprovedVideoConcept|null; signedIn:boolean;loginUnavailable:boolean;disabled:boolean;
   onRefreshLogin:()=>void;onApprove:(concept:ApprovedVideoConcept)=>void;
+  onDraftChange?:(concept:ApprovedVideoConcept)=>void;
   onOpenGoal:()=>void;onOpenStyle:()=>void;
 };
 const COPY={
@@ -110,8 +111,8 @@ const DIRECTION_UI={
   es:{title:"Elige tu historia",lead:"Tres relatos distintos basados en tu objetivo. Elige el que más te inspire.",
     badge:"Propuestas creativas",settings:"Ajustes creativos",ideaEdit:"Editar idea",ideaSave:"Guardar idea",quality:"Concreta tu objetivo para recibir tres historias completas. Un borrador incompleto no se puede aprobar."}
 } as const;
-export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speechTranscript=null,ownerFields,profile=null,selectedTopic=null,durationSeconds=30,approvedConcept,signedIn,
-  loginUnavailable,disabled,onRefreshLogin,onApprove,onOpenGoal,onOpenStyle}:Props){
+export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speechTranscript=null,ownerFields,profile=null,selectedTopic=null,durationSeconds=30,approvedConcept,draftConcept=null,signedIn,
+  loginUnavailable,disabled,onRefreshLogin,onApprove,onDraftChange,onOpenGoal,onOpenStyle}:Props){
   const t=COPY[locale]||COPY.en;
   const phraseSignature=phrases.join("\u001f");
   const suggested=useMemo(()=>suggestVideoConcept({
@@ -123,6 +124,8 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
   const directions=useMemo(()=>getVideoCreativeDirections(suggested,locale),
     [suggested,locale]);
   const selectedDirection=directions.find(d=>d.id===chosenDirectionId)||
+    (draftConcept?.baseSignature===suggested.signature?
+      directions.find(d=>d.id===draftConcept?.creativeDirectionId):undefined)||
     (approvedConcept?.baseSignature===suggested.signature?
       directions.find(d=>d.id===approvedConcept?.creativeDirectionId):undefined)||
     directions[0];
@@ -143,6 +146,7 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
   const modalRef=useRef<HTMLDivElement>(null);
   const concept=(custom&&custom.signature===directed.signature)?custom:
     draftByDirection[directed.signature]||
+    (draftConcept&&draftConcept.signature===directed.signature?draftConcept:null)||
     (approvedConcept&&approvedConcept.signature===directed.signature?approvedConcept:directed);
   // Auto-selected default phrase suggestions are not confirmation that a
   // visitor supplied a personal goal. The free guest example remains
@@ -224,7 +228,9 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
     setChosenDirectionId(id);
     setCustom(null);setApprovedSignature(null);
     const direction=directions.find(d=>d.id===id);
-    const nextKey=direction?applyVideoCreativeDirection(suggested,direction).signature:null;
+    const next=direction?applyVideoCreativeDirection(suggested,direction) as ApprovedVideoConcept:null;
+    const nextKey=next?.signature||null;
+    if(next)onDraftChange?.(draftByDirection[next.signature]||next);
     setHasLocalEdits(Boolean(nextKey&&draftByDirection[nextKey]));
     setTextEditing(false);setIdeaEditing(false);setEditing(false);
   };
@@ -253,6 +259,7 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
     }
     setCustom(next);setDraftByDirection(rows=>({...rows,[next.signature]:next}));
     setApprovedSignature(null);setHasLocalEdits(true);
+      onDraftChange?.(next);
   };
   const startIdeaEdit=()=>{setIdeaDraft(concept.mainMessage);setIdeaEditing(true);};
   const saveIdeaEdit=()=>{
@@ -263,6 +270,7 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
         userEditedFields:[...new Set([...(concept.userEditedFields||[]),"mainMessage"])]};
       setCustom(next);setDraftByDirection(rows=>({...rows,[next.signature]:next}));
       setApprovedSignature(null);setHasLocalEdits(true);
+      onDraftChange?.(next);
     }
     setIdeaEditing(false);
   };
@@ -275,6 +283,7 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
         userEditedFields:[...new Set([...(concept.userEditedFields||[]),"conceptText"])]};
       setCustom(next);setDraftByDirection(rows=>({...rows,[next.signature]:next}));
       setApprovedSignature(null);setHasLocalEdits(true);
+      onDraftChange?.(next);
     }
     setTextEditing(false);
   };
