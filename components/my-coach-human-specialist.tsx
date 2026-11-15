@@ -117,8 +117,8 @@ const textByLocale = {
     chatTitle:'Conversación · mensajes', secretary:'Ali · secretario IA', human:'Profesional',
     secretaryIntro:'¡Hola! Soy Ali, el secretario digital. Puedo responder preguntas generales sobre Holistic House. Para escribir al profesional, cambia a la pestaña Profesional.',
     secretaryInfo:'Respuestas automáticas · tu pregunta no se envía al profesional',
-    secretaryFallback:'Puedo ayudarte co
-    secretaryError:'Ali no puede verificar ahora el perfil. No se envió ningún mensaje ni se reservó una cita.',n información general. Para escribir personalmente, usa la pestaña Profesional.',
+    secretaryFallback:'Puedo ayudarte con información general. Para escribir personalmente, usa la pestaña Profesional.',
+    secretaryError:'Ali no puede verificar ahora el perfil. No se envió ningún mensaje ni se reservó una cita.',
     secretaryPlaceholder:'¿Qué te gustaría preguntar?…', moreShort:'Vídeos', bookShort:'Consulta',
   },
 }
