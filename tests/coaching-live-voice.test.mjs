@@ -428,7 +428,7 @@ test('spoken My Coach reply retains the reflection and start introduction',()=>{
  assert.ok(ui.includes('onSessionStart={()=>setCloudAgreed(true)}'))
  assert.ok(loop.includes('(naturalVoice||cloudAgreed)&&cloudAvailable'))
  assert.ok(loop.includes("if(!introStartedRef.current){"))
- assert.ok(ui.includes("const dynamicAllowed=cloudAgreed&&cloudAvailable&&")))
+ assert.ok(ui.includes("const dynamicAllowed=cloudAgreed&&cloudAvailable&&"))
  assert.ok(ui.includes("const [cloudAgreed,setCloudAgreed]=useState(false)"))
  assert.ok(!ui.includes('naturalVoiceRow'))
  assert.ok(!ui.includes('checked={cloudAgreed}'))
