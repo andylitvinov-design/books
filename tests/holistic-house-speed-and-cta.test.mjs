@@ -70,7 +70,8 @@ test("known first-party testimonial stills avoid speculative YouTube thumbnail t
   const source = read("components/site-video-player.tsx");
   const testimonials = read("components/personal-testimonials.tsx");
   assert.match(source, /poster && \(!fallbackPoster \|\| localPosterFailed\)/);
-  assert.match(source, /!isHeygen && fallbackPoster && !localPosterFailed/);
+  // Both hosted YouTube and iPhone-safe HeyGen introductions must prefer a first-party poster.
+  assert.match(source, /fallbackPoster && !approvedPoster && !localPosterFailed/);
   assert.match(source, /onError=\{\(\) => setLocalPosterFailed\(true\)\}/);
   assert.match(testimonials, /locallyArchivedVideoPosterIds/);
   assert.match(testimonials, /testimonial-posters\/\$\{item\.id\}\.webp/);

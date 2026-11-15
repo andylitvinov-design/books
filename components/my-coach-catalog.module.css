@@ -372,3 +372,11 @@
 .humanSessionLink:hover{background:#d5eee1}
 .humanSessionLink:focus-visible{outline:3px solid #176e6e;outline-offset:3px}
 @media(max-width:540px){.humanSessionLink{font-size:12px;min-height:44px;width:100%;box-sizing:border-box}}
+
+/* Pilot: only four public coaches use silent MP4 on static photo fallback. */
+.cardPortrait,.avatarLarge{position:relative;overflow:hidden}
+.cardPortrait [data-coach-motion-media],.avatarLarge [data-coach-motion-media]{z-index:1}
+.cardPortrait[data-persona=mira],.avatarLarge[data-persona=mira]{background-image:url('/images/holistic-house/my-coach-motion/mira-still.webp')!important}
+.cardPortrait[data-persona=max],.avatarLarge[data-persona=max]{background-image:url('/images/holistic-house/my-coach-motion/max-still.webp')!important}
+.cardPortrait[data-persona=sofia],.avatarLarge[data-persona=sofia]{background-image:url('/images/holistic-house/my-coach-motion/sofia-still.webp')!important}
+.cardPortrait[data-persona=alex],.avatarLarge[data-persona=alex]{background-image:url('/images/holistic-house/my-coach-motion/alex-still.webp')!important}

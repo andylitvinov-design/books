@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, ArrowRight, CalendarDays, CheckCheck, CirclePlay, MessageCircle, Send, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, ArrowRight, CalendarDays, CheckCheck, ChevronDown, CirclePlay, MessageCircle, Send, ShieldCheck } from 'lucide-react'
 import { whatsappEnquiryUrl, telegramEnquiryUrlFromWhatsApp } from '@/lib/whatsapp-enquiry'
 import styles from './my-coach-human-specialist.module.css'
+import { ruleConversationReply } from '@/lib/holistic-support/rule-conversation.mjs'
 
 type Locale = 'en' | 'ru' | 'es'
 export type SpecialistVideo = {
@@ -18,6 +19,7 @@ export type SpecialistVideo = {
   durationSeconds: number | null
 }
 type Message = {id:string;mine:boolean;text:string;createdAt:string;committed?:boolean}
+type SecretaryMessage = {id:string;mine:boolean;text:string}
 type Thread = {threadId:string;accountId:string;messages:Message[];requiresMessengerVerification?:boolean;legacyReadOnly?:boolean}
 type Props = {
   locale: Locale
@@ -39,6 +41,11 @@ const textByLocale = {
     ask:'Ask the specialist', empty:'Ask a question below. Only actual messages with this practitioner will appear here.',
     placeholder:'Write your question…', send:'Send', sending:'Sending…', signIn:'Sign in to message securely',
     book:'Book a personal consultation', note:'The specialist confirms the format, time and price before a booking.',
+    bookingPrompt:'When would you prefer your consultation?',bookingDay:'Preferred day',bookingTime:'Preferred time',
+    bookingChannels:'Send your preferred date and time',bookingFuture:'Please select a future date and time.',
+    bookingRequest:'I would like to request a personal consultation.',
+    bookingUnconfirmed:'This is a request, not a confirmed booking. Please confirm availability, format and price.',
+    bookingTimezone:'Your local time zone',
     guest:'Sign in and verify Telegram for the private website chat, or choose a messenger below.',
     unavailable:'The private message service is temporarily unavailable. Your question has not been sent.',
     verify:'Link and authorize Telegram in Cabinet settings before sending a website message.',
@@ -48,7 +55,12 @@ const textByLocale = {
     step:'Selecting a channel opens a draft; press Send in the messenger to submit.',
     defaultRequest:'I would like to ask you about a personal consultation.',
     restricted:'This practitioner has no enabled direct messages. Choose a published service to request a consultation.',
-    master:'Specialist profile', overview:'Watch original videos'
+    master:'Specialist profile', overview:'Watch original videos',
+    chatTitle:'Conversation · transcript', secretary:'Ali · AI secretary', human:'Specialist',
+    secretaryIntro:'Hi, I’m Ali, the digital secretary. I can answer general questions about Holistic House and help you find your next step. To contact the specialist personally, switch to Specialist.',
+    secretaryInfo:'Automatic replies · your question is not sent to the specialist',
+    secretaryFallback:'I can help with services and practical information. For a personal question, open the Specialist tab.',
+    secretaryPlaceholder:'What would you like to ask?…', moreShort:'Videos', bookShort:'Book a session',
   },
   ru: {
     choose:'Выбрать другого специалиста',chooseShort:'Другой специалист',badge:'ЖИВОЙ СПЕЦИАЛИСТ · ВИДЕО',
@@ -57,6 +69,11 @@ const textByLocale = {
     ask:'Задать вопрос специалисту',empty:'Напишите вопрос ниже. Здесь будут только настоящие сообщения из переписки со специалистом.',
     placeholder:'Напишите ваш вопрос…',send:'Отправить',sending:'Отправка…',signIn:'Войти для защищённой переписки',
     book:'Заказать личную консультацию',note:'Специалист отдельно подтверждает формат, время и стоимость консультации.',
+    bookingPrompt:'Когда вам удобнее провести консультацию?',bookingDay:'Предпочтительный день',bookingTime:'Предпочтительное время',
+    bookingChannels:'Отправьте пожелания по дате и времени',bookingFuture:'Выберите будущую дату и время.',
+    bookingRequest:'Хочу записаться на личную консультацию.',
+    bookingUnconfirmed:'Это заявка, а не подтверждённая запись. Пожалуйста, подтвердите свободное время, формат и стоимость.',
+    bookingTimezone:'Мой часовой пояс',
     guest:'Для переписки на сайте войдите и подтвердите Telegram либо выберите мессенджер ниже.',
     unavailable:'Переписка на сайте временно недоступна. Сообщение не было отправлено.',
     verify:'Подключите Telegram в настройках кабинета и разрешите ответы, чтобы писать на сайте.',
@@ -66,7 +83,12 @@ const textByLocale = {
     step:'Откроется черновик: для отправки нажмите «Отправить» в мессенджере.',
     defaultRequest:'Хочу задать вопрос о личной консультации.',
     restricted:'У этого специалиста нет активной личной переписки. Выберите опубликованную услугу для записи.',
-    master:'Профиль специалиста',overview:'Оригинальные видеоматериалы'
+    master:'Профиль специалиста',overview:'Оригинальные видеоматериалы',
+    chatTitle:'Разговор · переписка', secretary:'Ali · AI-секретарь', human:'Специалист',
+    secretaryIntro:'Здравствуйте! Я Ali, цифровой секретарь. Помогу с общими вопросами об услугах Holistic House. Чтобы написать специалисту лично, переключитесь на вкладку «Специалист».',
+    secretaryInfo:'Автоответы · ваши вопросы не отправляются специалисту',
+    secretaryFallback:'Могу помочь с информацией об услугах. Для личного вопроса выберите вкладку «Специалист».',
+    secretaryPlaceholder:'О чём хотите спросить?…', moreShort:'Видео', bookShort:'Консультация',
   },
   es: {
     choose:'Elegir otro profesional',chooseShort:'Otro profesional',badge:'PROFESIONAL REAL · VÍDEOS',
@@ -75,6 +97,11 @@ const textByLocale = {
     ask:'Pregunta al profesional',empty:'Escribe tu pregunta. Aquí solo aparecen los mensajes reales de tu conversación.',
     placeholder:'Escribe tu pregunta…',send:'Enviar',sending:'Enviando…',signIn:'Acceder a los mensajes privados',
     book:'Reservar una consulta personal',note:'El profesional confirma el formato, la fecha y el precio antes de reservar.',
+    bookingPrompt:'¿Qué día y hora prefieres para la consulta?',bookingDay:'Día preferido',bookingTime:'Hora preferida',
+    bookingChannels:'Envía tu fecha y hora preferidas',bookingFuture:'Selecciona una fecha y hora futuras.',
+    bookingRequest:'Quisiera solicitar una consulta personal.',
+    bookingUnconfirmed:'Es una solicitud, no una reserva confirmada. Confirma la disponibilidad, el formato y el precio.',
+    bookingTimezone:'Mi zona horaria',
     guest:'Inicia sesión y verifica Telegram para mensajes privados o elige un mensajero.',
     unavailable:'El servicio de mensajes no está disponible. Tu pregunta no se ha enviado.',
     verify:'Conecta y autoriza Telegram en la configuración de tu cuenta para escribir aquí.',
@@ -84,7 +111,12 @@ const textByLocale = {
     step:'Se abrirá un borrador. Pulsa Enviar en la aplicación para remitirlo.',
     defaultRequest:'Quisiera preguntar sobre una consulta personal.',
     restricted:'Este profesional no tiene mensajes directos habilitados. Elige un servicio publicado.',
-    master:'Perfil del profesional',overview:'Vídeos originales'
+    master:'Perfil del profesional',overview:'Vídeos originales',
+    chatTitle:'Conversación · mensajes', secretary:'Ali · secretario IA', human:'Profesional',
+    secretaryIntro:'¡Hola! Soy Ali, el secretario digital. Puedo responder preguntas generales sobre Holistic House. Para escribir al profesional, cambia a la pestaña Profesional.',
+    secretaryInfo:'Respuestas automáticas · tu pregunta no se envía al profesional',
+    secretaryFallback:'Puedo ayudarte con información general. Para escribir personalmente, usa la pestaña Profesional.',
+    secretaryPlaceholder:'¿Qué te gustaría preguntar?…', moreShort:'Vídeos', bookShort:'Consulta',
   },
 }
 function duration(seconds: number | null) {
@@ -92,6 +124,18 @@ function duration(seconds: number | null) {
   const minutes = Math.floor(seconds/60)
   return String(minutes)+':'+String(seconds%60).padStart(2,'0')
 }
+/** Visitor-local date/time: do not claim an appointment before specialist confirmation. */
+function localDay(date:Date) {
+  return date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0')+'-'+String(date.getDate()).padStart(2,'0')
+}
+function validFuturePreference(day:string,time:string) {
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(day)||!/^\d{2}:\d{2}$/.test(time))return false
+  const candidate=new Date(day+'T'+time+':00')
+  return Number.isFinite(candidate.getTime())&&localDay(candidate)===day&&
+    String(candidate.getHours()).padStart(2,'0')+':'+String(candidate.getMinutes()).padStart(2,'0')===time&&
+    candidate.getTime()>Date.now()
+}
+
 function safeMessages(value:unknown): Message[] {
   if (!Array.isArray(value)) return []
   return value.filter((v):v is Message => Boolean(v && typeof v==='object'
@@ -112,9 +156,18 @@ function VideoArtwork({src,fallback,className,loading='lazy'}:{
 export default function HumanSpecialistDialogue({locale,slug,name,role,photo,videos,bookingHref,isOwner,canMessage}:Props) {
   const t = textByLocale[locale]
   const [selected,setSelected] = useState(0)
+  const [channel,setChannel] = useState<'secretary'|'human'>('secretary')
+  const [secretaryDraft,setSecretaryDraft] = useState('')
+  const [secretaryMessages,setSecretaryMessages] = useState<SecretaryMessage[]>([])
+  const rootRef = useRef<HTMLElement>(null)
+  const threadView = useRef<HTMLDivElement>(null)
   const [playing,setPlaying] = useState(false)
   const [draft,setDraft] = useState('')
   const [showChannels,setShowChannels] = useState(false)
+  const [bookingOpen,setBookingOpen] = useState(false)
+  const [minBookingDay,setMinBookingDay] = useState('')
+  const [preferredDay,setPreferredDay] = useState('')
+  const [preferredTime,setPreferredTime] = useState('')
   const [mode,setMode] = useState<'loading'|'guest'|'ready'|'verify'|'unavailable'|'restricted'>(canMessage?'loading':'restricted')
   const [accountId,setAccountId] = useState('')
   const [threadId,setThreadId] = useState('')
@@ -125,6 +178,36 @@ export default function HumanSpecialistDialogue({locale,slug,name,role,photo,vid
   const activeVideo = videos[selected] || null
   const publicProfileHref = '/'+locale+'/masters/'+slug
   const settingsHref = '/'+locale+'/app/settings#hh-telegram-connect'
+  const bookingReady = validFuturePreference(preferredDay,preferredTime)
+  // Zone is resolved only after a client-side choice to avoid SSR hydration drift.
+  const bookingTimezone = bookingReady ? Intl.DateTimeFormat().resolvedOptions().timeZone || t.bookingTimezone : ''
+  const bookingWhatsApp = isOwner && bookingReady ? whatsappEnquiryUrl({
+    locale,service:role ? name+' — '+role : name,
+    request:t.bookingRequest+' '+t.bookingDay+': '+preferredDay+'; '+t.bookingTime+': '+
+      preferredTime+' ('+bookingTimezone+'). '+t.bookingUnconfirmed,
+  }) : null
+
+
+  // iOS Safari changes the visible screen height when the keyboard opens.
+  // Keep the actual composer in view without scrolling the whole document.
+  useEffect(() => {
+    const root = rootRef.current
+    if(!root)return
+    const viewport = window.visualViewport
+    const sync = () => root.style.setProperty('--human-view-height',
+      Math.max(240,Math.round(viewport?.height ?? window.innerHeight))+'px')
+    sync()
+    viewport?.addEventListener('resize',sync)
+    window.addEventListener('resize',sync)
+    return () => {
+      viewport?.removeEventListener('resize',sync)
+      window.removeEventListener('resize',sync)
+      root.style.removeProperty('--human-view-height')
+    }
+  },[])
+  useEffect(() => {
+    if(threadView.current)threadView.current.scrollTop = threadView.current.scrollHeight
+  },[channel,secretaryMessages,messages])
 
   useEffect(() => {
     if(!canMessage){setMode('restricted');return}
@@ -188,8 +271,25 @@ export default function HumanSpecialistDialogue({locale,slug,name,role,photo,vid
   }
   async function submit(event:FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const text = draft.trim()
+    const text = (channel==='secretary'?secretaryDraft:draft).trim()
     if(!text || busy)return
+    if(channel==='secretary') {
+      // Reuse the existing guest AI rule composer: no CRM send, paid model,
+      // private specialist thread, or implication that a human replied.
+      const history: Array<{role:'user'|'assistant';text:string}> = secretaryMessages.slice(-6).map(row=>({
+        role:row.mine?'user':'assistant',text:row.text,
+      }))
+      const reviewed = ruleConversationReply({message:text,locale,history})
+      const reply = typeof reviewed?.reply==='string' && reviewed.reply.trim()
+        ? reviewed.reply : t.secretaryFallback
+      const id = crypto.randomUUID()
+      setSecretaryMessages(previous=>[
+        ...previous,{id:id+'-user',mine:true,text},
+        {id:id+'-secretary',mine:false,text:reply},
+      ].slice(-30))
+      setSecretaryDraft('')
+      return
+    }
     if(mode==='guest'||mode==='verify'||mode==='unavailable'||mode==='restricted'||!accountId) {
       setShowChannels(true)
       setNotice(mode==='verify'?t.verify:mode==='restricted'?t.restricted:mode==='unavailable'?t.unavailable:t.guest)
@@ -240,7 +340,7 @@ export default function HumanSpecialistDialogue({locale,slug,name,role,photo,vid
       <small>{t.step}</small>
     </div>
   }
-  return <main lang={locale} className={styles.page} data-my-coach-human-dialogue data-specialist-slug={slug}>
+  return <main ref={rootRef} lang={locale} className={styles.page} data-my-coach-human-dialogue data-specialist-slug={slug}>
     <div className={styles.container}>
       <header className={styles.header}>
         <Link href={'/'+locale} className={styles.brand} aria-label="Holistic House">
@@ -279,27 +379,101 @@ export default function HumanSpecialistDialogue({locale,slug,name,role,photo,vid
               </button>}
         </div>
         <p className={styles.recordedNote}><ShieldCheck size={15} aria-hidden="true"/>{t.recorded}</p>
-        {videos.length>0&&<div className={styles.reelSection}>
-          <div className={styles.reelHeading}><h2>{t.more}</h2><span>{videos.length}</span></div>
-          <div className={styles.reel} role="group" aria-label={t.more} data-human-video-reel>
-            {videos.map((video,index)=><button type="button" className={styles.videoCard} key={video.id}
-              aria-pressed={selected===index} onClick={()=>{setSelected(index);setPlaying(false)}}
-              data-human-video-thumb={video.id}>
-              <span className={styles.thumbFrame}>
-                {(video.poster||photo)&&<VideoArtwork src={video.poster} fallback={photo}/>}
-                <span className={styles.thumbPlay} aria-hidden="true">▶</span>
-                {duration(video.durationSeconds)&&<small className={styles.duration}>{duration(video.durationSeconds)}</small>}
-              </span>
-              <span className={styles.thumbText}><strong>{video.title}</strong><small>{video.language.toUpperCase()}</small></span>
-            </button>)}
-          </div>
-        </div>}
+
       </section>
 
-      <section className={styles.dialogue} aria-labelledby="human-specialist-ask">
-        <h2 id="human-specialist-ask"><MessageCircle size={25} aria-hidden="true"/>{t.ask}</h2>
-        <div className={styles.thread} aria-live="polite" data-human-specialist-thread>
-          {messages.length?messages.map(message=><div className={message.mine?styles.myBubble:styles.theirBubble} key={message.id}>
+
+      <div className={styles.quickActions} data-human-specialist-quick-actions>
+        {videos.length>0&&<details className={styles.reelSection} data-human-video-details>
+          <summary className={styles.reelHeading} aria-label={t.more}>
+            <CirclePlay size={18} aria-hidden="true"/><span>{t.moreShort}</span>
+            <small>{videos.length}</small><ChevronDown size={16} aria-hidden="true"/>
+          </summary>
+          <div className={styles.reelPopover}>
+            <div className={styles.reel} role="group" aria-label={t.more} data-human-video-reel>
+              {videos.map((video,index)=><button type="button" className={styles.videoCard} key={video.id}
+                aria-pressed={selected===index} onClick={()=>{setSelected(index);setPlaying(false)}}
+                data-human-video-thumb={video.id}>
+                <span className={styles.thumbFrame}>
+                  {(video.poster||photo)&&<VideoArtwork src={video.poster} fallback={photo}/>}
+                  <span className={styles.thumbPlay} aria-hidden="true">▶</span>
+                  {duration(video.durationSeconds)&&<small className={styles.duration}>{duration(video.durationSeconds)}</small>}
+                </span>
+                <span className={styles.thumbText}><strong>{video.title}</strong><small>{video.language.toUpperCase()}</small></span>
+              </button>)}
+            </div>
+          </div>
+        </details>}
+        <div className={styles.bookingAction}>
+      {isOwner ? <>
+        <button type="button" className={styles.book+' '+styles.bookButton}
+          data-human-specialist-book aria-expanded={bookingOpen}
+          aria-controls={bookingOpen?'hh-human-booking-panel':undefined}
+          onClick={()=>{setMinBookingDay(localDay(new Date()));setBookingOpen(open=>!open)}}>
+          <CalendarDays size={19} aria-hidden="true"/><span>{t.bookShort}</span><ArrowRight size={18} aria-hidden="true"/>
+        </button>
+        {bookingOpen&&<section id="hh-human-booking-panel" className={styles.bookingPanel}
+          aria-label={t.bookingPrompt} data-human-specialist-booking-fields>
+          <h3>{t.bookingPrompt}</h3>
+          <div className={styles.bookingFields}>
+            <div className={styles.bookingField}>
+              <label htmlFor="hh-human-preferred-day">{t.bookingDay}</label>
+              <input id="hh-human-preferred-day" type="date" required min={minBookingDay}
+                value={preferredDay} onChange={event=>setPreferredDay(event.target.value)}/>
+            </div>
+            <div className={styles.bookingField}>
+              <label htmlFor="hh-human-preferred-time">{t.bookingTime}</label>
+              <input id="hh-human-preferred-time" type="time" required step={900}
+                value={preferredTime} onChange={event=>setPreferredTime(event.target.value)}/>
+            </div>
+          </div>
+          {preferredDay&&preferredTime&&!bookingReady&&
+            <p className={styles.bookingWarning} role="status">{t.bookingFuture}</p>}
+          {bookingReady&&bookingWhatsApp&&<div className={styles.bookingChannels}
+            data-human-specialist-booking-channels aria-live="polite">
+            <strong>{t.bookingChannels}</strong>
+            <div className={styles.bookingButtons}>
+              <a href={telegramEnquiryUrlFromWhatsApp(bookingWhatsApp)} target="_blank"
+                rel="noopener noreferrer" referrerPolicy="no-referrer">Telegram</a>
+              <a href={bookingWhatsApp} target="_blank" rel="noopener noreferrer"
+                referrerPolicy="no-referrer">WhatsApp</a>
+            </div>
+            <p>{t.bookingUnconfirmed}</p>
+          </div>}
+        </section>}
+      </> : <Link href={bookingHref} className={styles.book} data-human-specialist-book>
+        <CalendarDays size={19} aria-hidden="true"/><span>{t.bookShort}</span><ArrowRight size={18} aria-hidden="true"/>
+      </Link>}
+        </div>
+      </div>
+
+      <section className={styles.dialogue} aria-labelledby="human-specialist-ask" data-human-specialist-conversation>
+        <h2 id="human-specialist-ask"><MessageCircle size={22} aria-hidden="true"/>{t.chatTitle}</h2>
+        <div className={styles.channelTabs} role="tablist" aria-label={t.chatTitle}>
+          <button type="button" role="tab" data-human-channel="secretary" id="hh-human-tab-secretary" aria-controls="hh-human-specialist-transcript"
+            aria-selected={channel==='secretary'} onClick={()=>{setChannel('secretary');setNotice('')}}>
+            {t.secretary}
+          </button>
+          <button type="button" role="tab" data-human-channel="human" id="hh-human-tab-specialist" aria-controls="hh-human-specialist-transcript"
+            aria-selected={channel==='human'} onClick={()=>{setChannel('human');setNotice('')}}>
+            {t.human}
+          </button>
+        </div>
+        <div className={styles.thread} ref={threadView} role="tabpanel" id="hh-human-specialist-transcript"
+          aria-labelledby={channel==='secretary'?'hh-human-tab-secretary':'hh-human-tab-specialist'}
+          aria-live="polite" data-human-specialist-thread>
+          {channel==='secretary'?<>
+            <div className={styles.theirBubble} data-human-secretary-introduction>
+              <strong>{t.secretary}</strong><p>{t.secretaryIntro}</p>
+            </div>
+            {secretaryMessages.map(message=><div key={message.id}
+              className={message.mine?styles.myBubble:styles.theirBubble}
+              {...(!message.mine?{'data-human-secretary-reply':true}:{})}>
+              {!message.mine&&<strong>{t.secretary}</strong>}
+              <p>{message.text}</p>
+            </div>)}
+          </>:messages.length?messages.map(message=><div
+            className={message.mine?styles.myBubble:styles.theirBubble} key={message.id}>
             {!message.mine&&<strong>{name}</strong>}
             <p>{message.text}</p>
             <small>{new Date(message.createdAt).toLocaleString(locale,{dateStyle:'short',timeStyle:'short'})}
@@ -308,30 +482,36 @@ export default function HumanSpecialistDialogue({locale,slug,name,role,photo,vid
         </div>
         <form className={styles.messageForm} onSubmit={submit}>
           <label htmlFor="hh-human-specialist-question" className={styles.srOnly}>{t.ask}</label>
-          <textarea id="hh-human-specialist-question" rows={2} maxLength={1200} value={draft}
-            onChange={event=>{setDraft(event.target.value);setNotice('');operation.current=null}}
-            placeholder={t.placeholder} disabled={busy} />
-          <button type="submit" className={styles.send} disabled={busy||!draft.trim()}
-            aria-label={busy?t.sending:t.send}><Send size={22} aria-hidden="true"/></button>
+          <textarea id="hh-human-specialist-question" rows={1} maxLength={1200}
+            value={channel==='secretary'?secretaryDraft:draft}
+            onChange={event=>{
+              if(channel==='secretary')setSecretaryDraft(event.target.value)
+              else {setDraft(event.target.value);operation.current=null}
+              setNotice('')
+            }}
+            placeholder={channel==='secretary'?t.secretaryPlaceholder:t.placeholder} disabled={busy} />
+          <button type="submit" className={styles.send}
+            disabled={busy||!(channel==='secretary'?secretaryDraft:draft).trim()}
+            aria-label={busy?t.sending:t.send}><Send size={21} aria-hidden="true"/></button>
         </form>
-        {notice&&<p className={styles.messageNotice} role="status">{notice}</p>}
-        {mode==='loading'&&<p className={styles.chatHint} role="status">…</p>}
-        {mode==='guest'&&<Link href={'/'+locale+'/app/messages?to='+encodeURIComponent(slug)}
-          className={styles.secondaryLink} prefetch={false}>{t.signIn}<ArrowRight size={16} aria-hidden="true"/></Link>}
-        {mode==='verify'&&<Link href={settingsHref} className={styles.secondaryLink} prefetch={false}>{t.verify}<ArrowRight size={16} aria-hidden="true"/></Link>}
-        {mode==='ready'&&threadId&&<button type="button" className={styles.refresh}
-          onClick={()=>{void refreshThread(threadId,accountId).catch(()=>setNotice(t.unavailable))}}>{t.retry}</button>}
-        {isOwner&&<button type="button" className={styles.channelToggle}
-          onClick={()=>setShowChannels(x=>!x)} aria-expanded={showChannels}>{t.question}<ArrowRight size={15} aria-hidden="true"/></button>}
-        {showChannels&&messengerLinks()}
-        {mode==='restricted'&&!isOwner&&<Link href={publicProfileHref} className={styles.secondaryLink}>
-          {t.master}<ArrowRight size={16} aria-hidden="true"/></Link>}
+        {channel==='secretary'?<p className={styles.secretaryInfo}>{t.secretaryInfo}</p>:<>
+          {notice&&<p className={styles.messageNotice} role="status">{notice}</p>}
+          {mode==='loading'&&<p className={styles.chatHint} role="status">…</p>}
+          {mode==='guest'&&<Link href={'/'+locale+'/app/messages?to='+encodeURIComponent(slug)}
+            className={styles.secondaryLink} prefetch={false}>{t.signIn}<ArrowRight size={16} aria-hidden="true"/></Link>}
+          {mode==='verify'&&<Link href={settingsHref} className={styles.secondaryLink} prefetch={false}>
+            {t.verify}<ArrowRight size={16} aria-hidden="true"/></Link>}
+          {mode==='ready'&&threadId&&<button type="button" className={styles.refresh}
+            onClick={()=>{void refreshThread(threadId,accountId).catch(()=>setNotice(t.unavailable))}}>{t.retry}</button>}
+          {isOwner&&<button type="button" className={styles.channelToggle}
+            onClick={()=>setShowChannels(x=>!x)} aria-expanded={showChannels}>
+            {t.question}<ArrowRight size={15} aria-hidden="true"/></button>}
+          {showChannels&&messengerLinks()}
+          {mode==='restricted'&&!isOwner&&<Link href={publicProfileHref} className={styles.secondaryLink}>
+            {t.master}<ArrowRight size={16} aria-hidden="true"/></Link>}
+        </>}
       </section>
 
-      <Link href={bookingHref} className={styles.book} data-human-specialist-book>
-        <CalendarDays size={25} aria-hidden="true"/><span>{t.book}</span><ArrowRight size={23} aria-hidden="true"/>
-      </Link>
-      <p className={styles.bookingNote}>{t.note}</p>
     </div>
   </main>
 }

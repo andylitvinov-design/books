@@ -1,9 +1,13 @@
 import test from 'node:test'
 import './coach-session-director.test.mjs'
+import './my-coach-five-turn-flow.test.mjs'
+import './my-coach-dictation.test.mjs'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {portraitMouthAperture,speechRms,speechPcmEnvelope} from '../lib/coaching/living-portrait-motion.mjs'
 import {normalizeMyCoachFishRequest,myCoachFishConfig} from '../lib/coaching/my-coach-fish-voice.mjs'
+import {COACH_PRESENTATIONS,getCoachPresentation,coachPresentationVoice}
+  from '../lib/coaching/persona-presentations.mjs'
 import {
   COACH_PERSONAS, COACH_PERSONA_VERSION, COACH_LOCALES, COACH_TOPICS, COACH_SAFETY_RULES,
   getCoachPersona, localCoachText, normalizeCoachSettings, resolveCoachSelection,
@@ -109,7 +113,7 @@ test('Living Coach mouth activates only after real speech, and boundary pulses d
   assert.equal(speechRms([NaN]),0)
 })
 
-test('Living Coach reuses existing eight portraits and the onstart/onboundary speech loop', () => {
+test('Living Coach reuses existing eight portraits and real MP3 playback events', () => {
   const avatar=readFileSync(new URL('../components/app/coaching-avatar.jsx',import.meta.url),'utf8')
   const css=readFileSync(new URL('../components/app/coaching-avatar.module.css',import.meta.url),'utf8')
   const speech=readFileSync(new URL('../components/my-coach-speech-loop.jsx',import.meta.url),'utf8')
@@ -118,9 +122,10 @@ test('Living Coach reuses existing eight portraits and the onstart/onboundary sp
     'window.cancelAnimationFrame(raf)','audioContext.close()',
     'prefers-reduced-motion: reduce','-still.webp','-living.webp'])
     assert.ok(avatar.includes(token),token)
-  assert.ok(speech.includes('utterance.onstart='))
-  assert.ok(speech.includes('utterance.onboundary='))
-  assert.ok(speech.includes('utterance.onend='))
+  assert.ok(speech.includes('introPlayerRef.current=startDirectCoachIntroAudio'))
+  assert.ok(speech.includes('onStart:()=>'))
+  assert.ok(speech.includes('onEnd:()=>'))
+  assert.ok(!speech.includes('new Utterance(reply)'))
   assert.ok(speech.includes('generationRef.current!==generation'))
   assert.match(css,/\.livingPortraitMouth/)
   assert.match(css,/-webkit-mask-image/)
@@ -164,7 +169,7 @@ test('Fish natural voice accepts the exact live/replay persona payload but no ex
   const speech=readFileSync(new URL('../components/my-coach-speech-loop.jsx',import.meta.url),'utf8')
   const dialog=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
   const route=readFileSync(new URL('../app/api/app/my-coach/voice/synthesize/route.js',import.meta.url),'utf8')
-  assert.match(speech,/body:JSON\.stringify\(\{provider:cloudProvider,locale:replyLocale,personaId,/)
+  assert.match(speech,/body:JSON\.stringify\(\{provider:voiceProvider,locale:replyLocale,personaId,/)
   assert.match(dialog,/body:JSON\.stringify\(\{provider:cloudProvider,personaId,/)
   assert.match(route,/const \{provider:_,\.\.\.fishRaw\}=raw/)
   assert.match(route,/normalizeMyCoachFishRequest\(fishRaw\)/)
@@ -206,33 +211,99 @@ test('Downloaded MP3 can drive a bounded, silent-safe 20Hz portrait envelope',()
   assert.match(hero,/onVoiceLevel=\{setPortraitLevel\}/)
 })
 
-test('natural voice is independently opt-in for the first microphone-only turn, not locked behind text-composer consent',()=>{
+test('Play starts the authored natural voice once, without recording or extra checkbox',()=>{
   const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
   const voice=readFileSync(new URL('../components/my-coach-speech-loop.jsx',import.meta.url),'utf8')
-  // Mic mode is deliberately one tap; typed turns keep their separate checkbox.
-  assert.match(ui,/enabled=\{true\}/)
-  assert.match(ui,/onTurn=\{text=>sendMessage\(text,\{voiceTurn:true\}\)\}/)
-  assert.match(ui,/if\(!message\|\|\(!consent&&!voiceTurn\)\|\|busy\|\|paused\)return/)
-  assert.match(ui,/disabled=\{!consent\|\|busy\|\|!draft\.trim\(\)\|\|authRequired/)
-  // The cloud choice must appear immediately after controls for authenticated
-  // voice-only visitors. It must not depend on their typed-text consent.
-  assert.match(ui,/\{cloudAvailable&&!authRequired&&<div className=\{styles\.naturalVoiceRow\}>/)
-  assert.doesNotMatch(ui,/\{cloudAvailable&&consent&&!authRequired&&/)
-  assert.ok(ui.indexOf('className={styles.voiceControls}')<
-    ui.indexOf('className={styles.naturalVoiceRow}'))
-  assert.ok(ui.indexOf('className={styles.naturalVoiceRow}')<
-    ui.indexOf('className={styles.liveTranscript}'))
-  assert.match(ui,/checked=\{cloudAgreed\}/)
-  assert.match(ui,/changeNaturalVoice\(event\.target\.checked\)/)
-  // The coach's Replay and voice loop use the independent vendor opt-in.
-  assert.match(ui,/if\(cloudAgreed&&cloudAvailable&&\['google_chirp3_hd','fish_free'\]\.includes\(cloudProvider\)\)/)
-  assert.match(voice,/if\(cloudAgreed&&cloudAvailable&&\['google_chirp3_hd','fish_free'\]\.includes\(cloudProvider\)/)
-  assert.match(ui,/voiceConsent:true,cloudVoiceConsent:true/)
-  assert.match(ui,/trainingUseConsent:true/)
-  // Cloud speech is never automatically selected or sent when unchecked.
-  assert.match(ui,/const \[cloudAgreed,setCloudAgreed\]=useState\(false\)/)
-  assert.match(ui,/setCloudAgreed\(Boolean\(checked\)\)/)
-  assert.match(ui,/replayPlayerRef\.current\?\.cancel\(\)/)
-  for(const locale of ['en:','ru:','es:'])assert.ok(ui.includes(locale))
-  assert.doesNotMatch(ui,/localStorage|sessionStorage/)
+  assert.ok(ui.includes('getCoachPresentation(personaId,lang)?.text'))
+  assert.ok(ui.includes('const [cloudAgreed,setCloudAgreed]=useState(false)'))
+  assert.ok(ui.includes('introduction={introduction} onSessionStart={()=>setCloudAgreed(true)}'))
+  assert.ok(ui.includes('voiceProviderDetails'))
+  assert.ok(!ui.includes('naturalVoiceRow'))
+  assert.ok(!ui.includes('checked={cloudAgreed}'))
+  assert.ok(!ui.includes('recordingModeHint'))
+  assert.ok(!ui.includes('<dialog'))
+  assert.ok(voice.includes("if(!introStartedRef.current){"))
+  assert.ok(voice.includes('sessionStartRef.current?.()'))
+  assert.ok(voice.includes('<Play size={19}'))
+  assert.ok(voice.includes('(naturalVoice||voiceAgreed)&&voiceAvailable'))
+  assert.ok(voice.includes('voiceConfigRef.current={cloudAgreed,cloudAvailable,cloudProvider}'))
+  assert.ok(voice.includes('trainingUseConsent:true'))
+  assert.ok(voice.includes('cloudVoiceConsent:true'))
+  assert.ok(voice.includes('introPlayerRef.current=startDirectCoachIntroAudio'))
+  assert.ok(!voice.includes('speakOnDevice()'))
+  assert.ok(!voice.includes('MediaRecorder'))
+  assert.ok(!voice.includes('audio-storyboard'))
+})
+
+test('each of eight AI personae introduces its own approach and unique speech style in EN/RU/ES',()=>{
+  assert.deepEqual(Object.keys(COACH_PRESENTATIONS).sort(),COACH_PERSONAS.map(p=>p.id).sort())
+  for(const locale of COACH_LOCALES){
+    const voices=new Set(),introductions=new Set(),styles=new Set()
+    for(const persona of COACH_PERSONAS){
+      const intro=getCoachPresentation(persona.id,locale)
+      assert.ok(intro&&intro.text.length>=130&&intro.text.length<=500,persona.id+'/'+locale)
+      assert.ok(intro.text.includes(localCoachText(persona.name,locale)),persona.id+'/'+locale+' introduces own name')
+      assert.ok(intro.text.includes('?'),persona.id+'/'+locale+' begins with one real question')
+      assert.ok(intro.style.length>15,persona.id+'/'+locale+' names its communication style')
+      assert.ok(!introductions.has(intro.text),persona.id+' introduction is original')
+      assert.ok(!styles.has(intro.style),persona.id+' accent is distinct')
+      introductions.add(intro.text);styles.add(intro.style)
+      voices.add(intro.voice.rate+'/'+intro.voice.pitch)
+      const behavior=buildCoachBehaviorPolicy(persona.id,{},locale)
+      assert.ok(behavior.systemInstructions.includes(intro.style),persona.id+' model keeps its style')
+    }
+    assert.equal(introductions.size,8)
+    assert.equal(styles.size,8)
+    assert.equal(voices.size,8)
+  }
+  assert.equal(getCoachPresentation('__proto__'),null)
+  assert.equal(getCoachPresentation('unknown'),null)
+  assert.equal(coachPresentationVoice('__proto__','ru',[]),null)
+})
+
+test('legacy persona speech profiles remain pure and do not trigger device playback',()=>{
+  const voices=[
+    {name:'local-one',lang:'ru-RU',localService:true},
+    {name:'local-two',lang:'ru-RU',localService:true},
+    {name:'cloud-other',lang:'ru-RU',localService:false},
+    {name:'English voice',lang:'en-GB',localService:true}
+  ]
+  for(const persona of COACH_PERSONAS){
+    const profile=coachPresentationVoice(persona.id,'ru',voices)
+    assert.equal(profile.lang,'ru-RU')
+    assert.ok(profile.voice.localService)
+    assert.ok(profile.rate>=0.85&&profile.rate<=1.12)
+    assert.ok(profile.pitch>=0.88&&profile.pitch<=1.2)
+    assert.equal(coachPresentationVoice(persona.id,'es',[]).voice,null)
+    assert.equal(coachPresentationVoice(persona.id,'en',voices).voice.name,'English voice')
+  }
+})
+
+test('the eight approved presentations flow directly into the same live dialogue',()=>{
+  const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+  const voice=readFileSync(new URL('../components/my-coach-speech-loop.jsx',import.meta.url),'utf8')
+  const css=readFileSync(new URL('../components/my-coach-live-dialogue.module.css',import.meta.url),'utf8')
+  const intro=readFileSync(new URL('../components/my-coach-voice-introduction.jsx',import.meta.url),'utf8')
+  const introCss=readFileSync(new URL('../components/my-coach-voice-introduction.module.css',import.meta.url),'utf8')
+  assert.ok(ui.includes('getCoachPresentation(personaId,lang)?.text'))
+  assert.ok(ui.includes('introduction={introduction}'))
+  assert.ok(ui.includes('onSessionStart={()=>setCloudAgreed(true)}'))
+  assert.ok(ui.includes('replayingIntro'))
+  assert.ok(ui.includes('onBlocked:fail'))
+  assert.ok(voice.includes('introPlayerRef.current=startDirectCoachIntroAudio'))
+  assert.ok(voice.includes('coachIntroAudioPath(personaId,lang)'))
+  assert.ok(!ui.includes('coachPresentationVoice'))
+  assert.ok(!voice.includes('coachPresentationVoice'))
+  assert.ok(ui.includes('data-session-visual-v4'))
+  assert.ok(ui.includes('className={styles.conversationPanel}'))
+  assert.ok(!ui.includes('{introductionComplete&&<>'))
+  assert.ok(!ui.includes('onReady={()=>setIntroductionComplete(true)}'))
+  assert.ok(voice.includes('sessionStartRef.current?.()'))
+  assert.ok(voice.includes("mode:'intro'"))
+  assert.ok(css.includes('.root[data-session-visual-v4] .conversationPanel .transcriptFeed'))
+  assert.ok(css.includes('.root[data-session-visual-v4] .conversationPanel .textComposer'))
+  // The earlier component remains harmless and testable, but the single session
+  // no longer needs a second screen or another Play to start recognition.
+  assert.ok(intro.includes('data-my-coach-audio-introduction={personaId}'))
+  assert.ok(introCss.includes('@media(max-width:699px)'))
 })
