@@ -1,4 +1,5 @@
 import test from 'node:test'
+import './coach-semantic-evidence.test.mjs'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {coachingGroqConfig,verifiedGroqCoachingReply,coachGroqReasoningEffort,GROQ_COACH_MODEL} from '../lib/coaching/groq-coach-provider.mjs'
@@ -42,9 +43,13 @@ test('only server-side Groq JSON completion, no reasoning transcript or automati
     const schema=request.response_format.json_schema.schema
     assert.equal(schema.type,'object')
     assert.equal(schema.additionalProperties,false)
-    assert.deepEqual(schema.required,['message','planSuggestion','evidenceQuote'])
+    assert.deepEqual(schema.required,['message','planSuggestion','evidenceQuote','clientEvidence'])
     assert.deepEqual(Object.keys(schema.properties),schema.required)
-    assert.ok(Object.values(schema.properties).every(row=>row.type==='string'))
+    assert.ok(['message','planSuggestion','evidenceQuote'].every(k=>schema.properties[k].type==='string'))
+    assert.equal(schema.properties.clientEvidence.type,'object')
+    assert.deepEqual(schema.properties.clientEvidence.required,['kind','quote'])
+    assert.equal(schema.properties.clientEvidence.additionalProperties,false)
+    assert.ok(schema.properties.clientEvidence.properties.kind.enum.includes('none'))
     assert.equal(request.stream,false)
     assert.deepEqual(request.messages,messages)
     return mock()(url,options)
