@@ -196,7 +196,7 @@ test('Director owns the mandatory next move without forcing a questionnaire',()=
   const question=inputFor('alex','Что ты думаешь?')
   const answerPrompt=coachSessionDirectivePrompt(coachSessionDirective(question.input,question.persona))
   assert.match(answerPrompt,/Priority: answer the LATEST client request first/)
-  assert.match(answerPrompt,/direct questions/)
+  assert.match(answerPrompt,/MANDATORY next conversational move=answer_first/)
 })
 
 test('Director v2 locks one selected move for all eight methods, but never overrides client correction',()=>{
