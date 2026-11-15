@@ -226,7 +226,7 @@ test('English intro teardown requires old Home fetch, pagehide and correct publi
  ];
  const oldFetch={type:'fetch-start',path:'/api/public/english-intro-video',rsc:false,documentProbe:'home',time:93};
  const info={engine:'webkit',readiness:'rapid-history',origin,lifecycle,fetchTelemetry:[oldFetch]};
- const error={time:125,phase:'forward-to-public',stack:'Fetch API cannot load '+origin+'/api/public/english-intro-video due to access control checks.\\n    at fetch'};
+ const error={time:125,phase:'forward-to-public',stack:'Fetch API cannot load '+origin+'/api/public/english-intro-video due to access control checks.\n    at fetch'};
  assert.equal(classifyCspNavigationCancellation(error,info)?.kind,'webkit-hard-navigation-fetch-cancellation');
  for(const changed of [{fetchTelemetry:[]},{fetchTelemetry:[{...oldFetch,documentProbe:'other'}]},
  {fetchTelemetry:[{...oldFetch,rsc:true}]},{lifecycle:lifecycle.filter(x=>x.type!=='pagehide')},

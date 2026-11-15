@@ -197,3 +197,12 @@
   .hub .headingNav :global([data-site-search-trigger]){width:38px;min-width:38px}
   .hub .profileHeadingActions :global([data-profile-mode-switch]){min-width:87px}
 }
+
+/* At 360–430 CSS px there is room for full 44px touch targets while
+   retaining the owner's single My Space header row. Narrower 320px keeps
+   its already-approved 40px icon width and 44px control height. */
+@media (min-width:360px) and (max-width:430px){
+  .languageSwitch summary{min-width:44px}
+  .hub .headingNav :global([data-site-search-trigger]){width:44px;min-width:44px;height:44px}
+  .hub .headingNav :global(.site-main-menu-trigger){width:44px;min-width:44px;min-height:44px}
+}

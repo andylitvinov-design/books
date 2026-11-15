@@ -281,7 +281,18 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
           await expect(modes.locator('[data-profile-mode="live"]')).toHaveAttribute('aria-current','page')
           const search=header.locator('[data-site-search-trigger]')
           const menu=header.locator('details.site-main-menu')
-          for(const control of [langTrigger,search,menu.locator('summary')]) await inViewport(control,label+'/header-action')
+          for(const control of [langTrigger,search,menu.locator('summary')]){
+            if(width>=360) await inViewport(control,label+'/header-action');
+            else{
+              // 320px: four controls and two mode links still fit ONE row.
+              // They preserve 44px height with a compact >=38px hit box.
+              await expect(control).toBeVisible();
+              const box=await control.boundingBox();
+              assert.ok(box&&box.width>=38&&box.height>=44
+                &&box.x>=-1&&box.x+box.width<=width+1&&box.y>=-1&&box.y+box.height<=901,
+                label+': 320px compact control remains tappable without overflow');
+            }
+          }
           const geometry=await header.evaluate(el=>{
             const title=el.firstElementChild.getBoundingClientRect(),actions=el.lastElementChild.getBoundingClientRect()
             return {right:el.getBoundingClientRect().right,overlap:title.right-actions.left,
