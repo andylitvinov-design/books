@@ -292,7 +292,8 @@ export default function PracticeShowcase({ locale = 'en' }) {
     if (signedIn) return
     const target=event.target?.closest?.('a[href]')
     if (!target || target.closest('[data-profile-mode-switch]') ||
-      target.closest('[data-profile-language-switch]')) return
+      target.closest('[data-profile-language-switch]') ||
+      target.closest('[data-profile-chrome-navigation]')) return
     event.preventDefault()
     event.stopPropagation()
     setNotice('')

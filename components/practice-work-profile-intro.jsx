@@ -1,9 +1,10 @@
 'use client'
 
 import Link from 'next/link'
-import { BookOpen, ClipboardList, FileText, Home, Leaf, Plus, Users, BriefcaseBusiness } from 'lucide-react'
+import { BookOpen, ClipboardList, FileText, Home, Leaf, Plus, Users, BriefcaseBusiness, ChevronDown } from 'lucide-react'
 import { ProfileModeSwitch } from './master-mode-switch'
-import { SiteVideoPlayer } from './site-video-player'
+import { ProfilePresentationPlayer } from './app/profile-presentation-player'
+import { SiteNavigation } from './site-navigation'
 import { profilePresentationForLocale } from '@/lib/profile-presentation.mjs'
 import styles from './app/profile-hub-tabs.module.css'
 
@@ -36,15 +37,28 @@ export default function PracticeWorkProfileIntro({ locale, t, onAction }) {
   const presentation = profilePresentationForLocale(locale)
   return <section className={styles.hub} data-profile-hub-tabs data-profile-work-hub data-profile-active="today">
     <header className={styles.heading} data-practice-workspace-heading>
-      <div><p className={styles.eyebrow}>{t.spaceEyebrow}</p><h2>{t.title}</h2></div>
+      <div className={styles.headingTitle}>
+        <p className={styles.eyebrow}>{t.spaceEyebrow}</p>
+        <h2 aria-label={t.title}>
+          <span className={styles.titleFull}>{t.title}</span>
+          <span className={styles.titleCompact}>My Space</span>
+        </h2>
+      </div>
       <div className={styles.profileHeadingActions}>
-        <nav className={styles.languageSwitch} data-profile-language-switch
-          aria-label={locale === 'ru' ? 'Язык сайта' : locale === 'es' ? 'Idioma del sitio' : 'Site language'}>
-          {['ru','en'].map(language => <Link key={language} href={'/' + language + '/practice'} prefetch={false}
-            lang={language} hrefLang={language} aria-current={locale === language ? 'page' : undefined}
-            data-profile-language={language}>{language.toUpperCase()}</Link>)}
-        </nav>
+        <details className={styles.languageSwitch} data-profile-language-switch>
+          <summary aria-label={locale === 'ru' ? 'Выбрать язык сайта' : locale === 'es' ? 'Elegir idioma' : 'Choose site language'}>
+            {locale.toUpperCase()}<ChevronDown size={13} aria-hidden="true" />
+          </summary>
+          <div className={styles.languageOptions}>
+            {['ru','en','es'].map(language => <Link key={language} href={'/' + language + '/practice'} prefetch={false}
+              lang={language} hrefLang={language} aria-current={locale === language ? 'page' : undefined}
+              data-profile-language={language}>{language.toUpperCase()}</Link>)}
+          </div>
+        </details>
         <ProfileModeSwitch locale={locale} active="work" />
+        <div className={styles.headingNav} data-profile-chrome-navigation>
+          <SiteNavigation locale={locale} compact />
+        </div>
       </div>
     </header>
     <nav className={styles.tabs} data-work-profile-tabs aria-label={t.workNavigation}>
@@ -58,11 +72,9 @@ export default function PracticeWorkProfileIntro({ locale, t, onAction }) {
     </nav>
     <div className={styles.hero} data-profile-video-hero data-work-video-hero>
       <div className={styles.videoFrame}>
-        {presentation ? <div data-profile-presentation-locale={locale}
-          data-profile-presentation-source={presentation.youtubeId ? 'youtube' : 'heygen'}>
-          <SiteVideoPlayer key={locale} video={presentation} locale={locale}
-            minimal fallbackPoster={POSTER} />
-        </div> : <video controls playsInline preload="none" poster={POSTER}
+        {presentation ? <ProfilePresentationPlayer key={locale}
+          locale={locale} presentation={presentation} poster={POSTER} />
+        : <video controls playsInline preload="none" poster={POSTER}
           aria-label={VIDEO_LABEL[locale] || VIDEO_LABEL.en}>
           <source src="/videos/holistic-house/film-collection-v3/sun-autumn-hills.mp4" type="video/mp4" />
           <track kind="captions" src="/videos/holistic-house/profile-scenic.en.vtt" srcLang="en" label="English" />
