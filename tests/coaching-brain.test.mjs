@@ -271,6 +271,7 @@ test('model output is rejected when it uses coercive language or stacks question
 test('explicit stop is respected in Russian and Spanish without entering model logic',()=>{
   for(const [locale,message] of [
     ['ru','Давайте закончим разговор'],
+    ['ru','Остановим разговор'],
     ['es','Por favor, terminemos esta conversación'],
   ]){
     const input=normalizeCoachingBrainInput(req({locale,message}))
