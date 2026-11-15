@@ -11,6 +11,7 @@ import {classifyWisdomRequest} from '@/lib/coaching/wisdom-retrieval.mjs'
 import {coachTurnWindow} from '@/lib/coaching/coach-turn-window.mjs'
 import {coachEphemeralContext} from '@/lib/coaching/coach-ephemeral-context.mjs'
 import {coachGoalTurn} from '@/lib/coaching/goal-turn.mjs'
+import {understandCoachingTurn} from '@/lib/personal-coaching/coaching-turn-understanding.mjs'
 import styles from './my-coach-live-dialogue.module.css'
 import MyCoachSpeechLoop from './my-coach-speech-loop'
 import {startCoachingMp3Playback,unlockCoachingAudioContext,shouldUseCoachingWebAudio} from '@/lib/personal-coaching/streamed-mp3-playback.mjs'
@@ -133,6 +134,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [editablePlan,setEditablePlan]=useState('')
   const [selectedGoal,setSelectedGoal]=useState('')
   const lastSharedGoalRef=useRef('')
+  const semanticHintsRef=useRef([]) // short-lived in-tab hints, never localStorage or report data
   const [replaying,setReplaying]=useState(false)
   const [ratedCoachAnswer,setRatedCoachAnswer]=useState(null)
   const [coachQualityPending,setCoachQualityPending]=useState(false)
@@ -151,7 +153,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     let last=window.performance.now()
     const tick=()=>{
       const now=window.performance.now()
-      if(document.visibilityState==='visible'){
+      if(document.visibilityState==='visible'&&!paused){
         const delta=Math.min(15,Math.max(0,(now-last)/1000))
         setActiveSessionSeconds(seconds=>Math.min(7200,seconds+delta))
       }
@@ -161,7 +163,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     const timer=window.setInterval(tick,15000)
     document.addEventListener('visibilitychange',onVisibility)
     return()=>{window.clearInterval(timer);document.removeEventListener('visibilitychange',onVisibility)}
-  },[sessionClockStarted])
+  },[sessionClockStarted,paused])
   useEffect(()=>{
     // Preserve the current exact Play/MP3 and microphone handlers untouched.
     // The voice loop publishes loading on first Play and listening after intro.
@@ -445,6 +447,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       locale:responseLocale,turns,skip:wisdomRequested,
     })
     message=goalTurn.message
+    // Current client correction/new topic invalidates hints from the old focus.
+    if(['correction','topic_shift'].includes(
+      understandCoachingTurn({locale:responseLocale,message}).act))semanticHintsRef.current=[]
     const commitGoalTurn=()=>{
       if(goalTurn.goalIncluded)lastSharedGoalRef.current=goalTurn.goal
       if(goalTurn.clearGoal){
@@ -487,6 +492,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         }]
         return updated.slice(-96) // In-tab only: retain context throughout a typical 20-minute session
       })
+      if(mode==='safety'||mode==='boundary')semanticHintsRef.current=[]
       if(mode==='safety'||(mode==='boundary'&&interruption?.boundary==='stop'))setPaused(true)
       setDraft('')
       setSpeechPreview('')
@@ -505,6 +511,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           personaId,settings,locale:responseLocale,consent:true,message,
           elapsedSeconds:sessionClockStarted?Math.floor(activeSessionSeconds):0,
           sessionContext:coachEphemeralContext(turns,coachTurnWindow(turns,10),responseLocale,message),
+          semanticHints:semanticHintsRef.current,
           turns:coachTurnWindow(turns,10)
             .map(({role,content})=>({role,content})), // Preserve the latest client-stated active goal, not a greeting.
         }),
@@ -515,6 +522,13 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       if(controller.signal.aborted)return
       const answer=assistantText(result)
       if(!answer||answer.length>900)throw Error('COACH_REPLY_UNAVAILABLE')
+      if(result.mode==='ai'&&result.semanticEvidence&&
+        typeof result.semanticEvidence.kind==='string'&&
+        typeof result.semanticEvidence.quote==='string'){
+        const hint=result.semanticEvidence
+        semanticHintsRef.current=[...semanticHintsRef.current.filter(h=>
+          h.kind!==hint.kind||h.quote!==hint.quote),hint].slice(-3)
+      }
       setTurns(previous=>{
         const updated=[...previous,{role:'user',content:message},{
           role:'assistant',content:answer,reflection:result.reflection,question:result.question,
@@ -530,6 +544,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       setDraft('')
       setSpeechPreview('')
       commitGoalTurn()
+      if(result.mode==='safety'||result.mode==='boundary')semanticHintsRef.current=[]
       if(result.mode==='safety'||(result.mode==='boundary'&&result.boundary==='stop'))setPaused(true)
       if(result.mode==='ai'&&result.planSuggestion)setEditablePlan(result.planSuggestion)
       return {reply:answer,mode:result.mode,locale:responseLocale}

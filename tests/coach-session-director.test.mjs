@@ -104,7 +104,8 @@ test('existing production My Coach route invokes directive without new model or 
   assert.match(server,/enforceCoachSessionDirective/)
   assert.match(messages,/coachSessionDirectivePrompt/)
   assert.match(server,/verifiedGroqCoachingReply/)
-  assert.match(messages,/EXACTLY three string keys/)
+  assert.match(messages,/clientEvidence/)
+  assert.match(messages,/soft client-authored hint/)
 })
 
 test('20-minute focus guide is time-aware without forcing exit or fabricating completion',()=>{
