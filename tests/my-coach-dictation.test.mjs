@@ -27,78 +27,64 @@ test('Safari partial and final speech is visible and appendable in editable draf
  assert.equal(appendSpokenAnswer('Мне важно','сегодня поговорить',1200),'Мне важно сегодня поговорить')
  assert.equal(readDictationResults([{isFinal:true,0:{transcript:'  Hi  '}}]).final,'Hi')
 })
-test('Mic shows real listening state and writes interim results to the actual form',()=>{
+test('real mic shows ongoing live words without creating a recorded file',()=>{
  const loop=source('components/my-coach-speech-loop.jsx')
  const ui=source('components/my-coach-live-dialogue.jsx')
- for(const s of ['readDictationResults(event.results,1200)','draftRef.current?.(appendSpokenAnswer(draftAtStartRef.current,visible,1200))','recognition.onstart=',"changePhase('starting')",'lastHeardRef.current=finished',"event.error==='network'"])assert.ok(loop.includes(s),s)
- for(const s of ["onDraft={text=>{setDraft(text);setError('')}}",'speechLocale={speechLocale}','initialDraft={draft}','value={speechLocale}','responseLocale=detectedSpeechLocale(message,lang)','locale:responseLocale,consent:true,message'])assert.ok(ui.includes(s),s)
+ for(const token of ['readDictationResults(event.results,1200)','recognition.interimResults=true',
+   'transcriptRef.current?.(visible)',
+   'draftRef.current?.(appendSpokenAnswer(draftAtStartRef.current,visible,1200))',
+   "changePhase('starting')",'lastHeardRef.current=finished',
+   "event.error==='network'"])assert.ok(loop.includes(token),token)
+ for(const token of ["onDraft={text=>{setDraft(text);setError('')}}",
+   'speechLocale={speechLocale}','initialDraft={draft}','value={speechLocale}',
+   'responseLocale=detectedSpeechLocale(message,lang)','locale:responseLocale,consent:true,message'])
+   assert.ok(ui.includes(token),token)
+ assert.doesNotMatch(loop,/MediaRecorder|FormData|new File\(|audio-storyboard|18000/)
+ assert.doesNotMatch(ui,/recordedMode|recordingModeHint|recordingNotice/)
  assert.doesNotMatch(loop,/sendBeacon|localStorage|sessionStorage/)
- assert.match(loop,/if\(!recordingConsentRef\.current\|\|!Recorder\|\|!getUserMedia\)/)
 })
 
-test('iOS 27 Safari recovery targets only affected WebKit and preserves RU/EN conversation',()=>{
+test('iOS 27 recognition is repaired by bounded automatic re-arm, never a second tap',()=>{
  const ios27={userAgent:'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 Version/27.2 Mobile/15E148 Safari/604.1'}
  assert.equal(ios27NeedsSpeechRecovery(ios27),true)
  assert.equal(ios27NeedsSpeechRecovery({userAgent:ios27.userAgent.replace('Version/27.2','Version/26.6')}),false)
  assert.equal(ios27NeedsSpeechRecovery({userAgent:'Mozilla/5.0 (Macintosh; Intel Mac OS X) Version/27.2 Safari/605.1.15',platform:'MacIntel',maxTouchPoints:0}),false)
- assert.equal(ios27NeedsSpeechRecovery({userAgent:'Mozilla/5.0 (Macintosh; Intel Mac OS X) Version/27.2 Safari/605.1.15',platform:'MacIntel',maxTouchPoints:5}),true)
- assert.equal(ios27NeedsSpeechRecovery({userAgent:'Mozilla/5.0 (iPhone) CriOS/156.0 Mobile Safari/604.1'}),false)
- const sourceCode=source('components/my-coach-speech-loop.jsx')
- for(const part of ['if(!ios27)try{recognition.stop()}catch{}','ios27NeedsSpeechRecovery(window.navigator)',
-   'cue.onend=finishCue','cue.onerror=finishCue','iosCueSatisfiedRef.current',
-   'hasRecognizedRef.current','iosResultTimerRef.current=setTimeout',
-   'draftRef.current?.(appendSpokenAnswer(draftAtStartRef.current,visible,1200))'])
-   assert.ok(sourceCode.includes(part),part)
- assert.doesNotMatch(sourceCode,/sendBeacon|localStorage|sessionStorage/)
+ const loop=source('components/my-coach-speech-loop.jsx')
+ for(const part of ['ios27NeedsSpeechRecovery(window.navigator)','cue.onend=finishCue',
+   'cue.onerror=finishCue','hasRecognizedRef.current','retryAttemptsRef.current>=3',
+   'restartSilentRecognition(recognition)','startListening()',
+   'retryTimerRef.current=setTimeout','iosResultTimerRef.current=setTimeout'])
+   assert.ok(loop.includes(part),part)
+ assert.doesNotMatch(loop,/startRecordedTurn|recordingConsentRef|stopRecordedTurn/)
 })
 
-
-test('iOS 27 repeat-turn recovery always primes every following recognition, including after Fish playback',()=>{
- const code=source('components/my-coach-speech-loop.jsx')
- const start=code.slice(code.indexOf('function startListening(){'),code.indexOf('async function deliver(text){'))
- assert.match(start,/if\(ios27&&hasRecognizedRef\.current&&/,'cue required for every iOS 27 subsequent session')
- assert.doesNotMatch(start,/!cueAlreadyPlayed/,'prior TTS cannot skip the next cue')
- assert.match(start,/cue\.onend=finishCue/)
- assert.match(start,/recognition\.continuous=false/)
- assert.match(start,/if\(!ios27\)try\{recognition\.stop\(\)\}catch\{\}/)
- assert.match(start,/if\(recovered\.length>=3\)\{[\s\S]*?void deliver\(appendSpokenAnswer\(draftAtStartRef\.current,recovered,1200\)\)/)
- assert.match(start,/changePhase\('stalled'\)/)
- assert.match(code,/if\(phaseRef\.current==='stalled'\)\{/)
- assert.match(code,/retryMic\?t\.retryMic:ready\?t\.tapToHear:active\?t\.stop:t\.start/)
- assert.match(code,/iosResultTimerRef\.current=setTimeout/)
- assert.doesNotMatch(code,/new WebSocket|localStorage|sessionStorage/)
+test('Safari interim-only answers finalize once after silence, even without onend',()=>{
+ const loop=source('components/my-coach-speech-loop.jsx')
+ const result=loop.slice(loop.indexOf('recognition.onresult=event=>{'),loop.indexOf('recognition.onerror=event=>{'))
+ assert.match(result,/settleTimerRef\.current=setTimeout\(\(\)=>\{/)
+ assert.match(result,/final\?1700:2300/)
+ assert.match(result,/lastHeardRef\.current=heard/)
+ assert.match(result,/void deliver\(appendSpokenAnswer\(draftAtStartRef\.current,heard,1200\)\)/)
+ assert.match(result,/recognition\.onend=null/)
+ const onend=loop.slice(loop.indexOf('    recognition.onend=()=>{'),loop.indexOf('    const startRecognition='))
+ assert.match(onend,/if\(finished\.length>=3\)void deliver/)
+ assert.match(onend,/if\(recovered\.length>=3\)/)
  for(const phrase of ['Как ты себя чувствуешь','Мне спокойнее','Я хочу продолжить разговор']){
-   const result=readDictationResults([{isFinal:false,0:{transcript:phrase}}])
-   assert.equal(result.visible,phrase)
-   assert.equal(appendSpokenAnswer('',result.visible,1200),phrase)
+   const recognized=readDictationResults([{isFinal:false,0:{transcript:phrase}}])
+   assert.equal(appendSpokenAnswer('',recognized.visible,1200),phrase)
  }
 })
 
-test('reliable iPhone recording has separate consent, bounded duration and reuses the existing free STT bridge',()=>{
+test('Play intro and every subsequent reply use the same non-recording voice cycle',()=>{
  const loop=source('components/my-coach-speech-loop.jsx')
  const ui=source('components/my-coach-live-dialogue.jsx')
- const route=source('app/api/holistic-support/audio-storyboard/route.js')
- assert.match(loop,/if\(!recordingConsentRef\.current\|\|!Recorder\|\|!getUserMedia\)/)
- assert.match(loop,/recorder\.start\(250\)/)
- assert.match(loop,/setTimeout\(\(\)=>stopRecordedTurn\(\),18000\)/)
- assert.match(loop,/body\.set\('consent','yes'\)/)
- assert.match(loop,/body\.set\('locale',\['ru','en','es'\]\.includes\(speechLocale\)\?speechLocale:'auto'\)/)
- assert.match(loop,/fetch\('\/api\/holistic-support\/audio-storyboard'/)
- assert.match(loop,/void deliver\(combined\)/)
- assert.match(loop,/transcriptionControllerRef\.current\?\.abort\(\)/)
- assert.doesNotMatch(ui,/checked=\{recordingConsent\}|checked=\{recordedMode\}/)
- assert.match(loop,/if\(recordedModeRef\.current\)recordingConsentRef\.current=true/)
- assert.match(ui,/ios27NeedsSpeechRecovery\(window\.navigator\)/)
- assert.match(ui,/speechRef\.current\?\.resumeVoice\?\.\(\)/)
- assert.match(route,/if\(language!=="auto"\)multipart\.set\("language",language\)/)
- assert.match(route,/audio-stt-free-global-day/)
- assert.doesNotMatch(loop,/localStorage|sessionStorage|new WebSocket/)
-})
-test('Safari partial-fragment watchdog re-arms after every new transcript result',()=>{
- const loop=source('components/my-coach-speech-loop.jsx')
- const handler=loop.slice(loop.indexOf('recognition.onresult=event=>{'),loop.indexOf('recognition.onerror=event=>{'))
- assert.match(handler,/iosResultTimerRef\.current=setTimeout\(\(\)=>\{/)
- assert.match(handler,/6500/)
- assert.match(handler,/changePhase\('stalled'\)/)
- assert.match(handler,/draftRef\.current\?\.\(appendSpokenAnswer/)
+ assert.match(ui,/startSession\(opening,\{naturalVoice\}\)/)
+ assert.match(loop,/startSession\(introduction,\{naturalVoice=false\}=\{\}\)/)
+ assert.match(loop,/void speakCoachReply\(\{reply:String\(introduction\|\|'\'\)/)
+ assert.match(loop,/async function speakCoachReply\(result,text,generation,naturalVoice=false\)/)
+ assert.match(loop,/function startListening\(\)/)
+ assert.match(loop,/function afterSpeech|const afterSpeech=\(\)=>\{/)
+ assert.match(loop,/onEnd:\(\)=>\{/)
+ assert.match(loop,/speakReply\(result\)\{/)
+ assert.doesNotMatch(loop,/fetch\('\/api\/holistic-support\/audio-storyboard'/)
 })

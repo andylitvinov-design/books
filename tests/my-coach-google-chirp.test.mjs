@@ -88,12 +88,12 @@ test('hard-bounded first-party cost policy and existing owner-only My Coach UI',
    'normalizeGoogleChirpInput','synthesizeGoogleChirp','PRIVATE_HEADERS'])
    assert.ok(api.includes(needle),needle)
  for(const needle of ['cloudProvider={cloudProvider}','Google Chirp 3 HD','cloudAgreed',
-   'checked={cloudAgreed}','startCoachingMp3Playback','providerCopy.disclosure'])
+   'startVoiceSession','startCoachingMp3Playback','providerCopy.disclosure'])
    assert.ok(ui.includes(needle),needle)
  for(const needle of ['cloudControllerRef.current?.abort()','cloudPlayerRef.current?.cancel()',
    "cloudProvider==='google_chirp3_hd'","silence();changePhase('idle')"])
    assert.ok(speech.includes(needle),needle)
- assert.ok(ui.includes('replayControllerRef.current?.abort();replayPlayerRef.current?.cancel();setReplayBlocked(false);setReplaying(false);setCloudAgreed(false)'))
+ assert.ok(ui.includes('replayControllerRef.current?.abort()'))
  assert.ok(ui.includes("document.addEventListener('visibilitychange',onHidden)"))
  assert.ok(ui.includes("window.addEventListener('pagehide',stopReplay)"))
  assert.ok(speech.includes('(!cloudAgreed||!cloudAvailable)&&(cloudControllerRef.current||cloudPlayerRef.current)'))
@@ -105,23 +105,22 @@ test('hard-bounded first-party cost policy and existing owner-only My Coach UI',
  assert.ok(speech.includes('showTextOnly()'))
 })
 
-test('natural coach speech is opt-in at first microphone consent and narrates consented typed turns',()=>{
+test('natural coach narration starts at Play with disclosed vendor processing, no checkbox',()=>{
  const ui=read('components/my-coach-live-dialogue.jsx')
  const voice=read('components/my-coach-speech-loop.jsx')
  assert.match(ui,/if\(authRequired\|\|readiness\.status==='checking'\)/)
- assert.doesNotMatch(ui,/\[consent,authRequired,readiness\.status\]/,
-   'TTS availability probe does not require exposing or agreeing to send user text')
- assert.match(ui,/className=\{styles\.voiceModalNatural\}/)
- assert.match(ui,/checked=\{cloudAgreed\}/)
- assert.match(ui,/onChange=\{event=>changeNaturalVoice\(event\.target\.checked\)\}/)
- assert.match(ui,/setCloudAgreed\(Boolean\(checked\)\)/)
- assert.match(ui,/replayPlayerRef\.current\?\.cancel\(\)/)
+ assert.match(ui,/onStart=\{startVoiceSession\}/)
+ assert.match(ui,/startSession\(opening,\{naturalVoice\}\)/)
+ assert.match(ui,/setCloudAgreed\(Boolean\(naturalVoice\)\)/)
+ assert.match(ui,/providerCopy\.disclosure/)
+ assert.match(ui,/fishNotice:/)
+ assert.doesNotMatch(ui,/checked=\{cloudAgreed\}|voiceModalNatural|changeNaturalVoice\(/)
  assert.match(ui,/const spokenText=typeof overrideText==='string'\?overrideText:latestCoachText/)
  assert.match(ui,/const result=await sendMessage\(draft\.trim\(\)\)/)
- assert.match(ui,/\['safety','boundary'\]\.includes\(result\.mode\)/)
+ assert.match(ui,/speechRef\.current\?\.speakReply\?\.\(result\)/)
  assert.match(ui,/replayCoachReply\(result\.reply\)/)
  assert.match(ui,/className=\{styles\.replayControl\} onClick=\{\(\)=>replayCoachReply\(\)\}/)
- assert.match(voice,/cloudAgreed&&cloudAvailable/)
+ assert.match(voice,/\(naturalVoice\|\|cloudAgreed\)&&cloudAvailable/)
  assert.doesNotMatch(ui,/new MediaRecorder|localStorage|sessionStorage/)
 });
 

@@ -650,3 +650,136 @@
     height:135px;min-height:135px;
   }
 }
+
+/* Hands-free My Coach v4: one Play start, no recorder/consent cards, a
+   non-scrolling iPhone viewport with independent transcript scrolling. */
+@media(max-width:699px){
+  .root[data-session-visual-v4]{
+    display:flex;flex-direction:column;gap:5px;box-sizing:border-box;
+    height:100dvh;min-height:0;max-height:100dvh;width:100%;
+    padding:0 0 env(safe-area-inset-bottom);margin:0;overflow:hidden;
+    overscroll-behavior:none;background:#fbf6ed
+  }
+  .root[data-session-visual-v4] .sessionTopbar{flex:0 0 auto;min-height:48px;padding:4px 12px}
+  .root[data-session-visual-v4] .sessionScroll{
+    flex:0 0 auto;display:block;min-height:0;max-height:none;
+    padding:0;margin:0;overflow:visible
+  }
+  .root[data-session-visual-v4] .sessionHero{
+    box-sizing:border-box;width:calc(100% - 20px);height:clamp(164px,27dvh,250px);
+    min-height:0;margin:0 auto;border-radius:25px
+  }
+  .root[data-session-visual-v4] .sessionHeroCopy{top:12px;left:13px;width:min(57%,205px);gap:3px}
+  .root[data-session-visual-v4] .sessionHeroCopy h1{font-size:clamp(30px,8vw,42px)}
+  .root[data-session-visual-v4] .sessionHeroCopy>small{font-size:11px;line-height:1.23}
+  .root[data-session-visual-v4] .sessionProgress{display:none}
+  .root[data-session-visual-v4] .voiceWorkspace{
+    display:flex;flex:1 1 auto;flex-direction:column;gap:5px;
+    width:calc(100% - 20px);max-width:100%;min-height:0;
+    margin:0 auto;padding:0;overflow:visible
+  }
+  .root[data-session-visual-v4] .voiceControls{
+    position:relative;z-index:5;flex:0 0 auto;box-sizing:border-box;
+    height:99px;min-height:99px;max-height:99px;grid-template-rows:78px;
+    width:100%;max-width:100%;margin:-22px auto 0;padding:8px 6px 9px;
+    gap:3px;align-items:center;overflow:visible;border-radius:22px
+  }
+  .root[data-session-visual-v4] .voiceCenter{
+    box-sizing:border-box;align-self:center;height:78px;max-height:78px;min-height:0
+  }
+  .root[data-session-visual-v4] .voiceCenter :global([data-my-coach-voice]){
+    height:78px;min-height:78px;max-height:78px
+  }
+  .root[data-session-visual-v4] .voiceCenter :global([data-my-coach-voice] button){
+    width:73px;height:73px;min-width:73px;min-height:73px
+  }
+  .root[data-session-visual-v4] .voiceCenter :global([data-my-coach-voice] button svg){
+    width:29px;height:29px
+  }
+  .root[data-session-visual-v4] .voiceCenter :global([data-my-coach-voice] .status),
+  .root[data-session-visual-v4] .voiceCenter :global([data-my-coach-voice] .note){
+    top:calc(100% + 1px);max-height:15px;width:max-content;
+    max-width:min(290px,calc(100vw - 50px));white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis;font-size:10px;line-height:1.25
+  }
+  .root[data-session-visual-v4] .conversationPanel{
+    box-sizing:border-box;display:flex;flex:1 1 auto;flex-direction:column;
+    gap:4px;min-height:0;max-height:none;width:100%;
+    padding:9px 11px;overflow:hidden;border-radius:21px
+  }
+  .root[data-session-visual-v4] .conversationPanel .liveTranscript{
+    display:flex;flex:1 1 auto;min-height:0;max-height:none;
+    flex-direction:column;overflow:hidden
+  }
+  .root[data-session-visual-v4] .conversationPanel .transcriptHeading{
+    flex:0 0 auto;gap:6px;flex-wrap:nowrap;font-size:12px
+  }
+  .root[data-session-visual-v4] .conversationPanel .transcriptFeed{
+    display:flex;flex:1 1 auto;flex-direction:column;gap:5px;
+    min-height:0;max-height:none;height:auto;overflow-x:hidden;
+    overflow-y:auto;overscroll-behavior:contain
+  }
+  .root[data-session-visual-v4] .conversationPanel .transcriptCoach,
+  .root[data-session-visual-v4] .conversationPanel .transcriptUser,
+  .root[data-session-visual-v4] .conversationPanel .transcriptInterim{flex:0 0 auto}
+  .root[data-session-visual-v4] .conversationPanel .textComposer{
+    flex:0 0 auto;order:2;display:block;max-height:min(132px,29dvh);
+    padding:5px 0 0;margin:0;overflow-y:auto;overflow-x:hidden;
+    border-top:1px solid #e1e9e0;background:#fffdf9
+  }
+  .root[data-session-visual-v4] .textComposer .composer{gap:3px}
+  .root[data-session-visual-v4] .textComposer .composer textarea{
+    height:45px;min-height:45px;max-height:68px;resize:none
+  }
+  .root[data-session-visual-v4] .textComposer .composer .send{min-height:45px}
+  .root[data-session-visual-v4] .textComposer .consentDetails{margin-top:2px;font-size:9px}
+  .root[data-session-visual-v4] .goalRow,
+  .root[data-session-visual-v4] .goalPrivacy,
+  .root[data-session-visual-v4] .sessionDisclosure,
+  .root[data-session-visual-v4] .quickGoals,
+  .root[data-session-visual-v4] .sessionBottomNav{display:none}
+  .root[data-session-visual-v4] .playbackNotice{flex:0 0 auto;margin:0;padding:3px 8px}
+      }
+@media(max-width:699px) and (max-height:670px){
+  .root[data-session-visual-v4] .sessionHero{height:clamp(143px,24dvh,178px)}
+  .root[data-session-visual-v4] .voiceControls{height:84px;min-height:84px;max-height:84px;grid-template-rows:68px;padding:7px 5px 8px}
+  .root[data-session-visual-v4] .voiceCenter,
+  .root[data-session-visual-v4] .voiceCenter :global([data-my-coach-voice]){height:68px;min-height:68px;max-height:68px}
+  .root[data-session-visual-v4] .voiceCenter :global([data-my-coach-voice] button){width:64px;height:64px;min-width:64px;min-height:64px}
+  .root[data-session-visual-v4] .conversationPanel{padding:6px 9px}
+  .root[data-session-visual-v4] .conversationPanel .textComposer{max-height:min(103px,26dvh)}
+  }
+@media(max-width:699px) and (max-height:530px){
+  .root[data-session-visual-v4] .sessionHero{height:122px}
+  .root[data-session-visual-v4] .sessionHeroCopy>small{display:none}
+  .root[data-session-visual-v4] .voiceControls{height:77px;min-height:77px;max-height:77px;margin-top:-16px}
+  .root[data-session-visual-v4] .voiceCenter :global([data-my-coach-voice] button){width:59px;height:59px;min-height:59px;min-width:59px}
+}
+
+/* The authored eight-coach introduction stays visible BEFORE Play. The
+   voice runner is mounted but visually hidden so the Play gesture can call it
+   directly (and prime Safari audio) without a second re-render/gesture. */
+@media(max-width:699px){
+ .root[data-session-visual-v4][data-introduction-complete='false']{
+   height:100dvh;max-height:100dvh;overflow:hidden;gap:5px
+ }
+ .root[data-session-visual-v4][data-introduction-complete='false'] .sessionScroll{
+   display:flex;flex:1 1 auto;flex-direction:column;align-items:stretch;
+   gap:9px;min-height:0;max-height:none;overflow-y:auto;overflow-x:hidden;
+   overscroll-behavior:contain;padding:0 0 calc(14px + env(safe-area-inset-bottom))
+ }
+ .root[data-session-visual-v4][data-introduction-complete='false'] .sessionHero{
+   flex:0 0 auto;height:clamp(137px,21dvh,178px);min-height:137px
+ }
+ .root[data-session-visual-v4][data-introduction-complete='false'] .voiceWorkspace{
+   display:none
+ }
+ .root[data-session-visual-v4][data-introduction-complete='false'] .sessionProgress,
+ .root[data-session-visual-v4][data-introduction-complete='false'] .goalRow,
+ .root[data-session-visual-v4][data-introduction-complete='false'] .goalPrivacy,
+ .root[data-session-visual-v4][data-introduction-complete='false'] .plan,
+ .root[data-session-visual-v4][data-introduction-complete='false'] .sessionDisclosure,
+ .root[data-session-visual-v4][data-introduction-complete='false'] .hiLearningRating,
+ .root[data-session-visual-v4][data-introduction-complete='false'] .quickGoals,
+ .root[data-session-visual-v4][data-introduction-complete='false'] .sessionBottomNav{display:none}
+}

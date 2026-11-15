@@ -208,35 +208,22 @@ test('Downloaded MP3 can drive a bounded, silent-safe 20Hz portrait envelope',()
   assert.match(hero,/onVoiceLevel=\{setPortraitLevel\}/)
 })
 
-test('natural voice is independently opt-in for the first microphone-only turn, not locked behind text-composer consent',()=>{
-  const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
-  const voice=readFileSync(new URL('../components/my-coach-speech-loop.jsx',import.meta.url),'utf8')
-  // Mic mode is deliberately one tap; typed turns keep their separate checkbox.
-  assert.match(ui,/enabled=\{true\}/)
-  assert.match(ui,/onTurn=\{text=>sendMessage\(text,\{voiceTurn:true\}\)\}/)
-  assert.match(ui,/if\(!message\|\|\(!consent&&!voiceTurn\)\|\|busy\|\|paused\)return/)
-  assert.match(ui,/disabled=\{!consent\|\|busy\|\|!draft\.trim\(\)\|\|authRequired/)
-  // The cloud choice must appear immediately after controls for authenticated
-  // voice-only visitors. It must not depend on their typed-text consent.
-  assert.match(ui,/\{cloudAvailable&&!authRequired&&<div className=\{styles\.naturalVoiceRow\}>/)
-  assert.doesNotMatch(ui,/\{cloudAvailable&&consent&&!authRequired&&/)
-  assert.ok(ui.indexOf('className={styles.voiceControls}')<
-    ui.indexOf('className={styles.naturalVoiceRow}'))
-  assert.ok(ui.indexOf('className={styles.naturalVoiceRow}')<
-    ui.indexOf('className={styles.liveTranscript}'))
-  assert.match(ui,/checked=\{cloudAgreed\}/)
-  assert.match(ui,/changeNaturalVoice\(event\.target\.checked\)/)
-  // The coach's Replay and voice loop use the independent vendor opt-in.
-  assert.match(ui,/if\(cloudAgreed&&cloudAvailable&&\['google_chirp3_hd','fish_free'\]\.includes\(cloudProvider\)\)/)
-  assert.match(voice,/if\(cloudAgreed&&cloudAvailable&&\['google_chirp3_hd','fish_free'\]\.includes\(cloudProvider\)/)
-  assert.match(ui,/voiceConsent:true,cloudVoiceConsent:true/)
-  assert.match(ui,/trainingUseConsent:true/)
-  // Cloud speech is never automatically selected or sent when unchecked.
-  assert.match(ui,/const \[cloudAgreed,setCloudAgreed\]=useState\(false\)/)
-  assert.match(ui,/setCloudAgreed\(Boolean\(checked\)\)/)
-  assert.match(ui,/replayPlayerRef\.current\?\.cancel\(\)/)
-  for(const locale of ['en:','ru:','es:'])assert.ok(ui.includes(locale))
-  assert.doesNotMatch(ui,/localStorage|sessionStorage/)
+test('one Play grants disclosed coach-only natural voice without a separate checkbox',()=>{
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const voice=readFileSync(new URL('../components/my-coach-speech-loop.jsx',import.meta.url),'utf8')
+ assert.match(ui,/const \[cloudAgreed,setCloudAgreed\]=useState\(false\)/)
+ assert.match(ui,/const naturalVoice=cloudAvailable&&!wizardVoice&&/)
+ assert.match(ui,/startSession\(opening,\{naturalVoice\}\)/)
+ assert.match(ui,/setCloudAgreed\(Boolean\(naturalVoice\)\)/)
+ assert.match(ui,/fishNotice:/)
+ assert.match(ui,/providerCopy\.disclosure/)
+ assert.doesNotMatch(ui,/checked=\{cloudAgreed\}|naturalVoiceRow|voiceConsentRef|recordingNotice/)
+ assert.match(voice,/if\(\(naturalVoice\|\|cloudAgreed\)&&cloudAvailable&&\['google_chirp3_hd','fish_free'\]\.includes\(cloudProvider\)/)
+ assert.match(voice,/voiceConsent:true,cloudVoiceConsent:true/)
+ assert.match(voice,/trainingUseConsent:true/)
+ assert.doesNotMatch(voice,/MediaRecorder|new File\(|audio-storyboard/)
+ for(const locale of ['en:','ru:','es:'])assert.ok(ui.includes(locale))
+ assert.doesNotMatch(ui,/localStorage|sessionStorage/)
 })
 
 test('each of eight AI personae introduces its own approach and unique speech style in EN/RU/ES',()=>{
@@ -292,7 +279,9 @@ test('My Coach opens a real one-tap audio presentation before the complex dialog
   assert.match(ui,/\{!introductionComplete&&<MyCoachVoiceIntroduction/)
   assert.match(ui,/onReady=\{\(\)=>setIntroductionComplete\(true\)\}/)
   assert.match(ui,/\{introductionComplete&&<section className=\{styles\.sessionProgress\}/)
-  assert.match(ui,/\{introductionComplete&&<>/)
+  assert.match(ui,/className=\{styles\.voiceWorkspace\}/)
+  assert.match(ui,/onStart=\{startVoiceSession\}/)
+  assert.match(intro,/typeof onStart==='function'/)
   assert.match(intro,/data-my-coach-audio-introduction=\{personaId\}/)
   assert.match(intro,/data-my-coach-start-audio-intro/)
   assert.match(intro,/const synth=window\.speechSynthesis,Utterance=window\.SpeechSynthesisUtterance/)
@@ -304,6 +293,7 @@ test('My Coach opens a real one-tap audio presentation before the complex dialog
   assert.match(ui,/const profile=coachPresentationVoice\(personaId,spokenLocale,voices\)/)
   assert.doesNotMatch(intro,/fetch\(|MediaRecorder|getUserMedia|trainingUseConsent|api\/app\/my-coach/)
   assert.match(css,/data-introduction-complete='false'/)
+  assert.match(css,/\.root\[data-session-visual-v4\]\[data-introduction-complete='false'\] \.voiceWorkspace\{[\s\S]*?display:none/)
   assert.match(introCss,/@media\(max-width:699px\)/)
   assert.match(introCss,/min-height:55px/)
 })

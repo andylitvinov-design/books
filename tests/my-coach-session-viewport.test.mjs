@@ -2,136 +2,80 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
-test('approved mobile session flows from larger portrait to real mic and exactly one conversation panel',()=>{
- const ui=read('components/my-coach-live-dialogue.jsx'),css=read('components/my-coach-live-dialogue.module.css')
- assert.match(ui,/data-session-visual-v3/)
- assert.match(ui,/className=\{styles\.sessionScroll\} data-coaching-session-scroll/)
- assert.match(ui,/<MyCoachSpeechLoop ref=\{speechRef\}/)
- assert.match(ui,/className=\{styles\.keyboardControl\} onClick=\{toggleComposer\}/)
- assert.match(ui,/ref=\{composerDetailsRef\} className=\{styles\.textComposer\}/)
- assert.equal((ui.match(/className=\{styles\.liveTranscript\}/g)||[]).length,1)
- assert.equal((ui.match(/className=\{styles\.conversationPanel\}/g)||[]).length,1)
- assert.equal((ui.match(/className=\{styles\.voiceControls\}/g)||[]).length,1)
- assert.match(ui,/turns\.map\(\(turn,index\)=>/)
- assert.doesNotMatch(ui,/turns\.slice\(-6\)/)
- assert.doesNotMatch(ui,/className=\{styles\.(?:currentCoachPrompt|conversationHistory)\}/)
- const hero=ui.indexOf('className={styles.sessionHero}')
- const mic=ui.indexOf('className={styles.voiceControls}')
- const transcript=ui.indexOf('className={styles.liveTranscript}')
- const composer=ui.indexOf('className={styles.textComposer}')
- assert.ok(hero<mic&&mic<transcript&&transcript<composer,'portrait -> mic -> transcript -> composer')
- assert.match(css,/\.root\[data-session-visual-v3\]\{height:auto;min-height:100dvh;max-height:none;overflow:visible/)
- assert.match(css,/\.root\[data-session-visual-v3\] \.sessionScroll\{display:contents\}/)
- assert.match(css,/\.root\[data-session-visual-v3\] \.sessionHero\{height:clamp\(268px,39dvh,360px\)/)
- assert.match(css,/\.root\[data-session-visual-v3\] \.sessionProgress\{display:none\}/)
- assert.match(css,/\.root\[data-session-visual-v3\] \.voiceCenter :global\(\[data-my-coach-voice\] button\)\{width:92px;height:92px\}/)
- assert.match(css,/@media\(max-width:699px\) and \(max-height:680px\)/)
- assert.match(css,/@media\(max-width:350px\)/)
+
+test('mobile coach starts with one Play and no recording or vendor consent checkbox',()=>{
+  const ui=read('components/my-coach-live-dialogue.jsx')
+  const loop=read('components/my-coach-speech-loop.jsx')
+  assert.match(ui,/data-session-visual-v4/)
+  const intro=read('components/my-coach-voice-introduction.jsx')
+  assert.match(ui,/\{!introductionComplete&&<MyCoachVoiceIntroduction/)
+  assert.match(intro,/<Play size=\{22\} fill="currentColor"/)
+  assert.match(ui,/onStart=\{startVoiceSession\}/)
+  assert.match(ui,/startSession\(opening,\{naturalVoice\}\)/)
+  assert.match(loop,/startSession\(introduction,\{naturalVoice=false\}=\{\}\)/)
+  assert.doesNotMatch(ui,/recordingNotice|recordedMode|recordingModeHint|voiceConsentRef|naturalVoiceRow|voiceModalNatural/)
+  assert.doesNotMatch(ui,/checked=\{cloudAgreed\}|checked=\{consent\}|Fish Audio \(reply may train models\).*<input/)
+  assert.doesNotMatch(loop,/MediaRecorder|new File\(|FormData\(|audio-storyboard|18000|stopRecordedTurn/)
+  assert.ok(ui.includes('providerCopy.disclosure'),'privacy terms remain accessible')
+  assert.ok(ui.includes('fishNotice:'),'fish provider processing is disclosed before Play')
 })
 
-test('first microphone tap starts regardless of login/probe and preserves per-tap recording disclosure',()=>{
- const ui=read('components/my-coach-live-dialogue.jsx'),loop=read('components/my-coach-speech-loop.jsx')
- assert.match(ui,/enabled=\{true\}/)
- assert.match(ui,/canStart=\{!busy&&!paused&&!replaying\}/)
- assert.match(ui,/onTurn=\{text=>sendMessage\(text,\{voiceTurn:true\}\)\}/)
- assert.match(ui,/if\(!message\|\|\(!consent&&!voiceTurn\)\|\|busy\|\|paused\)return/)
- assert.ok(ui.includes("if(authRequired||(readiness.status!=='verified'&&!wisdomRequested))"),
-   'guests and unavailable AI use private local coaching')
- assert.match(loop,/forwardRef\(function MyCoachSpeechLoop/)
- assert.match(loop,/useImperativeHandle\(ref,\(\)=>\(\{/)
- assert.match(loop,/if\(!enabled\)\{onRequestConsent\?\.\(\);return\}/)
- assert.match(loop,/if\(supported===false\)\{setNotice\(t\.unsupported\);return\}/)
- assert.match(loop,/disabled=\{!active&&!canStart\}/)
- assert.match(loop,/recognition\.start\(\)/)
- assert.doesNotMatch(ui,/localStorage|sessionStorage|checked=\{recordedMode\}|checked=\{recordingConsent\}/)
- assert.doesNotMatch(loop,/api\.fish\.audio|new WebSocket/)
- for(const locale of ['en','ru','es'])assert.ok(loop.includes(locale+':{start:'),locale)
+test('real hands-free browser recognition commits speech automatically and re-arms after coach audio',()=>{
+  const loop=read('components/my-coach-speech-loop.jsx')
+  for(const token of [
+    'recognition.interimResults=true','readDictationResults(event.results,1200)',
+    'transcriptRef.current?.(visible)','draftRef.current?.(appendSpokenAnswer',
+    'settleTimerRef.current=setTimeout','async function deliver(text)',
+    'async function speakCoachReply(result,text,generation,naturalVoice=false)',
+    'startListening()','restartSilentRecognition(recognition)',
+    'retryAttemptsRef.current>=3','if(!activeRef.current)return',
+    'onEnd:()=>{','afterSpeech()','onCancelTurn'
+  ]) assert.ok(loop.includes(token),token)
+  assert.match(loop,/onTurn|turnRef\.current\?\.\(text\)/)
+  assert.match(loop,/recognition\.onend=\(\)=>\{/)
+  assert.match(loop,/if\(finished\.length>=3\)void deliver/)
+  assert.doesNotMatch(loop,/recorder|transcribing|recordingConsentRef/)
 })
 
-test('Safari dictation is displayed only in transcript while speech status never reflows mobile controls',()=>{
- const loop=read('components/my-coach-speech-loop.jsx')
- const css=read('components/my-coach-live-dialogue.module.css')
- const ui=read('components/my-coach-live-dialogue.jsx')
- const recognition=loop.slice(loop.indexOf('recognition.onresult=event=>{'),loop.indexOf('recognition.onerror=event=>{'))
- assert.match(recognition,/transcriptRef\.current\?\.\(visible\)/,'interim and final words still reach the transcript')
- assert.match(recognition,/if\(visible\|\|interim\)setNotice\(''\)/,'recognized words clear stale status')
- assert.doesNotMatch(recognition,/setNotice\(\(visible\|\|interim\)\.slice/,'never echo the spoken text beneath the mic')
- assert.match(loop,/\{active&&!notice&&<span className=\{styles\.status\}/,'status and notice are mutually exclusive')
- assert.match(loop,/\{supported===false&&!notice&&<p className=\{styles\.note\}/,'unsupported-browser warnings do not repeat')
- assert.match(ui,/onTranscript=\{setSpeechPreview\}/)
- assert.match(ui,/onDraft=\{text=>\{setDraft\(text\);setError\(''\)\}\}/)
- assert.match(css,/\.root\[data-session-visual-v3\] \.voiceControls\{[\s\S]*?height:147px;[\s\S]*?grid-template-rows:92px;/)
- assert.match(css,/\.root\[data-session-visual-v3\] \.voiceCenter :global\(\[data-my-coach-voice\] \.status\)\{[\s\S]*?position:absolute;/)
- assert.match(css,/\.root\[data-session-visual-v3\] \.voiceCenter :global\(\[data-my-coach-voice\] \.note\)\{[\s\S]*?max-height:34px;[\s\S]*?overflow-y:auto;/)
- assert.match(css,/\.root\[data-session-visual-v3\] \.conversationPanel\{[\s\S]*?max-width:100%;/)
- for(const width of [320,354,390,430]){
-   assert.ok(width>=320&&width<=699,'target viewport uses the guarded mobile CSS')
-   assert.ok(width-46>=274,'feedback container has nonzero safe width')
- }
+test('one mobile viewport reserves space for transcript AND bottom input',()=>{
+  const ui=read('components/my-coach-live-dialogue.jsx')
+  const css=read('components/my-coach-live-dialogue.module.css')
+  assert.equal((ui.match(/className=\{styles\.conversationPanel\}/g)||[]).length,1)
+  assert.equal((ui.match(/className=\{styles\.liveTranscript\}/g)||[]).length,1)
+  assert.match(ui,/className=\{styles\.textComposer\} open/)
+  assert.match(css,/\.root\[data-session-visual-v4\]\{[\s\S]*?height:100dvh;min-height:0;max-height:100dvh;[\s\S]*?overflow:hidden/)
+  assert.match(css,/\.root\[data-session-visual-v4\] \.voiceWorkspace\{[\s\S]*?flex:1 1 auto;[\s\S]*?min-height:0/)
+  assert.match(css,/\.root\[data-session-visual-v4\] \.conversationPanel\{[\s\S]*?flex:1 1 auto;[\s\S]*?min-height:0;max-height:none/)
+  assert.match(css,/\.root\[data-session-visual-v4\] \.conversationPanel \.transcriptFeed\{[\s\S]*?overflow-y:auto/)
+  assert.match(css,/\.root\[data-session-visual-v4\] \.conversationPanel \.textComposer\{[\s\S]*?flex:0 0 auto;order:2/)
+  assert.ok(css.includes('@media(max-width:699px) and (max-height:670px)'))
+  assert.ok(css.includes('@media(max-width:699px) and (max-height:530px)'))
+  for(const width of [320,354,390,430])
+    assert.ok(width>=320&&width<=699,'all target iPhones use the single flex viewport')
 })
 
-
-test('mobile Fish consent cannot push the current chat/composer outside a bounded conversation viewport',()=>{
- const css=read('components/my-coach-live-dialogue.module.css')
- const ui=read('components/my-coach-live-dialogue.jsx')
- assert.match(css,/\.root\[data-session-visual-v3\] \.conversationPanel\{[\s\S]*?max-height:min\(38dvh,325px\);/)
- assert.match(css,/\.root\[data-session-visual-v3\] \.sessionHero\{height:clamp\(210px,33dvh,250px\)\}/)
- assert.match(css,/\.root\[data-session-visual-v3\] \.conversationPanel\{max-height:min\(42dvh,288px\)\}/)
- assert.match(css,/\.root\[data-session-visual-v3\] \.conversationPanel \.transcriptFeed\{[\s\S]*?overflow-y:auto;/)
- assert.match(css,/\.root\[data-session-visual-v3\] \.conversationPanel \.textComposer\{[\s\S]*?order:2;[\s\S]*?overflow-y:auto;/)
- assert.match(css,/\.root\[data-session-visual-v3\] \.voiceWorkspace > \.naturalVoiceRow\{[\s\S]*?order:1;/)
- assert.match(css,/\.root\[data-session-visual-v3\] \.conversationPanel \.transcriptHeading >span\[role=status\]\{display:none\}/)
- assert.ok(ui.indexOf('className={styles.voiceControls}')<ui.indexOf('className={styles.liveTranscript}'))
- assert.ok(ui.includes('className={styles.naturalVoiceRow}'),'natural voice option remains available')
- assert.ok(ui.indexOf('className={styles.voiceControls}')<ui.indexOf('className={styles.naturalVoiceRow}'))
- assert.ok(ui.indexOf('className={styles.naturalVoiceRow}')<ui.indexOf('className={styles.liveTranscript}'),
-   'first-screen natural voice choice is before the transcript rather than hidden inside it')
- assert.ok(ui.includes('ref={composerDetailsRef} className={styles.textComposer} open'),'editable reply is still open')
+test('speaking has an audible fallback and one Replay resume path',()=>{
+  const ui=read('components/my-coach-live-dialogue.jsx')
+  const loop=read('components/my-coach-speech-loop.jsx')
+  assert.ok(loop.includes('const fallback=()=>{'))
+  assert.ok(loop.includes('speakOnDevice()'),'natural-voice network failures must not be silent')
+  assert.match(loop,/resumeVoice\(\)\{/)
+  assert.ok(loop.includes('blockedResumeRef.current()'))
+  assert.ok(ui.includes('if(speechRef.current?.resumeVoice?.())return'))
+  assert.ok(ui.includes('replayPlayerRef.current.resume()'))
+  assert.ok(ui.includes('onClick={()=>replayCoachReply()}'))
+  assert.ok(loop.includes('speakReply(result){'),'typed turns also enter audible coach path')
+  assert.doesNotMatch(ui,/localStorage|sessionStorage/)
 })
 
-test('Replay explicitly rescues Safari-blocked coach audio without re-synthesizing it',()=>{
- const ui=read('components/my-coach-live-dialogue.jsx')
- const loop=read('components/my-coach-speech-loop.jsx')
- assert.match(loop,/resumeVoice\(\)\{/)
- assert.match(loop,/blockedResumeRef\.current\(\)/)
- assert.match(ui,/if\(speechRef\.current\?\.resumeVoice\?\.\(\)\)return/)
- assert.match(ui,/voiceState\.phase!=='ready'/)
- assert.match(ui,/voiceState\.phase==='ready'\?voiceGate\.tapToHear/)
-})
-
-test('one-tap iPhone reliable recording has no extra checkboxes and never bypasses server consent',()=>{
- const ui=read('components/my-coach-live-dialogue.jsx')
- const loop=read('components/my-coach-speech-loop.jsx')
- const css=read('components/my-coach-live-dialogue.module.css')
- assert.ok(ui.includes('data-reliable-voice-notice'))
- for(const text of ['Groq Whisper','Нажатием вы соглашаетесь','Al tocarlo, aceptas'])
-   assert.ok(ui.includes(text),text)
- assert.doesNotMatch(ui,/checked=\{recordingConsent\}|checked=\{recordedMode\}|onRequestRecordingConsent=/)
- assert.ok(ui.includes('canStart={!busy&&!paused&&!replaying}'))
- assert.ok(ui.includes('enabled={true}'))
- assert.ok(loop.includes('recordingConsentRef.current=false'))
- assert.ok(loop.includes('if(recordedModeRef.current)recordingConsentRef.current=true'))
- assert.ok(loop.includes("if(!recordingConsentRef.current||!Recorder||!getUserMedia)"))
- assert.ok(loop.includes("body.set('consent','yes')"))
- assert.ok(css.includes('.recordingModeHint'))
- assert.doesNotMatch(css,/\.recordingModeRow\{/)
-});
-
-test('browser speech mode explains speech-provider and AI transcript transfer before a microphone tap',()=>{
- const ui=read('components/my-coach-live-dialogue.jsx')
- const loop=read('components/my-coach-speech-loop.jsx')
- assert.match(ui,/const browserVoiceNotice=\{/)
- for(const phrase of [
-   'browser may process audio with its speech provider',
-   'Браузер может передавать звук своему сервису распознавания',
-   'El navegador puede procesar audio con su proveedor de voz',
- ])assert.ok(ui.includes(phrase),phrase)
- assert.ok(ui.includes('data-browser-voice-notice={!recordedMode?'))
- assert.ok(ui.includes('data-reliable-voice-notice={recordedMode?'))
- assert.ok(ui.includes('recordedMode?recordingNotice[lang]:browserVoiceNotice[lang]'))
- assert.match(ui,/onTurn=\{text=>sendMessage\(text,\{voiceTurn:true\}\)\}/)
- assert.match(ui,/if\(!message\|\|\(!consent&&!voiceTurn\)\|\|busy\|\|paused\)return/)
- assert.match(loop,/if\(!recordingConsentRef\.current\|\|!Recorder\|\|!getUserMedia\)/)
- assert.ok(ui.includes('canStart={!busy&&!paused&&!replaying}'))
- assert.doesNotMatch(ui,/checked=\{recordingConsent\}|checked=\{recordedMode\}/)
+test('browser recognition disclosure is in the privacy details, not a recording panel',()=>{
+  const ui=read('components/my-coach-live-dialogue.jsx')
+  const css=read('components/my-coach-live-dialogue.module.css')
+  for(const phrase of ['Browser speech recognition may send microphone audio',
+    'Браузер может отправлять звук поставщику распознавания речи',
+    'El navegador puede procesar mi voz'])
+    assert.ok(ui.includes(phrase))
+  assert.ok(ui.includes('className={styles.consentDetails}'))
+  assert.doesNotMatch(ui,/data-reliable-voice-notice|data-browser-voice-notice/)
+  assert.doesNotMatch(css.slice(css.lastIndexOf('Hands-free My Coach v4')),/\.recordingModeHint|\.naturalVoiceRow/)
 })

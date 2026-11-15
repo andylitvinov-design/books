@@ -1,7 +1,7 @@
 'use client'
 
 import {useEffect,useRef,useState} from 'react'
-import {Volume2,ArrowRight} from 'lucide-react'
+import {Play,ArrowRight} from 'lucide-react'
 import {getCoachPresentation,coachPresentationVoice} from '@/lib/coaching/persona-presentations.mjs'
 import styles from './my-coach-voice-introduction.module.css'
 
@@ -24,7 +24,7 @@ const words={
     retry:'Reintentar audio',text:'Continuar con texto',
     note:'Personaje ficticio de IA, no terapeuta. La presentación usa la voz del dispositivo y no envía tus mensajes.'},
 }
-export default function MyCoachVoiceIntroduction({personaId,locale='en',name,onReady,onVoiceStateChange}){
+export default function MyCoachVoiceIntroduction({personaId,locale='en',name,onReady,onStart,startNotice,onVoiceStateChange}){
   const lang=words[locale]?locale:'en'
   const copy=words[lang]
   const intro=getCoachPresentation(personaId,lang)
@@ -64,6 +64,13 @@ export default function MyCoachVoiceIntroduction({personaId,locale='en',name,onR
   }
   function start(){
     if(phase==='speaking')return
+    if(typeof onStart==='function'){
+      // Parent starts natural/device synthesis plus the hands-free recognizer
+      // in THIS Play gesture. Do not speak twice in a second TTS runner.
+      const accepted=onStart()
+      if(accepted!==false)readyRef.current?.()
+      return
+    }
     const synth=window.speechSynthesis,Utterance=window.SpeechSynthesisUtterance
     if(!synth?.speak||!Utterance||!intro?.text){setError(copy.unavailable);return}
     cancelAudio()
@@ -109,7 +116,7 @@ export default function MyCoachVoiceIntroduction({personaId,locale='en',name,onR
     <div className={styles.actions}>
       <button type="button" className={styles.play} onClick={start}
         disabled={phase==='speaking'} data-my-coach-start-audio-intro>
-        <Volume2 size={22} aria-hidden="true"/>
+        <Play size={22} fill="currentColor" aria-hidden="true"/>
         <span>{phase==='speaking'?copy.speaking:error?copy.retry:copy.listen}</span>
       </button>
       {(phase==='speaking'||Boolean(error))&&<button type="button" className={styles.continue}
@@ -118,6 +125,6 @@ export default function MyCoachVoiceIntroduction({personaId,locale='en',name,onR
       </button>}
     </div>
     {error&&<p className={styles.error} role="status">{error}</p>}
-    <p className={styles.note}>{copy.note}</p>
+    <p className={styles.note}>{onStart?startNotice||copy.note:copy.note}</p>
   </section>
 }

@@ -4,7 +4,7 @@ import {useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
 import {ArrowRight,Heart,Home,Keyboard,Leaf,Captions,PhoneOff,LockKeyhole,MessageCircle,Pencil,Send,ShieldCheck,Sparkles,Target,UserRound,Video,Volume2,Zap} from 'lucide-react'
 import {getCoachPersona,localCoachText,coachStagePrompt} from '@/lib/coaching/persona-registry.mjs'
-import {coachPresentationVoice} from '@/lib/coaching/persona-presentations.mjs'
+import {getCoachPresentation,coachPresentationVoice} from '@/lib/coaching/persona-presentations.mjs'
 import MyCoachVoiceIntroduction from '@/components/my-coach-voice-introduction'
 import {coachingBrainSafety,coachingBrainBoundary,coachingBrainStageDecision,offlineCoachingBrainReply,selectCoachingBrainMethod} from '@/lib/personal-coaching/coaching-brain.mjs'
 import {classifyWisdomRequest} from '@/lib/coaching/wisdom-retrieval.mjs'
@@ -14,14 +14,14 @@ import styles from './my-coach-live-dialogue.module.css'
 import MyCoachSpeechLoop from './my-coach-speech-loop'
 import {startCoachingMp3Playback} from '@/lib/personal-coaching/streamed-mp3-playback.mjs'
 import {coachSpokenText} from '@/lib/coaching/coach-spoken-text.mjs'
-import {detectedSpeechLocale,ios27NeedsSpeechRecovery} from '@/lib/personal-coaching/my-coach-dictation.mjs'
+import {detectedSpeechLocale} from '@/lib/personal-coaching/my-coach-dictation.mjs'
 import CoachingAvatar from '@/components/app/coaching-avatar'
 
 const copy={
   en:{
     badge:'Generative AI dialogue · when available',title:'Let’s talk',
     disclosure:'I’m a fictional AI coach, not a therapist. No questionnaires here — just a conversation. You choose the pace and direction.',
-    consent:'I agree to send this conversation text to GroqCloud GPT-OSS (only after the site verifies the free tier and account-level Zero Data Retention), or a verified free OpenRouter fallback. Nothing is sent until I press Send or start voice mode. Browser speech recognition may send microphone audio to its provider. Do not share passwords or document numbers.',
+    consent:'Sent conversation text may reach GroqCloud GPT-OSS only after verified free access and Zero Data Retention, or a verified free OpenRouter fallback. Text is submitted when you press Send or speak after starting the session. Browser speech recognition may send microphone audio to its provider. Never share passwords or document numbers.',
     field:'Your message',placeholder:'What’s on your mind?…',
     send:'Send',sending:'Thinking…',verifying:'Checking the free model before sending any personal text…',verified:'Free privacy-checked AI is ready.',user:'You',coach:'AI coach',ai:'Model response',wisdom:'Wisdom Library',offline:'Offline coaching question',crisis:'Safety pause',
     plan:'Possible next step — your choice',evidence:'Based on your words',back:'Back to coach',guided:'Use the guided session instead',
@@ -36,7 +36,7 @@ const copy={
   ru:{
     badge:'Генеративный AI-диалог · при доступности модели',title:'Давай поговорим',
     disclosure:'Я AI-персонаж, не психотерапевт. Здесь нет анкеты — просто разговор в вашем темпе, а направление выбираете вы.',
-    consent:'Я согласен(на) отправлять текст этого разговора в GroqCloud GPT-OSS (только после проверки бесплатного тарифа и Zero Data Retention для аккаунта) либо в проверенную бесплатную модель OpenRouter. До нажатия «Отправить» или начала голосового режима ничего не передаётся. Браузер может отправлять звук поставщику распознавания речи. Не вводите пароли и номера документов.',
+    consent:'Текст диалога может передаваться в GroqCloud GPT-OSS только после проверки бесплатного тарифа и Zero Data Retention либо в проверенную бесплатную модель OpenRouter. Отправка происходит после нажатия «Отправить» или голосового ответа в начатой сессии. Браузер может отправлять звук поставщику распознавания речи. Не сообщайте пароли и номера документов.',
     field:'Ваше сообщение',placeholder:'Что сейчас у вас на уме?…',
     send:'Отправить',sending:'Думаю…',verifying:'Проверяем бесплатную модель без передачи ваших сообщений…',verified:'Бесплатная AI-модель проверена и готова.',user:'Вы',coach:'AI-коуч',ai:'Ответ модели',wisdom:'Библиотека мудрости',offline:'Офлайн-вопрос коуча',crisis:'Пауза для безопасности',
     plan:'Возможный следующий шаг — решаете вы',evidence:'Основание — ваши слова',back:'Назад к коучу',guided:'Пройти пошаговую программу',
@@ -51,7 +51,7 @@ const copy={
   es:{
     badge:'Diálogo generativo de IA · sujeto a disponibilidad',title:'Hablemos',
     disclosure:'Soy un personaje ficticio de IA, no terapeuta. Sin cuestionarios: podemos charlar con naturalidad, a tu ritmo.',
-    consent:'Consiento enviar el texto de este diálogo a GroqCloud GPT-OSS (solo tras verificar el nivel gratuito y Zero Data Retention de la cuenta) o a un modelo gratuito verificado de OpenRouter. No se envía nada hasta pulsar Enviar o iniciar el modo de voz. El navegador puede procesar mi voz. No incluyas contraseñas ni números de documentos.',
+    consent:'El texto enviado puede procesarse en GroqCloud GPT-OSS, tras verificar el acceso gratuito y Zero Data Retention, o en otro modelo gratuito verificado. Solo se envía cuando pulsas Enviar o hablas tras iniciar la sesión. El navegador puede procesar mi voz. No compartas contraseñas ni documentos.',
     field:'Tu mensaje',placeholder:'¿Qué tienes en mente?…',
     send:'Enviar',sending:'Pensando…',verifying:'Verificando el modelo gratuito sin enviar tus mensajes…',verified:'El modelo gratuito con privacidad verificada está listo.',user:'Tú',coach:'Coach IA',ai:'Respuesta del modelo',wisdom:'Biblioteca de sabiduría',offline:'Pregunta preparada',crisis:'Pausa de seguridad',
     plan:'Posible siguiente paso — tú decides',evidence:'Basado en tus palabras',back:'Volver al coach',guided:'Usar sesión guiada',
@@ -64,16 +64,6 @@ const copy={
     failed:'La respuesta IA no pasó la validación.',retry:'El servicio IA está temporalmente inaccesible.',goal:'Comienza por tu objetivo.',
   },
 }
-const recordingNotice={
-  en:'Tap the microphone to record (up to 18 seconds); tap again to transcribe. By tapping, you agree to send this short audio to free-only Groq Whisper and its transcript to an eligible free AI coach. We do not store recordings.',
-  ru:'Нажмите микрофон для записи (до 18 секунд) и ещё раз для расшифровки. Нажатием вы соглашаетесь передать короткую запись бесплатному Groq Whisper, а её текст — доступной бесплатной AI-модели коуча. Записи не сохраняются.',
-  es:'Toca el micrófono para grabar (hasta 18 segundos) y otra vez para transcribir. Al tocarlo, aceptas enviar el audio a Groq Whisper gratuito y su texto a una IA gratuita disponible. No guardamos grabaciones.',
-}
-const browserVoiceNotice={
-  en:'Tap the microphone to use browser dictation. Your browser may process audio with its speech provider; during voice mode, recognized words can be sent to a verified free AI coach when you are signed in. Stop the microphone to end voice input.',
-  ru:'Нажмите микрофон для распознавания речи в браузере. Браузер может передавать звук своему сервису распознавания; во время голосового диалога распознанный текст может отправляться проверенной бесплатной AI-модели после входа. Остановите микрофон, чтобы завершить ввод.',
-  es:'Toca el micrófono para el dictado del navegador. El navegador puede procesar audio con su proveedor de voz; durante el diálogo, el texto reconocido puede enviarse a una IA gratuita verificada si has iniciado sesión. Detén el micrófono para finalizar.',
-}
 const avatarVisuals={
   mira:'warm',max:'clear',sofia:'calm',alex:'clear',
   lea:'calm',noah:'warm',iris:'warm',ray:'clear',
@@ -85,14 +75,14 @@ const avatarNotice={
 }
 
 const sessionUi={
-en:{choose:'Choose another coach',mode:'AI COACH · LIVE DIALOGUE',step:'Step',of:'of',topics:'What would you like to explore?',stress:'Relieve stress',energy:'Restore energy',relationships:'Improve relationships',goal:'My goal',goalPlaceholder:'Add or edit your goal…',type:'Write a message',keyboardShort:'Text',captions:'Toggle subtitles',captionsShort:'CC',replayShort:'Replay',end:'End session',replay:'Hear the coach reply',voice:'Start voice conversation',home:'Home',coaching:'My Coach',practice:'Practices',video:'Video',profile:'Profile',disclosure:'A fictional AI coach, not a therapist. Your conversation is private to this tab and is not saved to your Cabinet.',guided:'Use the guided session instead',stages:['Clarify','Explore','Awareness','New perspective','Options','Next step'],stageQuestion:'Conversation progress',safety:'Safety pause',chooseTopic:'Choose a topic to add it to your draft. Nothing is sent until you press Send.',typedGoal:'Your goal is added to your next sent message (text or voice). It stays in this tab and is not saved to your account.',goalDeferred:'Your goal was not included because the message is too long; it can be included with a shorter next message.'},
-ru:{choose:'Выбрать другого коуча',mode:'AI-КОУЧ · ЖИВОЙ ДИАЛОГ',step:'Шаг',of:'из',topics:'Что хотите исследовать?',stress:'Снизить стресс',energy:'Вернуть энергию',relationships:'Улучшить отношения',goal:'Моя цель',goalPlaceholder:'Добавьте или измените цель…',type:'Написать сообщение',keyboardShort:'Текст',captions:'Переключить субтитры',captionsShort:'CC',replayShort:'Повтор',end:'Завершить сессию',replay:'Прослушать ответ коуча',voice:'Начать голосовой разговор',home:'Главная',coaching:'Мой коуч',practice:'Практики',video:'Видео',profile:'Профиль',disclosure:'Вымышленный AI-коуч, не психотерапевт. Диалог остаётся в этой вкладке и не сохраняется в личном кабинете.',guided:'Перейти к пошаговой сессии',stages:['Прояснение','Исследование','Осознание','Новый взгляд','Варианты','Следующий шаг'],stageQuestion:'Прогресс разговора',safety:'Пауза для безопасности',chooseTopic:'Выберите тему — она добавится в черновик. Ничего не отправится без нажатия «Отправить».',typedGoal:'Цель добавится в ваше следующее отправленное сообщение (текстом или голосом). Она не сохраняется в аккаунте.',goalDeferred:'Цель не добавлена: сообщение слишком длинное. Она может войти в следующее короткое сообщение.'},
-es:{choose:'Elegir otro coach',mode:'COACH IA · DIÁLOGO EN VIVO',step:'Paso',of:'de',topics:'¿Qué te gustaría explorar?',stress:'Reducir el estrés',energy:'Recuperar energía',relationships:'Mejorar relaciones',goal:'Mi objetivo',goalPlaceholder:'Añade o edita tu objetivo…',type:'Escribir mensaje',keyboardShort:'Texto',captions:'Activar o desactivar subtítulos',captionsShort:'CC',replayShort:'Repetir',end:'Terminar sesión',replay:'Escuchar la respuesta',voice:'Iniciar conversación por voz',home:'Inicio',coaching:'Mi coach',practice:'Prácticas',video:'Vídeo',profile:'Perfil',disclosure:'Coach ficticio de IA, no terapeuta. La conversación permanece en esta pestaña y no se guarda en tu cuenta.',guided:'Usar la sesión guiada',stages:['Aclarar','Explorar','Conciencia','Nueva perspectiva','Opciones','Siguiente paso'],stageQuestion:'Progreso de la conversación',safety:'Pausa de seguridad',chooseTopic:'Elige un tema para añadirlo al borrador. Nada se envía hasta pulsar Enviar.',typedGoal:'Tu objetivo se añadirá al próximo mensaje que envíes (por texto o voz). No se guarda en tu cuenta.',goalDeferred:'El objetivo no se incluyó porque el mensaje es demasiado largo; podrás enviarlo en uno más corto.'}
+en:{choose:'Choose another coach',startSession:'Start session',fishNotice:'Play agrees to Fish Audio processing coach replies (may train models).',googleNotice:'Play uses Google Cloud to speak coach replies.',deviceVoice:'Press Play to hear your coach; the browser may process microphone audio.',mode:'AI COACH · LIVE DIALOGUE',step:'Step',of:'of',topics:'What would you like to explore?',stress:'Relieve stress',energy:'Restore energy',relationships:'Improve relationships',goal:'My goal',goalPlaceholder:'Add or edit your goal…',type:'Write a message',keyboardShort:'Text',captions:'Toggle subtitles',captionsShort:'CC',replayShort:'Replay',end:'End session',replay:'Hear the coach reply',voice:'Start voice conversation',home:'Home',coaching:'My Coach',practice:'Practices',video:'Video',profile:'Profile',disclosure:'A fictional AI coach, not a therapist. Your conversation is private to this tab and is not saved to your Cabinet.',guided:'Use the guided session instead',stages:['Clarify','Explore','Awareness','New perspective','Options','Next step'],stageQuestion:'Conversation progress',safety:'Safety pause',chooseTopic:'Choose a topic to add it to your draft. Nothing is sent until you press Send.',typedGoal:'Your goal is added to your next sent message (text or voice). It stays in this tab and is not saved to your account.',goalDeferred:'Your goal was not included because the message is too long; it can be included with a shorter next message.'},
+ru:{choose:'Выбрать другого коуча',startSession:'Начать сессию',fishNotice:'Play разрешает Fish Audio обработать ответы коуча (возможное обучение модели).',googleNotice:'Play включает озвучку коуча через Google Cloud.',deviceVoice:'Нажмите Play, чтобы услышать коуча; браузер может обрабатывать звук с микрофона.',mode:'AI-КОУЧ · ЖИВОЙ ДИАЛОГ',step:'Шаг',of:'из',topics:'Что хотите исследовать?',stress:'Снизить стресс',energy:'Вернуть энергию',relationships:'Улучшить отношения',goal:'Моя цель',goalPlaceholder:'Добавьте или измените цель…',type:'Написать сообщение',keyboardShort:'Текст',captions:'Переключить субтитры',captionsShort:'CC',replayShort:'Повтор',end:'Завершить сессию',replay:'Прослушать ответ коуча',voice:'Начать голосовой разговор',home:'Главная',coaching:'Мой коуч',practice:'Практики',video:'Видео',profile:'Профиль',disclosure:'Вымышленный AI-коуч, не психотерапевт. Диалог остаётся в этой вкладке и не сохраняется в личном кабинете.',guided:'Перейти к пошаговой сессии',stages:['Прояснение','Исследование','Осознание','Новый взгляд','Варианты','Следующий шаг'],stageQuestion:'Прогресс разговора',safety:'Пауза для безопасности',chooseTopic:'Выберите тему — она добавится в черновик. Ничего не отправится без нажатия «Отправить».',typedGoal:'Цель добавится в ваше следующее отправленное сообщение (текстом или голосом). Она не сохраняется в аккаунте.',goalDeferred:'Цель не добавлена: сообщение слишком длинное. Она может войти в следующее короткое сообщение.'},
+es:{choose:'Elegir otro coach',startSession:'Iniciar sesión',fishNotice:'Play autoriza a Fish Audio a procesar respuestas del coach (pueden entrenar modelos).',googleNotice:'Play utiliza Google Cloud para la voz del coach.',deviceVoice:'Pulsa Play para escuchar; el navegador puede procesar audio del micrófono.',mode:'COACH IA · DIÁLOGO EN VIVO',step:'Paso',of:'de',topics:'¿Qué te gustaría explorar?',stress:'Reducir el estrés',energy:'Recuperar energía',relationships:'Mejorar relaciones',goal:'Mi objetivo',goalPlaceholder:'Añade o edita tu objetivo…',type:'Escribir mensaje',keyboardShort:'Texto',captions:'Activar o desactivar subtítulos',captionsShort:'CC',replayShort:'Repetir',end:'Terminar sesión',replay:'Escuchar la respuesta',voice:'Iniciar conversación por voz',home:'Inicio',coaching:'Mi coach',practice:'Prácticas',video:'Vídeo',profile:'Perfil',disclosure:'Coach ficticio de IA, no terapeuta. La conversación permanece en esta pestaña y no se guarda en tu cuenta.',guided:'Usar la sesión guiada',stages:['Aclarar','Explorar','Conciencia','Nueva perspectiva','Opciones','Siguiente paso'],stageQuestion:'Progreso de la conversación',safety:'Pausa de seguridad',chooseTopic:'Elige un tema para añadirlo al borrador. Nada se envía hasta pulsar Enviar.',typedGoal:'Tu objetivo se añadirá al próximo mensaje que envíes (por texto o voz). No se guarda en tu cuenta.',goalDeferred:'El objetivo no se incluyó porque el mensaje es demasiado largo; podrás enviarlo en uno más corto.'}
 }
 const transcriptUi={
-  en:{heading:'Conversation · transcript',listening:'Listening',languageLabel:'Speech recognition language',autoLanguage:'Device · auto',hint:'Your spoken words will appear here. Or type your reply below.',consentShort:'I agree to send my text to the eligible free AI; browser recognition may process my voice.',details:'Privacy and data processing'},
-  ru:{heading:'Диалог · расшифровка',listening:'Слушаю',languageLabel:'Язык распознавания речи',autoLanguage:'Авто · устройство',hint:'Здесь появятся ваши слова. Можно также написать ответ ниже.',consentShort:'Согласен(на) отправлять текст бесплатной AI-модели; браузер может обрабатывать мой голос.',details:'Приватность и обработка данных'},
-  es:{heading:'Diálogo · transcripción',listening:'Escuchando',languageLabel:'Idioma de reconocimiento de voz',autoLanguage:'Auto · dispositivo',hint:'Aquí aparecerán tus palabras. También puedes escribir abajo.',consentShort:'Acepto enviar mi texto a la IA gratuita; el navegador puede procesar mi voz.',details:'Privacidad y procesamiento'},
+  en:{heading:'Conversation',listening:'Listening',languageLabel:'Speech recognition language',autoLanguage:'Device · auto',hint:'Your spoken words will appear here. Or type your reply below.',consentShort:'I agree to send my text to the eligible free AI; browser recognition may process my voice.',details:'Privacy and data processing'},
+  ru:{heading:'Диалог',listening:'Слушаю',languageLabel:'Язык распознавания речи',autoLanguage:'Авто · устройство',hint:'Здесь появятся ваши слова. Можно также написать ответ ниже.',consentShort:'Согласен(на) отправлять текст бесплатной AI-модели; браузер может обрабатывать мой голос.',details:'Приватность и обработка данных'},
+  es:{heading:'Conversación',listening:'Escuchando',languageLabel:'Idioma de reconocimiento de voz',autoLanguage:'Auto · dispositivo',hint:'Aquí aparecerán tus palabras. También puedes escribir abajo.',consentShort:'Acepto enviar mi texto a la IA gratuita; el navegador puede procesar mi voz.',details:'Privacidad y procesamiento'},
 }
 const googleChirpCopy={
   en:{label:'Natural voice · Google Chirp 3 HD',about:'Privacy',disclosure:'Optional. Up to the first 500 characters of the coach’s reply are sent to Google Cloud Text-to-Speech. Longer replies are abbreviated for speech; the full transcript stays visible. Google may process this text. No audio or text is saved by Holistic House. Use text-only for private topics if you prefer.'},
@@ -128,7 +118,9 @@ const assistantText=(result)=>result.mode==='ai' && typeof result.message==='str
 export default function MyCoachLiveDialogue({locale='en',personaId='mira',settings={},onClose,onGuided}){
   const lang=copy[locale]?locale:'en',t=copy[lang]
   const persona=getCoachPersona(personaId)
-  const [consent,setConsent]=useState(false)
+  const [sessionStarted,setSessionStarted]=useState(false)
+  const [introductionComplete,setIntroductionComplete]=useState(false)
+  const sessionStartedRef=useRef(false)
   const [draft,setDraft]=useState('')
   const [speechPreview,setSpeechPreview]=useState('')
   const [cloudAvailable,setCloudAvailable]=useState(false)
@@ -136,10 +128,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [cloudProvider,setCloudProvider]=useState(null)
   const [wizardVoice,setWizardVoice]=useState(false)
   const [speechLocale,setSpeechLocale]=useState('auto')
-  const [recordedMode,setRecordedMode]=useState(false)
   const [showCaptions,setShowCaptions]=useState(false)
   const [turns,setTurns]=useState([])
-  const [introductionComplete,setIntroductionComplete]=useState(false)
   const [busy,setBusy]=useState(false)
   const [error,setError]=useState('')
   const [authRequired,setAuthRequired]=useState(false)
@@ -156,18 +146,12 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [replayBlocked,setReplayBlocked]=useState(false)
   const [playbackNotice,setPlaybackNotice]=useState('')
   const pending=useRef(null),composerRef=useRef(null),transcriptRef=useRef(null)
-  const composerDetailsRef=useRef(null),voiceConsentRef=useRef(null),speechRef=useRef(null)
+  const composerDetailsRef=useRef(null),speechRef=useRef(null)
   const replayControllerRef=useRef(null),replayPlayerRef=useRef(null)
   const portraitHeroRef=useRef(null)
   const replaySpeechRef=useRef(null),replayTimerRef=useRef(null)
   useEffect(()=>()=>pending.current?.abort(),[])
-  useEffect(()=>setIntroductionComplete(false),[personaId])
-  useEffect(()=>{
-    // Avoid the known WebKit 27 silent-result bug by selecting the reliable mode
-    // on affected iPhones, but NEVER automatically opt in to uploading audio.
-    if(ios27NeedsSpeechRecovery(window.navigator)&&window.MediaRecorder&&
-      window.navigator.mediaDevices?.getUserMedia)setRecordedMode(true)
-  },[])
+  useEffect(()=>{setIntroductionComplete(false);setSessionStarted(false);sessionStartedRef.current=false; speechRef.current?.stopSession?.()},[personaId])
   // Private shareable voice preset, not stored in the account or sent to providers.
   useEffect(()=>{
     try{if(new URLSearchParams(window.location.search).get('voice')==='wizard')setWizardVoice(true)}
@@ -205,7 +189,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       credentials:'same-origin',cache:'no-store',signal:controller.signal,
     }).then(r=>r.ok?r.json():null).then(data=>{
       if(!controller.signal.aborted){
-        setCloudAgreed(false)
+        // A provider discovered after Play was not disclosed beforehand: keep OFF.
+        setCloudAgreed(previous=>previous&&data?.available===true)
         setCloudProvider(['google_chirp3_hd','fish_free'].includes(data?.provider)?data.provider:null)
         setCloudAvailable(data?.available===true&&['google_chirp3_hd','fish_free'].includes(data?.provider))
       }
@@ -213,7 +198,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     return ()=>controller.abort()
   },[authRequired,readiness.status])
   const name=persona?localCoachText(persona.name,lang):t.coach
-  const opening=persona?localCoachText(persona.opening,lang):t.goal
+  const opening=getCoachPresentation(personaId,lang)?.text||
+    (persona?localCoachText(persona.opening,lang):t.goal)
   const ui=sessionUi[lang]||sessionUi.en
   const voiceGate=voiceGateText[lang]||voiceGateText.en
   const captions=transcriptUi[lang]||transcriptUi.en
@@ -265,14 +251,20 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   useEffect(()=>{
     if(voiceState.phase!=='speaking')setPortraitLevel(null)
   },[voiceState.phase,personaId])
-  function changeNaturalVoice(checked){
-    setCloudAgreed(Boolean(checked))
-    if(checked){setWizardVoice(false);return}
-    // Withdrawal of cloud consent stops pending voice samples immediately.
-    replayControllerRef.current?.abort()
-    replayPlayerRef.current?.cancel()
-    replayControllerRef.current=null;replayPlayerRef.current=null
-    setReplayBlocked(false);setReplaying(false);setPlaybackNotice('')
+  function startVoiceSession(){
+    if(sessionStartedRef.current||paused)return false
+    // The visible Play notice explains provider terms before any vendor request.
+    // No audio recording, cloud upload of microphone samples, or extra checkbox.
+    const naturalVoice=cloudAvailable&&!wizardVoice&&
+      ['google_chirp3_hd','fish_free'].includes(cloudProvider)
+    const started=speechRef.current?.startSession(opening,{naturalVoice})
+    if(!started)return false
+    sessionStartedRef.current=true
+    setSessionStarted(true)
+    setIntroductionComplete(true)
+    setCloudAgreed(Boolean(naturalVoice))
+    setPlaybackNotice('')
+    return true
   }
   function replayCoachReply(overrideText){
     // A typed turn may contain the new answer before React commits transcript.
@@ -287,9 +279,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     }
     if(!spokenText||voiceState.phase!=='idle'||replaying)return
     setPlaybackNotice('');setReplayBlocked(false)
-    // Voice-only turns already have an in-page privacy notice. Fish/Chirp has
-    // its own independent, unchecked consent; the text-composer checkbox is
-    // not a prerequisite for speaking an authored coach reply.
+    // Only an explicitly started Play session can enable provider narration.
+    // Private typed-only visitors stay with device speech.
     if(cloudAgreed&&cloudAvailable&&['google_chirp3_hd','fish_free'].includes(cloudProvider)){
       const controller=new AbortController()
       replayControllerRef.current=controller
@@ -329,8 +320,6 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     const chosen=voices.find(v=>v.lang?.toLowerCase()===utterance.lang.toLowerCase())||
       voices.find(v=>v.lang?.toLowerCase().startsWith(spokenLocale+'-'))
     if(chosen)utterance.voice=chosen
-    // Keep authored personas' distinctive pace and tone throughout the
-    // conversation, not only during their spoken introductions.
     if(!wizardVoice){
       const profile=coachPresentationVoice(personaId,spokenLocale,voices)
       if(profile){
@@ -394,13 +383,6 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     }
   },[])
 
-  function approveVoiceConsent(){
-    if(busy||paused||authRequired||readiness.status==='checking')return
-    setConsent(true)
-    voiceConsentRef.current?.close()
-    // Keep recognition.start() in the actual user gesture for iOS Safari.
-    speechRef.current?.startWithConsent()
-  }
   function toggleComposer(){
     const details=composerDetailsRef.current
     if(!details)return
@@ -411,18 +393,21 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   async function send(event){
     event.preventDefault()
     const result=await sendMessage(draft.trim())
-    // Text turns use the same natural TTS path as microphone turns only after
-    // explicit voice consent. Never send safety/boundary replies to a vendor.
-    if(result?.reply&&consent&&cloudAvailable&&cloudAgreed&&
-       !['safety','boundary'].includes(result.mode))replayCoachReply(result.reply)
+    // A typed reply is still spoken during a live session; otherwise
+    // a typed-only visitor can hear it via the device voice.
+    if(result?.reply){
+      if(!sessionStartedRef.current||!speechRef.current?.speakReply?.(result))
+        replayCoachReply(result.reply)
+    }
     return result
   }
   async function sendMessage(raw,{voiceTurn=false}={}){
     let message=String(raw||'').trim()
     const responseLocale=detectedSpeechLocale(message,lang)
-    // Tapping the mic affirms the inline disclosure. Typed turns keep their
-    // separate checkbox. Never contact a model if consent is absent.
-    if(!message||(!consent&&!voiceTurn)||busy||paused)return
+    if(voiceTurn)setPlaybackNotice('')
+    // Send and Play are explicit user actions. No mic file is recorded.
+    // An unverified cloud model never sees a client turn.
+    if(!message||busy||paused)return
     // Explicit quote requests use only the already-authenticated first-party
     // Wisdom Library. They do not require a free model or contact OpenRouter.
     const wisdomRequested=Boolean(classifyWisdomRequest({
@@ -517,7 +502,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       if(pending.current===controller){pending.current=null;setBusy(false)}
     }
   }
-  return <section className={styles.root} lang={lang} data-my-coach-live-dialogue={personaId} data-my-coach-immersive-session data-session-visual-v2 data-session-visual-v3 data-introduction-complete={introductionComplete?'true':'false'}>
+  return <section className={styles.root} lang={lang} data-my-coach-live-dialogue={personaId} data-my-coach-immersive-session data-session-visual-v2 data-session-visual-v3 data-session-visual-v4 data-introduction-complete={introductionComplete?'true':'false'} data-voice-started={sessionStarted?'true':'false'}>
     <header className={styles.sessionTopbar}>
       <Link className={styles.sessionBrand} href={'/'+lang+'/coaching/sessions'} aria-label="Holistic House">
         <span className={styles.sessionBrandMark} aria-hidden="true">✿</span><span>Holistic House</span>
@@ -544,7 +529,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       </div>}
     </section>
     {!introductionComplete&&<MyCoachVoiceIntroduction personaId={personaId} locale={lang} name={name}
-      onReady={()=>setIntroductionComplete(true)} onVoiceStateChange={setVoiceState}/>}
+      onReady={()=>setIntroductionComplete(true)} onStart={startVoiceSession}
+      startNotice={cloudAvailable&&cloudProvider==='fish_free'?ui.fishNotice:
+        cloudAvailable&&cloudProvider==='google_chirp3_hd'?ui.googleNotice:ui.deviceVoice}
+      onVoiceStateChange={setVoiceState}/>}
     {introductionComplete&&<section className={styles.sessionProgress} aria-label={ui.stageQuestion}>
       <div className={styles.sessionProgressText}><strong>{ui.step} {visibleStageIndex+1} {ui.of} 6</strong>
         <span>{currentStage==='safety'?ui.safety:ui.stages[visibleStageIndex]}</span></div>
@@ -555,7 +543,6 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       </div>
     </section>}
     </div>
-    {introductionComplete&&<>
     <section className={styles.voiceWorkspace} aria-label={ui.voice}>
       <div className={styles.voiceControls}>
         <button type="button" className={styles.captionsControl} onClick={()=>setShowCaptions(value=>!value)}
@@ -567,10 +554,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         <div className={styles.voiceCenter} data-voice-active={voiceState.phase!=='idle'?'true':undefined}>
           <span className={styles.voiceWaveLeft} aria-hidden="true"><i/><i/><i/><i/><i/></span>
           <MyCoachSpeechLoop ref={speechRef} locale={lang} speechLocale={speechLocale} initialDraft={draft}
-            recordedMode={recordedMode}
             cloudAvailable={cloudAvailable} cloudAgreed={cloudAgreed} cloudProvider={cloudProvider} personaId={personaId} wizardVoice={wizardVoice} enabled={true}
             canStart={!busy&&!paused&&!replaying} onTurn={text=>sendMessage(text,{voiceTurn:true})}
-            onRequestConsent={()=>{if(!voiceConsentRef.current?.open)voiceConsentRef.current?.showModal()}}
             onCancelTurn={()=>pending.current?.abort()} onVoiceStateChange={setVoiceState} onVoiceLevel={setPortraitLevel}
             onTranscript={setSpeechPreview} onDraft={text=>{setDraft(text);setError('')}}/>
           <span className={styles.voiceWaveRight} aria-hidden="true"><i/><i/><i/><i/><i/></span>
@@ -585,21 +570,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           <PhoneOff size={21} aria-hidden="true"/><span>{lang==='ru'?'Конец':lang==='es'?'Salir':'End'}</span>
         </Link>
       </div>
-      {/* Visible from the very first microphone turn, even when the typed
-          composer consent is unchecked. Cloud speech is opt-in only. */}
-      {cloudAvailable&&!authRequired&&<div className={styles.naturalVoiceRow}>
-        <label><input type="checkbox" checked={cloudAgreed}
-          onChange={event=>changeNaturalVoice(event.target.checked)}/>
-          <span>{providerCopy.label}</span></label>
-        <details><summary>{providerCopy.about}</summary>
-          <p>{providerCopy.disclosure}</p></details>
-      </div>}
       {playbackNotice&&<p className={styles.playbackNotice} role="status">{playbackNotice}</p>}
-      <p className={styles.recordingModeHint}
-        data-reliable-voice-notice={recordedMode?'true':undefined}
-        data-browser-voice-notice={!recordedMode?'true':undefined}>
-        {recordedMode?recordingNotice[lang]:browserVoiceNotice[lang]}
-      </p>
       <div className={styles.conversationPanel}>
       <section className={styles.liveTranscript} aria-label={captions.heading} data-coach-live-transcript>
         <div className={styles.transcriptHeading}><MessageCircle size={15} aria-hidden="true"/>
@@ -636,32 +607,21 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         {!paused&&<form className={styles.composer} onSubmit={send}>
           <label htmlFor="hh-my-coach-live-input">{t.field}</label>
           <textarea ref={composerRef} id="hh-my-coach-live-input" value={draft} maxLength={1200} rows={2}
-            placeholder={t.placeholder} disabled={busy||authRequired||readiness.status==='checking'}
+            placeholder={t.placeholder} disabled={busy}
             onChange={event=>{setDraft(event.target.value);setError('')}}/>
-          <label className={styles.consent}><input type="checkbox" checked={consent}
-            disabled={busy||readiness.status==='checking'}
-            onChange={event=>{setConsent(event.target.checked);if(!event.target.checked){pending.current?.abort();replayControllerRef.current?.abort();replayPlayerRef.current?.cancel();setReplayBlocked(false);setReplaying(false);setCloudAgreed(false)}}}/>
-            <span>{captions.consentShort}</span></label>
           <button className={styles.send} type="submit"
-            disabled={!consent||busy||!draft.trim()||authRequired||readiness.status==='checking'}>
+            disabled={busy||!draft.trim()}>
             {busy?t.sending:t.send}<ArrowRight size={18} aria-hidden="true"/>
           </button>
         </form>}
         {error&&<p className={styles.error} role="alert">{error}</p>}
         <details className={styles.consentDetails}><summary>{captions.details}</summary>
-          <p>{t.consent}</p><p className={styles.privacy}><ShieldCheck size={16} aria-hidden="true"/>{t.privacy}</p>
+          <p>{t.consent}</p><p>{providerCopy.disclosure}</p><p className={styles.privacy}><ShieldCheck size={16} aria-hidden="true"/>{t.privacy}</p>
         </details>
         {onGuided&&<button className={styles.guidedFallback} type="button" onClick={onGuided}>
           {ui.guided}<ArrowRight size={16} aria-hidden="true"/>
         </button>}
       </details>
-      <div className={styles.wizardVoiceRow}>
-        <label><input type="checkbox" checked={wizardVoice}
-          disabled={voiceState.phase!=='idle'||replaying}
-          onChange={event=>{setWizardVoice(event.target.checked);if(event.target.checked)setCloudAgreed(false)}}/>
-          <span>{wizardVoiceCopy[lang].label}</span></label>
-        <small>{wizardVoiceCopy[lang].note}</small>
-      </div>
       </div>
     </section>
     <label className={styles.goalRow}><Target size={22} aria-hidden="true"/><span>{ui.goal}</span>
@@ -696,20 +656,6 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           </button>)}
         </div>
       </details>}
-    <dialog ref={voiceConsentRef} className={styles.voiceConsentDialog} aria-labelledby="hh-coach-voice-consent-title">
-      <h2 id="hh-coach-voice-consent-title">{voiceGate.title}</h2>
-      <p>{t.consent}</p>
-      {cloudAvailable&&<div className={styles.voiceModalNatural}>
-        <label><input type="checkbox" checked={cloudAgreed}
-          onChange={event=>changeNaturalVoice(event.target.checked)}/>
-          <span>{providerCopy.label}</span></label>
-        <p>{providerCopy.disclosure}</p>
-      </div>}
-      <div className={styles.voiceConsentActions}>
-        <button type="button" onClick={()=>voiceConsentRef.current?.close()}>{voiceGate.cancel}</button>
-        <button type="button" onClick={approveVoiceConsent}>{voiceGate.agree}</button>
-      </div>
-    </dialog>
     <nav className={styles.sessionBottomNav} aria-label={lang==='ru'?'Нижняя навигация':lang==='es'?'Navegación inferior':'Bottom navigation'}>
       <Link href={'/'+lang}><Home size={21} aria-hidden="true"/><span>{ui.home}</span></Link>
       <Link href={'/'+lang+'/my-coach'} aria-current="page"><MessageCircle size={21} aria-hidden="true"/><span>{ui.coaching}</span></Link>
@@ -717,6 +663,5 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       <Link href={'/'+lang+'/holistic-support/mandala'}><Video size={21} aria-hidden="true"/><span>{ui.video}</span></Link>
       <Link href={'/'+(lang==='es'?'en':lang)+'/app/portrait'}><UserRound size={21} aria-hidden="true"/><span>{ui.profile}</span></Link>
     </nav>
-    </>}
   </section>
 }
