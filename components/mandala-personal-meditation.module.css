@@ -100,3 +100,19 @@
 .courseOffer a:focus-visible{outline:3px solid #daa755;outline-offset:2px}
 .courseOffer>small{display:block;margin-top:8px;font-size:11px;line-height:1.5;color:#6b775f}
 @media(max-width:355px){.courseOutline{padding:9px}.courseDays li{grid-template-columns:46px minmax(0,1fr);padding:8px}}
+/* Explicit opt-in text generation; no overlay, no automatic external call. */
+.writerModes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:12px 0 9px}
+.writerModes button{min-height:46px;min-width:0;padding:9px;border:1px solid #c9dfce;border-radius:12px;background:#f7fbf7;color:#267054;font:800 12px/1.35 system-ui,sans-serif;cursor:pointer}
+.writerModes button[aria-pressed=true]{border-color:#198568;background:#e2f4e8;color:#075d45;box-shadow:inset 0 -2px #198568}
+.writerModes button:disabled{opacity:.55;cursor:not-allowed}
+.aiPermissions{display:grid;gap:8px;margin:9px 0 12px;padding:11px;border:1px solid #c9dfce;border-radius:13px;background:#f6faf5}
+.aiPermissions label{display:grid;grid-template-columns:21px minmax(0,1fr);align-items:start;gap:8px;color:#46644f;font:500 12px/1.45 system-ui,sans-serif}
+.aiPermissions input{width:18px;height:18px;accent-color:#087e5e;margin:1px 0 0}
+.writerOrigin{margin:0 0 9px;color:#47735e;font:700 11px/1.4 system-ui,sans-serif}
+.panel .writerModes button:focus-visible,.panel .aiPermissions input:focus-visible{outline:3px solid #3ab991;outline-offset:2px}
+
+/* Course sessions 2–8 are created only on an explicit local user action. */
+.courseSessionAction{grid-column:2;display:block;min-width:0;min-height:44px;margin-top:4px;padding:8px 10px;border:1px solid #b9d9c5;border-radius:10px;background:#edf8ef;color:#1a684d;font:800 12px/1.35 system-ui,sans-serif;cursor:pointer;text-align:left}
+.courseSessionAction[aria-pressed=true]{border-color:#128365;background:#d9f1e3;box-shadow:inset 0 -2px #128365}
+.courseSessionAction:disabled{opacity:.55;cursor:not-allowed}
+.panel .courseSessionAction:focus-visible{outline:3px solid #3ab991;outline-offset:2px}

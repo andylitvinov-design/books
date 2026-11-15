@@ -65,7 +65,11 @@ test("affirmations are opt-in and file generation is not cloud storage",()=>{
     readFileSync(new URL("../components/mandala-personal-meditation.tsx",import.meta.url),"utf8"),
     readFileSync(new URL("../lib/mandala/personal-meditation-script.mjs",import.meta.url),"utf8")
   ];
-  assert.ok(!files.some(s=>/fetch\s*\(|localStorage|sessionStorage|sendBeacon|supabase|openai\.com|analytics\.track/.test(s)));
+  assert.ok(!files.some(s=>/localStorage|sessionStorage|sendBeacon|supabase|openai\.com|analytics\.track/.test(s)));
+  assert.deepEqual([...files[0].matchAll(/\bfetch\s*\(\s*"([^"]+)"/g)].map(match=>match[1]),
+    ["/api/holistic-support/meditation-writer/brief"]);
+  assert.match(files[0],/if\(!safetyResponse&&generationMode==="ai"\)/);
+  assert.match(files[0],/generationMode==="ai"&&\(!imageryConsent\|\|!externalAiConsent\)/);
 });
 test("writer stays at end of existing video studio and receives explicit course context",()=>{
   const parent=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");

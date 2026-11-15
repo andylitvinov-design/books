@@ -163,14 +163,15 @@ test('My Coach persona dialogue speaks and listens on exactly the consented sess
   assert.match(ui,/const result=await sendMessage\(draft.trim\(\)\)/)
   assert.ok(ui.includes("!['safety','boundary'].includes(result.mode))replayCoachReply(result.reply)"),
     'typed-turn narration requires consent and never sends safety/boundary content')
-  assert.match(ui,/onTurn=\{sendMessage\}/)
-  assert.match(ui,/enabled=\{consent&&readiness.status!=='checking'&&!authRequired\}/)
+  assert.match(ui,/onTurn=\{text=>sendMessage\(text,\{voiceTurn:true\}\)\}/)
+  assert.match(ui,/enabled=\{true\}/)
   assert.match(ui,/Local-only authored fallback/)
   assert.match(ui,/coachingBrainSafety\(input\)\|\|coachingBrainBoundary\(input\)/)
   assert.match(ui,/if\(mode==='safety'\|\|\(mode==='boundary'/)
   assert.match(ui,/coachStagePrompt\(personaId,stage,responseLocale,settings\)/)
-  const sendFunction=ui.slice(ui.indexOf('async function sendMessage(raw){'))
-  assert.ok(sendFunction.indexOf("if(readiness.status!=='verified'&&!wisdomRequested){") <
+  const sendFunction=ui.slice(ui.indexOf('async function sendMessage(raw,{voiceTurn=false}={}){'))
+  assert.ok(sendFunction.indexOf("if(authRequired||(readiness.status!=='verified'&&!wisdomRequested)){") >= 0 &&
+    sendFunction.indexOf("if(authRequired||(readiness.status!=='verified'&&!wisdomRequested)){") <
     sendFunction.indexOf("fetch('/api/app/my-coach/turn'"),
     'unverified models never receive client text; first-party wisdom requests remain authenticated')
   assert.match(ui,/Browser speech recognition may send microphone audio/)
@@ -257,7 +258,7 @@ test('approved live-session visual hierarchy keeps a real voice pipeline, readab
     'showCaptions&&','className={styles.captionsControl}','setShowCaptions(value=>!value)',
     'className={styles.endControl}','className={styles.liveTranscript}','className={styles.voiceControls}',
     'className={styles.textComposer} open','<details className={styles.quickGoals}>',
-    'onTurn={sendMessage}','onTranscript={setSpeechPreview}']) assert.ok(ui.includes(token),token)
+    'onTurn={text=>sendMessage(text,{voiceTurn:true})}','onTranscript={setSpeechPreview}']) assert.ok(ui.includes(token),token)
   for(const token of ['.heroSubtitle','.transcriptFeed','.sessionBottomNav{display:none}',
     '.voiceCenter :global([data-my-coach-voice] button)','@media(max-width:350px)',
     '@media(max-width:699px) and (max-height:680px)']) assert.ok(css.includes(token),token)
@@ -373,8 +374,12 @@ test('a silent iPhone recognizer offers one-tap retry while natural-voice consen
   assert.ok(loop.includes("retryMic:'Перезапустить микрофон'"))
   assert.ok(loop.includes('aria-label={recording?r.recording:transcribing?r.transcribing:retryMic?t.retryMic:'),
     'microphone retry remains labelled in the recorded/transcribing state machine')
-  assert.ok(loop.includes("if(recordedModeRef.current&&!recordingConsentRef.current)"),
-    'recorded mode still requires separate microphone consent')
+  assert.ok(loop.includes("if(recordedModeRef.current)recordingConsentRef.current=true"),
+    'the deliberate microphone tap establishes per-turn consent')
+  assert.ok(loop.includes("if(!recordingConsentRef.current||!Recorder||!getUserMedia)"),
+    'external audio transfer stays fail-closed without microphone gesture')
+  assert.ok(!ui.includes('checked={recordingConsent}'),
+    'two redundant reliable recording checkboxes are removed')
   const checkbox=ui.slice(ui.indexOf('<label><input type="checkbox" checked={cloudAgreed}'),
     ui.indexOf('<label><input type="checkbox" checked={cloudAgreed}')+180)
   assert.ok(checkbox.includes('onChange={event=>changeNaturalVoice(event.target.checked)}'),
