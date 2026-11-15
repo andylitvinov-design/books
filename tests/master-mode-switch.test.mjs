@@ -94,6 +94,8 @@ test("Live / Work is a reversible profile-header switch to real service publishi
   assert.match(workIntro, /<details className=\{styles\.languageSwitch\} data-profile-language-switch/);
   assert.match(workIntro, /className=\{styles\.titleCompact\}>My Space/);
   assert.match(practice, /target\.closest\('\[data-profile-chrome-navigation\]'\)/);
+  assert.match(practice, /target\.closest\('\[data-profile-video-hero\]'\)/);
+  assert.match(practice, /@aatapro/);
   assert.match(practice, /data-work-profile-actions/);
   assert.match(practice, /className=\{styles\.myPageAction\} data-work-my-page/);
   assert.match(practice, /href=\{'\/' \+ locale \+ '\/my-page'\}/);
