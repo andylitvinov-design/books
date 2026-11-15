@@ -333,7 +333,7 @@ test('My Coach has private default TTS, no stale transcription, and tap-to-recov
   const media=source('lib/personal-coaching/streamed-mp3-playback.mjs')
   for(const token of ['function speakOnDevice()', 'speakOnDevice()',
     'utterance.onstart=',"setNotice('') // Clear the old user transcript",
-    "phaseRef.current==='ready'&&blockedResumeRef.current","cloudAgreed&&cloudAvailable"])
+    "phaseRef.current==='ready'&&blockedResumeRef.current","(naturalVoice||cloudAgreed)&&cloudAvailable"])
     assert.ok(loop.includes(token),token)
   for(const token of ['replayBlocked','void replayPlayerRef.current.resume()',
     'new Utterance(spokenText.slice(0,900))','onBlocked:','replaySpeechRef.current',
