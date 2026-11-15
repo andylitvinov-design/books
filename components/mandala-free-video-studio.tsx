@@ -70,7 +70,8 @@ import {paintCreativeTimelineShot,CREATIVE_TRANSITIONS,CREATIVE_LOOKS} from "@/l
 import {emptyMyTubeEditorHistory,recordMyTubeEditorUndo,undoMyTubeEditor,redoMyTubeEditor} from "@/lib/mandala/creative-editor-history.mjs";
 import {createMyTubeEditorDraft,parseMyTubeEditorDraft,MYTUBE_DRAFT_MAX_BYTES} from "@/lib/mandala/creative-editor-draft.mjs";
 import {captionAnimationFrame,importSrtCaptionClips,exportSrtCaptionClips,CAPTION_SRT_BYTES} from "@/lib/mandala/creative-editor-captions.mjs";
-import {analyzeMusicRhythm,planMusicVideoCuts,MUSIC_MV_MAX_FILE_BYTES} from "@/lib/mandala/music-to-mv.mjs";
+import {analyzeMusicRhythm,planMusicVideoCuts,readApprovedMusicMaster,MUSIC_MV_MAX_FILE_BYTES} from "@/lib/mandala/music-to-mv.mjs";
+import {audioTransientScores,recommendSmartAudioCuts} from "@/lib/mandala/creative-editor-smart-cut.mjs";
 import {extractMyTubeWaveform,MYTUBE_WAVEFORM_MAX_FILE_BYTES,
   MYTUBE_WAVEFORM_MAX_AUDIO_SECONDS} from "@/lib/mandala/creative-editor-waveform.mjs";
 import {MYTUBE_MUSIC_BEDS,MYTUBE_REVIEWED_MUSIC_BEDS,MYTUBE_BED_FADES,validateMyTubeMusicBed} from "@/lib/mandala/creative-editor-audio-lanes.mjs";
@@ -2926,13 +2927,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     try{
       ctx=new AudioContext();
       const bytes=attached.kind==="file"?await attached.file.arrayBuffer():
-        await (async()=>{
-          const response=await fetch(presetAudioUrl(attached.id),{cache:"force-cache"});
-          if(!response.ok)throw Error("missing_first_party_audio");
-          const buffer=await response.arrayBuffer();
-          if(buffer.byteLength>MUSIC_MV_MAX_FILE_BYTES)throw Error("music_too_large");
-          return buffer;
-        })();
+        await readApprovedMusicMaster(presetAudioUrl(attached.id));
       if(sourceRef.current!==sourceSignature)return;
       const sound=await ctx.decodeAudioData(bytes);
       if(sourceRef.current!==sourceSignature)return;
@@ -2945,6 +2940,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       // Never assume unverified footage has enough source seconds for a moved cut.
       let proposal=proposedFilm.shots.length===4&&rhythm.bpm!==null?
         planMusicVideoCuts(duration,proposedFilm.shots,rhythm):null;
+      // Retain the existing Smart Cut as a coarse fallback only after a credible
+      // recurring beat was detected. A transient alone is not a musical concept.
+      if(proposedFilm.shots.length===4&&rhythm.bpm!==null&&
+         proposal?.status!=="audio_aligned"){
+        const peaks=audioTransientScores(sound.getChannelData(0),sound.sampleRate,duration);
+        const prior=recommendSmartAudioCuts(duration,proposedFilm.shots,peaks);
+        if(prior.status==="audio_aligned")proposal=prior;
+      }
       if(proposal?.status==="audio_aligned"){
         try{
           compileFreeFilmPreset(preset,locale,duration,aspect,{
