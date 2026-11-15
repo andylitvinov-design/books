@@ -1,6 +1,7 @@
 'use client'
 import {useState} from 'react'
 import styles from './practitioner-video-gallery.module.css'
+import { compareVideoAuthenticity } from '@/lib/site-videos/mirrors'
 
 type VideoMaterial={title:string;description:string;locale:'en'|'ru'|'es';url:string}
 type Embed={src:string;poster:string}
@@ -38,7 +39,8 @@ export default function PractitionerVideoGallery({videos,locale='en',variant='de
  const t=labels[locale as keyof typeof labels]||labels.en
  const entries=(videos||[]).map((video,index)=>({video,index,embed:embedFor(video.url)}))
   .filter((item):item is {video:VideoMaterial;index:number;embed:Embed}=>Boolean(item.embed))
-  .sort((a,b)=>Number(b.video.locale===locale)-Number(a.video.locale===locale))
+  .sort((a,b)=>compareVideoAuthenticity(a.video,b.video)
+    || Number(b.video.locale===locale)-Number(a.video.locale===locale))
  if(!entries.length)return null
  const visible=showAll?entries:entries.slice(0,6)
  return <section id="practitioner-videos" className={styles.section+(variant==='compact'?' '+styles.compact:'')} aria-labelledby="practitioner-video-gallery-title">
