@@ -93,7 +93,7 @@ test('direct HTML5 playback starts during Play and streams without waiting for B
   assert.throws(()=>startDirectCoachIntroAudio('/api/app/private',{environment}),/COACH_INTRO_AUDIO_INVALID/)
   const speech=source('components/my-coach-speech-loop.jsx')
   const intro=speech.slice(speech.indexOf("if(result.mode==='intro'){"),
-    speech.indexOf("if((naturalVoice||cloudAgreed)"))
+    speech.indexOf("const {cloudAgreed:voiceAgreed"))
   assert.ok(intro.includes('startDirectCoachIntroAudio(url,'))
   assert.ok(intro.includes('afterSpeech()'))
   assert.ok(!intro.includes('await fetch('))
