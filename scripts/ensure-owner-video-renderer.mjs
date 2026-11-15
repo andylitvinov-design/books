@@ -74,4 +74,17 @@ if(process.argv.includes('--verify-trace')){
    process.exit(1)
  }
  console.log('HH_OWNER_VIDEO_FFMPEG_TRACE_READY')
+ // The CRM bot only redirects verified owner commands to Dot. A native binary
+ // in this route would duplicate Function Storage for every retained release.
+ const crmTraceFile=join(process.cwd(),
+   '.next/server/app/api/app/crm/messenger/webhook/[provider]/route.js.nft.json')
+ let crmPaths=[]
+ try{crmPaths=JSON.parse(readFileSync(crmTraceFile,'utf8')).files||[]}
+ catch{console.error('HH_OWNER_VIDEO_CRM_FFMPEG_TRACE_MISSING');process.exit(1)}
+ if(crmPaths.some(file=>typeof file==='string'&&
+   file.replaceAll('\\','/').endsWith('/node_modules/ffmpeg-static/ffmpeg'))){
+   console.error('HH_OWNER_VIDEO_CRM_FFMPEG_RETRACED')
+   process.exit(1)
+ }
+ console.log('HH_OWNER_VIDEO_CRM_FFMPEG_NOT_TRACED')
 }
