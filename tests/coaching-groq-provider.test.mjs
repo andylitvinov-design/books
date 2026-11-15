@@ -35,6 +35,7 @@ test('only server-side Groq JSON completion, no reasoning transcript or automati
     assert.equal(request.model,GROQ_COACH_MODEL)
     assert.equal(request.include_reasoning,false)
     assert.equal(request.reasoning_effort,'medium')
+    assert.equal(request.temperature,0.6)
     assert.equal(request.response_format.type,'json_schema')
     assert.equal(request.response_format.json_schema.strict,true)
     const schema=request.response_format.json_schema.schema
