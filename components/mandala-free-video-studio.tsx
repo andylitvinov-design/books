@@ -70,7 +70,7 @@ import {paintCreativeTimelineShot,CREATIVE_TRANSITIONS,CREATIVE_LOOKS} from "@/l
 import {emptyMyTubeEditorHistory,recordMyTubeEditorUndo,undoMyTubeEditor,redoMyTubeEditor} from "@/lib/mandala/creative-editor-history.mjs";
 import {createMyTubeEditorDraft,parseMyTubeEditorDraft,MYTUBE_DRAFT_MAX_BYTES} from "@/lib/mandala/creative-editor-draft.mjs";
 import {captionAnimationFrame,importSrtCaptionClips,exportSrtCaptionClips,CAPTION_SRT_BYTES} from "@/lib/mandala/creative-editor-captions.mjs";
-import {audioTransientScores,recommendSmartAudioCuts,SMART_CUT_MAX_AUDIO_BYTES} from "@/lib/mandala/creative-editor-smart-cut.mjs";
+import {analyzeMusicRhythm,planMusicVideoCuts,MUSIC_MV_MAX_FILE_BYTES} from "@/lib/mandala/music-to-mv.mjs";
 import {extractMyTubeWaveform,MYTUBE_WAVEFORM_MAX_FILE_BYTES,
   MYTUBE_WAVEFORM_MAX_AUDIO_SECONDS} from "@/lib/mandala/creative-editor-waveform.mjs";
 import {MYTUBE_MUSIC_BEDS,MYTUBE_REVIEWED_MUSIC_BEDS,MYTUBE_BED_FADES,validateMyTubeMusicBed} from "@/lib/mandala/creative-editor-audio-lanes.mjs";
@@ -2498,6 +2498,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const editorDraftInputRef=useRef<HTMLInputElement>(null);
   const subtitleFileInputRef=useRef<HTMLInputElement>(null);
   const [smartCutBusy,setSmartCutBusy]=useState(false);
+  const [musicMvReport,setMusicMvReport]=useState<{bpm:number|null;confidence:number;status:string}|null>(null);
   const editorDraftEpochRef=useRef(0);
   const localEditorHistoryRef=useRef<EditorHistoryState>(emptyMyTubeEditorHistory() as EditorHistoryState);
   const [editorHistoryAvailability,setEditorHistoryAvailability]=useState({undo:false,redo:false});
@@ -2887,45 +2888,106 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         "Subtitles could not be exported.");
     }
   };
+  // One audio-first route upgrades the existing Montage and Storyboard. It
+  // neither uploads the song nor creates a second exporter or paid generation.
   const smartCutFromAudio=async()=>{
-    if(recording||preparing||smartCutBusy||!usingFreeFilmCompilation||
-       !cinematicPlan||attachedAudio?.kind!=="file")return;
-    const file=attachedAudio.file;
-    if(!file.size||file.size>Math.min(SMART_CUT_MAX_AUDIO_BYTES,8*1024*1024)){
-      setNotice(locale==="ru"?"Для анализа ритма выберите аудиофайл до 8 МБ.":
-        locale==="es"?"Selecciona un archivo de audio de hasta 8 MB.":
-        "Choose an audio file up to 8 MB for beat analysis.");return;
+    if(recording||preparing||smartCutBusy)return;
+    const attached=attachedAudio;
+    if(!attached||attached.kind==="presets"){
+      setNotice(locale==="ru"?"Выберите одну аудиодорожку для клипа.":locale==="es"?
+        "Selecciona una sola pista para el vídeo.":"Choose one music track for the video.");return;
     }
-    setSmartCutBusy(true);
+    if(attached.kind==="file"&&(!audioRights||!attached.file.size||
+       attached.file.size>MUSIC_MV_MAX_FILE_BYTES)){
+      setNotice(locale==="ru"?"Подтвердите права и выберите аудиофайл не больше 8 МБ.":
+        locale==="es"?"Confirma los derechos y elige un archivo de hasta 8 MB.":
+        "Confirm music rights and choose an audio file up to 8 MB.");return;
+    }
+    if(attached.kind==="preset"&&!curatedAudioTracks.some(track=>track.id===attached.id)){
+      setNotice(locale==="ru"?"Для видеоклипа нужна проверенная музыкальная запись.":
+        locale==="es"?"Elige una grabación musical verificada.":
+        "Choose a reviewed licensed recording.");return;
+    }
+    const preset=FREE_FILM_PRESETS.find(item=>item.id===activeFreeFilmPreset)||
+      aspectFilmPresets.find(item=>item.theme===theme);
+    if(!preset){setNotice(ui.videoUnavailable);return;}
+    let proposedFilm:CinematicStoryboard;
+    try{
+      proposedFilm=usingFreeFilmCompilation&&cinematicPlan?cinematicPlan:
+        compileFreeFilmPreset(preset,locale,duration,aspect);
+    }catch{
+      setNotice(locale==="ru"?"Для выбранного формата не хватило подтверждённых видеосцен. Смените формат или тему.":
+        locale==="es"?"No hay suficientes escenas con licencia para este formato.":
+        "Not enough verified source clips for this aspect. Try another format.");return;
+    }
+    setSmartCutBusy(true);setMusicMvReport(null);
     const sourceSignature=sourceRef.current;
     let ctx:AudioContext|null=null;
     try{
       ctx=new AudioContext();
-      const audio=await ctx.decodeAudioData(await file.arrayBuffer());
+      const bytes=attached.kind==="file"?await attached.file.arrayBuffer():
+        await (async()=>{
+          const response=await fetch(presetAudioUrl(attached.id),{cache:"force-cache"});
+          if(!response.ok)throw Error("missing_first_party_audio");
+          const buffer=await response.arrayBuffer();
+          if(buffer.byteLength>MUSIC_MV_MAX_FILE_BYTES)throw Error("music_too_large");
+          return buffer;
+        })();
       if(sourceRef.current!==sourceSignature)return;
-      const pulses=audioTransientScores(audio.getChannelData(0),audio.sampleRate,duration);
-      const proposal=recommendSmartAudioCuts(duration,cinematicPlan.shots,pulses);
-      if(proposal.status!=="audio_aligned"){
-        setNotice(locale==="ru"?"В аудио нет достаточно чётких ритмических акцентов: исходный монтаж сохранён.":
-          locale==="es"?"No se detectó un ritmo claro: el montaje no cambia.":
-          "No clear beats detected; your current edit is unchanged.");return;
+      const sound=await ctx.decodeAudioData(bytes);
+      if(sourceRef.current!==sourceSignature)return;
+      if(sound.duration+0.06<duration){
+        setNotice(locale==="ru"?"Музыка короче видео. Выберите меньшую длительность ролика.":
+          locale==="es"?"La música es más corta que el vídeo. Reduce la duración.":
+          "Music is shorter than the video. Select a shorter video duration.");return;
       }
-      recordBeforeEditorChange("smart-audio-cut");
-      setCinematicPlan(current=>{
-        if(current?.version!==FREE_FILM_PLAN_VERSION)return current;
-        const nextShots=current.shots.map((shot,i)=>({...shot,
-          startSeconds:proposal.shots[i].startSeconds,
-          durationSeconds:proposal.shots[i].durationSeconds}));
-        return {...current,shots:nextShots} as CinematicStoryboard;
-      });
-      stopMovieSound();setPreviewPlaying(false);setPreviewFrameRevision(v=>v+1);
-      setNotice(locale==="ru"?"Четыре видеосцены выровнены по ритмическим акцентам аудио. Проверьте результат.":
-        locale==="es"?"Cuatro escenas ajustadas a los acentos musicales; revisa el resultado.":
-        "Four scenes aligned to audio transients. Review the resulting cuts.");
+      const rhythm=analyzeMusicRhythm(sound.getChannelData(0),sound.sampleRate,duration);
+      // Never assume unverified footage has enough source seconds for a moved cut.
+      let proposal=proposedFilm.shots.length===4&&rhythm.bpm!==null?
+        planMusicVideoCuts(duration,proposedFilm.shots,rhythm):null;
+      if(proposal?.status==="audio_aligned"){
+        try{
+          compileFreeFilmPreset(preset,locale,duration,aspect,{
+            clipIds:proposal.shots.map(shot=>shot.sceneId),
+            durationSecondsByStage:proposal.shots.map(shot=>shot.durationSeconds),
+            captionTexts:proposedFilm.shots.map(shot=>shot.overlayText||"")
+          });
+        }catch{proposal=null;}
+      }
+      const nextFilm=proposal?.status==="audio_aligned"?
+        {...proposedFilm,shots:proposedFilm.shots.map((shot,index)=>({
+          ...shot,startSeconds:proposal.shots[index].startSeconds,
+          durationSeconds:proposal.shots[index].durationSeconds
+        }))} as CinematicStoryboard:proposedFilm;
+      if(sourceRef.current!==sourceSignature)return;
+      if(usingFreeFilmCompilation&&cinematicPlan)recordBeforeEditorChange("music-to-mv");
+      else{
+        resetEditorHistory();setCreationMode("catalog");
+        setActiveFreeFilmPreset(preset.id);
+        setTheme(preset.theme);setVideoCategory(preset.theme);
+        setTimelineTextClips(null);
+      }
+      setCinematicPlan(nextFilm);
+      setPreviewSeekSeconds(0);setPreviewPlayhead(0);
+      stopMovieSound();setPreviewPlaying(false);setPreviewFrameRevision(value=>value+1);
+      setMusicMvReport({bpm:rhythm.bpm,confidence:rhythm.confidence,
+        status:proposal?.status==="audio_aligned"?"audio_aligned":"visual_storyboard"});
+      setMontagePanel("concept");
+      setNotice(locale==="ru"
+        ?rhythm.bpm!==null
+          ?`Музыкальный видеоряд подготовлен. Темп около ${rhythm.bpm} BPM. Проверьте концепт и кадры перед экспортом.`
+          :"Видеоряд подобран по выбранной теме. Уверенный ритм не обнаружен — монтаж сохранён без ложных ударов."
+        :locale==="es"
+          ?rhythm.bpm!==null
+            ?`Vídeo musical preparado · ~${rhythm.bpm} BPM. Revisa las escenas antes de exportar.`
+            :"Vídeo preparado por tema; sin ritmo fiable, no cambiamos los cortes."
+          :rhythm.bpm!==null
+            ?`Music video prepared · ~${rhythm.bpm} BPM. Review the concept and shots before export.`
+            :"Storyboard prepared from the selected theme; no reliable beat detected, so original cuts are kept.");
     }catch{
-      setNotice(locale==="ru"?"Не удалось проанализировать аудио на этом устройстве.":
-        locale==="es"?"No se pudo analizar este audio en el dispositivo.":
-        "Could not analyze this audio on this device.");
+      setNotice(locale==="ru"?"Не удалось обработать эту музыку на устройстве. Попробуйте MP3 или M4A.":
+        locale==="es"?"No se pudo analizar el audio en este dispositivo.":
+        "Could not analyze this soundtrack on your device. Try MP3 or M4A.");
     }finally{
       if(ctx)void ctx.close().catch(()=>{});
       setSmartCutBusy(false);
@@ -9117,6 +9179,28 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 disabled={recording||preparing||micRecording||audioDurationInvalid||!audioRights}
                 onClick={attachSelectedAudio}>{audioNeedsAttachment?audioUi.attach:audioUi.attached}</button>
             </div>:null}
+            <div className={videoStyles.montageAdvancedShortcuts} data-video-music-to-mv>
+              <button type="button" data-video-music-to-mv-create
+                disabled={recording||preparing||smartCutBusy||!attachedAudio||
+                  attachedAudio.kind==="presets"||(attachedAudio.kind==="file"&&!audioRights)}
+                onClick={()=>void smartCutFromAudio()}>
+                <Film size={17} aria-hidden="true"/>
+                {smartCutBusy?(locale==="ru"?"Анализируем музыку…":locale==="es"?
+                    "Analizando música…":"Analyzing music…"):
+                  locale==="ru"?"Создать видеоряд под музыку":locale==="es"?
+                    "Crear vídeo con música":"Create video to music"}
+              </button>
+            </div>
+            {musicMvReport?<p role="status" data-video-music-to-mv-report>
+              {musicMvReport.bpm===null
+                ?locale==="ru"?"Монтаж основан на вашей теме; точный BPM не определён.":
+                  locale==="es"?"Montaje por tema; BPM no detectado.":"Theme-based montage; BPM not detected."
+                :(`~${musicMvReport.bpm} BPM · `)+
+                  (musicMvReport.status==="audio_aligned"
+                    ?locale==="ru"?"Сцены синхронизированы":locale==="es"?"Escenas sincronizadas":"Shots synced"
+                    :locale==="ru"?"Исходные монтажные точки сохранены":
+                      locale==="es"?"Cortes originales conservados":"Original cuts retained")}
+            </p>:null}
             <div className={videoStyles.montageAudioVolume}>
               <label htmlFor="montage-audio-volume"><AudioLines size={18} aria-hidden="true"/>
                 {locale==="ru"?"Громкость":locale==="es"?"Volumen":"Volume"} · {soundVolume}%
