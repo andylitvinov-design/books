@@ -468,3 +468,39 @@ test('iPhone buffered MP3 animates from decoded actual waveform without another 
   assert.match(page,/onLevel:level=>\{if\(!controller\.signal\.aborted/)
   assert.match(loop,/onLevel:level=>\{if\(live\(\)\)levelRef\.current\?\.\(level\)/)
 })
+
+
+test('one iPhone Play primes the MP3 audio element and blocked cloud speech never requires Replay',async()=>{
+  const {primeCoachingAudioGesture,startCoachingMp3Playback}=
+    await import('../lib/personal-coaching/streamed-mp3-playback.mjs')
+  let created=0,plays=0,starts=0,urls=0,revoked=0
+  class MockAudio {
+    constructor(){created++;this.src=''}
+    play(){plays++;this.onplaying?.();return Promise.resolve()}
+    pause(){}
+    removeAttribute(){this.src=''}
+    load(){}
+  }
+  const env={Audio:MockAudio,Blob,URL:{
+    createObjectURL:()=> 'blob:coach-'+(++urls),revokeObjectURL:()=>revoked++}}
+  const unlocked=primeCoachingAudioGesture(env)
+  assert.ok(unlocked,'initial Play primes audio in this event gesture')
+  assert.equal(created,1);assert.equal(plays,1)
+  await Promise.resolve()
+  const player=startCoachingMp3Playback({body:null,blob:async()=>new Blob(['ID3'])},{
+    environment:env,audioElement:unlocked,onStart:()=>starts++
+  })
+  await player.run
+  assert.equal(created,1,'never create a second autoplay-restricted iOS audio element')
+  assert.equal(player.audio,unlocked)
+  assert.equal(plays,2);assert.equal(starts,1)
+  player.cancel()
+  assert.ok(revoked>=2,'temporary audio URLs are revoked after playback')
+  const loop=source('components/my-coach-speech-loop.jsx')
+  assert.match(loop,/primedAudioRef.current=primeCoachingAudioGesture\(\)/)
+  assert.match(loop,/audioElement:primedAudioRef.current/)
+  const blocked=loop.slice(loop.indexOf('          onBlocked:()=>{'),loop.indexOf('          onEnd:()=>{',loop.indexOf('          onBlocked:()=>{')))
+  assert.match(blocked,/speakOnDevice\(\)/)
+  assert.doesNotMatch(blocked,/changePhase\('ready'\)|player\.resume\(\)/)
+  assert.doesNotMatch(loop,/MediaRecorder|startRecordedTurn|audio-storyboard/)
+})
