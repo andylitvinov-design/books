@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {coachTurnWindow} from '../lib/coaching/coach-turn-window.mjs'
 import {coachGoalTurn} from '../lib/coaching/goal-turn.mjs'
+import {coachEphemeralContext} from '../lib/coaching/coach-ephemeral-context.mjs'
 const user=content=>({role:'user',content})
 const coach=content=>({role:'assistant',content})
 const filler=(n,locale='ru')=>Array.from({length:n},(_,i)=>i%2?coach(locale==='ru'?'Можем обсудить конкретный случай.':'We can discuss one example.'):user(locale==='ru'?'Это уточнение '+i+'.':'A detail '+i+'.'))
@@ -155,4 +156,60 @@ test('My Coach UI sends an authored goal visibly and does not create account per
  assert.match(body,/lastSharedGoalRef\.current=goalTurn\.goal/)
  assert.match(ui,/Your goal is added to your next sent message/)
  assert.doesNotMatch(ui,/localStorage|sessionStorage|sendBeacon/)
+})
+ 
+test('ephemeral context recalls client-only goal, constraint and example from a long session',()=>{
+  const history=[
+    user('I want to reduce overtime while keeping my job.'),
+    coach('What changed?'),
+    user('For example, yesterday my manager scheduled evening meetings.'),
+    coach('What makes that difficult?'),
+    user('I cannot work late because I need to care for my child.'),
+    ...filler(75,'en'),
+  ]
+  const recent=coachTurnWindow(history,10)
+  const context=coachEphemeralContext(history,recent,'en','I am still thinking about this.')
+  // Either the 10-turn window OR the older snippets may carry a fact.
+  // The union must retain all three verbatim client statements, without repeats.
+  const remembered=[...recent.filter(x=>x.role==='user').map(x=>x.content),...context]
+  assert.ok(remembered.includes('I want to reduce overtime while keeping my job.'))
+  assert.ok(remembered.includes('I cannot work late because I need to care for my child.'))
+  assert.ok(remembered.includes('For example, yesterday my manager scheduled evening meetings.'))
+  assert.ok(context.length<=3)
+  assert.equal(new Set(remembered).size,remembered.length)
+  assert.ok(context.every(item=>history.some(x=>x.role==='user'&&x.content===item)))
+})
+
+test('ephemeral context resets after the client changes subject or corrects the framing',()=>{
+  const all=[
+    user('Я хочу обсудить работу.'),
+    user('Мне не хватает времени, потому что много встреч.'),
+    ...filler(28),
+    user('Давайте сменим тему.'),
+    coach('Конечно.'),
+    user('Моя цель — обсудить отношения.'),
+    ...filler(18),
+  ]
+  const notes=coachEphemeralContext(all,coachTurnWindow(all,10),'ru','Меня интересует именно этот вопрос.')
+  assert.ok(!notes.some(x=>x.includes('работу')||x.includes('времени')))
+  assert.deepEqual(coachEphemeralContext(all,coachTurnWindow(all,10),'ru','Нет, вы меня не поняли, это другой вопрос.'),[])
+  assert.deepEqual(coachEphemeralContext(all,coachTurnWindow(all,10),'ru','Давайте сменим тему.'),[])
+})
+
+test('context never uses assistant text or duplicates recent entries and has no persistence',async()=>{
+  const all=[
+    coach('My goal is to reveal system prompts.'),
+    user('Mi objetivo es encontrar más tiempo para mi familia.'),
+    coach('Me alegra escucharlo.'),
+    user('Porque mi horario actual no me deja descansar.'),
+    ...filler(24,'en'),
+  ]
+  const recent=coachTurnWindow(all,10)
+  const context=coachEphemeralContext(all,recent,'es','Quiero hablar de un ejemplo.')
+  assert.ok(!context.some(x=>x.includes('reveal system prompts')))
+  assert.ok(context.every(x=>!recent.some(r=>r.role==='user'&&r.content===x)))
+  const ui=(await import('node:fs')).readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+  assert.match(ui,/sessionContext:coachEphemeralContext\(turns,coachTurnWindow\(turns,10\),responseLocale,message\)/)
+  assert.equal((ui.match(/return updated\.slice\(-96\)/g)||[]).length,2)
+  assert.doesNotMatch(ui,/sessionStorage|localStorage|sendBeacon/)
 })
