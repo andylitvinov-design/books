@@ -79,7 +79,7 @@ function recommendationPortrait(item:AgentReply["suggestions"][number]):string {
   return art[item.kind]||"/images/holistic-house/reiki-approved-sunrise-v3.webp";
 }
 const copy = {
-  ru:{ title:"Разговор с AI-проводником",disclosure:"Я — AI-проводник Holistic House, не человек и не психотерапевт.",
+  ru:{ title:"Разговор с Ali",disclosure:"Я Ali — ИИ-помощник Holistic House, не человек и не психотерапевт.",
     intro:"Опишите запрос свободно. По вашему согласию можно учесть проверенные результаты выбранной темы без передачи баллов нейросети.",
     placeholder:"Что сейчас для вас важно?",send:"Отправить",cancel:"Остановить",mode:"Способ ответа",
     rules:"Без нейросети",device:"AI на устройстве (может потребоваться загрузка модели)",owned:"AI на нашем сервере (с согласия)",
@@ -103,7 +103,7 @@ const copy = {
     programError:"Не удалось сформировать план. Проверьте вход в кабинет или выберите другую тему.",
     programReady:"План готов для ознакомления, не опубликован. Медиафайлы не создавались.",programEmpty:"Выберите тему и подтвердите готовность.",
     programStep:"Шаг",programNoMedia:"Сценарный план — не готовое видео."},
-  en:{ title:"Chat with the AI guide",disclosure:"I am Holistic House's AI guide, not a human or a therapist.",
+  en:{ title:"Chat with Ali",disclosure:"I'm Ali, Holistic House's AI guide, not a human or a therapist.",
     intro:"Describe your question. With your permission, verified results for your selected topic can inform suggestions without sharing scores with a model.",
     placeholder:"What's on your mind?",send:"Send",cancel:"Stop",mode:"Response mode",
     rules:"Without a language model",device:"On-device AI (may download a model)",owned:"Our AI server (with consent)",
@@ -127,7 +127,7 @@ const copy = {
     programError:"Could not prepare the outline. Check your account or choose another topic.",
     programReady:"Draft outline, not published. No media was generated.",programEmpty:"Choose a topic and confirm readiness.",
     programStep:"Step",programNoMedia:"Written outline, not a finished video."},
-  es:{ title:"Habla con el asistente de IA",disclosure:"Soy el asistente de IA de Holistic House, no una persona ni terapeuta.",
+  es:{ title:"Habla con Ali",disclosure:"Soy Ali, el asistente de IA de Holistic House, no una persona ni terapeuta.",
     intro:"Describe tu pregunta. Con tu permiso se pueden considerar resultados del eje elegido sin enviar puntuaciones al modelo.",
     placeholder:"¿Qué te preocupa ahora?",send:"Enviar",cancel:"Detener",mode:"Tipo de respuesta",
     rules:"Sin modelo de IA",device:"IA en el dispositivo (puede descargar un modelo)",owned:"Nuestro servidor de IA (con permiso)",
