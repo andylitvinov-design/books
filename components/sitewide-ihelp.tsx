@@ -191,6 +191,8 @@ export function SitewideIHelp(){
    setMounted(true);
    setOpen(true);
  }
+ // This route has its own visible Ali secretary chat; avoid an overlapping iHelp bubble.
+ if(/^\/(?:ru|en|es)\/my-coach\/real\/[a-z0-9-]+\/?$/.test(pathname))return null;
  return <>
    <button type="button" ref={launcher} className={styles.launcher}
      data-hh-ihelp-trigger aria-label={t.open} aria-haspopup="dialog"

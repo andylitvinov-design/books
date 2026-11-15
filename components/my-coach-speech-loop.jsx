@@ -7,6 +7,7 @@ import {appendSpokenAnswer} from '@/lib/personal-coaching/speech-text.js'
 import {chooseDictationLanguage,readDictationResults,detectedSpeechLocale,ios27NeedsSpeechRecovery} from '@/lib/personal-coaching/my-coach-dictation.mjs'
 import {startCoachingMp3Playback,primeCoachingAudioGesture,unlockCoachingAudioContext,shouldUseCoachingWebAudio} from '@/lib/personal-coaching/streamed-mp3-playback.mjs'
 import {coachSpokenText} from '@/lib/coaching/coach-spoken-text.mjs'
+import {coachIntroAudioPath,startDirectCoachIntroAudio} from '@/lib/personal-coaching/direct-coach-intro-audio.mjs'
 
 const words={
   en:{start:'Talk by voice',stop:'Stop voice',retryMic:'Retry microphone',listening:'Listening…',thinking:'Coach is thinking…',speaking:'Speaking…',
@@ -49,6 +50,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   const cloudControllerRef=useRef(null)
   const cloudPlayerRef=useRef(null)
   const introControllerRef=useRef(null),introPlayerRef=useRef(null)
+  const microphonePermissionRef=useRef(null)
   const primedAudioRef=useRef(null),audioContextRef=useRef(null)
   const speakingRef=useRef(false)
   const speechTimerRef=useRef(null),blockedResumeRef=useRef(null),utteranceRef=useRef(null)
@@ -129,9 +131,28 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     changePhase('idle')
   }
   stopRef.current=stopVoice
+
+  // Request iPhone mic permission in the very SAME Play gesture, without
+  // recording or uploading audio. Immediately release the temporary stream;
+  // the actual Web Speech recognizer starts AFTER the coach finishes.
+  function primeMicrophonePermission(){
+    if(microphonePermissionRef.current)return
+    const getUserMedia=window.navigator.mediaDevices?.getUserMedia
+    if(!getUserMedia)return
+    try{
+      const request=window.navigator.mediaDevices.getUserMedia({audio:true})
+      microphonePermissionRef.current=request
+      void request.then(stream=>{
+        for(const track of stream.getTracks())track.stop()
+      }).catch(()=>{microphonePermissionRef.current=null})
+    }catch{microphonePermissionRef.current=null}
+  }
+
   useImperativeHandle(ref,()=>({
     startSession(introduction,{naturalVoice=false}={}){
       if(activeRef.current||!enabled||!canStart)return false
+      // The hero Play must grant the same voice consent as the toolbar Play.
+      sessionStartRef.current?.()
       activeRef.current=true
       introStartedRef.current=true
       generationRef.current+=1
@@ -142,6 +163,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       // Play is the single deliberate gesture that starts coach audio followed
       // by browser recognition. No recording, upload or second mic tap.
       void speakCoachReply({reply:String(introduction||'').slice(0,900),mode:'intro'},'',generationRef.current,naturalVoice)
+      primeMicrophonePermission()
       return true
     },
     startWithConsent(){
@@ -464,20 +486,20 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     // the public, globally rate-limited Fish S2.1 free route. No client audio,
     // client transcript or arbitrary text is exposed through this endpoint.
     if(result.mode==='intro'){
+      const url=coachIntroAudioPath(personaId,lang)
+      if(!url){showTextOnly();return}
       const controller=new AbortController()
       introControllerRef.current=controller
       try{
-        const response=await fetch('/api/coaching/intro?'+new URLSearchParams({
-          coach:personaId,locale:lang
-        }),{method:'GET',credentials:'omit',cache:'force-cache',signal:controller.signal})
-        if(!response.ok||!response.body)throw Error('COACH_INTRO_MP3_UNAVAILABLE')
-        if(!live()||controller.signal.aborted)return
-        introPlayerRef.current=startCoachingMp3Playback(response,{
-          audioElement:primedAudioRef.current,audioContext:audioContextRef.current,
-          onLevel:level=>{if(live())levelRef.current?.(level)},
-          onStart:()=>{if(live()){setNotice('');changePhase('speaking')}},
+        // Direct MediaElement.play() executes in the original user gesture.
+        // Safari streams audio progressively instead of waiting for a
+        // complete MP3 Blob and WebAudio decode.
+        introPlayerRef.current=startDirectCoachIntroAudio(url,{
+          onStart:()=>{
+            if(live()&&!controller.signal.aborted){setNotice('');changePhase('speaking')}
+          },
           onEnd:()=>{
-            if(!live())return
+            if(!live()||controller.signal.aborted)return
             introControllerRef.current=null
             introPlayerRef.current?.cancel()
             introPlayerRef.current=null
@@ -486,7 +508,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
           onBlocked:()=>{if(live())showTextOnly()},
           onError:()=>{if(live())showTextOnly()},
         })
-      }catch{if(live()&&!controller.signal.aborted)showTextOnly()}
+      }catch{if(live())showTextOnly()}
       return
     }
     if((naturalVoice||cloudAgreed)&&cloudAvailable&&['google_chirp3_hd','fish_free'].includes(cloudProvider)&&!['safety','boundary'].includes(result.mode)){
@@ -567,6 +589,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       primedAudioRef.current=audioContextRef.current?null:primeCoachingAudioGesture()
       changePhase('loading')
       void speakCoachReply({reply:String(introduction||'').slice(0,900),mode:'intro'},'',generationRef.current,true)
+      primeMicrophonePermission()
       return
     }
     if(supported===false){setNotice(t.unsupported);return}
