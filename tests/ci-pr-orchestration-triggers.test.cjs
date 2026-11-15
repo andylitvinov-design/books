@@ -339,8 +339,20 @@ test('trusted PR synchronize cancels only ancestor-proven stale HEADs, never arm
   assert.ok(prune.includes('persist-credentials: false'));
   assert.ok(prune.includes('actions: write'));
   assert.ok(prune.includes('HH_CI_PRUNE_LIMIT: ' + "'60'"));
-  assert.ok(prune.includes('node --test tests/ci-prune-stale-runs.test.mjs'));
+  assert.ok(prune.includes('node --check scripts/ci-prune-stale-runs.mjs'));
   assert.ok(prune.includes('node scripts/ci-prune-stale-runs.mjs'));
+  assert.match(prune,/^    runs-on: ubuntu-slim$/m,
+    'API-only janitor avoids full Ubuntu on every PR synchronize');
+  assert.match(prune,/^    timeout-minutes: 12$/m,
+    'existing bounded cleanup timeout remains');
+  assert.match(prune,/sparse-checkout-cone-mode: false/);
+  assert.match(prune,/^            scripts\/ci-prune-stale-runs\.mjs$/m);
+  assert.doesNotMatch(prune,/actions\/setup-node|node --test|npm ci|npm run build/,
+    'per-sync CI must not rerun tests already owned by production CI');
+  assert.match(prune,/^      actions: write$/m,
+    'janitor retains scoped cancellation permission');
+  assert.match(prune,/^          GITHUB_TOKEN: \$\{\{ github\.token \}\}$/m,
+    'unchanged protected Actions token required');
   assert.ok(prune.includes('cancel-in-progress: true'));
   assert.ok(!prune.includes('ref: ' + '$' + '{{ github.event.pull_request.head.sha'));
   assert.ok(!prune.includes('--force') && !prune.includes('gh pr merge'));
@@ -463,7 +475,8 @@ test('bounded AutoMerge/Dispatcher/API workers use slim without changing their f
   }
   const native=read('hh-native-auto-merge');
   const prune=native.split('  prune-head:\n')[1];
-  assert.match(prune,/^    runs-on: ubuntu-24\.04$/m,'prune janitor stays on full Ubuntu');
+  assert.match(prune,/^    runs-on: ubuntu-slim$/m,
+    'trusted API-only janitor may use slim; source/CI required gates remain unchanged');
   assert.match(native,/^  workflow_run:\n    workflows:\n      - 'HH PR core release gate'/m);
   assert.match(native,/hh-merge-check/);
   assert.match(native,/hh-specialist/);
