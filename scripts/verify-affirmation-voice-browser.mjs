@@ -1279,11 +1279,21 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         await montageProOffer.locator('[data-video-montage-pro-choice="free"]').click();
         await expect(page.locator("[data-mandala-free-video]")).toHaveAttribute("data-active-workspace","ready");
         await expect(page.locator("[data-video-ready]")).toHaveAttribute("data-ready-state","choose");
+        await expect(page.locator("[data-ready-video-tiers]")).toHaveCount(0);
         const readyGenerate=page.locator("[data-ready-generate]");
+        // The primary action must follow the player immediately on phone.
+        const readyPreview=page.locator("[data-video-ready] [data-aspect]");
+        const previewBox=await readyPreview.boundingBox();
+        const buttonBox=await readyGenerate.boundingBox();
+        if(previewBox&&buttonBox)assert.ok(buttonBox.y>=previewBox.y+previewBox.height-2,
+          "Ready Generate must sit directly beneath the video");
         await expect(readyGenerate).toBeEnabled({timeout:30000});
         phase(engine,"montage-free-navigated-ready");
         await readyGenerate.click();
         phase(engine,"ready-free-render-requested");
+        // The original self-check is inline below the live progress bar, not a popup.
+        await expect(page.locator("[data-ready-generating]")).toBeVisible({timeout:20000});
+        await expect(page.locator("[data-ready-checkin] [data-video-checkin]")).toBeVisible({timeout:20000});
         // No unsolicited optional survey should cover the intentional export.
         // The existing pill offers an explicit way to open the check-in.
         await expect(page.locator("[data-video-effect-overlay]")).toHaveCount(0);
@@ -1659,8 +1669,8 @@ clearTimeout(watchdog);
 // Access detailed video settings through the new fifth Montage step.
 // Story stays one-screen with its single quality-selection CTA.
 async function openMontageSettingsViaQuality(page){
-  const montage=page.locator('[data-video-montage-tab="promo"]');
-  await montage.click();
+  await page.locator('[data-video-montage-tab="concept"]').click();
+  await page.locator('[data-video-story-open-settings]').click();
   const advanced=page.locator('[data-video-stories-advanced]');
   await advanced.waitFor({state:"visible",timeout:20000});
   if(!await advanced.evaluate(node=>node.open))

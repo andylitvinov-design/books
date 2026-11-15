@@ -1136,3 +1136,6 @@
 .sessionPortrait[data-persona=max]{background-image:url('/images/holistic-house/my-coach-motion/max-still.webp'),linear-gradient(110deg,#485e53,#cbb9a1)!important}
 .sessionPortrait[data-persona=sofia]{background-image:url('/images/holistic-house/my-coach-motion/sofia-still.webp'),linear-gradient(110deg,#485e53,#cbb9a1)!important}
 .sessionPortrait[data-persona=alex]{background-image:url('/images/holistic-house/my-coach-motion/alex-still.webp'),linear-gradient(110deg,#485e53,#cbb9a1)!important}
+
+/* Verified per-turn model source: neutral and compact even in iPhone voice mode. */
+.responseSource{display:inline;font-size:10px;font-weight:500;letter-spacing:0;color:#65796e;overflow-wrap:anywhere}

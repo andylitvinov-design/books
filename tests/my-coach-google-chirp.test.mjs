@@ -90,7 +90,7 @@ test('hard-bounded first-party cost policy and single Play voice introduction',(
    'startCoachingMp3Playback','voiceProviderDetails','Google Chirp'])
    assert.ok(ui.includes(needle),needle)
  for(const needle of ['cloudControllerRef.current?.abort()','cloudPlayerRef.current?.cancel()',
-   "cloudProvider==='google_chirp3_hd'","silence();changePhase('idle')",
+   "voiceProvider==='google_chirp3_hd'","silence();changePhase('idle')",
    'sessionStartRef.current?.()'])
    assert.ok(speech.includes(needle),needle)
  assert.ok(!ui.includes('checked={cloudAgreed}'))
@@ -120,7 +120,7 @@ test('one explicit Play gesture authorizes the configured natural voice, not a c
  assert.ok(!ui.includes('<dialog'))
  assert.ok(voice.includes("if(!introStartedRef.current){"))
  assert.ok(voice.includes('sessionStartRef.current?.()'))
- assert.ok(voice.includes('(naturalVoice||cloudAgreed)&&cloudAvailable'))
+ assert.ok(voice.includes('(naturalVoice||voiceAgreed)&&voiceAvailable'))
  assert.ok(voice.includes('startCoachingMp3Playback'))
  assert.ok(voice.includes('voiceConsent:true,cloudVoiceConsent:true'))
  assert.ok(voice.includes('trainingUseConsent:true'))

@@ -357,7 +357,9 @@ try {
       // away at DOMContentLoaded. All page errors remain fatal below.
       if (!live) {
         await page.waitForLoadState('load', { timeout: 30000 })
-        await page.waitForLoadState('networkidle', { timeout: 30000 })
+        // Next DEV keeps background RSC/metadata requests alive; networkidle can
+        // wait forever without indicating a page defect. Keep the real load
+        // readiness, all 14 route/overflow checks, and fatal page errors.
       }
       const sizes = await page.evaluate(() => ({ viewport: innerWidth, document: document.documentElement.scrollWidth }))
       assert.ok(sizes.document <= sizes.viewport + 2, `Overflow on ${path}: ${JSON.stringify(sizes)}`)
