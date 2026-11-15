@@ -1002,3 +1002,76 @@
     width:47px;height:47px;min-width:47px;min-height:47px;
   }
 }
+
+/* Premium-voice entry: recover an expressive portrait after the cramped iPhone
+   shrink. Flex transcript continues to scroll independently; Send stays fixed. */
+@media(max-width:699px){
+  .root[data-session-visual-v4] .sessionHero{
+    height:clamp(155px,25dvh,222px);
+    min-height:0;
+  }
+}
+@media(max-width:699px) and (max-height:670px){
+  .root[data-session-visual-v4] .sessionHero{
+    height:clamp(120px,20dvh,154px);
+  }
+}
+
+/* Larger, recognisable coach portrait; style belongs beside the AVATAR,
+   not in a second large text-heavy introduction card. State-specific
+   specificity overrides the old compact v4 mobile layout intentionally. */
+.root[data-session-visual-v4] .coachStyleChip{
+  position:absolute;z-index:5;left:14px;bottom:13px;box-sizing:border-box;
+  display:inline-flex;align-items:center;max-width:min(56%,310px);
+  padding:7px 10px;border:1px solid #ffffffa8;border-radius:999px;
+  background:#173e34d9;color:#fff;font:700 12px/1.27 system-ui;
+  text-shadow:0 1px 4px #061c1780;overflow-wrap:anywhere;
+  pointer-events:none;box-shadow:0 3px 12px #16241c28;
+}
+.root[data-session-visual-v4] .sessionHero{height:clamp(245px,35dvh,380px)}
+.root[data-session-visual-v4][data-coach-showcase='true'] .sessionHero{
+  height:clamp(310px,47dvh,475px);
+}
+.root[data-session-visual-v4] .sessionTimeboxNotice{
+  display:flex;flex:0 0 auto;align-items:center;justify-content:space-between;
+  gap:8px;box-sizing:border-box;min-width:0;width:100%;
+  padding:7px 10px;border:1px solid #d9e6dc;border-radius:13px;
+  background:#fffdf8;color:#325e4f;font-size:12px;line-height:1.35;
+}
+.root[data-session-visual-v4] .sessionTimeboxNotice span{flex:1;min-width:0}
+.root[data-session-visual-v4] .sessionTimeboxNotice button{
+  flex:none;min-height:38px;padding:7px 11px;border:1px solid #a9cdbb;
+  border-radius:999px;background:#eef7f0;color:#11664e;
+  font:750 12px/1.2 system-ui;cursor:pointer;
+}
+.root[data-session-visual-v4] .sessionTimeboxNotice button:focus-visible{
+  outline:3px solid #0b866b;outline-offset:3px;
+}
+@media(max-width:699px){
+  .root[data-session-visual-v4] .sessionHero{
+    height:clamp(175px,27dvh,270px);min-height:0;
+  }
+  .root[data-session-visual-v4][data-coach-showcase='true'] .sessionHero{
+    height:clamp(230px,42dvh,355px);min-height:0;
+  }
+  .root[data-session-visual-v4] .sessionHeroCopy>small{display:none}
+  .root[data-session-visual-v4] .coachStyleChip{
+    left:11px;bottom:10px;max-width:58%;
+    padding:5px 8px;font-size:clamp(10px,2.6vw,12px);
+  }
+  .root[data-session-visual-v4] .sessionTimeboxNotice{
+    order:2;flex:0 0 auto;min-height:42px;padding:5px 7px;
+    font-size:11px;
+  }
+  .root[data-session-visual-v4] .sessionTimeboxNotice button{
+    min-height:36px;font-size:11px;padding:6px 9px;
+  }
+}
+@media(max-width:699px) and (max-height:670px){
+  .root[data-session-visual-v4] .sessionHero{
+    height:clamp(135px,23dvh,190px);min-height:0;
+  }
+  .root[data-session-visual-v4][data-coach-showcase='true'] .sessionHero{
+    height:clamp(205px,38dvh,260px);min-height:0;
+  }
+}
