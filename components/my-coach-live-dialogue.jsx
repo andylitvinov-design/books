@@ -155,6 +155,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const pending=useRef(null),composerRef=useRef(null),transcriptRef=useRef(null)
   const composerDetailsRef=useRef(null),voiceConsentRef=useRef(null),speechRef=useRef(null)
   const replayControllerRef=useRef(null),replayPlayerRef=useRef(null)
+  const portraitHeroRef=useRef(null)
   const replaySpeechRef=useRef(null),replayTimerRef=useRef(null)
   useEffect(()=>()=>pending.current?.abort(),[])
   useEffect(()=>{
@@ -245,6 +246,21 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     setDraft(previous=>previous.trim()?previous:(goalPrompts[id]||''))
     setError('')
   }
+  function setPortraitLevel(level){
+    const hero=portraitHeroRef.current
+    if(!hero)return
+    if(!Number.isFinite(level)){
+      hero.removeAttribute('data-photo-waveform')
+      hero.style.removeProperty('--hh-portrait-mouth-scale')
+      return
+    }
+    hero.dataset.photoWaveform='true'
+    hero.style.setProperty('--hh-portrait-mouth-scale',
+      (1+Math.max(0,Math.min(1,level))*.18).toFixed(3))
+  }
+  useEffect(()=>{
+    if(voiceState.phase!=='speaking')setPortraitLevel(null)
+  },[voiceState.phase,personaId])
   function changeNaturalVoice(checked){
     setCloudAgreed(Boolean(checked))
     if(checked){setWizardVoice(false);return}
@@ -288,6 +304,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         if(!response.ok||!response.body)throw Error('TTS_UNAVAILABLE')
         if(controller.signal.aborted)return
         replayPlayerRef.current=startCoachingMp3Playback(response,{
+          onLevel:level=>{if(!controller.signal.aborted&&replayControllerRef.current===controller)setPortraitLevel(level)},
           onStart:()=>{if(!controller.signal.aborted&&replayControllerRef.current===controller){setReplayBlocked(false);setReplaying(true);setPlaybackNotice('');setVoiceState({phase:'speaking',beat:0})}},
           onBlocked:()=>{if(!controller.signal.aborted&&replayControllerRef.current===controller){setReplayBlocked(true);setReplaying(false);setPlaybackNotice(voiceGate.tapToHear);setVoiceState({phase:'idle',beat:0})}},
           onEnd:()=>{if(replayControllerRef.current!==controller)return;replayControllerRef.current=null;replayPlayerRef.current=null;setReplayBlocked(false);setReplaying(false);setVoiceState({phase:'idle',beat:0})},
@@ -495,7 +512,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       <Link className={styles.chooseCoach} href={'/'+lang+'/my-coach'}><ArrowRight size={16} aria-hidden="true"/>{ui.choose}</Link>
     </header>
     <div className={styles.sessionScroll} data-coaching-session-scroll>
-    <section className={styles.sessionHero} aria-label={name} data-voice-phase={voiceState.phase}>
+    <section ref={portraitHeroRef} className={styles.sessionHero} aria-label={name} data-voice-phase={voiceState.phase}>
       <div className={styles.sessionPortrait} data-persona={personaId} role="img" aria-label={name}/>
       <div className={styles.sessionHeroShade} aria-hidden="true"/>
       <div className={styles.sessionHeroCopy}>
@@ -538,7 +555,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             cloudAvailable={cloudAvailable} cloudAgreed={cloudAgreed} cloudProvider={cloudProvider} personaId={personaId} wizardVoice={wizardVoice} enabled={true}
             canStart={!busy&&!paused&&!replaying} onTurn={text=>sendMessage(text,{voiceTurn:true})}
             onRequestConsent={()=>{if(!voiceConsentRef.current?.open)voiceConsentRef.current?.showModal()}}
-            onCancelTurn={()=>pending.current?.abort()} onVoiceStateChange={setVoiceState}
+            onCancelTurn={()=>pending.current?.abort()} onVoiceStateChange={setVoiceState} onVoiceLevel={setPortraitLevel}
             onTranscript={setSpeechPreview} onDraft={text=>{setDraft(text);setError('')}}/>
           <span className={styles.voiceWaveRight} aria-hidden="true"><i/><i/><i/><i/><i/></span>
         </div>
