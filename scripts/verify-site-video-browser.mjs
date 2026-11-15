@@ -73,7 +73,9 @@ try {
   const context = await browser.newContext({ viewport: { width: 1365, height: 1000 }, serviceWorkers: 'block' })
   const page = await context.newPage()
   const pageErrors = []
-  page.on('pageerror', error => pageErrors.push({ message: error.message, url: page.url() }))
+  // Keep every JavaScript error fatal and preserve bounded stack evidence.
+  page.on('pageerror', error => pageErrors.push({ message: error.message,
+    url: page.url(), stack: String(error.stack || '').slice(0, 1800) }))
   async function navigate(target) {
     const options = { waitUntil: 'domcontentloaded', timeout: 60000 }
     const destination = new URL(target, origin)
@@ -339,6 +341,12 @@ try {
     await page.setViewportSize({ width, height: 900 })
     for (const path of paths) {
       await navigate(path)
+      // Do not abort in-flight Next DEV RSC/JSON while immediately navigating
+      // away at DOMContentLoaded. All page errors remain fatal below.
+      if (!live) {
+        await page.waitForLoadState('load', { timeout: 30000 })
+        await page.waitForLoadState('networkidle', { timeout: 30000 })
+      }
       const sizes = await page.evaluate(() => ({ viewport: innerWidth, document: document.documentElement.scrollWidth }))
       assert.ok(sizes.document <= sizes.viewport + 2, `Overflow on ${path}: ${JSON.stringify(sizes)}`)
     }

@@ -48,19 +48,35 @@ for (const engine of [chromium, webkit]) {
           // four navigation actions beneath it, then six main categories.
           // The retained consultation carousel is now further down the page.
           const firstTabs = page.locator('[data-profile-tab="today"]');
-          // EN/RU now use the approved presentation's click-to-play facade,
-          // while ES retains the accessible scenic <video> fallback.
+          // EN may be waiting for an owner-confirmed upload; never show
+          // a fake Play or HeyGen iframe. RU and ES keep their real players.
           const firstVideo = page.locator(
-            '[data-profile-video-hero] .site-video-frame, [data-profile-video-hero] video'
+            '[data-profile-video-hero] .site-video-frame, [data-profile-video-hero] [data-profile-presentation-source="youtube-pending"] > div, [data-profile-video-hero] video'
           ).first();
           if (locale === 'en' || locale === 'ru') {
             const localized = page.locator('[data-profile-presentation-locale]');
             assert.equal(await localized.getAttribute('data-profile-presentation-locale'), locale,
               label + ': presentation language matches the selected site locale');
-            assert.equal(await localized.locator('.site-video-play').count(), 1,
-              label + ': approved presentation has a real play action before playback');
-            assert.equal(await localized.locator('iframe').count(), 0,
-              label + ': presentation does not auto-play or mount third-party playback');
+            const source = await localized.getAttribute('data-profile-presentation-source');
+            if (locale === 'en' && source === 'youtube-pending') {
+              assert.equal(await localized.locator('.site-video-play, iframe').count(), 0,
+                label + ': unpublished English YouTube must not show fake Play or HeyGen');
+              const channel = localized.locator('a[href="https://www.youtube.com/@aatapro"]');
+              assert.equal(await channel.count(), 1,
+                label + ': English pending poster links to the real owner channel');
+              assert.equal(await channel.getAttribute('target'), '_blank');
+              assert.match(await channel.getAttribute('rel') || '', /noopener/);
+              const linkBox = await channel.boundingBox();
+              assert.ok(linkBox && linkBox.height >= 44,
+                label + ': pending channel link is a usable touch target');
+            } else {
+              assert.equal(source, 'youtube',
+                label + ': published EN/RU presentation uses YouTube');
+              assert.equal(await localized.locator('.site-video-play').count(), 1,
+                label + ': confirmed publication has a Play action');
+              assert.equal(await localized.locator('iframe').count(), 0,
+                label + ': approved player stays opt-in');
+            }
           } else {
             assert.equal(await firstVideo.getAttribute('controls'), '',
               label + ': Spanish fallback is a controllable scenic player');
