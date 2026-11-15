@@ -14,27 +14,27 @@ const words={
     network:'Browser speech service is offline. Your words remain editable below.',noMicrophone:'No microphone found. Check device permissions.',language:'Browser speech does not support this language. Choose EN or RU.',
     unsupported:'Voice recognition is unavailable in this browser. Try opening this page in Safari, or type your message.',blocked:'Microphone denied. Check Safari/browser permissions.',
     short:'I did not catch that. Tap the microphone to try again.',review:'Voice saved as a draft. Review and send it below.',restart:'Tap the microphone for the next turn.',
-    failed:'Could not complete this voice turn. Please try again or type.',
+    failed:'Coach could not answer. The microphone is listening again; keep talking or edit your text.',
     privacy:'Microphone audio may be processed by your browser’s speech-recognition provider. We do not store recordings. Press Stop at any time.',
-    fallback:'Natural coach voice is unavailable right now. Please try again or use text.',tapToHear:'Tap to hear the coach',preparing:'Preparing voice…',
+    fallback:'Natural coach voice is unavailable right now. The microphone remains active; keep talking or type.',tapToHear:'Tap to hear the coach',preparing:'Preparing voice…',
     iosCue:'Ready to listen.',iosPreparing:'Preparing iPhone microphone…',iosSilent:'Safari may not be hearing. Your draft is editable; try again or reopen Safari.',iosAwaitEnd:'Text ready. Waiting for Safari to finish…'},
   ru:{start:'Говорить голосом',stop:'Остановить голос',retryMic:'Перезапустить микрофон',listening:'Слушаю…',thinking:'Коуч думает…',speaking:'Говорит…',
     network:'Распознавание браузера недоступно. Ваши слова остаются в поле ответа.',noMicrophone:'Микрофон не найден. Проверьте настройки устройства.',language:'Браузер не поддерживает этот язык. Выберите RU или EN.',
     unsupported:'Голосовой ввод недоступен в этом браузере. Попробуйте открыть страницу в Safari или написать сообщение.',
     blocked:'Доступ к микрофону запрещён. Разрешите его в Safari или настройках браузера.',
     short:'Не удалось разобрать фразу. Нажмите микрофон ещё раз.',review:'Слова сохранены в поле ввода. Проверьте и отправьте.',restart:'Нажмите микрофон для следующей реплики.',
-    failed:'Голосовой ответ недоступен. Попробуйте ещё раз или напишите сообщение.',
+    failed:'Коуч пока не смог ответить. Микрофон снова слушает; продолжайте говорить или исправьте текст.',
     privacy:'Браузер может передавать аудио поставщику распознавания речи. Мы не сохраняем записи. Разговор можно остановить в любой момент.',
-    fallback:'Качественный голос коуча сейчас недоступен. Попробуйте ещё раз или напишите ответ.',tapToHear:'Нажмите, чтобы услышать коуча',preparing:'Готовлю голос…',
+    fallback:'Качественный голос коуча сейчас недоступен. Микрофон продолжает слушать; можно говорить или писать.',tapToHear:'Нажмите, чтобы услышать коуча',preparing:'Готовлю голос…',
     iosCue:'Я вас слушаю.',iosPreparing:'Подготавливаю микрофон iPhone…',iosSilent:'Safari может не слышать речь. Текст можно отредактировать; попробуйте ещё раз или перезапустите Safari.',iosAwaitEnd:'Текст готов. Ждём завершения Safari…'},
   es:{start:'Hablar por voz',stop:'Detener voz',retryMic:'Reiniciar micrófono',listening:'Escuchando…',thinking:'El coach piensa…',speaking:'Hablando…',
     network:'El reconocimiento del navegador no está disponible. El texto dictado sigue abajo.',noMicrophone:'No se encontró un micrófono. Comprueba los permisos.',language:'El navegador no reconoce este idioma. Elige EN o RU.',
     unsupported:'El reconocimiento de voz no está disponible aquí. Prueba abrir la página en Safari o escribe tu mensaje.',
     blocked:'Micrófono bloqueado. Actívalo en Safari o en los ajustes del navegador.',
     short:'No entendí la frase. Toca el micrófono otra vez.',review:'Palabras guardadas en el borrador. Revisa y envía abajo.',restart:'Toca el micrófono para continuar.',
-    failed:'No se pudo completar el turno de voz. Inténtalo de nuevo o escribe.',
+    failed:'El coach no pudo responder. El micrófono vuelve a escuchar; sigue hablando o edita el texto.',
     privacy:'El navegador puede enviar audio al proveedor de reconocimiento. No almacenamos grabaciones. Detén la conversación cuando quieras.',
-    fallback:'La voz natural del coach no está disponible. Vuelve a intentarlo o escribe.',tapToHear:'Toca para escuchar al coach',preparing:'Preparando voz…',
+    fallback:'La voz natural del coach no está disponible. El micrófono sigue activo; puedes hablar o escribir.',tapToHear:'Toca para escuchar al coach',preparing:'Preparando voz…',
     iosCue:'Te escucho ahora.',iosPreparing:'Preparando el micrófono del iPhone…',iosSilent:'Safari puede haber dejado de escuchar. Tu texto se puede editar; prueba de nuevo o reinicia Safari.',iosAwaitEnd:'Texto listo. Esperando el final de Safari…'},
 }
 
@@ -451,9 +451,15 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     catch{result=null}
     if(!activeRef.current||generationRef.current!==generation)return
     if(!result?.reply){
+      // A model outage fails only this turn. Keep the text editable and the
+      // one-Play voice session alive, without retrying the model or TTS.
+      // Sync the draft ref before Web Speech restarts in this same tick.
+      currentDraftRef.current=text
       draftRef.current?.(text)
       transcriptRef.current?.('')
-      silence();changePhase('idle');setNotice(t.failed);return
+      startListening()
+      setNotice(t.failed)
+      return
     }
     heardRef.current=''
     transcriptRef.current?.('')
