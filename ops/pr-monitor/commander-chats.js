@@ -591,9 +591,23 @@ function renderThread(){
  function startReportPolling(){
   if(reportRefreshTimer!==null)win.clearInterval(reportRefreshTimer);
   reportRefreshTimer=null;
-  if(!thread||!Array.isArray(thread.prs)||!thread.prs.length)return;
+  if(!thread)return;
+  const hasPR=(Array.isArray(thread.prs)&&thread.prs.length>0)||
+   messages.some(m=>m.kind==='owner'&&prCompletionNumber(m.text)!==null);
+  if(!hasPR)return;
   reportRefreshTimer=win.setInterval(()=>{
-   if(thread&&doc.visibilityState!=='hidden')void reportList({automatic:true,silent:true});
+   if(!thread||doc.visibilityState==='hidden')return;
+   if(remote&&authorized){
+    const chatId=thread.id,number=thread.issueNumber;
+    void request(SERVER+'?action=read&issue='+number).then(data=>{
+     if(thread?.id!==chatId||!Array.isArray(data.messages))return;
+     if(data.messages.length!==messages.length||
+        data.messages.some((m,i)=>m.id!==messages[i]?.id)){
+      messages=data.messages;renderMessages();
+     }
+    }).catch(()=>{});
+   }
+   if(Array.isArray(thread.prs)&&thread.prs.length)void reportList({automatic:true,silent:true});
   },120000);
  }
  async function openChat(c){
@@ -785,11 +799,43 @@ async function update(e){
   show(isNew?'new-github-write-wrap':'github-write-wrap',mode==='hermes');
   if(mode!=='hermes')el(isNew?'new-github-write':'github-write').checked=false;
  }
+
+ function prCompletionNumber(message){
+  const s=typeof message==='string'?message.trim():'';
+  const plain=/^#?([1-9]\d{2,7})$/.exec(s);
+  if(plain)return Number(plain[1]);
+  const direct=/^(?:PR|ПР)\s*#?([1-9]\d{0,7})$/i.exec(s);
+  if(direct)return Number(direct[1]);
+  const command=/^(?:доведи|доделай|смержь|merge|\/live|\/pr)\s*(?:(?:PR|ПР)\s*)?#?([1-9]\d{0,7})(?:\s*(?:до\s*(?:live|лива|лив)|в\s*(?:live|лив)))?$/i.exec(s);
+  return command?Number(command[1]):null;
+ }
  async function send(e){
   e.preventDefault();if(!thread||busy)return;
   const text=el('message').value.trim(),mode=el('mode').value,model=el('model').value;
   stopVoice();
   if(text.length<2||text.length>1200)return info('Сообщение должно содержать 2–1200 символов.');
+  const prNumber=prCompletionNumber(text);
+  if(prNumber!==null){
+   if(!remote||!authorized)return info('Для команды PR требуется подтверждённый вход владельца. Локальная копия не запускает GitHub.');
+   busy=true;el('send').disabled=true;
+   try{
+    const c=thread,requestId=id();
+    await append(c,'owner',text,'',requestId);
+    const result=await request(SERVER+'?action=pr_complete','POST',{
+     prNumber,issueNumber:c.issueNumber,requestId
+    });
+    el('message').value='';
+    const stage=result.item?.status||'UNVERIFIED';
+    const feedback='PR #'+prNumber+' — '+stage+
+      '. '+String(result.item?.reasonCode||'REQUEST_REGISTERED_NOT_EXECUTED')+
+      '. Source commit и LIVE требуют отдельных GitHub/Vercel подтверждений.';
+    await append(c,'note',feedback,'');
+    startReportPolling();
+    info('Команда PR принята в защищённую очередь: '+feedback);
+   }catch(err){info('Команда PR не подтверждена: '+String(err.message||err)+'. Проверьте статус, прежде чем отправлять повторно.');}
+   finally{busy=false;el('send').disabled=false;}
+   return;
+  }
   if(mode==='openrouter'&&(!aiReady||!models.some(x=>x.id===model)))return info('Нет подтверждённой бесплатной модели OpenRouter.');
   if(mode==='hermes'&&!(executorModels||[]).some(x=>x.id===model))return info('Выберите проверенную бесплатную модель для Hermes.');
   if(mode==='director'&&(!remote||!ownedDirectorAvailable))return info('Собственный Agents Director ещё не доступен в защищённом сервисе.');

@@ -465,7 +465,13 @@ test('free Hermes model catalogue authenticates owner before its read-only publi
  const request=api.indexOf("const response=await fetch('https://openrouter.ai/api/v1/models");
  assert.ok(owner>=0&&request>owner);
  assert.ok(api.includes("m.id.endsWith(':free')"));
- assert.doesNotMatch(api.slice(0,api.indexOf('async function readMonitorFreeQuota()')),/Authorization:\s*'Bearer '|OPENROUTER_API_KEY/);
+ // A public model catalog must never use credentials. The distinct PR
+ // Completion bridge is owner-authenticated and legitimately forwards JWT.
+ const freeOnly=api.slice(api.indexOf('async function freeModels('),
+  api.indexOf('async function readMonitorFreeQuota()'));
+ assert.doesNotMatch(freeOnly,/Authorization:\s*'Bearer '|OPENROUTER_API_KEY/);
+ assert.match(api,/tokenFromRequest\(req\)/);
+ assert.match(api,/agent-commander-pr-completion-v1/);
 });
 test('verified GitHub CI reports carry the top-level source URL consumed by the chat renderer',()=>{
  const edge=src('../../supabase/functions/agent-commander-private-store-v1/index.ts');

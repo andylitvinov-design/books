@@ -1,0 +1,110 @@
+'use strict';
+/* Existing trusted Watchdog runner only. No new cron, CI workflow, source
+ * writer, model, branch update or paid provider. OIDC → private Supabase queue.
+ * One request per invocation; every state is backed by real GitHub readback. */
+const ENDPOINT='https://shervdixkaxurnaecioe.supabase.co/functions/v1/agent-commander-pr-completion-v1';
+const REPO='andylitvinov-design/books',BASE='codex/public-book-library';
+const SHA=/^[a-f0-9]{40}$/i,UUID=/^[a-f0-9-]{36}$/i;
+const VALID_STATES=new Set(['WATCHING','BLOCKED','MERGED','CLOSED_UNMERGED']);
+const HOLDS=new Set(['hh:hold','hh:blocked','hh:repair-manual','hh:worker-claimed']);
+function readback(pr,number){
+ if(!pr||pr.number!==number||pr.head?.repo?.full_name!==REPO||
+  pr.base?.repo?.full_name!==REPO||pr.base?.ref!==BASE||!SHA.test(pr.head?.sha||''))
+  return {status:'BLOCKED',reasonCode:'PR_IDENTITY_UNVERIFIED'};
+ if(pr.state==='closed'){
+  return pr.merged===true&&SHA.test(pr.merge_commit_sha||'')&&
+   Number.isFinite(Date.parse(pr.merged_at||''))?
+   {status:'MERGED',reasonCode:'GITHUB_MERGE_VERIFIED',headSha:pr.head.sha}:
+   {status:'CLOSED_UNMERGED',reasonCode:'GITHUB_CLOSED_NO_MERGE',headSha:pr.head.sha};
+ }
+ if(pr.state!=='open'||pr.draft===true)
+  return {status:'BLOCKED',reasonCode:'PR_NOT_READY',headSha:pr.head.sha};
+ const labels=new Set((pr.labels||[]).map(l=>l.name).filter(Boolean));
+ for(const hold of HOLDS)if(labels.has(hold))
+  return {status:'BLOCKED',reasonCode:'EXISTING_HOLD_NO_OVERRIDE',headSha:pr.head.sha};
+ if(pr.mergeable===false&&pr.mergeable_state==='dirty')
+  return {status:'BLOCKED',reasonCode:'MERGE_CONFLICT_REQUIRES_SEMANTIC_REPAIR',headSha:pr.head.sha};
+ return {status:'WATCHING',reasonCode:'AWAIT_EXISTING_CORE_AND_AUTO_MERGE',
+  headSha:pr.head.sha,eligibleForFirstRepair:pr.mergeable===true&&labels.has('hh:repair-needed')};
+}
+async function send(action,fields,token,fetcher){
+ const response=await fetcher(ENDPOINT,{method:'POST',cache:'no-store',redirect:'error',
+  signal:AbortSignal.timeout(12000),
+  headers:{Authorization:'Bearer '+token,'Content-Type':'application/json',Accept:'application/json'},
+  body:JSON.stringify({action,...fields})});
+ if(response?.status!==200)throw Error('OWNER_PR_EDGE_HTTP_'+String(response?.status||'UNKNOWN'));
+ const raw=await response.text();
+ if(typeof raw!=='string'||raw.length>16000)throw Error('OWNER_PR_EDGE_RESPONSE_OVERSIZED');
+ const data=JSON.parse(raw);
+ if(data?.schema!=='HH_COMMANDER_PR_COMPLETION_V1')throw Error('OWNER_PR_EDGE_SCHEMA_MISMATCH');
+ return data;
+}
+async function run({github,core,context,ownerToken='',fetcher=global.fetch,
+ dispatch=undefined}={}){
+ if(context?.repo?.owner+'/'+context?.repo?.repo!==REPO||
+  context?.ref!=='refs/heads/codex/bootstrap-books'||
+  !['schedule','workflow_dispatch'].includes(context.eventName)||
+  (context.eventName==='workflow_dispatch'&&String(context.payload?.inputs?.dry_run||'false')==='true'))
+  return {status:'SKIPPED_UNTRUSTED'};
+ const token=await core.getIDToken('hh-commander-pr');
+ if(typeof token!=='string'||token.length<100)return {status:'OIDC_UNAVAILABLE'};
+ let next;
+ try{next=await send('next',{},token,fetcher);}
+ catch(error){core.warning('HH_PR_COMPLETION_CLAIM_'+String(error.message).slice(0,90));return {status:'PRIVATE_QUEUE_UNAVAILABLE'}}
+ const task=next.item;
+ if(!task)return {status:'NO_PENDING'};
+ if(!UUID.test(task.requestId||'')||!UUID.test(task.leaseToken||'')||
+  !Number.isSafeInteger(task.prNumber)||task.prNumber<1||task.prNumber>99999999||
+  !SHA.test(task.requestedHeadSha||'')||typeof task.dispatchEligibleOnce!=='boolean')
+  throw Error('SIGNED_QUEUE_TASK_INVALID');
+ let decision={status:'BLOCKED',reasonCode:'PR_GITHUB_READ_UNAVAILABLE',
+  headSha:task.requestedHeadSha},dispatchAccepted=false;
+ try{
+  const response=await github.rest.pulls.get({owner:'andylitvinov-design',repo:'books',pull_number:task.prNumber});
+  const pr=response?.data;
+  decision=readback(pr,task.prNumber);
+  // Only a first dispatch per owner intent. Never enqueue another Core wave.
+  // Actual source writing still requires the signed current-HEAD Core failure,
+  // remote owner PAT identity and existing Watchdog/Dispatcher reservation.
+  if(task.dispatchEligibleOnce&&decision.eligibleForFirstRepair&&
+    decision.headSha===task.requestedHeadSha){
+   const invoke=dispatch||require('./ci-pr-pm-agent-inbox.cjs').dispatchLive;
+   const result=await invoke(github,{pr:task.prNumber},{ownerToken,fetcher});
+   dispatchAccepted=result?.dispatched===true;
+   if(dispatchAccepted)decision.reasonCode='OWNER_DISPATCH_ACCEPTED_NOT_MODEL_OR_COMMIT';
+   else if(typeof result?.reason==='string'){
+    decision.reasonCode=/^[A-Z0-9_]{3,90}$/.test(result.reason)?
+      result.reason:'REPAIR_DISPATCH_NOT_VERIFIED';
+    if(/^(?:OWNER_REPAIR_|REPAIR_NOT_|SIGNED_|SOURCE_|PR_NOT_)/.test(decision.reasonCode))
+     decision.status='BLOCKED';
+   }
+  }
+ }catch(error){
+  core.warning('HH_PR_COMPLETION_SOURCE_READ_'+String(error.message||'').slice(0,90));
+  decision={status:'WATCHING',reasonCode:'GITHUB_READ_TRANSIENT_UNVERIFIED',
+   headSha:task.requestedHeadSha};
+ }
+ if(!VALID_STATES.has(decision.status)||!SHA.test(decision.headSha||''))
+  throw Error('OWNER_PR_DECISION_INVALID');
+ let final;
+ try{
+  final=await send('finish',{
+   requestId:task.requestId,leaseToken:task.leaseToken,
+   status:decision.status,headSha:decision.headSha,
+   reasonCode:decision.reasonCode,workflowRunId:context.runId,
+   dispatchAccepted},token,fetcher);
+ }catch(error){
+  core.warning('HH_PR_COMPLETION_FINISH_'+String(error.message).slice(0,100));
+  return {status:'FINISH_UNCONFIRMED',prNumber:task.prNumber,
+   dispatchAccepted,claimed:true,merged:false,liveVerified:false};
+ }
+ if(final?.accepted!==true||final.item?.prNumber!==task.prNumber)
+  return {status:'FINISH_UNVERIFIED',prNumber:task.prNumber};
+ const report={status:final.item.status,prNumber:task.prNumber,
+  reasonCode:final.item.reasonCode,dispatchAccepted,
+  merged:final.item.status==='MERGED',mergeSha:final.item.mergeSha||null,
+  liveVerified:false,sourceWriteVerified:false};
+ core.info('HH_OWNER_PR_COMPLETION '+JSON.stringify(report));
+ return report;
+}
+module.exports={readback,run,send,ENDPOINT};
