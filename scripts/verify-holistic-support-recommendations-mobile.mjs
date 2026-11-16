@@ -68,8 +68,13 @@ for (const engine of [chromium, webkit]) {
               assert.equal(await link.count(), 1,
                 label + " unique real program " + key);
               const href = await link.getAttribute("href");
-              assert.ok(href?.startsWith("/" + locale + "/"),
-                label + " safe localized program link " + key);
+              // Magic archive has a verified Russian-only original. Preserve
+              // its real /ru/ Academy route instead of inventing translated
+              // content; every other program still needs its local route.
+              const verifiedRussianOriginal = key === "magic" &&
+                href === "/ru/academy/elements/elemental-magic";
+              assert.ok(href?.startsWith("/" + locale + "/") || verifiedRussianOriginal,
+                label + " safe published program link " + key);
             }
           }
           assert.equal(await directory.locator('nav[aria-label="Language"] a').count(), 3,
