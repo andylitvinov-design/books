@@ -146,8 +146,11 @@ test('cron remains independent while failed Core handoffs isolate pending branch
  assert.ok(yaml.includes("cron: '7,27,47 * * * *'"));
  assert.ok(!yaml.includes("  failed-core-event-handoff:"));
  assert.ok(!yaml.includes("      - 'HH PR core release gate'"));
- assert.ok(direct.includes("      - 'HH PR core release gate'"));
- assert.ok(direct.includes("types: [completed]"));
+ const native=fs.readFileSync(".github/workflows/hh-native-auto-merge.yml","utf8");
+ assert.ok(direct.includes("  workflow_call:"));
+ assert.ok(!direct.includes("  workflow_run:"));
+ assert.ok(native.includes("      - 'HH PR core release gate'"));
+ assert.ok(native.includes("types: [completed]"));
  assert.ok(direct.includes("group: hh-direct-core-pr-"));
  assert.ok(direct.includes("github.event.workflow_run.head_branch"));
  assert.ok(!direct.includes("group: hh-control-tower-single-writer"));

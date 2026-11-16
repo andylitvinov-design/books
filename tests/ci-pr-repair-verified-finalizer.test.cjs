@@ -152,7 +152,7 @@ test('a forged or edited terminal receipt never suppresses legitimate verificati
 });
 test('no extra workflow or privileged source action is introduced',()=>{
  const fs=require('node:fs');
- const yaml=fs.readFileSync('.github/workflows/hh-pr-direct-core-failure.yml','utf8');
+ const yaml=fs.readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
  assert.match(yaml,/core-slot-wakeup:[\s\S]*Record independently verified repair outcome on real new HEAD/);
  assert.match(yaml,/ci-pr-repair-verified-finalizer\.cjs/);
  assert.doesNotMatch(yaml,/HH_AUTOMERGE_TOKEN:[^\n]*core-slot-wakeup/);
@@ -161,8 +161,8 @@ test('no extra workflow or privileged source action is introduced',()=>{
 
 test('terminal receipt job has PR write but cannot write source; real 403 requires separate permission',()=>{
  const fs=require('node:fs');
- const yaml=fs.readFileSync('.github/workflows/hh-pr-direct-core-failure.yml','utf8');
- const slot=yaml.split('\n  core-slot-wakeup:\n')[1];
+ const yaml=fs.readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
+ const slot=yaml.split('\n  core-slot-wakeup:\n')[1]?.split('\n  recover-interrupted-core:\n')[0];
  assert.ok(slot,'reuse the existing successful Core completion job, no new runner');
  assert.match(slot,/name: core-ci-freed-slot-wakeup/);
  assert.match(slot,/github\.event\.workflow_run\.conclusion == 'success'/);

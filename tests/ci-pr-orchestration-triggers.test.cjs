@@ -3,9 +3,10 @@ const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const {readFileSync}=require('node:fs');
 const read=name=>readFileSync('.github/workflows/'+name+'.yml','utf8');
-test('watchdog has independent cron; failed Core is a direct event workflow',()=>{
+test('watchdog has independent cron; failed Core is delegated by one trusted event subscriber',()=>{
   const s=read('hh-pr-ten-minute-watchdog');
   const direct=read('hh-pr-direct-core-failure');
+  const native=read('hh-native-auto-merge');
   assert.ok(s.includes("cron: '7,27,47 * * * *'"));
   for(const tag of ['HH watchdog / dry run','HH watchdog / completion wake',
     'HH watchdog / direct handoff','HH watchdog / reconcile'])
@@ -14,7 +15,11 @@ test('watchdog has independent cron; failed Core is a direct event workflow',()=
   assert.ok(!s.includes("  failed-core-event-handoff:"));
   assert.ok(s.includes("      - 'HH PR source Repair Worker'"));
   assert.ok(s.includes("      - 'HH zero-cost PR CI worker'"));
-  assert.ok(direct.includes("      - 'HH PR core release gate'"));
+  assert.ok(native.includes("      - 'HH PR core release gate'"));
+  assert.ok(native.includes('  failed-core-handoff:'));
+  assert.ok(native.includes('secrets: inherit'));
+  assert.ok(direct.includes('  workflow_call:'));
+  assert.ok(!direct.includes('  workflow_run:'));
   assert.ok(direct.includes("github.event.workflow_run.conclusion == 'failure'"));
   assert.ok(direct.includes("github.event.workflow_run.conclusion == 'timed_out'"));
   assert.ok(direct.includes("github.event.workflow_run.conclusion == 'startup_failure'"));
@@ -126,19 +131,19 @@ test('Watchdog dispatches from durable CI and repair queue only when a slot exis
 
 test('successful Core event has exactly one live rate-bounded slot wakeup owner',()=>{
   const watchdog=read('hh-pr-ten-minute-watchdog');
-  const direct=read('hh-pr-direct-core-failure');
+  const native=read('hh-native-auto-merge');
   // This dead copy had no matching Core subscription and created skipped job
   // records on every unrelated Watchdog run.
   assert.ok(!watchdog.includes('  core-slot-wakeup:\n'));
   assert.ok(!watchdog.includes("      - 'HH PR core release gate'"));
-  assert.ok(direct.includes("      - 'HH PR core release gate'"));
-  assert.ok(direct.includes('  core-slot-wakeup:\n'));
-  assert.ok(direct.includes('name: core-ci-freed-slot-wakeup'));
-  assert.ok(direct.includes('group: hh-pr-core-slot-wakeup'));
-  assert.ok(direct.includes('cancel-in-progress: false'));
-  assert.ok(direct.includes("github.event.workflow_run.conclusion == 'success'"));
-  assert.ok(direct.includes('scripts/ci-pr-slot-wakeup.cjs'));
-  assert.ok(direct.includes('actions: write'));
+  assert.ok(native.includes("      - 'HH PR core release gate'"));
+  assert.ok(native.includes('  core-slot-wakeup:\n'));
+  assert.ok(native.includes('name: core-ci-freed-slot-wakeup'));
+  assert.ok(native.includes('group: hh-pr-core-slot-wakeup'));
+  assert.ok(native.includes('cancel-in-progress: false'));
+  assert.ok(native.includes("github.event.workflow_run.conclusion == 'success'"));
+  assert.ok(native.includes('scripts/ci-pr-slot-wakeup.cjs'));
+  assert.ok(native.includes('actions: write'));
 });
 
 test('separate Direction Watcher classifies all open PRs with a twenty-minute fallback',()=>{
@@ -298,7 +303,7 @@ test('live workers avoid duplicate unit suites while changes retain the full con
     'ci-pr-repair-worker','ci-pr-repair-test-scope','ci-pr-orchestration-triggers'
   ])assert.ok(contract.includes('tests/'+file+'.test.cjs'),file+' contract coverage');
 
-  const slot=read('hh-pr-direct-core-failure').split('\n  core-slot-wakeup:\n')[1];
+  const slot=read('hh-native-auto-merge').split('\n  core-slot-wakeup:\n')[1]?.split('\n  recover-interrupted-core:\n')[0];
   assert.ok(slot && !slot.includes('node --test'),'slot wake remains lightweight');
   assert.ok(slot.includes('scripts/ci-pr-slot-wakeup.cjs'));
 
@@ -377,8 +382,8 @@ test('interrupted Core recovery never resubmits intentional cancellation or a st
   assert.ok(recover.includes('parents[0]?.sha !== live.base.sha'));
 });
 
-test('successful Core CI refills capacity through the direct event runner without waiting for Watchdog',()=>{
- const direct=read('hh-pr-direct-core-failure');
+test('successful Core CI refills capacity through the unified event runner without waiting for Watchdog',()=>{
+ const direct=read('hh-native-auto-merge');
  const watchdog=read('hh-pr-ten-minute-watchdog');
  assert.ok(direct.includes('  core-slot-wakeup:'));
  assert.ok(direct.includes('group: hh-pr-core-slot-wakeup'));
@@ -497,7 +502,8 @@ test('bounded AutoMerge/Dispatcher/API workers use slim without changing their f
 // may use the existing slim runner; Code Fix/Verify/Publisher stay full Ubuntu.
 test('Four short failure/repair control jobs use slim with every safety gate retained',()=>{
   const cases=[
-    ['hh-pr-direct-core-failure',[['direct-core-failure',10],['core-slot-wakeup',3]]],
+    ['hh-pr-direct-core-failure',[['direct-core-failure',10]]],
+    ['hh-native-auto-merge',[['core-slot-wakeup',3]]],
     ['hh-pr-repair-worker',[['claim',5],['finalize',7]]],
   ];
   for(const [workflow,jobs] of cases){
