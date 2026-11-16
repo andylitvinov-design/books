@@ -177,8 +177,9 @@ on:
       # The exact video-only PRs #4732 / #4742 were allocating a full
       # 13-case public-services browser suite (13-17 minutes) despite making
       # no change to checkout, consent, booking or service discovery.
-      # All below are owned by the separate mandatory Mandala CI, including
-      # its real video browser and media checks. Only these exact presentational
+      # All below retain exact-HEAD Mandala source/unit/media contracts
+      # and focused browser preflight. Full video E2E stays on its existing
+      # selected branch/manual routes. Only these exact presentational
       # paths are excluded: mixed public-services PRs still trigger normally.
       - '!components/mandala-automatic-storyboard.tsx'
       - '!components/mandala-video-concept.tsx'
