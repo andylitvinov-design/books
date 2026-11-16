@@ -1,9 +1,11 @@
 'use client'
 import {useEffect,useState} from 'react'
 import {createClient} from '@supabase/supabase-js'
-import {Film,Images,Link2,UploadCloud,Video,RefreshCw} from 'lucide-react'
+import {Film,Images,Link2,UploadCloud,Video,RefreshCw,Headphones} from 'lucide-react'
 import {preparePhoto} from './session-photo-uploader'
 import {normalizePhoneVideoFile} from '@/lib/clients/phone-video-file'
+import {normalizePhoneAudioFile} from '@/lib/clients/phone-audio-file'
+import {canProxyOwnerAudio} from '@/lib/clients/owner-audio-upload'
 import {SessionYouTubePlayer} from './session-youtube-player'
 import {readUiLocale} from '@/lib/ui-locale'
 import styles from './practitioner-materials-cabinet.module.css'
@@ -15,7 +17,7 @@ async function request(url,method='GET',body){
   if(!response.ok)throw new Error(data.error||'MATERIAL_UNAVAILABLE')
   return data
 }
-export function uploadFile(intent,file,mime,onProgress){
+export async function uploadFile(intent,file,mime,onProgress){
   if(intent.provider==='external')return new Promise((resolve,reject)=>{
     if(!intent.uploadUrl?.startsWith('https://'))return reject(new Error('VIDEO_STORAGE_NOT_CONFIGURED'))
     const xhr=new XMLHttpRequest()
@@ -32,6 +34,15 @@ export function uploadFile(intent,file,mime,onProgress){
     xhr.onabort=()=>reject(new Error('VIDEO_UPLOAD_CANCELLED'))
     xhr.send(file)
   })
+  if(canProxyOwnerAudio(file)&&intent.assetId){
+    const response=await fetch('/api/admin/materials/'+encodeURIComponent(intent.assetId)+'/upload',{
+      method:'POST',headers:{'content-type':mime},body:file,credentials:'same-origin',cache:'no-store',
+    })
+    const result=await response.json().catch(()=>({}))
+    if(!response.ok||result.uploaded!==true)throw new Error(result.error||'MEDIA_STORAGE_UNAVAILABLE')
+    onProgress?.(100)
+    return
+  }
   if(!intent.token||!intent.bucket||!intent.objectKey||!intent.supabaseUrl||!intent.publishableKey)
     throw new Error('MEDIA_STORAGE_NOT_CONFIGURED')
   const storage=createClient(intent.supabaseUrl,intent.publishableKey,
@@ -41,7 +52,7 @@ export function uploadFile(intent,file,mime,onProgress){
     .then(result=>{if(result.error)throw new Error(result.error.message||'MEDIA_UPLOAD_FAILED')})
 }
 function kindName(kind,ru){return kind==='youtube'?'YouTube':
-  kind==='image'?(ru?'Фото':'Photo'):(ru?'Видео':'Video')}
+  kind==='image'?(ru?'Фото':'Photo'):kind==='audio'?(ru?'Аудио':'Audio'):(ru?'Видео':'Video')}
 export function PractitionerMaterialsCabinet(){
   const [locale,setLocale]=useState('en'),ru=locale==='ru'
   const [type,setType]=useState('youtube')
@@ -59,6 +70,9 @@ export function PractitionerMaterialsCabinet(){
   const [feedback,setFeedback]=useState('')
   const [error,setError]=useState('')
   useEffect(()=>{
+    if(new URLSearchParams(window.location.search).get('type')==='audio'){
+      setType('audio');setFilter('audio')
+    }
     const update=e=>setLocale(e.detail==='ru'?'ru':'en')
     setLocale(readUiLocale(document.cookie))
     window.addEventListener('holistic-house-ui-locale',update)
@@ -88,10 +102,12 @@ export function PractitionerMaterialsCabinet(){
         if(files.length>10)throw new Error('SELECT_UP_TO_10')
         let done=0
         for(const [index,original] of files.entries()){
-          const file=type==='image'?await preparePhoto(original):normalizePhoneVideoFile(original)
+          const file=type==='image'?await preparePhoto(original):type==='audio'?
+            normalizePhoneAudioFile(original):normalizePhoneVideoFile(original)
           const mime=file.type.split(';')[0].toLowerCase()
           if((type==='image'&&!['image/jpeg','image/png','image/webp'].includes(mime))||
-            (type==='video'&&!['video/mp4','video/quicktime'].includes(mime)))
+            (type==='video'&&!['video/mp4','video/quicktime'].includes(mime))||
+            (type==='audio'&&!['audio/mpeg','audio/mp4','audio/x-m4a','audio/webm','audio/wav','audio/x-wav','audio/ogg','audio/flac','audio/aac'].includes(mime)))
             throw new Error('MEDIA_TYPE_NOT_ALLOWED')
           const name=title.trim()+(files.length>1?' · '+(index+1):'')
           const result=await request('/api/admin/materials','POST',{
@@ -109,7 +125,7 @@ export function PractitionerMaterialsCabinet(){
       await reload()
     }catch(e){
       const messages={
-        SELECT_FILE:ru?'Выберите фото или видео.':'Select a photo or video.',
+        SELECT_FILE:ru?'Выберите файл для загрузки.':'Choose a file to upload.',
         SELECT_UP_TO_10:ru?'Не более 10 файлов за раз.':'Choose up to 10 files at once.',
         MEDIA_STORAGE_NOT_CONFIGURED:ru?'Защищённое хранилище не подключено. YouTube-ссылки можно добавлять отдельно.':
           'Private storage is not configured. YouTube links can still be saved.',
@@ -147,9 +163,9 @@ export function PractitionerMaterialsCabinet(){
       <p className={styles.hint}>{ru?'Добавляйте сюда только общие учебные материалы без данных клиентов. Личные фото и записи добавляются непосредственно к защищенной сессии.':
         'Only reusable non-client-specific education belongs here. Upload private client photos and recordings to their protected session instead.'}</p>
       <div className={styles.types} role="group" aria-label={ru?'Тип материала':'Material type'}>
-        {['youtube','image','video'].map(kind=><button type="button" key={kind}
+        {['youtube','image','audio','video'].map(kind=><button type="button" key={kind}
           aria-pressed={type===kind} onClick={()=>{setType(kind);setError('');setFeedback('')}}>
-          {kind==='youtube'?<Link2 size={18}/>:kind==='image'?<Images size={18}/>:<Video size={18}/>}
+          {kind==='youtube'?<Link2 size={18}/>:kind==='image'?<Images size={18}/>:kind==='audio'?<Headphones size={18}/>:<Video size={18}/>}
           {kindName(kind,ru)}
         </button>)}
       </div>
@@ -162,10 +178,11 @@ export function PractitionerMaterialsCabinet(){
           ?<label>{ru?'Ссылка YouTube':'YouTube link'}
             <input type="url" required value={url} onChange={e=>setUrl(e.target.value)}
               placeholder="https://youtu.be/XXXXXXXXXXX" maxLength={1500}/></label>
-          :<label>{type==='image'?(ru?'Фотографии':'Photos'):(ru?'Видео MP4 / MOV':'MP4 / MOV video')}
+          :<label>{type==='image'?(ru?'Фотографии':'Photos'):type==='audio'?(ru?'Аудиофайлы с телефона':'Phone audio files'):(ru?'Видео MP4 / MOV':'MP4 / MOV video')}
             <input type="file" required accept={type==='image'?
               'image/jpeg,image/png,image/webp,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.heic,.heif':
-              'video/mp4,video/quicktime,.mp4,.mov'} multiple={type==='image'}
+              type==='audio'?'audio/*,.m4a,.mp3,.wav,.wave,.webm,.ogg,.oga,.opus,.flac,.aac':
+              'video/mp4,video/quicktime,.mp4,.mov'} multiple={type==='image'||type==='audio'}
               key={type} onChange={e=>setFiles(Array.from(e.target.files||[]))}/>
           </label>}
         <label>{ru?'Описание (необязательно)':'Description (optional)'}
@@ -178,7 +195,9 @@ export function PractitionerMaterialsCabinet(){
           :type==='video'
           ?(ru?'MOV с iPhone поддерживается, но кодек HEVC может не воспроизводиться в других браузерах. Большие видео хранятся в закрытом R2/S3, не на YouTube.':
             'iPhone MOV is accepted; HEVC may not play in other browsers. Larger videos require protected R2/S3 storage, not YouTube.')
-          :(ru?'Фото с iPhone сжимаются и очищаются от GPS/EXIF перед загрузкой. Максимум 5 МБ после обработки.':
+          :type==='audio'?(ru?'MP3, M4A (Диктофон iPhone), WAV, WebM, OGG, FLAC, AAC · до 20 МБ на файл. Черновик закрыт. Прикрепите его к отчёту отдельно; автоматической публикации нет.':
+            'MP3, M4A (iPhone Voice Memos), WAV, WebM, OGG, FLAC, AAC · up to 20 MB each. Private until separately attached to a report; never auto-published.')
+          :(ru?'Фото с iPhone сжимаются и очищаются от GPS/EXIF перед загрузкой. Максимум 5 МБ после обработки.' :
             'Phone photos are resized and stripped of GPS/EXIF before upload. 5 MB processed size limit.')}</div>
         {type==='video'&&<div className={styles.note}>
           <strong>{ru?'Без R2/S3: загрузите обучающее видео через YouTube (Unlisted).':
@@ -204,6 +223,7 @@ export function PractitionerMaterialsCabinet(){
           <option value="all">{ru?'Все':'All'}</option>
           <option value="youtube">YouTube</option>
           <option value="image">{ru?'Фото':'Photo'}</option>
+          <option value="audio">{ru?'Аудио':'Audio'}</option>
           <option value="video">{ru?'Видео':'Video'}</option>
         </select>
         <button type="button" className={styles.primary} onClick={()=>void reload()} disabled={loading}
@@ -216,14 +236,16 @@ export function PractitionerMaterialsCabinet(){
       !visible.length?<p className={styles.empty}>{ru?'Пока нет материалов этого типа.':'No materials of this type yet.'}</p>:
       visible.map(item=><article key={item.id} className={styles.item}>
         <header>
-          {item.kind==='youtube'?<Link2 size={19}/>:item.kind==='image'?<Images size={19}/>:<Film size={19}/>}
+          {item.kind==='youtube'?<Link2 size={19}/>:item.kind==='image'?<Images size={19}/>:item.kind==='audio'?<Headphones size={19}/>:<Film size={19}/>}
           <strong>{item.title}</strong><span className={styles.tag}>{kindName(item.kind,ru)}</span>
         </header>
         {item.kind==='youtube'?<SessionYouTubePlayer title={item.title} url={item.url} locale={locale}/>:
           item.kind==='image'
           // eslint-disable-next-line @next/next/no-img-element
           ?<img className={styles.thumb} alt={item.title} loading="lazy" src={'/api/admin/materials/'+item.id+'/media'}/>
-          :<video className={styles.mediaPreview} controls playsInline preload="none"
+          :item.kind==='audio'?<audio className={styles.audioPreview} controls preload="none"
+            src={'/api/admin/materials/'+item.id+'/media'}/>:
+           <video className={styles.mediaPreview} controls playsInline preload="none"
             src={'/api/admin/materials/'+item.id+'/media'}/>}
         {item.description&&<p>{item.description}</p>}
         {item.kind==='youtube'&&<div className={styles.publication}>
@@ -245,8 +267,10 @@ export function PractitionerMaterialsCabinet(){
             </button>
           </div>
         </div>}
-        {item.kind==='video'&&<p className={styles.privateLabel}>{ru?
-          'Исходный файл остаётся закрытым. Для публичной библиотеки добавьте отдельную ссылку YouTube (Unlisted).':
+        {['video','audio'].includes(item.kind)&&<p className={styles.privateLabel}>{item.kind==='audio'?
+          (ru?'Аудио остаётся приватным. Прикрепите его к отчёту или слайду курса отдельно.':
+          'Saved audio stays private. Attach it to a report or course slide separately.'):ru?
+          'Исходный файл остаётся закрытым. Для публичной библиотеки видео добавьте отдельную ссылку YouTube (Unlisted).':
           'This original file stays private. To publish it in the Library, add an Unlisted YouTube link separately.'}</p>}
         <div className={styles.itemFooter}>{ru?'Доступно для клиентских отчётов':'Available for client reports'}</div>
       </article>)}

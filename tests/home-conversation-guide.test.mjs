@@ -111,7 +111,9 @@ test("EN/RU/ES let the visitor ask a question on demand after seven clear stages
   const more = read("components/home-more-disclosure.tsx");
   for (const page of [en,es]) {
     assert.ok(page.indexOf("<HomeSectionCarousel") < page.indexOf("<HomeFeaturedWorkspace"));
-    assert.ok(page.indexOf("<HomeFeaturedWorkspace") < page.indexOf("<HomeMoreDisclosure"));
+    // The approved first-visit flow places topic/disclosure navigation before
+    // the seven-stage workspace, preserving the on-demand conversation guide.
+    assert.ok(page.indexOf("<HomeMoreDisclosure") < page.indexOf("<HomeFeaturedWorkspace"));
     assert.doesNotMatch(page, /<HomeConversationGuide locale=/);
   }
   assert.match(more, /<HomeConversationGuide locale=\{locale\} \/>/);

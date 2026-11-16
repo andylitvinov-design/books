@@ -11,8 +11,8 @@ test("quick free-service capture is immediately visible with a single reply fiel
   const css = read("components/contact-channel-chooser.module.css");
 
   for (const snippet of [
-    "quick?: boolean", "data-quick={quick}", "hidden={!open && !quick}",
-    "const [consent, setConsent] = useState(quick)", "quick ? c.quickSubmit : c.submit",
+    "quick?: boolean", "data-quick={quick}", "hidden={!interactive || (!open && !quick)}",
+    "const [consent, setConsent] = useState(false)", "quick ? c.quickSubmit : c.submit",
     "quick && <small className={styles.quickConsent}>", "contactConsent: consent",
     'fetch("/api/service-enquiries"', "publicTopic?.trim()",
   ]) assert.ok(chooser.includes(snippet), "Quick request contract missing: " + snippet);
@@ -20,7 +20,7 @@ test("quick free-service capture is immediately visible with a single reply fiel
   assert.ok(resource.includes("publicTopic={broadTopic}"));
   assert.ok(resource.includes("<details className={styles.topicOptional}>"));
   assert.doesNotMatch(resource, /<textarea|copyPrivateContext|privateContext/);
-  assert.ok(chooser.includes("{!quick && <><details className={styles.optionalName}>"));
+  assert.ok(chooser.includes("{!quick && <><details className={styles.optionalName} open={nameOpen}>"));
   assert.ok(chooser.includes("<form onSubmit={submit}"));
   assert.ok(css.includes(".quickPanel"));
   assert.ok(css.includes("@media(max-width:430px)"));
@@ -31,7 +31,7 @@ test("Google prefill and contact-only requests never auto-save leads or subscrib
   const chooser = read("components/contact-channel-chooser.tsx");
   assert.ok(chooser.includes('continueTo: "enquiry", returnPath: pathname'));
   assert.ok(chooser.includes('fetch("/api/app/auth/contact-profile"'));
-  assert.ok(chooser.includes('if (busy || saved) return;'));
+  assert.ok(chooser.includes('if (!interactive || busy || saved) return;'));
   assert.ok(chooser.includes('setSaved({ saved: true, referenceCode: data.referenceCode })'));
   assert.ok(chooser.includes("No marketing, charge or confirmed booking"));
   assert.doesNotMatch(chooser, /autoSubmit|sendBeacon|localStorage/);

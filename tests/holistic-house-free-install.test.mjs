@@ -25,7 +25,7 @@ test('free-install landing has real EN/RU/ES routes, correct matching manifests 
   assert.match(landing,/data-hh-native-downloads/)
   assert.match(landing,/data-hh-native-ios-pending/)
   assert.match(landing,/data-hh-native-android-pending/)
-  assert.ok(landing.indexOf('data-hh-native-downloads')<landing.indexOf('data-hh-pwa-alternative'))
+  assert.ok(landing.indexOf('data-hh-pwa-alternative')<landing.indexOf('data-hh-native-downloads'))
   assert.match(landing,/href="\/api\/native-download\/android"/)
   assert.match(landing,/href="\/api\/native-download\/ios"/)
   assert.match(css,/@media\(max-width:430px\)/)
@@ -44,7 +44,7 @@ test('all three Home pages offer exactly the same free installer without duplica
   assert.match(banner,/data-hh-free-app-banner/)
   assert.match(banner,/data-hh-free-app-link/)
   assert.match(banner,/href=\{`\/\$\{locale\}\/install`\}/)
-  for(const txt of ['App downloads','Скачать приложение','Descargar aplicación'])
+  for(const txt of ['Install free web app','Установить на телефон','Instalar gratis'])
     assert.ok(banner.includes(txt),txt)
   assert.match(css,/@media\(max-width:650px\)/)
   assert.match(css,/min-height:50px/)
@@ -79,7 +79,7 @@ test('free install button uses browser PWA event, manual fallbacks and never cla
   assert.match(prompt,/pending = null/)
 })
 
-test('existing Holistic House manifest and private cache policy are unchanged by free PWA installation',()=>{
+test('same Holistic House identity starts on the public home and keeps private cache protected',()=>{
   const manifests=[
     ['public/holistic-house-app.webmanifest','en'],
     ['public/holistic-house-app-ru.webmanifest','ru'],
@@ -90,7 +90,7 @@ test('existing Holistic House manifest and private cache policy are unchanged by
     assert.equal(m.id,'/en/app')
     assert.equal(m.name,'Holistic House')
     assert.equal(m.display,'standalone')
-    assert.equal(m.start_url,`/${locale}/app/messages`)
+    assert.equal(m.start_url,`/${locale}`)
     assert.ok(m.icons.some(i=>i.sizes==='192x192'))
     assert.ok(m.icons.some(i=>i.sizes==='512x512'))
   }
@@ -101,7 +101,7 @@ test('existing Holistic House manifest and private cache policy are unchanged by
   assert.doesNotMatch(serviceWorker,/caches\.open\(.*private/)
 })
 
-test('install CI tests exact real messenger-first manifest, EN/RU/ES server pages and icon assets',()=>{
+test('install CI tests homepage-first manifest, EN/RU/ES server pages and icon assets',()=>{
   const workflow=read('.github/workflows/holistic-house-mobile-install.yml')
   const checker=read('scripts/verify-hh-mobile-head.mjs')
   assert.match(workflow,/holistic-house-free-install\.test\.mjs/)
@@ -114,4 +114,22 @@ test('install CI tests exact real messenger-first manifest, EN/RU/ES server page
   assert.match(checker,/\/holistic-house-app-es\.webmanifest/)
   assert.match(workflow,/file \/tmp\/hh-icon\.png/)
   assert.doesNotMatch(workflow,/pull_request_target:/)
+})
+
+test('owner iPhone install page offers genuine visible Safari instructions without changing private Cabinet installer',()=>{
+  const page=read('app/[locale]/install/page.jsx')
+  const ui=read('components/app/install-holistic-house.jsx')
+  const css=read('app/[locale]/install/install.module.css')
+  assert.ok(page.indexOf('data-hh-pwa-alternative')<page.indexOf('data-hh-native-downloads'))
+  assert.match(page,/data-hh-install-ready/)
+  assert.match(page,/Можно установить сейчас/)
+  assert.match(page,/Подписанный Android APK для прямого скачивания/)
+  assert.match(page,/data-hh-ios-quicksteps/)
+  assert.match(page,/значок компаса/)
+  assert.match(page,/«Поделиться»/)
+  assert.match(page,/«На экран Домой»/)
+  assert.match(css,/\.iphoneHelp\{/)
+  assert.match(ui,/if\(!offer\)\{setInstructions\(true\);return\}/)
+  assert.match(ui,/requestPwaInstallation\(\)/)
+  assert.doesNotMatch(ui,/\.ipa|\.apk|window\.open\(['"]safari/i)
 })

@@ -66,7 +66,7 @@ test('client link release requires owner, duration, independent listing and scre
     ['youtube_oembed_checked_at', null], ['metadata_checked_at', null],
     ['content_checked_at', null], ['metadata_confidence', 'candidate'],
     ['claims_risk', 'high'], ['source_kind', 'original'],
-    ['content_type', 'talk'], ['editorial_status', 'approved'],
+    ['content_type', 'ambient'], ['editorial_status', 'approved'],
     ['embed_status', 'blocked'], ['rights_status', 'blocked'],
   ]
   for (const [key, value] of fields) assert.equal(
@@ -96,4 +96,10 @@ test('owner clock is explicit and restricted to one to ten minutes', () => {
     { clock: '5:00', revision: -1 }, { clock: '5:00', unexpected: true },
   ]) assert.throws(() => prepareDurationReview({ ...base, clock: '05:00', ...input }), /validation/);
   assert.equal(videoLinkEligible({ ...linkCandidate, duration_basis: 'owner_checked' }), true);
+});
+
+test('educational talks require owner review for link-only display',()=>{
+ assert.equal(videoLinkEligible({...linkCandidate,content_type:'talk'}),true);
+ assert.equal(videoLinkEligible({...linkCandidate,content_type:'talk',owner_review_status:'pending'}),false);
+ assert.equal(videoLinkEligible({...linkCandidate,content_type:'talk',claims_risk:'unknown'}),false);
 });

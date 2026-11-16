@@ -670,11 +670,21 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
         </section> : null}
 
         {kind === "tests" ? (
+          <section className={styles.faq} data-public-tests-faq aria-labelledby="free-tests-faq-title">
+            <h2 id="free-tests-faq-title">{locale === "ru" ? "Вопросы перед началом" : locale === "es" ? "Preguntas frecuentes" : "Questions before you begin"}</h2>
+            {t.faq.map(([question, answer]) => <details key={question}><summary>{question}</summary><p>{answer}</p></details>)}
+          </section>
+        ) : null}
+
+        {kind === "tests" ? (
           <section className={styles.testDirect} data-benchmark-free-test-next-step aria-labelledby="free-tests-direct-title">
             <div className={styles.testDirectCopy}>
               <p className={styles.testDirectKicker}>{common.free}</p>
               <h2 id="free-tests-direct-title">{freeTestDirectCopy[locale].title}</h2>
               <p>{freeTestDirectCopy[locale].lead}</p>
+              <Link className={styles.testReviewLink} href={"/" + locale + "/services/free-situation-review"} prefetch={false}>
+                {locale === "ru" ? "Бесплатный личный письменный разбор" : locale === "es" ? "Revisión personal gratuita por escrito" : "Free personal written review"}
+              </Link>
             </div>
             <Link className={styles.primary} href={testsHref} prefetch={false}
               data-benchmark-free-test-open>{t.cta}<ArrowRight size={19} aria-hidden="true" /></Link>

@@ -38,7 +38,8 @@ test("the requested psychotherapy YouTube video is limited to RU service media",
   assert.match(registry, /ru: \{[\s\S]*?hypnotherapy: hypnotherapyRu,/);
   assert.match(registry, /en: \{[\s\S]*?hypnotherapy: hypnotherapyEn,/);
   assert.match(registry, /return media\[locale === "es" \? "en" : locale\]\[topic\]/);
-  assert.match(landing, /service === "imagery-therapy" \? "hypnotherapy"/);
+  assert.match(landing, /service === "systemic-constellations" \? "constellation-case" : service === "psychohomeopathy" \? "homeopathy" : "hypnotherapy"/);
+  assert.match(read("data/personal-service-pages.ts"), /PersonalServiceKey = "psychohomeopathy" \| "imagery-therapy" \| "systemic-constellations" \| "business-consulting"/);
   assert.match(showcase, /heading: "Образная психотерапия — видео о подходе"/);
 });
 
@@ -85,9 +86,11 @@ test("the dedicated video appears on every service detail, with accurate EN/RU/E
   assert.match(core, /<ServiceVideoShowcase topic=\{kind === "dao" \? "overview" : kind\} locale=\{locale\} id="service-video"/);
   assert.match(personal, /<ServiceVideoShowcase/);
   assert.match(personal, /service === "psychohomeopathy" \? "homeopathy"/);
-  assert.match(personal, /service === "imagery-therapy" \? "hypnotherapy"/);
+  assert.match(personal, /service === "systemic-constellations" \? "constellation-case" : service === "psychohomeopathy" \? "homeopathy" : "hypnotherapy"/);
+  assert.match(read("data/personal-service-pages.ts"), /PersonalServiceKey = "psychohomeopathy" \| "imagery-therapy" \| "systemic-constellations" \| "business-consulting"/);
   assert.match(free, /<SiteVideoPlayer video=\{situationVideo\.video\}/);
-  assert.match(free, /getServiceVideoMedia\("constellation-case", locale\)/);
+  assert.match(free, /getServiceVideoMedia\("overview", locale\)/);
+  assert.match(free, /const situationVideo = kind !== "situation" \? null/);
   assert.match(showcase, /<SiteVideoPlayer video=\{video\.video\} locale=\{locale\}/);
   assert.match(showcase, /textLanguage=\{video\.video\.language\}/);
   assert.match(showcase, /data-video-kind=\{video\.general \? "general" : "method"\}/);
@@ -105,7 +108,10 @@ test("six identity-verified public intro videos use YouTube on Play while retain
     assert.ok(player.includes(id), "published mirror not accessible: " + id);
   }
   assert.match(player, /existingYouTubeMirrors/);
-  assert.ok(player.includes("{mirrorLink && <div className={styles.quickWatch}>{mirrorLink}</div>}"));
+  // Both approved YouTube mirrors and the fallback for an unpaired EN master must be visible.
+  assert.match(player, /\(mirrorLink \|\| \(directFallbackLink && externalLink\)\)/);
+  assert.match(player, /\{mirrorLink \|\| externalLink\}/);
+  assert.match(player, /data-video-direct-watch=\{directFallbackLink \? "heygen-fallback" : undefined\}/);
   assert.match(player, /const playbackYouTubeId = mirrorId \|\| video\.youtubeId/);
   assert.match(player, /youtube-nocookie\.com\/embed\/\$\{playbackYouTubeId\}/);
   assert.match(player, /https:\/\/app\.heygen\.com\/embeds\//);

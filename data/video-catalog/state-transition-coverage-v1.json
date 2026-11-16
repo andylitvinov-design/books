@@ -1,0 +1,1370 @@
+{
+  "schemaVersion": "hh-stse-coverage-v1",
+  "status": "proposed_storylines_rewritten_and_curated_for_review; existing_public_scenarios_preserved",
+  "parentTaxonomyVersion": "mytube-content-taxonomy-4x4x4-v4",
+  "sourceOfTruth": "state-transition-scenarios-v1.json",
+  "summary": {
+    "categories": 4,
+    "subcategories": 16,
+    "topics": 64,
+    "legacyScenarios": 256,
+    "newProposedScenarios": 256,
+    "totalScenarios": 512,
+    "newScenarioMotifAssociations": 1280,
+    "newScenarioAvailableStyles": 3,
+    "approvedNewScenarios": 0,
+    "newScenariosPendingHumanReview": 256,
+    "verifiedNewMediaBindings": 0,
+    "creativeDraftsRewritten": 256,
+    "uniqueDraftMotifProfiles": 256,
+    "editorialApprovedNewScenarios": 0,
+    "publicRecommenderEligibleScenarios": 256,
+    "draftPreviewEligibleScenarios": 256
+  },
+  "topics": [
+    {
+      "topicId": "life-purpose",
+      "categoryId": "goals-money",
+      "subcategoryId": "purpose-development",
+      "preservedScenarioIds": [
+        "life-purpose-s1",
+        "life-purpose-s2",
+        "life-purpose-s3",
+        "life-purpose-s4"
+      ],
+      "proposedScenarioIds": [
+        "life-purpose-s5",
+        "life-purpose-s6",
+        "life-purpose-s7",
+        "life-purpose-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "finding-self",
+      "categoryId": "goals-money",
+      "subcategoryId": "purpose-development",
+      "preservedScenarioIds": [
+        "finding-self-s1",
+        "finding-self-s2",
+        "finding-self-s3",
+        "finding-self-s4"
+      ],
+      "proposedScenarioIds": [
+        "finding-self-s5",
+        "finding-self-s6",
+        "finding-self-s7",
+        "finding-self-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "personal-growth",
+      "categoryId": "goals-money",
+      "subcategoryId": "purpose-development",
+      "preservedScenarioIds": [
+        "personal-growth-s1",
+        "personal-growth-s2",
+        "personal-growth-s3",
+        "personal-growth-s4"
+      ],
+      "proposedScenarioIds": [
+        "personal-growth-s5",
+        "personal-growth-s6",
+        "personal-growth-s7",
+        "personal-growth-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "life-transitions",
+      "categoryId": "goals-money",
+      "subcategoryId": "purpose-development",
+      "preservedScenarioIds": [
+        "life-transitions-s1",
+        "life-transitions-s2",
+        "life-transitions-s3",
+        "life-transitions-s4"
+      ],
+      "proposedScenarioIds": [
+        "life-transitions-s5",
+        "life-transitions-s6",
+        "life-transitions-s7",
+        "life-transitions-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "goal-setting",
+      "categoryId": "goals-money",
+      "subcategoryId": "goal-achievement",
+      "preservedScenarioIds": [
+        "goal-setting-s1",
+        "goal-setting-s2",
+        "goal-setting-s3",
+        "goal-setting-s4"
+      ],
+      "proposedScenarioIds": [
+        "goal-setting-s5",
+        "goal-setting-s6",
+        "goal-setting-s7",
+        "goal-setting-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "goal-follow-through",
+      "categoryId": "goals-money",
+      "subcategoryId": "goal-achievement",
+      "preservedScenarioIds": [
+        "goal-follow-through-s1",
+        "goal-follow-through-s2",
+        "goal-follow-through-s3",
+        "goal-follow-through-s4"
+      ],
+      "proposedScenarioIds": [
+        "goal-follow-through-s5",
+        "goal-follow-through-s6",
+        "goal-follow-through-s7",
+        "goal-follow-through-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "procrastination",
+      "categoryId": "goals-money",
+      "subcategoryId": "goal-achievement",
+      "preservedScenarioIds": [
+        "procrastination-s1",
+        "procrastination-s2",
+        "procrastination-s3",
+        "procrastination-s4"
+      ],
+      "proposedScenarioIds": [
+        "procrastination-s5",
+        "procrastination-s6",
+        "procrastination-s7",
+        "procrastination-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "self-discipline",
+      "categoryId": "goals-money",
+      "subcategoryId": "goal-achievement",
+      "preservedScenarioIds": [
+        "self-discipline-s1",
+        "self-discipline-s2",
+        "self-discipline-s3",
+        "self-discipline-s4"
+      ],
+      "proposedScenarioIds": [
+        "self-discipline-s5",
+        "self-discipline-s6",
+        "self-discipline-s7",
+        "self-discipline-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "money-mindset",
+      "categoryId": "goals-money",
+      "subcategoryId": "money-abundance",
+      "preservedScenarioIds": [
+        "money-mindset-s1",
+        "money-mindset-s2",
+        "money-mindset-s3",
+        "money-mindset-s4"
+      ],
+      "proposedScenarioIds": [
+        "money-mindset-s5",
+        "money-mindset-s6",
+        "money-mindset-s7",
+        "money-mindset-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "money-blocks",
+      "categoryId": "goals-money",
+      "subcategoryId": "money-abundance",
+      "preservedScenarioIds": [
+        "money-blocks-s1",
+        "money-blocks-s2",
+        "money-blocks-s3",
+        "money-blocks-s4"
+      ],
+      "proposedScenarioIds": [
+        "money-blocks-s5",
+        "money-blocks-s6",
+        "money-blocks-s7",
+        "money-blocks-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "financial-stability",
+      "categoryId": "goals-money",
+      "subcategoryId": "money-abundance",
+      "preservedScenarioIds": [
+        "financial-stability-s1",
+        "financial-stability-s2",
+        "financial-stability-s3",
+        "financial-stability-s4"
+      ],
+      "proposedScenarioIds": [
+        "financial-stability-s5",
+        "financial-stability-s6",
+        "financial-stability-s7",
+        "financial-stability-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "income-growth",
+      "categoryId": "goals-money",
+      "subcategoryId": "money-abundance",
+      "preservedScenarioIds": [
+        "income-growth-s1",
+        "income-growth-s2",
+        "income-growth-s3",
+        "income-growth-s4"
+      ],
+      "proposedScenarioIds": [
+        "income-growth-s5",
+        "income-growth-s6",
+        "income-growth-s7",
+        "income-growth-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "entrepreneurship",
+      "categoryId": "goals-money",
+      "subcategoryId": "business-career",
+      "preservedScenarioIds": [
+        "entrepreneurship-s1",
+        "entrepreneurship-s2",
+        "entrepreneurship-s3",
+        "entrepreneurship-s4"
+      ],
+      "proposedScenarioIds": [
+        "entrepreneurship-s5",
+        "entrepreneurship-s6",
+        "entrepreneurship-s7",
+        "entrepreneurship-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "career-growth",
+      "categoryId": "goals-money",
+      "subcategoryId": "business-career",
+      "preservedScenarioIds": [
+        "career-growth-s1",
+        "career-growth-s2",
+        "career-growth-s3",
+        "career-growth-s4"
+      ],
+      "proposedScenarioIds": [
+        "career-growth-s5",
+        "career-growth-s6",
+        "career-growth-s7",
+        "career-growth-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "leadership",
+      "categoryId": "goals-money",
+      "subcategoryId": "business-career",
+      "preservedScenarioIds": [
+        "leadership-s1",
+        "leadership-s2",
+        "leadership-s3",
+        "leadership-s4"
+      ],
+      "proposedScenarioIds": [
+        "leadership-s5",
+        "leadership-s6",
+        "leadership-s7",
+        "leadership-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "business-decisions",
+      "categoryId": "goals-money",
+      "subcategoryId": "business-career",
+      "preservedScenarioIds": [
+        "business-decisions-s1",
+        "business-decisions-s2",
+        "business-decisions-s3",
+        "business-decisions-s4"
+      ],
+      "proposedScenarioIds": [
+        "business-decisions-s5",
+        "business-decisions-s6",
+        "business-decisions-s7",
+        "business-decisions-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "loneliness",
+      "categoryId": "love-relationships",
+      "subcategoryId": "loneliness-breakups",
+      "preservedScenarioIds": [
+        "loneliness-s1",
+        "loneliness-s2",
+        "loneliness-s3",
+        "loneliness-s4"
+      ],
+      "proposedScenarioIds": [
+        "loneliness-s5",
+        "loneliness-s6",
+        "loneliness-s7",
+        "loneliness-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "fear-being-alone",
+      "categoryId": "love-relationships",
+      "subcategoryId": "loneliness-breakups",
+      "preservedScenarioIds": [
+        "fear-being-alone-s1",
+        "fear-being-alone-s2",
+        "fear-being-alone-s3",
+        "fear-being-alone-s4"
+      ],
+      "proposedScenarioIds": [
+        "fear-being-alone-s5",
+        "fear-being-alone-s6",
+        "fear-being-alone-s7",
+        "fear-being-alone-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "breakup-recovery",
+      "categoryId": "love-relationships",
+      "subcategoryId": "loneliness-breakups",
+      "preservedScenarioIds": [
+        "breakup-recovery-s1",
+        "breakup-recovery-s2",
+        "breakup-recovery-s3",
+        "breakup-recovery-s4"
+      ],
+      "proposedScenarioIds": [
+        "breakup-recovery-s5",
+        "breakup-recovery-s6",
+        "breakup-recovery-s7",
+        "breakup-recovery-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "unrequited-love",
+      "categoryId": "love-relationships",
+      "subcategoryId": "loneliness-breakups",
+      "preservedScenarioIds": [
+        "unrequited-love-s1",
+        "unrequited-love-s2",
+        "unrequited-love-s3",
+        "unrequited-love-s4"
+      ],
+      "proposedScenarioIds": [
+        "unrequited-love-s5",
+        "unrequited-love-s6",
+        "unrequited-love-s7",
+        "unrequited-love-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "find-love",
+      "categoryId": "love-relationships",
+      "subcategoryId": "finding-love",
+      "preservedScenarioIds": [
+        "find-love-s1",
+        "find-love-s2",
+        "find-love-s3",
+        "find-love-s4"
+      ],
+      "proposedScenarioIds": [
+        "find-love-s5",
+        "find-love-s6",
+        "find-love-s7",
+        "find-love-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "ready-relationship",
+      "categoryId": "love-relationships",
+      "subcategoryId": "finding-love",
+      "preservedScenarioIds": [
+        "ready-relationship-s1",
+        "ready-relationship-s2",
+        "ready-relationship-s3",
+        "ready-relationship-s4"
+      ],
+      "proposedScenarioIds": [
+        "ready-relationship-s5",
+        "ready-relationship-s6",
+        "ready-relationship-s7",
+        "ready-relationship-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "dating",
+      "categoryId": "love-relationships",
+      "subcategoryId": "finding-love",
+      "preservedScenarioIds": [
+        "dating-s1",
+        "dating-s2",
+        "dating-s3",
+        "dating-s4"
+      ],
+      "proposedScenarioIds": [
+        "dating-s5",
+        "dating-s6",
+        "dating-s7",
+        "dating-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "choosing-partner",
+      "categoryId": "love-relationships",
+      "subcategoryId": "finding-love",
+      "preservedScenarioIds": [
+        "choosing-partner-s1",
+        "choosing-partner-s2",
+        "choosing-partner-s3",
+        "choosing-partner-s4"
+      ],
+      "proposedScenarioIds": [
+        "choosing-partner-s5",
+        "choosing-partner-s6",
+        "choosing-partner-s7",
+        "choosing-partner-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "relationship-problems",
+      "categoryId": "love-relationships",
+      "subcategoryId": "couple-relationships",
+      "preservedScenarioIds": [
+        "relationship-problems-s1",
+        "relationship-problems-s2",
+        "relationship-problems-s3",
+        "relationship-problems-s4"
+      ],
+      "proposedScenarioIds": [
+        "relationship-problems-s5",
+        "relationship-problems-s6",
+        "relationship-problems-s7",
+        "relationship-problems-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "couple-communication",
+      "categoryId": "love-relationships",
+      "subcategoryId": "couple-relationships",
+      "preservedScenarioIds": [
+        "couple-communication-s1",
+        "couple-communication-s2",
+        "couple-communication-s3",
+        "couple-communication-s4"
+      ],
+      "proposedScenarioIds": [
+        "couple-communication-s5",
+        "couple-communication-s6",
+        "couple-communication-s7",
+        "couple-communication-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "couple-conflict",
+      "categoryId": "love-relationships",
+      "subcategoryId": "couple-relationships",
+      "preservedScenarioIds": [
+        "couple-conflict-s1",
+        "couple-conflict-s2",
+        "couple-conflict-s3",
+        "couple-conflict-s4"
+      ],
+      "proposedScenarioIds": [
+        "couple-conflict-s5",
+        "couple-conflict-s6",
+        "couple-conflict-s7",
+        "couple-conflict-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "rebuilding-trust",
+      "categoryId": "love-relationships",
+      "subcategoryId": "couple-relationships",
+      "preservedScenarioIds": [
+        "rebuilding-trust-s1",
+        "rebuilding-trust-s2",
+        "rebuilding-trust-s3",
+        "rebuilding-trust-s4"
+      ],
+      "proposedScenarioIds": [
+        "rebuilding-trust-s5",
+        "rebuilding-trust-s6",
+        "rebuilding-trust-s7",
+        "rebuilding-trust-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "emotional-intimacy",
+      "categoryId": "love-relationships",
+      "subcategoryId": "intimacy-family",
+      "preservedScenarioIds": [
+        "emotional-intimacy-s1",
+        "emotional-intimacy-s2",
+        "emotional-intimacy-s3",
+        "emotional-intimacy-s4"
+      ],
+      "proposedScenarioIds": [
+        "emotional-intimacy-s5",
+        "emotional-intimacy-s6",
+        "emotional-intimacy-s7",
+        "emotional-intimacy-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "fear-intimacy",
+      "categoryId": "love-relationships",
+      "subcategoryId": "intimacy-family",
+      "preservedScenarioIds": [
+        "fear-intimacy-s1",
+        "fear-intimacy-s2",
+        "fear-intimacy-s3",
+        "fear-intimacy-s4"
+      ],
+      "proposedScenarioIds": [
+        "fear-intimacy-s5",
+        "fear-intimacy-s6",
+        "fear-intimacy-s7",
+        "fear-intimacy-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "emotional-dependency",
+      "categoryId": "love-relationships",
+      "subcategoryId": "intimacy-family",
+      "preservedScenarioIds": [
+        "emotional-dependency-s1",
+        "emotional-dependency-s2",
+        "emotional-dependency-s3",
+        "emotional-dependency-s4"
+      ],
+      "proposedScenarioIds": [
+        "emotional-dependency-s5",
+        "emotional-dependency-s6",
+        "emotional-dependency-s7",
+        "emotional-dependency-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "family-relationships",
+      "categoryId": "love-relationships",
+      "subcategoryId": "intimacy-family",
+      "preservedScenarioIds": [
+        "family-relationships-s1",
+        "family-relationships-s2",
+        "family-relationships-s3",
+        "family-relationships-s4"
+      ],
+      "proposedScenarioIds": [
+        "family-relationships-s5",
+        "family-relationships-s6",
+        "family-relationships-s7",
+        "family-relationships-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "everyday-overload",
+      "categoryId": "energy-confidence",
+      "subcategoryId": "stress-fatigue",
+      "preservedScenarioIds": [
+        "everyday-overload-s1",
+        "everyday-overload-s2",
+        "everyday-overload-s3",
+        "everyday-overload-s4"
+      ],
+      "proposedScenarioIds": [
+        "everyday-overload-s5",
+        "everyday-overload-s6",
+        "everyday-overload-s7",
+        "everyday-overload-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "evening-fatigue",
+      "categoryId": "energy-confidence",
+      "subcategoryId": "stress-fatigue",
+      "preservedScenarioIds": [
+        "evening-fatigue-s1",
+        "evening-fatigue-s2",
+        "evening-fatigue-s3",
+        "evening-fatigue-s4"
+      ],
+      "proposedScenarioIds": [
+        "evening-fatigue-s5",
+        "evening-fatigue-s6",
+        "evening-fatigue-s7",
+        "evening-fatigue-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "mental-tiredness",
+      "categoryId": "energy-confidence",
+      "subcategoryId": "stress-fatigue",
+      "preservedScenarioIds": [
+        "mental-tiredness-s1",
+        "mental-tiredness-s2",
+        "mental-tiredness-s3",
+        "mental-tiredness-s4"
+      ],
+      "proposedScenarioIds": [
+        "mental-tiredness-s5",
+        "mental-tiredness-s6",
+        "mental-tiredness-s7",
+        "mental-tiredness-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "recovery-after-load",
+      "categoryId": "energy-confidence",
+      "subcategoryId": "stress-fatigue",
+      "preservedScenarioIds": [
+        "recovery-after-load-s1",
+        "recovery-after-load-s2",
+        "recovery-after-load-s3",
+        "recovery-after-load-s4"
+      ],
+      "proposedScenarioIds": [
+        "recovery-after-load-s5",
+        "recovery-after-load-s6",
+        "recovery-after-load-s7",
+        "recovery-after-load-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "body-awareness",
+      "categoryId": "energy-confidence",
+      "subcategoryId": "body-health",
+      "preservedScenarioIds": [
+        "body-awareness-s1",
+        "body-awareness-s2",
+        "body-awareness-s3",
+        "body-awareness-s4"
+      ],
+      "proposedScenarioIds": [
+        "body-awareness-s5",
+        "body-awareness-s6",
+        "body-awareness-s7",
+        "body-awareness-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "breathing-practices",
+      "categoryId": "energy-confidence",
+      "subcategoryId": "body-health",
+      "preservedScenarioIds": [
+        "breathing-practices-s1",
+        "breathing-practices-s2",
+        "breathing-practices-s3",
+        "breathing-practices-s4"
+      ],
+      "proposedScenarioIds": [
+        "breathing-practices-s5",
+        "breathing-practices-s6",
+        "breathing-practices-s7",
+        "breathing-practices-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "muscle-relaxation",
+      "categoryId": "energy-confidence",
+      "subcategoryId": "body-health",
+      "preservedScenarioIds": [
+        "muscle-relaxation-s1",
+        "muscle-relaxation-s2",
+        "muscle-relaxation-s3",
+        "muscle-relaxation-s4"
+      ],
+      "proposedScenarioIds": [
+        "muscle-relaxation-s5",
+        "muscle-relaxation-s6",
+        "muscle-relaxation-s7",
+        "muscle-relaxation-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "healthy-habits",
+      "categoryId": "energy-confidence",
+      "subcategoryId": "body-health",
+      "preservedScenarioIds": [
+        "healthy-habits-s1",
+        "healthy-habits-s2",
+        "healthy-habits-s3",
+        "healthy-habits-s4"
+      ],
+      "proposedScenarioIds": [
+        "healthy-habits-s5",
+        "healthy-habits-s6",
+        "healthy-habits-s7",
+        "healthy-habits-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "low-energy",
+      "categoryId": "energy-confidence",
+      "subcategoryId": "vital-energy",
+      "preservedScenarioIds": [
+        "low-energy-s1",
+        "low-energy-s2",
+        "low-energy-s3",
+        "low-energy-s4"
+      ],
+      "proposedScenarioIds": [
+        "low-energy-s5",
+        "low-energy-s6",
+        "low-energy-s7",
+        "low-energy-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "morning-energy",
+      "categoryId": "energy-confidence",
+      "subcategoryId": "vital-energy",
+      "preservedScenarioIds": [
+        "morning-energy-s1",
+        "morning-energy-s2",
+        "morning-energy-s3",
+        "morning-energy-s4"
+      ],
+      "proposedScenarioIds": [
+        "morning-energy-s5",
+        "morning-energy-s6",
+        "morning-energy-s7",
+        "morning-energy-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "motivation-drive",
+      "categoryId": "energy-confidence",
+      "subcategoryId": "vital-energy",
+      "preservedScenarioIds": [
+        "motivation-drive-s1",
+        "motivation-drive-s2",
+        "motivation-drive-s3",
+        "motivation-drive-s4"
+      ],
+      "proposedScenarioIds": [
+        "motivation-drive-s5",
+        "motivation-drive-s6",
+        "motivation-drive-s7",
+        "motivation-drive-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "mental-clarity",
+      "categoryId": "energy-confidence",
+      "subcategoryId": "vital-energy",
+      "preservedScenarioIds": [
+        "mental-clarity-s1",
+        "mental-clarity-s2",
+        "mental-clarity-s3",
+        "mental-clarity-s4"
+      ],
+      "proposedScenarioIds": [
+        "mental-clarity-s5",
+        "mental-clarity-s6",
+        "mental-clarity-s7",
+        "mental-clarity-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "self-confidence",
+      "categoryId": "energy-confidence",
+      "subcategoryId": "confidence-calm",
+      "preservedScenarioIds": [
+        "self-confidence-s1",
+        "self-confidence-s2",
+        "self-confidence-s3",
+        "self-confidence-s4"
+      ],
+      "proposedScenarioIds": [
+        "self-confidence-s5",
+        "self-confidence-s6",
+        "self-confidence-s7",
+        "self-confidence-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "low-self-esteem",
+      "categoryId": "energy-confidence",
+      "subcategoryId": "confidence-calm",
+      "preservedScenarioIds": [
+        "low-self-esteem-s1",
+        "low-self-esteem-s2",
+        "low-self-esteem-s3",
+        "low-self-esteem-s4"
+      ],
+      "proposedScenarioIds": [
+        "low-self-esteem-s5",
+        "low-self-esteem-s6",
+        "low-self-esteem-s7",
+        "low-self-esteem-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "self-acceptance",
+      "categoryId": "energy-confidence",
+      "subcategoryId": "confidence-calm",
+      "preservedScenarioIds": [
+        "self-acceptance-s1",
+        "self-acceptance-s2",
+        "self-acceptance-s3",
+        "self-acceptance-s4"
+      ],
+      "proposedScenarioIds": [
+        "self-acceptance-s5",
+        "self-acceptance-s6",
+        "self-acceptance-s7",
+        "self-acceptance-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "calm-presence",
+      "categoryId": "energy-confidence",
+      "subcategoryId": "confidence-calm",
+      "preservedScenarioIds": [
+        "calm-presence-s1",
+        "calm-presence-s2",
+        "calm-presence-s3",
+        "calm-presence-s4"
+      ],
+      "proposedScenarioIds": [
+        "calm-presence-s5",
+        "calm-presence-s6",
+        "calm-presence-s7",
+        "calm-presence-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "stress-relief",
+      "categoryId": "stress-anxiety",
+      "subcategoryId": "stress-burnout",
+      "preservedScenarioIds": [
+        "stress-relief-s1",
+        "stress-relief-s2",
+        "stress-relief-s3",
+        "stress-relief-s4"
+      ],
+      "proposedScenarioIds": [
+        "stress-relief-s5",
+        "stress-relief-s6",
+        "stress-relief-s7",
+        "stress-relief-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "chronic-stress",
+      "categoryId": "stress-anxiety",
+      "subcategoryId": "stress-burnout",
+      "preservedScenarioIds": [
+        "chronic-stress-s1",
+        "chronic-stress-s2",
+        "chronic-stress-s3",
+        "chronic-stress-s4"
+      ],
+      "proposedScenarioIds": [
+        "chronic-stress-s5",
+        "chronic-stress-s6",
+        "chronic-stress-s7",
+        "chronic-stress-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "work-stress",
+      "categoryId": "stress-anxiety",
+      "subcategoryId": "stress-burnout",
+      "preservedScenarioIds": [
+        "work-stress-s1",
+        "work-stress-s2",
+        "work-stress-s3",
+        "work-stress-s4"
+      ],
+      "proposedScenarioIds": [
+        "work-stress-s5",
+        "work-stress-s6",
+        "work-stress-s7",
+        "work-stress-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "burnout",
+      "categoryId": "stress-anxiety",
+      "subcategoryId": "stress-burnout",
+      "preservedScenarioIds": [
+        "burnout-s1",
+        "burnout-s2",
+        "burnout-s3",
+        "burnout-s4"
+      ],
+      "proposedScenarioIds": [
+        "burnout-s5",
+        "burnout-s6",
+        "burnout-s7",
+        "burnout-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "constant-anxiety",
+      "categoryId": "stress-anxiety",
+      "subcategoryId": "anxiety-fears",
+      "preservedScenarioIds": [
+        "constant-anxiety-s1",
+        "constant-anxiety-s2",
+        "constant-anxiety-s3",
+        "constant-anxiety-s4"
+      ],
+      "proposedScenarioIds": [
+        "constant-anxiety-s5",
+        "constant-anxiety-s6",
+        "constant-anxiety-s7",
+        "constant-anxiety-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "anxiety-no-reason",
+      "categoryId": "stress-anxiety",
+      "subcategoryId": "anxiety-fears",
+      "preservedScenarioIds": [
+        "anxiety-no-reason-s1",
+        "anxiety-no-reason-s2",
+        "anxiety-no-reason-s3",
+        "anxiety-no-reason-s4"
+      ],
+      "proposedScenarioIds": [
+        "anxiety-no-reason-s5",
+        "anxiety-no-reason-s6",
+        "anxiety-no-reason-s7",
+        "anxiety-no-reason-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "panic-attacks",
+      "categoryId": "stress-anxiety",
+      "subcategoryId": "anxiety-fears",
+      "preservedScenarioIds": [
+        "panic-attacks-s1",
+        "panic-attacks-s2",
+        "panic-attacks-s3",
+        "panic-attacks-s4"
+      ],
+      "proposedScenarioIds": [
+        "panic-attacks-s5",
+        "panic-attacks-s6",
+        "panic-attacks-s7",
+        "panic-attacks-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "phobias",
+      "categoryId": "stress-anxiety",
+      "subcategoryId": "anxiety-fears",
+      "preservedScenarioIds": [
+        "phobias-s1",
+        "phobias-s2",
+        "phobias-s3",
+        "phobias-s4"
+      ],
+      "proposedScenarioIds": [
+        "phobias-s5",
+        "phobias-s6",
+        "phobias-s7",
+        "phobias-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "childhood-trauma",
+      "categoryId": "stress-anxiety",
+      "subcategoryId": "psychological-trauma",
+      "preservedScenarioIds": [
+        "childhood-trauma-s1",
+        "childhood-trauma-s2",
+        "childhood-trauma-s3",
+        "childhood-trauma-s4"
+      ],
+      "proposedScenarioIds": [
+        "childhood-trauma-s5",
+        "childhood-trauma-s6",
+        "childhood-trauma-s7",
+        "childhood-trauma-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "inner-child",
+      "categoryId": "stress-anxiety",
+      "subcategoryId": "psychological-trauma",
+      "preservedScenarioIds": [
+        "inner-child-s1",
+        "inner-child-s2",
+        "inner-child-s3",
+        "inner-child-s4"
+      ],
+      "proposedScenarioIds": [
+        "inner-child-s5",
+        "inner-child-s6",
+        "inner-child-s7",
+        "inner-child-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "rejection-wounds",
+      "categoryId": "stress-anxiety",
+      "subcategoryId": "psychological-trauma",
+      "preservedScenarioIds": [
+        "rejection-wounds-s1",
+        "rejection-wounds-s2",
+        "rejection-wounds-s3",
+        "rejection-wounds-s4"
+      ],
+      "proposedScenarioIds": [
+        "rejection-wounds-s5",
+        "rejection-wounds-s6",
+        "rejection-wounds-s7",
+        "rejection-wounds-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "abandonment-wounds",
+      "categoryId": "stress-anxiety",
+      "subcategoryId": "psychological-trauma",
+      "preservedScenarioIds": [
+        "abandonment-wounds-s1",
+        "abandonment-wounds-s2",
+        "abandonment-wounds-s3",
+        "abandonment-wounds-s4"
+      ],
+      "proposedScenarioIds": [
+        "abandonment-wounds-s5",
+        "abandonment-wounds-s6",
+        "abandonment-wounds-s7",
+        "abandonment-wounds-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "low-mood",
+      "categoryId": "stress-anxiety",
+      "subcategoryId": "depression-apathy",
+      "preservedScenarioIds": [
+        "low-mood-s1",
+        "low-mood-s2",
+        "low-mood-s3",
+        "low-mood-s4"
+      ],
+      "proposedScenarioIds": [
+        "low-mood-s5",
+        "low-mood-s6",
+        "low-mood-s7",
+        "low-mood-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "apathy",
+      "categoryId": "stress-anxiety",
+      "subcategoryId": "depression-apathy",
+      "preservedScenarioIds": [
+        "apathy-s1",
+        "apathy-s2",
+        "apathy-s3",
+        "apathy-s4"
+      ],
+      "proposedScenarioIds": [
+        "apathy-s5",
+        "apathy-s6",
+        "apathy-s7",
+        "apathy-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "loss-joy",
+      "categoryId": "stress-anxiety",
+      "subcategoryId": "depression-apathy",
+      "preservedScenarioIds": [
+        "loss-joy-s1",
+        "loss-joy-s2",
+        "loss-joy-s3",
+        "loss-joy-s4"
+      ],
+      "proposedScenarioIds": [
+        "loss-joy-s5",
+        "loss-joy-s6",
+        "loss-joy-s7",
+        "loss-joy-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    },
+    {
+      "topicId": "emotional-emptiness",
+      "categoryId": "stress-anxiety",
+      "subcategoryId": "depression-apathy",
+      "preservedScenarioIds": [
+        "emotional-emptiness-s1",
+        "emotional-emptiness-s2",
+        "emotional-emptiness-s3",
+        "emotional-emptiness-s4"
+      ],
+      "proposedScenarioIds": [
+        "emotional-emptiness-s5",
+        "emotional-emptiness-s6",
+        "emotional-emptiness-s7",
+        "emotional-emptiness-s8"
+      ],
+      "totalEditorialScenarios": 8,
+      "newScenarioMotifsPerScenario": 5,
+      "newEditorialStatus": "needs_human_review",
+      "newMediaStatus": "unbound"
+    }
+  ]
+}

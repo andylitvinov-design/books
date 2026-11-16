@@ -1,0 +1,42 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
+test('one approved owner-only Command Center stays canonical with a private read-only inspector',()=>{
+ const mobile=read('app/admin/command-center/command-center-mobile.jsx');
+ const api=read('app/api/admin/command-center/route.js');
+ const route=read('app/admin/command-center/page.tsx');
+ const manifest=JSON.parse(read('public/command-center.webmanifest'));
+ assert.match(route,/requireAdminRequest/);
+ assert.equal(manifest.start_url,'/admin/command-center');
+ assert.match(api,/inspect_delivery/);
+ assert.match(api,/ownerMaterialRequest/);
+ assert.match(api,/CROSS_ORIGIN_DENIED/);
+ assert.match(api,/ccUuid\(data.taskId\)/);
+ assert.match(mobile,/send\('inspect_delivery',\{taskId:id\}\)/);
+ assert.match(mobile,/selectedProof/);
+ assert.doesNotMatch(mobile,/markProductionLive|autoMergeGithub/);
+});
+test('source and status evidence from UI do not impersonate functional LIVE',()=>{
+ const mobile=read('app/admin/command-center/command-center-mobile.jsx');
+ assert.match(mobile,/selectedProof\?\.ci==='passed'/);
+ assert.match(mobile,/selectedProof\.codeOnProduction/);
+ assert.match(mobile,/t\.releaseBrowser/);
+ assert.match(mobile,/t\.noLive/);
+ assert.match(mobile,/disabled=\{!available\|\|busy\}/);
+ assert.ok(['Журнал агентов','Agent activity','Actividad de agentes'].every(s=>mobile.includes(s)));
+ assert.ok(['Проверка выпуска','Release verification','Verificación del lanzamiento'].every(s=>mobile.includes(s)));
+});
+test('voice capture is user-initiated, cleanly torn down and never sent to server',()=>{
+ const client=read('app/admin/command-center/command-center-mobile.jsx');
+ const voice=read('app/admin/command-center/command-center-voice-button.jsx');
+ const css=read('app/admin/command-center/command-center-voice-button.module.css');
+ assert.match(client,/CommandCenterVoiceButton/);
+ assert.match(client,/onTranscript=\{spoken=>setDraft/);
+ assert.match(voice,/recognition\.start\(\)/);
+ assert.match(voice,/recognition\.abort\(\)/);
+ assert.match(voice,/window\.webkitSpeechRecognition/);
+ assert.match(voice,/SpeechRecognition/);
+ assert.doesNotMatch(voice,/fetch\(|XMLHttpRequest|localStorage|MediaRecorder/);
+ assert.match(css,/min-height:44px/);
+});

@@ -1,0 +1,177 @@
+{
+  "version": "hh-curated-audio-imports-v1",
+  "rightsPolicy": "Only individually reviewed PD / CC0 / CC BY sound recordings with independently cleared composition rights; never raw standalone-restricted Pixabay music, copyrighted chart recordings, or CC BY-NC.",
+  "entries": [
+    {
+      "id": "curated-memory-away",
+      "kind": "melody",
+      "sourceType": "reviewed_external_recording",
+      "url": "/audio/mandala/curated/curated-memory-away.mp3",
+      "name": {
+        "ru": "Далёкое воспоминание",
+        "en": "A Memory Away",
+        "es": "Un recuerdo lejano"
+      },
+      "title": "A Memory Away",
+      "creator": "Tanner Helland",
+      "performer": "Tanner Helland",
+      "categories": [
+        "love",
+        "body",
+        "stress"
+      ],
+      "moods": [
+        "calm"
+      ],
+      "pace": "slow",
+      "voiceSafe": true,
+      "durationSeconds": 96.026,
+      "sourcePage": "https://github.com/tannerhelland/free-music/blob/f6bfe16f49feab2181075ab86b13b24740592aa6/mp3/A%20Memory%20Away.mp3",
+      "sourceSha256": "7f2bd5e82609bc8de59896547c000ae2058de4a7e0dead57a0a347ef3b49588f",
+      "audioSha256": "04f44d0d80168d9717e603f221df100dfdbda5ab189f485f0653de25df7af84c",
+      "recordingLicense": "CC-BY-4.0",
+      "recordingLicenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "recordingLicenseEvidence": "https://github.com/tannerhelland/free-music/blob/f6bfe16f49feab2181075ab86b13b24740592aa6/README.md",
+      "compositionRights": "licensed_for_commercial_sync",
+      "compositionLicenseEvidence": "https://github.com/tannerhelland/free-music/blob/f6bfe16f49feab2181075ab86b13b24740592aa6/LICENSE.md",
+      "reviewedOn": "2026-11-04"
+    },
+    {
+      "id": "curated-daybreak",
+      "kind": "melody",
+      "sourceType": "reviewed_external_recording",
+      "url": "/audio/mandala/curated/curated-daybreak.mp3",
+      "name": {
+        "ru": "Рассвет",
+        "en": "Daybreak",
+        "es": "Amanecer"
+      },
+      "title": "Daybreak",
+      "creator": "Tanner Helland",
+      "performer": "Tanner Helland",
+      "categories": [
+        "energy",
+        "business"
+      ],
+      "moods": [
+        "uplift",
+        "focus"
+      ],
+      "pace": "steady",
+      "voiceSafe": false,
+      "durationSeconds": 96.026,
+      "sourcePage": "https://github.com/tannerhelland/free-music/blob/f6bfe16f49feab2181075ab86b13b24740592aa6/mp3/Daybreak.mp3",
+      "sourceSha256": "4b6ba15448868847d62e62742e1b12ac0e3e7483a5f14feab7a169e85488d812",
+      "audioSha256": "874d2a8b18b7ff73511c7e25736efdc1f16e3180a373ebd66970c994d4eac400",
+      "recordingLicense": "CC-BY-4.0",
+      "recordingLicenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "recordingLicenseEvidence": "https://github.com/tannerhelland/free-music/blob/f6bfe16f49feab2181075ab86b13b24740592aa6/README.md",
+      "compositionRights": "licensed_for_commercial_sync",
+      "compositionLicenseEvidence": "https://github.com/tannerhelland/free-music/blob/f6bfe16f49feab2181075ab86b13b24740592aa6/LICENSE.md",
+      "reviewedOn": "2026-11-04"
+    },
+    {
+      "id": "curated-home",
+      "kind": "melody",
+      "sourceType": "reviewed_external_recording",
+      "url": "/audio/mandala/curated/curated-home.mp3",
+      "name": {
+        "ru": "Дом",
+        "en": "Home",
+        "es": "Hogar"
+      },
+      "title": "Home",
+      "creator": "Tanner Helland",
+      "performer": "Tanner Helland",
+      "categories": [
+        "body",
+        "love",
+        "stress"
+      ],
+      "moods": [
+        "calm"
+      ],
+      "pace": "slow",
+      "voiceSafe": true,
+      "durationSeconds": 89.522,
+      "sourcePage": "https://github.com/tannerhelland/free-music/blob/f6bfe16f49feab2181075ab86b13b24740592aa6/mp3/Home.mp3",
+      "sourceSha256": "d1f67610a9e58e4556a9988b637545fea8408983b58b14a398ef292e7a7a4cdb",
+      "audioSha256": "3bdd64b12fad75a41363d2b651ff6aa5bc6bddf5ecc8756484ab02006aac4a96",
+      "recordingLicense": "CC-BY-4.0",
+      "recordingLicenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "recordingLicenseEvidence": "https://github.com/tannerhelland/free-music/blob/f6bfe16f49feab2181075ab86b13b24740592aa6/README.md",
+      "compositionRights": "licensed_for_commercial_sync",
+      "compositionLicenseEvidence": "https://github.com/tannerhelland/free-music/blob/f6bfe16f49feab2181075ab86b13b24740592aa6/LICENSE.md",
+      "reviewedOn": "2026-11-04"
+    },
+    {
+      "id": "curated-forest-awakes",
+      "kind": "melody",
+      "sourceType": "reviewed_external_recording",
+      "url": "/audio/mandala/curated/curated-forest-awakes.mp3",
+      "name": {
+        "ru": "Пробуждение леса",
+        "en": "The Forest Awakes",
+        "es": "El bosque despierta"
+      },
+      "title": "The Forest Awakes",
+      "creator": "Tanner Helland",
+      "performer": "Tanner Helland",
+      "categories": [
+        "energy",
+        "body",
+        "stress"
+      ],
+      "moods": [
+        "uplift",
+        "calm"
+      ],
+      "pace": "steady",
+      "voiceSafe": true,
+      "durationSeconds": 96.026,
+      "sourcePage": "https://github.com/tannerhelland/free-music/blob/f6bfe16f49feab2181075ab86b13b24740592aa6/mp3/The%20Forest%20Awakes.mp3",
+      "sourceSha256": "4fe96e3663c84142d5eba4e8297c1278b4e80828eba8c1ceaed7e376d368c5b2",
+      "audioSha256": "f7fd03ed016cfc50f9131d5babd4803d0c155a4faf94e6bb48557eab64c264c5",
+      "recordingLicense": "CC-BY-4.0",
+      "recordingLicenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "recordingLicenseEvidence": "https://github.com/tannerhelland/free-music/blob/f6bfe16f49feab2181075ab86b13b24740592aa6/README.md",
+      "compositionRights": "licensed_for_commercial_sync",
+      "compositionLicenseEvidence": "https://github.com/tannerhelland/free-music/blob/f6bfe16f49feab2181075ab86b13b24740592aa6/LICENSE.md",
+      "reviewedOn": "2026-11-04"
+    },
+    {
+      "id": "curated-leaving-millie",
+      "kind": "melody",
+      "sourceType": "reviewed_external_recording",
+      "url": "/audio/mandala/curated/curated-leaving-millie.mp3",
+      "name": {
+        "ru": "Прощание с Милли · живое пианино",
+        "en": "Leaving Millie · live piano",
+        "es": "Dejando a Millie · piano en vivo"
+      },
+      "title": "Leaving Millie (live piano)",
+      "creator": "Tanner Helland",
+      "performer": "Tanner Helland",
+      "categories": [
+        "love",
+        "stress",
+        "body"
+      ],
+      "moods": [
+        "calm"
+      ],
+      "pace": "slow",
+      "voiceSafe": true,
+      "durationSeconds": 96.026,
+      "sourcePage": "https://github.com/tannerhelland/free-music/blob/f6bfe16f49feab2181075ab86b13b24740592aa6/mp3/Leaving%20Millie%20(live%20piano).mp3",
+      "sourceSha256": "ea1b9bdc79d6dbd161a73a50d1fa4f94439164f0735e221644f1c419e6695d4e",
+      "audioSha256": "6ad3768d7e1a37c3e2c4b48981acb11e1ae9028df71f7a68217d6fdbd2149614",
+      "recordingLicense": "CC-BY-4.0",
+      "recordingLicenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "recordingLicenseEvidence": "https://github.com/tannerhelland/free-music/blob/f6bfe16f49feab2181075ab86b13b24740592aa6/README.md",
+      "compositionRights": "licensed_for_commercial_sync",
+      "compositionLicenseEvidence": "https://github.com/tannerhelland/free-music/blob/f6bfe16f49feab2181075ab86b13b24740592aa6/LICENSE.md",
+      "reviewedOn": "2026-11-04"
+    }
+  ]
+}

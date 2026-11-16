@@ -3,7 +3,7 @@
   "short_name": "Holistic House",
   "description": "Tu espacio privado de Holistic House: mensajes, consultas, pruebas, informes y cursos",
   "lang": "es",
-  "start_url": "/es/app/messages",
+  "start_url": "/es",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",

@@ -1,0 +1,36 @@
+.root{margin:12px 0;padding:15px;background:#fffcfa;border:1px solid #eadfd9;
+ border-radius:20px;color:#142b3d;display:grid;gap:12px;min-width:0}
+.heading{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.heading h4{margin:0;font:800 18px/1.25 Arial,Helvetica,sans-serif;color:#14523f}
+.root button,.root a{display:inline-flex;align-items:center;justify-content:center;gap:8px;
+ min-height:44px;padding:9px 12px;text-align:center;border-radius:14px;
+ font:750 14px/1.3 Arial,Helvetica,sans-serif;text-decoration:none;cursor:pointer;
+ background:#fff;border:1px solid #bddad0;color:#14523f}
+.root :is(button,a,input):focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+.root button:disabled{opacity:.55;cursor:wait}
+.heading .close{border:0;background:transparent;color:#5d6a71}
+.choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.choices .device{background:#067a67;border-color:#067a67;color:#fff}
+.help,.hint,.notice{margin:0;font:500 13px/1.5 Arial,Helvetica,sans-serif;color:#5d6a71}
+.bot{display:flex;flex-wrap:wrap;align-items:center;gap:9px;
+ padding:12px;background:#f0f7ef;border:1px solid #d7e9db;border-radius:16px}
+.bot .linked{display:inline-flex;align-items:center;gap:6px;color:#067a67}
+.bot .secondary{background:#fff}
+.bot .hint{width:100%}
+.bot a{background:#e8f6ea}
+.consent{display:flex;align-items:flex-start;gap:10px;width:100%;padding:10px;
+ background:#fff;border:1px solid #cadbd0;border-radius:13px;cursor:pointer}
+.consent input{margin-top:4px;flex:none;width:19px;height:19px;accent-color:#067a67}
+.consent span{display:grid;gap:4px;color:#14523f;font-size:14px}
+.consent small,.privacy{font:500 12px/1.5 Arial,Helvetica,sans-serif;color:#5d6a71}
+.root .notice{color:#14523f;font-weight:700}
+@media(max-width:480px){
+ .root{padding:12px}
+ .choices{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .choices .device{grid-column:1/-1}
+ .root button,.root a{font-size:13px;overflow-wrap:anywhere}
+}
+
+.choices .savePrivate{background:#eaf6ed;border-color:#92cbb2;color:#125743}
+.root [data-video-saved-library-link]{justify-self:start;color:#0a6d52;background:#e6f5e9;font-weight:800}
+@media(max-width:480px){.choices .savePrivate{grid-column:1/-1}}

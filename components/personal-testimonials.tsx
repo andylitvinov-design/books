@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, Quote } from "lucide-react";
 
 import { SiteVideoPlayer } from "@/components/site-video-player";
+import { HomeYoutubeFacade } from "@/components/home-youtube-facade";
 import { HomeTestimonialMore } from "@/components/home-testimonial-more";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./personal-testimonials.module.css";
@@ -19,6 +20,12 @@ export const locallyArchivedVideoPosterIds = new Set([
   "4NrryHcEF1A", "hYwRNMxIMjc", "MIVLm1GUTtM", "ttQxUHopaUM",
   "VABgpmn4ZYA", "muOnIHllI7E",
 ]);
+
+/** The exact-ID local video still, or YouTube's own fallback if none is approved. */
+export const archivedTestimonialPosterFor = (id: string): string | undefined =>
+  locallyArchivedVideoPosterIds.has(id)
+    ? `/images/holistic-house/testimonial-posters/${id}.webp`
+    : undefined;
 
 export const testimonialVideos = {
   ru: [
@@ -139,14 +146,23 @@ export function PersonalTestimonials({
             : locale === "ru" ? "Английский · EN" : locale === "es" ? "Inglés · EN" : "English · EN"}
         </p>
       ) : null}
-      <SiteVideoPlayer
-        video={{ youtubeId: item.id, language: item.language, title: item.title }}
-        locale={locale}
-        compact
-        minimal={isAbout}
-        internalOnly={isAbout}
-        fallbackPoster={locallyArchivedVideoPosterIds.has(item.id) ? `/images/holistic-house/testimonial-posters/${item.id}.webp` : undefined}
-      />
+      {isHome ? (
+        <HomeYoutubeFacade
+          video={{ youtubeId: item.id, language: item.language, title: item.title }}
+          locale={locale}
+          compact
+          fallbackPoster={locallyArchivedVideoPosterIds.has(item.id) ? `/images/holistic-house/testimonial-posters/${item.id}.webp` : undefined}
+        />
+      ) : (
+        <SiteVideoPlayer
+          video={{ youtubeId: item.id, language: item.language, title: item.title }}
+          locale={locale}
+          compact
+          minimal={isAbout}
+          internalOnly={isAbout}
+          fallbackPoster={locallyArchivedVideoPosterIds.has(item.id) ? `/images/holistic-house/testimonial-posters/${item.id}.webp` : undefined}
+        />
+      )}
     </div>
   ));
 

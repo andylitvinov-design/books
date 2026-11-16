@@ -82,7 +82,7 @@ test('one question per screen, account persisted before Continue, explicit compl
   assert.match(ui,/data-coaching-question=\{question\.id\}/)
   assert.match(ui,/<textarea/)
   assert.match(ui,/onClick=\{\(\)=>next\(false\)\}/)
-  assert.match(ui,/command\('answer',\{questionId:question\.id,answer\}\)/)
+  assert.match(ui,/command\('answer',\{questionId:question\.id,answer,/)
   assert.match(ui,/commandAfterSave\(saved,'complete'\)/)
   assert.match(ui,/beforeunload/)
   assert.match(ui,/activeQuestions\.map\(item=>/)

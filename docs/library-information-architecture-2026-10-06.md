@@ -19,7 +19,7 @@ Alchemy of the Soul, Daoist tradition, and Maya tradition are **source-series la
 
 ## Current public corpus
 
-- 23 published books / manuals in `data/library.js`
+- 31 published books / manuals in `data/library.js` (23 original + 8 source-based ancient-tradition volumes, 2026-11-05)
 - 104 canonical remedy cards in the standalone remedy catalogue / Book 02 reference layer
 - Wu Xing client methodology as a standalone working guide
 - video materials remain a separate Library view
@@ -126,3 +126,8 @@ Use explicit related-material links instead of duplicating content:
 ## Health/editorial safety
 
 Health-related source texts may be preserved as authorial educational/archive material, but public structure must not convert source observations into diagnoses, prescriptions, dosing instructions, medication changes, cure guarantees, or claims that homeopathy replaces standard or urgent care.
+
+
+## 2026-11-05 · Original-source ancient traditions
+
+Eight additional manuscripts follow the existing source-books + canonical book catalog pattern: Egypt 2, Greece 3, Rome 1, Zoroastrianism/Mithra 2. The original 23 books and established URLs remain unchanged. Each new volume embeds the archival original author text, chapter links and primary Google Drive provenance. Sources and source-range decisions: [ANCIENT_TRADITIONS_SOURCE_MAP_20261105.md](../source-books/ANCIENT_TRADITIONS_SOURCE_MAP_20261105.md). Embedded Drive photos have *not* been rehosted pending source-paragraph association and rights checking. No paid/new service is added.

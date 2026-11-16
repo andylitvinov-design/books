@@ -188,6 +188,10 @@ test('day one restores five opening screens and all days add untracked support a
       assert.equal(f.payload.welcomeFeeling,null)
     }
     assert.ok(textOf(h.tree).includes(oporaEndingCopy(lang).congratsLead),'Saved receipt uses current supportive wording')
+    const learnedSkill=nodes(h.tree).find(node=>node.props?.['data-opora-learned-skill']===day)
+    assert.ok(learnedSkill,'Saved OPORA Day '+day+' must name the actual skill')
+    assert.ok(textOf(learnedSkill).includes(daily.title),'Day '+day+' displays the current skill in '+lang)
+    assert.ok(textOf(learnedSkill).includes(daily.practice),'Day '+day+' shows its actionable practice in '+lang)
     assert.ok(textOf(h.tree).includes(daily.transfer),'Confirmed receipt shows the one selected step')
     assert.match(textOf(h.tree),lang==='ru'?/Поздравляем/:/Congratulations/)
     assert.ok(!findButton(h.tree,lang==='ru'?'Послушать волны':'Relax with waves'),
@@ -421,5 +425,16 @@ test('only active V7 can submit five moments; old 14-step lesson sequences stay 
     const old=lessonFor('calm_regulation',1,lang,'standard',COURSE_ANTISTRESS_SKILLS_V6)
     assert.equal(buildCourseSlides(old).length,14)
     assert.equal(verifyCourseSlideVisitOrder(buildCourseSlides(old),OPORA_EXPERIENCE_PRE_SAVE_KEYS),false)
+  }
+})
+
+test('OPORA saved skill headings exist in English, Russian and Spanish without user-data writes',()=>{
+  for(const locale of ['en','ru','es']){
+    const c=oporaEndingCopy(locale)
+    assert.ok(c.congratsSkillLabel && c.congratsPracticeLabel)
+    for(let day=1;day<=14;day++){
+      const item=oporaExperienceDay(day,locale)
+      assert.ok(item.title && item.practice,'Missing '+locale+' skill for Day '+day)
+    }
   }
 })

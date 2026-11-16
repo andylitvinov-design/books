@@ -6,6 +6,7 @@ import {readFileSync} from 'node:fs'
 import {
   parseDiagnosticStart,telegramPublicStartRequested,telegramDiagnosticReady,telegramDiagnosticPublicUrl,
   transitionTelegramDiagnosticLegacy as transitionTelegramDiagnostic,TELEGRAM_DIAGNOSTIC_PHOTO_LIMIT,
+  telegramReplyConsentTimestamp,
 } from '../lib/crm/telegram-diagnostic.mjs'
 
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
@@ -160,8 +161,15 @@ test('signed Telegram transport, single transactional CRM save, update-id dedup 
   const route=source('app/api/app/crm/messenger/webhook/[provider]/route.js')
   const db=source('supabase/migrations/20261026143713_hh_crm_telegram_diagnostic_intake_20261026.sql')
   const publicApi=source('app/api/public/telegram-diagnostic/route.js')
-  assert.ok(route.indexOf('verifyMessengerWebhook(provider,raw,request.headers)')<
-    route.indexOf('processTelegramDiagnostic(event,config)'))
+  const signed=route.indexOf('verifyMessengerWebhook(provider,raw,request.headers)')
+  const v3=route.indexOf('processTelegramAiV3(diagnosticEvent,config)')
+  const legacy=route.indexOf('processTelegramDiagnostic(diagnosticEvent,config)')
+  // A signed webhook is mandatory before either the new V3 or fallback
+  // diagnostic receives normalized input; preserve the old security test.
+  assert.ok(signed>=0,'webhook signature gate must remain present')
+  assert.ok(v3>signed,'AI V3 must run only after webhook signature verification')
+  assert.ok(legacy>signed,'legacy diagnostic must run only after webhook signature verification')
+  assert.doesNotMatch(route,/processTelegramDiagnostic\(event,config\)/)
   assert.match(hook,/telegramPilotReady\(env\)/)
   assert.match(hook,/last_update_id/)
   assert.match(hook,/pg_advisory_xact_lock/)
@@ -198,7 +206,11 @@ test('diagnostic webhook forwards committed reply as Bot API text, not a missing
   const provider=source('lib/crm/messenger-provider.js')
   assert.match(route,/sendTelegramDiagnosticPrompt\(\{to:intake\.to,text:intake\.reply,keyboard:intake\.keyboard,/)
   assert.match(route,/approvedPilotGuest:intake\.approvedPilotGuest===true/)
-  assert.match(provider,/sendTelegramDiagnosticPrompt\(\{to,text,keyboard=\[\],approvedPilotGuest=false,locale='en'\}/)
+  assert.match(provider,/sendTelegramDiagnosticPrompt\(\{to,text,keyboard=\[\],approvedPilotGuest=false,locale='en',webAppUrl=null,presentation=false\}/)
+  assert.match(provider,/telegramPresentationMessage\(text,locale,presentation\)/)
+  assert.match(provider,/if\(welcome\.linkPreview\)body\.link_preview_options=welcome\.linkPreview/)
+  assert.match(provider,/INVALID_WEBAPP_LINK/)
+  assert.match(route,/webAppUrl:intake\.webAppUrl\|\|null/)
   assert.doesNotMatch(route,/sendTelegramDiagnosticPrompt\(intake\)/)
 })
 
@@ -267,4 +279,13 @@ test('owner Telegram proxy blocks inflated, malformed, unsafe-path and invalid c
     await assert.rejects(retrievePrivateTelegramPhoto(photoId,env),{code:'PHOTO_UNAVAILABLE',status:404})
     assert.deepEqual(calls,['metadata','download'])
   })
+})
+
+test('reply-only consent survives a Telegram questionnaire restart, but not STOP',()=>{
+  const prior={consent_at:'2026-10-26T15:00:00Z'},now='2026-11-04T13:42:42Z'
+  assert.equal(telegramReplyConsentTimestamp(prior,{stage:'consent'},now),prior.consent_at)
+  assert.equal(telegramReplyConsentTimestamp(prior,{stage:'drawing'},now),prior.consent_at)
+  assert.equal(telegramReplyConsentTimestamp(prior,{stage:'focus',consent:true},now),now)
+  assert.equal(telegramReplyConsentTimestamp(prior,{stage:'stopped',stop:true},now),null)
+  assert.equal(telegramReplyConsentTimestamp(null,{stage:'consent'},now),null)
 })

@@ -1,0 +1,52 @@
+{
+  "schemaVersion": "hh-hd-stock-release-v1",
+  "date": "2026-11-04",
+  "sourceArtifactId": 13300344783,
+  "sourceRun": 41783128782,
+  "editorialPipeline": "16 checked; 8 technical rejected; 4 editorial rejected; 4 selected and individually screened",
+  "userAuthorizedRelease": true,
+  "userViewedEachIndividualClip": false,
+  "editorialReviewer": "assistant_review_of_full_120_frames",
+  "publicationStatus": "pr_candidate_awaits_protected_merge_and_live_evidence",
+  "targetCountLicensed": 48,
+  "targetCountAnimated": 684,
+  "targetCountTotal": 732,
+  "originalsNotRedistributed": true,
+  "portraitOnly": true,
+  "sourceOriginal1920x1080": true,
+  "encoded720x1280_24fps": true,
+  "creditedSourceVideoIds": [
+    {
+      "id": "sun-trees-forest",
+      "sha256": "82156e7fae970c6705b322c156b5736ae5962877b9efd0eb034c201416ed972d",
+      "bytes": 2382205,
+      "sourcePage": "https://dareful.com/sun-trees-forest/",
+      "attribution": "Joel Holland / Dareful / CC BY 4.0; 5-second excerpt, cropped from 1920x1080 landscape to 720x1280 portrait and re-encoded; https://dareful.com/sun-trees-forest/",
+      "approvedByEditorialReview": true
+    },
+    {
+      "id": "warm-clouds-sunset",
+      "sha256": "692ed60e4cb9789c89bbd2c8facace4bb74f4cebbe154e6e01121717566e360a",
+      "bytes": 293260,
+      "sourcePage": "https://dareful.com/warm-clouds-sunset/",
+      "attribution": "Joel Holland / Dareful / CC BY 4.0; 5-second excerpt, cropped from 1920x1080 landscape to 720x1280 portrait and re-encoded; https://dareful.com/warm-clouds-sunset/",
+      "approvedByEditorialReview": true
+    },
+    {
+      "id": "fall-foliage-forest",
+      "sha256": "8e5aa88bed6d3315a3a33f1f85c98116f98cfdee565c5f57b21d3739566d85a9",
+      "bytes": 733455,
+      "sourcePage": "https://dareful.com/fall-foliage-forest/",
+      "attribution": "Joel Holland / Dareful / CC BY 4.0; 5-second excerpt, cropped from 1920x1080 landscape to 720x1280 portrait and re-encoded; https://dareful.com/fall-foliage-forest/",
+      "approvedByEditorialReview": true
+    },
+    {
+      "id": "snow-forest-winter",
+      "sha256": "bf249c8f5ea904cad9dbbcfe79d366c852de2e40f07700430b4da6181de2a254",
+      "bytes": 1007986,
+      "sourcePage": "https://dareful.com/snow-forest-winter/",
+      "attribution": "Joel Holland / Dareful / CC BY 4.0; 5-second excerpt, cropped from 1920x1080 landscape to 720x1280 portrait and re-encoded; https://dareful.com/snow-forest-winter/",
+      "approvedByEditorialReview": true
+    }
+  ]
+}

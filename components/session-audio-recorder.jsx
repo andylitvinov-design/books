@@ -294,7 +294,7 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
       const video=file.type.startsWith('video/')||/\.(mp4|mov)$/i.test(file.name)
       if(videoOnly&&!video)throw new Error('MEDIA_TYPE_NOT_ALLOWED')
       if(audioOnly&&!file.type.startsWith('audio/'))throw new Error('MEDIA_TYPE_NOT_ALLOWED')
-      if(audioOnly&&!['audio/mp4','audio/x-m4a','audio/mpeg','audio/webm'].includes(file.type.split(';')[0].toLowerCase()))throw new Error('MEDIA_TYPE_NOT_ALLOWED')
+      if(audioOnly&&!['audio/mp4','audio/x-m4a','audio/mpeg','audio/webm','audio/wav','audio/x-wav','audio/ogg','audio/flac','audio/aac'].includes(file.type.split(';')[0].toLowerCase()))throw new Error('MEDIA_TYPE_NOT_ALLOWED')
       if(audioOnly&&(file.size<128||file.size>20_000_000))throw new Error('MEDIA_SIZE_NOT_ALLOWED')
       if(video&&availability.videoReady===false)throw new Error('VIDEO_STORAGE_NOT_CONFIGURED')
       if(video&&file.size>Number(availability.videoLimitBytes||45_000_000))
@@ -354,16 +354,16 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
           disabled={busy||Boolean(retryFile)||signInRequired||Boolean(readinessError)||videoStatus?.ready!==true}>
           <Video size={20}/>{ru?'Записать видео':'Record video'}</button>}
         <label className={styles.filePicker}><UploadCloud size={18}/>{videoOnly?(ru?'Загрузить видео':'Upload video'):audioOnly?(ru?'Загрузить файл':'Upload file'):(ru?'Загрузить из телефона':'Choose from phone')}
-          <input type="file" accept={videoOnly?'video/mp4,video/quicktime,.mp4,.mov':audioOnly?'audio/mp4,audio/x-m4a,audio/mpeg,audio/webm,.m4a,.mp3,.webm':
-            'audio/mp4,audio/x-m4a,audio/mpeg,audio/webm,video/mp4,video/quicktime,application/pdf,.m4a,.mp3,.webm,.mp4,.mov,.pdf'}
+          <input type="file" accept={videoOnly?'video/mp4,video/quicktime,.mp4,.mov':audioOnly?'audio/*,.m4a,.mp3,.wav,.wave,.webm,.ogg,.oga,.opus,.flac,.aac':
+            'audio/*,video/mp4,video/quicktime,application/pdf,.m4a,.mp3,.wav,.wave,.webm,.ogg,.oga,.opus,.flac,.aac,.mp4,.mov,.pdf'}
             onChange={chooseFile} disabled={busy||Boolean(retryFile)||signInRequired||Boolean(readinessError)} hidden/></label>
       </>}
     </div>
     {audioOnly&&<details className={styles.audioHelp}>
       <summary>{ru?'Как загрузить с iPhone?':'Import from iPhone Voice Memos'}</summary>
       <p>{ru?
-        'Диктофон → Поделиться → Сохранить в Файлы. Затем загрузите M4A, MP3 или WebM (до 20 МБ). Клиент увидит запись только после публикации отчёта.':
-        'Voice Memos → Share → Save to Files. Upload M4A, MP3 or WebM (up to 20 MB). Your client sees it only after the report is published.'}</p>
+        'Диктофон → Поделиться → Сохранить в Файлы. Затем выберите M4A, MP3, WAV, WebM, OGG, FLAC или AAC (до 20 МБ). Клиент увидит запись только после публикации отчёта.':
+        'Voice Memos → Share → Save to Files. Upload M4A, MP3, WAV, WebM, OGG, FLAC or AAC (up to 20 MB). Your client sees it only after the report is published.'}</p>
     </details>}
     {videoOnly&&<details className={styles.audioHelp}>
       <summary>{ru?'Как загрузить видео с iPhone?':'Import an iPhone video'}</summary>

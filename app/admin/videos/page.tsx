@@ -1,19 +1,20 @@
 import "@/app/site-video-admin.css";
-import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 
 import { PrescriptionAdminHeader } from "@/components/prescription-admin-header";
 import { SiteVideoManager } from "@/components/site-video-manager";
-import { VideoReviewQueue } from "@/components/video-review-queue";
 import { KlingSceneStudio } from "@/components/kling-scene-studio";
+import { VeoSceneStudio } from "@/components/veo-scene-studio";
 import { KlingAvatarStudio } from "@/components/kling-avatar-studio";
 import { books } from "@/data/library";
 import { localizedBookText } from "@/data/library-localization";
 import { getRemedyDirectory } from "@/data/remedies";
-import { requireAdminActor } from "@/lib/prescriptions/admin";
+import { requireAdminRequest } from "@/lib/prescriptions/admin";
 import { getAppConfig } from "@/lib/app/config";
-import { listVideoReviewRows } from "@/lib/site-videos/review-store";
+import { createPractitionerRepository } from "@/lib/practitioners/repository";
+import type { PublicPractitioner } from "@/lib/practitioners/public-types";
 import type { SiteVideoRecord } from "@/lib/site-videos/model";
 import { builtInSiteVideoRecords } from "@/lib/site-videos/defaults";
 import { getSiteVideoStore } from "@/lib/site-videos/store";
@@ -22,31 +23,32 @@ import { uiLocaleCookie } from "@/lib/ui-locale";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Website videos — Holistic House", robots: { index: false, follow: false } };
 
-export default async function SiteVideosPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
-  const actor = await requireAdminActor();
-  if (!actor) redirect("/admin/login");
-  const reviewMode = (await searchParams)?.tab === "review";
+export default async function SiteVideosPage() {
+  if (!await requireAdminRequest()) redirect("/admin/login");
   const cookieLocale = (await cookies()).get(uiLocaleCookie)?.value;
   const klingLocale = cookieLocale === "es" ? "es" : cookieLocale === "en" ? "en" : "ru";
   const initialLocale = klingLocale === "es" ? "en" : klingLocale;
   let records: SiteVideoRecord[] = [];
   let storageReady = false;
-  let reviewRows: Awaited<ReturnType<typeof listVideoReviewRows>> = [];
-  let reviewUnavailable = false;
   try {
-    if (reviewMode) {
-      reviewRows = await listVideoReviewRows(getAppConfig(), actor);
-    } else {
-      const store = getSiteVideoStore();
-      if (store) {
-        records = await store.list();
-        storageReady = true;
-      } else records = builtInSiteVideoRecords();
-    }
+    const store = getSiteVideoStore();
+    if (store) {
+      records = await store.list();
+      storageReady = true;
+    } else records = builtInSiteVideoRecords();
   } catch {
-    // Private storage errors do not leak secrets to HTML or browser logs.
-    reviewUnavailable = reviewMode;
+    // Configuration and connection errors stay out of HTML and browser logs.
   }
+
+  // Only already approved, public practitioner profiles may be attributed.
+  let masters: { slug: string; name: string }[] = [];
+  try {
+    const approved: PublicPractitioner[] = await createPractitionerRepository(getAppConfig()).listPublicPractitioners("en");
+    masters = approved.map(item => ({
+      slug: item.slug,
+      name: item.profile.displayName || item.profile.name || item.slug,
+    })).filter(item => Boolean(item.name));
+  } catch { /* Publishing remains disabled when the verified master directory is unavailable. */ }
 
   const entities = {
     remedies: getRemedyDirectory("en").map(remedy => ({ id: remedy.slug, label: { en: remedy.title, ru: remedy.title } })),
@@ -59,17 +61,29 @@ export default async function SiteVideosPage({ searchParams }: { searchParams: P
         title={{ en: "Website videos", ru: "Видео сайта" }}
         description={{ en: "Choose a page, add a YouTube link, and preview before publishing.", ru: "Выберите страницу, добавьте ссылку YouTube и проверьте видео перед публикацией." }}
       />
-      <nav className="video-review-nav" aria-label={klingLocale === "ru" ? "Разделы видео" : "Video sections"}>
-        <Link href="/admin/videos?tab=review" aria-current={reviewMode ? "page" : undefined}>
-          {klingLocale === "ru" ? "Лента проверки · RU/EN" : klingLocale === "es" ? "Revisión de vídeos" : "Review queue · RU/EN"}
-        </Link>
-        <Link href="/admin/videos" aria-current={!reviewMode ? "page" : undefined}>
-          {klingLocale === "ru" ? "Видео сайта / редактор" : klingLocale === "es" ? "Editor del sitio" : "Website video editor"}
-        </Link>
-      </nav>
-      {reviewMode ? <VideoReviewQueue initialRows={reviewRows} initialLocale={klingLocale}
-        unavailable={reviewUnavailable} /> : <>
-      <SiteVideoManager initialRecords={records} initialLocale={initialLocale} storageReady={storageReady} entities={entities} />
+      <SiteVideoManager initialRecords={records} initialLocale={initialLocale} storageReady={storageReady} entities={entities} masters={masters} />
+      <section className="site-video-review-entry" aria-label="Owner video review queue">
+        <div><strong>{klingLocale === "ru" ? "Проверка обучающих видео · RU/EN" : "Educational video review · RU/EN"}</strong>
+          <p>{klingLocale === "ru" ? "Содержание, длительность, права и категории перед появлением в MyTube." : "Verify content, length, rights and categories before MyTube."}</p></div>
+        <Link href="/admin/videos/review">{klingLocale === "ru" ? "Открыть очередь" : "Open review queue"}</Link>
+      </section>
+      <section className="site-video-review-entry" aria-label="Video library coverage">
+        <div>
+          <strong>{klingLocale === "ru" ? "Покрытие видеобиблиотеки" : "Video Library Coverage"}</strong>
+          <p>{klingLocale === "ru" ? "Проверьте 64 темы MyTube, 120 сценариев и очередь недостающих видеосцен без фиктивной готовности." : "Review 64 MyTube topics, 120 stories and missing source scenes without invented readiness."}</p>
+        </div>
+        <Link href="/admin/video-library">{klingLocale === "ru" ? "Открыть карту покрытия" : "Open coverage map"}</Link>
+      </section>
+      <section className="site-video-review-entry" aria-label="Storyboard review">
+        <div><strong>{klingLocale === "ru" ? "Редакторская проверка 120 сценариев" : "Review 120 video storyboards"}</strong>
+          <p>{klingLocale === "ru" ? "Просмотрите 48 локальных MP4-композиций, подберите четыре кадра и сохраните черновик без публикации." : "Inspect the 48 approved local MP4 compositions and save private storyboard notes without publishing."}</p></div>
+        <Link href="/admin/videos/scenario-review">{klingLocale === "ru" ? "Открыть проверку сцен" : "Open scene review"}</Link>
+      </section>
+      <VeoSceneStudio
+        initialLocale={klingLocale}
+        configured={Boolean(process.env.HH_VEO_GCP_PROJECT_ID && process.env.HH_VEO_GCS_OUTPUT_URI && process.env.HH_VEO_SERVICE_ACCOUNT_JSON)}
+        enabled={process.env.HH_VEO_PAID_ENABLED === "true"}
+      />
       <KlingSceneStudio
         initialLocale={klingLocale}
         configured={Boolean(process.env.KLING_API_KEY)}
@@ -81,7 +95,6 @@ export default async function SiteVideosPage({ searchParams }: { searchParams: P
         configured={Boolean(process.env.KLING_API_KEY)}
         enabled={process.env.HH_KLING_PAID_GENERATION_ENABLED === "true" && process.env.HH_KLING_AVATAR_PAID_ENABLED === "true"}
       />
-      </>}
     </main>
   );
 }

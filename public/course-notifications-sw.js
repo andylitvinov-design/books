@@ -12,16 +12,21 @@
     // Never render a supplied title, body, result, diagnosis, URL or record identifier.
     const clientMessage = payload?.kind === 'client-message'
     const masterMessage = payload?.kind === 'master-message'
-    const message = clientMessage || masterMessage
-    const requestId = payload?.requestId
-    if (message && (typeof requestId !== 'string' ||
-      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestId))) return
+    const directMessage = payload?.kind === 'direct-message'
+    const message = clientMessage || masterMessage || directMessage
+    const requestId = payload?.requestId, threadId = payload?.threadId
+    const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    if ((clientMessage || masterMessage) && (typeof requestId !== 'string' || !uuid.test(requestId))) return
+    if (directMessage && (typeof threadId !== 'string' || !uuid.test(threadId))) return
     const root = locale === 'ru' ? 'ru' : 'en'
-    const href = masterMessage
-      ? `/${root}/app/practice?panel=clients&requestId=${requestId.toLowerCase()}`
-      : clientMessage
-        ? `/${root}/app/consultations?request=${requestId.toLowerCase()}`
-        : `/${root}/app/course`
+    const directRoot = ['en', 'ru', 'es'].includes(locale) ? locale : 'en'
+    const href = directMessage
+      ? `/${directRoot}/app/messages?thread=${threadId.toLowerCase()}`
+      : masterMessage
+        ? `/${root}/app/practice?panel=clients&requestId=${requestId.toLowerCase()}`
+        : clientMessage
+          ? `/${root}/app/consultations?request=${requestId.toLowerCase()}`
+          : `/${root}/app/course`
     event.waitUntil(self.registration.showNotification('Holistic House', {
       body: message
         ? (masterMessage
@@ -42,6 +47,7 @@
     const href = /^\/(en|ru)\/app\/course$/.test(requested || '') ||
       /^\/(en|ru)\/app\/consultations\?request=[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(requested || '')
       || /^\/(en|ru)\/app\/practice\?panel=clients&requestId=[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(requested || '')
+      || /^\/(en|ru|es)\/app\/messages\?thread=[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(requested || '')
       ? requested : '/en/app/course'
     const destination = new URL(href, self.location.origin).href
     event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async clients => {

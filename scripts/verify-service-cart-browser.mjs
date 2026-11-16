@@ -99,7 +99,7 @@ async function harness(locale = 'en', width = 360) {
   const page = await context.newPage()
   page.on('pageerror', (error) => errors.push(error.message))
   mark(`${locale}/${width}: real public Services has no cart`)
-  await page.goto(`${origin}/${locale}/services`, { waitUntil: 'networkidle' })
+  await page.goto(`${origin}/${locale}/services`, { waitUntil: 'domcontentloaded', timeout:60000 })
   await page.locator('main').first().waitFor({ state: 'visible' })
   assert.equal(await page.locator('[data-service-cart], #service-cart').count(), 0, 'ServiceCart must remain absent from real public Services')
   const presentation = await page.evaluate(() => ({

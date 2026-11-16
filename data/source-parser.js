@@ -5,7 +5,7 @@ const allowedTags = new Set([
   'tr', 'ul',
 ])
 
-const allowedMediaSeries = new Set(['alchemy', 'dao', 'maya'])
+const allowedMediaSeries = new Set(['alchemy', 'dao', 'maya', 'egypt', 'greek', 'roman', 'zoroastrian'])
 const mayaTempleMediaRoots = new Set([
   'maya-egregor-gods',
   'maya-calendar',

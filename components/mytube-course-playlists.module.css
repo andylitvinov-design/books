@@ -1,0 +1,72 @@
+/* MyTube dark-only playlist navigator. Never affects public Library or Studio. */
+.catalog{display:grid;gap:17px;width:100%;min-width:0;color:#f1f1f1;color-scheme:dark}
+.filters{display:grid;gap:10px;padding:12px;border:1px solid #343434;border-radius:15px;background:#181818}
+.heading{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.heading strong{font:750 13px/1.3 Arial,Helvetica,sans-serif;color:#ddd}
+.clear{border:0;background:transparent;color:#ccc;min-height:34px;padding:4px 6px;text-decoration:underline;font:650 12px/1.2 Arial,Helvetica,sans-serif;cursor:pointer}
+.categories{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.categories button{min-width:0;min-height:46px;border:1px solid #414141;border-radius:11px;padding:8px 5px;background:#272727;color:#eee;font:700 12px/1.25 Arial,Helvetica,sans-serif;text-align:center;cursor:pointer}
+.categories button[aria-pressed=true],.topics button[aria-pressed=true]{background:#f1f1f1;color:#111;border-color:#f1f1f1}
+.topicSection{display:grid;gap:8px;border-top:1px solid #303030;padding-top:12px}
+.topics{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;overscroll-behavior-x:contain}
+.topics::-webkit-scrollbar{display:none}
+.topics button{flex:0 0 auto;min-height:44px;max-width:70%;border:1px solid #444;border-radius:11px;padding:9px 13px;background:#272727;color:#eee;font:700 12px/1.25 Arial,Helvetica,sans-serif;white-space:normal;text-align:center;cursor:pointer}
+.collections{display:grid;gap:11px;min-width:0}
+.collectionTitle{display:flex;gap:9px;align-items:center}
+.collectionTitle strong{font:750 17px/1.25 Arial,Helvetica,sans-serif}
+.collectionTitle span{border-radius:20px;background:#292929;color:#ddd;padding:3px 9px;font-size:12px}
+.hint{margin:-1px 0 2px;color:#999;font:500 12px/1.4 Arial,Helvetica,sans-serif}
+.empty{margin:0;border:1px solid #343434;border-radius:12px;background:#202020;padding:17px;color:#c9c9c9;font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:start;min-width:0}
+.playlist{min-width:0;border:1px solid #343434;border-radius:14px;background:#1b1b1b;overflow:hidden}
+.playlist.open{border-color:#5b5b5b;grid-column:span 2}
+.playlistButton{display:flex;align-items:center;gap:12px;width:100%;min-height:106px;padding:10px;border:0;background:transparent;color:#eee;text-align:left;cursor:pointer}
+.playlistButton:hover{background:#252525}
+.cover{position:relative;display:grid;place-items:center;flex:0 0 154px;width:154px;aspect-ratio:16/9;overflow:hidden;border-radius:10px;background:#303030}
+.cover img,.lessonThumb img{object-fit:cover}
+.playlistCount{position:absolute;bottom:5px;right:5px;display:flex;align-items:center;gap:4px;border-radius:5px;background:#111e;padding:4px 6px;font:750 11px/1 Arial,Helvetica,sans-serif;color:#fff}
+.courseText{display:grid;min-width:0;flex:1;gap:7px}
+.courseText strong{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere;font:750 15px/1.26 Arial,Helvetica,sans-serif}
+.courseText>span{font:500 12px/1.4 Arial,Helvetica,sans-serif;color:#aaa}
+.arrow{flex:none;color:#aaa;transition:transform .15s ease}
+.open .arrow{transform:rotate(180deg)}
+.lessons{display:grid;gap:0;border-top:1px solid #333;padding:5px 10px 11px}
+.lesson{display:flex;min-width:0;gap:4px;align-items:center;border-bottom:1px solid #303030}
+.lesson:last-child{border-bottom:0}
+.lessonWatch{display:flex;align-items:center;flex:1;gap:10px;min-width:0;min-height:64px;padding:6px 2px;border:0;background:transparent;color:#eee;text-align:left;cursor:pointer}
+.lessonWatch[aria-pressed=true]{color:#fff;background:#303030}
+.lessonWatch:disabled{opacity:.6;cursor:default}
+.lessonNumber{display:grid;place-items:center;flex:0 0 20px;color:#aaa;font:700 12px/1 Arial,Helvetica,sans-serif}
+.lessonThumb{position:relative;display:grid;place-items:center;flex:0 0 86px;width:86px;aspect-ratio:16/9;border-radius:7px;background:#333;overflow:hidden}
+.lessonText{display:grid;flex:1;min-width:0;gap:4px}
+.lessonText>span{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere;font:700 13px/1.25 Arial,Helvetica,sans-serif}
+.lessonText small{color:#999;font:500 11px/1.25 Arial,Helvetica,sans-serif}
+.lessonPlay{flex:none;color:#aaa}
+.save{display:grid;place-items:center;flex:0 0 40px;width:40px;height:44px;border:0;border-radius:9px;background:transparent;color:#aaa;cursor:pointer}
+.save[aria-pressed=true]{color:#ff5976}
+.player{display:grid;gap:6px;padding:11px 0}
+.player iframe{width:100%;aspect-ratio:16/9;border:0;border-radius:11px;background:#000}
+.playerActions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.originalLink{display:flex;align-items:center;justify-content:center;gap:6px;min-width:0;min-height:44px;padding:6px;border:1px solid #444;border-radius:9px;color:#eee;text-decoration:none;font:650 12px/1.2 Arial,Helvetica,sans-serif;text-align:center}
+.closeVideo{display:flex;align-items:center;justify-content:center;gap:6px;min-height:40px;border:1px solid #444;border-radius:9px;background:#272727;color:#eee;font:650 12px/1.2 Arial,Helvetica,sans-serif;cursor:pointer}
+.more{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border:1px solid #444;border-radius:12px;background:#272727;color:#eee;font:700 13px/1.2 Arial,Helvetica,sans-serif;cursor:pointer}
+.rotated{transform:rotate(180deg)}
+.catalog :is(button,a):focus-visible{outline:2px solid #fff;outline-offset:3px}
+@media(max-width:740px){
+ .categories{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .grid{grid-template-columns:minmax(0,1fr)}
+ .playlist.open{grid-column:auto}
+ .playlistButton{min-height:97px;gap:9px;padding:9px}
+ .cover{flex-basis:128px;width:128px}
+ .courseText strong{font-size:14px}
+ .courseText>span{font-size:11px}
+ .filters{padding:10px;gap:9px}
+}
+@media(max-width:360px){
+ .playlistButton{gap:8px;padding:8px}
+ .cover{flex-basis:112px;width:112px}
+ .categories button{font-size:11px}
+ .lessonThumb{flex-basis:70px;width:70px}
+ .lessonWatch{gap:7px}
+}
+@media(prefers-reduced-motion:reduce){.arrow{transition:none}}

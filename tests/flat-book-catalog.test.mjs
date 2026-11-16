@@ -5,7 +5,7 @@ import { books, filterLibraryBooks } from '../data/library.js';
 
 const source = path => readFile(new URL('../' + path, import.meta.url), 'utf8');
 
-test('Ideas shows three book categories before listing individual books', async () => {
+test('Ideas shows all known book categories before listing individual books', async () => {
   const [catalog, picker, css, sections, spanish] = await Promise.all([
     source('components/book-catalog.tsx'),
     source('components/book-category-picker.tsx'),
@@ -38,7 +38,7 @@ test('Ideas shows three book categories before listing individual books', async 
 });
 
 test('all books belong to one restored category and original search still works', () => {
-  const collections = ['alchemy', 'dao', 'maya'];
+  const collections = ['alchemy', 'dao', 'maya', 'egypt', 'greek', 'roman', 'zoroastrian'];
   for (const collection of collections) {
     assert.ok(books.some(book => book.mediaSeries === collection), collection);
   }
@@ -46,6 +46,10 @@ test('all books belong to one restored category and original search still works'
   assert.equal(books.filter(book => book.mediaSeries === 'alchemy').length, 9);
   assert.equal(books.filter(book => book.mediaSeries === 'dao').length, 10);
   assert.equal(books.filter(book => book.mediaSeries === 'maya').length, 4);
+  assert.equal(books.filter(book => book.mediaSeries === 'egypt').length, 2);
+  assert.equal(books.filter(book => book.mediaSeries === 'greek').length, 3);
+  assert.equal(books.filter(book => book.mediaSeries === 'roman').length, 1);
+  assert.equal(books.filter(book => book.mediaSeries === 'zoroastrian').length, 2);
   assert.ok(filterLibraryBooks(books, { query: 'ритуал' }).length > 0);
 });
 

@@ -3,6 +3,7 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import { mkdir, writeFile } from "node:fs/promises";
+import { runMobileBrowserCases } from "./ci-mobile-browser-batch.mjs";
 
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
@@ -38,15 +39,15 @@ async function measureOrderedLayout(scope, middleSelector, afterSelector) {
   }, { middle: middleSelector, after: afterSelector });
 }
 
-async function verify(browserType, locale, width) {
-  const browser = await browserType.launch();
-  const page = await browser.newPage({
+async function verify(browserType, browser, locale, width) {
+  const context = await browser.newContext({
     viewport: { width, height: 844 },
     deviceScaleFactor: 1,
     hasTouch: true,
     isMobile: true,
     reducedMotion: "reduce",
   });
+  const page = await context.newPage();
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
   const label = browserType.name() + ":" + locale + ":" + width;
@@ -88,7 +89,7 @@ async function verify(browserType, locale, width) {
     assert.equal(await cards.filter({ visible: true }).count(), 4,
       label + ": four routes return after using Back");
     const coachingPath = switchboard.locator('[data-tests-coaching-path="coaching"]');
-    assert.equal(await coachingPath.getAttribute("href"), "/" + locale + "/coaching",
+    assert.equal(await coachingPath.getAttribute("href"), "/" + locale + "/coaching/sessions",
       label + ": coaching card is a direct link to the topic-first chooser");
     assert.notEqual(await coachingPath.getAttribute("data-tests-coaching-direct"), null,
       label + ": coaching entry must not open a second interstitial slide");
@@ -228,8 +229,18 @@ async function verify(browserType, locale, width) {
     assert.equal(await templePath.getAttribute("aria-expanded"), "true",
       label + ": Temple Insights in-place panel remains open");
     // Free Taoist guidance still produces a fresh symbolic response to the typed question.
+    // Require a hydrated React form and a committed, controlled question.
+    // Focus changes during an iPhone touch can otherwise retarget the same tap.
+    await page.waitForFunction(() => {
+      const form = document.getElementById("ideas-question-form");
+      const key = Object.keys(form || {}).find(name => name.startsWith("__reactProps$"));
+      return Boolean(key && typeof form[key]?.onSubmit === "function");
+    }, null, {timeout:30000});
     await textarea.fill(phrases[locale]);
-    await hub.locator('[data-ideas-tao]').tap();
+    await textarea.blur();
+    const daoSubmit = hub.locator('[data-ideas-tao]');
+    await daoSubmit.scrollIntoViewIfNeeded();
+    await daoSubmit.tap();
     const daoResult = hub.locator('[data-ideas-result="dao"]');
     await daoResult.waitFor({ state: "visible" });
     assert.equal(await daoResult.locator('[data-ideas-dao-summary]').count(), 1,
@@ -259,12 +270,24 @@ async function verify(browserType, locale, width) {
     const giftOrder = daoResult.locator('[data-ideas-order-button="gift"]');
     await readingOrder.tap();
     assert.equal(await readingOrder.getAttribute("aria-expanded"), "true", label + ": order opens inline");
-    assert.equal(await daoResult.locator('[data-inline-offer-form]:visible').count(), 1, label + ": one inline request directly below chosen card");
-    assert.equal(await daoResult.locator('[data-inline-offer-form]:visible input[type="checkbox"]').count(), 1, label + ": reply consent");
+    const inlineForm=daoResult.locator('[data-inline-offer-form]:visible');
+    assert.equal(await inlineForm.count(),1,label+": one inline messenger request");
+    assert.equal(await inlineForm.locator('[data-messenger-only-contact]').count(),1,
+      label+": the chosen offer owns one messenger action block");
+    const links=inlineForm.locator('a[data-messenger-only-channel]');
+    assert.equal(await links.count(),2,label+": WhatsApp and Telegram, without email form");
+    const whatsapp=new URL(await links.first().getAttribute('href'));
+    assert.equal(whatsapp.origin,'https://wa.me',label+": customer-initiated WhatsApp");
+    assert.ok((whatsapp.searchParams.get('text')||'').length>25,label+": selected offer text retained");
+    assert.equal(await inlineForm.locator('form,input[type="email"],input[type="checkbox"]').count(),0,
+      label+": no unverified website submission or silent consent");
+    assert.equal(await inlineForm.locator('[data-lead-saved]').count(),0,
+      label+": an opened link is never a CRM receipt");
     await giftOrder.tap();
     assert.equal(await readingOrder.getAttribute("aria-expanded"), "false", label + ": choosing other card closes the first");
     assert.equal(await giftOrder.getAttribute("aria-expanded"), "true", label + ": gift opens without navigation");
-    assert.equal(await daoResult.locator('[data-inline-offer-form]:visible').count(), 1, label + ": never duplicate requests");
+    assert.equal(await daoResult.locator('[data-inline-offer-form]:visible [data-messenger-only-contact]').count(),1,
+      label+": switching offers never duplicates messenger actions");
     await giftOrder.tap();
     assert.equal(await daoResult.locator('[data-inline-offer-form]:visible').count(), 0, label + ": click again collapses");
     const expandedBounds = await page.evaluate(() => ({
@@ -313,14 +336,13 @@ async function verify(browserType, locale, width) {
     assert.deepEqual(errors, [], label + ": unhandled client errors");
     evidence.push({ browser: browserType.name(), locale, width, result: "pass", linkedToGuestCoachingOptions: width === 390 });
   } finally {
-    await page.close();
-    await browser.close();
+    await context.close();
   }
 }
 
-for (const locale of ["en", "ru", "es"]) {
-  for (const width of widths) await verify(webkit, locale, width);
-}
-for (const locale of ["en", "ru", "es"]) await verify(chromium, locale, 390);
+await runMobileBrowserCases([
+  { browserType: webkit, cases: ["en", "ru", "es"].flatMap(locale => widths.map(width => [locale, width])) },
+  { browserType: chromium, cases: ["en", "ru", "es"].map(locale => [locale, 390]) },
+], verify);
 await writeFile(output + "/mobile-acceptance.json", JSON.stringify(evidence, null, 2));
 console.log("Ideas mobile browser acceptance passed: " + evidence.length + " combinations", evidence);

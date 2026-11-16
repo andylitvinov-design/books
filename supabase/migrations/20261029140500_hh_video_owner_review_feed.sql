@@ -7,7 +7,15 @@ ALTER TABLE public.hh_meditation_catalog_v1
   ADD COLUMN IF NOT EXISTS owner_review_note text NOT NULL DEFAULT '',
   ADD COLUMN IF NOT EXISTS owner_reviewed_at timestamptz,
   ADD COLUMN IF NOT EXISTS owner_reviewed_by uuid,
-  ADD COLUMN IF NOT EXISTS owner_review_version integer NOT NULL DEFAULT 0;
+  ADD COLUMN IF NOT EXISTS owner_review_version integer NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS legacy_public_link boolean NOT NULL DEFAULT false;
+-- Preserve all already-published outbound links during schema rollout.
+UPDATE public.hh_meditation_catalog_v1 SET legacy_public_link=true
+ WHERE discovery_status='link_only' AND source_kind='external' AND editorial_status='candidate'
+ AND youtube_oembed_checked_at IS NOT NULL AND metadata_confidence='public_listing'
+ AND content_type='guided' AND claims_risk IN ('low','moderate')
+ AND embed_status='unverified' AND rights_status='pending_embed_check'
+ AND metadata_checked_at IS NOT NULL;
 
 DO $guard$
 BEGIN
@@ -103,6 +111,7 @@ CREATE TABLE IF NOT EXISTS app_private.hh_video_review_events (
 CREATE INDEX IF NOT EXISTS hh_video_review_events_video_time
  ON app_private.hh_video_review_events(video_id,created_at DESC);
 ALTER TABLE app_private.hh_video_review_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE app_private.hh_video_review_events FORCE ROW LEVEL SECURITY;
 REVOKE ALL ON app_private.hh_video_review_events FROM PUBLIC,anon,authenticated;
 GRANT SELECT,INSERT ON app_private.hh_video_review_events TO hh_app_backend;
 GRANT USAGE,SELECT ON SEQUENCE app_private.hh_video_review_events_id_seq TO hh_app_backend;
@@ -120,38 +129,30 @@ CREATE POLICY hh_video_review_events_owner_write ON app_private.hh_video_review_
    AND current_setting('hh.video_review_owner',true)='1'
  );
 
--- Client-visible rows require explicit owner acceptance, short duration, and
--- independent checks. Existing 19 link-only candidates remain securely staged
--- until the owner accepts them. A watch/oEmbed URL never proves an iframe.
-DROP POLICY IF EXISTS "Published video or curated metadata-only YouTube link"
- ON public.hh_meditation_catalog_v1;
+-- Controlled link-only teaching clips are outbound links, NOT confirmed embeds.
+ALTER TABLE public.hh_meditation_catalog_v1 DROP CONSTRAINT IF EXISTS hh_meditation_link_only_guard;
+ALTER TABLE public.hh_meditation_catalog_v1 ADD CONSTRAINT hh_meditation_link_only_guard
+ CHECK (discovery_status<>'link_only' OR (
+  source_kind='external' AND editorial_status='candidate'
+  AND metadata_confidence='public_listing' AND metadata_checked_at IS NOT NULL
+  AND content_type IN ('guided','practice','talk') AND claims_risk IN ('low','moderate')
+  AND embed_status='unverified' AND rights_status='pending_embed_check'));
+DROP POLICY IF EXISTS "Published video or curated metadata-only YouTube link" ON public.hh_meditation_catalog_v1;
 CREATE POLICY "Published video or curated metadata-only YouTube link"
  ON public.hh_meditation_catalog_v1 FOR SELECT TO anon,authenticated
  USING (
-   owner_review_status='accepted'
-   AND duration_verified_seconds BETWEEN 1 AND 600
-   AND duration_basis IN ('metadata_checked','owner_checked')
-   AND content_checked_at IS NOT NULL
-   AND (
-     (
-       editorial_status='approved'
-       AND embed_status='confirmed'
-       AND rights_status='embed_approved'
-       AND embed_checked_at IS NOT NULL
-     )
-     OR (
-       discovery_status='link_only'
-       AND source_kind='external'
-       AND editorial_status='candidate'
-       AND youtube_oembed_checked_at IS NOT NULL
-       AND metadata_confidence='public_listing'
-       AND content_type='guided'
-       AND claims_risk IN ('low','moderate')
-       AND embed_status='unverified'
-       AND rights_status='pending_embed_check'
-       AND metadata_checked_at IS NOT NULL
-     )
-   )
+  (owner_review_status='accepted' AND editorial_status='approved'
+   AND embed_status='confirmed' AND rights_status='embed_approved'
+   AND content_checked_at IS NOT NULL AND embed_checked_at IS NOT NULL)
+  OR (discovery_status='link_only' AND source_kind='external'
+   AND editorial_status='candidate' AND youtube_oembed_checked_at IS NOT NULL
+   AND metadata_confidence='public_listing'
+   AND content_type IN ('guided','practice','talk') AND claims_risk IN ('low','moderate')
+   AND embed_status='unverified' AND rights_status='pending_embed_check'
+   AND metadata_checked_at IS NOT NULL
+   AND (legacy_public_link OR (
+     owner_review_status='accepted' AND content_checked_at IS NOT NULL
+     AND duration_verified_seconds BETWEEN 1 AND 600
+     AND duration_basis IN ('metadata_checked','owner_checked'))))
  );
-
 COMMIT;

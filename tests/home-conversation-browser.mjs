@@ -61,8 +61,17 @@ try {
       });
       try {
         await page.goto(host + scenario.path, { waitUntil: "domcontentloaded", timeout: 30000 });
+        // The approved home UI defers its conversation guide until the
+        // visitor explicitly opens the question disclosure. Do not force
+        // mounting or load private chat code before the visitor asks.
+        const disclosure = page.locator('[data-home-more-deferred="true"]');
+        await expect(disclosure).toHaveCount(1);
+        await expect(disclosure).not.toHaveAttribute("open", "");
+        await expect(page.locator("[data-home-conversation-guide]")).toHaveCount(0);
+        await disclosure.locator("summary").click();
+        await expect(disclosure).toHaveAttribute("open", "");
         const guide = page.locator("[data-home-conversation-guide]");
-        await expect(guide).toHaveCount(1);
+        await expect(guide).toHaveCount(1, { timeout: 10000 });
         await expect(guide).toBeVisible();
         await expect(guide).toHaveAttribute("data-guide-phase", "ready");
         await expect(guide.locator("[data-home-guide-needs] a")).toHaveCount(6);

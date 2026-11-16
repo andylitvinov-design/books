@@ -1,5 +1,8 @@
 # Codex continuation — HH Growth Studio (Publer+), 19 October 2026
 
+> **31.10.2026 — актуальное мастер-ТЗ:** [Growth Studio 2.0 · Publer parity, полная программа и критерии приёмки](./GROWTH_STUDIO_2_PUBLER_PARITY_IMPLEMENTATION_2026-10-31.md). Актуальный рабочий PR содержит только первую безопасную порцию P0.2 (platform draft preflight, EN/RU warnings, UTM counter, tests). Остальные разделы — план, а не подтверждённые внешние публикации. Перед продолжением перепроверить текущий production SHA, PR overlap и real connection readiness; PR #2111 уже merged, но provider OAuth/queue/readback остаются отдельными этапами. Следующие bounded PR: P0.1 реальный owner Save→Reload E2E, P0.3 durable queue dry-run feature flag OFF, P0.4 Telegram после разрешений и отдельного approval.
+
+
 ## 2026-10-20 — CURRENT P3 EXECUTION: actual account connections, no duplicate work
 
 > This is an update to the existing Codex handoff, **not a new Growth Studio spec**. Owner requested: "Сам подключи что можешь или пусть кодекс" (connect what is already authorized; finish everything possible in code; never fake or bypass provider OAuth). This branch exists to provide an actionable Codex task context. **Do not mark a provider connected until you have a real provider authorization and account ID readback.**

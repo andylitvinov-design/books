@@ -7,7 +7,7 @@ import { transpileModule, JsxEmit, ModuleKind, ScriptTarget } from 'typescript'
 import { renderToStaticMarkup } from 'react-dom/server'
 import {
   ACQUISITION_SOURCES, acquisitionDateRange, summarizeAcquisitionCounters, loadAcquisitionReport,
-  campaignLandingLinks, acquisitionRecommendation, UNMEASURED_STAGES,
+  campaignLandingLinks, acquisitionRecommendation, UNMEASURED_STAGES, summarizePublicWebsite,
 } from '../lib/acquisition/report.js'
 import { readOrganicEventReferral } from '../lib/organic-event-referrals.js'
 
@@ -209,8 +209,57 @@ test('actual JSX cannot replace unavailable or empty measurements with zero', as
   for (const readDaily of [async () => [], async () => { throw Error('PRIVATE_RAW_CONNECTION_ERROR') }]) {
     const report = await load({ readDaily })
     const html = await renderedPage({ report })
-    assert.equal((html.match(/<strong>Not measured<\/strong>/g) || []).length, 4)
+    assert.equal((html.match(/<strong>Not measured<\/strong>/g) || []).length, 7) // 3 public-web + 4 service counters
     assert.ok(!html.includes('PRIVATE_RAW_CONNECTION_ERROR'))
     assert.ok(!html.includes('<strong>0</strong>'))
   }
+})
+
+test('the admin sees actual anonymous page views and sources in all three locales', async () => {
+ const rows=[
+  {day:'2026-10-16',pagePath:'/en/services/free-situation-review',source:'google-organic',landings:'4',views:'8',clicks:'3'},
+  {day:'2026-10-16',pagePath:'/ru/services/free-situation-review',source:'telegram',landings:'2',views:'3',clicks:'1'},
+  {day:'2026-10-15',pagePath:'/en/services/free-situation-review',source:'direct',landings:'1',views:'1',clicks:'0'}
+ ]
+ const range=acquisitionDateRange(7,now)
+ const summary=summarizePublicWebsite(rows,range)
+ assert.deepEqual(summary.totals,{landings:7,views:12,clicks:4})
+ assert.equal(summary.observedDays,2)
+ assert.equal(summary.topPages[0].views,9)
+ assert.equal(summary.sources[0].source,'google-organic')
+ const report=await load({readPublicPages:async()=>rows})
+ assert.deepEqual(report.publicWeb,summary)
+ for(const [lang,heading] of [['en','Website traffic'],['ru','Общая веб-аналитика'],['es','Analítica web general']]){
+   const html=await renderedPage({report,params:{lang}})
+   assert.ok(html.includes(heading))
+   assert.ok(html.includes('href="/en/services/free-situation-review"'))
+   assert.ok(html.includes('<dd>7</dd>'))
+   assert.ok(!html.includes('user@example.com'))
+ }
+ for(const invalid of [
+  [{...rows[0],pagePath:'/en/app/private'}],
+  [{...rows[0],source:'email@example.com'}],
+  [{...rows[0],pagePath:null}],
+  [{...rows[0],source:null}],
+  [{...rows[0],private:'hidden'}],
+  [{...rows[0],views:-1}],
+  [{...rows[0],day:'2026-10-17'}],
+  [rows[0],rows[0]]
+ ]) assert.throws(()=>summarizePublicWebsite(invalid,range),/INVALID_(WEB_)?AGGREGATE/)
+ const missing=await load({readPublicPages:async()=>{throw Error('secret connection detail')}})
+ assert.equal(missing.publicWeb.status,'unavailable')
+ assert.equal(missing.publicWeb.totals,null)
+ assert.ok(!JSON.stringify(missing).includes('secret connection detail'))
+ const none=await load({readPublicPages:async()=>[]})
+ assert.equal(none.publicWeb.status,'no_observations')
+ assert.equal(none.publicWeb.totals,null)
+})
+test('web report only queries existing protected public aggregate table',()=>{
+ const reader=read('lib/acquisition/read-report.js')
+ assert.match(reader,/readPublicPages: async range/)
+ assert.ok(reader.includes('from app_private.public_page_source_daily'))
+ assert.match(reader,/limit 10001/)
+ assert.ok(!reader.includes('join app.accounts') && !reader.includes('visitor_id') && !reader.includes('referrer_url'))
+ assert.match(read('lib/public-analytics.ts'),/PUBLIC_ANALYTICS_AVAILABLE = false/)
+ assert.match(read('components/analytics-consent.tsx'),/Anonymous first-party public-page statistics are active/)
 })

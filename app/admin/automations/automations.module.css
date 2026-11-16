@@ -1,0 +1,27 @@
+.page{min-height:100vh;background:var(--hh-light-canvas,#fbf5e9);color:var(--hh-light-ink,#143d3a);padding-bottom:60px}
+.content{width:min(1120px,100%);margin:0 auto;padding:20px 16px 60px;display:grid;gap:20px}
+.links{display:flex;flex-wrap:wrap;gap:12px}.links a{display:inline-flex;min-height:44px;align-items:center;color:#067a67;font-weight:650}
+.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.metric,.section{background:var(--hh-light-surface,#fffcf7);border:1px solid var(--hh-light-border,#e9dfd1);border-radius:22px;padding:20px;min-width:0}
+.metric{display:grid;gap:8px}.metric strong{font-size:clamp(24px,4vw,36px);font-variant-numeric:tabular-nums}.metric span{font-size:14px;color:#5d6a71}
+.section{display:grid;gap:14px}.section>h1,.section>h2{font-size:clamp(22px,3vw,28px);margin:0;line-height:1.2}
+.task{border:1px solid #e9dfd1;background:white;border-radius:17px;padding:15px;display:flex;gap:12px;justify-content:space-between;align-items:flex-start}
+.task h2{font-size:17px;margin:0;overflow-wrap:anywhere}.task p{font-size:15px;margin:6px 0}.task small,.note{font-size:13px;color:#5d6a71;margin:0}.tag{flex:0 0 auto;background:#e6f6f1;color:#176e6e;font-size:13px;border-radius:15px;padding:6px 10px;font-weight:700}
+.tagProblem{background:#fff0e5;color:#87362a}.tagAwaiting{background:#f2eee7;color:#655e56}
+.tagVerified{background:#e6f6f1;color:#176e6e}.taskError{display:block;color:#8f3c28!important;font-weight:700}
+.warning{margin:0;background:#fff6e7;border:1px solid #e1c999;border-radius:14px;padding:13px 15px;font-size:14px;line-height:1.5}
+.actionPanel{display:grid;gap:8px}.actions{display:flex;flex-wrap:wrap;gap:10px}.actions button{min-height:48px;border-radius:14px;padding:10px 18px;font:inherit;font-weight:700;cursor:pointer}
+.primary{border:1px solid #067a67;background:#067a67;color:white}.secondary{border:1px solid #9dc9bc;color:#176e6e;background:#fff}
+.actions button:disabled{opacity:.5;cursor:not-allowed}.feedback{font-size:14px;min-height:1.3em;color:#175b51;margin:0}
+.runList,.candidates{display:grid;gap:10px}.run{display:grid;grid-template-columns:160px 130px 1fr;gap:10px;border:1px solid #e9dfd1;background:#fff;border-radius:14px;padding:12px;align-items:center;font-size:14px}.run small{color:#5d6a71}
+.history summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-weight:700}.slots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.slots>div{display:flex;justify-content:space-between;gap:6px;border-bottom:1px solid #ece5d9;padding:7px;font-size:13px}
+.candidates{grid-template-columns:repeat(2,minmax(0,1fr))}.candidate{display:grid;gap:7px;background:#fff;border:1px solid #e9dfd1;border-radius:16px;padding:15px;min-width:0}
+.candidate h3{margin:0;font-size:17px;overflow-wrap:anywhere}.candidate p{margin:0;color:#5d6a71;font-size:14px}.candidate small{font-size:12px;color:#5d6a71}.candidate a{display:inline-flex;min-height:44px;align-items:center;color:#067a67;font-weight:700;text-decoration:underline;text-underline-offset:2px}
+.content a:focus-visible,.content button:focus-visible,.content summary:focus-visible{outline:3px solid #176e6e;outline-offset:3px}
+.editorialActions{display:grid;gap:7px;border-top:1px solid #eee4d7;padding-top:10px}
+.editorialButtons{display:flex;gap:7px;flex-wrap:wrap}
+.editorialButtons button{min-height:44px;border:1px solid #a4c3ba;background:#fff;color:#175b51;border-radius:12px;padding:8px 11px;font:inherit;font-size:13px;font-weight:650;cursor:pointer}
+.editorialButtons button[aria-pressed="true"]{background:#e6f6f1;border:2px solid #067a67}
+.editorialButtons button:disabled{opacity:.6;cursor:not-allowed}
+.editorialActions small{font-size:12px;color:#5d6a71}
+@media(max-width:760px){.run{grid-template-columns:1fr auto}.run small{grid-column:1/-1}.candidates{grid-template-columns:1fr}}
+@media(max-width:480px){.content{padding:12px;gap:14px}.metrics{gap:8px}.metric,.section{padding:13px;border-radius:16px}.metric strong{font-size:22px}.metric span{font-size:12px}.task{display:grid;gap:8px}.tag{justify-self:start}.actions{display:grid}.slots{grid-template-columns:1fr}}

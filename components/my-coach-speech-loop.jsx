@@ -1,0 +1,664 @@
+'use client'
+
+import {forwardRef,useEffect,useImperativeHandle,useRef,useState} from 'react'
+import {Mic,Play,Volume2} from 'lucide-react'
+import styles from './my-coach-speech-loop.module.css'
+import {appendSpokenAnswer} from '@/lib/personal-coaching/speech-text.js'
+import {chooseDictationLanguage,readDictationResults,detectedSpeechLocale,ios27NeedsSpeechRecovery,hasCoachSpokenAnswer} from '@/lib/personal-coaching/my-coach-dictation.mjs'
+import {startCoachingMp3Playback,primeCoachingAudioGesture,unlockCoachingAudioContext,shouldUseCoachingWebAudio} from '@/lib/personal-coaching/streamed-mp3-playback.mjs'
+import {coachSpokenText} from '@/lib/coaching/coach-spoken-text.mjs'
+import {coachIntroAudioPath,startDirectCoachIntroAudio} from '@/lib/personal-coaching/direct-coach-intro-audio.mjs'
+
+const words={
+  en:{start:'Talk by voice',stop:'Stop voice',retryMic:'Retry microphone',listening:'Listening…',thinking:'Coach is thinking…',speaking:'Speaking…',
+    network:'Browser speech service is offline. Your words remain editable below.',noMicrophone:'No microphone found. Check device permissions.',language:'Browser speech does not support this language. Choose EN or RU.',
+    unsupported:'Voice recognition is unavailable in this browser. Try opening this page in Safari, or type your message.',blocked:'Microphone denied. Check Safari/browser permissions.',
+    short:'I did not catch that. Tap the microphone to try again.',review:'Voice saved as a draft. Review and send it below.',restart:'Tap the microphone for the next turn.',
+    failed:'Coach could not answer. The microphone is listening again; keep talking or edit your text.',
+    privacy:'Microphone audio may be processed by your browser’s speech-recognition provider. We do not store recordings. Press Stop at any time.',
+    fallback:'Natural coach voice is unavailable right now. The microphone remains active; keep talking or type.',tapToHear:'Tap to hear the coach',preparing:'Preparing voice…',
+    iosCue:'Ready to listen.',iosPreparing:'Preparing iPhone microphone…',iosSilent:'Safari may not be hearing. Your draft is editable; try again or reopen Safari.',iosAwaitEnd:'Text ready. Waiting for Safari to finish…'},
+  ru:{start:'Говорить голосом',stop:'Остановить голос',retryMic:'Перезапустить микрофон',listening:'Слушаю…',thinking:'Коуч думает…',speaking:'Говорит…',
+    network:'Распознавание браузера недоступно. Ваши слова остаются в поле ответа.',noMicrophone:'Микрофон не найден. Проверьте настройки устройства.',language:'Браузер не поддерживает этот язык. Выберите RU или EN.',
+    unsupported:'Голосовой ввод недоступен в этом браузере. Попробуйте открыть страницу в Safari или написать сообщение.',
+    blocked:'Доступ к микрофону запрещён. Разрешите его в Safari или настройках браузера.',
+    short:'Не удалось разобрать фразу. Нажмите микрофон ещё раз.',review:'Слова сохранены в поле ввода. Проверьте и отправьте.',restart:'Нажмите микрофон для следующей реплики.',
+    failed:'Коуч пока не смог ответить. Микрофон снова слушает; продолжайте говорить или исправьте текст.',
+    privacy:'Браузер может передавать аудио поставщику распознавания речи. Мы не сохраняем записи. Разговор можно остановить в любой момент.',
+    fallback:'Качественный голос коуча сейчас недоступен. Микрофон продолжает слушать; можно говорить или писать.',tapToHear:'Нажмите, чтобы услышать коуча',preparing:'Готовлю голос…',
+    iosCue:'Я вас слушаю.',iosPreparing:'Подготавливаю микрофон iPhone…',iosSilent:'Safari может не слышать речь. Текст можно отредактировать; попробуйте ещё раз или перезапустите Safari.',iosAwaitEnd:'Текст готов. Ждём завершения Safari…'},
+  es:{start:'Hablar por voz',stop:'Detener voz',retryMic:'Reiniciar micrófono',listening:'Escuchando…',thinking:'El coach piensa…',speaking:'Hablando…',
+    network:'El reconocimiento del navegador no está disponible. El texto dictado sigue abajo.',noMicrophone:'No se encontró un micrófono. Comprueba los permisos.',language:'El navegador no reconoce este idioma. Elige EN o RU.',
+    unsupported:'El reconocimiento de voz no está disponible aquí. Prueba abrir la página en Safari o escribe tu mensaje.',
+    blocked:'Micrófono bloqueado. Actívalo en Safari o en los ajustes del navegador.',
+    short:'No entendí la frase. Toca el micrófono otra vez.',review:'Palabras guardadas en el borrador. Revisa y envía abajo.',restart:'Toca el micrófono para continuar.',
+    failed:'El coach no pudo responder. El micrófono vuelve a escuchar; sigue hablando o edita el texto.',
+    privacy:'El navegador puede enviar audio al proveedor de reconocimiento. No almacenamos grabaciones. Detén la conversación cuando quieras.',
+    fallback:'La voz natural del coach no está disponible. El micrófono sigue activo; puedes hablar o escribir.',tapToHear:'Toca para escuchar al coach',preparing:'Preparando voz…',
+    iosCue:'Te escucho ahora.',iosPreparing:'Preparando el micrófono del iPhone…',iosSilent:'Safari puede haber dejado de escuchar. Tu texto se puede editar; prueba de nuevo o reinicia Safari.',iosAwaitEnd:'Texto listo. Esperando el final de Safari…'},
+}
+
+const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speechLocale='auto',initialDraft='',enabled=false,canStart=true,cloudAvailable=false,cloudAgreed=false,cloudProvider=null,personaId='mira',introduction='',onSessionStart,onTurn,onCancelTurn,onVoiceStateChange,onVoiceLevel,onRequestConsent,onTranscript,onDraft},ref){
+  const lang=words[locale]?locale:'en',t=words[lang]
+  const [phase,setPhase]=useState('idle')
+  const [notice,setNotice]=useState('')
+  const [supported,setSupported]=useState(null)
+  const phaseRef=useRef('idle'),introStartedRef=useRef(false)
+  const activeRef=useRef(false)
+  const recognitionRef=useRef(null)
+  const retryTimerRef=useRef(null),settleTimerRef=useRef(null),retryAttemptsRef=useRef(0)
+  // Web Speech callbacks created on first Play must use fresh provider/consent
+  // state on each turn; a closure over Play-time props can silence turn two.
+  const voiceConfigRef=useRef({cloudAgreed,cloudAvailable,cloudProvider})
+  voiceConfigRef.current={cloudAgreed,cloudAvailable,cloudProvider}
+  // A provider change must cancel only the in-flight TTS, not the voice session.
+  const providerUnavailableRef=useRef(null)
+  const cloudControllerRef=useRef(null)
+  const cloudPlayerRef=useRef(null)
+  const introControllerRef=useRef(null),introPlayerRef=useRef(null)
+  const microphonePermissionRef=useRef(null)
+  const primedAudioRef=useRef(null),audioContextRef=useRef(null)
+  const speakingRef=useRef(false)
+  const speechTimerRef=useRef(null),blockedResumeRef=useRef(null),utteranceRef=useRef(null)
+  const iosCueTimerRef=useRef(null)
+  const iosResultTimerRef=useRef(null)
+  const hasRecognizedRef=useRef(false)
+  const iosCueSatisfiedRef=useRef(false)
+  const generationRef=useRef(0)
+  const turnRef=useRef(onTurn),cancelRef=useRef(onCancelTurn),stopRef=useRef(null),sessionStartRef=useRef(onSessionStart)
+  const voiceStateRef=useRef(onVoiceStateChange),levelRef=useRef(onVoiceLevel)
+  const beatRef=useRef(0)
+  const heardRef=useRef('')
+  const lastHeardRef=useRef('')
+  const draftAtStartRef=useRef('')
+  const currentDraftRef=useRef(initialDraft)
+  currentDraftRef.current=initialDraft
+  const transcriptRef=useRef(onTranscript),draftRef=useRef(onDraft)
+  transcriptRef.current=onTranscript
+  draftRef.current=onDraft
+  turnRef.current=onTurn
+  sessionStartRef.current=onSessionStart
+  cancelRef.current=onCancelTurn
+  voiceStateRef.current=onVoiceStateChange
+  levelRef.current=onVoiceLevel
+
+  function changePhase(next){
+    phaseRef.current=next
+    if(next!=='speaking'){beatRef.current=0;levelRef.current?.(null)}
+    setPhase(next)
+    voiceStateRef.current?.({phase:next,beat:beatRef.current})
+  }
+  function silence(){
+    if(speechTimerRef.current)clearTimeout(speechTimerRef.current)
+    speechTimerRef.current=null;blockedResumeRef.current=null;utteranceRef.current=null
+    if(iosCueTimerRef.current)clearTimeout(iosCueTimerRef.current)
+    if(iosResultTimerRef.current)clearTimeout(iosResultTimerRef.current)
+    iosCueTimerRef.current=null
+    iosResultTimerRef.current=null
+    iosCueSatisfiedRef.current=false
+    if(retryTimerRef.current)clearTimeout(retryTimerRef.current)
+    if(settleTimerRef.current)clearTimeout(settleTimerRef.current)
+    retryTimerRef.current=null;settleTimerRef.current=null;retryAttemptsRef.current=0
+    providerUnavailableRef.current=null
+    cloudControllerRef.current?.abort()
+    cloudControllerRef.current=null
+    cloudPlayerRef.current?.cancel()
+    cloudPlayerRef.current=null
+    introControllerRef.current?.abort()
+    introControllerRef.current=null
+    introPlayerRef.current?.cancel()
+    introPlayerRef.current=null
+    const audioContext=audioContextRef.current
+    audioContextRef.current=null
+    if(audioContext)try{void audioContext.close?.().catch?.(()=>{})}catch{}
+    primedAudioRef.current=null
+    activeRef.current=false
+    generationRef.current+=1
+    const recognition=recognitionRef.current
+    recognitionRef.current=null
+    if(recognition){
+      recognition.onresult=null;recognition.onerror=null;recognition.onend=null
+      try{recognition.abort()}catch{}
+    }
+    if(speakingRef.current){
+      speakingRef.current=false
+      try{window.speechSynthesis?.cancel()}catch{}
+    }
+  }
+  function stopVoice(){
+    const cancelTurn=phaseRef.current==='thinking'
+    if(['starting','listening'].includes(phaseRef.current)&&hasCoachSpokenAnswer(heardRef.current)){
+      draftRef.current?.(appendSpokenAnswer(draftAtStartRef.current,heardRef.current.trim(),1200))
+      setNotice(t.review)
+    }else setNotice('')
+    heardRef.current=''
+    transcriptRef.current?.('')
+    silence()
+    if(cancelTurn)cancelRef.current?.()
+    changePhase('idle')
+  }
+  stopRef.current=stopVoice
+
+  // Request iPhone mic permission in the very SAME Play gesture, without
+  // recording or uploading audio. Immediately release the temporary stream;
+  // the actual Web Speech recognizer starts AFTER the coach finishes.
+  function primeMicrophonePermission(){
+    if(microphonePermissionRef.current)return
+    const getUserMedia=window.navigator.mediaDevices?.getUserMedia
+    if(!getUserMedia)return
+    try{
+      const request=window.navigator.mediaDevices.getUserMedia({audio:true})
+      microphonePermissionRef.current=request
+      void request.then(stream=>{
+        for(const track of stream.getTracks())track.stop()
+      }).catch(()=>{microphonePermissionRef.current=null})
+    }catch{microphonePermissionRef.current=null}
+  }
+
+  useImperativeHandle(ref,()=>({
+    startSession(introduction,{naturalVoice=false}={}){
+      if(activeRef.current||!enabled||!canStart)return false
+      // The hero Play must grant the same voice consent as the toolbar Play.
+      sessionStartRef.current?.()
+      activeRef.current=true
+      introStartedRef.current=true
+      generationRef.current+=1
+      // Unlock browser audio before any asynchronous model/TTS request.
+      audioContextRef.current=shouldUseCoachingWebAudio(window.navigator)?unlockCoachingAudioContext():null
+      primedAudioRef.current=audioContextRef.current?null:primeCoachingAudioGesture()
+      changePhase('loading')
+      // Play is the single deliberate gesture that starts coach audio followed
+      // by browser recognition. No recording, upload or second mic tap.
+      void speakCoachReply({reply:String(introduction||'').slice(0,900),mode:'intro'},'',generationRef.current,naturalVoice)
+      primeMicrophonePermission()
+      return true
+    },
+    startWithConsent(){
+      if(activeRef.current||!canStart)return false
+      activeRef.current=true
+      generationRef.current+=1
+      startListening()
+      return true
+    },
+    pauseForTypedTurn(){
+      if(!activeRef.current)return false
+      // Text Send cancels the active microphone/voice without releasing the
+      // already-unlocked Safari output. The answer can play automatically.
+      generationRef.current+=1
+      const recognition=recognitionRef.current
+      recognitionRef.current=null
+      if(recognition){
+        recognition.onresult=null;recognition.onerror=null;recognition.onend=null
+        try{recognition.abort()}catch{}
+      }
+      for(const key of [retryTimerRef,settleTimerRef,iosResultTimerRef,iosCueTimerRef])
+        if(key.current){clearTimeout(key.current);key.current=null}
+      providerUnavailableRef.current=null
+      cloudControllerRef.current?.abort()
+      cloudControllerRef.current=null
+      cloudPlayerRef.current?.cancel()
+      cloudPlayerRef.current=null
+      introControllerRef.current?.abort()
+      introControllerRef.current=null
+      introPlayerRef.current?.cancel()
+      introPlayerRef.current=null
+      if(speakingRef.current){
+        speakingRef.current=false
+        try{window.speechSynthesis?.cancel()}catch{}
+      }
+      blockedResumeRef.current=null
+      heardRef.current=''
+      transcriptRef.current?.('')
+      setNotice('')
+      changePhase('thinking')
+      return true
+    },
+    speakReply(result){
+      if(!activeRef.current||phaseRef.current!=='thinking'||!result?.reply)return false
+      changePhase('loading')
+      void speakCoachReply(result,'',generationRef.current)
+      return true
+    },
+    resumeAfterTypedFailure(){
+      if(activeRef.current&&phaseRef.current==='thinking')startListening()
+    },
+    // Replay is an explicit user gesture: resume Safari-blocked device or MP3 audio
+    // without re-synthesizing the same paid/free-quota-limited coach question.
+    stop(){stopVoice()},
+    resumeVoice(){
+      if(phaseRef.current!=='ready'||!blockedResumeRef.current)return false
+      blockedResumeRef.current()
+      return true
+    },
+  }))
+  useEffect(()=>{
+    setSupported(Boolean(window.SpeechRecognition||window.webkitSpeechRecognition))
+    const onHidden=()=>{if(document.visibilityState==='hidden')stopRef.current?.()}
+    document.addEventListener('visibilitychange',onHidden)
+    return ()=>{
+      document.removeEventListener('visibilitychange',onHidden)
+      stopRef.current?.()
+    }
+  },[])
+  useEffect(()=>{
+    if(!enabled&&activeRef.current)stopRef.current?.()
+  },[enabled])
+  useEffect(()=>{
+    // A provider outage/revoked consent interrupts only outbound audio.
+    // Preserve the original Play activation and return to hands-free listening.
+    if((!cloudAgreed||!cloudAvailable)&&(cloudControllerRef.current||cloudPlayerRef.current))
+      providerUnavailableRef.current?.()
+  },[cloudAgreed,cloudAvailable])
+
+  // If Web Speech ends without words, transparently try a fresh recognizer.
+  // Retries are bounded; permission and network failures remain visible.
+  function restartSilentRecognition(recognition){
+    if(recognitionRef.current!==recognition||!activeRef.current)return
+    recognitionRef.current=null
+    recognition.onresult=null;recognition.onend=null;recognition.onerror=null
+    try{recognition.abort()}catch{}
+    if(retryAttemptsRef.current>=3){
+      silence();changePhase('idle');setNotice(t.iosSilent);return
+    }
+    retryAttemptsRef.current+=1
+    changePhase('starting');setNotice(t.listening)
+    if(retryTimerRef.current)clearTimeout(retryTimerRef.current)
+    const generation=generationRef.current
+    retryTimerRef.current=setTimeout(()=>{
+      retryTimerRef.current=null
+      if(activeRef.current&&generationRef.current===generation)startListening()
+    },420)
+  }
+
+  function startListening(){
+    if(!activeRef.current)return
+    const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition
+    const ios27=ios27NeedsSpeechRecovery(window.navigator)
+    if(!Recognition){setSupported(false);stopVoice();setNotice(t.unsupported);return}
+    const recognition=new Recognition()
+    recognitionRef.current=recognition
+    recognition.lang=chooseDictationLanguage({locale:lang,selection:speechLocale,
+      browserLanguages:window.navigator.languages?.length?window.navigator.languages:[window.navigator.language],
+      lastTranscript:lastHeardRef.current})
+    recognition.continuous=false
+    recognition.interimResults=true
+    recognition.maxAlternatives=1
+    let finished=''
+    draftAtStartRef.current=currentDraftRef.current.trim()
+    heardRef.current=''
+    transcriptRef.current?.('')
+    changePhase('starting')
+    setNotice('')
+    recognition.onstart=()=>{
+      if(recognitionRef.current!==recognition||!activeRef.current)return
+      changePhase('listening')
+      if(ios27){
+        if(iosResultTimerRef.current)clearTimeout(iosResultTimerRef.current)
+        iosResultTimerRef.current=setTimeout(()=>{
+          if(recognitionRef.current===recognition&&activeRef.current&&!heardRef.current.trim()){
+            restartSilentRecognition(recognition)
+          }
+        },9000)
+      }
+    }
+    recognition.onresult=event=>{
+      if(recognitionRef.current!==recognition||!activeRef.current)return
+        if(phaseRef.current==='starting')changePhase('listening')
+      if(iosResultTimerRef.current){clearTimeout(iosResultTimerRef.current);iosResultTimerRef.current=null}
+      const {final,interim,visible}=readDictationResults(event.results,1200)
+      heardRef.current=visible
+      transcriptRef.current?.(visible)
+      // Safari interim words are editable even without a later final event.
+      // Interim words stay in the transcript, never duplicated in the composer.
+      if(final){
+        // Preserve interim words following a final segment in the same Safari event.
+        finished=visible
+        lastHeardRef.current=finished
+        // iOS 27 Safari can become deaf after an explicit stop(). Let this
+        // continuous=false recognizer finish naturally after its final result.
+      }
+      // iOS 27 WebKit #321436: a recognized session must end naturally.
+      // After a long silence, keep the text editable; NEVER abort a recognizer
+      // that has heard words or subsequent sessions can become permanently deaf.
+      if(ios27&&visible){
+        iosResultTimerRef.current=setTimeout(()=>{
+          if(recognitionRef.current!==recognition||!activeRef.current)return
+          const heard=heardRef.current.trim()
+          if(hasCoachSpokenAnswer(heard)){
+            draftRef.current?.(appendSpokenAnswer(draftAtStartRef.current,heard,1200))
+            transcriptRef.current?.('') // One visible copy in the editable Text field
+          }
+          // Safari must end every recognition naturally, even one-letter noise.
+          // Aborting after onresult poisons the next iOS 27 microphone session.
+          setNotice(t.iosAwaitEnd)
+        },6500)
+      }
+      // Dictation is shown in the transcript, never echoed beneath the microphone.
+      if(visible||interim)setNotice('')
+      if(visible){
+        retryAttemptsRef.current=0
+        if(settleTimerRef.current)clearTimeout(settleTimerRef.current)
+        // Only non-iOS-27 browsers use the early automatic settle fallback.
+        // On iOS 27, wait for natural onend to preserve the next voice turn.
+        if(!ios27){
+          const heardNow=visible.trim()
+          settleTimerRef.current=setTimeout(()=>{
+            if(recognitionRef.current!==recognition||!activeRef.current)return
+            const heard=heardRef.current.trim()
+            if(!hasCoachSpokenAnswer(heard)||heard!==heardNow)return
+            recognitionRef.current=null
+            recognition.onresult=null;recognition.onend=null;recognition.onerror=null
+            try{recognition.abort()}catch{}
+            lastHeardRef.current=heard
+            void deliver(appendSpokenAnswer(draftAtStartRef.current,heard,1200))
+          },final?1700:2300)
+        }
+      }
+    }
+    recognition.onerror=event=>{
+      if(recognitionRef.current!==recognition)return
+      const heard=heardRef.current.trim()
+      if(hasCoachSpokenAnswer(heard)&&!['not-allowed','service-not-allowed'].includes(event.error)){
+        recognitionRef.current=null
+        recognition.onresult=null;recognition.onend=null;recognition.onerror=null
+        if(settleTimerRef.current)clearTimeout(settleTimerRef.current)
+        lastHeardRef.current=heard
+        void deliver(appendSpokenAnswer(draftAtStartRef.current,heard,1200))
+        return
+      }
+      if(['no-speech','aborted','network'].includes(event.error)){
+        // A temporary browser STT network error must not cancel the one-Play
+        // session. Existing bounded recognition retries never retry AI/TTS.
+        // Microphone permission and capture errors still fail closed.
+        restartSilentRecognition(recognition);return
+      }
+      silence();changePhase('idle')
+      setNotice(['not-allowed','service-not-allowed'].includes(event.error)?t.blocked:
+        event.error==='network'?t.network:event.error==='audio-capture'?t.noMicrophone:
+        event.error==='language-not-supported'?t.language:t.restart)
+    }
+    const restartSilentRecognitionAfterEnd=()=>{
+      // onend has already detached the recognizer; retry without a second tap.
+      if(!activeRef.current)return
+      if(retryAttemptsRef.current>=3){silence();changePhase('idle');setNotice(t.iosSilent);return}
+      retryAttemptsRef.current+=1
+      changePhase('starting');setNotice(t.listening)
+      const generation=generationRef.current
+      retryTimerRef.current=setTimeout(()=>{
+        retryTimerRef.current=null
+        if(activeRef.current&&generationRef.current===generation)startListening()
+      },420)
+    }
+    recognition.onend=()=>{
+      if(iosResultTimerRef.current){clearTimeout(iosResultTimerRef.current);iosResultTimerRef.current=null}
+      if(settleTimerRef.current){clearTimeout(settleTimerRef.current);settleTimerRef.current=null}
+      if(recognitionRef.current!==recognition)return
+      recognitionRef.current=null
+      if(!activeRef.current)return
+        if(hasCoachSpokenAnswer(finished))void deliver(appendSpokenAnswer(draftAtStartRef.current,finished,1200))
+      else{
+        const recovered=heardRef.current.trim()
+        if(hasCoachSpokenAnswer(recovered)){
+          // Safari sometimes ends after interim words without a final event.
+          // A natural recognizer end commits that one turn; Stop/error never do.
+          lastHeardRef.current=recovered
+          void deliver(appendSpokenAnswer(draftAtStartRef.current,recovered,1200))
+        }else{
+          transcriptRef.current?.('')
+          heardRef.current=''
+          restartSilentRecognitionAfterEnd()
+        }
+      }
+    }
+    const startRecognition=()=>{
+      if(recognitionRef.current!==recognition||!activeRef.current)return
+      try{recognition.start()}
+      catch{restartSilentRecognition(recognition)}
+    }
+    iosCueSatisfiedRef.current=false
+    // WebKit #321436: even after coach device/Fish speech, every iOS 27
+    // follow-up recognizer gets its own completed short voice cue.
+    // Never stop a recognizer with useful interim words before natural onend.
+    if(ios27&&hasRecognizedRef.current&&
+       window.speechSynthesis?.speak&&window.SpeechSynthesisUtterance){
+      const cue=new window.SpeechSynthesisUtterance(t.iosCue)
+      cue.lang=recognition.lang
+      cue.rate=1.05
+      cue.volume=0 // WebKit speech recognition recovery, never audible phone narration
+      let completed=false
+      const finishCue=()=>{
+        if(completed)return
+        completed=true
+        if(iosCueTimerRef.current)clearTimeout(iosCueTimerRef.current)
+        iosCueTimerRef.current=null
+        speakingRef.current=false
+        setNotice('')
+        startRecognition()
+      }
+      cue.onend=finishCue
+      cue.onerror=finishCue
+      try{
+        window.speechSynthesis.cancel()
+        speakingRef.current=true
+        iosCueTimerRef.current=setTimeout(()=>{
+          try{window.speechSynthesis.cancel()}catch{}
+          finishCue()
+        },4000)
+        window.speechSynthesis.speak(cue)
+        setNotice(t.iosPreparing)
+      }catch{finishCue()}
+      return
+    }
+    startRecognition()
+  }
+
+  async function deliver(text){
+    const generation=generationRef.current
+    hasRecognizedRef.current=true
+    setNotice('') // Clear the old user transcript before coach speech.
+    changePhase('thinking')
+    let result
+    try{result=await turnRef.current?.(text)}
+    catch{result=null}
+    if(!activeRef.current||generationRef.current!==generation)return
+    if(!result?.reply){
+      // A model outage fails only this turn. Keep the text editable and the
+      // one-Play voice session alive, without retrying the model or TTS.
+      // Sync the draft ref before Web Speech restarts in this same tick.
+      currentDraftRef.current=text
+      draftRef.current?.(text)
+      transcriptRef.current?.('')
+      startListening()
+      setNotice(t.failed)
+      return
+    }
+    heardRef.current=''
+    transcriptRef.current?.('')
+    changePhase('loading') // Reply is ready; synthesis is pending, not model thinking.
+    void speakCoachReply(result,text,generation)
+  }
+
+  async function speakCoachReply(result,text,generation,naturalVoice=false){
+    const reply=String(result.reply).slice(0,900)
+    // An audible reply must include the answer/acknowledgement, not only its last question.
+    // The Google excerpt only applies to its separately-consented 500-char path.
+    const speakable=coachSpokenText(reply).text
+    const replyLocale=detectedSpeechLocale(reply,detectedSpeechLocale(text,lang))
+    const live=()=>activeRef.current&&generationRef.current===generation
+    const afterSpeech=()=>{
+      if(!live())return
+      if(result.mode==='safety'||result.mode==='boundary'){
+        silence();changePhase('idle');return
+      }
+      startListening()
+    }
+
+    function showTextOnly(){
+      if(!live())return
+      // Sensitive safety/boundary replies still terminate the speaking loop,
+      // even when premium TTS is unavailable. Do not auto-prompt after a stop.
+      if(result.mode==='safety'||result.mode==='boundary'){
+        afterSpeech()
+        return
+      }
+      // An unavailable natural voice must never end the active conversation.
+      // Keep the visible text and first-gesture Safari audio unlock; release
+      // only the failed player, then listen for the next user turn automatically.
+      providerUnavailableRef.current=null
+      introControllerRef.current?.abort()
+      introControllerRef.current=null
+      introPlayerRef.current?.cancel()
+      introPlayerRef.current=null
+      cloudControllerRef.current?.abort()
+      cloudControllerRef.current=null
+      cloudPlayerRef.current?.cancel()
+      cloudPlayerRef.current=null
+      startListening()
+      setNotice(t.fallback)
+    }
+
+    // Never synthesize an audible coach turn with speechSynthesis:
+    // its phone-system voice is not the approved natural coach voice.
+
+    // Initial Play requests only the fixed authored persona introduction from
+    // the public, globally rate-limited Fish S2.1 free route. No client audio,
+    // client transcript or arbitrary text is exposed through this endpoint.
+    if(result.mode==='intro'){
+      const url=coachIntroAudioPath(personaId,lang)
+      if(!url){showTextOnly();return}
+      const controller=new AbortController()
+      introControllerRef.current=controller
+      try{
+        // Direct MediaElement.play() executes in the original user gesture.
+        // Safari streams audio progressively instead of waiting for a
+        // complete MP3 Blob and WebAudio decode.
+        introPlayerRef.current=startDirectCoachIntroAudio(url,{
+          onStart:()=>{
+            if(live()&&!controller.signal.aborted){setNotice('');changePhase('speaking')}
+          },
+          onEnd:()=>{
+            if(!live()||controller.signal.aborted)return
+            introControllerRef.current=null
+            introPlayerRef.current?.cancel()
+            introPlayerRef.current=null
+            afterSpeech()
+          },
+          onBlocked:()=>{if(live())showTextOnly()},
+          onError:()=>{if(live())showTextOnly()},
+        })
+      }catch{if(live())showTextOnly()}
+      return
+    }
+    const {cloudAgreed:voiceAgreed,cloudAvailable:voiceAvailable,
+      cloudProvider:voiceProvider}=voiceConfigRef.current
+    if((naturalVoice||voiceAgreed)&&voiceAvailable&&['google_chirp3_hd','fish_free'].includes(voiceProvider)&&!['safety','boundary'].includes(result.mode)){
+      const controller=new AbortController()
+      cloudControllerRef.current=controller
+      providerUnavailableRef.current=()=>{
+        if(live()&&!controller.signal.aborted)showTextOnly()
+      }
+      const fallback=()=>{
+        if(!live()||controller.signal.aborted)return
+        cloudPlayerRef.current?.cancel()
+        cloudPlayerRef.current=null
+        cloudControllerRef.current=null
+        // Never silently switch to a low-quality phone voice.
+        showTextOnly()
+      }
+      try{
+        const response=await fetch('/api/app/my-coach/voice/synthesize',{
+          method:'POST',credentials:'same-origin',cache:'no-store',signal:controller.signal,
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({provider:voiceProvider,locale:replyLocale,personaId,
+            text:voiceProvider==='google_chirp3_hd'?speakable:reply,
+            voiceConsent:true,cloudVoiceConsent:true,
+            ...(voiceProvider==='fish_free'?{trainingUseConsent:true}:{})}),
+        })
+        if(!response.ok||!response.body)throw Error('CLOUD_TTS_UNAVAILABLE')
+        if(!live()||controller.signal.aborted)return
+        cloudPlayerRef.current=startCoachingMp3Playback(response,{
+          audioElement:primedAudioRef.current,
+          audioContext:audioContextRef.current,
+          onLevel:level=>{if(live())levelRef.current?.(level)},
+          onStart:()=>{
+            if(!live())return
+            blockedResumeRef.current=null;setNotice('');changePhase('speaking')
+          },
+          onBlocked:()=>{
+            if(!live())return
+            // Safari must not demand a second Replay tap after the one Play.
+            // If even the unlocked MP3 is rejected, try device narration.
+            cloudPlayerRef.current?.cancel()
+            cloudPlayerRef.current=null
+            cloudControllerRef.current=null
+            blockedResumeRef.current=null
+            showTextOnly()
+          },
+          onEnd:()=>{
+            if(!live())return
+            providerUnavailableRef.current=null
+            cloudControllerRef.current=null
+            cloudPlayerRef.current?.cancel()
+            cloudPlayerRef.current=null
+            // Keep iOS 27 WebKit's established short microphone-recovery cue.
+            // The MP3 playback itself is not proof that SpeechRecognition was reset.
+            iosCueSatisfiedRef.current=false
+            afterSpeech()
+          },
+          onError:fallback,
+        })
+        return
+      }catch{fallback();return}
+    }
+    // A remote natural voice is required. Keep text visible if unavailable.
+    showTextOnly()
+  }
+
+  function toggle(){
+    if(phaseRef.current==='ready'&&blockedResumeRef.current){
+      blockedResumeRef.current()
+      return
+    }
+    if(activeRef.current){stopVoice();return}
+    if(!canStart)return
+    if(!enabled){onRequestConsent?.();return}
+    // A natural prerecorded greeting must work even if this browser lacks STT.
+    if(!introStartedRef.current){
+      // Play is the only start gesture: the visitor starts live voice processing.
+      sessionStartRef.current?.()
+      activeRef.current=true
+      introStartedRef.current=true
+      generationRef.current+=1
+      audioContextRef.current=shouldUseCoachingWebAudio(window.navigator)?unlockCoachingAudioContext():null
+      primedAudioRef.current=audioContextRef.current?null:primeCoachingAudioGesture()
+      changePhase('loading')
+      void speakCoachReply({reply:String(introduction||'').slice(0,900),mode:'intro'},'',generationRef.current,true)
+      primeMicrophonePermission()
+      return
+    }
+    if(supported===false){setNotice(t.unsupported);return}
+    activeRef.current=true
+    generationRef.current+=1
+    startListening()
+  }
+
+  const active=phase!=='idle',ready=phase==='ready'
+  return <div className={styles.root} data-my-coach-voice={phase}>
+    <button type="button" className={styles.button}
+      onClick={toggle} disabled={!active&&!canStart}
+      aria-pressed={active&&!ready} aria-label={ready?t.tapToHear:active?t.stop:!introStartedRef.current?({en:'Start session with coach introduction',ru:'Начать сессию с аудиоприветствия',es:'Iniciar con la presentación en audio'}[lang]):t.start}>
+      {!active&&!introStartedRef.current?
+        <Play size={19} fill="currentColor" aria-hidden="true"/>:
+        <Mic size={19} aria-hidden="true" data-coach-microphone-icon/>}
+      <span>{ready?t.tapToHear:active?t.stop:t.start}</span>
+      {phase==='speaking'&&<Volume2 size={15} aria-hidden="true" data-coach-speaker-indicator/>}
+    </button>
+    {supported===false&&!notice&&<p className={styles.note} role="status">{t.unsupported}</p>}
+    {active&&!notice&&<span className={styles.status} role="status" data-coach-voice-status>
+      {ready?t.tapToHear:phase==='loading'?t.preparing:phase==='starting'||phase==='listening'?t.listening:phase==='thinking'?t.thinking:t.speaking}
+    </span>}
+    {notice&&<p className={styles.note} role="status" data-coach-voice-status>{notice}</p>}
+  </div>
+})
+
+export default MyCoachSpeechLoop

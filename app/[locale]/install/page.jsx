@@ -9,8 +9,8 @@ import styles from './install.module.css'
 const COPY={
   en:{
     title:'Install Holistic House for free',
-    intro:'Find the official iPhone or Android application and its release status. Your secure Holistic House messages, reports, tests and courses stay in one account.',
-    cost:'One account · Android and iPhone · free web alternative now',
+    intro:'Install Holistic House on your iPhone or Android Home Screen now. A signed Android APK will be available to download directly here after verification, without Google Play.',
+    cost:'Ready now · free PWA · Messenger included',available:'Available to install now',iphoneHelpTitle:'iPhone · Safari: install in 3 steps',iphoneHelp:'If you opened this inside ChatGPT, tap the compass icon to open Safari. Then tap Share → Add to Home Screen → Add.',
     open:'Open my Cabinet',messages:'Open my messages',settings:'Notification settings',
     stepsTitle:'Three steps to get started',
     steps:[
@@ -23,8 +23,8 @@ const COPY={
   },
   ru:{
     title:'Установить Holistic House бесплатно',
-    intro:'Здесь будет доступна загрузка настоящего приложения Holistic House для iPhone и Android. Один аккаунт для сообщений, отчётов, тестов и курсов.',
-    cost:'Один кабинет · iPhone и Android · веб-версия доступна сейчас',
+    intro:'Установка на экран iPhone и Android доступна сейчас. Подписанный Android APK для прямого скачивания появится здесь после проверки, без Google Play.',
+    cost:'Установка сейчас · бесплатно · с мессенджером',available:'Можно установить сейчас',iphoneHelpTitle:'iPhone · установка через Safari',iphoneHelp:'Если вы внутри ChatGPT, нажмите значок компаса для перехода в Safari. Затем: «Поделиться» → «На экран Домой» → «Добавить».',
     open:'Открыть кабинет',messages:'Мои сообщения',settings:'Настройки уведомлений',
     stepsTitle:'Три шага для установки',
     steps:[
@@ -37,8 +37,8 @@ const COPY={
   },
   es:{
     title:'Instala Holistic House gratis',
-    intro:'Aquí podrás descargar la aplicación oficial de Holistic House para iPhone o Android. Una sola cuenta para mensajes, informes, pruebas y cursos.',
-    cost:'Una sola cuenta · iPhone y Android · versión web disponible ahora',
+    intro:'Instala Holistic House ahora en la pantalla de inicio. Un APK firmado para Android se podrá descargar aquí directamente después de verificarlo, sin Google Play.',
+    cost:'Disponible ahora · gratis · con mensajería',available:'Disponible para instalar ahora',iphoneHelpTitle:'iPhone · instalar desde Safari',iphoneHelp:'Si estás dentro de ChatGPT, toca la brújula para abrir Safari. Después: Compartir → Añadir a la pantalla de inicio → Añadir.',
     open:'Abrir mi espacio',messages:'Abrir mis mensajes',settings:'Configurar notificaciones',
     stepsTitle:'Tres pasos para instalar',
     steps:[
@@ -54,38 +54,38 @@ const NATIVE_COPY={
   en:{
     title:'Real iPhone and Android applications',
     intro:'These are native install packages — not browser shortcuts. Downloads appear here only after signed releases and real-device acceptance tests.',
-    iosTitle:'iPhone · iOS',iosText:'Public installation requires the official App Store release. A personal unsigned IPA cannot be installed by everyone from this website in Canada.',
+    iosTitle:'iPhone · iOS',iosText:'In Canada, an ordinary iPhone cannot install a native IPA with one tap from this website. Install the full-screen Home Screen app above through Safari without the App Store.',
     iosReady:'Open in App Store',iosPending:'App Store version is not published yet.',
-    androidTitle:'Android · APK',androidText:'A release-signed APK can be downloaded from this site once its signature, version and private-account flows are verified.',
-    androidReady:'Download verified Android APK',androidPending:'A verified, release-signed APK is not published yet.',
+    androidTitle:'Android · APK',androidText:'The signed APK will download from this site after signature, version and real-device tests. Google Play is not required; Android may ask you to allow installation from your browser.',
+    androidReady:'Download APK from website',androidPending:'A verified, release-signed APK is not published yet.',
     statusReady:'Available',statusPending:'In preparation',
     trust:'Only approved releases are shown. No debug APK, unsigned IPA, test installer or customer data is distributed here.',
-    webTitle:'Use Holistic House today — web app',
-    webIntro:'An optional Home Screen web app is available now. It is not the native iPhone or Android release.',
+    webTitle:'Install Holistic House now — free web app',
+    webIntro:'Add the existing app to your phone Home Screen in Safari or Chrome. This is a PWA, not a native App Store or APK download.',
   },
   ru:{
     title:'Настоящее приложение для iPhone и Android',
     intro:'Здесь появятся нативные установщики, а не ярлыки браузера. Загрузка включается только после проверки подписи, безопасности и работы на телефоне.',
-    iosTitle:'iPhone · iOS',iosText:'Для массовой установки в Канаде нужен выпуск в App Store. Личный неподписанный IPA нельзя устанавливать всем прямо с этого сайта.',
+    iosTitle:'iPhone · iOS',iosText:'В Канаде обычный iPhone не установит нативный IPA одним нажатием с сайта. Используйте установку полноэкранного приложения Holistic House через Safari выше, без App Store.',
     iosReady:'Открыть в App Store',iosPending:'Версия для App Store пока не опубликована.',
-    androidTitle:'Android · APK',androidText:'Подписанный APK можно будет скачать здесь после проверки сертификата, версии, входа в аккаунт и переписки.',
-    androidReady:'Скачать проверенный Android APK',androidPending:'Проверенный подписанный APK пока не опубликован.',
+    androidTitle:'Android · APK',androidText:'Подписанный APK скачивается прямо с сайта после проверки сертификата, версии и работы на телефоне. Google Play не требуется; Android может запросить разрешение на установку из Chrome.',
+    androidReady:'Скачать APK с сайта',androidPending:'Проверенный подписанный APK пока не опубликован.',
     statusReady:'Доступно',statusPending:'Готовится',
     trust:'Тестовые APK, неподписанные IPA и личные данные клиентов здесь не публикуются.',
-    webTitle:'Holistic House уже доступен — веб-приложение',
-    webIntro:'Пока нативные версии готовятся, можно отдельно установить веб-приложение. Это не замена нативной версии.',
+    webTitle:'Установить Holistic House сейчас',
+    webIntro:'Установка бесплатного PWA на экран телефона доступна сейчас через Safari или Chrome. Отдельный APK или App Store для этого не нужен.',
   },
   es:{
     title:'Aplicaciones reales para iPhone y Android',
     intro:'Aquí aparecerán instaladores nativos, no accesos directos del navegador. Solo se activarán después de verificar firmas, privacidad y pruebas en dispositivos reales.',
-    iosTitle:'iPhone · iOS',iosText:'En Canadá, la distribución pública requiere App Store. Un IPA personal sin firmar no se puede instalar desde esta web para todo el mundo.',
+    iosTitle:'iPhone · iOS',iosText:'En Canadá, un iPhone normal no puede instalar un IPA nativo con un toque desde esta web. Instala la aplicación de pantalla de inicio desde Safari sin App Store.',
     iosReady:'Abrir en App Store',iosPending:'La versión de App Store aún no está publicada.',
-    androidTitle:'Android · APK',androidText:'El APK firmado estará aquí tras verificar el certificado, la versión, el inicio de sesión y los mensajes privados.',
-    androidReady:'Descargar APK Android verificado',androidPending:'Todavía no hay un APK firmado y verificado publicado.',
+    androidTitle:'Android · APK',androidText:'El APK firmado se descargará directamente desde esta web tras verificarlo en un dispositivo real. No requiere Google Play; Android puede pedir permiso para instalar desde Chrome.',
+    androidReady:'Descargar APK del sitio',androidPending:'Todavía no hay un APK firmado y verificado publicado.',
     statusReady:'Disponible',statusPending:'En preparación',
     trust:'No compartimos APK de depuración, IPA sin firmar ni datos privados de clientes.',
-    webTitle:'Usa Holistic House hoy — aplicación web',
-    webIntro:'Mientras se preparan las versiones nativas, la aplicación web es una alternativa opcional. No es una versión nativa.',
+    webTitle:'Instala Holistic House ahora',
+    webIntro:'Instala ahora la PWA gratuita desde Safari o Chrome en la pantalla de inicio. No requiere App Store ni descargar un APK.',
   }
 }
 
@@ -117,6 +117,33 @@ export default async function InstallPage({params}){
         <p className={styles.free}>{c.cost}</p>
       </div>
     </section>
+    {downloads.androidUrl && <section className={styles.webSection} aria-label={native.androidTitle} data-hh-direct-apk-ready>
+      <span className={styles.available}>{native.statusReady}</span>
+      <h2>{native.androidTitle}</h2>
+      <p>{native.androidText}</p>
+      <a className={styles.nativeLink} href="/api/native-download/android">{native.androidReady}</a>
+    </section>}
+    <section className={styles.webSection} aria-label={native.webTitle} data-hh-pwa-alternative>
+      <span className={styles.available} data-hh-install-ready>{c.available}</span>
+      <h2>{native.webTitle}</h2>
+      <InstallHolisticHouse locale={locale} showGuideLink={false} landing/>
+      <div className={styles.iphoneHelp} data-hh-ios-quicksteps>
+        <strong>{c.iphoneHelpTitle}</strong>
+        <p>{c.iphoneHelp}</p>
+      </div>
+      <p>{native.webIntro}</p>
+    </section>
+    <div className={styles.actions}>
+      <Link className={styles.primary} href={`/${locale}/app/messages`}>{c.messages}</Link>
+      <Link className={styles.link} href={`/${locale}/app/portrait`}>{c.open}</Link>
+      <Link className={styles.link} href={`/${locale}/app/settings#hh-phone-notifications`}>{c.settings}</Link>
+    </div>
+    <section className={styles.steps} aria-label={c.stepsTitle}>
+      <h2>{c.stepsTitle}</h2>
+      <ol>{c.steps.map((item,i)=><li key={i}><span>{i+1}</span><p>{item}</p></li>)}</ol>
+    </section>
+    <p className={styles.privacy}>{c.privacy}</p>
+    <p className={styles.note}>{c.note}</p>
     <section className={styles.nativeSection} aria-labelledby="hh-native-title" data-hh-native-downloads>
       <h2 id="hh-native-title">{native.title}</h2>
       <p className={styles.nativeIntro}>{native.intro}</p>
@@ -138,21 +165,5 @@ export default async function InstallPage({params}){
       </div>
       <p className={styles.nativeTrust}>{native.trust}</p>
     </section>
-    <section className={styles.webSection} aria-label={native.webTitle} data-hh-pwa-alternative>
-      <h2>{native.webTitle}</h2>
-      <p>{native.webIntro}</p>
-      <InstallHolisticHouse locale={locale} showGuideLink={false} landing/>
-    </section>
-    <div className={styles.actions}>
-      <Link className={styles.primary} href={`/${locale}/app/messages`}>{c.messages}</Link>
-      <Link className={styles.link} href={`/${locale}/app/portrait`}>{c.open}</Link>
-      <Link className={styles.link} href={`/${locale}/app/settings#hh-phone-notifications`}>{c.settings}</Link>
-    </div>
-    <section className={styles.steps} aria-label={c.stepsTitle}>
-      <h2>{c.stepsTitle}</h2>
-      <ol>{c.steps.map((item,i)=><li key={i}><span>{i+1}</span><p>{item}</p></li>)}</ol>
-    </section>
-    <p className={styles.privacy}>{c.privacy}</p>
-    <p className={styles.note}>{c.note}</p>
   </main>
 }

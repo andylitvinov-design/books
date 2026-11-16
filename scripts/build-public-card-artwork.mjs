@@ -2,11 +2,16 @@ import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import sharp from "sharp";
+import {createStaticMediaCache} from "./vercel-static-media-cache.mjs";
 
 // Outputs live in public/ (static CDN), not Vercel's /_next/image runtime.
 // Every requested asset has a pinned original Git blob SHA and an immutable-by-
 // content URL. Updating an original requires regenerating its registry entry.
 const root = process.cwd();
+const cache=createStaticMediaCache({root,group:"card-artwork",
+  sources:["scripts/build-public-card-artwork.mjs","data/public-card-artwork.json"]});
+const validWebp=bytes=>bytes.length>=20 && bytes.toString("ascii",0,4)==="RIFF" &&
+  bytes.toString("ascii",8,12)==="WEBP" && bytes.readUInt32LE(4)===bytes.length-8;
 const registry = JSON.parse(readFileSync(path.join(root, "data/public-card-artwork.json"), "utf8"));
 const all = [
   ...Object.values(registry.books).map(item => ({ ...item, destinations: [[item.url, 720]] })),
@@ -44,11 +49,12 @@ for (const item of all) {
     }
     let output;
     try {
-      output = await sharp(original, { failOn: "error" })
+      output = cache.get(item.source+":"+width,validWebp);
+      if (!output) output = cache.put(item.source+":"+width,await sharp(original, { failOn: "error" })
         .rotate()
         .resize({ width, withoutEnlargement: true, kernel: "lanczos3" })
         .webp({ quality: 76, alphaQuality: 90, effort: 4 })
-        .toBuffer();
+        .toBuffer(),validWebp);
     } catch (cause) {
       // Never silently ship a blank image or switch to an unpinned external asset.
       // Vercel build logs must identify the exact checked-in input to repair.
@@ -69,3 +75,6 @@ console.log(
   " versioned WebP files from " + all.length +
   " pinned sources without Vercel request-time image transformations.",
 );
+
+
+console.log("[hh-static-media] artwork cache",cache.stats);

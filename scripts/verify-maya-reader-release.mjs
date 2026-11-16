@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { books } from '../data/library.js';
 
 export const volumes = [
   ['maya-egregor-gods', 'Maya_Aztec_Egregor_Gods.html'],
@@ -24,6 +25,42 @@ export async function verifyBundle(root = process.cwd()) {
     assert.ok(info.isFile() && info.size > 0, `Empty/missing HTML source for ${slug}`);
   }
   console.log('PASS: all four Maya HTML sources are present in the actual reader runtime trace');
+}
+
+// The eight author-restored manuals are read from disk at runtime.
+// Check BOTH locale and legacy Vercel reader traces: a green build alone missed
+// these documents and caused ENOENT / HTTP 500 in production.
+export const ancientVolumeIds = Object.freeze([
+  'egypt-osiris-temple-magic', 'egypt-maat-isis-attunements',
+  'greek-temple-attunements', 'greek-metaphysics-planning',
+  'greek-dionysus-asclepius-course', 'roman-imperial-temples',
+  'zoroastrian-tradition-notes', 'mithra-mysteries',
+]);
+
+export async function verifyAncientReaderBundles(root = process.cwd()) {
+  const archived = ancientVolumeIds.map(id => {
+    const book = books.find(item => item.id === id);
+    assert.ok(book && book.status === 'published', 'Missing published original ' + id);
+    return book;
+  });
+  const tracePaths = [
+    '.next/server/app/books/[bookId]/page.js.nft.json',
+    '.next/server/app/[locale]/books/[bookId]/page.js.nft.json',
+  ];
+  for (const relativeTrace of tracePaths) {
+    const tracePath = path.resolve(root, relativeTrace);
+    const trace = JSON.parse(await readFile(tracePath, 'utf8'));
+    assert.ok(Array.isArray(trace.files), 'Missing runtime trace in ' + relativeTrace);
+    const files = new Set(trace.files.map(item => path.resolve(path.dirname(tracePath), item)));
+    for (const book of archived) {
+      const source = path.resolve(root, book.originalSourceFile);
+      assert.ok(files.has(source),
+        'Vercel ' + relativeTrace + ' is missing ' + book.id + ': ' + book.originalSourceFile);
+      const file = await stat(source);
+      assert.ok(file.isFile() && file.size > 2500, 'Invalid original HTML: ' + book.id);
+    }
+  }
+  console.log('PASS: eight ancient manuals are included in BOTH real Vercel book reader traces');
 }
 
 export function assertPage(html, pathname, locale) {
@@ -73,5 +110,5 @@ if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.ar
   const args = process.argv.slice(2);
   assert.ok(args.length === 0 || (args.length === 1 && args[0] === '--live'), 'Use no arguments for the build trace or --live for production');
   if (args[0] === '--live') await verifyLive();
-  else await verifyBundle();
+  else { await verifyBundle(); await verifyAncientReaderBundles(); }
 }

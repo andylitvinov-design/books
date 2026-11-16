@@ -1,0 +1,11 @@
+# Universal My Page — release and privacy contract · 2026-11-13
+
+Owner screenshot is Video Studio Ready, not an existing universal user page. Do NOT compare pixels between routes. The Ready UX and one-tap Save are owned by PR #4463 and #4515, which this change does not edit.
+
+Routes: Profile Life and Work link to locale my-page; signed-in owners manage their page and guest users can initiate the existing Google auth/start on demand. Public locale u/{handle} renders opted-in data only. Existing master services remain separate. My Videos links to the owner page, but private Save never automatically publishes.
+
+Privacy: A user's first page is a private draft. Personal name, bio, and handle are owner-editable. Every video, diary post and neutral achievement starts private, and requires an explicit Publish action. Unpublishing the page hides all posts and resets their visibility. Editing a public post makes it private. Real aggregate test, practice and saved-video counts are private unless the owner opts in. Public projection must suppress unshared counts, raw psychological results, therapy notes, source photos and private storage keys. Deleted private video events are revoked by a security-invoker database trigger on the same video status update. Public MP4 uses a scoped 60-second signed read via backend, not a public bucket.
+
+UI: Holistic Light ivory / white / green, readable mobile cards, 44px+ actions, accessible focus states, reduced motion, no video autoplay. Verify RU/EN/ES at 320/354/390/430 in Chromium + WebKit with actual page-state screenshots; no unrelated screenshot overlay accepted. Guest Profile must remain accessible without a surprise login popup.
+
+Gates: One-source-writer PR, native exact-HEAD Core/Specialist/Guard, rollback-only Supabase SQL dry run, reviewed production migration + RLS/grants readback before live deployment, real 2-account isolation and one signed saved-MP4 playback/revocation. No new provider, paid API, storage bucket, cron or workflow. MERGED != LIVE.

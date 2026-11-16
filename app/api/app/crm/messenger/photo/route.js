@@ -5,7 +5,7 @@ import { practitionerEmailAllowed } from '@/lib/app/practitioner-access'
 import { PRIVATE_HEADERS, safeError } from '@/lib/app/http'
 import { AppError } from '@/lib/assessments/contracts'
 import { createCrmRepository, crmEnabled } from '@/lib/crm/repository'
-import { retrievePrivateTelegramPhoto } from '@/lib/crm/messenger-provider'
+import { retrievePrivateTelegramPhoto,retrievePrivateWhatsAppPhoto } from '@/lib/crm/messenger-provider'
 
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
@@ -29,13 +29,15 @@ export async function GET(request){
        params.getAll('threadId').length!==1||params.getAll('messageId').length!==1)
       throw new AppError('INVALID_MESSAGE',400)
     const repo=createCrmRepository(config)
-    const fileId=await repo.withOwner(actor,store=>store.readTelegramPhotoRef({
+    const media=await repo.withOwner(actor,store=>store.readMessengerPhotoRef({
       threadId:params.get('threadId'),messageId:params.get('messageId'),
     }))
-    const photo=await retrievePrivateTelegramPhoto(fileId)
+    const photo=media.channel==='whatsapp'
+      ?await retrievePrivateWhatsAppPhoto(media.fileId)
+      :await retrievePrivateTelegramPhoto(media.fileId)
     return auth.apply(new NextResponse(photo.bytes,{headers:{
       ...PRIVATE_HEADERS,'Content-Type':photo.contentType,
-      'Content-Disposition':'inline; filename="telegram-enquiry-photo"',
+      'Content-Disposition':'inline; filename="'+media.channel+'-enquiry-photo"',
       'Cache-Control':'private, no-store, max-age=0',
       'X-Content-Type-Options':'nosniff',
     }}))

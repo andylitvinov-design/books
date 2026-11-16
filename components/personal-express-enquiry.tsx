@@ -2,10 +2,11 @@
 
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { CheckCircle2, ChevronDown, HeartPulse, MessageCircle, ShieldCheck, X } from "lucide-react";
 
 import { ContactChannelChooser } from "@/components/contact-channel-chooser";
+import {websiteMessengerOnlyUi} from "@/lib/crm/website-messenger-only.mjs";
 import { TelegramDiagnosticEntry } from "@/components/telegram-diagnostic-entry";
 import { FreeExpressWizard } from "@/components/free-express-wizard";
 import {EXPRESS_GOOGLE_CLAIM_PENDING_KEY,validExpressGoogleClaimIntent} from "@/lib/practitioners/free-express-google-claim.mjs";
@@ -21,17 +22,17 @@ const copy = {
     shortTitle: "Free express review",
     lead: "One personal written review. Choose what your question is about; the service stays the same.",
     legend: "What is your request about?",
-    secureAlternative: "Use the secure website form instead", close: "Close request form",
+    secureAlternative: "Choose Telegram or WhatsApp", close: "Close request form",
     areas: {
       situation: { title: "My situation", short: "Situation", hint: "A decision, relationship, work or something that feels stuck.", tag: "Situation" },
       energy: { title: "Energy & health", short: "Energy / health", hint: "Your energy, wellbeing and everyday resources — not a medical diagnosis.", tag: "Energy and wellbeing" },
     },
-    step: "Leave your phone and agree to one personal reply, then choose a messenger. No payment or appointment is required for the initial written review.",
+    step: "Choose Telegram or WhatsApp and send the message yourself. No payment or appointment is confirmed.",
     privacy: "Please do not include symptoms, diagnoses, reports or private drawings here or in the chat. Andrey can agree a secure way to review details later.",
     safety: "Privacy: no medical details in chat",
     service: "Free personal express review",
     request: "I would like a free personal express review. Please tell me how to continue securely.",
-    note: "Submitting saves a consented contact request in Holistic House CRM. WhatsApp and Telegram open a draft that you must send yourself; a chat opening is not a confirmed consultation.",
+    note: "The messenger link opens a draft, not a saved CRM enquiry. Press Send in the app; only verified provider conversations can be linked to CRM.",
     alt: "Andrey Litvinov",
   },
   ru: {
@@ -40,17 +41,17 @@ const copy = {
     shortTitle: "Экспресс-диагностика",
     lead: "Один личный письменный разбор. Выберите тему обращения — это не разные услуги.",
     legend: "С чем связан ваш запрос?",
-    secureAlternative: "Заполнить защищённую форму на сайте", close: "Свернуть форму",
+    secureAlternative: "Выбрать Telegram или WhatsApp", close: "Свернуть форму",
     areas: {
       situation: { title: "По ситуации", short: "Ситуация", hint: "Решение, отношения, работа или вопрос, в котором вы застряли.", tag: "Ситуация" },
       energy: { title: "По энергии и здоровью", short: "Энергия", hint: "Самочувствие, энергия и ресурсы — без медицинской диагностики.", tag: "Энергия и самочувствие" },
     },
-    step: "Оставьте телефон, согласитесь на один личный ответ и выберите мессенджер. Первичный письменный разбор — без оплаты и без записи на звонок.",
+    step: "Выберите Telegram или WhatsApp и отправьте сообщение. Запись и оплата пока не подтверждены.",
     privacy: "Не отправляйте здесь и в чат симптомы, диагнозы, анализы или личные рисунки. При необходимости Андрей согласует защищённую передачу информации.",
     safety: "Приватность: без медицинских данных в чате",
     service: "Бесплатная личная экспресс-диагностика",
     request: "Хочу получить бесплатный личный экспресс-разбор. Подскажите, как безопасно продолжить.",
-    note: "После согласия контактная заявка сохраняется в CRM. В WhatsApp или Telegram откроется черновик: нажать «Отправить» нужно самостоятельно. Заявка не подтверждает запись.",
+    note: "Ссылка открывает черновик, а не сохранённую заявку CRM. Отправьте сообщение в Telegram или WhatsApp; привязка к CRM требует подтверждения диалога.",
     alt: "Андрей Литвинов",
   },
   es: {
@@ -59,17 +60,17 @@ const copy = {
     shortTitle: "Revisión exprés gratuita",
     lead: "Una sola revisión personal escrita. Elige el tema de tu pregunta, no un servicio diferente.",
     legend: "¿Sobre qué es tu consulta?",
-    secureAlternative: "Usar el formulario seguro de esta web", close: "Cerrar formulario",
+    secureAlternative: "Elegir Telegram o WhatsApp", close: "Cerrar formulario",
     areas: {
       situation: { title: "Mi situación", short: "Situación", hint: "Decisiones, relaciones, trabajo o algo que te bloquea.", tag: "Situación" },
       energy: { title: "Energía y salud", short: "Energía / salud", hint: "Bienestar y recursos personales, sin diagnóstico médico.", tag: "Energía y bienestar" },
     },
-    step: "Deja tu teléfono, acepta una respuesta personal y elige mensajería. La revisión inicial escrita no requiere pago ni cita.",
+    step: "Elige Telegram o WhatsApp y pulsa Enviar. No se confirma ningún pago ni cita.",
     privacy: "No compartas síntomas, diagnósticos, informes ni dibujos privados aquí ni por chat. Andrey puede acordar un intercambio seguro más adelante.",
     safety: "Privacidad: sin datos médicos en el chat",
     service: "Revisión personal exprés gratuita",
     request: "Quisiera solicitar una revisión personal exprés gratuita. Indícame cómo continuar de forma segura.",
-    note: "La solicitud con consentimiento se guarda en el CRM. WhatsApp o Telegram solo abre un borrador que debes enviar tú; no confirma una cita.",
+    note: "El enlace abre un borrador, no una solicitud guardada en CRM. Pulsa Enviar; la vinculación requiere verificar el chat.",
     alt: "Andrey Litvinov",
   },
 } as const;
@@ -85,8 +86,20 @@ export function PersonalExpressEnquiry({
   const [focus, setFocus] = useState<Focus>("situation");
   const [focusLocked, setFocusLocked] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => { setHydrated(true); }, []);
   const revealRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const closeDisclosure = useCallback(() => {
+    // A delayed hashchange after Escape can re-open the folded form in WebKit.
+    // Remove only our form anchor; never clear search params or client identity.
+    if (window.location.hash === "#request-free-review") {
+      const url = new URL(window.location.href);
+      url.hash = "";
+      window.history.replaceState(window.history.state, "", url.pathname + url.search);
+    }
+    setExpanded(false);
+  }, []);
 
   // The compact mobile capture begins at the top of the visible card after opening.
   useEffect(() => {
@@ -136,13 +149,14 @@ export function PersonalExpressEnquiry({
     if (!expanded) return;
     const onEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape" && panelRef.current?.contains(document.activeElement)) {
-        setExpanded(false);
+        closeDisclosure();
         revealRef.current?.focus();
       }
     };
     document.addEventListener("keydown", onEscape);
     return () => document.removeEventListener("keydown", onEscape);
-  }, [expanded]);
+  }, [expanded, closeDisclosure]);
+  const publicWizard = enableWizard && !websiteMessengerOnlyUi();
   const whatsappUrl = whatsappEnquiryUrl({
     locale, service: t.service, request: t.request, pagePath: pathname,
     // Deliberately omit the selected focus and all health/personal information
@@ -153,7 +167,7 @@ export function PersonalExpressEnquiry({
     <div className={styles.wrapper} data-personal-express-review>
       {intro}
       <section className={styles.capture} id="request-free-review" data-personal-express-enquiry
-        data-expanded={expanded ? "true" : "false"} lang={locale} aria-labelledby="express-enquiry-title">
+        data-expanded={expanded ? "true" : "false"} data-express-hydrated={hydrated ? "true" : "false"} lang={locale} aria-labelledby="express-enquiry-title">
         <div className={styles.photo}>
           <Image src="/images/holistic-house/andy-about.png" alt={t.alt}
             fill sizes="(max-width: 720px) 90px, 38vw" />
@@ -165,9 +179,9 @@ export function PersonalExpressEnquiry({
           <p className={styles.lead}>{t.lead}</p>
           <TelegramDiagnosticEntry locale={locale} />
           <button ref={revealRef} type="button" className={styles.reveal}
-            data-express-reveal aria-expanded={expanded} aria-controls="express-request-form"
+            data-express-reveal disabled={!hydrated} aria-expanded={expanded} aria-controls="express-request-form"
             aria-label={expanded ? t.close : t.secureAlternative}
-            onClick={() => setExpanded(open => !open)}>
+            onClick={() => { if (expanded) closeDisclosure(); else setExpanded(true); }}>
             {expanded ? <X size={19} aria-hidden="true" /> : <ShieldCheck size={17} aria-hidden="true" />}
             <span>{expanded ? t.close : t.secureAlternative}</span>
             <ChevronDown className={styles.revealChevron} size={16} aria-hidden="true" />
@@ -188,18 +202,18 @@ export function PersonalExpressEnquiry({
               </label>
             ))}
           </fieldset>
-          <p className={styles.step}>{enableWizard
+          <p className={styles.step}>{publicWizard
             ? (locale === "ru" ? "Сначала зарегистрируем заявку, затем можно уточнить вопрос и приватно добавить фото или рисунок."
               : locale === "es" ? "Primero registramos tu solicitud; después puedes añadir tus respuestas e imágenes de forma privada."
               : "First register your request, then optionally add answers and private images.")
             : t.step}</p>
-          {enableWizard ? <FreeExpressWizard locale={locale} focus={focus} serviceTitle={t.service}
+          {publicWizard ? <FreeExpressWizard locale={locale} focus={focus} serviceTitle={t.service}
             onSaved={() => setFocusLocked(true)} onRestoredFocus={setFocus} />
           : <ContactChannelChooser key={focus} locale={locale}
             whatsappUrl={whatsappUrl} compactPhone stayAfterSave resetKey={focus}
             allowSecureExpressClaim publicServiceTitle={t.service}
             publicTopic={"Express review focus: " + t.areas[focus].tag} />}
-          {!enableWizard && <>
+          {!publicWizard && <>
             <p className={styles.privacy}><ShieldCheck size={16} aria-hidden="true" />{t.privacy}</p>
             <p className={styles.note}>{t.note}</p>
             <details className={styles.safetyDetails}>
@@ -210,7 +224,7 @@ export function PersonalExpressEnquiry({
           </div>
         </div>
       </section>
-      {!enableWizard && focus === "situation" ? children : null}
+      {!publicWizard && focus === "situation" ? children : null}
     </div>
   );
 }

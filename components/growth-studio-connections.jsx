@@ -5,13 +5,14 @@ import {CheckCircle2, AlertCircle, CircleHelp, RefreshCcw, ShieldCheck} from 'lu
 import {GROWTH_PUBLICATION_NETWORKS,CHANNEL_CAPABILITIES} from '@/lib/growth-studio/channel-capabilities.mjs'
 import {checkGrowthTelegramPublisherAction,checkGrowthStudioStorageAction,checkGrowthStudioProviderReadinessAction} from '@/app/admin/growth-studio/actions'
 import styles from './growth-studio.module.css'
+import {GROWTH_INSTAGRAM_ACCOUNT_TARGETS} from '@/lib/growth-studio/instagram-accounts.mjs'
 
 const messages={
   ru:{
     summary:'Подключения и способы публикации',
     explanation:'Наличие соцсети в редакторе означает только возможность подготовить черновик. Автопубликация в неё не считается подключённой без OAuth, разрешений и подтверждённого поста.',
     channel:'Канал',mode:'Доставка',connection:'Доступ',what:'Требуется',
-    telegramOptIn:'Только явное подтверждение владельца',existingUploader:'Отдельный YouTube-загрузчик',
+    metaPageOptIn:'Facebook Page · Meta OAuth + согласие владельца',telegramOptIn:'Только явное подтверждение владельца',existingUploader:'Отдельный YouTube-загрузчик',
     eventAdapter:'Модуль мероприятий',manual:'Ручное размещение',
     unconfigured:'Не подключён',configured:'Настройки есть, проверка не пройдена',
     verified:'Проверены канал и права бота', external:'Отдельный инструмент — OAuth ещё не подтверждён',
@@ -68,7 +69,7 @@ const messages={
     summary:'Connections and publishing methods',
     explanation:'Selecting a social network in the editor prepares a draft only. It does not mean publishing access is connected until OAuth, account permissions and provider delivery are verified.',
     channel:'Channel',mode:'Delivery',connection:'Access',what:'Requirements',
-    telegramOptIn:'Explicit owner-confirmed send only',existingUploader:'Separate YouTube uploader',
+    metaPageOptIn:'Facebook Page · Meta OAuth + owner confirmation',telegramOptIn:'Explicit owner-confirmed send only',existingUploader:'Separate YouTube uploader',
     eventAdapter:'Event publisher workflow',manual:'Manual handoff',
     unconfigured:'Not connected',configured:'Settings present; access not verified',
     verified:'Bot channel and posting rights verified',external:'Separate tool — OAuth not verified here',
@@ -140,11 +141,12 @@ const RU_REQUIREMENTS={
   meetup:'Нужны права организатора и доступное официальное подключение Meetup.',
   manual:'Готовый контент копируется владельцем вручную, без автоматической отправки.',
 }
-const modes={telegram_opt_in:'telegramOptIn',existing_uploader:'existingUploader',event_adapter:'eventAdapter',manual:'manual'}
+const modes={meta_page_opt_in:'metaPageOptIn',telegram_opt_in:'telegramOptIn',existing_uploader:'existingUploader',event_adapter:'eventAdapter',manual:'manual'}
 // A stable no-op prevents the owner-only Redis probe effect from looping if this
 // component is ever mounted without a parent readiness callback.
 const NOOP_STORAGE_VERIFICATION=()=>{}
-export default function GrowthStudioConnections({locale='en',telegram={ready:false,channel:null},onTelegramVerified=()=>{},onStorageVerified=NOOP_STORAGE_VERIFICATION}){
+const NOOP_META_STATUS=()=>{}
+export default function GrowthStudioConnections({locale='en',telegram={ready:false,channel:null},onTelegramVerified=()=>{},onStorageVerified=NOOP_STORAGE_VERIFICATION,onMetaStatus=NOOP_META_STATUS}){
   const t=messages[locale==='ru'?'ru':'en']
   const [tested,setTested]=useState(false)
   const [verified,setVerified]=useState(false)
@@ -157,6 +159,33 @@ export default function GrowthStudioConnections({locale='en',telegram={ready:fal
   const [providerSnapshot,setProviderSnapshot]=useState(null)
   const [providerChecking,setProviderChecking]=useState(false)
   const [providerFailed,setProviderFailed]=useState(false)
+  const [metaAccounts,setMetaAccounts]=useState([])
+  const [metaSetup,setMetaSetup]=useState(null)
+  const [metaError,setMetaError]=useState('')
+  const loadMetaAccounts=useCallback(async()=>{
+    try{
+      const response=await fetch('/api/admin/growth-studio/meta/status',{cache:'no-store',credentials:'same-origin'})
+      const result=await response.json()
+      if(!response.ok||result?.ok!==true)throw new Error('status')
+      const accounts=Array.isArray(result.accounts)?result.accounts:[]
+      const configuration=result.configuration||null
+      setMetaAccounts(accounts);setMetaSetup(configuration)
+      onMetaStatus({accounts,configuration})
+      setMetaError('')
+    }catch{setMetaAccounts([]);setMetaSetup(null);onMetaStatus(null);setMetaError(locale==='ru'?'Не удалось проверить Meta OAuth':'Meta connection status unavailable')}
+  },[locale,onMetaStatus])
+  async function disconnectMetaAccount(account){
+    try{
+      const response=await fetch('/api/admin/growth-studio/meta/disconnect',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({account})})
+      if(!response.ok)throw new Error('disconnect')
+      await loadMetaAccounts()
+    }catch{setMetaError(locale==='ru'?'Не удалось отключить аккаунт':'Could not disconnect account')}
+  }
+  useEffect(()=>{
+    void loadMetaAccounts()
+    const metaResult=new URLSearchParams(window.location.search).get('meta')
+    if(metaResult&&!metaResult.startsWith('connected_'))setMetaError(metaResult)
+  },[loadMetaAccounts])
   const all=useMemo(()=>GROWTH_PUBLICATION_NETWORKS.map(id=>({id,...CHANNEL_CAPABILITIES[id]})),[])
   async function verify(){
     if(!telegram.ready||checking)return
@@ -338,6 +367,70 @@ export default function GrowthStudioConnections({locale='en',telegram={ready:fal
         </section>
       </div>
       <p className={styles.growthSetupPrivacy}><ShieldCheck size={15} aria-hidden="true"/>{t.setupNoSecrets}</p>
+    </div>
+    <div className={styles.connectionBox}>
+      <div className={styles.connectionBoxTitle}>
+        <strong>Instagram · Meta Graph API</strong>
+        <button type="button" onClick={loadMetaAccounts}><RefreshCcw size={15}/>{locale==='ru'?'Обновить статус':'Refresh status'}</button>
+      </div>
+      <p>{locale==='ru'?'Каждый профиль авторизуется отдельно через официальное окно Meta. Система проверяет точный handle, связанную Facebook Page и разрешения. Публикация остаётся выключенной до отдельного теста доставки.':'Authorize each profile separately through Meta. The server verifies the exact handle, linked Facebook Page and permissions. Publishing remains disabled until a separate delivery test.'}</p>
+      {metaError&&<p className={styles.connectionError} role="alert">{metaError}</p>}
+      {metaSetup&&!metaSetup.authorizationReady&&<p className={styles.connectionError} role="status">
+        {locale==='ru'
+          ?'Сервер Meta ещё не готов к подключению. Добавьте в Vercel Production настройки: '
+          :'Meta setup is incomplete. Configure these Vercel Production settings: '}
+        <code>{metaSetup.missingSettings.join(' · ')}</code>
+        {' · '}<a href="https://vercel.com/super10/codex-public-book-library/settings/environment-variables"
+          target="_blank" rel="noopener noreferrer">{locale==='ru'?'Открыть Vercel':'Open Vercel'}</a>
+        {locale==='ru'?'. Затем обновите статус и пройдите официальную авторизацию Meta.':'. Then refresh this status and complete the official Meta login.'}
+      </p>}
+      {metaSetup?.authorizationReady&&!metaSetup.publishFlagEnabled&&<p className={styles.connectionNote}>
+        {locale==='ru'?'OAuth можно подключить. Отправка Stories выключена до подтверждения аккаунта и тестовой публикации.'
+          :'OAuth can be connected. Story publishing remains off until verified authorization and an approved test.'}
+      </p>}
+
+      <div className={styles.growthSetupSteps}>
+        {GROWTH_INSTAGRAM_ACCOUNT_TARGETS.map(account=>{
+          const status=metaAccounts.find(item=>item.targetId===account.id)
+          const connected=status?.connectionState==='connected'
+          return <section key={account.id}>
+            <h4>{account.accountRole==='work'?(locale==='ru'?'Рабочий аккаунт':'Work account'):(locale==='ru'?'Личный аккаунт':'Personal account')} · {account.displayName||account.label}</h4>
+            <small>{account.label}</small>
+            <p>{connected
+              ?(locale==='ru'?'Подключён: ':'Connected: ')+status.handle+' · '+(status.pageName||'Facebook Page')+' · Page ID '+status.pageId
+              :(metaSetup&&!metaSetup.authorizationReady
+                ?(locale==='ru'?'Не настроено приложение Meta':'Meta app not configured')
+                :(locale==='ru'?'Ожидает авторизации владельца через Meta':'Waiting for owner authorization through Meta'))}</p>
+            {connected&&<small>{locale==='ru'?'Instagram ID: ':'Instagram ID: '}{status.instagramAccountId} · {status.scopes?.length||0} {locale==='ru'?'разрешений':'permissions'}</small>}
+            {connected&&<p className={styles.hint}>
+              {locale==='ru'?'Facebook Page: ':'Facebook Page: '}
+              <strong>{status.pageName||'Page'} (ID {status.pageId})</strong>
+              {' · '}{status.scopes?.includes('pages_manage_posts')
+                ?(locale==='ru'?'pages_manage_posts получено':'pages_manage_posts granted')
+                :(locale==='ru'?'Нет разрешения pages_manage_posts':'Missing pages_manage_posts permission')}
+              {' · '}{metaSetup?.facebookPublishFlagEnabled
+                ?(locale==='ru'?'Серверный флаг Facebook включён':'Facebook server flag enabled')
+                :(locale==='ru'?'Серверная публикация Facebook выключена':'Facebook publishing disabled on server')}
+            </p>}
+            <div className={styles.connectionNav}>
+              {metaSetup?.authorizationReady
+                ?<a href={'/api/admin/growth-studio/meta/connect?account='+encodeURIComponent(account.id)}>
+                  {connected?(locale==='ru'?'Переподключить':'Reconnect'):(locale==='ru'?'Подключить через Meta':'Connect with Meta')} ↗
+                </a>
+                :<button type="button" disabled title={locale==='ru'?'Сначала настройте Meta в Vercel':'Set up Meta in Vercel first'}>
+                  {locale==='ru'?'Подключить через Meta':'Connect with Meta'}
+                </button>}
+              {connected&&<button type="button" onClick={()=>disconnectMetaAccount(account.id)}>{locale==='ru'?'Отключить':'Disconnect'}</button>}
+            </div>
+            <small>{locale==='ru'?'Публикация выключена до первого тестового поста':'publishing disabled until the first test post'}</small>
+          </section>
+        })}
+      </div>
+      <div className={styles.connectionNav}>
+        <a href="https://developers.facebook.com/" target="_blank" rel="noopener noreferrer">Meta for Developers ↗</a>
+        <a href="https://business.facebook.com/" target="_blank" rel="noopener noreferrer">{t.setupMeta} ↗</a>
+        <a href="https://github.com/andylitvinov-design/books/blob/codex/meta-instagram-oauth-foundation-20261109/docs/growth-studio/META_INSTAGRAM_OAUTH_SETUP.md" target="_blank" rel="noopener noreferrer">{locale==='ru'?'Инструкция настройки OAuth':'OAuth setup guide'} ↗</a>
+      </div>
     </div>
     <div className={styles.connectionScroller}>
       <table className={styles.connectionTable}>

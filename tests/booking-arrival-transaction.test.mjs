@@ -29,6 +29,13 @@ function database({failNotice=false,ordinary=false}={}){
   const transaction=async(_config,_actor,fn)=>{
     const pendingRequests=new Map(requests),pendingMessages=new Map(messages)
     const db={async query(sql,args){
+      // Fixture for the already released consultation messenger identity
+      // gate: a real request is verified only after it is created. Keep the
+      // production fail-closed check, do not disable or mock it away.
+      if(sql.includes("to_regprocedure('app_private.hh_consultation_messenger_verified(uuid)')"))
+        return {rows:[{ready:true}]}
+      if(sql.includes('select app_private.hh_consultation_messenger_verified($1)'))
+        return {rows:[{verified:pendingRequests.has(args[0])}]}
       if(sql.includes('from app.accounts'))return {rows:[{id:client.id,status:'active',onboarding_state:'active'}]}
       if(sql.includes('where account_id=$1 and operation_id=$2'))return {rows:[...pendingRequests.values()]
         .filter(row=>row.account_id===args[0]&&row.operation_id===args[1])}

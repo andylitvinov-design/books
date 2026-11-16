@@ -73,6 +73,22 @@ export default async function TempleInsightsPage({ params }: Props) {
       <section id="insights" className={styles.insights} aria-label={t.freeTitle}>
         <IdeasDiscovery locale={language} variant="temple" />
       </section>
+      <section className={styles.section} aria-labelledby="temple-attunements-index-title">
+        <h2 id="temple-attunements-index-title">
+          {language === "ru" ? "Авторские настройки храмовых традиций" : language === "es" ? "Sintonizaciones de tradiciones antiguas" : "Original temple attunements"}
+        </h2>
+        <p className={styles.sectionIntro}>
+          {language === "ru"
+            ? "Найдите стихи и настройки по традиции, каналу божества и месту: Асклепий, Дионис, Гера и другие."
+            : language === "es"
+              ? "Busca poemas y sintonizaciones por tradición, deidad y lugar, con fotografías del archivo."
+              : "Browse original poems and attunements by tradition, deity channel and recorded location."}
+        </p>
+        <Link className={styles.primaryAction} href={`/${language}/temple-channels`} prefetch={false}>
+          {language === "ru" ? "Открыть библиотеку настроек" : language === "es" ? "Abrir la biblioteca" : "Open attunement library"}
+          <span aria-hidden="true">→</span>
+        </Link>
+      </section>
       <section id="personal" className={styles.section}>
         <h2>{t.reviewTitle}</h2><p className={styles.sectionIntro}>{t.reviewBody}</p>
         <Link className={styles.primaryAction} href={"/" + language + "/holistic-support#free-diagnostic-start"} prefetch={false}>{t.reviewAction} <span aria-hidden="true">→</span></Link>

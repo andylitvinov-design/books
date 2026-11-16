@@ -4,6 +4,10 @@
 // Usage: node scripts/generate-soft-ocean-melody.mjs
 // The browser uses a static WAV (not WebAudio) for iPhone media reliability.
 import { writeFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import {createStaticMediaCache,isPcmWav} from "./vercel-static-media-cache.mjs";
+import { writeMelodyMasters } from "./generate-mandala-melodies.mjs";
+
 
 function synthSoftMelody() {
   // Uncompressed 24 kHz PCM is used for reliable iPhone Safari HTMLMediaElement playback.
@@ -87,7 +91,43 @@ function synthSoftMelody() {
   return {pcm,rms:Math.sqrt(rms/FRAMES),peak,seamDiff:Math.abs(dv.getInt16(44,true)-dv.getInt16(pcm.length-2,true))};
 }
 
+// This established build/predev audio pipeline regenerates the 22
+// score-owned 32s melodies without broadening package.json CI triggers.
+const authoredMusic=writeMelodyMasters();
+console.log("[holistic-original-melodies] ready",authoredMusic.masters,"original WAV masters");
+
+/** Build-only scenario audio masters. The existing npm prebuild/predev invokes
+ * this entrypoint already, so there is no root package.json script change.
+ * Direct Ocean Audio CI probes must remain focused on their 96s WAV.
+ */
+if (process.env.npm_lifecycle_event === "prebuild" ||
+    process.env.npm_lifecycle_event === "predev") {
+  const {buildScenarioMusicParallel,buildScenarioMusic} = await import("./generate-scenario-melodies.mjs");
+  // Vercel already persists .next/cache between successful deployments.
+  // Cache only source-pinned, SHA-checked, complete first-party scenario MP3s.
+  // CI, local predev and a cold/mismatched build still synthesize normally.
+  const report = process.env.VERCEL_ENV==="production"
+    ? await (await import("./vercel-scenario-music-cache.mjs")).withScenarioBuildCache({
+        generate:()=>buildScenarioMusicParallel(),
+        verify:()=>buildScenarioMusic({check:true}),
+      })
+    : await buildScenarioMusicParallel();
+  console.log("[hh-scenario-music]",report.totalMasterFiles,"physical MP3s; generated",report.generated);
+}
+
+
+
 const output = new URL("../public/audio/holistic-house-soft-melody-gentle-waves-96s.wav", import.meta.url);
-const result = synthSoftMelody();
-writeFileSync(output, result.pcm);
-console.log("Generated", output.pathname, "RMS", result.rms.toFixed(4), "peak", result.peak.toFixed(4), "seam", result.seamDiff);
+const oceanCache=createStaticMediaCache({root:fileURLToPath(new URL("../",import.meta.url)),
+  group:"ocean-wav",sources:["scripts/generate-soft-ocean-melody.mjs"]});
+const validOcean=bytes=>isPcmWav(bytes,24000,96);
+const cachedOcean=oceanCache.get("soft-ocean",validOcean);
+if(cachedOcean){
+  writeFileSync(output,cachedOcean);
+  console.log("[hh-static-media] restored source-pinned ocean WAV");
+}else{
+  const result = synthSoftMelody();
+  writeFileSync(output, oceanCache.put("soft-ocean",Buffer.from(result.pcm),validOcean));
+  console.log("Generated", output.pathname, "RMS", result.rms.toFixed(4), "peak", result.peak.toFixed(4), "seam", result.seamDiff);
+}
+

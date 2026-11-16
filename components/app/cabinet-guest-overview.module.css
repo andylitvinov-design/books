@@ -122,6 +122,13 @@
 .shell .secondaryAction:focus-visible,
 .shell .previous a:focus-visible { outline: 3px solid #e5cb91; outline-offset: 3px; }
 
+.identityNote {
+  margin: 13px 0 0;
+  max-width: 69ch;
+  color: #e4efed;
+  font: 400 13px/1.55 system-ui, sans-serif;
+}
+
 .shell .error {
   background: rgba(255, 255, 255, .11);
   color: #fff2df;

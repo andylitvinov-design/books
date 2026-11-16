@@ -6,9 +6,9 @@ import { groupViaRecommendations } from '../../lib/assessments/via-family.js'
 import { getCompactNavigation } from '../../lib/site-navigation-model.js'
 
 const COPY = {
-  en: { collections: 'Test collections by topic', more: 'Show all collections', less: 'Show fewer collections', browse: 'Prioritize collection', raysMore: 'Show 7 more scales', raysLess: 'Show fewer scales' },
-  ru: { collections: 'Подборки тестов по темам', more: 'Показать все подборки', less: 'Свернуть подборки', browse: 'Повысить приоритет подборки', raysMore: 'Показать ещё 7 шкал', raysLess: 'Свернуть остальные шкалы' },
-  es: { collections: 'Colecciones de pruebas por tema', more: 'Mostrar todas las colecciones', less: 'Mostrar menos', browse: 'Priorizar colección', raysMore: 'Ver 7 escalas más', raysLess: 'Mostrar menos escalas' },
+  en: { collections: 'Test collections by topic (optional)', more: 'Show all collections', less: 'Show fewer collections', browse: 'Prioritize collection', raysMore: 'Show 7 more scales', raysLess: 'Show fewer scales' },
+  ru: { collections: 'Подборки тестов по темам (необязательно)', more: 'Показать все подборки', less: 'Свернуть подборки', browse: 'Повысить приоритет подборки', raysMore: 'Показать ещё 7 шкал', raysLess: 'Свернуть остальные шкалы' },
+  es: { collections: 'Colecciones de pruebas por tema (opcional)', more: 'Mostrar todas las colecciones', less: 'Mostrar menos', browse: 'Priorizar colección', raysMore: 'Ver 7 escalas más', raysLess: 'Mostrar menos escalas' },
 }
 const selectedKeys = picker => picker.locator('[data-public-selected-tests] [data-selected-test-key]')
 const readSelection = picker => selectedKeys(picker).evaluateAll(nodes => nodes.map(node => node.dataset.selectedTestKey))
@@ -36,7 +36,7 @@ export async function assertPublicDiscoveryChrome(page, expect, locale) {
 export async function assertPublicCollectionChips(root, expect, locale, collections, width) {
   const copy = COPY[locale]
   assert.ok(Number.isFinite(width) && width > 0, 'Use the actual viewport for collapsed collection visibility')
-  const collapsedCount = Math.min(width <= 760 ? 4 : 8, collections.length)
+  const collapsedCount = Math.min(2, collections.length)
   await expect(root).toBeVisible()
   await expect(root).toHaveAttribute('data-expanded', 'false')
   await expect(root).toHaveAttribute('aria-labelledby', 'hh-test-curated-heading')
@@ -187,12 +187,14 @@ export async function exercisePortraitRays(portrait, expect, locale) {
   const sectors = portrait.locator('[data-portrait-sectors]')
   const defaultSector = sectors.locator('[data-portrait-sector-all]')
   const originals = new Map()
-  await expect(sectors.locator('[data-portrait-sector]')).toHaveCount(4)
+  await expect(sectors.locator('[data-portrait-sector]')).toHaveCount(PORTRAIT_SECTORS.length + 1)
+  await expect(sectors.locator('[data-portrait-sector="goal"]')).toHaveCount(1)
   await expect(defaultSector).toHaveAttribute('aria-pressed', 'true')
   await expect(defaultSector).toHaveCount(1)
   await expect(inputs).toHaveCount(0)
   await expect(rays).toHaveCount(4)
   await sectors.locator('[data-portrait-sector="body"]').click()
+  await portrait.locator('[data-portrait-view="axes"]').click()
   await expect(inputs).toHaveCount(PORTRAIT_SECTORS[0].axes.length)
   let total = 0
   for (const sector of PORTRAIT_SECTORS) {
@@ -236,6 +238,8 @@ export async function exercisePortraitRays(portrait, expect, locale) {
   await defaultSector.click()
   await expect(defaultSector).toHaveAttribute('aria-pressed', 'true')
   await expect(defaultSector).toHaveCount(1)
+  await expect(inputs).toHaveCount(17)
+  await portrait.locator('[data-portrait-view="chart"]').click()
   await expect(inputs).toHaveCount(0)
   await expect(rays).toHaveCount(4)
 }

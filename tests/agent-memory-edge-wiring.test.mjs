@@ -1,0 +1,44 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
+test('memory integration preserves the deployed first-party Commander and OIDC CI paths',()=>{
+ const edge=read('supabase/functions/agent-commander-private-store-v1/index.ts');
+ assert.match(edge,/agent-memory-store\.mjs/);
+ assert.match(edge,/receiveGitHubWorkflowRun/);
+ assert.match(edge,/receiveCommanderCiRoute/);
+ assert.match(edge,/commander_start_run/);
+ assert.match(edge,/commander_list_ci_events/);
+ assert.match(edge,/commander_list_execution_runs/);
+ assert.match(edge,/ownedDirectorCall/);
+ assert.match(edge,/OWNER_ACCESS_DENIED/);
+ assert.match(edge,/OWNER_WRITE_DENIED/);
+ assert.match(edge,/agentMemoryState/);
+ assert.match(edge,/previousVerifiedActivity/);
+ assert.match(edge,/appendCiDigest\(db,inboxOwnerId,associatedTaskId,event\)/);
+ assert.match(edge,/appendRunDigest\(db,ownerId,memoryRun\[0\]\)/);
+ assert.match(edge,/syncRecentRunDigests\(db,ownerId/);
+});
+test('the signed CI event, real run and owner-only digest API never become public endpoints',()=>{
+ const edge=read('supabase/functions/agent-commander-private-store-v1/index.ts');
+ const ownerGuard=edge.indexOf('OWNER_ACCESS_DENIED');
+ const readDigest=edge.indexOf('if(action==="commander_list_agent_digests")');
+ const readDetail=edge.indexOf('if(action==="commander_read_agent_digest")');
+ assert.ok(ownerGuard>=0&&readDigest>ownerGuard&&readDetail>ownerGuard);
+ assert.match(edge,/authenticatedOwner\(req\)/);
+ assert.match(edge,/business_brain\.owner_access/);
+ assert.match(edge,/commander_agent_lesson_candidates/);
+ assert.match(edge,/ownerOnly:true/);
+ assert.match(edge,/coalesce\(payload->>'schema',''\)<>'HH_AGENT_MEMORY_DIGEST_V1'/);
+ const store=read('supabase/functions/agent-commander-private-store-v1/agent-memory-store.mjs');
+ assert.match(store,/business_brain\.commander_chat_events/);
+ assert.match(store,/owner_id=\$1::uuid/);
+ assert.match(store,/on conflict\(event_id\) do nothing/);
+ assert.doesNotMatch(store,/service_role|Bearer |localStorage|client_memory|create table|pgvector|openrouter\.ai/);
+});
+test('no PR Monitor standalone page, graphs or deployment config are changed by P0 memory integration',()=>{
+ const edge=read('supabase/functions/agent-commander-private-store-v1/index.ts');
+ assert.doesNotMatch(edge,/deployments\/create|promoteToProduction|forceCommit/);
+ assert.match(edge,/liveVerified:false/);
+ assert.match(edge,/Deno\.serve\(handler\)/);
+});

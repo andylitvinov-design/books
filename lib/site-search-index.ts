@@ -4,6 +4,8 @@ import { academyDirections, academyDisplayTitle, preferredAcademyRecords } from 
 import { MONITORING_CATALOG } from "@/data/assessments/catalog";
 import { coreServiceOffers } from "@/data/core-service-offers";
 import { books } from "@/data/library";
+import { getRemedyDirectory } from "@/data/remedies";
+import { getAttunementDirectory } from "@/data/remedy-attunements";
 import { localizedBookText } from "@/data/library-localization";
 import { personalServiceCopy, personalServicePaths } from "@/data/personal-service-pages";
 import { loadPublicLibraryFeed } from "@/lib/public-library-feed";
@@ -77,6 +79,21 @@ function staticPublicEntries(locale: PublicLocale): SearchEntry[] {
       href: "/" + bookLocale + "/books/" + encodeURIComponent(book.id),
       keywords: [book.title, book.description, book.category, ...(book.tags || []),
         ...book.chapters.map(chapter => chapter.title)].join(" ") });
+  }
+  // Both public pages are individually discoverable. ES searches point to available EN pages.
+  const remedyLocale = locale === "es" ? "en" : locale;
+  for (const entry of getRemedyDirectory(remedyLocale)) {
+    add({kind: "material", title: entry.title,
+      description: locale === "ru" ? "Описание препарата · Алхимия Души" : "Remedy description · Alchemy of the Soul",
+      href: `/${remedyLocale}/homeopathy/remedies/${entry.slug}`,
+      keywords: [entry.commonName, ...entry.aliases, entry.searchText, "гомеопатия", "remedy"].join(" ")});
+  }
+  for (const entry of getAttunementDirectory(remedyLocale)) {
+    add({kind: "material",
+      title: locale === "ru" ? `Стих-настройка · ${entry.title}` : `Original poem · ${entry.title}`,
+      description: entry.poemTitles.join(" · "),
+      href: `/${remedyLocale}/homeopathy/attunements/${entry.slug}`,
+      keywords: [entry.commonName, ...entry.aliases, entry.poemSearchText, "стих настройка поэзия стихотворение", "poem verse attunement"].join(" ")});
   }
   for (const direction of academyDirections) {
     add({ kind: "course", title: direction.title[locale], description: direction.description[locale],

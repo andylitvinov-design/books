@@ -60,7 +60,7 @@ test("preferences honestly show the hold, disable grant and permit withdrawal", 
   const h = harness(); h.preferences(); const tree = h.preferences();
   const all = elements(tree), buttons = all.filter(item => item.type === "button");
   assert.equal(buttons.length, 2); assert.equal(buttons[0].props.disabled, true); assert.equal(buttons[1].props.disabled, undefined);
-  assert.match(JSON.stringify(tree), /temporarily unavailable/); assert.match(JSON.stringify(tree), /Saved preference/);
+  assert.match(JSON.stringify(tree), /Google Analytics remains disabled/); assert.match(JSON.stringify(tree), /Anonymous first-party public-page statistics are active/); assert.match(JSON.stringify(tree), /Saved preference/);
   buttons[1].props.onClick();
   assert.equal(h.cookies.get("holistic_house_analytics_consent"), "denied");
   assert.equal(h.document.documentElement.dataset.analyticsConsent, "denied");

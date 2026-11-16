@@ -1,0 +1,5 @@
+.card{margin:20px 0 16px;padding:clamp(18px,3.5vw,26px);border:1px solid #cbded9;border-radius:20px;background:linear-gradient(145deg,#eff7f4 0%,#f8faf7 55%,#fffaf4 100%);color:#274b49;box-shadow:0 3px 18px rgba(35,79,70,.05)}
+.label{margin:0 0 10px;color:#396e66;font:750 .75rem/1.4 system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase}
+.message{margin:0;max-width:70ch;font:450 clamp(1rem,2.5vw,1.16rem)/1.68 system-ui,sans-serif;overflow-wrap:anywhere;text-wrap:pretty}
+.note{margin:12px 0 0;color:#667d76;font:400 .73rem/1.5 system-ui,sans-serif}
+@media(max-width:560px){.card{margin:16px 0 12px;border-radius:16px;padding:18px 16px}.message{line-height:1.63}}

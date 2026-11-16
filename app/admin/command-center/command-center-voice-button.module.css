@@ -1,0 +1,7 @@
+.voiceRow{display:grid;gap:5px;min-width:0}
+.voiceButton{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;width:max-content;max-width:100%;
+ border:1px solid #74598d;border-radius:12px;background:#352a51;color:#f5eafa;padding:10px 13px;font:inherit;font-size:13px;font-weight:750;cursor:pointer}
+.voiceButton[aria-pressed="true"]{background:#6c315f;border-color:#bb91b7}
+.voiceButton:focus-visible{outline:3px solid #d3a9ff;outline-offset:2px}
+.voiceRow small,.voiceRow span{color:#aaa8c4;font-size:11px;line-height:1.4}
+@media(prefers-reduced-motion:reduce){.voiceButton{transition:none}}

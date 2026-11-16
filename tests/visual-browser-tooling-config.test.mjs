@@ -12,8 +12,15 @@ const sample = JSON.parse(read('scripts/fixtures/practice-approved-reference-202
 
 test('official visual MCPs are declared for trusted IDE and Codex, with pinned versions', () => {
   const servers = ide.servers
-  assert.deepEqual(Object.keys(servers).sort(),['figma','holistic-chrome-devtools','holistic-playwright'])
+  assert.deepEqual(Object.keys(servers).sort(),['figma','holistic-chrome-devtools','holistic-playwright','holistic-veo-lite'])
   assert.equal(servers.figma.url,'https://mcp.figma.com/mcp')
+  assert.equal(servers['holistic-veo-lite'].type,'stdio')
+  assert.equal(servers['holistic-veo-lite'].command,'node')
+  assert.deepEqual(servers['holistic-veo-lite'].args,['scripts/mcp/veo-lite.mjs'])
+  assert.match(codex,/\[mcp_servers\.holistic_veo_lite\]/)
+  assert.match(read('scripts/mcp/veo-lite.mjs'),/HH_VEO_MCP_ALLOW_SUBMIT/)
+  assert.match(read('scripts/mcp/veo-lite.mjs'),/veo_lite_quote/)
+
   for (const [key,version] of [
     ['holistic-playwright','@playwright/mcp@0.0.83'],
     ['holistic-chrome-devtools','chrome-devtools-mcp@1.12.0'],

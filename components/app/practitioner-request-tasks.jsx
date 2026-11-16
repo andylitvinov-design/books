@@ -133,6 +133,7 @@ export default function PractitionerRequestTasks({requestId,accountId,locale='en
     </button>
     {open&&<div className={styles.content}>
       <p className={styles.privacy}>{t.private}</p>
+      <a href={'/'+locale+'/app/memory?requestId='+encodeURIComponent(requestId)}>{locale==='ru'?'Назначить практику клиенту':locale==='es'?'Asignar práctica al cliente':'Offer a client practice'}</a>
       {loading&&<p role="status">{t.loading}</p>}
       {error&&<p role="alert" className={styles.error}>{error}</p>}
       {notice&&<p role="status" className={styles.notice}>{notice}</p>}

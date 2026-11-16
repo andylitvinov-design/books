@@ -13,6 +13,8 @@ const copy = {
     intro: "Telegram guides you through six short questions in English. WhatsApp opens a personal message to Andrey.",
     telegram: "Request my free review via Telegram",
     telegramHint: "6 guided questions · English",
+    aiIntro: "Telegram AI asks relevant follow-up questions in a natural conversation. WhatsApp opens a personal message to Andrey.",
+    aiHint: "AI dialogue · English",
     whatsapp: "Request my free review via WhatsApp",
     whatsappHint: "Personal message · manual reply",
     manual: "WhatsApp is not an automated questionnaire. Check the prepared message and tap Send.",
@@ -24,6 +26,8 @@ const copy = {
     intro: "В Telegram вас ждут шесть коротких вопросов на русском. WhatsApp открывает личное сообщение Андрею.",
     telegram: "Запросить бесплатный разбор через Telegram",
     telegramHint: "6 вопросов · русский язык",
+    aiIntro: "В Telegram ИИ-помощник задаёт уточняющие вопросы по смыслу ваших ответов. WhatsApp открывает личное сообщение Андрею.",
+    aiHint: "Свободный ИИ-диалог · русский",
     whatsapp: "Запросить бесплатный разбор через WhatsApp",
     whatsappHint: "Личное сообщение · ответ вручную",
     manual: "WhatsApp — не автоматическая анкета. Проверьте готовый текст и нажмите «Отправить».",
@@ -35,6 +39,8 @@ const copy = {
     intro: "Telegram te guía por seis preguntas breves en español. WhatsApp abre un mensaje personal a Andrey.",
     telegram: "Solicitar mi revisión gratis por Telegram",
     telegramHint: "6 preguntas guiadas · español",
+    aiIntro: "En Telegram, la IA hace preguntas adaptadas a tus respuestas. WhatsApp abre un mensaje personal a Andrey.",
+    aiHint: "Diálogo IA · español",
     whatsapp: "Solicitar mi revisión gratis por WhatsApp",
     whatsappHint: "Mensaje personal · respuesta manual",
     manual: "WhatsApp no es un cuestionario automático. Revisa el mensaje preparado y pulsa Enviar.",
@@ -45,10 +51,12 @@ const copy = {
 
 export function TelegramDiagnosticEntry({ locale }: { locale: PublicLocale }) {
   const [telegramUrl, setTelegramUrl] = useState<string | null>(null);
+  const [aiAvailable, setAiAvailable] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
     setTelegramUrl(null);
+    setAiAvailable(false);
     fetch("/api/public/telegram-diagnostic", {
       cache: "no-store", credentials: "same-origin", signal: controller.signal,
     }).then(response => response.ok ? response.json() : null).then(data => {
@@ -56,7 +64,9 @@ export function TelegramDiagnosticEntry({ locale }: { locale: PublicLocale }) {
       // Route locale is authoritative; never infer the user's language from a device.
       const link = data?.available === true ? data.urls?.[locale] : null;
       const expected = new RegExp("^https://t\\.me/[A-Za-z0-9_]{5,32}\\?start=hhreview_" + locale + "$");
-      setTelegramUrl(typeof link === "string" && expected.test(link) ? link : null);
+      const verified = typeof link === "string" && expected.test(link);
+      setTelegramUrl(verified ? link : null);
+      setAiAvailable(verified && data?.aiInterviewAvailable === true);
     }).catch(() => { if (!controller.signal.aborted) setTelegramUrl(null); });
     return () => controller.abort();
   }, [locale]);
@@ -68,7 +78,7 @@ export function TelegramDiagnosticEntry({ locale }: { locale: PublicLocale }) {
     <aside className={styles.entry} data-express-review-messenger-choice={locale} lang={locale} aria-label={t.title}>
       <div className={styles.content}>
         <h3>{t.title}</h3>
-        <p>{t.intro}</p>
+        <p>{aiAvailable ? t.aiIntro : t.intro}</p>
         <small>{t.note}</small>
       </div>
       <div className={styles.channels}>
@@ -77,7 +87,7 @@ export function TelegramDiagnosticEntry({ locale }: { locale: PublicLocale }) {
             referrerPolicy="no-referrer" data-express-review-channel="telegram"
             data-channel-locale={locale} className={styles.action}>
             <span className={styles.icon} aria-hidden="true"><Send size={21} strokeWidth={2.2} /></span>
-            <span className={styles.actionText}><strong>{t.telegram}</strong><small>{t.telegramHint}</small></span>
+            <span className={styles.actionText}><strong>{t.telegram}</strong><small>{aiAvailable ? t.aiHint : t.telegramHint}</small></span>
           </a>
         ) : (
           <p className={styles.unavailable} role="status">{t.telegramUnavailable}</p>

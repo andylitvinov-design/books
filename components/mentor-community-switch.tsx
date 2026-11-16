@@ -19,11 +19,12 @@ type Props = {
 
 const COPY = {
   en: {
-    title: "Explore our community",
-    intro: "Find a practitioner, explore published services and read new articles.",
+    title: "Find a Master",
+    allServices: "All services",
+    intro: "Choose a practitioner, explore real services and learn about their work.",
     tabs: "Community sections",
-    mentors: "Find a mentor",
-    articles: "Articles & services",
+    mentors: "Masters",
+    articles: "Services & articles",
     hint: "Only approved public profiles, services and articles appear here.",
     noArticles: "Our practitioners are preparing their first articles.",
     noArticlesHint: "Meet an approved mentor now, or share your own knowledge through My Practice.",
@@ -35,11 +36,12 @@ const COPY = {
     retry: "Try again",
   },
   ru: {
-    title: "Сообщество наставников",
-    intro: "Найдите мастера, изучите опубликованные услуги и читайте авторские статьи.",
+    title: "Найти мастера",
+    allServices: "Все услуги",
+    intro: "Выберите мастера, познакомьтесь с его услугами и подходом.",
     tabs: "Разделы сообщества",
-    mentors: "Найти наставника",
-    articles: "Статьи и услуги",
+    mentors: "Мастера",
+    articles: "Услуги и статьи",
     hint: "Здесь отображаются только одобренные профили, услуги и статьи.",
     noArticles: "Первые статьи наставников готовятся к публикации.",
     noArticlesHint: "Пока познакомьтесь с мастерами или опубликуйте свой материал через кабинет.",
@@ -51,11 +53,12 @@ const COPY = {
     retry: "Повторить",
   },
   es: {
-    title: "Comunidad de mentores",
-    intro: "Encuentra profesionales, explora servicios publicados y lee artículos.",
+    title: "Encuentra un profesional",
+    allServices: "Todos los servicios",
+    intro: "Conoce a los profesionales, sus servicios y sus enfoques.",
     tabs: "Secciones de la comunidad",
-    mentors: "Encontrar mentor",
-    articles: "Artículos y servicios",
+    mentors: "Profesionales",
+    articles: "Servicios y artículos",
     hint: "Solo se muestran perfiles, servicios y artículos aprobados.",
     noArticles: "Los profesionales están preparando sus primeros artículos.",
     noArticlesHint: "Conoce a un mentor o comparte tus conocimientos desde tu espacio profesional.",
@@ -111,10 +114,9 @@ export function MentorCommunitySwitch({
           <h1 id="mentor-community-title">{t.title}</h1>
           <p>{t.intro}</p>
         </div>
-        <nav className={styles.contribute} aria-label={locale === "ru" ? "Опубликовать в сообществе" : locale === "es" ? "Publicar en la comunidad" : "Contribute to the community"}>
-          <Link href={"/" + (locale === "es" ? "en" : locale) + "/app/practice?panel=materials&materialTab=articles"}>{t.write} <span aria-hidden="true">↗</span></Link>
-          <Link href={"/" + (locale === "es" ? "en" : locale) + "/app/practice?panel=materials&materialTab=services"}>{t.offer} <span aria-hidden="true">↗</span></Link>
-        </nav>
+        <Link className={styles.servicesLink} href={"/" + locale + "/services/catalog"} prefetch={false}>
+          {t.allServices} <span aria-hidden="true">→</span>
+        </Link>
       </header>
       <div className={styles.tabs} role="tablist" aria-label={t.tabs}>
         {(["mentors", "articles"] as const).map((item) => (
@@ -155,7 +157,13 @@ export function MentorCommunitySwitch({
           </div>
         )}
       </div>
-      <p className={styles.hint}>{t.hint}</p>
+      <footer className={styles.communityFooter}>
+        <p className={styles.hint}>{t.hint}</p>
+        <nav className={styles.contribute} aria-label={locale === "ru" ? "Опубликовать в сообществе" : locale === "es" ? "Publicar en la comunidad" : "Contribute to the community"}>
+          <Link href={"/" + (locale === "es" ? "en" : locale) + "/app/practice?panel=materials&materialTab=articles"}>{t.write} <span aria-hidden="true">↗</span></Link>
+          <Link href={"/" + (locale === "es" ? "en" : locale) + "/app/practice?panel=materials&materialTab=services"}>{t.offer} <span aria-hidden="true">↗</span></Link>
+        </nav>
+      </footer>
     </section>
   );
 }

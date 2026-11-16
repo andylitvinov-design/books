@@ -25,6 +25,9 @@ function scenario(keys, fault) {
       return [state, update => { if (fault !== 'stuck panel') state = typeof update === 'function' ? update(state) : update }]
     } },
     './free-course-banner': { FreeCourseBanner: () => null },
+    // The scale navigation harness isolates the report's optional closing
+    // motivation widget while still exercising every real scale interaction.
+    './motivator-mind': { MotivatorMind: () => null },
     './assessment-gauge': { ScoreGauge: () => null, ScoreTrend: () => null },
     '@/lib/assessments/dashboard-gauges': { gaugeModel: () => null },
     '@/lib/assessments/scale-guides': { getTestScaleGuide: () => null },

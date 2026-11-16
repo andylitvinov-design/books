@@ -16,3 +16,10 @@ tool_timeout_sec = 90
 
 [mcp_servers.figma]
 url = "https://mcp.figma.com/mcp"
+
+# Server-only quote/status tools. Paid generation is OFF by default.
+[mcp_servers.holistic_veo_lite]
+command = "node"
+args = ["scripts/mcp/veo-lite.mjs"]
+startup_timeout_sec = 15
+tool_timeout_sec = 45

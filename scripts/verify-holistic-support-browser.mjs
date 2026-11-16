@@ -3,6 +3,7 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import { mkdir, writeFile } from "node:fs/promises";
+import { runMobileBrowserCases } from "./ci-mobile-browser-batch.mjs";
 
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
@@ -19,12 +20,12 @@ const questions = {
 };
 const evidence = [];
 
-async function check(browserType, locale, width, height) {
-  const browser = await browserType.launch();
-  const page = await browser.newPage({
+async function check(browserType, browser, locale, width, height) {
+  const context = await browser.newContext({
     viewport: { width, height },
     deviceScaleFactor: 1, isMobile: true, hasTouch: true, reducedMotion: "reduce",
   });
+  const page = await context.newPage();
   const label = [browserType.name(), locale, width, height].join("-");
   const clientErrors = [];
   const leakedQuestion = [];
@@ -103,14 +104,16 @@ async function check(browserType, locale, width, height) {
     await page.screenshot({ path: folder + "/" + label + ".png", fullPage: true }).catch(() => {});
     throw err;
   } finally {
-    await page.close();
-    await browser.close();
+    await context.close();
   }
 }
 
-for (const locale of ["en", "ru", "es"]) await check(webkit, locale, 390, 844);
-await check(webkit, "ru", 320, 568);
-await check(webkit, "en", 430, 844);
-for (const locale of ["en", "ru", "es"]) await check(chromium, locale, 390, 844);
+await runMobileBrowserCases([
+  { browserType: webkit, cases: [
+    ...["en", "ru", "es"].map(locale => [locale, 390, 844]),
+    ["ru", 320, 568], ["en", 430, 844],
+  ] },
+  { browserType: chromium, cases: ["en", "ru", "es"].map(locale => [locale, 390, 844]) },
+], check);
 await writeFile(folder + "/acceptance.json", JSON.stringify(evidence, null, 2));
 console.log("Holistic Support three-choice mobile acceptance passed:", evidence.length, "browser/locale/width combinations");

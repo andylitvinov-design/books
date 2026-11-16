@@ -48,6 +48,8 @@ test('SSR uses actual components, immutable instrument results, and exact produc
   for(const key of [
     'components/app/compact-assessment-report.jsx',
     'components/app/compact-assessment-report.module.css',
+    'components/app/motivator-mind.jsx',
+    'components/app/motivator-mind.module.css',
     'components/app/assessment-gauge.jsx',
     'components/app/assessment-gauge.module.css',
     'app/globals.css',
@@ -64,6 +66,7 @@ test('SSR uses actual components, immutable instrument results, and exact produc
     assert.match(html,new RegExp('<html lang="'+f.locale+'">'))
     assert.match(html,/data-compact-assessment-report="true"/)
     assert.match(html,/data-personal-result-report="true"/)
+    assert.match(html,/data-motivator-mind="true"/)
     assert.match(html,/data-assessment-range-report="true"/)
     assert.match(html,/data-all-score-ranges="true"/)
     const section=f.report.sections[assessmentResultOverview(f.report,f.result,f.locale).initialIndex]

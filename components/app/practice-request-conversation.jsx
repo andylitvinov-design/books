@@ -1,9 +1,11 @@
 'use client'
 import {useEffect,useRef,useState} from 'react'
 import {createClient} from '@supabase/supabase-js'
-import {Paperclip} from 'lucide-react'
+import {Paperclip,Image as ImageIcon,Video,Send} from 'lucide-react'
 import DirectVoiceRecorder from './direct-voice-recorder'
-import {directMediaSpec} from '@/lib/practitioners/direct-message-policy.mjs'
+import PrivateChatPhoto from './private-chat-photo'
+import {preparePhoto} from '@/components/session-photo-uploader'
+import {requestMediaMime,requestMediaSpec,MAX_ORDER_VIDEO_SECONDS} from '@/lib/practitioners/request-media-policy.mjs'
 import {createConversationReadScope,latestVisibleParticipantMessage,mergeConversationPage} from '@/lib/practitioners/conversation-state'
 import styles from './practice-request-conversation.module.css'
 
@@ -14,11 +16,12 @@ const COPY={
     hint:'Write through the portal. No phone numbers, email, @handles, external links or health details.',contactBlocked:'Contact details cannot be exchanged. Please reply through Holistic House.',
     send:'Send through Holistic House',saved:'Reply saved to the private conversation.',
     loadOlder:'Earlier messages',refresh:'Refresh',newMessages:'New for you',markViewed:'Mark as viewed',viewed:'Messages marked as viewed.',retry:'Try again',error:'Could not load this conversation.',
+    messengerVerifyClient:'Verify Telegram in Cabinet Settings before messaging this practitioner. WhatsApp verification is not connected yet.',messengerVerifyMaster:'This client has not verified a messenger for this practitioner. Older messages remain readable, and private notes are still available.',messengerVerifyLink:'Verify Telegram',
     closed:'This enquiry is closed; the history remains readable.',
     conflict:'This reply conflicts with an earlier request. Change the text or refresh.',
     private:'Please remove medical information and private links.',
     limit:'Daily message limit reached.',unknown:'Reply status is uncertain. Do not resend automatically.',
-    audio:'Voice message',attach:'Attach audio',removeAudio:'Discard audio',uploadAudio:'Uploading voice…',audioError:'Could not attach voice. Check microphone or connection and retry.',
+    audio:'Voice message',photo:'Photo',video:'Video note',recordVideo:'Record short video',attach:'Attach file',removeAudio:'Discard attachment',uploadAudio:'Uploading privately…',audioError:'Could not attach this file. Check its type, size, or your connection.',videoLimit:'Short videos must be playable and up to 60 seconds.',
     me:'You',master:'Practitioner',client:'Client',privateNote:'Private master note',writeNote:'Write private note',saveNote:'Save private note',noteSaved:'Private note saved (not visible to client).'},
   ru:{open:'История переписки',close:'Скрыть переписку',initial:'Первоначальная заявка',title:'Защищённая переписка внутри сайта',
     info:'Эту переписку видят только клиент и мастер, которому адресована заявка. Сообщения сохраняются в Holistic House. Прямые контакты скрыты. Подключённый Telegram может получить только нейтральное уведомление без текста; доставка в WhatsApp пока не подключена.',
@@ -26,11 +29,12 @@ const COPY={
     hint:'Пишите через портал. Без телефонов, email, @ников, внешних ссылок и медицинских данных.',contactBlocked:'Контактами обмениваться нельзя. Продолжайте переписку через Holistic House.',
     send:'Отправить через Holistic House',saved:'Ответ сохранён в защищённой переписке.',
     loadOlder:'Ранние сообщения',refresh:'Обновить',newMessages:'Новые для вас',markViewed:'Отметить просмотренными',viewed:'Сообщения отмечены просмотренными.',retry:'Повторить',error:'Не удалось загрузить переписку.',
+    messengerVerifyClient:'Сначала подтвердите Telegram в настройках кабинета, чтобы написать мастеру. Подтверждение WhatsApp пока недоступно.',messengerVerifyMaster:'Клиент ещё не подтвердил мессенджер для этого мастера. Старые сообщения доступны для чтения, а внутренние заметки можно сохранять.',messengerVerifyLink:'Подтвердить Telegram',
     closed:'Заявка закрыта; история доступна для просмотра.',
     conflict:'Этот запрос противоречит ранее сохранённому ответу. Измените текст или обновите историю.',
     private:'Уберите медицинские данные и приватные ссылки.',
     limit:'Достигнут суточный лимит сообщений.',unknown:'Статус ответа неизвестен. Не повторяйте отправку автоматически.',
-    audio:'Аудиосообщение',attach:'Прикрепить аудио',removeAudio:'Убрать аудио',uploadAudio:'Загружаем голос…',audioError:'Не удалось прикрепить аудио. Проверьте микрофон или соединение и повторите.',
+    audio:'Аудиосообщение',photo:'Фото',video:'Видеосообщение',recordVideo:'Снять короткое видео',attach:'Прикрепить файл',removeAudio:'Убрать вложение',uploadAudio:'Безопасная загрузка…',audioError:'Не удалось прикрепить файл. Проверьте формат, размер и соединение.',videoLimit:'Видео должно воспроизводиться и длиться не более 60 секунд.',
     me:'Вы',master:'Мастер',client:'Клиент',privateNote:'Внутренняя заметка мастера',writeNote:'Внутренняя заметка',saveNote:'Сохранить заметку',noteSaved:'Заметка сохранена, клиент её не видит.'},
   es:{open:'Historial de mensajes',close:'Ocultar conversación',initial:'Solicitud inicial',title:'Conversación privada dentro del sitio',
     info:'Solo el cliente y el profesional asignado pueden ver estos mensajes. Se guardan en Holistic House. Los contactos personales están ocultos; Telegram puede enviar solo un aviso neutro con consentimiento. WhatsApp no está conectado.',
@@ -38,11 +42,33 @@ const COPY={
     hint:'Responde aquí. Sin teléfonos, emails, @usuarios, enlaces externos ni datos médicos.',contactBlocked:'No se pueden intercambiar contactos. Responde dentro de Holistic House.',
     send:'Enviar por Holistic House',saved:'Respuesta guardada en la conversación privada.',
     loadOlder:'Mensajes anteriores',refresh:'Actualizar',newMessages:'Nuevos para ti',markViewed:'Marcar como vistos',viewed:'Mensajes marcados como vistos.',retry:'Intentar de nuevo',error:'No se pudo cargar la conversación.',
+    messengerVerifyClient:'Verifica Telegram en los ajustes antes de escribir al profesional. WhatsApp aún no está conectado.',messengerVerifyMaster:'El cliente aún no ha verificado un mensajero para este profesional. Los mensajes anteriores siguen visibles y puedes guardar notas privadas.',messengerVerifyLink:'Verificar Telegram',
     closed:'Solicitud cerrada; el historial sigue disponible.',
     conflict:'Esta solicitud entra en conflicto con una respuesta anterior.',private:'Elimina datos médicos y enlaces privados.',
     limit:'Límite diario alcanzado.',unknown:'Estado desconocido; no volver a enviar automáticamente.',
-    audio:'Mensaje de voz',attach:'Adjuntar audio',removeAudio:'Descartar audio',uploadAudio:'Subiendo voz…',audioError:'No se pudo adjuntar audio. Revisa micrófono o conexión y reintenta.',
+    audio:'Mensaje de voz',photo:'Foto',video:'Videomensaje',recordVideo:'Grabar vídeo corto',attach:'Adjuntar archivo',removeAudio:'Quitar adjunto',uploadAudio:'Subiendo archivo privado…',audioError:'No se pudo adjuntar el archivo. Comprueba formato, tamaño y conexión.',videoLimit:'El vídeo debe reproducirse y durar como máximo 60 segundos.',
     me:'Tú',master:'Profesional',client:'Cliente',privateNote:'Nota privada del profesional',writeNote:'Nota privada',saveNote:'Guardar nota privada',noteSaved:'Nota privada guardada, invisible para el cliente.'},
+}
+// User-selected mobile clips are checked locally before any upload intent.
+async function validShortClip(file){
+  return new Promise(resolve=>{
+    const uri=URL.createObjectURL(file)
+    const player=document.createElement('video')
+    let done=false
+    const complete=value=>{
+      if(done)return
+      done=true;clearTimeout(timer)
+      player.removeAttribute('src');player.load();URL.revokeObjectURL(uri)
+      resolve(value)
+    }
+    const timer=setTimeout(()=>complete(false),12000)
+    player.preload='metadata'
+    player.onloadedmetadata=()=>complete(Number.isFinite(player.duration)&&
+      player.duration>0&&player.duration<=MAX_ORDER_VIDEO_SECONDS)
+    player.onerror=()=>complete(false)
+    player.src=uri
+    player.load()
+  })
 }
 function MessageConversation({requestId,accountId,locale='en',initialMessage='',createdAt=null,onSaved,onViewed,inline=false}){
   const lang=COPY[locale]?locale:'en',t=COPY[lang]
@@ -51,6 +77,8 @@ function MessageConversation({requestId,accountId,locale='en',initialMessage='',
   const [markingViewed,setMarkingViewed]=useState(false)
   const [text,setText]=useState(''),[notice,setNotice]=useState('')
   const [audioFile,setAudioFile]=useState(null),[audioPreview,setAudioPreview]=useState('')
+  const [checkingMedia,setCheckingMedia]=useState(false),[recording,setRecording]=useState(false)
+  const choiceRevision=useRef(0)
   const [visibility,setVisibility]=useState('participants')
   const pending=useRef(null),session=useRef(null),lastForegroundRefresh=useRef(0)
   useEffect(()=>{
@@ -64,6 +92,7 @@ function MessageConversation({requestId,accountId,locale='en',initialMessage='',
     session.current=original
     pending.current=null
     setView(null);setText('');setAudioFile(null);setNotice('');setError('');setVisibility('participants')
+    choiceRevision.current++;setCheckingMedia(false);setRecording(false)
     setBusy(false);setMarkingViewed(false);setPaging(false)
     void reload()
     return ()=>{
@@ -146,20 +175,25 @@ function MessageConversation({requestId,accountId,locale='en',initialMessage='',
     },60000)
     return ()=>window.clearInterval(timer)
   },[requestId,accountId,lang,busy,paging,markingViewed])
-  function audioMime(file){
-    const kind=String(file?.type||'').split(';')[0].toLowerCase()
-    if(kind==='audio/x-m4a'||kind==='audio/m4a')return 'audio/mp4'
-    if(kind==='audio/x-wav')return 'audio/wav'
-    return kind
-  }
-  function chooseAudio(file){
+  function audioMime(file){return requestMediaMime(file)}
+  async function chooseAudio(file){
+    const revision=++choiceRevision.current
     pending.current=null
-    if(!file){setAudioFile(null);return}
+    setAudioFile(null)
+    setCheckingMedia(Boolean(file))
+    if(!file){setCheckingMedia(false);return}
     try{
-      const mime=audioMime(file)
-      if(directMediaSpec(mime,file.size).kind!=='audio')throw new Error('INVALID_AUDIO')
-      setAudioFile(file);setNotice('')
-    }catch{setNotice(t.audioError)}
+      const photo=/^image\//.test(file.type)||/\.(heic|heif|jpe?g|png|webp)$/i.test(file.name)
+      const prepared=photo?await preparePhoto(file):file
+      const mime=audioMime(prepared)
+      requestMediaSpec(mime,prepared.size)
+      if(mime.startsWith('video/')&&!await validShortClip(prepared))
+        throw new Error('VIDEO_DURATION_NOT_ALLOWED')
+      if(revision===choiceRevision.current){setAudioFile(prepared);setNotice('')}
+    }catch(e){
+      if(revision===choiceRevision.current)
+        setNotice(e.message==='VIDEO_DURATION_NOT_ALLOWED'?t.videoLimit:t.audioError)
+    }finally{if(revision===choiceRevision.current)setCheckingMedia(false)}
   }
   async function mediaAction(body,signal){
     const response=await fetch('/api/app/practitioner-client-messages/media',{
@@ -210,7 +244,7 @@ function MessageConversation({requestId,accountId,locale='en',initialMessage='',
     const body=text.trim(),id=requestId,original=session.current
     const file=visibility==='participants'?audioFile:null
     if(!original||!(visibility==='practitioner_note'?view?.canNote:view?.canReply)||
-      (!body&&!file)||busy)return
+      (!body&&!file)||busy||checkingMedia||recording)return
     const old=pending.current
     const operation=old&&old.requestId===id&&old.text===body&&
       old.visibility===visibility&&old.file===file
@@ -241,6 +275,7 @@ function MessageConversation({requestId,accountId,locale='en',initialMessage='',
           ?t.audioError:err.message==='CONTACT_EXCHANGE_BLOCKED'?t.contactBlocked:
           err.message==='PRIVATE_CONTENT_BLOCKED'?t.private:
           err.message==='CONVERSATION_CLOSED'?t.closed:
+           err.message==='MESSENGER_VERIFICATION_REQUIRED'?t.messengerVerifyClient:
           err.message==='PRACTICE_MESSAGE_DAILY_LIMIT'?t.limit:
           err.message==='CONFLICT'?t.conflict:t.unknown)
       }
@@ -261,6 +296,10 @@ function MessageConversation({requestId,accountId,locale='en',initialMessage='',
       <strong>{t.title}</strong>
       <button type="button" disabled={busy||paging||markingViewed} onClick={()=>reload()}>{t.refresh}</button>
     </div>
+      {view.requiresMessengerVerification&&<p className={styles.notice} data-messenger-first-consultation>
+         {view.actorRole==='client'?t.messengerVerifyClient:t.messengerVerifyMaster}
+         {view.actorRole==='client'&&<a href={'/'+lang+'/app/settings#hh-telegram-connect'}>{t.messengerVerifyLink}</a>}
+       </p>}
       {view.unseenCount>0&&<div className={styles.unseenBanner} role="status">
         <strong>{t.newMessages}: {view.unseenCount}</strong>
         <button type="button" disabled={busy||markingViewed||
@@ -278,6 +317,11 @@ function MessageConversation({requestId,accountId,locale='en',initialMessage='',
           {item.text&&<p>{item.text}</p>}
           {item.attachment?.kind==='audio'&&<audio controls preload="none"
             aria-label={t.audio} className={styles.audioMessage}
+            src={'/api/app/practitioner-client-messages/media/'+encodeURIComponent(item.attachment.id)}/>}
+          {item.attachment?.kind==='image'&&<PrivateChatPhoto locale={lang}
+            alt={t.photo} src={'/api/app/practitioner-client-messages/media/'+encodeURIComponent(item.attachment.id)}/>}
+          {item.attachment?.kind==='video'&&<video controls playsInline preload="metadata"
+            aria-label={t.video} className={styles.videoMessage}
             src={'/api/app/practitioner-client-messages/media/'+encodeURIComponent(item.attachment.id)}/>}
           <time dateTime={item.createdAt}>{new Intl.DateTimeFormat(lang,{dateStyle:'short',timeStyle:'short',timeZone:'America/Toronto'}).format(new Date(item.createdAt))}</time>
         </article>)}
@@ -303,25 +347,45 @@ function MessageConversation({requestId,accountId,locale='en',initialMessage='',
             setText(event.target.value)
           }}/>
         {visibility==='participants'&&view.canReply&&<div className={styles.audioComposer}>
-          <label className={styles.audioPick}><Paperclip size={17} aria-hidden="true"/>{t.attach}
-            <input type="file" accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/webm,audio/ogg,audio/wav,audio/x-wav"
-              disabled={busy} onChange={event=>chooseAudio(event.target.files?.[0]||null)}/>
+          <label className={styles.audioPick} title={t.photo}>
+            <ImageIcon size={19} aria-hidden="true"/><span>{t.photo}</span>
+            <input type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+              disabled={busy||checkingMedia||recording}
+              onChange={event=>{void chooseAudio(event.target.files?.[0]||null);event.target.value=''}}/>
           </label>
-          <DirectVoiceRecorder key={requestId} locale={lang} disabled={busy}
-            onRecorded={chooseAudio}/>
+          <label className={styles.audioPick} title={t.attach}>
+            <Paperclip size={18} aria-hidden="true"/><span>{t.attach}</span>
+            <input type="file" accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/webm,audio/ogg,audio/wav,audio/x-wav,video/mp4,video/webm,video/quicktime,.mov,.mp4"
+              disabled={busy||checkingMedia||recording}
+              onChange={event=>{void chooseAudio(event.target.files?.[0]||null);event.target.value=''}}/>
+          </label>
+          <DirectVoiceRecorder key={requestId} locale={lang} disabled={busy||checkingMedia}
+            onRecordingChange={setRecording} onRecorded={file=>void chooseAudio(file)}/>
+          <label className={styles.audioPick} title={t.recordVideo}>
+            <Video size={19} aria-hidden="true"/><span>{t.video}</span>
+            <input type="file" accept="video/mp4,video/webm,video/quicktime"
+              capture="user" disabled={busy||checkingMedia||recording}
+              onChange={event=>{void chooseAudio(event.target.files?.[0]||null);event.target.value=''}}/>
+          </label>
+          {checkingMedia&&<p role="status">{t.loading}</p>}
           {audioFile&&<div className={styles.audioDraft}>
             <span>{audioFile.name} · {Math.ceil(audioFile.size/1024)} KB</span>
-            {audioPreview&&<audio controls preload="metadata" src={audioPreview}
-              aria-label={t.audio}/>}
-            <button type="button" disabled={busy} onClick={()=>chooseAudio(null)}>{t.removeAudio}</button>
+            {audioPreview&&(audioMime(audioFile).startsWith('image/')
+              ?<img src={audioPreview} alt={t.photo} className={styles.photoDraft}/>
+              :audioMime(audioFile).startsWith('video/')
+                ?<video controls playsInline preload="metadata" src={audioPreview}
+                  aria-label={t.video} className={styles.videoDraft}/>
+                :<audio controls preload="metadata" src={audioPreview} aria-label={t.audio}/>)}
+            <button type="button" disabled={busy} onClick={()=>void chooseAudio(null)}>{t.removeAudio}</button>
           </div>}
         </div>}
-        <button type="button" disabled={busy||(!text.trim()&&!(visibility==='participants'&&audioFile))}
+        <button type="button" disabled={busy||checkingMedia||recording||
+          (!text.trim()&&!(visibility==='participants'&&audioFile))}
           onClick={send}>
-          {visibility==='practitioner_note'?t.saveNote:t.send}
+          <Send size={18} aria-hidden="true"/>{visibility==='practitioner_note'?t.saveNote:t.send}
         </button>
       </div>}
-      {!view.canReply&&<p className={styles.notice}>{t.closed}</p>}
+      {!view.canReply&&!view.requiresMessengerVerification&&<p className={styles.notice}>{t.closed}</p>}
     </>}
     {notice&&<p className={styles.notice} role="status">{notice}</p>}
   </section>

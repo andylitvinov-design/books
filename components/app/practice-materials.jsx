@@ -104,6 +104,21 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
    setQuery('');setEditing(null);setError('')
    setSearchOpen(false);setShowAll(false);setAudioAction('');setCourseComposerOpen(shortcut.tab==='courses'&&Boolean(quickCreateCourse))
  },[shortcut?.nonce,shortcut?.tab,isOwner])
+ async function openGeneralAudioLibrary(){
+   try{
+    const response=await fetch('/api/app/practitioner/open',{
+     method:'POST',credentials:'same-origin',cache:'no-store',
+     headers:{'content-type':'application/json'},body:JSON.stringify({destination:'materials'}),
+    })
+    const data=await response.json().catch(()=>({}))
+    if(!response.ok||data.redirectUrl!=='/admin/materials')throw Error('NOT_AUTHORIZED')
+    window.location.assign(data.redirectUrl+'?type=audio')
+   }catch{
+    setError(locale==='ru'?'Не удалось открыть аудиобиблиотеку. Войдите в кабинет мастера.':
+     locale==='es'?'No se puede abrir la biblioteca. Inicia sesión como profesional.':
+     'Unable to open the audio library. Sign in as the practitioner.')
+   }
+ }
  function chooseTab(next){
    if(!activeTabs.includes(next))return
    setTab(next);onTabChange?.(next);setQuery('');setEditing(null);setError('')
@@ -249,7 +264,7 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
      <p className={styles.privacyNote}><LockKeyhole size={14} aria-hidden="true"/>{ru?'Аудиозаписи закрыты до вашей публикации.':es?'El audio permanece privado hasta publicarlo.':'Audio stays private until you publish it.'}</p>
     </div>}
     <div className={styles.courseComposer}>
-     {courseComposerOpen&&<div className={styles.composerPanel}><PractitionerCourseBuilder locale={locale} accountId={accountId} searchQuery={query} startCreate={quickCreateCourse} meditationType={meditationType} onOpenYoutube={isOwner?onOpenYoutube:null}/></div>}
+     {courseComposerOpen&&<div className={styles.composerPanel}><PractitionerCourseBuilder locale={locale} accountId={accountId} searchQuery={query} startCreate={quickCreateCourse} meditationType={meditationType} isOwner={isOwner} onOpenYoutube={isOwner?onOpenYoutube:null}/></div>}
     </div>
    </section>:
    tab==='audio'&&isOwner?<section className={styles.body} data-practice-audio-lessons>
@@ -259,6 +274,14 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
        busy={busy} onOpen={onOpenCoachingAudio}/>}
     <h4 className={styles.reikiAudioHeading}>Reiki Practitioner · {ru?'5 уроков':es?'5 lecciones':'5 lessons'}</h4>
     <div className={styles.mediaRows}>
+     <button type="button" className={styles.mediaRow} onClick={()=>void openGeneralAudioLibrary()} data-general-audio-library>
+      <span className={styles.materialArtwork}><Headphones size={23} aria-hidden="true"/></span>
+      <span className={styles.mediaRowCopy}><strong>{ru?'Общая аудиобиблиотека':es?'Biblioteca general de audio':'General audio library'}</strong>
+       <small>{ru?'Загрузить MP3 / M4A / WAV с телефона · прикрепить к отчётам и курсам':
+        es?'Sube MP3 / M4A / WAV desde el móvil · úsalo en informes y cursos':
+         'Upload MP3 / M4A / WAV from your phone · use in reports and courses'}</small></span>
+      <ChevronRight size={19} aria-hidden="true"/>
+     </button>
      {lessonEntries.filter(lesson=>!query||[lesson.en,lesson.ru].join(' ').toLowerCase().includes(query.toLowerCase())).slice(0,showAll||query?5:2).map((lesson,i)=>
       <button key={lesson.id} type="button" className={styles.mediaRow} disabled={busy||typeof onOpenReikiCourse!=='function'} onClick={()=>onOpenReikiCourse?.(lesson.id,audioAction)} data-reiki-audio-shortcut={lesson.id}>
        <span className={styles.materialArtwork}><Headphones size={23} aria-hidden="true"/></span>

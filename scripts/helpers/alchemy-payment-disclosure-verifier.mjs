@@ -5,11 +5,17 @@ import assert from 'node:assert/strict'
 export async function assertAlchemyBookingGate(main, expect, width) {
   const pricing = main.locator('[data-alchemy-booking-formats]')
   await expect(pricing).toHaveCount(1)
-  const book = pricing.locator('[data-booking-cta="book"]')
+  const entry=pricing.locator('[data-messenger-only-contact]')
+  await expect(entry).toHaveCount(1)
+  const book=entry.locator('summary')
   await expect(book).toHaveCount(1)
   const bounds = await book.boundingBox()
   assert.ok(bounds && bounds.height >= 44 && bounds.width >= 44,
-    'Book a Session is a reachable 44px touch target at width ' + width)
+    'Messenger request is a reachable 44px touch target at width ' + width)
+  assert.equal(await entry.locator('a[data-messenger-only-channel]').count(),2,
+    'Both customer-initiated WhatsApp and Telegram options exist')
+  assert.equal(await pricing.locator('form,input[type="email"],input[type="tel"]').count(),0,
+    'No unverified website contact-only booking can be submitted')
   assert.equal(await pricing.locator('[data-alchemy-payment-disclosure]').count(), 0,
     'Legacy payment links must be removed from the public booking page')
   assert.equal(await pricing.locator('[data-booking-payment-options]').count(), 0,

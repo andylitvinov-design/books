@@ -13,7 +13,7 @@ const compat = new FlatCompat({
 const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
   {
-    ignores: [".next/**", "node_modules/**", "build/**", "dao-books-site/**"],
+    ignores: [".next/**", "node_modules/**", "build/**", "dao-books-site/**", "supabase/functions/**"],
   },
   {
     files: ["next-env.d.ts"],

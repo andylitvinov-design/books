@@ -1,0 +1,41 @@
+{
+  "schemaVersion": "hh-mytube-interest-curation-v1",
+  "reviewDate": "2026-11-05",
+  "scope": "only four individually visually reviewed and already released licensed films",
+  "reviewAuthority": "delegated_editorial_screening_not_separate_owner_per_clip_review",
+  "policy": "An unknown or unmatched SHA is UNRATED, never automatically aesthetic-approved. Reframed versions of the same source are not additional filmed originals.",
+  "ratings": [
+    {
+      "id": "fall-foliage-forest",
+      "sha256": "8e5aa88bed6d3315a3a33f1f85c98116f98cfdee565c5f57b21d3739566d85a9",
+      "sourcePage": "https://dareful.com/fall-foliage-forest/",
+      "tier": "featured",
+      "visualScore": 5,
+      "comment": "Strong colourful autumn canopy, elegant aerial movement"
+    },
+    {
+      "id": "snow-forest-winter",
+      "sha256": "bf249c8f5ea904cad9dbbcfe79d366c852de2e40f07700430b4da6181de2a254",
+      "sourcePage": "https://dareful.com/snow-forest-winter/",
+      "tier": "featured",
+      "visualScore": 5,
+      "comment": "Distinctive snow, stream and trees, clean composition"
+    },
+    {
+      "id": "sun-trees-forest",
+      "sha256": "82156e7fae970c6705b322c156b5736ae5962877b9efd0eb034c201416ed972d",
+      "sourcePage": "https://dareful.com/sun-trees-forest/",
+      "tier": "strong",
+      "visualScore": 4,
+      "comment": "Detailed sunlit snow forest, winter-only semantics"
+    },
+    {
+      "id": "warm-clouds-sunset",
+      "sha256": "692ed60e4cb9789c89bbd2c8facace4bb74f4cebbe154e6e01121717566e360a",
+      "sourcePage": "https://dareful.com/warm-clouds-sunset/",
+      "tier": "strong",
+      "visualScore": 4,
+      "comment": "Beautiful softly moving clouds, calm background rather than hero action"
+    }
+  ]
+}

@@ -17,8 +17,8 @@
 - [x] Предыдущие native/PWA релизы и текущие конфиги проанализированы, рабочая ветка production определена; не переиспользовать старые ID/SHA автоматически.
 - [x] Обнаружен source drift: `capacitor.holistic-house.config.json` использует `/en/app/messages`, а `scripts/prepare-holistic-house-native.mjs` и контрактный тест всё ещё требуют `/en/app/portrait`. PR: исправить и проверить в CI.
 - [ ] PASS: `node --test tests/holistic-house-native-build.test.mjs tests/native-private-message-push.test.mjs tests/native-push-release.test.mjs` с соответствующими Node flags где нужно; Android debug APK/unsigned iOS simulator из `holistic-house-native.yml` собираются, совпадают label/package/start URL. Debug ≠ production.
-- [ ] Создать **отдельный вручную запускаемый** Android signed AAB pipeline (только trusted production ref, секреты в защищённом CI environment, preflight, SHA256/подпись, защищённый артефакт), **без автоматического upload в Play или внешних покупок**.
-- [ ] Зафиксировать версию Android `versionCode` monotonically increasing, имя `versionName`, `targetSdk` по актуальной политике Google. Отдельно проверить исходный PsiAlchemy build неизменным.
+- [x] Создана **исходная реализация** отдельного вручную запускаемого Android signed AAB pipeline (только trusted production ref, секреты в защищённом CI environment, preflight, SHA256/подпись, артефакт), **без автоматического upload в Play или внешних покупок**; [runbook](./HOLISTIC_HOUSE_PLAY_OPERATOR_RUNBOOK_20261027.md). **Не является проверенным подписанным AAB** до CI, настоящего ключа и Play Console QA.
+- [ ] Зафиксировать версию Android `versionCode` monotonically increasing, имя `versionName`. **Google Play после 31.08.2026 требует API 36** для новых Android app submissions; исходный PsiAlchemy native target 35 **не менять**, вместо этого stage-only upgrade `compileSdkVersion/targetSdkVersion 36` и AGP `8.9.1` в ручном Android Play Release Candidate (`Gradle 8.11.1`). До Android device QA поведение Android 16 не заявлять проверенным. См. [официальное требование API 36](https://support.google.com/googleplay/android-developer/answer/11926878?hl=en) и [минимальную AGP 8.9.1 для API36](https://developer.android.com/build/releases/about-agp).
 - [ ] PR CI (source checks, native Android, iOS, security checks) и review изменений в signing workflow; **не включать секреты в PR workflows**. Merge только после green gates и ревью.
 
 ### P1 — учётная запись Google, ключи и право на распространение (владелец)
@@ -95,3 +95,10 @@
 - [Personal account closed testing rule](https://support.google.com/googleplay/android-developer/answer/14151465?hl=en)
 
 **Status as of authoring:** PLAN + native path drift FIX in review; **NOT** signed AAB, NOT Play Console upload, NOT customer release. Merge, GitHub CI, production deployment and device testing each require separate evidence.
+
+
+## Android native release — техническая интеграция 01.11.2026
+
+Один существующий draft PR #2230 согласован с актуальной production веткой: сохранены Native CI, проверка private Messenger, iOS simulator/iPhone personal bundles, PWA. Проверки исходника Play/AAB подключены к native-current-contracts. Дорогая сборка с одноразовым тестовым ключом — только вручную через workflow_dispatch; не запускается на каждом PR или push. Постоянный ключ применяется отдельно в protected google-play-release workflow только на production HEAD. Он не публикует APK, AAB или App Store автоматически.
+
+Обязательные условия реального клиентского релиза: постоянная подпись, подтверждённый SHA256 сертификата, версия, реальный Android install/update, Google OAuth/PKCE, безопасные личные сообщения и доступы, FCM opt-in/receipt, соответствие политике магазина, одобрение владельца. Play upload certificate и Play app signing certificate могут отличаться — обновление APK между каналами нельзя обещать до проверки пары подписей. До этого доступна PWA, а native download endpoints остаются закрыты.

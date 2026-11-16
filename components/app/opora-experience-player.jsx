@@ -1064,7 +1064,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
               </div>}
           </>}
           {moment==='recap'&&<div className={styles.recapSummary} data-opora-lesson-recap="true">
-            <div className={styles.summaryItem}><span aria-hidden="true">🌿</span>
+            <div className={styles.summaryItem} data-opora-recap-takeaway="true"><span aria-hidden="true">🌿</span>
               <div><strong>{showNewPlan?dailyPlan?.result:c.notice}</strong>
                 <small>{reportedAttempt?t.attempted:t.readOnly}</small></div></div>
           </div>}
@@ -1082,7 +1082,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
           </>}
           {moment==='recapNext'&&<div className={styles.recapSummary}
             data-opora-daily-homework={cycle.day}>
-            <div className={styles.summaryItem}><span aria-hidden="true">✨</span>
+            <div className={styles.summaryItem} data-opora-recap-takeaway="true"><span aria-hidden="true">✨</span>
               <div>
                 <strong>{answers.transfer==='planned'&&plan
                   ?plan:(dailyPlan?.transfer||depth?.everyday||j.noPlan)}</strong>
@@ -1114,6 +1114,12 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
           {moment==='receipt'&&<>
             <div className={styles.celebrationMark} aria-hidden="true"><CheckCircle2 size={36}/></div>
             <p className={styles.lead}>{c.congratsLead}</p>
+            {/* A neutral safety exit must not replay the practice instruction. */}
+            {!neutralSupport&&<div className={styles.learnedSkill} data-opora-learned-skill={cycle.day}>
+              <span>{c.congratsSkillLabel}</span>
+              <strong>{(showNewPlan?dailyPlan?.title:null)||dayCopy?.title||lesson.title}</strong>
+              <p><b>{c.congratsPracticeLabel}:</b> {(showNewPlan?dailyPlan?.practice:null)||dayCopy?.practice||practiceGuide}</p>
+            </div>}
             <p className={styles.soft}>{t.savedText}</p>
             <div className={styles.receiptNote}>
               <ShieldCheck size={22}/><span>{reportedAttempt?t.attempted:t.readOnly}</span>
@@ -1192,3 +1198,4 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
     </div>}
   </div>
 }
+

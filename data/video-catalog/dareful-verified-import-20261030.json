@@ -1,0 +1,372 @@
+{
+  "version": "hh-reviewed-ccby-scene-import-v1",
+  "author": "Joel Holland",
+  "publisher": "Dareful",
+  "license": "https://creativecommons.org/licenses/by/4.0/",
+  "verifiedOn": "2026-10-30",
+  "reviewNote": "Individual Dareful pages verified; source media must pass real codec/motion/portrait QA before release.",
+  "sources": [
+    {
+      "id": "foggy-water-lake",
+      "title": "Foggy Water Lake",
+      "sourcePage": "https://dareful.com/foggy-water-lake/",
+      "mediaUrl": "https://stream.mux.com/kJUeUSAXp8GdwD6wMyhmG4Su995QbwAgScgfx7gHrfs.m3u8",
+      "provider": "dareful",
+      "creator": "Joel Holland",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "checkedOn": "2026-10-30",
+      "licenseEvidence": "Individual Dareful video page explicitly states CC Attribution 4.0 and MP4, reviewed 2026-10-30"
+    },
+    {
+      "id": "flower-bloom-nature",
+      "title": "Flower Bloom Nature",
+      "sourcePage": "https://dareful.com/flower-bloom-nature/",
+      "mediaUrl": "https://stream.mux.com/xezlUrILigpmjJ1Sdd01UtByXm01y5ly4iEL5ngZ4Ku1g.m3u8",
+      "provider": "dareful",
+      "creator": "Joel Holland",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "checkedOn": "2026-10-30",
+      "licenseEvidence": "Individual Dareful video page explicitly states CC Attribution 4.0 and MP4, reviewed 2026-10-30"
+    },
+    {
+      "id": "ocean-sea-waves",
+      "title": "Ocean Sea Waves",
+      "sourcePage": "https://dareful.com/ocean-sea-waves/",
+      "mediaUrl": "https://stream.mux.com/Nf8f52Cv4FcMTNVpNpDgSs01Ubngu1yT3tqfigrtieYI.m3u8",
+      "provider": "dareful",
+      "creator": "Joel Holland",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "checkedOn": "2026-10-30",
+      "licenseEvidence": "Individual Dareful video page explicitly states CC Attribution 4.0 and MP4, reviewed 2026-10-30"
+    },
+    {
+      "id": "sand-beach-waves",
+      "title": "Sand Beach Waves",
+      "sourcePage": "https://dareful.com/sand-beach-waves/",
+      "mediaUrl": "https://stream.mux.com/Waf02TbZfmK6x769lPmJNVmZjk7Sx01Vvb2gBmermuvQU.m3u8",
+      "provider": "dareful",
+      "creator": "Joel Holland",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "checkedOn": "2026-10-30",
+      "licenseEvidence": "Individual Dareful video page explicitly states CC Attribution 4.0 and MP4, reviewed 2026-10-30"
+    },
+    {
+      "id": "river-forest-landscape-2",
+      "title": "River Forest Landscape",
+      "sourcePage": "https://dareful.com/river-forest-landscape-2/",
+      "mediaUrl": "https://stream.mux.com/w1JVL9QwOfGjxlillVfq9w9yxsH5PIaqhQccUKjYbdU.m3u8",
+      "provider": "dareful",
+      "creator": "Joel Holland",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "checkedOn": "2026-10-30",
+      "licenseEvidence": "Individual Dareful video page explicitly states CC Attribution 4.0 and MP4, reviewed 2026-10-30"
+    },
+    {
+      "id": "forest-fall-autumn",
+      "title": "Forest Fall Autumn",
+      "sourcePage": "https://dareful.com/forest-fall-autumn/",
+      "mediaUrl": "https://stream.mux.com/ydseVfE008gi4MFRj02j21wzjNEnPiToZg02dGpein9f02A.m3u8",
+      "provider": "dareful",
+      "creator": "Joel Holland",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "checkedOn": "2026-10-30",
+      "licenseEvidence": "Individual Dareful video page explicitly states CC Attribution 4.0 and MP4, reviewed 2026-10-30"
+    },
+    {
+      "id": "autumn-fall-lake",
+      "title": "Autumn Fall Lake",
+      "sourcePage": "https://dareful.com/autumn-fall-lake/",
+      "mediaUrl": "https://stream.mux.com/yV8BDp01NfF7402sqNEc02zSIH3e02vlvUMQbWtdBVtsScU.m3u8",
+      "provider": "dareful",
+      "creator": "Joel Holland",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "checkedOn": "2026-10-30",
+      "licenseEvidence": "Individual Dareful video page explicitly states CC Attribution 4.0 and MP4, reviewed 2026-10-30"
+    },
+    {
+      "id": "rocky-jetty-coast",
+      "title": "Rocky Jetty Coast",
+      "sourcePage": "https://dareful.com/rocky-jetty-coast/",
+      "mediaUrl": "https://stream.mux.com/5EKzZ302V7P02E8OXtd7EhGqUiRid9p8GRedLN59sSOZo.m3u8",
+      "provider": "dareful",
+      "creator": "Joel Holland",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "checkedOn": "2026-10-30",
+      "licenseEvidence": "Individual Dareful video page explicitly states CC Attribution 4.0 and MP4, reviewed 2026-10-30"
+    },
+    {
+      "id": "island-ocean-coast",
+      "title": "Island Ocean Coast",
+      "sourcePage": "https://dareful.com/island-ocean-coast/",
+      "mediaUrl": "https://stream.mux.com/h2lk3R02RLPCPeXXzYDcuSeW4Qn00qXnHwhbD01RSyMQNU.m3u8",
+      "provider": "dareful",
+      "creator": "Joel Holland",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "checkedOn": "2026-10-30",
+      "licenseEvidence": "Individual Dareful video page explicitly states CC Attribution 4.0 and MP4, reviewed 2026-10-30"
+    },
+    {
+      "id": "wild-pink-flower",
+      "title": "Wild Pink Flower",
+      "sourcePage": "https://dareful.com/wild-pink-flower/",
+      "mediaUrl": "https://stream.mux.com/anTF02hxeKA5bz01idnXmSPdAgGm2ZCEpS3eXbB2gurpA.m3u8",
+      "provider": "dareful",
+      "creator": "Joel Holland",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "checkedOn": "2026-10-30",
+      "licenseEvidence": "Individual Dareful video page explicitly states CC Attribution 4.0 and MP4, reviewed 2026-10-30"
+    },
+    {
+      "id": "white-wild-flowers",
+      "title": "White Wild Flowers",
+      "sourcePage": "https://dareful.com/white-wild-flowers/",
+      "mediaUrl": "https://stream.mux.com/j00EjGPjn3MWmgmlZUQ9gVIg8WbxhfdkpRF22TFS0201KE.m3u8",
+      "provider": "dareful",
+      "creator": "Joel Holland",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "checkedOn": "2026-10-30",
+      "licenseEvidence": "Individual Dareful video page explicitly states CC Attribution 4.0 and MP4, reviewed 2026-10-30"
+    },
+    {
+      "id": "pink-wild-flower",
+      "title": "Pink Wild Flower",
+      "sourcePage": "https://dareful.com/pink-wild-flower/",
+      "mediaUrl": "https://stream.mux.com/X01b8JZelPR00XqzLum2l9wCoq2VHH6fwFlRV4rX6HXWc.m3u8",
+      "provider": "dareful",
+      "creator": "Joel Holland",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "checkedOn": "2026-10-30",
+      "licenseEvidence": "Individual Dareful video page explicitly states CC Attribution 4.0 and MP4, reviewed 2026-10-30"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "lake-mist-dawn",
+      "theme": "health",
+      "symbol": "≋",
+      "label": {
+        "ru": "Туманное озеро",
+        "en": "Misty lake",
+        "es": "Lago brumoso"
+      },
+      "tags": [
+        "mist",
+        "nature"
+      ],
+      "clips": [
+        "foggy-water-lake",
+        "autumn-fall-lake"
+      ]
+    },
+    {
+      "id": "flower-softening",
+      "theme": "health",
+      "symbol": "✧",
+      "label": {
+        "ru": "Раскрытие цветка",
+        "en": "Flower unfolding",
+        "es": "Flor que se abre"
+      },
+      "tags": [
+        "flowers",
+        "nature"
+      ],
+      "clips": [
+        "flower-bloom-nature",
+        "white-wild-flowers"
+      ]
+    },
+    {
+      "id": "petal-hope",
+      "theme": "life",
+      "symbol": "✦",
+      "label": {
+        "ru": "Нежное цветение",
+        "en": "Gentle blossoms",
+        "es": "Flores delicadas"
+      },
+      "tags": [
+        "growth",
+        "nature"
+      ],
+      "clips": [
+        "wild-pink-flower",
+        "pink-wild-flower"
+      ]
+    },
+    {
+      "id": "ocean-release",
+      "theme": "health",
+      "symbol": "≋",
+      "label": {
+        "ru": "Отпустить с волной",
+        "en": "Release with the waves",
+        "es": "Soltar con las olas"
+      },
+      "tags": [
+        "ocean",
+        "nature"
+      ],
+      "clips": [
+        "sand-beach-waves",
+        "ocean-sea-waves"
+      ]
+    },
+    {
+      "id": "shore-breath",
+      "theme": "energy",
+      "symbol": "△",
+      "label": {
+        "ru": "Дыхание побережья",
+        "en": "Coastal breathing",
+        "es": "Respirar junto al mar"
+      },
+      "tags": [
+        "breath",
+        "nature"
+      ],
+      "clips": [
+        "rocky-jetty-coast",
+        "island-ocean-coast"
+      ]
+    },
+    {
+      "id": "river-grounding",
+      "theme": "health",
+      "symbol": "♧",
+      "label": {
+        "ru": "Опора на берегу",
+        "en": "Riverside grounding",
+        "es": "Arraigo junto al río"
+      },
+      "tags": [
+        "grounding",
+        "nature"
+      ],
+      "clips": [
+        "river-forest-landscape-2",
+        "forest-fall-autumn"
+      ]
+    },
+    {
+      "id": "forest-renewal",
+      "theme": "life",
+      "symbol": "♧",
+      "label": {
+        "ru": "Возрождение леса",
+        "en": "Forest renewal",
+        "es": "Renacer del bosque"
+      },
+      "tags": [
+        "growth",
+        "nature"
+      ],
+      "clips": [
+        "forest-fall-autumn",
+        "wild-pink-flower"
+      ]
+    },
+    {
+      "id": "soft-horizon",
+      "theme": "goals",
+      "symbol": "△",
+      "label": {
+        "ru": "Открытый горизонт",
+        "en": "Open horizon",
+        "es": "Horizonte abierto"
+      },
+      "tags": [
+        "goals",
+        "nature"
+      ],
+      "clips": [
+        "island-ocean-coast",
+        "sand-beach-waves"
+      ]
+    },
+    {
+      "id": "heart-flow",
+      "theme": "relationships",
+      "symbol": "♡",
+      "label": {
+        "ru": "Мягкость и движение",
+        "en": "Heart in flow",
+        "es": "Corazón en movimiento"
+      },
+      "tags": [
+        "calm",
+        "nature"
+      ],
+      "clips": [
+        "ocean-sea-waves",
+        "flower-bloom-nature"
+      ]
+    },
+    {
+      "id": "clear-morning",
+      "theme": "energy",
+      "symbol": "☀",
+      "label": {
+        "ru": "Ясность утра",
+        "en": "A clearer morning",
+        "es": "Una mañana clara"
+      },
+      "tags": [
+        "clarity",
+        "nature"
+      ],
+      "clips": [
+        "foggy-water-lake",
+        "river-forest-landscape-2"
+      ]
+    },
+    {
+      "id": "still-water",
+      "theme": "life",
+      "symbol": "≋",
+      "label": {
+        "ru": "Спокойная вода",
+        "en": "Still water",
+        "es": "Agua serena"
+      },
+      "tags": [
+        "nature",
+        "nature"
+      ],
+      "clips": [
+        "rocky-jetty-coast",
+        "autumn-fall-lake"
+      ]
+    },
+    {
+      "id": "garden-acceptance",
+      "theme": "relationships",
+      "symbol": "♡",
+      "label": {
+        "ru": "Сад принятия",
+        "en": "Garden of acceptance",
+        "es": "Jardín de aceptación"
+      },
+      "tags": [
+        "flowers",
+        "nature"
+      ],
+      "clips": [
+        "white-wild-flowers",
+        "pink-wild-flower"
+      ]
+    }
+  ]
+}

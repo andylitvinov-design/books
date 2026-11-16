@@ -1,31 +1,50 @@
 ---
 description: Holistic House bounded Free Express UI pilot builder; no provider writes
 mode: primary
-temperature: 0.2
-permission:
-  read:
-    "*": allow
-    "*.env": deny
-    "*.env.*": deny
-    "**/.env": deny
-    "**/.env.*": deny
-  glob: allow
-  grep: allow
-  list: allow
-  edit:
-    "*": deny
-    "components/free-express-wizard.tsx": allow
-    "components/free-express-wizard.module.css": allow
-    "components/personal-express-enquiry.tsx": allow
-    "tests/free-express-wizard-v2.test.mjs": allow
-    "tests/free-express-unified-v2.test.mjs": allow
-    "tests/free-express-mobile-consent-layout.test.mjs": allow
-  bash: deny
-  task: deny
-  webfetch: deny
-  websearch: deny
-  external_directory: deny
-  "mcp_*": deny
+steps: 16
+permissions:
+  - action: "*"
+    resource: "*"
+    effect: deny
+  - action: "read"
+    resource: "*"
+    effect: allow
+  - action: "read"
+    resource: "*.env"
+    effect: deny
+  - action: "read"
+    resource: "*.env.*"
+    effect: deny
+  - action: "read"
+    resource: "**/.env"
+    effect: deny
+  - action: "read"
+    resource: "**/.env.*"
+    effect: deny
+  - action: "glob"
+    resource: "*"
+    effect: allow
+  - action: "grep"
+    resource: "*"
+    effect: allow
+  - action: "edit"
+    resource: "components/free-express-wizard.tsx"
+    effect: allow
+  - action: "edit"
+    resource: "components/free-express-wizard.module.css"
+    effect: allow
+  - action: "edit"
+    resource: "components/personal-express-enquiry.tsx"
+    effect: allow
+  - action: "edit"
+    resource: "tests/free-express-wizard-v2.test.mjs"
+    effect: allow
+  - action: "edit"
+    resource: "tests/free-express-unified-v2.test.mjs"
+    effect: allow
+  - action: "edit"
+    resource: "tests/free-express-mobile-consent-layout.test.mjs"
+    effect: allow
 ---
 
 You are the BUILDER of a narrowly scoped, disposable, synthetic-only Holistic House Gauntlet pilot.

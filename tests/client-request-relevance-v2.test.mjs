@@ -147,8 +147,9 @@ test("EUR budget is hard: price-on-request and minimum-from prices cannot be cal
 test("all personal criteria remain client-only with direct public service links",()=>{
  const ui=file("components/holistic-meditation-finder.tsx"),css=file("components/holistic-meditation-finder.module.css");
  for(const token of ["data-meditation-match-quality","data-meditation-advanced","data-meditation-related-services",
-   "rankClientServices","coreServiceOffers","exactOnly","freeServicesOnly","includeApprox"])
+   "buildHolisticIntelligencePlan","coreServiceOffers","exactOnly","freeServicesOnly","includeApprox"])
    assert.ok(ui.includes(token),token);
+ // Public search uses the shared deterministic core with no client network calls.
  assert.doesNotMatch(ui,/fetch\(|localStorage|sessionStorage|sendBeacon|window\.location|trackEvent|payment_received/);
  assert.match(css,/@media\(max-width:350px\)/);
  assert.match(css,/\.serviceCards/);

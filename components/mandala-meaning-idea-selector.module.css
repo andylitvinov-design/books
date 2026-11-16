@@ -1,0 +1,62 @@
+/* Compact inline first-party idea selector; no modal or bottom overlay. */
+.panel{box-sizing:border-box;min-width:0;max-width:100%;margin:14px 0;padding:14px;
+ border:1px solid #dce3db;border-radius:18px;background:#fffdfa;color:#1c4034;
+ display:flex;flex-direction:column;gap:11px;overflow-wrap:anywhere}
+.panel *{box-sizing:border-box}
+.title{margin:0;color:#235740;font-size:clamp(17px,4.6vw,21px);line-height:1.28}
+.hint,.disclaimer{margin:0;color:#52635b;font-size:13px;line-height:1.48}
+.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0;font-size:13px;font-weight:650;line-height:1.4}
+.field select,.field textarea{font:inherit;font-size:16px;max-width:100%;min-width:0;width:100%;
+ min-height:44px;padding:9px;border:1px solid #ced8cd;border-radius:11px;
+ background:white;color:#1c4034}
+.field textarea{min-height:72px;resize:vertical;font-weight:450;line-height:1.45}
+.legend{margin:4px 0 0;font-size:14px;font-weight:750}
+.axes{display:flex;flex-wrap:wrap;gap:7px}
+.chip{max-width:100%;min-width:0;min-height:40px;padding:8px 11px;
+ border:1px solid #c4d8cf;border-radius:999px;background:#fff;color:#225645;
+ font:inherit;font-size:13px;font-weight:650;line-height:1.3;cursor:pointer}
+.chip[aria-pressed="true"]{background:#ddf2e7;border-color:#158366;color:#0b4e39;
+ box-shadow:inset 0 0 0 1px #158366}
+.compact{color:#496258;font-size:13px}
+.compact summary{cursor:pointer;min-height:36px;display:flex;align-items:center}
+.compact>.fields{margin-top:9px}.panel [data-meaning-relief]{font-variant-numeric:tabular-nums}
+.presetRow{display:flex;gap:6px;overflow-x:auto;padding:6px 1px 10px;
+ scroll-snap-type:x proximity;max-width:100%}
+.presetRow .chip{flex:none;scroll-snap-align:start;white-space:normal;max-width:190px}
+.primary,.secondary,.neutral{min-height:44px;width:100%;border-radius:13px;
+ padding:10px 12px;font:inherit;font-size:14px;font-weight:730;cursor:pointer}
+.primary{background:#19714f;border:1px solid #19714f;color:#fff}
+.secondary{border:1px solid #19714f;background:#ecf6ef;color:#14583e}
+.neutral{border:1px solid #d1d9d1;background:#f7f7f4;color:#3d584a}
+.primary:disabled,.secondary:disabled,.neutral:disabled,.chip:disabled{opacity:.58;cursor:not-allowed}
+.panel button:focus-visible,.panel input:focus-visible,.panel select:focus-visible,
+.panel textarea:focus-visible,.panel summary:focus-visible{
+ outline:3px solid #156d73;outline-offset:3px}
+.options{display:flex;flex-direction:column;gap:8px;border-top:1px solid #e3e6dc;padding-top:11px}
+.option{display:flex;align-items:flex-start;gap:9px;border:1px solid #e0e4dc;
+ border-radius:12px;background:#fff;padding:11px;cursor:pointer;min-width:0}
+.option:has(input:checked){border-color:#168260;background:#eff9f2}
+.option>input{width:19px;height:19px;flex:none;margin:2px 0 0;accent-color:#137a5e}
+.option>span{display:flex;flex-direction:column;gap:5px;min-width:0}
+.option b{font-size:13px;color:#29634e}
+.option span span{font-size:14px;line-height:1.45;color:#1e4037}
+.check{display:flex;align-items:flex-start;gap:9px;font-size:13px;line-height:1.45}
+.check input{margin:2px 0 0;min-width:20px;min-height:20px;accent-color:#19714f}
+.linkAction{align-self:flex-start;border:0;background:transparent;color:#0e6d59;
+ font:inherit;font-size:13px;font-weight:650;text-decoration:underline;cursor:pointer;
+ padding:7px 0}
+.confirmed{padding:12px;border:1px solid #c9e0d4;background:#f1f8f3;
+ border-radius:12px;font-size:13px;line-height:1.5}
+.confirmed strong{font-size:14px}
+.confirmed p{margin:6px 0}
+.confirmed ol{margin:8px 0;padding-left:23px}
+.confirmed li{margin-bottom:4px}
+.warning{background:#fff5e8;color:#754719;border:1px solid #ead4b3;
+ border-radius:10px;padding:10px;font-size:13px;line-height:1.5;margin:0}
+.notice{margin:0;font-size:13px;color:#476457;line-height:1.5}
+.suggestedAxes{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
+.suggestedAxes button{border:1px solid #b9d6cb;background:#f1f7f1;
+ padding:8px 11px;border-radius:12px;color:#125b45;font:inherit;cursor:pointer}
+@media(max-width:359px){.fields{grid-template-columns:1fr}.panel{padding:11px}.chip{font-size:12px}}
+@media(prefers-reduced-motion:reduce){.presetRow{scroll-behavior:auto}}

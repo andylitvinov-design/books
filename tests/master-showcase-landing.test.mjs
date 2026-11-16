@@ -62,3 +62,40 @@ test("original language verification, honest empty states and localization on iP
   assert.match(css, /:focus-visible/);
   assert.doesNotMatch(page, /testimonials|fakeRatings|fakeReviews|<iframe/);
 });
+
+
+test('published master video gallery reuses approved website videos, author links, and languages',async()=>{
+  const [page,editor,action,model,player,gallery,defaults,css]=await Promise.all([
+    'app/[locale]/masters/[slug]/page.tsx','components/site-video-manager.tsx',
+    'app/admin/videos/actions.js','lib/site-videos/model.js',
+    'components/site-video-player.tsx','components/practitioner-video-gallery.tsx',
+    'lib/site-videos/defaults.js','app/site-videos.css',
+  ].map(read))
+  assert.match(page,/getPublishedSiteVideos\(\)/)
+  assert.match(page,/video\.practitionerSlug === practitioner\.slug/)
+  assert.match(page,/siteVideoWatchUrl\(video\)/)
+  assert.match(page,/existingYouTubeMirrors\[video\.heygenId\]/)
+  assert.match(page,/seenPublicVideos\.has\(item\.url\)/)
+  assert.match(page,/profile\.videoMaterials/)
+  assert.match(page,/getServiceVideoMedia\(topic, language\)\.video/)
+  assert.match(page,/englishPsychotherapyLandingVideo\.video/)
+  assert.match(page,/href="#practitioner-videos"/)
+  assert.match(gallery,/app\.heygen\.com/)
+  assert.match(gallery,/entries\.slice\(0,6\)/)
+  assert.match(gallery,/setShowAll\(true\)/)
+  assert.match(gallery,/youtube-nocookie\.com/)
+  assert.match(editor,/data-video-master-selector/)
+  assert.match(editor,/masters\.map\(item/)
+  assert.match(editor,/form\.practitionerSlug/)
+  assert.match(action,/getPublicPractitioner\(input\.practitionerSlug, 'en'\)/)
+  assert.match(action,/change\.practitionerName = approvedName/)
+  assert.match(action,/revalidatePath\('\/' \+ language \+ '\/masters\/' \+ slug\)/)
+  assert.match(model,/practitionerName/)
+  assert.match(player,/site-video-master-link/)
+  assert.match(player,/\$\{locale\}\/masters\/\$\{video\.practitionerSlug\}#practitioner-videos/)
+  assert.match(defaults,/practitionerSlug: 'andy-litvinov'/)
+  assert.match(css,/site-video-master-byline/)
+  for(const value of ['Все видео мастера','All videos by this master','Todos los vídeos del profesional'])
+    assert.match(player,new RegExp(value))
+  assert.doesNotMatch(page,/telegram_owner_video_drafts|client_session_media|crm_contacts/)
+})

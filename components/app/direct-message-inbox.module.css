@@ -144,3 +144,53 @@
 .actions .send{margin-left:auto}
 .voicePreview{width:min(100%,430px);height:48px;max-width:100%;}
 @media(max-width:390px){.actions{gap:6px}.filePick{padding:7px 9px}.actions .send{padding:9px 11px}}
+
+
+/* Video notes share the authenticated, private message feed; no public URL. */
+.videoBubble{display:block;width:min(230px,70vw);height:min(230px,70vw);aspect-ratio:1/1;object-fit:cover;border-radius:50%;background:#32242e;max-width:100%;border:3px solid #eed7df}
+.videoDraft{display:block;width:min(240px,74vw);height:min(240px,74vw);object-fit:cover;border-radius:50%;background:#32242e;border:3px solid #e5cad4;max-width:100%}
+@media(max-width:390px){.videoBubble,.videoDraft{width:min(195px,64vw);height:min(195px,64vw)}}
+
+
+/* Telegram-like mobile compose: 44px touch icons, labels retained for assistive technology. */
+@media(max-width:560px){
+  .shell .actions{gap:8px;align-items:center}
+  .shell .actions .filePick,.shell .actions .send{
+    font-size:0;min-width:44px;width:44px;min-height:44px;padding:0;justify-content:center;flex:none
+  }
+  .shell .actions [data-voice-recorder]>button,
+  .shell .actions [data-video-recorder]>button{
+    font-size:0;width:44px;min-width:44px;min-height:44px;padding:0;flex:none
+  }
+  .shell .actions .filePick svg,.shell .actions .send svg,
+  .shell .actions [data-voice-recorder]>button svg,
+  .shell .actions [data-video-recorder]>button svg{
+    width:19px;height:19px;flex:none
+  }
+}
+
+
+/* Approved calm order/client messenger: only the embedded conversation is
+   restyled; preserve upload controls, authenticated playback and keyboard layout. */
+.shell[data-simple-detail="true"]{color:#193e32;--hh-chat-green:#147d60}
+.shell[data-simple-detail="true"] .chat{background:#fffdf8;border-color:#e7e5dc;
+ box-shadow:0 5px 20px #3f44300b}
+.shell[data-simple-detail="true"] .chatHeader{background:#fcf9f2;border-color:#e4e8dc;
+ color:#163d33}
+.shell[data-simple-detail="true"] .feed{background:linear-gradient(175deg,#f9fbf5,#fcfaf4);}
+.shell[data-simple-detail="true"] .received{background:#fffefa;border-color:#e8e6dd;
+ color:#244438;box-shadow:0 3px 11px #3a4f3710;
+ border-radius:16px 16px 16px 5px}
+.shell[data-simple-detail="true"] .own{background:#e1f2e7;border-color:#d4eadb;
+ color:#174c39;border-radius:16px 16px 5px 16px}
+.shell[data-simple-detail="true"] .compose{background:#fffdf9;border-color:#e6e7df}
+.shell[data-simple-detail="true"] .compose textarea{background:#fff;border-color:#dfe5db;
+ color:#204335;border-radius:15px}
+.shell[data-simple-detail="true"] .filePick{border-color:#cfe4d5;background:#f2f8f3;
+ color:#19745a;border-radius:12px}
+.shell[data-simple-detail="true"] .send{background:linear-gradient(115deg,#359d7d,#15765c);
+ color:#fff;border-radius:12px;min-height:44px}
+.shell[data-simple-detail="true"] .fileName{color:#44715d}
+.shell[data-simple-detail="true"] .videoBubble{border:2px solid #dcefe3;background:#183c31}
+.shell[data-simple-detail="true"] .videoDraft{border:2px solid #dcefe3;background:#183c31}
+@media(max-width:700px){.shell[data-simple-detail="true"] .feed{max-height:none;min-height:0}}

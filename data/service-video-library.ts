@@ -14,35 +14,35 @@ export type ServiceVideoMedia = {
 const path = "/images/holistic-house/video-posters/";
 
 const overviewEn: ServiceVideoMedia = {
-  video: { youtubeId: "s30Y42IwPcg", language: "en", title: "How I Choose the Right Method", durationSeconds: 29 },
+  video: { practitionerSlug: 'andy-litvinov', practitionerName: 'Andy', youtubeId: "s30Y42IwPcg", language: "en", title: "How I Choose the Right Method", durationSeconds: 29 },
   poster: path + "services-en-v2.webp",
   general: true,
 };
 const overviewRu: ServiceVideoMedia = {
-  video: { youtubeId: "Cz6SxXJNZbw", language: "ru", title: "Как я выбираю подходящий метод", durationSeconds: 33 },
+  video: { practitionerSlug: 'andy-litvinov', practitionerName: 'Andy', youtubeId: "Cz6SxXJNZbw", language: "ru", title: "Как я выбираю подходящий метод", durationSeconds: 33 },
   poster: path + "services-ru-v1.webp",
   general: true,
 };
 const constellationsEn: ServiceVideoMedia = {
-  video: { youtubeId: "", heygenId: "7c6b243f048b9c0581ae29619a4a89fc", language: "en", title: "How I Work with Systemic Constellations", durationSeconds: 48 },
+  video: { practitionerSlug: 'andy-litvinov', practitionerName: 'Andy', youtubeId: "", heygenId: "7c6b243f048b9c0581ae29619a4a89fc", language: "en", title: "How I Work with Systemic Constellations", durationSeconds: 48 },
   poster: path + "constellations-en-v1.webp",
   general: false,
 };
 /** Owner-selected public recording: one ID for three related service landings. */
 const constellationCase: ServiceVideoMedia = {
-  video: { youtubeId: "sfVFOQNr2qk", language: "en", title: "Business Constellations" },
+  video: { practitionerSlug: 'andy-litvinov', practitionerName: 'Andy', youtubeId: "sfVFOQNr2qk", language: "en", title: "Business Constellations" },
   poster: "/images/holistic-house/andy-about.png",
   general: false,
 };
 const hypnotherapyEn: ServiceVideoMedia = {
-  video: { youtubeId: "", heygenId: "8c1634ce904434a91931429b6a7eefe1", language: "en", title: "How I Work with Hypnotherapy", durationSeconds: 47 },
+  video: { practitionerSlug: 'andy-litvinov', practitionerName: 'Andy', youtubeId: "", heygenId: "8c1634ce904434a91931429b6a7eefe1", language: "en", title: "How I Work with Hypnotherapy", durationSeconds: 47 },
   poster: path + "hypnotherapy-en-v1.webp",
   general: false,
 };
 // The Russian psychotherapy landing uses the owner's selected public YouTube video.
 // No new render or upload is needed, and the EN/ES media remain independent.
 const hypnotherapyRu: ServiceVideoMedia = {
-  video: { youtubeId: "eLsjFaKCBhI", language: "ru", title: "Образная психотерапия — видео о подходе" },
+  video: { practitionerSlug: 'andy-litvinov', practitionerName: 'Andy', youtubeId: "eLsjFaKCBhI", language: "ru", title: "Образная психотерапия — видео о подходе" },
   poster: path + "hypnotherapy-en-v1.webp",
   general: false,
 };
@@ -51,18 +51,18 @@ const hypnotherapyRu: ServiceVideoMedia = {
  * Its own YouTube thumbnail is used, not an unrelated static HeyGen still.
  */
 export const englishPsychotherapyLandingVideo: ServiceVideoMedia = {
-  video: { youtubeId: "vqRmI79cecQ", language: "en", title: "Psychotherapy — introduction in English" },
+  video: { practitionerSlug: 'andy-litvinov', practitionerName: 'Andy', youtubeId: "vqRmI79cecQ", language: "en", title: "Psychotherapy — introduction in English" },
   poster: "",
   general: false,
 };
 
 const homeopathyEn: ServiceVideoMedia = {
-  video: { youtubeId: "ILyRWyHtJoE", language: "en", title: "My Approach to Homeopathy", durationSeconds: 31 },
+  video: { practitionerSlug: 'andy-litvinov', practitionerName: 'Andy', youtubeId: "ILyRWyHtJoE", language: "en", title: "My Approach to Homeopathy", durationSeconds: 31 },
   poster: path + "homeopathy-en-v2.webp",
   general: false,
 };
 const homeopathyRu: ServiceVideoMedia = {
-  video: { youtubeId: "Q9NvYECKWuc", language: "ru", title: "Мой подход к гомеопатии", durationSeconds: 32 },
+  video: { practitionerSlug: 'andy-litvinov', practitionerName: 'Andy', youtubeId: "Q9NvYECKWuc", language: "ru", title: "Мой подход к гомеопатии", durationSeconds: 32 },
   poster: path + "homeopathy-ru-v1.webp",
   general: false,
 };

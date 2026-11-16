@@ -27,6 +27,13 @@
     "figma": {
       "type": "http",
       "url": "https://mcp.figma.com/mcp"
+    },
+    "holistic-veo-lite": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "scripts/mcp/veo-lite.mjs"
+      ]
     }
   }
 }

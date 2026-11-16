@@ -7,6 +7,9 @@ import { COACHING_TOPICS } from "@/lib/coaching/intake-model";
 import { DIAGNOSTIC_START_KEY } from "@/lib/coaching/diagnostic-enquiry.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./free-diagnostic-start.module.css";
+import {MandatoryMessengerActions} from "@/components/mandatory-messenger-actions";
+import {websiteMessengerOnlyUi} from "@/lib/crm/website-messenger-only.mjs";
+import {whatsappEnquiryUrl} from "@/lib/whatsapp-enquiry";
 
 const copy = {
   en: {
@@ -77,6 +80,13 @@ export function FreeDiagnosticStart({ locale, compact = false, id = "free-diagno
     }
     window.location.assign("/" + locale + "/coaching/intake");
   }
+  if (websiteMessengerOnlyUi()) return <section id={id} className={styles.card} data-free-diagnostic-start lang={locale}>
+    <MandatoryMessengerActions locale={locale} label={t.title} collapsed={compact}
+      telegramUrl={"https://t.me/holistichouse_bot?start=hhreview_"+locale}
+      whatsappUrl={whatsappEnquiryUrl({locale,service:"Free written Situation Review",
+        request:"Please contact me about a free written review.",
+        pagePath:"/"+locale+"/services/free-situation-review"})}/>
+  </section>;
   if (compact) {
     const short = concise[locale];
     return <section id={id} className={[styles.card, styles.compact].join(" ")}

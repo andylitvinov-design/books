@@ -3,6 +3,7 @@ import { buildAssessmentResultReport } from '@/lib/assessments/result-report'
 import { getTestScaleGuide } from '@/lib/assessments/scale-guides'
 import styles from './personal-result-report.module.css'
 import { CompactAssessmentReport } from './compact-assessment-report'
+import { MotivatorMind } from './motivator-mind'
 
 export function PersonalResultReport({ result, locale = 'en', previous = null, focusScaleKey = null }) {
   const report = buildAssessmentResultReport(result, locale)
@@ -129,6 +130,7 @@ export function PersonalResultReport({ result, locale = 'en', previous = null, f
         </Link>}
         {!bach && report.rulesVersion && <small className={styles.ruleVersion}>{ru ? 'Версия интерпретации' : 'Interpretation version'}: {report.rulesVersion}</small>}
       </footer>
+      <MotivatorMind report={report} result={result} locale={locale} focusScaleKey={focusScaleKey} />
     </section>
   )
 }

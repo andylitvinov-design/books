@@ -70,7 +70,7 @@ test('telemetry is bounded and init source is self-contained', () => {
 });
 test('verifier preserves fatal error gates and adds no classifier input or waiting policy', () => {
   const source = readFileSync(new URL('../scripts/verify-release-reaudit.mjs', import.meta.url), 'utf8');
-  assert.match(source, /classifyCspNavigationCancellation\(error, \{ engine, readiness, origin, lifecycle: lifecycleTrace \}\)/);
+  assert.match(source, /classifyCspNavigationCancellation\(error, \{ engine, readiness, origin, lifecycle: lifecycleTrace, fetchTelemetry: evidenceFetches \}\)/);
   assert.match(source, /assert\.deepEqual\(unexpectedErrors, \[\], 'No unexplained JavaScript diagnostics during CSP navigation'\)/);
   assert.match(source, /if \(readiness === 'loaded-history'\) assert\.deepEqual\(cspErrors, \[\]/);
   assert.match(source, /if \(readiness !== 'loaded-history'\) return;/);
@@ -154,4 +154,33 @@ test('stats diagnostics retain only exact public aggregate path without query va
   assert.match(source, /cspContext.addInitScript\(\{ content: catalogStatsDiagnosticSource\(\) \}\)/);
   assert.match(source, /record\('policy-violation'/);
   assert.match(source, /JSON.stringify\(\{ statsResponses, statsFetch, requestTelemetry, fetchTelemetry/);
+});
+
+test('Telegram cancellation telemetry records only its exact anonymous public path', () => {
+  assert.deepEqual(sanitizeCspRequest('/api/public/telegram-diagnostic',origin),
+    {path:'/api/public/telegram-diagnostic',rsc:false});
+  for (const path of ['/api/public/telegram-diagnostic?token=x',
+    '/api/public/telegram-diagnostic?_rsc=x',
+    '/api/public/telegram-diagnostic/other',
+    '/api/public/telegram-diagnostic?scope=private'])
+    assert.equal(sanitizeCspRequest(path,origin),null);
+  const observation=fixture(()=>Promise.resolve(null));
+  observation.env.fetch('/api/public/telegram-diagnostic');
+  assert.equal(observation.events()[0].path,'/api/public/telegram-diagnostic');
+  assert.doesNotMatch(JSON.stringify(observation.events()),/token|https?:|scope/);
+});
+
+test('English presentation metadata GET has a queryless anonymous first-party telemetry footprint',()=>{
+  const path='/api/public/english-intro-video';
+  assert.deepEqual(sanitizeCspRequest(path,origin),{path,rsc:false});
+  for(const invalid of [path+'?token=private',path+'?_rsc=secret',
+    path+'/other',path+'?source=tracking','https://elsewhere.test'+path,
+    '/api/private/english-intro-video','/api/public/english-intro-video-v2']){
+    assert.equal(sanitizeCspRequest(invalid,origin),null,invalid);
+  }
+  const observed=fixture(()=>Promise.resolve(null));
+  observed.env.fetch(path,{signal:new AbortController().signal});
+  assert.deepEqual(observed.events()[0],{type:'fetch-start',path,rsc:false,
+    id:'fetch-1',documentProbe:'document-1',time:102});
+  assert.doesNotMatch(JSON.stringify(observed.events()),/token|headers|credentials|http/);
 });

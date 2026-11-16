@@ -66,3 +66,95 @@
   .cardButton{font-size:10px}
 }
 @media(prefers-reduced-motion:reduce){.root *{scroll-behavior:auto}}
+
+
+/* My Coach inspired Coaching Lounge mobile refresh · 2026-11-09 */
+
+/* My Coach inspired Coaching Lounge mobile refresh · 2026-11-09 */
+.root{max-width:1120px;margin:0 auto;color:#143f37}
+.hero{
+  min-height:205px;margin:0 0 2px;border-radius:24px;overflow:hidden;isolation:isolate;
+  color:#143f37;background:#eaf0e7;border:1px solid #e3dbd1;
+  box-shadow:0 10px 26px #57432d12;
+}
+.heroImage{object-position:center 48%}
+.heroOverlay{
+  background:linear-gradient(95deg,rgba(249,250,244,.96),rgba(249,250,244,.84) 43%,rgba(249,250,244,.12) 100%);
+}
+.heroCopy{width:min(680px,100%);padding:clamp(21px,4vw,38px)}
+.eyebrow{color:#4c7569;margin-bottom:8px}
+.hero h1{font:850 clamp(35px,5vw,55px)/1.02 Arial,sans-serif;letter-spacing:-.05em;color:#103f37}
+.heroHeadline{font:600 clamp(17px,2.3vw,23px)/1.2 Arial,sans-serif;color:#173f37;margin:10px 0 6px}
+.heroLead{font:13px/1.35 Arial,sans-serif;color:#526a60}
+.heroChoices{grid-template-columns:repeat(3,minmax(0,1fr));margin-top:15px}
+.heroChoices a{
+  min-height:43px;padding:7px 10px;border:1px solid #fff;border-radius:99px;
+  color:#17493e;background:rgba(255,255,255,.83);box-shadow:0 3px 10px #54432c0d;
+  font:750 11px/1.2 Arial,sans-serif;backdrop-filter:blur(6px)
+}
+.heroChoices a:hover{background:#e9f5ec;color:#075e4b}
+.offersSection{margin:0 0 13px;padding:17px;border:1px solid #e8dfd5;background:#fffdfa;border-radius:20px}
+.sectionHeading h2{font:850 clamp(24px,3.2vw,32px)/1.1 Arial,sans-serif;color:#103f37}
+.sectionHeading p{color:#63746b}
+.cards{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.card{border:1px solid #e8ded3;border-radius:18px;background:linear-gradient(145deg,#fffefa,#f8f6ef)}
+.cardPhoto{min-height:135px}
+.cardContent{padding:13px;gap:7px}
+.card h3{font:800 19px/1.12 Arial,sans-serif;color:#15453a}
+.price{color:#087b63;font-size:10px}
+.cardContent>p{color:#5b6b62;font-size:12px}
+.details summary{color:#47695e}
+.cardButton{
+  min-height:44px;border-radius:99px;background:linear-gradient(145deg,#0f9271,#06604c);
+  font-size:12px;box-shadow:0 4px 12px #087a6123;
+}
+.cardButton:hover{background:#075c49}
+.intake{border:1px solid #e7ddd1;border-radius:19px;background:#fffefa}
+.selectedText{color:#155346}
+.safety{color:#64746a}
+@media(max-width:850px){
+  .hero{min-height:0}
+  .heroChoices{grid-template-columns:1fr}
+  .cards{grid-template-columns:1fr}
+  .card{display:grid;grid-template-columns:clamp(110px,25vw,150px) minmax(0,1fr)}
+  .cardPhoto{min-height:165px}
+}
+@media(max-width:600px){
+  .root{max-width:none}
+  .hero{min-height:0;margin:0 0 8px;border-radius:20px}
+  .heroImage{object-position:66% center}
+  .heroOverlay{background:linear-gradient(95deg,rgba(249,250,244,.97),rgba(249,250,244,.84) 55%,rgba(249,250,244,.22))}
+  .heroCopy{padding:17px 16px 16px}
+  .eyebrow{font-size:9px;letter-spacing:.1em}
+  .hero h1{font-size:clamp(31px,8.7vw,39px)}
+  .heroHeadline{font-size:15px;max-width:78%;margin:8px 0 5px}
+  .heroLead{font-size:11.5px;max-width:80%;line-height:1.34}
+  .heroChoices{display:flex;gap:6px;overflow-x:auto;padding:2px 1px 5px;scrollbar-width:none;margin-top:12px}
+  .heroChoices::-webkit-scrollbar{display:none}
+  .heroChoices a{flex:0 0 auto;min-height:40px;font-size:10.5px;padding:6px 10px}
+  .heroChoices a svg:last-child{display:none}
+  .offersSection{padding:12px 10px;border-radius:18px}
+  .sectionHeading{padding:0 3px 10px}
+  .sectionHeading h2{font-size:22px}
+  .sectionHeading p{font-size:11.5px;margin-top:4px}
+  .cards{grid-template-columns:1fr;gap:8px}
+  .card{grid-template-columns:clamp(94px,27vw,116px) minmax(0,1fr);border-radius:17px}
+  .cardPhoto{min-height:153px}
+  .cardContent{padding:9px;gap:5px}
+  .card h3{font-size:17px}
+  .cardContent>p{font-size:11px;line-height:1.35}
+  .price{font-size:8.5px}
+  .cardActions{gap:4px}
+  .details summary{min-height:40px;font-size:11px}
+  .cardButton{min-height:43px;font-size:10.5px;padding:7px 9px}
+  .intake{margin:0 0 13px;padding:10px;border-radius:17px}
+}
+@media(max-width:360px){
+  .heroCopy{padding:15px 12px}
+  .heroHeadline{max-width:84%}
+  .heroLead{max-width:88%}
+  .heroChoices a{padding:6px 8px}
+  .card{grid-template-columns:91px minmax(0,1fr)}
+  .cardPhoto{min-height:162px}
+}
+

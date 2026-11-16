@@ -9,7 +9,8 @@ const styles = read("components/ideas-discovery.module.css");
 test("Temple Insights offers two stacked real actions without transferring question data", () => {
   assert.match(source, /<button type="submit" form="ideas-question-form" className=\{styles\.testButton\} data-ideas-tao>/);
   const templeLink = source.slice(source.indexOf('{variant === "temple" ? <Link'), source.indexOf("</Link> : null}", source.indexOf('{variant === "temple" ? <Link')));
-  assert.ok(templeLink.includes('href={"/" + locale + "/coaching#free-diagnostic-start"}'));
+  assert.ok(source.includes('const coachingHref = "/" + locale + "/coaching/sessions"'));
+  assert.ok(templeLink.includes('href={coachingHref}'), "personal diagnosis opens the active free coaching sessions, never the human directory");
   assert.match(templeLink, /data-ideas-personal-diagnostic/);
   assert.match(templeLink, /prefetch=\{false\}/);
   const first = source.indexOf("data-ideas-tao>");

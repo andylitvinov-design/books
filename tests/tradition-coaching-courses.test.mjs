@@ -227,3 +227,22 @@ test('all 18 approved Egyptian and Greek photographs are mapped to unique first-
   assert.ok(stage.photo.credit&&stage.photo.license)
  }
 })
+
+test('private personal and traditional coaching shells follow real mobile Safari visual viewport and restore body scroll',()=>{
+ const hook=source('components/app/use-coaching-visual-viewport.js');
+ const base=source('components/app/personal-coaching.module.css');
+ const personal=source('components/app/personal-coaching.jsx');
+ const tradition=source('components/app/tradition-coaching.jsx');
+ assert.match(hook,/window\.visualViewport/);
+ assert.match(hook,/viewport\?\.addEventListener\('resize',update\)/);
+ assert.match(hook,/viewport\?\.addEventListener\('scroll',update\)/);
+ assert.match(hook,/viewport\?\.removeEventListener\('resize',update\)/);
+ assert.match(hook,/viewport\?\.removeEventListener\('scroll',update\)/);
+ assert.match(hook,/document\.body\.style\.overflow=originalOverflow/);
+ assert.match(base,/height:var\(--coaching-viewport-height,100dvh\)/);
+ assert.match(base,/top:var\(--coaching-viewport-top,0px\)/);
+ for(const player of [personal,tradition]){
+  assert.match(player,/useCoachingVisualViewport\(viewportRef\)/);
+  assert.match(player,/<main ref=\{viewportRef\} className=/);
+ }
+});

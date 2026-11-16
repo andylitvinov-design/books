@@ -35,7 +35,7 @@ for (const engine of [chromium, webkit]) {
           assert.equal(response?.status(), 200, label + ': public home must load');
           const slider = page.locator('[data-home-section-carousel] [role="region"][aria-roledescription="carousel"]');
           const paid = slider.locator('[data-home-first-screen-cta="paid"]');
-          const free = page.locator('[data-home-free-diagnosis-banner] [data-home-diagnosis-order]');
+          const free = page.locator('[data-home-module-action="review"]');
           await paid.waitFor({ state: 'visible', timeout: 30000 });
           await free.waitFor({ state: 'visible', timeout: 30000 });
           const [card, book, review] = await Promise.all([
@@ -44,36 +44,100 @@ for (const engine of [chromium, webkit]) {
           assert.ok(card && book && review, label + ': slider, paid CTA and free diagnosis are rendered');
           assert.ok(book.y >= card.y && book.y + book.height <= card.y + card.height,
             label + ': consultation CTA stays inside the first slider');
-          assert.ok(book.y >= 0 && book.y + book.height <= 844 - 72,
-            label + ': consultation CTA fits above mobile bottom navigation without scrolling');
+          // The owner's new front page is My Space: six tabs above video,
+          // four navigation actions beneath it, then six main categories.
+          // The retained consultation carousel is now further down the page.
+          const firstTabs = page.locator('[data-profile-tab="today"]');
+          // EN/RU now use the approved presentation's click-to-play facade,
+          // while ES retains the accessible scenic <video> fallback.
+          // Pending English YouTube is an honest 16:9 poster + channel link,
+          // not a fake playable video. Preserve the other real player states.
+          const firstVideo = page.locator(
+            '[data-profile-video-hero] [data-profile-presentation-source="youtube-pending"], ' +
+            '[data-profile-video-hero] .site-video-frame, [data-profile-video-hero] video'
+          ).first();
+          if (locale === 'en' || locale === 'ru') {
+            const localized = page.locator('[data-profile-presentation-locale]');
+            assert.equal(await localized.getAttribute('data-profile-presentation-locale'), locale,
+              label + ': presentation language matches the selected site locale');
+            if (locale === 'en') {
+              // The approved English channel is YouTube-only. Wait for the exact
+              // public receipt lookup: verified upload → native Play, otherwise
+              // honest, accessible pending state with a real @aatapro link.
+              await page.waitForFunction(() => {
+                const node=document.querySelector('[data-profile-presentation-locale="en"]');
+                return node?.getAttribute('data-profile-presentation-source')==='youtube' ||
+                  node?.getAttribute('data-profile-youtube-status')==='awaiting-verified-upload';
+              },undefined,{timeout:15000});
+            }
+            const source = await localized.getAttribute('data-profile-presentation-source');
+            if (locale === 'en' && source === 'youtube-pending') {
+              assert.equal(await localized.getAttribute('data-profile-youtube-status'),
+                'awaiting-verified-upload',label + ': unverified YouTube cannot claim playback');
+              const channel = localized.locator('a[href="https://www.youtube.com/@aatapro"]');
+              assert.equal(await channel.count(), 1,
+                label + ': pending presentation opens the approved English channel');
+              assert.equal(await channel.getAttribute('target'), '_blank',
+                label + ': open channel without discarding the local page');
+              assert.equal(await channel.getAttribute('rel'), 'noopener noreferrer',
+                label + ': secure outbound channel link');
+              const linkBox=await channel.boundingBox();
+              assert.ok(linkBox && linkBox.height>=44,label + ': pending channel CTA is tappable');
+              assert.equal(await localized.locator('.site-video-play').count(), 0,
+                label + ': no fake Play while YouTube is unverified');
+            } else {
+              assert.equal(await localized.locator('.site-video-play').count(), 1,
+                label + ': verified presentation has a genuine Play action');
+            }
+            assert.equal(await localized.locator('iframe').count(), 0,
+              label + ': presentation does not auto-play or mount third-party playback');
+          } else {
+            assert.equal(await firstVideo.getAttribute('controls'), '',
+              label + ': Spanish fallback is a controllable scenic player');
+          }
+          const firstQuick = page.locator('[data-profile-quick-actions]');
+          const firstTopics = page.locator('[data-my-space-topics]');
+          const [tabBox, videoBox, quickBox, topicBox] = await Promise.all([
+            firstTabs.boundingBox(), firstVideo.boundingBox(),
+            firstQuick.boundingBox(), firstTopics.boundingBox(),
+          ]);
+          assert.ok(tabBox && videoBox && quickBox && topicBox,
+            label + ': My Space navigation, video and six directions render');
+          assert.ok(tabBox.y + tabBox.height <= videoBox.y + 1 &&
+            videoBox.y + videoBox.height <= quickBox.y + 1 &&
+            quickBox.y + quickBox.height <= topicBox.y + 1,
+            label + ': navigation above video, actions below, topics after');
+          assert.equal(await firstTopics.locator('[data-my-space-topic]').count(), 6,
+            label + ': all six editorial directions have real links');
+          assert.ok(videoBox.y < 844 - 72, label + ': video starts on the first mobile screen');
           assert.ok(book.height >= 44 && review.height >= 44, label + ': finger-sized tap areas');
           assert.equal((await paid.innerText()).trim().replace(/\s+/g, ' '), paidCopy,
             label + ': exact localized €50 CTA');
           const paidHref = await paid.getAttribute('href');
           const freeHref = '/' + locale + '/services/free-situation-review';
           assert.equal(paidHref, '/' + locale + '/services#consultation', label + ': existing booking destination');
-          assert.equal(await free.getAttribute('aria-expanded'), 'false',
-            label + ': free diagnosis opens the existing consent-gated inline form');
-          // The approved first carousel slide keeps the original photo, seven named
+          assert.equal(await free.getAttribute('href'), freeHref,
+            label + ': free analysis reaches the existing consent-gated service');
+          // The approved first carousel slide keeps the original photo, six named
           // section links and the priced consultation button on the first fold.
           const sectionNav = page.locator('[data-home-hero-nav="true"]');
           await sectionNav.waitFor({ state: 'visible', timeout: 30000 });
           const sectionLinks = sectionNav.locator('a[data-home-nav-section]');
-          assert.equal(await sectionLinks.count(), 7, label + ': seven plain text site sections');
+          assert.equal(await sectionLinks.count(), 6, label + ': six plain text site sections');
           assert.equal(await sectionNav.locator('svg, img').count(), 0, label + ': no icons in the hero navigation');
           assert.ok((await sectionNav.getAttribute('aria-label'))?.length > 3, label + ': accessible section list');
-          const keys = ['home', 'tests', 'services', 'academy', 'business', 'ideas', 'cabinet'];
-          const suffixes = ['', '/client/tests', '/services', '/academy', '/explore/business', '/books', '/app'];
+          const keys = ['services', 'academy', 'business', 'tests', 'ideas', 'cabinet'];
+          const suffixes = ['/explore/energy', '/explore/love', '/explore/business', '/client/tests', '/books', '/app'];
           for (let i = 0; i < keys.length; i++) {
             const link = sectionLinks.nth(i);
             assert.equal(await link.getAttribute('data-home-nav-section'), keys[i], label + ': navigation order');
             assert.equal(await link.getAttribute('href'),
-              keys[i] === 'cabinet' && locale === 'es' ? '/en/app' : suffixes[i] ? '/' + locale + suffixes[i] : locale === 'en' ? '/' : '/' + locale,
+              keys[i] === 'cabinet' && locale === 'es' ? '/en/app' : '/' + locale + suffixes[i],
               label + ': real localized route for ' + keys[i]);
             const target = await link.boundingBox();
             assert.ok(target && target.height >= 44, label + ': touch target for ' + keys[i]);
           }
-          assert.equal(await sectionLinks.nth(2).getAttribute('aria-current'), 'true', label + ': first services slide selected');
+          assert.equal(await sectionLinks.nth(0).getAttribute('aria-current'), 'true', label + ': first services slide selected');
           const [navBox, copyBox] = await Promise.all([
             sectionNav.boundingBox(), page.locator('[data-home-slide]').boundingBox(),
           ]);
@@ -95,15 +159,22 @@ for (const engine of [chromium, webkit]) {
           // the visitor keeps the disclosure closed.
           if (width === 390) {
             const more = page.locator('[data-home-more-deferred="true"]');
-            assert.equal(await more.locator('[data-home-start]').count(), 0,
-              label + ': closed catalogue must not inflate initial SSR/RSC');
-            await more.locator('summary').first().click();
-            await page.locator('[data-home-start]').waitFor({ state: 'visible', timeout: 30000 });
-            assert.equal(await more.getAttribute('open'), '',
-              label + ': expanding reveals the existing section directory');
-            if (locale !== 'es') {
-              await page.locator('[data-core-service-id]').first().waitFor({ state: 'visible', timeout: 30000 });
+            assert.equal(await more.locator('[data-home-conversation-guide]').count(), 0,
+              label + ': closed guidance must not inflate initial SSR/RSC');
+            for (const [key, path] of Object.entries({'energy-confidence':'/explore/energy',
+              'love-relationships':'/explore/love', 'goals-money':'/explore/business',
+              'stress-anxiety':'/explore/stress', temple:'/temple-support', services:'/services', courses:'/academy'})) {
+              assert.equal(await page.locator('[data-home-topic-filter="' + key + '"]').getAttribute('href'),
+                '/' + locale + path, label + ': existing topic route for ' + key);
             }
+            await page.waitForFunction(() => {
+              const details = document.querySelector('[data-home-more-deferred="true"]');
+              return Boolean(details && Object.keys(details).some(key => key.startsWith('__reactProps$')));
+            }, null, {timeout:30000});
+            await more.locator('summary').first().click();
+            await more.locator('[data-home-conversation-guide]').waitFor({ state: 'visible', timeout: 60000 });
+            assert.equal(await more.getAttribute('open'), '',
+              label + ': expanding reveals the existing conversation guidance');
             await more.locator('summary').first().click();
             assert.equal(await more.getAttribute('open'), null, label + ': closes without navigation');
           }

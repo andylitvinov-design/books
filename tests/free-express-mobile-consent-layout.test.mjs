@@ -21,9 +21,14 @@ test('no anonymous analytics popup blocks public/mobile forms; preferences stay 
  const choice=read('components/analytics-consent.tsx')
  const privacy=read('app/privacy/page.tsx')
  const css=read('components/personal-express-enquiry.module.css')
- assert.doesNotMatch(layout,/FirstPartyStatsNotice|first-party-stats-notice/)
- assert.match(layout,/<PublicPageTraffic \/>/)
+ // The public notice was intentionally retired. Consent is never solicited
+ // with an interrupting banner; visitors can change it on the Privacy page.
+ assert.match(layout,/<AnalyticsConsent \/>[\s\S]*<PublicPageTraffic \/>/)
+ assert.doesNotMatch(layout,/FirstPartyStatsNotice|<FirstPartyStatsPreferences\s*\/>/)
+ assert.match(choice,/export function AnalyticsConsent\(\)/)
+ assert.match(choice,/export function FirstPartyStatsPreferences\(\)/)
  assert.match(privacy,/<FirstPartyStatsPreferences \/>/)
+ assert.match(privacy,/<AnalyticsPreferences \/>/)
  assert.match(choice,/setFirstPartyConsent\(allow\)/)
  assert.doesNotMatch(choice,/setFirstPartyConsent\(true\)/)
  assert.match(choice,/allow \? "v1" : "denied"/)

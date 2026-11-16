@@ -88,6 +88,14 @@ test('exposes the complete source-backed library and searchable metadata', () =>
     'maya-calendar',
     'maya-exorcism',
     'maya-mysteries',
+    'egypt-osiris-temple-magic',
+    'egypt-maat-isis-attunements',
+    'greek-temple-attunements',
+    'greek-metaphysics-planning',
+    'greek-dionysus-asclepius-course',
+    'roman-imperial-temples',
+    'zoroastrian-tradition-notes',
+    'mithra-mysteries',
   ]
   const requiredFields = [
     'id', 'title', 'description', 'sourceSeries', 'category', 'culture', 'cover',
@@ -95,7 +103,7 @@ test('exposes the complete source-backed library and searchable metadata', () =>
   ]
 
   assert.deepEqual(books.map((book) => book.id), expectedIds)
-  assert.equal(books.length, 23)
+  assert.equal(books.length, 31)
   assert.equal(new Set(books.map((book) => book.originalSourceFile)).size, 23)
   for (const book of books) {
     assert.deepEqual(
@@ -120,7 +128,7 @@ test('exposes the complete source-backed library and searchable metadata', () =>
 test('filters canonical books by chapter title and only exposes populated categories', () => {
   const categoryNames = getPopulatedCategories(books)
 
-  assert.deepEqual(categoryNames, ['Алхимия души', 'Даосская традиция', 'Традиция Майя'])
+  assert.deepEqual(categoryNames, ['Алхимия души', 'Даосская традиция', 'Традиция Майя', 'Египетская традиция', 'Греческая традиция', 'Римская традиция', 'Зороастризм и Митра'])
   assert.ok(!categoryNames.includes('Несуществующая традиция'))
   assert.deepEqual(
     filterLibraryBooks(books, { query: 'Снежная Королева' }).map((book) => book.id),
@@ -153,11 +161,23 @@ test('points every canonical record to an exact source file and existing cover',
     'source-books/book-3-maya-tradition/outputs/Maya_Calendar_Energies.html',
     'source-books/book-3-maya-tradition/outputs/Maya_Exorcism_Settings_Energies.html',
     'source-books/book-3-maya-tradition/outputs/Maya_Mysteries.html',
+    'source-books/book-4-egyptian-tradition/egypt_osiris_temple_magic.html',
+    'source-books/book-4-egyptian-tradition/egypt_maat_isis_attunements.html',
+    'source-books/book-5-greek-mysteries/greek_temple_attunements.html',
+    'source-books/book-5-greek-mysteries/greek_metaphysics_planning.html',
+    'source-books/book-5-greek-mysteries/greek_dionysus_asclepius_course.html',
+    'source-books/book-6-roman-tradition/roman_imperial_temples.html',
+    'source-books/book-7-zoroastrian-mithra/zoroastrian_notes.html',
+    'source-books/book-7-zoroastrian-mithra/mithra_mysteries.html',
   ]
   const mediaRoots = {
     alchemy: 'source-books/book-1-alchemy-soul/media',
     dao: 'source-books/book-2-dao-books/photos',
     maya: 'source-books/book-3-maya-tradition/raw/photos',
+    egypt: 'public/media/egypt',
+    greek: 'public/media/greek',
+    roman: 'public/media/roman',
+    zoroastrian: 'public/media/zoroastrian',
   }
 
   assert.deepEqual(books.map((book) => book.originalSourceFile), expectedSourceFiles)
@@ -169,6 +189,10 @@ test('points every canonical record to an exact source file and existing cover',
     { Alchemy: 9, Dao: 10, Maya: 4 },
   )
 
+  for (const culture of ['Egypt', 'Greece', 'Rome', 'Zoroastrian']) {
+    assert.ok(books.some((book) => book.culture === culture), `missing restored ${culture} books`)
+  }
+
   for (const book of books) {
     assert.ok(existsSync(book.originalSourceFile), `missing current-worktree source for ${book.id}`)
   }
@@ -177,6 +201,7 @@ test('points every canonical record to an exact source file and existing cover',
   if (!originalCheckout) return
 
   for (const book of books) {
+    if (['egypt', 'greek', 'roman', 'zoroastrian'].includes(book.mediaSeries)) continue
     assert.ok(existsSync(path.join(originalCheckout, book.originalSourceFile)), `missing source for ${book.id}`)
     assert.ok(
       existsSync(path.join(originalCheckout, mediaRoots[book.mediaSeries], book.cover)),

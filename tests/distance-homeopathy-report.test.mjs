@@ -128,7 +128,7 @@ test('report and Alchemy page reuse the same article and private workflow safely
   assert.match(html, /<RemedyContent[\s\S]+expandSupplementary/)
   assert.match(html, /<img src=\{remedy\.primary_image\}/)
   assert.match(html, /<DistanceHomeopathyGuide locale=\{locale\} embedded report \/>/)
-  assert.match(service, /<DistanceHomeopathyGuide locale=\{locale as Locale\} embedded \/>/)
+  assert.match(service, /<DistanceHomeopathyGuide locale=\{locale as PublicLocale\} embedded \/>/)
   assert.match(article, /distanceHomeopathyCopy/)
   assert.match(source, /not supported by reliable clinical evidence/)
 })

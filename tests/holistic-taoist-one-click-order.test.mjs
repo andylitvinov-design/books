@@ -36,7 +36,7 @@ test("Basket holds payment until master approves unpublished price and saves con
  assert.doesNotMatch(cart,/\/api\/payments\/square\/checkout/);
  assert.doesNotMatch(cart,/t\.me\/|api\.telegram\.org|sendMessage|window\.open/);
  assert.match(route,/requireSameOrigin\(request, config\)/);
- assert.match(route,/createPublicServiceEnquiry\(config, payload\)/);
+ assert.match(route,/createPublicServiceEnquiry\(config, payload, readPublicEnquiryAttribution\(request\)\)/);
 });
 test("Generic topic finder and existing master enquiry remain intact",()=>{
  const wizard=read("components/holistic-inline-support-order.tsx");

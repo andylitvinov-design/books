@@ -1,0 +1,24 @@
+[Unit]
+Description=Holistic Native AI authenticated localhost gateway
+After=network-online.target ollama.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=holistic-ai
+Group=holistic-ai
+WorkingDirectory=/srv/holistic-native-runtime
+EnvironmentFile=/etc/holistic-native-runtime.env
+ExecStart=/usr/bin/node /srv/holistic-native-runtime/gateway.mjs
+Restart=on-failure
+RestartSec=3
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+
+[Install]
+WantedBy=multi-user.target

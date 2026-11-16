@@ -60,7 +60,7 @@ export function SpanishBookShowcase({ books }: { books: Book[] }) {
             aria-label={`${copy.title}: abrir ficha en español`}
           >
             <figure className="catalog-cover">
-              <Image alt={`Portada: ${copy.title}`} height={600} width={800} priority={index < 1 && !showFeatured} src={bookCoverArtworkUrl(book.id, `/media/${book.mediaSeries}/${book.cover}`)} unoptimized={hasBookCoverArtwork(book.id)} />
+              <Image alt={`Portada: ${copy.title}`} height={600} width={800} priority={index < 1 && !showFeatured} src={bookCoverArtworkUrl(book.id, `/media/${book.mediaSeries}/${book.cover}`)} unoptimized={hasBookCoverArtwork(book.id) || book.cover.endsWith('.svg')} />
             </figure>
             <div className="catalog-card-body">
               <p className="catalog-card-series"><span>{copy.category}</span><span className="catalog-material-role">{roleLabels[getBookMaterialRole(book.id)]}</span></p>

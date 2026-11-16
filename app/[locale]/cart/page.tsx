@@ -8,6 +8,7 @@ import { wisePaymentsEnabled } from "@/lib/commerce/wise-payments";
 import { configuredSquarePaymentLinks } from "@/lib/commerce/square-payment-links";
 import { getSquareGatewayConfig } from "@/lib/commerce/square-gateway";
 import { configuredPayPalHostedLinks } from "@/lib/commerce/paypal-hosted-links";
+import { configuredIndividualCardLinks } from "@/lib/commerce/card-payment-links";
 import type { ServiceLocale } from "@/lib/commerce/catalog";
 
 type Props = { params: Promise<{ locale: string }> };
@@ -33,6 +34,6 @@ export default async function CartPage({ params }: Props) {
     <PersonalCart locale={locale} paypalEnabled={personalPayPalEnabled()} wiseEnabled={wisePaymentsEnabled()}
       squareLinks={configuredSquarePaymentLinks()} squareApiEnabled={squareGateway.enabled} squareApiEnvironment={squareGateway.environment}
       squareApiPrices={squareGateway.enabled ? squareGateway.prices : {}} verifiedPayPalEnabled={verifiedPayPalCheckout}
-      hostedPayPalLinks={configuredPayPalHostedLinks()} />
+      hostedPayPalLinks={configuredPayPalHostedLinks()} stripeLinks={configuredIndividualCardLinks()} />
   </main>;
 }

@@ -1,4 +1,4 @@
-name: Holistic House Gauntlet offline safety gate
+name: Holistic House Gauntlet free-model safety and contract gate
 
 on:
   pull_request:
@@ -10,22 +10,14 @@ on:
       - 'lib/benchmarking/hh-gauntlet-loop.mjs'
       - 'scripts/benchmarking/hh-gauntlet-loop.mjs'
       - 'tests/hh-gauntlet-loop.test.mjs'
-  push:
-    branches: ['codex/public-book-library']
-    paths:
-      - '.github/workflows/hh-gauntlet-loop.yml'
-      - '.opencode/agents/hh-gauntlet-*.md'
-      - 'lib/benchmarking/hh-gauntlet-loop.mjs'
-      - 'scripts/benchmarking/hh-gauntlet-loop.mjs'
-      - 'tests/hh-gauntlet-loop.test.mjs'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: hh-gauntlet-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: hh-gauntlet-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 
 jobs:
   offline-contract:
@@ -54,4 +46,5 @@ jobs:
         run: |
           npx eslint scripts/benchmarking/hh-gauntlet-loop.mjs lib/benchmarking/hh-gauntlet-loop.mjs tests/hh-gauntlet-loop.test.mjs
           npx tsc --noEmit
-      # No OpenCode CLI, API key, live POST, migrations, deployments or paid calls in CI.
+      # Never invoke a model in the contract job: repeatable, zero-provider baseline.
+

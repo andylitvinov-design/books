@@ -36,11 +36,18 @@ test('all public guide routes reuse current live test-selector and SEO data',()=
   const guide=read('components/topic-growth-guide.tsx')
   assert.match(route,/TopicJourneySelector/)
   assert.match(route,/TopicGrowthGuide theme=\{theme\}/)
-  assert.match(route,/const guide = growthGuideFor\(theme,language\)/)
+  assert.ok(route.includes("const isDirection = ['energy','love','business'].includes(theme)"));
+  assert.match(route,/<DirectionOffers locale=/);
+  assert.match(route,/<GoalSupportOffers locale=/);
+  assert.match(route,/<DirectionExtras locale=/);
+  assert.ok(route.includes("growthGuideFor(theme === 'love' ? 'relationships' : theme,language)"));
   assert.match(sitemap,/TOPIC_JOURNEYS\.map\(journey =>/)
   assert.match(sitemap,/\['en','ru','es'\] as const/)
   assert.match(library,/growthFeed/)
-  assert.match(library,/growthGuideFor\(theme,locale\)/)
+  // The library now maps approved MyTube taxonomy categories to the public
+  // guide route, translating the Love route to the canonical relationships key.
+  assert.match(library,/const guideKey=route==="love"\?"relationships":route/);
+  assert.match(library,/growthGuideFor\(guideKey,locale\)/)
   assert.match(guide,/id="hh-topic-growth-guide"/)
   assert.match(guide,/href="#hh-topic-selection-heading"/)
   assert.match(guide,/courses\/antistress/)

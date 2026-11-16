@@ -1,0 +1,6 @@
+.card{display:grid;gap:10px;padding:clamp(14px,3vw,20px);border:1px solid #c9dfd5;border-radius:16px;background:#f5faf7;color:#24474a}
+.card h2,.card p{margin:0}.card p,.result li{line-height:1.5}.card>p{font-size:13px}
+.button{justify-self:start;min-height:44px;border:0;border-radius:10px;padding:10px 15px;background:#156172;color:#fff;font-weight:700;cursor:pointer}
+.button:disabled{opacity:.6;cursor:wait}.button:focus-visible{outline:3px solid #0ba7ac;outline-offset:2px}
+.result{display:grid;gap:10px;overflow-wrap:anywhere}.result p,.result ul{margin:4px 0 0}.result small{color:#526e6b}.error{color:#8a1f2d;font-weight:700}
+.review{display:grid;gap:12px}.review label{display:grid;gap:5px;line-height:1.5}.review label:has(input){display:block}.review select{min-height:44px;max-width:100%;padding:8px;border:1px solid #86aaa2;border-radius:8px;background:#fff;color:#24474a}.review input{width:18px;height:18px;vertical-align:middle}

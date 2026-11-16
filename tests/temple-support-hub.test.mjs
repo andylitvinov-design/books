@@ -117,7 +117,8 @@ test("independent Temple Insights keeps its own diagnostic CTA and natural sceni
   const ideas = read("components/ideas-discovery.tsx");
   const scenic = read("components/ideas-discovery.module.css");
   assert.ok(ideas.includes('variant === "temple" ? <Link'));
-  assert.ok(ideas.includes('href={"/" + locale + "/coaching#free-diagnostic-start"}'));
+  assert.ok(ideas.includes('const coachingHref = "/" + locale + "/coaching/sessions"'));
+  assert.ok(ideas.includes('href={coachingHref}'), "Temple diagnosis CTA follows the free coaching-session route");
   assert.ok(ideas.includes("data-ideas-personal-diagnostic"));
   assert.ok(ideas.includes("data-ideas-free-test"));
   assert.ok(ideas.includes('const HeadingTag = variant === "temple" || daoFocused ? "h2" : "h1"'));
@@ -155,7 +156,7 @@ test("Coaching Lounge owns the former scenic first screen and exactly three dist
   assert.match(entry, /formatOptions=\{t\.formats\}/);
   assert.match(entry, /30 min · €50/);
   assert.match(entry, /60 min · €100/);
-  assert.match(ideas, /coaching#free-diagnostic-start/);
+  assert.match(ideas, /const coachingHref = "\/" \+ locale \+ "\/coaching\/sessions"/);
   assert.match(layout, /@media\(max-width:600px\)/);
   assert.match(layout, /@media\(max-width:350px\)/);
   assert.match(layout, /min-height:44px/);

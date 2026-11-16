@@ -73,6 +73,27 @@ try {
         // Wait for the real client hydration gate before the first touch action.
         await page.locator('[data-mentor-community][data-community-hydrated="true"]')
           .waitFor({ state: "visible", timeout: 30000 });
+        const modes = page.locator("[data-master-mode-switch]");
+        await modes.waitFor({ state: "visible" });
+        assert.equal(await modes.locator("a").count(), 2, label + ": two real master destinations");
+        assert.equal(await modes.locator('[data-master-mode="find"]').getAttribute("aria-current"),
+          "page", label + ": public finder is selected");
+        assert.equal(await modes.locator('[data-master-mode="share"]').getAttribute("href"),
+          "/" + locale + "/practice", label + ": existing practitioner workspace");
+        await assertTouchSize(modes.locator('[data-master-mode="find"]'), label + " find switch");
+        await assertTouchSize(modes.locator('[data-master-mode="share"]'), label + " share switch");
+        // Human /masters remains a distinct reviewed directory. The shared
+        // seven-tab dock links to AI My Coach, which must NOT be selected here.
+        const dock = page.locator('[data-hh-unified-dock]');
+        await dock.waitFor({ state: "visible" });
+        assert.equal(await dock.locator('[data-unified-dock-item]').count(), 7,
+          label + ": canonical seven-item navigation");
+        const coachDock = dock.locator('[data-unified-dock-item="coach"]');
+        await coachDock.waitFor({ state: "visible" });
+        assert.equal(await coachDock.getAttribute("href"), "/" + locale + "/my-coach",
+          label + ": AI coach link remains separate from human directory");
+        assert.equal(await coachDock.getAttribute("aria-current"), null,
+          label + ": human practitioner directory never impersonates AI coach selection");
         const mentorTab = page.locator("#mentor-community-tab-mentors");
         const articleTab = page.locator("#mentor-community-tab-articles");
         const mentorPanel = page.locator("#mentor-community-panel-mentors");
@@ -308,6 +329,21 @@ try {
           await page.locator("#mentor-community-tab-mentors").tap();
           assert.equal(await page.locator("#mentor-community-tab-mentors").getAttribute("aria-selected"), "true",
             label + ": user can return from article link to filters");
+        }
+        if (width === 390 && phase === "populated") {
+          await modes.locator('[data-master-mode="share"]').tap();
+          await page.waitForURL(url => url.pathname === "/" + locale + "/practice",
+            { timeout: 30000 });
+          await page.locator('[data-practice-showcase]').waitFor({ state: "visible" });
+          await page.locator('[data-master-mode="share"][aria-current="page"]')
+            .waitFor({ state: "visible" });
+          await noHorizontalOverflow(page, label + " practice destination");
+          await page.locator('[data-master-mode="find"]').tap();
+          await page.waitForURL(url => url.pathname === "/" + locale + "/masters",
+            { timeout: 30000 });
+          await page.locator('[data-mentor-community]').waitFor({ state: "visible" });
+          await page.locator('[data-master-mode="find"][aria-current="page"]')
+            .waitFor({ state: "visible" });
         }
         assert.deepEqual(errors, [], label + ": unexpected page exceptions");
         results.push({ engine: engineName, locale, width, phase, passed: true });

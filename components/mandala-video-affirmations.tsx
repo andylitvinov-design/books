@@ -71,13 +71,14 @@ const frequencyChoices: AffirmationFrequency[] = [1, 2, 3];
 const visibilityChoices: AffirmationVisibility[] = ["small", "large", "frame"];
 
 export function MandalaVideoAffirmations({
-  locale, theme, settings, onChange, disabled = false,
+  locale, theme, settings, onChange, disabled = false, onTestPersonalization,
 }: {
   locale: VideoLocale;
   theme: VideoTheme;
   settings: AffirmationSettings;
   onChange: (next: AffirmationSettings) => void;
   disabled?: boolean;
+  onTestPersonalization?: () => void;
 }) {
   const ui = text[locale];
   const [selectionMethod,setSelectionMethod] = useState<"manual"|"tests">("manual");
@@ -129,7 +130,7 @@ export function MandalaVideoAffirmations({
 
       <MandalaPersonalAffirmations locale={locale} theme={theme} settings={settings}
         onChange={onChange} disabled={disabled} selectionMethod={selectionMethod}
-        onManualSelect={chooseManual} onTestsSelected={()=>setSelectionMethod("tests")}/>
+        onManualSelect={chooseManual} onTestsSelected={()=>{setSelectionMethod("tests");onTestPersonalization?.();}}/>
 
       <fieldset id="video-hypno-manual" className={css.controls} disabled={disabled}>
         <legend className={css.sectionLabel}>

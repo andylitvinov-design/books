@@ -1,0 +1,16 @@
+.assistant{display:grid;gap:8px;border:1px solid #635582;background:#211f37;border-radius:14px;padding:11px;min-width:0}
+.heading{font-size:14px;color:#e9d9ff;letter-spacing:-.015em}
+.assistant label{font-size:12px;font-weight:700;color:#d6d2e8}
+.assistant textarea{font:inherit;width:100%;max-width:100%;min-height:65px;max-height:160px;resize:vertical;
+ border:1px solid #625875;border-radius:10px;background:#171b2b;color:#fff;padding:9px 11px;font-size:14px}
+.disclosure{color:#bdb4d4;font-size:11px;line-height:1.45}
+.prepare{border:1px solid #a88de3;border-radius:11px;background:#47346f;color:#fff;
+ min-height:45px;padding:9px 13px;font-size:13px;font-weight:760;cursor:pointer}
+.prepare:disabled{opacity:.5;cursor:not-allowed}
+.assistant :is(textarea,button):focus-visible{outline:3px solid #cfacf6;outline-offset:2px}
+.result{border:1px solid #8974b0;border-radius:11px;padding:10px;background:#302b45;color:#f4eaff;
+ font-size:12px;overflow-wrap:anywhere}
+.result p{margin:6px 0;line-height:1.45}
+.result small{color:#d2c2e2}
+.error{margin:0;color:#ffccbc;font-size:12px}
+@media(prefers-reduced-motion:reduce){.assistant *{transition:none!important}}

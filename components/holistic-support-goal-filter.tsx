@@ -8,7 +8,7 @@ import styles from "./holistic-support-goal-filter.module.css";
 
 export type GoalSector = "energy" | "money" | "love" | "meaning";
 export type GoalCheckinKey = "energy" | "money" | "relationships" | "meaning";
-// One Meaning check-in also covers purpose, direction and personal goals.
+// The Confidence check-in also covers inner harmony, resilience, purpose and goals.
 export const goalSectorCheckinKey: Record<GoalSector, GoalCheckinKey> = {
   energy: "energy", money: "money", love: "relationships", meaning: "meaning",
 };
@@ -127,50 +127,44 @@ const sectors: Record<GoalSector, Items> = {
     ],
   },
   meaning: {
+    // Keep established IDs: previously chosen goals and published recommendation mappings stay valid.
+    // Reorder and explain this area as confidence, calm, stability, harmony and self-realization.
     concerns: [
-      // Original Meaning topics come first; former Goals questions follow.
-      make("emptiness", "Emptiness", "Пустота", "Vacío"),
-      make("lostPurpose", "Lack of purpose", "Нет смысла", "Falta de sentido"),
-      make("valueConflict", "Conflicting values", "Конфликт ценностей", "Valores en conflicto"),
-      make("noInspiration", "No inspiration", "Нет вдохновения", "Sin inspiración"),
-      make("uncertainty", "Uncertainty", "Неопределённость", "Incertidumbre"),
-      make("littleSpace", "No time for myself", "Нет времени для себя", "Sin tiempo para mí"),
-
-      // The former Goals problems now belong to Meaning and direction.
-      make("stuck", "Feeling stuck", "Застой", "Estancamiento"),
-      make("distraction", "Distraction", "Рассеянность", "Distracción"),
-      make("procrastination", "Putting it off", "Откладывание", "Postergación"),
-      make("fear", "Fear of failure", "Страх неудачи", "Miedo al fracaso"),
-      make("tooMany", "Too many demands", "Слишком много задач", "Demasiadas tareas"),
-      make("unclearGoals", "Unclear goal", "Нет ясной цели", "Meta poco clara"),
+      make("tooMany", "Stress and overload", "Стресс и перегрузка", "Estrés y sobrecarga"),
+      make("fear", "Self-doubt and fear of failure", "Сомнения в себе, страх ошибки", "Dudas sobre mí y miedo a fallar"),
+      make("uncertainty", "Feeling unstable", "Нет чувства стабильности", "Falta de estabilidad"),
+      make("valueConflict", "Inner conflict", "Внутренний конфликт", "Conflicto interior"),
+      make("emptiness", "Loss of meaning", "Потеря смысла", "Pérdida de sentido"),
+      make("unclearGoals", "Unclear goals", "Нет ясных целей", "Metas poco claras"),
+      make("littleSpace", "No time for myself", "Нет времени на себя", "Sin tiempo para mí"),
+      make("stuck", "Feeling stuck in life", "Застой в развитии", "Estancamiento personal"),
+      make("distraction", "Stress disrupts focus", "Тревога мешает сосредоточиться", "El estrés dificulta concentrarme"),
+      make("procrastination", "Putting off what matters", "Откладываю важное", "Pospongo lo importante"),
+      make("lostPurpose", "No sense of direction", "Нет направления в жизни", "Falta de rumbo"),
+      make("noInspiration", "Lack of inspiration", "Нет вдохновения", "Falta de inspiración"),
     ],
     tasks: [
-      // Start with purpose and values; keep every former Goals action.
-      make("purpose", "Explore purpose", "Найти смысл", "Encontrar sentido"),
-      make("innerContact", "Reconnect with self", "Контакт с собой", "Reconectar conmigo"),
-      make("creativity", "Create", "Творить", "Crear"),
-      make("quiet", "Inner quiet", "Внутренняя тишина", "Paz interior"),
-      make("values", "Clarify values", "Прояснить ценности", "Aclarar valores"),
-      make("inspiration", "Feel inspired", "Вдохновение", "Inspiración"),
-
-      // Preserve Goal actions and motivation alongside values and purpose.
-      make("direction", "Find direction", "Найти направление", "Encontrar rumbo"),
-      make("nextStep", "Take the next step", "Сделать шаг", "Dar el siguiente paso"),
-      make("habits", "Build a habit", "Создать привычку", "Crear un hábito"),
-      make("courage", "Feel courageous", "Стать смелее", "Ganar valentía"),
-      make("priorities", "Set priorities", "Выбрать главное", "Priorizar"),
-      make("motivation", "Find motivation", "Найти мотивацию", "Motivarme"),
+      make("quiet", "Feel calmer under stress", "Спокойнее справляться со стрессом", "Afrontar el estrés con más calma"),
+      make("courage", "Build self-confidence", "Укрепить уверенность", "Fortalecer mi confianza"),
+      make("innerContact", "Build inner stability", "Обрести внутреннюю опору", "Encontrar estabilidad interior"),
+      make("values", "Find inner harmony", "Найти гармонию с собой", "Encontrar armonía interior"),
+      make("purpose", "Explore what gives life meaning", "Найти смысл", "Encontrar sentido"),
+      make("direction", "Clarify my direction", "Определить своё направление", "Aclarar mi rumbo"),
+      make("nextStep", "Take a step toward my goals", "Сделать шаг к цели", "Dar un paso hacia mis metas"),
+      make("motivation", "Realize my potential", "Реализовать свой потенциал", "Desarrollar mi potencial"),
+      make("habits", "Build steady habits", "Создать устойчивые привычки", "Crear hábitos estables"),
+      make("priorities", "Set healthy priorities", "Расставить приоритеты", "Definir prioridades"),
+      make("creativity", "Express myself", "Проявлять себя", "Expresarme"),
+      make("inspiration", "Find inspiration", "Вернуть вдохновение", "Recuperar inspiración"),
     ],
     axes: [
-      // Overall Meaning score aligns with the first Meaning indicator.
-      axis("meaningAxis", "Meaning in life", "Осмысленность", "Sentido de vida"),
-      axis("selfContact", "Connection with self", "Контакт с собой", "Conexión interior"),
-      axis("inspirationAxis", "Inspiration", "Вдохновение", "Inspiración"),
-
-      // The former Goals measures stay independent and editable within Meaning.
-      axis("goalClarity", "Goal clarity", "Ясность цели", "Claridad de metas"),
-      axis("actions", "Consistent action", "Реальные действия", "Acciones concretas"),
-      axis("progress", "Progress", "Ощущение прогресса", "Sensación de avance"),
+      // First measure mirrors the top-left Confidence check-in (higher = better).
+      axis("meaningAxis", "Self-confidence", "Уверенность в себе", "Confianza en mí"),
+      axis("selfContact", "Inner stability", "Внутренняя устойчивость", "Estabilidad interior"),
+      axis("inspirationAxis", "Calm and harmony", "Спокойствие и гармония", "Calma y armonía"),
+      axis("goalClarity", "Meaning and goal clarity", "Смыслы и ясность целей", "Sentido y claridad de metas"),
+      axis("actions", "Self-realization", "Самореализация", "Autorrealización"),
+      axis("progress", "Ability to manage stress", "Умение справляться со стрессом", "Capacidad para gestionar el estrés"),
     ],
   },
 };
@@ -194,7 +188,7 @@ const ui = {
       healing: "Reiki & energy support", masters: "Masters",
       initiations: "Initiations", mandala: "Video mandalas",
     },
-    labels: { energy: "Body & energy", money: "Money & work", love: "Love & connection", meaning: "Meaning" },
+    labels: { energy: "Body & energy", money: "Money & work", love: "Love & connection", meaning: "Confidence & harmony" },
   },
   ru: {
     title: "Фильтр целей и задач", sector: "Сфера жизни", current: "1. Что сейчас беспокоит?",
@@ -215,7 +209,7 @@ const ui = {
       healing: "Рейки и энергоподдержка", masters: "Мастера",
       initiations: "Инициации", mandala: "Видеомандалы",
     },
-    labels: { energy: "Энергия и тело", money: "Деньги", love: "Любовь и отношения", meaning: "Смыслы" },
+    labels: { energy: "Тело и энергия", money: "Деньги", love: "Любовь и отношения", meaning: "Уверенность и гармония" },
   },
   es: {
     title: "Filtro de metas y tareas", sector: "Área de vida", current: "1. ¿Qué te preocupa?",
@@ -236,7 +230,7 @@ const ui = {
       healing: "Reiki y apoyo energético", masters: "Guías",
       initiations: "Iniciaciones", mandala: "Mandala en vídeo",
     },
-    labels: { energy: "Cuerpo y energía", money: "Dinero y trabajo", love: "Amor y vínculos", meaning: "Sentido" },
+    labels: { energy: "Cuerpo y energía", money: "Dinero y trabajo", love: "Amor y vínculos", meaning: "Confianza y armonía" },
   },
 } as const;
 
@@ -498,8 +492,10 @@ export function HolisticSupportGoalFilter({
       <footer className={styles.actions} data-support-goal-actions>
         <div className={styles.categoryActions} data-support-goal-category-actions>
           <button type="button" className={styles.save} data-support-goal-save
+            onMouseDown={event=>event.preventDefault()}
             onClick={saveCurrent}><Check size={19} aria-hidden="true" />{t.save}</button>
           <button type="button" className={styles.next} data-support-goal-next
+            onMouseDown={event=>event.preventDefault()}
             onClick={nextSector}>{t.next}<ArrowRight size={18} aria-hidden="true" /></button>
         </div>
         <fieldset className={styles.formatFieldset} data-support-goal-formats>

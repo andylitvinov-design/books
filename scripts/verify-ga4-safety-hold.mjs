@@ -19,9 +19,9 @@ const bundleChecks = bundles.map(path => {
   // Webpack can retain dormant code behind an imported false constant. Merely
   // finding a URL in JS is not a network attempt. Execute these exact bundles
   // below and require zero tag/queue/network activity under the safety hold.
-  return { file: path.split("/.next/")[1], sha256: createHash("sha256").update(source).digest("hex"), dormantLoaderTextPresent: source.includes("www.googletagmanager.com/gtag/js"), holdCopyPresent: source.includes("Analytics is temporarily unavailable") };
+  return { file: path.split("/.next/")[1], sha256: createHash("sha256").update(source).digest("hex"), dormantLoaderTextPresent: source.includes("www.googletagmanager.com/gtag/js"), holdCopyPresent: source.includes("Google Analytics remains disabled") };
 });
-assert.ok(bundleChecks.some(bundle => bundle.holdCopyPresent), "generated client bundle includes the temporary-hold UI");
+assert.ok(bundleChecks.some(bundle => bundle.holdCopyPresent), "generated client bundle includes explicit Google Analytics disabled copy");
 const browser = await chromium.launch({ headless: true, proxy: { server: "http://127.0.0.1:9" }, args: ["--disable-background-networking", "--disable-component-update", "--disable-sync", "--no-first-run"] });
 const context = await browser.newContext({ serviceWorkers: "block" });
 let page;
@@ -51,8 +51,8 @@ try {
   page = await context.newPage();
   page.on("pageerror", error => failures.push(error.message));
   await page.goto(origin + "/privacy?synthetic=SYNTHETIC_QUERY");
-  await page.getByText("Analytics is temporarily unavailable", { exact: false }).waitFor();
-  assert.equal(await page.getByRole("button", { name: "Allow analytics", exact: true }).isDisabled(), true);
+  await page.getByText("Google Analytics remains disabled", { exact: false }).waitFor();
+  assert.equal(await page.getByRole("button", { name: "Allow Google Analytics (not yet available)", exact: true }).isDisabled(), true);
   async function check(label, expectedPreference = "granted") {
     await page.waitForTimeout(1000);
     const state = await page.evaluate(() => ({ gtagPresent: typeof window.gtag === "function", queuePresent: window.dataLayer !== undefined, sdkScripts: document.querySelectorAll('script[src*="googletagmanager"],script#holistic-house-google-tag').length, dataset: document.documentElement.dataset.analyticsConsent }));
@@ -72,7 +72,7 @@ try {
     window.dispatchEvent(new Event("holistic-house:analytics-consent"));
   });
   await check("synthetic-lifecycle-and-acquisition");
-  await page.getByRole("button", { name: "Keep analytics off", exact: true }).click();
+  await page.getByRole("button", { name: "Keep Google Analytics off", exact: true }).click();
   await check("explicit-withdrawal", "denied");
   // This is a synthetic navigation to a local fixture response, not production.
   await page.goto(origin + "/en/app/SYNTHETIC_PRIVATE_ROUTE");

@@ -12,6 +12,11 @@ for(const name of ['hh-course-presets','hh-energywork-ai','practitioner-presenta
    : 'app/api/app/\\[...path\\]/route.js'
  assert.ok(patterns.includes(expected), 'Literal Next route must remain in the trigger')
  assert.ok(patterns.every(pattern=>!/(?<!\\)[\[\]]/.test(pattern)), 'No unescaped Next directory brackets')
+ if(['hh-course-presets','hh-cabinet-journey'].includes(name)) {
+  assert.ok(patterns.includes('app/api/app/*/route.js'), 'BASE reader needs a narrow one-segment route')
+  for(const excluded of ['direct-messages','practitioner-client-messages','notification-channels'])
+   assert.ok(source.includes("      - '!app/api/app/"+excluded+"/**'"), 'exclude unrelated Messenger API: '+excluded)
+ }
  const api=patterns.find(p=>p.includes('...path'))
  assert.equal(api.replaceAll('\\[','[').replaceAll('\\]',']'), name === 'holistic-house-mobile-install'
    ? 'app/[locale]/app/[[...path]]/page.jsx' : 'app/api/app/[...path]/route.js')
@@ -34,3 +39,18 @@ test('mobile install keeps literal locale and optional route matching in both PR
  }
  assert.match(push,/branches:\s*\n\s+- codex\/public-book-library/)
 })
+
+
+test('course and cabinet use owning API paths, not the shared Messenger catch-all', () => {
+  const course = read('hh-course-presets');
+  const cabinet = read('hh-cabinet-journey');
+  for (const [name, source, expected] of [
+    ['Course Presets', course, "'app/api/app/course/**'"],
+    ['Cabinet Journey', cabinet, "'app/api/app/cabinet/**'"],
+  ]) {
+    assert.ok(source.includes(expected), name + ' must keep its API owner scope');
+    assert.ok(source.includes("'app/api/app/\\[...path\\]/route.js'"), name + ' must retain the exact shared API dispatcher safety impact');
+    assert.match(source, /permissions:\s*\n\s+contents: read/);
+    assert.doesNotMatch(source, /continue-on-error:\s*true/);
+  }
+});

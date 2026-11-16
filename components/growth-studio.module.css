@@ -2,7 +2,7 @@
   --ink:#18323b;--muted:#536e77;--teal:#087d86;--soft:#eef9f7;--line:#dce8e6;
   width:min(100%,1220px);margin:18px auto 56px;padding:clamp(12px,2.4vw,26px);
   border:1px solid var(--line);border-radius:26px;
-  background:linear-gradient(140deg,#f7fbfa 0%,#fff 52%,#f8faf8 100%);
+  background:linear-gradient(140deg,var(--hh-light-canvas) 0%,var(--hh-light-surface) 52%,#f8efdf 100%);
   color:var(--ink);box-shadow:0 14px 50px rgba(10,57,65,.08);
   box-sizing:border-box
 }

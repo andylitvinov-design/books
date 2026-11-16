@@ -1,6 +1,6 @@
 .root {
   --teal: #077c89; --deep: #123e4b; --ink: #143947; --muted: #54707b;
-  min-height: 100vh; background: #f7fbfc; color: var(--ink);
+  min-height: 100vh; background: var(--hh-light-canvas); color: var(--ink);
   font-family: Arial, Helvetica, sans-serif; overflow: clip;
 }
 .root * { box-sizing: border-box; }
@@ -132,7 +132,7 @@
 
 /* Oct 14, 2026: mobile-first public course journey. Overrides preserve the
    existing public header, API entry routes and design tokens. */
-.root { --teal: #0099ac; --deep: #16334f; --ink: #163b4c; --muted: #5b7e8b; background:#f4fafc; }
+.root { --teal: #0099ac; --deep: #16334f; --ink: #163b4c; --muted: #5b7e8b; background:var(--hh-light-canvas); }
 .hero { max-width:1160px; grid-template-columns:minmax(0,1fr) minmax(0,.82fr); gap:24px; padding:35px clamp(24px,4vw,48px); border-radius:27px;
   background:linear-gradient(118deg,#e8f9fb 0%,#d6f6f2 55%,#c1eded 100%); }
 .kicker { margin-bottom:13px; font-size:11px; color:#007f94; letter-spacing:.09em; }
