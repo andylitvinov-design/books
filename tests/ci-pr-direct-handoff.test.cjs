@@ -130,3 +130,20 @@ test('failed Core still has a separately authenticated repair bridge and exact-H
  assert.match(direct,/HH zero-cost PR CI worker/);
  assert.match(direct,/needs: reconcile/);
 });
+test('watchdog-only exact diff retains CI/repair checks but skips unrelated dashboard suites',()=>{
+ const contract=fs.readFileSync('.github/workflows/hh-pr-watchdog-contract-ci.yml','utf8');
+ assert.ok(contract.includes('id: control_scope'));
+ assert.ok(contract.includes('git rev-parse HEAD^2'));
+ assert.ok(contract.includes('git diff --no-renames --name-status HEAD^1 HEAD'));
+ assert.ok(contract.includes('route=FULL'));
+ assert.ok(contract.includes('route=CONTROL_ONLY'));
+ for(const path of [
+  'M:.github/workflows/hh-pr-ten-minute-watchdog.yml',
+  'M:.github/workflows/hh-pr-watchdog-contract-ci.yml',
+  'M:tests/ci-pr-direct-handoff.test.cjs'
+ ])assert.ok(contract.includes(path));
+ assert.equal(contract.split("if: ${{ steps.control_scope.outputs.route != 'CONTROL_ONLY' }}").length-1,13);
+ assert.ok(contract.includes('      - name: Watchdog decision contracts\n        run:'));
+ assert.ok(contract.includes('      - name: Hermes CI event bridge and private inbox contracts\n        run:'));
+ assert.ok(contract.includes('      - name: Syntax-check trusted watchdog and tests\n        run:'));
+});
