@@ -4,7 +4,7 @@ import {forwardRef,useEffect,useImperativeHandle,useRef,useState} from 'react'
 import {Mic,Play,Volume2} from 'lucide-react'
 import styles from './my-coach-speech-loop.module.css'
 import {appendSpokenAnswer} from '@/lib/personal-coaching/speech-text.js'
-import {chooseDictationLanguage,readDictationResults,detectedSpeechLocale,ios27NeedsSpeechRecovery,hasCoachSpokenAnswer} from '@/lib/personal-coaching/my-coach-dictation.mjs'
+import {chooseDictationLanguage,coachSpokenTurnLocale,readDictationResults,detectedSpeechLocale,ios27NeedsSpeechRecovery,hasCoachSpokenAnswer} from '@/lib/personal-coaching/my-coach-dictation.mjs'
 import {startCoachingMp3Playback,primeCoachingAudioGesture,unlockCoachingAudioContext,shouldUseCoachingWebAudio} from '@/lib/personal-coaching/streamed-mp3-playback.mjs'
 import {coachSpokenText} from '@/lib/coaching/coach-spoken-text.mjs'
 import {coachIntroAudioPath,startDirectCoachIntroAudio} from '@/lib/personal-coaching/direct-coach-intro-audio.mjs'
@@ -51,6 +51,12 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   // state on each turn; a closure over Play-time props can silence turn two.
   const voiceConfigRef=useRef({cloudAgreed,cloudAvailable,cloudProvider})
   voiceConfigRef.current={cloudAgreed,cloudAvailable,cloudProvider}
+  // Read the CURRENT dropdown on every recognizer turn, not the first Play render.
+  const speechLocaleRef=useRef(speechLocale)
+  speechLocaleRef.current=speechLocale
+  const priorSpeechLocaleRef=useRef(speechLocale)
+  const selectionAtRecognitionRef=useRef(speechLocale)
+  const recognizedLanguageRef=useRef('en-GB')
   // A provider change must cancel only the in-flight TTS, not the voice session.
   const providerUnavailableRef=useRef(null)
   const cloudControllerRef=useRef(null)
@@ -250,6 +256,19 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       providerUnavailableRef.current?.()
   },[cloudAgreed,cloudAvailable])
 
+  // Switching RU/EN mid-session needs no second Play. Never abort iOS speech
+  // that has already produced words: wait for its natural onend instead.
+  useEffect(()=>{
+    if(priorSpeechLocaleRef.current===speechLocale)return
+    priorSpeechLocaleRef.current=speechLocale
+    if(!activeRef.current)return
+    const recognition=recognitionRef.current
+    if(!recognition||!['starting','listening'].includes(phaseRef.current))return
+    if(heardRef.current.trim())return
+    retryAttemptsRef.current=0
+    restartSilentRecognition(recognition)
+  },[speechLocale])
+
   // If Web Speech ends without words, transparently try a fresh recognizer.
   // Retries are bounded; permission and network failures remain visible.
   function restartSilentRecognition(recognition){
@@ -277,9 +296,11 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     if(!Recognition){setSupported(false);stopVoice();setNotice(t.unsupported);return}
     const recognition=new Recognition()
     recognitionRef.current=recognition
-    recognition.lang=chooseDictationLanguage({locale:lang,selection:speechLocale,
+    selectionAtRecognitionRef.current=speechLocaleRef.current
+    recognition.lang=chooseDictationLanguage({locale:lang,selection:selectionAtRecognitionRef.current,
       browserLanguages:window.navigator.languages?.length?window.navigator.languages:[window.navigator.language],
       lastTranscript:lastHeardRef.current})
+    recognizedLanguageRef.current=recognition.lang
     recognition.continuous=false
     recognition.interimResults=true
     recognition.maxAlternatives=1
@@ -458,8 +479,13 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     setNotice('') // Clear the old user transcript before coach speech.
     changePhase('thinking')
     let result
-    try{result=await turnRef.current?.(text)}
-    catch{result=null}
+    try{
+      const utteranceLocale=coachSpokenTurnLocale({
+        selection:selectionAtRecognitionRef.current,
+        recognizedLanguage:recognizedLanguageRef.current,transcript:text,fallback:lang,
+      })
+      result=await turnRef.current?.(text,{locale:utteranceLocale})
+    }catch{result=null}
     if(!activeRef.current||generationRef.current!==generation)return
     if(!result?.reply){
       // A model outage fails only this turn. Keep the text editable and the

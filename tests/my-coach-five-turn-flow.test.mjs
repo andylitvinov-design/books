@@ -6,7 +6,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {runInNewContext} from 'node:vm'
-import {chooseDictationLanguage,detectedSpeechLocale,ios27NeedsSpeechRecovery,
+import {chooseDictationLanguage,detectedSpeechLocale,coachSpokenTurnLocale,ios27NeedsSpeechRecovery,
   readDictationResults,hasCoachSpokenAnswer} from '../lib/personal-coaching/my-coach-dictation.mjs'
 import {appendSpokenAnswer} from '../lib/personal-coaching/speech-text.js'
 
@@ -56,7 +56,7 @@ function createSession({ttsFailures=[],respond}={}){
   const sandbox={
     ...hooks,window:fakeWindow,document:fakeDocument,
     setTimeout:schedule,clearTimeout:cancel,queueMicrotask,AbortController,
-    chooseDictationLanguage,detectedSpeechLocale,ios27NeedsSpeechRecovery,
+    chooseDictationLanguage,detectedSpeechLocale,coachSpokenTurnLocale,ios27NeedsSpeechRecovery,
     readDictationResults,appendSpokenAnswer,hasCoachSpokenAnswer,
     coachSpokenText:text=>({text}),
     coachIntroAudioPath:(persona,locale)=>'/api/coaching/intro/'+locale+'/'+persona,
@@ -85,7 +85,7 @@ function createSession({ttsFailures=[],respond}={}){
     cloudAvailable:true,cloudAgreed:true,cloudProvider:'fish_free',
     personaId:'mira',introduction:'Здравствуйте! Я Мира.',
     onSessionStart:()=>{starts++},
-    onTurn:async text=>{inputs.push(text);return reply(text,inputs.length)},
+    onTurn:async (text,spoken)=>{assert.equal(spoken?.locale,'ru','manual RU remains authoritative for synthetic turns');inputs.push(text);return reply(text,inputs.length)},
     onCancelTurn(){},onVoiceStateChange:state=>phases.push(state.phase),
     onVoiceLevel(){},onTranscript(){},onDraft(){},
   },ref)
