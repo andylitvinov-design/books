@@ -200,7 +200,71 @@ function compareCIHistory(d,hours){
  });
  return {hours,periods,rows};
 }
-const publicHelpers={activity,speed,compactRecords,strictCohort,compareCIHistory,delay,number,SCHEMAS,URLS,periodSummary,activeCI,openBacklog};
+
+const NAMED_WEEKLY_CI_JOBS=[
+ ['core','Core CI job · P50'],
+ ['specialist','Specialist CI job · P50'],
+ ['merge_gate','Merge Gate job · P50']
+];
+const WEEKLY_STAGE_LABELS=[
+ ['before_unknown','Created → первая сохранённая CI · причина неизвестна'],
+ ['workflow_wait','Workflow → создание CI jobs'],
+ ['runner_wait','Ожидание runner · по job timestamps'],
+ ['checks','Выполнение сохранённых CI jobs'],
+ ['ci_wave_unknown','Между CI-волнами · неизвестно'],
+ ['ci_other_unknown','Прочие неизвестные паузы CI'],
+ ['after_unknown','Последняя сохранённая CI → Merge · неизвестно'],
+ ['no_archive_unknown','PR без сопоставимого архива CI']
+];
+const quantSafe=x=>typeof x==='number'&&Number.isFinite(x)&&x>=0;
+function compareStrictWeekly(d,hours){
+ if(![1,6,24].includes(hours)||d?.schema!=='HH_PR_CREATED_MERGED_WEEKLY_V1'||
+   d.period_hours!==hours||d.timezone!=='America/Toronto'||
+   d.base!=='codex/public-book-library'||
+   d.comparison_basis!=='CREATED_AND_MERGED_WITHIN_EACH_MATCHING_WINDOW'||
+   !Array.isArray(d.periods))throw Error('STRICT_WEEKLY_SCHEMA');
+ const periods={};
+ for(const id of ['current','week_ago']){
+  const p=d.periods.find(x=>x?.id===id),from=Date.parse(p?.from),to=Date.parse(p?.to);
+  if(!p||!Number.isFinite(from)||!Number.isFinite(to)||
+    Math.abs(to-from-hours*3600000)>1000||p.coverage?.search_complete!==true||
+    !safeInt(p.created_prs)||!safeInt(p.merged_prs)||p.merged_prs>p.created_prs||
+    !safeInt(p.not_merged_in_window)||p.created_prs-p.merged_prs!==p.not_merged_in_window||
+    !safeInt(p.coverage.ci_matched_prs)||!safeInt(p.coverage.ci_missing_prs)||
+    !safeInt(p.coverage.ci_invalid_prs)||
+    p.coverage.ci_matched_prs+p.coverage.ci_missing_prs+p.coverage.ci_invalid_prs!==p.merged_prs||
+    (p.merged_prs>0&&(!quantSafe(p.mean_minutes)||!quantSafe(p.p50_minutes)))||
+    !p.stages)throw Error('STRICT_WEEKLY_UNVERIFIED_'+id);
+  let sum=0;
+  for(const [key] of WEEKLY_STAGE_LABELS){
+   const s=p.stages[key];
+   if(!s||!safeInt(s.measured_prs)||s.measured_prs>p.merged_prs||
+     (p.merged_prs>0&&!quantSafe(s.mean_contribution_minutes))||
+     (s.measured_prs>0&&!quantSafe(s.p50_measured_minutes)))throw Error('STRICT_WEEKLY_STAGE_'+key);
+   if(p.merged_prs>0)sum+=s.mean_contribution_minutes;
+  }
+  // Eight stages rounded to 0.01 minute each; allow their sum to differ by <= 0.06.
+  if(p.merged_prs>0&&Math.abs(sum-p.mean_minutes)>0.06)throw Error('STRICT_WEEKLY_NOT_ADDITIVE');
+  for(const [key] of NAMED_WEEKLY_CI_JOBS){
+   const clock=p.named_ci_jobs?.[key];
+   if(!clock||!safeInt(clock.measured_prs)||clock.measured_prs>p.merged_prs||
+      (clock.measured_prs>0&&!quantSafe(clock.p50_minutes)))
+     throw Error('STRICT_WEEKLY_JOB_'+key);
+  }
+  periods[id]=p;
+ }
+ const local=s=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Toronto',
+  year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'})
+  .formatToParts(new Date(s)).filter(p=>p.type!=='literal').reduce((a,p)=>({...a,[p.type]:+p.value}),{});
+ const a=local(periods.current.to),b=local(periods.week_ago.to);
+ const days=(y,m,d)=>Date.UTC(y,m-1,d)/86400000;
+ if(days(a.year,a.month,a.day)-days(b.year,b.month,b.day)!==7||
+   ['hour','minute','second'].some(k=>a[k]!==b[k]))throw Error('STRICT_WEEKLY_TORONTO_WINDOW');
+ return {periods,rows:WEEKLY_STAGE_LABELS.map(([key,label])=>({key,label,
+  now:periods.current.stages[key],week:periods.week_ago.stages[key]}))};
+}
+
+const publicHelpers={activity,speed,compactRecords,strictCohort,compareCIHistory,compareStrictWeekly,delay,number,SCHEMAS,URLS,periodSummary,activeCI,openBacklog};
 if(typeof module==='object'&&module.exports)module.exports=publicHelpers;
 if(!env?.document||typeof env.fetch!=='function')return;
 const doc=env.document,el=id=>doc.getElementById(id);
@@ -336,39 +400,90 @@ function stageMissing(note){
  put('stages-period',selectedPeriod+' ч · нет подтверждённых замеров');
 }
 function comparisonMissing(note){
- const tbody=el('stage-comparison-rows');if(tbody){tbody.replaceChildren();
-  const tr=dom('tr');const cell=dom('td',null,note);cell.colSpan=3;tr.append(cell);tbody.append(tr);}
+ for(const id of ['stage-comparison-rows','stage-ci-diagnostic-rows']){
+  const tbody=el(id);if(tbody){tbody.replaceChildren();const tr=dom('tr');
+   const cell=dom('td',null,note);cell.colSpan=3;tr.append(cell);tbody.append(tr);}
+ }
  put('stage-comparison-period',selectedPeriod+' ч / 7 дней назад');
  put('stage-comparison-note','Неподтверждённые интервалы не приравниваются к 0. '+note);
 }
 function renderComparison(d,hours){
  if(selectedPeriod!==hours)return;
- const result=compareCIHistory(d,hours);
- const tbody=el('stage-comparison-rows');if(!tbody)return;
- tbody.replaceChildren();
- for(const row of result.rows){
+ const weekly=compareStrictWeekly(d?.strict_weekly,hours);
+ const tbody=el('stage-comparison-rows');if(!tbody)return;tbody.replaceChildren();
+ const cur=weekly.periods.current,old=weekly.periods.week_ago;
+ const cell=(tr,value,count,total,label)=>{
+  const tdEl=td(tr,value);
+  tdEl.append(dom('small','comparison-sample',label||('n='+number(count)+'/'+number(total))));
+ };
+ for(const row of weekly.rows){
   const tr=dom('tr');td(tr,row.label);
-  for(const v of [row.current,row.week]){
-   const cell=td(tr,v.value===null?'—':delay(v.value));
-   const note=dom('small','comparison-sample','n='+number(v.n)+'/'+number(v.denominator));
-   cell.append(note);
+  for(const [value,period]of [[row.now,cur],[row.week,old]]){
+   const exists=period.merged_prs>0&&value.measured_prs>0;
+   cell(tr,exists?delay(value.mean_contribution_minutes):'—',value.measured_prs,period.merged_prs,
+    'Замер '+number(value.measured_prs)+'/'+number(period.merged_prs));
   }
   tbody.append(tr);
  }
- const now=result.periods.current,old=result.periods.week_ago;
- put('stage-comparison-period',hours+' ч / то же окно 7 дней назад');
- put('stage-comparison-note','Сопоставимые '+hours+'-часовые окна: '+stamp(now.period.from)+
-  ' — '+stamp(now.period.to)+' и '+stamp(old.period.from)+' — '+stamp(old.period.to)+
-  '. Подтверждённый архив Core CI: '+number(now.summary.n)+' / '+number(old.summary.n)+
-  ' PR; полная история не подтверждена. Средние вклады и P50 отдельных jobs не суммируются; это не полный Created → LIVE.');
+ const namedTitle=dom('tr','comparison-subtitle'),titleCell=dom('th',null,'Отдельные CI jobs · P50 по измеренным PR, НЕ дополнительные этапы');
+ titleCell.colSpan=3;namedTitle.append(titleCell);tbody.append(namedTitle);
+ for(const [key,label] of NAMED_WEEKLY_CI_JOBS){
+  const tr=dom('tr');td(tr,label);
+  for(const p of [cur,old]){
+   const v=p.named_ci_jobs?.[key];
+   cell(tr,v?.measured_prs>0?delay(v.p50_minutes):'—',v?.measured_prs||0,p.merged_prs,
+    'Замер '+number(v?.measured_prs||0)+'/'+number(p.merged_prs));
+  }
+  tbody.append(tr);
+ }
+ const addSummary=(label,key,desc)=>{
+  const tr=dom('tr','comparison-total');td(tr,label);
+  for(const p of [cur,old])cell(tr,p.merged_prs>0?delay(p[key]):'—',p.merged_prs,p.created_prs,
+   desc+' · '+number(p.merged_prs)+'/'+number(p.created_prs));
+  tbody.append(tr);
+ };
+ addSummary('Итого Created → Merge · среднее','mean_minutes','Смержено');
+ addSummary('Created → Merge · P50','p50_minutes','Смержено');
+ addSummary('Created → Merge · P90','p90_minutes','Смержено');
+ const wave=dom('tr');td(wave,'Повторные CI-волны · подтверждено в архиве');
+ for(const p of [cur,old])cell(wave,number(p.ci_observed_retries),p.coverage.ci_matched_prs,p.merged_prs,
+  'Архив '+number(p.coverage.ci_matched_prs)+'/'+number(p.merged_prs));
+ tbody.append(wave);
+ const live=dom('tr');td(live,'Merge → LIVE · нет квитанции production');
+ td(live,'—');td(live,'—');tbody.append(live);
+ put('stage-comparison-period',hours+' ч · Created и Merge внутри одного периода');
+ put('stage-comparison-note','Сейчас: '+number(cur.merged_prs)+'/'+number(cur.created_prs)+
+  ' PR созданы и смержены в окне '+stamp(cur.from)+' — '+stamp(cur.to)+
+  '; неделю назад: '+number(old.merged_prs)+'/'+number(old.created_prs)+' за '+
+  stamp(old.from)+' — '+stamp(old.to)+'. Архив CI: '+
+  number(cur.coverage.ci_matched_prs)+'/'+number(cur.merged_prs)+' и '+
+  number(old.coverage.ci_matched_prs)+'/'+number(old.merged_prs)+
+  ' (частичных историй '+number(cur.coverage.ci_partial_prs)+' / '+number(old.coverage.ci_partial_prs)+
+  '). Вклады этапов — среднее по одинаковой когорте; неизвестные промежутки не означают ожидание runner. Merge ≠ LIVE.');
+ // Different cohort: diagnostic only. Do not mix values into the additive full PR path.
+ const ciRoot=el('stage-ci-diagnostic-rows');
+ if(ciRoot){
+  ciRoot.replaceChildren();
+  let diagnostic=null;
+  try{diagnostic=compareCIHistory(d,hours);}catch(_){}
+  if(!diagnostic){const tr=dom('tr');const c=dom('td',null,'Архивная диагностика не подтверждена');c.colSpan=3;tr.append(c);ciRoot.append(tr);}
+  else for(const row of diagnostic.rows){
+   const tr=dom('tr');td(tr,row.label);
+   for(const v of [row.current,row.week]){
+    const c=td(tr,v.value===null?'—':delay(v.value));
+    c.append(dom('small','comparison-sample','n='+number(v.n)+'/'+number(v.denominator)));
+   }
+   ciRoot.append(tr);
+  }
+ }
 }
 async function refreshStageWindows(hours,seq){
  const requests=[
   ['stages',URLS.stages.replace('hours=24','hours='+hours),SCHEMAS.stages,d=>renderStages(d,hours),()=>stageMissing('Интервалы этапов не подтверждены. Нажмите «Обновить».')],
-  ['comparison',URLS.comparison+'?hours='+hours+'&compare=1',SCHEMAS.comparison,d=>renderComparison(d,hours),()=>comparisonMissing('Исторический архив CI недоступен или неполон.')]
+  ['comparison',URLS.comparison+'?hours='+hours+'&compare=1&strict_weekly=1',SCHEMAS.comparison,d=>renderComparison(d,hours),()=>comparisonMissing('Исторический архив CI недоступен или неполон.')]
  ];
  await Promise.allSettled(requests.map(async([key,path,schema,apply,fail])=>{
-  try{const d=await fetchSafe(path,schema,16000);if(selectedPeriod===hours&&stageRequestSeq===seq)apply(d);}
+  try{const d=await fetchSafe(path,schema,24000);if(selectedPeriod===hours&&stageRequestSeq===seq)apply(d);}
   catch(_){if(selectedPeriod===hours&&stageRequestSeq===seq)fail();}
  }));
 }
@@ -480,9 +595,9 @@ async function refresh(){
 
  const atStart=selectedPeriod;
  const atStage=++stageRequestSeq;
- const tasks=[['flow',d=>drawFlow(activity(d))],['cohort',renderStrictCohort],['stages',d=>{if(stageRequestSeq===atStage)renderStages(d,atStart);},URLS.stages.replace('hours=24','hours='+atStart)],['comparison',d=>{if(stageRequestSeq===atStage)renderComparison(d,atStart);},URLS.comparison+'?hours='+atStart+'&compare=1'],['ci',renderCI],['queue',renderQueue],['repair',renderRepair],['ciLive',renderCILive],['period',d=>{if(selectedPeriod===atStart)renderPeriod(d,atStart);},URLS.period+'?hours='+atStart]];
+ const tasks=[['flow',d=>drawFlow(activity(d))],['cohort',renderStrictCohort],['stages',d=>{if(stageRequestSeq===atStage)renderStages(d,atStart);},URLS.stages.replace('hours=24','hours='+atStart)],['comparison',d=>{if(stageRequestSeq===atStage)renderComparison(d,atStart);},URLS.comparison+'?hours='+atStart+'&compare=1&strict_weekly=1'],['ci',renderCI],['queue',renderQueue],['repair',renderRepair],['ciLive',renderCILive],['period',d=>{if(selectedPeriod===atStart)renderPeriod(d,atStart);},URLS.period+'?hours='+atStart]];
  const result=await Promise.allSettled(tasks.map(async([key,fn,route])=>{
-  const data=key==='cohort'?await refreshStrictCohort():await fetchSafe(route||URLS[key],SCHEMAS[key],['stages','comparison'].includes(key)?16000:key==='ci'?11000:8500);if(key!=='cohort')fn(data);
+  const data=key==='cohort'?await refreshStrictCohort():await fetchSafe(route||URLS[key],SCHEMAS[key],['stages','comparison'].includes(key)?24000:key==='ci'?11000:8500);if(key!=='cohort')fn(data);
   const at=key==='queue'?(data.checked_at||data.generated_at):key==='period'?data.observed_at:data.generated_at;
   sourceTimes.push(isTime(at)?Date.parse(at):null);complete++;
  }));
