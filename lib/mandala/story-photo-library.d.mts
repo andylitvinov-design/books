@@ -1,13 +1,14 @@
 export interface StoryPhoto {
  readonly id:string;
  readonly provider:"pexels"|"wikimedia";
+ readonly autoUseEligible:boolean;
  readonly media:"licensed_photo";
  readonly visualOrigin:"real_camera_photo";
  readonly src:string;
  readonly upstreamSrc:string;
  readonly sourcePage:string;
  readonly licenseUrl:string;
- readonly licenseId?: "CC0-1.0"|"CC-BY-2.0"|"CC-BY-4.0";
+ readonly licenseId?: "CC0-1.0"|"CC-BY-2.0"|"CC-BY-4.0"|"Public-Domain";
  readonly creatorLicense:string;
  readonly attribution:string;
  readonly labels:Readonly<Record<"ru"|"en"|"es",string>>;
