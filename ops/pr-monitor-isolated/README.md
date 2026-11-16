@@ -16,3 +16,6 @@ Build/publish this standalone frontend only in the **new Vercel project**, never
 
 ## Limits
 No user credentials or data export. No new paid plan, recurring agent tasks, third-party calls or background auto-deploy. HTTP/API checks are separate from a real iPhone Safari render/interaction test; do not claim real-browser proof unless it has actually been performed.
+
+## Weekly historic CI source (2026-11-16)
+The isolated dashboard has a **single** zero-cron read-only local function `api/ci-stage-weekly.js` that reads verified public GitHub CI archive comments from issue #3419. It supplies the same `HH_CI_JOURNEY_PERIOD_COMPARISON_V1` schema for current and previous-week matching periods; the previously deployed legacy API ignored `compare=1`. No direct browser GitHub calls or private tokens. Strict 1/6/24-hour client windows; all historical CI measurements are marked as partial, not full Created→Merge/LIVE. Archive missing means `—`. This is an exception to static-only hosting for a source-compatible history fix. The route requires preview function HTTP 200 + comparison schema and n/N audit **before** promoting.

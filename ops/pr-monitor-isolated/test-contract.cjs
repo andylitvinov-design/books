@@ -4,7 +4,7 @@ const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const root=__dirname,read=f=>fs.readFileSync(path.join(root,f),'utf8');
 const html=read('index.html'),css=read('monitor.css'),js=read('monitor.js'),conf=JSON.parse(read('vercel.json'));
 const sandbox={module:{exports:{}}};new vm.Script(js).runInNewContext(sandbox);
-const {activity,speed,compactRecords,strictCohort,delay,SCHEMAS,URLS}=sandbox.module.exports;
+const {activity,speed,compactRecords,strictCohort,compareCIHistory,delay,SCHEMAS,URLS}=sandbox.module.exports;
 test('one static CSS + one deferred JS; all eight main sections exist',()=>{
  assert.equal((html.match(/<script /g)||[]).length,1);
  assert.equal((html.match(/rel="stylesheet"/g)||[]).length,1);
@@ -16,6 +16,7 @@ test('one static CSS + one deferred JS; all eight main sections exist',()=>{
 test('strict public read-only origin and 10 explicit API allowlist rewrites',()=>{
  assert.equal(conf.rewrites.length,10);
  for(const [key,url]of Object.entries(URLS)){
+  if(key==='comparison')continue; // Local read-only function; no proxy rewrite.
   const route=conf.rewrites.find(x=>x.source===url.split('?')[0]);
   assert.ok(route,key);
   assert.equal(route.destination,'https://holistic-house-pr-monitor.vercel.app'+route.source);
@@ -107,4 +108,41 @@ test('preserve independently published LIVE operational top counters while addin
  assert.match(js,/URLS\.period\+'\?hours='/);
  assert.match(js,/URLS\.cohort/);
  assert.match(js,/strictCohort\(strictRaw,strictArch,strictHours\)/);
+});
+
+test('weekly CI stage durations use exactly equal periods, 168h apart, without inventing absent samples',()=>{
+ const mk=(id,offset,hasSample)=>({
+  id,offset_hours:offset,
+  period:{duration_hours:6,from:new Date(Date.parse('2026-11-16T10:00:00Z')-offset*3600000-6*3600000).toISOString(),
+   to:new Date(Date.parse('2026-11-16T10:00:00Z')-offset*3600000).toISOString()},
+  summary:{n:2,median_minutes:15},
+  stage_breakdown:{schema:'HH_CI_JOURNEY_CONTRIBUTIONS_V1',n:2,
+   mean_minutes_per_pr:{workflow_wait:4,runner_wait:7,checks:8},
+   prs_with_observed_span:{workflow_wait:hasSample?2:0,runner_wait:2,checks:2}},
+  job_clock_summary:{schema:'HH_CI_NAMED_JOB_CLOCK_V1',clocks:{
+   core:{measured_prs:2,p50_minutes:5},specialist:{measured_prs:0,p50_minutes:null}}},
+  coverage:{rows_total:2}
+ });
+ const d={schema:SCHEMAS.comparison,comparison_basis:'SAME_DURATION_WINDOW_SHIFTED_BY_7D_AND_14D',
+  period_hours:6,periods:[mk('current',0,true),mk('week_ago',168,false)]};
+ const x=compareCIHistory(d,6);assert.equal(x.hours,6);
+ const workflow=x.rows.find(x=>x.key==='workflow_wait');assert.equal(workflow.current.value,4);
+ assert.equal(workflow.week.value,null);assert.equal(workflow.week.n,0);
+ assert.equal(x.rows.find(x=>x.key==='specialist').week.value,null);
+ assert.match(html,/id="stage-comparison-rows"/);
+ assert.match(js,/refreshStageWindows\(hours,stageSeq\)/);
+ assert.match(js,/renderStages\(d,atStart\)/);
+ d.periods[1].period.to='2026-11-16T10:00:00Z';
+ assert.throws(()=>compareCIHistory(d,6),/MISMATCH|UNVERIFIED/);
+ d.periods[1]=mk('week_ago',168,true);d.period_hours=24;
+ assert.throws(()=>compareCIHistory(d,6),/SCHEMA/);
+});
+
+test('local same-origin weekly CI function is deployed, read-only and backed by archive receipts',()=>{
+ const weekly=read('api/ci-stage-weekly.js');
+ assert.equal(URLS.comparison,'/api/ci-stage-weekly');
+ assert.match(weekly,/HH_CI_JOURNEY_PERIOD_COMPARISON_V1/);
+ assert.match(weekly,/HH_CORE_CI_JOURNEY_SHARD_V1/);
+ assert.match(weekly,/const force=false/);
+ assert.doesNotMatch(weekly,/setInterval|createWorkflow|dispatch|writeFile/);
 });
