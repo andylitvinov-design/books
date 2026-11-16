@@ -4,6 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import dynamic from "next/dynamic";
 import { MandalaSmartAnimation } from "./mandala-smart-animation";
 import Link from "next/link";
+import {StudioMusicPicker} from "./studio-music-picker";
 import { flushSync } from "react-dom";
 import { ArrowRight, Brain, BarChart3, Camera, Check, ChevronDown, ChevronRight, ListVideo, RefreshCw, Coins, Download, Film, HandHeart, Headphones, Heart, HeartPulse, Leaf, Sprout, Music2, AudioLines, Clock3, Smile, Paperclip, Search, Mic, Pause, Play, Share2, Scissors, SlidersHorizontal, Sparkles, Target, TestTubeDiagonal, Zap, X, Save, FolderOpen, Type, MessageCircleQuestion } from "lucide-react";
 import { moneyScenes } from "@/lib/mandala/money-flow-effects";
@@ -9102,6 +9103,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   onChange={event=>{chooseAudioFile(event.currentTarget.files?.[0]);event.currentTarget.value="";}}/>
               </label>
             </div>
+            <StudioMusicPicker locale={locale} disabled={recording||preparing||micRecording}
+              onSelect={(file:File)=>{
+                const selected=chooseAudioFile(file);
+                if(!selected)return;
+                setAudioRights(true);
+                setAttachedAudio({kind:"file",file:selected.file,id:selected.url});
+                setAudioAuto(false);
+                setMusicWarning("");
+              }}/>
             <div className={videoStyles.audioCompactSelection} data-video-audio-compact-selected
               role="status" aria-live="polite"><Check size={16} aria-hidden="true"/>
               <span>{uploadedAudio?uploadedAudio.file.name:attachedPresetIds.length?appliedAudioName:
