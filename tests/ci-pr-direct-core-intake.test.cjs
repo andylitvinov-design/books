@@ -6,10 +6,16 @@ const path=require('node:path');
 const full=fs.readFileSync(path.join(__dirname,'../.github/workflows/hh-pr-direct-core-failure.yml'),'utf8');
 // This contract runs with the same pull_request revision as the production workflow.
 const intake=full.split('  ci_event_intake:\n')[1]?.split('  direct-core-failure:\n')[0];
-const worker=full.split('  direct-core-failure:\n')[1]?.split('  core-slot-wakeup:\n')[0];
+const worker=full.split('  direct-core-failure:\n')[1];
+const native=fs.readFileSync(path.join(__dirname,'../.github/workflows/hh-native-auto-merge.yml'),'utf8');
 test('every eligible Core error gets its own independent OIDC ingestion without a shared pending slot',()=>{
  assert.ok(intake&&worker,'existing workflow has intake and writer jobs');
- assert.ok(full.includes('  workflow_run:\n'));
+ assert.ok(full.includes('  workflow_call:\n'));
+ assert.ok(!full.includes('  workflow_run:\n'));
+ assert.ok(native.includes('  workflow_run:\n'));
+ assert.ok(native.includes('  failed-core-handoff:\n'));
+ assert.ok(native.includes('secrets: inherit'));
+ assert.match(native,/      - 'HH PR core release gate'/);
  assert.match(intake,/github\.event\.workflow_run\.name == 'HH PR core release gate'/);
  for(const outcome of ['failure','timed_out','startup_failure'])assert.ok(intake.includes("'"+outcome+"'"),outcome);
  assert.doesNotMatch(intake,/concurrency:|hh-control-tower-single-writer|createWorkflowDispatch/);
@@ -49,9 +55,12 @@ test('repair handoff is branch-scoped, preserving exact-HEAD writer protection w
  assert.doesNotMatch(worker,/sendWorkflowFailure\(/);
  assert.ok(full.indexOf('  ci_event_intake:')<full.indexOf('  direct-core-failure:'));
 });
-test('existing success-side slot wakeup remains independent',()=>{
- assert.match(full,/  core-slot-wakeup:/);
- assert.match(full,/github\.event\.workflow_run\.conclusion == 'success'/);
+test('successful Core slot wakeup remains in the single trusted listener and outside failure writer',()=>{
+ assert.doesNotMatch(full,/^  core-slot-wakeup:/m);
+ const slot=native.split('  core-slot-wakeup:\n')[1]?.split('\n  recover-interrupted-core:\n')[0];
+ assert.ok(slot,'success-side slot wakeup preserved in same Core completion workflow');
+ assert.match(slot,/github\.event\.workflow_run\.conclusion == 'success'/);
+ assert.match(slot,/ci-pr-slot-wakeup\.cjs/);
 });
 
 test('GitHub pending concurrency slot cannot cross-cancel different source branches',()=>{
