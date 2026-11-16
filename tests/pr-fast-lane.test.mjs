@@ -1563,7 +1563,7 @@ test('short Core orchestration keeps isolated required aggregator and never skip
     'FULL, DOCK and unknown routes retain standard Ubuntu');
   assert.match(specialist, /^    needs: \[scope\]$/m, 'specialist must launch after successful Core');
   assert.match(specialist, /^    if: \$\{\{ !cancelled\(\) && needs\.scope\.result == 'success' && github\.event_name == 'pull_request' && github\.event\.pull_request\.draft == false \}\}$/m);
-  assert.match(gate, /^    runs-on: ubuntu-24\\.04$/m);
+  assert.match(gate, /^    runs-on: ubuntu-24\.04$/m);
   assert.match(gate, /^    timeout-minutes: 2$/m);
   assert.match(gate, /^    if: \$\{\{ !cancelled\(\) && \(github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false\) \}\}$/m);
   assert.match(gate, /^    needs: \[scope, hh-specialist\]$/m);
@@ -1578,7 +1578,7 @@ test('required hh-merge-check uses standard public runner and keeps fail-closed 
   assert.match(gate, /^    name: hh-merge-check$/m);
   assert.match(gate, /^    needs: \[scope, hh-specialist\]$/m);
   assert.match(gate, /^    if: \$\{\{ !cancelled\(\) && \(github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false\) \}\}$/m);
-  assert.match(gate, /^    runs-on: ubuntu-24\\.04$/m);
+  assert.match(gate, /^    runs-on: ubuntu-24\.04$/m);
   assert.match(gate, /^    timeout-minutes: 2$/m);
   assert.match(gate, /\[\[ "\$EVENT_NAME" == pull_request \]\] \|\|/);
   assert.match(gate, /if \[\[ "\$PR_DRAFT" == true \]\]; then/);
