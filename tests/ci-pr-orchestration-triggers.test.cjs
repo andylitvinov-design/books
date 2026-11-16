@@ -445,7 +445,10 @@ test('all five bounded Watchdog event/schedule control jobs use the existing 1-v
       name+' must not perform heavy compilation or privileged container operations');
   }
   assert.equal((w.match(/    runs-on: ubuntu-slim/g)||[]).length,jobs.length);
-  assert.match(w,/^  issue_comment:\n    types: \[created\]$/m);
+  assert.doesNotMatch(w,/^  issue_comment:/m,
+    'unrelated PR discussion must not start a new Watchdog Action');
+  assert.match(w,/^  schedule:\n    - cron: '7,27,47 \* \* \* \*'$/m);
+  assert.match(w,/^  workflow_dispatch:/m);
   assert.match(w,/group: hh-control-tower-single-writer/);
   assert.match(w,/^  workflow_run:$/m);
   assert.match(w,/^  pull_request_target:$/m);

@@ -250,7 +250,7 @@ jobs:
               route=CONTROL_ONLY
               while IFS=$'\t' read -r status file; do
                 case "$status:$file" in
-                  M:.github/workflows/hh-pr-ten-minute-watchdog.yml|M:.github/workflows/hh-pr-watchdog-contract-ci.yml|M:tests/ci-pr-direct-handoff.test.cjs) ;;
+                  M:.github/workflows/hh-pr-ten-minute-watchdog.yml|M:.github/workflows/hh-pr-watchdog-contract-ci.yml|M:tests/ci-pr-direct-handoff.test.cjs|M:tests/ci-pr-control-tower.test.cjs|M:tests/ci-pr-orchestration-triggers.test.cjs) ;;
                   *) route=FULL ;;
                 esac
               done <<< "$changes"

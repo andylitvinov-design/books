@@ -110,9 +110,13 @@ test('watchdog has only two worker-completion listeners; Core owns quality-failu
  ],'no redundant per-specialist or queue-observer completion callbacks');
  assert.match(trigger,/types: \[completed\]/);
  assert.match(watchdog,/group: hh-control-tower-single-writer/);
- // PR stage and owner PM command routes remain immediately event-driven.
+ // PR conflict handoff remains immediate; owner PM comments are scanned
+ // on the existing schedule (or explicit trusted workflow_dispatch).
  assert.match(watchdog,/pull_request_target:\n    types: \[opened, reopened, synchronize, ready_for_review\]/);
- assert.match(watchdog,/issue_comment:\n    types: \[created\]/);
+ assert.doesNotMatch(watchdog,/^  issue_comment:/m);
+ assert.ok(watchdog.includes("cron: '7,27,47 * * * *'"));
+ assert.ok(watchdog.includes('  workflow_dispatch:'));
+ assert.ok(watchdog.includes('HH PM inbox using verified Github free secret'));
 });
 
 test('failed Core still has a separately authenticated repair bridge and exact-HEAD handoff',()=>{
@@ -140,7 +144,9 @@ test('watchdog-only exact diff retains CI/repair checks but skips unrelated dash
  for(const path of [
   'M:.github/workflows/hh-pr-ten-minute-watchdog.yml',
   'M:.github/workflows/hh-pr-watchdog-contract-ci.yml',
-  'M:tests/ci-pr-direct-handoff.test.cjs'
+  'M:tests/ci-pr-direct-handoff.test.cjs',
+  'M:tests/ci-pr-control-tower.test.cjs',
+  'M:tests/ci-pr-orchestration-triggers.test.cjs'
  ])assert.ok(contract.includes(path));
  assert.equal(contract.split("if: ${{ steps.control_scope.outputs.route != 'CONTROL_ONLY' }}").length-1,13);
  assert.ok(contract.includes('      - name: Watchdog decision contracts\n        run:'));
