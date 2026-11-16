@@ -308,3 +308,66 @@ test('trusted BASE_ADVANCED specialist log is distinguished from missing Special
   repo:'books',jobData:{jobs,total_count:3}}),'');
  assert.equal(requests,1);
 });
+
+test('real exact-HEAD failed specialist is test triage, not missing workflow or blind Core retry',async()=>{
+ const {verifiedSpecialistTerminalEvidence,parseVerifiedSpecialistFailures}=require('../scripts/ci-pr-hermes-event-bridge.cjs');
+ const failed='.github/workflows/home-locale-switch.yml';
+ const payload=JSON.stringify({failed:[failed+':failure'],orphan:[],unregistered:[],retired:[]});
+ const log='2026-11-16T21:17:00Z CI_SPECIALIST_FAIL_CLOSED: SPECIALIST_FAILED:'+payload;
+ const jobs=[
+  {id:11,name:'core-lint-types-build',status:'completed',conclusion:'success'},
+  {id:22,name:'hh-specialist',status:'completed',conclusion:'failure',
+   steps:[{name:'Validate exact-head risk and required specialist workflows',conclusion:'failure'}]},
+  {id:33,name:'hh-merge-check',status:'completed',conclusion:'failure'}
+ ];
+ let reads=0;
+ const github={request:async (_route,arg)=>{reads++;assert.equal(arg.job_id,22);return {data:log};}};
+ assert.deepEqual(parseVerifiedSpecialistFailures(log),[failed]);
+ const proof=await verifiedSpecialistTerminalEvidence({
+  github,owner:'andylitvinov-design',repo:'books',jobData:{jobs,total_count:3}
+ });
+ assert.equal(reads,1,'reuse the existing bounded specialist job log read');
+ assert.equal(proof.kind,'SPECIALIST_FAILURE');
+ const diag=buildDiagnostics(jobs,makePR(),proof);
+ assert.equal(diag.category,'TEST_FAILURE');
+ assert.equal(diag.classification.reason_code,'VERIFIED_REQUIRED_SPECIALIST_FAILURE');
+ assert.equal(diag.classification.strategy_code,'TEST_FAILURE_TRIAGE');
+ assert.equal(diag.classification.responsible_role,'test-triage-agent');
+ assert.equal(diag.classification.source_write_authorized,false);
+ assert.equal(diag.classification.execution_authorized,false);
+ assert.equal(diag.classification.retry.max_attempts,1);
+ assert.ok(diag.failedSteps.includes('hh-specialist / '+failed+':failure'));
+ const {repairableCoreTestFailure}=require('../scripts/ci-pr-error-task.cjs');
+ assert.equal(repairableCoreTestFailure(diag.classification),false,
+  'a red independent specialist is NOT a source writer lease');
+ assert.equal(buildDiagnostics(jobs,makePR(),{kind:'SPECIALIST_FAILURE',workflows:[failed]})
+  .category,'BASE_OR_CI_ROUTING','an unsigned hint cannot claim a required specialist failed');
+});
+
+test('specialist terminal proof is fail-closed on malformed, mixed, duplicated or incomplete logs',async()=>{
+ const {verifiedSpecialistTerminalEvidence,parseVerifiedSpecialistFailures}=require('../scripts/ci-pr-hermes-event-bridge.cjs');
+ const f='.github/workflows/home-locale-switch.yml:failure';
+ const data={failed:[f],orphan:[],unregistered:[],retired:[]};
+ const line=obj=>'CI_SPECIALIST_FAIL_CLOSED: SPECIALIST_FAILED:'+JSON.stringify(obj);
+ for(const invalid of [
+  line({...data,orphan:['other']}),
+  line({...data,failed:[f,f]}),
+  line({...data,failed:['.github/workflows/../../private.yml:failure']}),
+  line({...data,failed:['.github/workflows/home-locale-switch.yml:cancelled']}),
+  line({...data,extra:true}),
+  line(data)+'\n'+line(data),
+  'SPECIALIST_FAILED: SPECIALIST_FAILED:'+JSON.stringify(data),
+  'CI_SPECIALIST_FAIL_CLOSED: SPECIALIST_FAILED:{broken-json}',
+  'CI_SPECIALIST_FAIL_CLOSED: SPECIALIST_MISSING_OR_PENDING:NOT_TRIGGERED'
+ ])assert.deepEqual(parseVerifiedSpecialistFailures(invalid),[],'not a verified exact failed specialist');
+ const jobs=[
+  {id:11,name:'core-lint-types-build',status:'completed',conclusion:'success'},
+  {id:22,name:'hh-specialist',status:'completed',conclusion:'failure'},
+  {id:33,name:'hh-merge-check',status:'completed',conclusion:'failure'}
+ ];
+ let reads=0;
+ const proof=await verifiedSpecialistTerminalEvidence({github:{request:async()=>{
+  reads++;return {data:line(data)};
+ }},owner:'andylitvinov-design',repo:'books',jobData:{jobs,total_count:4}});
+ assert.equal(proof,null);assert.equal(reads,0,'incomplete Core job inventory cannot query logs');
+});

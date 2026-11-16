@@ -65,20 +65,50 @@ async function resolveExactPR({ github, owner, repo, workflowRun }) {
   return { ok: true, pullRequest: exact[0] };
 }
 
-/** Optional read-only proof for the existing immutable BASE-owned specialist.
- * Invalid/missing logs keep the original classification without any retry.
- * Do not log, store or expose raw job logs or provider information. */
-async function verifiedSpecialistBaseAdvanced({github,owner,repo,jobData}={}){
- if(owner+'/'+repo!==REPO||typeof github?.request!=='function')return '';
+/** Read-only exact-job log evidence, never a write or rerun authority.
+ * Only the protected, terminal, three-job Core topology can supply this proof.
+ * Parse no user text and never expose raw logs, provider data or credentials. */
+const VERIFIED_SPECIALIST_PROOF=Symbol('authenticated GitHub specialist job log');
+const BASE_ADVANCED_HINT='BASE_ADVANCED: PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED';
+function parseVerifiedSpecialistFailures(raw){
+ const log=typeof raw==='string'?raw:
+  raw instanceof Uint8Array?Buffer.from(raw).toString('utf8'):null;
+ if(!log||log.length>2_000_000)return [];
+ const markers=log.split(/\r?\n/).map(line=>
+  /(?:^|\s)CI_SPECIALIST_FAIL_CLOSED: SPECIALIST_FAILED:(\{.{1,3500}\})\s*$/.exec(line)
+ ).filter(Boolean);
+ if(markers.length!==1)return [];
+ let parsed;
+ try{parsed=JSON.parse(markers[0][1]);}catch{return [];}
+ if(!parsed||Object.keys(parsed).sort().join(',')!=='failed,orphan,retired,unregistered' ||
+    !Array.isArray(parsed.failed)||!Array.isArray(parsed.orphan)||
+    !Array.isArray(parsed.unregistered)||!Array.isArray(parsed.retired)||
+    parsed.orphan.length||parsed.unregistered.length||parsed.retired.length||
+    parsed.failed.length<1||parsed.failed.length>5)return [];
+ const workflow=/^\.github\/workflows\/[a-z0-9._-]+\.ya?ml:failure$/;
+ if(parsed.failed.some(x=>typeof x!=='string'||!workflow.test(x))||
+    new Set(parsed.failed).size!==parsed.failed.length)return [];
+ return parsed.failed.map(x=>x.slice(0,-':failure'.length));
+}
+async function verifiedSpecialistTerminalEvidence({github,owner,repo,jobData}={}){
+ if(owner+'/'+repo!==REPO||typeof github?.request!=='function')return null;
  const jobId=validatedJobEvidence(jobData);
- if(!jobId)return '';
+ if(!jobId)return null;
  try{
   const response=await github.request(
    'GET /repos/{owner}/{repo}/actions/jobs/{job_id}/logs',
    {owner,repo,job_id:jobId});
-  return isActualBaseAdvancedLog(response?.data)
-   ?'BASE_ADVANCED: PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED':'';
- }catch{return '';}
+  if(isActualBaseAdvancedLog(response?.data))
+   return {proof:VERIFIED_SPECIALIST_PROOF,kind:'BASE_ADVANCED',workflows:[]};
+  const workflows=parseVerifiedSpecialistFailures(response?.data);
+  return workflows.length?
+   {proof:VERIFIED_SPECIALIST_PROOF,kind:'SPECIALIST_FAILURE',workflows}:null;
+ }catch{return null;}
+}
+// Retain the old focused API for existing protected BASE_ADVANCED contracts.
+async function verifiedSpecialistBaseAdvanced(args={}){
+ const result=await verifiedSpecialistTerminalEvidence(args);
+ return result?.kind==='BASE_ADVANCED'?BASE_ADVANCED_HINT:'';
 }
 function buildDiagnostics(jobs, pr, verifiedFailureHint='') {
   const failed = (Array.isArray(jobs) ? jobs : []).filter((job) =>
@@ -88,15 +118,17 @@ function buildDiagnostics(jobs, pr, verifiedFailureHint='') {
     .filter((step) => FAILURES.has(step?.conclusion))
     .map((step) => String(job.name || 'unnamed-job').slice(0, 90) + ' / ' +
       String(step.name || 'unnamed-step').slice(0, 90))).slice(0, 10);
-  const failureMessage=verifiedFailureHint===
-    'BASE_ADVANCED: PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED'
-      ?verifiedFailureHint:'';
-  const decision = classifyRedCiError({ pr, jobs, failureMessage });
+  const proven=verifiedFailureHint?.proof===VERIFIED_SPECIALIST_PROOF;
+  const failureMessage=(verifiedFailureHint===BASE_ADVANCED_HINT ||
+    (proven && verifiedFailureHint.kind==='BASE_ADVANCED'))?BASE_ADVANCED_HINT:'';
+  const verifiedSpecialistWorkflows=proven&&verifiedFailureHint.kind==='SPECIALIST_FAILURE'&&
+    Array.isArray(verifiedFailureHint.workflows)?verifiedFailureHint.workflows:[];
+  const decision = classifyRedCiError({pr,jobs,failureMessage,verifiedSpecialistWorkflows});
   const strategy=strategyFor(decision.category,'UNVERIFIED',decision.retry.allowed===true);
   return {
     category: decision.category,
     failedJobs: failedJobs.slice(0, 10),
-    failedSteps,
+    failedSteps:[...failedSteps,...verifiedSpecialistWorkflows.map(path=>'hh-specialist / '+path+':failure')].slice(0,10),
     classification: {
       schema: 'HH_CI_ERROR_CLASSIFICATION_V1',
       ruleset_version: decision.ruleset_version,
@@ -161,11 +193,11 @@ async function sendWorkflowFailure({
   const jobsResponse = await github.rest.actions.listJobsForWorkflowRun({
     owner, repo, run_id: workflowRun.id, per_page: 100, filter: 'latest'
   });
-  const verifiedFailureHint=await verifiedSpecialistBaseAdvanced({
+  const verifiedSpecialist=await verifiedSpecialistTerminalEvidence({
     github,owner,repo,jobData:jobsResponse.data
   });
   const diagnostics = buildDiagnostics(jobsResponse.data?.jobs,
-    association.pullRequest,verifiedFailureHint);
+    association.pullRequest,verifiedSpecialist);
   const payload = {
     action: 'completed',
     workflow_run: { ...workflowRun, pull_requests: [association.pullRequest] },
@@ -201,4 +233,4 @@ async function sendWorkflowFailure({
   return result;
 }
 
-module.exports = { exactPullRequestLink, resolveExactPR, buildDiagnostics, verifiedSpecialistBaseAdvanced, sendWorkflowFailure };
+module.exports = { exactPullRequestLink, resolveExactPR, buildDiagnostics, parseVerifiedSpecialistFailures, verifiedSpecialistTerminalEvidence, verifiedSpecialistBaseAdvanced, sendWorkflowFailure };
