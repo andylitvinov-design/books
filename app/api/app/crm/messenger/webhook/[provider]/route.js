@@ -20,6 +20,7 @@ import {parseHiTelegramRating} from '@/lib/holistic-support/hi-learning-policy.m
 import {insertHiLearningQuality} from '@/lib/holistic-support/hi-learning-store'
 import {processTelegramBusinessSecretary,gateTelegramBusinessSecretaryOptOut} from '@/lib/crm/telegram-secretary-service'
 import {notifyConfirmedTelegramBusinessOwner} from '@/lib/crm/telegram-business-owner-notice'
+import {processWhatsAppSecretary} from '@/lib/crm/whatsapp-secretary-service'
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
 export const revalidate=0
@@ -180,6 +181,21 @@ export async function POST(request,{params}){
         const proof=await processWhatsAppAccountLink(event,config)
         if(proof.handled||!channelTransportReady('whatsapp'))continue
         if(event.type==='incoming'){
+          // Reuse the verified public Secretary catalogue, not a second AI
+          // provider. Never intercept consent, STOP or an active private intake.
+          const secretary=await processWhatsAppSecretary(event,config)
+          if(secretary.handled){
+            if(secretary.reply){
+              try{
+                await consumeRate(config,{op:'hh-wa-secretary-chat',
+                  peer:operationHash({business:event.accountId,peer:event.userId},config)},12,86400)
+                await consumeRate(config,{op:'hh-wa-secretary-global'},100,86400)
+                await sendWhatsAppDiagnosticPrompt({to:secretary.to,text:secretary.reply,
+                  locale:secretary.locale})
+              }catch{console.error('HH_CRM_WA_SECRETARY_SEND_UNCONFIRMED')}
+            }
+            continue
+          }
           const intake=await processWhatsAppDiagnostic(event,config)
           if(intake.handled&&intake.reply){
             // Consent/CRM state are committed before one reply attempt.
