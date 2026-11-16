@@ -165,7 +165,11 @@
       }
       if(!r.sourceVerified||!['ChatGPT Triage','GitHub Actions','OpenRouter Free · GitHub Worker','GitHub Repair Gateway'].includes(r.agent))continue;
       const card=mk('article','pm-chat-report-card');
-      const head=mk('div','pm-chat-report-head',r.agent+' · '+at(r.createdAt)+' · '+r.origin);
+      const stage=r.completionState==='MERGED'?' · GitHub MERGED':
+        r.completionState==='WATCHING'?' · PR в работе':
+        r.completionState==='CLOSED_UNMERGED'?' · Закрыт без merge':
+        r.completionState==='EXPIRED_UNVERIFIED'?' · Требуется проверка':'';
+      const head=mk('div','pm-chat-report-head',r.agent+stage+' · '+at(r.createdAt)+' · '+r.origin);
       const body=mk('p','pm-chat-report-text',r.body);card.append(head,body);
       const a=mk('a','pm-chat-report-link','Открыть источник');a.href=r.url;
       a.target='_blank';a.rel='noopener noreferrer';card.append(a);
