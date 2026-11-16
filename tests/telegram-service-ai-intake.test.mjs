@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {telegramServiceRequestUrl} from '../lib/assist/telegram-business-request.mjs';
-import {resolveTelegramServiceEntry} from '../lib/app/telegram-entry-url.mjs';
+import {resolveTelegramFirstEntry,resolveTelegramServiceEntry} from '../lib/app/telegram-entry-url.mjs';
 import {v3ServiceStart,v3Context,v3ServiceCopy,v3ButtonsFor,V3_LABELS,v3Action} from '../lib/crm/telegram-ai-diagnostic-v3.mjs';
 import {v3ModelMessages} from '../lib/crm/telegram-ai-diagnostic-v3-model.mjs';
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
@@ -52,4 +52,19 @@ test('Owner CRM transfer requires existing confirmation path; no early lead',()=
  assert.match(code,/crm_tg_suppress_existing/);
  assert.match(ui,/resolveTelegramServiceEntry/);
  assert.match(ui,/serviceBot\|\|telegramUrl/);
+});
+
+test('Generic public free-review fallback is distinct from a selected service request',()=>{
+ const publicBot={available:true,directAvailable:false,
+  url:'https://t.me/holistichouse_bot',
+  urls:{en:'https://t.me/holistichouse_bot?start=hhreview_en',
+    ru:'https://t.me/holistichouse_bot?start=hhreview_ru',
+    es:'https://t.me/holistichouse_bot?start=hhreview_es'}};
+ for(const locale of ['ru','en','es']){
+  assert.equal(resolveTelegramFirstEntry(publicBot,locale)?.href,
+    'https://t.me/holistichouse_bot?start=hhreview_'+locale);
+  assert.equal(resolveTelegramServiceEntry(publicBot,
+    telegramServiceRequestUrl('reiki',locale),locale),null,
+    'Without active AI interview readiness, a product may not silently turn into free review');
+ }
 });
