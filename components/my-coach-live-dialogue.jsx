@@ -87,9 +87,9 @@ ru:{choose:'Выбрать другого коуча',mode:'AI-КОУЧ · ЖИ�
 es:{choose:'Elegir otro coach',mode:'COACH IA · DIÁLOGO EN VIVO',step:'Paso',of:'de',topics:'¿Qué te gustaría explorar?',stress:'Reducir el estrés',energy:'Recuperar energía',relationships:'Mejorar relaciones',goal:'Mi objetivo',goalPlaceholder:'Añade o edita tu objetivo…',type:'Escribir mensaje',keyboardShort:'Texto',captions:'Activar o desactivar subtítulos',captionsShort:'CC',replayShort:'Repetir',end:'Terminar sesión',replay:'Escuchar la respuesta',voice:'Iniciar conversación por voz',home:'Inicio',coaching:'Mi coach',practice:'Prácticas',video:'Vídeo',profile:'Perfil',disclosure:'Coach ficticio de IA, no terapeuta. La conversación permanece en esta pestaña y no se guarda en tu cuenta.',guided:'Usar la sesión guiada',stages:['Aclarar','Explorar','Conciencia','Nueva perspectiva','Opciones','Siguiente paso'],stageQuestion:'Progreso de la conversación',safety:'Pausa de seguridad',chooseTopic:'Elige un tema para añadirlo al borrador. Nada se envía hasta pulsar Enviar.',typedGoal:'Tu objetivo se añadirá al próximo mensaje que envíes (por texto o voz). No se guarda en tu cuenta.',goalDeferred:'El objetivo no se incluyó porque el mensaje es demasiado largo; podrás enviarlo en uno más corto.'}
 }
 const transcriptUi={
-  en:{heading:'Conversation · transcript',listening:'Listening',languageLabel:'Speech recognition language',autoLanguage:'Device · auto',hint:'Your spoken words will appear here. Or type your reply below.',consentShort:'I agree to send my text to the eligible free AI; browser recognition may process my voice.',details:'Privacy and data processing'},
-  ru:{heading:'Диалог · расшифровка',listening:'Слушаю',languageLabel:'Язык распознавания речи',autoLanguage:'Авто · устройство',hint:'Здесь появятся ваши слова. Можно также написать ответ ниже.',consentShort:'Согласен(на) отправлять текст бесплатной AI-модели; браузер может обрабатывать мой голос.',details:'Приватность и обработка данных'},
-  es:{heading:'Diálogo · transcripción',listening:'Escuchando',languageLabel:'Idioma de reconocimiento de voz',autoLanguage:'Auto · dispositivo',hint:'Aquí aparecerán tus palabras. También puedes escribir abajo.',consentShort:'Acepto enviar mi texto a la IA gratuita; el navegador puede procesar mi voz.',details:'Privacidad y procesamiento'},
+  en:{heading:'Conversation · transcript',listening:'Listening',languageLabel:'Speech recognition language',autoLanguage:'Auto · device/context',hint:'Your spoken words will appear here. Or type your reply below.',consentShort:'I agree to send my text to the eligible free AI; browser recognition may process my voice.',details:'Privacy and data processing'},
+  ru:{heading:'Диалог · расшифровка',listening:'Слушаю',languageLabel:'Язык распознавания речи',autoLanguage:'Авто · устройство/контекст',hint:'Здесь появятся ваши слова. Можно также написать ответ ниже.',consentShort:'Согласен(на) отправлять текст бесплатной AI-модели; браузер может обрабатывать мой голос.',details:'Приватность и обработка данных'},
+  es:{heading:'Diálogo · transcripción',listening:'Escuchando',languageLabel:'Idioma de reconocimiento de voz',autoLanguage:'Auto · dispositivo/contexto',hint:'Aquí aparecerán tus palabras. También puedes escribir abajo.',consentShort:'Acepto enviar mi texto a la IA gratuita; el navegador puede procesar mi voz.',details:'Privacidad y procesamiento'},
 }
 const voiceProviderDetails={
   en:'Play starts the conversation. Browser speech recognition may process microphone audio. If a natural voice is available, coach-generated text is sent to Google Chirp or Fish Audio; Fish may use the text to train models. Holistic House does not store a microphone recording.',
@@ -461,9 +461,12 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       modelProbeRef.current.inFlight=false
     }
   }
-  async function sendMessage(raw,{voiceTurn=false}={}){
+  async function sendMessage(raw,{voiceTurn=false,utteranceLocale=null}={}){
     let message=String(raw||'').trim()
-    const responseLocale=detectedSpeechLocale(message,lang)
+    // Manual recognizer locale is authoritative for a spoken turn; never
+    // re-infer it from potentially mis-scripted browser ASR output.
+    const responseLocale=voiceTurn&&['en','ru','es'].includes(utteranceLocale)
+      ?utteranceLocale:detectedSpeechLocale(message,lang)
     // Tapping the mic affirms the inline disclosure. Typed turns keep their
     // separate checkbox. Never contact a model if consent is absent.
     if(!message||busy||paused)return
@@ -682,7 +685,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           <MyCoachSpeechLoop ref={speechRef} locale={lang} speechLocale={speechLocale} initialDraft={draft}
             introduction={introduction} onSessionStart={()=>setCloudAgreed(true)}
             cloudAvailable={cloudAvailable} cloudAgreed={cloudAgreed} cloudProvider={cloudProvider} personaId={personaId} enabled={true}
-            canStart={!busy&&!paused&&!replaying} onTurn={text=>sendMessage(text,{voiceTurn:true})}
+            canStart={!busy&&!paused&&!replaying} onTurn={(text,spoken)=>sendMessage(text,{voiceTurn:true,utteranceLocale:spoken?.locale})}
             onCancelTurn={()=>pending.current?.abort()} onVoiceStateChange={setVoiceState} onVoiceLevel={setPortraitLevel}
             onTranscript={setSpeechPreview} onDraft={text=>{setDraft(text);setError('')}}/>
           <span className={styles.voiceWaveRight} aria-hidden="true"><i/><i/><i/><i/><i/></span>
@@ -707,11 +710,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         <div className={styles.transcriptHeading}><MessageCircle size={15} aria-hidden="true"/>
           <strong>{captions.heading}</strong>
           <select className={styles.transcriptLanguage} aria-label={captions.languageLabel}
-            value={speechLocale} onChange={event=>setSpeechLocale(event.target.value)}
-            disabled={voiceState.phase!=='idle'}>
+            value={speechLocale} onChange={event=>setSpeechLocale(event.target.value)}>
             <option value="auto">{captions.autoLanguage}</option>
-            <option value="ru">RU</option>
-            <option value="en">EN</option>
+            <option value="ru">Русский</option>
+            <option value="en">English</option>
             {lang==='es'&&<option value="es">ES</option>}
           </select>
           {voiceState.phase==='listening'&&<span role="status">{captions.listening}</span>}
