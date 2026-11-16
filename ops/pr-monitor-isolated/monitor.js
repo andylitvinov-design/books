@@ -2,8 +2,8 @@
 /* HH_PR_DASHBOARD_ISOLATED_V1: verified read-only evidence, no timers, no DOM watchers */
 (function(env){
 const REPO='https://github.com/andylitvinov-design/books';
-const URLS=Object.freeze({flow:'/api/ci-runner-trends',speed:'/api/pr-stage-timeline?hours=24',stages:'/api/pr-stage-overview?hours=24&scope=production',ci:'/api/ci-insights',queue:'/api/control-tower-stats',repair:'/api/pr-three-kpis',ciLive:'/api/ci-queue-detail',period:'/api/pr-merge-period',cohort:'/api/pr-created-cohort',archive:'/api/ci-journey-summary?hours=72'});
-const SCHEMAS=Object.freeze({flow:'HH_CI_RUNNER_BINS_V2',speed:'HH_PR_STAGE_TIMELINE_V2',stages:'HH_PR_STAGE_OVERVIEW_V1',ci:'HH_CI_DEEP_MONITOR_V1',queue:'HH_CONTROL_DISPATCH_METRICS_V1',repair:'HH_PR_THREE_KPI_V1',ciLive:'HH_PR_CI_QUEUE_DETAIL_V1',period:'HH_PR_MERGE_PERIOD_V1',cohort:'HH_PR_CREATED_COHORT_V1',archive:'HH_CI_FIRST_LAST_ARCHIVE_V1'});
+const URLS=Object.freeze({flow:'/api/ci-runner-trends',speed:'/api/pr-stage-timeline?hours=24',stages:'/api/pr-stage-overview?hours=24&scope=production',ci:'/api/ci-insights',queue:'/api/control-tower-stats',repair:'/api/pr-three-kpis',ciLive:'/api/ci-queue-detail',period:'/api/pr-merge-period',cohort:'/api/pr-created-cohort',archive:'/api/ci-journey-summary?hours=72',comparison:'/api/ci-journey-summary'});
+const SCHEMAS=Object.freeze({flow:'HH_CI_RUNNER_BINS_V2',speed:'HH_PR_STAGE_TIMELINE_V2',stages:'HH_PR_STAGE_OVERVIEW_V1',ci:'HH_CI_DEEP_MONITOR_V1',queue:'HH_CONTROL_DISPATCH_METRICS_V1',repair:'HH_PR_THREE_KPI_V1',ciLive:'HH_PR_CI_QUEUE_DETAIL_V1',period:'HH_PR_MERGE_PERIOD_V1',cohort:'HH_PR_CREATED_COHORT_V1',archive:'HH_CI_FIRST_LAST_ARCHIVE_V1',comparison:'HH_CI_JOURNEY_PERIOD_COMPARISON_V1'});
 const safeNum=n=>typeof n==='number'&&Number.isFinite(n)&&n>=0;
 const safeInt=n=>Number.isSafeInteger(n)&&n>=0;
 const number=n=>safeInt(n)?n.toLocaleString('ru-RU'):'—';
@@ -152,13 +152,61 @@ function strictCohort(source, archive, hours) {
     paths:paths.sort((a,b)=>b.minutes-a.minutes)};
 }
 /* HH_STRICT_CREATED_MERGED_COHORT_V1_END */
-const publicHelpers={activity,speed,compactRecords,strictCohort,delay,number,SCHEMAS,URLS,periodSummary,activeCI,openBacklog};
+
+/* Same observed Core CI cohort definition for both periods. Never infer missing history as zero. */
+const COMPARED_CI_STAGES=[
+ ['workflow_wait','Workflow → jobs · среднее / PR','stage'],
+ ['runner_wait','Ожидание runner · среднее / PR','stage'],
+ ['checks','Выполнение Core jobs · среднее / PR','stage'],
+ ['between_waves_unknown','Между CI-волнами · причина неизвестна','stage'],
+ ['other_unknown','Прочие интервалы CI · причина неизвестна','stage'],
+ ['core','Core job · P50 наблюд.','clock'],
+ ['specialist','Specialist job · P50 наблюд.','clock'],
+ ['merge_gate','Merge Gate job · P50 наблюд.','clock'],
+ ['overall','Первый → последний Core CI · P50','total']
+];
+function compareCIHistory(d,hours){
+ if(![1,6,24].includes(hours)||d?.schema!==SCHEMAS.comparison||
+   d.period_hours!==hours||d.comparison_basis!=='SAME_DURATION_WINDOW_SHIFTED_BY_7D_AND_14D'||
+   !Array.isArray(d.periods))throw Error('CI_WEEKLY_SCHEMA');
+ const periods={};
+ for(const [id,offset] of [['current',0],['week_ago',168]]){
+  const p=d.periods.find(x=>x?.id===id),w=p?.period;
+  if(!p||p.offset_hours!==offset||w?.duration_hours!==hours||
+    !isTime(w.from)||!isTime(w.to)||
+    Math.abs(Date.parse(w.to)-Date.parse(w.from)-hours*3600000)>2000||
+    p.stage_breakdown?.schema!=='HH_CI_JOURNEY_CONTRIBUTIONS_V1'||
+    p.job_clock_summary?.schema!=='HH_CI_NAMED_JOB_CLOCK_V1'||
+    !safeInt(p.stage_breakdown?.n)||!safeInt(p.summary?.n)||
+    p.stage_breakdown.n!==p.summary.n)throw Error('CI_WEEKLY_UNVERIFIED_'+id);
+  periods[id]=p;
+ }
+ if(Math.abs(Date.parse(periods.current.period.to)-Date.parse(periods.week_ago.period.to)-168*3600000)>2000)
+  throw Error('CI_WEEKLY_PERIOD_MISMATCH');
+ const rows=COMPARED_CI_STAGES.map(([key,label,kind])=>{
+  const read=p=>{
+   if(kind==='total')return {value:p.summary.n>0&&safeNum(p.summary.median_minutes)?p.summary.median_minutes:null,
+     n:p.summary.n,denominator:p.summary.n};
+   if(kind==='clock'){
+    const x=p.job_clock_summary.clocks?.[key];
+    return {value:x?.measured_prs>0&&safeNum(x.p50_minutes)?x.p50_minutes:null,
+      n:safeInt(x?.measured_prs)?x.measured_prs:0,denominator:p.summary.n};
+   }
+   const v=p.stage_breakdown.mean_minutes_per_pr?.[key],n=p.stage_breakdown.prs_with_observed_span?.[key];
+   return {value:safeInt(n)&&n>0&&safeNum(v)?v:null,
+     n:safeInt(n)?n:0,denominator:p.summary.n};
+  };
+  return {key,label,kind,current:read(periods.current),week:read(periods.week_ago)};
+ });
+ return {hours,periods,rows};
+}
+const publicHelpers={activity,speed,compactRecords,strictCohort,compareCIHistory,delay,number,SCHEMAS,URLS,periodSummary,activeCI,openBacklog};
 if(typeof module==='object'&&module.exports)module.exports=publicHelpers;
 if(!env?.document||typeof env.fetch!=='function')return;
 const doc=env.document,el=id=>doc.getElementById(id);
 const dom=(tag,cls,txt)=>{const e=doc.createElement(tag);if(cls)e.className=cls;if(txt!==undefined)e.textContent=String(txt);return e};
 const svgNS='http://www.w3.org/2000/svg',colors=['#9bcfff','#78e3bd','#ffc681'];
-const snapshots={};let refreshing=false,selectedPeriod=24,periodRequestSeq=0,strictRaw=null,strictArch=null,strictHours=24,strictUpdateError=null;
+const snapshots={};let refreshing=false,selectedPeriod=24,periodRequestSeq=0,stageRequestSeq=0,strictRaw=null,strictArch=null,strictHours=24,strictUpdateError=null;
 function put(id,value){const e=el(id);if(e)e.textContent=String(value);}
 function anchor(num,title){const a=dom('a',null,title||('#'+num));a.href=REPO+'/pull/'+num;a.target='_blank';a.rel='noopener noreferrer';return a;}
 function sv(parent,tag,attrs={},txt){const e=doc.createElementNS(svgNS,tag);for(const [k,v]of Object.entries(attrs))e.setAttribute(k,String(v));if(txt!==undefined)e.textContent=String(txt);if(parent)parent.appendChild(e);return e;}
@@ -257,9 +305,10 @@ async function refreshStrictCohort(){
 }
 
 
-function renderStages(d){
- if(d?.schema!==SCHEMAS.stages||d.selection?.scope!=='production'||d.selection?.hours!==24||!d.stages||!d.population)throw Error('STAGE_PRODUCTION_SCHEMA');
- put('stages-period','Выборочная диагностика n='+number(d.coverage?.measured)+' · 24 часа · '+stamp(d.generated_at));
+function renderStages(d,hours=selectedPeriod){
+ if(selectedPeriod!==hours)return;
+ if(d?.schema!==SCHEMAS.stages||d.selection?.scope!=='production'||d.selection?.hours!==hours||!d.stages||!d.population)throw Error('STAGE_PRODUCTION_SCHEMA');
+ put('stages-period','Выборочная диагностика n='+number(d.coverage?.measured)+' · '+hours+' ч · '+stamp(d.generated_at));
  const labels=[['prepare','Подготовка / HEAD'],['runner','Ожидание runner'],['ci','Core / Specialist CI'],['gate','Merge Gate'],['merge','Green → Merge']];
  const tbody=el('stage-rows');clear(tbody);
  for(const [key,label]of labels){
@@ -279,6 +328,50 @@ function overviewSources(){
  .filter(([,at])=>isTime(at)).map(([s,at])=>s+': '+stamp(at));
  put('overview-provenance','CI — запуски workflow, не отдельные jobs. '+(x.length?x.join(' · '):'Источники ещё загружаются.'));
 }
+
+function stageMissing(note){
+ const tbody=el('stage-rows');if(tbody){tbody.replaceChildren();
+  const tr=dom('tr');const cell=dom('td',null,note);cell.colSpan=5;tr.append(cell);tbody.append(tr);}
+ const detail=el('stage-detail');if(detail)detail.replaceChildren(dom('p','note','Нет проверенных подэтапов за выбранный период.'));
+ put('stages-period',selectedPeriod+' ч · нет подтверждённых замеров');
+}
+function comparisonMissing(note){
+ const tbody=el('stage-comparison-rows');if(tbody){tbody.replaceChildren();
+  const tr=dom('tr');const cell=dom('td',null,note);cell.colSpan=3;tr.append(cell);tbody.append(tr);}
+ put('stage-comparison-period',selectedPeriod+' ч / 7 дней назад');
+ put('stage-comparison-note','Неподтверждённые интервалы не приравниваются к 0. '+note);
+}
+function renderComparison(d,hours){
+ if(selectedPeriod!==hours)return;
+ const result=compareCIHistory(d,hours);
+ const tbody=el('stage-comparison-rows');if(!tbody)return;
+ tbody.replaceChildren();
+ for(const row of result.rows){
+  const tr=dom('tr');td(tr,row.label);
+  for(const v of [row.current,row.week]){
+   const cell=td(tr,v.value===null?'—':delay(v.value));
+   const note=dom('small','comparison-sample','n='+number(v.n)+'/'+number(v.denominator));
+   cell.append(note);
+  }
+  tbody.append(tr);
+ }
+ const now=result.periods.current,old=result.periods.week_ago;
+ put('stage-comparison-period',hours+' ч / то же окно 7 дней назад');
+ put('stage-comparison-note','Сопоставимые '+hours+'-часовые окна: '+stamp(now.period.from)+
+  ' — '+stamp(now.period.to)+' и '+stamp(old.period.from)+' — '+stamp(old.period.to)+
+  '. Подтверждённый архив Core CI: '+number(now.summary.n)+' / '+number(old.summary.n)+
+  ' PR; полная история не подтверждена. Средние вклады и P50 отдельных jobs не суммируются; это не полный Created → LIVE.');
+}
+async function refreshStageWindows(hours,seq){
+ const requests=[
+  ['stages',URLS.stages.replace('hours=24','hours='+hours),SCHEMAS.stages,d=>renderStages(d,hours),()=>stageMissing('Интервалы этапов не подтверждены. Нажмите «Обновить».')],
+  ['comparison',URLS.comparison+'?hours='+hours+'&compare=1',SCHEMAS.comparison,d=>renderComparison(d,hours),()=>comparisonMissing('Исторический архив CI недоступен или неполон.')]
+ ];
+ await Promise.allSettled(requests.map(async([key,path,schema,apply,fail])=>{
+  try{const d=await fetchSafe(path,schema,16000);if(selectedPeriod===hours&&stageRequestSeq===seq)apply(d);}
+  catch(_){if(selectedPeriod===hours&&stageRequestSeq===seq)fail();}
+ }));
+}
 function renderCILive(d){
  const v=activeCI(d),ok=recently(v.at);
  put('k-ci-running',ok?number(v.running):'—');put('k-ci-queued',ok?number(v.queued):'—');
@@ -296,6 +389,8 @@ function renderPeriod(d,hours){
 async function selectPeriod(hours){
  if(![1,6,24].includes(hours)||hours===selectedPeriod)return;
  selectedPeriod=hours;strictHours=hours;renderStrictCohort();const seq=++periodRequestSeq;
+ const stageSeq=++stageRequestSeq;stageMissing('Читаю этапы за '+hours+' ч…');comparisonMissing('Загружаю сопоставимое окно неделю назад…');
+ void refreshStageWindows(hours,stageSeq);
  for(const b of doc.querySelectorAll('[data-period]'))b.setAttribute('aria-pressed',String(Number(b.dataset.period)===hours));
  put('k-created','—');put('k-merged','—');put('k-created-note','Получаю данные за '+hours+' ч');put('k-merged-note','Получаю данные за '+hours+' ч');
  try{const data=await fetchSafe(URLS.period+'?hours='+hours,SCHEMAS.period);
@@ -384,13 +479,14 @@ async function refresh(){
  let complete=0,errors=0;const sourceTimes=[];
 
  const atStart=selectedPeriod;
- const tasks=[['flow',d=>drawFlow(activity(d))],['cohort',renderStrictCohort],['stages',renderStages],['ci',renderCI],['queue',renderQueue],['repair',renderRepair],['ciLive',renderCILive],['period',d=>{if(selectedPeriod===atStart)renderPeriod(d,atStart);},URLS.period+'?hours='+atStart]];
+ const atStage=++stageRequestSeq;
+ const tasks=[['flow',d=>drawFlow(activity(d))],['cohort',renderStrictCohort],['stages',d=>{if(stageRequestSeq===atStage)renderStages(d,atStart);},URLS.stages.replace('hours=24','hours='+atStart)],['comparison',d=>{if(stageRequestSeq===atStage)renderComparison(d,atStart);},URLS.comparison+'?hours='+atStart+'&compare=1'],['ci',renderCI],['queue',renderQueue],['repair',renderRepair],['ciLive',renderCILive],['period',d=>{if(selectedPeriod===atStart)renderPeriod(d,atStart);},URLS.period+'?hours='+atStart]];
  const result=await Promise.allSettled(tasks.map(async([key,fn,route])=>{
-  const data=key==='cohort'?await refreshStrictCohort():await fetchSafe(route||URLS[key],SCHEMAS[key],key==='ci'?11000:8500);if(key!=='cohort')fn(data);
+  const data=key==='cohort'?await refreshStrictCohort():await fetchSafe(route||URLS[key],SCHEMAS[key],['stages','comparison'].includes(key)?16000:key==='ci'?11000:8500);if(key!=='cohort')fn(data);
   const at=key==='queue'?(data.checked_at||data.generated_at):key==='period'?data.observed_at:data.generated_at;
   sourceTimes.push(isTime(at)?Date.parse(at):null);complete++;
  }));
- for(let i=0;i<result.length;i++){if(result[i].status==='rejected'){errors++;const key=tasks[i][0];if(key==='flow')put('flow-info','Сейчас нет ответа данных PR/CI — нажмите «Обновить».');if(key==='cohort'&&!strictRaw)renderStrictCohort();if(key==='ci')put('ci-coverage','CI источник недоступен');
+ for(let i=0;i<result.length;i++){if(result[i].status==='rejected'){errors++;const key=tasks[i][0];if(key==='flow')put('flow-info','Сейчас нет ответа данных PR/CI — нажмите «Обновить».');if(key==='cohort'&&!strictRaw)renderStrictCohort();if(key==='stages'&&selectedPeriod===atStart&&stageRequestSeq===atStage)stageMissing('Источник этапов не ответил.');if(key==='comparison'&&selectedPeriod===atStart&&stageRequestSeq===atStage)comparisonMissing('Исторические данные не ответили.');if(key==='ci')put('ci-coverage','CI источник недоступен');
  if(key==='ciLive'){put('k-ci-running','—');put('k-ci-queued','—');put('k-ci-running-note','Источник недоступен');put('k-ci-queued-note','Источник недоступен');}
  if(key==='queue'){put('k-open','—');put('k-open-note','Источник недоступен');}
  if(key==='period'&&selectedPeriod===atStart){put('k-created','—');put('k-merged','—');put('k-created-note','Источник недоступен');put('k-merged-note','Источник недоступен');}}}
@@ -398,7 +494,7 @@ async function refresh(){
  const age=oldest===null?Infinity:oldest===-Infinity?Infinity:Math.max(0,Date.now()-oldest);
  const stale=age>75*60000,delayed=age>15*60000;
  const freshness=stale?'Есть устаревший источник':delayed?'Некоторые источники обновляются с задержкой':'Источники свежие';
- put('status',errors?'Доступно '+complete+' из 8 источников, '+errors+' недоступны. '+freshness+'.':freshness+' · доступно '+complete+' из 8 источников.');
+ put('status',errors?'Доступно '+complete+' из 9 источников, '+errors+' недоступны. '+freshness+'.':freshness+' · доступно '+complete+' из 9 источников.');
  put('updated-at',Number.isFinite(oldest)?'Самый ранний срез · Торонто: '+stamp(oldest):'Время одного из источников неизвестно');
  el('state-dot').className='status-dot '+(complete===0?'bad':errors||delayed?'':'good');
  el('refresh').disabled=false;refreshing=false;updateRecommendations();
