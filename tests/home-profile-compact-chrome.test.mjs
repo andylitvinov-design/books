@@ -3,13 +3,20 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 
-test('Home uses My Space as its only top chrome and hides the sitewide promo ribbon', () => {
+test('The new public Home is only a one-line My Space conversation entry, without a second masthead', () => {
   const home=read('components/holistic-house-home.tsx')
+  const dialog=read('components/home-dialog-first.tsx')
   const banner=read('components/sitewide-antistress-banner.tsx')
-  assert.match(home, /<ProfileHubTabs locale=\{locale\} publicEntry \/>/)
-  assert.doesNotMatch(home, /<header className="house-header house-header--services">/)
-  assert.match(banner, /pathname === "\/" \|\|/)
-  assert.match(banner, /\(\?:ru\|en\|es\)/)
+  assert.match(home,/<HomeDialogFirst locale=\{locale\}\/>/)
+  assert.doesNotMatch(home,/ProfileHubTabs|HomeSectionCarousel|HomeFeaturedWorkspace|HomeMoreDisclosure/)
+  assert.match(dialog,/<h1 className=\{css.title\}>My Space<\/h1>/)
+  assert.match(dialog,/data-home-purpose="self"/)
+  assert.match(dialog,/data-home-purpose="business"/)
+  assert.match(dialog,/<SiteSearch locale=\{locale\} pathname=\{target\}\/>/)
+  assert.match(dialog,/data-home-menu/)
+  assert.match(banner,/pathname === "\/" \|\|/)
+  assert.match(banner,/\(\?:ru\|en\|es\)/)
+  assert.doesNotMatch(home,/house-header--services|SiteNavigation/)
 })
 
 test('Home and Profile share real search/menu, compact locale switch and working public links', () => {

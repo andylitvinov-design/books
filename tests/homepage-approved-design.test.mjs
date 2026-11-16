@@ -4,22 +4,17 @@ import test from "node:test";
 
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
-test("seven-stage main home retains three real services through the shared CTAs and filters", () => {
-  const home = read("components/holistic-house-home.tsx");
-  const es = read("app/es/page.tsx");
-  const stage = read("components/home-featured-workspace.tsx");
-  const more = read("components/home-more-disclosure.tsx");
-  for (const page of [home,es]) {
-    assert.match(page, /<HomeMoreDisclosure locale=/);
-    assert.match(page, /<HomeFeaturedWorkspace locale=/);
-    assert.doesNotMatch(page, /<HomeFreeDiagnosisBanner|<HomepageTopicJourneys|<HomeCoreMethods|<HomeMasterPath/);
-  }
-  for (const slug of ["free-situation-review","business-consulting","systemic-constellations","alchemy-of-soul"])
-    assert.ok(stage.includes(slug), slug);
-  assert.match(more, /data-home-topic-filter="services"/);
-  assert.match(more, /data-home-topic-filter="business"/);
-  assert.match(home, /<PersonalTestimonials locale=\{locale\} variant="home"/);
-  assert.doesNotMatch(home, /introVideoContent|HomeIntroVideoSection/);
+test("approved Home opens one dialogue instead of seven synchronous catalogues",()=>{
+ const home=read("components/holistic-house-home.tsx");
+ const es=read("app/es/page.tsx");
+ const first=read("components/home-dialog-first.tsx");
+ assert.match(home,/<HomeDialogFirst locale=\{locale\}\/>/);
+ assert.match(es,/<HomeDialogFirst locale="es"\/>/);
+ for(const source of [home,es])assert.doesNotMatch(source,/HomeSectionCarousel|HomeFeaturedWorkspace|HomeMoreDisclosure|ProfileHubTabs|PersonalTestimonials/);
+ assert.match(first,/data-home-purpose-switch/);
+ assert.match(first,/data-home-quick-intents/);
+ assert.match(first,/data-home-intent-input/);
+ assert.match(first,/priority unoptimized/);
 });
 
 test("homeopathy card has a complete local illustration instead of the observed broken image", () => {
@@ -35,18 +30,14 @@ test("homeopathy card has a complete local illustration instead of the observed 
   assert.match(journey, /constellations-en-v1\.webp/);
 });
 
-test("approved design uses actual teacher portrait, not the synthetic mockup person", () => {
-  const home = read("components/holistic-house-home.tsx");
-  assert.ok(existsSync(new URL("../public/images/holistic-house/andy-about.png", import.meta.url)));
-  assert.match(home, /className="service-home-about__portrait"/);
-  assert.match(home, /src="\/images\/holistic-house\/andy-about\.png"/);
-  assert.match(home, /className="service-home-about__image"/);
-  assert.match(home, /width=\{900\}/);
-  assert.match(home, /height=\{720\}/);
-  assert.match(home, /alt=\{locale === "ru" \? "Андрей Литвинов" : "Andrey Litvinov"\}/);
-  assert.match(home, /<p>\{text\.aboutIntro\}<\/p>/);
-  assert.match(home, /event="practitioner_view"/);
-  assert.doesNotMatch(home, /generated-avatar|synthetic-portrait|mockup-person/);
+test("approved first paint uses a lightweight owned scenic image, not an invented presenter",()=>{
+ const first=read("components/home-dialog-first.tsx");
+ const home=read("components/holistic-house-home.tsx");
+ assert.ok(existsSync(new URL("../public/images/holistic-house/reiki-approved-sunrise-v3.webp", import.meta.url)));
+ assert.match(first,/reiki-approved-sunrise-v3\.webp/);
+ assert.match(first,/priority unoptimized/);
+ assert.doesNotMatch(home,/generated-avatar|mockup-person|<StaticPortrait/);
+ assert.ok(existsSync(new URL("../public/images/holistic-house/andy-about.png", import.meta.url)));
 });
 
 test("premium botanical cards are responsive, keyboard-accessible and do not alter full Services", () => {
@@ -66,37 +57,27 @@ test("premium botanical cards are responsive, keyboard-accessible and do not alt
   assert.match(homeStyle, /prefers-reduced-motion:reduce/);
 });
 
-test("homepage uses the real blue enquiry chooser instead of the old beige direct-contact card", () => {
-  const home = read("components/holistic-house-home.tsx");
-  const cta = read("components/homepage-contact-cta.tsx");
-  const capture = read("components/consultation-choice-capture.tsx");
-  const captureCss = read("components/consultation-choice-capture.module.css");
-  const homeStyle = read("app/holistic-house-home.css");
-  assert.match(home, /<HomepageContactCta locale=\{locale\} \/>/);
-  assert.match(cta, /data-home-contact-capture/);
-  const homeFree = read("components/homepage-free-capture.tsx");
-  assert.match(cta, /<HomepageFreeCapture locale=\{locale\} \/>/);
-  assert.match(homeFree, /data-consultation-capture="home-free"/);
-  assert.match(homeFree, /data-choice-layout="home-free"/);
-  assert.doesNotMatch(cta, /variant="service"/);
-  assert.match(capture, /serviceChoices: ServiceChoice\[\] = \["session", "questions", "free"\]/);
-  assert.match(capture, /whatsappEnquiryUrl/);
-  assert.match(capture, /t\.me\/AndyTherapist/);
-  assert.match(capture, /services\/free-situation-review/);
-  assert.match(captureCss, /linear-gradient\(125deg, #e9f7fe/);
-  assert.match(homeStyle, /\.house-home--services \.home-contact-choice/);
-  assert.doesNotMatch(cta, /home-contact-capture__primary|You can simply write to me/);
-  assert.doesNotMatch(home, /fake-testimonial|stock-avatar/);
+test("contact and prices remain available on their dedicated consented service journeys",()=>{
+ const home=read("components/holistic-house-home.tsx");
+ const first=read("components/home-dialog-first.tsx");
+ const cta=read("components/homepage-contact-cta.tsx");
+ const capture=read("components/consultation-choice-capture.tsx");
+ assert.doesNotMatch(home,/HomepageContactCta|PublicConsultationCta/);
+ assert.match(first,/\/services/);
+ assert.match(cta,/data-home-contact-capture/);
+ assert.match(capture,/serviceChoices: ServiceChoice\[\] = \["session", "questions", "free"\]/);
+ assert.match(capture,/whatsappEnquiryUrl/);
+ assert.match(capture,/services\/free-situation-review/);
 });
 
-test("home converts visitors through one stage and preserves one final consented contact form", () => {
-  const home = read("components/holistic-house-home.tsx");
-  const stage = read("components/home-featured-workspace.tsx");
-  const more = read("components/home-more-disclosure.tsx");
-  assert.match(stage, /data-home-offer-primary=\{offer\.id\}/);
-  assert.match(stage, /data-home-offer-details=\{offer\.id\}/);
-  assert.doesNotMatch(home, /data-home-extra-paths|<details className="service-home-more"/);
-  assert.ok(home.indexOf("<HomeMoreDisclosure") < home.indexOf("<HomepageContactCta"));
-  assert.match(more, /data-home-topic-filter="energy"/);
-  assert.doesNotMatch(more, /<ServicesSolutions|<HomeExploreSections/);
+test("Home provides a single chat-first action and no duplicate conversion form",()=>{
+ const home=read("components/holistic-house-home.tsx");
+ const first=read("components/home-dialog-first.tsx");
+ assert.match(home,/<HomeDialogFirst locale=\{locale\}\/>/);
+ assert.doesNotMatch(home,/HomeMoreDisclosure|HomepageContactCta|data-home-extra-paths|HomeFeaturedWorkspace/);
+ assert.match(first,/data-home-intent-submit/);
+ assert.match(first,/data-home-continue/);
+ assert.match(first,/data-home-menu/);
+ assert.match(read("components/home-more-disclosure.tsx"),/data-home-topic-filter="energy"/);
 });
+

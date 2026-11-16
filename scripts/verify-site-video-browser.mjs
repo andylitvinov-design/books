@@ -174,7 +174,13 @@ try {
     // owner-approved 2026-10-30 presentation, not an old HeyGen fallback.
     await expect(page.locator('[data-video-slot="home-intro"]')).toHaveCount(0)
     const presentation = page.locator('[data-video-slot="home-presentation"]')
-    if (home === '/ru') {
+    if (await page.locator('[data-home-dialog-first]').count()) {
+      // The owner moved welcome and first action to one fast chat-first Home.
+      // Its old media slot MUST be absent; published videos remain on their
+      // dedicated pages and the existing Ali Assistant.
+      await expect(presentation).toHaveCount(0)
+      await expect(page.locator('[data-home-intent-input]')).toBeVisible()
+    } else if (home === '/ru') {
       // A production-domain check may run before this PR is deployed.
       // Local/preview builds MUST show the approved RU presentation.
       if (!live || await presentation.count()) {
@@ -205,7 +211,8 @@ try {
       await expect(presentation).toHaveAttribute('data-video-locale', 'en')
       await expect(presentation.locator('iframe')).toHaveCount(0)
     }
-    await expect(page.locator('[data-personal-testimonials="home"]')).toHaveCount(1)
+    if (!await page.locator('[data-home-dialog-first]').count())
+      await expect(page.locator('[data-personal-testimonials="home"]')).toHaveCount(1)
   }
   pass(`${live ? 'Production' : 'Local'}: withdrawn intros hidden; EN publication gate checked`)
   if (russianPresentationVerified) {

@@ -278,7 +278,7 @@ type NativePromptSession = { prompt: (text:string,options?:{signal?:AbortSignal}
 type NativeLanguageModel = { availability:(options:unknown)=>Promise<string>;
   create:(options?:unknown)=>Promise<NativePromptSession> };
 export type HolisticAgentPageHelp = {greeting:string;section?:string;actions:Array<{id:string;label:string;prompt:string;reply:string;href?:string;track?:"video"|"meditation"|"hint"}>};
-export type HolisticAgentQuickPrompt = {revision:number;text:string;format?:"video"|"audio"|"course"|"service"|"test"};
+export type HolisticAgentQuickPrompt = {revision:number;text:string;format?:"video"|"audio"|"course"|"service"|"test";autoSubmit?:boolean};
 export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,authenticated=false,authStatus="guest",onAuthRetry,pageHelp,messengerView=false,onConversationLocaleChange}:{
  locale:PublicLocale;compact?:boolean;quickPrompt?:HolisticAgentQuickPrompt|null;authenticated?:boolean;
  authStatus?:"guest"|"checking"|"authenticated"|"unavailable";onAuthRetry?:()=>void;pageHelp?:HolisticAgentPageHelp|null;messengerView?:boolean;
@@ -441,6 +441,15 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     // The user explicitly selected a rail action: prepare, never auto-send it.
     if(!compact)composerRef.current?.focus({preventScroll:true});
   },[quickPrompt,compact]);
+  const homeIntentConsumed=useRef<number|null>(null);
+  useEffect(()=>{
+    if(!messengerView||!quickPrompt?.autoSubmit||homeIntentConsumed.current===quickPrompt.revision)return;
+    homeIntentConsumed.current=quickPrompt.revision;
+    setEntryOpen(false);
+    // Only a real explicit Home Send reaches this path. The normal sendTurn
+    // safety, locale, sign-in and consent guards stay in full control.
+    void sendTurn(quickPrompt.text);
+  },[quickPrompt,messengerView]);
   useEffect(()=>{
     if(!compact)return;
     // Only a public instrument key may travel in the URL; answers/results never do.

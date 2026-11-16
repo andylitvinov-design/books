@@ -3,18 +3,18 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 
-test('public English, Russian and Spanish homes show the same My Space video-first navigation and categories', () => {
-  for (const path of ['components/holistic-house-home.tsx', 'app/es/page.tsx']) {
-    const page = read(path)
-    const hub = page.indexOf('<ProfileHubTabs')
-    const topics = page.indexOf('<MySpaceTopics')
-    const oldCarousel = page.indexOf('<HomeSectionCarousel')
-    const stages = page.indexOf('<HomeFeaturedWorkspace')
-    assert.ok(hub >= 0 && hub < topics && topics < oldCarousel && oldCarousel < stages,
-      path + ': video and topical discovery lead into the old seven-stage content')
-    assert.match(page, /publicEntry/)
-    assert.match(page, /publicHome/)
-  }
+test('public EN/RU/ES homes share the one-line dialog-first design',()=>{
+ const home=read('components/holistic-house-home.tsx')
+ const es=read('app/es/page.tsx')
+ const first=read('components/home-dialog-first.tsx')
+ assert.match(home,/<HomeDialogFirst locale=\{locale\}\/>/)
+ assert.match(es,/<HomeDialogFirst locale="es"\/>/)
+ assert.match(first,/data-home-first-header/)
+ assert.match(first,/data-home-purpose-switch/)
+ assert.match(first,/data-home-conversation-hero/)
+ for(const x of ['Для себя','Для бизнеса','For myself','For business','Para mí','Para negocios'])
+  assert.ok(first.includes(x),x)
+ assert.doesNotMatch(home,/ProfileHubTabs|HomeSectionCarousel|HomeFeaturedWorkspace/)
 })
 
 test('guest and account My Space add topics after the existing shared video and four quick actions', () => {
@@ -28,13 +28,14 @@ test('guest and account My Space add topics after the existing shared video and 
   assert.match(hub, /preload="none"/)
 })
 
-test('browser acceptance detects published EN/RU facades and the ES scenic video without autoplay', () => {
-  const browser = read('scripts/verify-home-consultation-first-screen.mjs')
-  assert.match(browser, /data-profile-presentation-locale/)
-  assert.match(browser, /site-video-frame/)
-  assert.match(browser, /site-video-play/)
-  assert.match(browser, /locator\('iframe'\)\.count\(\)/)
-  assert.match(browser, /presentation language matches the selected site locale/)
+test('browser acceptance requires the first-input hero, seven dock links and no autoplay',()=>{
+ const browser=read('scripts/verify-home-consultation-first-screen.mjs')
+ assert.match(browser,/data-home-first-header/)
+ assert.match(browser,/data-home-intent-input/)
+ assert.match(browser,/data-home-purpose="business"/)
+ assert.match(browser,/data-unified-dock-item/)
+ assert.match(browser,/no heavy Profile\/video on first paint/)
+ assert.match(browser,/document\.documentElement\.scrollWidth/)
 })
 
 test('all six categories, three verified free starts, seven-stage path and mobile sizes are present', () => {

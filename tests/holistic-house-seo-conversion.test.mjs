@@ -47,22 +47,18 @@ test("home SEO metadata and all three languages have real human-readable variant
   assert.match(sitemap, /\.\.\.network, \.\.\.homes/);
 });
 
-test("home SEO preserves visible photo offers and bottom blue free capture in EN/RU", () => {
-  const home = read("components/holistic-house-home.tsx");
-  const spanish = read("app/es/page.tsx");
-  assert.equal(home.split("<HomepageContactCta locale={locale} />").length - 1, 1);
-  assert.ok(home.indexOf("<ServicesSolutions locale={locale} variant=\"home\" />") < home.indexOf("<HomepageContactCta locale={locale} />"));
-  assert.doesNotMatch(home, /data-home-path|data-home-extra-paths|service-home-more|service-home-progress/);
-  assert.match(home, /href=\{\x60\/\$\{locale\}\/client\/tests\x60\}/);
-  assert.doesNotMatch(home, /HomeFreeTestsBanner/);
-  for (const comp of ["ServicesSolutions", "HomepageTopicJourneys", "PersonalTestimonials"]) {
-    assert.ok(home.includes("<" + comp), comp);
-  }
-  assert.match(spanish, /href="\/es\/services\/free-situation-review"/);
-  assert.match(spanish, /className="service-home-card-photo"/);
-  assert.match(spanish, /<PublicConsultationCta locale="es" \/>/);
-  assert.ok(spanish.indexOf("service-home-services") < spanish.indexOf("<PublicConsultationCta locale=\"es\" />"));
-  assert.doesNotMatch(spanish, /service-home-more|service-home-progress/);
+test("home SEO retains canonical locales while user-facing entry is light and conversational",()=>{
+ const home=read("components/holistic-house-home.tsx");
+ const spanish=read("app/es/page.tsx");
+ const first=read("components/home-dialog-first.tsx");
+ assert.match(home,/<HomeDialogFirst locale=\{locale\}\/>/);
+ assert.match(spanish,/<HomeDialogFirst locale="es"\/>/);
+ assert.doesNotMatch(home,/ServicesSolutions|HomepageTopicJourneys|PersonalTestimonials|HomepageContactCta/);
+ assert.match(first,/data-home-conversation-hero/);
+ assert.match(first,/\/client\/tests/);
+ assert.match(first,/\/academy/);
+ assert.match(first,/\/services/);
+ assert.match(read("components/homepage-contact-cta.tsx"),/data-home-contact-capture/);
 });
 
 test("linked data represents actual organization/person without invented regulated credentials or location", () => {

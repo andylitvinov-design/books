@@ -1,202 +1,143 @@
-// Production-build-only first-screen CTA QA. No user forms, payments or private data.
-import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
-import { mkdir, writeFile } from 'node:fs/promises';
-
-const require = createRequire(import.meta.url);
-const { chromium, webkit } = require(process.env.HH_PLAYWRIGHT_PACKAGE || 'playwright');
-const origin = process.env.HH_PUBLIC_QA_ORIGIN || 'http://127.0.0.1:3100';
-if (!/^http:\/\/(?:127\.0\.0\.1|localhost):\d+$/.test(origin)) {
-  throw new Error('Homepage acceptance only runs against an isolated local production server');
-}
-const output = 'artifacts/home-first-screen';
-await mkdir(output, { recursive: true });
-
-const result = [];
-for (const engine of [chromium, webkit]) {
-  const browser = await engine.launch();
-  try {
-    for (const [locale, route, paidCopy] of [
-      ['en', '/', 'Request a consultation · from €50'],
-      ['ru', '/ru', 'Запросить консультацию · от €50'],
-      ['es', '/es', 'Solicitar una consulta · desde €50'],
-    ]) {
-      for (const width of [320, 390, 430]) {
-        const page = await browser.newPage({
-          viewport: { width, height: 844 },
-          deviceScaleFactor: 1,
-          isMobile: true,
-          hasTouch: true,
-          reducedMotion: 'reduce',
-        });
-        const label = engine.name() + ':' + locale + ':' + width;
-        try {
-          const response = await page.goto(origin + route, { waitUntil: 'domcontentloaded', timeout: 60000 });
-          assert.equal(response?.status(), 200, label + ': public home must load');
-          const slider = page.locator('[data-home-section-carousel] [role="region"][aria-roledescription="carousel"]');
-          const paid = slider.locator('[data-home-first-screen-cta="paid"]');
-          const free = page.locator('[data-home-module-action="review"]');
-          await paid.waitFor({ state: 'visible', timeout: 30000 });
-          await free.waitFor({ state: 'visible', timeout: 30000 });
-          const [card, book, review] = await Promise.all([
-            slider.boundingBox(), paid.boundingBox(), free.boundingBox(),
-          ]);
-          assert.ok(card && book && review, label + ': slider, paid CTA and free diagnosis are rendered');
-          assert.ok(book.y >= card.y && book.y + book.height <= card.y + card.height,
-            label + ': consultation CTA stays inside the first slider');
-          // The owner's new front page is My Space: six tabs above video,
-          // four navigation actions beneath it, then six main categories.
-          // The retained consultation carousel is now further down the page.
-          const firstTabs = page.locator('[data-profile-tab="today"]');
-          // EN/RU now use the approved presentation's click-to-play facade,
-          // while ES retains the accessible scenic <video> fallback.
-          // Pending English YouTube is an honest 16:9 poster + channel link,
-          // not a fake playable video. Preserve the other real player states.
-          const firstVideo = page.locator(
-            '[data-profile-video-hero] [data-profile-presentation-source="youtube-pending"], ' +
-            '[data-profile-video-hero] .site-video-frame, [data-profile-video-hero] video'
-          ).first();
-          if (locale === 'en' || locale === 'ru') {
-            const localized = page.locator('[data-profile-presentation-locale]');
-            assert.equal(await localized.getAttribute('data-profile-presentation-locale'), locale,
-              label + ': presentation language matches the selected site locale');
-            if (locale === 'en') {
-              // The approved English channel is YouTube-only. Wait for the exact
-              // public receipt lookup: verified upload → native Play, otherwise
-              // honest, accessible pending state with a real @aatapro link.
-              await page.waitForFunction(() => {
-                const node=document.querySelector('[data-profile-presentation-locale="en"]');
-                return node?.getAttribute('data-profile-presentation-source')==='youtube' ||
-                  node?.getAttribute('data-profile-youtube-status')==='awaiting-verified-upload';
-              },undefined,{timeout:15000});
-            }
-            const source = await localized.getAttribute('data-profile-presentation-source');
-            if (locale === 'en' && source === 'youtube-pending') {
-              assert.equal(await localized.getAttribute('data-profile-youtube-status'),
-                'awaiting-verified-upload',label + ': unverified YouTube cannot claim playback');
-              const channel = localized.locator('a[href="https://www.youtube.com/@aatapro"]');
-              assert.equal(await channel.count(), 1,
-                label + ': pending presentation opens the approved English channel');
-              assert.equal(await channel.getAttribute('target'), '_blank',
-                label + ': open channel without discarding the local page');
-              assert.equal(await channel.getAttribute('rel'), 'noopener noreferrer',
-                label + ': secure outbound channel link');
-              const linkBox=await channel.boundingBox();
-              assert.ok(linkBox && linkBox.height>=44,label + ': pending channel CTA is tappable');
-              assert.equal(await localized.locator('.site-video-play').count(), 0,
-                label + ': no fake Play while YouTube is unverified');
-            } else {
-              assert.equal(await localized.locator('.site-video-play').count(), 1,
-                label + ': verified presentation has a genuine Play action');
-            }
-            assert.equal(await localized.locator('iframe').count(), 0,
-              label + ': presentation does not auto-play or mount third-party playback');
-          } else {
-            assert.equal(await firstVideo.getAttribute('controls'), '',
-              label + ': Spanish fallback is a controllable scenic player');
-          }
-          const firstQuick = page.locator('[data-profile-quick-actions]');
-          const firstTopics = page.locator('[data-my-space-topics]');
-          const [tabBox, videoBox, quickBox, topicBox] = await Promise.all([
-            firstTabs.boundingBox(), firstVideo.boundingBox(),
-            firstQuick.boundingBox(), firstTopics.boundingBox(),
-          ]);
-          assert.ok(tabBox && videoBox && quickBox && topicBox,
-            label + ': My Space navigation, video and six directions render');
-          assert.ok(tabBox.y + tabBox.height <= videoBox.y + 1 &&
-            videoBox.y + videoBox.height <= quickBox.y + 1 &&
-            quickBox.y + quickBox.height <= topicBox.y + 1,
-            label + ': navigation above video, actions below, topics after');
-          assert.equal(await firstTopics.locator('[data-my-space-topic]').count(), 6,
-            label + ': all six editorial directions have real links');
-          assert.ok(videoBox.y < 844 - 72, label + ': video starts on the first mobile screen');
-          assert.ok(book.height >= 44 && review.height >= 44, label + ': finger-sized tap areas');
-          assert.equal((await paid.innerText()).trim().replace(/\s+/g, ' '), paidCopy,
-            label + ': exact localized €50 CTA');
-          const paidHref = await paid.getAttribute('href');
-          const freeHref = '/' + locale + '/services/free-situation-review';
-          assert.equal(paidHref, '/' + locale + '/services#consultation', label + ': existing booking destination');
-          assert.equal(await free.getAttribute('href'), freeHref,
-            label + ': free analysis reaches the existing consent-gated service');
-          // The approved first carousel slide keeps the original photo, six named
-          // section links and the priced consultation button on the first fold.
-          const sectionNav = page.locator('[data-home-hero-nav="true"]');
-          await sectionNav.waitFor({ state: 'visible', timeout: 30000 });
-          const sectionLinks = sectionNav.locator('a[data-home-nav-section]');
-          assert.equal(await sectionLinks.count(), 6, label + ': six plain text site sections');
-          assert.equal(await sectionNav.locator('svg, img').count(), 0, label + ': no icons in the hero navigation');
-          assert.ok((await sectionNav.getAttribute('aria-label'))?.length > 3, label + ': accessible section list');
-          const keys = ['services', 'academy', 'business', 'tests', 'ideas', 'cabinet'];
-          const suffixes = ['/explore/energy', '/explore/love', '/explore/business', '/client/tests', '/books', '/app'];
-          for (let i = 0; i < keys.length; i++) {
-            const link = sectionLinks.nth(i);
-            assert.equal(await link.getAttribute('data-home-nav-section'), keys[i], label + ': navigation order');
-            assert.equal(await link.getAttribute('href'),
-              keys[i] === 'cabinet' && locale === 'es' ? '/en/app' : '/' + locale + suffixes[i],
-              label + ': real localized route for ' + keys[i]);
-            const target = await link.boundingBox();
-            assert.ok(target && target.height >= 44, label + ': touch target for ' + keys[i]);
-          }
-          assert.equal(await sectionLinks.nth(0).getAttribute('aria-current'), 'true', label + ': first services slide selected');
-          const [navBox, copyBox] = await Promise.all([
-            sectionNav.boundingBox(), page.locator('[data-home-slide]').boundingBox(),
-          ]);
-          assert.ok(navBox && copyBox, label + ': nav and photo copy are laid out');
-          assert.ok(navBox.y >= card.y - 1 && navBox.y + navBox.height <= copyBox.y + 4,
-            label + ': lightweight nav stays above the title without overlapping it');
-          assert.ok(navBox.x >= card.x - 1 && navBox.x + navBox.width <= card.x + card.width + 1,
-            label + ': nav stays within the existing photo');
-          const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
-          assert.ok(overflow <= 1, label + ': no horizontal overflow');
-          const visiblePixels = { cardY: Math.round(card.y), cardHeight: Math.round(card.height),
-            paidHeight: Math.round(book.height), freeHeight: Math.round(review.height) };
-          result.push({ engine: engine.name(), locale, width, ...visiblePixels });
-          if (engine === webkit && width === 390) {
-            await page.screenshot({ path: output + '/home-' + locale + '-webkit-390.png', fullPage: false });
-          }
-          // Opening the existing collapsed catalogue is the only trigger for
-          // downloading its heavier client code. Preserve route links even if
-          // the visitor keeps the disclosure closed.
-          if (width === 390) {
-            const more = page.locator('[data-home-more-deferred="true"]');
-            assert.equal(await more.locator('[data-home-conversation-guide]').count(), 0,
-              label + ': closed guidance must not inflate initial SSR/RSC');
-            for (const [key, path] of Object.entries({'energy-confidence':'/explore/energy',
-              'love-relationships':'/explore/love', 'goals-money':'/explore/business',
-              'stress-anxiety':'/explore/stress', temple:'/temple-support', services:'/services', courses:'/academy'})) {
-              assert.equal(await page.locator('[data-home-topic-filter="' + key + '"]').getAttribute('href'),
-                '/' + locale + path, label + ': existing topic route for ' + key);
-            }
-            await page.waitForFunction(() => {
-              const details = document.querySelector('[data-home-more-deferred="true"]');
-              return Boolean(details && Object.keys(details).some(key => key.startsWith('__reactProps$')));
-            }, null, {timeout:30000});
-            await more.locator('summary').first().click();
-            await more.locator('[data-home-conversation-guide]').waitFor({ state: 'visible', timeout: 60000 });
-            assert.equal(await more.getAttribute('open'), '',
-              label + ': expanding reveals the existing conversation guidance');
-            await more.locator('summary').first().click();
-            assert.equal(await more.getAttribute('open'), null, label + ': closes without navigation');
-          }
-          // Navigation is a genuine public route read. Do not submit a form, create
-          // a lead, book an appointment or trigger a payment.
-          if (width === 390) {
-            const paidTarget = await page.request.get(origin + paidHref.split('#')[0], { timeout: 30000 });
-            const freeTarget = await page.request.get(origin + freeHref, { timeout: 30000 });
-            assert.equal(paidTarget.status(), 200, label + ': paid target HTTP 200');
-            assert.equal(freeTarget.status(), 200, label + ': free target HTTP 200');
-            // A real touch navigation must reach the requested public section.
-            await sectionNav.locator('[data-home-nav-section="tests"]').tap();
-            await page.waitForURL(url => url.pathname === '/' + locale + '/client/tests', { timeout: 30000 });
-          }
-        } finally {
-          await page.close();
-        }
-      }
-    }
-  } finally {
-    await browser.close();
+// Protected browser acceptance for the owner's lightweight conversation-first
+// Home. Test the actual first paint, seven existing dock items and real links;
+// do not require any legacy video/carousel to render above the conversation.
+import assert from "node:assert/strict";
+import {createRequire} from "node:module";
+import {mkdir,writeFile} from "node:fs/promises";
+const require=createRequire(import.meta.url);
+const {chromium,webkit}=require(process.env.HH_PLAYWRIGHT_PACKAGE||"playwright");
+const origin=process.env.HH_PUBLIC_QA_ORIGIN||"http://127.0.0.1:3100";
+if(!/^http:\/\/(?:127\.0\.0\.1|localhost):\d+$/.test(origin))
+ throw Error("Homepage acceptance requires isolated local production server");
+const output="artifacts/home-first-screen";
+await mkdir(output,{recursive:true});
+const results=[];
+for(const engine of [chromium,webkit]){
+ const browser=await engine.launch();
+ try{
+  for(const [locale,path,self,business] of [
+    ["en","/","For myself","For business"],
+    ["ru","/ru","Для себя","Для бизнеса"],
+    ["es","/es","Para mí","Para negocios"],
+  ]){
+   for(const width of [320,390,430]){
+    const page=await browser.newPage({viewport:{width,height:844},
+      deviceScaleFactor:1,isMobile:true,hasTouch:true,reducedMotion:"reduce"});
+    const label=engine.name()+"/"+locale+"/"+width;
+    try{
+     const response=await page.goto(origin+path,{waitUntil:"domcontentloaded",timeout:60000});
+     assert.equal(response?.status(),200,label+": HTTP 200");
+     const home=page.locator("main[data-home-dialog-first]");
+     await home.waitFor({state:"visible",timeout:25000});
+     const header=home.locator("[data-home-first-header]");
+     const hero=home.locator("[data-home-conversation-hero]");
+     const input=home.locator("[data-home-intent-input]");
+     const send=home.locator("[data-home-intent-submit]");
+     assert.equal(await header.locator("h1").innerText(),"My Space",label+": one-line title");
+     assert.equal(await home.locator("[data-profile-hub-tabs], [data-home-section-carousel], iframe, video").count(),0,
+       label+": no heavy Profile/video on first paint");
+     assert.equal(await page.locator("[data-sitewide-antistress-banner], .house-header--services").count(),0,
+       label+": no promotional/old masthead");
+     await hero.waitFor({state:"visible"});
+     await input.waitFor({state:"visible"});
+     await send.waitFor({state:"visible"});
+     const [hb,ib]=await Promise.all([header.boundingBox(),input.boundingBox()]);
+     assert.ok(hb&&ib&&hb.y<hb.y+hb.height&&ib.y<844-65,label+": conversation first fold");
+     assert.equal(await send.isDisabled(),true,label+": empty message cannot send");
+     const mode=home.locator("[data-home-purpose-switch]");
+     const selfButton=mode.locator('[data-home-purpose="self"]');
+     const businessButton=mode.locator('[data-home-purpose="business"]');
+     assert.equal((await selfButton.innerText()).trim(),self,label+": self label");
+     assert.equal((await businessButton.innerText()).trim(),business,label+": business label");
+     assert.equal(await selfButton.getAttribute("aria-pressed"),"true",label+": default self");
+     // DOMContentLoaded can precede Next hydration on a cold iPhone. Check
+     // the real React click handler, not just static SSR button geometry.
+     await page.waitForFunction(()=>{
+       const button=document.querySelector('[data-home-purpose="business"]');
+       const key=Object.keys(button||{}).find(name=>name.startsWith('__reactProps
+     assert.equal(await businessButton.getAttribute("aria-pressed"),"true",label+": business changes mode");
+     assert.equal(await home.locator("[data-home-quick-intent]").count(),3,label+": three business intents");
+     assert.equal(await home.locator("[data-home-continue]").getAttribute("href"),"/"+locale+"/practice",
+       label+": business enters existing public Work");
+     await selfButton.click();
+     assert.equal(await selfButton.getAttribute("aria-pressed"),"true",label+": reversible");
+     assert.equal(await home.locator("[data-home-quick-intent]").count(),3,label+": three personal intents");
+     assert.equal(await home.locator("[data-home-continue]").getAttribute("href"),
+       "/"+(locale==="es"?"en":locale)+"/app/portrait",label+": real existing profile");
+     const dock=page.locator("[data-hh-unified-dock]");
+     await dock.waitFor({state:"visible"});
+     const ids=await dock.locator("[data-unified-dock-item]").evaluateAll(nodes=>nodes.map(n=>n.getAttribute("data-unified-dock-item")));
+     assert.deepEqual(ids,["mytube","video","coach","ai","services","practice","profile"],label+": seven existing dock links");
+     const search=header.locator("[data-site-search-trigger]");
+     const menu=header.locator("[data-home-menu] summary");
+     const lang=header.locator("[data-home-language] summary");
+     for(const item of [search,menu,lang]){
+       const b=await item.boundingBox();
+       assert.ok(b&&b.width>=38&&b.height>=43,label+": large, reachable header action");
+     }
+     await lang.click();
+     assert.equal(await header.locator("[data-home-language]").getAttribute("open"),"",label+": language menu opens");
+     assert.equal(await header.locator("[data-home-language] nav a").count(),3,label+": three real locale links");
+     await lang.click();
+     await menu.click();
+     assert.equal(await header.locator("[data-home-menu] nav a").count(),4,label+": site menu destinations");
+     await menu.click();
+     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
+     assert.ok(overflow<=2,label+": no horizontal overflow "+overflow);
+     const rect=await hero.boundingBox();
+     assert.ok(rect&&rect.width<=width+2,label+": hero fits viewport");
+     results.push({engine:engine.name(),locale,width,sevenDock:true,dialogFirst:true});
+     if(width===390&&engine===webkit)
+       await page.screenshot({path:output+"/dialog-"+locale+"-webkit-390.png",fullPage:false});
+    }finally{await page.close();}
+   }
   }
+ }finally{await browser.close();}
 }
-await writeFile(output + '/first-screen-results.json', JSON.stringify(result, null, 2));
-console.log('First-screen consultation QA passed in Chromium/WebKit, EN/RU/ES at 320/390/430px:', result.length);
+await writeFile(output+"/first-screen-results.json",JSON.stringify(results,null,2));
+console.log("Dialog-first Home Chromium/WebKit EN/RU/ES 320/390/430 PASS",results.length);
+));
+       return Boolean(key&&typeof button[key]?.onClick==='function');
+     },undefined,{timeout:30000});
+     await businessButton.click();
+     assert.equal(await businessButton.getAttribute("aria-pressed"),"true",label+": business changes mode");
+     assert.equal(await home.locator("[data-home-quick-intent]").count(),3,label+": three business intents");
+     assert.equal(await home.locator("[data-home-continue]").getAttribute("href"),"/"+locale+"/practice",
+       label+": business enters existing public Work");
+     await selfButton.click();
+     assert.equal(await selfButton.getAttribute("aria-pressed"),"true",label+": reversible");
+     assert.equal(await home.locator("[data-home-quick-intent]").count(),3,label+": three personal intents");
+     assert.equal(await home.locator("[data-home-continue]").getAttribute("href"),
+       "/"+(locale==="es"?"en":locale)+"/app/portrait",label+": real existing profile");
+     const dock=page.locator("[data-hh-unified-dock]");
+     await dock.waitFor({state:"visible"});
+     const ids=await dock.locator("[data-unified-dock-item]").evaluateAll(nodes=>nodes.map(n=>n.getAttribute("data-unified-dock-item")));
+     assert.deepEqual(ids,["mytube","video","coach","ai","services","practice","profile"],label+": seven existing dock links");
+     const search=header.locator("[data-site-search-trigger]");
+     const menu=header.locator("[data-home-menu] summary");
+     const lang=header.locator("[data-home-language] summary");
+     for(const item of [search,menu,lang]){
+       const b=await item.boundingBox();
+       assert.ok(b&&b.width>=38&&b.height>=43,label+": large, reachable header action");
+     }
+     await lang.click();
+     assert.equal(await header.locator("[data-home-language]").getAttribute("open"),"",label+": language menu opens");
+     assert.equal(await header.locator("[data-home-language] nav a").count(),3,label+": three real locale links");
+     await lang.click();
+     await menu.click();
+     assert.equal(await header.locator("[data-home-menu] nav a").count(),4,label+": site menu destinations");
+     await menu.click();
+     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
+     assert.ok(overflow<=2,label+": no horizontal overflow "+overflow);
+     const rect=await hero.boundingBox();
+     assert.ok(rect&&rect.width<=width+2,label+": hero fits viewport");
+     results.push({engine:engine.name(),locale,width,sevenDock:true,dialogFirst:true});
+     if(width===390&&engine===webkit)
+       await page.screenshot({path:output+"/dialog-"+locale+"-webkit-390.png",fullPage:false});
+    }finally{await page.close();}
+   }
+  }
+ }finally{await browser.close();}
+}
+await writeFile(output+"/first-screen-results.json",JSON.stringify(results,null,2));
+console.log("Dialog-first Home Chromium/WebKit EN/RU/ES 320/390/430 PASS",results.length);

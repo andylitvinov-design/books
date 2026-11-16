@@ -124,15 +124,28 @@ jobs:
           npm install --prefix /tmp/locale-browser-tools --no-package-lock --ignore-scripts @playwright/test@1.63.0
           ln -s /tmp/locale-browser-tools/node_modules/@playwright node_modules/@playwright
           /tmp/locale-browser-tools/node_modules/.bin/playwright install --with-deps chromium webkit
-      - name: Delayed navigation cannot discard the first play click
+      - name: Verify seven-link chat-first Home in Chromium and WebKit
         if: github.event_name != 'pull_request'
-        run: node scripts/verify-home-locale-switch.mjs
-      - name: Repeat read-only on Production
+        run: |
+          ./node_modules/.bin/next start -H 127.0.0.1 -p 3129 > /tmp/hh-home-dialog-next.log 2>&1 &
+          server=$!
+          trap 'kill $server 2>/dev/null || true' EXIT
+          ready=0
+          for attempt in $(seq 1 80); do
+            if curl -fsS http://127.0.0.1:3129/ >/dev/null; then ready=1; break; fi
+            sleep 1
+          done
+          [[ "$ready" == "1" ]] || { tail -n 100 /tmp/hh-home-dialog-next.log; exit 1; }
+          HH_PUBLIC_QA_ORIGIN=http://127.0.0.1:3129 node scripts/verify-home-consultation-first-screen.mjs
+      - name: Read-only LIVE locale availability (serving rollout verified separately)
         if: github.event_name == 'push'
-        run: node scripts/verify-home-locale-switch.mjs --live
+        run: |
+          node --input-type=module -e 'for(const path of ["/","/ru","/es"]){const r=await fetch("https://holistichouse.vercel.app"+path,{redirect:"follow"});if(!r.ok)throw Error(path+": "+r.status);console.log("LIVE",path,r.status)}'
       - uses: actions/upload-artifact@v4
         if: always() && github.event_name != 'pull_request'
         with:
           name: home-locale-switch-evidence
-          path: tmp/home-locale-switch/
+          path: |
+            tmp/home-locale-switch/
+            artifacts/home-first-screen/
           retention-days: 7

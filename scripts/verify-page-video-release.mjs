@@ -179,12 +179,17 @@ async function exercise(engine, browserType) {
       await expect(englishPresentation).toHaveAttribute('data-video-locale', 'en');
       await expect(englishPresentation.locator('iframe')).toHaveCount(0);
     }
-    await chooseRussianHome(page);
+    const conversationHome = await page.locator('[data-home-dialog-first]').count() > 0;
+    if(conversationHome) {
+      await expect(englishPresentation).toHaveCount(0);
+      await expect(page.locator('[data-home-intent-input]')).toBeVisible();
+      await page.goto(origin + '/ru', {waitUntil:'domcontentloaded'});
+    } else await chooseRussianHome(page);
     await expect(page.locator('[data-video-slot="home-intro"]')).toHaveCount(0);
     const approvedRussian = page.locator('[data-video-slot="home-presentation"][data-video-locale="ru"]');
     let russianPresentationVerified = false;
     // Production-domain sweeps may run before this PR is actually on LIVE.
-    if (new URL(origin).hostname !== 'holistichouse.vercel.app' || await approvedRussian.count()) {
+    if (!conversationHome && (new URL(origin).hostname !== 'holistichouse.vercel.app' || await approvedRussian.count())) {
       await expect(approvedRussian).toHaveCount(1);
       await expect(approvedRussian.locator('iframe')).toHaveCount(0);
       const play = approvedRussian.locator('button.site-video-play');
@@ -194,7 +199,10 @@ async function exercise(engine, browserType) {
         'src', /^https:\/\/www\.youtube-nocookie\.com\/embed\/G0Db6yOCMto\?/, { timeout: 10000 });
       russianPresentationVerified = true;
     }
-    await expect(page.locator('[data-personal-testimonials="home"]')).toHaveCount(1);
+    if(conversationHome) {
+      await expect(approvedRussian).toHaveCount(0);
+      await expect(page.locator('[data-home-intent-input]')).toBeVisible();
+    } else await expect(page.locator('[data-personal-testimonials="home"]')).toHaveCount(1);
     assert.deepEqual(pageErrors, [], 'Unexpected page JavaScript errors');
     results.push({ engine, retiredHomeIntroHidden: true, approvedRussianPresentation: russianPresentationVerified ? true : null, russianPresentationStatus: russianPresentationVerified ? "verified-click-to-iframe" : "skipped-live-slot-absent", pageJavaScriptErrors: pageErrors });
   } catch (error) {

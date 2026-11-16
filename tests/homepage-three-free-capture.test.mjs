@@ -10,7 +10,8 @@ const css = read("components/consultation-choice-capture.module.css");
 
 test("the approved bottom blue capture contains the three requested free offers, without a duplicate chooser", () => {
   assert.doesNotMatch(home, /<FreeInsightsPaths|import \{ FreeInsightsPaths \}/);
-  assert.match(home, /<HomepageContactCta locale=\{locale\} \/>/);
+  assert.match(home, /<HomeDialogFirst locale=\{locale\}\/>/);
+  assert.doesNotMatch(home, /<HomepageContactCta/);
   assert.match(wrapper, /id="home-consultation"/);
   assert.match(wrapper, /data-home-contact-capture/);
   assert.match(wrapper, /<HomepageFreeCapture locale=\{locale\} \/>/);
