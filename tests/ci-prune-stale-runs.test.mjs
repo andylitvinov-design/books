@@ -346,7 +346,7 @@ test('trusted PR-target janitor is separate from strict two-job read-only PR spe
   assert.ok(!original.includes('  prune-head:'));
   assert.ok(target.includes('  pull_request_target:'));
   assert.ok(target.includes('types: [synchronize, closed]'), 'native auto-merge must only wake janitor on synchronize or close');
-  assert.ok(!target.includes('types: [opened, reopened, ready_for_review, synchronize, closed]'), 'obsolete premature native callbacks must stay disabled');
+  assert.ok(!target.includes('types: [synchronize, closed]'), 'obsolete premature native callbacks must stay disabled');
   assert.ok(target.includes("github.event.action != 'synchronize'"), 'auto-merge must not arm before green Core');
   assert.ok(target.includes('  prune-head:'));
   assert.ok(target.includes("github.event.action == 'closed'"));
@@ -522,7 +522,7 @@ test('trusted cleanup cannot load PR HEAD and strict CI-only change still runs C
   const core=readFileSync('.github/workflows/hh-pr-core-release.yml','utf8');
   assert.ok(source.includes('pull_request_target:'));
   assert.ok(source.includes('types: [synchronize, closed]'), 'closed/synchronize trusted janitor preserved');
-  assert.ok(!source.includes('types: [opened, reopened, ready_for_review, synchronize, closed]'), 'do not restore native open/Ready fan-out');
+  assert.ok(!source.includes('types: [synchronize, closed]'), 'do not restore native open/Ready fan-out');
   assert.ok(source.includes('ref: codex/public-book-library'));
   assert.ok(source.includes("cancel-in-progress: true"));
   assert.ok(!source.includes("ref: ${{ github.event.pull_request.head.sha"));
