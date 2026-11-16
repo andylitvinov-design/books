@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import Image from "next/image";
 import { ChevronDown, ExternalLink, Play } from "lucide-react";
 import type { PublishedSiteVideo } from "@/lib/site-videos/model";
@@ -27,6 +27,9 @@ const labels = {
  */
 export function HomeYoutubeFacade({ video, locale, compact = false, fallbackPoster }: Props) {
   const [playing, setPlaying] = useState(false);
+  // Server-rendered Play markup must not accept an unhandled tap before React hydration.
+  const [interactive, setInteractive] = useState(false);
+  useEffect(() => { setInteractive(true); }, []);
   const [posterFailed, setPosterFailed] = useState(false);
   const titleId = useId();
   const youtubeId = video.youtubeId;
@@ -52,7 +55,8 @@ export function HomeYoutubeFacade({ video, locale, compact = false, fallbackPost
             allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
             allowFullScreen loading="eager" referrerPolicy="strict-origin-when-cross-origin" />
         ) : (
-          <button type="button" className="site-video-play"
+          <button type="button" className="site-video-play" disabled={!interactive}
+            aria-busy={!interactive} aria-disabled={!interactive}
             onClick={() => setPlaying(true)} aria-label={`${t.play}: ${video.title}`}>
             {poster ? <Image className="site-video-poster" src={poster} alt="" fill
               unoptimized loading="lazy" sizes={compact ? "(max-width: 767px) 100vw, 33vw" : "(max-width: 767px) 100vw, 960px"}
