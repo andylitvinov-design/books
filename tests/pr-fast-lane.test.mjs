@@ -1607,7 +1607,7 @@ test('Core restores immutable production-seeded media and compiler caches withou
   const producer = workflow('hh-static-image-cost-guard.yml');
   const coreJob = core.split(/^  scope:\s*$/m)[1]?.split(/^  hh-specialist:\s*$/m)[0] ?? '';
   const producerJob = producer.split(/^  static-image-cost-guard:\s*$/m)[1] ?? '';
-  for (const id of ['hh-core-media-v1-', 'hh-core-next-v1-']) {
+  for (const id of ['hh-core-media-v1-', 'hh-core-next-v1-', 'hh-core-tsbuild-v1-']) {
     assert.ok(coreJob.includes(id), 'Core lacks trusted cache key ' + id);
     assert.ok(producerJob.includes(id), 'production producer lacks the identical key ' + id);
     const a = coreJob.split('\n').find(line => line.includes('key: ' + id))?.trim();
@@ -1617,6 +1617,17 @@ test('Core restores immutable production-seeded media and compiler caches withou
   assert.match(coreJob, /actions\/cache\/restore@v4/);
   assert.doesNotMatch(coreJob, /actions\/cache\/save@v4/, 'candidate PR must not publish shared caches');
   assert.match(coreJob, /run: npm run build/, 'preserve mandatory exact-HEAD full Next build');
+  // The new incremental file is restored only from the protected baseline.
+  // A malicious or stale PR cannot publish cache state into a shared key.
+  assert.match(coreJob, /name: Restore production-owned TypeScript incremental cache \(read-only\)/);
+  assert.match(coreJob, /path: tsconfig\.tsbuildinfo/);
+  assert.match(producerJob, /name: Restore trusted TypeScript incremental cache/);
+  assert.match(producerJob, /name: Save production-only TypeScript incremental cache/);
+  assert.match(producerJob, /path: tsconfig\.tsbuildinfo/);
+  assert.match(producerJob, /if: github\.event_name != 'pull_request' && github\.ref == 'refs\/heads\/codex\/public-book-library' && steps\.ci_types_cache\.outputs\.cache-hit != 'true'/);
+  // A hit is an optimization hint, never a skip of the existing mandatory
+  // exact-HEAD Next build and TypeScript compilation.
+  assert.match(coreJob, /run: npm run build -- --no-lint/);
   assert.match(producerJob, /actions\/cache\/save@v4/);
   assert.match(producerJob, /node scripts\/generate-scenario-melodies\.mjs --check/);
   assert.match(producerJob, /node --test tests\/mandala-scenario-audio\.test\.mjs/);
