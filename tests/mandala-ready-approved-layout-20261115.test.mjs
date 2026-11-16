@@ -60,3 +60,10 @@ test("browser release tests exercise the current 7-card wizard and inline-only E
   assert.match(publicQa,/pending English video must not redirect, autoplay or fake Play/);
   assert.doesNotMatch(publicQa,/a\[href="https:\/\/www\.youtube\.com\/@aatapro"\]/);
 });
+
+test("Ready pending poster stays full 16:9 on iPhone instead of a 43px or 54px strip",()=>{
+  const tail=css.slice(css.indexOf("/* Approved iPhone Ready reference:"));
+  assert.match(tail,/width:100%;height:auto;min-height:0;max-height:none;aspect-ratio:16\/9/);
+  assert.match(tail,/\.root\[data-ready-state="choose"\] \.selectedVideo:not\(\[data-video-file="true"\]\)/);
+  assert.doesNotMatch(tail,/height:(?:43|54|64)px/);
+});

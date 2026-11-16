@@ -1291,18 +1291,22 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         phase(engine,"montage-free-navigated-ready");
         await readyGenerate.click();
         phase(engine,"ready-free-render-requested");
-        // The real seven-image 0–10 stepper from #4733 is inline during export.
-        // Verify the user's actual score tap advances one distinct question.
-        // Do not substitute the removed four-slider check-in or a mock media Blob.
+        // Seven pictured 0–10 questions are inline during a real export.
+        // Preserve stronger first-party photo and transition checks from newer Safari source.
         await expect(page.locator("[data-ready-generating]")).toBeVisible({timeout:20000});
         const readyCheckIn=page.locator("[data-ready-checkin] [data-ready-sequential-checkin]");
-        await expect(readyCheckIn).toBeVisible({timeout:6000});
+        await expect(readyCheckIn).toBeVisible({timeout:20000});
         await expect(readyCheckIn.locator("[data-ready-checkin-score]")).toHaveCount(11);
         await expect(readyCheckIn).toContainText("1 / 7");
+        const firstTone=await readyCheckIn.getAttribute("data-checkin-tone");
+        const firstImage=await readyCheckIn.locator("img").getAttribute("src");
+        assert.ok(firstTone&&firstImage?.startsWith("/videos/holistic-house/"),
+          "Ready check-in must have a first-party photo and a question");
         await readyCheckIn.locator('[data-ready-checkin-score="5"]').click();
+        await expect(readyCheckIn).not.toHaveAttribute("data-checkin-tone",firstTone,{timeout:5000});
+        await expect(readyCheckIn.locator("img")).not.toHaveAttribute("src",firstImage,{timeout:5000});
         await expect(readyCheckIn).toContainText("2 / 7");
-        // Ready keeps the answered stepper inline even if encoding finishes;
-        // the legacy optional floating poll/pill must never cover the player.
+        // No optional floating poll or pill may obscure the media player.
         await expect(page.locator("[data-video-effect-overlay]")).toHaveCount(0);
         await expect(page.locator("[data-video-effect-reopen]")).toBeHidden();
         // The idle source remains preload=none until the user's actual Create
