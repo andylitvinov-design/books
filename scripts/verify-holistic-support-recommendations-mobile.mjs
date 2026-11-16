@@ -35,51 +35,64 @@ for (const engine of [chromium, webkit]) {
             body: JSON.stringify(qaSupportDirectoryResponse(locale, kind)) });
         });
         try {
-          // The site's approved default is a source-backed Academy page:
-          // three learning schools, eight distinct programs, not the
-          // retired five-step Study quiz. Keep all 18 mobile/browser cases.
+          // Current Study entry is the owner's approved 5-question first screen.
+          // Verify it before opening the separately supported meditation workflow.
           const studyResponse = await page.goto(origin + "/" + locale + "/holistic-support/mobile",
             { waitUntil: "domcontentloaded", timeout: 60000 });
-          assert.equal(studyResponse?.status(), 200, label + " public Academy entry");
-          const study = page.locator('[data-holistic-study-academy]');
-          await study.waitFor({ state: "visible", timeout: 30000 });
-          assert.equal(await study.getAttribute("lang"), locale,
-            label + " approved page language");
-          assert.equal(await study.locator("h1").innerText(), ({
-            en: "Learning programs", ru: "Учебные программы", es: "Programas de formación",
-          })[locale], label + " Academy heading matches locale");
-          assert.equal(await study.locator('[data-study-school-nav]').count(), 3,
-            label + " exactly three visible school navigation links");
-          assert.equal(await study.locator('[data-study-academy-group]').count(), 3,
-            label + " exactly three distinct learning schools");
-          assert.equal(await study.locator('[data-study-academy-course]').count(), 8,
-            label + " eight source-backed programs remain separate");
-          const ids = await study.locator('[data-study-academy-course]')
-            .evaluateAll(nodes => nodes.map(node => node.getAttribute('data-study-academy-course')));
-          assert.deepEqual(ids, ["yggdrasil","tantra","kundalini","greece",
-            "egypt","practitioner","magic","meditation"],
-            label + " preserves the owner's eight approved programs");
-          const routes = await study.locator('[data-study-academy-course]')
-            .evaluateAll(nodes => nodes.map(node => node.getAttribute('href')));
-          assert.ok(routes.every(href => typeof href === "string" &&
-            href.startsWith("/" + locale + "/") && !href.includes("?token=")),
-            label + " all program links remain first-party and locale-scoped");
-          assert.equal(await study.locator('[data-study-personalized-path]').count(), 0,
-            label + " retired quiz is not mixed into the Academy");
-          if (width === 390) {
-            await study.locator('[data-study-school-nav="mysteries"]').click();
-            assert.equal(new URL(page.url()).hash, "#study-mysteries",
-              label + " mysteries anchor navigates inside Academy");
-            await study.locator('[data-study-school-nav="reiki"]').click();
-            assert.equal(new URL(page.url()).hash, "#study-reiki",
-              label + " Reiki anchor navigates inside Academy");
+          assert.equal(studyResponse?.status(), 200, label + " public Study entry");
+          // The approved default Study entry is now the source-backed Academy
+          // directory: three learning pathways and eight programs. The former
+          // five-question quiz remains an unused legacy component, not the page.
+          const directory = page.locator('[data-holistic-study-academy]');
+          await directory.waitFor({ state: "visible", timeout: 30000 });
+          assert.equal(await directory.getAttribute("lang"), locale,
+            label + " localized Academy entry");
+          assert.equal(await directory.locator('[data-study-school-nav]').count(), 3,
+            label + " three accessible learning pathways");
+          assert.equal(await directory.locator('[data-study-academy-group]').count(), 3,
+            label + " three distinct program sections");
+          assert.equal(await directory.locator('[data-study-academy-course]').count(), 8,
+            label + " eight published/source-backed programs");
+          for (const [school, keys] of [
+            ["reiki", ["yggdrasil", "tantra", "kundalini"]],
+            ["mysteries", ["greece", "egypt"]],
+            ["free", ["practitioner", "magic", "meditation"]],
+          ]) {
+            const section = directory.locator('[data-study-academy-group="' + school + '"]');
+            assert.equal(await section.count(), 1,
+              label + " real " + school + " section");
+            assert.equal(await section.locator('[data-study-academy-course]').count(), keys.length,
+              label + " expected " + school + " programs");
+            for (const key of keys) {
+              const link = section.locator('[data-study-academy-course="' + key + '"]');
+              assert.equal(await link.count(), 1,
+                label + " unique real program " + key);
+              const href = await link.getAttribute("href");
+              assert.ok(href?.startsWith("/" + locale + "/"),
+                label + " safe localized program link " + key);
+            }
           }
+          assert.equal(await directory.locator('nav[aria-label="Language"] a').count(), 3,
+            label + " three language entry links");
+          assert.equal(await page.locator('[data-study-personalized-path]').count(), 0,
+            label + " obsolete personalized quiz is not mounted");
+          assert.equal(await page.locator('[data-holistic-mobile-alternative]').count(), 0,
+            label + " separate legacy Support view is not duplicated");
+          assert.equal(await page.locator('[data-support-practice-tabs]:visible').count(), 0,
+            label + " obsolete Study header stays hidden");
+          assert.equal(await page.locator('[data-hh-unified-dock]:visible').count(), 1,
+            label + " exactly one app bottom navigation");
+          await directory.locator('[data-study-school-nav="free"]').click();
+          assert.equal(new URL(page.url()).hash, "#study-free",
+            label + " real pathway navigation reaches free learning");
+          await directory.locator('[data-study-academy-group="free"]')
+            .waitFor({ state: "visible", timeout: 10000 });
           const studyBounds = await page.evaluate(() => ({
             width: document.documentElement.clientWidth,
             scroll: document.documentElement.scrollWidth,
           }));
           assert.ok(studyBounds.scroll <= studyBounds.width + 2,
-            label + " compact Academy must not overflow horizontally");
+            label + " compact Study page does not overflow horizontally");
 
           // Legacy meditation/scales, Reiki, talisman and master services still
           // exist; test their exact view instead of demanding obsolete chrome
