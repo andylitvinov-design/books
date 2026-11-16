@@ -96,41 +96,47 @@ test("Save gate matches approved warm mobile design and all three locales",()=>{
 });
 
 
-test("all three Ready offers expand inline, generate scripts without navigation or paid rendering",()=>{
+test("Ready guided meditation and 8-session actions open sixth Therapy tab without inline expansion",()=>{
   const css=readFileSync(new URL("../components/mandala-video-ready.module.css",import.meta.url),"utf8");
-  assert.match(ready,/const \[activeOffer,setActiveOffer\]=useState<Offer\|null>\(null\)/);
-  assert.match(ready,/data-ready-offer-panel data-ready-offer=\{activeOffer\}/);
-  assert.match(ready,/id="ready-inline-offer"/);
-  for(const offer of ["meditation","ritual","journey"]){
-    assert.match(ready,new RegExp('onClick=\\{\\(\\)=>selectOffer\\("'+offer+'"\\)\\}'));
-    assert.match(ready,new RegExp('aria-expanded=\\{activeOffer==="'+offer+'"\\}'));
-    assert.doesNotMatch(ready,new RegExp('selectView\\("'+offer+'"\\)'));
+  const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  const therapy=readFileSync(new URL("../components/mandala-therapy-studio.tsx",import.meta.url),"utf8");
+  const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
+  const tabs=[...studio.matchAll(/\{id:"(video|phrases|editor|pro|ready|effects)",Icon:/g)].map(hit=>hit[1]);
+  assert.deepEqual(tabs,["video","phrases","editor","pro","ready","effects"]);
+  for(const [offer,format] of [["meditation","single"],["journey","course"]]){
+    assert.match(ready,new RegExp('onClick=\\{\\(\\)=>onOpenTherapy\\("'+format+'"\\)\\} data-ready-'+offer));
+    assert.match(ready,new RegExp('data-ready-therapy-format="'+format+'"'));
+    assert.doesNotMatch(ready,new RegExp('onClick=\\{\\(\\)=>selectOffer\\("'+offer+'"\\)\\}'));
+    assert.doesNotMatch(ready,new RegExp('data-ready-'+offer+'[^>]*aria-expanded'));
   }
-  assert.match(ready,/data-ready-generate-text/);
+  assert.match(studio,/onOpenTherapy=\{format=>\{/);
+  assert.match(studio,/setTherapyInitialFormat\(format\)/);
+  assert.match(studio,/activateQuickWorkspace\("effects"\)/);
+  assert.match(studio,/initialFormat=\{therapyInitialFormat\}/);
+  assert.match(studio,/focus=\{meditationFocus\}/);
+  assert.match(therapy,/const \[isCourse,setIsCourse\]=useState\(initialFormat==="course"\)/);
+  assert.match(therapy,/const \[pane,setPane\]=useState<Pane>\("meditation"\)/);
+  assert.match(therapy,/data-therapy-format="single"/);
+  assert.match(therapy,/data-therapy-format="course"/);
+  assert.match(browser,/ready-therapy-one-tap-navigation-verified/);
+  assert.match(browser,/toHaveAttribute\("data-therapy-course","true"\)/);
+  assert.match(browser,/toHaveAttribute\("data-therapy-course","false"\)/);
+  // Preserve the optional local ritual and existing actual account-gated delivery.
+  assert.match(ready,/onClick=\{\(\)=>selectOffer\("ritual"\)\} data-ready-ritual/);
+  assert.match(ready,/data-ready-offer-panel data-ready-offer=\{activeOffer\}/);
   assert.match(ready,/onClick=\{generateOffer\}/);
-  assert.match(ready,/generatedOffer===activeOffer/);
-  assert.match(ready,/buildPersonalMeditationScript\(/);
-  assert.match(ready,/buildPersonalImageryCourse\(/);
-  assert.match(ready,/selectResourcePractice\(/);
-  assert.match(ready,/data-ready-meditation-text/);
   assert.match(ready,/data-ready-ritual-result/);
-  assert.match(ready,/data-ready-eight-sessions/);
-  assert.match(ready,/courseTexts\.map\(/);
-  assert.match(ready,/ritual\.status==="blocked"\?/);
-  assert.match(ready,/meditationEditor/);
   assert.match(ready,/data-ready-save-choices/);
   assert.match(ready,/data-ready-save-gate-overlay/);
-  assert.doesNotMatch(ready,/onClick=\{onOpenCourse\} data-ready-journey/);
+  assert.match(ready,/onSendTelegramDirect/);
+  assert.match(ready,/onShareWhatsApp/);
   assert.match(css,/\.offerPanel\{display:grid/);
-  assert.match(css,/\.journey>button\[aria-expanded="true"\]/);
-  assert.match(css,/scroll-margin-bottom:calc\(82px \+ env\(safe-area-inset-bottom\)\)/);
-  assert.match(css,/white-space:pre-wrap/);
   for(const loc of ["en","ru","es"]){
-    const start=ready.indexOf("  "+loc+":{",ready.indexOf("const COPY={"));
-    const end=loc==="en"?ready.indexOf("  ru:{",start):loc==="ru"?ready.indexOf("  es:{",start):ready.indexOf("} as const;",start);
-    const lang=ready.slice(start,end);
-    for(const label of ["generateText","copyText","medText","sessionText"])
-      assert.ok(lang.includes(label+":"),loc+" has "+label);
+    const from=ready.indexOf("  "+loc+":{",ready.indexOf("const COPY={"));
+    const to=loc==="en"?ready.indexOf("  ru:{",from):loc==="ru"?ready.indexOf("  es:{",from):ready.indexOf("} as const;",from);
+    const lang=ready.slice(from,to);
+    for(const key of ["meditationNext","journeyNext","generateText"])
+      assert.ok(lang.includes(key+":"),loc+" preserves "+key);
   }
 });
 
