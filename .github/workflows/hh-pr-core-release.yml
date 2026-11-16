@@ -685,8 +685,12 @@ jobs:
     # status when expensive Core/Specialist jobs are intentionally skipped.
     # ready_for_review re-runs both real gates; failed Ready gates remain red.
     if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
-    # Read-only required aggregator: no Next build, npm or privileged tools.
-    runs-on: ubuntu-slim
+    # Read-only 4-second required aggregator: unchanged exact-HEAD gate.
+    # GitHub check timestamps on PRs #4754/#4760/#4769 showed 352-451s
+    # wait AFTER specialist completion on slim; test standard Ubuntu pool
+    # (free for this public repo) without waiving any required status.
+    # Restore slim if measured runner wait fails to improve.
+    runs-on: ubuntu-24.04
     timeout-minutes: 2
     permissions:
       contents: read
