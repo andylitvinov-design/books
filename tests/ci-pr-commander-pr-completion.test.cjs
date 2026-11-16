@@ -75,3 +75,18 @@ test('wrong trusted GitHub context never reaches private queue',async()=>{
  assert.equal(x.status,'SKIPPED_UNTRUSTED');
  assert.equal(f.calls.length,0);
 });
+
+test('owner PR queue executes before heavy inventory in the same trusted Watchdog runner',()=>{
+ const {readFileSync}=require('node:fs');
+ const {resolve}=require('node:path');
+ const src=readFileSync(resolve(__dirname,'../.github/workflows/hh-pr-ten-minute-watchdog.yml'),'utf8');
+ const checkout=src.indexOf('Read trusted watchdog from default branch');
+ const owner=src.indexOf('Owner PR-number completion via private signed queue');
+ const inventory=src.indexOf('Reconcile complete PR inventory;');
+ assert.ok(checkout>=0&&owner>checkout&&inventory>owner,
+  'Owner PR commands must not wait for heavy all-PR Watchdog inventory');
+ assert.match(src,/id-token: write/);
+ assert.match(src,/ci-pr-commander-pr-completion\.cjs/);
+ const worker=readFileSync(resolve(__dirname,'../scripts/ci-pr-commander-pr-completion.cjs'),'utf8');
+ assert.match(worker,/core\.getIDToken\('hh-commander-pr'\)/);
+});
