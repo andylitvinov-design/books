@@ -225,10 +225,16 @@ export function ServicesCompactPanel({ id, children }: { id: ServicesPanelId; ch
   const regionId = "services-unified-" + id;
   return (
     <article className={styles.panel} data-services-unified-panel={id} data-expanded={expanded}>
-      <div className={styles.preview}>
+      {/* The compact panel header is an accessible disclosure. Keep the two
+          distinct Details / Order actions below; without this control the
+          nested published modules (including Personal Video) are unreachable
+          on phones because .content stays hidden behind data-expanded. */}
+      <button type="button" className={styles.preview}
+        aria-expanded={expanded} aria-controls={regionId}
+        onClick={() => context.toggle(id)}>
         <span className={styles.icon} aria-hidden="true"><Icon size={23} strokeWidth={1.8} /></span>
         <span className={styles.previewText}><strong>{title}</strong><small>{description}</small></span>
-      </div>
+      </button>
       <ServicesCardActions locale={context.locale} title={title}
         description={panelDescriptions[context.locale][id]}
         href={"/" + context.locale + panelDestinations[id]}

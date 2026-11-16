@@ -60,6 +60,22 @@ test("open Details / Order panels use both category columns on mobile", () => {
   assert.match(layout, /\.panel:has\(> \[data-service-card-actions\] button\[aria-expanded="true"\]\)\{grid-column:1\/-1\}/);
 });
 
+test("mobile compact section header reopens the real nested service module without removing Details / Order", () => {
+  const section = catalog.slice(catalog.indexOf("export function ServicesCompactPanel"),
+    catalog.indexOf("export function ServicesHomeopathyLinks"));
+  assert.match(section, /<button type="button" className=\{styles\.preview\}/);
+  assert.match(section, /aria-expanded=\{expanded\} aria-controls=\{regionId\}/);
+  assert.match(section, /onClick=\{\(\) => context\.toggle\(id\)\}/);
+  assert.match(section, /data-expanded=\{expanded\}/);
+  assert.match(section, /<ServicesCardActions locale=\{context\.locale\}/);
+  assert.match(section, /<div id=\{regionId\} className=\{styles\.content\}/);
+  const layout = read("components/services-unified-catalog.module.css");
+  assert.match(layout, /\.panel\[data-expanded="true"\] \.content\{display:block/);
+  // A browser-level EN/RU check already opens this header to reach video.
+  const browser = read("scripts/verify-site-video-browser.mjs");
+  assert.match(browser, /const videoTrigger = videoPanel\.locator\(':scope > button'\)/);
+});
+
 test("recommendation cards reuse the same two-button component with direct service-specific Telegram deep links", () => {
   const recommendations = read("components/assist-top-recommendations.tsx");
   assert.match(recommendations, /<ServicesCardActions locale=\{locale\} title=\{title\}/);
