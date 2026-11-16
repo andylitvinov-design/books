@@ -3,7 +3,7 @@
 // tests passed. Native update-branch creates a new PR HEAD and triggers the
 // normal exact-HEAD Core/Specialist suite. Never mark an old run green.
 const {externalOwnerLeaseStatus,readCompleteIssueComments,trustedControlComment}=require('./ci-pr-task-state.cjs');
-const {MARKER:READY_MARKER}=require('./ci-pr-sensitive-base-ci-wake.cjs');
+const {MARKER:READY_MARKER,firstBaseRevalidationIntent}=require('./ci-pr-sensitive-base-ci-wake.cjs');
 const REPO='andylitvinov-design/books',PROD='codex/public-book-library';
 const SHA=/^[0-9a-f]{40}$/i;
 const CORE_PATH='.github/workflows/hh-pr-core-release.yml';
@@ -120,11 +120,12 @@ function sameSource(pr,source,head){
 // Split privileges: the workflow's GITHUB_TOKEN reads Core/leases/logs.
 // The owner PAT is confined to an identity-verified, expected-HEAD native
 // branch update. A partial/denied response never implies a new CI wave.
-async function ownerProtectedUpdate({fetcher,ownerToken,number,head,source,body}={}){
+async function ownerProtectedUpdate({fetcher,ownerToken,number,head,source,body,onBeforeMutation=null}={}){
  const fail=reason=>({ok:false,reason});
  if(typeof fetcher!=='function'||typeof ownerToken!=='string'||!ownerToken||
     !Number.isSafeInteger(number)||number<1||!SHA.test(head||'')||
-    typeof source!=='string'||!source||typeof body!=='string')
+    typeof source!=='string'||!source||typeof body!=='string'||
+   (onBeforeMutation!==null&&typeof onBeforeMutation!=='function'))
    return fail('OWNER_UPDATE_ARGUMENTS_INVALID');
  const endpoint='/repos/'+REPO+'/pulls/'+number;
  const headers={Authorization:'Bearer '+ownerToken,Accept:'application/vnd.github+json',
@@ -153,6 +154,13 @@ async function ownerProtectedUpdate({fetcher,ownerToken,number,head,source,body}
      pr.data.head?.sha!==head||pr.data.head?.ref!==source||pr.data.body!==body||
      pr.data.mergeable===false||pr.data.mergeable_state==='dirty')
    return fail('OWNER_PAT_PR_CHANGED');
+  // The PAT identity and immutable owner PR were checked before reserving
+  // an intent; the callback re-reads the trusted lane and atomically claims
+  // the one real base update, before the owner-only native CAS mutation.
+  if(onBeforeMutation){
+   try{await onBeforeMutation();}
+   catch{return fail('BASE_REVALIDATION_INTENT_UNVERIFIED');}
+  }
   const updated=await query('PUT',endpoint+'/update-branch',{
    expected_head_sha:head
   });
@@ -338,6 +346,12 @@ async function recoverBaseAdvanced({github,context,hasOwnerToken=false,
    async (_kind,call)=>{if(++pages>10)throw Error('LEASE_HISTORY_PAGE_LIMIT');return call();});
   if(!Array.isArray(comments)||externalOwnerLeaseStatus(comments,sourceSha,now)!=='FREE')
    return outcome('SKIPPED','ACTIVE_OR_UNVERIFIED_SOURCE_LEASE',number);
+  // Cross-lane dedup: a green-Core wake or an earlier failed-Core update
+  // already owns this source HEAD until a new real revision is observed.
+  const earlier=firstBaseRevalidationIntent(comments,number,sourceSha);
+  if(!earlier.ok)return outcome('SKIPPED',earlier.reason,number);
+  if(earlier.id!==null)
+   return outcome('SKIPPED','ONE_WAKE_ALREADY_RECORDED_FOR_HEAD',number);
   const [fresh,production]=await Promise.all([
    github.rest.pulls.get({owner,repo,pull_number:number}),
    github.rest.repos.getBranch({owner,repo,branch:PROD})
@@ -349,11 +363,6 @@ async function recoverBaseAdvanced({github,context,hasOwnerToken=false,
   // proves the newest protected BASE is inside that exact source HEAD.
   // Draft -> Ready alone may reuse an old synthetic merge (incident #4594).
   if(sourceContainsLiveBase){
-   const existingIntent=rows=>rows.some(c=>trustedControlComment(c)&&
-    String(c.body||'').includes('<!-- '+READY_MARKER+
-      ' pr='+number+' head='+sourceSha+' '));
-   if(existingIntent(comments))
-    return outcome('SKIPPED','ONE_WAKE_ALREADY_RECORDED_FOR_HEAD',number);
    const ready=await ownerProtectedReadyRevalidation({
     fetcher,ownerToken,number,head:sourceSha,source:e.head_branch,body:pr.body,
     onBeforeMutation:async()=>{
@@ -367,14 +376,25 @@ async function recoverBaseAdvanced({github,context,hasOwnerToken=false,
      let pages=0;
      const recent=await readCompleteIssueComments(github,owner,repo,number,
       async(_name,call)=>{if(++pages>10)throw Error('COMMENT_RECHECK_LIMIT');return call();});
-     if(!Array.isArray(recent)||existingIntent(recent)||
+     const prior=firstBaseRevalidationIntent(recent,number,sourceSha);
+     if(!prior.ok||prior.id!==null||
         externalOwnerLeaseStatus(recent,sourceSha,now)!=='FREE')
       throw Error('LEASE_OR_INTENT_CHANGED');
-     await github.rest.issues.createComment({owner,repo,issue_number:number,
+     const posted=await github.rest.issues.createComment({owner,repo,issue_number:number,
       body:'<!-- '+READY_MARKER+' pr='+number+' head='+sourceSha+
        ' from='+old+' to='+live+' core='+e.id+' -->\n'+
        'One same-HEAD Ready event requested for real current-BASE Core and Specialist. '+
        'Not source changed, CI PASS, merged or LIVE.'});
+     const ownId=posted?.data?.id;
+     if(!Number.isSafeInteger(ownId)||ownId<1)
+      throw Error('BASE_REVALIDATION_INTENT_ID_UNVERIFIED');
+     let confirmPages=0;
+     const confirmation=await readCompleteIssueComments(github,owner,repo,number,
+      async(_name,call)=>{if(++confirmPages>10)throw Error('INTENT_RECHECK_LIMIT');return call();});
+     const winner=firstBaseRevalidationIntent(confirmation,number,sourceSha);
+     if(!winner.ok||winner.id!==ownId||
+        externalOwnerLeaseStatus(confirmation,sourceSha,now)!=='FREE')
+      throw Error('COMPETING_BASE_REVALIDATION_INTENT');
     }
    });
    if(!ready.ok)return outcome('SKIPPED',ready.reason,number);
@@ -384,7 +404,42 @@ async function recoverBaseAdvanced({github,context,hasOwnerToken=false,
   // A normal merge of protected production into the PR head. GitHub performs
   // the expected_head_sha lease atomically; synchronize triggers genuine CI.
   const updated=await ownerProtectedUpdate({fetcher,ownerToken,
-   number,head:sourceSha,source:e.head_branch,body:pr.body});
+   number,head:sourceSha,source:e.head_branch,body:pr.body,
+   onBeforeMutation:async()=>{
+    const [current,branch]=await Promise.all([
+     github.rest.pulls.get({owner,repo,pull_number:number}),
+     github.rest.repos.getBranch({owner,repo,branch:PROD})
+    ]);
+    if(!sameSource(current.data,e.head_branch,sourceSha)||
+       branch.data?.protected!==true||branch.data?.commit?.sha!==live)
+     throw Error('SOURCE_OR_BASE_CHANGED_BEFORE_INTENT');
+    let intentPages=0;
+    const freshComments=await readCompleteIssueComments(github,owner,repo,number,
+     async(_name,call)=>{if(++intentPages>10)throw Error('INTENT_PAGE_LIMIT');return call();});
+    const previous=firstBaseRevalidationIntent(freshComments,number,sourceSha);
+    if(!previous.ok||previous.id!==null||
+       externalOwnerLeaseStatus(freshComments,sourceSha,now)!=='FREE')
+     throw Error('COMPETING_BASE_REVALIDATION_INTENT');
+    const posted=await github.rest.issues.createComment({owner,repo,issue_number:number,
+     body:'<!-- '+READY_MARKER+' pr='+number+' head='+sourceSha+
+      ' from='+old+' to='+live+' core='+e.id+' -->\n'+
+      'One protected production-base sync requested after verified BASE_ADVANCED. '+
+      'Not a completed new HEAD, Core PASS, merge, or LIVE.'});
+    const ownId=posted?.data?.id;
+    if(!Number.isSafeInteger(ownId)||ownId<1)
+     throw Error('BASE_REVALIDATION_INTENT_ID_UNVERIFIED');
+    let confirmPages=0;
+    const [confirmed,finalBase]=await Promise.all([
+     readCompleteIssueComments(github,owner,repo,number,
+      async(_name,call)=>{if(++confirmPages>10)throw Error('INTENT_CONFIRM_LIMIT');return call();}),
+     github.rest.repos.getBranch({owner,repo,branch:PROD})
+    ]);
+    const winner=firstBaseRevalidationIntent(confirmed,number,sourceSha);
+    if(!winner.ok||winner.id!==ownId||
+       externalOwnerLeaseStatus(confirmed,sourceSha,now)!=='FREE'||
+       finalBase.data?.protected!==true||finalBase.data?.commit?.sha!==live)
+     throw Error('BASE_REVALIDATION_INTENT_LOST');
+   }});
   if(!updated.ok)return outcome('SKIPPED',updated.reason,number);
   return outcome('UPDATED',updated.reason,number);
  }catch(error){
