@@ -24,7 +24,7 @@ type Props={
   video:VideoFile|null;verified:boolean;checking:boolean;rendering:boolean;renderProgress:number;
   progressQuestionnaire:ReactNode;generationNotice:string;signedIn:boolean;
   loginUnavailable:boolean;disabled:boolean;meditationEditor:ReactNode;
-  onOpenDelivery:()=>void;onRefreshLogin:()=>void;onOpenCourse:()=>void;onReturnToPro:()=>void;
+  onOpenDelivery:()=>void;onRefreshLogin:()=>void;onOpenCourse:()=>void;onOpenTherapy:(format:"single"|"course")=>void;onReturnToPro:()=>void;
   onGenerateBasicVideo:()=>boolean;onStartNewVideo:()=>void;onVerifyPlayback:(player:HTMLVideoElement)=>void;
   onSaveDirect:()=>void;onSendTelegramDirect:()=>void;onShareWhatsApp:(consentApproved?:boolean)=>void;
   saveStatus:VideoDeliveryStatus;basicFreeAvailable:boolean;
@@ -165,7 +165,7 @@ const COPY={
 export function MandalaVideoReady({
   locale,theme,wish,focus,aspect,video,verified,checking,rendering,renderProgress,
   generationNotice,signedIn,loginUnavailable,disabled,
-  meditationEditor,onOpenDelivery,onRefreshLogin,onOpenCourse,onReturnToPro,
+  meditationEditor,onOpenDelivery,onRefreshLogin,onOpenCourse,onOpenTherapy,onReturnToPro,
   onGenerateBasicVideo,onStartNewVideo,onVerifyPlayback,onSaveDirect,
   onSendTelegramDirect,onShareWhatsApp,saveStatus,
   basicFreeAvailable,basicFreeIssue,basicCreditCost
@@ -449,8 +449,8 @@ export function MandalaVideoReady({
       <h3 className={css.nextTitle}>{completed?t.nextSteps:t.videoIdeas}</h3>
       {completed?<p className={css.nextLead}>{t.nextLead}</p>:null}
       <div className={css.journey}>
-        <button type="button" onClick={()=>selectOffer("meditation")} data-ready-meditation
-          aria-expanded={activeOffer==="meditation"} aria-controls="ready-inline-offer">
+        <button type="button" onClick={()=>onOpenTherapy("single")} data-ready-meditation
+          data-ready-therapy-format="single" disabled={disabled}>
           <div className={css.thumbnail}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={completed?"/images/holistic-house/ready-save-sunrise-portrait.jpg":"/videos/holistic-house/film-collection-v2/meadow-morning.jpg"} alt=""/>
@@ -469,8 +469,8 @@ export function MandalaVideoReady({
           <span><strong>{t.ritual}</strong><small>{t.ritualHint}</small></span>
           <ArrowRight size={21} aria-hidden="true"/>
         </button>:null}
-        <button type="button" onClick={()=>selectOffer("journey")} data-ready-journey
-          aria-expanded={activeOffer==="journey"} aria-controls="ready-inline-offer">
+        <button type="button" onClick={()=>onOpenTherapy("course")} data-ready-journey
+          data-ready-therapy-format="course" disabled={disabled}>
           <div className={css.thumbnail}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={completed?"/images/holistic-house/messenger-zen-stones.svg":"/images/holistic-house/reiki-approved-sunrise-v3.webp"} alt=""/>

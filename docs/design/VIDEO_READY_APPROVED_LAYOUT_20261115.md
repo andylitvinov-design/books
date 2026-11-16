@@ -22,7 +22,7 @@
 - Before generating, the sole Generate button sits under the same full-width poster and still uses the existing credit/format/manual-confirm guard. No auto render on arriving from Montage.
 - During actual local encoding: status + a single slim progress bar; approved seven-question 0–10 image check-in from protected #4733 remains inline below the preview, stays after export if the user started it and can be dismissed after the summary; no optional floating poll/pill or duplicated global notice. A pending poster is explicitly not a playable file.
 - Completed: show real media controls; verified/credit-confirmed result alone enables Save to private My Videos and explicit Telegram link flow. No simulated video, download, upload, credit debit or delivery.
-- Preserve native video decode verification, localized EN/RU/ES text, on-demand meditation and eight-session script generation, user-invoked sign-in gate, and separate More Ideas/ritual for pre-export.
+- Preserve native video decode verification, localized EN/RU/ES text, user-invoked sign-in gate, and separate optional ritual for pre-export. Ready Meditation and 8-session cards open the existing **sixth Therapy workspace immediately** (Single practice or 8-session course) with the selected focus; no script generation, editor expansion, credits or paid render occurs on Ready.
 - Browser scope: 320/354/390/430px plus tablet and desktop; respect safe areas, 44px touch targets, focus and no scroll blocking. The one-row bottom navigation and Therapy workspace are **not** reverted to the stale Hypno tab shown in the older mock.
 
 ## Verification / release evidence

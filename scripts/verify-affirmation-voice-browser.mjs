@@ -1289,6 +1289,27 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           "Ready Generate must sit directly beneath the video");
         await expect(readyGenerate).toBeEnabled({timeout:30000});
         phase(engine,"montage-free-navigated-ready");
+        // Real mobile click contract: the two Ready cards switch to sixth
+        // Therapy workspace and select its format, with no Ready expansion.
+        await page.locator("[data-ready-meditation]").click();
+        await expect(page.locator("[data-mandala-free-video]"))
+          .toHaveAttribute("data-active-workspace","effects");
+        await expect(page.locator("[data-therapy-studio]"))
+          .toHaveAttribute("data-therapy-course","false");
+        await expect(page.locator('[data-therapy-subtab="meditation"]'))
+          .toHaveAttribute("aria-selected","true");
+        await expect(page.locator("[data-ready-offer-panel]")).toHaveCount(0);
+        await page.locator('[data-video-quick-control="ready"]').click();
+        await page.locator("[data-ready-journey]").click();
+        await expect(page.locator("[data-mandala-free-video]"))
+          .toHaveAttribute("data-active-workspace","effects");
+        await expect(page.locator("[data-therapy-studio]"))
+          .toHaveAttribute("data-therapy-course","true");
+        await expect(page.locator("[data-therapy-script-host]")).toBeVisible();
+        await expect(page.locator("[data-ready-offer-panel]")).toHaveCount(0);
+        await page.locator('[data-video-quick-control="ready"]').click();
+        await expect(readyGenerate).toBeEnabled({timeout:30000});
+        phase(engine,"ready-therapy-one-tap-navigation-verified");
         await readyGenerate.click();
         phase(engine,"ready-free-render-requested");
         // Seven pictured 0–10 questions are inline during a real export.
