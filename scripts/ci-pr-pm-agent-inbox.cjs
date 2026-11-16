@@ -44,6 +44,9 @@ function command(c){
      return {id:c.id,kind:'source',task,createdAt:c.created_at};
    }catch(_){return null;}
  }
+ // Owner-facing PR completion takes a number only; HEAD is fetched from GitHub.
+ const live=/^!pm (?:live|complete)\s+#?([1-9]\d{0,7})\s*$/i.exec(body);
+ if(live)return {id:c.id,kind:'live',pr:Number(live[1]),createdAt:c.created_at};
  const m=/^!pm repair\s+#?(\d{1,8})\s+([a-f0-9]{40})\s*$/i.exec(body);
  if(m && Number(m[1])>0)return {id:c.id,kind:'repair',pr:Number(m[1]),sha:m[2].toLowerCase(),createdAt:c.created_at};
  return null;
@@ -63,6 +66,21 @@ const claimBody=(cmd,run)=>'<!-- '+MARKER+' comment='+cmd.id+' status=CLAIMED --
   'Owner PM request claimed by the existing trusted Watchdog run '+run+
   '. This is NOT a source commit or confirmed model reply.';
 const resultBody=(cmd,result,run)=>{
+ if(cmd.kind==='live'){
+  const state=result.merged?'MERGED':result.watching?'WATCHING':'BLOCKED';
+  const description=result.merged?
+   'PR #'+cmd.pr+' merged on GitHub; merge SHA '+result.mergeSha+
+   '; '+PREFIX+'/pull/'+cmd.pr+'. Production LIVE requires separate verification.':
+   result.watching?
+   'Tracking PR #'+cmd.pr+' at exact HEAD '+result.sha+'. '+
+   trim(result.reason||'EXISTING_CI_AND_PROTECTED_AUTO_MERGE',160)+
+   '. This is not a verified model patch, CI success or merge.':
+   'PR #'+cmd.pr+' not started: '+trim(result.reason||'UNVERIFIED',120);
+  return '<!-- '+MARKER+' comment='+cmd.id+' status='+state+' -->\n'+
+   '**PR Completion · '+state+'**\n\n'+description+
+   '\n\nOriginal owner request: '+PREFIX+'/issues/'+ISSUE+'#issuecomment-'+cmd.id+
+   '\nTrusted Watchdog: '+run;
+ }
  const state=result.ok?'REPLIED':result.dispatched?'DISPATCH_ACCEPTED_UNCORRELATED':'BLOCKED';
  const head='<!-- '+MARKER+' comment='+cmd.id+' status='+state+' -->\n';
  const summary=result.ok?'**OpenRouter Free · ответ на технический вопрос**':
@@ -163,18 +181,93 @@ async function trustedRepair(github,cmd){
  if(!signed)return {reason:'SIGNED_FAILED_CORE_PROOF_MISSING'};
  return {ok:true};
 }
-async function dispatchRepair(github,cmd){
+async function dispatchRepair(github,cmd,{ownerToken,fetcher=fetch}={}){
  const trusted=await trustedRepair(github,cmd);
  if(!trusted.ok)return trusted;
- const crypto=require('node:crypto'),requestId=crypto.randomUUID();
+ // The bot GITHUB_TOKEN changes the workflow_dispatch actor to
+ // github-actions[bot], which validOwnerRepairTarget deliberately rejects.
+ if(typeof ownerToken!=='string'||!ownerToken.trim())
+  return {reason:'OWNER_REPAIR_DISPATCH_TOKEN_NOT_CONFIGURED'};
+ const requestId=require('node:crypto').randomUUID();
+ const endpoint='https://api.github.com/repos/'+OWNER+'/'+REPO+
+  '/actions/workflows/hh-pr-ten-minute-watchdog.yml/dispatches';
  try{
-  await github.rest.actions.createWorkflowDispatch({
-   owner:OWNER,repo:REPO,workflow_id:'hh-pr-ten-minute-watchdog.yml',
-   ref:'codex/bootstrap-books',inputs:{pm_pr_number:String(cmd.pr),pm_expected_sha:cmd.sha,
-    pm_request_id:requestId,dry_run:'false'}
-  });
- }catch(_){return {reason:'DISPATCH_AMBIGUOUS_NO_RETRY'};}
- return {dispatched:true,reason:'DISPATCH_ACCEPTED_UNCORRELATED'};
+  const response=await fetcher(endpoint,{method:'POST',redirect:'error',cache:'no-store',
+   signal:AbortSignal.timeout(15000),headers:{
+    Authorization:'Bearer '+ownerToken,Accept:'application/vnd.github+json',
+    'Content-Type':'application/json','X-GitHub-Api-Version':'2022-11-28'},
+   body:JSON.stringify({ref:'codex/bootstrap-books',inputs:{
+    pm_pr_number:String(cmd.pr),pm_expected_sha:cmd.sha,
+    pm_request_id:requestId,dry_run:'false'}})});
+  if(response?.status!==204)
+   return {reason:'OWNER_REPAIR_DISPATCH_HTTP_'+String(response?.status||'UNKNOWN')};
+ }catch(_){return {reason:'OWNER_REPAIR_DISPATCH_AMBIGUOUS_NO_RETRY'};}
+ return {dispatched:true,reason:'OWNER_DISPATCH_ACCEPTED_UNCORRELATED'};
+}
+async function dispatchLive(github,cmd,{ownerToken,fetcher=fetch}={}){
+ let pr;try{pr=(await github.rest.pulls.get({owner:OWNER,repo:REPO,pull_number:cmd.pr})).data;}
+ catch(_){return {reason:'GITHUB_PR_READ_UNAVAILABLE'};}
+ if(pr?.number!==cmd.pr||pr.base?.ref!=='codex/public-book-library'||
+   pr.head?.repo?.full_name!==OWNER+'/'+REPO||!SHA.test(pr.head?.sha||''))
+  return {reason:'UNVERIFIED_PROTECTED_PR'};
+ if(pr.state==='closed'){
+  if(pr.merged===true&&Number.isFinite(Date.parse(pr.merged_at||''))&&
+    SHA.test(pr.merge_commit_sha||''))
+   return {merged:true,mergeSha:pr.merge_commit_sha};
+  return {reason:'PR_CLOSED_WITHOUT_VERIFIED_MERGE'};
+ }
+ if(pr.state!=='open'||pr.draft===true)return {reason:'PR_NOT_READY'};
+ const labels=new Set((pr.labels||[]).map(x=>x.name));
+ if(labels.has('hh:hold')||labels.has('hh:blocked'))
+  return {watching:true,sha:pr.head.sha,reason:'OWNER_HOLD_NOT_OVERRIDDEN'};
+ if(labels.has('hh:repair-needed')&&pr.mergeable===true){
+  const repair=await dispatchRepair(github,{...cmd,sha:pr.head.sha},{ownerToken,fetcher});
+  return {watching:true,sha:pr.head.sha,
+   reason:repair.reason||'VERIFIED_SOURCE_DISPATCH_PENDING'};
+ }
+ return {watching:true,sha:pr.head.sha,
+  reason:pr.mergeable===false?'CONFLICT_REQUIRES_SEMANTIC_OWNER_REVIEW':
+   'EXISTING_CI_AND_PROTECTED_AUTO_MERGE'};
+}
+
+async function observeLive(github,comments,now=Date.now()){
+ const receipts=comments.map(trustedReceipt).filter(Boolean);
+ const active=comments.map(command).filter(c=>c?.kind==='live'&&
+   receipts.some(r=>r.commentId===c.id&&r.status==='WATCHING')&&
+   !receipts.some(r=>r.commentId===c.id&&
+     ['MERGED','CLOSED_UNMERGED','EXPIRED_UNVERIFIED'].includes(r.status)))
+   .sort((a,b)=>nowMs(a.createdAt)-nowMs(b.createdAt)||a.id-b.id);
+ if(!active.length)return {status:'NO_PENDING'};
+ // Rotate the first three reads so one long-running PR cannot starve others.
+ const start=Math.floor(now/1200000)%active.length;
+ const selected=[...active.slice(start),...active.slice(0,start)].slice(0,3);
+ let sent=0,open=0,unknown=0;
+ for(const cmd of selected){
+  let state='',detail='';
+  if(now-nowMs(cmd.createdAt)>30*86400000){
+   state='EXPIRED_UNVERIFIED';detail='PR #'+cmd.pr+' exceeded tracking retention without verified merge.';
+  }else{
+   let pr;try{pr=(await github.rest.pulls.get({owner:OWNER,repo:REPO,pull_number:cmd.pr})).data;}
+   catch(_){unknown++;continue;}
+   if(pr?.number!==cmd.pr||pr.base?.ref!=='codex/public-book-library'){unknown++;continue;}
+   if(pr.state==='closed'&&pr.merged===true&&
+      Number.isFinite(Date.parse(pr.merged_at||''))&&SHA.test(pr.merge_commit_sha||'')){
+    state='MERGED';
+    detail='GitHub PR #'+cmd.pr+' merged at '+pr.merged_at+
+     '; verified merge SHA '+pr.merge_commit_sha+
+     '; '+PREFIX+'/pull/'+cmd.pr+'. Production LIVE not yet verified.';
+   }else if(pr.state==='closed'&&pr.merged!==true){
+    state='CLOSED_UNMERGED';detail='PR #'+cmd.pr+' closed without GitHub merge. LIVE not claimed.';
+   }else{open++;continue;}
+  }
+  const text='<!-- '+MARKER+' comment='+cmd.id+' status='+state+' -->\n'+
+   '**PR Completion · '+state+'**\n\n'+detail+
+   '\n\nOriginal request '+PREFIX+'/issues/'+ISSUE+'#issuecomment-'+cmd.id;
+  try{if(!await send(github,text))return {status:'NOTICE_UNCONFIRMED'};}
+  catch(_){return {status:'NOTICE_UNCONFIRMED'};}
+  sent++;
+ }
+ return {status:sent?'COMPLETION_NOTICE_SENT':'WATCHING',sent,open,unknown,tracked:active.length};
 }
 async function dispatchSource(github,cmd,{ownerToken,fetcher=fetch}={}){
  const task=cmd?.task;
@@ -218,14 +311,15 @@ async function run({github,core,context,fetcher=fetch,token=undefined,
  let snapshot;try{snapshot=await comments(github)}catch(_){return {status:'INBOX_FETCH_UNAVAILABLE'};}
  if(snapshot.error)return {status:snapshot.error};
  const pick=pending(snapshot.comments);
- if(pick.status!=='OK'||!pick.next)return {status:pick.status==='OK'?'NO_PENDING':pick.status};
+ if(pick.status!=='OK')return {status:pick.status};
+ if(!pick.next)return observeLive(github,snapshot.comments);
  if(issueComment){
   const submitted=command(context.payload.comment);
   if(!submitted)return {status:'NO_OWNER_COMMAND'};
   if(pick.next.id!==submitted.id)return {status:'OLDER_COMMAND_PENDING',commandId:pick.next.id};
  }
  const cmd=pick.next;
- const cap=cmd.kind==='source'?3:cmd.kind==='repair'?6:MAX_DAILY;
+ const cap=cmd.kind==='source'?3:cmd.kind==='repair'||cmd.kind==='live'?6:MAX_DAILY;
  if(pick.used>=cap)return {status:'INBOX_DAILY_CAP_HOLD',kind:cmd.kind,commandId:cmd.id};
  // Serialize by existing Watchdog job concurrency. Commit a durable claim
  // BEFORE any model/API call. Never retry ambiguous remote requests.
@@ -234,17 +328,19 @@ async function run({github,core,context,fetcher=fetch,token=undefined,
  let outcome;
  try{outcome=cmd.kind==='ask'?
   await askFree(cmd.text,{fetcher,token,run:runUrl}):cmd.kind==='source'?
-  await dispatchSource(github,cmd,{ownerToken,fetcher:ownerFetcher}):
-  await dispatchRepair(github,cmd);
+  await dispatchSource(github,cmd,{ownerToken,fetcher:ownerFetcher}):cmd.kind==='live'?
+  await dispatchLive(github,cmd,{ownerToken,fetcher:ownerFetcher}):
+  await dispatchRepair(github,cmd,{ownerToken,fetcher:ownerFetcher});
  }catch(_){outcome={reason:'INBOX_EXECUTION_UNAVAILABLE_NO_RETRY'};}
  try{await send(github,resultBody(cmd,outcome,runUrl));}
  catch(_){return {status:'RESULT_COMMENT_UNCONFIRMED',kind:cmd.kind,commandId:cmd.id};}
+ const finalStatus=outcome.merged?'MERGED':outcome.watching?'WATCHING':outcome.ok?'AI_REPLIED':outcome.dispatched?'DISPATCH_ACCEPTED_UNCORRELATED':'BLOCKED';
  if(core?.info)core.info('HH_PM_INBOX_RESULT '+JSON.stringify({
-  commandId:cmd.id,kind:cmd.kind,status:outcome.ok?'AI_REPLIED':outcome.dispatched?'DISPATCH_ACCEPTED_UNCORRELATED':'BLOCKED',
+  commandId:cmd.id,kind:cmd.kind,status:finalStatus,
   reason:outcome.reason||null,model:outcome.model||null,
   cost:typeof outcome.cost==='number'&&Number.isFinite(outcome.cost)?outcome.cost:null,
   sourceCommitConfirmed:false
  }));
- return {status:outcome.ok?'AI_REPLIED':outcome.dispatched?'DISPATCH_ACCEPTED_UNCORRELATED':'BLOCKED',kind:cmd.kind,commandId:cmd.id};
+ return {status:finalStatus,kind:cmd.kind,commandId:cmd.id};
 }
-module.exports={run,ownerComment,trustedReceipt,command,pending,resultBody,askFree,dispatchSource};
+module.exports={run,ownerComment,trustedReceipt,command,pending,resultBody,askFree,dispatchSource,dispatchRepair,dispatchLive,observeLive};
