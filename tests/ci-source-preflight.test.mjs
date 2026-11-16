@@ -106,7 +106,7 @@ test('Core preflight skips only redundant CSS/data typing; Next and DOCK remain 
   assert.equal(impactsTypes(['package-lock.json']),true);
   assert.match(workflow,/name: Exact proposed release production build and TypeScript check/);
   assert.match(workflow,/run: npm run build/);
-  assert.match(workflow,/^  hh-specialist:/m);
+  assert.doesNotMatch(workflow,/^  hh-specialist:/m);
   assert.match(workflow,/^  hh-merge-check:/m);
 });
 
@@ -181,7 +181,7 @@ test('delegated preflight reports unchecked types honestly and still demands exa
   const step=flow.split('      - name: Source Preflight — syntax and TypeScript before costly Next build')[1]
     ?.split('      - name: Upload Source Preflight root diagnostics on failure')[0]||'';
   const build=flow.split('      - name: Exact proposed release production build and TypeScript check')[1]
-    ?.split('  hh-specialist:')[0]||'';
+    ?.split('  hh-merge-check:')[0]||'';
   for(const marker of ['HH_PREFLIGHT_ROUTE:', 'HH_PREFLIGHT_CI_ONLY:',
     '--defer-types-to-next', '--full-types'])assert.ok(step.includes(marker),'missing '+marker);
   assert.ok(step.includes('steps.fast.outputs.route'), 'require BASE-trusted router');
@@ -190,11 +190,12 @@ test('delegated preflight reports unchecked types honestly and still demands exa
   assert.ok(source.includes('FULL_MEDIA_EDITOR_ONLY'));
   assert.ok(source.includes("route==='FULL'"));
   assert.match(flow,/run: npm run build/);
-  assert.match(flow,/^  hh-specialist:/m);
+  assert.doesNotMatch(flow,/^  hh-specialist:/m);
   assert.ok(build.includes('run: npm run build'));
   assert.ok(build.includes("steps.diff.outputs.ci_only != 'true'"));
   assert.ok(build.includes("steps.fast.outputs.route != 'DOCK'"));
-  assert.ok(flow.includes('hh-specialist:')&&flow.includes('hh-merge-check:'));
+  assert.ok(!flow.includes('  hh-specialist:')&&flow.includes('  hh-merge-check:'));
+  assert.ok(flow.includes('ci-specialist-aggregate.mjs'), 'independent specialist cannot disappear');
   assert.ok(source.includes('CONFLICTING_TYPECHECK_OWNERS'));
   assert.ok(source.includes('mayDelegateTypesToNext(paths'));
   const report=formatReport(['components/public.tsx'],[],false,true);
