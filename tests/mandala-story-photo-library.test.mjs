@@ -7,7 +7,7 @@ import {
 import {planReviewedStoryWithPhotos} from "../lib/mandala/reviewed-filmed-story.mjs";
 
 test("Story photo catalog keeps Pexels and Wikimedia Commons sources and licenses separate",()=>{
- assert.equal(STORY_BUSINESS_PHOTOS.length,24);
+ assert.equal(STORY_BUSINESS_PHOTOS.length,25);
  assert.ok(STORY_WIKIMEDIA_PHOTOS.length>=10);
  assert.equal(STORY_PHOTOS.length,STORY_BUSINESS_PHOTOS.length+STORY_WIKIMEDIA_PHOTOS.length);
  assert.equal(new Set(STORY_PHOTOS.map(photo=>photo.id)).size,STORY_PHOTOS.length);
