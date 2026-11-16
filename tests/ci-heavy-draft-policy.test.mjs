@@ -920,7 +920,7 @@ test('Public Services ancestry proof uses exact merge parents and authenticated 
 
 test('Core specialist uses slim only on verified non-strict paths, with unchanged real gates', () => {
   const core = read('hh-pr-core-release.yml');
-  const job = core.split(/^  hh-specialist:\s*$/m)[1]?.split(/^  hh-eslint-repair:\s*$/m)[0];
+  const job = core.split(/^  hh-merge-check:\s*$/m)[1]?.split(/^  hh-eslint-repair:\s*$/m)[0];
   assert.ok(job, 'required specialist job must exist');
   const fast = "needs.scope.outputs.route == 'ASSETS' || needs.scope.outputs.route == 'TEXT' || needs.scope.outputs.route == 'CORE'";
   const expr = '$' + '{{ ';
@@ -929,12 +929,14 @@ test('Core specialist uses slim only on verified non-strict paths, with unchange
   assert.ok(job.includes("timeout-minutes: " + expr + '(' + fast + ') && 12 || 45 }}'),
     'slim must stay under its 15-minute cap, FULL/DOCK retain original timeout');
   assert.ok(job.includes('needs: [scope]'));
-  assert.ok(job.includes("needs.scope.result == 'success'"));
+  assert.ok(job.includes('Fail closed if mandatory Core failed')); 
+  assert.ok(job.includes('[[ "$EVENT_NAME" == pull_request && "$PR_DRAFT" != true && "$SCOPE_RESULT" == success ]]'));
   assert.ok(job.includes('Verify ready exact PR HEAD before independently scheduled specialist'));
   assert.ok(job.includes('Classify specialist with immutable tested-BASE policy'));
   assert.ok(job.includes('Validate exact-head risk and required specialist workflows'));
   assert.ok(job.includes("steps.specialist_route.outputs.route == 'FULL' || steps.specialist_route.outputs.route == 'DOCK'"));
   assert.match(core, /^  hh-merge-check:\s*$/m);
-  assert.ok(core.includes('needs: [scope, hh-specialist]'));
+  assert.ok(core.includes('needs: [scope]'));
+  assert.doesNotMatch(core,/^  hh-specialist:/m);
   assert.doesNotMatch(job, /continue-on-error:\s*true/);
 });

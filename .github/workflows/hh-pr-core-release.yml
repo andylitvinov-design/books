@@ -628,9 +628,6 @@ jobs:
             # a reviewed same-repository source PR.
             node scripts/ci-specialist-aggregate.mjs
           fi
-  # Optional, deterministic source repair. This is deliberately NOT a required
-  # status and is deliberately absent from hh-merge-check dependencies. It can
-  # write only after the exact Core ESLint step failed, under the existing PR lease.
       - name: Confirm one-runner Core and independent specialist release evidence
         shell: bash
         env:
@@ -650,6 +647,9 @@ jobs:
           # or separate terminal runner can waive a failed command above.
           echo "Unified Core gate passed for route=$ROUTE; docs_only=$DOCS_ONLY; independent specialist evidence succeeded" >> "$GITHUB_STEP_SUMMARY"
           echo 'hh-merge-check PASS: Core and every applicable real specialist succeeded in this same required job.' >> "$GITHUB_STEP_SUMMARY"
+  # Optional, deterministic source repair. This is deliberately NOT a required
+  # status and is deliberately absent from hh-merge-check dependencies. It can
+  # write only after the exact Core ESLint step failed, under the existing PR lease.
   hh-eslint-repair:
     name: hh-eslint-repair
     needs: [scope]

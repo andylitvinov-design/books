@@ -130,7 +130,7 @@ test('single required check co-locates Core proof and real specialist; failed Co
   assert.match(source,/^  pull_request:/m);
   assert.match(source,/^  merge_group:/m);
   assert.match(source,/^  hh-merge-check:/m);
-  assert.doesNotMatch(source,/^  hh-merge-check:|^  release-ready:|^  hh-core-verified:|^  hh-specialists-verified:/m);
+  assert.doesNotMatch(source,/^  hh-specialist:|^  release-ready:|^  hh-core-verified:|^  hh-specialists-verified:/m);
   const gate=source.match(/^  hh-merge-check:\s*\n([\s\S]*?)(?=^  [a-z][a-z0-9-]*:\s*$)/m)?.[1];
   assert.ok(gate,'required check must contain genuine trusted specialist implementation');
   assert.match(gate,/^    name: hh-merge-check$/m);
@@ -945,7 +945,7 @@ test('Core lint executes once with a full safety fallback before mandatory Next 
   assert.match(gate, /SCOPE_RESULT/);
   assert.match(gate, /Fail closed if mandatory Core failed/);
   assert.match(gate, /Confirm one-runner Core and independent specialist release evidence/);
-  assert.match(gate, /ci-specialist-aggregate\\.mjs/);
+  assert.match(gate, /ci-specialist-aggregate\.mjs/);
 });
 
 test('core production build is the single TypeScript gate and cannot ignore errors', () => {
@@ -1229,17 +1229,20 @@ test('native AutoMerge wakes once after Core and reserves owner PAT for actual p
   assert.ok(source.includes('recover-interrupted-core:'));
 });
 
-test('unified status replaces old aliases while independently requiring real Core+Specialist results',()=>{
+test('unified status replaces old aliases while executing genuine specialist inside the required job',()=>{
   const source=workflow('hh-pr-core-release.yml');
-  const gate=source.match(/^  hh-merge-check:\n[\s\S]*$/m)?.[0];
+  const gate=source.match(/^  hh-merge-check:\n([\s\S]*?)(?=^  hh-eslint-repair:)/m)?.[1];
   assert.ok(gate);
   assert.match(gate,/^    name: hh-merge-check$/m);
-  assert.match(gate,/^    needs: \[scope, hh-specialist\]$/m);
+  assert.match(gate,/^    needs: \[scope\]$/m);
   assert.match(gate,/^    if: \$\{\{ !cancelled\(\) && \(github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false\) \}\}$/m);
+  assert.match(gate,/Fail closed if mandatory Core failed/);
+  assert.match(gate,/\[\[ "\$EVENT_NAME" == pull_request && "\$PR_DRAFT" != true && "\$SCOPE_RESULT" == success \]\]/);
+  assert.match(gate,/ci-specialist-aggregate\.mjs/);
+  assert.match(gate,/git show "\$HH_TRUSTED_BASE_SHA:scripts\/ci-specialist-aggregate\.mjs"/);
   assert.match(gate,/Unified Core gate passed/);
-  assert.match(gate,/\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
-  assert.doesNotMatch(gate,/ci-specialist-aggregate\.mjs|checkout@v4|npm run build/);
-  assert.doesNotMatch(source,/^  hh-core-verified:|^  release-ready:/m);
+  assert.doesNotMatch(gate,/npm ci|npm run build|continue-on-error/);
+  assert.doesNotMatch(source,/^  hh-core-verified:|^  release-ready:|^  hh-specialist:/m);
 });
 
 test('production-base impact analyzer runs CI-only contracts without unrelated Next build',()=>{
@@ -1416,23 +1419,19 @@ test('native AutoMerge skips synchronize; isolated janitor runs without duplicat
   assert.doesNotMatch(enable, /--admin|--force|checkout@|continue-on-error:/);
 });
 
-test('post-migration live gate preserves parallel source checks and removes redundant wrappers',()=>{
+test('post-migration live gate keeps independent specialists without a third runner hop',()=>{
   const source=workflow('hh-pr-core-release.yml');
-  const specialist=source.match(/^  hh-merge-check:\s*\n([\s\S]*?)(?=^  [a-z][a-z0-9-]*:\s*$)/m)?.[1];
-  assert.ok(specialist);
-  assert.match(specialist,/^    needs: \[scope\]$/m,'do not allocate Specialist before Core has passed');
-  assert.match(specialist,/ci-specialist-aggregate\.mjs/);
-  assert.match(specialist,/steps\.specialist_route\.outputs\.route == 'FULL'/);
-  assert.doesNotMatch(specialist,/needs\.code/);
-  assert.match(specialist,/needs\.scope\.result == 'success'/);
-  const gate=source.split(/^  hh-merge-check:/m)[1];
+  const gate=source.match(/^  hh-merge-check:\s*\n([\s\S]*?)(?=^  hh-eslint-repair:)/m)?.[1];
   assert.ok(gate);
-  assert.match(gate,/^    needs: \[scope, hh-specialist\]$/m);
-  assert.doesNotMatch(source,/^  hh-core-verified:|^  release-ready:|^  hh-specialists-verified:/m);
+  assert.match(gate,/^    needs: \[scope\]$/m);
+  assert.match(gate,/ci-specialist-aggregate\.mjs/);
+  assert.match(gate,/steps\.specialist_route\.outputs\.route == 'FULL'/);
+  assert.doesNotMatch(gate,/needs\.code/);
+  assert.match(gate,/Fail closed if mandatory Core failed/);
+  assert.match(gate,/Confirm one-runner Core and independent specialist release evidence/);
+  assert.doesNotMatch(source,/^  hh-core-verified:|^  release-ready:|^  hh-specialists-verified:|^  hh-specialist:/m);
 });
 
-// The event-driven coordinator must paginate a current source HEAD without
-// declaring a truncated 100-run page green or exhausting the GitHub API.
 test('native AutoMerge bounded CI pagination handles 100+ current runs safely',async()=>{
   const native=readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
   const begin=native.indexOf('          script: |\n',native.indexOf('  enable:\n'));
@@ -1512,23 +1511,23 @@ test('retired administration migrator cannot restore old protected contexts',()=
   assert.match(native,/hh-specialist/);
 });
 
-test('single hh-merge-check never passes without exact-current workflow Core and Specialist', () => {
+test('single hh-merge-check cannot pass failed Core or unvalidated specialist on this SHA', () => {
   const source=workflow('hh-pr-core-release.yml');
-  const gate=source.split(/^  hh-merge-check:\s*$/m)[1];
+  const gate=source.match(/^  hh-merge-check:\s*\n([\s\S]*?)(?=^  hh-eslint-repair:)/m)?.[1];
   assert.ok(gate,'single required status must exist following admin readback');
   assert.match(gate,/^    name: hh-merge-check$/m);
-  assert.match(gate,/^    needs: \[scope, hh-specialist\]$/m);
+  assert.match(gate,/^    needs: \[scope\]$/m);
   assert.match(gate,/^    if: \$\{\{ !cancelled\(\) && \(github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false\) \}\}$/m);
-  for(const required of ['SCOPE_RESULT','SPECIALIST_RESULT','PR_DRAFT'])
+  for(const required of ['SCOPE_RESULT','PR_DRAFT','HH_EVENT_HEAD_SHA','HH_TRUSTED_BASE_SHA'])
     assert.ok(gate.includes(required),'missing fail-closed '+required);
-  assert.match(gate,/\[\[ "\$EVENT_NAME" == pull_request \]\] \|\| \{/);
-  assert.match(gate,/\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
+  assert.match(gate,/\[\[ "\$EVENT_NAME" == pull_request && "\$PR_DRAFT" != true && "\$SCOPE_RESULT" == success \]\]/);
+  assert.match(gate,/ci-specialist-aggregate\.mjs/);
   assert.match(gate,/Unified Core gate passed/);
-  assert.doesNotMatch(gate,/npm ci|npm run build|npx|playwright|continue-on-error/);
-  assert.doesNotMatch(source,/^  release-ready:|^  hh-core-verified:/m);
+  assert.doesNotMatch(gate,/npm ci|npm run build|continue-on-error/);
+  assert.doesNotMatch(source,/^  release-ready:|^  hh-core-verified:|^  hh-specialist:/m);
 });
 
-test('missing PR Core recovery requires genuine Ready event instead of incidental metadata edits',()=>{
+test('missing Core recovery uses genuine Ready, and failed Core makes required job red',()=>{
   const source=workflow('hh-pr-core-release.yml');
   const match=source.match(/^  pull_request:\s*\n([\s\S]*?)(?=^  merge_group:)/m);
   assert.ok(match,'Core must stay attached to a genuine PR event');
@@ -1538,51 +1537,45 @@ test('missing PR Core recovery requires genuine Ready event instead of incidenta
   assert.doesNotMatch(match[1],/paths:|paths-ignore:/,
     'required CI must not be skipped by a path filter');
   const scope=source.split(/^  scope:/m)[1]?.split(/^  hh-merge-check:/m)[0]??'';
-  const specialist=source.split(/^  hh-merge-check:/m)[1]?.split(/^  hh-merge-check:/m)[0]??'';
-  const gate=source.split(/^  hh-merge-check:/m)[1]??'';
+  const gate=source.split(/^  hh-merge-check:/m)[1]?.split(/^  hh-eslint-repair:/m)[0]??'';
   assert.match(scope,/github\.event\.pull_request\.draft == false/,
     'real scope must execute on a non-draft Ready PR');
-  assert.match(specialist,/if: \$\{\{ !cancelled\(\) && needs\.scope\.result == 'success' && github\.event_name == 'pull_request' && github\.event\.pull_request\.draft == false \}\}/);
-  assert.match(gate,/if: \$\{\{ !cancelled\(\) && \(github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false\) \}\}/,
-    'required status must run and reject failed Core/Specialist');
-  assert.match(gate,/\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
+  assert.match(gate,/^    if: \$\{\{ !cancelled\(\) && \(github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false\) \}\}/m,
+    'required status cannot skip a failed Core job');
+  assert.match(gate,/\[\[ "\$EVENT_NAME" == pull_request && "\$PR_DRAFT" != true && "\$SCOPE_RESULT" == success \]\]/);
+  assert.match(gate,/ci-specialist-aggregate\.mjs/);
   assert.doesNotMatch(gate,/continue-on-error:\s*true/);
 });
 
-test('short Core orchestration keeps isolated required aggregator and never skips real Core or specialist checks', () => {
+test('short Core orchestration retains protected, trusted specialist validation in one runner', () => {
   const source = workflow('hh-pr-core-release.yml');
   const scope = source.split(/^  scope:\s*$/m)[1]?.split(/^  hh-merge-check:\s*$/m)[0] ?? '';
-  const core = source.split(/^  scope:\s*$/m)[1]?.split(/^  hh-merge-check:\s*$/m)[0] ?? '';
-  const specialist = source.split(/^  hh-merge-check:\s*$/m)[1]?.split(/^  hh-eslint-repair:\s*$/m)[0] ?? '';
-  const gate = source.split(/^  hh-merge-check:\s*$/m)[1] ?? '';
+  const gate = source.split(/^  hh-merge-check:\s*$/m)[1]?.split(/^  hh-eslint-repair:\s*$/m)[0] ?? '';
   assert.match(scope, /^    runs-on: ubuntu-24\.04$/m);
   assert.match(scope, /^    timeout-minutes: 45$/m);
-  assert.match(core, /^    runs-on: ubuntu-24\.04$/m);
-  assert.ok(specialist.includes("&& 'ubuntu-slim' || 'ubuntu-24.04' }}"),
+  assert.ok(gate.includes("&& 'ubuntu-slim' || 'ubuntu-24.04' }}"),
     'FULL, DOCK and unknown routes retain standard Ubuntu');
-  assert.match(specialist, /^    needs: \[scope\]$/m, 'specialist must launch after successful Core');
-  assert.match(specialist, /^    if: \$\{\{ !cancelled\(\) && needs\.scope\.result == 'success' && github\.event_name == 'pull_request' && github\.event\.pull_request\.draft == false \}\}$/m);
-  assert.match(gate, /^    runs-on: ubuntu-24\.04$/m);
-  assert.match(gate, /^    timeout-minutes: 2$/m);
+  assert.match(gate, /^    needs: \[scope\]$/m);
   assert.match(gate, /^    if: \$\{\{ !cancelled\(\) && \(github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false\) \}\}$/m);
-  assert.match(gate, /^    needs: \[scope, hh-specialist\]$/m);
-  assert.match(gate, /\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
+  assert.match(gate,/\[\[ "\$EVENT_NAME" == pull_request && "\$PR_DRAFT" != true && "\$SCOPE_RESULT" == success \]\]/);
+  assert.match(gate, /Classify specialist with immutable tested-BASE policy/);
+  assert.match(gate, /Validate exact-head risk and required specialist workflows/);
   assert.match(gate, /Unified Core gate passed/);
+  assert.equal((source.match(/^  hh-merge-check:/gm)??[]).length,1);
+  assert.doesNotMatch(source,/^  hh-specialist:/m);
 });
 
-test('required hh-merge-check uses standard public runner and keeps fail-closed Core/Specialist gate', () => {
+test('required hh-merge-check uses route-scoped public runner without third job and rejects failed Core', () => {
   const source = workflow('hh-pr-core-release.yml');
-  const gate = source.split(/^  hh-merge-check:/m)[1];
+  const gate = source.split(/^  hh-merge-check:/m)[1]?.split(/^  hh-eslint-repair:/m)[0] ?? '';
   assert.ok(gate, 'protected check name must be retained');
   assert.match(gate, /^    name: hh-merge-check$/m);
-  assert.match(gate, /^    needs: \[scope, hh-specialist\]$/m);
+  assert.match(gate, /^    needs: \[scope\]$/m);
   assert.match(gate, /^    if: \$\{\{ !cancelled\(\) && \(github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false\) \}\}$/m);
-  assert.match(gate, /^    runs-on: ubuntu-24\.04$/m);
-  assert.match(gate, /^    timeout-minutes: 2$/m);
-  assert.match(gate, /\[\[ "\$EVENT_NAME" == pull_request \]\] \|\|/);
-  assert.match(gate, /if \[\[ "\$PR_DRAFT" == true \]\]; then/);
-  assert.match(gate, /\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\] \|\|/);
-  
+  assert.match(gate, /'ubuntu-slim' \|\| 'ubuntu-24\.04'/m);
+  assert.match(gate, /&& 12 \|\| 45/);
+  assert.match(gate,/\[\[ "\$EVENT_NAME" == pull_request && "\$PR_DRAFT" != true && "\$SCOPE_RESULT" == success \]\]/);
+  assert.match(gate, /ci-specialist-aggregate\.mjs/);
   assert.doesNotMatch(gate, /continue-on-error:\s*true/);
 });
 
@@ -1661,7 +1654,8 @@ test('Public Services planner/source test stay in the narrow Core CI-only lane',
     assert.ok(scope.includes(name + '|\\'), 'CI-only route missing for ' + name);
   }
   assert.match(core, /name: hh-merge-check/, 'required protected gate is not optional');
-  assert.match(core, /needs: \[scope, hh-specialist\]/, 'real Specialist remains mandatory');
+  assert.match(core, /needs: \[scope\]/, 'required gate waits on real Core');
+  assert.match(core, /ci-specialist-aggregate\.mjs/, 'real independent Specialist remains mandatory');
 });
 
 test('App R1 banner matrix runs REAL preinstalled Playwright only when applicable, never repeated apt install',()=>{
@@ -1710,7 +1704,7 @@ test('billing specialist avoids repeated global TypeScript with all dedicated pa
   assert.match(core,/run: npm run build/);
   assert.match(core,/node scripts\/ci-source-preflight\.mjs/);
   assert.match(core,/^  hh-merge-check:/m);
-  assert.match(core,/^    needs: \[scope, hh-specialist\]$/m);
+  assert.match(core,/^    needs: \[scope\]$/m);
 });
 
 
