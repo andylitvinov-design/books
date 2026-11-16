@@ -153,21 +153,40 @@ test("image-only QA generates and decodes all 85 pinned WebP while Core owns pro
   assert.match(workflow, /^  workflow_dispatch:/m);
   assert.match(workflow, /node --test tests\/public-card-artwork-generated\.test\.mjs/);
   assert.match(workflow, /node --test tests\/public-card-artwork-cost-guard\.test\.mjs tests\/public-card-artwork-reuse-secondary\.test\.mjs/);
-  assert.match(core, /^  hh-specialist:/m);
-  // Unified protected gate replaces the obsolete release-ready wrapper.
-  // The unified Scope job owns Core checks; the aggregate consumes Scope and Specialist results.
-  assert.match(core, /^  hh-merge-check:\n    name: hh-merge-check\n    needs: \[scope, hh-specialist\]/m);
-  // Draft PR must not get a fabricated red status. Ready PRs must still
-  // pass the real Core+Specialist check before GitHub may merge.
+  // On the older protected architecture, Core and Specialist are separate
+  // jobs. Newer tested-BASE merges integrate Specialist *inside* the required
+  // hh-merge-check job to avoid a redundant runner handoff. In both cases the
+  // merge must fail closed on missing Core, unknown HEAD or specialist failure.
+  const legacySpecialist = /^  hh-specialist:/m.test(core);
+  const inlineSpecialist = /^  hh-merge-check:\n    name: hh-merge-check\n(?:    [^\n]*\n){0,12}    needs: \[scope\]/m.test(core);
+  assert.ok(legacySpecialist || inlineSpecialist,
+    "Required merge gate must own independently validated Specialist checks");
+  assert.match(core, /- name: Verify ready exact PR HEAD before independently scheduled specialist/);
+  assert.match(core, /- name: Classify specialist with immutable tested-BASE policy/);
+  assert.match(core, /- name: Validate exact-head risk and required specialist workflows/);
+  assert.match(core, /- name: Pin exact production base for shallow checkout/);
+  assert.match(core, /- name: Require real Core and specialist results from this workflow|node .*ci-specialist-aggregate\.mjs/);
+  // A failed or Draft Core may never become an apparently successful skipped
+  // required job, regardless of which reviewed architecture is in use.
   assert.match(core.split(/^  hh-merge-check:/m)[1],
     /^    if: \$\{\{ !cancelled\(\) && \(github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false\) \}\}$/m);
-  assert.match(core, /- name: Require real Core and specialist results from this workflow/);
-  assert.match(core, /\[\[ "\$EVENT_NAME" == pull_request \]\]/);
-  assert.match(core, /\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
+  if (legacySpecialist) {
+    assert.match(core, /^  hh-merge-check:\n    name: hh-merge-check\n    needs: \[scope, hh-specialist\]/m);
+    assert.match(core, /- name: Require real Core and specialist results from this workflow/);
+    assert.match(core, /\[\[ "\$EVENT_NAME" == pull_request \]\]/);
+    assert.match(core, /\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
+    assert.match(core, /SCOPE_RESULT: \$\{\{ needs\.scope\.result \}\}/);
+    assert.match(core, /ROUTE: \$\{\{ needs\.scope\.outputs\.route \}\}/);
+  } else {
+    assert.doesNotMatch(core, /^  hh-specialist:/m);
+    assert.match(core, /- name: Fail closed if mandatory Core failed or this is not a Ready PR/);
+    assert.match(core, /\[\[ "\$EVENT_NAME" == pull_request && "\$PR_DRAFT" != true && "\$SCOPE_RESULT" == success \]\] \|\| \{/);
+    assert.match(core, /SCOPE_RESULT: \$\{\{ needs\.scope\.result \}\}/);
+    assert.match(core, /node "\$RUNNER_TEMP\/hh-ci-trusted\/scripts\/ci-specialist-aggregate\.mjs"|node scripts\/ci-specialist-aggregate\.mjs/);
+    assert.match(core, /HH_TRUSTED_BASE_SHA/);
+    assert.match(core, /needs\.scope\.outputs\.route/);
+  }
   assert.match(core, /name: core-lint-types-build/);
-  assert.match(core, /SCOPE_RESULT: \$\{\{ needs\.scope\.result \}\}/);
-  assert.match(core, /ROUTE: \$\{\{ needs\.scope\.outputs\.route \}\}/);
-  assert.match(core, /\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
   assert.doesNotMatch(core, /^  code:/m);
   assert.doesNotMatch(core, /CODE_RESULT|needs\.code/);
   assert.doesNotMatch(core, /^  release-ready:/m);
