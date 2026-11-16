@@ -14,6 +14,19 @@
 ## Deployment policy
 Build/publish this standalone frontend only in the **new Vercel project**, never the Director project or the old combined monitor. New project must not be Git-linked to the enormous books repo; it has no automatic source deploys on unrelated PR merges. Source is versioned in `ops/pr-monitor-isolated` with a single atomic protected PR. To release, verify six proxy routes and all three client assets, then one production deployment, then read back the alias and schemas. Preserve the source-SHA deployment ID for rollback.
 
+### Deployment cost guard — verified identical upload protection
+
+**P0 owner cost policy (16 November 2026):** The isolated PR Dashboard is deliberately an API-uploaded static/readonly-function project without Git auto-deploy. CI data, error funnels, timestamps, and weekly summaries update through its existing read-only API; *no Vercel deployment is needed for a changed PR result or a new Git commit outside this dashboard's source*. Do not refresh the page by uploading identical files.
+
+**Verified duplication:** Vercel `dpl_H44bKgqFR2oemhghAe63oTe7q2p6` and `dpl_8gFEQYsF23d4VMb42NxnJU7vX6Lm`, created 16 Nov 2026, have the same seven uploaded source `path/uid` pairs (including both serverless API files). The account had 11 successful dashboard Production deployments in the preceding 24 hours. This is evidence of duplicated uploads, **not** evidence that every upload was redundant.
+
+**Mandatory release preflight for all ChatGPT/Codex/agent publishers:**
+- Confirm the latest protected change actually modified `ops/pr-monitor-isolated/`, not just the generic `books` HEAD or an unrelated Control Tower/CI source
+- Prepare all seven or more intended files and the full source-file manifest; compare content hashes with the previous approved Vercel READY deployment manifest, using full verified bytes when identifier schemes differ
+- If all proposed bytes, serverless API files, rewrites, and build/runtime settings are unchanged: return `AUX_DASHBOARD_UNCHANGED_SKIP`, **do not** invoke Vercel `create_deployment` or `redeploy`
+- If a real, reviewed change exists: follow the existing single atomic protected-PR publication policy, verify corresponding routes, and issue only **one** authorized deployment; preserve the existing LIVE and rollback version
+- Never replace this check with always-skip Vercel settings: real updates must still reach LIVE. No new cron, paid service, external model, credentials, automatic cleanup or PR-triggered redeploy
+
 ## Limits
 No user credentials or data export. No new paid plan, recurring agent tasks, third-party calls or background auto-deploy. HTTP/API checks are separate from a real iPhone Safari render/interaction test; do not claim real-browser proof unless it has actually been performed.
 
