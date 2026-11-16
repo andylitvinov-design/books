@@ -16,8 +16,9 @@ const end=source.indexOf("  const active=phase!=='idle'",start)
 assert.ok(start>=0&&end>start,'the tested slice is the real voice controller, not a replica')
 const executable=source.slice(start,end)+'\n  return null\n})\nMyCoachSpeechLoop'
 
-function createSession({ttsFailures=[],respond}={}){
-  const voices=[],inputs=[],phases=[],timers=new Map()
+function createSession({ttsFailures=[],respond,permissionError=null,holdMicPermission=false}={}){
+  const voices=[],inputs=[],phases=[],timers=new Map(),stateChanges=[],microphoneEvents=[]
+  let releaseMicPermission=null
   let id=0,starts=0,intros=0,ttsCalls=0,cues=0,spoken=0
   class Recognition{
     constructor(){this.started=false;this.aborted=false;voices.push(this)}
@@ -33,7 +34,13 @@ function createSession({ttsFailures=[],respond}={}){
   const navigator={
     userAgent:'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Mobile/15E148 Safari/604.1',
     platform:'iPhone',maxTouchPoints:5,languages:['ru-RU'],language:'ru-RU',
-    mediaDevices:{getUserMedia:async()=>({getTracks:()=>[{stop(){}}]})},
+    mediaDevices:{getUserMedia:()=>{
+      microphoneEvents.push('requested')
+      if(permissionError)return Promise.reject(Object.assign(new Error('Microphone access failed'),{name:permissionError}))
+      const makeStream=()=>({getTracks:()=>[{stop(){microphoneEvents.push('stopped')}}]})
+      if(holdMicPermission)return new Promise(resolve=>{releaseMicPermission=()=>resolve(makeStream())})
+      return Promise.resolve(makeStream())
+    }},
   }
   const fakeWindow={
     navigator,SpeechRecognition:Recognition,webkitSpeechRecognition:Recognition,
@@ -47,7 +54,7 @@ function createSession({ttsFailures=[],respond}={}){
   const hooks={
     forwardRef:fn=>fn,
     useRef:value=>({current:value}),
-    useState:value=>[value,()=>{}],
+    useState:value=>[value,next=>stateChanges.push(next)],
     useEffect:callback=>{callback()},
     useImperativeHandle:(reference,factory)=>{reference.current=factory()},
   }
@@ -90,7 +97,8 @@ function createSession({ttsFailures=[],respond}={}){
     onVoiceLevel(){},onTranscript(){},onDraft(){},
   },ref)
   return {
-    ref,voices,inputs,phases,
+    ref,voices,inputs,phases,stateChanges,microphoneEvents,
+    releaseMicPermission(){releaseMicPermission?.()},
     get starts(){return starts},
     get intros(){return intros},
     get ttsCalls(){return ttsCalls},
@@ -207,3 +215,55 @@ test('The existing mobile timebox pauses with the deliberate Pause control',()=>
   assert.match(source,/document\.visibilityState==='visible'&&!paused/)
   assert.match(source,/\},\[sessionClockStarted,paused\]\)/)
 })
+
+test('one Play waits for iPhone microphone consent to settle before speech recognition',async()=>{
+ const session=createSession({holdMicPermission:true})
+ session.ref.current.startSession('Здравствуйте! Я Мира.',{naturalVoice:true})
+ for(let i=0;i<8;i++)await Promise.resolve()
+ assert.equal(session.voices.length,1)
+ assert.equal(session.voices[0].started,false)
+ session.releaseMicPermission()
+ const mic=await nextMic(session,1)
+ assert.deepEqual(session.microphoneEvents,['requested','stopped'])
+ mic.hear('Мне важно обсудить отношения')
+ await nextMic(session,2)
+ assert.deepEqual(session.inputs,['Мне важно обсудить отношения'])
+})
+test('transient Safari audio-capture re-arms microphone without another Play',async()=>{
+ const session=createSession()
+ session.ref.current.startSession('Здравствуйте! Я Мира.',{naturalVoice:true})
+ const mic=await nextMic(session,1)
+ mic.onerror?.({error:'audio-capture'})
+ assert.equal(mic.aborted,true)
+ session.flushDelay(800)
+ const recovered=await nextMic(session,2)
+ recovered.hear('Теперь меня слышно')
+ await nextMic(session,3)
+ assert.deepEqual(session.inputs,['Теперь меня слышно'])
+ assert.equal(session.starts,1)
+})
+test('four consecutive capture failures stop with an accurate retry instruction',async()=>{
+ const session=createSession()
+ session.ref.current.startSession('Здравствуйте! Я Мира.',{naturalVoice:true})
+ let mic=await nextMic(session,1)
+ for(const [index,delay] of [800,1500,2600].entries()){
+  mic.onerror?.({error:'audio-capture'})
+  session.flushDelay(delay)
+  mic=await nextMic(session,index+2)
+ }
+ mic.onerror?.({error:'audio-capture'})
+ assert.equal(session.phases.at(-1),'idle')
+ assert.ok(session.stateChanges.some(x=>typeof x==='string'&&x.includes('не смог включить микрофон')))
+ assert.equal(session.voices.length,4)
+})
+for(const [permissionError,notice] of [['NotAllowedError','Доступ к микрофону запрещён'],['NotFoundError','Safari не видит микрофон']]){
+ test('Safari permission '+permissionError+' does not trigger infinite capture retries',async()=>{
+  const session=createSession({permissionError})
+  session.ref.current.startSession('Здравствуйте! Я Мира.',{naturalVoice:true})
+  for(let i=0;i<12;i++)await Promise.resolve()
+  assert.equal(session.phases.at(-1),'idle')
+  assert.equal(session.voices.length,1)
+  assert.equal(session.voices[0].started,false)
+  assert.ok(session.stateChanges.some(x=>typeof x==='string'&&x.includes(notice)))
+ })
+}
