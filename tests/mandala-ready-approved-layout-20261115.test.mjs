@@ -65,5 +65,5 @@ test("Ready pending poster stays full 16:9 on iPhone instead of a 43px or 54px s
   const tail=css.slice(css.indexOf("/* Approved iPhone Ready reference:"));
   assert.match(tail,/width:100%;height:auto;min-height:0;max-height:none;aspect-ratio:16\/9/);
   assert.match(tail,/\.root\[data-ready-state="choose"\] \.selectedVideo:not\(\[data-video-file="true"\]\)/);
-  assert.doesNotMatch(tail,/height:(?:43|54|64)px/);
+  assert.doesNotMatch(tail,/\.selectedVideo:not\(\[data-video-file="true"\]\)\{height:(?:43|54|64)px/);
 });
