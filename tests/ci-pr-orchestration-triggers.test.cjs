@@ -490,8 +490,8 @@ test('bounded AutoMerge/Dispatcher/API workers use slim without changing their f
   assert.doesNotMatch(native,/continue-on-error:\s*true/);
 });
 
-// Trusted control jobs, not the Code Fix/Verify/Publisher or OIDC inbox,
-// may use the same existing one-vCPU runner as the deployed CI Worker.
+// Trusted short API/receipt control jobs, including the isolated OIDC inbox,
+// may use the existing slim runner; Code Fix/Verify/Publisher stay full Ubuntu.
 test('Four short failure/repair control jobs use slim with every safety gate retained',()=>{
   const cases=[
     ['hh-pr-direct-core-failure',[['direct-core-failure',10],['core-slot-wakeup',3]]],
@@ -518,7 +518,9 @@ test('Four short failure/repair control jobs use slim with every safety gate ret
   }
   const direct=read('hh-pr-direct-core-failure');
   const intake=direct.split('  ci_event_intake:\n')[1]?.split(/\n  [a-z_][a-z0-9_-]*:\n/)[0];
-  assert.match(intake,/^    runs-on: ubuntu-24\.04$/m,'OIDC intake stays on original runner');
+  assert.match(intake,/^    runs-on: ubuntu-slim$/m,'OIDC-only inbox does not occupy Core runner');
+  assert.match(intake,/id-token: write/,'signed OIDC receipt remains authorized');
+  assert.match(intake,/persistReadOnlyRoute/,'durable routing receipt remains present');
   assert.match(direct,/github.event.workflow_run.conclusion == 'failure'/);
   assert.match(direct,/recoverBaseAdvanced/,'exact-HEAD BASE recovery remains guarded');
   assert.match(repair,/HH_AUTOMERGE_TOKEN/);

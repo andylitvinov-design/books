@@ -147,3 +147,23 @@ test('watchdog-only exact diff retains CI/repair checks but skips unrelated dash
  assert.ok(contract.includes('      - name: Hermes CI event bridge and private inbox contracts\n        run:'));
  assert.ok(contract.includes('      - name: Syntax-check trusted watchdog and tests\n        run:'));
 });
+
+test('control-only failed-Core intake uses slim runner without moving OIDC receipt into lossy writer concurrency', () => {
+ const direct=fs.readFileSync('.github/workflows/hh-pr-direct-core-failure.yml','utf8');
+ const intake=direct.split('  ci_event_intake:\n')[1]?.split('  direct-core-failure:\n')[0];
+ const writer=direct.split('  direct-core-failure:\n')[1]?.split('  core-slot-wakeup:\n')[0];
+ assert.ok(intake && writer, 'two independent phases remain present');
+ assert.match(intake,/runs-on: ubuntu-slim/);
+ assert.match(writer,/runs-on: ubuntu-slim/);
+ assert.match(intake,/timeout-minutes: 4/);
+ assert.match(intake,/sendWorkflowFailure/);
+ assert.match(intake,/persistReadOnlyRoute/);
+ assert.match(intake,/core\.getIDToken\('hh-commander-ci'\)/);
+ assert.doesNotMatch(intake,/concurrency:|npm ci|npm run build|npx playwright/,
+  'durable OIDC receipt must not be suppressed by a single-pending writer slot');
+ assert.match(writer,/needs: ci_event_intake/);
+ assert.match(writer,/needs\.ci_event_intake\.outputs\.stale_event != 'true'/);
+ assert.match(writer,/group: hh-direct-core-pr-/);
+ assert.match(writer,/ci-pr-base-advanced-recovery\.cjs/);
+ assert.match(writer,/HH_DIRECT_CORE_HANDOFF/);
+});
