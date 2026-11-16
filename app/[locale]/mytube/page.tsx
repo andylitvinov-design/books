@@ -4,6 +4,7 @@ import {ArrowLeft, BookOpen, Play} from "lucide-react";
 import {notFound} from "next/navigation";
 import {VideoDiscovery} from "@/components/video-discovery";
 import {LibraryFeed} from "@/components/library-feed";
+import {MyTubeExternalPractices} from "@/components/mytube-external-practices";
 import selectedStyles from "./mytube-selected.module.css";
 import {buildPublicVideoDiscoveryItems} from "@/components/library-hub";
 import {loadPublicMyTubeVideos} from "@/lib/public-library-feed";
@@ -19,7 +20,7 @@ type Props={params:Promise<{locale:string}>;searchParams?:Promise<{video?:string
 const t={
   ru:{title:"MyTube — развивающие видео",description:"Ищите развивающие видео и практики по цели, жизненной сфере, методу и автору.",back:"В видеостудию",library:"Библиотека",subtitle:"Осмысленные видео, практики и учебные записи",note:"Публичная видеотека Holistic House. Видео остаются у авторов."},
   en:{title:"MyTube — videos for growth",description:"Discover curated learning videos by goal, life area, creator, method, and original language.",back:"Video Studio",library:"Library",subtitle:"Thoughtful videos, practices and learning sessions",note:"Public Holistic House video library. Videos stay with their creators."},
-  es:{title:"MyTube — vídeos para crecer",description:"Descubre vídeos educativos por objetivo, área de vida, autor, método e idioma original.",back:"Estudio de vídeo",library:"Biblioteca",subtitle:"Vídeos, prácticas y lecciones para aprender",note:"Videoteca pública de Holistic House. Los vídeos permanecen con sus autores."},
+  es:{title:"MyTube — vídeos para crecer",description:"Descubre vídeos educativos por objetivo, área de vida, autor, método e idioma original.",back:"Estudio de vídeo",library:"Biblioteca",subtitle:"Vídeos, prácticas y lecciones para aprender",note:"Videoteca pública de Holistic House. Los vídeos permanecen en los canales de sus creadores."},
 } as const;
 export async function generateMetadata({params}:Props):Promise<Metadata>{
   const {locale:raw}=await params;
@@ -63,6 +64,7 @@ export default async function MyTubePage({params,searchParams}:Props){
         <LibraryFeed locale={locale} items={[selectedVideo]} videosOnly preserveOrder videoLayout="mytube"/>
       </section>}
       <VideoDiscovery locale={locale} videos={publicVideos} variant="mytube" subtitle={copy.subtitle}/>
+      <MyTubeExternalPractices locale={locale}/>
       <p className={styles.footerNote}>{copy.note}</p>
     </div>
   </main>;
