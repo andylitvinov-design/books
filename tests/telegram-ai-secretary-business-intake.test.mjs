@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
 import {telegramAiSecretaryQuestion,telegramAiSecretaryStep,telegramAiSecretaryAnswer,
- telegramAiSecretarySummary,TELEGRAM_AI_SECRETARY_STEPS} from '../lib/assist/telegram-ai-secretary-intake.mjs';
+ telegramAiSecretarySummary,telegramAiSecretaryIntent,TELEGRAM_AI_SECRETARY_STEPS} from '../lib/assist/telegram-ai-secretary-intake.mjs';
 import {telegramServiceRequestDraft,parseTelegramServiceDraft,telegramServiceRequestUrl,
  telegramBusinessConversationReply,telegramBusinessClientChoice} from '../lib/assist/telegram-business-request.mjs';
 import {telegramEnquiryUrlFromWhatsApp,whatsappEnquiryUrl} from '../lib/whatsapp-enquiry.js';
@@ -20,6 +20,20 @@ test('AI-secretary order opens owner human Telegram with a fixed safe service ma
   const viaWa=whatsappEnquiryUrl({locale,service:title,request:'Please contact me',pagePath:'/'+locale+'/services/business-consulting'});
   assert.equal(telegramEnquiryUrlFromWhatsApp(viaWa),href);
  }
+});
+test('Natural first message in the owner chat starts ONLY an explicit AI-secretary product request',()=>{
+ const prompts=[
+  ['Хочу заказать AI-секретаря для бизнеса','ru'],
+  ['I need an AI secretary for my business','en'],
+  ['Quiero un asistente IA para mi negocio','es'],
+ ];
+ for(const [message,locale] of prompts)
+  assert.deepEqual(telegramAiSecretaryIntent(message),{service:'ai_secretary',locale});
+ for(const message of ['Привет!','Какие у вас услуги?','Мне грустно','My family is stressed',
+  'Can you send me a course?','', '/start', 'x'.repeat(500)])
+  assert.equal(telegramAiSecretaryIntent(message),null,message.slice(0,40));
+ const code=read('lib/crm/telegram-business-service.js');
+ assert.match(code,/event\.request=telegramAiSecretaryIntent\(event\.text\)/);
 });
 test('Five compact, local, service-specific steps never require an extra bot /start',()=>{
  assert.equal(TELEGRAM_AI_SECRETARY_STEPS,5);
