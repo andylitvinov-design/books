@@ -107,3 +107,15 @@
   .featured :global([data-consultation-choice] > div:first-child){min-height:100px}
 }
 @media(prefers-reduced-motion:reduce){.chevron{transition:none}}
+
+/* Mobile category preview is now informational; two explicit controls govern the card. */
+.panelActions{display:none}
+@media(max-width:760px){
+  .panel .preview{display:grid;grid-template-columns:41px minmax(0,1fr);min-height:68px;cursor:default}
+  .panelActions{display:block;padding:0 9px 10px}
+  .panel[data-expanded="true"] .preview{grid-template-columns:41px minmax(0,1fr);min-height:68px}
+  .panel[data-expanded="true"] .icon{width:41px;height:46px}
+  .featured :global([data-consultation-choice] > div:first-child){grid-column:1;grid-row:1!important;min-height:108px;height:108px}
+  .featured :global([data-consultation-choice] > div:nth-child(2)){grid-column:2;grid-row:1}
+  .featured :global([data-consultation-choice] > [data-service-card-actions]){grid-column:1/-1;grid-row:2;width:100%;margin-top:2px}
+}
