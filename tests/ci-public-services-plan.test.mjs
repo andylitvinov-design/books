@@ -1734,7 +1734,7 @@ test('Nov 16 video-only PRs stay on mandatory Mandala CI without an unrelated 13
     assert.equal(files.some(file => covers(pub, file)), false,
       'isolated Video Studio changes must not allocate the public-services full browser matrix');
     assert.equal(files.some(file => covers(mandala, file)), true,
-      'real Mandala video checks must still run');
+      'mandatory Mandala source/media checks must still run');
   }
   for (const sensitive of [
     'middleware.ts',
