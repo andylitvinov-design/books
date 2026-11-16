@@ -84,7 +84,7 @@ export function ServicesCardActions({
       <div className={styles.panel} id={id + "-order"} role="region"
         aria-label={t.order + ": " + title} data-service-card-order hidden={expanded !== "order"}>
         <MandatoryMessengerActions locale={locale} whatsappUrl={messageUrl} telegramUrl={telegramUrl}
-          compact collapsed={false} label={t.choose} />
+          compact collapsed={false} label={t.choose} active={expanded==="order"} />
       </div>
     </div>
   );

@@ -11,6 +11,7 @@ import { sendTelegramDiagnosticPrompt, sendWhatsAppDiagnosticPrompt, ensureTeleg
 import { telegramPresentationOnStart } from '@/lib/crm/telegram-presentation.mjs'
 import {processTelegramCompanion} from '@/lib/crm/telegram-companion-service'
 import {processTelegramAiV3,finishTelegramAiV3,finishTelegramWaveVoiceV3,bindTelegramWaveVoiceOffer,deliverTelegramWaveVoiceV3} from '@/lib/crm/telegram-ai-diagnostic-v3-service'
+import {finalizeTelegramV3Service,notifyOwnerTelegramV3Service} from '@/lib/crm/telegram-v3-service-finalizer'
 import {shouldBootstrapTelegramNativeMenu} from '@/lib/crm/telegram-companion-native-commands.mjs'
 import { receiveOwnerTelegramVideoCrmFallback } from '@/lib/practitioners/owner-telegram-video-crm-fallback'
 import {processTelegramBusinessConversation} from '@/lib/crm/telegram-business-service'
@@ -98,9 +99,9 @@ export async function POST(request,{params}){
     if(provider==='telegram'){
       const business=await processTelegramBusinessConversation(body,config)
       if(business.handled){
-        // CRM confirmation is committed before notifying the verified owner.
-        // Send a neutral receipt via the already-consented @Andydotbot outbox;
-        // provider uncertainty cannot alter the customer's response.
+        // The signed Telegram Business CRM confirmation is already committed.
+        // Notify only the paired, consented owner bot; a provider failure must
+        // never change the client's reply or turn an enquiry into a booking.
         if(business.terminal)after(async()=>{
           try{
             const notice=await notifyConfirmedTelegramBusinessOwner(config,body)
@@ -248,6 +249,27 @@ export async function POST(request,{params}){
         // for explicitly started or already active V3 diagnostic sessions.
         const aiIntake=await processTelegramAiV3(diagnosticEvent,config)
         if(aiIntake.handled){
+          if(aiIntake.serviceFinalize){
+            try{
+              const finished=await finalizeTelegramV3Service(config,aiIntake.serviceFinalize)
+              if(finished.saved){
+                // Do not claim "request submitted" until after the existing
+                // protected practitioner CRM service enquiry transaction commits.
+                aiIntake.reply=finished.message
+                after(async()=>{
+                  try{await notifyOwnerTelegramV3Service(config,finished)}
+                  catch{console.error('HH_TG_V3_SERVICE_NOTICE_NOT_CONFIRMED')}
+                })
+              }else aiIntake.reply=finished.message||null
+            }catch{
+              aiIntake.reply=aiIntake.locale==='ru'
+                ?'Не удалось подтвердить сохранение в CRM. Отправьте /retry_request — новая заявка не создастся.'
+                :aiIntake.locale==='es'
+                  ?'No pude confirmar la solicitud en CRM. Envía /retry_request para volver a comprobarlo.'
+                  :'CRM request not yet confirmed. Send /retry_request to check again without duplicates.'
+              console.error('HH_TG_V3_SERVICE_FINALIZE_NOT_CONFIRMED')
+            }
+          }
           if(event.callbackId){
             try{await acknowledgeTelegramInlineCallback({
               callbackId:event.callbackId,to:event.userId,
