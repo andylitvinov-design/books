@@ -8,7 +8,7 @@ import { telegramEnquiryUrlFromWhatsApp, whatsappEnquiryUrl } from "@/lib/whatsa
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./services-courses-shelf.module.css";
 
-type Direction = "all" | "temple" | "reiki" | "wellbeing";
+type Direction = "all" | "temple" | "reiki" | "wellbeing" | "magic";
 type Format = "all" | "free" | "teacher";
 const courses = [
   { id: "opora", direction: "wellbeing", teacher: false, freeIntro: true,
@@ -21,6 +21,12 @@ const courses = [
     path: "academy/reiki/yggdrasil", image: "/academy/reiki-yggdrasil/source/basic-program.jpg" },
   { id: "kundalini", direction: "reiki", teacher: true, freeIntro: false,
     path: "academy/reiki/kundalini-reiki", image: "/academy/kundalini-reiki/kundalini-manual-level-2.jpg" },
+  { id: "egypt", direction: "temple", teacher: false, freeIntro: true, fixedLocale: "ru",
+    path: "academy/egyptian-priesthood/learn", image: "/academy/reiki-yggdrasil/source/temple-studies.png" },
+  { id: "magic", direction: "magic", teacher: false, freeIntro: false, archived: true,
+    path: "holistic-support/mobile?view=pump", image: "/academy/reiki-yggdrasil/source/advanced-runes.png" },
+  { id: "meditation", direction: "wellbeing", teacher: false, freeIntro: true,
+    path: "meditations", image: "/images/holistic-house/reiki-practitioner-sunrise.webp" },
   { id: "dionysus", direction: "temple", teacher: false, freeIntro: false, archived: true,
     path: "academy/archive/dionysian-tantra-club", image: "/images/holistic-house/hero-olive-incense.webp" },
 ] as const;
@@ -29,7 +35,7 @@ const content = {
     eyebrow: "HOLISTIC HOUSE · ОБУЧЕНИЕ", title: "Обучающие курсы",
     lead: "Знания, практики и инициации для целостного развития",
     direction: "Направление обучения", format: "Вариант обучения", recommended: "Рекомендуемые курсы",
-    directions: { all: "Все курсы", temple: "Храмовые традиции", reiki: "Рейки и энергия", wellbeing: "Антистресс" },
+    directions: { all: "Все курсы", temple: "Храмовые традиции", reiki: "Рейки и энергия", wellbeing: "Антистресс", magic: "Магия и символы" },
     formats: { all: "Все", free: "Бесплатно", teacher: "С мастером" },
     details: "Подробнее", order: "Заказать курс", start: "Начать обучение", all: "Посмотреть все курсы",
     empty: "По этому фильтру пока нет курсов.", reset: "Сбросить фильтры",
@@ -42,13 +48,16 @@ const content = {
       opora: { title: "ОПОРА · Антистресс", label: "Самоподдержка", description: "14 занятий и шесть бережных маршрутов самоподдержки", status: "Начать курс" },
       practitioner: { title: "Бесплатный курс практикующего Рейки", label: "Основы Рейки", description: "Пять вводных занятий на английском языке", status: "Бесплатный старт · EN" },
       kundalini: { title: "Кундалини Рейки", label: "Энергопрактики", description: "Обзор программы и индивидуальное обучение по согласованию", status: "Программа обучения" },
+      egypt: { title: "Египетские мистерии", label: "Храмовые традиции", description: "Семь открытых уроков школы Осириса на русском языке.", status: "Бесплатные уроки · RU" },
+      magic: { title: "Магические практики · архив", label: "Магия и символы", description: "Открытые исторические материалы по рунам, Таро и стихиям. Это обзор каталога, а не набор на курс.", status: "Открытые архивные материалы" },
+      meditation: { title: "Бесплатные медитации", label: "Самоподдержка", description: "Авторские практики и видеомедитации для самостоятельного изучения.", status: "Бесплатно" },
     },
   },
   en: {
     eyebrow: "HOLISTIC HOUSE · LEARNING", title: "Learning courses",
     lead: "Knowledge, practices and initiations for personal growth",
     direction: "Learning direction", format: "Learning option", recommended: "Recommended courses",
-    directions: { all: "All courses", temple: "Temple traditions", reiki: "Reiki & energy", wellbeing: "Anti-stress" },
+    directions: { all: "All courses", temple: "Temple traditions", reiki: "Reiki & energy", wellbeing: "Anti-stress", magic: "Magic & symbols" },
     formats: { all: "All", free: "Free", teacher: "With a teacher" },
     details: "Details", order: "Enquire about course", start: "Start learning", all: "Explore all courses",
     empty: "No courses match these filters yet.", reset: "Reset filters",
@@ -61,13 +70,16 @@ const content = {
       opora: { title: "OPORA · Anti-Stress", label: "Wellbeing", description: "14 lessons with six gentle paths for self-support", status: "Start the course" },
       practitioner: { title: "Free Reiki Practitioner Course", label: "Reiki foundations", description: "Five introductory lessons in the original English course", status: "Free introduction · EN" },
       kundalini: { title: "Kundalini Reiki", label: "Energy practices", description: "Explore the programme and enquire about individual learning", status: "Learning programme" },
+      egypt: { title: "Egyptian mysteries", label: "Temple traditions", description: "Seven publicly available Osiris lessons, with original Russian instruction.", status: "Free lessons · RU" },
+      magic: { title: "Symbolic magic · archive", label: "Magic & symbols", description: "Public historical material on runes, Tarot and elements. Browse the archive; this is not open enrolment.", status: "Open archive materials" },
+      meditation: { title: "Free meditation practices", label: "Wellbeing", description: "Original guided practices and video meditations for independent exploration.", status: "Free" },
     },
   },
   es: {
     eyebrow: "HOLISTIC HOUSE · FORMACIÓN", title: "Cursos de formación",
     lead: "Conocimientos, prácticas e iniciaciones para crecer",
     direction: "Área de formación", format: "Opción de formación", recommended: "Cursos recomendados",
-    directions: { all: "Todos los cursos", temple: "Tradiciones de templo", reiki: "Reiki y energía", wellbeing: "Antiestrés" },
+    directions: { all: "Todos los cursos", temple: "Tradiciones de templo", reiki: "Reiki y energía", wellbeing: "Antiestrés", magic: "Magia y símbolos" },
     formats: { all: "Todos", free: "Gratis", teacher: "Con un maestro" },
     details: "Detalles", order: "Solicitar curso", start: "Empezar", all: "Ver todos los cursos",
     empty: "Aún no hay cursos para estos filtros.", reset: "Restablecer filtros",
@@ -80,6 +92,9 @@ const content = {
       opora: { title: "OPORA · Antiestrés", label: "Bienestar", description: "14 lecciones y seis rutas suaves de apoyo personal", status: "Empezar el curso" },
       practitioner: { title: "Curso gratuito para practicantes de Reiki", label: "Fundamentos de Reiki", description: "Cinco clases iniciales del curso original en inglés", status: "Inicio gratis · EN" },
       kundalini: { title: "Kundalini Reiki", label: "Prácticas energéticas", description: "Explora el programa y consulta la formación individual", status: "Programa de formación" },
+      egypt: { title: "Misterios egipcios", label: "Tradiciones de templo", description: "Siete lecciones abiertas de Osiris, con instrucción original en ruso.", status: "Lecciones gratis · RU" },
+      magic: { title: "Magia simbólica · archivo", label: "Magia y símbolos", description: "Material histórico sobre runas, Tarot y elementos. El archivo no implica inscripción abierta.", status: "Materiales abiertos" },
+      meditation: { title: "Meditaciones gratuitas", label: "Bienestar", description: "Prácticas originales y videomeditaciones de exploración personal.", status: "Gratis" },
     },
   },
 } as const;
@@ -98,7 +113,7 @@ export function ServicesCoursesShelf({ locale }: { locale: PublicLocale }) {
     <div className={styles.filters}>
       <label className={styles.directionLabel} htmlFor="assist-course-direction"><GraduationCap size={22} aria-hidden="true"/>{t.direction}</label>
       <select id="assist-course-direction" value={direction} onChange={event=>setDirection(event.target.value as Direction)}>
-        {(["all","temple","reiki","wellbeing"] as const).map(key=><option value={key} key={key}>{t.directions[key]}</option>)}
+        {(["all","temple","reiki","wellbeing","magic"] as const).map(key=><option value={key} key={key}>{t.directions[key]}</option>)}
       </select>
       <p className={styles.formatLabel}><BookOpen size={22} aria-hidden="true"/>{t.format}</p>
       <div className={styles.pills} role="group" aria-label={t.format}>
@@ -107,8 +122,8 @@ export function ServicesCoursesShelf({ locale }: { locale: PublicLocale }) {
       </div>
     </div>
     <div className={styles.topics} role="group" aria-label={t.direction}>
-      {(["all","temple","reiki","wellbeing"] as const).map(key=><button key={key} type="button" aria-pressed={direction===key}
-        onClick={()=>setDirection(key)}><span aria-hidden="true">{key==="temple"?"✧":key==="reiki"?"❧":"✦"}</span>{t.directions[key]}</button>)}
+      {(["all","temple","reiki","wellbeing","magic"] as const).map(key=><button key={key} type="button" aria-pressed={direction===key}
+        onClick={()=>setDirection(key)}><span aria-hidden="true">{key==="temple"?"✧":key==="reiki"?"❧":key==="magic"?"✶":"✦"}</span>{t.directions[key]}</button>)}
     </div>
     <h3 className={styles.sectionTitle}>{t.recommended}</h3>
     <div className={styles.cards}>
