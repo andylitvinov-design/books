@@ -171,5 +171,6 @@ test('source-only postmerge repeats and stale-before-hour LIVE audits stay off',
   assert.match(cleanup,/  prune:\n[\s\S]*?    runs-on: ubuntu-slim/,'lightweight janitor');
   assert.match(cleanup,/node --test tests\/ci-prune-stale-runs\.test\.mjs/,'PR policy tests still mandatory');
   assert.match(cleanup,/node --check scripts\/ci-prune-stale-runs\.mjs/,'reviewed script syntax verified');
-  assert.doesNotMatch(cleanup,/P1 PR-minute loss report|Group unresolved PR merge-conflict candidates/,'no optional read-only diagnostics on every merge');
+  assert.match(cleanup,/node scripts\/ci-pr-loss-report\.mjs/,'retain nonblocking P1 PR lifecycle telemetry');
+  assert.match(cleanup,/Group unresolved PR merge-conflict candidates/,'retain nonblocking PR conflict diagnostics');
 });

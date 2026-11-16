@@ -537,3 +537,92 @@ test('Core concurrency is stable for a PR, isolated for manual and merge_group',
   assert.ok(!source.includes('github.event.before != github.event.after'),
     'a new synchronize event is itself sufficient to cancel the prior first attempt within the PR-scoped group');
 });
+
+
+test('merged PR orphan: exact commit association and ancestry permit queued old SHA cancellation', async () => {
+  const closedAt = '2026-11-11T23:27:00Z';
+  const terminal = pr({state:'closed',created_at:'2026-11-11T20:43:41Z',
+    closed_at:closedAt,merged_at:closedAt});
+  const pending = run({pull_requests:[],created_at:'2026-11-11T20:43:45Z'});
+  const calls = [], cancelled = [];
+  const api = {list:async()=>({workflow_runs:[pending]}),
+    closed:async()=>{throw Error('unbounded closed-list scan forbidden when commit association exists');},
+    commitPulls:async sha=>{calls.push(['associated',sha]);return [terminal];},
+    pr:async()=>terminal,
+    run:async()=>pending,
+    compare:async (a,b)=>{calls.push(['compare',a,b]);return {status:'ahead',ahead_by:8,behind_by:0};},
+    cancel:async id=>cancelled.push(id)};
+  const result = await prune(api,{repo,target:TARGET,number:null});
+  assert.deepEqual(cancelled,[100]);
+  assert.equal(result.orphanLookups,1);
+  assert.equal(result.orphanAncestorCandidates,1);
+  assert.equal(result.closedCandidates,1);
+  assert.deepEqual(calls,[['associated',OLD],['compare',OLD,NEW]]);
+});
+
+test('orphan cancellation is fail closed for ambiguous, unmerged, fork and diverged PRs', async () => {
+  const closedAt = '2026-11-11T23:27:00Z';
+  const terminal = pr({state:'closed',created_at:'2026-11-11T20:43:41Z',
+    closed_at:closedAt,merged_at:closedAt});
+  const pending = run({pull_requests:[],created_at:'2026-11-11T20:43:45Z'});
+  const cases = [
+    ['zero association',[],terminal,{status:'ahead',ahead_by:8}],
+    ['ambiguous association',[terminal,terminal],terminal,{status:'ahead',ahead_by:8}],
+    ['unmerged', [{...terminal,merged_at:null}],{...terminal,merged_at:null},{status:'ahead',ahead_by:8}],
+    ['reopened',[terminal],{...terminal,state:'open'},{status:'ahead',ahead_by:8}],
+    ['different SHA',[terminal],pr({...terminal,head:{...terminal.head,sha:MERGE}}),{status:'ahead',ahead_by:8}],
+    ['wrong branch',[{...terminal,head:{...terminal.head,ref:'different'}}],terminal,{status:'ahead',ahead_by:8}],
+    ['different repository',[{...terminal,head:{...terminal.head,repo:{full_name:'fork/other'}}}],terminal,{status:'ahead',ahead_by:8}],
+    ['diverged history',[terminal],terminal,{status:'diverged',ahead_by:8,behind_by:1}],
+    ['not ancestor',[terminal],terminal,{status:'behind',ahead_by:0,behind_by:8}],
+    ['unverified compare',[terminal],terminal,null],
+    ['run after merge',[terminal],terminal,{status:'ahead',ahead_by:8},run({...pending,created_at:'2026-11-12T00:00:00Z'})],
+  ];
+  for (const [label,matches,current,relation,special] of cases) {
+    let cancels=0;
+    const api={list:async()=>({workflow_runs:[special||pending]}),
+      commitPulls:async()=>matches,
+      pr:async()=>current,run:async()=>special||pending,
+      compare:async()=>{if(!relation)throw Error('GitHub unavailable');return relation;},
+      cancel:async()=>{cancels++;}};
+    const result=await prune(api,{repo,target:TARGET,number:null});
+    assert.equal(cancels,0,label);
+    assert.deepEqual(result.cancelled,[],label);
+  }
+});
+
+test('orphan cancellation revalidates queued job and final PR head after compare', async () => {
+  const closedAt='2026-11-11T23:27:00Z';
+  const terminal=pr({state:'closed',created_at:'2026-11-11T20:43:41Z',
+    closed_at:closedAt,merged_at:closedAt});
+  const orphan=run({pull_requests:[],created_at:'2026-11-11T20:43:45Z'});
+  for (const type of ['job-started','pr-moved','head-sha-mutated','path-mutated']) {
+    let cancel=0,readRun=0,readPR=0;
+    const api={list:async()=>({workflow_runs:[orphan]}),
+      commitPulls:async()=>[terminal],
+      pr:async()=>{readPR++;return type==='pr-moved'&&readPR>=3
+        ? pr({...terminal,head:{...terminal.head,sha:MERGE}}) : terminal;},
+      run:async()=>{readRun++;return type==='job-started'&&readRun>=2 ? {...orphan,status:'in_progress'} :
+        type==='head-sha-mutated'&&readRun>=2 ? {...orphan,head_sha:MERGE} :
+        type==='path-mutated'&&readRun>=2 ? {...orphan,path:'.github/workflows/other.yml'} : orphan;},
+      compare:async()=>({status:'ahead',ahead_by:8,behind_by:0}),
+      cancel:async()=>{cancel++;}};
+    const result=await prune(api,{repo,target:TARGET,number:null});
+    assert.equal(cancel,0,type);
+    assert.deepEqual(result.cancelled,[],type);
+  }
+});
+
+test('orphan association cache only looks up a commit once and caps unknown batch work', async () => {
+  const closedAt='2026-11-11T23:27:00Z';
+  const terminal=pr({state:'closed',created_at:'2026-11-11T20:43:41Z',closed_at:closedAt,merged_at:closedAt});
+  const queued=Array.from({length:5},(_,i)=>run({id:100+i,pull_requests:[],created_at:'2026-11-11T20:43:45Z'}));
+  let lookup=0;
+  const api={list:async()=>({workflow_runs:queued}),commitPulls:async()=>{lookup++;return [terminal];},
+    pr:async()=>terminal,run:async id=>queued.find(v=>v.id===id),
+    compare:async()=>({status:'ahead',ahead_by:8,behind_by:0}),cancel:async()=>{}};
+  const result=await prune(api,{repo,target:TARGET,number:null});
+  assert.equal(lookup,1);
+  assert.equal(result.orphanAncestorCandidates,5);
+  assert.equal(result.cancelled.length,5);
+});
