@@ -196,6 +196,7 @@ test('single Core-completion workflow preserves successful slot wakeup, failed O
  assert.match(delegated,/github\.event\.workflow_run\.status == 'completed'/);
  assert.match(delegated,/contains\(fromJSON\('\["failure","timed_out","startup_failure"\]'\)/);
  assert.match(delegated,/id-token: write/);
+ assert.match(delegated,/secrets: inherit/,'preserve existing owner token when routing genuine failed Core');
  assert.match(delegated,/actions: write/);
  assert.match(enabled,/actions: read/,'green auto-merge should not gain error-intake write scopes');
  assert.match(success,/github\.event\.workflow_run\.conclusion == 'success'/);
