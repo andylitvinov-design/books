@@ -1,4 +1,5 @@
-// Explicit owner workflow_dispatch cleanup only. Never run this from a cron.
+// Explicit owner-authorized cleanup only. Never run this from a cron.
+// Retention is 2 days; current LIVE plus newest 30 READY and newest 10 stay protected.
 // Fail closed if any project, current aliases or rollback evidence is unclear.
 const TEAM = 'team_OSf690d0nxRHWVMXCElA8i95';
 const PROJECT = 'prj_4jAwcx6lrKyUKZ3R9vgC5xwwyC0b';
@@ -6,7 +7,7 @@ const BRANCH = 'codex/public-book-library';
 const LIVE_ALIAS = 'holistichouse.vercel.app';
 const ORIGIN = 'https://api.vercel.com';
 const DAY = 86400000;
-const RETAIN_DAYS = 7;
+export const RETAIN_DAYS = 2;
 const MAX_DELETE = 35;
 const MAX_PAGES = 5;
 const validId = id => typeof id === 'string' && /^dpl_[A-Za-z0-9]{10,}$/.test(id);
@@ -78,7 +79,7 @@ export function eligibleForDelete(d, {now, liveId, protectedIds, assignedAliases
     return false;
   // The detail.alias field is historical, not proof of a CURRENT assignment.
   // Fail closed unless the dedicated Vercel aliases endpoint confirms zero active aliases.
-  // Vercel marks historic READY deployments as rollback candidates even after
+  // 2-day cleanup must still retain the last 30 successful READY versions.// Vercel marks historic READY deployments as rollback candidates even after
   // they fall outside our retention window. Protect the 30 newest READY builds
   // in protectedDeploymentIds instead of preventing *all* old READY cleanup.
   if (!Array.isArray(assignedAliases) || assignedAliases.length !== 0
