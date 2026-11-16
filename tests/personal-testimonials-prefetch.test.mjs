@@ -12,6 +12,7 @@ function render(locale, variant, input = source) {
     'next/link': { default: props => jsx('a', props) },
     'lucide-react': { ArrowRight: () => null, Quote: () => null },
     '@/components/site-video-player': { SiteVideoPlayer: props => jsx('video-fixture', props) },
+    '@/components/home-youtube-facade': { HomeYoutubeFacade: props => jsx('video-fixture', props) },
     '@/components/home-testimonial-more': { HomeTestimonialMore: props => jsx('lazy-testimonials-fixture', props) },
     './personal-testimonials.module.css': { default: {} },
   };
