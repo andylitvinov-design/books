@@ -101,7 +101,7 @@ export default async function VideoLibraryPhotosPage(){
       <span>{item.labels[locale]}</span>
       <small>{item.sourceKind} · {item.originEvidence}</small>
      </li>)}</ol>
-    <p className={styles.subtle}>{t.ref}: {report.sources.externalPhotoReferences.length} (Pexels; {t.caveat})</p>
+    <p className={styles.subtle}>{t.ref}: {report.sources.externalPhotoReferences.length} (Pexels + Wikimedia Commons; {t.caveat})</p>
    </section>
   </div>
  </main>;
