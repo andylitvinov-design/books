@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
+import { StaticPortrait } from "@/components/static-portrait";
 import { ArrowRight, ChevronDown, MessageCircle, Send, ShoppingBag } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useState } from "react";
@@ -93,9 +93,9 @@ export function SitewideLeadCapture() {
     return (
       <aside className={styles.training} data-sitewide-capture="training"
         data-academy-messenger-order lang={locale} aria-label={t.title}>
-        <Image className={styles.trainingPortrait}
+        <StaticPortrait className={styles.trainingPortrait}
           src="/images/holistic-house/andy-about.png"
-          alt="" width={72} height={72} loading="lazy" unoptimized />
+          alt="" width={72} height={72} sizes="72px" loading="lazy" />
         <div className={styles.trainingCopy}>
           <span className={styles.trainingEyebrow}>HOLISTIC HOUSE · ACADEMY</span>
           <h2>{t.title}</h2>
