@@ -113,6 +113,13 @@ const COPY={
   error:"No se pudo verificar el envío o guardar la preferencia. El vídeo local sigue disponible; revisa tu cuenta antes de reintentarlo.",
   cancelled:"Compartir cancelado.",
   privacy:"El vídeo solo se sube cuando autorizas el envío. Puedes desactivar el envío automático aquí.",
+  telegramStart:"Abre Telegram, pulsa Start, vuelve y elige Comprobar y enviar",
+  whatsappConnect:"Vincula tu WhatsApp a Mi espacio",
+  whatsappStart:"Confirma el vínculo en tu WhatsApp y vuelve aquí",
+  whatsappUnavailable:"La vinculación oficial de WhatsApp no está disponible. Puedes descargar el vídeo",
+  whatsappTapAgain:"WhatsApp verificado. Pulsa WhatsApp otra vez para compartir el MP4",
+  whatsappShare:"Selecciona WhatsApp y tu propio chat. El sitio no puede elegir al destinatario",
+  shared:"Archivo pasado al menú Compartir. No se confirma la entrega al destinatario",
  }
 } as const;
 const MAX_BYTES=12_000_000;
@@ -156,13 +163,6 @@ export const MandalaVideoDelivery=forwardRef<VideoDeliveryHandle,Props>(function
    setSession(errorCode(error)==="SIGN_IN_REQUIRED"?"guest":"unavailable");
    return null;
   }
-  telegramStart:"Abre Telegram, pulsa Start, vuelve y elige Comprobar y enviar",
-  whatsappConnect:"Vincula tu WhatsApp a Mi espacio",
-  whatsappStart:"Confirma el vínculo en tu WhatsApp y vuelve aquí",
-  whatsappUnavailable:"La vinculación oficial de WhatsApp no está disponible. Puedes descargar el vídeo",
-  whatsappTapAgain:"WhatsApp verificado. Pulsa WhatsApp otra vez para compartir el MP4",
-  whatsappShare:"Selecciona WhatsApp y tu propio chat. El sitio no puede elegir al destinatario",
-  shared:"Archivo pasado al menú Compartir. No se confirma la entrega al destinatario",
  },[]);
  useEffect(()=>{
   let active=true;
