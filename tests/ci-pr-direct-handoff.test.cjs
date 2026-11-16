@@ -19,8 +19,9 @@ test('Watchdog retains guarded writer while direct Core handoff isolates pending
  assert.ok(directJob,'direct-handoff job exists');
  assert.ok(directJob.includes('"HH PR core release gate"'),'Core is explicitly excluded from generic handoff');
  assert.match(direct,/HH PR core release gate/);
- assert.match(direct,/  workflow_run:/);
- assert.match(direct,/types: \[completed\]/);
+ assert.match(direct,/^  workflow_call:$/m);
+ assert.doesNotMatch(direct,/^  workflow_run:/m);
+ assert.match(fs.readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8'),/types: \[completed\]/);
  assert.match(direct,/group: hh-direct-core-pr-\$\{\{ github\.event\.workflow_run\.head_branch/);
  assert.doesNotMatch(direct,/group: hh-control-tower-single-writer/);
  assert.ok(direct.includes('ci-pr-event-handoff.cjs'));
@@ -122,9 +123,12 @@ test('watchdog has only two worker-completion listeners; Core owns quality-failu
 test('failed Core still has a separately authenticated repair bridge and exact-HEAD handoff',()=>{
  const watchdog=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
  const bridge=fs.readFileSync('.github/workflows/hh-pr-direct-core-failure.yml','utf8');
- assert.match(bridge,/  workflow_run:/);
- assert.match(bridge,/      - 'HH PR core release gate'/);
- assert.match(bridge,/types: \[completed\]/);
+ const native=fs.readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
+ assert.match(bridge,/^  workflow_call:$/m);
+ assert.doesNotMatch(bridge,/^  workflow_run:/m);
+ assert.match(native,/  workflow_run:/);
+ assert.match(native,/      - 'HH PR core release gate'/);
+ assert.match(native,/types: \[completed\]/);
  assert.match(bridge,/persistReadOnlyRoute/);
  assert.match(bridge,/group: hh-direct-core-pr-/);
  const direct=watchdog.split('  direct-handoff:\n')[1]?.split('\n  reactivate-schedules:\n')[0];
@@ -157,7 +161,8 @@ test('watchdog-only exact diff retains CI/repair checks but skips unrelated dash
 test('control-only failed-Core intake uses slim runner without moving OIDC receipt into lossy writer concurrency', () => {
  const direct=fs.readFileSync('.github/workflows/hh-pr-direct-core-failure.yml','utf8');
  const intake=direct.split('  ci_event_intake:\n')[1]?.split('  direct-core-failure:\n')[0];
- const writer=direct.split('  direct-core-failure:\n')[1]?.split('  core-slot-wakeup:\n')[0];
+ const writer=direct.split('  direct-core-failure:\n')[1];
+ assert.doesNotMatch(direct,/^  core-slot-wakeup:/m,'success completion must be owned by the unified subscriber');
  assert.ok(intake && writer, 'two independent phases remain present');
  assert.match(intake,/runs-on: ubuntu-slim/);
  assert.match(writer,/runs-on: ubuntu-slim/);
@@ -172,4 +177,35 @@ test('control-only failed-Core intake uses slim runner without moving OIDC recei
  assert.match(writer,/group: hh-direct-core-pr-/);
  assert.match(writer,/ci-pr-base-advanced-recovery\.cjs/);
  assert.match(writer,/HH_DIRECT_CORE_HANDOFF/);
+});
+
+test('single Core-completion workflow preserves successful slot wakeup, failed OIDC intake, and least-privilege jobs',()=>{
+ const native=fs.readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
+ const child=fs.readFileSync('.github/workflows/hh-pr-direct-core-failure.yml','utf8');
+ const top=native.split('jobs:\n')[0];
+ const enabled=native.split('  enable:\n')[1]?.split('\n  failed-core-handoff:\n')[0];
+ const delegated=native.split('  failed-core-handoff:\n')[1]?.split('\n  core-slot-wakeup:\n')[0];
+ const success=native.split('  core-slot-wakeup:\n')[1]?.split('\n  recover-interrupted-core:\n')[0];
+ assert.ok(enabled&&delegated&&success,'all three signed response lanes remain');
+ assert.equal((top.match(/  workflow_run:/g)||[]).length,1,'only one completed-Core listener');
+ assert.match(top,/      - 'HH PR core release gate'/);
+ assert.match(top,/types: \[completed\]/);
+ assert.match(child,/^  workflow_call:$/m);
+ assert.doesNotMatch(child,/^  workflow_run:/m);
+ assert.match(delegated,/uses: \.\/\.github\/workflows\/hh-pr-direct-core-failure\.yml/);
+ assert.match(delegated,/github\.event\.workflow_run\.status == 'completed'/);
+ assert.match(delegated,/contains\(fromJSON\('\["failure","timed_out","startup_failure"\]'\)/);
+ assert.match(delegated,/id-token: write/);
+ assert.match(delegated,/actions: write/);
+ assert.match(enabled,/actions: read/,'green auto-merge should not gain error-intake write scopes');
+ assert.match(success,/github\.event\.workflow_run\.conclusion == 'success'/);
+ assert.match(success,/group: hh-pr-core-slot-wakeup/);
+ assert.match(success,/ci-pr-slot-wakeup\.cjs/);
+ assert.match(success,/ci-pr-repair-verified-finalizer\.cjs/);
+ assert.match(success,/ci-pr-core-journey-archive\.cjs/);
+ assert.match(child,/ci_event_intake:\n/);
+ assert.match(child,/needs: ci_event_intake/);
+ assert.match(child,/HH_DIRECT_CORE_HANDOFF/);
+ assert.match(native,/  recover-interrupted-core:/);
+ assert.match(native,/  prune-head:/);
 });

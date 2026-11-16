@@ -20,11 +20,19 @@ on:
 permissions:
   contents: write
   pull-requests: write
-  actions: read
+  actions: write
   checks: read
+  issues: write
+  id-token: write
 jobs:
   enable:
     name: event-driven exact-head auto-merge reevaluation
+    # Keep the original minimal merge credentials despite delegated OIDC intake.
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: read
+      checks: read
     if: >-
       (github.event_name == 'pull_request_review' &&
        github.event.pull_request.draft == false &&
@@ -497,6 +505,98 @@ jobs:
             if ((attempt < 5)); then sleep "$((attempt * 2))"; fi
           done
           exit 1
+  failed-core-handoff:
+    name: exact-head failed-Core intake and repair routing
+    # ONE Core-completion subscriber for success/failure. The called workflow
+    # preserves the independent OIDC receipt, per-source writer lease and
+    # fail-closed task handoff; no source from a PR is ever checked out.
+    if: >-
+      github.repository == 'andylitvinov-design/books' &&
+      github.ref == 'refs/heads/codex/bootstrap-books' &&
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.name == 'HH PR core release gate' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.status == 'completed' &&
+      github.event.workflow_run.repository.full_name == github.repository &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      contains(fromJSON('["failure","timed_out","startup_failure"]'), github.event.workflow_run.conclusion)
+    permissions:
+      contents: read
+      actions: write
+      issues: write
+      pull-requests: write
+      checks: read
+      id-token: write
+    uses: ./.github/workflows/hh-pr-direct-core-failure.yml
+
+  core-slot-wakeup:
+    name: core-ci-freed-slot-wakeup
+    # Success already wakes native AutoMerge. Only schedule a fresh Watchdog
+    # when the exact trusted Core event frees scarce CI capacity.
+    if: >-
+      github.repository == 'andylitvinov-design/books' &&
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.status == 'completed' &&
+      github.event.workflow_run.conclusion == 'success'
+    # Lightweight checked-in Node and GitHub API control; no compilation.
+    # Same permission, owner lease and timeout; slim hard cap is 15 minutes.
+    runs-on: ubuntu-slim
+    timeout-minutes: 3
+    concurrency:
+      group: hh-pr-core-slot-wakeup
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      actions: write
+      # A PR Conversation receipt is a PR-scoped issue comment. Real Core
+      # #42958812466 reached independently verified GREEN, but the job's
+      # issues:write + pull-requests:read token was denied HTTP 403 on
+      # POST /issues/4306/comments. Keep contents:read and grant only this
+      # trusted success/terminal-receipt job PR write scope.
+      pull-requests: write
+      issues: write
+      checks: read
+    steps:
+      - name: Checkout trusted default branch for bounded admission policy
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      # The same slot-wakeup decisions are tested by HH PR watchdog contract on code changes.
+      - name: Dispatch one live Watchdog only when actual CI capacity is free
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const {run}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-slot-wakeup.cjs');
+            await run({github,core,context});
+      - name: Record independently verified repair outcome on real new HEAD
+        if: ${{ always() }}
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const {run}=require(process.env.GITHUB_WORKSPACE+
+              '/scripts/ci-pr-repair-verified-finalizer.cjs');
+            const result=await run({github,core,context});
+            await core.summary.addHeading('Repair task: exact-HEAD CI outcome')
+              .addCodeBlock(JSON.stringify(result,null,2)).write();
+      - name: Persist completed Core job timings without another runner
+        if: ${{ always() }}
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            try {
+              const {archive}=require(process.env.GITHUB_WORKSPACE+
+                '/scripts/ci-pr-core-journey-archive.cjs');
+              const result=await archive({github,context});
+              core.info('HH_CI_JOURNEY_ARCHIVE '+JSON.stringify(result));
+            } catch(error) {
+              core.warning('HH_CI_JOURNEY_ARCHIVE_UNAVAILABLE '+
+                String(error.message||error).slice(0,120));
+            }
   recover-interrupted-core:
     name: recover-interrupted-core
     # Mirror the script's cheap trust and eligibility checks before reserving a runner.
