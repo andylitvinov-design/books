@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
@@ -25,20 +24,17 @@ test('EN/RU/ES home videos use a lightweight YouTube poster facade while the ful
   assert.doesNotMatch(more, /from ["']@\/components\/site-video-player["']/);
 });
 
-test('home profile card loads an immutable 256px WebP instead of its 535KB master', () => {
+test('home profile card reuses the existing 8KB AVIF with no new pinned source variants', () => {
   const home = read('components/home-featured-workspace.tsx');
-  const manifest = JSON.parse(read('data/public-card-artwork.json'));
-  const source = '/images/holistic-house/report-lighthouse-coast.webp';
-  const image = manifest.images[source];
-  assert.ok(image, 'missing review-pinned original image');
+  const path = '/images/holistic-house/report-lighthouse-coast.avif';
+  const image = readFileSync(new URL('../public' + path, import.meta.url));
   assert.match(home, /loading="lazy"/);
-  assert.ok(home.includes('"profile": "' + image.thumb + '"'));
-  assert.notEqual(image.thumb, source);
-  const contents = readFileSync(new URL('../' + image.source, import.meta.url));
-  const sha = createHash('sha1').update('blob ' + contents.length + '\0').update(contents).digest('hex');
-  assert.equal(sha, image.sha);
-  assert.equal(contents.length, image.bytes);
-  assert.match(image.thumb, /-w256\.webp$/);
+  assert.ok(home.includes('"profile": "' + path + '"'), 'Use the already committed small illustration');
+  assert.ok(image.byteLength > 0 && image.byteLength <= 16_000, 'Never load the 535KB master for a small card');
+  const manifest = JSON.parse(read('data/public-card-artwork.json'));
+  assert.equal(Object.keys(manifest.images).length, 31, 'Keep existing 31 reviewed source entries');
+  assert.ok(!Object.hasOwn(manifest.images, '/images/holistic-house/report-lighthouse-coast.webp'),
+    'No unnecessary hashed master or two more generated variants');
 });
 
 test('nonce-bound root layout is not incorrectly marked force-static', () => {
