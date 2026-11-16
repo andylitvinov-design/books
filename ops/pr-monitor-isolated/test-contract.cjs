@@ -165,18 +165,23 @@ test('strict weekly production comparison: same Toronto clock, same cohort and a
  assert.equal(selected.stages.no_archive_unknown.mean_contribution_minutes,12);
  assert.equal(selected.stages.runner_wait.measured_prs,0);
  assert.equal(selected.coverage.ci_missing_prs,1);
+ assert.equal(selected.named_ci_jobs.core.measured_prs,0);
+ assert.equal(selected.named_ci_jobs.core.p50_minutes,null);
  const keys=['before_unknown','workflow_wait','runner_wait','checks','ci_wave_unknown',
   'ci_other_unknown','after_unknown','no_archive_unknown'];
  const stages=Object.fromEntries(keys.map(key=>[key,{measured_prs:key==='no_archive_unknown'?0:1,
   mean_contribution_minutes:key==='checks'?12:0,p50_measured_minutes:key==='no_archive_unknown'?null:key==='checks'?12:0}]));
  const windowFor=(id,to)=>({id,from:new Date(to-24*3600000).toISOString(),to:new Date(to).toISOString(),
   created_prs:2,merged_prs:1,not_merged_in_window:1,mean_minutes:12,p50_minutes:12,stages,
+  named_ci_jobs:Object.fromEntries(['core','specialist','merge_gate'].map(key=>[key,{measured_prs:1,p50_minutes:4,mean_minutes:4}])),
   coverage:{search_complete:true,ci_matched_prs:1,ci_missing_prs:0,ci_invalid_prs:0}});
  const source={schema:'HH_PR_CREATED_MERGED_WEEKLY_V1',base:'codex/public-book-library',
   timezone:'America/Toronto',comparison_basis:'CREATED_AND_MERGED_WITHIN_EACH_MATCHING_WINDOW',period_hours:24,
   periods:[windowFor('current',Date.parse('2026-11-16T16:00:00Z')),
    windowFor('week_ago',Date.parse('2026-11-09T16:00:00Z'))]};
  assert.equal(compareStrictWeekly(source,24).rows.length,8);
+ assert.match(js,/NAMED_WEEKLY_CI_JOBS/);
+ assert.match(js,/Отдельные CI jobs/);
  source.periods[1].to='2026-11-09T17:00:00Z';
  assert.throws(()=>compareStrictWeekly(source,24),/UNVERIFIED|WINDOW/);
 });
