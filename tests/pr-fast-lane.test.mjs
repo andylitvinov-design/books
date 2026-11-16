@@ -1722,3 +1722,24 @@ test('only the reviewed PR-loss README can enter the CI-only fast lane', () => {
   assert.ok(!scope.includes('README.*'), 'unreviewed root README variants must remain strict');
   assert.ok(core.includes("steps.diff.outputs.ci_only != 'true'"), 'full Next build remains for non-CI changes');
 });
+
+test('four high-traffic specialist workflows cancel obsolete PR HEADs only',()=>{
+  const entries=[
+    ['compact-lead-capture-ci.yml','hh-dedupe-compact-lead'],
+    ['hh-central-telegram.yml','hh-dedupe-central-telegram'],
+    ['hh-owner-ai-telegram.yml','hh-dedupe-owner-ai-telegram'],
+    ['home-locale-switch.yml','hh-dedupe-home-locale'],
+  ];
+  const unique=new Set();
+  for(const [name,prefix] of entries){
+    const s=workflow(name);
+    assert.match(s,/^  pull_request:/m,'original specialist PR test owner must remain');
+    assert.equal((s.match(/^concurrency:$/gm)||[]).length,1,'one root gate for '+name);
+    const group='group: '+prefix+"-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}";
+    assert.ok(s.includes(group),'PR-scoped first-attempt lease missing for '+name);
+    assert.ok(!unique.has(prefix));unique.add(prefix);
+    assert.ok(s.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}"),
+      'only new source SHA may cancel old PR HEAD; manual and push remain independent');
+    assert.doesNotMatch(s,/^  cancel-in-progress: true$/m, 'unconditional cancellation is forbidden');
+  }
+});
