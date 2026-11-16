@@ -68,15 +68,23 @@ async function run({github,core,context,ownerToken='',fetcher=global.fetch,
   // remote owner PAT identity and existing Watchdog/Dispatcher reservation.
   if(task.dispatchEligibleOnce&&decision.eligibleForFirstRepair&&
     decision.headSha===task.requestedHeadSha){
-   const invoke=dispatch||require('./ci-pr-pm-agent-inbox.cjs').dispatchLive;
-   const result=await invoke(github,{pr:task.prNumber},{ownerToken,fetcher});
-   dispatchAccepted=result?.dispatched===true;
-   if(dispatchAccepted)decision.reasonCode='OWNER_DISPATCH_ACCEPTED_NOT_MODEL_OR_COMMIT';
-   else if(typeof result?.reason==='string'){
-    decision.reasonCode=/^[A-Z0-9_]{3,90}$/.test(result.reason)?
-      result.reason:'REPAIR_DISPATCH_NOT_VERIFIED';
-    if(/^(?:OWNER_REPAIR_|REPAIR_NOT_|SIGNED_|SOURCE_|PR_NOT_)/.test(decision.reasonCode))
-     decision.status='BLOCKED';
+   // Atomic Supabase CAS is committed BEFORE remote workflow_dispatch.
+   // Watching a PR before CI fails never consumes this one-shot fence.
+   const arm=await send('arm_dispatch',{requestId:task.requestId,
+    leaseToken:task.leaseToken},token,fetcher);
+   if(arm.armed!==true){
+    decision.reasonCode='PR_REPAIR_DISPATCH_ALREADY_RESERVED';
+   }else{
+    const invoke=dispatch||require('./ci-pr-pm-agent-inbox.cjs').dispatchLive;
+    const result=await invoke(github,{pr:task.prNumber},{ownerToken,fetcher});
+    dispatchAccepted=result?.dispatched===true;
+    if(dispatchAccepted)decision.reasonCode='OWNER_DISPATCH_ACCEPTED_NOT_MODEL_OR_COMMIT';
+    else if(typeof result?.reason==='string'){
+     decision.reasonCode=/^[A-Z0-9_]{3,90}$/.test(result.reason)?
+       result.reason:'REPAIR_DISPATCH_NOT_VERIFIED';
+     if(/^(?:OWNER_REPAIR_|REPAIR_NOT_|SIGNED_|SOURCE_|PR_NOT_)/.test(decision.reasonCode))
+      decision.status='BLOCKED';
+    }
    }
   }
  }catch(error){
