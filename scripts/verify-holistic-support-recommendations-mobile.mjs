@@ -35,49 +35,51 @@ for (const engine of [chromium, webkit]) {
             body: JSON.stringify(qaSupportDirectoryResponse(locale, kind)) });
         });
         try {
-          // Current Study entry is the owner's approved 5-question first screen.
-          // Verify it before opening the separately supported meditation workflow.
+          // The site's approved default is a source-backed Academy page:
+          // three learning schools, eight distinct programs, not the
+          // retired five-step Study quiz. Keep all 18 mobile/browser cases.
           const studyResponse = await page.goto(origin + "/" + locale + "/holistic-support/mobile",
             { waitUntil: "domcontentloaded", timeout: 60000 });
-          assert.equal(studyResponse?.status(), 200, label + " public Study entry");
-          const study = page.locator('[data-study-personalized-path]');
+          assert.equal(studyResponse?.status(), 200, label + " public Academy entry");
+          const study = page.locator('[data-holistic-study-academy]');
           await study.waitFor({ state: "visible", timeout: 30000 });
-          await page.locator('[data-holistic-mobile-alternative][data-support-tool-hydrated="true"]')
-            .waitFor({ state: "visible", timeout: 30000 });
-          assert.equal(await study.locator('nav button').count(), 5,
-            label + " five accessible progress steps");
-          assert.equal(await study.locator('[data-study-next]').isDisabled(), true,
-            label + " unanswered question cannot advance");
-          assert.equal(await study.locator('section[aria-label] [role="group"] button').count(), 4,
-            label + " four direct goal answers");
-          assert.equal(await page.locator('[data-support-practice-tabs]:visible').count(), 0,
-            label + " obsolete Study header stays hidden");
-          assert.equal(await page.locator('[data-hh-unified-dock]:visible').count(), 1,
-            label + " exactly one app bottom navigation");
+          assert.equal(await study.getAttribute("lang"), locale,
+            label + " approved page language");
+          assert.equal(await study.locator("h1").innerText(), ({
+            en: "Learning programs", ru: "Учебные программы", es: "Programas de formación",
+          })[locale], label + " Academy heading matches locale");
+          assert.equal(await study.locator('[data-study-school-nav]').count(), 3,
+            label + " exactly three visible school navigation links");
+          assert.equal(await study.locator('[data-study-academy-group]').count(), 3,
+            label + " exactly three distinct learning schools");
+          assert.equal(await study.locator('[data-study-academy-course]').count(), 8,
+            label + " eight source-backed programs remain separate");
+          const ids = await study.locator('[data-study-academy-course]')
+            .evaluateAll(nodes => nodes.map(node => node.getAttribute('data-study-academy-course')));
+          assert.deepEqual(ids, ["yggdrasil","tantra","kundalini","greece",
+            "egypt","practitioner","magic","meditation"],
+            label + " preserves the owner's eight approved programs");
+          const routes = await study.locator('[data-study-academy-course]')
+            .evaluateAll(nodes => nodes.map(node => node.getAttribute('href')));
+          assert.ok(routes.every(href => typeof href === "string" &&
+            href.startsWith("/" + locale + "/") && !href.includes("?token=")),
+            label + " all program links remain first-party and locale-scoped");
+          assert.equal(await study.locator('[data-study-personalized-path]').count(), 0,
+            label + " retired quiz is not mixed into the Academy");
           if (width === 390) {
-            const studyAnswers = study.locator('section[aria-label] [role="group"] button');
-            await studyAnswers.first().click();
-            assert.equal(await study.locator('[data-study-recommendation]').first()
-              .getAttribute('data-study-recommendation'), 'study-opora',
-              label + " stress selects published OPORA without a paid AI call");
-            for (let index = 0; index < 5; index++) {
-              if (index > 0) await studyAnswers.first().click();
-              await study.locator('[data-study-next]').click();
-            }
-            assert.equal(await study.getAttribute('data-study-step'), '5',
-              label + " fifth answer completes the interactive quiz");
-            await study.locator('section[aria-labelledby="study-recommended-title"] button[aria-label]').click();
-            assert.equal(await study.getAttribute('data-study-step'), '1',
-              label + " restart returns to step one");
-            assert.equal(await study.locator('[data-study-next]').isDisabled(), true,
-              label + " restart clears the earlier answer");
+            await study.locator('[data-study-school-nav="mysteries"]').click();
+            assert.equal(new URL(page.url()).hash, "#study-mysteries",
+              label + " mysteries anchor navigates inside Academy");
+            await study.locator('[data-study-school-nav="reiki"]').click();
+            assert.equal(new URL(page.url()).hash, "#study-reiki",
+              label + " Reiki anchor navigates inside Academy");
           }
           const studyBounds = await page.evaluate(() => ({
             width: document.documentElement.clientWidth,
             scroll: document.documentElement.scrollWidth,
           }));
           assert.ok(studyBounds.scroll <= studyBounds.width + 2,
-            label + " compact Study page does not overflow horizontally");
+            label + " compact Academy must not overflow horizontally");
 
           // Legacy meditation/scales, Reiki, talisman and master services still
           // exist; test their exact view instead of demanding obsolete chrome
