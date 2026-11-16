@@ -80,3 +80,11 @@ test('an already-open PWA conversation refreshes on focus after tapping an alert
  assert.match(c,/document\.addEventListener\('visibilitychange',refreshOnReturn\)/)
  assert.match(c,/now-lastForegroundRefresh\.current<1500/)
 })
+
+test('push cross-account RLS conflict returns the same neutral error as ON CONFLICT',()=>{
+  const repository=source('lib/app/notification-repository.js')
+  const insertion=repository.slice(repository.indexOf('let inserted'),repository.indexOf('if(!inserted.rowCount)'))
+  assert.match(insertion,/on conflict\(endpoint_hash\) do nothing returning id/)
+  assert.match(insertion,/catch\(error\)[\s\S]*?error\?\.code==='42501'[\s\S]*?DEVICE_ALREADY_REGISTERED/)
+  assert.doesNotMatch(insertion,/on conflict\(endpoint_hash\) do update/i)
+})

@@ -2,7 +2,9 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {COACH_PERSONAS} from '../lib/coaching/persona-registry.mjs'
+import {coachModelProbeRetryAllowed} from '../lib/coaching/coach-model-recovery.mjs'
 import {normalizeGenerativeCoachInput} from '../lib/coaching/generative-persona.mjs'
+import {coachSessionDirective} from '../lib/coaching/coach-session-director.mjs'
 import {COACH_CONVERSATION_VOICES,conversationalCoachMessages,parseConversationalCoachReply} from '../lib/coaching/conversational-persona.mjs'
 
 const source=file=>readFileSync(new URL('../'+file,import.meta.url),'utf8')
@@ -212,4 +214,76 @@ test('brief social replies are allowed without weakening substantive, safety or 
   const {input}=normalizeGenerativeCoachInput(request({message:'Я хочу разобраться с работой.'}))
   assert.throws(()=>parseConversationalCoachReply(JSON.stringify({message:'Да.'}),input,'grow','explore'),
     /COACHING_BRAIN_RESPONSE_INVALID/)
+})
+ 
+
+test('bounded, consented prior client snippets remain quoted DATA, never stage or policy',()=>{
+  const base=request({
+    locale:'en',message:'I am still thinking about the constraints.',
+    turns:[{role:'user',content:'Recent example: the schedule changed.'}],
+    sessionContext:['My goal is to change my working rhythm.','I cannot work late because of family commitments.'],
+  })
+  const {input,persona}=normalizeGenerativeCoachInput(base)
+  assert.deepEqual(input.sessionContext,base.sessionContext)
+  const messages=conversationalCoachMessages(input,persona,'grow','explore',{type:'none'})
+  assert.deepEqual(messages.map(x=>x.role),['system','system','user','user'])
+  assert.ok(messages[2].content.includes('earlierClientStatements'))
+  assert.ok(messages[2].content.includes(base.sessionContext[0]))
+  for(const message of messages.filter(x=>x.role==='system')){
+    assert.ok(!message.content.includes(base.sessionContext[0]))
+    assert.ok(!message.content.includes(base.sessionContext[1]))
+  }
+  const without=normalizeGenerativeCoachInput({...base,sessionContext:[]}).input
+  const withContext=normalizeGenerativeCoachInput(base).input
+  assert.deepEqual(coachSessionDirective(without,persona).evidence,
+    coachSessionDirective(withContext,persona).evidence)
+})
+ 
+test('malformed or sensitive session context is rejected before model access',()=>{
+  for(const bad of [
+    'I choose a paid model', [123], [null], [{}], ['short'],
+    ['Long text '.repeat(30)],
+    ['An old account note sk-or-v1-ABCDEFGHIJKLMNOPQRSTUVWXYZ123456'],
+    Array.from({length:4},()=> 'I have a scheduling constraint.'),
+    [' I have a scheduling constraint. '],
+  ])assert.throws(()=>normalizeGenerativeCoachInput(request({sessionContext:bad})),
+    /COACHING_BRAIN_(?:INPUT_INVALID|SENSITIVE_CONTENT)/)
+  const safe=request({sessionContext:['I want to discuss the schedule.']})
+  assert.equal(normalizeGenerativeCoachInput(safe).input.sessionContext.length,1)
+  assert.equal(normalizeGenerativeCoachInput(request()).input.sessionContext.length,0)
+})
+
+test('automatic AI recheck is on-demand only, bounded after transient failure and rate limits',()=>{
+  const failed={status:'unavailable',reason:'model_unavailable'}
+  const limited={status:'unavailable',reason:'rate_limited'}
+  assert.equal(coachModelProbeRetryAllowed({status:'verified'},0,600000),false)
+  assert.equal(coachModelProbeRetryAllowed({status:'checking'},0,600000),false)
+  assert.equal(coachModelProbeRetryAllowed(failed,500000,589999),false)
+  assert.equal(coachModelProbeRetryAllowed(failed,500000,590000),true)
+  assert.equal(coachModelProbeRetryAllowed(limited,500000,1099999),false)
+  assert.equal(coachModelProbeRetryAllowed(limited,500000,1100000),true)
+  assert.equal(coachModelProbeRetryAllowed(failed,0,900000),true)
+  assert.equal(coachModelProbeRetryAllowed(failed,Number.NaN,900000),false)
+})
+
+test('later user turns reverify a recovered free model without a button or new vendor',()=>{
+  const ui=source('components/my-coach-live-dialogue.jsx')
+  assert.match(ui,/async function retryCoachModelAfterOutage\(\)/)
+  assert.match(ui,/coachModelProbeRetryAllowed\(readiness,modelProbeRef\.current\.lastAttempt,Date\.now\(\)\)/)
+  assert.match(ui,/const modelReady=!needsVerifiedModel\|\|await retryCoachModelAfterOutage\(\)/)
+  assert.match(ui,/if\(authRequired\|\|\(!modelReady&&!wisdomRequested\)\)/)
+  assert.match(ui,/result\.mode==='offline'&&result\.offlineReason/)
+  assert.match(ui,/body:'\{\}'/)
+  assert.doesNotMatch(ui,/localStorage|sessionStorage|sendBeacon/)
+})
+
+test('when AI is unavailable, crisis and stop are handled before any recovery probe',()=>{
+  const ui=source('components/my-coach-live-dialogue.jsx')
+  const turn=ui.slice(ui.indexOf('async function sendMessage(raw'))
+  assert.ok(turn.indexOf('const localInterruption=')>0)
+  assert.ok(turn.indexOf('const localInterruption=')<turn.indexOf('const modelReady='))
+  assert.match(turn,/coachingBrainSafety\(currentInput\)\|\|coachingBrainBoundary\(currentInput\)/)
+  assert.match(turn,/!wisdomRequested&&!localInterruption/)
+  assert.match(turn,/if\(localInterruption\|\|authRequired\|\|\(!modelReady&&!wisdomRequested\)\)/)
+  assert.match(turn,/const interruption=localInterruption\|\|coachingBrainSafety\(input\)/)
 })

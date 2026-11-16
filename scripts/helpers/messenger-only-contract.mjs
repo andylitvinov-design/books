@@ -27,14 +27,18 @@ export async function assertMessengerOnlyCapture(scope,expect,{
   assert.ok(draft.length>24,label+' descriptive public offer draft');
   if(offer)assert.ok(draft.includes(offer),label+' preserves selected offer '+offer);
   assert.equal(tg.origin,'https://t.me',label+' Telegram host');
-  assert.ok(['/AndyTherapist','/holistichouse_bot'].includes(tg.pathname),
-    label+' official/manual Telegram destination only');
+  assert.ok(['/holistichouse','/holistichouse_bot'].includes(tg.pathname),
+    label+' approved human Telegram Business or explicitly opted-in bot only');
   if(tg.pathname==='/holistichouse_bot'){
     assert.ok(locale&&['hhtalk_'+locale,'hhreview_'+locale].includes(tg.searchParams.get('start')),
-      label+' correct signed first-party bot locale');
+      label+' explicit diagnostic bot locale');
   }else{
     assert.deepEqual([...tg.searchParams.keys()],['text'],label+' no secret params');
-    assert.equal(tg.searchParams.get('text'),draft,label+' same offer to both messengers');
+    const telegramDraft=tg.searchParams.get('text')||'';
+    assert.ok(telegramDraft.length>=12&&telegramDraft.length<=320,label+' public selected service title');
+    assert.doesNotMatch(telegramDraft,/(?:Reference|Context|Topic|Page|Контекст|Страница|Тема|Solicitud|Contexto):|access_token|auth_token|private=|https?:\/\//iu,
+      label+' no WhatsApp private context, references or URL copied to Telegram');
+    assert.notEqual(telegramDraft,draft,label+' no full WhatsApp text copied to Telegram');
   }
   for(const link of [w,t]){
     await expect(link).toHaveAttribute('target','_blank');
