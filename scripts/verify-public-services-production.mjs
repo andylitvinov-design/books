@@ -113,6 +113,50 @@ try {
   // The three responsive recommendations are separate small cards BELOW the chat.
   // Preserve all locale/desktop/privacy contracts; never navigate Telegram in CI.
   const verifyMobileAssist = async (page, locale, width) => {
+    // First-screen contract: all four questions are visible at once, and
+    // money/business must lead to an actual published business offer.
+    await page.goto(origin + "/" + locale + "/services", { waitUntil: "domcontentloaded" });
+    const quiz = page.locator("[data-services-quiz]");
+    await visible(quiz.locator("#services-quiz-title"));
+    await expect(quiz).toHaveAttribute("data-services-quiz-questions", "4");
+    await expect(quiz.locator("[data-services-quiz-question]")).toHaveCount(4);
+    await expect(quiz.locator("[data-services-quiz-category]")).toHaveCount(6);
+    await expect(quiz.locator('[data-services-quiz-category="business"]'))
+      .toHaveAttribute("href", "/" + locale + "/services/business-consulting");
+    assert.equal(await page.locator("[data-hh-unified-dock]").count(),1,"One real site dock, never a mock duplicate");
+    // Owner first-screen acceptance: every category, including business, must
+    // finish above the actual fixed navigation on the initial portrait screen.
+    const firstScreen = await page.evaluate(() => {
+      const last = document.querySelector('[data-services-quiz-category="videos"]');
+      const dock = document.querySelector('[data-hh-unified-dock]');
+      if (!last || !dock) return null;
+      return {lastBottom:last.getBoundingClientRect().bottom,
+        dockTop:dock.getBoundingClientRect().top,
+        width:document.documentElement.scrollWidth, viewport:innerWidth};
+    });
+    assert.ok(firstScreen && firstScreen.lastBottom<=firstScreen.dockTop+1 &&
+      firstScreen.width<=firstScreen.viewport+1,
+      "Services four-question first screen must show all six categories above real dock: "+
+        locale+"/"+width+" "+JSON.stringify(firstScreen));
+    if (locale === "es") await expect(quiz.locator("#services-quiz-title"))
+      .toHaveText("Encuentra tu apoyo");
+    const submitQuiz = quiz.locator("[data-services-quiz-submit]");
+    await expect(submitQuiz).toBeDisabled();
+    if (width === 390) await quiz.screenshot({ path: output + "/services-" + locale + "-four-questions-390.png" });
+    for (const [field,value] of [["topic","work"],["mode","human"],["channel","online"],["budget","flexible"]]) {
+      const choice = quiz.locator('[data-services-quiz-question="' + field + '"] [data-services-quiz-choice="' + value + '"]');
+      await choice.click();
+      await expect(choice).toHaveAttribute("aria-pressed", "true");
+    }
+    await expect(submitQuiz).toBeEnabled();
+    await submitQuiz.click();
+    await visible(page.locator('[data-services-quiz-results]'));
+    await expect(page.locator('[data-services-quiz-results] [data-assist-best-card="business"]')).toHaveCount(1);
+    await assertViewport(page, locale + "/services/quiz/" + width);
+    // The original locally-scoped Ali messenger remains reachable by an
+    // explicit guest action, preserving all existing messenger regression tests.
+    await page.goto(origin + "/" + locale + "/services?assist=chat", { waitUntil: "domcontentloaded" });
+
     const assist = page.locator("[data-assist-mobile]");
     const legacy = page.locator("[data-services-showcase-hero]");
     await visible(assist.locator("h1#assist-title"));
