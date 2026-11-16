@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { consultServiceQuestion } from "@/lib/assist/consultant-mind.mjs";
 import { waveNativeTurn } from "@/lib/holistic-support/wave-native-router.mjs";
-import { ArrowDown, ArrowRight, BatteryCharging, BookOpen, BriefcaseBusiness, Coins, Filter, Flower2, HandHeart, Heart, HeartHandshake, Leaf, MessageCircle, Mic, Moon, Play, Sparkles, Sprout, TestTubeDiagonal, Zap } from "lucide-react";
+import { ArrowDown, ArrowRight, BatteryCharging, BookOpen, BriefcaseBusiness, Coins, Filter, Flower2, HandHeart, Heart, HeartHandshake, Leaf, MessageCircle, Mic, MicOff, Moon, Play, Sparkles, Sprout, TestTubeDiagonal, Zap } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import { inferAssistPreferences, nextAssistQuestion, rankAssistOffers } from "@/lib/assist/service-match.mjs";
 import type { AssistPreferences } from "@/lib/assist/service-match.mjs";
@@ -14,6 +14,17 @@ import { AssistTopRecommendations } from "./assist-top-recommendations";
 import { ServicesAssistMyTube } from "./services-assist-mytube";
 import { ServicesAssistHomeopathy } from "./services-assist-homeopathy";
 import { containsUrgentSymptoms } from "@/lib/remedies/assist-matcher.mjs";
+
+type LocalSpeechResult = { isFinal: boolean; [index: number]: { transcript: string } | boolean | undefined };
+type LocalSpeechEvent = { resultIndex: number; results: ArrayLike<LocalSpeechResult> };
+type LocalSpeechRecognizer = {
+  lang: string; interimResults: boolean; continuous: boolean; processLocally: boolean;
+  onresult: ((event: LocalSpeechEvent) => void) | null;
+  onerror: (() => void) | null;
+  onend: (() => void) | null;
+  start: () => void; stop: () => void; abort: () => void;
+};
+type LocalSpeechConstructor = new () => LocalSpeechRecognizer;
 
 type Focus = "stress" | "relationships" | "energy" | "health" | "work" | "growth" | "general";
 const routes = {
@@ -42,7 +53,7 @@ const copy = {
     eyebrow:"HOLISTIC HOUSE · SERVICES", title:"Ali", lead:"Помогу подобрать подходящую услугу или специалиста для вашей ситуации.", ask:"С чем вы хотели бы обратиться?", choose:"Выберите проблему или опишите её своими словами.",
     placeholder:"Опишите вашу ситуацию или цель…", submit:"Показать рекомендации", topics:"Частые обращения",
     hints:[["Стресс / тревога","Меня беспокоят стресс и тревога","stress"],["Мало сил","Чувствую усталость и недостаток энергии","energy"],["Конфликты в паре","У меня конфликт в отношениях с партнером","relationships"],["Плохой сон","Мне трудно спать и расслабиться","stress"],["Работа / деньги","Меня тревожат работа и деньги","work"],["Душевная боль","Мне тяжело эмоционально, хочется поддержки","stress"],["Ссоры в семье","Есть напряжение и конфликты в семье","relationships"],["Нет ясности в жизни","Я потерял направление и смысл","growth"],["Симптомы в теле","Меня беспокоят физические симптомы и самочувствие","health"],["Сложно решиться","Мне трудно принять важное решение","growth"],["Нужна практика","Хочу освоить практику для поддержки себя","growth"],["Другое…","","general"]],
-    privacy:"Подбор работает в вашем браузере: текст не сохраняется и не отправляется внешнему ИИ.", voice:"Открыть клавиатуру для диктовки голосом",
+    privacy:"Подбор работает в вашем браузере: текст не сохраняется и не отправляется внешнему ИИ.", voice:"Голосовой ввод", voiceStop:"Остановить диктовку", voiceListening:"Слушаю — произнесите короткий запрос.", voiceFallback:"Локальное распознавание недоступно. Для диктовки используйте микрофон клавиатуры. Обработка зависит от настроек устройства.",
     label:"Ваш запрос", answer:"Что может помочь", change:"Изменить запрос", tools:"Инструменты поддержки", browse:"Можно выбрать метод самостоятельно — без разговора.", all:"Все услуги и мастера",
     reply:{stress:"Начните с самопроверки, затем попробуйте практику. Личная работа остаётся вашим выбором.",relationships:"Сначала можно прояснить ситуацию, а затем выбрать индивидуальную поддержку.",energy:"Оцените своё состояние и попробуйте подходящую практику.",health:"При физических симптомах важна медицинская оценка. Здесь — только дополнительная поддержка и самоисследование.",work:"Бесплатный разбор поможет сформулировать запрос. Затем можно обсудить решения на консультации.",growth:"Начните с прояснения вопроса, а затем выберите обучение или личную работу.",general:"Вот несколько реальных вариантов, с которых можно начать без обязательной записи."},
     skip:"Пропустить", adjust:"Изменить пожелания", noOffers:"С такими условиями сейчас нет подтверждённых вариантов. Можно изменить формат или бюджет.",
@@ -56,7 +67,7 @@ const copy = {
     eyebrow:"HOLISTIC HOUSE · SERVICES", title:"Ali", lead:"Find the right support, service or specialist for your situation.", ask:"What would you like help with right now?", choose:"Choose a common issue or describe it in your own words.",
     placeholder:"Describe your situation or goal…", submit:"See recommendations", topics:"Common concerns",
     hints:[["Stress / anxiety","I feel stressed and anxious","stress"],["Low energy","I feel tired and low on energy","energy"],["Relationship conflict","I have conflict with my partner","relationships"],["Sleep problems","I struggle with sleep and relaxation","stress"],["Work or money","I am worried about work and money","work"],["Emotional pain","I am in emotional pain and need support","stress"],["Family tension","I am dealing with tension in my family","relationships"],["Feeling lost","I feel lost and lack a sense of direction","growth"],["Body symptoms","I am concerned about physical symptoms","health"],["Hard decisions","I am struggling to make a decision","growth"],["Need a practice","I want to learn a supportive practice","growth"],["Other…","","general"]],
-    privacy:"Matching happens in your browser. Your text is not stored or sent to external AI.", voice:"Open keyboard to use voice dictation",
+    privacy:"Matching happens in your browser. Your text is not stored or sent to external AI.", voice:"Voice input", voiceStop:"Stop dictation", voiceListening:"Listening — say a short request.", voiceFallback:"On-device recognition is unavailable. Use your keyboard microphone instead. Processing follows your device settings.",
     label:"Your question", answer:"Suggested next steps", change:"Change my question", tools:"Support tools", browse:"Prefer browsing? Choose a method yourself.", all:"All services & practitioners",
     reply:{stress:"Start with a self-check, try a practice and consider personal support if helpful.",relationships:"Clarify your situation first, then choose individual support if you wish.",energy:"Explore your current state and consider a gentle practice.",health:"Physical symptoms deserve medical assessment. These options are for additional support and reflection only.",work:"A free review can clarify the question before a business consultation.",growth:"Clarify your goal, then explore learning or personal support.",general:"Here are real starting points that do not require a booking."},
     skip:"Skip", adjust:"Change preferences", noOffers:"No verified options match all these preferences. You can adjust the format or budget.",
@@ -70,7 +81,7 @@ const copy = {
     eyebrow:"HOLISTIC HOUSE · SERVICES", title:"Ali", lead:"Encuentra el servicio o profesional adecuado para tu situación.", ask:"¿Con qué necesitas ayuda ahora?", choose:"Elige una dificultad o describe tu situación.",
     placeholder:"Describe tu situación o tu objetivo…", submit:"Ver recomendaciones", topics:"Problemas frecuentes",
     hints:[["Estrés / ansiedad","Siento estrés y ansiedad","stress"],["Poca energía","Me siento cansado y sin energía","energy"],["Conflicto de pareja","Tengo conflictos en mi relación de pareja","relationships"],["Problemas de sueño","Me cuesta dormir y relajarme","stress"],["Trabajo / dinero","Me preocupan el trabajo y el dinero","work"],["Dolor emocional","Siento dolor emocional y necesito apoyo","stress"],["Tensión familiar","Tengo tensiones y conflictos en mi familia","relationships"],["Sin rumbo","Me siento perdido y sin dirección","growth"],["Síntomas físicos","Me preocupan síntomas físicos y mi salud","health"],["Decisión difícil","Me cuesta tomar una decisión importante","growth"],["Busco una práctica","Quiero aprender una práctica de apoyo","growth"],["Otro…","","general"]],
-    privacy:"La selección ocurre en tu navegador. El texto no se guarda ni se envía a una IA externa.", voice:"Abrir teclado para usar dictado de voz",
+    privacy:"La selección ocurre en tu navegador. El texto no se guarda ni se envía a una IA externa.", voice:"Entrada de voz", voiceStop:"Detener dictado", voiceListening:"Escuchando — di tu consulta.", voiceFallback:"El reconocimiento local no está disponible. Usa el micrófono del teclado; el tratamiento depende de los ajustes del dispositivo.",
     label:"Tu consulta", answer:"Opciones que pueden ayudar", change:"Cambiar consulta", tools:"Herramientas de apoyo", browse:"También puedes explorar métodos directamente.", all:"Servicios y profesionales",
     reply:{stress:"Empieza con una autoevaluación, prueba ejercicios y considera apoyo personal si quieres.",relationships:"Aclara primero la situación y después elige apoyo individual.",energy:"Explora tu estado y prueba una práctica suave.",health:"Los síntomas físicos requieren evaluación médica. Estas opciones son solo apoyo adicional.",work:"Una revisión gratuita puede aclarar tus preguntas antes de una consulta.",growth:"Aclara tus objetivos y explora formación o apoyo personal.",general:"Estas son opciones reales que no requieren una reserva."},
     skip:"Omitir", adjust:"Cambiar preferencias", noOffers:"No hay opciones verificadas que cumplan todas estas preferencias. Puedes cambiar el formato o presupuesto.",
@@ -143,6 +154,9 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
   const [checkinScores,setCheckinScores]=useState<Record<CheckinKey,number>>({energy:5,money:5,relationships:5,confidence:5});
   const [editedCheckins,setEditedCheckins]=useState<CheckinKey[]>([]);
   const inputRef=useRef<HTMLTextAreaElement>(null);
+  const speechRef=useRef<LocalSpeechRecognizer|null>(null);
+  const [listening,setListening]=useState(false);
+  const [speechHint,setSpeechHint]=useState("");
   const chatRef=useRef<HTMLDivElement>(null);
   const formRef=useRef<HTMLFormElement>(null);
   const medicalRisk=selection!==null&&containsUrgentSymptoms(selection.text);
@@ -150,6 +164,64 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
   const question=selection&&!crisis?nextAssistQuestion(preferences):null;
   const suggestions=selection&&!crisis?rankAssistOffers(selection.focus,preferences):[];
   const selectedFocus=editedCheckins.length?editedCheckins.reduce((best,key)=>checkinScores[key]<checkinScores[best]?key:best):null;
+
+  // Browser-only speech input: refuse remote-capable recognition entirely.
+  // Safari/iPhone uses the explicit, native keyboard-microphone fallback.
+  useEffect(() => () => {
+    speechRef.current?.abort();
+    speechRef.current = null;
+  }, []);
+
+  function toggleLocalDictation() {
+    if (speechRef.current) {
+      speechRef.current.stop();
+      setListening(false);
+      return;
+    }
+    const browser = window as Window & {
+      SpeechRecognition?: LocalSpeechConstructor;
+      webkitSpeechRecognition?: LocalSpeechConstructor;
+    };
+    const Speech = browser.SpeechRecognition ?? browser.webkitSpeechRecognition;
+    const fallback = () => {
+      setListening(false);
+      setSpeechHint(t.voiceFallback);
+      inputRef.current?.focus();
+    };
+    if (!Speech) { fallback(); return; }
+    let speech: LocalSpeechRecognizer;
+    try { speech = new Speech(); } catch { fallback(); return; }
+    // Some browsers expose SpeechRecognition but send audio to a remote provider.
+    // Never call start() unless processLocally is natively supported.
+    if (!("processLocally" in speech)) { fallback(); return; }
+    speech.processLocally = true;
+    speech.lang = locale === "ru" ? "ru-RU" : locale === "es" ? "es-ES" : "en-US";
+    speech.interimResults = false;
+    speech.continuous = false;
+    speech.onresult = event => {
+      for (let index = event.resultIndex; index < event.results.length; index++) {
+        const result = event.results[index];
+        if (!result?.isFinal) continue;
+        const value = result[0];
+        const transcript = typeof value === "object" && value ? value.transcript.trim() : "";
+        if (transcript) setText(current => (current.trim() ? current.trim() + " " : "").concat(transcript).slice(0,280));
+      }
+    };
+    speech.onerror = () => { speechRef.current = null; fallback(); };
+    speech.onend = () => {
+      if (speechRef.current === speech) {
+        speechRef.current = null;
+        setListening(false);
+      }
+    };
+    try {
+      // Direct user click retains transient microphone permission activation.
+      speech.start();
+      speechRef.current = speech;
+      setListening(true);
+      setSpeechHint(t.voiceListening);
+    } catch { fallback(); }
+  }
 
   // Only the message history scrolls; never jump the page to a second questionnaire.
   useEffect(()=>{
@@ -356,9 +428,10 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
         <textarea id="assist-question" ref={inputRef} rows={1} value={text} maxLength={280} autoComplete="off"
           placeholder={t.placeholder} onChange={event=>setText(event.target.value)}
           onKeyDown={event=>{if(event.key==="Enter"&&!event.shiftKey&&!event.nativeEvent.isComposing){event.preventDefault();event.currentTarget.form?.requestSubmit();}}}/>
-        <button type="button" className={styles.voiceButton} aria-label={t.voice} title={t.voice} onClick={()=>inputRef.current?.focus()}><Mic size={20} aria-hidden="true"/></button>
+        <button type="button" className={styles.voiceButton} aria-label={listening?t.voiceStop:t.voice} title={listening?t.voiceStop:t.voice} aria-pressed={listening} data-assist-local-dictation onClick={toggleLocalDictation}>{listening?<MicOff size={20} aria-hidden="true"/>:<Mic size={20} aria-hidden="true"/>}</button>
         <button type="submit" className={styles.sendButton} disabled={!text.trim()} aria-label={t.submit} title={t.submit}><ArrowRight size={21} aria-hidden="true"/></button>
       </form>
+      {speechHint?<p className={styles.speechHint} role="status" data-assist-speech-status>{speechHint}</p>:null}
       {selection?<button type="button" className={styles.reset} data-assist-reset onClick={reset}>{t.change}</button>:null}
     </div>
     <p className={styles.privacy}>{t.privacy}</p>

@@ -35,43 +35,65 @@ for (const engine of [chromium, webkit]) {
             body: JSON.stringify(qaSupportDirectoryResponse(locale, kind)) });
         });
         try {
-          // Current Study entry is the owner's approved 5-question first screen.
+          // The current Study entry is the 3-school source-backed Academy.
           // Verify it before opening the separately supported meditation workflow.
           const studyResponse = await page.goto(origin + "/" + locale + "/holistic-support/mobile",
             { waitUntil: "domcontentloaded", timeout: 60000 });
           assert.equal(studyResponse?.status(), 200, label + " public Study entry");
-          const study = page.locator('[data-study-personalized-path]');
-          await study.waitFor({ state: "visible", timeout: 30000 });
-          await page.locator('[data-holistic-mobile-alternative][data-support-tool-hydrated="true"]')
-            .waitFor({ state: "visible", timeout: 30000 });
-          assert.equal(await study.locator('nav button').count(), 5,
-            label + " five accessible progress steps");
-          assert.equal(await study.locator('[data-study-next]').isDisabled(), true,
-            label + " unanswered question cannot advance");
-          assert.equal(await study.locator('section[aria-label] [role="group"] button').count(), 4,
-            label + " four direct goal answers");
+          // The approved default Study entry is now the source-backed Academy
+          // directory: three learning pathways and eight programs. The former
+          // five-question quiz remains an unused legacy component, not the page.
+          const directory = page.locator('[data-holistic-study-academy]');
+          await directory.waitFor({ state: "visible", timeout: 30000 });
+          assert.equal(await directory.getAttribute("lang"), locale,
+            label + " localized Academy entry");
+          assert.equal(await directory.locator('[data-study-school-nav]').count(), 3,
+            label + " three accessible learning pathways");
+          assert.equal(await directory.locator('[data-study-academy-group]').count(), 3,
+            label + " three distinct program sections");
+          assert.equal(await directory.locator('[data-study-academy-course]').count(), 8,
+            label + " eight published/source-backed programs");
+          for (const [school, keys] of [
+            ["reiki", ["yggdrasil", "tantra", "kundalini"]],
+            ["mysteries", ["greece", "egypt"]],
+            ["free", ["practitioner", "magic", "meditation"]],
+          ]) {
+            const section = directory.locator('[data-study-academy-group="' + school + '"]');
+            assert.equal(await section.count(), 1,
+              label + " real " + school + " section");
+            assert.equal(await section.locator('[data-study-academy-course]').count(), keys.length,
+              label + " expected " + school + " programs");
+            for (const key of keys) {
+              const link = section.locator('[data-study-academy-course="' + key + '"]');
+              assert.equal(await link.count(), 1,
+                label + " unique real program " + key);
+              const href = await link.getAttribute("href");
+              if (key === "magic") {
+                // Original archival course is published in Russian, even for EN/ES
+                // visitors. Do not fabricate a translated Academy route.
+                assert.equal(href, "/ru/academy/elements/elemental-magic",
+                  label + " canonical Russian-source magic course");
+              } else {
+                assert.ok(href?.startsWith("/" + locale + "/"),
+                  label + " safe localized program link " + key);
+              }
+            }
+          }
+          assert.equal(await directory.locator('nav[aria-label="Language"] a').count(), 3,
+            label + " three language entry links");
+          assert.equal(await page.locator('[data-study-personalized-path]').count(), 0,
+            label + " obsolete personalized quiz is not mounted");
+          assert.equal(await page.locator('[data-holistic-mobile-alternative]').count(), 0,
+            label + " separate legacy Support view is not duplicated");
           assert.equal(await page.locator('[data-support-practice-tabs]:visible').count(), 0,
             label + " obsolete Study header stays hidden");
           assert.equal(await page.locator('[data-hh-unified-dock]:visible').count(), 1,
             label + " exactly one app bottom navigation");
-          if (width === 390) {
-            const studyAnswers = study.locator('section[aria-label] [role="group"] button');
-            await studyAnswers.first().click();
-            assert.equal(await study.locator('[data-study-recommendation]').first()
-              .getAttribute('data-study-recommendation'), 'study-opora',
-              label + " stress selects published OPORA without a paid AI call");
-            for (let index = 0; index < 5; index++) {
-              if (index > 0) await studyAnswers.first().click();
-              await study.locator('[data-study-next]').click();
-            }
-            assert.equal(await study.getAttribute('data-study-step'), '5',
-              label + " fifth answer completes the interactive quiz");
-            await study.locator('section[aria-labelledby="study-recommended-title"] button[aria-label]').click();
-            assert.equal(await study.getAttribute('data-study-step'), '1',
-              label + " restart returns to step one");
-            assert.equal(await study.locator('[data-study-next]').isDisabled(), true,
-              label + " restart clears the earlier answer");
-          }
+          await directory.locator('[data-study-school-nav="free"]').click();
+          assert.equal(new URL(page.url()).hash, "#study-free",
+            label + " real pathway navigation reaches free learning");
+          await directory.locator('[data-study-academy-group="free"]')
+            .waitFor({ state: "visible", timeout: 10000 });
           const studyBounds = await page.evaluate(() => ({
             width: document.documentElement.clientWidth,
             scroll: document.documentElement.scrollWidth,

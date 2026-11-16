@@ -8,12 +8,11 @@ import { Fragment } from "react";
 import { ServicesVideoGenerationCard } from "@/components/services-video-generation-card";
 import { ServicesCoursesShelf } from "@/components/services-courses-shelf";
 import { ServicesCoachTherapistMobile } from "@/components/services-coach-therapist-mobile";
-import { ArrowRight, ChevronDown, ClipboardCheck, ShieldCheck } from "lucide-react";
+import { ArrowRight, ClipboardCheck, ShieldCheck } from "lucide-react";
 
-import { ContactChannelChooser } from "@/components/contact-channel-chooser";
+import { ServicesCardActions } from "@/components/services-card-actions";
 import { coreServiceOffers, type CoreServiceOffer } from "@/data/core-service-offers";
 import type { PublicLocale } from "@/lib/public-locales";
-import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import styles from "./services-studio-offers.module.css";
 
 type Offer = {
@@ -162,7 +161,6 @@ const directStaticServiceImages = new Set([
 ]);
 
 function ServiceCard({ offer, locale, index, hidden = false }: { offer: Offer; locale: PublicLocale; index: number; hidden?: boolean }) {
-  const t = text[locale];
   return (
     <article className={styles.card} data-services-studio-card={offer.id} hidden={hidden}>
       <Link href={offer.href} className={styles.photo} tabIndex={-1} aria-hidden="true" prefetch={false}>
@@ -182,46 +180,9 @@ function ServiceCard({ offer, locale, index, hidden = false }: { offer: Offer; l
         <h3><Link href={offer.href} prefetch={false}>{offer.title}</Link></h3>
         <p className={styles.description}>{offer.description}</p>
         {offer.price ? <p className={styles.price}>{offer.price}</p> : null}
-        <div className={styles.actions}>
-          <details className={styles.details}>
-            <summary aria-label={t.details + ": " + offer.title}>{t.details}<ChevronDown size={16} aria-hidden="true" /></summary>
-            <div className={styles.detailBody}>
-              <p>{offer.details}</p>
-              <Link href={offer.href} prefetch={false}>{t.landing}<ArrowRight size={14} aria-hidden="true" /></Link>
-            </div>
-          </details>
-          {offer.isFree ? (
-            <Link href={offer.href} className={styles.action} data-services-studio-action={offer.id} prefetch={false}>
-              {t.start}<ArrowRight size={16} aria-hidden="true" />
-            </Link>
-          ) : offer.monthly ? (
-            <Link href={offer.href} className={styles.action} data-services-studio-action={offer.id} prefetch={false}>
-              {t.viewProgram}<ArrowRight size={16} aria-hidden="true" />
-            </Link>
-          ) : offer.externalFlow ? (
-            <Link href={offer.href} className={styles.action} data-services-studio-action={offer.id} prefetch={false}>
-              {t.remoteAction}<ArrowRight size={16} aria-hidden="true" />
-            </Link>
-          ) : (
-            <div className={styles.booking}>
-              <ContactChannelChooser
-                locale={locale}
-                label={t.request}
-                className={styles.action}
-                event="service_request_start"
-                whatsappUrl={whatsappEnquiryUrl({
-                  locale,
-                  service: offer.title,
-                  request: t.enquiry,
-                  option: "30 min · €50 / 60 min · €100",
-                  pagePath: offer.href,
-                })}
-                attributes={{ "data-services-studio-action": offer.id }}
-              />
-            </div>
-          )}
-        </div>
       </div>
+      <ServicesCardActions locale={locale} title={offer.title} description={offer.details}
+        href={offer.href} option={offer.price} trackingId={offer.id} />
     </article>
   );
 }

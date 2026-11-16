@@ -2,6 +2,8 @@ import test from 'node:test'
 import './crm-telegram-direct-chat.test.mjs'
 import './crm-telegram-direct-flow.test.mjs'
 import './crm-wave-continuity.test.mjs'
+import './telegram-service-ai-intake.test.mjs'
+import './crm-telegram-service-ai-finalize.test.mjs'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import {
@@ -405,7 +407,6 @@ test('completed V2 can renew an expired signed questionnaire link without creati
   assert.match(hook,/next\.stage==='done'/)
   assert.match(hook,/reply=null/)
 })
-
 test('completed V2 /help renews a signed form link rather than exposing a public, unlinked questionnaire',()=>{
   for(const locale of ['ru','en','es']){
     const done={stage:'done',locale,topic:'business',flowVersion:2,consentAt:'2026-11-16T13:00:00Z'}

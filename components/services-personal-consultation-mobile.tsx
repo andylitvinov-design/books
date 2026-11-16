@@ -1,11 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
-import { ArrowRight, Camera, Video, Zap } from "lucide-react";
-import { ContactChannelChooser } from "@/components/contact-channel-chooser";
+import { Camera, Video, Zap } from "lucide-react";
+import { ServicesCardActions } from "@/components/services-card-actions";
 import { StaticPortrait } from "@/components/static-portrait";
-import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./services-personal-consultation-mobile.module.css";
 
@@ -42,12 +40,29 @@ const copy = {
   },
 } as const;
 
+
+const descriptions = {
+  en: {
+    free: "A complimentary written express review of your question or situation. Share a short request to receive personal reflections and a possible next step; it is not a medical diagnosis.",
+    remote: "A more detailed personal reflection at a distance, potentially using a photo after a secure channel is agreed. We clarify the goal, materials and individual conditions before any work begins.",
+    live: "A one-to-one video consultation with Andrey to discuss your situation, explore perspectives and choose practical next steps. Session time and pricing are confirmed before booking.",
+  },
+  ru: {
+    free: "Бесплатный краткий письменный разбор вопроса или ситуации. Вы описываете запрос и получаете личные наблюдения и возможный следующий шаг; это не медицинская диагностика.",
+    remote: "Более подробный дистанционный разбор с возможностью использовать фотографию после согласования защищённого канала. Сначала уточняем тему, материалы и условия работы.",
+    live: "Личная видеоконсультация с Андреем: обсуждение ситуации, поиск новых перспектив и возможных дальнейших шагов. Время и стоимость согласовываются до записи.",
+  },
+  es: {
+    free: "Una revisión escrita breve y gratuita de tu pregunta o situación, con observaciones personales y un posible siguiente paso. No es un diagnóstico médico.",
+    remote: "Una revisión personal más detallada a distancia, posiblemente con una foto enviada por un canal seguro acordado. Primero aclaramos el objetivo, los materiales y las condiciones.",
+    live: "Una videoconferencia individual con Andrey para explorar tu situación, distintas perspectivas y próximos pasos. El horario y el precio se confirman antes de reservar.",
+  },
+} as const;
+
 /** Mobile-only choice shelf inside the existing Services/Assist page; all orders use established first-party flows. */
 export function ServicesPersonalConsultationMobile({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
-  const pagePath = "/" + locale + "/services";
-  const remoteServiceTitle = t.remote.title + " · " + t.remote.detail;
-  const videoServiceTitle = t.live.title + " · " + t.live.detail;
+  const d = descriptions[locale];
 
   return (
     <section id="assist-personal-consultation" className={styles.section}
@@ -67,11 +82,9 @@ export function ServicesPersonalConsultationMobile({ locale }: { locale: PublicL
             <span className={styles.freeTag}>{t.free.tag}</span>
             <h3>{t.free.title}</h3>
             <p><Zap size={18} aria-hidden="true" />{t.free.detail}</p>
-            <Link href={"/" + locale + "/services/free-situation-review#request-free-review"}
-              prefetch={false} className={styles.action} data-consultation-action="free">
-              {t.free.action}<ArrowRight size={20} aria-hidden="true" />
-            </Link>
           </div>
+          <ServicesCardActions locale={locale} title={t.free.title} description={d.free}
+            href={"/" + locale + "/services/free-situation-review"} trackingId="free" />
         </article>
         <article className={styles.card} data-consultation-choice="remote-photo">
           <div className={styles.photo}>
@@ -81,13 +94,8 @@ export function ServicesPersonalConsultationMobile({ locale }: { locale: PublicL
             <h3>{t.remote.title}</h3>
             <p><Camera size={19} aria-hidden="true" />{t.remote.detail}</p>
           </div>
-          <div className={styles.order} data-consultation-action="remote-photo">
-              <ContactChannelChooser locale={locale}
-                whatsappUrl={whatsappEnquiryUrl({locale,service:remoteServiceTitle,request:t.remote.request,pagePath})}
-                publicServiceTitle={remoteServiceTitle} publicTopic="Remote photo-based personal reflection · contact only"
-                label={t.remote.action} className={styles.action}
-                compactPhone compactTrigger compactMessenger stayAfterSave />
-          </div>
+          <ServicesCardActions locale={locale} title={t.remote.title} description={d.remote}
+            href={"/" + locale + "/services/alchemy-of-soul"} request={t.remote.request} trackingId="remote-photo" />
         </article>
         <article className={styles.card} data-consultation-choice="video">
           <div className={styles.photo}>
@@ -97,13 +105,8 @@ export function ServicesPersonalConsultationMobile({ locale }: { locale: PublicL
             <h3>{t.live.title}</h3>
             <p><Video size={19} aria-hidden="true" />{t.live.detail}</p>
           </div>
-          <div className={styles.order} data-consultation-action="video">
-              <ContactChannelChooser locale={locale}
-                whatsappUrl={whatsappEnquiryUrl({locale,service:videoServiceTitle,request:t.live.request,pagePath})}
-                publicServiceTitle={videoServiceTitle} publicTopic="Personal video consultation · contact only"
-                label={t.live.action} className={styles.action}
-                compactPhone compactTrigger compactMessenger stayAfterSave />
-          </div>
+          <ServicesCardActions locale={locale} title={t.live.title} description={d.live}
+            href={"/" + locale + "/services/free-consultation"} request={t.live.request} trackingId="video" />
         </article>
       </div>
       <p className={styles.note}>{t.note}</p>

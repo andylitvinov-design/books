@@ -56,6 +56,9 @@ async function verify(browserType, browser, locale, width) {
       waitUntil: "domcontentloaded", timeout: 60000,
     });
     assert.equal(response?.status(), 200, label + ": route");
+    // Wait for real client JS before the FIRST single-touch interaction.
+    // DOMContentLoaded can precede React hydration.
+    await page.waitForLoadState("load", { timeout: 60000 });
     const hub = page.locator("[data-ideas-discovery]");
     await hub.waitFor({ state: "visible", timeout: 30000 });
     const switchboard = hub.locator("[data-tests-coaching-hub]");
@@ -79,6 +82,14 @@ async function verify(browserType, browser, locale, width) {
       label + ": all four choices remain available above the first fold");
     const profilePath = switchboard.locator('[data-tests-coaching-path="profile"]');
     await profilePath.tap();
+    // One tap must open the real details panel; wait for the React state
+    // commit, not a synchronous aria snapshot immediately after tap().
+    await page.waitForFunction(() => {
+      const card = document.querySelector('[data-tests-coaching-path="profile"]');
+      const detail = document.querySelector("#tests-coaching-detail");
+      return card?.getAttribute("aria-expanded") === "true" &&
+        detail?.getAttribute("data-selected-path") === "profile";
+    }, null, { timeout: 10000 });
     assert.equal(await profilePath.getAttribute("aria-expanded"), "true");
     assert.equal(await switchboard.locator('[data-personality-profiles-entry] a[href="/' + locale + '/personality-profiles"]').count(), 1,
       label + ": canonical profile builder, no duplicate tests or storage");
@@ -86,6 +97,9 @@ async function verify(browserType, browser, locale, width) {
     assert.equal(await switchboard.locator("nav[hidden] [data-tests-coaching-path]:visible").count(), 0,
       label + ": hide the four paths after choosing one");
     await backPath.tap();
+    await page.waitForFunction(() =>
+      document.querySelector("#tests-coaching-detail")?.hasAttribute("hidden") === true,
+      null, { timeout: 10000 });
     assert.equal(await cards.filter({ visible: true }).count(), 4,
       label + ": four routes return after using Back");
     const coachingPath = switchboard.locator('[data-tests-coaching-path="coaching"]');
@@ -106,8 +120,17 @@ async function verify(browserType, browser, locale, width) {
     assert.equal(await support.getByRole("status").count(), 1,
       label + ": consent, practice and completion work");
     await backPath.tap();
+    await page.waitForFunction(() =>
+      document.querySelector("#tests-coaching-detail")?.hasAttribute("hidden") === true,
+      null, { timeout: 10000 });
     const templePath = switchboard.locator('[data-tests-coaching-path="temple"]');
     await templePath.tap();
+    await page.waitForFunction(() => {
+      const card = document.querySelector('[data-tests-coaching-path="temple"]');
+      const detail = document.querySelector("#tests-coaching-detail");
+      return card?.getAttribute("aria-expanded") === "true" &&
+        detail?.getAttribute("data-selected-path") === "temple";
+    }, null, { timeout: 10000 });
     assert.equal(await templePath.getAttribute("aria-expanded"), "true");
     const hero = hub.locator("[data-ideas-hero]");
     const inputBounds = await hero.locator("#ideas-question").boundingBox();
