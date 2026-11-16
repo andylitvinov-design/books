@@ -18,6 +18,7 @@ import {telegramBusinessMessageFromUpdate} from '@/lib/assist/telegram-business-
 import {parseHiTelegramRating} from '@/lib/holistic-support/hi-learning-policy.mjs'
 import {insertHiLearningQuality} from '@/lib/holistic-support/hi-learning-store'
 import {processTelegramBusinessSecretary,gateTelegramBusinessSecretaryOptOut} from '@/lib/crm/telegram-secretary-service'
+import {notifyConfirmedTelegramBusinessOwner} from '@/lib/crm/telegram-business-owner-notice'
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
 export const revalidate=0
@@ -97,6 +98,18 @@ export async function POST(request,{params}){
     if(provider==='telegram'){
       const business=await processTelegramBusinessConversation(body,config)
       if(business.handled){
+        // CRM confirmation is committed before notifying the verified owner.
+        // Send a neutral receipt via the already-consented @Andydotbot outbox;
+        // provider uncertainty cannot alter the customer's response.
+        if(business.terminal)after(async()=>{
+          try{
+            const notice=await notifyConfirmedTelegramBusinessOwner(config,body)
+            if(notice.attempted>0&&notice.accepted!==1)
+              console.error('HH_TG_BUSINESS_OWNER_NOTICE_UNCONFIRMED')
+          }catch{
+            console.error('HH_TG_BUSINESS_OWNER_NOTICE_FAILED')
+          }
+        })
         if(business.reply){
           try{
             await consumeRate(config,{op:'hh-tg-business-intent-message',

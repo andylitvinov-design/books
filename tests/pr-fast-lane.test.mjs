@@ -658,7 +658,11 @@ test('PR-only cancellation safeguards owner video, SEO and performance audit wit
   for(const [filename,group,contracts] of specs){
     const s=workflow(filename);
     assert.match(s,/^  pull_request:/m,filename+' must still validate PR changes');
-    assert.match(s,/^  push:/m,filename+' must preserve trusted production release audit');
+    if (filename === 'hh-live-seo-audit.yml') {
+      assert.match(s,/^  push:/m,filename+' retains independent published SEO audit');
+    } else {
+      assert.doesNotMatch(s,/^  push:/m,filename+' must not rerun merged source checks');
+    }
     assert.match(s,/^    paths:/m,filename+' must retain relevant path filters');
     assert.equal((s.match(/^concurrency:/gm)||[]).length,1,filename+' requires exactly one concurrency block');
     assert.ok(s.includes('group: '+group+'-'+suffix),filename+' must only group the same PR');
@@ -762,7 +766,8 @@ test('proven CI fast wins remove duplicate jobs but preserve domain coverage',()
   assert.ok(voice.includes('Independent Next.js production build'));
   const perf=workflow('hh-public-performance-audit.yml');
   assert.ok(perf.includes("if: ${{ github.event_name != 'pull_request' }}"));
-  assert.match(perf,/^  push:\s*$/m);
+  assert.doesNotMatch(perf,/^  push:\s*$/m);
+  assert.match(perf,/^  workflow_dispatch:/m);
   const services=workflow('hh-public-services-production.yml');
   // Public Services still compiles the entire production app, while the
   // required Core retains unrelated prebuild coaching regression suites.
@@ -1383,7 +1388,9 @@ test('native AutoMerge skips synchronize; isolated janitor runs without duplicat
   const core = workflow('hh-pr-core-release.yml');
   const nativeEvents = native.split('  pull_request_target:\n')[1]?.split('  workflow_run:\n')[0];
   assert.ok(nativeEvents, 'native PR onboarding trigger must exist');
-  assert.match(nativeEvents, /types: \[opened, reopened, ready_for_review, synchronize, closed\]/);
+  assert.match(nativeEvents, /types: \[synchronize, closed\]/);
+  assert.doesNotMatch(nativeEvents, /opened|reopened|ready_for_review/,
+    'premature native AutoMerge callbacks waste Actions before the exact-head Core result');
   assert.ok(native.includes("github.event.action == 'closed'"),
     'close wakes the trusted janitor for orphaned queued checks');
   assert.ok(native.includes("github.event.action != 'closed'"),
@@ -1602,12 +1609,12 @@ test('universal actionlint and Guard use lightweight runner without weakening ex
   for(const s of [lint,guard]) assert.doesNotMatch(s,/continue-on-error:\s*true/);
 });
 
-test('Core restores immutable production-seeded media and compiler caches without writing from PR', () => {
+test('Core restores production-only media/Next/TypeScript caches without PR cache publication', () => {
   const core = workflow('hh-pr-core-release.yml');
   const producer = workflow('hh-static-image-cost-guard.yml');
   const coreJob = core.split(/^  scope:\s*$/m)[1]?.split(/^  hh-specialist:\s*$/m)[0] ?? '';
   const producerJob = producer.split(/^  static-image-cost-guard:\s*$/m)[1] ?? '';
-  for (const id of ['hh-core-media-v1-', 'hh-core-next-v1-', 'hh-core-tsbuild-v1-']) {
+  for (const id of ['hh-core-media-v1-', 'hh-core-next-v2-']) {
     assert.ok(coreJob.includes(id), 'Core lacks trusted cache key ' + id);
     assert.ok(producerJob.includes(id), 'production producer lacks the identical key ' + id);
     const a = coreJob.split('\n').find(line => line.includes('key: ' + id))?.trim();
@@ -1615,19 +1622,15 @@ test('Core restores immutable production-seeded media and compiler caches withou
     assert.ok(a && b && a === b, 'cache identity mismatch for ' + id);
   }
   assert.match(coreJob, /actions\/cache\/restore@v4/);
-  assert.doesNotMatch(coreJob, /actions\/cache\/save@v4/, 'candidate PR must not publish shared caches');
+  // The TS incremental cache is safe only when seeded by the same protected
+  // production cache as Next. A candidate PR must never save shared caches.
+  const compilerPath = /^          path: \|\n            \.next\/cache\n            tsconfig\.tsbuildinfo$/m;
+  assert.match(coreJob, compilerPath, 'Core must restore TS + Next together');
+  assert.match(producerJob, compilerPath, 'protected production must seed TS + Next together');
+  assert.match(coreJob, /id: ci_trusted_next_cache/);
+  assert.match(producerJob, /id: ci_next_cache/);
+  assert.doesNotMatch(coreJob, /actions\/cache\/save@v4|uses: actions\/cache@v4/, 'candidate PR must not publish shared caches');
   assert.match(coreJob, /run: npm run build/, 'preserve mandatory exact-HEAD full Next build');
-  // The new incremental file is restored only from the protected baseline.
-  // A malicious or stale PR cannot publish cache state into a shared key.
-  assert.match(coreJob, /name: Restore production-owned TypeScript incremental cache \(read-only\)/);
-  assert.match(coreJob, /path: tsconfig\.tsbuildinfo/);
-  assert.match(producerJob, /name: Restore trusted TypeScript incremental cache/);
-  assert.match(producerJob, /name: Save production-only TypeScript incremental cache/);
-  assert.match(producerJob, /path: tsconfig\.tsbuildinfo/);
-  assert.match(producerJob, /if: github\.event_name != 'pull_request' && github\.ref == 'refs\/heads\/codex\/public-book-library' && steps\.ci_types_cache\.outputs\.cache-hit != 'true'/);
-  // A hit is an optimization hint, never a skip of the existing mandatory
-  // exact-HEAD Next build and TypeScript compilation.
-  assert.match(coreJob, /run: npm run build -- --no-lint/);
   assert.match(producerJob, /actions\/cache\/save@v4/);
   assert.match(producerJob, /node scripts\/generate-scenario-melodies\.mjs --check/);
   assert.match(producerJob, /node --test tests\/mandala-scenario-audio\.test\.mjs/);
