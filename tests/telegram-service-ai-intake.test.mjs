@@ -51,7 +51,7 @@ test('Owner CRM transfer requires existing confirmation path; no early lead',()=
  assert.match(code,/ingestMessengerEventInTransaction/);
  assert.match(code,/ai_review_consent_at=now\(\)/);
  assert.match(code,/crm_tg_suppress_existing/);
- assert.match(ui,/resolveTelegramServiceEntry/);
+ assert.doesNotMatch(ui,/resolveTelegramServiceEntry/);
  assert.match(ui,/serviceBot\|\|telegramUrl/);
 });
 
@@ -107,7 +107,7 @@ test('Two-action Services cards fetch the verified V3 bot only after Order opens
  const action=source('components/services-card-actions.tsx');
  assert.match(action,/active=\{expanded==="order"\}/);
  assert.match(ui,/if\(!active\)\{setServiceBot\(null\);setBotKind\(null\);return;\}/);
- assert.match(ui,/resolveTelegramServiceEntry\(payload,manual,locale\)/);
+ assert.doesNotMatch(ui,/resolveTelegramServiceEntry\(payload,manual,locale\)/);
  assert.match(ui,/const entry=selected\|\|freeReview/);
  assert.match(ui,/serviceBot\|\|telegramUrl\|\|telegramEnquiryUrlFromWhatsApp\(whatsappUrl\)/);
  assert.doesNotMatch(ui,/createPublicServiceEnquiry|serviceRole|privateKey/);
