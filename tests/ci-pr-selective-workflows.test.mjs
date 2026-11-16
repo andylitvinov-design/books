@@ -136,9 +136,10 @@ test('Core suppresses metadata-only waves but keeps exact-HEAD and signed Ready 
   ]);
   assert.ok(!types.includes('edited'), 'PR body/title edits must not restart Core');
   assert.match(workflow, /HH PR core release gate/);
-  assert.match(workflow, /^  hh-specialist:\s*$/m);
+  assert.doesNotMatch(workflow, /^  hh-specialist:\s*$/m);
   assert.match(workflow, /^  hh-merge-check:\s*$/m);
-  assert.match(workflow, /needs: \[scope, hh-specialist\]/);
+  assert.match(workflow, /needs: \[scope\]/);
+  assert.match(workflow, /Fail closed if mandatory Core failed/);
   assert.match(workflow, /\(github\.event\.action == 'synchronize' \|\| github\.event\.action == 'converted_to_draft'\)/);
   assert.doesNotMatch(workflow, /continue-on-error:\s*true/);
 });

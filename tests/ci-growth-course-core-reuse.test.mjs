@@ -57,7 +57,9 @@ test('P2 scoped specialists defer redundant compilation only to required product
   // Both source-scope optimizations rely on Core's mandatory real build.
   assert.match(core,/^  hh-merge-check:/m);
   assert.match(core,/run: npm run build/);
-  assert.match(core,/needs: \[scope, hh-specialist\]/);
+  assert.match(core,/needs: \[scope\]/);
+  assert.match(core,/ci-specialist-aggregate\.mjs/);
+  assert.match(core,/Fail closed if mandatory Core failed/);
   assert.ok(core.includes('tests/ci-growth-course-core-reuse.test.mjs'));
 });
 
