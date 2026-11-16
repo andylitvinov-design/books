@@ -1383,7 +1383,9 @@ test('native AutoMerge skips synchronize; isolated janitor runs without duplicat
   const core = workflow('hh-pr-core-release.yml');
   const nativeEvents = native.split('  pull_request_target:\n')[1]?.split('  workflow_run:\n')[0];
   assert.ok(nativeEvents, 'native PR onboarding trigger must exist');
-  assert.match(nativeEvents, /types: \[opened, reopened, ready_for_review, synchronize, closed\]/);
+  assert.match(nativeEvents, /types: \[synchronize, closed\]/);
+  assert.doesNotMatch(nativeEvents, /opened|reopened|ready_for_review/,
+    'premature native AutoMerge callbacks waste Actions before the exact-head Core result');
   assert.ok(native.includes("github.event.action == 'closed'"),
     'close wakes the trusted janitor for orphaned queued checks');
   assert.ok(native.includes("github.event.action != 'closed'"),

@@ -36,6 +36,7 @@ const content = {
 } as const;
 export function ServicesVideoGenerationCard({locale}:{locale:PublicLocale}) {
  const t=content[locale], url="/"+locale+"/holistic-support/mandala";
+  const scenarioDestinations=["#video-templates","#personal-meditation","#video-director-chat"] as const;
  return <section className={styles.card} data-assist-video-generation lang={locale} aria-labelledby="services-video-title">
   <header className={styles.top}>
    <Image className={styles.flora} src="/images/holistic-house/assist-video-botanical.svg" alt="" width={320} height={168} unoptimized loading="lazy" aria-hidden="true"/>
@@ -43,7 +44,7 @@ export function ServicesVideoGenerationCard({locale}:{locale:PublicLocale}) {
    <p>{t.sub}</p>
   </header>
   <div className={styles.list}>
-   {t.ideas.map(([title,desc],i)=><Link key={title} href={url} prefetch={false}
+   {t.ideas.map(([title,desc],i)=><Link key={title} href={url+scenarioDestinations[i]} prefetch={false}
     data-assist-video-scenario={i+1} className={styles.item} aria-label={t.open+title}>
     <Image src={thumbnails[i]} width={220} height={124} alt="" unoptimized loading="lazy" data-assist-video-image={i+1}/>
     <span><strong>{title}</strong><small>{desc}</small></span><ChevronRight size={20} aria-hidden="true"/>
