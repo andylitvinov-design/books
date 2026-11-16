@@ -435,32 +435,56 @@ function strictRanges(h,now=Date.now()){
  return [{id:'current',from:new Date(now-span).toISOString(),to:new Date(now).toISOString()},
   {id:'week_ago',from:new Date(prev-span).toISOString(),to:new Date(prev).toISOString()}];
 }
+/* A single 24-hour-plus safety envelope is shared by the 1/6/24h views.
+ * Promise coalescing and a bounded warm-instance cache avoid repeat GitHub searches. */
+const strictSearchCache=new Map(),STRICT_SEARCH_TTL=300000;
+function strictSearchEnvelope(range){
+ const to=ms(range.to),from=ms(range.from),rounded=Math.ceil(to/STRICT_SEARCH_TTL)*STRICT_SEARCH_TTL;
+ const widenedFrom=rounded-24*3600000-STRICT_SEARCH_TTL;
+ if(from===null||to===null||from<widenedFrom||to>rounded)throw Error('HISTORICAL_WINDOW_OUTSIDE_CACHE_ENVELOPE');
+ return {key:String(rounded),from:new Date(widenedFrom).toISOString(),to:new Date(rounded).toISOString()};
+}
 async function strictGitHubSearch(range){
- const q='repo:andylitvinov-design/books is:pr base:codex/public-book-library created:'+range.from+'..'+range.to;
- const headers={Accept:'application/vnd.github+json','User-Agent':'HH-Weekly-Production-PR','X-GitHub-Api-Version':'2022-11-28'};
- const token=process.env.GITHUB_TOKEN||process.env.GH_TOKEN;if(token)headers.Authorization='Bearer '+token;
- const rows=[],seen=new Set();let total=null;
- for(let page=1;page<=4;page++){
-  const url='https://api.github.com/search/issues?q='+encodeURIComponent(q)+'&sort=created&order=desc&per_page=100&page='+page;
-  const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),12000);let res;
-  try{res=await fetch(url,{headers,signal:ctl.signal,cache:'no-store'});}finally{clearTimeout(timer);}
-  const remaining=Number(res.headers.get('x-ratelimit-remaining'));
-  if(!res.ok||(Number.isFinite(remaining)&&remaining<3))throw Error('GITHUB_SEARCH_'+res.status);
-  const data=await res.json();
-  if(data?.incomplete_results!==false||!Number.isSafeInteger(data.total_count)||data.total_count>400||!Array.isArray(data.items))
-   throw Error('GITHUB_SEARCH_INCOMPLETE');
-  if(total!==null&&total!==data.total_count)throw Error('GITHUB_SEARCH_CHANGED');total=data.total_count;
-  for(const p of data.items){
-   if(!Number.isSafeInteger(p.number)||p.number<1||seen.has(p.number)||ms(p.created_at)===null||
-     !p.pull_request||!Object.prototype.hasOwnProperty.call(p.pull_request,'merged_at'))throw Error('GITHUB_SEARCH_ROW');
-   seen.add(p.number);rows.push({pr:p.number,created:ms(p.created_at),merged:ms(p.pull_request.merged_at)});
+ const envelope=strictSearchEnvelope(range),key=envelope.key;
+ let entry=strictSearchCache.get(key);
+ if(!entry||entry.expires<=Date.now()){
+  const request=(async()=>{
+   const q='repo:andylitvinov-design/books is:pr base:codex/public-book-library created:'+envelope.from+'..'+envelope.to;
+   const headers={Accept:'application/vnd.github+json','User-Agent':'HH-Weekly-Production-PR',
+    'X-GitHub-Api-Version':'2022-11-28'};
+   const token=process.env.GITHUB_TOKEN||process.env.GH_TOKEN;if(token)headers.Authorization='Bearer '+token;
+   const rows=[],seen=new Set();let total=null;
+   for(let page=1;page<=4;page++){
+    const url='https://api.github.com/search/issues?q='+encodeURIComponent(q)+'&sort=created&order=desc&per_page=100&page='+page;
+    const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),12000);let res;
+    try{res=await fetch(url,{headers,signal:ctl.signal,cache:'no-store'});}finally{clearTimeout(timer);}
+    // A successful HTTP 200 is valid even when the rate-limit header has reached zero.
+    if(!res.ok)throw Error('GITHUB_SEARCH_'+res.status);
+    const data=await res.json();
+    if(data?.incomplete_results!==false||!Number.isSafeInteger(data.total_count)||
+      data.total_count>400||!Array.isArray(data.items))throw Error('GITHUB_SEARCH_INCOMPLETE');
+    if(total!==null&&total!==data.total_count)throw Error('GITHUB_SEARCH_CHANGED');total=data.total_count;
+    for(const p of data.items){
+     if(!Number.isSafeInteger(p.number)||p.number<1||seen.has(p.number)||ms(p.created_at)===null||
+       !p.pull_request||!Object.prototype.hasOwnProperty.call(p.pull_request,'merged_at'))throw Error('GITHUB_SEARCH_ROW');
+     seen.add(p.number);rows.push({pr:p.number,created:ms(p.created_at),merged:ms(p.pull_request.merged_at)});
+    }
+    if(rows.length>=total)break;
+    if(!data.items.length)throw Error('GITHUB_SEARCH_EMPTY_PAGE');
+   }
+   if(rows.length!==total)throw Error('GITHUB_SEARCH_PARTIAL');
+   return rows;
+  })();
+  entry={promise:request,expires:Date.now()+STRICT_SEARCH_TTL};
+  strictSearchCache.set(key,entry);
+  if(strictSearchCache.size>6){
+   for(const [k,v]of strictSearchCache){if(k!==key&&v.expires<=Date.now())strictSearchCache.delete(k);}
   }
-  if(rows.length>=total)break;
-  if(!data.items.length)throw Error('GITHUB_SEARCH_EMPTY_PAGE');
+  request.catch(()=>{if(strictSearchCache.get(key)===entry)strictSearchCache.delete(key);});
  }
- if(rows.length!==total)throw Error('GITHUB_SEARCH_PARTIAL');
- const a=ms(range.from),b=ms(range.to);
- return {rows:rows.filter(p=>p.created>=a&&p.created<b),search_n:rows.length,complete:true};
+ const all=await entry.promise,from=ms(range.from),to=ms(range.to);
+ const rows=all.filter(p=>p.created>=from&&p.created<to);
+ return {rows,search_n:rows.length,complete:true};
 }
 function strictWeeklyWindow(search,store,range){
  if(search?.complete!==true||!Array.isArray(search.rows)||!Array.isArray(store?.runs))throw Error('STRICT_COHORT_UNVERIFIED');
