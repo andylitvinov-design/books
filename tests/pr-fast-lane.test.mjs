@@ -1604,12 +1604,12 @@ test('universal actionlint and Guard use lightweight runner without weakening ex
   for(const s of [lint,guard]) assert.doesNotMatch(s,/continue-on-error:\s*true/);
 });
 
-test('Core restores immutable production-seeded media and compiler caches without writing from PR', () => {
+test('Core restores production-only media/Next/TypeScript caches without PR cache publication', () => {
   const core = workflow('hh-pr-core-release.yml');
   const producer = workflow('hh-static-image-cost-guard.yml');
   const coreJob = core.split(/^  scope:\s*$/m)[1]?.split(/^  hh-specialist:\s*$/m)[0] ?? '';
   const producerJob = producer.split(/^  static-image-cost-guard:\s*$/m)[1] ?? '';
-  for (const id of ['hh-core-media-v1-', 'hh-core-next-v1-']) {
+  for (const id of ['hh-core-media-v1-', 'hh-core-next-v2-']) {
     assert.ok(coreJob.includes(id), 'Core lacks trusted cache key ' + id);
     assert.ok(producerJob.includes(id), 'production producer lacks the identical key ' + id);
     const a = coreJob.split('\n').find(line => line.includes('key: ' + id))?.trim();
@@ -1617,7 +1617,14 @@ test('Core restores immutable production-seeded media and compiler caches withou
     assert.ok(a && b && a === b, 'cache identity mismatch for ' + id);
   }
   assert.match(coreJob, /actions\/cache\/restore@v4/);
-  assert.doesNotMatch(coreJob, /actions\/cache\/save@v4/, 'candidate PR must not publish shared caches');
+  // The TS incremental cache is safe only when seeded by the same protected
+  // production cache as Next. A candidate PR must never save shared caches.
+  const compilerPath = /^          path: \|\n            \.next\/cache\n            tsconfig\.tsbuildinfo$/m;
+  assert.match(coreJob, compilerPath, 'Core must restore TS + Next together');
+  assert.match(producerJob, compilerPath, 'protected production must seed TS + Next together');
+  assert.match(coreJob, /id: ci_trusted_next_cache/);
+  assert.match(producerJob, /id: ci_next_cache/);
+  assert.doesNotMatch(coreJob, /actions\/cache\/save@v4|uses: actions\/cache@v4/, 'candidate PR must not publish shared caches');
   assert.match(coreJob, /run: npm run build/, 'preserve mandatory exact-HEAD full Next build');
   assert.match(producerJob, /actions\/cache\/save@v4/);
   assert.match(producerJob, /node scripts\/generate-scenario-melodies\.mjs --check/);
