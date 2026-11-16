@@ -1,6 +1,34 @@
 'use strict';
 /* Private Agent Commander chat API. All chat headers and events are owner-scoped in Supabase. */
-const {callStore,sendJson,isOriginAllowed}=require('../lib/commander-private-store');
+const {callStore,sendJson,isOriginAllowed,tokenFromRequest}=require('../lib/commander-private-store');
+const PR_EDGE='https://shervdixkaxurnaecioe.supabase.co/functions/v1/agent-commander-pr-completion-v1';
+async function completionRequest(req,res,action,body){
+ const owner=await callStore(req,'status',{}, {method:'GET'});
+ if(owner.status!==200||owner.data?.owner!==true||
+    owner.data?.privateStoreConfigured!==true||action==='submit'&&owner.data?.canWrite!==true)
+  return sendJson(res,owner.status===401?401:403,{error:'OWNER_SESSION_REQUIRED'});
+ const key=process.env.HH_PM_SUPABASE_PUBLISHABLE_KEY||'';
+ if(process.env.HH_PM_SUPABASE_URL!=='https://shervdixkaxurnaecioe.supabase.co'||
+    !/^sb_publishable_[A-Za-z0-9_-]{20,}$/.test(key))
+  return sendJson(res,503,{error:'PR_COMPLETION_OWNER_BRIDGE_NOT_CONFIGURED'});
+ const token=tokenFromRequest(req);
+ if(!token)return sendJson(res,401,{error:'OWNER_TOKEN_REQUIRED'});
+ const input=action==='submit'
+  ?{action,prNumber:body.prNumber,requestId:body.requestId,
+    ...(body.issueNumber!=null?{chatNumber:body.issueNumber}:{})}
+  :{action,...(body.prNumber!=null?{prNumber:body.prNumber}:{})};
+ try{
+  const response=await fetch(PR_EDGE,{method:'POST',cache:'no-store',redirect:'error',
+   signal:AbortSignal.timeout(12000),headers:{
+    apikey:key,Authorization:'Bearer '+token,'Content-Type':'application/json',Accept:'application/json'},
+   body:JSON.stringify(input)});
+  const raw=await response.text();
+  if(raw.length>20000)return sendJson(res,502,{error:'PR_COMPLETION_RESPONSE_TOO_LARGE'});
+  const result=JSON.parse(raw);
+  return sendJson(res,response.status,result);
+ }catch{return sendJson(res,503,{error:'PR_COMPLETION_GATEWAY_UNAVAILABLE'})}
+}
+
 async function freeModels(req,res){
  const owner=await callStore(req,'status',{}, {method:'GET'});
  if(owner.status!==200||owner.data?.owner!==true||owner.data?.privateStoreConfigured!==true)
@@ -74,7 +102,12 @@ module.exports=async function(req,res){
    else if(name==='read'){action='commander_read_chat';body.issueNumber=Number(url.searchParams.get('issue'))}
    else if(name==='proof'){action='commander_pr_proof';body.pr=Number(url.searchParams.get('pr'))}
    else if(name==='runs'){action='commander_list_execution_runs';body.issueNumber=Number(url.searchParams.get('issue'))}
-   else if(name==='ci_events'){
+   else if(name==='pr_status'){
+     const pr=url.searchParams.get('pr');
+     if(pr!==null&&!/^[1-9]\d{0,7}$/.test(pr))return sendJson(res,400,{error:'INVALID_PR'});
+     return await completionRequest(req,res,'status',{prNumber:pr===null?undefined:Number(pr)});
+    }
+    else if(name==='ci_events'){
     action='commander_list_ci_events';
     const prValue=url.searchParams.get('pr'),limitValue=url.searchParams.get('limit');
     if(prValue!==null)body.pr=Number(prValue);
@@ -90,7 +123,14 @@ module.exports=async function(req,res){
   }else{
    body=req.body;if(typeof body==='string')try{body=JSON.parse(body)}catch{return sendJson(res,400,{error:'INVALID_JSON'})}
    if(!body||typeof body!=='object'||Array.isArray(body))return sendJson(res,400,{error:'INVALID_BODY'});
-   if(name==='from_task'){action='commander_from_task';body={taskId:body.taskId}}
+   if(name==='pr_complete'){
+     if(!Number.isSafeInteger(body.prNumber)||body.prNumber<1||body.prNumber>99999999||
+       typeof body.requestId!=='string'||!/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(body.requestId)||
+       !Number.isSafeInteger(body.issueNumber)||body.issueNumber<1)
+      return sendJson(res,400,{error:'INVALID_PR_COMPLETION_REQUEST'});
+     return await completionRequest(req,res,'submit',body);
+    }
+    if(name==='from_task'){action='commander_from_task';body={taskId:body.taskId}}
    else if(name==='create'){action='commander_create_chat';body={chat:body.chat}}
    else if(name==='update'){action='commander_update_chat';body={issueNumber:body.issueNumber,expectedRevision:body.expectedRevision,chat:body.chat}}
    else if(name==='event'){action='commander_append_event';body={issueNumber:body.issueNumber,eventId:body.eventId,kind:body.kind,text:body.text,model:body.model}}
