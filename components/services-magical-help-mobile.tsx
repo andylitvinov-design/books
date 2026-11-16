@@ -2,17 +2,19 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, ChevronRight, Coins, Flower2, Sparkles, Sun, UsersRound } from "lucide-react";
+import { ArrowRight, ChevronRight, Coins, Flame, Flower2, Sparkles, Sun, UsersRound } from "lucide-react";
 import { ContactChannelChooser } from "@/components/contact-channel-chooser";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./services-magical-help-mobile.module.css";
 
-const kinds = ["health", "money", "energy"] as const;
+const kinds = ["health", "money", "energy", "talisman", "ritual"] as const;
 const pictures = {
   health: "/images/holistic-house/mandala-gold-reference.webp",
   money: "/images/holistic-house/hero-olive-incense.webp",
   energy: "/images/holistic-house/reiki-practitioner-sunrise.webp",
+  talisman: "/academy/reiki-yggdrasil/source/advanced-runes.png",
+  ritual: "/academy/reiki-yggdrasil/source/temple-studies.png",
 } as const;
 
 const copy = {
@@ -46,6 +48,10 @@ const copy = {
         request: "",
         alt: "Солнечный образ практики Рейки",
       },
+      talisman: { title: "Личный талисман", description: "Символический предмет по теме или намерению. Материалы и изготовление обсуждаются отдельно.", action: "Запросить талисман",
+        request: "Хочу обсудить символический талисман. Уточните варианты, материалы, стоимость и сроки.", alt: "Символические рунические изображения" },
+      ritual: { title: "Ритуал и церемония", description: "Личная символическая практика или церемония с мастером по согласованной теме.", action: "Запросить ритуал",
+        request: "Хочу узнать о символической церемонии или ритуале. Уточните формат, правила участия, сроки и стоимость.", alt: "Изображение храмовой традиции" },
     },
   },
   en: {
@@ -78,6 +84,10 @@ const copy = {
         request: "",
         alt: "Sunlit imagery for a Reiki practice",
       },
+      talisman: { title: "Personal talisman", description: "A symbolic object linked to your intention. Materials and commissioning are agreed separately.", action: "Enquire about a talisman",
+        request: "I would like to ask about a symbolic talisman. Please confirm options, materials, price and delivery.", alt: "Symbolic rune illustrations" },
+      ritual: { title: "Ritual & ceremony", description: "A personal symbolic ceremony with a practitioner by agreement.", action: "Enquire about a ritual",
+        request: "Please tell me about symbolic rituals, participation, format and cost before booking.", alt: "Illustration of a temple tradition" },
     },
   },
   es: {
@@ -110,6 +120,10 @@ const copy = {
         request: "",
         alt: "Imagen luminosa para una práctica de Reiki",
       },
+      talisman: { title: "Talismán personal", description: "Objeto simbólico para una intención. Materiales y encargo se acuerdan por separado.", action: "Solicitar talismán",
+        request: "Quisiera consultar sobre un talismán simbólico. Confirmen opciones, materiales, precio y entrega.", alt: "Ilustraciones simbólicas de runas" },
+      ritual: { title: "Ritual y ceremonia", description: "Práctica simbólica personal con un especialista, previo acuerdo.", action: "Consultar ritual",
+        request: "Quisiera conocer los rituales simbólicos, las condiciones, modalidad y coste.", alt: "Imagen de una tradición de templo" },
     },
   },
 } as const;
@@ -126,8 +140,8 @@ export function ServicesMagicalHelpMobile({ locale }: { locale: PublicLocale }) 
       <div className={styles.cards}>
         {kinds.map(kind => {
           const item = t.cards[kind];
-          const Icon = kind === "health" ? Flower2 : kind === "money" ? Coins : Sun;
-          const detailsHref = kind === "energy" ? "/" + locale + "/services/remote-energy-support" : "/" + locale + "/holistic-support/mandala?mode=photo";
+          const Icon = kind === "health" ? Flower2 : kind === "money" ? Coins : kind === "energy" ? Sun : kind === "talisman" ? Sparkles : Flame;
+          const detailsHref = kind === "energy" ? "/" + locale + "/services/remote-energy-support" : kind === "talisman" ? "/" + locale + "/holistic-support/mobile" : kind === "ritual" ? "/" + locale + "/services/spiritual-reading" : "/" + locale + "/holistic-support/mandala?mode=photo";
           return (
             <article key={kind} className={styles.card} data-assist-magical-card={kind}>
               <div className={styles.picture}>
