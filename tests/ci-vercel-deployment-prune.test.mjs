@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {deploymentId, appendRollbackEvidencePage, eligibleForDelete, protectedDeploymentIds} from '../scripts/ci-vercel-deployment-prune.mjs';
+import {RETAIN_DAYS, deploymentId, appendRollbackEvidencePage, eligibleForDelete, protectedDeploymentIds} from '../scripts/ci-vercel-deployment-prune.mjs';
 
 const now = 1794590000000;
 const project = 'prj_4jAwcx6lrKyUKZ3R9vgC5xwwyC0b';
@@ -29,14 +29,19 @@ test('keep 30 READY production rollback versions and 10 newest deployments', () 
 test('delete only old, currently unaliased, exact-project production deployments', () => {
   const protectedIds = protectedDeploymentIds(history);
   const opts = {now, protectedIds, liveId: history[0].id, assignedAliases: []};
+  assert.equal(RETAIN_DAYS, 2, '2-day retention is intentional; 30 READY rollbacks still protected');
   assert.equal(eligibleForDelete(history[31], opts), true);
+  assert.equal(eligibleForDelete(make(87, {created: now - 2 * 86400000 + 1}), opts), false,
+    'a deployment newer than 2 days is never deleted');
+  assert.equal(eligibleForDelete(make(88, {created: now - 2 * 86400000}), opts), true,
+    'exactly 2 days old and unassigned is eligible only outside rollback set');
   assert.equal(eligibleForDelete(make(81, {alias: ['holistichouse.vercel.app']}), opts), true,
     'stale historical aliases are not current assignments');
   const cases = {
     live: {id: history[0].id},
     rollback: {id: history[25].id},
     preview: {target: 'preview'},
-    recent: {created: now - 2 * 86400000},
+    recent: {created: now - 86400000},
     unknownProject: {projectId: 'prj_other'},
     unknownRepo: {meta: {...history[31].meta, githubRepo: 'other'}},
     wrongBranch: {meta: {...history[31].meta, githubCommitRef: 'main'}},
