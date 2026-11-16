@@ -59,3 +59,12 @@ test("open Details / Order panels use both category columns on mobile", () => {
   const layout = read("components/services-unified-catalog.module.css");
   assert.match(layout, /\.panel:has\(> \[data-service-card-actions\] button\[aria-expanded="true"\]\)\{grid-column:1\/-1\}/);
 });
+
+test("recommendation cards reuse the same two-button component with direct service-specific Telegram deep links", () => {
+  const recommendations = read("components/assist-top-recommendations.tsx");
+  assert.match(recommendations, /<ServicesCardActions locale=\{locale\} title=\{title\}/);
+  assert.match(recommendations, /telegramUrl=\{draft\|\|undefined\}/);
+  assert.match(actions, /telegramUrl\?: string/);
+  assert.match(actions, /telegramUrl=\{telegramUrl\}/);
+  assert.doesNotMatch(recommendations, /data-assist-best-action=\{id\}/);
+});

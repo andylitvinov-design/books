@@ -8,6 +8,7 @@ import type { AssistPreferences } from "@/lib/assist/service-match.mjs";
 import { assistPriceLabel } from "@/lib/assist/service-match.mjs";
 import { rankAssistProducts } from "@/lib/assist/product-recommendations.mjs";
 import { telegramServiceRequestUrl } from "@/lib/assist/telegram-business-request.mjs";
+import { ServicesCardActions } from "@/components/services-card-actions";
 import styles from "./assist-top-recommendations.module.css";
 
 type Focus = "stress" | "relationships" | "energy" | "health" | "work" | "growth" | "general" | null;
@@ -28,7 +29,7 @@ const copy = {
     detail:"Конкретные услуги, подобранные под описанную проблему.",
     request:"Заказать",open:"Открыть",more:"Все предложения",price:"Стоимость уточните в предложении",
     none:"По выбранным условиям подходящих предложений пока нет. Измените формат или бюджет.",
-    note:"Заказ откроет Telegram с названием услуги. Отправка сообщения не означает запись или оплату. Символические практики не заменяют медицинскую помощь.",
+    note:"При заказе выберите WhatsApp или Telegram. Только ваше отправленное сообщение становится обращением; запись и оплата не подтверждаются. Символические практики не заменяют медицинскую помощь.",
     cards:{
       review:["Бесплатный разбор ситуации","Письменная обратная связь по вашему вопросу."],
       therapy:["Сессия образной психотерапии","Индивидуальная работа с переживаниями и выбором."],
@@ -44,7 +45,7 @@ const copy = {
     detail:"Specific services selected for the problem you described.",
     request:"Request",open:"View",more:"All services",price:"See the offer for pricing",
     none:"No suitable offers match those conditions. Try another format or budget.",
-    note:"A request opens Telegram with the chosen service. You still need to send it; this does not confirm a booking or payment. Symbolic practices are not medical care.",
+    note:"Choose WhatsApp or Telegram when ordering. Opening the messenger alone does not submit a request, confirm a booking or take payment. Symbolic practices are not medical care.",
     cards:{
       review:["Free Personal Situation Review","Written feedback on your specific question."],
       therapy:["Guided Imagery Therapy Session","Personal support with feelings and life choices."],
@@ -60,7 +61,7 @@ const copy = {
     detail:"Servicios concretos seleccionados para el problema que describes.",
     request:"Solicitar",open:"Ver",more:"Todos los servicios",price:"Consulta el precio en la oferta",
     none:"No hay ofertas que cumplan esas condiciones. Prueba otro formato o presupuesto.",
-    note:"La solicitud abre Telegram con el servicio elegido. Debes enviar el mensaje; no confirma reserva ni pago. Las prácticas simbólicas no son atención médica.",
+    note:"Elige WhatsApp o Telegram al solicitar el servicio. Abrir el chat no envía tu solicitud ni confirma reserva o pago. Las prácticas simbólicas no son atención médica.",
     cards:{
       review:["Revisión personal gratuita","Respuesta escrita a tu pregunta específica."],
       therapy:["Sesión de terapia con imágenes","Apoyo individual para emociones y decisiones."],
@@ -112,12 +113,9 @@ export function AssistTopRecommendations({
               <small className={styles.price}>{price}</small>
             </span>
           </Link>
-          {draft?<a className={styles.action} href={draft} target="_blank" rel="noopener noreferrer"
-              referrerPolicy="no-referrer" aria-label={t.request+": "+title+" — Telegram"} data-assist-best-action={id}>
-              {t.request}<ArrowRight size={16} aria-hidden="true"/>
-            </a>:<Link className={styles.action} href={href} prefetch={false} data-assist-best-action={id}>
-              {t.open}<ArrowRight size={16} aria-hidden="true"/>
-            </Link>}
+          <ServicesCardActions locale={locale} title={title} description={description}
+            href={href} telegramUrl={draft||undefined} option={priced?price:undefined}
+            trackingId={id} className={styles.cardActions} />
         </article>;
       })}
     </div>

@@ -391,26 +391,43 @@ try {
       nodes.map(node=>node.getAttribute("data-assist-best-card")));
     assert.deepEqual(actualStress,expectedStress,
       "Matching real products, not directions, for the selected problem");
-    // Preserve the previously approved exact Telegram link/locale assertion,
-    // now mapping concrete offered products onto the existing service codes.
+    // Recommendations use the same two controls as the rest of Services.
+    // Only after an explicit Order tap are the real messenger links visible.
     const requestIds = {therapy:"coaching",constellation:"constellations",business:"business",reiki:"reiki"};
     for(const key of expectedStress){
-      const detail=shelf.locator('[data-assist-product-link="'+key+'"]');
-      await expect(detail).toHaveAttribute("href",new RegExp("^/"+locale+"/[a-z0-9/-]+$"));
-      const action=shelf.locator('[data-assist-best-action="'+key+'"]');
+      const card=shelf.locator('[data-assist-best-card="'+key+'"]');
+      const product=card.locator('[data-assist-product-link="'+key+'"]');
+      await expect(product).toHaveAttribute("href",new RegExp("^/"+locale+"/[a-z0-9/-]+$"));
+      const controls=card.locator('[data-service-card-actions] button');
+      await expect(controls).toHaveCount(2);
+      const details=controls.first(),order=controls.nth(1);
+      await details.click();
+      await expect(details).toHaveAttribute("aria-expanded","true");
+      await visible(card.locator('[data-service-card-details] p'));
+      await expect(card.locator('[data-service-card-order]')).toBeHidden();
+      await order.click();
+      await expect(details).toHaveAttribute("aria-expanded","false");
+      await expect(order).toHaveAttribute("aria-expanded","true");
+      await expect(card.locator('[data-service-card-details]')).toBeHidden();
+      const whatsapp=card.locator('[data-service-card-order] [data-messenger-only-channel="whatsapp"]');
+      const telegram=card.locator('[data-service-card-order] [data-messenger-only-channel="telegram"]');
+      await visible(whatsapp);
+      await visible(telegram);
+      await expect(whatsapp).toHaveAttribute("href",/^https:\/\/wa\.me\/\d+\?text=/);
       const code=requestIds[key];
       if(code){
         const url=telegramServiceRequestUrl(code,locale);
-        assert.ok(url,"No unapproved Telegram request: "+key);
-        await expect(action).toHaveAttribute("href",url);
-        await expect(action).toHaveAttribute("target","_blank");
+        await expect(telegram).toHaveAttribute("href",url);
         assert.equal(new URL(url).searchParams.get("text")?.split(String.fromCharCode(10)).at(-1),
           "[HH-REQ:"+code+":"+locale+"]","Deep link contains no private problem text");
       }else{
-        await expect(action).toHaveAttribute("href",new RegExp("^/"+locale+"/[a-z0-9/-]+$"));
+        await expect(telegram).toHaveAttribute("href",/^https:\/\/t\.me\/holistichouse\?text=/);
       }
-      const box=await action.boundingBox();
-      assert.ok(box&&box.height>=44,"Mobile product touch target: "+locale+"/"+width+"/"+key);
+      await expect(telegram).toHaveAttribute("target","_blank");
+      const box=await order.boundingBox();
+      assert.ok(box&&box.height>=44,"Mobile recommendation Order target: "+locale+"/"+width+"/"+key);
+      await order.click();
+      await expect(order).toHaveAttribute("aria-expanded","false");
     }
 
     // A reply stays in the chat and reranks the service cards without a page jump.
@@ -438,8 +455,10 @@ try {
     const expectedWork=rankAssistProducts("work",{});
     assert.deepEqual(actualWork,expectedWork,"Work cards rerank without appending the prior intent");
     if (expectedWork.includes("business")) {
-      await expect(shelf.locator('[data-assist-best-action="business"]'))
-        .toHaveAttribute("href", /^https:\/\/t\.me\/holistichouse\?text=/);
+      const business=shelf.locator('[data-assist-best-card="business"]');
+      await business.locator('[data-service-card-actions] button').nth(1).click();
+      await expect(business.locator('[data-service-card-order] [data-messenger-only-channel="telegram"]'))
+        .toHaveAttribute("href",telegramServiceRequestUrl("business",locale));
     }
     await reset.click();
     await expect(topics).toHaveCount(6);
