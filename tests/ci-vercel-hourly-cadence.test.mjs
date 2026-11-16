@@ -40,3 +40,16 @@ test('hourly release recovers previously accepted minimal GitSource POST and rep
   assert.match(workflow,/response_file=.*mktemp/)
   assert.doesNotMatch(workflow,/echo "\$response"/)
 })
+
+test('hourly 400 diagnostics preserve fields without leaking error text or retrying POST',()=>{
+  assert.match(workflow,/error_field=.*jq -r/);
+  assert.match(workflow,/\.error\.errors \/\/ \.error\.details \/\/ \.error\.validationErrors/);
+  assert.match(workflow,/case "\$error_field" in gitSource\|gitSource\.\*\|name\|project\|target/);
+  assert.match(workflow,/code=\$error_code, field=\$error_field/);
+  assert.doesNotMatch(workflow,/echo "\$\(cat "\$response_file"\)"/);
+  assert.doesNotMatch(workflow,/\bcurl[^\n]*--retry[^\n]*-X POST|\bcurl[^\n]*-X POST[^\n]*--retry/);
+  assert.match(workflow,/No automatic retry/);
+  assert.match(workflow,/Production deployment created within the last 60 minutes/);
+  assert.match(workflow,/Already deployed or in progress:/);
+  assert.doesNotMatch(workflow,/skipAutoDetectionConfirmation|forceNew=1.*cron/);
+});

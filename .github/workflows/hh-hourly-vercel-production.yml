@@ -108,7 +108,16 @@ jobs:
           if [[ "$http_status" != "200" && "$http_status" != "201" ]]; then
             error_code="$(jq -r '.error.code // "unavailable"' "$response_file" 2>/dev/null || true)"
             [[ "$error_code" =~ ^[A-Za-z_][A-Za-z0-9_-]{0,63}$ ]] || error_code="unavailable"
-            echo "Vercel rejected hourly release: HTTP $http_status, code=$error_code."
+            # HTTP 400 from Vercel is not actionable when its exact schema
+            # field is hidden. Emit ONLY a strict field allowlist, never raw
+            # provider messages, response JSON, tokens, or arbitrary strings.
+            error_field="$(jq -r '(.error.errors // .error.details // .error.validationErrors // []) | if type == "array" then (.[0].path // .[0].field // "unavailable") else "unavailable" end | if type == "array" then join(".") else . end' "$response_file" 2>/dev/null || true)"
+            [[ "$error_field" =~ ^[A-Za-z_][A-Za-z0-9_.-]{0,79}$ ]] || error_field="unavailable"
+            case "$error_field" in gitSource|gitSource.*|name|project|target) ;; *) error_field="unavailable" ;; esac
+            echo "Vercel rejected hourly release: HTTP $http_status, code=$error_code, field=$error_field."
+            # Even a 400 could accompany a concurrent Git-backed deployment.
+            # Fail closed without a second POST: routine next-hour gating uses
+            # authoritative Vercel production history before any new build.
             exit 1
           fi
           jq -e '.id | strings | startswith("dpl_")' "$response_file" >/dev/null ||
