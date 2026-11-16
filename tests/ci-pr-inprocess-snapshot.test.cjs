@@ -58,5 +58,7 @@ test('only one scheduled Watchdog writer and no second hourly Control Tower scan
  assert.ok(w.includes("cron: '7,27,47 * * * *'"),
   'existing bounded Watchdog schedule remains as a fallback');
  assert.doesNotMatch(c,/^  schedule:/m,'hourly duplicate Control Tower observer removed');
- assert.match(w,/  conflict-event-handoff:/,'existing conflict event route preserved');
+ const native=fs.readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
+ assert.match(native,/  conflict-event-handoff:/,'protected event route was preserved in the existing native PR-target runner');
+ assert.doesNotMatch(w,/^  pull_request_target:/m,'a second Watchdog PR-target wrapper must not be created');
 });

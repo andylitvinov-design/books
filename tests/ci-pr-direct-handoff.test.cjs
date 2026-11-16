@@ -113,7 +113,9 @@ test('watchdog has only two worker-completion listeners; Core owns quality-failu
  assert.match(watchdog,/group: hh-control-tower-single-writer/);
  // PR conflict handoff remains immediate; owner PM comments are scanned
  // on the existing schedule (or explicit trusted workflow_dispatch).
- assert.match(watchdog,/pull_request_target:\n    types: \[opened, reopened, synchronize, ready_for_review\]/);
+ const native=fs.readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
+ assert.match(native,/pull_request_target:\n    # One existing PR-target event[\s\S]*?types: \[opened, reopened, synchronize, ready_for_review\]/);
+ assert.doesNotMatch(watchdog,/^  pull_request_target:/m);
  assert.doesNotMatch(watchdog,/^  issue_comment:/m);
  assert.ok(watchdog.includes("cron: '7,27,47 * * * *'"));
  assert.ok(watchdog.includes('  workflow_dispatch:'));
