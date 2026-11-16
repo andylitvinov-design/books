@@ -1,6 +1,6 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
-const {run,candidate,MARKER}=require('../scripts/ci-pr-sensitive-base-ci-wake.cjs');
+const {run,candidate,MARKER,firstBaseRevalidationIntent}=require('../scripts/ci-pr-sensitive-base-ci-wake.cjs');
 const HEAD='e'.repeat(40),OLD='9e84af6e730328ab34099f97b98cb14211bc08af';
 const NEW='ea9a8e571dfc597d50a91fa369ebde1cecd79441';
 function world(opts={}){
@@ -40,6 +40,12 @@ function world(opts={}){
    id:opts.newerCore?45:44,head_sha:HEAD,status:'completed',conclusion:'success'}]}})},
   issues:{listComments:async()=>({data:comments}),
    createComment:async({body})=>{
+    if(opts.concurrentClaim&&comments.length===0)comments.push({
+     id:1,body:'<!-- '+MARKER+' pr=4303 head='+HEAD+
+      ' from='+OLD+' to='+NEW+' core=43 -->\nCompeting failed-Core claim',
+     user:{login:'github-actions[bot]',id:41898282,type:'Bot'},
+     performed_via_github_app:{id:15368,slug:'github-actions'}
+    });
     comments.push({id:comments.length+1,body,user:{
      login:'github-actions[bot]',id:41898282,type:'Bot'},
      performed_via_github_app:{id:15368,slug:'github-actions'}});
@@ -176,6 +182,39 @@ test('BASE advance record and code keep exact required gate; no force or fake gr
  assert.doesNotMatch(code,/force:true|createCheckRun|check-runs\/|\/merges/);
 });
 
+test('shared BASE claim uses earliest authenticated Actions comment, not user text',()=>{
+ const w=world();
+ const prefix='<!-- '+MARKER+' pr=4303 head='+HEAD+
+  ' from='+OLD+' to='+NEW+' core=42 -->';
+ w.comments.push({id:1,body:prefix,user:{login:'not-a-bot',id:2}});
+ assert.deepEqual(firstBaseRevalidationIntent(w.comments,4303,HEAD),{ok:true,id:null});
+ w.comments.push({id:20,body:prefix,
+  user:{login:'github-actions[bot]',id:41898282,type:'Bot'},
+  performed_via_github_app:{id:15368,slug:'github-actions'}});
+ assert.deepEqual(firstBaseRevalidationIntent(w.comments,4303,HEAD),{ok:true,id:20});
+ assert.deepEqual(firstBaseRevalidationIntent(w.comments,4304,HEAD),{ok:true,id:null});
+ w.comments[1].id=null;
+ assert.equal(firstBaseRevalidationIntent(w.comments,4303,HEAD).ok,false);
+});
+test('green-Core refuses an earlier trusted failed-Core BASE claim',async()=>{
+ const w=world();
+ w.comments.push({id:20,body:'<!-- '+MARKER+' pr=4303 head='+HEAD+
+  ' from='+OLD+' to='+NEW+' core=43 -->\nFailed-Core intent',
+  user:{login:'github-actions[bot]',id:41898282,type:'Bot'},
+  performed_via_github_app:{id:15368,slug:'github-actions'}});
+ assert.equal((await run(w.args)).reason,'ONE_WAKE_ALREADY_RECORDED_FOR_HEAD');
+ assert.equal(w.updates.length,0);
+ assert.equal(w.mutations.length,0);
+});
+test('concurrent earlier trusted BASE claim beats this callback before CAS or Ready',async()=>{
+ for(const options of [{concurrentClaim:true},{alreadyCurrent:true,concurrentClaim:true}]){
+  const w=world(options),out=await run(w.args);
+  assert.equal(out.reason,'BASE_REVALIDATION_INTENT_NOT_OWNED');
+  assert.equal(w.updates.length,0);
+  assert.equal(w.mutations.length,0);
+  assert.equal(w.comments.length,2);
+ }
+});
 const syncCommit=(sha,at)=>({sha,parents:[{sha:OLD},{sha:OLD}],
  commit:{message:"Merge branch 'codex/public-book-library' into codex/reasoning-mind-20261110",
   committer:{date:at}}});

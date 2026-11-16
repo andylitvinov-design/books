@@ -232,10 +232,38 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          fetch-depth: 2
+      # Fail-closed exact PR HEAD + file-status routing for policy-only changes.
+      - name: Identify exact PR-only watchdog policy change
+        id: control_scope
+        shell: bash
+        env:
+          HH_EVENT_KIND: ${{ github.event_name }}
+          HH_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          route=FULL
+          if [[ "$HH_EVENT_KIND" == pull_request && "$HH_PR_HEAD_SHA" =~ ^[0-9a-f]{40}$ ]] &&
+             [[ "$(git rev-parse HEAD^2 2>/dev/null || true)" == "$HH_PR_HEAD_SHA" ]]; then
+            changes="$(git diff --no-renames --name-status HEAD^1 HEAD)"
+            if [[ -n "$changes" ]]; then
+              route=CONTROL_ONLY
+              while IFS=$'\t' read -r status file; do
+                case "$status:$file" in
+                  M:.github/workflows/hh-pr-ten-minute-watchdog.yml|M:.github/workflows/hh-pr-watchdog-contract-ci.yml|M:tests/ci-pr-direct-handoff.test.cjs) ;;
+                  *) route=FULL ;;
+                esac
+              done <<< "$changes"
+            fi
+          fi
+          echo "route=$route" >> "$GITHUB_OUTPUT"
+          echo "Watchdog contract route: $route" >> "$GITHUB_STEP_SUMMARY"
       - uses: denoland/setup-deno@v2
+        if: ${{ steps.control_scope.outputs.route != 'CONTROL_ONLY' }}
         with:
           deno-version: v2.x
       - name: Resolve and syntax-compile Agent Commander Supabase Edge Function
+        if: ${{ steps.control_scope.outputs.route != 'CONTROL_ONLY' }}
         run: |
           cd supabase/functions/agent-commander-private-store-v1 && deno cache --no-lock index.ts
           cd ../agent-commander-openrouter-worker && deno cache --no-lock index.ts
@@ -246,6 +274,7 @@ jobs:
       - name: Install trusted test dependencies without lifecycle scripts
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Verify cloud OpenRouter worker leases, zero-cost, and typed SQL contracts
+        if: ${{ steps.control_scope.outputs.route != 'CONTROL_ONLY' }}
         run: node --test tests/commander-openrouter-worker.test.mjs
       - name: Syntax-check trusted watchdog and tests
         run: |
@@ -404,34 +433,44 @@ jobs:
       - name: Watchdog decision contracts
         run: node --test tests/ci-pr-core-tested-base-logs.test.cjs tests/ci-pr-sensitive-base-ci-wake.test.cjs tests/ci-pr-base-freshness.test.cjs tests/ci-pr-direction-watcher.test.cjs tests/ci-pr-slot-wakeup.test.cjs tests/ci-pr-priority.test.cjs tests/ci-pr-ten-minute-watchdog.test.cjs tests/ci-pr-pm-agent-inbox.test.cjs tests/ci-pr-merge-gates.test.cjs tests/ci-pr-native-merge-policy.test.cjs tests/ci-pr-base-advanced-recovery.test.cjs tests/ci-pr-ci-worker.test.cjs tests/ci-pr-core-metadata-wake.test.cjs tests/ci-pr-repair-worker.test.cjs tests/ci-pr-repair-owner-rate.test.cjs tests/ci-pr-repair-graphql-writer.test.cjs tests/ci-pr-next-wave-proof.test.cjs tests/ci-pr-repair-verified-finalizer.test.cjs tests/ci-pr-legacy-cloud.test.cjs tests/ci-pr-repair-source-proof.test.cjs tests/ci-pr-runner-evidence.test.cjs tests/ci-pr-repair-test-scope.test.cjs tests/ci-pr-repair-deterministic.test.cjs tests/ci-pr-repair-free-agent.test.cjs tests/ci-pr-repair-openrouter-free.test.cjs tests/ci-pr-repair-budgeted-coder.test.cjs tests/ci-pr-orchestration-triggers.test.cjs tests/ci-pr-control-tower-wakeup.test.cjs tests/ci-pr-control-tower.test.cjs tests/ci-pr-ci-wake-reconcile.test.cjs tests/ci-pr-selective-core-rerun.test.cjs tests/ci-pr-direct-handoff.test.cjs tests/ci-pr-inprocess-snapshot.test.cjs tests/ci-pr-monitor-feed.test.cjs tests/ci-pr-ci-daytime-signals.test.cjs tests/ci-pr-blocker-progress.test.cjs tests/ci-pr-event-handoff.test.cjs tests/ci-pr-conflict-event-handoff.test.cjs tests/ci-pr-direction-event-label.test.cjs tests/ci-pr-event-snapshot-fastpath.test.cjs tests/ci-pr-live-verifier.test.cjs tests/ci-pr-served-release.test.cjs tests/ci-pr-release-outcomes.test.cjs tests/ci-pr-release-kpi.test.cjs tests/ci-pr-kpi*.test.cjs tests/ci-pr-closed-run-cleanup.test.cjs tests/ci-pr-manus-handoff.test.cjs tests/ci-pr-unified-error-classifier.test.cjs tests/ci-pr-red-ci-classifier.test.cjs tests/ci-pr-error-task.test.cjs
       - name: Vercel rollback and deployment identity contracts
+        if: ${{ steps.control_scope.outputs.route != 'CONTROL_ONLY' }}
         run: node --test tests/ci-vercel-deployment-prune.test.mjs
       - name: Hermes CI event bridge and private inbox contracts
         run: node --test tests/ci-pr-hermes-event-bridge.test.cjs tests/ci-pr-commander-ci-inbox.test.cjs tests/ci-pr-commander-strategy-router.test.cjs tests/ci-pr-commander-ci-route-receipt.test.cjs tests/ci-pr-direct-core-intake.test.cjs tests/ci-pr-readonly-route-intake.test.cjs tests/ci-pr-commander-assignment-receipts.test.cjs tests/ci-pr-openrouter-quota-triage.test.cjs
       - name: Agent Commander learning security and evidence contracts
+        if: ${{ steps.control_scope.outputs.route != 'CONTROL_ONLY' }}
         run: node --test ops/pr-monitor/tests/commander-learning.test.mjs ops/pr-monitor/tests/pr-ai-repair-handoff.test.mjs
       - name: Agent Commander private Supabase storage and OAuth handoff contracts
+        if: ${{ steps.control_scope.outputs.route != 'CONTROL_ONLY' }}
         run: node --test ops/pr-monitor/tests/commander-private-store.test.mjs ops/pr-monitor/tests/commander-chats.test.mjs ops/pr-monitor/tests/commander-editor.test.mjs ops/pr-monitor/tests/google-owner-sso.test.mjs ops/pr-monitor/tests/pm-agent-chat.test.mjs
       - name: Commander Codex dispatch security and exact-head contracts
+        if: ${{ steps.control_scope.outputs.route != 'CONTROL_ONLY' }}
         run: node --test ops/pr-monitor/tests/commander-codex.test.mjs
       - name: Standalone monitor legacy fallback contract
+        if: ${{ steps.control_scope.outputs.route != 'CONTROL_ONLY' }}
         run: node --test ops/pr-monitor/tests/vercel-fallback.test.cjs
       - name: Strict Created-and-Merged PR cohort contracts (both independent monitors)
+        if: ${{ steps.control_scope.outputs.route != 'CONTROL_ONLY' }}
         run: |
           node --check ops/pr-monitor-isolated/monitor.js
           node --check ops/pr-monitor-standalone/pr-two-screen.js
           node --check ops/pr-monitor-standalone/pr-merge-velocity-ui.js
           node --test ops/pr-monitor-isolated/test-contract.cjs ops/pr-monitor-standalone/tests/standalone.test.cjs
       - name: PR error funnel proof and diagnostic assignment contracts
+        if: ${{ steps.control_scope.outputs.route != 'CONTROL_ONLY' }}
         run: node --test ops/pr-monitor/tests/pr-error-funnel.test.cjs
       - name: PR attribution timeline evidence contracts
+        if: ${{ steps.control_scope.outputs.route != 'CONTROL_ONLY' }}
         run: node --test ops/pr-monitor/tests/pr-repair-cycle-model.test.cjs tests/ci-pr-timeline-audit.test.cjs tests/pr-attribution-api.test.cjs tests/pr-checkpoint-evidence.test.cjs tests/pr-cohort-wall-clock.test.cjs tests/pr-monitor-reconciliation-v2.test.cjs tests/ci-pr-core-journey-summary.test.cjs tests/pr-monitor-two-screen.test.cjs tests/pr-monitor-velocity-three-lines.test.cjs tests/pr-monitor-wave-effectiveness.test.cjs tests/pr-monitor-three-kpi-boot.test.cjs tests/pr-monitor-three-kpis.test.cjs tests/pr-monitor-three-kpis-api.test.cjs tests/pr-monitor-ci-wave-comparison.test.cjs ops/pr-monitor/tests/pr-recommendations.test.cjs
       - name: Checkout protected production classifier for integration test
+        if: ${{ steps.control_scope.outputs.route != 'CONTROL_ONLY' }}
         uses: actions/checkout@v4
         with:
           ref: codex/public-book-library
           path: .hh-merge-policy-production
           persist-credentials: false
       - name: Verify pinned classifier integration without write credentials
+        if: ${{ steps.control_scope.outputs.route != 'CONTROL_ONLY' }}
         run: node --test tests/ci-pr-base-classifier-integration.test.cjs
       - name: Probe real KPI evidence without write credentials
         if: >-

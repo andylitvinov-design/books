@@ -33,3 +33,22 @@
 .ci-diagnostic summary:focus-visible{outline:2px solid #8cc5f5;outline-offset:3px}
 #stage-comparison-rows td:first-child{font-weight:600;line-height:1.32}
 @media(max-width:410px){#stage-comparison-rows td:first-child{font-size:11px} .ci-diagnostic{padding:8px}}
+
+/* Signed GitHub error-to-commit funnel; compact on phones. */
+.funnel-heading{align-items:center;gap:12px}
+.funnel-selector{display:flex;flex-direction:column;gap:4px;color:var(--muted,#a6bdd4);font-size:12px;white-space:nowrap}
+.funnel-selector select{font:inherit;font-size:14px;min-height:38px;color:#e8f6ff;background:#18324b;border:1px solid #4b6b84;border-radius:8px;padding:5px 12px}
+.funnel-selector select:focus-visible{outline:2px solid #72dfd8;outline-offset:2px}
+.funnel-table{min-width:560px}
+.funnel-table td:first-child{min-width:190px}
+.funnel-table td:first-child small{display:block;color:#a9c4d8;font-size:11px;line-height:1.4;margin-top:4px;font-weight:400}
+.funnel-table td:nth-child(2),.funnel-table td:nth-child(3){white-space:nowrap;font-variant-numeric:tabular-nums}
+.funnel-count{font-weight:780;color:#74e9d5;font-size:17px}
+.funnel-proof{display:inline-block;color:#8ce6fa;margin-right:9px;margin-bottom:3px;text-decoration:underline}
+@media(max-width:750px){.funnel-heading{align-items:flex-start;flex-direction:column}.funnel-selector{flex-direction:row;align-items:center;white-space:normal;gap:9px}.funnel-table{min-width:520px;font-size:12px}.funnel-table td:first-child{min-width:175px}.funnel-count{font-size:16px}}
+
+.funnel-pr-controls{display:flex;gap:5px;align-items:center;flex-wrap:wrap;font-size:12px;color:#b4cce0;margin-top:5px}
+.funnel-pr-controls input{font:inherit;font-size:13px;width:95px;min-height:36px;padding:5px 7px;background:#18324b;border:1px solid #4b6b84;border-radius:8px;color:#e8f6ff}
+.funnel-pr-controls button{font:inherit;font-size:12px;min-height:36px;padding:5px 8px;border:1px solid #406683;border-radius:8px;background:#1b4a67;color:#eaf8ff;cursor:pointer}
+.funnel-pr-controls button:focus-visible,.funnel-pr-controls input:focus-visible{outline:2px solid #72dfd8;outline-offset:2px}
+@media(max-width:750px){.funnel-pr-controls{width:100%;gap:7px}.funnel-pr-controls input{width:90px}}

@@ -2,8 +2,8 @@
 /* HH_PR_DASHBOARD_ISOLATED_V1: verified read-only evidence, no timers, no DOM watchers */
 (function(env){
 const REPO='https://github.com/andylitvinov-design/books';
-const URLS=Object.freeze({flow:'/api/ci-runner-trends',speed:'/api/pr-stage-timeline?hours=24',stages:'/api/pr-stage-overview?hours=24&scope=production',ci:'/api/ci-insights',queue:'/api/control-tower-stats',repair:'/api/pr-three-kpis',ciLive:'/api/ci-queue-detail',period:'/api/pr-merge-period',cohort:'/api/pr-created-cohort',archive:'/api/ci-journey-summary?hours=72',comparison:'/api/ci-stage-weekly'});
-const SCHEMAS=Object.freeze({flow:'HH_CI_RUNNER_BINS_V2',speed:'HH_PR_STAGE_TIMELINE_V2',stages:'HH_PR_STAGE_OVERVIEW_V1',ci:'HH_CI_DEEP_MONITOR_V1',queue:'HH_CONTROL_DISPATCH_METRICS_V1',repair:'HH_PR_THREE_KPI_V1',ciLive:'HH_PR_CI_QUEUE_DETAIL_V1',period:'HH_PR_MERGE_PERIOD_V1',cohort:'HH_PR_CREATED_COHORT_V1',archive:'HH_CI_FIRST_LAST_ARCHIVE_V1',comparison:'HH_CI_JOURNEY_PERIOD_COMPARISON_V1'});
+const URLS=Object.freeze({flow:'/api/ci-runner-trends',speed:'/api/pr-stage-timeline?hours=24',stages:'/api/pr-stage-overview?hours=24&scope=production',ci:'/api/ci-insights',queue:'/api/control-tower-stats',repair:'/api/pr-three-kpis',ciLive:'/api/ci-queue-detail',period:'/api/pr-merge-period',cohort:'/api/pr-created-cohort',archive:'/api/ci-journey-summary?hours=72',comparison:'/api/ci-stage-weekly',funnel:'/api/ci-error-funnel?hours=24'});
+const SCHEMAS=Object.freeze({flow:'HH_CI_RUNNER_BINS_V2',speed:'HH_PR_STAGE_TIMELINE_V2',stages:'HH_PR_STAGE_OVERVIEW_V1',ci:'HH_CI_DEEP_MONITOR_V1',queue:'HH_CONTROL_DISPATCH_METRICS_V1',repair:'HH_PR_THREE_KPI_V1',ciLive:'HH_PR_CI_QUEUE_DETAIL_V1',period:'HH_PR_MERGE_PERIOD_V1',cohort:'HH_PR_CREATED_COHORT_V1',archive:'HH_CI_FIRST_LAST_ARCHIVE_V1',comparison:'HH_CI_JOURNEY_PERIOD_COMPARISON_V1',funnel:'HH_PR_REPAIR_EVIDENCE_FUNNEL_V1'});
 const safeNum=n=>typeof n==='number'&&Number.isFinite(n)&&n>=0;
 const safeInt=n=>Number.isSafeInteger(n)&&n>=0;
 const number=n=>safeInt(n)?n.toLocaleString('ru-RU'):'—';
@@ -270,7 +270,7 @@ if(!env?.document||typeof env.fetch!=='function')return;
 const doc=env.document,el=id=>doc.getElementById(id);
 const dom=(tag,cls,txt)=>{const e=doc.createElement(tag);if(cls)e.className=cls;if(txt!==undefined)e.textContent=String(txt);return e};
 const svgNS='http://www.w3.org/2000/svg',colors=['#9bcfff','#78e3bd','#ffc681'];
-const snapshots={};let refreshing=false,selectedPeriod=24,periodRequestSeq=0,stageRequestSeq=0,strictRaw=null,strictArch=null,strictHours=24,strictUpdateError=null;
+const snapshots={};let refreshing=false,selectedPeriod=24,periodRequestSeq=0,stageRequestSeq=0,funnelHours=24,funnelPR=null,funnelSeq=0,strictRaw=null,strictArch=null,strictHours=24,strictUpdateError=null;
 function put(id,value){const e=el(id);if(e)e.textContent=String(value);}
 function anchor(num,title){const a=dom('a',null,title||('#'+num));a.href=REPO+'/pull/'+num;a.target='_blank';a.rel='noopener noreferrer';return a;}
 function sv(parent,tag,attrs={},txt){const e=doc.createElementNS(svgNS,tag);for(const [k,v]of Object.entries(attrs))e.setAttribute(k,String(v));if(txt!==undefined)e.textContent=String(txt);if(parent)parent.appendChild(e);return e;}
@@ -559,6 +559,46 @@ function renderQueue(d){
  }
  snapshots.queue=d;overviewSources();updateRecommendations();
 }
+const FUNNEL_KEYS=['failed','classified','task','assigned','source_assigned','dispatched','claimed','runner','responded','committed'];
+function funnelMissing(message){
+ for(const key of FUNNEL_KEYS){put('f-'+key,'—');put('f-t-'+key,'—');put('f-proof-'+key,'—');}
+ put('error-funnel-coverage',message);
+ put('error-funnel-info','«—» = нет проверенного свидетельства, не ноль. Приватный CI inbox недоступен публично.');
+}
+function renderFunnel(d,hours=funnelHours){
+ if(d?.schema!==SCHEMAS.funnel||d.period_hours!==hours||
+  !Array.isArray(d.stages)||d.stages.length!==10||
+  !FUNNEL_KEYS.every((key,i)=>d.stages[i]?.key===key&&safeInt(d.stages[i]?.confirmed))||
+  !safeInt(d.cohort?.sampled_prs)||d.cohort?.checked_only_public_records!==true)throw Error('FUNNEL_SCHEMA');
+ const c=d.cohort;
+ put('error-funnel-coverage',(c.requested_pr?'PR #'+c.requested_pr+' · ':'Частичный архив: '+number(c.candidate_prs)+' PR с ошибками · ')+'проверено '+number(c.sampled_prs)+' PR, '+number(c.comments_read)+' наборов комментариев GitHub.');
+ for(const s of d.stages){
+  put('f-'+s.key,s.confirmed>0?'≥'+number(s.confirmed):'—');
+  put('f-t-'+s.key,s.confirmed>0&&safeNum(s.median_minutes)?delay(s.median_minutes):'—');
+  const root=el('f-proof-'+s.key);root.replaceChildren();
+  for(const example of (Array.isArray(s.examples)?s.examples.slice(0,3):[])){
+   if(!safeInt(example.pr)||example.pr<1||typeof example.url!=='string')continue;
+   const prefix=REPO+'/pull/'+example.pr+'#issuecomment-';
+   const goodComment=example.url.startsWith(prefix)&&/^[0-9]+$/.test(example.url.slice(prefix.length));
+   const runPrefix=REPO+'/actions/runs/';
+   const goodRun=example.url.startsWith(runPrefix)&&/^[0-9]+$/.test(example.url.slice(runPrefix.length));
+   if(!goodComment&&!goodRun)continue;
+   const a=dom('a','funnel-proof','#'+example.pr);a.href=example.url;a.target='_blank';a.rel='noopener noreferrer';root.appendChild(a);
+  }
+  if(!root.childNodes.length)root.textContent='—';
+ }
+ put('error-funnel-info','Подтверждения сопоставлены по точным PR + HEAD + Core run. Счётчик ≥ — нижняя граница в неполной выборке.');
+}
+function funnelUrl(hours,pr){return URLS.funnel.replace('hours=24','hours='+hours)+(pr===null?'':'&pr='+pr);}
+async function selectFunnelPeriod(hours,pr=funnelPR){
+ if(![24,168,336].includes(hours)||pr!==null&&(!safeInt(pr)||pr<1||pr>999999))return;
+ funnelHours=hours;funnelPR=pr;const seq=++funnelSeq;
+ funnelMissing('Получаю подтверждения за '+(hours===24?'24 часа':hours/24+' дней')+'…');
+ try{const url=funnelUrl(hours,pr);
+  const data=await fetchSafe(url,SCHEMAS.funnel,24000);
+  if(seq===funnelSeq)renderFunnel(data,hours);
+ }catch(_){if(seq===funnelSeq)funnelMissing('GitHub-квитанции недоступны.');}
+}
 function renderRepair(d){
  if(d?.schema!==SCHEMAS.repair)throw Error('REPAIR_SCHEMA');
  const r=d.windows?.last_24h;if(!r)throw Error('REPAIR_WINDOW');
@@ -595,26 +635,31 @@ async function refresh(){
 
  const atStart=selectedPeriod;
  const atStage=++stageRequestSeq;
- const tasks=[['flow',d=>drawFlow(activity(d))],['cohort',renderStrictCohort],['stages',d=>{if(stageRequestSeq===atStage)renderStages(d,atStart);},URLS.stages.replace('hours=24','hours='+atStart)],['comparison',d=>{if(stageRequestSeq===atStage)renderComparison(d,atStart);},URLS.comparison+'?hours='+atStart+'&compare=1&strict_weekly=1'],['ci',renderCI],['queue',renderQueue],['repair',renderRepair],['ciLive',renderCILive],['period',d=>{if(selectedPeriod===atStart)renderPeriod(d,atStart);},URLS.period+'?hours='+atStart]];
+ const funnelAtStart=funnelHours,funnelPRAtStart=funnelPR,funnelAtSeq=++funnelSeq;
+ const tasks=[['flow',d=>drawFlow(activity(d))],['cohort',renderStrictCohort],['stages',d=>{if(stageRequestSeq===atStage)renderStages(d,atStart);},URLS.stages.replace('hours=24','hours='+atStart)],['comparison',d=>{if(stageRequestSeq===atStage)renderComparison(d,atStart);},URLS.comparison+'?hours='+atStart+'&compare=1&strict_weekly=1'],['ci',renderCI],['queue',renderQueue],['funnel',d=>{if(funnelAtSeq===funnelSeq)renderFunnel(d,funnelAtStart);},funnelUrl(funnelAtStart,funnelPRAtStart)],['repair',renderRepair],['ciLive',renderCILive],['period',d=>{if(selectedPeriod===atStart)renderPeriod(d,atStart);},URLS.period+'?hours='+atStart]];
  const result=await Promise.allSettled(tasks.map(async([key,fn,route])=>{
-  const data=key==='cohort'?await refreshStrictCohort():await fetchSafe(route||URLS[key],SCHEMAS[key],['stages','comparison'].includes(key)?24000:key==='ci'?11000:8500);if(key!=='cohort')fn(data);
+  const data=key==='cohort'?await refreshStrictCohort():await fetchSafe(route||URLS[key],SCHEMAS[key],['stages','comparison','funnel'].includes(key)?24000:key==='ci'?11000:8500);if(key!=='cohort')fn(data);
   const at=key==='queue'?(data.checked_at||data.generated_at):key==='period'?data.observed_at:data.generated_at;
   sourceTimes.push(isTime(at)?Date.parse(at):null);complete++;
  }));
  for(let i=0;i<result.length;i++){if(result[i].status==='rejected'){errors++;const key=tasks[i][0];if(key==='flow')put('flow-info','Сейчас нет ответа данных PR/CI — нажмите «Обновить».');if(key==='cohort'&&!strictRaw)renderStrictCohort();if(key==='stages'&&selectedPeriod===atStart&&stageRequestSeq===atStage)stageMissing('Источник этапов не ответил.');if(key==='comparison'&&selectedPeriod===atStart&&stageRequestSeq===atStage)comparisonMissing('Исторические данные не ответили.');if(key==='ci')put('ci-coverage','CI источник недоступен');
  if(key==='ciLive'){put('k-ci-running','—');put('k-ci-queued','—');put('k-ci-running-note','Источник недоступен');put('k-ci-queued-note','Источник недоступен');}
+ if(key==='funnel'&&funnelAtSeq===funnelSeq)funnelMissing('GitHub-квитанции недоступны.');
  if(key==='queue'){put('k-open','—');put('k-open-note','Источник недоступен');}
  if(key==='period'&&selectedPeriod===atStart){put('k-created','—');put('k-merged','—');put('k-created-note','Источник недоступен');put('k-merged-note','Источник недоступен');}}}
  const oldest=sourceTimes.length?Math.min(...sourceTimes.map(t=>t===null?-Infinity:t)):null;
  const age=oldest===null?Infinity:oldest===-Infinity?Infinity:Math.max(0,Date.now()-oldest);
  const stale=age>75*60000,delayed=age>15*60000;
  const freshness=stale?'Есть устаревший источник':delayed?'Некоторые источники обновляются с задержкой':'Источники свежие';
- put('status',errors?'Доступно '+complete+' из 9 источников, '+errors+' недоступны. '+freshness+'.':freshness+' · доступно '+complete+' из 9 источников.');
+ put('status',errors?'Доступно '+complete+' из '+tasks.length+' источников, '+errors+' недоступны. '+freshness+'.':freshness+' · доступно '+complete+' из '+tasks.length+' источников.');
  put('updated-at',Number.isFinite(oldest)?'Самый ранний срез · Торонто: '+stamp(oldest):'Время одного из источников неизвестно');
  el('state-dot').className='status-dot '+(complete===0?'bad':errors||delayed?'':'good');
  el('refresh').disabled=false;refreshing=false;updateRecommendations();
 }
 el('refresh').addEventListener('click',()=>{void refresh();});
+el('error-funnel-period').addEventListener('change',e=>{void selectFunnelPeriod(Number(e.target.value));});
+el('error-funnel-find').addEventListener('click',()=>{const value=el('error-funnel-pr').value.trim();if(!/^[1-9][0-9]{0,5}$/.test(value)){put('error-funnel-coverage','Введите корректный номер PR.');return;}void selectFunnelPeriod(funnelHours,Number(value));});
+el('error-funnel-all').addEventListener('click',()=>{el('error-funnel-pr').value='';void selectFunnelPeriod(funnelHours,null);});
 for(const b of doc.querySelectorAll('[data-period]'))b.addEventListener('click',()=>{void selectPeriod(Number(b.dataset.period));});
 void refresh();
 })(typeof window==='undefined'?null:window);
