@@ -24,3 +24,12 @@
 .comparison-table th:not(:first-child),.comparison-table td:not(:first-child){width:25%}
 .comparison-sample{display:block;font-size:10px;color:#9fb6cf;margin-top:3px}
 @media(max-width:410px){.comparison-table th,.comparison-table td{padding:9px 6px;font-size:11px}.comparison-sample{font-size:9px}}
+
+/* Dedicated identical-cohort weekly comparison: compact on mobile */
+.comparison-total{font-weight:750;background:rgba(109,171,211,.09)}
+.comparison-total td{color:#f4f8ff}
+.ci-diagnostic{margin-top:13px;border:1px solid #3d536e;border-radius:10px;padding:10px;background:#172b43}
+.ci-diagnostic summary{cursor:pointer;color:#add8fa;font-weight:680;font-size:12px;line-height:1.4;padding:5px 0}
+.ci-diagnostic summary:focus-visible{outline:2px solid #8cc5f5;outline-offset:3px}
+#stage-comparison-rows td:first-child{font-weight:600;line-height:1.32}
+@media(max-width:410px){#stage-comparison-rows td:first-child{font-size:11px} .ci-diagnostic{padding:8px}}
