@@ -175,3 +175,36 @@ test('source-only postmerge repeats and stale-before-hour LIVE audits stay off',
   assert.match(cleanup,/node scripts\/ci-pr-loss-report\.mjs/,'retain nonblocking P1 PR lifecycle telemetry');
   assert.match(cleanup,/Group unresolved PR merge-conflict candidates/,'retain nonblocking PR conflict diagnostics');
 });
+
+test('CRM provider webhook edits do not fan out unrelated Google/Axis/audio PR jobs',()=>{
+  const ingress='app/api/app/crm/messenger/webhook/[provider]/route.js';
+  // The shared authenticated catch-all and all truly owned paths stay live;
+  // only the exact provider ingress subtree is excluded.
+  for(const name of ['practice-google-browser.yml','hh-profile-axis-matching.yml','hh-private-audio-e2e.yml']){
+    const route=trigger(name);
+    assert.equal(matchesTrigger(route,[ingress],TARGET),false,
+      name+': CRM-only webhook should not allocate an unrelated browser/media runner');
+    assert.ok(route.paths.includes('!app/api/app/crm/messenger/webhook/**'),
+      name+': signed CRM ingress exclusion must remain narrow and explicit');
+    assert.equal(matchesTrigger(route,['app/api/app/[...path]/route.js'],TARGET),true,
+      name+': shared app dispatcher must still receive independent domain QA');
+  }
+  // The genuine security owner and baseline Core are not advisory or skipped.
+  for(const name of ['hh-crm-source-check.yml','hh-app-browser.yml','hh-pr-core-release.yml'])
+    assert.equal(matchesTrigger(trigger(name),[ingress],TARGET),true,
+      name+': real signed webhook/privacy/security owner must still execute');
+  for(const [name,owned] of [
+    ['practice-google-browser.yml','components/app/practice-inner-navigation.jsx'],
+    ['hh-profile-axis-matching.yml','lib/holistic-support/axis-offer-matcher.mjs'],
+    ['hh-private-audio-e2e.yml','lib/app/session.js'],
+  ]){
+    assert.equal(matchesTrigger(trigger(name),[owned],TARGET),true,
+      name+': own feature/auth source still triggers');
+    assert.equal(matchesTrigger(trigger(name),[ingress,owned],TARGET),true,
+      name+': mixed CRM + own-feature PR must not bypass the specialist');
+  }
+  const audio=source('hh-private-audio-e2e.yml');
+  const push=audio.split(/^  push:/m)[1]?.split(/^concurrency:|^permissions:|^jobs:/m)[0] || '';
+  assert.match(push,/app\/api\/app\/\*\*/,'postmerge private media audit must remain broad');
+  assert.doesNotMatch(push,/!app\/api\/app\/crm\/messenger\/webhook/);
+});
