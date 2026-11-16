@@ -456,3 +456,28 @@ test('router HTTP 400 is diagnosed precisely and never falls back to a paid mode
   model:FREE_ROUTER_MODEL,fetchImpl}),/FREE_AI_OPENROUTER_HTTP_400/);
  assert.equal(calls,2);
 });
+
+test('Repair Worker pins role-vetted auto free model instead of unconstrained free router', () => {
+ const workflow=require('node:fs').readFileSync(
+  '.github/workflows/hh-pr-repair-worker.yml','utf8');
+ const section=workflow.split('      - name: Generate one bounded no-token free-model patch; never retry paid')[1]
+   ?.split('      - id: capture')[0];
+ assert.ok(section,'isolated free proposer step must remain');
+ assert.match(section,/HH_OPENROUTER_FREE_MODEL: auto/);
+ assert.doesNotMatch(section,/HH_OPENROUTER_FREE_MODEL: openrouter\/free/,
+  'unconstrained $0 router may pick non-coding or reasoning-only completions');
+ assert.match(section,/HH_OPENROUTER_FREE_API_KEY:/);
+ assert.match(section,/node \.hh-trusted\/scripts\/ci-pr-repair-free-agent\.cjs/);
+ // Free-model ranking is already catalog-verified and enforces actual $0
+ // before inference. It must not permit a non-free or review-only model.
+ assert.ok(MODEL_PROFILES.repair.length>=2);
+ for(const id of MODEL_PROFILES.repair){
+  assert.match(id,/:free$/);
+  assert.notEqual(id,'dots-studio/dots-3-note-preview:free');
+ }
+ const onlyOne={data:[{...entry(),id:MODEL_PROFILES.repair[0]}]};
+ assert.equal(chooseVerifiedFreeModel(onlyOne,{model:'auto',role:'repair'}).model,
+  MODEL_PROFILES.repair[0]);
+ assert.throws(()=>chooseVerifiedFreeModel({data:[{...entry({prompt:0,completion:0.02}),id:MODEL_PROFILES.repair[0]}]}, {model:'auto',role:'repair'}),
+  /NO_VERIFIED_FREE_MODEL/);
+});
