@@ -215,3 +215,84 @@ test('issue-comment trigger does not skip FIFO when an earlier owner command is 
  assert.equal(fx.calls.length,0);
  assert.equal(fx.sent.length,0);
 });
+
+
+test('owner can request PR LIVE with one number while nonowners cannot',()=>{
+ const live=inbox.command(cmd(801,'!pm live #4770'));
+ assert.equal(live.kind,'live');assert.equal(live.pr,4770);
+ assert.equal(inbox.command(cmd(802,'!pm complete 4770')).kind,'live');
+ assert.equal(inbox.command({...cmd(803,'!pm live 4770'),user:bot}),null);
+ assert.equal(inbox.command(cmd(804,'!pm live 0')),null);
+});
+test('owner PM repair dispatch uses the owner credential, never bot GITHUB_TOKEN',async()=>{
+ const head='a'.repeat(40),prNumber=3826,requestCalls=[];
+ const pr={number:prNumber,state:'open',draft:false,user:owner,
+  head:{sha:head,repo:{full_name:'andylitvinov-design/books'}},
+  base:{ref:'codex/public-book-library'},mergeable:true,mergeable_state:'clean',
+  labels:[{name:'hh:repair-needed'}]};
+ const gh={rest:{
+  pulls:{get:async()=>({data:pr})},
+  issues:{listComments:async()=>({data:[{
+   user:bot,performed_via_github_app:app,
+   body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+head+' -->\nFailed jobs: core-lint-types-build'
+  }]})},
+  actions:{createWorkflowDispatch:async()=>{throw Error('UNSAFE_BOT_ACTOR_DISPATCH');}}
+ }};
+ const withoutOwner=await inbox.dispatchRepair(gh,{pr:prNumber,sha:head});
+ assert.equal(withoutOwner.reason,'OWNER_REPAIR_DISPATCH_TOKEN_NOT_CONFIGURED');
+ const ok=await inbox.dispatchRepair(gh,{pr:prNumber,sha:head},{
+  ownerToken:'synthetic-owner-only-token',fetcher:async(url,req)=>{
+   requestCalls.push({url,req});return {status:204};
+  }});
+ assert.equal(ok.dispatched,true);
+ assert.equal(requestCalls.length,1);
+ assert.match(requestCalls[0].url,/hh-pr-ten-minute-watchdog\.yml\/dispatches$/);
+ assert.equal(requestCalls[0].req.headers.Authorization,'Bearer synthetic-owner-only-token');
+ const payload=JSON.parse(requestCalls[0].req.body);
+ assert.equal(payload.ref,'codex/bootstrap-books');
+ assert.equal(payload.inputs.pm_pr_number,'3826');
+ assert.equal(payload.inputs.pm_expected_sha,head);
+ assert.match(payload.inputs.pm_request_id,/^[a-f0-9-]{36}$/);
+ assert.equal(payload.inputs.dry_run,'false');
+});
+test('PR LIVE observes merge from GitHub once and does not relaunch green CI',async()=>{
+ const head='b'.repeat(40),mergedSha='c'.repeat(40);
+ const pr={number:4770,state:'open',draft:false,merged:false,
+  base:{ref:'codex/public-book-library'},
+  head:{sha:head,repo:{full_name:'andylitvinov-design/books'}},
+  mergeable:true,labels:[]};
+ const fx=stub([cmd(805,'!pm live 4770')],{pr});
+ const first=await inbox.run({github:fx.github,context,ownerFetcher:async()=>{
+  throw Error('UNEXPECTED_SOURCE_OR_CI_DISPATCH');
+ }});
+ assert.equal(first.status,'WATCHING');
+ assert.equal(fx.sent.length,2);assert.match(fx.sent[1],/status=WATCHING/);
+ assert.equal(fx.dispatches.length,0);
+ const second=await inbox.run({github:fx.github,context});
+ assert.equal(second.status,'WATCHING');assert.equal(fx.sent.length,2);
+ pr.state='closed';pr.merged=true;pr.merged_at=at();pr.merge_commit_sha=mergedSha;
+ const done=await inbox.run({github:fx.github,context});
+ assert.equal(done.status,'COMPLETION_NOTICE_SENT');
+ assert.match(fx.sent[2],/status=MERGED/);
+ assert.match(fx.sent[2],new RegExp(mergedSha));
+ assert.match(fx.sent[2],/Production LIVE not yet verified/);
+ assert.equal((await inbox.run({github:fx.github,context})).status,'NO_PENDING');
+ assert.equal(fx.sent.length,3);
+});
+test('closed unmerged PR is not reported as merged; missing merge SHA holds',async()=>{
+ const head='d'.repeat(40);
+ const pr={number:4771,state:'open',draft:false,merged:false,
+  base:{ref:'codex/public-book-library'},
+  head:{sha:head,repo:{full_name:'andylitvinov-design/books'}},
+  mergeable:true,labels:[{name:'hh:hold'}]};
+ const fx=stub([cmd(806,'!pm live 4771')],{pr});
+ assert.equal((await inbox.run({github:fx.github,context})).status,'WATCHING');
+ assert.match(fx.sent[1],/OWNER_HOLD_NOT_OVERRIDDEN/);
+ pr.state='closed';pr.merged=true;pr.merged_at=at();pr.merge_commit_sha=null;
+ assert.equal((await inbox.run({github:fx.github,context})).status,'WATCHING');
+ assert.equal(fx.sent.length,2);
+ pr.merged=false;
+ assert.equal((await inbox.run({github:fx.github,context})).status,'COMPLETION_NOTICE_SENT');
+ assert.match(fx.sent[2],/status=CLOSED_UNMERGED/);
+ assert.doesNotMatch(fx.sent[2],/status=MERGED/);
+});
