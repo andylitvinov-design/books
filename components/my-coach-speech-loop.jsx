@@ -509,7 +509,9 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     // An audible reply must include the answer/acknowledgement, not only its last question.
     // The Google excerpt only applies to its separately-consented 500-char path.
     const speakable=coachSpokenText(reply).text
-    const replyLocale=detectedSpeechLocale(reply,detectedSpeechLocale(text,lang))
+    const replyLocale=['en','ru','es'].includes(result.locale)?result.locale:
+      ['en','ru','es'].includes(speechLocaleRef.current)?speechLocaleRef.current:
+      detectedSpeechLocale(reply,detectedSpeechLocale(text,lang))
     const live=()=>activeRef.current&&generationRef.current===generation
     const afterSpeech=()=>{
       if(!live())return
