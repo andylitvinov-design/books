@@ -412,6 +412,99 @@ function waveDetail(store,pr,h,now=Date.now()){
    waves:available?row.wave_rows:[],
    note:'Sequence and HEAD are observed; person, trigger and cause remain unverified. Overlapping runs are not counted as idle time.'};
 }
+
+/* HH_STRICT_WEEKLY_PRODUCTION_V1: created AND merged in each window; no guessed stage durations. */
+const STRICT_KEYS=['before_unknown','workflow_wait','runner_wait','checks','ci_wave_unknown','ci_other_unknown','after_unknown','no_archive_unknown'];
+const CORE_KEYS=['workflow_wait','runner_wait','checks','between_waves_unknown','other_unknown'];
+const ms=x=>{const n=Date.parse(x||'');return Number.isFinite(n)?n:null};
+const valid=x=>typeof x==='number'&&Number.isFinite(x)&&x>=0;
+function torontoWeekAgo(now){
+ const fmt=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Toronto',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'});
+ const parts=m=>Object.fromEntries(fmt.formatToParts(new Date(m)).filter(p=>p.type!=='literal').map(p=>[p.type,+p.value]));
+ const p=parts(now),wall=Date.UTC(p.year,p.month-1,p.day-7,p.hour,p.minute,p.second)+now%1000;
+ let guess=wall+5*3600000;
+ for(let i=0;i<3;i++){const x=parts(guess),current=Date.UTC(x.year,x.month-1,x.day,x.hour,x.minute,x.second)+guess%1000;guess=wall-(current-guess);}
+ const expected=new Date(Date.UTC(p.year,p.month-1,p.day-7)).toISOString().slice(0,10);
+ const actual=parts(guess),date=[actual.year,String(actual.month).padStart(2,'0'),String(actual.day).padStart(2,'0')].join('-');
+ if(date!==expected||actual.hour!==p.hour||actual.minute!==p.minute||actual.second!==p.second)throw Error('WEEKLY_LOCAL_TIME_UNVERIFIED');
+ return guess;
+}
+function strictRanges(h,now=Date.now()){
+ if(![1,6,24].includes(h))throw Error('STRICT_HOURS_INVALID');
+ const prev=torontoWeekAgo(now),span=h*3600000;
+ return [{id:'current',from:new Date(now-span).toISOString(),to:new Date(now).toISOString()},
+  {id:'week_ago',from:new Date(prev-span).toISOString(),to:new Date(prev).toISOString()}];
+}
+async function strictGitHubSearch(range){
+ const q='repo:andylitvinov-design/books is:pr base:codex/public-book-library created:'+range.from+'..'+range.to;
+ const headers={Accept:'application/vnd.github+json','User-Agent':'HH-Weekly-Production-PR','X-GitHub-Api-Version':'2022-11-28'};
+ const token=process.env.GITHUB_TOKEN||process.env.GH_TOKEN;if(token)headers.Authorization='Bearer '+token;
+ const rows=[],seen=new Set();let total=null;
+ for(let page=1;page<=4;page++){
+  const url='https://api.github.com/search/issues?q='+encodeURIComponent(q)+'&sort=created&order=desc&per_page=100&page='+page;
+  const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),12000);let res;
+  try{res=await fetch(url,{headers,signal:ctl.signal,cache:'no-store'});}finally{clearTimeout(timer);}
+  const remaining=Number(res.headers.get('x-ratelimit-remaining'));
+  if(!res.ok||(Number.isFinite(remaining)&&remaining<3))throw Error('GITHUB_SEARCH_'+res.status);
+  const data=await res.json();
+  if(data?.incomplete_results!==false||!Number.isSafeInteger(data.total_count)||data.total_count>400||!Array.isArray(data.items))
+   throw Error('GITHUB_SEARCH_INCOMPLETE');
+  if(total!==null&&total!==data.total_count)throw Error('GITHUB_SEARCH_CHANGED');total=data.total_count;
+  for(const p of data.items){
+   if(!Number.isSafeInteger(p.number)||p.number<1||seen.has(p.number)||ms(p.created_at)===null||
+     !p.pull_request||!Object.prototype.hasOwnProperty.call(p.pull_request,'merged_at'))throw Error('GITHUB_SEARCH_ROW');
+   seen.add(p.number);rows.push({pr:p.number,created:ms(p.created_at),merged:ms(p.pull_request.merged_at)});
+  }
+  if(rows.length>=total)break;
+  if(!data.items.length)throw Error('GITHUB_SEARCH_EMPTY_PAGE');
+ }
+ if(rows.length!==total)throw Error('GITHUB_SEARCH_PARTIAL');
+ const a=ms(range.from),b=ms(range.to);
+ return {rows:rows.filter(p=>p.created>=a&&p.created<b),search_n:rows.length,complete:true};
+}
+function strictWeeklyWindow(search,store,range){
+ if(search?.complete!==true||!Array.isArray(search.rows)||!Array.isArray(store?.runs))throw Error('STRICT_COHORT_UNVERIFIED');
+ const start=ms(range.from),end=ms(range.to),keys=STRICT_KEYS;
+ const seen=new Set();for(const p of search.rows){if(!Number.isSafeInteger(p.pr)||seen.has(p.pr)||p.created<start||p.created>=end)throw Error('STRICT_PR_DUPLICATE');seen.add(p.pr);}
+ const finished=search.rows.filter(p=>p.merged!==null&&p.merged>=p.created&&p.merged<=end),n=finished.length;
+ const byPr=new Map();for(const run of store.runs){if(!seen.has(run.pr))continue;const a=byPr.get(run.pr)||[];a.push(run);byPr.set(run.pr,a);}
+ const sums=Object.fromEntries(keys.map(k=>[k,0])),samples=Object.fromEntries(keys.map(k=>[k,[]]));
+ let covered=0,partial=0,invalid=0,missing=0,waves=0,retries=0;const totals=[];
+ for(const p of finished){
+  const duration=(p.merged-p.created)/60000,runs=byPr.get(p.pr),ci=runs?.length?summarizePR(p.pr,runs):null;
+  const a=ms(ci?.first_at),b=ms(ci?.last_at),stage=ci?.stages_ms;
+  const match=ci&&a!==null&&b!==null&&a>=p.created&&b<=p.merged&&b>=a&&
+   CORE_KEYS.every(k=>valid(stage?.[k]))&&Math.abs(CORE_KEYS.reduce((v,k)=>v+stage[k],0)-(b-a))<=10;
+  const values=match?{before_unknown:(a-p.created)/60000,workflow_wait:stage.workflow_wait/60000,
+   runner_wait:stage.runner_wait/60000,checks:stage.checks/60000,ci_wave_unknown:stage.between_waves_unknown/60000,
+   ci_other_unknown:stage.other_unknown/60000,after_unknown:(p.merged-b)/60000,no_archive_unknown:0}
+   :Object.fromEntries(keys.map(k=>[k,k==='no_archive_unknown'?duration:0]));
+  if(match){covered++;if(ci.partial)partial++;waves+=ci.runs;retries+=ci.repeats;}
+  else if(runs?.length)invalid++;else missing++;
+  if(Math.abs(keys.reduce((sum,k)=>sum+values[k],0)-duration)>.0001)throw Error('STRICT_NOT_ADDITIVE_PR');
+  for(const k of keys){sums[k]+=values[k];if((match&&k!=='no_archive_unknown')||(!match&&k==='no_archive_unknown'))samples[k].push(values[k]);}
+  totals.push(duration);
+ }
+ const total=totals.reduce((a,b)=>a+b,0);
+ if(Math.abs(keys.reduce((a,k)=>a+sums[k],0)-total)>.0001)throw Error('STRICT_NOT_ADDITIVE_COHORT');
+ return {id:range.id,from:range.from,to:range.to,created_prs:search.rows.length,merged_prs:n,
+  not_merged_in_window:search.rows.length-n,mean_minutes:n?rnd(total/n):null,
+  p50_minutes:n?rnd(quant(totals,.5)):null,p90_minutes:n?rnd(quant(totals,.9)):null,
+  stages:Object.fromEntries(keys.map(k=>[k,{mean_contribution_minutes:n?rnd(sums[k]/n):null,
+   measured_prs:samples[k].length,p50_measured_minutes:samples[k].length?rnd(quant(samples[k],.5)):null}])),
+  ci_observed_waves:waves,ci_observed_retries:retries,
+  coverage:{search_complete:true,github_search_items:search.search_n,ci_matched_prs:covered,
+   ci_partial_prs:partial,ci_invalid_prs:invalid,ci_missing_prs:missing,ci_archive_complete:false}};
+}
+async function strictWeeklyComparison(store,h,now=Date.now()){
+ const ranges=strictRanges(h,now),periods=[];
+ for(const range of ranges)periods.push(strictWeeklyWindow(await strictGitHubSearch(range),store,range));
+ return {schema:'HH_PR_CREATED_MERGED_WEEKLY_V1',generated_at:new Date(now).toISOString(),
+  base:'codex/public-book-library',timezone:'America/Toronto',period_hours:h,
+  comparison_basis:'CREATED_AND_MERGED_WITHIN_EACH_MATCHING_WINDOW',periods,history_complete:false,
+  note:'A PR must be created and merged within the SAME selected window. CI stages come only from saved validated Core receipts; unknown intervals are never assigned to runners or repair.'};
+}
+
 module.exports=async(req,res)=>{
  res.setHeader('Content-Type','application/json; charset=utf-8');
  res.setHeader('X-Robots-Tag','noindex,nofollow');
@@ -429,10 +522,17 @@ module.exports=async(req,res)=>{
    const store=await fetchArchive(force);
    res.statusCode=200;
    if(compare&&rawPr!==undefined){res.statusCode=400;return res.end(JSON.stringify({error:'COMPARE_CANNOT_INCLUDE_PR'}));}
-   res.end(JSON.stringify(compare?comparePeriods(store,hours):
-     rawPr===undefined?report(store,hours):waveDetail(store,Number(rawPr),hours)));
+   if(compare){
+    const result=comparePeriods(store,hours);
+    if(req.query?.strict_weekly==='1'){
+      try{result.strict_weekly=await strictWeeklyComparison(store,hours);}
+      catch(e){result.strict_weekly=null;result.strict_weekly_error=String(e.message||e).slice(0,100);}
+    }
+    return res.end(JSON.stringify(result));
+   }
+   return res.end(JSON.stringify(rawPr===undefined?report(store,hours):waveDetail(store,Number(rawPr),hours)));
  }
  catch(e){res.statusCode=503;res.end(JSON.stringify({schema:'HH_CI_FIRST_LAST_ARCHIVE_V1',
    error:String(e.message||e).slice(0,90),missing_is_not_zero:true}));}
 };
-module.exports._test={parse,summarizePR,report,comparePeriods,waveDetail};
+module.exports._test={parse,summarizePR,report,comparePeriods,waveDetail,strictRanges,torontoWeekAgo,strictWeeklyWindow,strictWeeklyComparison};
