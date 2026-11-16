@@ -72,6 +72,12 @@ function world(options={}){
    issues:{listComments:async()=>({data:comments}),
     createComment:async({body})=>{
      if(options.intentDenied)throw Error('intent denied');
+     if(options.concurrentClaim&&comments.length===0)comments.push({
+      id:1,body:'<!-- HH_SENSITIVE_BASE_CI_REVALIDATE_V1 pr=3510 head='+HEAD+
+       ' from='+OLD+' to='+LIVE+' core=99 -->\nOther trusted lane',
+      user:{login:'github-actions[bot]',id:41898282,type:'Bot'},
+      performed_via_github_app:{id:15368,slug:'github-actions'}
+     });
      comments.push({id:comments.length+1,body,
       user:{login:'github-actions[bot]',id:41898282,type:'Bot'},
       performed_via_github_app:{id:15368,slug:'github-actions'}});
@@ -174,6 +180,8 @@ test('verified failure creates one native non-force base update, never a synthet
  assert.equal(result.status,'UPDATED');
  assert.equal(result.mergeAuthorized,false);
  assert.equal(w.updated(),1);
+ assert.equal(w.comments.length,1,'failed-Core source sync now records a trusted intent');
+ assert.match(w.comments[0].body,/HH_SENSITIVE_BASE_CI_REVALIDATE_V1 pr=3510/);
 });
 
 test('regression #4594: loose production rules must not recheck stale synthetic merge',async()=>{
@@ -182,7 +190,7 @@ test('regression #4594: loose production rules must not recheck stale synthetic 
   assert.equal(result.status,'UPDATED');
   assert.equal(w.updated(),1);
   assert.deepEqual(w.mutations,[],'no useless Ready on unchanged old merge ref');
-  assert.equal(w.comments.length,0);
+  assert.equal(w.comments.length,1,'failed-Core source update owns shared intent');
  }
 });
 test('verified source containing current protected BASE requests one true same-HEAD Core',async()=>{
@@ -200,6 +208,22 @@ test('verified source containing current protected BASE requests one true same-H
   assert.equal(w.comments.length,1);
   assert.equal((await run(w)).reason,'ONE_WAKE_ALREADY_RECORDED_FOR_HEAD');
  }
+});
+test('failed-Core respects a green-Core intent rather than publishing duplicate HEAD',async()=>{
+ const marker='<!-- HH_SENSITIVE_BASE_CI_REVALIDATE_V1 pr=3510 head='+HEAD+
+  ' from='+OLD+' to='+LIVE+' core=98 -->\nGreen-Core base recovery';
+ const prior={id:1000,body:marker,user:{login:'github-actions[bot]',id:41898282,type:'Bot'},
+  performed_via_github_app:{id:15368,slug:'github-actions'}};
+ const w=world({comments:[prior]}),answer=await run(w);
+ assert.equal(answer.reason,'ONE_WAKE_ALREADY_RECORDED_FOR_HEAD');
+ assert.equal(w.updated(),0);
+ assert.equal(w.ownerCalls().length,0);
+});
+test('failed-Core callback losing concurrent signed claim never calls update-branch',async()=>{
+ const w=world({concurrentClaim:true}),answer=await run(w);
+ assert.equal(answer.reason,'BASE_REVALIDATION_INTENT_UNVERIFIED');
+ assert.equal(w.updated(),0);
+ assert.equal(w.comments.length,2);
 });
 test('manual source ownership forbids automatic Ready even if source contains BASE',async()=>{
  const w=world({looseRuleset:true,sourceAlreadyContainsLive:true,

@@ -26,6 +26,21 @@ function candidate(pr,expectedHead){
    pr.auto_merge!=null||!Array.isArray(pr.labels))return false;
  return !pr.labels.some(l=>HELD.has(l?.name));
 }
+// Both the green-Core and failed-Specialist recovery paths use this EXACT
+// signed claim marker. A second callback for the same source HEAD must not
+// independently request another base-sync wave. GitHub comment IDs provide
+// an ordered tie-breaker if two trusted callbacks race after initial reads.
+function firstBaseRevalidationIntent(comments,number,head){
+ if(!Array.isArray(comments)||!Number.isSafeInteger(number)||number<1||
+    !SHA.test(head||''))
+  return {ok:false,reason:'BASE_REVALIDATION_INTENT_INPUT_UNVERIFIED'};
+ const prefix='<!-- '+MARKER+' pr='+number+' head='+head+' ';
+ const claims=comments.filter(c=>trustedControlComment(c)&&
+  typeof c.body==='string'&&c.body.startsWith(prefix));
+ if(claims.some(c=>!Number.isSafeInteger(c.id)||c.id<1))
+  return {ok:false,reason:'BASE_REVALIDATION_INTENT_ID_UNVERIFIED'};
+ return {ok:true,id:claims.length?Math.min(...claims.map(c=>c.id)):null};
+}
 async function run({github,context,token,number,head,oldBase,newBase,coreRunId,
  now=Date.now(),fetcher=globalThis.fetch}={}){
  const result={schema:MARKER,pr_number:number,status:'HOLD',reason:'UNVERIFIED',
@@ -99,9 +114,9 @@ async function run({github,context,token,number,head,oldBase,newBase,coreRunId,
   comments=await readCompleteIssueComments(github,owner,repo,number,
    async (_name,call)=>{if(++pages>5)throw Error('COMMENT_LIMIT');return call();});
   if(!Array.isArray(comments))return hold('LEASE_HISTORY_INCOMPLETE');
-  const seen=comments.some(c=>trustedControlComment(c)&&
-   String(c.body||'').includes('<!-- '+MARKER+' pr='+number+' head='+head+' '));
-  if(seen)return hold('ONE_WAKE_ALREADY_RECORDED_FOR_HEAD');
+  const previous=firstBaseRevalidationIntent(comments,number,head);
+  if(!previous.ok)return hold(previous.reason);
+  if(previous.id!==null)return hold('ONE_WAKE_ALREADY_RECORDED_FOR_HEAD');
   if(externalOwnerLeaseStatus(comments,head,now)!=='FREE')
    return hold('SOURCE_OWNER_LEASE_NOT_FREE');
   // The failed-Core recovery path already prevents repeated BASE-only merges.
@@ -160,13 +175,17 @@ async function run({github,context,token,number,head,oldBase,newBase,coreRunId,
  }catch{return hold('OWNER_PREFLIGHT_UNAVAILABLE');}
  // Record the one-shot intent BEFORE the owner mutation (Ready or branch CAS).
  // Even if GitHub delivery is ambiguous, do not start another duplicate wave.
+ let ownIntentId;
  try{
-  await github.rest.issues.createComment({owner,repo,issue_number:number,
+  const posted=await github.rest.issues.createComment({owner,repo,issue_number:number,
    body:'<!-- '+MARKER+' pr='+number+' head='+head+
     ' from='+oldBase+' to='+newBase+' core='+coreRunId+' -->\n'+
     'Necessary current-base CI revalidation requested by trusted coordinator. '+
     'One protected update for diverged BASE, or Ready only when source already contains it. '+
     'Not a completed source update, CI PASS, merge or LIVE.'});
+  ownIntentId=posted?.data?.id;
+  if(!Number.isSafeInteger(ownIntentId)||ownIntentId<1)
+   return hold('SIGNED_WAKE_INTENT_ID_UNVERIFIED');
  }catch{return hold('SIGNED_WAKE_INTENT_NOT_WRITTEN');}
 
  if(needsHeadUpdate){
@@ -182,8 +201,10 @@ async function run({github,context,token,number,head,oldBase,newBase,coreRunId,
    let rereadPages=0;
    const latestComments=await readCompleteIssueComments(github,owner,repo,number,
     async(_name,call)=>{if(++rereadPages>5)throw Error('LEASE_REREAD_LIMIT');return call();});
-   if(!Array.isArray(latestComments)||
-      externalOwnerLeaseStatus(latestComments,head,now)!=='FREE')
+   const winner=firstBaseRevalidationIntent(latestComments,number,head);
+   if(!winner.ok||winner.id!==ownIntentId)
+    return hold('BASE_REVALIDATION_INTENT_NOT_OWNED');
+   if(externalOwnerLeaseStatus(latestComments,head,now)!=='FREE')
     return hold('SOURCE_OWNER_LEASE_CHANGED');
    const patFresh=await ownerCall('GET','/repos/'+FULL+'/pulls/'+number);
    if(patFresh?.head?.sha!==head||patFresh?.base?.ref!==PROD||
@@ -198,6 +219,25 @@ async function run({github,context,token,number,head,oldBase,newBase,coreRunId,
      reason:'AWAITING_NEW_HEAD_EXACT_CORE',headUpdateRequested:true};
   }catch{return hold('PROTECTED_BASE_SYNC_NOT_ACCEPTED');}
  }
+ // The Ready path is also a CI wake. Re-check the shared signed claim
+ // immediately before changing Draft state, including a competing failed-Core
+ // callback that arrived after our initial snapshot.
+ try{
+  let claimPages=0;
+  const [latestComments,latestBase]=await Promise.all([
+   readCompleteIssueComments(github,owner,repo,number,async(_name,call)=>{
+    if(++claimPages>5)throw Error('CLAIM_PAGE_LIMIT');
+    return call();
+   }),
+   github.rest.repos.getBranch({owner,repo,branch:PROD})
+  ]);
+  const winner=firstBaseRevalidationIntent(latestComments,number,head);
+  if(!winner.ok||winner.id!==ownIntentId)
+   return hold('BASE_REVALIDATION_INTENT_NOT_OWNED');
+  if(externalOwnerLeaseStatus(latestComments,head,now)!=='FREE'||
+     latestBase.data?.protected!==true||latestBase.data.commit?.sha!==newBase)
+   return hold('READY_SOURCE_LEASE_OR_BASE_CHANGED');
+ }catch{return hold('READY_INTENT_RECHECK_UNAVAILABLE');}
  const mutation=async(name)=>{
   const query='mutation($id:ID!){'+name+
    '(input:{pullRequestId:$id}){pullRequest{id isDraft}}}';
@@ -229,4 +269,4 @@ async function run({github,context,token,number,head,oldBase,newBase,coreRunId,
   reason:'AWAITING_SAME_HEAD_ALREADY_CONTAINS_BASE_CORE',
   metadataEventRequested:true};
 }
-module.exports={run,candidate,MARKER};
+module.exports={run,candidate,MARKER,firstBaseRevalidationIntent};
