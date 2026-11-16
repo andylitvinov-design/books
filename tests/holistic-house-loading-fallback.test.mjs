@@ -27,3 +27,13 @@ test("loading scene uses an existing small first-party photo and reduced-motion 
   assert.doesNotMatch(css, /https?:\/\/|@import|backdrop-filter/);
   assert.ok((await stat(photo)).size <= 100_000, "loading image must remain under 100 KB");
 });
+
+test("public Academy order CTA is server-visible while private/rewrite routes stay hydration-safe", async () => {
+  const capture = await source("components/sitewide-lead-capture.tsx");
+  const browser = await source("scripts/verify-academy-messenger-order.mjs");
+  assert.match(capture, /stableAcademyPath/);
+  assert.match(capture, /classifyPublicLead\(clientPath \?\? pathname\)/);
+  assert.match(browser, /academy\/temple-studies/);
+  assert.match(browser, /course order card arrives with the server document/);
+  assert.doesNotMatch(browser, /academy\/mysteries/);
+});
