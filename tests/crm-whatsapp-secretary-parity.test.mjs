@@ -73,7 +73,7 @@ test('signed WhatsApp secretary may not intercept consent, require AI, or bypass
  const route=source('app/api/app/crm/messenger/webhook/[provider]/route.js')
  const handler=source('lib/crm/whatsapp-secretary-service.js')
  const hook=source('lib/crm/messenger-webhook.js')
- const migration=source('supabase/migrations/20261116235500_hh_wa_service_intake_choice.sql')
+ const migration=source('supabase/migrations/20261116232444_hh_wa_service_intake_choice_20261116.sql')
  assert.match(route,/verifyMessengerWebhook\(provider,raw,request.headers\)/)
  assert.match(route,/processWhatsAppSecretary\(event,config\)/)
  assert.match(route,/processWhatsAppDiagnostic\(event,config\)/)
