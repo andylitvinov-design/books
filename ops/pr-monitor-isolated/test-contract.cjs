@@ -4,7 +4,7 @@ const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const root=__dirname,read=f=>fs.readFileSync(path.join(root,f),'utf8');
 const html=read('index.html'),css=read('monitor.css'),js=read('monitor.js'),conf=JSON.parse(read('vercel.json'));
 const sandbox={module:{exports:{}}};new vm.Script(js).runInNewContext(sandbox);
-const {activity,speed,compactRecords,strictCohort,compareCIHistory,delay,SCHEMAS,URLS}=sandbox.module.exports;
+const {activity,speed,compactRecords,strictCohort,compareCIHistory,compareStrictWeekly,delay,SCHEMAS,URLS}=sandbox.module.exports;
 test('one static CSS + one deferred JS; all eight main sections exist',()=>{
  assert.equal((html.match(/<script /g)||[]).length,1);
  assert.equal((html.match(/rel="stylesheet"/g)||[]).length,1);
@@ -145,4 +145,38 @@ test('local same-origin weekly CI function is deployed, read-only and backed by 
  assert.match(weekly,/HH_CORE_CI_JOURNEY_SHARD_V1/);
  assert.match(weekly,/const force=false/);
  assert.doesNotMatch(weekly,/setInterval|createWorkflow|dispatch|writeFile/);
+});
+
+test('strict weekly production comparison: same Toronto clock, same cohort and additive stages',()=>{
+ assert.match(html,/id="stage-ci-diagnostic-rows"/);
+ assert.match(html,/смержены в выбранном периоде/);
+ assert.match(js,/compareStrictWeekly\(d\?\.strict_weekly,hours\)/);
+ assert.match(js,/strict_weekly=1/);
+ const core=require('./api/ci-stage-weekly.js')._test;
+ const utc=Date.parse('2026-11-02T17:00:00Z');
+ assert.equal(new Date(core.torontoWeekAgo(utc)).toISOString(),'2026-10-26T16:00:00.000Z');
+ const selected=core.strictWeeklyWindow({complete:true,search_n:3,rows:[
+  {pr:1,created:Date.parse('2026-11-16T14:00:00Z'),merged:Date.parse('2026-11-16T14:12:00Z')},
+  {pr:2,created:Date.parse('2026-11-16T14:04:00Z'),merged:null},
+  {pr:3,created:Date.parse('2026-11-16T14:40:00Z'),merged:Date.parse('2026-11-16T17:00:00Z')}
+ ]},{runs:[]},{id:'current',from:'2026-11-16T13:00:00Z',to:'2026-11-16T16:00:00Z'});
+ assert.equal(selected.created_prs,3);assert.equal(selected.merged_prs,1);
+ assert.equal(selected.mean_minutes,12);
+ assert.equal(selected.stages.no_archive_unknown.mean_contribution_minutes,12);
+ assert.equal(selected.stages.runner_wait.measured_prs,0);
+ assert.equal(selected.coverage.ci_missing_prs,1);
+ const keys=['before_unknown','workflow_wait','runner_wait','checks','ci_wave_unknown',
+  'ci_other_unknown','after_unknown','no_archive_unknown'];
+ const stages=Object.fromEntries(keys.map(key=>[key,{measured_prs:key==='no_archive_unknown'?0:1,
+  mean_contribution_minutes:key==='checks'?12:0,p50_measured_minutes:key==='no_archive_unknown'?null:key==='checks'?12:0}]));
+ const windowFor=(id,to)=>({id,from:new Date(to-24*3600000).toISOString(),to:new Date(to).toISOString(),
+  created_prs:2,merged_prs:1,not_merged_in_window:1,mean_minutes:12,p50_minutes:12,stages,
+  coverage:{search_complete:true,ci_matched_prs:1,ci_missing_prs:0,ci_invalid_prs:0}});
+ const source={schema:'HH_PR_CREATED_MERGED_WEEKLY_V1',base:'codex/public-book-library',
+  timezone:'America/Toronto',comparison_basis:'CREATED_AND_MERGED_WITHIN_EACH_MATCHING_WINDOW',period_hours:24,
+  periods:[windowFor('current',Date.parse('2026-11-16T16:00:00Z')),
+   windowFor('week_ago',Date.parse('2026-11-09T16:00:00Z'))]};
+ assert.equal(compareStrictWeekly(source,24).rows.length,8);
+ source.periods[1].to='2026-11-09T17:00:00Z';
+ assert.throws(()=>compareStrictWeekly(source,24),/UNVERIFIED|WINDOW/);
 });
