@@ -51,6 +51,11 @@ test("supported first-party detail routes stay connected and no new registration
 test("browser acceptance scopes category details and messenger actions to the owning card", () => {
   const browser = read("scripts/verify-public-services-production.mjs");
   assert.match(browser, /cardActions\.locator\(":scope > \[data-service-card-details\] > p"\)/);
-  assert.match(browser, /cardActions\.locator\(":scope > \[data-service-card-order\] \[data-messenger-only-channel=\"whatsapp\"\]"/);
+  assert.match(browser, /cardActions\.locator\(':scope > \[data-service-card-order\] \[data-messenger-only-channel="whatsapp"\]'\)/);
   assert.doesNotMatch(browser, /visible\(panel\.locator\("\[data-service-card-details\] p"\)\)/);
+});
+
+test("open Details / Order panels use both category columns on mobile", () => {
+  const layout = read("components/services-unified-catalog.module.css");
+  assert.match(layout, /\.panel:has\(> \[data-service-card-actions\] button\[aria-expanded="true"\]\)\{grid-column:1\/-1\}/);
 });

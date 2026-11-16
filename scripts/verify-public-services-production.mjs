@@ -175,6 +175,11 @@ try {
         const order = controls.nth(1);
         await details.click();
         await expect(details).toHaveAttribute("aria-expanded", "true");
+        // The revealed Details and Order rows must span the entire category, not a cramped half-width tile.
+        const openedBounds = await panel.boundingBox();
+        const catalogBounds = await catalog.boundingBox();
+        assert.ok(openedBounds && catalogBounds && openedBounds.width >= catalogBounds.width - 6,
+          "Open category panels must fill the entire mobile catalogue width: " + id);
         await visible(cardActions.locator(":scope > [data-service-card-details] > p"));
         await expect(cardActions.locator(":scope > [data-service-card-order]")).toBeHidden();
         const landing = cardActions.locator(":scope > [data-service-card-details] a[href]").first();
