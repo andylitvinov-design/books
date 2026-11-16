@@ -18,13 +18,20 @@ test("website-only intake UI shows Telegram and WhatsApp with honest Send disclo
  const ui=read("components/mandatory-messenger-actions.tsx");
  for(const s of ["WhatsApp","Telegram","data-messenger-only-contact","Нажмите «Отправить»","Press Send inside the messenger","data-hh-messenger-art"])assert.ok(ui.includes(s),s);
  assert.doesNotMatch(ui,/mailto:|\/api\/service-enquiries|type="email"/);
- assert.doesNotMatch(ui,/resolveTelegramFirstEntry|setBot|telegram-diagnostic/);
+ // Generic free-review pages must use the verified official hhreview bot,
+ // while a selected-service request is routed only by its allowlisted code.
+ assert.match(ui,/resolveTelegramFirstEntry/);
+ assert.match(ui,/resolveTelegramServiceEntry/);
+ assert.match(ui,/if\(!active\)\{setServiceBot\(null\);setBotKind\(null\);return;\}/);
+ assert.match(ui,/api\/public\/telegram-diagnostic/);
+ assert.doesNotMatch(ui,/mailto:|type="email"|\/api\/service-enquiries/);
  assert.ok(ui.includes("telegramEnquiryUrlFromWhatsApp(whatsappUrl)"));
  const chooser=read("components/contact-channel-chooser.tsx");
  assert.match(chooser,/collapsed=\{compactMessenger\|\|\(\(compactPhone\|\|compactTrigger\)&&!allowSecureExpressClaim\)\}/);
  const css=read("components/mandatory-messenger-actions.module.css");
  assert.match(css,/@media\(max-width:430px\)\{\.art\{height:44px\}\}/);
- assert.match(ui,/data-telegram-route=\{telegramUrl\?"manual":"service"\}/);
+ assert.ok(ui.includes('serviceBot||telegramUrl||telegramEnquiryUrlFromWhatsApp(whatsappUrl)'));
+ assert.ok(ui.includes('botKind==="service"?"service-ai":telegramUrl?"manual":botKind||"service"'));
  for(const p of ["components/contact-channel-chooser.tsx","components/compact-lead-capture.tsx","components/business-website-enquiry.tsx","components/meditation-course-enquiry.tsx"]) {
    assert.match(read(p),/if \(websiteMessengerOnlyUi\(\)\) return /,p);
    assert.match(read(p),/MandatoryMessengerActions/,p);
