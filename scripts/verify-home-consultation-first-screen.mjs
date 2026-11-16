@@ -73,7 +73,7 @@ for (const engine of [chromium, webkit]) {
             if (locale === 'en' && source === 'youtube-pending') {
               assert.equal(await localized.getAttribute('data-profile-youtube-status'),
                 'awaiting-verified-upload',label + ': unverified YouTube cannot claim playback');
-              await expect(localized.getByRole('status')).toBeVisible();
+              await localized.getByRole('status').waitFor({state:'visible',timeout:15000});
               assert.equal(await localized.locator('a[href^="https://www.youtube.com"],a[target="_blank"]').count(),0,
                 label + ': pending presentation stays inside My Space with no outbound YouTube link');
               assert.equal(await localized.locator('.site-video-play').count(), 0,

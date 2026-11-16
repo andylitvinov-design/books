@@ -1339,9 +1339,21 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         phase(engine,"montage-free-navigated-ready");
         await readyGenerate.click();
         phase(engine,"ready-free-render-requested");
-        // The original self-check is inline below the live progress bar, not a popup.
-        await expect(page.locator("[data-ready-generating]")).toBeVisible({timeout:20000});
-        await expect(page.locator("[data-ready-checkin] [data-video-checkin]")).toBeVisible({timeout:20000});
+        // The Ready questionnaire stays visible WHILE encoding. On fast local
+        // exports the verified result can replace the progress UI between two
+        // Playwright awaits, so inspect one consistent DOM snapshot per poll.
+        const readyProgress=page.locator("[data-video-ready]");
+        await expect.poll(()=>readyProgress.evaluate(root=>{
+          if(root.getAttribute("data-ready-state")==="complete"){
+            return root.getAttribute("data-ready-has-video")==="true"&&root.querySelector("video")
+              ?"verified-complete":"completed-without-video";
+          }
+          const generating=root.querySelector("[data-ready-generating]");
+          const questionnaire=root.querySelector("[data-ready-checkin] [data-video-checkin]");
+          const visible=element=>Boolean(element&&element.getClientRects().length);
+          return visible(generating)&&visible(questionnaire)
+            ?"generating-with-checkin":"waiting-for-checkin";
+        }),{timeout:20000}).toMatch(/^(?:generating-with-checkin|verified-complete)$/);
         // No unsolicited optional survey should cover the intentional export.
         // The existing pill offers an explicit way to open the check-in.
         await expect(page.locator("[data-video-effect-overlay]")).toHaveCount(0);
