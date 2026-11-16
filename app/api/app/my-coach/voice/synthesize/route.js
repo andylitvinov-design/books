@@ -89,7 +89,10 @@ export async function POST(request){
       signal:AbortSignal.any([request.signal,AbortSignal.timeout(15000)]),
       headers:{Authorization:`Bearer ${vendor.key}`,'Content-Type':'application/json',
         Accept:'audio/mpeg',model:vendor.model},
-      body:JSON.stringify({text:input.text,format:'mp3',reference_id:referenceId}),
+      body:JSON.stringify({text:input.text,format:'mp3',reference_id:referenceId,
+        // Fish's low-latency mode starts synthesizing smaller speech segments.
+        // One free-only request; never retry or silently upgrade to paid.
+        latency:'low',chunk_length:100}),
     })
     const kind=upstream.headers.get('content-type')||''
     if(!upstream.ok||!upstream.body||
