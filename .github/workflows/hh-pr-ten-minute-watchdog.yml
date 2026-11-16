@@ -148,6 +148,14 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 1
+          # Full Next.js checkout stalled for the entire 8-min Watchdog budget,
+          # leaving verified owner PR intents unclaimed. Only trusted control
+          # code and monitor helpers are needed in THIS reconciliation job.
+          filter: blob:none
+          sparse-checkout: |
+            scripts
+            .github
+            ops/pr-monitor
       # Owner command takes priority over repository-wide inventory sweeps.
       # Reuse this same runner; a failed or rate-limited inventory must never
       # silently strand an already accepted owner PR request.
