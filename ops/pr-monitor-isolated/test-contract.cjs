@@ -16,6 +16,7 @@ test('one static CSS + one deferred JS; all eight main sections exist',()=>{
 test('strict public read-only origin and 10 explicit API allowlist rewrites',()=>{
  assert.equal(conf.rewrites.length,10);
  for(const [key,url]of Object.entries(URLS)){
+  if(key==='comparison')continue; // Local read-only function; no proxy rewrite.
   const route=conf.rewrites.find(x=>x.source===url.split('?')[0]);
   assert.ok(route,key);
   assert.equal(route.destination,'https://holistic-house-pr-monitor.vercel.app'+route.source);
@@ -135,4 +136,13 @@ test('weekly CI stage durations use exactly equal periods, 168h apart, without i
  assert.throws(()=>compareCIHistory(d,6),/MISMATCH|UNVERIFIED/);
  d.periods[1]=mk('week_ago',168,true);d.period_hours=24;
  assert.throws(()=>compareCIHistory(d,6),/SCHEMA/);
+});
+
+test('local same-origin weekly CI function is deployed, read-only and backed by archive receipts',()=>{
+ const weekly=read('api/ci-stage-weekly.js');
+ assert.equal(URLS.comparison,'/api/ci-stage-weekly');
+ assert.match(weekly,/HH_CI_JOURNEY_PERIOD_COMPARISON_V1/);
+ assert.match(weekly,/HH_CORE_CI_JOURNEY_SHARD_V1/);
+ assert.match(weekly,/const force=false/);
+ assert.doesNotMatch(weekly,/setInterval|createWorkflow|dispatch|writeFile/);
 });
