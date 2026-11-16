@@ -60,17 +60,34 @@ async function verify(engine, locale, width) {
     assert.ok((await scenic.evaluate(node => getComputedStyle(node, "::before").backgroundImage))
       .includes("ideas-pine-sharp.avif"), label + ": approved pine photograph");
 
-    // Check the shipped single seven-item dock, not the retired Temple footer.
-    const tab = page.locator('[data-hh-unified-dock] [data-unified-dock-item="practice"]');
-    await tab.waitFor({state: "visible"});
-    assert.equal((await tab.innerText()).trim(), copy[locale].tab);
-    assert.equal(await tab.getAttribute("aria-label"), copy[locale].accessible);
-    assert.equal(await tab.getAttribute("href"), "/" + locale + "/holistic-support/mobile",
-      label + ": the visible Study control opens the real practice page");
-    assert.equal(await tab.getAttribute("aria-current"), null,
-      label + ": the Holistic Support insights page is not the Study tab");
-    assert.equal(await page.locator(".mobile-bottom-navigation").count(), 0,
-      label + ": only one bottom navigation is present");
+    // Holistic Support now uses the same public seven-destination dock as the
+    // rest of the site. Verify its real visible navigation, not the removed
+    // legacy "Temple" footer. All follow-on meditation/energy checks still run.
+    const dock = page.locator('[data-hh-unified-dock]');
+    // Keep the one stable locator across editorial and Services views,
+    // preserving the distinct authored dock assertions.
+    const unifiedDock = page.locator('[data-hh-unified-dock]');
+    await dock.waitFor({state:"visible",timeout:30000});
+    const dockIds=await dock.locator('[data-unified-dock-item]').evaluateAll(nodes=>
+      nodes.map(node=>node.getAttribute('data-unified-dock-item')));
+    assert.deepEqual(dockIds,["mytube","video","coach","ai","services","practice","profile"],
+      label+": one original seven-destination navigation");
+    assert.equal(await page.locator('.mobile-bottom-navigation:visible').count(),0,
+      label+": no duplicate legacy mobile navigation");
+    const study=dock.locator('[data-unified-dock-item="practice"]');
+    await study.waitFor({state:"visible",timeout:15000});
+    assert.equal((await study.innerText()).trim(),copy[locale].tab,
+      label+": current Study destination has correct translation");
+    assert.equal(await study.getAttribute("aria-label"),copy[locale].accessible);
+    assert.equal(await study.getAttribute("href"),"/"+locale+"/holistic-support/mobile",
+      label+": current Study destination opens existing public practice");
+    const navTarget = await study.boundingBox();
+    assert.ok(navTarget && navTarget.height >= 44 && navTarget.width >= 44,
+      label + ": Study action remains finger-sized");
+    assert.equal(await unifiedDock.locator("[data-unified-dock-item]").count(), 7,
+      label + ": all seven nav destinations remain visible");
+    assert.equal(await dock.locator('[aria-current="page"]').count(),0,
+      label+": support overview does not pretend a different tab is selected");
 
 
     // The current meditation section exposes source-backed recordings and an
@@ -187,7 +204,6 @@ async function verify(engine, locale, width) {
       label + ": focus chips precede optional wishes");
     const findBox = await findOptions.boundingBox();
     // Services now uses the single unified mobile dock; do not wait for a removed legacy nav.
-    const unifiedDock = page.locator('[data-hh-unified-dock]');
     await unifiedDock.waitFor({state:'visible',timeout:15000});
     const bottomNav = await unifiedDock.boundingBox();
     assert.equal(await unifiedDock.locator('[data-unified-dock-item="services"]').getAttribute('aria-current'), 'page',
