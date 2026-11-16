@@ -418,7 +418,7 @@ test('Core CI-only install avoids optional ffmpeg-static fetch without weakening
   assert.match(block,/else[\s\S]*npm ci --no-audit --no-fund/);
   assert.match(core,/run: npm run build/);
   assert.match(core,/name: Source Preflight — syntax and TypeScript before costly Next build/);
-  assert.match(core,/^  hh-specialist:/m);
+  assert.doesNotMatch(core,/^  hh-specialist:/m);
   assert.match(core,/^  hh-merge-check:/m);
 });
 
