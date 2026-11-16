@@ -61,7 +61,7 @@ export function MyTubeExternalPractices({locale}: {locale: PublicLocale}) {
             <div className={styles.details}>
               <h3>{video.title}</h3>
               <p className={styles.creator}>{video.creator}</p>
-              <p className={styles.meta}>{t.language}: {t[video.language]}</p>
+              <p className={styles.meta}>{t.language}: {video.language === "ru" ? t.ru : t.en}</p>
               <p className={styles.description}>{video.description}</p>
               <a className={styles.open} href={video.href} target="_blank" rel="noopener noreferrer"
                 referrerPolicy="strict-origin-when-cross-origin">{t.open}</a>
