@@ -7515,6 +7515,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           if(deliveryRef.current)void deliveryRef.current.saveToLibrary();
           else setDeliveryChooserOpen(true);
         }}
+        onSendTelegramDirect={()=>{if(deliveryRef.current)void deliveryRef.current.sendToTelegram();}}
+        onShareWhatsApp={()=>{if(deliveryRef.current)void deliveryRef.current.shareToWhatsApp();}}
         onOpenDelivery={()=>{
           setDeliveryChooserOpen(true);
           window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
