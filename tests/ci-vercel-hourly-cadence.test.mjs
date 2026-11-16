@@ -3,8 +3,8 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 const workflow=readFileSync(new URL('../.github/workflows/hh-hourly-vercel-production.yml',import.meta.url),'utf8')
 
-test('hourly Vercel workflow avoids GitHub top-of-hour drops at minute 17',()=>{
-  assert.match(workflow,/cron:\s*'17 \* \* \* \*'/)
+test('hourly Vercel workflow re-registers one hourly off-peak cron at minute 37',()=>{
+  assert.match(workflow,/cron:\s*'37 \* \* \* \*'/)
   assert.doesNotMatch(workflow,/cron:\s*'0 \* \* \* \*'/)
   assert.match(workflow,/HH_VERCEL_HOURLY_ENABLED/)
   assert.match(workflow,/refs\/heads\/codex\/public-book-library/)
