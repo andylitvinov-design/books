@@ -1,7 +1,8 @@
 'use client'
 import {useEffect,useId,useRef,useState} from 'react'
 import Image from 'next/image'
-import {COACH_PERSONAS} from '@/lib/coaching/persona-registry.mjs'
+import {COACH_PERSONAS,PUBLIC_COACH_PERSONA_IDS} from '@/lib/coaching/persona-registry.mjs'
+import MyCoachMotionMedia from '@/components/my-coach-motion-media'
 import {COACH_AVATAR_OPTIONS} from '@/lib/personal-coaching/coaching-avatar-state.mjs'
 import styles from './coaching-avatar.module.css'
 import {portraitMouthAperture,speechRms} from '@/lib/coaching/living-portrait-motion.mjs'
@@ -51,7 +52,8 @@ export default function CoachingAvatar({locale='en',avatarId='warm',onAvatarChan
    if(state!=='speaking')lastBoundaryRef.current={beat:0,at:0}
    else if(Number.isFinite(beat)&&beat>0)lastBoundaryRef.current={beat,at:performance.now()}
  },[state,beat,photoId])
- const livePhoto=Boolean(photoId)&&pageVisible&&!reduceMotion
+ const hasMotionVideo=Boolean(photoId)&&PUBLIC_COACH_PERSONA_IDS.includes(photoId)
+ const livePhoto=Boolean(photoId)&&pageVisible&&!reduceMotion&&!hasMotionVideo
  const speakingPhoto=livePhoto&&state==='speaking'&&speakingPhotoId===photoId
  useEffect(()=>{
    const element=frameRef.current
@@ -101,7 +103,8 @@ export default function CoachingAvatar({locale='en',avatarId='warm',onAvatarChan
 
  return <div ref={frameRef} className={styles.frame} data-coach-avatar="true" data-photo-speaking={speakingPhoto?'true':undefined}
   data-photo-motion={livePhoto?'enabled':'static'} data-avatar-size={size==='large'?'large':'compact'} data-phase={state}
-  data-avatar-id={profile.id} data-photo-persona={photoId||undefined} style={palette} aria-label={t.label}>
+  data-avatar-id={profile.id} data-photo-persona={photoId||undefined}
+  data-coach-motion-video={hasMotionVideo?'true':undefined} style={palette} aria-label={t.label}>
   <div className={styles.face} aria-hidden="true">
    <svg className={styles.illustration} viewBox="0 0 146 146" focusable="false">
     <defs><linearGradient id={skinId} x1="0" y1="0" x2="1" y2="1">
@@ -136,6 +139,7 @@ export default function CoachingAvatar({locale='en',avatarId='warm',onAvatarChan
      {speakingPhoto&&<Image className={styles.livingPortraitMouth}
        src={'/images/holistic-house/my-coach-motion/'+photoId+'-still.webp'}
        width={370} height={697} unoptimized alt="" draggable={false}/>}
+     {hasMotionVideo&&<MyCoachMotionMedia personaId={photoId} phase={state} context="avatar" />}
    </div>}
   </div>
   <div className={styles.info}>

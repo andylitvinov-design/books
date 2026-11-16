@@ -40,7 +40,7 @@ async function routeRun({source=candidate,payload=callback(),diagnostic='off',co
    processWhatsAppDiagnostic:async()=>{calls.waIntake++;return {handled:false}},
    sendWhatsAppDiagnosticPrompt:async()=>{calls.waSend++},
    // Production CRM webhook routes owner-only video commands before diagnostic callbacks.
-   receiveOwnerTelegramVideoWebhook:async()=>({handled:false}),
+   receiveOwnerTelegramVideoCrmFallback:async()=>({handled:false}),
    // The business account is an independent Telegram update, not this callback route.
    telegramBusinessRequestFromUpdate:()=>null,
    processTelegramBusinessConversation:async()=>({handled:false}),

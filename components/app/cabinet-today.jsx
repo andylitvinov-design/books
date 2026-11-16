@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { cabinetActionHref, cabinetActionIds, matchCabinetIntent } from '@/lib/app/cabinet-today.mjs'
 import styles from './cabinet-today.module.css'
+import { MySpaceTopics } from '@/components/my-space-topics'
 
 const ICONS = {
   course: BookOpen, article: PenLine, video: Clapperboard, audio: Headphones,
@@ -168,7 +169,8 @@ export default function CabinetToday({ locale = 'en', practitioner = false, owne
     </Link>
   }
 
-  return <section className={styles.shell} data-cabinet-today aria-labelledby="hh-cabinet-today-title">
+  return <><MySpaceTopics locale={locale} signedIn />
+  <section className={styles.shell} data-cabinet-today aria-labelledby="hh-cabinet-today-title">
     <div className={styles.intro}>
       <span className={styles.mark}><Sparkles size={22} aria-hidden="true" /></span>
       <div className={styles.introText}>
@@ -212,5 +214,5 @@ export default function CabinetToday({ locale = 'en', practitioner = false, owne
       {notice && <p role="status" className={styles.notice}>{notice}</p>}
     </form>
     <p className={styles.privacy}><ShieldCheck size={13} aria-hidden="true" />{t.privacy} {speechAvailable ? t.voicePrivacy : ''}</p>
-  </section>
+  </section></>
 }
