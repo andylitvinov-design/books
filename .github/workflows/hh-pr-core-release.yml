@@ -473,6 +473,15 @@ jobs:
         with:
           path: .next/cache
           key: hh-core-next-v1-${{ runner.os }}-${{ hashFiles('package-lock.json', 'next.config.ts', 'tsconfig.json') }}
+      # Restore only protected-production TypeScript incremental state. The
+      # compiler itself validates every changed source; no PR can publish this
+      # shared cache or replace the real Next.js TypeScript gate.
+      - name: Restore production-owned TypeScript incremental cache (read-only)
+        if: ${{ (github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT' && steps.fast.outputs.route != 'DOCK')) && (steps.diff.outputs.ci_only != 'true') }}
+        uses: actions/cache/restore@v4
+        with:
+          path: tsconfig.tsbuildinfo
+          key: hh-core-tsbuild-v1-${{ runner.os }}-${{ hashFiles('package-lock.json', 'next.config.ts', 'tsconfig.json') }}
       - name: Exact proposed release production build and TypeScript check
         if: ${{ (github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT' && steps.fast.outputs.route != 'DOCK')) && (steps.diff.outputs.ci_only != 'true') }}
         # CI-only changes still run Core lint and guard-unit; a full app build
