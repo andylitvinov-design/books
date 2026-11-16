@@ -174,6 +174,19 @@ on:
       - '!components/mandala-pro-enhance.module.css'
       - '!components/mandala-video-ideas.tsx'
       - '!components/mandala-video-ideas.module.css'
+      # The exact video-only PRs #4732 / #4742 were allocating a full
+      # 13-case public-services browser suite (13-17 minutes) despite making
+      # no change to checkout, consent, booking or service discovery.
+      # All below are owned by the separate mandatory Mandala CI, including
+      # its real video browser and media checks. Only these exact presentational
+      # paths are excluded: mixed public-services PRs still trigger normally.
+      - '!components/mandala-automatic-storyboard.tsx'
+      - '!components/mandala-video-concept.tsx'
+      - '!components/mandala-video-concept.module.css'
+      - '!components/mandala-video-ready.tsx'
+      - '!components/mandala-video-ready.module.css'
+      - '!components/mandala-video-effect-journey.module.css'
+      - '!components/mandala-therapy-studio.tsx'
 permissions:
   contents: read
   pull-requests: read
