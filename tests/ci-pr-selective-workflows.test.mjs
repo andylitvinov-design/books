@@ -147,8 +147,7 @@ test('Core suppresses metadata-only waves but keeps exact-HEAD and signed Ready 
 // an exact PR HEAD, not to fresh source jobs on each protected merge.
 test('source-only postmerge repeats and stale-before-hour LIVE audits stay off', () => {
   for (const name of [
-    'hh-private-audio-e2e.yml',
-    'hh-my-progress-release.yml','hh-owner-telegram-video.yml',
+    'hh-owner-telegram-video.yml',
     'hh-public-performance-audit.yml','hh-free-review-live-mobile.yml',
   ]) {
     const yaml=source(name);
@@ -162,6 +161,11 @@ test('source-only postmerge repeats and stale-before-hour LIVE audits stay off',
   }
   const migration=source('hh-event-referral-contract.yml');
   assert.match(migration,/^  push:/m,'legacy CRM event-channel migration still requires production push QA');
+  for (const critical of ['hh-private-audio-e2e.yml','hh-my-progress-release.yml']) {
+    const yaml=source(critical);
+    assert.match(yaml,/^  pull_request:/m,critical+': real PR checks must remain');
+    assert.match(yaml,/^  push:/m,critical+': postmerge confidential data and progress acceptance retained');
+  }
   const cleanup=source('hh-ci-stale-run-prune.yml');
   assert.match(cleanup,/^  push:/m,'safe cleanup fallback kept for default startup failures');
   assert.match(cleanup,/  prune:\n[\s\S]*?    runs-on: ubuntu-slim/,'lightweight janitor');

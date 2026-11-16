@@ -43,6 +43,48 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/hh-private-audio-e2e.yml'
+  push:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'components/session-audio-recorder.jsx'
+      - 'components/session-photo-uploader.jsx'
+      - 'components/report-video-materials-editor.jsx'
+      - 'lib/clients/phone-audio-file.js'
+      - 'lib/clients/recording-upload.js'
+      - 'components/session-recording-review.jsx'
+      - 'tests/client-session-take-selection.test.mjs'
+      - 'lib/clients/owner-audio-upload.js'
+      - 'lib/clients/owner-photo-upload.js'
+      - 'lib/clients/session-delivery-*.js'
+      - 'app/api/admin/clients/**/media/**'
+      - 'app/api/client-session-viewer/**'
+      - 'tests/client-session-audio-synthetic-e2e.test.mjs'
+      - 'tests/client-session-photos.test.mjs'
+      - 'tests/client-session-owner-photo-upload.test.mjs'
+      - 'tests/client-session-owner-audio-upload.test.mjs'
+      - 'tests/client-session-external-video.test.mjs'
+      - 'tests/session-delivery-security.test.mjs'
+      - 'tests/session-media-sdk.test.mjs'
+      - 'tests/fixture-module-body.test.mjs'
+      - 'tests/helpers/fixture-module-body.mjs'
+      - 'tests/fixtures/synthetic-440hz-voice.m4a.base64'
+      - 'lib/prescriptions/admin*.js'
+      - 'lib/prescriptions/store.js'
+      - 'lib/app/admin-auth-refresh.js'
+      - 'lib/app/session.js'
+      - 'lib/app/config.js'
+      - 'lib/app/repository.js'
+      - 'middleware.ts'
+      - 'app/api/app/**'
+      - 'app/admin/api/recorder-auth/**'
+      - 'tests/admin-*.test.mjs'
+      - 'tests/practitioner-bridge.test.mjs'
+      - 'tests/client-session-recorder-auth.test.mjs'
+      - 'tests/cabinet-v2-ux.test.mjs'
+      - 'tests/prescription-access.test.mjs'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/hh-private-audio-e2e.yml'
 concurrency:
   group: hh-private-audio-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
@@ -93,9 +135,9 @@ jobs:
         run: node --test tests/fixture-module-body.test.mjs tests/session-media-sdk.test.mjs tests/client-session-external-video.test.mjs
       - name: Fixture lint and private media tests
         run: npx --no-install eslint tests/helpers/fixture-module-body.mjs tests/fixture-module-body.test.mjs tests/session-delivery-security.test.mjs tests/client-session-external-video.test.mjs tests/client-session-owner-photo-upload.test.mjs tests/session-media-sdk.test.mjs tests/client-session-owner-audio-upload.test.mjs
-      # Mandatory exact-HEAD Core owns whole-project typing/build on production PRs.
-      # Owner/guest media privacy suites still run on relevant PRs; do not replay
-      # identical source validation immediately after protected merge.
+      # The unconditional Core release-ready checks these exact global validations
+      # on production-targeted PRs. Retain them for real production pushes and
+      # non-PR runs; never skip owner/guest media tests or privacy assertions.
       - name: Full TypeScript (core owns production PR typing)
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit --incremental false

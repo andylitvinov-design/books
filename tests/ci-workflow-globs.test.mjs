@@ -5,14 +5,14 @@ import { parsePrTrigger, matchesTrigger } from '../lib/ci/specialist-aggregate.m
 
 const workflow = (name) => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
 
-test('My Progress validates on PR without duplicate postmerge CI wave', () => {
+test('My Progress retains required production push and targeted PR source checks', () => {
   const s = workflow('hh-my-progress-release.yml');
   assert.ok(s.includes("      - 'app/**/app/my-progress/**'"));
   assert.ok(!s.includes("      - 'app/**/app/**/page.jsx'"));
   assert.doesNotMatch(s, /\[\[\.\.\.path\]\]/);
   assert.doesNotMatch(s, /codex\/my-progress-unified-history-20261028/);
   assert.match(s, /^  pull_request:/m);
-  assert.doesNotMatch(s, /^  push:/m);
+  assert.match(s, /^  push:/m);
 });
 
 test('Practitioner editor validates dynamic routes without spurious push trigger', () => {
