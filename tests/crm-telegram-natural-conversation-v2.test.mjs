@@ -379,3 +379,31 @@ test('expired-pilot STOP remains terminal even for legacy sessions',()=>{
   assert.match(webhook,/if\(restricted&&!ownerChat&&!activeGuest&&!invite&&!isStop\)return \{handled:true\}/)
   assert.match(webhook,/approvedPilotGuest:restricted&&!ownerChat/)
 })
+
+test('completed V2 can renew an expired signed questionnaire link without creating a duplicate CRM request',()=>{
+  for(const [locale,command] of [['ru','/form'],['en','questionnaire'],['es','formulario']]){
+    const done={stage:'done',locale,topic:'business',flowVersion:2,
+      consentAt:'2026-11-16T12:00:00Z'}
+    const resumed=transitionTelegramDiagnostic(done,{rawText:command,locale})
+    assert.equal(resumed.stage,'done')
+    assert.equal(resumed.topic,'business')
+    assert.equal(resumed.refreshHandoff,true)
+    assert.equal(resumed.body,null,'renewal must not create another CRM message')
+    assert.equal(resumed.consent,false,'renewal never grants new consent')
+    assert.deepEqual(resumed.keyboard,[])
+    assert.match(resumed.reply,/https:\/\/holistichouse\.vercel\.app\/.*\/coaching\/intake\?topic=business/)
+    const ordinary=transitionTelegramDiagnostic(done,{rawText:'A separate follow-up',locale})
+    assert.equal(ordinary.refreshHandoff,undefined)
+    assert.equal(ordinary.body,'A separate follow-up')
+    assert.equal(ordinary.reply,null)
+    const noConsent=transitionTelegramDiagnostic({...done,consentAt:null},{rawText:command,locale})
+    assert.equal(noConsent.refreshHandoff,undefined,'a missing consent cannot renew the handoff')
+    const stopped=transitionTelegramDiagnostic({...done,stage:'stopped'},{rawText:command,locale})
+    assert.equal(stopped.reply,null,'STOP is permanent for this session')
+  }
+  const hook=read('lib/crm/messenger-webhook.js')
+  assert.match(hook,/next\.refreshHandoff===true/)
+  assert.match(hook,/issueTelegramCoachingHandoff/)
+  assert.match(hook,/next\.stage==='done'/)
+  assert.match(hook,/reply=null/)
+})

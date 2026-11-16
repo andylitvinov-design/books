@@ -345,7 +345,8 @@ test('trusted PR-target janitor is separate from strict two-job read-only PR spe
   assert.ok(!original.includes('  pull_request_target:'));
   assert.ok(!original.includes('  prune-head:'));
   assert.ok(target.includes('  pull_request_target:'));
-  assert.ok(target.includes('types: [opened, reopened, ready_for_review, synchronize, closed]'));
+  assert.ok(target.includes('types: [synchronize, closed]'), 'native auto-merge must only wake janitor on synchronize or close');
+  assert.ok(!target.includes('types: [opened, reopened, ready_for_review, synchronize, closed]'), 'obsolete premature native callbacks must stay disabled');
   assert.ok(target.includes("github.event.action != 'synchronize'"), 'auto-merge must not arm before green Core');
   assert.ok(target.includes('  prune-head:'));
   assert.ok(target.includes("github.event.action == 'closed'"));
@@ -520,7 +521,8 @@ test('trusted cleanup cannot load PR HEAD and strict CI-only change still runs C
   const source=readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
   const core=readFileSync('.github/workflows/hh-pr-core-release.yml','utf8');
   assert.ok(source.includes('pull_request_target:'));
-  assert.ok(source.includes('types: [opened, reopened, ready_for_review, synchronize, closed]'));
+  assert.ok(source.includes('types: [synchronize, closed]'), 'closed/synchronize trusted janitor preserved');
+  assert.ok(!source.includes('types: [opened, reopened, ready_for_review, synchronize, closed]'), 'do not restore native open/Ready fan-out');
   assert.ok(source.includes('ref: codex/public-book-library'));
   assert.ok(source.includes("cancel-in-progress: true"));
   assert.ok(!source.includes("ref: ${{ github.event.pull_request.head.sha"));
@@ -536,4 +538,112 @@ test('Core concurrency is stable for a PR, isolated for manual and merge_group',
     'Core cancellation is limited to first-attempt synchronize or Draft transition');
   assert.ok(!source.includes('github.event.before != github.event.after'),
     'a new synchronize event is itself sufficient to cancel the prior first attempt within the PR-scoped group');
+});
+
+
+test('merged PR orphan: exact commit association and ancestry permit queued old SHA cancellation', async () => {
+  const closedAt = '2026-11-11T23:27:00Z';
+  const terminal = pr({state:'closed',created_at:'2026-11-11T20:43:41Z',
+    closed_at:closedAt,merged_at:closedAt});
+  const pending = run({pull_requests:[],created_at:'2026-11-11T20:43:45Z'});
+  const calls = [], cancelled = [];
+  const api = {list:async()=>({workflow_runs:[pending]}),
+    closed:async()=>{throw Error('unbounded closed-list scan forbidden when commit association exists');},
+    commitPulls:async sha=>{calls.push(['associated',sha]);return [terminal];},
+    pr:async()=>terminal,
+    run:async()=>pending,
+    compare:async (a,b)=>{calls.push(['compare',a,b]);return {status:'ahead',ahead_by:8,behind_by:0};},
+    cancel:async id=>cancelled.push(id)};
+  const result = await prune(api,{repo,target:TARGET,number:null});
+  assert.deepEqual(cancelled,[100]);
+  assert.equal(result.orphanLookups,1);
+  assert.equal(result.orphanAncestorCandidates,1);
+  assert.equal(result.closedCandidates,1);
+  assert.deepEqual(calls,[['associated',OLD],['compare',OLD,NEW]]);
+});
+
+test('orphan cancellation is fail closed for ambiguous, unmerged, fork and diverged PRs', async () => {
+  const closedAt = '2026-11-11T23:27:00Z';
+  const terminal = pr({state:'closed',created_at:'2026-11-11T20:43:41Z',
+    closed_at:closedAt,merged_at:closedAt});
+  const pending = run({pull_requests:[],created_at:'2026-11-11T20:43:45Z'});
+  const cases = [
+    ['zero association',[],terminal,{status:'ahead',ahead_by:8}],
+    ['ambiguous association',[terminal,terminal],terminal,{status:'ahead',ahead_by:8}],
+    ['unmerged', [{...terminal,merged_at:null}],{...terminal,merged_at:null},{status:'ahead',ahead_by:8}],
+    ['reopened',[terminal],{...terminal,state:'open'},{status:'ahead',ahead_by:8}],
+    ['different SHA',[terminal],pr({...terminal,head:{...terminal.head,sha:MERGE}}),{status:'ahead',ahead_by:8}],
+    ['wrong branch',[{...terminal,head:{...terminal.head,ref:'different'}}],terminal,{status:'ahead',ahead_by:8}],
+    ['different repository',[{...terminal,head:{...terminal.head,repo:{full_name:'fork/other'}}}],terminal,{status:'ahead',ahead_by:8}],
+    ['diverged history',[terminal],terminal,{status:'diverged',ahead_by:8,behind_by:1}],
+    ['not ancestor',[terminal],terminal,{status:'behind',ahead_by:0,behind_by:8}],
+    ['unverified compare',[terminal],terminal,null],
+    ['run after merge',[terminal],terminal,{status:'ahead',ahead_by:8},run({...pending,created_at:'2026-11-12T00:00:00Z'})],
+  ];
+  for (const [label,matches,current,relation,special] of cases) {
+    let cancels=0;
+    const api={list:async()=>({workflow_runs:[special||pending]}),
+      commitPulls:async()=>matches,
+      pr:async()=>current,run:async()=>special||pending,
+      compare:async()=>{if(!relation)throw Error('GitHub unavailable');return relation;},
+      cancel:async()=>{cancels++;}};
+    const result=await prune(api,{repo,target:TARGET,number:null});
+    assert.equal(cancels,0,label);
+    assert.deepEqual(result.cancelled,[],label);
+  }
+});
+
+test('orphan cancellation revalidates queued job and final PR head after compare', async () => {
+  const closedAt='2026-11-11T23:27:00Z';
+  const terminal=pr({state:'closed',created_at:'2026-11-11T20:43:41Z',
+    closed_at:closedAt,merged_at:closedAt});
+  const orphan=run({pull_requests:[],created_at:'2026-11-11T20:43:45Z'});
+  for (const type of ['job-started','pr-moved','head-sha-mutated','path-mutated']) {
+    let cancel=0,readRun=0,readPR=0;
+    const api={list:async()=>({workflow_runs:[orphan]}),
+      commitPulls:async()=>[terminal],
+      pr:async()=>{readPR++;return type==='pr-moved'&&readPR>=3
+        ? pr({...terminal,head:{...terminal.head,sha:MERGE}}) : terminal;},
+      run:async()=>{readRun++;return type==='job-started'&&readRun>=2 ? {...orphan,status:'in_progress'} :
+        type==='head-sha-mutated'&&readRun>=2 ? {...orphan,head_sha:MERGE} :
+        type==='path-mutated'&&readRun>=2 ? {...orphan,path:'.github/workflows/other.yml'} : orphan;},
+      compare:async()=>({status:'ahead',ahead_by:8,behind_by:0}),
+      cancel:async()=>{cancel++;}};
+    const result=await prune(api,{repo,target:TARGET,number:null});
+    assert.equal(cancel,0,type);
+    assert.deepEqual(result.cancelled,[],type);
+  }
+});
+
+test('orphan association cache only looks up a commit once and caps unknown batch work', async () => {
+  const closedAt='2026-11-11T23:27:00Z';
+  const terminal=pr({state:'closed',created_at:'2026-11-11T20:43:41Z',closed_at:closedAt,merged_at:closedAt});
+  const queued=Array.from({length:5},(_,i)=>run({id:100+i,pull_requests:[],created_at:'2026-11-11T20:43:45Z'}));
+  let lookup=0;
+  const api={list:async()=>({workflow_runs:queued}),commitPulls:async()=>{lookup++;return [terminal];},
+    pr:async()=>terminal,run:async id=>queued.find(v=>v.id===id),
+    compare:async()=>({status:'ahead',ahead_by:8,behind_by:0}),cancel:async()=>{}};
+  const result=await prune(api,{repo,target:TARGET,number:null});
+  assert.equal(lookup,1);
+  assert.equal(result.orphanAncestorCandidates,5);
+  assert.equal(result.cancelled.length,5);
+});
+
+
+test('routine production merges cannot launch the expensive batch orphan sweep', () => {
+  const yaml = readFileSync('.github/workflows/hh-ci-stale-run-prune.yml', 'utf8');
+  const push = yaml.match(/^  push:\n([\s\S]*?)(?=^permissions:)/m)?.[1];
+  assert.ok(push, 'batch janitor must stay available for policy changes');
+  assert.ok(push.includes("    branches: ['codex/public-book-library']"));
+  const paths = [...push.matchAll(/^      - '([^']+)'$/gm)].map(match => match[1]);
+  assert.deepEqual(paths, [
+    '.github/workflows/hh-ci-stale-run-prune.yml',
+    'scripts/ci-prune-stale-runs.mjs',
+    'tests/ci-prune-stale-runs.test.mjs',
+  ], 'normal application merges must not wake the repository-wide janitor');
+  const native = readFileSync('.github/workflows/hh-native-auto-merge.yml', 'utf8');
+  assert.match(native, /github\.event\.action == 'synchronize'/);
+  assert.match(native, /github\.event\.action == 'closed'/);
+  assert.match(native, /^  prune-head:$/m);
+  assert.match(yaml, /^  pull_request:$/m);
 });
