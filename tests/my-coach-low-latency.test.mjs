@@ -43,3 +43,18 @@ test('Russian Mira voice is independently rights-gated, never confused with Engl
  assert.notEqual(myCoachFishVoice('mira','ru',env),myCoachFishVoice('mira','en',env))
  assert.equal(myCoachFishVoice('mira','ru',{}),myCoachFishVoice('mira','en',{}))
 })
+
+
+test('unsupported Safari performance.measure never interrupts speech or microphone restart',()=>{
+ const loop=source('components/my-coach-speech-loop.jsx')
+ const measures=['hh-coach-ai-turn','hh-coach-tts-headers','hh-coach-tts-first-play']
+ for(const metric of measures){
+   const marker="performance.measure?.('"+metric+"'"
+   const index=loop.indexOf(marker)
+   assert.ok(index>0,metric)
+   const previous=loop.slice(Math.max(0,index-12),index)
+   const next=loop.slice(index,index+200)
+   assert.match(previous,/try\s*\{/,'metric must run inside a try block')
+   assert.match(next,/catch\{/,'metric must be guarded')
+ }
+})

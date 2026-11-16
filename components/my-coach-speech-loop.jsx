@@ -536,7 +536,8 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     if(!activeRef.current||generationRef.current!==generation)return
     if(modelStartedAt!==null&&typeof performance!=='undefined'){
       // Numeric-only browser timing; no transcript, user identifiers or server telemetry.
-      performance.measure?.('hh-coach-ai-turn', {start:modelStartedAt,end:performance.now()})
+      try{performance.measure?.('hh-coach-ai-turn', {start:modelStartedAt,end:performance.now()})}
+      catch{/* Metrics must never interrupt an audible coach turn. */}
     }
     if(!result?.reply){
       // A model outage fails only this turn. Keep the text editable and the
@@ -657,7 +658,8 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
         if(!response.ok||!response.body)throw Error('CLOUD_TTS_UNAVAILABLE')
         if(!live()||controller.signal.aborted)return
         if(synthesisStartedAt!==null&&typeof performance!=='undefined')
-          performance.measure?.('hh-coach-tts-headers',{start:synthesisStartedAt,end:performance.now()})
+          try{performance.measure?.('hh-coach-tts-headers',{start:synthesisStartedAt,end:performance.now()})}
+          catch{/* Unsupported Performance API: keep audio playing. */}
         cloudPlayerRef.current=startCoachingMp3Playback(response,{
           audioElement:primedAudioRef.current,
           audioContext:audioContextRef.current,
@@ -665,7 +667,8 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
           onStart:()=>{
             if(!live())return
             if(synthesisStartedAt!==null&&typeof performance!=='undefined')
-              performance.measure?.('hh-coach-tts-first-play',{start:synthesisStartedAt,end:performance.now()})
+              try{performance.measure?.('hh-coach-tts-first-play',{start:synthesisStartedAt,end:performance.now()})}
+              catch{/* Never break streaming and recognizer re-arm. */}
             blockedResumeRef.current=null;setNotice('');changePhase('speaking')
           },
           onBlocked:()=>{
