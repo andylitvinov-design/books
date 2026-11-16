@@ -247,3 +247,20 @@ test('short yes/no/number answers are complete coaching turns, not missing speec
  assert.doesNotMatch(iosWatchdog,/restartSilentRecognition\(recognition\)|recognition\.abort\(\)/,
   'iOS never aborts a recognized short utterance before natural onend')
 })
+
+
+test('Safari audio-capture recovers while denied and missing devices fail clearly',()=>{
+ const loop=source('components/my-coach-speech-loop.jsx')
+ assert.ok(loop.includes("if(event.error==='audio-capture'){"))
+ assert.ok(loop.includes("restartSilentRecognition(recognition,'capture')"))
+ assert.ok(loop.includes("const permissionRequest=microphonePermissionRef.current"))
+ assert.ok(loop.includes("void permissionRequest.then(begin,begin)"))
+ assert.ok(loop.includes("reason==='capture'?[800,1500,2600]"))
+ assert.ok(!loop.includes("event.error==='audio-capture'?t.noMicrophone"))
+ for(const message of ["captureRetry:'","captureFailed:'"])assert.equal(loop.split(message).length,4)
+})
+
+test('iOS 27 Safari installed PWA without Version UA gets WebKit speech recovery',()=>{
+ assert.equal(ios27NeedsSpeechRecovery({userAgent:'Mozilla/5.0 (iPhone; CPU iPhone OS 27_2 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148'}),true)
+ assert.equal(ios27NeedsSpeechRecovery({userAgent:'Mozilla/5.0 (iPhone; CPU iPhone OS 27_2 like Mac OS X) AppleWebKit/605.1.15 CriOS/150.0 Mobile'}),false)
+})
