@@ -51,7 +51,7 @@
   <div class="panel-heading"><div><p class="eyebrow">ЕДИНАЯ КОГОРТА · PRODUCTION</p>
     <h2 id="strict-title">Created → Merge · реальные интервалы</h2></div>
     <span class="small" id="strict-source">Читаю GitHub…</span></div>
-  <p class="note">Для выбора периода используйте переключатель вверху страницы. Для 72 ч нет полной истории.</p>
+  <p class="note">Выберите 1, 6 или 24 часа вверху. Здесь измеряется Created → Merge только внутри выбранного периода; сравнение с прошлой неделей — ниже.</p>
   <div class="metrics compact">
     <article><span>Среднее Created → Merge</span><strong id="strict-mean">—</strong></article>
     <article><span>Медиана P50</span><strong id="strict-p50">—</strong></article>
@@ -69,10 +69,15 @@
 <section class="panel" id="stages" aria-labelledby="stages-title">
   <div class="panel-heading"><div><p class="eyebrow">ПОЛНЫЙ ПУТЬ PR · ЗАМЕРЫ</p><h2 id="stages-title">Этапы прохождения и задержки</h2></div><span id="stages-period" class="small">24 часа</span></div>
   <div class="stage-flow" aria-label="Этапы"> <span>Created</span><span>Подготовка</span><span>Runner</span><span>Core / Specialist CI</span><span>Gate</span><span>Merge</span><span>LIVE*</span></div>
-  <div class="subheading">Сравнение длительности этапов · сейчас / неделю назад</div>
-  <p class="note" id="stage-comparison-period">24 ч / 7 дней назад · архив Core CI</p>
-  <div class="table-scroll"><table class="comparison-table"><thead><tr><th>Этап CI и способ расчёта</th><th>Сейчас</th><th>Неделю назад</th></tr></thead><tbody id="stage-comparison-rows"><tr><td colspan="3">Загружаю исторические интервалы…</td></tr></tbody></table></div>
-  <p class="note" id="stage-comparison-note">Сравниваются идентичные окна и одинаковый тип замера. Неполные архивы отмечаются отдельно.</p>
+  <div class="subheading">Созданы и смержены в выбранном периоде · сравнение с прошлой неделей</div>
+  <p class="note" id="stage-comparison-period">24 ч · одинаковые временные окна</p>
+  <div class="table-scroll"><table class="comparison-table"><thead><tr><th>Этап · средний вклад на PR</th><th>Сейчас</th><th>Неделю назад</th></tr></thead><tbody id="stage-comparison-rows"><tr><td colspan="3">Загружаю одинаковые когорты GitHub…</td></tr></tbody></table></div>
+  <p class="note" id="stage-comparison-note">Сравниваются PR, созданные и смерженные внутри каждого окна. Неподтверждённая часть времени отдельно обозначена как неизвестная.</p>
+  <details class="ci-diagnostic"><summary>Дополнительно: архивные показатели CI (другая выборка)</summary>
+    <p class="note">Отдельная диагностика PR по последнему наблюдаемому Core CI, не часть основной таблицы Created → Merge.</p>
+    <div class="table-scroll"><table class="comparison-table"><thead><tr><th>Показатель CI</th><th>Сейчас</th><th>Неделю назад</th></tr></thead>
+      <tbody id="stage-ci-diagnostic-rows"><tr><td colspan="3">Загружаю данные архива…</td></tr></tbody></table></div>
+  </details>
   <div class="subheading">Текущий период · P50 / P90 по подтверждённым этапам PR</div>
   <div class="table-scroll"><table><thead><tr><th>Этап</th><th>PR с замером</th><th>P50</th><th>P90</th><th>Ожидают</th></tr></thead><tbody id="stage-rows"><tr><td colspan="5">Получаю подтверждённые интервалы…</td></tr></tbody></table></div>
   <div class="subheading">Подэтапы CI и очередей</div><div id="stage-detail" class="mini-grid"><p>Core, Specialist, Preflight, Gate — данные загружаются…</p></div>
