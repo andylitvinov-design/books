@@ -16,6 +16,8 @@ function mock(task,pr=base){
   const payload=JSON.parse(req.body);calls.push(payload);
   if(payload.action==='next')return {status:200,text:async()=>JSON.stringify({
    schema:'HH_COMMANDER_PR_COMPLETION_V1',item:task})};
+  if(payload.action==='arm_dispatch')return {status:200,text:async()=>JSON.stringify({
+   schema:'HH_COMMANDER_PR_COMPLETION_V1',armed:true})};
   if(payload.action==='finish')return {status:200,text:async()=>JSON.stringify({
    schema:'HH_COMMANDER_PR_COMPLETION_V1',accepted:true,
    item:{prNumber:task.prNumber,status:payload.status,reasonCode:payload.reasonCode,
@@ -43,6 +45,7 @@ test('signed owner PR with green or pending CI remains read-only, no extra dispa
  assert.equal(result.reasonCode,'AWAIT_EXISTING_CORE_AND_AUTO_MERGE');
  assert.equal(result.liveVerified,false);
  assert.deepEqual(calls,[]);
+ assert.equal(f.calls.filter(x=>x.action==='arm_dispatch').length,0);
  assert.equal(f.calls.filter(x=>x.action==='finish').length,1);
 });
 test('exact-head first eligible source task dispatches once, but never claims model or commit',async()=>{
@@ -55,6 +58,7 @@ test('exact-head first eligible source task dispatches once, but never claims mo
  assert.equal(result.status,'WATCHING');
  assert.equal(result.dispatchAccepted,true);assert.equal(result.sourceWriteVerified,false);
  assert.equal(attempts,1);
+ assert.equal(f.calls.filter(x=>x.action==='arm_dispatch').length,1);
  const later=mock({...task,dispatchEligibleOnce:false},p);
  const second=await run({...later,context,dispatch:async()=>{throw Error('DUPLICATE')}});
  assert.equal(second.dispatchAccepted,false);
@@ -89,4 +93,21 @@ test('owner PR queue executes before heavy inventory in the same trusted Watchdo
  assert.match(src,/ci-pr-commander-pr-completion\.cjs/);
  const worker=readFileSync(resolve(__dirname,'../scripts/ci-pr-commander-pr-completion.cjs'),'utf8');
  assert.match(worker,/core\.getIDToken\('hh-commander-pr'\)/);
+});
+
+test('unknown remote dispatch acknowledgment cannot be repeated after atomic arm',async()=>{
+ const source={...base,labels:[{name:'hh:repair-needed'}]};
+ const f=mock(task,source);let invoked=0;
+ const original=f.fetcher;
+ f.fetcher=async(url,req)=>{
+  const action=JSON.parse(req.body).action;
+  if(action==='arm_dispatch')return {status:200,text:async()=>JSON.stringify({
+    schema:'HH_COMMANDER_PR_COMPLETION_V1',armed:false})};
+  return original(url,req);
+ };
+ const out=await run({...f,context,dispatch:async()=>{invoked++;return {dispatched:true}}});
+ assert.equal(invoked,0);
+ assert.equal(out.status,'WATCHING');
+ assert.equal(out.reasonCode,'PR_REPAIR_DISPATCH_ALREADY_RESERVED');
+ assert.equal(out.dispatchAccepted,false);
 });
