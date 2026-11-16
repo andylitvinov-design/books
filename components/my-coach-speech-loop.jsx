@@ -4,7 +4,7 @@ import {forwardRef,useEffect,useImperativeHandle,useRef,useState} from 'react'
 import {Mic,Play,Volume2} from 'lucide-react'
 import styles from './my-coach-speech-loop.module.css'
 import {appendSpokenAnswer} from '@/lib/personal-coaching/speech-text.js'
-import {chooseDictationLanguage,readDictationResults,detectedSpeechLocale,ios27NeedsSpeechRecovery} from '@/lib/personal-coaching/my-coach-dictation.mjs'
+import {chooseDictationLanguage,readDictationResults,detectedSpeechLocale,ios27NeedsSpeechRecovery,hasCoachSpokenAnswer} from '@/lib/personal-coaching/my-coach-dictation.mjs'
 import {startCoachingMp3Playback,primeCoachingAudioGesture,unlockCoachingAudioContext,shouldUseCoachingWebAudio} from '@/lib/personal-coaching/streamed-mp3-playback.mjs'
 import {coachSpokenText} from '@/lib/coaching/coach-spoken-text.mjs'
 import {coachIntroAudioPath,startDirectCoachIntroAudio} from '@/lib/personal-coaching/direct-coach-intro-audio.mjs'
@@ -14,27 +14,27 @@ const words={
     network:'Browser speech service is offline. Your words remain editable below.',noMicrophone:'No microphone found. Check device permissions.',language:'Browser speech does not support this language. Choose EN or RU.',
     unsupported:'Voice recognition is unavailable in this browser. Try opening this page in Safari, or type your message.',blocked:'Microphone denied. Check Safari/browser permissions.',
     short:'I did not catch that. Tap the microphone to try again.',review:'Voice saved as a draft. Review and send it below.',restart:'Tap the microphone for the next turn.',
-    failed:'Could not complete this voice turn. Please try again or type.',
+    failed:'Coach could not answer. The microphone is listening again; keep talking or edit your text.',
     privacy:'Microphone audio may be processed by your browser’s speech-recognition provider. We do not store recordings. Press Stop at any time.',
-    fallback:'Natural coach voice is unavailable right now. Please try again or use text.',tapToHear:'Tap to hear the coach',preparing:'Preparing voice…',
+    fallback:'Natural coach voice is unavailable right now. The microphone remains active; keep talking or type.',tapToHear:'Tap to hear the coach',preparing:'Preparing voice…',
     iosCue:'Ready to listen.',iosPreparing:'Preparing iPhone microphone…',iosSilent:'Safari may not be hearing. Your draft is editable; try again or reopen Safari.',iosAwaitEnd:'Text ready. Waiting for Safari to finish…'},
   ru:{start:'Говорить голосом',stop:'Остановить голос',retryMic:'Перезапустить микрофон',listening:'Слушаю…',thinking:'Коуч думает…',speaking:'Говорит…',
     network:'Распознавание браузера недоступно. Ваши слова остаются в поле ответа.',noMicrophone:'Микрофон не найден. Проверьте настройки устройства.',language:'Браузер не поддерживает этот язык. Выберите RU или EN.',
     unsupported:'Голосовой ввод недоступен в этом браузере. Попробуйте открыть страницу в Safari или написать сообщение.',
     blocked:'Доступ к микрофону запрещён. Разрешите его в Safari или настройках браузера.',
     short:'Не удалось разобрать фразу. Нажмите микрофон ещё раз.',review:'Слова сохранены в поле ввода. Проверьте и отправьте.',restart:'Нажмите микрофон для следующей реплики.',
-    failed:'Голосовой ответ недоступен. Попробуйте ещё раз или напишите сообщение.',
+    failed:'Коуч пока не смог ответить. Микрофон снова слушает; продолжайте говорить или исправьте текст.',
     privacy:'Браузер может передавать аудио поставщику распознавания речи. Мы не сохраняем записи. Разговор можно остановить в любой момент.',
-    fallback:'Качественный голос коуча сейчас недоступен. Попробуйте ещё раз или напишите ответ.',tapToHear:'Нажмите, чтобы услышать коуча',preparing:'Готовлю голос…',
+    fallback:'Качественный голос коуча сейчас недоступен. Микрофон продолжает слушать; можно говорить или писать.',tapToHear:'Нажмите, чтобы услышать коуча',preparing:'Готовлю голос…',
     iosCue:'Я вас слушаю.',iosPreparing:'Подготавливаю микрофон iPhone…',iosSilent:'Safari может не слышать речь. Текст можно отредактировать; попробуйте ещё раз или перезапустите Safari.',iosAwaitEnd:'Текст готов. Ждём завершения Safari…'},
   es:{start:'Hablar por voz',stop:'Detener voz',retryMic:'Reiniciar micrófono',listening:'Escuchando…',thinking:'El coach piensa…',speaking:'Hablando…',
     network:'El reconocimiento del navegador no está disponible. El texto dictado sigue abajo.',noMicrophone:'No se encontró un micrófono. Comprueba los permisos.',language:'El navegador no reconoce este idioma. Elige EN o RU.',
     unsupported:'El reconocimiento de voz no está disponible aquí. Prueba abrir la página en Safari o escribe tu mensaje.',
     blocked:'Micrófono bloqueado. Actívalo en Safari o en los ajustes del navegador.',
     short:'No entendí la frase. Toca el micrófono otra vez.',review:'Palabras guardadas en el borrador. Revisa y envía abajo.',restart:'Toca el micrófono para continuar.',
-    failed:'No se pudo completar el turno de voz. Inténtalo de nuevo o escribe.',
+    failed:'El coach no pudo responder. El micrófono vuelve a escuchar; sigue hablando o edita el texto.',
     privacy:'El navegador puede enviar audio al proveedor de reconocimiento. No almacenamos grabaciones. Detén la conversación cuando quieras.',
-    fallback:'La voz natural del coach no está disponible. Vuelve a intentarlo o escribe.',tapToHear:'Toca para escuchar al coach',preparing:'Preparando voz…',
+    fallback:'La voz natural del coach no está disponible. El micrófono sigue activo; puedes hablar o escribir.',tapToHear:'Toca para escuchar al coach',preparing:'Preparando voz…',
     iosCue:'Te escucho ahora.',iosPreparing:'Preparando el micrófono del iPhone…',iosSilent:'Safari puede haber dejado de escuchar. Tu texto se puede editar; prueba de nuevo o reinicia Safari.',iosAwaitEnd:'Texto listo. Esperando el final de Safari…'},
 }
 
@@ -47,6 +47,12 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   const activeRef=useRef(false)
   const recognitionRef=useRef(null)
   const retryTimerRef=useRef(null),settleTimerRef=useRef(null),retryAttemptsRef=useRef(0)
+  // Web Speech callbacks created on first Play must use fresh provider/consent
+  // state on each turn; a closure over Play-time props can silence turn two.
+  const voiceConfigRef=useRef({cloudAgreed,cloudAvailable,cloudProvider})
+  voiceConfigRef.current={cloudAgreed,cloudAvailable,cloudProvider}
+  // A provider change must cancel only the in-flight TTS, not the voice session.
+  const providerUnavailableRef=useRef(null)
   const cloudControllerRef=useRef(null)
   const cloudPlayerRef=useRef(null)
   const introControllerRef=useRef(null),introPlayerRef=useRef(null)
@@ -93,6 +99,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     if(retryTimerRef.current)clearTimeout(retryTimerRef.current)
     if(settleTimerRef.current)clearTimeout(settleTimerRef.current)
     retryTimerRef.current=null;settleTimerRef.current=null;retryAttemptsRef.current=0
+    providerUnavailableRef.current=null
     cloudControllerRef.current?.abort()
     cloudControllerRef.current=null
     cloudPlayerRef.current?.cancel()
@@ -120,7 +127,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   }
   function stopVoice(){
     const cancelTurn=phaseRef.current==='thinking'
-    if(['starting','listening'].includes(phaseRef.current)&&heardRef.current.trim().length>=3){
+    if(['starting','listening'].includes(phaseRef.current)&&hasCoachSpokenAnswer(heardRef.current)){
       draftRef.current?.(appendSpokenAnswer(draftAtStartRef.current,heardRef.current.trim(),1200))
       setNotice(t.review)
     }else setNotice('')
@@ -186,6 +193,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       }
       for(const key of [retryTimerRef,settleTimerRef,iosResultTimerRef,iosCueTimerRef])
         if(key.current){clearTimeout(key.current);key.current=null}
+      providerUnavailableRef.current=null
       cloudControllerRef.current?.abort()
       cloudControllerRef.current=null
       cloudPlayerRef.current?.cancel()
@@ -236,8 +244,10 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     if(!enabled&&activeRef.current)stopRef.current?.()
   },[enabled])
   useEffect(()=>{
+    // A provider outage/revoked consent interrupts only outbound audio.
+    // Preserve the original Play activation and return to hands-free listening.
     if((!cloudAgreed||!cloudAvailable)&&(cloudControllerRef.current||cloudPlayerRef.current))
-      stopRef.current?.()
+      providerUnavailableRef.current?.()
   },[cloudAgreed,cloudAvailable])
 
   // If Web Speech ends without words, transparently try a fresh recognizer.
@@ -314,11 +324,13 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
         iosResultTimerRef.current=setTimeout(()=>{
           if(recognitionRef.current!==recognition||!activeRef.current)return
           const heard=heardRef.current.trim()
-          if(heard.length>=3){
+          if(hasCoachSpokenAnswer(heard)){
             draftRef.current?.(appendSpokenAnswer(draftAtStartRef.current,heard,1200))
             transcriptRef.current?.('') // One visible copy in the editable Text field
-            setNotice(t.iosAwaitEnd)
-          }else restartSilentRecognition(recognition)
+          }
+          // Safari must end every recognition naturally, even one-letter noise.
+          // Aborting after onresult poisons the next iOS 27 microphone session.
+          setNotice(t.iosAwaitEnd)
         },6500)
       }
       // Dictation is shown in the transcript, never echoed beneath the microphone.
@@ -333,7 +345,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
           settleTimerRef.current=setTimeout(()=>{
             if(recognitionRef.current!==recognition||!activeRef.current)return
             const heard=heardRef.current.trim()
-            if(heard.length<3||heard!==heardNow)return
+            if(!hasCoachSpokenAnswer(heard)||heard!==heardNow)return
             recognitionRef.current=null
             recognition.onresult=null;recognition.onend=null;recognition.onerror=null
             try{recognition.abort()}catch{}
@@ -346,7 +358,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     recognition.onerror=event=>{
       if(recognitionRef.current!==recognition)return
       const heard=heardRef.current.trim()
-      if(heard.length>=3&&!['not-allowed','service-not-allowed'].includes(event.error)){
+      if(hasCoachSpokenAnswer(heard)&&!['not-allowed','service-not-allowed'].includes(event.error)){
         recognitionRef.current=null
         recognition.onresult=null;recognition.onend=null;recognition.onerror=null
         if(settleTimerRef.current)clearTimeout(settleTimerRef.current)
@@ -354,7 +366,10 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
         void deliver(appendSpokenAnswer(draftAtStartRef.current,heard,1200))
         return
       }
-      if(['no-speech','aborted'].includes(event.error)){
+      if(['no-speech','aborted','network'].includes(event.error)){
+        // A temporary browser STT network error must not cancel the one-Play
+        // session. Existing bounded recognition retries never retry AI/TTS.
+        // Microphone permission and capture errors still fail closed.
         restartSilentRecognition(recognition);return
       }
       silence();changePhase('idle')
@@ -380,10 +395,10 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       if(recognitionRef.current!==recognition)return
       recognitionRef.current=null
       if(!activeRef.current)return
-        if(finished.length>=3)void deliver(appendSpokenAnswer(draftAtStartRef.current,finished,1200))
+        if(hasCoachSpokenAnswer(finished))void deliver(appendSpokenAnswer(draftAtStartRef.current,finished,1200))
       else{
         const recovered=heardRef.current.trim()
-        if(recovered.length>=3){
+        if(hasCoachSpokenAnswer(recovered)){
           // Safari sometimes ends after interim words without a final event.
           // A natural recognizer end commits that one turn; Stop/error never do.
           lastHeardRef.current=recovered
@@ -447,9 +462,15 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     catch{result=null}
     if(!activeRef.current||generationRef.current!==generation)return
     if(!result?.reply){
+      // A model outage fails only this turn. Keep the text editable and the
+      // one-Play voice session alive, without retrying the model or TTS.
+      // Sync the draft ref before Web Speech restarts in this same tick.
+      currentDraftRef.current=text
       draftRef.current?.(text)
       transcriptRef.current?.('')
-      silence();changePhase('idle');setNotice(t.failed);return
+      startListening()
+      setNotice(t.failed)
+      return
     }
     heardRef.current=''
     transcriptRef.current?.('')
@@ -474,11 +495,26 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
 
     function showTextOnly(){
       if(!live())return
-      const wasIntroduction=result.mode==='intro'
-      silence()
-      if(wasIntroduction)introStartedRef.current=false
+      // Sensitive safety/boundary replies still terminate the speaking loop,
+      // even when premium TTS is unavailable. Do not auto-prompt after a stop.
+      if(result.mode==='safety'||result.mode==='boundary'){
+        afterSpeech()
+        return
+      }
+      // An unavailable natural voice must never end the active conversation.
+      // Keep the visible text and first-gesture Safari audio unlock; release
+      // only the failed player, then listen for the next user turn automatically.
+      providerUnavailableRef.current=null
+      introControllerRef.current?.abort()
+      introControllerRef.current=null
+      introPlayerRef.current?.cancel()
+      introPlayerRef.current=null
+      cloudControllerRef.current?.abort()
+      cloudControllerRef.current=null
+      cloudPlayerRef.current?.cancel()
+      cloudPlayerRef.current=null
+      startListening()
       setNotice(t.fallback)
-      changePhase('idle')
     }
 
     // Never synthesize an audible coach turn with speechSynthesis:
@@ -513,9 +549,14 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       }catch{if(live())showTextOnly()}
       return
     }
-    if((naturalVoice||cloudAgreed)&&cloudAvailable&&['google_chirp3_hd','fish_free'].includes(cloudProvider)&&!['safety','boundary'].includes(result.mode)){
+    const {cloudAgreed:voiceAgreed,cloudAvailable:voiceAvailable,
+      cloudProvider:voiceProvider}=voiceConfigRef.current
+    if((naturalVoice||voiceAgreed)&&voiceAvailable&&['google_chirp3_hd','fish_free'].includes(voiceProvider)&&!['safety','boundary'].includes(result.mode)){
       const controller=new AbortController()
       cloudControllerRef.current=controller
+      providerUnavailableRef.current=()=>{
+        if(live()&&!controller.signal.aborted)showTextOnly()
+      }
       const fallback=()=>{
         if(!live()||controller.signal.aborted)return
         cloudPlayerRef.current?.cancel()
@@ -528,10 +569,10 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
         const response=await fetch('/api/app/my-coach/voice/synthesize',{
           method:'POST',credentials:'same-origin',cache:'no-store',signal:controller.signal,
           headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({provider:cloudProvider,locale:replyLocale,personaId,
-            text:cloudProvider==='google_chirp3_hd'?speakable:reply,
+          body:JSON.stringify({provider:voiceProvider,locale:replyLocale,personaId,
+            text:voiceProvider==='google_chirp3_hd'?speakable:reply,
             voiceConsent:true,cloudVoiceConsent:true,
-            ...(cloudProvider==='fish_free'?{trainingUseConsent:true}:{})}),
+            ...(voiceProvider==='fish_free'?{trainingUseConsent:true}:{})}),
         })
         if(!response.ok||!response.body)throw Error('CLOUD_TTS_UNAVAILABLE')
         if(!live()||controller.signal.aborted)return
@@ -555,6 +596,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
           },
           onEnd:()=>{
             if(!live())return
+            providerUnavailableRef.current=null
             cloudControllerRef.current=null
             cloudPlayerRef.current?.cancel()
             cloudPlayerRef.current=null

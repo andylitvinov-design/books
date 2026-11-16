@@ -1128,3 +1128,14 @@
     animation:none;transition:none;
   }
 }
+
+/* 4-coach pilot: no legacy mouth patch over the smooth MP4 portrait. */
+.sessionPortrait[data-coach-motion-video='true']{overflow:hidden}
+.root[data-my-coach-immersive-session] .sessionPortrait[data-coach-motion-video='true']::after{display:none!important}
+.sessionPortrait[data-persona=mira]{background-image:url('/images/holistic-house/my-coach-motion/mira-still.webp'),linear-gradient(110deg,#485e53,#cbb9a1)!important}
+.sessionPortrait[data-persona=max]{background-image:url('/images/holistic-house/my-coach-motion/max-still.webp'),linear-gradient(110deg,#485e53,#cbb9a1)!important}
+.sessionPortrait[data-persona=sofia]{background-image:url('/images/holistic-house/my-coach-motion/sofia-still.webp'),linear-gradient(110deg,#485e53,#cbb9a1)!important}
+.sessionPortrait[data-persona=alex]{background-image:url('/images/holistic-house/my-coach-motion/alex-still.webp'),linear-gradient(110deg,#485e53,#cbb9a1)!important}
+
+/* Verified per-turn model source: neutral and compact even in iPhone voice mode. */
+.responseSource{display:inline;font-size:10px;font-weight:500;letter-spacing:0;color:#65796e;overflow-wrap:anywhere}

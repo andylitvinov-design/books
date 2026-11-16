@@ -1,5 +1,7 @@
 import test from 'node:test'
 import './coach-session-director.test.mjs'
+import './my-coach-five-turn-flow.test.mjs'
+import './my-coach-dictation.test.mjs'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {portraitMouthAperture,speechRms,speechPcmEnvelope} from '../lib/coaching/living-portrait-motion.mjs'
@@ -167,7 +169,7 @@ test('Fish natural voice accepts the exact live/replay persona payload but no ex
   const speech=readFileSync(new URL('../components/my-coach-speech-loop.jsx',import.meta.url),'utf8')
   const dialog=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
   const route=readFileSync(new URL('../app/api/app/my-coach/voice/synthesize/route.js',import.meta.url),'utf8')
-  assert.match(speech,/body:JSON\.stringify\(\{provider:cloudProvider,locale:replyLocale,personaId,/)
+  assert.match(speech,/body:JSON\.stringify\(\{provider:voiceProvider,locale:replyLocale,personaId,/)
   assert.match(dialog,/body:JSON\.stringify\(\{provider:cloudProvider,personaId,/)
   assert.match(route,/const \{provider:_,\.\.\.fishRaw\}=raw/)
   assert.match(route,/normalizeMyCoachFishRequest\(fishRaw\)/)
@@ -223,7 +225,8 @@ test('Play starts the authored natural voice once, without recording or extra ch
   assert.ok(voice.includes("if(!introStartedRef.current){"))
   assert.ok(voice.includes('sessionStartRef.current?.()'))
   assert.ok(voice.includes('<Play size={19}'))
-  assert.ok(voice.includes('(naturalVoice||cloudAgreed)&&cloudAvailable'))
+  assert.ok(voice.includes('(naturalVoice||voiceAgreed)&&voiceAvailable'))
+  assert.ok(voice.includes('voiceConfigRef.current={cloudAgreed,cloudAvailable,cloudProvider}'))
   assert.ok(voice.includes('trainingUseConsent:true'))
   assert.ok(voice.includes('cloudVoiceConsent:true'))
   assert.ok(voice.includes('introPlayerRef.current=startDirectCoachIntroAudio'))

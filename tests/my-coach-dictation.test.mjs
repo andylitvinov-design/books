@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
-import {detectedSpeechLocale,chooseDictationLanguage,readDictationResults,ios27NeedsSpeechRecovery} from '../lib/personal-coaching/my-coach-dictation.mjs'
+import {detectedSpeechLocale,chooseDictationLanguage,readDictationResults,ios27NeedsSpeechRecovery,hasCoachSpokenAnswer} from '../lib/personal-coaching/my-coach-dictation.mjs'
 import {appendSpokenAnswer} from '../lib/personal-coaching/speech-text.js'
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 test('Auto follows device language and remembered transcript; manual RU/EN override works',()=>{
@@ -133,3 +133,99 @@ test('iOS 27 keeps recognized Safari voice sessions alive until natural onend',(
  assert.ok(loop.includes('cue.onend=finishCue'),'every subsequent Safari session still waits for the short recovery cue')
  for(const marker of ['iosAwaitEnd:',"setNotice(t.iosAwaitEnd)"])assert.ok(loop.includes(marker))
 });
+
+test('hands-free voice uses live consent and never ends on a natural TTS outage',()=>{
+  const loop=source('components/my-coach-speech-loop.jsx')
+  assert.ok(loop.includes('voiceConfigRef.current={cloudAgreed,cloudAvailable,cloudProvider}'))
+  const live=loop.slice(loop.indexOf('async function speakCoachReply('),loop.indexOf('function toggle(){'))
+  assert.match(live,/cloudProvider:voiceProvider}=voiceConfigRef\.current/)
+  assert.ok(live.includes('(naturalVoice||voiceAgreed)&&voiceAvailable'))
+  for(const marker of ['provider:voiceProvider',"voiceProvider==='google_chirp3_hd'",
+    "voiceProvider==='fish_free'"])assert.ok(live.includes(marker),marker)
+  const fallback=live.slice(live.indexOf('function showTextOnly(){'),live.indexOf('// Never synthesize'))
+  assert.ok(fallback.includes("if(result.mode==='safety'||result.mode==='boundary')"),
+    'safety and boundary stops retain their original guard')
+  assert.ok(fallback.includes('afterSpeech()'))
+  assert.ok(fallback.includes('startListening()'))
+  assert.ok(fallback.includes('setNotice(t.fallback)'))
+  assert.doesNotMatch(fallback,/silence\(\)|changePhase\('idle'\)|introStartedRef\.current=false/)
+  assert.ok(live.includes('afterSpeech()'),'a successful spoken reply must also auto-listen')
+  assert.ok(loop.includes('cue.onend=finishCue'),'iOS 27 WebKit recovery remains')
+})
+
+test('model-turn failure re-arms microphone without re-tapping or retrying an external model',()=>{
+  const loop=source('components/my-coach-speech-loop.jsx')
+  const deliver=loop.slice(loop.indexOf('async function deliver(text){'),
+    loop.indexOf('async function speakCoachReply('))
+  assert.ok(deliver.includes('if(!activeRef.current||generationRef.current!==generation)return'),
+    'End/cancel during the network turn must suppress any microphone restart')
+  const failure=deliver.slice(deliver.indexOf('if(!result?.reply){'),
+    deliver.indexOf("heardRef.current=''",deliver.indexOf('if(!result?.reply){')))
+  for(const statement of ['currentDraftRef.current=text',"draftRef.current?.(text)",
+    "transcriptRef.current?.('')",'startListening()',"setNotice(t.failed)"])
+    assert.ok(failure.includes(statement),statement)
+  assert.doesNotMatch(failure,/silence\(\)|changePhase\('idle'\)|turnRef\.current|fetch\(|speakCoachReply\(/,
+    'an unavailable model must not end the voice session or repeat a provider request')
+  assert.ok(loop.includes("if(result.mode==='safety'||result.mode==='boundary'){"),
+    'explicit safety/boundary stops still end the voice session')
+  assert.ok(loop.includes("const afterSpeech=()=>{"),
+    'successful spoken turns still resume listening automatically')
+  for(const text of ['The microphone is listening again','Микрофон снова слушает',
+    'El micrófono vuelve a escuchar'])
+    assert.ok(loop.includes(text),text)
+})
+
+test('provider status changes during a natural voice reply preserve the active mic',()=>{
+  const loop=source('components/my-coach-speech-loop.jsx')
+  const effect=loop.slice(loop.indexOf('  useEffect(()=>{\n    // A provider outage/revoked consent'),
+    loop.indexOf('  // If Web Speech ends without words'))
+  assert.ok(effect.includes("providerUnavailableRef.current?.()"))
+  assert.doesNotMatch(effect,/stopRef\.current\?\.\(\)|silence\(\)|changePhase\('idle'\)/)
+  const speech=loop.slice(loop.indexOf('async function speakCoachReply('),loop.indexOf('function toggle(){'))
+  const callback=speech.slice(speech.indexOf('providerUnavailableRef.current=()=>{'),
+    speech.indexOf('const fallback=()=>{'))
+  assert.ok(callback.includes('if(live()&&!controller.signal.aborted)showTextOnly()'))
+  const fallback=speech.slice(speech.indexOf('function showTextOnly(){'),
+    speech.indexOf('// Never synthesize'))
+  assert.ok(fallback.includes('providerUnavailableRef.current=null'))
+  assert.ok(fallback.includes('startListening()'))
+  assert.ok(speech.includes('providerUnavailableRef.current=null\n            cloudControllerRef.current=null'))
+  for(const marker of ["if(result.mode==='safety'||result.mode==='boundary')",
+    'recognition.continuous=false','cue.onend=finishCue'])
+    assert.ok(loop.includes(marker),marker)
+})
+
+test('five synthetic speech fragments remain distinct across recognition turn parsing',()=>{
+  const phrases=['Хочу обсудить мои цели','Я чувствую тревогу','Это происходит на работе',
+    'Мне важно выбрать шаг','Завтра попробую это']
+  const recognized=[]
+  for(const phrase of phrases){
+    const interim=readDictationResults([{isFinal:false,0:{transcript:phrase}}])
+    const final=readDictationResults([{isFinal:true,0:{transcript:phrase}}])
+    const repeated=readDictationResults([{isFinal:true,0:{transcript:phrase}}])
+    assert.equal(interim.visible,phrase)
+    assert.equal(final.visible,phrase)
+    assert.equal(repeated.visible,phrase)
+    recognized.push(appendSpokenAnswer('',final.visible,1200))
+  }
+  assert.deepEqual(recognized,phrases)
+  assert.equal(new Set(recognized).size,5)
+  // This is text parsing coverage, not a physical Safari five-turn voice E2E.
+})
+
+test('short yes/no/number answers are complete coaching turns, not missing speech',()=>{
+ for(const words of ['Да','Да!','Не','Нет','No','NO!','Sí','¿Sí?','Si','ok','OK','5','42','yes','угу'])
+  assert.equal(hasCoachSpokenAnswer(words),true,words)
+ for(const noise of ['',' ','.','?','а','я','I','…','!!','  ,  '])
+  assert.equal(hasCoachSpokenAnswer(noise),false,noise)
+ const sourceText=source('components/my-coach-speech-loop.jsx')
+ const onend=sourceText.slice(sourceText.indexOf('recognition.onend=()=>{'),
+  sourceText.indexOf('const startRecognition=()=>{'))
+ assert.ok(onend.includes('if(hasCoachSpokenAnswer(finished))'))
+ assert.ok(onend.includes('if(hasCoachSpokenAnswer(recovered))'))
+ const iosWatchdog=sourceText.slice(sourceText.indexOf('if(ios27&&visible){'),
+  sourceText.indexOf('// Dictation is shown'))
+ assert.ok(iosWatchdog.includes('hasCoachSpokenAnswer(heard)'))
+ assert.doesNotMatch(iosWatchdog,/restartSilentRecognition\(recognition\)|recognition\.abort\(\)/,
+  'iOS never aborts a recognized short utterance before natural onend')
+})

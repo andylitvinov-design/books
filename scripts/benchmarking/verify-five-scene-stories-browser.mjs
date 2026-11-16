@@ -99,7 +99,12 @@ try{
    'STORY_QUALITY_MUST_OPEN_MONTAGE');
  assert.equal(await page.locator('[data-video-basic-editor]').getAttribute('data-montage-panel'),
    'promo','STORY_QUALITY_PANEL_MUST_COMMIT');
+ // Story quality still enters the fifth Extra offer; detailed scene editing
+ // has intentionally moved to Story > Video settings, not beneath Extra cards.
+ await storyTab.click();
+ await page.locator('[data-video-story-open-settings]').click();
  const advanced=page.locator('[data-video-stories-advanced]');
+ await advanced.waitFor({state:'visible',timeout:20000});
  await advanced.locator(':scope > summary').click();
  const format=advanced.locator('[data-video-stories-format]');
  await format.waitFor({state:'visible'});
@@ -130,8 +135,34 @@ try{
  for(const id of ids)assert.ok(approved.has(id),'STORIES_UNREVIEWED_OR_GRAPHICAL_SOURCE:'+id);
  result.shotCount=ids.length;result.distinctSources=new Set(ids).size;
  result.verifiedRights=true;
- // The user-approved fifth Montage has exactly three choices. Generate FREE
- // from the actual in-card CTA, not a hidden legacy Audio / Create shortcut.
+ // Exercise the real mobile single-scene alternate when the licensed catalog
+ // offers an eligible option. A disabled alternate is honest, not a fake render.
+ const remixButtons=sceneList.locator('[data-video-stories-remix]');
+ assert.equal(await remixButtons.count(),5,'STORIES_SCENE_REMIX_CONTROLS_MISSING');
+ let changeIndex=-1;
+ for(let i=0;i<5;i++)if(await remixButtons.nth(i).isEnabled()){changeIndex=i;break;}
+ if(changeIndex>=0){
+   await remixButtons.nth(changeIndex).click();
+   await page.waitForFunction(({index,previous})=>{
+     const values=[...document.querySelectorAll('[data-video-stories-source]')].map(node=>node.value);
+     return values.length===5&&values[index]!==previous;
+   },{index:changeIndex,previous:ids[changeIndex]},{timeout:15000});
+   const changed=await sceneList.locator('[data-video-stories-source]').evaluateAll(nodes=>
+     nodes.map(node=>node.value));
+   assert.equal(new Set(changed).size,5,'STORIES_REMIX_DUPLICATED_MEDIA');
+   assert.ok(approved.has(changed[changeIndex]),'STORIES_REMIX_UNREVIEWED_SOURCE');
+   for(let i=0;i<5;i++)if(i!==changeIndex)
+     assert.equal(changed[i],ids[i],'STORIES_REMIX_CHANGED_UNRELATED_SCENE_'+i);
+   result.singleSceneRemix={status:'VERIFIED',index:changeIndex,unchanged:4};
+ }else result.singleSceneRemix={status:'NO_ELIGIBLE_ALTERNATIVE'};
+ // Explicit user approval advances from visible Story editors to Extra,
+ // preserving the five licensed source IDs for the existing real renderer.
+ const toExtra=sceneList.locator('[data-video-stories-to-extra]');
+ // The action belongs to the settings footer (a sibling of the scene list).
+ await page.locator('[data-video-stories-to-extra]').click();
+ await montageTab.waitFor({state:'visible',timeout:15000});
+ await page.locator('[data-video-montage-pro-offer]').waitFor({state:'visible'});
+ // Generate FREE from the actual in-card CTA, not a hidden legacy shortcut.
  const free=page.locator('[data-video-montage-pro-choice="free"]');
  await free.waitFor({state:'visible',timeout:20000});
  // Track whether a genuine recorded result was mounted then invalidated:

@@ -114,7 +114,7 @@ export default async function HolisticSupportMobilePage({ params, searchParams }
   const initialTheme = ["business", "love", "energy", "health"].includes(String(query.topic))
     ? query.topic as "business" | "love" | "energy" | "health" : "all";
   const availableViews: SupportMobileChoice[] = ["meditation", "consultation", "talisman", "pump", "healing", "masters", "tests"];
-  const initialChoice = availableViews.find(view => view === requestedView) ?? "meditation";
+  const initialChoice = availableViews.find(view => view === requestedView) ?? "pump";
 
   const originalMysteryCourses: SupportMobileCourse[] = [];
 
