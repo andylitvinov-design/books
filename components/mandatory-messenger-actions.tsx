@@ -2,7 +2,7 @@
 import {useEffect,useState} from "react";
 import {MessageCircle,Send} from "lucide-react";
 import {telegramEnquiryUrlFromWhatsApp} from "@/lib/whatsapp-enquiry";
-import {resolveTelegramFirstEntry,resolveTelegramServiceEntry} from "@/lib/app/telegram-entry-url.mjs";
+import {resolveTelegramFirstEntry,resolveTelegramServiceEntry,isOfficialFreeReviewWhatsAppDraft} from "@/lib/app/telegram-entry-url.mjs";
 import type {PublicLocale} from "@/lib/public-locales";
 import styles from "./mandatory-messenger-actions.module.css";
 const copy={
@@ -26,15 +26,19 @@ export function MandatoryMessengerActions({locale,whatsappUrl,label,telegramUrl,
      .then(r=>r.ok?r.json():null)
      .then(payload=>{
        if(abort.signal.aborted)return;
-       const entry=telegramUrl
-         ?resolveTelegramServiceEntry(payload,telegramUrl,locale)
-         :resolveTelegramFirstEntry(payload,locale);
+       // Most catalogue buttons only provide the trusted WhatsApp draft.
+       // Recover its exact published service before falling back to a bot.
+       const manual=telegramUrl||telegramEnquiryUrlFromWhatsApp(whatsappUrl);
+       const selected=resolveTelegramServiceEntry(payload,manual,locale);
+       const freeReview=!telegramUrl&&isOfficialFreeReviewWhatsAppDraft(whatsappUrl,locale)
+         ?resolveTelegramFirstEntry(payload,locale):null;
+       const entry=selected||freeReview;
        setServiceBot(entry?.href||null);
        setBotKind(entry?.kind||null);
      })
      .catch(()=>{if(!abort.signal.aborted){setServiceBot(null);setBotKind(null);}});
    return ()=>abort.abort();
- },[telegramUrl,locale]);
+ },[telegramUrl,whatsappUrl,locale]);
  // Every service/order request keeps its selected product; never launch the
  // unrelated opt-in free-review Telegram bot from a purchasing button.
  const channels=<>

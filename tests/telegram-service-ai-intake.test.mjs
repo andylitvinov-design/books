@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {telegramServiceRequestUrl} from '../lib/assist/telegram-business-request.mjs';
-import {resolveTelegramFirstEntry,resolveTelegramServiceEntry} from '../lib/app/telegram-entry-url.mjs';
+import {telegramServiceRequestUrl,telegramBusinessServiceTitle} from '../lib/assist/telegram-business-request.mjs';
+import {whatsappEnquiryUrl,telegramEnquiryUrlFromWhatsApp} from '../lib/whatsapp-enquiry.js';
+import {resolveTelegramFirstEntry,resolveTelegramServiceEntry,isOfficialFreeReviewWhatsAppDraft} from '../lib/app/telegram-entry-url.mjs';
 import {v3ServiceStart,v3Context,v3ServiceCopy,v3ButtonsFor,V3_LABELS,v3Action} from '../lib/crm/telegram-ai-diagnostic-v3.mjs';
 import {v3ModelMessages} from '../lib/crm/telegram-ai-diagnostic-v3-model.mjs';
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
@@ -67,4 +68,36 @@ test('Generic public free-review fallback is distinct from a selected service re
     telegramServiceRequestUrl('reiki',locale),locale),null,
     'Without active AI interview readiness, a product may not silently turn into free review');
  }
+});
+
+test('Actual service cards with WhatsApp URL alone select the same service in AI bot',()=>{
+ for(const lang of locales)for(const service of services){
+   const wa=whatsappEnquiryUrl({locale:lang,service:telegramBusinessServiceTitle(service,lang),
+     request:'Public request only',pagePath:'/'+lang+'/services'});
+   const derived=telegramEnquiryUrlFromWhatsApp(wa);
+   assert.equal(derived,telegramServiceRequestUrl(service,lang));
+   assert.equal(resolveTelegramServiceEntry(ready,derived,lang)?.href,
+     'https://t.me/holistichouse_bot?start=hhservice_'+service+'_'+lang);
+   assert.equal(isOfficialFreeReviewWhatsAppDraft(wa,lang),false);
+ }
+});
+test('Only canonical free review gets the generic bot, other services stay manual',()=>{
+ const publicBot={available:true,directAvailable:false,url:ready.url,
+   urls:Object.fromEntries(locales.map(l=>
+    [l,'https://t.me/holistichouse_bot?start=hhreview_'+l]))};
+ for(const lang of locales){
+   const free=whatsappEnquiryUrl({locale:lang,service:'Free personal express review',
+     request:'Please contact me',pagePath:'/'+lang+'/services/free-situation-review'});
+   assert.equal(isOfficialFreeReviewWhatsAppDraft(free,lang),true);
+   assert.equal(resolveTelegramFirstEntry(publicBot,lang)?.href,
+     'https://t.me/holistichouse_bot?start=hhreview_'+lang);
+   const other=whatsappEnquiryUrl({locale:lang,service:'Extended personal service',
+     request:'Please contact me',pagePath:'/'+lang+'/services'});
+   assert.equal(isOfficialFreeReviewWhatsAppDraft(other,lang),false);
+   const manual=telegramEnquiryUrlFromWhatsApp(other);
+   assert.equal(resolveTelegramServiceEntry(ready,manual,lang),null);
+   assert.ok(manual.startsWith('https://t.me/holistichouse?text='));
+ }
+ assert.equal(isOfficialFreeReviewWhatsAppDraft('https://evil.test?text=Page','en'),false);
+ assert.equal(isOfficialFreeReviewWhatsAppDraft('https://wa.me/1000?text=Page','en'),false);
 });
