@@ -72,6 +72,7 @@ import {emptyMyTubeEditorHistory,recordMyTubeEditorUndo,undoMyTubeEditor,redoMyT
 import {createMyTubeEditorDraft,parseMyTubeEditorDraft,MYTUBE_DRAFT_MAX_BYTES} from "@/lib/mandala/creative-editor-draft.mjs";
 import {captionAnimationFrame,importSrtCaptionClips,exportSrtCaptionClips,CAPTION_SRT_BYTES} from "@/lib/mandala/creative-editor-captions.mjs";
 import {analyzeMusicRhythm,planMusicVideoCuts,readApprovedMusicMaster,MUSIC_MV_MAX_FILE_BYTES} from "@/lib/mandala/music-to-mv.mjs";
+import {analyzeMusicShape,suggestMusicVideoDirections} from "@/lib/mandala/music-mv-director.mjs";
 import {audioTransientScores,recommendSmartAudioCuts} from "@/lib/mandala/creative-editor-smart-cut.mjs";
 import {extractMyTubeWaveform,MYTUBE_WAVEFORM_MAX_FILE_BYTES,
   MYTUBE_WAVEFORM_MAX_AUDIO_SECONDS} from "@/lib/mandala/creative-editor-waveform.mjs";
@@ -2525,6 +2526,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const subtitleFileInputRef=useRef<HTMLInputElement>(null);
   const [smartCutBusy,setSmartCutBusy]=useState(false);
   const [musicMvReport,setMusicMvReport]=useState<{bpm:number|null;confidence:number;status:string}|null>(null);
+  const [musicMvCreative,setMusicMvCreative]=useState<{
+    shape:string;energy:readonly number[];
+    directions:readonly {id:string;title:string;mainIdea:string;storyPitch:string}[];
+    selected:string;
+  }|null>(null);
+  useEffect(()=>{setMusicMvReport(null);setMusicMvCreative(null);},
+    [attachedAudio,wish,theme,duration]);
   const editorDraftEpochRef=useRef(0);
   const localEditorHistoryRef=useRef<EditorHistoryState>(emptyMyTubeEditorHistory() as EditorHistoryState);
   const [editorHistoryAvailability,setEditorHistoryAvailability]=useState({undo:false,redo:false});
@@ -2962,6 +2970,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           "Music is shorter than the video. Select a shorter video duration.");return;
       }
       const rhythm=analyzeMusicRhythm(sound.getChannelData(0),sound.sampleRate,duration);
+      const shape=analyzeMusicShape(
+        Array.from({length:Math.min(2,sound.numberOfChannels)},(_,index)=>sound.getChannelData(index)),
+        sound.sampleRate,duration);
+      const directions=suggestMusicVideoDirections({shape,goal:wish,theme,locale});
       // Never assume unverified footage has enough source seconds for a moved cut.
       let proposal=proposedFilm.shots.length===4&&rhythm.bpm!==null?
         planMusicVideoCuts(duration,proposedFilm.shots,rhythm):null;
@@ -3002,6 +3014,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       stopMovieSound();setPreviewPlaying(false);setPreviewFrameRevision(value=>value+1);
       setMusicMvReport({bpm:rhythm.bpm,confidence:rhythm.confidence,
         status:proposal?.status==="audio_aligned"?"audio_aligned":"visual_storyboard"});
+      setMusicMvCreative({shape:shape.label,energy:shape.relativeEnergy,
+        directions,selected:shape.label==="steady"?"quiet":"cinema"});
       setMontagePanel("concept");
       setNotice(locale==="ru"
         ?rhythm.bpm!==null
@@ -7501,6 +7515,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           if(deliveryRef.current)void deliveryRef.current.saveToLibrary();
           else setDeliveryChooserOpen(true);
         }}
+        onSendTelegramDirect={()=>{if(deliveryRef.current)void deliveryRef.current.sendToTelegram();}}
+        onShareWhatsApp={(consentApproved=false)=>{
+          if(deliveryRef.current)void deliveryRef.current.shareToWhatsApp(consentApproved);
+        }}
         onOpenDelivery={()=>{
           setDeliveryChooserOpen(true);
           window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
@@ -8651,11 +8669,42 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 :locale==="ru"?"Видеосцены подобраны; исходные переходы сохранены.":
                   locale==="es"?"Escenas elegidas; cortes originales conservados.":"Storyboard selected; original cuts preserved."}</p>
             </div>:null}
+            {musicMvCreative?<div className={videoStyles.montageMovedNote}
+              data-video-music-mv-directions role="group"
+              aria-label={locale==="ru"?"Три варианта сюжета":locale==="es"?"Tres historias posibles":"Three creative directions"}>
+              <strong>{locale==="ru"?"Выберите историю под музыку":locale==="es"?"Elige una historia para tu música":"Choose a story for the music"}</strong>
+              <p>{locale==="ru"?"Из музыки взяты только ритм и динамика. История основана на вашей цели, а не на выдуманных словах.":locale==="es"?
+                "El ritmo proviene del audio; las ideas siguen tu objetivo, no letras supuestas.":
+                "Rhythm follows the audio; story ideas follow your goal, not imagined lyrics."}</p>
+              <p>{locale==="ru"?"Энергия по частям: ":locale==="es"?"Energía por partes: ":"Energy across sections: "}
+                {musicMvCreative.energy.map(value=>Math.round(value*100)+"%").join(" · ")}</p>
+              <div style={{display:"grid",gap:8}}>
+                {musicMvCreative.directions.map(item=><button type="button"
+                  key={item.id} data-video-music-mv-direction={item.id}
+                  aria-pressed={musicMvCreative.selected===item.id}
+                  disabled={recording||preparing}
+                  style={{display:"grid",textAlign:"left",gap:4,padding:10,minHeight:52,
+                    borderRadius:12,border:musicMvCreative.selected===item.id
+                      ?"2px solid #168b70":"1px solid #d5ded8",
+                    background:musicMvCreative.selected===item.id?"#ecfaf4":"#fff"}}
+                  onClick={()=>setMusicMvCreative(current=>current?{...current,selected:item.id}:null)}>
+                  <strong>{item.title}</strong><small>{item.mainIdea}</small>
+                </button>)}
+              </div>
+              <small>{locale==="ru"?"Выбранный сюжет появится в раскадровке ниже. Проверьте и примените реальные кадры.":locale==="es"?
+                "La idea elegida aparece en el guion visual. Revisa las escenas antes de aplicarlas.":
+                "The chosen idea updates the storyboard. Review real shots before applying."}</small>
+            </div>:null}
             <MandalaAutomaticStoryboard
               locale={locale} goal={wish} theme={theme} durationSeconds={duration}
               aspect={aspect} styleIndex={quickStyleIndex} pace={speed}
               personalization={ideasProfileConfirmed?summarizeVideoGoalProfile(ideasProfile,locale):null}
-              selectedTopic={selectedConceptTopic}
+              selectedTopic={musicMvCreative?.selected?{
+                topicId:selectedConceptTopic?.topicId||"",
+                brief:[selectedConceptTopic?.brief,
+                  musicMvCreative.directions.find(item=>item.id===musicMvCreative.selected)?.storyPitch]
+                  .filter(Boolean).join(" ").slice(0,550)
+              }:selectedConceptTopic}
               appliedStoryKey={appliedStoryKey} phrases={affirmationLines}
               fiveSceneShots={cinematicPlan?.version===FREE_FILM_PLAN_VERSION?
                 cinematicPlan.shots.map(shot=>({
