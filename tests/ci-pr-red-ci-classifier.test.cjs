@@ -126,3 +126,22 @@ test('source preflight cannot be inferred from near-match, mixed failures or sec
  assert.equal(check([job('core-lint-types-build',step),job('Unit tests','Run unit tests')]).category,'UNKNOWN');
  assert.equal(check([job('core-lint-types-build',step),job('guard','Security / dependency scan')]).category,'SECURITY');
 });
+
+test('signed terminal specialist test failures get a bounded diagnostic classification only',()=>{
+ const step='Validate exact-head risk and required specialist workflows';
+ const jobs=[job('hh-specialist',step),job('hh-merge-check','Require real Core and specialist results from this workflow')];
+ const files=['.github/workflows/home-locale-switch.yml'];
+ const result=check(jobs,PR,'UNVERIFIED','',files);
+ // The test harness uses classifyRedCiError directly; pass a real option below
+ const {classifyRedCiError}=require('../scripts/ci-pr-red-ci-classifier.cjs');
+ const trusted=classifyRedCiError({pr:PR,jobs,verifiedSpecialistWorkflows:files});
+ assert.equal(trusted.category,'TEST_FAILURE');
+ assert.equal(trusted.reason_code,'VERIFIED_REQUIRED_SPECIALIST_FAILURE');
+ assert.equal(trusted.responsible_role,'test-triage-agent');
+ assert.equal(trusted.source_write_authorized,false);
+ assert.equal(trusted.execution_authorized,false);
+ assert.equal(result.category,'BASE_OR_CI_ROUTING','unsigned/default evidence stays in routing');
+ for(const invalid of [[],['../../config'],[42],['.github/workflows/x.yml:failure']]){
+  assert.equal(classifyRedCiError({pr:PR,jobs,verifiedSpecialistWorkflows:invalid}).category,'BASE_OR_CI_ROUTING');
+ }
+});

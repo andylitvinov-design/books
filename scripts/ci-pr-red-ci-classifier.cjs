@@ -73,6 +73,7 @@ function makeResult(category, evidence, confidence, details = {}) {
  */
 function classifyRedCiError({
   pr, jobs, coreRoot = 'UNVERIFIED', failureMessage = '',
+  verifiedSpecialistWorkflows = [],
   automationState = null, integrationTarget = null
 } = {}) {
   if (!SHA.test(pr?.head?.sha || '') || !Array.isArray(jobs) || !jobs.length) {
@@ -131,6 +132,18 @@ function classifyRedCiError({
   const specialistProofFailure=evidence.some(item=>
     String(item.job||'').toLowerCase()==='hh-specialist'&&
     SIGNALS.SPECIALIST_PROOF_GATE.test(String(item.step||'')));
+  // Only an authenticated GitHub job-log parser supplies this parameter in
+  // production. No specialist can become a code-writer merely by being red.
+  // Confirm one exact failed workflow, not generic missing/stale proof.
+  if(specialistProofFailure && Array.isArray(verifiedSpecialistWorkflows) &&
+     verifiedSpecialistWorkflows.length>0 && verifiedSpecialistWorkflows.length<=5 &&
+     verifiedSpecialistWorkflows.every(path=>
+       typeof path==='string' && /^\.github\/workflows\/[a-z0-9._-]+\.ya?ml$/.test(path))){
+    return makeResult('TEST_FAILURE',evidence,0.98,{
+      reasonCode:'VERIFIED_REQUIRED_SPECIALIST_FAILURE',
+      evidenceCode:'EXACT_GITHUB_SPECIALIST_TERMINAL_LOG'
+    });
+  }
   if(specialistProofFailure){
     return makeResult('BASE_OR_CI_ROUTING',evidence,0.97,{
       reasonCode:'SPECIALIST_REQUIRED_PROOF_MISSING_OR_STALE',
