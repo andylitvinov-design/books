@@ -569,4 +569,5 @@ module.exports=async(req,res)=>{
  catch(e){res.statusCode=503;res.end(JSON.stringify({schema:'HH_CI_FIRST_LAST_ARCHIVE_V1',
    error:String(e.message||e).slice(0,90),missing_is_not_zero:true}));}
 };
+module.exports._readOnly={fetchArchive};
 module.exports._test={parse,summarizePR,report,comparePeriods,waveDetail,strictRanges,strictSearchEnvelope,torontoWeekAgo,strictWeeklyWindow,strictWeeklyComparison};

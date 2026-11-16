@@ -16,7 +16,7 @@ test('one static CSS + one deferred JS; all eight main sections exist',()=>{
 test('strict public read-only origin and 10 explicit API allowlist rewrites',()=>{
  assert.equal(conf.rewrites.length,10);
  for(const [key,url]of Object.entries(URLS)){
-  if(key==='comparison')continue; // Local read-only function; no proxy rewrite.
+  if(key==='comparison'||key==='funnel')continue; // Two local read-only serverless functions; no public owner API proxy.
   const route=conf.rewrites.find(x=>x.source===url.split('?')[0]);
   assert.ok(route,key);
   assert.equal(route.destination,'https://holistic-house-pr-monitor.vercel.app'+route.source);
@@ -196,4 +196,58 @@ test('strict weekly production comparison: same Toronto clock, same cohort and a
  assert.match(js,/Отдельные CI jobs/);
  source.periods[1].to='2026-11-09T17:00:00Z';
  assert.throws(()=>compareStrictWeekly(source,24),/UNVERIFIED|WINDOW/);
+});
+
+test('error-to-GitHub signed funnel appears on the new independent dashboard with stable 10 stages',()=>{
+ assert.match(html,/id="error-funnel"/);
+ assert.match(html,/id="error-funnel-rows"/);
+ assert.match(html,/id="error-funnel-period"/);
+ assert.match(html,/value="24"/);
+ assert.match(html,/value="168"/);
+ assert.match(html,/value="336"/);
+ for(const key of ['failed','classified','task','assigned','source_assigned','dispatched','claimed','runner','responded','committed']){
+  assert.match(html,new RegExp('id="f-'+key+'"'));
+ }
+ assert.match(js,/function renderFunnel/);
+ assert.match(js,/function funnelMissing/);
+ assert.match(js,/funnelSeq/);
+ assert.match(html,/Ошибка → Worker/);
+ assert.match(js,/URLS\.funnel/);
+ assert.doesNotMatch(JSON.stringify(conf.rewrites),/commander-chats|ci_events/);
+});
+test('funnel local read-only endpoint uses exact GitHub receipts and unknown rather than made-up totals',()=>{
+ const source=read('api/ci-error-funnel.js');
+ const weekly=read('api/ci-stage-weekly.js');
+ assert.match(source,/HH_PR_REPAIR_EVIDENCE_FUNNEL_V1/);
+ assert.match(source,/HH_CI_ERROR_TASK_V1/);
+ assert.match(source,/HH_PR_TASK_V1/);
+ assert.match(source,/HH_PR_REPAIR_OUTCOME_V1/);
+ assert.match(source,/HH_PR_STAGE_V1/);
+ assert.match(source,/\/git\/commits\//);
+ assert.match(source,/source_published/);
+ assert.match(source,/comments_read/);
+ assert.match(weekly,/module\.exports\._readOnly=\{fetchArchive\}/);
+ assert.doesNotMatch(source,/createWorkflow|dispatchEvent|setInterval|git\/refs\/heads|force-push|api\/commander-chats/);
+ const {selectCases,inspect,STAGES}=require('./api/ci-error-funnel.js')._test;
+ assert.equal(STAGES.length,10);
+ const now=Date.parse('2026-11-16T18:00:00Z');
+ const incident={pr:12,run_id:123,source_head:'a'.repeat(40),completed_at:'2026-11-16T17:00:00Z',conclusion:'failure',
+  jobs:[{name:'core-lint-types-build',conclusion:'failure'}]};
+ assert.equal(selectCases([incident],24,now).rows.length,1);
+ assert.equal(selectCases([incident],24,now-86400000).rows.length,0);
+ const e={pr:12,head:'a'.repeat(40),run:123,at:incident.completed_at,failure_url:'https://github.com/andylitvinov-design/books/actions/runs/123'};
+ const unknown=inspect(e,[]);assert.ok(unknown.failed);
+ assert.equal(unknown.claimed,null);assert.equal(unknown.committed,null);
+});
+
+test('exact PR query is optional and a signed CLAIMED is independent from edited reservations',()=>{
+ const {selectCases}=require('./api/ci-error-funnel.js')._test;
+ const run={pr:4220,run_id:42871460834,source_head:'d7c31ae1bd66ead236b200f8d0c6353cb633d4b9',
+  completed_at:'2026-11-10T18:08:48.000Z',conclusion:'failure',jobs:[{name:'core-lint-types-build',conclusion:'failure'}]};
+ const now=Date.parse('2026-11-16T18:00:00Z');
+ assert.equal(selectCases([run],168,now,4220).rows.length,1);
+ assert.equal(selectCases([run],168,now,4232).rows.length,0);
+ assert.match(html,/id="error-funnel-find"/);
+ assert.match(html,/id="error-funnel-all"/);
+ assert.match(js,/funnelUrl\(funnelAtStart,funnelPRAtStart\)/);
 });

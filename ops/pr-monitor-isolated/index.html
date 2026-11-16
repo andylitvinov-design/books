@@ -33,7 +33,7 @@
  </section>
  <p class="overview-provenance" id="overview-provenance">CI — число workflow, не jobs; время источников уточняется.</p>
  <nav class="section-nav" aria-label="Разделы PR Monitor">
- <a href="#strict">Точная когорта</a><a href="#graphs">Графики</a><a href="#stages">Этапы</a><a href="#ci">CI</a><a href="#queue">Очередь</a><a href="#prs">PR</a><a href="#repair">Ремонт</a><a href="#issues">Ошибки</a>
+ <a href="#strict">Точная когорта</a><a href="#graphs">Графики</a><a href="#stages">Этапы</a><a href="#ci">CI</a><a href="#error-funnel">Ошибка → Worker</a><a href="#queue">Очередь</a><a href="#prs">PR</a><a href="#repair">Ремонт</a><a href="#issues">Ошибки</a>
  </nav>
  <section class="chart-grid" id="graphs" aria-label="Динамика PR и CI">
   <article class="panel chart"><div class="panel-heading"><div><p class="eyebrow">ДИНАМИКА</p><h2>Создание PR и CI</h2></div><span class="small">6 × 1 час</span></div>
@@ -88,6 +88,26 @@
   <div class="metrics compact"><article><span>Запуски workflow / час</span><strong id="k-ci">—</strong></article><article><span>Проверенные jobs</span><strong id="k-ci-jobs">—</strong></article><article><span>Ошибки в выборке</span><strong id="k-ci-fails">—</strong></article><article><span>Очередь runner · P50</span><strong id="k-runner">—</strong></article></div>
   <div class="two-col"><div><h3>Типы ошибок CI</h3><div class="list" id="ci-errors">Данные проверяются…</div></div><div><h3>Задержки по проверкам</h3><div id="ci-checks" class="list">Данные проверяются…</div></div></div>
   <p class="note">Статистика CI может быть выборочной. Количество workflow-run не равно числу CI jobs.</p>
+ </section>
+ <section class="panel" id="error-funnel" aria-labelledby="error-funnel-title">
+  <div class="panel-heading funnel-heading"><div><p class="eyebrow">ОШИБКА CI → AI WORKER → GITHUB</p><h2 id="error-funnel-title">Путь исправления · 10 подтверждений</h2></div>
+   <label class="funnel-selector">Период ошибок CI <select id="error-funnel-period" aria-label="Период ошибок CI"><option value="24">24 ч</option><option value="168">7 дней</option><option value="336">14 дней</option></select></label><div class="funnel-pr-controls"><label for="error-funnel-pr">PR №</label><input id="error-funnel-pr" inputmode="numeric" maxlength="6" placeholder="Напр. 4220" aria-label="Номер PR для просмотра"><button type="button" id="error-funnel-find">Найти</button><button type="button" id="error-funnel-all">Все PR</button></div></div>
+  <p class="note" id="error-funnel-coverage">Извлекаю проверенные события GitHub…</p>
+  <div class="table-scroll"><table class="funnel-table"><thead><tr><th>Этап</th><th>Подтверждено</th><th>От ошибки CI · P50</th><th>GitHub-доказательства</th></tr></thead>
+    <tbody id="error-funnel-rows">
+     <tr><td><strong>1. PR с ошибкой Core CI</strong><small>Ошибка зафиксирована в архиве GitHub Actions</small></td><td class="funnel-count" id="f-failed">—</td><td id="f-t-failed">—</td><td id="f-proof-failed">—</td></tr>
+     <tr><td><strong>2. Ошибка классифицирована</strong><small>Подписанная задача указывает тип ошибки</small></td><td class="funnel-count" id="f-classified">—</td><td id="f-t-classified">—</td><td id="f-proof-classified">—</td></tr>
+     <tr><td><strong>3. Задача создана</strong><small>Задача связана с PR, HEAD и запуском CI</small></td><td class="funnel-count" id="f-task">—</td><td id="f-t-task">—</td><td id="f-proof-task">—</td></tr>
+     <tr><td><strong>4. Ответственный назначен</strong><small>Сохранено назначение реального исполнителя</small></td><td class="funnel-count" id="f-assigned">—</td><td id="f-t-assigned">—</td><td id="f-proof-assigned">—</td></tr>
+     <tr><td><strong>5. Repair Worker назначен</strong><small>Выбран исполнитель исправления исходников</small></td><td class="funnel-count" id="f-source_assigned">—</td><td id="f-t-source_assigned">—</td><td id="f-proof-source_assigned">—</td></tr>
+     <tr><td><strong>6. Dispatch принят GitHub</strong><small>Подтверждена отправка на запуск Worker</small></td><td class="funnel-count" id="f-dispatched">—</td><td id="f-t-dispatched">—</td><td id="f-proof-dispatched">—</td></tr>
+     <tr><td><strong>7. Worker получил задачу</strong><small>CLAIMED на том же PR, HEAD и task key</small></td><td class="funnel-count" id="f-claimed">—</td><td id="f-t-claimed">—</td><td id="f-proof-claimed">—</td></tr>
+     <tr><td><strong>8. Worker действительно запущен</strong><small>Подтверждён отдельный GitHub Actions runner</small></td><td class="funnel-count" id="f-runner">—</td><td id="f-t-runner">—</td><td id="f-proof-runner">—</td></tr>
+     <tr><td><strong>9. Результат Worker получен</strong><small>Подписан итог выполнения, в том числе неуспех</small></td><td class="funnel-count" id="f-responded">—</td><td id="f-t-responded">—</td><td id="f-proof-responded">—</td></tr>
+     <tr><td><strong>10. Коммит получен GitHub</strong><small>Опубликованный SHA независимо подтверждён GitHub</small></td><td class="funnel-count" id="f-committed">—</td><td id="f-t-committed">—</td><td id="f-proof-committed">—</td></tr>
+    </tbody></table></div>
+  <p class="note" id="error-funnel-info">Показаны только независимые подтверждения GitHub. «—» означает отсутствие проверенного свидетельства, не ноль.</p>
+  <p class="caution">Частичный архив, до 8 PR в одном срезе · счётчик «≥» означает минимальное подтверждённое число. Назначение, CLAIMED, runner, ответ модели и опубликованный SHA не взаимозаменяемы. Приватная база владельца не раскрывается.</p>
  </section>
  <section class="panel" id="queue" aria-labelledby="queue-title">
   <div class="panel-heading"><div><p class="eyebrow">ОПЕРАЦИОННАЯ ОЧЕРЕДЬ</p><h2 id="queue-title">PR, блокировки и исполнители</h2></div><span class="small" id="queue-asof">Срез не получен</span></div>
