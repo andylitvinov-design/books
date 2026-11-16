@@ -145,6 +145,8 @@ test('local same-origin weekly CI function is deployed, read-only and backed by 
  assert.match(weekly,/HH_CORE_CI_JOURNEY_SHARD_V1/);
  assert.match(weekly,/const force=false/);
  assert.doesNotMatch(weekly,/setInterval|createWorkflow|dispatch|writeFile/);
+ assert.match(weekly,/strictSearchCache/);
+ assert.doesNotMatch(weekly,/remaining<3/);
 });
 
 test('strict weekly production comparison: same Toronto clock, same cohort and additive stages',()=>{
@@ -165,6 +167,14 @@ test('strict weekly production comparison: same Toronto clock, same cohort and a
  assert.equal(selected.stages.no_archive_unknown.mean_contribution_minutes,12);
  assert.equal(selected.stages.runner_wait.measured_prs,0);
  assert.equal(selected.coverage.ci_missing_prs,1);
+ const now=Date.parse('2026-11-16T16:00:00Z');
+ const envelope1=core.strictSearchEnvelope(core.strictRanges(1,now)[0]);
+ const envelope6=core.strictSearchEnvelope(core.strictRanges(6,now)[0]);
+ const envelope24=core.strictSearchEnvelope(core.strictRanges(24,now)[0]);
+ assert.equal(envelope1.key,envelope6.key);
+ assert.equal(envelope6.key,envelope24.key);
+ assert.ok(Date.parse(envelope24.from)<=now-24*3600000);
+ assert.ok(Date.parse(envelope24.to)>=now);
  assert.equal(selected.named_ci_jobs.core.measured_prs,0);
  assert.equal(selected.named_ci_jobs.core.p50_minutes,null);
  const keys=['before_unknown','workflow_wait','runner_wait','checks','ci_wave_unknown',
