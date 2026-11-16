@@ -92,6 +92,16 @@ jobs:
         with:
           path: .next/cache
           key: hh-core-next-v1-${{ runner.os }}-${{ hashFiles('package-lock.json', 'next.config.ts', 'tsconfig.json') }}
+      # This writer is restricted to the protected production branch.
+      # TypeScript's incremental graph is a compilation hint, never a pass
+      # signal; consumer PRs still run the exact-HEAD full typecheck.
+      - name: Restore trusted TypeScript incremental cache
+        id: ci_types_cache
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/codex/public-book-library'
+        uses: actions/cache/restore@v4
+        with:
+          path: tsconfig.tsbuildinfo
+          key: hh-core-tsbuild-v1-${{ runner.os }}-${{ hashFiles('package-lock.json', 'next.config.ts', 'tsconfig.json') }}
       - name: Verify public source hashes and static lookup paths
         run: node --test tests/public-card-artwork-cost-guard.test.mjs tests/public-card-artwork-reuse-secondary.test.mjs
       # Every production-targeted PR already has an unconditional exact-head
@@ -127,3 +137,11 @@ jobs:
         with:
           path: .next/cache
           key: ${{ steps.ci_next_cache.outputs.cache-primary-key }}
+      - name: Save production-only TypeScript incremental cache
+        # Never populate a trusted key from a PR; the producer first passed
+        # the full production build and independent tsc --noEmit.
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/codex/public-book-library' && steps.ci_types_cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: tsconfig.tsbuildinfo
+          key: ${{ steps.ci_types_cache.outputs.cache-primary-key }}
