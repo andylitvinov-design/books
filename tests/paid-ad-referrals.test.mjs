@@ -87,7 +87,10 @@ test("provider click IDs are never placed in message or analytics; user must pre
       assert.deepEqual([...new URL(drafted).searchParams.keys()], ["text"]);
       assert.match(message(drafted), / · hh_free_review_en_toronto_202610 · ad_b/);
       assert.doesNotMatch(message(drafted), /gclid|fbclid|secret123|abc123|xyz987|utm_/);
-      assert.match(message(telegramEnquiryUrlFromWhatsApp(drafted)), /Ad referral|Рекламный источник|Origen publicitario/);
+      // Telegram must not receive the WhatsApp draft's advertising metadata.
+      const telegramText = message(telegramEnquiryUrlFromWhatsApp(drafted));
+      assert.match(telegramText, /Written situation review/);
+      assert.doesNotMatch(telegramText, /Ad referral|Рекламный источник|Origen publicitario|hh_free_review|ad_b|gclid|fbclid|utm_|secret123/i);
     }
   }
 });
