@@ -71,3 +71,12 @@ test('Only a verified V3 Telegram enquiry persists a Telegram CRM contact channe
  assert.equal(legacy.values.length,13)
  assert.equal(ordinary.values.length,11)
 })
+
+test('Backend V3 consent proof uses only three additional read columns under existing FORCE RLS',()=>{
+ const sql=source('supabase/migrations/20261116183500_hh_tg_v3_service_backend_proof_columns.sql')
+ assert.ok(sql.includes('grant select (flow_version, ai_context_id, ai_review_consent_at)'))
+ assert.ok(sql.includes('on table app_private.crm_tg_diagnostic_sessions'))
+ assert.ok(sql.includes('to hh_app_backend;'))
+ assert.doesNotMatch(sql,/grant[^;]*to\s+(anon|authenticated|service_role)/i)
+ assert.doesNotMatch(sql,/disable\s+row\s+level\s+security/i)
+})
