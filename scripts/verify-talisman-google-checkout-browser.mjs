@@ -87,7 +87,7 @@ const run = async (locale, width) => {
   });
   try {
     const path = "/" + locale + "/holistic-support/mobile";
-    const response = await page.goto(origin+path,{waitUntil:"domcontentloaded",timeout:60000});
+    const response = await page.goto(origin+path+"?view=meditation",{waitUntil:"domcontentloaded",timeout:60000});
     assert.equal(response?.status(),200,"Public mobile support route");
     // SSR shows a button before React hydration. Await the existing photo/UI
     // hydration effect so an iPhone Safari tap cannot be silently discarded.

@@ -35,7 +35,7 @@ for (const engine of [chromium, webkit]) {
             body: JSON.stringify(qaSupportDirectoryResponse(locale, kind)) });
         });
         try {
-          const response = await page.goto(origin + "/" + locale + "/holistic-support/mobile",
+          const response = await page.goto(origin + "/" + locale + "/holistic-support/mobile?view=meditation",
             { waitUntil: "domcontentloaded", timeout: 60000 });
           assert.equal(response?.status(), 200, label + " existing mobile route");
           const root = page.locator("[data-holistic-mobile-alternative]");
