@@ -201,6 +201,11 @@ function compareCIHistory(d,hours){
  return {hours,periods,rows};
 }
 
+const NAMED_WEEKLY_CI_JOBS=[
+ ['core','Core CI job · P50'],
+ ['specialist','Specialist CI job · P50'],
+ ['merge_gate','Merge Gate job · P50']
+];
 const WEEKLY_STAGE_LABELS=[
  ['before_unknown','Created → первая сохранённая CI · причина неизвестна'],
  ['workflow_wait','Workflow → создание CI jobs'],
@@ -240,6 +245,12 @@ function compareStrictWeekly(d,hours){
   }
   // Eight stages rounded to 0.01 minute each; allow their sum to differ by <= 0.06.
   if(p.merged_prs>0&&Math.abs(sum-p.mean_minutes)>0.06)throw Error('STRICT_WEEKLY_NOT_ADDITIVE');
+  for(const [key] of NAMED_WEEKLY_CI_JOBS){
+   const clock=p.named_ci_jobs?.[key];
+   if(!clock||!safeInt(clock.measured_prs)||clock.measured_prs>p.merged_prs||
+      (clock.measured_prs>0&&!quantSafe(clock.p50_minutes)))
+     throw Error('STRICT_WEEKLY_JOB_'+key);
+  }
   periods[id]=p;
  }
  const local=s=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Toronto',
@@ -411,6 +422,17 @@ function renderComparison(d,hours){
    const exists=period.merged_prs>0&&value.measured_prs>0;
    cell(tr,exists?delay(value.mean_contribution_minutes):'—',value.measured_prs,period.merged_prs,
     'Замер '+number(value.measured_prs)+'/'+number(period.merged_prs));
+  }
+  tbody.append(tr);
+ }
+ const namedTitle=dom('tr','comparison-subtitle'),titleCell=dom('th',null,'Отдельные CI jobs · P50 по измеренным PR, НЕ дополнительные этапы');
+ titleCell.colSpan=3;namedTitle.append(titleCell);tbody.append(namedTitle);
+ for(const [key,label] of NAMED_WEEKLY_CI_JOBS){
+  const tr=dom('tr');td(tr,label);
+  for(const p of [cur,old]){
+   const v=p.named_ci_jobs?.[key];
+   cell(tr,v?.measured_prs>0?delay(v.p50_minutes):'—',v?.measured_prs||0,p.merged_prs,
+    'Замер '+number(v?.measured_prs||0)+'/'+number(p.merged_prs));
   }
   tbody.append(tr);
  }
