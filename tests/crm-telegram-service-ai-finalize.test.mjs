@@ -6,7 +6,8 @@ const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 test('Client confirmation commits CRM transcript before service finalization and acknowledgement',()=>{
  const v3=source('lib/crm/telegram-ai-diagnostic-v3-service.js')
  const webhook=source('app/api/app/crm/messenger/webhook/[provider]/route.js')
- assert.ok(v3.indexOf("if(action==='send')")<v3.indexOf('serviceFinalize:'))
+ const review=v3.slice(v3.indexOf("if(row.stage==='review_confirm')"),v3.indexOf("if(row.stage!=='interview')"))
+ assert.ok(review.indexOf("if(action==='send')")>=0&&review.indexOf("if(action==='send')")<review.indexOf('serviceFinalize:'))
  assert.match(v3,/ai_review_consent_at=now\(\)/)
  assert.match(v3,/serviceCopy&&raw==='\/retry_request'/)
  assert.ok(webhook.indexOf('await finalizeTelegramV3Service(config,aiIntake.serviceFinalize)')<
