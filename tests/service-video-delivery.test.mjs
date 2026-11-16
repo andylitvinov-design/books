@@ -43,14 +43,24 @@ test("the requested psychotherapy YouTube video is limited to RU service media",
   assert.match(showcase, /heading: "Образная психотерапия — видео о подходе"/);
 });
 
-test("the Services video gallery is expanded by default after booking and testimonials", () => {
+test("Services MyTube retains its verified method gallery with two accessible compact actions", () => {
   const page = read("app/[locale]/services/page.tsx");
   const extras = read("components/services-studio-extras.tsx");
-  const begin = page.indexOf('<ServicesMethodVideos locale={locale as Locale}');
+  const begin = page.indexOf('<ServicesCompactPanel id="mytube"><ServicesMethodVideos locale={locale} />');
   assert.match(extras, /<details\b[^>]*id="method-videos"[^>]*\bopen(?:\s|>)/);
-  const testimonials = page.indexOf('<PersonalTestimonials locale={locale as Locale} variant="services"');
-  assert.ok(testimonials > page.indexOf("<PublicConsultationCta") && begin > testimonials, "Owner #996 keeps visible method videos after booking and testimonials");
-  assert.match(page, /<ServicesIntroMedia locale=\{locale as Locale\} \/>/);
+  const testimonials = page.indexOf('<ServicesCompactPanel id="testimonials"><PersonalTestimonials locale={locale} variant="services" />');
+  assert.ok(testimonials > page.indexOf("<PublicConsultationCta") && begin > testimonials,
+    "Method videos remain accessible under MyTube after booking and testimonials");
+  const catalog = read("components/services-unified-catalog.tsx");
+  assert.match(catalog, /data-services-unified-panel=\{id\}/);
+  assert.match(catalog, /<ServicesCardActions locale=\{context\.locale\} title=\{title\}/);
+  assert.match(catalog, /mytube: "\/mytube"/);
+  const actions = read("components/services-card-actions.tsx");
+  assert.match(actions, /hidden=\{expanded !== "details"\}/);
+  assert.match(actions, /hidden=\{expanded !== "order"\}/);
+  assert.match(actions, /<Link href=\{href\} prefetch=\{false\}/);
+  assert.match(actions, /<MandatoryMessengerActions locale=\{locale\} whatsappUrl=\{messageUrl\}/);
+  assert.match(page, /<ServicesIntroMedia locale=\{locale\} \/>/);
   assert.match(extras, /<PageVideo slot="services-intro" locale=\{locale\} \/>/);
   assert.match(extras, /<PageVideo slot="method-hypnotherapy" locale=\{locale\} \/>/);
   assert.match(extras, /<PageVideo slot="method-constellations" locale=\{locale\} \/>/);

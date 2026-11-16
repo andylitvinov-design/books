@@ -805,14 +805,21 @@ try{
  assert.equal(await page.locator("[data-hh-unified-dock]:visible").count(),1);
  await page.locator("[data-unified-dock-item=practice]").click();
  await page.waitForURL(/\/ru\/holistic-support\/mobile\/?$/,{timeout:30000});
- const studyEntry=page.locator("[data-study-personalized-path]");
+ // Practice now opens the owner's published three-pathway Academy, not
+ // the obsolete five-question personalized quiz. Verify real catalogue links.
+ const studyEntry=page.locator("[data-holistic-study-academy]");
  await studyEntry.waitFor({state:"visible",timeout:30000});
- assert.equal(await studyEntry.locator("nav button").count(),5,
-   "Practice now opens the approved five-question Study path");
- assert.equal(await studyEntry.locator("[data-study-next]").isDisabled(),true);
- await studyEntry.locator('section[aria-label] [role="group"] button').first().click();
- assert.equal(await studyEntry.locator('[data-study-recommendation]').first().getAttribute('data-study-recommendation'),
-   "study-opora","stress answer selects the real anti-stress course");
+ assert.equal(await studyEntry.locator("[data-study-school-nav]").count(),3,
+   "Practice opens three approved Academy learning pathways");
+ assert.equal(await studyEntry.locator("[data-study-academy-group]").count(),3,
+   "Practice lists the three grouped Academy programs");
+ assert.equal(await studyEntry.locator("[data-study-academy-course]").count(),8,
+   "Practice links to eight source-backed courses");
+ assert.equal(await page.locator("[data-study-personalized-path]").count(),0,
+   "Retired personalized quiz must not reappear on the Academy default");
+ await studyEntry.locator('[data-study-school-nav="free"]').click();
+ assert.equal(new URL(page.url()).hash,"#study-free",
+   "Public Academy navigation reaches the free programs without a fake request");
  // The older consultation tabs are still accessible on their explicit view.
  await page.goto(origin+"/ru/holistic-support/mobile?view=meditation",
    {waitUntil:"domcontentloaded",timeout:75000});
@@ -852,7 +859,8 @@ try{
  assert.equal(await page.locator(".mobile-bottom-navigation:visible").count(),0);
  await homeDock.locator('[data-unified-dock-item="practice"]').click();
  await page.waitForURL(/\/ru\/holistic-support\/mobile\/?$/,{timeout:45000});
- await page.locator("[data-study-personalized-path]").waitFor({state:"visible",timeout:30000});
+ await page.locator("[data-holistic-study-academy]").waitFor({state:"visible",timeout:30000});
+ assert.equal(await page.locator("[data-holistic-study-academy] [data-study-academy-course]").count(),8);
  assert.equal(await page.locator("[data-support-practice-tabs]:visible").count(),0,
    "the approved Study page does not show the retired top menu");
  assert.equal(await page.locator("[data-hh-unified-dock]:visible").count(),1);
