@@ -250,29 +250,72 @@ async function startVisibleNative(disclosure, index, scenario = {}) {
         stalled.ready === 0 && stalled.frames === 0 && stalled.time === 0 &&
         stalled.playRequest?.state === 'pending' && initial.frames === 0 &&
         !initial.presentedFrame);
-      if (!genuineSameSourceStall && !pendingNoMetadata) throw clockFailure;
-      observation.nativeStall = { firstFailure: clockFailure.message, before: stalled,
-        recoveryRequests: 1, metadataReload: pendingNoMetadata };
-      // Only a decoder that had NO metadata BEFORE recovery may be reloaded.
-      // A healthy WebKit stream can transiently report readyState=0 after
-      // pause() during another participant's disclosure/seek. Reloading then
-      // destroys its buffered position and can strand the native MP4 at 0.
-      // Preserve the source and still require fresh real media clock/frames.
-      await video.evaluate((el,needsInitialMetadata)=>{
-        el.pause();
-        if(needsInitialMetadata)el.load();
-      },pendingNoMetadata);
-      await expect.poll(() => video.evaluate(el => el.paused), { timeout: 5000 }).toBe(true);
-      await video.evaluate(requestNativePlayback);
-      await expect.poll(() => video.evaluate(el => el.paused), { timeout: 5000 }).toBe(false);
-      await expect.poll(() => video.evaluate(el => el.currentTime), { timeout: 20000 }).toBeGreaterThan(initial.time + 0.1);
-      const resumed = await video.evaluate(nativePlaybackSnapshot);
-      assert.equal(resumed.currentSrc, stalled.currentSrc, 'Reactivation must retain original native source');
-      assert.equal(resumed.error, null, 'Reactivation must not ignore an HTMLMediaElement error');
-      assert.equal(resumed.paused, false, 'Reactivation must leave the native media playing');
-      observation.nativeStall.after = resumed;
-      // Baseline the second independent frame gate AFTER the initial stall.
-      frameBaseline = { ...initial, presentedFrame: stalled.presentedFrame };
+      // Real WebKit/GStreamer evidence (run 43934993825) also showed a
+      // reconstructed *same-source* decoder with a fresh 0.066s preroll frame
+      // while retaining a 16.989s clock, but paused and still seeking. This is
+      // NOT successful playback. Allow at most one explicit resume only after
+      // that native seek really finishes; retain the final independent frame
+      // and advancing media-time release gates below.
+      const rebuildingSameSourceSeek = Boolean(stalled.connected && stalled.visible &&
+        stalled.currentSrc && stalled.currentSrc === observation.before.currentSrc &&
+        stalled.paused && stalled.seeking && !stalled.ended && stalled.error === null &&
+        stalled.ready >= 2 && stalled.frames === 0 &&
+        stalled.playRequest?.state === 'fulfilled' &&
+        Number.isFinite(initial.time) && initial.time > 1 &&
+        Math.abs(stalled.time - initial.time) <= 0.1 &&
+        initial.presentedFrame && stalled.presentedFrame &&
+        Number.isFinite(initial.presentedFrame.at) &&
+        Number.isFinite(stalled.presentedFrame.at) &&
+        stalled.presentedFrame.at > initial.presentedFrame.at &&
+        Number.isFinite(stalled.presentedFrame.mediaTime) &&
+        stalled.presentedFrame.mediaTime >= 0 && stalled.presentedFrame.mediaTime < 1);
+      if (!genuineSameSourceStall && !pendingNoMetadata && !rebuildingSameSourceSeek) throw clockFailure;
+      if (rebuildingSameSourceSeek) {
+        observation.nativeSeekRecovery = { firstFailure: clockFailure.message,
+          before: stalled, recoveryRequests: 1, metadataReload: false };
+        // Refuse false positives while the pipeline is still seeking, while
+        // paused at an unverified position or after a source/decoder error.
+        await expect.poll(() => video.evaluate((el,pinned) =>
+          el.currentSrc === pinned.src && el.paused && !el.seeking &&
+          !el.ended && !el.error && el.readyState >= 2 &&
+          Math.abs(el.currentTime - pinned.time) < 0.1,
+          {src:stalled.currentSrc,time:initial.time}), {timeout:15000}).toBe(true);
+        await video.evaluate(requestNativePlayback);
+        await expect.poll(() => video.evaluate(el =>
+          !el.paused && !el.seeking && !el.ended && !el.error), {timeout:5000}).toBe(true);
+        await expect.poll(() => video.evaluate(el => el.currentTime),
+          {timeout:20000}).toBeGreaterThan(initial.time + 0.1);
+        const resumed = await video.evaluate(nativePlaybackSnapshot);
+        assert.equal(resumed.currentSrc, stalled.currentSrc, 'Seek recovery must retain the real source');
+        assert.equal(resumed.error, null, 'Seek recovery must reject media errors');
+        assert.equal(resumed.paused, false, 'Seek recovery must reach real playing state');
+        assert.equal(resumed.seeking, false, 'Seek recovery must finish decoder seek');
+        observation.nativeSeekRecovery.after = resumed;
+        frameBaseline = { ...initial, presentedFrame: stalled.presentedFrame };
+      } else {
+        observation.nativeStall = { firstFailure: clockFailure.message, before: stalled,
+          recoveryRequests: 1, metadataReload: pendingNoMetadata };
+        // Only a decoder that had NO metadata BEFORE recovery may be reloaded.
+        // A healthy WebKit stream can transiently report readyState=0 after
+        // pause() during another participant's disclosure/seek. Reloading then
+        // destroys its buffered position and can strand the native MP4 at 0.
+        // Preserve the source and still require fresh real media clock/frames.
+        await video.evaluate((el,needsInitialMetadata)=>{
+          el.pause();
+          if(needsInitialMetadata)el.load();
+        },pendingNoMetadata);
+        await expect.poll(() => video.evaluate(el => el.paused), { timeout: 5000 }).toBe(true);
+        await video.evaluate(requestNativePlayback);
+        await expect.poll(() => video.evaluate(el => el.paused), { timeout: 5000 }).toBe(false);
+        await expect.poll(() => video.evaluate(el => el.currentTime), { timeout: 20000 }).toBeGreaterThan(initial.time + 0.1);
+        const resumed = await video.evaluate(nativePlaybackSnapshot);
+        assert.equal(resumed.currentSrc, stalled.currentSrc, 'Reactivation must retain original native source');
+        assert.equal(resumed.error, null, 'Reactivation must not ignore an HTMLMediaElement error');
+        assert.equal(resumed.paused, false, 'Reactivation must leave the native media playing');
+        observation.nativeStall.after = resumed;
+        // Baseline the second independent frame gate AFTER the initial stall.
+        frameBaseline = { ...initial, presentedFrame: stalled.presentedFrame };
+      }
     }
     // WebKit/GStreamer may reset BOTH totalVideoFrames and presentedFrames
     // during same-source decoder reconstruction (real 2026-11-16 run:

@@ -64,7 +64,7 @@ export async function GET(request){
         ...CACHE_HEADERS,'Content-Length':String(audio.length)}})
     }
 
-    const referenceId=myCoachFishVoice(personaId)
+    const referenceId=myCoachFishVoice(personaId,locale)
     if(!referenceId)throw new AppError('MY_COACH_INTRO_INVALID',400)
     const vendor=myCoachFishConfig()
     if(!vendor)throw new AppError('MY_COACH_NATURAL_VOICE_UNAVAILABLE',503)

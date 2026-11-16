@@ -254,9 +254,8 @@
 /* Approved 2026-11-12 My Coach live-session composition: preserve the real
    speech loop, in-tab transcript, persona assets and explicit privacy gates. */
 .heroSubtitle{display:none}
-.captionsControl,.endControl{display:inline-flex;align-items:center;justify-content:center;gap:4px;border:1px solid #e2e4dc;background:#fffdf9;color:#175c4e;text-decoration:none;font:700 11px/1.2 system-ui;cursor:pointer}
-.captionsControl[aria-pressed=false]{opacity:.58}
-.captionsControl:focus-visible,.endControl:focus-visible{outline:3px solid #16876b;outline-offset:2px}
+.languageControl,.endControl{display:inline-flex;align-items:center;justify-content:center;gap:4px;border:1px solid #e2e4dc;background:#fffdf9;color:#175c4e;text-decoration:none;font:700 11px/1.2 system-ui;cursor:pointer}
+.languageControl:focus-visible,.endControl:focus-visible{outline:3px solid #16876b;outline-offset:2px}
 @media(max-width:699px){
   .root[data-session-visual-v2]{gap:7px;background:#fbf6ed}
   .root[data-session-visual-v2] .sessionTopbar{min-height:52px;padding:6px 12px}
@@ -301,8 +300,8 @@
   .root[data-session-visual-v2] .transcriptFeed strong{font-size:10px;font-weight:800;letter-spacing:.035em;color:#336f60}
   .root[data-session-visual-v2] .transcriptFeed p{font-size:14px;line-height:1.35;margin-top:3px}
   .root[data-session-visual-v2] .voiceControls{display:grid;grid-template-columns:minmax(42px,1fr) minmax(42px,1fr) minmax(70px,1.4fr) minmax(42px,1fr) minmax(42px,1fr);gap:4px;min-height:73px;padding:2px 1px;background:transparent}
-  .root[data-session-visual-v2] .captionsControl,.root[data-session-visual-v2] .keyboardControl,.root[data-session-visual-v2] .replayControl,.root[data-session-visual-v2] .endControl{width:100%;max-width:51px;height:54px;min-height:51px;display:flex;flex-direction:column;gap:3px;align-items:center;justify-content:center;justify-self:center;border-radius:16px;font-size:10px;line-height:1.1;box-shadow:0 3px 9px #28453114}
-  .root[data-session-visual-v2] .captionsControl svg,.root[data-session-visual-v2] .keyboardControl svg,.root[data-session-visual-v2] .replayControl svg,.root[data-session-visual-v2] .endControl svg{width:20px;height:20px}
+  .root[data-session-visual-v2] .languageControl,.root[data-session-visual-v2] .keyboardControl,.root[data-session-visual-v2] .replayControl,.root[data-session-visual-v2] .endControl{width:100%;max-width:51px;height:54px;min-height:51px;display:flex;flex-direction:column;gap:3px;align-items:center;justify-content:center;justify-self:center;border-radius:16px;font-size:10px;line-height:1.1;box-shadow:0 3px 9px #28453114}
+  .root[data-session-visual-v2] .languageControl svg,.root[data-session-visual-v2] .keyboardControl svg,.root[data-session-visual-v2] .replayControl svg,.root[data-session-visual-v2] .endControl svg{width:20px;height:20px}
   .root[data-session-visual-v2] .endControl{border-color:#efd7d3;background:#fff1ed;color:#bb4d48}
   .root[data-session-visual-v2] .voiceCenter :global([data-my-coach-voice] button){width:66px;height:66px}
   .root[data-session-visual-v2] .voiceCenter :global([data-my-coach-voice] button svg){width:29px;height:29px}
@@ -328,9 +327,6 @@
 }
 
 /* One-line dictation language correction, fits the existing mobile transcript. */
-.transcriptLanguage{margin-left:auto;max-width:104px;min-width:64px;min-height:30px;padding:3px 6px;border:1px solid #d5e5dd;border-radius:9px;background:#fbfefa;color:#226551;font-size:11px;line-height:1.3;font-weight:650;font-family:inherit;flex-shrink:0}
-.transcriptLanguage:focus-visible{outline:2px solid #16866c;outline-offset:2px}
-@media(max-width:390px){.transcriptLanguage{max-width:90px;font-size:10px}}
 
 .naturalVoiceRow{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;
   padding:7px 12px;margin:0 2px 6px;border:1px solid #d5e7dc;
@@ -371,7 +367,7 @@
  .root[data-session-visual-v3] .voiceControls{order:0;z-index:1;position:relative;min-height:107px;width:100%;margin:-34px auto 0;padding:10px 9px 8px;border:1px solid #ece6dc;border-radius:27px;background:#fffdf9;box-shadow:0 7px 25px #284a3714}
  .root[data-session-visual-v3] .voiceCenter :global([data-my-coach-voice] button){width:92px;height:92px}
  .root[data-session-visual-v3] .voiceCenter :global([data-my-coach-voice] button svg){width:36px;height:36px}
- .root[data-session-visual-v3] .captionsControl,.root[data-session-visual-v3] .keyboardControl,.root[data-session-visual-v3] .replayControl,.root[data-session-visual-v3] .endControl{min-height:48px;max-width:57px;height:57px;border-radius:17px}
+ .root[data-session-visual-v3] .languageControl,.root[data-session-visual-v3] .keyboardControl,.root[data-session-visual-v3] .replayControl,.root[data-session-visual-v3] .endControl{min-height:48px;max-width:57px;height:57px;border-radius:17px}
  .root[data-session-visual-v3] .conversationPanel{order:1;width:100%;padding:12px 13px;border-radius:25px;box-shadow:0 6px 18px #28473510}
  .root[data-session-visual-v3] .conversationPanel .transcriptHeading{gap:7px;flex-wrap:wrap;font-size:clamp(13px,3.5vw,15px)}
  .root[data-session-visual-v3] .conversationPanel .transcriptFeed{min-height:90px;max-height:min(33dvh,285px);overflow-y:auto}
@@ -391,7 +387,7 @@
  .root[data-session-visual-v3] .sessionHero{height:250px}
  .root[data-session-visual-v3] .voiceControls{gap:2px;padding-inline:4px}
  .root[data-session-visual-v3] .voiceCenter :global([data-my-coach-voice] button){width:76px;height:76px}
- .root[data-session-visual-v3] .captionsControl,.root[data-session-visual-v3] .keyboardControl,.root[data-session-visual-v3] .replayControl,.root[data-session-visual-v3] .endControl{max-width:48px}
+ .root[data-session-visual-v3] .languageControl,.root[data-session-visual-v3] .keyboardControl,.root[data-session-visual-v3] .replayControl,.root[data-session-visual-v3] .endControl{max-width:48px}
  .root[data-session-visual-v3] .sessionHeroCopy{width:61%}
 }
 
@@ -726,7 +722,7 @@
     width:max-content;max-width:min(220px,calc(100vw - 120px));
     max-height:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   }
-  .root[data-session-visual-v4] .captionsControl,
+  .root[data-session-visual-v4] .languageControl,
   .root[data-session-visual-v4] .keyboardControl,
   .root[data-session-visual-v4] .replayControl,
   .root[data-session-visual-v4] .endControl{
@@ -916,7 +912,7 @@
     text-align:center;white-space:nowrap;
     overflow:hidden;text-overflow:ellipsis;pointer-events:none;
   }
-  .root[data-session-visual-v4] .captionsControl,
+  .root[data-session-visual-v4] .languageControl,
   .root[data-session-visual-v4] .keyboardControl,
   .root[data-session-visual-v4] .replayControl,
   .root[data-session-visual-v4] .endControl{
@@ -1139,3 +1135,68 @@
 
 /* Verified per-turn model source: neutral and compact even in iPhone voice mode. */
 .responseSource{display:inline;font-size:10px;font-weight:500;letter-spacing:0;color:#65796e;overflow-wrap:anywhere}
+/* iPhone keyboard mode: the parent shell tracks visualViewport.height and
+   offsetTop. On focused text reply, keep the transcript scrollable and the
+   Send/textarea row at the bottom of that shell, never in the page scroll.
+   This comes AFTER the large-portrait rules so typing cannot enlarge it. */
+@media(max-width:699px){
+  .root[data-session-visual-v4]:has(.textComposer textarea:focus){
+    box-sizing:border-box;height:100%;max-height:100%;min-height:0;
+    padding:0 0 4px;gap:0;overflow:hidden;
+  }
+  .root[data-session-visual-v4]:has(.textComposer textarea:focus) .sessionTopbar,
+  .root[data-session-visual-v4]:has(.textComposer textarea:focus) .sessionScroll,
+  .root[data-session-visual-v4]:has(.textComposer textarea:focus) .voiceControls,
+  .root[data-session-visual-v4]:has(.textComposer textarea:focus) .voicePrivacyDetails,
+  .root[data-session-visual-v4]:has(.textComposer textarea:focus) .playbackNotice,
+  .root[data-session-visual-v4]:has(.textComposer textarea:focus) .sessionTimeboxNotice,
+  .root[data-session-visual-v4]:has(.textComposer textarea:focus) .sessionMore{
+    display:none;
+  }
+  .root[data-session-visual-v4]:has(.textComposer textarea:focus) .voiceWorkspace{
+    box-sizing:border-box;display:flex;flex:1 1 0;flex-direction:column;
+    width:100%;min-height:0;max-height:100%;gap:0;margin:0;
+    overflow:hidden;
+  }
+  .root[data-session-visual-v4]:has(.textComposer textarea:focus) .conversationPanel{
+    box-sizing:border-box;display:flex;flex:1 1 0;flex-direction:column;
+    width:100%;min-height:0;max-height:100%;
+    margin:0;padding:8px 12px 5px;gap:6px;overflow:hidden;
+    border-radius:0;
+  }
+  .root[data-session-visual-v4]:has(.textComposer textarea:focus) .conversationPanel .liveTranscript{
+    display:flex;flex:1 1 0;flex-direction:column;
+    min-height:0;max-height:none;overflow:hidden;
+  }
+  .root[data-session-visual-v4]:has(.textComposer textarea:focus) .conversationPanel .transcriptFeed{
+    flex:1 1 0;min-height:0;max-height:none;overflow-y:auto;
+    overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+  }
+  .root[data-session-visual-v4]:has(.textComposer textarea:focus) .conversationPanel .textComposer{
+    flex:0 0 auto;order:2;width:100%;min-height:0;
+    max-height:min(155px,42%);margin:0;padding:6px 0 0;
+    overflow-y:auto;overflow-x:hidden;
+  }
+}
+
+/* The toolbar language control replaces CC in the existing mobile row.
+   Keep the iPhone's native select accessible and 47px touch height. */
+.root[data-my-coach-immersive-session] .languageControl{
+  min-width:0;overflow:hidden;padding-inline:2px;cursor:pointer;
+}
+.root[data-my-coach-immersive-session] .languageControl select{
+  box-sizing:border-box;display:block;width:100%;min-width:0;max-width:100%;
+  padding:1px 0;border:0;background:transparent;color:#175c4e;
+  font:800 10px/1.15 system-ui;text-align:center;text-align-last:center;
+  appearance:none;-webkit-appearance:none;cursor:pointer;
+}
+.root[data-my-coach-immersive-session] .languageControl:focus-within{
+  outline:3px solid #16876b;outline-offset:2px;
+}
+.root[data-my-coach-immersive-session] .captionMore{
+  display:block;width:100%;min-height:38px;margin:4px 0 8px;
+  padding:7px 10px;border:1px solid #c8ded3;border-radius:10px;
+  background:#f7fbf7;color:#175c4e;font:700 12px/1.3 system-ui;
+  text-align:left;cursor:pointer;
+}
+.root[data-my-coach-immersive-session] .captionMore[aria-pressed=true]{background:#e1f3e8}

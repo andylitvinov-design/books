@@ -366,6 +366,18 @@ test("Add video keeps the existing hydrated first-video editor visible across Sa
   assert.match(decoder,/if\(needsInitialMetadata\)el\.load\(\)/);
   assert.match(decoder,/\,pendingNoMetadata\)/);
   assert.doesNotMatch(decoder,/if \(el\.readyState === 0\) el\.load\(\)/);
+  // Real WebKit seeks that rebuild the decoder cannot be mistaken for success:
+  // one same-source recovery only after native seeking ends and fresh frames move.
+  assert.match(decoder,/const rebuildingSameSourceSeek = Boolean\(/);
+  assert.match(decoder,/stalled\.paused && stalled\.seeking && !stalled\.ended/);
+  assert.match(decoder,/stalled\.frames === 0/);
+  assert.match(decoder,/stalled\.presentedFrame\.at > initial\.presentedFrame\.at/);
+  assert.match(decoder,/!genuineSameSourceStall && !pendingNoMetadata && !rebuildingSameSourceSeek/);
+  assert.match(decoder,/el\.paused && !el\.seeking &&/);
+  assert.match(decoder,/Math\.abs\(el\.currentTime - pinned\.time\) < 0\.1/);
+  assert.match(decoder,/observation\.nativeSeekRecovery\.after = resumed/);
+  assert.match(decoder,/frame\.mediaTime > before\.time \+ 0\.35/);
+  assert.doesNotMatch(decoder,/if \(rebuildingSameSourceSeek\)[\s\S]*?metadataReload: true/);
   // WebKit/GStreamer can reset presentedFrames after the native decoder is
   // rebuilt, even as the actual player clock and decoded frames advance.
   // Never require this resettable counter to be monotonic across resumes.
