@@ -8,18 +8,15 @@ const wrapper = read("components/homepage-contact-cta.tsx");
 const capture = read("components/homepage-free-capture.tsx");
 const css = read("components/consultation-choice-capture.module.css");
 
-test("the approved bottom blue capture contains the three requested free offers, without a duplicate chooser", () => {
-  assert.doesNotMatch(home, /<FreeInsightsPaths|import \{ FreeInsightsPaths \}/);
-  assert.match(home, /<HomepageContactCta locale=\{locale\} \/>/);
-  assert.match(wrapper, /id="home-consultation"/);
-  assert.match(wrapper, /data-home-contact-capture/);
-  assert.match(wrapper, /<HomepageFreeCapture locale=\{locale\} \/>/);
-  assert.match(capture, /data-home-free-capture="true"/);
-  assert.match(capture, /data-consultation-capture="home-free"/);
-  assert.match(capture, /data-choice-layout="home-free"/);
-  assert.match(capture, /type FreeOffer = "selfTest" \| "analysis" \| "reiki"/);
-  assert.match(capture, /offerOrder: FreeOffer\[\] = \["selfTest", "analysis", "reiki"\]/);
-  assert.doesNotMatch(capture, /"wu"|"stress"/);
+test("Dialog-first homepage replaces old 'the approved bottom blue capture contains the thre' contract", () => {
+  const home=read("components/holistic-house-home.tsx");
+  const dialog=read("components/home-dialog-first.tsx");
+  assert.match(home, /<HomeDialogFirst locale=\{locale\}\/>/);
+  assert.doesNotMatch(home, /<ProfileHubTabs|<HomeSectionCarousel|<HomeFeaturedWorkspace|<HomeMoreDisclosure|<PersonalTestimonials|<HomepageContactCta/);
+  assert.match(dialog, /data-hh-home-composer/);
+  assert.match(dialog, /data-hh-home-business-switch/);
+  assert.match(dialog, /data-hh-home-starters/);
+  assert.match(dialog, /window\.sessionStorage\.setItem\(HOME_AI_HANDOFF_KEY,payload\)/);
 });
 
 test("self-test and Reiki keep direct routes; personal review opens the shared phone-and-messenger form in place", () => {

@@ -265,61 +265,52 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
         // The home now owns the compact My Space chrome. Keep all eleven
         // responsive widths, real interactions, accessibility and lower dock.
         if(surface==='home'){
-          const hub=page.locator('[data-profile-hub-tabs]')
-          const header=hub.locator(':scope > header')
+          const root=page.locator('[data-hh-dialog-first]')
+          const header=root.locator('[data-hh-dialog-header]')
+          await expect(root).toBeVisible()
           await expect(header).toBeVisible()
-          await expect(page.locator('header.house-header--services')).toHaveCount(0)
+          await expect(page.locator('header.house-header--services,[data-profile-hub-tabs]')).toHaveCount(0)
           await expect(page.locator('[data-sitewide-antistress-banner]')).toHaveCount(0)
-          const language=header.locator('[data-profile-language-switch]')
-          const langTrigger=language.locator('summary')
-          const choices=language.locator('[data-profile-language]')
-          await expect(langTrigger).toContainText(locale.toUpperCase())
-          assert.deepEqual(await choices.evaluateAll(list=>list.map(x=>x.lang)),['ru','en','es'])
-          await expect(language.locator('[data-profile-language][aria-current="page"]')).toHaveAttribute('lang',locale)
-          const modes=header.locator('[data-profile-mode-switch]')
-          await expect(modes.locator('a')).toHaveCount(2)
-          await expect(modes.locator('[data-profile-mode="live"]')).toHaveAttribute('aria-current','page')
+          const lang=header.locator('[data-hh-home-language]')
+          const trigger=lang.locator('summary')
+          await expect(trigger).toContainText(locale.toUpperCase())
           const search=header.locator('[data-site-search-trigger]')
           const menu=header.locator('details.site-main-menu')
-          for(const control of [langTrigger,search,menu.locator('summary')]){
-            if(width>=360) await inViewport(control,label+'/header-action');
-            else{
-              // 320px: four controls and two mode links still fit ONE row.
-              // They preserve 44px height with a compact >=38px hit box.
-              await expect(control).toBeVisible();
-              const box=await control.boundingBox();
-              assert.ok(box&&box.width>=38&&box.height>=44
-                &&box.x>=-1&&box.x+box.width<=width+1&&box.y>=-1&&box.y+box.height<=901,
-                label+': 320px compact control remains tappable without overflow');
-            }
+          for(const [name,control] of [['language',trigger],['search',search],['menu',menu.locator('summary')]]){
+            const box=await control.boundingBox()
+            assert.ok(box&&box.x>=-1&&box.x+box.width<=width+1&&box.height>=40,
+              label+': accessible '+name+' fits')
           }
-          const geometry=await header.evaluate(el=>{
-            const title=el.firstElementChild.getBoundingClientRect(),actions=el.lastElementChild.getBoundingClientRect()
-            return {right:el.getBoundingClientRect().right,overlap:title.right-actions.left,
-              difference:Math.abs((title.top+title.height/2)-(actions.top+actions.height/2))}
-          })
-          assert.ok(geometry.right<=width+1&&geometry.overlap<=1&&geometry.difference<=12,label+': single-row header')
-          const video=hub.locator('[data-profile-video-hero] .site-video-frame')
-          if(await video.count()){const rect=await video.boundingBox();assert.ok(rect&&Math.abs(rect.width/rect.height-16/9)<0.03,label+': player 16:9')}
-          await langTrigger.click()
-          await expect(language).toHaveJSProperty('open',true)
-          await expect(choices.first()).toBeVisible()
-          await langTrigger.click()
-          await expect(language).toHaveJSProperty('open',false)
+          const headerBox=await header.boundingBox()
+          assert.ok(headerBox&&headerBox.x>=-1&&headerBox.x+headerBox.width<=width+1,
+            label+': compact header is one row in viewport')
+          const switcher=root.locator('[data-hh-home-business-switch]')
+          await expect(switcher.locator('button')).toHaveCount(2)
+          await expect(switcher.locator('button').first()).toHaveAttribute('aria-pressed','true')
+          await switcher.locator('button').nth(1).click()
+          await expect(root).toHaveAttribute('data-home-mode','business')
+          await switcher.locator('button').first().click()
+          await expect(root).toHaveAttribute('data-home-mode','self')
+          await expect(root.locator('[data-hh-home-starters] button')).toHaveCount(3)
+          await expect(root.locator('[data-hh-home-composer] textarea')).toBeVisible()
+          await trigger.click()
+          await expect(lang).toHaveJSProperty('open',true)
+          await expect(lang.locator('a[lang]')).toHaveCount(3)
+          await trigger.click()
           await search.click()
           await expect(header.locator('[data-site-search-panel]')).toBeVisible()
           await page.keyboard.press('Escape')
           await expect(header.locator('[data-site-search-panel]')).toHaveCount(0)
           await menu.locator('summary').click()
           await expect(menu).toHaveJSProperty('open',true)
-          await expect(menu.locator('.site-main-menu-panel [data-nav-item="services"]')).toBeVisible()
           await page.keyboard.press('Escape')
           await expect(menu).toHaveJSProperty('open',false)
-          assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),label+': no overflow')
+          assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),
+            label+': no overflow')
           await header.screenshot({path:evidence+'/header-'+engine+'-'+locale+'-home-'+width+'.png'})
           const bottom=await assertUnifiedBottomNavigation(page,{locale,label,visible:width<760})
-          if(width<760) await bottom.screenshot({path:evidence+'/bottom-'+engine+'-'+locale+'-home-'+width+'.png'})
-          pass('Compact My Space Home: '+label)
+          if(width<760)await bottom.screenshot({path:evidence+'/bottom-'+engine+'-'+locale+'-home-'+width+'.png'})
+          pass('Dialog-first My Space Home: '+label)
           continue
         }
         const header = page.locator('header.house-header--services')

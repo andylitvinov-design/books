@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import {Mic, Paperclip, Plus, Send, X} from "lucide-react";
 import {MessengerAiLanding} from "@/components/app/messenger-ai-landing";
+import {takeHomeAiHandoff} from "@/lib/home-ai-handoff.mjs";
 import {MessengerSixProjects,messengerProject} from "@/components/app/messenger-six-projects";
 import {sessionGoalChoices,sessionCopy,sessionGoalForText,sessionOfferIds,sessionOfferDescription} from "@/lib/holistic-support/session-goal-intake.mjs";
 import type {MessengerProjectId,MessengerProjectOption,MessengerTestFocus} from "@/components/app/messenger-six-projects";
@@ -1159,6 +1160,17 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       if(alternativeAbortRef.current===abort){alternativeAbortRef.current=null;setAlternativeBusy(false);}
     }
   }
+  const consumedHomeHandoff=useRef(false);
+  useEffect(()=>{
+    if(!messengerView||authStatus==="checking"||consumedHomeHandoff.current)return;
+    consumedHomeHandoff.current=true;
+    // One-use same-tab text is removed BEFORE sending. Never log or expose it
+    // in a URL; all original AI safety/consent checks run through sendTurn.
+    const handoff=takeHomeAiHandoff(window.sessionStorage,routeLocale);
+    if(!handoff)return;
+    setEntryOpen(false);
+    void sendTurn(handoff.text);
+  },[messengerView,authStatus,routeLocale]);
   function submit(event:FormEvent<HTMLFormElement>) {
     event.preventDefault();
     void sendTurn(draft);

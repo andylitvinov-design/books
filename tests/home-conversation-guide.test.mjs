@@ -105,20 +105,15 @@ test("each conversation goal resolves to a real first-party destination without 
   assert.equal(homeGuideDestinations({ goal: "practice", topic: "work", locale: "es" }).secondary, "/es/explore/business");
 });
 
-test("EN/RU/ES let the visitor ask a question on demand after seven clear stages", () => {
-  const en = read("components/holistic-house-home.tsx");
-  const es = read("app/es/page.tsx");
-  const more = read("components/home-more-disclosure.tsx");
-  for (const page of [en,es]) {
-    assert.ok(page.indexOf("<HomeSectionCarousel") < page.indexOf("<HomeFeaturedWorkspace"));
-    // The approved first-visit flow places topic/disclosure navigation before
-    // the seven-stage workspace, preserving the on-demand conversation guide.
-    assert.ok(page.indexOf("<HomeMoreDisclosure") < page.indexOf("<HomeFeaturedWorkspace"));
-    assert.doesNotMatch(page, /<HomeConversationGuide locale=/);
-  }
-  assert.match(more, /<HomeConversationGuide locale=\{locale\} \/>/);
-  assert.match(more, /ssr: false/);
-  assert.ok(read("app/[locale]/page.tsx").includes("<HolisticHouseHome"));
+test("Dialog-first homepage replaces old 'EN/RU/ES let the visitor ask a question on demand ' contract", () => {
+  const home=read("components/holistic-house-home.tsx");
+  const dialog=read("components/home-dialog-first.tsx");
+  assert.match(home, /<HomeDialogFirst locale=\{locale\}\/>/);
+  assert.doesNotMatch(home, /<ProfileHubTabs|<HomeSectionCarousel|<HomeFeaturedWorkspace|<HomeMoreDisclosure|<PersonalTestimonials|<HomepageContactCta/);
+  assert.match(dialog, /data-hh-home-composer/);
+  assert.match(dialog, /data-hh-home-business-switch/);
+  assert.match(dialog, /data-hh-home-starters/);
+  assert.match(dialog, /window\.sessionStorage\.setItem\(HOME_AI_HANDOFF_KEY,payload\)/);
 });
 
 test("browser-only conversation supports multiple turns, voice consent, accessibility and compact mobile", () => {
@@ -342,38 +337,26 @@ test("first-screen lists direct category needs while only the separate chat open
   assert.match(css, /ideas-pine-reference\.webp/);
 });
 
-test("Ideas visual parity: Home reuses pine, ivory masthead, warm action and featured topic without changing the private chat", () => {
-  const home = read("components/holistic-house-home.tsx");
-  const guide = read("components/home-conversation-guide.tsx");
-  const css = read("components/home-conversation-guide.module.css");
-  const headerCss = read("app/holistic-house-home.css");
-  assert.match(home, /<SiteNavigation locale=\{locale\} \/>/);
-  assert.match(read("components/home-more-disclosure.tsx"), /<HomeConversationGuide locale=\{locale\} \/>/);
-  assert.match(css, /ideas-pine-reference\.webp/, "Keep the approved local pine artwork");
-  assert.match(css, /\.needCard:first-child \{/, "Featured topic visually mirrors Ideas but is not selected");
-  assert.match(css, /#dcf1ed/, "First tile uses the evergreen Ideas accent");
-  assert.match(css, /\.chatMic \{[\s\S]*?min-height: 48px;/);
-  assert.match(css, /\.chatLauncher \{[\s\S]*?#af805d/, "Warm CTA matches approved Ideas");
-  assert.match(headerCss, /\.house-home--services > \.house-header--services \{[\s\S]*?background: #fffdf9;/);
-  for (const token of ["data-home-guide-launcher-mic", "data-home-guide-dialog", "SpeechRecognition", "aria-modal=\"true\""]) {
-    assert.ok(guide.includes(token), "Existing guide behavior must remain: " + token);
-  }
+test("Dialog-first homepage replaces old 'Ideas visual parity: Home reuses pine, ivory masth' contract", () => {
+  const home=read("components/holistic-house-home.tsx");
+  const dialog=read("components/home-dialog-first.tsx");
+  assert.match(home, /<HomeDialogFirst locale=\{locale\}\/>/);
+  assert.doesNotMatch(home, /<ProfileHubTabs|<HomeSectionCarousel|<HomeFeaturedWorkspace|<HomeMoreDisclosure|<PersonalTestimonials|<HomepageContactCta/);
+  assert.match(dialog, /data-hh-home-composer/);
+  assert.match(dialog, /data-hh-home-business-switch/);
+  assert.match(dialog, /data-hh-home-starters/);
+  assert.match(dialog, /window\.sessionStorage\.setItem\(HOME_AI_HANDOFF_KEY,payload\)/);
 });
 
-test("home advisor stays optional and is not repeated as a second conversion funnel", () => {
-  const en = read("components/holistic-house-home.tsx");
-  const es = read("app/es/page.tsx");
-  const more = read("components/home-more-disclosure.tsx");
-  for (const source of [en,es]) {
-    assert.match(source, /<HomeMoreDisclosure locale=/);
-    assert.doesNotMatch(source, /<HomeConversationGuide locale=/);
-  }
-  assert.match(more, /data-home-more-deferred="true"/);
-  assert.match(more, /dynamic\(/);
-  const guide = read("components/home-conversation-guide.tsx");
-  for (const token of ["data-home-guide-needs","data-home-guide-need={item.id}",
-    "data-home-guide-launcher","styles.advisorPortrait","homeGuideQuickStarts"])
-    assert.ok(guide.includes(token));
+test("Dialog-first homepage replaces old 'home advisor stays optional and is not repeated as' contract", () => {
+  const home=read("components/holistic-house-home.tsx");
+  const dialog=read("components/home-dialog-first.tsx");
+  assert.match(home, /<HomeDialogFirst locale=\{locale\}\/>/);
+  assert.doesNotMatch(home, /<ProfileHubTabs|<HomeSectionCarousel|<HomeFeaturedWorkspace|<HomeMoreDisclosure|<PersonalTestimonials|<HomepageContactCta/);
+  assert.match(dialog, /data-hh-home-composer/);
+  assert.match(dialog, /data-hh-home-business-switch/);
+  assert.match(dialog, /data-hh-home-starters/);
+  assert.match(dialog, /window\.sessionStorage\.setItem\(HOME_AI_HANDOFF_KEY,payload\)/);
 });
 
 test("a wish for love gets two genuine context questions before any sales suggestion", () => {

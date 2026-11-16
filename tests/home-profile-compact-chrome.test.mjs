@@ -3,14 +3,16 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 
-test('Home uses My Space as its only top chrome and hides the sitewide promo ribbon', () => {
-  const home=read('components/holistic-house-home.tsx')
-  const banner=read('components/sitewide-antistress-banner.tsx')
-  assert.match(home, /<ProfileHubTabs locale=\{locale\} publicEntry \/>/)
-  assert.doesNotMatch(home, /<header className="house-header house-header--services">/)
-  assert.match(banner, /pathname === "\/" \|\|/)
-  assert.match(banner, /\(\?:ru\|en\|es\)/)
-})
+test("Dialog-first homepage replaces old 'Home uses My Space as its only top chrome and hide' contract", () => {
+  const home=read("components/holistic-house-home.tsx");
+  const dialog=read("components/home-dialog-first.tsx");
+  assert.match(home, /<HomeDialogFirst locale=\{locale\}\/>/);
+  assert.doesNotMatch(home, /<ProfileHubTabs|<HomeSectionCarousel|<HomeFeaturedWorkspace|<HomeMoreDisclosure|<PersonalTestimonials|<HomepageContactCta/);
+  assert.match(dialog, /data-hh-home-composer/);
+  assert.match(dialog, /data-hh-home-business-switch/);
+  assert.match(dialog, /data-hh-home-starters/);
+  assert.match(dialog, /window\.sessionStorage\.setItem\(HOME_AI_HANDOFF_KEY,payload\)/);
+});
 
 test('Home and Profile share real search/menu, compact locale switch and working public links', () => {
   const hub=read('components/app/profile-hub-tabs.jsx')

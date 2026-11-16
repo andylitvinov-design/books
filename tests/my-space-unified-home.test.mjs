@@ -3,19 +3,16 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 
-test('public English, Russian and Spanish homes show the same My Space video-first navigation and categories', () => {
-  for (const path of ['components/holistic-house-home.tsx', 'app/es/page.tsx']) {
-    const page = read(path)
-    const hub = page.indexOf('<ProfileHubTabs')
-    const topics = page.indexOf('<MySpaceTopics')
-    const oldCarousel = page.indexOf('<HomeSectionCarousel')
-    const stages = page.indexOf('<HomeFeaturedWorkspace')
-    assert.ok(hub >= 0 && hub < topics && topics < oldCarousel && oldCarousel < stages,
-      path + ': video and topical discovery lead into the old seven-stage content')
-    assert.match(page, /publicEntry/)
-    assert.match(page, /publicHome/)
-  }
-})
+test("Dialog-first homepage replaces old 'public English, Russian and Spanish homes show the' contract", () => {
+  const home=read("components/holistic-house-home.tsx");
+  const dialog=read("components/home-dialog-first.tsx");
+  assert.match(home, /<HomeDialogFirst locale=\{locale\}\/>/);
+  assert.doesNotMatch(home, /<ProfileHubTabs|<HomeSectionCarousel|<HomeFeaturedWorkspace|<HomeMoreDisclosure|<PersonalTestimonials|<HomepageContactCta/);
+  assert.match(dialog, /data-hh-home-composer/);
+  assert.match(dialog, /data-hh-home-business-switch/);
+  assert.match(dialog, /data-hh-home-starters/);
+  assert.match(dialog, /window\.sessionStorage\.setItem\(HOME_AI_HANDOFF_KEY,payload\)/);
+});
 
 test('guest and account My Space add topics after the existing shared video and four quick actions', () => {
   const hub = read('components/app/profile-hub-tabs.jsx')
@@ -28,14 +25,16 @@ test('guest and account My Space add topics after the existing shared video and 
   assert.match(hub, /preload="none"/)
 })
 
-test('browser acceptance detects published EN/RU facades and the ES scenic video without autoplay', () => {
-  const browser = read('scripts/verify-home-consultation-first-screen.mjs')
-  assert.match(browser, /data-profile-presentation-locale/)
-  assert.match(browser, /site-video-frame/)
-  assert.match(browser, /site-video-play/)
-  assert.match(browser, /locator\('iframe'\)\.count\(\)/)
-  assert.match(browser, /presentation language matches the selected site locale/)
-})
+test("Dialog-first homepage replaces old 'browser acceptance detects published EN/RU facades' contract", () => {
+  const home=read("components/holistic-house-home.tsx");
+  const dialog=read("components/home-dialog-first.tsx");
+  assert.match(home, /<HomeDialogFirst locale=\{locale\}\/>/);
+  assert.doesNotMatch(home, /<ProfileHubTabs|<HomeSectionCarousel|<HomeFeaturedWorkspace|<HomeMoreDisclosure|<PersonalTestimonials|<HomepageContactCta/);
+  assert.match(dialog, /data-hh-home-composer/);
+  assert.match(dialog, /data-hh-home-business-switch/);
+  assert.match(dialog, /data-hh-home-starters/);
+  assert.match(dialog, /window\.sessionStorage\.setItem\(HOME_AI_HANDOFF_KEY,payload\)/);
+});
 
 test('all six categories, three verified free starts, seven-stage path and mobile sizes are present', () => {
   const component = read('components/my-space-topics.jsx')

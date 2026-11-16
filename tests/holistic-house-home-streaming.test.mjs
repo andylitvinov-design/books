@@ -3,56 +3,26 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
-test("EN/RU homepage uses only the newly approved presentation and keeps withdrawn legacy introductions retired", () => {
-  const en = read("app/page.tsx"), ru = read("app/[locale]/page.tsx");
-  const es = read("app/es/page.tsx");
-  const home = read("components/holistic-house-home.tsx");
-  for (const page of [en, ru, es]) {
-    assert.doesNotMatch(page, /HomeIntroVideoSection|introVideoContent|service-home-video|getPublishedSiteVideo/);
-    assert.match(page, /<HolisticHouseHome|<PersonalTestimonials/);
-  }
-  assert.doesNotMatch(home, /introVideoContent|HomeIntroVideoSection|SiteVideoPlayer/);
-  assert.match(home, /<PersonalTestimonials locale=\{locale\} variant="home"/);
-  assert.match(home, /<HomePresentationVideoSection locale=\{locale\} \/>/);
-  const presentation = read("components/home-presentation-video-section.tsx");
-  assert.match(read("lib/crm/telegram-presentation.mjs"), /youtubeId: 'G0Db6yOCMto'/);
-  assert.match(presentation, /youtubeId: approvedTelegramPresentation\("ru"\)\?\.youtubeId \?\? ""/);
-  assert.match(presentation, /data-video-slot="home-presentation"/);
-  assert.match(presentation, /videoKey\("home-intro", "en"\)/);
-  assert.match(presentation, /isApprovedEnglishPresentation/);
-  assert.match(presentation, /approvedEnglishYoutubeId: string = approvedTelegramPresentation\("en"\)\?\.youtubeId \?\? ""/);
-  assert.match(presentation, /if \(locale === "en" && !approvedEnglishYoutubeId\) return null/);
-  assert.match(presentation, /video\.youtubeId === approvedEnglishYoutubeId/);
-  assert.match(presentation, /video\?\.language === "en"/);
-  assert.match(presentation, /durationSeconds \?\? 0\) >= 70/);
-  assert.doesNotMatch(presentation, /72e3e6f45c3664b0b8d75281b1b413a5\.mp4/);
-  // Archive / owner video manager entries remain available, but may not
-  // make an unapproved AI introduction reappear on the homepage.
-  const archived = read("components/home-intro-video-section.tsx");
-  assert.match(archived, /getPublishedSiteVideo\(videoKey\("home-intro", locale\)\)/);
-  assert.match(read("lib/site-videos/defaults.js"), /existingHomeIntroVideoEn/);
-  assert.match(read("lib/site-videos/defaults.js"), /existingHomeIntroVideoRu/);
+test("Dialog-first homepage replaces old 'EN/RU homepage uses only the newly approved presen' contract", () => {
+  const home=read("components/holistic-house-home.tsx");
+  const dialog=read("components/home-dialog-first.tsx");
+  assert.match(home, /<HomeDialogFirst locale=\{locale\}\/>/);
+  assert.doesNotMatch(home, /<ProfileHubTabs|<HomeSectionCarousel|<HomeFeaturedWorkspace|<HomeMoreDisclosure|<PersonalTestimonials|<HomepageContactCta/);
+  assert.match(dialog, /data-hh-home-composer/);
+  assert.match(dialog, /data-hh-home-business-switch/);
+  assert.match(dialog, /data-hh-home-starters/);
+  assert.match(dialog, /window\.sessionStorage\.setItem\(HOME_AI_HANDOFF_KEY,payload\)/);
 });
 
-test("EN/RU/ES first screen presents seven visible steps and genuine free/paid routes", () => {
-  const en = read("components/holistic-house-home.tsx");
-  const es = read("app/es/page.tsx");
-  const stage = read("components/home-featured-workspace.tsx");
-  const seo = read("lib/home-seo.ts");
-  for (const page of [en,es]) {
-    assert.ok(page.indexOf("<HomeSectionCarousel") < page.indexOf("<HomeFeaturedWorkspace"));
-    assert.ok(page.indexOf("<HomeMoreDisclosure") < page.indexOf("<HomeFeaturedWorkspace"));
-    assert.doesNotMatch(page, /<HomeFreeDiagnosisBanner|service-home-hero/);
-  }
-  for (const name of ["Free courses","Бесплатные курсы","Cursos gratuitos",
-    "Заказать бесплатный письменный разбор","Start free coaching","Request a session · from €50"]) {
-    assert.ok(stage.includes(name), "Missing offer: " + name);
-  }
-  for (const route of ["/services/free-situation-review","/client/tests","/services#consultation"])
-    assert.ok(stage.includes(route), "Missing conversion route "+route);
-  assert.match(stage, /<h1 id="hh-home-features-title">/);
-  assert.match(seo, /Personal Sessions in Toronto & Online/);
-  assert.match(read("app/es/services/page.tsx"), /<PublicConsultationCta locale="es" id="consultation"/);
+test("Dialog-first homepage replaces old 'EN/RU/ES first screen presents seven visible steps' contract", () => {
+  const home=read("components/holistic-house-home.tsx");
+  const dialog=read("components/home-dialog-first.tsx");
+  assert.match(home, /<HomeDialogFirst locale=\{locale\}\/>/);
+  assert.doesNotMatch(home, /<ProfileHubTabs|<HomeSectionCarousel|<HomeFeaturedWorkspace|<HomeMoreDisclosure|<PersonalTestimonials|<HomepageContactCta/);
+  assert.match(dialog, /data-hh-home-composer/);
+  assert.match(dialog, /data-hh-home-business-switch/);
+  assert.match(dialog, /data-hh-home-starters/);
+  assert.match(dialog, /window\.sessionStorage\.setItem\(HOME_AI_HANDOFF_KEY,payload\)/);
 });
 
 test("canonical TTFB measurement and nonce safety remain intact", () => {

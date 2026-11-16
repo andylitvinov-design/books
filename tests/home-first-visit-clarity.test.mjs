@@ -17,34 +17,15 @@ test("EN RU ES show free-first offers and paid requests with distinct CTA and de
   assert.match(css, /min-height: 44px/);
 });
 
-test("five early topic filters replace duplicated offer, test and My Space sections", () => {
-  const home = read("components/holistic-house-home.tsx");
-  const es = read("app/es/page.tsx");
-  const more = read("components/home-more-disclosure.tsx");
-  for (const source of [home, es]) {
-    assert.match(source, /<HomeFeaturedWorkspace locale=/);
-    assert.match(source, /<HomeMoreDisclosure locale=/);
-    assert.doesNotMatch(source, /HomeFreePaths|FreeInsightsPaths|<HomeFreeDiagnosisBanner|<HomepageTopicJourneys|<HomePersonalSpaceCard|service-home-hero/);
-    assert.ok(source.indexOf("<HomeSectionCarousel") < source.indexOf("<HomeMoreDisclosure"), "Keep the photo hero first");
-    assert.ok(source.indexOf("<HomeMoreDisclosure") < source.indexOf("<HomeFeaturedWorkspace"), "Topic choices belong immediately after the hero");
-    assert.equal((source.match(/<HomeMoreDisclosure/g) || []).length, 1, "One topic picker, no duplicate footer section");
-  }
-  for (const [category,route] of Object.entries({
-    'goals-money':'business','love-relationships':'love',
-    'energy-confidence':'energy','stress-anxiety':'stress'
-  })) assert.ok(more.includes('"' + category + '": "' + route + '"'),category);
-  assert.match(more, /categories\.map\(category => <Link/);
-  assert.match(more, /data-home-topic-filter=\{category\.id\}/);
-  for (const key of ['temple','services','courses'])
-    assert.ok(more.includes('data-home-topic-filter="' + key + '"'),key);
-  assert.match(more, /\{expanded \? <HomeConversationGuide locale=\{locale\} \/> : null\}/);
-  const style = read("components/home-more-disclosure.module.css");
-  assert.match(style, /grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/);
-  assert.match(style, /@media \(max-width: 640px\)/);
-  assert.match(style, /\.filters \.chip:nth-child\(3\) \{ grid-column: auto; \}/);
-  assert.match(style, /overflow-wrap: anywhere/);
-  assert.match(style, /:focus-visible/);
-  for (const phrase of ["Explore by topic", "Выберите тему", "Explora por tema"]) assert.ok(more.includes(phrase));
+test("Dialog-first homepage replaces old 'five early topic filters replace duplicated offer,' contract", () => {
+  const home=read("components/holistic-house-home.tsx");
+  const dialog=read("components/home-dialog-first.tsx");
+  assert.match(home, /<HomeDialogFirst locale=\{locale\}\/>/);
+  assert.doesNotMatch(home, /<ProfileHubTabs|<HomeSectionCarousel|<HomeFeaturedWorkspace|<HomeMoreDisclosure|<PersonalTestimonials|<HomepageContactCta/);
+  assert.match(dialog, /data-hh-home-composer/);
+  assert.match(dialog, /data-hh-home-business-switch/);
+  assert.match(dialog, /data-hh-home-starters/);
+  assert.match(dialog, /window\.sessionStorage\.setItem\(HOME_AI_HANDOFF_KEY,payload\)/);
 });
 
 test("main menu prioritizes Energy Love Business and retains full legacy catalogues", () => {
@@ -60,10 +41,14 @@ test("main menu prioritizes Energy Love Business and retains full legacy catalog
   assert.match(nav, /mainMenuItems\.map/);
 });
 
-test("final consented capture remains after seven stages", () => {
-  const home = read("components/holistic-house-home.tsx");
-  const spanish = read("app/es/page.tsx");
-  assert.ok(home.indexOf("<HomeMoreDisclosure") < home.indexOf("<HomepageContactCta"));
-  assert.ok(spanish.indexOf("<HomeMoreDisclosure") < spanish.indexOf("<PublicConsultationCta"));
-  assert.match(read("components/homepage-contact-cta.tsx"), /data-home-contact-capture/);
+test("Dialog-first homepage replaces old 'final consented capture remains after seven stages' contract", () => {
+  const home=read("components/holistic-house-home.tsx");
+  const dialog=read("components/home-dialog-first.tsx");
+  assert.match(home, /<HomeDialogFirst locale=\{locale\}\/>/);
+  assert.doesNotMatch(home, /<ProfileHubTabs|<HomeSectionCarousel|<HomeFeaturedWorkspace|<HomeMoreDisclosure|<PersonalTestimonials|<HomepageContactCta/);
+  assert.match(dialog, /data-hh-home-composer/);
+  assert.match(dialog, /data-hh-home-business-switch/);
+  assert.match(dialog, /data-hh-home-starters/);
+  assert.match(dialog, /window\.sessionStorage\.setItem\(HOME_AI_HANDOFF_KEY,payload\)/);
 });
+
