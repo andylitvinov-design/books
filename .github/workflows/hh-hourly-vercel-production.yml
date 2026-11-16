@@ -1,7 +1,7 @@
 name: HH hourly Vercel production batch
 on:
   schedule:
-    - cron: '0 * * * *' # top of every hour in Toronto and UTC (including DST)
+    - cron: '17 * * * *' # off-peak each hour, Toronto/UTC: one existing scheduled event
   workflow_dispatch:
     inputs:
       emergency:
