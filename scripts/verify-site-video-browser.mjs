@@ -39,8 +39,7 @@ try {
         const redisScope=classifyIsolatedVideoRedisCommand(command)
         assert.notEqual(redisScope,'deny')
         if(redisScope==='synthetic-missing'){
-          // Do not fabricate a signed-in YouTube channel. A missing optional
-          // YouTube record is not an error in the site-video test adapter.
+          // Missing optional EN YouTube upload is not a fabricated player.
           response.writeHead(200,{'Content-Type':'application/json'})
           response.end(JSON.stringify({result:null}))
           return
@@ -81,11 +80,29 @@ try {
   }
   browser = await chromium.launch({ headless: true })
   const context = await browser.newContext({ viewport: { width: 1365, height: 1000 }, serviceWorkers: 'block' })
+  // Next 15 DEV can briefly lack a clientReferenceManifest on the first
+  // dynamically compiled /ru home render. Precompile both public Home routes
+  // by an isolated HTTP GET before any browser page can receive that transient
+  // server error. A genuine repeated 500 remains fatal; LIVE is unchanged.
+  if(!live){
+    for(const warmPath of ['/', '/ru']){
+      let ready=false
+      for(let attempt=0;attempt<3;attempt++){
+        const response=await context.request.get(origin+warmPath,{timeout:60000})
+        if(response.status()===200){ready=true;break}
+        if(response.status()!==500)throw new Error('Next DEV warmup unexpected status '+response.status()+' on '+warmPath)
+        await pause(450)
+      }
+      assert.ok(ready,'Next DEV public route failed first-render warmup: '+warmPath)
+    }
+  }
   const page = await context.newPage()
   const pageErrors = []
-  page.on('pageerror', error => pageErrors.push({ message: error.message, url: page.url() }))
+  // Keep every JavaScript error fatal and preserve bounded stack evidence.
+  page.on('pageerror', error => pageErrors.push({ message: error.message,
+    url: page.url(), stack: String(error.stack || '').slice(0, 1800) }))
   async function navigate(target) {
-    const options = { waitUntil: 'domcontentloaded', timeout: 60000 }
+    const options = { waitUntil: live ? 'domcontentloaded' : 'load', timeout: 60000 }
     const destination = new URL(target, origin)
     const previous = new URL(page.url())
     // Multiple placements can share one Services path and differ by #anchor.
@@ -164,8 +181,20 @@ try {
         await expect(presentation).toHaveCount(1)
         await expect(presentation).toHaveAttribute('data-video-locale', 'ru')
         await expect(presentation.locator('iframe')).toHaveCount(0)
+        // This secondary player is below the initial Home fold. A DEV
+        // DOMContentLoaded response may precede React hydration, leaving
+        // its intentionally inert SSR Play button disabled. Simulate the
+        // real visitor scrolling into view and prove hydration rather than
+        // pressing an unbound control or waiving the playback assertion.
+        await presentation.scrollIntoViewIfNeeded()
+        if (!live) await page.waitForLoadState('load', { timeout: 60000 })
+        await expect.poll(
+          () => page.evaluate(() => history.pushState.toString().includes('__NA')),
+          { timeout: 30000, message: 'RU presentation requires a hydrated Next router' },
+        ).toBe(true)
         const play = presentation.locator('button.site-video-play')
-        await expect(play).toBeEnabled({ timeout: 30000 })
+        await expect(play).toHaveAttribute('aria-busy', 'false', { timeout: 30000 })
+        await expect(play).toBeEnabled()
         await play.click()
         await expect(presentation.locator('iframe')).toHaveAttribute('src', /^https:\/\/www\.youtube-nocookie\.com\/embed\/G0Db6yOCMto\?/, { timeout: 10000 })
         russianPresentationVerified = true
@@ -349,6 +378,14 @@ try {
     await page.setViewportSize({ width, height: 900 })
     for (const path of paths) {
       await navigate(path)
+      // Do not abort in-flight Next DEV RSC/JSON while immediately navigating
+      // away at DOMContentLoaded. All page errors remain fatal below.
+      if (!live) {
+        await page.waitForLoadState('load', { timeout: 30000 })
+        // Next DEV keeps background RSC/metadata requests alive; networkidle can
+        // wait forever without indicating a page defect. Keep the real load
+        // readiness, all 14 route/overflow checks, and fatal page errors.
+      }
       const sizes = await page.evaluate(() => ({ viewport: innerWidth, document: document.documentElement.scrollWidth }))
       assert.ok(sizes.document <= sizes.viewport + 2, `Overflow on ${path}: ${JSON.stringify(sizes)}`)
     }

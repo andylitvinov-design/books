@@ -16,7 +16,6 @@ import { FreeMobileAppBanner } from "@/components/free-mobile-app-banner";
 
 
 import { PersonalTestimonials } from "@/components/personal-testimonials";
-import { SiteNavigation } from "@/components/site-navigation";
 import { LOCAL_ACQUISITION } from "@/data/local-acquisition";
 import type { Locale } from "@/data/remedies";
 
@@ -57,14 +56,6 @@ export function HolisticHouseHome({ locale = "en" }: HolisticHouseHomeProps) {
 
   return (
     <main className="house-home house-home--services" lang={locale} data-home-design="approved-v2">
-      <header className="house-header house-header--services">
-        <Link className="house-wordmark" href={locale === "ru" ? "/ru" : "/"} aria-label={text.homeLabel} prefetch={false}>
-          Holistic House
-          <span>{text.wordmark}</span>
-        </Link>
-        <SiteNavigation locale={locale} />
-      </header>
-
       <ProfileHubTabs locale={locale} publicEntry />
       <MySpaceTopics locale={locale} publicHome />
 
