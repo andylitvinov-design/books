@@ -1,8 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState, type FormEvent } from "react";
-import { ArrowRight, BookOpen, BriefcaseBusiness, Check, Flower2, GraduationCap, HandHeart, HeartHandshake, MonitorPlay, Sparkles, type LucideIcon } from "lucide-react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { ArrowRight, BatteryCharging, BookOpen, BriefcaseBusiness, Check, ChevronDown, CircleHelp, Coins, Compass, Flower2, Gift, GraduationCap, HandHeart, HeartHandshake, HeartPulse, Laptop, MapPin, MessageCircle, MonitorPlay, Sparkles, UserRound, Wallet, type LucideIcon } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import type { AssistMode, AssistChannel, AssistBudget, AssistPreferences } from "@/lib/assist/service-match.mjs";
 import { rankAssistProducts } from "@/lib/assist/product-recommendations.mjs";
@@ -22,7 +23,7 @@ type QuizCopy = {
 const questionKeys = ["topic", "mode", "channel", "budget"] as const;
 const copy: Record<PublicLocale, QuizCopy> = {
   ru: {
-    title: "Подберём поддержку", lead: "4 вопроса · персональные рекомендации",
+    title: "Подберём вашу поддержку", lead: "4 вопроса · персональные рекомендации",
     button: "Показать рекомендации", all: "Все услуги", other: "Предпочитаете диалог с Ali?",
     privacy: "Подбор работает в браузере. Ответы не отправляются ИИ и не сохраняются.",
     empty: "Под выбранные условия подтверждённых вариантов пока нет. Измените формат или бюджет.",
@@ -44,8 +45,8 @@ const copy: Record<PublicLocale, QuizCopy> = {
       ] },
     },
     categories: {
-      therapy: "Психотерапия", homeopathy: "Гомеопатия", constellations: "Расстановки",
-      business: "Деньги и бизнес", study: "Курсы и практики", videos: "Видео и медитации",
+      therapy: "Психотерапия и поддержка", homeopathy: "Гомеопатия и ремедии", constellations: "Расстановки и отношения",
+      business: "Деньги и бизнес", study: "Курсы и обучение", videos: "Видео и медитации",
     },
   },
   en: {
@@ -71,8 +72,8 @@ const copy: Record<PublicLocale, QuizCopy> = {
       ] },
     },
     categories: {
-      therapy: "Psychotherapy", homeopathy: "Homeopathy", constellations: "Constellations",
-      business: "Money & business", study: "Courses & practice", videos: "Video & meditation",
+      therapy: "Psychotherapy & support", homeopathy: "Homeopathy & remedies", constellations: "Constellations & relationships",
+      business: "Money & business", study: "Courses & learning", videos: "Video & meditation",
     },
   },
   es: {
@@ -98,26 +99,44 @@ const copy: Record<PublicLocale, QuizCopy> = {
       ] },
     },
     categories: {
-      therapy: "Psicoterapia", homeopathy: "Homeopatía", constellations: "Constelaciones",
-      business: "Dinero y negocios", study: "Cursos y prácticas", videos: "Vídeos y meditación",
+      therapy: "Psicoterapia y apoyo", homeopathy: "Homeopatía y remedios", constellations: "Constelaciones y relaciones",
+      business: "Dinero y negocios", study: "Cursos y aprendizaje", videos: "Vídeos y meditación",
     },
   },
 };
-const categories: readonly { key: Category; path: string; Icon: LucideIcon }[] = [
-  { key: "therapy", path: "services/imagery-therapy", Icon: Flower2 },
-  { key: "homeopathy", path: "services/psychohomeopathy", Icon: HandHeart },
-  { key: "constellations", path: "services/systemic-constellations", Icon: HeartHandshake },
-  { key: "business", path: "services/business-consulting", Icon: BriefcaseBusiness },
-  { key: "study", path: "academy/reiki", Icon: GraduationCap },
-  { key: "videos", path: "mytube", Icon: MonitorPlay },
+const categories: readonly { key: Category; path: string; image: string; Icon: LucideIcon }[] = [
+  { key: "therapy", path: "services/imagery-therapy", image: "/images/holistic-house/messenger-zen-stones.svg", Icon: Flower2 },
+  { key: "homeopathy", path: "services/psychohomeopathy", image: "/images/holistic-house/distance-homeopathy.webp", Icon: HandHeart },
+  { key: "constellations", path: "services/systemic-constellations", image: "/images/holistic-house/homepage-constellations.svg", Icon: HeartHandshake },
+  { key: "business", path: "services/business-consulting", image: "/images/holistic-house/tao-fu-prosperity.webp", Icon: BriefcaseBusiness },
+  { key: "study", path: "academy/reiki", image: "/images/holistic-house/books-library.webp", Icon: GraduationCap },
+  { key: "videos", path: "mytube", image: "/images/holistic-house/reiki-approved-sunrise-v3.webp", Icon: MonitorPlay },
 ];
+
+const chromeCopy: Record<PublicLocale, {brand:string;step:string;extra:string;languages:string;profile:string;goBack:string}> = {
+  ru: {brand:"УСЛУГИ",step:"Вопрос",extra:"Другие задачи",languages:"Язык сайта",profile:"Мой профиль",goBack:"Вернуться к вопросу"},
+  en: {brand:"SERVICES",step:"Question",extra:"Other topics",languages:"Site language",profile:"My profile",goBack:"Return to question"},
+  es: {brand:"SERVICIOS",step:"Pregunta",extra:"Otros temas",languages:"Idioma del sitio",profile:"Mi perfil",goBack:"Volver a la pregunta"},
+};
+
+const choiceIcons: Record<QuestionKey, Record<string, LucideIcon>> = {
+  topic: {stress:Flower2, relationships:HeartHandshake, energy:BatteryCharging, growth:Compass, work:BriefcaseBusiness, health:HeartPulse},
+  mode: {human:UserRound, self:GraduationCap, video:MonitorPlay, any:CircleHelp},
+  channel: {online:Laptop, inperson:MapPin, async:MessageCircle, any:Compass},
+  budget: {free:Gift, under50:Coins, under100:Wallet, flexible:MessageCircle},
+};
 
 export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
+  const ui = chromeCopy[locale];
   const [answers, setAnswers] = useState<Partial<Record<QuestionKey, string>>>({});
+  const [currentStep, setCurrentStep] = useState(0);
   const [submitted, setSubmitted] = useState(false);
+  const headingRef = useRef<HTMLHeadingElement>(null);
   const answered = questionKeys.filter(key => Boolean(answers[key])).length;
   const ready = answered === questionKeys.length;
+  const key = questionKeys[currentStep];
+  const question = t.questions[key];
   const focus = (answers.topic || "growth") as Focus;
   const preferences: AssistPreferences = {
     mode: answers.mode as AssistMode | undefined,
@@ -125,17 +144,30 @@ export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
     budget: answers.budget as AssistBudget | undefined,
   };
   const matchingIds = rankAssistProducts(focus, preferences);
-  function choose(key: QuestionKey, value: string) {
-    setAnswers(old => ({ ...old, [key]: value }));
+  const primaryOptions = key === "topic"
+    ? question.options.filter(([value]) => value !== "work" && value !== "health")
+    : question.options;
+  const additionalOptions = key === "topic"
+    ? question.options.filter(([value]) => value === "work" || value === "health")
+    : [];
+
+  function choose(questionKey: QuestionKey, value: string) {
+    setAnswers(old => ({ ...old, [questionKey]: value }));
     setSubmitted(false);
+    if (currentStep < questionKeys.length - 1) setCurrentStep(currentStep + 1);
   }
+
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (ready) setSubmitted(true);
+    if (ready && currentStep === questionKeys.length - 1) setSubmitted(true);
   }
+
+  useEffect(() => {
+    if (currentStep !== 0) headingRef.current?.focus({ preventScroll: true });
+  }, [currentStep]);
+
   useEffect(() => {
     if (!submitted) return;
-    // Only a deliberate completed submission scrolls away from the first screen.
     const frame = requestAnimationFrame(() => {
       const target = document.getElementById("assist-recommendations");
       target?.focus({ preventScroll: true });
@@ -147,48 +179,109 @@ export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
     return () => cancelAnimationFrame(frame);
   }, [submitted]);
 
+  function renderOption([value, label]: Choice) {
+    const selected = answers[key] === value;
+    const Icon = choiceIcons[key][value] || Sparkles;
+    return <button type="button" className={styles.choice} key={value}
+      data-services-quiz-choice={value} aria-pressed={selected} onClick={() => choose(key, value)}>
+      <Icon size={27} strokeWidth={1.8} aria-hidden="true" />
+      <span>{label}</span>{selected ? <Check className={styles.check} size={17} strokeWidth={2.8} aria-hidden="true" /> : null}
+    </button>;
+  }
+
   return <section className={styles.root} data-services-quiz data-services-quiz-questions="4"
     lang={locale} aria-labelledby="services-quiz-title">
+    <div className={styles.masthead}>
+      <Link href={"/" + locale} className={styles.brand} aria-label="Holistic House" prefetch={false}>
+        <svg className={styles.lotus} viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="2.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M32 40C20 27 25 14 32 6c7 8 12 21 0 34Z"/>
+          <path d="M28 43C13 37 10 23 12 15c12 3 20 13 20 28"/>
+          <path d="M36 43c15-6 18-20 16-28-12 3-20 13-20 28"/>
+          <path d="M28 47C15 48 7 41 3 31c13-3 23 2 29 14"/>
+          <path d="M36 47c13 1 21-6 25-16-13-3-23 2-29 14"/>
+          <path d="M11 49c12 7 30 9 42 0"/>
+        </svg>
+        <span className={styles.brandText}><strong>Holistic House</strong><small>{ui.brand}</small></span>
+      </Link>
+      <div className={styles.mastActions}>
+        <details className={styles.languageMenu}>
+          <summary aria-label={ui.languages}>{locale.toUpperCase()}<ChevronDown size={16} aria-hidden="true" /></summary>
+          <nav aria-label={ui.languages}>
+            {(["ru","en","es"] as const).map(lang => <Link key={lang} href={"/" + lang + "/services"}
+              lang={lang} hrefLang={lang} aria-current={lang === locale ? "page" : undefined}
+              prefetch={false}>{lang.toUpperCase()}</Link>)}
+          </nav>
+        </details>
+        <Link className={styles.profile} href={"/" + (locale === "es" ? "en" : locale) + "/app/portrait"}
+          aria-label={ui.profile} prefetch={false}><UserRound size={25} strokeWidth={1.5} aria-hidden="true" /></Link>
+      </div>
+    </div>
+
     <header className={styles.hero}>
-      <span className={styles.eyebrow}><Sparkles size={15} aria-hidden="true" /> HOLISTIC HOUSE · ASSIST</span>
-      <h1 id="services-quiz-title">{t.title}</h1>
-      <p>{t.lead}</p>
+      <div className={styles.heroCopy}>
+        <h1 id="services-quiz-title">{t.title}</h1>
+        <p>{t.lead}</p>
+      </div>
     </header>
-    <form className={styles.form} data-services-quiz-form onSubmit={submit}>
-      {questionKeys.map((key, index) => {
-        const question = t.questions[key];
-        return <fieldset className={styles.question} data-services-quiz-question={key} key={key}>
-          <legend><span className={styles.questionNumber}>{index + 1}</span>{question.title}</legend>
-          <div className={styles.choices} data-question-kind={key}>
-            {question.options.map(([value, label]) => {
-              const selected = answers[key] === value;
-              return <button type="button" className={styles.choice} key={value}
-                data-services-quiz-choice={value} aria-pressed={selected} onClick={() => choose(key, value)}>
-                <span>{label}</span>{selected ? <Check size={15} strokeWidth={2.8} aria-hidden="true" /> : null}
-              </button>;
-            })}
-          </div>
-        </fieldset>;
-      })}
-      <button type="submit" className={styles.submit} data-services-quiz-submit disabled={!ready}
-        aria-controls="assist-recommendations">{t.button}<ArrowRight size={19} aria-hidden="true" /></button>
+
+    <form className={styles.form} data-services-quiz-form data-services-quiz-step={currentStep + 1}
+      onSubmit={submit} aria-label={t.lead}>
+      <div className={styles.progress} data-services-quiz-progress="4">
+        <span>{ui.step} {currentStep + 1} / 4</span>
+        <div className={styles.progressDots} role="group" aria-label={t.lead}>
+          {questionKeys.map((stepKey, index) => <button key={stepKey} type="button"
+            className={styles.progressDot} data-current={currentStep === index}
+            data-done={Boolean(answers[stepKey])}
+            aria-label={ui.goBack + " " + (index + 1)}
+            aria-current={currentStep === index ? "step" : undefined}
+            disabled={index > currentStep || !answers[stepKey] && index !== currentStep}
+            onClick={() => { setCurrentStep(index); setSubmitted(false); }}><span /></button>)}
+        </div>
+      </div>
+      <div className={styles.question} data-services-quiz-question={key}>
+        <h2 ref={headingRef} tabIndex={-1} id="services-current-question">{question.title}</h2>
+        <div className={styles.choices} data-question-kind={key}
+          role="group" aria-labelledby="services-current-question">
+          {primaryOptions.map(renderOption)}
+        </div>
+        {additionalOptions.length > 0 ? <div className={styles.otherTopics}>
+          <span>{ui.extra}</span>
+          {additionalOptions.map(([value,label]) => <button key={value} type="button"
+            data-services-quiz-choice={value} aria-pressed={answers[key] === value}
+            onClick={() => choose(key, value)}>{label}</button>)}
+        </div> : null}
+      </div>
+      {ready && currentStep === questionKeys.length - 1 ? <button type="submit"
+        className={styles.submit} data-services-quiz-submit
+        aria-controls="assist-recommendations">{t.button}<ArrowRight size={21} aria-hidden="true" /></button> : null}
     </form>
-    <section className={styles.categories} data-services-quick-categories aria-labelledby="services-quiz-categories-title">
+
+    <section className={styles.categories} data-services-quick-categories
+      aria-labelledby="services-quiz-categories-title">
       <div className={styles.categoryHeader}>
         <h2 id="services-quiz-categories-title">{t.section}</h2>
-        <a href="#services-unified-heading">{t.all}<ArrowRight size={15} aria-hidden="true"/></a>
+        <a href="#services-unified-heading">{t.all}<ArrowRight size={16} aria-hidden="true" /></a>
       </div>
       <div className={styles.categoryGrid}>
-        {categories.map(({key, path, Icon}) => <Link href={"/" + locale + "/" + path} key={key} prefetch={false}
-          className={styles.category} data-services-quiz-category={key}>
-          <Icon size={20} strokeWidth={1.8} aria-hidden="true" /><span>{t.categories[key]}</span>
+        {categories.map(({key: category, path, image, Icon}) => <Link
+          href={"/" + locale + "/" + path} key={category} prefetch={false}
+          className={styles.category} data-services-quiz-category={category}>
+          <div className={styles.categoryPhoto}>
+            <Image src={image} alt="" width={240} height={150}
+              sizes="(max-width: 350px) 28vw, (max-width: 760px) 31vw, 180px" />
+          </div>
+          <div className={styles.categoryBody}>
+            <span className={styles.categoryIcon}><Icon size={22} strokeWidth={1.8} aria-hidden="true" /></span>
+            <strong>{t.categories[category]}</strong>
+          </div>
         </Link>)}
       </div>
       <div className={styles.footerRow}>
         <Link href={"/" + locale + "/services?assist=chat"} prefetch={false}>{t.other}</Link>
-        <BookOpen size={15} aria-hidden="true" />
+        <BookOpen size={17} aria-hidden="true" />
       </div>
     </section>
+
     {submitted ? <div className={styles.results} data-services-quiz-results>
       <AssistTopRecommendations locale={locale} focus={focus} preferences={preferences}
         matchingIds={matchingIds} noMatchLabel={t.empty} />

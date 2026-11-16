@@ -113,40 +113,52 @@ try {
   // The three responsive recommendations are separate small cards BELOW the chat.
   // Preserve all locale/desktop/privacy contracts; never navigate Telegram in CI.
   const verifyMobileAssist = async (page, locale, width) => {
-    // First-screen contract: all four questions are visible at once, and
-    // money/business must lead to an actual published business offer.
+    // Image-led mobile Services: one question per step, shared real dock,
+    // six photographed directions and existing ranked business recommendations.
     await page.goto(origin + "/" + locale + "/services", { waitUntil: "domcontentloaded" });
     const quiz = page.locator("[data-services-quiz]");
     await visible(quiz.locator("#services-quiz-title"));
     await expect(quiz).toHaveAttribute("data-services-quiz-questions", "4");
-    await expect(quiz.locator("[data-services-quiz-question]")).toHaveCount(4);
+    await expect(quiz.locator("[data-services-quiz-question]")).toHaveCount(1);
+    await expect(quiz.locator('[data-services-quiz-form]')).toHaveAttribute("data-services-quiz-step", "1");
+    await expect(quiz.locator("[data-services-quiz-progress] button")).toHaveCount(4);
     await expect(quiz.locator("[data-services-quiz-category]")).toHaveCount(6);
     await expect(quiz.locator('[data-services-quiz-category="business"]'))
       .toHaveAttribute("href", "/" + locale + "/services/business-consulting");
+    await expect(quiz.locator('[data-services-quiz-category="videos"] img')).toHaveCount(1);
+    await expect(quiz.locator('[data-services-quiz-category="therapy"] img')).toHaveCount(1);
     assert.equal(await page.locator("[data-hh-unified-dock]").count(),1,"One real site dock, never a mock duplicate");
-    // Owner first-screen acceptance: every category, including business, must
-    // finish above the actual fixed navigation on the initial portrait screen.
     const firstScreen = await page.evaluate(() => {
-      const last = document.querySelector('[data-services-quiz-category="videos"]');
-      const dock = document.querySelector('[data-hh-unified-dock]');
-      if (!last || !dock) return null;
-      return {lastBottom:last.getBoundingClientRect().bottom,
+      const panel = document.querySelector("[data-services-quiz-form]");
+      const categories = document.querySelector("[data-services-quick-categories]");
+      const dock = document.querySelector("[data-hh-unified-dock]");
+      if (!panel || !categories || !dock) return null;
+      return { quizBottom:panel.getBoundingClientRect().bottom,
+        categoryTop:categories.getBoundingClientRect().top,
         dockTop:dock.getBoundingClientRect().top,
-        width:document.documentElement.scrollWidth, viewport:innerWidth};
+        width:document.documentElement.scrollWidth, viewport:innerWidth };
     });
-    assert.ok(firstScreen && firstScreen.lastBottom<=firstScreen.dockTop+1 &&
+    assert.ok(firstScreen && firstScreen.quizBottom<=firstScreen.dockTop+1 &&
+      firstScreen.categoryTop<firstScreen.dockTop &&
       firstScreen.width<=firstScreen.viewport+1,
-      "Services four-question first screen must show all six categories above real dock: "+
+      "Services image-led first step and category heading must be usable above the fixed dock: "+
         locale+"/"+width+" "+JSON.stringify(firstScreen));
     if (locale === "es") await expect(quiz.locator("#services-quiz-title"))
       .toHaveText("Encuentra tu apoyo");
     const submitQuiz = quiz.locator("[data-services-quiz-submit]");
-    await expect(submitQuiz).toBeDisabled();
-    if (width === 390) await quiz.screenshot({ path: output + "/services-" + locale + "-four-questions-390.png" });
-    for (const [field,value] of [["topic","work"],["mode","human"],["channel","online"],["budget","flexible"]]) {
+    await expect(submitQuiz).toHaveCount(0);
+    if (width === 390) await quiz.screenshot({ path: output + "/services-" + locale + "-image-led-step1-390.png" });
+    const sequence = [["topic","work"],["mode","human"],["channel","online"],["budget","flexible"]];
+    for (const [index,[field,value]] of sequence.entries()) {
+      await expect(quiz.locator("[data-services-quiz-form]"))
+        .toHaveAttribute("data-services-quiz-step", String(index+1));
       const choice = quiz.locator('[data-services-quiz-question="' + field + '"] [data-services-quiz-choice="' + value + '"]');
+      await visible(choice);
       await choice.click();
-      await expect(choice).toHaveAttribute("aria-pressed", "true");
+      if (index < sequence.length - 1) {
+        await expect(quiz.locator("[data-services-quiz-form]"))
+          .toHaveAttribute("data-services-quiz-step", String(index+2));
+      }
     }
     await expect(submitQuiz).toBeEnabled();
     await submitQuiz.click();

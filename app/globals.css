@@ -5980,3 +5980,12 @@ body:has([data-my-coach-immersive-session]) .launcher{display:none!important}
 
 /* Subscription picker: the old 2x2 pricing preview duplicates the compact Plans dialog. */
 [data-profile-active="settings"] #hh-settings-overview-plans{display:none}
+
+/* Approved Services mobile reference: the opt-in Ali link and shared AI dock
+   replace the overlapping floating iHelp launcher only during the four-step quiz.
+   The original ?assist=chat and all other routes retain their working iHelp. */
+@media (max-width:760px) {
+  body:has([data-services-quiz]) [data-hh-ihelp-trigger] {
+    display: none !important;
+  }
+}
