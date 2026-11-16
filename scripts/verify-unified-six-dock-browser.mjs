@@ -805,6 +805,17 @@ try{
  assert.equal(await page.locator("[data-hh-unified-dock]:visible").count(),1);
  await page.locator("[data-unified-dock-item=practice]").click();
  await page.waitForURL(/\/ru\/holistic-support\/mobile\/?$/,{timeout:30000});
+ const studyEntry=page.locator("[data-study-personalized-path]");
+ await studyEntry.waitFor({state:"visible",timeout:30000});
+ assert.equal(await studyEntry.locator("nav button").count(),5,
+   "Practice now opens the approved five-question Study path");
+ assert.equal(await studyEntry.locator("[data-study-next]").isDisabled(),true);
+ await studyEntry.locator('section[aria-label] [role="group"] button').first().click();
+ assert.equal(await studyEntry.locator('[data-study-recommendation]').first().getAttribute('data-study-recommendation'),
+   "study-opora","stress answer selects the real anti-stress course");
+ // The older consultation tabs are still accessible on their explicit view.
+ await page.goto(origin+"/ru/holistic-support/mobile?view=meditation",
+   {waitUntil:"domcontentloaded",timeout:75000});
  await page.locator("[data-support-practice-tabs]").waitFor({state:"visible",timeout:30000});
  assert.equal(await page.locator("[data-support-practice-tabs] > *").count(),3);
  await page.locator('[data-support-practice-tabs] button').nth(1).click();
@@ -841,7 +852,9 @@ try{
  assert.equal(await page.locator(".mobile-bottom-navigation:visible").count(),0);
  await homeDock.locator('[data-unified-dock-item="practice"]').click();
  await page.waitForURL(/\/ru\/holistic-support\/mobile\/?$/,{timeout:45000});
- await page.locator("[data-support-practice-tabs]").waitFor({state:"visible",timeout:30000});
+ await page.locator("[data-study-personalized-path]").waitFor({state:"visible",timeout:30000});
+ assert.equal(await page.locator("[data-support-practice-tabs]:visible").count(),0,
+   "the approved Study page does not show the retired top menu");
  assert.equal(await page.locator("[data-hh-unified-dock]:visible").count(),1);
  assert.equal(await page.locator('[data-hh-unified-dock] [data-unified-dock-item]').count(),7);
  results.push({journey:"Holistic House Home → Services → Practice with one seven-tab dock",passed:true});
