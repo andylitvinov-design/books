@@ -1,6 +1,8 @@
 "use client";
+import {useEffect,useState} from "react";
 import {MessageCircle,Send} from "lucide-react";
 import {telegramEnquiryUrlFromWhatsApp} from "@/lib/whatsapp-enquiry";
+import {resolveTelegramFirstEntry,isOfficialFreeReviewWhatsAppDraft} from "@/lib/app/telegram-entry-url.mjs";
 import type {PublicLocale} from "@/lib/public-locales";
 import styles from "./mandatory-messenger-actions.module.css";
 const copy={
@@ -8,9 +10,33 @@ const copy={
  en:{title:"Message us in a messenger",intro:"Choose Telegram or WhatsApp. Email and a typed phone number do not verify a conversation.",note:"Press Send inside the messenger. Opening a link is not a submitted enquiry, confirmed booking or payment. Do not share private medical information in chat.",bot:"In the Telegram bot, confirm reply consent and then write your question.",review:"The bot starts a free personal-review questionnaire, not direct chat or website sign-in."},
  es:{title:"Escríbenos por mensajería",intro:"Elige Telegram o WhatsApp. Escribir un correo o teléfono no verifica la conversación.",note:"Pulsa Enviar dentro de la aplicación. Abrir el enlace no es una solicitud, reserva o pago confirmado. Evita datos médicos privados.",bot:"En el bot de Telegram, acepta el contacto y escribe tu consulta.",review:"El bot inicia un cuestionario de revisión personal, no un chat directo ni una sesión web."}
 } as const;
-type Props={locale:PublicLocale;whatsappUrl:string;label?:string;telegramUrl?:string;collapsed?:boolean;compact?:boolean;id?:string;className?:string};
-export function MandatoryMessengerActions({locale,whatsappUrl,label,telegramUrl,collapsed=false,compact=false,id,className}:Props){
+type Props={locale:PublicLocale;whatsappUrl:string;label?:string;telegramUrl?:string;collapsed?:boolean;compact?:boolean;active?:boolean;id?:string;className?:string};
+export function MandatoryMessengerActions({locale,whatsappUrl,label,telegramUrl,collapsed=false,compact=false,active=true,id,className}:Props){
  const t=copy[locale];
+ const [serviceBot,setServiceBot]=useState<string|null>(null);
+ const [botKind,setBotKind]=useState<"review"|"direct"|"service"|null>(null);
+ useEffect(()=>{
+   // Service-card actions are mounted but hidden until Order is expanded.
+   // Do not issue one Telegram readiness fetch per hidden card on page load.
+   if(!active||telegramUrl||!isOfficialFreeReviewWhatsAppDraft(whatsappUrl,locale)){
+     setServiceBot(null);setBotKind(null);return;
+   }
+   const abort=new AbortController();
+   setServiceBot(null);
+   setBotKind(null);
+   // Only the explicitly selected free personal review uses its opt-in bot.
+   // All service orders remain in the human @holistichouse Business chat.
+   fetch('/api/public/telegram-diagnostic',{cache:'no-store',signal:abort.signal})
+     .then(r=>r.ok?r.json():null)
+     .then(payload=>{
+       if(abort.signal.aborted)return;
+       const entry=resolveTelegramFirstEntry(payload,locale);
+       setServiceBot(entry?.href||null);
+       setBotKind(entry?.kind||null);
+     })
+     .catch(()=>{if(!abort.signal.aborted){setServiceBot(null);setBotKind(null);}});
+   return ()=>abort.abort();
+ },[telegramUrl,whatsappUrl,locale,active]);
  // Every service/order request keeps its selected product; never launch the
  // unrelated opt-in free-review Telegram bot from a purchasing button.
  const channels=<>
@@ -18,7 +44,7 @@ export function MandatoryMessengerActions({locale,whatsappUrl,label,telegramUrl,
   <p className={styles.intro}>{t.intro}</p></>}
   <div className={styles.actions} role="group" aria-label={t.title}>
    <a href={whatsappUrl} className={styles.whatsapp} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" data-messenger-only-channel="whatsapp"><MessageCircle size={19} aria-hidden="true"/>WhatsApp</a>
-   <a href={telegramUrl||telegramEnquiryUrlFromWhatsApp(whatsappUrl)} data-telegram-route={telegramUrl?"manual":"service"} className={styles.telegram} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" data-messenger-only-channel="telegram"><Send size={19} aria-hidden="true"/>Telegram</a>
+   <a href={serviceBot||telegramUrl||telegramEnquiryUrlFromWhatsApp(whatsappUrl)} data-telegram-route={serviceBot?(botKind||"review"):telegramUrl?"manual":"service"} className={styles.telegram} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" data-messenger-only-channel="telegram"><Send size={19} aria-hidden="true"/>Telegram</a>
   </div>
   {!compact&&<p className={styles.note}>{t.note}</p>}
  </>;

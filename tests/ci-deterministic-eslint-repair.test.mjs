@@ -79,7 +79,7 @@ test('worker uses trusted BASE dependencies, exclusive lease and a normal non-fo
 test('the repair lane is optional, BASE-owned and cannot satisfy the required merge aggregator',()=>{
   const workflow=readFileSync(new URL('../.github/workflows/hh-pr-core-release.yml',import.meta.url),'utf8');
   const start=workflow.indexOf('  hh-eslint-repair:');
-  const end=workflow.indexOf('  # Both GitHub production protection sources',start);
+  const end=workflow.length;
   assert.ok(start>=0&&end>start,'the optional repair job must exist');
   const job=workflow.slice(start,end);
   assert.match(job,/needs: \[scope\]/);
@@ -95,9 +95,11 @@ test('the repair lane is optional, BASE-owned and cannot satisfy the required me
   assert.match(job,/git cat-file -e "\$HH_BASE_SHA:scripts\/ci-deterministic-eslint-repair\.mjs"/);
   assert.match(job,/git show "\$HH_BASE_SHA:scripts\/ci-deterministic-eslint-repair\.mjs"/);
   const mergeStart=workflow.indexOf('  hh-merge-check:');
-  const merge=workflow.slice(mergeStart);
-  assert.match(merge,/needs: \[scope, hh-specialist\]/);
-  assert.doesNotMatch(merge,/hh-eslint-repair/);
+  const merge=workflow.slice(mergeStart,start);
+  assert.match(merge,/needs: \[scope\]/);
+  assert.match(merge,/Fail closed if mandatory Core failed/);
+  assert.match(merge,/ci-specialist-aggregate\.mjs/);
+  assert.doesNotMatch(merge,/^  hh-eslint-repair:/m);
 });
 
 test('fast ubuntu-slim preflight checks deterministic repair contract before slow Core queue',()=>{
