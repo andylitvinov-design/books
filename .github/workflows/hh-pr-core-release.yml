@@ -467,12 +467,18 @@ jobs:
         with:
           path: public/audio/mandala/scenarios
           key: hh-core-media-v1-${{ runner.os }}-${{ hashFiles('scripts/generate-scenario-melodies.mjs', 'scripts/generate-mandala-melodies.mjs', 'lib/mandala/scenario-audio-catalog.mjs', 'package-lock.json') }}
+      # Reuse only TypeScript/Next compiler artifacts produced by the protected
+      # production branch. The immutable TypeScript build info tracks changed
+      # files and does NOT skip the mandatory exact-HEAD Next.js typecheck.
       - name: Restore production-owned Next compiler cache (read-only)
+      id: ci_trusted_next_cache
         if: ${{ (github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT' && steps.fast.outputs.route != 'DOCK')) && (steps.diff.outputs.ci_only != 'true') }}
         uses: actions/cache/restore@v4
         with:
-          path: .next/cache
-          key: hh-core-next-v1-${{ runner.os }}-${{ hashFiles('package-lock.json', 'next.config.ts', 'tsconfig.json') }}
+          path: |
+            .next/cache
+            tsconfig.tsbuildinfo
+          key: hh-core-next-v2-${{ runner.os }}-${{ hashFiles('package-lock.json', 'next.config.ts', 'tsconfig.json') }}
       - name: Exact proposed release production build and TypeScript check
         if: ${{ (github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT' && steps.fast.outputs.route != 'DOCK')) && (steps.diff.outputs.ci_only != 'true') }}
         # CI-only changes still run Core lint and guard-unit; a full app build
