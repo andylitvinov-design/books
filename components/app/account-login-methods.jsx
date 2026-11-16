@@ -9,21 +9,21 @@ const COPY={
   google:'Google',telegram:'Telegram',linked:'Connected',connect:'Link',
   explanation:'A linked sign-in method is not a subscription or permission for the Telegram bot to contact you. Connect the messaging bot separately below.',
   error:'Could not check your sign-in methods.',linkError:'The secure link could not be started. Identity linking may still need to be enabled in Supabase Auth.',
-  working:'Connecting…',requests:'Telegram requests',requestHelp:'After signing in with Telegram, connect confirmed Telegram Business enquiries to this Cabinet.',attach:'Connect requests',detach:'Disconnect requests',requestError:'Could not verify or link Telegram requests.',none:'No confirmed Telegram requests linked yet.',done:'Telegram requests updated.',
+  working:'Connecting…',requests:'Telegram requests',requestHelp:'Confirmed Telegram enquiries appear here automatically after verified sign-in.',automatic:'Automatic linking is on',disabled:'Automatic linking is off',resume:'Resume linking',detach:'Disconnect requests',requestError:'Could not sync Telegram requests.',none:'No confirmed Telegram requests yet.',done:'Telegram request settings updated.'
  },
  ru:{
   title:'Способы входа',intro:'Google и Telegram могут открывать ОДИН личный кабинет. Второй способ привязывайте только после входа в существующий аккаунт.',
   google:'Google',telegram:'Telegram',linked:'Привязан',connect:'Привязать',
   explanation:'Привязка способа входа не означает подписку на рассылки или согласие на сообщения от Telegram-бота. Бот для переписки подключается отдельно ниже.',
   error:'Не удалось проверить способы входа.',linkError:'Не удалось начать безопасную привязку. Возможно, в Supabase Auth ещё нужно включить связывание аккаунтов.',
-  working:'Подключаем…',requests:'Мои заявки из Telegram',requestHelp:'После входа через Telegram привяжите подтверждённые заявки к этому кабинету.',attach:'Привязать заявки',detach:'Отвязать заявки',requestError:'Не удалось подтвердить или привязать Telegram-заявки.',none:'Подтверждённых привязанных заявок пока нет.',done:'Telegram-заявки обновлены.',
+  working:'Подключаем…',requests:'Мои заявки из Telegram',requestHelp:'Подтверждённые заявки автоматически появляются здесь после входа через Telegram.',automatic:'Автоматическая привязка включена',disabled:'Автоматическая привязка выключена',resume:'Снова подключать автоматически',detach:'Отключить связь с заявками',requestError:'Не удалось синхронизировать заявки Telegram.',none:'Подтверждённых Telegram-заявок пока нет.',done:'Настройки Telegram-заявок обновлены.'
  },
  es:{
   title:'Métodos de acceso',intro:'Google y Telegram pueden abrir el MISMO gabinete privado. Vincula otro método solo después de entrar en tu cuenta existente.',
   google:'Google',telegram:'Telegram',linked:'Vinculado',connect:'Vincular',
   explanation:'Vincular el acceso no suscribe a anuncios ni autoriza mensajes del bot. Conecta el bot de mensajería por separado más abajo.',
   error:'No se pudieron verificar los métodos de acceso.',linkError:'No se pudo iniciar el enlace seguro. Tal vez debas activar el enlace de identidades en Supabase Auth.',
-  working:'Conectando…',requests:'Mis solicitudes de Telegram',requestHelp:'Después de iniciar sesión con Telegram, vincula tus solicitudes confirmadas a este gabinete.',attach:'Vincular solicitudes',detach:'Desvincular solicitudes',requestError:'No se pudieron verificar las solicitudes.',none:'Todavía no hay solicitudes confirmadas vinculadas.',done:'Solicitudes de Telegram actualizadas.',
+  working:'Conectando…',requests:'Mis solicitudes de Telegram',requestHelp:'Las solicitudes confirmadas aparecen automáticamente al acceder con Telegram.',automatic:'Vinculación automática activada',disabled:'Vinculación automática desactivada',resume:'Reactivar vinculación',detach:'Desvincular solicitudes',requestError:'No se pudieron sincronizar las solicitudes.',none:'Aún no hay solicitudes confirmadas.',done:'Preferencias de Telegram actualizadas.'
  },
 }
 export default function AccountLoginMethods({locale='en',accountId}){
@@ -33,6 +33,7 @@ export default function AccountLoginMethods({locale='en',accountId}){
  const [error,setError]=useState('')
  const [enquiries,setEnquiries]=useState([])
  const [requestStatus,setRequestStatus]=useState('')
+ const [syncDisabled,setSyncDisabled]=useState(null)
  useEffect(()=>{
   if(!accountId)return
   const controller=new AbortController()
@@ -46,19 +47,34 @@ export default function AccountLoginMethods({locale='en',accountId}){
  useEffect(()=>{
   if(!accountId||!view?.telegram)return
   const controller=new AbortController()
-  appFetch('auth/telegram-business-enquiries',undefined,undefined,{accountId,signal:controller.signal})
-   .then(result=>{if(!controller.signal.aborted)setEnquiries(Array.isArray(result.enquiries)?result.enquiries:[])})
-   .catch(()=>{if(!controller.signal.aborted)setRequestStatus(t.requestError)})
+  const sync=async()=>{
+   try{
+    // Session-bound POST, not a mutation performed by an unauthenticated GET.
+    const response=await appFetch('auth/telegram-business-link',{},'POST',
+      {accountId,signal:controller.signal})
+    if(controller.signal.aborted)return
+    setSyncDisabled(response.disabled===true)
+    const list=await appFetch('auth/telegram-business-enquiries',undefined,undefined,
+      {accountId,signal:controller.signal})
+    if(!controller.signal.aborted)setEnquiries(Array.isArray(list.enquiries)?list.enquiries:[])
+   }catch{if(!controller.signal.aborted)setRequestStatus(t.requestError)}
+  }
+  void sync()
   return ()=>controller.abort()
  },[accountId,view?.telegram,t.requestError])
  async function syncRequests(action){
-  if(busy||!accountId)return
+  if(busy||!accountId||!['detach','resume'].includes(action))return
   setBusy(action);setRequestStatus('')
   try{
-   await appFetch(action==='attach'?'auth/telegram-business-link':'auth/telegram-business-unlink',
-    {confirm:true},'POST',{accountId})
-   const result=await appFetch('auth/telegram-business-enquiries',undefined,undefined,{accountId})
-   setEnquiries(Array.isArray(result.enquiries)?result.enquiries:[])
+   if(action==='detach'){
+    await appFetch('auth/telegram-business-unlink',{},'POST',{accountId})
+    setEnquiries([]);setSyncDisabled(true)
+   }else{
+    const response=await appFetch('auth/telegram-business-link',{reactivate:true},'POST',{accountId})
+    setSyncDisabled(response.disabled===true)
+    const list=await appFetch('auth/telegram-business-enquiries',undefined,undefined,{accountId})
+    setEnquiries(Array.isArray(list.enquiries)?list.enquiries:[])
+   }
    setRequestStatus(t.done)
   }catch{setRequestStatus(t.requestError)}
   finally{setBusy('')}
@@ -103,12 +119,12 @@ export default function AccountLoginMethods({locale='en',accountId}){
    <div className={styles.method}>
     <strong>{t.requests}</strong>
     <p>{t.requestHelp}</p>
-    <button type="button" disabled={!!busy} onClick={()=>syncRequests('attach')}>
-     {busy==='attach'?t.working:t.attach}
-    </button>
-    {enquiries.length>0&&<button type="button" disabled={!!busy} onClick={()=>syncRequests('detach')}>
-     {t.detach}
-    </button>}
+    <p className={styles.note}>{syncDisabled===true?t.disabled:syncDisabled===false?t.automatic:t.working}</p>
+    {syncDisabled===true?<button type="button" disabled={!!busy} onClick={()=>syncRequests('resume')}>
+      {busy==='resume'?t.working:t.resume}
+    </button>:<button type="button" disabled={!!busy||syncDisabled===null} onClick={()=>syncRequests('detach')}>
+      {busy==='detach'?t.working:t.detach}
+    </button>}}
    </div>
    {enquiries.length>0?<ul>{enquiries.map(item=><li key={item.referenceCode}>
     {item.serviceTitle} · {item.referenceCode} · {item.status}
