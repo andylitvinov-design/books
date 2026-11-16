@@ -2296,3 +2296,35 @@ test('stale ghost queue rotates exactly three read-only candidate hints on exist
  assert.equal(staleMergedQueueSamples([mk(1),mk(1,{id:777})],bucket+60000).length,1);
  assert.deepEqual(staleMergedQueueSamples(pool,Infinity),[]);
 });
+
+test('trusted dispatcher runs rotate ghost queue hints without extra API reads',()=>{
+ const {staleMergedQueueSamples}=require('../scripts/ci-pr-capacity.cjs');
+ const {readFileSync}=require('node:fs');
+ const now=Date.parse('2026-11-16T18:00:00Z');
+ const queued=Array.from({length:12},(_,i)=>({
+   id:700000+i,run_attempt:1,event:'pull_request',status:'queued',
+   repository:{full_name:'andylitvinov-design/books'},
+   head_repository:{full_name:'andylitvinov-design/books'},
+   head_branch:'ghost-event-'+i,head_sha:'a'.repeat(40),
+   pull_requests:[],created_at:new Date(now-3*60*60*1000).toISOString()
+ }));
+ const ids=new Set();
+ for(const runId of [100,101,102,103]){
+   const hints=staleMergedQueueSamples(queued,now,runId);
+   assert.equal(hints.length,3,'never exceed the original three proof reads');
+   assert.deepEqual(hints,staleMergedQueueSamples(queued,now,runId),
+     'the same event must be idempotent');
+   hints.forEach(h=>ids.add(h.run_id));
+ }
+ assert.deepEqual([...ids].sort((a,b)=>a-b),queued.map(x=>x.id),
+   'four back-to-back events must reach all twelve stale unique branches');
+ assert.deepEqual(staleMergedQueueSamples(queued,now,-1),
+   staleMergedQueueSamples(queued,now),
+   'missing or forged event identities use the original clock rotation');
+ assert.deepEqual(staleMergedQueueSamples(queued,now,Number.MAX_SAFE_INTEGER+1),
+   staleMergedQueueSamples(queued,now));
+ const source=readFileSync('scripts/ci-pr-queue-dispatcher.cjs','utf8');
+ assert.ok(source.includes('context?.runId'));
+ assert.equal(source.split('capacityFn(github,owner,repo,now,eventRotation)').length-1,2,
+   'normal and retry capacity paths must use the same trusted seed');
+});
