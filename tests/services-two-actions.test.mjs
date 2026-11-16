@@ -46,3 +46,11 @@ test("supported first-party detail routes stay connected and no new registration
   }
   assert.doesNotMatch(actions, /fetch\(|router\.push|window\.location|localStorage|sessionStorage/);
 });
+
+
+test("browser acceptance scopes category details and messenger actions to the owning card", () => {
+  const browser = read("scripts/verify-public-services-production.mjs");
+  assert.match(browser, /cardActions\.locator\(":scope > \[data-service-card-details\] > p"\)/);
+  assert.match(browser, /cardActions\.locator\(":scope > \[data-service-card-order\] \[data-messenger-only-channel=\"whatsapp\"\]"/);
+  assert.doesNotMatch(browser, /visible\(panel\.locator\("\[data-service-card-details\] p"\)\)/);
+});

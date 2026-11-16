@@ -169,22 +169,23 @@ try {
       // Every visible category has two independent actions, never a nested Request.
       for (const id of panelIds) {
         const panel = catalog.locator('[data-services-unified-panel="' + id + '"]');
-        const controls = panel.locator(':scope > [data-service-card-actions] button');
+        const cardActions = panel.locator(':scope > [data-service-card-actions]');
+        const controls = cardActions.locator(':scope > div[role="group"] > button');
         const details = controls.first();
         const order = controls.nth(1);
         await details.click();
         await expect(details).toHaveAttribute("aria-expanded", "true");
-        await visible(panel.locator("[data-service-card-details] p"));
-        await expect(panel.locator("[data-service-card-order]")).toBeHidden();
-        const landing = panel.locator("[data-service-card-details] a[href]").first();
+        await visible(cardActions.locator(":scope > [data-service-card-details] > p"));
+        await expect(cardActions.locator(":scope > [data-service-card-order]")).toBeHidden();
+        const landing = cardActions.locator(":scope > [data-service-card-details] a[href]").first();
         assert.ok((await landing.getAttribute("href"))?.startsWith("/" + locale + "/"),
           "A full-description link must lead to a published localized route: " + id);
         await order.click();
         await expect(details).toHaveAttribute("aria-expanded", "false");
         await expect(order).toHaveAttribute("aria-expanded", "true");
-        await expect(panel.locator("[data-service-card-details]")).toBeHidden();
-        await visible(panel.locator('[data-messenger-only-channel="whatsapp"]'));
-        await visible(panel.locator('[data-messenger-only-channel="telegram"]'));
+        await expect(cardActions.locator(":scope > [data-service-card-details]")).toBeHidden();
+        await visible(cardActions.locator(':scope > [data-service-card-order] [data-messenger-only-channel="whatsapp"]'));
+        await visible(cardActions.locator(':scope > [data-service-card-order] [data-messenger-only-channel="telegram"]'));
         await order.click();
         await expect(order).toHaveAttribute("aria-expanded", "false");
         await assertViewport(page, locale + "/services/unified/" + id);
