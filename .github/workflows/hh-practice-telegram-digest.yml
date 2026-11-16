@@ -56,6 +56,10 @@ on:
       - 'vercel.json'
       - '.github/workflows/hh-practice-telegram-digest.yml'
   workflow_dispatch:
+concurrency:
+  group: hh-practice-telegram-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
+
 permissions:
   contents: read
 jobs:

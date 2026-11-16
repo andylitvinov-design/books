@@ -3,6 +3,10 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 const workflows = [
+  ['andrey-voice-free-contract.yml', 'hh-andrey-voice-free'],
+  ['hh-agent-secrets-ci.yml', 'hh-agent-secrets'],
+  ['hh-business-coaching.yml', 'hh-business-coaching'],
+  ['hh-practice-telegram-digest.yml', 'hh-practice-telegram'],
   ['hh-assessment-quality.yml', 'hh-assessment-evidence'],
   ['hh-direct-video-notes.yml', 'hh-direct-media'],
   ['hh-gauntlet-loop.yml', 'hh-gauntlet'],
@@ -100,4 +104,30 @@ test('Profile Axis writer-only skip remains BASE-trusted; mandatory Axis still r
   assert.ok(source.includes('  axis-unit-types-build:\n    if:'));
   assert.ok(source.includes('group: profile-axis-'));
   assert.ok(source.includes('github.event.before != github.event.after'));
+});
+
+test('four previously unscoped specialist workflows cancel obsolete PR attempts but retain independent real checks',()=>{
+ const names=["andrey-voice-free-contract.yml","hh-agent-secrets-ci.yml","hh-business-coaching.yml","hh-practice-telegram-digest.yml"];
+ for(const name of names){
+  const source=readFileSync('.github/workflows/'+name,'utf8');
+  const required=['pull_request:','jobs:','group:','cancel-in-progress:'];
+  for(const needle of required)assert.ok(source.includes(needle),name+' lost '+needle);
+  assert.match(source,/github\.run_attempt == 1/);
+  assert.match(source,/format\('pr-\{0\}', github\.event\.pull_request\.number\)/);
+  assert.match(source,/format\('run-\{0\}', github\.run_id\)/);
+  assert.match(source,/github\.event\.action == 'synchronize'/);
+  assert.doesNotMatch(source,/cancel-in-progress: true|github\.event\.before != github\.event\.after/,
+    'manual, retry and other-PR work must not be cancelled');
+ }
+ const digest=readFileSync('.github/workflows/hh-practice-telegram-digest.yml','utf8');
+ for(const job of ['enquiry-attribution-rls-postgres17','offline-contracts','production-build'])
+  assert.ok(digest.includes('  '+job+':'),'real independent Telegram/SQL check lost '+job);
+ assert.match(digest,/postgres:17-alpine/);
+ assert.match(digest,/tests\/public-enquiry-attribution-rls\.integration\.mjs/);
+ const voice=readFileSync('.github/workflows/andrey-voice-free-contract.yml','utf8');
+ assert.match(voice,/redis-atomic:/);assert.match(voice,/node --test tests\/local-narration-redis-runtime\.test\.mjs/);
+ const agent=readFileSync('.github/workflows/hh-agent-secrets-ci.yml','utf8');
+ assert.match(agent,/Test protected secret transport without live credentials/);
+ const business=readFileSync('.github/workflows/hh-business-coaching.yml','utf8');
+ assert.match(business,/tests\/business-coaching-90-days\.test\.mjs/);
 });
