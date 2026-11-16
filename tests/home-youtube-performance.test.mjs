@@ -11,6 +11,11 @@ test('EN/RU/ES home videos use a lightweight YouTube poster facade while the ful
   const more = read('components/home-testimonial-more.tsx');
   assert.match(facade, /data-home-video-facade="true"/);
   assert.match(facade, /setPlaying\(true\)/);
+  assert.match(facade, /useEffect\(\(\) => \{ setInteractive\(true\); \}, \[\]\)/);
+  assert.match(facade, /disabled=\{!interactive\}/);
+  assert.match(facade, /aria-busy=\{!interactive\}/);
+  assert.match(facade, /aria-disabled=\{!interactive\}/);
+  assert.match(facade, /onClick=\{\(\) => setPlaying\(true\)\}/);
   assert.match(facade, /playing \? \(/);
   assert.match(facade, /youtube-nocookie\.com\/embed\/\$\{youtubeId\}/);
   assert.match(facade, /\^\[A-Za-z0-9_-\]\{11\}\$/);
