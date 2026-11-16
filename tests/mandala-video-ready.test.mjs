@@ -385,7 +385,13 @@ test("Ready Telegram sends directly to the verified own bot without the chooser"
 test("Ready WhatsApp requires own verified link, never claims Meta MP4 delivery",()=>{
   assert.match(ready,/data-ready-whatsapp><MessageCircle/);
   assert.match(ready,/data-ready-whatsapp-link-step/);
-  assert.match(delivery,/const data=await appFetch\("whatsapp-link"\)/);
+  assert.match(delivery,/getCabinetBootstrap\("portrait"\)/);
+  assert.match(delivery,/appFetch\("whatsapp-link",undefined,"GET",\{accountId\}\)/);
+  assert.match(delivery,/accountId:current\.accountId/);
+  assert.match(delivery,/if\(consentApproved!==true\)/);
+  assert.match(ready,/data-ready-whatsapp-link-consent/);
+  assert.match(ready,/disabled=\{!whatsappConsent\|\|saveStatus\.busy\}/);
+  assert.match(ready,/onShareWhatsApp\(true\)/);
   assert.match(delivery,/if\(whatsappLink\?\.linked\)\{/);
   assert.match(delivery,/await shareFromDevice\(\)/);
   assert.match(delivery,/action:"begin",noticeVersion:"hh-whatsapp-account-link-v1",permissionAccepted:true/);

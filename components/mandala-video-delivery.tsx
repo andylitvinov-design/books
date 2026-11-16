@@ -3,7 +3,7 @@
 import {forwardRef,useCallback,useEffect,useImperativeHandle,useRef,useState} from "react";
 import Link from "next/link";
 import {Download,Send,RefreshCw,MessageCircle,CheckCircle2} from "lucide-react";
-import {appFetch} from "@/lib/app/client-fetch";
+import {appFetch,getCabinetBootstrap} from "@/lib/app/client-fetch";
 import {savePrivateMp4} from "@/lib/mandala/signed-private-video-upload.mjs";
 import type {PublicLocale} from "@/lib/public-locales";
 import css from "./mandala-video-delivery.module.css";
@@ -16,8 +16,9 @@ type State={
 export type VideoDeliveryStatus={
  notice:string;busy:boolean;uploadPercent:number|null;savedId:string|null;cloudAvailable:boolean|null;
  telegramConnectUrl?:string|null;whatsappConnectUrl?:string|null;whatsappLinked?:boolean|null;
+ whatsappConsentRequired?:boolean;
 };
-export type VideoDeliveryHandle={saveToLibrary:()=>Promise<void>;sendToTelegram:()=>Promise<void>;shareToWhatsApp:()=>Promise<void>};
+export type VideoDeliveryHandle={saveToLibrary:()=>Promise<void>;sendToTelegram:()=>Promise<void>;shareToWhatsApp:(consentApproved?:boolean)=>Promise<void>};
 type Props={
  locale:PublicLocale;open:boolean;onClose:()=>void;
  onStatusChange?:(status:VideoDeliveryStatus)=>void;
@@ -141,7 +142,8 @@ export const MandalaVideoDelivery=forwardRef<VideoDeliveryHandle,Props>(function
  const [busy,setBusy]=useState(false);
  const [botUrl,setBotUrl]=useState("");
  const [whatsappUrl,setWhatsappUrl]=useState("");
- const [whatsappLink,setWhatsappLink]=useState<{available:boolean;linked:boolean}|null>(null);
+ const [whatsappLink,setWhatsappLink]=useState<{available:boolean;linked:boolean;accountId:string}|null>(null);
+ const [whatsappConsentRequired,setWhatsappConsentRequired]=useState(false);
  const directActionRef=useRef(false);
  const inFlight=useRef<Promise<string>|null>(null);
  const savingRef=useRef(false);
@@ -181,14 +183,17 @@ export const MandalaVideoDelivery=forwardRef<VideoDeliveryHandle,Props>(function
  },[]);
  const refreshWhatsApp=useCallback(async()=>{
   try{
-   // Reuse the existing account-scoped, Meta-webhook-verified link.
-   const data=await appFetch("whatsapp-link") as {available?:boolean;linked?:boolean};
-   const next={available:data.available===true,linked:data.linked===true};
+   // This API requires the exact verified Cabinet account ID on every read/write.
+   const bootstrap=await getCabinetBootstrap("portrait");
+   const accountId=bootstrap?.account?.id;
+   if(typeof accountId!=="string"||!accountId)throw new Error("ACCOUNT_REQUIRED");
+   const data=await appFetch("whatsapp-link",undefined,"GET",{accountId}) as {available?:boolean;linked?:boolean};
+   const next={available:data.available===true,linked:data.linked===true,accountId};
    setWhatsappLink(next);
-   if(next.linked)setWhatsappUrl("");
+   if(next.linked){setWhatsappUrl("");setWhatsappConsentRequired(false);}
    return next;
   }catch{
-   setWhatsappLink({available:false,linked:false});
+   setWhatsappLink(null);
    return null;
   }
  },[]);
@@ -203,8 +208,10 @@ export const MandalaVideoDelivery=forwardRef<VideoDeliveryHandle,Props>(function
    if(botUrl)void refresh();
    if(whatsappUrl)void refreshWhatsApp();
   };
+  window.addEventListener("focus",check);
   document.addEventListener("visibilitychange",check);
-  return()=>document.removeEventListener("visibilitychange",check);
+  return()=>{window.removeEventListener("focus",check);
+   document.removeEventListener("visibilitychange",check);};
  },[botUrl,whatsappUrl,refresh,refreshWhatsApp]);
  async function shareFromDevice(){
   try{
@@ -346,10 +353,10 @@ export const MandalaVideoDelivery=forwardRef<VideoDeliveryHandle,Props>(function
    await sendViaBot(false);
   }finally{directActionRef.current=false;}
  }
- async function shareToWhatsApp(){
+ async function shareToWhatsApp(consentApproved:boolean=false){
   if(busy||savingRef.current||directActionRef.current)return;
-  // navigator.share must run in a trusted tap. It cannot select a recipient;
-  // WhatsApp media delivery via Meta is NOT activated by account linking.
+  // Web Share must be called during the original iPhone user gesture. It
+  // cannot target a specific app/chat and never proves provider delivery.
   if(whatsappLink?.linked){
    setNotice(t.whatsappShare);
    await shareFromDevice();
@@ -361,16 +368,21 @@ export const MandalaVideoDelivery=forwardRef<VideoDeliveryHandle,Props>(function
    if(!current){setNotice(t.signInRequired);return;}
    if(current.linked){setNotice(t.whatsappTapAgain);return;}
    if(!current.available){setNotice(t.whatsappUnavailable);return;}
-   // First click reads status; after the explicit Connect label appears,
-   // the next click approves the existing one-time link consent.
-   if(!whatsappLink){setNotice(t.whatsappConnect);return;}
+   // A separate unchecked, purpose-specific checkbox is required BEFORE
+   // initiating the one-use Meta-webhook-verified WhatsApp link.
+   if(consentApproved!==true){
+    setWhatsappConsentRequired(true);
+    setNotice(t.whatsappConnect);return;
+   }
+   if(!whatsappConsentRequired){setNotice(t.whatsappConnect);return;}
    const data=await appFetch("whatsapp-link",{
     action:"begin",noticeVersion:"hh-whatsapp-account-link-v1",permissionAccepted:true
-   },"POST") as {linkUrl?:unknown};
+   },"POST",{accountId:current.accountId}) as {linkUrl?:unknown};
    const link=String(data.linkUrl||"");
    if(!/^https:\/\/wa\.me\/[1-9][0-9]{7,14}\?text=HHWA%20[A-Za-z0-9_-]{43}$/.test(link))
     throw new Error("INVALID_WHATSAPP_LINK");
    setWhatsappUrl(link);
+   setWhatsappConsentRequired(false);
    setNotice(t.whatsappStart);
   }catch{setNotice(t.whatsappUnavailable);}
   finally{directActionRef.current=false;}
@@ -380,8 +392,8 @@ export const MandalaVideoDelivery=forwardRef<VideoDeliveryHandle,Props>(function
  useEffect(()=>{
   onStatusChange?.({notice,busy,uploadPercent,savedId,cloudAvailable:state?.cloudAvailable??null,
    telegramConnectUrl:botUrl||null,whatsappConnectUrl:whatsappUrl||null,
-   whatsappLinked:whatsappLink?.linked??null});
- },[notice,busy,uploadPercent,savedId,state?.cloudAvailable,botUrl,whatsappUrl,whatsappLink?.linked,onStatusChange]);
+   whatsappLinked:whatsappLink?.linked??null,whatsappConsentRequired});
+ },[notice,busy,uploadPercent,savedId,state?.cloudAvailable,botUrl,whatsappUrl,whatsappLink?.linked,whatsappConsentRequired,onStatusChange]);
  if(!open)return onStatusChange?null:
    notice?<p className={css.notice} role="status" aria-live="polite" data-video-delivery-status>{notice}</p>:null;
  const accountLocale=locale==="es"?"en":locale;
