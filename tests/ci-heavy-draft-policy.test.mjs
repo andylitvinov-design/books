@@ -538,7 +538,7 @@ test('Draft staging keeps full IA security, SEO source-build and production moni
   assert.match(seo, /^  workflow_dispatch:/m);
   assert.match(seo, /verify-live-sitemap\.mjs/);
   const performance = read('hh-public-performance-audit.yml');
-  assert.match(performance, /^  push:/m);
+  assert.doesNotMatch(performance, /^  push:/m, 'stale LIVE alias before hourly publication is not postmerge acceptance');
   assert.match(performance, /^  workflow_dispatch:/m);
   assert.match(performance, /tests\/holistic-house-image-quota\.test\.mjs/);
 });
@@ -877,7 +877,8 @@ test('Free Review runs for real lead/intake changes, not shared CI policy test-o
     'real functional Free Review changes must still execute their owner QA: '+real);
   const yaml=read('hh-free-review-live-mobile.yml');
   assert.match(yaml,/workflow_dispatch:/);
-  assert.match(yaml,/^  push:/m);
+  assert.doesNotMatch(yaml,/^  push:/m, 'no Free Review verification against stale alias before hourly LIVE');
+  assert.match(yaml,/^  workflow_dispatch:/m);
   assert.doesNotMatch(yaml,/continue-on-error:\s*true/);
 });
 
