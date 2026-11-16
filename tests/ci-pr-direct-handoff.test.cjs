@@ -99,60 +99,34 @@ test('watchdog direct-handoff condition must be balanced',()=>{
  assert.equal(depth,0,'GitHub Actions if expression has no unclosed parentheses');
 });
 
-test('independent required PR workflow failures wake the same serialized Watchdog immediately',()=>{
+test('watchdog has only two worker-completion listeners; Core owns quality-failure aggregation',()=>{
  const watchdog=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
- const trigger=watchdog.split('  workflow_run:\n')[1]?.split('  push:\n')[0];
- assert.ok(trigger,'workflow_run trigger exists');
- for(const name of [
-  'HH PR Sweep Guard tests',
-  'HH workflow syntax — actionlint',
-  'HH PR watchdog contract',
-  'Holistic Support mandala release checks',
-  'Holistic House public services production acceptance',
-  'Holistic House CRM source checks',
-  'Website video browser verification',
-  'Practitioner visual service editor',
-  'HH First Video LIVE · encoded file acceptance',
-  'Video publication safety and legacy private preflight',
-  'Holistic House nightly public URL / media crawl',
-  'Native CI'
- ]) assert.ok(trigger.includes("'"+name+"'"),'missing event wake for '+name);
- const reconcile=watchdog.split('  reconcile:\n')[1]?.split('    runs-on:')[0];
- assert.ok(reconcile.includes("github.event.workflow_run.conclusion == 'failure'"));
- assert.ok(reconcile.includes("github.event.workflow_run.conclusion == 'timed_out'"));
- assert.ok(reconcile.includes("github.event.workflow_run.conclusion == 'startup_failure'"));
- assert.ok(reconcile.includes("contains(fromJSON("));
- assert.ok(reconcile.includes("github.event.workflow_run.event == 'pull_request'"));
- assert.ok(reconcile.includes("group: hh-control-tower-single-writer"));
-});
-
-test('failed independent PR workflow runs dispatch the durable queue after Watchdog reconcile',()=>{
- const watchdog=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
- const job=watchdog.split('  direct-handoff:\n')[1]?.split('\n  reactivate-schedules-and-dispatch:\n')[0];
- assert.ok(job,'direct-handoff job exists');
- assert.ok(job.includes("github.event.workflow_run.event == 'pull_request'"));
- assert.ok(job.includes("github.event.workflow_run.head_repository.full_name == 'andylitvinov-design/books'"));
- for(const conclusion of ['failure','timed_out','startup_failure'])
-   assert.ok(job.includes("github.event.workflow_run.conclusion == '"+conclusion+"'"));
- assert.ok(job.includes("!contains(fromJSON("));
- assert.ok(job.includes('"HH PR core release gate"'));
- assert.ok(job.includes('"HH PR source Repair Worker"'));
- assert.ok(job.includes('"HH zero-cost PR CI worker"'));
- assert.ok(job.includes('needs: reconcile'));
- assert.ok(job.includes('group: hh-control-tower-single-writer'));
-});
-
-test('workflow_run wake allowlist covers production PR workflows within GitHub subscription cap',()=>{
- const watchdog=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
- const trigger=watchdog.split('  workflow_run:\n')[1]?.split('  push:\n')[0];
- assert.ok(trigger,'workflow_run trigger exists');
+ const trigger=watchdog.split('  workflow_run:\\n')[1]?.split('  push:\\n')[0];
+ assert.ok(trigger,'workflow_run completion listener exists');
  const names=[...trigger.matchAll(/^      - '(.+)'$/gm)].map(m=>m[1]);
- assert.ok(names.includes('HH Growth Studio editorial checks'));
- assert.ok(names.includes('HH one-shot PR backlog recovery'));
- assert.ok(names.includes('HH PR Control Tower queue dispatcher'));
- assert.ok(names.includes('HH PR three-cohort evidence backfill'));
- assert.ok(names.length<=20,'GitHub workflow_run workflow subscription limit exceeded: '+names.length);
- assert.ok(names.includes('HH PR source Repair Worker'));
- assert.ok(names.includes('HH zero-cost PR CI worker'));
- assert.ok(!names.includes('HH PR core release gate'),'Core keeps its dedicated handoff owner');
+ assert.deepEqual(names,[
+  'HH PR source Repair Worker',
+  'HH zero-cost PR CI worker'
+ ],'no redundant per-specialist or queue-observer completion callbacks');
+ assert.match(trigger,/types: \\[completed\\]/);
+ assert.match(watchdog,/group: hh-control-tower-single-writer/);
+ // PR stage and owner PM command routes remain immediately event-driven.
+ assert.match(watchdog,/pull_request_target:\\n    types: \\[opened, reopened, synchronize, ready_for_review\\]/);
+ assert.match(watchdog,/issue_comment:\\n    types: \\[created\\]/);
+});
+
+test('failed Core still has a separately authenticated repair bridge and exact-HEAD handoff',()=>{
+ const watchdog=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
+ const bridge=fs.readFileSync('.github/workflows/hh-pr-direct-core-failure.yml','utf8');
+ assert.match(bridge,/  workflow_run:/);
+ assert.match(bridge,/      - 'HH PR core release gate'/);
+ assert.match(bridge,/types: \\[completed\\]/);
+ assert.match(bridge,/persistReadOnlyRoute/);
+ assert.match(bridge,/group: hh-direct-core-pr-/);
+ const direct=watchdog.split('  direct-handoff:\\n')[1]?.split('\\n  reactivate-schedules:\\n')[0];
+ assert.ok(direct,'worker completion direct handoff remains');
+ assert.match(direct,/github\\.event\\.workflow_run\\.status == 'completed'/);
+ assert.match(direct,/HH PR source Repair Worker/);
+ assert.match(direct,/HH zero-cost PR CI worker/);
+ assert.match(direct,/needs: reconcile/);
 });
