@@ -12,21 +12,23 @@ test('Control Tower is read-only; Watchdog owns the worker dispatch lease',()=>{
  assert.ok(watchdog.includes('group: hh-control-tower-single-writer'));
  assert.ok(watchdog.includes('needs: reconcile'));
 });
-test('unrelated issue comments cannot displace authenticated Watchdog/PM single-writer jobs',()=>{
+test('global issue comments no longer spawn no-op Actions; PM inbox is scheduled and manually callable',()=>{
  const fs=require('node:fs');
  const workflow=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
  const reconcile=workflow.split('  reconcile:')[1]?.split('  conflict-event-handoff:')[0]||'';
  const guard=reconcile.split('    runs-on:')[0];
- assert.match(workflow,/issue_comment:\n\s+types: \[created\]/);
- assert.match(guard,/github\.event_name != 'issue_comment'/);
- assert.match(guard,/github\.event\.action == 'created'/);
- assert.match(guard,/github\.event\.issue\.number == 3890/);
- assert.match(guard,/github\.event\.issue\.pull_request == null/);
- assert.match(guard,/github\.event\.comment\.user\.login == 'andylitvinov-design'/);
+ // GitHub filters issue_comment only AFTER starting a workflow run; removing
+ // this event avoids thousands of skipped executions from unrelated PR chat.
+ assert.doesNotMatch(workflow,/^  issue_comment:/m);
+ assert.ok(workflow.includes("cron: '7,27,47 * * * *'"));
+ assert.ok(workflow.includes('  workflow_dispatch:'));
+ assert.match(guard,/group: hh-control-tower-single-writer/);
  assert.match(guard,/cancel-in-progress: false/);
- assert.doesNotMatch(guard,/cancel-in-progress: true/);
  assert.match(reconcile,/HH PM inbox using verified Github free secret/);
- assert.match(reconcile,/github\.event\.issue\.number == 3890/);
+ assert.ok(reconcile.includes("github.event_name == 'schedule'"));
+ assert.ok(reconcile.includes("github.event_name == 'workflow_dispatch' && inputs.dry_run != true"));
+ assert.ok(reconcile.includes('ci-pr-pm-agent-inbox.cjs'));
+ assert.doesNotMatch(reconcile,/github\.event_name == 'issue_comment'/);
 });
 const {taskFor,validPR,laneOf,reservation,commentBody,reservationStatus,externalOwnerLeaseStatus}=require('../scripts/ci-pr-task-state.cjs');
 const {computeCapacity,admission,snapshot}=require('../scripts/ci-pr-capacity.cjs');
