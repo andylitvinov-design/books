@@ -242,13 +242,17 @@ test('owner PM repair dispatch uses the owner credential, never bot GITHUB_TOKEN
  assert.equal(withoutOwner.reason,'OWNER_REPAIR_DISPATCH_TOKEN_NOT_CONFIGURED');
  const ok=await inbox.dispatchRepair(gh,{pr:prNumber,sha:head},{
   ownerToken:'synthetic-owner-only-token',fetcher:async(url,req)=>{
-   requestCalls.push({url,req});return {status:204};
+   requestCalls.push({url,req});
+   if(url==='https://api.github.com/user')
+    return {status:200,json:async()=>({login:'andylitvinov-design',id:274943885,type:'User'})};
+   return {status:204};
   }});
  assert.equal(ok.dispatched,true);
- assert.equal(requestCalls.length,1);
- assert.match(requestCalls[0].url,/hh-pr-ten-minute-watchdog\.yml\/dispatches$/);
- assert.equal(requestCalls[0].req.headers.Authorization,'Bearer synthetic-owner-only-token');
- const payload=JSON.parse(requestCalls[0].req.body);
+ assert.equal(requestCalls.length,2);
+ assert.equal(requestCalls[0].url,'https://api.github.com/user');
+ assert.match(requestCalls[1].url,/hh-pr-ten-minute-watchdog\.yml\/dispatches$/);
+ assert.equal(requestCalls[1].req.headers.Authorization,'Bearer synthetic-owner-only-token');
+ const payload=JSON.parse(requestCalls[1].req.body);
  assert.equal(payload.ref,'codex/bootstrap-books');
  assert.equal(payload.inputs.pm_pr_number,'3826');
  assert.equal(payload.inputs.pm_expected_sha,head);
@@ -295,4 +299,33 @@ test('closed unmerged PR is not reported as merged; missing merge SHA holds',asy
  assert.equal((await inbox.run({github:fx.github,context})).status,'COMPLETION_NOTICE_SENT');
  assert.match(fx.sent[2],/status=CLOSED_UNMERGED/);
  assert.doesNotMatch(fx.sent[2],/status=MERGED/);
+});
+
+test('wrong actor and unverifiable owner token cannot dispatch a repair workflow',async()=>{
+ const head='a'.repeat(40),prNumber=3826;
+ const pr={number:prNumber,state:'open',draft:false,user:owner,
+  head:{sha:head,repo:{full_name:'andylitvinov-design/books'}},
+  base:{ref:'codex/public-book-library'},mergeable:true,mergeable_state:'clean',
+  labels:[{name:'hh:repair-needed'}]};
+ const gh={rest:{
+  pulls:{get:async()=>({data:pr})},
+  issues:{listComments:async()=>({data:[{
+   user:bot,performed_via_github_app:app,
+   body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+head+' -->\nFailed jobs: core-lint-types-build'
+  }]})}
+ }};
+ let dispatched=0;
+ const wrong=await inbox.dispatchRepair(gh,{pr:prNumber,sha:head},{
+  ownerToken:'synthetic-wrong-actor',fetcher:async(url)=>{
+   if(url.endsWith('/user'))return {status:200,json:async()=>({login:'github-actions[bot]',id:41898282,type:'Bot'})};
+   dispatched++;return {status:204};
+  }});
+ assert.equal(wrong.reason,'OWNER_REPAIR_DISPATCH_ACTOR_MISMATCH');
+ const unknown=await inbox.dispatchRepair(gh,{pr:prNumber,sha:head},{
+  ownerToken:'synthetic-unverifiable',fetcher:async(url)=>{
+   if(url.endsWith('/user'))return {status:403};
+   dispatched++;return {status:204};
+  }});
+ assert.equal(unknown.reason,'OWNER_REPAIR_TOKEN_IDENTITY_UNVERIFIED');
+ assert.equal(dispatched,0);
 });
