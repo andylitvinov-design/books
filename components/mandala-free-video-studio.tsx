@@ -7516,6 +7516,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           if(deliveryRef.current)void deliveryRef.current.saveToLibrary();
           else setDeliveryChooserOpen(true);
         }}
+        onSendTelegramDirect={()=>{if(deliveryRef.current)void deliveryRef.current.sendToTelegram();}}
+        onShareWhatsApp={(consentApproved=false)=>{
+          if(deliveryRef.current)void deliveryRef.current.shareToWhatsApp(consentApproved);
+        }}
         onOpenDelivery={()=>{
           setDeliveryChooserOpen(true);
           window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
@@ -7523,8 +7527,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               ?.scrollIntoView({block:"nearest",behavior:"smooth"})));
         }}
         onOpenTherapy={format=>{
-          // Reuse the actual sixth tab and transfer the existing goal; no hidden
-          // Ready editor, render request, credit charge or additional disclosure.
+          // Reuse the sixth Therapy tab and current goal; do not unfold another
+          // editor in Ready, render a film, or charge credits.
           setTherapyInitialFormat(format);
           activateQuickWorkspace("effects");
           window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>{

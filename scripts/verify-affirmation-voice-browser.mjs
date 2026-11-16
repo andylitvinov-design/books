@@ -1289,8 +1289,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           "Ready Generate must sit directly beneath the video");
         await expect(readyGenerate).toBeEnabled({timeout:30000});
         phase(engine,"montage-free-navigated-ready");
-        // These Ready choices must navigate in one tap to the actual sixth
-        // Therapy workspace, without mounting any inline meditation/course.
+        // Real mobile click contract: the two Ready cards switch to sixth
+        // Therapy workspace and select its format, with no Ready expansion.
         await page.locator("[data-ready-meditation]").click();
         await expect(page.locator("[data-mandala-free-video]"))
           .toHaveAttribute("data-active-workspace","effects");
