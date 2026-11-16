@@ -1312,12 +1312,30 @@ function recordingMimes(withAudio: boolean, preferWebm = false, forceMp4ForRetry
   return candidates.filter(mime => MediaRecorder.isTypeSupported(mime));
 }
 
+// A stalled WebKit media promise must never leave the Ready export spinner forever.
+async function withLocalMediaDeadline<T>(task:Promise<T>,timeoutMs:number):Promise<T>{
+  let timeout:number|undefined;
+  try{
+    return await Promise.race([task,new Promise<never>((_,reject)=>{
+      timeout=window.setTimeout(()=>reject(new Error("local_media_timeout")),timeoutMs);
+    })]);
+  }finally{if(timeout!==undefined)window.clearTimeout(timeout);}
+}
 function loadLocalImage(url: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new window.Image();
-    image.onload = () => image.naturalWidth ? resolve(image) : reject(new Error("Invalid image"));
-    image.onerror = () => reject(new Error("Image not available"));
-    image.src = url;
+    let finished=false;
+    const complete=(error?:Error)=>{
+      if(finished)return;
+      finished=true;
+      window.clearTimeout(timeout);
+      image.onload=null;image.onerror=null;
+      if(error)reject(error);else resolve(image);
+    };
+    const timeout=window.setTimeout(()=>complete(new Error("image_load_timeout")),20000);
+    image.onload=()=>image.naturalWidth?complete():complete(new Error("Invalid image"));
+    image.onerror=()=>complete(new Error("Image not available"));
+    image.src=url;
   });
 }
 function loadSceneImage(url:string):Promise<HTMLImageElement|null>{
@@ -2025,6 +2043,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [videoScenarioOpen,setVideoScenarioOpen] = useState(false);
   const goalContinueRef=useRef<(()=>boolean)|null>(null);
   const [firstVideoAdvancedActivated,setFirstVideoAdvancedActivated] = useState(false);
+  // Keep the optional source editor compact until the user explicitly opens
+  // it or follows Add video. React owns this disclosure across WebKit rerenders.
+  const [firstVideoAdvancedOpen,setFirstVideoAdvancedOpen] = useState(false);
   const [voiceStudioActivated,setVoiceStudioActivated] = useState(false);
   const [phraseCatalogActivated,setPhraseCatalogActivated] = useState(false);
   const [studioMode,setStudioMode] = useState<"pump"|"therapy">("pump");
@@ -3705,59 +3726,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     if(creditOpRef.current)return; // never reserve twice while confirmation is pending
     preparingRef.current=true;
     setPreparing(true);
-    // Only professional exports are branded. No extra credit debit or upload.
-    // A capability must come from this account's authenticated server session.
+    // Keep the same authenticated export variant, but prime local video/audio
+    // on the user gesture BEFORE any account network request can suspend Safari.
     let exportBrandVariant:VideoExportVariant=resolveVideoExportVariant({professionalMode});
-    if(professionalMode){
-      const controller=new AbortController();
-      const timeout=window.setTimeout(()=>controller.abort(),1200);
-      try{
-        const capability=await appFetch("video-export/capabilities",undefined,undefined,
-          {signal:controller.signal}) as VideoExportCapability;
-        exportBrandVariant=resolveVideoExportVariant({professionalMode,capability});
-      }catch{/* Missing, expired or unavailable rights always keep the brand. */}
-      finally{window.clearTimeout(timeout);}
-    }
-    const guestLocalRender=creditCatalog.chargeRequired&&creditSession==="guest"&&!guestFirstVideoUsed;
-    guestRenderRef.current=guestLocalRender;
-    if(guestLocalRender){setCreditConfirmed(true);setCreditRetry(false);}
-    // Registered exports retain the exact same account-scoped hold/complete
-    // ledger. The first anonymous render is strictly local, no server debit.
-    if(creditCatalog.chargeRequired&&!guestLocalRender){
-      const operationId=crypto.randomUUID();
-      try{
-        const hold=await videoCreditRequest("hold",{operationId});
-        if(hold.status!=="held")throw Error("VIDEO_CREDIT_HOLD_INVALID");
-        creditOpRef.current=operationId;
-        creditValidRef.current=false;
-        setCreditConfirmed(false);
-        setCreditBalance(hold.balance?.balanceCredits??null);
-        if(!aliveRef.current||document.hidden){
-          await releaseCredit(operationId);
-          preparingRef.current=false;
-          if(aliveRef.current)setPreparing(false);
-          return;
-        }
-      }catch(error){
-        // Idempotency UUID can release a hold even if the POST response was lost.
-        void releaseCredit(operationId);
-        const reason=error instanceof Error?error.message:"";
-        if(reason==="SIGN_IN_REQUIRED")void refreshCreditSession();
-        setNotice(reason==="VIDEO_CREDITS_INSUFFICIENT"?
-          (locale==="ru"?"Кредитов недостаточно. Следующее пополнение — в новом месяце.":
-            locale==="es"?"Créditos insuficientes. Se renovarán el mes próximo.":
-            "Insufficient credits. Monthly credits renew next month.")
-          :reason==="SIGN_IN_REQUIRED"?
-          (locale==="ru"?"Сессия завершилась. Повторите создание: первое видео доступно без входа.":
-            locale==="es"?"La sesión terminó. Inténtalo otra vez: el primer vídeo no requiere acceso.":
-            "Session expired. Retry: your first video does not require sign-in.")
-          :(locale==="ru"?"Не удалось зарезервировать кредиты. Списаний нет.":
-            locale==="es"?"No se pudieron reservar créditos. Sin cobro.":
-            "Could not reserve credits. No charge occurred."));
-        preparingRef.current=false;setPreparing(false);
-        return;
-      }
-    }
     setVideoEffectSession(current=>current+1);
     setVideoEffectStarted(false);setVideoEffectEnded(false);
     setPreparing(true);setProgress(0);
@@ -3800,7 +3771,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 image.decoding="async";
                 image.src=photo.src; // Same-origin allowlisted photo proxy; no client data.
               }
-              await image.decode();
+              await withLocalMediaDeadline(image.decode(),20000);
               const resolved=new URL(image.currentSrc||image.src,window.location.href);
               if(resolved.origin!==window.location.origin||!image.complete||
                  image.naturalWidth<600||image.naturalHeight<600)
@@ -3816,18 +3787,21 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               :`Preparing video scenes: ${ready} of ${total}…`),
           }).then(()=>true,()=>false)
         : Promise.resolve(true);
-      musicSession = attachedAudio?.kind==="file"
+      const audioPreparation = attachedAudio?.kind==="file"
         ? useWebCodecsMp4?null:musicBed.id!=="none"
-          ?await startLayeredVideoAudio(
+          ?startLayeredVideoAudio(
             attachedAudio.file,musicBed.id,soundVolume,musicBed.volumePercent,{
               seconds:duration,loop:attachedAudio.narration!==true&&attachedAudio.nonLoop!==true,
               startSeconds:effectiveAudioStartSeconds,fadeSeconds:musicBed.fadeSeconds,
               approvedCuratedBedIds:MYTUBE_REVIEWED_MUSIC_BEDS,
               deferStart:true
             })
-          :await startUploadedAudio(attachedAudio.file,soundVolume,{loop:attachedAudio.narration!==true&&attachedAudio.nonLoop!==true,startSeconds:effectiveAudioStartSeconds,deferStart:true})
-        : attachedAudio?.kind==="preset" ? useWebCodecsMp4?null:await startPresetAudio(attachedAudio.id,soundVolume,{startSeconds:effectiveAudioStartSeconds,deferStart:true})
-        : attachedAudio?.kind==="presets" ? useWebCodecsMp4?null:await startPresetMixAudio(attachedAudio.ids,soundVolume,{startSeconds:effectiveAudioStartSeconds,deferStart:true}) : null;
+          :startUploadedAudio(attachedAudio.file,soundVolume,{loop:attachedAudio.narration!==true&&attachedAudio.nonLoop!==true,startSeconds:effectiveAudioStartSeconds,deferStart:true})
+        : attachedAudio?.kind==="preset" ? useWebCodecsMp4?null:startPresetAudio(attachedAudio.id,soundVolume,{startSeconds:effectiveAudioStartSeconds,deferStart:true})
+        : attachedAudio?.kind==="presets" ? useWebCodecsMp4?null:startPresetMixAudio(attachedAudio.ids,soundVolume,{startSeconds:effectiveAudioStartSeconds,deferStart:true}) : null;
+      // Every native AudioContext.resume() starts synchronously with the tap.
+      // Safari must not retain an endless Preparing spinner if audio stalls.
+      musicSession=audioPreparation?await withLocalMediaDeadline(audioPreparation,20000):null;
       if(attachedAudio && !musicSession) {
         if(!useWebCodecsMp4){
           setMusicWarning(ui.soundUnavailable);
@@ -3869,15 +3843,69 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       if(activeFilm) {
         const master=premiumVideoRef.current;
         if(!master || master.readyState < 2)throw new Error("HD MP4 scene not loaded");
-        await master.play();
+        await withLocalMediaDeadline(master.play(),12000);
       }
       if(selectedStyleFilm&&!freeFilmShots.some(shot=>shot.photo)){
         const styleVideo=styleFilmRef.current;
         if(!styleVideo||styleVideo.readyState<2||styleVideo.videoWidth<1)
           throw new Error("selected_style_mp4_not_decoded");
-        styleVideo.muted=true;await styleVideo.play();
+        styleVideo.muted=true;await withLocalMediaDeadline(styleVideo.play(),12000);
       }
       setPreviewPlaying(false);
+      // All local decoders were primed on the trusted Create tap. Perform the
+      // existing account capability and credit hold only AFTER preflight, but
+      // still BEFORE starting the encoder, without changing price or ledger.
+      if(professionalMode){
+        const controller=new AbortController();
+        const timeout=window.setTimeout(()=>controller.abort(),1200);
+        try{
+          const capability=await appFetch("video-export/capabilities",undefined,undefined,
+            {signal:controller.signal}) as VideoExportCapability;
+          exportBrandVariant=resolveVideoExportVariant({professionalMode,capability});
+        }catch{/* Missing, expired or unavailable rights always keep the brand. */}
+        finally{window.clearTimeout(timeout);}
+      }
+      const guestLocalRender=creditCatalog.chargeRequired&&creditSession==="guest"&&!guestFirstVideoUsed;
+      guestRenderRef.current=guestLocalRender;
+      if(guestLocalRender){setCreditConfirmed(true);setCreditRetry(false);}
+      // Registered exports retain the exact same account-scoped hold/complete
+      // ledger. The first anonymous render is strictly local, no server debit.
+      if(creditCatalog.chargeRequired&&!guestLocalRender){
+        const operationId=crypto.randomUUID();
+        try{
+          const hold=await videoCreditRequest("hold",{operationId});
+          if(hold.status!=="held")throw Error("VIDEO_CREDIT_HOLD_INVALID");
+          creditOpRef.current=operationId;
+          creditValidRef.current=false;
+          setCreditConfirmed(false);
+          setCreditBalance(hold.balance?.balanceCredits??null);
+          if(!aliveRef.current||document.hidden){
+            await releaseCredit(operationId);
+            preparingRef.current=false;
+            if(aliveRef.current)setPreparing(false);
+            return;
+          }
+        }catch(error){
+          // Idempotency UUID can release a hold even if the POST response was lost.
+          void releaseCredit(operationId);
+          const reason=error instanceof Error?error.message:"";
+          if(reason==="SIGN_IN_REQUIRED")void refreshCreditSession();
+          setNotice(reason==="VIDEO_CREDITS_INSUFFICIENT"?
+            (locale==="ru"?"Кредитов недостаточно. Следующее пополнение — в новом месяце.":
+              locale==="es"?"Créditos insuficientes. Se renovarán el mes próximo.":
+              "Insufficient credits. Monthly credits renew next month.")
+            :reason==="SIGN_IN_REQUIRED"?
+            (locale==="ru"?"Сессия завершилась. Повторите создание: первое видео доступно без входа.":
+              locale==="es"?"La sesión terminó. Inténtalo otra vez: el primer vídeo no requiere acceso.":
+              "Session expired. Retry: your first video does not require sign-in.")
+            :(locale==="ru"?"Не удалось зарезервировать кредиты. Списаний нет.":
+              locale==="es"?"No se pudieron reservar créditos. Sin cobro.":
+              "Could not reserve credits. No charge occurred."));
+          preparingRef.current=false;setPreparing(false);
+          return;
+        }
+      }
+      if(sourceRef.current!==snapshotKey||!aliveRef.current)return;
       const canvas = canvasRef.current;
       if (!canvas || (!useWebCodecsMp4 &&
           (typeof canvas.captureStream !== "function" || typeof MediaRecorder === "undefined"))) {
@@ -5508,6 +5536,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       if(hash==="video-templates"){
         setVideoScenarioOpen(true);
         setFirstVideoAdvancedActivated(true);
+        setFirstVideoAdvancedOpen(true);
       }
       if(hash==="video-audio"){setMontagePanel("audio");setBasicPanelTab("music");}
       if(hash==="video-settings"){setMontagePanel("settings");setMontageStyleSettingsOpen(true);}
@@ -5541,9 +5570,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     if(anchor==="video-audio"){setMontagePanel("audio");setBasicPanelTab("music");setAudioLibraryOpen(true);}
     if(anchor==="video-settings"){setMontagePanel("settings");setMontageStyleSettingsOpen(true);}
     if(anchor==="video-templates"){
-      // A visitor choosing All styles must see the original 4-shot catalogue.
+      // Add Video / all styles must reveal the real mounted source editor.
       setVideoScenarioOpen(true);
       setFirstVideoAdvancedActivated(true);
+      setFirstVideoAdvancedOpen(true);
     }
     if(anchor==="voice-studio"){setHypnoEntryGroup("audio");setVoiceStudioActivated(true);}
     // The compact Video surface hides the full audio gallery by default.
@@ -5737,6 +5767,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setVideoScenarioOpen(true);
     setShowAdvancedVideo(true);
     setFirstVideoAdvancedActivated(true);
+    setFirstVideoAdvancedOpen(true);
     setActiveWorkspace("video");
     window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
       document.querySelector("[data-free-film-compilation-catalog]")?.scrollIntoView({
@@ -7496,7 +7527,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <MandalaSmartAnimation locale={locale}/>
         </details>
         <details className={videoStyles.quickExtras} data-workspace-section="video"
-          onToggle={event=>{if(event.currentTarget.open)setFirstVideoAdvancedActivated(true);}}
+          open={firstVideoAdvancedOpen}
+          onToggle={event=>{
+            const opened=event.currentTarget.open;
+            setFirstVideoAdvancedOpen(opened);
+            if(opened)setFirstVideoAdvancedActivated(true);
+          }}
           data-video-first-video-advanced>
           <summary>{locale==="ru"?"Дополнительно: видео по подробному описанию":locale==="es"?"Avanzado: vídeo desde descripción":"Advanced: video from description"}</summary>
         {/* Compact first-video tool follows the third Style section,
