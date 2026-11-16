@@ -20,7 +20,7 @@ const words = {
   en: {
     eyebrow: 'HOLISTIC HOUSE · MY COACH',
     title: 'Find your AI coach',
-    intro: 'Four distinct coaching personas. Choose the approach that fits your situation, then adjust how your coach asks questions.',
+    intro: 'Five distinct coaching personas. Choose the approach that fits your situation, then adjust how your coach asks questions.',
     aiNotice: 'These are fictional AI personas, not real practitioners. Coaching supports reflection; it does not replace medical or mental health care.',
     search: 'Search coaches and topics', searchPlaceholder: 'E.g. relationships, decisions, habits',
     all: 'All coaches', favorites: 'Favorites', noResults: 'No coaches match. Clear the filters to see everyone.',
@@ -32,7 +32,7 @@ const words = {
     light: 'Practical', deep: 'Reflective', reset: 'Reset style',
     preview: 'Preview of a follow-up question', start: 'Start guided coaching',
     viewProfile: 'Explore coach', favorite: 'Add to favorites', unfavorite: 'Remove from favorites',
-    chosen: 'Selected', available: '4 characters', change: 'Change your coach anytime',
+    chosen: 'Selected', available: '5 characters', change: 'Change your coach anytime',
     sessionNote: 'After sign-in and your explicit consent, a generative text dialogue is offered when a verified free privacy-preserving model is configured. Reviewed guided questions remain available as a fallback; two-way AI voice is not enabled.',
     back: 'Coaching Lounge', human: 'Human specialists', privacy: 'Search and choices stay in this browser; favorites save only persona IDs on this device.',
     safety: 'One question at a time · No diagnoses · Your decisions remain yours',
@@ -40,7 +40,7 @@ const words = {
   ru: {
     eyebrow: 'HOLISTIC HOUSE · MY COACH',
     title: 'Выберите своего AI-коуча',
-    intro: 'Четыре разных AI-персонажа. Выберите подходящий стиль и настройте, как коуч будет задавать вопросы.',
+    intro: 'Пять разных AI-персонажей. Выберите подходящий стиль и настройте, как коуч будет задавать вопросы.',
     aiNotice: 'Это вымышленные AI-персонажи, а не реальные специалисты. Коучинг помогает размышлять, но не заменяет медицинскую или психотерапевтическую помощь.',
     search: 'Поиск по коучам и темам', searchPlaceholder: 'Например: отношения, решение, привычки',
     all: 'Все коучи', favorites: 'Избранные', noResults: 'По запросу никого нет. Сбросьте фильтры, чтобы увидеть всех.',
@@ -52,7 +52,7 @@ const words = {
     light: 'Практично', deep: 'Глубоко', reset: 'Вернуть стиль',
     preview: 'Пример дополнительного вопроса', start: 'Начать коучинг-сессию',
     viewProfile: 'Открыть профиль', favorite: 'В избранное', unfavorite: 'Убрать из избранного',
-    chosen: 'Выбран', available: '4 персонажа', change: 'Коуча можно сменить в любой момент',
+    chosen: 'Выбран', available: '5 персонажей', change: 'Коуча можно сменить в любой момент',
     sessionNote: 'После входа и вашего согласия доступен генеративный текстовый диалог, если настроена проверенная бесплатная модель с защитой данных. Программа с проверенными вопросами остаётся запасным вариантом. Двусторонний AI-голос не подключён.',
     back: 'Гостиная коучинга', human: 'Реальные специалисты', privacy: 'Поиск остаётся в браузере; в избранном на устройстве сохраняются только ID персонажей.',
     safety: 'Один вопрос за раз · Без диагнозов · Решение остаётся за вами',
@@ -60,7 +60,7 @@ const words = {
   es: {
     eyebrow: 'HOLISTIC HOUSE · MY COACH',
     title: 'Elige tu coach de IA',
-    intro: 'Cuatro personajes diferentes. Elige el estilo apropiado y adapta cómo hace las preguntas.',
+    intro: 'Cinco personajes diferentes. Elige el estilo apropiado y adapta cómo hace las preguntas.',
     aiNotice: 'Son personajes ficticios de IA, no profesionales reales. El coaching ayuda a reflexionar, pero no sustituye la atención clínica.',
     search: 'Buscar coaches y temas', searchPlaceholder: 'Ej.: relaciones, decisiones, hábitos',
     all: 'Todos los coaches', favorites: 'Favoritos', noResults: 'No hay resultados. Borra los filtros para verlos todos.',
@@ -72,7 +72,7 @@ const words = {
     light: 'Práctico', deep: 'Reflexivo', reset: 'Restablecer estilo',
     preview: 'Ejemplo de pregunta de seguimiento', start: 'Empezar coaching guiado',
     viewProfile: 'Ver perfil', favorite: 'Añadir favorito', unfavorite: 'Quitar favorito',
-    chosen: 'Seleccionado', available: '4 personajes', change: 'Cambia de coach cuando quieras',
+    chosen: 'Seleccionado', available: '5 personajes', change: 'Cambia de coach cuando quieras',
     sessionNote: 'Tras iniciar sesión y dar consentimiento, se ofrece diálogo de texto generativo si hay un modelo gratuito con privacidad verificada. Las preguntas guiadas siguen disponibles. La voz bidireccional no está activada.',
     back: 'Sala de coaching', human: 'Profesionales reales', privacy: 'La búsqueda queda en este navegador; solo se guardan los ID de favoritos en el dispositivo.',
     safety: 'Una pregunta por turno · Sin diagnósticos · Tú decides',
@@ -152,7 +152,7 @@ const miraCopy = {
 const humanCopy = {
   en: {
     chooser: 'Choose coach type', all: 'All', ai: 'AI Coach', real: 'Real People',
-    combinedIntro: 'Explore four AI coaches, then meet real practitioners.',
+    combinedIntro: 'Explore five AI coaches, then meet real practitioners.',
     contactLabel: 'Contact Andrey through WhatsApp or Telegram',
     contactRequest: 'I would like to request a personal psychotherapy and guided imagery session. Please let me know your availability and next steps.',
     intro: 'Meet a real practitioner for a personal therapy session.',
@@ -166,7 +166,7 @@ const humanCopy = {
   },
   ru: {
     chooser: 'Тип специалиста', all: 'Все', ai: 'AI-коучи', real: 'Реальные люди',
-    combinedIntro: 'Сначала четыре AI-коуча, затем реальные специалисты.',
+    combinedIntro: 'Сначала пять AI-коучей, затем реальные специалисты.',
     contactLabel: 'Связаться с Андреем через WhatsApp или Telegram',
     contactRequest: 'Хочу узнать о персональной сессии психотерапии и работы с образами. Подскажите, пожалуйста, доступное время и дальнейшие шаги.',
     intro: 'Выберите живого специалиста для индивидуальной терапевтической сессии.',
@@ -180,7 +180,7 @@ const humanCopy = {
   },
   es: {
     chooser: 'Tipo de coach', all: 'Todos', ai: 'Coaches IA', real: 'Personas reales',
-    combinedIntro: 'Primero cuatro coaches IA; después, profesionales reales.',
+    combinedIntro: 'Primero cinco coaches IA; después, profesionales reales.',
     contactLabel: 'Contactar con Andrey por WhatsApp o Telegram',
     contactRequest: 'Quisiera solicitar una sesión personal de psicoterapia e imaginación guiada. ¿Qué disponibilidad hay y cuál es el siguiente paso?',
     intro: 'Conoce a un profesional real para una sesión de terapia individual.',
@@ -479,7 +479,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
                   <span>{categories[persona.topic]}</span>
                   {persona.related.slice(0, 2).map(tag => <span key={tag}>{categories[tag]}</span>)}
                 </div>
-                <p className={styles.cardMeta}><Sparkles size={13} aria-hidden="true" /> {d.aiPersona} <span aria-hidden="true">·</span> {d.language}</p>
+                <p className={styles.cardMeta}><Sparkles size={13} aria-hidden="true" /> {d.aiPersona} <span aria-hidden="true">·</span> {persona.id==='merlin'?'RU · EN':d.language}</p>
                 <div className={styles.cardFooter}>
                   <button type="button" className={styles.viewProfile} onClick={() => choose(persona.id)}
                     aria-expanded={isExpanded} aria-controls={'my-coach-profile-' + persona.id}>{d.showProfile}</button>

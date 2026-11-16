@@ -19,7 +19,9 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
   const supported=PUBLIC_COACH_PERSONA_IDS.includes(personaId)
   const state=PHASES.has(phase)?phase:'idle'
   const poster=supported?MEDIA_ROOT+personaId+'-still.webp':null
-  const src=supported?MEDIA_ROOT+personaId+'-'+state+'.mp4':null
+  // Merlin has a unique original poster. No fake or missing animation URLs.
+  const hasMotion=supported&&personaId!=='merlin'
+  const src=hasMotion?MEDIA_ROOT+personaId+'-'+state+'.mp4':null
 
   useEffect(()=>{
     const preference=window.matchMedia?.('(prefers-reduced-motion: reduce)')
@@ -54,7 +56,7 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
   useEffect(()=>{
     setVideoReady(false)
   },[src])
-  const shouldPlay=supported&&motionAllowed&&inViewport&&pageVisible
+  const shouldPlay=hasMotion&&motionAllowed&&inViewport&&pageVisible
   useEffect(()=>{
     const video=videoRef.current
     if(!video)return

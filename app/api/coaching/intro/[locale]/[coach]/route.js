@@ -30,7 +30,7 @@ export async function GET(request){
     if(request.headers.get('sec-fetch-site')==='cross-site')
       throw new AppError('MY_COACH_INTRO_CROSS_SITE',403)
     const url=new URL(request.url)
-    const match=/^\/api\/coaching\/intro\/(en|ru|es)\/(mira|max|sofia|alex|lea|noah|iris|ray)\/?$/.exec(url.pathname)
+    const match=/^\/api\/coaching\/intro\/(en|ru|es)\/(mira|max|sofia|alex|merlin|lea|noah|iris|ray)\/?$/.exec(url.pathname)
     if(!match||url.search)throw new AppError('MY_COACH_INTRO_INVALID',400)
     const [,locale,personaId]=match
     const intro=getCoachPresentation(personaId,locale)
@@ -64,7 +64,7 @@ export async function GET(request){
         ...CACHE_HEADERS,'Content-Length':String(audio.length)}})
     }
 
-    const referenceId=myCoachFishVoice(personaId)
+    const referenceId=myCoachFishVoice(personaId,locale)
     if(!referenceId)throw new AppError('MY_COACH_INTRO_INVALID',400)
     const vendor=myCoachFishConfig()
     if(!vendor)throw new AppError('MY_COACH_NATURAL_VOICE_UNAVAILABLE',503)

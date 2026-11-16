@@ -5,7 +5,7 @@ import './my-coach-dictation.test.mjs'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {portraitMouthAperture,speechRms,speechPcmEnvelope} from '../lib/coaching/living-portrait-motion.mjs'
-import {normalizeMyCoachFishRequest,myCoachFishConfig} from '../lib/coaching/my-coach-fish-voice.mjs'
+import {normalizeMyCoachFishRequest,myCoachFishConfig,myCoachFishVoice,MY_COACH_FISH_VOICES,MIRA_RU_ADULT_FISH_CANDIDATE,MERLIN_RU_FISH_CANDIDATE} from '../lib/coaching/my-coach-fish-voice.mjs'
 import {COACH_PRESENTATIONS,getCoachPresentation,coachPresentationVoice}
   from '../lib/coaching/persona-presentations.mjs'
 import {
@@ -14,8 +14,8 @@ import {
   coachSessionHref, coachStagePrompt, buildCoachBehaviorPolicy, personaMethodFit,
 } from '../lib/coaching/persona-registry.mjs'
 
-test('eight distinct fictional AI coaches have complete EN/RU/ES profiles and stage examples', () => {
-  assert.equal(COACH_PERSONAS.length, 8)
+test('nine distinct fictional AI coaches have complete EN/RU/ES profiles and stage examples', () => {
+  assert.equal(COACH_PERSONAS.length, 9)
   assert.equal(new Set(COACH_PERSONAS.map(persona => persona.id)).size, 8)
   assert.equal(new Set(COACH_PERSONAS.map(persona => persona.topic)).size, 8)
   for (const persona of COACH_PERSONAS) {
@@ -165,6 +165,25 @@ test('mobile My Coach hero mouth remains visible when compact avatar is hidden',
 // The real My Coach microphone and Replay code both send personaId to the
 // same Fish route. Previously the strict parser rejected this legitimate
 // field and every opted-in natural-voice request failed before TTS.
+test('five visible Fish voices are unique, native adult RU candidates require rights',()=>{
+ const visible=['mira','max','sofia','alex','merlin']
+ assert.equal(new Set(visible.map(id=>myCoachFishVoice(id,'en',{}))).size,5)
+ assert.equal(new Set(visible.map(id=>myCoachFishVoice(id,'ru',{}))).size,5)
+ const approved={HH_MY_COACH_MIRA_RU_VOICE_RIGHTS_APPROVED:'true',
+  HH_MY_COACH_MERLIN_RU_VOICE_RIGHTS_APPROVED:'true'}
+ assert.equal(myCoachFishVoice('mira','ru',approved),MIRA_RU_ADULT_FISH_CANDIDATE)
+ assert.equal(myCoachFishVoice('merlin','ru',approved),MERLIN_RU_FISH_CANDIDATE)
+ assert.equal(myCoachFishVoice('mira','en',approved),MY_COACH_FISH_VOICES.mira)
+ assert.equal(myCoachFishVoice('merlin','en',approved),MY_COACH_FISH_VOICES.merlin)
+ assert.equal(new Set(visible.map(id=>myCoachFishVoice(id,'ru',approved))).size,5)
+ assert.notEqual(myCoachFishVoice('mira','ru',{}),MIRA_RU_ADULT_FISH_CANDIDATE)
+ assert.equal(myCoachFishVoice('unknown','ru',approved),null)
+ const response=readFileSync(new URL('../app/api/app/my-coach/voice/synthesize/route.js',import.meta.url),'utf8')
+ const intro=readFileSync(new URL('../app/api/coaching/intro/[locale]/[coach]/route.js',import.meta.url),'utf8')
+ assert.ok(response.includes('myCoachFishVoice(fishRaw.personaId,input.locale)'))
+ assert.ok(intro.includes('myCoachFishVoice(personaId,locale)'))
+})
+
 test('Fish natural voice accepts the exact live/replay persona payload but no extra fields', () => {
   const speech=readFileSync(new URL('../components/my-coach-speech-loop.jsx',import.meta.url),'utf8')
   const dialog=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')

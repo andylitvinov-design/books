@@ -1139,3 +1139,7 @@
 
 /* Verified per-turn model source: neutral and compact even in iPhone voice mode. */
 .responseSource{display:inline;font-size:10px;font-weight:500;letter-spacing:0;color:#65796e;overflow-wrap:anywhere}
+
+/* Merlin's unique first-party portrait remains stationary until real reviewed
+   animation media exists; other coaches keep their original 24fps loops. */
+.sessionPortrait[data-persona=merlin]{background-image:url('/images/holistic-house/my-coach-motion/merlin-still.webp'),linear-gradient(110deg,#364d45,#cbb9a1);background-size:auto 140%,cover;background-position:right 32%,center;background-repeat:no-repeat}

@@ -380,3 +380,6 @@
 .cardPortrait[data-persona=max],.avatarLarge[data-persona=max]{background-image:url('/images/holistic-house/my-coach-motion/max-still.webp')!important}
 .cardPortrait[data-persona=sofia],.avatarLarge[data-persona=sofia]{background-image:url('/images/holistic-house/my-coach-motion/sofia-still.webp')!important}
 .cardPortrait[data-persona=alex],.avatarLarge[data-persona=alex]{background-image:url('/images/holistic-house/my-coach-motion/alex-still.webp')!important}
+
+.cardPortrait[data-persona=merlin],.avatarLarge[data-persona=merlin]{background-image:url('/images/holistic-house/my-coach-motion/merlin-still.webp');background-size:cover;background-position:center 26%}
+.cardPortrait[data-persona=merlin] .avatarSymbol{display:none}

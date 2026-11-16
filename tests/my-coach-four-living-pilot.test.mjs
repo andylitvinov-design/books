@@ -10,10 +10,10 @@ const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 const root='../public/images/holistic-house/my-coach-motion/'
 const states=['greeting','idle','listening','speaking']
 
-test('pilot advertises exactly two female and two male coaches without deleting the historical registry',()=>{
-  assert.deepEqual(PUBLIC_COACH_PERSONA_IDS,['mira','max','sofia','alex'])
+test('pilot advertises two female and three male coaches while retaining historical registry',()=>{
+  assert.deepEqual(PUBLIC_COACH_PERSONA_IDS,['mira','max','sofia','alex','merlin'])
   assert.deepEqual(PUBLIC_COACH_PERSONAS.map(item=>item.id),PUBLIC_COACH_PERSONA_IDS)
-  assert.equal(COACH_PERSONAS.length,8)
+  assert.equal(COACH_PERSONAS.length,9)
   assert.ok(PUBLIC_COACH_PERSONA_IDS.every(id=>getCoachPersona(id)))
   assert.ok(PUBLIC_COACH_TOPICS.every(topic=>PUBLIC_COACH_PERSONAS.some(p=>p.topic===topic||p.related.includes(topic))))
   const catalog=source('components/my-coach-catalog.jsx')
@@ -42,6 +42,19 @@ test('every active coach has a silent playable local 24fps MP4 for each of four 
     }
   }
   assert.equal(hashes.size,16)
+})
+
+test('new Merlin poster exists and does not request missing 24fps videos',()=>{
+ const poster=readFileSync(new URL(root+'merlin-still.webp',import.meta.url))
+ assert.equal(poster.subarray(0,4).toString(),'RIFF')
+ assert.equal(poster.subarray(8,12).toString(),'WEBP')
+ const motion=source('components/my-coach-motion-media.jsx')
+ assert.ok(motion.includes("personaId!=='merlin'"))
+ assert.ok(motion.includes("const src=hasMotion?"))
+ const intro=source('lib/personal-coaching/direct-coach-intro-audio.mjs')
+ const api=source('app/api/coaching/intro/[locale]/[coach]/route.js')
+ assert.match(intro,/alex\|merlin\|lea/)
+ assert.match(api,/alex\|merlin\|lea/)
 })
 
 test('motion player is silent, visibility-gated, reduced-motion safe and never calls a provider',()=>{

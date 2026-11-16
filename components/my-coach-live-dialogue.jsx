@@ -72,7 +72,7 @@ const copy={
 // Speech services receive only their minimum necessary data after a real
 // Play gesture. Keep full disclosures in the optional Privacy details.
 const avatarVisuals={
-  mira:'warm',max:'clear',sofia:'calm',alex:'clear',
+  mira:'warm',max:'clear',sofia:'calm',alex:'clear',merlin:'calm',
   lea:'calm',noah:'warm',iris:'warm',ray:'clear',
 }
 const avatarNotice={
