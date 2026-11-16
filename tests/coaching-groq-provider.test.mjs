@@ -1,4 +1,5 @@
 import test from 'node:test'
+import './coach-semantic-evidence.test.mjs'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {coachingGroqConfig,verifiedGroqCoachingReply,coachGroqReasoningEffort,GROQ_COACH_MODEL} from '../lib/coaching/groq-coach-provider.mjs'
@@ -42,9 +43,13 @@ test('only server-side Groq JSON completion, no reasoning transcript or automati
     const schema=request.response_format.json_schema.schema
     assert.equal(schema.type,'object')
     assert.equal(schema.additionalProperties,false)
-    assert.deepEqual(schema.required,['message','planSuggestion','evidenceQuote'])
+    assert.deepEqual(schema.required,['message','planSuggestion','evidenceQuote','clientEvidence'])
     assert.deepEqual(Object.keys(schema.properties),schema.required)
-    assert.ok(Object.values(schema.properties).every(row=>row.type==='string'))
+    assert.ok(['message','planSuggestion','evidenceQuote'].every(k=>schema.properties[k].type==='string'))
+    assert.equal(schema.properties.clientEvidence.type,'object')
+    assert.deepEqual(schema.properties.clientEvidence.required,['kind','quote'])
+    assert.equal(schema.properties.clientEvidence.additionalProperties,false)
+    assert.ok(schema.properties.clientEvidence.properties.kind.enum.includes('none'))
     assert.equal(request.stream,false)
     assert.deepEqual(request.messages,messages)
     return mock()(url,options)
@@ -240,4 +245,54 @@ test('My Coach annotates validated model replies only, not synthetic probes or o
   assert.match(client,/data-coach-answer-source=\{turn\.inference\.provider\}/)
   assert.match(client,/turn\.mode==='offline'/)
   assert.match(client,/turns:coachTurnWindow\(turns,10\)/)
+})
+
+
+test('a very short RU dictation fragment is clarified naturally, not turned into a goal-intake template',()=>{
+  const {input,persona}=normalizeGenerativeCoachInput({
+    personaId:'mira',locale:'ru',consent:true,settings:{},message:'Там Миро',turns:[],
+  })
+  const prompts=conversationalCoachMessages(input,persona,'grow','goal',{type:'none'})
+  assert.match(prompts[1].content,/LOW-CONTEXT SPOKEN FRAGMENT/)
+  const model=JSON.stringify({
+    message:'Вы упомянули Миро. Что бы вам хотелось достичь или обсудить в связи с этим?',
+    planSuggestion:'',evidenceQuote:'',clientEvidence:{kind:'none',quote:''},
+  })
+  const output=parseConversationalCoachReply(model,input,'grow','goal')
+  assert.equal(output.mode,'ai')
+  assert.match(output.message,/Можно чуть подробнее/)
+  assert.doesNotMatch(output.message,/Вы упомянули|достичь/)
+  assert.equal(output.planSuggestion,'')
+  assert.equal(output.semanticEvidence,null)
+})
+
+test('second odd spoken fragment changes the clarification and keeps the client in control',()=>{
+  const prior=[
+    {role:'user',content:'Там Лино'},
+    {role:'assistant',content:'Вы упомянули Лино. Что бы вам хотелось обсудить в связи с этим?'},
+  ]
+  const {input}=normalizeGenerativeCoachInput({
+    personaId:'mira',locale:'ru',consent:true,settings:{},message:'Мама селфи',turns:prior,
+  })
+  const answer=parseConversationalCoachReply(JSON.stringify({
+    message:'Вы упомянули «Мама селфи». Что бы вам хотелось с этим обсудить или изменить?',
+    planSuggestion:'',evidenceQuote:'',clientEvidence:{kind:'none',quote:''},
+  }),input,'grow','goal')
+  assert.match(answer.message,/Можете сказать иначе/)
+  assert.doesNotMatch(answer.message,/Вы упомянули|достичь|цель/)
+  assert.equal(answer.evidenceQuote,'')
+})
+
+test('substantive coaching text and client direct questions still keep model-owned wording',()=>{
+  const base={personaId:'sofia',locale:'ru',consent:true,settings:{},turns:[]}
+  const normal=normalizeGenerativeCoachInput({...base,message:'Я хочу обсудить с мамой свои границы и отношения.'}).input
+  const conversational='Это непростая тема. Давайте посмотрим, что происходит между вами.'
+  assert.equal(parseConversationalCoachReply(JSON.stringify({
+    message:conversational,planSuggestion:'',evidenceQuote:'',clientEvidence:{kind:'none',quote:''},
+  }),normal,'grow','explore').message,conversational)
+  const question=normalizeGenerativeCoachInput({...base,message:'Что вы думаете об этом?'}).input
+  assert.equal(parseConversationalCoachReply(JSON.stringify({
+    message:'Я бы не торопилась с выводом. Тут важны ваши границы.',
+    planSuggestion:'',evidenceQuote:'',clientEvidence:{kind:'none',quote:''},
+  }),question,'grow','explore').mode,'ai')
 })

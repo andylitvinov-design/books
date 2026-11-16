@@ -14,7 +14,7 @@ import { useNavigationLocale } from './use-navigation-locale';
 import { HomePersonalSpaceNavEntry } from './home-personal-space';
 import { HeaderCreditProfile } from './header-credit-profile';
 
-type Props = { locale?: PublicLocale; onLocaleChange?: (locale: Locale) => void };
+type Props = { locale?: PublicLocale; onLocaleChange?: (locale: Locale) => void; compact?: boolean };
 
 const shopMenuCopy = { en: 'Shop', ru: 'Магазин', es: 'Tienda' } as const;
 const myCoachMenuCopy = { en: 'My Coach', ru: 'Мой коуч', es: 'Mi coach' } as const;
@@ -40,7 +40,7 @@ const siteMenuCopy = {
   },
 } as const;
 
-export function SiteNavigation({ locale, onLocaleChange }: Props) {
+export function SiteNavigation({ locale, onLocaleChange, compact = false }: Props) {
   const pathname = usePathname();
   const languageRef = useRef<HTMLDetailsElement>(null);
   const siteMenuRef = useRef<HTMLDetailsElement>(null);
@@ -134,13 +134,16 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
     { id: 'my-coach', label: myCoachMenuCopy[activeLocale], href: '/' + activeLocale + '/my-coach', ariaLabel: myCoachMenuCopy[activeLocale], external: false },
   );
 
-  return <nav aria-label={text.navigation} className="site-navigation">
+  return <nav aria-label={text.navigation} className={compact ? "site-navigation site-navigation--profile-compact" : "site-navigation"}>
+    {!compact && <>
     <Link className="site-nav-free-entry" href={freeReviewHref} prefetch={false}>{siteMenu.start}</Link>
     {getSiteNavigation(activeLocale).filter(item => ['energy', 'love', 'business'].includes(item.id)).map(item => item.external
       ? <a key={item.id} data-nav-item={item.id} href={item.href} aria-label={item.ariaLabel} rel="noreferrer">{item.label}</a>
       : <Link key={item.id} data-nav-item={item.id} href={item.href} prefetch={false} aria-current={current === item.id ? 'page' : undefined}>{item.label}</Link>)}
     <Link className="site-nav-about-entry" href={`/${activeLocale}/about`} prefetch={false} aria-current={pathname === `/${activeLocale}/about` ? 'page' : undefined}>{text.about}</Link>
+    </>}
     <SiteSearch locale={activeLocale} pathname={pathname} />
+    {!compact && <>
     {/^(?:\/)(?:en|ru|es)\/holistic-support\/mandala(?:\/|$)/.test(pathname)
       ? <HeaderCreditProfile locale={activeLocale} />
       : <HomePersonalSpaceNavEntry locale={activeLocale}
@@ -156,6 +159,7 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
         ? <Link prefetch={false} aria-current={activeLocale === next ? 'true' : undefined} href={counterpart(next)} key={next} lang={next} onClick={() => selectLocale(next)}>{next.toUpperCase()}</Link>
         : <button aria-pressed={activeLocale === next} key={next} lang={next} onClick={() => selectLocale(next)} type="button">{next.toUpperCase()}</button>)}</span>
     </details></span>
+    </>}
     <details className="site-main-menu" ref={siteMenuRef}>
       <summary className="site-main-menu-trigger" aria-label={siteMenu.open} title={siteMenu.open}>
         <Menu aria-hidden="true" /><span className="site-main-menu-trigger__label">{siteMenu.label}</span>

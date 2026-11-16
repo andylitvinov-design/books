@@ -20,7 +20,7 @@ test("Ready is the sixth existing editor tab, never a seventh or a parallel rend
 });
 test("Video must be verified; guests get login before save, and existing signed upload is reused",()=>{
   assert.match(ready,/if\(!verified\|\|!video\|\|disabled\)return/);
-  assert.match(ready,/if\(!signedIn\|\|intent==="telegram"\|\|intent==="house"\)/,
+  assert.match(ready,/if\(!signedIn\|\|intent==="house"\)/,
     "guest save and Telegram entry open the action-invoked gate");
   assert.match(studio,/<MandalaVideoReady/);
   assert.match(ready,/data-video-ready/);
@@ -285,7 +285,7 @@ test("real Safari encoded-Blob guest helper gates Save without relying on the re
 
 test("verified signed-in Ready Save uploads directly through the existing signed private MP4 uploader",()=>{
   const css=readFileSync(new URL("../components/mandala-video-ready.module.css",import.meta.url),"utf8");
-  assert.match(ready,/if\(!signedIn\|\|intent==="telegram"\|\|intent==="house"\)/);
+  assert.match(ready,/if\(!signedIn\|\|intent==="house"\)/);
   assert.match(ready,/if\(intent==="save"\)\{onSaveDirect\(\);return;\}/);
   assert.match(ready,/data-ready-save-status/);
   assert.match(ready,/disabled=\{disabled\|\|saveStatus\.busy\}/);
@@ -294,7 +294,7 @@ test("verified signed-in Ready Save uploads directly through the existing signed
   assert.match(studio,/if\(deliveryRef\.current\)void deliveryRef\.current\.saveToLibrary\(\)/);
   assert.match(studio,/onStatusChange=\{setReadySaveStatus\}/);
   assert.match(delivery,/forwardRef<VideoDeliveryHandle,Props>/);
-  assert.match(delivery,/useImperativeHandle\(ref,\(\)=>\(\{saveToLibrary\}\)/);
+  assert.match(delivery,/useImperativeHandle\(ref,\(\)=>\(\{saveToLibrary,sendToTelegram,shareToWhatsApp\}\)/);
   assert.match(delivery,/if\(!current\.cloudAvailable\)\{setNotice\(t\.cloudSaveOff\);return;\}/);
   assert.match(delivery,/savingRef\.current=true/);
   assert.match(delivery,/const id=await privateUpload\(\)/);
@@ -306,4 +306,97 @@ test("verified signed-in Ready Save uploads directly through the existing signed
       loc==="ru"?delivery.indexOf(" en:{",i):delivery.indexOf("} as const;",i);
     assert.ok(i>0&&e>i&&delivery.slice(i,e).includes("cloudSaveOff:"),loc+" clear cloud error");
   }
+});
+
+test("Ready primes Safari media on trusted Create before awaiting account credit hold",()=>{
+  const begin=studio.indexOf("async function createVideo(");
+  const end=studio.indexOf("  function stopSoundPreview()",begin);
+  assert.ok(begin>0&&end>begin);
+  const create=studio.slice(begin,end);
+  const at=(fragment)=>{
+    const position=create.indexOf(fragment);
+    assert.ok(position>=0,"Missing render step: "+fragment);
+    return position;
+  };
+  const primedVideo=at("const stylePreparation=");
+  const primedAudio=at("const audioPreparation =");
+  const audioStarted=at("musicSession=audioPreparation?await withLocalMediaDeadline");
+  const sceneCheck=at("if(!(await filmPreparation))");
+  const masterStarted=at("await withLocalMediaDeadline(master.play(),12000)");
+  const creditHold=at('const hold=await videoCreditRequest("hold"');
+  const encoder=at("const canvas = canvasRef.current;");
+  assert.ok(primedVideo<primedAudio&&primedAudio<audioStarted&&audioStarted<sceneCheck);
+  assert.ok(sceneCheck<masterStarted&&masterStarted<creditHold&&creditHold<encoder,
+    "No network hold/capability call may steal the original Safari tap before decoders start");
+  assert.ok(at('appFetch("video-export/capabilities"')>masterStarted);
+  assert.match(studio,/async function withLocalMediaDeadline<T>/);
+  assert.match(studio,/image_load_timeout/);
+  assert.match(create,/await withLocalMediaDeadline\(image\.decode\(\),20000\)/);
+  assert.match(create,/setExportUnavailable\(true\)/);
+});
+
+test("credit hold times out instead of leaving a signed-in iPhone in Preparing",async()=>{
+  const {postVideoCreditAction}=await import("../lib/video-credits/client.mjs");
+  const originalFetch=globalThis.fetch;
+  let aborted=false;
+  try{
+    globalThis.fetch=(url,init)=>{
+      assert.equal(url,"/api/app/video-credits/hold");
+      assert.equal(init.method,"POST");
+      assert.equal(init.credentials,"same-origin");
+      return new Promise((_resolve,reject)=>init.signal.addEventListener("abort",()=>{
+        aborted=true;reject(new Error("AbortError"));
+      },{once:true}));
+    };
+    await assert.rejects(postVideoCreditAction("hold",{operationId:"synthetic-hold"},{timeoutMs:40}),
+      /VIDEO_CREDITS_UNAVAILABLE/);
+    assert.equal(aborted,true,"the hung browser request must be aborted");
+  }finally{globalThis.fetch=originalFetch;}
+});
+
+test("Add Video keeps the optional source editor closed on landing and opens it on user navigation",()=>{
+  assert.match(studio,/const \[firstVideoAdvancedOpen,setFirstVideoAdvancedOpen\] = useState\(false\)/);
+  assert.match(studio,/open=\{firstVideoAdvancedOpen\}/);
+  assert.match(studio,/setFirstVideoAdvancedOpen\(opened\)/,
+    "real native summary toggle owns open and close");
+  const from=studio.indexOf("const openQuickDetailed=");
+  const to=studio.indexOf("const openVideoScenarioStep",from);
+  assert.ok(from>0&&to>from);
+  assert.match(studio.slice(from,to),
+    /if\(anchor==="video-templates"\)\{[\s\S]*?setFirstVideoAdvancedOpen\(true\)/,
+    "Add Video reveals the real first-party source editor before Safari can lose a second tap");
+  assert.match(studio,/data-video-first-video-advanced>/);
+});
+
+
+test("Ready Telegram sends directly to the verified own bot without the chooser",()=>{
+  assert.match(ready,/if\(intent==="telegram"\)\{onSendTelegramDirect\(\);return;\}/);
+  assert.match(studio,/onSendTelegramDirect=\{\(\)=>\{if\(deliveryRef\.current\)void deliveryRef\.current\.sendToTelegram\(\);\}\}/);
+  assert.match(delivery,/async function sendToTelegram\(\)/);
+  assert.match(delivery,/const current=await refresh\(\)/);
+  assert.match(delivery,/if\(!current\.telegram\.linked\)/);
+  assert.match(delivery,/if\(!current\.cloudAvailable\|\|!current\.telegram\.sendingAvailable\)/);
+  assert.match(delivery,/await sendViaBot\(false\)/);
+  assert.match(ready,/data-ready-telegram-link-step/);
+  assert.match(ready,/data-ready-verify-telegram/);
+  assert.doesNotMatch(ready,/if\(!signedIn\|\|intent==="telegram"/);
+});
+
+test("Ready WhatsApp requires own verified link, never claims Meta MP4 delivery",()=>{
+  assert.match(ready,/data-ready-whatsapp><MessageCircle/);
+  assert.match(ready,/data-ready-whatsapp-link-step/);
+  assert.match(delivery,/getCabinetBootstrap\("portrait"\)/);
+  assert.match(delivery,/appFetch\("whatsapp-link",undefined,"GET",\{accountId\}\)/);
+  assert.match(delivery,/accountId:current\.accountId/);
+  assert.match(delivery,/if\(consentApproved!==true\)/);
+  assert.match(ready,/data-ready-whatsapp-link-consent/);
+  assert.match(ready,/disabled=\{!whatsappConsent\|\|saveStatus\.busy\}/);
+  assert.match(ready,/onShareWhatsApp\(true\)/);
+  assert.match(delivery,/if\(whatsappLink\?\.linked\)\{/);
+  assert.match(delivery,/await shareFromDevice\(\)/);
+  assert.match(delivery,/action:"begin",noticeVersion:"hh-whatsapp-account-link-v1",permissionAccepted:true/);
+  assert.match(delivery,/setWhatsappUrl\(link\)/);
+  assert.match(delivery,/setNotice\(t\.whatsappUnavailable\)/);
+  assert.match(ready,/direct automated MP4 sending is not enabled/);
+  assert.doesNotMatch(delivery,/channel:"whatsapp"/);
 });
