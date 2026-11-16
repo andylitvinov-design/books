@@ -51,8 +51,8 @@ test('Owner CRM transfer requires existing confirmation path; no early lead',()=
  assert.match(code,/ingestMessengerEventInTransaction/);
  assert.match(code,/ai_review_consent_at=now\(\)/);
  assert.match(code,/crm_tg_suppress_existing/);
- assert.match(ui,/resolveTelegramServiceEntry/);
- assert.match(ui,/serviceBot\|\|telegramUrl/);
+ assert.doesNotMatch(ui,/resolveTelegramServiceEntry/);
+ assert.match(ui,/reviewBot\|\|telegramUrl/);
 });
 
 test('Generic public free-review fallback is distinct from a selected service request',()=>{
