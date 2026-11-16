@@ -27,3 +27,16 @@ test('emergency Deploy Now and manual-only guarded cleanup remain available',()=
   assert.match(workflow,/github\.event_name == 'workflow_dispatch' && inputs\.cleanup_mode != 'off'/)
   assert.doesNotMatch(workflow,/push:\s*\n\s*branches:/)
 })
+
+test('hourly release recovers previously accepted minimal GitSource POST and reports sanitized errors',()=>{
+  assert.match(workflow,/payload=.*gitSource:/)
+  assert.match(workflow,/repoId:1229814825,ref:"codex\/public-book-library",sha:/)
+  assert.doesNotMatch(workflow,/meta:\{hhReleaseController/)
+  assert.match(workflow,/http_status=.*curl -sS --max-time 30/)
+  assert.match(workflow,/if \[\[ "\$http_status" != "200" && "\$http_status" != "201" \]\]; then/)
+  assert.match(workflow,/error_code=.*jq -r '.error.code/)
+  assert.match(workflow,/code=\$error_code/)
+  assert.match(workflow,/No automatic retry/)
+  assert.match(workflow,/response_file=.*mktemp/)
+  assert.doesNotMatch(workflow,/echo "\$response"/)
+})

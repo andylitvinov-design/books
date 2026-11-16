@@ -660,7 +660,17 @@ test('normal Vercel production batch allows at most one requested deployment per
  check([{target:'production',createdAt:hour+1,state:'BUILDING'}],true);
  check([{target:'production',created:hour+1,state:'ERROR'}],true);
  assert.ok(workflow.includes('type == "number"'),'unknown API timestamps must fail closed');
- assert.match(workflow,/hhReleaseController:"github-actions-hourly"/);
- assert.match(workflow,/hhReleaseHourUtc:\$hour/);
+ // The previously accepted GitSource API request is intentionally minimal.
+ // GitHub Actions provides the scheduled run / UTC-hour audit provenance.
+ assert.doesNotMatch(workflow,/meta:\{hhReleaseController/,
+   'do not reintroduce optional POST metadata that preceded the HTTP 400 regression');
+ assert.match(workflow,/payload=.*gitSource:/,
+   'release still targets the exact GitHub source SHA');
+ assert.match(workflow,/http_status=.*curl -sS --max-time 30/,
+   'record Vercel response status without logging request or response bodies');
+ assert.match(workflow,/code=\$error_code/,
+   'capture bounded vendor error codes for diagnosis');
+ assert.match(workflow,/No automatic retry/,
+   'do not duplicate a possibly accepted production POST');
  assert.match(workflow,/if \[\[ "\$EMERGENCY" != "true" \]\]; then/);
 });

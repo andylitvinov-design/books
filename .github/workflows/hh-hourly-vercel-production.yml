@@ -89,15 +89,29 @@ jobs:
           set -euo pipefail
           latest="$(git ls-remote https://github.com/andylitvinov-design/books.git refs/heads/codex/public-book-library | cut -f1)"
           [[ "$latest" == "$EXPECTED_SHA" ]] || { echo 'Production advanced; next hourly run will publish latest SHA.'; exit 0; }
-          release_hour="$(date -u +%Y%m%d%H)"
-          payload="$(jq -cn --arg sha "$EXPECTED_SHA" --arg hour "$release_hour" --arg emergency "$EMERGENCY" '{name:"codex-public-book-library",project:"prj_4jAwcx6lrKyUKZ3R9vgC5xwwyC0b",target:"production",gitSource:{type:"github",repoId:1229814825,ref:"codex/public-book-library",sha:$sha},meta:{hhReleaseController:"github-actions-hourly",hhReleaseHourUtc:$hour,hhReleaseEmergency:$emergency}}')"
+          # Restore the GitSource payload from the last successful hourly run.
+          # Custom metadata preceded repeated HTTP 400 responses; keep its
+          # diagnostic context in the GitHub Actions run rather than the POST.
+          payload="$(jq -cn --arg sha "$EXPECTED_SHA" '{name:"codex-public-book-library",project:"prj_4jAwcx6lrKyUKZ3R9vgC5xwwyC0b",target:"production",gitSource:{type:"github",repoId:1229814825,ref:"codex/public-book-library",sha:$sha}}')"
           url='https://api.vercel.com/v13/deployments?teamId=team_OSf690d0nxRHWVMXCElA8i95'
           if [[ "$EMERGENCY" == "true" ]]; then url="$url&forceNew=1"; fi
           # POST is NOT retried: timeout may mean Vercel accepted it.
-          response="$(curl -fsS --max-time 30 -X POST "$url" \
+          # Store the response privately and log only bounded error code/status.
+          response_file="$(mktemp)"
+          trap 'rm -f "$response_file"' EXIT
+          http_status="$(curl -sS --max-time 30 -o "$response_file" -w '%{http_code}' -X POST "$url" \
             -H "Authorization: Bearer $VERCEL_TOKEN" \
-            -H 'Content-Type: application/json' --data "$payload")"
-          jq -e '.id | strings | startswith("dpl_")' <<< "$response" >/dev/null ||
+            -H 'Content-Type: application/json' --data "$payload")" || {
+              echo 'Vercel transport failure; outcome unknown. No automatic retry.'
+              exit 1
+            }
+          if [[ "$http_status" != "200" && "$http_status" != "201" ]]; then
+            error_code="$(jq -r '.error.code // "unavailable"' "$response_file" 2>/dev/null || true)"
+            [[ "$error_code" =~ ^[A-Za-z_][A-Za-z0-9_-]{0,63}$ ]] || error_code="unavailable"
+            echo "Vercel rejected hourly release: HTTP $http_status, code=$error_code."
+            exit 1
+          fi
+          jq -e '.id | strings | startswith("dpl_")' "$response_file" >/dev/null ||
             { echo 'Vercel did not return a deployment ID'; exit 1; }
           echo 'One exact-SHA production build requested; READY/LIVE must be checked separately.'
   cleanup:
