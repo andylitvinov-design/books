@@ -3,7 +3,7 @@
 import {useEffect,useMemo,useRef,useState} from "react";
 import type {ReactNode} from "react";
 import Link from "next/link";
-import {ArrowRight,BookOpen,CheckCircle2,Clock3,Download,Flower2,FolderOpen,Headphones,Play,RefreshCw,Send,ShieldCheck,Sparkles,UserRound} from "lucide-react";
+import {ArrowRight,BookOpen,CheckCircle2,Clock3,Download,Flower2,FolderOpen,Headphones,Play,RefreshCw,Send,MessageCircle,ShieldCheck,Sparkles,UserRound} from "lucide-react";
 import type {PublicLocale} from "@/lib/public-locales";
 import type {VideoTheme} from "@/lib/mandala/holistic-video-themes";
 import type {GuidedMeditationFocus} from "./mandala-guided-course";
@@ -26,13 +26,14 @@ type Props={
   loginUnavailable:boolean;disabled:boolean;meditationEditor:ReactNode;
   onOpenDelivery:()=>void;onRefreshLogin:()=>void;onOpenCourse:()=>void;onReturnToPro:()=>void;
   onGenerateBasicVideo:()=>boolean;onStartNewVideo:()=>void;onVerifyPlayback:(player:HTMLVideoElement)=>void;
-  onSaveDirect:()=>void;saveStatus:VideoDeliveryStatus;basicFreeAvailable:boolean;
+  onSaveDirect:()=>void;onSendTelegramDirect:()=>void;onShareWhatsApp:(consentApproved?:boolean)=>void;
+  saveStatus:VideoDeliveryStatus;basicFreeAvailable:boolean;
   basicFreeIssue:"checking"|"unavailable"|"guest_used"|"insufficient"|null;basicCreditCost:number;
 };
 const COPY={
   en:{
     saveGateTitle:"Save your video free",saveGateLead:"Your video is ready. Sign in to save it in My Videos, download it or send it to Telegram.",saveGateTag:"YOUR VIDEO · YOUR CHOICE",saveGateBenefitSave:"Keep in My Videos",saveGateBenefitDownload:"Download to device",saveGateBenefitTelegram:"Send to Telegram",saveGateBenefitPractice:"Meditation or course",saveGateLogin:"Sign in to My House",saveGateTelegram:"Open Telegram · tap Start",saveGateTelegramConnect:"Get secure Telegram link",saveGateTelegramChecking:"Checking Telegram link…",saveGateTelegramUnavailable:"Telegram linking is unavailable. You can still use My House.",saveGateTelegramPending:"Tap Start in the Telegram chat, then return here.",saveGateTelegramLinked:"Telegram linked to your account.",saveGateTelegramVerify:"Check Telegram connection",saveGateContinue:"Continue saving",saveGateOr:"or",saveGateClose:"Close",saveGatePrivacy:"Free within available limits · Sent only with consent · Private by choice",saveGateSignInHint:"First sign in to My House. Open it in a new tab so your video stays here. Then check your sign-in.",saveGateTelegramHint:"Start connects the bot to your signed-in account. It does not send or save the video automatically.",saveGateRefresh:"Check sign-in",saveGateUnavailable:"Could not verify your account. The video stays on your device.",
-    ready:"Your video is ready!",nextSteps:"Next steps: create a deeper practice",nextLead:"Expand your video into a guided practice or a full program.",newVideo:"Generate New Video",sendTelegram:"Send to Telegram",meditationNext:"Add a Guided Meditation",meditationNextHint:"Turn your video into a full meditation with voice and music.",journeyNext:"Create an 8-Session Video Therapy",journeyNextHint:"A step-by-step program to work deeply with your goal.",preview:"Preview, save or continue your journey.",
+    ready:"Your video is ready!",nextSteps:"Next steps: create a deeper practice",nextLead:"Expand your video into a guided practice or a full program.",newVideo:"Generate New Video",sendTelegram:"Send to Telegram",connectWhatsApp:"Connect WhatsApp",whatsapp:"WhatsApp",openTelegramStart:"Open Telegram · Start",telegramVerifySend:"Check link & send",openWhatsAppStart:"Open WhatsApp · verify",whatsappVerify:"Check WhatsApp",waLinkConsent:"I agree to link my own WhatsApp to this account for private practitioner messages. No marketing subscription or automatic video delivery.",whatsappLimit:"WhatsApp uses the device Share menu after linking your own account. Select your own chat; direct automated MP4 sending is not enabled.",meditationNext:"Add a Guided Meditation",meditationNextHint:"Turn your video into a full meditation with voice and music.",journeyNext:"Create an 8-Session Video Therapy",journeyNextHint:"A step-by-step program to work deeply with your goal.",preview:"Preview, save or continue your journey.",
     generating:"Your video is being generated on this device…",
     notReady:"Your video is not ready yet",createFirst:"Create and verify a video in PRO first.",
     videoChooseTitle:"Choose a video option",videoChooseHint:"Choose a format, then generate your video.",
@@ -75,7 +76,7 @@ const COPY={
   },
   ru:{
     saveGateTitle:"Сохраните видео бесплатно",saveGateLead:"Видео уже готово. Войдите, чтобы сохранить его в «Моих видео», скачать или отправить себе в Telegram.",saveGateTag:"ВАШЕ ВИДЕО · ВАШ ВЫБОР",saveGateBenefitSave:"В Мои видео",saveGateBenefitDownload:"Скачать на телефон",saveGateBenefitTelegram:"Отправить в Telegram",saveGateBenefitPractice:"Медитация или курс",saveGateLogin:"Войти в Мой дом",saveGateTelegram:"Открыть Telegram · нажать «Старт»",saveGateTelegramConnect:"Получить ссылку в Telegram",saveGateTelegramChecking:"Проверяем Telegram…",saveGateTelegramUnavailable:"Подключение Telegram недоступно. Сохранить видео можно через кабинет.",saveGateTelegramPending:"Нажмите «Старт» в Telegram и вернитесь на эту страницу.",saveGateTelegramLinked:"Telegram подключён к кабинету.",saveGateTelegramVerify:"Проверить Telegram",saveGateContinue:"Продолжить сохранение",saveGateOr:"или",saveGateClose:"Закрыть",saveGatePrivacy:"Бесплатно в рамках лимитов · Только с согласия · Приватно",saveGateSignInHint:"Сначала войдите в «Мой дом». Откроется новая вкладка, ваше видео останется здесь. Затем проверьте вход.",saveGateTelegramHint:"«Старт» привязывает бота к вашему кабинету, но не отправляет и не сохраняет видео автоматически.",saveGateRefresh:"Проверить вход",saveGateUnavailable:"Не удалось проверить вход. Видео осталось на вашем устройстве.",
-    ready:"Ваше видео готово!",nextSteps:"Следующий шаг: углубите практику",nextLead:"Дополните ролик медитацией или программой занятий.",newVideo:"Создать новое видео",sendTelegram:"Отправить в Telegram",meditationNext:"Добавить медитацию с голосом",meditationNextHint:"Озвучка и музыка к вашему ролику.",journeyNext:"Создать 8 видео-сессий",journeyNextHint:"Восемь связанных этапов вашей практики.",preview:"Посмотрите, сохраните или продолжите практику.",
+    ready:"Ваше видео готово!",nextSteps:"Следующий шаг: углубите практику",nextLead:"Дополните ролик медитацией или программой занятий.",newVideo:"Создать новое видео",sendTelegram:"Отправить в Telegram",connectWhatsApp:"Привязать WhatsApp",whatsapp:"WhatsApp",openTelegramStart:"Открыть Telegram · Start",telegramVerifySend:"Проверить и отправить",openWhatsAppStart:"Открыть WhatsApp · подтвердить",whatsappVerify:"Проверить WhatsApp",waLinkConsent:"Я разрешаю привязать мой WhatsApp к кабинету для личных сообщений со специалистом. Без рассылок и автоматической отправки видео.",whatsappLimit:"После привязки WhatsApp выберите свой чат в меню телефона. Прямая автоматическая отправка MP4 пока недоступна.",meditationNext:"Добавить медитацию с голосом",meditationNextHint:"Озвучка и музыка к вашему ролику.",journeyNext:"Создать 8 видео-сессий",journeyNextHint:"Восемь связанных этапов вашей практики.",preview:"Посмотрите, сохраните или продолжите практику.",
     generating:"Видео создаётся на вашем устройстве…",
     notReady:"Видео пока не готово",createFirst:"Сначала создайте ролик в PRO и проверьте воспроизведение.",
     videoChooseTitle:"Выберите вариант видео",videoChooseHint:"Выберите формат и нажмите «Создать видео».",
@@ -118,7 +119,7 @@ const COPY={
   },
   es:{
     saveGateTitle:"Guarda tu vídeo gratis",saveGateLead:"Tu vídeo está listo. Inicia sesión para guardarlo en Mis vídeos, descargarlo o enviártelo por Telegram.",saveGateTag:"TU VÍDEO · TU ELECCIÓN",saveGateBenefitSave:"Mis vídeos",saveGateBenefitDownload:"Descarga al móvil",saveGateBenefitTelegram:"Enviar a Telegram",saveGateBenefitPractice:"Meditación o curso",saveGateLogin:"Entrar a Mi espacio",saveGateTelegram:"Abrir Telegram · pulsar Start",saveGateTelegramConnect:"Obtener enlace de Telegram",saveGateTelegramChecking:"Comprobando Telegram…",saveGateTelegramUnavailable:"No se puede conectar Telegram. Puedes guardar desde Mi espacio.",saveGateTelegramPending:"Pulsa Start en Telegram y vuelve a esta página.",saveGateTelegramLinked:"Telegram conectado a tu cuenta.",saveGateTelegramVerify:"Comprobar Telegram",saveGateContinue:"Continuar y guardar",saveGateOr:"o",saveGateClose:"Cerrar",saveGatePrivacy:"Gratis dentro de los límites · Solo con consentimiento · Privado",saveGateSignInHint:"Primero entra a Mi espacio. Se abrirá otra pestaña y el vídeo seguirá aquí. Después comprueba el acceso.",saveGateTelegramHint:"Start vincula el bot a tu cuenta, no guarda ni envía automáticamente el vídeo.",saveGateRefresh:"Comprobar acceso",saveGateUnavailable:"No se pudo comprobar la sesión. El vídeo sigue en tu dispositivo.",
-    ready:"¡Tu vídeo está listo!",nextSteps:"Siguiente paso: profundiza en tu práctica",nextLead:"Continúa con una meditación o un programa.",newVideo:"Crear otro vídeo",sendTelegram:"Enviar a Telegram",meditationNext:"Añadir meditación guiada",meditationNextHint:"Voz y música para tu vídeo.",journeyNext:"Crear 8 sesiones de vídeo",journeyNextHint:"Ocho pasos conectados con tu objetivo.",preview:"Míralo, guárdalo o continúa tu camino.",
+    ready:"¡Tu vídeo está listo!",nextSteps:"Siguiente paso: profundiza en tu práctica",nextLead:"Continúa con una meditación o un programa.",newVideo:"Crear otro vídeo",sendTelegram:"Enviar a Telegram",connectWhatsApp:"Conectar WhatsApp",whatsapp:"WhatsApp",openTelegramStart:"Abrir Telegram · Start",telegramVerifySend:"Comprobar y enviar",openWhatsAppStart:"Abrir WhatsApp · verificar",whatsappVerify:"Comprobar WhatsApp",waLinkConsent:"Acepto vincular mi WhatsApp a esta cuenta para mensajes privados con el profesional. Sin anuncios ni envío automático de vídeos.",whatsappLimit:"Tras vincular WhatsApp, elige tu propio chat en el menú Compartir. El envío automático directo de MP4 no está activado.",meditationNext:"Añadir meditación guiada",meditationNextHint:"Voz y música para tu vídeo.",journeyNext:"Crear 8 sesiones de vídeo",journeyNextHint:"Ocho pasos conectados con tu objetivo.",preview:"Míralo, guárdalo o continúa tu camino.",
     generating:"Se está creando el vídeo en tu dispositivo…",
     notReady:"Tu vídeo todavía no está listo",createFirst:"Primero crea y verifica un vídeo en PRO.",
     videoChooseTitle:"Elige una opción de vídeo",videoChooseHint:"Elige el formato y pulsa «Generar vídeo».",
@@ -165,7 +166,8 @@ export function MandalaVideoReady({
   locale,theme,wish,focus,aspect,video,verified,checking,rendering,renderProgress,
   generationNotice,signedIn,loginUnavailable,disabled,
   meditationEditor,onOpenDelivery,onRefreshLogin,onOpenCourse,onReturnToPro,
-  onGenerateBasicVideo,onStartNewVideo,onVerifyPlayback,onSaveDirect,saveStatus,
+  onGenerateBasicVideo,onStartNewVideo,onVerifyPlayback,onSaveDirect,
+  onSendTelegramDirect,onShareWhatsApp,saveStatus,
   basicFreeAvailable,basicFreeIssue,basicCreditCost
 }:Props){
   const t=COPY[locale];
@@ -181,7 +183,8 @@ export function MandalaVideoReady({
   const [courseTexts,setCourseTexts]=useState<CourseText[]>([]);
   const [meditationAdvancedOpen,setMeditationAdvancedOpen]=useState(false);
   const offerRef=useRef<HTMLElement|null>(null);
-  const [gateIntent,setGateIntent]=useState<"save"|"download"|"telegram"|"house">("save");
+  const [gateIntent,setGateIntent]=useState<"save"|"download"|"telegram"|"whatsapp"|"house">("save");
+  const [whatsappConsent,setWhatsAppConsent]=useState(false);
   const gateRef=useRef<HTMLElement|null>(null);
   const gateCloseRef=useRef<HTMLButtonElement|null>(null);
   const gateLauncherRef=useRef<HTMLElement|null>(null);
@@ -246,14 +249,22 @@ export function MandalaVideoReady({
     ...ritual.steps,ritual.transfer
   ].filter(Boolean).join("\n\n"):"";
   function closeSaveGate(){setView("home");setTelegramLink("");setTelegramError("");}
-  function openDelivery(){closeSaveGate();onOpenDelivery();}
-  function chooseDelivery(intent:"save"|"download"|"telegram"|"house"="save"){
+  function openDelivery(){
+    closeSaveGate();
+    if(gateIntent==="save"){onSaveDirect();return;}
+    if(gateIntent==="telegram"){onSendTelegramDirect();return;}
+    if(gateIntent==="whatsapp"){onShareWhatsApp();return;}
+    onOpenDelivery();
+  }
+  function chooseDelivery(intent:"save"|"download"|"telegram"|"whatsapp"|"house"="save"){
     if(!verified||!video||disabled)return;
-    if(!signedIn||intent==="telegram"||intent==="house"){
+    if(!signedIn||intent==="house"){
       gateLauncherRef.current=document.activeElement instanceof HTMLElement?document.activeElement:null;
       setGateIntent(intent);setView("login");return;
     }
     if(intent==="save"){onSaveDirect();return;}
+    if(intent==="telegram"){onSendTelegramDirect();return;}
+    if(intent==="whatsapp"){onShareWhatsApp();return;}
     onOpenDelivery();
   }
   async function requestTelegramLink(){
@@ -395,9 +406,34 @@ export function MandalaVideoReady({
           <button type="button" onClick={()=>chooseDelivery("save")}
             disabled={disabled||saveStatus.busy} aria-busy={saveStatus.busy}
             data-ready-save><Download size={21} aria-hidden="true"/><span>{t.save}</span></button>
-          <button type="button" onClick={()=>chooseDelivery("telegram")} disabled={disabled}
+          <button type="button" onClick={()=>chooseDelivery("telegram")} disabled={disabled||saveStatus.busy}
             data-ready-telegram><Send size={21} aria-hidden="true"/><span>{t.sendTelegram}</span></button>
+          <button type="button" onClick={()=>chooseDelivery("whatsapp")} disabled={disabled||saveStatus.busy}
+            data-ready-whatsapp><MessageCircle size={19} aria-hidden="true"/>
+            <span>{saveStatus.whatsappLinked===false?t.connectWhatsApp:t.whatsapp}</span></button>
         </div>
+        {saveStatus.telegramConnectUrl?<div className={css.linkActions} data-ready-telegram-link-step>
+          <a href={saveStatus.telegramConnectUrl} target="_blank" rel="noopener noreferrer"
+            data-ready-open-telegram>{t.openTelegramStart}</a>
+          <button type="button" onClick={onSendTelegramDirect} disabled={saveStatus.busy}
+            data-ready-verify-telegram>{t.telegramVerifySend}</button>
+        </div>:null}
+        {saveStatus.whatsappConsentRequired&&!saveStatus.whatsappLinked&&!saveStatus.whatsappConnectUrl?
+          <div className={css.linkConsent} data-ready-whatsapp-link-consent>
+            <label><input type="checkbox" checked={whatsappConsent}
+              onChange={event=>setWhatsAppConsent(event.currentTarget.checked)}/>
+              <span>{t.waLinkConsent}</span></label>
+            <button type="button" onClick={()=>{if(whatsappConsent)onShareWhatsApp(true);}}
+              disabled={!whatsappConsent||saveStatus.busy}
+              data-ready-whatsapp-confirm-link>{t.connectWhatsApp}</button>
+          </div>:null}
+        {saveStatus.whatsappConnectUrl?<div className={css.linkActions} data-ready-whatsapp-link-step>
+          <a href={saveStatus.whatsappConnectUrl} target="_blank" rel="noopener noreferrer"
+            data-ready-open-whatsapp>{t.openWhatsAppStart}</a>
+          <button type="button" onClick={()=>onShareWhatsApp()} disabled={saveStatus.busy}
+            data-ready-verify-whatsapp>{t.whatsappVerify}</button>
+        </div>:null}
+        <p className={css.whatsappLimit}>{t.whatsappLimit}</p>
         {saveStatus.notice?<div className={css.saveStatus} role="status" aria-live="polite"
           data-ready-save-status>
           <span>{saveStatus.busy&&saveStatus.uploadPercent!==null
