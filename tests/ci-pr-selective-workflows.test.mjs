@@ -142,3 +142,35 @@ test('Core suppresses metadata-only waves but keeps exact-HEAD and signed Ready 
   assert.match(workflow, /\(github\.event\.action == 'synchronize' \|\| github\.event\.action == 'converted_to_draft'\)/);
   assert.doesNotMatch(workflow, /continue-on-error:\s*true/);
 });
+
+// Release validation belongs to mandatory Core + BASE-trusted Specialist on
+// an exact PR HEAD, not to fresh source jobs on each protected merge.
+test('source-only postmerge repeats and stale-before-hour LIVE audits stay off', () => {
+  for (const name of [
+    'hh-owner-telegram-video.yml',
+    'hh-public-performance-audit.yml','hh-free-review-live-mobile.yml',
+  ]) {
+    const yaml=source(name);
+    assert.match(yaml,/^  pull_request:/m,name+': real PR validation retained');
+    assert.doesNotMatch(yaml,/^  push:/m,name+': redundant merged-source wave forbidden');
+  }
+  for (const name of ['hh-lighthouse.yml','hh-public-performance-audit.yml','hh-free-review-live-mobile.yml']) {
+    const yaml=source(name);
+    assert.match(yaml,/^  workflow_dispatch:/m,name+': explicit post-hourly LIVE audit retained');
+    assert.doesNotMatch(yaml,/^  push:/m,name+': do not audit old LIVE immediately after merge');
+  }
+  const migration=source('hh-event-referral-contract.yml');
+  assert.match(migration,/^  push:/m,'legacy CRM event-channel migration still requires production push QA');
+  for (const critical of ['hh-private-audio-e2e.yml','hh-my-progress-release.yml']) {
+    const yaml=source(critical);
+    assert.match(yaml,/^  pull_request:/m,critical+': real PR checks must remain');
+    assert.match(yaml,/^  push:/m,critical+': postmerge confidential data and progress acceptance retained');
+  }
+  const cleanup=source('hh-ci-stale-run-prune.yml');
+  assert.match(cleanup,/^  push:/m,'safe cleanup fallback kept for default startup failures');
+  assert.match(cleanup,/  prune:\n[\s\S]*?    runs-on: ubuntu-slim/,'lightweight janitor');
+  assert.match(cleanup,/node --test tests\/ci-prune-stale-runs\.test\.mjs/,'PR policy tests still mandatory');
+  assert.match(cleanup,/node --check scripts\/ci-prune-stale-runs\.mjs/,'reviewed script syntax verified');
+  assert.match(cleanup,/node scripts\/ci-pr-loss-report\.mjs/,'retain nonblocking P1 PR lifecycle telemetry');
+  assert.match(cleanup,/Group unresolved PR merge-conflict candidates/,'retain nonblocking PR conflict diagnostics');
+});
