@@ -17,3 +17,10 @@
 .cohort-range button[aria-pressed="true"]{background:#215d74;border-color:#69b5c4}
 #strict-stage-rows tr:last-child{font-weight:700;background:rgba(95,167,185,.10)}
 #strict-note{line-height:1.45}
+
+/* Verified Core CI week-over-week stage comparison */
+.comparison-table{min-width:0;table-layout:fixed}
+.comparison-table th:first-child,.comparison-table td:first-child{width:50%;overflow-wrap:anywhere}
+.comparison-table th:not(:first-child),.comparison-table td:not(:first-child){width:25%}
+.comparison-sample{display:block;font-size:10px;color:#9fb6cf;margin-top:3px}
+@media(max-width:410px){.comparison-table th,.comparison-table td{padding:9px 6px;font-size:11px}.comparison-sample{font-size:9px}}
