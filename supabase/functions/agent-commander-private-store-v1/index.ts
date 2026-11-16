@@ -311,7 +311,9 @@ async function verifyGitHubActionsOidc(req) {
         claims.repository_owner !== "andylitvinov-design" ||
         claims.event_name !== "workflow_run" ||
         claims.ref !== "refs/heads/codex/bootstrap-books" ||
-        claims.workflow_ref !== "andylitvinov-design/books/.github/workflows/hh-pr-direct-core-failure.yml@refs/heads/codex/bootstrap-books") return null;
+        (claims.workflow_ref !== "andylitvinov-design/books/.github/workflows/hh-pr-direct-core-failure.yml@refs/heads/codex/bootstrap-books" &&
+        !(claims.workflow_ref === "andylitvinov-design/books/.github/workflows/hh-native-auto-merge.yml@refs/heads/codex/bootstrap-books" &&
+          claims.job_workflow_ref === "andylitvinov-design/books/.github/workflows/hh-pr-direct-core-failure.yml@refs/heads/codex/bootstrap-books"))) return null;
 
     const jwks = await githubOidcJwks();
     const jwk = jwks.keys.find((item) => item.kid === header.kid && item.kty === "RSA" && (!item.use || item.use === "sig"));
