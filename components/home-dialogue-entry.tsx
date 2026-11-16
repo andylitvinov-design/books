@@ -108,9 +108,13 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
   const [error,setError]=useState("");
   const [voiceMessage,setVoiceMessage]=useState("");
   const [listening,setListening]=useState(false);
+  const [interactive,setInteractive]=useState(false);
   const inputRef=useRef<HTMLTextAreaElement|null>(null);
   const speechRef=useRef<SpeechRecognitionEngine|null>(null);
-  useEffect(()=>()=>{speechRef.current?.abort();speechRef.current=null},[]);
+  useEffect(()=>{
+    setInteractive(true);
+    return ()=>{speechRef.current?.abort();speechRef.current=null};
+  },[]);
   const chatPath="/"+locale+"/app/messages?section=ai";
   const hints=mode==="business"?t.businessHints:t.personalHints;
 
@@ -147,7 +151,8 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
     setListening(true);
     try{speech.start()}catch{setVoiceMessage(t.speechError);setListening(false);speechRef.current=null}
   }
-  return <section className={styles.root} data-home-dialogue-entry data-home-mode={mode} lang={locale}>
+  return <section className={styles.root} data-home-dialogue-entry data-home-mode={mode}
+    data-home-interactive={interactive?"true":"false"} lang={locale}>
     <header className={styles.header} data-home-dialogue-header>
       <h1>My Space</h1>
       <div className={styles.headerActions}>

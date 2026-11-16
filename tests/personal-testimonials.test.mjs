@@ -14,7 +14,7 @@ test("homepage keeps four matching-audio videos; Services uses four and preserve
   assert.match(expanded,/<PersonalTestimonials locale=\{locale\} variant="home"/);
   assert.match(home,/<HomeDeferredSections locale=\{locale\}/);
   assert.doesNotMatch(home,/<PersonalTestimonials/);
-  assert.match(services, /<PersonalTestimonials locale=\{locale as Locale\} variant="services"/);
+  assert.match(services, /<PersonalTestimonials locale=\{locale\} variant="services"/);
   assert.ok(expanded.indexOf("PersonalTestimonials locale")>expanded.indexOf("HomeFeaturedWorkspace"));
   assert.ok(services.indexOf("PersonalTestimonials locale") > services.indexOf('<ServicesIntroMedia'));
   // Conversion-first Services intentionally presents the booking action in the first screen.

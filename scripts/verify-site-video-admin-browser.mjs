@@ -94,6 +94,17 @@ async function navigate(target){
   assert.equal(response.status(),200,target)
   await expect(page.locator('main').first()).toBeVisible()
 }
+// Keep first-paint fast; the real user must deliberately open discovery
+// before the source-backed testimonial videos are expected in the DOM.
+async function revealHomeTestimonials() {
+  const discovery=page.locator('[data-home-deferred-sections]');
+  await discovery.scrollIntoViewIfNeeded();
+  const disclosure=discovery.locator('[data-home-discover-more]');
+  await disclosure.waitFor({state:'visible',timeout:30000});
+  await disclosure.locator('summary').click();
+  await expect(discovery.locator('[data-home-expanded-catalog]')).toHaveCount(1);
+  await expect(page.locator('[data-personal-testimonials="home"]')).toHaveCount(1);
+}
 let page
 try{
   const db = new pg.Client({connectionString:process.env.HH_TEST_ADMIN_DATABASE_URL})
@@ -263,13 +274,7 @@ try{
           // until the visitor reaches discovery and explicitly expands it.
           // Still verify that the original 12 source videos remain accessible
           // after that interaction; never demand their JS on first paint.
-          const discovery=page.locator('[data-home-deferred-sections]');
-          await discovery.scrollIntoViewIfNeeded();
-          const disclosure=discovery.locator('[data-home-discover-more]');
-          await disclosure.waitFor({state:'visible',timeout:30000});
-          await disclosure.locator('summary').click();
-          await expect(discovery.locator('[data-home-expanded-catalog]')).toHaveCount(1);
-          await expect(page.locator('[data-personal-testimonials="home"]')).toHaveCount(1);
+          await revealHomeTestimonials();
           continue
         }
         if (slot.id === 'thank-you') {
@@ -321,7 +326,7 @@ try{
     assert.equal(await page.locator('iframe').count(), 0)
     // Owner withdrew approval: even a newly published archived home intro cannot
     // leak back onto the public homepage. Testimonial videos remain independent.
-    await expect(page.locator('[data-personal-testimonials="home"]')).toHaveCount(1)
+    await revealHomeTestimonials()
     pass('Archived unpublished-quality home introduction cannot reappear in public')
     await save('hide', second)
     await navigate('/?lang=en')

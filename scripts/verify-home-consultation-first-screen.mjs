@@ -32,6 +32,9 @@ for (const engine of [chromium,webkit]){
           assert.equal(response?.status(),200,label+": Home HTTP 200");
           const root=page.locator("[data-home-dialogue-entry]");
           await root.waitFor({state:"visible",timeout:30000});
+          // React must be hydrated before exercising the actual mode click.
+          await page.locator('[data-home-dialogue-entry][data-home-interactive="true"]')
+            .waitFor({state:"visible",timeout:15000});
           const header=root.locator("[data-home-dialogue-header]");
           await header.locator("h1").waitFor({state:"visible"});
           assert.equal((await header.locator("h1").innerText()).trim(),"My Space",
