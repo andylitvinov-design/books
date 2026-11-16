@@ -72,7 +72,7 @@ test('the umbrella homepage can render Russian and English chrome and copy', asy
   const deferred = await readFile('components/home-deferred-sections.tsx','utf8')
   const expanded = await readFile('components/home-expanded-catalog.tsx','utf8')
   assert.match(deferred, /IntersectionObserver/)
-  assert.match(expanded, /<HomeFeaturedWorkspace locale=\{locale\} \/>/)
+  assert.match(expanded, /<HomeFeaturedWorkspace locale=\{locale\}\s*\/>/)
   assert.doesNotMatch(home, /<HomeFeaturedWorkspace|<HomeMoreDisclosure/)
   assert.match(more, /data-home-topic-filters/)
   assert.match(more, /data-home-topic-filter="temple"/)

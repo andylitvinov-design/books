@@ -40,38 +40,36 @@ for (const engine of [chromium, webkit]) {
           const studyResponse = await page.goto(origin + "/" + locale + "/holistic-support/mobile",
             { waitUntil: "domcontentloaded", timeout: 60000 });
           assert.equal(studyResponse?.status(), 200, label + " public Study entry");
-          const study = page.locator('[data-study-personalized-path]');
-          await study.waitFor({ state: "visible", timeout: 30000 });
-          await page.locator('[data-holistic-mobile-alternative][data-support-tool-hydrated="true"]')
-            .waitFor({ state: "visible", timeout: 30000 });
-          assert.equal(await study.locator('nav button').count(), 5,
-            label + " five accessible progress steps");
-          assert.equal(await study.locator('[data-study-next]').isDisabled(), true,
-            label + " unanswered question cannot advance");
-          assert.equal(await study.locator('section[aria-label] [role="group"] button').count(), 4,
-            label + " four direct goal answers");
-          assert.equal(await page.locator('[data-support-practice-tabs]:visible').count(), 0,
-            label + " obsolete Study header stays hidden");
-          assert.equal(await page.locator('[data-hh-unified-dock]:visible').count(), 1,
-            label + " exactly one app bottom navigation");
-          if (width === 390) {
-            const studyAnswers = study.locator('section[aria-label] [role="group"] button');
-            await studyAnswers.first().click();
-            assert.equal(await study.locator('[data-study-recommendation]').first()
-              .getAttribute('data-study-recommendation'), 'study-opora',
-              label + " stress selects published OPORA without a paid AI call");
-            for (let index = 0; index < 5; index++) {
-              if (index > 0) await studyAnswers.first().click();
-              await study.locator('[data-study-next]').click();
-            }
-            assert.equal(await study.getAttribute('data-study-step'), '5',
-              label + " fifth answer completes the interactive quiz");
-            await study.locator('section[aria-labelledby="study-recommended-title"] button[aria-label]').click();
-            assert.equal(await study.getAttribute('data-study-step'), '1',
-              label + " restart returns to step one");
-            assert.equal(await study.locator('[data-study-next]').isDisabled(), true,
-              label + " restart clears the earlier answer");
-          }
+          // The owner-approved default Study experience now contains three
+          // Academy schools and eight independent published program entries,
+          // replacing the obsolete introductory five-question selector. The
+          // legacy meditation view remains fully browser-tested below.
+          const study=page.locator('[data-holistic-study-academy]');
+          await study.waitFor({state:"visible",timeout:30000});
+          const groups=study.locator('[data-study-academy-group]');
+          assert.deepEqual(await groups.evaluateAll(nodes=>nodes.map(node=>node.getAttribute('data-study-academy-group'))),
+            ['reiki','mysteries','free'],label+" three real Academy schools");
+          const courses=study.locator('[data-study-academy-course]');
+          assert.deepEqual(await courses.evaluateAll(nodes=>nodes.map(node=>node.getAttribute('data-study-academy-course'))),
+            ['yggdrasil','tantra','kundalini','greece','egypt','practitioner','magic','meditation'],
+            label+" eight distinct learning programs");
+          assert.equal(await study.locator('[data-study-school-nav]').count(),3,
+            label+" three accessible section links");
+          const first=study.locator('[data-study-academy-course="practitioner"]');
+          assert.match(await first.getAttribute('href')||"",/^\/(?:en|ru|es)\/academy\//,
+            label+" real free Reiki practitioner route");
+          const existing=study.locator('[data-study-academy-course="meditation"]');
+          assert.equal(await existing.getAttribute('href'),
+            '/'+locale+'/holistic-support/mobile?view=meditation',
+            label+" original meditation workflow remains linked");
+          assert.equal(await page.locator('[data-study-personalized-path]').count(),0,
+            label+" retired quiz is not shown instead of training programs");
+          assert.equal(await page.locator('[data-support-practice-tabs]:visible').count(),0,
+            label+" obsolete Study header stays hidden");
+          assert.equal(await page.locator('[data-hh-unified-dock]:visible').count(),1,
+            label+" one shared mobile dock");
+          assert.equal(await page.locator('[data-hh-unified-dock] [data-unified-dock-item]').count(),7,
+            label+" all seven approved bottom destinations remain");
           const studyBounds = await page.evaluate(() => ({
             width: document.documentElement.clientWidth,
             scroll: document.documentElement.scrollWidth,
