@@ -165,7 +165,7 @@ async function workerAction(sql,body,action,origin){
     " or (state='LEASED' and lease_until<now())"+
     " order by case when state='QUEUED' then 0 else 1 end, coalesce(last_checked_at,created_at),created_at for update skip locked limit 1");
    if(!rows.length)return null;
-   const row=rows[0],first=row.first_attempt_at==null&&row.state==='QUEUED';
+   const row=rows[0],first=row.dispatch_attempted_at==null;
    const lease=crypto.randomUUID();
    await tx.unsafe('update '+T+
     " set state='LEASED',lease_token=$1::uuid,lease_until=now()+interval '4 minutes',"+
@@ -175,6 +175,19 @@ async function workerAction(sql,body,action,origin){
     requestedHeadSha:row.requested_head_sha,dispatchEligibleOnce:first};
   });
   return json(200,{schema:FUNCTION,item:result},origin);
+ }
+ if(action==='arm_dispatch'){
+  // A durable CAS fence BEFORE the remote GitHub dispatch. Merely watching
+  // a green/pending CI must NEVER consume the only source-repair opportunity.
+  const id=body.requestId,lease=body.leaseToken;
+  if(!UUID.test(id||'')||!UUID.test(lease||''))
+   return json(400,{error:'DISPATCH_ARM_ID_INVALID'},origin);
+  const updated=await sql.unsafe('update '+T+
+   ' set dispatch_attempted_at=now(),updated_at=now()'+
+   " where request_id=$1::uuid and lease_token=$2::uuid and state='LEASED'"+
+   ' and lease_until>now() and dispatch_attempted_at is null returning request_id',
+   [id,lease]);
+  return json(200,{schema:FUNCTION,armed:updated.length===1},origin);
  }
  if(action!=='finish')return json(400,{error:'WORKER_ACTION_INVALID'},origin);
  const id=body.requestId,lease=body.leaseToken,state=body.status;
@@ -223,14 +236,14 @@ Deno.serve(async request=>{
  if(!body||typeof body!=='object'||Array.isArray(body)||typeof body.action!=='string')
   return json(400,{error:'INVALID_ENVELOPE'},origin);
  const action=body.action;
- if(!['submit','status','next','finish'].includes(action))return json(400,{error:'UNKNOWN_ACTION'},origin);
- if(['next','finish'].includes(action)&&!(await checkOidc(request)))
+ if(!['submit','status','next','finish','arm_dispatch'].includes(action))return json(400,{error:'UNKNOWN_ACTION'},origin);
+ if(['next','finish','arm_dispatch'].includes(action)&&!(await checkOidc(request)))
   return json(401,{error:'GITHUB_WORKFLOW_OIDC_DENIED'},origin);
  const dbUrl=Deno.env.get('SUPABASE_DB_URL');
  if(!dbUrl)return json(503,{error:'OWNER_QUEUE_DATABASE_UNAVAILABLE'},origin);
  const sql=postgres(dbUrl,{max:1,connect_timeout:6,idle_timeout:4,ssl:'require',prepare:false});
  try{
-  return ['next','finish'].includes(action)
+  return ['next','finish','arm_dispatch'].includes(action)
    ?await workerAction(sql,body,action,origin)
    :await ownerAction(sql,request,body,action,origin);
  }catch(e){

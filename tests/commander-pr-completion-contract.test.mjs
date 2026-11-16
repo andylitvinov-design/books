@@ -33,6 +33,9 @@ test('Edge function authenticates owner or signed exact-workflow OIDC, not model
  assert.match(s,/readPR\(number\)/);
  assert.match(s,/for update skip locked limit 1/);
  assert.match(s,/lease_token=\$1::uuid/);
+ assert.match(s,/action==='arm_dispatch'/);
+ assert.match(s,/dispatch_attempted_at=now\(\)/);
+ assert.match(s,/dispatch_attempted_at is null/);
  assert.match(s,/state='LEASED'/);
  assert.match(s,/MERGE_READBACK_UNVERIFIED/);
  assert.match(s,/sourceVerified:true/);
