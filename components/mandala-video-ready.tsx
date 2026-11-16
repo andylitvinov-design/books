@@ -166,7 +166,8 @@ export function MandalaVideoReady({
   locale,theme,wish,focus,aspect,video,verified,checking,rendering,renderProgress,
   generationNotice,signedIn,loginUnavailable,disabled,
   meditationEditor,onOpenDelivery,onRefreshLogin,onOpenCourse,onReturnToPro,
-  onGenerateBasicVideo,onStartNewVideo,onVerifyPlayback,onSaveDirect,saveStatus,
+  onGenerateBasicVideo,onStartNewVideo,onVerifyPlayback,onSaveDirect,
+  onSendTelegramDirect,onShareWhatsApp,saveStatus,
   basicFreeAvailable,basicFreeIssue,basicCreditCost
 }:Props){
   const t=COPY[locale];
