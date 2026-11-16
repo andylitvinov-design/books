@@ -68,8 +68,14 @@ for (const engine of [chromium, webkit]) {
               assert.equal(await link.count(), 1,
                 label + " unique real program " + key);
               const href = await link.getAttribute("href");
-              assert.ok(href?.startsWith("/" + locale + "/"),
-                label + " safe localized program link " + key);
+              // The Magic programme is a published Russian-language archive.
+              // Preserve its real /ru/academy source route for EN/ES visitors;
+              // never fabricate a translated course URL to satisfy localization.
+              const localized = href?.startsWith("/" + locale + "/") === true;
+              const russianSourceArchive = key === "magic" &&
+                /^\/ru\/academy\/[A-Za-z0-9/_-]+$/.test(href || "");
+              assert.ok(localized || russianSourceArchive,
+                label + " safe source-backed Academy link " + key);
             }
           }
           assert.equal(await directory.locator('nav[aria-label="Language"] a').count(), 3,
