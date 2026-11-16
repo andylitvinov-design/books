@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import {telegramBusinessMessageFromUpdate,telegramBusinessClientChoice} from '../lib/assist/telegram-business-request.mjs';
+import {matchTelegramFreeReviewDraft,telegramFreeReviewAcknowledgement} from '../lib/crm/telegram-business-free-review.mjs';
 import {classifyTelegramSecretaryQuery,publishedTelegramServiceOffers,
   composeTelegramSecretaryAnswer,TELEGRAM_SITE} from '../lib/crm/telegram-secretary-offers.mjs';
 
@@ -169,4 +170,38 @@ test('STOP before Business intake, exact signed ingress and RLS not weakened',()
  assert.doesNotMatch(sql,/GRANT (?:SELECT|INSERT|UPDATE|DELETE).* TO (?:anon|authenticated|public)/i);
  assert.match(allSecure(),/secretaryStopped\(event,config\)/);
  function allSecure(){return f('lib/crm/telegram-secretary-service.js');}
+});
+
+test('customer Free personal express review draft is acknowledged in the human Business chat, not ignored',()=>{
+ const cases=[
+  ['Hello! I am interested in «Free personal express review». Could you help me make a request?','en'],
+  ['Здравствуйте! Меня интересует «Бесплатный личный экспресс-разбор». Подскажите, как оформить запрос.','ru'],
+  ['¡Hola! Me interesa «Revisión personal exprés gratuita». ¿Cómo puedo solicitarlo?','es'],
+ ];
+ for(const [draft,locale] of cases){
+  assert.equal(matchTelegramFreeReviewDraft(draft)?.locale,locale);
+  const reply=telegramFreeReviewAcknowledgement(locale);
+  assert.equal(reply.kind,'free_review');
+  assert.ok(reply.handled);
+  assert.ok(reply.text.length<450);
+  assert.equal(reply.buttons.length,1);
+  assert.equal(reply.buttons[0].url,'https://holistichouse.vercel.app/'+locale+'/services/free-situation-review');
+  assert.doesNotMatch(reply.text,/booking confirmed|payment confirmed|запись подтверждена/iu);
+ }
+ for(const text of ['Hello','Could you help me make a request?','A private medical report',
+   'Hello! I am interested in «Business coaching». Could you help me make a request?',
+   'Hello! I am interested in «Free personal express review». My private story is here.',
+   '/stop', 'x'.repeat(500)])
+  assert.equal(matchTelegramFreeReviewDraft(text),null,text.slice(0,70));
+ const handler=f('lib/crm/telegram-secretary-service.js');
+ const route=f('app/api/app/crm/messenger/webhook/[provider]/route.js');
+ assert.match(handler,/matchTelegramFreeReviewDraft\(event\.text\)/);
+ assert.match(handler,/telegramFreeReviewAcknowledgement\(locale\)/);
+ assert.match(handler,/assertHolisticBusinessConnection\(\{connectionId:event\.connectionId/);
+ assert.match(handler,/secretaryStopped\(event,config\)/);
+ assert.match(route,/gateTelegramBusinessSecretaryOptOut\(body,config\)/);
+ assert.match(route,/hh-tg-secretary-reply/);
+ const i=handler.indexOf("if(query.kind!=='safety'&&query.kind!=='free_review')");
+ assert.ok(i>handler.indexOf('assertHolisticBusinessConnection'));
+ assert.doesNotMatch(handler,/sendMarketing|sendBroadcast/);
 });

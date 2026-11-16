@@ -34,6 +34,9 @@ on:
       - '!app/api/app/direct-messages/route.js'
       - '!app/api/app/practitioner-client-messages/route.js'
       - '!app/api/app/notification-channels/route.js'
+      # CRM messenger provider ingress is not an Axis/meditation policy route.
+      # Keep the shared authenticated dispatcher and all other app APIs.
+      - '!app/api/app/crm/messenger/webhook/**'
       - 'tests/intelligence-meditation-bridge.test.mjs'
       - 'lib/holistic-support/client-reasoning-risk.mjs'
       - 'tests/intelligence-risk.test.mjs'
