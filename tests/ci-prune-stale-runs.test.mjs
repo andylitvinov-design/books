@@ -628,3 +628,22 @@ test('orphan association cache only looks up a commit once and caps unknown batc
   assert.equal(result.orphanAncestorCandidates,5);
   assert.equal(result.cancelled.length,5);
 });
+
+
+test('routine production merges cannot launch the expensive batch orphan sweep', () => {
+  const yaml = readFileSync('.github/workflows/hh-ci-stale-run-prune.yml', 'utf8');
+  const push = yaml.match(/^  push:\n([\s\S]*?)(?=^permissions:)/m)?.[1];
+  assert.ok(push, 'batch janitor must stay available for policy changes');
+  assert.ok(push.includes("    branches: ['codex/public-book-library']"));
+  const paths = [...push.matchAll(/^      - '([^']+)'$/gm)].map(match => match[1]);
+  assert.deepEqual(paths, [
+    '.github/workflows/hh-ci-stale-run-prune.yml',
+    'scripts/ci-prune-stale-runs.mjs',
+    'tests/ci-prune-stale-runs.test.mjs',
+  ], 'normal application merges must not wake the repository-wide janitor');
+  const native = readFileSync('.github/workflows/hh-native-auto-merge.yml', 'utf8');
+  assert.match(native, /github\.event\.action == 'synchronize'/);
+  assert.match(native, /github\.event\.action == 'closed'/);
+  assert.match(native, /^  prune-head:$/m);
+  assert.match(yaml, /^  pull_request:$/m);
+});
