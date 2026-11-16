@@ -18,8 +18,11 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
   const [videoReady,setVideoReady]=useState(false)
   const supported=PUBLIC_COACH_PERSONA_IDS.includes(personaId)
   const state=PHASES.has(phase)?phase:'idle'
-  const poster=supported?MEDIA_ROOT+personaId+'-still.webp':null
-  const src=supported?MEDIA_ROOT+personaId+'-'+state+'.mp4':null
+  // Frame-matched, seamless first-party v3 greeting on the hero, profile and
+  // public cards. Real conversation listening/speaking clips stay independent.
+  const expressiveGreeting=state==='greeting'||(state==='idle'&&context==='card')
+  const poster=supported?MEDIA_ROOT+personaId+(expressiveGreeting?'-greeting-real-v3.webp':'-still.webp'):null
+  const src=supported?MEDIA_ROOT+personaId+(expressiveGreeting?'-greeting-real-v3.mp4':'-'+state+'.mp4'):null
 
   useEffect(()=>{
     const preference=window.matchMedia?.('(prefers-reduced-motion: reduce)')
@@ -65,7 +68,8 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
   if(!supported)return null
   return <span ref={containerRef} className={[styles.media,className].filter(Boolean).join(' ')}
     data-coach-motion-media={personaId} data-coach-motion-context={context}
-    data-coach-motion-state={state} data-coach-motion-ready={videoReady?'true':'false'}
+    data-coach-motion-state={state} data-coach-motion-clip={expressiveGreeting?'greeting-real-v3':state}
+    data-coach-motion-ready={videoReady?'true':'false'}
     aria-hidden="true">
     <img src={poster} className={styles.poster} alt="" draggable={false} loading="lazy" decoding="async" />
     {shouldPlay&&<video key={src} ref={videoRef} className={styles.video}
