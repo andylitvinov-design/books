@@ -51,8 +51,8 @@ test('Owner CRM transfer requires existing confirmation path; no early lead',()=
  assert.match(code,/ingestMessengerEventInTransaction/);
  assert.match(code,/ai_review_consent_at=now\(\)/);
  assert.match(code,/crm_tg_suppress_existing/);
- assert.doesNotMatch(ui,/resolveTelegramServiceEntry/);
- assert.match(ui,/reviewBot\|\|telegramUrl/);
+ assert.match(ui,/resolveTelegramServiceEntry/);
+ assert.match(ui,/serviceBot\|\|telegramUrl/);
 });
 
 test('Generic public free-review fallback is distinct from a selected service request',()=>{
@@ -100,4 +100,15 @@ test('Only canonical free review gets the generic bot, other services stay manua
  }
  assert.equal(isOfficialFreeReviewWhatsAppDraft('https://evil.test?text=Page','en'),false);
  assert.equal(isOfficialFreeReviewWhatsAppDraft('https://wa.me/1000?text=Page','en'),false);
+});
+
+test('Two-action Services cards fetch the verified V3 bot only after Order opens',()=>{
+ const ui=source('components/mandatory-messenger-actions.tsx');
+ const action=source('components/services-card-actions.tsx');
+ assert.match(action,/active=\{expanded==="order"\}/);
+ assert.match(ui,/if\(!active\)\{setServiceBot\(null\);setBotKind\(null\);return;\}/);
+ assert.match(ui,/resolveTelegramServiceEntry\(payload,manual,locale\)/);
+ assert.match(ui,/const entry=selected\|\|freeReview/);
+ assert.match(ui,/serviceBot\|\|telegramUrl\|\|telegramEnquiryUrlFromWhatsApp\(whatsappUrl\)/);
+ assert.doesNotMatch(ui,/createPublicServiceEnquiry|serviceRole|privateKey/);
 });
