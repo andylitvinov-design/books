@@ -188,6 +188,21 @@ async function dispatchRepair(github,cmd,{ownerToken,fetcher=fetch}={}){
  // github-actions[bot], which validOwnerRepairTarget deliberately rejects.
  if(typeof ownerToken!=='string'||!ownerToken.trim())
   return {reason:'OWNER_REPAIR_DISPATCH_TOKEN_NOT_CONFIGURED'};
+ // A 204 dispatch is not proof that the resulting Actions run was authorized.
+ // The trusted dispatcher accepts ONLY the actual repository owner as actor.
+ // Read back token identity before consuming a new workflow or CI capacity.
+ try{
+  const response=await fetcher('https://api.github.com/user',{
+   method:'GET',redirect:'error',cache:'no-store',
+   signal:AbortSignal.timeout(7000),
+   headers:{Authorization:'Bearer '+ownerToken,Accept:'application/vnd.github+json',
+    'X-GitHub-Api-Version':'2022-11-28'}
+  });
+  if(response?.status!==200)return {reason:'OWNER_REPAIR_TOKEN_IDENTITY_UNVERIFIED'};
+  const user=await response.json();
+  if(user?.login!==OWNER||user?.id!==274943885||user?.type!=='User')
+   return {reason:'OWNER_REPAIR_DISPATCH_ACTOR_MISMATCH'};
+ }catch(_){return {reason:'OWNER_REPAIR_TOKEN_IDENTITY_UNVERIFIED'};}
  const requestId=require('node:crypto').randomUUID();
  const endpoint='https://api.github.com/repos/'+OWNER+'/'+REPO+
   '/actions/workflows/hh-pr-ten-minute-watchdog.yml/dispatches';
