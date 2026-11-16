@@ -128,3 +128,11 @@
 .content p{font-size:12px}
 .action,.order :global([data-contact-order]){font-size:12px;padding:6px}
 }
+
+/* Unified Details / Order row spans the full width of each featured card. */
+@media(max-width:760px){
+.card{grid-template-rows:auto auto;align-items:start}
+.card>.photo{grid-column:1;grid-row:1;min-height:112px;height:112px}
+.card>.content{grid-column:2;grid-row:1}
+.card>:global([data-service-card-actions]){grid-column:1/-1;grid-row:2;padding:0 1px 1px;margin:2px 0 0}
+}
