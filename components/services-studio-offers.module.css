@@ -84,3 +84,7 @@
 .card:has(.freeBadge) .category{max-width:calc(100% - 67px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media(max-width:680px){.card:has(.freeBadge) .category{max-width:calc(100% - 58px)}}
 @media(max-width:680px){.resultsAnchor{width:calc(100% - 24px);scroll-margin-top:72px}}
+
+/* Two equal card controls with one full-card-width inline expansion; never a floating Request popover. */
+.card>:global([data-service-card-actions]){grid-column:1/-1;margin:0;padding:9px 12px 12px;border-top:1px solid #e8e1d8}
+@media(max-width:680px){.card>:global([data-service-card-actions]){padding:8px 9px 10px}}
