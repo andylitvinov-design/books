@@ -5,7 +5,7 @@ import type {Dispatch,SetStateAction} from "react";
 import {ArrowDown,Check,ChevronDown,Heart,Mic,Pencil,Play,Plus,RefreshCw,SlidersHorizontal,Sparkles,Target,Zap} from "lucide-react";
 import {listMeaningAxes} from "@/lib/mandala/meaning-emotion/idea-engine.mjs";
 import {listCurrentEmotionClusters,listDesiredEmotionClusters} from "@/lib/mandala/meaning-emotion/emotional-vector-matrix.mjs";
-import {resolveVideoIdeaContext,suggestVideoGoalPhrases} from "@/lib/mandala/video-goal-idea-phrases.mjs";
+import {resolveVideoIdeaContext,suggestVideoGoalPhrases,translateVideoGoalPhrase} from "@/lib/mandala/video-goal-idea-phrases.mjs";
 import {isIdeaEditorSnapshot,planIdeaSelection,sanitizeIdeaPhrase} from "@/lib/mandala/video-idea-selection.mjs";
 import {goalCurrentMeaningId,goalDesiredMeaningId,DEFAULT_VIDEO_GOAL_PROFILE,type VideoGoalProfile} from "./mandala-video-personalization";
 import type {AffirmationSettings} from "@/lib/mandala/video-affirmations";
@@ -16,7 +16,7 @@ type Axis={id:string;label:string;description:string};
 type Cluster={id:string;label:string};
 type Props={
  locale:VideoLocale;theme:VideoTheme;requestText:string;active:boolean;disabled:boolean;settings:AffirmationSettings;
- profile?:VideoGoalProfile;
+ profile?:VideoGoalProfile; languagePicker?:boolean;
  generating:boolean;onChange:Dispatch<SetStateAction<AffirmationSettings>>;
  onPendingChange:Dispatch<SetStateAction<boolean>>;onPreview:()=>void;onCreate:()=>void;onGenerate:()=>void;status?:string;
  onRecord:()=>void;onResetPreview:()=>void;
@@ -77,9 +77,13 @@ const allFive=[0,1,2,3,4];
 const scaleValues=["small","medium","large"] as const;
 const cleanPhrase=sanitizeIdeaPhrase;
 
-export function MandalaVideoIdeas({locale,theme,requestText,profile,active,disabled,settings,generating,
+export function MandalaVideoIdeas({locale,theme,requestText,profile,languagePicker=false,active,disabled,settings,generating,
  onChange,onPendingChange,onPreview,onCreate,onGenerate,status,onRecord,onResetPreview}:Props){
  const t=wording[locale];
+ const [phraseLocale,setPhraseLocale]=useState<VideoLocale>(()=>settings.ideasDraft?.locale??locale);
+ const [languageNotice,setLanguageNotice]=useState("");
+ const captionLocale=languagePicker?phraseLocale:(settings.ideasDraft?.locale??locale);
+ const languageChoices:VideoLocale[]=locale==="es"?["es","en","ru"]:["en","ru"];
  const goalContext=useMemo(()=>resolveVideoIdeaContext({locale,request:requestText,theme}),[locale,requestText,theme]);
  const currentOptions=useMemo<Cluster[]>(()=>listCurrentEmotionClusters(locale),[locale]);
  const desiredOptions=useMemo<Cluster[]>(()=>listDesiredEmotionClusters(locale),[locale]);
@@ -137,7 +141,7 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,active,disab
   const pool:string[]=[];
   for(let i=0;i<Math.max(currentForSuggestions.length,desiredForSuggestions.length);i++){
    const next=suggestVideoGoalPhrases({
-    locale,request:requestText,theme,axisIds:axesForSuggestions,
+    locale:captionLocale,request:requestText,theme,axisIds:axesForSuggestions,
     current:currentForSuggestions[i%currentForSuggestions.length],
     desired:desiredForSuggestions[i%desiredForSuggestions.length],
     strength:strengthForSuggestions,energy:energyForSuggestions,
@@ -148,7 +152,7 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,active,disab
   return pool.slice(0,7);
   // Personal answers are represented by their stable serialized values.
   // eslint-disable-next-line react-hooks/exhaustive-deps
- },[locale,requestText,theme,goalContext.key,profileKey,selectionGoalKey,
+ },[captionLocale,requestText,theme,goalContext.key,profileKey,selectionGoalKey,
   selectedAxes,current,desired,stateScore,energy,revision]);
 
  // Keep the edited list in the parent's session state, the same source used by
@@ -156,22 +160,23 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,active,disab
  useEffect(()=>{
   if(!active||signature===lastApplied.current)return;
   lastApplied.current=signature;
-  setMoreClicks(0);setEditing(null);setAdding(false);setFeedback("");
+  setMoreClicks(0);setEditing(null);setAdding(false);setFeedback("");setLanguageNotice("");
   const remembered=settings.ideasDraft;
   if(remembered&&isIdeaEditorSnapshot(remembered,signature)){
    setOptions(remembered.options);setChosen(remembered.chosen);
+   if(languagePicker&&remembered.locale)setPhraseLocale(remembered.locale);
    return;
   }
   // A genuine change in Goal refinement deliberately starts new suggestions.
   const initial=planIdeaSelection(suggested,allFive,suggested,signature);
   setOptions(initial.editor.options);setChosen(initial.editor.chosen);
-  onChange(old=>({...old,...initial.settingsPatch,ideasDraft:initial.editor,
+  onChange(old=>({...old,...initial.settingsPatch,ideasDraft:{...initial.editor,locale:captionLocale},
    motion:"rise",visibility:old.visibility.length?old.visibility:["large"]}));
  },[active,signature,suggested,onChange,settings.ideasDraft]);
 
  const selectedCount=chosen.length;
  const textSizeIndex=Math.max(0,scaleValues.indexOf(settings.textScale??"medium"));
- const apply=(candidates:string[],indices:number[])=>{
+ const apply=(candidates:string[],indices:number[],outputLocale:VideoLocale=captionLocale)=>{
   // Mark this signature initialized before a real click can be overwritten by
   // a delayed activation effect when iOS/WebKit enters Montage → Text.
   // Editing phrases always wins over stale automatic bootstrap suggestions.
@@ -180,10 +185,22 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,active,disab
   // Stop an old playback frame before repainting at 0 with the new phrases.
   const plan=planIdeaSelection(candidates,indices,suggested,signature);
   onResetPreview();
-  onChange(old=>({...old,...plan.settingsPatch,ideasDraft:plan.editor,motion:"rise",
+  onChange(old=>({...old,...plan.settingsPatch,ideasDraft:{...plan.editor,locale:outputLocale},motion:"rise",
    visibility:old.visibility.length?old.visibility:["large"]}));
   onPendingChange(false);
   setOptions(plan.editor.options);setChosen(plan.editor.chosen);setFeedback("");
+ };
+ const chooseTextLanguage=(next:VideoLocale)=>{
+  if(next===captionLocale||disabled||generating)return;
+  const translated=options.map(line=>translateVideoGoalPhrase(line,captionLocale,next));
+  const unchanged=translated.filter((line,index)=>line===options[index]).length;
+  setPhraseLocale(next);
+  setEditing(null);setAdding(false);setDraft("");
+  apply(translated,chosen,next);
+  setLanguageNotice(unchanged?(locale==="ru"
+   ?"Свои или неизвестные фразы оставлены без перевода. Их можно исправить карандашом."
+   :locale==="es"?"Las frases propias o desconocidas no se han traducido. Puedes editarlas."
+   :"Custom or unknown phrases stayed unchanged. You can edit them here."):"");
  };
  const toggle=(index:number)=>{
   if(chosen.includes(index))apply(options,chosen.filter(i=>i!==index));
@@ -222,7 +239,7 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,active,disab
  const moreOptions=()=>{
   if(options.length>=14)return;
   const candidates=suggestVideoGoalPhrases({
-   locale,request:requestText,theme,axisIds:axesForSuggestions,
+   locale:captionLocale,request:requestText,theme,axisIds:axesForSuggestions,
    current:currentForSuggestions[0],desired:desiredForSuggestions[0],
    strength:strengthForSuggestions,energy:energyForSuggestions,
    revision:revision+moreClicks,
@@ -237,6 +254,18 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,active,disab
  };
 
  return <section className={css.ideas} data-video-ideas-compact data-video-ideas-goal-category={goalContext.categoryId||"neutral"} aria-label={t.select} hidden={!active}>
+  {languagePicker?<header className={css.languageHeader} data-video-text-language-header>
+   <h3 id="video-ideas-phrases-heading">{locale==="ru"?"Фразы в вашем видео":locale==="es"?"Frases de tu vídeo":"Text for your video"}</h3>
+   <div className={css.languageTools}>
+    <span className={css.headerCount} data-video-ideas-selected-count aria-live="polite">{selectedCount}/{options.length}<span className={css.countLabel}> {t.selected}</span></span>
+    <div className={css.languageSwitch} role="group" aria-label={locale==="ru"?"Язык фраз видео":locale==="es"?"Idioma del texto del vídeo":"Video text language"}>
+     {languageChoices.map(language=><button key={language} type="button" data-video-text-language={language}
+      lang={language} aria-pressed={captionLocale===language} disabled={disabled||generating}
+      onClick={()=>chooseTextLanguage(language)}>{language.toUpperCase()}</button>)}
+    </div>
+   </div>
+  </header>:null}
+  {languagePicker&&languageNotice?<p className={css.languageNotice} role="status" data-video-text-language-notice>{languageNotice}</p>:null}
   <div className={css.sizeCard} data-video-ideas-size>
    <div className={css.sizeTitle}>
     <label htmlFor="video-ideas-text-size"><span className={css.sample} data-scale={scaleValues[textSizeIndex]}>Aa</span>{t.size}</label>
@@ -249,10 +278,10 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,active,disab
   </div>
 
   <section className={css.phrases} data-video-ideas-phrases aria-labelledby="video-ideas-phrases-heading">
-   <div className={css.phraseHeader}>
+   {!languagePicker?<div className={css.phraseHeader}>
     <h3 id="video-ideas-phrases-heading"><Heart size={25} aria-hidden="true"/>{t.select}</h3>
     <span className={css.count} data-video-ideas-selected-count>{selectedCount} / {options.length} {t.selected}</span>
-   </div>
+   </div>:null}
    <p className={css.subtitle} id="ideas-choice-help">{t.pick}</p>
    <ol className={css.phraseList} data-video-ideas-scroll aria-describedby="ideas-choice-help" tabIndex={0}>
     {options.map((line,index)=><li key={index} data-video-idea-phrase={index} className={css.item}
