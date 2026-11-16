@@ -205,3 +205,41 @@ test('customer Free personal express review draft is acknowledged in the human B
  assert.ok(i>handler.indexOf('assertHolisticBusinessConnection'));
  assert.doesNotMatch(handler,/sendMarketing|sendBroadcast/);
 });
+
+test('operational customer FAQs get one bounded guiding question in Russian, English and Spanish',()=>{
+ const cases=[
+  ['Сколько стоит?','ru','price'],['How much does it cost?','en','price'],['¿Cuánto cuesta?','es','price'],
+  ['Как записаться?','ru','booking'],['How can I book?','en','booking'],['¿Cómo puedo reservar?','es','booking'],
+  ['Можно консультацию онлайн?','ru','format'],['Do you offer online sessions?','en','format'],['¿Ofrecen consultas online?','es','format'],
+  ['Можно поговорить с человеком?','ru','human'],['Can I talk to a real person?','en','human'],['¿Puedo hablar con una persona?','es','human'],
+  ['Моя заявка отправлена?','ru','status'],['Is my request submitted?','en','status'],['¿Mi solicitud fue enviada?','es','status'],
+  ['Когда вы ответите?','ru','response_time'],['When will you reply?','en','response_time'],['¿Cuándo responden?','es','response_time'],
+  ['Как отключить бота?','ru','stop_help'],['How do I stop the bot?','en','stop_help'],['¿Cómo detener el bot?','es','stop_help'],
+  ['Как связаться с вами?','ru','contact'],['How can I contact you?','en','contact'],['¿Cómo contactar?','es','contact'],
+  ['Хочу бесплатный разбор ситуации','ru','free_review'],['I want a free situation review','en','free_review'],
+ ];
+ for(const [message,locale,topic] of cases){
+  const q=classifyTelegramSecretaryQuery(message,locale);
+  assert.equal(q?.kind,'faq',message);
+  assert.equal(q?.topic,topic,message);
+  const a=composeTelegramSecretaryAnswer(q,[make()]);
+  assert.equal(a?.kind,'faq',message);
+  assert.equal(a.modelUsed,false);
+  assert.ok(a.text.length>=25&&a.text.length<420);
+  assert.ok((a.text.match(/[?？]/g)||[]).length<=1,message);
+  assert.ok(a.buttons.length<=1);
+  for(const button of a.buttons){
+   assert.equal(new URL(button.url).origin,TELEGRAM_SITE);
+   assert.equal(new URL(button.url).pathname.startsWith('/'+locale+'/'),true);
+  }
+ }
+});
+test('new FAQs do not hijack personal messages, STOP, published named prices or emergency help',()=>{
+ for(const message of ['Привет','Давай просто поговорим','I feel overwhelmed','I need you to change my password','/stop','[HH-REQ:business:ru]'])
+  assert.equal(classifyTelegramSecretaryQuery(message,'ru'),null,message);
+ assert.equal(classifyTelegramSecretaryQuery('Не могу дышать','ru').kind,'safety');
+ const priced=classifyTelegramSecretaryQuery('Сколько стоит рейки?','ru');
+ assert.equal(priced.kind,'catalog');
+ assert.match(composeTelegramSecretaryAnswer(priced,[make()]).text,/от €50/);
+ assert.equal(classifyTelegramSecretaryQuery('рейки','ru').kind,'catalog');
+});
