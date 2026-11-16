@@ -63,7 +63,10 @@ test('signed Telegram continuation retains consented website attribution and dur
   assert.match(store,/linkedTelegram\?\[linkedTelegram\.threadId,linkedTelegram\.digest\]:\[\]/)
   assert.match(store,/SERVICE_OFFERING_NOT_VERIFIED/)
   assert.match(store,/if \(contact&&!linkedTelegram\)/)
-  assert.match(store,/if\(contact\)\{/)
+  // Both legacy website contacts and new consented V3 Telegram requests
+  // create durable intents; unrelated unverified Telegram drafts do not.
+  assert.match(store,/if\\(contact\\|\\|v3ServiceTelegram\\)\\{/)
+  assert.match(store,/const v3ServiceTelegram=linkedTelegram\\?\\.purpose==='v3_service'/)
   assert.match(store,/notification_public_enquiry_intents/)
   assert.match(inbox,/validId\(selected\.item\.telegramThreadId\)/)
   assert.match(inbox,/initialThreadId=\{selected\.item\.telegramThreadId\}/)
