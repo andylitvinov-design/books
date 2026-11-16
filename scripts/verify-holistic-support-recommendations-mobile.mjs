@@ -35,7 +35,7 @@ for (const engine of [chromium, webkit]) {
             body: JSON.stringify(qaSupportDirectoryResponse(locale, kind)) });
         });
         try {
-          // Current Study entry is the owner's approved 5-question first screen.
+          // The current Study entry is the 3-school source-backed Academy.
           // Verify it before opening the separately supported meditation workflow.
           const studyResponse = await page.goto(origin + "/" + locale + "/holistic-support/mobile",
             { waitUntil: "domcontentloaded", timeout: 60000 });
@@ -68,13 +68,15 @@ for (const engine of [chromium, webkit]) {
               assert.equal(await link.count(), 1,
                 label + " unique real program " + key);
               const href = await link.getAttribute("href");
-              // Magic archive has a verified Russian-only original. Preserve
-              // its real /ru/ Academy route instead of inventing translated
-              // content; every other program still needs its local route.
-              const verifiedRussianOriginal = key === "magic" &&
-                href === "/ru/academy/elements/elemental-magic";
-              assert.ok(href?.startsWith("/" + locale + "/") || verifiedRussianOriginal,
-                label + " safe published program link " + key);
+              if (key === "magic") {
+                // Original archival course is published in Russian, even for EN/ES
+                // visitors. Do not fabricate a translated Academy route.
+                assert.equal(href, "/ru/academy/elements/elemental-magic",
+                  label + " canonical Russian-source magic course");
+              } else {
+                assert.ok(href?.startsWith("/" + locale + "/"),
+                  label + " safe localized program link " + key);
+              }
             }
           }
           assert.equal(await directory.locator('nav[aria-label="Language"] a').count(), 3,
