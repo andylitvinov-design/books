@@ -365,6 +365,18 @@ jobs:
       - name: Verify Source Preflight unit contracts
         if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.preflight_touched == 'true' && steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') }}
         run: node --test tests/ci-source-preflight.test.mjs tests/ci-vercel-scenario-music-cache.test.mjs
+      # This replaces the separate 2-job App Browser *PR source-only* wrapper.
+      # Full isolated PostgreSQL + Chromium/WebKit QA remains in that workflow
+      # for explicit dispatch / its dedicated app branch. No test is waived.
+      - name: App Browser source contracts within mandatory Core (no extra Actions)
+        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT' }}
+        run: |
+          node --check scripts/verify-document-hydration.mjs
+          node --check scripts/verify-app-r1.mjs
+          node --check scripts/verify-compassion-assessments.mjs
+          node --check scripts/verify-relationships-assessments.mjs
+          node --test tests/ci-heavy-impact.test.mjs
+          echo 'App Browser source-only PR contracts executed in protected Core; full isolated browser/database suites remain manual/dedicated-branch.' >> "$GITHUB_STEP_SUMMARY"
       - name: Source Preflight — syntax and TypeScript before costly Next build
         if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') }}
         id: source_preflight

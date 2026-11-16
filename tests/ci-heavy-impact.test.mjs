@@ -601,3 +601,32 @@ test('App R1 no-op lanes use only slim runners and skip PostgreSQL', () => {
   assert.match(unit, /node --conditions=react-server --test tests\/app-auth-pkce\.integration\.mjs/);
   assert.doesNotMatch(yaml, /continue-on-error:\s*true/);
 });
+
+test('App Browser PR source contracts are fully consolidated into mandatory Core without losing manual real-browser QA',()=>{
+ const app=read('hh-app-browser.yml'), core=read('hh-pr-core-release.yml');
+ const trigger=app.split('  pull_request:\n')[1]?.split('\npermissions:\n')[0];
+ assert.ok(trigger,'old App Browser PR event must remain for workflow self-change');
+ assert.match(trigger,/paths:\s*\n\s+- '\.github\/workflows\/hh-app-browser\.yml'/);
+ assert.equal((trigger.match(/^      - /gm)||[]).length,1,'PR domain updates must not spawn a redundant source-only wrapper');
+ for(const broad of ["app/api/app/**","supabase/migrations/**","package-lock.json","middleware.ts"])
+  assert.ok(!trigger.includes(broad),'source-only PR trigger wrongly retained '+broad);
+ const coreStep=core.split('      - name: App Browser source contracts within mandatory Core (no extra Actions)\n')[1]
+   ?.split('      - name: Source Preflight —')[0];
+ assert.ok(coreStep,'mandatory Core owns migrated lightweight source checks');
+ assert.match(coreStep,/github\.event_name == 'pull_request'/);
+ assert.match(coreStep,/steps\.diff\.outputs\.docs_only != 'true'/);
+ for(const cmd of [
+  'node --check scripts/verify-document-hydration.mjs',
+  'node --check scripts/verify-app-r1.mjs',
+  'node --check scripts/verify-compassion-assessments.mjs',
+  'node --check scripts/verify-relationships-assessments.mjs',
+  'node --test tests/ci-heavy-impact.test.mjs'
+ ])assert.ok(coreStep.includes(cmd),'lost protected PR source contract: '+cmd);
+ assert.match(app,/^  workflow_dispatch:$/m,'explicit real browser QA retained');
+ assert.match(app,/^  push:\n    branches: \['codex\/holistic-house-app-r1'\]/m,'dedicated app-branch QA retained');
+ assert.match(app,/postgres:17-alpine/);
+ assert.match(app,/playwright install --with-deps/);
+ assert.match(app,/browser-journey-complete/);
+ assert.match(core,/name: hh-merge-check/);
+ assert.match(core,/name: hh-specialist/);
+});

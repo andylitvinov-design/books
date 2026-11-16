@@ -7,35 +7,10 @@ on:
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
-      - 'scripts/helpers/isolated-browser-diagnostics.mjs'
-      - 'scripts/verify-account-status-filters.mjs'
-      - 'scripts/verify-asrs6-pdf.mjs'
-      - 'scripts/verify-asrs6.mjs'
-      - 'scripts/verify-bach-personal-report-browser.mjs'
-      - 'scripts/verify-mhc-sf.mjs'
-      - 'scripts/verify-personality-types.mjs'
-      - 'app/**/app/**'
-      - 'app/**/client/**'
-      - 'app/api/app/**'
-      - 'app/api/client/**'
-      - 'components/app/**'
-      - 'components/academy-video-library-client*'
-      - 'lib/app/**'
-      - 'lib/assessments/**'
-      - 'lib/profile/**'
-      - 'lib/security/**'
-      - 'tests/app-*.mjs'
-      - 'tests/assessment-*.mjs'
-      - 'tests/client-report*.mjs'
-      - 'scripts/verify-app-*.mjs'
-      - 'scripts/verify-*assessment*.mjs'
-      - 'scripts/verify-document-hydration*'
-      - 'tests/helpers/app*'
-      - 'supabase/migrations/**'
-      - 'middleware.ts'
-      - 'next.config.*'
-      - 'package.json'
-      - 'package-lock.json'
+      # The existing Core now owns every PR source-only Node contract.
+      # This self-path keeps migration CI fail-closed and validates YAML edits.
+      # Full isolated browser/Postgres tests retain manual + app-branch routes.
+      - '.github/workflows/hh-app-browser.yml'
 permissions:
   contents: read
   pull-requests: read
