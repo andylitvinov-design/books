@@ -12,10 +12,8 @@ const ownerWorkflows = [
   "dao-iching-library.yml",
   "hh-benchmark-program.yml",
   "hh-benchmark-public-browser.yml",
-  "hh-course-presets.yml",
   "hh-energywork-ai.yml",
   "hh-event-referral-contract.yml",
-  "hh-growth-journey.yml",
   "hh-growth-studio.yml",
   "hh-home-conversation.yml",
   "hh-ideas-coaching-public.yml",
@@ -37,10 +35,11 @@ const ownerWorkflows = [
   "practice-visual-browser.yml",
   "practice-google-browser.yml"
 ];
-// The private Coaching Brain workflow must self-trigger on changes to its own
-// validation policy; Core, Guard and actionlint still verify that YAML.
-// It is a required security/privacy owner, unlike the optional fan-out jobs.
-const highRiskSelfChecks = ["hh-personal-coaching-session.yml","opora-module-ci.yml","hh-public-test-collections.yml","hh-kling-video.yml","practitioner-presentations.yml","pro-reiki-master-paths.yml","hh-reports-development-program.yml","hh-support-mobile-mock-browser.yml","hh-public-journey-wave1.yml"];
+// Private Coaching, Course and Growth workflows explicitly self-trigger on
+// changes to their own validation policy; all real domain QA remains required.
+// #4820 preserved Course billing/private checks and Growth user-consent checks
+// on owner-YAML changes while removing only duplicate CI-policy-test fanout.
+const highRiskSelfChecks = ["hh-course-presets.yml","hh-growth-journey.yml","hh-personal-coaching-session.yml","opora-module-ci.yml","hh-public-test-collections.yml","hh-kling-video.yml","practitioner-presentations.yml","pro-reiki-master-paths.yml","hh-reports-development-program.yml","hh-support-mobile-mock-browser.yml","hh-public-journey-wave1.yml"];
 const contractFile = 'docs/operations/CI_OWNER_ROUTE_MIGRATION_20261104.md';
 const legacyTrigger = 'tests/ci-pr-selective-workflows.test.mjs';
 const source = name => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
