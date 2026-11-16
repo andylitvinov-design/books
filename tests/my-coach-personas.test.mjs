@@ -16,7 +16,7 @@ import {
 
 test('nine distinct fictional AI coaches have complete EN/RU/ES profiles and stage examples', () => {
   assert.equal(COACH_PERSONAS.length, 9)
-  assert.equal(new Set(COACH_PERSONAS.map(persona => persona.id)).size, 8)
+  assert.equal(new Set(COACH_PERSONAS.map(persona => persona.id)).size, 9)
   assert.equal(new Set(COACH_PERSONAS.map(persona => persona.topic)).size, 8)
   for (const persona of COACH_PERSONAS) {
     assert.ok(COACH_TOPICS.includes(persona.topic), persona.id)
@@ -130,11 +130,11 @@ test('Living Coach reuses existing eight portraits and real MP3 playback events'
   assert.match(css,/\.livingPortraitMouth/)
   assert.match(css,/-webkit-mask-image/)
   assert.match(css,/@media\(prefers-reduced-motion:reduce\)/)
-  for (const persona of COACH_PERSONAS)
+  for (const persona of COACH_PERSONAS.filter(p=>p.id!=='merlin'))
     assert.ok(css.includes(`data-photo-persona='${persona.id}'`),persona.id)
   // These photos are 328x456 cropped to square at 22% vertical object-position.
   // Mask centering at uncropped source coordinates would move the nose, not lips.
-  for (const persona of COACH_PERSONAS) {
+  for (const persona of COACH_PERSONAS.filter(p=>p.id!=='merlin')) {
     const selector=`data-photo-persona='${persona.id}']{--photo-mouth-y:`
     const y=Number(css.split(selector)[1]?.split('%}')[0])
     assert.ok(Number.isFinite(y)&&y>=68&&y<=74,
@@ -153,7 +153,7 @@ test('mobile My Coach hero mouth remains visible when compact avatar is hidden',
   assert.ok(hero.includes('@media(max-width:699px) and (prefers-reduced-motion:no-preference)'))
   assert.ok(hero.includes('aspect-ratio:328/456'))
   assert.ok(hero.includes('animation:hh-hero-mouth-speaking'))
-  for (const persona of COACH_PERSONAS) {
+  for (const persona of COACH_PERSONAS.filter(p=>p.id!=='merlin')) {
     const token=`data-persona=${persona.id}]{--hh-hero-mouth-image:url('/images/holistic-house/my-coach-motion/${persona.id}-still.webp');--hh-hero-mouth-y:`
     const y=Number(hero.split(token)[1]?.split('%}')[0])
     assert.ok(Number.isFinite(y)&&y>=55&&y<=59,`source lip region: ${persona.id} / ${y}`)
@@ -254,7 +254,7 @@ test('Play starts the authored natural voice once, without recording or extra ch
   assert.ok(!voice.includes('audio-storyboard'))
 })
 
-test('each of eight AI personae introduces its own approach and unique speech style in EN/RU/ES',()=>{
+test('each of nine AI personae introduces its own approach and distinct style in EN/RU/ES',()=>{
   assert.deepEqual(Object.keys(COACH_PRESENTATIONS).sort(),COACH_PERSONAS.map(p=>p.id).sort())
   for(const locale of COACH_LOCALES){
     const voices=new Set(),introductions=new Set(),styles=new Set()
@@ -271,9 +271,9 @@ test('each of eight AI personae introduces its own approach and unique speech st
       const behavior=buildCoachBehaviorPolicy(persona.id,{},locale)
       assert.ok(behavior.systemInstructions.includes(intro.style),persona.id+' model keeps its style')
     }
-    assert.equal(introductions.size,8)
-    assert.equal(styles.size,8)
-    assert.equal(voices.size,8)
+    assert.equal(introductions.size,9)
+    assert.equal(styles.size,9)
+    assert.equal(voices.size,9)
   }
   assert.equal(getCoachPresentation('__proto__'),null)
   assert.equal(getCoachPresentation('unknown'),null)

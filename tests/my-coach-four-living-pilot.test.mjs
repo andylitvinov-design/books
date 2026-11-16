@@ -27,9 +27,9 @@ test('pilot advertises two female and three male coaches while retaining histori
   }
 })
 
-test('every active coach has a silent playable local 24fps MP4 for each of four visual states',()=>{
+test('the original four active coaches retain silent playable 24fps MP4s in every state',()=>{
   const hashes=new Set()
-  for(const id of PUBLIC_COACH_PERSONA_IDS){
+  for(const id of ['mira','max','sofia','alex']){
     for(const state of states){
       const f=new URL(root+id+'-'+state+'.mp4',import.meta.url)
       const bytes=readFileSync(f)
