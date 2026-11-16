@@ -1139,3 +1139,46 @@
 
 /* Verified per-turn model source: neutral and compact even in iPhone voice mode. */
 .responseSource{display:inline;font-size:10px;font-weight:500;letter-spacing:0;color:#65796e;overflow-wrap:anywhere}
+/* iPhone keyboard mode: the parent shell tracks visualViewport.height and
+   offsetTop. On focused text reply, keep the transcript scrollable and the
+   Send/textarea row at the bottom of that shell, never in the page scroll.
+   This comes AFTER the large-portrait rules so typing cannot enlarge it. */
+@media(max-width:699px){
+  .root[data-session-visual-v4]:has(.textComposer textarea:focus){
+    box-sizing:border-box;height:100%;max-height:100%;min-height:0;
+    padding:0 0 4px;gap:0;overflow:hidden;
+  }
+  .root[data-session-visual-v4]:has(.textComposer textarea:focus) .sessionTopbar,
+  .root[data-session-visual-v4]:has(.textComposer textarea:focus) .sessionScroll,
+  .root[data-session-visual-v4]:has(.textComposer textarea:focus) .voiceControls,
+  .root[data-session-visual-v4]:has(.textComposer textarea:focus) .voicePrivacyDetails,
+  .root[data-session-visual-v4]:has(.textComposer textarea:focus) .playbackNotice,
+  .root[data-session-visual-v4]:has(.textComposer textarea:focus) .sessionTimeboxNotice,
+  .root[data-session-visual-v4]:has(.textComposer textarea:focus) .sessionMore{
+    display:none;
+  }
+  .root[data-session-visual-v4]:has(.textComposer textarea:focus) .voiceWorkspace{
+    box-sizing:border-box;display:flex;flex:1 1 0;flex-direction:column;
+    width:100%;min-height:0;max-height:100%;gap:0;margin:0;
+    overflow:hidden;
+  }
+  .root[data-session-visual-v4]:has(.textComposer textarea:focus) .conversationPanel{
+    box-sizing:border-box;display:flex;flex:1 1 0;flex-direction:column;
+    width:100%;min-height:0;max-height:100%;
+    margin:0;padding:8px 12px 5px;gap:6px;overflow:hidden;
+    border-radius:0;
+  }
+  .root[data-session-visual-v4]:has(.textComposer textarea:focus) .conversationPanel .liveTranscript{
+    display:flex;flex:1 1 0;flex-direction:column;
+    min-height:0;max-height:none;overflow:hidden;
+  }
+  .root[data-session-visual-v4]:has(.textComposer textarea:focus) .conversationPanel .transcriptFeed{
+    flex:1 1 0;min-height:0;max-height:none;overflow-y:auto;
+    overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+  }
+  .root[data-session-visual-v4]:has(.textComposer textarea:focus) .conversationPanel .textComposer{
+    flex:0 0 auto;order:2;width:100%;min-height:0;
+    max-height:min(155px,42%);margin:0;padding:6px 0 0;
+    overflow-y:auto;overflow-x:hidden;
+  }
+}
