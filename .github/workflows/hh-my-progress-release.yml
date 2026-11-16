@@ -14,17 +14,6 @@ on:
       - 'tests/my-progress.test.mjs'
       - 'supabase/migrations/20261029013946_hh_my_progress_video_marks_20261028.sql'
       - '.github/workflows/hh-my-progress-release.yml'
-  push:
-    branches: ['codex/public-book-library']
-    paths:
-      - 'components/app/my-progress.*'
-      - 'components/app/academy-video-progress.jsx'
-      - 'components/academy-video-library-client.tsx'
-      - 'app/api/app/video-progress/route.js'
-      - 'lib/app/my-progress.mjs'
-      - 'lib/app/video-progress.js'
-      - 'tests/my-progress.test.mjs'
-      - '.github/workflows/hh-my-progress-release.yml'
 permissions:
   contents: read
 concurrency:

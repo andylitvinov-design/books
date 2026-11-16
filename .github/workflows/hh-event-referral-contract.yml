@@ -20,28 +20,6 @@ on:
       - 'supabase/migrations/*hh_crm_event_channel_sources*.sql'
       - 'tests/crm-event-channel-attribution.test.mjs'
       - '.github/workflows/hh-crm-event-channels.yml'
-  push:
-    branches: [codex/public-book-library]
-    paths:
-      - 'lib/organic-event-referrals.js'
-      - 'components/contact-channel-chooser.tsx'
-      - 'tests/organic-event-referrals.test.mjs'
-      - 'app/admin/acquisition/**'
-      - 'lib/acquisition/**'
-      - 'components/admin-acquisition-links.jsx'
-      - 'components/practitioner-cabinet.jsx'
-      - 'tests/acquisition-report.test.mjs'
-      - 'lib/paid-ad-referrals.js'
-      - 'tests/paid-ad-referrals.test.mjs'
-      - 'data/meta-ads-pilot-draft.json'
-      - 'data/google-ads-pilot-draft.json'
-      - 'lib/crm/marketing.js'
-      - 'components/app/crm-marketing.jsx'
-      - 'supabase/migrations/*hh_crm_event_channel_sources*.sql'
-      - 'tests/crm-event-channel-attribution.test.mjs'
-      - '.github/workflows/hh-crm-event-channels.yml'
-      - '.github/workflows/hh-event-referral-contract.yml'
-
 permissions:
   contents: read
 

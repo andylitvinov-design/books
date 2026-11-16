@@ -658,7 +658,11 @@ test('PR-only cancellation safeguards owner video, SEO and performance audit wit
   for(const [filename,group,contracts] of specs){
     const s=workflow(filename);
     assert.match(s,/^  pull_request:/m,filename+' must still validate PR changes');
-    assert.match(s,/^  push:/m,filename+' must preserve trusted production release audit');
+    if (filename === 'hh-live-seo-audit.yml') {
+      assert.match(s,/^  push:/m,filename+' retains independent published SEO audit');
+    } else {
+      assert.doesNotMatch(s,/^  push:/m,filename+' must not rerun merged source checks');
+    }
     assert.match(s,/^    paths:/m,filename+' must retain relevant path filters');
     assert.equal((s.match(/^concurrency:/gm)||[]).length,1,filename+' requires exactly one concurrency block');
     assert.ok(s.includes('group: '+group+'-'+suffix),filename+' must only group the same PR');
@@ -762,7 +766,8 @@ test('proven CI fast wins remove duplicate jobs but preserve domain coverage',()
   assert.ok(voice.includes('Independent Next.js production build'));
   const perf=workflow('hh-public-performance-audit.yml');
   assert.ok(perf.includes("if: ${{ github.event_name != 'pull_request' }}"));
-  assert.match(perf,/^  push:\s*$/m);
+  assert.doesNotMatch(perf,/^  push:\s*$/m);
+  assert.match(perf,/^  workflow_dispatch:/m);
   const services=workflow('hh-public-services-production.yml');
   // Public Services still compiles the entire production app, while the
   // required Core retains unrelated prebuild coaching regression suites.

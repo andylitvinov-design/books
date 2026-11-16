@@ -5,13 +5,14 @@ import { parsePrTrigger, matchesTrigger } from '../lib/ci/specialist-aggregate.m
 
 const workflow = (name) => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
 
-test('My Progress uses a valid broad dynamic Next.js pathname and production push only', () => {
+test('My Progress validates on PR without duplicate postmerge CI wave', () => {
   const s = workflow('hh-my-progress-release.yml');
   assert.ok(s.includes("      - 'app/**/app/my-progress/**'"));
   assert.ok(!s.includes("      - 'app/**/app/**/page.jsx'"));
   assert.doesNotMatch(s, /\[\[\.\.\.path\]\]/);
   assert.doesNotMatch(s, /codex\/my-progress-unified-history-20261028/);
-  assert.match(s, /push:\s*\n\s*branches: \['codex\/public-book-library'\]/);
+  assert.match(s, /^  pull_request:/m);
+  assert.doesNotMatch(s, /^  push:/m);
 });
 
 test('Practitioner editor validates dynamic routes without spurious push trigger', () => {
@@ -111,7 +112,8 @@ test('YouTube and Free Review: obsolete PR commits cancel safely; Draft saves br
   const free = workflow('hh-free-review-live-mobile.yml');
   assert.match(youtube, /npm run build/, 'YouTube local real video UI build must remain');
   assert.match(youtube, /verify-youtube-phone-mobile\.mjs/, 'YouTube mobile acceptance must remain');
-  assert.match(free, /^  push:/m, 'post-merge production verification cannot be cancelled');
+  assert.doesNotMatch(free, /^  push:/m, 'do not smoke unupdated live alias before hourly publish');
+  assert.match(free, /if: github.event_name == 'workflow_dispatch'/, 'post-hourly explicit LIVE audit retained');
   assert.match(free, /Verify PR's local production build, not old live alias/, 'PR acceptance must test exact source');
   assert.match(free, /tests\/private-material-handoff\.test\.mjs/, 'privacy/consent checks must remain');
 });
