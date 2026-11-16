@@ -121,3 +121,7 @@
  .frame[data-photo-persona] .livingPortrait{animation:none!important;transform:none!important}
  .livingPortraitMouth{display:none!important;transform:none!important}
 }
+
+/* 4-coach pilot: MP4 is above the static photo, no independent twitch. */
+.frame[data-coach-motion-video='true'] .livingPortrait{animation:none!important;transform:none!important}
+.frame[data-coach-motion-video='true'] .livingPortraitMouth{display:none!important}

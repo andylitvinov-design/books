@@ -1,6 +1,8 @@
 import Image from 'next/image';
 import { StaticPortrait } from '@/components/static-portrait';
 import { HomeSectionCarousel } from '@/components/home-section-carousel';
+import { MySpaceTopics } from '@/components/my-space-topics';
+import { ProfileHubTabs } from '@/components/app/profile-hub-tabs';
 import { HomeFeaturedWorkspace } from '@/components/home-featured-workspace';
 import { FreeMobileAppBanner } from '@/components/free-mobile-app-banner';
 import Link from 'next/link';
@@ -8,12 +10,12 @@ import { PersonalTestimonials } from '@/components/personal-testimonials';
 import { HomeMoreDisclosure } from '@/components/home-more-disclosure';
 import { listMyTubeCategories } from '@/lib/mandala/mytube-content-taxonomy.mjs';
 import { PublicConsultationCta } from '@/components/public-consultation-cta';
-import { PublicSiteHeader } from '@/components/public-site-header';
 import { spanishMetadata } from '@/lib/spanish-metadata';
 export const metadata = spanishMetadata('/es', 'Sesiones personales en Toronto y en línea | Holistic House', 'Explora tus preguntas sobre relaciones, trabajo y decisiones con Andrey Litvinov. Sesiones personales desde €50 y revisión escrita gratuita opcional.');
 export default function SpanishHomePage() {
   return <main className="house-home house-home--services" lang="es">
-    <PublicSiteHeader locale="es" />
+    <ProfileHubTabs locale="es" publicEntry />
+    <MySpaceTopics locale="es" publicHome />
     <HomeSectionCarousel locale="es" />
     <HomeMoreDisclosure locale="es" categories={listMyTubeCategories("es")} />
     <HomeFeaturedWorkspace locale="es" />

@@ -1,0 +1,184 @@
+{
+  "schema": "hi-learning-independent-ru-en-es-v1",
+  "locked": true,
+  "synthetic": true,
+  "privateClientData": false,
+  "cases": [
+    {
+      "locale": "ru",
+      "intent": "services",
+      "text": "Где на сайте собраны форматы индивидуальной работы с мастером?"
+    },
+    {
+      "locale": "ru",
+      "intent": "courses",
+      "text": "Подскажите раздел с материалами для самостоятельного обучения."
+    },
+    {
+      "locale": "ru",
+      "intent": "pricing",
+      "text": "Мне нужно узнать стоимость личного занятия до выбора даты."
+    },
+    {
+      "locale": "ru",
+      "intent": "identity",
+      "text": "Вы человек или цифровая программа для ответов?"
+    },
+    {
+      "locale": "ru",
+      "intent": "technical",
+      "text": "Не получается авторизоваться в личном разделе, куда обратиться?"
+    },
+    {
+      "locale": "ru",
+      "intent": "human",
+      "text": "Можно связаться с живым представителем команды?"
+    },
+    {
+      "locale": "ru",
+      "intent": null,
+      "text": "Подождите с рекомендациями, я пока не готов выбирать услугу."
+    },
+    {
+      "locale": "ru",
+      "intent": null,
+      "text": "Подскажи, сколько колец обнаружено у Нептуна?"
+    },
+    {
+      "locale": "ru",
+      "intent": null,
+      "text": "Не сохраняйте мои документы без разрешения."
+    },
+    {
+      "locale": "ru",
+      "intent": null,
+      "text": "У меня сильная боль в груди, что делать?"
+    },
+    {
+      "locale": "en",
+      "intent": "services",
+      "text": "Which page lists your individual practice and consultation formats?"
+    },
+    {
+      "locale": "en",
+      "intent": "courses",
+      "text": "Could you direct me to the self-study learning materials section?"
+    },
+    {
+      "locale": "en",
+      "intent": "pricing",
+      "text": "Where can I review the fee before choosing an appointment date?"
+    },
+    {
+      "locale": "en",
+      "intent": "identity",
+      "text": "Is a software assistant or a real person responding in this chat?"
+    },
+    {
+      "locale": "en",
+      "intent": "technical",
+      "text": "Signing in fails on the account page, where should I go?"
+    },
+    {
+      "locale": "en",
+      "intent": "human",
+      "text": "May I speak to a real member of your support team?"
+    },
+    {
+      "locale": "en",
+      "intent": null,
+      "text": "Please hold off on recommendations until I decide what I need."
+    },
+    {
+      "locale": "en",
+      "intent": null,
+      "text": "How many moons does the planet Neptune currently have?"
+    },
+    {
+      "locale": "en",
+      "intent": null,
+      "text": "Do not store my personal documents without permission."
+    },
+    {
+      "locale": "en",
+      "intent": null,
+      "text": "I am having severe chest pain, what should I do?"
+    },
+    {
+      "locale": "es",
+      "intent": "services",
+      "text": "¿En qué sección se presentan las consultas individuales?"
+    },
+    {
+      "locale": "es",
+      "intent": null,
+      "text": "No sugieras tratamientos si no he pedido recomendaciones."
+    }
+  ],
+  "dialogues": [
+    {
+      "locale": "ru",
+      "turns": [
+        {
+          "text": "Я хотел бы узнать о консультациях.",
+          "expected": "consultation"
+        },
+        {
+          "text": "Нет, не записывайте, давайте сначала поговорим о цели.",
+          "expected": "decline_booking"
+        },
+        {
+          "text": "Не давайте мне советов, пожалуйста.",
+          "expected": "refuse_advice"
+        },
+        {
+          "text": "Давайте сменим тему: интересуют учебные курсы.",
+          "expected": "topic_change"
+        }
+      ]
+    },
+    {
+      "locale": "en",
+      "turns": [
+        {
+          "text": "I would like to learn about a consultation.",
+          "expected": "consultation"
+        },
+        {
+          "text": "Please do not book anything; I want to discuss my goal first.",
+          "expected": "decline_booking"
+        },
+        {
+          "text": "No advice please.",
+          "expected": "refuse_advice"
+        },
+        {
+          "text": "Let's change the topic to learning courses.",
+          "expected": "topic_change"
+        }
+      ]
+    }
+  ],
+  "telegramOrders": [
+    {
+      "service": "homeopathy",
+      "locale": "ru"
+    },
+    {
+      "service": "coaching",
+      "locale": "en"
+    },
+    {
+      "service": "reiki",
+      "locale": "es"
+    },
+    {
+      "service": "constellations",
+      "locale": "ru"
+    },
+    {
+      "service": "business",
+      "locale": "en"
+    }
+  ]
+}

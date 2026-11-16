@@ -69,7 +69,7 @@ test('the umbrella homepage can render Russian and English chrome and copy', asy
   const explore = await readFile('components/home-explore-sections.tsx', 'utf8')
   const more = await readFile("components/home-more-disclosure.tsx", "utf8")
   assert.match(home, /<HomeMoreDisclosure locale=\{locale\} categories=\{listMyTubeCategories\(locale\)\} \/>/)
-  assert.doesNotMatch(more, /mytube-content-taxonomy/, "Keep the video taxonomy outside the client island")
+  assert.doesNotMatch(more, /mytube-content-taxonomy/, "The 256-scenario taxonomy cannot hydrate the tiny client navigation")
   assert.match(more, /data-home-topic-filters/)
   assert.match(more, /data-home-topic-filter="temple"/)
   assert.match(explore, /Выберите свой следующий шаг/)
@@ -273,15 +273,29 @@ test('compact language menu and cabinet next-step remain available after IA inte
   assert.match(esPublicVerifier, /site-language-menu-trigger/)
 })
 
-test('top site header opens Cabinet while mobile bottom bar promotes Books', async () => {
-  const [nav, home, header, styles] = await Promise.all([
+test('My Space Home has compact real navigation while other site headers retain Cabinet and mobile Books', async () => {
+  const [nav, home, header, styles, hub, spanishHome, workspace] = await Promise.all([
     readFile('components/site-navigation.tsx', 'utf8'),
     readFile('components/holistic-house-home.tsx', 'utf8'),
     readFile('components/public-site-header.tsx', 'utf8'),
     readFile('app/holistic-house-home.css', 'utf8'),
+    readFile('components/app/profile-hub-tabs.jsx', 'utf8'),
+    readFile('app/es/page.tsx', 'utf8'),
+    readFile('components/app/app-workspace.jsx', 'utf8'),
   ])
 
-  assert.match(home, /<SiteNavigation locale=\{locale\}/)
+  // The owner removed only the legacy marketing header from Home.
+  // The same full accessible search/menu still exists via ProfileHubTabs,
+  // while secondary public pages keep their original header and Cabinet.
+  assert.match(home, /<ProfileHubTabs locale=\{locale\} publicEntry \/>/)
+  assert.doesNotMatch(home, /<SiteNavigation locale=\{locale\}/)
+  assert.doesNotMatch(home, /className="house-header house-header--services"/)
+  assert.match(spanishHome, /<ProfileHubTabs locale="es" publicEntry \/>/)
+  assert.doesNotMatch(spanishHome, /<PublicSiteHeader locale="es" \/>/)
+  assert.match(hub, /<SiteNavigation locale=\{selected\} compact \/>/)
+  assert.match(nav, /<SiteSearch locale=\{activeLocale\} pathname=\{pathname\} \/>/)
+  assert.match(nav, /<details className="site-main-menu"/)
+  assert.match(workspace, /target\.closest\('\[data-profile-chrome-navigation\]'\)/)
   assert.match(header, /<SiteNavigation locale=\{locale\}/)
   assert.match(nav, /\['energy', 'love', 'business'\]\.includes\(item\.id\)/)
   assert.match(nav, /site-nav-free-entry/)

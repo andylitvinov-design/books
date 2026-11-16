@@ -68,3 +68,27 @@ test("Library keeps book/Dao views out of the public feed and approved-video rea
   assert.match(legacy,/permanentRedirect\("\/" \+ locale \+ "\/services\/alchemy-of-soul"\)/)
   assert.doesNotMatch(legacy,/PersonalServiceLanding/)
 })
+
+test('External owner-library videos retain their real source labels and exact MyTube topic tags',()=>{
+  const hub=source('components/library-hub.tsx')
+  const metadata=hub.slice(hub.indexOf('const PUBLIC_YOUTUBE_EDITORIAL_METADATA'),hub.indexOf('/** The Library and Ideas surfaces share'))
+  const rows=[
+    ['1Evwgu369Jw','Royal Society of Arts','emotional-intimacy'],
+    ['8KkKuTCFvzI','TED','family-relationships'],
+    ['Rqj7besaGg4','TEDx Talks','money-mindset'],
+    ['l_NYrWqUR40','TED-Ed','self-confidence'],
+    ['w-HYZv6HzAs','TEDx Talks','self-confidence'],
+    ['RcGyVTAoXEU','TED','stress-relief'],
+    ['F2hc2FLOdhI','TED','stress-relief'],
+    ['eBz7iUJu9UM','TED-Ed','personal-growth'],
+    ['7JtjrPcMjBg','Анна Выровая','self-acceptance'],
+    ['KoZn6cKbxXg','Валерий Гут','self-confidence'],
+  ]
+  for(const [id,sourceLabel,topicTag] of rows){
+    assert.ok(metadata.includes('"'+id+'"'),'Missing editorial source '+id)
+    assert.ok(metadata.includes('sourceLabel:"'+sourceLabel+'"'),'Wrong source label for '+id)
+    assert.ok(metadata.includes('topicTags:["'+topicTag+'"]'),'Missing exact MyTube topic '+id)
+  }
+  assert.match(hub,/sourceLabel: editorial\?\.sourceLabel \|\| "Holistic House"/)
+  assert.match(hub,/topicTags: editorial\?\.topicTags \|\| \[\]/)
+})

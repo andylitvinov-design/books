@@ -10,6 +10,9 @@ import {
 } from '../lib/personal-coaching/coaching-brain.mjs'
 import {analyzeCoachingProtocol,coachingProtocolPrompt} from '../lib/personal-coaching/coaching-session-protocol.mjs'
 import {understandCoachingTurn,coachingTurnPrompt} from '../lib/personal-coaching/coaching-turn-understanding.mjs'
+// Run the same Director v2 method/persona regression contracts in both
+// focused coaching verification and the existing production prebuild suite.
+import './coach-session-director.test.mjs'
 
 const uuid='e620286d-62ac-4efb-87e3-e58baa2c71b5'
 const req=(overrides={})=>({sessionId:uuid,locale:'en',consent:true,
@@ -271,6 +274,7 @@ test('model output is rejected when it uses coercive language or stacks question
 test('explicit stop is respected in Russian and Spanish without entering model logic',()=>{
   for(const [locale,message] of [
     ['ru','Давайте закончим разговор'],
+    ['ru','Остановим разговор'],
     ['es','Por favor, terminemos esta conversación'],
   ]){
     const input=normalizeCoachingBrainInput(req({locale,message}))

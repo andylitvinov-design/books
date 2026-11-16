@@ -2,6 +2,14 @@
 
 This is the authoritative current policy for CI and production delivery. GitHub ruleset 26269892 is the authoritative configuration; verify its current readback before delivery and do not modify it as part of routine releases.
 
+## Production publication is batched hourly (owner decision, 15 November 2026)
+
+**Single ordinary publisher.** Following a protected merge to `codex/public-book-library`, do not independently create or promote a Vercel Production deployment. The trusted default control branch `codex/bootstrap-books` owns the **existing** `.github/workflows/hh-hourly-vercel-production.yml`, scheduled `0 * * * *` (the top of each hour in America/Toronto). It reads the latest protected site SHA, checks existing Vercel Production deployments within the previous 60 minutes and for the same SHA, and sends at most one non-emergency request per run. GitHub schedule delivery can be delayed; do not manufacture a second release to compensate.
+
+Connected chats, Codex, workers, bots, release coordinators, and tools must **not** invoke Vercel `create_deployment`, `request_promote`, CLI `--prod`, redeploy, REST API deploys, Deploy Hooks, or a manual GitHub Actions release after a normal PR merge. A merge is `MERGED_AWAITING_HOURLY` until exact canonical-alias/SHA and scoped LIVE acceptance are verified. `git.deploymentEnabled:false` on Production is preserved. An independently triggered API/CLI release can bypass the workflow's hourly guard, so neither that setting nor a green CI run proves team-wide rate limiting; investigate unexplained new deploys instead of claiming one/hour globally.
+
+Only an **explicit emergency Deploy Now** approval by the owner for a particular release authorizes `workflow_dispatch emergency=true`; the existing required PR checks and safe deployment validation still apply. The separate manual `cleanup_mode=dry-run|apply` remains bounded, with current LIVE and 30 READY rollbacks protected. No additional scheduled workflows, paid services, token movement, preview builds or production deploys may be created just to implement or check this policy.
+
 ## Immediate PR and GitHub CI Fast Lane (owner decision, 3 November 2026)
 
 This is the default, event-driven path and overrides older text below that suggests Triage, Watchdog, scheduled sweeps, priority labels or Repair are mandatory before a routine PR can start CI or merge.

@@ -101,5 +101,11 @@ test('first Home reply may bootstrap native Menu once per hour without blocking 
  assert.ok(route.indexOf('const aiIntake=await processTelegramAiV3') <
    route.indexOf('const intake=await processTelegramDiagnostic'),
    'consented V3 is handled first; legacy diagnostics remain the next handler');
- assert.ok(route.includes('const video=await receiveOwnerTelegramVideoWebhook'));
+ // CRM owns only the signed owner-to-Dot redirect; FFmpeg is scoped to Dot.
+ const verified=route.indexOf('if(!verifyMessengerWebhook(provider,raw,request.headers))return rejected()');
+ const handoff=route.indexOf('const video=await receiveOwnerTelegramVideoCrmFallback(config,body)');
+ const stop=route.indexOf('const stop=await gateTelegramBusinessSecretaryOptOut(body,config)');
+ assert.ok(verified>=0&&handoff>verified&&stop>handoff,
+   'signed owner video handoff stays before CRM handling without triggering video rendering');
+ assert.ok(!route.includes("from '@/lib/practitioners/owner-telegram-video-service'"));
 });
