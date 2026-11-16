@@ -154,6 +154,8 @@ test('strict weekly production comparison: same Toronto clock, same cohort and a
  assert.match(html,/смержены в выбранном периоде/);
  assert.match(js,/compareStrictWeekly\(d\?\.strict_weekly,hours\)/);
  assert.match(js,/strict_weekly=1/);
+ assert.equal(JSON.parse(read('api/package.json')).type,'commonjs',
+  'weekly serverless handler must remain CommonJS under ESM root');
  const core=require('./api/ci-stage-weekly.js')._test;
  const utc=Date.parse('2026-11-02T17:00:00Z');
  assert.equal(new Date(core.torontoWeekAgo(utc)).toISOString(),'2026-10-26T16:00:00.000Z');
