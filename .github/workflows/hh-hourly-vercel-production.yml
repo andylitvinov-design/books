@@ -2,10 +2,6 @@ name: HH hourly Vercel production batch
 on:
   schedule:
     - cron: '17 * * * *' # off-peak each hour, Toronto/UTC: one existing scheduled event
-  # Temporary owner-approved one-time cleanup; remove immediately after the run.
-  push:
-    branches: ['codex/bootstrap-books']
-    paths: ['.github/workflows/hh-hourly-vercel-production.yml']
   workflow_dispatch:
     inputs:
       emergency:
@@ -120,11 +116,7 @@ jobs:
           echo 'One exact-SHA production build requested; READY/LIVE must be checked separately.'
   cleanup:
     # Owner-dispatched cleanup only. Scheduled runs never delete deployments.
-    if: >-
-      (github.event_name == 'workflow_dispatch' && inputs.cleanup_mode != 'off') ||
-      (github.event_name == 'push' &&
-       github.ref == 'refs/heads/codex/bootstrap-books' &&
-       startsWith(github.event.head_commit.message, 'ci(vercel): owner 2-day retention prune 20261116'))
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.cleanup_mode != 'off' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -132,30 +124,8 @@ jobs:
         with:
           ref: codex/bootstrap-books
           persist-credentials: false
-      - name: Verify existing cleanup protections before one-time owner action
-        if: ${{ github.event_name == 'push' }}
-        env:
-          HH_VERCEL_RELEASE_TOKEN: ${{ secrets.HH_VERCEL_RELEASE_TOKEN }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          node --test tests/ci-vercel-deployment-prune.test.mjs
-          node scripts/ci-vercel-deployment-prune.mjs dry-run
-      - name: Apply bounded one-time cleanup or owner-manual mode
+      - name: Inspect and optionally prune old unaliased deployments
         env:
           HH_VERCEL_RELEASE_TOKEN: ${{ secrets.HH_VERCEL_RELEASE_TOKEN }}
           CLEANUP_MODE: ${{ inputs.cleanup_mode }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [[ "$GITHUB_EVENT_NAME" == 'push' ]]; then
-            # Each pass independently checks current LIVE + 30 READY rollbacks.
-            # At most four existing guarded 35-delete passes; no auto retries.
-            for pass in 1 2 3 4; do
-              echo "HH_ONE_TIME_PRUNE_PASS=$pass max_passes=4"
-              node scripts/ci-vercel-deployment-prune.mjs dry-run
-              node scripts/ci-vercel-deployment-prune.mjs apply
-            done
-          else
-            node scripts/ci-vercel-deployment-prune.mjs "$CLEANUP_MODE"
-          fi
+        run: node scripts/ci-vercel-deployment-prune.mjs "$CLEANUP_MODE"
