@@ -160,7 +160,7 @@ export function MandalaAutomaticStoryboard({
 
  // The author's six scenes stay six scenes; never fold them into five cards.
  // A five-cut editor montage is an explicitly separate legacy 20s flow.
- const manualFiveReady=Boolean(!v3RequiresActionProof&&fiveSceneShots?.length===5&&
+ const manualFiveReady=Boolean(!v3RequiresActionProof&&durationSeconds===20&&fiveSceneShots?.length===5&&
   fiveSceneShots.every(shot=>isReviewedFilmedStoryScene(sceneCatalog.get(shot.sceneId),"portrait")));
  const visibleCount=manualFiveReady?5:guides.scenes.length;
  const compactCards=Array.from({length:visibleCount},(_,index)=>{

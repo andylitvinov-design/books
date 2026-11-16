@@ -50,6 +50,25 @@ test("Curated and v3 six-shot fiction are not auto-bound to clips based on vague
  assert.match(studio,/setAppliedStoryKey\(null\)/);
 });
 
+test("general Love still has six distinct visual actions; 5-cut mode is 20 seconds only",()=>{
+ for(const locale of ["ru","en","es"]){
+  const goal={ru:"Любовь",en:"Love",es:"Amor"}[locale];
+  const base=suggestVideoConcept({locale,goal,theme:"relationships"});
+  const direction=getVideoCreativeDirections({...base,semanticConfidence:"low"},locale)[0];
+  assert.ok(direction,"category-only request must not fall back to four-arrow catalog");
+  const chosen=applyVideoCreativeDirection(base,direction);
+  const scenes=buildAlignedStorySceneGuides({locale,goal,concept:chosen,count:6,phrases:[]}).scenes;
+  assert.deepEqual(scenes.map(x=>x.visual),chosen.storyboard.map(x=>x.action));
+  assert.equal(new Set(scenes.map(x=>x.visual)).size,6);
+ }
+ const ui=source("components/mandala-video-concept.tsx");
+ assert.match(ui,/data-video-concept-direction-hook/);
+ assert.doesNotMatch(ui,/<span className=\{css\.directionIdea\}>\{direction\.idea\}<\/span>/);
+ assert.match(ui,/concept\.creativeTitle&&directions\.length<2/);
+ const story=source("components/mandala-automatic-storyboard.tsx");
+ assert.match(story,/durationSeconds===20&&fiveSceneShots\?\.length===5/);
+});
+
 test("Selecting or editing any film in Ideas updates Montage's editorial source before approval",()=>{
  const ideas=source("components/mandala-video-concept.tsx");
  assert.match(ideas,/onDraftChange\?:\(concept:ApprovedVideoConcept\)=>void/);

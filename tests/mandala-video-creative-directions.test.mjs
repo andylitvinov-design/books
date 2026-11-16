@@ -70,10 +70,23 @@ test("specific relationship goal yields three DIFFERENT authored stories in RU/E
  }
 });
 
-test("only a specific goal gets cinematic biography suggestions; transcripts remain source-authoritative",()=>{
+test("category Love yields original anonymous films; unknown intent and transcripts remain protected",()=>{
  for(const locale of ["ru","en","es"]){
-  const general=suggestVideoConcept({locale,goal:"Love",theme:"relationships"});
-  assert.equal(getVideoCreativeDirections({...general,semanticConfidence:"low"},locale).length,0);
+  const goal={ru:"Любовь",en:"Love",es:"Amor"}[locale];
+  const general=suggestVideoConcept({locale,goal,theme:"relationships"});
+  const suggestions=getVideoCreativeDirections({...general,semanticConfidence:"low"},locale);
+  assert.equal(suggestions.length,3,locale+": explicit Love requests original films");
+  assert.equal(new Set(suggestions.map(x=>x.idea)).size,3);
+  assert.equal(new Set(suggestions.map(x=>x.story)).size,3);
+  assert.ok(suggestions.every(d=>d.creativeSchemaVersion==="hh-creative-concept-v3"));
+  assert.ok(suggestions.every(d=>d.storyboard.length===6&&
+    new Set(d.storyboard.map(x=>x.action)).size===6));
+  assert.ok(suggestions.every(d=>!/(?:→|The story opens with|Something begins to change)/i
+    .test(d.idea+" "+d.story)));
+  assert.ok(suggestions.every(d=>d.storyboard.every(x=>x.sourceVerified===false)));
+  const unknown=suggestVideoConcept({locale,goal:"unrelated unknown topic",theme:"relationships"});
+  assert.equal(getVideoCreativeDirections({...unknown,semanticConfidence:"low"},locale).length,0,
+    "An unknown topic does not justify invented personal history");
   const speaking=suggestVideoConcept({locale,goal:labels[locale],theme:"relationships",
    selectedTopicId:"ready-relationship",speechTranscript:{text:"Create a video from what I am saying"}});
   assert.equal(getVideoCreativeDirections(speaking,locale).length,0);

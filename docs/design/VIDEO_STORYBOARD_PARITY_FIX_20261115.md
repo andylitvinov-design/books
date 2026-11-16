@@ -44,3 +44,21 @@ A generic tag or a reviewed video codec does not verify a depicted event.
 
 **Release status on authoring:** prepared source/test/docs patch; not
 equivalent to protected merge, Vercel READY, or verified LIVE.
+
+## Follow-up · 16 November iPhone screenshot correction
+
+- The unmerged Concept v3 PR means LIVE still serves old arrow-chain stories
+  and unconnected, five-card forest/ocean stock montage.
+- The explicit broad Love/Любовь/Amor category now receives three independent
+  anonymous visual narratives rather than old four-beat catalog copy; unknown
+  unrelated free text still fails closed instead of inventing a biography.
+- Direction options show a distinct cinematic hook, not the entire Main Idea
+  duplicated. The chosen story title appears once, on its option card.
+- The old five-cut mode remains available only at 20s. Normal 30s scenes are
+  a separate ordered set of six 5-second actions; unverified visuals are missing,
+  not mislabeled nature stock photos.
+- Preserve in the existing conflict-resolution merge the new production
+  `ReadyGenerationCheckIn` component and its sequential questionnaire; do not
+  overwrite unrelated Ready browser test fixes on source HEAD.
+- This source/test/doc patch is pre-merge work. Required checks and the existing
+  hourly production release plus real iPhone smoke remain mandatory.

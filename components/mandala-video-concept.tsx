@@ -412,9 +412,10 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
                {selectedDirection?.id===direction.id?<Check size={15}/>:null}</span>
            </span>
            <small>{direction.mode}</small>
-           <span className={css.directionIdea}>{direction.idea}</span>
-           {("pitch" in direction&&direction.pitch)?
-             <span className={css.directionPitch}>{String(direction.pitch)}</span>:null}
+           <span className={css.directionIdea} data-video-concept-direction-hook>
+             {("pitch" in direction&&direction.pitch)?String(direction.pitch):
+               direction.storyboard?.[0]?.action||direction.idea}
+           </span>
          </button>)}
        </div>
      </section>:null}
@@ -435,7 +436,8 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
           <button type="button" onClick={()=>setIdeaEditing(false)}>{t.textCancel}</button>
         </div>
       </div>:null}
-      {concept.creativeTitle?<span className={css.conceptTitle}>{concept.creativeTitle}</span>:null}
+      {concept.creativeTitle&&directions.length<2?
+        <span className={css.conceptTitle}>{concept.creativeTitle}</span>:null}
       {!ideaEditing?<strong data-video-concept-main-idea="true">{concept.mainMessage}</strong>:null}
     </section>
     <section className={css.narrativeCard} data-video-concept-text>
