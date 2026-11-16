@@ -16,8 +16,16 @@ on:
       - 'scripts/ci-pr-repair-start.mjs'
       - 'tests/ci-pr-loss-metrics.test.mjs'
       - 'tests/ci-pr-repair-start.test.mjs'
+  # A full orphan inventory must not run after every ordinary production merge.
+  # The default control branch already cleans each closed PR, and its
+  # synchronize janitor cancels superseded source HEADs without this sweep.
+  # Recheck all open PRs only when the bulk cleanup code/policy changes.
   push:
     branches: ['codex/public-book-library']
+    paths:
+      - '.github/workflows/hh-ci-stale-run-prune.yml'
+      - 'scripts/ci-prune-stale-runs.mjs'
+      - 'tests/ci-prune-stale-runs.test.mjs'
 
 permissions: {}
 concurrency:
