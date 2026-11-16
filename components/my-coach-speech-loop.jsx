@@ -11,7 +11,7 @@ import {coachIntroAudioPath,startDirectCoachIntroAudio} from '@/lib/personal-coa
 
 const words={
   en:{start:'Talk by voice',stop:'Stop voice',retryMic:'Retry microphone',listening:'Listening…',thinking:'Coach is thinking…',speaking:'Speaking…',
-    network:'Browser speech service is offline. Your words remain editable below.',noMicrophone:'No microphone found. Check device permissions.',language:'Browser speech does not support this language. Choose EN or RU.',
+    network:'Browser speech service is offline. Your words remain editable below.',noMicrophone:'No microphone detected by Safari.',captureRetry:'Restoring microphone…',captureFailed:'Safari could not activate the microphone. Check site microphone access, then tap Mic to retry.',language:'Browser speech does not support this language. Choose EN or RU.',
     unsupported:'Voice recognition is unavailable in this browser. Try opening this page in Safari, or type your message.',blocked:'Microphone denied. Check Safari/browser permissions.',
     short:'I did not catch that. Tap the microphone to try again.',review:'Voice saved as a draft. Review and send it below.',restart:'Tap the microphone for the next turn.',
     failed:'Coach could not answer. The microphone is listening again; keep talking or edit your text.',
@@ -19,7 +19,7 @@ const words={
     fallback:'Natural coach voice is unavailable right now. The microphone remains active; keep talking or type.',tapToHear:'Tap to hear the coach',preparing:'Preparing voice…',
     iosCue:'Ready to listen.',iosPreparing:'Preparing iPhone microphone…',iosSilent:'Safari may not be hearing. Your draft is editable; try again or reopen Safari.',iosAwaitEnd:'Text ready. Waiting for Safari to finish…'},
   ru:{start:'Говорить голосом',stop:'Остановить голос',retryMic:'Перезапустить микрофон',listening:'Слушаю…',thinking:'Коуч думает…',speaking:'Говорит…',
-    network:'Распознавание браузера недоступно. Ваши слова остаются в поле ответа.',noMicrophone:'Микрофон не найден. Проверьте настройки устройства.',language:'Браузер не поддерживает этот язык. Выберите RU или EN.',
+    network:'Распознавание браузера недоступно. Ваши слова остаются в поле ответа.',noMicrophone:'Safari не обнаружил микрофон.',captureRetry:'Восстанавливаю микрофон…',captureFailed:'Браузер не смог включить микрофон. Проверьте доступ к микрофону для сайта и нажмите микрофон ещё раз.',language:'Браузер не поддерживает этот язык. Выберите RU или EN.',
     unsupported:'Голосовой ввод недоступен в этом браузере. Попробуйте открыть страницу в Safari или написать сообщение.',
     blocked:'Доступ к микрофону запрещён. Разрешите его в Safari или настройках браузера.',
     short:'Не удалось разобрать фразу. Нажмите микрофон ещё раз.',review:'Слова сохранены в поле ввода. Проверьте и отправьте.',restart:'Нажмите микрофон для следующей реплики.',
@@ -28,7 +28,7 @@ const words={
     fallback:'Качественный голос коуча сейчас недоступен. Микрофон продолжает слушать; можно говорить или писать.',tapToHear:'Нажмите, чтобы услышать коуча',preparing:'Готовлю голос…',
     iosCue:'Я вас слушаю.',iosPreparing:'Подготавливаю микрофон iPhone…',iosSilent:'Safari может не слышать речь. Текст можно отредактировать; попробуйте ещё раз или перезапустите Safari.',iosAwaitEnd:'Текст готов. Ждём завершения Safari…'},
   es:{start:'Hablar por voz',stop:'Detener voz',retryMic:'Reiniciar micrófono',listening:'Escuchando…',thinking:'El coach piensa…',speaking:'Hablando…',
-    network:'El reconocimiento del navegador no está disponible. El texto dictado sigue abajo.',noMicrophone:'No se encontró un micrófono. Comprueba los permisos.',language:'El navegador no reconoce este idioma. Elige EN o RU.',
+    network:'El reconocimiento del navegador no está disponible. El texto dictado sigue abajo.',noMicrophone:'Safari no detectó ningún micrófono.',captureRetry:'Restaurando micrófono…',captureFailed:'Safari no pudo activar el micrófono. Revisa los permisos del sitio y vuelve a tocar el micrófono.',language:'El navegador no reconoce este idioma. Elige EN o RU.',
     unsupported:'El reconocimiento de voz no está disponible aquí. Prueba abrir la página en Safari o escribe tu mensaje.',
     blocked:'Micrófono bloqueado. Actívalo en Safari o en los ajustes del navegador.',
     short:'No entendí la frase. Toca el micrófono otra vez.',review:'Palabras guardadas en el borrador. Revisa y envía abajo.',restart:'Toca el micrófono para continuar.',
@@ -63,6 +63,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   const cloudPlayerRef=useRef(null)
   const introControllerRef=useRef(null),introPlayerRef=useRef(null)
   const microphonePermissionRef=useRef(null)
+  const microphonePermissionStateRef=useRef('unknown'),captureFailureRef=useRef(false)
   const primedAudioRef=useRef(null),audioContextRef=useRef(null)
   const speakingRef=useRef(false)
   const speechTimerRef=useRef(null),blockedResumeRef=useRef(null),utteranceRef=useRef(null)
@@ -105,6 +106,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     if(retryTimerRef.current)clearTimeout(retryTimerRef.current)
     if(settleTimerRef.current)clearTimeout(settleTimerRef.current)
     retryTimerRef.current=null;settleTimerRef.current=null;retryAttemptsRef.current=0
+    captureFailureRef.current=false
     providerUnavailableRef.current=null
     cloudControllerRef.current?.abort()
     cloudControllerRef.current=null
@@ -149,16 +151,37 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   // recording or uploading audio. Immediately release the temporary stream;
   // the actual Web Speech recognizer starts AFTER the coach finishes.
   function primeMicrophonePermission(){
-    if(microphonePermissionRef.current)return
-    const getUserMedia=window.navigator.mediaDevices?.getUserMedia
-    if(!getUserMedia)return
+    if(microphonePermissionRef.current)return microphonePermissionRef.current
+    const devices=window.navigator.mediaDevices
+    if(typeof devices?.getUserMedia!=='function')return null
+    const classify=error=>{
+      const name=String(error?.name||'')
+      // An iOS audio-service reset can use NotAllowedError without permission denial.
+      if(/AVAudioSessionCaptureDevice|audio session|capture device/i.test(String(error?.message||'')))return 'temporary'
+      if(['NotAllowedError','SecurityError','PermissionDeniedError'].includes(name))return 'denied'
+      if(['NotFoundError','DevicesNotFoundError'].includes(name))return 'missing'
+      return 'temporary'
+    }
     try{
-      const request=window.navigator.mediaDevices.getUserMedia({audio:true})
-      microphonePermissionRef.current=request
-      void request.then(stream=>{
-        for(const track of stream.getTracks())track.stop()
-      }).catch(()=>{microphonePermissionRef.current=null})
-    }catch{microphonePermissionRef.current=null}
+      // Begin the permission request in the actual user Play/tap gesture.
+      const request=devices.getUserMedia({audio:true})
+      const checked=Promise.resolve(request).then(stream=>{
+        try{for(const track of stream.getTracks())track.stop()}catch{}
+        microphonePermissionStateRef.current='granted'
+        return 'granted'
+      },error=>{
+        const outcome=classify(error)
+        microphonePermissionStateRef.current=outcome
+        return outcome
+      }).finally(()=>{
+        if(microphonePermissionRef.current===checked)microphonePermissionRef.current=null
+      })
+      microphonePermissionRef.current=checked
+      return checked
+    }catch(error){
+      microphonePermissionStateRef.current=classify(error)
+      return null
+    }
   }
 
   useImperativeHandle(ref,()=>({
@@ -175,14 +198,15 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       changePhase('loading')
       // Play is the single deliberate gesture that starts coach audio followed
       // by browser recognition. No recording, upload or second mic tap.
-      void speakCoachReply({reply:String(introduction||'').slice(0,900),mode:'intro'},'',generationRef.current,naturalVoice)
       primeMicrophonePermission()
+      void speakCoachReply({reply:String(introduction||'').slice(0,900),mode:'intro'},'',generationRef.current,naturalVoice)
       return true
     },
     startWithConsent(){
       if(activeRef.current||!canStart)return false
       activeRef.current=true
       generationRef.current+=1
+      primeMicrophonePermission()
       startListening()
       return true
     },
@@ -271,22 +295,24 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
 
   // If Web Speech ends without words, transparently try a fresh recognizer.
   // Retries are bounded; permission and network failures remain visible.
-  function restartSilentRecognition(recognition){
+  function restartSilentRecognition(recognition,reason='silence'){
+    if(reason==='capture')captureFailureRef.current=true
     if(recognitionRef.current!==recognition||!activeRef.current)return
     recognitionRef.current=null
     recognition.onresult=null;recognition.onend=null;recognition.onerror=null
     try{recognition.abort()}catch{}
     if(retryAttemptsRef.current>=3){
-      silence();changePhase('idle');setNotice(t.iosSilent);return
+      const message=captureFailureRef.current?t.captureFailed:t.iosSilent
+      silence();changePhase('idle');setNotice(message);return
     }
     retryAttemptsRef.current+=1
-    changePhase('starting');setNotice(t.listening)
+    changePhase('starting');setNotice(reason==='capture'?t.captureRetry:t.listening)
     if(retryTimerRef.current)clearTimeout(retryTimerRef.current)
     const generation=generationRef.current
     retryTimerRef.current=setTimeout(()=>{
       retryTimerRef.current=null
       if(activeRef.current&&generationRef.current===generation)startListening()
-    },420)
+    },reason==='capture'?[800,1500,2600][retryAttemptsRef.current-1]:420)
   }
 
   function startListening(){
@@ -387,16 +413,23 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
         void deliver(appendSpokenAnswer(draftAtStartRef.current,heard,1200))
         return
       }
+      if(event.error==='audio-capture'){
+        // WebKit can lose capture even when a physical microphone exists.
+        if(['denied','missing'].includes(microphonePermissionStateRef.current)){
+          const message=microphonePermissionStateRef.current==='denied'?t.blocked:t.noMicrophone
+          silence();changePhase('idle');setNotice(message)
+        }else restartSilentRecognition(recognition,'capture')
+        return
+      }
       if(['no-speech','aborted','network'].includes(event.error)){
         // A temporary browser STT network error must not cancel the one-Play
         // session. Existing bounded recognition retries never retry AI/TTS.
-        // Microphone permission and capture errors still fail closed.
+        // Permission denial fails closed; transient capture loss is retried.
         restartSilentRecognition(recognition);return
       }
       silence();changePhase('idle')
       setNotice(['not-allowed','service-not-allowed'].includes(event.error)?t.blocked:
-        event.error==='network'?t.network:event.error==='audio-capture'?t.noMicrophone:
-        event.error==='language-not-supported'?t.language:t.restart)
+        event.error==='network'?t.network:event.error==='language-not-supported'?t.language:t.restart)
     }
     const restartSilentRecognitionAfterEnd=()=>{
       // onend has already detached the recognizer; retry without a second tap.
@@ -433,8 +466,20 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     }
     const startRecognition=()=>{
       if(recognitionRef.current!==recognition||!activeRef.current)return
-      try{recognition.start()}
-      catch{restartSilentRecognition(recognition)}
+      const begin=()=>{
+        if(recognitionRef.current!==recognition||!activeRef.current)return
+        const permission=microphonePermissionStateRef.current
+        if(permission==='denied'||permission==='missing'){
+          const message=permission==='denied'?t.blocked:t.noMicrophone
+          silence();changePhase('idle');setNotice(message);return
+        }
+        try{recognition.start()}
+        catch{restartSilentRecognition(recognition,'capture')}
+      }
+      // Do not race Web Speech with the Safari permission prompt/track cleanup.
+      const permissionRequest=microphonePermissionRef.current
+      if(permissionRequest){void permissionRequest.then(begin,begin);return}
+      begin()
     }
     iosCueSatisfiedRef.current=false
     // WebKit #321436: even after coach device/Fish speech, every iOS 27
@@ -658,13 +703,14 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       audioContextRef.current=shouldUseCoachingWebAudio(window.navigator)?unlockCoachingAudioContext():null
       primedAudioRef.current=audioContextRef.current?null:primeCoachingAudioGesture()
       changePhase('loading')
-      void speakCoachReply({reply:String(introduction||'').slice(0,900),mode:'intro'},'',generationRef.current,true)
       primeMicrophonePermission()
+      void speakCoachReply({reply:String(introduction||'').slice(0,900),mode:'intro'},'',generationRef.current,true)
       return
     }
     if(supported===false){setNotice(t.unsupported);return}
     activeRef.current=true
     generationRef.current+=1
+    primeMicrophonePermission()
     startListening()
   }
 
