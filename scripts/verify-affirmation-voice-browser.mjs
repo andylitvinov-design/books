@@ -1291,9 +1291,19 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         phase(engine,"montage-free-navigated-ready");
         await readyGenerate.click();
         phase(engine,"ready-free-render-requested");
-        // The original self-check is inline below the live progress bar, not a popup.
+        // Verify the approved seven-picture Ready check-in, not the old Goal
+        // sliders: one real 0–10 tap must advance to a distinct licensed image.
         await expect(page.locator("[data-ready-generating]")).toBeVisible({timeout:20000});
-        await expect(page.locator("[data-ready-checkin] [data-video-checkin]")).toBeVisible({timeout:20000});
+        const readyCheckin=page.locator("[data-ready-checkin] [data-ready-sequential-checkin]");
+        await expect(readyCheckin).toBeVisible({timeout:20000});
+        await expect(readyCheckin.locator("[data-ready-checkin-score]")).toHaveCount(11);
+        const firstTone=await readyCheckin.getAttribute("data-checkin-tone");
+        const firstImage=await readyCheckin.locator("img").getAttribute("src");
+        assert.ok(firstTone&&firstImage?.startsWith("/videos/holistic-house/"),
+          "Ready must show a real first-party picture and named question");
+        await readyCheckin.locator('[data-ready-checkin-score="5"]').click();
+        await expect(readyCheckin).not.toHaveAttribute("data-checkin-tone",firstTone,{timeout:5000});
+        await expect(readyCheckin.locator("img")).not.toHaveAttribute("src",firstImage,{timeout:5000});
         // No unsolicited optional survey should cover the intentional export.
         // The existing pill offers an explicit way to open the check-in.
         await expect(page.locator("[data-video-effect-overlay]")).toHaveCount(0);
