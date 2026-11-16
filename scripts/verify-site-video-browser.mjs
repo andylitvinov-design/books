@@ -6,6 +6,7 @@ import { once } from 'node:events'
 import { createServer } from 'node:https'
 import { mkdirSync, readFileSync, writeFileSync, createWriteStream } from 'node:fs'
 import { promisify } from 'node:util'
+import {classifyIsolatedVideoRedisCommand} from './helpers/isolate-video-redis-command.mjs'
 import { chromium, expect } from '@playwright/test'
 import { verifyAboutTestimonials } from './verify-about-testimonials-browser.mjs'
 import {assertMessengerOnlyCapture} from './helpers/messenger-only-contract.mjs'
@@ -35,6 +36,14 @@ try {
         const command = JSON.parse(raw)
         assert.ok(Array.isArray(command))
         assert.ok(['HGET', 'HGETALL', 'EVAL'].includes(command[0]))
+        const redisScope=classifyIsolatedVideoRedisCommand(command)
+        assert.notEqual(redisScope,'deny')
+        if(redisScope==='synthetic-missing'){
+          // Missing optional EN YouTube upload is not a fabricated player.
+          response.writeHead(200,{'Content-Type':'application/json'})
+          response.end(JSON.stringify({result:null}))
+          return
+        }
         assert.equal(command[command[0] === 'EVAL' ? 3 : 1], namespace)
         const { stdout } = await exec('redis-cli', ['-h', '127.0.0.1', '-p', '6379', '--json', ...command.map(String)], { maxBuffer: 4 * 1024 * 1024 })
         response.writeHead(200, { 'Content-Type': 'application/json' })
@@ -71,13 +80,29 @@ try {
   }
   browser = await chromium.launch({ headless: true })
   const context = await browser.newContext({ viewport: { width: 1365, height: 1000 }, serviceWorkers: 'block' })
+  // Next 15 DEV can briefly lack a clientReferenceManifest on the first
+  // dynamically compiled /ru home render. Precompile both public Home routes
+  // by an isolated HTTP GET before any browser page can receive that transient
+  // server error. A genuine repeated 500 remains fatal; LIVE is unchanged.
+  if(!live){
+    for(const warmPath of ['/', '/ru']){
+      let ready=false
+      for(let attempt=0;attempt<3;attempt++){
+        const response=await context.request.get(origin+warmPath,{timeout:60000})
+        if(response.status()===200){ready=true;break}
+        if(response.status()!==500)throw new Error('Next DEV warmup unexpected status '+response.status()+' on '+warmPath)
+        await pause(450)
+      }
+      assert.ok(ready,'Next DEV public route failed first-render warmup: '+warmPath)
+    }
+  }
   const page = await context.newPage()
   const pageErrors = []
   // Keep every JavaScript error fatal and preserve bounded stack evidence.
   page.on('pageerror', error => pageErrors.push({ message: error.message,
     url: page.url(), stack: String(error.stack || '').slice(0, 1800) }))
   async function navigate(target) {
-    const options = { waitUntil: 'domcontentloaded', timeout: 60000 }
+    const options = { waitUntil: live ? 'domcontentloaded' : 'load', timeout: 60000 }
     const destination = new URL(target, origin)
     const previous = new URL(page.url())
     // Multiple placements can share one Services path and differ by #anchor.

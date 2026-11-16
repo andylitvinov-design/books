@@ -38,7 +38,6 @@ export default function PracticeWorkProfileIntro({ locale, t, onAction }) {
   return <section className={styles.hub} data-profile-hub-tabs data-profile-work-hub data-profile-active="today">
     <header className={styles.heading} data-practice-workspace-heading>
       <div className={styles.headingTitle}>
-        <p className={styles.eyebrow}>{t.spaceEyebrow}</p>
         <h2 aria-label={t.title}>
           <span className={styles.titleFull}>{t.title}</span>
           <span className={styles.titleCompact}>My Space</span>

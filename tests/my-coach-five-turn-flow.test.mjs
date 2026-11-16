@@ -7,7 +7,7 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {runInNewContext} from 'node:vm'
 import {chooseDictationLanguage,detectedSpeechLocale,ios27NeedsSpeechRecovery,
-  readDictationResults} from '../lib/personal-coaching/my-coach-dictation.mjs'
+  readDictationResults,hasCoachSpokenAnswer} from '../lib/personal-coaching/my-coach-dictation.mjs'
 import {appendSpokenAnswer} from '../lib/personal-coaching/speech-text.js'
 
 const source=readFileSync(new URL('../components/my-coach-speech-loop.jsx',import.meta.url),'utf8')
@@ -57,7 +57,7 @@ function createSession({ttsFailures=[],respond}={}){
     ...hooks,window:fakeWindow,document:fakeDocument,
     setTimeout:schedule,clearTimeout:cancel,queueMicrotask,AbortController,
     chooseDictationLanguage,detectedSpeechLocale,ios27NeedsSpeechRecovery,
-    readDictationResults,appendSpokenAnswer,
+    readDictationResults,appendSpokenAnswer,hasCoachSpokenAnswer,
     coachSpokenText:text=>({text}),
     coachIntroAudioPath:(persona,locale)=>'/api/coaching/intro/'+locale+'/'+persona,
     startDirectCoachIntroAudio:(_path,{onStart,onEnd})=>{
@@ -98,6 +98,9 @@ function createSession({ttsFailures=[],respond}={}){
     get cues(){return cues},
     flushShortTimers(){
       for(const [key,t] of [...timers])if(t.ms<=500){timers.delete(key);t.fn()}
+    },
+    flushDelay(ms){
+      for(const [key,t] of [...timers])if(t.ms===ms){timers.delete(key);t.fn()}
     },
   }
 }
@@ -156,4 +159,51 @@ test('safety reply stops the speech loop rather than prompting for another user 
   assert.equal(session.voices.length,1,'no automatic listening after safety stop')
   assert.equal(session.phases.at(-1),'idle')
   assert.deepEqual(session.inputs,['Мне сейчас небезопасно'])
+})
+
+test('iOS 27 naturally ends short yes/no turns without poisoning the next mic',async()=>{
+ const session=createSession()
+ session.ref.current.startSession('Здравствуйте! Я Мира.',{naturalVoice:true})
+ const noiseMic=await nextMic(session,1)
+ noiseMic.onresult?.({results:[{isFinal:false,0:{transcript:'а'}}]})
+ session.flushDelay(6500)
+ assert.equal(noiseMic.aborted,false,'one-letter interim must not abort a heard iOS recognizer')
+ noiseMic.onend?.()
+ session.flushShortTimers()
+ let mic=await nextMic(session,2)
+ for(const [index,answer] of ['Да','No','Sí','42'].entries()){
+  mic.hear(answer)
+  mic=await nextMic(session,index+3)
+ }
+ assert.deepEqual(session.inputs,['Да','No','Sí','42'])
+ assert.equal(session.starts,1,'one Play starts all short utterances')
+ assert.equal(session.ttsCalls,4,'four replies with no duplicate syntheses')
+ assert.equal(session.cues,4,'short responses preserve WebKit recovery cues')
+ session.ref.current.stop()
+ assert.equal(mic.aborted,true)
+})
+
+test('one Play sustains TEN synthetic iOS 27 client/coach turns with bounded TTS failures',async()=>{
+  const session=createSession({ttsFailures:[2,7]})
+  assert.equal(session.ref.current.startSession('Здравствуйте! Я Мира.',{naturalVoice:true}),true)
+  let mic=await nextMic(session,1)
+  const phrases=Array.from({length:10},(_,index)=>'Ход клиента номер '+(index+1))
+  for(let i=0;i<phrases.length;i++){
+    mic.hear(phrases[i])
+    mic=await nextMic(session,i+2)
+  }
+  assert.equal(session.starts,1,'no second Play after beginning')
+  assert.equal(session.intros,1,'one authored introduction per session')
+  assert.deepEqual(session.inputs,phrases,'all ten distinct user phrases delivered once')
+  assert.equal(session.ttsCalls,10,'no hidden provider retries')
+  assert.equal(session.spoken,8,'failed natural audio does not freeze later turns')
+  assert.equal(session.cues,10,'each subsequent Safari mic start follows one recovery cue')
+  session.ref.current.stop()
+  assert.equal(mic.aborted,true)
+  assert.equal(session.phases.at(-1),'idle')
+})
+test('The existing mobile timebox pauses with the deliberate Pause control',()=>{
+  const source=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+  assert.match(source,/document\.visibilityState==='visible'&&!paused/)
+  assert.match(source,/\},\[sessionClockStarted,paused\]\)/)
 })

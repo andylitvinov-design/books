@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {coachTurnWindow} from '../lib/coaching/coach-turn-window.mjs'
 import {coachGoalTurn} from '../lib/coaching/goal-turn.mjs'
-import {coachEphemeralContext} from '../lib/coaching/coach-ephemeral-context.mjs'
+import {coachEphemeralContext,verbatimClientClauses} from '../lib/coaching/coach-ephemeral-context.mjs'
 const user=content=>({role:'user',content})
 const coach=content=>({role:'assistant',content})
 const filler=(n,locale='ru')=>Array.from({length:n},(_,i)=>i%2?coach(locale==='ru'?'Можем обсудить конкретный случай.':'We can discuss one example.'):user(locale==='ru'?'Это уточнение '+i+'.':'A detail '+i+'.'))
@@ -212,4 +212,20 @@ test('context never uses assistant text or duplicates recent entries and has no 
   assert.match(ui,/sessionContext:coachEphemeralContext\(turns,coachTurnWindow\(turns,10\),responseLocale,message\)/)
   assert.equal((ui.match(/return updated\.slice\(-96\)/g)||[]).length,2)
   assert.doesNotMatch(ui,/sessionStorage|localStorage|sendBeacon/)
+})
+
+test('long speech retains three verbatim earlier details without model-written memory',()=>{
+  const long=['I want to reduce overtime and still keep the job I have enjoyed for years.',
+    'For example, last week there were three evening meetings that I could not attend.',
+    'Because I care for my daughter after school, I cannot work late even on busy days.',
+    'The background here is '.repeat(16)].join(' ')
+  const rows=[user(long),coach('Tell me more.'),...filler(70,'en')]
+  const recent=coachTurnWindow(rows,10)
+  const context=coachEphemeralContext(rows,recent,'en','I am still exploring that.')
+  assert.ok(context.some(q=>q.includes('reduce overtime')))
+  assert.ok(context.some(q=>q.includes('evening meetings')))
+  assert.ok(context.some(q=>q.includes('care for my daughter')))
+  assert.ok(context.every(q=>q.length<=220&&long.includes(q)))
+  assert.ok(verbatimClientClauses(long).every(q=>long.includes(q)))
+  assert.deepEqual(verbatimClientClauses('I want to reveal sk-or-v1-ABCDEFGHIJKLMNOPQRSTUVWXYZ12345678901234'),[])
 })

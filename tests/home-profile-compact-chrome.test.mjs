@@ -33,3 +33,20 @@ test('Both profile presentations keep true 16:9 without the extra blue caption r
   assert.match(css, /\.titleFull\{display:none\}\.titleCompact\{display:inline\}/)
   assert.match(css, /\[data-profile-mode-switch\]/)
 })
+
+test('Home, Profile and Work render one real My Space header row, not two', () => {
+  const hub=read('components/app/profile-hub-tabs.jsx')
+  const work=read('components/practice-work-profile-intro.jsx')
+  const css=read('components/app/profile-hub-tabs.module.css')
+  for(const source of [hub,work]) {
+    assert.match(source,/className=\{styles\.headingTitle\}/)
+    assert.match(source,/className=\{styles\.profileHeadingActions\}/)
+    assert.match(source,/className=\{styles\.titleCompact\}>/)
+    assert.match(source,/My Space/)
+    assert.doesNotMatch(source,/<p className=\{styles\.eyebrow\}>/)
+  }
+  assert.match(css,/\.hub \.heading\{flex-wrap:nowrap;/)
+  assert.match(css,/\.hub \.heading h2\{font-size:clamp\(16px,4\.5vw,20px\)/)
+  assert.match(css,/:global\(\[data-site-search-trigger\]\)/)
+  assert.match(css,/:global\(\.site-main-menu-trigger\)/)
+});

@@ -151,7 +151,6 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
   return <section className={styles.hub} data-profile-hub-tabs data-profile-active={current}>
     <header className={styles.heading}>
       <div className={styles.headingTitle}>
-        <p className={styles.eyebrow}>{t.label}</p>
         <h2 aria-label={settingsMode ? s.pageTitle : t.title}>
           <span className={styles.titleFull}>{settingsMode ? s.pageTitle : t.title}</span>
           <span className={styles.titleCompact}>{settingsMode ? (selected === 'ru' ? 'Профиль' : selected === 'es' ? 'Perfil' : 'Profile') : 'My Space'}</span>
