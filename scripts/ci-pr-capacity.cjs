@@ -72,9 +72,12 @@ const STALE_QUEUE_PROBE_LIMIT=3;
 const SHA40=/^[a-f0-9]{40}$/i;
 function staleMergedQueueSamples(runs,now){
  if(!Array.isArray(runs)||!Number.isFinite(now))return [];
- const seen=new Set(),out=[];
+ const seen=new Set(),candidates=[];
+ // The GitHub queued page is newest-first. Repeating the first three
+ // hints can starve independently provable merged/jobless records forever.
+ // Rotate within the SAME bounded, already-fetched page; downstream
+ // unique-merged-PR, zero-job, ancestry and active-worker checks stay strict.
  for(const r of runs){
-  if(out.length>=STALE_QUEUE_PROBE_LIMIT)break;
   const at=Date.parse(r?.created_at||'');
   if(!Number.isSafeInteger(r?.id)||r.id<=0||r.status!=='queued'||
      r.event!=='pull_request'||r.run_attempt!==1||
@@ -87,8 +90,19 @@ function staleMergedQueueSamples(runs,now){
      !Number.isFinite(at)||at>now-60*60*1000||
      seen.has(r.head_branch))continue;
   seen.add(r.head_branch);
-  out.push({run_id:r.id,head_sha:r.head_sha,head_branch:r.head_branch,
+  candidates.push({run_id:r.id,head_sha:r.head_sha,head_branch:r.head_branch,
    created_at:r.created_at});
+ }
+ if(!candidates.length)return [];
+ // Each 20-minute Watchdog sweep probes one different column of three
+ // disjoint groups. All N stable candidates rotate in ceil(N/3) sweeps.
+ // This changes selection only, never count, privilege, or API budget.
+ const stride=Math.ceil(candidates.length/STALE_QUEUE_PROBE_LIMIT);
+ const offset=Math.floor(now/(20*60*1000))%stride;
+ const out=[];
+ for(let i=0;i<STALE_QUEUE_PROBE_LIMIT;i++){
+  const hint=candidates[offset+i*stride];
+  if(hint)out.push(hint);
  }
  return out;
 }

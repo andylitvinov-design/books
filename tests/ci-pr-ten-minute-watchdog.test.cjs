@@ -2267,3 +2267,32 @@ test('Vercel cleanup paginates rollback evidence with bounded cursors and no des
    recentDeployments:[],recentSeen:new Set(),readyCount:0},now),
    /DEPLOYMENT_HISTORY_UNAVAILABLE/);
 });
+
+test('stale ghost queue rotates exactly three read-only candidate hints on existing Watchdog cadence',()=>{
+ const {staleMergedQueueSamples}=require('../scripts/ci-pr-capacity.cjs');
+ const period=20*60*1000,bucket=Math.floor(NOW/period)*period;
+ const mk=(i,changes={})=>({
+  id:610000+i,status:'queued',event:'pull_request',run_attempt:1,
+  repository:{full_name:'andylitvinov-design/books'},
+  head_repository:{full_name:'andylitvinov-design/books'},
+  head_branch:'ghost-'+i,head_sha:'a'.repeat(40),pull_requests:[],
+  created_at:new Date(bucket-3*60*60*1000).toISOString(),...changes
+ });
+ const pool=Array.from({length:12},(_,i)=>mk(i)),seen=new Set();
+ for(let i=0;i<4;i++){
+  const hints=staleMergedQueueSamples(pool,bucket+i*period+60*1000);
+  assert.equal(hints.length,3,'unchanged three-lookups API limit');
+  hints.forEach(h=>seen.add(h.run_id));
+ }
+ assert.deepEqual([...seen].sort((a,b)=>a-b),pool.map(p=>p.id));
+ const bad=[
+  mk(20,{status:'in_progress'}),mk(21,{event:'issue_comment'}),
+  mk(22,{repository:{full_name:'foreign/branch'}}),mk(23,{run_attempt:2}),
+  mk(24,{head_sha:'invalid'}),mk(25,{pull_requests:[{},{}]}),
+  mk(26,{head_branch:'codex/bootstrap-books'}),
+  mk(27,{created_at:new Date(bucket+60*1000).toISOString()})
+ ];
+ assert.deepEqual(staleMergedQueueSamples(bad,bucket+60000),[]);
+ assert.equal(staleMergedQueueSamples([mk(1),mk(1,{id:777})],bucket+60000).length,1);
+ assert.deepEqual(staleMergedQueueSamples(pool,Infinity),[]);
+});
