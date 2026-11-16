@@ -51,7 +51,9 @@ const CORE_FORCE_JOBS = new Set(['classify-change', 'core-lint-types-build', 'hh
   'hh-specialist', 'hh-merge-check', 'hh-eslint-repair', 'release-ready']);
 
 // GitHub may erase workflow_runs[].pull_requests after PR closure.
-// Never infer ancestry from an unlinked run; only exact final SHA is provable.
+// A trusted production-push janitor can also prove historical ancestry through
+// GitHub's commit-to-PR association API, an exact merged PR and Compare API.
+// Never infer an obsolete run from its branch name, age or status alone.
 export function closedEvidence(run, pr) {
   if (pr?.state !== 'closed' || !Array.isArray(run?.pull_requests) ||
       run.pull_requests.length > 1 || run.head_sha !== pr.head?.sha) return false;
@@ -64,6 +66,36 @@ export function closedEvidence(run, pr) {
   const linked = run.pull_requests[0];
   return linked?.number === pr.number && linked?.base?.ref === TARGET &&
     linked?.head?.ref === pr.head.ref && linked?.head?.sha === run.head_sha;
+}
+
+
+/**
+ * Production-push-only proof for orphaned, queued checks from already merged PRs.
+ * A unique GitHub commit->PR association is mandatory; ancestry is *separately*
+ * proved via Compare before cancellation. Never cover open or unmerged PRs.
+ */
+export function orphanClosedEvidence(run, pr, ctx, linked) {
+  if (!ctx || ctx.number || ctx.headSha || ctx.closedHeadSha ||
+      !run || run.event !== 'pull_request' || run.status !== 'queued' ||
+      !Array.isArray(run.pull_requests) || run.pull_requests.length !== 0 ||
+      !Number.isSafeInteger(Number(run.id)) || Number(run.id) < 1 ||
+      !pr || pr.state !== 'closed' || !pr.merged_at ||
+      !Number.isSafeInteger(pr.number) || pr.number < 1 ||
+      pr.base?.ref !== TARGET || run.head_repository?.full_name !== ctx.repo ||
+      pr.head?.repo?.full_name !== ctx.repo || run.head_branch !== pr.head.ref ||
+      !sha40(run.head_sha) || !sha40(pr.head.sha) || run.head_sha === pr.head.sha ||
+      !linked || linked.number !== pr.number || linked.state !== 'closed' ||
+      !linked.merged_at || linked.base?.ref !== TARGET ||
+      linked.head?.repo?.full_name !== ctx.repo ||
+      linked.head?.ref !== pr.head.ref || linked.head?.sha !== pr.head.sha ||
+      linked.merged_at !== pr.merged_at) return false;
+  const created = Date.parse(run.created_at || '');
+  const opened = Date.parse(pr.created_at || '');
+  const closed = Date.parse(pr.closed_at || '');
+  const merged = Date.parse(pr.merged_at || '');
+  return [created, opened, closed, merged].every(Number.isFinite) &&
+    created >= opened && created <= closed && merged <= closed &&
+    merged >= opened;
 }
 
 export function eligible(run, pr, ctx) {
@@ -114,7 +146,8 @@ export async function prune(api, ctx, { limit = 300, dryRun = false,
   const recentClosed = new Map();
   // Production pushes sweep orphaned queued runs from recently closed PRs,
   // including those that were closed before this event handler was installed.
-  if (!ctx.number && typeof api.closed === 'function' &&
+  if (!ctx.number && typeof api.commitPulls !== 'function' &&
+      typeof api.closed === 'function' &&
       found.some(run => run.event === 'pull_request' && run.status === 'queued' &&
         Array.isArray(run.pull_requests) && run.pull_requests.length === 0)) {
     try {
@@ -141,6 +174,10 @@ export async function prune(api, ctx, { limit = 300, dryRun = false,
     partial: truncated || closedScanPartial };
   const accepted = new Map();
   const baseWorkflows = new Map();
+  // Exact SHA is immutable. Cache verified commit associations across queued
+  // checks; bound unique API lookups per production push to prevent CI bursts.
+  const commitAssociations = new Map();
+  let orphanLookups = 0, orphanAncestors = 0;
   const seen = new Set();
   for (const run of found) {
     if (summary.cancelled.length + summary.dryRun.length >= max) { summary.partial = true; break; }
@@ -150,7 +187,7 @@ export async function prune(api, ctx, { limit = 300, dryRun = false,
         (run.status !== 'queued' && run.status !== 'in_progress') ||
         (run.status === 'in_progress' && !(ctx.headSha || ctx.closedHeadSha)) ||
         !int(run.id) || !Array.isArray(run.pull_requests) || run.pull_requests.length > 1) continue;
-    let n;
+    let n, association = null;
     if (ctx.number) {
       n = ctx.number;
     } else if (run.pull_requests.length === 1) {
@@ -158,31 +195,62 @@ export async function prune(api, ctx, { limit = 300, dryRun = false,
     } else {
       const matches = (recentClosed.get(run.head_branch + ':' + run.head_sha) || [])
         .filter(pr => eligible(run, pr, ctx));
-      if (matches.length !== 1) { if (matches.length > 1) summary.partial = true; continue; }
-      n = matches[0].number;
+      if (matches.length === 1) {
+        n = matches[0].number;
+      } else if (matches.length > 1) {
+        summary.partial = true;
+        continue;
+      } else if (typeof api.commitPulls === 'function' && sha40(run.head_sha)) {
+        if (!commitAssociations.has(run.head_sha)) {
+          if (orphanLookups >= 36) { summary.partial = true; continue; }
+          orphanLookups++;
+          try {
+            const result = await api.commitPulls(run.head_sha);
+            commitAssociations.set(run.head_sha, Array.isArray(result) ? result : null);
+          } catch { summary.partial = true; commitAssociations.set(run.head_sha, null); }
+        }
+        const result = commitAssociations.get(run.head_sha);
+        if (!Array.isArray(result) || result.length !== 1) {
+          if (!Array.isArray(result) || (result && result.length > 1)) summary.partial = true;
+          continue;
+        }
+        association = result[0];
+        n = int(association?.number);
+      } else {
+        continue;
+      }
     }
     if (!n) continue;
     let pr = cache.get(n);
     if (!pr) { pr = await api.pr(n); cache.set(n, pr); }
-    if (!eligible(run, pr, ctx)) continue;
+    const historical = Boolean(association) && orphanClosedEvidence(run, pr, ctx, association);
+    if (!eligible(run, pr, ctx) && !historical) continue;
     summary.candidates++;
     if (pr.state === 'closed') summary.closedCandidates++;
-    // Read BOTH objects again before POST: a queued run may have started and a PR HEAD may have moved.
+    // Re-read both objects before POST; exact SHA, state, branch and association
+    // remain immutable. Historical orphans also require real ancestry proof.
     const [freshRun, freshPR] = await Promise.all([api.run(run.id), api.pr(n)]);
-    if (!eligible(freshRun, freshPR, ctx) || freshRun.head_sha !== run.head_sha) continue;
-    // A closed PR is obsolete on the exact final SHA. Open PRs still
-    // require independently verified ancestry.
-    if (freshPR.state === 'open') {
+    const freshEligible = historical
+      ? orphanClosedEvidence(freshRun, freshPR, ctx, association)
+      : eligible(freshRun, freshPR, ctx);
+    if (!freshEligible || freshRun.head_sha !== run.head_sha ||
+        freshRun.path !== run.path) continue;
+    if (freshPR.state === 'open' || historical) {
       let relation;
       try { relation = await api.compare(freshRun.head_sha, freshPR.head.sha); }
       catch { summary.partial = true; continue; }
-      if (relation?.status !== 'ahead' || !Number.isSafeInteger(relation.ahead_by) || relation.ahead_by < 1) continue;
+      if (relation?.status !== 'ahead' || !Number.isSafeInteger(relation.ahead_by) || relation.ahead_by < 1 ||
+          !Number.isSafeInteger(relation.behind_by ?? 0) || (relation.behind_by ?? 0) !== 0) continue;
     }
-    // Re-read after the network compare: neither a new HEAD nor a started job
-    // may be acted on using stale evidence.
+    // Re-read after the compare: a queued check must never become a running or
+    // current check between proof and cancellation.
     const [verifiedRun, verifiedPR] = await Promise.all([api.run(run.id), api.pr(n)]);
-    if (!eligible(verifiedRun, verifiedPR, ctx) || verifiedRun.head_sha !== freshRun.head_sha ||
-        verifiedPR.head.sha !== freshPR.head.sha) continue;
+    const lastEligible = historical
+      ? orphanClosedEvidence(verifiedRun, verifiedPR, ctx, association)
+      : eligible(verifiedRun, verifiedPR, ctx);
+    if (!lastEligible || verifiedRun.head_sha !== freshRun.head_sha ||
+        verifiedRun.path !== freshRun.path || verifiedPR.head.sha !== freshPR.head.sha) continue;
+    if (historical) orphanAncestors++;
     if (dryRun) { summary.dryRun.push(run.id); continue; }
     try { await api.cancel(run.id); summary.cancelled.push(run.id); accepted.set(run.id, {number:n, head:freshRun.head_sha, path:verifiedRun.path}); }
     catch (e) {
@@ -260,6 +328,8 @@ export async function prune(api, ctx, { limit = 300, dryRun = false,
       if (checked?.status === 'completed' && checked.conclusion === 'cancelled') summary.confirmed.push(id);
     } catch (e) { summary.errors.push({ id, status: 'readback: ' + String(e.message || e).slice(0, 80) }); }
   }
+  summary.orphanLookups = orphanLookups;
+  summary.orphanAncestorCandidates = orphanAncestors;
   return summary;
 }
 
@@ -349,6 +419,11 @@ export function client(repo, token, transport = fetch,
     forceCancel: (id) => call('/actions/runs/' + id + '/force-cancel', 'POST'),
     workflowBlob: (ref) => call('/contents/' + CORE_FORCE_PATH + '?' + new URLSearchParams({ref})),
     compare: (base, head) => call('/compare/' + base + '...' + head),
+    // Only unique, merged PR association is accepted as orphan cleanup proof.
+    commitPulls: sha => {
+      if (!sha40(sha)) throw Error('Invalid commit association SHA');
+      return call('/commits/' + sha + '/pulls?per_page=10');
+    },
     recent: (page, since) => call('/actions/runs?' + new URLSearchParams({ event: 'pull_request', created: '>=' + since, per_page: '100', page: String(page) })),
     jobs: id => call('/actions/runs/' + id + '/jobs?per_page=100&page=1'),
     list: (page, branch, status = 'queued') => {
@@ -379,6 +454,7 @@ async function main() {
   const msg = (ctx.closedHeadSha ? 'CI closed-PR cleanup: ' : ctx.headSha ? 'CI targeted stale-HEAD prune: ' : 'CI queued-only prune: ') +
     'scanned=' + s.scanned + ' eligible=' + s.candidates + ' closed_PR_eligible=' + s.closedCandidates +
     ' cancelled=' + s.cancelled.length + ' dry_run=' + s.dryRun.length +
+    ' orphan_proofs=' + s.orphanAncestorCandidates + ' orphan_lookups=' + s.orphanLookups +
     ' jobless_409=' + s.jobless409.length + ' errors=' + s.errors.length +
     '\nCancellation accepted IDs: ' + (s.cancelled.join(',') || 'none') +
     '\nGitHub queued/jobless 409 (unresolved, not cancelled): ' +
@@ -395,7 +471,9 @@ async function main() {
     (metricError ? 'Metrics error: ' + metricError + '\n' : '');
   console.log(msg);
   console.log('HH_CI_QUEUE_METRICS ' + JSON.stringify({ at: new Date().toISOString(), scanned: s.scanned,
-    candidates: s.candidates, closedCandidates: s.closedCandidates, cancelAccepted: s.cancelled.length, forceAccepted: s.forced.length, cancelConfirmed: s.confirmed.length,
+    candidates: s.candidates, closedCandidates: s.closedCandidates, orphanLookups: s.orphanLookups,
+    orphanAncestorCandidates: s.orphanAncestorCandidates,
+    cancelAccepted: s.cancelled.length, forceAccepted: s.forced.length, cancelConfirmed: s.confirmed.length,
     partial: s.partial, errors: s.errors.length, jobless409: s.jobless409.length,
     jobless409RunIds: s.jobless409.slice(0, 8).map(x => x.id), snapshot: m, metricError }));
   if (env.GITHUB_STEP_SUMMARY) appendFileSync(env.GITHUB_STEP_SUMMARY, msg);
