@@ -6,10 +6,10 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
+    # The existing Core now owns every PR source-only Node contract.
+    # Keep the self-path for BASE-trusted migration and YAML validation.
+    # Full isolated browser/Postgres tests remain manual/app-branch.
     paths:
-      # The existing Core now owns every PR source-only Node contract.
-      # This self-path keeps migration CI fail-closed and validates YAML edits.
-      # Full isolated browser/Postgres tests retain manual + app-branch routes.
       - '.github/workflows/hh-app-browser.yml'
 permissions:
   contents: read
