@@ -274,18 +274,17 @@ async function startVisibleNative(disclosure, index, scenario = {}) {
       // Baseline the second independent frame gate AFTER the initial stall.
       frameBaseline = { ...initial, presentedFrame: stalled.presentedFrame };
     }
-    // Real WebKit/GStreamer can reset totalVideoFrames during the same-source
-    // decoder rebuild (24 -> 11 on actual WebKit EN 1365 in artifact 13274813238)
-    // even though media time and presented frame callbacks genuinely advance.
-    // Do not mistake a resettable counter for absent decoded playback. Require
-    // independent NEW presented-frame metadata, advancing mediaTime, healthy
-    // active controls and a media clock matching the presented frame instead.
+    // WebKit/GStreamer may reset BOTH totalVideoFrames and presentedFrames
+    // during same-source decoder reconstruction (real 2026-11-16 run:
+    // presentedFrames 599 -> 378 while clock 19.94s -> 37.84s and real
+    // callback mediaTime 37.9s). Counters do not prove frame chronology.
+    // Require a strictly NEW callback timestamp, advancing mediaTime beyond
+    // the prior playback clock, healthy controls and same-source playback.
     await expect.poll(() => video.evaluate((el, before) => {
       const frame = el.__tantraPresentedFrame;
       return Boolean(frame &&
         Number.isFinite(frame.at) && frame.at > (before.presentedFrame?.at ?? -1) &&
         Number.isFinite(frame.mediaTime) && frame.mediaTime > before.time + 0.35 &&
-        (!before.presentedFrame || frame.presentedFrames > before.presentedFrame.presentedFrames) &&
         Math.abs(frame.mediaTime - el.currentTime) < 0.35 &&
         !el.paused && !el.seeking && !el.ended && !el.error &&
         el.readyState >= 2 && el.currentSrc);

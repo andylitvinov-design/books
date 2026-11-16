@@ -360,7 +360,14 @@ test("Add video keeps the existing hydrated first-video editor visible across Sa
   assert.match(decoder,/if\(needsInitialMetadata\)el\.load\(\)/);
   assert.match(decoder,/\,pendingNoMetadata\)/);
   assert.doesNotMatch(decoder,/if \(el\.readyState === 0\) el\.load\(\)/);
+  // WebKit/GStreamer can reset presentedFrames after the native decoder is
+  // rebuilt, even as the actual player clock and decoded frames advance.
+  // Never require this resettable counter to be monotonic across resumes.
+  assert.match(decoder,/frame\.at > \(before\.presentedFrame\?\.at \?\? -1\)/);
   assert.match(decoder,/frame\.mediaTime > before\.time \+ 0\.35/);
+  assert.match(decoder,/Math\.abs\(frame\.mediaTime - el\.currentTime\) < 0\.35/);
+  assert.doesNotMatch(decoder,/frame\.presentedFrames > before\.presentedFrame\.presentedFrames/);
+  assert.match(decoder,/!el\.paused && !el\.seeking && !el\.ended && !el\.error/);
   assert.match(decoder,/sample\.error, null/);
 });
 
