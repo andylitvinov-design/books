@@ -4,15 +4,25 @@ import test from "node:test";
 
 const source = (path) => readFile(new URL("../" + path, import.meta.url), "utf8");
 
-test("all public and locale routes share the same transient branded loading fallback", async () => {
-  const [root, locale, scene] = await Promise.all([
-    source("app/loading.tsx"),
-    source("app/[locale]/loading.tsx"),
+test("only public homepage routes show branded loading; private admin/auth routes never get global streaming boundaries", async () => {
+  const [en, ru, es, scene] = await Promise.all([
+    source("app/page.tsx"),
+    source("app/[locale]/page.tsx"),
+    source("app/es/page.tsx"),
     source("components/holistic-house-loading-scene.tsx"),
   ]);
-  for (const loading of [root, locale]) {
-    assert.match(loading, /HolisticHouseLoadingScene/);
-    assert.doesNotMatch(loading, /use client|fetch\(|setTimeout|setInterval|redirect\(/);
+  for (const page of [en, ru, es]) {
+    assert.match(page, /Suspense fallback=\{<HolisticHouseLoadingScene \/>\}/);
+    assert.match(page, /HolisticHouseLoadingScene/);
+  }
+  // Global loading.tsx can prematurely stream private redirects as HTTP 200.
+  // It must not turn the authenticated practitioner bridge into a public shell.
+  for (const file of ["app/loading.tsx", "app/[locale]/loading.tsx"]) {
+    await assert.rejects(
+      stat(new URL("../" + file, import.meta.url)),
+      { code: "ENOENT" },
+      file + " may not put private routes behind a public loading boundary",
+    );
   }
   assert.match(scene, /Holistic <span>House<\/span>/);
   assert.match(scene, /role="status"/);
