@@ -49,3 +49,24 @@ test('owner free chat can answer public general questions without implying real-
  assert.ok(api.includes('If a prompt contains sensitive content, ask for a redacted version'));
  assert.ok(api.includes('allow_fallbacks:false,max_price:{prompt:0,completion:0}'));
 });
+
+
+test('owner report feed retains trusted PR completion states but rejects spoofing',()=>{
+ const app={slug:'github-actions',id:15368};
+ const bot={login:'github-actions[bot]',type:'Bot',id:41898282};
+ const at='2026-11-16T22:00:00Z';
+ const row=(id,status,user=bot,via=app)=>({
+  id,user,performed_via_github_app:via,created_at:at,
+  body:'<!-- HH_PM_INBOX_STATE_V1 comment=6931007656 status='+status+' -->\nPR #4796 checked via verified GitHub evidence.'
+ });
+ const out=t.reportEntries([
+  row(1,'WATCHING'),row(2,'MERGED'),row(3,'CLOSED_UNMERGED'),row(4,'EXPIRED_UNVERIFIED'),
+  row(5,'MERGED',{login:'attacker',type:'User'}),
+  row(6,'MERGED',bot,{slug:'other',id:11}),
+  row(7,'FAKE_MERGED')
+ ],3890);
+ assert.equal(out.length,4);
+ assert.deepEqual(out.map(r=>r.completionState),['WATCHING','MERGED','CLOSED_UNMERGED','EXPIRED_UNVERIFIED']);
+ assert.ok(out.every(r=>r.status==='REPORT_ONLY_NOT_PROOF_OF_SOURCE_COMMIT'));
+ assert.match(read('pm-agent-chat.js'),/r\.completionState==='MERGED'/);
+});

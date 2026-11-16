@@ -92,18 +92,19 @@ function reportEntries(comments,issue){
  if(!Array.isArray(comments))return [];
  const out=[];
  for(const c of comments){
-  let agent=reporter(c);
+  let agent=reporter(c),completionState=null;
   if(!agent||typeof c.body!=='string'||!Number.isSafeInteger(c.id)||c.id<1)continue;
   if(issue===3890){
     const matched=/^<!-- HH_PM_INBOX_STATE_V1 comment=([1-9]\d*) status=([A-Z_]+) -->/.exec(c.body);
-    if(agent!=='GitHub Actions'||!matched||!['CLAIMED','REPLIED','BLOCKED','DISPATCH_ACCEPTED_UNCORRELATED'].includes(matched[2]))continue;
+    if(agent!=='GitHub Actions'||!matched||!['CLAIMED','REPLIED','BLOCKED','DISPATCH_ACCEPTED_UNCORRELATED','WATCHING','MERGED','CLOSED_UNMERGED','EXPIRED_UNVERIFIED'].includes(matched[2]))continue;
+    completionState=matched[2];
     agent=matched[2]==='REPLIED'?'OpenRouter Free · GitHub Worker':'GitHub Repair Gateway';
   }
   const url='https://github.com/'+REPO+'/issues/'+issue+'#issuecomment-'+c.id;
   const body=clamp(c.body.replace(/<!--[\s\S]*?-->/g,'').replace(/(?:ghp_|gho_|sk-)[A-Za-z0-9_-]{16,}/g,'[REDACTED]'),1600);
   if(!body||!/^\d{4}-\d{2}-\d{2}T/.test(c.created_at||''))continue;
   out.push({id:issue+':'+c.id,agent,origin:'GitHub issue #'+issue,body,
-   createdAt:c.created_at,url,sourceVerified:true,
+   createdAt:c.created_at,url,sourceVerified:true,completionState,
    status:'REPORT_ONLY_NOT_PROOF_OF_SOURCE_COMMIT'});
  }
  return out;
