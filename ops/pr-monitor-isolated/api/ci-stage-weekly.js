@@ -469,6 +469,7 @@ function strictWeeklyWindow(search,store,range){
  const finished=search.rows.filter(p=>p.merged!==null&&p.merged>=p.created&&p.merged<=end),n=finished.length;
  const byPr=new Map();for(const run of store.runs){if(!seen.has(run.pr))continue;const a=byPr.get(run.pr)||[];a.push(run);byPr.set(run.pr,a);}
  const sums=Object.fromEntries(keys.map(k=>[k,0])),samples=Object.fromEntries(keys.map(k=>[k,[]]));
+ const jobClockSamples=Object.fromEntries(['core','specialist','merge_gate'].map(k=>[k,[]]));
  let covered=0,partial=0,invalid=0,missing=0,waves=0,retries=0;const totals=[];
  for(const p of finished){
   const duration=(p.merged-p.created)/60000,runs=byPr.get(p.pr),ci=runs?.length?summarizePR(p.pr,runs):null;
@@ -479,7 +480,13 @@ function strictWeeklyWindow(search,store,range){
    runner_wait:stage.runner_wait/60000,checks:stage.checks/60000,ci_wave_unknown:stage.between_waves_unknown/60000,
    ci_other_unknown:stage.other_unknown/60000,after_unknown:(p.merged-b)/60000,no_archive_unknown:0}
    :Object.fromEntries(keys.map(k=>[k,k==='no_archive_unknown'?duration:0]));
-  if(match){covered++;if(ci.partial)partial++;waves+=ci.runs;retries+=ci.repeats;}
+  if(match){
+    covered++;if(ci.partial)partial++;waves+=ci.runs;retries+=ci.repeats;
+    for(const key of Object.keys(jobClockSamples)){
+      const duration=ci.job_clock_ms?.[key];
+      if(valid(duration))jobClockSamples[key].push(duration/60000);
+    }
+   }
   else if(runs?.length)invalid++;else missing++;
   if(Math.abs(keys.reduce((sum,k)=>sum+values[k],0)-duration)>.0001)throw Error('STRICT_NOT_ADDITIVE_PR');
   for(const k of keys){sums[k]+=values[k];if((match&&k!=='no_archive_unknown')||(!match&&k==='no_archive_unknown'))samples[k].push(values[k]);}
@@ -493,6 +500,9 @@ function strictWeeklyWindow(search,store,range){
   stages:Object.fromEntries(keys.map(k=>[k,{mean_contribution_minutes:n?rnd(sums[k]/n):null,
    measured_prs:samples[k].length,p50_measured_minutes:samples[k].length?rnd(quant(samples[k],.5)):null}])),
   ci_observed_waves:waves,ci_observed_retries:retries,
+   named_ci_jobs:Object.fromEntries(Object.entries(jobClockSamples).map(([k,sample])=>
+    [k,{measured_prs:sample.length,p50_minutes:sample.length?rnd(quant(sample,.5)):null,
+       mean_minutes:sample.length?rnd(sample.reduce((a,b)=>a+b,0)/sample.length):null}])),
   coverage:{search_complete:true,github_search_items:search.search_n,ci_matched_prs:covered,
    ci_partial_prs:partial,ci_invalid_prs:invalid,ci_missing_prs:missing,ci_archive_complete:false}};
 }
