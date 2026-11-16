@@ -70,7 +70,9 @@ const STALE_MERGED_REPAIR_MODE='GHOST_STALE_MERGED_ONE_REPAIR';
 const STALE_MERGED_PROOF='MERGED_JOBLESS_QUEUE_READONLY';
 const STALE_QUEUE_PROBE_LIMIT=3;
 const SHA40=/^[a-f0-9]{40}$/i;
-function staleMergedQueueSamples(runs,now){
+// Use a trusted GitHub run identity to rotate hints across real PR events.
+// Without it, retain the existing deterministic time-bucket fallback.
+function staleMergedQueueSamples(runs,now,rotationRunId=null){
  if(!Array.isArray(runs)||!Number.isFinite(now))return [];
  const seen=new Set(),candidates=[];
  // The GitHub queued page is newest-first. Repeating the first three
@@ -94,11 +96,13 @@ function staleMergedQueueSamples(runs,now){
    created_at:r.created_at});
  }
  if(!candidates.length)return [];
- // Each 20-minute Watchdog sweep probes one different column of three
- // disjoint groups. All N stable candidates rotate in ceil(N/3) sweeps.
- // This changes selection only, never count, privilege, or API budget.
+ // Exactly three read-only candidate hints are still validated per call.
+ // A delayed GitHub cron must not strand the other columns while frequent
+ // authenticated event runs are available. No extra jobs or API quota.
  const stride=Math.ceil(candidates.length/STALE_QUEUE_PROBE_LIMIT);
- const offset=Math.floor(now/(20*60*1000))%stride;
+ const fallbackBucket=Math.floor(now/(20*60*1000));
+ const offset=(Number.isSafeInteger(rotationRunId)&&rotationRunId>0
+   ? rotationRunId : fallbackBucket)%stride;
  const out=[];
  for(let i=0;i<STALE_QUEUE_PROBE_LIMIT;i++){
   const hint=candidates[offset+i*stride];
@@ -341,7 +345,7 @@ function admission(lane,capacity){
  // task ownership and SHA before reserving and starting this lane.
  return 'ADMIT';
 }
-async function snapshot(github,owner,repo,now=Date.now()){
+async function snapshot(github,owner,repo,now=Date.now(),rotationRunId=null){
  // GitHub may update total_count while an Actions run moves between states.
  // A single disagreeing count must not permanently idle the dispatch queue.
  // Only when two reads severely disagree, retry twice more using idempotent
@@ -371,7 +375,7 @@ async function snapshot(github,owner,repo,now=Date.now()){
       saturatedBy:aCount>100&&qCount>100?'BOTH':
         aCount>100?'ACTIVE':'QUEUED',
       safeToDispatch:false,
-      ghostQueueCandidates:qCount>100?staleMergedQueueSamples(queued,now):[]};
+      ghostQueueCandidates:qCount>100?staleMergedQueueSamples(queued,now,rotationRunId):[]};
   }
   // When even the total count is saturated, do not waste API quota reading
   // runner jobs or accidentally treat an incomplete list as a free slot.
