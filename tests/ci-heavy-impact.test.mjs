@@ -191,7 +191,7 @@ test('Free Review workflow preserves post-merge real browser, functional build a
   assert.match(yaml, /node --test tests\/retired-situation-promo-sitewide\.test\.mjs/);
   assert.match(yaml, /if: github\.event_name == 'pull_request' && steps\.impact\.outputs\.browser == 'true'/);
   assert.match(yaml, /if: github\.event_name != 'pull_request' \|\| steps\.impact\.outputs\.browser == 'true'/);
-  assert.match(yaml, /if: github\.event_name == 'push'/);
+  assert.match(yaml, /if: github\.event_name == 'workflow_dispatch'/);
   assert.match(yaml, /npm run build/);
   assert.doesNotMatch(yaml, /npx tsc --noEmit/);
 });

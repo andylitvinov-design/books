@@ -246,3 +246,53 @@ test('My Coach annotates validated model replies only, not synthetic probes or o
   assert.match(client,/turn\.mode==='offline'/)
   assert.match(client,/turns:coachTurnWindow\(turns,10\)/)
 })
+
+
+test('a very short RU dictation fragment is clarified naturally, not turned into a goal-intake template',()=>{
+  const {input,persona}=normalizeGenerativeCoachInput({
+    personaId:'mira',locale:'ru',consent:true,settings:{},message:'Там Миро',turns:[],
+  })
+  const prompts=conversationalCoachMessages(input,persona,'grow','goal',{type:'none'})
+  assert.match(prompts[1].content,/LOW-CONTEXT SPOKEN FRAGMENT/)
+  const model=JSON.stringify({
+    message:'Вы упомянули Миро. Что бы вам хотелось достичь или обсудить в связи с этим?',
+    planSuggestion:'',evidenceQuote:'',clientEvidence:{kind:'none',quote:''},
+  })
+  const output=parseConversationalCoachReply(model,input,'grow','goal')
+  assert.equal(output.mode,'ai')
+  assert.match(output.message,/Можно чуть подробнее/)
+  assert.doesNotMatch(output.message,/Вы упомянули|достичь/)
+  assert.equal(output.planSuggestion,'')
+  assert.equal(output.semanticEvidence,null)
+})
+
+test('second odd spoken fragment changes the clarification and keeps the client in control',()=>{
+  const prior=[
+    {role:'user',content:'Там Лино'},
+    {role:'assistant',content:'Вы упомянули Лино. Что бы вам хотелось обсудить в связи с этим?'},
+  ]
+  const {input}=normalizeGenerativeCoachInput({
+    personaId:'mira',locale:'ru',consent:true,settings:{},message:'Мама селфи',turns:prior,
+  })
+  const answer=parseConversationalCoachReply(JSON.stringify({
+    message:'Вы упомянули «Мама селфи». Что бы вам хотелось с этим обсудить или изменить?',
+    planSuggestion:'',evidenceQuote:'',clientEvidence:{kind:'none',quote:''},
+  }),input,'grow','goal')
+  assert.match(answer.message,/Можете сказать иначе/)
+  assert.doesNotMatch(answer.message,/Вы упомянули|достичь|цель/)
+  assert.equal(answer.evidenceQuote,'')
+})
+
+test('substantive coaching text and client direct questions still keep model-owned wording',()=>{
+  const base={personaId:'sofia',locale:'ru',consent:true,settings:{},turns:[]}
+  const normal=normalizeGenerativeCoachInput({...base,message:'Я хочу обсудить с мамой свои границы и отношения.'}).input
+  const conversational='Это непростая тема. Давайте посмотрим, что происходит между вами.'
+  assert.equal(parseConversationalCoachReply(JSON.stringify({
+    message:conversational,planSuggestion:'',evidenceQuote:'',clientEvidence:{kind:'none',quote:''},
+  }),normal,'grow','explore').message,conversational)
+  const question=normalizeGenerativeCoachInput({...base,message:'Что вы думаете об этом?'}).input
+  assert.equal(parseConversationalCoachReply(JSON.stringify({
+    message:'Я бы не торопилась с выводом. Тут важны ваши границы.',
+    planSuggestion:'',evidenceQuote:'',clientEvidence:{kind:'none',quote:''},
+  }),question,'grow','explore').mode,'ai')
+})

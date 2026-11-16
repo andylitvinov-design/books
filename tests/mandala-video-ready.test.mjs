@@ -20,7 +20,7 @@ test("Ready is the sixth existing editor tab, never a seventh or a parallel rend
 });
 test("Video must be verified; guests get login before save, and existing signed upload is reused",()=>{
   assert.match(ready,/if\(!verified\|\|!video\|\|disabled\)return/);
-  assert.match(ready,/if\(!signedIn\|\|intent==="telegram"\|\|intent==="house"\)/,
+  assert.match(ready,/if\(!signedIn\|\|intent==="house"\)/,
     "guest save and Telegram entry open the action-invoked gate");
   assert.match(studio,/<MandalaVideoReady/);
   assert.match(ready,/data-video-ready/);
@@ -96,41 +96,47 @@ test("Save gate matches approved warm mobile design and all three locales",()=>{
 });
 
 
-test("all three Ready offers expand inline, generate scripts without navigation or paid rendering",()=>{
+test("Ready guided meditation and 8-session actions open sixth Therapy tab without inline expansion",()=>{
   const css=readFileSync(new URL("../components/mandala-video-ready.module.css",import.meta.url),"utf8");
-  assert.match(ready,/const \[activeOffer,setActiveOffer\]=useState<Offer\|null>\(null\)/);
-  assert.match(ready,/data-ready-offer-panel data-ready-offer=\{activeOffer\}/);
-  assert.match(ready,/id="ready-inline-offer"/);
-  for(const offer of ["meditation","ritual","journey"]){
-    assert.match(ready,new RegExp('onClick=\\{\\(\\)=>selectOffer\\("'+offer+'"\\)\\}'));
-    assert.match(ready,new RegExp('aria-expanded=\\{activeOffer==="'+offer+'"\\}'));
-    assert.doesNotMatch(ready,new RegExp('selectView\\("'+offer+'"\\)'));
+  const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  const therapy=readFileSync(new URL("../components/mandala-therapy-studio.tsx",import.meta.url),"utf8");
+  const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
+  const tabs=[...studio.matchAll(/\{id:"(video|phrases|editor|pro|ready|effects)",Icon:/g)].map(hit=>hit[1]);
+  assert.deepEqual(tabs,["video","phrases","editor","pro","ready","effects"]);
+  for(const [offer,format] of [["meditation","single"],["journey","course"]]){
+    assert.match(ready,new RegExp('onClick=\\{\\(\\)=>onOpenTherapy\\("'+format+'"\\)\\} data-ready-'+offer));
+    assert.match(ready,new RegExp('data-ready-therapy-format="'+format+'"'));
+    assert.doesNotMatch(ready,new RegExp('onClick=\\{\\(\\)=>selectOffer\\("'+offer+'"\\)\\}'));
+    assert.doesNotMatch(ready,new RegExp('data-ready-'+offer+'[^>]*aria-expanded'));
   }
-  assert.match(ready,/data-ready-generate-text/);
+  assert.match(studio,/onOpenTherapy=\{format=>\{/);
+  assert.match(studio,/setTherapyInitialFormat\(format\)/);
+  assert.match(studio,/activateQuickWorkspace\("effects"\)/);
+  assert.match(studio,/initialFormat=\{therapyInitialFormat\}/);
+  assert.match(studio,/focus=\{meditationFocus\}/);
+  assert.match(therapy,/const \[isCourse,setIsCourse\]=useState\(initialFormat==="course"\)/);
+  assert.match(therapy,/const \[pane,setPane\]=useState<Pane>\("meditation"\)/);
+  assert.match(therapy,/data-therapy-format="single"/);
+  assert.match(therapy,/data-therapy-format="course"/);
+  assert.match(browser,/ready-therapy-one-tap-navigation-verified/);
+  assert.match(browser,/toHaveAttribute\("data-therapy-course","true"\)/);
+  assert.match(browser,/toHaveAttribute\("data-therapy-course","false"\)/);
+  // Preserve the optional local ritual and existing actual account-gated delivery.
+  assert.match(ready,/onClick=\{\(\)=>selectOffer\("ritual"\)\} data-ready-ritual/);
+  assert.match(ready,/data-ready-offer-panel data-ready-offer=\{activeOffer\}/);
   assert.match(ready,/onClick=\{generateOffer\}/);
-  assert.match(ready,/generatedOffer===activeOffer/);
-  assert.match(ready,/buildPersonalMeditationScript\(/);
-  assert.match(ready,/buildPersonalImageryCourse\(/);
-  assert.match(ready,/selectResourcePractice\(/);
-  assert.match(ready,/data-ready-meditation-text/);
   assert.match(ready,/data-ready-ritual-result/);
-  assert.match(ready,/data-ready-eight-sessions/);
-  assert.match(ready,/courseTexts\.map\(/);
-  assert.match(ready,/ritual\.status==="blocked"\?/);
-  assert.match(ready,/meditationEditor/);
   assert.match(ready,/data-ready-save-choices/);
   assert.match(ready,/data-ready-save-gate-overlay/);
-  assert.doesNotMatch(ready,/onClick=\{onOpenCourse\} data-ready-journey/);
+  assert.match(ready,/onSendTelegramDirect/);
+  assert.match(ready,/onShareWhatsApp/);
   assert.match(css,/\.offerPanel\{display:grid/);
-  assert.match(css,/\.journey>button\[aria-expanded="true"\]/);
-  assert.match(css,/scroll-margin-bottom:calc\(82px \+ env\(safe-area-inset-bottom\)\)/);
-  assert.match(css,/white-space:pre-wrap/);
   for(const loc of ["en","ru","es"]){
-    const start=ready.indexOf("  "+loc+":{",ready.indexOf("const COPY={"));
-    const end=loc==="en"?ready.indexOf("  ru:{",start):loc==="ru"?ready.indexOf("  es:{",start):ready.indexOf("} as const;",start);
-    const lang=ready.slice(start,end);
-    for(const label of ["generateText","copyText","medText","sessionText"])
-      assert.ok(lang.includes(label+":"),loc+" has "+label);
+    const from=ready.indexOf("  "+loc+":{",ready.indexOf("const COPY={"));
+    const to=loc==="en"?ready.indexOf("  ru:{",from):loc==="ru"?ready.indexOf("  es:{",from):ready.indexOf("} as const;",from);
+    const lang=ready.slice(from,to);
+    for(const key of ["meditationNext","journeyNext","generateText"])
+      assert.ok(lang.includes(key+":"),loc+" preserves "+key);
   }
 });
 
@@ -285,7 +291,7 @@ test("real Safari encoded-Blob guest helper gates Save without relying on the re
 
 test("verified signed-in Ready Save uploads directly through the existing signed private MP4 uploader",()=>{
   const css=readFileSync(new URL("../components/mandala-video-ready.module.css",import.meta.url),"utf8");
-  assert.match(ready,/if\(!signedIn\|\|intent==="telegram"\|\|intent==="house"\)/);
+  assert.match(ready,/if\(!signedIn\|\|intent==="house"\)/);
   assert.match(ready,/if\(intent==="save"\)\{onSaveDirect\(\);return;\}/);
   assert.match(ready,/data-ready-save-status/);
   assert.match(ready,/disabled=\{disabled\|\|saveStatus\.busy\}/);
@@ -294,7 +300,7 @@ test("verified signed-in Ready Save uploads directly through the existing signed
   assert.match(studio,/if\(deliveryRef\.current\)void deliveryRef\.current\.saveToLibrary\(\)/);
   assert.match(studio,/onStatusChange=\{setReadySaveStatus\}/);
   assert.match(delivery,/forwardRef<VideoDeliveryHandle,Props>/);
-  assert.match(delivery,/useImperativeHandle\(ref,\(\)=>\(\{saveToLibrary\}\)/);
+  assert.match(delivery,/useImperativeHandle\(ref,\(\)=>\(\{saveToLibrary,sendToTelegram,shareToWhatsApp\}\)/);
   assert.match(delivery,/if\(!current\.cloudAvailable\)\{setNotice\(t\.cloudSaveOff\);return;\}/);
   assert.match(delivery,/savingRef\.current=true/);
   assert.match(delivery,/const id=await privateUpload\(\)/);
@@ -366,4 +372,37 @@ test("Add Video keeps the optional source editor closed on landing and opens it 
     /if\(anchor==="video-templates"\)\{[\s\S]*?setFirstVideoAdvancedOpen\(true\)/,
     "Add Video reveals the real first-party source editor before Safari can lose a second tap");
   assert.match(studio,/data-video-first-video-advanced>/);
+});
+
+
+test("Ready Telegram sends directly to the verified own bot without the chooser",()=>{
+  assert.match(ready,/if\(intent==="telegram"\)\{onSendTelegramDirect\(\);return;\}/);
+  assert.match(studio,/onSendTelegramDirect=\{\(\)=>\{if\(deliveryRef\.current\)void deliveryRef\.current\.sendToTelegram\(\);\}\}/);
+  assert.match(delivery,/async function sendToTelegram\(\)/);
+  assert.match(delivery,/const current=await refresh\(\)/);
+  assert.match(delivery,/if\(!current\.telegram\.linked\)/);
+  assert.match(delivery,/if\(!current\.cloudAvailable\|\|!current\.telegram\.sendingAvailable\)/);
+  assert.match(delivery,/await sendViaBot\(false\)/);
+  assert.match(ready,/data-ready-telegram-link-step/);
+  assert.match(ready,/data-ready-verify-telegram/);
+  assert.doesNotMatch(ready,/if\(!signedIn\|\|intent==="telegram"/);
+});
+
+test("Ready WhatsApp requires own verified link, never claims Meta MP4 delivery",()=>{
+  assert.match(ready,/data-ready-whatsapp><MessageCircle/);
+  assert.match(ready,/data-ready-whatsapp-link-step/);
+  assert.match(delivery,/getCabinetBootstrap\("portrait"\)/);
+  assert.match(delivery,/appFetch\("whatsapp-link",undefined,"GET",\{accountId\}\)/);
+  assert.match(delivery,/accountId:current\.accountId/);
+  assert.match(delivery,/if\(consentApproved!==true\)/);
+  assert.match(ready,/data-ready-whatsapp-link-consent/);
+  assert.match(ready,/disabled=\{!whatsappConsent\|\|saveStatus\.busy\}/);
+  assert.match(ready,/onShareWhatsApp\(true\)/);
+  assert.match(delivery,/if\(whatsappLink\?\.linked\)\{/);
+  assert.match(delivery,/await shareFromDevice\(\)/);
+  assert.match(delivery,/action:"begin",noticeVersion:"hh-whatsapp-account-link-v1",permissionAccepted:true/);
+  assert.match(delivery,/setWhatsappUrl\(link\)/);
+  assert.match(delivery,/setNotice\(t\.whatsappUnavailable\)/);
+  assert.match(ready,/direct automated MP4 sending is not enabled/);
+  assert.doesNotMatch(delivery,/channel:"whatsapp"/);
 });
