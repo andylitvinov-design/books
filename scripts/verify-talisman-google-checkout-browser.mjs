@@ -150,7 +150,7 @@ const run = async (locale, width) => {
     },{p:path});
     signedIn = true;
     priced = true;
-    await page.goto(origin+path+"?hh_enquiry=google",{waitUntil:"domcontentloaded",timeout:60000});
+    await page.goto(origin+path+"?hh_enquiry=google&view=meditation",{waitUntil:"domcontentloaded",timeout:60000});
     const resumed = page.locator('dialog[open][aria-labelledby="support-talisman-order-title"]');
     await resumed.waitFor({state:"visible",timeout:25000});
     const purchased = resumed.locator("[data-taoist-talisman-cart]");
