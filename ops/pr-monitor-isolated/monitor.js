@@ -2,7 +2,7 @@
 /* HH_PR_DASHBOARD_ISOLATED_V1: verified read-only evidence, no timers, no DOM watchers */
 (function(env){
 const REPO='https://github.com/andylitvinov-design/books';
-const URLS=Object.freeze({flow:'/api/ci-runner-trends',speed:'/api/pr-stage-timeline?hours=24',stages:'/api/pr-stage-overview?hours=24&scope=production',ci:'/api/ci-insights',queue:'/api/control-tower-stats',repair:'/api/pr-three-kpis',ciLive:'/api/ci-queue-detail',period:'/api/pr-merge-period',cohort:'/api/pr-created-cohort',archive:'/api/ci-journey-summary?hours=72',comparison:'/api/ci-journey-summary'});
+const URLS=Object.freeze({flow:'/api/ci-runner-trends',speed:'/api/pr-stage-timeline?hours=24',stages:'/api/pr-stage-overview?hours=24&scope=production',ci:'/api/ci-insights',queue:'/api/control-tower-stats',repair:'/api/pr-three-kpis',ciLive:'/api/ci-queue-detail',period:'/api/pr-merge-period',cohort:'/api/pr-created-cohort',archive:'/api/ci-journey-summary?hours=72',comparison:'/api/ci-stage-weekly'});
 const SCHEMAS=Object.freeze({flow:'HH_CI_RUNNER_BINS_V2',speed:'HH_PR_STAGE_TIMELINE_V2',stages:'HH_PR_STAGE_OVERVIEW_V1',ci:'HH_CI_DEEP_MONITOR_V1',queue:'HH_CONTROL_DISPATCH_METRICS_V1',repair:'HH_PR_THREE_KPI_V1',ciLive:'HH_PR_CI_QUEUE_DETAIL_V1',period:'HH_PR_MERGE_PERIOD_V1',cohort:'HH_PR_CREATED_COHORT_V1',archive:'HH_CI_FIRST_LAST_ARCHIVE_V1',comparison:'HH_CI_JOURNEY_PERIOD_COMPARISON_V1'});
 const safeNum=n=>typeof n==='number'&&Number.isFinite(n)&&n>=0;
 const safeInt=n=>Number.isSafeInteger(n)&&n>=0;
