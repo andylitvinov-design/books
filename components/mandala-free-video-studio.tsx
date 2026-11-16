@@ -2176,6 +2176,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [catalogPhraseDraft,setCatalogPhraseDraft] = useState<string|null>(null);
   const [hypnoLight,setHypnoLight] = useState<HypnoLightSettings>({enabled:false,cyclesPerMinute:6,opacity:.18});
   const [therapyJumpRequested,setTherapyJumpRequested] = useState(false);
+  const [therapyInitialFormat,setTherapyInitialFormat]=useState<"single"|"course">("single");
   const [scores,setScores] = useState<Record<(typeof checkOrder)[number],number>>({energy:5,money:5,relationships:5,goals:5});
   const [touchedScores,setTouchedScores] = useState<Partial<Record<(typeof checkOrder)[number],number>>>({});
   const [theme, setTheme] = useState<VideoTheme>("energy");
@@ -7521,6 +7522,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             document.querySelector("[data-video-messenger-delivery]")
               ?.scrollIntoView({block:"nearest",behavior:"smooth"})));
         }}
+        onOpenTherapy={format=>{
+          // Reuse the actual sixth tab and transfer the existing goal; no hidden
+          // Ready editor, render request, credit charge or additional disclosure.
+          setTherapyInitialFormat(format);
+          activateQuickWorkspace("effects");
+          window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>{
+            const destination=document.querySelector<HTMLElement>('[data-therapy-format="'+format+'"]');
+            destination?.focus({preventScroll:true});
+            document.querySelector("[data-video-effects-panel]")
+              ?.scrollIntoView({block:"start",behavior:"auto"});
+          }));
+        }}
         onOpenCourse={()=>{
           setActiveWorkspace("practices");setStudioMode("therapy");
           setTherapyJumpRequested(true);
@@ -7780,7 +7793,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       </section>
       <section className={videoStyles.quickPhraseSection} data-workspace-section="effects"
         data-video-effects-panel aria-label={workspaceCopy[locale].effects.title}>
-        {activeWorkspace==="effects" ? <MandalaTherapyStudio locale={locale}
+        {activeWorkspace==="effects" ? <MandalaTherapyStudio locale={locale} initialFormat={therapyInitialFormat}
           disabled={recording||preparing||hypnoAudioBusy}
           editor={isCourse=><MandalaPersonalMeditation key={isCourse?"course":"single"}
             coursePreview={isCourse} compactTherapy approvedVideoConcept={approvedVideoConcept}
