@@ -153,25 +153,25 @@ test("image-only QA generates and decodes all 85 pinned WebP while Core owns pro
   assert.match(workflow, /^  workflow_dispatch:/m);
   assert.match(workflow, /node --test tests\/public-card-artwork-generated\.test\.mjs/);
   assert.match(workflow, /node --test tests\/public-card-artwork-cost-guard\.test\.mjs tests\/public-card-artwork-reuse-secondary\.test\.mjs/);
-  // The protected CI now has one mandatory Scope job and a fail-closed
-  // hh-merge-check job, which runs independently verified specialist checks
-  // in the same runner. Never expect or resurrect a duplicate hh-specialist job.
-  assert.match(core, /^  scope:\n    name: core-lint-types-build/m);
-  assert.match(core, /^  hh-merge-check:\n    name: hh-merge-check/m);
-  const mergedGate = core.split(/^  hh-merge-check:/m)[1]?.split(/^  hh-eslint-repair:/m)[0] || "";
-  assert.match(mergedGate, /^    needs: \[scope\]/m);
-  assert.match(mergedGate, /^    if: \$\{\{ !cancelled\(\) && \(github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false\) \}\}$/m);
-  assert.match(mergedGate, /- name: Fail closed if mandatory Core failed or this is not a Ready PR/);
-  assert.match(mergedGate, /- name: Verify ready exact PR HEAD before independently scheduled specialist/);
-  assert.match(mergedGate, /- name: Classify specialist with immutable tested-BASE policy/);
-  assert.match(mergedGate, /- name: Validate exact-head risk and required specialist workflows/);
-  assert.match(mergedGate, /git show "\$HH_TRUSTED_BASE_SHA:scripts\/ci-specialist-aggregate\.mjs"/);
-  assert.match(mergedGate, /node "\$RUNNER_TEMP\/hh-ci-trusted\/scripts\/ci-specialist-aggregate\.mjs"/);
-  assert.match(mergedGate, /- name: Confirm one-runner Core and independent specialist release evidence/);
-  assert.match(mergedGate, /\[\[ "\$EVENT_NAME" == pull_request && "\$PR_DRAFT" != true && "\$SCOPE_RESULT" == success \]\]/);
-  assert.match(mergedGate, /SCOPE_RESULT: \$\{\{ needs\.scope\.result \}\}/);
-  assert.match(mergedGate, /ROUTE: \$\{\{ needs\.scope\.outputs\.route \}\}/);
+  // Required one-runner gate now combines Core and immutable-BASE Specialist.
+  // Never treat a missing specialist as green or weaken fail-closed policy.
   assert.doesNotMatch(core, /^  hh-specialist:/m);
+  assert.match(core, /^  hh-merge-check:\n    name: hh-merge-check/m);
+  assert.match(core, /^    needs: \[scope\]/m);
+  assert.match(core, /- name: Validate exact-head risk and required specialist workflows/);
+  assert.match(core, /node "\$RUNNER_TEMP\/hh-ci-trusted\/scripts\/ci-specialist-aggregate\.mjs"/);
+  assert.match(core, /- name: Fail closed if mandatory Core failed or this is not a Ready PR/);
+  // Draft PR must not get a fabricated red status. Ready PRs must still
+  // pass the real Core+Specialist check before GitHub may merge.
+  assert.match(core.split(/^  hh-merge-check:/m)[1],
+    /^    if: \$\{\{ !cancelled\(\) && \(github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false\) \}\}$/m);
+  assert.match(core, /- name: Confirm one-runner Core and independent specialist release evidence/);
+  assert.match(core, /\[\[ "\$EVENT_NAME" == pull_request \]\]/);
+  assert.match(core, /\[\[ "\$EVENT_NAME" == pull_request && "\$PR_DRAFT" != true && "\$SCOPE_RESULT" == success \]\]/);
+  assert.match(core, /name: core-lint-types-build/);
+  assert.match(core, /SCOPE_RESULT: \$\{\{ needs\.scope\.result \}\}/);
+  assert.match(core, /ROUTE: \$\{\{ needs\.scope\.outputs\.route \}\}/);
+  assert.match(core, /node scripts\/ci-specialist-aggregate\.mjs/);
   assert.doesNotMatch(core, /^  code:/m);
   assert.doesNotMatch(core, /CODE_RESULT|needs\.code/);
   assert.doesNotMatch(core, /^  release-ready:/m);
