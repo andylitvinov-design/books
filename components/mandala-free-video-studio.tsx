@@ -59,7 +59,7 @@ import type { AffirmationSettings } from "@/lib/mandala/video-affirmations";
 import { suggestPersonalVideoScene, captionFromWish, graphemeTrim } from "@/lib/mandala/personal-video-intent.mjs";
 import { cinematicPreviewSeconds, buildCinematicStoryboard } from "@/lib/mandala/cinematic-director.mjs";
 import { FIRST_VIDEO_FOOD_CANVAS_PLAN_VERSION } from "@/lib/mandala/first-video-director.mjs";
-import { allocateFreeFilmTimeline, allocateAdaptiveFilmTimeline, allocateSourceBoundedFilmTimeline, allocateVariableFilmTimeline, shiftAdaptiveFilmBoundary, shiftVariableFilmBoundary, reframeCinematicPlan } from "@/lib/mandala/free-film-timeline.mjs";
+import { allocateFreeFilmTimeline, allocateAdaptiveFilmTimeline, allocateSourceBoundedFilmTimeline, allocateMusicAlignedFilmTimeline, allocateVariableFilmTimeline, shiftAdaptiveFilmBoundary, shiftVariableFilmBoundary, reframeCinematicPlan } from "@/lib/mandala/free-film-timeline.mjs";
 import {validateMontageClips,isSafeMontageScene} from "@/lib/mandala/video-montage-sources.mjs";
 import {isReviewedFilmedStoryScene} from "@/lib/mandala/reviewed-filmed-story.mjs";
 import {autoFillApprovedFilm} from "@/lib/mandala/auto-fill-approved-film.mjs";
@@ -71,7 +71,8 @@ import {paintCreativeTimelineShot,CREATIVE_TRANSITIONS,CREATIVE_LOOKS} from "@/l
 import {emptyMyTubeEditorHistory,recordMyTubeEditorUndo,undoMyTubeEditor,redoMyTubeEditor} from "@/lib/mandala/creative-editor-history.mjs";
 import {createMyTubeEditorDraft,parseMyTubeEditorDraft,MYTUBE_DRAFT_MAX_BYTES} from "@/lib/mandala/creative-editor-draft.mjs";
 import {captionAnimationFrame,importSrtCaptionClips,exportSrtCaptionClips,CAPTION_SRT_BYTES} from "@/lib/mandala/creative-editor-captions.mjs";
-import {audioTransientScores,recommendSmartAudioCuts,SMART_CUT_MAX_AUDIO_BYTES} from "@/lib/mandala/creative-editor-smart-cut.mjs";
+import {analyzeMusicRhythm,planMusicVideoCuts,readApprovedMusicMaster,MUSIC_MV_MAX_FILE_BYTES} from "@/lib/mandala/music-to-mv.mjs";
+import {audioTransientScores,recommendSmartAudioCuts} from "@/lib/mandala/creative-editor-smart-cut.mjs";
 import {extractMyTubeWaveform,MYTUBE_WAVEFORM_MAX_FILE_BYTES,
   MYTUBE_WAVEFORM_MAX_AUDIO_SECONDS} from "@/lib/mandala/creative-editor-waveform.mjs";
 import {MYTUBE_MUSIC_BEDS,MYTUBE_REVIEWED_MUSIC_BEDS,MYTUBE_BED_FADES,validateMyTubeMusicBed} from "@/lib/mandala/creative-editor-audio-lanes.mjs";
@@ -996,6 +997,7 @@ type EmotionalVideoEdit={pathId:string;emotionalAxisId:string;pace:"gentle"|"ste
 type FreeFilmCompilationEdit={
   clipIds:readonly string[];durationSecondsByStage:readonly number[];
   captionTexts:readonly string[];excludedMotifs?:readonly string[];
+  musicAligned?:boolean;
   semanticScenePlan?:EmotionalVideoEdit;
 };
 function compileFreeFilmPreset(
@@ -1068,7 +1070,9 @@ function compileFreeFilmPreset(
   }
   const captions=edit?.captionTexts??Array.from({length:clipIds.length},()=>"");
   const verified=clipIds.map(id=>verifiedCategorySource(FREE_FILM_CATALOG_BY_ID.get(id)));
-  const timings=adaptive
+  const timings:readonly {sceneId:string;startSeconds:number;durationSeconds:number}[]=edit?.musicAligned===true
+    ?allocateMusicAlignedFilmTimeline(durationSeconds,[...clipIds],edit.durationSecondsByStage??null)
+    :adaptive
     ?allocateVariableFilmTimeline(durationSeconds,[...clipIds],edit?.durationSecondsByStage??null)
     :allocateSourceBoundedFilmTimeline(durationSeconds,[...clipIds],
       verified.map(scene=>scene?.durationSeconds??NaN),edit?.durationSecondsByStage??null);
@@ -2520,6 +2524,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const editorDraftInputRef=useRef<HTMLInputElement>(null);
   const subtitleFileInputRef=useRef<HTMLInputElement>(null);
   const [smartCutBusy,setSmartCutBusy]=useState(false);
+  const [musicMvReport,setMusicMvReport]=useState<{bpm:number|null;confidence:number;status:string}|null>(null);
   const editorDraftEpochRef=useRef(0);
   const localEditorHistoryRef=useRef<EditorHistoryState>(emptyMyTubeEditorHistory() as EditorHistoryState);
   const [editorHistoryAvailability,setEditorHistoryAvailability]=useState({undo:false,redo:false});
@@ -2909,45 +2914,110 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         "Subtitles could not be exported.");
     }
   };
+  // One audio-first route upgrades the existing Montage and Storyboard. It
+  // neither uploads the song nor creates a second exporter or paid generation.
   const smartCutFromAudio=async()=>{
-    if(recording||preparing||smartCutBusy||!usingFreeFilmCompilation||
-       !cinematicPlan||attachedAudio?.kind!=="file")return;
-    const file=attachedAudio.file;
-    if(!file.size||file.size>Math.min(SMART_CUT_MAX_AUDIO_BYTES,8*1024*1024)){
-      setNotice(locale==="ru"?"Для анализа ритма выберите аудиофайл до 8 МБ.":
-        locale==="es"?"Selecciona un archivo de audio de hasta 8 MB.":
-        "Choose an audio file up to 8 MB for beat analysis.");return;
+    if(recording||preparing||smartCutBusy)return;
+    const attached=attachedAudio;
+    if(!attached||attached.kind==="presets"){
+      setNotice(locale==="ru"?"Выберите одну аудиодорожку для клипа.":locale==="es"?
+        "Selecciona una sola pista para el vídeo.":"Choose one music track for the video.");return;
     }
-    setSmartCutBusy(true);
+    if(attached.kind==="file"&&(!audioRights||!attached.file.size||
+       attached.file.size>MUSIC_MV_MAX_FILE_BYTES)){
+      setNotice(locale==="ru"?"Подтвердите права и выберите аудиофайл не больше 8 МБ.":
+        locale==="es"?"Confirma los derechos y elige un archivo de hasta 8 MB.":
+        "Confirm music rights and choose an audio file up to 8 MB.");return;
+    }
+    if(attached.kind==="preset"&&!curatedAudioTracks.some(track=>track.id===attached.id)){
+      setNotice(locale==="ru"?"Для видеоклипа нужна проверенная музыкальная запись.":
+        locale==="es"?"Elige una grabación musical verificada.":
+        "Choose a reviewed licensed recording.");return;
+    }
+    const preset=FREE_FILM_PRESETS.find(item=>item.id===activeFreeFilmPreset)||
+      aspectFilmPresets.find(item=>item.theme===theme);
+    if(!preset){setNotice(ui.videoUnavailable);return;}
+    let proposedFilm:CinematicStoryboard;
+    try{
+      proposedFilm=usingFreeFilmCompilation&&cinematicPlan?cinematicPlan:
+        compileFreeFilmPreset(preset,locale,duration,aspect);
+    }catch{
+      setNotice(locale==="ru"?"Для выбранного формата не хватило подтверждённых видеосцен. Смените формат или тему.":
+        locale==="es"?"No hay suficientes escenas con licencia para este formato.":
+        "Not enough verified source clips for this aspect. Try another format.");return;
+    }
+    setSmartCutBusy(true);setMusicMvReport(null);
     const sourceSignature=sourceRef.current;
     let ctx:AudioContext|null=null;
     try{
       ctx=new AudioContext();
-      const audio=await ctx.decodeAudioData(await file.arrayBuffer());
+      const bytes=attached.kind==="file"?await attached.file.arrayBuffer():
+        await readApprovedMusicMaster(presetAudioUrl(attached.id));
       if(sourceRef.current!==sourceSignature)return;
-      const pulses=audioTransientScores(audio.getChannelData(0),audio.sampleRate,duration);
-      const proposal=recommendSmartAudioCuts(duration,cinematicPlan.shots,pulses);
-      if(proposal.status!=="audio_aligned"){
-        setNotice(locale==="ru"?"В аудио нет достаточно чётких ритмических акцентов: исходный монтаж сохранён.":
-          locale==="es"?"No se detectó un ritmo claro: el montaje no cambia.":
-          "No clear beats detected; your current edit is unchanged.");return;
+      const sound=await ctx.decodeAudioData(bytes);
+      if(sourceRef.current!==sourceSignature)return;
+      if(sound.duration+0.06<duration){
+        setNotice(locale==="ru"?"Музыка короче видео. Выберите меньшую длительность ролика.":
+          locale==="es"?"La música es más corta que el vídeo. Reduce la duración.":
+          "Music is shorter than the video. Select a shorter video duration.");return;
       }
-      recordBeforeEditorChange("smart-audio-cut");
-      setCinematicPlan(current=>{
-        if(current?.version!==FREE_FILM_PLAN_VERSION)return current;
-        const nextShots=current.shots.map((shot,i)=>({...shot,
-          startSeconds:proposal.shots[i].startSeconds,
-          durationSeconds:proposal.shots[i].durationSeconds}));
-        return {...current,shots:nextShots} as CinematicStoryboard;
-      });
-      stopMovieSound();setPreviewPlaying(false);setPreviewFrameRevision(v=>v+1);
-      setNotice(locale==="ru"?"Четыре видеосцены выровнены по ритмическим акцентам аудио. Проверьте результат.":
-        locale==="es"?"Cuatro escenas ajustadas a los acentos musicales; revisa el resultado.":
-        "Four scenes aligned to audio transients. Review the resulting cuts.");
+      const rhythm=analyzeMusicRhythm(sound.getChannelData(0),sound.sampleRate,duration);
+      // Never assume unverified footage has enough source seconds for a moved cut.
+      let proposal=proposedFilm.shots.length===4&&rhythm.bpm!==null?
+        planMusicVideoCuts(duration,proposedFilm.shots,rhythm):null;
+      // Retain the existing Smart Cut as a coarse fallback only after a credible
+      // recurring beat was detected. A transient alone is not a musical concept.
+      if(proposedFilm.shots.length===4&&rhythm.bpm!==null&&
+         proposal?.status!=="audio_aligned"){
+        const peaks=audioTransientScores(sound.getChannelData(0),sound.sampleRate,duration);
+        const prior=recommendSmartAudioCuts(duration,proposedFilm.shots,peaks);
+        if(prior.status==="audio_aligned")proposal=prior;
+      }
+      let validatedMusicFilm:CinematicStoryboard|null=null;
+      if(proposal?.status==="audio_aligned"){
+        try{
+          validatedMusicFilm=compileFreeFilmPreset(preset,locale,duration,aspect,{
+            clipIds:proposal.shots.map(shot=>shot.sceneId),
+            durationSecondsByStage:proposal.shots.map(shot=>shot.durationSeconds),
+            captionTexts:proposedFilm.shots.map(shot=>shot.overlayText||""),
+            musicAligned:true
+          });
+        }catch{proposal=null;}
+      }
+      const nextFilm=validatedMusicFilm?
+        {...proposedFilm,shots:proposedFilm.shots.map((shot,index)=>({
+          ...shot,startSeconds:validatedMusicFilm!.shots[index].startSeconds,
+          durationSeconds:validatedMusicFilm!.shots[index].durationSeconds
+        }))} as CinematicStoryboard:proposedFilm;
+      if(sourceRef.current!==sourceSignature)return;
+      if(usingFreeFilmCompilation&&cinematicPlan)recordBeforeEditorChange("music-to-mv");
+      else{
+        resetEditorHistory();setCreationMode("catalog");
+        setActiveFreeFilmPreset(preset.id);
+        setTheme(preset.theme);setVideoCategory(preset.theme);
+        setTimelineTextClips(null);
+      }
+      setCinematicPlan(nextFilm);
+      setPreviewSeekSeconds(0);setPreviewPlayhead(0);
+      stopMovieSound();setPreviewPlaying(false);setPreviewFrameRevision(value=>value+1);
+      setMusicMvReport({bpm:rhythm.bpm,confidence:rhythm.confidence,
+        status:proposal?.status==="audio_aligned"?"audio_aligned":"visual_storyboard"});
+      setMontagePanel("concept");
+      setNotice(locale==="ru"
+        ?rhythm.bpm!==null
+          ?`Музыкальный видеоряд подготовлен. Темп около ${rhythm.bpm} BPM. Проверьте концепт и кадры перед экспортом.`
+          :"Видеоряд подобран по выбранной теме. Уверенный ритм не обнаружен — монтаж сохранён без ложных ударов."
+        :locale==="es"
+          ?rhythm.bpm!==null
+            ?`Vídeo musical preparado · ~${rhythm.bpm} BPM. Revisa las escenas antes de exportar.`
+            :"Vídeo preparado por tema; sin ritmo fiable, no cambiamos los cortes."
+          :rhythm.bpm!==null
+            ?`Music video prepared · ~${rhythm.bpm} BPM. Review the concept and shots before export.`
+            :"Storyboard prepared from the selected theme; no reliable beat detected, so original cuts are kept.");
     }catch{
-      setNotice(locale==="ru"?"Не удалось проанализировать аудио на этом устройстве.":
-        locale==="es"?"No se pudo analizar este audio en el dispositivo.":
-        "Could not analyze this audio on this device.");
+      setNotice(locale==="ru"?"Не удалось обработать эту музыку на устройстве. Попробуйте MP3 или M4A.":
+        locale==="es"?"No se pudo analizar el audio en este dispositivo.":
+        "Could not analyze this soundtrack on your device. Try MP3 or M4A.");
     }finally{
       if(ctx)void ctx.close().catch(()=>{});
       setSmartCutBusy(false);
@@ -4435,6 +4505,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     sttAbortRef.current?.abort();sttAbortRef.current=null;
     setSttBusy(false);setSttError("");setManualTranscript("");
     setVoiceTranscript(null);setVoiceVisualPlan(null);setAudioPlanApplied(false);
+    setMusicMvReport(null);
     stopSoundPreview();
     if(uploadedAudioRef.current)URL.revokeObjectURL(uploadedAudioRef.current.url);
     uploadedAudioRef.current=null;
@@ -8564,6 +8635,22 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               <div><h3>{locale==="ru"?"Простая раскадровка":
                 locale==="es"?"Guion visual simple":"Simple storyboard"}</h3></div>
             </div>
+            {musicMvReport?<div className={videoStyles.montageMovedNote}
+              data-video-music-mv-treatment role="status">
+              <strong>Music Video Director · {musicMvReport.bpm===null
+                ?locale==="ru"?"темп не определён":locale==="es"?"tempo no detectado":"tempo not detected"
+                :`~${musicMvReport.bpm} BPM`}</strong>
+              <p>{locale==="ru"
+                ?"Визуальная тема и история основаны на вашей цели, не на выдуманном содержании музыки. Монтаж учитывает реальные звуковые акценты только там, где это подтверждено анализом."
+                :locale==="es"
+                ?"La historia parte de tu objetivo; el ritmo musical se usa solo cuando hay evidencia acústica."
+                :"The storyline follows your chosen goal. Musical cuts use detected audio attacks only when verified."}</p>
+              <p>{musicMvReport.status==="audio_aligned"
+                ?locale==="ru"?"Видеопереходы подстроены под музыку. Проверьте кадры.":
+                  locale==="es"?"Cortes ajustados al ritmo. Revisa los planos.":"Music-aligned cuts. Review the shots."
+                :locale==="ru"?"Видеосцены подобраны; исходные переходы сохранены.":
+                  locale==="es"?"Escenas elegidas; cortes originales conservados.":"Storyboard selected; original cuts preserved."}</p>
+            </div>:null}
             <MandalaAutomaticStoryboard
               locale={locale} goal={wish} theme={theme} durationSeconds={duration}
               aspect={aspect} styleIndex={quickStyleIndex} pace={speed}
@@ -8943,8 +9030,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <summary>{locale==="ru"?"Ещё инструменты · SRT, монтаж, черновики":locale==="es"?"Más herramientas · SRT y borradores":"More tools · SRT & drafts"}</summary>
           <div className={videoStyles.editorDraftTools} data-video-editor-smart-tools>
             <button type="button" data-video-smart-audio-cut
-              disabled={recording||preparing||smartCutBusy||!usingFreeFilmCompilation||
-                attachedAudio?.kind!=="file"}
+              disabled={recording||preparing||smartCutBusy||!attachedAudio||
+                attachedAudio.kind==="presets"||(attachedAudio.kind==="file"&&!audioRights)}
               onClick={()=>void smartCutFromAudio()}>
               <Music2 size={16} aria-hidden="true"/>
               {smartCutBusy?(locale==="ru"?"Анализ ритма…":locale==="es"?
@@ -9163,6 +9250,28 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 disabled={recording||preparing||micRecording||audioDurationInvalid||!audioRights}
                 onClick={attachSelectedAudio}>{audioNeedsAttachment?audioUi.attach:audioUi.attached}</button>
             </div>:null}
+            <div className={videoStyles.montageAdvancedShortcuts} data-video-music-to-mv>
+              <button type="button" data-video-music-to-mv-create
+                disabled={recording||preparing||smartCutBusy||!attachedAudio||
+                  attachedAudio.kind==="presets"||(attachedAudio.kind==="file"&&!audioRights)}
+                onClick={()=>void smartCutFromAudio()}>
+                <Film size={17} aria-hidden="true"/>
+                {smartCutBusy?(locale==="ru"?"Анализируем музыку…":locale==="es"?
+                    "Analizando música…":"Analyzing music…"):
+                  locale==="ru"?"Создать видеоряд под музыку":locale==="es"?
+                    "Crear vídeo con música":"Create video to music"}
+              </button>
+            </div>
+            {musicMvReport?<p role="status" data-video-music-to-mv-report>
+              {musicMvReport.bpm===null
+                ?locale==="ru"?"Монтаж основан на вашей теме; точный BPM не определён.":
+                  locale==="es"?"Montaje por tema; BPM no detectado.":"Theme-based montage; BPM not detected."
+                :(`~${musicMvReport.bpm} BPM · `)+
+                  (musicMvReport.status==="audio_aligned"
+                    ?locale==="ru"?"Сцены синхронизированы":locale==="es"?"Escenas sincronizadas":"Shots synced"
+                    :locale==="ru"?"Исходные монтажные точки сохранены":
+                      locale==="es"?"Cortes originales conservados":"Original cuts retained")}
+            </p>:null}
             <div className={videoStyles.montageAudioVolume}>
               <label htmlFor="montage-audio-volume"><AudioLines size={18} aria-hidden="true"/>
                 {locale==="ru"?"Громкость":locale==="es"?"Volumen":"Volume"} · {soundVolume}%
