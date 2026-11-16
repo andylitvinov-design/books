@@ -428,7 +428,7 @@ export function MandalaVideoReady({
         {saveStatus.whatsappConnectUrl?<div className={css.linkActions} data-ready-whatsapp-link-step>
           <a href={saveStatus.whatsappConnectUrl} target="_blank" rel="noopener noreferrer"
             data-ready-open-whatsapp>{t.openWhatsAppStart}</a>
-          <button type="button" onClick={onShareWhatsApp} disabled={saveStatus.busy}
+          <button type="button" onClick={()=>onShareWhatsApp()} disabled={saveStatus.busy}
             data-ready-verify-whatsapp>{t.whatsappVerify}</button>
         </div>:null}
         <p className={css.whatsappLimit}>{t.whatsappLimit}</p>
