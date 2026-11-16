@@ -2,7 +2,7 @@
 import {useEffect,useState} from "react";
 import {MessageCircle,Send} from "lucide-react";
 import {telegramEnquiryUrlFromWhatsApp} from "@/lib/whatsapp-enquiry";
-import {resolveTelegramFirstEntry,resolveTelegramServiceEntry,isOfficialFreeReviewWhatsAppDraft} from "@/lib/app/telegram-entry-url.mjs";
+import {resolveTelegramFirstEntry,isOfficialFreeReviewWhatsAppDraft} from "@/lib/app/telegram-entry-url.mjs";
 import type {PublicLocale} from "@/lib/public-locales";
 import styles from "./mandatory-messenger-actions.module.css";
 const copy={
@@ -13,30 +13,23 @@ const copy={
 type Props={locale:PublicLocale;whatsappUrl:string;label?:string;telegramUrl?:string;collapsed?:boolean;compact?:boolean;id?:string;className?:string};
 export function MandatoryMessengerActions({locale,whatsappUrl,label,telegramUrl,collapsed=false,compact=false,id,className}:Props){
  const t=copy[locale];
- const [serviceBot,setServiceBot]=useState<string|null>(null);
- const [botKind,setBotKind]=useState<"review"|"direct"|"service"|null>(null);
+ const [reviewBot,setReviewBot]=useState<string|null>(null);
+ 
+ // Only explicit FREE review may lead to a separate opt-in bot.
+ // Purchased service requests always stay in the owner's existing
+ // @holistichouse personal Telegram chat; AI joins via Business automation.
  useEffect(()=>{
+   if(telegramUrl||!isOfficialFreeReviewWhatsAppDraft(whatsappUrl,locale)){
+     setReviewBot(null);
+     return;
+   }
    const abort=new AbortController();
-   setServiceBot(null);
-   setBotKind(null);
-   // A selected service may enter only its own verified V3 interview. On
-   // contactless free-review pages, restore the prior official hhreview bot
-   // fallback. No browser click implies an actual CRM lead or Telegram Send.
    fetch('/api/public/telegram-diagnostic',{cache:'no-store',signal:abort.signal})
      .then(r=>r.ok?r.json():null)
      .then(payload=>{
-       if(abort.signal.aborted)return;
-       // Most catalogue buttons only provide the trusted WhatsApp draft.
-       // Recover its exact published service before falling back to a bot.
-       const manual=telegramUrl||telegramEnquiryUrlFromWhatsApp(whatsappUrl);
-       const selected=resolveTelegramServiceEntry(payload,manual,locale);
-       const freeReview=!telegramUrl&&isOfficialFreeReviewWhatsAppDraft(whatsappUrl,locale)
-         ?resolveTelegramFirstEntry(payload,locale):null;
-       const entry=selected||freeReview;
-       setServiceBot(entry?.href||null);
-       setBotKind(entry?.kind||null);
+       if(!abort.signal.aborted)setReviewBot(resolveTelegramFirstEntry(payload,locale)?.href||null);
      })
-     .catch(()=>{if(!abort.signal.aborted){setServiceBot(null);setBotKind(null);}});
+     .catch(()=>{if(!abort.signal.aborted)setReviewBot(null);});
    return ()=>abort.abort();
  },[telegramUrl,whatsappUrl,locale]);
  // Every service/order request keeps its selected product; never launch the
@@ -46,7 +39,7 @@ export function MandatoryMessengerActions({locale,whatsappUrl,label,telegramUrl,
   <p className={styles.intro}>{t.intro}</p></>}
   <div className={styles.actions} role="group" aria-label={t.title}>
    <a href={whatsappUrl} className={styles.whatsapp} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" data-messenger-only-channel="whatsapp"><MessageCircle size={19} aria-hidden="true"/>WhatsApp</a>
-   <a href={serviceBot||telegramUrl||telegramEnquiryUrlFromWhatsApp(whatsappUrl)} data-telegram-route={botKind==="service"?"service-ai":telegramUrl?"manual":botKind||"service"} className={styles.telegram} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" data-messenger-only-channel="telegram"><Send size={19} aria-hidden="true"/>Telegram</a>
+   <a href={reviewBot||telegramUrl||telegramEnquiryUrlFromWhatsApp(whatsappUrl)} data-telegram-route={reviewBot?"review":telegramUrl?"manual":"service"} className={styles.telegram} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" data-messenger-only-channel="telegram"><Send size={19} aria-hidden="true"/>Telegram</a>
   </div>
   {!compact&&<p className={styles.note}>{t.note}</p>}
  </>;
