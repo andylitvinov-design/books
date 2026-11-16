@@ -2,19 +2,24 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+const mobile=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
 const painter=studio.slice(studio.indexOf("function paintCinematicFrame("),studio.indexOf("function paintSingleVideoTextOverlay("));
-test("Stories preserve a one-screen Story and keep advanced scene editing in fifth Montage",()=>{
+test("Stories keep compact Story, Extra choices, and advanced editing in Story settings",()=>{
  const start=studio.indexOf("<nav className={videoStyles.montageQuickTools}");
  const nav=studio.slice(start,studio.indexOf("</nav>",start));
  assert.match(nav,/id:"concept",Icon:Film/);
  assert.match(nav,/id:"promo",Icon:Zap/);
  assert.doesNotMatch(nav,/id:"settings",Icon:SlidersHorizontal/);
  assert.match(studio,/montagePanel==="promo" \? <MandalaMontageProOffer/);
- assert.match(studio,/data-video-story-open-settings/);
+ assert.match(studio,/data-video-story-open-settings\s+aria-label=/);
+ assert.match(mobile,/data-video-story-open-settings\]\{\s*display:inline-flex!important/);
+ assert.doesNotMatch(mobile,/data-video-story-open-settings\]\{\s*display:none!important/);
  assert.match(nav,/concept:\{ru:"Сюжет",en:"Story",es:"Guion"\}/);
  assert.match(studio,/data-video-montage-concept/);
  assert.match(studio,/MandalaAutomaticStoryboard/);
- assert.match(studio,/montagePanel==="promo" \? <details className=\{videoStyles\.montageStoryAdvanced\}/);
+ assert.match(studio,/montagePanel==="settings" \? <details className=\{videoStyles\.montageStoryAdvanced\}/);
+ assert.doesNotMatch(studio,/montagePanel==="promo" \? <details className=\{videoStyles\.montageStoryAdvanced\}/);
+ assert.match(nav,/promo:\{ru:"Extra",en:"Extra",es:"Extra"\}/);
  assert.match(studio,/data-video-stories-advanced/);
  assert.match(studio,/data-video-montage-storyboard/);
  assert.match(studio,/hypnoEntryGroup/);
@@ -67,7 +72,10 @@ test("local still replaces only its assigned shot in both preview and final Canv
  assert.match(studio,/if\(still\?\.complete&&still\.naturalWidth>0/);
  assert.match(studio,/hasStoryboardPhotoAt\(frameTime\)/);
  assert.match(studio,/hasStoryboardPhotoAt\(0\)/);
- assert.equal((studio.match(/activeMontageStyleId,styleFilmRef\.current,storyboardPhotos\)/g)||[]).length,5);
+ assert.match(studio,/const activeStoryboardPhotos=\(\)=>\(\{\.\.\.storyboardPhotos,\.\.\.freeFilmPhotoRefs\.current\}\)/,
+   "manual scene photos and verified licensed stock stills share the one Canvas painter");
+ assert.equal((studio.match(/activeMontageStyleId,styleFilmRef\.current,activeStoryboardPhotos\(\)\)/g)||[]).length,5,
+   "the same verified photo map must serve preview, first-frame check, WebCodecs and MediaRecorder");
 });
 test("storyboard source replacement and reordering retain the existing safe source checks",()=>{
  assert.match(studio,/const replaceStoryboardSource=/);
@@ -105,4 +113,28 @@ test('real five-scene WebKit acceptance uses original UI, local-only requests, d
  assert.match(script,/\['GET','HEAD'\]\.includes\(request\.method\(\)\)/);
  assert.match(script,/url\.origin===origin/);
  assert.doesNotMatch(script,/method:\s*['"]POST|api\/instagram|api\/payment/);
+});
+
+test("one verified Story scene can change without rebuilding the other four or invoking a paid provider",()=>{
+ const start=studio.indexOf("const replaceStoryboardSource=");
+ const end=studio.indexOf("async function transcribeVideoVoice",start);
+ const replace=studio.slice(start,end);
+ assert.match(replace,/const remixStoryboardSource=\(index:number,choices:readonly \{id:string\}\[\]\)=>/);
+ assert.match(replace,/choices\.find\(item=>item\.id!==previous\)/);
+ assert.match(replace,/replaceStoryboardSource\(index,alternative\.id\)/);
+ assert.match(replace,/plan\.shots\.map\(\(shot,i\)=>i===index\?/);
+ assert.match(replace,/plan\.sceneChoices\.map\(\(choice,i\)=>i===index\?/);
+ assert.match(replace,/verifiedSceneAspect\(verified,aspect\)/);
+ assert.match(replace,/canonicalSourceMasterKey\(verified\)/);
+ assert.match(replace,/setResult\(null\)/);
+ assert.doesNotMatch(replace,/fetch\(|appFetch\(|paidProviderRequests|postVideoCreditAction/);
+ assert.match(studio,/data-video-stories-remix=\{index\}/);
+ assert.match(studio,/!choices\.some\(item=>item\.id!==shot\.sceneId\)/);
+ assert.match(studio,/data-video-stories-to-extra/);
+ assert.match(mobile,/data-video-stories-remix/);
+ assert.match(mobile,/min-height:44px/);
+ const storyAction=studio.slice(studio.indexOf("const createFiveSceneStory="),studio.indexOf("const replaceStoryboardSource="));
+ assert.match(storyAction,/setMontagePanel\("settings"\)/,
+   "keep the actual scene editors visible until the user explicitly chooses quality");
+ assert.doesNotMatch(storyAction,/setMontagePanel\("promo"\)/);
 });

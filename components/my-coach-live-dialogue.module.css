@@ -342,6 +342,14 @@
 .naturalVoiceRow details p{margin:7px 0 2px;max-width:52ch;line-height:1.45}
 .naturalVoiceRow :is(input,summary):focus-visible{outline:2px solid #168467;outline-offset:2px}
 
+/* Optional anonymous rating near a coach reply, not a second conversation panel. */
+.hiLearningRating{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0;font-size:12px;line-height:1.45;color:#698091}
+.hiLearningRating button{border:1px solid #cbd8df;border-radius:8px;background:transparent;color:inherit;padding:5px 9px;font:inherit;cursor:pointer}
+.hiLearningRating button{min-height:44px}
+.hiLearningRating button:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+.hiLearningRating button:disabled{opacity:.55;cursor:default}
+.hiLearningRating button:hover:not(:disabled){background:#f3f7fa}
+
 /* Owner approved: one continuous mobile session (portrait -> mic -> transcript + composer).
    Keep actual browser speech, language selection, replay, consent and no popup marketing. */
 .conversationPanel{display:grid;gap:10px;min-width:0;padding:13px 15px;border:1px solid #e1e9de;border-radius:25px;background:#fffdf9;box-shadow:0 7px 22px #2b4d3812}
@@ -409,6 +417,19 @@
     animation:hh-hero-mouth-speaking .32s ease-in-out infinite alternate;
   }
   @keyframes hh-hero-mouth-speaking{from{transform:scaleY(1)}to{transform:scaleY(1.16)}}
+}
+
+/* v3 hero renders each 328x456 portrait at 108% height, centered on its
+   right edge. Match the mouth patch to the same 108% / -4% geometry. */
+@media(max-width:699px) and (prefers-reduced-motion:no-preference){
+  .root[data-session-visual-v3] .sessionHero[data-voice-phase='speaking'] .sessionPortrait[data-persona]::after{
+    top:-4%;height:108%;
+  }
+  /* Real sampled MP3 energy takes precedence over fixed timing when available.
+     Browser speechSynthesis (no waveform) safely keeps the existing pulses. */
+  .root[data-session-visual-v3] .sessionHero[data-photo-waveform='true'][data-voice-phase='speaking'] .sessionPortrait[data-persona]::after{
+    animation:none;transform:scaleY(var(--hh-portrait-mouth-scale,1));
+  }
 }
 
 
@@ -561,15 +582,11 @@
  .root[data-session-visual-v3] .conversationPanel .textComposer{max-height:150px}
 }
 
-/* Short, separately consented iPhone recording option. Never overlay the hero or mic. */
-.recordingModeRow{box-sizing:border-box;width:100%;max-width:100%;min-width:0;
-  padding:8px 12px;border:1px solid #cfe6dc;background:#f6faf7;
-  border-radius:15px;color:#225b4b;font-size:12px;line-height:1.4}
-.recordingModeRow summary{cursor:pointer;font-weight:750;font-size:12px}
-.recordingModeRow label{display:flex;gap:8px;align-items:flex-start;min-width:0;margin-top:7px;overflow-wrap:anywhere}
-.recordingModeRow input{accent-color:#14846c;width:18px;height:18px;flex:none}
-.recordingModeRow small{display:block;font-size:11px;color:#55776b;margin-top:5px}
-.recordingModeRow input:focus-visible,.recordingModeRow summary:focus-visible{outline:2px solid #0e8767;outline-offset:2px}
+/* A microphone tap is informed consent for this individual audio turn.
+   No redundant checkboxes; iOS's native microphone permission remains. */
+.recordingModeHint{box-sizing:border-box;max-width:100%;margin:0;padding:6px 10px;
+  color:#426d62;font-size:11px;line-height:1.35;overflow-wrap:anywhere}
+@media(max-width:699px){.root[data-session-visual-v3] .recordingModeHint{order:1;padding:5px 10px}}
 @media(max-width:699px){.root[data-session-visual-v3] .recordingModeRow{order:1;margin:0}}
 /* Optional original wizard character voice: device-only, no external TTS transfer. */
 .wizardVoiceRow{display:grid;gap:4px;min-width:0;padding:8px 10px;border:1px solid #d8e7dc;border-radius:14px;background:#f5faf4;color:#215c4e;font-size:12px}
@@ -600,3 +617,525 @@
     order:1;margin:0;padding:4px 9px;
   }
 }
+
+/* Voice-first first-contact view: one authored introduction, one Play action.
+   The full transcript, microphone, settings, goal and progress render only
+   after the genuine spoken greeting finishes (or explicit text fallback). */
+.root[data-introduction-complete='false']{
+  height:100dvh;min-height:0;max-height:100dvh;
+  padding:0;overflow:hidden;gap:8px;
+}
+.root[data-introduction-complete='false'] .sessionScroll{
+  box-sizing:border-box;display:flex;flex:1;min-height:0;width:100%;
+  flex-direction:column;align-items:stretch;gap:12px;
+  overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;
+  padding:0 0 calc(16px + env(safe-area-inset-bottom));
+  scrollbar-width:thin;-webkit-overflow-scrolling:touch;
+}
+.root[data-introduction-complete='false'] .sessionHero{
+  flex:none;height:clamp(185px,30dvh,300px);min-height:0;
+}
+.root[data-introduction-complete='false'] .sessionHeroCopy>small{display:none}
+@media(max-width:699px){
+  .root[data-introduction-complete='false']{gap:5px}
+  .root[data-introduction-complete='false'] .sessionHero{
+    flex:none;height:clamp(137px,21dvh,178px);min-height:137px;
+  }
+  .root[data-introduction-complete='false'] .sessionScroll{
+    gap:10px;padding-bottom:calc(18px + env(safe-area-inset-bottom));
+  }
+}
+@media(max-width:699px) and (max-height:670px){
+  .root[data-introduction-complete='false'] .sessionHero{
+    height:135px;min-height:135px;
+  }
+}
+
+/* v4 hands-free session: a single Play gesture, no recording/Fish checkboxes,
+   and a bounded transcript + composer inside the actual iPhone viewport. */
+.voicePrivacyDetails{box-sizing:border-box;max-width:100%;margin:0 2px;padding:0 8px;
+  color:#426d62;font-size:11px;line-height:1.3}
+.voicePrivacyDetails summary{cursor:pointer;list-style-position:inside;font-weight:600}
+.voicePrivacyDetails p{margin:5px 0;padding:7px 9px;border:1px solid #d9e6da;
+  border-radius:10px;background:#f7faf5;max-width:80ch;line-height:1.45}
+.voicePrivacyDetails summary:focus-visible{outline:2px solid #13816a;outline-offset:2px}
+@media(max-width:699px){
+  .root[data-session-visual-v4]{
+    box-sizing:border-box;display:flex;flex-direction:column;
+    height:100dvh;min-height:0;max-height:100dvh;
+    width:100%;min-width:0;max-width:100%;
+    gap:5px;padding:0 0 max(4px,env(safe-area-inset-bottom));
+    overflow:hidden;overscroll-behavior:none;
+  }
+  .root[data-session-visual-v4] .sessionTopbar{
+    flex:0 0 auto;min-height:48px;max-height:58px;
+    padding:5px 11px;
+  }
+  .root[data-session-visual-v4] .sessionScroll{
+    display:block;flex:0 0 auto;min-height:0;width:100%;
+    padding:0;margin:0;overflow:visible;
+  }
+  .root[data-session-visual-v4] .sessionHero{
+    box-sizing:border-box;flex:0 0 auto;
+    height:clamp(148px,24dvh,222px);min-height:0;
+    width:calc(100% - 22px);margin:0 auto;
+    border-radius:24px;
+  }
+  .root[data-session-visual-v4] .sessionHeroCopy{
+    left:13px;top:12px;width:min(56%,224px);gap:4px;
+  }
+  .root[data-session-visual-v4] .sessionHeroCopy h1{
+    font-size:clamp(32px,9.3vw,43px);margin-top:3px;
+  }
+  .root[data-session-visual-v4] .sessionHeroCopy>small{
+    display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;
+    overflow:hidden;font-size:clamp(10px,3vw,12px);line-height:1.22;
+  }
+  .root[data-session-visual-v4] .voiceWorkspace{
+    flex:1 1 0;min-height:0;max-height:100%;
+    box-sizing:border-box;display:flex;flex-direction:column;
+    width:calc(100% - 22px);max-width:100%;
+    gap:5px;margin:0 auto;overflow:hidden;
+  }
+  .root[data-session-visual-v4] .voiceControls{
+    box-sizing:border-box;flex:0 0 88px;
+    position:relative;z-index:3;order:0;
+    height:88px;min-height:88px;max-height:88px;
+    margin:-13px auto 0;padding:7px 7px 12px;
+    grid-template-rows:66px;gap:4px;
+    width:100%;max-width:100%;overflow:visible;
+    border-radius:23px;
+  }
+  .root[data-session-visual-v4] .voiceCenter{
+    height:66px;min-height:0;align-self:center;max-width:100%;
+  }
+  .root[data-session-visual-v4] .voiceCenter :global([data-my-coach-voice]){
+    display:flex;flex-direction:column;align-items:center;
+    width:100%;height:66px;min-height:66px;
+    padding:0;margin:0;gap:0;overflow:visible;
+  }
+  .root[data-session-visual-v4] .voiceCenter :global([data-my-coach-voice] button){
+    width:66px;height:66px;min-height:66px;
+  }
+  .root[data-session-visual-v4] .voiceCenter :global([data-my-coach-voice] button svg){
+    width:28px;height:28px;
+  }
+  .root[data-session-visual-v4] .voiceCenter :global([data-my-coach-voice] .status),
+  .root[data-session-visual-v4] .voiceCenter :global([data-my-coach-voice] .note){
+    top:calc(100% + 1px);font-size:10px;line-height:1.1;
+    width:max-content;max-width:min(220px,calc(100vw - 120px));
+    max-height:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .root[data-session-visual-v4] .captionsControl,
+  .root[data-session-visual-v4] .keyboardControl,
+  .root[data-session-visual-v4] .replayControl,
+  .root[data-session-visual-v4] .endControl{
+    height:49px;min-height:49px;max-width:52px;
+    border-radius:15px;font-size:10px;
+  }
+  .root[data-session-visual-v4] .voicePrivacyDetails{
+    flex:0 0 auto;order:1;margin:0 3px;
+    font-size:10px;line-height:1.22;
+  }
+  .root[data-session-visual-v4] .voicePrivacyDetails[open]{
+    max-height:85px;overflow-y:auto;
+  }
+  .root[data-session-visual-v4] .voiceWorkspace>.playbackNotice{
+    flex:0 0 auto;order:2;margin:0 3px;
+    padding:2px 6px;font-size:11px;
+  }
+  .root[data-session-visual-v4] .conversationPanel{
+    box-sizing:border-box;order:3;flex:1 1 0;
+    display:flex;flex-direction:column;gap:5px;
+    width:100%;max-width:100%;min-height:0;max-height:none;
+    overflow:hidden;padding:9px 11px 7px;
+    border-radius:19px;
+  }
+  .root[data-session-visual-v4] .conversationPanel .liveTranscript{
+    flex:1 1 0;min-height:0;max-height:none;
+    display:flex;flex-direction:column;overflow:hidden;
+  }
+  .root[data-session-visual-v4] .conversationPanel .transcriptHeading{
+    flex:0 0 auto;gap:4px;flex-wrap:nowrap;
+    font-size:clamp(12px,3.5vw,14px);
+  }
+  .root[data-session-visual-v4] .conversationPanel .transcriptHeading strong{
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .root[data-session-visual-v4] .conversationPanel .transcriptFeed{
+    display:flex;flex:1 1 0;flex-direction:column;
+    align-items:stretch;gap:5px;
+    min-height:0;max-height:none;
+    overflow-y:auto;overflow-x:hidden;
+    margin-top:5px;padding-bottom:3px;
+    -webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+  }
+  .root[data-session-visual-v4] .conversationPanel .transcriptCoach,
+  .root[data-session-visual-v4] .conversationPanel .transcriptUser,
+  .root[data-session-visual-v4] .conversationPanel .transcriptInterim{
+    flex:0 0 auto;min-width:0;max-width:94%;
+  }
+  .root[data-session-visual-v4] .conversationPanel .textComposer{
+    box-sizing:border-box;order:2;flex:0 0 auto;
+    min-height:0;max-height:min(24dvh,190px);
+    width:100%;overflow-y:auto;overflow-x:hidden;
+    margin:0;padding:6px 0 0;
+    border-top:1px solid #e9ece4;
+    background:#fffdf9;
+  }
+  .root[data-session-visual-v4] .textComposer .composer{
+    display:grid;grid-template-columns:minmax(0,1fr) 44px;
+    gap:5px;align-items:center;
+  }
+  .root[data-session-visual-v4] .textComposer .composer textarea{
+    min-height:44px;max-height:82px;padding:9px 10px;
+  }
+  .root[data-session-visual-v4] .goalRow,
+  .root[data-session-visual-v4] .goalPrivacy,
+  .root[data-session-visual-v4] .plan,
+  .root[data-session-visual-v4] .sessionDisclosure,
+  .root[data-session-visual-v4] .hiLearningRating,
+  .root[data-session-visual-v4] .quickGoals,
+  .root[data-session-visual-v4] .sessionBottomNav{
+    display:none;
+  }
+}
+@media(max-width:699px) and (max-height:670px){
+  .root[data-session-visual-v4] .sessionHero{
+    height:clamp(110px,21dvh,156px);
+  }
+  .root[data-session-visual-v4] .voiceControls{
+    flex-basis:77px;height:77px;min-height:77px;max-height:77px;
+    grid-template-rows:60px;
+  }
+  .root[data-session-visual-v4] .voiceCenter,
+  .root[data-session-visual-v4] .voiceCenter :global([data-my-coach-voice]){
+    height:60px;min-height:60px;
+  }
+  .root[data-session-visual-v4] .voiceCenter :global([data-my-coach-voice] button){
+    width:60px;height:60px;min-height:60px;
+  }
+}
+
+/* The iPhone software keyboard may reduce the visual viewport without
+   resizing CSS vh. Focus collapses the hero so the real reply remains usable. */
+@media(max-width:699px){
+  .root[data-session-visual-v4]:has(.textComposer textarea:focus) .sessionHero{
+    height:clamp(72px,12dvh,105px);min-height:0;
+  }
+  .root[data-session-visual-v4]:has(.textComposer textarea:focus) .sessionHeroCopy>small{
+    display:none;
+  }
+  .root[data-session-visual-v4]:has(.textComposer textarea:focus) .sessionHeroCopy h1{
+    font-size:28px;
+  }
+  .root[data-session-visual-v4]:has(.textComposer textarea:focus) .voiceControls{
+    flex-basis:66px;height:66px;min-height:66px;max-height:66px;
+    grid-template-rows:54px;margin-top:-8px;padding:5px 7px;
+  }
+  .root[data-session-visual-v4]:has(.textComposer textarea:focus) .voiceCenter,
+  .root[data-session-visual-v4]:has(.textComposer textarea:focus) .voiceCenter :global([data-my-coach-voice]){
+    height:54px;min-height:54px;
+  }
+  .root[data-session-visual-v4]:has(.textComposer textarea:focus) .voiceCenter :global([data-my-coach-voice] button){
+    width:54px;height:54px;min-height:54px;
+  }
+  .root[data-session-visual-v4]:has(.textComposer textarea:focus) .conversationPanel .transcriptFeed{
+    max-height:18dvh;
+  }
+}
+
+/* Owner screenshot 2026-11-14: voice status is a CSS-module class, not a
+   literal ".status". Target a stable semantic attribute so a second flex row
+   never pushes the transcript or hides the actual microphone. */
+@media(max-width:699px){
+  .root[data-session-visual-v4]{
+    height:var(--hh-coach-visible-height,100dvh);
+    max-height:var(--hh-coach-visible-height,100dvh);
+    min-height:0;gap:4px;overflow:hidden;
+    padding-bottom:max(4px,env(safe-area-inset-bottom));
+  }
+  .root[data-session-visual-v4] .sessionTopbar{
+    flex:0 0 auto;min-height:46px;max-height:54px;padding:4px 10px;
+  }
+  .root[data-session-visual-v4] .sessionScroll{
+    flex:0 0 auto;display:block;min-height:0;max-height:none;
+    padding:0;margin:0;overflow:visible;
+  }
+  .root[data-session-visual-v4] .sessionHero{
+    flex:0 0 auto;height:clamp(124px,20dvh,184px);min-height:0;
+    width:calc(100% - 20px);margin:0 auto;
+  }
+  .root[data-session-visual-v4] .sessionHeroCopy>small{
+    -webkit-line-clamp:2;
+  }
+  .root[data-session-visual-v4] .voiceWorkspace{
+    flex:1 1 0;display:flex;flex-direction:column;gap:4px;
+    min-height:0;max-height:none;width:calc(100% - 20px);
+    overflow:hidden;
+  }
+  .root[data-session-visual-v4] .voiceControls{
+    position:relative;z-index:5;order:0;flex:0 0 80px;
+    display:grid;grid-template-rows:58px;align-items:center;
+    box-sizing:border-box;height:80px;min-height:80px;max-height:80px;
+    margin:0 auto;padding:3px 5px 14px;gap:3px;overflow:hidden;
+    border-radius:21px;
+  }
+  .root[data-session-visual-v4] .voiceCenter{
+    position:relative;height:58px;min-height:58px;max-height:58px;
+    align-self:start;overflow:visible;
+  }
+  .root[data-session-visual-v4] .voiceCenter :global([data-my-coach-voice]){
+    position:relative;display:flex;flex-direction:column;
+    justify-content:flex-start;align-items:center;gap:0;
+    width:100%;height:58px;min-height:58px;max-height:58px;
+    overflow:visible;padding:0;margin:0;
+  }
+  .root[data-session-visual-v4] .voiceCenter :global([data-my-coach-voice] button){
+    position:relative;flex:0 0 auto;
+    width:56px;height:56px;min-width:56px;min-height:56px;
+    max-width:56px;max-height:56px;
+  }
+  .root[data-session-visual-v4] .voiceCenter :global([data-my-coach-voice] button [data-coach-microphone-icon]){
+    width:27px;height:27px;
+  }
+  .root[data-session-visual-v4] .voiceCenter :global([data-my-coach-voice] [data-coach-speaker-indicator]){
+    position:absolute;top:1px;right:1px;width:17px;height:17px;
+    padding:2px;border-radius:50%;background:#fffdf9;
+    color:#176a58;box-shadow:0 0 0 1px #bcdaca;
+  }
+  .root[data-session-visual-v4] .voiceCenter :global([data-my-coach-voice] [data-coach-voice-status]){
+    position:absolute;z-index:3;
+    top:calc(100% + 1px);bottom:auto;left:50%;
+    transform:translateX(-50%);
+    box-sizing:border-box;display:block;
+    width:max-content;max-width:min(235px,calc(100vw - 115px));
+    height:12px;max-height:12px;
+    margin:0;padding:0;border:0;
+    font-size:10px;line-height:12px;font-weight:700;
+    text-align:center;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis;pointer-events:none;
+  }
+  .root[data-session-visual-v4] .captionsControl,
+  .root[data-session-visual-v4] .keyboardControl,
+  .root[data-session-visual-v4] .replayControl,
+  .root[data-session-visual-v4] .endControl{
+    height:47px;min-height:47px;max-height:47px;max-width:50px;
+    border-radius:14px;font-size:10px;
+  }
+  .root[data-session-visual-v4] .voicePrivacyDetails{
+    order:1;flex:0 0 auto;margin:0 4px;
+    font-size:10px;line-height:1.2;
+  }
+  .root[data-session-visual-v4] .conversationPanel{
+    box-sizing:border-box;order:3;
+    display:flex;flex:1 1 0;flex-direction:column;gap:4px;
+    width:100%;min-height:0;max-height:none;
+    margin:0;padding:8px 10px 6px;overflow:hidden;
+  }
+  .root[data-session-visual-v4] .conversationPanel .liveTranscript{
+    flex:1 1 0;display:flex;flex-direction:column;
+    min-height:0;max-height:none;overflow:hidden;
+  }
+  .root[data-session-visual-v4] .conversationPanel .transcriptFeed{
+    flex:1 1 0;min-height:0;max-height:none;
+    overflow-y:auto;overflow-x:hidden;
+    overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+  }
+  .root[data-session-visual-v4] .conversationPanel .textComposer{
+    flex:0 0 auto;order:2;box-sizing:border-box;
+    width:100%;min-height:0;max-height:min(118px,26dvh);
+    margin:0;padding:5px 0 0;overflow-y:auto;overflow-x:hidden;
+    border-top:1px solid #e7ebe4;
+  }
+  .root[data-session-visual-v4] .textComposer .composer{
+    display:grid;grid-template-columns:minmax(0,1fr) 46px;
+    align-items:center;gap:5px;
+  }
+  .root[data-session-visual-v4] .textComposer .composer textarea{
+    box-sizing:border-box;grid-column:1;
+    height:47px;min-height:47px;max-height:70px;
+    padding:8px 10px;font-size:16px;
+  }
+  .root[data-session-visual-v4] .textComposer .composer .send{
+    grid-column:2;min-height:47px;height:47px;
+  }
+  .root[data-session-visual-v4] .sessionMore{
+    min-height:16px;max-height:55px;
+    margin-top:2px;overflow-y:auto;
+    color:#557469;font-size:11px;line-height:1.3;
+  }
+  .root[data-session-visual-v4] .sessionMore>summary{
+    cursor:pointer;list-style-position:inside;
+  }
+  .root[data-session-visual-v4] .sessionMore .guidedFallback{
+    min-height:35px;margin-top:4px;
+  }
+}
+@media(max-width:699px) and (max-height:670px){
+  .root[data-session-visual-v4] .sessionHero{height:clamp(92px,17dvh,125px)}
+  .root[data-session-visual-v4] .voiceControls{
+    flex-basis:72px;height:72px;min-height:72px;max-height:72px;
+    grid-template-rows:53px;padding:2px 4px 13px;
+  }
+  .root[data-session-visual-v4] .voiceCenter,
+  .root[data-session-visual-v4] .voiceCenter :global([data-my-coach-voice]){
+    height:53px;min-height:53px;max-height:53px;
+  }
+  .root[data-session-visual-v4] .voiceCenter :global([data-my-coach-voice] button){
+    width:51px;height:51px;min-width:51px;min-height:51px;
+  }
+}
+@media(max-width:699px){
+  .root[data-session-visual-v4]:has(.textComposer textarea:focus) .sessionHero{
+    height:clamp(70px,10dvh,98px);
+  }
+  .root[data-session-visual-v4]:has(.textComposer textarea:focus) .voiceControls{
+    flex-basis:64px;height:64px;min-height:64px;max-height:64px;
+    margin:0 auto;grid-template-rows:49px;padding:2px 4px 11px;
+  }
+  .root[data-session-visual-v4]:has(.textComposer textarea:focus) .voiceCenter,
+  .root[data-session-visual-v4]:has(.textComposer textarea:focus) .voiceCenter :global([data-my-coach-voice]){
+    height:49px;min-height:49px;max-height:49px;
+  }
+  .root[data-session-visual-v4]:has(.textComposer textarea:focus) .voiceCenter :global([data-my-coach-voice] button){
+    width:47px;height:47px;min-width:47px;min-height:47px;
+  }
+}
+
+/* Premium-voice entry: recover an expressive portrait after the cramped iPhone
+   shrink. Flex transcript continues to scroll independently; Send stays fixed. */
+@media(max-width:699px){
+  .root[data-session-visual-v4] .sessionHero{
+    height:clamp(155px,25dvh,222px);
+    min-height:0;
+  }
+}
+@media(max-width:699px) and (max-height:670px){
+  .root[data-session-visual-v4] .sessionHero{
+    height:clamp(120px,20dvh,154px);
+  }
+}
+
+/* Larger, recognisable coach portrait; style belongs beside the AVATAR,
+   not in a second large text-heavy introduction card. State-specific
+   specificity overrides the old compact v4 mobile layout intentionally. */
+.root[data-session-visual-v4] .coachStyleChip{
+  position:absolute;z-index:5;left:14px;bottom:13px;box-sizing:border-box;
+  display:inline-flex;align-items:center;max-width:min(56%,310px);
+  padding:7px 10px;border:1px solid #ffffffa8;border-radius:999px;
+  background:#173e34d9;color:#fff;font:700 12px/1.27 system-ui;
+  text-shadow:0 1px 4px #061c1780;overflow-wrap:anywhere;
+  pointer-events:none;box-shadow:0 3px 12px #16241c28;
+}
+.root[data-session-visual-v4] .sessionHero{height:clamp(245px,35dvh,380px)}
+.root[data-session-visual-v4][data-coach-showcase='true'] .sessionHero{
+  height:clamp(310px,47dvh,475px);
+}
+.root[data-session-visual-v4] .sessionTimeboxNotice{
+  display:flex;flex:0 0 auto;align-items:center;justify-content:space-between;
+  gap:8px;box-sizing:border-box;min-width:0;width:100%;
+  padding:7px 10px;border:1px solid #d9e6dc;border-radius:13px;
+  background:#fffdf8;color:#325e4f;font-size:12px;line-height:1.35;
+}
+.root[data-session-visual-v4] .sessionTimeboxNotice span{flex:1;min-width:0}
+.root[data-session-visual-v4] .sessionTimeboxNotice button{
+  flex:none;min-height:38px;padding:7px 11px;border:1px solid #a9cdbb;
+  border-radius:999px;background:#eef7f0;color:#11664e;
+  font:750 12px/1.2 system-ui;cursor:pointer;
+}
+.root[data-session-visual-v4] .sessionTimeboxNotice button:focus-visible{
+  outline:3px solid #0b866b;outline-offset:3px;
+}
+@media(max-width:699px){
+  .root[data-session-visual-v4] .sessionHero{
+    height:clamp(175px,27dvh,270px);min-height:0;
+  }
+  .root[data-session-visual-v4][data-coach-showcase='true'] .sessionHero{
+    height:clamp(230px,42dvh,355px);min-height:0;
+  }
+  .root[data-session-visual-v4] .sessionHeroCopy>small{display:none}
+  .root[data-session-visual-v4] .coachStyleChip{
+    left:11px;bottom:10px;max-width:58%;
+    padding:5px 8px;font-size:clamp(10px,2.6vw,12px);
+  }
+  .root[data-session-visual-v4] .sessionTimeboxNotice{
+    order:2;flex:0 0 auto;min-height:42px;padding:5px 7px;
+    font-size:11px;
+  }
+  .root[data-session-visual-v4] .sessionTimeboxNotice button{
+    min-height:36px;font-size:11px;padding:6px 9px;
+  }
+}
+@media(max-width:699px) and (max-height:670px){
+  .root[data-session-visual-v4] .sessionHero{
+    height:clamp(135px,23dvh,190px);min-height:0;
+  }
+  .root[data-session-visual-v4][data-coach-showcase='true'] .sessionHero{
+    height:clamp(205px,38dvh,260px);min-height:0;
+  }
+}
+
+/* Selected AI coach is a playable session, not a passive photograph.
+   Overlay shares the portrait's existing stacking context; the toolbar
+   microphone remains available for interrupt and subsequent voice turns. */
+.root[data-my-coach-immersive-session] .heroPlayControl{
+  position:absolute;z-index:8;left:69%;top:52%;
+  transform:translate(-50%,-50%);
+  display:grid;place-items:center;
+  width:92px;height:92px;min-width:74px;min-height:74px;
+  padding:0;border:2px solid #ffffffed;border-radius:999px;
+  background:linear-gradient(145deg,#fffdf2f7,#e3faf1f2);
+  color:#087454;cursor:pointer;
+  box-shadow:0 5px 27px #082c20a0,0 0 0 10px #bfe8d340;
+  -webkit-tap-highlight-color:transparent;
+  backdrop-filter:blur(6px);
+  transition:transform .16s ease,box-shadow .16s ease;
+}
+.root[data-my-coach-immersive-session] .heroPlayControl svg{
+  margin-left:4px;filter:drop-shadow(0 1px 1px #fff8);
+}
+.root[data-my-coach-immersive-session] .heroPlayControl:hover:not(:disabled),
+.root[data-my-coach-immersive-session] .heroPlayControl:focus-visible{
+  transform:translate(-50%,-50%) scale(1.05);
+  outline:3px solid #cffde5;outline-offset:4px;
+}
+.root[data-my-coach-immersive-session] .heroPlayControl:disabled{
+  opacity:.86;cursor:progress;
+}
+.root[data-my-coach-immersive-session] .heroPlayControl:disabled svg{
+  margin-left:0;animation:coachIntroBusy 1.2s linear infinite;
+}
+@keyframes coachIntroBusy{to{transform:rotate(360deg)}}
+@media(max-width:699px){
+  .root[data-session-visual-v4] .heroPlayControl{
+    left:71%;top:49%;
+    width:83px;height:83px;min-width:74px;min-height:74px;
+    box-shadow:0 5px 24px #082c207f,0 0 0 8px #bfe8d341;
+  }
+  .root[data-session-visual-v4] .heroPlayControl svg{
+    width:38px;height:38px;
+  }
+}
+@media(max-width:350px){
+  .root[data-session-visual-v4] .heroPlayControl{
+    left:72%;width:75px;height:75px;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .root[data-my-coach-immersive-session] .heroPlayControl,
+  .root[data-my-coach-immersive-session] .heroPlayControl:disabled svg{
+    animation:none;transition:none;
+  }
+}
+
+/* 4-coach pilot: no legacy mouth patch over the smooth MP4 portrait. */
+.sessionPortrait[data-coach-motion-video='true']{overflow:hidden}
+.root[data-my-coach-immersive-session] .sessionPortrait[data-coach-motion-video='true']::after{display:none!important}
+.sessionPortrait[data-persona=mira]{background-image:url('/images/holistic-house/my-coach-motion/mira-still.webp'),linear-gradient(110deg,#485e53,#cbb9a1)!important}
+.sessionPortrait[data-persona=max]{background-image:url('/images/holistic-house/my-coach-motion/max-still.webp'),linear-gradient(110deg,#485e53,#cbb9a1)!important}
+.sessionPortrait[data-persona=sofia]{background-image:url('/images/holistic-house/my-coach-motion/sofia-still.webp'),linear-gradient(110deg,#485e53,#cbb9a1)!important}
+.sessionPortrait[data-persona=alex]{background-image:url('/images/holistic-house/my-coach-motion/alex-still.webp'),linear-gradient(110deg,#485e53,#cbb9a1)!important}
+
+/* Verified per-turn model source: neutral and compact even in iPhone voice mode. */
+.responseSource{display:inline;font-size:10px;font-weight:500;letter-spacing:0;color:#65796e;overflow-wrap:anywhere}

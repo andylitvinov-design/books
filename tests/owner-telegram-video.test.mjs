@@ -1,4 +1,5 @@
 import test from 'node:test'
+import './owner-telegram-crm-ffmpeg-trace.test.mjs'
 // Run the new metadata contract suite inside the existing owner-video CI command.
 import './owner-telegram-youtube-metadata.test.mjs'
 import assert from 'node:assert/strict'
@@ -394,8 +395,9 @@ test('backend only webhook and forced RLS migration; no cross-bot or automatic Y
  assert.match(migration,/force row level security/ig)
  assert.match(migration,/revoke all on app_private.telegram_owner_video_jobs from public, anon, authenticated, hh_app_inbox/)
  assert.match(migration,/public,file_size_limit,allowed_mime_types\)\nvalues\('hh-owner-video-drafts','hh-owner-video-drafts',false/)
- assert.match(crmWebhook,/verifyMessengerWebhook[\s\S]*receiveOwnerTelegramVideoWebhook[\s\S]*normalizeMessengerUpdates/)
- assert.match(crmWebhook,/channel:'crm'/)
+  assert.match(crmWebhook,/verifyMessengerWebhook[\s\S]*receiveOwnerTelegramVideoCrmFallback[\s\S]*normalizeMessengerUpdates/)
+  assert.match(crmWebhook,/receiveOwnerTelegramVideoCrmFallback\(config,body\)/)
+  assert.doesNotMatch(crmWebhook,/from '@\/lib\/practitioners\/owner-telegram-video-service'/)
  const dotWebhook=readFileSync(new URL('../app/api/app/notification-channels/telegram/webhook/route.js',import.meta.url),'utf8')
  assert.match(dotWebhook,/verifyClientTelegramSecret[\s\S]*receiveOwnerTelegramVideoWebhook[\s\S]*receiveOwnerTelegramAudioWebhook/)
  assert.match(dotWebhook,/channel:'practice'/)
@@ -405,14 +407,17 @@ test('backend only webhook and forced RLS migration; no cross-bot or automatic Y
  assert.match(nextConfig,/\/api\/app\/crm\/messenger\/webhook\/\*/)
  assert.match(nextConfig,/\/api\/app\/notification-channels\/telegram\/webhook/)
  assert.match(nextConfig,/ffmpeg-static\/ffmpeg/)
- assert.match(crmWebhook,/if\(video.background\)after\(/)
+  assert.doesNotMatch(crmWebhook,/if\(video.background\)after\(/)
  assert.match(service,/event.chatId!==owner.chat\|\|event.userId!==owner.chat/)
  assert.match(service,/if\(env.VERCEL_ENV==='preview'\|\|env.HH_OWNER_VIDEO_ENABLED!=='true'\)/)
- assert.match(service,/!\['crm','practice'\].includes\(channel\)/)
- assert.match(service,/if\(channel==='crm'\)\{/)
- assert.match(service,/if\(event.action==='media'\|\|event.action==='reject'\)return \{handled:false\}/)
- assert.match(service,/https:\/\/t\.me\/Andydotbot\?start=audio/)
- assert.match(service,/channel==='practice'&&telegramClientBotMode\(env\)!=='shared_practice'/)
+  assert.match(service,/if\(channel==='crm'\)return receiveOwnerTelegramVideoCrmFallback\(config,update,\{env,fetcher,now\}\)/)
+  const redirect=readFileSync(new URL('../lib/practitioners/owner-telegram-video-crm-fallback.mjs',import.meta.url),'utf8')
+  assert.match(redirect,/if\(event.action==='media'\|\|event.action==='reject'\)return \{handled:false\}/)
+  assert.match(redirect,/https:\/\/t\.me\/Andydotbot\?start=audio/)
+  assert.match(redirect,/event.chatId!==chat\|\|event.userId!==chat/)
+  assert.match(redirect,/resolvedOwnerTelegramEnv\(config,env\)/)
+  assert.doesNotMatch(redirect,/owner-telegram-video-render|ffmpeg-static/)
+  assert.match(service,/channel!=='practice'\|\|telegramClientBotMode\(env\)!=='shared_practice'/)
  assert.match(service,/if\(event.action==='publish'\)/)
  assert.match(service,/if\(event.action==='done'\)/)
  assert.doesNotMatch(service,/if\(result.state==='added'\)\{\s*await ownerMessage/)

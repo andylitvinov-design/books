@@ -48,6 +48,8 @@ export async function verifyHumanSpecialistMobile() {
       const frame=await video.boundingBox()
       assert.ok(frame&&frame.width>260&&Math.abs(frame.width/frame.height-16/9)<0.05,
         label+': 16:9 video geometry '+JSON.stringify(frame))
+      const videoDetails=root.locator('[data-human-video-details]')
+      await videoDetails.locator('summary').tap()
       const reel=root.locator('[data-human-video-reel]')
       const thumbnails=reel.locator('[data-human-video-thumb]')
       assert.ok(await thumbnails.count()>=2,label+': actual published video thumbnails')
@@ -79,16 +81,47 @@ export async function verifyHumanSpecialistMobile() {
         assert.equal(await video.locator('iframe,video').count(),0,
           label+': selecting a new thumbnail tears down the old player')
       }
+      await videoDetails.locator('summary').tap()
+      const secretaryTab=root.locator('[data-human-channel="secretary"]')
+      assert.equal(await secretaryTab.getAttribute('aria-selected'),'true',
+        label+': secretary is the initial conversation tab')
       const question=root.locator('#hh-human-specialist-question')
       await question.waitFor({state:'visible'})
+      await question.fill('Hello, I have a question about your services')
+      await root.locator('button[type="submit"]').tap()
+      await root.locator('[data-human-secretary-reply]').first().waitFor({state:'visible'})
+      assert.equal(posted,0,label+': secretary never posts into the practitioner CRM thread')
+      await root.locator('[data-human-channel="human"]').tap()
       await root.locator('a[href*="/app/messages?to=andy-litvinov"]').waitFor({state:'visible'})
       await question.fill('Synthetic browser QA question — do not send')
       await root.locator('button[type="submit"]').tap()
       await root.locator('[data-human-specialist-channels]').waitFor({state:'visible'})
       assert.equal(posted,0,label+': guest attempt never posts to CRM')
       const cta=root.locator('[data-human-specialist-book]')
-      assert.equal(await cta.getAttribute('href'),'/' + locale + '/services/imagery-therapy',
-        label+': genuine consultation CTA')
+      assert.equal(await cta.getAttribute('href'),null,label+': owner booking opens an inline form')
+      await cta.tap()
+      const booking=root.locator('[data-human-specialist-booking-fields]')
+      await booking.waitFor({state:'visible'})
+      const channels=booking.locator('[data-human-specialist-booking-channels]')
+      assert.equal(await channels.count(),0,label+': no messenger before choosing a day and time')
+      const futureDay=await page.evaluate(()=>{
+        const date=new Date();date.setDate(date.getDate()+14)
+        return date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0')+'-'+String(date.getDate()).padStart(2,'0')
+      })
+      await booking.locator('input[type="date"]').fill(futureDay)
+      assert.equal(await channels.count(),0,label+': day alone cannot open booking messengers')
+      await booking.locator('input[type="time"]').fill('14:30')
+      await channels.waitFor({state:'visible'})
+      const telegram=await channels.locator('a').first().getAttribute('href')
+      const whatsapp=await channels.locator('a').nth(1).getAttribute('href')
+      assert.ok(telegram?.startsWith('https://t.me/AndyTherapist?text='),label+': known specialist Telegram link')
+      assert.ok(whatsapp?.startsWith('https://wa.me/14376066502?text='),label+': known specialist WhatsApp link')
+      for(const href of [telegram,whatsapp]) {
+        const text=new URL(href).searchParams.get('text') || ''
+        assert.ok(text.includes(futureDay) && text.includes('14:30'),
+          label+': request preserves day and time across messenger channels')
+      }
+      assert.equal(posted,0,label+': choosing a preferred slot never posts to CRM')
       assert.equal(await root.locator('a[href="/'+locale+'/my-coach#all-coaches"]').count(),1,
         label+': return to the coach directory')
       const layout=await page.evaluate(()=>({
@@ -96,6 +129,19 @@ export async function verifyHumanSpecialistMobile() {
         width:document.documentElement.scrollWidth,
       }))
       assert.ok(layout.width<=layout.viewport+2,label+': no document overflow '+JSON.stringify(layout))
+      const firstViewport=await page.evaluate(()=>{
+        const root=document.querySelector('[data-my-coach-human-dialogue]')
+        const stage=root?.querySelector('[data-human-video-stage]')
+        const composer=root?.querySelector('form')
+        const booking=root?.querySelector('[data-human-specialist-book]')
+        return {video:stage?.getBoundingClientRect().bottom,
+          composer:composer?.getBoundingClientRect().bottom,
+          booking:booking?.getBoundingClientRect().bottom,visible:window.innerHeight}
+      })
+      assert.ok(Number(firstViewport.video)<firstViewport.visible-160 &&
+        Number(firstViewport.booking)<firstViewport.visible-100 &&
+        Number(firstViewport.composer)<firstViewport.visible-90,
+        label+': first-screen controls visible above dock '+JSON.stringify(firstViewport))
       const brand=await root.locator('header a').first().boundingBox()
       const change=await root.locator('header a').nth(1).boundingBox()
       assert.ok(brand&&change&&brand.x+brand.width<=change.x+2,
