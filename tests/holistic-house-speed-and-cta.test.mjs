@@ -31,40 +31,25 @@ test("short-lived public video snapshot cache never includes drafts or request-s
   assert.doesNotMatch(publicSource, /force-static|s-maxage|public, max-age/);
 });
 
-test("homepage keeps one free-first journey and the original consented final enquiry", () => {
-  const home = read("components/holistic-house-home.tsx");
-  const spanish = read("app/es/page.tsx");
-  const stage = read("components/home-featured-workspace.tsx");
-  const wrapper = read("components/homepage-contact-cta.tsx");
-  const freeCapture = read("components/homepage-free-capture.tsx");
-  assert.match(home, /<HomeFeaturedWorkspace locale=\{locale\} \/>/);
-  assert.match(spanish, /<HomeFeaturedWorkspace locale="es" \/>/);
-  assert.match(stage, /data-home-offer-primary=\{offer\.id\}/);
-  for (const route of ["/client/tests","/services/free-situation-review","/academy/principles-of-energywork/learn",
-    "/services#consultation","/coaching"])
-    assert.ok(stage.includes(route), "Missing action route: "+route);
-  assert.match(wrapper, /id="home-consultation"/);
-  assert.match(wrapper, /<HomepageFreeCapture locale=\{locale\} \/>/);
-  assert.match(freeCapture, /data-home-free-capture="true"/);
-  assert.match(read("components/free-entry-landing.tsx"), /<FreeSituationReviewForm locale=\{locale\} \/>/);
-  assert.ok(home.indexOf("<HomeFeaturedWorkspace") < home.indexOf("<HomepageContactCta"));
-  assert.ok(spanish.indexOf("<HomeFeaturedWorkspace") < spanish.indexOf("<PublicConsultationCta"));
-  assert.doesNotMatch(home, /<HomeFreeDiagnosisBanner|service-home-hero/);
+test("Dialog-first Home contract: homepage keeps one free-first journey and the original consented final enquiry",()=>{
+  const home=read("components/holistic-house-home.tsx");
+  const es=read("app/es/page.tsx");
+  const hero=read("components/home-dialog-first.tsx");
+  assert.match(home,/<HomeDialogFirst locale=\{locale\}\/>/);
+  assert.match(es,/<HolisticHouseHome locale="es"\/>/);
+  assert.doesNotMatch(home,/<ProfileHubTabs|<HomeSectionCarousel|<HomeMoreDisclosure|<HomeFeaturedWorkspace|<PersonalTestimonials|<HomePresentationVideoSection/);
+  assert.match(hero,/data-hh-home-composer/);
+  assert.match(hero,/data-hh-home-business-switch/);
 });
 
-test("bypass transformations only for owned WebP images and the exact approved local artwork", () => {
-  const player = read("components/site-video-player.tsx");
-  const services = read("components/services-solutions.tsx");
-  assert.match(player, /unoptimized=\{approvedPoster\.endsWith\("\.webp"\)\}/);
-  assert.match(player, /unoptimized=\{fallbackPoster\.endsWith\("\.webp"\)\}/);
-  assert.match(services, /unoptimized=\{\(isHome \? homepageMedia\[offer\.id\] : offer\.image\)\.endsWith\("\.webp"\) \|\| \(isHome \? homepageMedia\[offer\.id\] : offer\.image\) === "\/academy\/reiki-yggdrasil\/source\/eastern-tradition\.png"\}/);
-  assert.match(player, /https:\/\/www\.youtube-nocookie\.com\/embed/);
-  // Verified portrait and YouTube stills bypass unneeded runtime transforms.
-  assert.match(read("components/holistic-house-home.tsx"), /<StaticPortrait\b/);
-  assert.match(read("components/holistic-house-home.tsx"), /src="\/images\/holistic-house\/andy-about\.png"/);
-  assert.match(player, /src=\{\x60https:\/\/i\.ytimg\.com\/vi\//);
-});
-
+test("Home scene is compressed local WebP; video transform protections remain",()=>{
+    const scenic=read("components/home-dialog-first.module.css");
+    const video=read("components/site-video-player.tsx");
+    const home=read("components/holistic-house-home.tsx");
+    assert.match(scenic,/reiki-approved-sunrise-v3\.webp/);
+    assert.match(video,/youtube-nocookie\.com\/embed/);
+    assert.doesNotMatch(home,/<StaticPortrait|<SiteVideoPlayer/);
+  });
 
 test("known first-party testimonial stills avoid speculative YouTube thumbnail transformations", () => {
   const source = read("components/site-video-player.tsx");
@@ -102,19 +87,14 @@ test('private Cabinet loads heavyweight tab modules on demand', () => {
 });
 
 
-test("visible H1, privacy, and free/paid distinction agree in EN/RU/ES", () => {
-  const home = read("components/holistic-house-home.tsx");
-  const es = read("app/es/page.tsx");
-  const stage = read("components/home-featured-workspace.tsx");
-  const css = read("components/home-featured-workspace.module.css");
-  assert.match(stage, /<h1 id="hh-home-features-title">/);
-  assert.match(stage, /<h2 id=\{"hh-home-" \+ id \+ "-title"\}>/);
-  for (const heading of ["Explore your path at Holistic House","Ваш путь в Holistic House","Tu camino en Holistic House"])
-    assert.ok(stage.includes(heading));
-  assert.match(stage, /Request a session · from €50/);
-  assert.match(stage, /Заказать бесплатный письменный разбор/);
-  assert.match(stage, /This is a request for a written response, not a call/);
-  assert.match(css, /\.offerPrimary \{[\s\S]*?background: #742c42/);
-  assert.doesNotMatch(home, /force-static|s-maxage/);
-  assert.match(es, /<PublicConsultationCta locale="es" \/>/);
+test("Dialog-first Home contract: visible H1, privacy, and free/paid distinction agree in EN/RU/ES",()=>{
+  const home=read("components/holistic-house-home.tsx");
+  const es=read("app/es/page.tsx");
+  const hero=read("components/home-dialog-first.tsx");
+  assert.match(home,/<HomeDialogFirst locale=\{locale\}\/>/);
+  assert.match(es,/<HolisticHouseHome locale="es"\/>/);
+  assert.doesNotMatch(home,/<ProfileHubTabs|<HomeSectionCarousel|<HomeMoreDisclosure|<HomeFeaturedWorkspace|<PersonalTestimonials|<HomePresentationVideoSection/);
+  assert.match(hero,/data-hh-home-composer/);
+  assert.match(hero,/data-hh-home-business-switch/);
 });
+

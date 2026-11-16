@@ -31,17 +31,14 @@ test("public personal and reading CTAs use the compact blue topic selector, whil
   assert.match(css, /linear-gradient\(125deg, #e9f7fe/);
 });
 
-test("dedicated Services always exposes paid and express booking choices at the linked hash", () => {
-  const home = read("components", "holistic-house-home.tsx");
-  const page = read("app", "[locale]", "services", "page.tsx");
-  const cta = read("components", "public-consultation-cta.tsx");
-  assert.match(read("components", "home-featured-workspace.tsx"), /\/services#consultation/);
-  assert.match(read("components", "home-featured-workspace.tsx"), /services\/free-situation-review/);
-  assert.match(page, /<PublicConsultationCta locale=\{locale as Locale\} id="consultation" serviceBooking wiseEnabled=\{wisePaymentsEnabled\(\)\} paypalPersonalEnabled=\{personalPayPalEnabled\(\)\} \/>/);
-  assert.match(read("app", "es", "page.tsx"), /<HomeFeaturedWorkspace locale="es" \/>/);
-  assert.match(read("app", "es", "services", "page.tsx"), /<PublicConsultationCta locale="es" id="consultation" serviceBooking wiseEnabled=\{wisePaymentsEnabled\(\)\} paypalPersonalEnabled=\{personalPayPalEnabled\(\)\} \/>/);
-  assert.match(cta, /serviceBooking = false/);
-  assert.match(cta, /if \(serviceBooking\) return <ConsultationCartEntry locale=\{locale\} id=\{id\} \/>/);
-  assert.match(read("components", "commerce", "consultation-cart-entry.tsx"), /publicServiceCatalog\(locale\)/);
-  assert.match(read("components", "commerce", "consultation-cart-entry.tsx"), /data-service-product=/);
-});
+test("Standalone Services keeps paid checkout while dialog Home links the service",()=>{
+    const home=read("components","holistic-house-home.tsx");
+    const es=read("app","es","page.tsx");
+    const service=read("app","[locale]","services","page.tsx");
+    const cta=read("components","public-consultation-cta.tsx");
+    assert.match(home,/\/services\/free-situation-review/);
+    assert.match(es,/<HolisticHouseHome locale="es"\/>/);
+    assert.match(service,/<PublicConsultationCta locale=\{locale as Locale\} id="consultation"/);
+    assert.match(cta,/ConsultationCartEntry/);
+  });
+

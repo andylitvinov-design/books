@@ -30,21 +30,15 @@ test("all slide imagery exists locally and preserves the low-cost static image p
   assert.match(carousel, /priority=\{index === 0\}/);
 });
 
-test("localized slider appears first on EN/RU/ES without removing existing consented offers", () => {
-  const home = read("components/holistic-house-home.tsx");
-  const spanish = read("app/es/page.tsx");
-  for (const language of ["en:", "ru:", "es:"]) assert.ok(carousel.includes(language));
-  for (const [page, marker] of [[home, "<HomeSectionCarousel locale={locale} />"], [spanish, '<HomeSectionCarousel locale="es" />']]) {
-    const at = page.indexOf(marker);
-    assert.ok(at > 0, "Homepage must mount carousel");
-    assert.ok(at < page.indexOf("<HomeFeaturedWorkspace"), "Carousel precedes seven-stage journey");
-    const workspace = read("components/home-featured-workspace.tsx");
-    for (const route of ["/services#consultation", "/services/free-situation-review", "/client/tests"]) {
-      assert.ok(workspace.includes(route), "The existing journey retains destination: " + route);
-    }
-    assert.ok(page.includes("<HomeFeaturedWorkspace"));
-  }
-  assert.match(read("app/holistic-house-home.css"), /\[data-home-featured-intro\]/);
+test("Dialog-first Home contract: localized slider appears first on EN/RU/ES without removing existing consented offers",()=>{
+  const home=read("components/holistic-house-home.tsx");
+  const es=read("app/es/page.tsx");
+  const hero=read("components/home-dialog-first.tsx");
+  assert.match(home,/<HomeDialogFirst locale=\{locale\}\/>/);
+  assert.match(es,/<HolisticHouseHome locale="es"\/>/);
+  assert.doesNotMatch(home,/<ProfileHubTabs|<HomeSectionCarousel|<HomeMoreDisclosure|<HomeFeaturedWorkspace|<PersonalTestimonials|<HomePresentationVideoSection/);
+  assert.match(hero,/data-hh-home-composer/);
+  assert.match(hero,/data-hh-home-business-switch/);
 });
 
 test("touch, focus, arrows, accessible dots and reduced motion are preserved on small phones", () => {

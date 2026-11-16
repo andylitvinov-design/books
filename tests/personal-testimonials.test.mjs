@@ -5,27 +5,14 @@ import test from "node:test";
 
 const read = (...segments) => readFileSync(path.join(process.cwd(), ...segments), "utf8");
 
-test("homepage keeps four matching-audio videos; Services uses four and preserves more in a disclosure", () => {
-  const home = read("components", "holistic-house-home.tsx");
-  const services = read("app", "[locale]", "services", "page.tsx");
-  const extra = read("components", "services-studio-extras.tsx");
-  const testimonials = read("components", "personal-testimonials.tsx");
-  assert.match(home, /<PersonalTestimonials locale=\{locale\} variant="home"/);
-  assert.match(services, /<PersonalTestimonials locale=\{locale as Locale\} variant="services"/);
-  assert.ok(home.indexOf("PersonalTestimonials locale") < home.indexOf('className="service-home-about"'));
-  assert.ok(services.indexOf("PersonalTestimonials locale") > services.indexOf('<ServicesIntroMedia'));
-  // Conversion-first Services intentionally presents the booking action in the first screen.
-  // Genuine customer stories follow the offers + intro media rather than delaying the booking CTA.
-  assert.ok(services.indexOf('<PublicConsultationCta locale=') < services.indexOf('<ServicesStudioOffers'));
-  assert.ok(services.indexOf('<ServicesStudioOffers') < services.indexOf("PersonalTestimonials locale"));
-  assert.ok(services.indexOf('<ServicesStudioOffers') < services.indexOf("PersonalTestimonials locale"));
-  assert.match(testimonials, /<HomeTestimonialMore/);
-  const lazy = read("components", "home-testimonial-more.tsx");
-  assert.match(lazy, /data-home-testimonial-disclosure="true"/);
-  assert.match(testimonials, /data-more-services-testimonials/);
-  assert.match(extra, /<PageVideo slot="consultation" locale=\{locale\} \/>/);
-  assert.match(extra, /id="method-videos" data-services-methods lang=\{locale\} open/);
-});
+test("Video testimonials are deferred from Home but available in full Services",()=>{
+    const home=read("components","holistic-house-home.tsx");
+    const service=read("app","[locale]","services","page.tsx");
+    const gallery=read("components","personal-testimonials.tsx");
+    assert.doesNotMatch(home,/<PersonalTestimonials/);
+    assert.match(service,/<PersonalTestimonials locale=\{locale as Locale\} variant="services"/);
+    assert.match(gallery,/<HomeTestimonialMore/);
+  });
 
 test("homepage previews four sourced videos and preserves all 12 originals behind the disclosure", () => {
   const component = read("components", "personal-testimonials.tsx");
@@ -121,16 +108,14 @@ test("mobile video testimonials keep real YouTube thumbnail images with a same-o
   assert.match(player, /youtube-nocookie\.com\/embed\/\$\{playbackYouTubeId\}/);
 });
 
-test("the real practitioner photo stays full-width on mobile", () => {
-  const home = read("components", "holistic-house-home.tsx");
-  const css = read("app", "holistic-house-home.css");
-  assert.match(home, /src="\/images\/holistic-house\/andy-about\.png"/);
-  assert.match(home, /className="service-home-about__image"/);
-  assert.match(home, /width=\{900\}/);
-  assert.match(home, /height=\{720\}/);
-  assert.match(css, /\.house-home--services \.service-home-about__image/);
-  assert.match(css, /aspect-ratio:16\/9/);
-});
+test("Home no longer downloads practitioner portrait before dialogue",()=>{
+    const home=read("components","holistic-house-home.tsx");
+    const style=read("components","home-dialog-first.module.css");
+    const portrait=read("components","static-portrait.tsx");
+    assert.match(style,/reiki-approved-sunrise-v3\.webp/);
+    assert.doesNotMatch(home,/<StaticPortrait|andy-about\.png/);
+    assert.match(portrait,/srcSet=\{srcSet\}/);
+  });
 
 test("the testimonial gallery uses real ID-matched archived frames instead of decorative SVGs", () => {
   const component = read("components", "personal-testimonials.tsx");

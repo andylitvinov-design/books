@@ -34,27 +34,17 @@ test('free-install landing has real EN/RU/ES routes, correct matching manifests 
   assert.doesNotMatch(landing,/https:\/\/play\.google\.com\/store\/apps\//i)
 })
 
-test('all three Home pages offer exactly the same free installer without duplicating app identity',()=>{
-  const home=read('components/holistic-house-home.tsx')
-  const es=read('app/es/page.tsx')
-  const banner=read('components/free-mobile-app-banner.tsx')
-  const css=read('components/free-mobile-app-banner.module.css')
-  assert.match(home,/<FreeMobileAppBanner locale=\{locale\} \/>/)
-  assert.match(es,/<FreeMobileAppBanner locale="es" \/>/)
-  assert.match(banner,/data-hh-free-app-banner/)
-  assert.match(banner,/data-hh-free-app-link/)
-  assert.match(banner,/href=\{`\/\$\{locale\}\/install`\}/)
-  for(const txt of ['Install free web app','Установить на телефон','Instalar gratis'])
-    assert.ok(banner.includes(txt),txt)
-  assert.match(css,/@media\(max-width:650px\)/)
-  assert.match(css,/min-height:50px/)
-  assert.match(css,/:focus-visible/)
-  const nav=read('components/site-navigation.tsx')
-  assert.match(nav,/data-nav-item="install"/)
-  assert.match(nav,/siteMenu\.install/)
-  const locales=read('lib/public-locales.ts')
-  assert.ok(locales.includes(String.raw`(?:en|ru|es)\/install`))
-})
+test("Installer remains discoverable via menu and all EN/RU/ES share the same PWA",()=>{
+    const home=read("components/holistic-house-home.tsx");
+    const es=read("app/es/page.tsx");
+    const menu=read("components/site-navigation.tsx");
+    const dock=read("lib/unified-mobile-dock.mjs");
+    assert.match(home,/<HomeDialogFirst locale=\{locale\}\/>/);
+    assert.match(es,/<HolisticHouseHome locale="es"\/>/);
+    assert.doesNotMatch(home,/<FreeMobileAppBanner/);
+    assert.match(menu,/\/install/);
+    assert.match(dock,/UNIFIED_DOCK_IDS=Object\.freeze/);
+  });
 
 test('free install button uses browser PWA event, manual fallbacks and never claims install before appinstalled',()=>{
   const ui=read('components/app/install-holistic-house.jsx')

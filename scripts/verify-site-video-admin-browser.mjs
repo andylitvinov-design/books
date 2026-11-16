@@ -259,7 +259,7 @@ try{
           await expect(page.locator('[data-video-slot="home-intro"]')).toHaveCount(0)
           assert.ok(!(await page.content()).includes(title),
             'Retired Home intro must not leak a published admin title: '+locale)
-          await expect(page.locator('[data-personal-testimonials="home"]')).toHaveCount(1)
+          await expect(page.locator('[data-hh-dialog-first]')).toHaveCount(1)
           continue
         }
         if (slot.id === 'thank-you') {
@@ -311,7 +311,7 @@ try{
     assert.equal(await page.locator('iframe').count(), 0)
     // Owner withdrew approval: even a newly published archived home intro cannot
     // leak back onto the public homepage. Testimonial videos remain independent.
-    await expect(page.locator('[data-personal-testimonials="home"]')).toHaveCount(1)
+    await expect(page.locator('[data-hh-dialog-first]')).toHaveCount(1)
     pass('Archived unpublished-quality home introduction cannot reappear in public')
     await save('hide', second)
     await navigate('/?lang=en')

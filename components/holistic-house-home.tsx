@@ -38,6 +38,7 @@ export function HolisticHouseHome({locale="en"}:{locale?:PublicLocale}){
       <p>Holistic House · {t.footer}</p>
       <Link href={"/"+locale+"/about"} prefetch={false}>{t.more}</Link>
       <Link href="/privacy" prefetch={false}>Privacy</Link>
+      <Link href="/terms" prefetch={false}>Terms</Link>
     </footer>
   </main>;
 }

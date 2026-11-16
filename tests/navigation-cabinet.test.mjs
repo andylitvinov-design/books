@@ -57,10 +57,10 @@ test('Courses menu opens the full Academy; enrolled My Courses remains in the pe
 })
 
 test("Intent-first Home replaces outdated navigation contract: the umbrella homepage can render Russian and",async()=>{
- const home=await read("components/holistic-house-home.tsx");
- const dialog=await read("components/home-dialog-first.tsx");
- const nav=await read("components/site-navigation.tsx");
- const es=await read("app/es/page.tsx");
+ const home=await readFile("components/holistic-house-home.tsx","utf8");
+ const dialog=await readFile("components/home-dialog-first.tsx","utf8");
+ const nav=await readFile("components/site-navigation.tsx","utf8");
+ const es=await readFile("app/es/page.tsx","utf8");
  assert.match(home,/<HomeDialogFirst locale=\{locale\}\/>/);
  assert.match(es,/<HolisticHouseHome locale="es"\/>/);
  assert.doesNotMatch(home,/<ProfileHubTabs|<HomeFeaturedWorkspace|<HomeSectionCarousel|<HomepageContactCta/);
@@ -196,10 +196,10 @@ test('About exposes a consultation request form and a Google-first Cabinet with 
 })
 
 test("Intent-first Home replaces outdated navigation contract: public pages share one localized soft CTA wi",async()=>{
- const home=await read("components/holistic-house-home.tsx");
- const dialog=await read("components/home-dialog-first.tsx");
- const nav=await read("components/site-navigation.tsx");
- const es=await read("app/es/page.tsx");
+ const home=await readFile("components/holistic-house-home.tsx","utf8");
+ const dialog=await readFile("components/home-dialog-first.tsx","utf8");
+ const nav=await readFile("components/site-navigation.tsx","utf8");
+ const es=await readFile("app/es/page.tsx","utf8");
  assert.match(home,/<HomeDialogFirst locale=\{locale\}\/>/);
  assert.match(es,/<HolisticHouseHome locale="es"\/>/);
  assert.doesNotMatch(home,/<ProfileHubTabs|<HomeFeaturedWorkspace|<HomeSectionCarousel|<HomepageContactCta/);
@@ -229,10 +229,10 @@ test('compact language menu and cabinet next-step remain available after IA inte
 })
 
 test("Intent-first Home replaces outdated navigation contract: My Space Home has compact real navigation wh",async()=>{
- const home=await read("components/holistic-house-home.tsx");
- const dialog=await read("components/home-dialog-first.tsx");
- const nav=await read("components/site-navigation.tsx");
- const es=await read("app/es/page.tsx");
+ const home=await readFile("components/holistic-house-home.tsx","utf8");
+ const dialog=await readFile("components/home-dialog-first.tsx","utf8");
+ const nav=await readFile("components/site-navigation.tsx","utf8");
+ const es=await readFile("app/es/page.tsx","utf8");
  assert.match(home,/<HomeDialogFirst locale=\{locale\}\/>/);
  assert.match(es,/<HolisticHouseHome locale="es"\/>/);
  assert.doesNotMatch(home,/<ProfileHubTabs|<HomeFeaturedWorkspace|<HomeSectionCarousel|<HomepageContactCta/);
@@ -241,6 +241,17 @@ test("Intent-first Home replaces outdated navigation contract: My Space Home has
  assert.match(dialog,/<SiteNavigation locale=\{locale\} compact \/>/);
  assert.match(nav,/details className="site-main-menu"/);
 });
+
+function assertAdminHeaderInitialLocale(source) {
+  const defaultLocale = source.match(/export function PrescriptionAdminHeader\(\{[^}]*initialLocale = ('[^']+')/)
+  const initializer = source.match(/const \[locale, setLocale\] = useState\(([^\n]+)\)/)
+  assert.ok(defaultLocale, 'Header must retain its explicit initial-locale default')
+  assert.ok(initializer, 'Header locale must have a single inspected initializer')
+  const initial = new Function('provided', `const { initialLocale = ${defaultLocale[1]} } = provided; return (${initializer[1]});`)
+  assert.equal(initial({}), 'en', 'No supplied preference defaults to English')
+  assert.equal(initial({ initialLocale: 'ru' }), 'ru', 'Explicit Russian is retained')
+  for (const initialLocale of ['en', 'es', '', null]) assert.equal(initial({ initialLocale }), 'en')
+}
 
 test('practitioner locale initializer rejects wrong default and ignored explicit preference', async () => {
   const source = await readFile('components/prescription-admin-header.jsx', 'utf8')

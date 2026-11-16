@@ -8,18 +8,15 @@ const css = read("components/home-core-methods.module.css");
 const enRu = read("components/holistic-house-home.tsx");
 const es = read("app/es/page.tsx");
 
-test("the three signature approaches appear in separate stages without a duplicate top showcase", () => {
-  const feature = read("components/home-featured-workspace.tsx");
-  for (const home of [enRu, es]) {
-    assert.match(home, /<HomeFeaturedWorkspace locale=/);
-    assert.doesNotMatch(home, /<HomeCoreMethods locale=/);
-  }
-  for (const stage of ["coaching", "alchemy", "energy"]) {
-    assert.ok(feature.includes('"'+stage+'": {'), "Missing stage: " + stage);
-  }
-  for (const action of ["aiCoaching", "therapist", "alchemy", "energy"]) {
-    assert.ok(feature.includes('"'+action+'": "/images/holistic-house/'), "Missing method card: " + action);
-  }
+test("Dialog-first Home contract: the three signature approaches appear in separate stages without a duplicate top showcase",()=>{
+  const home=read("components/holistic-house-home.tsx");
+  const es=read("app/es/page.tsx");
+  const hero=read("components/home-dialog-first.tsx");
+  assert.match(home,/<HomeDialogFirst locale=\{locale\}\/>/);
+  assert.match(es,/<HolisticHouseHome locale="es"\/>/);
+  assert.doesNotMatch(home,/<ProfileHubTabs|<HomeSectionCarousel|<HomeMoreDisclosure|<HomeFeaturedWorkspace|<PersonalTestimonials|<HomePresentationVideoSection/);
+  assert.match(hero,/data-hh-home-composer/);
+  assert.match(hero,/data-hh-home-business-switch/);
 });
 
 test("localized card copy explains methods and avoids overstating active AI or booking", () => {

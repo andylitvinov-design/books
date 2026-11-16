@@ -13,24 +13,16 @@ test("YouTube video stills bypass Vercel image transforms but keep the source fa
   assert.match(player, /onError=\{showFallbackPoster\}/);
 });
 
-test("Andy portrait uses already-built responsive static variants on all audited placements", () => {
-  const player = read("components/site-video-player.tsx");
-  const home = read("components/holistic-house-home.tsx");
-  const serviceHero = read("components/services-conversion-hero.tsx");
-  const serviceCards = read("components/services-studio-offers.tsx");
-  const portrait = read("components/static-portrait.tsx");
-  assert.match(player, /<StaticPortrait className="site-video-poster" src="\/images\/holistic-house\/andy-about\.png"/);
-  assert.equal((home.match(/<StaticPortrait\b/g) || []).length, 1);
-  const spanish = read("app/es/page.tsx");
-  assert.equal((spanish.match(/<StaticPortrait\b/g) || []).length, 1, "Spanish About keeps one verified photo");
-  assert.match(serviceHero, /\{ kind: "business", image: "\/images\/holistic-house\/andy-about\.png"/);
-  assert.match(serviceHero, /slide\.image === "\/images\/holistic-house\/andy-about\.png" \? \(/);
-  assert.match(serviceHero, /<StaticPortrait src=(?:\{slide\.image\}|"\/images\/holistic-house\/andy-about\.png")/);
-  assert.match(serviceCards, /<StaticPortrait src="\/images\/holistic-house\/andy-about\.png"/);
-  assert.match(read("app/[locale]/services/free-situation-review/page.tsx"), /<FreeEntryLanding locale=\{locale\} kind="situation" \/>/);
-  assert.match(portrait, /unoptimized: true/);
-  assert.match(portrait, /srcSet=\{srcSet\}/);
-});
+test("Homepage LCP avoids the 2MB portrait; Services keeps all sourced portraits",()=>{
+    const home=read("components/holistic-house-home.tsx");
+    const scenic=read("components/home-dialog-first.module.css");
+    const services=read("components/services-studio-offers.tsx");
+    const portrait=read("components/static-portrait.tsx");
+    assert.doesNotMatch(home,/<StaticPortrait|<PersonalTestimonials/);
+    assert.match(scenic,/reiki-approved-sunrise-v3\.webp/);
+    assert.match(services,/<StaticPortrait src="\/images\/holistic-house\/andy-about\.png"/);
+    assert.match(portrait,/srcSet=\{srcSet\}/);
+  });
 
 test("service cards reuse the verified responsive Andy portrait instead of a 2MB PNG transform", () => {
   const services = read("components/services-solutions.tsx");
