@@ -1339,21 +1339,43 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         phase(engine,"montage-free-navigated-ready");
         await readyGenerate.click();
         phase(engine,"ready-free-render-requested");
-        // The Ready questionnaire stays visible WHILE encoding. On fast local
-        // exports the verified result can replace the progress UI between two
-        // Playwright awaits, so inspect one consistent DOM snapshot per poll.
+        // Verify the approved seven-picture Ready check-in and accept a
+        // finished, genuinely encoded movie if a fast render wins the race.
         const readyProgress=page.locator("[data-video-ready]");
-        await expect.poll(()=>readyProgress.evaluate(root=>{
+        const readyCheckin=page.locator("[data-ready-checkin] [data-ready-sequential-checkin]");
+        const readReadyState=()=>readyProgress.evaluate(root=>{
           if(root.getAttribute("data-ready-state")==="complete"){
             return root.getAttribute("data-ready-has-video")==="true"&&root.querySelector("video")
               ?"verified-complete":"completed-without-video";
           }
           const generating=root.querySelector("[data-ready-generating]");
-          const questionnaire=root.querySelector("[data-ready-checkin] [data-video-checkin]");
+          const questionnaire=root.querySelector("[data-ready-checkin] [data-ready-sequential-checkin]");
           const visible=element=>Boolean(element&&element.getClientRects().length);
           return visible(generating)&&visible(questionnaire)
             ?"generating-with-checkin":"waiting-for-checkin";
-        }),{timeout:20000}).toMatch(/^(?:generating-with-checkin|verified-complete)$/);
+        });
+        await expect.poll(readReadyState,{timeout:20000})
+          .toMatch(/^(?:generating-with-checkin|verified-complete)$/);
+        if(await readyCheckin.isVisible()){
+          await expect(readyCheckin.locator("[data-ready-checkin-score]")).toHaveCount(11);
+          const firstTone=await readyCheckin.getAttribute("data-checkin-tone");
+          const firstImage=await readyCheckin.locator("img").getAttribute("src");
+          assert.ok(firstTone&&firstImage?.startsWith("/videos/holistic-house/"),
+            "Ready must show a real first-party picture and named question");
+          try{
+            await readyCheckin.locator('[data-ready-checkin-score="5"]').click({timeout:5000});
+          }catch(error){
+            if(await readReadyState()!=="verified-complete")throw error;
+          }
+          await expect.poll(async()=>{
+            if(await readReadyState()==="verified-complete")return "verified-complete";
+            if(!await readyCheckin.isVisible())return "waiting";
+            const tone=await readyCheckin.getAttribute("data-checkin-tone");
+            const image=await readyCheckin.locator("img").getAttribute("src");
+            return tone!==firstTone&&image!==firstImage
+              ?"question-advanced":"waiting";
+          },{timeout:5000}).toMatch(/^(?:question-advanced|verified-complete)$/);
+        }
         // No unsolicited optional survey should cover the intentional export.
         // The existing pill offers an explicit way to open the check-in.
         await expect(page.locator("[data-video-effect-overlay]")).toHaveCount(0);
