@@ -488,3 +488,52 @@
 }
 .testReviewLink{display:inline-flex;align-items:center;min-height:44px;margin-top:10px;color:#24584b;font-size:14px;line-height:1.4;font-weight:750;text-decoration:underline;text-underline-offset:3px}
 .testReviewLink:hover{text-decoration-thickness:2px}
+
+/* Free personal review: readable copy and natural line spacing on phones.
+   Allow sections to grow with RU/EN text rather than crushing it to one viewport. */
+@media(max-width:720px){
+ .page[data-free-entry-landing="situation"]{font-size:16px}
+ .page[data-free-entry-landing="situation"] .situationHero{min-height:0;padding:20px 16px;align-content:start}
+ .page[data-free-entry-landing="situation"] .situationHero h1{font-size:clamp(30px,8vw,36px);line-height:1.16;letter-spacing:-.02em;text-wrap:balance}
+ .page[data-free-entry-landing="situation"] .situationHero .shortLead{display:block;font-size:17px;line-height:1.58;margin:2px 0 20px;text-wrap:pretty}
+ .page[data-free-entry-landing="situation"] .situationHero .primary{font-size:16px;line-height:1.4;min-height:56px;padding:14px 16px}
+ .page[data-free-entry-landing="situation"] .situationHero .badge{font-size:12px;line-height:1.4;padding:7px 11px}
+ .page[data-free-entry-landing="situation"] .reviewOutcome,
+ .page[data-free-entry-landing="situation"] .reviewProcess,
+ .page[data-free-entry-landing="situation"] .reviewApproach,
+ .page[data-free-entry-landing="situation"] .reviewIntro,
+ .page[data-free-entry-landing="situation"] .reviewSocialProof{padding:24px 18px;min-height:0;gap:20px;overflow:visible}
+ .page[data-free-entry-landing="situation"] .reviewOutcome h2,
+ .page[data-free-entry-landing="situation"] .reviewProcess h2,
+ .page[data-free-entry-landing="situation"] .reviewApproach h2,
+ .page[data-free-entry-landing="situation"] .reviewIntroCopy h2,
+ .page[data-free-entry-landing="situation"] .reviewSocialProof h2{font-size:clamp(28px,7.5vw,34px);line-height:1.18;letter-spacing:-.018em;text-wrap:balance}
+ .page[data-free-entry-landing="situation"] .reviewOutcome .sectionLead,
+ .page[data-free-entry-landing="situation"] .reviewProcess .sectionLead,
+ .page[data-free-entry-landing="situation"] .reviewApproach .sectionLead,
+ .page[data-free-entry-landing="situation"] .reviewIntroLead,
+ .page[data-free-entry-landing="situation"] .reviewSocialProofHeader>p:last-child{font-size:17px;line-height:1.58;margin-bottom:16px;text-wrap:pretty}
+ .page[data-free-entry-landing="situation"] .reviewBenefitsList h3,
+ .page[data-free-entry-landing="situation"] .approachList h3{font-size:22px;line-height:1.28;margin-bottom:8px}
+ .page[data-free-entry-landing="situation"] .reviewBenefitsList p,
+ .page[data-free-entry-landing="situation"] .approachList p,
+ .page[data-free-entry-landing="situation"] .reviewSteps p{font-size:16px;line-height:1.62;text-wrap:pretty}
+ .page[data-free-entry-landing="situation"] .reviewSteps strong{font-size:18px;line-height:1.4}
+ .page[data-free-entry-landing="situation"] .reviewBenefitsList article,
+ .page[data-free-entry-landing="situation"] .approachList article{padding:16px 0;gap:12px}
+ .page[data-free-entry-landing="situation"] .reviewIntroTakeaway{font-size:16px;line-height:1.55;padding:16px}
+ .page[data-free-entry-landing="situation"] .reviewPrivacy,
+ .page[data-free-entry-landing="situation"] .reviewIntroSourceNote,
+ .page[data-free-entry-landing="situation"] .reviewStoryDisclaimer{font-size:14px;line-height:1.6;text-wrap:pretty}
+ .page[data-free-entry-landing="situation"] .reviewIntroAudio,
+ .page[data-free-entry-landing="situation"] .reviewAudioLabel{font-size:14px;line-height:1.5}
+ .page[data-free-entry-landing="situation"] .reviewCta,
+ .page[data-free-entry-landing="situation"] .reviewIntro .reviewCta{display:flex;min-height:56px;padding:12px 16px;font-size:16px;line-height:1.4}
+ .page[data-free-entry-landing="situation"] .reviewStories>summary{min-height:56px;font-size:16px;line-height:1.5;padding:16px}
+ .page[data-free-entry-landing="situation"] .fullQuestionnaire>summary,
+ .page[data-free-entry-landing="situation"] .coachingLink a{font-size:16px;line-height:1.5}
+ .page[data-free-entry-landing="situation"] .reviewIntroCopy,
+ .page[data-free-entry-landing="situation"] .reviewOutcomeCopy,
+ .page[data-free-entry-landing="situation"] .reviewProcessCopy,
+ .page[data-free-entry-landing="situation"] .reviewApproachCopy{min-width:0;max-width:70ch}
+}
