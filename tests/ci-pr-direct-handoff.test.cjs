@@ -101,18 +101,18 @@ test('watchdog direct-handoff condition must be balanced',()=>{
 
 test('watchdog has only two worker-completion listeners; Core owns quality-failure aggregation',()=>{
  const watchdog=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
- const trigger=watchdog.split('  workflow_run:\\n')[1]?.split('  push:\\n')[0];
+ const trigger=watchdog.split('  workflow_run:\n')[1]?.split('  push:\n')[0];
  assert.ok(trigger,'workflow_run completion listener exists');
  const names=[...trigger.matchAll(/^      - '(.+)'$/gm)].map(m=>m[1]);
  assert.deepEqual(names,[
   'HH PR source Repair Worker',
   'HH zero-cost PR CI worker'
  ],'no redundant per-specialist or queue-observer completion callbacks');
- assert.match(trigger,/types: \\[completed\\]/);
+ assert.match(trigger,/types: \[completed\]/);
  assert.match(watchdog,/group: hh-control-tower-single-writer/);
  // PR stage and owner PM command routes remain immediately event-driven.
- assert.match(watchdog,/pull_request_target:\\n    types: \\[opened, reopened, synchronize, ready_for_review\\]/);
- assert.match(watchdog,/issue_comment:\\n    types: \\[created\\]/);
+ assert.match(watchdog,/pull_request_target:\n    types: \[opened, reopened, synchronize, ready_for_review\]/);
+ assert.match(watchdog,/issue_comment:\n    types: \[created\]/);
 });
 
 test('failed Core still has a separately authenticated repair bridge and exact-HEAD handoff',()=>{
@@ -120,12 +120,12 @@ test('failed Core still has a separately authenticated repair bridge and exact-H
  const bridge=fs.readFileSync('.github/workflows/hh-pr-direct-core-failure.yml','utf8');
  assert.match(bridge,/  workflow_run:/);
  assert.match(bridge,/      - 'HH PR core release gate'/);
- assert.match(bridge,/types: \\[completed\\]/);
+ assert.match(bridge,/types: \[completed\]/);
  assert.match(bridge,/persistReadOnlyRoute/);
  assert.match(bridge,/group: hh-direct-core-pr-/);
- const direct=watchdog.split('  direct-handoff:\\n')[1]?.split('\\n  reactivate-schedules:\\n')[0];
+ const direct=watchdog.split('  direct-handoff:\n')[1]?.split('\n  reactivate-schedules:\n')[0];
  assert.ok(direct,'worker completion direct handoff remains');
- assert.match(direct,/github\\.event\\.workflow_run\\.status == 'completed'/);
+ assert.match(direct,/github\.event\.workflow_run\.status == 'completed'/);
  assert.match(direct,/HH PR source Repair Worker/);
  assert.match(direct,/HH zero-cost PR CI worker/);
  assert.match(direct,/needs: reconcile/);
