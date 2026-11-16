@@ -259,7 +259,17 @@ try{
           await expect(page.locator('[data-video-slot="home-intro"]')).toHaveCount(0)
           assert.ok(!(await page.content()).includes(title),
             'Retired Home intro must not leak a published admin title: '+locale)
-          await expect(page.locator('[data-personal-testimonials="home"]')).toHaveCount(1)
+          // Owner-approved Ali-first Home defers the testimonial catalog
+          // until the visitor reaches discovery and explicitly expands it.
+          // Still verify that the original 12 source videos remain accessible
+          // after that interaction; never demand their JS on first paint.
+          const discovery=page.locator('[data-home-deferred-sections]');
+          await discovery.scrollIntoViewIfNeeded();
+          const disclosure=discovery.locator('[data-home-discover-more]');
+          await disclosure.waitFor({state:'visible',timeout:30000});
+          await disclosure.locator('summary').click();
+          await expect(discovery.locator('[data-home-expanded-catalog]')).toHaveCount(1);
+          await expect(page.locator('[data-personal-testimonials="home"]')).toHaveCount(1);
           continue
         }
         if (slot.id === 'thank-you') {
