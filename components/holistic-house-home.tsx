@@ -8,6 +8,7 @@ import { HomeSectionCarousel } from "@/components/home-section-carousel";
 import { MySpaceTopics } from "@/components/my-space-topics";
 import { ProfileHubTabs } from "@/components/app/profile-hub-tabs";
 import { HomeMoreDisclosure } from "@/components/home-more-disclosure";
+import { listMyTubeCategories } from "@/lib/mandala/mytube-content-taxonomy.mjs";
 import { HomeFeaturedWorkspace } from "@/components/home-featured-workspace";
 import { HomePresentationVideoSection } from "@/components/home-presentation-video-section";
 import { FreeMobileAppBanner } from "@/components/free-mobile-app-banner";
@@ -60,7 +61,7 @@ export function HolisticHouseHome({ locale = "en" }: HolisticHouseHomeProps) {
       <MySpaceTopics locale={locale} publicHome />
 
       <HomeSectionCarousel locale={locale} />
-      <HomeMoreDisclosure locale={locale} />
+      <HomeMoreDisclosure locale={locale} categories={listMyTubeCategories(locale)} />
       <HomeFeaturedWorkspace locale={locale} />
       <Suspense fallback={null}>
         <HomePresentationVideoSection locale={locale} />

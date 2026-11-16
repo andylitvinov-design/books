@@ -363,7 +363,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null,person
   const sessionScrollRef=useRef(null)
   const rootRef=useRef(null)
   useEffect(()=>{
-    if(!session)return
+    if(!session&&!liveChat)return
     // The public session is an immersive viewport, not a card inside the site.
     // Keep the original scroll state when returning to the model lounge.
     const previousOverflow=document.body.style.overflow
@@ -386,7 +386,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null,person
       rootRef.current?.style.removeProperty('--coach-visible-height')
       rootRef.current?.style.removeProperty('--coach-visible-top')
     }
-  },[session])
+  },[session,liveChat])
   // On phones, the next question must not appear below the old viewport.
   // Focus the freshly rendered heading after each guest step; never autofocus
   // an input or open the keyboard without the visitor's action.
@@ -603,7 +603,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null,person
   }
   return <main ref={rootRef} className={styles.root} data-public-coaching data-public-coaching-active={session||liveChat?'true':undefined} lang={lang}>
     <div className={styles.wrap}>
-      {!session?selectedPersona?<section className={styles.personaWelcome} data-my-coach-handoff={selectedPersona.id}>
+      {!session?selectedPersona?<section className={styles.personaWelcome} data-my-coach-handoff={selectedPersona.id} data-coach-session-layout={liveChat?'true':undefined}>
         {liveChat?<MyCoachLiveDialogue key={selectedPersona.id} locale={lang}
           personaId={selectedPersona.id} settings={personaSelection?.settings}
           onClose={()=>setLiveChat(false)}
