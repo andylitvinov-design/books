@@ -92,6 +92,18 @@ test('dependency timeout needs explicit named poll step and terminal timed_out; 
   assert.equal(normal.stages.dependency_timeout.minutes,0);
   assert.equal(proof.stages.dependency_timeout.minutes,23);
   assert.equal(proof.stages.runner_start_wait.minutes,1);
+  // #4815 merged the terminal status with the real Specialist worker.
+  // The current required check name must retain the same explicit-step
+  // timeout attribution; generic Core failures/slow jobs are not proof.
+  const unified=job(91,'hh-merge-check',at('10:01'),at('10:02'),at('10:25'),'timed_out');
+  const explicit={...unified,steps:[{name:'specialist dependency timeout',conclusion:'timed_out'}]};
+  const unrelated={...unified,steps:[{name:'generic script timeout',conclusion:'timed_out'}]};
+  assert.equal(analyzePrLoss(pr(),[timeout],{9:{jobs:[unified],total_count:1}},[],at('13:00'))
+    .stages.dependency_timeout.minutes,0);
+  assert.equal(analyzePrLoss(pr(),[timeout],{9:{jobs:[unrelated],total_count:1}},[],at('13:00'))
+    .stages.dependency_timeout.minutes,0);
+  assert.equal(analyzePrLoss(pr(),[timeout],{9:{jobs:[explicit],total_count:1}},[],at('13:00'))
+    .stages.dependency_timeout.minutes,23);
 });
 
 test('merged final-HEAD run without GitHub PR links remains verifiable by exact SHA, repository and lifetime',()=>{
