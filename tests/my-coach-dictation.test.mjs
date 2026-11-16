@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
-import {detectedSpeechLocale,chooseDictationLanguage,readDictationResults,ios27NeedsSpeechRecovery,hasCoachSpokenAnswer} from '../lib/personal-coaching/my-coach-dictation.mjs'
+import {detectedSpeechLocale,chooseDictationLanguage,coachSpokenTurnLocale,readDictationResults,ios27NeedsSpeechRecovery,hasCoachSpokenAnswer} from '../lib/personal-coaching/my-coach-dictation.mjs'
 import {appendSpokenAnswer} from '../lib/personal-coaching/speech-text.js'
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 test('Auto follows device language and remembered transcript; manual RU/EN override works',()=>{
@@ -13,6 +13,24 @@ test('Auto follows device language and remembered transcript; manual RU/EN overr
  assert.equal(chooseDictationLanguage({locale:'ru',selection:'en',browserLanguages:['ru-RU']}),'en-GB')
  assert.equal(chooseDictationLanguage({locale:'es'}),'es-ES')
 })
+test('explicit spoken locale beats wrong-script ASR and live RU/EN switch does not require Play again',()=>{
+ assert.equal(coachSpokenTurnLocale({selection:'en',recognizedLanguage:'en-GB',transcript:'Мать селфи'}),'en')
+ assert.equal(coachSpokenTurnLocale({selection:'ru',recognizedLanguage:'ru-RU',transcript:'Mother selfie'}),'ru')
+ assert.equal(coachSpokenTurnLocale({selection:'auto',recognizedLanguage:'en-GB',transcript:'I want to talk'}),'en')
+ assert.equal(coachSpokenTurnLocale({selection:'auto',recognizedLanguage:'ru-RU',transcript:'Хочу поговорить'}),'ru')
+ const loop=source('components/my-coach-speech-loop.jsx')
+ const ui=source('components/my-coach-live-dialogue.jsx')
+ for(const token of ['speechLocaleRef.current=speechLocale',
+   'selection:selectionAtRecognitionRef.current',
+   'recognizedLanguageRef.current=recognition.lang',
+   'if(heardRef.current.trim())return',
+   'restartSilentRecognition(recognition)',
+   'turnRef.current?.(text,{locale:utteranceLocale})'])assert.ok(loop.includes(token),token)
+ assert.ok(ui.includes('utteranceLocale:spoken?.locale'))
+ assert.ok(ui.includes("voiceTurn&&['en','ru','es'].includes(utteranceLocale)"))
+ assert.ok(!ui.includes("disabled={voiceState.phase!=='idle'}>"),'the live language selector must never be disabled')
+})
+
 test('One shared coaching Brain gets text detected as Russian or English',()=>{
  assert.equal(detectedSpeechLocale('Мне тревожно','en'),'ru')
  assert.equal(detectedSpeechLocale('I feel anxious','ru'),'en')

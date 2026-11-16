@@ -163,17 +163,17 @@ test('My Coach persona dialogue speaks and listens on exactly the consented sess
   assert.match(ui,/const result=await sendMessage\(draft.trim\(\)\)/)
   assert.ok(ui.includes("if(!spokeInSession&&!['safety','boundary'].includes(result.mode))"),
     'typed turns use the live audio path first; unconsented safety responses never go to the vendor')
-  assert.match(ui,/onTurn=\{text=>sendMessage\(text,\{voiceTurn:true\}\)\}/)
+  assert.match(ui,/onTurn=\{\(text,spoken\)=>sendMessage\(text,\{voiceTurn:true,utteranceLocale:spoken\?\.locale\}\)\}/)
   assert.match(ui,/enabled=\{true\}/)
   assert.match(ui,/Local-only authored fallback/)
   assert.match(ui,/coachingBrainSafety\(input\)\|\|coachingBrainBoundary\(input\)/)
   assert.match(ui,/if\(mode==='safety'\|\|\(mode==='boundary'/)
   assert.match(ui,/coachStagePrompt\(personaId,stage,responseLocale,settings\)/)
-  const sendFunction=ui.slice(ui.indexOf('async function sendMessage(raw,{voiceTurn=false}={}){'))
+  const sendFunction=ui.slice(ui.indexOf('async function sendMessage(raw,{voiceTurn=false,utteranceLocale=null}={}){'))
   // On a new consented turn, a metadata-only model probe may restore verified
   // availability. Client messages stay private until the verified-model guard.
   const probeFunction=ui.slice(ui.indexOf('async function retryCoachModelAfterOutage(){'),
-    ui.indexOf('async function sendMessage(raw,{voiceTurn=false}={}){'))
+    ui.indexOf('async function sendMessage(raw,{voiceTurn=false,utteranceLocale=null}={}){'))
   const verify="const needsVerifiedModel=readiness.status!=='verified'&&!wisdomRequested&&!localInterruption"
   const wait="const modelReady=!needsVerifiedModel||await retryCoachModelAfterOutage()"
   const offline="if(localInterruption||authRequired||(!modelReady&&!wisdomRequested)){"
@@ -190,7 +190,7 @@ test('My Coach persona dialogue speaks and listens on exactly the consented sess
   assert.match(ui,/Браузер может отправлять звук поставщику распознавания речи/)
   for(const phrase of ['window.SpeechRecognition||window.webkitSpeechRecognition',
     'recognition.interimResults=true','recognition.lang=chooseDictationLanguage',
-    'void deliver(appendSpokenAnswer(draftAtStartRef.current,finished,1200))','turnRef.current?.(text)','window.SpeechSynthesisUtterance',
+    'void deliver(appendSpokenAnswer(draftAtStartRef.current,finished,1200))','turnRef.current?.(text,{locale:utteranceLocale})','window.SpeechSynthesisUtterance',
     'activeRef.current=false','document.visibilityState===\'hidden\'',
     'recognition.abort()','onCancelTurn','aria-pressed={active&&!ready}'])
     assert.ok(loop.includes(phrase),phrase)
@@ -262,7 +262,7 @@ test('approved live-session visual hierarchy keeps a real voice pipeline, readab
     'showCaptions&&','className={styles.captionsControl}','setShowCaptions(value=>!value)',
     'className={styles.endControl}','className={styles.liveTranscript}','className={styles.voiceControls}',
     'className={styles.textComposer} open','<details className={styles.quickGoals}>',
-    'onTurn={text=>sendMessage(text,{voiceTurn:true})}','onTranscript={setSpeechPreview}']) assert.ok(ui.includes(token),token)
+    'onTurn={(text,spoken)=>sendMessage(text,{voiceTurn:true,utteranceLocale:spoken?.locale})}','onTranscript={setSpeechPreview}']) assert.ok(ui.includes(token),token)
   for(const token of ['.heroSubtitle','.transcriptFeed','.sessionBottomNav{display:none}',
     '.voiceCenter :global([data-my-coach-voice] button)','@media(max-width:350px)',
     '@media(max-width:699px) and (max-height:680px)']) assert.ok(css.includes(token),token)
