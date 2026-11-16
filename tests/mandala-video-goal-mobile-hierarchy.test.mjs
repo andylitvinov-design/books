@@ -30,7 +30,7 @@ test("Subcategories are a distinct prominent step with touch-sized choices",()=>
 });
 test("Exactly four source-backed topics replace prior choices at the third quiz step",()=>{
   assert.match(director,/const visibleQuickTopicIds=goalQuizStep===3/);
-  assert.match(director,/taxonomyTopics\\.map\\(item=>item\\.id\\)\\.slice\\(0,4\\)/);
+  assert.ok(director.includes('taxonomyTopics.map(item=>item.id).slice(0,4)'));
   assert.match(director,/data-video-goal-topic-chips/);
   assert.match(director,/data-video-optional-topic/);
   assert.match(mobile,/\[data-video-goal-topic-chips\] button/);
