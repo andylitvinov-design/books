@@ -1,5 +1,5 @@
 /**
- * Bounded first-party cache for the curated Pexels business photographs used
+ * Bounded first-party cache for the curated Pexels and Wikimedia Commons photographs used
  * as Story fallback. Never a generic URL fetcher or user-supplied proxy.
  * JPEG decoding and geometry are checked again by the browser renderer.
  */
@@ -22,9 +22,12 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
  try{
    // The URL is a literal allowlisted source ID; no redirects, cookies, user
    // prompts, profile values or personal information are sent to the CDN.
-   const result=await fetch(photo.upstreamSrc,{redirect:"error",cache:"force-cache",
+   const isWikimedia=photo.provider==="wikimedia";
+   const result=await fetch(photo.upstreamSrc,{redirect:isWikimedia?"follow":"error",cache:"force-cache",
      headers:{Accept:"image/jpeg"},signal:AbortSignal.timeout(8000)});
-   if(!result.ok||!IMAGE_TYPE.test(result.headers.get("content-type")||""))
+   const finalHost=new URL(result.url).hostname;
+   if(!result.ok||!IMAGE_TYPE.test(result.headers.get("content-type")||"")||
+      (isWikimedia?finalHost!=="upload.wikimedia.org":finalHost!=="images.pexels.com"))
      return new Response(null,{status:503});
    const length=Number(result.headers.get("content-length")||0);
    if(length>MAX_BYTES)return new Response(null,{status:413});
