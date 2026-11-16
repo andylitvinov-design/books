@@ -1692,3 +1692,57 @@ test('exact #3843 iHelp photo dialogue uses real Mandala owner, never unrelated 
   assert.equal(planPublicServicesChangedPaths([
     'components/contact-channel-chooser.tsx']).mode,'full');
 });
+
+
+test('Nov 16 video-only PRs stay on mandatory Mandala CI without an unrelated 13-case public-services runner', () => {
+  const pub = pathsOf('hh-public-services-production.yml');
+  const mandala = pathsOf('holistic-support-mandala.yml');
+  const videoOnly = [
+    'components/mandala-automatic-storyboard.tsx',
+    'components/mandala-video-concept.tsx',
+    'components/mandala-video-concept.module.css',
+    'components/mandala-video-ready.tsx',
+    'components/mandala-video-ready.module.css',
+    'components/mandala-video-effect-journey.module.css',
+    'components/mandala-therapy-studio.tsx',
+  ];
+  for (const file of videoOnly) {
+    assert.equal(covers(mandala, file), true, 'mandatory real Mandala specialist must still own ' + file);
+    assert.equal(covers(pub, file), false, 'unrelated public checkout E2E must not run for ' + file);
+  }
+  // Real file inventories from the Nov 16 video-only #4732 and #4742.
+  // If any other changed file needs public services, its positive trigger
+  // still wins; never waive mixed commerce, consent or booking PRs.
+  const pr4732 = [
+    'components/mandala-video-effect-journey.module.css',
+    'components/mandala-video-mobile.module.css',
+    'components/mandala-video-ready.module.css',
+    'components/mandala-video-ready.tsx',
+    'docs/design/VIDEO_READY_APPROVED_LAYOUT_20261115.md',
+    'scripts/verify-affirmation-voice-browser.mjs',
+    'tests/mandala-ready-approved-layout-20261115.test.mjs',
+    'tests/mandala-video-ready.test.mjs',
+  ];
+  const pr4742 = [
+    'components/mandala-free-video-studio.tsx',
+    'components/mandala-therapy-studio.tsx',
+    'components/mandala-video-ready.tsx',
+    'scripts/verify-affirmation-voice-browser.mjs',
+    'tests/mandala-video-ready.test.mjs',
+  ];
+  for (const files of [pr4732, pr4742]) {
+    assert.equal(files.some(file => covers(pub, file)), false,
+      'isolated Video Studio changes must not allocate the public-services full browser matrix');
+    assert.equal(files.some(file => covers(mandala, file)), true,
+      'real Mandala video checks must still run');
+  }
+  for (const sensitive of [
+    'middleware.ts',
+    'components/sitewide-lead-capture.tsx',
+    'app/api/payments/new-gateway/route.js',
+    'scripts/verify-home-consultation-first-screen.mjs',
+    'components/mandala-service-cart.tsx',
+    'components/mandala-new-public-booking.tsx',
+  ]) assert.equal(covers(pub, sensitive), true,
+    'mixed real public-services/auth/consent/payment work must keep independent E2E for ' + sensitive);
+});
