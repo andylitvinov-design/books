@@ -17,29 +17,14 @@ on:
     types: [opened, reopened, synchronize, ready_for_review]
     branches: ['codex/public-book-library']
   workflow_run:
-    # Worker completions retain their dedicated completion relay. Independent
-    # PR quality workflows wake the same serialized Watchdog immediately on
-    # failure, instead of waiting for the next ten-minute inventory sweep.
+    # Worker completion remains an immediate refill trigger. Required quality
+    # checks already report through exact-HEAD Core hh-specialist; failed Core
+    # reaches the separate durable direct-Core repair handoff. Subscribing to
+    # every specialist completion produced extra skipped and duplicate Actions
+    # for each PR without authorizing any additional release.
     workflows:
       - 'HH PR source Repair Worker'
       - 'HH zero-cost PR CI worker'
-      - 'HH PR Sweep Guard tests'
-      - 'HH workflow syntax — actionlint'
-      - 'HH PR watchdog contract'
-      - 'Holistic Support mandala release checks'
-      - 'Holistic House public services production acceptance'
-      - 'Holistic House CRM source checks'
-      - 'Website video browser verification'
-      - 'Practice reference design — Chromium and WebKit screenshots'
-      - 'Practitioner visual service editor'
-      - 'HH First Video LIVE · encoded file acceptance'
-      - 'Video publication safety and legacy private preflight'
-      - 'Holistic House nightly public URL / media crawl'
-      - 'Native CI'
-      - 'HH Growth Studio editorial checks'
-      - 'HH one-shot PR backlog recovery'
-      - 'HH PR Control Tower queue dispatcher'
-      - 'HH PR three-cohort evidence backfill'
     types: [completed]
   push:
     branches: ['codex/bootstrap-books']
