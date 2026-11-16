@@ -15,7 +15,7 @@ test('Control Tower is read-only; Watchdog owns the worker dispatch lease',()=>{
 test('global issue comments no longer spawn no-op Actions; PM inbox is scheduled and manually callable',()=>{
  const fs=require('node:fs');
  const workflow=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
- const reconcile=workflow.split('  reconcile:')[1]?.split('  conflict-event-handoff:')[0]||'';
+ const reconcile=workflow.split('  reconcile:')[1]?.split('  completion-wait:')[0]||'';
  const guard=reconcile.split('    runs-on:')[0];
  // GitHub filters issue_comment only AFTER starting a workflow run; removing
  // this event avoids thousands of skipped executions from unrelated PR chat.

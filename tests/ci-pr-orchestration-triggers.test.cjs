@@ -332,8 +332,8 @@ test('trusted PR synchronize cancels only ancestor-proven stale HEADs, never arm
   const enable=native.split('  enable:\n')[1]?.split('  recover-interrupted-core:\n')[0];
   const prune=native.split(/^  prune-head:\s*$/m)[1];
   assert.ok(enable && prune, 'both isolated jobs must remain');
-  assert.ok(native.includes('types: [synchronize]'), 'only changed source wakes Native PR-target janitor');
-  assert.ok(!native.includes('types: [opened, ready_for_review, synchronize]'));
+  assert.ok(native.includes('types: [opened, reopened, synchronize, ready_for_review]'), 'native event coalesces PR conflict and stale janitor');
+  assert.ok(!read('hh-pr-ten-minute-watchdog').includes('  pull_request_target:'),'watchdog must not create second PR event wrapper');
   assert.ok(!enable.includes("github.event_name == 'pull_request_target'"),
     'Native AutoMerge must not arm or run on opened/Ready before exact-HEAD Core');
   assert.ok(enable.includes("github.event.workflow_run.conclusion == 'success'"), 'post-Core ARM retained');
@@ -396,18 +396,20 @@ test('successful Core CI refills capacity through the unified event runner witho
 });
 
 
-test('opened/Ready telemetry shares Watchdog; native merge still waits for exact Core',()=>{
+test('opened/Ready telemetry shares native PR-target wrapper; native merge still waits for exact Core',()=>{
   const native=read('hh-native-auto-merge');
   const watchdog=read('hh-pr-ten-minute-watchdog');
   const helper=readFileSync('scripts/ci-pr-conflict-event-handoff.cjs','utf8');
   const enable=native.split('  enable:\n')[1]?.split('  recover-interrupted-core:\n')[0];
   assert.ok(enable,'trusted native enable gate must remain');
-  assert.ok(native.includes('types: [synchronize]'),
-    'native PR-target only cancels superseded source-HEAD CI');
+  assert.ok(native.includes('types: [opened, reopened, synchronize, ready_for_review]'),
+    'native PR-target reuses one wrapper for Ready/conflict + obsolete HEAD cancellation');
   assert.ok(!enable.includes("github.event_name == 'pull_request_target'"),
     'opened/Ready never arms native merge without new Core');
-  assert.ok(watchdog.includes('publishReadyStage({github,context})'),
-    'already running Watchdog PR event must preserve Ready evidence');
+  assert.ok(native.includes('publishReadyStage({github,context})'),
+    'already running native PR event must preserve Ready evidence');
+  assert.ok(!watchdog.includes('  pull_request_target:'),
+    'watchdog must not dispatch a second per-PR event');
   assert.ok(helper.includes("['opened','ready_for_review']"),
     'only actual opened/Ready can be recorded');
   assert.ok(helper.includes("source:opened?'pr_opened_ready':'ready_event_observed'"),
@@ -435,9 +437,10 @@ test('watchdog contracts execute the immutable-base freshness suite once per CI 
     'repeated test path wastes a runner without adding coverage');
 });
 
-test('all five bounded Watchdog event/schedule control jobs use the existing 1-vCPU slim runner',()=>{
+test('four bounded Watchdog control jobs retain slim; conflict uses native PR-target wrapper',()=>{
   const w=read('hh-pr-ten-minute-watchdog');
-  const jobs=[['reconcile',8],['conflict-event-handoff',5],['completion-wait',3],
+  const native=read('hh-native-auto-merge');
+  const jobs=[['reconcile',8],['completion-wait',3],
     ['direct-handoff',8],['reactivate-schedules',5]];
   for(const [name,timeout] of jobs){
     const marker='  '+name+':\n';
@@ -456,7 +459,12 @@ test('all five bounded Watchdog event/schedule control jobs use the existing 1-v
   assert.match(w,/^  workflow_dispatch:/m);
   assert.match(w,/group: hh-control-tower-single-writer/);
   assert.match(w,/^  workflow_run:$/m);
-  assert.match(w,/^  pull_request_target:$/m);
+  assert.doesNotMatch(w,/^  pull_request_target:$/m);
+  const conflict=native.split('  conflict-event-handoff:\n')[1]?.split('\n  prune-head:\n')[0];
+  assert.ok(conflict);
+  assert.match(conflict,/^    runs-on: ubuntu-slim$/m);
+  assert.match(conflict,/^    timeout-minutes: 5$/m);
+  assert.match(conflict,/group: hh-control-tower-single-writer/);
   assert.match(w,/HH PR 10-minute watchdog/);
   assert.doesNotMatch(w,/continue-on-error:\s*true/);
 });
@@ -600,7 +608,8 @@ test('background control schedules halve native runner ticks without weakening e
  assert.equal(cronTicks(ci),1);
  assert.equal([watchdog,direction,ci].reduce((sum,s)=>sum+cronTicks(s),0),7,
    'these three native backup schedules must use 7, not 14, ticks/hour');
- assert.match(watchdog,/^  pull_request_target:\n    types: \[opened, reopened, synchronize, ready_for_review\]/m);
+ assert.match(read('hh-native-auto-merge'),/^  pull_request_target:\n(?:    #[^\n]*\n)*    types: \[opened, reopened, synchronize, ready_for_review\]/m);
+ assert.doesNotMatch(watchdog,/^  pull_request_target:/m);
  assert.match(watchdog,/^  workflow_run:\n/m);
  assert.match(watchdog,/^  workflow_dispatch:\n/m);
  assert.match(watchdog,/group: hh-control-tower-single-writer/);
@@ -640,7 +649,7 @@ test('hourly Vercel dedupes exact SHA across v6 readyState and state',()=>{
  check([],false);
  assert.match(workflow,/target=production&limit=100/,
    'a single bounded GET covers recent production deployments');
- assert.match(workflow,/cron: '17 \* \* \* \*'/);
+ assert.match(workflow,/cron: '37 \* \* \* \*'/);
  assert.match(workflow,/if \[\[ "\$EMERGENCY" != "true" \]\]; then/);
  assert.match(workflow,/\[\[ "\$latest" == "\$EXPECTED_SHA" \]\]/,
    'protect latest source HEAD before Vercel release');
@@ -684,4 +693,32 @@ test('normal Vercel production batch allows at most one requested deployment per
  assert.match(workflow,/No automatic retry/,
    'do not duplicate a possibly accepted production POST');
  assert.match(workflow,/if \[\[ "\$EMERGENCY" != "true" \]\]; then/);
+});
+
+test('PR-target event consolidation keeps protected conflict, Ready stage, source prune and Core-only merge',()=>{
+ const native=read('hh-native-auto-merge'),watchdog=read('hh-pr-ten-minute-watchdog');
+ const target=native.split('  pull_request_target:\n')[1]?.split('\n  pull_request_review:\n')[0];
+ assert.ok(target);
+ assert.match(target,/types: \[opened, reopened, synchronize, ready_for_review\]/);
+ assert.equal((native.match(/^  pull_request_target:$/gm)||[]).length,1);
+ assert.doesNotMatch(watchdog,/^  pull_request_target:$/m);
+ const conflict=native.split('  conflict-event-handoff:\n')[1]?.split('\n  prune-head:\n')[0];
+ const prune=native.split('  prune-head:\n')[1];
+ assert.ok(conflict&&prune);
+ assert.match(conflict,/group: hh-control-tower-single-writer/);
+ assert.match(conflict,/ref: codex\/bootstrap-books/);
+ assert.match(conflict,/persist-credentials: false/);
+ assert.match(conflict,/publishReadyStage/);
+ assert.match(conflict,/HH_CONFLICT_EVENT_HANDOFF/);
+ assert.match(conflict,/HH_PR_DIRECTION_EVENT_SEED/);
+ assert.match(conflict,/HH_PR_EVENT_WATCHDOG_LIVENESS/);
+ assert.match(conflict,/HH_PR_EVENT_CI_DAYTIME_SIGNAL/);
+ assert.match(prune,/github.event.action == 'synchronize'/);
+ assert.match(prune,/node scripts\/ci-prune-stale-runs\.mjs/);
+ const enable=native.split('  enable:\n')[1]?.split('\n  failed-core-handoff:\n')[0];
+ assert.ok(enable);
+ assert.doesNotMatch(enable,/github.event_name == 'pull_request_target'/);
+ assert.match(enable,/github.event.workflow_run.conclusion == 'success'/);
+ assert.match(native,/  workflow_run:/);
+ assert.doesNotMatch(native,/continue-on-error:\s*true/);
 });

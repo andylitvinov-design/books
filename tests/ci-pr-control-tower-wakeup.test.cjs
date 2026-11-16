@@ -273,7 +273,7 @@ test('trusted production PR event safely wakes old cron once; rejects forged eve
 });
 test('PR event backstop runs in the original Watchdog job without new cron',()=>{
  const fs=require('node:fs');
- const yaml=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
+ const yaml=fs.readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
  const job=yaml.split('  conflict-event-handoff:')[1]?.split('  completion-wait:')[0];
  assert.ok(job);assert.match(job,/HH_PR_EVENT_WATCHDOG_LIVENESS/);
  assert.match(job,/wakeStaleWatchdog/);

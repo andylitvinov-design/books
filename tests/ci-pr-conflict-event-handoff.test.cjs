@@ -77,12 +77,14 @@ test('unknown mergeability, stale HEAD and held PR fail closed without dispatch'
 });
 test('single event workflow never falls into full Watchdog inventory scan',()=>{
  const fs=require('node:fs');
- const y=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
- assert.match(y,/pull_request_target:/);
- assert.match(y,/  conflict-event-handoff:/);
- assert.match(y,/github.event_name != 'pull_request_target'/);
- assert.match(y,/group: hh-control-tower-single-writer/);
- assert.match(y,/ci-pr-conflict-event-handoff\.cjs/);
+ const native=fs.readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
+ const watchdog=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
+ assert.match(native,/pull_request_target:/);
+ assert.match(native,/  conflict-event-handoff:/);
+ assert.doesNotMatch(watchdog,/^  pull_request_target:/m,'only one trusted PR-target workflow starts');
+ assert.doesNotMatch(watchdog,/^  conflict-event-handoff:/m);
+ assert.match(native,/group: hh-control-tower-single-writer/);
+ assert.match(native,/ci-pr-conflict-event-handoff\.cjs/);
 });
 
 test('Ready timestamps share trusted PR-event runner and preserve HEAD',async()=>{
@@ -128,12 +130,12 @@ test('Ready telemetry coalescing preserves actual protected Core and conflict ev
  const fs=require('node:fs');
  const native=fs.readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
  const watchdog=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
- assert.match(native,/types: \[synchronize\]/);
- assert.doesNotMatch(native,/types: \[opened, ready_for_review, synchronize\]/);
+ assert.match(native,/types: \[opened, reopened, synchronize, ready_for_review\]/);
+ assert.doesNotMatch(native,/types: \[synchronize\]/,'ready/conflict event must use existing native wrapper');
  assert.match(native,/pull_request_review:/);assert.match(native,/workflow_run:/);
  assert.match(native,/Verify live PR and completed exact-head CI/);
  assert.match(native,/Enable native auto-merge for this exact head/);
- assert.match(watchdog,/pull_request_target:/);
- assert.match(watchdog,/publishReadyStage\(\{github,context\}\)/);
- assert.match(watchdog,/ci-pr-conflict-event-handoff\.cjs/);
+ assert.doesNotMatch(watchdog,/^  pull_request_target:/m);
+ assert.match(native,/publishReadyStage\(\{github,context\}\)/);
+ assert.match(native,/ci-pr-conflict-event-handoff\.cjs/);
 });

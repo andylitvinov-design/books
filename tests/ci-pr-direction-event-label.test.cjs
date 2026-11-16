@@ -81,7 +81,7 @@ test('dry run is read-only and missing labels are not synthetic timestamps',asyn
 });
 test('existing watchdog event job seeds without another job or scheduled workflow',()=>{
  const fs=require('node:fs');
- const y=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
+ const y=fs.readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
  assert.match(y,/conflict-event-handoff:/);
  assert.match(y,/ci-pr-direction-event-label\.cjs/);
  assert.match(y,/await seedDirection\(\{github,context\}\)/);
