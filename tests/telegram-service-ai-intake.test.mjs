@@ -102,13 +102,15 @@ test('Only canonical free review gets the generic bot, other services stay manua
  assert.equal(isOfficialFreeReviewWhatsAppDraft('https://wa.me/1000?text=Page','en'),false);
 });
 
-test('Two-action Services cards fetch the verified V3 bot only after Order opens',()=>{
+test('Two-action Services cards route paid Order to the human Business chat, and fetch free review bot only when selected',()=>{
  const ui=source('components/mandatory-messenger-actions.tsx');
  const action=source('components/services-card-actions.tsx');
  assert.match(action,/active=\{expanded==="order"\}/);
- assert.match(ui,/if\(!active\)\{setServiceBot\(null\);setBotKind\(null\);return;\}/);
- assert.doesNotMatch(ui,/resolveTelegramServiceEntry\(payload,manual,locale\)/);
- assert.match(ui,/const entry=selected\|\|freeReview/);
+ assert.match(ui,/if\(!active\|\|telegramUrl\|\|!isOfficialFreeReviewWhatsAppDraft\(whatsappUrl,locale\)\)/);
+ assert.match(ui,/fetch\('\/api\/public\/telegram-diagnostic'/);
+ assert.match(ui,/const entry=resolveTelegramFirstEntry\(payload,locale\)/);
  assert.match(ui,/serviceBot\|\|telegramUrl\|\|telegramEnquiryUrlFromWhatsApp\(whatsappUrl\)/);
+ assert.match(ui,/data-telegram-route=\{serviceBot\?/);
+ assert.doesNotMatch(ui,/resolveTelegramServiceEntry\(payload,manual,locale\)/);
  assert.doesNotMatch(ui,/createPublicServiceEnquiry|serviceRole|privateKey/);
 });
