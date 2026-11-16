@@ -53,7 +53,14 @@ test("WhatsApp and Telegram draft only a generic course-next-step request", () =
     assert.doesNotMatch(message, /end-01|motivation|firstName|email|accountId|\{\s*"answers"/);
     const telegram = telegramEnquiryUrlFromWhatsApp(url);
     assert.equal(new URL(telegram).pathname, "/" + TELEGRAM_USERNAME);
-    assert.equal(new URL(telegram).searchParams.get("text"), message);
+    const telegramParams = new URL(telegram).searchParams;
+    const telegramText = telegramParams.get("text") || "";
+    // Telegram gets a public service title or bounded start code, not the learner's
+    // course progress, personal intent or full WhatsApp draft.
+    assert.notEqual(telegramText, message);
+    assert.doesNotMatch(telegramText, /five|пять|completed|завершил|personal initiation|инициаци|firstName|accountId|email/i);
+    assert.ok(telegramText.includes("Reiki Practitioner") || telegramParams.has("start"),
+      "Telegram must contain only a public service title or a verified bot start code");
   }
   assert.match(learner, /href=\{reikiWhatsAppUrl\}/);
   assert.match(learner, /href=\{reikiTelegramUrl\}/);

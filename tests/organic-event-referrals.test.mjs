@@ -81,7 +81,11 @@ test("voluntary WhatsApp and Telegram handoffs identify safe organic source with
     assert.deepEqual([...new URL(wa).searchParams.keys()], ["text"]);
     assert.match(text(wa), new RegExp(label));
     assert.match(text(wa), /Eventbrite · stress-live-2026-11/);
-    assert.match(text(telegramEnquiryUrlFromWhatsApp(wa)), /Eventbrite · stress-live-2026-11/);
+    // Keep WhatsApp's reviewed organic referral, but do NOT forward campaigns
+    // or the visitor's message content to a Telegram URL.
+    const telegramText = text(telegramEnquiryUrlFromWhatsApp(wa));
+    assert.match(telegramText, /Live workshop follow-up/);
+    assert.doesNotMatch(telegramText, /Eventbrite|stress-live-2026-11|event_followup|utm_|private|token=/i);
     assert.doesNotMatch(text(wa), /utm_|private|token=/);
   }
 });

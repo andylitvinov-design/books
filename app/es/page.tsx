@@ -9,12 +9,10 @@ import Link from 'next/link';
 import { PersonalTestimonials } from '@/components/personal-testimonials';
 import { HomeMoreDisclosure } from '@/components/home-more-disclosure';
 import { PublicConsultationCta } from '@/components/public-consultation-cta';
-import { PublicSiteHeader } from '@/components/public-site-header';
 import { spanishMetadata } from '@/lib/spanish-metadata';
 export const metadata = spanishMetadata('/es', 'Sesiones personales en Toronto y en línea | Holistic House', 'Explora tus preguntas sobre relaciones, trabajo y decisiones con Andrey Litvinov. Sesiones personales desde €50 y revisión escrita gratuita opcional.');
 export default function SpanishHomePage() {
   return <main className="house-home house-home--services" lang="es">
-    <PublicSiteHeader locale="es" />
     <ProfileHubTabs locale="es" publicEntry />
     <MySpaceTopics locale="es" publicHome />
     <HomeSectionCarousel locale="es" />
