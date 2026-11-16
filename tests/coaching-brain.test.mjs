@@ -13,6 +13,7 @@ import {understandCoachingTurn,coachingTurnPrompt} from '../lib/personal-coachin
 // Run the same Director v2 method/persona regression contracts in both
 // focused coaching verification and the existing production prebuild suite.
 import './coach-session-director.test.mjs'
+import './my-coach-session-progress.test.mjs'
 
 const uuid='e620286d-62ac-4efb-87e3-e58baa2c71b5'
 const req=(overrides={})=>({sessionId:uuid,locale:'en',consent:true,
