@@ -1,7 +1,7 @@
 name: HH hourly Vercel production batch
 on:
   schedule:
-    - cron: '17 * * * *' # off-peak each hour, Toronto/UTC: one existing scheduled event
+    - cron: '37 * * * *' # re-register missing scheduled events; 1 off-peak run/hour, no added cadence
   workflow_dispatch:
     inputs:
       emergency:

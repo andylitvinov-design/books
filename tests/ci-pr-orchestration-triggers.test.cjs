@@ -640,7 +640,7 @@ test('hourly Vercel dedupes exact SHA across v6 readyState and state',()=>{
  check([],false);
  assert.match(workflow,/target=production&limit=100/,
    'a single bounded GET covers recent production deployments');
- assert.match(workflow,/cron: '17 \* \* \* \*'/);
+ assert.match(workflow,/cron: '37 \* \* \* \*'/);
  assert.match(workflow,/if \[\[ "\$EMERGENCY" != "true" \]\]; then/);
  assert.match(workflow,/\[\[ "\$latest" == "\$EXPECTED_SHA" \]\]/,
    'protect latest source HEAD before Vercel release');
