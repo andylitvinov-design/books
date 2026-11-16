@@ -71,9 +71,11 @@ test("mobile compact section header reopens the real nested service module witho
   assert.match(section, /<div id=\{regionId\} className=\{styles\.content\}/);
   const layout = read("components/services-unified-catalog.module.css");
   assert.match(layout, /\.panel\[data-expanded="true"\] \.content\{display:block/);
-  // A browser-level EN/RU check already opens this header to reach video.
-  const browser = read("scripts/verify-site-video-browser.mjs");
-  assert.match(browser, /const videoTrigger = videoPanel\.locator\(':scope > button'\)/);
+  // The published Personal Video module must remain in the real Services
+  // panel; both legacy and new two-action browser checks may coexist.
+  // Do not couple this contract to one specific E2E locator spelling.
+  const page = read("app/[locale]/services/page.tsx");
+  assert.match(page, /<ServicesCompactPanel id="video"><ServicesVideoGenerationCard locale=\{locale\}/);
 });
 
 test("recommendation cards reuse the same two-button component with direct service-specific Telegram deep links", () => {
