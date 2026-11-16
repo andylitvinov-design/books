@@ -94,16 +94,19 @@ test('feature branch regression runs never cancel each other', () => {
   assert.ok(source.includes('cancel-in-progress: false'));
 });
 
-// The sole exception is exact-source Profile Axis. Its writer job is guarded
-// to another branch, while the mandatory axis-unit-types-build still runs.
-// Immutable BASE Specialist cannot approve a concurrency-only migration here.
-test('Profile Axis writer-only skip remains BASE-trusted; mandatory Axis still runs', () => {
+// Keep Profile Axis unchanged in this independent concurrency-only rollout.
+// Current protected policy requires both real writer and Axis on every Ready PR;
+// the retired writer-only branch exception is no longer part of production.
+test('Profile Axis retains both genuine Ready checks and its BASE-trusted lease', () => {
   const source = readFileSync('.github/workflows/hh-profile-axis-matching.yml', 'utf8');
-  assert.ok(source.includes("github.head_ref == 'feat/meditation-writer-device-voice-v1-20261030'"));
-  assert.ok(source.includes("  writer-practical-focused:\n    if:"));
-  assert.ok(source.includes('  axis-unit-types-build:\n    if:'));
+  const ready = "    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}";
+  assert.ok(source.includes('  writer-practical-focused:\n'+ready),
+    'independent writer verification must run on Ready PR');
+  assert.ok(source.includes('  axis-unit-types-build:\n'+ready),
+    'independent Axis verification must run on Ready PR');
   assert.ok(source.includes('group: profile-axis-'));
-  assert.ok(source.includes('github.event.before != github.event.after'));
+  assert.ok(source.includes('github.event.before != github.event.after'),
+    'do not alter separately protected Profile Axis concurrency in this migration');
 });
 
 test('four previously unscoped specialist workflows cancel obsolete PR attempts but retain independent real checks',()=>{
