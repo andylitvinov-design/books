@@ -28,7 +28,7 @@ try {
     });
     const page = await ctx.newPage();
     page.setDefaultTimeout(20000);
-    const errors = [], requests = [], path = "/" + locale + "/holistic-support/mobile";
+    const errors = [], requests = [], path = "/" + locale + "/holistic-support/mobile?view=healing";
     page.on("pageerror", e => errors.push(e.message));
     await ctx.route("**/*", route => {
       const url = new URL(route.request().url());
@@ -48,7 +48,7 @@ try {
       return route.continue();
     });
     try {
-      const response = await page.goto(origin + path, {waitUntil:"domcontentloaded",timeout:60000});
+      const response = await page.goto(origin + path + "?view=meditation", {waitUntil:"domcontentloaded",timeout:60000});
       assert.equal(response?.status(),200,locale+": first party route HTTP");
       await page.locator('[data-support-tool="healing"]').click();
       const gallery = page.locator('[data-support-master-viewer][data-support-directory-kind="healing"]');

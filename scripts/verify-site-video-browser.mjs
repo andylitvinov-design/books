@@ -193,8 +193,10 @@ try {
           { timeout: 30000, message: 'RU presentation requires a hydrated Next router' },
         ).toBe(true)
         const play = presentation.locator('button.site-video-play')
-        await expect(play).toHaveAttribute('aria-busy', 'false', { timeout: 30000 })
-        await expect(play).toBeEnabled()
+        // Hydration gates the real play action; a transient SSR aria-busy value
+        // is not proof of interactivity. A working YouTube embed still must load.
+        await expect(play).toHaveAttribute('aria-label', /Holistic House — Начните с себя/)
+        await expect(play).toBeEnabled({ timeout: 30000 })
         await play.click()
         await expect(presentation.locator('iframe')).toHaveAttribute('src', /^https:\/\/www\.youtube-nocookie\.com\/embed\/G0Db6yOCMto\?/, { timeout: 10000 })
         russianPresentationVerified = true
