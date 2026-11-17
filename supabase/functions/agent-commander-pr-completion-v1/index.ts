@@ -8,6 +8,14 @@ const SHA=/^[a-f0-9]{40}$/i;
 const OWNER_WORKFLOW=REPO+'/.github/workflows/hh-pr-ten-minute-watchdog.yml@refs/heads/codex/bootstrap-books';
 const AUD='hh-commander-pr';
 const T='business_brain.commander_pr_completions';
+// Strictly prove *no dispatch* before rearming a source repair grant.
+// OIDC worker + HEAD/lease CAS still required; ambiguous results never retry.
+const SAFE_CAPACITY_HOLDS=new Set([
+ 'OWNER_REPAIR_DIRECT_CAPACITY_UNVERIFIED','OWNER_REPAIR_DIRECT_CAPACITY_UNKNOWN',
+ 'OWNER_REPAIR_DIRECT_GHOST_WORKER_BUSY','OWNER_REPAIR_DIRECT_WORKER_BUSY',
+ 'OWNER_REPAIR_DIRECT_RUNNERS_SATURATED','OWNER_REPAIR_DIRECT_JOBS_SATURATED',
+ 'OWNER_REPAIR_DIRECT_CORE_PRIORITY_PENDING'
+]);
 const label=x=>typeof x==='string'&&/^[A-Z0-9_]{3,90}$/.test(x)?x:'UNKNOWN';
 const validNum=n=>Number.isSafeInteger(n)&&n>0&&n<=99999999;
 const json=(status,value,origin)=>new Response(JSON.stringify(value),{status,headers:{
@@ -247,6 +255,12 @@ async function workerAction(sql,body,action,origin){
   [id,lease]);
  if(prior.length!==1)return json(409,{error:'LEASE_EXPIRED_OR_MOVED'},origin);
  let mergedAt=null,mergeSha=null,code=label(body.reasonCode);
+ // Trust only an OIDC worker's explicit non-dispatch witness for a known
+ // pre-dispatch capacity refusal. An active or past accepted worker is fenced.
+ const verifiedNoDispatch=state==='WATCHING'&&
+  body.noDispatchVerified===true&&body.dispatchAccepted!==true&&
+  prior[0].dispatch_accepted!==true&&prior[0].dispatch_attempted_at!=null&&
+  SAFE_CAPACITY_HOLDS.has(code);
  // Follow a changing HEAD only after a fresh exact-GitHub PR readback.
  // Signed owner intent is for the PR, not one stale SHA. Preserve the one
  // source-write fence and never treat the new SHA as an AI patch receipt.
@@ -274,6 +288,7 @@ async function workerAction(sql,body,action,origin){
   ' set state=$1,reason_code=$2,observed_head_sha=$3,observed_merge_sha=$4,'+
   ' merged_at=$5::timestamptz,dispatch_accepted=dispatch_accepted or $6,'+
   ' requested_head_sha=coalesce($10::text,requested_head_sha),'+
+  ' dispatch_attempted_at=case when $11::boolean then null else dispatch_attempted_at end,'+
   ' lease_token=null,lease_until=null,last_checked_at=now(),checked_count=checked_count+1,updated_at=now(),'+
   ' evidence=$7::text::jsonb where request_id=$8::uuid and lease_token=$9::uuid and state=\'LEASED\' and lease_until>now() returning *',
   [state,code,body.headSha,mergeSha,mergedAt,body.dispatchAccepted===true,
@@ -281,8 +296,9 @@ async function workerAction(sql,body,action,origin){
     workflowRunId:validNum(body.workflowRunId)?body.workflowRunId:null,
     dispatchAccepted:body.dispatchAccepted===true,
     candidateProof:'NOT_ATTESTED_BY_GATEWAY',liveVerified:false,
-    followedCurrentHead:verifiedFollowedHead!==null}),
-   id,lease,verifiedFollowedHead]);
+    followedCurrentHead:verifiedFollowedHead!==null,
+    safeCapacityRetryDeferred:verifiedNoDispatch}),
+   id,lease,verifiedFollowedHead,verifiedNoDispatch]);
  if(rows.length!==1)return json(409,{error:'LEASE_CAS_FAILED'},origin);
  if(['MERGED','CLOSED_UNMERGED','BLOCKED'].includes(state))await eventFor(sql,rows[0]);
  return json(200,{schema:FUNCTION,accepted:true,item:publicRow(rows[0])},origin);
