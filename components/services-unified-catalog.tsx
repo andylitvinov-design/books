@@ -7,6 +7,7 @@ import { ArrowRight, BookOpen, BriefcaseBusiness, Clapperboard, Compass, Flower2
   UsersRound, Video, type LucideIcon } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import { ServicesCardActions } from "@/components/services-card-actions";
+import { isThreeOptionGroup, ServicesThreeVisibleOptions } from "@/components/services-three-visible-options";
 import styles from "./services-unified-catalog.module.css";
 
 export type ServicesPanelId = "reiki" | "browse" | "reading" | "consultation" | "services"
@@ -22,7 +23,7 @@ const icons: Record<ServicesPanelId, LucideIcon> = {
 };
 const words = {
   ru: {
-    title: "Другие варианты поддержки", intro: "Выберите направление — подробности откроются здесь.",
+    title: "Все варианты поддержки", intro: "В каждом направлении сразу видны три варианта услуг.",
     panels: {
       reiki: ["Рейки-сессия", "Мастер, время и длительность"],
       browse: ["Подбор по темам", "Онлайн или очно"],
@@ -42,7 +43,7 @@ const words = {
     homeopathy: ["Об авторском подходе", "Бесплатный разбор", "Все предложения специалистов"],
   },
   en: {
-    title: "More ways to support you", intro: "Choose a service to see details without leaving this page.",
+    title: "Explore all services", intro: "Three options are visible in every service category.",
     panels: {
       reiki: ["Reiki sessions", "Practitioners and preferred time"],
       browse: ["Explore by topic", "Online or in person"],
@@ -62,7 +63,7 @@ const words = {
     homeopathy: ["About the approach", "Free situation review", "All practitioner offers"],
   },
   es: {
-    title: "Más formas de acompañarte", intro: "Elige una opción para ver los detalles aquí mismo.",
+    title: "Todos los servicios", intro: "Tres opciones visibles en cada categoría de servicios.",
     panels: {
       reiki: ["Sesiones de Reiki", "Profesionales y horarios"],
       browse: ["Buscar por tema", "En línea o presencial"],
@@ -221,18 +222,37 @@ export function ServicesCompactPanel({ id, children }: { id: ServicesPanelId; ch
   if (!context) throw new Error("ServicesCompactPanel requires ServicesCompactCatalog");
   const [title, description] = words[context.locale].panels[id];
   const expanded = context.expanded === id;
+  const hasVariants = isThreeOptionGroup(id);
   const Icon = icons[id];
   const regionId = "services-unified-" + id;
+  const more = {
+    ru: ["Показать все форматы", "Скрыть дополнительные форматы", "3 варианта"],
+    en: ["Explore all formats", "Hide extra formats", "3 options"],
+    es: ["Ver todos los formatos", "Ocultar formatos adicionales", "3 opciones"],
+  }[context.locale];
   return (
-    <article className={styles.panel} data-services-unified-panel={id} data-expanded={expanded}>
-      <div className={styles.preview}>
+    <article className={styles.panel} data-services-unified-panel={id}
+      data-services-has-three={hasVariants} data-expanded={expanded}>
+      <button type="button" className={styles.preview}
+        aria-expanded={expanded} aria-controls={regionId}
+        onClick={() => context.toggle(id)}>
         <span className={styles.icon} aria-hidden="true"><Icon size={23} strokeWidth={1.8} /></span>
         <span className={styles.previewText}><strong>{title}</strong><small>{description}</small></span>
-      </div>
-      <ServicesCardActions locale={context.locale} title={title}
-        description={panelDescriptions[context.locale][id]}
-        href={"/" + context.locale + panelDestinations[id]}
-        trackingId={id} className={styles.panelActions} />
+        {hasVariants ? <span className={styles.variantCount}>{more[2]}</span>
+          : <ArrowRight className={styles.previewArrow} size={19} aria-hidden="true" />}
+      </button>
+      {isThreeOptionGroup(id) ? (
+        <ServicesThreeVisibleOptions locale={context.locale} id={id} />
+      ) : (
+        <ServicesCardActions locale={context.locale} title={title}
+          description={panelDescriptions[context.locale][id]}
+          href={"/" + context.locale + panelDestinations[id]}
+          trackingId={id} className={styles.panelActions} />
+      )}
+      {hasVariants ? <button type="button" className={styles.moreFormats}
+        aria-expanded={expanded} aria-controls={regionId} onClick={() => context.toggle(id)}>
+        {expanded ? more[1] : more[0]} <ArrowRight size={16} aria-hidden="true" />
+      </button> : null}
       <div id={regionId} className={styles.content} role="region" aria-label={title}>
         {children}
       </div>
