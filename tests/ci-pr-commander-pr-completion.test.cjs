@@ -433,3 +433,14 @@ test('historical BLOCKED task remains blocked on GitHub read failure',async()=>{
  assert.equal(result.reasonCode,'PR_IDENTITY_UNVERIFIED');
  assert.equal(f.calls.some(c=>c.action==='arm_dispatch'),false);
 });
+
+test('protected Commander gateway source updates wake the existing Watchdog without a new cron',()=>{
+ const {readFileSync}=require('node:fs');
+ const workflow=readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
+ const push=workflow.split('  push:\n')[1]?.split('  workflow_dispatch:\n')[0];
+ assert.ok(push&&push.includes("      - 'scripts/ci-pr-commander-pr-completion.cjs'"));
+ assert.match(workflow,/branches: \['codex\/bootstrap-books'\]/);
+ assert.match(workflow,/github\.event_name == 'push'/);
+ assert.match(workflow,/id-token: write/);
+ assert.equal((workflow.match(/cron:/g)||[]).length,1,'do not add a second schedule');
+});
