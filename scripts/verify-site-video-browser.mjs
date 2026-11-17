@@ -253,28 +253,50 @@ try {
       await expect(intro.locator('button.site-video-play')).toBeHidden()
       await expect(visibleGallery).toBeHidden()
       const videoPanel = page.locator('[data-services-unified-panel="video"]')
-      const videoTrigger = videoPanel.locator(':scope > button')
-      await expect(videoTrigger).toBeVisible()
-      await expect(videoTrigger).toHaveAttribute('aria-expanded', 'false')
-      const mobileVideo = videoPanel.locator('[data-assist-video-generation]')
-      await expect(mobileVideo).toBeHidden()
-      // A dev SSR snapshot can paint before Next attaches client event
-      // handlers. Do not misclassify an unhydrated early click as an app
-      // state regression; require the real Next router hydration first.
+      await expect(videoPanel).toBeVisible()
+      // Services now has two distinct customer actions, Details and Order,
+      // instead of the retired full-panel accordion button. Verify both
+      // actions and their actual consequences without hiding a regression.
+      const actions = videoPanel.locator('[data-service-card-actions]')
+      const detailsTrigger = actions.locator('button[aria-controls$="-details"]')
+      const orderTrigger = actions.locator('button[aria-controls$="-order"]')
+      await expect(detailsTrigger).toBeVisible()
+      await expect(orderTrigger).toBeVisible()
+      await expect(detailsTrigger).toHaveAttribute('aria-expanded', 'false')
+      await expect(orderTrigger).toHaveAttribute('aria-expanded', 'false')
+      const detailsPanel = actions.locator('[data-service-card-details]')
+      const orderPanel = actions.locator('[data-service-card-order]')
+      await expect(detailsPanel).toBeHidden()
+      await expect(orderPanel).toBeHidden()
+      // A dev SSR snapshot can paint before Next attaches client handlers.
       await expect.poll(
         () => page.evaluate(() => history.pushState.toString().includes("__NA")),
-        { timeout: 30000, message: 'Services video panel must hydrate before the click' },
+        { timeout: 30000, message: 'Services video actions must hydrate before click' },
       ).toBe(true)
-      await videoTrigger.click()
-      await expect(videoTrigger).toHaveAttribute('aria-expanded', 'true')
-      await expect(mobileVideo).toBeVisible()
-      await expect(mobileVideo.locator('a[data-assist-video-scenario]')).toHaveCount(3)
-      const createVideo = mobileVideo.locator('a[data-assist-video-create]')
-      await expect(createVideo).toBeVisible()
-      await expect(createVideo).toHaveAttribute('href', '/' + locale + '/holistic-support/mandala')
-      const createBox = await createVideo.boundingBox()
-      assert.ok(createBox && createBox.height >= 44, 'Services mobile create-video action is finger-sized: ' + locale)
-      await expect(mobileVideo.locator('iframe')).toHaveCount(0)
+      await detailsTrigger.click()
+      await expect(detailsTrigger).toHaveAttribute('aria-expanded', 'true')
+      await expect(detailsPanel).toBeVisible()
+      const studioLink = detailsPanel.locator('a[href="/' + locale + '/holistic-support/mandala"]')
+      await expect(studioLink).toBeVisible()
+      await expect(orderPanel).toBeHidden()
+      await orderTrigger.click()
+      await expect(orderTrigger).toHaveAttribute('aria-expanded', 'true')
+      await expect(detailsPanel).toBeHidden()
+      await expect(orderPanel).toBeVisible()
+      const telegram = orderPanel.locator('[data-messenger-only-channel="telegram"]')
+      const whatsapp = orderPanel.locator('[data-messenger-only-channel="whatsapp"]')
+      await expect(telegram).toBeVisible()
+      await expect(whatsapp).toBeVisible()
+      const telegramHref = await telegram.getAttribute('href')
+      assert.ok(telegramHref && telegramHref.startsWith('https://t.me/holistichouse?text='),
+        'Video Order must lead to the owner human Telegram chat: ' + locale)
+      const whatsappHref = await whatsapp.getAttribute('href')
+      assert.ok(whatsappHref && whatsappHref.startsWith('https://wa.me/'),
+        'Video Order must lead to a real WhatsApp conversation: ' + locale)
+      // The former three-scenario gallery is not exposed inside collapsed
+      // mobile Services cards. The dedicated Video Studio is still reachable.
+      await expect(videoPanel.locator('[data-assist-video-generation]')).toBeHidden()
+      await expect(videoPanel.locator('iframe')).toHaveCount(0)
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2), 'Services mobile overflow: ' + locale)
       await page.screenshot({ path: `${evidence}/services-${locale}-mobile-video.png`, fullPage: true })
       await page.setViewportSize({ width: 1365, height: 1000 })

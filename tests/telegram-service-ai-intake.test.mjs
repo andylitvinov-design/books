@@ -102,13 +102,18 @@ test('Only canonical free review gets the generic bot, other services stay manua
  assert.equal(isOfficialFreeReviewWhatsAppDraft('https://wa.me/1000?text=Page','en'),false);
 });
 
-test('Two-action Services cards do not enter the opt-in bot; only active free-review CTA can load it',()=>{
+test('Paid Services cards keep human Telegram; only explicit free review checks bot readiness when Order opens',()=>{
  const ui=source('components/mandatory-messenger-actions.tsx');
  const action=source('components/services-card-actions.tsx');
  assert.match(action,/active=\{expanded==="order"\}/);
- assert.match(ui,/if\(!active\|\|telegramUrl\|\|!isOfficialFreeReviewWhatsAppDraft\(whatsappUrl,locale\)\)/);
- assert.doesNotMatch(ui,/resolveTelegramServiceEntry\(payload,manual,locale\)/);
+ // Never probe a bot for hidden cards, explicitly provided human links,
+ // or paid services. Only the public free review can opt in to bot flow.
+ assert.match(ui,/if\(!active\|\|telegramUrl\|\|!isOfficialFreeReviewWhatsAppDraft\(whatsappUrl,locale\)\)\{/);
+ assert.match(ui,/setServiceBot\(null\);setBotKind\(null\);return;/);
+ assert.match(ui,/fetch\('\/api\/public\/telegram-diagnostic'/);
+ assert.match(ui,/data-telegram-route=\{serviceBot\?/);
  assert.match(ui,/const entry=resolveTelegramFirstEntry\(payload,locale\)/);
+ assert.doesNotMatch(ui,/resolveTelegramServiceEntry\(/);
  assert.match(ui,/serviceBot\|\|telegramUrl\|\|telegramEnquiryUrlFromWhatsApp\(whatsappUrl\)/);
  assert.doesNotMatch(ui,/createPublicServiceEnquiry|serviceRole|privateKey/);
 });

@@ -123,7 +123,8 @@ export async function POST(request,{params}){
                 connectionId:business.connectionId,chatId:business.to},4,86400)
             }else{
               await consumeRate(config,{op:'hh-tg-business-intent-chat',
-                connectionId:business.connectionId,chatId:business.to},3,86400)
+                connectionId:business.connectionId,chatId:business.to},
+                business.serviceKey==='ai_secretary'?7:3,86400)
             }
             await consumeRate(config,{op:'hh-tg-business-intent-global'},100,86400)
             // The first client-authored service enquiry shows the fixed avatar

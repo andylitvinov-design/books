@@ -10,7 +10,12 @@ test("all three canonical service pages exist in EN/RU/ES with SEO and actual en
     assert.match(page,/generateMetadata/);
     assert.match(page,/generateStaticParams/);
     for (const locale of ["en","ru","es"]) assert.ok(page.includes("/" + locale + "/services/" + name), locale + " missing in " + name);
-    assert.match(page,/PersonalServiceLanding/);
+    if(name==="psychohomeopathy"){
+      assert.match(page,/permanentRedirect/);
+      assert.match(page,/\/services\/alchemy-of-soul/);
+      const canonical=read("app/[locale]/services/alchemy-of-soul/page.tsx");
+      assert.match(canonical,/<AlchemySoulLanding/);
+    }else assert.match(page,/PersonalServiceLanding/);
     assert.match(page,/isPublicLocale/);
   }
   const component = read("components/personal-service-landing.tsx");
