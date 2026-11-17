@@ -280,3 +280,23 @@ test('UNKNOWN Core task gains a signed reclassification without executor authori
  a.equal(reclassificationStatus(old,unknown),'AWAITING_CAUSAL_DIAGNOSIS');
  a.equal(reclassificationStatus([bot(taskBody(recognized))],recognized),'NOT_NEEDED');
 });
+
+test('trusted Core source contracts receive guarded AI triage, never direct writes',()=>{
+ const {repairableCoreTestFailure}=require('../scripts/ci-pr-error-task.cjs');
+ for(const name of ['Commander PR served-LIVE provenance contracts',
+  'Fast Mandala release contracts']){
+  const classified=classify(name);
+  a.equal(classified.category,'TEST_FAILURE',name);
+  a.equal(repairableCoreTestFailure(classified),true,name);
+  const selected=task(name);
+  a.equal(selected.executor_id,'github-actions:hh-pr-repair-worker.yml',name);
+  a.equal(selected.strategy_code,'GUARDED_SOURCE_REPAIR',name);
+  a.equal(selected.source_write_authorized,false);
+  a.equal(selected.execution_authorized,false);
+  a.equal(task(name,{root:'SPECIALIST_FAILED'}).executor_kind,'owner_review');
+ }
+ for(const name of ['Fast Mandala release contract',
+  'Unrelated browser E2E tests','Validate exact-head risk and required specialist workflows']){
+  a.equal(repairableCoreTestFailure(classify(name)),false,name);
+ }
+});
