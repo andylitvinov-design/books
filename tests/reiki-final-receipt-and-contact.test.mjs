@@ -53,7 +53,14 @@ test("WhatsApp and Telegram draft only a generic course-next-step request", () =
     assert.doesNotMatch(message, /end-01|motivation|firstName|email|accountId|\{\s*"answers"/);
     const telegram = telegramEnquiryUrlFromWhatsApp(url);
     assert.equal(new URL(telegram).pathname, "/" + TELEGRAM_USERNAME);
-    assert.equal(new URL(telegram).searchParams.get("text"), message);
+    const tgUrl = new URL(telegram);
+    assert.equal(tgUrl.origin, "https://t.me");
+    assert.deepEqual([...tgUrl.searchParams.keys()], ["text"]);
+    const tgText = tgUrl.searchParams.get("text") || "";
+    // Telegram accepts only the selected public service. The longer WhatsApp
+    // request, course completion details and the public-page URL stay in WhatsApp.
+    assert.match(tgText, /Reiki Practitioner/);
+    assert.doesNotMatch(tgText, /five|пять|initiati|инициац|completed all|Я завершил|https?:\/\/|Page:|Страница:|utm_|end-01|motivation|firstName|email|accountId|answers/i);
   }
   assert.match(learner, /href=\{reikiWhatsAppUrl\}/);
   assert.match(learner, /href=\{reikiTelegramUrl\}/);

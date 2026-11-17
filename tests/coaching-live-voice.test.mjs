@@ -219,9 +219,9 @@ test('selected persona opens immersive My Coach session with real avatar, stages
   for(const token of ['data-my-coach-immersive-session','sessionHero','sessionPortrait','sessionAvatar',
     'CoachingAvatar locale={lang}','sessionProgressSegments','conversationPanel','quickGoalCard',
     'sessionBottomNav','goalRow','onVoiceStateChange={setVoiceState}']) assert.ok(ui.includes(token),token)
-  for(const token of ['data-coach-stage-index={visibleStageIndex+1}',
-    "progressValid?lastRecordedProgress.index:provisionalIndex",'onClick={()=>replayCoachReply()}',
+  for(const token of ['data-coach-stage-index={visibleStageIndex+1}','onClick={()=>replayCoachReply()}',
     'onClick={()=>chooseTopic(id)}','composerRef.current?.focus()',
+    'progressValid?lastRecordedProgress.index:provisionalIndex',
     'coachingBrainSafety(input)||coachingBrainBoundary(input)']) assert.ok(ui.includes(token),token)
   for(const token of ['my-coach-portraits.avif','reiki-approved-sunrise-v3.webp',
     'messenger-zen-stones.svg','assessment-lotus.svg','safe-area-inset-bottom']) assert.ok(css.includes(token),token)
@@ -260,7 +260,7 @@ test('approved live-session visual hierarchy keeps a real voice pipeline, readab
   const ui=source('components/my-coach-live-dialogue.jsx')
   const css=source('components/my-coach-live-dialogue.module.css')
   for(const token of ['data-session-visual-v2','data-session-visual-v3','className={styles.heroSubtitle}',
-    'showCaptions&&','className={styles.captionMore}','setShowCaptions(value=>!value)',
+    'showCaptions&&','className={styles.captionMore}','data-coach-language-control','onChange={event=>setSpeechLocale(event.target.value)}','setShowCaptions(value=>!value)',
     'className={styles.endControl}','className={styles.liveTranscript}','className={styles.voiceControls}',
     'className={styles.textComposer} open','<details className={styles.quickGoals}>',
     'onTurn={(text,spoken)=>sendMessage(text,{voiceTurn:true,utteranceLocale:spoken?.locale})}','onTranscript={setSpeechPreview}']) assert.ok(ui.includes(token),token)
@@ -484,7 +484,10 @@ test('iPhone buffered MP3 animates from decoded actual waveform without another 
   assert.equal(levels.at(-1),null,'Stop resets moving mouth')
   const page=source('components/my-coach-live-dialogue.jsx')
   const loop=source('components/my-coach-speech-loop.jsx')
-  assert.match(page,/onLevel:level=>\{if\(!controller\.signal\.aborted/)
+  // Real audio PCM is tested above, but approved photo/MP4 presentation must
+  // never reintroduce browser-side face/mouth morphs or fake amplitude effects.
+  assert.doesNotMatch(page,/onLevel:level=>\{if\(!controller\.signal\.aborted/)
+  assert.doesNotMatch(page,/setPortraitLevel|onVoiceLevel=\{setPortraitLevel\}/)
   assert.match(loop,/onLevel:level=>\{if\(live\(\)\)levelRef\.current\?\.\(level\)/)
 })
 

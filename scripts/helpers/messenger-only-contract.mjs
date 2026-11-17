@@ -19,7 +19,37 @@ export async function assertMessengerOnlyCapture(scope,expect,{
   await expect(w).toHaveCount(1); await expect(t).toHaveCount(1);
   if(open){await expect(w).toBeVisible();await expect(t).toBeVisible();}
   const wa=new URL(await w.getAttribute('href'));
-  const tg=new URL(await t.getAttribute('href'));
+  const telegramHref=await t.getAttribute('href');
+  let tg, handoffService=null;
+  // Public Services may use an internal, server-validated 307 handoff so that
+  // visitors reach a verified bot when the human Business chat is not ready.
+  // Resolve that exact same-origin route and inspect its real redirect WITHOUT
+  // following it or contacting Telegram. Never waive destination assertions.
+  if(telegramHref?.startsWith('/api/public/telegram-service-entry?')){
+    assert.ok(locale&&['en','ru','es'].includes(locale),label+' handoff needs a valid locale');
+    const origin=process.env.HH_PUBLIC_QA_ORIGIN||'http://127.0.0.1:3100';
+    const handoff=new URL(telegramHref,origin);
+    assert.equal(handoff.origin,new URL(origin).origin,label+' handoff must be same-origin');
+    assert.equal(handoff.pathname,'/api/public/telegram-service-entry',label+' exact public handoff');
+    assert.equal(handoff.pathname+handoff.search,telegramHref,label+' no hidden URL fragments');
+    const keys=[...handoff.searchParams.keys()].sort();
+    assert.deepEqual(keys,handoff.searchParams.has('offer')
+      ?['locale','offer','service']:['locale','service'],label+' bounded public handoff parameters');
+    handoffService=handoff.searchParams.get('service');
+    assert.ok(['homeopathy','coaching','reiki','constellations','business'].includes(handoffService),
+      label+' only published request types');
+    assert.equal(handoff.searchParams.get('locale'),locale,label+' locale preserved');
+    assert.ok(!handoff.searchParams.has('offer')||
+      (handoffService==='business'&&handoff.searchParams.get('offer')==='business_strategy'),
+      label+' only the approved business-page offer');
+    const response=await fetch(handoff.href,{redirect:'manual'});
+    assert.equal(response.status,307,label+' must be a temporary customer-initiated redirect');
+    assert.match(response.headers.get('cache-control')||'',/no-store/i,
+      label+' customer-facing handoff must not be cached');
+    tg=new URL(response.headers.get('location'));
+  }else{
+    tg=new URL(telegramHref);
+  }
   assert.equal(wa.origin,'https://wa.me',label+' WhatsApp host');
   assert.equal(wa.pathname,'/14376066502',label+' verified public destination');
   assert.deepEqual([...wa.searchParams.keys()],['text'],label+' no contact/secret parameters');
@@ -30,8 +60,14 @@ export async function assertMessengerOnlyCapture(scope,expect,{
   assert.ok(['/holistichouse','/holistichouse_bot'].includes(tg.pathname),
     label+' approved human Telegram Business or explicitly opted-in bot only');
   if(tg.pathname==='/holistichouse_bot'){
-    assert.ok(locale&&['hhtalk_'+locale,'hhreview_'+locale].includes(tg.searchParams.get('start')),
-      label+' explicit diagnostic bot locale');
+    assert.deepEqual([...tg.searchParams.keys()],['start'],label+' bot start only, no private fields');
+    if(handoffService){
+      assert.equal(tg.searchParams.get('start'),'hhservice_'+handoffService+'_'+locale,
+        label+' verified service bot handoff, no private questions or CRM receipt');
+    }else{
+      assert.ok(locale&&['hhtalk_'+locale,'hhreview_'+locale].includes(tg.searchParams.get('start')),
+        label+' explicit diagnostic bot locale');
+    }
   }else{
     assert.deepEqual([...tg.searchParams.keys()],['text'],label+' no secret params');
     const telegramDraft=tg.searchParams.get('text')||'';

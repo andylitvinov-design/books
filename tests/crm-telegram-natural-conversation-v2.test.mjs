@@ -407,3 +407,28 @@ test('completed V2 can renew an expired signed questionnaire link without creati
   assert.match(hook,/next\.stage==='done'/)
   assert.match(hook,/reply=null/)
 })
+test('completed V2 /help renews a signed form link rather than exposing a public, unlinked questionnaire',()=>{
+  for(const locale of ['ru','en','es']){
+    const done={stage:'done',locale,topic:'business',flowVersion:2,consentAt:'2026-11-16T13:00:00Z'}
+    const help=transitionTelegramDiagnostic(done,{rawText:'/help',locale})
+    assert.equal(help.stage,'done')
+    assert.equal(help.topic,'business')
+    assert.equal(help.body,null,'help cannot create a second CRM message')
+    assert.equal(help.refreshHandoff,true,'signed webhook must reissue a protected handoff')
+    assert.equal(help.consent,false,'help cannot create or extend consent')
+    assert.match(help.reply,/\/coaching\/intake\?topic=business/)
+    assert.deepEqual(help.keyboard,[])
+    const revoked=transitionTelegramDiagnostic({...done,consentAt:null},{rawText:'/help',locale})
+    assert.equal(revoked.reply,null,'revoked consent receives no unsigned public form')
+    assert.equal(revoked.refreshHandoff,undefined)
+    const stopped=transitionTelegramDiagnostic({...done,stage:'stopped'},{rawText:'/help',locale})
+    assert.equal(stopped.reply,null,'STOP blocks reissue')
+    const active=transitionTelegramDiagnostic({...done,stage:'question'},{rawText:'/help',locale})
+    assert.equal(active.stage,'question','earlier interview stages keep their existing help')
+    assert.equal(active.refreshHandoff,undefined)
+  }
+  const webhook=read('lib/crm/messenger-webhook.js')
+  assert.match(webhook,/next\.refreshHandoff===true/)
+  assert.match(webhook,/issueTelegramCoachingHandoff/)
+  assert.match(webhook,/else if\(next\.refreshHandoff\)/)
+})

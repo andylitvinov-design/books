@@ -2,7 +2,7 @@
 import {useEffect,useState} from "react";
 import {MessageCircle,Send} from "lucide-react";
 import {telegramEnquiryUrlFromWhatsApp} from "@/lib/whatsapp-enquiry";
-import {resolveTelegramFirstEntry,resolveTelegramServiceEntry,isOfficialFreeReviewWhatsAppDraft} from "@/lib/app/telegram-entry-url.mjs";
+import {resolveTelegramFirstEntry,resolveTelegramServiceHandoffUrl,isOfficialFreeReviewWhatsAppDraft} from "@/lib/app/telegram-entry-url.mjs";
 import type {PublicLocale} from "@/lib/public-locales";
 import styles from "./mandatory-messenger-actions.module.css";
 const copy={
@@ -16,32 +16,26 @@ export function MandatoryMessengerActions({locale,whatsappUrl,label,telegramUrl,
  const [serviceBot,setServiceBot]=useState<string|null>(null);
  const [botKind,setBotKind]=useState<"review"|"direct"|"service"|null>(null);
  useEffect(()=>{
-   // Service-card actions are mounted but hidden until Order is expanded.
-   // Do not issue one Telegram readiness fetch per hidden card on page load.
-   if(!active){setServiceBot(null);setBotKind(null);return;}
+   // Hidden service cards never fetch. The five supported service orders use
+   // a deterministic server handoff below; only free review needs a lookup.
+   if(!active||telegramUrl||!isOfficialFreeReviewWhatsAppDraft(whatsappUrl,locale)){
+     setServiceBot(null);setBotKind(null);return;
+   }
    const abort=new AbortController();
-   setServiceBot(null);
-   setBotKind(null);
-   // A selected service may enter only its own verified V3 interview. On
-   // contactless free-review pages, restore the prior official hhreview bot
-   // fallback. No browser click implies an actual CRM lead or Telegram Send.
+   setServiceBot(null);setBotKind(null);
    fetch('/api/public/telegram-diagnostic',{cache:'no-store',signal:abort.signal})
      .then(r=>r.ok?r.json():null)
      .then(payload=>{
        if(abort.signal.aborted)return;
-       // Most catalogue buttons only provide the trusted WhatsApp draft.
-       // Recover its exact published service before falling back to a bot.
-       const manual=telegramUrl||telegramEnquiryUrlFromWhatsApp(whatsappUrl);
-       const selected=resolveTelegramServiceEntry(payload,manual,locale);
-       const freeReview=!telegramUrl&&isOfficialFreeReviewWhatsAppDraft(whatsappUrl,locale)
-         ?resolveTelegramFirstEntry(payload,locale):null;
-       const entry=selected||freeReview;
+       const entry=resolveTelegramFirstEntry(payload,locale);
        setServiceBot(entry?.href||null);
        setBotKind(entry?.kind||null);
      })
      .catch(()=>{if(!abort.signal.aborted){setServiceBot(null);setBotKind(null);}});
    return ()=>abort.abort();
  },[telegramUrl,whatsappUrl,locale,active]);
+ const serviceRoute=active?resolveTelegramServiceHandoffUrl(
+   telegramUrl||telegramEnquiryUrlFromWhatsApp(whatsappUrl),locale):null;
  // Every service/order request keeps its selected product; never launch the
  // unrelated opt-in free-review Telegram bot from a purchasing button.
  const channels=<>
@@ -49,7 +43,7 @@ export function MandatoryMessengerActions({locale,whatsappUrl,label,telegramUrl,
   <p className={styles.intro}>{t.intro}</p></>}
   <div className={styles.actions} role="group" aria-label={t.title}>
    <a href={whatsappUrl} className={styles.whatsapp} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" data-messenger-only-channel="whatsapp"><MessageCircle size={19} aria-hidden="true"/>WhatsApp</a>
-   <a href={serviceBot||telegramUrl||telegramEnquiryUrlFromWhatsApp(whatsappUrl)} data-telegram-route={botKind==="service"?"service-ai":telegramUrl?"manual":botKind||"service"} className={styles.telegram} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" data-messenger-only-channel="telegram"><Send size={19} aria-hidden="true"/>Telegram</a>
+   <a href={serviceRoute||serviceBot||telegramUrl||telegramEnquiryUrlFromWhatsApp(whatsappUrl)} data-telegram-route={serviceRoute?"service-router":serviceBot?(botKind||"review"):telegramUrl?"manual":"service"} className={styles.telegram} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" data-messenger-only-channel="telegram"><Send size={19} aria-hidden="true"/>Telegram</a>
   </div>
   {!compact&&<p className={styles.note}>{t.note}</p>}
  </>;

@@ -63,8 +63,8 @@ test("personal free review has portrait-led hero, a separate locale-matched expl
   assert.match(free, /locallyArchivedVideoPosterIds\.has\(item\.id\)/);
   assert.match(free, /item\.language === "ru"/);
   assert.match(free, /"Esta revisión exprés gratuita"|vídeo específico sobre la revisión exprés/);
-  assert.match(free, /"Видео Андрея · русский язык"/);
-  assert.match(free, /"Andrey's introduction · English audio"/);
+  assert.match(free, /"Андрей рассказывает о работе · на русском"/);
+  assert.match(free, /"Introduction by Andrey · English"/);
   assert.match(free, /href=\{kind === "situation" \? "#request-free-review"/);
   assert.match(free, /<PersonalExpressEnquiry locale=\{locale\} intro=\{/);
   assert.match(free, /<PersonalTestimonials locale=\{locale\} variant="all" \/>/);

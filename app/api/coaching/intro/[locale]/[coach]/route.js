@@ -78,7 +78,8 @@ export async function GET(request){
         signal:AbortSignal.any([request.signal,AbortSignal.timeout(15000)]),
         headers:{Authorization:`Bearer ${vendor.key}`,
           'Content-Type':'application/json',Accept:'audio/mpeg',model:vendor.model},
-        body:JSON.stringify({text:intro.text,format:'mp3',reference_id:referenceId}),
+        body:JSON.stringify({text:intro.text,format:'mp3',reference_id:referenceId,
+          latency:'low',chunk_length:100}),
       })
     }catch{throw new AppError('MY_COACH_INTRO_TTS_UNAVAILABLE',503)}
     const type=upstream.headers.get('content-type')||''
