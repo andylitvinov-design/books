@@ -45,3 +45,44 @@ Record unique intervals `error_detected→classified`, `classified→owner_claim
 - Stale event/head/base: no task/CI/merge.
 - Successful CI or merge without LIVE: never reported as published.
 - Every counted delay maps to two real timestamps and an evidence source; unmatched interval remains UNKNOWN.
+
+
+## P0 follow-up · stale bot/manual on a new already-tested source HEAD
+
+A generated `hh:repair-manual` label can outlive the HEAD that triggered the
+original unsafely scoped free-AI repair. It must **not** become an eternal block
+once an authorized source owner has published a different fully tested HEAD.
+
+The read-only Control Tower may retire only its own obsolete metadata label
+when **all** are proven independently:
+
+- Exact current same-repo PR / source HEAD / production base, open,
+  mergeable and non-DIRTY; no explicit owner hold, policy block, claimed
+  source-owner lease, or pending current source repair.
+- Full authenticated history establishes the original
+  `HH_CONTROL_SCOPE_OWNER_V1` + `HH_PR_TASK_V1(MANUAL)` receipt for a
+  **different** old HEAD. The last observed manual-label transition was
+  issued by GitHub Actions, not an owner.
+- Old vs current HEAD are demonstrably different under GitHub compare,
+  including explicit fail-closed handling of owner-rebuilt/diverged branches.
+- A real **current** `HH PR core release gate` run is associated with
+  exact PR/source SHA/base SHA, its `core-lint-types-build` job passed,
+  its protected `hh-merge-check` failed, and an authenticated GitHub
+  Actions error task for that **same run** states
+  `BASE_ADVANCED / EXPLICIT_BASE_FAILURE / RELEASE_GATE_ONLY`.
+  Source failures, missing checks, unknown attempts, unrelated evidence
+  or failed Core are never sufficient.
+- Immediately before modifying labels, compare HEAD+base and all hard
+  holds again, inspect complete signed comments, confirm no active
+  owner lease and recheck the last manual-label event.
+
+The allowed mutation removes only the stale machine `hh:repair-manual`
+and, if the current HEAD is still verifiably non-DIRTY, the obsolete
+`hh:conflict-repair-needed` hint. Preserve `hh:release-gate-review`,
+all required CI, versioned base revalidation, source-owner authority,
+merge protection and LIVE verification. **Never** claim the source was
+repaired or that a successful Core build authorizes merge.
+
+Validation: prove all fail-closed branches in the existing Watchdog
+contract suite; check #4854 only against its exact current HEAD. No
+new workflow, provider spend or Vercel deployment is permitted.

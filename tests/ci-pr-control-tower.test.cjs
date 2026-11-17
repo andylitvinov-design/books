@@ -2652,3 +2652,116 @@ test('verified old ghost queue admits one existing source or read-only legacy wo
   assert.equal(verdict.known,false,'fresh/unknown/overloaded jobs stay held '+JSON.stringify(changes));
  }
 });
+
+
+test('stale bot manual can be released only after authenticated current Core green and BASE_ADVANCED-only gate',async()=>{
+ const {verifyStaleMachineManual,recoverStaleMachineManual,currentExactCore,
+  verifyCurrentBaseAdvancedCore,baseEligibility}
+ =require('../scripts/ci-pr-manual-hold-recovery.cjs');
+ const oldHead='b'.repeat(40),now=NOW;
+ const current=pr(4854,'conflict',{
+   head:{ref:'branch-4854',sha:SHA,repo:{full_name:'andylitvinov-design/books'}},
+   base:{ref:'codex/public-book-library',sha:'c'.repeat(40)},
+   labels:[{name:'hh:repair-manual'},{name:'hh:conflict-repair-needed'},
+    {name:'hh:release-gate-review'}]
+ });
+ const bot={user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+   performed_via_github_app:{id:15368,slug:'github-actions'}};
+ const ticks=String.fromCharCode(96).repeat(3);
+ const oldRecord={schema:'HH_PR_TASK_V1',task_key:'f'.repeat(32),pr_number:4854,
+   head_sha:oldHead,state:'MANUAL',reason_code:'SOURCE_SCOPE_UNSAFE_FOR_FREE_AI'};
+ const scope={...bot,created_at:new Date(now-20000).toISOString(),
+   body:'<!-- HH_CONTROL_SCOPE_OWNER_V1 '+oldHead+' -->\n'+commentBody(oldRecord)};
+ const taskId='d'.repeat(32),runId=123456;
+ const baseTask={schema:'HH_CI_ERROR_TASK_V1',task_id:taskId,
+  event_kind:'CORE_CI_FAILED',pr_number:4854,head_sha:SHA,
+  run_id:runId,run_attempt:1,category:'BASE_ADVANCED',
+  reason_code:'EXPLICIT_BASE_FAILURE',root_code:'RELEASE_GATE_ONLY'};
+ const baseReceipt={...bot,created_at:new Date(now-1000).toISOString(),
+   body:'<!-- HH_CI_ERROR_TASK_V1 '+taskId+' -->\n'+ticks+'json\n'+
+    JSON.stringify(baseTask)+'\n'+ticks};
+ const comments=[scope,baseReceipt];
+ const events=[{event:'labeled',created_at:new Date(now-10000).toISOString(),
+  label:{name:'hh:repair-manual'},actor:{login:'github-actions[bot]',id:41898282}}];
+ const comparison={status:'diverged',behind_by:1,ahead_by:2,
+  base_commit:{sha:oldHead},merge_base_commit:{sha:'d'.repeat(40)}};
+ const runRecord={id:runId,name:'HH PR core release gate',
+  path:'.github/workflows/hh-pr-core-release.yml',event:'pull_request',
+  status:'completed',conclusion:'failure',run_attempt:1,
+  head_branch:current.head.ref,head_sha:current.head.sha,
+  repository:{full_name:'andylitvinov-design/books'},
+  head_repository:{full_name:'andylitvinov-design/books'},
+  pull_requests:[{number:4854,head:{ref:current.head.ref,sha:SHA},
+   base:{ref:'codex/public-book-library',sha:current.base.sha}}]};
+ const runs=[runRecord],jobs=[{id:301,name:'core-lint-types-build',
+  status:'completed',conclusion:'success',
+  started_at:new Date(now-60000).toISOString(),
+  completed_at:new Date(now-30000).toISOString()},
+ {id:302,name:'hh-merge-check',status:'completed',conclusion:'failure',
+  started_at:new Date(now-30000).toISOString(),
+  completed_at:new Date(now-20000).toISOString()}];
+ assert.equal(baseEligibility(current),true);
+ assert.equal(currentExactCore(current,runs)?.id,runId);
+ const verified=verifyCurrentBaseAdvancedCore(current,comments,runs,jobs);
+ assert.equal(verified.verified,true);
+ assert.equal(verifyStaleMachineManual({pr:current,comments,events,
+  comparison,gateProof:verified,now}).eligible,true);
+ assert.equal(verifyStaleMachineManual({pr:current,comments,events,
+  comparison,now}).eligible,false,'ancestry alone cannot release a manual');
+ assert.equal(verifyCurrentBaseAdvancedCore(current,comments,runs,
+  jobs.map(j=>({...j,conclusion:'failure'}))).verified,false);
+ assert.equal(verifyCurrentBaseAdvancedCore(current,comments,
+  [{...runRecord,head_sha:oldHead}],jobs).verified,false);
+ assert.equal(verifyCurrentBaseAdvancedCore(current,comments,runs,
+  [{...jobs[0],status:'queued'},jobs[1]]).verified,false);
+ assert.equal(verifyStaleMachineManual({pr:current,comments,
+  events:[{...events[0],actor:{login:'andylitvinov-design',id:274943885}}],
+  comparison,gateProof:verified,now}).eligible,false,
+  'owner manually labeled PR must not be auto released');
+ assert.equal(verifyStaleMachineManual({pr:current,comments,
+  events:Array(100).fill(events[0]),comparison,gateProof:verified,now}).eligible,false);
+ assert.equal(verifyStaleMachineManual({pr:current,comments,events,
+  comparison:{...comparison,ahead_by:0},gateProof:verified,now}).eligible,false);
+ assert.equal(baseEligibility({...current,labels:[
+  ...current.labels,{name:'hh:hold'}]}),false);
+ assert.equal(baseEligibility({...current,labels:[
+  ...current.labels,{name:'hh:repair-needed'}]}),false);
+ const removed=[];
+ const github={rest:{
+  issues:{
+   listEvents:async()=>({data:events}),
+   listComments:async()=>({data:comments}),
+   removeLabel:async arg=>{removed.push(arg.name);return {data:{}};}
+  },
+  repos:{compareCommits:async()=>({data:comparison})},
+  actions:{
+   listWorkflowRuns:async()=>({data:{total_count:1,workflow_runs:runs}}),
+   listJobsForWorkflowRun:async()=>({data:{total_count:2,jobs}})
+  },
+  pulls:{get:async()=>({data:current})}
+ }};
+ const done=await recoverStaleMachineManual({
+  github,owner:'andylitvinov-design',repo:'books',pr:current,comments,now
+ });
+ assert.equal(done.status,'RELEASED');
+ assert.equal(done.current_head,SHA);
+ assert.deepEqual(removed,['hh:repair-manual','hh:conflict-repair-needed']);
+ assert.equal(removed.includes('hh:release-gate-review'),false);
+ assert.equal(done.sourceWrite,false);assert.equal(done.ciDispatched,false);
+ const before=removed.length;
+ const dry=await recoverStaleMachineManual({
+  github,owner:'andylitvinov-design',repo:'books',pr:current,comments,
+  now,dryRun:true
+ });
+ assert.equal(dry.status,'WOULD_RELEASE');
+ assert.equal(removed.length,before);
+ const changed=await recoverStaleMachineManual({
+  github:{rest:{...github.rest,pulls:{get:async()=>({data:{
+    ...current,head:{...current.head,sha:'e'.repeat(40)}
+  }})}}},
+  owner:'andylitvinov-design',repo:'books',pr:current,comments,now
+ });
+ assert.equal(changed.status,'HOLD');
+ assert.equal(changed.reason,'MANUAL_SCOPE_HEAD_OR_POLICY_CHANGED');
+ assert.equal(removed.length,before);
+});

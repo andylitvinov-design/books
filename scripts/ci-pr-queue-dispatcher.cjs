@@ -14,6 +14,7 @@ const {safeSourcePath: safeFreeSourcePath,
  assessCompleteFreeRepairScope}=require('./ci-pr-repair-free-agent.cjs');
 const {verifiedRunnerReceipt,recentlyStartedRunner}=require('./ci-pr-runner-evidence.cjs');
 const {reconcileCiWake,recoverVerifiedCiManualHold}=require('./ci-pr-ci-wake-reconcile.cjs');
+const {recoverStaleMachineManual}=require('./ci-pr-manual-hold-recovery.cjs');
 const {classifyIndependentSpecialistChecks,latestByName}=require('./ci-pr-ten-minute-watchdog.cjs');
 const {PATHS:QUALITY_EVENT_PATHS,isTrustedQualityFailureEvent,qualityEventMatchesPR}=require('./ci-pr-quality-event.cjs');
 const WORKER_PATH={repair:'hh-pr-repair-worker.yml',legacy:'hh-pr-repair-worker.yml',
@@ -414,6 +415,7 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   manualConflictHandoffs:0,wouldManualConflictHandoffs:0,
   verifiedManualConflictReroutes:0,verifiedSourceConflictReroutes:0,dependentPrsLinked:0,
   conflictQueueReleased:0,unconfirmedHandoffs:0,
+  staleMachineManualReleased:0,wouldReleaseStaleMachineManual:0,
   manualSourceEscalations:0,wouldManualSourceEscalations:0,
   specialistReclassified:0,wouldSpecialistReclassify:0,
   policyReclassified:0,wouldPolicyReclassify:0,
@@ -849,6 +851,26 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
     runner_id:realRunner.runner.runner_id});
   }
   const status=reservationStatus(task,comments,now);
+  // Release only an obsolete BOT-issued MANUAL marker from an older HEAD,
+  // after independently verified success of the CURRENT source Core job and
+  // a signed exact-run BASE_ADVANCED-only merge-gate failure. This step can
+  // mutate labels only: never starts Core, AI, writes source or merges.
+  if(task.lane==='legacy'&&status==='FREE'){
+   const recovery=await recoverStaleMachineManual({
+    github,owner,repo,pr:fresh,comments,now,dryRun,limited
+   });
+   if(recovery.status==='RELEASED'){
+    summary.staleMachineManualReleased++;
+    log('STALE_MACHINE_MANUAL_RELEASED #'+task.pr_number+
+      ' old='+recovery.old_head.slice(0,12)+
+      ' current='+task.head_sha.slice(0,12));
+    continue;
+   }
+   if(recovery.status==='WOULD_RELEASE'){
+    summary.wouldReleaseStaleMachineManual++;
+    continue;
+   }
+  }
   if(task.lane==='ci'&&fresh.labels?.some(l=>l.name==='hh:ci-wake-unverified')){
    // Signed "wake undelivered" describes the former attempt, not necessarily
    // the current PR HEAD. Only a genuine, completed exact-HEAD Core runner
