@@ -335,3 +335,68 @@ test('trusted protected push claims one private owner PR on existing Watchdog ru
   assert.equal(fx.calls.length,0);
  }
 });
+
+test('failed exact-repository Core wakes owner queue without a full inventory sweep',async()=>{
+ const {trustedCoreFailureWake}=require('../scripts/ci-pr-commander-pr-completion.cjs');
+ const good={...context,eventName:'workflow_run',payload:{workflow_run:{
+  status:'completed',conclusion:'failure',name:'HH PR core release gate',
+  event:'pull_request',head_branch:'fix/product-pr-4711',
+  repository:{full_name:REPO},head_repository:{full_name:REPO}
+ }}};
+ assert.equal(trustedCoreFailureWake(good),true);
+ const f=mock(task);
+ const out=await run({...f,context:good,dispatch:async()=>{throw Error('NO_SPURIOUS_REPAIR')}});
+ assert.equal(out.status,'WATCHING');
+ assert.equal(f.calls.filter(c=>c.action==='next').length,1);
+ for(const delta of [
+  {conclusion:'success'},{status:'in_progress'},{event:'workflow_dispatch'},
+  {name:'Unrelated workflow'}, {head_repository:{full_name:'someone/fork'}},
+  {repository:{full_name:'someone/fork'}}
+ ]){
+  const bad={...good,payload:{workflow_run:{...good.payload.workflow_run,...delta}}};
+  assert.equal(trustedCoreFailureWake(bad),false);
+  const fx=mock(task);
+  assert.equal((await run({...fx,context:bad})).status,'SKIPPED_UNTRUSTED');
+  assert.equal(fx.calls.length,0);
+ }
+});
+test('one signed runner drains several distinct owner requests, with hard cap',async()=>{
+ const {drain}=require('../scripts/ci-pr-commander-pr-completion.cjs');
+ const items=[4770,4771,4772].map((n,i)=>({...task,prNumber:n,
+  requestId:'123e4567-e89b-42d3-a456-42661417400'+i}));
+ const actions=[];let current=null;
+ const response=value=>({status:200,text:async()=>JSON.stringify({schema:'HH_COMMANDER_PR_COMPLETION_V1',...value})});
+ const fetcher=async(url,request)=>{
+  assert.equal(url,ENDPOINT);
+  const value=JSON.parse(request.body);actions.push(value.action);
+  if(value.action==='next'){
+   current=items.shift()||null;
+   return response({item:current});
+  }
+  if(value.action==='finish')return response({accepted:true,item:{
+   prNumber:current.prNumber,status:value.status,reasonCode:value.reasonCode}});
+  throw Error('UNEXPECTED_OWNER_QUEUE_ACTION_'+value.action);
+ };
+ const core={getIDToken:async()=>'.'.repeat(121),info(){},warning(){}};
+ const github={rest:{pulls:{get:async({pull_number})=>({
+  data:{...base,number:pull_number}})}}};
+ const report=await drain({github,core,context,fetcher,dispatch:async()=>{throw Error('NO_REPAIR')}});
+ assert.equal(report.processed,3);
+ assert.deepEqual(report.items.map(x=>x.prNumber),[4770,4771,4772,null]);
+ assert.equal(actions.filter(x=>x==='next').length,4);
+ assert.equal(actions.filter(x=>x==='finish').length,3);
+ await assert.rejects(()=>drain({github,core,context,fetcher},5),/DRAIN_LIMIT/);
+});
+test('Core-failure wake only starts direct handoff, with sparse default-branch checkout',()=>{
+ const workflow=require('node:fs').readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
+ assert.match(workflow,/workflows:\\s*[\\s\\S]*'HH PR core release gate'/);
+ const reconciler=workflow.slice(workflow.indexOf('  reconcile:'),workflow.indexOf('  completion-wait:'));
+ const direct=workflow.slice(workflow.indexOf('  direct-handoff:'),workflow.indexOf('  reactivate-schedules:'));
+ assert.match(reconciler,/github\\.event_name != 'workflow_run'/);
+ assert.match(direct,/github\\.event\\.workflow_run\\.name == 'HH PR core release gate'/);
+ assert.match(direct,/github\\.event\\.workflow_run\\.conclusion == 'failure'/);
+ assert.match(direct,/filter: blob:none/);
+ assert.match(direct,/sparse-checkout: \\|[\\s\\S]*scripts[\\s\\S]*\\.github/);
+ assert.equal((workflow.match(/const \\{drain\\}=require\\(process\\.env\\.GITHUB_WORKSPACE/g)||[]).length,2);
+ assert.equal((workflow.match(/const outcome=await drain\\(/g)||[]).length,2);
+});
