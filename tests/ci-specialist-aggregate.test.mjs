@@ -2356,5 +2356,5 @@ test('two obsolete push/manual CI workflows have narrow BASE-trusted actionlint 
   assert.throws(()=>resolveExpectedSpecialists({base,current:new Map([[owner,actionlint+'\n# untrusted']]),changed,expected}),
     /UNTRUSTED_SPECIALIST_REPLACEMENT/);
   assert.throws(()=>resolveExpectedSpecialists({base,current:new Map(),changed,expected}),
-    /UNTRUSTED_SPECIALIST_REPLACEMENT/);
+    /UNAPPROVED_WORKFLOW_DELETION:.*hh-actionlint/);
 });
