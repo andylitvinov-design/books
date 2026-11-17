@@ -30,7 +30,7 @@ test("public preview requires original recording evidence and never invents list
  assert.match(server,/license_code in \('CC0-1.0','PDM-1.0'\)/);
  assert.ok(server.includes('row.status==="ready"&&row.source_verified===true'));
  assert.match(server,/technical_preview/);
- assert.ok(server.includes('row.status==="published"&&row.rights_confirmed'));
+ assert.ok(server.includes('const reviewed=row?.status==="published"&&row.rights_confirmed&&row.quality_score>=4;'));
  assert.match(picker,/studioMusicFilter/);
  assert.match(picker,/sourceVerified/);
  assert.match(picker,/preload="none"/);
