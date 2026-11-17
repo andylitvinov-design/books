@@ -90,15 +90,15 @@
   <p class="note">Статистика CI может быть выборочной. Количество workflow-run не равно числу CI jobs.</p>
  </section>
  <section class="panel" id="error-funnel" aria-labelledby="error-funnel-title">
-  <div class="panel-heading funnel-heading"><div><p class="eyebrow">ОШИБКА CI → AI WORKER → GITHUB</p><h2 id="error-funnel-title">Путь исправления · 10 подтверждений</h2></div>
+  <div class="panel-heading funnel-heading"><div><p class="eyebrow">ОШИБКА CI → AI WORKER → GITHUB</p><h2 id="error-funnel-title">Путь исправления · подтверждённые этапы</h2></div>
    <label class="funnel-selector">Период ошибок CI <select id="error-funnel-period" aria-label="Период ошибок CI"><option value="24">24 ч</option><option value="168">7 дней</option><option value="336">14 дней</option></select></label><div class="funnel-pr-controls"><label for="error-funnel-pr">PR №</label><input id="error-funnel-pr" inputmode="numeric" maxlength="6" placeholder="Напр. 4220" aria-label="Номер PR для просмотра"><button type="button" id="error-funnel-find">Найти</button><button type="button" id="error-funnel-all">Все PR</button></div></div>
   <p class="note" id="error-funnel-coverage">Извлекаю проверенные события GitHub…</p>
   <div class="table-scroll"><table class="funnel-table"><thead><tr><th>Этап</th><th>Подтверждено</th><th>От ошибки CI · P50</th><th>GitHub-доказательства</th></tr></thead>
     <tbody id="error-funnel-rows">
      <tr><td><strong>1. PR с ошибкой Core CI</strong><small>Ошибка зафиксирована в архиве GitHub Actions</small></td><td class="funnel-count" id="f-failed">—</td><td id="f-t-failed">—</td><td id="f-proof-failed">—</td></tr>
-     <tr><td><strong>2. Ошибка классифицирована</strong><small>Подписанная задача указывает тип ошибки</small></td><td class="funnel-count" id="f-classified">—</td><td id="f-t-classified">—</td><td id="f-proof-classified">—</td></tr>
+     <tr><td><strong>2. Причина определена</strong><small>UNKNOWN не считается классификацией</small></td><td class="funnel-count" id="f-classified">—</td><td id="f-t-classified">—</td><td id="f-proof-classified">—</td></tr>
      <tr><td><strong>3. Задача создана</strong><small>Задача связана с PR, HEAD и запуском CI</small></td><td class="funnel-count" id="f-task">—</td><td id="f-t-task">—</td><td id="f-proof-task">—</td></tr>
-     <tr><td><strong>4. Ответственный назначен</strong><small>Сохранено назначение реального исполнителя</small></td><td class="funnel-count" id="f-assigned">—</td><td id="f-t-assigned">—</td><td id="f-proof-assigned">—</td></tr>
+     <tr><td><strong>4. AI Worker выбран</strong><small>owner_review не считается запуском AI</small></td><td class="funnel-count" id="f-assigned">—</td><td id="f-t-assigned">—</td><td id="f-proof-assigned">—</td></tr>
      <tr><td><strong>5. Repair Worker назначен</strong><small>Выбран исполнитель исправления исходников</small></td><td class="funnel-count" id="f-source_assigned">—</td><td id="f-t-source_assigned">—</td><td id="f-proof-source_assigned">—</td></tr>
      <tr><td><strong>6. Dispatch принят GitHub</strong><small>Подтверждена отправка на запуск Worker</small></td><td class="funnel-count" id="f-dispatched">—</td><td id="f-t-dispatched">—</td><td id="f-proof-dispatched">—</td></tr>
      <tr><td><strong>7. Worker получил задачу</strong><small>CLAIMED на том же PR, HEAD и task key</small></td><td class="funnel-count" id="f-claimed">—</td><td id="f-t-claimed">—</td><td id="f-proof-claimed">—</td></tr>
@@ -106,8 +106,13 @@
      <tr><td><strong>9. Результат Worker получен</strong><small>Подписан итог выполнения, в том числе неуспех</small></td><td class="funnel-count" id="f-responded">—</td><td id="f-t-responded">—</td><td id="f-proof-responded">—</td></tr>
      <tr><td><strong>10. Коммит получен GitHub</strong><small>Опубликованный SHA независимо подтверждён GitHub</small></td><td class="funnel-count" id="f-committed">—</td><td id="f-t-committed">—</td><td id="f-proof-committed">—</td></tr>
     </tbody></table></div>
+  <div class="funnel-pagination"><button type="button" id="funnel-prev">Назад</button><span id="funnel-page" aria-live="polite">Срез 1</span><button type="button" id="funnel-next">Далее</button></div>
+  <div class="subheading">Модель, патч, CI, Merge и LIVE · отдельно</div>
+  <div id="funnel-extra-rows" class="funnel-extra-grid">Получаю квитанции…</div>
+  <div class="subheading">История PR · раскрыть подтверждения и блокировку</div>
+  <div id="funnel-incident-list" class="funnel-incident-list">Получаю историю…</div>
   <p class="note" id="error-funnel-info">Показаны только независимые подтверждения GitHub. «—» означает отсутствие проверенного свидетельства, не ноль.</p>
-  <p class="caution">Частичный архив, до 8 PR в одном срезе · счётчик «≥» означает минимальное подтверждённое число. Назначение, CLAIMED, runner, ответ модели и опубликованный SHA не взаимозаменяемы. Приватная база владельца не раскрывается.</p>
+  <p class="caution">Частичный архив, по 8 PR/HEAD на странице · счётчик «≥» означает минимальное подтверждённое число. Назначение, CLAIMED, runner, ответ модели и опубликованный SHA не взаимозаменяемы. Приватная база владельца не раскрывается.</p>
  </section>
  <section class="panel" id="queue" aria-labelledby="queue-title">
   <div class="panel-heading"><div><p class="eyebrow">ОПЕРАЦИОННАЯ ОЧЕРЕДЬ</p><h2 id="queue-title">PR, блокировки и исполнители</h2></div><span class="small" id="queue-asof">Срез не получен</span></div>

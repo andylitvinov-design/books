@@ -1339,7 +1339,9 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
       summary.transientCiReruns++;
       log(`${dryRun?'WOULD_RERUN':'RERUN'} classified ${diagnosis.category} core CI #${pr.number} run=${latest.id} HEAD ${pr.head.sha.slice(0,12)}`);
     } else if ((dryRun||errorTaskDurable) && latest.conclusion === 'failure' && latest.run_attempt >= 1) {
-      if(root==='RELEASE_GATE_ONLY') {
+      if(root==='RELEASE_GATE_ONLY'||
+         (root==='SPECIALIST_FAILED'&&diagnosis.category==='BASE_ADVANCED')) {
+        // A signed BASE_ADVANCED proof outranks legacy specialist grouping.
         // Modern hh-merge-check may embed a genuinely failed Specialist.
         // Only authenticated exact-job log evidence may select that route.
         if(diagnosis.reason_code==='VERIFIED_REQUIRED_SPECIALIST_FAILURE'){
@@ -1352,10 +1354,12 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
         // aggregation; the exact log must determine which. No source claim.
         if(summary.releaseGateQueued < MAX_RELEASE_GATE_LABELS && !budget.exhausted) {
           if(await ensureQueueLabel(github,owner,repo,live,RELEASE_GATE_LABEL,
-            'Core passed; investigate required release gate, base or specialist result',
+            diagnosis.category==='BASE_ADVANCED'?
+              'Signed production BASE_ADVANCED: protected base recovery, not product source repair':
+              'Core passed; investigate required release gate, base or specialist result',
             'fbca04',dryRun,limited,log)) summary.releaseGateQueued++;
         }
-        log('#'+pr.number+' gate-only Core failure; no speculative source repair');
+        log('#'+pr.number+' '+(diagnosis.category==='BASE_ADVANCED'? 'BASE_ADVANCED_RECOVERY_REQUIRED':'GATE_ONLY')+'; no speculative source repair');
       } else if(root==='SPECIALIST_FAILED') {
         await routeVerifiedSpecialist(live);
         log('#'+pr.number+' specialist aggregate failed; independently verified cause decides its queue');

@@ -270,7 +270,7 @@ if(!env?.document||typeof env.fetch!=='function')return;
 const doc=env.document,el=id=>doc.getElementById(id);
 const dom=(tag,cls,txt)=>{const e=doc.createElement(tag);if(cls)e.className=cls;if(txt!==undefined)e.textContent=String(txt);return e};
 const svgNS='http://www.w3.org/2000/svg',colors=['#9bcfff','#78e3bd','#ffc681'];
-const snapshots={};let refreshing=false,selectedPeriod=24,periodRequestSeq=0,stageRequestSeq=0,funnelHours=24,funnelPR=null,funnelSeq=0,strictRaw=null,strictArch=null,strictHours=24,strictUpdateError=null;
+const snapshots={};let refreshing=false,selectedPeriod=24,periodRequestSeq=0,stageRequestSeq=0,funnelHours=24,funnelPR=null,funnelSeq=0,funnelPage=0,funnelPages=1,strictRaw=null,strictArch=null,strictHours=24,strictUpdateError=null;
 function put(id,value){const e=el(id);if(e)e.textContent=String(value);}
 function anchor(num,title){const a=dom('a',null,title||('#'+num));a.href=REPO+'/pull/'+num;a.target='_blank';a.rel='noopener noreferrer';return a;}
 function sv(parent,tag,attrs={},txt){const e=doc.createElementNS(svgNS,tag);for(const [k,v]of Object.entries(attrs))e.setAttribute(k,String(v));if(txt!==undefined)e.textContent=String(txt);if(parent)parent.appendChild(e);return e;}
@@ -563,6 +563,10 @@ const FUNNEL_KEYS=['failed','classified','task','assigned','source_assigned','di
 function funnelMissing(message){
  for(const key of FUNNEL_KEYS){put('f-'+key,'—');put('f-t-'+key,'—');put('f-proof-'+key,'—');}
  put('error-funnel-coverage',message);
+ el('funnel-extra-rows').textContent='Подтверждения не получены.';
+ el('funnel-incident-list').textContent='Нет подтверждённых инцидентов.';
+ put('funnel-page','Данные не получены');
+ el('funnel-prev').disabled=true;el('funnel-next').disabled=true;
  put('error-funnel-info','«—» = нет проверенного свидетельства, не ноль. Приватный CI inbox недоступен публично.');
 }
 function renderFunnel(d,hours=funnelHours){
@@ -587,14 +591,66 @@ function renderFunnel(d,hours=funnelHours){
   }
   if(!root.childNodes.length)root.textContent='—';
  }
+ const extRoot=el('funnel-extra-rows');clear(extRoot);
+ const ext=Array.isArray(d.extended_stages)?d.extended_stages:[];
+ if(!ext.length)extRoot.append(dom('p','empty','Данных о модели и патче пока нет.'));
+ for(const stage of ext){
+  if(typeof stage.label!=='string'||!safeInt(stage.confirmed))continue;
+  const panel=dom('div','funnel-extra-item');
+  panel.append(dom('span',null,clampText(stage.label,60)));
+  panel.append(dom('strong',null,stage.confirmed>0?'≥'+number(stage.confirmed):'—'));
+  panel.append(dom('small',null,'P50: '+(stage.confirmed>0&&safeNum(stage.p50_minutes)?delay(stage.p50_minutes):'—')+
+   ' · P90: '+(stage.confirmed>0&&safeNum(stage.p90_minutes)?delay(stage.p90_minutes):'—')));
+  extRoot.append(panel);
+ }
+ const detailRoot=el('funnel-incident-list');clear(detailRoot);
+ const rows=Array.isArray(d.incidents)?d.incidents.slice(0,8):[];
+ if(!rows.length)detailRoot.append(dom('p','empty','В выбранном срезе инцидентов нет.'));
+ for(const x of rows){
+  if(!safeInt(x.pr)||x.pr<1||typeof x.head!=='string')continue;
+  const block=dom('details');
+  block.append(dom('summary',null,'#'+x.pr+' · '+clampText(x.category||'Диагностика',26)+
+    ' · '+clampText(x.state||'Не подтверждено',42)));
+  const values=[
+    ['HEAD',x.head.slice(0,12)],
+    ['Причина',x.blocked_reason||x.reason_code||'Не установлена'],
+    ['Следующее действие',x.next_action||'Требуется диагностика'],
+    ['Проверить после',isTime(x.next_check_at)?stamp(x.next_check_at):'Нет подтверждённой даты'],
+    ['Исполнитель',x.executor_id||'Не назначен'],
+    ['Модель',x.model_evidence||'Не подтверждено'],
+    ['Патч',x.patch_ready?'Проверен':'Не подтверждён'],
+    ['Новый SHA',typeof x.source_sha==='string'?x.source_sha.slice(0,12):'Не подтверждён'],
+    ['Релиз',(x.ci_verified?'CI ✓':'CI —')+' / '+
+      (x.merged?'Merge ✓':'Merge —')+' / '+(x.live_verified?'LIVE ✓':'LIVE —')]
+  ];
+  for(const [name,value]of values){
+    const p=dom('p');p.append(dom('b',null,name+': '));
+    p.append(doc.createTextNode(clampText(value,140)));block.append(p);
+  }
+  const link=dom('a',null,'PR в GitHub');
+  link.href=REPO+'/pull/'+x.pr;link.rel='noopener noreferrer';link.target='_blank';
+  block.append(link);
+  if(typeof x.worker_run==='string'&&
+    /^https:\/\/github\.com\/andylitvinov-design\/books\/actions\/runs\/[0-9]+$/.test(x.worker_run)){
+    const worker=dom('a',null,'Worker run');worker.href=x.worker_run;
+    worker.rel='noopener noreferrer';worker.target='_blank';block.append(worker);
+  }
+  detailRoot.append(block);
+ }
+ funnelPage=safeInt(c.page)?c.page:0;
+ funnelPages=safeInt(c.pages_total)&&c.pages_total>0?c.pages_total:1;
+ put('funnel-page','Страница '+(funnelPage+1)+' / '+funnelPages);
+ el('funnel-prev').disabled=funnelPage===0;
+ el('funnel-next').disabled=funnelPage>=funnelPages-1;
  put('error-funnel-info','Подтверждения сопоставлены по точным PR + HEAD + Core run. '+
   (Number.isSafeInteger(c.unclassified_tasks)&&c.unclassified_tasks>0?
     'Требуют дополнительной диагностики: '+number(c.unclassified_tasks)+' из проверенных PR. ':'')+
   'UNKNOWN и owner_review не считаются классификацией и запуском AI Worker; ≥ — нижняя граница выборки.');
 }
-function funnelUrl(hours,pr){return URLS.funnel.replace('hours=24','hours='+hours)+(pr===null?'':'&pr='+pr);}
-async function selectFunnelPeriod(hours,pr=funnelPR){
+function funnelUrl(hours,pr){return URLS.funnel.replace('hours=24','hours='+hours)+(pr===null?'':'&pr='+pr)+(funnelPage>0?'&page='+funnelPage:'');}
+async function selectFunnelPeriod(hours,pr=funnelPR,keepPage=false){
  if(![24,168,336].includes(hours)||pr!==null&&(!safeInt(pr)||pr<1||pr>999999))return;
+ if(!keepPage)funnelPage=0;
  funnelHours=hours;funnelPR=pr;const seq=++funnelSeq;
  funnelMissing('Получаю подтверждения за '+(hours===24?'24 часа':hours/24+' дней')+'…');
  try{const url=funnelUrl(hours,pr);
@@ -663,6 +719,12 @@ el('refresh').addEventListener('click',()=>{void refresh();});
 el('error-funnel-period').addEventListener('change',e=>{void selectFunnelPeriod(Number(e.target.value));});
 el('error-funnel-find').addEventListener('click',()=>{const value=el('error-funnel-pr').value.trim();if(!/^[1-9][0-9]{0,5}$/.test(value)){put('error-funnel-coverage','Введите корректный номер PR.');return;}void selectFunnelPeriod(funnelHours,Number(value));});
 el('error-funnel-all').addEventListener('click',()=>{el('error-funnel-pr').value='';void selectFunnelPeriod(funnelHours,null);});
+el('funnel-prev').addEventListener('click',()=>{
+ if(funnelPage>0){funnelPage--;void selectFunnelPeriod(funnelHours,funnelPR,true);}
+});
+el('funnel-next').addEventListener('click',()=>{
+ if(funnelPage<funnelPages-1){funnelPage++;void selectFunnelPeriod(funnelHours,funnelPR,true);}
+});
 for(const b of doc.querySelectorAll('[data-period]'))b.addEventListener('click',()=>{void selectPeriod(Number(b.dataset.period));});
 void refresh();
 })(typeof window==='undefined'?null:window);
