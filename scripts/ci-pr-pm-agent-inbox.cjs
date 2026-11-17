@@ -81,18 +81,19 @@ const resultBody=(cmd,result,run)=>{
    '\n\nOriginal owner request: '+PREFIX+'/issues/'+ISSUE+'#issuecomment-'+cmd.id+
    '\nTrusted Watchdog: '+run;
  }
- const state=result.ok?'REPLIED':result.dispatched?'DISPATCH_ACCEPTED_UNCORRELATED':'BLOCKED';
+ const state=result.ok?'REPLIED':result.dispatched?'DISPATCH_ACCEPTED_UNCORRELATED':result.watching?'WATCHING':'BLOCKED';
  const head='<!-- '+MARKER+' comment='+cmd.id+' status='+state+' -->\n';
  const summary=result.ok?'**OpenRouter Free · ответ на технический вопрос**':
    result.dispatched?(cmd.kind==='source'?'**Source Worker dispatch accepted; source commit NOT yet verified**':
-    '**Watchdog dispatch accepted; Repair Worker not yet verified**'):'**Agent request blocked**';
+    '**Repair Worker dispatch accepted; source commit NOT yet verified**'):
+   result.watching?'**PR source repair waiting for a verified worker slot**':'**Agent request blocked**';
  const text=result.ok?trim(result.text,2300):result.dispatched?
    (cmd.kind==='source'?
     'Existing owner Source Worker workflow_dispatch accepted for public technical task '+cmd.task.task_id+
     '. No source SHA, draft PR, CI, merge or LIVE is yet verified. Check the linked Actions workflow.':
     'Request accepted by GitHub Actions for PR #'+cmd.pr+' exact HEAD '+cmd.sha+
     '. This is NOT runner start, patch, commit, CI green, merge, or LIVE.'):
-   'Reason: '+trim(result.reason||'UNKNOWN',140);
+   (result.watching?'Existing signed PR queue will retry when eligible, without another CI or model wave. No source commit or merge is claimed. Reason: ':'Reason: ')+trim(result.reason||'UNKNOWN',140);
  const billing=result.ok&&typeof result.cost==='number'&&result.cost===0?
    '\n\nModel: '+trim(result.model,120)+' · verified provider cost: $0':'';
  return head+summary+'\n\n'+text+billing+'\n\n'+
@@ -217,7 +218,15 @@ async function dispatchRepair(github,cmd,{ownerToken,fetcher=fetch,dispatchDirec
    return {dispatched:true,reason:'OWNER_DIRECT_QUEUE_DISPATCH_ACCEPTED'};
   const cause=typeof result?.reason==='string'&&
     /^[A-Z0-9_]{3,75}$/.test(result.reason)?result.reason:'NOT_ADMITTED';
-  return {dispatched:false,reason:'OWNER_REPAIR_DIRECT_'+cause};
+  // Capacity was not admitted: preserve the current-head owner intent as
+  // WATCHING while the existing signed queue handles future eligible slots.
+  // Real safety denials still return BLOCKED and are never retried here.
+  const waiting=new Set(['CAPACITY_UNVERIFIED','CAPACITY_UNKNOWN',
+   'GHOST_WORKER_BUSY','WORKER_BUSY','RUNNERS_SATURATED','JOBS_SATURATED',
+   'CORE_PRIORITY_PENDING','RESERVED_REQUIRES_REVIEW',
+   'CLAIMED_AWAITING_OUTCOME']);
+  return {dispatched:false,watching:waiting.has(cause),
+   reason:'OWNER_REPAIR_DIRECT_'+cause};
  }
  // The bot GITHUB_TOKEN changes the workflow_dispatch actor to
  // github-actions[bot], which validOwnerRepairTarget deliberately rejects.
@@ -284,7 +293,10 @@ async function dispatchLive(github,cmd,{ownerToken,fetcher=fetch,dispatchDirect=
 
 async function observeLive(github,comments,now=Date.now()){
  const receipts=comments.map(trustedReceipt).filter(Boolean);
- const active=comments.map(command).filter(c=>c?.kind==='live'&&
+ // Track accepted owner repair commands until GitHub independently proves a
+ // merge or closure. Do NOT redispatch here: only the guarded exact-HEAD
+ // queue dispatcher may retry and reserve another source writer.
+ const active=comments.map(command).filter(c=>['live','repair'].includes(c?.kind)&&
    receipts.some(r=>r.commentId===c.id&&r.status==='WATCHING')&&
    !receipts.some(r=>r.commentId===c.id&&
      ['MERGED','CLOSED_UNMERGED','EXPIRED_UNVERIFIED'].includes(r.status)))
