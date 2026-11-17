@@ -87,7 +87,21 @@ async function run({github,core,context,ownerToken='',fetcher=global.fetch,
     else if(typeof result?.reason==='string'){
      decision.reasonCode=/^[A-Z0-9_]{3,90}$/.test(result.reason)?
        result.reason:'REPAIR_DISPATCH_NOT_VERIFIED';
-     if(/^(?:OWNER_REPAIR_|REPAIR_NOT_|SIGNED_|SOURCE_|PR_NOT_)/.test(decision.reasonCode))
+     // Capacity pressure is a real waiting state, not an owner denial.
+     // The global signed queue can still repair this exact PR on a later
+     // available slot; never claim a worker/source commit from WATCHING.
+     const retryable=new Set([
+      'OWNER_REPAIR_DIRECT_GHOST_WORKER_BUSY',
+      'OWNER_REPAIR_DIRECT_WORKER_BUSY',
+      'OWNER_REPAIR_DIRECT_RUNNERS_SATURATED',
+      'OWNER_REPAIR_DIRECT_JOBS_SATURATED',
+      'OWNER_REPAIR_DIRECT_CAPACITY_UNKNOWN',
+      'OWNER_REPAIR_DIRECT_NO_SAFE_DISPATCH',
+      'OWNER_REPAIR_DIRECT_RESERVED_REQUIRES_REVIEW',
+      'OWNER_REPAIR_DIRECT_CLAIMED_AWAITING_OUTCOME'
+     ]);
+     if(!retryable.has(decision.reasonCode)&&
+        /^(?:OWNER_REPAIR_|REPAIR_NOT_|SIGNED_|SOURCE_|PR_NOT_)/.test(decision.reasonCode))
       decision.status='BLOCKED';
     }
    }
