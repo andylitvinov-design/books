@@ -34,11 +34,17 @@ function trustedControlPush(context){
   p?.deleted!==true&&p?.repository?.full_name===REPO&&
   SHA.test(p?.after||'')&&context.sha===p.after;
 }
-function readback(pr,number){
+function readback(pr,number,{terminalReadbackOnly=false}={}){
  if(!pr||pr.number!==number||pr.head?.repo?.full_name!==REPO||
-  pr.base?.repo?.full_name!==REPO||pr.base?.ref!==BASE||!SHA.test(pr.head?.sha||''))
+  pr.base?.repo?.full_name!==REPO||!SHA.test(pr.head?.sha||''))
   return {status:'BLOCKED',reasonCode:'PR_IDENTITY_UNVERIFIED',
    headSha:SHA.test(pr?.head?.sha||'')?pr.head.sha:null};
+ // Historical control-branch requests may ONLY be reconciled to a GitHub
+ // terminal state. They never become eligible for source write or dispatch.
+ const terminalControl=terminalReadbackOnly&&pr.state==='closed'&&
+  pr.base?.ref==='codex/bootstrap-books';
+ if(pr.base?.ref!==BASE&&!terminalControl)
+  return {status:'BLOCKED',reasonCode:'PR_IDENTITY_UNVERIFIED',headSha:pr.head.sha};
  if(pr.state==='closed'){
   return pr.merged===true&&SHA.test(pr.merge_commit_sha||'')&&
    Number.isFinite(Date.parse(pr.merged_at||''))?
@@ -90,7 +96,14 @@ async function run({github,core,context,ownerToken='',fetcher=global.fetch,
  try{
   const response=await github.rest.pulls.get({owner:'andylitvinov-design',repo:'books',pull_number:task.prNumber});
   const pr=response?.data;
-  decision=readback(pr,task.prNumber);
+  decision=readback(pr,task.prNumber,{terminalReadbackOnly:task.blockedRecheckOnly===true});
+  // A formerly BLOCKED request is a READ-ONLY terminal reconciliation: do not
+  // authorize a new source writer, even if labels or a stale HEAD changed.
+  if(task.blockedRecheckOnly===true&&
+     !['MERGED','CLOSED_UNMERGED'].includes(decision.status))
+   decision={status:'BLOCKED',headSha:task.requestedHeadSha,
+    reasonCode:/^[A-Z0-9_]{3,90}$/.test(task.previousReasonCode||'')?
+     task.previousReasonCode:'PR_BLOCKED_RECHECK_UNCHANGED'};
   // The owner has explicitly sent a NEW authenticated PR command. Only an
   // Actions-bot-proven, finished zero-price model truncation can request ONE
   // additional isolated legacy-code run. Keep hh:repair-manual in place until
@@ -170,7 +183,10 @@ async function run({github,core,context,ownerToken='',fetcher=global.fetch,
   }
  }catch(error){
   core.warning('HH_PR_COMPLETION_SOURCE_READ_'+String(error.message||'').slice(0,90));
-  decision={status:'WATCHING',reasonCode:'GITHUB_READ_TRANSIENT_UNVERIFIED',
+  decision={status:task.blockedRecheckOnly===true?'BLOCKED':'WATCHING',
+   reasonCode:task.blockedRecheckOnly===true&&
+    /^[A-Z0-9_]{3,90}$/.test(task.previousReasonCode||'')?
+     task.previousReasonCode:'GITHUB_READ_TRANSIENT_UNVERIFIED',
    headSha:task.requestedHeadSha};
  }
  // Unsupported base/foreign PRs must produce a durable BLOCKED receipt,
@@ -185,6 +201,7 @@ async function run({github,core,context,ownerToken='',fetcher=global.fetch,
    requestId:task.requestId,leaseToken:task.leaseToken,
    status:decision.status,headSha:decision.headSha,
    reasonCode:decision.reasonCode,workflowRunId:context.runId,
+   blockedRecheckOnly:task.blockedRecheckOnly===true,
    dispatchAccepted,noDispatchVerified},token,fetcher);
  }catch(error){
   core.warning('HH_PR_COMPLETION_FINISH_'+String(error.message).slice(0,100));

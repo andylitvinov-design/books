@@ -397,3 +397,39 @@ test('only proven pre-dispatch capacity may re-arm; unknown remote results never
  await run({...ack,context,dispatch:async()=>({dispatched:true,reason:'OWNER_DIRECT_QUEUE_DISPATCH_ACCEPTED'})});
  assert.equal(ack.calls.find(x=>x.action==='finish').noDispatchVerified,false);
 });
+
+// The private owner queue can revisit historical BLOCKED rows, but they must
+// never turn into a fresh dispatch authorization merely because GitHub moved.
+test('historical control-branch BLOCKED request reconciles only after verified terminal GitHub readback',async()=>{
+ const control={...base,base:{...base.base,ref:'codex/bootstrap-books'},
+  state:'closed',merged:true,merged_at:'2026-11-17T20:00:00Z',merge_commit_sha:MERGE};
+ assert.equal(readback(control,4770).status,'BLOCKED');
+ assert.equal(readback(control,4770,{terminalReadbackOnly:true}).status,'MERGED');
+ assert.equal(readback({...control,state:'open'},4770,{terminalReadbackOnly:true}).status,'BLOCKED');
+ const signed={...task,blockedRecheckOnly:true,previousReasonCode:'PR_IDENTITY_UNVERIFIED',
+  dispatchEligibleOnce:false};
+ const f=mock(signed,control);let dispatched=0;
+ const result=await run({...f,context,dispatch:async()=>{dispatched++;}});
+ assert.equal(result.status,'MERGED');assert.equal(dispatched,0);
+ assert.equal(f.calls.filter(c=>c.action==='arm_dispatch').length,0);
+ assert.equal(f.calls.find(c=>c.action==='finish').blockedRecheckOnly,true);
+});
+test('historical BLOCKED owner task cannot dispatch on a newly repair-labelled PR',async()=>{
+ const signed={...task,blockedRecheckOnly:true,previousReasonCode:'OWNER_REPAIR_DISPATCH_HTTP_403',
+  dispatchEligibleOnce:false};
+ const f=mock(signed,{...base,labels:[{name:'hh:repair-needed'}]});
+ const result=await run({...f,context,dispatch:async()=>{throw Error('UNSAFE_REPAIR');}});
+ assert.equal(result.status,'BLOCKED');
+ assert.equal(result.reasonCode,'OWNER_REPAIR_DISPATCH_HTTP_403');
+ assert.equal(f.calls.some(c=>c.action==='arm_dispatch'),false);
+});
+test('historical BLOCKED task remains blocked on GitHub read failure',async()=>{
+ const signed={...task,blockedRecheckOnly:true,previousReasonCode:'PR_IDENTITY_UNVERIFIED',
+  dispatchEligibleOnce:false};
+ const f=mock(signed);
+ f.github.rest.pulls.get=async()=>{throw Error('GitHub unavailable')};
+ const result=await run({...f,context});
+ assert.equal(result.status,'BLOCKED');
+ assert.equal(result.reasonCode,'PR_IDENTITY_UNVERIFIED');
+ assert.equal(f.calls.some(c=>c.action==='arm_dispatch'),false);
+});
