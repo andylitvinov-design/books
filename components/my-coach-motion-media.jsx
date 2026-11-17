@@ -4,8 +4,8 @@ import {PUBLIC_COACH_PERSONA_IDS} from '@/lib/coaching/persona-registry.mjs'
 import {coachVisualClip,normalizeCoachVisualScene} from '@/lib/coaching/coach-visual-cues.mjs'
 import styles from './my-coach-motion-media.module.css'
 
-// Media is available for the original four. Future personas use a still photo
-// until their own reviewed MP4 actually exists; no broken requests.
+// Only the original four have MP4 loops. Merlin and Harry use their own still art;
+// never request nonexistent video clips.
 const VIDEO_PERSONAS=new Set(['mira','max','sofia','alex'])
 const PHASES=new Set(['greeting','idle','listening','speaking'])
 const MEDIA_ROOT='/images/holistic-house/my-coach-motion/'
@@ -24,7 +24,7 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
   const fallbackScene=state==='greeting'?'welcome':state==='listening'?'attentive':'calm'
   const visualScene=state==='speaking'?normalizeCoachVisualScene(scene,'explain'):fallbackScene
   const clip=coachVisualClip(state,visualScene)
-  const poster=supported?MEDIA_ROOT+personaId+'-still.webp':null
+  const poster=supported?(personaId==='harry'?MEDIA_ROOT+'harry-still.svg':MEDIA_ROOT+personaId+'-still.webp'):null
   const src=supported&&hasVideo?MEDIA_ROOT+personaId+'-'+clip+'.mp4':null
 
   useEffect(()=>{

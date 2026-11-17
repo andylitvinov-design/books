@@ -3,7 +3,7 @@
 import {useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
 import {ArrowRight,Heart,Home,Keyboard,Leaf,Languages,PhoneOff,LockKeyhole,MessageCircle,Pencil,Send,ShieldCheck,Sparkles,Target,UserRound,Video,Volume2,Play,LoaderCircle,Zap} from 'lucide-react'
-import {getCoachPersona,localCoachText,coachStagePrompt,PUBLIC_COACH_PERSONA_IDS} from '@/lib/coaching/persona-registry.mjs'
+import {getCoachPersona,localCoachText,coachStagePrompt} from '@/lib/coaching/persona-registry.mjs'
 import {getCoachPresentation} from '@/lib/coaching/persona-presentations.mjs'
 import {coachTimeboxState} from '@/lib/coaching/session-timebox.mjs'
 import {coachingBrainSafety,coachingBrainBoundary,coachingBrainStageDecision,offlineCoachingBrainReply,selectCoachingBrainMethod} from '@/lib/personal-coaching/coaching-brain.mjs'
@@ -73,7 +73,7 @@ const copy={
 // Speech services receive only their minimum necessary data after a real
 // Play gesture. Keep full disclosures in the optional Privacy details.
 const avatarVisuals={
-  mira:'warm',max:'clear',sofia:'calm',alex:'clear',
+  mira:'warm',max:'clear',sofia:'calm',alex:'clear',merlin:'calm',harry:'clear',
   lea:'calm',noah:'warm',iris:'warm',ray:'clear',
 }
 const avatarNotice={
@@ -668,7 +668,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     <div className={styles.sessionScroll} data-coaching-session-scroll>
     <section className={styles.sessionHero} aria-label={name} data-voice-phase={voiceState.phase}>
       <div className={styles.sessionPortrait} data-persona={personaId}
-        data-coach-motion-video={PUBLIC_COACH_PERSONA_IDS.includes(personaId)?'true':undefined}
+        data-coach-motion-video={['mira','max','sofia','alex'].includes(personaId)?'true':undefined}
         role="img" aria-label={name}>
         <MyCoachMotionMedia personaId={personaId} phase={motionPhase} context="session" scene={visualScene} />
       </div>

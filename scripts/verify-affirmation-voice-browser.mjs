@@ -54,6 +54,24 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(handoffPanel).toBeVisible({timeout:15000});
     await handoffPanel.evaluate(element=>{element.open=false;});
     await expect(handoffPanel).toBeHidden();
+    // The approved Goal redesign deliberately gates Personalization behind
+    // three explicit selections; hydration alone must NEVER unlock this CTA.
+    await expect(continueToIdeas).toBeDisabled();
+    const quizProgress=page.locator('[data-video-goal-quiz-progress]');
+    await expect(quizProgress).toContainText('1 / 3');
+    const categories=page.locator('[data-auto-video-category]');
+    await expect(categories).toHaveCount(4);
+    await categories.first().click();
+    await expect(quizProgress).toContainText('2 / 3');
+    await expect(continueToIdeas).toBeDisabled();
+    const subcategories=page.locator('[data-auto-video-subcategory]');
+    await expect(subcategories).toHaveCount(4);
+    await subcategories.first().click();
+    await expect(quizProgress).toContainText('3 / 3');
+    await expect(continueToIdeas).toBeDisabled();
+    const topics=page.locator('[data-video-goal-topic]');
+    await expect(topics).toHaveCount(4);
+    await topics.first().click();
     await expect(continueToIdeas).toBeEnabled();
     await continueToIdeas.click();
     const ideas=page.locator('[data-video-quick-control="phrases"]');
@@ -660,6 +678,13 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(personalTab).toHaveAttribute("aria-pressed","true");
       await expect(phrases.locator("[data-video-ideas-personalization-panel]")).toBeVisible();
       await expect(phrases.locator("[data-personalization-kind]")).toHaveCount(3);
+      const preferredName=locale==="ru"?"Андрей":locale==="es"?"Andrés":"Andy";
+      const personalClosing=locale==="ru"?"Андрей, я в тебя верю":
+        locale==="es"?"Andrés, creo en ti":"Andy, I believe in you";
+      const firstNameInput=phrases.locator("[data-video-personalization-name]");
+      await expect(firstNameInput).toBeVisible();
+      await firstNameInput.fill(preferredName);
+      await expect(firstNameInput).toHaveValue(preferredName);
       await conceptTab.click();
       await expect(phrases.locator("[data-video-ideas-concept-panel]")).toBeVisible();
       await personalTab.click();
@@ -763,6 +788,12 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(page.locator('[data-video-montage-text]')).toBeVisible();
       const montageIdeas=page.locator('[data-video-montage-text] [data-video-ideas-compact]');
       await expect(montageIdeas).toBeVisible();
+      // The proposed closing is actually included among the selected captions
+      // fed to Canvas and export, not merely visible as an unselected suggestion.
+      const selectedClosing=montageIdeas.locator("[data-video-idea-phrase]").last();
+      await expect(selectedClosing).toContainText(personalClosing);
+      await expect(selectedClosing.locator("[data-video-idea-select]"))
+        .toHaveAttribute("aria-pressed","true");
       const montageCountLabel=montageIdeas.locator('[data-video-ideas-selected-count]');
       await expect(montageCountLabel).toBeVisible();
       const initialMontageCount=Number(((await montageCountLabel.innerText()).match(/^\s*(\d+)/)||[])[1]||0);
@@ -773,11 +804,11 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // drops below the minimum; restoring it returns the editor to a valid state.
       await firstIdea.click();
       await expect(firstIdea).toHaveAttribute("aria-pressed","false");
-      await expect(montageCountLabel).toContainText(String(initialMontageCount-1)+" /");
+      await expect(montageCountLabel).toHaveText(new RegExp("^\\s*"+(initialMontageCount-1)+"\\s*/\\s*\\d+\\b"));
       await expect(montageIdeas.locator("[data-video-ideas-minimum]")).toBeVisible();
       await firstIdea.click();
       await expect(firstIdea).toHaveAttribute("aria-pressed","true");
-      await expect(montageCountLabel).toContainText(String(initialMontageCount)+" /");
+      await expect(montageCountLabel).toHaveText(new RegExp("^\\s*"+initialMontageCount+"\\s*/\\s*\\d+\\b"));
       await expect(montageIdeas.locator("[data-video-ideas-minimum]")).toHaveCount(0);
       const recordEntry=page.locator('[data-video-montage-text] [data-video-ideas-record]');
       await expect(recordEntry).toBeVisible();
@@ -1310,8 +1341,41 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         await page.locator('[data-video-quick-control="ready"]').click();
         await expect(readyGenerate).toBeEnabled({timeout:30000});
         phase(engine,"ready-therapy-one-tap-navigation-verified");
+        // Capture transient real Ready progress before the trusted Generate tap:
+        // a fast local export may unmount the seven-question panel immediately.
+        await page.evaluate(()=>{
+          const evidence={progress:false,step:false,scoreButtons:0,photo:false};
+          window.__hhReadyInlineCheckInEvidence=evidence;
+          const scan=()=>{
+            const progress=document.querySelector('[data-ready-generating]');
+            const step=document.querySelector('[data-ready-checkin] [data-ready-sequential-checkin]');
+            const scoreButtons=step?.querySelectorAll('[data-ready-checkin-score]').length??0;
+            const photo=Boolean(step?.querySelector('img[src^="/videos/holistic-house/film-collection-v2/"]'));
+            if(progress)evidence.progress=true;
+            if(progress&&step&&scoreButtons===11&&photo){
+              evidence.step=true;evidence.scoreButtons=scoreButtons;evidence.photo=true;
+              window.__hhReadyCheckInObserver?.disconnect();
+            }
+          };
+          window.__hhReadyCheckInObserver?.disconnect();
+          window.__hhReadyCheckInObserver=new MutationObserver(scan);
+          window.__hhReadyCheckInObserver.observe(document.body,{childList:true,subtree:true});
+          scan();
+        });
         await readyGenerate.click();
         phase(engine,"ready-free-render-requested");
+        await expect.poll(()=>page.evaluate(()=>
+          Boolean(window.__hhReadyInlineCheckInEvidence?.progress&&
+            window.__hhReadyInlineCheckInEvidence?.step)),
+          {timeout:20000,intervals:[100,250,500]}).toBe(true);
+        const observation=await page.evaluate(()=>{
+          window.__hhReadyCheckInObserver?.disconnect();
+          return window.__hhReadyInlineCheckInEvidence;
+        });
+        assert.equal(observation.scoreButtons,11,
+          "Ready shows all 0–10 score choices during real encoding");
+        assert.equal(observation.photo,true,
+          "Ready check-in displays a genuine first-party scene photo");
         // Verify the approved seven-picture Ready check-in, not the old Goal
         // sliders: one real 0–10 tap must advance to a distinct licensed image.
         await expect(page.locator("[data-ready-generating]")).toBeVisible({timeout:20000});
@@ -1326,9 +1390,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         await expect(readyCheckin).not.toHaveAttribute("data-checkin-tone",firstTone,{timeout:5000});
         await expect(readyCheckin.locator("img")).not.toHaveAttribute("src",firstImage,{timeout:5000});
         // No unsolicited optional survey should cover the intentional export.
-        // The existing pill offers an explicit way to open the check-in.
+        // No retired floating survey or overlay may block the actual export.
         await expect(page.locator("[data-video-effect-overlay]")).toHaveCount(0);
-        await expect(page.locator("[data-video-effect-reopen]")).toBeVisible({timeout:20000});
         // The idle source remains preload=none until the user's actual Create
         // gesture; Safari must then start a physical decode, never a CSS-only
         // preview or an unverified download.
@@ -1421,7 +1484,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           // The optional progress/check-in overlay must get out of the way
           // automatically when verified Ready appears, without bypassing the UI.
           await expect(page.locator("[data-video-effect-overlay]")).toHaveCount(0);
-          await expect(page.locator("[data-video-effect-reopen]")).toBeVisible();
+          // The visitor-started check-in can remain inline, never above Save.
+          // Clicking Save below proves it does not intercept the actual action.
           await readyView.locator("[data-ready-save]").click();
           await expect(readyView.locator("[data-ready-save-gate]")).toBeVisible();
           await expect(readyView.locator("[data-ready-save-gate-signin]")).toBeVisible();
@@ -1588,7 +1652,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       if(engine==="webkit")await unselectedToggle.tap();
       else await unselectedToggle.click();
       await expect(phraseEditor.locator(`[data-video-idea-select="${unselectedIndex}"]`)).toHaveAttribute('aria-pressed','true');
-      await expect(montageCountLabel).toContainText(`${countBeforeAddition+1} / ${optionCountBeforeAddition}`);
+      await expect(montageCountLabel).toHaveText(new RegExp("^\\s*"+(countBeforeAddition+1)+"\\s*/\\s*"+optionCountBeforeAddition+"\\b"));
       assert.ok(countBeforeAddition+1<=10,"adding a phrase never exceeds the ten-phrase export limit");
       assert.equal(await page.locator('[data-video-narration-stale]').isVisible(),false,
         "adding an unspoken phrase does not invalidate the actual WAV");

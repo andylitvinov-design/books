@@ -464,3 +464,7 @@
  .quickActions .pill,.quickActions .pillActive{padding:8px 9px}
 }
 @media(prefers-reduced-motion:reduce){.coachKind,.coachKindActive,.compactTopic,.compactTopicActive{transition:none!important}}
+
+.cardPortrait[data-persona=merlin],.avatarLarge[data-persona=merlin]{background-image:url('/images/holistic-house/my-coach-motion/merlin-still.webp');background-size:cover;background-position:center 24%;background-repeat:no-repeat}
+.cardPortrait[data-persona=harry],.avatarLarge[data-persona=harry]{background-image:url('/images/holistic-house/my-coach-motion/harry-still.svg');background-size:cover;background-position:center 24%;background-repeat:no-repeat}
+.cardPortrait[data-persona=merlin] .avatarSymbol,.cardPortrait[data-persona=harry] .avatarSymbol{display:none}

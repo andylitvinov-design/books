@@ -118,18 +118,19 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
   const chatPath="/"+locale+"/app/messages?section=ai";
   const hints=mode==="business"?t.businessHints:t.personalHints;
 
-  function startConversation(event:FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const prompt=draft.trim();
+  function startConversationWith(value:string) {
+    const prompt=value.trim();
     if(!prompt)return;
-    // An explicit Send click is needed; preserve a single bounded, ephemeral
-    // message for the established Ali chat. No prompt ever enters the URL.
+    // The explicit Send tap OR a starter choice carries the exact user's words.
     let passed=false;
     try{passed=stageHomeAliHandoff(window.sessionStorage,{text:prompt,locale,mode})}
     catch{/* Some private browsers prohibit sessionStorage; don't silently lose text. */}
-    if(!passed){setError(t.transferError);return}
+    if(!passed){setDraft(prompt);setError(t.transferError);return}
     setError("");
     router.push(chatPath);
+  }
+  function startConversation(event:FormEvent<HTMLFormElement>) {
+    event.preventDefault();startConversationWith(draft);
   }
   function dictate() {
     if(speechRef.current){speechRef.current.stop();return}
@@ -208,7 +209,7 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
         {voiceMessage&&<p className={styles.voiceStatus} role="status">{voiceMessage}</p>}
         <div className={styles.starters} aria-label={t.title}>
           {hints.map((hint,index)=><button type="button" key={hint.id} data-home-intent-option={hint.id}
-            onClick={()=>{setDraft(hint.prompt);setError("");inputRef.current?.focus({preventScroll:true})}}>
+            aria-label={hint.label+" · "+t.send} onClick={()=>startConversationWith(hint.prompt)}>
             {index===0?<HeartHandshake size={20} aria-hidden="true"/>:
               index===1?<WandSparkles size={20} aria-hidden="true"/>:
               <Sparkles size={20} aria-hidden="true"/>}
