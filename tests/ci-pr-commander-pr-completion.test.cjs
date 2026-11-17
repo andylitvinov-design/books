@@ -93,6 +93,25 @@ test('verified ghost queue capacity delay is WATCHING, never a false terminal fi
  assert.equal(result.liveVerified,false);
  assert.equal(fx.calls.find(x=>x.action==='finish').status,'WATCHING');
 });
+test('saturated global queue preserves private owner PR intent as WATCHING rather than consuming false failure',async()=>{
+ const p={...base,labels:[{name:'hh:repair-needed'}]};
+ for(const code of ['OWNER_REPAIR_DIRECT_CAPACITY_UNVERIFIED',
+  'OWNER_REPAIR_DIRECT_CORE_PRIORITY_PENDING']){
+  const fx=mock(task,p);
+  const outcome=await run({...fx,context,dispatch:async()=>({
+   watching:true,dispatched:false,reason:code})});
+  assert.equal(outcome.status,'WATCHING',code);
+  assert.equal(outcome.reasonCode,code);
+  assert.equal(outcome.dispatchAccepted,false);
+  assert.equal(outcome.sourceWriteVerified,false);
+  assert.equal(fx.calls.find(x=>x.action==='finish').status,'WATCHING');
+ }
+ const denied=mock(task,p);
+ const error=await run({...denied,context,dispatch:async()=>({
+  dispatched:false,reason:'SOURCE_SCOPE_UNSAFE_FOR_FREE_AI'})});
+ assert.equal(error.status,'BLOCKED','no unsafe source is implicitly admitted');
+ assert.equal(error.dispatchAccepted,false);
+});
 test('confirmed merge only after GitHub readback; never reports LIVE from merge',async()=>{
  const p={...base,state:'closed',merged:true,merged_at:'2026-11-16T22:00:00Z',
   merge_commit_sha:MERGE};
