@@ -22,11 +22,21 @@ test('RU and EN show exactly six full-width actions and fixed first-party destin
    const action=TELEGRAM_EXPLORE_ACTIONS[index]
    assert.deepEqual(parseTelegramHomeCallback(row[0].callback_data),{locale:lang,action})
    const detail=telegramExploreDetailButtons(lang,action)
-   assert.equal(detail.inline_keyboard.length,2)
-   const url=new URL(detail.inline_keyboard[0][0].url)
+   // Consultation now offers an additional explicit FREE review option.
+   // The canonical site link and safe Back action must remain in place.
+   const hasFreeReview=action==='consultation'
+   assert.equal(detail.inline_keyboard.length,hasFreeReview?3:2)
+   if(hasFreeReview){
+    assert.deepEqual(parseTelegramHomeCallback(detail.inline_keyboard[0][0].callback_data),
+      {locale:lang,action:'review'})
+    assert.match(detail.inline_keyboard[0][0].text,/Бесплатная диагностика|Free situation review/)
+   }
+   const openIndex=hasFreeReview?1:0,backIndex=hasFreeReview?2:1
+   const url=new URL(detail.inline_keyboard[openIndex][0].url)
    assert.equal(url.origin,'https://holistichouse.vercel.app')
    assert.match(url.pathname,new RegExp('^/'+lang+'/'))
-   assert.deepEqual(parseTelegramHomeCallback(detail.inline_keyboard[1][0].callback_data),{locale:lang,action:'home'})
+   assert.deepEqual(parseTelegramHomeCallback(detail.inline_keyboard[backIndex][0].callback_data),
+     {locale:lang,action:'home'})
    assert.ok(telegramExploreDetailText(lang,action).length<200)
   }
  }
