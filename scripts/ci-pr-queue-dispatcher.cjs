@@ -1115,6 +1115,32 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
    continue;
   }
   if(task.lane==='repair'){
+   // GitHub temporarily reports mergeable:null while it calculates the
+   // current merge state. Never discard a proven P1 Core error solely because
+   // the initial API response was inconclusive; perform ONE bounded readback.
+   // Authorization still requires the same exact PR, HEAD, base, safe lane
+   // and independently verified non-conflicting mergeability.
+   if(repairMode(fresh)!=='lint'&&
+      (fresh.mergeable==null||fresh.mergeable_state==='unknown')){
+    try{
+     const rechecked=(await limited('source-mergeability-recheck',()=>
+      github.rest.pulls.get({owner,repo,pull_number:task.pr_number}))).data;
+     if(rechecked?.number===task.pr_number&&
+        rechecked.state==='open'&&rechecked.head?.sha===task.head_sha&&
+        rechecked.head?.ref===task.head_ref&&
+        rechecked.base?.ref===PROD&&
+        rechecked.base?.sha===fresh.base?.sha&&
+        rechecked.head?.repo?.full_name===REPO&&
+        validPR(rechecked)&&laneOf(rechecked)==='repair'&&
+        repairMode(rechecked)==='lint'){
+      fresh=rechecked;
+      log('SOURCE_MERGEABILITY_RECHECK_VERIFIED #'+task.pr_number+
+        ' HEAD='+task.head_sha.slice(0,12));
+     }
+    }catch(error){
+     log('SOURCE_MERGEABILITY_RECHECK_UNAVAILABLE #'+task.pr_number);
+    }
+   }
    if(repairMode(fresh)!=='lint'){blocked('SOURCE_MERGEABILITY_UNVERIFIED');continue;}
    let files;
    try{files=(await limited('repair-files',()=>github.rest.pulls.listFiles({
