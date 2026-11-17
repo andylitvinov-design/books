@@ -48,3 +48,14 @@ test('private SQL schema has RLS, no anon/authenticated rights, single writer PR
  assert.match(s,/enable row level security/);
  assert.match(s,/revoke all on business_brain\.commander_pr_completions from public,anon,authenticated/);
 });
+
+
+test('server preserves numeric GitHub HTTP rejection reason instead of UNKNOWN',()=>{
+ const edge=file('supabase/functions/agent-commander-pr-completion-v1/index.ts');
+ const literal="const label=x=>typeof x==='string'&&/^[A-Z0-9_]{3,90}$/.test(x)?x:'UNKNOWN';";
+ assert.ok(edge.includes(literal),'owner-safe code parser must preserve 403/422');
+ const accepts=x=>typeof x==='string'&&/^[A-Z0-9_]{3,90}$/.test(x)?x:'UNKNOWN';
+ assert.equal(accepts('OWNER_REPAIR_DISPATCH_HTTP_403'),'OWNER_REPAIR_DISPATCH_HTTP_403');
+ assert.equal(accepts('OWNER_REPAIR_DISPATCH_HTTP_422'),'OWNER_REPAIR_DISPATCH_HTTP_422');
+ assert.equal(accepts('any invalid injected input'),'UNKNOWN');
+});
