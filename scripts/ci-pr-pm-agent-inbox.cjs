@@ -135,9 +135,13 @@ async function askFree(prompt,{fetcher,token,run}){
    headers:{Authorization:'Bearer '+token,'Content-Type':'application/json',
     'HTTP-Referer':'https://holistic-house-pr-monitor.vercel.app',
     'X-Title':'HH PM GitHub Free Agent'},
-   body:JSON.stringify({model:'openrouter/free',messages,max_tokens:1600,temperature:0.25,
-    reasoning:{enabled:false,exclude:true},
-    provider:{allow_fallbacks:false,max_price:{prompt:0,completion:0}},usage:{include:true}})
+   // The virtual free router may choose a required-reasoning provider.
+   // reasoning.enabled=false caused HTTP 400; use only portable chat fields,
+   // as the already verified zero-cost source Repair adapter does.
+   body:JSON.stringify({model:'openrouter/free',messages,max_tokens:2200,
+    stream:false,usage:{include:true},
+    provider:{allow_fallbacks:false,max_price:{prompt:0,completion:0},
+     data_collection:'deny'}})
   });
  }catch(_){return {reason:'OPENROUTER_NETWORK_UNKNOWN_NO_RETRY'};}
  if(!response?.ok)return {reason:'OPENROUTER_HTTP_'+String(response?.status||'UNKNOWN')};
