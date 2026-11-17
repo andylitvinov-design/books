@@ -354,6 +354,39 @@ test('owner inbox passes authenticated comment ID to same-run direct callback',a
  assert.equal(fx.dispatches.length,0,'no second Watchdog run');
  assert.match(fx.sent[1],/DISPATCH_ACCEPTED_UNCORRELATED/);
 });
+test('capacity-saturated owner repair is WATCHING until verified merge, not a terminal BLOCKED claim',async()=>{
+ const head='a'.repeat(40),number=3826,commentId=663111;
+ const pr={number,state:'open',draft:false,user:owner,
+  head:{sha:head,repo:{full_name:'andylitvinov-design/books'}},
+  base:{ref:'codex/public-book-library'},mergeable:true,mergeable_state:'blocked',
+  labels:[{name:'hh:repair-needed'}]};
+ const fx=stub([cmd(commentId,'!pm repair '+number+' '+head)],{pr});
+ const oldList=fx.github.rest.issues.listComments;
+ fx.github.rest.issues.listComments=async args=>args.issue_number===number?
+  {data:[{user:bot,performed_via_github_app:app,
+   body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+head+' -->\nFailed jobs: core-lint-types-build'}]}:
+  oldList(args);
+ let calls=0;
+ const first=await inbox.run({github:fx.github,context,fetcher:fx.fetcher,
+  dispatchDirect:async()=>{calls++;return {reason:'CAPACITY_UNVERIFIED'};}});
+ assert.equal(first.status,'WATCHING');
+ assert.equal(calls,1);
+ assert.match(fx.sent[1],/status=WATCHING/);
+ assert.match(fx.sent[1],/OWNER_REPAIR_DIRECT_CAPACITY_UNVERIFIED/);
+ assert.doesNotMatch(fx.sent[1],/source commit VERIFIED|LIVE_VERIFIED/);
+ const same=await inbox.run({github:fx.github,context,fetcher:fx.fetcher,
+  dispatchDirect:async()=>{throw Error('DUPLICATE_WRITER');}});
+ assert.equal(same.status,'WATCHING');
+ assert.equal(calls,1,'existing dispatcher, not PM poller, owns retries');
+ assert.equal(fx.sent.length,2);
+ pr.state='closed';pr.merged=true;
+ pr.merged_at='2026-11-17T03:00:00Z';pr.merge_commit_sha='b'.repeat(40);
+ const completed=await inbox.run({github:fx.github,context,fetcher:fx.fetcher});
+ assert.equal(completed.status,'COMPLETION_NOTICE_SENT');
+ assert.match(fx.sent[2],/status=MERGED/);
+ assert.match(fx.sent[2],/Production LIVE not yet verified/);
+ assert.equal((await inbox.run({github:fx.github,context})).status,'NO_PENDING');
+});
 test('wrong actor and unverifiable owner token cannot dispatch a repair workflow',async()=>{
  const head='a'.repeat(40),prNumber=3826;
  const pr={number:prNumber,state:'open',draft:false,user:owner,
