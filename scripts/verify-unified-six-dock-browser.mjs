@@ -825,9 +825,13 @@ try{
  assert.equal(await choices.count(),4,
    "The active first question offers four genuine choices, excluding the four recommendation-tab buttons");
  const nextStep=academyQuiz.locator('[data-study-next]');
- await expect(nextStep).toBeDisabled();
- await choices.first().click();
+ // Academy intentionally presets the published stress goal. Verify that
+ // the selected choice enables Next and a real different answer replaces it.
  await expect(choices.first()).toHaveAttribute("aria-pressed","true");
+ await expect(nextStep).toBeEnabled();
+ await choices.nth(1).click();
+ await expect(choices.first()).toHaveAttribute("aria-pressed","false");
+ await expect(choices.nth(1)).toHaveAttribute("aria-pressed","true");
  await expect(nextStep).toBeEnabled();
  await nextStep.click();
  assert.equal(await academyQuiz.getAttribute("data-study-step"),"2",
