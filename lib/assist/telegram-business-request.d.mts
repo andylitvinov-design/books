@@ -13,7 +13,7 @@ export declare function telegramBusinessMessageFromUpdate(update:unknown,now?:nu
  request:{service:string;locale:TelegramRequestLocale;name:string}|null}|null;
 export declare function telegramBusinessClientChoice(text:unknown):
  {kind:'format';value:'online'|'inperson'|'async'}|{kind:'confirm'|'cancel'|'stop'}|null;
-export declare function telegramBusinessConversationReply(type:'format'|'confirm'|'submitted'|'cancelled'|'stopped'|'unavailable',input:
- {locale?:TelegramRequestLocale;service?:string;format?:string|null;referenceCode?:string|null}):string|null;
+export declare function telegramBusinessConversationReply(type:'format'|'confirm'|'submitted'|'cancelled'|'stopped'|'unavailable'|'ai_question',input:
+ {locale?:TelegramRequestLocale;service?:string;format?:string|null;referenceCode?:string|null;questionIndex?:number|null}):string|null;
 
 export declare function telegramBusinessServiceTitle(service:string,locale:TelegramRequestLocale):string|null;
