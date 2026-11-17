@@ -141,10 +141,13 @@ async function askFree(prompt,{fetcher,token,run}){
   if(!listing?.ok)return {reason:'OPENROUTER_FREE_CATALOG_UNAVAILABLE'};
   selected=chooseVerifiedFreeModel(await listing.json(),{role:'pm'}).model;
  }catch(_){return {reason:'OPENROUTER_NO_VERIFIED_FREE_PM_MODEL'};}
+ // Keep the same bounded deadline through both HTTP headers and body;
+ // otherwise slow free completions looked like corrupt 200 responses.
+ const signal=AbortSignal.timeout(115000);
  let response;
  try{
   response=await fetcher('https://openrouter.ai/api/v1/chat/completions',{
-   method:'POST',redirect:'error',cache:'no-store',signal:AbortSignal.timeout(22000),
+   method:'POST',redirect:'error',cache:'no-store',signal,
    headers:{Authorization:'Bearer '+token,'Content-Type':'application/json',
     'HTTP-Referer':'https://holistic-house-pr-monitor.vercel.app',
     'X-Title':'HH PM GitHub Free Agent'},
@@ -155,9 +158,20 @@ async function askFree(prompt,{fetcher,token,run}){
     provider:{allow_fallbacks:false,max_price:{prompt:0,completion:0},
      data_collection:'deny'}})
   });
- }catch(_){return {reason:'OPENROUTER_NETWORK_UNKNOWN_NO_RETRY'};}
+ }catch(error){
+  return {reason:signal.aborted||['AbortError','TimeoutError'].includes(error?.name)?
+   'OPENROUTER_RESPONSE_TIMEOUT_UNVERIFIED':'OPENROUTER_NETWORK_UNKNOWN_NO_RETRY'};
+ }
  if(!response?.ok)return {reason:'OPENROUTER_HTTP_'+String(response?.status||'UNKNOWN')};
- let data;try{data=await response.json()}catch(_){return {reason:'OPENROUTER_RESPONSE_INVALID'};}
+ let data;
+ try{data=await response.json();}
+ catch(error){
+  if(signal.aborted||['AbortError','TimeoutError'].includes(error?.name))
+   return {reason:'OPENROUTER_RESPONSE_TIMEOUT_UNVERIFIED'};
+  return {reason:'OPENROUTER_RESPONSE_INVALID'};
+ }
+ // Error envelopes must never be counted as paid, free, or successful answers.
+ if(data?.error)return {reason:'OPENROUTER_PROVIDER_ERROR'};
  const cost=data?.usage?.cost;
  if(typeof cost!=='number'||!Number.isFinite(cost))return {reason:'MODEL_BILLING_UNVERIFIED_HOLD'};
  if(cost!==0||data?.usage?.is_byok===true)return {reason:'MODEL_REPORTED_NONZERO_COST_HOLD'};
