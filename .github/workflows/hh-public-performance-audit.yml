@@ -1,6 +1,7 @@
 name: Holistic House public TTFB and media audit
 on:
   pull_request:
+    branches: ['codex/public-book-library']
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     paths:
       - 'scripts/measure-hh-public-ttfb.mjs'
