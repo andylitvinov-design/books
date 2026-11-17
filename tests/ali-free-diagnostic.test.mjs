@@ -5,6 +5,7 @@ import {FREE_DIAGNOSTIC_MODE,FREE_DIAGNOSTIC_PHASES,
   aliFreeDiagnosticTurn,aliFreeDiagnosticSummary,
   aliFreeDiagnosticIntro} from '../lib/assist/ali-free-diagnostic.mjs';
 import {FREE_DIAGNOSTIC_LIBRARY} from '../lib/assist/ali-free-diagnostic-library.mjs';
+import {ALI_FREE_REACTION_COUNTS,planAliFreeReaction} from '../lib/assist/ali-free-diagnostic-reactions.mjs';
 import {v3Context,v3FreeDiagnosticStart,v3StartLocale,v3ButtonsFor,
   V3_LABELS,V3_BUTTONS,v3Action,v3CanChat,v3CanStart} from '../lib/crm/telegram-ai-diagnostic-v3.mjs';
 import {telegramInlineButtonForText,telegramInlineCallbackSelection}
@@ -207,4 +208,117 @@ test('production hook is consent-first, never uses external LLM or silent CRM ha
    HH_COUNCIL_OPENROUTER_API_KEY:''};
  assert.equal(v3CanChat(local),true);
  assert.equal(v3CanStart(local),false);
+});
+
+
+test('Ali free diagnostic covers 43 reaction intents without consuming the current stage',()=>{
+ assert.equal(ALI_FREE_REACTION_COUNTS.faq,24);
+ assert.equal(ALI_FREE_REACTION_COUNTS.comment,19);
+ const samples=[
+  ['Is this free?','en','free_price'],
+  ['What will I get after?','en','next_step'],
+  ['Are you a psychic?','en','bot_identity'],
+  ['Check my energy','en','photo_energy'],
+  ['What information would you exactly need?','en','information_needed'],
+  ['How long does the review take?','en','duration'],
+  ['What about privacy?','en','privacy'],
+  ['Why are you asking?','en','why_question'],
+  ['Can I speak to a person?','en','human_handoff'],
+  ['When will Andrey reply?','en','response_time'],
+  ['How accurate is this?','en','accuracy_guarantee'],
+  ['Can you diagnose me?','en','medical_diagnosis'],
+  ['Should I draw something?','en','drawing'],
+  ['Do I need a form?','en','form'],
+  ['Can I book a session?','en','booking'],
+  ['Do you speak Russian?','en','language'],
+  ["What's next?",'en','next_step'],
+  ['Can I stop at any time?','en','stop_anytime'],
+  ['Can I skip this question?','en','cannot_answer'],
+  ['Do you have reviews?','en','source_testimonials'],
+  ['Can I do this online?','en','online_format'],
+  ['Give me a solution','en','advice_now'],
+  ['I feel ashamed','en','embarrassed'],
+  ["I'm scared",'en','fear'],
+  ["I'm angry",'en','anger'],
+  ["I'm sad",'en','sadness'],
+  ['I feel overwhelmed','en','overwhelm'],
+  ['I am hopeful','en','hopeful'],
+  ['I am failing at life','en','hopelessness'],
+  ["I don't trust this",'en','uncertain_trust'],
+  ['Too many questions','en','robotic'],
+  ["You don't understand",'en','misunderstood'],
+  ['I do not understand this question','en','confused_question'],
+  ['No more sales please','en','no_sales'],
+  ["I don't want to share",'en','no_share'],
+  ['I need more time','en','need_time'],
+  ['No','en','short_refusal'],
+  ['Thank you','en','gratitude'],
+  ['Okay','en','short_ack'],
+  ['This is not helping me','en','uncertain_help'],
+  ['Мне страшно','ru','fear'],
+  ['Мне стыдно','ru','embarrassed'],
+  ['Я не верю','ru','uncertain_trust'],
+  ['Это конфиденциально?','ru','privacy'],
+  ['Можно без анкеты?','ru','form'],
+  ['Можно прекратить разговор?','ru','stop_anytime'],
+  ['Quiero saber el precio','es','free_price'],
+  ['Tengo miedo','es','fear'],
+  ['No creo que esto ayude','es','uncertain_help'],
+ ];
+ for(const [message,locale,id] of samples){
+  const planned=planAliFreeReaction({message,locale});
+  assert.equal(planned?.id,id,message);
+  const result=turn(message,{locale,stage:'challenge',slots:{goal:'I want clarity'}});
+  assert.equal(result?.kind,'reaction',message);
+  assert.equal(result?.reactionId,id,message);
+  assert.equal(result?.stage,'challenge',message);
+  assert.deepEqual(result?.slots,{goal:'I want clarity'},message);
+  assert.ok(result.reply.length<950,message);
+  assert.ok(questions(result.reply)<=1,message);
+ }
+});
+test('reactions do not invent goals or chase a client who requests boundaries',()=>{
+ for(const text of ["I don't want to share","Don't sell me anything",
+  'I need more time','No','No creo que esto ayude']){
+  const result=turn(text,{stage:'goal',locale:'en'});
+  assert.equal(result.stage,'goal',text);
+  assert.equal(result.slots.goal,undefined,text);
+  assert.equal(questions(result.reply),0,text);
+ }
+ for(const text of ["I'm scared","I'm angry",'Мне стыдно','Thank you']){
+  const result=turn(text,{stage:'goal',locale:/[а-яё]/iu.test(text)?'ru':'en'});
+  assert.equal(result.stage,'goal',text);
+  assert.equal(result.slots.goal,undefined,text);
+ }
+ const real=turn('I want a different career, and I feel nervous');
+ assert.equal(real.kind,'progress','a real stated goal must not be lost to the emotion classifier');
+ assert.equal(real.stage,'challenge');
+ assert.match(real.slots.goal,/different career/);
+ const correction=turn("You don't understand",{stage:'challenge',slots:{goal:'A better job'}});
+ assert.equal(questions(correction.reply),1,'only the correction question, not a second stage question');
+ assert.match(correction.reply,/correct|miss/i);
+});
+test('recent replies rotate among verified variants and preserve user context',()=>{
+ const first=turn('Is this free?',{stage:'challenge',slots:{goal:'Career clarity'}});
+ const second=turn('Is this free?',{stage:'challenge',slots:first.slots,
+   turns:[{role:'assistant',text:first.reply}]});
+ assert.notEqual(first.reply,second.reply);
+ const third=turn('Is this free?',{stage:'challenge',slots:second.slots,
+   turns:[{role:'assistant',text:first.reply},{role:'assistant',text:second.reply}]});
+ assert.notEqual(second.reply,third.reply,'never repeat the immediately preceding template');
+ assert.equal(questions(third.reply),1);
+ assert.equal(third.stage,'challenge');
+ const same=planAliFreeReaction({message:'Я не верю',locale:'ru'});
+ assert.equal(same.kind,'comment');
+ assert.equal(same.modelUsed,false);
+ for(const locale of ['ru','en','es']){
+  const example={ru:'Это конфиденциально?',en:'What about privacy?',es:'¿Quién verá mis datos?'}[locale];
+  const reply=planAliFreeReaction({message:example,locale});
+  assert.ok(reply,locale);
+  assert.equal(reply.stageConsumed,false);
+  assert.ok(reply.reply.length>20);
+ }
+ const module=source('lib/assist/ali-free-diagnostic-reactions.mjs');
+ assert.doesNotMatch(module,/\bfetch\s*\(|\baxios\s*\(|\bingestMessengerEventInTransaction\s*\(/);
+ assert.doesNotMatch(module,/api_key|token_secret/i);
 });
