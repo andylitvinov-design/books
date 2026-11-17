@@ -15,6 +15,16 @@ const styles={
 const label={QUEUED:'В очереди · ещё не запущен',LEASED:'Watchdog проверяет PR',
  WATCHING:'Отслеживаем CI / Repair / Merge',MERGED:'GitHub смержен',
  CLOSED_UNMERGED:'PR закрыт без merge',BLOCKED:'Требуется исправление блокировки'};
+function stamp(value){
+ if(!value||!Number.isFinite(Date.parse(value)))return '';
+ return new Date(value).toLocaleString('ru-RU',{
+  day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'
+ });
+}
+function stageSymbol(status){
+ return status==='done'?'✓':status==='attention'?'!':
+  status==='working'?'…':status==='waiting'?'○':'?';
+}
 function parsePR(raw){
  const s=raw.trim();
  const m=/^#?([1-9]\d{0,7})$/.exec(s)||/\b(?:PR|ПР)\s*#?([1-9]\d{0,7})\b/i.exec(s);
@@ -23,7 +33,10 @@ function parsePR(raw){
 export default function PrCompletionClient(){
  const [value,setValue]=useState(''),[items,setItems]=useState([]),
   [busy,setBusy]=useState(false),[message,setMessage]=useState(''),
-  [authNeeded,setAuthNeeded]=useState(false),[lastAt,setLastAt]=useState('');
+  [authNeeded,setAuthNeeded]=useState(false),[lastAt,setLastAt]=useState(''),
+  [expandedId,setExpandedId]=useState(null),
+  [journeys,setJourneys]=useState({}),[journeyLoading,setJourneyLoading]=useState({}),
+  [journeyErrors,setJourneyErrors]=useState({});
  const load=useCallback(async()=>{
   try{
    const r=await fetch(API,{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}});
@@ -39,6 +52,33 @@ export default function PrCompletionClient(){
   const tick=setInterval(()=>{if(document.visibilityState!=='hidden')void load()},60000);
   return ()=>clearInterval(tick);
  },[load]);
+ async function loadJourney(item){
+  const id=item.requestId;
+  if(typeof id!=='string'||journeyLoading[id])return;
+  setJourneyLoading(previous=>({...previous,[id]:true}));
+  setJourneyErrors(previous=>({...previous,[id]:''}));
+  try{
+   const url=API+'?pr='+item.prNumber+'&details=1';
+   const response=await fetch(url,{credentials:'same-origin',cache:'no-store',
+    headers:{Accept:'application/json'}});
+   const result=await response.json().catch(()=>({}));
+   if(response.status===401)setAuthNeeded(true);
+   if(!response.ok)throw Error(result.error||'DETAILS_UNAVAILABLE');
+   if(result.schema!=='HH_COMMANDER_PR_JOURNEY_V1'||
+     result.prNumber!==item.prNumber||result.requestId!==id||
+     !Array.isArray(result.stages))
+    throw Error('DETAILS_IDENTITY_UNVERIFIED');
+   setJourneys(previous=>({...previous,[id]:result}));
+  }catch(error){
+   setJourneyErrors(previous=>({...previous,[id]:
+    'Не удалось подтвердить этапы: '+String(error.message||error)}));
+  }finally{setJourneyLoading(previous=>({...previous,[id]:false}));}
+ }
+ function toggleJourney(item){
+  if(expandedId===item.requestId){setExpandedId(null);return;}
+  setExpandedId(item.requestId);
+  if(!journeys[item.requestId])void loadJourney(item);
+ }
  async function submit(event){
   event.preventDefault();
   const pr=parsePR(value);
@@ -94,6 +134,52 @@ export default function PrCompletionClient(){
     <p style={{fontWeight:600,margin:'6px 0'}}>{label[item.status]||item.status}</p>
     <p style={{...styles.small,margin:'5px 0'}}>HEAD: {(item.headSha||'').slice(0,12)} · {item.reasonCode||'Нет подтверждения следующего этапа'}</p>
     {item.mergeSha&&<p style={styles.small}>Merge SHA: {item.mergeSha.slice(0,12)} · Production LIVE не подтверждён</p>}
+    <button className="hh-pr-details-toggle" type="button"
+     aria-expanded={expandedId===item.requestId}
+     aria-controls={'hh-pr-details-'+item.requestId}
+     onClick={()=>toggleJourney(item)}>
+     {expandedId===item.requestId?'Свернуть детали':'Детали'}
+     <span aria-hidden="true">{expandedId===item.requestId?'⌃':'⌄'}</span>
+    </button>
+    {expandedId===item.requestId&&
+     <section id={'hh-pr-details-'+item.requestId} className="hh-pr-details" aria-label={'Этапы обработки PR #'+item.prNumber}>
+      {journeyLoading[item.requestId]&&<p role="status" className="hh-pr-journey-note">Сверяю очередь Supabase и реальный HEAD/CI в GitHub…</p>}
+      {journeyErrors[item.requestId]&&<p role="alert" className="hh-pr-journey-error">{journeyErrors[item.requestId]}</p>}
+      {journeys[item.requestId]&&(()=>{
+       const journey=journeys[item.requestId];
+       return <>
+        <div className="hh-pr-current-stage">
+         <p className="hh-pr-current-eyebrow">{journey.stalled?'Задержка на этапе':'Текущий этап'}</p>
+         <strong>{journey.currentStageTitle}</strong>
+         {journey.attention&&<p className="hh-pr-journey-error">{journey.attention}</p>}
+         {journey.minutesSinceRequest!==null&&
+          <p className="hh-pr-journey-note">С момента заявки: {journey.minutesSinceRequest} мин.</p>}
+        </div>
+        <ol className="hh-pr-stage-list">
+         {journey.stages.map(step=><li key={step.id}
+          className={'hh-pr-stage hh-pr-stage--'+step.state+
+           (journey.currentStage===step.id?' hh-pr-stage--current':'')}>
+          <span className="hh-pr-stage-symbol" aria-hidden="true">{stageSymbol(step.state)}</span>
+          <div className="hh-pr-stage-body">
+           <strong>{step.title}</strong>
+           <p>{step.detail}</p>
+           {(step.at||step.link)&&
+            <div className="hh-pr-stage-meta">
+             {step.at&&<time dateTime={step.at}>{stamp(step.at)}</time>}
+             {step.link&&<a href={step.link} target="_blank" rel="noopener noreferrer">Открыть проверку CI</a>}
+            </div>}
+          </div>
+         </li>)}
+        </ol>
+        <p className="hh-pr-journey-note">Данные: личная очередь Supabase и проверенные сведения GitHub.
+         Состояние проверки: {stamp(journey.observedAt)}. Отсутствие доказательства не считается выполнением.</p>
+       </>;
+      })()}
+      <button type="button" className="hh-pr-details-refresh"
+       disabled={journeyLoading[item.requestId]} onClick={()=>void loadJourney(item)}>
+       Проверить этапы ещё раз
+      </button>
+     </section>}
    </article>)}
   </section>
   <p style={{...styles.small,marginTop:17}}>Без новых платных моделей, повторных CI без нового SHA и обхода branch protection.
