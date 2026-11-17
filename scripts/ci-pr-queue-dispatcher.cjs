@@ -9,7 +9,7 @@ const {WORKFLOWS,admission,snapshot,verifiedGhostRepairCapacity,
  verifiedStaleMergedRepairCapacity,GHOST_REPAIR_MODE,STALE_MERGED_REPAIR_MODE}
  =require('./ci-pr-capacity.cjs');
 const {repairMode,safeFiles,hasVerifiedSourceHandoff,verifiedCoreCodeFailure}=require('./ci-pr-repair-worker.cjs');
-const {trustedWorkerWake}=require('./ci-pr-commander-pr-completion.cjs');
+const {trustedWorkerWake,trustedControlPush}=require('./ci-pr-commander-pr-completion.cjs');
 const {eligibleMachineTruncation}=require('./ci-pr-manual-resume.cjs');
 const {safeSourcePath: safeFreeSourcePath,
  assessCompleteFreeRepairScope}=require('./ci-pr-repair-free-agent.cjs');
@@ -55,7 +55,8 @@ function validOwnerRepairTarget(context,target,ownerProof=null){
  if(context.eventName==='workflow_dispatch'&&context.actor==='andylitvinov-design')
   return true;
  const signedWorkerWake=ownerProof?.source==='OIDC_SIGNED_QUEUE'&&trustedWorkerWake(context);
- if(!(['schedule','workflow_dispatch'].includes(context.eventName)||signedWorkerWake)||
+ const signedControlPush=ownerProof?.source==='OIDC_SIGNED_QUEUE'&&trustedControlPush(context);
+ if(!(['schedule','workflow_dispatch'].includes(context.eventName)||signedWorkerWake||signedControlPush)||
     !ownerProof||typeof ownerProof!=='object'||Array.isArray(ownerProof)||
     ownerProof.prNumber!==target.prNumber||
     ownerProof.expectedSha!==target.expectedSha)return false;

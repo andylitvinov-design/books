@@ -152,6 +152,7 @@ jobs:
           github.repository == 'andylitvinov-design/books' &&
           github.ref == 'refs/heads/codex/bootstrap-books' &&
           (github.event_name == 'schedule' ||
+           (github.event_name == 'push' && github.event.deleted != true) ||
            (github.event_name == 'workflow_dispatch' && inputs.dry_run != true))
         uses: actions/github-script@v7
         env:

@@ -304,3 +304,34 @@ test('untrusted worker completions never claim signed owner queue',async()=>{
   assert.equal(f.calls.length,0);
  }
 });
+
+
+test('trusted protected push claims one private owner PR on existing Watchdog runner',async()=>{
+ const {trustedControlPush}=require('../scripts/ci-pr-commander-pr-completion.cjs');
+ const control={...context,eventName:'push',sha:SHA,
+  payload:{repository:{full_name:REPO},after:SHA,deleted:false}};
+ assert.equal(trustedControlPush(control),true);
+ const f=mock(task);
+ const result=await run({...f,context:control,dispatch:async()=>{throw Error('UNEXPECTED_DISPATCH')}});
+ assert.equal(result.status,'WATCHING');
+ assert.equal(f.calls.filter(c=>c.action==='next').length,1);
+ assert.equal(f.calls.filter(c=>c.action==='arm_dispatch').length,0);
+ const workflow=require('node:fs').readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
+ const section=workflow.slice(workflow.indexOf('- name: Owner PR-number completion via private signed queue'),
+  workflow.indexOf('- name: HH PM inbox using verified Github free secret'));
+ assert.match(section,/github.event_name == 'push'/);
+ const denied=[
+  {...control,sha:'b'.repeat(40)},
+  {...control,payload:{...control.payload,after:'b'.repeat(40)}},
+  {...control,payload:{...control.payload,deleted:true}},
+  {...control,ref:'refs/heads/untrusted'},
+  {...control,payload:{...control.payload,repository:{full_name:'stranger/other'}}}
+ ];
+ for(const bad of denied){
+  assert.equal(trustedControlPush(bad),false);
+  const fx=mock(task);
+  const res=await run({...fx,context:bad});
+  assert.equal(res.status,'SKIPPED_UNTRUSTED');
+  assert.equal(fx.calls.length,0);
+ }
+});
