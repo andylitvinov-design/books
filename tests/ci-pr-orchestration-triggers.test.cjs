@@ -102,8 +102,12 @@ test('guarded inventory validates but expires historical exact-head sweep owners
 
 test('single scheduled Watchdog shares a writer lease with targeted Core and conflict callbacks',()=>{
   const s=read('hh-pr-ten-minute-watchdog');
-  assert.ok(s.includes('  reconcile:\n    # Watchdog and its dispatcher'));
-  assert.ok(s.includes('    concurrency:\n      group: hh-control-tower-single-writer'));
+  assert.ok(s.includes('  reconcile:\n    # Protect real owner/scheduled PR work'));
+  assert.ok(s.includes('hh-watchdog-inspection-only'));
+  assert.ok(s.includes('hh-control-tower-single-writer'));
+  assert.ok(s.includes("github.event_name == 'push'"));
+  assert.ok(s.includes('inputs.dry_run == true'));
+  assert.ok(s.includes('      cancel-in-progress: false'));
   assert.ok(!s.includes('concurrency:\n  group: hh-control-tower-single-writer'));
   const reconcile=s.split('\n  completion-wait:\n')[0];
   assert.ok(reconcile.includes("github.event.workflow_run.status == 'completed'"));
