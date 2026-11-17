@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {installGuestVideoBlobCapture,readRealGuestVideo} from './real-guest-video-file.mjs';
+import {completeThreeStepGoalsQuiz} from './complete-three-step-goals-quiz.mjs';
 
 // Local, anonymous acceptance: exercise actual UI and inspect the real test-owned movie Blob.
 const origin = 'http://127.0.0.1:3100';
@@ -31,8 +32,10 @@ page.on('console', message => {
 try {
   await page.goto(`${origin}/ru/holistic-support/mandala`, { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.locator('[data-video-studio-hydrated="true"]').waitFor({ timeout: 60000 });
-  // Select real source footage through the visitor-visible three-stage route.
-  await page.locator('[data-video-continue-scenarios]').click();
+  // Complete all three real Goal selections before the visitor's Ideas CTA.
+  await completeThreeStepGoalsQuiz(page,{engine});
+  if(engine==='webkit')await page.locator('[data-video-continue-scenarios]').tap();
+  else await page.locator('[data-video-continue-scenarios]').click();
   assert.equal(await page.locator('[data-video-quick-control="phrases"]').getAttribute('aria-pressed'),
     'true','GOALS_MUST_OPEN_IDEAS');
   const editor=page.locator('[data-video-quick-control="editor"]');
@@ -262,8 +265,10 @@ try {
 
 
 async function openMontageSettings(page){
-  // The fifth Montage preserves detailed scene, timeline and format controls.
-  await page.locator('[data-video-montage-tab="promo"]').click();
+  // Extra contains only the three video choices; the original detailed settings
+  // remain available via the existing Story > Video settings action.
+  await page.locator('[data-video-montage-tab="concept"]').click();
+  await page.locator('[data-video-story-open-settings]').click();
   const advanced=page.locator('[data-video-stories-advanced]');
   await advanced.locator(':scope > summary').click();
   const settings=advanced.locator('[data-video-stories-settings]');

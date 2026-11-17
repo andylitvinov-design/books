@@ -16,7 +16,7 @@ export type AffirmationSettings = {
   motion?: "rise";
   presetOverride?: string[];
   // Session-local editor snapshot: keeps user edits when Ideas remounts.
-  ideasDraft?: { signature: string; options: string[]; chosen: number[] };
+  ideasDraft?: { signature: string; options: string[]; chosen: number[]; locale?: VideoLocale };
 };
 
 export const defaultAffirmations: AffirmationSettings = {

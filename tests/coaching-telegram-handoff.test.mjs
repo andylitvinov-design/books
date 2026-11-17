@@ -63,7 +63,12 @@ test('signed Telegram continuation retains consented website attribution and dur
   assert.match(store,/linkedTelegram\?\[linkedTelegram\.threadId,linkedTelegram\.digest\]:\[\]/)
   assert.match(store,/SERVICE_OFFERING_NOT_VERIFIED/)
   assert.match(store,/if \(contact&&!linkedTelegram\)/)
-  assert.match(store,/if\(contact\)\{/)
+  // Only a confirmed, signed V3 service request authorizes a new notice.
+  // A contactless legacy coaching continuation still has no such intent.
+  assert.ok(store.includes("if(contact||v3ServiceTelegram){"))
+  assert.ok(store.includes("const v3ServiceTelegram=linkedTelegram?.purpose==='v3_service'"))
+  assert.ok(store.includes("replyConsent:'telegram_v3_service_request_v1'"))
+  assert.doesNotMatch(store,/if\(contact\|\|linkedTelegram\)\{/)
   assert.match(store,/notification_public_enquiry_intents/)
   assert.match(inbox,/validId\(selected\.item\.telegramThreadId\)/)
   assert.match(inbox,/initialThreadId=\{selected\.item\.telegramThreadId\}/)

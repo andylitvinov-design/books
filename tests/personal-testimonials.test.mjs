@@ -10,9 +10,12 @@ test("homepage keeps four matching-audio videos; Services uses four and preserve
   const services = read("app", "[locale]", "services", "page.tsx");
   const extra = read("components", "services-studio-extras.tsx");
   const testimonials = read("components", "personal-testimonials.tsx");
-  assert.match(home, /<PersonalTestimonials locale=\{locale\} variant="home"/);
-  assert.match(services, /<PersonalTestimonials locale=\{locale as Locale\} variant="services"/);
-  assert.ok(home.indexOf("PersonalTestimonials locale") < home.indexOf('className="service-home-about"'));
+  const expanded=read("components","home-expanded-catalog.tsx");
+  assert.match(expanded,/<PersonalTestimonials locale=\{locale\} variant="home"/);
+  assert.match(home,/<HomeDeferredSections locale=\{locale\}/);
+  assert.doesNotMatch(home,/<PersonalTestimonials/);
+  assert.match(services, /<PersonalTestimonials locale=\{locale\} variant="services"/);
+  assert.ok(expanded.indexOf("PersonalTestimonials locale")>expanded.indexOf("HomeFeaturedWorkspace"));
   assert.ok(services.indexOf("PersonalTestimonials locale") > services.indexOf('<ServicesIntroMedia'));
   // Conversion-first Services intentionally presents the booking action in the first screen.
   // Genuine customer stories follow the offers + intro media rather than delaying the booking CTA.

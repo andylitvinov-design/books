@@ -174,7 +174,12 @@ test("video studio lazily loads optional editor workspaces and collapsed tools",
       name + " should be loaded on demand");
     assert.ok(!studio.includes(`import { ${name} } from "./${path}";`));
   }
-  assert.match(studio, /onToggle=\{event=>\{if\(event\.currentTarget\.open\)setFirstVideoAdvancedActivated\(true\);\}\}/);
+  assert.match(studio, /const \[firstVideoAdvancedOpen,setFirstVideoAdvancedOpen\] = useState\(false\)/,
+    "source editor stays collapsed until user intent");
+  assert.match(studio, /open=\{firstVideoAdvancedOpen\}/,
+    "native disclosure is controlled by React, not a hidden DOM patch");
+  assert.match(studio, /onToggle=\{event=>\{\s*const opened=event\.currentTarget\.open;\s*setFirstVideoAdvancedOpen\(opened\);\s*if\(opened\)setFirstVideoAdvancedActivated\(true\);\s*\}\}/,
+    "user opening loads first-video tools; manual closing preserves state");
   assert.match(studio, /\{firstVideoAdvancedActivated \? <MandalaFirstVideoStart/);
   // Voice can now be activated by a deep link and its one live details
   // panel owns the same state as the lazily mounted studio.

@@ -6,7 +6,7 @@ import {getCoachPresentation} from '../lib/coaching/persona-presentations.mjs'
 import {myCoachFishConfig} from '../lib/coaching/my-coach-fish-voice.mjs'
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
-const introRoute='app/api/coaching/intro/route.js'
+const introRoute='app/api/coaching/intro/[locale]/[coach]/route.js'
 
 test('the first Play can request only 24 reviewed public coach introductions',()=>{
   const route=read(introRoute)
@@ -17,15 +17,16 @@ test('the first Play can request only 24 reviewed public coach introductions',()
     assert.ok(intro?.text.length>=120&&intro.text.length<=900,coach.id+'/'+locale)
     assert.ok(intro.text.includes('?' ),coach.id+'/'+locale)
   }
-  for(const token of ["!['en','ru','es'].includes(locale)",
+  for(const token of ["const [,locale,personaId]=match",
     "getCoachPresentation(personaId,locale)",
-    "some(key=>!['coach','locale'].includes(key))",
+    "myCoachFishVoice(personaId)",
+    "if(!match||url.search)",
     "MY_COACH_INTRO_INVALID",
     "const vendor=myCoachFishConfig()",
     "my-coach-public-intro-minute",
     "my-coach-public-intro-global-day",
     "consumeRate(config",
-    "format:'mp3'","'Content-Type':'audio/mpeg'",
+    "format:'mp3',reference_id:referenceId","'Content-Type':'audio/mpeg'",
     "'Cache-Control':'public, max-age=300, s-maxage=86400",
   ])assert.ok(route.includes(token),token)
   assert.doesNotMatch(route,/createRequestAuth|auth\.verified\(\)|readBody\(|JSON\.parse\(request/)
@@ -48,12 +49,12 @@ test('the entire active coach session refuses robotic device TTS',()=>{
   const loop=read('components/my-coach-speech-loop.jsx')
   const page=read('components/my-coach-live-dialogue.jsx')
   assert.ok(loop.includes("if(result.mode==='intro'){"))
-  assert.ok(loop.includes("introPlayerRef.current=startCoachingMp3Playback"))
-  assert.ok(loop.includes('/api/coaching/intro?'))
-  assert.ok(loop.includes('credentials:\'omit\''))
+  assert.ok(loop.includes("introPlayerRef.current=startDirectCoachIntroAudio"))
+  assert.ok(loop.includes('coachIntroAudioPath(personaId,lang)'))
+  assert.ok(loop.includes('primeMicrophonePermission()'))
   assert.ok(page.includes('replayingIntro'))
   assert.ok(page.includes('voiceGate.naturalUnavailable'))
-  assert.ok(page.includes("method:'GET',credentials:'omit'"))
+  assert.ok(page.includes('startDirectCoachIntroAudio(introUrl'))
   assert.ok(!loop.includes('function speakOnDevice'))
   assert.ok(!loop.includes('speakOnDevice()'))
   assert.ok(!loop.includes('new Utterance(reply)'))
@@ -74,7 +75,7 @@ test('first Play unlocks WebKit media and UI does not invent audible success',()
   const player=read('lib/personal-coaching/streamed-mp3-playback.mjs')
   assert.ok(loop.includes('audioContextRef.current=shouldUseCoachingWebAudio(window.navigator)?unlockCoachingAudioContext():null'))
   assert.ok(loop.includes('audioContext:audioContextRef.current'))
-  assert.ok(loop.includes("onStart:()=>{if(live()){setNotice('');changePhase('speaking')}}"))
+  assert.ok(loop.includes("if(live()&&!controller.signal.aborted){setNotice('');changePhase('speaking')}"))
   assert.ok(loop.includes('if(wasIntroduction)introStartedRef.current=false'))
   assert.ok(loop.includes('showTextOnly()'))
   assert.ok(player.includes('source.start(0)'))

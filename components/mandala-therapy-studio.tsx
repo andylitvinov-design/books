@@ -4,7 +4,7 @@ import {AudioLines, BookOpen, ChevronDown, ChevronRight, Film, Heart, Leaf, Mic2
 import type {PublicLocale} from "@/lib/public-locales";
 import css from "./mandala-therapy-studio.module.css";
 type Pane="meditation"|"voice"|"practice";
-type Props={locale:PublicLocale;disabled:boolean;editor:(course:boolean)=>ReactNode;voiceEditor:ReactNode;advancedEffects:ReactNode;onVideoPhrases:()=>void};
+type Props={locale:PublicLocale;disabled:boolean;initialFormat?:"single"|"course";editor:(course:boolean)=>ReactNode;voiceEditor:ReactNode;advancedEffects:ReactNode;onVideoPhrases:()=>void};
 const dict={
  en:{title:"Therapy Studio",tag:"PERSONAL PRACTICES",intro:"Create a guided meditation or an eight-session practice course.",
   single:"Single practice",singleHint:"One meditation",course:"8-session course",courseHint:"Eight connected themes",
@@ -34,12 +34,12 @@ const dict={
   effects:"Efectos opcionales de audio y vídeo",effectsHint:"Controles originales conservados, sin render automático.",
   safety:"Práctica reflexiva, no tratamiento médico. El curso comienza con un plan y el primer guion; los demás se crean localmente solo si los solicitas."}
 } as const;
-export function MandalaTherapyStudio({locale,disabled,editor,voiceEditor,advancedEffects,onVideoPhrases}:Props){
+export function MandalaTherapyStudio({locale,disabled,initialFormat="single",editor,voiceEditor,advancedEffects,onVideoPhrases}:Props){
  const [pane,setPane]=useState<Pane>("meditation");
- const [isCourse,setIsCourse]=useState(false);
+ const [isCourse,setIsCourse]=useState(initialFormat==="course");
  const [effectsOpen,setEffectsOpen]=useState(false);
  const t=dict[locale];
- return <div className={css.shell} data-therapy-studio>
+ return <div className={css.shell} data-therapy-studio data-therapy-course={isCourse?"true":"false"}>
   <header className={css.hero}><span className={css.eyebrow}><Leaf size={17}/>{t.tag}</span><h3>{t.title}</h3><p>{t.intro}</p></header>
   <div className={css.format} data-therapy-format-switch role="group" aria-label="Practice format">
    <button type="button" data-therapy-format="single" disabled={disabled} aria-pressed={!isCourse} onClick={()=>{setIsCourse(false);setPane("meditation");}}>

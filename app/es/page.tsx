@@ -1,27 +1,17 @@
+import { Suspense } from "react";
+import { HolisticHouseLoadingScene } from "@/components/holistic-house-loading-scene";
+import { HomeDialogueEntry } from '@/components/home-dialogue-entry';
+import { HomeDeferredSections } from '@/components/home-deferred-sections';
 import Image from 'next/image';
 import { StaticPortrait } from '@/components/static-portrait';
-import { HomeSectionCarousel } from '@/components/home-section-carousel';
-import { MySpaceTopics } from '@/components/my-space-topics';
-import { ProfileHubTabs } from '@/components/app/profile-hub-tabs';
-import { HomeFeaturedWorkspace } from '@/components/home-featured-workspace';
-import { FreeMobileAppBanner } from '@/components/free-mobile-app-banner';
 import Link from 'next/link';
-import { PersonalTestimonials } from '@/components/personal-testimonials';
-import { HomeMoreDisclosure } from '@/components/home-more-disclosure';
 import { PublicConsultationCta } from '@/components/public-consultation-cta';
-import { PublicSiteHeader } from '@/components/public-site-header';
 import { spanishMetadata } from '@/lib/spanish-metadata';
 export const metadata = spanishMetadata('/es', 'Sesiones personales en Toronto y en línea | Holistic House', 'Explora tus preguntas sobre relaciones, trabajo y decisiones con Andrey Litvinov. Sesiones personales desde €50 y revisión escrita gratuita opcional.');
 export default function SpanishHomePage() {
-  return <main className="house-home house-home--services" lang="es">
-    <PublicSiteHeader locale="es" />
-    <ProfileHubTabs locale="es" publicEntry />
-    <MySpaceTopics locale="es" publicHome />
-    <HomeSectionCarousel locale="es" />
-    <HomeMoreDisclosure locale="es" />
-    <HomeFeaturedWorkspace locale="es" />
-    <FreeMobileAppBanner locale="es" />
-    <PersonalTestimonials locale="es" variant="home" />
+  return <Suspense fallback={<HolisticHouseLoadingScene />}><main className="house-home house-home--services" lang="es">
+    <HomeDialogueEntry locale="es" />
+    <HomeDeferredSections locale="es" />
     <section className="service-home-about" aria-labelledby="service-home-about-title">
       <div className="service-home-about__copy">
         <p className="service-home-kicker">Sobre mí</p>
@@ -38,5 +28,5 @@ export default function SpanishHomePage() {
     <section className="service-home-library" aria-labelledby="service-home-library-title"><Image unoptimized src="/images/holistic-house/books-library.webp" alt="" fill sizes="(max-width: 767px) 100vw, 1200px" className="service-home-library-photo" /><div className="service-home-library-copy"><p className="service-home-kicker">Libro del autor</p><h2 id="service-home-library-title">El poder de la vida</h2><p className="service-home-library-intro">Mi libro sobre desarrollo interior, psicohomeopatía y un enfoque integrador del trabajo con los estados humanos.</p><Link href="/es/books">Explorar la biblioteca<span aria-hidden="true">→</span></Link></div></section>
     <PublicConsultationCta locale="es" />
     <footer className="service-home-footer"><Link className="house-wordmark" href="/es">Holistic House</Link><p>Trabajo individual, práctica consciente y un espacio para el desarrollo interior.</p><Link href="/es/services">Explorar servicios<span aria-hidden="true">→</span></Link></footer>
-  </main>;
+  </main></Suspense>;
 }
