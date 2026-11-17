@@ -2,6 +2,7 @@
 import {useCallback,useEffect,useState} from 'react'
 import {ArrowRight,ClipboardList,Link2,MessageCircle,ShieldCheck} from 'lucide-react'
 import {useSearchParams} from 'next/navigation'
+import Link from 'next/link'
 import DirectMessageInbox from './direct-message-inbox'
 import MessengerGuestGate from './messenger-guest-gate'
 import MessengerSignIn from './messenger-sign-in'
@@ -160,7 +161,15 @@ export default function MessagesHub({locale='en',embedded=false,onClientsCount=u
   // Practitioner and ordinary member accounts share the same compact protected
   // conversation-list UI, WITHOUT connecting to the owner-only Telegram CRM.
   // Their direct threads and assigned requests remain separately authorized.
-  if(embedded&&requestData?.accountId)return <MessagesSimpleInbox
+  if(embedded&&requestData?.accountId)return <div className={styles.embeddedMessages} data-embedded-member-messages>
+    {ownerAccountId&&<Link href={'/'+locale+'/app/messages/telegram-settings'}
+      prefetch={false} className={styles.ownerTelegramShortcut}
+      data-owner-telegram-settings-shortcut>
+      <span>{locale==='ru'?'⚙ Настройки Telegram-бота':locale==='es'?
+        '⚙ Configuración del bot Telegram':'⚙ Telegram bot settings'}</span>
+      <ArrowRight size={17} aria-hidden="true"/>
+    </Link>}
+    <MessagesSimpleInbox
     key={requestData.accountId+':member'} locale={locale}
     accountId={requestData.accountId} requests={requestData.requests||[]}
     businessEnquiries={requestData.businessEnquiries||[]}
@@ -168,6 +177,7 @@ export default function MessagesHub({locale='en',embedded=false,onClientsCount=u
     websiteUnavailable={!usableData&&!loading}
     onClientsCount={onClientsCount} onDetailChange={onDetailChange}
     onReload={()=>setRefreshKey(value=>value+1)}/>
+  </div>
   // If the optional consultation-directory request fails, the standalone
   // private messenger still uses its own verified account API. Never hide
   // existing direct conversations just because one listing endpoint is down.
