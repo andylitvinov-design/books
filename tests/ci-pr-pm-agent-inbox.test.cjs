@@ -329,3 +329,47 @@ test('wrong actor and unverifiable owner token cannot dispatch a repair workflow
  assert.equal(unknown.reason,'OWNER_REPAIR_TOKEN_IDENTITY_UNVERIFIED');
  assert.equal(dispatched,0);
 });
+
+
+test('dispatchLive retains owner-authenticated dispatch acceptance for private queue',async()=>{
+ const head='a'.repeat(40),prNumber=3826,requests=[];
+ const pr={number:prNumber,state:'open',draft:false,user:owner,
+  head:{sha:head,repo:{full_name:'andylitvinov-design/books'}},
+  base:{ref:'codex/public-book-library'},mergeable:true,mergeable_state:'clean',
+  labels:[{name:'hh:repair-needed'}]};
+ const gh={rest:{pulls:{get:async()=>({data:pr})},issues:{listComments:async()=>({
+  data:[{user:bot,performed_via_github_app:app,
+   body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+head+' -->\nFailed jobs: core-lint-types-build'}]
+ })}}};
+ const result=await inbox.dispatchLive(gh,{pr:prNumber},{ownerToken:'synthetic-owner-only-token',
+  fetcher:async(url,req)=>{
+   requests.push(url);
+   if(url==='https://api.github.com/user')
+    return {status:200,json:async()=>({login:'andylitvinov-design',id:274943885,type:'User'})};
+   assert.match(url,/hh-pr-ten-minute-watchdog\.yml\/dispatches$/);
+   assert.equal(JSON.parse(req.body).inputs.pm_expected_sha,head);
+   return {status:204};
+  }});
+ assert.equal(result.watching,true);
+ assert.equal(result.dispatched,true);
+ assert.equal(result.reason,'OWNER_DISPATCH_ACCEPTED_UNCORRELATED');
+ assert.equal(requests.length,2);
+});
+test('dispatchLive preserves numeric HTTP denial and does not report acceptance',async()=>{
+ const head='a'.repeat(40),prNumber=3826;
+ const pr={number:prNumber,state:'open',draft:false,user:owner,
+  head:{sha:head,repo:{full_name:'andylitvinov-design/books'}},
+  base:{ref:'codex/public-book-library'},mergeable:true,mergeable_state:'clean',
+  labels:[{name:'hh:repair-needed'}]};
+ const gh={rest:{pulls:{get:async()=>({data:pr})},issues:{listComments:async()=>({
+  data:[{user:bot,performed_via_github_app:app,
+   body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+head+' -->\nFailed jobs: core-lint-types-build'}]
+ })}}};
+ const result=await inbox.dispatchLive(gh,{pr:prNumber},{ownerToken:'synthetic-owner-only-token',
+  fetcher:async url=>url==='https://api.github.com/user'?
+   {status:200,json:async()=>({login:'andylitvinov-design',id:274943885,type:'User'})}:
+   {status:403}});
+ assert.equal(result.watching,true);
+ assert.equal(result.dispatched,false);
+ assert.equal(result.reason,'OWNER_REPAIR_DISPATCH_HTTP_403');
+});

@@ -237,7 +237,9 @@ async function dispatchLive(github,cmd,{ownerToken,fetcher=fetch}={}){
   return {watching:true,sha:pr.head.sha,reason:'OWNER_HOLD_NOT_OVERRIDDEN'};
  if(labels.has('hh:repair-needed')&&pr.mergeable===true){
   const repair=await dispatchRepair(github,{...cmd,sha:pr.head.sha},{ownerToken,fetcher});
-  return {watching:true,sha:pr.head.sha,
+  // Propagate HTTP 204 dispatch acceptance, but never conflate it with
+  // runner start, model call, source patch, green CI or protected merge.
+  return {watching:true,sha:pr.head.sha,dispatched:repair.dispatched===true,
    reason:repair.reason||'VERIFIED_SOURCE_DISPATCH_PENDING'};
  }
  return {watching:true,sha:pr.head.sha,

@@ -147,3 +147,17 @@ test('unknown foreign PR identity retains original owner HEAD and always finishe
  assert.equal(finish.status,'BLOCKED');
  assert.equal(finish.headSha,SHA);
 });
+
+
+test('numeric dispatch HTTP denials survive trusted Worker finish without UNKNOWN',async()=>{
+ const p={...base,labels:[{name:'hh:repair-needed'}]};
+ for(const reason of ['OWNER_REPAIR_DISPATCH_HTTP_403','OWNER_REPAIR_DISPATCH_HTTP_422']){
+  const f=mock(task,p);
+  const result=await run({...f,context,dispatch:async()=>({dispatched:false,reason})});
+  assert.equal(result.status,'BLOCKED');
+  assert.equal(result.reasonCode,reason);
+  assert.equal(result.dispatchAccepted,false);
+  assert.equal(f.calls.filter(x=>x.action==='finish').length,1);
+  assert.equal(f.calls.find(x=>x.action==='finish').reasonCode,reason);
+ }
+});
