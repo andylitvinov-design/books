@@ -16,6 +16,7 @@ const MAX_READS = 36;
 const RATE_RESERVE = 100;
 const {pickQueueCandidates,priorityFor} = require('./ci-pr-priority.cjs');
 const {safeSourcePath: safeFreeSourcePath,assessCompleteFreeRepairScope}=require('./ci-pr-repair-free-agent.cjs');
+const {signedOwnerResume}=require('./ci-pr-manual-resume.cjs');
 const {taskFor,commentBody,readCompleteIssueComments,externalOwnerLeaseStatus,parseRecords,trustedControlComment,reservationStatus}=require('./ci-pr-task-state.cjs');
 const {stageLine}=require('./ci-pr-stage-receipts.cjs');
 const {buildRepairExecutionEvidence}=require('./ci-pr-repair-execution-evidence.cjs');
@@ -82,6 +83,11 @@ function trustedLegacySourceRetry(pr,comments,changedFiles){
  // On the SAME HEAD, only a documented no-model/no-source outcome qualifies.
  const records=parseRecords((comments||[]).filter(trustedControlComment));
  if(!records)return false;
+ // Only a fresh, OIDC-backed owner request can grant the one additional
+ // SAME-HEAD machine-truncation attempt. A single trusted legacy task key
+ // prevents another attempt after this one is handled. Human/security holds
+ // and failed-Core/source-scope/lease proofs remain mandatory above.
+ if(signedOwnerResume(pr,comments))return true;
  // Require a real signed older-head MANUAL outcome. Same-head terminal
  // states are already consumed by reservationStatus(); treating a no-model
  // MANUAL on the same HEAD as a fresh retry would bypass that queue fence.
