@@ -20,7 +20,7 @@ test('pilot advertises exactly two female and two male coaches without deleting 
   assert.match(catalog,/PUBLIC_COACH_PERSONAS\.filter\(persona =>/)
   assert.match(catalog,/PUBLIC_COACH_TOPICS\.map\(key =>/)
   assert.match(catalog,/PUBLIC_COACH_PERSONA_IDS\.includes\(id\)/)
-  assert.match(catalog,/PUBLIC_COACH_PERSONA_IDS\.map\(id =>/)
+  assert.match(catalog,/data-my-coach-kind-switch/)
   assert.doesNotMatch(catalog,/COACH_PERSONAS\.filter\(persona =>/)
   for(const id of ['lea','noah','iris','ray']){
     assert.ok(!PUBLIC_COACH_PERSONA_IDS.includes(id))
@@ -61,7 +61,7 @@ test('live reply selects a scene without changing ASR, privacy gates or speech s
  const live=source('components/my-coach-live-dialogue.jsx')
  const avatar=source('components/app/coaching-avatar.jsx')
  const css=source('components/my-coach-live-dialogue.module.css')
- assert.match(catalog,/<MyCoachMotionMedia personaId=\{selected\.id\} phase="greeting" context="hero"/)
+ assert.match(catalog,/<MyCoachExpressStart locale=\{lang\} embedded/)
  assert.match(catalog,/<MyCoachMotionMedia personaId=\{persona\.id\} phase="idle" context="card"/)
  assert.match(live,/selectCoachVisualScene\(\{phase:motionPhase,text:latestCoachText,stage:currentStage\}\)/)
  assert.match(live,/<MyCoachMotionMedia personaId=\{personaId\} phase=\{motionPhase\} context="session" scene=\{visualScene\}/)
