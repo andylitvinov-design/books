@@ -18,6 +18,7 @@ import { buildPublishedVideoIndex } from "@/lib/video-discovery/catalog.mjs";
 import { classifyMyTubeFormat } from "@/lib/video-discovery/mytube-duration.mjs";
 import { originalPsiMasterPracticeMetadata } from "@/lib/video-discovery/mytube-practice-collections.mjs";
 import { rankPublicMyTubeVideo } from "@/lib/mandala/mytube-video-tagging.mjs";
+import {listApprovedLocalFilmScenes} from "@/lib/video-discovery/approved-local-scenes.mjs";
 import { listMyTubeCategories } from "@/lib/mandala/mytube-content-taxonomy.mjs";
 
 export type LibraryView = "latest" | "books" | "videos" | "dao";
@@ -473,7 +474,7 @@ export function buildPublicVideoDiscoveryItems(
   }));
   // One canonical public index, de-duplicated by YouTube ID. Unknown, private,
   // draft and unapproved clips never gain publication rights from this merge.
-  return buildPublishedVideoIndex([
+  const indexedVideos = buildPublishedVideoIndex([
     ...originalPsiMasterPractices,
     ...siteIntroductions,
     ...seriesItems,
@@ -490,8 +491,8 @@ export function buildPublicVideoDiscoveryItems(
       ?{mytubeSection:"masters" as const,author:"Andy",
          aiAssisted:approvedAiMasterIds.has(video.youtubeId)}:{}),
   }));
+  return [...indexedVideos, ...listApprovedLocalFilmScenes(locale)];
 }
-
 export function LibraryHub({ locale, view = "latest", publishedVideos = [], articles = [], approvedMeditations = [] }: {
   locale: PublicLocale;
   view?: LibraryView;
