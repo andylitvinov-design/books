@@ -1050,15 +1050,10 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
    }
    continue;
   }
-  // Capacity is a source-writing gate, not a metadata-only conflict handoff
-  // gate. The manual owner queue must progress during runner saturation.
-  if(!capacity?.known){blocked('CAPACITY_UNVERIFIED');continue;}
-  const permission=admission(task.lane,capacity);
-  if(permission!=='ADMIT'){blocked(permission);continue;}
-  if([GHOST_REPAIR_MODE,STALE_MERGED_REPAIR_MODE]
-      .includes(capacity?.inventoryConfidence)&&summary.dispatchAccepted>=1){
-   blocked('GHOST_ONLY_ONE_WORKER_PER_SWEEP');continue;
-  }
+  // Metadata-only source-hint classification is safe even if all GitHub
+  // runners are unavailable. Inspect exact-HEAD bot-signed Core proof and
+  // product/aggregate checks BEFORE the worker capacity admission gate.
+  // Only actual worker dispatches reserve runner/queue capacity.
   // Source must have an exact-HEAD trusted Watchdog diagnosis; labels alone
   // are stale hints and must not give privileged source write permission.
   if(task.lane==='repair'&&(!hasVerifiedSourceHandoff(comments,task.head_sha)||
@@ -1113,6 +1108,15 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
     log('Non-source classification #'+task.pr_number+': '+err.message);
    }
    continue;
+  }
+  // Capacity is a source-writing gate, not a metadata-only conflict handoff
+  // gate. The manual owner queue must progress during runner saturation.
+  if(!capacity?.known){blocked('CAPACITY_UNVERIFIED');continue;}
+  const permission=admission(task.lane,capacity);
+  if(permission!=='ADMIT'){blocked(permission);continue;}
+  if([GHOST_REPAIR_MODE,STALE_MERGED_REPAIR_MODE]
+      .includes(capacity?.inventoryConfidence)&&summary.dispatchAccepted>=1){
+   blocked('GHOST_ONLY_ONE_WORKER_PER_SWEEP');continue;
   }
   if(task.lane==='repair'){
    // GitHub temporarily reports mergeable:null while it calculates the
