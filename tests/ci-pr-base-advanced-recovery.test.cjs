@@ -11,10 +11,17 @@ const MARKER=[
  '2026-11-04T20:59:47.4536699Z ##[error]BASE_ADVANCED: PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED',
  '2026-11-04T20:59:47.4547714Z CI_SPECIALIST_FAIL_CLOSED: PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED'
 ].join('\n');
+// Actual 2026-11-17 HH PR core release gate (#4811, run 43997841082):
+// source Core succeeded; hh-merge-check failed with the exact BASE_ADVANCED
+// marker; hh-eslint-repair skipped. There is NO separate hh-specialist job.
 const jobs=[
  {id:1,name:'core-lint-types-build',status:'completed',conclusion:'success'},
- {id:2,name:'hh-specialist',status:'completed',conclusion:'failure'},
- {id:3,name:'hh-merge-check',status:'completed',conclusion:'failure'}
+ {id:2,name:'hh-merge-check',status:'completed',conclusion:'failure'},
+ {id:3,name:'hh-eslint-repair',status:'completed',conclusion:'skipped'}
+];
+const legacyJobs=[
+ jobs[0],{id:4,name:'hh-specialist',status:'completed',conclusion:'failure'},
+ jobs[1]
 ];
 function world(options={}){
  const event={
@@ -135,13 +142,22 @@ test('accepts only recent trusted failed Core event on exact default branch',()=
   {payload:{workflow_run:{...w.context.payload.workflow_run,repository:{full_name:'other/repo'}}}}
  ])assert.equal(isTrustedFailure({...w.context,...variant},Date.parse('2026-11-04T21:02:00Z')),false);
 });
-test('exact independent Core + failed specialist and merge evidence is mandatory',()=>{
- assert.equal(validatedJobEvidence({total_count:3,jobs}),2);
- assert.equal(validatedJobEvidence({total_count:4,jobs}),null);
- assert.equal(validatedJobEvidence({total_count:4,jobs:[...jobs,{id:4,name:'browser',conclusion:'failure'}]}),null);
- assert.equal(validatedJobEvidence({total_count:3,jobs:jobs.map(x=>
-  x.name==='core-lint-types-build'?{...x,conclusion:'skipped'}:x)}),null);
- assert.equal(validatedJobEvidence({total_count:4,jobs:[...jobs,jobs[1]]}),null);
+test('actual embedded specialist gate recovers BASE_ADVANCED without retired hh-specialist job',()=>{
+ const recorded={total_count:3,jobs};
+ assert.equal(validatedJobEvidence(recorded),2,'use failing embedded hh-merge-check job log');
+ assert.equal(validatedJobEvidence({total_count:3,jobs:legacyJobs}),4,
+  'older separate specialist gate is still supported with independent proof');
+ for(const altered of [
+  {total_count:4,jobs},
+  {total_count:4,jobs:[...jobs,{id:5,name:'browser',status:'completed',conclusion:'failure'}]},
+  {total_count:3,jobs:jobs.map(x=>x.name==='core-lint-types-build'?{...x,conclusion:'skipped'}:x)},
+  {total_count:3,jobs:jobs.map(x=>x.name==='hh-merge-check'?{...x,conclusion:'success'}:x)},
+  {total_count:4,jobs:[...jobs,jobs[1]]},
+  {total_count:3,jobs:[jobs[0],jobs[2],jobs[2]]},
+  {total_count:3,jobs:[jobs[1],jobs[1],jobs[2]]},
+  {total_count:4,jobs:[...legacyJobs,legacyJobs[1]]},
+  {total_count:3,jobs:legacyJobs.map(x=>x.name==='hh-specialist'?{...x,conclusion:'success'}:x)}
+ ])assert.equal(validatedJobEvidence(altered),null,'never accept failed source or ambiguous gate');
  assert.equal(isActualBaseAdvancedLog(MARKER),true);
  assert.equal(isActualBaseAdvancedLog(MARKER.replace('BASE_ADVANCED','GENERIC_FAILURE')),false);
  assert.equal(isActualBaseAdvancedLog('CI_SPECIALIST_FAIL_CLOSED: PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED'),false);
