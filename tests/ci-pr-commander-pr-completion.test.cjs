@@ -111,3 +111,17 @@ test('unknown remote dispatch acknowledgment cannot be repeated after atomic arm
  assert.equal(out.reasonCode,'PR_REPAIR_DISPATCH_ALREADY_RESERVED');
  assert.equal(out.dispatchAccepted,false);
 });
+
+test('owner PR Watchdog checks out only necessary trusted control directories before queue claim',()=>{
+ const fs=require('node:fs');
+ const workflow=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
+ const begin=workflow.indexOf('- name: Read trusted watchdog from default branch');
+ const owner=workflow.indexOf('- name: Owner PR-number completion via private signed queue');
+ const scan=workflow.indexOf('- name: Reconcile complete PR inventory');
+ assert.ok(begin>0&&begin<owner&&owner<scan,'owner queue must precede heavy full inventory');
+ const checkout=workflow.slice(begin,owner);
+ assert.match(checkout,/filter:\s*blob:none/);
+ assert.match(checkout,/sparse-checkout:\s*\|[\s\S]*scripts[\s\S]*\.github/);
+ assert.match(checkout,/ops\/pr-monitor/);
+ assert.doesNotMatch(checkout,/persist-credentials:\s*true/);
+});
