@@ -1167,3 +1167,6 @@
 
 /* No JS/CSS-generated photo mouth overlays on active or historical coaches. */
 .root[data-my-coach-immersive-session] .sessionHero[data-voice-phase='speaking'] .sessionPortrait[data-persona]::after{display:none!important;content:none!important;animation:none!important;transform:none!important}
+
+.voicePlayNotice{margin:4px 16px 5px;font-size:11px;line-height:1.35;color:#50665e;text-align:center}
+
