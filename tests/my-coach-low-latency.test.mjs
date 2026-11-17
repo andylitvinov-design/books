@@ -23,9 +23,12 @@ test('Safari continues to wait for natural recognizer end while other browsers s
  assert.match(result,/if\(!ios27\)\{/)
  assert.match(result,/final\?900:1900/)
  assert.doesNotMatch(result.slice(result.indexOf('if(ios27&&visible){'),result.indexOf('// Dictation is shown')),/recognition\.abort\(\)|void deliver\(/)
- assert.match(loop,/cue\.volume=0/)
+ assert.match(loop,/cue\.volume=0\.2/,'non-muted Safari reset cue must actually play')
  assert.match(loop,/cue\.onend=finishCue/)
- assert.match(loop,/\},3200\)/)
+ assert.match(loop,/cue\.onerror=failCue/,'a failed cue cannot claim microphone readiness')
+ assert.match(loop,/\},4000\)/)
+ assert.match(loop,/failCue\(\) \/\/ cancel\(\) is not a completed audio-session reset/)
+ assert.match(loop,/armSilentWatchdog\(14000\)/,'also detect missing onstart')
 })
 
 test('per-turn profiling records timing only, never words, audio, or extra calls',()=>{

@@ -113,49 +113,74 @@ try {
   // The three responsive recommendations are separate small cards BELOW the chat.
   // Preserve all locale/desktop/privacy contracts; never navigate Telegram in CI.
   const verifyMobileAssist = async (page, locale, width) => {
-    // First-screen contract: all four questions are visible at once, and
-    // money/business must lead to an actual published business offer.
+    // Owner's screenshot: one question per green panel with four progress dots,
+    // six photographic category cards, and the existing shared seven-item dock.
     await page.goto(origin + "/" + locale + "/services", { waitUntil: "domcontentloaded" });
     const quiz = page.locator("[data-services-quiz]");
     await visible(quiz.locator("#services-quiz-title"));
-    await expect(quiz).toHaveAttribute("data-services-quiz-questions", "4");
-    await expect(quiz.locator("[data-services-quiz-question]")).toHaveCount(4);
-    await expect(quiz.locator("[data-services-quiz-category]")).toHaveCount(6);
-    await expect(quiz.locator('[data-services-quiz-category="business"]'))
-      .toHaveAttribute("href", "/" + locale + "/services/business-consulting");
-    assert.equal(await page.locator("[data-hh-unified-dock]").count(),1,"One real site dock, never a mock duplicate");
-    // Owner first-screen acceptance: every category, including business, must
-    // finish above the actual fixed navigation on the initial portrait screen.
-    const firstScreen = await page.evaluate(() => {
-      const last = document.querySelector('[data-services-quiz-category="videos"]');
-      const dock = document.querySelector('[data-hh-unified-dock]');
-      if (!last || !dock) return null;
-      return {lastBottom:last.getBoundingClientRect().bottom,
-        dockTop:dock.getBoundingClientRect().top,
-        width:document.documentElement.scrollWidth, viewport:innerWidth};
-    });
-    assert.ok(firstScreen && firstScreen.lastBottom<=firstScreen.dockTop+1 &&
-      firstScreen.width<=firstScreen.viewport+1,
-      "Services four-question first screen must show all six categories above real dock: "+
-        locale+"/"+width+" "+JSON.stringify(firstScreen));
-    if (locale === "es") await expect(quiz.locator("#services-quiz-title"))
-      .toHaveText("Encuentra tu apoyo");
-    const submitQuiz = quiz.locator("[data-services-quiz-submit]");
-    await expect(submitQuiz).toBeDisabled();
     // Static SSR controls become interactive only after the Next route hydrates.
     await expect.poll(
       () => page.evaluate(() => history.pushState.toString().includes("__NA")),
       { timeout: 30000, message: "Services quiz must hydrate before the first answer" },
     ).toBe(true);
-    if (width === 390) await quiz.screenshot({ path: output + "/services-" + locale + "-four-questions-390.png" });
-    for (const [field,value] of [["topic","work"],["mode","human"],["channel","online"],["budget","flexible"]]) {
-      const choice = quiz.locator('[data-services-quiz-question="' + field + '"] [data-services-quiz-choice="' + value + '"]');
-      await choice.click();
-      await expect(choice).toHaveAttribute("aria-pressed", "true");
+    await expect(quiz).toHaveAttribute("data-services-quiz-questions", "4");
+    await expect(quiz).toHaveAttribute("data-services-quiz-step", "1");
+    await expect(page.locator("[data-hh-ihelp-trigger]")).toHaveCount(0);
+    await expect(quiz.locator("[data-quiz-dot]")).toHaveCount(4);
+    await expect(quiz.locator("[data-services-quiz-question]")).toHaveCount(1);
+    await expect(quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice]')).toHaveCount(4);
+    await expect(quiz.locator("[data-services-quiz-category]")).toHaveCount(6);
+    await expect(quiz.locator("[data-services-quiz-category] img")).toHaveCount(6);
+    await expect(quiz.locator("[data-services-business-link]"))
+      .toHaveAttribute("href", "/" + locale + "/services/business-consulting");
+    assert.equal(await page.locator("[data-hh-unified-dock]").count(), 1,
+      "Keep the real site dock; never add a second mock dock");
+    // The approved screenshot is 390px wide. At smaller widths content may
+    // scroll, but no controls may disappear sideways or behind a fixed rail.
+    const firstScreen = await page.evaluate(() => {
+      const last = document.querySelector('[data-services-quiz-category="videos"]');
+      const dock = document.querySelector("[data-hh-unified-dock]");
+      if (!last || !dock) return null;
+      return {
+        lastBottom: last.getBoundingClientRect().bottom,
+        dockTop: dock.getBoundingClientRect().top,
+        width: document.documentElement.scrollWidth, viewport: innerWidth,
+      };
+    });
+    assert.ok(firstScreen && firstScreen.width <= firstScreen.viewport + 1,
+      "Services screenshot UI must not overflow horizontally: " + locale + "/" + width);
+    if (width >= 390) assert.ok(firstScreen.lastBottom <= firstScreen.dockTop + 12,
+      "At 390+ the six image cards should fit above the site dock: " +
+        locale + "/" + width + " " + JSON.stringify(firstScreen));
+    if (locale === "es") await expect(quiz.locator("#services-quiz-title"))
+      .toHaveText("Encontremos tu apoyo");
+    await expect(quiz.locator("[data-services-quiz-submit]")).toHaveCount(0);
+    if (width === 390) {
+      await page.screenshot({ path: output + "/services-" + locale + "-step1-390.png" });
+      await quiz.screenshot({ path: output + "/services-" + locale + "-quiz-390.png" });
     }
+
+    // Money/business was an explicit owner requirement even though the visual
+    // reference shows only four primary topic buttons; reveal the two extra topics.
+    await quiz.locator("[data-services-more-topics]").click();
+    await expect(quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice]')).toHaveCount(6);
+    await quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice="work"]').click();
+    await expect(quiz).toHaveAttribute("data-services-quiz-step", "2");
+    await quiz.locator('[data-services-quiz-question="mode"] [data-services-quiz-choice="human"]').click();
+    await expect(quiz).toHaveAttribute("data-services-quiz-step", "3");
+    await quiz.locator('[data-services-quiz-question="channel"] [data-services-quiz-choice="online"]').click();
+    await expect(quiz).toHaveAttribute("data-services-quiz-step", "4");
+    const submitQuiz = quiz.locator("[data-services-quiz-submit]");
+    await expect(submitQuiz).toBeDisabled();
+    await quiz.locator('[data-services-quiz-question="budget"] [data-services-quiz-choice="flexible"]').click();
     await expect(submitQuiz).toBeEnabled();
+    // A completed step remains revisitable; changing an answer does not send data.
+    await quiz.locator('[data-quiz-dot="3"]').click();
+    await expect(quiz).toHaveAttribute("data-services-quiz-step", "3");
+    await quiz.locator('[data-services-quiz-choice="online"]').click();
+    await expect(quiz).toHaveAttribute("data-services-quiz-step", "4");
     await submitQuiz.click();
-    await visible(page.locator('[data-services-quiz-results]'));
+    await visible(page.locator("[data-services-quiz-results]"));
     await expect(page.locator('[data-services-quiz-results] [data-assist-best-card="business"]')).toHaveCount(1);
     await assertViewport(page, locale + "/services/quiz/" + width);
     // The original locally-scoped Ali messenger remains reachable by an
@@ -478,8 +503,20 @@ try {
     if (expectedWork.includes("business")) {
       const business=shelf.locator('[data-assist-best-card="business"]');
       await business.locator('[data-service-card-actions] button').nth(1).click();
-      await expect(business.locator('[data-service-card-order] [data-messenger-only-channel="telegram"]'))
-        .toHaveAttribute("href",telegramServiceRequestUrl("business",locale));
+      const businessTelegram=business.locator('[data-service-card-order] [data-messenger-only-channel="telegram"]');
+      const businessHandoff="/api/public/telegram-service-entry?service=business&locale="+locale;
+      await expect(businessTelegram).toHaveAttribute("href",businessHandoff);
+      const businessResponse=await fetch(origin+businessHandoff,{redirect:"manual"});
+      assert.equal(businessResponse.status,307,"Business CTA must use temporary server-verified Telegram handoff");
+      const businessDestination=new URL(businessResponse.headers.get("location"));
+      assert.equal(businessDestination.origin,"https://t.me","Only approved Telegram provider may receive visitor");
+      assert.ok(["/holistichouse","/holistichouse_bot"].includes(businessDestination.pathname),"Only verified human or bot account");
+      if(businessDestination.pathname==="/holistichouse"){
+        assert.equal(businessDestination.href,telegramServiceRequestUrl("business",locale));
+      }else{
+        assert.deepEqual([...businessDestination.searchParams.keys()],["start"],"No private bot data");
+        assert.equal(businessDestination.searchParams.get("start"),"hhservice_business_"+locale);
+      }
     }
     await reset.click();
     await expect(topics).toHaveCount(6);

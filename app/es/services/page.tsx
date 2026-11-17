@@ -36,7 +36,7 @@ export default async function SpanishServicesPage({ searchParams }: { searchPara
     <main className={"services-shell services-shell--studio " + assistStyles.assistPage + " " + compactStyles.page} lang="es">
       <PublicSiteHeader locale="es" showAssessmentStrip={false} />
       <ServicesExplorerProvider>
-        {/* Four visible questions by default; retain Ali when the guest explicitly chooses chat. */}
+        {/* Scenic four-step quiz by default; retain Ali when the guest explicitly chooses chat. */}
         {query?.assist==="chat" ? <ServicesAssistMobile locale="es" /> : <ServicesAssistQuiz locale="es" />}
         <div className={compactStyles.featured} data-services-featured>
           <ServicesPersonalConsultationMobile locale="es" />
