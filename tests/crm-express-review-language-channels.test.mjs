@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {createHmac} from 'node:crypto'
-import {whatsappExpressReviewHandoff,whatsappExpressReviewLocale} from '../lib/crm/express-review-channel-handoff.mjs'
+import {whatsappExpressReviewHandoff,whatsappExpressReviewLocale,telegramExpressReviewHandoff} from '../lib/crm/express-review-channel-handoff.mjs'
 import {telegramDiagnosticPublicUrl} from '../lib/crm/telegram-diagnostic.mjs'
 import {normalizeMessengerUpdates,verifyMessengerWebhook} from '../lib/crm/messenger-webhook.js'
 
@@ -82,7 +82,7 @@ test('signed official WhatsApp webhook stores language marker as locale only, ne
   assert.equal(unmarked[0].language,null)
   assert.equal(unmarked[0].diagnosticLocale,null)
 })
-test('free situation landing exposes locale-scoped chooser with distinct Telegram bot and manual WhatsApp labels',()=>{
+test('free review offers human-first Telegram and consented manual WhatsApp without private fields',()=>{
   const component=read('components/telegram-diagnostic-entry.tsx')
   const page=read('components/free-entry-landing.tsx')
   const hook=read('lib/crm/messenger-webhook.js')
@@ -92,10 +92,18 @@ test('free situation landing exposes locale-scoped chooser with distinct Telegra
   assert.match(component,/data-express-review-messenger-choice=\{locale\}/)
   assert.match(component,/data-express-review-channel="telegram"/)
   assert.match(component,/data-express-review-channel="whatsapp-manual"/)
-  assert.match(component,/data\.urls\?\.\[locale\]/)
-  assert.match(component,/start=hhreview_/)
-  assert.match(component,/setTelegramUrl\(null\)/)
+  assert.match(component,/data-telegram-route="human-business"/)
+  assert.match(component,/telegramExpressReviewHandoff\(locale\)/)
   assert.match(component,/whatsappExpressReviewHandoff\(locale\)/)
+  assert.doesNotMatch(component,/\/api\/public\/telegram-diagnostic|setTelegramUrl|hhreview_|telegramUnavailable|useEffect|fetch\(/)
+  for(const locale of ['en','ru','es']){
+    const url=new URL(telegramExpressReviewHandoff(locale))
+    assert.equal(url.origin,'https://t.me')
+    assert.equal(url.pathname,'/holistichouse')
+    assert.deepEqual([...url.searchParams.keys()],['text'])
+    assert.ok((url.searchParams.get('text')||'').length>20)
+    assert.doesNotMatch(url.searchParams.get('text'),/symptom|diagnos|medical|password|token|\bphone\b/i)
+  }
   assert.match(hook,/whatsappExpressReviewLocale\((?:String\(body\?\?''\)|body)\)/)
   assert.match(hook,/const safeBody=safeString\(body,1200\)/)
   assert.ok(route.indexOf('verifyMessengerWebhook(provider,raw,request.headers)')<
@@ -104,6 +112,18 @@ test('free situation landing exposes locale-scoped chooser with distinct Telegra
   const css=read('components/telegram-diagnostic-entry.module.css')
   assert.match(css,/@media\s*\(max-width:\s*580px\)/)
   assert.match(css,/min-height:\s*46px/)
+})
+
+test('free review keeps private drawings out of messenger and offers protected follow-up',()=>{
+  const landing=read('components/free-entry-landing.tsx')
+  const channels=read('components/telegram-diagnostic-entry.tsx')
+  assert.match(landing,/If I need more context or a drawing, we'll arrange a secure way to share it/)
+  assert.match(landing,/Если понадобится рисунок или дополнительные сведения, договоримся, как передать их через защищённую форму/)
+  assert.match(landing,/Envía expedientes médicos, pruebas y datos sensibles solo por el formulario protegido/)
+  assert.match(channels,/secure questionnaire/)
+  assert.match(channels,/защищённую анкету/)
+  assert.doesNotMatch(channels,/send medical documents to Telegram|пришлите медицинские документы в Telegram/i)
+  assert.doesNotMatch(landing,/Use WhatsApp or Telegram to share your answers|Пришлите анкету и фото рисунка в WhatsApp/)
 })
 
 test('free-review copy uses private handoff for sensitive details in all locales',()=>{
@@ -124,7 +144,7 @@ test('free-review messenger CTAs have branded colors, clear localized names and 
   for(const label of [
     'Write on Telegram','Write on WhatsApp',
     'Написать в Telegram','Написать в WhatsApp',
-    'Solicitar mi revisión gratis por Telegram','Solicitar mi revisión gratis por WhatsApp',
+    'Escribir a Andrey por Telegram','Escribir a Andrey por WhatsApp',
   ]) assert.ok(channels.includes(label),label)
   assert.match(channels,/import \{ MessageCircle, Send \} from "lucide-react"/)
   assert.match(channelsCss,/\.action \{ background: #087cad/)

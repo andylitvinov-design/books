@@ -66,7 +66,7 @@ test("personal express diagnosis unfolds inside the same landing, without a moda
   for (const localized of [
     "Write on Telegram", "Write on WhatsApp",
     "Написать в Telegram", "Написать в WhatsApp",
-    "Solicitar mi revisión gratis por Telegram", "Solicitar mi revisión gratis por WhatsApp",
+    "Escribir a Andrey por Telegram", "Escribir a Andrey por WhatsApp",
   ]) assert.ok(messenger.includes(localized), localized);
   assert.ok(enquiry.indexOf("<TelegramDiagnosticEntry locale={locale} />") <
     enquiry.indexOf("<button ref={revealRef}"), "messenger actions precede the optional handoff information");

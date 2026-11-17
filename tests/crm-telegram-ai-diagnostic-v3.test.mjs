@@ -268,12 +268,12 @@ test('Wave fallback preserves short-turn context, handles model identity and sta
   assert.match(incoming('Поговорим?'),/поболта|пообща|разговар/i);
   assert.match(incoming("Let's chat",[],'en'),/chat/i);
   assert.match(incoming('Hablemos',[],'es'),/conversar/);
-  assert.match(incoming('О Qwen'),/Ali/);
+  assert.match(incoming('О Qwen'),/Wave/);
   assert.match(incoming('О Qwen'),/Qwen/);
-  assert.match(incoming('What is your name?',[],'en'),/Ali/);
+  assert.match(incoming('What is your name?',[],'en'),/Wave/);
   assert.match(incoming('Quiero morir',[],'es'),/emergencia/);
   assert.match(incoming('Не хочу больше жить'),/экстренн/);
-  assert.match(incoming('Объясни квантовую физику'),/Ali/);
+  assert.match(incoming('Объясни квантовую физику'),/Wave/);
   assert.doesNotMatch(incoming('Объясни квантовую физику'),/квантовая физика —/);
   assert.ok(incoming('Поговорим?').length<700);
   assert.equal(incoming('Спасибо',[{role:'assistant',text:'Привет'}]).length>0,true);
