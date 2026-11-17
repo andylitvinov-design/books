@@ -212,9 +212,7 @@ test('retired duplicate production-push audits keep exact-head PR specialists an
   const reduced = [
     ['site-video-browser.yml', 'components/page-video.tsx'],
     ['home-locale-switch.yml', 'components/holistic-house-home.tsx'],
-    ['hh-reports-development-program.yml', 'lib/profile/development-program.js'],
     ['hh-home-conversation.yml', 'components/holistic-house-home.tsx'],
-    ['practice-visual-browser.yml', 'components/practice-showcase.jsx'],
     ['hh-benchmark-program.yml', 'lib/benchmarking/plan.mjs'],
     ['hh-assessment-quality.yml', 'lib/assessments/research-directory-2026.js'],
   ];
@@ -230,6 +228,11 @@ test('retired duplicate production-push audits keep exact-head PR specialists an
     'hh-public-performance-audit.yml']) {
     assert.match(source(name), /branches: \['codex\/public-book-library'\]/,
       name + ': do not run production specialist on unrelated control-branch PR');
+  }
+  // These two post-merge contracts are deliberate; never disable them as duplicates.
+  for (const name of ['hh-reports-development-program.yml', 'practice-visual-browser.yml']) {
+    assert.match(source(name), /^  pull_request:/m, name + ': PR gate retained');
+    assert.match(source(name), /^  push:/m, name + ': post-merge acceptance retained');
   }
   for (const name of ['hh-private-audio-e2e.yml', 'hh-my-progress-release.yml',
     'hh-messenger-mobile-release.yml']) {

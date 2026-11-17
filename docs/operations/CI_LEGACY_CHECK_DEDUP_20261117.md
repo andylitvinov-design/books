@@ -1,44 +1,35 @@
-# PR CI: retire duplicate post-merge audits (2026-11-17)
+# Holistic House PR CI reduction — verified scope (2026-11-17)
 
-## Objective
+## Goal
 
-Reduce old GitHub Actions fan-out so production PRs reach protected merge and the existing hourly LIVE release faster. This change is a first measurable cohort of the requested **10×** legacy-check reduction, **not** a claim that all PR checks are already 10× faster.
+Reduce legacy, redundant GitHub Actions checks and CI wave delays, targeting 10x only where source coverage remains independently enforced. No claim of an overall 10x reduction is made without measured before/after data.
 
-## Observed baseline
+## Baseline
 
-A snapshot of the latest 100 `push` workflow runs (captured 2026-11-17) showed:
-- Reports development programme: 12
-- Website video browser: 5
-- Home language switch: 4
-- Home conversation, practice screenshots, benchmark: 1 each
+Among the last 100 repository push Actions sampled on 17 November: 12 report-development, 5 site-video, 4 home-locale, 1 home-conversation, 1 Practice browser, and 1 benchmark run (24 total). Detailed test contracts prove that report-development and Practice need their post-merge checks: these 13 runs remain valid and are NOT included as removable duplication.
 
-Thus **24 of the sampled 100 push runs** belonged to six suites that had already been scheduled for relevant source PRs. The assessment suite was also double-triggered but absent in this sample.
+At least 11/100 push runs matched four now-retired duplicate push owners: site-video (5), home-locale (4), home-conversation (1), benchmark (1). Assessment-quality also had a redundant production push trigger, though none appeared in that sample. These are historical snapshot counts, not future guaranteed savings.
 
-## Change
+## Changes
 
-Seven duplicate production-push suites now run on matching **production pull requests** only, with `workflow_dispatch` preserved for explicit diagnostic reruns:
+Remove production push triggers (but keep matching PR checks and add/retain manual recovery) for the following five specialists:
+- site-video-browser.yml
+- home-locale-switch.yml
+- hh-home-conversation.yml
+- hh-benchmark-program.yml
+- hh-assessment-quality.yml
 
-`site-video-browser`, `home-locale-switch`, `hh-reports-development-program`, `hh-home-conversation`, `practice-visual-browser`, `hh-benchmark-program`, `hh-assessment-quality`.
+Scope hh-public-performance-audit.yml, home-locale and assessment PR checks to codex/public-book-library only; do not duplicate their checks on unrelated PR branches.
 
-`hh-public-performance-audit` (and locale/assessment) is now scoped to production PRs, avoiding unrelated base-branch tests.
+Preserve post-merge push acceptance for hh-reports-development-program.yml (report progress assertions) and practice-visual-browser.yml (real Chromium/WebKit visual results) as required by existing source contracts. Keep private audio, messenger, progress, sensitive auth, payments and customer-data checks.
 
-No app runtime code or Vercel configuration changes. No new cron, dispatcher, branch bypass, secret, paid preview or CI wave.
+## Acceptance
 
-## Retained non-negotiable quality gates
+- tests/pr-fast-lane.test.mjs, tests/ci-pr-selective-workflows.test.mjs, actionlint and Sweep Guard all pass on the exact PR HEAD; Core hh-merge-check verifies required specialists independently before any protected merge.
+- No newly introduced paid service, Vercel preview, schedule, branch bypass or unchecked continue-on-error.
+- Monitor push/PR workflow counts on the next 100 runs and report true before/after, including queue time and source-to-merged/merged-to-LIVE separately.
+- PR is not LIVE merely by merging. Existing hourly/capped production release and independent served-SHA verification decide LIVE.
 
-- The single Core `hh-merge-check`, BASE-trusted specialist evidence and exact PR HEAD binding.
-- Independent PR suites for all matching specialist source paths, including risky media/auth/consent files.
-- Production-push private-audio, user-progress and Messenger acceptance.
-- Native protected merge and independent LIVE SHA verification after the already-capped Vercel hourly release.
-- Manual `workflow_dispatch` of every retired duplicate for incident recovery.
+## Follow-up
 
-## Verification
-
-The `ci-pr-selective-workflows` test proves PR owner triggers, manual recovery, preserved sensitive postmerge cases, production-only branch filters and Core gate. `HH workflow syntax — actionlint` and `HH PR Sweep Guard` validate the routing change on its actual PR HEAD.
-
-## Acceptance criteria / next measurement
-
-1. Compare the next 100 production `push` runs against the above baseline, separating active PR checks, postmerge checks, and control-plane jobs.
-2. Confirm no removed duplicate appears on production push, and each still fires on a matching source PR.
-3. Confirm one safe PR merges under `hh-merge-check` and independently reaches LIVE.
-4. **Do not report a 10× overall reduction until measured.** Other protected domain suites and old queued-run cleanup require separate evidence; never waive mandatory source coverage merely to reach a numeric quota.
+Control-plane Watchdog and the read-only queue dispatcher have separate push-trigger fan-out on codex/bootstrap-books. Audit and reduce those on their own protected control-branch PR; do not disable scheduled PR repair or the only source-to-LIVE pipeline to hit a numeric quota.
