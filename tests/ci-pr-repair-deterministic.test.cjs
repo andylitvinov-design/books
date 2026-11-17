@@ -1,7 +1,7 @@
 'use strict';
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-const {repairTypeOnlyImports,trustedRepairScope}=require('../scripts/ci-pr-repair-deterministic.cjs');
+const {repairTypeOnlyImports,repairDuplicateParameterBinding,trustedRepairScope}=require('../scripts/ci-pr-repair-deterministic.cjs');
 
 test('mixed signed JS/TS scope is accepted without permitting unsafe or duplicate paths',()=>{
  const sha='a'.repeat(40),files=['components/page.jsx','lib/helper.mjs','components/types.tsx'];
@@ -173,4 +173,40 @@ test('strict one-line TS2304 may restore only the exact protected source line',(
   {baseline:baseline.slice(0,-1)}
  ])assert.equal(repair({file,source,baseline,diagnostics:diagnostic,...changed}).changed,false,
    'invalid compiler proof or nonunique changes must be rejected');
+});
+
+
+test('repairs a parameter/local TS2300 collision without model reasoning or changing prior parameter usage',()=>{
+ const before=[
+  'export function buildPublicVideoDiscoveryItems(locale: string, publishedVideos: string[]) {',
+  ' const feed = buildLibraryFeedItems(locale,publishedVideos);',
+  ' const publishedVideos = buildPublishedVideoIndex([feed]);',
+  ' return [...publishedVideos, ...listApprovedLocalFilmScenes(locale)];',
+  '}',
+  ''
+ ].join('\\n');
+ const repair=repairDuplicateParameterBinding(before,'components/library-hub.tsx');
+ assert.equal(repair.changed,true);
+ assert.equal(repair.edits,2);
+ assert.match(repair.code,/buildLibraryFeedItems\\(locale,publishedVideos\\)/);
+ assert.match(repair.code,/const indexedVideos = buildPublishedVideoIndex/);
+ assert.match(repair.code,/return \\[\\.\\.\\.indexedVideos,/);
+ assert.equal(repairDuplicateParameterBinding(repair.code,'components/library-hub.tsx').changed,false);
+});
+test('duplicate repair refuses ambiguous identifiers, nested references, and unrelated code',()=>{
+ const cases=[
+  'function f(items: string[]) { const items = []; console.log(items); return items; }\\n',
+  'function f(items: string[]) { const items = []; return items.map(x => x); }\\n',
+  'function f(items: string[]) { const items = []; return [...items]; const items = []; }\\n',
+  'function f(items: string[]) { const items = []; return [...items]; }\\nfunction g(x: number[]) { const x = []; return [...x]; }\\n',
+  'export const items = 12;\\n',
+ ];
+ for(const source of cases){
+  const result=repairDuplicateParameterBinding(source,'src/sample.tsx');
+  assert.equal(result.changed,false,source);
+  assert.equal(result.code,source);
+ }
+ assert.equal(repairDuplicateParameterBinding(
+  'function f(items: string[]) { const items = []; return [...items]; }',
+  'src/sample.js').changed,false);
 });
