@@ -21,7 +21,11 @@ const MODEL_PROFILES=Object.freeze({
   review:Object.freeze(['nvidia/nemotron-3-ultra-550b-a55b:free',
     'dots-studio/dots-3-note-preview:free','xingchen-agi/xing4.0-29b-a4b:free']),
   visual:Object.freeze(['nvidia/nemotron-3.5-super-vl:free',
-    'cohere/north-mini-code:free','google/gemma-4-31b-it:free'])
+    'cohere/north-mini-code:free','google/gemma-4-31b-it:free']),
+  // Public, nonprivate owner PM questions prefer a small visible-text model.
+  // Actual eligibility remains a fresh, exact zero-price catalog decision.
+  pm:Object.freeze(['cohere/north-mini-code:free',
+    'nvidia/nemotron-3.5-lightning:free','google/gemma-4-31b-it:free'])
 });
 const MAX_REPLY=40000;
 function selectedModel(value=DEFAULT_MODEL){
