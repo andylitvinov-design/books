@@ -31,20 +31,30 @@ function isTrustedFailure(context,now=Date.now()){
 }
 function validatedJobEvidence(data){
  const jobs=data?.jobs;
- if(!Array.isArray(jobs)||!Number.isSafeInteger(data.total_count) ||
-    data.total_count!==jobs.length||jobs.length<3||jobs.length>100)return null;
- const exact=name=>{
-  const matches=jobs.filter(job=>job?.name===name);
-  return matches.length===1?matches[0]:null;
- };
- const core=exact('core-lint-types-build'),specialist=exact('hh-specialist'),
-  merge=exact('hh-merge-check');
- if(!core||!specialist||!merge||!Number.isSafeInteger(specialist.id)||
+ if(!Array.isArray(jobs)||!Number.isSafeInteger(data?.total_count) ||
+    data.total_count!==jobs.length||jobs.length<2||jobs.length>100)return null;
+ // The modern Core workflow has exactly one mandatory merged specialist gate:
+ // hh-merge-check. The old separate hh-specialist job was retired. Waiting
+ // for the obsolete name caused EVERY real BASE_ADVANCED recovery to report
+ // CORE_OR_SPECIALIST_FAILURE_UNVERIFIED, despite an authenticated failure.
+ // Preserve legacy proof only when that separately named job really exists.
+ const matches=name=>jobs.filter(job=>job?.name===name);
+ const unique=name=>matches(name).length===1?matches(name)[0]:null;
+ const core=unique('core-lint-types-build'),merge=unique('hh-merge-check');
+ const legacy=matches('hh-specialist');
+ if(!core||!merge||legacy.length>1||
+    !Number.isSafeInteger(merge.id)||merge.id<=0||
     core.status!=='completed'||core.conclusion!=='success'||
-    specialist.status!=='completed'||specialist.conclusion!=='failure'||
-    merge.status!=='completed'||merge.conclusion!=='failure'||
-    jobs.some(job=>job.conclusion==='failure'&&job!==specialist&&job!==merge))return null;
- return specialist.id;
+    merge.status!=='completed'||merge.conclusion!=='failure')return null;
+ const actual=legacy.length===1?legacy[0]:merge;
+ if(actual.status!=='completed'||actual.conclusion!=='failure'||
+    !Number.isSafeInteger(actual.id)||actual.id<=0||
+    jobs.some(job=>job.conclusion==='failure'&&job!==actual&&job!==merge))
+  return null;
+ // Return only a verified failed job ID. Its real GitHub Actions log must
+ // independently contain BOTH exact BASE_ADVANCED markers before any PAT,
+ // lease or source mutation is considered. A red gate alone proves nothing.
+ return actual.id;
 }
 function isActualBaseAdvancedLog(raw){
  const log=typeof raw==='string'?raw:
