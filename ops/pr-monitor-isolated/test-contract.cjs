@@ -304,7 +304,7 @@ test('same-run signed reclassification is evidence, not worker execution',()=>{
    '\x60\x60\x60json\n'+JSON.stringify(item)+'\n\x60\x60\x60'});
  const first=comment(1,'HH_CI_ERROR_TASK_V1',old,at);
  const revised=comment(2,'HH_CI_ERROR_RECLASSIFICATION_V1',fixed,'2026-11-17T08:15:00Z');
- a=inspect(e,[first]);assert.equal(a.classified,null);
+ const a=inspect(e,[first]);assert.equal(a.classified,null);
  const b=inspect(e,[first,revised]);
  assert.ok(b.classified);assert.match(b.classified.url,/issuecomment-2$/);
  assert.equal(b.assigned,null);assert.equal(b.runner,null);
