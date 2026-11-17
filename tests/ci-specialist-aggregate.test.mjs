@@ -734,8 +734,12 @@ test('approved migration destinations contain the exact retired scope and the or
     assert.ok(trigger);
     for(const pattern of item.patterns) assert.ok(successor.includes('      - '+pattern), item.into+' missing '+pattern);
     for(const test of item.contracts) assert.ok(successor.includes(test),item.into+' missing '+test);
-    if (['hh-crm-event-channels.yml','psychometric-research-catalogue.yml','hh-benchmark-free-test-pilot.yml'].includes(item.from)) {
-      assert.ok(successor.includes('push:'),item.into+' must preserve original production push verification');
+    if (item.from === 'hh-crm-event-channels.yml') {
+      assert.ok(successor.includes('push:'), item.into+' retains distinct postmerge contract');
+    } else if (['psychometric-research-catalogue.yml','hh-benchmark-free-test-pilot.yml'].includes(item.from)) {
+      assert.doesNotMatch(successor,/^  push:/m,
+        item.into+' source ownership is proved on production PR; duplicate postmerge verification retired');
+      assert.match(successor,/^  workflow_dispatch:/m,item.into+' supports explicit incident QA');
     }
     assert.ok(!successor.includes('continue-on-error: true'),item.into+' must fail closed');
   }
@@ -1049,7 +1053,7 @@ test('client progress owner is complete before the trusted second-phase deletion
     'npm run build',
     '  workflow_dispatch:',
   ]) assert.ok(source.includes(required), 'Replacement lost original evidence or trigger: ' + required);
-  assert.ok(source.includes("branches: ['codex/reports-development-program-20261017', 'codex/public-book-library']"), 'Post-merge report verification remains');
+  assert.ok(source.includes("branches: ['codex/reports-development-program-20261017']"), 'Independent feature smoke retained; source PR proves all report regressions');
   const oldSource="on:\n  pull_request:\n    branches: [codex/public-book-library]\n    paths:\n      - '.github/workflows/hh-client-report-progress.yml'\n";
   const base=new Map([[old,oldSource],[owner,source]]);
   const current=new Map([[owner,source]]);
