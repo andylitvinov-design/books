@@ -14,13 +14,20 @@ const OWNER_EXECUTOR='github-owner:andylitvinov-design';
 // A deterministic executor candidate is not an execution authorization.
 // Only a signed exact-HEAD reservation, accepted workflow dispatch and
 // subsequent worker CLAIMED receipt can advance this state.
-// This one named Core test step is also an independently verified SOURCE
-// gate (see classifyCoreFailureJobs). Other TEST_FAILURE specialists/browser
-// checks remain diagnostic-only, without a code-writer reservation.
+// Only a small enumerated set of exact Core source contracts may reach the
+// existing guarded repair lane. They are not source-write authority: signed
+// failed-Core, exact HEAD, changed-file allowlist, independent tests and
+// source publisher gates still apply. Specialist/browser and policy errors
+// remain review-only, never inferred into repair from their category alone.
+const VERIFIED_CORE_SOURCE_CONTRACTS=new Set([
+  'Mobile Dock Core geometry and iPhone keyboard contracts',
+  'Commander PR served-LIVE provenance contracts',
+  'Fast Mandala release contracts'
+]);
 function repairableCoreTestFailure(c){
   return !!(c&&c.category==='TEST_FAILURE'&&
     c.failed_job==='core-lint-types-build'&&
-    c.failed_step==='Mobile Dock Core geometry and iPhone keyboard contracts'&&
+    VERIFIED_CORE_SOURCE_CONTRACTS.has(c.failed_step)&&
     c.reason_code==='FAILED_TEST_STEP_REQUIRES_TRIAGE'&&
     c.evidence_code==='FAILED_TEST_STEP_REQUIRES_TRIAGE'&&
     c.status==='DIAGNOSTIC_ONLY'&&
