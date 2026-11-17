@@ -264,7 +264,76 @@ function compareStrictWeekly(d,hours){
   now:periods.current.stages[key],week:periods.week_ago.stages[key]}))};
 }
 
-const publicHelpers={activity,speed,compactRecords,strictCohort,compareCIHistory,compareStrictWeekly,delay,number,SCHEMAS,URLS,periodSummary,activeCI,openBacklog};
+
+// The active isolated dashboard is same-origin only: these exact public
+// repository reads are supplied by existing Vercel Project Routes. Never
+// expose GitHub credentials, add polling, or infer causality from a label.
+const PUBLIC_PR_LABELS=Object.freeze({
+ 'hh:hold':'EXPLICIT_OWNER_HOLD',
+ 'hh:blocked':'POLICY_BLOCKED',
+ 'hh:worker-claimed':'SOURCE_OWNER_CLAIMED',
+ 'hh:direction-override:invalid':'INVALID_DIRECTION_OVERRIDE',
+ 'hh:repair-manual':'SEMANTIC_SOURCE_REPAIR_PENDING',
+ 'hh:conflict-repair-needed':'MERGE_CONFLICT_TRIAGE',
+ 'hh:release-gate-review':'RELEASE_GATE_REVIEW',
+ 'hh:repair-needed':'SAFE_REPAIR_QUEUED',
+ 'hh:ci-needed':'CORE_CI_RECOVERY_PENDING'
+});
+function parsePublicPrContext(pr,metadata,events){
+ if(!Number.isSafeInteger(pr)||pr<1||pr>999999||!metadata||
+    metadata.number!==pr||!Array.isArray(events)||events.length>100||
+    metadata.base?.ref!=='codex/public-book-library'||
+    metadata.head?.repo?.full_name!=='andylitvinov-design/books'||
+    !/^[a-f0-9]{40}$/i.test(metadata.head?.sha||'')||
+    !Array.isArray(metadata.labels))return null;
+ const labels=metadata.labels.map(x=>x?.name)
+  .filter(name=>Object.hasOwn(PUBLIC_PR_LABELS,name));
+ const chosen=metadata.state==='open'&&labels.includes('hh:hold')?'EXPLICIT_OWNER_HOLD':
+   metadata.state==='open'&&labels.includes('hh:blocked')?'POLICY_BLOCKED':
+   metadata.state==='open'&&labels.includes('hh:worker-claimed')?'SOURCE_OWNER_CLAIMED':
+   metadata.state==='open'&&metadata.mergeable===false&&
+    metadata.mergeable_state==='dirty'?'MERGE_CONFLICT_DIRTY_NOW':
+   metadata.state==='open'&&labels.includes('hh:repair-manual')?'SEMANTIC_SOURCE_REPAIR_PENDING':
+   metadata.state==='open'&&labels.includes('hh:release-gate-review')?'RELEASE_GATE_REVIEW':
+   metadata.state==='open'&&labels.includes('hh:conflict-repair-needed')?'MERGE_CONFLICT_TRIAGE':
+   metadata.state==='open'&&labels.includes('hh:repair-needed')?'SAFE_REPAIR_QUEUED':
+   metadata.state==='open'&&labels.includes('hh:ci-needed')?'CORE_CI_RECOVERY_PENDING':
+   metadata.state==='open'?'OPEN_NO_PROVEN_BLOCKER':'CLOSED_NOT_CURRENTLY_WAITING';
+ const observed=events.filter(e=>['labeled','unlabeled'].includes(e?.event)&&
+   Object.hasOwn(PUBLIC_PR_LABELS,e?.label?.name)&&isTime(e.created_at)&&
+   /^[A-Za-z0-9_\[\]-]{1,80}$/.test(e?.actor?.login||''))
+  .map(e=>({at:e.created_at,label:e.label.name,
+   reason_code:PUBLIC_PR_LABELS[e.label.name],transition:e.event,
+   actor:e.actor.login,evidence:'GITHUB_ISSUE_LABEL_EVENT',
+   cause_verified:false}))
+  .sort((a,b)=>Date.parse(a.at)-Date.parse(b.at)).slice(-35);
+ return {schema:'HH_CI_PR_BLOCKER_DISPLAY_V1',pr,
+  current_status:metadata.state,current_head:metadata.head.sha,
+  current_reason_code:chosen,current_labels:labels,
+  history_complete:events.length<100,
+  status:events.length===100?'PARTIAL':'VERIFIED',
+  historical_cause_verified:false,observed_events:observed};
+}
+async function readPublicPrContext(pr,fetchImpl){
+ if(!Number.isSafeInteger(pr)||pr<1||pr>999999||
+    typeof fetchImpl!=='function')return null;
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),6500);
+ try{
+  const read=async path=>{
+   const r=await fetchImpl(path,{headers:{Accept:'application/json'},
+    credentials:'omit',cache:'no-store',signal:controller.signal});
+   if(!r?.ok)throw Error('PR_EVIDENCE_UNAVAILABLE');
+   return r.json();
+  };
+  const [meta,events]=await Promise.all([
+   read('/api/verified-pr-meta/'+pr),read('/api/verified-pr-events/'+pr)
+  ]);
+  return parsePublicPrContext(pr,meta,events);
+ }catch{return null;}
+ finally{clearTimeout(timer);}
+}
+
+const publicHelpers={activity,speed,compactRecords,strictCohort,compareCIHistory,compareStrictWeekly,delay,number,SCHEMAS,URLS,periodSummary,activeCI,openBacklog,parsePublicPrContext,readPublicPrContext};
 if(typeof module==='object'&&module.exports)module.exports=publicHelpers;
 if(!env?.document||typeof env.fetch!=='function')return;
 const doc=env.document,el=id=>doc.getElementById(id);
@@ -378,7 +447,17 @@ function renderStages(d,hours=selectedPeriod){
  for(const [key,label]of labels){
   const s=d.stages[key],w=d.waiting?.[key],tr=dom('tr');td(tr,label);td(tr,number(s?.n));
   td(tr,s?.n>0?delay(s.median):'—');td(tr,s?.n>0?delay(s.p90):'—');
-  const cell=td(tr,number(w?.n));if(Array.isArray(w?.examples)&&safeInt(w.examples[0])&&w.examples[0]>0){cell.append(' · ');cell.append(anchor(w.examples[0]));}tbody.append(tr);
+  const cell=td(tr,number(w?.n));
+  if(Array.isArray(w?.examples)&&safeInt(w.examples[0])&&w.examples[0]>0){
+   const n=w.examples[0];cell.append(' · ');cell.append(anchor(n));
+   const inspect=dom('a',null,' · Причина');inspect.href='#error-funnel';
+   inspect.addEventListener('click',()=>{
+    el('error-funnel-pr').value=String(n);
+    void selectFunnelPeriod(funnelHours,n);
+   });
+   cell.append(inspect);
+  }
+  tbody.append(tr);
  }
  const names=[['core_queue','Core Queue'],['specialist_queue','Specialist Queue'],['preflight','Preflight'],['core_jobs','Core Jobs'],['specialist_jobs','Specialist Jobs'],['retry_gap','Retry Gap'],['gate_queue','Gate Queue'],['gate_job','Gate Job']];
  const detail=el('stage-detail');clear(detail);
@@ -560,6 +639,58 @@ function renderQueue(d){
  snapshots.queue=d;overviewSources();updateRecommendations();
 }
 const FUNNEL_KEYS=['failed','classified','task','assigned','source_assigned','dispatched','claimed','runner','responded','committed'];
+// Always display the real current PR blocker separately from historical
+// gap attribution; an event is not proof of why the whole interval elapsed.
+const PR_REASON_TEXT=Object.freeze({
+ EXPLICIT_OWNER_HOLD:'Явная блокировка владельца',
+ POLICY_BLOCKED:'Блокировка политики',
+ SOURCE_OWNER_CLAIMED:'Исходники заняты другим исполнителем',
+ MERGE_CONFLICT_DIRTY_NOW:'Неприменимый merge: конфликт с production',
+ SEMANTIC_SOURCE_REPAIR_PENDING:'Требуется семантическое исправление',
+ RELEASE_GATE_REVIEW:'Требуется разбор release gate',
+ MERGE_CONFLICT_TRIAGE:'Конфликт ожидает проверку',
+ SAFE_REPAIR_QUEUED:'Исправление стоит в очереди',
+ CORE_CI_RECOVERY_PENDING:'Ожидается восстановление Core CI',
+ OPEN_NO_PROVEN_BLOCKER:'Открыт, блокировка не подтверждена',
+ CLOSED_NOT_CURRENTLY_WAITING:'PR закрыт'
+});
+function prContextRoot(){
+ let block=el('error-funnel-pr-context');
+ if(!block){
+  block=dom('div','note');block.id='error-funnel-pr-context';
+  const after=el('error-funnel-info');
+  if(after)after.insertAdjacentElement('afterend',block);
+  else el('error-funnel')?.append(block);
+ }
+ return block;
+}
+function showPublicPrContext(pr,record){
+ const root=prContextRoot();if(!root)return;
+ root.replaceChildren();if(pr===null)return;
+ const heading=dom('p','note');
+ heading.append(anchor(pr,'PR #'+pr),' · ');
+ if(!record){heading.append('Не удалось проверить текущую блокировку GitHub. Неизвестно ≠ нет ошибки.');root.append(heading);return;}
+ const cause=PR_REASON_TEXT[record.current_reason_code]||record.current_reason_code;
+ heading.append('Сейчас: '+cause+' · HEAD '+record.current_head.slice(0,12)+
+  '. Это не доказательство причины всех прошлых пауз.');
+ root.append(heading);
+ const seen=record.observed_events.slice(-5);
+ for(const e of seen){
+  root.append(dom('p','note',stamp(e.at)+' · '+
+   (e.transition==='labeled'?'Добавлена ':'Снята ')+e.label+
+   ' · '+e.reason_code+'. Событие GitHub, не длительность работы AI.'));
+ }
+ if(!record.history_complete)root.append(dom('p','note',
+  'История неполная — возможно, более старые блокировки не вошли в выборку.'));
+}
+async function refreshPrContext(pr,sequence){
+ if(pr===null){showPublicPrContext(null,null);return;}
+ const root=prContextRoot();
+ if(root)root.replaceChildren(dom('p','note','Проверяю текущий PR #'+pr+' в GitHub…'));
+ const record=await readPublicPrContext(pr,env.fetch);
+ if(sequence!==funnelSeq)return;
+ showPublicPrContext(pr,record);
+}
 function funnelMissing(message){
  for(const key of FUNNEL_KEYS){put('f-'+key,'—');put('f-t-'+key,'—');put('f-proof-'+key,'—');}
  put('error-funnel-coverage',message);
@@ -653,6 +784,7 @@ async function selectFunnelPeriod(hours,pr=funnelPR,keepPage=false){
  if(!keepPage)funnelPage=0;
  funnelHours=hours;funnelPR=pr;const seq=++funnelSeq;
  funnelMissing('Получаю подтверждения за '+(hours===24?'24 часа':hours/24+' дней')+'…');
+ void refreshPrContext(pr,seq);
  try{const url=funnelUrl(hours,pr);
   const data=await fetchSafe(url,SCHEMAS.funnel,24000);
   if(seq===funnelSeq)renderFunnel(data,hours);
@@ -695,6 +827,7 @@ async function refresh(){
  const atStart=selectedPeriod;
  const atStage=++stageRequestSeq;
  const funnelAtStart=funnelHours,funnelPRAtStart=funnelPR,funnelAtSeq=++funnelSeq;
+ if(funnelPRAtStart!==null)void refreshPrContext(funnelPRAtStart,funnelAtSeq);
  const tasks=[['flow',d=>drawFlow(activity(d))],['cohort',renderStrictCohort],['stages',d=>{if(stageRequestSeq===atStage)renderStages(d,atStart);},URLS.stages.replace('hours=24','hours='+atStart)],['comparison',d=>{if(stageRequestSeq===atStage)renderComparison(d,atStart);},URLS.comparison+'?hours='+atStart+'&compare=1&strict_weekly=1'],['ci',renderCI],['queue',renderQueue],['funnel',d=>{if(funnelAtSeq===funnelSeq)renderFunnel(d,funnelAtStart);},funnelUrl(funnelAtStart,funnelPRAtStart)],['repair',renderRepair],['ciLive',renderCILive],['period',d=>{if(selectedPeriod===atStart)renderPeriod(d,atStart);},URLS.period+'?hours='+atStart]];
  const result=await Promise.allSettled(tasks.map(async([key,fn,route])=>{
   const data=key==='cohort'?await refreshStrictCohort():await fetchSafe(route||URLS[key],SCHEMAS[key],['stages','comparison','funnel'].includes(key)?24000:key==='ci'?11000:8500);if(key!=='cohort')fn(data);
