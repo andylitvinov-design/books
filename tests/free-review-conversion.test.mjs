@@ -68,7 +68,7 @@ test("free landings explain benefits before closing with one short capture", () 
 test("all three locales explain real service advantages without health claims or invented diagnoses", () => {
   for (const phrase of [
     "Understand your starting point", "Лучше поймите себя", "Conoce mejor tu punto de partida",
-    "Free personal express review with Andrey.", "Личная экспресс-диагностика с Андреем.", "Revisión personal exprés gratuita con Andrey.",
+    "Tell me what's on your mind.", "Давайте разберём ваш вопрос.", "Revisión personal exprés gratuita con Andrey.",
     "Discover what gives you strength.", "Узнайте, что даёт вам внутреннюю опору.",
     "Descubre qué te da fuerza.", "A symbolic guide for reflection — not a medical test.",
     "Символическая модель для самоисследования, а не медицинский тест.",
@@ -77,7 +77,7 @@ test("all three locales explain real service advantages without health claims or
     "Условный пример — не ваш персональный профиль.",
     "diagnose or treat health conditions", "не диагностируют и не лечат заболевания",
   ]) assert.ok(landing.includes(phrase), "Missing benefit/safety: " + phrase);
-  for (const phrase of ["Free personal express review with Andrey.", "Личная экспресс-диагностика с Андреем.",
+  for (const phrase of ["Tell me what's on your mind.", "Давайте разберём ваш вопрос.",
     "Revisión personal exprés gratuita con Andrey.", "Five Elements", "Пять элементов", "Cinco Elementos"]) {
     assert.ok(landing.includes(phrase) || situationPage.includes(phrase) || daoPage.includes(phrase), phrase);
   }
@@ -90,9 +90,9 @@ test("free drawing entry reuses private intake without duplicate collection or m
   assert.match(landing, /<FreeSituationReviewForm locale=\{locale\} \/>/);
   assert.match(form, /<FreeDrawingIntake locale=\{locale\}/);
   assert.match(intake, /\/coaching\/intake\?topic=/);
-  assert.match(intake, /Sign in to save an encrypted private draft/);
-  assert.match(intake, /Saving does not send it to a coach/);
-  assert.match(intake, /Keep the photo on your device/);
+  assert.match(intake, /Sign in to keep a private, encrypted draft/);
+  assert.match(intake, /Saving the draft doesn't send it to Andrey/);
+  assert.match(intake, /Keep any photo on your own device/);
   assert.doesNotMatch(intake, /<form|<textarea|navigator\.clipboard|ContactChannelChooser|whatsappEnquiryUrl|localStorage|sessionStorage|fetch\(|sendBeacon/);
   assert.match(intakeCss, /@media\(max-width:767px\)/);
 });
@@ -139,6 +139,8 @@ test("mobile layout offers one meaning per screen, authentic images, and accessi
   assert.match(css, /\.reviewBenefitsList/);
   assert.match(css, /\.reviewProcess/);
   assert.match(css, /\.reviewApproach/);
+  assert.match(css, /font-size:17px;line-height:1\.58/);
+  assert.match(css, /\.reviewBenefitsList p,[\s\S]*?\.approachList p,[\s\S]*?\.reviewSteps p\{font-size:16px/);
   assert.match(landing, /id="how-i-review"/);
 });
 

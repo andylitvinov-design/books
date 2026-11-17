@@ -17,13 +17,18 @@ test('EN/RU/ES protect clinical answers while acknowledging optional consented T
  // sensitive private answers, drawings and scores through WhatsApp.
  for(const phrase of ['Do not send private answers','Не отправляйте личные ответы','No envíes respuestas privadas'])
    assert.ok(capture.includes(phrase),phrase)
- // Previously approved Telegram V2 invites an optional non-clinical photo and
- // drawing after explicit consent. The public instructions must not contradict it.
- for(const phrase of ['After consent, the Telegram dialogue may ask',
-   'После согласия Telegram-бот может','Tras dar tu consentimiento, Telegram puede pedir'])
+ // Consent remains an actual Telegram bot requirement, not a marketing promise.
+ // The landing may describe the optional drawing in human language without
+ // inventing a sensitive-photo submission through WhatsApp.
+ const botActions=read('components/mandatory-messenger-actions.tsx')
+ for(const phrase of ['confirm reply consent','подтвердите согласие','acepta el contacto'])
+   assert.ok(botActions.includes(phrase),phrase)
+ for(const phrase of ["If I need more context or a drawing, we'll arrange a secure way to share it.",
+   'Если понадобится рисунок или дополнительные сведения, договоримся, как передать их через защищённую форму.',
+   'Tras dar tu consentimiento, Telegram puede pedir'])
    assert.ok(landing.includes(phrase),phrase)
- for(const phrase of ['medical records, test results and sensitive details in the protected website form',
-   'Медицинские документы, результаты тестов и чувствительные сведения передавайте только через защищённую форму сайта',
+ for(const phrase of ['Please don\'t send medical records or other sensitive information in chat.',
+   'Медицинские документы и личные данные в чат присылать не нужно.',
    'Envía expedientes médicos, pruebas y datos sensibles solo por el formulario protegido'])
    assert.ok(landing.includes(phrase),phrase)
  assert.doesNotMatch(landing,/Use WhatsApp or Telegram to share your answers|Пришлите анкету и фото рисунка в WhatsApp|Comparte las respuestas y la foto por WhatsApp/)

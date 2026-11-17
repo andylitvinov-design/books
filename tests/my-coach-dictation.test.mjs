@@ -77,10 +77,12 @@ test('iOS 27 recognizer recovery retains locale detection and re-primes after re
   const loop=source('components/my-coach-speech-loop.jsx')
   for(const marker of ['ios27NeedsSpeechRecovery(window.navigator)',
     'hasRecognizedRef.current','cue.onend=finishCue',
-    'cue.onerror=finishCue','recognition.continuous=false',
+    'cue.onerror=failCue','recognition.continuous=false',
     'restartSilentRecognition(recognition)','settleTimerRef.current=setTimeout',
     'void deliver(appendSpokenAnswer(draftAtStartRef.current,heard,1200))',
-    'iosResultTimerRef.current=setTimeout'])
+    'iosResultTimerRef.current=setTimeout',
+    'armSilentWatchdog(14000)','armSilentWatchdog(9000)',
+    'cue.volume=0.2','cue.onend=finishCue','cue.onerror=failCue'])
     assert.ok(loop.includes(marker),marker)
 })
 
