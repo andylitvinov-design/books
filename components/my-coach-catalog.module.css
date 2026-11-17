@@ -441,7 +441,7 @@
 .diagnosticNote{margin:12px 2px 0;color:#66756e;font:500 12px/1.4 system-ui}
 .taoHeading{display:flex;align-items:center;gap:12px;margin-bottom:18px}
 .taoHeading>svg{width:42px;height:42px;padding:8px;border:1px solid #cde7d6;border-radius:50%;background:#e8f6ef;flex:0 0 42px;color:#0c6d50}
-:global(body):has([data-my-coach-catalog]) :global([data-hh-ihelp-trigger]){display:none!important}
+:global(body):has(.root[data-my-coach-catalog]) :global([data-hh-ihelp-trigger]){display:none!important}
 @media(max-width:700px){
  .root .coachKindSwitch{gap:5px}
  .root .coachKind,.root .coachKindActive{flex-direction:column;min-height:66px;padding:7px 3px;gap:4px;font-size:clamp(9.3px,1.6vw,12px);border-radius:18px}
