@@ -181,6 +181,26 @@ async function trustedRepair(github,cmd){
  if(!signed)return {reason:'SIGNED_FAILED_CORE_PROOF_MISSING'};
  return {ok:true};
 }
+// Only trusted default-branch Watchdog code calls this helper after the
+// private OIDC CAS or authenticated GitHub owner comment has been verified.
+// It reuses the existing single writer, exact-HEAD reservation, source-proof,
+// runner-capacity and protected merge gates; no extra Watchdog/PAT dispatch.
+async function dispatchOwnerQueue(github,core,context,{pr,sha,ownerProof}={}){
+ if(!Number.isSafeInteger(pr)||pr<1||pr>99999999||!SHA.test(sha||''))
+  return {reason:'OWNER_DIRECT_INVALID_TARGET'};
+ let outcome;
+ try{
+  outcome=await require('./ci-pr-queue-dispatcher.cjs').run({
+   github,core,context,manualTarget:{prNumber:pr,expectedSha:sha},
+   ownerProof});
+ }catch(_){return {reason:'OWNER_DIRECT_QUEUE_UNAVAILABLE'};}
+ if(outcome?.dispatchAccepted===1&&outcome?.repairDispatchAccepted===1)
+  return {dispatched:true,reason:'OWNER_DIRECT_QUEUE_DISPATCH_ACCEPTED'};
+ const candidate=Object.keys(outcome?.blocked||{})[0]||
+  String(outcome?.reason||'NOT_ADMITTED').replace(/^INVENTORY_UNVERIFIED:\\s*/,'');
+ const reason=/^[A-Z0-9_]{3,60}$/.test(candidate)?candidate:'NOT_ADMITTED';
+ return {reason};
+}
 async function dispatchRepair(github,cmd,{ownerToken,fetcher=fetch,dispatchDirect=null}={}){
  const trusted=await trustedRepair(github,cmd);
  if(!trusted.ok)return trusted;
@@ -379,4 +399,4 @@ async function run({github,core,context,fetcher=fetch,token=undefined,
  }));
  return {status:finalStatus,kind:cmd.kind,commandId:cmd.id};
 }
-module.exports={run,ownerComment,trustedReceipt,command,pending,resultBody,askFree,dispatchSource,dispatchRepair,dispatchLive,observeLive};
+module.exports={run,ownerComment,trustedReceipt,command,pending,resultBody,askFree,dispatchSource,dispatchRepair,dispatchLive,dispatchOwnerQueue,observeLive};
