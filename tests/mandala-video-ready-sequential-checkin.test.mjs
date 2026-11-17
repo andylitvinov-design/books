@@ -77,7 +77,12 @@ test("real macOS WebKit verifies the seven-card Ready self-check during an actua
   assert.match(browser,/\[data-ready-checkin-score\]/);
   assert.match(browser,/\[data-ready-generating\]/);
   assert.match(browser,/observation\.scoreButtons,11/);
-  assert.match(browser,/\[data-ready-checkin\]"\)\)\.toHaveCount\(0\)/);
+  assert.match(browser,/readyCheckin\.locator\('\[data-ready-checkin-score="5"\]'\)\.click\(\)/,
+    "tap a real 0–10 answer in the running video and advance to the next photo");
+  assert.match(browser,/data-ready-meditation/,
+    "keep the existing Ready → Therapy mobile navigation acceptance");
+  assert.match(browser,/window\.__hhReadyInlineCheckInEvidence/,
+    "capture fast transient Ready DOM without faking video readiness");
   assert.doesNotMatch(browser,/\[data-ready-checkin\] \[data-video-checkin\]/,
     "no stale four-slider selector after the approved seven-question design");
   assert.doesNotMatch(browser,/\[data-video-effect-reopen\]/,

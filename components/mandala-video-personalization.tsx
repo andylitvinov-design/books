@@ -135,7 +135,12 @@ export function MandalaVideoPersonalization({locale,value,onChange,onBack,onCont
    <input id="video-personalization-name" data-video-personalization-name type="text"
     name="preferredName" autoComplete="given-name" maxLength={18}
     placeholder={t.namePlaceholder} value={value.name??""} disabled={disabled}
-    onChange={event=>onChange(old=>({...old,name:event.currentTarget.value}))}/>
+    onChange={event=>{
+      // React may invoke a functional state updater after the input event.
+      // Capture the value now: currentTarget is not stable inside that callback.
+      const name=event.currentTarget.value;
+      onChange(old=>({...old,name}));
+     }}/>
    <p>{t.nameHint}</p>
   </section>
   <section className={css.card} data-personalization-kind="current" aria-labelledby="personalization-now-heading">

@@ -64,7 +64,7 @@ test("Changing personal answers recomputes the original localized phrase editor 
   assert.match(ideas,/profile\?\.current\?\.length\?profile\.current\.map\(goalCurrentMeaningId\)/);
   assert.match(ideas,/profile\?\.desired\?\.length\?profile\.desired\.map\(goalDesiredMeaningId\)/);
   assert.match(ideas,/remembered&&isIdeaEditorSnapshot\(remembered,signature\)/);
-  assert.match(ideas,/ideasDraft:plan.editor/);
+  assert.match(ideas,/ideasDraft:\{\.\.\.plan\.editor,locale:outputLocale\}/);
   assert.equal((ideas.match(/data-video-ideas-compact/g)||[]).length,1);
   const relationship=suggestMeaningPhrases("en",["connection"],"loneliness","connection",4,6,0,7);
   assert.ok(relationship.some(line=>line.includes("connection")||line.includes("contact")));
@@ -105,7 +105,7 @@ test("Concept uses canonical selected filters and numeric energy, while WebKit p
   assert.match(personal,/energyStart:value\.energy,energyTarget:value\.desiredLevel/);
   assert.match(engine,/selectedTopicId:explicitTopic\?\.topic\.id/);
   assert.match(semantic,/put\(p,"pace",dynamic\?"dynamic"/);
-  const applyStart=ideas.indexOf("const apply=(candidates:string[],indices:number[])=>");
+  const applyStart=ideas.indexOf("const apply=(candidates:string[],indices:number[],outputLocale:VideoLocale=captionLocale)=>");
   const projectionStart=ideas.indexOf("const plan=planIdeaSelection",applyStart);
   assert.ok(applyStart>=0&&projectionStart>applyStart);
   assert.match(ideas.slice(applyStart,projectionStart),/lastApplied\.current=signature/);
@@ -147,11 +147,20 @@ test("Name question stays in browser and personal closing follows the existing v
   assert.match(personal,/data-video-personalization-name type="text"/);
   for(const line of ["Как вас зовут?","What is your name?","¿Cómo te llamas?"])
     assert.ok(personal.includes(line),line);
-  assert.match(ideas,/personalClosingPhrase=personalVideoClosingPhrase\(locale,profile\?\.name\)/);
-  assert.match(ideas,/appendPersonalVideoClosingPhrase\(pool,locale,profile\?\.name\)/);
+  assert.match(ideas,/personalClosingPhrase=personalVideoClosingPhrase\(captionLocale,profile\?\.name\)/);
+  assert.match(ideas,/appendPersonalVideoClosingPhrase\(pool,captionLocale,profile\?\.name\)/);
   assert.match(ideas,/initialChosen=personalClosingPhrase\?/);
+  assert.match(personal,/const name=event\.currentTarget\.value;/);
+  assert.match(ideas,/priorClosing=personalVideoClosingPhrase\(captionLocale,profile\?\.name\)/);
+  assert.match(ideas,/nextClosing=personalVideoClosingPhrase\(next,profile\?\.name\)/);
+  assert.match(ideas,/translateVideoGoalPhrase\(line,captionLocale,next\)/);
+  assert.match(ideas,/data-video-text-language=\{language\}/);
+  assert.match(browser,/const preferredName=locale===/);
+  assert.match(browser,/data-video-personalization-name/);
+  assert.match(browser,/const selectedClosing=montageIdeas.locator/);
+  assert.match(ideas,/ideasDraft:\{\.\.\.plan\.editor,locale:outputLocale\}/);
   assert.match(ideas,/options\[options\.length-1\]===personalClosingPhrase/);
-  assert.match(ideas,/ideasDraft:plan\.editor/);
+  assert.match(ideas,/ideasDraft:\{\.\.\.plan\.editor,locale:outputLocale\}/);
   assert.ok(css.includes(".nameCard input:focus-visible"));
   const summary=personal.slice(personal.indexOf("export function summarizeVideoGoalProfile"),
     personal.indexOf("export function MandalaVideoPersonalization"));

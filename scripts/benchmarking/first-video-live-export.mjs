@@ -256,9 +256,12 @@ try {
     undefined,{timeout:15000});
   row.phase='source-advanced-section-visibility';
   const advanced=page.locator('[data-video-first-video-advanced]');
-  await advanced.waitFor({state:'visible',timeout:40000});
-  if(await advanced.getAttribute('open')===null)
-    await advanced.locator(':scope > summary').click();
+  await advanced.waitFor({state:'visible',timeout:20000});
+  // A genuine Add Video tap must reveal the detail view without requiring
+  // a second, potentially lost Safari summary tap. Never force open via DOM.
+  await page.waitForFunction(()=>
+    document.querySelector('[data-video-first-video-advanced]')?.open===true,
+    undefined,{timeout:15000});
   assert.equal(await advanced.count(),1,'FIRST_VIDEO_ADVANCED_SECTION_MISSING');
   const first = page.locator('[data-first-free-video][data-first-video-hydrated="true"]');
   await first.waitFor({state: 'visible', timeout: 40000});

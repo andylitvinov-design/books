@@ -67,7 +67,7 @@ test("private, duplicated, mismatched, unknown or sensitive query params fail cl
   assert.equal(readPaidAdReferral(valid, "//evil.example"), null);
 });
 
-test("provider click IDs are never placed in message or analytics; user must press Send", () => {
+test("paid attribution stays in reviewed WhatsApp draft; Telegram sends only public service, never provider click IDs", () => {
   for (const [source,medium,clickId] of [
     ["facebook","paid_social","fbclid=abc123"],
     ["instagram","paid_social","fbclid=xyz987"],
@@ -87,7 +87,15 @@ test("provider click IDs are never placed in message or analytics; user must pre
       assert.deepEqual([...new URL(drafted).searchParams.keys()], ["text"]);
       assert.match(message(drafted), / · hh_free_review_en_toronto_202610 · ad_b/);
       assert.doesNotMatch(message(drafted), /gclid|fbclid|secret123|abc123|xyz987|utm_/);
-      assert.match(message(telegramEnquiryUrlFromWhatsApp(drafted)), /Ad referral|Рекламный источник|Origen publicitario/);
+      // A Telegram recipient gets the service only, not WhatsApp's ad
+      // attribution, drafted request or provider click identifiers.
+      const telegram = telegramEnquiryUrlFromWhatsApp(drafted);
+      assert.equal(new URL(telegram).origin, "https://t.me");
+      assert.equal(new URL(telegram).pathname, "/holistichouse");
+      assert.deepEqual([...new URL(telegram).searchParams.keys()], ["text"]);
+      assert.match(message(telegram), /Written situation review/);
+      assert.doesNotMatch(message(telegram),
+        /Ad referral|Рекламный источник|Origen publicitario|hh_free_review_en_toronto_202610|ad_b|gclid|fbclid|secret123|abc123|xyz987|utm_|Please send the instructions for the free written review/i);
     }
   }
 });

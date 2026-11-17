@@ -30,7 +30,7 @@ export async function GET(request){
     if(request.headers.get('sec-fetch-site')==='cross-site')
       throw new AppError('MY_COACH_INTRO_CROSS_SITE',403)
     const url=new URL(request.url)
-    const match=/^\/api\/coaching\/intro\/(en|ru|es)\/(mira|max|sofia|alex|lea|noah|iris|ray)\/?$/.exec(url.pathname)
+    const match=/^\/api\/coaching\/intro\/(en|ru|es)\/(mira|max|sofia|alex|merlin|harry|lea|noah|iris|ray)\/?$/.exec(url.pathname)
     if(!match||url.search)throw new AppError('MY_COACH_INTRO_INVALID',400)
     const [,locale,personaId]=match
     const intro=getCoachPresentation(personaId,locale)
@@ -64,7 +64,7 @@ export async function GET(request){
         ...CACHE_HEADERS,'Content-Length':String(audio.length)}})
     }
 
-    const referenceId=myCoachFishVoice(personaId)
+    const referenceId=myCoachFishVoice(personaId,locale)
     if(!referenceId)throw new AppError('MY_COACH_INTRO_INVALID',400)
     const vendor=myCoachFishConfig()
     if(!vendor)throw new AppError('MY_COACH_NATURAL_VOICE_UNAVAILABLE',503)
@@ -78,7 +78,8 @@ export async function GET(request){
         signal:AbortSignal.any([request.signal,AbortSignal.timeout(15000)]),
         headers:{Authorization:`Bearer ${vendor.key}`,
           'Content-Type':'application/json',Accept:'audio/mpeg',model:vendor.model},
-        body:JSON.stringify({text:intro.text,format:'mp3',reference_id:referenceId}),
+        body:JSON.stringify({text:intro.text,format:'mp3',reference_id:referenceId,
+          latency:'low',chunk_length:100}),
       })
     }catch{throw new AppError('MY_COACH_INTRO_TTS_UNAVAILABLE',503)}
     const type=upstream.headers.get('content-type')||''

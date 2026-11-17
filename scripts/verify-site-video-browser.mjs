@@ -6,6 +6,7 @@ import { once } from 'node:events'
 import { createServer } from 'node:https'
 import { mkdirSync, readFileSync, writeFileSync, createWriteStream } from 'node:fs'
 import { promisify } from 'node:util'
+import {classifyIsolatedVideoRedisCommand} from './helpers/isolate-video-redis-command.mjs'
 import { chromium, expect } from '@playwright/test'
 import { verifyAboutTestimonials } from './verify-about-testimonials-browser.mjs'
 import {assertMessengerOnlyCapture} from './helpers/messenger-only-contract.mjs'
@@ -35,6 +36,14 @@ try {
         const command = JSON.parse(raw)
         assert.ok(Array.isArray(command))
         assert.ok(['HGET', 'HGETALL', 'EVAL'].includes(command[0]))
+        const redisScope=classifyIsolatedVideoRedisCommand(command)
+        assert.notEqual(redisScope,'deny')
+        if(redisScope==='synthetic-missing'){
+          // Missing optional EN YouTube upload is not a fabricated player.
+          response.writeHead(200,{'Content-Type':'application/json'})
+          response.end(JSON.stringify({result:null}))
+          return
+        }
         assert.equal(command[command[0] === 'EVAL' ? 3 : 1], namespace)
         const { stdout } = await exec('redis-cli', ['-h', '127.0.0.1', '-p', '6379', '--json', ...command.map(String)], { maxBuffer: 4 * 1024 * 1024 })
         response.writeHead(200, { 'Content-Type': 'application/json' })
@@ -71,11 +80,29 @@ try {
   }
   browser = await chromium.launch({ headless: true })
   const context = await browser.newContext({ viewport: { width: 1365, height: 1000 }, serviceWorkers: 'block' })
+  // Next 15 DEV can briefly lack a clientReferenceManifest on the first
+  // dynamically compiled /ru home render. Precompile both public Home routes
+  // by an isolated HTTP GET before any browser page can receive that transient
+  // server error. A genuine repeated 500 remains fatal; LIVE is unchanged.
+  if(!live){
+    for(const warmPath of ['/', '/ru']){
+      let ready=false
+      for(let attempt=0;attempt<3;attempt++){
+        const response=await context.request.get(origin+warmPath,{timeout:60000})
+        if(response.status()===200){ready=true;break}
+        if(response.status()!==500)throw new Error('Next DEV warmup unexpected status '+response.status()+' on '+warmPath)
+        await pause(450)
+      }
+      assert.ok(ready,'Next DEV public route failed first-render warmup: '+warmPath)
+    }
+  }
   const page = await context.newPage()
   const pageErrors = []
-  page.on('pageerror', error => pageErrors.push({ message: error.message, url: page.url() }))
+  // Keep every JavaScript error fatal and preserve bounded stack evidence.
+  page.on('pageerror', error => pageErrors.push({ message: error.message,
+    url: page.url(), stack: String(error.stack || '').slice(0, 1800) }))
   async function navigate(target) {
-    const options = { waitUntil: 'domcontentloaded', timeout: 60000 }
+    const options = { waitUntil: live ? 'domcontentloaded' : 'load', timeout: 60000 }
     const destination = new URL(target, origin)
     const previous = new URL(page.url())
     // Multiple placements can share one Services path and differ by #anchor.
@@ -154,8 +181,20 @@ try {
         await expect(presentation).toHaveCount(1)
         await expect(presentation).toHaveAttribute('data-video-locale', 'ru')
         await expect(presentation.locator('iframe')).toHaveCount(0)
+        // This secondary player is below the initial Home fold. A DEV
+        // DOMContentLoaded response may precede React hydration, leaving
+        // its intentionally inert SSR Play button disabled. Simulate the
+        // real visitor scrolling into view and prove hydration rather than
+        // pressing an unbound control or waiving the playback assertion.
+        await presentation.scrollIntoViewIfNeeded()
+        if (!live) await page.waitForLoadState('load', { timeout: 60000 })
+        await expect.poll(
+          () => page.evaluate(() => history.pushState.toString().includes('__NA')),
+          { timeout: 30000, message: 'RU presentation requires a hydrated Next router' },
+        ).toBe(true)
         const play = presentation.locator('button.site-video-play')
-        await expect(play).toBeEnabled({ timeout: 30000 })
+        await expect(play).toHaveAttribute('aria-busy', 'false', { timeout: 30000 })
+        await expect(play).toBeEnabled()
         await play.click()
         await expect(presentation.locator('iframe')).toHaveAttribute('src', /^https:\/\/www\.youtube-nocookie\.com\/embed\/G0Db6yOCMto\?/, { timeout: 10000 })
         russianPresentationVerified = true
@@ -166,7 +205,10 @@ try {
       await expect(presentation).toHaveAttribute('data-video-locale', 'en')
       await expect(presentation.locator('iframe')).toHaveCount(0)
     }
-    await expect(page.locator('[data-personal-testimonials="home"]')).toHaveCount(1)
+    await expect(page.locator('[data-home-dialogue-entry]')).toHaveCount(1)
+    await expect(page.locator('[data-home-intent-form]')).toHaveCount(1)
+    // Testimonial galleries now load only when the visitor explicitly expands
+    // the lower catalogue, never before Ali's main composer is interactive.
   }
   pass(`${live ? 'Production' : 'Local'}: withdrawn intros hidden; EN publication gate checked`)
   if (russianPresentationVerified) {
@@ -214,27 +256,51 @@ try {
       await expect(intro.locator('button.site-video-play')).toBeHidden()
       await expect(visibleGallery).toBeHidden()
       const videoPanel = page.locator('[data-services-unified-panel="video"]')
-      const videoTrigger = videoPanel.locator(':scope > button')
-      await expect(videoTrigger).toBeVisible()
-      await expect(videoTrigger).toHaveAttribute('aria-expanded', 'false')
+      await expect(videoPanel).toBeVisible()
+      const actions = videoPanel.locator(':scope > [data-service-card-actions]')
+      await expect(actions).toHaveCount(1)
+      const controls = actions.locator(':scope > div[role="group"] > button')
+      await expect(controls).toHaveCount(2)
+      const details = controls.first()
+      const order = controls.nth(1)
+      await expect(details).toBeVisible()
+      await expect(order).toBeVisible()
+      await expect(details).toHaveAttribute('aria-expanded', 'false')
+      await expect(order).toHaveAttribute('aria-expanded', 'false')
+      // Owner-approved mobile Services cards now expose Details / Order.
+      // The original video generator stays accessible via the real studio link.
       const mobileVideo = videoPanel.locator('[data-assist-video-generation]')
       await expect(mobileVideo).toBeHidden()
-      // A dev SSR snapshot can paint before Next attaches client event
-      // handlers. Do not misclassify an unhydrated early click as an app
-      // state regression; require the real Next router hydration first.
+      // The DEV SSR snapshot can paint before Next attaches click handlers.
       await expect.poll(
         () => page.evaluate(() => history.pushState.toString().includes("__NA")),
-        { timeout: 30000, message: 'Services video panel must hydrate before the click' },
+        { timeout: 30000, message: 'Services video actions must hydrate before the click' },
       ).toBe(true)
-      await videoTrigger.click()
-      await expect(videoTrigger).toHaveAttribute('aria-expanded', 'true')
-      await expect(mobileVideo).toBeVisible()
-      await expect(mobileVideo.locator('a[data-assist-video-scenario]')).toHaveCount(3)
-      const createVideo = mobileVideo.locator('a[data-assist-video-create]')
-      await expect(createVideo).toBeVisible()
-      await expect(createVideo).toHaveAttribute('href', '/' + locale + '/holistic-support/mandala')
-      const createBox = await createVideo.boundingBox()
-      assert.ok(createBox && createBox.height >= 44, 'Services mobile create-video action is finger-sized: ' + locale)
+      await details.click()
+      await expect(details).toHaveAttribute('aria-expanded', 'true')
+      await expect(order).toHaveAttribute('aria-expanded', 'false')
+      const description = actions.locator(':scope > [data-service-card-details]')
+      await expect(description).toBeVisible()
+      await expect(description.locator('p')).toBeVisible()
+      const studioLink = description.locator('a[href]')
+      await expect(studioLink).toHaveCount(1)
+      await expect(studioLink).toHaveAttribute('href', '/' + locale + '/holistic-support/mandala')
+      const studioLinkBox = await studioLink.boundingBox()
+      assert.ok(studioLinkBox && studioLinkBox.height >= 44,
+        'Services mobile personal video studio link is finger-sized: ' + locale)
+      await expect(actions.locator(':scope > [data-service-card-order]')).toBeHidden()
+      await order.click()
+      await expect(details).toHaveAttribute('aria-expanded', 'false')
+      await expect(order).toHaveAttribute('aria-expanded', 'true')
+      await expect(description).toBeHidden()
+      const orderRegion = actions.locator(':scope > [data-service-card-order]')
+      await expect(orderRegion).toBeVisible()
+      await expect(orderRegion.locator('[data-messenger-only-channel="whatsapp"]')).toBeVisible()
+      await expect(orderRegion.locator('[data-messenger-only-channel="telegram"]')).toBeVisible()
+      // Opening this test-only menu is not submitting a customer request.
+      await order.click()
+      await expect(order).toHaveAttribute('aria-expanded', 'false')
+      await expect(orderRegion).toBeHidden()
       await expect(mobileVideo.locator('iframe')).toHaveCount(0)
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2), 'Services mobile overflow: ' + locale)
       await page.screenshot({ path: `${evidence}/services-${locale}-mobile-video.png`, fullPage: true })
@@ -339,6 +405,14 @@ try {
     await page.setViewportSize({ width, height: 900 })
     for (const path of paths) {
       await navigate(path)
+      // Do not abort in-flight Next DEV RSC/JSON while immediately navigating
+      // away at DOMContentLoaded. All page errors remain fatal below.
+      if (!live) {
+        await page.waitForLoadState('load', { timeout: 30000 })
+        // Next DEV keeps background RSC/metadata requests alive; networkidle can
+        // wait forever without indicating a page defect. Keep the real load
+        // readiness, all 14 route/overflow checks, and fatal page errors.
+      }
       const sizes = await page.evaluate(() => ({ viewport: innerWidth, document: document.documentElement.scrollWidth }))
       assert.ok(sizes.document <= sizes.viewport + 2, `Overflow on ${path}: ${JSON.stringify(sizes)}`)
     }

@@ -660,6 +660,13 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(personalTab).toHaveAttribute("aria-pressed","true");
       await expect(phrases.locator("[data-video-ideas-personalization-panel]")).toBeVisible();
       await expect(phrases.locator("[data-personalization-kind]")).toHaveCount(3);
+      const preferredName=locale==="ru"?"Андрей":locale==="es"?"Andrés":"Andy";
+      const personalClosing=locale==="ru"?"Андрей, я в тебя верю":
+        locale==="es"?"Andrés, creo en ti":"Andy, I believe in you";
+      const firstNameInput=phrases.locator("[data-video-personalization-name]");
+      await expect(firstNameInput).toBeVisible();
+      await firstNameInput.fill(preferredName);
+      await expect(firstNameInput).toHaveValue(preferredName);
       await conceptTab.click();
       await expect(phrases.locator("[data-video-ideas-concept-panel]")).toBeVisible();
       await personalTab.click();
@@ -763,6 +770,12 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(page.locator('[data-video-montage-text]')).toBeVisible();
       const montageIdeas=page.locator('[data-video-montage-text] [data-video-ideas-compact]');
       await expect(montageIdeas).toBeVisible();
+      // The proposed closing is actually included among the selected captions
+      // fed to Canvas and export, not merely visible as an unselected suggestion.
+      const selectedClosing=montageIdeas.locator("[data-video-idea-phrase]").last();
+      await expect(selectedClosing).toContainText(personalClosing);
+      await expect(selectedClosing.locator("[data-video-idea-select]"))
+        .toHaveAttribute("aria-pressed","true");
       const montageCountLabel=montageIdeas.locator('[data-video-ideas-selected-count]');
       await expect(montageCountLabel).toBeVisible();
       const initialMontageCount=Number(((await montageCountLabel.innerText()).match(/^\s*(\d+)/)||[])[1]||0);
@@ -1289,9 +1302,29 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           "Ready Generate must sit directly beneath the video");
         await expect(readyGenerate).toBeEnabled({timeout:30000});
         phase(engine,"montage-free-navigated-ready");
-        // Observe the real seven-step check-in before the trusted Generate tap.
-        // Fast local exports can finish and unmount the reflection before the
-        // next Playwright assertion; transient DOM evidence must not be lost.
+        // Real mobile click contract: the two Ready cards switch to sixth
+        // Therapy workspace and select its format, with no Ready expansion.
+        await page.locator("[data-ready-meditation]").click();
+        await expect(page.locator("[data-mandala-free-video]"))
+          .toHaveAttribute("data-active-workspace","effects");
+        await expect(page.locator("[data-therapy-studio]"))
+          .toHaveAttribute("data-therapy-course","false");
+        await expect(page.locator('[data-therapy-subtab="meditation"]'))
+          .toHaveAttribute("aria-selected","true");
+        await expect(page.locator("[data-ready-offer-panel]")).toHaveCount(0);
+        await page.locator('[data-video-quick-control="ready"]').click();
+        await page.locator("[data-ready-journey]").click();
+        await expect(page.locator("[data-mandala-free-video]"))
+          .toHaveAttribute("data-active-workspace","effects");
+        await expect(page.locator("[data-therapy-studio]"))
+          .toHaveAttribute("data-therapy-course","true");
+        await expect(page.locator("[data-therapy-script-host]")).toBeVisible();
+        await expect(page.locator("[data-ready-offer-panel]")).toHaveCount(0);
+        await page.locator('[data-video-quick-control="ready"]').click();
+        await expect(readyGenerate).toBeEnabled({timeout:30000});
+        phase(engine,"ready-therapy-one-tap-navigation-verified");
+        // Capture transient real Ready progress before the trusted Generate tap:
+        // a fast local export may unmount the seven-question panel immediately.
         await page.evaluate(()=>{
           const evidence={progress:false,step:false,scoreButtons:0,photo:false};
           window.__hhReadyInlineCheckInEvidence=evidence;
@@ -1324,8 +1357,22 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         assert.equal(observation.scoreButtons,11,
           "Ready shows all 0–10 score choices during real encoding");
         assert.equal(observation.photo,true,
-          "Ready check-in displays an existing first-party scene photograph");
-        // No unsolicited optional survey/overlay may cover the export.
+          "Ready check-in displays a genuine first-party scene photo");
+        // Verify the approved seven-picture Ready check-in, not the old Goal
+        // sliders: one real 0–10 tap must advance to a distinct licensed image.
+        await expect(page.locator("[data-ready-generating]")).toBeVisible({timeout:20000});
+        const readyCheckin=page.locator("[data-ready-checkin] [data-ready-sequential-checkin]");
+        await expect(readyCheckin).toBeVisible({timeout:20000});
+        await expect(readyCheckin.locator("[data-ready-checkin-score]")).toHaveCount(11);
+        const firstTone=await readyCheckin.getAttribute("data-checkin-tone");
+        const firstImage=await readyCheckin.locator("img").getAttribute("src");
+        assert.ok(firstTone&&firstImage?.startsWith("/videos/holistic-house/"),
+          "Ready must show a real first-party picture and named question");
+        await readyCheckin.locator('[data-ready-checkin-score="5"]').click();
+        await expect(readyCheckin).not.toHaveAttribute("data-checkin-tone",firstTone,{timeout:5000});
+        await expect(readyCheckin.locator("img")).not.toHaveAttribute("src",firstImage,{timeout:5000});
+        // No unsolicited optional survey should cover the intentional export.
+        // No retired floating survey or overlay may block the actual export.
         await expect(page.locator("[data-video-effect-overlay]")).toHaveCount(0);
         // The idle source remains preload=none until the user's actual Create
         // gesture; Safari must then start a physical decode, never a CSS-only
@@ -1419,7 +1466,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           // The optional progress/check-in overlay must get out of the way
           // automatically when verified Ready appears, without bypassing the UI.
           await expect(page.locator("[data-video-effect-overlay]")).toHaveCount(0);
-          await expect(page.locator("[data-ready-checkin]")).toHaveCount(0);
+          // The visitor-started check-in can remain inline, never above Save.
+          // Clicking Save below proves it does not intercept the actual action.
           await readyView.locator("[data-ready-save]").click();
           await expect(readyView.locator("[data-ready-save-gate]")).toBeVisible();
           await expect(readyView.locator("[data-ready-save-gate-signin]")).toBeVisible();

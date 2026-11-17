@@ -116,3 +116,93 @@
 .hub .videoFrame :global(.site-video-watch-link){color:#14523f}
 @media(max-width:430px){.hub .heading>.profileHeadingActions{flex:0 0 auto;margin-left:auto;min-width:0}}
 @media(min-width:768px){.hub .videoFrame :global(.site-video-frame){aspect-ratio:16/9}}
+
+/* The same compact one-row chrome is shared by public Home and private Profile. */
+.hub .heading{
+  display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;justify-content:space-between;
+  gap:6px;min-width:0;padding:6px 9px;
+}
+.hub .headingTitle{min-width:0;flex:0 1 auto}
+.hub .eyebrow{display:none}
+.hub .heading h2{
+  margin:0;white-space:nowrap;overflow-wrap:normal;
+  font:700 clamp(18px,2.6vw,24px)/1.15 Georgia,serif;letter-spacing:-.035em;
+}
+.titleCompact{display:none}
+.hub .heading>.profileHeadingActions{min-width:0;flex:0 0 auto;display:flex;align-items:center;flex-wrap:nowrap;gap:6px;margin-left:auto}
+.languageSwitch{position:relative;display:block;flex:none;padding:0;border:0;background:transparent}
+.languageSwitch summary{
+  display:flex;align-items:center;justify-content:center;gap:3px;box-sizing:border-box;
+  height:44px;min-width:45px;padding:0 6px;border:1px solid #d2e6dd;border-radius:12px;
+  background:#f5faf7;color:#14523f;cursor:pointer;list-style:none;font:750 12px/1 system-ui,sans-serif;
+}
+.languageSwitch summary::-webkit-details-marker{display:none}
+.languageSwitch summary::marker{content:""}
+.languageSwitch[open] summary{background:#e6f6f1}
+.languageSwitch summary:focus-visible,.languageOptions a:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+.languageOptions{
+  position:absolute;z-index:120;top:calc(100% + 5px);right:0;min-width:76px;
+  display:grid;overflow:hidden;padding:3px;border:1px solid #d2e6dd;
+  border-radius:12px;background:#fffcf7;box-shadow:0 12px 30px #143d3a24;
+}
+.languageOptions a{min-width:0;min-height:44px;border-radius:9px;padding:0 12px}
+.languageOptions a[aria-current=page]{background:#e6f6f1;color:#05634d}
+.hub .headingNav{display:flex;align-items:center;min-width:0;flex:none}
+.hub .headingNav :global(.site-navigation--profile-compact){
+  display:flex;align-items:center;flex-wrap:nowrap;gap:5px;
+  margin:0;padding:0;border:0;min-width:0;
+}
+.hub .headingNav :global(.site-main-menu-trigger__label){display:none}
+.hub .headingNav :global(.site-main-menu-trigger){
+  width:44px;min-width:44px;min-height:44px;padding:0;border-radius:12px;
+}
+.hub .headingNav :global([data-site-search-trigger]){width:44px;min-width:44px;height:44px;border-radius:12px}
+.hub .headingNav :global([data-site-search-panel]){right:-46px;max-width:calc(100vw - 20px)}
+.hub .headingNav :global(.site-main-menu-panel){max-width:calc(100vw - 20px)}
+/* Only the Profile presentation loses its generic watch/caption rail. Other
+   SiteVideoPlayer uses retain transcripts, credits and external fallback links. */
+.hub .videoFrame{width:100%;aspect-ratio:16/9;overflow:hidden;background:#17334b}
+.hub .videoFrame>video{display:block;width:100%;height:100%;max-height:none!important;aspect-ratio:16/9;object-fit:cover}
+.hub .videoFrame :global([data-profile-presentation-locale]){width:100%;height:100%}
+.hub .videoFrame :global(.site-video-player){
+  width:100%;height:100%;margin:0;border:0;border-radius:15px;background:transparent;box-shadow:none
+}
+.hub .videoFrame :global(.site-video-frame){width:100%;height:100%;aspect-ratio:16/9}
+.hub .videoFrame :global(.site-video-caption){display:none!important}
+.hub .videoFrame :global([data-profile-presentation-source="youtube-pending"]>div){
+  width:100%;height:100%;min-height:0;aspect-ratio:16/9;
+}
+@media(max-width:430px){
+  .hub .heading{flex-wrap:nowrap;gap:4px;padding:5px 6px;border-radius:14px}
+  .hub .headingTitle{flex:0 1 auto}
+  .hub .heading h2{font-size:clamp(16px,4.5vw,20px)}
+  .titleFull{display:none}.titleCompact{display:inline}
+  .hub .heading>.profileHeadingActions{flex:0 0 auto;gap:3px;min-width:0}
+  .languageSwitch summary{min-width:40px;padding:0 4px;font-size:11px}
+  .hub .headingNav :global(.site-navigation--profile-compact){gap:3px}
+  .hub .headingNav :global(.site-main-menu-trigger){width:40px;min-width:40px;min-height:44px}
+  .hub .headingNav :global([data-site-search-trigger]){width:40px;min-width:40px;height:44px}
+  .hub .headingNav :global([data-site-search-panel]){right:-44px}
+  .hub .profileHeadingActions :global([data-profile-mode-switch]){min-width:94px;gap:1px;padding:2px;border-radius:12px}
+  .hub .profileHeadingActions :global([data-profile-mode-switch] a){
+    gap:3px;min-height:44px;padding:5px 2px;font-size:11px;border-radius:9px
+  }
+  .hub .profileHeadingActions :global([data-profile-mode-switch] svg){width:13px;height:13px}
+}
+@media(max-width:350px){
+  .hub .heading h2{font-size:15px}
+  .hub .heading>.profileHeadingActions{gap:2px}
+  .hub .headingNav :global(.site-navigation--profile-compact){gap:2px}
+  .hub .headingNav :global(.site-main-menu-trigger){width:38px;min-width:38px}
+  .hub .headingNav :global([data-site-search-trigger]){width:38px;min-width:38px}
+  .hub .profileHeadingActions :global([data-profile-mode-switch]){min-width:87px}
+}
+
+/* At 360–430 CSS px there is room for full 44px touch targets while
+   retaining the owner's single My Space header row. Narrower 320px keeps
+   its already-approved 40px icon width and 44px control height. */
+@media (min-width:360px) and (max-width:430px){
+  .languageSwitch summary{min-width:44px}
+  .hub .headingNav :global([data-site-search-trigger]){width:44px;min-width:44px;height:44px}
+  .hub .headingNav :global(.site-main-menu-trigger){width:44px;min-width:44px;min-height:44px}
+}

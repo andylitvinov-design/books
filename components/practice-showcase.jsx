@@ -292,7 +292,12 @@ export default function PracticeShowcase({ locale = 'en' }) {
     if (signedIn) return
     const target=event.target?.closest?.('a[href]')
     if (!target || target.closest('[data-profile-mode-switch]') ||
-      target.closest('[data-profile-language-switch]')) return
+      target.closest('[data-profile-language-switch]') ||
+      target.closest('[data-profile-chrome-navigation]')) return
+    // Public YouTube presentation links are readable without a login.
+    // Keep every practitioner action and all other guest links auth-gated.
+    if (target.closest('[data-profile-video-hero]') &&
+      /^https:\/\/www\.youtube\.com\/(?:@aatapro(?:\/|$)|watch\?v=)/.test(target.getAttribute('href') || '')) return
     event.preventDefault()
     event.stopPropagation()
     setNotice('')
