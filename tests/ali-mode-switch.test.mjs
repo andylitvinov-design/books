@@ -13,8 +13,8 @@ const decide=(message,locale='ru',history=[],extra={})=>routeMindRole({message,l
 test('one named Ali role selector, separate from authorization or model provider',()=>{
  assert.equal(ALI_DIALOGUE_ROLES.join(','),'secretary,sales,coach,secretary_psychologist');
  assert.match(ALI_MODE_SWITCH_VERSION,/ali-shared-mode-switch/);
- const module=read('lib/holistic-support/ali-mode-switch.mjs');
- assert.doesNotMatch(module,/\bfetch\(|axios|localStorage|database|createClient\(|sendMessage\(|OPENROUTER_API_KEY/);
+ const moduleSource=read('lib/holistic-support/ali-mode-switch.mjs');
+ assert.doesNotMatch(moduleSource,/\bfetch\(|axios|localStorage|database|createClient\(|sendMessage\(|OPENROUTER_API_KEY/);
  for(const role of ALI_DIALOGUE_ROLES)assert.match(mindRoleInstruction(role,'en'),/Ali|SAME Ali/);
  assert.match(mindRoleInstruction('invalid'),/neutral/);
  assert.equal(decide('Привет').version,MIND_ROLE_ROUTER_VERSION);
