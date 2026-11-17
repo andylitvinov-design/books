@@ -59,3 +59,24 @@ test('server preserves numeric GitHub HTTP rejection reason instead of UNKNOWN',
  assert.equal(accepts('OWNER_REPAIR_DISPATCH_HTTP_422'),'OWNER_REPAIR_DISPATCH_HTTP_422');
  assert.equal(accepts('any invalid injected input'),'UNKNOWN');
 });
+test('worker wake remains signed to one GitHub workflow and fails closed for foreign callbacks',()=>{
+ const s=file('supabase/functions/agent-commander-pr-completion-v1/index.ts');
+ assert.match(s,/\['schedule','workflow_dispatch','workflow_run'\]\.includes\(claims\.event_name\)/);
+ assert.match(s,/claims\.workflow_ref!==OWNER_WORKFLOW/);
+ assert.match(s,/claims\.ref!=='refs\/heads\/codex\/bootstrap-books'/);
+ assert.match(s,/claims\.repository!==REPO/);
+ assert.match(s,/claims\.aud!==AUD/);
+ assert.match(s,/crypto\.subtle\.verify/);
+ assert.doesNotMatch(s,/\['schedule','workflow_dispatch','push'\]\.includes\(claims\.event_name\)/);
+});
+test('owner PR HEAD follows independently GitHub verified source, never spending a second repair grant',()=>{
+ const s=file('supabase/functions/agent-commander-pr-completion-v1/index.ts');
+ assert.match(s,/if\(state==='WATCHING'&&body\.headSha!==prior\[0\]\.requested_head_sha\)/);
+ assert.match(s,/await readPR\(prior\[0\]\.pr_number\)/);
+ assert.match(s,/current\.state==='open'&&current\.draft!==true/);
+ assert.match(s,/current\.head\.sha===body\.headSha/);
+ assert.match(s,/requested_head_sha=coalesce\(\$10::text,requested_head_sha\)/);
+ assert.match(s,/lease_until>now\(\) returning \*/);
+ assert.match(s,/dispatch_attempted_at is null/);
+ assert.doesNotMatch(s,/set dispatch_attempted_at=null/);
+});
