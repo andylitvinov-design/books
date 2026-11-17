@@ -7,6 +7,7 @@ import {telegramAiSecretaryQuestion,telegramAiSecretaryStep,telegramAiSecretaryA
 import {telegramServiceRequestDraft,parseTelegramServiceDraft,telegramServiceRequestUrl,
  telegramBusinessConversationReply,telegramBusinessClientChoice} from '../lib/assist/telegram-business-request.mjs';
 import {telegramEnquiryUrlFromWhatsApp,whatsappEnquiryUrl} from '../lib/whatsapp-enquiry.js';
+import {classifyTelegramSecretaryQuery,composeTelegramSecretaryAnswer} from '../lib/crm/telegram-secretary-offers.mjs';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 test('AI-secretary order opens owner human Telegram with a fixed safe service marker in RU/EN/ES',()=>{
  for(const locale of ['ru','en','es']){
@@ -113,7 +114,8 @@ test('Business AI-secretary stage actually advances five encrypted turns and fin
   TABLE:'app_private.crm_tg_business_service_sessions',
   randomUUID:()=> '11111111-1111-4111-8111-111111111111',
   PRACTITIONER_ID:'246aa1a3-a371-5a83-9f4b-cd23ff027a76',
-  telegramAiSecretaryStep,telegramAiSecretaryAnswer,telegramAiSecretarySummary,
+  telegramAiSecretaryQuestion,telegramAiSecretaryStep,telegramAiSecretaryAnswer,telegramAiSecretarySummary,
+  classifyTelegramSecretaryQuery,composeTelegramSecretaryAnswer,
   telegramBusinessClientChoice,telegramBusinessConversationReply,
   webhookTransaction:async(_config,handler)=>handler(db),
   openSealed:payload=>JSON.parse(payload),seal:payload=>JSON.stringify(payload),
@@ -129,11 +131,28 @@ test('Business AI-secretary stage actually advances five encrypted turns and fin
  assert.equal(start.welcomePhoto,true);
  assert.ok(start.reply.includes('Какой у вас бизнес'));
  assert.equal(row.intake_answers_ciphertext,null);
+ const price=await scope.stage(event('Сколько стоит?',21),{},hashes);
+ assert.equal(row.stage,'ai_q1');
+ assert.equal(row.intake_answers_ciphertext,null);
+ assert.match(price.reply,/Цена зависит/);
+ assert.match(price.reply,/Какой у вас бизнес/);
+ assert.equal((price.reply.match(/[?？]/g)||[]).length,1);
+ assert.equal(price.commit,undefined);
+ const urgent=await scope.stage(event('Не могу дышать',22),{},hashes);
+ assert.equal(row.stage,'ai_q1');
+ assert.equal(row.intake_answers_ciphertext,null);
+ assert.match(urgent.reply,/неотложной помощи/);
+ assert.doesNotMatch(urgent.reply,/Какой у вас бизнес/);
+ const unknown=await scope.stage(event('А что насчёт Viber?',23),{},hashes);
+ assert.equal(row.stage,'ai_q1');
+ assert.equal(row.intake_answers_ciphertext,null);
+ assert.match(unknown.reply,/лучше уточнить у мастера/);
+ assert.match(unknown.reply,/Какой у вас бизнес/);
  const samples=['Студия йоги','Telegram и сайт','Отвечать на вопросы и принимать заявки',
   'Около 20 обращений ежедневно, русский и английский',
   'Передавать сложные вопросы менеджеру и подключить календарь'];
  for(let i=0;i<samples.length;i++){
-  const result=await scope.stage(event(samples[i],21+i),{},hashes);
+  const result=await scope.stage(event(samples[i],24+i),{},hashes);
   assert.equal(JSON.parse(row.intake_answers_ciphertext).answers.length,i+1);
   if(i<4){
    assert.equal(row.stage,'ai_q'+(i+2));
@@ -147,7 +166,7 @@ test('Business AI-secretary stage actually advances five encrypted turns and fin
   }
  }
  // Replay of the fifth signed update does not create another case.
- const replay=await scope.stage(event(samples[4],25),{},hashes);
+ const replay=await scope.stage(event(samples[4],28),{},hashes);
  assert.equal(replay.commit,undefined);
  // STOP during an earlier interview is terminal.
  row.stage='ai_q2'; row.last_update_id=50; row.intake_answers_ciphertext=JSON.stringify({answers:['Студия']});

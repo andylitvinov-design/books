@@ -124,7 +124,7 @@ export async function POST(request,{params}){
             }else{
               await consumeRate(config,{op:'hh-tg-business-intent-chat',
                 connectionId:business.connectionId,chatId:business.to},
-                business.serviceKey==='ai_secretary'?7:3,86400)
+                business.serviceKey==='ai_secretary'?16:3,86400)
             }
             await consumeRate(config,{op:'hh-tg-business-intent-global'},100,86400)
             // The first client-authored service enquiry shows the fixed avatar
@@ -137,7 +137,7 @@ export async function POST(request,{params}){
               })}catch{console.error('HH_TG_BUSINESS_WELCOME_PHOTO_NOT_CONFIRMED')}
             }
             await sendHolisticBusinessRequestReply({connectionId:business.connectionId,
-              to:business.to,text:business.reply})
+              to:business.to,text:business.reply,buttons:business.buttons||[]})
           }catch{
             // Provider acceptance is not delivery; never re-send blindly.
             console.error('HH_TG_BUSINESS_REPLY_NOT_CONFIRMED')
