@@ -1257,6 +1257,32 @@ test('GitHub 100+ ghost Actions cannot block trusted metadata-only source-hint r
   assert.equal(scenario==='product'?result.specialistReclassified:result.policyReclassified,1);
  }
 });
+test('modern embedded hh-merge-check routes source-green product and base failures without retired specialist job',async()=>{
+ for(const mode of ['product','base']){
+  const number=mode==='product'?4401:4402;
+  const source=pr(number,'repair',{mergeable:true,mergeable_state:'blocked'});
+  const f=fixture([source],{comments:{[number]:[]}});
+  const fresh={...source,labels:[...source.labels]},mutations=[];
+  f.github.rest.pulls.get=async()=>({data:fresh});
+  const names=mode==='product'?
+   ['core-lint-types-build','hh-merge-check','voice-webkit-macos']:
+   ['core-lint-types-build','hh-merge-check'];
+  const checks=names.map((name,i)=>({id:i+1,name,status:'completed',
+   conclusion:name==='core-lint-types-build'?'success':'failure',app:{id:15368}}));
+  f.github.rest.checks={listForRef:async()=>({data:{total_count:checks.length,check_runs:checks}})};
+  f.github.rest.issues.addLabels=async({labels})=>{
+   fresh.labels.push({name:labels[0]});mutations.push(['add',labels[0]]);
+  };
+  f.github.rest.issues.removeLabel=async({name})=>mutations.push(['remove',name]);
+  const r=await run({github:f.github,core:core(),context,now:NOW,
+   capacityFn:async()=>({known:false,reason:'RUN_CAPACITY_SATURATED'})});
+  const desired=mode==='product'?'hh:specialist-repair-needed':'hh:release-gate-review';
+  assert.deepEqual(mutations,[['add',desired],['remove','hh:repair-needed']],mode);
+  assert.equal(r.dispatchAccepted,0);
+  assert.equal(f.calls.dispatched.length,0);
+  assert.equal(f.calls.reserved.filter(x=>x.body.includes('"state":"RESERVED"')).length,0);
+ }
+});
 test('without current signed source or product proof, saturation never claims a source worker',async()=>{
  const source=pr(4323,'repair',{mergeable:true,mergeable_state:'blocked'});
  const f=fixture([source],{comments:{4323:[]}});
