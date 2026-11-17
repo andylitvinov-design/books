@@ -335,3 +335,65 @@ test('trusted protected push claims one private owner PR on existing Watchdog ru
   assert.equal(fx.calls.length,0);
  }
 });
+
+test('one signed runner drains several distinct owner requests, with hard cap',async()=>{
+ const {drain}=require('../scripts/ci-pr-commander-pr-completion.cjs');
+ const items=[4770,4771,4772].map((n,i)=>({...task,prNumber:n,
+  requestId:'123e4567-e89b-42d3-a456-42661417400'+i}));
+ const actions=[];let current=null;
+ const response=value=>({status:200,text:async()=>JSON.stringify({schema:'HH_COMMANDER_PR_COMPLETION_V1',...value})});
+ const fetcher=async(url,request)=>{
+  assert.equal(url,ENDPOINT);
+  const value=JSON.parse(request.body);actions.push(value.action);
+  if(value.action==='next'){
+   current=items.shift()||null;
+   return response({item:current});
+  }
+  if(value.action==='finish')return response({accepted:true,item:{
+   prNumber:current.prNumber,status:value.status,reasonCode:value.reasonCode}});
+  throw Error('UNEXPECTED_OWNER_QUEUE_ACTION_'+value.action);
+ };
+ const core={getIDToken:async()=>'.'.repeat(121),info(){},warning(){}};
+ const github={rest:{pulls:{get:async({pull_number})=>({
+  data:{...base,number:pull_number}})}}};
+ const report=await drain({github,core,context,fetcher,dispatch:async()=>{throw Error('NO_REPAIR')}});
+ assert.equal(report.processed,3);
+ assert.deepEqual(report.items.map(x=>x.prNumber),[4770,4771,4772,null]);
+ assert.equal(actions.filter(x=>x==='next').length,4);
+ assert.equal(actions.filter(x=>x==='finish').length,3);
+ await assert.rejects(()=>drain({github,core,context,fetcher},5),/DRAIN_LIMIT/);
+});
+test('native Core event remains the only Core subscriber; owner queue shares worker wakes',()=>{
+ const fs=require('node:fs');
+ const watchdog=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
+ const native=fs.readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
+ assert.equal(watchdog.includes("      - 'HH PR core release gate'"),false);
+ assert.equal(native.includes("      - 'HH PR core release gate'"),true);
+ assert.equal(watchdog.split("const {drain}=require(process.env.GITHUB_WORKSPACE").length-1,2);
+ assert.equal(watchdog.split("const outcome=await drain(").length-1,2);
+ const direct=watchdog.split('  direct-handoff:')[1]?.split('  reactivate-schedules:')[0];
+ assert.match(direct,/filter: blob:none/);
+ assert.match(direct,/sparse-checkout: \|[\s\S]*scripts[\s\S]*\.github/);
+});
+
+test('only proven pre-dispatch capacity may re-arm; unknown remote results never repeat',async()=>{
+ const p={...base,labels:[{name:'hh:repair-needed'}]};
+ for(const reason of ['OWNER_REPAIR_DIRECT_WORKER_BUSY',
+  'OWNER_REPAIR_DIRECT_CORE_PRIORITY_PENDING',
+  'OWNER_REPAIR_DIRECT_CAPACITY_UNVERIFIED']){
+  const f=mock(task,p);
+  const outcome=await run({...f,context,dispatch:async()=>({dispatched:false,reason})});
+  assert.equal(outcome.status,'WATCHING');
+  assert.equal(f.calls.find(x=>x.action==='finish').noDispatchVerified,true,reason);
+ }
+ for(const reason of ['OWNER_REPAIR_DIRECT_CLAIMED_AWAITING_OUTCOME',
+  'OWNER_REPAIR_DIRECT_RESERVED_REQUIRES_REVIEW',
+  'OWNER_REPAIR_DISPATCH_AMBIGUOUS_NO_RETRY']){
+  const f=mock(task,p);
+  await run({...f,context,dispatch:async()=>({dispatched:false,reason})});
+  assert.equal(f.calls.find(x=>x.action==='finish').noDispatchVerified,false,reason);
+ }
+ const ack=mock(task,p);
+ await run({...ack,context,dispatch:async()=>({dispatched:true,reason:'OWNER_DIRECT_QUEUE_DISPATCH_ACCEPTED'})});
+ assert.equal(ack.calls.find(x=>x.action==='finish').noDispatchVerified,false);
+});

@@ -160,11 +160,11 @@ jobs:
         with:
           github-token: ${{ github.token }}
           script: |
-            const {run}=require(process.env.GITHUB_WORKSPACE+
+            const {drain}=require(process.env.GITHUB_WORKSPACE+
               '/scripts/ci-pr-commander-pr-completion.cjs');
             const inbox=require(process.env.GITHUB_WORKSPACE+
               '/scripts/ci-pr-pm-agent-inbox.cjs');
-            const outcome=await run({github,core,context,
+            const outcome=await drain({github,core,context,
               ownerToken:process.env.HH_PM_OWNER_TOKEN,fetcher:fetch,
               // OIDC claim and atomic CAS already verified the owner command.
               // Deliver source repair inside this existing single-writer job.
@@ -424,6 +424,11 @@ jobs:
           ref: codex/bootstrap-books
           persist-credentials: false
           fetch-depth: 1
+          filter: blob:none
+          sparse-checkout: |
+            scripts
+            .github
+            ops/pr-monitor
       # Same existing single-writer runner. An OIDC signed owner intent is
       # checked BEFORE the next backlog scan; no new CI wave is created.
       - name: Owner PR completion wake on verified finished worker
@@ -434,11 +439,11 @@ jobs:
         with:
           github-token: ${{ github.token }}
           script: |
-            const {run}=require(process.env.GITHUB_WORKSPACE+
+            const {drain}=require(process.env.GITHUB_WORKSPACE+
               '/scripts/ci-pr-commander-pr-completion.cjs');
             const inbox=require(process.env.GITHUB_WORKSPACE+
               '/scripts/ci-pr-pm-agent-inbox.cjs');
-            const outcome=await run({github,core,context,
+            const outcome=await drain({github,core,context,
               ownerToken:process.env.HH_PM_OWNER_TOKEN,fetcher:fetch,
               dispatch:(gh,cmd,opts)=>inbox.dispatchLive(gh,cmd,{
                 ownerToken:opts.ownerToken,fetcher:opts.fetcher,

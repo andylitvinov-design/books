@@ -86,7 +86,7 @@ async function run({github,core,context,ownerToken='',fetcher=global.fetch,
   !SHA.test(task.requestedHeadSha||'')||typeof task.dispatchEligibleOnce!=='boolean')
   throw Error('SIGNED_QUEUE_TASK_INVALID');
  let decision={status:'BLOCKED',reasonCode:'PR_GITHUB_READ_UNAVAILABLE',
-  headSha:task.requestedHeadSha},dispatchAccepted=false;
+  headSha:task.requestedHeadSha},dispatchAccepted=false,noDispatchVerified=false;
  try{
   const response=await github.rest.pulls.get({owner:'andylitvinov-design',repo:'books',pull_number:task.prNumber});
   const pr=response?.data;
@@ -134,6 +134,15 @@ async function run({github,core,context,ownerToken='',fetcher=global.fetch,
       require('./ci-pr-pm-agent-inbox.cjs').dispatchLive);
     const result=await invoke(github,{pr:task.prNumber},{ownerToken,fetcher,ownerProof});
     dispatchAccepted=result?.dispatched===true;
+    // Re-arm only when the trusted dispatcher proves no source was dispatched.
+    // Unknown acknowledgment, reserved or claimed work never grant a retry.
+    const safeDeferral=new Set([
+     'OWNER_REPAIR_DIRECT_CAPACITY_UNVERIFIED','OWNER_REPAIR_DIRECT_CAPACITY_UNKNOWN',
+     'OWNER_REPAIR_DIRECT_GHOST_WORKER_BUSY','OWNER_REPAIR_DIRECT_WORKER_BUSY',
+     'OWNER_REPAIR_DIRECT_RUNNERS_SATURATED','OWNER_REPAIR_DIRECT_JOBS_SATURATED',
+     'OWNER_REPAIR_DIRECT_CORE_PRIORITY_PENDING'
+    ]);
+    noDispatchVerified=result?.dispatched===false&&safeDeferral.has(result?.reason||'');
     if(dispatchAccepted)decision.reasonCode='OWNER_DISPATCH_ACCEPTED_NOT_MODEL_OR_COMMIT';
     else if(typeof result?.reason==='string'){
      decision.reasonCode=/^[A-Z0-9_]{3,90}$/.test(result.reason)?
@@ -176,7 +185,7 @@ async function run({github,core,context,ownerToken='',fetcher=global.fetch,
    requestId:task.requestId,leaseToken:task.leaseToken,
    status:decision.status,headSha:decision.headSha,
    reasonCode:decision.reasonCode,workflowRunId:context.runId,
-   dispatchAccepted},token,fetcher);
+   dispatchAccepted,noDispatchVerified},token,fetcher);
  }catch(error){
   core.warning('HH_PR_COMPLETION_FINISH_'+String(error.message).slice(0,100));
   return {status:'FINISH_UNCONFIRMED',prNumber:task.prNumber,
@@ -191,4 +200,29 @@ async function run({github,core,context,ownerToken='',fetcher=global.fetch,
  core.info('HH_OWNER_PR_COMPLETION '+JSON.stringify(report));
  return report;
 }
-module.exports={readback,run,send,ENDPOINT,trustedWorkerWake,trustedControlPush};
+// Process at most four distinct owner requests per existing signed runner.
+// An idle queue ends immediately. No new CI run or workflow dispatch is created.
+async function drain(options={},maxItems=4){
+ if(!Number.isSafeInteger(maxItems)||maxItems<1||maxItems>4)
+  throw Error('OWNER_QUEUE_DRAIN_LIMIT_INVALID');
+ const outcomes=[],seen=new Set();
+ for(let i=0;i<maxItems;i++){
+  const result=await run(options);
+  outcomes.push(result);
+  if(result?.prNumber!=null){
+   if(seen.has(result.prNumber)){
+    options.core?.warning?.('HH_OWNER_QUEUE_DUPLICATE_CLAIM_GUARD');
+    break;
+   }
+   seen.add(result.prNumber);
+  }
+  if(!['WATCHING','BLOCKED','MERGED','CLOSED_UNMERGED'].includes(result?.status))
+   break;
+ }
+ return {schema:'HH_OWNER_QUEUE_DRAIN_V1',processed:seen.size,
+  status:outcomes.at(-1)?.status||'NO_RESULT',
+  items:outcomes.map(x=>({prNumber:x.prNumber||null,status:x.status,
+   reasonCode:x.reasonCode||null,dispatchAccepted:x.dispatchAccepted===true}))};
+}
+module.exports={readback,run,drain,send,ENDPOINT,trustedWorkerWake,
+ trustedControlPush};
