@@ -80,3 +80,21 @@ test('owner PR HEAD follows independently GitHub verified source, never spending
  assert.match(s,/dispatch_attempted_at is null/);
  assert.doesNotMatch(s,/set dispatch_attempted_at=null/);
 });
+
+test('only signed proven non-dispatch capacity denial may re-arm the source CAS',()=>{
+ const edge=file('supabase/functions/agent-commander-pr-completion-v1/index.ts');
+ assert.match(edge,/const SAFE_CAPACITY_HOLDS=new Set/);
+ assert.match(edge,/body\.noDispatchVerified===true/);
+ assert.match(edge,/body\.dispatchAccepted!==true/);
+ assert.match(edge,/prior\[0\]\.dispatch_accepted!==true/);
+ assert.match(edge,/prior\[0\]\.dispatch_attempted_at!=null/);
+ assert.match(edge,/SAFE_CAPACITY_HOLDS\.has\(code\)/);
+ assert.match(edge,/dispatch_attempted_at=case when \$11::boolean then null else dispatch_attempted_at end/);
+ assert.match(edge,/safeCapacityRetryDeferred:verifiedNoDispatch/);
+ assert.doesNotMatch(edge,/set dispatch_attempted_at=null/);
+ const allowed=edge.match(/const SAFE_CAPACITY_HOLDS=new Set\(\[([\s\S]*?)\]\);/)[1];
+ for(const code of ['OWNER_REPAIR_DIRECT_RESERVED_REQUIRES_REVIEW',
+  'OWNER_REPAIR_DIRECT_CLAIMED_AWAITING_OUTCOME',
+  'OWNER_REPAIR_DISPATCH_AMBIGUOUS_NO_RETRY'])
+  assert.equal(allowed.includes(code),false,code);
+});

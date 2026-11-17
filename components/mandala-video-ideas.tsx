@@ -5,7 +5,7 @@ import type {Dispatch,SetStateAction} from "react";
 import {ArrowDown,Check,ChevronDown,Heart,Mic,Pencil,Play,Plus,RefreshCw,SlidersHorizontal,Sparkles,Target,Zap} from "lucide-react";
 import {listMeaningAxes} from "@/lib/mandala/meaning-emotion/idea-engine.mjs";
 import {listCurrentEmotionClusters,listDesiredEmotionClusters} from "@/lib/mandala/meaning-emotion/emotional-vector-matrix.mjs";
-import {resolveVideoIdeaContext,suggestVideoGoalPhrases,translateVideoGoalPhrase} from "@/lib/mandala/video-goal-idea-phrases.mjs";
+import {resolveVideoIdeaContext,suggestVideoGoalPhrases,translateVideoGoalPhrase,personalVideoClosingPhrase,appendPersonalVideoClosingPhrase} from "@/lib/mandala/video-goal-idea-phrases.mjs";
 import {isIdeaEditorSnapshot,planIdeaSelection,sanitizeIdeaPhrase} from "@/lib/mandala/video-idea-selection.mjs";
 import {goalCurrentMeaningId,goalDesiredMeaningId,DEFAULT_VIDEO_GOAL_PROFILE,type VideoGoalProfile} from "./mandala-video-personalization";
 import type {AffirmationSettings} from "@/lib/mandala/video-affirmations";
@@ -117,6 +117,7 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,languagePick
  // Preserve the canonical Goal classifier. Explicit local Personalization
  // answers refine its suggestions without losing Love/relationship relevance.
  const profileKey=JSON.stringify(profile??null);
+ const personalClosingPhrase=personalVideoClosingPhrase(captionLocale,profile?.name);
  const hasCurrentChoice=Boolean(profile&&
   JSON.stringify(profile.current)!==JSON.stringify(DEFAULT_VIDEO_GOAL_PROFILE.current));
  const hasDesiredChoice=Boolean(profile&&
@@ -149,7 +150,7 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,languagePick
    });
    for(const line of next)if(!pool.includes(line))pool.push(line);
   }
-  return pool.slice(0,7);
+  return appendPersonalVideoClosingPhrase(pool,captionLocale,profile?.name);
   // Personal answers are represented by their stable serialized values.
   // eslint-disable-next-line react-hooks/exhaustive-deps
  },[captionLocale,requestText,theme,goalContext.key,profileKey,selectionGoalKey,
@@ -168,11 +169,13 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,languagePick
    return;
   }
   // A genuine change in Goal refinement deliberately starts new suggestions.
-  const initial=planIdeaSelection(suggested,allFive,suggested,signature);
+  // The optional name-based closing is the fifth initial chosen video phrase.
+  const initialChosen=personalClosingPhrase?[...allFive.slice(0,4),suggested.length-1]:allFive;
+  const initial=planIdeaSelection(suggested,initialChosen,suggested,signature);
   setOptions(initial.editor.options);setChosen(initial.editor.chosen);
   onChange(old=>({...old,...initial.settingsPatch,ideasDraft:{...initial.editor,locale:captionLocale},
    motion:"rise",visibility:old.visibility.length?old.visibility:["large"]}));
- },[active,signature,suggested,onChange,settings.ideasDraft]);
+ },[active,signature,suggested,personalClosingPhrase,onChange,settings.ideasDraft]);
 
  const selectedCount=chosen.length;
  const textSizeIndex=Math.max(0,scaleValues.indexOf(settings.textScale??"medium"));
@@ -192,7 +195,12 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,languagePick
  };
  const chooseTextLanguage=(next:VideoLocale)=>{
   if(next===captionLocale||disabled||generating)return;
-  const translated=options.map(line=>translateVideoGoalPhrase(line,captionLocale,next));
+  const priorClosing=personalVideoClosingPhrase(captionLocale,profile?.name);
+  const nextClosing=personalVideoClosingPhrase(next,profile?.name);
+  // An unchanged generated closing follows EN/RU/ES; manually edited words
+  // remain private and untouched, as with every other custom phrase.
+  const translated=options.map(line=>line===priorClosing&&priorClosing&&nextClosing
+   ?nextClosing:translateVideoGoalPhrase(line,captionLocale,next));
   const unchanged=translated.filter((line,index)=>line===options[index]).length;
   setPhraseLocale(next);
   setEditing(null);setAdding(false);setDraft("");
@@ -246,7 +254,14 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,languagePick
    excluded:options,limit:Math.min(3,14-options.length),
   });
   setMoreClicks(n=>n+1);
-  if(candidates.length)apply([...options,...candidates],chosen);
+  if(candidates.length){
+   // Offer more options before the generated closing, keeping it last and selected.
+   // If the visitor edited or moved the closing, honor that manual arrangement.
+   if(personalClosingPhrase&&options[options.length-1]===personalClosingPhrase){
+    const next=[...options.slice(0,-1),...candidates,personalClosingPhrase];
+    apply(next,chosen.map(index=>index===options.length-1?next.length-1:index));
+   }else apply([...options,...candidates],chosen);
+  }
  };
  const toggleAxis=(id:string)=>{
   setSelectedAxes(old=>old.includes(id)?(old.length===1?old:old.filter(x=>x!==id)):[...old,id]);

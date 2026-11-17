@@ -52,7 +52,7 @@ test("browser release tests exercise the current 7-card Ready wizard",()=>{
   const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
   assert.match(browser,/\[data-ready-checkin\] \[data-ready-sequential-checkin\]/);
   assert.match(browser,/data-ready-checkin-score="5"/);
-  assert.match(browser,/await expect\(readyCheckIn\)\.toContainText\("2 \/ 7"\)/);
+  assert.match(browser,/await expect\(readyCheckin\)\.toContainText\("2 \/ 7"\)/);
   assert.doesNotMatch(browser,/\[data-ready-checkin\] \[data-video-checkin\]/);
   assert.match(browser,/await expect\(page\.locator\("\[data-video-effect-reopen\]"\)\)\.toBeHidden\(\)/);
 });
@@ -62,4 +62,18 @@ test("Ready pending poster stays full 16:9 on iPhone instead of a 43px or 54px s
   assert.match(tail,/width:100%;height:auto;min-height:0;max-height:none;aspect-ratio:16\/9/);
   assert.match(tail,/\.root\[data-ready-state="choose"\] \.selectedVideo:not\(\[data-video-file="true"\]\)/);
   assert.doesNotMatch(tail,/\.selectedVideo:not\(\[data-video-file="true"\]\)\{height:(?:43|54|64)px/);
+});
+
+
+test("Ready keeps the local Canvas compositor active but visually hidden",()=>{
+  const match=studioCss.match(/\.studio\[data-active-workspace="ready"\] \.quickBuilder>\.previewStage\{([^}]+)\}/);
+  assert.ok(match,"Ready needs one preserved source compositor");
+  assert.match(match[1],/display:block!important/);
+  assert.match(match[1],/position:absolute!important/);
+  assert.match(match[1],/width:2px!important;height:2px!important/);
+  assert.match(match[1],/opacity:0!important;pointer-events:none!important/);
+  assert.doesNotMatch(studioCss,/\.studio\[data-active-workspace="ready"\] \.quickBuilder>\.previewStage,\s*\.studio\[data-active-workspace="ready"\] \.quickBuilder>\.workspaceHeading/);
+  const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
+  assert.match(browser,/const sourceCompositor=await readySourceStage.evaluate/);
+  assert.match(browser,/assert.notEqual\(sourceCompositor.display,"none"/);
 });
