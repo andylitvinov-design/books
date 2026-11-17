@@ -200,6 +200,8 @@ test('live check is server-owned, details-only and cannot accept user-supplied s
  const route=readFileSync(new URL('../app/api/app/commander/pr-completion/route.js',import.meta.url),'utf8');
  const client=readFileSync(new URL('../app/commander/pr/PrCompletionClient.jsx',import.meta.url),'utf8');
  assert.match(route,/verifyPrLiveReadback\(evidence\.pr\)/);
+ assert.match(route,/siteRuntimeOnly/);
+ assert.match(route,/NON_SITE_RUNTIME_SCOPE_UNVERIFIED/);
  assert.match(route,/if\(detailsRequested\)/);
  assert.match(route,/await auth\.verified\(\)/);
  assert.match(client,/productionVerified===true/);
