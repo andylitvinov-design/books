@@ -21,7 +21,7 @@ const old={
 };
 const grant={
  schema:'HH_PR_TASK_V1',pr_number:4737,head_sha:SHA,
- lane:'legacy',state:'RESERVED',
+ lane:'legacy',task_key:'2'.repeat(32),state:'RESERVED',
  owner_retry_kind:'TRUNCATED_FREE_MODEL',
  owner_retry_source:'OIDC_SIGNED_QUEUE',
  owner_retry_request_id:'123e4567-e89b-42d3-a456-426614174000',
