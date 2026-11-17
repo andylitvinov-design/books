@@ -1,22 +1,7 @@
 name: HH PR Control Tower queue dispatcher
 on:
   # The ten-minute Watchdog is the only scheduled PR inventory collector.
-  # Preserve read-only manual/push contract observation, not duplicate hourly polling.
-  push:
-    branches: ['codex/bootstrap-books']
-    paths:
-      - '.github/workflows/hh-pr-queue-dispatcher.yml'
-      - 'scripts/ci-pr-queue-dispatcher.cjs'
-      - 'scripts/ci-pr-ci-wake-reconcile.cjs'
-      - 'tests/ci-pr-ci-wake-reconcile.test.cjs'
-      - 'scripts/ci-pr-ci-legacy-recovery.cjs'
-      - 'scripts/ci-pr-task-state.cjs'
-      - 'scripts/ci-pr-capacity.cjs'
-      - 'scripts/ci-pr-api-quota.cjs'
-      - 'tests/ci-pr-control-tower.test.cjs'
-      - 'tests/ci-pr-inprocess-snapshot.test.cjs'
-      - 'tests/ci-pr-ci-legacy-recovery.test.cjs'
-      - 'tests/ci-pr-core-priority.test.cjs'
+  # Preserve read-only manual/PR contract observation, not duplicate hourly polling.
   pull_request:
     branches: ['codex/bootstrap-books']
     paths:
