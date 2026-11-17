@@ -61,6 +61,8 @@ test('new pipeline extends previous job ledger rather than inventing a second',(
  assert.match(sql,/force row level security/);
  assert.match(sql,/video_generation_jobs_source_exclusive/);
  assert.match(sql,/video_paid_job_insert_guard/);
+ assert.match(sql,/hh_video_paid_qa_exact_asset_read/);
+ assert.match(sql,/hh.video_paid_qa_video_id/);
  assert.doesNotMatch(sql,/create table app_private\.video_generation_jobs/);
  assert.match(admin,/requireAdminRequest\(\)/);
  assert.match(admin,/VIDEO_OWNER_RECONCILIATION_REQUIRED/);
@@ -77,5 +79,7 @@ test('30-second delivery requires owner QA and existing private master',()=>{
  assert.match(service,/status!=='ready'/);
  assert.match(service,/duration_seconds!==30/);
  assert.match(service,/v\.status/);
+ assert.match(service,/set_config\('hh.video_paid_qa_order_id'/);
+ assert.match(service,/set_config\('hh.video_paid_qa_video_id'/);
  assert.match(service,/qaManifestSha256/);
 });

@@ -105,4 +105,16 @@ create trigger video_paid_job_update before update on app_private.video_generati
  for each row execute function app_private.video_paid_job_update_guard();
 revoke execute on function app_private.video_paid_job_update_guard() from public,anon,authenticated,service_role;
 grant execute on function app_private.video_paid_job_update_guard() to hh_app_backend;
+-- Scope moderator read to ONE approved QA order and ONE target video ID, never all client videos.
+create policy hh_video_paid_qa_exact_asset_read on app_private.personal_videos
+ for select to hh_app_backend using (
+   current_setting('hh.moderator',true)='1'
+   and id=nullif(current_setting('hh.video_paid_qa_video_id',true),'')::uuid
+   and exists (
+     select 1 from app_private.video_paid_orders_v1 paid
+     where paid.id=nullif(current_setting('hh.video_paid_qa_order_id',true),'')::uuid
+       and paid.account_id=personal_videos.account_id
+       and paid.status='qa_pending'
+   )
+ );
 commit;
