@@ -168,7 +168,7 @@ export function ServicesThreeVisibleOptions({id,locale}:{id:ThreeGroup;locale:Pu
         </div>
         <ServicesCardActions locale={locale} title={title} description={description}
           href={href} request={description} option={price}
-          trackingId={id+"-"+offer.id} className={styles.actions} />
+          trackingId={id+"-"+offer.id} telegramUrl={"/api/public/telegram-option-entry?offer="+id+"_"+offer.id+"&locale="+locale} className={styles.actions} />
       </article>;
     })}
  </div>;
