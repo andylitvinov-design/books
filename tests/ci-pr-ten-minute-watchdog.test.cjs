@@ -2336,3 +2336,40 @@ test('signed BASE_ADVANCED from the embedded gate outranks historical Specialist
  assert.match(source,/else if\(root==='SPECIALIST_FAILED'\)/,
   'real signed product Specialist remains independently routed');
 });
+
+// One canonical Actions GET per sweep; alternate pages on the existing
+// twenty-minute Watchdog cadence instead of repeatedly probing page one.
+test('old queued Actions page two receives a bounded independent sweep',async()=>{
+ const checked=[],cancelled=[];
+ const now=Date.parse('2026-11-17T12:00:00Z');
+ const github={rest:{
+  actions:{
+   listWorkflowRunsForRepo:async({page,status,per_page})=>{
+    assert.equal(status,'queued');
+    assert.equal(per_page,100);
+    checked.push(page);
+    return {data:{total_count:142,workflow_runs:[]}};
+   },
+   getWorkflowRun:async()=>{throw Error('no eligible run to recheck');},
+   listJobsForWorkflowRun:async()=>{throw Error('no eligible job to inspect');},
+   cancelWorkflowRun:async x=>{cancelled.push(x.run_id);throw Error('unexpected cancellation');}
+  },
+  pulls:{list:async()=>{throw Error('unexpected PR search');},
+   get:async()=>{throw Error('unexpected PR read');}},
+  repos:{compareCommits:async()=>{throw Error('unexpected ancestry check');}}
+ }};
+ const context={repo:{owner:'andylitvinov-design',repo:'books'},
+  ref:'refs/heads/codex/bootstrap-books',eventName:'schedule'};
+ const opts={github,context,observedQueued:142,observedRemaining:1000};
+ const first=await mergedCleanup.runCleanup({...opts,now});
+ const second=await mergedCleanup.runCleanup({...opts,now:now+20*60*1000});
+ assert.deepEqual([...checked].sort(),[1,2],
+  'two existing watchdog cycles must cover the first and second page');
+ assert.equal(checked.length,2,'no extra Actions inventory GET');
+ assert.deepEqual([first.queue_page,second.queue_page],checked);
+ assert.equal(first.queue_pages_planned,2);
+ assert.equal(second.queue_pages_planned,2);
+ assert.deepEqual(cancelled,[],'no cancellation without complete identity/ancestry proof');
+ assert.equal(first.status,'NO_PROVEN_STALE_RUN');
+ assert.equal(second.status,'NO_PROVEN_STALE_RUN');
+});
