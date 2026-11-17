@@ -126,11 +126,14 @@ function classifyRedCiError({
       evidenceCode: 'WORKFLOW_BUDGET_GUARD'
     });
   }
+  // The legacy hh-specialist and current embedded hh-merge-check have the
+  // same trusted exact-head gate step. The signed job-log evidence below is
+  // still mandatory: a red aggregate alone cannot authorize source repair.
   // This exact specialist gate validates live HEAD/base identity and the
   // presence/completion of required specialist workflows. Its failure is
   // missing/stale CI proof, never proof that product source is defective.
   const specialistProofFailure=evidence.some(item=>
-    String(item.job||'').toLowerCase()==='hh-specialist'&&
+    ['hh-specialist','hh-merge-check'].includes(String(item.job||'').toLowerCase())&&
     SIGNALS.SPECIALIST_PROOF_GATE.test(String(item.step||'')));
   // Only an authenticated GitHub job-log parser supplies this parameter in
   // production. No specialist can become a code-writer merely by being red.

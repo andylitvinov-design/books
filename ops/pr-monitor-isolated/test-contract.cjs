@@ -251,3 +251,36 @@ test('exact PR query is optional and a signed CLAIMED is independent from edited
  assert.match(html,/id="error-funnel-all"/);
  assert.match(js,/funnelUrl\(funnelAtStart,funnelPRAtStart\)/);
 });
+
+
+test('public funnel distinguishes UNKNOWN and owner review from real classification and AI assignment',()=>{
+ const {inspect}=require('./api/ci-error-funnel.js')._test;
+ const head='a'.repeat(40),pr=4856,run=44014243574,at='2026-11-17T08:09:00Z';
+ const e={pr,head,run,at,failure_url:'https://github.com/andylitvinov-design/books/actions/runs/'+run};
+ const item={schema:'HH_CI_ERROR_TASK_V1',event_kind:'CORE_CI_FAILED',
+  task_id:'a'.repeat(32),pr_number:pr,head_sha:head,run_id:run,
+  category:'UNKNOWN',reason_code:'UNCLASSIFIED_FAILURE',
+  executor_kind:'owner_review',executor_id:'github-owner:andylitvinov-design',
+  assignment_status:'OWNER_REVIEW_REQUIRED'};
+ const signed=record=>({
+  id:45,user:{login:'github-actions[bot]',id:41898282,type:'Bot'},
+  performed_via_github_app:{id:15368,slug:'github-actions'},
+  created_at:at,updated_at:at,
+  body:'<!-- HH_CI_ERROR_TASK_V1 '+record.task_id+' -->\n'+'\x60\x60\x60json\n'+JSON.stringify(record)+'\n\x60\x60\x60'
+ });
+ const unknown=inspect(e,[signed(item)]);
+ assert.ok(unknown.task);
+ assert.equal(unknown.classified,null,'UNKNOWN is not successful classification');
+ assert.equal(unknown.assigned,null,'owner review is not a running AI worker');
+ const classified=inspect(e,[signed({...item,category:'BASE_ADVANCED',
+  reason_code:'EXPLICIT_BASE_FAILURE'})]);
+ assert.ok(classified.classified);
+ assert.equal(classified.assigned,null);
+ const selected=inspect(e,[signed({...item,category:'SOURCE_CODE',
+  reason_code:'SOURCE_BUILD_OR_LINT_FAILURE',executor_kind:'github_actions',
+  executor_id:'github-actions:hh-pr-repair-worker.yml',
+  assignment_status:'SELECTED_NOT_DISPATCHED'})]);
+ assert.ok(selected.classified);
+ assert.ok(selected.assigned);
+ assert.equal(selected.dispatched,null,'candidate selection is not dispatch acknowledgement');
+});

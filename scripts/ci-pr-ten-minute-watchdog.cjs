@@ -38,6 +38,7 @@ const {readCompleteIssueComments,externalOwnerLeaseStatus}=require('./ci-pr-task
 const {hasVerifiedSourceHandoff}=require('./ci-pr-repair-worker.cjs');
 const {stageLine}=require('./ci-pr-stage-receipts.cjs');
 const {classifyRedCiError}=require('./ci-pr-red-ci-classifier.cjs');
+const {verifiedSpecialistTerminalEvidence}=require('./ci-pr-hermes-event-bridge.cjs');
 const {makeCoreTask,taskBody,taskStatus,taskLifecycle}=require('./ci-pr-error-task.cjs');
 const {isTrustedQualityFailureEvent,qualityEventMatchesPR}=require('./ci-pr-quality-event.cjs');
 
@@ -262,8 +263,9 @@ function classifyCoreFailureJobs(jobs) {
   // Modern Core no longer emits classify-change / hh-core-verified.
   // A successful real source build plus both modern gates proves source success.
   const modernCore=scope===undefined && core===undefined &&
-    byName.has('hh-merge-check') && byName.has('hh-specialist') &&
-    build?.conclusion==='success';
+    byName.has('hh-merge-check') && build?.conclusion==='success' &&
+    (!byName.has('hh-specialist') ||
+     ['success','failure'].includes(byName.get('hh-specialist')?.conclusion));
   const sourceGreen=(scope?.conclusion==='success'||modernCore) &&
     (build?.conclusion==='success' || build?.conclusion==='skipped') &&
     coreVerified;
@@ -1238,7 +1240,33 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
     // or source-repair decision. Retry requires both the classifier policy and
     // the existing bounded exact-run timing/attempt gate.
     const root=classifyCoreFailureJobs(jobs);
-    const diagnosis=classifyRedCiError({pr:live,jobs,coreRoot:root});
+    // A green source job and red modern hh-merge-check is NOT proof of a
+    // source defect. Read at most one authenticated, exact-run gate log through
+    // the existing bounded GitHub API budget. The shared bridge validates
+    // the complete Core job topology and returns only typed markers, never
+    // log bytes, secrets or arbitrary PR-controlled text.
+    let failureMessage='',verifiedSpecialistWorkflows=[];
+    if(['RELEASE_GATE_ONLY','SPECIALIST_FAILED'].includes(root)&&
+       Array.isArray(jobs)&&
+       jobs.some(j=>['hh-merge-check','hh-specialist'].includes(j.name)&&
+         j.conclusion==='failure')&&!budget.exhausted){
+      try{
+        const proof=await verifiedSpecialistTerminalEvidence({
+          github:{request:(route,args)=>limited('exact-core-gate-log',()=>
+            github.request(route,args))},
+          owner,repo,jobData:{total_count:jobs.length,jobs}
+        });
+        if(proof?.kind==='BASE_ADVANCED')
+          failureMessage='BASE_ADVANCED: PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED';
+        else if(proof?.kind==='SPECIALIST_FAILURE')
+          verifiedSpecialistWorkflows=proof.workflows;
+      }catch(error){
+        log('#'+pr.number+' causal gate evidence deferred: '+
+          String(error?.name||'Error').slice(0,60));
+      }
+    }
+    const diagnosis=classifyRedCiError({pr:live,jobs,coreRoot:root,
+      failureMessage,verifiedSpecialistWorkflows});
     summary.ciErrorByCategory[diagnosis.category]=
       (summary.ciErrorByCategory[diagnosis.category]||0)+1;
     const blocker=summary.blockerCases.find(c=>c.pr_number===live.number&&
@@ -1292,6 +1320,13 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
       log(`${dryRun?'WOULD_RERUN':'RERUN'} classified ${diagnosis.category} core CI #${pr.number} run=${latest.id} HEAD ${pr.head.sha.slice(0,12)}`);
     } else if ((dryRun||errorTaskDurable) && latest.conclusion === 'failure' && latest.run_attempt >= 1) {
       if(root==='RELEASE_GATE_ONLY') {
+        // Modern hh-merge-check may embed a genuinely failed Specialist.
+        // Only authenticated exact-job log evidence may select that route.
+        if(diagnosis.reason_code==='VERIFIED_REQUIRED_SPECIALIST_FAILURE'){
+          await routeVerifiedSpecialist(live);
+          log('#'+pr.number+' signed embedded Specialist failure; exact-head specialist triage');
+          continue;
+        }
         summary.releaseGateOnly++;
         // This may be a production BASE_ADVANCED result or failed specialist
         // aggregation; the exact log must determine which. No source claim.

@@ -89,7 +89,7 @@ test('trusted red-CI taxonomy: mixed, pending and invalid-head jobs remain UNKNO
 });
 test('existing watchdog records a diagnostic only, without new dispatch or gate override',()=>{
  const src=fs.readFileSync('scripts/ci-pr-ten-minute-watchdog.cjs','utf8');
- assert.match(src,/classifyRedCiError\(\{pr:live,jobs,coreRoot:root\}\)/);
+ assert.match(src,/classifyRedCiError\(\{pr:live,jobs,coreRoot:root,/);
  assert.match(src,/ciErrorByCategory/);
  assert.match(src,/noteConfirmedBlocker/);
 });
@@ -144,4 +144,25 @@ test('signed terminal specialist test failures get a bounded diagnostic classifi
  for(const invalid of [[],['../../config'],[42],['.github/workflows/x.yml:failure']]){
   assert.equal(classifyRedCiError({pr:PR,jobs,verifiedSpecialistWorkflows:invalid}).category,'BASE_OR_CI_ROUTING');
  }
+});
+
+
+test('modern embedded hh-merge-check diagnoses verified Specialist, not arbitrary aggregate failure',()=>{
+ const {classifyRedCiError}=require('../scripts/ci-pr-red-ci-classifier.cjs');
+ const jobs=[{name:'core-lint-types-build',conclusion:'success'},
+  {name:'hh-merge-check',conclusion:'failure',steps:[
+   {name:'Validate exact-head risk and required specialist workflows',conclusion:'failure'}
+  ]},{name:'hh-eslint-repair',conclusion:'skipped'}];
+ const signed=classifyRedCiError({pr:PR,jobs,coreRoot:'RELEASE_GATE_ONLY',
+  verifiedSpecialistWorkflows:['.github/workflows/hh-public-services-production.yml']});
+ assert.equal(signed.category,'TEST_FAILURE');
+ assert.equal(signed.reason_code,'VERIFIED_REQUIRED_SPECIALIST_FAILURE');
+ assert.equal(signed.execution_authorized,false);
+ const missing=classifyRedCiError({pr:PR,jobs,coreRoot:'RELEASE_GATE_ONLY'});
+ assert.equal(missing.category,'BASE_OR_CI_ROUTING');
+ assert.equal(missing.reason_code,'SPECIALIST_REQUIRED_PROOF_MISSING_OR_STALE');
+ const base=classifyRedCiError({pr:PR,jobs,coreRoot:'RELEASE_GATE_ONLY',
+  failureMessage:'BASE_ADVANCED: PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED'});
+ assert.equal(base.category,'BASE_ADVANCED');
+ assert.equal(base.source_write_authorized,false);
 });
