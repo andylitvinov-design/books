@@ -1,7 +1,7 @@
 name: Reports development programme isolated verification
 on:
   push:
-    branches: ['codex/reports-development-program-20261017', 'codex/public-book-library']
+    branches: ['codex/reports-development-program-20261017']
     paths:
       - '.github/workflows/hh-reports-development-program.yml'
       - 'components/app/development-program*'
