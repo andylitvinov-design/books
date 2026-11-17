@@ -14,7 +14,7 @@ const invalid=()=>new NextResponse('Not Found',{status:404,headers})
 // A click is not a submitted enquiry. Only public offer/locale codes enter
 // the URL; Telegram Send and (for model processing) explicit consent remain
 // required. Do not send customers to a silent personal account when the
-// already-approved V3 bot is actually ready and Business automation is off.
+// already-approved V3 bot is actually ready; human Business is the fallback.
 export async function GET(request){
  const params=new URL(request.url).searchParams
  const keys=[...params.keys()]

@@ -108,7 +108,7 @@ test('Only canonical free review gets the generic bot, other services stay manua
  assert.equal(isOfficialFreeReviewWhatsAppDraft('https://wa.me/1000?text=Page','en'),false);
 });
 
-test('Service cards use server-verified opt-in bot only when human automation is disabled',()=>{
+test('Service cards prefer signed, ready V3 bot regardless of independent Business automation',()=>{
  const ui=source('components/mandatory-messenger-actions.tsx');
  const action=source('components/services-card-actions.tsx');
  const router=source('app/api/public/telegram-service-entry/route.js');
@@ -117,7 +117,7 @@ test('Service cards use server-verified opt-in bot only when human automation is
  assert.match(ui,/href=\{serviceRoute\|\|serviceBot\|\|telegramUrl/);
  assert.match(router,/telegramServiceRequestUrl\(service,locale\)/);
  assert.match(router,/telegramBusinessStrategyRequestUrl\(locale\)/);
- assert.match(router,/HH_CRM_TG_CHAT_AUTOMATION_ENABLED/);
+ assert.doesNotMatch(router,/if\(env\.HH_CRM_TG_CHAT_AUTOMATION_ENABLED!=='true'/);
  assert.match(router,/channelTransportReady\('telegram',env\)/);
  assert.match(router,/v3CanStart\(env\)/);
  assert.match(router,/resolveTelegramServiceEntry/);
@@ -172,7 +172,7 @@ test('AI secretary product remains in Telegram Business, never unsupported V3 bo
 
 // Exercise the actual route with a sandboxed NextResponse, without real
 // provider calls, client data, Telegram sends or paid model processing.
-test('all 15 public services choose READY bot, real Business, or safe human fallback',async()=>{
+test('all 15 public service handoffs use READY bot even with Business automation, or safe human fallback',async()=>{
  const raw=source('app/api/public/telegram-service-entry/route.js');
  const compiled=raw.replace(/^import\s+.*$/gm,'').replace(/^export\s+/gm,'');
  class Reply {
@@ -205,7 +205,7 @@ test('all 15 public services choose READY bot, real Business, or safe human fall
   const redirect=await getV3({url});
   assert.equal(redirect.status,307);
   assert.equal(redirect.location,expectedBot,'ready existing bot must answer');
-  assert.equal((await getHuman({url})).location,expectedHuman,'verified Business keeps human chat');
+  assert.equal((await getHuman({url})).location,expectedBot,'ready bot takes service handoff independent of human automation');
   assert.equal((await getOffline({url})).location,expectedHuman,'unready bot must not be advertised');
   assert.equal((await getDisabled({url})).location,expectedHuman);
   assert.equal((await getTransportOff({url})).location,expectedHuman);
@@ -213,9 +213,10 @@ test('all 15 public services choose READY bot, real Business, or safe human fall
  }
  for(const locale of locales){
   const url='https://holistichouse.vercel.app/api/public/telegram-service-entry?service=business&locale='+locale+'&offer=business_strategy';
-  assert.equal((await getHuman({url})).location,telegramBusinessStrategyRequestUrl(locale));
+  assert.equal((await getHuman({url})).location,'https://t.me/holistichouse_bot?start=hhservice_business_strategy_'+locale);
   assert.equal((await getV3({url})).location,
-   'https://t.me/holistichouse_bot?start=hhservice_business_'+locale);
+   'https://t.me/holistichouse_bot?start=hhservice_business_strategy_'+locale);
+  assert.equal((await getOffline({url})).location,telegramBusinessStrategyRequestUrl(locale));
  }
  for(const unsafe of [
   '?service=ai_secretary&locale=en',
