@@ -10,6 +10,7 @@ import { inferAssistPreferences } from "../lib/assist/service-match.mjs";
 import { rankAssistProducts } from "../lib/assist/product-recommendations.mjs";
 import { rankDiscoveryVideos } from "../lib/video-discovery/ranker.mjs";
 import { telegramServiceRequestUrl } from "../lib/assist/telegram-business-request.mjs";
+import { resolveTelegramServiceHandoffUrl } from "../lib/app/telegram-entry-url.mjs";
 import { mkdir, writeFile } from "node:fs/promises";
 
 const origin = process.env.HH_PUBLIC_QA_ORIGIN || "http://127.0.0.1:3100";
@@ -474,7 +475,7 @@ try {
       if(code){
         const url=telegramServiceRequestUrl(code,locale);
         assert.ok(url,"No unapproved Telegram request: "+key);
-        await expect(action).toHaveAttribute("href",url);
+        await expect(action).toHaveAttribute("href",resolveTelegramServiceHandoffUrl(url,locale));
         await expect(action).toHaveAttribute("target","_blank");
         assert.equal(new URL(url).searchParams.get("text")?.split(String.fromCharCode(10)).at(-1),
           "[HH-REQ:"+code+":"+locale+"]","Deep link contains no private problem text");
@@ -511,7 +512,7 @@ try {
     assert.deepEqual(actualWork,expectedWork,"Work cards rerank without appending the prior intent");
     if (expectedWork.includes("business")) {
       await expect(shelf.locator('[data-assist-best-action="business"]'))
-        .toHaveAttribute("href", /^https:\/\/t\.me\/holistichouse\?text=/);
+        .toHaveAttribute("href", /^\/api\/public\/telegram-service-entry\?service=business&locale=/);
     }
     await reset.click();
     await expect(topics).toHaveCount(6);
