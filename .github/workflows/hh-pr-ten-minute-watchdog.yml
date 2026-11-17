@@ -20,6 +20,9 @@ on:
     # every specialist completion produced extra skipped and duplicate Actions
     # for each PR without authorizing any additional release.
     workflows:
+      # Exactly one cheap default-branch wake for a failed Core; success
+      # is skipped and never starts another CI wave.
+      - 'HH PR core release gate'
       - 'HH PR source Repair Worker'
       - 'HH zero-cost PR CI worker'
     types: [completed]
@@ -100,17 +103,9 @@ jobs:
       github.repository == 'andylitvinov-design/books' &&
       github.ref == 'refs/heads/codex/bootstrap-books' &&
       (
-        github.event_name != 'workflow_run' ||
-        (
-          github.event.workflow_run.event == 'pull_request' &&
-          github.event.workflow_run.status == 'completed' &&
-          (
-            github.event.workflow_run.conclusion == 'failure' ||
-            github.event.workflow_run.conclusion == 'timed_out' ||
-            github.event.workflow_run.conclusion == 'startup_failure'
-          ) &&
-          !contains(fromJSON('["HH PR source Repair Worker","HH zero-cost PR CI worker"]'), github.event.workflow_run.name)
-        )
+        # Completed Core and worker events use only the lightweight
+        # direct-handoff job, not the expensive all-PR reconcile.
+        github.event_name != 'workflow_run'
       ) &&
       github.event_name != 'pull_request_target' &&
       !(github.event_name == 'workflow_dispatch' &&
@@ -160,11 +155,11 @@ jobs:
         with:
           github-token: ${{ github.token }}
           script: |
-            const {run}=require(process.env.GITHUB_WORKSPACE+
+            const {drain}=require(process.env.GITHUB_WORKSPACE+
               '/scripts/ci-pr-commander-pr-completion.cjs');
             const inbox=require(process.env.GITHUB_WORKSPACE+
               '/scripts/ci-pr-pm-agent-inbox.cjs');
-            const outcome=await run({github,core,context,
+            const outcome=await drain({github,core,context,
               ownerToken:process.env.HH_PM_OWNER_TOKEN,fetcher:fetch,
               // OIDC claim and atomic CAS already verified the owner command.
               // Deliver source repair inside this existing single-writer job.
@@ -382,14 +377,14 @@ jobs:
         github.event.workflow_run.conclusion != 'skipped' &&
         (
           (
+            github.event.workflow_run.name == 'HH PR core release gate' &&
             github.event.workflow_run.event == 'pull_request' &&
             github.event.workflow_run.head_repository.full_name == 'andylitvinov-design/books' &&
             (
               github.event.workflow_run.conclusion == 'failure' ||
               github.event.workflow_run.conclusion == 'timed_out' ||
               github.event.workflow_run.conclusion == 'startup_failure'
-            ) &&
-            !contains(fromJSON('["HH PR core release gate","HH PR source Repair Worker","HH zero-cost PR CI worker"]'), github.event.workflow_run.name)
+            )
           ) ||
           (
             (github.event.workflow_run.name == 'HH PR source Repair Worker' ||
@@ -424,6 +419,11 @@ jobs:
           ref: codex/bootstrap-books
           persist-credentials: false
           fetch-depth: 1
+          filter: blob:none
+          sparse-checkout: |
+            scripts
+            .github
+            ops/pr-monitor
       # Same existing single-writer runner. An OIDC signed owner intent is
       # checked BEFORE the next backlog scan; no new CI wave is created.
       - name: Owner PR completion wake on verified finished worker
@@ -434,11 +434,11 @@ jobs:
         with:
           github-token: ${{ github.token }}
           script: |
-            const {run}=require(process.env.GITHUB_WORKSPACE+
+            const {drain}=require(process.env.GITHUB_WORKSPACE+
               '/scripts/ci-pr-commander-pr-completion.cjs');
             const inbox=require(process.env.GITHUB_WORKSPACE+
               '/scripts/ci-pr-pm-agent-inbox.cjs');
-            const outcome=await run({github,core,context,
+            const outcome=await drain({github,core,context,
               ownerToken:process.env.HH_PM_OWNER_TOKEN,fetcher:fetch,
               dispatch:(gh,cmd,opts)=>inbox.dispatchLive(gh,cmd,{
                 ownerToken:opts.ownerToken,fetcher:opts.fetcher,
