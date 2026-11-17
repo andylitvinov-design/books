@@ -8,6 +8,7 @@ import type { AssistPreferences } from "@/lib/assist/service-match.mjs";
 import { assistPriceLabel } from "@/lib/assist/service-match.mjs";
 import { rankAssistProducts } from "@/lib/assist/product-recommendations.mjs";
 import { telegramServiceRequestUrl } from "@/lib/assist/telegram-business-request.mjs";
+import { resolveTelegramServiceHandoffUrl } from "@/lib/app/telegram-entry-url.mjs";
 import styles from "./assist-top-recommendations.module.css";
 
 type Focus = "stress" | "relationships" | "energy" | "health" | "work" | "growth" | "general" | null;
@@ -99,6 +100,7 @@ export function AssistTopRecommendations({
         const [title,description]=t.cards[id];
         const href="/"+locale+"/"+item.path;
         const draft=item.requestId?telegramServiceRequestUrl(item.requestId,locale):null;
+        const handoff=draft?resolveTelegramServiceHandoffUrl(draft,locale):null;
         const priced=id==="review"||id==="therapy"||id==="constellation"||id==="business";
         const price=priced?assistPriceLabel(id,locale)
           .replaceAll(" minutes — ","m · ").replaceAll(" минут — ","м · ")
@@ -112,7 +114,7 @@ export function AssistTopRecommendations({
               <small className={styles.price}>{price}</small>
             </span>
           </Link>
-          {draft?<a className={styles.action} href={draft} target="_blank" rel="noopener noreferrer"
+          {draft?<a className={styles.action} href={handoff||draft} target="_blank" rel="noopener noreferrer"
               referrerPolicy="no-referrer" aria-label={t.request+": "+title+" — Telegram"} data-assist-best-action={id}>
               {t.request}<ArrowRight size={16} aria-hidden="true"/>
             </a>:<Link className={styles.action} href={href} prefetch={false} data-assist-best-action={id}>
