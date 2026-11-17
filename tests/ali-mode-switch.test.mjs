@@ -5,6 +5,7 @@ import {decideAliDialogueMode,ALI_DIALOGUE_ROLES,ALI_MODE_SWITCH_VERSION} from '
 import {routeMindRole,mindRoleInstruction,MIND_ROLE_ROUTER_VERSION} from '../lib/holistic-support/mind-role-router.mjs';
 import {classifyTelegramSecretaryQuery,composeTelegramAliServiceReply} from '../lib/crm/telegram-secretary-offers.mjs';
 import {consultServiceQuestion} from '../lib/assist/consultant-mind.mjs';
+import {assessRoleReply} from '../lib/holistic-support/role-output-guard.mjs';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const user=text=>({role:'user',text});
 const bot=text=>({role:'assistant',text});
@@ -135,4 +136,19 @@ test('all existing Ali channel routers share canonical roles, but do not share a
  }
  assert.equal(consultServiceQuestion({message:'Сколько стоит психотерапия?',locale:'ru'}).intent,'price');
  assert.equal(composeTelegramAliServiceReply('Мне тревожно','ru'),null);
+});
+
+test('localized output guard protects Spanish and the separately consented psychologist role',()=>{
+  for(const [role,locale,text,reason] of [
+    ['sales','es','Ya he reservado tu cita.','fabricated_action'],
+    ['secretary','es','Tu pago está confirmado.','fabricated_action'],
+    ['secretary_psychologist','es','Tienes depresión.','unsupported_diagnosis'],
+    ['coach','es','¿Qué deseas? ¿Cuándo empezarás?','question_overload'],
+    ['secretary_psychologist','ru','Я записал вас на сессию.','fabricated_action'],
+  ]){
+    const result=assessRoleReply({role,locale,text});
+    assert.equal(result.ok,false,text);
+    assert.equal(result.reason,reason,text);
+  }
+  assert.equal(assessRoleReply({role:'sales',locale:'es',text:'Puedo explicarte el método. ¿Qué quieres saber?'}).ok,true);
 });
