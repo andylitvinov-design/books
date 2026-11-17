@@ -186,3 +186,18 @@ test('native ARM spends owner PAT only for protected merge, not read-only prefli
     arm.includes('HH_EXPECTED_MERGE_METHOD')&&arm.includes('CI_AUTO_MERGE_SAFETY:')===false,
     'base freshness and method verification are preserved');
 });
+
+test('retired admin migration is gone and PR inventory no longer collides with watchdog',()=>{
+  assert.equal(fs.existsSync('.github/workflows/hh-migrate-legacy-core-check.yml'),false,
+    'one-off status migration must never be dispatched after protected merge gate is active');
+  const inventory=fs.readFileSync('.github/workflows/hh-pr-full-inventory.yml','utf8');
+  const watchdog=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
+  const cron=s=>[...s.matchAll(/- cron: '([^']+)'/g)].map(m=>m[1]);
+  const minutes=s=>new Set(cron(s).flatMap(expression=>expression.split(' ')[0].split(',').map(Number)));
+  const [full]=cron(inventory);
+  assert.match(full,/^17 \* \* \* \*$/);
+  for(const minute of minutes(inventory)){
+    assert.ok(!minutes(watchdog).has(minute),
+      'full PR inventory must not start at the same minute as a write-capable Watchdog');
+  }
+});

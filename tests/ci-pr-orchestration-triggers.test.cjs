@@ -68,7 +68,7 @@ test('CI scheduled recovery retains cron but cannot reserve addressed worker lea
  assert.ok(s.includes('HH_CI_SCHEDULE_FALLBACK'));
 });
 test('full inventory retains independent hourly recovery',()=>{
-  assert.ok(read('hh-pr-full-inventory').includes("cron: '27 * * * *'"));
+  assert.ok(read('hh-pr-full-inventory').includes("cron: '17 * * * *'"));
 });
 
 test('trusted default push re-enables schedules and dispatches one live watchdog',()=>{
@@ -273,7 +273,7 @@ test('auto-merge pins production SHA for revalidated isolated CI policy, not onl
     'exact source HEAD remains mandatory on both routes');
 });
 
-test('staged single-release-check policy preserves legacy until proven administrative cutover',()=>{
+test('current singleton merge gate keeps legacy read compatibility without admin migration',()=>{
   const auto=read('hh-native-auto-merge');
   assert.ok(auto.includes('const allowedRequiredSets = new Map(['));
   assert.ok(auto.includes('["release-ready", ["hh-core-verified", "hh-specialist", "release-ready"]]'));
@@ -283,21 +283,8 @@ test('staged single-release-check policy preserves legacy until proven administr
   assert.ok(auto.includes('jobPage.total_count !== jobs.length'));
   assert.ok(auto.includes('required.length !== new Set(required).size || !need'));
   assert.ok(!auto.includes("oldRequired === coreRequired"));
-  const m=read('hh-migrate-legacy-core-check');
-  assert.ok(m.includes('HH_BRANCH_ADMIN_TOKEN'));
-  assert.ok(m.includes('head_sha=$head'));
-  assert.ok(m.includes('evidence_pr_number:'));
-  assert.ok(m.includes('required: true'));
-  assert.ok(!m.includes("default: '3054'"),'closed unmerged proof PR must not be silently preselected');
-  assert.ok(m.includes('Actually merged production PR with successful hh-merge-check'));
-  assert.ok(m.includes('["hh-core-verified","hh-specialist","release-ready","hh-merge-check"]'));
-  assert.ok(m.includes('.parameters.required_status_checks = ['));
-  assert.ok(m.includes('"context":"hh-merge-check","integration_id":15368'));
-  assert.ok(m.includes('"context":"hh-merge-check","app_id":15368'));
-  assert.ok(m.includes('gh api --method PUT'));
-  assert.ok(m.includes('gh api --method PATCH'));
-  assert.ok(m.includes("Already migrated, both protections verified"));
-  assert.ok(m.includes('strict: false'));
+  assert.equal(require('node:fs').existsSync('.github/workflows/hh-migrate-legacy-core-check.yml'),false,
+    'retired privileged ruleset migration must no longer be dispatchable');
 });
 
 test('live workers avoid duplicate unit suites while changes retain the full contract gate',()=>{
@@ -591,7 +578,7 @@ test('two hourly full-inventory API and LIVE receipt jobs reuse slim without wea
  assert.match(live,/scripts\/ci-pr-live-verifier\.cjs/);
  assert.match(live,/scripts\/ci-pr-release-kpi\.cjs/);
  assert.match(live,/actions\/upload-artifact@v4/);
- assert.match(source,/cron: '27 \* \* \* \*'/);
+ assert.match(source,/cron: '17 \* \* \* \*'/);
  assert.doesNotMatch(source,/continue-on-error:\s*true/);
 });
 

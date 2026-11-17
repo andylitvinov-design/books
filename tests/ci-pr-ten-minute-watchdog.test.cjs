@@ -649,43 +649,14 @@ test('GraphQL outage falls back to no more than six rotating REST snapshots',asy
   assert.equal(result.inspected,6);
 });
 
-test('one-time admin migration proves merged single gate and preserves BOTH protected controls',()=>{
-  const {readFileSync}=require('node:fs');
-  const source=readFileSync('.github/workflows/hh-migrate-legacy-core-check.yml','utf8');
-  assert.ok(source.includes('  workflow_dispatch:'));
-  assert.ok(!source.includes('  push:'));
-  assert.ok(!source.includes('  schedule:'));
-  assert.ok(source.includes('GH_TOKEN: ' + '$' + '{{ secrets.HH_BRANCH_ADMIN_TOKEN }}'));
-  assert.ok(!source.includes('secrets.HH_AUTOMERGE_TOKEN'));
-  assert.ok(source.includes('set -euo pipefail'));
-  assert.ok(source.includes('HH_BRANCH_ADMIN_TOKEN missing. No branch rule changed.'));
-  assert.ok(source.includes("EVIDENCE_PR: " + '$' + "{{ inputs.evidence_pr_number }}"));
-  assert.ok(source.includes('repos/$GH_REPO/pulls/$EVIDENCE_PR'));
-  assert.ok(source.includes('.merged == true'));
-  assert.ok(source.includes('head_sha=$head'));
-  assert.ok(source.includes('total_count == (.jobs | length)'));
-  for(const gate of ['hh-core-verified','hh-specialist','release-ready','hh-merge-check'])
-    assert.ok(source.includes('"'+gate+'"'),gate);
-  assert.ok(source.includes('Exact run lacks Core, Specialist, legacy or new verified PASS jobs.'));
-  const beforeRules=source.indexOf('gh api "repos/$GH_REPO/rulesets/26269892" > "$temp/rules.json"');
-  const putRules=source.indexOf('gh api --method PUT "repos/$GH_REPO/rulesets/26269892"');
-  const afterRules=source.indexOf('gh api "repos/$GH_REPO/rulesets/26269892" > "$temp/rules-after.json"');
-  const beforeClassic=source.indexOf('gh api "repos/$GH_REPO/branches/codex%2Fpublic-book-library/protection/required_status_checks" > "$temp/classic.json"');
-  const patchClassic=source.indexOf('gh api --method PATCH ');
-  const afterClassic=source.indexOf('gh api "repos/$GH_REPO/branches/codex%2Fpublic-book-library/protection/required_status_checks" > "$temp/classic-after.json"');
-  assert.ok(beforeRules>=0&&beforeRules<putRules&&putRules<afterRules);
-  assert.ok(beforeClassic>=0&&beforeClassic<patchClassic&&patchClassic<afterClassic);
-  assert.equal((source.match(/^          gh api --method PUT /gm)||[]).length,1);
-  assert.equal((source.match(/^          gh api --method PATCH /gm)||[]).length,1);
-  assert.ok(source.includes('.enforcement == "active"'));
-  assert.ok(source.includes('required_review_thread_resolution == true'));
-  assert.ok(source.includes('non_fast_forward'));
-  assert.ok(source.includes('deletion'));
-  assert.ok(source.includes('Already migrated, both protections verified.'));
-  assert.ok(source.includes('["hh-merge-check"]'));
-  assert.ok(source.includes('MIGRATED: only hh-merge-check required'));
-  assert.ok(!source.includes('base64 --decode | grep -q '));
-  assert.ok(!source.includes('gh api --method DELETE '));
+test('retired admin status migration cannot mutate live branch protections',()=>{
+  const {existsSync,readFileSync}=require('node:fs');
+  assert.equal(existsSync('.github/workflows/hh-migrate-legacy-core-check.yml'),false,
+    'obsolete admin migration must not be runnable');
+  const native=readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
+  assert.ok(native.includes('hh-merge-check'));
+  assert.ok(native.includes('required.length !== new Set(required).size || !need'),
+    'protected release must still reject unknown or empty check requirements');
 });
 
 test('event-driven merge supports legacy, bridge and only approved single required check',()=>{
