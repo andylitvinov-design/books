@@ -1,9 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
-import {telegramServiceRequestUrl,telegramBusinessServiceTitle} from '../lib/assist/telegram-business-request.mjs';
+import {telegramServiceRequestUrl,telegramBusinessServiceTitle,BUSINESS_STRATEGY_PAGE_TITLES,telegramBusinessStrategyRequestUrl} from '../lib/assist/telegram-business-request.mjs';
 import {whatsappEnquiryUrl,telegramEnquiryUrlFromWhatsApp} from '../lib/whatsapp-enquiry.js';
-import {resolveTelegramFirstEntry,resolveTelegramServiceEntry,isOfficialFreeReviewWhatsAppDraft} from '../lib/app/telegram-entry-url.mjs';
+import {resolveTelegramFirstEntry,resolveTelegramServiceEntry,isTelegramServiceDraft,resolveTelegramServiceHandoffUrl,isOfficialFreeReviewWhatsAppDraft} from '../lib/app/telegram-entry-url.mjs';
 import {v3ServiceStart,v3Context,v3ServiceCopy,v3ButtonsFor,V3_LABELS,v3Action} from '../lib/crm/telegram-ai-diagnostic-v3.mjs';
 import {v3ModelMessages} from '../lib/crm/telegram-ai-diagnostic-v3-model.mjs';
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
@@ -16,6 +17,9 @@ test('15 approved Telegram service-deep links preserve exact service/locale',()=
   assert.equal(entry?.href,'https://t.me/holistichouse_bot?start=hhservice_'+service+'_'+lang);
   assert.deepEqual(v3ServiceStart('/start hhservice_'+service+'_'+lang),{service,locale:lang});
   assert.ok(v3ServiceCopy(lang,service).intro.includes('OpenRouter'));
+  assert.equal(isTelegramServiceDraft(telegramServiceRequestUrl(service,lang),lang),true);
+  assert.equal(resolveTelegramServiceHandoffUrl(telegramServiceRequestUrl(service,lang),lang),
+    '/api/public/telegram-service-entry?service='+service+'&locale='+lang);
   assert.deepEqual(v3ButtonsFor(lang,'review_confirm',3,service),[
    [V3_LABELS[lang].servicesend],[V3_LABELS[lang].edit,V3_LABELS[lang].cancel]]);
  }
@@ -25,6 +29,8 @@ test('Strict bot readiness and tamper rejection retain human fallback',()=>{
  assert.equal(resolveTelegramServiceEntry({...ready,aiInterviewAvailable:false},human,'ru'),null);
  assert.equal(resolveTelegramServiceEntry({...ready,available:false},human,'ru'),null);
  assert.equal(resolveTelegramServiceEntry(ready,human,'en'),null);
+ assert.equal(isTelegramServiceDraft(human,'en'),false);
+ assert.equal(isTelegramServiceDraft(human+'&extra=private','ru'),false);
  assert.equal(resolveTelegramServiceEntry(ready,human+'&extra=private','ru'),null);
  assert.equal(resolveTelegramServiceEntry(ready,human.replace('/holistichouse','/attacker'),'ru'),null);
  assert.equal(resolveTelegramServiceEntry({...ready,url:'https://t.me/attacker_bot?evil=1'},human,'ru'),null);
@@ -51,7 +57,7 @@ test('Owner CRM transfer requires existing confirmation path; no early lead',()=
  assert.match(code,/ingestMessengerEventInTransaction/);
  assert.match(code,/ai_review_consent_at=now\(\)/);
  assert.match(code,/crm_tg_suppress_existing/);
- assert.doesNotMatch(ui,/resolveTelegramServiceEntry/);
+ assert.match(ui,/resolveTelegramServiceHandoffUrl/);
  assert.match(ui,/serviceBot\|\|telegramUrl/);
 });
 
@@ -102,13 +108,127 @@ test('Only canonical free review gets the generic bot, other services stay manua
  assert.equal(isOfficialFreeReviewWhatsAppDraft('https://wa.me/1000?text=Page','en'),false);
 });
 
-test('Two-action Services cards do not enter the opt-in bot; only active free-review CTA can load it',()=>{
+test('Service cards use server-verified opt-in bot only when human automation is disabled',()=>{
  const ui=source('components/mandatory-messenger-actions.tsx');
  const action=source('components/services-card-actions.tsx');
+ const router=source('app/api/public/telegram-service-entry/route.js');
  assert.match(action,/active=\{expanded==="order"\}/);
- assert.match(ui,/if\(!active\|\|telegramUrl\|\|!isOfficialFreeReviewWhatsAppDraft\(whatsappUrl,locale\)\)/);
+ assert.match(ui,/resolveTelegramServiceHandoffUrl/);
+ assert.match(ui,/href=\{serviceRoute\|\|serviceBot\|\|telegramUrl/);
+ assert.match(router,/telegramServiceRequestUrl\(service,locale\)/);
+ assert.match(router,/telegramBusinessStrategyRequestUrl\(locale\)/);
+ assert.match(router,/HH_CRM_TG_CHAT_AUTOMATION_ENABLED/);
+ assert.match(router,/channelTransportReady\('telegram',env\)/);
+ assert.match(router,/v3CanStart\(env\)/);
+ assert.match(router,/resolveTelegramServiceEntry/);
+ assert.match(router,/NextResponse.redirect\(target/);
  assert.doesNotMatch(ui,/resolveTelegramServiceEntry\(payload,manual,locale\)/);
- assert.match(ui,/const entry=resolveTelegramFirstEntry\(payload,locale\)/);
- assert.match(ui,/serviceBot\|\|telegramUrl\|\|telegramEnquiryUrlFromWhatsApp\(whatsappUrl\)/);
+ for(const lang of locales)for(const service of services){
+  const url=telegramServiceRequestUrl(service,lang);
+  assert.ok(resolveTelegramServiceHandoffUrl(url,lang)?.startsWith('/api/public/telegram-service-entry?service='));
+ }
+ assert.equal(resolveTelegramServiceHandoffUrl('https://t.me/attacker?text=hello','ru'),null);
+ assert.equal(resolveTelegramServiceHandoffUrl(telegramServiceRequestUrl('reiki','ru')+'&text=private','ru'),null);
  assert.doesNotMatch(ui,/createPublicServiceEnquiry|serviceRole|privateKey/);
+});
+
+test('Business Strategy website title maps to an exact public Business marker in RU/EN/ES',()=>{
+ const landing=source('data/business-consulting-copy.ts');
+ for(const lang of locales){
+  const title=BUSINESS_STRATEGY_PAGE_TITLES[lang];
+  assert.ok(landing.includes(JSON.stringify(title)),lang+' public title changed');
+  const whatsapp=whatsappEnquiryUrl({
+   locale:lang,service:title,
+   request:'PRIVATE internal business plan and phone +1-123-456',
+   pagePath:'/'+lang+'/services/business-consulting',
+  });
+  const direct=telegramEnquiryUrlFromWhatsApp(whatsapp);
+  assert.equal(direct,telegramBusinessStrategyRequestUrl(lang));
+  assert.ok(isTelegramServiceDraft(direct,lang));
+  const text=new URL(direct).searchParams.get('text');
+  assert.ok(text.includes('«'+title+'»'));
+  assert.ok(text.endsWith('[HH-REQ:business:'+lang+']'));
+  assert.doesNotMatch(text,/PRIVATE|internal business plan|phone|\+1-123-456/);
+  assert.equal(resolveTelegramServiceHandoffUrl(direct,lang),
+   '/api/public/telegram-service-entry?service=business&locale='+lang+'&offer=business_strategy');
+  assert.equal(resolveTelegramServiceEntry(ready,direct,lang)?.href,
+   'https://t.me/holistichouse_bot?start=hhservice_business_'+lang);
+  assert.equal(resolveTelegramServiceHandoffUrl(direct+'&extra=x',lang),null);
+ }
+});
+
+test('AI secretary product remains in Telegram Business, never unsupported V3 bot',()=>{
+ const router=source('app/api/public/telegram-service-entry/route.js');
+ assert.match(router,/!manual\|\|!isTelegramServiceDraft\(manual,locale\)/);
+ for(const lang of locales){
+  const businessChat=telegramServiceRequestUrl('ai_secretary',lang);
+  assert.ok(businessChat&&businessChat.startsWith('https://t.me/holistichouse?text='));
+  assert.equal(isTelegramServiceDraft(businessChat,lang),false);
+  assert.equal(resolveTelegramServiceHandoffUrl(businessChat,lang),null);
+  assert.equal(resolveTelegramServiceEntry(ready,businessChat,lang),null);
+  assert.equal(v3ServiceStart('/start hhservice_ai_secretary_'+lang),null);
+ }
+});
+
+// Exercise the actual route with a sandboxed NextResponse, without real
+// provider calls, client data, Telegram sends or paid model processing.
+test('all 15 public services choose READY bot, real Business, or safe human fallback',async()=>{
+ const raw=source('app/api/public/telegram-service-entry/route.js');
+ const compiled=raw.replace(/^import\s+.*$/gm,'').replace(/^export\s+/gm,'');
+ class Reply {
+  constructor(body,init={}){this.body=body;this.status=init.status||200}
+  static redirect(href,init={}){return {location:href,status:init.status,headers:init.headers}}
+ }
+ const makeGet=env=>{
+  const ctx=vm.createContext({
+   NextResponse:Reply,URL,process:{env},
+   telegramServiceRequestUrl,telegramBusinessStrategyRequestUrl,isTelegramServiceDraft,
+   channelTransportReady:(channel,e)=>channel==='telegram'&&e.transportReady===true,
+   v3CanStart:e=>e.v3Ready===true,
+   telegramDiagnosticPublicUrl:(lang,e)=>e.botReady===true
+    ?'https://t.me/holistichouse_bot?start=hhreview_'+lang:null,
+   resolveTelegramServiceEntry,
+  },{codeGeneration:{strings:false,wasm:false}});
+  return vm.runInContext(compiled+'\nGET',ctx,{timeout:1500});
+ };
+ const v3={HH_CRM_TG_CHAT_AUTOMATION_ENABLED:'false',
+  HH_CRM_TG_AI_V3_SCHEMA_READY:'true',transportReady:true,v3Ready:true,botReady:true};
+ const human={...v3,HH_CRM_TG_CHAT_AUTOMATION_ENABLED:'true'};
+ const offline={...v3,botReady:false};
+ const disabled={...v3,HH_CRM_TG_AI_V3_SCHEMA_READY:'false'};
+ const getV3=makeGet(v3),getHuman=makeGet(human),getOffline=makeGet(offline);
+ const getDisabled=makeGet(disabled),getTransportOff=makeGet({...v3,transportReady:false});
+ for(const locale of locales)for(const service of services){
+  const url='https://holistichouse.vercel.app/api/public/telegram-service-entry?service='+service+'&locale='+locale;
+  const expectedHuman=telegramServiceRequestUrl(service,locale);
+  const expectedBot='https://t.me/holistichouse_bot?start=hhservice_'+service+'_'+locale;
+  const redirect=await getV3({url});
+  assert.equal(redirect.status,307);
+  assert.equal(redirect.location,expectedBot,'ready existing bot must answer');
+  assert.equal((await getHuman({url})).location,expectedHuman,'verified Business keeps human chat');
+  assert.equal((await getOffline({url})).location,expectedHuman,'unready bot must not be advertised');
+  assert.equal((await getDisabled({url})).location,expectedHuman);
+  assert.equal((await getTransportOff({url})).location,expectedHuman);
+  assert.match(redirect.headers['Cache-Control'],/no-store/);
+ }
+ for(const locale of locales){
+  const url='https://holistichouse.vercel.app/api/public/telegram-service-entry?service=business&locale='+locale+'&offer=business_strategy';
+  assert.equal((await getHuman({url})).location,telegramBusinessStrategyRequestUrl(locale));
+  assert.equal((await getV3({url})).location,
+   'https://t.me/holistichouse_bot?start=hhservice_business_'+locale);
+ }
+ for(const unsafe of [
+  '?service=ai_secretary&locale=en',
+  '?service=reiki&locale=xx',
+  '?service=reiki&locale=ru&service=coaching',
+  '?service=reiki&locale=ru&text=private',
+  '?service=business&locale=ru&offer=other',
+  '?service=reiki&locale=ru&offer=business_strategy',
+  '?service=business&locale=en&offer=business_strategy&extra=x',
+  '?service=business&locale=en&offer=business_strategy&offer=business_strategy',
+  '?service=attacker&locale=en',
+ ]){
+  const response=await getV3({url:'https://holistichouse.vercel.app/api/public/telegram-service-entry'+unsafe});
+  assert.equal(response.status,404,unsafe);
+ }
 });

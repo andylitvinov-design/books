@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import {telegramBusinessMessageFromUpdate,telegramBusinessClientChoice} from '../lib/assist/telegram-business-request.mjs';
 import {matchTelegramFreeReviewDraft,telegramFreeReviewAcknowledgement} from '../lib/crm/telegram-business-free-review.mjs';
+import {telegramExpressReviewHandoff} from '../lib/crm/express-review-channel-handoff.mjs';
 import {classifyTelegramSecretaryQuery,publishedTelegramServiceOffers,
   composeTelegramSecretaryAnswer,TELEGRAM_SITE} from '../lib/crm/telegram-secretary-offers.mjs';
 
@@ -242,4 +243,32 @@ test('new FAQs do not hijack personal messages, STOP, published named prices or 
  assert.equal(priced.kind,'catalog');
  assert.match(composeTelegramSecretaryAnswer(priced,[make()]).text,/от €50/);
  assert.equal(classifyTelegramSecretaryQuery('рейки','ru').kind,'catalog');
+});
+
+test('free-review website always opens the verified HUMAN Telegram account, regardless of bot readiness',()=>{
+ const view=f('components/telegram-diagnostic-entry.tsx');
+ const source=f('lib/crm/express-review-channel-handoff.mjs');
+ const expected={
+  en:'Hello! I am interested in «Free personal express review». Could you help me make a request?',
+  ru:'Здравствуйте! Меня интересует «Бесплатный личный экспресс-разбор». Подскажите, как оформить запрос.',
+  es:'¡Hola! Me interesa «Revisión personal exprés gratuita». ¿Cómo puedo solicitarlo?',
+ };
+ for(const [locale,draft] of Object.entries(expected)){
+  const link=telegramExpressReviewHandoff(locale);
+  const uri=new URL(link);
+  assert.equal(uri.origin,'https://t.me');
+  assert.equal(uri.pathname,'/holistichouse');
+  assert.deepEqual([...uri.searchParams.keys()],['text']);
+  assert.equal(uri.searchParams.get('text'),draft);
+  assert.equal(matchTelegramFreeReviewDraft(draft)?.locale,locale);
+  assert.ok(view.includes(locale==='ru'?'Написать в Telegram':
+     locale==='es'?'Escribir a Andrey por Telegram':'Write on Telegram'));
+ }
+ assert.equal(telegramExpressReviewHandoff('invalid'),null);
+ assert.match(source,/telegramExpressReviewHandoff/);
+ assert.match(view,/data-telegram-route="human-business"/);
+ assert.doesNotMatch(view,/\/api\/public\/telegram-diagnostic|setTelegramUrl|telegramUnavailable|Telegram is not available right now|hhreview_/);
+ assert.match(view,/Opening a link doesn't send a request or register it in CRM/);
+ assert.match(view,/Переход по ссылке не отправляет сообщение и не создаёт заявку в CRM/);
+ assert.doesNotMatch(view,/HH_CRM_MSG_TELEGRAM_TOKEN|https?:\/\/openrouter\.ai/i);
 });
