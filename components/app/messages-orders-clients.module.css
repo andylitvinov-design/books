@@ -598,12 +598,3 @@
   .root .languageCompact{width:48px}
 }
 @media(prefers-reduced-motion:reduce){.root .languageOptions button{transition:none}}
-
-/* Existing mobile My Clients screen: a visible, owner-only way into the
-   separate Telegram provider settings, never the public enquiries list. */
-.telegramSettingsLink{display:flex;align-items:center;justify-content:space-between;gap:10px;
-  margin:0 0 13px;padding:13px 16px;min-height:48px;text-decoration:none;
-  border:1px solid #b6d6c9;border-radius:14px;background:#eff8f2;
-  color:#145b48;font:700 15px/1.3 Arial,Helvetica,sans-serif}
-.telegramSettingsLink:hover{background:#e5f5eb}
-.telegramSettingsLink:focus-visible{outline:3px solid #137d61;outline-offset:3px}
