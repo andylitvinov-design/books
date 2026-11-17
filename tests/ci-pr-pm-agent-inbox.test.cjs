@@ -8,6 +8,23 @@ const at=()=>new Date().toISOString();
 const cmd=(id,body)=>({id,body,user:owner,created_at:at()});
 const receipt=(id,commandId,state)=>({id,body:'<!-- HH_PM_INBOX_STATE_V1 comment='+commandId+' status='+state+' -->\nResult',user:bot,performed_via_github_app:app,created_at:at()});
 const context={repo:{owner:'andylitvinov-design',repo:'books'},ref:'refs/heads/codex/bootstrap-books',eventName:'schedule',runId:123};
+const PM_MODEL='cohere/north-mini-code:free';
+const PM_OTHER_MODEL='nvidia/nemotron-3.5-lightning:free';
+const catalog=(id=PM_MODEL)=>({ok:true,status:200,json:async()=>({data:[{
+ id,pricing:{prompt:'0',completion:'0'},architecture:{
+  input_modalities:['text'],output_modalities:['text']}
+}]})});
+const pmFetcher=(payload,{model=PM_MODEL,calls=[]}={})=>async(url,settings)=>{
+ calls.push({url,settings});
+ if(settings?.method==='GET'){
+  assert.match(url,/\/api\/v1\/models\?endpoints=/);
+  assert.equal(settings.headers.Authorization,undefined);
+  return catalog(model);
+ }
+ assert.equal(settings.method,'POST');
+ assert.equal(JSON.parse(settings.body).model,model);
+ return {ok:true,status:200,json:async()=>({model,...payload})};
+};
 function stub(initial,options={}){
  const comments=[...initial],dispatches=[],calls=[],sent=[];
  const github={rest:{
@@ -25,14 +42,17 @@ function stub(initial,options={}){
   actions:{createWorkflowDispatch:async x=>{dispatches.push(x);return {status:204}}}
  }};
  const fetcher=async(url,settings)=>{
+  if(settings.method==='GET')return catalog();
   calls.push('openrouter');
   assert.equal(url,'https://openrouter.ai/api/v1/chat/completions');
   assert.equal(settings.headers.Authorization,'Bearer mock-key');
   const pay=JSON.parse(settings.body);
-  assert.equal(pay.model,'openrouter/free');
+  assert.equal(pay.model,PM_MODEL);
   assert.equal(pay.provider.allow_fallbacks,false);
   assert.deepEqual(pay.provider.max_price,{prompt:0,completion:0});
-  return {ok:true,json:async()=>({model:'openrouter/free',usage:{cost:0},choices:[{message:{content:'Связанный PR следует проверять на exact HEAD.'}}]})};
+  assert.equal(pay.provider.data_collection,'deny');
+  assert.equal(pay.modalities,undefined);
+  return {ok:true,json:async()=>({model:PM_MODEL,usage:{cost:0},choices:[{message:{content:'Связанный PR следует проверять на exact HEAD.'}}]})};
  };
  return {github,fetcher,comments,dispatches,calls,sent};
 }
@@ -79,23 +99,26 @@ test('only signed bot receipt confirms claimed request; daily cap counts claims 
  assert.equal(inbox.trustedReceipt({...receipt(302,99,'CLAIMED'),user:{login:'attacker',type:'User'}}),null);
 });
 
-test('virtual free router uses portable chat payload with zero-price and privacy cap',async()=>{
- let request=null;
- const fetcher=async(_url,options)=>{request=JSON.parse(options.body);return {ok:true,
-  json:async()=>({model:'openrouter/free',usage:{cost:0},choices:[{finish_reason:'stop',message:{content:'Готовый краткий ответ.'}}]})};};
+test('catalog-verified PM model makes one portable free chat inference with $0 cap',async()=>{
+ const observed=[];let request=null;
+ const original=pmFetcher({usage:{cost:0},
+  choices:[{finish_reason:'stop',message:{content:'Готовый краткий ответ.'}}]},{calls:observed});
+ const fetcher=async(url,opts)=>{
+  if(opts.method==='POST')request=JSON.parse(opts.body);
+  return original(url,opts);
+ };
  const out=await inbox.askFree('Нужен план?',{fetcher,token:'synthetic-key'});
- assert.equal(out.ok,true);
+ assert.equal(out.ok,true);assert.equal(out.model,PM_MODEL);
  assert.equal(out.text,'Готовый краткий ответ.');
+ assert.equal(observed.length,2);
+ assert.equal(request.model,PM_MODEL);
  assert.equal(request.max_tokens,2200);
  assert.equal(request.stream,false);
- assert.ok(!Object.hasOwn(request,'reasoning'),
-  'required-reasoning free models must not receive reasoning.enabled=false');
- assert.ok(!Object.hasOwn(request,'temperature'),
-  'avoid optional model-incompatible sampling hints');
+ for(const field of ['reasoning','temperature','modalities','n','tools','models'])
+  assert.equal(request[field],undefined);
  assert.equal(request.provider.allow_fallbacks,false);
  assert.equal(request.provider.data_collection,'deny');
- assert.equal(request.provider.max_price.prompt,0);
- assert.equal(request.provider.max_price.completion,0);
+ assert.deepEqual(request.provider.max_price,{prompt:0,completion:0});
 });
 test('reasoning-only 200 response gets explicit bounded blocker, never false success',async()=>{
  const fetcher=async()=>({ok:true,json:async()=>({model:'openrouter/free',
