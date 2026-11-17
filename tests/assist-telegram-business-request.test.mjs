@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
-import {HOLISTIC_TELEGRAM_ACCOUNT,telegramServiceRequestDraft,telegramServiceRequestUrl,parseTelegramServiceDraft,telegramBusinessRequestFromUpdate,isHolisticBusinessConnection,telegramBusinessRequestReply,telegramBusinessMessageFromUpdate,
+import {HOLISTIC_TELEGRAM_ACCOUNT,telegramServiceRequestDraft,telegramServiceRequestUrl,parseTelegramServiceDraft,parseTelegramPublicServiceRequest,telegramBusinessRequestFromUpdate,isHolisticBusinessConnection,telegramBusinessRequestReply,telegramBusinessMessageFromUpdate,
  telegramBusinessClientChoice,telegramBusinessConversationReply,telegramBusinessServiceTitle} from '../lib/assist/telegram-business-request.mjs';
 const get=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 test('15 real service request drafts are filled into a normal user chat, no /start',()=>{
@@ -291,4 +291,59 @@ test('first signed Telegram Business enquiry sends the existing female avatar ex
  assert.ok(first>0&&photo>first&&message>photo,'must await photo first, then send text');
  assert.ok(route.indexOf('await sendHolisticBusinessWelcomePhoto(',photo+1)<0,'welcome only in first request branch');
  assert.match(route,/HH_TG_BUSINESS_WELCOME_PHOTO_NOT_CONFIRMED/);
+});
+
+test('exact published Business Strategy & Archetypal Coaching site request begins a signed personal Telegram Business dialogue',()=>{
+ const publicTitles={
+  en:'Business Strategy & Archetypal Coaching',
+  ru:'Бизнес-консалтинг и архетипический коучинг',
+  es:'Consultoría de negocios y coaching arquetípico',
+ };
+ const intro={en:'Hello! I am interested in «',ru:'Здравствуйте! Меня интересует «',
+   es:'¡Hola! Me interesa «'};
+ const end={en:'». Could you help me make a request?',
+   ru:'». Подскажите, как оформить запрос.',
+   es:'». ¿Cómo puedo solicitarlo?'};
+ const content=get('data/business-consulting-copy.ts');
+ for(const locale of ['en','ru','es']){
+  const title=publicTitles[locale];
+  assert.ok(content.includes('"title": "'+title+'"'),
+   'The source of truth for the published '+locale+' service changed');
+  const message=intro[locale]+title+end[locale];
+  const parsed=parseTelegramPublicServiceRequest(message);
+  assert.equal(parsed?.service,'business');
+  assert.equal(parsed?.locale,locale);
+  assert.equal(parsed?.name,telegramBusinessServiceTitle('business',locale));
+  // The normal web URL is not an automatic CRM lead or a bot login.
+  assert.equal(parseTelegramServiceDraft(message),null);
+  const signed=fixture();
+  signed.business_message.text=message;
+  assert.equal(telegramBusinessMessageFromUpdate(signed)?.request?.service,'business');
+  assert.equal(telegramBusinessRequestFromUpdate(signed)?.service,'business');
+  const first=telegramBusinessConversationReply('format',parsed);
+  assert.ok(first?.length>20&&first.length<600);
+  assert.doesNotMatch(first,/start=|@holistichouse_bot|https?:/);
+  for(const mutate of [
+   v=>{v.business_message.from.id=999},
+   v=>{v.business_message.chat.type='channel'},
+   v=>{v.business_message.sender_business_bot={id:999}},
+   v=>{v.business_message.forward_origin={type:'user'}},
+   v=>{v.business_message.date=0},
+  ]){
+   const altered=structuredClone(signed);mutate(altered);
+   assert.equal(telegramBusinessMessageFromUpdate(altered),null);
+  }
+ }
+ for(const text of [
+  'Hello! I am interested in «Business Strategy & Archetypal Coaching». Private documents attached.',
+  'Hello! I am interested in «Business Strategy & Archetypal Coaching»',
+  'Hello! I am interested in «Other Business». Could you help me make a request?',
+  'Hello! I am interested in «Business Strategy & Archetypal Coaching». Could you help me make a request? [HH-REQ:reiki:en]',
+  '/stop','What is your coaching price?','x'.repeat(400),null
+ ])assert.equal(parseTelegramPublicServiceRequest(text),null);
+ const handler=get('lib/crm/telegram-business-service.js');
+ assert.match(handler,/const action=telegramBusinessClientChoice\(event\.text\),request=event\.request/);
+ assert.match(handler,/if\(request&&\(!old\|\|old\.stage==='submitted'/);
+ assert.match(handler,/response\(event,request\.locale,request\.service,'format'\)/);
+ assert.match(handler,/assertHolisticBusinessConnection/);
 });
