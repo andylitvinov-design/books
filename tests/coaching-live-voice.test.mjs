@@ -486,6 +486,7 @@ test('iPhone buffered MP3 decodes actual waveform without a second call or synth
   const page=source('components/my-coach-live-dialogue.jsx')
   const loop=source('components/my-coach-speech-loop.jsx')
   assert.doesNotMatch(page,/onLevel:level=>\{if\(!controller\.signal\.aborted/)
+  assert.doesNotMatch(page,/setPortraitLevel|onVoiceLevel=\{setPortraitLevel\}/)
   assert.match(page,/selectCoachVisualScene\(\{phase:motionPhase,text:latestCoachText,stage:currentStage\}\)/)
   const avatar=source('components/app/coaching-avatar.jsx')
   assert.match(avatar,/data-photo-motion="static"/)
