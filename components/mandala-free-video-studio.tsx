@@ -9172,20 +9172,36 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 </button>;
               })}
             </div>
-            <fieldset className={videoStyles.montageEffectBrightness} disabled={recording||preparing}>
-              <legend>{ui.brightness}</legend>
-              <button type="button" aria-pressed={brightness==="soft"} onClick={()=>setBrightness("soft")}>{ui.soft}</button>
-              <button type="button" aria-pressed={brightness==="bright"} onClick={()=>setBrightness("bright")}>{ui.bright}</button>
-            </fieldset>
             <fieldset className={videoStyles.montageAspectSwitch} data-video-montage-aspect-switch
               disabled={recording||preparing}>
               <legend>{locale==="ru"?"Формат видео":locale==="es"?"Formato de vídeo":"Video format"}</legend>
               <div role="group" aria-label={locale==="ru"?"Соотношение сторон видео":locale==="es"?"Relación de aspecto":"Video aspect ratio"}>
-                {([{id:"landscape",label:"16:9"},{id:"portrait",label:"9:16"}] as const).map(item=><button
+                {([
+                  {id:"landscape",ratio:"16:9",
+                    title:locale==="ru"?"Горизонтальное":locale==="es"?"Horizontal":"Horizontal",
+                    use:locale==="ru"?"YouTube · широкий экран":locale==="es"?"YouTube · pantalla ancha":"YouTube · widescreen"},
+                  {id:"portrait",ratio:"9:16",
+                    title:locale==="ru"?"Вертикальное":locale==="es"?"Vertical":"Vertical",
+                    use:locale==="ru"?"Shorts · Reels · телефон":locale==="es"?"Shorts · Reels · móvil":"Shorts · Reels · phone"}
+                ] as const).map(item=><button
                   key={item.id} type="button" data-video-montage-aspect={item.id}
+                  aria-label={item.title+" · "+item.ratio+" · "+item.use}
                   aria-pressed={aspect===item.id} onClick={()=>changeVideoAspect(item.id)}>
-                  <Film size={18} aria-hidden="true"/>{item.label}
-                  {aspect===item.id?<Check size={16} aria-hidden="true"/>:null}
+                  <span className={videoStyles.montageAspectPreview} aria-hidden="true">
+                    <span className={videoStyles.montageAspectFrame} data-orientation={item.id}>
+                      <span className={videoStyles.montageAspectSun}/>
+                      <span className={videoStyles.montageAspectHills}/>
+                      <Play size={15} fill="currentColor"/>
+                    </span>
+                  </span>
+                  <span className={videoStyles.montageAspectCaption}>
+                    <strong>{item.title}</strong>
+                    <b>{item.ratio}</b>
+                    <small>{item.use}</small>
+                  </span>
+                  {aspect===item.id?<span className={videoStyles.montageAspectCheck} aria-hidden="true">
+                    <Check size={15}/>
+                  </span>:null}
                 </button>)}
               </div>
             </fieldset>

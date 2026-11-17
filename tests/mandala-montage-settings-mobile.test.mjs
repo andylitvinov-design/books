@@ -169,3 +169,26 @@ test("Montage PRO shows three compact format choices and safe onward routes",()=
  assert.match(css,/\[data-video-order-bar\]\[hidden\]\{display:none!important\}/);
  assert.match(css,/data-montage-panel="promo"\] \.previewStage \.heroRail\{display:none!important\}/);
 });
+
+
+test("Montage Style uses illustrated horizontal and vertical video formats without Brightness switch",()=>{
+  const start=studio.indexOf('montagePanel==="effects" ? <div');
+  const end=studio.indexOf('montagePanel==="audio" ? <div',start);
+  assert.ok(start>0&&end>start,"use the real Style panel");
+  const panel=studio.slice(start,end);
+  assert.doesNotMatch(panel,/montageEffectBrightness|ui\.brightness|setBrightness\(/);
+  for(const text of ["Горизонтальное","Вертикальное","Horizontal","Vertical","pantalla ancha","широкий экран","Shorts · Reels"]){
+    assert.ok(panel.includes(text),text+" localized format context");
+  }
+  assert.match(panel,/className=\{videoStyles\.montageAspectFrame\} data-orientation=\{item\.id\}/);
+  assert.match(panel,/data-video-montage-aspect=\{item\.id\}/);
+  assert.match(panel,/aria-pressed=\{aspect===item\.id\}/);
+  assert.match(panel,/onClick=\{\(\)=>changeVideoAspect\(item\.id\)\}/);
+  assert.match(panel,/disabled=\{recording\|\|preparing\}/);
+  assert.match(css,/\.montageAspectFrame\{[^}]*aspect-ratio:16\/9/);
+  assert.match(css,/\.montageAspectFrame\[data-orientation="portrait"\]\{[^}]*aspect-ratio:9\/16/);
+  assert.match(css,/\.montageAspectSwitch>div\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.doesNotMatch(css,/\.montageEffectBrightness/);
+  assert.match(studio,/const \[brightness,setBrightness\] = useState<Brightness>\("soft"\)/,
+    "retain rendering defaults and existing project compatibility");
+});
