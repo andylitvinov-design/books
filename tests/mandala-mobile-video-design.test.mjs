@@ -165,7 +165,10 @@ test("video UI choices affect the actual free MP4/WebM recording and the user se
   assert.match(studio,/data-video-montage-preference="format"/);
   assert.match(studio,/data-video-montage-preference="speed"/);
   assert.match(studio,/onChange=\{event=>setSpeed\(event.currentTarget.value as Speed\)\}/);
-  assert.match(studio,/setBrightness\("bright"\)/);
+  // Brightness is automatic per chosen style, no longer a visible control.
+  assert.match(studio,/setBrightness\(index===1\|\|index===5\?"bright":"soft"\)/);
+  assert.doesNotMatch(studio,/className=\{videoStyles\.montageEffectBrightness\}/,
+    "removed Brightness selector must not return");
   assert.match(studio,/captionMode==="custom"/);
   // Selection now uses the filtered catalog's stable track IDs, not the
   // removed fixed five-preset `choice` loop. Preserve export contract below.
