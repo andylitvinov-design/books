@@ -2,36 +2,8 @@ name: Home language switch first-click regression
 on:
   workflow_dispatch:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
-    paths:
-      - 'components/holistic-house-home.tsx'
-      - 'components/home-section-carousel.tsx'
-      - 'app/\[locale\]/services/page.tsx'
-      - 'app/es/services/page.tsx'
-      - 'tests/stable-session-entry.test.mjs'
-      - 'tests/home-section-carousel.test.mjs'
-      - 'tests/home-carousel-first-screen-cta.test.mjs'
-      - 'components/home-featured-workspace.tsx'
-      - 'components/home-featured-workspace.module.css'
-      - 'tests/home-featured-workspace.test.mjs'
-      - 'tests/personality-profiles-builder.test.mjs'
-      - 'components/personality-profiles-builder.tsx'
-      - 'components/personality-profiles-builder.module.css'
-      - 'lib/profile/profile-battery.js'
-      - 'app/\[locale\]/personality-profiles/page.tsx'
-      - 'tests/home-master-path.test.mjs'
-      - 'tests/home-rsc-on-demand.test.mjs'
-      - 'components/home-core-methods.tsx'
-      - 'components/home-core-methods.module.css'
-      - 'app/es/page.tsx'
-      - 'tests/home-core-methods.test.mjs'
-      - 'components/site-navigation.tsx'
-      - 'tests/home-locale-menu-state.test.mjs'
-      - 'app/page.tsx'
-      - 'scripts/verify-home-locale-switch.mjs'
-      - '.github/workflows/home-locale-switch.yml'
-  push:
     branches: ['codex/public-book-library']
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     paths:
       - 'components/holistic-house-home.tsx'
       - 'components/home-section-carousel.tsx'
