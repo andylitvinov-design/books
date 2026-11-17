@@ -2,7 +2,7 @@
 import {useEffect,useState} from "react";
 import {MessageCircle,Send} from "lucide-react";
 import {telegramEnquiryUrlFromWhatsApp} from "@/lib/whatsapp-enquiry";
-import {resolveTelegramFirstEntry,isOfficialFreeReviewWhatsAppDraft} from "@/lib/app/telegram-entry-url.mjs";
+import {resolveTelegramFirstEntry,resolveTelegramServiceEntry,isTelegramServiceDraft,isOfficialFreeReviewWhatsAppDraft} from "@/lib/app/telegram-entry-url.mjs";
 import type {PublicLocale} from "@/lib/public-locales";
 import styles from "./mandatory-messenger-actions.module.css";
 const copy={
@@ -16,21 +16,24 @@ export function MandatoryMessengerActions({locale,whatsappUrl,label,telegramUrl,
  const [serviceBot,setServiceBot]=useState<string|null>(null);
  const [botKind,setBotKind]=useState<"review"|"direct"|"service"|null>(null);
  useEffect(()=>{
-   // Service-card actions are mounted but hidden until Order is expanded.
-   // Do not issue one Telegram readiness fetch per hidden card on page load.
-   if(!active||telegramUrl||!isOfficialFreeReviewWhatsAppDraft(whatsappUrl,locale)){
-     setServiceBot(null);setBotKind(null);return;
-   }
+   // Hidden service cards must not create dozens of readiness requests.
+   if(!active){setServiceBot(null);setBotKind(null);return;}
+   const manual=telegramUrl||telegramEnquiryUrlFromWhatsApp(whatsappUrl);
+   const review=!telegramUrl&&isOfficialFreeReviewWhatsAppDraft(whatsappUrl,locale);
+   const selectedService=isTelegramServiceDraft(manual,locale);
+   if(!review&&!selectedService){setServiceBot(null);setBotKind(null);return;}
    const abort=new AbortController();
-   setServiceBot(null);
-   setBotKind(null);
-   // Only the explicitly selected free personal review uses its opt-in bot.
-   // All service orders remain in the human @holistichouse Business chat.
+   setServiceBot(null);setBotKind(null);
+   // Prefer the human chat when verified Business automation is activated.
+   // Otherwise only five exact published service codes enter the V3 AI bot.
+   // Invalid/unknown services retain the human fallback, never free review.
    fetch('/api/public/telegram-diagnostic',{cache:'no-store',signal:abort.signal})
      .then(r=>r.ok?r.json():null)
      .then(payload=>{
        if(abort.signal.aborted)return;
-       const entry=resolveTelegramFirstEntry(payload,locale);
+       const entry=selectedService&&payload?.businessAutoReplyAvailable!==true
+         ?resolveTelegramServiceEntry(payload,manual,locale)
+         :review?resolveTelegramFirstEntry(payload,locale):null;
        setServiceBot(entry?.href||null);
        setBotKind(entry?.kind||null);
      })
@@ -44,7 +47,7 @@ export function MandatoryMessengerActions({locale,whatsappUrl,label,telegramUrl,
   <p className={styles.intro}>{t.intro}</p></>}
   <div className={styles.actions} role="group" aria-label={t.title}>
    <a href={whatsappUrl} className={styles.whatsapp} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" data-messenger-only-channel="whatsapp"><MessageCircle size={19} aria-hidden="true"/>WhatsApp</a>
-   <a href={serviceBot||telegramUrl||telegramEnquiryUrlFromWhatsApp(whatsappUrl)} data-telegram-route={serviceBot?(botKind||"review"):telegramUrl?"manual":"service"} className={styles.telegram} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" data-messenger-only-channel="telegram"><Send size={19} aria-hidden="true"/>Telegram</a>
+   <a href={serviceBot||telegramUrl||telegramEnquiryUrlFromWhatsApp(whatsappUrl)} data-telegram-route={serviceBot?(botKind==="service"?"service-ai":botKind||"review"):telegramUrl?"manual":"service"} className={styles.telegram} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" data-messenger-only-channel="telegram"><Send size={19} aria-hidden="true"/>Telegram</a>
   </div>
   {!compact&&<p className={styles.note}>{t.note}</p>}
  </>;
