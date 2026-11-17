@@ -428,3 +428,51 @@ test('manual owner hold wins while foreign PR and incomplete evidence fail close
  assert.match(js,/current_head\.slice\(0,12\)/);
  assert.match(js,/historical_cause_verified:false/);
 });
+
+test('atomic release manifest includes every serverless dependency and all matching UI controls',()=>{
+ const release=require('./release-integrity.cjs');
+ const report=release.auditBundle(root);
+ assert.equal(report.schema,'HH_PR_DASHBOARD_ATOMIC_RELEASE_V1');
+ assert.equal(report.file_count,8);
+ assert.match(report.bundle_sha256,/^[a-f0-9]{64}$/);
+ assert.ok(report.files.some(x=>x.path==='api/ci-funnel-extensions.cjs'));
+ assert.ok(report.files.every(x=>x.bytes>0));
+});
+test('post-deploy acceptance refuses old public API or partially uploaded HTML',async()=>{
+ const release=require('./release-integrity.cjs');
+ const fake=async(url)=>{
+  const route=new URL(url).pathname;
+  if(route==='/api/ci-error-funnel')return {status:200,redirected:false,
+   json:async()=>({schema:'HH_PR_REPAIR_EVIDENCE_FUNNEL_V1',
+    stages:[],cohort:{page_size:8,checked_only_public_records:true}})};
+  const file=route==='/'?'index.html':route.slice(1);
+  return {status:200,redirected:false,
+   arrayBuffer:async()=>fs.readFileSync(path.join(root,file))};
+ };
+ const result=await release.verifyLive({fetchImpl:fake});
+ assert.equal(result.verified,false);
+ assert.equal(result.reason,'ERROR_FUNNEL_API_OLD_OR_INCOMPLETE');
+ const mismatched=await release.verifyLive({fetchImpl:async()=>({
+  status:200,redirected:false,arrayBuffer:async()=>Buffer.from('stale')
+ })});
+ assert.equal(mismatched.verified,false);
+ assert.equal(mismatched.reason,'ATOMIC_STATIC_ASSETS_MISMATCH');
+ const valid=await release.verifyLive({fetchImpl:async(url)=>{
+  const route=new URL(url).pathname;
+  if(route==='/api/ci-error-funnel')return {status:200,redirected:false,
+   json:async()=>({schema:'HH_PR_REPAIR_EVIDENCE_FUNNEL_V1',
+    extended_stages:Array.from({length:6},()=>({key:'unknown',confirmed:0})),
+    incidents:[],cohort:{page_size:8,checked_only_public_records:true}})};
+  return fake(url);
+ }});
+ assert.equal(valid.verified,true);
+ assert.equal(valid.reason,'ATOMIC_DASHBOARD_BUNDLE_SERVING');
+});
+test('mixed live HTML and current JS are fail-safe, with ten signed stages still visible',async()=>{
+ const source=read('monitor.js');
+ assert.match(source,/if\(!extRoot\|\|!detailRoot\|\|!el\('funnel-page'\)\|\|!prev\|\|!next\)/);
+ assert.match(source,/if\(el\('funnel-prev'\)\)el\('funnel-prev'\)\.addEventListener/);
+ assert.match(source,/if\(el\('funnel-next'\)\)el\('funnel-next'\)\.addEventListener/);
+ assert.match(source,/if\(extra\)extra\.textContent/);
+ assert.match(source,/if\(!newApi\)extRoot\.append/);
+});
