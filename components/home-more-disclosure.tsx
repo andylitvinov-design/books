@@ -4,7 +4,6 @@ import dynamic from "next/dynamic";
 import { useState } from "react";
 import Link from "next/link";
 import type { PublicLocale } from "@/lib/public-locales";
-import { listMyTubeCategories } from "@/lib/mandala/mytube-content-taxonomy.mjs";
 import styles from "./home-more-disclosure.module.css";
 
 // Optional conversation guidance loads only on explicit intent; old repeated
@@ -53,10 +52,13 @@ const categoryRoutes = {
   "stress-anxiety": "stress",
 } as const
 
-export function HomeMoreDisclosure({ locale }: { locale: PublicLocale }) {
+export function HomeMoreDisclosure({ locale, categories }: {
+  locale: PublicLocale;
+  /** Four reviewed category labels, projected by a server component. */
+  categories: ReadonlyArray<{ id: string; label: string }>;
+}) {
   const [expanded, setExpanded] = useState(false);
   const t = copy[locale];
-  const categories = listMyTubeCategories(locale);
   return (
     <section className={styles.root} data-home-topic-filters aria-labelledby="hh-home-topic-filters-title">
       <header className={styles.heading}>

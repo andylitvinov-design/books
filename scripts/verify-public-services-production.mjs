@@ -118,6 +118,11 @@ try {
     await page.goto(origin + "/" + locale + "/services", { waitUntil: "domcontentloaded" });
     const quiz = page.locator("[data-services-quiz]");
     await visible(quiz.locator("#services-quiz-title"));
+    // Static SSR controls become interactive only after the Next route hydrates.
+    await expect.poll(
+      () => page.evaluate(() => history.pushState.toString().includes("__NA")),
+      { timeout: 30000, message: "Services quiz must hydrate before the first answer" },
+    ).toBe(true);
     await expect(quiz).toHaveAttribute("data-services-quiz-questions", "4");
     await expect(quiz).toHaveAttribute("data-services-quiz-step", "1");
     await expect(page.locator("[data-hh-ihelp-trigger]")).toHaveCount(0);
@@ -157,11 +162,6 @@ try {
 
     // Money/business was an explicit owner requirement even though the visual
     // reference shows only four primary topic buttons; reveal the two extra topics.
-    // Retain current Production React hydration guard before any quiz click.
-    await expect.poll(
-      () => page.evaluate(() => history.pushState.toString().includes("__NA")),
-      { timeout: 30000, message: "Services quiz must hydrate before the first answer" },
-    ).toBe(true);
     await quiz.locator("[data-services-more-topics]").click();
     await expect(quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice]')).toHaveCount(6);
     await quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice="work"]').click();
@@ -421,26 +421,59 @@ try {
       nodes.map(node=>node.getAttribute("data-assist-best-card")));
     assert.deepEqual(actualStress,expectedStress,
       "Matching real products, not directions, for the selected problem");
-    // Preserve the previously approved exact Telegram link/locale assertion,
-    // now mapping concrete offered products onto the existing service codes.
+    // Recommendations use the same two controls as the rest of Services.
+    // Only after an explicit Order tap are the real messenger links visible.
     const requestIds = {therapy:"coaching",constellation:"constellations",business:"business",reiki:"reiki"};
     for(const key of expectedStress){
-      const detail=shelf.locator('[data-assist-product-link="'+key+'"]');
-      await expect(detail).toHaveAttribute("href",new RegExp("^/"+locale+"/[a-z0-9/-]+$"));
-      const action=shelf.locator('[data-assist-best-action="'+key+'"]');
+      const card=shelf.locator('[data-assist-best-card="'+key+'"]');
+      const product=card.locator('[data-assist-product-link="'+key+'"]');
+      await expect(product).toHaveAttribute("href",new RegExp("^/"+locale+"/[a-z0-9/-]+$"));
+      const controls=card.locator('[data-service-card-actions] button');
+      await expect(controls).toHaveCount(2);
+      const details=controls.first(),order=controls.nth(1);
+      await details.click();
+      await expect(details).toHaveAttribute("aria-expanded","true");
+      await visible(card.locator('[data-service-card-details] p'));
+      await expect(card.locator('[data-service-card-order]')).toBeHidden();
+      await order.click();
+      await expect(details).toHaveAttribute("aria-expanded","false");
+      await expect(order).toHaveAttribute("aria-expanded","true");
+      await expect(card.locator('[data-service-card-details]')).toBeHidden();
+      const whatsapp=card.locator('[data-service-card-order] [data-messenger-only-channel="whatsapp"]');
+      const telegram=card.locator('[data-service-card-order] [data-messenger-only-channel="telegram"]');
+      await visible(whatsapp);
+      await visible(telegram);
+      await expect(whatsapp).toHaveAttribute("href",/^https:\/\/wa\.me\/\d+\?text=/);
       const code=requestIds[key];
       if(code){
         const url=telegramServiceRequestUrl(code,locale);
-        assert.ok(url,"No unapproved Telegram request: "+key);
-        await expect(action).toHaveAttribute("href",url);
-        await expect(action).toHaveAttribute("target","_blank");
+        const handoff="/api/public/telegram-service-entry?service="+code+"&locale="+locale;
+        await expect(telegram).toHaveAttribute("href",handoff);
+        // A relative first-party link is intentional: inspect the real 307
+        // destination without following it, granting consent or sending a message.
+        const response=await fetch(origin+handoff,{redirect:"manual"});
+        assert.equal(response.status,307,"Signed Telegram service handoff stays temporary");
+        const destination=new URL(response.headers.get("location"));
+        assert.equal(destination.origin,"https://t.me","Only the approved Telegram provider");
+        assert.ok(["/holistichouse","/holistichouse_bot"].includes(destination.pathname),
+          "Only verified human Business chat or the existing AI bot");
+        if(destination.pathname==="/holistichouse"){
+          assert.equal(destination.href,url,"Manual fallback preserves the public service marker");
+        }else{
+          assert.deepEqual([...destination.searchParams.keys()],["start"],"No private bot parameters");
+          assert.equal(destination.searchParams.get("start"),
+            "hhservice_"+code+"_"+locale,"Existing V3 bot receives the matching service and locale");
+        }
         assert.equal(new URL(url).searchParams.get("text")?.split(String.fromCharCode(10)).at(-1),
           "[HH-REQ:"+code+":"+locale+"]","Deep link contains no private problem text");
       }else{
-        await expect(action).toHaveAttribute("href",new RegExp("^/"+locale+"/[a-z0-9/-]+$"));
+        await expect(telegram).toHaveAttribute("href",/^https:\/\/t\.me\/holistichouse\?text=/);
       }
-      const box=await action.boundingBox();
-      assert.ok(box&&box.height>=44,"Mobile product touch target: "+locale+"/"+width+"/"+key);
+      await expect(telegram).toHaveAttribute("target","_blank");
+      const box=await order.boundingBox();
+      assert.ok(box&&box.height>=44,"Mobile recommendation Order target: "+locale+"/"+width+"/"+key);
+      await order.click();
+      await expect(order).toHaveAttribute("aria-expanded","false");
     }
 
     // A reply stays in the chat and reranks the service cards without a page jump.
@@ -468,8 +501,22 @@ try {
     const expectedWork=rankAssistProducts("work",{});
     assert.deepEqual(actualWork,expectedWork,"Work cards rerank without appending the prior intent");
     if (expectedWork.includes("business")) {
-      await expect(shelf.locator('[data-assist-best-action="business"]'))
-        .toHaveAttribute("href", /^https:\/\/t\.me\/holistichouse\?text=/);
+      const business=shelf.locator('[data-assist-best-card="business"]');
+      await business.locator('[data-service-card-actions] button').nth(1).click();
+      const businessTelegram=business.locator('[data-service-card-order] [data-messenger-only-channel="telegram"]');
+      const businessHandoff="/api/public/telegram-service-entry?service=business&locale="+locale;
+      await expect(businessTelegram).toHaveAttribute("href",businessHandoff);
+      const businessResponse=await fetch(origin+businessHandoff,{redirect:"manual"});
+      assert.equal(businessResponse.status,307,"Business CTA must use temporary server-verified Telegram handoff");
+      const businessDestination=new URL(businessResponse.headers.get("location"));
+      assert.equal(businessDestination.origin,"https://t.me","Only approved Telegram provider may receive visitor");
+      assert.ok(["/holistichouse","/holistichouse_bot"].includes(businessDestination.pathname),"Only verified human or bot account");
+      if(businessDestination.pathname==="/holistichouse"){
+        assert.equal(businessDestination.href,telegramServiceRequestUrl("business",locale));
+      }else{
+        assert.deepEqual([...businessDestination.searchParams.keys()],["start"],"No private bot data");
+        assert.equal(businessDestination.searchParams.get("start"),"hhservice_business_"+locale);
+      }
     }
     await reset.click();
     await expect(topics).toHaveCount(6);

@@ -152,3 +152,15 @@ test('Booking keeps confirmed future-date messenger gating while compact',()=>{
   assert.match(css,/\.bookingAction \.bookingPanel\{position:absolute/)
   assert.match(css,/max-height:min\(56dvh,470px\)/)
 });
+
+test('The compact first-screen Ali tab reads published specialist facts from a bounded public endpoint',()=>{
+  assert.match(client,/\/api\/public\/specialist-secretary/)
+  assert.match(client,/bookingConfirmed!==false/)
+  assert.match(client,/secretaryFlight\.current/)
+  assert.match(client,/role:row\.mine\?'user':'assistant'/)
+  assert.match(client,/setBookingOpen\(true\)/)
+  assert.match(client,/secretaryError:/)
+  assert.match(browser,/published public FAQ response/)
+  assert.match(browser,/aliRequests,1/)
+  assert.match(client,/Never route another practitioner's question to Andrey/)
+});

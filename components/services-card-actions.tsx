@@ -40,13 +40,14 @@ type Props = {
   request?: string;
   option?: string;
   whatsappUrl?: string;
+  telegramUrl?: string;
   className?: string;
   trackingId?: string;
 };
 
 /** One source of truth for the two actions on every public Services card. */
 export function ServicesCardActions({
-  locale, title, description, href, request, option, whatsappUrl, className, trackingId,
+  locale, title, description, href, request, option, whatsappUrl, telegramUrl, className, trackingId,
 }: Props) {
   const [expanded, setExpanded] = useState<"details" | "order" | null>(null);
   const id = useId().replace(/:/g, "");
@@ -82,7 +83,7 @@ export function ServicesCardActions({
       </div>
       <div className={styles.panel} id={id + "-order"} role="region"
         aria-label={t.order + ": " + title} data-service-card-order hidden={expanded !== "order"}>
-        <MandatoryMessengerActions locale={locale} whatsappUrl={messageUrl}
+        <MandatoryMessengerActions locale={locale} whatsappUrl={messageUrl} telegramUrl={telegramUrl}
           compact collapsed={false} label={t.choose} active={expanded==="order"} />
       </div>
     </div>

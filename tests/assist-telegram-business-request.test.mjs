@@ -56,8 +56,16 @@ test('Assist and signed Telegram webhook preserve bot diagnostics, prefill, limi
  // The current Assist renders product cards by item.requestId; the older
  // direct-id lookup is retained as a supported call shape.
  assert.match(ui,/telegramServiceRequestUrl\((?:id|item\.requestId),locale\)/);
- assert.match(ui,/target="_blank"/);
- assert.match(ui,/data-assist-best-action=\{id\}/);
+ const actions=get('components/services-card-actions.tsx');
+ const messenger=get('components/mandatory-messenger-actions.tsx');
+ // Preserve exact explicit Order and outbound-link/consent contracts after two-action redesign.
+ assert.match(ui,/ServicesCardActions/);
+ assert.match(ui,/telegramUrl=\{draft\|\|undefined\}/);
+ assert.match(actions,/data-service-card-actions/);
+ assert.match(actions,/data-service-card-order/);
+ assert.match(actions,/active=\{expanded==="order"\}/);
+ assert.match(messenger,/data-messenger-only-channel="telegram"/);
+ assert.match(messenger,/target="_blank" rel="noopener noreferrer"/);
  assert.match(route,/verifyMessengerWebhook\(provider,raw,request.headers\)/);
  assert.match(route,/processTelegramBusinessConversation\(body,config\)/);
  assert.match(get('lib/crm/telegram-business-service.js'),/HH_CRM_TG_CHAT_AUTOMATION_ENABLED!=='true'/);

@@ -59,3 +59,30 @@ test("open Details / Order panels use both category columns on mobile", () => {
   const layout = read("components/services-unified-catalog.module.css");
   assert.match(layout, /\.panel:has\(> \[data-service-card-actions\] button\[aria-expanded="true"\]\)\{grid-column:1\/-1\}/);
 });
+
+test("mobile compact section header reopens the real nested service module without removing Details / Order", () => {
+  const section = catalog.slice(catalog.indexOf("export function ServicesCompactPanel"),
+    catalog.indexOf("export function ServicesHomeopathyLinks"));
+  assert.match(section, /<button type="button" className=\{styles\.preview\}/);
+  assert.match(section, /aria-expanded=\{expanded\} aria-controls=\{regionId\}/);
+  assert.match(section, /onClick=\{\(\) => context\.toggle\(id\)\}/);
+  assert.match(section, /data-expanded=\{expanded\}/);
+  assert.match(section, /<ServicesCardActions locale=\{context\.locale\}/);
+  assert.match(section, /<div id=\{regionId\} className=\{styles\.content\}/);
+  const layout = read("components/services-unified-catalog.module.css");
+  assert.match(layout, /\.panel\[data-expanded="true"\] \.content\{display:block/);
+  // The published Personal Video module must remain in the real Services
+  // panel; both legacy and new two-action browser checks may coexist.
+  // Do not couple this contract to one specific E2E locator spelling.
+  const page = read("app/[locale]/services/page.tsx");
+  assert.match(page, /<ServicesCompactPanel id="video"><ServicesVideoGenerationCard locale=\{locale\}/);
+});
+
+test("recommendation cards reuse the same two-button component with direct service-specific Telegram deep links", () => {
+  const recommendations = read("components/assist-top-recommendations.tsx");
+  assert.match(recommendations, /<ServicesCardActions locale=\{locale\} title=\{title\}/);
+  assert.match(recommendations, /telegramUrl=\{draft\|\|undefined\}/);
+  assert.match(actions, /telegramUrl\?: string/);
+  assert.match(actions, /telegramUrl=\{telegramUrl\}/);
+  assert.doesNotMatch(recommendations, /data-assist-best-action=\{id\}/);
+});

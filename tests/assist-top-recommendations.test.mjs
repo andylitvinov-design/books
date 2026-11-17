@@ -8,12 +8,14 @@ const shell=read("components/services-assist-mobile.tsx");
 const css=read("components/assist-top-recommendations.module.css");
 
 test("products, not general direction filters, occupy the recommendation shelf",()=>{
-  assert.match(component,/rankAssistProducts\(focus\?\?"general",preferences\)/);
+  assert.match(component,/rankAssistProducts\(focus\?\?"general",preferences,20\)/);
   assert.doesNotMatch(component,/data-assist-direction|const directions|const shelves/);
   for(const id of ["review","therapy","constellation","business","opora","reiki","mandala"])
     assert(component.includes(id+":{path:"),id);
   assert.match(component,/data-assist-product-link=\{id\}/);
-  assert.match(component,/data-assist-best-action=\{id\}/);
+  assert.match(component, /<ServicesCardActions locale=\{locale\} title=\{title\}/);
+  assert.match(component, /telegramUrl=\{draft\|\|undefined\}/);
+  assert.doesNotMatch(component,/data-assist-best-action=\{id\}/);
   assert.match(shell,/!crisis&&selection\?<AssistTopRecommendations/);
   assert.match(shell,/preferences=\{preferences\}/);
 });
@@ -27,14 +29,16 @@ test("a visitor feeling lost sees three existing concrete offers in helpful orde
   assert.match(component,/services\/systemic-constellations/);
 });
 
-test("horizontal mobile rows have readable prices and real single-product actions",()=>{
-  assert.match(css,/\.card\{display:grid;grid-template-columns:minmax\(0,1fr\) 87px/);
+test("compact mobile rows have readable prices and real Details / Order choices",()=>{
+  assert.match(css,/\.card\{display:grid;grid-template-columns:minmax\(0,1fr\);/);
   assert.match(css,/\.product\{display:grid;grid-template-columns:67px/);
-  assert.match(css,/\.action\{[^}]*min-height:44px/);
+  assert.match(css,/\.cardActions\{grid-column:1\/-1;/);
   assert.match(component,/assistPriceLabel/);
   assert.match(component,/telegramServiceRequestUrl/);
   assert.match(component,/href=\{href\}/);
-  assert.match(component,/referrerPolicy="no-referrer"/);
+  const messenger=read("components/mandatory-messenger-actions.tsx");
+  assert.match(messenger,/referrerPolicy="no-referrer"/);
+  assert.match(messenger,/data-messenger-only-channel="telegram"/);
   assert.doesNotMatch(component,/href="#"/);
 });
 
