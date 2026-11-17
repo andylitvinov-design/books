@@ -21,7 +21,11 @@ const MODEL_PROFILES=Object.freeze({
   review:Object.freeze(['nvidia/nemotron-3-ultra-550b-a55b:free',
     'dots-studio/dots-3-note-preview:free','xingchen-agi/xing4.0-29b-a4b:free']),
   visual:Object.freeze(['nvidia/nemotron-3.5-super-vl:free',
-    'cohere/north-mini-code:free','google/gemma-4-31b-it:free'])
+    'cohere/north-mini-code:free','google/gemma-4-31b-it:free']),
+  // Public, nonprivate owner PM questions prefer a small visible-text model.
+  // Actual eligibility remains a fresh, exact zero-price catalog decision.
+  pm:Object.freeze(['cohere/north-mini-code:free',
+    'nvidia/nemotron-3.5-lightning:free','google/gemma-4-31b-it:free'])
 });
 const MAX_REPLY=40000;
 function selectedModel(value=DEFAULT_MODEL){
@@ -234,13 +238,12 @@ async function requestFreePatch({prompt,key,model='auto',role='repair',
     body:JSON.stringify({model:selected,
       messages:[{role:'system',content:'Return ONLY one of: (1) raw JSON with exactly keys file,old,new for a single exact full-line source replacement; or (2) a valid unified git diff for allowed source files. The old line must match the supplied original source exactly, including whitespace. No reasoning, prose, tool calls or markdown fences. If no safe fix is possible, return NO_SAFE_PATCH.'},
         {role:'user',content:prompt}],
-      // The proven working $0 router endpoint needs only the portable chat
-      // completion fields. Provider-specific optional reasoning/modalities
-      // caused HTTP 400 in real source-repair runs; keep pinned-model behavior.
-      ...(selected===FREE_ROUTER_MODEL?{}:{
-        // Required-reasoning free endpoints reject reasoning:false (HTTP 400).
-        // Leave reasoning selection to the pre-verified provider; parse only final text.
-        modalities:['text'],n:1}),
+      // Use the same portable Chat Completions fields for every catalog-
+      // verified free model, including pinned :free models. OpenRouter can
+      // reject optional modalities, n and reasoning hints with HTTP 400,
+      // even though the endpoint accepts ordinary text messages. Keep the
+      // single verified model and ZERO price/privacy cap; validate the actual
+      // number of choices in the response instead of asking for n:1.
       max_tokens:selected===FREE_ROUTER_MODEL?2200:5500,
       stream:false,usage:{include:true},
       provider:{allow_fallbacks:false,max_price:{prompt:0,completion:0},

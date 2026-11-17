@@ -128,11 +128,21 @@ async function askFree(prompt,{fetcher,token,run}){
   {role:'system',content:'Answer only a public technical project-management question in Russian. Produce a SHORT final user-visible TEXT answer directly, without analysis or reasoning. No private data, no code tools, no credentials, no speculative agent-commit claims. Provide safe next step and say when proof is unknown. Never execute code.'},
   {role:'user',content:prompt}
  ];
- // A free-tier endpoint can return 200 headers quickly but stream a slow
- // reasoning completion. AbortSignal.timeout(22s) was still cancelling the
- // body stream AFTER fetch succeeded, misreported as JSON corruption.
- // Keep ONE bounded HTTP request; the 8-minute trusted Watchdog budget owns
- // the outer deadline. Never retry inference on an uncertain delivery.
+ // A virtual free router can select a reasoning-only/non-chat endpoint,
+ // returning HTTP 400 despite a valid public question. Before inference,
+ // select ONE actual role-suitable text-chat model with every catalog price
+ // explicitly zero. No secret is used for this read-only catalog GET.
+ const {CHAT_CATALOG,chooseVerifiedFreeModel}=require('./ci-pr-repair-openrouter-free.cjs');
+ let selected;
+ try{
+  const listing=await fetcher(CHAT_CATALOG,{
+   method:'GET',redirect:'error',cache:'no-store',signal:AbortSignal.timeout(10000),
+   headers:{Accept:'application/json'}});
+  if(!listing?.ok)return {reason:'OPENROUTER_FREE_CATALOG_UNAVAILABLE'};
+  selected=chooseVerifiedFreeModel(await listing.json(),{role:'pm'}).model;
+ }catch(_){return {reason:'OPENROUTER_NO_VERIFIED_FREE_PM_MODEL'};}
+ // Keep the same bounded deadline through both HTTP headers and body;
+ // otherwise slow free completions looked like corrupt 200 responses.
  const signal=AbortSignal.timeout(115000);
  let response;
  try{
@@ -141,10 +151,9 @@ async function askFree(prompt,{fetcher,token,run}){
    headers:{Authorization:'Bearer '+token,'Content-Type':'application/json',
     'HTTP-Referer':'https://holistic-house-pr-monitor.vercel.app',
     'X-Title':'HH PM GitHub Free Agent'},
-   // The virtual free router may choose a required-reasoning provider.
-   // reasoning.enabled=false caused HTTP 400; use only portable chat fields,
-   // as the already verified zero-cost source Repair adapter does.
-   body:JSON.stringify({model:'openrouter/free',messages,max_tokens:2200,
+   // The same portable payload used by source Repair: no optional
+   // modalities, n, reasoning hints, cross-model fallbacks or paid models.
+   body:JSON.stringify({model:selected,messages,max_tokens:2200,
     stream:false,usage:{include:true},
     provider:{allow_fallbacks:false,max_price:{prompt:0,completion:0},
      data_collection:'deny'}})
@@ -157,19 +166,16 @@ async function askFree(prompt,{fetcher,token,run}){
  let data;
  try{data=await response.json();}
  catch(error){
-  // Response.json() reads the body using the SAME AbortSignal as fetch().
-  // Treat a body-stream timeout separately from malformed/non-JSON HTTP 200
-  // without reading, logging or exporting arbitrary provider error content.
   if(signal.aborted||['AbortError','TimeoutError'].includes(error?.name))
    return {reason:'OPENROUTER_RESPONSE_TIMEOUT_UNVERIFIED'};
   return {reason:'OPENROUTER_RESPONSE_INVALID'};
  }
+ // Error envelopes must never be counted as paid, free, or successful answers.
  if(data?.error)return {reason:'OPENROUTER_PROVIDER_ERROR'};
  const cost=data?.usage?.cost;
  if(typeof cost!=='number'||!Number.isFinite(cost))return {reason:'MODEL_BILLING_UNVERIFIED_HOLD'};
- if(cost!==0)return {reason:'MODEL_REPORTED_NONZERO_COST_HOLD'};
- const model=String(data?.model||'');
- if(model&&model!=='openrouter/free'&&!model.endsWith(':free'))return {reason:'MODEL_ROUTING_NOT_VERIFIED_FREE'};
+ if(cost!==0||data?.usage?.is_byok===true)return {reason:'MODEL_REPORTED_NONZERO_COST_HOLD'};
+ if(data?.model!==selected)return {reason:'MODEL_ROUTING_NOT_VERIFIED_FREE'};
  const raw=data?.choices?.[0]?.message?.content;
  const text=typeof raw==='string'?raw:Array.isArray(raw)?
   raw.filter(p=>p&&p.type==='text'&&typeof p.text==='string').map(p=>p.text).join('\n'):'';
@@ -180,7 +186,7 @@ async function askFree(prompt,{fetcher,token,run}){
    'OPENROUTER_REASONING_EXHAUSTED_VISIBLE_BUDGET':'OPENROUTER_EMPTY_RESPONSE';
   return {reason};
  }
- return {ok:true,text,model:model||'openrouter/free',cost};
+ return {ok:true,text,model:selected,cost};
 }
 async function trustedRepair(github,cmd){
  let pr;try{pr=(await github.rest.pulls.get({owner:OWNER,repo:REPO,pull_number:cmd.pr})).data;}catch(_){return {reason:'PR_LOOKUP_UNAVAILABLE'};}

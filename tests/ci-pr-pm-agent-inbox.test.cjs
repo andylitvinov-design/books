@@ -8,6 +8,23 @@ const at=()=>new Date().toISOString();
 const cmd=(id,body)=>({id,body,user:owner,created_at:at()});
 const receipt=(id,commandId,state)=>({id,body:'<!-- HH_PM_INBOX_STATE_V1 comment='+commandId+' status='+state+' -->\nResult',user:bot,performed_via_github_app:app,created_at:at()});
 const context={repo:{owner:'andylitvinov-design',repo:'books'},ref:'refs/heads/codex/bootstrap-books',eventName:'schedule',runId:123};
+const PM_MODEL='cohere/north-mini-code:free';
+const PM_OTHER_MODEL='nvidia/nemotron-3.5-lightning:free';
+const catalog=(id=PM_MODEL)=>({ok:true,status:200,json:async()=>({data:[{
+ id,pricing:{prompt:'0',completion:'0'},architecture:{
+  input_modalities:['text'],output_modalities:['text']}
+}]})});
+const pmFetcher=(payload,{model=PM_MODEL,calls=[]}={})=>async(url,settings)=>{
+ calls.push({url,settings});
+ if(settings?.method==='GET'){
+  assert.match(url,/\/api\/v1\/models\?endpoints=/);
+  assert.equal(settings.headers.Authorization,undefined);
+  return catalog(model);
+ }
+ assert.equal(settings.method,'POST');
+ assert.equal(JSON.parse(settings.body).model,model);
+ return {ok:true,status:200,json:async()=>({model,...payload})};
+};
 function stub(initial,options={}){
  const comments=[...initial],dispatches=[],calls=[],sent=[];
  const github={rest:{
@@ -25,14 +42,17 @@ function stub(initial,options={}){
   actions:{createWorkflowDispatch:async x=>{dispatches.push(x);return {status:204}}}
  }};
  const fetcher=async(url,settings)=>{
+  if(settings.method==='GET')return catalog();
   calls.push('openrouter');
   assert.equal(url,'https://openrouter.ai/api/v1/chat/completions');
   assert.equal(settings.headers.Authorization,'Bearer mock-key');
   const pay=JSON.parse(settings.body);
-  assert.equal(pay.model,'openrouter/free');
+  assert.equal(pay.model,PM_MODEL);
   assert.equal(pay.provider.allow_fallbacks,false);
   assert.deepEqual(pay.provider.max_price,{prompt:0,completion:0});
-  return {ok:true,json:async()=>({model:'openrouter/free',usage:{cost:0},choices:[{message:{content:'Связанный PR следует проверять на exact HEAD.'}}]})};
+  assert.equal(pay.provider.data_collection,'deny');
+  assert.equal(pay.modalities,undefined);
+  return {ok:true,json:async()=>({model:PM_MODEL,usage:{cost:0},choices:[{message:{content:'Связанный PR следует проверять на exact HEAD.'}}]})};
  };
  return {github,fetcher,comments,dispatches,calls,sent};
 }
@@ -79,82 +99,101 @@ test('only signed bot receipt confirms claimed request; daily cap counts claims 
  assert.equal(inbox.trustedReceipt({...receipt(302,99,'CLAIMED'),user:{login:'attacker',type:'User'}}),null);
 });
 
-test('virtual free router uses portable chat payload with zero-price and privacy cap',async()=>{
- let request=null;
- const fetcher=async(_url,options)=>{request=JSON.parse(options.body);return {ok:true,
-  json:async()=>({model:'openrouter/free',usage:{cost:0},choices:[{finish_reason:'stop',message:{content:'Готовый краткий ответ.'}}]})};};
+test('catalog-verified PM model makes one portable free chat inference with $0 cap',async()=>{
+ const observed=[];let request=null;
+ const original=pmFetcher({usage:{cost:0},
+  choices:[{finish_reason:'stop',message:{content:'Готовый краткий ответ.'}}]},{calls:observed});
+ const fetcher=async(url,opts)=>{
+  if(opts.method==='POST')request=JSON.parse(opts.body);
+  return original(url,opts);
+ };
  const out=await inbox.askFree('Нужен план?',{fetcher,token:'synthetic-key'});
- assert.equal(out.ok,true);
+ assert.equal(out.ok,true);assert.equal(out.model,PM_MODEL);
  assert.equal(out.text,'Готовый краткий ответ.');
+ assert.equal(observed.length,2);
+ assert.equal(request.model,PM_MODEL);
  assert.equal(request.max_tokens,2200);
  assert.equal(request.stream,false);
- assert.ok(!Object.hasOwn(request,'reasoning'),
-  'required-reasoning free models must not receive reasoning.enabled=false');
- assert.ok(!Object.hasOwn(request,'temperature'),
-  'avoid optional model-incompatible sampling hints');
+ for(const field of ['reasoning','temperature','modalities','n','tools','models'])
+  assert.equal(request[field],undefined);
  assert.equal(request.provider.allow_fallbacks,false);
  assert.equal(request.provider.data_collection,'deny');
- assert.equal(request.provider.max_price.prompt,0);
- assert.equal(request.provider.max_price.completion,0);
+ assert.deepEqual(request.provider.max_price,{prompt:0,completion:0});
 });
-test('one slow free completion retains its body deadline, without retrying inference',async()=>{
- let count=0,signal=null;
+test('slow free completion preserves one bounded HTTP body deadline without paid retry',async()=>{
+ let posts=0,signal=null,reads=0;
  const fetcher=async(_url,options)=>{
-  count++;
-  signal=options.signal;
-  return {ok:true,status:200,json:async()=>({
-   model:'cohere/north-mini-code:free',usage:{cost:0},
-   choices:[{finish_reason:'stop',message:{content:'PR — pull request.'}}]
-  })};
+  if(options.method==='GET'){reads++;return catalog();}
+  posts++;signal=options.signal;
+  return {ok:true,status:200,json:async()=>({model:PM_MODEL,usage:{cost:0},
+   choices:[{finish_reason:'stop',message:{content:'PR — pull request.'}}]})};
  };
  const answer=await inbox.askFree('Что такое PR?',{fetcher,token:'test'});
- assert.equal(count,1,'no second model, no paid fallback');
+ assert.equal(reads,1,'catalog is checked once without secrets');
+ assert.equal(posts,1,'one real inference request, no paid retry');
  assert.equal(signal.aborted,false);
- assert.equal(answer.ok,true);
- assert.equal(answer.cost,0);
+ assert.equal(answer.ok,true);assert.equal(answer.cost,0);
  assert.equal(answer.text,'PR — pull request.');
 });
-test('body abort after headers is not misdiagnosed as malformed JSON or retried',async()=>{
- let calls=0;
- const timedOut=await inbox.askFree('Тест?',{token:'test',fetcher:async()=>{
-  calls++;
-  return {ok:true,status:200,json:async()=>{
-   throw Object.assign(Error('body aborted after headers'),{name:'AbortError'});
-  }};
- }});
- assert.equal(calls,1);
- assert.equal(timedOut.reason,'OPENROUTER_RESPONSE_TIMEOUT_UNVERIFIED');
- const bad=await inbox.askFree('Тест?',{token:'test',fetcher:async()=>{
-  calls++;
-  return {ok:true,status:200,json:async()=>{throw SyntaxError('invalid body');}};
- }});
- assert.equal(calls,2);
- assert.equal(bad.reason,'OPENROUTER_RESPONSE_INVALID');
- const rejected=await inbox.askFree('Тест?',{token:'test',fetcher:async()=>{
-  calls++;
-  return {ok:true,status:200,json:async()=>({error:{message:'private provider details'}})};
- }});
+test('aborted body and free provider errors are truthful, never retried or exposed',async()=>{
+ let posts=0;
+ const runCase=async failure=>inbox.askFree('Тест?',{token:'test',
+  fetcher:async(_url,options)=>{
+   if(options.method==='GET')return catalog();
+   posts++;
+   return {ok:true,status:200,json:async()=>{if(failure==='aborted')
+     throw Object.assign(Error('body aborted'),{name:'AbortError'});
+    if(failure==='invalid')throw SyntaxError('bad provider body');
+    return {error:{message:'secret upstream data'}};
+   }};
+  }});
+ assert.equal((await runCase('aborted')).reason,'OPENROUTER_RESPONSE_TIMEOUT_UNVERIFIED');
+ assert.equal((await runCase('invalid')).reason,'OPENROUTER_RESPONSE_INVALID');
+ const rejected=await runCase('provider');
  assert.equal(rejected.reason,'OPENROUTER_PROVIDER_ERROR');
- assert.ok(!JSON.stringify(rejected).includes('private provider'));
- assert.equal(calls,3);
+ assert.ok(!JSON.stringify(rejected).includes('secret upstream'));
+ assert.equal(posts,3);
 });
 test('reasoning-only 200 response gets explicit bounded blocker, never false success',async()=>{
- const fetcher=async()=>({ok:true,json:async()=>({model:'openrouter/free',
-  choices:[{finish_reason:'length',message:{content:''}}],
-  usage:{cost:0,completion_tokens:1600,completion_tokens_details:{reasoning_tokens:1599}}})});
+ const fetcher=pmFetcher({choices:[{finish_reason:'length',message:{content:''}}],
+  usage:{cost:0,completion_tokens:1600,completion_tokens_details:{reasoning_tokens:1599}}});
  const out=await inbox.askFree('Почему CI красная?',{fetcher,token:'synthetic-key'});
  assert.equal(out.ok,undefined);
  assert.equal(out.reason,'OPENROUTER_REASONING_EXHAUSTED_VISIBLE_BUDGET');
 });
 test('multipart text-only completion accepted but reasoning never exported',async()=>{
- const fetcher=async()=>({ok:true,json:async()=>({model:'openrouter/free',
-  choices:[{finish_reason:'stop',message:{content:[{type:'text',text:'Ответ.'},{type:'reasoning',text:'secret model reasoning'}]}}],usage:{cost:0}})});
+ const fetcher=pmFetcher({
+  choices:[{finish_reason:'stop',message:{content:[{type:'text',text:'Ответ.'},{type:'reasoning',text:'secret model reasoning'}]}}],usage:{cost:0}});
  const out=await inbox.askFree('Test?',{fetcher,token:'synthetic-key'});
  assert.equal(out.ok,true);
  assert.equal(out.text,'Ответ.');
 });
 
 
+test('invalid, priced and non-text catalog cannot start free AI inference',async()=>{
+ for(const value of [
+  {data:[]},
+  {data:[{id:PM_MODEL,pricing:{prompt:'0.01',completion:'0'},
+   architecture:{input_modalities:['text'],output_modalities:['text']}}]},
+  {data:[{id:PM_MODEL,pricing:{prompt:'0',completion:'0'},
+   architecture:{input_modalities:['image'],output_modalities:['text']}}]}
+ ]){
+  let calls=0;
+  const result=await inbox.askFree('Публичный технический вопрос?',{token:'synthetic-key',
+   fetcher:async()=>{calls++;return {ok:true,json:async()=>value};}});
+  assert.equal(result.reason,'OPENROUTER_NO_VERIFIED_FREE_PM_MODEL');
+  assert.equal(calls,1,'no inference or paid fallback after invalid catalog');
+ }
+});
+test('unexpected model after one request fails closed without reply or retry',async()=>{
+ let calls=0;
+ const answer=await inbox.askFree('Проверка?',{token:'synthetic-key',
+  fetcher:async(_url,opts)=>{calls++;return opts.method==='GET'?catalog():{
+   ok:true,json:async()=>({model:'paid/other',usage:{cost:0},
+    choices:[{message:{content:'not a trusted answer'}}]})};}});
+ assert.equal(answer.reason,'MODEL_ROUTING_NOT_VERIFIED_FREE');
+ assert.equal(calls,2);
+});
 test('public technical source command requires real owner, validation and explicit public consent',()=>{
  const task={task_id:'commander_public_source_20261107',target_base:'codex/bootstrap-books',
   expected_base_sha:'a'.repeat(40),path:'components/example.js',title:'Fix verified UI behavior',
@@ -203,19 +242,19 @@ test('unknown or nonzero provider billing is blocked and never reported as free'
  const cases=[[{},'MODEL_BILLING_UNVERIFIED_HOLD'],[{cost:null},'MODEL_BILLING_UNVERIFIED_HOLD'],
   [{cost:'0'},'MODEL_BILLING_UNVERIFIED_HOLD'],[{cost:0.000001},'MODEL_REPORTED_NONZERO_COST_HOLD']];
  for(const [usage,reason] of cases){
-  const fetcher=async()=>({ok:true,json:async()=>({model:'openrouter/free',usage,
-   choices:[{finish_reason:'stop',message:{content:'Ответ.'}}]})});
+  const fetcher=pmFetcher({usage,
+   choices:[{finish_reason:'stop',message:{content:'Ответ.'}}]});
   const out=await inbox.askFree('Проверка цены?',{fetcher,token:'synthetic-key'});
   assert.equal(out.ok,undefined);assert.equal(out.reason,reason);
  }
 });
 test('verified zero provider cost is included in owner-visible receipt and telemetry',async()=>{
- const fetcher=async()=>({ok:true,json:async()=>({model:'nvidia/nemotron-3.5-super-vl:free',
-  usage:{cost:0},choices:[{finish_reason:'stop',message:{content:'Проверка пройдена.'}}]})});
+ const fetcher=pmFetcher({usage:{cost:0},
+  choices:[{finish_reason:'stop',message:{content:'Проверка пройдена.'}}]},{model:PM_OTHER_MODEL});
  const out=await inbox.askFree('Проверка цены?',{fetcher,token:'synthetic-key'});
  assert.equal(out.ok,true);assert.equal(out.cost,0);
  const body=inbox.resultBody({kind:'ask',id:777},{...out},'https://github.com/example/run/1');
- assert.match(body,/nvidia\/nemotron-3\.5-super-vl:free/);
+ assert.match(body,/nvidia\/nemotron-3\.5-lightning:free/);
  assert.match(body,/verified provider cost: \$0/);
 });
 
