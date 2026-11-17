@@ -223,8 +223,8 @@ test('fresh signed owner PR number can requeue a conclusive free-model truncatio
  };
  const comment={user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
   performed_via_github_app:{id:15368,slug:'github-actions'},
-  body:'<!-- HH_PR_TASK_V1 -->\\n'+String.fromCharCode(96).repeat(3)+'json\\n'+
-   JSON.stringify(resultRecord)+'\\n'+String.fromCharCode(96).repeat(3)};
+  body:'<!-- HH_PR_TASK_V1 -->\n'+String.fromCharCode(96).repeat(3)+'json\n'+
+   JSON.stringify(resultRecord)+'\n'+String.fromCharCode(96).repeat(3)};
  const fx=mock(task,manual);
  fx.github.rest.issues={listComments:async()=>({data:[comment]})};
  let calls=0;
