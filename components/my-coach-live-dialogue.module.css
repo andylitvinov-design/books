@@ -1190,3 +1190,6 @@
  .root[data-session-visual-v4] .sessionProgressText span{font-size:10px}
  .root[data-session-visual-v4] .sessionProgressSegments{min-width:67px}
 }
+
+.sessionPortrait[data-persona=merlin]{background-image:url('/images/holistic-house/my-coach-motion/merlin-still.webp'),linear-gradient(110deg,#273b3b,#9c8b82);background-size:auto 140%,cover;background-position:right 32%,center;background-repeat:no-repeat}
+.sessionPortrait[data-persona=harry]{background-image:url('/images/holistic-house/my-coach-motion/harry-still.svg'),linear-gradient(110deg,#273b3b,#9c8b82);background-size:auto 140%,cover;background-position:right 32%,center;background-repeat:no-repeat}
