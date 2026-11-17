@@ -86,7 +86,11 @@ async function readPR(number){
 const publicRow=r=>({requestId:r.request_id,prNumber:r.pr_number,headSha:r.observed_head_sha||r.requested_head_sha,
  status:r.state,reasonCode:r.reason_code||null,dispatchAccepted:r.dispatch_accepted===true,
  mergeSha:r.observed_merge_sha||null,mergedAt:r.merged_at||null,
- createdAt:r.created_at,updatedAt:r.updated_at,lastCheckedAt:r.last_checked_at});
+ createdAt:r.created_at,updatedAt:r.updated_at,lastCheckedAt:r.last_checked_at,
+ // Owner-only progress facts, not an inferred AI/model/patch receipt.
+ requestedHeadSha:r.requested_head_sha,firstAttemptAt:r.first_attempt_at||null,
+ leaseUntil:r.lease_until||null,dispatchAttemptedAt:r.dispatch_attempted_at||null,
+ checkedCount:Number.isSafeInteger(Number(r.checked_count))?Number(r.checked_count):0});
 async function eventFor(sql,row){
  if(!row.chat_id||!['MERGED','CLOSED_UNMERGED','BLOCKED'].includes(row.state))return;
  const hash=new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(

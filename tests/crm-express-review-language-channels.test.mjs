@@ -106,14 +106,13 @@ test('free situation landing exposes locale-scoped chooser with distinct Telegra
   assert.match(css,/min-height:\s*46px/)
 })
 
-test('free-review copy does not contradict consented optional Telegram photo and drawing',()=>{
+test('free-review copy uses private handoff for sensitive details in all locales',()=>{
   const landing=read('components/free-entry-landing.tsx')
-  assert.doesNotMatch(landing,/Do not send private answers or drawings via messengers|Не отправляйте личные ответы и рисунки в мессенджерах|No envíes respuestas privadas ni dibujos por mensajería/)
-  // Owner-approved EN/RU free-review copy now starts with personal contact
-  // and shares drawings only through a secure follow-up, never an open chat.
-  assert.match(landing,/If I need more context or a drawing, we'll arrange a secure way to share it/)
+  // EN/RU wording now forbids sharing health records in messenger chats.
+  assert.match(landing,/Please don't send medical records or other sensitive information in chat/)
   assert.match(landing,/Медицинские документы и личные данные в чат присылать не нужно/)
-  assert.match(landing,/Tras dar tu consentimiento, Telegram puede pedir/)
+  assert.match(landing,/secure way to share it/)
+  assert.match(landing,/защищённую форму/)
   assert.match(landing,/formulario protegido/)
 })
 
