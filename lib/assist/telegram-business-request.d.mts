@@ -1,5 +1,7 @@
 export type TelegramRequestLocale="ru"|"en"|"es";
 export declare const HOLISTIC_TELEGRAM_ACCOUNT:"holistichouse";
+export declare const BUSINESS_STRATEGY_PAGE_TITLES:Readonly<Record<TelegramRequestLocale,string>>;
+export declare function telegramBusinessStrategyRequestUrl(locale:TelegramRequestLocale):string|null;
 export declare function telegramServiceRequestDraft(service:string,locale:TelegramRequestLocale):string|null;
 export declare function telegramServiceRequestUrl(service:string,locale:TelegramRequestLocale):string|null;
 export declare function parseTelegramServiceDraft(value:unknown):{service:string;locale:TelegramRequestLocale;name:string}|null;
