@@ -48,7 +48,6 @@ on:
       - 'tests/course-free-slot-restart.test.mjs'
       # Core already owns edits to its CI-only policy contract. Workflow
       # changes still run this specialist's real domain checks before merge.
-      - '.github/workflows/hh-course-presets.yml'
       - 'package.json'
   workflow_dispatch:
 
