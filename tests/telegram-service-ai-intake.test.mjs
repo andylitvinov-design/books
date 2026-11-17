@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {telegramServiceRequestUrl,telegramBusinessServiceTitle} from '../lib/assist/telegram-business-request.mjs';
 import {whatsappEnquiryUrl,telegramEnquiryUrlFromWhatsApp} from '../lib/whatsapp-enquiry.js';
-import {resolveTelegramFirstEntry,resolveTelegramServiceEntry,isTelegramServiceDraft,isOfficialFreeReviewWhatsAppDraft} from '../lib/app/telegram-entry-url.mjs';
+import {resolveTelegramFirstEntry,resolveTelegramServiceEntry,isTelegramServiceDraft,resolveTelegramServiceHandoffUrl,isOfficialFreeReviewWhatsAppDraft} from '../lib/app/telegram-entry-url.mjs';
 import {v3ServiceStart,v3Context,v3ServiceCopy,v3ButtonsFor,V3_LABELS,v3Action} from '../lib/crm/telegram-ai-diagnostic-v3.mjs';
 import {v3ModelMessages} from '../lib/crm/telegram-ai-diagnostic-v3-model.mjs';
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
@@ -17,6 +17,8 @@ test('15 approved Telegram service-deep links preserve exact service/locale',()=
   assert.deepEqual(v3ServiceStart('/start hhservice_'+service+'_'+lang),{service,locale:lang});
   assert.ok(v3ServiceCopy(lang,service).intro.includes('OpenRouter'));
   assert.equal(isTelegramServiceDraft(telegramServiceRequestUrl(service,lang),lang),true);
+  assert.equal(resolveTelegramServiceHandoffUrl(telegramServiceRequestUrl(service,lang),lang),
+    '/api/public/telegram-service-entry?service='+service+'&locale='+lang);
   assert.deepEqual(v3ButtonsFor(lang,'review_confirm',3,service),[
    [V3_LABELS[lang].servicesend],[V3_LABELS[lang].edit,V3_LABELS[lang].cancel]]);
  }
@@ -54,7 +56,7 @@ test('Owner CRM transfer requires existing confirmation path; no early lead',()=
  assert.match(code,/ingestMessengerEventInTransaction/);
  assert.match(code,/ai_review_consent_at=now\(\)/);
  assert.match(code,/crm_tg_suppress_existing/);
- assert.match(ui,/resolveTelegramServiceEntry\(payload,manual,locale\)/);
+ assert.match(ui,/resolveTelegramServiceHandoffUrl/);
  assert.match(ui,/serviceBot\|\|telegramUrl/);
 });
 
@@ -105,17 +107,26 @@ test('Only canonical free review gets the generic bot, other services stay manua
  assert.equal(isOfficialFreeReviewWhatsAppDraft('https://wa.me/1000?text=Page','en'),false);
 });
 
-test('Service cards use the V3 bot only with exact service readiness; Business stays human-first',()=>{
+test('Service cards route through server readiness with human-first fallback',()=>{
  const ui=source('components/mandatory-messenger-actions.tsx');
  const action=source('components/services-card-actions.tsx');
+ const router=source('app/api/public/telegram-service-entry/route.js');
  assert.match(action,/active=\{expanded==="order"\}/);
- assert.match(ui,/if\(!active\)\{setServiceBot\(null\);setBotKind\(null\);return;\}/);
- assert.match(ui,/const selectedService=isTelegramServiceDraft\(manual,locale\)/);
- assert.match(ui,/if\(!review&&!selectedService\)/);
- assert.match(ui,/payload\?\.businessAutoReplyAvailable!==true/);
- assert.match(ui,/resolveTelegramServiceEntry\(payload,manual,locale\)/);
- assert.match(ui,/review\?resolveTelegramFirstEntry\(payload,locale\):null/);
- assert.match(source('app/api/public/telegram-diagnostic/route.js'),/businessAutoReplyAvailable/);
- assert.match(ui,/serviceBot\|\|telegramUrl\|\|telegramEnquiryUrlFromWhatsApp\(whatsappUrl\)/);
+ assert.match(ui,/resolveTelegramServiceHandoffUrl/);
+ assert.match(ui,/href=\{serviceRoute\|\|serviceBot\|\|telegramUrl/);
+ assert.match(ui,/serviceRoute\?"service-router"/);
+ assert.match(ui,/if\(!active\|\|telegramUrl\|\|!isOfficialFreeReviewWhatsAppDraft\(whatsappUrl,locale\)\)/);
+ assert.doesNotMatch(ui,/resolveTelegramServiceEntry\(payload,manual,locale\)/);
+ assert.match(router,/telegramServiceRequestUrl\(service,locale\)/);
+ assert.match(router,/HH_CRM_TG_CHAT_AUTOMATION_ENABLED!==\x27true\x27/);
+ assert.match(router,/channelTransportReady\(\x27telegram\x27,env\)/);
+ assert.match(router,/v3CanStart\(env\)/);
+ assert.match(router,/NextResponse.redirect\(target/);
+ for(const lang of locales)for(const service of services){
+  const url=telegramServiceRequestUrl(service,lang);
+  assert.ok(resolveTelegramServiceHandoffUrl(url,lang)?.startsWith('/api/public/telegram-service-entry?service='));
+ }
+ assert.equal(resolveTelegramServiceHandoffUrl('https://t.me/attacker?text=hello','ru'),null);
+ assert.equal(resolveTelegramServiceHandoffUrl(telegramServiceRequestUrl('reiki','ru')+'&text=private','ru'),null);
  assert.doesNotMatch(ui,/createPublicServiceEnquiry|serviceRole|privateKey/);
 });
