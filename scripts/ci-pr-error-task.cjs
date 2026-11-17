@@ -7,6 +7,7 @@ const REPO='andylitvinov-design/books',PROD='codex/public-book-library';
 const SCHEMA='HH_CI_ERROR_TASK_V1',SHA=/^[a-f0-9]{40}$/i,KEY=/^[a-f0-9]{32}$/i;
 const CODE=/^[A-Z0-9_]{3,120}$/;
 const DISPATCH_SCHEMA='HH_CI_ERROR_DISPATCH_V1';
+const RECLASS_SCHEMA='HH_CI_ERROR_RECLASSIFICATION_V1';
 const REPAIR_EXECUTOR='github-actions:hh-pr-repair-worker.yml';
 const CI_EXECUTOR='github-actions:hh-pr-ci-worker.yml';
 const OWNER_EXECUTOR='github-owner:andylitvinov-design';
@@ -227,6 +228,64 @@ function taskStatus(comments,task){
   return 'MISSING';
 }
 
+// Append-only clarification of a previously UNKNOWN signed CI incident.
+// It keeps the same causal task ID and grants no execution or source rights.
+function revisionRecord(task){
+ if(!validTask(task)||task.event_kind!=='CORE_CI_FAILED'||
+    task.category==='UNKNOWN'||task.reason_code==='SPECIALIST_REQUIRED_PROOF_MISSING_OR_STALE')
+  throw Error('RECLASSIFICATION_CAUSE_NOT_VERIFIED');
+ return {schema:RECLASS_SCHEMA,task_id:task.task_id,
+  pr_number:task.pr_number,head_sha:task.head_sha,
+  run_id:task.run_id,run_attempt:task.run_attempt,
+  previous_category:'UNKNOWN',category:task.category,reason_code:task.reason_code,
+  root_code:task.root_code,strategy_code:task.strategy_code,
+  executor_id:task.executor_id||OWNER_EXECUTOR,
+  executor_kind:task.executor_kind||'owner_review',
+  assignment_status:task.assignment_status||'OWNER_REVIEW_REQUIRED',
+  created_at:task.created_at,next_check_at:task.next_check_at,
+  source_write_authorized:false,execution_authorized:false};
+}
+function reclassificationBody(task){
+ const x=revisionRecord(task);
+ return '<!-- '+RECLASS_SCHEMA+' '+task.task_id+' -->\n'+
+  '**CI cause reclassified; diagnostic only; no worker started.**\n'+
+  fence+'json\n'+JSON.stringify(x)+'\n'+fence;
+}
+function reclassificationStatus(comments,task){
+ if(!Array.isArray(comments)||!validTask(task))return null;
+ const marker='<!-- '+SCHEMA+' '+task.task_id+' -->';
+ const revision='<!-- '+RECLASS_SCHEMA+' '+task.task_id+' -->';
+ const original=[],revised=[];
+ for(const c of comments){
+  if(!trustedControlComment(c))continue;
+  const b=String(c.body||'');
+  if(!b.startsWith(marker)&&!b.startsWith(revision))continue;
+  const json=b.split(fence+'json\n')[1]?.split('\n'+fence)[0];
+  let x;try{x=JSON.parse(json);}catch{return null;}
+  if(b.startsWith(marker)){
+   if(!validTask(x)||x.task_id!==task.task_id||
+      x.pr_number!==task.pr_number||x.head_sha!==task.head_sha||
+      x.run_id!==task.run_id||x.run_attempt!==task.run_attempt)return null;
+   original.push(x);
+  }else{
+   if(x?.schema!==RECLASS_SCHEMA||x.task_id!==task.task_id||
+      x.pr_number!==task.pr_number||x.head_sha!==task.head_sha||
+      x.run_id!==task.run_id||x.run_attempt!==task.run_attempt||
+      x.previous_category!=='UNKNOWN'||x.source_write_authorized!==false||
+      x.execution_authorized!==false)return null;
+   revised.push(x);
+  }
+ }
+ if(original.length!==1||revised.length>1)return null;
+ if(original[0].category!=='UNKNOWN')return 'NOT_NEEDED';
+ if(task.category==='UNKNOWN'||task.reason_code==='SPECIALIST_REQUIRED_PROOF_MISSING_OR_STALE')
+  return 'AWAITING_CAUSAL_DIAGNOSIS';
+ let expected;try{expected=revisionRecord(task);}catch{return 'AWAITING_CAUSAL_DIAGNOSIS';}
+ if(!revised.length)return 'READY';
+ return ['category','reason_code','root_code','strategy_code','executor_id','executor_kind',
+  'assignment_status'].every(key=>revised[0][key]===expected[key])?
+   'ALREADY_RECLASSIFIED':null;
+}
 /**
  * Read-only delivery/execution reconciliation from authenticated existing
  * HH_PR_TASK_V1 receipts. An event task receipt alone never proves delivery.
@@ -359,4 +418,4 @@ function taskLifecycle(comments,task,now=Date.now()){
   return {state:'CLASSIFIED_NOT_DELIVERED',next_action:'RECONCILE_EXISTING_DISPATCHER'};
 }
 
-module.exports={makeCoreTask,makeWorkerFollowUp,strategyFor,taskBody,taskStatus,taskLifecycle,latestErrorTaskId,validTask,executorPlan,repairableCoreTestFailure,coreErrorTaskId,dispatchAcceptance,dispatchAcceptanceBody,validDispatchAcceptance,REPAIR_EXECUTOR,CI_EXECUTOR};
+module.exports={makeCoreTask,makeWorkerFollowUp,strategyFor,taskBody,taskStatus,taskLifecycle,latestErrorTaskId,validTask,executorPlan,repairableCoreTestFailure,coreErrorTaskId,dispatchAcceptance,dispatchAcceptanceBody,validDispatchAcceptance,reclassificationBody,reclassificationStatus,RECLASS_SCHEMA,REPAIR_EXECUTOR,CI_EXECUTOR};

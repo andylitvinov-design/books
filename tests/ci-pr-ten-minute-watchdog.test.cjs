@@ -2346,3 +2346,11 @@ test('current three-job Core roots separate a red embedded gate from application
   failed('hh-merge-check'),{...failed('core-lint-types-build'),conclusion:'skipped'}
  ]),'UNVERIFIED','missing real source result fails closed');
 });
+
+
+test('signed UNKNOWN task may be reclassified in Watchdog without creating new Worker jobs',()=>{
+ const source=require('node:fs').readFileSync('scripts/ci-pr-ten-minute-watchdog.cjs','utf8');
+ assert.match(source,/reclassificationStatus\(comments,task\)/);
+ assert.match(source,/RECLASSIFICATION_READBACK_UNVERIFIED/);
+ assert.match(source,/errorTasksReclassified/);
+});

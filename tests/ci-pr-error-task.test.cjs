@@ -261,3 +261,22 @@ test('real Core mobile source-contract failure selects guarded worker but other 
   classification:{...bogus,failed_step:'A fake test failure'}});
  a.equal(spoofed.assignment_status,'OWNER_REVIEW_REQUIRED');
 });
+
+
+test('UNKNOWN Core task gains a signed reclassification without executor authority',()=>{
+ const {reclassificationStatus,reclassificationBody}=require('../scripts/ci-pr-error-task.cjs');
+ const unknown=makeCoreTask({pr,run,classification:classifyRedCiError({pr,jobs:[]}),now});
+ const recognized=task('TypeScript check');
+ a.equal(unknown.task_id,recognized.task_id);
+ const old=[bot(taskBody(unknown))];
+ a.equal(reclassificationStatus(old,recognized),'READY');
+ const reclassified=reclassificationBody(recognized);
+ a.match(reclassified,/HH_CI_ERROR_RECLASSIFICATION_V1/);
+ a.doesNotMatch(reclassified,/WORKER_STARTED/);
+ const saved=[...old,bot(reclassified)];
+ a.equal(taskStatus(saved,recognized),'ALREADY_RECORDED');
+ a.equal(reclassificationStatus(saved,recognized),'ALREADY_RECLASSIFIED');
+ a.equal(reclassificationStatus([...saved,bot(reclassified)],recognized),null);
+ a.equal(reclassificationStatus(old,unknown),'AWAITING_CAUSAL_DIAGNOSIS');
+ a.equal(reclassificationStatus([bot(taskBody(recognized))],recognized),'NOT_NEEDED');
+});

@@ -87,18 +87,29 @@ function inspect(e,comments){
   .map(v=>({...x,record:v})));
  if(!errors.length)return found;
  const earliest=errors[0],taskIds=new Set(errors.map(x=>x.record.task_id));
+ const revisions=signed.flatMap(x=>x.rows.filter(v=>
+  v.schema==='HH_CI_ERROR_RECLASSIFICATION_V1'&&
+  x.c.body.includes('<!-- HH_CI_ERROR_RECLASSIFICATION_V1 '+v.task_id+' -->')&&
+  HEX.test(v.task_id||'')&&taskIds.has(v.task_id)&&v.pr_number===e.pr&&
+  v.head_sha===e.head&&Number(v.run_id)===e.run&&
+  v.previous_category==='UNKNOWN'&&v.category!=='UNKNOWN'&&
+  typeof v.reason_code==='string'&&v.reason_code!=='UNCLASSIFIED_FAILURE'&&
+  v.source_write_authorized===false&&v.execution_authorized===false)
+  .map(v=>({...x,record:v})));
  const mark=(key,x)=>{if(!x||found[key])return;const at=x.c.created_at;
   if(t(at)!==null&&t(at)>=t(e.at)-120000)found[key]={at,url:x.url};};
- if(errors.some(x=>typeof x.record.category==='string'&&
-  x.record.category!=='UNKNOWN'&&x.record.reason_code!=='UNCLASSIFIED_FAILURE'&&
-  typeof x.record.reason_code==='string'&&x.record.reason_code.length>0))
-  mark('classified',earliest);
+ const classified=[...errors,...revisions].find(x=>
+  typeof x.record.category==='string'&&x.record.category!=='UNKNOWN'&&
+  typeof x.record.reason_code==='string'&&
+  x.record.reason_code!=='UNCLASSIFIED_FAILURE'&&x.record.reason_code.length>0);
+ if(classified)mark('classified',classified);
  mark('task',earliest);
- if(errors.some(x=>x.record.executor_kind==='github_actions'&&
+ const selected=[...errors,...revisions].find(x=>
+  x.record.executor_kind==='github_actions'&&
   x.record.assignment_status==='SELECTED_NOT_DISPATCHED'&&
   typeof x.record.executor_id==='string'&&
-  x.record.executor_id.startsWith('github-actions:')))
-  mark('assigned',earliest);
+  x.record.executor_id.startsWith('github-actions:'));
+ if(selected)mark('assigned',selected);
  const reserve=signed.flatMap(x=>x.rows.filter(v=>v.schema==='HH_PR_TASK_V1'&&
   v.pr_number===e.pr&&v.head_sha===e.head&&taskIds.has(v.error_task_id)&&
   HEX.test(v.task_key||'')&&v.state==='RESERVED'&&
