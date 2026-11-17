@@ -210,3 +210,52 @@ test('numeric dispatch HTTP denials survive trusted Worker finish without UNKNOW
   assert.equal(f.calls.find(x=>x.action==='finish').reasonCode,reason);
  }
 });
+
+test('fresh signed owner PR number can requeue a conclusive free-model truncation only once',async()=>{
+ const manual={...base,user:{login:'andylitvinov-design'},labels:[{name:'hh:repair-manual'}]};
+ const resultRecord={
+  schema:'HH_PR_TASK_V1',lane:'repair',pr_number:task.prNumber,
+  head_sha:SHA,state:'MANUAL',source_published:false,new_sha:null,
+  detail_code:'FREE_AI_OPENROUTER_PATCH_RESPONSE_TRUNCATED',
+  ai_execution:{model_response_confirmed:true,patch_received:false,source_published_sha:null},
+  model_run:{model_call_started_at:'2026-11-16T00:05:00Z',
+   response_shape:{finish_reason:'length'},patch_present:false}
+ };
+ const comment={user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+  performed_via_github_app:{id:15368,slug:'github-actions'},
+  body:'<!-- HH_PR_TASK_V1 -->\\n'+String.fromCharCode(96).repeat(3)+'json\\n'+
+   JSON.stringify(resultRecord)+'\\n'+String.fromCharCode(96).repeat(3)};
+ const fx=mock(task,manual);
+ fx.github.rest.issues={listComments:async()=>({data:[comment]})};
+ let calls=0;
+ const outcome=await run({...fx,context,dispatch:async(_g,cmd,options)=>{
+  calls++;
+  assert.equal(cmd.pr,task.prNumber);
+  assert.deepEqual(options.ownerProof,{
+   source:'OIDC_SIGNED_QUEUE',prNumber:task.prNumber,
+   expectedSha:SHA,requestId:task.requestId,leaseToken:task.leaseToken
+  });
+  return {dispatched:true,reason:'OWNER_DIRECT_MACHINE_RETRY_DISPATCH_ACCEPTED'};
+ }});
+ assert.equal(outcome.status,'WATCHING');
+ assert.equal(outcome.reasonCode,'OWNER_DISPATCH_ACCEPTED_NOT_MODEL_OR_COMMIT');
+ assert.equal(outcome.sourceWriteVerified,false);
+ assert.equal(outcome.dispatchAccepted,true);
+ assert.equal(calls,1);
+ assert.equal(fx.calls.filter(x=>x.action==='arm_dispatch').length,1);
+ const second=mock({...task,dispatchEligibleOnce:false},manual);
+ second.github.rest.issues=fx.github.rest.issues;
+ const repeat=await run({...second,context,dispatch:async()=>{throw Error('REPEAT_UNSAFE');}});
+ assert.equal(repeat.dispatchAccepted,false);
+ assert.equal(second.calls.filter(x=>x.action==='arm_dispatch').length,0);
+});
+test('manual owner/security hold still blocks even with former machine failure receipt',async()=>{
+ const held={...base,user:{login:'andylitvinov-design'},
+  labels:[{name:'hh:repair-manual'},{name:'hh:hold'}]};
+ const fx=mock(task,held);
+ fx.github.rest.issues={listComments:async()=>({data:[]})};
+ const outcome=await run({...fx,context,dispatch:async()=>{throw Error('BYPASS')}}); 
+ assert.equal(outcome.status,'BLOCKED');
+ assert.equal(outcome.reasonCode,'EXISTING_HOLD_NO_OVERRIDE');
+ assert.equal(fx.calls.filter(x=>x.action==='arm_dispatch').length,0);
+});
