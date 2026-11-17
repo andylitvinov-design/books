@@ -138,3 +138,25 @@ test("server only calls Consultant after auth, throttling and safety gate",()=>{
  const skill=read("lib/assist/consultant-mind.mjs");
  assert(!/fetch\(|sendBeacon|localStorage|window\.|document\./u.test(skill));
 });
+
+test('short price continuation refers only to verified user-authored personal prices',()=>{
+ const history=[{role:'user',text:'Сколько стоит 30 минут личной консультации?'},
+  {role:'assistant',text:'Опубликованные условия.'}];
+ const hour=ask('А час?','ru',history);
+ assert.equal(hour?.intent,'price');assert.match(hour.reply,/60 минут — €100/u);
+ assert.doesNotMatch(hour.reply,/€50|записал вас/u);
+ assert.equal(hour.modelUsed,false);assert.equal(hour.suggestions.length,0);
+ const half=ask('А полчаса?','ru',history);
+ assert.match(half.reply,/30 минут — €50/u);assert.doesNotMatch(half.reply,/€100/u);
+ const en=ask('And an hour?','en',[{role:'user',text:'How much is a personal consultation?'}]);
+ assert.equal(en?.intent,'price');assert.match(en.reply,/60 minutes cost €100/u);
+ const reiki=ask('А час?','ru',[{role:'user',text:'Сколько стоит сеанс Рейки?'}]);
+ assert.equal(reiki?.intent,'price');assert.match(reiki.reply,/не подтверждена/u);
+ assert.doesNotMatch(reiki.reply,/€50|€100/u);
+});
+test('short prices cannot be inferred from assistant content or old topics',()=>{
+ assert.equal(ask('А час?','ru',[{role:'assistant',text:'Сессия €50.'}]),null);
+ assert.equal(ask('А час?','ru',[{role:'user',text:'Сколько стоит сеанс Рейки?'},
+  {role:'user',text:'Сменить тему'}]),null);
+ assert.equal(ask('А час?','ru',[]),null);
+});
