@@ -3,7 +3,7 @@
  * as Story fallback. Never a generic URL fetcher or user-supplied proxy.
  * JPEG decoding and geometry are checked again by the browser renderer.
  */
-import {STORY_PHOTO_BY_ID,isTrustedStoryPhoto} from "@/lib/mandala/story-photo-library.mjs";
+import {STORY_PHOTO_BY_ID,isTrustedStoryPhoto,isAllowedStoryPhotoResponseUrl} from "@/lib/mandala/story-photo-library.mjs";
 
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
@@ -25,9 +25,8 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
    const isWikimedia=photo.provider==="wikimedia";
    const result=await fetch(photo.upstreamSrc,{redirect:isWikimedia?"follow":"error",cache:"force-cache",
      headers:{Accept:"image/jpeg"},signal:AbortSignal.timeout(8000)});
-   const finalHost=new URL(result.url).hostname;
    if(!result.ok||!IMAGE_TYPE.test(result.headers.get("content-type")||"")||
-      (isWikimedia?finalHost!=="upload.wikimedia.org":finalHost!=="images.pexels.com"))
+      !isAllowedStoryPhotoResponseUrl(photo,result.url))
      return new Response(null,{status:503});
    const length=Number(result.headers.get("content-length")||0);
    if(length>MAX_BYTES)return new Response(null,{status:413});
