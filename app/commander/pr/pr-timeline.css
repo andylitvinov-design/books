@@ -33,3 +33,37 @@
  .hh-pr-stage-body strong{font-size:14px}
  .hh-pr-details-toggle{width:100%;justify-content:space-between}
 }
+
+
+/* Owner-only audit: dense, readable cards that preserve all observed HEADs. */
+.hh-pr-history{border-top:1px solid #514c68;margin-top:17px;padding-top:16px}
+.hh-pr-history h3{font-size:17px;margin:0 0 10px;color:#f4e7ff}
+.hh-pr-head{border:1px solid #615676;border-radius:12px;margin:9px 0;background:#1b1a2e;overflow:hidden}
+.hh-pr-head summary,.hh-pr-events summary{cursor:pointer;min-height:44px;
+ display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:9px 12px;
+ color:#f1e4ff;font-weight:650;overflow-wrap:anywhere}
+.hh-pr-head summary:focus-visible,.hh-pr-events summary:focus-visible{outline:2px solid #c9a5ff;outline-offset:-3px}
+.hh-pr-head-sha{font:600 13px/1.45 ui-monospace,SFMono-Regular,monospace;color:#d3bdff}
+.hh-pr-head-mark{font-size:12px;color:#c6d6ee;font-weight:550}
+.hh-pr-head-detail{border-top:1px solid #49435a;padding:11px 12px}
+.hh-pr-head-detail>p{font-size:13px;line-height:1.5;margin:0 0 7px;color:#d2c7de}
+.hh-pr-head-detail code{overflow-wrap:anywhere;font-size:11px}
+.hh-pr-head-detail strong{display:block;font-size:13px;line-height:1.5;margin:9px 0 5px}
+.hh-pr-head-evidence{border-left:2px solid #a68bc6;padding:7px 9px;margin:6px 0;background:#28253d;border-radius:0 8px 8px 0}
+.hh-pr-head-evidence p{font-size:12px;line-height:1.5;color:#d4c9e2;margin:4px 0}
+.hh-pr-head-evidence a,.hh-pr-head-check a,.hh-pr-events a{font-size:12px;color:#d3bbff;text-decoration:underline}
+.hh-pr-head-check{display:flex;align-items:center;gap:4px 9px;flex-wrap:wrap;
+ font-size:12px;color:#e5dced;border-top:1px solid #393549;padding:8px 0}
+.hh-pr-head-check time{color:#bcb2cd}
+.hh-pr-green{color:#9bd7b8}.hh-pr-red{color:#ffb7aa}
+.hh-pr-events{margin:12px 0;background:#201e32;border:1px solid #514862;border-radius:12px}
+.hh-pr-events ol{margin:0;padding:5px 12px 10px 28px;max-height:580px;overflow:auto}
+.hh-pr-events li{padding:7px 0;border-bottom:1px solid #393449;font-size:12px}
+.hh-pr-events li:last-child{border:0}
+.hh-pr-events time{display:block;color:#b9accb;margin-bottom:2px}
+.hh-pr-events li strong{display:block;color:#f2e5ff}
+.hh-pr-events li code{font-size:11px;color:#c6b5dd}
+.hh-pr-events li p{font-size:12px;line-height:1.45;margin:3px 0;color:#d1c7e0}
+@media(max-width:430px){.hh-pr-history h3{font-size:16px}
+ .hh-pr-head summary{padding:10px 11px}.hh-pr-head-detail{padding:10px 11px}
+ .hh-pr-head-check{align-items:flex-start}}

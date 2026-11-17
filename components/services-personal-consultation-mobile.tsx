@@ -59,6 +59,12 @@ const descriptions = {
   },
 } as const;
 
+const priceLabels = {
+  ru: { quote: "По запросу", session: "€100 / 60 мин" },
+  en: { quote: "Price on request", session: "€100 / 60 min" },
+  es: { quote: "Consultar precio", session: "€100 / 60 min" },
+} as const;
+
 /** Mobile-only choice shelf inside the existing Services/Assist page; all orders use established first-party flows. */
 export function ServicesPersonalConsultationMobile({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
@@ -79,10 +85,11 @@ export function ServicesPersonalConsultationMobile({ locale }: { locale: PublicL
             <Image src="/images/holistic-house/messenger-zen-stones.svg" alt="" fill unoptimized sizes="110px" />
           </div>
           <div className={styles.content}>
-            <span className={styles.freeTag}>{t.free.tag}</span>
+            
             <h3>{t.free.title}</h3>
             <p><Zap size={18} aria-hidden="true" />{t.free.detail}</p>
           </div>
+          <span className={styles.priceTag} data-service-price-kind="free">{t.free.tag}</span>
           <ServicesCardActions locale={locale} title={t.free.title} description={d.free}
             href={"/" + locale + "/services/free-situation-review"} trackingId="free" />
         </article>
@@ -94,6 +101,7 @@ export function ServicesPersonalConsultationMobile({ locale }: { locale: PublicL
             <h3>{t.remote.title}</h3>
             <p><Camera size={19} aria-hidden="true" />{t.remote.detail}</p>
           </div>
+          <span className={styles.priceTag} data-service-price-kind="quote">{priceLabels[locale].quote}</span>
           <ServicesCardActions locale={locale} title={t.remote.title} description={d.remote}
             href={"/" + locale + "/services/alchemy-of-soul"} request={t.remote.request} trackingId="remote-photo" />
         </article>
@@ -105,6 +113,7 @@ export function ServicesPersonalConsultationMobile({ locale }: { locale: PublicL
             <h3>{t.live.title}</h3>
             <p><Video size={19} aria-hidden="true" />{t.live.detail}</p>
           </div>
+          <span className={styles.priceTag} data-service-price-kind="paid">{priceLabels[locale].session}</span>
           <ServicesCardActions locale={locale} title={t.live.title} description={d.live}
             href={"/" + locale + "/services/free-consultation"} request={t.live.request} trackingId="video" />
         </article>

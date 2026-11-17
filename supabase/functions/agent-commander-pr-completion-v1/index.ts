@@ -36,7 +36,7 @@ async function checkOidc(request){
    claims.repository_owner!=='andylitvinov-design'||
    claims.ref!=='refs/heads/codex/bootstrap-books'||
    claims.workflow_ref!==OWNER_WORKFLOW||
-   !['schedule','workflow_dispatch'].includes(claims.event_name)||
+   !['schedule','workflow_dispatch','workflow_run','push'].includes(claims.event_name)||
    (claims.job_workflow_ref&&claims.job_workflow_ref!==OWNER_WORKFLOW)||
    !Number.isSafeInteger(claims.exp)||!Number.isSafeInteger(claims.iat)||
    claims.exp<=now||claims.exp>now+900||claims.iat>now+60||claims.iat<now-900||
@@ -91,6 +91,30 @@ const publicRow=r=>({requestId:r.request_id,prNumber:r.pr_number,headSha:r.obser
  requestedHeadSha:r.requested_head_sha,firstAttemptAt:r.first_attempt_at||null,
  leaseUntil:r.lease_until||null,dispatchAttemptedAt:r.dispatch_attempted_at||null,
  checkedCount:Number.isSafeInteger(Number(r.checked_count))?Number(r.checked_count):0});
+
+const safeInfo=(value,max=110)=>typeof value==='string'?value.slice(0,max):null;
+const cleanCiRow=r=>{
+ const cls=r.classification&&typeof r.classification==='object'?r.classification:{};
+ const route=r.route_receipt&&typeof r.route_receipt==='object'?r.route_receipt:{};
+ const assignment=r.assignment_receipt&&typeof r.assignment_receipt==='object'?r.assignment_receipt:{};
+ const sha=SHA.test(r.head_sha||'')?r.head_sha:
+  SHA.test(r.workflow_run_head_sha||'')?r.workflow_run_head_sha:null;
+ return {headSha:sha,runId:r.workflow_run_id!=null&&Number.isSafeInteger(Number(r.workflow_run_id))?
+   Number(r.workflow_run_id):null,
+  attempt:r.run_attempt!=null&&Number.isSafeInteger(Number(r.run_attempt))?Number(r.run_attempt):null,
+  workflowName:safeInfo(r.workflow_name,90),
+  conclusion:safeInfo(r.conclusion,30),
+  category:safeInfo(r.category||cls.category,70),
+  reasonCode:safeInfo(cls.reason_code,100),
+  classificationStatus:safeInfo(cls.status,60),
+  responsibleRole:safeInfo(cls.responsible_role||route.responsibleRole,90),
+  routeState:safeInfo(route.state,65),
+  routeReason:safeInfo(route.reason,100),
+  workerStarted:route.workerStarted===true||assignment.workerStarted===true,
+  dispatchAccepted:route.dispatchAcknowledged===true||assignment.dispatchAccepted===true,
+  sourceRunAt:r.source_run_created_at||null,recordedAt:r.created_at||null};
+};
+
 async function eventFor(sql,row){
  if(!row.chat_id||!['MERGED','CLOSED_UNMERGED','BLOCKED'].includes(row.state))return;
  const hash=new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(
@@ -120,6 +144,25 @@ async function ownerAction(sql,req,body,action,origin){
  const acl=await sql.unsafe('select can_read,can_write from business_brain.owner_access where user_id=$1::uuid limit 1',[owner]);
  if(acl.length!==1||acl[0].can_read!==true||(action==='submit'&&acl[0].can_write!==true))
   return json(403,{error:'OWNER_ACCESS_DENIED'},origin);
+ if(action==='history'){
+  const pr=Number(body.prNumber),page=body.page===undefined?1:Number(body.page);
+  if(!validNum(pr)||!Number.isSafeInteger(page)||page<1||page>1000)
+   return json(400,{error:'PR_HISTORY_QUERY_INVALID'},origin);
+  const queue=await sql.unsafe('select * from '+T+
+   ' where owner_id=$1::uuid and pr_number=$2 order by created_at desc limit 5',
+   [owner,pr]);
+  if(!queue.length)return json(404,{error:'OWNER_PR_NOT_IN_QUEUE'},origin);
+  const ci=await sql.unsafe(
+   'select head_sha,workflow_run_head_sha,workflow_run_id,run_attempt,workflow_name,'+
+   ' conclusion,category,classification,route_receipt,assignment_receipt,'+
+   ' source_run_created_at,created_at from business_brain.commander_ci_event_inbox '+
+   ' where pr_number=$1 and repository=$2 order by created_at desc,ci_event_id desc '+
+   ' limit 31 offset $3',
+   [pr,REPO,(page-1)*30]);
+  return json(200,{schema:FUNCTION,items:queue.map(publicRow),ownerOnly:true,
+   ciHistoryAvailable:true,ciPage:page,ciHasMore:ci.length>30,
+   ciEvents:ci.slice(0,30).map(cleanCiRow)},origin);
+ }
  if(action==='status'){
   const pr=body.prNumber===undefined?null:Number(body.prNumber);
   if(pr!==null&&!validNum(pr))return json(400,{error:'PR_NUMBER_INVALID'},origin);
@@ -204,6 +247,19 @@ async function workerAction(sql,body,action,origin){
   [id,lease]);
  if(prior.length!==1)return json(409,{error:'LEASE_EXPIRED_OR_MOVED'},origin);
  let mergedAt=null,mergeSha=null,code=label(body.reasonCode);
+ // Follow a changing HEAD only after a fresh exact-GitHub PR readback.
+ // Signed owner intent is for the PR, not one stale SHA. Preserve the one
+ // source-write fence and never treat the new SHA as an AI patch receipt.
+ let verifiedFollowedHead=null;
+ if(state==='WATCHING'&&body.headSha!==prior[0].requested_head_sha){
+  try{
+   const current=await readPR(prior[0].pr_number);
+   if(current.state==='open'&&current.draft!==true&&
+      current.head.sha===body.headSha)verifiedFollowedHead=current.head.sha;
+  }catch{
+   // GitHub temporary failure cannot authorize a source writer.
+  }
+ }
  if(state==='MERGED'||state==='CLOSED_UNMERGED'){
   const pr=await readPR(prior[0].pr_number);
   if(pr.state!=='closed'||state==='MERGED'&&(
@@ -217,14 +273,16 @@ async function workerAction(sql,body,action,origin){
  const rows=await sql.unsafe('update '+T+
   ' set state=$1,reason_code=$2,observed_head_sha=$3,observed_merge_sha=$4,'+
   ' merged_at=$5::timestamptz,dispatch_accepted=dispatch_accepted or $6,'+
+  ' requested_head_sha=coalesce($10::text,requested_head_sha),'+
   ' lease_token=null,lease_until=null,last_checked_at=now(),checked_count=checked_count+1,updated_at=now(),'+
-  ' evidence=$7::text::jsonb where request_id=$8::uuid and lease_token=$9::uuid and state=\'LEASED\' returning *',
+  ' evidence=$7::text::jsonb where request_id=$8::uuid and lease_token=$9::uuid and state=\'LEASED\' and lease_until>now() returning *',
   [state,code,body.headSha,mergeSha,mergedAt,body.dispatchAccepted===true,
    JSON.stringify({schema:'HH_PR_COMPLETION_WORKER_V1',source:'SIGNED_GITHUB_ACTIONS_OIDC',
     workflowRunId:validNum(body.workflowRunId)?body.workflowRunId:null,
     dispatchAccepted:body.dispatchAccepted===true,
-    candidateProof:'NOT_ATTESTED_BY_GATEWAY',liveVerified:false}),
-   id,lease]);
+    candidateProof:'NOT_ATTESTED_BY_GATEWAY',liveVerified:false,
+    followedCurrentHead:verifiedFollowedHead!==null}),
+   id,lease,verifiedFollowedHead]);
  if(rows.length!==1)return json(409,{error:'LEASE_CAS_FAILED'},origin);
  if(['MERGED','CLOSED_UNMERGED','BLOCKED'].includes(state))await eventFor(sql,rows[0]);
  return json(200,{schema:FUNCTION,accepted:true,item:publicRow(rows[0])},origin);
@@ -240,7 +298,7 @@ Deno.serve(async request=>{
  if(!body||typeof body!=='object'||Array.isArray(body)||typeof body.action!=='string')
   return json(400,{error:'INVALID_ENVELOPE'},origin);
  const action=body.action;
- if(!['submit','status','next','finish','arm_dispatch'].includes(action))return json(400,{error:'UNKNOWN_ACTION'},origin);
+ if(!['submit','status','history','next','finish','arm_dispatch'].includes(action))return json(400,{error:'UNKNOWN_ACTION'},origin);
  if(['next','finish','arm_dispatch'].includes(action)&&!(await checkOidc(request)))
   return json(401,{error:'GITHUB_WORKFLOW_OIDC_DENIED'},origin);
  const dbUrl=Deno.env.get('SUPABASE_DB_URL');
