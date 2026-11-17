@@ -38,6 +38,7 @@ async function routeRun({source=candidate,payload=callback(),diagnostic='off',co
    safeError:()=>({status:503}),telegramDiagnosticReady:()=>false,channelTransportReady:()=>true,
    processWhatsAppAccountLink:async()=>{calls.waProof++;return {handled:false}},
    processWhatsAppDiagnostic:async()=>{calls.waIntake++;return {handled:false}},
+   processWhatsAppSecretary:async()=>({handled:false}),
    sendWhatsAppDiagnosticPrompt:async()=>{calls.waSend++},
    // Production CRM webhook routes owner-only video commands before diagnostic callbacks.
    receiveOwnerTelegramVideoCrmFallback:async()=>({handled:false}),

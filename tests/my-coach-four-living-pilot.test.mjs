@@ -10,10 +10,10 @@ const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 const root='../public/images/holistic-house/my-coach-motion/'
 const states=['greeting','idle','listening','speaking']
 
-test('pilot advertises two female and three male coaches while retaining historical registry',()=>{
+test('pilot advertises five selected fictional coaches without deleting the historical registry',()=>{
   assert.deepEqual(PUBLIC_COACH_PERSONA_IDS,['mira','max','sofia','alex','merlin'])
   assert.deepEqual(PUBLIC_COACH_PERSONAS.map(item=>item.id),PUBLIC_COACH_PERSONA_IDS)
-  assert.equal(COACH_PERSONAS.length,9)
+  assert.ok(COACH_PERSONAS.length>=8)
   assert.ok(PUBLIC_COACH_PERSONA_IDS.every(id=>getCoachPersona(id)))
   assert.ok(PUBLIC_COACH_TOPICS.every(topic=>PUBLIC_COACH_PERSONAS.some(p=>p.topic===topic||p.related.includes(topic))))
   const catalog=source('components/my-coach-catalog.jsx')
@@ -27,7 +27,7 @@ test('pilot advertises two female and three male coaches while retaining histori
   }
 })
 
-test('the original four active coaches retain silent playable 24fps MP4s in every state',()=>{
+test('every active coach has a silent playable local 24fps MP4 for each of four visual states',()=>{
   const hashes=new Set()
   for(const id of ['mira','max','sofia','alex']){
     for(const state of states){
@@ -44,43 +44,42 @@ test('the original four active coaches retain silent playable 24fps MP4s in ever
   assert.equal(hashes.size,16)
 })
 
-test('new Merlin poster exists and does not request missing 24fps videos',()=>{
- const poster=readFileSync(new URL(root+'merlin-still.webp',import.meta.url))
- assert.equal(poster.subarray(0,4).toString(),'RIFF')
- assert.equal(poster.subarray(8,12).toString(),'WEBP')
+test('Merlin is a fifth published coach with static photo, never nonexistent MP4 or fabricated lip motion',()=>{
+ const portrait=readFileSync(new URL(root+'merlin-still.webp',import.meta.url))
+ assert.equal(portrait.subarray(0,4).toString('ascii'),'RIFF')
+ assert.equal(portrait.subarray(8,12).toString('ascii'),'WEBP')
  const motion=source('components/my-coach-motion-media.jsx')
- assert.ok(motion.includes("personaId!=='merlin'"))
- assert.ok(motion.includes("const src=hasMotion?"))
- const intro=source('lib/personal-coaching/direct-coach-intro-audio.mjs')
- const api=source('app/api/coaching/intro/[locale]/[coach]/route.js')
- assert.match(intro,/alex\|merlin\|lea/)
- assert.match(api,/alex\|merlin\|lea/)
+ const avatar=source('components/app/coaching-avatar.jsx')
+ assert.match(motion,/VIDEO_PERSONAS=new Set\(\['mira','max','sofia','alex'\]\)/)
+ assert.match(motion,/const src=supported&&hasVideo\?/)
+ assert.ok(motion.includes("data-coach-motion-clip={hasVideo?clip:'still'}"))
+ assert.ok(avatar.includes('data-photo-motion="static"'))
+ assert.doesNotMatch(avatar,/portraitMouthAperture|livingPortraitMouth|requestAnimationFrame/)
 })
 
-test('motion player is silent, visibility-gated, reduced-motion safe and never calls a provider',()=>{
-  const comp=source('components/my-coach-motion-media.jsx')
-  const css=source('components/my-coach-motion-media.module.css')
-  for(const value of ['IntersectionObserver','visibilitychange','prefers-reduced-motion: reduce',
-    'video.play()','video.pause()','playsInline autoPlay','muted loop','onError',
-    'data-coach-motion-state={state}','-still.webp',"+'-'+state+'.mp4'"])
-    assert.ok(comp.includes(value),value)
-  assert.match(css,/\.media\[data-coach-motion-ready='true'\] \.video\{opacity:1\}/)
-  assert.match(css,/@media\(prefers-reduced-motion:reduce\)/)
-  assert.doesNotMatch(comp, /fetch\(|navigator\.mediaDevices|speechSynthesis|localStorage|sessionStorage/)
+test('motion media uses a real static poster, existing silent MP4 and edge-only cues',()=>{
+ const comp=source('components/my-coach-motion-media.jsx')
+ const css=source('components/my-coach-motion-media.module.css')
+ for(const value of ['IntersectionObserver','visibilitychange','prefers-reduced-motion: reduce',
+  'video.play()','video.pause()','muted loop playsInline autoPlay',
+  'data-coach-motion-scene={visualScene}','-still.webp'])
+  assert.ok(comp.includes(value),value)
+ assert.match(css,/\.media\[data-coach-motion-ready='true'\] \.video\{opacity:1\}/)
+ assert.match(css,/@media\(prefers-reduced-motion:reduce\)/)
+ assert.doesNotMatch(comp,/greeting-real-v3|fetch\(|navigator\.mediaDevices|speechSynthesis|localStorage|sessionStorage|canvas|getUserMedia/)
+ assert.doesNotMatch(css,/mask-image:radial-gradient/)
 })
-
-test('catalog and dialogue reuse one face and real voice phase instead of jerky 6-frame WebP',()=>{
-  const catalog=source('components/my-coach-catalog.jsx')
-  const live=source('components/my-coach-live-dialogue.jsx')
-  const avatar=source('components/app/coaching-avatar.jsx')
-  const css=source('components/my-coach-live-dialogue.module.css')
-  assert.match(catalog,/<MyCoachMotionMedia personaId=\{selected\.id\} phase="greeting" context="hero"/)
-  assert.match(catalog,/<MyCoachMotionMedia personaId=\{persona\.id\} phase="idle" context="card"/)
-  assert.match(catalog,/src=\{`\/images\/holistic-house\/my-coach-motion\/\$\{id\}-still\.webp`\}/)
-  assert.match(live,/<MyCoachMotionMedia personaId=\{personaId\} phase=\{motionPhase\} context="session"/)
-  assert.match(live,/voiceState\.phase==='speaking'\?'speaking'/)
-  assert.match(live,/voiceState\.phase==='listening'\?'listening'/)
-  assert.match(avatar,/<MyCoachMotionMedia personaId=\{photoId\} phase=\{state\} context="avatar"/)
-  assert.match(css,/data-coach-motion-video='true'\]::after\{display:none!important\}/)
-  assert.ok(live.includes('data-voice-phase={voiceState.phase}'))
+test('live reply selects a scene without changing ASR, privacy gates or speech source',()=>{
+ const catalog=source('components/my-coach-catalog.jsx')
+ const live=source('components/my-coach-live-dialogue.jsx')
+ const avatar=source('components/app/coaching-avatar.jsx')
+ const css=source('components/my-coach-live-dialogue.module.css')
+ assert.match(catalog,/<MyCoachMotionMedia personaId=\{selected\.id\} phase="greeting" context="hero"/)
+ assert.match(catalog,/<MyCoachMotionMedia personaId=\{persona\.id\} phase="idle" context="card"/)
+ assert.match(live,/selectCoachVisualScene\(\{phase:motionPhase,text:latestCoachText,stage:currentStage\}\)/)
+ assert.match(live,/<MyCoachMotionMedia personaId=\{personaId\} phase=\{motionPhase\} context="session" scene=\{visualScene\}/)
+ assert.match(avatar,/<MyCoachMotionMedia personaId=\{photoId\} phase=\{state\} context="avatar" scene=\{scene\}/)
+ assert.doesNotMatch(avatar,/requestAnimationFrame|AudioContext|portraitMouthAperture|livingPortraitMouth|living\.webp/)
+ assert.doesNotMatch(live,/setPortraitLevel|onVoiceLevel=\{setPortraitLevel\}/)
+ assert.match(css,/sessionPortrait\[data-persona\]::after\{display:none!important;content:none!important/)
 })

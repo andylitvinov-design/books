@@ -337,13 +337,13 @@ test("MyTube cards display the original scenario, not the four generic archetype
  assert.match(director,/Scenario concept; matching footage is verified separately/);
 });
 
-test("owner correction: canonical subcategory and optional topic and request precede the story",()=>{
+test("owner correction: explicit quiz category precedes its four subcategories and topics",()=>{
  const goals=director.slice(director.indexOf("const goalPanel="),director.indexOf("return <section className={css.root}"));
  const goalBlock=goals.slice(0,goals.indexOf("const quickTopicPanel="));
- assert.match(goalBlock,/subcategoriesOpen&&!requestNeedsChoice\?<div className=\{css\.subcategories\}/,
-   "show subcategories only after an explicit or reliable category selection");
- assert.match(goalBlock,/aria-pressed=\{selectedCategoryId===item\.id&&!requestNeedsChoice\}/,
-   "an unmatched wish must not show the previously selected category as checked");
+ assert.match(goalBlock,/goalQuizStep===2&&goalCategoryAnswered&&subcategoriesOpen&&!requestNeedsChoice\?<div className=\{css\.subcategories\}/,
+   "four subcategories appear only at step 2 after an explicit category choice");
+ assert.match(goalBlock,/aria-pressed=\{selectedCategoryId===item\.id&&goalCategoryAnswered&&!requestNeedsChoice\}/,
+   "an initial suggestion or unmatched wish must not count as an answered category");
  assert.match(director,/if\(!classification\|\|broad\)\{[\s\S]*?setProposal\(null\);setTimelineEdits\(null\);return/,
    "unresolved or broad wishes must not inherit a ready film timeline");
  assert.match(goalBlock,/taxonomySubcategories\.map\(item=>/);
