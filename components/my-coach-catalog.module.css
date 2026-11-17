@@ -380,3 +380,109 @@
 .cardPortrait[data-persona=max],.avatarLarge[data-persona=max]{background-image:url('/images/holistic-house/my-coach-motion/max-still.webp')!important}
 .cardPortrait[data-persona=sofia],.avatarLarge[data-persona=sofia]{background-image:url('/images/holistic-house/my-coach-motion/sofia-still.webp')!important}
 .cardPortrait[data-persona=alex],.avatarLarge[data-persona=alex]{background-image:url('/images/holistic-house/my-coach-motion/alex-still.webp')!important}
+
+
+/* Owner-approved compact My Coach discovery: five categories + four topic chips. */
+.root{background:var(--hh-light-canvas,#fbf5e9)}
+.compactHero{min-height:0!important}
+.compactHeading{padding:15px 4px 14px}
+.compactHeading h1{margin:0 0 7px;color:#064d40;font:780 clamp(32px,4.2vw,47px)/1.05 system-ui;letter-spacing:-.05em}
+.compactHeading p{margin:0;max-width:690px;color:#5d6a71;font:550 clamp(14px,1.7vw,18px)/1.35 system-ui}
+.controlTop{margin:4px 0 14px}
+.controlTop[hidden],.expressDirectory[hidden],.taoDirectory[hidden]{display:none!important}
+.filtersButton,.filtersActive{width:48px;height:48px;min-height:48px;padding:0;position:relative}
+.filterDot{position:absolute;top:5px;right:5px}
+.coachKindSwitch{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));max-width:none;gap:7px;
+  background:transparent;border:0;padding:0;margin:0 0 16px;border-radius:0;scroll-margin-top:84px}
+.coachKind,.coachKindActive{display:flex;flex-direction:row;align-items:center;justify-content:center;gap:7px;min-width:0;
+  min-height:54px;padding:6px 8px;border-radius:17px;border:1px solid #e9dfd1;background:#fffcf7;
+  color:#143d3a;text-align:center;font:730 clamp(11px,1.2vw,13px)/1.13 system-ui;
+  box-shadow:0 3px 12px #243f3410;white-space:normal}
+.coachKindActive{background:linear-gradient(135deg,#119b77,#00684e);border-color:#078163;color:white}
+.coachKind span,.coachKindActive span{min-width:0}
+.coachKind svg,.coachKindActive svg{width:18px;height:18px;flex-shrink:0}
+.taoTabGlyph{font:600 24px/1 system-ui;flex:0 0 auto}
+.topicChips{display:flex;align-items:center;gap:7px;overflow-x:auto;min-width:0;
+  margin:0 0 12px;padding:2px 1px 6px;scrollbar-width:none;scroll-snap-type:x proximity}
+.topicChips::-webkit-scrollbar{display:none}
+.topicCaption{flex:0 0 auto;color:#596862;font:700 12px/1.2 system-ui}
+.topicQuick,.topicQuickActive{display:inline-flex;align-items:center;justify-content:center;gap:5px;
+  min-height:42px;flex:0 0 auto;padding:8px 11px;border-radius:999px;
+  border:1px solid #e6ded5;background:#fffcf7;box-shadow:0 3px 12px #243f3410;
+  color:#174b3d;font:700 12px/1.15 system-ui;scroll-snap-align:start;cursor:pointer}
+.topicQuickActive{background:#e6f6f1;border-color:#067a67;box-shadow:inset 0 0 0 1px #067a67}
+.topicQuick svg,.topicQuickActive svg{flex-shrink:0;color:#0d6e52}
+.advancedChoices{display:flex;gap:7px;flex-wrap:wrap;margin:2px 0 10px}
+.advancedChoices button{display:inline-flex;align-items:center;gap:5px;padding:8px 12px;
+  border-radius:999px;min-height:39px;cursor:pointer;font:700 12px/1.15 system-ui}
+.cardMiraStart{min-width:0;max-width:205px;width:100%}
+.cardMiraStart :global([data-my-coach-mira-quick-start]){width:100%;max-width:none;margin:0}
+.cardMiraStart :global([data-my-coach-mira-talk]){width:100%;min-height:44px;padding:6px 9px;
+  border:1px solid #078163;box-shadow:0 3px 8px #08794b28;gap:5px;font:720 12px/1.1 system-ui}
+.cardMiraStart :global([data-my-coach-mira-talk] svg:first-of-type){display:none}
+.cardMiraStart :global([data-my-coach-mira-talk] svg:last-of-type){width:15px;height:15px}
+.expressDirectory{margin-top:25px;min-width:0}
+.expressDirectory h2,.taoCopy h2{margin:0 0 7px;color:#143d3a;font:770 clamp(22px,2.5vw,29px)/1.15 system-ui}
+.entryLead{font:540 14px/1.5 system-ui;color:#5d6a71;margin:0 0 13px}
+.entryGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}
+.entryCard{position:relative;display:flex;align-items:flex-start;gap:11px;min-width:0;
+  padding:20px 13px 17px;border:1px solid #e9dfd1;border-radius:21px;background:#fffcf7;
+  text-decoration:none;color:#143d3a;box-shadow:0 3px 14px #243f3410}
+.entryCard:focus-visible,.taoOpen:focus-visible{outline:3px solid #176e6e;outline-offset:3px}
+.entryIcon{flex:0 0 auto;color:#067a67;padding-top:5px}
+.entryCopy{min-width:0;display:flex;flex-direction:column;gap:8px;padding-top:12px}
+.entryCopy strong{font:760 16px/1.2 system-ui}
+.entryCopy small{font:520 13px/1.45 system-ui;color:#5d6a71}
+.freeMarker{position:absolute;top:5px;right:8px;font:750 9px/1.3 system-ui;
+  letter-spacing:.02em;color:#067a67;background:#e6f6f1;border-radius:99px;padding:3px 5px}
+.entryArrow{position:absolute;bottom:9px;right:10px;color:#067a67}
+.entryNote{font:520 12px/1.45 system-ui;color:#66756e;margin:11px 3px 0}
+.taoDirectory{display:flex;align-items:center;gap:20px;padding:18px;border:1px solid #e9dfd1;
+  border-radius:24px;background:#fffcf7;margin:23px 0 0;box-shadow:0 3px 14px #243f3410}
+.taoSageIcon{display:grid;place-items:center;align-self:stretch;min-width:100px;
+  border-radius:18px;background:linear-gradient(135deg,#edf8ef,#f5eddd);
+  color:#08654d;font:500 66px/1 Georgia,serif}
+.taoCopy{min-width:0}
+.taoCopy p{margin:0 0 12px;color:#5d6a71;font:540 14px/1.45 system-ui}
+.taoCopy small{display:block;margin:9px 0 0;color:#65766c;font:500 12px/1.4 system-ui}
+.taoOpen{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;
+  padding:8px 15px;border-radius:999px;background:#067a67;color:white;text-decoration:none;
+  font:720 13px/1.2 system-ui}
+.taoOpen svg{margin-left:8px}
+@media(max-width:760px){
+  .coachKindSwitch{gap:5px}
+  .coachKind,.coachKindActive{flex-direction:column;gap:4px;min-height:62px;padding:7px 3px;
+    font-size:clamp(9.5px,2.8vw,12px);line-height:1.12;border-radius:16px}
+  .coachKind svg,.coachKindActive svg{width:18px;height:18px}
+  .taoTabGlyph{font-size:20px}
+  .entryGrid{grid-template-columns:1fr;gap:8px}
+  .entryCard{min-height:99px;padding:19px 36px 12px 12px}
+  .entryCopy{padding-top:6px}
+}
+@media(max-width:540px){
+  .compactHeading{padding:9px 3px 13px}
+  .compactHeading h1{font-size:35px;margin-bottom:5px}
+  .compactHeading p{font-size:14px}
+  .controlTop{margin:3px 0 12px}
+  .search input{height:47px;font-size:14px}
+  .coachKindSwitch{grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;margin-bottom:13px}
+  .coachKind,.coachKindActive{font-size:clamp(9px,2.6vw,11px);min-height:62px;line-height:1.09}
+  .topicCaption{display:none}
+  .topicChips{gap:5px}
+  .topicQuick,.topicQuickActive{min-height:40px;padding:7px 9px;font-size:11px}
+  .topicQuick svg,.topicQuickActive svg{width:16px;height:16px}
+  .cardMiraStart{max-width:170px}
+  .cardMiraStart :global([data-my-coach-mira-talk]){font-size:10.5px;padding:5px 7px;min-height:42px}
+  .taoDirectory{padding:12px;gap:11px}
+  .taoSageIcon{min-width:69px;font-size:47px}
+  .taoCopy h2{font-size:21px}
+}
+@media(max-width:355px){
+  .coachKind,.coachKindActive{font-size:9px;padding:6px 2px}
+  .coachKind svg,.coachKindActive svg{width:16px;height:16px}
+  .topicQuick,.topicQuickActive{padding:7px 7px;font-size:10.5px}
+  .entryCopy strong{font-size:15px}
+}
+@media(prefers-reduced-motion:reduce){
+  .coachKind,.coachKindActive,.entryCard,.taoOpen{transition:none}
+}

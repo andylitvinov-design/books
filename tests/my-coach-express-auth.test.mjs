@@ -37,12 +37,12 @@ test('Mira express auth reuses server PKCE and allows Telegram only when explici
   assert.doesNotMatch(modal, /returnPath|accountToken|service_role|SUPABASE_SERVICE_ROLE_KEY/)
 })
 
-test('Mira-first hero auth gate replaces primary CTA and suppresses direct arrow bypass', () => {
+test('Mira card keeps the authenticated start flow after removing the oversized hero', () => {
   const catalog = read('components/my-coach-catalog.jsx')
   const component = read('components/my-coach-express-start.jsx')
-  assert.match(catalog, /selected\.id === 'mira'[\s\S]*?<MyCoachExpressStart locale=\{lang\} embedded/)
-  assert.match(catalog, /selected\.id !== 'mira' && <Link className=\{heroStyles\.circleAction\}/)
-  assert.match(catalog, /data-my-coach-hero-start=\{selected\.id\}/)
+  assert.match(catalog, /persona\.id === 'mira'[\s\S]*?<MyCoachExpressStart locale=\{lang\} embedded/)
+  assert.match(catalog, /data-my-coach-card-start=\{persona\.id\}/)
+  assert.doesNotMatch(catalog, /className=\{heroStyles\.heroStage\}/)
   assert.match(component, /className=\{styles\.talkButton\} \{\.\.\.buttonProps\} onClick=\{startMira\}/)
   assert.match(component, /await fetch|const response = await fetch/)
   assert.doesNotMatch(component, /signInAnonymously|localStorage|SUPABASE_SERVICE_ROLE_KEY/)

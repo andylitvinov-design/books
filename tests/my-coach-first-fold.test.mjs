@@ -5,24 +5,19 @@ import { readFileSync, statSync } from 'node:fs'
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 const photoPath = 'public/images/holistic-house/'
 
-test('My Coach mobile first fold keeps both the real session CTA and choice of coaches', () => {
+test('My Coach first fold uses one compact search, five categories and four theme chips', () => {
   const jsx = read('components/my-coach-catalog.jsx')
-  const css = read('components/my-coach-mira-landing.module.css')
-  assert.match(jsx, /data-my-coach-hero-start=\{selected\.id\}/)
-  assert.match(jsx, /className=\{heroStyles\.coachRail\}/)
-  assert.ok(jsx.indexOf('className={heroStyles.heroStage}') < jsx.indexOf('className={heroStyles.coachRail}'))
-  assert.match(css, /height:clamp\(320px,39svh,348px\)/)
-  assert.match(css, /min-height:0/)
-  assert.match(css, /stageActions\{position:relative;inset:auto/)
-  assert.match(css, /stageTopics\{position:relative;inset:auto/)
-  assert.match(css, /background-size:auto 100%/)
-  assert.match(css, /background-size:auto 90%/)
-  assert.doesNotMatch(jsx, /stageBubble|previewControl|railPlay|setIntroExpanded/)
-  assert.doesNotMatch(css, /height:clamp\(300px,41svh,355px\)/)
-  assert.match(css, /grid-auto-columns:minmax\(84px,calc\(\(100% - 21px\)\/4\)\)/)
-  assert.match(css, /@media\(max-width:540px\) and \(max-height:760px\)/)
-  assert.match(css, /@media\(max-width:370px\)/)
-  assert.match(css, /@media\(prefers-reduced-motion:reduce\)/)
+  const css = read('components/my-coach-catalog.module.css')
+  assert.match(jsx, /data-my-coach-kind-switch/)
+  for (const mode of ['all', 'ai', 'human', 'express', 'tao']) {
+    assert.ok(jsx.includes('data-my-coach-mode="' + mode + '"'), mode)
+  }
+  for (const topic of ["resilience", "relationships", "career", "habits"]) {
+    assert.ok(jsx.includes("id: '" + topic + "'"), topic)
+  }
+  assert.match(css, /\.coachKindSwitch\{display:grid;grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/)
+  assert.match(jsx, /data-my-coach-card=\{persona\.id\}/)
+  assert.doesNotMatch(jsx, /className=\{heroStyles\.heroStage\}|className=\{heroStyles\.benefitTiles\}/)
   assert.doesNotMatch(jsx, /<video[^>]+autoPlay|<audio[^>]+autoPlay/i)
 })
 
@@ -63,14 +58,12 @@ test('owner-approved visual mock uses the original fictional portraits instead o
   assert.match(css,/railPortrait\{height:clamp\(77px,11svh,90px\)\}/)
 })
 
-test('mobile coach thumbnails preserve their photo proportions and the Mira CTA is centered', () => {
+test('compact coach cards keep real portraits and a guarded Mira session entry', () => {
   const jsx = read('components/my-coach-catalog.jsx')
-  const css = read('components/my-coach-mira-landing.module.css')
-  assert.match(jsx, /className=\{heroStyles\.railPhoto\}/)
-  assert.match(jsx, /width=\{288\}\s+height=\{320\}/)
-  assert.match(jsx, /aria-pressed=\{selected\.id === id\}/)
-  assert.match(css, /\.railPortrait\s*\{[^}]*aspect-ratio:4 \/ 5;/)
-  assert.match(css, /\.railPhoto\s*\{[^}]*object-fit:cover;/)
-  assert.match(css, /\.stageActions > \[data-my-coach-mira-quick-start\][\s\S]*?flex:0 1 88%;/)
-  assert.match(css, /\.stageActions\{justify-content:center\}/)
+  const css = read('components/my-coach-catalog.module.css')
+  assert.match(jsx, /<MyCoachMotionMedia personaId=\{persona\.id\} phase="idle" context="card"/)
+  assert.match(jsx, /persona\.id === 'mira'[\s\S]*?<MyCoachExpressStart locale=\{lang\} embedded/)
+  assert.match(jsx, /href=\{coachSessionHref\(lang, persona\.id, normalizeCoachSettings\(persona\.id\)\)\}/)
+  assert.match(css, /\.cardMiraStart\{/)
+  assert.match(css, /@media\(max-width:540px\)/)
 })

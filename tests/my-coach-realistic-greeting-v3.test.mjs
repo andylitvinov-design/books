@@ -40,7 +40,7 @@ test('catalog and session greetings select v3 while actual voice/listening state
   assert.ok(player.includes("expressiveGreeting?'-greeting-real-v3.mp4':'-'+state+'.mp4'"))
   assert.ok(player.includes("expressiveGreeting?'-greeting-real-v3.webp':'-still.webp'"))
   assert.ok(player.includes("data-coach-motion-clip={expressiveGreeting?'greeting-real-v3':state}"))
-  assert.ok(catalog.includes('phase="greeting" context="hero"'))
+  assert.ok(catalog.includes('<MyCoachExpressStart locale={lang} embedded'))
   assert.ok(catalog.includes('phase="greeting" context="avatar"'))
   assert.ok(catalog.includes('phase="idle" context="card"'))
   assert.ok(session.includes('phase={motionPhase} context="session"'))

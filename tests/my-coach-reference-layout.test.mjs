@@ -11,7 +11,7 @@ test('My Coach reference layout uses compact scenic design and actual persona/se
 
   assert.ok(!page.includes('PublicSiteHeader'), 'old promotion/header must not push the catalog below the fold')
   for (const locale of ['en', 'ru', 'es']) assert.match(page, new RegExp("/" + locale + "/my-coach"))
-  for (const part of ['brandHeader', 'hero', 'quickTopics', 'controlTop', 'typePills', 'visualTopics', 'cardGrid', 'cardPortrait']) {
+  for (const part of ['brandHeader', 'hero', 'controlTop', 'coachKindSwitch', 'topicChips', 'cardGrid', 'cardPortrait']) {
     assert.ok(component.includes('styles.' + part), part + ' present')
     assert.ok(css.includes('.' + part + '{'), part + ' styled')
   }

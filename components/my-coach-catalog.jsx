@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowRight, BookOpen, Heart, RotateCcw, Search, ShieldCheck, SlidersHorizontal, Sparkles, Users, MoreHorizontal, Zap, Leaf, Flower2 } from 'lucide-react'
+import { ArrowRight, BookOpen, Heart, RotateCcw, Search, ShieldCheck, SlidersHorizontal, Sparkles, Users, MoreHorizontal, Zap, Leaf, Flower2, Target, Compass, Brain } from 'lucide-react'
 import {
   PUBLIC_COACH_PERSONA_IDS, PUBLIC_COACH_PERSONAS, PUBLIC_COACH_TOPICS, coachSessionHref, coachStagePrompt, getCoachPersona,
   localCoachText, normalizeCoachSettings,
@@ -194,6 +194,55 @@ const humanCopy = {
   },
 }
 
+
+const hubCopy = {
+  en: {
+    intro: 'Explore AI coaches, human practitioners, free diagnostics and Taoist guidance.',
+    all: 'All', ai: 'AI Coach', human: 'Human Coach',
+    express: 'Express Diagnostics', tao: 'Tao Advice',
+    search: 'Find a coach or topic…', topics: 'Topics',
+    calm: 'Calm', relationships: 'Relationships', goals: 'Goals', energy: 'Energy',
+    diagnosticsTitle: 'Express Diagnostics',
+    diagnosticsLead: 'Three free ways to explore your situation. Select an existing service to begin.',
+    situation: 'Free situation review', situationDetails: 'Request a personal written reflection on your question, goal and obstacles.',
+    wu: 'Free Wu Xing profile', wuDetails: 'Explore strengths and balance through the symbolic Five Elements.',
+    tests: 'Free self-tests', testsDetails: 'Short wellbeing and personality questionnaires with results.',
+    free: 'FREE', diagnosticNote: 'Personal written reviews are requested separately. Self-tests and Wu Xing are not medical diagnoses.',
+    taoTitle: 'Tao Advice', taoLead: 'Ask your question and open the existing Taoist I Ching insight and reflections.',
+    taoOpen: 'Open Taoist guidance', taoNote: 'A symbolic reflection for thought, not a prediction or medical advice.',
+  },
+  ru: {
+    intro: 'Выберите AI-коуча, живого специалиста, бесплатный разбор или подсказку Дао.',
+    all: 'Все', ai: 'AI-коуч', human: 'Живой коуч',
+    express: 'Экспресс-диагностика', tao: 'Подсказки Дао',
+    search: 'Найти коуча или тему…', topics: 'Темы',
+    calm: 'Спокойствие', relationships: 'Отношения', goals: 'Цели', energy: 'Энергия',
+    diagnosticsTitle: 'Бесплатная экспресс-диагностика',
+    diagnosticsLead: 'Три существующих бесплатных варианта — выберите подходящий.',
+    situation: 'Разбор ситуации', situationDetails: 'Запросите личный письменный анализ вопроса, цели и препятствий.',
+    wu: 'Профиль У-Син', wuDetails: 'Символический анализ ресурсов и баланса по Пяти стихиям.',
+    tests: 'Бесплатные тесты', testsDetails: 'Короткие опросники о самочувствии и личности с результатами.',
+    free: 'БЕСПЛАТНО', diagnosticNote: 'Личные письменные разборы оформляются по запросу. Тесты и У-Син не являются медицинской диагностикой.',
+    taoTitle: 'Подсказки Дао', taoLead: 'Задайте вопрос и откройте уже действующую подсказку И-Цзин и даосские размышления.',
+    taoOpen: 'Открыть подсказку Дао', taoNote: 'Символическая практика для размышления, не предсказание и не медицинский совет.',
+  },
+  es: {
+    intro: 'Explora coaches IA, profesionales reales, evaluaciones gratuitas y consejos taoístas.',
+    all: 'Todos', ai: 'Coach IA', human: 'Coach humano',
+    express: 'Diagnóstico exprés', tao: 'Consejo taoísta',
+    search: 'Busca coach o tema…', topics: 'Temas',
+    calm: 'Calma', relationships: 'Relaciones', goals: 'Metas', energy: 'Energía',
+    diagnosticsTitle: 'Evaluación exprés gratuita',
+    diagnosticsLead: 'Tres opciones gratuitas existentes para explorar tu situación.',
+    situation: 'Revisión de situación', situationDetails: 'Solicita una reflexión personal escrita sobre tu pregunta y objetivos.',
+    wu: 'Perfil Wu Xing', wuDetails: 'Explora recursos y equilibrio mediante los Cinco Elementos simbólicos.',
+    tests: 'Tests gratuitos', testsDetails: 'Cuestionarios breves de bienestar y personalidad con resultados.',
+    free: 'GRATIS', diagnosticNote: 'Las revisiones escritas se solicitan aparte. Tests y Wu Xing no son diagnósticos médicos.',
+    taoTitle: 'Consejo taoísta', taoLead: 'Haz una pregunta y abre las reflexiones e I Ching ya disponibles.',
+    taoOpen: 'Abrir consejo taoísta', taoNote: 'Una reflexión simbólica, no una predicción ni un consejo médico.',
+  },
+}
+
 const topicGlyphs = { all: '▦', resilience: 'ϟ', relationships: '♡', career: '◇', meaning: '✿', habits: '✧' }
 const visualTopics = [
   { id: 'all', image: 'lotus' },
@@ -216,6 +265,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
   const d = designCopy[lang]
   const hw = miraCopy[lang]
   const h = humanCopy[lang]
+  const hub = hubCopy[lang]
   const [search, setSearch] = useState('')
   const [topic, setTopic] = useState('all')
   const [onlyFavorites, setOnlyFavorites] = useState(false)
@@ -308,139 +358,73 @@ export default function MyCoachCatalog({ locale = 'en' }) {
         </nav>
       </header>
 
-      <section className={[styles.hero, heroStyles.landing].join(' ')} id="my-coach-top" aria-labelledby="my-coach-heading">
-        <div className={[styles.heroCopy, heroStyles.heroHeading].join(' ')}>
+      <section className={[styles.hero, heroStyles.landing, styles.compactHero].join(' ')}
+        id="my-coach-top" aria-labelledby="my-coach-heading">
+        <div className={styles.compactHeading}>
           <h1 id="my-coach-heading">My Coach</h1>
-          <p className={heroStyles.tagline}>{hw.tagline}</p>
-        </div>
-        <div className={heroStyles.heroStage} data-my-coach-hero={selected.id}>
-          <div className={heroStyles.heroPortrait} data-persona={selected.id} aria-hidden="true">
-            <MyCoachMotionMedia personaId={selected.id} phase="greeting" context="hero" />
-          </div>
-          <div className={heroStyles.stageTop}>
-            <span className={heroStyles.liveLabel}><span className={heroStyles.liveDot} />{hw.badge}</span>
-          </div>
-          <div className={heroStyles.stageGreeting}>
-            <h2>{hw.hello} {selectedName}</h2>
-            <p>{hw.subtitle}</p>
-          </div>
-          <div className={heroStyles.stageActions}>
-            {selected.id === 'mira'
-              ? <MyCoachExpressStart locale={lang} embedded data-my-coach-hero-start={selected.id} />
-              : <Link className={heroStyles.talkButton} href={startHref} prefetch={false}
-                  data-my-coach-hero-start={selected.id}>♩ {hw.talk} {selectedName} <ArrowRight size={17} aria-hidden="true" /></Link>}
-          </div>
-          <div className={heroStyles.stageTopics}>
-            <span>{hw.topic}</span>
-            <div className={[styles.quickTopics, heroStyles.quickTopics].join(' ')} role="group" aria-label={t.topics}>
-              {[
-                { id: 'resilience', label: d.energy }, { id: 'relationships', label: d.love },
-                { id: 'career', label: d.goals }, { id: 'habits', label: d.habits },
-              ].map(item => {
-                const Icon = categoryIcon[item.id] || Sparkles
-                return <button type="button" key={item.id} aria-pressed={topic === item.id}
-                  className={topic === item.id ? styles.quickTopicActive : styles.quickTopic}
-                  onClick={() => { setTopic(item.id); document.getElementById('all-coaches')?.scrollIntoView({behavior:'smooth',block:'start'}) }}>
-                  <Icon size={20} strokeWidth={1.7} aria-hidden="true" /><span>{item.label}</span>
-                </button>
-              })}
-            </div>
-          </div>
-        </div>
-        <div className={heroStyles.coachRailHeading}>
-          <h2>{hw.choose}</h2>
-          <a href="#all-coaches">{hw.all} <ArrowRight size={18} aria-hidden="true" /></a>
-        </div>
-        <div className={heroStyles.coachRail} role="group" aria-label={hw.choose}>
-          {PUBLIC_COACH_PERSONA_IDS.map(id => {
-            const persona = getCoachPersona(id)
-            if (!persona) return null
-            return <button type="button" key={id} className={heroStyles.railCard}
-              aria-pressed={selected.id === id}
-              onClick={() => { setSelectedId(id); setSettings(normalizeCoachSettings(id)) }}>
-              <span className={heroStyles.railPortrait} data-persona={id} aria-hidden="true">
-                <picture>
-                  <source media="(prefers-reduced-motion: reduce)" type="image/webp"
-                    srcSet={`/images/holistic-house/my-coach-motion/${id}-still.webp`} />
-                  <img
-                    className={heroStyles.railPhoto}
-                    src={`/images/holistic-house/my-coach-motion/${id}-still.webp`}
-                    alt=""
-                    width={288}
-                    height={320}
-                    loading="lazy"
-                    decoding="async"
-                  />
-                </picture>
-              </span>
-              <strong>{localCoachText(persona.name, lang)}</strong>
-              <small>{localCoachText(persona.role, lang)}</small>
-            </button>
-          })}
-        </div>
-        <div className={heroStyles.benefitTiles}>
-          <Link href={'/' + lang + '/holistic-support/mobile'}><BookOpen size={27} aria-hidden="true" /><strong>{hw.review}</strong></Link>
-          <a href="#all-coaches"><Sparkles size={27} aria-hidden="true" /><strong>{hw.hint}</strong></a>
-          <Link href={startHref} prefetch={false}><Leaf size={27} aria-hidden="true" /><strong>{hw.plan}</strong></Link>
+          <p>{directoryMode === 'human' ? h.intro : directoryMode === 'ai' ? hw.browse : hub.intro}</p>
         </div>
       </section>
-      <section className={heroStyles.directoryHeading} id="all-coaches" aria-label={hw.browse}>
-        <a href="#my-coach-top" className={heroStyles.directoryBack} aria-label={hw.back}>‹</a>
-        <div><h2>My Coach</h2><p>{directoryMode === 'human' ? h.intro : directoryMode === 'ai' ? hw.browse : h.combinedIntro}</p></div>
-      </section>
-
-      <div className={styles.coachKindSwitch} role="group" aria-label={h.chooser} data-my-coach-kind-switch>
-        <button type="button" className={directoryMode === 'all' ? styles.coachKindActive : styles.coachKind}
-          aria-pressed={directoryMode === 'all'} onClick={() => { setDirectoryMode('all'); setHumanContactOpen(false) }}>
-          <BookOpen size={17} aria-hidden="true" />{h.all}
-        </button>
-        <button type="button" className={directoryMode === 'ai' ? styles.coachKindActive : styles.coachKind}
-          aria-pressed={directoryMode === 'ai'} onClick={() => { setDirectoryMode('ai'); setHumanContactOpen(false) }}>
-          <Sparkles size={17} aria-hidden="true" />{h.ai}
-        </button>
-        <button type="button" className={directoryMode === 'human' ? styles.coachKindActive : styles.coachKind}
-          aria-pressed={directoryMode === 'human'} onClick={() => { setDirectoryMode('human'); setHumanContactOpen(false) }}>
-          <Users size={17} aria-hidden="true" />{h.real}
+      <div className={styles.controlTop} hidden={!['all', 'ai'].includes(directoryMode)}>
+        <label className={styles.search}>
+          <Search size={20} aria-hidden="true" />
+          <span className={styles.srOnly}>{t.search}</span>
+          <input type="search" value={search} onChange={event => setSearch(event.target.value)}
+            placeholder={hub.search} autoComplete="off" maxLength={90} />
+        </label>
+        <button type="button" className={showFilters ? styles.filtersActive : styles.filtersButton}
+          aria-label={d.filters} title={d.filters} aria-pressed={showFilters} aria-expanded={showFilters}
+          aria-controls="my-coach-filter-panel" onClick={() => setShowFilters(value => !value)}>
+          <SlidersHorizontal size={21} aria-hidden="true" />
+          {topic !== 'all' || paceFilter !== 'any' || onlyFavorites || sortBy !== 'all'
+            ? <i aria-hidden="true" className={styles.filterDot} /> : null}
         </button>
       </div>
-      <section className={styles.discover} aria-label={t.topics} hidden={directoryMode === 'human'}>
-        <div className={[styles.visualTopics, heroStyles.directoryTopics].join(' ')} role="group" aria-label={d.allTopics}>
-          {visualTopics.map(item => {
-            const label = item.id === 'all' ? d.allTopics : item.id === 'resilience' ? d.antistress
-              : item.id === 'career' ? d.goals : item.id === 'meaning' ? d.growth
-              : item.id === 'habits' ? d.habits : categories[item.id]
+      <nav className={styles.coachKindSwitch} id="all-coaches" aria-label={h.chooser}
+        data-my-coach-kind-switch>
+        <button type="button" className={directoryMode === 'all' ? styles.coachKindActive : styles.coachKind}
+          aria-pressed={directoryMode === 'all'} data-my-coach-mode="all"
+          onClick={() => { setDirectoryMode('all'); setHumanContactOpen(false) }}>
+          <BookOpen size={18} aria-hidden="true" /><span>{hub.all}</span>
+        </button>
+        <button type="button" className={directoryMode === 'ai' ? styles.coachKindActive : styles.coachKind}
+          aria-pressed={directoryMode === 'ai'} data-my-coach-mode="ai"
+          onClick={() => { setDirectoryMode('ai'); setHumanContactOpen(false) }}>
+          <Sparkles size={18} aria-hidden="true" /><span>{hub.ai}</span>
+        </button>
+        <button type="button" className={directoryMode === 'human' ? styles.coachKindActive : styles.coachKind}
+          aria-pressed={directoryMode === 'human'} data-my-coach-mode="human"
+          onClick={() => { setDirectoryMode('human'); setHumanContactOpen(false) }}>
+          <Users size={18} aria-hidden="true" /><span>{hub.human}</span>
+        </button>
+        <button type="button" className={directoryMode === 'express' ? styles.coachKindActive : styles.coachKind}
+          aria-pressed={directoryMode === 'express'} data-my-coach-mode="express"
+          onClick={() => { setDirectoryMode('express'); setHumanContactOpen(false) }}>
+          <Zap size={18} aria-hidden="true" /><span>{hub.express}</span>
+        </button>
+        <button type="button" className={directoryMode === 'tao' ? styles.coachKindActive : styles.coachKind}
+          aria-pressed={directoryMode === 'tao'} data-my-coach-mode="tao"
+          onClick={() => { setDirectoryMode('tao'); setHumanContactOpen(false) }}>
+          <span className={styles.taoTabGlyph} aria-hidden="true">☯</span><span>{hub.tao}</span>
+        </button>
+      </nav>
+      <section className={styles.discover} aria-label={t.topics}
+        hidden={!['all', 'ai'].includes(directoryMode)}>
+        <div className={styles.topicChips} role="group" aria-label={hub.topics}>
+          <span className={styles.topicCaption}>{hub.topics}:</span>
+          {[
+            {id: 'resilience', label: hub.calm, icon: Flower2},
+            {id: 'relationships', label: hub.relationships, icon: Heart},
+            {id: 'career', label: hub.goals, icon: Target},
+            {id: 'habits', label: hub.energy, icon: Zap},
+          ].map(item => {
+            const TopicIcon = item.icon
             return <button type="button" key={item.id} aria-pressed={topic === item.id}
-              className={topic === item.id ? styles.visualTopicActive : styles.visualTopic}
-              onClick={() => setTopic(item.id)}>
-              <span className={[styles.topicPicture, heroStyles.topicGlyph].join(' ')} aria-hidden="true">{topicGlyphs[item.id]}</span>
-              <span>{label}</span>
+              className={topic === item.id ? styles.topicQuickActive : styles.topicQuick}
+              onClick={() => setTopic(current => current === item.id ? 'all' : item.id)}>
+              <TopicIcon size={17} aria-hidden="true" /><span>{item.label}</span>
             </button>
           })}
-        </div>
-        <div className={styles.controlTop}>
-          <label className={styles.search}>
-            <Search size={20} aria-hidden="true" />
-            <span className={styles.srOnly}>{t.search}</span>
-            <input type="search" value={search} onChange={event => setSearch(event.target.value)}
-              placeholder={t.searchPlaceholder} autoComplete="off" maxLength={90} />
-          </label>
-          <button type="button" className={showFilters ? styles.filtersActive : styles.filtersButton}
-            aria-pressed={showFilters} aria-expanded={showFilters} aria-controls="my-coach-filter-panel"
-            onClick={() => setShowFilters(value => !value)}>
-            <SlidersHorizontal size={20} aria-hidden="true" /> <span>{d.filters}</span>
-            {topic !== 'all' || paceFilter !== 'any' ? <i aria-hidden="true" className={styles.filterDot} /> : null}
-          </button>
-        </div>
-        <div className={styles.typePills} role="group" aria-label={t.topics}>
-          <button type="button" aria-pressed={sortBy === 'all' && !onlyFavorites}
-            className={sortBy === 'all' && !onlyFavorites ? styles.pillActive : styles.pill}
-            onClick={() => { setSortBy('all'); setOnlyFavorites(false) }}><Users size={17} aria-hidden="true" />{t.all}</button>
-          <button type="button" aria-pressed={sortBy === 'suggested' && !onlyFavorites}
-            className={sortBy === 'suggested' && !onlyFavorites ? styles.pillActive : styles.pill}
-            onClick={() => { setSortBy('suggested'); setOnlyFavorites(false) }}><Sparkles size={17} aria-hidden="true" />{d.recommended}</button>
-          <button type="button" aria-pressed={onlyFavorites}
-            className={onlyFavorites ? styles.pillActive : styles.pill}
-            onClick={() => setOnlyFavorites(value => !value)}><Heart size={17} aria-hidden="true" />{t.favorites}</button>
         </div>
         <div id="my-coach-filter-panel" className={showFilters ? styles.filterPanel : styles.filterPanelHidden}>
           <div className={styles.topicRail} role="group" aria-label={t.topics}>
@@ -448,6 +432,18 @@ export default function MyCoachCatalog({ locale = 'en' }) {
               onClick={() => setTopic('all')}>{d.allTopics}</button>
             {PUBLIC_COACH_TOPICS.map(key => <button type="button" key={key} aria-pressed={topic === key}
               className={topic === key ? styles.topicActive : styles.topicChip} onClick={() => setTopic(key)}>{categories[key]}</button>)}
+          </div>
+          <div className={styles.advancedChoices}>
+            <button type="button" aria-pressed={sortBy === 'suggested'}
+              className={sortBy === 'suggested' ? styles.topicActive : styles.topicChip}
+              onClick={() => setSortBy(current => current === 'suggested' ? 'all' : 'suggested')}>
+              <Sparkles size={15} aria-hidden="true" />{d.recommended}
+            </button>
+            <button type="button" aria-pressed={onlyFavorites}
+              className={onlyFavorites ? styles.topicActive : styles.topicChip}
+              onClick={() => setOnlyFavorites(value => !value)}>
+              <Heart size={15} aria-hidden="true" />{t.favorites}
+            </button>
           </div>
           <label className={styles.paceFilter}><span>{d.pace}</span>
             <select value={paceFilter} onChange={e => setPaceFilter(e.target.value)}>
@@ -483,9 +479,13 @@ export default function MyCoachCatalog({ locale = 'en' }) {
                 <div className={styles.cardFooter}>
                   <button type="button" className={styles.viewProfile} onClick={() => choose(persona.id)}
                     aria-expanded={isExpanded} aria-controls={'my-coach-profile-' + persona.id}>{d.showProfile}</button>
-                  <Link className={styles.cardButton}
-                    href={coachSessionHref(lang, persona.id, normalizeCoachSettings(persona.id))}
-                    prefetch={false}>{d.startNow}<ArrowRight size={16} aria-hidden="true" /></Link>
+                  {persona.id === 'mira'
+                    ? <div className={styles.cardMiraStart}>
+                        <MyCoachExpressStart locale={lang} embedded data-my-coach-card-start={persona.id} />
+                      </div>
+                    : <Link className={styles.cardButton}
+                        href={coachSessionHref(lang, persona.id, normalizeCoachSettings(persona.id))}
+                        prefetch={false}>{d.startNow}<ArrowRight size={16} aria-hidden="true" /></Link>}
                 </div>
               </div>
               <button type="button" className={styles.heart}
@@ -558,7 +558,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
         <p className={styles.disclosure} role="note"><ShieldCheck size={15} aria-hidden="true" />{t.aiNotice}</p>
       </section>
 
-      <section className={styles.humanDirectory} hidden={directoryMode === 'ai'} aria-label={h.real}
+      <section className={styles.humanDirectory} hidden={!['all', 'human'].includes(directoryMode)} aria-label={h.real}
         data-my-coach-real-people data-my-coach-combined={directoryMode === 'all' ? 'true' : undefined}>
         {directoryMode === 'all' && <h2 className={styles.humanSectionHeading}>{h.real}</h2>}
         <div className={styles.cardGrid}>
@@ -600,6 +600,45 @@ export default function MyCoachCatalog({ locale = 'en' }) {
         </div>
         <p className={styles.humanNote}>{h.note}</p>
         <Link className={styles.humanMore} href={'/' + lang + '/masters'}>{h.more}<ArrowRight size={16} aria-hidden="true" /></Link>
+      </section>
+
+
+      <section className={styles.expressDirectory} hidden={!['all', 'express'].includes(directoryMode)}
+        data-my-coach-express-diagnostics aria-labelledby="my-coach-express-title">
+        <h2 id="my-coach-express-title">{hub.diagnosticsTitle}</h2>
+        <p className={styles.entryLead}>{hub.diagnosticsLead}</p>
+        <div className={styles.entryGrid}>
+          {[
+            {id: 'situation', title: hub.situation, detail: hub.situationDetails, icon: BookOpen, path: '/services/free-situation-review'},
+            {id: 'wu', title: hub.wu, detail: hub.wuDetails, icon: Compass, path: '/services/dao-health-profile'},
+            {id: 'tests', title: hub.tests, detail: hub.testsDetails, icon: Brain, path: '/tests'},
+          ].map(entry => {
+            const EntryIcon = entry.icon
+            return <Link key={entry.id} href={'/' + lang + entry.path} prefetch={false}
+              className={styles.entryCard} data-my-coach-free-option={entry.id}>
+              <span className={styles.entryIcon}><EntryIcon size={22} aria-hidden="true" /></span>
+              <span className={styles.entryCopy}>
+                <strong>{entry.title}</strong><small>{entry.detail}</small>
+              </span>
+              <span className={styles.freeMarker}>{hub.free}</span>
+              <ArrowRight className={styles.entryArrow} size={19} aria-hidden="true" />
+            </Link>
+          })}
+        </div>
+        <p className={styles.entryNote}>{hub.diagnosticNote}</p>
+      </section>
+      <section className={styles.taoDirectory} hidden={!['all', 'tao'].includes(directoryMode)}
+        data-my-coach-tao-advice aria-labelledby="my-coach-tao-title">
+        <span className={styles.taoSageIcon} aria-hidden="true">☯</span>
+        <div className={styles.taoCopy}>
+          <h2 id="my-coach-tao-title">{hub.taoTitle}</h2>
+          <p>{hub.taoLead}</p>
+          <Link href={'/' + lang + '/holistic-support#dao-guidance'} prefetch={false}
+            className={styles.taoOpen} data-my-coach-tao-open>
+            <span aria-hidden="true">☯</span>{hub.taoOpen}<ArrowRight size={17} aria-hidden="true" />
+          </Link>
+          <small>{hub.taoNote}</small>
+        </div>
       </section>
 
       <nav className={styles.secondaryNav} aria-label={t.change}>
