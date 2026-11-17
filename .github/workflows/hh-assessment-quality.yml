@@ -2,6 +2,7 @@ name: Holistic House assessment evidence and authored-content QA
 
 on:
   pull_request:
+    branches: ['codex/public-book-library']
     paths:
       - '.github/workflows/hh-assessment-quality.yml'
       - 'data/assessments/research-directory-2026/**'
@@ -25,16 +26,6 @@ on:
       - 'tests/hh-author-content-audit.test.mjs'
       - 'tests/psychometric-validity-directory.test.mjs'
       - 'docs/assessments/**'
-  push:
-    branches: ['codex/public-book-library']
-    paths:
-      - 'data/assessments/research-directory-2026/**'
-      - 'lib/assessments/research-directory-2026.js'
-      - 'lib/assessments/psychometric-validity-2026.js'
-      - 'components/app/research-directory.*'
-      - 'components/app/test-explorer.jsx'
-      - 'tests/psychometric-validity-directory.test.mjs'
-      - '.github/workflows/psychometric-research-catalogue.yml'
   workflow_dispatch:
 
 permissions:
