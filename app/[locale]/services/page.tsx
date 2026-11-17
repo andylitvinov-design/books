@@ -99,18 +99,18 @@ export default async function ServicesPage({ params, searchParams }: PageProps) 
           <ServicesPersonalConsultationMobile locale={locale} />
         </div>
         <ServicesCompactCatalog locale={locale}>
-          <ServicesCompactPanel id="reiki"><AssistReikiSession locale={locale} /></ServicesCompactPanel>
-          <ServicesCompactPanel id="browse"><ServicesConversionHero locale={locale} /></ServicesCompactPanel>
-          <ServicesCompactPanel id="reading"><SpiritualReadingEntry locale={locale} /></ServicesCompactPanel>
           <ServicesCompactPanel id="consultation">
             <PublicConsultationCta locale={locale} id="consultation" serviceBooking wiseEnabled={wisePaymentsEnabled()} paypalPersonalEnabled={personalPayPalEnabled()} />
           </ServicesCompactPanel>
+          <ServicesCompactPanel id="homeopathy"><ServicesHomeopathyLinks locale={locale} /></ServicesCompactPanel>
           <ServicesCompactPanel id="services"><ServicesStudioOffers locale={locale} splitExtras /></ServicesCompactPanel>
-          <ServicesCompactPanel id="video"><ServicesVideoGenerationCard locale={locale} /></ServicesCompactPanel>
+          <ServicesCompactPanel id="reiki"><AssistReikiSession locale={locale} /></ServicesCompactPanel>
           <ServicesCompactPanel id="courses"><ServicesCoursesShelf locale={locale} /></ServicesCompactPanel>
+          <ServicesCompactPanel id="video"><ServicesVideoGenerationCard locale={locale} /></ServicesCompactPanel>
+          <ServicesCompactPanel id="browse"><ServicesConversionHero locale={locale} /></ServicesCompactPanel>
+          <ServicesCompactPanel id="reading"><SpiritualReadingEntry locale={locale} /></ServicesCompactPanel>
           <ServicesCompactPanel id="coach"><ServicesCoachTherapistMobile locale={locale} /></ServicesCompactPanel>
           <ServicesCompactPanel id="magical"><ServicesMagicalHelpMobile locale={locale} /></ServicesCompactPanel>
-          <ServicesCompactPanel id="homeopathy"><ServicesHomeopathyLinks locale={locale} /></ServicesCompactPanel>
           <ServicesCompactPanel id="about"><ServicesIntroMedia locale={locale} /></ServicesCompactPanel>
           <ServicesCompactPanel id="testimonials"><PersonalTestimonials locale={locale} variant="services" /></ServicesCompactPanel>
           <ServicesCompactPanel id="mytube"><ServicesMethodVideos locale={locale} /></ServicesCompactPanel>

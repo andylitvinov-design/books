@@ -182,3 +182,47 @@
  .panel .previewText strong,.panel[data-expanded="true"] .previewText strong{font-size:16px}
  .priceBadge{right:8px;top:7px;max-width:calc(100% - 99px);font-size:10px;padding:4px 7px}
 }
+
+
+/* #4874: source-backed options remain visible while the owner-approved
+   photographic header and upper-right price badge from #4900 are preserved.
+   The full legacy interactive module is a separate optional disclosure. */
+.moreFormats{display:flex;align-items:center;justify-content:center;gap:7px;max-width:calc(100% - 20px);min-height:43px;margin:2px auto 11px;padding:8px 13px;border:1px solid #d6e5db;border-radius:13px;background:#f3f8f0;color:#116453;cursor:pointer;font:700 12px/1.3 Arial,Helvetica,sans-serif}
+.moreFormats svg{flex:none}
+.moreFormats[aria-expanded="true"] svg{transform:rotate(90deg)}
+.moreFormats:focus-visible{outline:3px solid #08705a;outline-offset:2px}
+@media(max-width:760px){
+  .panel[data-services-has-three="true"]{grid-column:1/-1}
+  .panel[data-services-has-three="true"] > .content{display:none}
+  .panel[data-services-has-three="true"][data-expanded="true"] > .content{display:block}
+  .panel[data-services-has-three="true"] .preview{cursor:pointer}
+  .panel[data-services-has-three="true"] .priceBadge{pointer-events:none}
+}
+@media(min-width:761px){
+  .catalog{display:block;width:calc(100% - 36px);max-width:1120px;margin:24px auto 38px;color:#143d3a}
+  .catalogHeading{display:block;margin:0 2px 15px}
+  .catalogHeading h2{margin:0 0 6px;color:#17334b;font:700 30px/1.12 Georgia,"Times New Roman",serif}
+  .catalogHeading p{margin:0;font:14px/1.4 Arial,Helvetica,sans-serif;color:#5d6a71}
+  .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
+  .panel{display:block;min-width:0;overflow:hidden;border:1px solid #e7d9c6;border-radius:20px;background:#fffdf9;box-shadow:0 4px 13px #60432b12}
+  .preview{position:relative;display:grid;width:100%;grid-template-columns:96px minmax(0,1fr);align-items:center;gap:12px;min-height:119px;padding:10px;border:0;background:transparent;text-align:left;cursor:pointer}
+  .icon{position:relative;display:block;width:96px;height:102px;overflow:hidden;border-radius:14px;background:#e5ecdf}
+  .icon img{object-fit:cover;object-position:center}
+  .iconOverlay{position:absolute;left:6px;bottom:6px;z-index:1;display:grid;place-items:center;width:27px;height:27px;border-radius:50%;background:#fffdf9e8;color:#07634c}
+  .previewText{display:grid;gap:4px;min-width:0;padding:25px 14px 5px 0}
+  .previewText strong{color:#112c3e;font:700 21px/1.16 Georgia,"Times New Roman",serif}
+  .previewText small{color:#5d6463;font:13px/1.4 Arial,Helvetica,sans-serif}
+  .priceBadge{position:absolute;top:10px;right:11px;max-width:calc(100% - 123px);padding:5px 9px;border-radius:999px;background:#e0f0e5;color:#07533e;font:700 12px/1.2 Arial,Helvetica,sans-serif;white-space:nowrap}
+  .priceBadge[data-service-price-kind="session"],.priceBadge[data-service-price-kind="from"]{background:#fff0cc;color:#6d5018}
+  .priceBadge[data-service-price-kind="quote"],.priceBadge[data-service-price-kind="mixed"]{background:#f1eddf;color:#66563d}
+  .chevron{position:absolute;right:15px;bottom:16px;color:#08705a}
+  .panel[data-expanded="true"]{grid-column:auto}
+  .panelActions{display:block;padding:0 12px 12px}
+  .content{display:none}
+  .panel[data-expanded="true"] .content{display:block;padding:12px;border-top:1px solid #e9e0d3}
+}
+
+/* Same-page first-screen category links target the full visible three-offer group. */
+.panel[id^="service-group-"]{scroll-margin-top:74px}
+.panel[id^="service-group-"]:target{outline:2px solid #248268;outline-offset:-2px}
+@media(prefers-reduced-motion:reduce){.panel[id^="service-group-"]{scroll-behavior:auto}}
