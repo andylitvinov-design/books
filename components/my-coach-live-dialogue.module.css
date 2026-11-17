@@ -1169,3 +1169,6 @@
 .root[data-my-coach-immersive-session] .sessionHero[data-voice-phase='speaking'] .sessionPortrait[data-persona]::after{display:none!important;content:none!important;animation:none!important;transform:none!important}
 
 .voicePlayNotice{margin:4px 16px 5px;font-size:11px;line-height:1.35;color:#50665e;text-align:center}
+
+/* Real MP3 waveform gently lights the mic ring; never morph coach faces. */
+.root[data-session-visual-v4] .voiceCenter :global([data-my-coach-voice] button){filter:drop-shadow(0 0 var(--coach-voice-glow,0px) rgba(45,152,116,.44))}

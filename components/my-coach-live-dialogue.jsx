@@ -160,6 +160,12 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const replayControllerRef=useRef(null),replayPlayerRef=useRef(null)
   const sessionRootRef=useRef(null)
   const replayAudioContextRef=useRef(null)
+  // Apply measured audio amplitude to the toolbar halo, never browser-drawn
+  // face/mouth animation. This updates CSS directly without 60fps React renders.
+  function setPortraitLevel(level){
+    const strength=Number.isFinite(level)?Math.max(0,Math.min(1,level)):0
+    sessionRootRef.current?.style.setProperty('--coach-voice-glow',Math.round(strength*8)+'px')
+  }
   // The 20-minute format counts active foreground seconds, not wall-clock
   // time while Safari is backgrounded. No stored state or forced cutoff.
   useEffect(()=>{
@@ -368,6 +374,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       if(controller.signal.aborted||replayControllerRef.current!==controller)return
       replayPlayerRef.current=startCoachingMp3Playback(response,{
         audioContext:replayAudioContextRef.current,
+        onLevel:level=>{if(!controller.signal.aborted&&replayControllerRef.current===controller)
+          setPortraitLevel(level)
+        },
         onStart:()=>{
           if(!controller.signal.aborted&&replayControllerRef.current===controller){
             setReplayBlocked(false);setReplaying(true);setPlaybackNotice('')
@@ -394,6 +403,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       replayAudioContextRef.current=null
       if(context)try{void context.close?.().catch?.(()=>{})}catch{}
       setReplayBlocked(false);setReplaying(false)
+      setPortraitLevel(null)
     }
     const onHidden=()=>{if(document.hidden){stopReplay();setVoiceState({phase:'idle',beat:0})}}
     document.addEventListener('visibilitychange',onHidden)
@@ -690,7 +700,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             introduction={introduction} onSessionStart={()=>setCloudAgreed(true)}
             cloudAvailable={cloudAvailable} cloudAgreed={cloudAgreed} cloudProvider={cloudProvider} personaId={personaId} enabled={true}
             canStart={!busy&&!paused&&!replaying} onTurn={(text,spoken)=>sendMessage(text,{voiceTurn:true,utteranceLocale:spoken?.locale})}
-            onCancelTurn={()=>pending.current?.abort()} onVoiceStateChange={setVoiceState}
+            onCancelTurn={()=>pending.current?.abort()} onVoiceStateChange={setVoiceState} onVoiceLevel={setPortraitLevel}
             onTranscript={setSpeechPreview} onDraft={text=>{setDraft(text);setError('')}}/>
           <span className={styles.voiceWaveRight} aria-hidden="true"><i/><i/><i/><i/><i/></span>
         </div>

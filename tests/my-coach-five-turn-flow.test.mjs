@@ -59,6 +59,8 @@ function createSession({ttsFailures=[],respond,stuckCue=false,skipSpeechStart=fa
     setTimeout:schedule,clearTimeout:cancel,queueMicrotask,AbortController,
     chooseDictationLanguage,detectedSpeechLocale,coachSpokenTurnLocale,ios27NeedsSpeechRecovery,
     readDictationResults,appendSpokenAnswer,hasCoachSpokenAnswer,
+    // In Web Speech-only fixtures the new iPhone recorder is intentionally absent.
+    coachRecordedSupported:()=>false,startCoachRecordedTurn:()=>null,
     coachSpokenText:text=>({text}),
     coachIntroAudioPath:(persona,locale)=>'/api/coaching/intro/'+locale+'/'+persona,
     startDirectCoachIntroAudio:(_path,{onStart,onEnd})=>{
