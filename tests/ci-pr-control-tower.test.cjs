@@ -2119,6 +2119,8 @@ test('stale merged queue cleanup does not let a verified jobless GitHub 409 star
  assert.equal(forcedAccepted.result.status,'CANCELLATION_ACCEPTED_NOT_TERMINAL');
  const forceRejected=await check(true,409);
  assert.deepEqual(forceRejected.forced,[991]);
+ assert.deepEqual(forceRejected.cancelled,[991]);
+ assert.equal(forceRejected.result.deferred_same_branch_409,1);
  assert.equal(forceRejected.result.non_cancelable[0].force_cancel_status,409);
  assert.equal(forceRejected.result.status,'GITHUB_409_SUPPORT_TRIAGE');
  // Production github-script does not expose the named Octokit method.
@@ -2128,12 +2130,96 @@ test('stale merged queue cleanup does not let a verified jobless GitHub 409 star
  assert.deepEqual(fallbackAccepted.result.force_cancel_accepted.map(x=>x.run_id),[991]);
  const fallbackRejected=await check(true,409,true);
  assert.deepEqual(fallbackRejected.forced,[991]);
+ assert.deepEqual(fallbackRejected.cancelled,[991]);
+ assert.equal(fallbackRejected.result.deferred_same_branch_409,1);
  assert.equal(fallbackRejected.result.non_cancelable[0].force_cancel_status,409);
  const jobExists=await check(false,202);
  assert.deepEqual(jobExists.forced,[],'never force-cancel a live or unknown job');
 });
 
 
+
+
+test('real merged-PR 409/409 root defers sibling runs, not independent PRs',async()=>{
+ const {runCleanup}=require('../scripts/ci-pr-merged-queue-cleanup.cjs');
+ const full='andylitvinov-design/books',old='a'.repeat(40),next='b'.repeat(40);
+ const now=Date.parse('2026-11-17T15:00:00Z');
+ const item=(id,branch='feat/proven-A')=>({id,event:'pull_request',
+  status:'queued',run_attempt:1,repository:{full_name:full},
+  head_repository:{full_name:full},head_branch:branch,head_sha:old,
+  created_at:'2026-11-10T10:00:00Z',pull_requests:[]});
+ const desired=[item(901),item(902),item(903),item(904,'feat/proven-B')];
+ const items=[],rotation=Math.floor(now/(10*60*1000))%desired.length;
+ desired.forEach((row,i)=>{items[(rotation+i)%desired.length]=row;});
+ const merged={number:4368,state:'closed',merged:true,merged_at:'2026-11-11T10:00:00Z',
+  created_at:'2026-11-09T10:00:00Z',base:{ref:'codex/public-book-library',
+   repo:{full_name:full}},head:{ref:'feat/proven-A',sha:next,
+   repo:{full_name:full}}};
+ const other={...merged,number:4369,head:{...merged.head,ref:'feat/proven-B'}};
+ const cancelled=[],forced=[],github={rest:{
+  actions:{
+   listWorkflowRunsForRepo:async()=>({data:{total_count:137,workflow_runs:items}}),
+   getWorkflowRun:async({run_id})=>({data:items.find(x=>x.id===run_id)}),
+   listJobsForWorkflowRun:async()=>({data:{total_count:0,jobs:[]}}),
+   cancelWorkflowRun:async({run_id})=>{
+    cancelled.push(run_id);
+    if(run_id!==904)throw Object.assign(Error('cancel 409'),{status:409});
+    return {status:202};
+   },
+   forceCancelWorkflowRun:async({run_id})=>{
+    forced.push(run_id);throw Object.assign(Error('force 409'),{status:409});
+   }
+  },
+  pulls:{list:async({head})=>({data:[head.endsWith('feat/proven-A')?merged:other]}),
+   get:async({pull_number})=>({data:pull_number===4368?merged:other})},
+  repos:{compareCommits:async()=>({data:{status:'ahead',
+   base_commit:{sha:old},merge_base_commit:{sha:old}}})}
+ }};
+ const context={repo:{owner:'andylitvinov-design',repo:'books'},
+  ref:'refs/heads/codex/bootstrap-books',eventName:'schedule'};
+ const result=await runCleanup({github,context,now,
+  observedQueued:137,observedRemaining:4500});
+ assert.deepEqual(cancelled,[901,904]);
+ assert.deepEqual(forced,[901]);
+ assert.equal(result.cancel_attempts,2);
+ assert.equal(result.deferred_same_branch_409,2);
+ assert.deepEqual(result.cancel_accepted.map(x=>x.run_id),[904]);
+ assert.equal(result.status,'GITHUB_409_SUPPORT_TRIAGE');
+});
+
+test('jobless stale OPEN PR can be guarded-cancelled but never force-cancelled',async()=>{
+ const {runCleanup}=require('../scripts/ci-pr-merged-queue-cleanup.cjs');
+ const full='andylitvinov-design/books',old='a'.repeat(40),head='b'.repeat(40);
+ const now=Date.parse('2026-11-17T15:00:00Z');
+ const item={id:991,event:'pull_request',status:'queued',run_attempt:1,
+  repository:{full_name:full},head_repository:{full_name:full},
+  head_branch:'feat/open-stale',head_sha:old,created_at:'2026-11-10T10:00:00Z',
+  pull_requests:[{number:4368,base:{ref:'codex/public-book-library'},
+   head:{ref:'feat/open-stale',repo:{full_name:full}}}]};
+ const pr={number:4368,state:'open',draft:false,merged:false,merged_at:null,
+  created_at:'2026-11-09T10:00:00Z',labels:[],
+  base:{ref:'codex/public-book-library',repo:{full_name:full}},
+  head:{ref:'feat/open-stale',sha:head,repo:{full_name:full}}};
+ let cancelled=0,forced=0;
+ const github={rest:{
+  actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:137,
+   workflow_runs:[item]}}),getWorkflowRun:async()=>({data:item}),
+   listJobsForWorkflowRun:async()=>({data:{total_count:0,jobs:[]}}),
+   cancelWorkflowRun:async()=>{cancelled++;throw Object.assign(Error('409'),{status:409});},
+   forceCancelWorkflowRun:async()=>{forced++;return {status:202};}},
+  pulls:{list:async()=>({data:[pr]}),get:async()=>({data:pr})},
+  repos:{compareCommits:async()=>({data:{status:'ahead',
+   behind_by:0,ahead_by:1,total_commits:1,
+   base_commit:{sha:old},merge_base_commit:{sha:old}}})}
+ }};
+ const context={repo:{owner:'andylitvinov-design',repo:'books'},
+  ref:'refs/heads/codex/bootstrap-books',eventName:'schedule'};
+ const result=await runCleanup({github,context,now,
+  observedQueued:137,observedRemaining:4500});
+ assert.equal(cancelled,1);
+ assert.equal(forced,0);
+ assert.equal(result.non_cancelable[0].code,'QUEUED_WITH_ZERO_JOBS_CANCEL_409');
+});
 
 test('mature queued ghost deletion is exact-merged, jobless, bounded, and GitHub-verified',async()=>{
  const {runCleanup,oldEnoughForDelete}=require('../scripts/ci-pr-merged-queue-cleanup.cjs');

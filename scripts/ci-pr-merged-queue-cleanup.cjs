@@ -101,6 +101,7 @@ async function runCleanup({github,context,core={info(){},warning(){}},
  const out={schema:'HH_STALE_MERGED_QUEUE_CLEANUP_V1',status:'HOLD',
   scanned:0,checked_branches:0,proved_shas:0,eligible:0,
   cancel_accepted:[],cancel_attempts:0,force_cancel_attempts:0,
+  deferred_same_branch_409:0,
   force_cancel_accepted:[],non_cancelable:[],
   delete_attempts:0,delete_verified:[],delete_unverified:[],
   delete_denied:[],delete_deferred:0,
@@ -126,12 +127,20 @@ async function runCleanup({github,context,core={info(){},warning(){}},
  if(response.total_count<=THRESHOLD)
   return {...out,status:'QUEUE_NO_LONGER_SATURATED',partial:false};
  const branches=new Map(),commits=new Map();
+ const denied409Branches=new Set();
  // Rotate the bounded queue page so one uncancellable GitHub zombie cannot
  // starve all other independently verified stale merged-PR checks forever.
  const rotation=Math.floor(now/(10*60*1000))%Math.max(1,response.workflow_runs.length);
  for(let index=0;index<response.workflow_runs.length;index++){
   if(out.cancel_attempts>=limit)break;
   const item=response.workflow_runs[(rotation+index)%response.workflow_runs.length];
+  // A proved merged 409 plus denied force-cancel is one branch-level root.
+  // Defer its sibling runs for this sweep, not other independent PRs.
+  if(denied409Branches.has(item.head_branch)){
+   out.deferred_same_branch_409++;
+   out.skipped++;
+   continue;
+  }
   if(!queuedPRRun(item)){out.skipped++;continue;}
   let pr=branches.get(item.head_branch);
   if(pr===undefined){
@@ -337,7 +346,7 @@ async function runCleanup({github,context,core={info(){},warning(){}},
           'POST /repos/{owner}/{repo}/actions/runs/{run_id}/force-cancel',args)
         : null;
     let forceStatus=null;
-    if(jobless&&out.force_cancel_attempts<MAX_FORCE_CANCELS&&forceCancel){
+    if(mergedScope&&jobless&&out.force_cancel_attempts<MAX_FORCE_CANCELS&&forceCancel){
      out.force_cancel_attempts++;
      try{
       const response=await forceCancel({
@@ -355,6 +364,10 @@ async function runCleanup({github,context,core={info(){},warning(){}},
       out.errors.push('FORCE_CANCEL_DENIED:'+String(forceStatus||'unknown'));
      }
     }
+    // GitHub rejected both documented cancellation endpoints for one
+    // exact, jobless merged branch. Avoid redundant writes this sweep.
+    if(mergedScope&&jobless&&forceStatus===409)
+     denied409Branches.add(item.head_branch);
     out.errors.push('CANCEL_DENIED:409');
     out.non_cancelable.push({run_id:item.id,pr:pr.number,
      code:jobless?'QUEUED_WITH_ZERO_JOBS_CANCEL_409':'CANCEL_409_UNVERIFIED',

@@ -2198,7 +2198,7 @@ test('open-PR cleanup rejects changed HEAD, holds, draft, ambiguity, jobs and in
   observedQueued:139,observedRemaining:4700,now:Date.parse('2026-11-12T18:00:00Z')});
  assert.equal(changed.eligible,0);assert.deepEqual(moved.calls.cancel,[]);
 });
-test('open-PR verified 409 jobless still requires final PR reread before bounded force cancel',async()=>{
+test('open-PR verified 409 stays visible but never force-cancels even with exact-head jobless proof',async()=>{
  const old='a'.repeat(40),full='andylitvinov-design/books';
  const assoc=[{number:4370,base:{ref:'codex/public-book-library'},
   head:{ref:'feat/live-speech',repo:{full_name:full}}}];
@@ -2212,8 +2212,10 @@ test('open-PR verified 409 jobless still requires final PR reread before bounded
  f.github.rest.actions.forceCancelWorkflowRun=async()=>{forced++;return {status:202};};
  const r=await mergedCleanup.runCleanup({github:f.github,context:f.context,
   observedQueued:139,observedRemaining:4700,now:Date.parse('2026-11-12T18:00:00Z')});
- assert.equal(forced,1);assert.equal(r.force_cancel_accepted.length,1);
- assert.equal(r.status,'CANCELLATION_ACCEPTED_NOT_TERMINAL');
+ assert.equal(forced,0,'never force-cancel an open PR even after a normal 409');
+ assert.equal(r.force_cancel_accepted.length,0);
+ assert.equal(r.status,'GITHUB_409_SUPPORT_TRIAGE');
+ assert.equal(r.non_cancelable[0].code,'QUEUED_WITH_ZERO_JOBS_CANCEL_409');
  const changed=cleanupFixture({state:'open',runAssoc:assoc});
  changed.github.rest.repos.compareCommits=f.github.rest.repos.compareCommits;
  changed.github.rest.actions.cancelWorkflowRun=f.github.rest.actions.cancelWorkflowRun;
