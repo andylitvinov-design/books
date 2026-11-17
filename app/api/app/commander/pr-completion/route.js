@@ -4,6 +4,7 @@ import {createRequestAuth} from '@/lib/app/session';
 import {PRIVATE_HEADERS,safeError} from '@/lib/app/http';
 import {AppError} from '@/lib/assessments/contracts';
 import {buildPrCompletionJourney} from '@/lib/agent-director/pr-completion-journey.mjs';
+import {verifyPrLiveReadback} from '@/lib/agent-director/pr-live-identity.mjs';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -101,8 +102,14 @@ async function route(request,method){
    if(!item)return auth.apply(NextResponse.json({error:'OWNER_PR_NOT_IN_QUEUE'},
     {status:404,headers:PRIVATE_HEADERS}));
    const evidence=await githubJourneyEvidence(detailsPr);
+   // Never promote GitHub MERGED to LIVE. Only the served canonical Vercel
+   // runtime plus exact Git merge ancestry can certify the particular PR.
+   // This read occurs on owner-authenticated, on-demand Details requests.
+   const production=evidence.pr?.state==='closed'&&evidence.pr.merged===true?
+     await verifyPrLiveReadback(evidence.pr):
+     {verified_live:false,reason:'PR_NOT_MERGED'};
    const result=buildPrCompletionJourney({
-    item,github:evidence,observedAt:new Date().toISOString()
+    item,github:evidence,production,observedAt:new Date().toISOString()
    });
    return auth.apply(NextResponse.json(result,{status:200,headers:PRIVATE_HEADERS}));
   }
