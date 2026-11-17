@@ -117,13 +117,22 @@ async function runCleanup({github,context,core={info(){},warning(){}},
     !github.rest.repos?.compareCommits)
   return {...out,status:'MISSING_TRUSTED_APIS'};
  const limit=Math.min(MAX_CANCELS,Math.max(1,Number.isSafeInteger(maxCancels)?maxCancels:MAX_CANCELS));
+ // A frozen first page of 100 jobless GitHub 409 runs must not hide older
+ // queues forever. Rotate ONE page per existing reconciliation (20-minute
+ // slot); do not add API calls, workflow runs or cancellation budget.
+ // This read-only page choice never authorizes a source write or merge.
+ const pagesToRotate=Math.min(3,Math.max(1,Math.ceil(observedQueued/100)));
+ const queuePage=Number.isFinite(now)
+  ?Math.floor(now/(20*60*1000))%pagesToRotate+1:1;
  const response=(await github.rest.actions.listWorkflowRunsForRepo({
-  owner:OWNER,repo:REPO,status:'queued',per_page:100,page:1})).data;
+  owner:OWNER,repo:REPO,status:'queued',per_page:100,page:queuePage})).data;
  if(!Array.isArray(response?.workflow_runs)||response.workflow_runs.length>100||
    !Number.isSafeInteger(response.total_count)||response.total_count<0)
   return {...out,status:'QUEUE_INVENTORY_INVALID'};
  out.scanned=response.workflow_runs.length;
  out.queued_observed=response.total_count;
+ out.queue_page=queuePage;
+ out.queue_pages_planned=pagesToRotate;
  if(response.total_count<=THRESHOLD)
   return {...out,status:'QUEUE_NO_LONGER_SATURATED',partial:false};
  const branches=new Map(),commits=new Map();
