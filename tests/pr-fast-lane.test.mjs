@@ -977,11 +977,11 @@ test('central CI utilities isolate non-PR runs and cancel only newer first attem
   }
 });
 
-test('report-only production pushes rerun original report progress assertions without repeating Next build', () => {
+test('report PR verifies original progress tests, while nonproduction smoke retains optional Next build', () => {
   const src=workflow('hh-reports-development-program.yml');
   const isolated=src.split('  isolated-unit-lint-build:')[1];
   assert.ok(isolated, 'Retained reports workflow must keep real tests');
-  assert.ok(src.includes("branches: ['codex/reports-development-program-20261017', 'codex/public-book-library']"), 'Post-merge production verification must remain');
+  assert.ok(src.includes("branches: ['codex/reports-development-program-20261017']"), 'Feature branch smoke retained without repeating protected production PR checks');
   for(const command of ['tests/report-progress-before-after.test.mjs','tests/client-report-before-after-rings.test.mjs','tests/session-publication-review.test.mjs']) {
     assert.ok(isolated.includes(command),'Original report test missing: '+command);
   }
