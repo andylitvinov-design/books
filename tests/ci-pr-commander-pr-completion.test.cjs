@@ -259,3 +259,48 @@ test('manual owner/security hold still blocks even with former machine failure r
  assert.equal(outcome.reasonCode,'EXISTING_HOLD_NO_OVERRIDE');
  assert.equal(fx.calls.filter(x=>x.action==='arm_dispatch').length,0);
 });
+
+test('one existing trusted worker-completion run also claims private owner PR',async()=>{
+ const worker={...context,eventName:'workflow_run',payload:{workflow_run:{
+  status:'completed',conclusion:'success',name:'HH PR source Repair Worker',
+  event:'workflow_dispatch',head_branch:'codex/bootstrap-books',
+  repository:{full_name:REPO},head_repository:{full_name:REPO}
+ }}};
+ const {trustedWorkerWake}=require('../scripts/ci-pr-commander-pr-completion.cjs');
+ assert.equal(trustedWorkerWake(worker),true);
+ const f=mock(task);
+ const result=await run({...f,context:worker,dispatch:async()=>{throw Error('UNEXPECTED_DISPATCH')}});
+ assert.equal(result.status,'WATCHING');
+ assert.equal(f.calls.filter(c=>c.action==='next').length,1);
+ assert.equal(f.calls.filter(c=>c.action==='finish').length,1);
+ assert.equal(f.calls.filter(c=>c.action==='arm_dispatch').length,0);
+ const workflow=require('node:fs').readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
+ const body=workflow.slice(workflow.indexOf('  direct-handoff:'));
+ assert.match(body,/id-token: write/);
+ assert.match(body,/Owner PR completion wake on verified finished worker/);
+ assert.ok(body.indexOf('Owner PR completion wake')<body.indexOf('Start workers from Watchdog'));
+});
+test('untrusted worker completions never claim signed owner queue',async()=>{
+ const {trustedWorkerWake}=require('../scripts/ci-pr-commander-pr-completion.cjs');
+ const e={...context,eventName:'workflow_run',payload:{workflow_run:{
+  status:'completed',conclusion:'success',name:'HH PR source Repair Worker',
+  event:'workflow_dispatch',head_branch:'codex/bootstrap-books',
+  repository:{full_name:REPO},head_repository:{full_name:REPO}
+ }}};
+ const variants=[
+  {...e,payload:{workflow_run:{...e.payload.workflow_run,repository:{full_name:'someone/other'}}}},
+  {...e,payload:{workflow_run:{...e.payload.workflow_run,head_branch:'untrusted'}}},
+  {...e,payload:{workflow_run:{...e.payload.workflow_run,name:'Holistic House IA v2 checks'}}},
+  {...e,payload:{workflow_run:{...e.payload.workflow_run,status:'in_progress'}}},
+  {...e,payload:{workflow_run:{...e.payload.workflow_run,event:'pull_request'}}},
+  {...e,payload:{workflow_run:{...e.payload.workflow_run,conclusion:'cancelled'}}},
+  {...e,ref:'refs/heads/feature'},
+ ];
+ for(const item of variants){
+  assert.equal(trustedWorkerWake(item),false);
+  const f=mock(task);
+  const result=await run({...f,context:item});
+  assert.equal(result.status,'SKIPPED_UNTRUSTED');
+  assert.equal(f.calls.length,0);
+ }
+});
