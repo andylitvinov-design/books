@@ -1854,6 +1854,19 @@ test('old manual PR remains read-only; source-repair takes precedence in hourly 
  assert.equal(planned.filter(x=>x.lane==='legacy').length,1);
 });
 
+test('P1 repair cannot be starved by P5 legacy preflight with one ghost worker slot',()=>{
+ const failedProof=pr(4816,'repair',{title:'fix(video): urgent story media'});
+ const verifiedSource=pr(4811,'repair',{title:'fix(my-coach): urgent TypeScript error'});
+ const legacy=pr(2306,'repair',{title:'feat(instagram): historical preview',
+  labels:[{name:'hh:repair-manual'}],mergeable:null,mergeable_state:'unknown'});
+ const planned=planCandidates([failedProof,legacy,verifiedSource],NOW);
+ assert.deepEqual(planned.slice(0,2).map(x=>x.lane),['repair','repair'],
+  'the next P1 source candidate must be examined before legacy occupies the only worker');
+ assert.equal(planned.filter(x=>x.lane==='legacy').length,1,
+  'preserve exactly one historical preflight, without granting it source-write authority');
+ assert.equal(planned[2].pr_number,2306,
+  'legacy remains inspectable after both urgent source candidates');
+});
 test('owner PM exact-target handoff cannot skip the existing admission gates',async()=>{
  const {validOwnerRepairTarget}=require('../scripts/ci-pr-queue-dispatcher.cjs');
  const owner={...context,actor:'andylitvinov-design'},target={prNumber:5,expectedSha:SHA};

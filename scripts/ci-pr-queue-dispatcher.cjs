@@ -193,9 +193,13 @@ function planCandidates(prs,now){
  const add=pr=>{if(pr&&!chosen.has(pr.number)&&picked.length<MAX_INSPECT){picked.push(pr);chosen.add(pr.number);}};
  if(fairnessTurn)add(conflict);
  add(source[0]);add(ci);
- for(const old of oldCandidates)add(old);
- // Keep priority among the first three sources and rotate the remainder.
+ // Under GHOST_409_ONE_REPAIR the first admitted worker is the ONLY worker.
+ // Do not let a P5 read-only legacy preflight steal that slot before a P1
+ // exact-HEAD source repair merely because the first source candidate lacks
+ // current signed Core proof (SOURCE_PROOF_MISSING). Keep the legacy hourly
+ // candidate, but inspect the next two urgent repairs FIRST.
  for(const pr of source.slice(1,3))if(picked.length<MAX_INSPECT-(conflict&&!chosen.has(conflict.number)?1:0))add(pr);
+ for(const old of oldCandidates)add(old);
  // Preserve source/CI priority and a real-conflict slot before manual probes.
  const probes=manualConflictProbes(MAX_INSPECT-picked.length-
   (conflict&&!chosen.has(conflict.number)?1:0));
