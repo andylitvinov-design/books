@@ -43,6 +43,20 @@ async function handle(request){
         onlyKeys(payload,['channel'])
         if(payload.channel!=='telegram')throw new AppError('INVALID_CHANNEL',400)
         data=await inspectTelegramBotIdentity()
+      }else if(action==='sync_telegram_business_updates'){
+        // A connected owner can repair old message-only webhook subscriptions.
+        // Never replace another application's webhook, expose credentials,
+        // send a client message, or bypass the Telegram Business access scope.
+        onlyKeys(payload,['channel'])
+        if(payload.channel!=='telegram')throw new AppError('INVALID_CHANNEL',400)
+        const preflight=await inspectTelegramBotIdentity()
+        if(preflight.webhookState!=='connected')throw new AppError('TELEGRAM_WEBHOOK_NOT_OWNED',409)
+        if(preflight.businessCapable!==true)throw new AppError('TELEGRAM_BUSINESS_NOT_ENABLED',409)
+        await ensureTelegramWebhook()
+        const checked=await inspectTelegramBotIdentity()
+        if(checked.webhookState!=='connected'||checked.businessUpdatesReady!==true)
+          throw new AppError('TELEGRAM_BUSINESS_SUBSCRIPTION_UNVERIFIED',503)
+        data=checked
       }else if(action==='connect'){
         onlyKeys(payload,['channel'])
         if(!MESSENGER_CHANNELS.includes(payload.channel))throw new AppError('INVALID_CHANNEL',400)
