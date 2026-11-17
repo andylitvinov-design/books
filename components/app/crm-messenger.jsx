@@ -79,7 +79,7 @@ const setupText={
     channelKeys:'Variables del servidor en Vercel Production',copyUrl:'Copiar URL del webhook',
     copied:'URL copiada',copyError:'No se pudo copiar. Usa la URL mostrada.',
     openPortal:'Abrir configuración oficial',notVerified:'No compartas tokens en el chat ni en GitHub. Usa Environment Variables cifradas en Vercel.',
-    telegramCaution:'Crea un bot dedicado de BotFather; no reutilices un bot de diagnóstico.',
+    telegramCaution:'Usa el @holistichouse_bot existente. Activa Secretary Mode en BotFather y permite SOLO chats nuevos en Telegram Chat Automation; el servidor no puede comprobar este ajuste.',
     pilotKeys:'Para un piloto seguro en Telegram configura también',
     globalKeys:'Para clientes reales, revisa por separado',
     connectReady:'Después de configurar, pulsa Conectar para verificar la cuenta.',
