@@ -218,3 +218,21 @@ test('only exact signed mobile Core source test may reach existing guarded worke
   assert.equal(calls,0);
  }
 });
+
+test('exact trusted Core source contracts can handoff but never bypass signed Repair policy',async()=>{
+ for(const step of ['Commander PR served-LIVE provenance contracts',
+  'Fast Mandala release contracts']){
+  const start=receipt('TEST_FAILURE');
+  const verified={...start,classification:{...start.classification,
+   reason_code:'FAILED_TEST_STEP_REQUIRES_TRIAGE',
+   evidence_code:'FAILED_TEST_STEP_REQUIRES_TRIAGE',
+   failed_job:'core-lint-types-build',failed_step:step}};
+  let dispatches=0;
+  const result=await route({receipt:verified,context:context(),
+   existingCoreHandoff:async()=>{dispatches++;return acceptedHandoff();}});
+  assert.equal(result.state,'DISPATCH_ACCEPTED_NOT_WORKER_STARTED');
+  assert.equal(result.workerStarted,false);
+  assert.equal(result.sourceWriteVerified,false);
+  assert.equal(dispatches,1);
+ }
+});
