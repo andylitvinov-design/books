@@ -38,6 +38,7 @@ on:
       - 'tests/practitioner-preview-auth.test.mjs'
       - 'components/practice-showcase.*'
       - 'app/**/practice/page.jsx'
+      - '.github/workflows/practice-visual-services.yml'
 permissions:
   contents: read
 concurrency:
