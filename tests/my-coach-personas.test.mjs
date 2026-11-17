@@ -114,54 +114,47 @@ test('Living Coach mouth activates only after real speech, and boundary pulses d
   assert.equal(speechRms([NaN]),0)
 })
 
-test('Living Coach reuses existing eight portraits and real MP3 playback events', () => {
+test('Living Coach keeps static face identity and uses real MP4 playback, never synthesized mouth motion', () => {
   const avatar=readFileSync(new URL('../components/app/coaching-avatar.jsx',import.meta.url),'utf8')
   const css=readFileSync(new URL('../components/app/coaching-avatar.module.css',import.meta.url),'utf8')
+  const media=readFileSync(new URL('../components/my-coach-motion-media.jsx',import.meta.url),'utf8')
+  const mediaCss=readFileSync(new URL('../components/my-coach-motion-media.module.css',import.meta.url),'utf8')
   const speech=readFileSync(new URL('../components/my-coach-speech-loop.jsx',import.meta.url),'utf8')
-  for (const token of ['ref={frameRef}','speakingPhoto','speechRms(samples)',
-    'createMediaStreamSource(playbackStream)','document.visibilityState!==\'hidden\'',
-    'window.cancelAnimationFrame(raf)','audioContext.close()',
-    'prefers-reduced-motion: reduce','-still.webp','-living.webp'])
-    assert.ok(avatar.includes(token),token)
+  assert.ok(avatar.includes('data-photo-motion="static"'))
+  assert.ok(avatar.includes('<picture className={styles.livingPortraitBase}>'))
+  assert.ok(avatar.includes('MyCoachMotionMedia personaId={photoId}'))
+  assert.match(css,/\.livingPortraitMouth\{display:none!important\}/)
+  assert.match(css,/\.frame \.head,\.frame \.eyes,\.frame \.mouthTalk,\.frame \.halo\{animation:none!important/)
+  assert.ok(media.includes("const VIDEO_PERSONAS=new Set(['mira','max','sofia','alex'])"))
+  assert.ok(media.includes("MEDIA_ROOT+personaId+'-still.webp'"))
+  assert.ok(media.includes("MEDIA_ROOT+personaId+'-'+clip+'.mp4'"))
+  assert.ok(media.includes('muted loop playsInline autoPlay'))
+  assert.ok(media.includes("window.matchMedia?.('(prefers-reduced-motion: reduce)')"))
+  assert.match(mediaCss,/\.poster,\.video\{[^}]*transform:none!important;animation:none!important/)
+  assert.match(mediaCss,/@media\(prefers-reduced-motion:reduce\)\{\.video,\.sceneGraphics\{display:none!important/)
+  assert.doesNotMatch(avatar,/frameRef|speakingPhoto|createMediaStreamSource|requestAnimationFrame|portraitMouthAperture/)
   assert.ok(speech.includes('introPlayerRef.current=startDirectCoachIntroAudio'))
   assert.ok(speech.includes('onStart:()=>'))
   assert.ok(speech.includes('onEnd:()=>'))
   assert.ok(!speech.includes('new Utterance(reply)'))
   assert.ok(speech.includes('generationRef.current!==generation'))
-  assert.match(css,/\.livingPortraitMouth/)
-  assert.match(css,/-webkit-mask-image/)
-  assert.match(css,/@media\(prefers-reduced-motion:reduce\)/)
-  for (const persona of COACH_PERSONAS)
-    assert.ok(css.includes(`data-photo-persona='${persona.id}'`),persona.id)
-  // These photos are 328x456 cropped to square at 22% vertical object-position.
-  // Mask centering at uncropped source coordinates would move the nose, not lips.
-  for (const persona of COACH_PERSONAS) {
-    const selector=`data-photo-persona='${persona.id}']{--photo-mouth-y:`
-    const y=Number(css.split(selector)[1]?.split('%}')[0])
-    assert.ok(Number.isFinite(y)&&y>=68&&y<=74,
-      `mouth outside cropped lip region: ${persona.id} / ${y}`)
-  }
   assert.doesNotMatch(avatar,/getUserMedia|MediaRecorder|fetch\(|localStorage|sessionStorage/)
 })
 
-test('mobile My Coach hero mouth remains visible when compact avatar is hidden', () => {
+test('mobile My Coach hero displays a still/MP4 scene with no CSS lip or eye distortion', () => {
   const hero=readFileSync(new URL('../components/my-coach-live-dialogue.module.css',import.meta.url),'utf8')
   const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+  const media=readFileSync(new URL('../components/my-coach-motion-media.jsx',import.meta.url),'utf8')
   assert.ok(hero.includes('.sessionAvatar{display:none}'))
   assert.ok(ui.includes('data-voice-phase={voiceState.phase}'))
   assert.ok(ui.includes('data-session-visual-v2'))
-  assert.ok(hero.includes(".sessionHero[data-voice-phase='speaking'] .sessionPortrait[data-persona]::after"))
-  assert.ok(hero.includes('@media(max-width:699px) and (prefers-reduced-motion:no-preference)'))
-  assert.ok(hero.includes('aspect-ratio:328/456'))
-  assert.ok(hero.includes('animation:hh-hero-mouth-speaking'))
-  for (const persona of COACH_PERSONAS) {
-    const token=`data-persona=${persona.id}]{--hh-hero-mouth-image:url('/images/holistic-house/my-coach-motion/${persona.id}-still.webp');--hh-hero-mouth-y:`
-    const y=Number(hero.split(token)[1]?.split('%}')[0])
-    assert.ok(Number.isFinite(y)&&y>=55&&y<=59,`source lip region: ${persona.id} / ${y}`)
-  }
+  assert.ok(ui.includes('<MyCoachMotionMedia personaId={personaId} phase={motionPhase} context="session" scene={visualScene} />'))
+  assert.match(hero,/sessionPortrait\[data-persona\]::after\{display:none!important;content:none!important/)
+  assert.doesNotMatch(hero,/hh-hero-mouth-speaking|--hh-hero-mouth-image|--hh-portrait-mouth-scale/)
+  assert.ok(media.includes("data-coach-motion-scene={visualScene}"))
+  assert.doesNotMatch(ui,/setPortraitLevel|portraitHeroRef|data-photo-waveform/)
   assert.doesNotMatch(hero,/getUserMedia|MediaRecorder|new WebSocket/)
 })
-
 
 // The real My Coach microphone and Replay code both send personaId to the
 // same Fish route. Previously the strict parser rejected this legitimate
@@ -207,7 +200,7 @@ test('Fish natural voice accepts the exact live/replay persona payload but no ex
   assert.equal(myCoachFishConfig({...enabled,HH_MY_COACH_FISH_FREE_DATA_ACKNOWLEDGED:'false'}),null)
 });
 
-test('Downloaded MP3 can drive a bounded, silent-safe 20Hz portrait envelope',()=>{
+test('PCM analysis remains bounded but cannot deform the photographic face',()=>{
   const samples=new Float32Array(4000)
   samples.fill(.25,2000)
   const envelope=speechPcmEnvelope(samples,4000)
@@ -217,12 +210,14 @@ test('Downloaded MP3 can drive a bounded, silent-safe 20Hz portrait envelope',()
   assert.equal(speechPcmEnvelope(samples,0).length,0)
   assert.equal(speechPcmEnvelope([],4000).length,0)
   const css=readFileSync(new URL('../components/my-coach-live-dialogue.module.css',import.meta.url),'utf8')
-  assert.match(css,/\.root\[data-session-visual-v3\] \.sessionHero\[data-voice-phase='speaking'\] \.sessionPortrait\[data-persona\]::after\{[\s\S]*?top:-4%;height:108%/)
-  assert.match(css,/data-photo-waveform='true'/)
-  assert.match(css,/animation:none;transform:scaleY\(var\(--hh-portrait-mouth-scale,1\)\)/)
   const hero=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
-  assert.match(hero,/ref=\{portraitHeroRef\}/)
-  assert.match(hero,/onVoiceLevel=\{setPortraitLevel\}/)
+  const media=readFileSync(new URL('../components/my-coach-motion-media.jsx',import.meta.url),'utf8')
+  assert.match(css,/sessionPortrait\[data-persona\]::after\{display:none!important;content:none!important/)
+  assert.doesNotMatch(css,/data-photo-waveform='true'|--hh-portrait-mouth-scale|hh-hero-mouth-speaking/)
+  assert.doesNotMatch(hero,/onVoiceLevel=\{setPortraitLevel\}|ref=\{portraitHeroRef\}/)
+  assert.ok(hero.includes('phase={motionPhase} context="session" scene={visualScene}'))
+  assert.ok(media.includes('onPlaying={()=>setVideoReady(true)}'))
+  assert.ok(media.includes('onError={()=>setVideoReady(false)}'))
 })
 
 test('Play starts the authored natural voice once, without recording or extra checkbox',()=>{

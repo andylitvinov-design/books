@@ -21,6 +21,7 @@ import {detectedSpeechLocale,chooseDictationLanguage} from '@/lib/personal-coach
 import {coachIntroAudioPath,startDirectCoachIntroAudio} from '@/lib/personal-coaching/direct-coach-intro-audio.mjs'
 import CoachingAvatar from '@/components/app/coaching-avatar'
 import MyCoachMotionMedia from '@/components/my-coach-motion-media'
+import {selectCoachVisualScene} from '@/lib/coaching/coach-visual-cues.mjs'
 
 const copy={
   en:{
@@ -157,7 +158,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const pending=useRef(null),composerRef=useRef(null),transcriptRef=useRef(null)
   const composerDetailsRef=useRef(null),speechRef=useRef(null)
   const replayControllerRef=useRef(null),replayPlayerRef=useRef(null)
-  const portraitHeroRef=useRef(null),sessionRootRef=useRef(null)
+  const sessionRootRef=useRef(null)
   const replayAudioContextRef=useRef(null)
   // The 20-minute format counts active foreground seconds, not wall-clock
   // time while Safari is backgrounded. No stored state or forced cutoff.
@@ -297,21 +298,6 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     setDraft(previous=>previous.trim()?previous:(goalPrompts[id]||''))
     setError('')
   }
-  function setPortraitLevel(level){
-    const hero=portraitHeroRef.current
-    if(!hero)return
-    if(!Number.isFinite(level)){
-      hero.removeAttribute('data-photo-waveform')
-      hero.style.removeProperty('--hh-portrait-mouth-scale')
-      return
-    }
-    hero.dataset.photoWaveform='true'
-    hero.style.setProperty('--hh-portrait-mouth-scale',
-      (1+Math.max(0,Math.min(1,level))*.18).toFixed(3))
-  }
-  useEffect(()=>{
-    if(voiceState.phase!=='speaking')setPortraitLevel(null)
-  },[voiceState.phase,personaId])
   function ensureReplayAudioOutput(){
     if(shouldUseCoachingWebAudio(window.navigator)&&
       (!replayAudioContextRef.current||replayAudioContextRef.current.state==='closed'))
@@ -382,7 +368,6 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       if(controller.signal.aborted||replayControllerRef.current!==controller)return
       replayPlayerRef.current=startCoachingMp3Playback(response,{
         audioContext:replayAudioContextRef.current,
-        onLevel:level=>{if(!controller.signal.aborted&&replayControllerRef.current===controller)setPortraitLevel(level)},
         onStart:()=>{
           if(!controller.signal.aborted&&replayControllerRef.current===controller){
             setReplayBlocked(false);setReplaying(true);setPlaybackNotice('')
@@ -619,6 +604,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   }
   const motionPhase=paused?'idle':voiceState.phase==='speaking'?'speaking':
     voiceState.phase==='listening'?'listening':!introComplete?'greeting':'idle'
+  const visualScene=selectCoachVisualScene({phase:motionPhase,text:latestCoachText,stage:currentStage})
   return <section ref={sessionRootRef} className={styles.root} lang={lang} data-my-coach-live-dialogue={personaId} data-my-coach-immersive-session data-session-visual-v2 data-session-visual-v3 data-session-visual-v4 data-coach-session-started={sessionClockStarted?'true':'false'} data-coach-showcase={introComplete?'false':'true'}>
     <header className={styles.sessionTopbar}>
       <Link className={styles.sessionBrand} href={'/'+lang+'/coaching/sessions'} aria-label="Holistic House">
@@ -627,11 +613,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       <Link className={styles.chooseCoach} href={'/'+lang+'/my-coach'}><ArrowRight size={16} aria-hidden="true"/>{ui.choose}</Link>
     </header>
     <div className={styles.sessionScroll} data-coaching-session-scroll>
-    <section ref={portraitHeroRef} className={styles.sessionHero} aria-label={name} data-voice-phase={voiceState.phase}>
+    <section className={styles.sessionHero} aria-label={name} data-voice-phase={voiceState.phase}>
       <div className={styles.sessionPortrait} data-persona={personaId}
         data-coach-motion-video={PUBLIC_COACH_PERSONA_IDS.includes(personaId)?'true':undefined}
         role="img" aria-label={name}>
-        <MyCoachMotionMedia personaId={personaId} phase={motionPhase} context="session" />
+        <MyCoachMotionMedia personaId={personaId} phase={motionPhase} context="session" scene={visualScene} />
       </div>
       <div className={styles.sessionHeroShade} aria-hidden="true"/>
       <div className={styles.sessionHeroCopy}>
@@ -644,7 +630,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       <div className={styles.sessionAvatar}>
         <CoachingAvatar locale={lang} avatarId={avatarVisuals[personaId]||'warm'} personaId={personaId} displayName={name}
           showPicker={false} size="large"
-          phase={voiceState.phase==='speaking'?'speaking':paused?'paused':busy?'thinking':voiceState.phase} beat={voiceState.beat}/>
+          phase={voiceState.phase==='speaking'?'speaking':paused?'paused':busy?'thinking':voiceState.phase} beat={voiceState.beat} scene={visualScene}/>
       </div>
       {!introComplete&&['idle','loading'].includes(voiceState.phase)&&
         <button type="button" className={styles.heroPlayControl}
@@ -704,7 +690,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             introduction={introduction} onSessionStart={()=>setCloudAgreed(true)}
             cloudAvailable={cloudAvailable} cloudAgreed={cloudAgreed} cloudProvider={cloudProvider} personaId={personaId} enabled={true}
             canStart={!busy&&!paused&&!replaying} onTurn={(text,spoken)=>sendMessage(text,{voiceTurn:true,utteranceLocale:spoken?.locale})}
-            onCancelTurn={()=>pending.current?.abort()} onVoiceStateChange={setVoiceState} onVoiceLevel={setPortraitLevel}
+            onCancelTurn={()=>pending.current?.abort()} onVoiceStateChange={setVoiceState}
             onTranscript={setSpeechPreview} onDraft={text=>{setDraft(text);setError('')}}/>
           <span className={styles.voiceWaveRight} aria-hidden="true"><i/><i/><i/><i/><i/></span>
         </div>
