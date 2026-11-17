@@ -207,3 +207,35 @@ test('CRM provider webhook edits do not fan out unrelated Google/Axis/audio PR j
   assert.match(push,/app\/api\/app\/\*\*/,'postmerge private media audit must remain broad');
   assert.doesNotMatch(push,/!app\/api\/app\/crm\/messenger\/webhook/);
 });
+
+test('retired duplicate production-push audits keep exact-head PR specialists and manual recovery', () => {
+  const reduced = [
+    ['site-video-browser.yml', 'components/page-video.tsx'],
+    ['home-locale-switch.yml', 'components/holistic-house-home.tsx'],
+    ['hh-reports-development-program.yml', 'lib/profile/development-program.js'],
+    ['hh-home-conversation.yml', 'components/holistic-house-home.tsx'],
+    ['practice-visual-browser.yml', 'components/practice-showcase.jsx'],
+    ['hh-benchmark-program.yml', 'lib/benchmarking/plan.mjs'],
+    ['hh-assessment-quality.yml', 'lib/assessments/research-directory-2026.js'],
+  ];
+  for (const [name, ownedPath] of reduced) {
+    const yaml = source(name);
+    assert.match(yaml, /^  pull_request:/m, name + ': production source PR validation required');
+    assert.match(yaml, /^  workflow_dispatch:/m, name + ': incident/manual acceptance retained');
+    assert.doesNotMatch(yaml, /^  push:/m, name + ': duplicate postmerge check removed');
+    assert.equal(matchesTrigger(trigger(name), [ownedPath], TARGET), true,
+      name + ': owned source must still launch independent PR validation');
+  }
+  for (const name of ['home-locale-switch.yml', 'hh-assessment-quality.yml',
+    'hh-public-performance-audit.yml']) {
+    assert.match(source(name), /branches: \['codex\/public-book-library'\]/,
+      name + ': do not run production specialist on unrelated control-branch PR');
+  }
+  for (const name of ['hh-private-audio-e2e.yml', 'hh-my-progress-release.yml',
+    'hh-messenger-mobile-release.yml']) {
+    assert.match(source(name), /^  push:/m,
+      name + ': sensitive or unique postmerge acceptance must remain');
+  }
+  const core = source('hh-pr-core-release.yml');
+  assert.match(core, /^  hh-merge-check:/m, 'single exact-head release gate must remain');
+});
