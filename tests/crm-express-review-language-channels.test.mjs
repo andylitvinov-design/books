@@ -109,10 +109,12 @@ test('free situation landing exposes locale-scoped chooser with distinct Telegra
 test('free-review copy does not contradict consented optional Telegram photo and drawing',()=>{
   const landing=read('components/free-entry-landing.tsx')
   assert.doesNotMatch(landing,/Do not send private answers or drawings via messengers|Не отправляйте личные ответы и рисунки в мессенджерах|No envíes respuestas privadas ni dibujos por mensajería/)
-  assert.match(landing,/After consent, the Telegram dialogue may ask/)
-  assert.match(landing,/После согласия Telegram-бот может/)
+  // Owner-approved EN/RU free-review copy now starts with personal contact
+  // and shares drawings only through a secure follow-up, never an open chat.
+  assert.match(landing,/If I need more context or a drawing, we'll arrange a secure way to share it/)
+  assert.match(landing,/Медицинские документы и личные данные в чат присылать не нужно/)
   assert.match(landing,/Tras dar tu consentimiento, Telegram puede pedir/)
-  assert.match(landing,/protected website form/)
+  assert.match(landing,/formulario protegido/)
 })
 
 test('free-review messenger CTAs have branded colors, clear localized names and no duplicate primary button',()=>{
@@ -121,8 +123,8 @@ test('free-review messenger CTAs have branded colors, clear localized names and 
   const capture=read('components/personal-express-enquiry.tsx')
   const captureCss=read('components/personal-express-enquiry.module.css')
   for(const label of [
-    'Request my free review via Telegram','Request my free review via WhatsApp',
-    'Запросить бесплатный разбор через Telegram','Запросить бесплатный разбор через WhatsApp',
+    'Write on Telegram','Write on WhatsApp',
+    'Написать в Telegram','Написать в WhatsApp',
     'Solicitar mi revisión gratis por Telegram','Solicitar mi revisión gratis por WhatsApp',
   ]) assert.ok(channels.includes(label),label)
   assert.match(channels,/import \{ MessageCircle, Send \} from "lucide-react"/)
