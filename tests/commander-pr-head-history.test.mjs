@@ -51,5 +51,7 @@ test('history is private, paginated and never confuses queue time with PR cycle'
  assert.match(client,/История HEAD и CI/);
  assert.match(client,/Загрузить более ранние HEAD/);
  assert.match(client,/ownerRequestAfterMerge/);
+ assert.match(client,/GitHub смержен · Production LIVE проверяется/);
+ assert.match(client,/journeys\[item.requestId\]\?\.currentHeadSha/);
  assert.doesNotMatch(client,/dangerouslySetInnerHTML|GITHUB_TOKEN/);
 });
