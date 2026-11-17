@@ -79,7 +79,7 @@ const copy = {
 situation: {
       eyebrow: "FREE PERSONAL REVIEW · WITH ANDREY",
       title: "Tell me what's on your mind.",
-      lead: "Maybe there's a decision you keep putting off, a conversation that goes nowhere, or a feeling you can't quite explain. Tell me about one thing that's troubling you. I'll read your question myself and send you a short written response. There's no charge.",
+      lead: "Maybe there's a decision you keep putting off, a conversation that goes nowhere, or a feeling you can't quite explain. Tell me about one thing that's troubling you. I'm Andrey. I'll read your question myself and send you a short written response. There's no charge.",
       value: "One question. A personal written reply. No fee, no call.",
       bullets: ["Tell me what's happening.", "I'll look at what may be getting in the way.", "We'll see where you might begin."],
       outcomeTitle: "What you'll hear back from me",
@@ -182,7 +182,7 @@ situation: {
 situation: {
       eyebrow: "БЕСПЛАТНЫЙ ЛИЧНЫЙ РАЗБОР · С АНДРЕЕМ",
       title: "Давайте разберём ваш вопрос.",
-      lead: "Бывает, что решение никак не приходит, разговоры ходят по кругу или просто не хватает сил. Расскажите мне об одном вопросе, который сейчас вас волнует. Я сам прочитаю ваше обращение и отвечу письменно. Это бесплатно.",
+      lead: "Бывает, что решение никак не приходит, разговоры ходят по кругу или просто не хватает сил. Расскажите мне об одном вопросе, который сейчас вас волнует. Я Андрей. Лично прочитаю ваше обращение и отвечу письменно. Это бесплатно.",
       value: "Один вопрос. Мой письменный ответ. Без оплаты и созвона.",
       bullets: ["Расскажите, что происходит.", "Я посмотрю, что может мешать.", "Попробуем найти, с чего начать."],
       outcomeTitle: "Что я напишу вам в ответ",
