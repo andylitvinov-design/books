@@ -120,6 +120,40 @@ test('catalog-verified PM model makes one portable free chat inference with $0 c
  assert.equal(request.provider.data_collection,'deny');
  assert.deepEqual(request.provider.max_price,{prompt:0,completion:0});
 });
+test('slow free completion preserves one bounded HTTP body deadline without paid retry',async()=>{
+ let posts=0,signal=null,reads=0;
+ const fetcher=async(_url,options)=>{
+  if(options.method==='GET'){reads++;return catalog();}
+  posts++;signal=options.signal;
+  return {ok:true,status:200,json:async()=>({model:PM_MODEL,usage:{cost:0},
+   choices:[{finish_reason:'stop',message:{content:'PR — pull request.'}}]})};
+ };
+ const answer=await inbox.askFree('Что такое PR?',{fetcher,token:'test'});
+ assert.equal(reads,1,'catalog is checked once without secrets');
+ assert.equal(posts,1,'one real inference request, no paid retry');
+ assert.equal(signal.aborted,false);
+ assert.equal(answer.ok,true);assert.equal(answer.cost,0);
+ assert.equal(answer.text,'PR — pull request.');
+});
+test('aborted body and free provider errors are truthful, never retried or exposed',async()=>{
+ let posts=0;
+ const runCase=async failure=>inbox.askFree('Тест?',{token:'test',
+  fetcher:async(_url,options)=>{
+   if(options.method==='GET')return catalog();
+   posts++;
+   return {ok:true,status:200,json:async()=>{if(failure==='aborted')
+     throw Object.assign(Error('body aborted'),{name:'AbortError'});
+    if(failure==='invalid')throw SyntaxError('bad provider body');
+    return {error:{message:'secret upstream data'}};
+   }};
+  }});
+ assert.equal((await runCase('aborted')).reason,'OPENROUTER_RESPONSE_TIMEOUT_UNVERIFIED');
+ assert.equal((await runCase('invalid')).reason,'OPENROUTER_RESPONSE_INVALID');
+ const rejected=await runCase('provider');
+ assert.equal(rejected.reason,'OPENROUTER_PROVIDER_ERROR');
+ assert.ok(!JSON.stringify(rejected).includes('secret upstream'));
+ assert.equal(posts,3);
+});
 test('reasoning-only 200 response gets explicit bounded blocker, never false success',async()=>{
  const fetcher=pmFetcher({choices:[{finish_reason:'length',message:{content:''}}],
   usage:{cost:0,completion_tokens:1600,completion_tokens_details:{reasoning_tokens:1599}}});
