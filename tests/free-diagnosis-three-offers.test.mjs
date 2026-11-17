@@ -25,8 +25,8 @@ test("express landing has one service; consultation hub keeps its existing three
   assert.match(oneService, /data-personal-express-enquiry/);
   assert.match(oneService, /express-review-focus/);
   assert.match(oneService, /"situation" \| "energy"/);
-  assert.match(oneService, /"По ситуации"/);
-  assert.match(oneService, /"По энергии и здоровью"/);
+  assert.match(oneService, /"О ситуации в жизни"/);
+  assert.match(oneService, /"О самочувствии"/);
   assert.match(oneService, /compactPhone stayAfterSave resetKey=\{focus\}/);
   assert.match(oneService, /publicTopic=\{"Express review focus: " \+ t\.areas\[focus\]\.tag\}/);
   assert.doesNotMatch(oneService, /option:|topic:|context:|fetch\(|payment_received/);
@@ -64,9 +64,9 @@ test("personal express diagnosis unfolds inside the same landing, without a moda
   ]) assert.ok(enquiry.includes(localized), localized);
   const messenger = source("components/telegram-diagnostic-entry.tsx");
   for (const localized of [
-    "Request my free review via Telegram", "Request my free review via WhatsApp",
-    "Запросить бесплатный разбор через Telegram", "Запросить бесплатный разбор через WhatsApp",
-    "Solicitar mi revisión gratis por Telegram", "Solicitar mi revisión gratis por WhatsApp",
+    "Write on Telegram", "Write on WhatsApp",
+    "Написать в Telegram", "Написать в WhatsApp",
+    "Escribir a Andrey por Telegram", "Escribir a Andrey por WhatsApp",
   ]) assert.ok(messenger.includes(localized), localized);
   assert.ok(enquiry.indexOf("<TelegramDiagnosticEntry locale={locale} />") <
     enquiry.indexOf("<button ref={revealRef}"), "messenger actions precede the optional handoff information");
