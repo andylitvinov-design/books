@@ -224,6 +224,7 @@ try {
     console.log(skipped)
   }
 
+  // Regressions reported by the owner: the Services videos were buried inside
   // Approved 10x3 Services catalogue: the legacy intro and video gallery remain
   // available when their informational panels are opened by the visitor.
   // First-screen Videos is a three-offer shelf, not a duplicate page or hidden checkout.
