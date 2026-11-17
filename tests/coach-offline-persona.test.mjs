@@ -5,6 +5,7 @@ import {normalizeGenerativeCoachInput} from '../lib/coaching/generative-persona.
 import {coachSessionDirective,directedCoachOfflineReply} from '../lib/coaching/coach-session-director.mjs'
 import {methodQuestionVariants} from '../lib/coaching/coach-method-question-variants.mjs'
 import {personaSpeechCue} from '../lib/coaching/coach-persona-speech-variants.mjs'
+import {coachDialoguePolicy} from '../lib/coaching/unified-coach-policy.mjs'
 
 const sample=(personaId='mira',locale='ru',message='Я хочу разобраться со сложным решением',turns=[],elapsedSeconds=0)=>{
  const {input,persona}=normalizeGenerativeCoachInput({
@@ -99,5 +100,19 @@ test('20-minute user-controlled wrap-up remains possible for every persona and d
   const out=reply(s)
   assert.match(out.question,/итог|продолжить/u)
   assert.equal(out.planSuggestion,'')
+ }
+})
+
+test('explicit RU/EN/ES request for no advice overrides all method questions',()=>{
+ for(const [locale,message] of [
+  ['ru','Не давайте мне советов, просто послушайте'],
+  ['en',"Please don't give me advice; just listen"],
+  ['es','No me des consejos, solo escucha']
+ ]){
+  const s=sample('mira',locale,message)
+  assert.equal(coachDialoguePolicy(s.input).noAdvice,true,locale)
+  const got=reply(s)
+  assert.equal(got.question,'',locale)
+  assert.equal(got.planSuggestion,'',locale)
  }
 })
