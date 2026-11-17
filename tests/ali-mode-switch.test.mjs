@@ -181,3 +181,18 @@ test('explicit sadness interrupts selling, and a fresh conversation cannot inher
  assert.equal(decide('Мне грустно','ru',hist,trusted).role,'secretary');
  assert.equal(decide('Я просто хочу поговорить','ru',hist,trusted).role,'secretary');
 });
+
+test('no-advice/no-sales boundaries do not revoke an already consented psychologist interview',()=>{
+ const psych={currentRole:'secretary_psychologist',sessionRoleVerified:true,validatedPsychologistConsent:true};
+ for(const phrase of ['Без советов','Без продаж','Только факты','Не хочу коучинг']){
+  const outcome=decide(phrase,'ru',[user('Хочу режим психолога')],psych);
+  assert.equal(outcome.role,'secretary_psychologist',phrase);
+  assert.equal(outcome.transition,'hold',phrase);
+ }
+ const out=decide('Не хочу режим психолога','ru',[],psych);
+ assert.equal(out.role,'secretary');
+ assert.equal(out.transition,'reset');
+ const coach={currentRole:'coach',sessionRoleVerified:true};
+ assert.equal(decide('Без советов','ru',[],coach).role,'coach');
+ assert.equal(decide('Не хочу коучинг, только факты','ru',[],coach).role,'secretary');
+});
