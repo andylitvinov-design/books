@@ -1,6 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {coachSpokenText} from '../lib/coaching/coach-spoken-text.mjs'
+// Reuse the existing coaching release gate; no new workflow or CI fan-out.
+import './coach-dialogue-selector.test.mjs'
 
 test('short natural answer plus question is spoken in full RU/EN/ES',()=>{
   for(const reply of [

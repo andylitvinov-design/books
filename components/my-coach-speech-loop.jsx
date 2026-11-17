@@ -396,6 +396,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
         if(settleTimerRef.current)clearTimeout(settleTimerRef.current)
         // Only non-iOS-27 browsers use the early automatic settle fallback.
         // On iOS 27, wait for natural onend to preserve the next voice turn.
+        // Other browsers can settle a final transcript sooner; do not cut iOS.
         if(!ios27){
           const heardNow=visible.trim()
           settleTimerRef.current=setTimeout(()=>{
@@ -407,7 +408,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
             try{recognition.abort()}catch{}
             lastHeardRef.current=heard
             void deliver(appendSpokenAnswer(draftAtStartRef.current,heard,1200))
-          },final?1700:2300)
+          },final?900:1900)
         }
       }
     }
@@ -450,7 +451,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       retryTimerRef.current=setTimeout(()=>{
         retryTimerRef.current=null
         if(activeRef.current&&generationRef.current===generation)startListening()
-      },420)
+      },300)
     }
     recognition.onend=()=>{
       if(iosResultTimerRef.current){clearTimeout(iosResultTimerRef.current);iosResultTimerRef.current=null}
@@ -544,6 +545,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     hasRecognizedRef.current=true
     setNotice('') // Clear the old user transcript before coach speech.
     changePhase('thinking')
+    const modelStartedAt=typeof performance!=='undefined'?performance.now():null
     let result
     try{
       const utteranceLocale=coachSpokenTurnLocale({
@@ -553,6 +555,11 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       result=await turnRef.current?.(text,{locale:utteranceLocale})
     }catch{result=null}
     if(!activeRef.current||generationRef.current!==generation)return
+    if(modelStartedAt!==null&&typeof performance!=='undefined'){
+      // Numeric-only browser timing; no transcript, user identifiers or server telemetry.
+      try{performance.measure?.('hh-coach-ai-turn', {start:modelStartedAt,end:performance.now()})}
+      catch{/* Metrics must never interrupt an audible coach turn. */}
+    }
     if(!result?.reply){
       // A model outage fails only this turn. Keep the text editable and the
       // one-Play voice session alive, without retrying the model or TTS.
@@ -660,6 +667,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
         showTextOnly()
       }
       try{
+        const synthesisStartedAt=typeof performance!=='undefined'?performance.now():null
         const response=await fetch('/api/app/my-coach/voice/synthesize',{
           method:'POST',credentials:'same-origin',cache:'no-store',signal:controller.signal,
           headers:{'Content-Type':'application/json'},
@@ -670,12 +678,18 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
         })
         if(!response.ok||!response.body)throw Error('CLOUD_TTS_UNAVAILABLE')
         if(!live()||controller.signal.aborted)return
+        if(synthesisStartedAt!==null&&typeof performance!=='undefined')
+          try{performance.measure?.('hh-coach-tts-headers',{start:synthesisStartedAt,end:performance.now()})}
+          catch{/* Unsupported Performance API: keep audio playing. */}
         cloudPlayerRef.current=startCoachingMp3Playback(response,{
           audioElement:primedAudioRef.current,
           audioContext:audioContextRef.current,
           onLevel:level=>{if(live())levelRef.current?.(level)},
           onStart:()=>{
             if(!live())return
+            if(synthesisStartedAt!==null&&typeof performance!=='undefined')
+              try{performance.measure?.('hh-coach-tts-first-play',{start:synthesisStartedAt,end:performance.now()})}
+              catch{/* Never break streaming and recognizer re-arm. */}
             blockedResumeRef.current=null;setNotice('');changePhase('speaking')
           },
           onBlocked:()=>{

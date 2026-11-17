@@ -52,7 +52,9 @@ import {
   parseGuestCookie,
   setGuestCookie,
 } from '@/lib/app/guest-session'
-import { consumeRate } from '@/lib/app/database'
+import { consumeRate,transaction } from '@/lib/app/database'
+import { operationHash } from '@/lib/app/crypto'
+import { verifiedTelegramSubject } from '@/lib/app/telegram-business-identity.mjs'
 import { createBillingService } from '@/lib/billing/service'
 import {
   clearSaveIntentCookie,
@@ -175,6 +177,46 @@ const notifyBookingParticipants=(config,actor,requestId,recipient,{event='update
     }
   })
 }
+// Verified Telegram OIDC is the only bridge from Business messages to Cabinet.
+// Never derive Supabase Auth from bot messages, usernames, phones or profile text.
+async function syncVerifiedTelegramBusinessEnquiries(config,actor,identities,{reactivate=false}={}){
+ const subject=verifiedTelegramSubject(identities)
+ if(!subject)return {verified:false,linked:0,disabled:false}
+ const peerHash=operationHash({scope:'hh-telegram-business-peer',id:subject},config)
+ return transaction(config,actor,async db=>{
+  await db.query('select pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended($1,0))',
+   ['hh-tg-cabinet-autolink:'+actor.id])
+  if(reactivate)await db.query(
+   'delete from app_private.crm_tg_business_cabinet_optouts where account_id=$1',[actor.id])
+  const stopped=await db.query(
+   'select account_id from app_private.crm_tg_business_cabinet_optouts where account_id=$1',
+   [actor.id])
+  if(stopped.rowCount)return {verified:true,linked:0,disabled:true}
+  await db.query("select set_config('hh.telegram_verified_peer_hash',$1,true)",[peerHash])
+  const updated=await db.query(
+   'update app_private.crm_tg_business_service_sessions '+
+   'set account_id=$1,linked_at=coalesce(linked_at,now()) '+
+   "where telegram_peer_hash=$2 and contact_id is not null and stage='submitted' "+
+   'and account_id is null returning contact_id',
+   [actor.id,peerHash])
+  return {verified:true,linked:updated.rowCount,disabled:false}
+ })
+}
+async function disableVerifiedTelegramBusinessSync(config,actor){
+ return transaction(config,actor,async db=>{
+  await db.query('select pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended($1,0))',
+   ['hh-tg-cabinet-autolink:'+actor.id])
+  await db.query(
+   'insert into app_private.crm_tg_business_cabinet_optouts(account_id) values($1) '+
+   'on conflict(account_id) do nothing',[actor.id])
+  const result=await db.query(
+   'update app_private.crm_tg_business_service_sessions '+
+   'set account_id=null,linked_at=null where account_id=$1 returning contact_id',
+   [actor.id])
+  return result.rowCount
+ })
+}
+
 async function handle(request, { params }) {
   let auth
   try {
@@ -241,6 +283,36 @@ async function handle(request, { params }) {
         20,
         600,
       )
+      // One verified Telegram OAuth action, with no second confirmation:
+      // when Google is already signed in, link to that account, not a new one.
+      if(authChoice==='telegram'&&!native){
+        let existingActor=null
+        try{existingActor=await auth.verified()}
+        catch(e){if(e?.code!=='SIGN_IN_REQUIRED')throw e}
+        if(existingActor){
+          const {data:existingIdentities,error:identityError}=await auth.client.auth.getUserIdentities()
+          if(identityError||!Array.isArray(existingIdentities?.identities))
+            throw new AppError('IDENTITY_LIST_UNAVAILABLE',503)
+          if(!existingIdentities.identities.some(item=>item.provider===TELEGRAM_OIDC_PROVIDER)){
+            const {data:linked,error:linkError}=await auth.client.auth.linkIdentity({
+              provider:TELEGRAM_OIDC_PROVIDER,
+              options:{
+                scopes:selectedProvider.scopes,
+                redirectTo:origin+'/api/app/auth/callback?locale='+locale+'&continue=cabinet&link=1&quick=1',
+                skipBrowserRedirect:true,
+              },
+            })
+            if(linkError||!linked?.url||new URL(linked.url).origin!==config.supabaseUrl)
+              throw new AppError('IDENTITY_LINK_UNAVAILABLE',503)
+            const response=json({redirectUrl:linked.url})
+            response.cookies.set(IDENTITY_LINK_COOKIE,
+              createIdentityLinkProof(existingActor.id,TELEGRAM_OIDC_PROVIDER,config),{
+                path:'/api/app/auth',maxAge:600,httpOnly:true,secure:!config.test,sameSite:'lax',
+              })
+            return response
+          }
+        }
+      }
       const { data, error } = await auth.client.auth.signInWithOAuth({
         provider: selectedProvider.provider,
         options: {
@@ -416,10 +488,22 @@ async function handle(request, { params }) {
           }))
       }
       const account=await createAppRepository(config).ensureAccount(actor)
+      // Auto-attach only proven Business enquiries; never invalidate login
+      // on a transient CRM error. Settings retries an authenticated POST.
+      if(telegramLoginEnabled()){
+        try{
+          const {data:verifiedIdentities,error:telegramIdentityError}=
+            await auth.client.auth.getUserIdentities()
+          if(!telegramIdentityError&&Array.isArray(verifiedIdentities?.identities))
+            await syncVerifiedTelegramBusinessEnquiries(config,actor,verifiedIdentities.identities)
+        }catch{
+          console.error('HH_TELEGRAM_BUSINESS_CABINET_AUTOLINK_RETRY_ON_SETTINGS')
+        }
+      }
       // On first Google sign-in, the client must finish explicit account
       // consent before a private thread is created. Keep the chosen master's
       // public slug through this existing Cabinet onboarding, never in storage.
-      const verifiedDestination=linkedAccount ? `${origin}/${locale}/app/settings?identity=linked` : continueTo==='direct-messages'&&account.onboardingState!=='active'
+      const verifiedDestination=linkedAccount ? (url.searchParams.get('quick')==='1' ? destination : origin+'/'+locale+'/app/settings?identity=linked') : continueTo==='direct-messages'&&account.onboardingState!=='active'
         ? origin+directMessengerSetupPath(locale,recipientSlug) : destination
       return finishAuth(
         NextResponse.redirect(verifiedDestination, { status: 303, headers: PRIVATE_HEADERS }),
@@ -473,6 +557,54 @@ async function handle(request, { params }) {
         path:'/api/app/auth',maxAge:600,httpOnly:true,secure:!config.test,sameSite:'lax',
       })
       return response
+    }
+
+    // Business messages are not Auth sessions. The client explicitly requests
+    // association AFTER Supabase verifies the official Telegram OIDC identity.
+    if (joined === 'auth/telegram-business-link' && method === 'POST') {
+      const actor=await auth.verified()
+      if(request.headers.get('x-hh-account-id')!==actor.id)
+        throw new AppError('ACCOUNT_CHANGED',409)
+      const body=await readBody(request,1024)
+      onlyKeys(body,['reactivate'])
+      if(body.reactivate!==undefined&&body.reactivate!==true)
+        throw new AppError('INVALID_AUTOLINK_REQUEST',400)
+      const {data,error}=await auth.client.auth.getUserIdentities()
+      if(error||!verifiedTelegramSubject(data?.identities))
+        throw new AppError('TELEGRAM_IDENTITY_REQUIRED',428)
+      await consumeRate(config,{op:'telegram-business-cabinet-sync',account:actor.id},12,600)
+      // A plain POST retries the automatic association; only an explicit
+      // Resume action overrides a durable user opt-out.
+      const result=await syncVerifiedTelegramBusinessEnquiries(
+        config,actor,data.identities,{reactivate:body.reactivate===true})
+      return json(result)
+    }
+    if (joined === 'auth/telegram-business-unlink' && method === 'POST') {
+      const actor=await auth.verified()
+      if(request.headers.get('x-hh-account-id')!==actor.id)
+        throw new AppError('ACCOUNT_CHANGED',409)
+      const body=await readBody(request,1024)
+      onlyKeys(body,[])
+      const unlinked=await disableVerifiedTelegramBusinessSync(config,actor)
+      return json({unlinked,disabled:true})
+    }
+    if (joined === 'auth/telegram-business-enquiries' && method === 'GET') {
+      const actor=await auth.verified()
+      if(request.headers.get('x-hh-account-id')!==actor.id)
+        throw new AppError('ACCOUNT_CHANGED',409)
+      const enquiries=await transaction(config,actor,async db=>{
+        const result=await db.query(
+          "select distinct e.id,e.reference_code,e.service_title,e.locale,e.status,e.created_at "+
+          "from app.public_service_enquiries e "+
+          "join app_private.public_enquiry_contact_links l on l.enquiry_id=e.id "+
+          "join app_private.crm_tg_business_service_sessions s on s.contact_id=l.contact_id "+
+          "where s.account_id=$1 and l.evidence='verified_telegram_business_enquiry' "+
+          "order by e.created_at desc,e.id desc limit 100",[actor.id])
+        return result.rows.map(row=>({referenceCode:row.reference_code,
+          serviceTitle:row.service_title,locale:row.locale,status:row.status,
+          createdAt:row.created_at}))
+      })
+      return json({enquiries})
     }
     if (joined === 'auth/contact-profile' && method === 'GET') {
       // Verified server-side Google identity only. Never create a lead, infer
