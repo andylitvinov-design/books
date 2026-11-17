@@ -7,7 +7,7 @@ import {waveTelegramLocalReply} from '../lib/crm/telegram-wave-local-reply.mjs';
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const migration=source('supabase/migrations/20261117005500_wave_conversation_receipts_v1.sql');
 
-test('Wave is the only displayed native assistant name, old names may still be recognized as aliases',()=>{
+test('Ali is the only displayed native assistant name, old names may still be recognized as aliases',()=>{
   for(const [locale,identity,greeting] of [
     ['ru','Расскажи о себе','Приветик'],
     ['en','Who are you','Hi Ali'],
@@ -16,14 +16,14 @@ test('Wave is the only displayed native assistant name, old names may still be r
     for(const text of [identity,greeting]){
       const result=waveNativeTurn({message:text,locale});
       assert.ok(result?.reply,text);
-      assert.match(result.reply,/Wave/u);
-      assert.doesNotMatch(result.reply,/\bAli\b/u);
+      assert.match(result.reply,/Ali/u);
+      assert.doesNotMatch(result.reply,/\bWave\b/u);
       assert.equal(result.externalCalled,false);
     }
     for(const text of ['',locale==='ru'?'Поговорим':locale==='en'?'Let us chat':'Hablemos']){
       const reply=waveTelegramLocalReply({locale,turns:text?[{role:'user',text}]:[]});
       assert.ok(reply);
-      assert.doesNotMatch(reply,/\bAli\b/u);
+      assert.doesNotMatch(reply,/\bWave\b/u);
     }
   }
 });

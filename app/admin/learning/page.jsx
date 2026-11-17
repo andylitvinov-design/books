@@ -79,7 +79,7 @@ export default async function LearningObservatoryPage(){
     <section className={styles.section}>
       <h2>Message delivery and archive coverage</h2>
       <p className={styles.note}>Только события из существующей CRM-переписки,
-        отдельно сохранённой с согласием истории Wave на сайте и
+        отдельно сохранённой с согласием истории Ali на сайте и
         разрешённой записи сессий коуча. Личные Telegram Business чаты,
         несохранённые обращения и сообщения внешних каналов сюда не попадают.
         Принято провайдером не означает доставлено или прочитано.</p>

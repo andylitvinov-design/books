@@ -50,7 +50,7 @@ test('No-advice preference persists until explicit renewed interest in three lan
 test('Short informal greetings stay first-party',()=>{
  for(const [message,locale] of [['Ку','ru'],['Приветик','ru'],['Hi Wave','en'],['Hola Wave','es'],['Hi Ali','en'],['Hola Ali','es']]){
   const r=waveNativeTurn({message,locale});
-  assert.equal(r?.externalCalled,false);assert.match(r.reply,/Wave/);
+  assert.equal(r?.externalCalled,false);assert.match(r.reply,/Ali/);
  }
 });
 test('Eight reviewed problem areas have source-grounded first-stage answers',()=>{
