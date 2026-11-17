@@ -9,6 +9,7 @@ const {WORKFLOWS,admission,snapshot,verifiedGhostRepairCapacity,
  verifiedStaleMergedRepairCapacity,GHOST_REPAIR_MODE,STALE_MERGED_REPAIR_MODE}
  =require('./ci-pr-capacity.cjs');
 const {repairMode,safeFiles,hasVerifiedSourceHandoff,verifiedCoreCodeFailure}=require('./ci-pr-repair-worker.cjs');
+const {trustedWorkerWake}=require('./ci-pr-commander-pr-completion.cjs');
 const {eligibleMachineTruncation}=require('./ci-pr-manual-resume.cjs');
 const {safeSourcePath: safeFreeSourcePath,
  assessCompleteFreeRepairScope}=require('./ci-pr-repair-free-agent.cjs');
@@ -53,13 +54,14 @@ function validOwnerRepairTarget(context,target,ownerProof=null){
   Object.keys(target).every(key=>key==='prNumber'||key==='expectedSha')))return false;
  if(context.eventName==='workflow_dispatch'&&context.actor==='andylitvinov-design')
   return true;
- if(!['schedule','workflow_dispatch'].includes(context.eventName)||
+ const signedWorkerWake=ownerProof?.source==='OIDC_SIGNED_QUEUE'&&trustedWorkerWake(context);
+ if(!(['schedule','workflow_dispatch'].includes(context.eventName)||signedWorkerWake)||
     !ownerProof||typeof ownerProof!=='object'||Array.isArray(ownerProof)||
     ownerProof.prNumber!==target.prNumber||
     ownerProof.expectedSha!==target.expectedSha)return false;
  const keys=Object.keys(ownerProof).sort().join(',');
  if(ownerProof.source==='OWNER_ISSUE_3890')
-  return keys==='commentId,expectedSha,prNumber,source'&&
+  return context.eventName!=='workflow_run'&&keys==='commentId,expectedSha,prNumber,source'&&
    Number.isSafeInteger(ownerProof.commentId)&&ownerProof.commentId>0;
  if(ownerProof.source==='OIDC_SIGNED_QUEUE')
   return keys==='expectedSha,leaseToken,prNumber,requestId,source'&&

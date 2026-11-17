@@ -1985,6 +1985,19 @@ test('signed owner issue and private OIDC request can use same-run dispatcher, n
  assert.equal(validOwnerRepairTarget(botRun,target,issue),true);
  assert.equal(validOwnerRepairTarget(botRun,target,privateQueue),true);
  assert.equal(validOwnerRepairTarget(botRun,target),false);
+ const wake={...botRun,eventName:'workflow_run',payload:{workflow_run:{
+  status:'completed',conclusion:'success',name:'HH PR source Repair Worker',
+  event:'workflow_dispatch',head_branch:'codex/bootstrap-books',
+  repository:{full_name:'andylitvinov-design/books'},
+  head_repository:{full_name:'andylitvinov-design/books'}
+ }}};
+ assert.equal(validOwnerRepairTarget(wake,target,privateQueue),true,
+  'existing worker completion can resume OIDC-signed private owner request');
+ assert.equal(validOwnerRepairTarget(wake,target,issue),false,
+  'owner-comment proof is not valid in unrelated workflow_run');
+ assert.equal(validOwnerRepairTarget({...wake,payload:{workflow_run:{
+  ...wake.payload.workflow_run,head_branch:'untrusted'}}},target,privateQueue),false);
+
  assert.equal(validOwnerRepairTarget({...botRun,ref:'refs/heads/feature'},target,issue),false);
  assert.equal(validOwnerRepairTarget({...botRun,eventName:'pull_request'},target,issue),false);
  for(const invalid of [

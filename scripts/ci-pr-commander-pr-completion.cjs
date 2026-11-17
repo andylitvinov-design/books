@@ -9,6 +9,22 @@ const VALID_STATES=new Set(['WATCHING','BLOCKED','MERGED','CLOSED_UNMERGED']);
 const HOLDS=new Set(['hh:hold','hh:blocked','hh:repair-manual','hh:worker-claimed']);
 const {eligibleMachineTruncation}=require('./ci-pr-manual-resume.cjs');
 const {readCompleteIssueComments}=require('./ci-pr-task-state.cjs');
+// The default-branch Watchdog already wakes on these completed worker runs.
+// Only its signed, same-repository worker-completion callback may claim ONE
+// pending private owner request. No extra workflow, cron or source permission.
+function trustedWorkerWake(context){
+ const r=context?.payload?.workflow_run;
+ return context?.eventName==='workflow_run'&&
+  context.repo?.owner+'/'+context.repo?.repo===REPO&&
+  context.ref==='refs/heads/codex/bootstrap-books'&&
+  r?.status==='completed'&&r.repository?.full_name===REPO&&
+  (!r.head_repository?.full_name||r.head_repository.full_name===REPO)&&
+  r.head_branch==='codex/bootstrap-books'&&
+  !['cancelled','skipped'].includes(r.conclusion)&&
+  ((r.name==='HH PR source Repair Worker'&&r.event==='workflow_dispatch')||
+   (r.name==='HH zero-cost PR CI worker'&&
+    ['workflow_dispatch','schedule'].includes(r.event)));
+}
 function readback(pr,number){
  if(!pr||pr.number!==number||pr.head?.repo?.full_name!==REPO||
   pr.base?.repo?.full_name!==REPO||pr.base?.ref!==BASE||!SHA.test(pr.head?.sha||''))
@@ -46,7 +62,7 @@ async function run({github,core,context,ownerToken='',fetcher=global.fetch,
  dispatch=undefined}={}){
  if(context?.repo?.owner+'/'+context?.repo?.repo!==REPO||
   context?.ref!=='refs/heads/codex/bootstrap-books'||
-  !['schedule','workflow_dispatch'].includes(context.eventName)||
+  !(['schedule','workflow_dispatch'].includes(context.eventName)||trustedWorkerWake(context))||
   (context.eventName==='workflow_dispatch'&&String(context.payload?.inputs?.dry_run||'false')==='true'))
   return {status:'SKIPPED_UNTRUSTED'};
  const token=await core.getIDToken('hh-commander-pr');
@@ -166,4 +182,4 @@ async function run({github,core,context,ownerToken='',fetcher=global.fetch,
  core.info('HH_OWNER_PR_COMPLETION '+JSON.stringify(report));
  return report;
 }
-module.exports={readback,run,send,ENDPOINT};
+module.exports={readback,run,send,ENDPOINT,trustedWorkerWake};
