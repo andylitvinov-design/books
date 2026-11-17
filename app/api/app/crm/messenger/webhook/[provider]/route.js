@@ -21,6 +21,7 @@ import {insertHiLearningQuality} from '@/lib/holistic-support/hi-learning-store'
 import {processTelegramBusinessSecretary,gateTelegramBusinessSecretaryOptOut} from '@/lib/crm/telegram-secretary-service'
 import {notifyConfirmedTelegramBusinessOwner} from '@/lib/crm/telegram-business-owner-notice'
 import {processWhatsAppSecretary} from '@/lib/crm/whatsapp-secretary-service'
+import {finalizeWhatsAppService,notifyOwnerWhatsAppService} from '@/lib/crm/whatsapp-service-finalizer'
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
 export const revalidate=0
@@ -197,6 +198,27 @@ export async function POST(request,{params}){
             continue
           }
           const intake=await processWhatsAppDiagnostic(event,config)
+          if(intake.serviceFinalize){
+            try{
+              const finished=await finalizeWhatsAppService(config,intake.serviceFinalize)
+              intake.reply=finished.message
+              if(finished.saved)after(async()=>{
+                try{await notifyOwnerWhatsAppService(config,finished)}
+                catch{console.error('HH_CRM_WA_OWNER_NOTICE_UNCONFIRMED')}
+              })
+            }catch{
+              intake.reply=event.diagnosticLocale==='ru'
+                ?'Не удалось подтвердить сохранение заявки. Напишите /retry_request.'
+                :'Unable to confirm saving your request. Send /retry_request.'
+              console.error('HH_CRM_WA_SERVICE_FINALIZE_UNCONFIRMED')
+            }
+          }else if(intake.serviceFinalizeFailed){
+            intake.reply=intake.locale==='ru'
+              ?'Пока не удалось подтвердить заявку. Напишите /retry_request.'
+              :intake.locale==='es'
+                ?'Aún no puedo confirmar la solicitud. Envía /retry_request.'
+                :'I cannot confirm your request yet. Send /retry_request.'
+          }
           if(intake.handled&&intake.reply){
             // Consent/CRM state are committed before one reply attempt.
             // Uncertain provider outcomes must not automatically repeat.
