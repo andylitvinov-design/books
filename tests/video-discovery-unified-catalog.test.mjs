@@ -100,7 +100,7 @@ test("Supabase candidate rows stay invisible until complete independent review",
    content_type:"guided",goals:["energy","meaning"],claims_risk:"low",
    subtopics:["energy_health","personal_growth"],
    duration_basis:"metadata_checked",duration_verified_seconds:300,
-   editorial_status:"approved",embed_status:"confirmed",rights_status:"embed_approved",
+   owner_review_status:"accepted",editorial_status:"approved",embed_status:"confirmed",rights_status:"embed_approved",
    content_checked_at:"2026-11-01",embed_checked_at:"2026-11-01",metadata_checked_at:"2026-11-01"};
  const unchecked={...base,youtube_id:ID2,source_url:"https://www.youtube.com/watch?v="+ID2,
    content_checked_at:null};

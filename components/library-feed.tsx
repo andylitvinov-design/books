@@ -18,6 +18,7 @@ export type LibraryFeedItem = {
   image?: string;
   href?: string;
   youtubeId?: string;
+  playbackMode?: "embedded" | "youtube_only";
   publishedAt?: string;
   author?: string;
   seriesId?: string;
@@ -192,12 +193,12 @@ export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = fa
 
     <div className={styles.list}>
       {visible.map((item, index) => {
-        const canPlay = item.kind === "video" && Boolean(item.youtubeId);
+        const canPlay = item.kind === "video" && Boolean(item.youtubeId) && item.playbackMode !== "youtube_only";
         const playing = canPlay && playingId === item.id;
         const poster = item.image || (item.youtubeId ?
           "https://i.ytimg.com/vi/" + encodeURIComponent(item.youtubeId) + "/hqdefault.jpg" : "");
         const date = dateLabel(item.publishedAt, locale);
-        const action = item.kind === "article" ? copy.read : item.kind === "guide" ? copy.open : copy.watch;
+        const action = item.kind === "article" ? copy.read : item.kind === "guide" ? copy.open : item.playbackMode === "youtube_only" ? copy.original : copy.watch;
         const matchingTopic=(item.mytubeRankings||[]).find(match=>
           (!mytubeFocus?.categoryId||mytubeFocus.categoryId==="all"||match.categoryId===mytubeFocus.categoryId)&&
           (!mytubeFocus?.subcategoryId||mytubeFocus.subcategoryId==="all"||match.subcategoryId===mytubeFocus.subcategoryId)&&
