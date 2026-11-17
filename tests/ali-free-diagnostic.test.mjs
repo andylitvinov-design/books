@@ -318,7 +318,7 @@ test('recent replies rotate among verified variants and preserve user context',(
   assert.equal(reply.stageConsumed,false);
   assert.ok(reply.reply.length>20);
  }
- const module=source('lib/assist/ali-free-diagnostic-reactions.mjs');
- assert.doesNotMatch(module,/\bfetch\s*\(|\baxios\s*\(|\bingestMessengerEventInTransaction\s*\(/);
- assert.doesNotMatch(module,/api_key|token_secret/i);
+ const reactionsSource=source('lib/assist/ali-free-diagnostic-reactions.mjs');
+ assert.doesNotMatch(reactionsSource,/\bfetch\s*\(|\baxios\s*\(|\bingestMessengerEventInTransaction\s*\(/);
+ assert.doesNotMatch(reactionsSource,/api_key|token_secret/i);
 });
