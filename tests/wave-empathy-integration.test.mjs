@@ -1,3 +1,4 @@
+import {planJudgmentTurn} from '../lib/holistic-support/judgment-mind.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -74,4 +75,17 @@ test('No new provider or hidden data writes in the empathy integration',()=>{
   'lib/coaching/coach-session-director.mjs'
  ])assert.match(code(source),/planEmpathyTurn/);
  assert.doesNotMatch(empathy,/\bfetch\(|\bsupabase\b|openrouter|localStorage|process\.env/iu);
+});
+
+test('Host Judgment must never intercept direct service questions with emotion prompts',()=>{
+ const safe={status:'clear'};
+ for(const [locale,message] of [
+  ['ru','Мне страшно. Сколько стоит консультация?'],
+  ['en',"I'm scared. How much does a consultation cost?"],
+  ['es','Tengo miedo. ¿Cuánto cuesta la consulta?']
+ ]){
+  const result=planJudgmentTurn({message,locale,safety:safe});
+  assert.equal(result.status,'abstain',locale+': '+JSON.stringify(result));
+  assert.notEqual(result.state,'emotion_acknowledged');
+ }
 });
