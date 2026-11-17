@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { join,matchesGlob as requireGlob } from 'node:path';
 import test from 'node:test';
 
@@ -1498,12 +1498,8 @@ test('native AutoMerge bounded CI pagination handles 100+ current runs safely',a
   assert.ok(tooMany.notes.some(s=>s.includes('beyond bounded CI pages')));
 });
 
-test('retired administration migrator cannot restore old protected contexts',()=>{
-  const migration=workflow('hh-loose-release-ready-once.yml');
-  assert.match(migration,/^  workflow_dispatch:/m);
-  assert.doesNotMatch(migration,/^  push:|^  pull_request:|^  schedule:/m);
-  assert.match(migration,/hh-merge-check/);
-  assert.doesNotMatch(migration,/HH_AUTOMERGE_TOKEN|--method PUT|--method PATCH|HH_STATUS_MIGRATION_ONE_TIME/);
+test('retired status migration check is absent and protected merge still checks Core and specialists',()=>{
+  assert.equal(existsSync(join(root,'.github','workflows','hh-loose-release-ready-once.yml')),false);
   const prune=workflow('hh-ci-stale-run-prune.yml');
   assert.doesNotMatch(prune,/HH_STATUS_MIGRATION_ONE_TIME|--method PATCH/);
   const native=workflow('hh-native-auto-merge.yml');
@@ -1511,6 +1507,23 @@ test('retired administration migrator cannot restore old protected contexts',()=
   assert.match(native,/hh-specialist/);
 });
 
+test('Messages visual PR gate skips installs but preserves manual full-browser quality',()=>{
+  const s=workflow('hh-messages-wellness-browser.yml');
+  assert.match(s,/^  pull_request:/m);
+  assert.match(s,/node --check scripts\/verify-messages-wellness-browser\.mjs/);
+  for (const step of [
+    '- name: Stage checksum-verified FFmpeg before npm lifecycle',
+    '- run: npm ci --no-audit --no-fund',
+    '- name: Materialize checksum-verified FFmpeg for package runtime',
+  ]) {
+    const at=s.indexOf(step);
+    assert.ok(at>=0, 'missing manual QA prerequisite: '+step);
+    assert.ok(s.slice(at,at+190).includes("\n        if: github.event_name != 'pull_request'"),
+      'ordinary PR must not install browser dependencies: '+step);
+  }
+  assert.match(s,/node scripts\/verify-messages-wellness-browser\.mjs/);
+  assert.match(s,/if: github.event_name != 'pull_request'\n        run: npm run build/);
+});
 test('single hh-merge-check cannot pass failed Core or unvalidated specialist on this SHA', () => {
   const source=workflow('hh-pr-core-release.yml');
   const gate=source.match(/^  hh-merge-check:\s*\n([\s\S]*?)(?=^  hh-eslint-repair:)/m)?.[1];
