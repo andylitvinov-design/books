@@ -39,7 +39,7 @@ const {hasVerifiedSourceHandoff}=require('./ci-pr-repair-worker.cjs');
 const {stageLine}=require('./ci-pr-stage-receipts.cjs');
 const {classifyRedCiError}=require('./ci-pr-red-ci-classifier.cjs');
 const {verifiedSpecialistTerminalEvidence}=require('./ci-pr-hermes-event-bridge.cjs');
-const {makeCoreTask,taskBody,taskStatus,taskLifecycle}=require('./ci-pr-error-task.cjs');
+const {makeCoreTask,taskBody,taskStatus,taskLifecycle,reclassificationBody,reclassificationStatus}=require('./ci-pr-error-task.cjs');
 const {isTrustedQualityFailureEvent,qualityEventMatchesPR}=require('./ci-pr-quality-event.cjs');
 
 
@@ -567,7 +567,26 @@ async function recordErrorTask(github,owner,repo,pr,run,diagnosis,root,
     const lifecycle=taskLifecycle(comments,task);
     log('HH_CI_ERROR_TASK_LIFECYCLE #'+pr.number+' '+lifecycle.state+
       ' next='+lifecycle.next_action);
-    return lifecycle.state==='HISTORY_UNVERIFIED'?'UNVERIFIED_HISTORY':'ALREADY_RECORDED';
+    if(lifecycle.state==='HISTORY_UNVERIFIED')return 'UNVERIFIED_HISTORY';
+    const revision=reclassificationStatus(comments,task);
+    if(revision===null)return 'UNVERIFIED_RECLASSIFICATION_HISTORY';
+    if(revision==='READY'){
+      const current=(await limited('reclassification-head-recheck',()=>
+        github.rest.pulls.get({owner,repo,pull_number:pr.number}))).data;
+      if(current?.state!=='open'||current.draft||current.base?.ref!==PROD||
+         current.head?.sha!==pr.head.sha||current.head?.ref!==pr.head.ref||
+         current.head?.repo?.full_name!==owner+'/'+repo)
+        return 'STALE_OR_UNTRUSTED_HEAD';
+      await limited('signed-reclassification',()=>github.rest.issues.createComment({
+        owner,repo,issue_number:pr.number,body:reclassificationBody(task)}));
+      const checked=await readCompleteIssueComments(github,owner,repo,pr.number,limited);
+      if(reclassificationStatus(checked,task)!=='ALREADY_RECLASSIFIED')
+        return 'RECLASSIFICATION_READBACK_UNVERIFIED';
+      log('HH_CI_ERROR_TASK_RECLASSIFIED #'+pr.number+' '+task.task_id+
+        ' category='+task.category);
+      return 'RECLASSIFIED';
+    }
+    return 'ALREADY_RECORDED';
   }
   const current=(await limited('error-task-head-recheck',()=>
     github.rest.pulls.get({owner,repo,pull_number:pr.number}))).data;
@@ -793,7 +812,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
       '#'+availableRepair.number+' '+priorityFor(availableRepair,now).tier+
       ' '+priorityFor(availableRepair,now).direction : 'no eligible source repair',
     greenUnarmed:0,mergeCoordinatorDispatched:0,pendingCi:0,coreFailures:0,ciErrorByCategory:{},
-    errorTasksCreated:0,errorTasksExisting:0,errorTasksDeferred:0,errorTasksDryRun:0,
+    errorTasksCreated:0,errorTasksExisting:0,errorTasksReclassified:0,errorTasksDeferred:0,errorTasksDryRun:0,
     errorTaskReceiptVerified:0,errorTaskReceiptUnverified:0,
     releaseGateOnly:0,releaseGateQueued:0,specialistFailures:0,specialistQueued:0,
     specialistPolicyHolds:0,specialistContractFailures:0,specialistEvidenceUnverified:0,
@@ -1295,6 +1314,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
           diagnosis,root,dryRun,log,limited,now);
         if(result==='CREATED'){summary.errorTasksCreated++;errorTaskDurable=true;}
         else if(result==='ALREADY_RECORDED'){summary.errorTasksExisting++;errorTaskDurable=true;}
+        else if(result==='RECLASSIFIED'){summary.errorTasksReclassified++;errorTaskDurable=true;}
         else if(result==='WOULD_RECORD')summary.errorTasksDryRun++;
         else {summary.errorTasksDeferred++;log('HH_CI_ERROR_TASK_DEFERRED #'+pr.number+' '+result);}
         if(errorTaskDurable)summary.errorTaskReceiptVerified++;

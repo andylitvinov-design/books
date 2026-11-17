@@ -284,3 +284,30 @@ test('public funnel distinguishes UNKNOWN and owner review from real classificat
  assert.ok(selected.assigned);
  assert.equal(selected.dispatched,null,'candidate selection is not dispatch acknowledgement');
 });
+
+
+test('same-run signed reclassification is evidence, not worker execution',()=>{
+ const {inspect}=require('./api/ci-error-funnel.js')._test;
+ const head='a'.repeat(40),pr=4856,run=44014243574,at='2026-11-17T08:09:00Z',id='a'.repeat(32);
+ const e={pr,head,run,at,failure_url:'https://github.com/andylitvinov-design/books/actions/runs/'+run};
+ const old={schema:'HH_CI_ERROR_TASK_V1',task_id:id,event_kind:'CORE_CI_FAILED',
+  pr_number:pr,head_sha:head,run_id:run,category:'UNKNOWN',
+  reason_code:'UNCLASSIFIED_FAILURE',executor_kind:'owner_review'};
+ const fixed={schema:'HH_CI_ERROR_RECLASSIFICATION_V1',task_id:id,
+  pr_number:pr,head_sha:head,run_id:run,previous_category:'UNKNOWN',
+  category:'BASE_ADVANCED',reason_code:'EXPLICIT_BASE_FAILURE',
+  source_write_authorized:false,execution_authorized:false,executor_kind:'owner_review'};
+ const comment=(n,schema,item,time)=>({id:n,created_at:time,updated_at:time,
+  user:{login:'github-actions[bot]',id:41898282,type:'Bot'},
+  performed_via_github_app:{id:15368,slug:'github-actions'},
+  body:'<!-- '+schema+' '+id+' -->\n'+
+   '\x60\x60\x60json\n'+JSON.stringify(item)+'\n\x60\x60\x60'});
+ const first=comment(1,'HH_CI_ERROR_TASK_V1',old,at);
+ const revised=comment(2,'HH_CI_ERROR_RECLASSIFICATION_V1',fixed,'2026-11-17T08:15:00Z');
+ const a=inspect(e,[first]);assert.equal(a.classified,null);
+ const b=inspect(e,[first,revised]);
+ assert.ok(b.classified);assert.match(b.classified.url,/issuecomment-2$/);
+ assert.equal(b.assigned,null);assert.equal(b.runner,null);
+ assert.equal(inspect(e,[first,comment(3,'HH_CI_ERROR_RECLASSIFICATION_V1',
+  {...fixed,head_sha:'b'.repeat(40)},at)]).classified,null);
+});
