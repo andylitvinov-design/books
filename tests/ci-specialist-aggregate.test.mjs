@@ -2333,3 +2333,28 @@ test('additive coaching build registration drops unrelated specialists', () => {
   proposedNoBuild.scripts.prebuild = 'echo skip';
   assert.equal(classify(proposedNoBuild, changed, noBuild).mode, 'full');
 });
+
+test('two obsolete push/manual CI workflows have narrow BASE-trusted actionlint retirement',()=>{
+  const owner='.github/workflows/hh-actionlint.yml';
+  const retired=[
+    '.github/workflows/hh-app-regression.yml',
+    '.github/workflows/hh-loose-release-ready-once.yml',
+  ];
+  for(const old of retired)assert.equal(APPROVED_SPECIALIST_REPLACEMENTS[old],owner);
+  const actionlint=readFileSync(owner,'utf8');
+  assert.match(actionlint,/^  pull_request:/m);
+  assert.ok(actionlint.includes("      - '.github/workflows/**'"));
+  const base=new Map([[owner,actionlint],...retired.map(x=>[x,
+    "name: legacy-only\\non:\\n  workflow_dispatch:\\n"])]);
+  const current=new Map([[owner,actionlint]]);
+  const changed=[...retired];
+  const expected=expectedWorkflows({base,current,changed});
+  assert.deepEqual(expected,[owner]);
+  const result=resolveExpectedSpecialists({base,current,changed,expected});
+  assert.deepEqual(result.expected,[owner]);
+  assert.deepEqual(result.delegated,retired.map(retired=>({retired,replacement:owner})));
+  assert.throws(()=>resolveExpectedSpecialists({base,current:new Map([[owner,actionlint+'\\n# untrusted']]),changed,expected}),
+    /UNTRUSTED_SPECIALIST_REPLACEMENT/);
+  assert.throws(()=>resolveExpectedSpecialists({base,current:new Map(),changed,expected}),
+    /UNTRUSTED_SPECIALIST_REPLACEMENT/);
+});
