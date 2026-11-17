@@ -22,3 +22,12 @@ export declare function consumeHomeAliHandoff(
   locale: HomeAliLocale,
   now?:number
 ): HomeAliHandoff | null;
+
+export declare function peekHomeAliHandoff(
+  storage: (Pick<Storage,"getItem"> & Partial<Pick<Storage,"removeItem">>) | null,
+  locale: HomeAliLocale, now?:number
+): HomeAliHandoff | null;
+export declare function acknowledgeHomeAliHandoff(
+  storage: Pick<Storage,"getItem"|"removeItem"> | null,
+  received: HomeAliHandoff | null
+): boolean;
