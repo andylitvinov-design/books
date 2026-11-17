@@ -12,7 +12,7 @@ function eligibleMachineTruncation(pr,comments){
     !['clean','blocked','behind'].includes(pr.mergeable_state)||
     !Array.isArray(comments))return false;
  const labels=new Set((pr.labels||[]).map(l=>l.name));
- if(!labels.has('hh:repair-manual')||!labels.has('hh:repair-needed')||
+ if(!labels.has('hh:repair-manual')||
     ['hh:hold','hh:blocked','hh:worker-claimed','hh:direction-override:invalid',
      'hh:release-gate-review','hh:specialist-repair-needed',
      'hh:conflict-repair-needed'].some(x=>labels.has(x)))return false;
