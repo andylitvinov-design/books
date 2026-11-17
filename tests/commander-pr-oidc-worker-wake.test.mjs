@@ -10,7 +10,7 @@ test('signed owner command accepts existing Worker completion, but not an arbitr
  assert.match(src,/claims\.ref!=='refs\/heads\/codex\/bootstrap-books'/);
  assert.match(src,/claims\.workflow_ref!==OWNER_WORKFLOW/);
  assert.match(src,/claims\.job_workflow_ref&&claims\.job_workflow_ref!==OWNER_WORKFLOW/);
- assert.match(src,/!\['schedule','workflow_dispatch','workflow_run'\]\.includes\(claims\.event_name\)/);
+ assert.match(src,/!\['schedule','workflow_dispatch','workflow_run','push'\]\.includes\(claims\.event_name\)/);
  assert.doesNotMatch(src,/\['schedule','workflow_dispatch','workflow_run','pull_request'\]/);
  assert.match(src,/crypto\.subtle\.verify\(/);
  assert.match(src,/lease_until>now\(\) and dispatch_attempted_at is null/);
