@@ -69,3 +69,49 @@ test('one failed status lookup preserves partial counts',()=>{
  assert.equal(result.coverage.observed_statuses,4);
  assert.equal(result.trend.bins,null);
 });
+
+test('oldest queued page exposes old jobless incident records missed by newest 100',()=>{
+ const page=['in_progress','queued','waiting','pending','requested'].map(status=>({
+   total_count:status==='queued'?103:0,
+   workflow_runs:status==='queued'
+     ?Array.from({length:100},(_,i)=>run(200-i,'HH PR core release gate',i+2,'queued'))
+     :[]
+ }));
+ const oldest={total_count:103,workflow_runs:[
+   run(100,'HH PR core release gate',350,'queued'),
+   run(99,'HH PR core release gate',450,'queued'),
+   run(98,'HH PR core release gate',900,'queued')
+ ]};
+ const proof=m.verifiedHistoricalQueued(page,oldest);
+ assert.equal(proof.status,'VERIFIED_LAST_PAGE');
+ assert.deepEqual(proof.runs.map(x=>x.id),[100,99,98]);
+ const result=m.summarize({statusPages:page,oldestQueuedPage:oldest,
+   jobPages:{98:{total_count:0,jobs:[]}},
+   recent:{total_count:0,workflow_runs:[]},scheduled:{workflow_runs:[]}},now,8);
+ assert.equal(result.coverage.complete,false,'middle queued page never claimed complete');
+ assert.equal(result.coverage.oldest_queued_page,'VERIFIED_LAST_PAGE');
+ assert.equal(result.coverage.oldest_queued_run_candidates,3);
+ assert.equal(result.coverage.oldest_queued_verified,1);
+ assert.equal(result.stale.some(x=>x.id===98&&x.reason==='QUEUED_WORKFLOW_WITHOUT_JOBS'),true);
+ assert.equal(result.ci.running_jobs,0,'GitHub ghost is NOT a running job');
+});
+test('changed or duplicate last page never invents ghost workload proof',()=>{
+ const statuses=['in_progress','queued','waiting','pending','requested'].map(s=>({
+   total_count:s==='queued'?101:0,
+   workflow_runs:s==='queued'
+     ?Array.from({length:100},(_,i)=>run(200-i,'HH PR core release gate',i+2,'queued'))
+     :[]
+ }));
+ const invalid=[
+   {total_count:102,workflow_runs:[run(100,'HH PR core release gate',900,'queued')]},
+   {total_count:101,workflow_runs:[run(101,'HH PR core release gate',900,'queued')]},
+   {total_count:101,workflow_runs:[run(100,'HH PR core release gate',900,'in_progress')]},
+   {total_count:101,workflow_runs:[]},
+   null
+ ];
+ for(const page of invalid){
+   const proof=m.verifiedHistoricalQueued(statuses,page);
+   assert.equal(proof.status,'UNVERIFIED_LAST_PAGE');
+   assert.deepEqual(proof.runs,[]);
+ }
+});

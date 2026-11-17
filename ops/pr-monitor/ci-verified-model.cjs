@@ -49,6 +49,30 @@ function selectRuns(inventory) {
   if(validStatuses===0)throw Error('NO_WORKFLOW_STATUS_EVIDENCE');
   return {runs:[...selected.values()].sort((a,b)=>b.id-a.id),complete,validStatuses};
 }
+// The first queued page is newest-first; incident-era zero-job records
+// can be far older. Validate the exact LAST page without treating the
+// unobserved middle pages as safe, completed or eligible for merge.
+function verifiedHistoricalQueued(statusPages,lastPage) {
+  const queued=statusPages?.[1];
+  if(!queued||queued.read_failed===true||!validCount(queued.total_count))
+    return {status:'UNKNOWN',runs:[]};
+  const total=queued.total_count;
+  if(total<=100)return {status:'NOT_REQUIRED',runs:[]};
+  if(total>500)return {status:'OVER_BOUNDED_LIMIT',runs:[]};
+  const expected=total-100*(Math.ceil(total/100)-1);
+  const first=queued.workflow_runs,tail=lastPage?.workflow_runs;
+  if(lastPage?.total_count!==total||!Array.isArray(first)||first.length!==100||
+     !Array.isArray(tail)||tail.length!==expected)
+    return {status:'UNVERIFIED_LAST_PAGE',runs:[]};
+  const seen=new Set(first.map(r=>r.id));
+  if(first.some(r=>!Number.isSafeInteger(r?.id)||r.id<=0)||
+     tail.some(r=>!Number.isSafeInteger(r?.id)||r.id<=0||
+       r.status!=='queued'||typeof r.name!=='string'||
+       seen.has(r.id)||r.id>=first[first.length-1].id)||
+     new Set(tail.map(r=>r.id)).size!==tail.length)
+    return {status:'UNVERIFIED_LAST_PAGE',runs:[]};
+  return {status:'VERIFIED_LAST_PAGE',runs:tail};
+}
 function evaluateRun(run,jobPage,now) {
   if(!Number.isSafeInteger(run?.id)||run.id<=0||!ACTIVE.has(run.status))
     throw Error('INVALID_RUN');
@@ -125,10 +149,13 @@ function scheduleHealth(scheduled,now,recent=null) {
     rows.some(x=>x.status==='UNKNOWN')?'UNKNOWN':'OBSERVED',rows,
     note:'GitHub schedule is best-effort; pre-existing event-driven Watchdog remains primary.'};
 }
-function summarize({statusPages,jobPages,recent,scheduled},now=Date.now(),cap=16) {
+function summarize({statusPages,jobPages,recent,scheduled,oldestQueuedPage=null},now=Date.now(),cap=16) {
   const selected=selectRuns(statusPages);
-  const limited=prioritySample(selected.runs,cap),items=[];
-  let complete=selected.complete&&selected.runs.length<=cap;
+  const historical=verifiedHistoricalQueued(statusPages,oldestQueuedPage);
+  const pool=[...new Map([...selected.runs,...historical.runs]
+    .map(run=>[run.id,run])).values()].sort((a,b)=>b.id-a.id);
+  const limited=prioritySample(pool,cap),items=[];
+  let complete=selected.complete&&pool.length<=cap;
   for(const r of limited){
     const page=jobPages?.[r.id];
     try{items.push(evaluateRun(r,page,now));}
@@ -142,7 +169,12 @@ function summarize({statusPages,jobPages,recent,scheduled},now=Date.now(),cap=16
   return {schema:SCHEMA,observed_at:new Date(now).toISOString(),
     coverage:{complete,checked_runs:items.filter(x=>x.verified).length,
       checked_ci_runs:verifiedCi.length,known_ci_runs:selected.runs.filter(x=>type(x.name,x.event)==='ci').length,
-      listed_runs:selected.runs.length,limit:cap,lower_bound:!complete,
+      listed_runs:selected.runs.length,sample_pool_runs:pool.length,
+      oldest_queued_page:historical.status,
+      oldest_queued_run_candidates:historical.runs.length,
+      oldest_queued_verified:items.filter(x=>x.verified&&
+        historical.runs.some(r=>r.id===x.id)).length,
+      limit:cap,lower_bound:!complete,
       observed_statuses:selected.validStatuses,possible_statuses:5},
     ci:{running_jobs:tally('ci','running_jobs'),queued_jobs:tally('ci','queued_jobs'),
       active_workflows:verifiedCi.filter(x=>!x.stale).length,
@@ -153,5 +185,5 @@ function summarize({statusPages,jobPages,recent,scheduled},now=Date.now(),cap=16
     incomplete:items.filter(x=>!x.verified).map(x=>({id:x.id,name:x.name,url:x.url})),
     trend:series(recent,now),schedule:scheduleHealth(scheduled,now,recent)};
 }
-module.exports={SCHEMA,STALE_AFTER_MIN,JOB_FRESH_MIN,type,minutes,selectRuns,evaluateRun,
+module.exports={SCHEMA,STALE_AFTER_MIN,JOB_FRESH_MIN,type,minutes,selectRuns,verifiedHistoricalQueued,evaluateRun,
   prioritySample,series,scheduleHealth,summarize};
