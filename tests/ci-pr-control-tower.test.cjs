@@ -334,7 +334,8 @@ test('live exact-head DIRTY manual conflict routes to semantic executor without 
  assert.equal(result.dispatchAccepted,0);
  assert.equal(f.calls.dispatched.length,0,'never dispatch a source writer for conflict');
  assert.ok(f.calls.reserved.some(x=>x.body.includes('HH_CONTROL_CONFLICT_HANDOFF_V1 '+SHA)));
- assert.ok(f.calls.labels.some(x=>x.labels.includes('hh:repair-manual')));
+ assert.equal(f.calls.labels.some(x=>x.labels.includes('hh:repair-manual')),false,
+  'already-present manual label is not written twice');
  assert.ok(f.calls.removed.some(x=>x.name==='hh:conflict-repair-needed'));
 });
 test('unknown list mergeability routes dual-labelled DIRTY source to owner conflict, not Worker',async()=>{

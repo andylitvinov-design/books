@@ -139,3 +139,58 @@ test('Ready telemetry coalescing preserves actual protected Core and conflict ev
  assert.match(native,/publishReadyStage\(\{github,context\}\)/);
  assert.match(native,/ci-pr-conflict-event-handoff\.cjs/);
 });
+
+test('manual DIRTY conflict with an existing queue hint remains eligible only for read-only triage',async()=>{
+ const current=source(['hh:repair-manual','hh:conflict-repair-needed']);
+ const {validReadOnlyConflict}=require('../scripts/ci-pr-queue-dispatcher.cjs');
+ assert.equal(laneOf(current),'conflict');
+ assert.equal(validReadOnlyConflict(current),true);
+ assert.equal(validReadOnlyConflict(source(['hh:hold','hh:repair-manual','hh:conflict-repair-needed'])),false);
+ assert.equal(validReadOnlyConflict(source(['hh:repair-manual','hh:conflict-repair-needed'],{
+  mergeable:true,mergeable_state:'clean'})),false);
+ let dispatched=0,wrote=0;
+ const github={rest:{pulls:{get:async()=>({data:current})},
+  issues:{addLabels:async()=>{wrote++;}}}};
+ const r=await run({github,core,context:event(),dispatchRun:async args=>{
+  dispatched++;assert.equal(args.focusPrSnapshot,current);
+  return {manualConflictHandoffs:0,dispatchAccepted:0,blocked:{CONFLICT_ALREADY_HANDED_OFF:1},
+   reason:'AWAITING_SEMANTIC_CONFLICT_REPAIR'};
+ }});
+ assert.equal(dispatched,1);assert.equal(wrote,0);
+ assert.equal(r.outcome,'CONFLICT_QUEUE_PENDING_OR_BLOCKED');
+ assert.equal(r.reason,'AWAITING_SEMANTIC_CONFLICT_REPAIR');
+ assert.equal(r.nextAction,'SEMANTIC_OWNER_REPAIR_AND_EXACT_HEAD_CI');
+ assert.equal(r.sourceCommitVerified,false);
+ assert.equal(r.mergeAuthorized,false);
+});
+test('manual conflict after queue retirement cannot recreate an endless conflict-label loop',async()=>{
+ const current=source(['hh:repair-manual']);
+ let writes=0,dispatches=0;
+ const github={rest:{pulls:{get:async()=>({data:current})},
+  issues:{addLabels:async()=>{writes++;}}}};
+ const r=await run({github,core,context:event(),dispatchRun:async()=>{dispatches++;}});
+ assert.equal(r.outcome,'MANUAL_CONFLICT_AWAITING_SOURCE_PATCH');
+ assert.equal(r.reason,'NO_VERIFIED_SEMANTIC_SOURCE_COMMIT');
+ assert.equal(r.nextAction,'SEMANTIC_OWNER_REPAIR_AND_EXACT_HEAD_CI');
+ assert.equal(writes,0);assert.equal(dispatches,0);
+});
+test('explicit hard holds report precise reason and never pass into a source or conflict dispatcher',async()=>{
+ const cases={
+  'hh:hold':'EXPLICIT_OWNER_HOLD',
+  'hh:blocked':'POLICY_BLOCKED',
+  'hh:worker-claimed':'SOURCE_OWNER_ALREADY_CLAIMED',
+  'hh:direction-override:invalid':'INVALID_DIRECTION_OVERRIDE'
+ };
+ for(const [label,reason] of Object.entries(cases)){
+  let writes=0,dispatches=0;
+  const github={rest:{pulls:{get:async()=>({data:source([label,'hh:repair-manual'])})},
+   issues:{addLabels:async()=>{writes++;}}}};
+  const r=await run({github,core,context:event(),
+   dispatchRun:async()=>{dispatches++;}});
+  assert.equal(r.outcome,'BLOCKED_EXISTING_OWNER_OR_POLICY');
+  assert.equal(r.blockingLabel,label);
+  assert.equal(r.reason,reason);
+  assert.equal(r.nextAction,'REVIEW_EXPLICIT_HOLD_OR_SOURCE_OWNER');
+  assert.equal(writes,0);assert.equal(dispatches,0);
+ }
+});

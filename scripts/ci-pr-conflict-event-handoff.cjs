@@ -9,7 +9,14 @@ const REPO='andylitvinov-design/books';
 const PROD='codex/public-book-library';
 const SHA=/^[0-9a-f]{40}$/i;
 const ACTIONS=new Set(['opened','reopened','synchronize','ready_for_review']);
-const HOLDS=new Set(['hh:hold','hh:repair-manual','hh:blocked','hh:worker-claimed']);
+// Manual semantic repair is NOT a permission to write source; however it
+// must not hide an already-proven DIRTY PR from read-only conflict triage.
+const HARD_HOLDS=new Map([
+ ['hh:hold','EXPLICIT_OWNER_HOLD'],
+ ['hh:blocked','POLICY_BLOCKED'],
+ ['hh:worker-claimed','SOURCE_OWNER_ALREADY_CLAIMED'],
+ ['hh:direction-override:invalid','INVALID_DIRECTION_OVERRIDE']
+]);
 const CONFLICT='hh:conflict-repair-needed';
 function trustedConflictEvent(context){
  const pr=context?.payload?.pull_request;
@@ -64,7 +71,8 @@ function currentDirty(pr,eventPr){
 async function run({github,core,context,dryRun=false,dispatchRun=null,readPr=null}={}){
  const result={schema:'HH_CONFLICT_EVENT_HANDOFF_V1',outcome:'UNVERIFIED_EVENT',
   prNumber:null,headSha:null,labelAdded:false,dispatchAccepted:0,
-  manualConflictHandoffs:0,reason:null};
+  manualConflictHandoffs:0,reason:null,blockingLabel:null,
+  nextAction:null,sourceCommitVerified:false,mergeAuthorized:false};
  if(!trustedConflictEvent(context))return result;
  const eventPr=context.payload.pull_request;
  const {owner,repo}=context.repo;
@@ -82,8 +90,21 @@ async function run({github,core,context,dryRun=false,dispatchRun=null,readPr=nul
   return result;
  }
  const labels=new Set((pr.labels||[]).map(x=>x.name));
- if([...HOLDS].some(name=>labels.has(name))){
-  result.outcome='BLOCKED_EXISTING_OWNER_OR_POLICY';return result;
+ const hardHold=[...HARD_HOLDS].find(([name])=>labels.has(name));
+ if(hardHold){
+  result.outcome='BLOCKED_EXISTING_OWNER_OR_POLICY';
+  result.blockingLabel=hardHold[0];result.reason=hardHold[1];
+  result.nextAction='REVIEW_EXPLICIT_HOLD_OR_SOURCE_OWNER';
+  return result;
+ }
+ // A terminal semantic handoff deliberately removes the conflict queue hint.
+ // Do not re-label it on every synchronize/Ready event: that produces an
+ // endless "conflict detected -> manual handoff" loop with no source patch.
+ if(labels.has('hh:repair-manual')&&!labels.has(CONFLICT)){
+  result.outcome='MANUAL_CONFLICT_AWAITING_SOURCE_PATCH';
+  result.reason='NO_VERIFIED_SEMANTIC_SOURCE_COMMIT';
+  result.nextAction='SEMANTIC_OWNER_REPAIR_AND_EXACT_HEAD_CI';
+  return result;
  }
  if(!labels.has(CONFLICT)){
   if(dryRun){result.outcome='WOULD_ROUTE_CONFLICT';return result;}
@@ -115,8 +136,15 @@ async function run({github,core,context,dryRun=false,dispatchRun=null,readPr=nul
   result.outcome=result.manualConflictHandoffs>0?'MANUAL_CONFLICT_HANDOFF':
    result.dispatchAccepted>0?'DISPATCH_ACCEPTED':
    'CONFLICT_QUEUE_PENDING_OR_BLOCKED';
-  result.reason=routed?.reason||null;
   result.blocked=routed?.blocked||{};
+  const blockedCodes=Object.keys(result.blocked).filter(k=>result.blocked[k]>0);
+  result.reason=routed?.reason||
+    (blockedCodes.length===1?blockedCodes[0]:null);
+  result.nextAction=result.manualConflictHandoffs>0?
+   'SEMANTIC_OWNER_REPAIR_AND_EXACT_HEAD_CI':
+   result.dispatchAccepted>0?'VERIFY_WORKER_AND_PUBLISHED_SHA':
+   result.blocked.CONFLICT_ALREADY_HANDED_OFF?
+    'SEMANTIC_OWNER_REPAIR_AND_EXACT_HEAD_CI':'RECONCILE_CONFLICT_QUEUE';
  }catch(error){
   result.outcome='DISPATCH_UNAVAILABLE';
   result.reason=String(error.message||error).slice(0,180);

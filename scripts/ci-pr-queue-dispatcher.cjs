@@ -18,6 +18,11 @@ const {PATHS:QUALITY_EVENT_PATHS,isTrustedQualityFailureEvent,qualityEventMatche
 const WORKER_PATH={repair:'hh-pr-repair-worker.yml',legacy:'hh-pr-repair-worker.yml',
  conflict:'hh-pr-repair-worker.yml',ci:'hh-pr-ci-worker.yml'};
 const MAX_DISPATCH=2, MAX_MANUAL_CONFLICT_HANDOFFS=2, MAX_INSPECT=16, MAX_CONFLICT_ONLY_INSPECT=6, MAX_API=55, MIN_RATE=250;
+// DIRTY manual PRs may enter only the read-only semantic conflict lane.
+// The free code writer, CI bootstrap, leases and merge checks still use validPR.
+function validReadOnlyConflict(pr){
+ return laneOf(pr)==='conflict'&&(validPR(pr)||validLegacyPrep(pr));
+}
 // Only after a terminally handled hourly candidate: bounded alternative PR
 // checks, not additional worker executions or source authorisations.
 const MAX_LEGACY_BACKUPS=4, MAX_LEGACY_HOURLY_HISTORY=20;
@@ -551,7 +556,8 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
  // Watchdog verifies the corresponding merge commit's second parent.
  let focusedPR=null;
  if(focusPrNumber!==null){
-  const selected=production.filter(pr=>pr.number===focusPrNumber && validPR(pr));
+  const selected=production.filter(pr=>pr.number===focusPrNumber &&
+   (conflictEvent?validReadOnlyConflict(pr):validPR(pr)));
   if(conflictEvent){
    const event=context.payload?.pull_request;
    if(selected.length!==1||selected[0].head?.sha!==event?.head?.sha||
@@ -806,7 +812,8 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
    blocked('MANUAL_CONFLICT_PROBE_NOT_DIRTY');continue;
   }
   if(!fresh||fresh.head?.sha!==task.head_sha||fresh.base?.ref!==PROD||
-     !(wasLegacy?validLegacyPrep(fresh):validPR(fresh))||
+     !(task.lane==='conflict'?validReadOnlyConflict(fresh):
+       wasLegacy?validLegacyPrep(fresh):validPR(fresh))||
       laneOf(fresh)!==task.lane){blocked('STALE_SHA_OR_STATE');continue;}
   if(conflictEvent&&task.lane!=='conflict'){
    blocked('CONFLICT_EVENT_LANE_MISMATCH');continue;
@@ -1002,9 +1009,11 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
         before.head?.repo?.full_name!==REPO||before.base?.ref!==PROD){
       blocked('CONFLICT_RELEASE_RECHECK_CHANGED');return false;
      }
-     await limited('conflict-manual-owner-label',()=>github.rest.issues.addLabels({
-      owner,repo,issue_number:task.pr_number,labels:['hh:repair-manual']
-     }));
+     if(!before.labels?.some(l=>l.name==='hh:repair-manual')){
+      await limited('conflict-manual-owner-label',()=>github.rest.issues.addLabels({
+       owner,repo,issue_number:task.pr_number,labels:['hh:repair-manual']
+      }));
+     }
      // Revalidate after the label mutation; do not delete newer-HEAD work.
      const after=(await limited('conflict-release-postcheck',()=>
       github.rest.pulls.get({owner,repo,pull_number:task.pr_number}))).data;
@@ -1430,5 +1439,5 @@ async function wakeDirectionWatcher({github,core,context,now=Date.now(),dryRun=f
  log();return state;
 }
 module.exports={trustedContext,validOwnerRepairTarget,planCandidates,legacyHourlyWorkerSlot,legacyFallbackStart,run,wakeDirectionWatcher,workerBusyOrCooling,
- DIRECTION_IDLE_MS,DIRECTION_WORKFLOW,verifiedSpecialistProductFailure,backlogLabelHints,
+ DIRECTION_IDLE_MS,DIRECTION_WORKFLOW,validReadOnlyConflict,verifiedSpecialistProductFailure,backlogLabelHints,
  signedCiWakeTiming};
