@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync,statSync} from "node:fs";
-import {HOME_ALI_HANDOFF_KEY, HOME_ALI_HANDOFF_MAX_AGE,prepareHomeAliHandoff,stageHomeAliHandoff,consumeHomeAliHandoff} from "../lib/home-ali-handoff.mjs";
+import {HOME_ALI_HANDOFF_KEY, HOME_ALI_HANDOFF_MAX_AGE,prepareHomeAliHandoff,stageHomeAliHandoff,consumeHomeAliHandoff,peekHomeAliHandoff,acknowledgeHomeAliHandoff} from "../lib/home-ali-handoff.mjs";
 
 const read=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 function memoryStorage(){
@@ -84,10 +84,47 @@ test("Ali receives the once-consumed Home request in the established chat, behin
  assert.match(entry,/stageHomeAliHandoff\(window\.sessionStorage/);
  assert.match(entry,/router\.push\(chatPath\)/);
  assert.match(entry,/app\/messages\?section=ai/);
- assert.match(chat,/consumeHomeAliHandoff\(window\.sessionStorage,routeLocale\)/);
+ assert.match(chat,/peekHomeAliHandoff\(window\.sessionStorage,routeLocale\)/);
+ assert.match(chat,/acknowledgeHomeAliHandoff\(window\.sessionStorage,pending\.payload\)/);
  assert.match(chat,/homeHandoffConsumed\.current=true/);
  assert.match(chat,/void sendTurn\(message\)/);
  assert.match(chat,/mode==="owned"&&!agree/);
  assert.match(route,/MessagesOrdersClients/);
  assert.doesNotMatch(entry,/URLSearchParams|setItem\(["']localStorage/);
+});
+
+test("non-destructive Home handoff and compare-and-delete prevent missing first turn",()=>{
+ const storage=memoryStorage();
+ const old={text:"Понять себя",locale:"ru",mode:"self",now:10000};
+ assert.equal(stageHomeAliHandoff(storage,old),true);
+ const first=peekHomeAliHandoff(storage,"ru",10001);
+ assert.equal(first?.text,"Понять себя");
+ assert.equal(storage.entries().length,1);
+ assert.equal(peekHomeAliHandoff(storage,"en",10002),null);
+ assert.equal(storage.entries().length,1);
+ assert.equal(stageHomeAliHandoff(storage,{...old,text:"Новый запрос",now:10003}),true);
+ assert.equal(acknowledgeHomeAliHandoff(storage,first),false);
+ const latest=peekHomeAliHandoff(storage,"ru",10004);
+ assert.equal(latest?.text,"Новый запрос");
+ assert.equal(acknowledgeHomeAliHandoff(storage,latest),true);
+ assert.equal(storage.entries().length,0);
+ assert.equal(acknowledgeHomeAliHandoff(storage,latest),false);
+ assert.equal(stageHomeAliHandoff(storage,{...old,now:10010}),true);
+ assert.equal(peekHomeAliHandoff(storage,"ru",10010+HOME_ALI_HANDOFF_MAX_AGE+1),null);
+ assert.equal(storage.entries().length,0);
+});
+test("Home starter sends on one tap, Ali preserves original wording and shows retry",()=>{
+ const home=read("components/home-dialogue-entry.tsx");
+ const chat=read("components/holistic-agent-chat.tsx");
+ const hub=read("components/app/messages-orders-clients.jsx");
+ assert.match(home,/onClick=\{\(\)=>startConversationWith\(hint\.prompt\)\}/);
+ assert.match(home,/startConversationWith\(draft\)/);
+ assert.match(chat,/homeHandoffPhase==="queued"/);
+ assert.match(chat,/homeHandoffPhase==="retry"/);
+ assert.match(chat,/data-home-handoff-pending/);
+ assert.match(chat,/data-home-handoff-retry/);
+ assert.match(chat,/newTurns\.slice\(userIndex\+1\)\.some\(turn=>turn\.role==="assistant"\)/);
+ assert.match(chat,/startContent\(turnLocale,text\)/);
+ assert.doesNotMatch(chat,/text:safeIntent/);
+ assert.match(hub,/const timeout=window\.setTimeout\(\(\)=>controller\.abort\(\),6000\)/);
 });
