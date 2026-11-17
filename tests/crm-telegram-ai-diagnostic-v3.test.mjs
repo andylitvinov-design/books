@@ -256,8 +256,10 @@ test('Wave local chat remains consent-gated and is independent of any model key'
   assert.equal(v3CanChat({...local,VERCEL_ENV:'preview'}),false);
   const service=source('lib/crm/telegram-ai-diagnostic-v3-service.js');
   assert.match(service,/const generalStart=chatAllowed/);
-  assert.match(service,/purposeReady=general\?chatAllowed:allowed/);
-  assert.match(service,/if\(!row.ai_consent_at\|\|!\(ctx.conversationKind==='general'\?chatAllowed:allowed\)\)/);
+  // The new free diagnostic explicitly stays LOCAL after chat consent;
+  // a full service interview still requires the verified external model.
+  assert.match(service,/purposeReady=general\\|\\|ctx.mode===FREE_DIAGNOSTIC_MODE\\?chatAllowed:allowed/);
+  assert.match(service,/if\\(!row.ai_consent_at\\|\\|!\\(\\(ctx.conversationKind==='general'\\|\\|ctx.mode===FREE_DIAGNOSTIC_MODE\\)\\?chatAllowed:allowed\\)\\)/);
   assert.match(service,/waveTelegramLocalReply\(\{locale:prior.locale,turns\}\)/);
   assert.match(service,/wave_telegram_inference/);
 });
