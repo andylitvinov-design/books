@@ -184,22 +184,22 @@ test('repairs a parameter/local TS2300 collision without model reasoning or chan
   ' return [...publishedVideos, ...listApprovedLocalFilmScenes(locale)];',
   '}',
   ''
- ].join('\\n');
+ ].join('\n');
  const repair=repairDuplicateParameterBinding(before,'components/library-hub.tsx');
  assert.equal(repair.changed,true);
  assert.equal(repair.edits,2);
- assert.match(repair.code,/buildLibraryFeedItems\\(locale,publishedVideos\\)/);
+ assert.match(repair.code,/buildLibraryFeedItems\(locale,publishedVideos\)/);
  assert.match(repair.code,/const indexedVideos = buildPublishedVideoIndex/);
- assert.match(repair.code,/return \\[\\.\\.\\.indexedVideos,/);
+ assert.match(repair.code,/return \[\.\.\.indexedVideos,/);
  assert.equal(repairDuplicateParameterBinding(repair.code,'components/library-hub.tsx').changed,false);
 });
 test('duplicate repair refuses ambiguous identifiers, nested references, and unrelated code',()=>{
  const cases=[
-  'function f(items: string[]) { const items = []; console.log(items); return items; }\\n',
-  'function f(items: string[]) { const items = []; return items.map(x => x); }\\n',
-  'function f(items: string[]) { const items = []; return [...items]; const items = []; }\\n',
-  'function f(items: string[]) { const items = []; return [...items]; }\\nfunction g(x: number[]) { const x = []; return [...x]; }\\n',
-  'export const items = 12;\\n',
+  'function f(items: string[]) { const items = []; console.log(items); return items; }\n',
+  'function f(items: string[]) { const items = []; return items.map(x => x); }\n',
+  'function f(items: string[]) { const items = []; return [...items]; const items = []; }\n',
+  'function f(items: string[]) { const items = []; return [...items]; }\nfunction g(x: number[]) { const x = []; return [...x]; }\n',
+  'export const items = 12;\n',
  ];
  for(const source of cases){
   const result=repairDuplicateParameterBinding(source,'src/sample.tsx');
