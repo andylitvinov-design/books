@@ -54,7 +54,9 @@ test('only one $0 pinned inference, without fallbacks or write tools',async()=>{
   assert.deepEqual(body.provider,{allow_fallbacks:false,max_price:{prompt:0,completion:0},
     data_collection:'deny'});
   assert.equal(body.model,DEFAULT_MODEL);
-  assert.equal(body.n,1,'exactly one completion choice is requested');
+  assert.equal(body.n,undefined,'n is optional and triggers 400 on some free endpoints');
+  assert.equal(body.modalities,undefined,'free chat models must not receive optional modalities');
+  assert.equal(body.reasoning,undefined,'required-reasoning providers choose their own setting');
   assert.equal(body.tools,undefined);
   assert.equal(body.models,undefined);
   assert.equal(calls[1].headers.Authorization,'Bearer test-key');
