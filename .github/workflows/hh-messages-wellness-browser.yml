@@ -37,6 +37,7 @@ jobs:
         if: github.event_name != 'pull_request'
         uses: ./.github/actions/ci-ffmpeg-static
       - run: npm ci --no-audit --no-fund
+        if: github.event_name != 'pull_request'
       - name: Materialize checksum-verified FFmpeg for package runtime
         if: github.event_name != 'pull_request'
         uses: ./.github/actions/ci-ffmpeg-static
