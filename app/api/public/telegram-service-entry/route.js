@@ -1,6 +1,9 @@
 import {NextResponse} from 'next/server'
-import {telegramServiceRequestUrl} from '@/lib/assist/telegram-business-request.mjs'
-import {isTelegramServiceDraft} from '@/lib/app/telegram-entry-url.mjs'
+import {channelTransportReady} from '@/lib/crm/messenger-policy'
+import {telegramDiagnosticPublicUrl} from '@/lib/crm/telegram-diagnostic.mjs'
+import {v3CanStart} from '@/lib/crm/telegram-ai-diagnostic-v3.mjs'
+import {telegramServiceRequestUrl,telegramBusinessStrategyRequestUrl} from '@/lib/assist/telegram-business-request.mjs'
+import {resolveTelegramServiceEntry,isTelegramServiceDraft} from '@/lib/app/telegram-entry-url.mjs'
 
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
@@ -8,17 +11,39 @@ export const revalidate=0
 const headers={'Cache-Control':'private, no-store, max-age=0','Referrer-Policy':'no-referrer','X-Content-Type-Options':'nosniff'}
 const invalid=()=>new NextResponse('Not Found',{status:404,headers})
 
-// Explicit service clicks stay with the human @holistichouse account.
-// The existing signed Telegram Business secretary may answer when authorized;
-// never divert a customer to a separate /start bot based on a backend flag.
-// Opening this URL is not consent, a CRM lead, a booked order, or payment.
+// A click is not a submitted enquiry. Only public offer/locale codes enter
+// the URL; Telegram Send and (for model processing) explicit consent remain
+// required. Do not send customers to a silent personal account when the
+// already-approved V3 bot is actually ready and Business automation is off.
 export async function GET(request){
  const params=new URL(request.url).searchParams
- if([...params.keys()].length!==2||
+ const keys=[...params.keys()]
+ if((keys.length!==2&&keys.length!==3)||new Set(keys).size!==keys.length||
     params.getAll('service').length!==1||params.getAll('locale').length!==1||
-    !params.has('service')||!params.has('locale'))return invalid()
+    !params.has('service')||!params.has('locale')||
+    (keys.length===3&&!params.has('offer')))return invalid()
  const service=params.get('service'),locale=params.get('locale')
- const manual=telegramServiceRequestUrl(service,locale)
+ const offer=params.get('offer')
+ if(offer!==null&&(offer!=='business_strategy'||service!=='business'))return invalid()
+ const manual=offer==='business_strategy'
+   ?telegramBusinessStrategyRequestUrl(locale)
+   :telegramServiceRequestUrl(service,locale)
  if(!manual||!isTelegramServiceDraft(manual,locale))return invalid()
- return NextResponse.redirect(manual,{status:307,headers})
+ const env=process.env
+ let target=manual
+ // A human Business-chat auto-reply is permitted ONLY after owner/provider
+ // authorization. Until then the existing signed opt-in AI assistant is
+ // the non-silent option, provided all readiness gates are satisfied.
+ if(env.HH_CRM_TG_CHAT_AUTOMATION_ENABLED!=='true'&&
+    env.HH_CRM_TG_AI_V3_SCHEMA_READY==='true'&&
+    channelTransportReady('telegram',env)&&v3CanStart(env)){
+   const publicBot=telegramDiagnosticPublicUrl(locale,env)
+   if(typeof publicBot==='string'){
+     const entry=resolveTelegramServiceEntry({
+       available:true,aiInterviewAvailable:true,url:publicBot.split('?')[0],
+     },manual,locale)
+     if(entry)target=entry.href
+   }
+ }
+ return NextResponse.redirect(target,{status:307,headers})
 }
