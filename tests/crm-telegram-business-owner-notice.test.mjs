@@ -5,7 +5,7 @@ import vm from 'node:vm'
 const source=readFileSync(new URL('../lib/crm/telegram-business-owner-notice.mjs',import.meta.url),'utf8')
  .replace(/^import .*$/gm,'').replace(/^export /gm,'')+'\n; notifyConfirmedTelegramBusinessOwner'
 const env={HH_CRM_TG_CHAT_AUTOMATION_ENABLED:'true'}
-function fixture({intent='Confirm',session=true,match=true,ready=true,bot='andydotbot',verified=true}={}){
+function fixture({intent='Confirm',service='business',session=true,match=true,ready=true,bot='andydotbot',verified=true}={}){
  const events=[]
  const message={update_id:42,business_message:{business_connection_id:'connection-1',chat:{id:123456789,type:'private'},from:{id:123456789,is_bot:false},text:intent,message_id:4}}
  const ctx=vm.createContext({
@@ -16,7 +16,7 @@ function fixture({intent='Confirm',session=true,match=true,ready=true,bot='andyd
   webhookTransaction:async(c,fn)=>fn({query:async(sql,args)=>{
    events.push('session_lookup'); assert.ok(sql.includes("stage='submitted'"));
    assert.equal(args.at(-1),42)
-   return {rows:session?[{operation_id:'11111111-1111-4111-8111-111111111111',reference_code:'HH-AB12CD34EF56'}]:[]}
+   return {rows:session?[{operation_id:'11111111-1111-4111-8111-111111111111',reference_code:'HH-AB12CD34EF56',service_key:service}]:[]}
   }}),
   transaction:async(c,actor,fn)=>fn({query:async(sql,args)=>{
    if(sql.includes('set_config')){events.push('operation_scope');return {rows:[]}}
@@ -37,8 +37,26 @@ test('only a committed client-confirmed enquiry can enqueue an owner notice',asy
  assert.equal((await x.fn({},x.message,env)).accepted,1)
  assert.deepEqual(x.events,['session_lookup','operation_scope','validate_enquiry','intent','verify_bot','dispatch'])
 })
+test('five-answer AI-secretary handoff notifies @Andydotbot without requiring typed Confirm',async()=>{
+ const x=fixture({intent:'Please forward complex requests to my manager and calendar',
+   service:'ai_secretary'});
+ const result=await x.fn({},x.message,env);
+ assert.equal(result.accepted,1);
+ assert.deepEqual(x.events,['session_lookup','operation_scope','validate_enquiry','intent','verify_bot','dispatch']);
+});
+
+test('an unrelated non-AI enquiry cannot forge a no-confirm owner notification',async()=>{
+ const x=fixture({intent:'Please forward complex requests to my manager',
+   service:'business'});
+ const result=await x.fn({},x.message,env);
+ assert.equal(result.attempted,0);
+ assert.ok(!x.events.includes('intent'));
+ assert.ok(!x.events.includes('dispatch'));
+});
+
 test('unconfirmed, STOP, incomplete/foreign session and missing CRM row are silent',async()=>{
- for(const data of [{intent:'unrelated'},{intent:'/stop'},{session:false},{match:false}]){
+ for(const data of [{intent:'unrelated'},{intent:'/stop'},{intent:'/stop',service:'ai_secretary'},
+  {session:false},{match:false}]){
   const x=fixture(data),result=await x.fn({},x.message,env)
   assert.equal(result.accepted,0);assert.ok(!x.events.includes('dispatch'))
  }
@@ -51,11 +69,25 @@ test('unready, wrong bot or invalid bot identity saves intent but cannot send',a
 })
 test('privacy: no client text/identity forwarded in owner notification request',()=>{
  assert.doesNotMatch(source,/sendMessage\s*\(|sendOneMessengerMessage\s*\(|console\.log\(/)
- assert.match(source,/telegramBusinessClientChoice\(event\.text\)\?\.kind!=='confirm'/)
+ assert.match(source,/const command=telegramBusinessClientChoice\(event\.text\)\?\.kind/)
+ assert.match(source,/command!=='confirm'&&session\.service_key!=='ai_secretary'/)
+ assert.match(source,/last_update_id=\$4/)
  assert.match(source,/stage='submitted'/)
  assert.match(source,/app_private\.notification_public_enquiry_intents/)
  assert.match(source,/dispatchPublicServiceEnquiryTelegram/)
 })
+
+test('a confirmed Business enquiry and durable owner notification are committed atomically',()=>{
+ const code=readFileSync(new URL('../lib/crm/telegram-business-service.js',import.meta.url),'utf8');
+ const begin=code.indexOf('async function saveConfirmedEnquiry');
+ const operation=code.indexOf("set_config('hh.public_enquiry_operation'",begin);
+ const intent=code.indexOf('insert into app_private.notification_public_enquiry_intents',begin);
+ const receipt=code.indexOf('return finalize(id,ref,contactId)',begin);
+ assert.ok(begin>=0&&operation>begin&&intent>operation&&receipt>intent);
+ assert.match(code.slice(begin,intent),/transaction\(config,null,async db=>/);
+ assert.match(code.slice(intent,receipt),/\(enquiry_id,owner_id\) values\(\$1,\$2\) on conflict do nothing/);
+ assert.match(code.slice(intent,receipt),/\[id,ownerId\]/);
+});
 
 test('signed webhook schedules a post-commit owner notification, without changing client reply',()=>{
  const route=readFileSync(new URL('../app/api/app/crm/messenger/webhook/[provider]/route.js',import.meta.url),'utf8')

@@ -4151,10 +4151,6 @@
 .montageEffectsGrid button[aria-pressed="true"]{border:2px solid #067a67;background:#ebf8ee}
 .montageEffectsGrid img{width:100%;aspect-ratio:1.4;object-fit:cover;border-radius:9px}
 .montageEffectsGrid button>svg{position:absolute;top:7px;right:7px;color:#fff;background:#067a67;border-radius:50%}
-.montageEffectBrightness{display:flex;flex-wrap:wrap;gap:8px;align-items:center;border:0;margin:0;padding:0}
-.montageEffectBrightness legend{font-weight:750;color:#143d3a}
-.montageEffectBrightness button{min-height:44px;padding:8px 12px;border:1px solid #d6e1d5;border-radius:12px;background:white;color:#143d3a}
-.montageEffectBrightness button[aria-pressed="true"]{background:#e6f6f1;border-color:#067a67}
 .studio[data-active-workspace="editor"] .quickBuilder>[data-video-order-bar]{
   order:5!important;position:static!important;bottom:auto!important;
   display:grid;grid-template-columns:1fr;gap:7px;
@@ -4667,10 +4663,6 @@
  }
  .studio[data-active-workspace="editor"][data-montage-panel="effects"] .montageEffectsGrid img{
    display:block;height:clamp(42px,6.2dvh,55px);width:100%;aspect-ratio:auto;object-fit:cover;border-radius:9px
- }
- .studio[data-active-workspace="editor"][data-montage-panel="effects"] .montageEffectBrightness{gap:6px}
- .studio[data-active-workspace="editor"][data-montage-panel="effects"] .montageEffectBrightness button{
-   min-height:40px;padding:6px 10px;font-size:13px
  }
  .studio[data-active-workspace="editor"] .quickBuilder>.previewStage,
  .studio[data-active-workspace="video"] .quickBuilder>.previewStage{padding:0!important}
@@ -5318,13 +5310,25 @@
 /* Montage 7 Nov — format is chosen with Style; Text and visual Effects are
    real tabs over the existing single Canvas/MP4 editor (no duplicate player). */
 .montagePane[hidden]{display:none!important}
-.montageAspectSwitch{display:grid;gap:8px;min-width:0;margin:6px 0 2px;padding:0;border:0}
-.montageAspectSwitch legend{padding:0;margin-bottom:6px;color:#143d3a;font:800 17px/1.2 Arial,Helvetica,sans-serif}
+/* Real proportions, unmistakable landscape screen versus portrait phone; zero media requests. */
+.montageAspectSwitch{display:grid;gap:6px;min-width:0;margin:5px 0 2px;padding:0;border:0}
+.montageAspectSwitch legend{padding:0;margin-bottom:5px;color:#143d3a;font:800 17px/1.2 Arial,Helvetica,sans-serif}
 .montageAspectSwitch>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-.montageAspectSwitch button{position:relative;display:flex;align-items:center;justify-content:center;gap:8px;min-width:0;min-height:47px;padding:9px 7px;border:1px solid #d6e1d5;border-radius:13px;background:#fff;color:#174a3c;font:800 16px/1.2 Arial,Helvetica,sans-serif}
-.montageAspectSwitch button[aria-pressed="true"]{border:2px solid #067a67;background:#e6f6f1;color:#056c58}
+.montageAspectSwitch button{position:relative;display:grid;align-content:start;justify-items:center;gap:3px;min-width:0;min-height:153px;padding:9px 6px 10px;border:1px solid #e9dfd1;border-radius:16px;background:#fffcf7;color:#143d3a;text-align:center;font:700 14px/1.2 Arial,Helvetica,sans-serif;cursor:pointer}
+.montageAspectSwitch button[aria-pressed="true"]{border:2px solid #067a67;background:#e6f6f1;color:#056c58;padding:8px 5px 9px}
 .montageAspectSwitch button:focus-visible,.montageVisualGrid button:focus-visible,.montageEffectIntensity input:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
-.montageAspectSwitch button:disabled{opacity:.6}
+.montageAspectSwitch button:disabled{opacity:.6;cursor:not-allowed}
+.montageAspectPreview{display:grid;place-items:center;flex:none;width:100%;height:75px}
+.montageAspectFrame{position:relative;display:block;overflow:hidden;height:48px;aspect-ratio:16/9;border:2px solid #496b63;border-radius:6px;background:linear-gradient(180deg,#f4e6b5 0%,#d5e9df 56%,#90c9b3 100%);box-shadow:0 2px 6px #173e3429}
+.montageAspectFrame[data-orientation="portrait"]{height:70px;aspect-ratio:9/16}
+.montageAspectSun{position:absolute;top:16%;right:15%;width:19%;aspect-ratio:1;border-radius:50%;background:#fff5cd;box-shadow:0 0 8px #fff9e9}
+.montageAspectHills{position:absolute;inset:47% -4% -3%;background:linear-gradient(140deg,#479886,#146b58);clip-path:polygon(0 75%,27% 28%,48% 66%,73% 9%,100% 66%,100% 100%,0 100%)}
+.montageAspectFrame>svg{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;filter:drop-shadow(0 1px 2px #184b3b)}
+.montageAspectCaption{display:grid;justify-items:center;gap:2px;width:100%;min-width:0}
+.montageAspectCaption strong{font:800 clamp(12px,3.7vw,16px)/1.1 Arial,Helvetica,sans-serif;overflow-wrap:anywhere}
+.montageAspectCaption b{font:850 15px/1.2 Arial,Helvetica,sans-serif;color:#067a67}
+.montageAspectCaption small{font:600 clamp(9px,2.7vw,11px)/1.22 Arial,Helvetica,sans-serif;color:#5d6a71;overflow-wrap:anywhere}
+.montageAspectCheck{position:absolute;top:6px;right:6px;display:grid;place-items:center;width:21px;height:21px;border-radius:50%;background:#067a67;color:#fff}
 .montageMovedNote{margin:0;color:#536b62;font:500 13px/1.42 Arial,Helvetica,sans-serif}
 .montageVisualGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;min-width:0}
 .montageVisualGrid button{position:relative;display:flex;align-items:center;justify-content:flex-start;gap:7px;min-width:0;min-height:64px;padding:9px 8px;border:1px solid #dfdfd1;border-radius:14px;background:#fffdfa;color:#143d3a;text-align:left;font:750 13px/1.18 Arial,Helvetica,sans-serif}
