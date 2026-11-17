@@ -22,6 +22,7 @@ import { resolveComplaintTurn } from "@/lib/holistic-support/complaint-mind.mjs"
 import { reviewPracticeBoundary } from "@/lib/holistic-support/practice-boundary.mjs";
 import { consultServiceQuestion, resolveConsultantSuggestion } from "@/lib/assist/consultant-mind.mjs";
 import { salesMindTurn } from "@/lib/holistic-support/sales-mind.mjs";
+import { routeMindRole } from "@/lib/holistic-support/mind-role-router.mjs";
 import { resolveWisdomRequest } from "@/lib/app/coaching-wisdom.js";
 import { resolveConversationFocus } from "@/lib/holistic-support/conversation-context.mjs";
 import { detectConversationLocale } from "@/lib/holistic-support/conversation-locale.mjs";
@@ -407,6 +408,11 @@ export async function POST(request) {
         });
       }
     }
+    // One shared Ali role decision for the website and Telegram. This is only
+    // editorial routing after existing auth/rate/safety; it grants no actions
+    // or permission to enter a deeper psychologist interview.
+    const aliMode=routeMindRole({message:body.message,locale:body.locale,
+      history:body.history,selectedGoal:body.selectedGoal});
     // Sales Mind only handles genuine service exploration/objections; booking,
     // factual price lookup and explicit selections stay with Secretary/Consultant.
     // Keep the same upstream safety, auth, rate, user-context and STOP gates.
@@ -415,7 +421,7 @@ export async function POST(request) {
       body.usePrivateProfile!==true && body.usePrivateHistory!==true &&
       body.useAgentMemory!==true && body.preferredFormat==null &&
       (!body.chosenAxes || body.chosenAxes.length===0) &&
-      ["rules","owned"].includes(body.mode)
+      ["rules","owned"].includes(body.mode) && aliMode.role==="sales"
       ? salesMindTurn({message:body.message,locale:body.locale,history:body.history}) : null;
     if(salesConversation)return await finish({
       status:salesConversation.status,reply:salesConversation.reply,
