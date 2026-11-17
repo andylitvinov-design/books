@@ -249,3 +249,7 @@
   .hero{min-height:126px;padding:12px}
   .hero>p:last-child{font-size:12px}
 }
+
+/* Optional on-device speech recognition; no new overlay or page-width change. */
+.speechHint{margin:4px 11px 0;color:#356b5b;font:600 12px/1.4 Arial,Helvetica,sans-serif}
+.form .voiceButton[aria-pressed="true"]{background:#e6f6f1;color:#075c51;border-color:#067a67}

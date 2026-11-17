@@ -10,6 +10,7 @@ import { inferAssistPreferences } from "../lib/assist/service-match.mjs";
 import { rankAssistProducts } from "../lib/assist/product-recommendations.mjs";
 import { rankDiscoveryVideos } from "../lib/video-discovery/ranker.mjs";
 import { telegramServiceRequestUrl } from "../lib/assist/telegram-business-request.mjs";
+import { resolveTelegramServiceHandoffUrl } from "../lib/app/telegram-entry-url.mjs";
 import { mkdir, writeFile } from "node:fs/promises";
 
 const origin = process.env.HH_PUBLIC_QA_ORIGIN || "http://127.0.0.1:3100";
@@ -113,6 +114,101 @@ try {
   // The three responsive recommendations are separate small cards BELOW the chat.
   // Preserve all locale/desktop/privacy contracts; never navigate Telegram in CI.
   const verifyMobileAssist = async (page, locale, width) => {
+    // Owner's screenshot: one question per green panel with four progress dots,
+    // six photographic category cards, and the existing shared seven-item dock.
+    await page.goto(origin + "/" + locale + "/services", { waitUntil: "domcontentloaded" });
+    const quiz = page.locator("[data-services-quiz]");
+    await visible(quiz.locator("#services-quiz-title"));
+    await expect(quiz).toHaveAttribute("data-services-quiz-questions", "4");
+    await expect(quiz).toHaveAttribute("data-services-quiz-step", "1");
+    await expect(page.locator("[data-hh-ihelp-trigger]")).toHaveCount(0);
+    await expect(quiz.locator("[data-quiz-dot]")).toHaveCount(4);
+    await expect(quiz.locator("[data-services-quiz-question]")).toHaveCount(1);
+    await expect(quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice]')).toHaveCount(4);
+    await expect(quiz.locator("[data-services-quiz-category]")).toHaveCount(6);
+    await expect(quiz.locator("[data-services-quiz-category] img")).toHaveCount(6);
+    await expect(quiz.locator("[data-services-business-link]"))
+      .toHaveAttribute("href", "#service-group-services");
+    assert.equal(await page.locator("[data-hh-unified-dock]").count(), 1,
+      "Keep the real site dock; never add a second mock dock");
+    // The approved screenshot is 390px wide. At smaller widths content may
+    // scroll, but no controls may disappear sideways or behind a fixed rail.
+    const firstScreen = await page.evaluate(() => {
+      const last = document.querySelector('[data-services-quiz-category="videos"]');
+      const dock = document.querySelector("[data-hh-unified-dock]");
+      if (!last || !dock) return null;
+      return {
+        lastBottom: last.getBoundingClientRect().bottom,
+        dockTop: dock.getBoundingClientRect().top,
+        width: document.documentElement.scrollWidth, viewport: innerWidth,
+      };
+    });
+    assert.ok(firstScreen && firstScreen.width <= firstScreen.viewport + 1,
+      "Services screenshot UI must not overflow horizontally: " + locale + "/" + width);
+    if (width >= 390) assert.ok(firstScreen.lastBottom <= firstScreen.dockTop + 12,
+      "At 390+ the six image cards should fit above the site dock: " +
+        locale + "/" + width + " " + JSON.stringify(firstScreen));
+    if (locale === "es") await expect(quiz.locator("#services-quiz-title"))
+      .toHaveText("Encontremos tu apoyo");
+    await expect(quiz.locator("[data-services-quiz-submit]")).toHaveCount(0);
+    if (width === 390) {
+      await page.screenshot({ path: output + "/services-" + locale + "-step1-390.png" });
+      await quiz.screenshot({ path: output + "/services-" + locale + "-quiz-390.png" });
+    }
+
+    // Money/business was an explicit owner requirement even though the visual
+    // reference shows only four primary topic buttons; reveal the two extra topics.
+    // Retain current Production React hydration guard before any quiz click.
+    await expect.poll(
+      () => page.evaluate(() => history.pushState.toString().includes("__NA")),
+      { timeout: 30000, message: "Services quiz must hydrate before the first answer" },
+    ).toBe(true);
+    // Six photographic first-screen categories stay on /services and expose exactly three matching options.
+    const quickTargets = {
+      therapy: "consultation", homeopathy: "homeopathy", constellations: "services",
+      practice: "reiki", study: "courses", videos: "video",
+    };
+    for (const [category, group] of Object.entries(quickTargets)) {
+      const card = quiz.locator('[data-services-quiz-category="' + category + '"]');
+      await expect(card).toHaveAttribute("href", "#service-group-" + group);
+      await card.click();
+      const location = new URL(page.url());
+      assert.equal(location.pathname, "/" + locale + "/services", "First-screen card must never leave Services: " + category);
+      assert.equal(location.hash, "#service-group-" + group);
+      const target = page.locator("#service-group-" + group);
+      await visible(target);
+      await expect(target.locator(':scope > [data-services-three-visible] > [data-service-variant]')).toHaveCount(3);
+      await expect(target.locator(':scope > [data-services-three-visible] > [data-service-variant]').first()).toBeVisible();
+    }
+    await expect(quiz.locator("[data-services-business-link]")).toHaveAttribute("href", "#service-group-services");
+    await quiz.locator("[data-services-business-link]").click();
+    assert.equal(new URL(page.url()).pathname, "/" + locale + "/services", "Business category must stay on Services");
+    assert.equal(new URL(page.url()).hash, "#service-group-services");
+    await quiz.locator("[data-services-more-topics]").click();
+    await expect(quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice]')).toHaveCount(6);
+    await quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice="work"]').click();
+    await expect(quiz).toHaveAttribute("data-services-quiz-step", "2");
+    await quiz.locator('[data-services-quiz-question="mode"] [data-services-quiz-choice="human"]').click();
+    await expect(quiz).toHaveAttribute("data-services-quiz-step", "3");
+    await quiz.locator('[data-services-quiz-question="channel"] [data-services-quiz-choice="online"]').click();
+    await expect(quiz).toHaveAttribute("data-services-quiz-step", "4");
+    const submitQuiz = quiz.locator("[data-services-quiz-submit]");
+    await expect(submitQuiz).toBeDisabled();
+    await quiz.locator('[data-services-quiz-question="budget"] [data-services-quiz-choice="flexible"]').click();
+    await expect(submitQuiz).toBeEnabled();
+    // A completed step remains revisitable; changing an answer does not send data.
+    await quiz.locator('[data-quiz-dot="3"]').click();
+    await expect(quiz).toHaveAttribute("data-services-quiz-step", "3");
+    await quiz.locator('[data-services-quiz-choice="online"]').click();
+    await expect(quiz).toHaveAttribute("data-services-quiz-step", "4");
+    await submitQuiz.click();
+    await visible(page.locator("[data-services-quiz-results]"));
+    await expect(page.locator('[data-services-quiz-results] [data-assist-best-card="business"]')).toHaveCount(1);
+    await assertViewport(page, locale + "/services/quiz/" + width);
+    // The original locally-scoped Ali messenger remains reachable by an
+    // explicit guest action, preserving all existing messenger regression tests.
+    await page.goto(origin + "/" + locale + "/services?assist=chat", { waitUntil: "domcontentloaded" });
+
     const assist = page.locator("[data-assist-mobile]");
     const legacy = page.locator("[data-services-showcase-hero]");
     await visible(assist.locator("h1#assist-title"));
@@ -144,15 +240,37 @@ try {
       "reiki", "browse", "reading", "consultation", "services", "video", "courses",
       "coach", "magical", "homeopathy", "about", "testimonials", "mytube", "directory",
     ];
+    const servicePanelIds = new Set(panelIds.slice(0, 10));
     await expect(catalog.locator("[data-services-unified-panel]")).toHaveCount(panelIds.length);
     for (const id of panelIds) {
       const panel = catalog.locator('[data-services-unified-panel="' + id + '"]');
-      const toggle = panel.locator(':scope > button');
-      await visible(toggle);
-      await expect(toggle).toHaveAttribute("aria-expanded", "false");
-      const bounds = await toggle.boundingBox();
-      assert.ok(bounds && bounds.height >= 44 && bounds.x >= -1 && bounds.x + bounds.width <= width + 1,
-        "Compact service tile must fit the phone with a 44px target: " + locale + "/" + width + "/" + id);
+      const isService = servicePanelIds.has(id);
+      const variants = panel.locator(':scope > [data-services-three-visible] > [data-service-variant]');
+      await expect(variants).toHaveCount(isService ? 3 : 0);
+      if (isService) {
+        // Three source-backed choices and their prices are visible without opening old tabs.
+        await expect(panel).toHaveAttribute("data-services-has-three", "true");
+        for (const offer of await variants.all()) {
+          await visible(offer);
+          await visible(offer.locator("[data-service-price]"));
+          await visible(offer.locator("img"));
+        }
+      }
+      const hosts = isService
+        ? variants.locator(':scope > [data-service-card-actions]')
+        : panel.locator(':scope > [data-service-card-actions]');
+      await expect(hosts).toHaveCount(isService ? 3 : 1);
+      for (const host of await hosts.all()) {
+        const controls = host.locator(':scope > div[role="group"] > button');
+        await expect(controls).toHaveCount(2);
+        for (const control of await controls.all()) {
+          await visible(control);
+          await expect(control).toHaveAttribute("aria-expanded", "false");
+          const bounds = await control.boundingBox();
+          assert.ok(bounds && bounds.height >= 44 && bounds.x >= -1 && bounds.x + bounds.width <= width + 1,
+            "Every variant action must fit the phone: " + locale + "/" + width + "/" + id);
+        }
+      }
     }
     for (const selector of [
       "[data-assist-spiritual-entry]", "[data-assist-video-generation]",
@@ -163,39 +281,44 @@ try {
       await expect(page.locator(selector)).toBeHidden();
     }
     if (width === 390) {
-      // Open the REAL previously published flows, not fake placeholder cards.
-      // Every service must become visible after its own explicit tap, then close.
-      const detailChecks = [
-        ["reiki", "[data-assist-reiki-session]"],
-        ["browse", "[data-services-showcase-hero]"],
-        ["reading", "[data-assist-spiritual-entry]"],
-        ["consultation", "#consultation"],
-        ["services", "[data-services-studio-paid]"],
-        ["video", "[data-assist-video-generation]"],
-        ["courses", "[data-assist-course-shelf]"],
-        ["coach", "[data-assist-coach-therapist]"],
-        ["magical", "[data-assist-magical-help]"],
-        ["homeopathy", 'a[href="/' + locale + '/services/psychohomeopathy"]'],
-        ["about", "[data-services-meet]"],
-        ["testimonials", '[data-personal-testimonials="services"]'],
-        ["mytube", "#method-videos"],
-        ["directory", "[data-services-directory-invitation]"],
-      ];
-      for (const [id, selector] of detailChecks) {
+      // Exercise first option end-to-end; validate all 3 variants above.
+      for (const id of panelIds) {
         const panel = catalog.locator('[data-services-unified-panel="' + id + '"]');
-        const trigger = panel.locator(":scope > button");
-        await trigger.click();
-        await expect(trigger).toHaveAttribute("aria-expanded", "true");
-        await visible(panel.locator(selector));
-        await expect(catalog.locator('[data-services-unified-panel][data-expanded="true"]')).toHaveCount(1);
+        const cardActions = servicePanelIds.has(id)
+          ? panel.locator(':scope > [data-services-three-visible] > [data-service-variant]').first()
+            .locator(':scope > [data-service-card-actions]')
+          : panel.locator(':scope > [data-service-card-actions]');
+        const controls = cardActions.locator(':scope > div[role="group"] > button');
+        const details = controls.first();
+        const order = controls.nth(1);
+        await details.click();
+        await expect(details).toHaveAttribute("aria-expanded", "true");
+        const openedBounds = await panel.boundingBox();
+        const catalogBounds = await catalog.boundingBox();
+        assert.ok(openedBounds && catalogBounds && openedBounds.width >= catalogBounds.width - 6,
+          "Expanded cards must occupy the full mobile catalogue width: " + id);
+        await visible(cardActions.locator(":scope > [data-service-card-details] > p"));
+        await expect(cardActions.locator(":scope > [data-service-card-order]")).toBeHidden();
+        const landing = cardActions.locator(":scope > [data-service-card-details] a[href]").first();
+        assert.ok((await landing.getAttribute("href"))?.startsWith("/" + locale + "/"),
+          "A full-description link must lead to a published localized route: " + id);
+        await order.click();
+        await expect(details).toHaveAttribute("aria-expanded", "false");
+        await expect(order).toHaveAttribute("aria-expanded", "true");
+        await expect(cardActions.locator(":scope > [data-service-card-details]")).toBeHidden();
+        await visible(cardActions.locator(':scope > [data-service-card-order] [data-messenger-only-channel="whatsapp"]'));
+        await visible(cardActions.locator(':scope > [data-service-card-order] [data-messenger-only-channel="telegram"]'));
+        await order.click();
+        await expect(order).toHaveAttribute("aria-expanded", "false");
         await assertViewport(page, locale + "/services/unified/" + id);
-        await trigger.click();
-        await expect(trigger).toHaveAttribute("aria-expanded", "false");
-        await expect(panel.locator(selector)).toBeHidden();
       }
       await expect(catalog.locator('[data-services-unified-panel][data-expanded="true"]')).toHaveCount(0);
+      // The real prior flows remain mounted for stable site deep links.
+      for (const selector of [
+        "[data-assist-reiki-session]", "[data-assist-spiritual-entry]", "[data-assist-video-generation]",
+        "[data-assist-course-shelf]", "[data-assist-coach-therapist]", "[data-assist-magical-help]",
+      ]) await expect(page.locator(selector)).toHaveCount(1);
     }
-
 
     // Coach/Mira and Reiki are separate mobile categories, never extra chat steps.
     const coach=page.locator("[data-assist-coach-therapist]");
@@ -352,7 +475,7 @@ try {
       if(code){
         const url=telegramServiceRequestUrl(code,locale);
         assert.ok(url,"No unapproved Telegram request: "+key);
-        await expect(action).toHaveAttribute("href",url);
+        await expect(action).toHaveAttribute("href",resolveTelegramServiceHandoffUrl(url,locale));
         await expect(action).toHaveAttribute("target","_blank");
         assert.equal(new URL(url).searchParams.get("text")?.split(String.fromCharCode(10)).at(-1),
           "[HH-REQ:"+code+":"+locale+"]","Deep link contains no private problem text");
@@ -389,7 +512,7 @@ try {
     assert.deepEqual(actualWork,expectedWork,"Work cards rerank without appending the prior intent");
     if (expectedWork.includes("business")) {
       await expect(shelf.locator('[data-assist-best-action="business"]'))
-        .toHaveAttribute("href", /^https:\/\/t\.me\/holistichouse\?text=/);
+        .toHaveAttribute("href", /^\/api\/public\/telegram-service-entry\?service=business&locale=/);
     }
     await reset.click();
     await expect(topics).toHaveCount(6);
@@ -414,6 +537,31 @@ try {
       nodes.map(node=>node.getAttribute("data-assist-best-card")));
     assert.deepEqual(actualTyped,typedRanking,
       "Typed question applies live deterministic matching without storing the text");
+
+    // Source-backed match on actual RU/EN/ES free-text input, not a fabricated diagnosis.
+    await reset.click();
+    await question.fill(locale==="ru" ? "Стеснение в груди при волнении, дрожь при общении, запор на фоне стресса"
+      :locale==="es" ? "Temblor en compañía, opresión en el pecho y estreñimiento por tensión"
+      :"Chest tightness when anxious, trembling in company and stress related constipation");
+    await submit.click();
+    await visible(homeopathy);
+    await expect(assist.locator("[data-assist-homeopathy-mind]")).toHaveCount(1);
+    await expect(homeopathy.locator('a[data-assist-remedy="ambra-grisea"]')).toHaveCount(1);
+    const sourceProfileKeys=await homeopathy.locator("a[data-assist-remedy]").evaluateAll(nodes=>
+      nodes.map(node=>node.getAttribute("data-assist-remedy")));
+    assert.ok(sourceProfileKeys.length>=1 && sourceProfileKeys.length<=3 &&
+      !sourceProfileKeys.includes("gelsemium"), "Ranked homeopathy archive evidence must replace the static showcase");
+
+    // A medical red flag must suppress paid recommendations and all tool links.
+    await reset.click();
+    await question.fill(locale==="ru" ? "Боль в груди и трудно дышать"
+      :locale==="es" ? "No puedo respirar" : "Chest pain and trouble breathing");
+    await submit.click();
+    await visible(log.locator('[role="alert"]'));
+    await expect(assist.locator("[data-assist-homeopathy]")).toHaveCount(0);
+    await expect(assist.locator("[data-assist-mytube]")).toHaveCount(0);
+    await expect(shelf).toHaveCount(0);
+    await expect(assist.locator("a[data-assist-tool]")).toHaveCount(0);
 
     // The owner's real life-direction example must produce purchasable/requestable offers.
     await reset.click();
@@ -493,6 +641,16 @@ try {
       if (width <= 760) {
         await verifyMobileAssist(page, locale, width);
       } else {
+        await expect.poll(
+          () => page.evaluate(() => history.pushState.toString().includes("__NA")),
+          { timeout: 30000, message: "Desktop Services catalogue must hydrate before interactions" },
+        ).toBe(true);
+        // Existing full modules are opt-in on desktop; test them after opening.
+        for (const id of ["browse", "consultation", "services", "about", "testimonials", "mytube", "directory"]) {
+          const category = page.locator('[data-services-unified-panel="' + id + '"]');
+          await category.locator(':scope > button').first().click();
+          await expect(category).toHaveAttribute("data-expanded", "true");
+        }
         await visible(page.locator("#services-conversion-title"));
         await expect(page.locator("[data-services-showcase-hero]")).toBeVisible();
         await expect(page.locator("[data-assist-mobile]")).toBeHidden();
@@ -519,25 +677,41 @@ try {
         assert.equal(await paid.locator('[data-services-studio-card]').count(), 6);
         await visible(monthlySupport);
         await expect(monthlySupport).toContainText(locale === "ru" ? "€200 / месяц" : locale === "es" ? "200 € / mes" : "€200 / month");
-        assert.equal(await monthlySupport.locator('[data-services-studio-action="monthly-support"]').getAttribute("href"),
+        assert.equal(await monthlySupport.locator('[data-service-card-details] a[href="/' + locale + '/services/personal-support"]').getAttribute("href"),
           "/" + locale + "/services/personal-support", "Approved monthly support must reach its own terms page");
         assert.equal(await page.locator("#find-your-service").count(), 0,
           "Detailed practitioner search belongs on the separate directory");
-        const testAction = free.locator('[data-services-studio-action="tests"]');
+        const testAction = free.locator('[data-services-studio-card="tests"] [data-service-card-details] a[href="/' + locale + '/tests"]');
         assert.equal(await testAction.getAttribute("href"), "/" + locale + "/tests");
         await visible(free.locator('a[href="/' + locale + '/services/free-situation-review"]').first());
         await visible(free.locator('a[href="/' + locale + '/services/dao-health-profile"]').first());
         await visible(free.locator('a[href="/' + locale + '/courses/antistress"]'));
         assert.equal(await page.locator("h1#services-conversion-title").count(), 1);
+        // The approved public Services page has 10 compact groups and 30
+        // immediately visible options. The former conversion hero now lives
+        // inside the Browse panel AFTER the first six service groups.
+        const visibleVariants=page.locator('[data-services-unified-catalog] [data-services-three-visible]');
+        await expect(visibleVariants).toHaveCount(10);
+        await expect(visibleVariants.locator('[data-service-variant]')).toHaveCount(30);
+        const actualGroups=await visibleVariants.evaluateAll(nodes=>
+          nodes.map(node=>({id:node.getAttribute("data-services-three-visible"),
+            declared:node.getAttribute("data-services-offer-count"),
+            visible:node.getClientRects().length>0,
+            options:node.querySelectorAll("[data-service-variant]").length})));
+        assert.deepEqual(actualGroups.map(x=>x.id),
+          ["consultation","homeopathy","services","reiki","courses","video","browse","reading","coach","magical"],
+          "The first six category targets must remain visible in their approved order");
+        assert.ok(actualGroups.every(x=>x.declared==="3"&&x.visible&&x.options===3),
+          "Each of the ten service panels displays all three choices without opening an accordion");
         assert.equal(await page.evaluate(() => {
-          const selectors = ["#services-conversion-title", "#consultation", "#free-insights", "#solutions",
-            "[data-services-meet]", '[data-personal-testimonials="services"]',
-            "#method-videos", "[data-services-directory-invitation]"];
-          const sections = selectors.map(selector => [...document.querySelectorAll(selector)]);
-          if (sections.some(matches => matches.length !== 1)) return false;
-          return sections.every((matches, index) => index === 0 ||
-            Boolean(sections[index - 1][0].compareDocumentPosition(matches[0]) & Node.DOCUMENT_POSITION_FOLLOWING));
-        }), true, "Owner studio order: hero, booking, 3 free, personal offers, intro, reviews, methods, directory");
+          const selectors = ["#consultation","#free-insights","#solutions","#services-conversion-title",
+            "[data-services-meet]",'[data-personal-testimonials="services"]',
+            "#method-videos","[data-services-directory-invitation]"];
+          const sections=selectors.map(selector=>[...document.querySelectorAll(selector)]);
+          if(sections.some(matches=>matches.length!==1))return false;
+          return sections.every((matches,index)=>index===0||
+            Boolean(sections[index-1][0].compareDocumentPosition(matches[0])&Node.DOCUMENT_POSITION_FOLLOWING));
+        }),true,"Approved Services sequence: booking, 3 free, personal offers, Browse hero, intro, reviews, methods, directory");
         await expect(page.locator("#method-videos")).toHaveAttribute("open", "",
           { timeout: 15000 });
         // Method posters are visible, while third-party players stay opt-in.
@@ -549,7 +723,7 @@ try {
         await expect(paid.locator("h2#services-personal-title")).toBeHidden();
         await expect(paid.locator("[data-services-studio-card]:visible")).toHaveCount(0);
         await expect(page.locator('[data-services-unified-panel="video"] [data-assist-video-generation]')).toBeHidden();
-        await visible(page.locator('[data-services-unified-panel="video"] > button'));
+        await visible(page.locator('[data-services-unified-panel="video"] [data-service-card-actions] button').first());
         assert.equal(await page.locator("#find-your-service").count(), 0);
       }
       await assertNoDevIssueOverlay(page, locale + "/services/" + width);
@@ -616,7 +790,7 @@ try {
         // booking choices instead of landing on a hidden collapsed mobile panel.
         await page.goto(origin + "/" + locale + "/services#consultation", { waitUntil: "domcontentloaded" });
         const linkedPanel = page.locator('[data-services-unified-panel="consultation"]');
-        await expect(linkedPanel.locator(":scope > button")).toHaveAttribute("aria-expanded", "true");
+        await expect(linkedPanel).toHaveAttribute("data-expanded", "true");
         await visible(linkedPanel.locator("#consultation"));
         assert.ok(await linkedPanel.locator("[data-service-product]").count() >= 2,
           "Deep link preserves express/paid consultation offers: " + locale);
@@ -757,7 +931,7 @@ try {
     const esMonthly = page.locator('[data-services-studio-paid] [data-services-studio-card="monthly-support"]');
     await expect(esMonthly).toBeHidden();
     await expect(esMonthly).toContainText("200 € / mes");
-    assert.equal(await esMonthly.locator('[data-services-studio-action="monthly-support"]').getAttribute("href"),
+    assert.equal(await esMonthly.locator('[data-service-card-details] a[href="/es/services/personal-support"]').getAttribute("href"),
       "/es/services/personal-support", "Spanish support offer must lead to the terms page");
     assert.equal(await page.locator("#find-your-service").count(), 0);
     // Confirm the real Spanish mobile Assist, then retain the full original
@@ -766,6 +940,12 @@ try {
     await page.setViewportSize({ width: 430, height: 844 });
     await verifyMobileAssist(page, "es", 430);
     await page.setViewportSize({ width: 1188, height: 844 });
+    // Existing full modules are opt-in on desktop; test them after opening.
+    for (const id of ["browse", "consultation", "services", "about", "testimonials", "mytube", "directory"]) {
+      const category = page.locator('[data-services-unified-panel="' + id + '"]');
+      await category.locator(':scope > button').first().click();
+      await expect(category).toHaveAttribute("data-expanded", "true");
+    }
     await visible(page.locator("#services-conversion-title"));
     await expect(page.locator("[data-assist-mobile]")).toBeHidden();
     const esShowcase = page.locator("[data-services-showcase-hero]");

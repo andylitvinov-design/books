@@ -805,6 +805,43 @@ try{
  assert.equal(await page.locator("[data-hh-unified-dock]:visible").count(),1);
  await page.locator("[data-unified-dock-item=practice]").click();
  await page.waitForURL(/\/ru\/holistic-support\/mobile\/?$/,{timeout:30000});
+ // Practice offers the approved five-question learning quiz above the three Academy schools.
+ // Verify the first question requires a real choice before advancing.
+ const studyEntry=page.locator("[data-holistic-study-academy]");
+ await studyEntry.waitFor({state:"visible",timeout:30000});
+ assert.equal(await studyEntry.locator("[data-study-school-nav]").count(),3,
+   "Practice opens three approved Academy learning pathways");
+ assert.equal(await studyEntry.locator("[data-study-academy-group]").count(),3,
+   "Practice lists the three grouped Academy programs");
+ assert.equal(await studyEntry.locator("[data-study-academy-course]").count(),8,
+   "Practice links to eight source-backed courses");
+ const academyQuiz=studyEntry.locator('[data-study-mobile-quiz] [data-study-personalized-path]');
+ await academyQuiz.waitFor({state:"visible",timeout:30000});
+ assert.equal(await academyQuiz.getAttribute("data-study-step"),"1",
+   "Approved Academy quiz starts at the first question");
+ assert.equal(await academyQuiz.locator('[aria-current="step"]').count(),1,
+   "The quiz exposes exactly one active step");
+ const choices=academyQuiz.locator('[role="group"]').first().locator('button[aria-pressed]');
+ assert.equal(await choices.count(),4,
+   "The active first question offers four genuine choices, excluding the four recommendation-tab buttons");
+ const nextStep=academyQuiz.locator('[data-study-next]');
+ // Academy intentionally presets the published stress goal. Verify that
+ // the selected choice enables Next and a real different answer replaces it.
+ await expect(choices.first()).toHaveAttribute("aria-pressed","true");
+ await expect(nextStep).toBeEnabled();
+ await choices.nth(1).click();
+ await expect(choices.first()).toHaveAttribute("aria-pressed","false");
+ await expect(choices.nth(1)).toHaveAttribute("aria-pressed","true");
+ await expect(nextStep).toBeEnabled();
+ await nextStep.click();
+ assert.equal(await academyQuiz.getAttribute("data-study-step"),"2",
+   "Only a genuine selected first answer advances the Academy quiz");
+ await studyEntry.locator('[data-study-school-nav="free"]').click();
+ assert.equal(new URL(page.url()).hash,"#study-free",
+   "Public Academy navigation reaches the free programs without a fake request");
+ // The older consultation tabs are still accessible on their explicit view.
+ await page.goto(origin+"/ru/holistic-support/mobile?view=meditation",
+   {waitUntil:"domcontentloaded",timeout:75000});
  await page.locator("[data-support-practice-tabs]").waitFor({state:"visible",timeout:30000});
  assert.equal(await page.locator("[data-support-practice-tabs] > *").count(),3);
  await page.locator('[data-support-practice-tabs] button').nth(1).click();
@@ -841,7 +878,10 @@ try{
  assert.equal(await page.locator(".mobile-bottom-navigation:visible").count(),0);
  await homeDock.locator('[data-unified-dock-item="practice"]').click();
  await page.waitForURL(/\/ru\/holistic-support\/mobile\/?$/,{timeout:45000});
- await page.locator("[data-support-practice-tabs]").waitFor({state:"visible",timeout:30000});
+ await page.locator("[data-holistic-study-academy]").waitFor({state:"visible",timeout:30000});
+ assert.equal(await page.locator("[data-holistic-study-academy] [data-study-academy-course]").count(),8);
+ assert.equal(await page.locator("[data-support-practice-tabs]:visible").count(),0,
+   "the approved Study page does not show the retired top menu");
  assert.equal(await page.locator("[data-hh-unified-dock]:visible").count(),1);
  assert.equal(await page.locator('[data-hh-unified-dock] [data-unified-dock-item]').count(),7);
  results.push({journey:"Holistic House Home → Services → Practice with one seven-tab dock",passed:true});
@@ -874,10 +914,22 @@ try{
    "My Space retains six canonical sections for guest and signed-in users");
  assert.equal(await page.locator('[data-hh-unified-dock] [data-unified-dock-item="profile"][aria-current="page"]').count(),1);
  assert.equal(await page.locator('.mobile-bottom-navigation:visible').count(),0);
+ // In Profile, every account action is gated on an explicit guest click.
+ // The sitewide public test catalogue remains accessible outside My Space.
  await publicTests.click();
- await page.waitForURL(/\/ru\/client\/tests\/?$/, {timeout:45000});
- await page.locator('main[lang="ru"]').waitFor({state:"visible",timeout:45000});
- results.push({journey:"Public Profile → My Space Today guest overview → explicit public Tests without forced login",passed:true});
+ const login=page.locator('dialog[data-profile-auth-dialog]');
+ await login.waitFor({state:"visible",timeout:45000});
+ assert.equal(await login.getByRole('button',{name:'Продолжить через Google'}).isVisible(),true,
+   'Profile guest action offers the existing Google OAuth entry');
+ assert.match(page.url(),/\/ru\/app\/portrait\/?$/,
+   'clicking a Profile action keeps the guest on Life until authenticated');
+ await login.getByRole('button',{name:'Продолжить просмотр'}).click();
+ await login.waitFor({state:'hidden',timeout:15000});
+ // The mode switch itself never prompts or creates a private account.
+ await page.locator('[data-profile-mode="work"]').click();
+ await page.waitForURL(/\/ru\/practice\/?$/,{timeout:45000});
+ await page.locator('[data-practice-showcase]').waitFor({state:'visible',timeout:45000});
+ results.push({journey:"Public Profile → guest action opens OAuth choice → dismiss → free Life/Work mode switch",passed:true});
 
 }finally{await browser.close();}
 writeFileSync(folder+"/results.json",JSON.stringify(results,null,2));

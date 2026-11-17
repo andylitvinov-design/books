@@ -22,7 +22,7 @@
 .textLabel{display:block;font-size:12px;font-weight:800;color:#38674e;margin-top:11px}
 .textLabel textarea{box-sizing:border-box;display:block;width:100%;max-width:100%;min-height:120px;padding:11px;margin-top:6px;font:500 14px/1.55 system-ui,-apple-system,sans-serif;resize:vertical;border:1px solid #cadccf;border-radius:12px;background:white;color:#244c37}
 .count{display:block;text-align:right;color:#78917e;font-size:11px;padding:5px 0}
-.consent{display:flex;align-items:flex-start;gap:9px;font-size:12px;line-height:1.55;color:#526d5b;margin:10px 0}
+.consent{display:flex;align-items:center;gap:9px;font-size:12px;line-height:1.55;color:#526d5b;margin:10px 0;min-height:44px;padding:9px 0;scroll-margin-block:112px 150px}
 .consent input{width:19px;height:19px;flex-shrink:0;accent-color:#147657;margin-top:1px}
 .background{margin:14px 0}
 .background .language button{flex:1 1 70px}

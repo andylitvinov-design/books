@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { HolisticHouseLoadingScene } from "@/components/holistic-house-loading-scene";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { HolisticHouseHome } from "@/components/holistic-house-home";
@@ -15,6 +17,8 @@ export default async function HomePage({ searchParams }: Props) {
   // Preserve existing shared links, but keep locale content on stable URLs.
   if (requested === "ru" || requested === "es") redirect(`/${requested}`);
   return (
-    <HolisticHouseHome locale="en" />
+    <Suspense fallback={<HolisticHouseLoadingScene />}>
+      <HolisticHouseHome locale="en" />
+    </Suspense>
   );
 }

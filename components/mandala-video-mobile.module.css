@@ -4151,10 +4151,6 @@
 .montageEffectsGrid button[aria-pressed="true"]{border:2px solid #067a67;background:#ebf8ee}
 .montageEffectsGrid img{width:100%;aspect-ratio:1.4;object-fit:cover;border-radius:9px}
 .montageEffectsGrid button>svg{position:absolute;top:7px;right:7px;color:#fff;background:#067a67;border-radius:50%}
-.montageEffectBrightness{display:flex;flex-wrap:wrap;gap:8px;align-items:center;border:0;margin:0;padding:0}
-.montageEffectBrightness legend{font-weight:750;color:#143d3a}
-.montageEffectBrightness button{min-height:44px;padding:8px 12px;border:1px solid #d6e1d5;border-radius:12px;background:white;color:#143d3a}
-.montageEffectBrightness button[aria-pressed="true"]{background:#e6f6f1;border-color:#067a67}
 .studio[data-active-workspace="editor"] .quickBuilder>[data-video-order-bar]{
   order:5!important;position:static!important;bottom:auto!important;
   display:grid;grid-template-columns:1fr;gap:7px;
@@ -4667,10 +4663,6 @@
  }
  .studio[data-active-workspace="editor"][data-montage-panel="effects"] .montageEffectsGrid img{
    display:block;height:clamp(42px,6.2dvh,55px);width:100%;aspect-ratio:auto;object-fit:cover;border-radius:9px
- }
- .studio[data-active-workspace="editor"][data-montage-panel="effects"] .montageEffectBrightness{gap:6px}
- .studio[data-active-workspace="editor"][data-montage-panel="effects"] .montageEffectBrightness button{
-   min-height:40px;padding:6px 10px;font-size:13px
  }
  .studio[data-active-workspace="editor"] .quickBuilder>.previewStage,
  .studio[data-active-workspace="video"] .quickBuilder>.previewStage{padding:0!important}
@@ -5273,6 +5265,10 @@
 .studio .therapyHeroPlayback{position:absolute;inset:0;z-index:3;opacity:0;pointer-events:none;background:#061b19;transition:opacity .16s ease}
 .studio .therapyHeroPlayback[data-playing="true"]{opacity:1;pointer-events:auto}
 .studio .therapyHeroVideo{display:block;width:100%;height:100%;object-fit:contain;background:#061b19}
+.studio .therapyHeroFallbackFrame{position:absolute;inset:0;z-index:2;display:block;width:100%;height:100%;border:0;background:#061b19}
+.studio .therapyHeroRecovery{position:absolute;z-index:3;top:5px;left:5px;display:flex;gap:4px;max-width:calc(100% - 100px)}
+.studio .therapyHeroRecovery button,.studio .therapyHeroRecovery a{display:inline-flex;align-items:center;justify-content:center;min-height:35px;max-width:110px;padding:4px 6px;border:1px solid #fff9;border-radius:8px;background:#123e35e8;color:#fff;font:750 clamp(9px,2.4vw,11px)/1.15 Arial,Helvetica,sans-serif;text-align:center;text-decoration:none;cursor:pointer}
+.studio .therapyHeroRecovery button:focus-visible,.studio .therapyHeroRecovery a:focus-visible{outline:3px solid #ffe18b;outline-offset:-3px}
 .studio .therapyHeroClose{position:absolute;z-index:4;top:5px;right:5px;display:flex;align-items:center;justify-content:center;min-height:44px;max-width:70%;padding:5px 8px;border:1px solid #ffffffb5;border-radius:9px;background:#124434f0;color:#fff;font:750 clamp(9px,2.4vw,11px)/1.15 Arial,Helvetica,sans-serif;cursor:pointer}
 .studio .therapyHeroError{position:absolute;z-index:5;inset:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:8px;border-radius:10px;background:#061b19e8;color:#fff;text-align:center;font:700 12px/1.25 Arial,Helvetica,sans-serif}
 .studio .therapyHeroError button,.studio .therapyHeroError a{padding:7px 10px;border:1px solid #fff;border-radius:8px;background:#fff;color:#124434;text-decoration:none;font:inherit;cursor:pointer}
@@ -5314,13 +5310,25 @@
 /* Montage 7 Nov — format is chosen with Style; Text and visual Effects are
    real tabs over the existing single Canvas/MP4 editor (no duplicate player). */
 .montagePane[hidden]{display:none!important}
-.montageAspectSwitch{display:grid;gap:8px;min-width:0;margin:6px 0 2px;padding:0;border:0}
-.montageAspectSwitch legend{padding:0;margin-bottom:6px;color:#143d3a;font:800 17px/1.2 Arial,Helvetica,sans-serif}
+/* Real proportions, unmistakable landscape screen versus portrait phone; zero media requests. */
+.montageAspectSwitch{display:grid;gap:6px;min-width:0;margin:5px 0 2px;padding:0;border:0}
+.montageAspectSwitch legend{padding:0;margin-bottom:5px;color:#143d3a;font:800 17px/1.2 Arial,Helvetica,sans-serif}
 .montageAspectSwitch>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-.montageAspectSwitch button{position:relative;display:flex;align-items:center;justify-content:center;gap:8px;min-width:0;min-height:47px;padding:9px 7px;border:1px solid #d6e1d5;border-radius:13px;background:#fff;color:#174a3c;font:800 16px/1.2 Arial,Helvetica,sans-serif}
-.montageAspectSwitch button[aria-pressed="true"]{border:2px solid #067a67;background:#e6f6f1;color:#056c58}
+.montageAspectSwitch button{position:relative;display:grid;align-content:start;justify-items:center;gap:3px;min-width:0;min-height:153px;padding:9px 6px 10px;border:1px solid #e9dfd1;border-radius:16px;background:#fffcf7;color:#143d3a;text-align:center;font:700 14px/1.2 Arial,Helvetica,sans-serif;cursor:pointer}
+.montageAspectSwitch button[aria-pressed="true"]{border:2px solid #067a67;background:#e6f6f1;color:#056c58;padding:8px 5px 9px}
 .montageAspectSwitch button:focus-visible,.montageVisualGrid button:focus-visible,.montageEffectIntensity input:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
-.montageAspectSwitch button:disabled{opacity:.6}
+.montageAspectSwitch button:disabled{opacity:.6;cursor:not-allowed}
+.montageAspectPreview{display:grid;place-items:center;flex:none;width:100%;height:75px}
+.montageAspectFrame{position:relative;display:block;overflow:hidden;height:48px;aspect-ratio:16/9;border:2px solid #496b63;border-radius:6px;background:linear-gradient(180deg,#f4e6b5 0%,#d5e9df 56%,#90c9b3 100%);box-shadow:0 2px 6px #173e3429}
+.montageAspectFrame[data-orientation="portrait"]{height:70px;aspect-ratio:9/16}
+.montageAspectSun{position:absolute;top:16%;right:15%;width:19%;aspect-ratio:1;border-radius:50%;background:#fff5cd;box-shadow:0 0 8px #fff9e9}
+.montageAspectHills{position:absolute;inset:47% -4% -3%;background:linear-gradient(140deg,#479886,#146b58);clip-path:polygon(0 75%,27% 28%,48% 66%,73% 9%,100% 66%,100% 100%,0 100%)}
+.montageAspectFrame>svg{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;filter:drop-shadow(0 1px 2px #184b3b)}
+.montageAspectCaption{display:grid;justify-items:center;gap:2px;width:100%;min-width:0}
+.montageAspectCaption strong{font:800 clamp(12px,3.7vw,16px)/1.1 Arial,Helvetica,sans-serif;overflow-wrap:anywhere}
+.montageAspectCaption b{font:850 15px/1.2 Arial,Helvetica,sans-serif;color:#067a67}
+.montageAspectCaption small{font:600 clamp(9px,2.7vw,11px)/1.22 Arial,Helvetica,sans-serif;color:#5d6a71;overflow-wrap:anywhere}
+.montageAspectCheck{position:absolute;top:6px;right:6px;display:grid;place-items:center;width:21px;height:21px;border-radius:50%;background:#067a67;color:#fff}
 .montageMovedNote{margin:0;color:#536b62;font:500 13px/1.42 Arial,Helvetica,sans-serif}
 .montageVisualGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;min-width:0}
 .montageVisualGrid button{position:relative;display:flex;align-items:center;justify-content:flex-start;gap:7px;min-width:0;min-height:64px;padding:9px 8px;border:1px solid #dfdfd1;border-radius:14px;background:#fffdfa;color:#143d3a;text-align:left;font:750 13px/1.18 Arial,Helvetica,sans-serif}
@@ -5451,12 +5459,15 @@
 .storyboardScene label{display:grid;gap:5px;font-size:11px;font-weight:750}
 .storyboardScene select,.storyboardPhotoControls input{width:100%;min-width:0;min-height:42px;padding:8px;border:1px solid #c9d9cf;border-radius:9px;background:#fff;color:#25493c}
 .storyboardSceneActions,.storyboardPhotoControls{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
-.storyboardSceneActions button,.storyboardPhotoControls button{min-height:40px;padding:7px 10px;border:1px solid #c9d9cf;border-radius:9px;background:#f4f7f2;color:#315545;font-size:12px;font-weight:750}
+.storyboardSceneActions button,.storyboardPhotoControls button{min-height:44px;padding:7px 10px;border:1px solid #c9d9cf;border-radius:9px;background:#f4f7f2;color:#315545;font-size:12px;font-weight:750}
+.storyboardSceneActions [data-video-stories-remix]{display:inline-flex;align-items:center;gap:6px;background:#e8f6ef;border-color:#addac5;color:#096b52}
+.storyboardSceneActions [data-video-stories-remix]:disabled{opacity:.52;cursor:not-allowed}
 .storyboardPhotoControls{display:grid;gap:5px;padding:8px;border:1px dashed #bdd2c4;border-radius:10px;background:#f7faf5}
 .storyboardPhotoControls span,.storyboardPhotoControls small{font-size:11px;color:#536d5e}
 .storyboardEmpty{display:grid;justify-items:start;gap:8px;padding:16px;border:1px dashed #c8d9cd;border-radius:14px;background:#f7faf5;color:#466354}
 .storyboardFooterActions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-.storyboardFooterActions button{display:inline-flex;align-items:center;gap:6px;min-height:42px;padding:8px 11px;border:1px solid #c8d9ce;border-radius:10px;background:#f7faf5;color:#315645;font-weight:750}
+.storyboardFooterActions button{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:8px 11px;border:1px solid #c8d9ce;border-radius:10px;background:#f7faf5;color:#315645;font-weight:750}
+.storyboardFooterActions [data-video-stories-to-extra]{background:var(--hh-studio-primary);border-color:var(--hh-studio-primary);color:white}
 .montagePreferences [data-video-stories-paid-gate]{padding:9px 11px;border:1px solid #e3d3ac;border-radius:10px;background:#fff9e9;color:#705b31;font-size:12px;line-height:1.45}
 @media(min-width:760px){.storyboardSceneList{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
@@ -5542,6 +5553,38 @@
  .studio[data-active-workspace="editor"][data-montage-panel="audio"] [data-video-stage-actions="montage"]>button{font-size:12px}
 }
 
+/* Compact Audio consent/rights-preserving layout. Reuses the real existing
+   Ready-navigation and Text handlers; this CSS does not start rendering. */
+@media(max-width:759px){
+ .studio[data-active-workspace="editor"][data-montage-panel="audio"] .audioCompactGrid{
+   display:grid;grid-auto-flow:column;grid-auto-columns:clamp(84px,27vw,112px);
+   grid-template-columns:none;grid-template-rows:1fr;gap:6px;min-width:0;
+   max-width:100%;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;
+   scroll-snap-type:x proximity;scrollbar-width:thin;padding:2px 2px 5px}
+ .studio[data-active-workspace="editor"][data-montage-panel="audio"] .audioCompactGrid>*{
+   scroll-snap-align:start}
+ .studio[data-active-workspace="editor"][data-montage-panel="audio"] .audioCompactTile,
+ .studio[data-active-workspace="editor"][data-montage-panel="audio"] .audioCompactUpload{
+   width:100%;height:clamp(72px,20vw,84px);border-radius:12px}
+ .studio[data-active-workspace="editor"][data-montage-panel="audio"] [data-video-order-bar] .quickOrderSummary{
+   display:none!important}
+ .studio[data-active-workspace="editor"][data-montage-panel="audio"] [data-video-stage-actions="montage"]{
+   display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;
+   gap:8px;margin:2px 0 0}
+ .studio[data-active-workspace="editor"][data-montage-panel="audio"] [data-video-stage-actions="montage"]>.quickGenerate{
+   order:0;min-height:49px;background:#fffcf7!important;color:#11664f!important;
+   border:1px solid #a4cfc1!important;box-shadow:none!important;
+   font-size:clamp(12px,3.3vw,15px)!important;line-height:1.2}
+ .studio[data-active-workspace="editor"][data-montage-panel="audio"] [data-video-stage-actions="montage"]>.stageAddButton{
+   order:1;min-height:49px;border:1px solid #087e61!important;
+   background:linear-gradient(105deg,#087e61,#0a9b74)!important;color:#fff!important;
+   font-size:clamp(12px,3.3vw,15px)!important;line-height:1.2}
+}
+@media(max-width:359px){
+ .studio[data-active-workspace="editor"][data-montage-panel="audio"] .audioCompactGrid{
+   grid-auto-columns:84px}
+}
+
 /* Compact verified credit balance: retain the approved Audio/Montage layout. */
 @media(max-width:759px){
  .studio[data-active-workspace] .quickBuilder>.quickBrandBar{gap:4px!important}
@@ -5609,12 +5652,20 @@
    display:none!important}
  .studio[data-active-workspace="editor"][data-montage-panel="concept"] [data-video-stage-actions="montage"]{
    display:none!important}
+ /* One discreet settings icon belongs in the Story heading, not below
+    Extra's three choices. Keep 44px touch access without adding a row. */
  .studio[data-active-workspace="editor"][data-montage-panel="concept"] [data-video-story-open-settings]{
-   display:none!important}
+   display:inline-flex!important;position:absolute;top:5px;right:5px;z-index:2;
+   align-items:center;justify-content:center;width:44px;height:44px;min-height:44px;
+   padding:8px!important;overflow:hidden;font-size:0!important;
+   border:1px solid #c9ddd0;border-radius:12px;background:#fffdfa;
+   color:#11694f}
+ .studio[data-active-workspace="editor"][data-montage-panel="concept"] [data-video-story-open-settings] svg{
+   width:20px;height:20px;flex:none}
  .studio[data-active-workspace="editor"][data-montage-panel="concept"] .montagePane{
-   padding:10px!important;gap:8px!important;border-radius:16px}
+   position:relative;padding:10px!important;gap:8px!important;border-radius:16px}
  .studio[data-active-workspace="editor"][data-montage-panel="concept"] .quickSectionHeading{
-   margin:0!important;padding:0!important}
+   margin:0!important;padding:0 48px 0 0!important}
  .studio[data-active-workspace="editor"][data-montage-panel="concept"] .quickSectionHeading h3{
    font-size:19px!important;line-height:1.2!important;margin:0!important}
  .studio[data-active-workspace="editor"][data-montage-panel="concept"] .storyAutoRoot{gap:8px}

@@ -1,0 +1,98 @@
+.scene {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100svh;
+  overflow: hidden;
+  padding: calc(28px + env(safe-area-inset-top, 0px)) 18px calc(28px + env(safe-area-inset-bottom, 0px));
+  background: #143d3a;
+  color: #fffcf7;
+  text-align: center;
+}
+
+.photograph,
+.tint {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.photograph {
+  background-image: url("/images/holistic-house/reiki-approved-sunrise-v3.webp");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.tint {
+  background: linear-gradient(180deg, rgba(13, 43, 45, .24), rgba(10, 41, 40, .45) 45%, rgba(9, 37, 38, .63));
+}
+
+.content {
+  width: min(100%, 650px);
+  padding: clamp(24px, 5vw, 52px) 12px;
+  text-shadow: 0 2px 24px rgba(0, 0, 0, .34);
+}
+
+.symbol {
+  display: block;
+  font-size: 34px;
+  line-height: 1;
+  margin-bottom: 25px;
+  color: #f9e4ac;
+}
+
+.wordmark {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(40px, 8.1vw, 88px);
+  font-weight: 500;
+  letter-spacing: -.055em;
+  line-height: 1.06;
+  text-wrap: balance;
+}
+
+.wordmark span { font-style: italic; font-weight: 400; }
+
+.divider {
+  display: block;
+  width: 66px;
+  height: 1px;
+  margin: 27px auto 21px;
+  background: rgba(255, 252, 247, .82);
+}
+
+.progress {
+  display: flex;
+  justify-content: center;
+  gap: 9px;
+}
+
+.progress span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #fffcf7;
+  opacity: .45;
+  animation: holistic-loading-breathe 1.5s ease-in-out infinite;
+}
+
+.progress span:nth-child(2) { animation-delay: .25s; }
+.progress span:nth-child(3) { animation-delay: .5s; }
+
+@keyframes holistic-loading-breathe {
+  0%, 100% { opacity: .35; }
+  50% { opacity: 1; }
+}
+
+@media (max-width: 360px) {
+  .wordmark { font-size: 37px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress span { animation: none; opacity: .7; }
+}

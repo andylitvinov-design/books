@@ -35,7 +35,129 @@ for (const engine of [chromium, webkit]) {
             body: JSON.stringify(qaSupportDirectoryResponse(locale, kind)) });
         });
         try {
-          const response = await page.goto(origin + "/" + locale + "/holistic-support/mobile",
+          // The owner reference combines a five-step first screen with the
+          // original three schools and eight source-backed course links below.
+          const studyResponse = await page.goto(origin + "/" + locale + "/holistic-support/mobile",
+            { waitUntil: "domcontentloaded", timeout: 60000 });
+          assert.equal(studyResponse?.status(), 200, label + " public Study entry");
+          const directory = page.locator('[data-holistic-study-academy]');
+          await directory.waitFor({state:"visible",timeout:30000});
+          assert.equal(await directory.getAttribute("lang"),locale,label+" locale");
+          const quiz = directory.locator('[data-study-personalized-path]');
+          await directory.locator('[data-study-personalized-path][data-study-hydrated="true"]')
+            .waitFor({state:"visible",timeout:30000});
+          assert.equal(await directory.locator('[data-study-mobile-quiz]:visible').count(),1,
+            label+" compact owner-approved mobile quiz is first");
+          assert.equal(await quiz.locator('nav button').count(),5,
+            label+" five numbered journey steps");
+          assert.equal(await quiz.getAttribute("data-study-step"),"1",
+            label+" one question per screen");
+          assert.equal(await quiz.getAttribute("data-study-active-goal"),"stress",
+            label+" reference screenshot's editable stress selection");
+          assert.equal(await quiz.locator('section[aria-label] [role="group"] button').count(),4,
+            label+" four direct answers");
+          assert.equal(await quiz.locator('[data-study-next]').isEnabled(),true,
+            label+" selected response is already a usable CTA");
+          assert.equal(await quiz.locator('[data-study-recommendation]').count(),3,
+            label+" three real initial recommendations");
+          assert.equal(await quiz.locator('[data-study-recommendation]').first()
+            .getAttribute('data-study-recommendation'),"study-opora",
+            label+" actual OPORA anti-stress course leads a stress match");
+          const firstCourse = quiz.locator('[data-study-recommendation="study-opora"]');
+          assert.equal(await firstCourse.getAttribute("href"),
+            "/"+locale+"/courses/antistress",label+" real local course link");
+          const categoryTabs = quiz.locator(
+            'section[aria-labelledby="study-recommended-title"] [role="group"] button');
+          assert.equal(await categoryTabs.count(),4,label+" four working catalog tabs");
+          await categoryTabs.nth(1).click();
+          assert.equal(await quiz.locator('[data-study-recommendation]').count(),2,
+            label+" two original source-backed Mystery programs");
+          await categoryTabs.first().click();
+          assert.equal(await quiz.locator('[data-study-recommendation]').count(),3,
+            label+" Courses category restores three ranked published links");
+          const rects = await page.evaluate(()=>{
+            const quiz=document.querySelector('[data-study-personalized-path]')?.getBoundingClientRect();
+            const programs=document.querySelector('[data-study-academy-group]')?.getBoundingClientRect();
+            return {quizTop:quiz?.top,programsTop:programs?.top,
+              width:document.documentElement.clientWidth,
+              scroll:document.documentElement.scrollWidth};
+          });
+          assert.ok(rects.quizTop != null && rects.programsTop != null &&
+            rects.quizTop < rects.programsTop,
+            label+" quiz must render ABOVE the real Academy");
+          assert.ok(rects.scroll <= rects.width+2,label+" no horizontal overflow");
+          assert.equal(await directory.locator('[data-study-school-nav]').count(),3,
+            label+" preserved three Academy school links");
+          assert.equal(await directory.locator('[data-study-academy-group]').count(),3,
+            label+" preserved three original Academy sections");
+          assert.equal(await directory.locator('[data-study-academy-course]').count(),8,
+            label+" preserved all eight published Academy entries");
+          for (const [school,keys] of [
+            ["reiki",["yggdrasil","tantra","kundalini"]],
+            ["mysteries",["greece","egypt"]],
+            ["free",["practitioner","magic","meditation"]],
+          ]) {
+            const section=directory.locator('[data-study-academy-group="'+school+'"]');
+            assert.equal(await section.count(),1,label+" section "+school);
+            assert.equal(await section.locator('[data-study-academy-course]').count(),keys.length,
+              label+" cards in "+school);
+            for (const key of keys) {
+              const href=await section.locator('[data-study-academy-course="'+key+'"]').getAttribute('href');
+              if(key==="magic") assert.equal(href,"/ru/academy/elements/elemental-magic",
+                label+" preserve canonical Russian archive URL");
+              else assert.ok(href?.startsWith("/"+locale+"/"),
+                label+" published canonical route "+key);
+            }
+          }
+          assert.equal(await directory.locator('nav[aria-label="Language"] a').count(),3,
+            label+" existing three language links");
+          assert.equal(await page.locator('[data-holistic-mobile-alternative]').count(),0,
+            label+" no duplicate legacy support app");
+          assert.equal(await page.locator('[data-support-practice-tabs]:visible').count(),0,
+            label+" old toolbar is hidden on mobile Study");
+          assert.equal(await page.locator('[data-hh-unified-dock]:visible').count(),1,
+            label+" exactly one shared dock");
+          if(width===390){
+            const answers=quiz.locator('section[aria-label] [role="group"] button');
+            await answers.nth(2).click();
+            await directory.locator('[data-study-personalized-path][data-study-active-goal="energy"]')
+              .waitFor({state:"visible",timeout:10000});
+            assert.equal(await quiz.getAttribute("data-study-active-goal"),"energy",
+              label+" selecting Energy changes the actual current goal");
+            assert.equal(await quiz.locator('[data-study-recommendation]').first()
+              .getAttribute('data-study-recommendation'),"academy-yggdrasil",
+              label+" Energy ranks published Reiki before OPORA");
+            await answers.first().click();
+            await directory.locator('[data-study-personalized-path][data-study-active-goal="stress"]')
+              .waitFor({state:"visible",timeout:10000});
+            assert.equal(await quiz.getAttribute("data-study-active-goal"),"stress",
+              label+" returning to stress changes recommendation back");
+            for(let step=1;step<=5;step++){
+              if(step>1) await quiz.locator('section[aria-label] [role="group"] button').first().click();
+              await quiz.locator('[data-study-next]').click();
+              if(step<5)assert.equal(await quiz.getAttribute("data-study-step"),String(step+1),
+                label+" progresses to next numbered question");
+            }
+            assert.equal(await quiz.getAttribute("data-study-finished"),"true",
+              label+" finish becomes true only after five responses");
+            await quiz.locator('button[aria-label]').last().click();
+            assert.equal(await quiz.getAttribute("data-study-step"),"1",
+              label+" reset goes to first step");
+            assert.equal(await quiz.getAttribute("data-study-active-goal"),"none",
+              label+" reset clears the earlier selected goal");
+            assert.equal(await quiz.locator('[data-study-next]').isDisabled(),true,
+              label+" reset disables continuation without an answer");
+          }
+          await directory.locator('[data-study-school-nav="free"]').click();
+          assert.equal(new URL(page.url()).hash,"#study-free",
+            label+" original real school anchor remains functional");
+          await directory.locator('[data-study-academy-group="free"]')
+            .waitFor({state:"visible",timeout:10000});
+
+          // Legacy meditation/scales, Reiki, talisman and master services still
+          // exist; test their exact view instead of demanding obsolete chrome
+          // on the owner's redesigned default Study entry.
+          const response = await page.goto(origin + "/" + locale + "/holistic-support/mobile?view=meditation",
             { waitUntil: "domcontentloaded", timeout: 60000 });
           assert.equal(response?.status(), 200, label + " existing mobile route");
           const root = page.locator("[data-holistic-mobile-alternative]");
@@ -207,9 +329,17 @@ for (const engine of [chromium, webkit]) {
             "fu-prosperity", label + " money is the lowest score");
           await viewer.locator("[data-support-talisman-next]").click();
           await viewer.locator('[data-support-talisman-thumb="fu-prosperity"]').click();
-          await viewer.locator("[data-support-talisman-request]").click();
+          const requestButton=viewer.locator("[data-support-talisman-request]");
+          // Real iPhone taps must open the existing native dialog, without a
+          // synthetic checkout request or a forced/progammatic button click.
+          if(engine.name()==="webkit")await requestButton.tap();
+          else await requestButton.click();
+          await page.waitForFunction(()=>
+            document.querySelector("[data-support-talisman-viewer]")
+              ?.getAttribute("data-talisman-request-open")==="true",
+            null,{timeout:10000});
           const modal = page.locator('dialog[aria-labelledby="support-talisman-order-title"]');
-          await modal.waitFor({ state:"visible" });
+          await modal.waitFor({ state:"visible",timeout:15000 });
           assert.equal(await modal.locator('[data-taoist-talisman-cart][data-inline="true"]').count(), 1,
             label + " existing protected quote UI, no new backend");
           assert.equal(await modal.locator('[data-cart-talisman="fu-prosperity"]').count(), 1,

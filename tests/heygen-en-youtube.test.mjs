@@ -4,7 +4,8 @@ import {readFileSync} from 'node:fs'
 import {cleanHeygenPublication,validHeygenMediaUrl,resolveHeygenCaptionedUrl,
   transferHeygenToEnglishYoutube,verifyHeygenYoutubeUpload,
   validatedYoutubeUploadLocation} from '../lib/youtube/heygen-en-upload.mjs'
-import {verifyYoutubeEnOwner} from '../lib/practitioners/owner-telegram-video-youtube.mjs'
+import {verifyYoutubeEnOwner,verifyYoutubeEnOwnerForPairing} from '../lib/practitioners/owner-telegram-video-youtube.mjs'
+import {createMemoryYoutubeHistoryStore} from '../lib/youtube/upload-history-store.js'
 
 const ID='8d998c778af3b563aa63233aa4fb4a06'
 const CHANNEL='UC'+ 'a'.repeat(22)
@@ -140,4 +141,45 @@ test('server OAuth persists EN target independently and cannot reuse RU seal',()
  assert.match(api,/requireSameOrigin\(request,config\)/)
  assert.match(api,/after\(async\(\)=>/)
  assert.doesNotMatch(api,/METRICOOL|NEXT_PUBLIC_HEYGEN_API_KEY/)
+})
+
+test('first-time English OAuth can pair only the Google-owned @aatapro channel',async()=>{
+ const good=async url=>{
+   assert.match(url,/channels\?part=id&/)
+   assert.match(url,/mine=true|forHandle=%40aatapro/)
+   return okJson({items:[{id:CHANNEL}]})
+ }
+ assert.equal(await verifyYoutubeEnOwnerForPairing(TOKEN,good),CHANNEL)
+ const store=createMemoryYoutubeHistoryStore()
+ assert.equal((await store.channels()).en,null)
+ assert.equal((await store.pairEnglish({id:CHANNEL,name:'AATA Pro',handle:'@aatapro'})).id,CHANNEL)
+ assert.equal((await store.channels()).en.id,CHANNEL)
+ await assert.rejects(store.pairEnglish({
+   id:'UC'+'b'.repeat(22),name:'Other',handle:'@other'}),/channel_conflict/)
+ const mismatch=async uri=>okJson({items:[{
+   id:uri.includes('forHandle')?CHANNEL:'UC'+'b'.repeat(22)}]})
+ await assert.rejects(verifyYoutubeEnOwnerForPairing(TOKEN,mismatch),
+   /VIDEO_YOUTUBE_WRONG_CHANNEL/)
+ const multiple=async uri=>okJson({items:uri.includes('forHandle')
+   ?[{id:CHANNEL}]:[{id:CHANNEL},{id:'UC'+'b'.repeat(22)}]})
+ await assert.rejects(verifyYoutubeEnOwnerForPairing(TOKEN,multiple),
+   /VIDEO_YOUTUBE_WRONG_CHANNEL/)
+ await assert.rejects(verifyYoutubeEnOwnerForPairing('short',good),
+   /VIDEO_YOUTUBE_RECONNECT_REQUIRED/)
+})
+test('single Google connect never skips owner PKCE or English grant isolation',()=>{
+ const callback=readFileSync(new URL('../app/api/admin/telegram-video/youtube/callback/route.js',import.meta.url),'utf8')
+ const page=readFileSync(new URL('../app/admin/youtube-upload/page.js',import.meta.url),'utf8')
+ const api=readFileSync(new URL('../app/api/admin/heygen-youtube/route.js',import.meta.url),'utf8')
+ const state=callback.indexOf('ownerVideoOauthStateMatches(sealed,state)')
+ const verified=callback.indexOf('verifyYoutubeEnOwnerForPairing(token.access_token)')
+ const paired=callback.indexOf("history.pairEnglish({id:channel,name:'AATA Pro',handle:'@aatapro'})")
+ const granted=callback.indexOf("saveOwnerVideoYoutubeConsent(config,token.refresh_token,channel,{visibility:editing,target:'en'})")
+ assert.ok(state>0&&verified>state&&paired>verified&&granted>paired)
+ assert.match(page,/href="\/api\/admin\/telegram-video\/youtube\/start\?target=en"/)
+ assert.doesNotMatch(page,/telegramVideoConfigured&&initialChannels\.en&&<Link/)
+ assert.match(api,/requireSameOrigin\(request,config\)/)
+ assert.match(api,/rightsConfirmed/)
+ assert.match(api,/privacyConfirmed/)
+ assert.match(callback,/const channel=await verifyYoutubeRuOwner\(token.access_token\)/)
 })

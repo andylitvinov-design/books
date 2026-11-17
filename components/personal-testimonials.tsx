@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, Quote } from "lucide-react";
 
 import { SiteVideoPlayer } from "@/components/site-video-player";
+import { HomeYoutubeFacade } from "@/components/home-youtube-facade";
 import { HomeTestimonialMore } from "@/components/home-testimonial-more";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./personal-testimonials.module.css";
@@ -145,14 +146,23 @@ export function PersonalTestimonials({
             : locale === "ru" ? "Английский · EN" : locale === "es" ? "Inglés · EN" : "English · EN"}
         </p>
       ) : null}
-      <SiteVideoPlayer
-        video={{ youtubeId: item.id, language: item.language, title: item.title }}
-        locale={locale}
-        compact
-        minimal={isAbout}
-        internalOnly={isAbout}
-        fallbackPoster={locallyArchivedVideoPosterIds.has(item.id) ? `/images/holistic-house/testimonial-posters/${item.id}.webp` : undefined}
-      />
+      {isHome ? (
+        <HomeYoutubeFacade
+          video={{ youtubeId: item.id, language: item.language, title: item.title }}
+          locale={locale}
+          compact
+          fallbackPoster={locallyArchivedVideoPosterIds.has(item.id) ? `/images/holistic-house/testimonial-posters/${item.id}.webp` : undefined}
+        />
+      ) : (
+        <SiteVideoPlayer
+          video={{ youtubeId: item.id, language: item.language, title: item.title }}
+          locale={locale}
+          compact
+          minimal={isAbout}
+          internalOnly={isAbout}
+          fallbackPoster={locallyArchivedVideoPosterIds.has(item.id) ? `/images/holistic-house/testimonial-posters/${item.id}.webp` : undefined}
+        />
+      )}
     </div>
   ));
 

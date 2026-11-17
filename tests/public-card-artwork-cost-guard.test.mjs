@@ -153,21 +153,25 @@ test("image-only QA generates and decodes all 85 pinned WebP while Core owns pro
   assert.match(workflow, /^  workflow_dispatch:/m);
   assert.match(workflow, /node --test tests\/public-card-artwork-generated\.test\.mjs/);
   assert.match(workflow, /node --test tests\/public-card-artwork-cost-guard\.test\.mjs tests\/public-card-artwork-reuse-secondary\.test\.mjs/);
-  assert.match(core, /^  hh-specialist:/m);
-  // Unified protected gate replaces the obsolete release-ready wrapper.
-  // The unified Scope job owns Core checks; the aggregate consumes Scope and Specialist results.
-  assert.match(core, /^  hh-merge-check:\n    name: hh-merge-check\n    needs: \[scope, hh-specialist\]/m);
+  // Required one-runner gate now combines Core and immutable-BASE Specialist.
+  // Never treat a missing specialist as green or weaken fail-closed policy.
+  assert.doesNotMatch(core, /^  hh-specialist:/m);
+  assert.match(core, /^  hh-merge-check:\n    name: hh-merge-check/m);
+  assert.match(core, /^    needs: \[scope\]/m);
+  assert.match(core, /- name: Validate exact-head risk and required specialist workflows/);
+  assert.match(core, /node "\$RUNNER_TEMP\/hh-ci-trusted\/scripts\/ci-specialist-aggregate\.mjs"/);
+  assert.match(core, /- name: Fail closed if mandatory Core failed or this is not a Ready PR/);
   // Draft PR must not get a fabricated red status. Ready PRs must still
   // pass the real Core+Specialist check before GitHub may merge.
   assert.match(core.split(/^  hh-merge-check:/m)[1],
     /^    if: \$\{\{ !cancelled\(\) && \(github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false\) \}\}$/m);
-  assert.match(core, /- name: Require real Core and specialist results from this workflow/);
+  assert.match(core, /- name: Confirm one-runner Core and independent specialist release evidence/);
   assert.match(core, /\[\[ "\$EVENT_NAME" == pull_request \]\]/);
-  assert.match(core, /\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
+  assert.match(core, /\[\[ "\$EVENT_NAME" == pull_request && "\$PR_DRAFT" != true && "\$SCOPE_RESULT" == success \]\]/);
   assert.match(core, /name: core-lint-types-build/);
   assert.match(core, /SCOPE_RESULT: \$\{\{ needs\.scope\.result \}\}/);
   assert.match(core, /ROUTE: \$\{\{ needs\.scope\.outputs\.route \}\}/);
-  assert.match(core, /\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
+  assert.match(core, /node scripts\/ci-specialist-aggregate\.mjs/);
   assert.doesNotMatch(core, /^  code:/m);
   assert.doesNotMatch(core, /CODE_RESULT|needs\.code/);
   assert.doesNotMatch(core, /^  release-ready:/m);

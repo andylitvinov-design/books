@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {installGuestVideoBlobCapture,readRealGuestVideo} from './real-guest-video-file.mjs';
+import {completeThreeStepGoalsQuiz} from './complete-three-step-goals-quiz.mjs';
 
 // Local, anonymous acceptance: exercise actual UI and inspect the real test-owned movie Blob.
 const origin = 'http://127.0.0.1:3100';
@@ -31,8 +32,10 @@ page.on('console', message => {
 try {
   await page.goto(`${origin}/ru/holistic-support/mandala`, { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.locator('[data-video-studio-hydrated="true"]').waitFor({ timeout: 60000 });
-  // Select real source footage through the visitor-visible three-stage route.
-  await page.locator('[data-video-continue-scenarios]').click();
+  // Complete all three real Goal selections before the visitor's Ideas CTA.
+  await completeThreeStepGoalsQuiz(page,{engine});
+  if(engine==='webkit')await page.locator('[data-video-continue-scenarios]').tap();
+  else await page.locator('[data-video-continue-scenarios]').click();
   assert.equal(await page.locator('[data-video-quick-control="phrases"]').getAttribute('aria-pressed'),
     'true','GOALS_MUST_OPEN_IDEAS');
   const editor=page.locator('[data-video-quick-control="editor"]');
@@ -183,9 +186,17 @@ try {
     'the compact music picker keeps its three-track rights and mix limit');
   await page.locator('[data-video-audio-compact-selected]').waitFor({state:'visible'});
   const generate = page.locator('[data-video-quick-generate]');
+  // Montage Generate is navigation only; the physical encoder starts only
+  // after the guest explicitly chooses Generate in the Ready workspace.
   if (engine === 'webkit') await generate.tap({timeout:30000});
   else await generate.click({timeout:30000});
-  // The actual verified film moves to Ready; guests cannot use direct Save.
+  const readyChoice = page.locator('[data-video-ready][data-ready-state="choose"]');
+  await readyChoice.waitFor({state:'visible',timeout:15000});
+  const readyGenerate = readyChoice.locator('[data-ready-generate]');
+  await readyGenerate.waitFor({state:'visible',timeout:15000});
+  if (engine === 'webkit') await readyGenerate.tap({timeout:30000});
+  else await readyGenerate.click({timeout:30000});
+  // Ready creates the actual film; guests cannot use direct Save.
   // Reuse the first-party encoded Blob and prove the login gate instead.
   let captured;
   try{
@@ -254,8 +265,10 @@ try {
 
 
 async function openMontageSettings(page){
-  // The fifth Montage preserves detailed scene, timeline and format controls.
-  await page.locator('[data-video-montage-tab="promo"]').click();
+  // Extra contains only the three video choices; the original detailed settings
+  // remain available via the existing Story > Video settings action.
+  await page.locator('[data-video-montage-tab="concept"]').click();
+  await page.locator('[data-video-story-open-settings]').click();
   const advanced=page.locator('[data-video-stories-advanced]');
   await advanced.locator(':scope > summary').click();
   const settings=advanced.locator('[data-video-stories-settings]');

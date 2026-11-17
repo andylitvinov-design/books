@@ -741,6 +741,31 @@ test('approved migration destinations contain the exact retired scope and the or
   }
 });
 
+test('retired optional workflow owners are explicitly reviewed without allowing arbitrary YAML deletion',()=>{
+  for(const [old,successor] of [
+    ['.github/workflows/hh-app-regression.yml','.github/workflows/hh-actionlint.yml'],
+    ['.github/workflows/hh-loose-release-ready-once.yml','.github/workflows/hh-actionlint.yml'],
+  ]){
+    assert.equal(APPROVED_SPECIALIST_REPLACEMENTS[old],successor);
+    const successorYaml=readFileSync(successor,'utf8');
+    const oldYaml='name: retired one-time check\non:\n  workflow_dispatch:\njobs:\n  legacy:\n    runs-on: ubuntu-latest\n';
+    const base=new Map([[old,oldYaml],[successor,successorYaml]]);
+    const current=new Map([[successor,successorYaml]]);
+    const changed=[old];
+    const expected=expectedWorkflows({base,current,changed});
+    assert.deepEqual(expected,[successor], 'approved successor must really trigger for removed YAML '+old);
+    assert.deepEqual(resolveExpectedSpecialists({base,current,changed,expected}).delegated,
+      [{retired:old,replacement:successor}]);
+    const tampered=new Map([[successor,successorYaml+'\n# not BASE approved']]);
+    assert.throws(()=>resolveExpectedSpecialists({base,current:tampered,changed,expected}),
+      /UNTRUSTED_SPECIALIST_REPLACEMENT/);
+  }
+  const unknown='.github/workflows/unknown-obsolete-check.yml';
+  const base=new Map([[unknown,'on:\n  workflow_dispatch:\n']]);
+  assert.throws(()=>resolveExpectedSpecialists({base,current:new Map(),changed:[unknown],expected:[]}),
+    /UNAPPROVED_WORKFLOW_DELETION/);
+});
+
 test('all workflow deletions, even push-only and files excluded from original PR trigger, require an approved replacement',()=>{
   const unrelated='.github/workflows/private-push-only-publisher.yml';
   const pushOnly='on:\n  push:\n    branches: [codex/public-book-library]\njobs:\n  publish:\n    runs-on: ubuntu-24.04\n';
@@ -1287,6 +1312,33 @@ test('missing HEAD-index row can be recovered by exact workflow then tracked unt
   assert.equal(probes,1,'only missing workflow gets a targeted index lookup');
   assert.ok(refreshes>=1,'pending recovered run must be refreshed until completed');
   assert.ok(clock.elapsed()>=180_000,'queued evidence is not accepted as passed');
+});
+
+test('late registered exact-HEAD actionlint is discovered without another Core wave', async () => {
+  const clock=virtualSpecialistClock();
+  let probes=0;
+  const api={
+    pr:async()=>pr(),
+    changed:async()=>[{filename:'lib/crm/a.js'}],
+    // The general HEAD index stays stale; only the scoped workflow index
+    // receives this real and completed run after GitHub propagation.
+    runs:async()=>[],
+    runsForWorkflow:async(sha,filename)=>{
+      assert.equal(sha,SHA);
+      assert.equal(filename,path);
+      probes++;
+      return clock.elapsed()<90_000 ? [] : [run()];
+    },
+    jobs:async()=>[{name:'specialist',status:'completed',conclusion:'success'}],
+  };
+  const result=await verify(api,{repo,number:27,head:SHA,base:BASE},
+    {base:new Map([[path,yaml]]),current:new Map([[path,yaml]])},
+    {maxWaitMs:180_000,pollMs:10_000,...clock});
+  assert.deepEqual(result.expected,[path]);
+  assert.equal(result.executed.length,1,'real successful job evidence remains mandatory');
+  assert.ok(probes>=3,'scoped workflow lookup must retry within the discovery window');
+  assert.ok(clock.elapsed()>=90_000 && clock.elapsed()<120_000,
+    'late registration must pass before the fail-closed deadline');
 });
 
 test('foreign direct workflow evidence never authorizes missing specialist', async () => {
@@ -2236,4 +2288,73 @@ test('inert raster production-base advance is ancestry-proven, conflict-independ
     assert.equal(verifiedIndependentPublicRasterAdvance(
       diff(['public/images/a.png'],bad),old,newest,['lib/crm/contact.js']),false);
   }
+});
+
+test('additive coaching build registration drops unrelated specialists', () => {
+  const app = '.github/workflows/hh-app-r1.yml';
+  const coach = '.github/workflows/hh-personal-coaching-session.yml';
+  const audio = '.github/workflows/hh-live-audio-ci.yml';
+  const ia = '.github/workflows/ia-v2.yml';
+  const opora = '.github/workflows/opora-module-ci.yml';
+  const publicServices = '.github/workflows/hh-public-services-production.yml';
+  const workflow = patterns => "on:\n  pull_request:\n    branches: ['codex/public-book-library']\n    paths:\n" +
+    patterns.map(pattern => "      - '" + pattern + "'\n").join('');
+  const sources = new Map([
+    [app, workflow(['package.json', 'lib/app/**'])],
+    [coach, workflow(['tests/coaching-live-voice.test.mjs', 'lib/personal-coaching/**'])],
+    [audio, workflow(['package.json', 'app/api/live-audio/**'])],
+    [ia, workflow(['package.json', 'lib/security/**'])],
+    [opora, workflow(['package.json', 'data/opora/**'])],
+    [publicServices, workflow(['package.json', 'components/public-consultation-cta.tsx'])],
+  ]);
+  const original = {
+    scripts: {
+      'test:coaching:release': 'node --test tests/coaching-life-plan.test.mjs tests/coaching-report.test.mjs',
+      prebuild: 'node --check scripts/source-check.mjs && npm run test:coaching:release',
+    },
+    dependencies: { next: '15.0.0' },
+  };
+  const proposed = structuredClone(original);
+  const added = 'tests/coach-spoken-text.test.mjs';
+  proposed.scripts['test:coaching:release'] =
+    'node --test ' + added + ' ' + original.scripts['test:coaching:release'].slice('node --test '.length);
+  const changed = ['package.json', added, 'lib/coaching/coach-spoken-text.mjs',
+    'tests/coaching-live-voice.test.mjs'];
+  const classify = (next = proposed, paths = changed, prior = original) => classifyPackageImpact({
+    changed: paths, basePackage: JSON.stringify(prior), currentPackage: JSON.stringify(next),
+  });
+  const impact = classify();
+  assert.deepEqual(impact, {
+    mode: 'scoped', reason: 'ADDITIVE_COACHING_BUILD_TEST', workflows: [app],
+  });
+  const before = expectedWorkflows({base:sources, current:sources, changed});
+  const after = expectedWorkflows({base:sources, current:sources, changed,
+    packageImpact:impact});
+  assert.equal(before.length, 6, 'package changes previously triggered six independent suites');
+  assert.deepEqual(after, [app, coach],
+    'retain App and coaching owners but not unrelated billing, audio, IA and OPORA owners');
+  assert.ok(after.length * 2 <= before.length, 'more than halve the routed suites');
+  const missingOwner = new Map(sources);
+  missingOwner.delete(app);
+  assert.throws(() => expectedWorkflows({base:missingOwner, current:sources, changed,
+    packageImpact:impact}), /PACKAGE_ROUTE_OWNER_UNAVAILABLE/);
+  assert.equal(classify(proposed, changed.filter(path => path !== added)).mode, 'full');
+  assert.equal(classify(proposed, [...changed, 'package-lock.json']).mode, 'full');
+  const mutate = (change) => {
+    const bad = structuredClone(proposed);
+    change(bad);
+    assert.equal(classify(bad).mode, 'full', 'unsafe manifest/script change must remain full');
+  };
+  mutate(bad => { bad.dependencies.next = '16.0.0'; });
+  mutate(bad => { bad.scripts.prebuild = 'echo skip'; });
+  mutate(bad => { bad.scripts['test:coaching:release'] += ' && echo bypass'; });
+  mutate(bad => { bad.scripts['test:coaching:release'] =
+    bad.scripts['test:coaching:release'].replace(added, 'tests/billing-bypass.test.mjs'); });
+  mutate(bad => { bad.scripts['test:coaching:release'] =
+    bad.scripts['test:coaching:release'].replace('tests/coaching-report.test.mjs', 'tests/unrelated.test.mjs'); });
+  const noBuild = structuredClone(original);
+  noBuild.scripts.prebuild = 'echo skip';
+  const proposedNoBuild = structuredClone(proposed);
+  proposedNoBuild.scripts.prebuild = 'echo skip';
+  assert.equal(classify(proposedNoBuild, changed, noBuild).mode, 'full');
 });

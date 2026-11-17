@@ -39,6 +39,7 @@
 .masterRow>svg{color:#0d655e}
 .empty{padding:14px 15px;background:#fff;border:1px solid #ead9bf;border-radius:16px}
 .directoryLink{display:inline-flex;align-items:center;gap:10px;min-height:44px;color:#006760;font:700 15px Arial,sans-serif;text-decoration:underline;text-underline-offset:3px}
+.entryGroup{display:none}
 .entry{display:flex;align-items:center;gap:12px;width:min(100% - 24px,750px);min-height:82px;padding:14px;margin:12px auto 18px;border:1px solid #e4cdaa;border-radius:22px;background:linear-gradient(125deg,#fffaf2,#fff8ed);box-shadow:0 5px 14px #755f3d12;color:#0d1c39;text-decoration:none}
 .entryMark{display:grid;place-items:center;flex:0 0 46px;height:46px;border-radius:50%;background:#fbefd6;color:#b78d46}
 .entryWords{display:grid;gap:4px;min-width:0;flex:1}
@@ -76,4 +77,17 @@
 .entryWords strong{font-size:19px}
 .entryWords small{font-size:12px}
 .entryAction{font-size:12px}
+}
+
+/* Inline mobile quick choices for the existing Spiritual Reading service panel.
+   The separate full reading page and published-master source remain unchanged. */
+@media(max-width:760px){
+  .entryGroup{display:block;width:min(100% - 24px,750px);margin:10px auto 18px}
+  .entryGroup .entry{width:100%;margin:0 0 8px}
+  .entryChoices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+  .entryChoices a{display:flex;align-items:center;justify-content:center;min-width:0;min-height:52px;padding:8px 6px;
+    border:1px solid #d8e6dc;border-radius:13px;background:#fffcf7;color:#0b6154;text-align:center;text-decoration:none;
+    font:700 12px/1.28 Arial,Helvetica,sans-serif;overflow-wrap:anywhere}
+  .entryChoices a:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+  .page #spiritual-tao,.page #spiritual-tarot{scroll-margin-top:88px}
 }
