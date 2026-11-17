@@ -1,36 +1,5 @@
 name: Reports development programme isolated verification
 on:
-  push:
-    branches: ['codex/reports-development-program-20261017', 'codex/public-book-library']
-    paths:
-      - '.github/workflows/hh-reports-development-program.yml'
-      - 'components/app/development-program*'
-      - 'components/app/app-workspace.jsx'
-      - 'components/app/profile-domains.jsx'
-      - 'lib/profile/development-program.js'
-      - 'lib/app/development-goals.js'
-      - 'app/api/app/**'
-      - 'tests/reports-development-program.test.mjs'
-      - 'tests/profile-portrait-test-suggestions.test.mjs'
-      - 'tests/goal-profile-journey.test.mjs'
-      - 'lib/profile/goal-profile.js'
-      - 'components/app/goal-profile-panel.jsx'
-      - 'components/app/goal-profile-panel.module.css'
-      - 'lib/profile/portrait-test-suggestions.js'
-      - 'package.json'
-      - 'lib/clients/session-delivery-service.js'
-      - 'lib/documents/report-progress.js'
-      - 'components/prescription-document.jsx'
-      - 'components/admin-session-studio.jsx'
-      - 'tests/client-report-before-after-rings.test.mjs'
-      - 'tests/report-progress-before-after.test.mjs'
-      - 'tests/session-publication-review.test.mjs'
-      - '.github/workflows/hh-client-report-progress.yml'
-      - 'components/client-session-page.jsx'
-      - 'components/client-session.module.css'
-      - 'public/images/holistic-house/report-lighthouse-coast.svg'
-      - 'tests/client-report-coastal-v2.test.mjs'
-      - '.github/workflows/hh-client-report-coastal-v2.yml'
   pull_request:
     branches: ['codex/public-book-library']
     paths:
