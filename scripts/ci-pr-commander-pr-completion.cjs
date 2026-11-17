@@ -65,8 +65,9 @@ async function run({github,core,context,ownerToken='',fetcher=global.fetch,
   const pr=response?.data;
   decision=readback(pr,task.prNumber);
   // Only a first dispatch per owner intent. Never enqueue another Core wave.
-  // Actual source writing still requires the signed current-HEAD Core failure,
-  // remote owner PAT identity and existing Watchdog/Dispatcher reservation.
+  // Source writing still requires signed exact-HEAD failed Core proof,
+  // worker reservation and all merge gates. A private signed OIDC owner task
+  // may reach the same-run queue without a second, PAT-denied dispatch.
   if(task.dispatchEligibleOnce&&decision.eligibleForFirstRepair&&
     decision.headSha===task.requestedHeadSha){
    // Atomic Supabase CAS is committed BEFORE remote workflow_dispatch.
@@ -77,7 +78,10 @@ async function run({github,core,context,ownerToken='',fetcher=global.fetch,
     decision.reasonCode='PR_REPAIR_DISPATCH_ALREADY_RESERVED';
    }else{
     const invoke=dispatch||require('./ci-pr-pm-agent-inbox.cjs').dispatchLive;
-    const result=await invoke(github,{pr:task.prNumber},{ownerToken,fetcher});
+    const result=await invoke(github,{pr:task.prNumber},{ownerToken,fetcher,
+     ownerProof:{source:'OIDC_SIGNED_QUEUE',prNumber:task.prNumber,
+      expectedSha:task.requestedHeadSha,requestId:task.requestId,
+      leaseToken:task.leaseToken}});
     dispatchAccepted=result?.dispatched===true;
     if(dispatchAccepted)decision.reasonCode='OWNER_DISPATCH_ACCEPTED_NOT_MODEL_OR_COMMIT';
     else if(typeof result?.reason==='string'){
