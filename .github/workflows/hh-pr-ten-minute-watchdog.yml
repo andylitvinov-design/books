@@ -34,6 +34,8 @@ on:
       - '.github/workflows/hh-pr-full-inventory.yml'
       - 'scripts/ci-pr-ten-minute-watchdog.cjs'
       - 'scripts/ci-pr-event-handoff.cjs'
+      # Immediate source-quality repair routing must remain auditable.
+      - 'scripts/ci-pr-quality-event.cjs'
       - 'scripts/ci-pr-control-tower-wakeup.cjs'
       - 'scripts/ci-pr-pm-agent-inbox.cjs'
       - '.github/hh-pr-directions.json'
