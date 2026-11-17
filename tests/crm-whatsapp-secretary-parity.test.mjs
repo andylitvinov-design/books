@@ -9,8 +9,16 @@ const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 for(const locale of ['en','ru','es']){
  test('verified WhatsApp service selection and consented CRM stages: '+locale,()=>{
   const title={ru:'Сеанс Рейки',en:'Reiki session',es:'Sesión de Reiki'}[locale]
-  const link=whatsappEnquiryUrl({locale,service:title,
-   request:'Interested in this published service.',pagePath:'/'+locale+'/services'})
+  const previousFlag=process.env.NEXT_PUBLIC_HH_CRM_WA_SERVICE_ENABLED
+  let link
+  try {
+   process.env.NEXT_PUBLIC_HH_CRM_WA_SERVICE_ENABLED='true'
+   link=whatsappEnquiryUrl({locale,service:title,
+    request:'Interested in this published service.',pagePath:'/'+locale+'/services'})
+  } finally {
+   if(previousFlag===undefined)delete process.env.NEXT_PUBLIC_HH_CRM_WA_SERVICE_ENABLED
+   else process.env.NEXT_PUBLIC_HH_CRM_WA_SERVICE_ENABLED=previousFlag
+  }
   const message=new URL(link).searchParams.get('text')
   assert.ok(message.endsWith('[HH-REQ:reiki:'+locale+']'))
   const first=whatsappIntakeEvent(null,{rawText:message})
@@ -54,6 +62,17 @@ for(const locale of ['en','ru','es']){
   assert.equal(blocked.reply,null)
  })
 }
+test('ordinary WhatsApp handoff hides internal service markers before Meta activation',()=>{
+ const old=process.env.NEXT_PUBLIC_HH_CRM_WA_SERVICE_ENABLED
+ try{
+  delete process.env.NEXT_PUBLIC_HH_CRM_WA_SERVICE_ENABLED
+  const link=whatsappEnquiryUrl({locale:'en',service:'Reiki session',request:'Can you help me?'})
+  assert.doesNotMatch(new URL(link).searchParams.get('text'),/\[HH-REQ:/)
+ }finally{
+  if(old===undefined)delete process.env.NEXT_PUBLIC_HH_CRM_WA_SERVICE_ENABLED
+  else process.env.NEXT_PUBLIC_HH_CRM_WA_SERVICE_ENABLED=old
+ }
+})
 test('arbitrary visitor-provided services do not gain a privileged service code',()=>{
  const url=whatsappEnquiryUrl({locale:'en',service:'Unpublished user request',
   request:'Write to the team'})
