@@ -167,7 +167,7 @@ export default function PrCompletionClient(){
     {item.mergeSha&&<p style={styles.small}>Merge SHA: {item.mergeSha.slice(0,12)} · {' '}
      {journeys[item.requestId]?.productionVerified===true?
        'Vercel LIVE · '+journeys[item.requestId].deploymentId:
-       'Production LIVE не подтверждён'}</p>
+       'Production LIVE не подтверждён'}</p>}
     <button className="hh-pr-details-toggle" type="button"
      aria-expanded={expandedId===item.requestId}
      aria-controls={'hh-pr-details-'+item.requestId}
