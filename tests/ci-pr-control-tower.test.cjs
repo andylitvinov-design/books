@@ -1221,6 +1221,81 @@ test('dual-labelled DIRTY does not take the source Repair Worker',async()=>{
  assert.equal(r.dispatchAccepted,0);
  assert.equal(f.calls.dispatched.length,0);
 });
+test('GitHub 100+ ghost Actions cannot block trusted metadata-only source-hint reclassification',async()=>{
+ for(const scenario of ['product','base']){
+  const number=scenario==='product'?4321:4322;
+  const source=pr(number,'repair',{mergeable:true,mergeable_state:'blocked'});
+  const f=fixture([source],{comments:{[number]:[]}});
+  const latest={...source,labels:[...source.labels]},writes=[];
+  f.github.rest.pulls.get=async()=>({data:latest});
+  const checks=scenario==='product'?[
+   {id:1,name:'hh-core-verified',status:'completed',conclusion:'success',app:{id:15368}},
+   {id:2,name:'hh-specialist',status:'completed',conclusion:'failure',app:{id:15368}},
+   {id:3,name:'voice-webkit-macos',status:'completed',conclusion:'failure',app:{id:15368}}
+  ]:[
+   {id:1,name:'core-lint-types-build',status:'completed',conclusion:'success',app:{id:15368}},
+   {id:2,name:'hh-specialist',status:'completed',conclusion:'failure',app:{id:15368}},
+   {id:3,name:'hh-merge-check',status:'completed',conclusion:'failure',app:{id:15368}},
+   {id:4,name:'guard-unit',status:'completed',conclusion:'failure',app:{id:15368}}
+  ];
+  f.github.rest.checks={listForRef:async({ref})=>{
+   assert.equal(ref,SHA);return {data:{total_count:checks.length,check_runs:checks}};
+  }};
+  f.github.rest.issues.addLabels=async({labels})=>{
+   writes.push(['add',labels[0]]);latest.labels.push({name:labels[0]});
+  };
+  f.github.rest.issues.removeLabel=async({name})=>writes.push(['remove',name]);
+  const result=await run({github:f.github,core:core(),context,now:NOW,
+   capacityFn:async()=>({known:false,reason:'RUN_CAPACITY_SATURATED',
+    queuedRuns:116,activeRuns:21})});
+  const expected=scenario==='product'?'hh:specialist-repair-needed':'hh:release-gate-review';
+  assert.deepEqual(writes,[['add',expected],['remove','hh:repair-needed']],scenario);
+  assert.equal(result.dispatchAccepted,0);
+  assert.equal(result.repairDispatchAccepted,0);
+  assert.equal(f.calls.dispatched.length,0);
+  assert.ok(!f.calls.reserved.some(row=>row.body.includes('"state":"RESERVED"')));
+  assert.equal(scenario==='product'?result.specialistReclassified:result.policyReclassified,1);
+ }
+});
+test('modern embedded hh-merge-check routes source-green product and base failures without retired specialist job',async()=>{
+ for(const mode of ['product','base']){
+  const number=mode==='product'?4401:4402;
+  const source=pr(number,'repair',{mergeable:true,mergeable_state:'blocked'});
+  const f=fixture([source],{comments:{[number]:[]}});
+  const fresh={...source,labels:[...source.labels]},mutations=[];
+  f.github.rest.pulls.get=async()=>({data:fresh});
+  const names=mode==='product'?
+   ['core-lint-types-build','hh-merge-check','voice-webkit-macos']:
+   ['core-lint-types-build','hh-merge-check'];
+  const checks=names.map((name,i)=>({id:i+1,name,status:'completed',
+   conclusion:name==='core-lint-types-build'?'success':'failure',app:{id:15368}}));
+  f.github.rest.checks={listForRef:async()=>({data:{total_count:checks.length,check_runs:checks}})};
+  f.github.rest.issues.addLabels=async({labels})=>{
+   fresh.labels.push({name:labels[0]});mutations.push(['add',labels[0]]);
+  };
+  f.github.rest.issues.removeLabel=async({name})=>mutations.push(['remove',name]);
+  const r=await run({github:f.github,core:core(),context,now:NOW,
+   capacityFn:async()=>({known:false,reason:'RUN_CAPACITY_SATURATED'})});
+  const desired=mode==='product'?'hh:specialist-repair-needed':'hh:release-gate-review';
+  assert.deepEqual(mutations,[['add',desired],['remove','hh:repair-needed']],mode);
+  assert.equal(r.dispatchAccepted,0);
+  assert.equal(f.calls.dispatched.length,0);
+  assert.equal(f.calls.reserved.filter(x=>x.body.includes('"state":"RESERVED"')).length,0);
+ }
+});
+test('without current signed source or product proof, saturation never claims a source worker',async()=>{
+ const source=pr(4323,'repair',{mergeable:true,mergeable_state:'blocked'});
+ const f=fixture([source],{comments:{4323:[]}});
+ f.github.rest.checks={listForRef:async()=>({data:{total_count:1,check_runs:[
+  {id:1,name:'core-lint-types-build',status:'completed',conclusion:'success',app:{id:15368}}
+ ]}})};
+ const result=await run({github:f.github,core:core(),context,now:NOW,
+  capacityFn:async()=>({known:false,reason:'RUN_CAPACITY_SATURATED'})});
+ assert.equal(result.blocked.SOURCE_PROOF_MISSING,1);
+ assert.equal(result.dispatchAccepted,0);
+ assert.equal(f.calls.dispatched.length,0);
+ assert.equal(f.calls.reserved.length,0);
+});
 test('unknown capacity continues to reject normal source writes',async()=>{
  const f=fixture([pr(77)],{comments:{77:[proof()]}});
  const r=await run({github:f.github,core:core(),context,now:NOW,

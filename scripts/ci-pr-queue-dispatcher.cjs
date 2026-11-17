@@ -75,9 +75,20 @@ function verifiedSourceGreen(checks){
 function verifiedSpecialistProductFailure(checks){
  if(classifyIndependentSpecialistChecks(checks)!=='PRODUCT_FAILURE'||
     !verifiedSourceGreen(checks))return false;
- const specialist=latestByName(checks.check_runs).get('hh-specialist');
- return specialist?.app?.id===15368&&specialist.status==='completed'&&
-   specialist.conclusion==='failure';
+ const latest=latestByName(checks.check_runs);
+ const specialist=latest.get('hh-specialist'),merge=latest.get('hh-merge-check');
+ // Modern Core runs the independent specialist validator inside hh-merge-check;
+ // the old separate hh-specialist job no longer exists. Never classify a
+ // product failure from a red Core alone: independent product QA must already
+ // be independently authenticated by classifyIndependentSpecialistChecks.
+ const legacy=specialist?.app?.id===15368&&
+   specialist.status==='completed'&&specialist.conclusion==='failure';
+ const embedded=merge?.app?.id===15368&&merge.status==='completed'&&
+   merge.conclusion==='failure';
+ // Both historically real topologies must remain valid: the old independent
+ // hh-specialist without a merge-check, or the new embedded merge-check.
+ // Independent product QA and green Core are mandatory in either case.
+ return legacy||embedded;
 }
 // Red aggregate gates with green source and no failed independent QA are
 // policy/stale-base blockers, not a source-writing authorization.
@@ -87,9 +98,10 @@ function verifiedAggregatePolicyHold(checks){
     !verifiedSourceGreen(checks))return false;
  const latest=latestByName(checks.check_runs);
  const specialist=latest.get('hh-specialist'),merge=latest.get('hh-merge-check');
- if(specialist?.app?.id!==15368||specialist.status!=='completed'||
-    specialist.conclusion!=='failure'||merge?.app?.id!==15368||
-    merge.status!=='completed'||merge.conclusion!=='failure')return false;
+ if(merge?.app?.id!==15368||merge.status!=='completed'||
+    merge.conclusion!=='failure'||(specialist&&
+    (specialist.app?.id!==15368||specialist.status!=='completed'||
+     specialist.conclusion!=='failure')))return false;
  const inherited=new Set(['hh-specialist','hh-merge-check','hh-specialists-verified',
    'release-ready','hh-core-verified','classify-change','core-lint-types-build']);
  const trustedPolicyJobs=new Set(['guard-unit','actionlint-changed']);
@@ -1050,15 +1062,10 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
    }
    continue;
   }
-  // Capacity is a source-writing gate, not a metadata-only conflict handoff
-  // gate. The manual owner queue must progress during runner saturation.
-  if(!capacity?.known){blocked('CAPACITY_UNVERIFIED');continue;}
-  const permission=admission(task.lane,capacity);
-  if(permission!=='ADMIT'){blocked(permission);continue;}
-  if([GHOST_REPAIR_MODE,STALE_MERGED_REPAIR_MODE]
-      .includes(capacity?.inventoryConfidence)&&summary.dispatchAccepted>=1){
-   blocked('GHOST_ONLY_ONE_WORKER_PER_SWEEP');continue;
-  }
+  // Metadata-only source-hint classification is safe even if all GitHub
+  // runners are unavailable. Inspect exact-HEAD bot-signed Core proof and
+  // product/aggregate checks BEFORE the worker capacity admission gate.
+  // Only actual worker dispatches reserve runner/queue capacity.
   // Source must have an exact-HEAD trusted Watchdog diagnosis; labels alone
   // are stale hints and must not give privileged source write permission.
   if(task.lane==='repair'&&(!hasVerifiedSourceHandoff(comments,task.head_sha)||
@@ -1113,6 +1120,15 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
     log('Non-source classification #'+task.pr_number+': '+err.message);
    }
    continue;
+  }
+  // Capacity is a source-writing gate, not a metadata-only conflict handoff
+  // gate. The manual owner queue must progress during runner saturation.
+  if(!capacity?.known){blocked('CAPACITY_UNVERIFIED');continue;}
+  const permission=admission(task.lane,capacity);
+  if(permission!=='ADMIT'){blocked(permission);continue;}
+  if([GHOST_REPAIR_MODE,STALE_MERGED_REPAIR_MODE]
+      .includes(capacity?.inventoryConfidence)&&summary.dispatchAccepted>=1){
+   blocked('GHOST_ONLY_ONE_WORKER_PER_SWEEP');continue;
   }
   if(task.lane==='repair'){
    // GitHub temporarily reports mergeable:null while it calculates the
