@@ -13,6 +13,7 @@ import type { PublicLocale } from "@/lib/public-locales";
 import type { AssistMode, AssistChannel, AssistBudget, AssistPreferences } from "@/lib/assist/service-match.mjs";
 import { rankAssistProducts } from "@/lib/assist/product-recommendations.mjs";
 import { AssistTopRecommendations } from "./assist-top-recommendations";
+import { serviceGroupAnchor, servicesCategoryTargets } from "@/lib/services-quick-categories";
 import styles from "./services-assist-quiz.module.css";
 
 type QuestionKey = "topic" | "mode" | "channel" | "budget";
@@ -140,13 +141,13 @@ const choiceIcons: Record<QuestionKey, Record<string, LucideIcon>> = {
   budget: { free: Gift, under50: Wallet, under100: CreditCard, flexible: MessageCircle },
 };
 
-const categories: readonly { key: Category; path: string; image: string; Icon: LucideIcon }[] = [
-  { key: "therapy", path: "services/imagery-therapy", image: "/images/holistic-house/messenger-zen-stones.svg", Icon: Flower2 },
-  { key: "homeopathy", path: "services/psychohomeopathy", image: "/images/holistic-house/distance-homeopathy.webp", Icon: HandHeart },
-  { key: "constellations", path: "services/systemic-constellations", image: "/images/holistic-house/homepage-constellations.svg", Icon: HeartHandshake },
-  { key: "practice", path: "services/remote-energy-support", image: "/images/holistic-house/reiki-practitioner-sunrise.webp", Icon: Leaf },
-  { key: "study", path: "academy/reiki", image: "/images/holistic-house/books-library.webp", Icon: GraduationCap },
-  { key: "videos", path: "mytube", image: "/images/holistic-house/assist-video-botanical.svg", Icon: MonitorPlay },
+const categories: readonly { key: Exclude<Category, "business">; image: string; Icon: LucideIcon }[] = [
+  { key: "therapy", image: "/images/holistic-house/messenger-zen-stones.svg", Icon: Flower2 },
+  { key: "homeopathy", image: "/images/holistic-house/distance-homeopathy.webp", Icon: HandHeart },
+  { key: "constellations", image: "/images/holistic-house/homepage-constellations.svg", Icon: HeartHandshake },
+  { key: "practice", image: "/images/holistic-house/reiki-practitioner-sunrise.webp", Icon: Leaf },
+  { key: "study", image: "/images/holistic-house/books-library.webp", Icon: GraduationCap },
+  { key: "videos", image: "/images/holistic-house/assist-video-botanical.svg", Icon: MonitorPlay },
 ];
 
 export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
@@ -271,9 +272,10 @@ export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
         <a href="#services-unified-heading">{t.all}<ArrowRight size={17} aria-hidden="true" /></a>
       </div>
       <div className={styles.categoryGrid}>
-        {categories.map(({key,path,image,Icon}) =>
-          <Link href={"/" + locale + "/" + path} key={key} prefetch={false}
-            className={styles.category} data-services-quiz-category={key}>
+        {categories.map(({key,image,Icon}) =>
+          <a href={"#" + serviceGroupAnchor(servicesCategoryTargets[key])} key={key}
+            className={styles.category} data-services-quiz-category={key}
+            data-services-quiz-target={servicesCategoryTargets[key]}>
             <span className={styles.categoryMedia}>
               <Image src={image} alt="" fill sizes="(max-width: 520px) 32vw, 160px" />
             </span>
@@ -281,11 +283,11 @@ export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
               <span className={styles.categoryIcon}><Icon size={26} strokeWidth={1.65} aria-hidden="true" /></span>
               <span className={styles.categoryName}>{t.categories[key]}</span>
             </span>
-          </Link>)}
+          </a>)}
       </div>
       <div className={styles.categoryExtras}>
-        <Link href={"/" + locale + "/services/business-consulting"} prefetch={false}
-          data-services-business-link><BriefcaseBusiness size={15} aria-hidden="true" /> {t.categories.business}</Link>
+        <a href={"#" + serviceGroupAnchor(servicesCategoryTargets.business)}
+          data-services-business-link data-services-quiz-target={servicesCategoryTargets.business}><BriefcaseBusiness size={15} aria-hidden="true" /> {t.categories.business}</a>
         <Link href={"/" + locale + "/services?assist=chat"} prefetch={false}>{t.other}</Link>
       </div>
     </section>
