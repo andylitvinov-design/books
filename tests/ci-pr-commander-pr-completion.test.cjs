@@ -63,6 +63,36 @@ test('exact-head first eligible source task dispatches once, but never claims mo
  const second=await run({...later,context,dispatch:async()=>{throw Error('DUPLICATE')}});
  assert.equal(second.dispatchAccepted,false);
 });
+test('signed private OIDC owner intent is carried only after atomic arm, without PAT redispatch',async()=>{
+ const p={...base,labels:[{name:'hh:repair-needed'}]};
+ const fx=mock(task,p);let invoked=0;
+ const result=await run({...fx,context,dispatch:async(_github,cmd,options)=>{
+  invoked++;
+  assert.equal(cmd.pr,task.prNumber);
+  assert.deepEqual(options.ownerProof,{
+   source:'OIDC_SIGNED_QUEUE',prNumber:task.prNumber,
+   expectedSha:task.requestedHeadSha,requestId:task.requestId,
+   leaseToken:task.leaseToken});
+  assert.equal(fx.calls.filter(x=>x.action==='arm_dispatch').length,1,
+   'the signed intent must be consumed before dispatching');
+  return {watching:true,dispatched:true,reason:'OWNER_DIRECT_QUEUE_DISPATCH_ACCEPTED'};
+ }});
+ assert.equal(result.status,'WATCHING');
+ assert.equal(result.dispatchAccepted,true);
+ assert.equal(result.sourceWriteVerified,false);
+ assert.equal(invoked,1);
+});
+test('verified ghost queue capacity delay is WATCHING, never a false terminal fix or merge',async()=>{
+ const p={...base,labels:[{name:'hh:repair-needed'}]};
+ const fx=mock(task,p);
+ const result=await run({...fx,context,dispatch:async()=>({
+  watching:true,dispatched:false,reason:'OWNER_REPAIR_DIRECT_GHOST_WORKER_BUSY'})});
+ assert.equal(result.status,'WATCHING');
+ assert.equal(result.reasonCode,'OWNER_REPAIR_DIRECT_GHOST_WORKER_BUSY');
+ assert.equal(result.dispatchAccepted,false);
+ assert.equal(result.liveVerified,false);
+ assert.equal(fx.calls.find(x=>x.action==='finish').status,'WATCHING');
+});
 test('confirmed merge only after GitHub readback; never reports LIVE from merge',async()=>{
  const p={...base,state:'closed',merged:true,merged_at:'2026-11-16T22:00:00Z',
   merge_commit_sha:MERGE};

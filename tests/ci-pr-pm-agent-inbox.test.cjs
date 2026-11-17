@@ -301,6 +301,59 @@ test('closed unmerged PR is not reported as merged; missing merge SHA holds',asy
  assert.doesNotMatch(fx.sent[2],/status=MERGED/);
 });
 
+test('authenticated GitHub owner repair dispatches in-process with no PAT or extra Watchdog',async()=>{
+ const head='a'.repeat(40),prNumber=3826,targets=[];
+ const pr={number:prNumber,state:'open',draft:false,user:owner,
+  head:{sha:head,repo:{full_name:'andylitvinov-design/books'}},
+  base:{ref:'codex/public-book-library'},mergeable:true,mergeable_state:'clean',
+  labels:[{name:'hh:repair-needed'}]};
+ const signed={user:bot,performed_via_github_app:app,
+  body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+head+' -->\nFailed jobs: core-lint-types-build'};
+ const gh={rest:{pulls:{get:async()=>({data:pr})},
+  issues:{listComments:async()=>({data:[signed]})}}};
+ const repair=await inbox.dispatchRepair(gh,{pr:prNumber,sha:head},{
+  ownerToken:'',fetcher:async()=>{throw Error('PAT_OR_WATCHDOG_HOP_FORBIDDEN')},
+  dispatchDirect:async target=>{
+   targets.push(target);
+   return {dispatched:true,reason:'OWNER_DIRECT_QUEUE_DISPATCH_ACCEPTED'};
+  }});
+ assert.equal(repair.dispatched,true);
+ assert.deepEqual(targets,[{pr:prNumber,sha:head}]);
+ assert.equal(repair.reason,'OWNER_DIRECT_QUEUE_DISPATCH_ACCEPTED');
+ const held=await inbox.dispatchRepair(gh,{pr:prNumber,sha:head},{
+  dispatchDirect:async()=>({dispatched:false,reason:'GHOST_WORKER_BUSY'})});
+ assert.equal(held.dispatched,false);
+ assert.equal(held.reason,'OWNER_REPAIR_DIRECT_GHOST_WORKER_BUSY');
+ const noProof={rest:{pulls:gh.rest.pulls,issues:{listComments:async()=>({data:[]})}}};
+ let unsafe=0;
+ const refused=await inbox.dispatchRepair(noProof,{pr:prNumber,sha:head},{
+  dispatchDirect:async()=>{unsafe++;return {dispatched:true,reason:'OWNER_DIRECT_QUEUE_DISPATCH_ACCEPTED'};}});
+ assert.equal(refused.reason,'SIGNED_FAILED_CORE_PROOF_MISSING');
+ assert.equal(unsafe,0);
+});
+test('owner inbox passes authenticated comment ID to same-run direct callback',async()=>{
+ const head='a'.repeat(40),prNumber=3826,ownerCommentId=663111;
+ const pr={number:prNumber,state:'open',draft:false,user:owner,
+  head:{sha:head,repo:{full_name:'andylitvinov-design/books'}},
+  base:{ref:'codex/public-book-library'},mergeable:true,mergeable_state:'clean',
+  labels:[{name:'hh:repair-needed'}]};
+ const fx=stub([cmd(ownerCommentId,'!pm repair 3826 '+head)],{pr});
+ const original=fx.github.rest.issues.listComments;
+ fx.github.rest.issues.listComments=async args=>args.issue_number===3826?
+  {data:[{user:bot,performed_via_github_app:app,
+   body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+head+' -->\nFailed jobs: core-lint-types-build'}]}:
+  original(args);
+ let directCalls=0;
+ const r=await inbox.run({github:fx.github,context,fetcher:fx.fetcher,
+  ownerToken:'',dispatchDirect:async detail=>{
+   directCalls++;assert.deepEqual(detail,{pr:3826,sha:head,ownerCommentId});
+   return {dispatched:true,reason:'OWNER_DIRECT_QUEUE_DISPATCH_ACCEPTED'};
+  }});
+ assert.equal(r.status,'DISPATCH_ACCEPTED_UNCORRELATED');
+ assert.equal(directCalls,1);
+ assert.equal(fx.dispatches.length,0,'no second Watchdog run');
+ assert.match(fx.sent[1],/DISPATCH_ACCEPTED_UNCORRELATED/);
+});
 test('wrong actor and unverifiable owner token cannot dispatch a repair workflow',async()=>{
  const head='a'.repeat(40),prNumber=3826;
  const pr={number:prNumber,state:'open',draft:false,user:owner,

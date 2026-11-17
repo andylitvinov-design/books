@@ -65,8 +65,9 @@ async function run({github,core,context,ownerToken='',fetcher=global.fetch,
   const pr=response?.data;
   decision=readback(pr,task.prNumber);
   // Only a first dispatch per owner intent. Never enqueue another Core wave.
-  // Actual source writing still requires the signed current-HEAD Core failure,
-  // remote owner PAT identity and existing Watchdog/Dispatcher reservation.
+  // Source writing still requires signed exact-HEAD failed Core proof,
+  // worker reservation and all merge gates. A private signed OIDC owner task
+  // may reach the same-run queue without a second, PAT-denied dispatch.
   if(task.dispatchEligibleOnce&&decision.eligibleForFirstRepair&&
     decision.headSha===task.requestedHeadSha){
    // Atomic Supabase CAS is committed BEFORE remote workflow_dispatch.
@@ -77,13 +78,30 @@ async function run({github,core,context,ownerToken='',fetcher=global.fetch,
     decision.reasonCode='PR_REPAIR_DISPATCH_ALREADY_RESERVED';
    }else{
     const invoke=dispatch||require('./ci-pr-pm-agent-inbox.cjs').dispatchLive;
-    const result=await invoke(github,{pr:task.prNumber},{ownerToken,fetcher});
+    const result=await invoke(github,{pr:task.prNumber},{ownerToken,fetcher,
+     ownerProof:{source:'OIDC_SIGNED_QUEUE',prNumber:task.prNumber,
+      expectedSha:task.requestedHeadSha,requestId:task.requestId,
+      leaseToken:task.leaseToken}});
     dispatchAccepted=result?.dispatched===true;
     if(dispatchAccepted)decision.reasonCode='OWNER_DISPATCH_ACCEPTED_NOT_MODEL_OR_COMMIT';
     else if(typeof result?.reason==='string'){
      decision.reasonCode=/^[A-Z0-9_]{3,90}$/.test(result.reason)?
        result.reason:'REPAIR_DISPATCH_NOT_VERIFIED';
-     if(/^(?:OWNER_REPAIR_|REPAIR_NOT_|SIGNED_|SOURCE_|PR_NOT_)/.test(decision.reasonCode))
+     // Capacity pressure is a real waiting state, not an owner denial.
+     // The global signed queue can still repair this exact PR on a later
+     // available slot; never claim a worker/source commit from WATCHING.
+     const retryable=new Set([
+      'OWNER_REPAIR_DIRECT_GHOST_WORKER_BUSY',
+      'OWNER_REPAIR_DIRECT_WORKER_BUSY',
+      'OWNER_REPAIR_DIRECT_RUNNERS_SATURATED',
+      'OWNER_REPAIR_DIRECT_JOBS_SATURATED',
+      'OWNER_REPAIR_DIRECT_CAPACITY_UNKNOWN',
+      'OWNER_REPAIR_DIRECT_NO_SAFE_DISPATCH',
+      'OWNER_REPAIR_DIRECT_RESERVED_REQUIRES_REVIEW',
+      'OWNER_REPAIR_DIRECT_CLAIMED_AWAITING_OUTCOME'
+     ]);
+     if(!retryable.has(decision.reasonCode)&&
+        /^(?:OWNER_REPAIR_|REPAIR_NOT_|SIGNED_|SOURCE_|PR_NOT_)/.test(decision.reasonCode))
       decision.status='BLOCKED';
     }
    }
