@@ -54,25 +54,16 @@ test('all books belong to one restored category and original search still works'
 });
 
 test('Ideas, its book readers and Library navigation remain available', async () => {
-  const [page, hub, home, deferred, deferredContent, expanded, carousel] = await Promise.all([
+  const [page, hub, home, carousel] = await Promise.all([
     source('app/[locale]/books/page.tsx'),
     source('components/library-hub.tsx'),
     source('components/holistic-house-home.tsx'),
-    source('components/home-deferred-sections.tsx'),
-    source('components/home-deferred-content.tsx'),
-    source('components/home-expanded-catalog.tsx'),
     source('components/home-section-carousel.tsx'),
   ]);
   assert.match(page, /<BookCatalog/);
   assert.match(hub, /\/books/);
   assert.match(hub, /\/homeopathy\/remedies/);
   assert.match(hub, /\/wu-xing/);
-  // The dialogue-first Home preserves Ideas/books, but intentionally loads
-  // the editorial carousel only after the visitor opens More. Verify the
-  // complete published route instead of requiring an eager first paint.
-  assert.match(home, /<HomeDeferredSections locale=\{locale\}/);
-  assert.match(deferred, /HomeDeferredContent/);
-  assert.match(deferredContent, /HomeExpandedCatalog/);
-  assert.match(expanded, /<HomeSectionCarousel locale=\{locale\}/);
+  assert.match(home, /<HomeSectionCarousel locale=\{locale\}/);
   assert.match(carousel, /key: "ideas", href: "\/books"/);
 });
