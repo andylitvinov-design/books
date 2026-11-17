@@ -1,17 +1,23 @@
 "use client";
-import {useEffect,useRef,useState} from "react";
+import {useEffect,useMemo,useRef,useState} from "react";
 import Link from "next/link";
 import {createClient} from "@supabase/supabase-js";
 import styles from "./admin-studio-music.module.css";
+import {PUBLIC_MUSIC_TAG_LABELS,musicTagLabel,safeStudioMusicTags,studioMusicFilter} from "@/lib/mandala/studio-music-catalog.mjs";
 import {
  STUDIO_MUSIC_CATEGORIES,STUDIO_MUSIC_MAX_BYTES,
  studioMusicFileInfo
 } from "@/lib/mandala/studio-music-contract.mjs";
 
 const words={
- ru:{title:"Музыкальная библиотека MyVideo",hint:"Загрузите до 30 качественных аудиодорожек за один раз. Исходники сначала сохраняются приватно; только после прослушивания, оценки и подтверждения прав они появятся в монтаже.",cat:"Категория для новых записей",choose:"Выбрать аудиофайлы",send:"Загрузить все",sending:"Загрузка",saved:"Сохранённые записи",empty:"Пока нет загруженных композиций",listen:"Прослушать",publish:"Опубликовать в MyVideo",retire:"Скрыть",rights:"Я проверил качество, права на коммерческое использование в видео и публичное воспроизведение этой фонограммы.",quality:"Моя оценка звучания",done:"Файлы приняты. Прослушайте и одобрите каждую запись отдельно.",problem:"Не удалось загрузить или сохранить некоторые файлы.",back:"В Video Studio",count:"Файлов в очереди",list:"Из них опубликовано",limit:"MP3, M4A, WAV · до 15 МБ каждый · до 30 за пакет",status:{pending:"Ожидает загрузки",ready:"Приватно",published:"Опубликовано",retired:"Скрыто"},categories:{wellbeing:"Восстановление",focus:"Сосредоточение",calm:"Спокойствие",energy:"Энергия",love:"Любовь"}},
- en:{title:"MyVideo music library",hint:"Add up to 30 high-quality recordings at once. Originals stay private until you listen, rate and confirm rights for video use and public previews.",cat:"New music category",choose:"Choose audio files",send:"Upload all",sending:"Uploading",saved:"Saved recordings",empty:"No music uploaded yet",listen:"Listen",publish:"Publish to MyVideo",retire:"Hide",rights:"I listened to this recording and verified commercial video-sync and public recording-preview rights.",quality:"My listening score",done:"Files uploaded. Listen and approve each recording separately.",problem:"Some music files could not be uploaded.",back:"Video Studio",count:"Files queued",list:"Published",limit:"MP3, M4A, WAV · 15 MB per file · 30 per batch",status:{pending:"Pending upload",ready:"Private",published:"Published",retired:"Hidden"},categories:{wellbeing:"Wellbeing",focus:"Focus",calm:"Calm",energy:"Energy",love:"Love"}},
- es:{title:"Biblioteca musical MyVideo",hint:"Sube hasta 30 pistas de calidad. Las grabaciones siguen privadas hasta que las escuches, evalúes y confirmes los derechos.",cat:"Categoría",choose:"Elegir archivos",send:"Subir todos",sending:"Subiendo",saved:"Grabaciones guardadas",empty:"Todavía no hay pistas",listen:"Escuchar",publish:"Publicar en MyVideo",retire:"Ocultar",rights:"He escuchado la grabación y confirmado los derechos para vídeo comercial y reproducción pública.",quality:"Mi valoración",done:"Archivos subidos. Escucha y aprueba cada grabación.",problem:"Algunos archivos no se pudieron subir.",back:"Video Studio",count:"Archivos pendientes",list:"Publicados",limit:"MP3, M4A, WAV · 15 MB por archivo · 30 por lote",status:{pending:"Pendiente",ready:"Privado",published:"Publicado",retired:"Oculto"},categories:{wellbeing:"Bienestar",focus:"Concentración",calm:"Calma",energy:"Energía",love:"Amor"}}
+ ru:{title:"Музыкальная библиотека MyVideo",hint:"Загрузите до 30 качественных аудиодорожек за один раз. Исходники сохраняются приватно. Записи с проверенными файлами и лицензией доступны для ручного выбора; после прослушивания и оценки они попадут в одобренную подборку.",cat:"Категория для новых записей",choose:"Выбрать аудиофайлы",send:"Загрузить все",sending:"Загрузка",saved:"Сохранённые записи",empty:"Пока нет загруженных композиций",listen:"Прослушать",publish:"Опубликовать в MyVideo",retire:"Скрыть",rights:"Я проверил качество, права на коммерческое использование в видео и публичное воспроизведение этой фонограммы.",quality:"Моя оценка звучания",done:"Файлы приняты. Прослушайте и одобрите каждую запись отдельно.",problem:"Не удалось загрузить или сохранить некоторые файлы.",back:"В Video Studio",count:"Файлов в очереди",list:"Из них опубликовано",limit:"MP3, M4A, WAV · до 15 МБ каждый · до 30 за пакет",status:{pending:"Ожидает загрузки",ready:"Приватно",published:"Опубликовано",retired:"Скрыто"},categories:{wellbeing:"Восстановление",focus:"Сосредоточение",calm:"Спокойствие",energy:"Энергия",love:"Любовь"}},
+ en:{title:"MyVideo music library",hint:"Add up to 30 high-quality recordings at once. Uploads stay private. Source-verified classics can be selected manually; listening approval is still required for the reviewed collection.",cat:"New music category",choose:"Choose audio files",send:"Upload all",sending:"Uploading",saved:"Saved recordings",empty:"No music uploaded yet",listen:"Listen",publish:"Publish to MyVideo",retire:"Hide",rights:"I listened to this recording and verified commercial video-sync and public recording-preview rights.",quality:"My listening score",done:"Files uploaded. Listen and approve each recording separately.",problem:"Some music files could not be uploaded.",back:"Video Studio",count:"Files queued",list:"Published",limit:"MP3, M4A, WAV · 15 MB per file · 30 per batch",status:{pending:"Pending upload",ready:"Private",published:"Published",retired:"Hidden"},categories:{wellbeing:"Wellbeing",focus:"Focus",calm:"Calm",energy:"Energy",love:"Love"}},
+ es:{title:"Biblioteca musical MyVideo",hint:"Sube hasta 30 pistas de calidad. Las cargas siguen privadas. La música con origen verificado puede seleccionarse manualmente; la colección aprobada requiere escucharla y evaluarla.",cat:"Categoría",choose:"Elegir archivos",send:"Subir todos",sending:"Subiendo",saved:"Grabaciones guardadas",empty:"Todavía no hay pistas",listen:"Escuchar",publish:"Publicar en MyVideo",retire:"Ocultar",rights:"He escuchado la grabación y confirmado los derechos para vídeo comercial y reproducción pública.",quality:"Mi valoración",done:"Archivos subidos. Escucha y aprueba cada grabación.",problem:"Algunos archivos no se pudieron subir.",back:"Video Studio",count:"Archivos pendientes",list:"Publicados",limit:"MP3, M4A, WAV · 15 MB por archivo · 30 por lote",status:{pending:"Pendiente",ready:"Privado",published:"Publicado",retired:"Oculto"},categories:{wellbeing:"Bienestar",focus:"Concentración",calm:"Calma",energy:"Energía",love:"Amor"}}
+};
+const filtersWords={
+ ru:{find:"Поиск по названию или исполнителю",all:"Все категории",tags:"Любые теги",source:"Источник записи",verified:"Подлинный аудиофайл проверен"},
+ en:{find:"Search titles or performers",all:"All categories",tags:"Any tag",source:"Recording source",verified:"Original audio verified"},
+ es:{find:"Buscar título o intérprete",all:"Todas las categorías",tags:"Cualquier etiqueta",source:"Fuente de grabación",verified:"Audio original verificado"}
 };
 const address="/api/admin/studio-music";
 const post=async input=>{
@@ -23,12 +29,14 @@ const post=async input=>{
 };
 export default function AdminStudioMusic({locale="ru"}){
  const t=words[locale]||words.ru;
+ const ft=filtersWords[locale]||filtersWords.ru;
  const [items,setItems]=useState([]),[files,setFiles]=useState([]);
  const [category,setCategory]=useState("calm");
  const [busy,setBusy]=useState(false),[progress,setProgress]=useState("");
  const [notice,setNotice]=useState(""),[error,setError]=useState("");
  const [preview,setPreview]=useState(null);
  const [reviews,setReviews]=useState({});
+ const [filterCategory,setFilterCategory]=useState("all"),[filterTag,setFilterTag]=useState("all"),[filterQuery,setFilterQuery]=useState("");
  const input=useRef(null),mounted=useRef(true);
  useEffect(()=>{mounted.current=true;void reload();return()=>{mounted.current=false}},[]);
  async function reload(){
@@ -105,6 +113,10 @@ export default function AdminStudioMusic({locale="ru"}){
   catch{setError(t.problem)}finally{setBusy(false)}
  }
  const published=items.filter(x=>x.status==="published").length;
+ const tags=useMemo(()=>Object.keys(PUBLIC_MUSIC_TAG_LABELS)
+  .filter(k=>items.some(v=>safeStudioMusicTags(v.tags).includes(k))),[items]);
+ const visible=useMemo(()=>studioMusicFilter(items,{category:filterCategory,tag:filterTag,query:filterQuery}),
+  [items,filterCategory,filterTag,filterQuery]);
  return <main className={styles.page} data-studio-music-owner lang={locale}>
   <header className={styles.head}><div>
    <h1>{t.title}</h1><p>{t.hint}</p>
@@ -132,9 +144,28 @@ export default function AdminStudioMusic({locale="ru"}){
   </section>
   <section className={styles.panel}>
    <h2>{t.saved}: {items.length} · {t.list}: {published}</h2>
+   <div className={styles.filters}>
+    <input aria-label={ft.find} placeholder={ft.find} value={filterQuery} maxLength={100}
+     onChange={v=>setFilterQuery(v.target.value)}/>
+    <select aria-label={ft.all} value={filterCategory} onChange={v=>setFilterCategory(v.target.value)}>
+     <option value="all">{ft.all}</option>{STUDIO_MUSIC_CATEGORIES.map(k=><option key={k} value={k}>{t.categories[k]}</option>)}
+    </select>
+    <select aria-label={ft.tags} value={filterTag} onChange={v=>setFilterTag(v.target.value)}>
+     <option value="all">{ft.tags}</option>{tags.map(k=><option key={k} value={k}>{musicTagLabel(k,locale)}</option>)}
+    </select>
+    <small>{visible.length}/{items.length}</small>
+   </div>
    {items.length===0?<p>{t.empty}</p>:
-    <div className={styles.grid}>{items.map(item=><article key={item.id} className={styles.record} data-studio-music-row={item.id}>
-     <div><strong>{item.title}</strong><small>{t.categories[item.category]} · {(item.bytes/1048576).toFixed(1)} MB · {t.status[item.status]}</small></div>
+    <div className={styles.grid}>{visible.map(item=><article key={item.id} className={styles.record} data-studio-music-row={item.id}>
+     <div><strong>{item.title}</strong>
+      <small>{t.categories[item.category]} · {(item.bytes/1048576).toFixed(1)} MB · {t.status[item.status]}</small>
+      {item.composer&&<small>{item.composer} · {item.performer||""}</small>}
+      <div className={styles.tags}>{safeStudioMusicTags(item.tags).filter(k=>PUBLIC_MUSIC_TAG_LABELS[k]).slice(0,6)
+       .map(k=><small key={k}>{musicTagLabel(k,locale)}</small>)}</div>
+      {item.sourceVerified&&<small>{ft.verified} · {item.licenseCode}</small>}
+      {item.sourcePage?.startsWith("https://commons.wikimedia.org/wiki/File:")&&
+       <a href={item.sourcePage} target="_blank" rel="noopener noreferrer">{ft.source}</a>}
+     </div>
      {(item.status==="ready"||item.status==="published")&&
       <button onClick={()=>listen(item)} disabled={busy}>{t.listen}</button>}
      {preview?.id===item.id&&<audio src={preview.url} controls preload="none" className={styles.player}/>}

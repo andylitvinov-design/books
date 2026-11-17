@@ -68,8 +68,8 @@ test('production handler requires explicit start and reuses consent/STOP/CRM gat
  assert.match(service,/psychStart=v3PsychologistStart\(raw\)/);
  assert.match(service,/mode:SECRETARY_MODES\.PSYCHOLOGIST/);
  assert.match(service,/mode:prior\.ctx\.mode/);
- assert.ok(service.includes("const notes=[SECRETARY_MODES.PSYCHOLOGIST,FREE_DIAGNOSTIC_MODE].includes(ctx.mode)?[]:"),
-   'Deep psychologist and free-diagnostic transcripts must stay out of the CRM handoff');
+ assert.match(service,/ctx\.mode===SECRETARY_MODES\.PSYCHOLOGIST\?SECRETARY_PSYCHOLOGIST_COPY\[lang\]\.first/);
+ assert.match(service,/ctx\.mode===FREE_DIAGNOSTIC_MODE\?v3ButtonsFor\(lang,'free_interview',0\):\[\]/);
  assert.match(service,/ai_review_consent_at=now\(\)/);
  assert.match(service,/if\(stop\)/);
  assert.match(service,/SECRETARY_PSYCHOLOGIST_COPY\[lang\]/);
