@@ -528,6 +528,13 @@ export default function MessagesOrdersClients({locale:routeLocale='en',children}
     <div id="hh-clients-panel" role="tabpanel" className={styles.clients} hidden={section!=='clients'}>
       {guestAccess?(section==='clients'?<MessengerGuestGate locale={locale} section="clients"/>:null):<>
       {listHelper}
+      {ordersData?.hasPractice&&<Link
+        href={'/'+locale+'/app/messages/telegram-settings'} prefetch={false}
+        className={styles.telegramSettingsLink} data-owner-telegram-settings-shortcut>
+        <span>{locale==='ru'?'⚙ Настройки Telegram-бота':locale==='es'?
+          '⚙ Configuración del bot Telegram':'⚙ Telegram bot settings'}</span>
+        <ChevronRight size={18} aria-hidden="true"/>
+      </Link>}
       {clientsVisited&&(isValidElement(children)?cloneElement(children,{
         locale,onClientsCount:setClientCount,onDetailChange:setClientDetailOpen}):children)}
       </>}
