@@ -99,14 +99,12 @@ jobs:
     concurrency:
       group: ${{ (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.dry_run == true)) && 'hh-watchdog-inspection-only' || 'hh-control-tower-single-writer' }}
       cancel-in-progress: false
+    # Completed Core and worker events use only the lightweight direct-handoff
+    # job, not this expensive all-PR reconciliation.
     if: >-
       github.repository == 'andylitvinov-design/books' &&
       github.ref == 'refs/heads/codex/bootstrap-books' &&
-      (
-        # Completed Core and worker events use only the lightweight
-        # direct-handoff job, not the expensive all-PR reconcile.
-        github.event_name != 'workflow_run'
-      ) &&
+      github.event_name != 'workflow_run' &&
       github.event_name != 'pull_request_target' &&
       !(github.event_name == 'workflow_dispatch' &&
         (github.event.inputs.completion_wake == 'true' ||
