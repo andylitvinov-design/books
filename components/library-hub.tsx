@@ -451,7 +451,7 @@ export function buildPublicVideoDiscoveryItems(
   }));
   // One canonical public index, de-duplicated by YouTube ID. Unknown, private,
   // draft and unapproved clips never gain publication rights from this merge.
-  const publishedVideos = buildPublishedVideoIndex([
+  const indexedVideos = buildPublishedVideoIndex([
     ...originalPsiMasterPractices,
     ...siteIntroductions,
     ...seriesItems,
@@ -468,7 +468,7 @@ export function buildPublicVideoDiscoveryItems(
       ?{mytubeSection:"masters" as const,author:"Andy",
          aiAssisted:approvedAiMasterIds.has(video.youtubeId)}:{}),
   }));
-  return [...publishedVideos, ...listApprovedLocalFilmScenes(locale)];
+  return [...indexedVideos, ...listApprovedLocalFilmScenes(locale)];
 }
 export function LibraryHub({ locale, view = "latest", publishedVideos = [], articles = [], approvedMeditations = [] }: {
   locale: PublicLocale;
