@@ -6,9 +6,9 @@ import {listMeaningAxes} from "@/lib/mandala/meaning-emotion/idea-engine.mjs";
 import type {VideoLocale} from "@/lib/mandala/holistic-video-themes";
 import css from "./mandala-video-personalization.module.css";
 
-export type VideoGoalProfile={current:string[];desired:string[];axes:string[];energy:number;desiredLevel:number};
+export type VideoGoalProfile={name?:string;current:string[];desired:string[];axes:string[];energy:number;desiredLevel:number};
 export const DEFAULT_VIDEO_GOAL_PROFILE:VideoGoalProfile={
- current:["fatigue"],desired:["calm"],axes:["meaning"],energy:4,desiredLevel:6,
+ name:"",current:["fatigue"],desired:["calm"],axes:["meaning"],energy:4,desiredLevel:6,
 };
 type Mood="sad"|"calm"|"happy";
 type Axis={id:string;label:string;description:string};
@@ -67,9 +67,9 @@ const desiredByMood:Record<Mood,string[]>={
 };
 const moods:[Mood,string][]=[["sad","☹"],["calm","☺"],["happy","☻"]];
 const copy={
- ru:{step:"Идеи · Персонализация",title:"Персонализируйте своё видео",intro:"Выберите своё состояние, желаемое чувство и то, что хотите укрепить.",now:"Как я чувствую себя сейчас?",want:"Как я хотел бы себя чувствовать?",strength:"Что я хочу укрепить?",choose:"Выберите один или несколько вариантов",axisHint:"Выберите одно или несколько направлений",energy:"Моя энергия сейчас",level:"Мой желаемый уровень",more:"Прокрутите для других вариантов",back:"Назад к цели",next:"Перейти к концепции",moods:{sad:"Грустное",calm:"Спокойное",happy:"Радостное"}},
- en:{step:"Ideas · Personalization",title:"Personalize your video",intro:"Choose how you feel now, how you would like to feel, and what you want to strengthen.",now:"How do I feel now?",want:"How would I like to feel?",strength:"What would I like to strengthen?",choose:"Choose one or more phrases",axisHint:"Choose one or more directions",energy:"My energy level now",level:"My desired level",more:"Scroll for more choices",back:"Back to goal",next:"Review video concept",moods:{sad:"Sad",calm:"Calm",happy:"Happy"}},
- es:{step:"Ideas · Personalización",title:"Personaliza tu vídeo",intro:"Elige cómo te sientes, cómo te gustaría sentirte y qué quieres fortalecer.",now:"¿Cómo me siento ahora?",want:"¿Cómo me gustaría sentirme?",strength:"¿Qué me gustaría fortalecer?",choose:"Elige una o varias frases",axisHint:"Elige una o varias direcciones",energy:"Mi energía actual",level:"Mi nivel deseado",more:"Desliza para ver más",back:"Volver al objetivo",next:"Revisar el concepto",moods:{sad:"Triste",calm:"Tranquilo",happy:"Alegre"}},
+ ru:{step:"Идеи · Персонализация",title:"Персонализируйте своё видео",intro:"Выберите своё состояние, желаемое чувство и то, что хотите укрепить.",now:"Как я чувствую себя сейчас?",want:"Как я хотел бы себя чувствовать?",strength:"Что я хочу укрепить?",choose:"Выберите один или несколько вариантов",axisHint:"Выберите одно или несколько направлений",energy:"Моя энергия сейчас",level:"Мой желаемый уровень",more:"Прокрутите для других вариантов",nameQuestion:"Как вас зовут?",namePlaceholder:"Ваше имя",nameHint:"Необязательно · имя появится в последней фразе поддержки.",back:"Назад к цели",next:"Перейти к концепции",moods:{sad:"Грустное",calm:"Спокойное",happy:"Радостное"}},
+ en:{step:"Ideas · Personalization",title:"Personalize your video",intro:"Choose how you feel now, how you would like to feel, and what you want to strengthen.",now:"How do I feel now?",want:"How would I like to feel?",strength:"What would I like to strengthen?",choose:"Choose one or more phrases",axisHint:"Choose one or more directions",energy:"My energy level now",level:"My desired level",more:"Scroll for more choices",nameQuestion:"What is your name?",namePlaceholder:"Your first name",nameHint:"Optional · the final suggested phrase will use your name.",back:"Back to goal",next:"Review video concept",moods:{sad:"Sad",calm:"Calm",happy:"Happy"}},
+ es:{step:"Ideas · Personalización",title:"Personaliza tu vídeo",intro:"Elige cómo te sientes, cómo te gustaría sentirte y qué quieres fortalecer.",now:"¿Cómo me siento ahora?",want:"¿Cómo me gustaría sentirme?",strength:"¿Qué me gustaría fortalecer?",choose:"Elige una o varias frases",axisHint:"Elige una o varias direcciones",energy:"Mi energía actual",level:"Mi nivel deseado",more:"Desliza para ver más",nameQuestion:"¿Cómo te llamas?",namePlaceholder:"Tu nombre",nameHint:"Opcional · la última frase de apoyo incluirá tu nombre.",back:"Volver al objetivo",next:"Revisar el concepto",moods:{sad:"Triste",calm:"Tranquilo",happy:"Alegre"}},
 } as const;
 export const goalCurrentMeaningId=(id:string)=>currentChoices.find(c=>c.id===id)?.meaning||"present";
 export const goalDesiredMeaningId=(id:string)=>desiredChoices.find(c=>c.id===id)?.meaning||"calm";
@@ -130,6 +130,19 @@ export function MandalaVideoPersonalization({locale,value,onChange,onBack,onCont
  return <div className={css.wizard} data-video-personalization>
   <header className={css.intro}><span className={css.step}>{t.step}</span>
    <h2>{t.title}</h2><p>{t.intro}</p></header>
+  <section className={css.nameCard} data-video-personalization-name-question>
+   <label htmlFor="video-personalization-name">{t.nameQuestion}</label>
+   <input id="video-personalization-name" data-video-personalization-name type="text"
+    name="preferredName" autoComplete="given-name" maxLength={18}
+    placeholder={t.namePlaceholder} value={value.name??""} disabled={disabled}
+    onChange={event=>{
+      // React may invoke a functional state updater after the input event.
+      // Capture the value now: currentTarget is not stable inside that callback.
+      const name=event.currentTarget.value;
+      onChange(old=>({...old,name}));
+     }}/>
+   <p>{t.nameHint}</p>
+  </section>
   <section className={css.card} data-personalization-kind="current" aria-labelledby="personalization-now-heading">
    <div className={css.cardHead}><div className={css.cardName}>
     <Heart size={25} aria-hidden="true"/><div><h3 id="personalization-now-heading">{t.now}</h3><p>{t.choose}</p></div>
