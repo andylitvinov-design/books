@@ -59,6 +59,8 @@ on:
       - 'package-lock.json'
       - 'scripts/ci-heavy-impact.mjs'
       - '.github/workflows/hh-app-r1.yml'
+      - '!app/api/app/crm/messenger/webhook/**'
+      - '!lib/app/client-telegram-transport.js'
 permissions:
   contents: read
   pull-requests: read

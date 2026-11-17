@@ -207,3 +207,59 @@ test('CRM provider webhook edits do not fan out unrelated Google/Axis/audio PR j
   assert.match(push,/app\/api\/app\/\*\*/,'postmerge private media audit must remain broad');
   assert.doesNotMatch(push,/!app\/api\/app\/crm\/messenger\/webhook/);
 });
+
+test('shared Telegram provider transport has one canonical suite and independent source owners',()=>{
+  const ingress='app/api/app/crm/messenger/webhook/[provider]/route.js';
+  const transport='lib/app/client-telegram-transport.js';
+  // Private client messages remain gated; only signed CRM ingress and
+  // shared Telegram transport stop fan-out to unrelated heavy domains.
+  for(const name of ['ia-v2.yml','hh-app-r1.yml','hh-owner-telegram-video.yml']){
+    for(const file of [ingress,transport])
+      assert.equal(matchesTrigger(trigger(name),[file],TARGET),false,
+        name+': shared source must not trigger unrelated full browser/FFmpeg suites');
+  }
+  for(const name of ['hh-owner-ai-telegram.yml','hh-practice-telegram-digest.yml'])
+    assert.equal(matchesTrigger(trigger(name),[transport],TARGET),false,
+      name+': shared transport contracts now owned by notification workflow');
+  for(const [name,file] of [
+    ['hh-crm-source-check.yml',ingress],['hh-app-browser.yml',ingress],
+    ['hh-pr-core-release.yml',ingress],['hh-messenger-notification-build.yml',transport],
+    ['hh-ideas-coaching-public.yml','components/coaching-intake-form.tsx'],
+    ['hh-free-review-live-mobile.yml','components/coaching-intake-form.tsx'],
+  ]) assert.equal(matchesTrigger(trigger(name),[file],TARGET),true,
+      name+': relevant independent specialist/CORE must stay active');
+  const sample=[ingress,transport,'components/coaching-intake-form.tsx'];
+  const owners=['ia-v2.yml','hh-app-r1.yml','hh-owner-ai-telegram.yml',
+    'hh-owner-telegram-video.yml','hh-practice-telegram-digest.yml',
+    'hh-crm-source-check.yml','hh-app-browser.yml',
+    'hh-messenger-notification-build.yml','hh-ideas-coaching-public.yml',
+    'hh-free-review-live-mobile.yml','hh-pr-core-release.yml'];
+  const fired=owners.filter(name=>matchesTrigger(trigger(name),sample,TARGET));
+  assert.deepEqual(fired.sort(),[
+    'hh-crm-source-check.yml','hh-app-browser.yml','hh-messenger-notification-build.yml',
+    'hh-ideas-coaching-public.yml','hh-free-review-live-mobile.yml',
+    'hh-pr-core-release.yml',
+  ].sort(),'11 separate checks on a shared Ali/Telegram PR must become six real owner checks');
+  for(const [name,owned] of [
+    ['ia-v2.yml','app/api/app/direct-messages/route.js'],
+    ['hh-app-r1.yml','app/api/app/direct-messages/route.js'],
+    ['hh-owner-telegram-video.yml','lib/practitioners/owner-telegram-video-crm-fallback.mjs'],
+    ['hh-owner-ai-telegram.yml','lib/practitioners/owner-ai-telegram.mjs'],
+    ['hh-practice-telegram-digest.yml','lib/practitioners/daily-telegram-transport.mjs'],
+  ]){
+    assert.equal(matchesTrigger(trigger(name),[owned],TARGET),true,
+      name+': own protected source still triggers independent specialist');
+    assert.equal(matchesTrigger(trigger(name),[ingress,transport,owned],TARGET),true,
+      name+': mixed real changes cannot bypass required feature checks');
+  }
+  assert.match(source('hh-crm-source-check.yml'),
+    /node --test tests\/owner-telegram-crm-ffmpeg-trace\.test\.mjs/,
+    'CRM verifies the signed Dot video/FFmpeg isolation contract');
+  const notification=source('hh-messenger-notification-build.yml');
+  for(const test of ['practitioner-owner-ai-telegram','practitioner-daily-telegram',
+    'owner-telegram-enquiry-pilot'])
+    assert.ok(notification.includes('tests/'+test+'.test.mjs'),
+      'shared canonical notification owner must preserve '+test);
+  assert.match(source('hh-owner-telegram-video.yml'),/^  workflow_dispatch:/m,
+    'the full media acceptance remains manually callable');
+});
