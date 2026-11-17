@@ -733,8 +733,8 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     const prefix=language==="ru"?"Тема поддержки: ":language==="es"?"Tema de apoyo: ":"Support topic: ";
     const need=language==="ru"?"Потребность: ":language==="es"?"Necesidad: ":"Need: ";
     const modePrompt=choice.mode==="coach"
-      ?(language==="ru"?"Хочу коучинг, чтобы разобраться со своей целью.":
-        language==="es"?"Quiero explorar mi objetivo con coaching.":"I want to explore my goal with coaching.")
+      ?(language==="ru"?"Хочу начать коучинг, чтобы разобраться со своей целью.":
+        language==="es"?"Quiero coaching para trabajar en mi objetivo.":"Let\'s do coaching. I want to work on my goal.")
       :choice.mode==="talk"
         ?(language==="ru"?"Хочу спокойно поговорить без советов и продаж.":
           language==="es"?"Quiero hablar con calma, sin consejos ni ventas.":"I want a calm conversation without advice or sales pressure.")
@@ -1130,7 +1130,11 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         method:"POST",credentials:"same-origin",signal:abort.signal,
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({locale:turnLocale,message:text,mode,history:prior,
-          selectedGoal:null,ownedInferenceConsent:mode==="owned"&&agree,
+          // Only explicit coaching choice in this first-party quiz sets the goal preference.
+          // Safety, price and stop questions still override it server-side.
+          selectedGoal:!leaveSupport&&supportSelection?.mode==="coach"
+            ?({stress:"energy",relationships:"relationships",money:"money",business:"goals"} as const)[supportSelection.category]
+            :null,ownedInferenceConsent:mode==="owned"&&agree,
           chosenAxes:axisRef?[axisRef]:[],
           preferredFormat:format||null,
           usePrivateProfile:useSavedTests&&Boolean(axisRef),

@@ -44,8 +44,9 @@ test("RU EN ES parity, consent and reset boundaries are preserved",()=>{
   assert.match(quiz,/not a human therapist/);
   assert.match(quiz,/не живой психотерапевт/);
   assert.doesNotMatch(chat,/validatedPsychologistConsent:true/);
-  assert.match(chat,/if\(supportQuizOpen\)/);
+  assert.match(chat,/supportQuizOpen\?<MessengerSupportQuiz/);
   assert.match(chat,/setSupportSelection\(null\)/);
+  assert.match(chat,/selectedGoal:!leaveSupport&&supportSelection\?\.mode==="coach"/);
   assert.match(css,/\.categories\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
 });
 
