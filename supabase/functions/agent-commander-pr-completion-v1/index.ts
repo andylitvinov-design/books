@@ -8,7 +8,7 @@ const SHA=/^[a-f0-9]{40}$/i;
 const OWNER_WORKFLOW=REPO+'/.github/workflows/hh-pr-ten-minute-watchdog.yml@refs/heads/codex/bootstrap-books';
 const AUD='hh-commander-pr';
 const T='business_brain.commander_pr_completions';
-const label=x=>typeof x==='string'&&/^[A-Z_]{3,90}$/.test(x)?x:'UNKNOWN';
+const label=x=>typeof x==='string'&&/^[A-Z0-9_]{3,90}$/.test(x)?x:'UNKNOWN';
 const validNum=n=>Number.isSafeInteger(n)&&n>0&&n<=99999999;
 const json=(status,value,origin)=>new Response(JSON.stringify(value),{status,headers:{
  'content-type':'application/json; charset=utf-8','cache-control':'private, no-store',
