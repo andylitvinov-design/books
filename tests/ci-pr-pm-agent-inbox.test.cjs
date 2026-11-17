@@ -79,15 +79,21 @@ test('only signed bot receipt confirms claimed request; daily cap counts claims 
  assert.equal(inbox.trustedReceipt({...receipt(302,99,'CLAIMED'),user:{login:'attacker',type:'User'}}),null);
 });
 
-test('bounded free router requests sufficient visible budget and suppresses reasoning',async()=>{
+test('virtual free router uses portable chat payload with zero-price and privacy cap',async()=>{
  let request=null;
  const fetcher=async(_url,options)=>{request=JSON.parse(options.body);return {ok:true,
   json:async()=>({model:'openrouter/free',usage:{cost:0},choices:[{finish_reason:'stop',message:{content:'Готовый краткий ответ.'}}]})};};
  const out=await inbox.askFree('Нужен план?',{fetcher,token:'synthetic-key'});
  assert.equal(out.ok,true);
  assert.equal(out.text,'Готовый краткий ответ.');
- assert.equal(request.max_tokens,1600);
- assert.deepEqual(request.reasoning,{enabled:false,exclude:true});
+ assert.equal(request.max_tokens,2200);
+ assert.equal(request.stream,false);
+ assert.ok(!Object.hasOwn(request,'reasoning'),
+  'required-reasoning free models must not receive reasoning.enabled=false');
+ assert.ok(!Object.hasOwn(request,'temperature'),
+  'avoid optional model-incompatible sampling hints');
+ assert.equal(request.provider.allow_fallbacks,false);
+ assert.equal(request.provider.data_collection,'deny');
  assert.equal(request.provider.max_price.prompt,0);
  assert.equal(request.provider.max_price.completion,0);
 });
