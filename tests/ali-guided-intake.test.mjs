@@ -1,0 +1,137 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {aliGuidedIntakeTurn,aliGuidedIntakeSummary,
+  aliIntakeStageFromTurns} from '../lib/assist/ali-guided-intake.mjs';
+import {v3Context} from '../lib/crm/telegram-ai-diagnostic-v3.mjs';
+
+const step=(message,stage='goal',slots={},locale='en',turns=[])=>
+  aliGuidedIntakeTurn({message,stage,slots,locale,turns});
+const countQuestions=value=>(value.match(/[?？]/gu)||[]).length;
+const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
+
+test('Ali uses exactly one goal -> obstacle -> current -> review question at a time',()=>{
+ const a=step('I want a clearer idea of where I am going with my career');
+ assert.equal(a.stage,'challenge');
+ assert.match(a.reply,/difficult/i);
+ assert.equal(countQuestions(a.reply),1);
+ assert.match(a.slots.goal,/clearer idea/);
+ const b=step('My obstacle is that I am uncertain what fits me',a.stage,a.slots);
+ assert.equal(b.stage,'situation');
+ assert.equal(countQuestions(b.reply),1);
+ const c=step('Currently I am switching work and feeling lost',b.stage,b.slots);
+ assert.equal(c.stage,'ready');
+ assert.equal(countQuestions(c.reply),0);
+ assert.match(c.reply,/Finish interview/);
+ assert.doesNotMatch(c.reply,/sent to|submitted to|diagnosed with/i);
+ const summary=aliGuidedIntakeSummary({slots:c.slots});
+ assert.match(summary,/career/);
+ assert.match(summary,/uncertain/);
+ assert.match(summary,/switching work/);
+ assert.doesNotMatch(summary,/trauma|diagnosis|therapy recommended/i);
+});
+test('An unclear, distressed or first-time visitor is not forced to invent a goal',()=>{
+ for(const text of ['Currently I am going through lots of negative events in my life',
+   'My happening life','Sorry it is my first time','Help please lol']){
+   const a=step(text);
+   assert.equal(a.stage,'goal',text);
+   assert.deepEqual(a.slots,{},text);
+   assert.equal(countQuestions(a.reply),1,text);
+ }
+ const changed=step('My goal is to regain direction after many negative events');
+ assert.equal(changed.stage,'challenge');
+ assert.match(changed.slots.goal,/regain direction/);
+});
+test('Identity, photo reading, and details questions receive an explanation first',()=>{
+ for(const text of ['You are therapist or physic','Are you a psychic?',
+   'Pls chk my energy','photo scan reading?',
+   'So what information would you exactly need?']){
+   const a=step(text);
+   assert.equal(a.stage,'goal',text);
+   assert.deepEqual(a.slots,{},text);
+   assert.equal(countQuestions(a.reply),1,text);
+ }
+ assert.match(step('photo scan reading?').reply,/can't reliably assess health/);
+ assert.match(step('You are therapist or physic').reply,/digital assistant/);
+});
+test('RU and ES ask just one question in the requested language',()=>{
+ const ru=step('Хочу понять, куда двигаться дальше','goal',{},'ru');
+ const es=step('Quiero comprender mis dificultades','goal',{},'es');
+ assert.equal(ru.stage,'challenge');
+ assert.equal(es.stage,'challenge');
+ assert.equal(countQuestions(ru.reply),1);
+ assert.equal(countQuestions(es.reply),1);
+ assert.match(ru.reply,/мешает/);
+ assert.match(es.reply,/dificultando/);
+});
+test('Explicit three-part client answer can skip repeated questions',()=>{
+ const a=step('Goal: career clarity\nProblem: difficult choices\nCurrently: changing jobs');
+ assert.equal(a.stage,'ready');
+ assert.match(a.slots.goal,/career/);
+ assert.match(a.slots.challenge,/choices/);
+ assert.match(a.slots.situation,/changing/);
+ assert.equal(countQuestions(a.reply),0);
+});
+test('Uncertainty and boundaries are respected; neither creates fake facts',()=>{
+ const one=step("I don't know");
+ assert.equal(one.stage,'goal');
+ assert.deepEqual(one.slots,{});
+ const two=step("I don't know",'goal',{},'en',[{role:'user',text:"I don't know"}]);
+ assert.equal(two.stage,'challenge');
+ assert.deepEqual(two.slots,{});
+ const paused=step('No more questions','challenge',{goal:'I want clarity'});
+ assert.equal(paused.stage,'ready');
+ assert.equal(countQuestions(paused.reply),0);
+ assert.equal(paused.slots.challenge,undefined);
+ for(const risk of ['I want to die','У меня боль в груди','/stop']){
+   assert.equal(step(risk),null,risk);
+ }
+});
+test('Corrections received after ready are included in the client-reviewed draft',()=>{
+ const slots={goal:'I want clarity',challenge:'I feel stuck',situation:'I am changing work'};
+ const followUp=step('One more detail: my family situation is changing','ready',slots);
+ assert.equal(followUp.stage,'ready');
+ const summary=aliGuidedIntakeSummary({slots:followUp.slots,turns:[
+   {role:'user',text:'I want clarity'},
+   {role:'user',text:'One more detail: my family situation is changing'},
+ ]});
+ assert.match(summary,/family situation/);
+ assert.equal(countQuestions(followUp.reply),0);
+});
+test('Existing V3 ciphertext explicitly allowlists stage and bounded factual slots',()=>{
+ const ctx=v3Context({turns:[],intakeStage:'challenge',
+   intakeSlots:{goal:'x'.repeat(500),challenge:'what is difficult',
+     diagnosis:'unverified label'},photoFileId:'test-file-id'});
+ assert.equal(ctx.intakeStage,'challenge');
+ assert.equal(ctx.intakeSlots.goal.length,360);
+ assert.equal(ctx.intakeSlots.challenge,'what is difficult');
+ assert.equal(ctx.intakeSlots.diagnosis,undefined);
+ assert.equal(ctx.photoFileId,undefined);
+ assert.equal(v3Context({turns:[],intakeStage:'secretly_sent'}).intakeStage,undefined);
+ assert.equal(v3Context({turns:[],intakeSlots:{goal:123}}).intakeSlots.goal,undefined);
+});
+test('Old V3 interviews resume from user answers, not a new interview',()=>{
+ assert.equal(aliIntakeStageFromTurns([]),'goal');
+ assert.equal(aliIntakeStageFromTurns([{role:'user',text:'Hello'}]),'goal');
+ assert.equal(aliIntakeStageFromTurns([{role:'user',text:'I want direction'}]),'challenge');
+ assert.equal(aliIntakeStageFromTurns([
+   {role:'user',text:'I want direction'}, {role:'assistant',text:'What is hard?'},
+   {role:'user',text:'I cannot decide'}, {role:'user',text:'Now is a difficult time'},
+ ]),'ready');
+});
+test('No new external calls, consent bypass or implicit CRM handoff',()=>{
+ const planner=source('lib/assist/ali-guided-intake.mjs');
+ for(const term of [/from 'node:fs'/,/\bfetch\s*\(/,/\baxios\s*\(/,
+   /\bingestMessengerEventInTransaction\s*\(/,/\bseal\s*\(/])
+   assert.doesNotMatch(planner,term);
+ const handler=source('lib/crm/telegram-ai-diagnostic-v3-service.js');
+ assert.match(handler,/aliGuidedIntakeTurn\(/);
+ assert.match(handler,/aliGuidedIntakeSummary\(/);
+ assert.match(handler,/prior\.ctx\.conversationKind!=='general'/);
+ assert.match(handler,/prior\.ctx\.mode!==SECRETARY_MODES\.PSYCHOLOGIST/);
+ assert.match(handler,/if\(!row\.ai_consent_at\|\|!/);
+ assert.match(handler,/if\(stop\)/);
+ assert.match(handler,/if\(action==='send'\)/);
+ assert.match(handler,/ai_review_consent_at=now\(\)/);
+ assert.match(handler,/ingestMessengerEventInTransaction/);
+});
