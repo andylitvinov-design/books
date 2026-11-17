@@ -181,9 +181,24 @@ async function trustedRepair(github,cmd){
  if(!signed)return {reason:'SIGNED_FAILED_CORE_PROOF_MISSING'};
  return {ok:true};
 }
-async function dispatchRepair(github,cmd,{ownerToken,fetcher=fetch}={}){
+async function dispatchRepair(github,cmd,{ownerToken,fetcher=fetch,dispatchDirect=null}={}){
  const trusted=await trustedRepair(github,cmd);
  if(!trusted.ok)return trusted;
+ // A validated owner command inside Watchdog uses its existing trusted
+ // single-writer dispatcher and GITHUB_TOKEN Actions write permission.
+ // No nested owner PAT workflow_dispatch (which currently returns HTTP 403).
+ // The normal dispatcher still signs the exact-HEAD reservation, checks
+ // failed Core source proof and admits only an available real Repair slot.
+ if(typeof dispatchDirect==='function'){
+  let result;
+  try{result=await dispatchDirect({pr:cmd.pr,sha:cmd.sha});}
+  catch(_){return {reason:'OWNER_REPAIR_DIRECT_QUEUE_UNAVAILABLE'};}
+  if(result?.dispatched===true&&result.reason==='OWNER_DIRECT_QUEUE_DISPATCH_ACCEPTED')
+   return {dispatched:true,reason:'OWNER_DIRECT_QUEUE_DISPATCH_ACCEPTED'};
+  const cause=typeof result?.reason==='string'&&
+    /^[A-Z0-9_]{3,75}$/.test(result.reason)?result.reason:'NOT_ADMITTED';
+  return {dispatched:false,reason:'OWNER_REPAIR_DIRECT_'+cause};
+ }
  // The bot GITHUB_TOKEN changes the workflow_dispatch actor to
  // github-actions[bot], which validOwnerRepairTarget deliberately rejects.
  if(typeof ownerToken!=='string'||!ownerToken.trim())
@@ -219,7 +234,7 @@ async function dispatchRepair(github,cmd,{ownerToken,fetcher=fetch}={}){
  }catch(_){return {reason:'OWNER_REPAIR_DISPATCH_AMBIGUOUS_NO_RETRY'};}
  return {dispatched:true,reason:'OWNER_DISPATCH_ACCEPTED_UNCORRELATED'};
 }
-async function dispatchLive(github,cmd,{ownerToken,fetcher=fetch}={}){
+async function dispatchLive(github,cmd,{ownerToken,fetcher=fetch,dispatchDirect=null}={}){
  let pr;try{pr=(await github.rest.pulls.get({owner:OWNER,repo:REPO,pull_number:cmd.pr})).data;}
  catch(_){return {reason:'GITHUB_PR_READ_UNAVAILABLE'};}
  if(pr?.number!==cmd.pr||pr.base?.ref!=='codex/public-book-library'||
@@ -236,7 +251,7 @@ async function dispatchLive(github,cmd,{ownerToken,fetcher=fetch}={}){
  if(labels.has('hh:hold')||labels.has('hh:blocked'))
   return {watching:true,sha:pr.head.sha,reason:'OWNER_HOLD_NOT_OVERRIDDEN'};
  if(labels.has('hh:repair-needed')&&pr.mergeable===true){
-  const repair=await dispatchRepair(github,{...cmd,sha:pr.head.sha},{ownerToken,fetcher});
+  const repair=await dispatchRepair(github,{...cmd,sha:pr.head.sha},{ownerToken,fetcher,dispatchDirect});
   // Propagate HTTP 204 dispatch acceptance, but never conflate it with
   // runner start, model call, source patch, green CI or protected merge.
   return {watching:true,sha:pr.head.sha,dispatched:repair.dispatched===true,
@@ -313,7 +328,7 @@ async function dispatchSource(github,cmd,{ownerToken,fetcher=fetch}={}){
  }catch(_){return {reason:'SOURCE_DISPATCH_AMBIGUOUS_NO_RETRY'};}
 }
 async function run({github,core,context,fetcher=fetch,token=undefined,
- ownerToken=undefined,ownerFetcher=fetch}={}){
+ ownerToken=undefined,ownerFetcher=fetch,dispatchDirect=null}={}){
  const issueComment=context.eventName==='issue_comment';
  const trustedIssueComment=issueComment&&context.payload?.issue?.number===ISSUE&&
   !context.payload?.issue?.pull_request&&context.payload?.comment?.user?.login===OWNER&&
@@ -343,11 +358,15 @@ async function run({github,core,context,fetcher=fetch,token=undefined,
  try{if(!await send(github,claimBody(cmd,runUrl)))return {status:'CLAIM_NOT_CONFIRMED'};}
  catch(_){return {status:'CLAIM_UNAVAILABLE_NO_DISPATCH'};}
  let outcome;
+ // The owner command was authenticated against GitHub issue #3890 above.
+ // Only this claimed comment ID may become a same-run direct queue intent.
+ const trustedDispatch=typeof dispatchDirect==='function'?
+  target=>dispatchDirect({...target,ownerCommentId:cmd.id}):null;
  try{outcome=cmd.kind==='ask'?
   await askFree(cmd.text,{fetcher,token,run:runUrl}):cmd.kind==='source'?
   await dispatchSource(github,cmd,{ownerToken,fetcher:ownerFetcher}):cmd.kind==='live'?
-  await dispatchLive(github,cmd,{ownerToken,fetcher:ownerFetcher}):
-  await dispatchRepair(github,cmd,{ownerToken,fetcher:ownerFetcher});
+  await dispatchLive(github,cmd,{ownerToken,fetcher:ownerFetcher,dispatchDirect:trustedDispatch}):
+  await dispatchRepair(github,cmd,{ownerToken,fetcher:ownerFetcher,dispatchDirect:trustedDispatch});
  }catch(_){outcome={reason:'INBOX_EXECUTION_UNAVAILABLE_NO_RETRY'};}
  try{await send(github,resultBody(cmd,outcome,runUrl));}
  catch(_){return {status:'RESULT_COMMENT_UNCONFIRMED',kind:cmd.kind,commandId:cmd.id};}
