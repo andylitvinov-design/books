@@ -743,7 +743,7 @@ test('approved migration destinations contain the exact retired scope and the or
 
 test('retired optional workflow owners are explicitly reviewed without allowing arbitrary YAML deletion',()=>{
   for(const [old,successor] of [
-    ['.github/workflows/hh-app-regression.yml','.github/workflows/hh-app-r1.yml'],
+    ['.github/workflows/hh-app-regression.yml','.github/workflows/hh-actionlint.yml'],
     ['.github/workflows/hh-loose-release-ready-once.yml','.github/workflows/hh-actionlint.yml'],
   ]){
     assert.equal(APPROVED_SPECIALIST_REPLACEMENTS[old],successor);

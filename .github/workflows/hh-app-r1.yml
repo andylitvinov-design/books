@@ -58,7 +58,6 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - 'scripts/ci-heavy-impact.mjs'
-      - '.github/workflows/hh-app-regression.yml'
       - '.github/workflows/hh-app-r1.yml'
 permissions:
   contents: read
