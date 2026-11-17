@@ -22,8 +22,15 @@ test('global issue comments no longer spawn no-op Actions; PM inbox is scheduled
  assert.doesNotMatch(workflow,/^  issue_comment:/m);
  assert.ok(workflow.includes("cron: '7,27,47 * * * *'"));
  assert.ok(workflow.includes('  workflow_dispatch:'));
- assert.match(guard,/group: hh-control-tower-single-writer/);
+ assert.match(guard,/hh-watchdog-inspection-only/);
+ assert.match(guard,/hh-control-tower-single-writer/);
+ assert.match(guard,/github\.event_name == 'push'/);
+ assert.match(guard,/inputs\.dry_run == true/);
  assert.match(guard,/cancel-in-progress: false/);
+ // A pending read-only source push MUST NOT replace a real queued owner
+ // command; all source-writing event handoffs still use the original lock.
+ const direct=workflow.split('  direct-handoff:')[1]?.split('  reactivate-schedules:')[0]||'';
+ assert.match(direct,/group: hh-control-tower-single-writer/);
  assert.match(reconcile,/HH PM inbox using verified Github free secret/);
  assert.ok(reconcile.includes("github.event_name == 'schedule'"));
  assert.ok(reconcile.includes("github.event_name == 'workflow_dispatch' && inputs.dry_run != true"));
