@@ -483,7 +483,10 @@ test('iPhone buffered MP3 animates from decoded actual waveform without another 
   assert.equal(levels.at(-1),null,'Stop resets moving mouth')
   const page=source('components/my-coach-live-dialogue.jsx')
   const loop=source('components/my-coach-speech-loop.jsx')
-  assert.match(page,/onLevel:level=>\{if\(!controller\.signal\.aborted/)
+  // Real audio PCM is tested above, but approved photo/MP4 presentation must
+  // never reintroduce browser-side face/mouth morphs or fake amplitude effects.
+  assert.doesNotMatch(page,/onLevel:level=>\{if\(!controller\.signal\.aborted/)
+  assert.doesNotMatch(page,/setPortraitLevel|onVoiceLevel=\{setPortraitLevel\}/)
   assert.match(loop,/onLevel:level=>\{if\(live\(\)\)levelRef\.current\?\.\(level\)/)
 })
 
