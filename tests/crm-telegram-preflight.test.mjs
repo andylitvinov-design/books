@@ -143,7 +143,7 @@ test('owner API and UI require verified sign-in and explicit action; all real de
   assert.match(route,/inspectTelegramBotIdentity\(\)/)
   assert.match(ui,/action\('verify_telegram',\{channel:'telegram'\}\)/)
   assert.match(ui,/action\('sync_telegram_business_updates',\{channel:'telegram'\}\)/)
-  assert.match(ui,/botCheck.businessCapable===true&&botCheck.businessUpdatesReady!==true/)
+  assert.match(ui,/botCheck.businessCapable===true&&\s*botCheck.businessUpdatesReady!==true/)
   assert.match(ui,/botCheck\.webhookState/)
   assert.match(provider,/channelTransportReady\('telegram',env\)/)
   assert.match(provider,/TELEGRAM_WEBHOOK_ALREADY_IN_USE/)
