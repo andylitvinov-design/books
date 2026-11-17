@@ -1,56 +1,95 @@
-.root{box-sizing:border-box;width:calc(100% - 24px);max-width:520px;margin:6px auto 16px;color:var(--hh-light-ink,#143d3a);font-family:Arial,Helvetica,sans-serif;min-width:0}
-.root *{box-sizing:border-box}
-.hero{position:relative;overflow:hidden;isolation:isolate;padding:9px 15px 10px;border-radius:22px 22px 9px 9px;background:linear-gradient(92deg,#fffaf3 0%,#fff8eceb 63%,#fff8ec55 100%),url("/images/holistic-house/reiki-approved-sunrise-v3.webp") right 43%/cover no-repeat}
-.eyebrow{display:inline-flex;align-items:center;gap:5px;color:#08765c;font:700 10px/1.2 Arial,Helvetica,sans-serif;letter-spacing:.085em}
-.hero h1{max-width:94%;margin:3px 0 0;color:#143d3a;font:700 clamp(26px,7vw,32px)/1.05 Georgia,"Times New Roman",serif;letter-spacing:-.025em}
-.hero p{margin:5px 0 0;color:#465958;font:500 clamp(12px,3.3vw,14px)/1.25 Arial,Helvetica,sans-serif}
-.form{display:grid;gap:7px;margin-top:4px;padding:9px 10px 10px;background:var(--hh-light-surface,#fffcf7);border:1px solid var(--hh-light-border,#e9dfd1);border-radius:20px;box-shadow:0 5px 20px #60432b12}
-.progress{display:flex;align-items:center;gap:10px;justify-content:flex-end;min-height:13px;color:#527268;font:700 11px/1 Arial,Helvetica,sans-serif}
-.progressTrack{width:68px;height:5px;overflow:hidden;border-radius:99px;background:#e3ebe3}
-.progressTrack span{display:block;height:100%;background:var(--hh-light-primary,#067a67);border-radius:99px;transition:width .16s ease}
-.question{display:block;min-width:0;border:0;padding:0;margin:0}
-.question legend{display:flex;align-items:center;gap:7px;padding:0 0 5px;color:#153d33;font:700 clamp(14px,3.9vw,16px)/1.12 Arial,Helvetica,sans-serif}
-.questionNumber{display:inline-grid;place-items:center;flex:none;width:21px;height:21px;border-radius:50%;background:#e7f4e9;color:#076648;font:800 12px/1 Arial,Helvetica,sans-serif}
-.choices{display:grid;gap:5px;min-width:0}
-.choices[data-question-kind="topic"]{grid-template-columns:repeat(3,minmax(0,1fr))}
-.choices[data-question-kind="mode"]{grid-template-columns:repeat(2,minmax(0,1fr))}
-.choices[data-question-kind="channel"],.choices[data-question-kind="budget"]{grid-template-columns:repeat(4,minmax(0,1fr))}
-.choice{display:flex;align-items:center;justify-content:center;gap:4px;min-width:0;min-height:35px;padding:4px 3px;border:1px solid #e1dbd1;border-radius:11px;background:#fffaf3;color:#183e35;cursor:pointer;text-align:center;font:650 clamp(12px,3.4vw,14px)/1.15 Arial,Helvetica,sans-serif;overflow-wrap:anywhere}
-.choices[data-question-kind="topic"] .choice{min-height:38px}
-.choices[data-question-kind="mode"] .choice{min-height:34px}
-.choice svg{flex:none;color:var(--hh-light-primary,#067a67)}
-.choice[aria-pressed="true"]{border:2px solid var(--hh-light-primary,#067a67);padding:3px 2px;background:var(--hh-light-primary-soft,#e6f6f1);color:#07553f}
-.choice:hover{border-color:#08836b}
-.submit{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;min-height:45px;margin-top:2px;border:0;border-radius:14px;background:var(--hh-light-primary,#067a67);color:#fff;font:750 16px/1.18 Arial,Helvetica,sans-serif;cursor:pointer}
-.submit:disabled{background:#b3ccc0;color:#294f43;cursor:not-allowed}
-.categories{margin:10px 1px 0}
-.categoryHeader{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:7px}
-.categoryHeader h2{margin:0;min-width:0;color:#143d3a;font:700 clamp(22px,5.8vw,26px)/1.13 Georgia,"Times New Roman",serif;letter-spacing:-.02em}
-.categoryHeader a{display:flex;align-items:center;gap:2px;color:#08765c;text-decoration:none;white-space:nowrap;font:700 12px/1 Arial,Helvetica,sans-serif;min-height:34px}
-.categoryGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
-.category{display:flex;align-items:center;gap:8px;min-height:47px;padding:7px 8px;border:1px solid #e9dfd1;border-radius:14px;background:#fffcf7;color:#173d33;text-decoration:none;box-shadow:0 2px 6px #60432b0b;font:700 clamp(13px,3.7vw,15px)/1.12 Arial,Helvetica,sans-serif}
-.category svg{flex:none;color:#08736b}
-.category:nth-child(3n+2){background:#fbf2de}
-.category:nth-child(3n+3){background:#fcecf2}
-.category:nth-child(4){background:#fbf2de}
-.category:nth-child(4) svg{color:#966a1f}
-.footerRow{display:flex;justify-content:flex-end;align-items:center;gap:6px;margin-top:8px;color:#668176;font-size:12px}
-.footerRow a{color:#08765c;text-decoration:underline;text-underline-offset:3px;min-height:28px;display:flex;align-items:center}
-.results{margin:13px 0 0}
-.privacy{margin:9px 4px 0;color:#63736b;font:400 11px/1.28 Arial,Helvetica,sans-serif}
-.root :is(button,a):focus-visible{outline:3px solid var(--hh-light-focus,#176e6e);outline-offset:2px}
-@media(max-width:350px){.root{width:calc(100% - 16px)}.hero{padding:8px 10px}.hero h1{font-size:25px}.form{padding:8px}.choice{font-size:12px}.categories{margin-top:8px}.category{padding:5px;gap:5px;font-size:13px}.category svg{width:18px}.categoryHeader h2{font-size:21px}}
-@media(min-width:761px){.root{display:none}}
-@media(prefers-reduced-motion:reduce){.progressTrack span{transition:none}}
-
-/* Compact approved first screen: all four questions and the six category tiles
-   remain readable above the existing seven-item dock on portrait phones. */
-@media(max-width:760px){
-  .hero{padding:7px 13px 7px}
-  .hero h1{font-size:clamp(25px,7vw,30px);line-height:1.06;margin:1px 0 0}
-  .hero p{font-size:12.5px;line-height:1.2;margin-top:4px}
-  .form{gap:6px;padding:8px 9px}
-  .choices[data-question-kind="mode"]{grid-template-columns:repeat(4,minmax(0,1fr))}
-  .categoryHeader{margin-bottom:5px}
-  .categoryHeader h2{font-size:clamp(21px,5.8vw,24px)}
+.root {
+  box-sizing:border-box;
+  width:calc(100% - 24px);
+  max-width:520px;
+  margin:0 auto 18px;
+  color:var(--hh-light-ink,#143d3a);
+  font-family:Arial,Helvetica,sans-serif;
+  min-width:0;
 }
+.root * {box-sizing:border-box}
+.brandBar {display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:54px;padding:4px 7px}
+.brand {display:flex;align-items:center;gap:8px;min-width:0;color:#0d5336;text-decoration:none}
+.brand>svg {flex:none;color:#0d653f}
+.brand strong {display:block;color:#14372b;font:500 clamp(21px,5.5vw,27px)/1 Georgia,"Times New Roman",serif;white-space:nowrap}
+.brand small {display:block;margin-top:4px;color:#506157;font:700 10px/1 Arial,Helvetica,sans-serif;letter-spacing:.22em}
+.brandActions {display:flex;align-items:center;gap:8px;flex:none}
+.languageMenu {position:relative;color:#0f563a}
+.languageMenu summary {display:flex;align-items:center;gap:2px;min-width:44px;min-height:44px;cursor:pointer;list-style:none;font:750 15px/1 Arial,Helvetica,sans-serif}
+.languageMenu summary::-webkit-details-marker {display:none}
+.languageOptions {position:absolute;z-index:35;top:42px;right:-2px;display:grid;min-width:75px;padding:4px;border:1px solid #e9dfd1;border-radius:12px;background:#fffcf7;box-shadow:0 9px 22px #43321d25}
+.languageOptions a {display:flex;align-items:center;justify-content:center;min-height:41px;border-radius:9px;color:#153d33;text-decoration:none;font-weight:750}
+.languageOptions a[aria-current="page"] {background:#e6f6f1}
+.profile {display:grid;place-items:center;width:44px;height:44px;border:1px solid #d9d0bf;border-radius:50%;background:#fff9f2;color:#123d32;text-decoration:none}
+
+.hero {position:relative;isolation:isolate;overflow:hidden;min-height:99px;margin:0 0 7px;padding:12px 14px 10px;border-radius:16px;background:#f8ebd7}
+.hero::before {content:"";position:absolute;inset:0;z-index:-2;background:url("/images/holistic-house/reiki-approved-sunrise-v3.webp") right 48%/cover no-repeat}
+.hero::after {content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,#fbf6e9 0%,#fbf4eaf5 40%,#fbf4eabe 65%,#fff4d200 100%)}
+.hero h1 {max-width:80%;margin:0;color:#103e2d;font:700 clamp(29px,7.7vw,39px)/.99 Georgia,"Times New Roman",serif;letter-spacing:-.035em;text-wrap:balance}
+.hero p {position:relative;max-width:95%;margin:9px 0 0;color:#374740;font:500 clamp(12px,3.25vw,14px)/1.2 Arial,Helvetica,sans-serif}
+
+.form {position:relative;isolation:isolate;display:flex;flex-direction:column;gap:7px;min-height:215px;padding:11px 12px 16px;margin-top:-1px;border:2px solid #f6f5df;border-radius:30px;background:radial-gradient(ellipse at 108% 104%,#8fc645 0%,#278d51 35%,transparent 61%),linear-gradient(128deg,#0e9069 0%,#046143 51%,#00513a 100%);box-shadow:0 10px 24px #1d3a2340,0 3px 9px #355c3222;color:#fff}
+.form::after {position:absolute;z-index:-1;content:"";top:4px;right:0;bottom:0;width:41%;opacity:.14;pointer-events:none;background:url("/images/holistic-house/homepage-botanical.svg") center/cover no-repeat;filter:saturate(1.4);border-radius:inherit}
+.progress {display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 4px 1px;color:#f4fff1;font:650 13px/1.15 Arial,Helvetica,sans-serif}
+.progressSteps {position:relative;display:flex;align-items:center;justify-content:space-between;gap:17px;padding:0 2px}
+.progressSteps::before {content:"";position:absolute;left:14px;right:14px;top:50%;height:2px;background:#b9e0be;transform:translateY(-50%)}
+.progressDot {position:relative;z-index:1;display:grid;place-items:center;width:25px;height:25px;margin:0;padding:0;border:2px solid #b0ddbd;border-radius:50%;background:#0a7653;color:#fff;cursor:pointer}
+.progressDot[aria-current="step"] {width:30px;height:30px;background:#fff9e9;border-color:#fff9e9;box-shadow:0 1px 5px #00402a66}
+.progressDot[data-complete="true"]:not([aria-current="step"]) {background:#0b684e;border-color:#f2fff1}
+.progressDot:disabled {opacity:1;cursor:default}
+.progressInner {display:grid;place-items:center;width:100%;height:100%}
+.question {display:block;min-width:0;margin:0;padding:0;border:0}
+.question legend {display:block;max-width:100%;margin:0 0 8px;padding:0;color:#fff;font:750 clamp(21px,5.7vw,27px)/1.08 Arial,Helvetica,sans-serif;letter-spacing:-.028em}
+.questionTitle {display:block;max-width:96%;outline:none;text-wrap:balance}
+.choices {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;min-width:0}
+.choice {position:relative;display:grid;grid-template-columns:29px minmax(0,1fr);align-items:center;gap:7px;min-height:56px;min-width:0;padding:7px 7px 7px 10px;border:2px solid #fffef5;border-radius:18px;background:linear-gradient(132deg,#fffdfa,#fdf4e5);color:#123a2f;box-shadow:0 4px 6px #01291f22;cursor:pointer;text-align:left;font:750 clamp(12.5px,3.85vw,15px)/1.2 Arial,Helvetica,sans-serif;overflow-wrap:break-word}
+.choice>svg:first-child {color:#08623f;flex:none}
+.choice>span {min-width:0}
+.choice[aria-pressed="true"] {border-color:#b6f1ac;background:#e5f5d8;box-shadow:0 0 0 2px #edffb264}
+.check {position:absolute;right:4px;top:4px;color:#086347}
+.moreTopics {position:absolute;right:14px;bottom:2px;display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:19px;margin:0;padding:2px 4px;border:0;background:transparent;color:#f2fff4;text-decoration:underline;text-underline-offset:3px;font:650 11.5px/1.2 Arial,Helvetica,sans-serif;cursor:pointer}
+.moreTopics svg {flex:none}
+.rotated {transform:rotate(180deg)}
+.submit {display:flex;align-items:center;justify-content:center;gap:9px;width:100%;min-height:49px;margin-top:auto;border:1px solid #dcf8de;border-radius:17px;background:#e2f6dd;color:#09503d;font:750 16px/1.2 Arial,Helvetica,sans-serif;cursor:pointer}
+.submit:disabled {opacity:.64;cursor:not-allowed}
+.categories {margin:14px 1px 0}
+.categoryHeader {display:flex;align-items:center;justify-content:space-between;gap:9px;margin:0 3px 8px}
+.categoryHeader h2 {margin:0;color:#143d2f;font:700 clamp(22px,6vw,28px)/1.08 Georgia,"Times New Roman",serif;letter-spacing:-.025em}
+.categoryHeader>a {display:flex;align-items:center;gap:5px;color:#087355;text-decoration:none;white-space:nowrap;font:750 12px/1.1 Arial,Helvetica,sans-serif;min-height:32px}
+.categoryGrid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.category {position:relative;display:flex;flex-direction:column;min-width:0;min-height:123px;overflow:hidden;border:1px solid #e6d8c8;border-radius:20px;background:#fff8ef;color:#142f27;box-shadow:0 4px 9px #6a4b2e1a;text-decoration:none}
+.categoryMedia {position:relative;display:block;flex:none;height:70px;background:#e8e5d5;overflow:hidden;border-radius:18px 18px 16px 16px}
+.categoryMedia img {object-fit:cover;object-position:center}
+.categoryInfo {position:relative;display:flex;flex:1;flex-direction:column;align-items:flex-start;min-width:0;padding:17px 8px 7px}
+.categoryIcon {position:absolute;display:grid;place-items:center;top:-19px;left:8px;width:38px;height:36px;border-radius:13px 13px 4px 4px;background:#fff9eeef;color:#075f41;box-shadow:0 -2px 6px #352b1c14}
+.categoryName {display:block;white-space:pre-line;font:750 clamp(12px,3.2vw,15px)/1.18 Arial,Helvetica,sans-serif;letter-spacing:-.02em;overflow-wrap:break-word}
+.categoryExtras {display:flex;align-items:center;justify-content:space-between;gap:6px 13px;flex-wrap:wrap;margin:10px 3px 0;font:550 12px/1.3 Arial,Helvetica,sans-serif}
+.categoryExtras a {display:inline-flex;align-items:center;gap:5px;min-height:29px;color:#086951;text-decoration:underline;text-underline-offset:3px}
+.results {margin:16px 0 0;scroll-margin-top:14px}
+.privacy {margin:11px 5px 0;color:#65736b;font:400 11px/1.3 Arial,Helvetica,sans-serif}
+.root :is(button,a,summary):focus-visible {outline:3px solid var(--hh-light-focus,#176e6e);outline-offset:2px}
+.form :is(button,span[tabindex="-1"]):focus-visible {outline:3px solid #f7ffb8;outline-offset:2px}
+@media(max-width:350px) {
+  .root {width:calc(100% - 16px)}
+  .brandBar {padding-inline:2px}
+  .brand strong {font-size:19px}
+  .brand>svg {width:32px}
+  .hero {min-height:110px;padding:12px 11px}
+  .hero h1 {font-size:28px}
+  .hero p {font-size:11.5px}
+  .form {padding:11px 10px;min-height:215px;border-radius:25px}
+  .progressSteps {gap:11px}
+  .question legend {font-size:21px}
+  .choices {gap:7px}
+  .choice {min-height:56px;grid-template-columns:23px minmax(0,1fr);gap:6px;padding:7px;font-size:12px}
+  .choice>svg:first-child {width:23px}
+  .categoryGrid {gap:6px}
+  .category {min-height:123px;border-radius:16px}
+  .categoryMedia {height:67px}
+  .categoryInfo {padding:18px 6px 7px}
+  .categoryName {font-size:11.5px}
+  .categoryIcon {left:6px}
+  .categoryHeader h2 {font-size:21px}
+}
+@media(min-width:761px){.root{display:none}}
+@media(prefers-reduced-motion:reduce){.root *{scroll-behavior:auto!important}}
