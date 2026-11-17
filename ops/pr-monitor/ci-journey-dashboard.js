@@ -1,7 +1,7 @@
 'use strict';
 /* Central persistent Core CI history, no client-side polling or API tokens. */
 (()=>{
- window.__hhCiArchiveActive=true;
+ if(typeof window!=='undefined')window.__hhCiArchiveActive=true;
  const periods=[1,6,24,72];
  const STAGES=[['workflow_wait','Запуск workflow → создание jobs'],
    ['runner_wait','Ожидание runner'],
@@ -20,6 +20,80 @@
    /^https:\/\/github\.com\/andylitvinov-design\/books\/actions\/runs\/\d+(?:\/job\/\d+)?$/.test(raw)?raw:null;
  const commitLink=sha=>typeof sha==='string'&&/^[0-9a-f]{40}$/.test(sha)?
    'https://github.com/andylitvinov-design/books/commit/'+sha:null;
+
+ // Public GitHub fallback for older monitor deployments. Only called when
+ // a human opens ONE PR; no polling, token, source write or new CI workflow.
+ const GH='https://api.github.com/repos/andylitvinov-design/books';
+ const SHA=/^[a-f0-9]{40}$/i;
+ const LABEL_CODES=Object.freeze({
+  'hh:hold':'EXPLICIT_OWNER_HOLD',
+  'hh:blocked':'POLICY_BLOCKED',
+  'hh:worker-claimed':'SOURCE_OWNER_CLAIMED',
+  'hh:repair-manual':'SEMANTIC_SOURCE_REPAIR_PENDING',
+  'hh:conflict-repair-needed':'MERGE_CONFLICT_TRIAGE',
+  'hh:repair-needed':'SAFE_REPAIR_QUEUED'
+ });
+ function parseGithubBlockerContext(pr,events,live){
+   if(!Number.isSafeInteger(pr)||pr<1||pr>999999||!Array.isArray(events)||
+      events.length>100||!live||live.number!==pr||
+      live.base?.ref!=='codex/public-book-library'||
+      live.head?.repo?.full_name!=='andylitvinov-design/books'||
+      !SHA.test(live.head?.sha||'')||!Array.isArray(live.labels))return null;
+   const labels=live.labels.map(x=>x?.name).filter(x=>Object.hasOwn(LABEL_CODES,x));
+   const reason=live.state==='open'&&live.mergeable===false&&
+     live.mergeable_state==='dirty'?'MERGE_CONFLICT_DIRTY_NOW':
+     live.state==='open'&&labels.includes('hh:hold')?'EXPLICIT_OWNER_HOLD':
+     live.state==='open'&&labels.includes('hh:blocked')?'POLICY_BLOCKED':
+     live.state==='open'&&labels.includes('hh:worker-claimed')?'SOURCE_OWNER_CLAIMED':
+     live.state==='open'&&labels.includes('hh:repair-manual')?'SEMANTIC_SOURCE_REPAIR_PENDING':
+     live.state==='open'&&labels.includes('hh:conflict-repair-needed')?'MERGE_CONFLICT_TRIAGE':
+     live.state==='open'&&labels.includes('hh:repair-needed')?'SAFE_REPAIR_QUEUED':
+     live.state==='open'?'OPEN_NO_PROVEN_BLOCKER':'CLOSED_NOT_CURRENTLY_WAITING';
+   const at=value=>{const time=Date.parse(value||'');return Number.isFinite(time)?time:null;};
+   const observed=events.filter(e=>['labeled','unlabeled'].includes(e?.event)&&
+     Object.hasOwn(LABEL_CODES,e?.label?.name)&&at(e.created_at)!==null&&
+     /^[A-Za-z0-9_\[\]-]{1,80}$/.test(e?.actor?.login||'')).map(e=>({
+       at:e.created_at,label:e.label.name,reason_code:LABEL_CODES[e.label.name],
+       transition:e.event,actor:e.actor.login,
+       evidence:'GITHUB_ISSUE_LABEL_EVENT',cause_verified:false
+     })).sort((a,b)=>at(a.at)-at(b.at)).slice(-50);
+   return {schema:'HH_CI_GAP_BLOCKER_CONTEXT_V1',
+     status:events.length===100?'PARTIAL':'VERIFIED',
+     history_complete:events.length<100,pr,current_status:live.state,
+     current_head:live.head.sha,current_reason_code:reason,current_labels:labels,
+     current_is_historical_cause:false,observed_events:observed};
+ }
+ async function readBrowserBlockerContext(pr,fetchImpl=fetch){
+   if(!Number.isSafeInteger(pr)||pr<1||pr>999999)return null;
+   const controller=new AbortController();
+   const timer=setTimeout(()=>controller.abort(),6500);
+   try{
+     const get=async url=>{
+       const response=await fetchImpl(url,{headers:{Accept:'application/vnd.github+json'},
+         cache:'no-store',signal:controller.signal});
+       if(!response.ok)throw Error('GITHUB_BLOCKER_EVIDENCE_NOT_AVAILABLE');
+       return response.json();
+     };
+     const [events,live]=await Promise.all([
+       get(GH+'/issues/'+pr+'/events?per_page=100'),get(GH+'/pulls/'+pr)
+     ]);
+     return parseGithubBlockerContext(pr,events,live);
+   }catch{
+     // Missing public API or exhausted read quota is UNKNOWN, never "no blocker".
+     return null;
+   }finally{clearTimeout(timer);}
+ }
+ function attachBrowserBlockerContext(detail,ctx){
+   if(!ctx||!Array.isArray(detail?.waves)||!Array.isArray(ctx.observed_events))return detail;
+   const at=value=>{const n=Date.parse(value||'');return Number.isFinite(n)?n:null;};
+   return {...detail,blocker_context:ctx,waves:detail.waves.map(w=>{
+     const start=at(w.started_at),end=at(w.ended_at);
+     return {...w,cause_verified:false,
+       observed_blocker_events:start!==null&&end!==null?
+         ctx.observed_events.filter(e=>at(e.at)>=start&&at(e.at)<=end).slice(0,8):[]};
+   })};
+ }
+
  let target,card,body,meta,toolbar,status,exportBtn;
  let current=null,active=24,busy=false,lastKey='',lastAt=0;
  function period(){
@@ -45,10 +119,16 @@
    try{
      const response=await fetch('/api/ci-journey-summary?hours='+h+'&pr='+pr,
        {headers:{Accept:'application/json'},cache:'default'});
-     const data=await response.json();
+     let data=await response.json();
      if(!response.ok||data.schema!=='HH_CI_WAVE_DETAIL_V1'||data.pr!==pr||
         data.period_hours!==h||!Array.isArray(data.waves)||data.total_waves!==data.waves.length)
        throw Error(data.error||'Список интервалов не подтверждён');
+     // If the deployment's server API predates #4870, read actual public
+     // GitHub evidence only on this user-expanded PR. Do not create a wave.
+     if(data.available&&!data.blocker_context){
+       const ctx=await readBrowserBlockerContext(pr);
+       if(ctx)data=attachBrowserBlockerContext(data,ctx);
+     }
      host.replaceChildren();
      if(!data.available){
        host.append(el('p','hh-ci-archive-note','В выбранном периоде нет подтверждённых интервалов; это не ноль.'));
@@ -377,6 +457,12 @@
      '.hh-ci-archive-more>.hh-ci-archive-list{margin-top:8px}';
    document.head.append(style);
    active=period();void load(false);return true;
+ }
+ if(typeof document==='undefined'){
+   if(typeof module!=='undefined'&&module.exports)module.exports={
+     parseGithubBlockerContext,readBrowserBlockerContext,attachBrowserBlockerContext
+   };
+   return;
  }
  if(mount())return;
  const watch=new MutationObserver(()=>{if(mount())watch.disconnect();});

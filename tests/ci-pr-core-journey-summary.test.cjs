@@ -238,3 +238,53 @@ test('untrusted, oversized, unrelated and incomplete PR evidence cannot become v
  assert.equal(partial.status,'PARTIAL');assert.equal(partial.history_complete,false);
  assert.equal(attachWaveBlockerEvidence({waves:[]},{status:'UNAVAILABLE'}).waves.length,0);
 });
+
+test('public GitHub on-demand fallback identifies current policy without attributing past CI gaps',async()=>{
+ const {parseGithubBlockerContext,readBrowserBlockerContext,attachBrowserBlockerContext}
+ =require('../ops/pr-monitor/ci-journey-dashboard.js');
+ const pr=4748,time=at(-44),events=[
+  {event:'labeled',created_at:time,label:{name:'hh:repair-manual'},
+   actor:{login:'github-actions[bot]'}}
+ ];
+ const live={number:4748,state:'open',mergeable:false,mergeable_state:'dirty',
+  head:{sha:'b'.repeat(40),repo:{full_name:'andylitvinov-design/books'}},
+  base:{ref:'codex/public-book-library'},
+  labels:[{name:'hh:repair-manual'},{name:'hh:conflict-repair-needed'}]};
+ const ctx=parseGithubBlockerContext(pr,events,live);
+ assert.equal(ctx.current_reason_code,'MERGE_CONFLICT_DIRTY_NOW');
+ assert.equal(ctx.current_is_historical_cause,false);
+ assert.equal(ctx.observed_events.length,1);
+ assert.equal(ctx.observed_events[0].cause_verified,false);
+ const fetched=[];
+ const fetcher=async url=>{
+  fetched.push(url);
+  return {ok:true,json:async()=>url.endsWith('/pulls/4748')?live:events};
+ };
+ const loaded=await readBrowserBlockerContext(pr,fetcher);
+ assert.equal(fetched.length,2,'only one pair of bounded reads for opened PR');
+ assert.equal(loaded.current_reason_code,'MERGE_CONFLICT_DIRTY_NOW');
+ const one=summarizePR(pr,[{...run(pr,4901,-50,-45),conclusion:'failure'},
+  {...run(pr,4902,-42,-38),source_head:'b'.repeat(40)}]).wave_rows;
+ const detailed=attachBrowserBlockerContext({waves:one},loaded);
+ assert.equal(detailed.waves[0].observed_blocker_events.length,1);
+ assert.equal(detailed.waves[0].cause_verified,false);
+ assert.equal(detailed.blocker_context.current_head,'b'.repeat(40));
+});
+test('browser fallback refuses foreign PR, stale/unverifiable identity and unavailable API',async()=>{
+ const {parseGithubBlockerContext,readBrowserBlockerContext,attachBrowserBlockerContext}
+ =require('../ops/pr-monitor/ci-journey-dashboard.js');
+ const live={number:4748,state:'open',mergeable:true,mergeable_state:'clean',
+  head:{sha:'b'.repeat(40),repo:{full_name:'attacker/books'}},
+  base:{ref:'codex/public-book-library'},labels:[]};
+ assert.equal(parseGithubBlockerContext(4748,[],live),null);
+ assert.equal(parseGithubBlockerContext(4748,Array(101).fill({}),{
+  ...live,head:{...live.head,repo:{full_name:'andylitvinov-design/books'}}}),null);
+ const ctx=parseGithubBlockerContext(4748,Array(100).fill({}),{
+  ...live,head:{...live.head,repo:{full_name:'andylitvinov-design/books'}}});
+ assert.equal(ctx.status,'PARTIAL');
+ assert.equal(ctx.history_complete,false);
+ assert.equal(await readBrowserBlockerContext(4748,async()=>{throw Error('429')}),null);
+ assert.equal(await readBrowserBlockerContext(-1,async()=>{throw Error('called')}),null);
+ const original={waves:[]};
+ assert.equal(attachBrowserBlockerContext(original,null),original);
+});
