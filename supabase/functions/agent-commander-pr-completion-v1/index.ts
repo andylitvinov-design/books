@@ -36,7 +36,7 @@ async function checkOidc(request){
    claims.repository_owner!=='andylitvinov-design'||
    claims.ref!=='refs/heads/codex/bootstrap-books'||
    claims.workflow_ref!==OWNER_WORKFLOW||
-   !['schedule','workflow_dispatch'].includes(claims.event_name)||
+   !['schedule','workflow_dispatch','workflow_run'].includes(claims.event_name)||
    (claims.job_workflow_ref&&claims.job_workflow_ref!==OWNER_WORKFLOW)||
    !Number.isSafeInteger(claims.exp)||!Number.isSafeInteger(claims.iat)||
    claims.exp<=now||claims.exp>now+900||claims.iat>now+60||claims.iat<now-900||
