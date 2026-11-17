@@ -54,16 +54,27 @@ test('all books belong to one restored category and original search still works'
 });
 
 test('Ideas, its book readers and Library navigation remain available', async () => {
-  const [page, hub, home, carousel] = await Promise.all([
+  const [page, hub, home, delayed, content, expanded, carousel] = await Promise.all([
     source('app/[locale]/books/page.tsx'),
     source('components/library-hub.tsx'),
     source('components/holistic-house-home.tsx'),
+    source('components/home-deferred-sections.tsx'),
+    source('components/home-deferred-content.tsx'),
+    source('components/home-expanded-catalog.tsx'),
     source('components/home-section-carousel.tsx'),
   ]);
   assert.match(page, /<BookCatalog/);
   assert.match(hub, /\/books/);
   assert.match(hub, /\/homeopathy\/remedies/);
   assert.match(hub, /\/wu-xing/);
-  assert.match(home, /<HomeSectionCarousel locale=\{locale\}/);
+  // The Ideas carousel is intentionally loaded only after the user expands
+  // the deferred catalog. Keep its route, while proving first-paint isolation.
+  assert.match(home, /<HomeDeferredSections locale=\{locale\}/);
+  assert.doesNotMatch(home, /HomeSectionCarousel/);
+  assert.match(delayed, /import\("\.\/home-deferred-content"\)/);
+  assert.match(delayed, /data-home-deferred-ready/);
+  assert.match(content, /import\("\.\/home-expanded-catalog"\)/);
+  assert.match(content, /data-home-discover-more/);
+  assert.match(expanded, /<HomeSectionCarousel locale=\{locale\}/);
   assert.match(carousel, /key: "ideas", href: "\/books"/);
 });
