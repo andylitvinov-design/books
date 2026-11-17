@@ -415,6 +415,7 @@ jobs:
       issues: write
       pull-requests: write
       checks: read
+      id-token: write
     steps:
       - name: Checkout trusted worker dispatcher
         uses: actions/checkout@v4
@@ -422,6 +423,27 @@ jobs:
           ref: codex/bootstrap-books
           persist-credentials: false
           fetch-depth: 1
+      # Same existing single-writer runner. An OIDC signed owner intent is
+      # checked BEFORE the next backlog scan; no new CI wave is created.
+      - name: Owner PR completion wake on verified finished worker
+        if: github.event_name == 'workflow_run'
+        uses: actions/github-script@v7
+        env:
+          HH_PM_OWNER_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const {run}=require(process.env.GITHUB_WORKSPACE+
+              '/scripts/ci-pr-commander-pr-completion.cjs');
+            const inbox=require(process.env.GITHUB_WORKSPACE+
+              '/scripts/ci-pr-pm-agent-inbox.cjs');
+            const outcome=await run({github,core,context,
+              ownerToken:process.env.HH_PM_OWNER_TOKEN,fetcher:fetch,
+              dispatch:(gh,cmd,opts)=>inbox.dispatchLive(gh,cmd,{
+                ownerToken:opts.ownerToken,fetcher:opts.fetcher,
+                dispatchDirect:target=>inbox.dispatchOwnerQueue(gh,core,context,{
+                  ...target,ownerProof:opts.ownerProof})})});
+            core.info('HH_OWNER_PR_WORKER_WAKE '+JSON.stringify(outcome));
       - name: Verify queue admission source
         run: |
           node --check scripts/ci-pr-task-state.cjs
