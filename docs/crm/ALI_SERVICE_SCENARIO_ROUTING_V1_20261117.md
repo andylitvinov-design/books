@@ -17,3 +17,5 @@ The website's fixed public business_strategy offer now survives server redirect 
 Acceptance: RU/EN/ES tests, exact title and handoff, FAQ and STOP, separately consented diagnostics, signed provider E2E, CRM verified receipt, protected exact-HEAD CI, native merge, only existing hourly Vercel publisher and physical Telegram test before LIVE claim.
 
 GLOBAL_PR_ONE_PUBLISH_V1: staged_before_open=yes; local_checks=partial; post_open_head_updates=0; extra_waves=none; cost_new_spend=NO_NEW_SERVICES.
+
+Production CTA policy: when the signed V3 private bot is confirmed ready, a supported service CTA routes to that bot even if the separate human Telegram Business auto-reply flag is enabled. If the bot is not ready, the site retains the human @holistichouse prefilled draft. The owner can still use the direct human chat independently. Previously the Business flag could force a supported website order away from the working bot.

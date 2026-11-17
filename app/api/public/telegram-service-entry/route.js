@@ -31,11 +31,12 @@ export async function GET(request){
  if(!manual||!isTelegramServiceDraft(manual,locale))return invalid()
  const env=process.env
  let target=manual
- // A human Business-chat auto-reply is permitted ONLY after owner/provider
- // authorization. Until then the existing signed opt-in AI assistant is
- // the non-silent option, provided all readiness gates are satisfied.
- if(env.HH_CRM_TG_CHAT_AUTOMATION_ENABLED!=='true'&&
-    env.HH_CRM_TG_AI_V3_SCHEMA_READY==='true'&&
+ // Human Business chat automation and the bot are independent channels.
+ // A service CTA enters the existing private bot when verified and ready.
+ // Otherwise the public offer remains a manual @holistichouse draft.
+ // Prefer the existing consent-gated private service bot whenever it is ready;
+ // the human @holistichouse message remains the safe fallback if not.
+ if(env.HH_CRM_TG_AI_V3_SCHEMA_READY==='true'&&
     channelTransportReady('telegram',env)&&v3CanStart(env)){
    const publicBot=telegramDiagnosticPublicUrl(locale,env)
    if(typeof publicBot==='string'){

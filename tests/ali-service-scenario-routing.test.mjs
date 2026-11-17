@@ -59,5 +59,17 @@ test('STOP, safety, mode consent, bad payload, mid-intake FAQs, generic unchange
   assert.ok(a.reply.includes(aliServiceScenario('reiki',locale).questions.goal));
   assert.ok(aliServiceFaq(message,locale,'reiki'));
  }
+ const undecided=aliGuidedIntakeTurn({message:"I don't know",locale:'en',
+  serviceRequest:'reiki',stage:'challenge',slots:{goal:'I want clarity'},
+  turns:[{role:'user',text:"I don't know"}]});
+ assert.equal(undecided.stage,'situation');
+ assert.ok(undecided.reply.includes(aliServiceScenario('reiki','en').questions.situation));
  assert.match(aliGuidedIntakeTurn({message:'I want clarity'}).reply,/difficult/);
+});
+
+test('site private bot wins when ready regardless of independent human Business automation',()=>{
+ const api=readFileSync(new URL('../app/api/public/telegram-service-entry/route.js',import.meta.url),'utf8');
+ assert.doesNotMatch(api,/if\(env\.HH_CRM_TG_CHAT_AUTOMATION_ENABLED!=='true'/);
+ for(const required of ["env.HH_CRM_TG_AI_V3_SCHEMA_READY==='true'","channelTransportReady('telegram',env)","v3CanStart(env)","let target=manual"])
+  assert.ok(api.includes(required),required);
 });
