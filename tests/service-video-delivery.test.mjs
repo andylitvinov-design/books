@@ -68,7 +68,14 @@ test("Services MyTube retains its verified method gallery with two accessible co
   assert.match(extras, /<ServiceVideoShowcase locale="es" topic="constellations" id="es-service-video-constellations"/);
   assert.match(page, /<PublicConsultationCta/);
   const browser = read("scripts/verify-site-video-browser.mjs");
-  assert.match(browser, /getAttribute\('open'\) === null/);
+  // The approved 30-option Services UI tests its two native actions rather
+  // than toggling the legacy method gallery to expose compact offer cards.
+  assert.match(browser, /data-service-card-actions/);
+  assert.match(browser, /toHaveAttribute\('aria-expanded','false'\)/);
+  assert.match(browser, /toHaveAttribute\('aria-expanded','true'\)/);
+  // The separate video release browser still guards real method gallery open state.
+  assert.match(read("scripts/verify-page-video-release.mjs"),
+    /disclosure\.getAttribute\('open'\) === null/);
 });
 
 test("Services cards keep exact method media accessible on-page with transcript if the HeyGen player fails", () => {
