@@ -379,8 +379,8 @@ const freeTestDirectCopy = {
 } as const;
 
 const situationFirstScreen = {
-  en: { lead: "Tell me about one thing on your mind. I’ll read it myself and reply in writing, free of charge.", reviews: "More client videos · 12 recordings" },
-  ru: { lead: "Расскажите, что вас волнует. Я лично прочитаю ваш вопрос и бесплатно отвечу письменно.", reviews: "Другие видеоотзывы клиентов · 12 записей" },
+  en: { lead: "I’m Andrey. Tell me what’s troubling you — I’ll read your question myself and send a written reply, free of charge.", reviews: "More client videos · 12 recordings" },
+  ru: { lead: "Меня зовут Андрей. Расскажите, что вас волнует — я прочитаю ваш вопрос и бесплатно отвечу письменно.", reviews: "Другие видеоотзывы клиентов · 12 записей" },
   es: { lead: "Tu pregunta · otra perspectiva · un paso más.", reviews: "Todos los testimonios · 12 vídeos" },
 } as const;
 
