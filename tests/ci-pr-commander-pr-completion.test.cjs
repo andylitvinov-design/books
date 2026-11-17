@@ -215,7 +215,7 @@ test('fresh signed owner PR number can requeue a conclusive free-model truncatio
  const manual={...base,user:{login:'andylitvinov-design'},labels:[{name:'hh:repair-manual'}]};
  const resultRecord={
   schema:'HH_PR_TASK_V1',lane:'repair',pr_number:task.prNumber,
-  head_sha:SHA,state:'MANUAL',source_published:false,new_sha:null,
+  head_sha:SHA,task_key:'1'.repeat(32),state:'MANUAL',source_published:false,new_sha:null,
   detail_code:'FREE_AI_OPENROUTER_PATCH_RESPONSE_TRUNCATED',
   ai_execution:{model_response_confirmed:true,patch_received:false,source_published_sha:null},
   model_run:{model_call_started_at:'2026-11-16T00:05:00Z',
