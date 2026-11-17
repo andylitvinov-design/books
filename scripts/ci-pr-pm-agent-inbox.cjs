@@ -226,6 +226,9 @@ async function dispatchOwnerQueue(github,core,context,{pr,sha,ownerProof}={}){
  }catch(_){return {reason:'OWNER_DIRECT_QUEUE_UNAVAILABLE'};}
  if(outcome?.dispatchAccepted===1&&outcome?.repairDispatchAccepted===1)
   return {dispatched:true,reason:'OWNER_DIRECT_QUEUE_DISPATCH_ACCEPTED'};
+ if(ownerProof?.source==='OIDC_SIGNED_QUEUE'&&
+    outcome?.dispatchAccepted===1&&outcome?.legacyDispatchAccepted===1)
+  return {dispatched:true,reason:'OWNER_DIRECT_MACHINE_RETRY_DISPATCH_ACCEPTED'};
  const candidate=Object.keys(outcome?.blocked||{})[0]||
   String(outcome?.reason||'NOT_ADMITTED').replace(/^INVENTORY_UNVERIFIED:\\s*/,'');
  const reason=/^[A-Z0-9_]{3,60}$/.test(candidate)?candidate:'NOT_ADMITTED';

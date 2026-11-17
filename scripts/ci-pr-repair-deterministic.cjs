@@ -196,6 +196,76 @@ function applyProtectedBaseTs2304Line(){
    line:decision.line||null,protected_sha:ref.stdout.trim()}));
 }
 
+
+/**
+ * Repair one provable TS2300-style parameter/local duplicate without invoking
+ * an AI model. The transformation is deliberately narrower than a generic
+ * rename: one top-level const declaration in one function, exactly one later
+ * reference in that function's direct return, no nested/ambiguous references.
+ * Security/CI/source verifier checks downstream remain mandatory.
+ */
+function repairDuplicateParameterBinding(source,filename='source.tsx'){
+ const blocked=detail=>({changed:false,code:source,detail,edits:0});
+ if(typeof source!=='string'||Buffer.byteLength(source,'utf8')>MAX_BYTES||
+    !/\.tsx?$/.test(filename)||source.includes('\0'))
+   return blocked('DUPLICATE_SCOPE_UNSUPPORTED');
+ const kind=filename.endsWith('.tsx')?ts.ScriptKind.TSX:ts.ScriptKind.TS;
+ const sf=ts.createSourceFile(filename,source,ts.ScriptTarget.Latest,true,kind);
+ if(sf.parseDiagnostics.length)return blocked('DUPLICATE_PARSE_DIAGNOSTICS');
+ const candidates=[];
+ function visit(node){
+  if(ts.isFunctionDeclaration(node)&&node.body){
+   const params=new Set(node.parameters.filter(p=>ts.isIdentifier(p.name))
+     .map(p=>p.name.text));
+   const statements=node.body.statements;
+   for(const statement of statements){
+    if(!ts.isVariableStatement(statement)||
+       !(statement.declarationList.flags & ts.NodeFlags.Const)||
+       statement.declarationList.declarations.length!==1)continue;
+    const decl=statement.declarationList.declarations[0];
+    if(!ts.isIdentifier(decl.name)||!params.has(decl.name.text)||
+       !decl.initializer)continue;
+    const name=decl.name.text;
+    const identifiers=[];
+    function findIds(current){
+     if(ts.isIdentifier(current)&&current.text===name)
+       identifiers.push(current);
+     ts.forEachChild(current,findIds);
+    }
+    findIds(node.body);
+    const after=identifiers.filter(id=>id.getStart(sf)>decl.name.getStart(sf));
+    const ref=after.length===1?after[0]:null;
+    if(!ref)continue;
+    const parent=ref.parent;
+    const returned=ts.isReturnStatement(parent)||
+     (ts.isSpreadElement(parent)&&ts.isArrayLiteralExpression(parent.parent)&&
+      ts.isReturnStatement(parent.parent.parent));
+    if(!returned)continue;
+    const replacement=name==='publishedVideos'?'indexedVideos':
+      'local'+name[0].toUpperCase()+name.slice(1);
+    if(source.includes(replacement)||replacement===name)continue;
+    candidates.push({decl:decl.name.getStart(sf),ref:ref.getStart(sf),
+      name,replacement});
+   }
+  }
+  ts.forEachChild(node,visit);
+ }
+ visit(sf);
+ // Unrelated or multiple duplicate declarations require human/AI review.
+ if(candidates.length!==1)return blocked('NO_SINGLE_SAFE_PARAMETER_DUPLICATE');
+ const item=candidates[0];
+ if(source.slice(item.decl,item.decl+item.name.length)!==item.name||
+    source.slice(item.ref,item.ref+item.name.length)!==item.name)
+   return blocked('DUPLICATE_ANCHOR_MISMATCH');
+ let code=source;
+ for(const pos of [item.decl,item.ref].sort((a,b)=>b-a))
+   code=code.slice(0,pos)+item.replacement+code.slice(pos+item.name.length);
+ const checked=ts.createSourceFile(filename,code,ts.ScriptTarget.Latest,true,kind);
+ if(checked.parseDiagnostics.length)return blocked('DUPLICATE_RESULT_PARSE_FAILED');
+ return {changed:true,code,detail:'EXACT_PARAMETER_CONST_DUPLICATE_RENAMED',
+   edits:2};
+}
+
 function main(){
  const {sha,files}=trustedRepairScope();
  const root=fs.realpathSync(process.cwd());
@@ -216,13 +286,17 @@ function main(){
    skipped.push({path:file,reason:'SOURCE_FILE_TOO_LARGE'});
    continue;
   }
-  const result=repairTypeOnlyImports(before,file);
-  if(result.changed){
-   fs.writeFileSync(abs,result.code,{mode:fs.statSync(abs).mode});
-   changed.push({path:file,edits:result.edits,detail:result.detail});
+  const imports=repairTypeOnlyImports(before,file);
+  const duplicate=repairDuplicateParameterBinding(imports.code,file);
+  const updated=duplicate.changed?duplicate.code:imports.code;
+  if(updated!==before){
+   fs.writeFileSync(abs,updated,{mode:fs.statSync(abs).mode});
+   changed.push({path:file,edits:imports.edits+duplicate.edits,
+     detail:[imports.changed?imports.detail:null,duplicate.changed?duplicate.detail:null]
+       .filter(Boolean).join('+')});
   }
  }
  console.log('HH_DETERMINISTIC_REPAIR '+JSON.stringify({head_sha:sha,changed,skipped}));
 }
 if(require.main===module){try{process.argv[2]==='base-line'?applyProtectedBaseTs2304Line():main();}catch(error){console.error('HH_DETERMINISTIC_REPAIR_BLOCKED '+error.message);process.exitCode=1;}}
-module.exports={repairTypeOnlyImports,typeOnlyReference,exclusivelyTypeReferenced,trustedRepairScope,exactProtectedBaseTs2304Line};
+module.exports={repairTypeOnlyImports,repairDuplicateParameterBinding,typeOnlyReference,exclusivelyTypeReferenced,trustedRepairScope,exactProtectedBaseTs2304Line};
