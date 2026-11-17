@@ -61,7 +61,7 @@ test('server preserves numeric GitHub HTTP rejection reason instead of UNKNOWN',
 });
 test('worker wake remains signed to one GitHub workflow and fails closed for foreign callbacks',()=>{
  const s=file('supabase/functions/agent-commander-pr-completion-v1/index.ts');
- assert.match(s,/\['schedule','workflow_dispatch','workflow_run'\]\.includes\(claims\.event_name\)/);
+ assert.match(s,/\['schedule','workflow_dispatch','workflow_run','push'\]\.includes\(claims\.event_name\)/);
  assert.match(s,/claims\.workflow_ref!==OWNER_WORKFLOW/);
  assert.match(s,/claims\.ref!=='refs\/heads\/codex\/bootstrap-books'/);
  assert.match(s,/claims\.repository!==REPO/);
