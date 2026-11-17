@@ -41,7 +41,7 @@ export async function GET(request){
    if(typeof publicBot==='string'){
      const entry=resolveTelegramServiceEntry({
        available:true,aiInterviewAvailable:true,url:publicBot.split('?')[0],
-     },manual,locale)
+     },manual,locale,offer)
      if(entry)target=entry.href
    }
  }
