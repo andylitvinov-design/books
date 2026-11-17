@@ -126,6 +126,16 @@ test('free review keeps private drawings out of messenger and offers protected f
   assert.doesNotMatch(landing,/Use WhatsApp or Telegram to share your answers|Пришлите анкету и фото рисунка в WhatsApp/)
 })
 
+test('free-review copy uses private handoff for sensitive details in all locales',()=>{
+  const landing=read('components/free-entry-landing.tsx')
+  // EN/RU wording now forbids sharing health records in messenger chats.
+  assert.match(landing,/Please don't send medical records or other sensitive information in chat/)
+  assert.match(landing,/Медицинские документы и личные данные в чат присылать не нужно/)
+  assert.match(landing,/secure way to share it/)
+  assert.match(landing,/защищённую форму/)
+  assert.match(landing,/formulario protegido/)
+})
+
 test('free-review messenger CTAs have branded colors, clear localized names and no duplicate primary button',()=>{
   const channels=read('components/telegram-diagnostic-entry.tsx')
   const channelsCss=read('components/telegram-diagnostic-entry.module.css')
