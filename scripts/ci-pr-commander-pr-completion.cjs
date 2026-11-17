@@ -25,21 +25,6 @@ function trustedWorkerWake(context){
    (r.name==='HH zero-cost PR CI worker'&&
     ['workflow_dispatch','schedule'].includes(r.event)));
 }
-// A trusted, finished red Core is an event-driven queue wake. The job executes
-// checked-out control code from the default branch; untrusted PR sources cannot
-// grant repair permission. The existing dispatcher still verifies exact HEAD,
-// ownership, failure proof and capacity before any source write.
-function trustedCoreFailureWake(context){
- const r=context?.payload?.workflow_run;
- return context?.eventName==='workflow_run'&&
-  context.repo?.owner+'/'+context.repo?.repo===REPO&&
-  context.ref==='refs/heads/codex/bootstrap-books'&&
-  r?.name==='HH PR core release gate'&&r.event==='pull_request'&&
-  r.status==='completed'&&
-  ['failure','timed_out','startup_failure'].includes(r.conclusion)&&
-  r.repository?.full_name===REPO&&
-  r.head_repository?.full_name===REPO;
-}
 // Protected default-branch push is already a Watchdog event: no new cron.
 function trustedControlPush(context){
  const p=context?.payload;
@@ -86,7 +71,7 @@ async function run({github,core,context,ownerToken='',fetcher=global.fetch,
  dispatch=undefined}={}){
  if(context?.repo?.owner+'/'+context?.repo?.repo!==REPO||
   context?.ref!=='refs/heads/codex/bootstrap-books'||
-  !(['schedule','workflow_dispatch'].includes(context.eventName)||trustedWorkerWake(context)||trustedCoreFailureWake(context)||trustedControlPush(context))||
+  !(['schedule','workflow_dispatch'].includes(context.eventName)||trustedWorkerWake(context)||trustedControlPush(context))||
   (context.eventName==='workflow_dispatch'&&String(context.payload?.inputs?.dry_run||'false')==='true'))
   return {status:'SKIPPED_UNTRUSTED'};
  const token=await core.getIDToken('hh-commander-pr');
@@ -240,4 +225,4 @@ async function drain(options={},maxItems=4){
    reasonCode:x.reasonCode||null,dispatchAccepted:x.dispatchAccepted===true}))};
 }
 module.exports={readback,run,drain,send,ENDPOINT,trustedWorkerWake,
- trustedCoreFailureWake,trustedControlPush};
+ trustedControlPush};
