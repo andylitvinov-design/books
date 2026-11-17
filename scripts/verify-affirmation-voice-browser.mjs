@@ -1330,23 +1330,24 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         phase(engine,"ready-therapy-one-tap-navigation-verified");
         await readyGenerate.click();
         phase(engine,"ready-free-render-requested");
-        // Verify the approved seven-picture Ready check-in, not the old Goal
-        // sliders: one real 0–10 tap must advance to a distinct licensed image.
+        // Seven pictured 0–10 questions are inline during a real export.
+        // Preserve stronger first-party photo and transition checks from newer Safari source.
         await expect(page.locator("[data-ready-generating]")).toBeVisible({timeout:20000});
-        const readyCheckin=page.locator("[data-ready-checkin] [data-ready-sequential-checkin]");
-        await expect(readyCheckin).toBeVisible({timeout:20000});
-        await expect(readyCheckin.locator("[data-ready-checkin-score]")).toHaveCount(11);
-        const firstTone=await readyCheckin.getAttribute("data-checkin-tone");
-        const firstImage=await readyCheckin.locator("img").getAttribute("src");
+        const readyCheckIn=page.locator("[data-ready-checkin] [data-ready-sequential-checkin]");
+        await expect(readyCheckIn).toBeVisible({timeout:20000});
+        await expect(readyCheckIn.locator("[data-ready-checkin-score]")).toHaveCount(11);
+        await expect(readyCheckIn).toContainText("1 / 7");
+        const firstTone=await readyCheckIn.getAttribute("data-checkin-tone");
+        const firstImage=await readyCheckIn.locator("img").getAttribute("src");
         assert.ok(firstTone&&firstImage?.startsWith("/videos/holistic-house/"),
-          "Ready must show a real first-party picture and named question");
-        await readyCheckin.locator('[data-ready-checkin-score="5"]').click();
-        await expect(readyCheckin).not.toHaveAttribute("data-checkin-tone",firstTone,{timeout:5000});
-        await expect(readyCheckin.locator("img")).not.toHaveAttribute("src",firstImage,{timeout:5000});
-        // No unsolicited optional survey should cover the intentional export.
-        // The existing pill offers an explicit way to open the check-in.
+          "Ready check-in must have a first-party photo and a question");
+        await readyCheckIn.locator('[data-ready-checkin-score="5"]').click();
+        await expect(readyCheckIn).not.toHaveAttribute("data-checkin-tone",firstTone,{timeout:5000});
+        await expect(readyCheckIn.locator("img")).not.toHaveAttribute("src",firstImage,{timeout:5000});
+        await expect(readyCheckIn).toContainText("2 / 7");
+        // No optional floating poll or pill may obscure the media player.
         await expect(page.locator("[data-video-effect-overlay]")).toHaveCount(0);
-        await expect(page.locator("[data-video-effect-reopen]")).toBeVisible({timeout:20000});
+        await expect(page.locator("[data-video-effect-reopen]")).toBeHidden();
         // The idle source remains preload=none until the user's actual Create
         // gesture; Safari must then start a physical decode, never a CSS-only
         // preview or an unverified download.
@@ -1439,7 +1440,9 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           // The optional progress/check-in overlay must get out of the way
           // automatically when verified Ready appears, without bypassing the UI.
           await expect(page.locator("[data-video-effect-overlay]")).toHaveCount(0);
-          await expect(page.locator("[data-video-effect-reopen]")).toBeVisible();
+          await expect(page.locator("[data-video-effect-reopen]")).toBeHidden();
+          await expect(readyCheckIn).toBeVisible();
+          await expect(readyCheckIn).toContainText("2 / 7");
           await readyView.locator("[data-ready-save]").click();
           await expect(readyView.locator("[data-ready-save-gate]")).toBeVisible();
           await expect(readyView.locator("[data-ready-save-gate-signin]")).toBeVisible();
