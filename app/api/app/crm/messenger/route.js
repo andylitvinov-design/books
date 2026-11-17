@@ -52,7 +52,7 @@ async function handle(request){
         const preflight=await inspectTelegramBotIdentity()
         if(preflight.webhookState!=='connected')throw new AppError('TELEGRAM_WEBHOOK_NOT_OWNED',409)
         if(preflight.businessCapable!==true)throw new AppError('TELEGRAM_BUSINESS_NOT_ENABLED',409)
-        await ensureTelegramWebhook()
+        await ensureTelegramWebhook(process.env,{ownerVerifiedSync:true})
         const checked=await inspectTelegramBotIdentity()
         if(checked.webhookState!=='connected'||checked.businessUpdatesReady!==true)
           throw new AppError('TELEGRAM_BUSINESS_SUBSCRIPTION_UNVERIFIED',503)
