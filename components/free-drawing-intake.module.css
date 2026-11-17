@@ -35,3 +35,14 @@
 .privacy{margin:14px 0 0;padding-top:10px;border-top:1px solid #c7dfd1;color:#6c7970;font:11px/1.55 Arial,Helvetica,sans-serif}
 .card :is(button,textarea,a,summary):focus-visible{outline:3px solid #be8d5a;outline-offset:3px}
 @media(max-width:767px){.card{border-radius:18px;padding:18px 15px}.topicGrid button{font-size:11px;min-height:49px}.lead{font-size:13px}.whatsapp{font-size:13px}}
+
+/* Readable private-questionnaire instructions at narrow phone widths. */
+@media(max-width:767px){
+ .card{padding:20px 16px}
+ .eyebrow{font-size:12px;line-height:1.5}
+ .card h2{font-size:30px;line-height:1.2}
+ .lead{font-size:16px;line-height:1.6}
+ .note{font-size:16px;line-height:1.55}
+ .prepare{font-size:16px;line-height:1.4;min-height:56px}
+ .privacy{font-size:14px;line-height:1.6}
+}

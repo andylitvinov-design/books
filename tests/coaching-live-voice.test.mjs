@@ -259,7 +259,7 @@ test('approved live-session visual hierarchy keeps a real voice pipeline, readab
   const ui=source('components/my-coach-live-dialogue.jsx')
   const css=source('components/my-coach-live-dialogue.module.css')
   for(const token of ['data-session-visual-v2','data-session-visual-v3','className={styles.heroSubtitle}',
-    'showCaptions&&','className={styles.captionsControl}','setShowCaptions(value=>!value)',
+    'showCaptions&&','className={styles.captionMore}','data-coach-language-control','onChange={event=>setSpeechLocale(event.target.value)}','setShowCaptions(value=>!value)',
     'className={styles.endControl}','className={styles.liveTranscript}','className={styles.voiceControls}',
     'className={styles.textComposer} open','<details className={styles.quickGoals}>',
     'onTurn={(text,spoken)=>sendMessage(text,{voiceTurn:true,utteranceLocale:spoken?.locale})}','onTranscript={setSpeechPreview}']) assert.ok(ui.includes(token),token)
@@ -435,7 +435,7 @@ test('spoken My Coach reply retains the reflection and start introduction',()=>{
  assert.ok(loop.includes('introPlayerRef.current=startDirectCoachIntroAudio'))
  assert.doesNotMatch(loop,/questions\.slice\(\)\.reverse\(\)\.find/)
  assert.ok(ui.includes('coachSpokenText(spokenText).text'))
- assert.ok(ui.includes('getCoachPresentation(personaId,lang)?.text'))
+ assert.ok(ui.includes('getCoachPresentation(personaId,conversationLang)?.text'))
  assert.ok(ui.includes('introduction={introduction}'))
  assert.ok(ui.includes('onSessionStart={()=>setCloudAgreed(true)}'))
  assert.ok(loop.includes('(naturalVoice||voiceAgreed)&&voiceAvailable'))
