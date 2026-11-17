@@ -22,11 +22,16 @@ test('RU and EN show exactly six full-width actions and fixed first-party destin
    const action=TELEGRAM_EXPLORE_ACTIONS[index]
    assert.deepEqual(parseTelegramHomeCallback(row[0].callback_data),{locale:lang,action})
    const detail=telegramExploreDetailButtons(lang,action)
-   assert.equal(detail.inline_keyboard.length,2)
-   const url=new URL(detail.inline_keyboard[0][0].url)
+   const freeReview=action==='consultation'
+   assert.equal(detail.inline_keyboard.length,freeReview?3:2)
+   if(freeReview){
+    assert.equal(detail.inline_keyboard[0][0].callback_data,'hhhome:'+lang+':review')
+    assert.match(detail.inline_keyboard[0][0].text,lang==='ru'?/Бесплатная диагностика/:/Free situation review/)
+   }
+   const url=new URL(detail.inline_keyboard[freeReview?1:0][0].url)
    assert.equal(url.origin,'https://holistichouse.vercel.app')
    assert.match(url.pathname,new RegExp('^/'+lang+'/'))
-   assert.deepEqual(parseTelegramHomeCallback(detail.inline_keyboard[1][0].callback_data),{locale:lang,action:'home'})
+   assert.deepEqual(parseTelegramHomeCallback(detail.inline_keyboard[freeReview?2:1][0].callback_data),{locale:lang,action:'home'})
    assert.ok(telegramExploreDetailText(lang,action).length<200)
   }
  }
