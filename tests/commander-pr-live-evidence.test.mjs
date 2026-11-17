@@ -30,7 +30,7 @@ test('LIVE requires a canonical deployed descendant of the exact GitHub merge',(
 });
 test('GitHub merge alone, unrelated READY or changed alias cannot imply LIVE',()=>{
  const failures=[
-  {...sample,proof:{...proof,sha:'c'.repeat(40)}},
+  {...sample,proof:{...proof,sha:'c'.repeat(40)},comparison:{status:'diverged'}},
   {...sample,proof:{...proof,available:false}},
   {...sample,proof:{...proof,environment:'preview'}},
   {...sample,proof:{...proof,project_id:'wrong-project'}},
