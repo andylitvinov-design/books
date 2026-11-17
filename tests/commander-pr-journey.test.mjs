@@ -151,3 +151,28 @@ test('details are on demand, owner authenticated, and mobile timeline expandable
   assert.ok(edge.includes(field),'owner-only status supplies '+field);
  assert.doesNotMatch(client,/dangerouslySetInnerHTML|openrouter|localStorage|GITHUB_TOKEN/);
 });
+
+test('real GitHub merge supersedes stale BLOCKED owner queue without inventing LIVE',()=>{
+ const item={...ownerItem,status:'BLOCKED',reasonCode:'EXISTING_HOLD_NO_OVERRIDE',
+  firstAttemptAt:'2026-11-17T00:09:00Z',leaseUntil:'2026-11-17T00:13:00Z'};
+ const gh={pr:{...pr,state:'closed',merged:true,merge_commit_sha:MERGE,merged_at:NOW,
+   head:{...pr.head,sha:NEW},labels:[]},
+  checks:[checked(NEW,'success')],checksComplete:true,commentsComplete:false};
+ const result=buildPrCompletionJourney({item,github:gh,observedAt:NOW});
+ assert.equal(result.githubVerified,true);
+ assert.equal(result.currentStage,'live');
+ assert.equal(result.stalled,false);
+ assert.equal(result.attention,null);
+ assert.equal(result.currentHeadSha,NEW);
+ assert.equal(byId(result,'merge').state,'done');
+ assert.match(byId(result,'merge').detail,/GitHub подтвердил merge SHA/);
+ assert.equal(byId(result,'live').state,'unknown');
+});
+test('without independently verified merge a stale BLOCKED remains stalled',()=>{
+ const item={...ownerItem,status:'BLOCKED',reasonCode:'EXISTING_HOLD_NO_OVERRIDE'};
+ const result=buildPrCompletionJourney({item,github:evidence,observedAt:NOW});
+ assert.equal(result.stalled,true);
+ assert.equal(result.currentStage,'handoff');
+ assert.equal(byId(result,'merge').state,'waiting');
+ assert.equal(byId(result,'live').state,'unknown');
+});
