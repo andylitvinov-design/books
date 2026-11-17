@@ -226,7 +226,7 @@ test('Play starts the authored natural voice once, without recording or extra ch
   assert.ok(ui.includes('getCoachPresentation(personaId,conversationLang)?.text'))
   assert.ok(ui.includes("const conversationLang=['en','ru','es'].includes(speechLocale)?speechLocale:deviceSpeechLocale"))
   assert.ok(ui.includes('const [cloudAgreed,setCloudAgreed]=useState(false)'))
-  assert.ok(ui.includes('introduction={introduction} onSessionStart={()=>setCloudAgreed(true)}'))
+  assert.ok(ui.includes('introduction={introduction} onSessionStart={()=>{setCloudAgreed(true);requestServerCoachSession()}}'))
   assert.ok(ui.includes('voiceProviderDetails'))
   assert.ok(!ui.includes('naturalVoiceRow'))
   assert.ok(!ui.includes('checked={cloudAgreed}'))
@@ -262,9 +262,9 @@ test('each of nine AI personae introduces its own approach and unique speech sty
       const behavior=buildCoachBehaviorPolicy(persona.id,{},locale)
       assert.ok(behavior.systemInstructions.includes(intro.style),persona.id+' model keeps its style')
     }
-    assert.equal(introductions.size,8)
-    assert.equal(styles.size,8)
-    assert.equal(voices.size,8)
+    assert.equal(introductions.size,9)
+    assert.equal(styles.size,9)
+    assert.equal(voices.size,9)
   }
   assert.equal(getCoachPresentation('__proto__'),null)
   assert.equal(getCoachPresentation('unknown'),null)
@@ -289,7 +289,7 @@ test('legacy persona speech profiles remain pure and do not trigger device playb
   }
 })
 
-test('the eight approved presentations flow directly into the same live dialogue',()=>{
+test('the nine approved presentations flow directly into the same live dialogue',()=>{
   const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
   const voice=readFileSync(new URL('../components/my-coach-speech-loop.jsx',import.meta.url),'utf8')
   const css=readFileSync(new URL('../components/my-coach-live-dialogue.module.css',import.meta.url),'utf8')
@@ -297,7 +297,7 @@ test('the eight approved presentations flow directly into the same live dialogue
   const introCss=readFileSync(new URL('../components/my-coach-voice-introduction.module.css',import.meta.url),'utf8')
   assert.ok(ui.includes('getCoachPresentation(personaId,conversationLang)?.text'))
   assert.ok(ui.includes('introduction={introduction}'))
-  assert.ok(ui.includes('onSessionStart={()=>setCloudAgreed(true)}'))
+  assert.ok(ui.includes('onSessionStart={()=>{setCloudAgreed(true);requestServerCoachSession()}}'))
   assert.ok(ui.includes('replayingIntro'))
   assert.ok(ui.includes('onBlocked:fail'))
   assert.ok(voice.includes('introPlayerRef.current=startDirectCoachIntroAudio'))

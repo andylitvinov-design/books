@@ -447,7 +447,7 @@ test('spoken My Coach reply retains the reflection and start introduction',()=>{
  assert.ok(!ui.includes('naturalVoiceRow'))
  assert.ok(!ui.includes('checked={cloudAgreed}'))
 })
-test('iPhone buffered MP3 animates from decoded actual waveform without another service call',async()=>{
+test('iPhone buffered MP3 decodes actual waveform without a second call or synthetic facial motion',async()=>{
   const {startCoachingMp3Playback}=await import('../lib/personal-coaching/streamed-mp3-playback.mjs')
   const frames=[],levels=[]
   let blobs=0,starts=0
@@ -480,12 +480,16 @@ test('iPhone buffered MP3 animates from decoded actual waveform without another 
   assert.equal(blobs,1,'no extra provider call or second audio download')
   assert.ok(frames.length>0)
   frames.shift()(100)
-  assert.ok(levels.some(level=>level>.9),'audible PCM drives the mouth')
+  assert.ok(levels.some(level=>level>.9),'decoded audible PCM is available locally without another provider call')
   player.cancel()
-  assert.equal(levels.at(-1),null,'Stop resets moving mouth')
+  assert.equal(levels.at(-1),null,'Stop resets buffered audio measurement')
   const page=source('components/my-coach-live-dialogue.jsx')
   const loop=source('components/my-coach-speech-loop.jsx')
-  assert.match(page,/onLevel:level=>\{if\(!controller\.signal\.aborted/)
+  assert.doesNotMatch(page,/onLevel:level=>\{if\(!controller\.signal\.aborted/)
+  assert.match(page,/selectCoachVisualScene\(\{phase:motionPhase,text:latestCoachText,stage:currentStage\}\)/)
+  const avatar=source('components/app/coaching-avatar.jsx')
+  assert.match(avatar,/data-photo-motion="static"/)
+  assert.doesNotMatch(avatar,/requestAnimationFrame|portraitMouthAperture|livingPortraitMouth/)
   assert.match(loop,/onLevel:level=>\{if\(live\(\)\)levelRef\.current\?\.\(level\)/)
 })
 
