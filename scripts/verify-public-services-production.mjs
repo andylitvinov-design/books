@@ -422,7 +422,23 @@ try {
       const code=requestIds[key];
       if(code){
         const url=telegramServiceRequestUrl(code,locale);
-        await expect(telegram).toHaveAttribute("href",url);
+        const handoff="/api/public/telegram-service-entry?service="+code+"&locale="+locale;
+        await expect(telegram).toHaveAttribute("href",handoff);
+        // A relative first-party link is intentional: inspect the real 307
+        // destination without following it, granting consent or sending a message.
+        const response=await fetch(origin+handoff,{redirect:"manual"});
+        assert.equal(response.status,307,"Signed Telegram service handoff stays temporary");
+        const destination=new URL(response.headers.get("location"));
+        assert.equal(destination.origin,"https://t.me","Only the approved Telegram provider");
+        assert.ok(["/holistichouse","/holistichouse_bot"].includes(destination.pathname),
+          "Only verified human Business chat or the existing AI bot");
+        if(destination.pathname==="/holistichouse"){
+          assert.equal(destination.href,url,"Manual fallback preserves the public service marker");
+        }else{
+          assert.deepEqual([...destination.searchParams.keys()],["start"],"No private bot parameters");
+          assert.equal(destination.searchParams.get("start"),
+            "hhservice_"+code+"_"+locale,"Existing V3 bot receives the matching service and locale");
+        }
         assert.equal(new URL(url).searchParams.get("text")?.split(String.fromCharCode(10)).at(-1),
           "[HH-REQ:"+code+":"+locale+"]","Deep link contains no private problem text");
       }else{
