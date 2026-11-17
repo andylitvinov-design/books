@@ -64,6 +64,15 @@ test('completed answer with explicit labels skips the rest immediately',()=>{
  const next=aliFreeDiagnosticSummary({slots:p.slots});
  assert.match(next,/two job offers/);
 });
+test('real first-time client can answer the numbered sample fields in one turn',()=>{
+ const p=turn('1. My goal/desire is to understand my direction\n'+
+   '2. My problem is uncertainty\n'+
+   '3. Currently: several negative events have occurred');
+ assert.equal(p.slots.goal,'to understand my direction');
+ assert.equal(p.slots.challenge,'uncertainty');
+ assert.match(p.slots.situation,/negative events/);
+ assert.equal(p.stage,'impact','only the missing details remain');
+});
 test('negative life events are kept as client situation, not a fictional goal',()=>{
  const first=turn('Currently I am going through lots of negative events in my life');
  assert.equal(first.stage,'goal');
@@ -191,6 +200,7 @@ test('production hook is consent-first, never uses external LLM or silent CRM ha
  assert.match(handler,/ai_review_consent_at=now\(\)/);
  assert.match(handler,/return promptResult/);
  assert.match(handler,/ctx\.mode===FREE_DIAGNOSTIC_MODE\?chatAllowed:allowed/);
+ assert.match(handler,/prior\.ctx\.mode===FREE_DIAGNOSTIC_MODE\)\?v3CanChat\(env\):v3CanStart\(env\)/);
  assert.doesNotMatch(planner,/\bfetch\s*\(|\baxios\s*\(|\bingestMessengerEventInTransaction\s*\(/);
  const local={VERCEL_ENV:'production',HH_CRM_TG_AI_V3_SCHEMA_READY:'true',
    HH_CRM_TG_AI_V3_ENABLED:'true',HH_CRM_TG_AI_V3_FREE_TIER_CONFIRMED:'true',
