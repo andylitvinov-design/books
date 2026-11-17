@@ -2,7 +2,8 @@
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { ArrowRight, BookOpen, BriefcaseBusiness, Clapperboard, Compass, Flower2,
+import Image from "next/image";
+import { ArrowRight, BookOpen, BriefcaseBusiness, Clapperboard, Compass, ChevronDown, Flower2,
   GraduationCap, HandHeart, HeartHandshake, MonitorPlay, SlidersHorizontal, Sparkles,
   UsersRound, Video, type LucideIcon } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -20,6 +21,41 @@ const icons: Record<ServicesPanelId, LucideIcon> = {
   magical: Flower2, homeopathy: Sparkles, about: Video,
   testimonials: HeartHandshake, mytube: MonitorPlay, directory: BookOpen,
 };
+
+/* Photographic 14-panel catalog: reuse existing first-party assets only.
+   Lazy 96px thumbs avoid extra Vercel image-generation work. */
+const panelMedia: Record<ServicesPanelId, string> = {
+  reiki: "/images/holistic-house/reiki-practitioner-sunrise.webp",
+  browse: "/images/holistic-house/report-lighthouse-coast.webp",
+  reading: "/images/holistic-house/homepage-constellations.svg",
+  consultation: "/images/holistic-house/andy-about.png",
+  services: "/images/holistic-house/messenger-zen-stones.svg",
+  video: "/images/holistic-house/assist-video-botanical.svg",
+  courses: "/images/holistic-house/books-library.webp",
+  coach: "/images/holistic-house/andy-about.png",
+  magical: "/images/holistic-house/reiki-practitioner-sunrise.webp",
+  homeopathy: "/images/holistic-house/distance-homeopathy.webp",
+  about: "/images/holistic-house/andy-about.png",
+  testimonials: "/images/holistic-house/reiki-approved-sunrise-v3.webp",
+  mytube: "/images/holistic-house/assist-video-botanical.svg",
+  directory: "/images/holistic-house/messenger-zen-stones.svg",
+};
+type PriceKind = "free" | "someFree" | "quote" | "mixed" | "session" | "from";
+const panelPriceKind: Record<ServicesPanelId, PriceKind> = {
+  reiki: "quote", browse: "mixed", reading: "quote", consultation: "from",
+  services: "mixed", video: "someFree", courses: "someFree", coach: "someFree",
+  magical: "quote", homeopathy: "session", about: "free",
+  testimonials: "free", mytube: "free", directory: "mixed",
+};
+const priceWords: Record<PublicLocale, Record<PriceKind,string>> = {
+  ru: { free: "Бесплатно", someFree: "Есть бесплатно", quote: "По запросу",
+        mixed: "Разные цены", session: "€100 / 60 мин", from: "От €50" },
+  en: { free: "Free", someFree: "Free options", quote: "Price on request",
+        mixed: "Various prices", session: "€100 / 60 min", from: "From €50" },
+  es: { free: "Gratis", someFree: "Opciones gratis", quote: "Consultar",
+        mixed: "Varios precios", session: "€100 / 60 min", from: "Desde €50" },
+};
+
 const words = {
   ru: {
     title: "Другие варианты поддержки", intro: "Выберите направление — подробности откроются здесь.",
@@ -225,10 +261,18 @@ export function ServicesCompactPanel({ id, children }: { id: ServicesPanelId; ch
   const regionId = "services-unified-" + id;
   return (
     <article className={styles.panel} data-services-unified-panel={id} data-expanded={expanded}>
-      <div className={styles.preview}>
-        <span className={styles.icon} aria-hidden="true"><Icon size={23} strokeWidth={1.8} /></span>
+      <button type="button" className={styles.preview}
+        aria-expanded={expanded} aria-controls={regionId} onClick={() => context.toggle(id)}>
+        <span className={styles.icon} aria-hidden="true">
+          <Image src={panelMedia[id]} alt="" fill loading="lazy" sizes="(max-width: 760px) 96px, 1px" />
+          <span className={styles.iconOverlay}><Icon size={19} strokeWidth={1.8} /></span>
+        </span>
         <span className={styles.previewText}><strong>{title}</strong><small>{description}</small></span>
-      </div>
+        <span className={styles.priceBadge} data-service-price-kind={panelPriceKind[id]}>
+          {priceWords[context.locale][panelPriceKind[id]]}
+        </span>
+        <ChevronDown className={styles.chevron} size={17} aria-hidden="true" />
+      </button>
       <ServicesCardActions locale={context.locale} title={title}
         description={panelDescriptions[context.locale][id]}
         href={"/" + context.locale + panelDestinations[id]}
