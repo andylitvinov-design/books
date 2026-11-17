@@ -686,15 +686,31 @@ try {
         await visible(free.locator('a[href="/' + locale + '/services/dao-health-profile"]').first());
         await visible(free.locator('a[href="/' + locale + '/courses/antistress"]'));
         assert.equal(await page.locator("h1#services-conversion-title").count(), 1);
+        // The approved public Services page has 10 compact groups and 30
+        // immediately visible options. The former conversion hero now lives
+        // inside the Browse panel AFTER the first six service groups.
+        const visibleVariants=page.locator('[data-services-unified-catalog] [data-services-three-visible]');
+        await expect(visibleVariants).toHaveCount(10);
+        await expect(visibleVariants.locator('[data-service-variant]')).toHaveCount(30);
+        const actualGroups=await visibleVariants.evaluateAll(nodes=>
+          nodes.map(node=>({id:node.getAttribute("data-services-three-visible"),
+            declared:node.getAttribute("data-services-offer-count"),
+            visible:node.getClientRects().length>0,
+            options:node.querySelectorAll("[data-service-variant]").length})));
+        assert.deepEqual(actualGroups.map(x=>x.id),
+          ["consultation","homeopathy","services","reiki","courses","video","browse","reading","coach","magical"],
+          "The first six category targets must remain visible in their approved order");
+        assert.ok(actualGroups.every(x=>x.declared==="3"&&x.visible&&x.options===3),
+          "Each of the ten service panels displays all three choices without opening an accordion");
         assert.equal(await page.evaluate(() => {
-          const selectors = ["#services-conversion-title", "#consultation", "#free-insights", "#solutions",
-            "[data-services-meet]", '[data-personal-testimonials="services"]',
-            "#method-videos", "[data-services-directory-invitation]"];
-          const sections = selectors.map(selector => [...document.querySelectorAll(selector)]);
-          if (sections.some(matches => matches.length !== 1)) return false;
-          return sections.every((matches, index) => index === 0 ||
-            Boolean(sections[index - 1][0].compareDocumentPosition(matches[0]) & Node.DOCUMENT_POSITION_FOLLOWING));
-        }), true, "Owner studio order: hero, booking, 3 free, personal offers, intro, reviews, methods, directory");
+          const selectors = ["#consultation","#free-insights","#solutions","#services-conversion-title",
+            "[data-services-meet]",'[data-personal-testimonials="services"]',
+            "#method-videos","[data-services-directory-invitation]"];
+          const sections=selectors.map(selector=>[...document.querySelectorAll(selector)]);
+          if(sections.some(matches=>matches.length!==1))return false;
+          return sections.every((matches,index)=>index===0||
+            Boolean(sections[index-1][0].compareDocumentPosition(matches[0])&Node.DOCUMENT_POSITION_FOLLOWING));
+        }),true,"Approved Services sequence: booking, 3 free, personal offers, Browse hero, intro, reviews, methods, directory");
         await expect(page.locator("#method-videos")).toHaveAttribute("open", "",
           { timeout: 15000 });
         // Method posters are visible, while third-party players stay opt-in.
