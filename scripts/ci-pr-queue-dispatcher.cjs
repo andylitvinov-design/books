@@ -81,10 +81,14 @@ function verifiedSpecialistProductFailure(checks){
  // the old separate hh-specialist job no longer exists. Never classify a
  // product failure from a red Core alone: independent product QA must already
  // be independently authenticated by classifyIndependentSpecialistChecks.
- if(merge?.app?.id!==15368||merge.status!=='completed'||
-    merge.conclusion!=='failure')return false;
- return !specialist||(specialist.app?.id===15368&&
-   specialist.status==='completed'&&specialist.conclusion==='failure');
+ const legacy=specialist?.app?.id===15368&&
+   specialist.status==='completed'&&specialist.conclusion==='failure';
+ const embedded=merge?.app?.id===15368&&merge.status==='completed'&&
+   merge.conclusion==='failure';
+ // Both historically real topologies must remain valid: the old independent
+ // hh-specialist without a merge-check, or the new embedded merge-check.
+ // Independent product QA and green Core are mandatory in either case.
+ return legacy||embedded;
 }
 // Red aggregate gates with green source and no failed independent QA are
 // policy/stale-base blockers, not a source-writing authorization.
