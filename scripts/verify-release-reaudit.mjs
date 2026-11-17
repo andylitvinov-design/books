@@ -34,9 +34,10 @@ async function assertCspPublicHome(page) {
   // A history traversal can update the URL while the previous public document
   // remains visible and its replacement is pending. Require the destination DOM,
   // not load/hydration readiness: the server-rendered home is sufficient here.
-  const home = page.locator('main[data-home-design="approved-v2"]');
+  const home = page.locator('main[data-home-design="dialogue-first-v1"]');
   await expect(home).toHaveCount(1);
   await expect(home).toBeVisible();
+  await expect(home.locator('[data-home-dialogue-entry]')).toBeVisible();
 }
 
 async function assertAnonymousPrivateNavigation(page) {
