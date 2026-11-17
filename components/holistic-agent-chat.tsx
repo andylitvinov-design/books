@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from "react"
 import {Mic, Paperclip, Plus, Send, X} from "lucide-react";
 import {MessengerAiLanding} from "@/components/app/messenger-ai-landing";
 import {MessengerSixProjects,messengerProject} from "@/components/app/messenger-six-projects";
+import { consumeHomeAliHandoff } from "@/lib/home-ali-handoff.mjs";
 import {sessionGoalChoices,sessionCopy,sessionGoalForText,sessionOfferIds,sessionOfferDescription} from "@/lib/holistic-support/session-goal-intake.mjs";
 import type {MessengerProjectId,MessengerProjectOption,MessengerTestFocus} from "@/components/app/messenger-six-projects";
 import { prepareNaturalDialogue, finishNaturalDialogue } from "@/lib/holistic-support/natural-dialogue.mjs";
@@ -386,6 +387,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   const nativeSession=useRef<{id:string;revision:number}|null>(null);
   useEffect(()=>{nativeSession.current=null;},[authenticated]);
   const composerRef=useRef<HTMLTextAreaElement|null>(null);
+  const homeHandoffConsumed=useRef(false);
   const threadRef=useRef<HTMLDivElement|null>(null);
   const followTail=useRef(true);
   const programmaticScrollTop=useRef<number|null>(null);
@@ -441,6 +443,28 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     // The user explicitly selected a rail action: prepare, never auto-send it.
     if(!compact)composerRef.current?.focus({preventScroll:true});
   },[quickPrompt,compact]);
+  useEffect(()=>{
+    // A public-Home Send tap opens the ONE existing Ali chat. The text is
+    // carried once in same-tab sessionStorage, never in a URL or analytics.
+    // Do not consume before account status is known; existing consent/safety
+    // guards inside sendTurn still govern protected responses.
+    if(!compact||!messengerView||authStatus==="checking"||homeHandoffConsumed.current)return;
+    if(!/^\/(?:en|ru|es)\/app\/messages\/?$/.test(window.location.pathname))return;
+    const transferred=consumeHomeAliHandoff(window.sessionStorage,routeLocale);
+    if(!transferred)return;
+    homeHandoffConsumed.current=true;
+    const prefix=transferred.mode==="business"
+      ?(routeLocale==="ru"?"Для бизнеса: ":routeLocale==="es"?"Para mi negocio: ":"For business: "):"";
+    const message=(prefix+transferred.text).slice(0,2000);
+    setDraft(message);
+    setEntryOpen(false);
+    followTail.current=true;
+    setNewBelow(false);
+    // The visitor explicitly pressed Send on Home. Existing Ali handles the
+    // one new turn, including guest-safe rules and any private consent gate.
+    void sendTurn(message);
+  },[compact,messengerView,authStatus,routeLocale]);
+
   useEffect(()=>{
     if(!compact)return;
     // Only a public instrument key may travel in the URL; answers/results never do.

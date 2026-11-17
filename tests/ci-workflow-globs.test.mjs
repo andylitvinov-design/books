@@ -180,7 +180,7 @@ test('Public Services exact-head routing preserves source contracts and real ris
 
 test('Core classification and all applicable Core checks share the first scheduled runner', () => {
   const s=workflow('hh-pr-core-release.yml');
-  const core=s.split('\n  scope:')[1]?.split('\n  hh-specialist:')[0];
+  const core=s.split('\n  scope:')[1]?.split('\n  hh-merge-check:')[0];
   assert.ok(core, 'Unified Core job must exist');
   assert.match(core, /name: core-lint-types-build/);
   assert.match(core, /runs-on: ubuntu-24\.04/);
@@ -339,7 +339,7 @@ test('Core runs CI policy regressions only when relevant CI or manifest files ch
     assert.ok(source.includes(required),'Relevant CI contract owner lost: '+required);
   assert.match(source,/node scripts\/ci-source-preflight\.mjs/);
   assert.match(source,/run: npm run build/);
-  assert.match(source,/^  hh-specialist:/m);
+  assert.doesNotMatch(source,/^  hh-specialist:/m);
   assert.match(source,/^  hh-merge-check:/m);
 });
 

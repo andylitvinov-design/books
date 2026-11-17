@@ -32,3 +32,21 @@ test('iPhone text focus pins Send to the bottom, leaving only transcript scrolli
   assert.match(ui,/<textarea ref=\{composerRef\} id="hh-my-coach-live-input"/)
   assert.match(ui,/<button className=\{styles.send\} type="submit"/)
 })
+test('focused iPhone editor can shrink the OUTER fixed shell below CSS 100dvh',()=>{
+  const css=source('components/public-coaching-discovery.module.css')
+  const page=source('components/public-coaching-discovery.jsx')
+  const generic=css.indexOf('.root:has([data-my-coach-immersive-session]){')
+  const active=css.lastIndexOf('.root[data-public-coaching-active="true"]:has([data-my-coach-immersive-session]){')
+  assert.ok(generic>=0&&active>generic,'active fixed-shell override must come after the generic 100dvh floor')
+  const rule=css.slice(active,css.indexOf('}',active)+1)
+  assert.match(rule,/min-height:0;/)
+  assert.match(rule,/height:var\(--coach-visible-height,100dvh\);/)
+  assert.match(rule,/max-height:var\(--coach-visible-height,100dvh\);/)
+  assert.match(css,/\.root\[data-public-coaching-active="true"\]\{[\s\S]*?position:fixed;[\s\S]*?height:var\(--coach-visible-height,100dvh\);/)
+  assert.match(page,/viewport\?\.height\|\|window\.innerHeight/)
+  assert.match(page,/viewport\?\.addEventListener\('resize',sizeToVisibleViewport\)/)
+  assert.match(page,/viewport\?\.removeEventListener\('resize',sizeToVisibleViewport\)/)
+  // CSS 100dvh still applies to the unselected landing; only a fixed chat
+  // has the extra specificity that releases the minimum-height constraint.
+  assert.match(css,/\.root:has\(\[data-my-coach-immersive-session\]\)\{[^}]*min-height:100dvh/)
+})

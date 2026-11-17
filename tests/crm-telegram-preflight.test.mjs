@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs'
 import {
   telegramBotBusinessId, telegramCredentialPreflightReady, channelTransportReady,
 } from '../lib/crm/messenger-policy.js'
-import { inspectTelegramBotIdentity } from '../lib/crm/messenger-provider.js'
+import { inspectTelegramBotIdentity,ensureTelegramWebhook } from '../lib/crm/messenger-provider.js'
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 const CALLBACK = 'https://holistichouse.vercel.app/api/app/crm/messenger/webhook/telegram'
@@ -20,16 +20,30 @@ const reply = result => new Response(JSON.stringify({ok:true,result}),{
   status:200,headers:{'Content-Type':'application/json'},
 })
 async function simulatedProvider({id=12345678,isBot=true,username='holistichouse_bot',
-  webhookUrl='',failWebhook=false}={},run){
+  webhookUrl='',failWebhook=false,businessCapable=false,allowedUpdates=null}={},run){
   const calls=[]
+  let registeredUrl=webhookUrl
+  let subscribedUpdates=allowedUpdates
   const original=globalThis.fetch
   globalThis.fetch=async (url,options={})=>{
     calls.push({url:String(url),method:options.method||'GET'})
     if(String(url).endsWith('/getMe'))
-      return reply({id,is_bot:isBot,username})
+      return reply({id,is_bot:isBot,username,can_connect_to_business:businessCapable})
     if(String(url).endsWith('/getWebhookInfo')){
       if(failWebhook) throw new Error('Synthetic transport offline')
-      return reply({url:webhookUrl,pending_update_count:0})
+      return reply({url:registeredUrl,pending_update_count:0,
+        ...(Array.isArray(subscribedUpdates)?{allowed_updates:subscribedUpdates}:{})})
+    }
+    if(String(url).endsWith('/setWebhook')){
+      const body=JSON.parse(options.body||'{}')
+      assert.equal(body.url,CALLBACK)
+      assert.equal(body.drop_pending_updates,false)
+      assert.equal(body.secret_token,env.HH_CRM_MSG_TELEGRAM_WEBHOOK_SECRET)
+      assert.deepEqual(body.allowed_updates,
+        ['message','callback_query','business_connection','business_message'])
+      registeredUrl=body.url
+      subscribedUpdates=body.allowed_updates
+      return reply(true)
     }
     throw new Error('UNEXPECTED_PROVIDER_OPERATION')
   }
@@ -55,7 +69,8 @@ test('preflight verifies exact getMe username and ID, reads webhook without inst
     const actual=await inspectTelegramBotIdentity(env)
     assert.deepEqual(actual,{
       verified:true,username:'holistichouse_bot',webhookState:'not_set',
-      webhookDeliveryError:false,pilotReady:false,publicSendingEnabled:false,
+      webhookDeliveryError:false,businessCapable:false,businessUpdatesReady:null,
+      businessAutoReplyServerEnabled:false,pilotReady:false,publicSendingEnabled:false,
     })
     assert.deepEqual(calls.map(x=>x.method),['GET','GET'])
     assert.ok(calls[0].url.endsWith('/getMe'))
@@ -69,6 +84,31 @@ test('existing correct webhook is reported without provider changes',async()=>{
     const result=await inspectTelegramBotIdentity(env)
     assert.equal(result.webhookState,'connected')
     assert.equal(calls.length,2)
+  })
+})
+test('owner preflight distinguishes BotFather Secretary capability and real Business subscription',async()=>{
+  await simulatedProvider({webhookUrl:CALLBACK,businessCapable:true,
+    allowedUpdates:['message','callback_query','business_connection','business_message']},async calls=>{
+    const result=await inspectTelegramBotIdentity({...env,HH_CRM_TG_CHAT_AUTOMATION_ENABLED:'false'})
+    assert.equal(result.businessCapable,true)
+    assert.equal(result.businessUpdatesReady,true)
+    assert.equal(result.businessAutoReplyServerEnabled,false)
+    assert.deepEqual(calls.map(x=>x.method),['GET','GET'])
+  })
+  await simulatedProvider({webhookUrl:CALLBACK,businessCapable:true,
+    allowedUpdates:['message','callback_query']},async()=>{
+    const result=await inspectTelegramBotIdentity(env)
+    assert.equal(result.businessCapable,true)
+    assert.equal(result.businessUpdatesReady,false)
+  })
+  await simulatedProvider({webhookUrl:CALLBACK,businessCapable:true},async()=>{
+    assert.equal((await inspectTelegramBotIdentity(env)).businessUpdatesReady,null,
+      'Unknown subscription does not become a false verified green status')
+  })
+  await simulatedProvider({webhookUrl:'https://foreign.example',businessCapable:true,
+    allowedUpdates:['business_message','business_connection']},async()=>{
+    assert.equal((await inspectTelegramBotIdentity(env)).businessUpdatesReady,null,
+      'A foreign webhook is NEVER repair-ready')
   })
 })
 test('foreign webhook is a conflict, NEVER silently hijacked',async()=>{
@@ -107,9 +147,18 @@ test('owner API and UI require verified sign-in and explicit action; all real de
   assert.match(route,/requireSameOrigin/)
   assert.match(route,/x-hh-account-id/)
   assert.match(route,/action==='verify_telegram'/)
+  assert.match(route,/action==='sync_telegram_business_updates'/)
+  assert.match(route,/preflight.webhookState!=='connected'/)
+  assert.match(route,/preflight.businessCapable!==true/)
+  assert.match(route,/await ensureTelegramWebhook\(process\.env,\{ownerVerifiedSync:true\}\)/)
+  assert.match(route,/if\(preflight\.webhookState!=='connected'\)/)
+  assert.match(route,/if\(preflight\.businessCapable!==true\)/)
+  assert.match(route,/checked.businessUpdatesReady!==true/)
   assert.match(route,/onlyKeys\(payload,\['channel'\]\)/)
   assert.match(route,/inspectTelegramBotIdentity\(\)/)
   assert.match(ui,/action\('verify_telegram',\{channel:'telegram'\}\)/)
+  assert.match(ui,/action\('sync_telegram_business_updates',\{channel:'telegram'\}\)/)
+  assert.match(ui,/botCheck.businessCapable===true&&\s*botCheck.businessUpdatesReady!==true/)
   assert.match(ui,/botCheck\.webhookState/)
   assert.match(provider,/channelTransportReady\('telegram',env\)/)
   assert.match(provider,/TELEGRAM_WEBHOOK_ALREADY_IN_USE/)
@@ -117,4 +166,47 @@ test('owner API and UI require verified sign-in and explicit action; all real de
   assert.doesNotMatch(provider.slice(provider.indexOf('export async function inspectTelegramBotIdentity'),
     provider.indexOf('// Called ONLY on explicit owner action; never infer')),
     /setWebhook|sendMessage|deleteWebhook|databasePool/)
+})
+
+test('only owner-verified existing Business webhook can synchronize while public transport is OFF',async()=>{
+ assert.equal(channelTransportReady('telegram',env),false)
+ await assert.rejects(ensureTelegramWebhook(env),{code:'CHANNEL_NOT_CONNECTED',status:503})
+ await simulatedProvider({webhookUrl:CALLBACK,businessCapable:true,
+   allowedUpdates:['message','callback_query']},async calls=>{
+   // The owner route performs this official read-only verification before sync.
+   const proof=await inspectTelegramBotIdentity(env)
+   assert.equal(proof.verified,true)
+   assert.equal(proof.businessCapable,true)
+   assert.equal(proof.webhookState,'connected')
+   assert.equal(proof.businessUpdatesReady,false)
+   const result=await ensureTelegramWebhook(env,{ownerVerifiedSync:true})
+   assert.equal(result.connected,true)
+   const after=await inspectTelegramBotIdentity(env)
+   assert.equal(after.businessUpdatesReady,true)
+   assert.equal(after.businessAutoReplyServerEnabled,false,
+     'Subscription repair never activates customer-facing chat automation')
+   assert.equal(calls.filter(x=>x.url.endsWith('/setWebhook')).length,1)
+   assert.equal(calls.some(x=>/sendMessage|sendPhoto|deleteWebhook/i.test(x.url)),false)
+ })
+})
+test('preflight sync rejects wrong credentials, wrong environment and foreign callback',async()=>{
+ const invalid=[
+   {...env,HH_CRM_MSG_TELEGRAM_TOKEN:'invalid'},
+   {...env,HH_CRM_MSG_TELEGRAM_WEBHOOK_SECRET:''},
+   {...env,HH_CRM_MSG_TELEGRAM_USERNAME:'wrong'},
+   {...env,HH_CRM_MSG_TELEGRAM_ENABLED:'false'},
+   {...env,VERCEL_ENV:'preview'},
+ ]
+ for(const sample of invalid)
+   await assert.rejects(ensureTelegramWebhook(sample,{ownerVerifiedSync:true}),
+     {code:'CHANNEL_NOT_CONNECTED',status:503})
+ await simulatedProvider({webhookUrl:'https://attacker.example/hook',businessCapable:true},
+   async calls=>{
+    await assert.rejects(ensureTelegramWebhook(env,{ownerVerifiedSync:true}),
+      {code:'TELEGRAM_WEBHOOK_ALREADY_IN_USE',status:409})
+    assert.equal(calls.some(x=>x.method==='POST'),false)
+   })
+ const src=read('lib/crm/messenger-provider.js')
+ assert.match(src,/ownerVerifiedSync===true&&telegramCredentialPreflightReady\(env\)/)
+ assert.match(src,/\(!channelTransportReady\('telegram',env\)&&!safeOwnerSync\)/)
 })
