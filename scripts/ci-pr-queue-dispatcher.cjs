@@ -9,6 +9,7 @@ const {WORKFLOWS,admission,snapshot,verifiedGhostRepairCapacity,
  verifiedStaleMergedRepairCapacity,GHOST_REPAIR_MODE,STALE_MERGED_REPAIR_MODE}
  =require('./ci-pr-capacity.cjs');
 const {repairMode,safeFiles,hasVerifiedSourceHandoff,verifiedCoreCodeFailure}=require('./ci-pr-repair-worker.cjs');
+const {eligibleMachineTruncation}=require('./ci-pr-manual-resume.cjs');
 const {safeSourcePath: safeFreeSourcePath,
  assessCompleteFreeRepairScope}=require('./ci-pr-repair-free-agent.cjs');
 const {verifiedRunnerReceipt,recentlyStartedRunner}=require('./ci-pr-runner-evidence.cjs');
@@ -481,7 +482,9 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
     const selected=res?.data;
     if(!selected||selected.number!==manualTarget.prNumber||
        selected.head?.sha?.toLowerCase()!==manualTarget.expectedSha.toLowerCase()||
-       !validPR(selected)||laneOf(selected)!=='repair')
+       !((validPR(selected)&&laneOf(selected)==='repair')||
+         (ownerProof?.source==='OIDC_SIGNED_QUEUE'&&
+          validLegacyPrep(selected)&&laneOf(selected)==='legacy')))
       throw Error('OWNER_TARGET_NOT_REPAIR_ELIGIBLE');
     prs=[selected];
    }else if(inventorySnapshot!==null){
@@ -823,6 +826,15 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
    comments=await readCompleteIssueComments(github,owner,repo,task.pr_number,limited);
    if(!comments){blocked('OWNER_HISTORY_INCOMPLETE');continue;}
   }catch(err){blocked('OWNER_HISTORY_UNAVAILABLE');continue;}
+  // This one-shot recovery is available only to a NEW OIDC-authenticated
+  // owner request and an exact-HEAD, Actions-bot-signed model truncation.
+  // A public issue comment or a machine-only Watchdog scan cannot grant it.
+  const ownerModelRetry=manualTarget!==null&&task.lane==='legacy'&&
+    ownerProof?.source==='OIDC_SIGNED_QUEUE'&&
+    eligibleMachineTruncation(fresh,comments);
+  if(manualTarget!==null&&task.lane==='legacy'&&!ownerModelRetry){
+   blocked('OWNER_MANUAL_RETRY_PROOF_MISSING');continue;
+  }
   if(task.lane==='ci'){
    const sample=signedCiWakeTiming(task,comments,now);
    if(sample)summary.ciWakeTelemetry.push(sample);
@@ -1277,6 +1289,10 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   const errorTaskId=task.lane==='repair'?
     latestErrorTaskId(comments,task.pr_number,task.head_sha):null;
   const claim={...reservation(task,now,context.runId||'unspecified'),
+    ...(ownerModelRetry?{
+      owner_retry_kind:'TRUNCATED_FREE_MODEL',
+      owner_retry_source:'OIDC_SIGNED_QUEUE',
+      owner_retry_request_id:ownerProof.requestId}:{}),
     assigned_executor_id:task.lane==='ci'?CI_EXECUTOR:REPAIR_EXECUTOR,
     executor_kind:'github_actions',assignment_status:'SELECTED_RESERVED_NOT_STARTED',
     ...(errorTaskId?{error_task_id:errorTaskId}:{})};
