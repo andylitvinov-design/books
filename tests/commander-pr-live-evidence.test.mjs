@@ -14,7 +14,7 @@ const proof={schema:'HH_PUBLIC_RELEASE_EVIDENCE_V1',available:true,
 const status={total_count:1,statuses:[{context:'Vercel',state:'success',
  updated_at:'2026-11-17T16:20:00Z',
  target_url:'https://vercel.com/super10/codex-public-book-library/'+DEPLOY.slice(4)}]};
-const comparison={status:'ahead',behind_by:0,merge_base_commit:{sha:MERGE}};
+const comparison={status:'ahead',behind_by:0,base_commit:{sha:MERGE},merge_base_commit:{sha:MERGE}};
 const site={status:200,host:'holistichouse.vercel.app',contentType:'text/html',html:true};
 const sample={pr,proof,statuses:status,comparison,site};
 const verified=x=>verifyServedPrEvidence(x).verified_live;
