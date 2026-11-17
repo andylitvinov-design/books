@@ -125,3 +125,25 @@ test('owner PR Watchdog checks out only necessary trusted control directories be
  assert.match(checkout,/ops\/pr-monitor/);
  assert.doesNotMatch(checkout,/persist-credentials:\s*true/);
 });
+
+test('wrong-base PR produces terminal BLOCKED receipt, not a stranded owner lease',async()=>{
+ const wrong={...base,base:{...base.base,ref:'codex/bootstrap-books'}};
+ const f=mock(task,wrong);
+ let dispatched=0;
+ const result=await run({...f,context,dispatch:async()=>{dispatched++;throw Error('SHOULD_NOT_DISPATCH')}});
+ assert.equal(result.status,'BLOCKED');
+ assert.equal(result.reasonCode,'PR_IDENTITY_UNVERIFIED');
+ assert.equal(dispatched,0);
+ const finish=f.calls.filter(x=>x.action==='finish');
+ assert.equal(finish.length,1);
+ assert.equal(finish[0].status,'BLOCKED');
+ assert.equal(finish[0].headSha,SHA);
+});
+test('unknown foreign PR identity retains original owner HEAD and always finishes BLOCKED',async()=>{
+ const f=mock(task,null);
+ const result=await run({...f,context});
+ assert.equal(result.status,'BLOCKED');
+ const finish=f.calls.find(x=>x.action==='finish');
+ assert.equal(finish.status,'BLOCKED');
+ assert.equal(finish.headSha,SHA);
+});
