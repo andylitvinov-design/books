@@ -38,6 +38,7 @@ test('explicit coaching work or selected goal activates Coach without inferring 
 test('direct service questions select Sales; bookings and published price lookup use Secretary',()=>{
  for(const [message,locale] of [
   ['Интересуюсь вашими услугами','ru'],['Расскажите о сеансе Рейки','ru'],
+  ['Что вы предлагаете?','ru'],['What do you offer?','en'],['¿Qué ofrecen?','es'],
   ['I am interested in your services','en'],['Me interesa una consulta','es'],
  ])assert.equal(decide(message,locale).role,'sales',message);
  for(const [message,locale] of [
