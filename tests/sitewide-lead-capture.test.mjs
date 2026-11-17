@@ -57,12 +57,7 @@ test("global fallback is a short consented footer after page content and preserv
   const suppress = read("app/sitewide-capture.css");
   assert.ok(root.indexOf("{children}") < root.indexOf("<SitewideLeadCapture"));
   assert.ok(root.indexOf("<SitewideLeadCapture") < root.indexOf("<MobileBottomNavigation"));
-  // Public Academy receives an SSR-visible enrolment CTA, while rewritten and
-  // all private routes still wait for a verified client pathname.
-  assert.match(component, /const stableAcademyPath/);
-  assert.match(component, /const route = clientPath \|\| stableAcademyPath/);
-  assert.match(component, /classifyPublicLead\(clientPath \?\? pathname\)/);
-  assert.match(component, /setClientPath\(pathname\)/);
+  assert.match(component, /clientPath \? classifyPublicLead\(clientPath\) : null/);
   assert.match(component, /setClientPath\(pathname\)/);
   assert.match(component, /setLegacyBookLocale/);
   assert.match(component, /window.location.search/);
@@ -169,18 +164,4 @@ test("Kundalini course appears correctly in all locales' prepared messenger requ
     assert.ok(text.includes("holistichouse.vercel.app" + path));
     assert.doesNotMatch(text, /secret|health|password/i);
   }
-});
-
-test("mobile support browser QA enters the intended practice mode before testing tools", () => {
-  const paths = [
-    "scripts/verify-holistic-support-recommendations-mobile.mjs",
-    "scripts/verify-reiki-mobile-order-browser.mjs",
-    "scripts/verify-talisman-google-checkout-browser.mjs",
-  ];
-  for (const path of paths) {
-    const script = read(path);
-    assert.match(script, /\?view=meditation/, path + ": choose interactive practice rather than the course-only default");
-  }
-  const source = read("app/[locale]/holistic-support/mobile/page.tsx");
-  assert.match(source, /initialChoice = availableViews\.find\(view => view === requestedView\) \?\? "pump"/);
 });

@@ -6,7 +6,8 @@ const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8'
 test('Home uses My Space as its only top chrome and hides the sitewide promo ribbon', () => {
   const home=read('components/holistic-house-home.tsx')
   const banner=read('components/sitewide-antistress-banner.tsx')
-  assert.match(home, /<ProfileHubTabs locale=\{locale\} publicEntry \/>/)
+  assert.match(home, /<HomeDialogueEntry locale=\{locale\} \/>/)
+  assert.doesNotMatch(home, /<ProfileHubTabs locale=\{locale\} publicEntry \/>/)
   assert.doesNotMatch(home, /<header className="house-header house-header--services">/)
   assert.match(banner, /pathname === "\/" \|\|/)
   assert.match(banner, /\(\?:ru\|en\|es\)/)
@@ -14,6 +15,10 @@ test('Home uses My Space as its only top chrome and hides the sitewide promo rib
 
 test('Home and Profile share real search/menu, compact locale switch and working public links', () => {
   const hub=read('components/app/profile-hub-tabs.jsx')
+  const first=read('components/home-dialogue-entry.tsx')
+  assert.match(first, /<SiteNavigation locale=\{locale\} compact \/>/)
+  assert.match(first, /data-home-language-switch/)
+  assert.match(first, /data-home-mode-button="business"/)
   const nav=read('components/site-navigation.tsx')
   const workspace=read('components/app/app-workspace.jsx')
   assert.match(hub, /data-profile-language-switch/)

@@ -54,6 +54,24 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(handoffPanel).toBeVisible({timeout:15000});
     await handoffPanel.evaluate(element=>{element.open=false;});
     await expect(handoffPanel).toBeHidden();
+    // The approved Goal redesign deliberately gates Personalization behind
+    // three explicit selections; hydration alone must NEVER unlock this CTA.
+    await expect(continueToIdeas).toBeDisabled();
+    const quizProgress=page.locator('[data-video-goal-quiz-progress]');
+    await expect(quizProgress).toContainText('1 / 3');
+    const categories=page.locator('[data-auto-video-category]');
+    await expect(categories).toHaveCount(4);
+    await categories.first().click();
+    await expect(quizProgress).toContainText('2 / 3');
+    await expect(continueToIdeas).toBeDisabled();
+    const subcategories=page.locator('[data-auto-video-subcategory]');
+    await expect(subcategories).toHaveCount(4);
+    await subcategories.first().click();
+    await expect(quizProgress).toContainText('3 / 3');
+    await expect(continueToIdeas).toBeDisabled();
+    const topics=page.locator('[data-video-goal-topic]');
+    await expect(topics).toHaveCount(4);
+    await topics.first().click();
     await expect(continueToIdeas).toBeEnabled();
     await continueToIdeas.click();
     const ideas=page.locator('[data-video-quick-control="phrases"]');
@@ -773,11 +791,11 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // drops below the minimum; restoring it returns the editor to a valid state.
       await firstIdea.click();
       await expect(firstIdea).toHaveAttribute("aria-pressed","false");
-      await expect(montageCountLabel).toContainText(String(initialMontageCount-1)+" /");
+      await expect(montageCountLabel).toHaveText(new RegExp("^\\s*"+(initialMontageCount-1)+"\\s*/\\s*\\d+\\b"));
       await expect(montageIdeas.locator("[data-video-ideas-minimum]")).toBeVisible();
       await firstIdea.click();
       await expect(firstIdea).toHaveAttribute("aria-pressed","true");
-      await expect(montageCountLabel).toContainText(String(initialMontageCount)+" /");
+      await expect(montageCountLabel).toHaveText(new RegExp("^\\s*"+initialMontageCount+"\\s*/\\s*\\d+\\b"));
       await expect(montageIdeas.locator("[data-video-ideas-minimum]")).toHaveCount(0);
       const recordEntry=page.locator('[data-video-montage-text] [data-video-ideas-record]');
       await expect(recordEntry).toBeVisible();
@@ -1588,7 +1606,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       if(engine==="webkit")await unselectedToggle.tap();
       else await unselectedToggle.click();
       await expect(phraseEditor.locator(`[data-video-idea-select="${unselectedIndex}"]`)).toHaveAttribute('aria-pressed','true');
-      await expect(montageCountLabel).toContainText(`${countBeforeAddition+1} / ${optionCountBeforeAddition}`);
+      await expect(montageCountLabel).toHaveText(new RegExp("^\\s*"+(countBeforeAddition+1)+"\\s*/\\s*"+optionCountBeforeAddition+"\\b"));
       assert.ok(countBeforeAddition+1<=10,"adding a phrase never exceeds the ten-phrase export limit");
       assert.equal(await page.locator('[data-video-narration-stale]').isVisible(),false,
         "adding an unspoken phrase does not invalidate the actual WAV");

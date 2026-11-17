@@ -1,6 +1,6 @@
-import type { Metadata } from "next";
 import { Suspense } from "react";
 import { HolisticHouseLoadingScene } from "@/components/holistic-house-loading-scene";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { HolisticHouseHome } from "@/components/holistic-house-home";
 import { homeMetadataFor } from "@/lib/home-seo";

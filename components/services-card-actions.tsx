@@ -80,7 +80,7 @@ export function ServicesCardActions({
           {t.full}<ArrowRight size={16} aria-hidden="true" />
         </Link>
       </div>
-      <div className={styles.panel} id={id + "-order"} role="region"
+      <div className={[styles.panel, styles.orderPanel].join(" ")} id={id + "-order"} role="region"
         aria-label={t.order + ": " + title} data-service-card-order hidden={expanded !== "order"}>
         <MandatoryMessengerActions locale={locale} whatsappUrl={messageUrl}
           compact collapsed={false} label={t.choose} active={expanded==="order"} />

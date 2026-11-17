@@ -51,14 +51,7 @@ export function SitewideLeadCapture() {
     }
   }, [pathname]);
 
-  // Academy routes have a stable, public, locale-scoped pathname. Render the
-  // training enquiry in the first server HTML rather than waiting for global
-  // hydration (which may be delayed on a cold mobile connection). Keep the
-  // post-mount path check for other rewritten and all private routes.
-  const stableAcademyPath = /^\/(?:en|ru|es)\/academy\/[a-z0-9-]+(?:\/[a-z0-9-]+)*\/?$/.test(pathname);
-  const route = clientPath || stableAcademyPath
-    ? classifyPublicLead(clientPath ?? pathname)
-    : null;
+  const route = clientPath ? classifyPublicLead(clientPath) : null;
   if (!route) return null;
   const locale = (/^\/books\/[^/]+/.test(pathname) ? legacyBookLocale : route.locale) as "en" | "ru" | "es";
   const kind = route.kind as "training" | "reading" | "personal" | "network";

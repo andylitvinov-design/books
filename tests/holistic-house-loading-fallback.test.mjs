@@ -38,12 +38,11 @@ test("loading scene uses an existing small first-party photo and reduced-motion 
   assert.ok((await stat(photo)).size <= 100_000, "loading image must remain under 100 KB");
 });
 
-test("public Academy order CTA is server-visible while private/rewrite routes stay hydration-safe", async () => {
-  const capture = await source("components/sitewide-lead-capture.tsx");
-  const browser = await source("scripts/verify-academy-messenger-order.mjs");
-  assert.match(capture, /stableAcademyPath/);
-  assert.match(capture, /classifyPublicLead\(clientPath \?\? pathname\)/);
-  assert.match(browser, /academy\/temple-studies/);
-  assert.match(browser, /course order card arrives with the server document/);
-  assert.doesNotMatch(browser, /academy\/mysteries/);
+test("loading fallback is scoped to the public home routes and preserves the published Ali-first home",async()=>{
+ const home=await source("components/holistic-house-home.tsx");
+ const spanish=await source("app/es/page.tsx");
+ assert.match(home,/HomeDialogueEntry/);
+ assert.match(home,/HomeDeferredSections/);
+ assert.match(spanish,/HomeDialogueEntry locale="es"/);
+ assert.doesNotMatch(home,/<HomeSectionCarousel/);
 });

@@ -25,15 +25,10 @@ for (const browserType of [chromium, webkit]) {
         const errors = [];
         page.on("pageerror", error => errors.push(error.message));
         try {
-          const response = await page.goto(origin + "/" + locale + "/academy/temple-studies", {
+          const response = await page.goto(origin + "/" + locale + "/academy/mysteries", {
             waitUntil: "domcontentloaded", timeout: 60000,
           });
           assert.equal(response?.status(), 200, label + ": course loads");
-          // This inline footer must be present in initial HTML. Delaying its
-          // existence until React hydration makes the Order CTA disappear on
-          // slow phones and was the observed 30-second browser failure.
-          assert.match(await response.text(), /data-sitewide-capture="training"/,
-            label + ": course order card arrives with the server document");
           const card = page.locator('[data-sitewide-capture="training"]');
           await card.waitFor({ state: "visible", timeout: 30000 });
           assert.equal(await card.count(), 1, label + ": one footer order card");
@@ -86,7 +81,7 @@ for (const browserType of [chromium, webkit]) {
           assert.ok(bounds && bounds.x >= -1 && bounds.x + bounds.width <= width + 1,
             label + ": expanded card fits viewport");
           if (browserType === webkit && locale === "en" && width === 390) {
-            await card.screenshot({ path: output + "/academy-temple-studies-390-webkit.png" });
+            await card.screenshot({ path: output + "/academy-mysteries-390-webkit.png" });
           }
           await order.click();
           assert.equal(await channels.isVisible(), false, label + ": chooser closes");

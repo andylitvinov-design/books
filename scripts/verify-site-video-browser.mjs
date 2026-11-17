@@ -205,7 +205,10 @@ try {
       await expect(presentation).toHaveAttribute('data-video-locale', 'en')
       await expect(presentation.locator('iframe')).toHaveCount(0)
     }
-    await expect(page.locator('[data-personal-testimonials="home"]')).toHaveCount(1)
+    await expect(page.locator('[data-home-dialogue-entry]')).toHaveCount(1)
+    await expect(page.locator('[data-home-intent-form]')).toHaveCount(1)
+    // Testimonial galleries now load only when the visitor explicitly expands
+    // the lower catalogue, never before Ali's main composer is interactive.
   }
   pass(`${live ? 'Production' : 'Local'}: withdrawn intros hidden; EN publication gate checked`)
   if (russianPresentationVerified) {
@@ -253,39 +256,52 @@ try {
       await expect(intro.locator('button.site-video-play')).toBeHidden()
       await expect(visibleGallery).toBeHidden()
       const videoPanel = page.locator('[data-services-unified-panel="video"]')
+      await expect(videoPanel).toBeVisible()
       const actions = videoPanel.locator(':scope > [data-service-card-actions]')
-      await expect(actions).toBeVisible()
-      const controls = actions.locator('[role="group"] > button')
+      await expect(actions).toHaveCount(1)
+      const controls = actions.locator(':scope > div[role="group"] > button')
       await expect(controls).toHaveCount(2)
-      const detailsButton = controls.nth(0)
-      const orderButton = controls.nth(1)
-      await expect(detailsButton).toHaveAttribute('aria-expanded', 'false')
-      await expect(orderButton).toHaveAttribute('aria-expanded', 'false')
-      // The Services redesign replaced the old expandable thumbnail with
-      // two explicit Details / Order actions, retaining the Video Studio link.
+      const details = controls.first()
+      const order = controls.nth(1)
+      await expect(details).toBeVisible()
+      await expect(order).toBeVisible()
+      await expect(details).toHaveAttribute('aria-expanded', 'false')
+      await expect(order).toHaveAttribute('aria-expanded', 'false')
+      // Owner-approved mobile Services cards now expose Details / Order.
+      // The original video generator stays accessible via the real studio link.
+      const mobileVideo = videoPanel.locator('[data-assist-video-generation]')
+      await expect(mobileVideo).toBeHidden()
+      // The DEV SSR snapshot can paint before Next attaches click handlers.
       await expect.poll(
         () => page.evaluate(() => history.pushState.toString().includes("__NA")),
-        { timeout: 30000, message: 'Services actions must hydrate before click' },
+        { timeout: 30000, message: 'Services video actions must hydrate before the click' },
       ).toBe(true)
-      await expect(videoPanel.locator('[data-assist-video-generation]')).toBeHidden()
-      await detailsButton.click()
-      await expect(detailsButton).toHaveAttribute('aria-expanded', 'true')
-      const details = actions.locator('[data-service-card-details]')
-      await expect(details).toBeVisible()
-      await expect(details.locator('p')).toBeVisible()
-      const studioLink = details.locator('a[href]')
+      await details.click()
+      await expect(details).toHaveAttribute('aria-expanded', 'true')
+      await expect(order).toHaveAttribute('aria-expanded', 'false')
+      const description = actions.locator(':scope > [data-service-card-details]')
+      await expect(description).toBeVisible()
+      await expect(description.locator('p')).toBeVisible()
+      const studioLink = description.locator('a[href]')
+      await expect(studioLink).toHaveCount(1)
       await expect(studioLink).toHaveAttribute('href', '/' + locale + '/holistic-support/mandala')
-      const linkBox = await studioLink.boundingBox()
-      assert.ok(linkBox && linkBox.height >= 44, 'Services mobile Video Studio link is finger-sized: ' + locale)
-      await orderButton.click()
-      await expect(orderButton).toHaveAttribute('aria-expanded', 'true')
-      await expect(details).toBeHidden()
-      const order = actions.locator('[data-service-card-order]')
-      await expect(order).toBeVisible()
-      await expect(order.locator('[data-messenger-only-channel]')).toHaveCount(2)
-      await expect(order.locator('[data-messenger-only-channel="telegram"]')).toHaveAttribute('target', '_blank')
-      await expect(order.locator('[data-messenger-only-channel="whatsapp"]')).toHaveAttribute('target', '_blank')
-      await expect(videoPanel.locator('iframe')).toHaveCount(0)
+      const studioLinkBox = await studioLink.boundingBox()
+      assert.ok(studioLinkBox && studioLinkBox.height >= 44,
+        'Services mobile personal video studio link is finger-sized: ' + locale)
+      await expect(actions.locator(':scope > [data-service-card-order]')).toBeHidden()
+      await order.click()
+      await expect(details).toHaveAttribute('aria-expanded', 'false')
+      await expect(order).toHaveAttribute('aria-expanded', 'true')
+      await expect(description).toBeHidden()
+      const orderRegion = actions.locator(':scope > [data-service-card-order]')
+      await expect(orderRegion).toBeVisible()
+      await expect(orderRegion.locator('[data-messenger-only-channel="whatsapp"]')).toBeVisible()
+      await expect(orderRegion.locator('[data-messenger-only-channel="telegram"]')).toBeVisible()
+      // Opening this test-only menu is not submitting a customer request.
+      await order.click()
+      await expect(order).toHaveAttribute('aria-expanded', 'false')
+      await expect(orderRegion).toBeHidden()
+      await expect(mobileVideo.locator('iframe')).toHaveCount(0)
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2), 'Services mobile overflow: ' + locale)
       await page.screenshot({ path: `${evidence}/services-${locale}-mobile-video.png`, fullPage: true })
       await page.setViewportSize({ width: 1365, height: 1000 })
