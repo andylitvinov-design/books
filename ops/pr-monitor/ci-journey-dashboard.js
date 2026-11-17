@@ -54,6 +54,21 @@
        host.append(el('p','hh-ci-archive-note','В выбранном периоде нет подтверждённых интервалов; это не ноль.'));
        return;
      }
+     const ctx=data.blocker_context;
+     if(ctx?.schema==='HH_CI_GAP_BLOCKER_CONTEXT_V1'&&
+        ['VERIFIED','PARTIAL'].includes(ctx.status)){
+       const meanings={MERGE_CONFLICT_DIRTY_NOW:'Сейчас конфликт с production',
+        SEMANTIC_SOURCE_REPAIR_PENDING:'Ожидает семантического исправления кода',
+        EXPLICIT_OWNER_HOLD:'Явная блокировка владельца',
+        POLICY_BLOCKED:'Блокировка политики безопасности',
+        SOURCE_OWNER_CLAIMED:'Исходники заняты другим исполнителем',
+        MERGE_CONFLICT_TRIAGE:'Ожидает разбора merge-конфликта',
+        SAFE_REPAIR_QUEUED:'Задача ожидает Repair Worker'};
+       host.append(el('p','hh-ci-archive-note',
+         'Текущий статус PR: '+(meanings[ctx.current_reason_code]||ctx.current_reason_code)+
+         '. Это текущее состояние, а не доказанная причина каждой прошлой паузы.'+
+         (!ctx.history_complete?' История событий неполная.':'')));
+     }
      if(!data.waves.length){
        host.append(el('p','hh-ci-archive-note','Запуски пересекались по времени либо нет подтверждённых пауз.'));
        return;
@@ -72,7 +87,18 @@
        const commit=commitLink(w.next_head);
        if(commit){const a=el('a','',' · Коммит');a.href=commit;a.target='_blank';
          a.rel='noopener noreferrer';links.append(a);}
-       item.append(head,note,links);host.append(item);
+       item.append(head,note,links);
+       if(Array.isArray(w.observed_blocker_events)&&w.observed_blocker_events.length){
+         for(const e of w.observed_blocker_events){
+           if(!e||e.evidence!=='GITHUB_ISSUE_LABEL_EVENT'||e.cause_verified!==false)continue;
+           item.append(el('p','hh-ci-archive-note',
+             'Наблюдаемое событие '+dt(e.at)+': '+
+             (e.transition==='labeled'?'добавлена ':'снята ')+
+             e.label+' · '+e.reason_code+' · '+e.actor+
+             '. Факт из GitHub; не подтверждает причину всей паузы.'));
+         }
+       }
+       host.append(item);
      }
      host.append(el('p','hh-ci-archive-note',
        'Смена SHA доказывает новый исходный код, а не причину задержки.'+
