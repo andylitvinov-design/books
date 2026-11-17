@@ -31,15 +31,34 @@ function legacyFallbackStart(total,now){
  return (Math.floor(now/600_000)*MAX_LEGACY_BACKUPS)%total;
 }
 const RELEVANT=new Set(['HH PR 10-minute watchdog','HH PR source Repair Worker','HH zero-cost PR CI worker','HH PR core release gate',...Object.keys(QUALITY_EVENT_PATHS)]);
-function validOwnerRepairTarget(context,target){
- return !!(target&&typeof target==='object'&&!Array.isArray(target)&&
+// Two independent routes: owner-authored manual workflow dispatch, OR a
+// signed owner intent already authenticated inside THIS protected Watchdog
+// runner (GitHub #3890 owner comment / private OIDC queue with atomic CAS).
+// The latter never comes from workflow_dispatch inputs or PR-authored code.
+// Neither route grants source-write or merge rights: the normal exact-HEAD,
+// signed failed-Core, owner-lease and capacity gates remain mandatory.
+function validOwnerRepairTarget(context,target,ownerProof=null){
+ if(!(target&&typeof target==='object'&&!Array.isArray(target)&&
   context?.repo?.owner==='andylitvinov-design'&&context.repo.repo==='books'&&
-  context.eventName==='workflow_dispatch'&&
   context.ref==='refs/heads/codex/bootstrap-books'&&
-  context.actor==='andylitvinov-design'&&
   Number.isSafeInteger(target.prNumber)&&target.prNumber>0&&target.prNumber<=99999999&&
   SHA.test(target.expectedSha||'')&&
-  Object.keys(target).every(key=>key==='prNumber'||key==='expectedSha'));
+  Object.keys(target).every(key=>key==='prNumber'||key==='expectedSha')))return false;
+ if(context.eventName==='workflow_dispatch'&&context.actor==='andylitvinov-design')
+  return true;
+ if(!['schedule','workflow_dispatch'].includes(context.eventName)||
+    !ownerProof||typeof ownerProof!=='object'||Array.isArray(ownerProof)||
+    ownerProof.prNumber!==target.prNumber||
+    ownerProof.expectedSha!==target.expectedSha)return false;
+ const keys=Object.keys(ownerProof).sort().join(',');
+ if(ownerProof.source==='OWNER_ISSUE_3890')
+  return keys==='commentId,expectedSha,prNumber,source'&&
+   Number.isSafeInteger(ownerProof.commentId)&&ownerProof.commentId>0;
+ if(ownerProof.source==='OIDC_SIGNED_QUEUE')
+  return keys==='expectedSha,leaseToken,prNumber,requestId,source'&&
+   /^[a-f0-9-]{36}$/i.test(ownerProof.requestId||'')&&
+   /^[a-f0-9-]{36}$/i.test(ownerProof.leaseToken||'');
+ return false;
 }
 function verifiedSourceGreen(checks){
  if(!checks||!Array.isArray(checks.check_runs)||
@@ -369,7 +388,7 @@ function legacyHourlyWorkerSlot(data,now){
  return 'FREE';
 }
 
-async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=snapshot,focusPrNumber=null,focusPrSnapshot=null,inventorySnapshot=null,watchdogEvidence=null,manualTarget=null}){
+async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=snapshot,focusPrNumber=null,focusPrSnapshot=null,inventorySnapshot=null,watchdogEvidence=null,manualTarget=null,ownerProof=null}){
  const summary={schema:'HH_CONTROL_DISPATCH_V1',checkedAt:new Date(now).toISOString(),
   dryRun,discovered:0,production:0,actionable:0,candidates:0,
   inspected:0,dispatchAccepted:0,wouldDispatch:0,
@@ -411,7 +430,7 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
    .addHeading('HH Control Tower 2.0 — queue dispatch')
    .addCodeBlock(JSON.stringify(summary,null,2)).write();return summary;};
  if(!trustedContext(context)){summary.reason='UNTRUSTED_EVENT';return finish();}
- if(manualTarget!==null&&!validOwnerRepairTarget(context,manualTarget)){
+ if(manualTarget!==null&&!validOwnerRepairTarget(context,manualTarget,ownerProof)){
   summary.reason='UNTRUSTED_OWNER_TARGET';return finish();
  }
  if(manualTarget!==null&&(focusPrNumber!==null||inventorySnapshot!==null)){
