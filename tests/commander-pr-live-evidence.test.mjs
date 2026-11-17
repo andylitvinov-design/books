@@ -11,7 +11,7 @@ const pr={number:4737,state:'closed',merged:true,merged_at:'2026-11-17T14:55:41Z
 const proof={schema:'HH_PUBLIC_RELEASE_EVIDENCE_V1',available:true,
  sha:SERVED,deployment_id:DEPLOY,project_id:'prj_4jAwcx6lrKyUKZ3R9vgC5xwwyC0b',
  environment:'production',branch:'codex/public-book-library',repo:'andylitvinov-design/books'};
-const status={total_count:1,statuses:[{context:'Vercel',state:'success',
+const status={total_count:1,statuses:[{context:'Vercel – codex-public-book-library',state:'success',
  updated_at:'2026-11-17T16:20:00Z',
  target_url:'https://vercel.com/super10/codex-public-book-library/'+DEPLOY.slice(4)}]};
 const comparison={status:'ahead',behind_by:0,base_commit:{sha:MERGE},merge_base_commit:{sha:MERGE}};
@@ -37,6 +37,7 @@ test('GitHub merge alone, unrelated READY or changed alias cannot imply LIVE',()
   {...sample,proof:{...proof,branch:'main'}},
   {...sample,proof:{...proof,repo:'other/repository'}},
   {...sample,statuses:{...status,statuses:[{...status.statuses[0],state:'failure'}]}},
+  {...sample,statuses:{...status,statuses:[{...status.statuses[0],context:'Vercel – another-project'}]}},
   {...sample,statuses:{...status,statuses:[{...status.statuses[0],target_url:'https://example.net/fake'}]}},
   {...sample,comparison:{status:'behind'}},
   {...sample,comparison:{status:'ahead',behind_by:0,merge_base_commit:{sha:'c'.repeat(40)}}},
