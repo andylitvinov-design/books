@@ -38,6 +38,8 @@ on:
       # not synthetic encrypted owner/client IA with Redis and two browsers.
       - '!lib/practitioners/public-*'
       - '!lib/practitioners/taoist-talisman-cart.js'
+      - '!app/api/app/crm/messenger/webhook/**'
+      - '!lib/app/client-telegram-transport.js'
   workflow_dispatch:
 permissions:
   contents: read
