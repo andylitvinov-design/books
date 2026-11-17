@@ -128,10 +128,16 @@ async function askFree(prompt,{fetcher,token,run}){
   {role:'system',content:'Answer only a public technical project-management question in Russian. Produce a SHORT final user-visible TEXT answer directly, without analysis or reasoning. No private data, no code tools, no credentials, no speculative agent-commit claims. Provide safe next step and say when proof is unknown. Never execute code.'},
   {role:'user',content:prompt}
  ];
+ // A free-tier endpoint can return 200 headers quickly but stream a slow
+ // reasoning completion. AbortSignal.timeout(22s) was still cancelling the
+ // body stream AFTER fetch succeeded, misreported as JSON corruption.
+ // Keep ONE bounded HTTP request; the 8-minute trusted Watchdog budget owns
+ // the outer deadline. Never retry inference on an uncertain delivery.
+ const signal=AbortSignal.timeout(115000);
  let response;
  try{
   response=await fetcher('https://openrouter.ai/api/v1/chat/completions',{
-   method:'POST',redirect:'error',cache:'no-store',signal:AbortSignal.timeout(22000),
+   method:'POST',redirect:'error',cache:'no-store',signal,
    headers:{Authorization:'Bearer '+token,'Content-Type':'application/json',
     'HTTP-Referer':'https://holistic-house-pr-monitor.vercel.app',
     'X-Title':'HH PM GitHub Free Agent'},
@@ -143,9 +149,22 @@ async function askFree(prompt,{fetcher,token,run}){
     provider:{allow_fallbacks:false,max_price:{prompt:0,completion:0},
      data_collection:'deny'}})
   });
- }catch(_){return {reason:'OPENROUTER_NETWORK_UNKNOWN_NO_RETRY'};}
+ }catch(error){
+  return {reason:signal.aborted||['AbortError','TimeoutError'].includes(error?.name)?
+   'OPENROUTER_RESPONSE_TIMEOUT_UNVERIFIED':'OPENROUTER_NETWORK_UNKNOWN_NO_RETRY'};
+ }
  if(!response?.ok)return {reason:'OPENROUTER_HTTP_'+String(response?.status||'UNKNOWN')};
- let data;try{data=await response.json()}catch(_){return {reason:'OPENROUTER_RESPONSE_INVALID'};}
+ let data;
+ try{data=await response.json();}
+ catch(error){
+  // Response.json() reads the body using the SAME AbortSignal as fetch().
+  // Treat a body-stream timeout separately from malformed/non-JSON HTTP 200
+  // without reading, logging or exporting arbitrary provider error content.
+  if(signal.aborted||['AbortError','TimeoutError'].includes(error?.name))
+   return {reason:'OPENROUTER_RESPONSE_TIMEOUT_UNVERIFIED'};
+  return {reason:'OPENROUTER_RESPONSE_INVALID'};
+ }
+ if(data?.error)return {reason:'OPENROUTER_PROVIDER_ERROR'};
  const cost=data?.usage?.cost;
  if(typeof cost!=='number'||!Number.isFinite(cost))return {reason:'MODEL_BILLING_UNVERIFIED_HOLD'};
  if(cost!==0)return {reason:'MODEL_REPORTED_NONZERO_COST_HOLD'};

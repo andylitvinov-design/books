@@ -97,6 +97,47 @@ test('virtual free router uses portable chat payload with zero-price and privacy
  assert.equal(request.provider.max_price.prompt,0);
  assert.equal(request.provider.max_price.completion,0);
 });
+test('one slow free completion retains its body deadline, without retrying inference',async()=>{
+ let count=0,signal=null;
+ const fetcher=async(_url,options)=>{
+  count++;
+  signal=options.signal;
+  return {ok:true,status:200,json:async()=>({
+   model:'cohere/north-mini-code:free',usage:{cost:0},
+   choices:[{finish_reason:'stop',message:{content:'PR — pull request.'}}]
+  })};
+ };
+ const answer=await inbox.askFree('Что такое PR?',{fetcher,token:'test'});
+ assert.equal(count,1,'no second model, no paid fallback');
+ assert.equal(signal.aborted,false);
+ assert.equal(answer.ok,true);
+ assert.equal(answer.cost,0);
+ assert.equal(answer.text,'PR — pull request.');
+});
+test('body abort after headers is not misdiagnosed as malformed JSON or retried',async()=>{
+ let calls=0;
+ const timedOut=await inbox.askFree('Тест?',{token:'test',fetcher:async()=>{
+  calls++;
+  return {ok:true,status:200,json:async()=>{
+   throw Object.assign(Error('body aborted after headers'),{name:'AbortError'});
+  }};
+ }});
+ assert.equal(calls,1);
+ assert.equal(timedOut.reason,'OPENROUTER_RESPONSE_TIMEOUT_UNVERIFIED');
+ const bad=await inbox.askFree('Тест?',{token:'test',fetcher:async()=>{
+  calls++;
+  return {ok:true,status:200,json:async()=>{throw SyntaxError('invalid body');}};
+ }});
+ assert.equal(calls,2);
+ assert.equal(bad.reason,'OPENROUTER_RESPONSE_INVALID');
+ const rejected=await inbox.askFree('Тест?',{token:'test',fetcher:async()=>{
+  calls++;
+  return {ok:true,status:200,json:async()=>({error:{message:'private provider details'}})};
+ }});
+ assert.equal(rejected.reason,'OPENROUTER_PROVIDER_ERROR');
+ assert.ok(!JSON.stringify(rejected).includes('private provider'));
+ assert.equal(calls,3);
+});
 test('reasoning-only 200 response gets explicit bounded blocker, never false success',async()=>{
  const fetcher=async()=>({ok:true,json:async()=>({model:'openrouter/free',
   choices:[{finish_reason:'length',message:{content:''}}],
