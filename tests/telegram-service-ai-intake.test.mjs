@@ -112,17 +112,17 @@ test('Service cards use server-verified opt-in bot only when human automation is
  const ui=source('components/mandatory-messenger-actions.tsx');
  const action=source('components/services-card-actions.tsx');
  const router=source('app/api/public/telegram-service-entry/route.js');
- assert.match(action,/active=\\{expanded==="order"\\}/);
+ assert.match(action,/active=\{expanded==="order"\}/);
  assert.match(ui,/resolveTelegramServiceHandoffUrl/);
- assert.match(ui,/href=\\{serviceRoute\\|\\|serviceBot\\|\\|telegramUrl/);
- assert.match(router,/telegramServiceRequestUrl\\(service,locale\\)/);
- assert.match(router,/telegramBusinessStrategyRequestUrl\\(locale\\)/);
+ assert.match(ui,/href=\{serviceRoute\|\|serviceBot\|\|telegramUrl/);
+ assert.match(router,/telegramServiceRequestUrl\(service,locale\)/);
+ assert.match(router,/telegramBusinessStrategyRequestUrl\(locale\)/);
  assert.match(router,/HH_CRM_TG_CHAT_AUTOMATION_ENABLED/);
- assert.match(router,/channelTransportReady\\('telegram',env\\)/);
- assert.match(router,/v3CanStart\\(env\\)/);
+ assert.match(router,/channelTransportReady\('telegram',env\)/);
+ assert.match(router,/v3CanStart\(env\)/);
  assert.match(router,/resolveTelegramServiceEntry/);
- assert.match(router,/NextResponse.redirect\\(target/);
- assert.doesNotMatch(ui,/resolveTelegramServiceEntry\\(payload,manual,locale\\)/);
+ assert.match(router,/NextResponse.redirect\(target/);
+ assert.doesNotMatch(ui,/resolveTelegramServiceEntry\(payload,manual,locale\)/);
  for(const lang of locales)for(const service of services){
   const url=telegramServiceRequestUrl(service,lang);
   assert.ok(resolveTelegramServiceHandoffUrl(url,lang)?.startsWith('/api/public/telegram-service-entry?service='));
@@ -148,7 +148,7 @@ test('Business Strategy website title maps to an exact public Business marker in
   const text=new URL(direct).searchParams.get('text');
   assert.ok(text.includes('«'+title+'»'));
   assert.ok(text.endsWith('[HH-REQ:business:'+lang+']'));
-  assert.doesNotMatch(text,/PRIVATE|internal business plan|phone|\\+1-123-456/);
+  assert.doesNotMatch(text,/PRIVATE|internal business plan|phone|\+1-123-456/);
   assert.equal(resolveTelegramServiceHandoffUrl(direct,lang),
    '/api/public/telegram-service-entry?service=business&locale='+lang+'&offer=business_strategy');
   assert.equal(resolveTelegramServiceEntry(ready,direct,lang)?.href,
@@ -174,7 +174,7 @@ test('AI secretary product remains in Telegram Business, never unsupported V3 bo
 // provider calls, client data, Telegram sends or paid model processing.
 test('all 15 public services choose READY bot, real Business, or safe human fallback',async()=>{
  const raw=source('app/api/public/telegram-service-entry/route.js');
- const compiled=raw.replace(/^import\\s+.*$/gm,'').replace(/^export\\s+/gm,'');
+ const compiled=raw.replace(/^import\s+.*$/gm,'').replace(/^export\s+/gm,'');
  class Reply {
   constructor(body,init={}){this.body=body;this.status=init.status||200}
   static redirect(href,init={}){return {location:href,status:init.status,headers:init.headers}}
@@ -189,7 +189,7 @@ test('all 15 public services choose READY bot, real Business, or safe human fall
     ?'https://t.me/holistichouse_bot?start=hhreview_'+lang:null,
    resolveTelegramServiceEntry,
   },{codeGeneration:{strings:false,wasm:false}});
-  return vm.runInContext(compiled+'\\nGET',ctx,{timeout:1500});
+  return vm.runInContext(compiled+'\nGET',ctx,{timeout:1500});
  };
  const v3={HH_CRM_TG_CHAT_AUTOMATION_ENABLED:'false',
   HH_CRM_TG_AI_V3_SCHEMA_READY:'true',transportReady:true,v3Ready:true,botReady:true};
