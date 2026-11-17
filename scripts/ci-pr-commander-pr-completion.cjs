@@ -25,6 +25,21 @@ function trustedWorkerWake(context){
    (r.name==='HH zero-cost PR CI worker'&&
     ['workflow_dispatch','schedule'].includes(r.event)));
 }
+// A trusted, finished red Core is an event-driven queue wake. The job executes
+// checked-out control code from the default branch; untrusted PR sources cannot
+// grant repair permission. The existing dispatcher still verifies exact HEAD,
+// ownership, failure proof and capacity before any source write.
+function trustedCoreFailureWake(context){
+ const r=context?.payload?.workflow_run;
+ return context?.eventName==='workflow_run'&&
+  context.repo?.owner+'/'+context.repo?.repo===REPO&&
+  context.ref==='refs/heads/codex/bootstrap-books'&&
+  r?.name==='HH PR core release gate'&&r.event==='pull_request'&&
+  r.status==='completed'&&
+  ['failure','timed_out','startup_failure'].includes(r.conclusion)&&
+  r.repository?.full_name===REPO&&
+  r.head_repository?.full_name===REPO;
+}
 // Protected default-branch push is already a Watchdog event: no new cron.
 function trustedControlPush(context){
  const p=context?.payload;
@@ -71,7 +86,7 @@ async function run({github,core,context,ownerToken='',fetcher=global.fetch,
  dispatch=undefined}={}){
  if(context?.repo?.owner+'/'+context?.repo?.repo!==REPO||
   context?.ref!=='refs/heads/codex/bootstrap-books'||
-  !(['schedule','workflow_dispatch'].includes(context.eventName)||trustedWorkerWake(context)||trustedControlPush(context))||
+  !(['schedule','workflow_dispatch'].includes(context.eventName)||trustedWorkerWake(context)||trustedCoreFailureWake(context)||trustedControlPush(context))||
   (context.eventName==='workflow_dispatch'&&String(context.payload?.inputs?.dry_run||'false')==='true'))
   return {status:'SKIPPED_UNTRUSTED'};
  const token=await core.getIDToken('hh-commander-pr');
@@ -191,4 +206,29 @@ async function run({github,core,context,ownerToken='',fetcher=global.fetch,
  core.info('HH_OWNER_PR_COMPLETION '+JSON.stringify(report));
  return report;
 }
-module.exports={readback,run,send,ENDPOINT,trustedWorkerWake,trustedControlPush};
+// Process at most four distinct owner requests per existing signed runner.
+// An idle queue ends immediately. No new CI run or workflow dispatch is created.
+async function drain(options={},maxItems=4){
+ if(!Number.isSafeInteger(maxItems)||maxItems<1||maxItems>4)
+  throw Error('OWNER_QUEUE_DRAIN_LIMIT_INVALID');
+ const outcomes=[],seen=new Set();
+ for(let i=0;i<maxItems;i++){
+  const result=await run(options);
+  outcomes.push(result);
+  if(result?.prNumber!=null){
+   if(seen.has(result.prNumber)){
+    options.core?.warning?.('HH_OWNER_QUEUE_DUPLICATE_CLAIM_GUARD');
+    break;
+   }
+   seen.add(result.prNumber);
+  }
+  if(!['WATCHING','BLOCKED','MERGED','CLOSED_UNMERGED'].includes(result?.status))
+   break;
+ }
+ return {schema:'HH_OWNER_QUEUE_DRAIN_V1',processed:seen.size,
+  status:outcomes.at(-1)?.status||'NO_RESULT',
+  items:outcomes.map(x=>({prNumber:x.prNumber||null,status:x.status,
+   reasonCode:x.reasonCode||null,dispatchAccepted:x.dispatchAccepted===true}))};
+}
+module.exports={readback,run,drain,send,ENDPOINT,trustedWorkerWake,
+ trustedCoreFailureWake,trustedControlPush};
