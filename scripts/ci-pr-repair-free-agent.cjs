@@ -353,6 +353,17 @@ function boundedTruncationRetryPrompt(scope,root){
     !Number.isSafeInteger(scope.evidence.line)||scope.evidence.line<1||
     scope.evidence.line>50000)return null;
  const file=scope.files[0];
+ // A malformed focused-test proof must NEVER fall through into the
+ // compiler's source-line path: there the number is a TEST line, not a
+ // source line. Rejected proof means no second model request.
+ if(scope.evidence?.test&&!(
+    scope.evidence.file===file&&
+    (!scope.evidence.source||scope.evidence.source==='focused_test')&&
+    typeof scope.evidence.assertion==='string'&&scope.evidence.assertion.length<=240&&
+    Number.isSafeInteger(scope.evidence.line)&&scope.evidence.line>0&&
+    /^tests\/[A-Za-z0-9_.\/-]+\.test\.(?:mjs|cjs|js)$/.test(scope.evidence.test)&&
+    !scope.evidence.test.includes('..')&&!scope.evidence.test.includes('//')))
+   return null;
  // A verified failing direct-import test may identify the source file but
  // not the precise SOURCE line. A truncated first model response previously
  // ended here with no retry, even when a compact single-line correction was
