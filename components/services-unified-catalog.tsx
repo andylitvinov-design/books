@@ -166,13 +166,13 @@ const panelFromHash: Record<string, ServicesPanelId> = {
 
 type CatalogContextValue = {
   locale: PublicLocale;
-  expanded: ServicesPanelId | null;
+  expanded: ReadonlySet<ServicesPanelId>;
   toggle: (id: ServicesPanelId) => void;
 };
 const CatalogContext = createContext<CatalogContextValue | null>(null);
 
 export function ServicesCompactCatalog({ locale, children }: { locale: PublicLocale; children: ReactNode }) {
-  const [expanded, setExpanded] = useState<ServicesPanelId | null>(null);
+  const [expanded, setExpanded] = useState<ReadonlySet<ServicesPanelId>>(() => new Set());
   useEffect(() => {
     let firstFrame = 0;
     let secondFrame = 0;
@@ -180,7 +180,7 @@ export function ServicesCompactCatalog({ locale, children }: { locale: PublicLoc
       if (!window.matchMedia("(max-width: 760px)").matches) return;
       const id = panelFromHash[window.location.hash.slice(1)];
       if (!id) return;
-      setExpanded(id);
+      setExpanded(previous => new Set(previous).add(id));
       window.cancelAnimationFrame(firstFrame);
       window.cancelAnimationFrame(secondFrame);
       // Wait for React to reveal the panel before scrolling to a hidden anchor.
@@ -205,7 +205,11 @@ export function ServicesCompactCatalog({ locale, children }: { locale: PublicLoc
     };
   }, []);
   return (
-    <CatalogContext.Provider value={{ locale, expanded, toggle: id => setExpanded(value => value === id ? null : id) }}>
+    <CatalogContext.Provider value={{ locale, expanded, toggle: id => setExpanded(previous => {
+      const next = new Set(previous);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    }) }}>
       <section className={styles.catalog} data-services-unified-catalog lang={locale} aria-labelledby="services-unified-heading">
         <header className={styles.catalogHeading}>
           <h2 id="services-unified-heading">{words[locale].title}</h2>
@@ -221,7 +225,7 @@ export function ServicesCompactPanel({ id, children }: { id: ServicesPanelId; ch
   const context = useContext(CatalogContext);
   if (!context) throw new Error("ServicesCompactPanel requires ServicesCompactCatalog");
   const [title, description] = words[context.locale].panels[id];
-  const expanded = context.expanded === id;
+  const expanded = context.expanded.has(id);
   const hasVariants = isThreeOptionGroup(id);
   const Icon = icons[id];
   const regionId = "services-unified-" + id;
