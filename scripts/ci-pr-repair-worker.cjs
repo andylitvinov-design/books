@@ -71,7 +71,7 @@ function trustedLegacySourceRetry(pr,comments,changedFiles){
    pr.mergeable!==true||!['clean','blocked','behind'].includes(pr.mergeable_state)||
    pr.labels?.some(l=>['hh:release-gate-review','hh:specialist-repair-needed',
      CONFLICT].includes(l.name))||
-   !pr.labels?.some(l=>l.name===SOURCE)||
+   (!pr.labels?.some(l=>l.name===SOURCE)&&!signedOwnerResume(pr,comments))||
    !hasVerifiedSourceHandoff(comments,sha)||
    !verifiedCoreCodeFailure(comments,sha))return false;
  // Check the COMPLETE PR diff, not the first eight filtered code paths.
