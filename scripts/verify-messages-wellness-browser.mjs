@@ -170,6 +170,47 @@ for(const browserType of [chromium,webkit]){
     assert.equal(aiGeometry.position,'fixed',key+' AI chat viewport pinned')
     assert.ok(aiGeometry.composerBottom<=aiGeometry.hubBottom+3,
       key+' visible composer '+JSON.stringify(aiGeometry))
+    // The owner-approved welcome composer keeps +, mic and Send beside the
+    // actual field, including 320px and WebKit. No menu/voice feature flag
+    // may disable plain text dictation.
+    const composerRow=await aiComposer.evaluate(el=>{
+      const form=el.closest('form'),input=el.getBoundingClientRect()
+      const selectors=['[data-hh-ai-more] summary','[data-hh-dictation-mic]','button[type="submit"]']
+      return {display:getComputedStyle(form).display,
+        input:{top:input.top,bottom:input.bottom,left:input.left,right:input.right},
+        controls:selectors.map(selector=>{
+          const target=form.querySelector(selector),r=target?.getBoundingClientRect()
+          return r?{top:r.top,bottom:r.bottom,left:r.left,right:r.right,height:r.height}:null
+        })}
+    })
+    assert.equal(composerRow.display,'flex',key+' welcome composer is one row')
+    assert.ok(composerRow.controls.every(r=>r&&r.height>=44&&
+      Math.abs((r.top+r.bottom-composerRow.input.top-composerRow.input.bottom)/2)<=7&&
+      r.right<=width+2),key+' all inline controls visible '+JSON.stringify(composerRow))
+    const mic=root.locator('#hh-ai-panel [data-hh-dictation-mic]')
+    assert.equal(await mic.isDisabled(),false,key+' text microphone enabled without voice companion')
+    // Synthetic Web Speech provider: test actual field insertion, repeated
+    // final event de-duplication and no automatic message send / paid API.
+    await page.evaluate(()=>{
+      class MockRecognition{
+        start(){setTimeout(()=>{
+          const event={results:[{isFinal:true,0:{transcript:'Synthetic dictated segment'}}]}
+          this.onresult?.(event);this.onresult?.(event);this.onend?.()
+        },0)}
+        stop(){this.onend?.()}
+        abort(){this.onend?.()}
+      }
+      Object.defineProperty(window,'SpeechRecognition',
+        {value:MockRecognition,configurable:true,writable:true})
+      Object.defineProperty(window,'webkitSpeechRecognition',
+        {value:MockRecognition,configurable:true,writable:true})
+    })
+    page.once('dialog',dialog=>{void dialog.accept()})
+    await aiComposer.fill('Existing text')
+    await mic.click()
+    await page.waitForFunction(()=>document.querySelector('#hh-ai-panel textarea')?.value.includes('Synthetic dictated segment'))
+    assert.equal(await aiComposer.inputValue(),'Existing text Synthetic dictated segment',
+      key+' dictated words append once and stay editable until Send')
     const firstQuick=root.locator('[data-hh-ai-quick-action="video"]')
     await firstQuick.click()
     assert.ok((await aiComposer.inputValue()).length>20,key+' AI prompt prepared')
