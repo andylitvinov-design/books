@@ -53,3 +53,23 @@ test('hourly 400 diagnostics preserve fields without leaking error text or retry
   assert.match(workflow,/Already deployed or in progress:/);
   assert.doesNotMatch(workflow,/skipAutoDetectionConfirmation|forceNew=1.*cron/);
 });
+
+test('verified production merge wakes the SAME one-per-hour batch without an extra workflow or CI wave',()=>{
+  const top=workflow.slice(0,workflow.indexOf('jobs:'))
+  const pub=workflow.slice(workflow.indexOf('  publish:'),
+    workflow.indexOf('  cleanup:'))
+  assert.match(top,/pull_request_target:\\s*\\n\\s*types: \\[closed\\]/)
+  assert.match(top,/branches: \\['codex\\/public-book-library'\\]/)
+  assert.doesNotMatch(top,/types: \\[opened|types: \\[synchronize/)
+  assert.match(pub,/github\\.event_name == 'pull_request_target'/)
+  assert.match(pub,/github\\.event\\.pull_request\\.merged == true/)
+  assert.match(pub,/github\\.event\\.pull_request\\.draft == false/)
+  assert.match(pub,/github\\.event\\.pull_request\\.base\\.repo\\.full_name == github\\.repository/)
+  assert.match(pub,/github\\.event\\.pull_request\\.head\\.repo\\.full_name == github\\.repository/)
+  assert.match(pub,/vars\\.HH_VERCEL_HOURLY_ENABLED == 'true'/)
+  assert.match(pub,/cutoff_ms=.*3600000/)
+  assert.match(pub,/Production deployment created within the last 60 minutes/)
+  assert.match(pub,/Already deployed or in progress:/)
+  assert.match(pub,/if \\[\\[ "\\$EMERGENCY" != "true" \\]\\]; then/)
+  assert.doesNotMatch(pub,/actions\\/checkout|checkout.*pull_request|github\\.event\\.pull_request\\.head\\.sha/)
+})
