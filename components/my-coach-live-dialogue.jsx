@@ -87,6 +87,42 @@ en:{choose:'Choose another coach',mode:'AI COACH · LIVE DIALOGUE',step:'Step',o
 ru:{choose:'Выбрать другого коуча',mode:'AI-КОУЧ · ЖИВОЙ ДИАЛОГ',step:'Шаг',of:'из',topics:'Что хотите исследовать?',stress:'Снизить стресс',energy:'Вернуть энергию',relationships:'Улучшить отношения',goal:'Моя цель',goalPlaceholder:'Добавьте или измените цель…',type:'Написать сообщение',keyboardShort:'Текст',captions:'Переключить субтитры',captionsShort:'CC',replayShort:'Повтор',end:'Завершить сессию',replay:'Прослушать ответ коуча',voice:'Начать голосовой разговор',home:'Главная',coaching:'Мой коуч',practice:'Практики',video:'Видео',profile:'Профиль',disclosure:'Вымышленный AI-коуч, не психотерапевт. Диалог остаётся в этой вкладке и не сохраняется в личном кабинете.',guided:'Перейти к пошаговой сессии',stages:['Прояснение','Исследование','Осознание','Новый взгляд','Варианты','Следующий шаг'],stageQuestion:'Прогресс разговора',safety:'Пауза для безопасности',chooseTopic:'Выберите тему — она добавится в черновик. Ничего не отправится без нажатия «Отправить».',typedGoal:'Цель добавится в ваше следующее отправленное сообщение (текстом или голосом). Она не сохраняется в аккаунте.',goalDeferred:'Цель не добавлена: сообщение слишком длинное. Она может войти в следующее короткое сообщение.'},
 es:{choose:'Elegir otro coach',mode:'COACH IA · DIÁLOGO EN VIVO',step:'Paso',of:'de',topics:'¿Qué te gustaría explorar?',stress:'Reducir el estrés',energy:'Recuperar energía',relationships:'Mejorar relaciones',goal:'Mi objetivo',goalPlaceholder:'Añade o edita tu objetivo…',type:'Escribir mensaje',keyboardShort:'Texto',captions:'Activar o desactivar subtítulos',captionsShort:'CC',replayShort:'Repetir',end:'Terminar sesión',replay:'Escuchar la respuesta',voice:'Iniciar conversación por voz',home:'Inicio',coaching:'Mi coach',practice:'Prácticas',video:'Vídeo',profile:'Perfil',disclosure:'Coach ficticio de IA, no terapeuta. La conversación permanece en esta pestaña y no se guarda en tu cuenta.',guided:'Usar la sesión guiada',stages:['Aclarar','Explorar','Conciencia','Nueva perspectiva','Opciones','Siguiente paso'],stageQuestion:'Progreso de la conversación',safety:'Pausa de seguridad',chooseTopic:'Elige un tema para añadirlo al borrador. Nada se envía hasta pulsar Enviar.',typedGoal:'Tu objetivo se añadirá al próximo mensaje que envíes (por texto o voz). No se guarda en tu cuenta.',goalDeferred:'El objetivo no se incluyó porque el mensaje es demasiado largo; podrás enviarlo en uno más corto.'}
 }
+const methodStepTitles={
+  en:{
+    topic:'Choose a topic',goal:'Clarify the goal',reality:'Explore the situation',options:'Explore possibilities',
+    way_forward:'Choose a next step',review:'Reflect and review',wish:'Name a wish',outcome:'Desired outcome',
+    internal_obstacle:'Inner obstacle',if_then:'If–then plan',scaling:'Where you are now',
+    know_how:'What already helps',affirm_action:'Chosen action',preferred_future:'Preferred future',
+    exceptions:'When it worked',strengths:'Strengths',experiment:'Small experiment',
+    discover:'Discover',dream:'Imagine',design:'Create options',deliver:'Put into practice',
+    complete:'Summary confirmed'
+  },
+  ru:{
+    topic:'Выбор темы',goal:'Прояснение цели',reality:'Исследование ситуации',options:'Поиск возможностей',
+    way_forward:'Выбор следующего шага',review:'Подведение итогов',wish:'Ваше желание',
+    outcome:'Желаемый результат',internal_obstacle:'Внутреннее препятствие',if_then:'План «если — то»',
+    scaling:'Оценка состояния',know_how:'Что уже помогает',affirm_action:'Выбранное действие',
+    preferred_future:'Желаемое будущее',exceptions:'Когда уже получалось',
+    strengths:'Ваши ресурсы',experiment:'Малый эксперимент',
+    discover:'Исследование',dream:'Образ будущего',design:'Варианты решений',
+    deliver:'Переход к действию',complete:'Итоги подтверждены'
+  },
+  es:{
+    topic:'Elegir el tema',goal:'Aclarar el objetivo',reality:'Explorar la situación',options:'Explorar opciones',
+    way_forward:'Elegir un paso',review:'Reflexión final',wish:'El deseo',outcome:'Resultado deseado',
+    internal_obstacle:'Obstáculo interior',if_then:'Plan si–entonces',scaling:'Situación actual',
+    know_how:'Lo que ya ayuda',affirm_action:'Acción elegida',preferred_future:'Futuro preferido',
+    exceptions:'Cuando funcionó',strengths:'Fortalezas',experiment:'Pequeño experimento',
+    discover:'Descubrir',dream:'Imaginar',design:'Diseñar opciones',deliver:'Poner en práctica',
+    complete:'Resumen confirmado'
+  }
+}
+const stageProgressHelp={
+  en:'Stages advance when your own answers support the next method step, not because time passed or the coach spoke.',
+  ru:'Этап меняется, когда ваши ответы подтверждают следующий шаг методики, а не из-за времени или слов коуча.',
+  es:'Los pasos cambian cuando tus respuestas sustentan el siguiente paso del método, no por el tiempo ni por lo que diga el coach.'
+}
+
 const transcriptUi={
   en:{heading:'Conversation · transcript',listening:'Listening',languageLabel:'Speech and coach voice language',autoLanguage:'Auto · device/context',hint:'Your spoken words will appear here. Or type your reply below.',consentShort:'I agree to send my text to the eligible free AI; browser recognition may process my voice.',details:'Privacy and data processing'},
   ru:{heading:'Диалог · расшифровка',listening:'Слушаю',languageLabel:'Язык расшифровки и голоса коуча',autoLanguage:'Авто · устройство/контекст',hint:'Здесь появятся ваши слова. Можно также написать ответ ниже.',consentShort:'Согласен(на) отправлять текст бесплатной AI-модели; браузер может обрабатывать мой голос.',details:'Приватность и обработка данных'},
@@ -103,7 +139,6 @@ const voiceGateText={
  es:{title:'Antes de hablar por voz',cancel:'Ahora no',agree:'Aceptar y hablar',tapToHear:'Toca para escuchar al coach',playbackUnavailable:'La reproducción de voz no está disponible aquí. Prueba Safari o escribe.',naturalUnavailable:'La voz natural del coach no está disponible ahora. Vuelve a intentarlo o escribe.'},
 }
 const quickTopics=[{id:'stress',icon:Leaf,art:'stones'},{id:'energy',icon:Zap,art:'sunrise'},{id:'relationships',icon:Heart,art:'lotus'}]
-const stageKeys=['clarify','explore','awareness','reframe','choice','planning','commitment','integration']
 
 const reasons={
   feature_disabled:'disabled',server_not_configured:'config',rate_limited:'limit',
@@ -284,9 +319,25 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     finally{setCoachQualityPending(false)}
   }
   const currentStage=latestCoachTurn?.stage||'clarify'
-  const legacyStageIndex={goal:0,reality:1,resources:2,options:4,action:5}
-  const stageIndex=currentStage==='safety'?0:(legacyStageIndex[currentStage]??Math.max(0,stageKeys.indexOf(currentStage)))
-  const visibleStageIndex=Math.min(5,Math.max(0,stageIndex))
+  // Read the last Director-authored milestone snapshot; model prose cannot
+  // advance the bar. Safety replies with no milestone keep the last step.
+  const lastRecordedProgress=[...turns].reverse().find(turn=>
+    turn.role==='assistant'&&turn.sessionProgress?.source==='director-client-evidence')
+    ?.sessionProgress
+  const progressValid=Number.isInteger(lastRecordedProgress?.index)&&
+    lastRecordedProgress.index>=0&&lastRecordedProgress.index<=5
+  // A locally authored offline reply has no server-confirmed evidence. Its
+  // existing semantic stage remains a visibly provisional fallback.
+  const fallbackStageIndex={
+    goal:0,reality:1,resources:2,options:3,action:4,review:5,safety:0,
+    clarify:0,explore:1,awareness:2,reframe:3,choice:4,planning:5,
+    commitment:5,integration:5
+  }
+  const provisionalIndex=fallbackStageIndex[latestCoachTurn?.stage]??0
+  const visibleStageIndex=progressValid?lastRecordedProgress.index:provisionalIndex
+  const stageDescription=progressValid
+    ?(methodStepTitles[lang]?.[lastRecordedProgress.stepId]||ui.stages[visibleStageIndex])
+    :ui.stages[visibleStageIndex]
   const goalPrompts={
     en:{stress:'I would like to feel less stressed. Can we explore what is weighing on me?',energy:'I would like to restore my energy. Can we explore what is draining it?',relationships:'I would like to improve an important relationship. Can we explore what matters most?'},
     ru:{stress:'Я хочу снизить стресс. Давайте разберём, что сейчас на меня давит.',energy:'Я хочу восстановить энергию. Давайте посмотрим, что её забирает.',relationships:'Я хочу улучшить важные для меня отношения. Давайте разберёмся, что сейчас важнее всего.'},
@@ -575,6 +626,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           role:'assistant',content:answer,locale:responseLocale,reflection:result.reflection,question:result.question,
           hypothesis:result.hypothesis||'',mode:result.mode,
           reason:result.offlineReason||'',stage:result.stage||'',
+          sessionProgress:result.sessionProgress?.source==='director-client-evidence'
+            ?result.sessionProgress:null,
           suggestion:result.planSuggestion||'',evidence:result.evidenceQuote||'',
           inference:result.mode==='ai'&&['groq','openrouter'].includes(result.inference?.provider)&&
             typeof result.inference?.model==='string'&&result.inference.model.length<=128
@@ -646,15 +699,6 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         <p>{latestCoachText.length>160?latestCoachText.slice(0,157).trimEnd()+'…':latestCoachText}</p>
       </div>}
     </section>
-    <section className={styles.sessionProgress} aria-label={ui.stageQuestion}>
-      <div className={styles.sessionProgressText}><strong>{ui.step} {visibleStageIndex+1} {ui.of} 6</strong>
-        <span>{currentStage==='safety'?ui.safety:ui.stages[visibleStageIndex]}</span></div>
-      <div className={styles.sessionProgressSegments} role="progressbar" aria-label={ui.stageQuestion}
-        aria-valuemin={1} aria-valuemax={6} aria-valuenow={visibleStageIndex+1}>
-        {ui.stages.map((label,index)=><span key={label} data-complete={index<=visibleStageIndex?'true':undefined}
-          data-current={index===visibleStageIndex?'true':undefined}/>)}
-      </div>
-    </section>
     </div>
     <section className={styles.voiceWorkspace} aria-label={ui.voice}>
       {sessionClockStarted&&sessionTimebox.offerWrapUp&&turns.length>0&&
@@ -709,6 +753,22 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         ru:'Play запускает голос. На iPhone короткие ответы могут расшифровываться через Groq Whisper без хранения аудио на Holistic House.',
         es:'Play activa la voz. En iPhone, Groq Whisper puede transcribir respuestas breves; Holistic House no almacena el audio.',
       })[lang]}</p>
+      <section className={styles.sessionProgress} aria-label={ui.stageQuestion}
+        data-coach-stage-index={visibleStageIndex+1}
+        data-coach-stage-source={progressValid?'director-client-evidence':'local-provisional'}
+        title={stageProgressHelp[lang]}>
+        <div className={styles.sessionProgressText} aria-live="polite">
+          <strong>{ui.step} {visibleStageIndex+1} {ui.of} 6</strong>
+          <span>{stageDescription}</span>
+        </div>
+        <div className={styles.sessionProgressSegments} role="progressbar" aria-label={ui.stageQuestion}
+          aria-valuemin={1} aria-valuemax={6} aria-valuenow={visibleStageIndex+1}
+          aria-valuetext={ui.step+' '+(visibleStageIndex+1)+' '+ui.of+' 6 · '+stageDescription}>
+          {ui.stages.map((label,index)=><span key={label}
+            data-complete={index<visibleStageIndex?'true':undefined}
+            data-current={index===visibleStageIndex?'true':undefined}/>)}
+        </div>
+      </section>
       <details className={styles.voicePrivacyDetails}>
         <summary>{lang==='ru'?'Приватность голоса':lang==='es'?'Privacidad de voz':'Voice privacy'}</summary>
         <p>{voiceProviderDetails[lang]}</p>

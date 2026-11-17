@@ -176,3 +176,35 @@ test('without independently verified merge a stale BLOCKED remains stalled',()=>
  assert.equal(byId(result,'merge').state,'waiting');
  assert.equal(byId(result,'live').state,'unknown');
 });
+
+test('a served Vercel descendant with independent proof upgrades merged PR to LIVE',()=>{
+ const item={...ownerItem,status:'MERGED',mergeSha:MERGE};
+ const gh={pr:{...pr,state:'closed',merged:true,merge_commit_sha:MERGE,merged_at:NOW},
+  checks:[checked(ORIGINAL,'success')],checksComplete:true,commentsComplete:false};
+ const production={verified_live:true,
+  proof_method:'CANONICAL_RUNTIME_AND_GITHUB_VERCEL_ANCESTRY',
+  alias:'holistichouse.vercel.app',merge_sha:MERGE,
+  production_sha:'c'.repeat(40),deployment_id:'dpl_B34A56cd78'};
+ const live=buildPrCompletionJourney({item,github:gh,production,observedAt:NOW});
+ assert.equal(live.productionVerified,true);
+ assert.equal(live.deploymentId,production.deployment_id);
+ assert.equal(byId(live,'merge').state,'done');
+ assert.equal(byId(live,'live').state,'done');
+ assert.equal(live.currentStage,'live');
+ const unproven=buildPrCompletionJourney({item,github:gh,
+  production:{...production,merge_sha:'d'.repeat(40)},observedAt:NOW});
+ assert.equal(unproven.productionVerified,false);
+ assert.equal(byId(unproven,'live').state,'unknown');
+});
+test('live check is server-owned, details-only and cannot accept user-supplied success',()=>{
+ const route=readFileSync(new URL('../app/api/app/commander/pr-completion/route.js',import.meta.url),'utf8');
+ const client=readFileSync(new URL('../app/commander/pr/PrCompletionClient.jsx',import.meta.url),'utf8');
+ assert.match(route,/verifyPrLiveReadback\(evidence\.pr\)/);
+ assert.match(route,/siteRuntimeOnly/);
+ assert.match(route,/NON_SITE_RUNTIME_SCOPE_UNVERIFIED/);
+ assert.match(route,/if\(detailsRequested\)/);
+ assert.match(route,/await auth\.verified\(\)/);
+ assert.match(client,/productionVerified===true/);
+ assert.match(client,/Vercel LIVE/);
+ assert.doesNotMatch(client,/dangerouslySetInnerHTML|GITHUB_TOKEN|VERCEL_TOKEN/);
+});
