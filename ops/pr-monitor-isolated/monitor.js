@@ -694,10 +694,16 @@ async function refreshPrContext(pr,sequence){
 function funnelMissing(message){
  for(const key of FUNNEL_KEYS){put('f-'+key,'—');put('f-t-'+key,'—');put('f-proof-'+key,'—');}
  put('error-funnel-coverage',message);
- el('funnel-extra-rows').textContent='Подтверждения не получены.';
- el('funnel-incident-list').textContent='Нет подтверждённых инцидентов.';
- put('funnel-page','Данные не получены');
- el('funnel-prev').disabled=true;el('funnel-next').disabled=true;
+ // The API's old deployment and the newer JS can be served together while
+ // the single atomic Vercel release is pending. Older HTML lacks these nodes.
+ // Keep the original signed 10-stage funnel usable instead of crashing.
+ const extra=el('funnel-extra-rows'),details=el('funnel-incident-list');
+ const prev=el('funnel-prev'),next=el('funnel-next');
+ if(extra)extra.textContent='Подтверждения не получены.';
+ if(details)details.textContent='Нет подтверждённых инцидентов.';
+ if(el('funnel-page'))put('funnel-page','Данные не получены');
+ if(prev)prev.disabled=true;
+ if(next)next.disabled=true;
  put('error-funnel-info','«—» = нет проверенного свидетельства, не ноль. Приватный CI inbox недоступен публично.');
 }
 function renderFunnel(d,hours=funnelHours){
@@ -722,9 +728,20 @@ function renderFunnel(d,hours=funnelHours){
   }
   if(!root.childNodes.length)root.textContent='—';
  }
- const extRoot=el('funnel-extra-rows');clear(extRoot);
- const ext=Array.isArray(d.extended_stages)?d.extended_stages:[];
- if(!ext.length)extRoot.append(dom('p','empty','Данных о модели и патче пока нет.'));
+ // If only monitor.js was uploaded, the older HTML cannot render extra
+ // panels. Never throw, silently hide base stages, or equate a stale API with
+ // zero model/patch activity. Production needs one complete release bundle.
+ const extRoot=el('funnel-extra-rows'),detailRoot=el('funnel-incident-list');
+ const prev=el('funnel-prev'),next=el('funnel-next');
+ if(!extRoot||!detailRoot||!el('funnel-page')||!prev||!next){
+  put('error-funnel-info','Базовые квитанции GitHub доступны. Расширенный обзор ожидает единую публикацию HTML, JS и API; сейчас он не проверен.');
+  return;
+ }
+ clear(extRoot);
+ const newApi=Array.isArray(d.extended_stages)&&Array.isArray(d.incidents);
+ const ext=newApi?d.extended_stages:[];
+ if(!newApi)extRoot.append(dom('p','empty','API мониторинга ещё старой версии. Модель, патч и LIVE пока не подтверждены.'));
+ else if(!ext.length)extRoot.append(dom('p','empty','Данных о модели и патче пока нет.'));
  for(const stage of ext){
   if(typeof stage.label!=='string'||!safeInt(stage.confirmed))continue;
   const panel=dom('div','funnel-extra-item');
@@ -734,9 +751,10 @@ function renderFunnel(d,hours=funnelHours){
    ' · P90: '+(stage.confirmed>0&&safeNum(stage.p90_minutes)?delay(stage.p90_minutes):'—')));
   extRoot.append(panel);
  }
- const detailRoot=el('funnel-incident-list');clear(detailRoot);
+ clear(detailRoot);
  const rows=Array.isArray(d.incidents)?d.incidents.slice(0,8):[];
- if(!rows.length)detailRoot.append(dom('p','empty','В выбранном срезе инцидентов нет.'));
+ if(!newApi)detailRoot.append(dom('p','empty','Для детализации PR требуется единая публикация нового API.'));
+ else if(!rows.length)detailRoot.append(dom('p','empty','В выбранном срезе инцидентов нет.'));
  for(const x of rows){
   if(!safeInt(x.pr)||x.pr<1||typeof x.head!=='string')continue;
   const block=dom('details');
@@ -852,10 +870,10 @@ el('refresh').addEventListener('click',()=>{void refresh();});
 el('error-funnel-period').addEventListener('change',e=>{void selectFunnelPeriod(Number(e.target.value));});
 el('error-funnel-find').addEventListener('click',()=>{const value=el('error-funnel-pr').value.trim();if(!/^[1-9][0-9]{0,5}$/.test(value)){put('error-funnel-coverage','Введите корректный номер PR.');return;}void selectFunnelPeriod(funnelHours,Number(value));});
 el('error-funnel-all').addEventListener('click',()=>{el('error-funnel-pr').value='';void selectFunnelPeriod(funnelHours,null);});
-el('funnel-prev').addEventListener('click',()=>{
+if(el('funnel-prev'))el('funnel-prev').addEventListener('click',()=>{
  if(funnelPage>0){funnelPage--;void selectFunnelPeriod(funnelHours,funnelPR,true);}
 });
-el('funnel-next').addEventListener('click',()=>{
+if(el('funnel-next'))el('funnel-next').addEventListener('click',()=>{
  if(funnelPage<funnelPages-1){funnelPage++;void selectFunnelPeriod(funnelHours,funnelPR,true);}
 });
 for(const b of doc.querySelectorAll('[data-period]'))b.addEventListener('click',()=>{void selectPeriod(Number(b.dataset.period));});

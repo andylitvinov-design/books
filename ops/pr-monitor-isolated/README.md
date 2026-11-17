@@ -49,3 +49,18 @@ Deployment source includes all existing static and serverless files, plus the ne
 
 ### On-demand PR drilldown
 Optional PR number search reads exact PR-specific signed GitHub receipts from the selected historical error period, with no private CI inbox proxy. It makes older error→worker stories inspectable even when the rolling dashboard samples only the newest 8 PRs. A signed CLAIMED still counts without an untrusted edited reservation; the missing dispatch/assigned stages stay unknown.
+
+## Atomic V2 release verification (2026-11-17)
+Run `node ops/pr-monitor-isolated/release-integrity.cjs` on the reviewed protected
+source to get a deterministic eight-file hash manifest. One complete Vercel
+deployment must include all manifest paths, including the serverless
+`api/ci-funnel-extensions.cjs` module. Publishing only `monitor.js` while the
+HTML and `/api/ci-error-funnel` remain old causes a split-version release.
+
+After an **already authorized**, budget-checked, single production deployment,
+run `node ops/pr-monitor-isolated/release-integrity.cjs --verify-live`.
+Acceptance requires exact static content hashes and the extended six-stage API
+shape. Do not mark Dashboard LIVE on GitHub merge, JS-only refresh, or a
+Vercel READY status alone. The script has no deployment/rollback operations
+or timers. A stale HTML must degrade gracefully and keep the ten original
+signed stages usable; the newer AI panels remain unverified until atomic LIVE.
