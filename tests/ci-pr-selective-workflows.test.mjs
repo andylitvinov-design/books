@@ -208,37 +208,41 @@ test('CRM provider webhook edits do not fan out unrelated Google/Axis/audio PR j
   assert.doesNotMatch(push,/!app\/api\/app\/crm\/messenger\/webhook/);
 });
 
-test('retired duplicate production-push audits keep exact-head PR specialists and manual recovery', () => {
-  const reduced = [
-    ['site-video-browser.yml', 'components/page-video.tsx'],
-    ['home-locale-switch.yml', 'components/holistic-house-home.tsx'],
-    ['hh-home-conversation.yml', 'components/holistic-house-home.tsx'],
+test('retire proven duplicate postmerge smoke but retain independent browser evidence', () => {
+  // These owners run the same complete source/test contract on PR and push.
+  for (const [name, path] of [
     ['hh-benchmark-program.yml', 'lib/benchmarking/plan.mjs'],
     ['hh-assessment-quality.yml', 'lib/assessments/research-directory-2026.js'],
-  ];
-  for (const [name, ownedPath] of reduced) {
+  ]) {
     const yaml = source(name);
-    assert.match(yaml, /^  pull_request:/m, name + ': production source PR validation required');
-    assert.match(yaml, /^  workflow_dispatch:/m, name + ': incident/manual acceptance retained');
-    assert.doesNotMatch(yaml, /^  push:/m, name + ': duplicate postmerge check removed');
-    assert.equal(matchesTrigger(trigger(name), [ownedPath], TARGET), true,
-      name + ': owned source must still launch independent PR validation');
+    assert.match(yaml, /^  pull_request:/m, name + ': actual PR tests remain');
+    assert.match(yaml, /^  workflow_dispatch:/m, name + ': manual verification remains');
+    assert.doesNotMatch(yaml, /^  push:/m, name + ': no duplicate production rerun');
+    assert.equal(matchesTrigger(trigger(name), [path], TARGET), true,
+      name + ': domain source still triggers independent validation');
   }
-  for (const name of ['home-locale-switch.yml', 'hh-assessment-quality.yml',
-    'hh-public-performance-audit.yml']) {
+  // Reports still run independent non-production branch smoke and all
+  // real protected source PR tests, but never rerun on production push.
+  const reports = source('hh-reports-development-program.yml');
+  const reportsPush = reports.split('  push:\n')[1]?.split('  pull_request:\n')[0] || '';
+  assert.match(reportsPush, /branches: \['codex\/reports-development-program-20261017'\]/);
+  assert.doesNotMatch(reportsPush, /codex\/public-book-library/,
+    'source PR already proved original report assertions');
+  assert.equal(matchesTrigger(trigger('hh-reports-development-program.yml'),
+    ['lib/profile/development-program.js'], TARGET), true);
+  // The browser suites have different PR and postmerge execution paths:
+  // production push must remain until equivalent coverage is proved.
+  for (const name of [
+    'site-video-browser.yml','home-locale-switch.yml',
+    'hh-home-conversation.yml','practice-visual-browser.yml',
+    'hh-private-audio-e2e.yml','hh-my-progress-release.yml',
+    'hh-messenger-mobile-release.yml',
+  ]) {
+    assert.match(source(name), /^  push:/m, name + ': unique postmerge acceptance remains');
+  }
+  for (const name of ['hh-assessment-quality.yml','hh-public-performance-audit.yml']) {
     assert.match(source(name), /branches: \['codex\/public-book-library'\]/,
-      name + ': do not run production specialist on unrelated control-branch PR');
+      name + ': isolated production-only specialist');
   }
-  // These two post-merge contracts are deliberate; never disable them as duplicates.
-  for (const name of ['hh-reports-development-program.yml', 'practice-visual-browser.yml']) {
-    assert.match(source(name), /^  pull_request:/m, name + ': PR gate retained');
-    assert.match(source(name), /^  push:/m, name + ': post-merge acceptance retained');
-  }
-  for (const name of ['hh-private-audio-e2e.yml', 'hh-my-progress-release.yml',
-    'hh-messenger-mobile-release.yml']) {
-    assert.match(source(name), /^  push:/m,
-      name + ': sensitive or unique postmerge acceptance must remain');
-  }
-  const core = source('hh-pr-core-release.yml');
-  assert.match(core, /^  hh-merge-check:/m, 'single exact-head release gate must remain');
+  assert.match(source('hh-pr-core-release.yml'), /^  hh-merge-check:/m);
 });
