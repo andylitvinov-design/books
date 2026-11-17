@@ -805,8 +805,8 @@ try{
  assert.equal(await page.locator("[data-hh-unified-dock]:visible").count(),1);
  await page.locator("[data-unified-dock-item=practice]").click();
  await page.waitForURL(/\/ru\/holistic-support\/mobile\/?$/,{timeout:30000});
- // Practice now opens the owner's published three-pathway Academy, not
- // the obsolete five-question personalized quiz. Verify real catalogue links.
+ // Practice offers the approved five-question learning quiz above the three Academy schools.
+ // Verify the first question requires a real choice before advancing.
  const studyEntry=page.locator("[data-holistic-study-academy]");
  await studyEntry.waitFor({state:"visible",timeout:30000});
  assert.equal(await studyEntry.locator("[data-study-school-nav]").count(),3,
@@ -815,8 +815,23 @@ try{
    "Practice lists the three grouped Academy programs");
  assert.equal(await studyEntry.locator("[data-study-academy-course]").count(),8,
    "Practice links to eight source-backed courses");
- assert.equal(await page.locator("[data-study-personalized-path]").count(),0,
-   "Retired personalized quiz must not reappear on the Academy default");
+ const academyQuiz=studyEntry.locator('[data-study-mobile-quiz] [data-study-personalized-path]');
+ await academyQuiz.waitFor({state:"visible",timeout:30000});
+ assert.equal(await academyQuiz.getAttribute("data-study-step"),"1",
+   "Approved Academy quiz starts at the first question");
+ assert.equal(await academyQuiz.locator('[aria-current="step"]').count(),1,
+   "The quiz exposes exactly one active step");
+ const choices=academyQuiz.locator('[role="group"]').first().locator('button[aria-pressed]');
+ assert.equal(await choices.count(),4,
+   "The active first question offers four genuine choices, excluding the four recommendation-tab buttons");
+ const nextStep=academyQuiz.locator('[data-study-next]');
+ await expect(nextStep).toBeDisabled();
+ await choices.first().click();
+ await expect(choices.first()).toHaveAttribute("aria-pressed","true");
+ await expect(nextStep).toBeEnabled();
+ await nextStep.click();
+ assert.equal(await academyQuiz.getAttribute("data-study-step"),"2",
+   "Only a genuine selected first answer advances the Academy quiz");
  await studyEntry.locator('[data-study-school-nav="free"]').click();
  assert.equal(new URL(page.url()).hash,"#study-free",
    "Public Academy navigation reaches the free programs without a fake request");
