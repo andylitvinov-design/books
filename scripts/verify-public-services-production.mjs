@@ -619,6 +619,10 @@ try {
       if (width <= 760) {
         await verifyMobileAssist(page, locale, width);
       } else {
+        await expect.poll(
+          () => page.evaluate(() => history.pushState.toString().includes("__NA")),
+          { timeout: 30000, message: "Desktop Services catalogue must hydrate before interactions" },
+        ).toBe(true);
         // Existing full modules are opt-in on desktop; test them after opening.
         for (const id of ["browse", "consultation", "services", "about", "testimonials", "mytube", "directory"]) {
           const category = page.locator('[data-services-unified-panel="' + id + '"]');
