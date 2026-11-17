@@ -186,3 +186,14 @@ test('native ARM spends owner PAT only for protected merge, not read-only prefli
     arm.includes('HH_EXPECTED_MERGE_METHOD')&&arm.includes('CI_AUTO_MERGE_SAFETY:')===false,
     'base freshness and method verification are preserved');
 });
+
+
+test('retired administrative status migrator stays removed while exact-head merge checks remain',()=>{
+  assert.equal(fs.existsSync('.github/workflows/hh-migrate-legacy-core-check.yml'),false,
+    'the one-time legacy status migration already completed and must not be rerun');
+  const native=fs.readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
+  assert.match(native,/HH PR core release gate/,
+    'trusted default branch must still listen for completed real Core CI');
+  assert.match(native,/hh-merge-check/,
+    'production merge continues to require the effective exact-head release status');
+});
