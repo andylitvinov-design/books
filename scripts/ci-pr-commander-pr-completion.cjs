@@ -25,6 +25,15 @@ function trustedWorkerWake(context){
    (r.name==='HH zero-cost PR CI worker'&&
     ['workflow_dispatch','schedule'].includes(r.event)));
 }
+// Protected default-branch push is already a Watchdog event: no new cron.
+function trustedControlPush(context){
+ const p=context?.payload;
+ return context?.eventName==='push'&&
+  context.repo?.owner+'/'+context.repo?.repo===REPO&&
+  context.ref==='refs/heads/codex/bootstrap-books'&&
+  p?.deleted!==true&&p?.repository?.full_name===REPO&&
+  SHA.test(p?.after||'')&&context.sha===p.after;
+}
 function readback(pr,number){
  if(!pr||pr.number!==number||pr.head?.repo?.full_name!==REPO||
   pr.base?.repo?.full_name!==REPO||pr.base?.ref!==BASE||!SHA.test(pr.head?.sha||''))
@@ -62,7 +71,7 @@ async function run({github,core,context,ownerToken='',fetcher=global.fetch,
  dispatch=undefined}={}){
  if(context?.repo?.owner+'/'+context?.repo?.repo!==REPO||
   context?.ref!=='refs/heads/codex/bootstrap-books'||
-  !(['schedule','workflow_dispatch'].includes(context.eventName)||trustedWorkerWake(context))||
+  !(['schedule','workflow_dispatch'].includes(context.eventName)||trustedWorkerWake(context)||trustedControlPush(context))||
   (context.eventName==='workflow_dispatch'&&String(context.payload?.inputs?.dry_run||'false')==='true'))
   return {status:'SKIPPED_UNTRUSTED'};
  const token=await core.getIDToken('hh-commander-pr');
@@ -182,4 +191,4 @@ async function run({github,core,context,ownerToken='',fetcher=global.fetch,
  core.info('HH_OWNER_PR_COMPLETION '+JSON.stringify(report));
  return report;
 }
-module.exports={readback,run,send,ENDPOINT,trustedWorkerWake};
+module.exports={readback,run,send,ENDPOINT,trustedWorkerWake,trustedControlPush};

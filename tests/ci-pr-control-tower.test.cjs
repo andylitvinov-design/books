@@ -1991,6 +1991,12 @@ test('signed owner issue and private OIDC request can use same-run dispatcher, n
   repository:{full_name:'andylitvinov-design/books'},
   head_repository:{full_name:'andylitvinov-design/books'}
  }}};
+ const protectedPush={...botRun,eventName:'push',sha:SHA,
+  payload:{repository:{full_name:'andylitvinov-design/books'},after:SHA,deleted:false}};
+ assert.equal(validOwnerRepairTarget(protectedPush,target,privateQueue),true);
+ assert.equal(validOwnerRepairTarget(protectedPush,target,issue),false);
+ assert.equal(validOwnerRepairTarget({...protectedPush,payload:{
+  ...protectedPush.payload,after:'b'.repeat(40)}},target,privateQueue),false);
  assert.equal(validOwnerRepairTarget(wake,target,privateQueue),true,
   'existing worker completion can resume OIDC-signed private owner request');
  assert.equal(validOwnerRepairTarget(wake,target,issue),false,
