@@ -4,35 +4,35 @@ import { telegramExpressReviewHandoff, whatsappExpressReviewHandoff } from "@/li
 import styles from "./telegram-diagnostic-entry.module.css";
 
 const copy = {
-  en: {
-    title: "Choose a messenger",
-    intro: "Message Andrey in Telegram or WhatsApp. Telegram opens his personal chat, not a separate bot. An AI assistant can reply there when connected; otherwise Andrey can reply directly.",
-    telegram: "Message Andrey in Telegram",
-    telegramHint: "Personal chat · English",
-    whatsapp: "Message Andrey in WhatsApp",
-    whatsappHint: "Personal chat · manual reply",
-    note: "Review the draft and tap Send in your messenger. Opening a link does not register a CRM enquiry or confirm an appointment. Use the secure site for sensitive records.",
-    manual: "WhatsApp is a personal message, not an automated questionnaire.",
+en: {
+    title: "Where would you like to write?",
+    intro: "You can write to me directly on Telegram or WhatsApp. Telegram opens my personal chat, not a separate bot. If my assistant is connected, it may ask a few questions; otherwise I can reply myself.",
+    telegram: "Write on Telegram",
+    telegramHint: "Personal chat with Andrey · English",
+    whatsapp: "Write on WhatsApp",
+    whatsappHint: "Personal message",
+    manual: "WhatsApp opens a prepared message. You decide whether to send it.",
+    note: "Opening a link doesn't send a request or register it in CRM. Review the message and tap Send in the messenger. Keep health documents and other sensitive details in the secure questionnaire.",
   },
-  ru: {
-    title: "Выберите мессенджер",
-    intro: "Напишите Андрею в Telegram или WhatsApp. Telegram откроет его личный чат, не отдельного бота. Если AI-помощник подключён, он сможет ответить здесь; иначе ответит Андрей лично.",
-    telegram: "Написать Андрею в Telegram",
-    telegramHint: "Личный чат · русский язык",
-    whatsapp: "Написать Андрею в WhatsApp",
-    whatsappHint: "Личный чат · ответ вручную",
-    note: "Проверьте сообщение и нажмите «Отправить» в мессенджере. Открытие ссылки ещё не создаёт заявку в CRM или запись. Личные документы передавайте через защищённую форму сайта.",
-    manual: "WhatsApp — личное сообщение, а не автоматическая анкета.",
+ru: {
+    title: "Где вам удобнее написать?",
+    intro: "Напишите мне в Telegram или WhatsApp. В Telegram откроется мой личный чат, а не отдельный бот. Если помощник подключён, он может задать несколько вопросов. Если нет — я отвечу сам.",
+    telegram: "Написать в Telegram",
+    telegramHint: "Личный чат с Андреем · на русском",
+    whatsapp: "Написать в WhatsApp",
+    whatsappHint: "Личное сообщение",
+    manual: "WhatsApp откроет готовый текст. Проверьте его и нажмите «Отправить».",
+    note: "Переход по ссылке не отправляет сообщение и не создаёт заявку в CRM. Нажмите «Отправить» в мессенджере. Личные документы и сведения о здоровье передавайте через защищённую анкету.",
   },
   es: {
-    title: "Elige una mensajería",
-    intro: "Escribe a Andrey por Telegram o WhatsApp. Telegram abre su chat personal, no otro bot. Si el asistente IA está conectado, puede responder allí; en caso contrario, Andrey puede responder personalmente.",
+    title: "¿Dónde prefieres escribir?",
+    intro: "Puedes escribirme por Telegram o WhatsApp. Telegram abre mi chat personal, no otro bot. Si el asistente está conectado, puede hacer algunas preguntas; si no, podré responderte yo.",
     telegram: "Escribir a Andrey por Telegram",
     telegramHint: "Chat personal · español",
     whatsapp: "Escribir a Andrey por WhatsApp",
-    whatsappHint: "Chat personal · respuesta manual",
-    note: "Revisa el mensaje y pulsa Enviar. Abrir el enlace no registra una solicitud en el CRM ni confirma una cita. Utiliza la web segura para documentos sensibles.",
-    manual: "WhatsApp es un mensaje personal, no un cuestionario automático.",
+    whatsappHint: "Mensaje personal",
+    manual: "WhatsApp abre un mensaje preparado. Revísalo y pulsa Enviar.",
+    note: "Abrir el enlace no envía el mensaje ni registra una solicitud en el CRM. Para documentos médicos y datos privados utiliza el formulario seguro.",
   },
 } as const;
 

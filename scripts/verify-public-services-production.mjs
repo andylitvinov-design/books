@@ -142,6 +142,11 @@ try {
       .toHaveText("Encuentra tu apoyo");
     const submitQuiz = quiz.locator("[data-services-quiz-submit]");
     await expect(submitQuiz).toBeDisabled();
+    // Static SSR controls become interactive only after the Next route hydrates.
+    await expect.poll(
+      () => page.evaluate(() => history.pushState.toString().includes("__NA")),
+      { timeout: 30000, message: "Services quiz must hydrate before the first answer" },
+    ).toBe(true);
     if (width === 390) await quiz.screenshot({ path: output + "/services-" + locale + "-four-questions-390.png" });
     for (const [field,value] of [["topic","work"],["mode","human"],["channel","online"],["budget","flexible"]]) {
       const choice = quiz.locator('[data-services-quiz-question="' + field + '"] [data-services-quiz-choice="' + value + '"]');
