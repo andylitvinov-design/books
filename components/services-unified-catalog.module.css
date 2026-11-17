@@ -125,3 +125,46 @@
   .panel:has(> [data-service-card-actions] button[aria-expanded="true"]){grid-column:1/-1}
   .panel:has(> [data-service-card-actions] button[aria-expanded="true"]) .panelActions{padding:0 10px 12px}
 }
+
+
+/* P0 #4874: primary three-offer catalogue is visible WITHOUT opening an accordion.
+   Published legacy sections stay available only as optional extra formats.
+   This is one consistent view across mobile and desktop, not another tab set. */
+.variantCount{display:inline-flex;align-items:center;justify-content:center;flex:none;white-space:nowrap;padding:5px 8px;border-radius:999px;background:#e7f3ed;color:#0b6853;font:700 11px/1.2 Arial,Helvetica,sans-serif}
+.previewArrow{flex:none;color:#08736b}
+.moreFormats{display:flex;align-items:center;justify-content:center;gap:6px;min-height:42px;max-width:calc(100% - 20px);margin:0 auto 11px;padding:8px 11px;border:1px solid #d6e5db;border-radius:12px;background:#f3f8f0;color:#116453;cursor:pointer;font:700 12px/1.3 Arial,Helvetica,sans-serif}
+.moreFormats svg{flex:none}
+.moreFormats[aria-expanded="true"] svg{transform:rotate(90deg)}
+.moreFormats:focus-visible{outline:3px solid #176e6e;outline-offset:3px}
+@media(max-width:760px){
+ .grid{grid-template-columns:minmax(0,1fr);gap:11px}
+ .panel,.panel[data-expanded="true"]{grid-column:1/-1;min-width:0}
+ .panel .preview,.panel[data-expanded="true"] .preview{display:grid;grid-template-columns:41px minmax(0,1fr) auto;align-items:center;gap:9px;min-height:67px;width:100%;padding:11px;cursor:pointer}
+ .panel[data-expanded="true"] .previewText strong{font:700 clamp(16px,4.6vw,20px)/1.2 Arial,Helvetica,sans-serif}
+ .panel .previewText strong{font:700 clamp(16px,4.6vw,20px)/1.2 Arial,Helvetica,sans-serif}
+ .panel .previewText small{font-size:12px;line-height:1.3}
+ .panel[data-expanded="true"] .icon{width:41px;height:46px}
+ .panel[data-services-has-three="true"] .content{display:none}
+ .panel[data-services-has-three="true"][data-expanded="true"] .content{display:block}
+ .panel:has(> [data-service-card-actions] button[aria-expanded="true"]){grid-column:1/-1}
+ .panel[data-services-has-three="false"] > .panelActions{display:block}
+ .panel .preview:focus-visible{outline:3px solid #176e6e;outline-offset:-3px}
+}
+@media(min-width:761px){
+ .catalog{display:block;width:calc(100% - 36px);max-width:1120px;margin:26px auto 38px;padding:0;color:#143d3a}
+ .catalogHeading{display:block;margin:0 2px 15px}
+ .catalogHeading h2{margin:0 0 6px;color:#17334b;font:700 30px/1.1 Georgia,"Times New Roman",serif}
+ .catalogHeading p{margin:0;font:14px/1.4 Arial,Helvetica,sans-serif;color:#5d6a71}
+ .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
+ .panel{display:block;min-width:0;border:1px solid #e9dfd1;border-radius:19px;background:#fffcf7;box-shadow:0 3px 12px #60432b10;overflow:hidden}
+ .preview{display:grid;grid-template-columns:46px minmax(0,1fr) auto;gap:11px;align-items:center;width:100%;min-height:76px;padding:12px;border:0;background:transparent;text-align:left;color:#143d3a;cursor:pointer}
+ .icon{display:grid;place-items:center;width:46px;height:50px;border-radius:14px;background:#eaf8ef;color:#08736b}
+ .previewText{display:grid;min-width:0;gap:4px}
+ .previewText strong{font:700 19px/1.22 Georgia,"Times New Roman",serif;color:#17334b}
+ .previewText small{font:12px/1.3 Arial,Helvetica,sans-serif;color:#5d6a71}
+ .panelActions{display:block;padding:0 12px 12px}
+ .panel[data-expanded="true"]{grid-column:auto}
+ .content{display:none}
+ .panel[data-expanded="true"] .content{display:block;padding:12px;border-top:1px solid #e9dfd1}
+ .panel .preview:focus-visible{outline:3px solid #176e6e;outline-offset:-3px}
+}
