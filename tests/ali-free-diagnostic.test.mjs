@@ -9,6 +9,8 @@ import {v3Context,v3FreeDiagnosticStart,v3StartLocale,v3ButtonsFor,
   V3_LABELS,V3_BUTTONS,v3Action,v3CanChat,v3CanStart} from '../lib/crm/telegram-ai-diagnostic-v3.mjs';
 import {telegramInlineButtonForText,telegramInlineCallbackSelection}
   from '../lib/crm/telegram-inline-buttons.mjs';
+import {telegramExploreDetailButtons,parseTelegramHomeCallback}
+  from '../lib/crm/telegram-companion-menu.mjs';
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const turn=(message,opts={})=>aliFreeDiagnosticTurn({message,locale:'en',stage:'goal',...opts});
 const questions=s=>(s.match(/[?？]/gu)||[]).length;
@@ -141,6 +143,29 @@ test('skip button belongs only to this consented V3 free mode',()=>{
  const skipped=turn('',{stage:'impact',slots:{goal:'Clarity'},action:'skip'});
  assert.equal(skipped.stage,'attempts');
  assert.equal(skipped.slots.impact,undefined);
+});
+test('existing compact Telegram menu offers Free Diagnostic as second-level choice',()=>{
+ for(const locale of ['ru','en']){
+   const menu=telegramExploreDetailButtons(locale,'consultation');
+   assert.equal(menu.inline_keyboard.length,3);
+   assert.equal(menu.inline_keyboard[0][0].callback_data,'hhhome:'+locale+':review');
+   assert.deepEqual(parseTelegramHomeCallback('hhhome:'+locale+':review'),
+     {locale,action:'review'});
+ }
+ const service=source('lib/crm/telegram-companion-service.js');
+ assert.match(service,/\['ai_on','daily_on','home','review'/);
+ assert.match(service,/hh\(\?:review\|diagnostic\)/);
+ const route=source('app/api/app/crm/messenger/webhook/[provider]/route.js');
+ assert.match(route,/companion\.reviewRequested/);
+ assert.match(route,/\/start hhreview_/);
+});
+test('pre-consent danger is answered without storing or advancing interview',()=>{
+ const handler=source('lib/crm/telegram-ai-diagnostic-v3-service.js');
+ const index=handler.indexOf("if(row.stage==='consent')");
+ const safety=handler.indexOf("const emergency=v3ChatPreConsentSafetyReply(raw,lang)",index);
+ const agree=handler.indexOf("const agrees=general?action",index);
+ assert.ok(safety>index&&safety<agree);
+ assert.match(handler,/if\(emergency\)\{/);
 });
 test('encrypted V3 allowlist retains only this mode and verified user facts',()=>{
  const c=v3Context({mode:FREE_DIAGNOSTIC_MODE,intakeStage:'impact',
