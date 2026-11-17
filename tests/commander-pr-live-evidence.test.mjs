@@ -25,7 +25,7 @@ test('LIVE requires a canonical deployed descendant of the exact GitHub merge',(
  assert.equal(result.merge_sha,MERGE);
  assert.equal(result.deployment_id,DEPLOY);
  assert.equal(result.alias,'holistichouse.vercel.app');
- assert.equal(verified({...sample,comparison:{status:'identical'},
+ assert.equal(verified({...sample,comparison:{status:'identical',base_commit:{sha:MERGE}}, 
    proof:{...proof,sha:MERGE}}),true);
 });
 test('GitHub merge alone, unrelated READY or changed alias cannot imply LIVE',()=>{
