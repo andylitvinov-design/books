@@ -10,7 +10,8 @@ const HOLDS=new Set(['hh:hold','hh:blocked','hh:repair-manual','hh:worker-claime
 function readback(pr,number){
  if(!pr||pr.number!==number||pr.head?.repo?.full_name!==REPO||
   pr.base?.repo?.full_name!==REPO||pr.base?.ref!==BASE||!SHA.test(pr.head?.sha||''))
-  return {status:'BLOCKED',reasonCode:'PR_IDENTITY_UNVERIFIED'};
+  return {status:'BLOCKED',reasonCode:'PR_IDENTITY_UNVERIFIED',
+   headSha:SHA.test(pr?.head?.sha||'')?pr.head.sha:null};
  if(pr.state==='closed'){
   return pr.merged===true&&SHA.test(pr.merge_commit_sha||'')&&
    Number.isFinite(Date.parse(pr.merged_at||''))?
@@ -92,6 +93,10 @@ async function run({github,core,context,ownerToken='',fetcher=global.fetch,
   decision={status:'WATCHING',reasonCode:'GITHUB_READ_TRANSIENT_UNVERIFIED',
    headSha:task.requestedHeadSha};
  }
+ // Unsupported base/foreign PRs must produce a durable BLOCKED receipt,
+ // rather than strand the signed 4-minute lease without a finish call.
+ if(decision.status==='BLOCKED'&&!SHA.test(decision.headSha||''))
+  decision.headSha=task.requestedHeadSha;
  if(!VALID_STATES.has(decision.status)||!SHA.test(decision.headSha||''))
   throw Error('OWNER_PR_DECISION_INVALID');
  let final;
