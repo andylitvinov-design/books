@@ -30,6 +30,30 @@ function parsePR(raw){
  const m=/^#?([1-9]\d{0,7})$/.exec(s)||/\b(?:PR|ПР)\s*#?([1-9]\d{0,7})\b/i.exec(s);
  return m?Number(m[1]):null;
 }
+
+function mergeHeadHistory(previous,next){
+ if(!previous||!next)return next;
+ const map=new Map();
+ for(const head of [...previous.heads,...next.heads]){
+  const old=map.get(head.sha);
+  if(!old){map.set(head.sha,head);continue}
+  const checks=new Map([...old.checks,...head.checks].map(c=>[c.id||c.name,c]));
+  const ci=new Map([...old.ciEvents,...head.ciEvents].map(c=>
+   [String(c.runId)+':'+String(c.attempt),c]));
+  map.set(head.sha,{...old,...head,observedHead:old.observedHead||head.observedHead,
+   sources:[...new Set([...old.sources,...head.sources])],
+   checks:[...checks.values()],ciEvents:[...ci.values()]});
+ }
+ const events=new Map([...previous.events,...next.events].map(e=>[e.id,e]));
+ const heads=[...map.values()].sort((a,b)=>
+  Number(b.sha===next.currentHeadSha)-Number(a.sha===next.currentHeadSha)||
+  String(b.at||'').localeCompare(String(a.at||'')));
+ return {...next,heads,releaseScope:next.releaseScope==='UNKNOWN'?previous.releaseScope:next.releaseScope,
+  reportedRelease:next.reportedRelease||previous.reportedRelease,
+  events:[...events.values()].sort((a,b)=>
+  String(a.at||'').localeCompare(String(b.at||'')))};
+}
+
 export default function PrCompletionClient(){
  const [value,setValue]=useState(''),[items,setItems]=useState([]),
   [busy,setBusy]=useState(false),[message,setMessage]=useState(''),
@@ -52,13 +76,13 @@ export default function PrCompletionClient(){
   const tick=setInterval(()=>{if(document.visibilityState!=='hidden')void load()},60000);
   return ()=>clearInterval(tick);
  },[load]);
- async function loadJourney(item){
+ async function loadJourney(item,page=1){
   const id=item.requestId;
   if(typeof id!=='string'||journeyLoading[id])return;
   setJourneyLoading(previous=>({...previous,[id]:true}));
   setJourneyErrors(previous=>({...previous,[id]:''}));
   try{
-   const url=API+'?pr='+item.prNumber+'&details=1';
+   const url=API+'?pr='+item.prNumber+'&details=1'+(page>1?'&historyPage='+page:'');
    const response=await fetch(url,{credentials:'same-origin',cache:'no-store',
     headers:{Accept:'application/json'}});
    const result=await response.json().catch(()=>({}));
@@ -68,7 +92,8 @@ export default function PrCompletionClient(){
      result.prNumber!==item.prNumber||result.requestId!==id||
      !Array.isArray(result.stages))
     throw Error('DETAILS_IDENTITY_UNVERIFIED');
-   setJourneys(previous=>({...previous,[id]:result}));
+   setJourneys(previous=>({...previous,[id]:page===1?result:{...result,
+    history:mergeHeadHistory(previous[id]?.history,result.history)}}));
   }catch(error){
    setJourneyErrors(previous=>({...previous,[id]:
     'Не удалось подтвердить этапы: '+String(error.message||error)}));
@@ -152,7 +177,11 @@ export default function PrCompletionClient(){
          <p className="hh-pr-current-eyebrow">{journey.stalled?'Задержка на этапе':'Текущий этап'}</p>
          <strong>{journey.currentStageTitle}</strong>
          {journey.attention&&<p className="hh-pr-journey-error">{journey.attention}</p>}
-         {journey.minutesSinceRequest!==null&&
+         {journey.history?.prToMergeMinutes!==null&&journey.history?.prToMergeMinutes!==undefined&&
+          <p className="hh-pr-journey-note">От открытия PR до merge: {journey.history.prToMergeMinutes} мин.</p>}
+         {journey.history?.ownerRequestAfterMerge?
+          <p className="hh-pr-journey-note">Заявка поступила уже после GitHub merge: её ожидание не включается во время PR → Merge.</p>:
+          journey.minutesSinceRequest!==null&&
           <p className="hh-pr-journey-note">С момента заявки: {journey.minutesSinceRequest} мин.</p>}
         </div>
         <ol className="hh-pr-stage-list">
@@ -171,6 +200,76 @@ export default function PrCompletionClient(){
           </div>
          </li>)}
         </ol>
+
+        {!journey.history&&<p role="alert" className="hh-pr-journey-error">Историю HEAD сейчас не удалось получить из GitHub; текущий статус не является полной историей PR.</p>}
+        {journey.history&&<section className="hh-pr-history" aria-label="Все HEAD и проверки">
+         <h3>История HEAD и CI</h3>
+         <p className="hh-pr-journey-note">
+          Отдельные коммиты, подтверждённые HEAD и проверки каждого SHA.
+          {journey.history.coverage.ciInbox==='unavailable'?
+           ' История классификации из Supabase пока недоступна.':''}
+          {journey.history.releaseScope==='SUPABASE_ONLY'?
+           ' Изменение относится только к Supabase: необходима отдельная проверка Edge/API.':''}
+         </p>
+         {journey.history.reportedRelease&&<p className="hh-pr-journey-note">
+          Отчёт о выпуске: {journey.history.reportedRelease.status} — запись автора PR, не независимая функциональная проверка.
+          {journey.history.reportedRelease.url&&<>{' '}
+           <a href={journey.history.reportedRelease.url} target="_blank" rel="noopener noreferrer">Источник</a></>}
+         </p>}
+         {journey.history.heads.map(head=><details key={head.sha} className="hh-pr-head">
+          <summary>
+           <span className="hh-pr-head-sha">{head.sha.slice(0,12)}</span>
+           <span className="hh-pr-head-mark">{head.sha===journey.history.currentHeadSha?
+            'Текущий HEAD':head.observedHead?'HEAD наблюдался':'Коммит PR · HEAD не доказан'}</span>
+          </summary>
+          <div className="hh-pr-head-detail">
+           <p>{head.subject||'Коммит или наблюдение GitHub'}</p>
+           <p className="hh-pr-journey-note">SHA: <code>{head.sha}</code></p>
+           {head.at&&<p className="hh-pr-journey-note">{stamp(head.at)} · дата коммита/наблюдения (не обязательно время публикации HEAD)</p>}
+           {head.ciEvents.length>0&&<div>
+            <strong>Классификация и маршрутизация</strong>
+            {head.ciEvents.map((ci,index)=><div className="hh-pr-head-evidence" key={(ci.runId||'none')+'-'+index}>
+             <strong>{ci.category} · {ci.conclusion||'исход неизвестен'}</strong>
+             <p>{ci.reasonCode||'Причина не указана'} · {ci.classificationStatus||'без статуса классификации'}</p>
+             <p>Маршрут: {ci.routeState||'не подтверждён'} · {ci.responsibleRole||'исполнитель не назначен'}</p>
+             <p>{ci.workerStarted?'Запуск воркера подтверждён':'Запуск воркера не подтверждён'}; вызов AI отдельно не подтверждён</p>
+             {ci.url&&<a href={ci.url} target="_blank" rel="noopener noreferrer">Открыть CI #{ci.runId}</a>}
+            </div>)}
+           </div>}
+           <strong>GitHub CI · {head.checks.length} проверок</strong>
+           {head.checks.length===0&&<p className="hh-pr-journey-note">Данные проверок для этого SHA отсутствуют или ещё не загружены.</p>}
+           {head.checks.map((check,index)=><div className="hh-pr-head-check" key={(check.id||check.name)+'-'+index}>
+            <span className={check.conclusion==='success'?'hh-pr-green':check.conclusion==='failure'?'hh-pr-red':''}>
+             {check.name} · {check.conclusion||check.status||'неизвестно'}
+            </span>
+            {check.finishedAt&&<time dateTime={check.finishedAt}>{stamp(check.finishedAt)}</time>}
+            {check.url&&<a href={check.url} target="_blank" rel="noopener noreferrer">GitHub</a>}
+           </div>)}
+          </div>
+         </details>)}
+         {(journey.history.hasOlder||journey.history.hasMoreCi)&&
+          <button type="button" className="hh-pr-details-refresh" disabled={journeyLoading[item.requestId]}
+           onClick={()=>void loadJourney(item,journey.history.page+1)}>
+           Загрузить более ранние HEAD и события CI
+          </button>}
+         <details className="hh-pr-events">
+          <summary>Хронология PR · {journey.history.events.length} событий</summary>
+          <ol>{journey.history.events.map(evt=><li key={evt.id}>
+           <time dateTime={evt.at}>{stamp(evt.at)}</time>
+           <strong>{evt.title}</strong>
+           {evt.sha&&<code>{evt.sha.slice(0,12)}</code>}
+           {evt.description&&<p>{evt.description}</p>}
+           {evt.url&&<a href={evt.url} target="_blank" rel="noopener noreferrer">Открыть источник</a>}
+          </li>)}</ol>
+         </details>
+         <p className="hh-pr-journey-note">
+          Полнота данных: GitHub-коммиты {journey.history.coverage.commits},
+          CI {journey.history.coverage.checks},
+          журнал ошибок {journey.history.coverage.ciInbox}.
+          {journey.history.coverage.note}
+         </p>
+        </section>}
+
         <p className="hh-pr-journey-note">Данные: личная очередь Supabase и проверенные сведения GitHub.
          Состояние проверки: {stamp(journey.observedAt)}. Отсутствие доказательства не считается выполнением.</p>
        </>;
