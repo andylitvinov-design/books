@@ -542,3 +542,36 @@ test('free code repair never blindly retries quota, provider errors, or unverifi
  assert.match(text,/reply=await invoke\(focused,true\)/);
  assert.doesNotMatch(text,/paid.*fallback\s*=\s*true/i);
 });
+
+test('truncated free response gets one bounded focused-test retry, without pretending test line is source line',()=>{
+ const {boundedTruncationRetryPrompt}=require('../scripts/ci-pr-repair-free-agent.cjs');
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'hh-truncated-focused-'));
+ const file='components/my-coach-speech-loop.jsx';
+ const testFile='tests/my-coach-premium-first.test.mjs';
+ const assertion="assert.ok(loop.includes('shouldUseCoachingWebAudio'))";
+ const source=[
+  "'use client'","const unrelated=3",
+  "const audioContextRef=shouldUseCoachingWebAudio(navigator)?unlockCoachingAudioContext():null",
+  "const rest='speech recognition'",""
+ ].join('\n');
+ const base={sha:SHA,files:[file],evidence:{file,test:testFile,line:2,assertion}};
+ try{
+  fs.mkdirSync(path.join(root,'components'));fs.mkdirSync(path.join(root,'tests'));
+  fs.writeFileSync(path.join(root,file),source);
+  fs.writeFileSync(path.join(root,testFile),"const loop=read('"+file+"')\n"+assertion+"\n");
+  const prompt=boundedTruncationRetryPrompt(base,root);
+  assert.ok(prompt,'verified source/test match enables one compact no-cost retry');
+  assert.match(prompt,/Previous completion was truncated/);
+  assert.match(prompt,/Return ONLY minified JSON/);
+  assert.match(prompt,/Exact assertion:/);
+  assert.match(prompt,/shouldUseCoachingWebAudio/);
+  assert.ok(prompt.length<=7900);
+  assert.ok(!prompt.includes('Exact old source line: '+JSON.stringify(assertion)),
+   'test-line evidence is not misrepresented as source-line evidence');
+  assert.equal(boundedTruncationRetryPrompt({...base,evidence:{...base.evidence,assertion:'forged test line'}},root),null);
+  assert.equal(boundedTruncationRetryPrompt({...base,evidence:{...base.evidence,test:'tests/../private.test.mjs'}},root),null);
+  assert.equal(boundedTruncationRetryPrompt({...base,files:[file,'components/extra.jsx']},root),null);
+  fs.writeFileSync(path.join(root,file),source.replace('shouldUseCoachingWebAudio','differentSymbol'));
+  assert.equal(boundedTruncationRetryPrompt(base,root),null,'no matching source symbol means no model retry');
+ }finally{fs.rmSync(root,{recursive:true,force:true});}
+});
