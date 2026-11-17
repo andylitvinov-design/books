@@ -371,3 +371,39 @@ test('specialist terminal proof is fail-closed on malformed, mixed, duplicated o
  }},owner:'andylitvinov-design',repo:'books',jobData:{jobs,total_count:4}});
  assert.equal(proof,null);assert.equal(reads,0,'incomplete Core job inventory cannot query logs');
 });
+
+
+test('real modern three-job Core logs classify BASE_ADVANCED and embedded Specialist failures',async()=>{
+ const {verifiedSpecialistTerminalEvidence}=require('../scripts/ci-pr-hermes-event-bridge.cjs');
+ const jobs=[
+  {id:11,name:'core-lint-types-build',status:'completed',conclusion:'success'},
+  {id:22,name:'hh-merge-check',status:'completed',conclusion:'failure',steps:[
+   {name:'Validate exact-head risk and required specialist workflows',conclusion:'failure'}
+  ]},{id:33,name:'hh-eslint-repair',status:'completed',conclusion:'skipped'}
+ ];
+ const baseLog=[
+  '2026-11-17T04:58:01Z ##[error]BASE_ADVANCED: PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED',
+  '2026-11-17T04:58:01Z CI_SPECIALIST_FAIL_CLOSED: PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED'
+ ].join('\n');
+ const specialist='.github/workflows/hh-public-services-production.yml';
+ const specialistLog='2026-11-17T04:54:41Z CI_SPECIALIST_FAIL_CLOSED: SPECIALIST_FAILED:'+
+  JSON.stringify({failed:[specialist+':failure'],orphan:[],unregistered:[],retired:[]});
+ for(const [log,expected,category,reason] of [
+  [baseLog,'BASE_ADVANCED','BASE_ADVANCED','EXPLICIT_BASE_FAILURE'],
+  [specialistLog,'SPECIALIST_FAILURE','TEST_FAILURE','VERIFIED_REQUIRED_SPECIALIST_FAILURE']
+ ]){
+  const ids=[];
+  const proof=await verifiedSpecialistTerminalEvidence({
+   github:{request:async(_route,args)=>{ids.push(args.job_id);return {data:log};}},
+   owner:'andylitvinov-design',repo:'books',jobData:{total_count:3,jobs}
+  });
+  assert.deepEqual(ids,[22],'only the signed current gate log is read');
+  assert.equal(proof.kind,expected);
+  const d=buildDiagnostics(jobs,makePR(),proof);
+  assert.equal(d.category,category);
+  assert.equal(d.classification.reason_code,reason);
+  assert.equal(d.classification.source_write_authorized,false);
+ }
+ const unsigned=buildDiagnostics(jobs,makePR(),{kind:'SPECIALIST_FAILURE',workflows:[specialist]});
+ assert.equal(unsigned.category,'BASE_OR_CI_ROUTING');
+});

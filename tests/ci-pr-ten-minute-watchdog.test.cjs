@@ -2328,3 +2328,20 @@ test('trusted dispatcher runs rotate ghost queue hints without extra API reads',
  assert.equal(source.split('capacityFn(github,owner,repo,now,eventRotation)').length-1,2,
    'normal and retry capacity paths must use the same trusted seed');
 });
+
+
+test('current three-job Core roots separate a red embedded gate from application source errors',()=>{
+ const green=name=>({name,status:'completed',conclusion:'success'});
+ const failed=name=>({name,status:'completed',conclusion:'failure'});
+ assert.equal(classifyCoreFailureJobs([
+  green('core-lint-types-build'),failed('hh-merge-check'),{...failed('hh-eslint-repair'),conclusion:'skipped'}
+ ]),'RELEASE_GATE_ONLY','current 3-job Core gate is not an UNKNOWN source failure');
+ assert.equal(classifyCoreFailureJobs([
+  {...failed('core-lint-types-build'),steps:[
+   {name:'Exact proposed release production build and TypeScript check',conclusion:'failure'}
+  ]},failed('hh-merge-check')
+ ]),'SOURCE_OR_PREFLIGHT');
+ assert.equal(classifyCoreFailureJobs([
+  failed('hh-merge-check'),{...failed('core-lint-types-build'),conclusion:'skipped'}
+ ]),'UNVERIFIED','missing real source result fails closed');
+});

@@ -11,9 +11,9 @@ const SHA=/^[a-f0-9]{40}$/i,HEX=/^[a-f0-9]{32}$/i;
 const FAIL=new Set(['failure','timed_out','startup_failure','action_required']);
 const STAGES=[
  ['failed','PR с ошибкой Core CI','Архив подтверждённого Core CI'],
- ['classified','Ошибка классифицирована','Подписанная классификация по CI incident'],
+ ['classified','Причина ошибки определена','Подписанная НЕ-UNKNOWN классификация по CI incident'],
  ['task','Задача создана','Сохранённая задача на точный HEAD'],
- ['assigned','Ответственный назначен','Назначен исполнитель; это ещё не запуск'],
+ ['assigned','AI Worker выбран','Выбран конкретный исполняемый GitHub Worker; owner_review не считается'],
  ['source_assigned','Repair Worker назначен','Кодовый Worker выбран для HEAD'],
  ['dispatched','Dispatch принят GitHub','GitHub принял запуск Workflow'],
  ['claimed','Worker получил задачу','GitHub Actions подписал CLAIMED'],
@@ -89,10 +89,16 @@ function inspect(e,comments){
  const earliest=errors[0],taskIds=new Set(errors.map(x=>x.record.task_id));
  const mark=(key,x)=>{if(!x||found[key])return;const at=x.c.created_at;
   if(t(at)!==null&&t(at)>=t(e.at)-120000)found[key]={at,url:x.url};};
- if(errors.some(x=>typeof x.record.category==='string'&&typeof x.record.reason_code==='string'))mark('classified',earliest);
+ if(errors.some(x=>typeof x.record.category==='string'&&
+  x.record.category!=='UNKNOWN'&&x.record.reason_code!=='UNCLASSIFIED_FAILURE'&&
+  typeof x.record.reason_code==='string'&&x.record.reason_code.length>0))
+  mark('classified',earliest);
  mark('task',earliest);
- if(errors.some(x=>typeof x.record.executor_id==='string'&&x.record.executor_id.length>0&&
-  typeof x.record.assignment_status==='string'))mark('assigned',earliest);
+ if(errors.some(x=>x.record.executor_kind==='github_actions'&&
+  x.record.assignment_status==='SELECTED_NOT_DISPATCHED'&&
+  typeof x.record.executor_id==='string'&&
+  x.record.executor_id.startsWith('github-actions:')))
+  mark('assigned',earliest);
  const reserve=signed.flatMap(x=>x.rows.filter(v=>v.schema==='HH_PR_TASK_V1'&&
   v.pr_number===e.pr&&v.head_sha===e.head&&taskIds.has(v.error_task_id)&&
   HEX.test(v.task_key||'')&&v.state==='RESERVED'&&
@@ -170,7 +176,9 @@ function aggregate(cases,checked,now,hours,all,store){
  return {schema:'HH_PR_REPAIR_EVIDENCE_FUNNEL_V1',generated_at:new Date(now).toISOString(),
   period_hours:hours,basis:'GITHUB_CORE_ARCHIVE_AND_SIGNED_PR_COMMENTS_MATCHED_BY_EXACT_HEAD_AND_RUN',
   cohort:{candidate_prs:all,sampled_prs:cases.length,comments_read:checked.filter(x=>x.checked).length,
-    comment_failures:checked.filter(x=>!x.checked).length,archive_partial:true,
+    comment_failures:checked.filter(x=>!x.checked).length,
+    unclassified_tasks:checked.filter(x=>x.found?.task&&!x.found?.classified).length,
+    archive_partial:true,
     pagination_partial:store.pagination_partial===true,checked_only_public_records:true},
   stages,archive_url:REPO+'/issues/3419',
   note:'Только проверенные публичные GitHub-квитанции; исходный приватный CI event inbox не опубликован. ≥ — минимум подтверждений в ограниченной выборке, отсутствие квитанции не является нулём. Merge ≠ LIVE.'};

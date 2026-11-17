@@ -587,7 +587,10 @@ function renderFunnel(d,hours=funnelHours){
   }
   if(!root.childNodes.length)root.textContent='—';
  }
- put('error-funnel-info','Подтверждения сопоставлены по точным PR + HEAD + Core run. Счётчик ≥ — нижняя граница в неполной выборке.');
+ put('error-funnel-info','Подтверждения сопоставлены по точным PR + HEAD + Core run. '+
+  (Number.isSafeInteger(c.unclassified_tasks)&&c.unclassified_tasks>0?
+    'Требуют дополнительной диагностики: '+number(c.unclassified_tasks)+' из проверенных PR. ':'')+
+  'UNKNOWN и owner_review не считаются классификацией и запуском AI Worker; ≥ — нижняя граница выборки.');
 }
 function funnelUrl(hours,pr){return URLS.funnel.replace('hours=24','hours='+hours)+(pr===null?'':'&pr='+pr);}
 async function selectFunnelPeriod(hours,pr=funnelPR){
