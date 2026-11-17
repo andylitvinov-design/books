@@ -2345,7 +2345,7 @@ test('two obsolete push/manual CI workflows have narrow BASE-trusted actionlint 
   assert.match(actionlint,/^  pull_request:/m);
   assert.ok(actionlint.includes("      - '.github/workflows/**'"));
   const base=new Map([[owner,actionlint],...retired.map(x=>[x,
-    "name: legacy-only\\non:\\n  workflow_dispatch:\\n"])]);
+    "name: legacy-only\non:\n  workflow_dispatch:\n"])]);
   const current=new Map([[owner,actionlint]]);
   const changed=[...retired];
   const expected=expectedWorkflows({base,current,changed});
@@ -2353,7 +2353,7 @@ test('two obsolete push/manual CI workflows have narrow BASE-trusted actionlint 
   const result=resolveExpectedSpecialists({base,current,changed,expected});
   assert.deepEqual(result.expected,[owner]);
   assert.deepEqual(result.delegated,retired.map(retired=>({retired,replacement:owner})));
-  assert.throws(()=>resolveExpectedSpecialists({base,current:new Map([[owner,actionlint+'\\n# untrusted']]),changed,expected}),
+  assert.throws(()=>resolveExpectedSpecialists({base,current:new Map([[owner,actionlint+'\n# untrusted']]),changed,expected}),
     /UNTRUSTED_SPECIALIST_REPLACEMENT/);
   assert.throws(()=>resolveExpectedSpecialists({base,current:new Map(),changed,expected}),
     /UNTRUSTED_SPECIALIST_REPLACEMENT/);
