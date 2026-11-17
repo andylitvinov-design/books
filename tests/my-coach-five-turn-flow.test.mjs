@@ -9,6 +9,7 @@ import {runInNewContext} from 'node:vm'
 import {chooseDictationLanguage,detectedSpeechLocale,coachSpokenTurnLocale,ios27NeedsSpeechRecovery,
   readDictationResults,hasCoachSpokenAnswer} from '../lib/personal-coaching/my-coach-dictation.mjs'
 import {appendSpokenAnswer} from '../lib/personal-coaching/speech-text.js'
+import {coachRecordingMime,createCoachVoiceGate,coachFallbackLocale,coachRecordedSupported,startCoachRecordedTurn} from '../lib/personal-coaching/coach-recorded-turn.mjs'
 
 const source=readFileSync(new URL('../components/my-coach-speech-loop.jsx',import.meta.url),'utf8')
 const start=source.indexOf('const words={')
@@ -239,6 +240,114 @@ test('stuck Safari recovery cue does not start a deaf recognizer or silently con
   assert.equal(session.phases.at(-1),'idle')
   assert.equal(session.voices[0].aborted,true)
 })
+
+test('iPhone fallback selects Safari audio/mp4 and refuses unsupported recording',()=>{
+  assert.deepEqual(coachRecordingMime({isTypeSupported:type=>type==='audio/mp4'}),{mime:'audio/mp4',extension:'m4a'});
+  assert.deepEqual(coachRecordingMime({isTypeSupported:type=>type==='audio/webm;codecs=opus'}),{mime:'audio/webm;codecs=opus',extension:'webm'});
+  assert.equal(coachRecordingMime({isTypeSupported:()=>false}),null);
+  assert.equal(coachFallbackLocale('ru'),'ru');
+  assert.equal(coachFallbackLocale('auto'),'en');
+  assert.equal(coachRecordedSupported({navigator:{mediaDevices:{getUserMedia(){}}},MediaRecorder:{isTypeSupported(){return true}},AudioContext(){}}),false,'MediaRecorder must be a constructor');
+});
+test('local voice gate is silent before speech; commits only after a spoken turn and pause',()=>{
+  const gate=createCoachVoiceGate({silenceMs:900,resetAfterMs:15000});
+  assert.equal(gate.update(0,0),'silence');
+  assert.equal(gate.update(100,.08),'silence');
+  assert.equal(gate.update(200,.08),'speech');
+  assert.equal(gate.update(300,.07),'speech');
+  assert.equal(gate.update(1100,0),'speech');
+  assert.equal(gate.update(1400,0),'finish');
+  const quiet=createCoachVoiceGate({resetAfterMs:1500});
+  quiet.update(0,0);assert.equal(quiet.update(2000,0),'rotate');
+  assert.equal(quiet.heard,false,'silence never uploads to STT');
+});
+test('recorded-turn fails closed when media capabilities are missing',()=>{
+  assert.equal(startCoachRecordedTurn({environment:{navigator:{mediaDevices:{}},MediaRecorder:null}}),null);
+});
+test('one Play exposes informed free-only speech fallback without second consent dialog',()=>{
+  const speech=readFileSync(new URL('../components/my-coach-speech-loop.jsx',import.meta.url),'utf8');
+  const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8');
+  const provider=readFileSync(new URL('../app/api/holistic-support/audio-storyboard/route.js',import.meta.url),'utf8');
+  assert.ok(speech.includes('startCoachRecordedTurn({locale:transcriptLocale'));
+  assert.ok(speech.includes("void deliver(appendSpokenAnswer(draftAtStartRef.current,value,1200))"));
+  assert.ok(ui.includes('data-coach-voice-consent-one-play'));
+  assert.ok(ui.includes('Groq Whisper'));
+  assert.match(provider,/HH_AUDIO_STT_FREE_CONFIRMED/);
+  assert.match(provider,/form\.get\("consent"\)!=="yes"/);
+});
+
+test('recorded fallback completes one consented voice turn with a single STT call',async()=>{
+  let time=0,tick=null,loud=false,uploads=0,stopped=0,answer='',phases=[];
+  class FakeRecorder{
+    static isTypeSupported(type){return type==='audio/mp4';}
+    constructor(){this.state='inactive';this.mimeType='audio/mp4';}
+    start(){this.state='recording';}
+    stop(){
+      if(this.state!=='recording')return;
+      this.state='inactive';
+      this.ondataavailable?.({data:new Blob([new Uint8Array(3200)],{type:'audio/mp4'})});
+      this.onstop?.();
+    }
+  }
+  class FakeContext{
+    createMediaStreamSource(){return {connect(){},disconnect(){}};}
+    createAnalyser(){return {fftSize:1024,getByteTimeDomainData(buf){buf.fill(loud?164:128);}};}
+    resume(){return Promise.resolve();}
+    close(){return Promise.resolve();}
+  }
+  const environment={
+    navigator:{mediaDevices:{getUserMedia:async()=>({getTracks:()=>[{stop(){stopped++;}}]})}},
+    MediaRecorder:FakeRecorder,AudioContext:FakeContext,
+    fetch:async(_url,options)=>{
+      uploads++;
+      assert.equal(options.body.get('consent'),'yes');
+      assert.equal(options.body.get('locale'),'ru');
+      assert.match(options.body.get('file').name,/\.m4a$/);
+      return {ok:true,json:async()=>({transcript:{text:'Я хочу обсудить свою цель'}})};
+    },
+    performance:{now:()=>time},
+    setInterval:fn=>{tick=fn;return 1;},
+    clearInterval:()=>{tick=null;},
+  };
+  assert.equal(coachRecordedSupported(environment),true);
+  const capture=startCoachRecordedTurn({locale:'ru',environment,onState:phase=>phases.push(phase),onResult:text=>{answer=text;},onFailure:code=>assert.fail(code)});
+  for(let i=0;i<12&&!tick;i++)await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(typeof tick,'function');
+  time=200;loud=true;tick();time=350;tick();
+  assert.ok(phases.includes('hearing'));
+  loud=false;time=1600;tick();
+  for(let i=0;i<12&&!answer;i++)await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(answer,'Я хочу обсудить свою цель');
+  assert.equal(uploads,1);
+  assert.equal(stopped,1);
+  assert.ok(phases.includes('transcribing'));
+  capture.cancel();
+});
+test('End during a recorded turn stops the track without sending any speech',async()=>{
+  let tick=null,stopped=0,requests=0;
+  class FakeRecorder{
+    static isTypeSupported(){return true;}
+    constructor(){this.state='inactive';this.mimeType='audio/mp4';}
+    start(){this.state='recording';}
+    stop(){this.state='inactive';this.onstop?.();}
+  }
+  class FakeContext{
+    createMediaStreamSource(){return {connect(){},disconnect(){}};}
+    createAnalyser(){return {fftSize:1024,getByteTimeDomainData(b){b.fill(128);}};}
+    resume(){return Promise.resolve();}
+    close(){return Promise.resolve();}
+  }
+  const env={navigator:{mediaDevices:{getUserMedia:async()=>({getTracks:()=>[{stop(){stopped++;}}]})}},
+    MediaRecorder:FakeRecorder,AudioContext:FakeContext,
+    fetch:async()=>{requests++;return {ok:false};},
+    setInterval:fn=>{tick=fn;return 1;},clearInterval:()=>{tick=null;},performance:{now:()=>0}};
+  const active=startCoachRecordedTurn({environment:env,onFailure:code=>assert.fail(code)});
+  for(let i=0;i<12&&!tick;i++)await new Promise(resolve=>setImmediate(resolve));
+  active.cancel();
+  assert.equal(requests,0,'cancel never uploads audio');
+  assert.equal(stopped,1,'camera/mic track released immediately on End');
+  assert.equal(active.active,false);
+});
 test('The existing mobile timebox pauses with the deliberate Pause control',()=>{
   const source=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
   assert.match(source,/document\.visibilityState==='visible'&&!paused/)
