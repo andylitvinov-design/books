@@ -1867,6 +1867,34 @@ test('P1 repair cannot be starved by P5 legacy preflight with one ghost worker s
  assert.equal(planned[2].pr_number,2306,
   'legacy remains inspectable after both urgent source candidates');
 });
+test('signed owner issue and private OIDC request can use same-run dispatcher, never untrusted inputs',async()=>{
+ const {validOwnerRepairTarget}=require('../scripts/ci-pr-queue-dispatcher.cjs');
+ const target={prNumber:5,expectedSha:SHA};
+ const botRun={...context,eventName:'schedule',actor:'github-actions[bot]'};
+ const issue={source:'OWNER_ISSUE_3890',commentId:6933833202,prNumber:5,expectedSha:SHA};
+ const privateQueue={source:'OIDC_SIGNED_QUEUE',
+  requestId:'123e4567-e89b-42d3-a456-426614174000',
+  leaseToken:'123e4567-e89b-42d3-a456-426614174001',
+  prNumber:5,expectedSha:SHA};
+ assert.equal(validOwnerRepairTarget(botRun,target,issue),true);
+ assert.equal(validOwnerRepairTarget(botRun,target,privateQueue),true);
+ assert.equal(validOwnerRepairTarget(botRun,target),false);
+ assert.equal(validOwnerRepairTarget({...botRun,ref:'refs/heads/feature'},target,issue),false);
+ assert.equal(validOwnerRepairTarget({...botRun,eventName:'pull_request'},target,issue),false);
+ for(const invalid of [
+  {...issue,commentId:0}, {...issue,expectedSha:'b'.repeat(40)},
+  {...issue,source:'PR_PAYLOAD'}, {...issue,extra:'untrusted'},
+  {...privateQueue,requestId:'forged'}, {...privateQueue,leaseToken:'bad'}
+ ])assert.equal(validOwnerRepairTarget(botRun,target,invalid),false);
+ const fx=fixture([pr(5,'repair')],{comments:{5:[proof()]}});
+ const result=await run({github:fx.github,core:core(),context:botRun,
+  manualTarget:target,ownerProof:issue,capacityFn:fx.capacityFn,now:NOW});
+ assert.equal(result.repairDispatchAccepted,1,
+  'authenticated owner command reaches existing Repair Worker without another Watchdog run');
+ assert.equal(fx.calls.dispatched.length,1);
+ assert.equal(fx.calls.dispatched[0].workflow_id,'hh-pr-repair-worker.yml');
+ assert.equal(fx.calls.dispatched[0].inputs.expected_sha,SHA);
+});
 test('owner PM exact-target handoff cannot skip the existing admission gates',async()=>{
  const {validOwnerRepairTarget}=require('../scripts/ci-pr-queue-dispatcher.cjs');
  const owner={...context,actor:'andylitvinov-design'},target={prNumber:5,expectedSha:SHA};
