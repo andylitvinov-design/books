@@ -7,6 +7,8 @@ const REPO='andylitvinov-design/books',BASE='codex/public-book-library';
 const SHA=/^[a-f0-9]{40}$/i,UUID=/^[a-f0-9-]{36}$/i;
 const VALID_STATES=new Set(['WATCHING','BLOCKED','MERGED','CLOSED_UNMERGED']);
 const HOLDS=new Set(['hh:hold','hh:blocked','hh:repair-manual','hh:worker-claimed']);
+const {eligibleMachineTruncation}=require('./ci-pr-manual-resume.cjs');
+const {readCompleteIssueComments}=require('./ci-pr-task-state.cjs');
 function readback(pr,number){
  if(!pr||pr.number!==number||pr.head?.repo?.full_name!==REPO||
   pr.base?.repo?.full_name!==REPO||pr.base?.ref!==BASE||!SHA.test(pr.head?.sha||''))
@@ -64,6 +66,23 @@ async function run({github,core,context,ownerToken='',fetcher=global.fetch,
   const response=await github.rest.pulls.get({owner:'andylitvinov-design',repo:'books',pull_number:task.prNumber});
   const pr=response?.data;
   decision=readback(pr,task.prNumber);
+  // The owner has explicitly sent a NEW authenticated PR command. Only an
+  // Actions-bot-proven, finished zero-price model truncation can request ONE
+  // additional isolated legacy-code run. Keep hh:repair-manual in place until
+  // a new verified source commit is published (the worker removes it then).
+  if(decision.reasonCode==='EXISTING_HOLD_NO_OVERRIDE'&&
+     pr.head?.sha===task.requestedHeadSha){
+   let pages=0;
+   const history=await readCompleteIssueComments(github,'andylitvinov-design','books',
+     task.prNumber,async(_label,fn)=>{
+      if(++pages>8)throw Error('OWNER_RETRY_HISTORY_LIMIT');
+      return fn();
+     });
+   if(eligibleMachineTruncation(pr,history)){
+    decision={status:'WATCHING',reasonCode:'OWNER_SIGNED_TRUNCATION_RETRY_ELIGIBLE',
+      headSha:pr.head.sha,eligibleForFirstRepair:true,machineRetry:true};
+   }
+  }
   // Only a first dispatch per owner intent. Never enqueue another Core wave.
   // Source writing still requires signed exact-HEAD failed Core proof,
   // worker reservation and all merge gates. A private signed OIDC owner task
@@ -77,11 +96,18 @@ async function run({github,core,context,ownerToken='',fetcher=global.fetch,
    if(arm.armed!==true){
     decision.reasonCode='PR_REPAIR_DISPATCH_ALREADY_RESERVED';
    }else{
-    const invoke=dispatch||require('./ci-pr-pm-agent-inbox.cjs').dispatchLive;
-    const result=await invoke(github,{pr:task.prNumber},{ownerToken,fetcher,
-     ownerProof:{source:'OIDC_SIGNED_QUEUE',prNumber:task.prNumber,
+    const ownerProof={source:'OIDC_SIGNED_QUEUE',prNumber:task.prNumber,
       expectedSha:task.requestedHeadSha,requestId:task.requestId,
-      leaseToken:task.leaseToken}});
+      leaseToken:task.leaseToken};
+    // Legacy/manual recovery must go directly to the same signed
+    // single-writer queue, not to the older public-inbox gate which rejects
+    // all manual labels. The dispatcher and worker reverify the full proof.
+    const invoke=dispatch||(decision.machineRetry?
+      async(_g,cmd,opts)=>require('./ci-pr-pm-agent-inbox.cjs')
+        .dispatchOwnerQueue(github,core,context,{
+          pr:cmd.pr,sha:task.requestedHeadSha,ownerProof:opts.ownerProof}):
+      require('./ci-pr-pm-agent-inbox.cjs').dispatchLive);
+    const result=await invoke(github,{pr:task.prNumber},{ownerToken,fetcher,ownerProof});
     dispatchAccepted=result?.dispatched===true;
     if(dispatchAccepted)decision.reasonCode='OWNER_DISPATCH_ACCEPTED_NOT_MODEL_OR_COMMIT';
     else if(typeof result?.reason==='string'){
