@@ -35,12 +35,18 @@ test('An unclear, distressed or first-time visitor is not forced to invent a goa
    'My happening life','Sorry it is my first time','Help please lol']){
    const a=step(text);
    assert.equal(a.stage,'goal',text);
-   assert.deepEqual(a.slots,{},text);
+   assert.equal(a.slots.goal,undefined,text);
    assert.equal(countQuestions(a.reply),1,text);
  }
  const changed=step('My goal is to regain direction after many negative events');
  assert.equal(changed.stage,'challenge');
  assert.match(changed.slots.goal,/regain direction/);
+ const distress=step('Currently I am going through lots of negative events in my life');
+ assert.match(distress.slots.situation,/negative events/);
+ const desired=step('I want clarity','goal',distress.slots);
+ assert.equal(desired.stage,'challenge');
+ const done=step('Too many setbacks','challenge',desired.slots);
+ assert.equal(done.stage,'ready','known current situation must not be asked again');
 });
 test('Identity, photo reading, and details questions receive an explanation first',()=>{
  for(const text of ['You are therapist or physic','Are you a psychic?',
@@ -134,4 +140,5 @@ test('No new external calls, consent bypass or implicit CRM handoff',()=>{
  assert.match(handler,/if\(action==='send'\)/);
  assert.match(handler,/ai_review_consent_at=now\(\)/);
  assert.match(handler,/ingestMessengerEventInTransaction/);
+ assert.match(handler,/readyForReview\?\[\[V3_LABELS\[locale\]\.finish\]\]/);
 });
