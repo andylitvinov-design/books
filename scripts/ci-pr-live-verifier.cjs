@@ -23,7 +23,10 @@ function trustedContext(context) {
 }
 function latestVercelStatus(rows) {
  if(!Array.isArray(rows))return null;
- const v=rows.filter(s=>s?.context==='Vercel');
+ // GitHub's real Vercel integration uses the project-qualified context.
+ // A Vercel status from a different project must never attest this site.
+ const v=rows.filter(s=>['Vercel','Vercel – codex-public-book-library']
+   .includes(s?.context));
  return v.sort((a,b)=>
   (Date.parse(b.updated_at||b.created_at||'')||0)-
   (Date.parse(a.updated_at||a.created_at||'')||0))[0]||null;
