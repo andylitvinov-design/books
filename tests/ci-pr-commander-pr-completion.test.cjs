@@ -400,3 +400,25 @@ test('Core-failure wake only starts direct handoff, with sparse default-branch c
  assert.equal((workflow.match(/const \{drain\}=require\(process\.env\.GITHUB_WORKSPACE/g)||[]).length,2);
  assert.equal((workflow.match(/const outcome=await drain\(/g)||[]).length,2);
 });
+
+test('only proven pre-dispatch capacity may re-arm; unknown remote results never repeat',async()=>{
+ const p={...base,labels:[{name:'hh:repair-needed'}]};
+ for(const reason of ['OWNER_REPAIR_DIRECT_WORKER_BUSY',
+  'OWNER_REPAIR_DIRECT_CORE_PRIORITY_PENDING',
+  'OWNER_REPAIR_DIRECT_CAPACITY_UNVERIFIED']){
+  const f=mock(task,p);
+  const outcome=await run({...f,context,dispatch:async()=>({dispatched:false,reason})});
+  assert.equal(outcome.status,'WATCHING');
+  assert.equal(f.calls.find(x=>x.action==='finish').noDispatchVerified,true,reason);
+ }
+ for(const reason of ['OWNER_REPAIR_DIRECT_CLAIMED_AWAITING_OUTCOME',
+  'OWNER_REPAIR_DIRECT_RESERVED_REQUIRES_REVIEW',
+  'OWNER_REPAIR_DISPATCH_AMBIGUOUS_NO_RETRY']){
+  const f=mock(task,p);
+  await run({...f,context,dispatch:async()=>({dispatched:false,reason})});
+  assert.equal(f.calls.find(x=>x.action==='finish').noDispatchVerified,false,reason);
+ }
+ const ack=mock(task,p);
+ await run({...ack,context,dispatch:async()=>({dispatched:true,reason:'OWNER_DIRECT_QUEUE_DISPATCH_ACCEPTED'})});
+ assert.equal(ack.calls.find(x=>x.action==='finish').noDispatchVerified,false);
+});
