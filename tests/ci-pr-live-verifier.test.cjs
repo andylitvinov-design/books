@@ -181,3 +181,12 @@ test('hourly conflict diagnostics reuse the read-only LIVE job and pinned produc
  assert.match(part,/node scripts\/pr-sweep-guard\.mjs route-conflicts/);
  assert.doesNotMatch(part,/HH_AUTOMERGE_TOKEN|HH_VERCEL_READ_TOKEN/);
 });
+
+test('production-qualified Vercel GitHub context is accepted, other project is refused',()=>{
+ const actual={...status,context:'Vercel – codex-public-book-library',
+  updated_at:'2026-11-17T15:36:14Z'};
+ assert.equal(latestVercelStatus([actual]),actual);
+ assert.equal(latestVercelStatus([status,actual]),actual);
+ assert.equal(latestVercelStatus([{...actual,context:'Vercel – unrelated'}]),null);
+ assert.equal(evidenceDecision({sha,status:actual,deployment,alias,publicSite}).verified_live,true);
+});
