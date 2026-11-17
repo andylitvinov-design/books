@@ -249,3 +249,12 @@
   .hub .telegramShare{margin-left:auto}
   .hub .telegramShare a,.hub .telegramShare button{font-size:10px;min-height:32px;padding:5px 7px}
 }
+
+/* The real mobile My Clients inbox is a simple embedded member list.
+   Keep the owner-only Telegram setup visible above that list. */
+.embeddedMessages{display:grid;gap:12px;min-width:0}
+.ownerTelegramShortcut{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  min-height:48px;padding:12px 15px;margin:0;text-decoration:none;
+  color:#155f4a;border:1px solid #bad6c4;border-radius:14px;background:#eff8f2;
+  font:700 15px/1.35 system-ui,-apple-system,sans-serif}
+.ownerTelegramShortcut:focus-visible{outline:3px solid #137d61;outline-offset:3px}

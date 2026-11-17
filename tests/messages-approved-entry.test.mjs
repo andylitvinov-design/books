@@ -21,7 +21,9 @@ test('default EN/RU/ES messages route renders one Orders / Clients hub',()=>{
   assert.doesNotMatch(page,/MessagesBottomNavigation/)
 })
 test('approved Messenger preserves existing CRM plus direct and client request auth, not a fake chat',()=>{
-  assert.match(hub,/if\(ownerAccountId\)return <MessagesSimpleInbox/)
+  assert.match(hub,/if\(ownerAccountId\)\{[\s\S]*?const ownerInbox=<MessagesSimpleInbox/)
+  assert.match(hub,/if\(!embedded\)return ownerInbox/)
+  assert.match(hub,/data-embedded-owner-messages[\s\S]*?data-owner-telegram-settings-shortcut/)
   assert.match(simple,/data-simple-messages/)
   assert.match(simple,/className=\{selectedKey===row\.key\?styles\.personSelected:styles\.person\}/)
   assert.match(simple,/<CrmMessengerPanel/)

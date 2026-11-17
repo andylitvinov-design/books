@@ -1,19 +1,27 @@
 "use client";
-import {useCallback,useEffect,useState} from "react";
+import {useCallback,useEffect,useMemo,useState} from "react";
 import Link from "next/link";
+import {PUBLIC_MUSIC_TAG_LABELS,musicTagLabel,safeStudioMusicTags,studioMusicFilter} from "@/lib/mandala/studio-music-catalog.mjs";
 
 const text={
-ru:{title:"♫ Моя музыкальная библиотека",hide:"Скрыть библиотеку",upload:"Загрузить музыку",refresh:"Обновить",listen:"Прослушать",use:"В ролик",empty:"Опубликованных аудиодорожек пока нет",error:"Не удалось открыть аудио",loading:"Загрузка...",all:"Все",wellbeing:"Восстановление",focus:"Фокус",calm:"Спокойствие",energy:"Энергия",love:"Любовь"},
-en:{title:"♫ My music library",hide:"Hide library",upload:"Upload music",refresh:"Refresh",listen:"Listen",use:"Use in video",empty:"No published recordings yet",error:"Music unavailable",loading:"Loading...",all:"All",wellbeing:"Wellbeing",focus:"Focus",calm:"Calm",energy:"Energy",love:"Love"},
-es:{title:"♫ Mi biblioteca musical",hide:"Ocultar biblioteca",upload:"Subir música",refresh:"Actualizar",listen:"Escuchar",use:"Usar en vídeo",empty:"Aún no hay pistas publicadas",error:"Audio no disponible",loading:"Cargando...",all:"Todas",wellbeing:"Bienestar",focus:"Concentración",calm:"Calma",energy:"Energía",love:"Amor"}
+ru:{title:"♫ Моя музыкальная библиотека",hide:"Скрыть библиотеку",upload:"Загрузить музыку",refresh:"Обновить",listen:"Прослушать",use:"В ролик",empty:"Нет доступных аудиодорожек",error:"Не удалось открыть аудио",loading:"Загрузка...",all:"Все",wellbeing:"Восстановление",focus:"Фокус",calm:"Спокойствие",energy:"Энергия",love:"Любовь"},
+en:{title:"♫ My music library",hide:"Hide library",upload:"Upload music",refresh:"Refresh",listen:"Listen",use:"Use in video",empty:"No available recordings yet",error:"Music unavailable",loading:"Loading...",all:"All",wellbeing:"Wellbeing",focus:"Focus",calm:"Calm",energy:"Energy",love:"Love"},
+es:{title:"♫ Mi biblioteca musical",hide:"Ocultar biblioteca",upload:"Subir música",refresh:"Actualizar",listen:"Escuchar",use:"Usar en vídeo",empty:"Aún no hay grabaciones disponibles",error:"Audio no disponible",loading:"Cargando...",all:"Todas",wellbeing:"Bienestar",focus:"Concentración",calm:"Calma",energy:"Energía",love:"Amor"}
+};
+const extra={
+ ru:{find:"Найти музыку или композитора...",tags:"Теги",preview:"Источник и файл проверены · прослушивание не оценено",approved:"Проверено на слух"},
+ en:{find:"Find music or composer...",tags:"Tags",preview:"Source and file verified · listening not yet reviewed",approved:"Audition approved"},
+ es:{find:"Buscar música o compositor...",tags:"Etiquetas",preview:"Origen y archivo verificados · pendiente de escucha",approved:"Aprobado tras escuchar"}
 };
 const SAFE_MIME=new Set(["audio/mpeg","audio/mp4","audio/wav"]);
 const MAX_SIZE=15*1024*1024;
 export function StudioMusicPicker({locale="en",disabled=false,onSelect}){
  const t=text[locale]||text.en;
+ const e=extra[locale]||extra.en;
  const [open,setOpen]=useState(false);
  const [loading,setLoading]=useState(false);
  const [category,setCategory]=useState("all");
+ const [tag,setTag]=useState("all"),[query,setQuery]=useState("");
  const [tracks,setTracks]=useState([]);
  const [preview,setPreview]=useState(null);
  const [error,setError]=useState("");
@@ -26,7 +34,8 @@ export function StudioMusicPicker({locale="en",disabled=false,onSelect}){
    if(!Array.isArray(json.items))throw Error("MUSIC_LIST_INVALID");
    setTracks(json.items.filter(v=>v&&typeof v.id==="string"&&
      typeof v.title==="string"&&SAFE_MIME.has(v.mime)&&
-     Number.isSafeInteger(v.bytes)&&v.bytes>0&&v.bytes<=MAX_SIZE));
+     Number.isSafeInteger(v.bytes)&&v.bytes>0&&v.bytes<=MAX_SIZE)
+     .map(row=>({...row,tags:safeStudioMusicTags(row.tags)})));
   }catch{setError(t.error)}
   finally{setLoading(false)}
  },[t.error]);
@@ -56,7 +65,9 @@ export function StudioMusicPicker({locale="en",disabled=false,onSelect}){
    setPreview(null);setOpen(false);
   }catch{setError(t.error)}finally{setLoading(false)}
  }
- const items=tracks.filter(x=>category==="all"||x.category===category);
+ const availableTags=useMemo(()=>Object.keys(PUBLIC_MUSIC_TAG_LABELS)
+  .filter(k=>tracks.some(v=>v.tags?.includes(k))),[tracks]);
+ const items=useMemo(()=>studioMusicFilter(tracks,{category,tag,query}),[tracks,category,tag,query]);
  return <section data-video-studio-music-library
   style={{margin:"10px 0",border:"1px solid #d6ded2",borderRadius:15,padding:"10px 12px",background:"#fbfff9"}}>
   <div style={{display:"flex",justifyContent:"space-between",gap:8,flexWrap:"wrap",alignItems:"center"}}>
@@ -68,10 +79,18 @@ export function StudioMusicPicker({locale="en",disabled=false,onSelect}){
    <Link href="/admin/music-library" style={{color:"#08735d",textDecoration:"underline",fontSize:12}}>{t.upload}</Link>
   </div>
   {open&&<div style={{display:"grid",gap:9,marginTop:10}}>
+   <input aria-label={e.find} value={query} placeholder={e.find} maxLength={100}
+     onChange={v=>setQuery(v.target.value)}
+     style={{border:"1px solid #cbd8cc",padding:9,borderRadius:10,background:"white",width:"100%",boxSizing:"border-box"}}/>
    <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
     <select aria-label={t.all} value={category} onChange={event=>setCategory(event.target.value)}
       style={{border:"1px solid #cbd8cc",padding:9,borderRadius:10,background:"white"}}>
      {["all","wellbeing","focus","calm","energy","love"].map(k=><option key={k} value={k}>{t[k]}</option>)}
+    </select>
+    <select aria-label={e.tags} value={tag} onChange={v=>setTag(v.target.value)}
+      style={{border:"1px solid #cbd8cc",padding:9,borderRadius:10,background:"white",maxWidth:"100%"}}>
+     <option value="all">{e.tags}</option>
+     {availableTags.map(k=><option key={k} value={k}>{musicTagLabel(k,locale)}</option>)}
     </select>
     <button type="button" onClick={()=>void refresh()} disabled={loading}>{t.refresh}</button>
     <small>{loading?t.loading:items.length}</small>
@@ -80,7 +99,16 @@ export function StudioMusicPicker({locale="en",disabled=false,onSelect}){
    {!loading&&items.length===0&&<small role="status">{t.empty}</small>}
    <div style={{maxHeight:330,overflowY:"auto",display:"grid",gap:7}}>
    {items.map(row=><div key={row.id} style={{border:"1px solid #dbe3dd",padding:9,borderRadius:10,display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
-    <strong style={{fontSize:13,flex:"1 1 125px"}}>{row.title}</strong>
+    <div style={{flex:"1 1 160px",minWidth:0,display:"grid",gap:4}}>
+      <strong style={{fontSize:13,overflowWrap:"anywhere"}}>{row.title}</strong>
+      <small>{[row.composer,row.performer].filter(Boolean).join(" · ")}</small>
+      <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+       {row.tags?.filter(k=>PUBLIC_MUSIC_TAG_LABELS[k]).slice(0,4).map(k=>
+         <small key={k} style={{background:"#eaf7ef",padding:"2px 5px",borderRadius:6}}>
+          {musicTagLabel(k,locale)}</small>)}
+      </div>
+      <small>{row.reviewStage==="technical_preview"&&row.sourceVerified?e.preview:e.approved}</small>
+    </div>
     <button type="button" disabled={loading||disabled} onClick={()=>void getRecording(row,false)}>{t.listen}</button>
     <button type="button" disabled={loading||disabled} onClick={()=>void getRecording(row,true)}>{t.use}</button>
     {preview?.id===row.id&&<audio src={preview.url} controls preload="none" style={{maxWidth:"100%",width:280}}/>}

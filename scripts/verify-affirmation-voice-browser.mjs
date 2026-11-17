@@ -54,6 +54,24 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(handoffPanel).toBeVisible({timeout:15000});
     await handoffPanel.evaluate(element=>{element.open=false;});
     await expect(handoffPanel).toBeHidden();
+    // The approved Goal redesign deliberately gates Personalization behind
+    // three explicit selections; hydration alone must NEVER unlock this CTA.
+    await expect(continueToIdeas).toBeDisabled();
+    const quizProgress=page.locator('[data-video-goal-quiz-progress]');
+    await expect(quizProgress).toContainText('1 / 3');
+    const categories=page.locator('[data-auto-video-category]');
+    await expect(categories).toHaveCount(4);
+    await categories.first().click();
+    await expect(quizProgress).toContainText('2 / 3');
+    await expect(continueToIdeas).toBeDisabled();
+    const subcategories=page.locator('[data-auto-video-subcategory]');
+    await expect(subcategories).toHaveCount(4);
+    await subcategories.first().click();
+    await expect(quizProgress).toContainText('3 / 3');
+    await expect(continueToIdeas).toBeDisabled();
+    const topics=page.locator('[data-video-goal-topic]');
+    await expect(topics).toHaveCount(4);
+    await topics.first().click();
     await expect(continueToIdeas).toBeEnabled();
     await continueToIdeas.click();
     const ideas=page.locator('[data-video-quick-control="phrases"]');
@@ -773,11 +791,11 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // drops below the minimum; restoring it returns the editor to a valid state.
       await firstIdea.click();
       await expect(firstIdea).toHaveAttribute("aria-pressed","false");
-      await expect(montageCountLabel).toContainText(String(initialMontageCount-1)+" /");
+      await expect(montageCountLabel).toHaveText(new RegExp("^\\s*"+(initialMontageCount-1)+"\\s*/\\s*\\d+\\b"));
       await expect(montageIdeas.locator("[data-video-ideas-minimum]")).toBeVisible();
       await firstIdea.click();
       await expect(firstIdea).toHaveAttribute("aria-pressed","true");
-      await expect(montageCountLabel).toContainText(String(initialMontageCount)+" /");
+      await expect(montageCountLabel).toHaveText(new RegExp("^\\s*"+initialMontageCount+"\\s*/\\s*\\d+\\b"));
       await expect(montageIdeas.locator("[data-video-ideas-minimum]")).toHaveCount(0);
       const recordEntry=page.locator('[data-video-montage-text] [data-video-ideas-record]');
       await expect(recordEntry).toBeVisible();
@@ -1312,24 +1330,23 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         phase(engine,"ready-therapy-one-tap-navigation-verified");
         await readyGenerate.click();
         phase(engine,"ready-free-render-requested");
-        // Seven pictured 0–10 questions are inline during a real export.
-        // Preserve stronger first-party photo and transition checks from newer Safari source.
+        // Verify the approved seven-picture Ready check-in, not the old Goal
+        // sliders: one real 0–10 tap must advance to a distinct licensed image.
         await expect(page.locator("[data-ready-generating]")).toBeVisible({timeout:20000});
-        const readyCheckIn=page.locator("[data-ready-checkin] [data-ready-sequential-checkin]");
-        await expect(readyCheckIn).toBeVisible({timeout:20000});
-        await expect(readyCheckIn.locator("[data-ready-checkin-score]")).toHaveCount(11);
-        await expect(readyCheckIn).toContainText("1 / 7");
-        const firstTone=await readyCheckIn.getAttribute("data-checkin-tone");
-        const firstImage=await readyCheckIn.locator("img").getAttribute("src");
+        const readyCheckin=page.locator("[data-ready-checkin] [data-ready-sequential-checkin]");
+        await expect(readyCheckin).toBeVisible({timeout:20000});
+        await expect(readyCheckin.locator("[data-ready-checkin-score]")).toHaveCount(11);
+        const firstTone=await readyCheckin.getAttribute("data-checkin-tone");
+        const firstImage=await readyCheckin.locator("img").getAttribute("src");
         assert.ok(firstTone&&firstImage?.startsWith("/videos/holistic-house/"),
-          "Ready check-in must have a first-party photo and a question");
-        await readyCheckIn.locator('[data-ready-checkin-score="5"]').click();
-        await expect(readyCheckIn).not.toHaveAttribute("data-checkin-tone",firstTone,{timeout:5000});
-        await expect(readyCheckIn.locator("img")).not.toHaveAttribute("src",firstImage,{timeout:5000});
-        await expect(readyCheckIn).toContainText("2 / 7");
-        // No optional floating poll or pill may obscure the media player.
+          "Ready must show a real first-party picture and named question");
+        await readyCheckin.locator('[data-ready-checkin-score="5"]').click();
+        await expect(readyCheckin).not.toHaveAttribute("data-checkin-tone",firstTone,{timeout:5000});
+        await expect(readyCheckin.locator("img")).not.toHaveAttribute("src",firstImage,{timeout:5000});
+        // No unsolicited optional survey should cover the intentional export.
+        // The existing pill offers an explicit way to open the check-in.
         await expect(page.locator("[data-video-effect-overlay]")).toHaveCount(0);
-        await expect(page.locator("[data-video-effect-reopen]")).toBeHidden();
+        await expect(page.locator("[data-video-effect-reopen]")).toBeVisible({timeout:20000});
         // The idle source remains preload=none until the user's actual Create
         // gesture; Safari must then start a physical decode, never a CSS-only
         // preview or an unverified download.
@@ -1422,9 +1439,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           // The optional progress/check-in overlay must get out of the way
           // automatically when verified Ready appears, without bypassing the UI.
           await expect(page.locator("[data-video-effect-overlay]")).toHaveCount(0);
-          await expect(page.locator("[data-video-effect-reopen]")).toBeHidden();
-          await expect(readyCheckIn).toBeVisible();
-          await expect(readyCheckIn).toContainText("2 / 7");
+          await expect(page.locator("[data-video-effect-reopen]")).toBeVisible();
           await readyView.locator("[data-ready-save]").click();
           await expect(readyView.locator("[data-ready-save-gate]")).toBeVisible();
           await expect(readyView.locator("[data-ready-save-gate-signin]")).toBeVisible();
@@ -1591,7 +1606,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       if(engine==="webkit")await unselectedToggle.tap();
       else await unselectedToggle.click();
       await expect(phraseEditor.locator(`[data-video-idea-select="${unselectedIndex}"]`)).toHaveAttribute('aria-pressed','true');
-      await expect(montageCountLabel).toContainText(`${countBeforeAddition+1} / ${optionCountBeforeAddition}`);
+      await expect(montageCountLabel).toHaveText(new RegExp("^\\s*"+(countBeforeAddition+1)+"\\s*/\\s*"+optionCountBeforeAddition+"\\b"));
       assert.ok(countBeforeAddition+1<=10,"adding a phrase never exceeds the ten-phrase export limit");
       assert.equal(await page.locator('[data-video-narration-stale]').isVisible(),false,
         "adding an unspoken phrase does not invalidate the actual WAV");

@@ -12,6 +12,7 @@ import {mkdirSync, writeFileSync, mkdtempSync, rmSync, readFileSync} from 'node:
 import {resolve, join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {installGuestVideoBlobCapture,readRealGuestVideo} from './real-guest-video-file.mjs';
+import {completeThreeStepGoalsQuiz} from './complete-three-step-goals-quiz.mjs';
 
 const LIVE_ORIGIN = 'https://holistichouse.vercel.app';
 const LOCAL_ORIGIN = 'http://127.0.0.1:3100';
@@ -168,6 +169,8 @@ try {
   }
   // Visitor route: Goals → Ideas → Montage Style → Settings deep Concept → verified timeline.
   // Use the real visitor actions; do not bypass hydration, rights, or editor.
+  row.phase='goals-three-native-quiz-answers';
+  await completeThreeStepGoalsQuiz(page,{engine});
   const continueToIdeas=page.locator('[data-video-continue-scenarios]');
   await continueToIdeas.waitFor({state:'visible',timeout:40000});
   row.phase='goals-to-ideas-native-tap';
