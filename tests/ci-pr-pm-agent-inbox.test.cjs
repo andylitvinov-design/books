@@ -121,22 +121,45 @@ test('catalog-verified PM model makes one portable free chat inference with $0 c
  assert.deepEqual(request.provider.max_price,{prompt:0,completion:0});
 });
 test('reasoning-only 200 response gets explicit bounded blocker, never false success',async()=>{
- const fetcher=async()=>({ok:true,json:async()=>({model:'openrouter/free',
-  choices:[{finish_reason:'length',message:{content:''}}],
-  usage:{cost:0,completion_tokens:1600,completion_tokens_details:{reasoning_tokens:1599}}})});
+ const fetcher=pmFetcher({choices:[{finish_reason:'length',message:{content:''}}],
+  usage:{cost:0,completion_tokens:1600,completion_tokens_details:{reasoning_tokens:1599}}});
  const out=await inbox.askFree('Почему CI красная?',{fetcher,token:'synthetic-key'});
  assert.equal(out.ok,undefined);
  assert.equal(out.reason,'OPENROUTER_REASONING_EXHAUSTED_VISIBLE_BUDGET');
 });
 test('multipart text-only completion accepted but reasoning never exported',async()=>{
- const fetcher=async()=>({ok:true,json:async()=>({model:'openrouter/free',
-  choices:[{finish_reason:'stop',message:{content:[{type:'text',text:'Ответ.'},{type:'reasoning',text:'secret model reasoning'}]}}],usage:{cost:0}})});
+ const fetcher=pmFetcher({
+  choices:[{finish_reason:'stop',message:{content:[{type:'text',text:'Ответ.'},{type:'reasoning',text:'secret model reasoning'}]}}],usage:{cost:0}});
  const out=await inbox.askFree('Test?',{fetcher,token:'synthetic-key'});
  assert.equal(out.ok,true);
  assert.equal(out.text,'Ответ.');
 });
 
 
+test('invalid, priced and non-text catalog cannot start free AI inference',async()=>{
+ for(const value of [
+  {data:[]},
+  {data:[{id:PM_MODEL,pricing:{prompt:'0.01',completion:'0'},
+   architecture:{input_modalities:['text'],output_modalities:['text']}}]},
+  {data:[{id:PM_MODEL,pricing:{prompt:'0',completion:'0'},
+   architecture:{input_modalities:['image'],output_modalities:['text']}}]}
+ ]){
+  let calls=0;
+  const result=await inbox.askFree('Публичный технический вопрос?',{token:'synthetic-key',
+   fetcher:async()=>{calls++;return {ok:true,json:async()=>value};}});
+  assert.equal(result.reason,'OPENROUTER_NO_VERIFIED_FREE_PM_MODEL');
+  assert.equal(calls,1,'no inference or paid fallback after invalid catalog');
+ }
+});
+test('unexpected model after one request fails closed without reply or retry',async()=>{
+ let calls=0;
+ const answer=await inbox.askFree('Проверка?',{token:'synthetic-key',
+  fetcher:async(_url,opts)=>{calls++;return opts.method==='GET'?catalog():{
+   ok:true,json:async()=>({model:'paid/other',usage:{cost:0},
+    choices:[{message:{content:'not a trusted answer'}}]})};}});
+ assert.equal(answer.reason,'MODEL_ROUTING_NOT_VERIFIED_FREE');
+ assert.equal(calls,2);
+});
 test('public technical source command requires real owner, validation and explicit public consent',()=>{
  const task={task_id:'commander_public_source_20261107',target_base:'codex/bootstrap-books',
   expected_base_sha:'a'.repeat(40),path:'components/example.js',title:'Fix verified UI behavior',
@@ -185,19 +208,19 @@ test('unknown or nonzero provider billing is blocked and never reported as free'
  const cases=[[{},'MODEL_BILLING_UNVERIFIED_HOLD'],[{cost:null},'MODEL_BILLING_UNVERIFIED_HOLD'],
   [{cost:'0'},'MODEL_BILLING_UNVERIFIED_HOLD'],[{cost:0.000001},'MODEL_REPORTED_NONZERO_COST_HOLD']];
  for(const [usage,reason] of cases){
-  const fetcher=async()=>({ok:true,json:async()=>({model:'openrouter/free',usage,
-   choices:[{finish_reason:'stop',message:{content:'Ответ.'}}]})});
+  const fetcher=pmFetcher({usage,
+   choices:[{finish_reason:'stop',message:{content:'Ответ.'}}]});
   const out=await inbox.askFree('Проверка цены?',{fetcher,token:'synthetic-key'});
   assert.equal(out.ok,undefined);assert.equal(out.reason,reason);
  }
 });
 test('verified zero provider cost is included in owner-visible receipt and telemetry',async()=>{
- const fetcher=async()=>({ok:true,json:async()=>({model:'nvidia/nemotron-3.5-super-vl:free',
-  usage:{cost:0},choices:[{finish_reason:'stop',message:{content:'Проверка пройдена.'}}]})});
+ const fetcher=pmFetcher({usage:{cost:0},
+  choices:[{finish_reason:'stop',message:{content:'Проверка пройдена.'}}]},{model:PM_OTHER_MODEL});
  const out=await inbox.askFree('Проверка цены?',{fetcher,token:'synthetic-key'});
  assert.equal(out.ok,true);assert.equal(out.cost,0);
  const body=inbox.resultBody({kind:'ask',id:777},{...out},'https://github.com/example/run/1');
- assert.match(body,/nvidia\/nemotron-3\.5-super-vl:free/);
+ assert.match(body,/nvidia\/nemotron-3\.5-lightning:free/);
  assert.match(body,/verified provider cost: \$0/);
 });
 
