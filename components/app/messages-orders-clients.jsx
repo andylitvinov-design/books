@@ -136,6 +136,9 @@ export default function MessagesOrdersClients({locale:routeLocale='en',children}
   const retryAiIdentity=useCallback(()=>setIdentityCheck(v=>v+1),[])
   useEffect(()=>{
     const controller=new AbortController()
+    let active=true
+    // Never leave a public Home choice waiting indefinitely for account data.
+    const timeout=window.setTimeout(()=>controller.abort(),6000)
     setAiIdentity({status:'checking',accountId:null})
     fetch('/api/app/session',{credentials:'same-origin',cache:'no-store',signal:controller.signal})
       .then(async response=>{
@@ -146,9 +149,10 @@ export default function MessagesOrdersClients({locale:routeLocale='en',children}
           return {status:'unavailable',accountId:null}
         return {status:'authenticated',accountId:data.accountId}
       })
-      .then(identity=>{if(!controller.signal.aborted)setAiIdentity(identity)})
-      .catch(()=>{if(!controller.signal.aborted)setAiIdentity({status:'unavailable',accountId:null})})
-    return()=>controller.abort()
+      .then(identity=>{if(active)setAiIdentity(identity)})
+      .catch(()=>{if(active)setAiIdentity({status:'unavailable',accountId:null})})
+      .finally(()=>window.clearTimeout(timeout))
+    return()=>{active=false;window.clearTimeout(timeout);controller.abort()}
   },[identityCheck])
   useEffect(()=>{
     const controller=new AbortController()
