@@ -157,6 +157,11 @@ try {
 
     // Money/business was an explicit owner requirement even though the visual
     // reference shows only four primary topic buttons; reveal the two extra topics.
+    // Retain current Production React hydration guard before any quiz click.
+    await expect.poll(
+      () => page.evaluate(() => history.pushState.toString().includes("__NA")),
+      { timeout: 30000, message: "Services quiz must hydrate before the first answer" },
+    ).toBe(true);
     await quiz.locator("[data-services-more-topics]").click();
     await expect(quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice]')).toHaveCount(6);
     await quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice="work"]').click();
