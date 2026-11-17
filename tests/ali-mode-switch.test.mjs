@@ -66,6 +66,8 @@ test('price is a temporary secretary handoff, a price objection returns to servi
  assert.equal(objection.reason,'contextual_service_objection');
  assert.equal(decide('Нет времени','ru',past).role,'sales');
  assert.equal(decide('Не подходит','ru',past).role,'sales');
+ assert.equal(decide('Не уверен, что мне подходит','ru',past).role,'sales');
+ assert.equal(decide('Недорого','ru',past).role,'secretary');
 });
 test('topic change or explicit refusal clears old context, later confirmed new topic can start again',()=>{
  const original=[user('Интересуюсь вашими услугами'),user('Сменим тему')];
