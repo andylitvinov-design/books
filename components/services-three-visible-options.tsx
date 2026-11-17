@@ -140,12 +140,6 @@ const tags: Record<PublicLocale, Record<Price, string>> = {
   es:{ free:"Gratis", express:"€50 · 30 min", full:"€100 · 60 min", from50:"desde €50", quote:"Precio a consultar" },
 };
 
-const ui: Record<PublicLocale,{more:string;count:string}> = {
- ru:{more:"Дополнительные форматы",count:"3 варианта"},
- en:{more:"Additional formats",count:"3 options"},
- es:{more:"Otros formatos",count:"3 opciones"},
-};
-
 const translate = (values:Text3, locale:PublicLocale):string =>
   values[locale==="ru"?0:locale==="en"?1:2];
 
