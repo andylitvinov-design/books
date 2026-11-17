@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
 import {telegramServiceRequestUrl,telegramBusinessServiceTitle} from '../lib/assist/telegram-business-request.mjs';
 import {whatsappEnquiryUrl,telegramEnquiryUrlFromWhatsApp} from '../lib/whatsapp-enquiry.js';
@@ -107,7 +108,7 @@ test('Only canonical free review gets the generic bot, other services stay manua
  assert.equal(isOfficialFreeReviewWhatsAppDraft('https://wa.me/1000?text=Page','en'),false);
 });
 
-test('Service cards route through server readiness with human-first fallback',()=>{
+test('Service cards enter human Telegram Business chat without redirecting to a bot',()=>{
  const ui=source('components/mandatory-messenger-actions.tsx');
  const action=source('components/services-card-actions.tsx');
  const router=source('app/api/public/telegram-service-entry/route.js');
@@ -118,10 +119,8 @@ test('Service cards route through server readiness with human-first fallback',()
  assert.match(ui,/if\(!active\|\|telegramUrl\|\|!isOfficialFreeReviewWhatsAppDraft\(whatsappUrl,locale\)\)/);
  assert.doesNotMatch(ui,/resolveTelegramServiceEntry\(payload,manual,locale\)/);
  assert.match(router,/telegramServiceRequestUrl\(service,locale\)/);
- assert.match(router,/HH_CRM_TG_CHAT_AUTOMATION_ENABLED!==\x27true\x27/);
- assert.match(router,/channelTransportReady\(\x27telegram\x27,env\)/);
- assert.match(router,/v3CanStart\(env\)/);
- assert.match(router,/NextResponse.redirect\(target/);
+ assert.match(router,/NextResponse.redirect\(manual/);
+ assert.doesNotMatch(router,/channelTransportReady|v3CanStart|resolveTelegramServiceEntry|telegramDiagnosticPublicUrl|HH_CRM_TG_CHAT_AUTOMATION_ENABLED|hhservice_/);
  for(const lang of locales)for(const service of services){
   const url=telegramServiceRequestUrl(service,lang);
   assert.ok(resolveTelegramServiceHandoffUrl(url,lang)?.startsWith('/api/public/telegram-service-entry?service='));
@@ -141,5 +140,36 @@ test('AI secretary product remains in Telegram Business, never unsupported V3 bo
   assert.equal(resolveTelegramServiceHandoffUrl(businessChat,lang),null);
   assert.equal(resolveTelegramServiceEntry(ready,businessChat,lang),null);
   assert.equal(v3ServiceStart('/start hhservice_ai_secretary_'+lang),null);
+ }
+});
+
+// Execute the route itself, not just a regex, with a fake NextResponse so no
+// network, Telegram token, paid model or CRM write is involved.
+test('all 15 approved service clicks route to the human @holistichouse, even when bot readiness would be true',async()=>{
+ const raw=source('app/api/public/telegram-service-entry/route.js');
+ const compiled=raw.replace(/^import\s+.*$/gm,'').replace(/^export\s+/gm,'');
+ class Reply {
+  constructor(body,init={}){this.body=body;this.status=init.status||200}
+  static redirect(href,init={}){return {location:href,status:init.status,headers:init.headers}}
+ }
+ const context=vm.createContext({NextResponse:Reply,telegramServiceRequestUrl,isTelegramServiceDraft,URL},
+  {codeGeneration:{strings:false,wasm:false}});
+ const get=vm.runInContext(compiled+'\nGET',context,{timeout:1500});
+ for(const locale of locales)for(const service of services){
+  const response=await get({url:'https://holistichouse.vercel.app/api/public/telegram-service-entry?service='+service+'&locale='+locale});
+  assert.equal(response.status,307);
+  assert.equal(response.location,telegramServiceRequestUrl(service,locale));
+  assert.ok(response.location.startsWith('https://t.me/holistichouse?text='));
+  assert.equal(response.location.includes('?start='),false);
+ }
+ for(const unsafe of [
+  '?service=ai_secretary&locale=en',
+  '?service=reiki&locale=xx',
+  '?service=reiki&locale=ru&service=coaching',
+  '?service=reiki&locale=ru&text=private',
+  '?service=attacker&locale=en',
+ ]){
+  const response=await get({url:'https://holistichouse.vercel.app/api/public/telegram-service-entry'+unsafe});
+  assert.equal(response.status,404,unsafe);
  }
 });
