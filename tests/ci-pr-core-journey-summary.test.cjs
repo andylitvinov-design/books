@@ -197,3 +197,44 @@ test('overlapping same-name jobs are unioned; missing jobs remain null',()=>{
  assert.equal(reportData.job_clock_summary.clocks.specialist.mean_minutes,null);
  assert.equal(reportData.job_clock_summary.clocks.specialist.measured_prs,0);
 });
+
+test('PR drilldown distinguishes current exact-head policy blockers from historical wave causes',()=>{
+ const {parsePrBlockerContext,attachWaveBlockerEvidence}=require('../ops/pr-monitor/api/ci-journey-summary.js')._test;
+ const pr=4748,first=run(pr,4901,-50,-45),
+  next={...run(pr,4902,-42,-38),source_head:'b'.repeat(40)};
+ const detail={schema:'HH_CI_WAVE_DETAIL_V1',waves:summarizePR(pr,[first,next]).wave_rows};
+ const eventAt=at(-44);
+ const events=[{event:'labeled',created_at:eventAt,label:{name:'hh:repair-manual'},
+   actor:{login:'github-actions[bot]'}},{event:'labeled',created_at:at(-60),
+   label:{name:'hh:hold'},actor:{login:'github-actions[bot]'}}];
+ const live={number:pr,state:'open',mergeable:false,mergeable_state:'dirty',
+   base:{ref:'codex/public-book-library'},head:{sha:'b'.repeat(40),
+    repo:{full_name:'andylitvinov-design/books'}},
+   labels:[{name:'hh:repair-manual'},{name:'hh:conflict-repair-needed'}]};
+ const c=parsePrBlockerContext(pr,events,live);
+ assert.equal(c.status,'VERIFIED');
+ assert.equal(c.current_reason_code,'MERGE_CONFLICT_DIRTY_NOW');
+ assert.equal(c.current_is_historical_cause,false);
+ const annotated=attachWaveBlockerEvidence(detail,c);
+ assert.equal(annotated.waves.length,1);
+ assert.equal(annotated.waves[0].observed_blocker_events.length,1);
+ assert.equal(annotated.waves[0].observed_blocker_events[0].label,'hh:repair-manual');
+ assert.equal(annotated.waves[0].cause_verified,false);
+ assert.equal(annotated.waves[0].observed_blocker_events[0].cause_verified,false);
+});
+test('untrusted, oversized, unrelated and incomplete PR evidence cannot become verified causal attribution',()=>{
+ const {parsePrBlockerContext,attachWaveBlockerEvidence}=require('../ops/pr-monitor/api/ci-journey-summary.js')._test;
+ const live={number:4748,state:'open',mergeable:false,mergeable_state:'dirty',
+   base:{ref:'codex/public-book-library'},
+   head:{sha:'a'.repeat(40),repo:{full_name:'andylitvinov-design/books'}},
+   labels:[{name:'hh:repair-manual'}]};
+ const event={event:'labeled',label:{name:'hh:repair-manual'},
+   created_at:at(-40),actor:{login:'github-actions[bot]'}};
+ assert.equal(parsePrBlockerContext(4749,[event],live).status,'UNVERIFIED');
+ assert.equal(parsePrBlockerContext(4748,[event],{...live,
+    head:{...live.head,repo:{full_name:'untrusted/repo'}}}).status,'UNVERIFIED');
+ assert.equal(parsePrBlockerContext(4748,Array(101).fill(event),live).status,'UNVERIFIED');
+ const partial=parsePrBlockerContext(4748,Array(100).fill(event),live);
+ assert.equal(partial.status,'PARTIAL');assert.equal(partial.history_complete,false);
+ assert.equal(attachWaveBlockerEvidence({waves:[]},{status:'UNAVAILABLE'}).waves.length,0);
+});

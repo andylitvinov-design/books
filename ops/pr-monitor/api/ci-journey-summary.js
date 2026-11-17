@@ -61,6 +61,79 @@ function parse(comment){
      partial_jobs:registrationOnly||r.partial_jobs===true||jobs.length!==r.jobs.length};
  }).filter(Boolean);
 }
+
+// Observed GitHub labels are evidence of a state transition, NOT evidence that
+// the entire preceding/following Core gap was caused by that label.
+const BLOCKER_LABELS=Object.freeze({
+ 'hh:hold':'EXPLICIT_OWNER_HOLD',
+ 'hh:blocked':'POLICY_BLOCKED',
+ 'hh:worker-claimed':'SOURCE_OWNER_CLAIMED',
+ 'hh:repair-manual':'SEMANTIC_SOURCE_REPAIR_PENDING',
+ 'hh:conflict-repair-needed':'MERGE_CONFLICT_TRIAGE',
+ 'hh:repair-needed':'SAFE_REPAIR_QUEUED'
+});
+const knownLabel=(label)=>Object.hasOwn(BLOCKER_LABELS,label);
+function parsePrBlockerContext(pr,events,live){
+ if(!Number.isSafeInteger(pr)||pr<1||!Array.isArray(events)||
+    events.length>100||!live||live.number!==pr||
+    live.base?.ref!==BASE||
+    live.head?.repo?.full_name!=='andylitvinov-design/books'||
+    !SHA.test(live.head?.sha||''))return {status:'UNVERIFIED'};
+ const known=(live.labels||[]).map(x=>x?.name).filter(knownLabel);
+ const current=live.state==='open'&&live.mergeable===false&&
+   live.mergeable_state==='dirty'?'MERGE_CONFLICT_DIRTY_NOW':
+   live.state==='open'&&known.includes('hh:hold')?'EXPLICIT_OWNER_HOLD':
+   live.state==='open'&&known.includes('hh:blocked')?'POLICY_BLOCKED':
+   live.state==='open'&&known.includes('hh:worker-claimed')?'SOURCE_OWNER_CLAIMED':
+   live.state==='open'&&known.includes('hh:repair-manual')?'SEMANTIC_SOURCE_REPAIR_PENDING':
+   live.state==='open'&&known.includes('hh:conflict-repair-needed')?'MERGE_CONFLICT_TRIAGE':
+   live.state==='open'&&known.includes('hh:repair-needed')?'SAFE_REPAIR_QUEUED':
+   live.state==='open'?'OPEN_NO_PROVEN_BLOCKER':'CLOSED_NOT_CURRENTLY_WAITING';
+ const observed=events.filter(e=>
+   ['labeled','unlabeled'].includes(e?.event)&&knownLabel(e?.label?.name)&&
+   t(e.created_at)!==null&&typeof e.actor?.login==='string'&&
+   /^[A-Za-z0-9_\[\]-]{1,80}$/.test(e.actor.login)).map(e=>({
+   at:e.created_at,label:e.label.name,reason_code:BLOCKER_LABELS[e.label.name],
+   transition:e.event,actor:e.actor.login,
+   evidence:'GITHUB_ISSUE_LABEL_EVENT',cause_verified:false
+ })).sort((a,b)=>t(a.at)-t(b.at)).slice(-50);
+ return {schema:'HH_CI_GAP_BLOCKER_CONTEXT_V1',status:events.length===100?'PARTIAL':'VERIFIED',
+   history_complete:events.length<100,pr,current_status:live.state,
+   current_head:live.head.sha,current_reason_code:current,current_labels:known,
+   current_is_historical_cause:false,observed_events:observed};
+}
+async function fetchPrBlockerContext(pr){
+ const token=process.env.GITHUB_TOKEN||process.env.GH_TOKEN;
+ const headers={Accept:'application/vnd.github+json','User-Agent':'HH-CI-Gap-Read-Only',
+   'X-GitHub-Api-Version':'2022-11-28'};
+ if(token)headers.Authorization='Bearer '+token;
+ const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),8500);
+ const get=async url=>{
+   const response=await fetch(url,{headers,signal:ctrl.signal});
+   if(!response.ok)throw Error('GITHUB_PR_EVIDENCE_HTTP_'+response.status);
+   return response.json();
+ };
+ try{
+   const [events,live]=await Promise.all([
+     get(HOST+'/issues/'+pr+'/events?per_page=100'),
+     get(HOST+'/pulls/'+pr)
+   ]);
+   return parsePrBlockerContext(pr,events,live);
+ }catch(e){
+   return {schema:'HH_CI_GAP_BLOCKER_CONTEXT_V1',status:'UNAVAILABLE',
+     reason:'GITHUB_PR_EVIDENCE_NOT_VERIFIED'};
+ }finally{clearTimeout(timer);}
+}
+function attachWaveBlockerEvidence(detail,context){
+ if(!detail||!Array.isArray(detail.waves)||!context||!Array.isArray(context.observed_events))
+   return detail;
+ return {...detail,blocker_context:context,waves:detail.waves.map(w=>{
+   const start=t(w.started_at),end=t(w.ended_at);
+   return {...w,observed_blocker_events:start!==null&&end!==null?
+      context.observed_events.filter(e=>t(e.at)>=start&&t(e.at)<=end).slice(0,8):[],
+     cause_verified:false};
+ })};
+}
 async function fetchArchive(force=false){
  if(cache&&Date.now()-last<(force?60000:300000))return {...cache,stale:false};
  if(pending)return pending;
@@ -427,10 +500,22 @@ module.exports=async(req,res)=>{
    const store=await fetchArchive(force);
    res.statusCode=200;
    if(compare&&rawPr!==undefined){res.statusCode=400;return res.end(JSON.stringify({error:'COMPARE_CANNOT_INCLUDE_PR'}));}
-   res.end(JSON.stringify(compare?comparePeriods(store,hours):
-     rawPr===undefined?report(store,hours):waveDetail(store,Number(rawPr),hours)));
+   let payload;
+   if(compare)payload=comparePeriods(store,hours);
+   else if(rawPr===undefined)payload=report(store,hours);
+   else {
+     const pr=Number(rawPr);
+     const detail=waveDetail(store,pr,hours);
+     // Only the explicitly opened PR drilldown performs these two read-only
+     // GitHub lookups. A failed lookup never invents a reason or breaks CI.
+     const evidence=detail.available?await fetchPrBlockerContext(pr):null;
+     payload=evidence?attachWaveBlockerEvidence(detail,evidence):detail;
+     if(evidence&&!payload.blocker_context)payload.blocker_context=evidence;
+   }
+   res.end(JSON.stringify(payload));
  }
  catch(e){res.statusCode=503;res.end(JSON.stringify({schema:'HH_CI_FIRST_LAST_ARCHIVE_V1',
    error:String(e.message||e).slice(0,90),missing_is_not_zero:true}));}
 };
-module.exports._test={parse,summarizePR,report,comparePeriods,waveDetail};
+module.exports._test={parse,summarizePR,report,comparePeriods,waveDetail,
+ parsePrBlockerContext,attachWaveBlockerEvidence};
