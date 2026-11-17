@@ -2851,3 +2851,28 @@ test('stale bot manual can be released only after authenticated current Core gre
  assert.equal(changed.reason,'MANUAL_SCOPE_HEAD_OR_POLICY_CHANGED');
  assert.equal(removed.length,before);
 });
+
+test('only real PR work or a core-control change launches extra orchestrator Actions',()=>{
+ const fs=require('node:fs');
+ const observer=fs.readFileSync('.github/workflows/hh-pr-queue-dispatcher.yml','utf8');
+ const watchdog=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
+ const on=yaml=>yaml.split('\non:\n')[1]?.split('\npermissions:\n')[0]||'';
+ const observe=on(observer),watch=on(watchdog);
+ assert.doesNotMatch(observe,/^  push:/m,'read-only observer must not consume a runner on every control merge');
+ assert.match(observe,/^  pull_request:/m,'queue owner contracts still checked on PR');
+ assert.match(observe,/^  workflow_dispatch:/m,'manual queue audit retained');
+ assert.match(watch,/^  schedule:/m,'periodic owner reinspection retained');
+ assert.match(watch,/cron: '7,27,47 \* \* \* \*'/,'20-minute recovery cadence retained');
+ assert.match(watch,/^  workflow_run:/m,'worker completion continues to wake orchestrator');
+ assert.match(watch,/^  workflow_dispatch:/m,'direct signed repair handoff retained');
+ const push=watch.split('  push:\n')[1]?.split('  workflow_dispatch:\n')[0]||'';
+ assert.ok(push,'source-change fallback for registering schedules retained');
+ assert.match(push,/hh-pr-ten-minute-watchdog\.yml/);
+ assert.match(push,/ci-pr-ten-minute-watchdog\.cjs/);
+ assert.match(push,/hh-pr-repair-worker\.yml/);
+ assert.doesNotMatch(push,/tests\//,'editing an old test cannot flood PR reconciliation');
+ assert.doesNotMatch(push,/ci-pr-monitor-feed\.cjs/,'read-only monitor edits must not wake PR coordinator');
+ assert.ok((push.match(/^      - /gm)||[]).length<=10,'push owner trigger is tightly scoped');
+ assert.match(watchdog,/^  reactivate-schedules:/m,
+  'trusted schedule repair remains reachable from source push');
+});

@@ -24,37 +24,21 @@ on:
       - 'HH zero-cost PR CI worker'
     types: [completed]
   push:
+    # Keep only schedule-registration and production-routing source changes.
+    # Test edits and auxiliary telemetry must not create idle PR reconciles.
     branches: ['codex/bootstrap-books']
     paths:
       - '.github/workflows/hh-pr-ten-minute-watchdog.yml'
+      - '.github/workflows/hh-pr-ci-worker.yml'
+      - '.github/workflows/hh-pr-repair-worker.yml'
+      - '.github/workflows/hh-pr-full-inventory.yml'
       - 'scripts/ci-pr-ten-minute-watchdog.cjs'
-      - 'scripts/ci-pr-error-task.cjs'
-      - 'tests/ci-pr-error-task.test.cjs'
       - 'scripts/ci-pr-event-handoff.cjs'
+      # Immediate source-quality repair routing must remain auditable.
       - 'scripts/ci-pr-quality-event.cjs'
-      - 'tests/ci-pr-event-handoff.test.cjs'
       - 'scripts/ci-pr-control-tower-wakeup.cjs'
-      - 'tests/ci-pr-control-tower-wakeup.test.cjs'
-      - 'scripts/ci-pr-slot-wakeup.cjs'
-      - 'tests/ci-pr-slot-wakeup.test.cjs'
-      - 'scripts/ci-pr-priority.cjs'
-      - '.github/hh-pr-directions.json'
-      - 'scripts/ci-pr-direction-watcher.cjs'
-      - '.github/workflows/hh-pr-direction-watcher.yml'
-      - 'tests/ci-pr-priority.test.cjs'
-      - 'tests/ci-pr-ten-minute-watchdog.test.cjs'
       - 'scripts/ci-pr-pm-agent-inbox.cjs'
-      - 'tests/ci-pr-pm-agent-inbox.test.cjs'
-      - 'scripts/ci-pr-queue-dispatcher.cjs'
-      - 'scripts/ci-pr-capacity.cjs'
-      - 'scripts/ci-pr-monitor-feed.cjs'
-      - 'scripts/ci-pr-ci-daytime-signals.cjs'
-      - 'tests/ci-pr-monitor-feed.test.cjs'
-      - 'tests/ci-pr-ci-daytime-signals.test.cjs'
-      - 'scripts/ci-pr-ci-wake-reconcile.cjs'
-      - 'tests/ci-pr-ci-wake-reconcile.test.cjs'
-      - 'tests/ci-pr-control-tower.test.cjs'
-      - 'tests/ci-pr-direct-handoff.test.cjs'
+      - '.github/hh-pr-directions.json'
   # Owner PM Issue #3890 remains served by scheduled Watchdog and
   # authenticated workflow_dispatch. Do not subscribe globally to
   # issue_comment: ordinary PR discussion generated thousands of no-op runs.
