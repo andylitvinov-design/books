@@ -362,7 +362,16 @@
  .root[data-session-visual-v3] .sessionHeroCopy{top:16px;left:16px;width:min(60%,230px);gap:5px}
  .root[data-session-visual-v3] .sessionHeroCopy h1{font-size:clamp(38px,10vw,48px);line-height:1.08}
  .root[data-session-visual-v3] .sessionHeroCopy>small{font-size:clamp(11px,3vw,13px);line-height:1.33}
- .root[data-session-visual-v3] .sessionProgress{display:none}
+ .root[data-session-visual-v3] .sessionProgress{
+   box-sizing:border-box;display:flex;flex:0 0 auto;
+   width:100%;min-height:42px;margin:0;padding:7px 10px;gap:8px;border-radius:16px;
+ }
+ .root[data-session-visual-v3] .sessionProgressText{flex:1.15;flex-wrap:nowrap;gap:5px}
+ .root[data-session-visual-v3] .sessionProgressText strong{font-size:12px}
+ .root[data-session-visual-v3] .sessionProgressText span{
+   display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;
+ }
+ .root[data-session-visual-v3] .sessionProgressSegments{flex:.85;min-width:76px;gap:4px}
  .root[data-session-visual-v3] .voiceWorkspace{flex:none;display:flex;flex-direction:column;gap:10px;min-width:0;width:calc(100% - 24px)}
  .root[data-session-visual-v3] .voiceControls{order:0;z-index:1;position:relative;min-height:107px;width:100%;margin:-34px auto 0;padding:10px 9px 8px;border:1px solid #ece6dc;border-radius:27px;background:#fffdf9;box-shadow:0 7px 25px #284a3714}
  .root[data-session-visual-v3] .voiceCenter :global([data-my-coach-voice] button){width:92px;height:92px}
@@ -1135,6 +1144,10 @@
 
 /* Verified per-turn model source: neutral and compact even in iPhone voice mode. */
 .responseSource{display:inline;font-size:10px;font-weight:500;letter-spacing:0;color:#65796e;overflow-wrap:anywhere}
+
+/* Merlin's unique first-party portrait remains stationary until real reviewed
+   animation media exists; other coaches keep their original 24fps loops. */
+.sessionPortrait[data-persona=merlin]{background-image:url('/images/holistic-house/my-coach-motion/merlin-still.webp'),linear-gradient(110deg,#364d45,#cbb9a1);background-size:auto 140%,cover;background-position:right 32%,center;background-repeat:no-repeat}
 /* iPhone keyboard mode: the parent shell tracks visualViewport.height and
    offsetTop. On focused text reply, keep the transcript scrollable and the
    Send/textarea row at the bottom of that shell, never in the page scroll.
@@ -1200,3 +1213,23 @@
   text-align:left;cursor:pointer;
 }
 .root[data-my-coach-immersive-session] .captionMore[aria-pressed=true]{background:#e1f3e8}
+
+/* Six evidence-led milestones belong inside the existing voice workspace, not
+   above the portrait. Keep transcript/composer flexible in the iPhone visual
+   viewport while the microphone and portrait retain their approved geometry. */
+@media(max-width:699px){
+ .root[data-session-visual-v4] .voiceWorkspace>.sessionProgress{
+   box-sizing:border-box;display:flex;order:0;flex:0 0 auto;
+   width:100%;min-width:0;min-height:38px;max-height:47px;margin:0;
+   padding:6px 10px;gap:8px;border-radius:15px;
+ }
+ .root[data-session-visual-v4] .sessionProgressSegments span{height:6px}
+ .root[data-session-visual-v4]:has(.textComposer textarea:focus) .voiceWorkspace>.sessionProgress{
+   min-height:30px;max-height:36px;padding:4px 8px;
+ }
+}
+@media(max-width:355px){
+ .root[data-session-visual-v4] .sessionProgressText strong{font-size:11px}
+ .root[data-session-visual-v4] .sessionProgressText span{font-size:10px}
+ .root[data-session-visual-v4] .sessionProgressSegments{min-width:67px}
+}

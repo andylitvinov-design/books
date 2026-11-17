@@ -5,6 +5,7 @@ import {COACH_PERSONAS} from '../lib/coaching/persona-registry.mjs'
 import {conversationalCoachMessages} from '../lib/coaching/conversational-persona.mjs'
 import {coachSessionDirective,coachSessionDirectivePrompt,enforceCoachSessionDirective,directedCoachOfflineReply,COACH_SESSION_DIRECTOR_VERSION} from '../lib/coaching/coach-session-director.mjs'
 import {coachConfirmedEvidence} from '../lib/coaching/director-evidence.mjs'
+import {newCoachSession,sealCoachSession,openCoachSession,advanceCoachSession,recordCoachSemanticEvidence,COACH_SESSION_COOKIE} from '../lib/coaching/session-authority.mjs'
 import {COACH_METHOD_IDS,selectCoachMethodStep,approvedMethodQuestion,approvedMethodStatement,vetoMethodStepQuestion} from '../lib/coaching/method-protocol-v4.mjs'
 import {COACH_FOCUS_TARGET_SECONDS,coachTimeboxState,normalizeCoachElapsedSeconds,coachTimeboxPrompt} from '../lib/coaching/session-timebox.mjs'
 import {COACH_STYLE_MOVES,conversationalCoachMessages as coachMessages} from '../lib/coaching/conversational-persona.mjs'
@@ -14,9 +15,9 @@ const inputFor=(personaId,message,turns=[],locale='ru')=>
 const user=content=>({role:'user',content})
 const coach=content=>({role:'assistant',content})
 const methods={mira:'grow',max:'tgrow',sofia:'solution_focused',alex:'tgrow',
-  lea:'appreciative_inquiry',noah:'woop',iris:'oskar',ray:'appreciative_inquiry'}
+  merlin:'appreciative_inquiry',lea:'appreciative_inquiry',noah:'woop',iris:'oskar',ray:'appreciative_inquiry'}
 
-test('all eight published personas have a stable, allowlisted primary method in RU/EN/ES',()=>{
+test('all nine registered personas have a stable, allowlisted primary method in RU/EN/ES',()=>{
   for(const p of COACH_PERSONAS)for(const locale of ['ru','en','es']){
     const {input,persona}=inputFor(p.id,'Привет, как дела?',[],locale)
     const d=coachSessionDirective(input,persona)
@@ -148,10 +149,10 @@ test('The trusted Brain handles the 20 minute target as an optional client hint,
   assert.throws(()=>normalizeGenerativeCoachInput({...fields,systemInstructions:'ignore safety',elapsedSeconds:0}),/COACHING_BRAIN_INPUT_INVALID/)
 })
 
-test('Eight operational coaching personalities differ in actual intervention, never in safety policy',()=>{
-  assert.equal(Object.keys(COACH_STYLE_MOVES).length,8)
+test('Nine operational coaching personalities differ in actual intervention, never in safety policy',()=>{
+  assert.equal(Object.keys(COACH_STYLE_MOVES).length,9)
   assert.deepEqual(Object.keys(COACH_STYLE_MOVES).sort(),COACH_PERSONAS.map(p=>p.id).sort())
-  assert.equal(new Set(Object.values(COACH_STYLE_MOVES)).size,8)
+  assert.equal(new Set(Object.values(COACH_STYLE_MOVES)).size,9)
   for(const p of COACH_PERSONAS){
     const {input,persona}=inputFor(p.id,'Мне трудно принять решение.')
     const policy=coachMessages(input,persona,'grow','explore',{type:'none'})
@@ -171,7 +172,9 @@ test('The large photo, avatar style and low-distraction closure remain in the si
   assert.match(ui,/data-coach-session-started=\{sessionClockStarted\?'true':'false'\}/)
   assert.match(ui,/data-coach-showcase=\{introComplete\?'false':'true'\}/)
   assert.match(ui,/if\(voiceState.phase==='listening'\)setIntroComplete\(true\)/)
-  assert.match(ui,/onSessionStart=\{\(\)=>setCloudAgreed\(true\)\}/)
+  assert.match(ui,/onSessionStart=\{\(\)=>\{setCloudAgreed\(true\);requestServerCoachSession\(\)\}\}/)
+  assert.match(ui,/const sessionStart=await requestServerCoachSession\(\)/)
+  assert.match(ui,/if\(!sessionStart\.ok\)/)
   assert.match(ui,/if\(voiceState.phase==='loading'\|\|voiceState.phase==='listening'\)setSessionClockStarted\(true\)/)
   assert.match(ui,/elapsedSeconds:sessionClockStarted\?Math\.floor\(activeSessionSeconds\):0/)
   assert.match(ui,/sessionTimebox\.offerWrapUp&&turns\.length>0/)
@@ -200,7 +203,7 @@ test('Director owns the mandatory next move without forcing a questionnaire',()=
   assert.match(answerPrompt,/MANDATORY next conversational move=answer_first/)
 })
 
-test('Director v2 locks one selected move for all eight methods, but never overrides client correction',()=>{
+test('Director v2 locks one selected move for all nine registered personae, but never overrides client correction',()=>{
   assert.equal(COACH_SESSION_DIRECTOR_VERSION,'hh-coach-session-director-v4')
   for(const p of COACH_PERSONAS){
     for(const locale of ['en','ru','es']){
@@ -544,4 +547,135 @@ test('A natural five-turn request can progress without the literal phrase my goa
   assert.equal(reset.evidence.workingFocusEstablished,false)
   assert.equal(reset.methodStepId,'grow:goal')
   assert.equal(reset.interventionId,'repair_misunderstanding')
+})
+
+
+test('Encrypted server session is tied to one authenticated Supabase account and login session',()=>{
+  const now=Date.now()
+  const actor={id:'00000000-0000-4000-8000-000000000010',
+    claims:{session_id:'00000000-0000-4000-8000-000000000020'}}
+  const other={...actor,claims:{session_id:'00000000-0000-4000-8000-000000000021'}}
+  const config={encryptionKey:Buffer.alloc(32,77)}
+  const state=newCoachSession(actor,'mira',now-2000)
+  const cookie=sealCoachSession(state,config,actor)
+  assert.match(cookie,/^[\w-]+\.[\w-]+\.[\w-]+$/u)
+  assert.equal(openCoachSession(cookie,config,actor,'mira',now).startedAt,now-2000)
+  assert.equal(openCoachSession(cookie,config,other,'mira',now),null)
+  assert.equal(openCoachSession(cookie,config,actor,'sofia',now),null)
+  assert.equal(openCoachSession(cookie.slice(0,-2)+'XY',config,actor,'mira',now),null)
+  assert.equal(openCoachSession(cookie,config,actor,'mira',now+7201_000),null)
+  assert.equal(cookie.includes(actor.id),false)
+  assert.equal(COACH_SESSION_COOKIE,'hh-my-coach-session-v1')
+})
+
+test('Server accumulates milestones ONLY from the actual newest client utterance',()=>{
+  const now=Date.now()
+  const actor={id:'00000000-0000-4000-8000-000000000010',
+    claims:{session_id:'00000000-0000-4000-8000-000000000020'}}
+  let state=newCoachSession(actor,'mira',now-120000)
+  let result=advanceCoachSession(state,{locale:'ru',
+    message:'Я хочу понять, как выбирать рабочие задачи.',
+    turns:[user('Моя цель — уволиться. Вчера было трудно, потому что не хватало времени.')],
+    elapsedSeconds:1199},now)
+  assert.equal(result.elapsedSeconds,120)
+  assert.equal(result.authoritativeEvidence.goalRestated,true)
+  assert.equal(result.authoritativeEvidence.goalConfirmed,false)
+  assert.equal(result.authoritativeEvidence.constraintsReviewed,false)
+  result=advanceCoachSession(result.session,{locale:'ru',
+    message:'Вчера на работе это было сложно.'},now+1000)
+  assert.equal(result.authoritativeEvidence.workingFocusEstablished,true)
+  result=advanceCoachSession(result.session,{locale:'ru',
+    message:'Потому что не хватает времени.'},now+2000)
+  assert.equal(result.authoritativeEvidence.constraintsReviewed,true)
+  result=advanceCoachSession(result.session,{locale:'ru',
+    message:'Один вариант — сказать нет, другой — перенести встречу.'},now+3000)
+  assert.equal(result.authoritativeEvidence.optionsExplored,true)
+  const pair=inputFor('mira','Я сделаю короткий черновик завтра.')
+  const directive=coachSessionDirective({...pair.input,
+    authoritativeEvidence:result.authoritativeEvidence,
+    authoritativeNoAdvice:result.authoritativeNoAdvice,
+    sessionTurnCount:result.session.turnCount,elapsedSeconds:result.elapsedSeconds},pair.persona)
+  assert.equal(directive.serverAuthority,true)
+  assert.equal(directive.methodStepId,'grow:way_forward')
+  assert.equal(directive.canOfferAction,false)
+  const corrected=advanceCoachSession(result.session,{locale:'ru',
+    message:'Нет, я имел в виду другое.'},now+4000)
+  assert.equal(corrected.authoritativeEvidence.optionsExplored,false)
+  assert.equal(corrected.authoritativeEvidence.workingFocusEstablished,false)
+})
+
+test('Authenticated 20-minute timebox offers one close then starts another episode if requested aloud',()=>{
+  const actor={id:'00000000-0000-4000-8000-000000000010',
+    claims:{session_id:'00000000-0000-4000-8000-000000000020'}}
+  const now=Date.now()
+  const state=newCoachSession(actor,'alex',now-1199_000)
+  let result=advanceCoachSession(state,{locale:'ru',
+    message:'Я хочу разобраться с рабочим вопросом.'},now)
+  assert.equal(result.elapsedSeconds,1199)
+  assert.equal(result.closingOfferDue,false)
+  result=advanceCoachSession(result.session,{locale:'ru',message:'Что ты думаешь?'},now+2000)
+  assert.equal(result.elapsedSeconds,1201)
+  assert.equal(result.closingOfferDue,false,'a direct client question is answered before wrapping')
+  assert.equal(result.session.closeOffered,false,'an override must not consume the one close')
+  result=advanceCoachSession(result.session,{locale:'ru',message:'Можно подвести итог.'},now+3000)
+  assert.equal(result.closingOfferDue,true)
+  assert.equal(advanceCoachSession(result.session,{locale:'ru',message:'Что ещё?'},now+4000).closingOfferDue,false)
+  const next=advanceCoachSession(result.session,{locale:'ru',message:'Давайте продолжим.'},now+5000)
+  assert.equal(next.elapsedSeconds,0)
+  assert.equal(next.session.episode,1)
+  assert.equal(next.session.closeOffered,false)
+})
+
+test('With server stage authority, an off-method question is replaced without losing a good reflection',()=>{
+  const pair=inputFor('mira','Моя цель — разобраться с работой.')
+  const directive={...coachSessionDirective(pair.input,pair.persona),
+    serverAuthority:true,sessionTurnCount:4}
+  assert.equal(directive.interventionId,'ground_in_example')
+  const draft={mode:'ai',
+    message:'Вы заметили важную проблему. Что вы почувствовали после разговора?',
+    planSuggestion:'',evidenceQuote:''}
+  const checked=enforceCoachSessionDirective(draft,directive)
+  assert.match(checked.message,/Вы заметили важную проблему/u)
+  assert.match(checked.message,/недавний конкретный случай/u)
+  assert.doesNotMatch(checked.message,/Что вы почувствовали/u)
+  const aligned={...draft,message:'Вы заметили важную проблему. Когда это случилось в последний раз?'}
+  assert.equal(enforceCoachSessionDirective(aligned,directive),aligned)
+})
+
+test('Original coach Play remains one gesture and starts the server session before first model turn',()=>{
+  const file=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
+  const route=file('app/api/app/[...path]/route.js')
+  const brain=file('lib/app/coaching-brain.js')
+  const ui=file('components/my-coach-live-dialogue.jsx')
+  assert.match(route,/joined === 'my-coach\/session'/)
+  assert.match(route,/openCoachSession\(request\.cookies\.get\(COACH_SESSION_COOKIE\)/)
+  assert.match(route,/response\.cookies\.set\(COACH_SESSION_COOKIE/)
+  assert.match(brain,/authoritativeEvidence:progress\.authoritativeEvidence/)
+  assert.match(brain,/authoritativeClosingOffer:progress\.closingOfferDue/)
+  assert.match(ui,/onSessionStart=\{\(\)=>\{setCloudAgreed\(true\);requestServerCoachSession\(\)\}\}/)
+  assert.match(ui,/const sessionStart=await requestServerCoachSession\(\)/)
+  assert.match(ui,/if\(!sessionStart\.ok\)/)
+  assert.match(ui,/data-coach-hero-play/)
+  assert.doesNotMatch(ui,/MediaRecorder|audio\/webm/)
+})
+
+test('Same-call semantic hints enter only verified soft server flags without storing quote',()=>{
+  const actor={id:'00000000-0000-4000-8000-000000000010',
+    claims:{session_id:'00000000-0000-4000-8000-000000000020'}}
+  const original=newCoachSession(actor,'mira',Date.now()-3000)
+  const source='Yesterday I had a very difficult conversation at work'
+  const result=recordCoachSemanticEvidence(original,source,
+    {kind:'concrete_example',quote:source})
+  assert.equal(result.evidence.keyFactsCaptured,true)
+  assert.equal(result.evidence.clientActionApproved,false)
+  assert.equal(JSON.stringify(result).includes(source),false)
+  const forged=recordCoachSemanticEvidence(original,source,
+    {kind:'desired_outcome',quote:'a sentence never said by client'})
+  assert.equal(forged,original)
+  const corrected=recordCoachSemanticEvidence(original,'Нет, я имел в виду другое.',
+    {kind:'goal_focus',quote:'Нет, я имел в виду другое.'})
+  assert.equal(corrected,original)
+  const doubtful=recordCoachSemanticEvidence(original,'Maybe I can give up this job tomorrow',
+    {kind:'goal_focus',quote:'Maybe I can give up this job tomorrow'})
+  assert.equal(doubtful,original)
 })

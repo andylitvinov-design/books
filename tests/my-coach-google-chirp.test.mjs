@@ -5,7 +5,7 @@ import {readFileSync} from 'node:fs'
 import {runInNewContext} from 'node:vm'
 import {coachSpokenText} from '../lib/coaching/coach-spoken-text.mjs'
 import {GOOGLE_PROVIDER,GOOGLE_TTS_MAX_CHARS,GOOGLE_TTS_MONTHLY_UPPER_BOUND,
- GOOGLE_TTS_GLOBAL_DAILY_LIMIT,googleChirpConfig,googleChirpVoice,
+ GOOGLE_TTS_GLOBAL_DAILY_LIMIT,googleChirpConfig,googleChirpVoice,COACH_CHIRP_VOICE_NAMES,
  normalizeGoogleChirpInput,googleChirpAssertion,synthesizeGoogleChirp
 } from '../lib/coaching/my-coach-google-chirp.mjs'
 
@@ -36,9 +36,15 @@ test('Google Chirp is completely OFF by default and requires verified cost, priv
  assert.ok(!JSON.stringify({projectId:config.projectId,email:config.email}).includes('PRIVATE KEY'))
 })
 test('fixed RU/EN/ES persona voices and strict independent Google Cloud consent',()=>{
- assert.deepEqual(googleChirpVoice('ru','mira'),{languageCode:'ru-RU',name:'ru-RU-Chirp3-HD-Aoede'})
- assert.deepEqual(googleChirpVoice('en','max'),{languageCode:'en-US',name:'en-US-Chirp3-HD-Charon'})
- assert.deepEqual(googleChirpVoice('es','sofia'),{languageCode:'es-ES',name:'es-ES-Chirp3-HD-Aoede'})
+ assert.deepEqual(googleChirpVoice('ru','mira'),{languageCode:'ru-RU',name:'ru-RU-Chirp3-HD-Gacrux'})
+ assert.deepEqual(googleChirpVoice('en','max'),{languageCode:'en-US',name:'en-US-Chirp3-HD-Fenrir'})
+ assert.deepEqual(googleChirpVoice('es','sofia'),{languageCode:'es-ES',name:'es-ES-Chirp3-HD-Kore'})
+ for(const locale of ['ru','en','es']){
+  const names=Object.keys(COACH_CHIRP_VOICE_NAMES).map(id=>googleChirpVoice(locale,id)?.name)
+  assert.equal(names.length,9)
+  assert.equal(new Set(names).size,9,locale+' must preserve unique voice identity')
+ }
+ assert.equal(googleChirpVoice('ru','merlin').name,'ru-RU-Chirp3-HD-Iapetus')
  assert.equal(googleChirpVoice('fr','max'),null)
  assert.deepEqual(normalizeGoogleChirpInput(valid),{locale:'ru',personaId:'mira',text:valid.text})
  for(const invalid of [{...valid,cloudVoiceConsent:false},{...valid,voiceConsent:false},
@@ -72,7 +78,7 @@ test('uses only Google token + Chirp REST endpoints and validates returned MP3 b
  assert.ok(audio.equals(mp3))
  assert.deepEqual(calls.map(x=>x.url),['https://oauth2.googleapis.com/token',
    'https://texttospeech.googleapis.com/v1/text:synthesize'])
- assert.equal(JSON.parse(calls[1].options.body).voice.name,'ru-RU-Chirp3-HD-Aoede')
+ assert.equal(JSON.parse(calls[1].options.body).voice.name,'ru-RU-Chirp3-HD-Gacrux')
  assert.equal(JSON.parse(calls[1].options.body).audioConfig.audioEncoding,'MP3')
  assert.equal(calls[1].options.headers['x-goog-user-project'],projectId)
  assert.equal(calls[1].options.cache,'no-store')

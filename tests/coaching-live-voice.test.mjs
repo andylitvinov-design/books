@@ -177,11 +177,13 @@ test('My Coach persona dialogue speaks and listens on exactly the consented sess
   const verify="const needsVerifiedModel=readiness.status!=='verified'&&!wisdomRequested&&!localInterruption"
   const wait="const modelReady=!needsVerifiedModel||await retryCoachModelAfterOutage()"
   const offline="if(localInterruption||authRequired||(!modelReady&&!wisdomRequested)){"
+  const start="const sessionStart=await requestServerCoachSession()"
   const send="fetch('/api/app/my-coach/turn'"
   assert.ok(sendFunction.indexOf(verify)>=0 &&
     sendFunction.indexOf(verify)<sendFunction.indexOf(wait) &&
     sendFunction.indexOf(wait)<sendFunction.indexOf(offline) &&
-    sendFunction.indexOf(offline)<sendFunction.indexOf(send) &&
+    sendFunction.indexOf(offline)<sendFunction.indexOf(start) &&
+    sendFunction.indexOf(start)<sendFunction.indexOf(send) &&
     probeFunction.includes("body:'{}'") &&
     probeFunction.includes("result?.schema==='HH_COACHING_BRAIN_PROBE_V1'") &&
     probeFunction.includes("return next.status==='verified'"),
@@ -219,7 +221,7 @@ test('selected persona opens immersive My Coach session with real avatar, stages
   for(const token of ['data-my-coach-immersive-session','sessionHero','sessionPortrait','sessionAvatar',
     'CoachingAvatar locale={lang}','sessionProgressSegments','conversationPanel','quickGoalCard',
     'sessionBottomNav','goalRow','onVoiceStateChange={setVoiceState}']) assert.ok(ui.includes(token),token)
-  for(const token of ['stageKeys.indexOf(currentStage)','onClick={()=>replayCoachReply()}',
+  for(const token of ['data-coach-stage-source','onClick={()=>replayCoachReply()}',
     'onClick={()=>chooseTopic(id)}','composerRef.current?.focus()',
     'coachingBrainSafety(input)||coachingBrainBoundary(input)']) assert.ok(ui.includes(token),token)
   for(const token of ['my-coach-portraits.avif','reiki-approved-sunrise-v3.webp',
@@ -294,7 +296,7 @@ test('My Coach Fish TTS remains limited to approved free vendor routes and Play 
     "voiceProvider==='fish_free'?{trainingUseConsent:true}:{}"])
     assert.ok(speech.includes(marker),marker)
   assert.ok(page.includes('voiceProviderDetails'))
-  assert.ok(page.includes('onSessionStart={()=>setCloudAgreed(true)}'))
+  assert.ok(page.includes('onSessionStart={()=>{setCloudAgreed(true);requestServerCoachSession()}}'))
   assert.ok(page.includes('const [cloudAgreed,setCloudAgreed]=useState(false)'))
   assert.ok(!page.includes('checked={cloudAgreed}'))
   assert.ok(page.includes('Fish may use the text to train models'))
@@ -382,7 +384,7 @@ test('a silent iPhone recognizer retries automatically without stopping to recor
     'setTimeout(()=>','settleTimerRef.current=setTimeout',
     'void deliver(appendSpokenAnswer'])
     assert.ok(loop.includes(marker),marker)
-  assert.ok(ui.includes('onSessionStart={()=>setCloudAgreed(true)}'))
+  assert.ok(ui.includes('onSessionStart={()=>{setCloudAgreed(true);requestServerCoachSession()}}'))
   assert.ok(!ui.includes('<dialog'))
   assert.ok(!ui.includes('checked={cloudAgreed}'))
   assert.ok(!loop.includes('stopRecordedTurn'))
@@ -437,7 +439,7 @@ test('spoken My Coach reply retains the reflection and start introduction',()=>{
  assert.ok(ui.includes('coachSpokenText(spokenText).text'))
  assert.ok(ui.includes('getCoachPresentation(personaId,conversationLang)?.text'))
  assert.ok(ui.includes('introduction={introduction}'))
- assert.ok(ui.includes('onSessionStart={()=>setCloudAgreed(true)}'))
+ assert.ok(ui.includes('onSessionStart={()=>{setCloudAgreed(true);requestServerCoachSession()}}'))
  assert.ok(loop.includes('(naturalVoice||voiceAgreed)&&voiceAvailable'))
  assert.ok(loop.includes("if(!introStartedRef.current){"))
  assert.ok(ui.includes("const dynamicAllowed=cloudAgreed&&cloudAvailable&&"))

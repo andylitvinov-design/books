@@ -52,8 +52,8 @@ export default function CoachingAvatar({locale='en',avatarId='warm',onAvatarChan
    if(state!=='speaking')lastBoundaryRef.current={beat:0,at:0}
    else if(Number.isFinite(beat)&&beat>0)lastBoundaryRef.current={beat,at:performance.now()}
  },[state,beat,photoId])
- const hasMotionVideo=Boolean(photoId)&&PUBLIC_COACH_PERSONA_IDS.includes(photoId)
- const livePhoto=Boolean(photoId)&&pageVisible&&!reduceMotion&&!hasMotionVideo
+ const hasMotionVideo=Boolean(photoId)&&PUBLIC_COACH_PERSONA_IDS.includes(photoId)&&photoId!=='merlin'
+ const livePhoto=Boolean(photoId)&&photoId!=='merlin'&&pageVisible&&!reduceMotion&&!hasMotionVideo
  const speakingPhoto=livePhoto&&state==='speaking'&&speakingPhotoId===photoId
  useEffect(()=>{
    const element=frameRef.current

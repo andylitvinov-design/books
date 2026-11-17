@@ -6,7 +6,7 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {portraitMouthAperture,speechRms,speechPcmEnvelope} from '../lib/coaching/living-portrait-motion.mjs'
 import {normalizeMyCoachFishRequest,myCoachFishConfig,myCoachFishVoice,
- MY_COACH_FISH_VOICES,MIRA_RU_FISH_VOICE_CANDIDATE} from '../lib/coaching/my-coach-fish-voice.mjs'
+ MY_COACH_FISH_VOICES,MIRA_RU_FISH_VOICE_CANDIDATE,MERLIN_RU_FISH_VOICE_CANDIDATE} from '../lib/coaching/my-coach-fish-voice.mjs'
 import {COACH_PRESENTATIONS,getCoachPresentation,coachPresentationVoice}
   from '../lib/coaching/persona-presentations.mjs'
 import {
@@ -15,9 +15,9 @@ import {
   coachSessionHref, coachStagePrompt, buildCoachBehaviorPolicy, personaMethodFit,
 } from '../lib/coaching/persona-registry.mjs'
 
-test('eight distinct fictional AI coaches have complete EN/RU/ES profiles and stage examples', () => {
-  assert.equal(COACH_PERSONAS.length, 8)
-  assert.equal(new Set(COACH_PERSONAS.map(persona => persona.id)).size, 8)
+test('nine distinct fictional AI coaches have complete EN/RU/ES profiles and stage examples', () => {
+  assert.equal(COACH_PERSONAS.length, 9)
+  assert.equal(new Set(COACH_PERSONAS.map(persona => persona.id)).size, 9)
   assert.equal(new Set(COACH_PERSONAS.map(persona => persona.topic)).size, 8)
   for (const persona of COACH_PERSONAS) {
     assert.ok(COACH_TOPICS.includes(persona.topic), persona.id)
@@ -114,7 +114,7 @@ test('Living Coach mouth activates only after real speech, and boundary pulses d
   assert.equal(speechRms([NaN]),0)
 })
 
-test('Living Coach reuses existing eight portraits and real MP3 playback events', () => {
+test('Living Coach reuses eight existing animated portraits and real MP3 playback events', () => {
   const avatar=readFileSync(new URL('../components/app/coaching-avatar.jsx',import.meta.url),'utf8')
   const css=readFileSync(new URL('../components/app/coaching-avatar.module.css',import.meta.url),'utf8')
   const speech=readFileSync(new URL('../components/my-coach-speech-loop.jsx',import.meta.url),'utf8')
@@ -131,11 +131,11 @@ test('Living Coach reuses existing eight portraits and real MP3 playback events'
   assert.match(css,/\.livingPortraitMouth/)
   assert.match(css,/-webkit-mask-image/)
   assert.match(css,/@media\(prefers-reduced-motion:reduce\)/)
-  for (const persona of COACH_PERSONAS)
+  for (const persona of COACH_PERSONAS.filter(p=>p.id!=='merlin'))
     assert.ok(css.includes(`data-photo-persona='${persona.id}'`),persona.id)
   // These photos are 328x456 cropped to square at 22% vertical object-position.
   // Mask centering at uncropped source coordinates would move the nose, not lips.
-  for (const persona of COACH_PERSONAS) {
+  for (const persona of COACH_PERSONAS.filter(p=>p.id!=='merlin')) {
     const selector=`data-photo-persona='${persona.id}']{--photo-mouth-y:`
     const y=Number(css.split(selector)[1]?.split('%}')[0])
     assert.ok(Number.isFinite(y)&&y>=68&&y<=74,
@@ -154,7 +154,7 @@ test('mobile My Coach hero mouth remains visible when compact avatar is hidden',
   assert.ok(hero.includes('@media(max-width:699px) and (prefers-reduced-motion:no-preference)'))
   assert.ok(hero.includes('aspect-ratio:328/456'))
   assert.ok(hero.includes('animation:hh-hero-mouth-speaking'))
-  for (const persona of COACH_PERSONAS) {
+  for (const persona of COACH_PERSONAS.filter(p=>p.id!=='merlin')) {
     const token=`data-persona=${persona.id}]{--hh-hero-mouth-image:url('/images/holistic-house/my-coach-motion/${persona.id}-still.webp');--hh-hero-mouth-y:`
     const y=Number(hero.split(token)[1]?.split('%}')[0])
     assert.ok(Number.isFinite(y)&&y>=55&&y<=59,`source lip region: ${persona.id} / ${y}`)
@@ -177,6 +177,18 @@ test('Mira Russian voice is locale-specific and never enabled without approved u
  const introRoute=readFileSync(new URL('../app/api/coaching/intro/[locale]/[coach]/route.js',import.meta.url),'utf8')
  assert.ok(privateRoute.includes('myCoachFishVoice(fishRaw.personaId,input.locale)'))
  assert.ok(introRoute.includes('myCoachFishVoice(personaId,locale)'))
+})
+
+test('all five public Fish voice identities are distinct; adult RU alternatives are strictly rights-gated',()=>{
+ const visible=['mira','max','sofia','alex','merlin']
+ assert.equal(new Set(visible.map(id=>myCoachFishVoice(id,'en',{}))).size,5)
+ assert.equal(new Set(visible.map(id=>myCoachFishVoice(id,'ru',{}))).size,5)
+ const approved={HH_MY_COACH_MIRA_RU_VOICE_RIGHTS_APPROVED:'true',
+  HH_MY_COACH_MERLIN_RU_VOICE_RIGHTS_APPROVED:'true'}
+ assert.equal(myCoachFishVoice('mira','ru',approved),MIRA_RU_FISH_VOICE_CANDIDATE)
+ assert.equal(myCoachFishVoice('merlin','ru',approved),MERLIN_RU_FISH_VOICE_CANDIDATE)
+ assert.equal(myCoachFishVoice('merlin','ru',{}),MY_COACH_FISH_VOICES.merlin)
+ assert.equal(myCoachFishVoice('unknown','ru',approved),null)
 })
 
 test('Fish natural voice accepts the exact live/replay persona payload but no extra fields', () => {
@@ -231,7 +243,7 @@ test('Play starts the authored natural voice once, without recording or extra ch
   assert.ok(ui.includes('getCoachPresentation(personaId,conversationLang)?.text'))
   assert.ok(ui.includes("const conversationLang=['en','ru','es'].includes(speechLocale)?speechLocale:deviceSpeechLocale"))
   assert.ok(ui.includes('const [cloudAgreed,setCloudAgreed]=useState(false)'))
-  assert.ok(ui.includes('introduction={introduction} onSessionStart={()=>setCloudAgreed(true)}'))
+  assert.ok(ui.includes('introduction={introduction} onSessionStart={()=>{setCloudAgreed(true);requestServerCoachSession()}}'))
   assert.ok(ui.includes('voiceProviderDetails'))
   assert.ok(!ui.includes('naturalVoiceRow'))
   assert.ok(!ui.includes('checked={cloudAgreed}'))
@@ -250,7 +262,7 @@ test('Play starts the authored natural voice once, without recording or extra ch
   assert.ok(!voice.includes('audio-storyboard'))
 })
 
-test('each of eight AI personae introduces its own approach and unique speech style in EN/RU/ES',()=>{
+test('each of nine AI personae introduces its own approach and unique speech style in EN/RU/ES',()=>{
   assert.deepEqual(Object.keys(COACH_PRESENTATIONS).sort(),COACH_PERSONAS.map(p=>p.id).sort())
   for(const locale of COACH_LOCALES){
     const voices=new Set(),introductions=new Set(),styles=new Set()
@@ -267,9 +279,9 @@ test('each of eight AI personae introduces its own approach and unique speech st
       const behavior=buildCoachBehaviorPolicy(persona.id,{},locale)
       assert.ok(behavior.systemInstructions.includes(intro.style),persona.id+' model keeps its style')
     }
-    assert.equal(introductions.size,8)
-    assert.equal(styles.size,8)
-    assert.equal(voices.size,8)
+    assert.equal(introductions.size,9)
+    assert.equal(styles.size,9)
+    assert.equal(voices.size,9)
   }
   assert.equal(getCoachPresentation('__proto__'),null)
   assert.equal(getCoachPresentation('unknown'),null)
@@ -294,7 +306,7 @@ test('legacy persona speech profiles remain pure and do not trigger device playb
   }
 })
 
-test('the eight approved presentations flow directly into the same live dialogue',()=>{
+test('the nine approved presentations flow directly into the same live dialogue',()=>{
   const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
   const voice=readFileSync(new URL('../components/my-coach-speech-loop.jsx',import.meta.url),'utf8')
   const css=readFileSync(new URL('../components/my-coach-live-dialogue.module.css',import.meta.url),'utf8')
@@ -302,7 +314,7 @@ test('the eight approved presentations flow directly into the same live dialogue
   const introCss=readFileSync(new URL('../components/my-coach-voice-introduction.module.css',import.meta.url),'utf8')
   assert.ok(ui.includes('getCoachPresentation(personaId,conversationLang)?.text'))
   assert.ok(ui.includes('introduction={introduction}'))
-  assert.ok(ui.includes('onSessionStart={()=>setCloudAgreed(true)}'))
+  assert.ok(ui.includes('onSessionStart={()=>{setCloudAgreed(true);requestServerCoachSession()}}'))
   assert.ok(ui.includes('replayingIntro'))
   assert.ok(ui.includes('onBlocked:fail'))
   assert.ok(voice.includes('introPlayerRef.current=startDirectCoachIntroAudio'))
