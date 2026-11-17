@@ -1,6 +1,5 @@
 name: Holistic House conversation entry verification
 on:
-  workflow_dispatch:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
@@ -14,6 +13,17 @@ on:
       - 'tests/home-conversation-browser.mjs'
       - 'tests/home-carousel-first-screen-cta.test.mjs'
       - 'tests/home-diagnosis-messenger.test.mjs'
+  push:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'components/home-conversation-guide.*'
+      - 'components/home-free-diagnosis-banner.*'
+      - 'components/holistic-house-home.tsx'
+      - 'app/es/page.tsx'
+      - 'lib/home-conversation.*'
+      - 'tests/home-conversation-guide.test.mjs'
+      - 'tests/home-conversation-browser.mjs'
+      - '.github/workflows/hh-home-conversation.yml'
 permissions:
   contents: read
 concurrency:
