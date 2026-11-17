@@ -306,7 +306,7 @@ test('repair uses one text-only free request and makes the patch contract explic
  assert.equal(text,patch);
  assert.equal(calls.length,2,'no hidden model retries');
  const payload=JSON.parse(calls[1].body);
- assert.deepEqual(payload.modalities,['text']);
+ assert.equal(payload.modalities,undefined,'portable free endpoint does not accept modalities');
  assert.equal(payload.reasoning,undefined,
    'never force reasoning:false for mandatory-reasoning free models');
  assert.equal(payload.messages[0].role,'system');
@@ -339,9 +339,9 @@ test('mandatory-reasoning free Flint gets one compatible zero-price request, no 
  const request=JSON.parse(calls[1].body);
  assert.equal(request.model,model);
  assert.equal(request.reasoning,undefined);
- assert.deepEqual(request.modalities,['text']);
+ assert.equal(request.modalities,undefined,'no optional modalities on required-reasoning provider');
  assert.equal(request.max_tokens,5500);
- assert.equal(request.n,1);
+ assert.equal(request.n,undefined,'the response validator ensures one choice without n');
  assert.equal(request.stream,false);
  assert.equal(request.tools,undefined);
  assert.equal(request.provider.allow_fallbacks,false);
