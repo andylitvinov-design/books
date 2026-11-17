@@ -103,10 +103,14 @@ permissions:
   pull-requests: write
 jobs:
   reconcile:
-    # Watchdog and its dispatcher are one authenticated writer, serialized
-    # with exact-PR Core, conflict and worker-completion event handoffs.
+    # Protect real owner/scheduled PR work from high-volume diagnostic pushes.
+    # GitHub retains only one PENDING job per concurrency group and REPLACES
+    # the older pending job even when cancel-in-progress is false. A dry-run
+    # push used to evict a queued live watchdog before it could claim PRs.
+    # Keep all real source-writing reconciles and direct handoffs serialized
+    # by their original shared single-writer lock.
     concurrency:
-      group: hh-control-tower-single-writer
+      group: ${{ (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.dry_run == true)) && 'hh-watchdog-inspection-only' || 'hh-control-tower-single-writer' }}
       cancel-in-progress: false
     if: >-
       github.repository == 'andylitvinov-design/books' &&
