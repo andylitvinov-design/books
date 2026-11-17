@@ -157,11 +157,17 @@ export default function PrCompletionClient(){
     <a style={{...styles.link,fontSize:18,fontWeight:650}} href={'https://github.com/andylitvinov-design/books/pull/'+item.prNumber}
       target="_blank" rel="noopener noreferrer">PR #{item.prNumber}</a>
     <p style={{fontWeight:600,margin:'6px 0'}}>
-     {journeys[item.requestId]?.stages?.some(step=>step.id==='merge'&&step.state==='done')
-      ?'GitHub смержен · Production LIVE проверяется':label[item.status]||item.status}
+     {journeys[item.requestId]?.productionVerified===true?
+       'Production LIVE подтверждён':
+       journeys[item.requestId]?.stages?.some(step=>step.id==='merge'&&step.state==='done')
+        ?'GitHub смержен · Production LIVE ожидает подтверждения':
+         label[item.status]||item.status}
     </p>
     <p style={{...styles.small,margin:'5px 0'}}>HEAD: {(journeys[item.requestId]?.currentHeadSha||item.headSha||'').slice(0,12)} · {item.reasonCode||'Нет подтверждения следующего этапа'}</p>
-    {item.mergeSha&&<p style={styles.small}>Merge SHA: {item.mergeSha.slice(0,12)} · Production LIVE не подтверждён</p>}
+    {item.mergeSha&&<p style={styles.small}>Merge SHA: {item.mergeSha.slice(0,12)} · {' '}
+     {journeys[item.requestId]?.productionVerified===true?
+       'Vercel LIVE · '+journeys[item.requestId].deploymentId:
+       'Production LIVE не подтверждён'}</p>}
     <button className="hh-pr-details-toggle" type="button"
      aria-expanded={expandedId===item.requestId}
      aria-controls={'hh-pr-details-'+item.requestId}
@@ -171,7 +177,7 @@ export default function PrCompletionClient(){
     </button>
     {expandedId===item.requestId&&
      <section id={'hh-pr-details-'+item.requestId} className="hh-pr-details" aria-label={'Этапы обработки PR #'+item.prNumber}>
-      {journeyLoading[item.requestId]&&<p role="status" className="hh-pr-journey-note">Сверяю очередь Supabase и реальный HEAD/CI в GitHub…</p>}
+      {journeyLoading[item.requestId]&&<p role="status" className="hh-pr-journey-note">Сверяю Supabase, GitHub и реально обслуживаемую версию Vercel…</p>}
       {journeyErrors[item.requestId]&&<p role="alert" className="hh-pr-journey-error">{journeyErrors[item.requestId]}</p>}
       {journeys[item.requestId]&&(()=>{
        const journey=journeys[item.requestId];

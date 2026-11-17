@@ -4,6 +4,7 @@ import {createRequestAuth} from '@/lib/app/session';
 import {PRIVATE_HEADERS,safeError} from '@/lib/app/http';
 import {AppError} from '@/lib/assessments/contracts';
 import {buildPrCompletionJourney} from '@/lib/agent-director/pr-completion-journey.mjs';
+import {verifyPrLiveReadback} from '@/lib/agent-director/pr-live-identity.mjs';
 import {buildPrHeadHistory} from '@/lib/agent-director/pr-head-history.mjs';
 
 export const runtime='nodejs';
@@ -68,6 +69,11 @@ async function githubHistoryEvidence(pr,ciEvents,page){
   after:x.after_commit?.sha||x.after_commit,at:x.created_at
  }));
  const files=filesResponse.status==='fulfilled'&&Array.isArray(filesResponse.value)?filesResponse.value:[];
+ const siteRuntimeOnly=Number.isSafeInteger(pr.changed_files)&&
+  pr.changed_files>0&&pr.changed_files===files.length&&
+  files.every(f=>typeof f.filename==='string'&&
+    !/^supabase\/(?:functions|migrations)\//.test(f.filename))&&
+  files.some(f=>/^(?:app\/|components\/|public\/|lib\/(?!ci\/)|styles\/|content\/|data\/|next\.config\.)/.test(f.filename));
  const releaseScope=Number.isSafeInteger(pr.changed_files)&&pr.changed_files>0&&
   pr.changed_files===files.length&&files.every(f=>typeof f.filename==='string'&&
    /^supabase\/(functions|migrations)\//.test(f.filename))?'SUPABASE_ONLY':
@@ -92,7 +98,7 @@ async function githubHistoryEvidence(pr,ciEvents,page){
   }else checksComplete=false;
  });
  return {commits,checksBySha,forcePushes,page,pageCount,
-  commitHistoryComplete,checksComplete,releaseScope};
+  commitHistoryComplete,checksComplete,releaseScope,siteRuntimeOnly};
 }
 
 async function route(request,method){
@@ -166,16 +172,22 @@ async function route(request,method){
     {status:404,headers:PRIVATE_HEADERS}));
    const evidence=await githubJourneyEvidence(detailsPr);
    const observedAt=new Date().toISOString();
-   const journey=buildPrCompletionJourney({item,github:evidence,observedAt});
    const ciEvents=data.ciHistoryAvailable===true&&Array.isArray(data.ciEvents)?
     data.ciEvents:[];
    const historyEvidence=await githubHistoryEvidence(evidence.pr,ciEvents,historyPage);
+   const scope=historyEvidence.releaseScope||'UNKNOWN';
+   // The site bundle cannot prove separate Supabase Edge or SQL changes.
+   const production=historyEvidence.siteRuntimeOnly===true&&
+     evidence.pr?.state==='closed'&&evidence.pr.merged===true?
+     await verifyPrLiveReadback(evidence.pr):
+     {verified_live:false,reason:historyEvidence.siteRuntimeOnly===true?
+      'PR_NOT_MERGED':'NON_SITE_RUNTIME_SCOPE_UNVERIFIED'};
+   const journey=buildPrCompletionJourney({item,github:evidence,production,observedAt});
    const history=evidence.pr?buildPrHeadHistory({
     pr:evidence.pr,item,ciEvents,observedAt,...historyEvidence,
     ciHistoryAvailable:data.ciHistoryAvailable===true,
     ciHistoryComplete:data.ciHistoryAvailable===true&&data.ciHasMore!==true
    }):null;
-   const scope=historyEvidence.releaseScope||'UNKNOWN';
    const isSupabaseOnly=scope==='SUPABASE_ONLY';
    const receipt=evidence.pr?.merged===true&&evidence.commentsComplete?
     evidence.comments.find(c=>c?.user?.login==='andylitvinov-design'&&
