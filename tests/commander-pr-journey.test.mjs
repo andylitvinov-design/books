@@ -151,3 +151,60 @@ test('details are on demand, owner authenticated, and mobile timeline expandable
   assert.ok(edge.includes(field),'owner-only status supplies '+field);
  assert.doesNotMatch(client,/dangerouslySetInnerHTML|openrouter|localStorage|GITHUB_TOKEN/);
 });
+
+test('real GitHub merge supersedes stale BLOCKED owner queue without inventing LIVE',()=>{
+ const item={...ownerItem,status:'BLOCKED',reasonCode:'EXISTING_HOLD_NO_OVERRIDE',
+  firstAttemptAt:'2026-11-17T00:09:00Z',leaseUntil:'2026-11-17T00:13:00Z'};
+ const gh={pr:{...pr,state:'closed',merged:true,merge_commit_sha:MERGE,merged_at:NOW,
+   head:{...pr.head,sha:NEW},labels:[]},
+  checks:[checked(NEW,'success')],checksComplete:true,commentsComplete:false};
+ const result=buildPrCompletionJourney({item,github:gh,observedAt:NOW});
+ assert.equal(result.githubVerified,true);
+ assert.equal(result.currentStage,'live');
+ assert.equal(result.stalled,false);
+ assert.equal(result.attention,null);
+ assert.equal(result.currentHeadSha,NEW);
+ assert.equal(byId(result,'merge').state,'done');
+ assert.match(byId(result,'merge').detail,/GitHub подтвердил merge SHA/);
+ assert.equal(byId(result,'live').state,'unknown');
+});
+test('without independently verified merge a stale BLOCKED remains stalled',()=>{
+ const item={...ownerItem,status:'BLOCKED',reasonCode:'EXISTING_HOLD_NO_OVERRIDE'};
+ const result=buildPrCompletionJourney({item,github:evidence,observedAt:NOW});
+ assert.equal(result.stalled,true);
+ assert.equal(result.currentStage,'handoff');
+ assert.equal(byId(result,'merge').state,'waiting');
+ assert.equal(byId(result,'live').state,'unknown');
+});
+
+test('a served Vercel descendant with independent proof upgrades merged PR to LIVE',()=>{
+ const item={...ownerItem,status:'MERGED',mergeSha:MERGE};
+ const gh={pr:{...pr,state:'closed',merged:true,merge_commit_sha:MERGE,merged_at:NOW},
+  checks:[checked(ORIGINAL,'success')],checksComplete:true,commentsComplete:false};
+ const production={verified_live:true,
+  proof_method:'CANONICAL_RUNTIME_AND_GITHUB_VERCEL_ANCESTRY',
+  alias:'holistichouse.vercel.app',merge_sha:MERGE,
+  production_sha:'c'.repeat(40),deployment_id:'dpl_B34A56cd78'};
+ const live=buildPrCompletionJourney({item,github:gh,production,observedAt:NOW});
+ assert.equal(live.productionVerified,true);
+ assert.equal(live.deploymentId,production.deployment_id);
+ assert.equal(byId(live,'merge').state,'done');
+ assert.equal(byId(live,'live').state,'done');
+ assert.equal(live.currentStage,'live');
+ const unproven=buildPrCompletionJourney({item,github:gh,
+  production:{...production,merge_sha:'d'.repeat(40)},observedAt:NOW});
+ assert.equal(unproven.productionVerified,false);
+ assert.equal(byId(unproven,'live').state,'unknown');
+});
+test('live check is server-owned, details-only and cannot accept user-supplied success',()=>{
+ const route=readFileSync(new URL('../app/api/app/commander/pr-completion/route.js',import.meta.url),'utf8');
+ const client=readFileSync(new URL('../app/commander/pr/PrCompletionClient.jsx',import.meta.url),'utf8');
+ assert.match(route,/verifyPrLiveReadback\(evidence\.pr\)/);
+ assert.match(route,/siteRuntimeOnly/);
+ assert.match(route,/NON_SITE_RUNTIME_SCOPE_UNVERIFIED/);
+ assert.match(route,/if\(detailsRequested\)/);
+ assert.match(route,/await auth\.verified\(\)/);
+ assert.match(client,/productionVerified===true/);
+ assert.match(client,/Vercel LIVE/);
+ assert.doesNotMatch(client,/dangerouslySetInnerHTML|GITHUB_TOKEN|VERCEL_TOKEN/);
+});

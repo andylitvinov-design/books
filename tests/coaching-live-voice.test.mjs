@@ -219,8 +219,9 @@ test('selected persona opens immersive My Coach session with real avatar, stages
   for(const token of ['data-my-coach-immersive-session','sessionHero','sessionPortrait','sessionAvatar',
     'CoachingAvatar locale={lang}','sessionProgressSegments','conversationPanel','quickGoalCard',
     'sessionBottomNav','goalRow','onVoiceStateChange={setVoiceState}']) assert.ok(ui.includes(token),token)
-  for(const token of ['stageKeys.indexOf(currentStage)','onClick={()=>replayCoachReply()}',
+  for(const token of ['data-coach-stage-index={visibleStageIndex+1}','onClick={()=>replayCoachReply()}',
     'onClick={()=>chooseTopic(id)}','composerRef.current?.focus()',
+    'progressValid?lastRecordedProgress.index:provisionalIndex',
     'coachingBrainSafety(input)||coachingBrainBoundary(input)']) assert.ok(ui.includes(token),token)
   for(const token of ['my-coach-portraits.avif','reiki-approved-sunrise-v3.webp',
     'messenger-zen-stones.svg','assessment-lotus.svg','safe-area-inset-bottom']) assert.ok(css.includes(token),token)

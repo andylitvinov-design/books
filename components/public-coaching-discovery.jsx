@@ -32,6 +32,8 @@ const preferredCoachingStarters=Object.freeze({
   max:['grow_quick_v1','tgrow_compass_v1'],
   sofia:['solution_relationship_dialogue_v1','clear_dialogue_v1'],
   alex:['tgrow_compass_v1','grow_quick_v1'],
+  merlin:['appreciative_future_v1','grow_reflect_v1'],
+  harry:['oskar_resources_v1','woop_habit_v1'],
   lea:['appreciative_future_v1','grow_reflect_v1'],
   noah:['woop_habit_v1','woop_wellbeing_routine_v1'],
   iris:['oskar_resources_v1','solution_focus_quick_v1'],
