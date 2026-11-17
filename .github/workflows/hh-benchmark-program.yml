@@ -15,6 +15,20 @@ on:
       - "components/free-entry-landing.module.css"
       - "tests/benchmark-free-tests-first-pilot.test.mjs"
       - ".github/workflows/hh-benchmark-free-test-pilot.yml"
+  push:
+    branches:
+      - codex/public-book-library
+    paths:
+      - ".github/workflows/hh-benchmark-program.yml"
+      - "data/benchmarking/**"
+      - "lib/benchmarking/**"
+      - "scripts/benchmarking/plan.mjs"
+      - "tests/benchmark-reference-matrix.test.mjs"
+      - "components/free-entry-landing.tsx"
+      - "components/free-entry-landing.module.css"
+      - "tests/benchmark-free-tests-first-pilot.test.mjs"
+      - ".github/workflows/hh-benchmark-free-test-pilot.yml"
+
 permissions:
   contents: read
 

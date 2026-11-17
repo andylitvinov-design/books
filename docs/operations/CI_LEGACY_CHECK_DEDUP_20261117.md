@@ -1,33 +1,29 @@
-# PR CI: reduce redundant production checks (2026-11-17)
+# Holistic House PR CI: verified legacy trigger audit (2026-11-17)
 
-## Objective
+## Purpose
+Target a 10x reduction in *unnecessary* old checks, not mandatory release evidence. Do not claim a completed 10x reduction until measured in comparable PR cohorts.
 
-Remove obsolete repeated GitHub Actions without reducing real PR, security, browser or independently verified LIVE coverage. This is a measurable first phase toward the requested 10× cut, **not** proof that total checks are already 10× lower.
+## Findings from latest 100 push runs
+- Reports Development Programme: 12
+- Site-video browser: 5
+- Home locale browser: 4
+- Home conversation: 1
+- Practice visual browser: 1
+- Benchmark programme: 1
+- Assessment-quality: none in sample
 
-## Measured baseline
+These suites looked redundant but existing trusted tests show that Reports, Assessment, and Benchmark are successors to deleted separate workflows with required postmerge coverage. Practice, Site Video, Home and Locale retain unique postmerge browser acceptance. Removing their triggers without a replacement would reduce quality evidence, not obsolete work.
 
-Among 100 recent GitHub `push` runs (snapshot on 2026-11-17):
-- **12** were Reports Development Programme; the exact report assertions are independently run on matching production PRs. Their nonproduction feature-branch smoke remains.
-- **1** was the Benchmark programme; its full test job already runs on matching production PRs.
-- Assessment quality also had duplicate `pull_request`/`push` execution but did not appear in this snapshot.
+## Safe change in this PR
+- Scope the public-performance/TTFB specialist to production PRs only (not unrelated branches).
+- Scope the assessment PR event to canonical production branch while preserving its matching source and original postmerge successor.
+- Preserve production pushes for Reports, Benchmark and Assessment, and retain all relevant on-PR specialists and manual acceptance.
+- Add guard regressions against deleting required successor postmerge owners.
 
-These **13/100 observed pushes** are the confirmed removable duplicate cohort; do not extrapolate to all branches or all PRs.
-
-## Changes
-
-1. Report QA: `push` now only targets the legacy feature branch `codex/reports-development-program-20261017`; all source PR checks and manual workflow remain.
-2. Benchmark and Assessment: remove production `push` duplicates; PR checks and `workflow_dispatch` remain.
-3. Scope public performance and Assessment PR owners to the canonical `codex/public-book-library` target branch.
-4. Preserve the **unique** postmerge browser/visual acceptance of Site Video, Home locale switch, Home Conversation and Practice visual. Their PR checks deliberately skip portions of the browser matrix, so deleting their `push` trigger would silently remove quality evidence.
-5. Preserve private audio, progress, Messenger, Core `hh-merge-check`, tested-BASE specialist aggregator, protected merge and independent LIVE SHA verification.
-
-## Verification
-
-- Core `pr-fast-lane` tests explicitly assert Reports nonproduction-only push and full report contract on PR.
-- Selective-workflow regressions prove specialist PR ownership, retained unique postmerge browser suites, manual recovery and Core release gate.
-- Guard and actionlint confirm changed YAML on exact HEAD.
-- No new schedules, paid Vercel previews, tokens, deployment POST or branch bypass.
+## Control-plane work
+Separate control branch PR #4899 removes the obsolete read-only dispatcher push observer, while narrowing diagnostic Watchdog pushes. It retains scheduled and event-driven PR repair, signed manual actions, and protected merge. PR #4898 already merged, removing the one-time administrative migration workflow and staggering coordinator/Watchdog scheduling.
 
 ## Acceptance
-
-After the protected merge and next normal production push, verify the retired report/benchmark/assessment duplicate cohort does not rerun. Re-measure latest 100 `push`/PR workflows and queue-to-merge timings. Never claim 10× overall unless observed on comparable cohorts.
+- Exact HEAD Actionlint, Sweep Guard, and Core hh-merge-check all green.
+- No bypass to base protection or disabled failed checks.
+- Measure before/after CI run count and queue minutes separately for open-source PR, control-plane, postmerge and LIVE. No new paid Vercel previews or agents.

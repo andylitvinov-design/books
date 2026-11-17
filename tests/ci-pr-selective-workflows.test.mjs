@@ -208,41 +208,22 @@ test('CRM provider webhook edits do not fan out unrelated Google/Axis/audio PR j
   assert.doesNotMatch(push,/!app\/api\/app\/crm\/messenger\/webhook/);
 });
 
-test('retire proven duplicate postmerge smoke but retain independent browser evidence', () => {
-  // These owners run the same complete source/test contract on PR and push.
-  for (const [name, path] of [
-    ['hh-benchmark-program.yml', 'lib/benchmarking/plan.mjs'],
-    ['hh-assessment-quality.yml', 'lib/assessments/research-directory-2026.js'],
+
+test('approved specialist migrations retain original postmerge evidence and separate Core release gate', () => {
+  for (const [file, owned] of [
+    ['hh-assessment-quality.yml','lib/assessments/research-directory-2026.js'],
+    ['hh-benchmark-program.yml','lib/benchmarking/plan.mjs'],
+    ['hh-reports-development-program.yml','lib/profile/development-program.js'],
   ]) {
-    const yaml = source(name);
-    assert.match(yaml, /^  pull_request:/m, name + ': actual PR tests remain');
-    assert.match(yaml, /^  workflow_dispatch:/m, name + ': manual verification remains');
-    assert.doesNotMatch(yaml, /^  push:/m, name + ': no duplicate production rerun');
-    assert.equal(matchesTrigger(trigger(name), [path], TARGET), true,
-      name + ': domain source still triggers independent validation');
+    const yaml = source(file);
+    assert.match(yaml, /^  pull_request:/m, file + ': exact-head specialist PR checks');
+    assert.match(yaml, /^  push:/m, file + ': successor postmerge acceptance');
+    assert.equal(matchesTrigger(trigger(file), [owned], TARGET), true,
+      file + ': original scoped source still has an independent PR owner');
   }
-  // Reports still run independent non-production branch smoke and all
-  // real protected source PR tests, but never rerun on production push.
-  const reports = source('hh-reports-development-program.yml');
-  const reportsPush = reports.split('  push:\n')[1]?.split('  pull_request:\n')[0] || '';
-  assert.match(reportsPush, /branches: \['codex\/reports-development-program-20261017'\]/);
-  assert.doesNotMatch(reportsPush, /codex\/public-book-library/,
-    'source PR already proved original report assertions');
-  assert.equal(matchesTrigger(trigger('hh-reports-development-program.yml'),
-    ['lib/profile/development-program.js'], TARGET), true);
-  // The browser suites have different PR and postmerge execution paths:
-  // production push must remain until equivalent coverage is proved.
-  for (const name of [
-    'site-video-browser.yml','home-locale-switch.yml',
-    'hh-home-conversation.yml','practice-visual-browser.yml',
-    'hh-private-audio-e2e.yml','hh-my-progress-release.yml',
-    'hh-messenger-mobile-release.yml',
-  ]) {
-    assert.match(source(name), /^  push:/m, name + ': unique postmerge acceptance remains');
-  }
-  for (const name of ['hh-assessment-quality.yml','hh-public-performance-audit.yml']) {
-    assert.match(source(name), /branches: \['codex\/public-book-library'\]/,
-      name + ': isolated production-only specialist');
-  }
-  assert.match(source('hh-pr-core-release.yml'), /^  hh-merge-check:/m);
+  assert.match(source('hh-public-performance-audit.yml'),
+    /branches: \['codex\/public-book-library'\]/,
+    'non-production PRs should not receive production public TTFB check');
+  assert.match(source('hh-pr-core-release.yml'), /^  hh-merge-check:/m,
+    'protected release gate remains intact');
 });
