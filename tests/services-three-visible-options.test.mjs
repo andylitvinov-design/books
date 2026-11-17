@@ -55,7 +55,7 @@ test("each visible offer has own two actions, safe messenger context and full-wi
 test("optional legacy details stay mounted; compact cards are always visible on mobile and desktop", () => {
   assert.match(catalog, /<button type="button" className=\{styles\.preview\}/);
   assert.match(catalog, /<div id=\{regionId\} className=\{styles\.content\}/);
-  assert.match(catalog, /aria-controls=\{regionId\} onClick=\{\(\) => context\.toggle\(id\)\}/);
+  assert.match(catalog, /aria-controls=\{regionId\}\s+onClick=\{\(\) => context\.toggle\(id\)\}/);
   assert.match(layout, /\.grid\{grid-template-columns:minmax\(0,1fr\);gap:11px\}/);
   assert.match(layout, /@media\(min-width:761px\)/);
   assert.doesNotMatch(source, /localStorage|sessionStorage|fetch\(|setTimeout\(/);
