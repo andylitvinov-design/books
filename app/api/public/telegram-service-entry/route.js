@@ -3,7 +3,7 @@ import {channelTransportReady} from '@/lib/crm/messenger-policy'
 import {telegramDiagnosticPublicUrl} from '@/lib/crm/telegram-diagnostic.mjs'
 import {v3CanStart} from '@/lib/crm/telegram-ai-diagnostic-v3.mjs'
 import {telegramServiceRequestUrl} from '@/lib/assist/telegram-business-request.mjs'
-import {resolveTelegramServiceEntry} from '@/lib/app/telegram-entry-url.mjs'
+import {resolveTelegramServiceEntry,isTelegramServiceDraft} from '@/lib/app/telegram-entry-url.mjs'
 
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
@@ -20,7 +20,7 @@ export async function GET(request){
     !params.has('service')||!params.has('locale'))return invalid()
  const service=params.get('service'),locale=params.get('locale')
  const manual=telegramServiceRequestUrl(service,locale)
- if(!manual)return invalid()
+ if(!manual||!isTelegramServiceDraft(manual,locale))return invalid()
  let target=manual
  const env=process.env
  // Personal chat when enabled; otherwise verified V3 AI bot. A missing

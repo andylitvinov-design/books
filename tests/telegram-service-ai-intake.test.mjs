@@ -130,3 +130,16 @@ test('Service cards route through server readiness with human-first fallback',()
  assert.equal(resolveTelegramServiceHandoffUrl(telegramServiceRequestUrl('reiki','ru')+'&text=private','ru'),null);
  assert.doesNotMatch(ui,/createPublicServiceEnquiry|serviceRole|privateKey/);
 });
+
+test('AI secretary product remains in Telegram Business, never unsupported V3 bot',()=>{
+ const router=source('app/api/public/telegram-service-entry/route.js');
+ assert.match(router,/!manual\|\|!isTelegramServiceDraft\(manual,locale\)/);
+ for(const lang of locales){
+  const businessChat=telegramServiceRequestUrl('ai_secretary',lang);
+  assert.ok(businessChat&&businessChat.startsWith('https://t.me/holistichouse?text='));
+  assert.equal(isTelegramServiceDraft(businessChat,lang),false);
+  assert.equal(resolveTelegramServiceHandoffUrl(businessChat,lang),null);
+  assert.equal(resolveTelegramServiceEntry(ready,businessChat,lang),null);
+  assert.equal(v3ServiceStart('/start hhservice_ai_secretary_'+lang),null);
+ }
+});
