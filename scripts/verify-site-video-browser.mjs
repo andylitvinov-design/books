@@ -253,49 +253,38 @@ try {
       await expect(intro.locator('button.site-video-play')).toBeHidden()
       await expect(visibleGallery).toBeHidden()
       const videoPanel = page.locator('[data-services-unified-panel="video"]')
-      await expect(videoPanel).toBeVisible()
-      // Services now has two distinct customer actions, Details and Order,
-      // instead of the retired full-panel accordion button. Verify both
-      // actions and their actual consequences without hiding a regression.
-      const actions = videoPanel.locator('[data-service-card-actions]')
-      const detailsTrigger = actions.locator('button[aria-controls$="-details"]')
-      const orderTrigger = actions.locator('button[aria-controls$="-order"]')
-      await expect(detailsTrigger).toBeVisible()
-      await expect(orderTrigger).toBeVisible()
-      await expect(detailsTrigger).toHaveAttribute('aria-expanded', 'false')
-      await expect(orderTrigger).toHaveAttribute('aria-expanded', 'false')
-      const detailsPanel = actions.locator('[data-service-card-details]')
-      const orderPanel = actions.locator('[data-service-card-order]')
-      await expect(detailsPanel).toBeHidden()
-      await expect(orderPanel).toBeHidden()
-      // A dev SSR snapshot can paint before Next attaches client handlers.
+      const actions = videoPanel.locator(':scope > [data-service-card-actions]')
+      await expect(actions).toBeVisible()
+      const controls = actions.locator('[role="group"] > button')
+      await expect(controls).toHaveCount(2)
+      const detailsButton = controls.nth(0)
+      const orderButton = controls.nth(1)
+      await expect(detailsButton).toHaveAttribute('aria-expanded', 'false')
+      await expect(orderButton).toHaveAttribute('aria-expanded', 'false')
+      // The Services redesign replaced the old expandable thumbnail with
+      // two explicit Details / Order actions, retaining the Video Studio link.
       await expect.poll(
         () => page.evaluate(() => history.pushState.toString().includes("__NA")),
-        { timeout: 30000, message: 'Services video actions must hydrate before click' },
+        { timeout: 30000, message: 'Services actions must hydrate before click' },
       ).toBe(true)
-      await detailsTrigger.click()
-      await expect(detailsTrigger).toHaveAttribute('aria-expanded', 'true')
-      await expect(detailsPanel).toBeVisible()
-      const studioLink = detailsPanel.locator('a[href="/' + locale + '/holistic-support/mandala"]')
-      await expect(studioLink).toBeVisible()
-      await expect(orderPanel).toBeHidden()
-      await orderTrigger.click()
-      await expect(orderTrigger).toHaveAttribute('aria-expanded', 'true')
-      await expect(detailsPanel).toBeHidden()
-      await expect(orderPanel).toBeVisible()
-      const telegram = orderPanel.locator('[data-messenger-only-channel="telegram"]')
-      const whatsapp = orderPanel.locator('[data-messenger-only-channel="whatsapp"]')
-      await expect(telegram).toBeVisible()
-      await expect(whatsapp).toBeVisible()
-      const telegramHref = await telegram.getAttribute('href')
-      assert.ok(telegramHref && telegramHref.startsWith('https://t.me/holistichouse?text='),
-        'Video Order must lead to the owner human Telegram chat: ' + locale)
-      const whatsappHref = await whatsapp.getAttribute('href')
-      assert.ok(whatsappHref && whatsappHref.startsWith('https://wa.me/'),
-        'Video Order must lead to a real WhatsApp conversation: ' + locale)
-      // The former three-scenario gallery is not exposed inside collapsed
-      // mobile Services cards. The dedicated Video Studio is still reachable.
       await expect(videoPanel.locator('[data-assist-video-generation]')).toBeHidden()
+      await detailsButton.click()
+      await expect(detailsButton).toHaveAttribute('aria-expanded', 'true')
+      const details = actions.locator('[data-service-card-details]')
+      await expect(details).toBeVisible()
+      await expect(details.locator('p')).toBeVisible()
+      const studioLink = details.locator('a[href]')
+      await expect(studioLink).toHaveAttribute('href', '/' + locale + '/holistic-support/mandala')
+      const linkBox = await studioLink.boundingBox()
+      assert.ok(linkBox && linkBox.height >= 44, 'Services mobile Video Studio link is finger-sized: ' + locale)
+      await orderButton.click()
+      await expect(orderButton).toHaveAttribute('aria-expanded', 'true')
+      await expect(details).toBeHidden()
+      const order = actions.locator('[data-service-card-order]')
+      await expect(order).toBeVisible()
+      await expect(order.locator('[data-messenger-only-channel]')).toHaveCount(2)
+      await expect(order.locator('[data-messenger-only-channel="telegram"]')).toHaveAttribute('target', '_blank')
+      await expect(order.locator('[data-messenger-only-channel="whatsapp"]')).toHaveAttribute('target', '_blank')
       await expect(videoPanel.locator('iframe')).toHaveCount(0)
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2), 'Services mobile overflow: ' + locale)
       await page.screenshot({ path: `${evidence}/services-${locale}-mobile-video.png`, fullPage: true })
