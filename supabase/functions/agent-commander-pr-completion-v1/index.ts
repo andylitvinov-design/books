@@ -36,7 +36,7 @@ async function checkOidc(request){
    claims.repository_owner!=='andylitvinov-design'||
    claims.ref!=='refs/heads/codex/bootstrap-books'||
    claims.workflow_ref!==OWNER_WORKFLOW||
-   !['schedule','workflow_dispatch'].includes(claims.event_name)||
+   !['schedule','workflow_dispatch','workflow_run'].includes(claims.event_name)||
    (claims.job_workflow_ref&&claims.job_workflow_ref!==OWNER_WORKFLOW)||
    !Number.isSafeInteger(claims.exp)||!Number.isSafeInteger(claims.iat)||
    claims.exp<=now||claims.exp>now+900||claims.iat>now+60||claims.iat<now-900||
@@ -247,6 +247,19 @@ async function workerAction(sql,body,action,origin){
   [id,lease]);
  if(prior.length!==1)return json(409,{error:'LEASE_EXPIRED_OR_MOVED'},origin);
  let mergedAt=null,mergeSha=null,code=label(body.reasonCode);
+ // Follow a changing HEAD only after a fresh exact-GitHub PR readback.
+ // Signed owner intent is for the PR, not one stale SHA. Preserve the one
+ // source-write fence and never treat the new SHA as an AI patch receipt.
+ let verifiedFollowedHead=null;
+ if(state==='WATCHING'&&body.headSha!==prior[0].requested_head_sha){
+  try{
+   const current=await readPR(prior[0].pr_number);
+   if(current.state==='open'&&current.draft!==true&&
+      current.head.sha===body.headSha)verifiedFollowedHead=current.head.sha;
+  }catch{
+   // GitHub temporary failure cannot authorize a source writer.
+  }
+ }
  if(state==='MERGED'||state==='CLOSED_UNMERGED'){
   const pr=await readPR(prior[0].pr_number);
   if(pr.state!=='closed'||state==='MERGED'&&(
@@ -260,14 +273,16 @@ async function workerAction(sql,body,action,origin){
  const rows=await sql.unsafe('update '+T+
   ' set state=$1,reason_code=$2,observed_head_sha=$3,observed_merge_sha=$4,'+
   ' merged_at=$5::timestamptz,dispatch_accepted=dispatch_accepted or $6,'+
+  ' requested_head_sha=coalesce($10::text,requested_head_sha),'+
   ' lease_token=null,lease_until=null,last_checked_at=now(),checked_count=checked_count+1,updated_at=now(),'+
-  ' evidence=$7::text::jsonb where request_id=$8::uuid and lease_token=$9::uuid and state=\'LEASED\' returning *',
+  ' evidence=$7::text::jsonb where request_id=$8::uuid and lease_token=$9::uuid and state=\'LEASED\' and lease_until>now() returning *',
   [state,code,body.headSha,mergeSha,mergedAt,body.dispatchAccepted===true,
    JSON.stringify({schema:'HH_PR_COMPLETION_WORKER_V1',source:'SIGNED_GITHUB_ACTIONS_OIDC',
     workflowRunId:validNum(body.workflowRunId)?body.workflowRunId:null,
     dispatchAccepted:body.dispatchAccepted===true,
-    candidateProof:'NOT_ATTESTED_BY_GATEWAY',liveVerified:false}),
-   id,lease]);
+    candidateProof:'NOT_ATTESTED_BY_GATEWAY',liveVerified:false,
+    followedCurrentHead:verifiedFollowedHead!==null}),
+   id,lease,verifiedFollowedHead]);
  if(rows.length!==1)return json(409,{error:'LEASE_CAS_FAILED'},origin);
  if(['MERGED','CLOSED_UNMERGED','BLOCKED'].includes(state))await eventFor(sql,rows[0]);
  return json(200,{schema:FUNCTION,accepted:true,item:publicRow(rows[0])},origin);
