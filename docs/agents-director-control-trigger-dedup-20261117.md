@@ -13,7 +13,7 @@ These are a **41/100 cohort**, not proof of 10× total reduction. Most of these 
 ## Change
 
 1. Remove the deprecated **push trigger** from the read-only queue observer. Its `pull_request` contract check and `workflow_dispatch` read-only audit remain.
-2. Narrow Watchdog push `paths` from **29 to 9**, removing tests and monitoring-only code as triggers. Keep owner workflow changes, event/PM handoff and production routing changes immediately observable.
+2. Narrow Watchdog push `paths` from **29 to 10**, removing tests and monitoring-only code as triggers. Keep owner workflow changes, event/PM handoff and production routing and exact-PR quality-failure source changes immediately observable.
 3. Do **not** alter cron `7,27,47 * * * *`, Worker-completion `workflow_run`, manual signed `workflow_dispatch`, shared writer lease, admission/security decisions, branch controls, or HTTP/generation costs.
 4. Preserve the special `reactivate-schedules` fallback for trusted workflow-source pushes.
 
