@@ -2,7 +2,7 @@
 /* One user-requested, read-only GitHub census. No schedule, dispatch, mutation,
  * token on the client, Vercel build, or duplicate background poller.
  */
-const {summarize,selectRuns,prioritySample}=require('../ci-verified-model.cjs');
+const {summarize,selectRuns,prioritySample,verifiedHistoricalQueued}=require('../ci-verified-model.cjs');
 const BASE='https://api.github.com/repos/andylitvinov-design/books';
 const STATES=['in_progress','queued','waiting','pending','requested'];
 const CACHE_MS=55_000;
@@ -12,7 +12,7 @@ function methodError(res,status,code){return res.status(status).json({schema:'HH
 async function census(now=Date.now(),request=fetch){
   let reads=0,remaining=null;
   const token=process.env.GITHUB_TOKEN||process.env.GH_TOKEN||'';
-  const maxReads=CAP+7;
+  const maxReads=CAP+8; // one bounded oldest-queued page, never a new poller
   async function gh(path){
     if(++reads>maxReads)throw Error('BOUNDED_READ_LIMIT');
     if(remaining!==null && remaining<(token?40:4))throw Error('GITHUB_API_RESERVE');
@@ -28,8 +28,20 @@ async function census(now=Date.now(),request=fetch){
     try{return await gh('/actions/runs?status='+s+'&per_page=100');}
     catch{return {read_failed:true,status:s};}
   }));
+  // The standard 100 newest queued runs can hide historical Nov-11
+  // jobless GitHub records. One additional exact last page is enough to
+  // show the oldest evidence; changes in total_count fail closed.
+  const queued=statusPages[1];
+  const oldestQueuedPage=queued?.total_count>100&&queued.total_count<=500&&
+      Array.isArray(queued.workflow_runs)&&queued.workflow_runs.length===100
+    ? await gh('/actions/runs?status=queued&per_page=100&page='+
+        Math.ceil(queued.total_count/100)).catch(()=>null)
+    : null;
   const selected=selectRuns(statusPages);
-  const runs=prioritySample(selected.runs,CAP);
+  const historical=verifiedHistoricalQueued(statusPages,oldestQueuedPage);
+  const pool=[...new Map([...selected.runs,...historical.runs]
+    .map(run=>[run.id,run])).values()].sort((a,b)=>b.id-a.id);
+  const runs=prioritySample(pool,CAP);
   const jobPages={};
   await Promise.all(runs.map(async r=>{
     try{jobPages[r.id]=await gh('/actions/runs/'+r.id+'/jobs?per_page=100&filter=latest');}
@@ -38,9 +50,9 @@ async function census(now=Date.now(),request=fetch){
   const [recent,scheduled]=await Promise.all([
     gh('/actions/runs?per_page=100').catch(()=>null),
     gh('/actions/runs?event=schedule&per_page=100').catch(()=>null)]);
-  return {...summarize({statusPages,jobPages,recent,scheduled},now,CAP),
+  return {...summarize({statusPages,jobPages,recent,scheduled,oldestQueuedPage},now,CAP),
     source:{kind:'BOUNDED_GITHUB_ACTIONS_READ_ONLY',reads,quota_remaining:remaining,
-      note:'Latest workflow statuses reconciled against actual job state; no CI is dispatched.'}};
+      note:'Latest and oldest GitHub queued workflow statuses are separately reconciled against real jobs; missing evidence never passes CI or dispatches a worker.'}};
 }
 async function handler(req,res){
   res.setHeader('Cache-Control','public, s-maxage=45, stale-while-revalidate=20');
