@@ -2354,3 +2354,12 @@ test('signed UNKNOWN task may be reclassified in Watchdog without creating new W
  assert.match(source,/RECLASSIFICATION_READBACK_UNVERIFIED/);
  assert.match(source,/errorTasksReclassified/);
 });
+
+test('signed BASE_ADVANCED from the embedded gate outranks historical Specialist root',()=>{
+ const source=require('node:fs').readFileSync('scripts/ci-pr-ten-minute-watchdog.cjs','utf8');
+ assert.match(source,/root==='SPECIALIST_FAILED'&&diagnosis\.category==='BASE_ADVANCED'/);
+ assert.match(source,/BASE_ADVANCED_RECOVERY_REQUIRED/);
+ assert.match(source,/Signed production BASE_ADVANCED: protected base recovery/);
+ assert.match(source,/else if\(root==='SPECIALIST_FAILED'\)/,
+  'real signed product Specialist remains independently routed');
+});

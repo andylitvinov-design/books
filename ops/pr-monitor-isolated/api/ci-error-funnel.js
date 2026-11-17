@@ -5,6 +5,7 @@
  * Absence of a signed record means unknown, never a successful/failed zero.
  */
 const {fetchArchive}=require('./ci-stage-weekly.js')._readOnly;
+const {extra,EXTRA}=require('./ci-funnel-extensions.cjs');
 const HOST='https://api.github.com/repos/andylitvinov-design/books';
 const REPO='https://github.com/andylitvinov-design/books';
 const SHA=/^[a-f0-9]{40}$/i,HEX=/^[a-f0-9]{32}$/i;
@@ -32,8 +33,8 @@ async function github(path,timeout=6500){
   return await r.json();
  }finally{clearTimeout(timer);}
 }
-function selectCases(runs,hours,now=Date.now(),prFilter=null){
- const from=now-hours*3600000, candidates=new Map();
+function selectCases(runs,hours,now=Date.now(),prFilter=null,page=0){
+ const from=now-hours*3600000,candidates=new Map();
  for(const r of runs||[]){
   const ended=t(r.completed_at),sha=r.source_head;
   if(prFilter!==null&&r.pr!==prFilter)continue;
@@ -43,13 +44,18 @@ function selectCases(runs,hours,now=Date.now(),prFilter=null){
   const knownFailure=r.jobs.some(j=>FAIL.has(j.conclusion)&&
     ['core-lint-types-build','hh-specialist','hh-merge-check'].includes(j.name));
   if(!knownFailure&&r.registration_only!==true)continue;
-  const candidate={pr:r.pr,head:sha.toLowerCase(),run:r.run_id,at:r.completed_at,
+  const item={pr:r.pr,head:sha.toLowerCase(),run:r.run_id,at:r.completed_at,
     failure_url:REPO+'/actions/runs/'+r.run_id};
-  const prior=candidates.get(r.pr);
-  if(!prior||t(candidate.at)>t(prior.at))candidates.set(r.pr,candidate);
+  // All-PR: latest incident per PR. A specified PR: retain past source HEADs
+  // so a prior signed model attempt is not hidden by a later HEAD update.
+  const key=prFilter===null?String(r.pr):r.pr+':'+item.head;
+  const prior=candidates.get(key);
+  if(!prior||t(item.at)>t(prior.at))candidates.set(key,item);
  }
  const rows=[...candidates.values()].sort((a,b)=>t(b.at)-t(a.at)||b.pr-a.pr);
- return {all:rows.length,rows:rows.slice(0,8)};
+ const pageSize=8;
+ return {all:rows.length,rows:rows.slice(page*pageSize,(page+1)*pageSize),
+  page,page_size:pageSize,pages_total:Math.max(1,Math.ceil(rows.length/pageSize))};
 }
 function trusted(c){
  return Number.isSafeInteger(c?.id)&&c.id>0&&
@@ -173,7 +179,11 @@ async function confirmPublication(e,found){
     found.committed={at:proof.c.created_at,url:proof.url,sha};
  }catch(_){/* cannot count unverified SHA as GitHub commit */}
 }
-function aggregate(cases,checked,now,hours,all,store){
+function aggregate(picked,checked,now,hours,all,store){
+ const cases=Array.isArray(picked)?picked:picked.rows;
+ const page=Number.isSafeInteger(picked?.page)?picked.page:0;
+ const pageSize=Number.isSafeInteger(picked?.page_size)?picked.page_size:8;
+ const pagesTotal=Number.isSafeInteger(picked?.pages_total)?picked.pages_total:1;
  const stages=STAGES.map(([key,label,description])=>{
   const proofs=checked.filter(x=>x.found?.[key]).map(x=>({
    pr:x.pr,url:x.found[key].url,sha:x.found[key].sha||null,
@@ -184,28 +194,62 @@ function aggregate(cases,checked,now,hours,all,store){
   return {key,label,description,confirmed:proofs.length,median_minutes:median,
    examples:proofs.slice(0,3).map(({pr,url,sha})=>({pr,url,sha}))};
  });
+ const extended_stages=EXTRA.map(([key,label])=>{
+   const proofs=checked.filter(x=>x.found?._extension?.stages?.[key])
+    .map(x=>({pr:x.pr,proof:x.found._extension.stages[key],
+      minutes:Math.max(0,(t(x.found._extension.stages[key].at)-t(x.at))/60000)}));
+   const times=proofs.map(x=>x.minutes).filter(Number.isFinite).sort((a,b)=>a-b);
+   return {key,label,confirmed:proofs.length,
+    p50_minutes:times.length?times[Math.floor((times.length-1)/2)]:null,
+    p90_minutes:times.length?times[Math.ceil(.9*times.length)-1]:null,
+    examples:proofs.slice(0,3).map(x=>({pr:x.pr,url:x.proof.url}))};
+ });
+ const incident_details=checked.map(x=>({
+    pr:x.pr,head:x.head,core_run:x.run,core_url:x.failure_url,
+    source_checked:x.checked===true,partial_comments:x.partial_comments===true,
+    ...(x.found?._extension?.detail||{}),
+    model_requested:Boolean(x.found?._extension?.stages?.model_requested),
+    model_responded:Boolean(x.found?._extension?.stages?.model_responded),
+    patch_ready:Boolean(x.found?._extension?.stages?.patch_ready),
+    ci_verified:Boolean(x.found?._extension?.stages?.ci_verified),
+    merged:Boolean(x.found?._extension?.stages?.merged),
+    live_verified:Boolean(x.found?._extension?.stages?.live_verified)
+ }));
  return {schema:'HH_PR_REPAIR_EVIDENCE_FUNNEL_V1',generated_at:new Date(now).toISOString(),
   period_hours:hours,basis:'GITHUB_CORE_ARCHIVE_AND_SIGNED_PR_COMMENTS_MATCHED_BY_EXACT_HEAD_AND_RUN',
   cohort:{candidate_prs:all,sampled_prs:cases.length,comments_read:checked.filter(x=>x.checked).length,
     comment_failures:checked.filter(x=>!x.checked).length,
     unclassified_tasks:checked.filter(x=>x.found?.task&&!x.found?.classified).length,
-    archive_partial:true,
+    archive_partial:true,page,page_size:pageSize,pages_total:pagesTotal,
     pagination_partial:store.pagination_partial===true,checked_only_public_records:true},
-  stages,archive_url:REPO+'/issues/3419',
+  stages,extended_stages,incidents:incident_details,archive_url:REPO+'/issues/3419',
   note:'Только проверенные публичные GitHub-квитанции; исходный приватный CI event inbox не опубликован. ≥ — минимум подтверждений в ограниченной выборке, отсутствие квитанции не является нулём. Merge ≠ LIVE.'};
 }
 let cache=new Map(),pending=new Map();
-async function calculate(hours,prFilter=null){
- const now=Date.now(),store=await fetchArchive(false),picked=selectCases(store.runs,hours,now,prFilter);
+async function calculate(hours,prFilter=null,page=0){
+ const now=Date.now(),store=await fetchArchive(false),picked=selectCases(store.runs,hours,now,prFilter,page);
  const checked=await Promise.all(picked.rows.map(async e=>{
   try{const comments=await github('/issues/'+e.pr+'/comments?per_page=100&page=1',7000);
    if(!Array.isArray(comments))throw Error('COMMENTS_INVALID');
    const found=inspect(e,comments);
    await confirmPublication(e,found);
+   found._extension=extra(e,comments,found,store.runs,trusted,jsonRecords);
+   // Independently verify merge only for a GitHub-confirmed new source SHA.
+   // A PR merge alone cannot establish production LIVE.
+   if(found.committed&&found._extension){
+     try{
+       const pr=await github('/pulls/'+e.pr,6500);
+       if(pr?.merged===true&&pr.head?.sha?.toLowerCase()===found.committed.sha&&
+          SHA.test(pr.merge_commit_sha||'')&&t(pr.merged_at)!==null){
+         found._extension.stages.merged={at:pr.merged_at,url:REPO+'/pull/'+e.pr};
+         found._extension.detail.state='MERGED_LIVE_UNVERIFIED';
+       }
+     }catch(_){/* no optimistic merge */}
+   }
    return {...e,found,checked:true,partial_comments:comments.length===100};
   }catch(_){return {...e,found:{failed:{at:e.at,url:e.failure_url}},checked:false};}
  }));
- const result=aggregate(picked.rows,checked,now,hours,picked.all,store);
+ const result=aggregate(picked,checked,now,hours,picked.all,store);
  if(prFilter!==null)result.cohort.requested_pr=prFilter;
  if(checked.some(x=>x.partial_comments))result.cohort.pagination_partial=true;
  return result;
@@ -218,15 +262,17 @@ module.exports=async(req,res)=>{
  if(req.method!=='GET'){res.statusCode=405;res.setHeader('Allow','GET');return res.end(JSON.stringify({error:'METHOD_NOT_ALLOWED'}));}
  const raw=req.query?.hours===undefined?'24':String(req.query.hours);
  if(!['24','168','336'].includes(raw)){res.statusCode=400;return res.end(JSON.stringify({error:'INVALID_HOURS'}));}
+ const pageText=req.query?.page===undefined?'0':String(req.query.page);
+ if(!/^(?:0|[1-9][0-9]?)$/.test(pageText)||Number(pageText)>24){res.statusCode=400;return res.end(JSON.stringify({error:'INVALID_PAGE'}));}
  const rawPR=req.query?.pr;
  if(rawPR!==undefined&&(typeof rawPR!=='string'||!/^[1-9][0-9]{0,5}$/.test(rawPR))){res.statusCode=400;return res.end(JSON.stringify({error:'INVALID_PR'}));}
- const hours=Number(raw),prFilter=rawPR===undefined?null:Number(rawPR),key=hours+':'+(prFilter===null?'cohort':prFilter),entry=cache.get(key);
+ const hours=Number(raw),page=Number(pageText),prFilter=rawPR===undefined?null:Number(rawPR),key=hours+':'+(prFilter===null?'cohort':prFilter)+':'+page,entry=cache.get(key);
  if(entry&&Date.now()-entry.at<300000){res.statusCode=200;return res.end(JSON.stringify(entry.data));}
- if(!pending.has(key))pending.set(key,calculate(hours,prFilter).finally(()=>pending.delete(key)));
+ if(!pending.has(key))pending.set(key,calculate(hours,prFilter,page).finally(()=>pending.delete(key)));
  try{const data=await pending.get(key);cache.set(key,{at:Date.now(),data});
   res.statusCode=200;return res.end(JSON.stringify(data));
  }catch(e){res.statusCode=503;return res.end(JSON.stringify({
   schema:'HH_PR_REPAIR_EVIDENCE_FUNNEL_V1',error:String(e.message||e).slice(0,95),missing_is_not_zero:true
  }));}
 };
-module.exports._test={selectCases,inspect,aggregate,STAGES,trusted,jsonRecords};
+module.exports._test={selectCases,inspect,aggregate,STAGES,trusted,jsonRecords,EXTRA};

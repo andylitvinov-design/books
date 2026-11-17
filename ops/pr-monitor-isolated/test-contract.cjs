@@ -311,3 +311,71 @@ test('same-run signed reclassification is evidence, not worker execution',()=>{
  assert.equal(inspect(e,[first,comment(3,'HH_CI_ERROR_RECLASSIFICATION_V1',
   {...fixed,head_sha:'b'.repeat(40)},at)]).classified,null);
 });
+
+test('bounded signed incident pages cover prior HEADs and keep partial-coverage honest',()=>{
+ const {selectCases,EXTRA}=require('./api/ci-error-funnel.js')._test;
+ const now=Date.parse('2026-11-17T14:30:00Z');
+ const runs=Array.from({length:18},(_,i)=>({
+  pr:4500+i,run_id:44000000000+i,source_head:(i+1).toString(16).padStart(40,'a'),
+  completed_at:new Date(now-600000-i*1000).toISOString(),conclusion:'failure',
+  jobs:[{name:'hh-merge-check',conclusion:'failure'}]
+ }));
+ const page0=selectCases(runs,24,now,null,0);
+ const page1=selectCases(runs,24,now,null,1);
+ const page2=selectCases(runs,24,now,null,2);
+ assert.equal(page0.all,18);assert.equal(page0.rows.length,8);
+ assert.equal(page1.rows.length,8);assert.equal(page2.rows.length,2);
+ assert.equal(page0.pages_total,3);
+ assert.ok(!page0.rows.some(x=>page1.rows.some(y=>x.pr===y.pr)));
+ assert.equal(EXTRA.length,6);
+ const r0={...runs[0],pr:4869},r1={...runs[1],pr:4869};
+ const historical=selectCases([r0,r1],24,now,4869);
+ assert.equal(historical.rows.length,2,'past HEAD model evidence is still browsable');
+ assert.notEqual(historical.rows[0].head,historical.rows[1].head);
+});
+test('PR #4869 style signed model response is visible without inventing a patch, CI or LIVE',()=>{
+ const {extra}=require('./api/ci-funnel-extensions.cjs');
+ const {trusted,jsonRecords}=require('./api/ci-error-funnel.js')._test;
+ const head='e513e1f4d0bebd65bd3b96b602322f2d9a33d125';
+ const incident={pr:4869,head,run:44100863020,at:'2026-11-17T14:15:00Z'};
+ const task='6a01c387668ec8eb6f58d086bba25f4c',key='ac8fd4a042243e6c601fde1d6fea689e',worker='44101341789';
+ const signed=(marker,doc,id,time)=>({
+  id,user:{login:'github-actions[bot]',id:41898282,type:'Bot'},
+  performed_via_github_app:{id:15368,slug:'github-actions'},
+  created_at:time,updated_at:time,
+  body:marker+'\n'+'\x60\x60\x60json\n'+JSON.stringify(doc)+'\n\x60\x60\x60'
+ });
+ const error=signed('<!-- HH_CI_ERROR_TASK_V1 '+task+' -->',{
+  schema:'HH_CI_ERROR_TASK_V1',task_id:task,event_kind:'CORE_CI_FAILED',
+  pr_number:4869,head_sha:head,run_id:incident.run,category:'TYPESCRIPT',
+  reason_code:'FAILED_TYPESCRIPT_STEP',next_action:'VERIFY_SOURCE_SCOPE_AND_CI',
+  executor_id:'github-actions:hh-pr-repair-worker.yml'
+ },1,'2026-11-17T14:15:20Z');
+ const claim=signed('<!-- HH_PR_REPAIR_WORKER_V1 '+head+' -->',{
+  schema:'HH_PR_TASK_V1',state:'CLAIMED',worker_started:true,
+  task_key:key,error_task_id:task,pr_number:4869,head_sha:head,owner_run_id:worker
+ },2,'2026-11-17T14:16:45Z');
+ const outcome=signed('<!-- HH_PR_REPAIR_OUTCOME_V1 '+head+' '+worker+' -->',{
+  schema:'HH_PR_TASK_V1',state:'SUPERSEDED',
+  task_key:key,pr_number:4869,head_sha:head,owner_run_id:worker,
+  reason_code:'SOURCE_HEAD_MOVED_BEFORE_PUBLISH',source_published:false,
+  ai_execution:{schema:'HH_PR_AI_EXECUTION_EVIDENCE_V1',
+   model_request_attempted:true,configured_provider:'openrouter',
+   executor_started_at:'2026-11-17T14:18:52Z',
+   model_response_confirmed:true,model_response_at:'2026-11-17T14:21:20Z',
+   actual_provider:'openrouter',actual_model:'recursive/flint-v1.0:free',
+   patch_received:false,patch_verified:false}
+ },3,'2026-11-17T14:22:01Z');
+ const result=extra(incident,[error,claim,outcome],{runner:{at:'2026-11-17T14:16:47Z'}},[],trusted,jsonRecords);
+ assert.ok(result.stages.model_requested);
+ assert.ok(result.stages.model_responded);
+ assert.equal(result.stages.patch_ready,null);
+ assert.equal(result.stages.ci_verified,null);
+ assert.equal(result.stages.live_verified,null);
+ assert.equal(result.detail.state,'SUPERSEDED');
+ assert.equal(result.detail.blocked_reason,'SOURCE_HEAD_MOVED_BEFORE_PUBLISH');
+ assert.equal(result.detail.source_sha,null);
+ const untrusted=extra(incident,[error,claim,{...outcome,updated_at:'2026-11-17T14:23:00Z'}],
+  {runner:{at:'2026-11-17T14:16:47Z'}},[],trusted,jsonRecords);
+ assert.equal(untrusted.stages.model_responded,null);
+});
