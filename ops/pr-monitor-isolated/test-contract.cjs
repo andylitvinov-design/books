@@ -3,7 +3,7 @@ const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const root=__dirname,read=f=>fs.readFileSync(path.join(root,f),'utf8');
 const html=read('index.html'),css=read('monitor.css'),js=read('monitor.js'),conf=JSON.parse(read('vercel.json'));
-const sandbox={module:{exports:{}}};new vm.Script(js).runInNewContext(sandbox);
+const sandbox={module:{exports:{}},AbortController,setTimeout,clearTimeout};new vm.Script(js).runInNewContext(sandbox);
 const {activity,speed,compactRecords,strictCohort,compareCIHistory,compareStrictWeekly,delay,SCHEMAS,URLS}=sandbox.module.exports;
 test('one static CSS + one deferred JS; all eight main sections exist',()=>{
  assert.equal((html.match(/<script /g)||[]).length,1);
@@ -378,4 +378,53 @@ test('PR #4869 style signed model response is visible without inventing a patch,
  const untrusted=extra(incident,[error,claim,{...outcome,updated_at:'2026-11-17T14:23:00Z'}],
   {runner:{at:'2026-11-17T14:16:47Z'}},[],trusted,jsonRecords);
  assert.equal(untrusted.stages.model_responded,null);
+});
+
+test('one PR evidence request uses two same-origin read-only calls with no credentials',async()=>{
+ const {parsePublicPrContext,readPublicPrContext}=sandbox.module.exports;
+ const pr=4748,HEAD='a'.repeat(40);
+ const live={number:pr,state:'open',mergeable:false,mergeable_state:'dirty',
+  base:{ref:'codex/public-book-library'},
+  head:{sha:HEAD,repo:{full_name:'andylitvinov-design/books'}},
+  labels:[{name:'hh:repair-manual'},{name:'hh:conflict-repair-needed'}]};
+ const events=[{event:'labeled',created_at:'2026-11-17T09:00:00Z',
+  label:{name:'hh:repair-manual'},actor:{login:'github-actions[bot]'}}];
+ const trace=[];
+ const fetcher=async(url,opt)=>{
+  trace.push({url,credentials:opt.credentials,cache:opt.cache});
+  return {ok:true,json:async()=>url.includes('/verified-pr-meta/')?live:events};
+ };
+ const data=await readPublicPrContext(pr,fetcher);
+ assert.equal(data.current_reason_code,'MERGE_CONFLICT_DIRTY_NOW');
+ assert.equal(data.current_head,HEAD);
+ assert.equal(data.historical_cause_verified,false);
+ assert.equal(data.observed_events.length,1);
+ assert.equal(data.observed_events[0].cause_verified,false);
+ assert.equal(trace.length,2);
+ assert.deepEqual(trace.map(x=>x.url),[
+  '/api/verified-pr-meta/4748','/api/verified-pr-events/4748']);
+ assert.ok(trace.every(x=>x.credentials==='omit'&&x.cache==='no-store'));
+ assert.ok(!js.includes('api.github.com'),'browser must use same-origin fixed routes');
+ assert.equal(parsePublicPrContext(pr,events,live),null,'swapped data is untrusted');
+});
+test('manual owner hold wins while foreign PR and incomplete evidence fail closed',async()=>{
+ const {parsePublicPrContext,readPublicPrContext}=sandbox.module.exports;
+ const original={number:4854,state:'open',mergeable:false,mergeable_state:'dirty',
+  base:{ref:'codex/public-book-library'},
+  head:{sha:'f'.repeat(40),repo:{full_name:'andylitvinov-design/books'}},
+  labels:[{name:'hh:hold'},{name:'hh:repair-manual'}]};
+ assert.equal(parsePublicPrContext(4854,original,[]).current_reason_code,'EXPLICIT_OWNER_HOLD');
+ assert.equal(parsePublicPrContext(4854,{...original,
+  head:{...original.head,repo:{full_name:'attacker/books'}}},[]),null);
+ assert.equal(parsePublicPrContext(4855,original,[]),null);
+ assert.equal(parsePublicPrContext(4854,original,Array(101).fill({})),null);
+ const incomplete=parsePublicPrContext(4854,original,Array(100).fill({}));
+ assert.equal(incomplete.history_complete,false);assert.equal(incomplete.status,'PARTIAL');
+ let called=false;
+ assert.equal(await readPublicPrContext(0,async()=>{called=true;}),null);
+ assert.equal(called,false);
+ assert.equal(await readPublicPrContext(4854,async()=>{throw Error('quota')}),null);
+ assert.match(js,/refreshPrContext\(pr,seq\)/);
+ assert.match(js,/current_head\.slice\(0,12\)/);
+ assert.match(js,/historical_cause_verified:false/);
 });
