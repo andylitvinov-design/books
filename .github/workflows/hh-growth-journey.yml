@@ -23,7 +23,9 @@ on:
       - 'components/app/development-program.jsx'
       - 'app/[locale]/explore/[theme]/page.tsx'
       - 'tests/growth-journey-public.test.mjs'
-      - 'tests/ci-growth-course-core-reuse.test.mjs'
+      # Core already owns edits to its CI-only policy contract. Workflow
+      # changes still run this specialist's real domain checks before merge.
+      - '.github/workflows/hh-growth-journey.yml'
 permissions:
   contents: read
 

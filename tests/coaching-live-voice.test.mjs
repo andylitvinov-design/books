@@ -163,17 +163,17 @@ test('My Coach persona dialogue speaks and listens on exactly the consented sess
   assert.match(ui,/const result=await sendMessage\(draft.trim\(\)\)/)
   assert.ok(ui.includes("if(!spokeInSession&&!['safety','boundary'].includes(result.mode))"),
     'typed turns use the live audio path first; unconsented safety responses never go to the vendor')
-  assert.match(ui,/onTurn=\{text=>sendMessage\(text,\{voiceTurn:true\}\)\}/)
+  assert.match(ui,/onTurn=\{\(text,spoken\)=>sendMessage\(text,\{voiceTurn:true,utteranceLocale:spoken\?\.locale\}\)\}/)
   assert.match(ui,/enabled=\{true\}/)
   assert.match(ui,/Local-only authored fallback/)
   assert.match(ui,/coachingBrainSafety\(input\)\|\|coachingBrainBoundary\(input\)/)
   assert.match(ui,/if\(mode==='safety'\|\|\(mode==='boundary'/)
   assert.match(ui,/coachStagePrompt\(personaId,stage,responseLocale,settings\)/)
-  const sendFunction=ui.slice(ui.indexOf('async function sendMessage(raw,{voiceTurn=false}={}){'))
+  const sendFunction=ui.slice(ui.indexOf('async function sendMessage(raw,{voiceTurn=false,utteranceLocale=null}={}){'))
   // On a new consented turn, a metadata-only model probe may restore verified
   // availability. Client messages stay private until the verified-model guard.
   const probeFunction=ui.slice(ui.indexOf('async function retryCoachModelAfterOutage(){'),
-    ui.indexOf('async function sendMessage(raw,{voiceTurn=false}={}){'))
+    ui.indexOf('async function sendMessage(raw,{voiceTurn=false,utteranceLocale=null}={}){'))
   const verify="const needsVerifiedModel=readiness.status!=='verified'&&!wisdomRequested&&!localInterruption"
   const wait="const modelReady=!needsVerifiedModel||await retryCoachModelAfterOutage()"
   const offline="if(localInterruption||authRequired||(!modelReady&&!wisdomRequested)){"
@@ -190,7 +190,7 @@ test('My Coach persona dialogue speaks and listens on exactly the consented sess
   assert.match(ui,/Браузер может отправлять звук поставщику распознавания речи/)
   for(const phrase of ['window.SpeechRecognition||window.webkitSpeechRecognition',
     'recognition.interimResults=true','recognition.lang=chooseDictationLanguage',
-    'void deliver(appendSpokenAnswer(draftAtStartRef.current,finished,1200))','turnRef.current?.(text)','window.SpeechSynthesisUtterance',
+    'void deliver(appendSpokenAnswer(draftAtStartRef.current,finished,1200))','turnRef.current?.(text,{locale:utteranceLocale})','window.SpeechSynthesisUtterance',
     'activeRef.current=false','document.visibilityState===\'hidden\'',
     'recognition.abort()','onCancelTurn','aria-pressed={active&&!ready}'])
     assert.ok(loop.includes(phrase),phrase)
@@ -219,8 +219,9 @@ test('selected persona opens immersive My Coach session with real avatar, stages
   for(const token of ['data-my-coach-immersive-session','sessionHero','sessionPortrait','sessionAvatar',
     'CoachingAvatar locale={lang}','sessionProgressSegments','conversationPanel','quickGoalCard',
     'sessionBottomNav','goalRow','onVoiceStateChange={setVoiceState}']) assert.ok(ui.includes(token),token)
-  for(const token of ['stageKeys.indexOf(currentStage)','onClick={()=>replayCoachReply()}',
+  for(const token of ['data-coach-stage-index={visibleStageIndex+1}','onClick={()=>replayCoachReply()}',
     'onClick={()=>chooseTopic(id)}','composerRef.current?.focus()',
+    'progressValid?lastRecordedProgress.index:provisionalIndex',
     'coachingBrainSafety(input)||coachingBrainBoundary(input)']) assert.ok(ui.includes(token),token)
   for(const token of ['my-coach-portraits.avif','reiki-approved-sunrise-v3.webp',
     'messenger-zen-stones.svg','assessment-lotus.svg','safe-area-inset-bottom']) assert.ok(css.includes(token),token)
@@ -259,10 +260,10 @@ test('approved live-session visual hierarchy keeps a real voice pipeline, readab
   const ui=source('components/my-coach-live-dialogue.jsx')
   const css=source('components/my-coach-live-dialogue.module.css')
   for(const token of ['data-session-visual-v2','data-session-visual-v3','className={styles.heroSubtitle}',
-    'showCaptions&&','className={styles.captionsControl}','setShowCaptions(value=>!value)',
+    'showCaptions&&','className={styles.captionMore}','data-coach-language-control','onChange={event=>setSpeechLocale(event.target.value)}','setShowCaptions(value=>!value)',
     'className={styles.endControl}','className={styles.liveTranscript}','className={styles.voiceControls}',
     'className={styles.textComposer} open','<details className={styles.quickGoals}>',
-    'onTurn={text=>sendMessage(text,{voiceTurn:true})}','onTranscript={setSpeechPreview}']) assert.ok(ui.includes(token),token)
+    'onTurn={(text,spoken)=>sendMessage(text,{voiceTurn:true,utteranceLocale:spoken?.locale})}','onTranscript={setSpeechPreview}']) assert.ok(ui.includes(token),token)
   for(const token of ['.heroSubtitle','.transcriptFeed','.sessionBottomNav{display:none}',
     '.voiceCenter :global([data-my-coach-voice] button)','@media(max-width:350px)',
     '@media(max-width:699px) and (max-height:680px)']) assert.ok(css.includes(token),token)
@@ -435,7 +436,7 @@ test('spoken My Coach reply retains the reflection and start introduction',()=>{
  assert.ok(loop.includes('introPlayerRef.current=startDirectCoachIntroAudio'))
  assert.doesNotMatch(loop,/questions\.slice\(\)\.reverse\(\)\.find/)
  assert.ok(ui.includes('coachSpokenText(spokenText).text'))
- assert.ok(ui.includes('getCoachPresentation(personaId,lang)?.text'))
+ assert.ok(ui.includes('getCoachPresentation(personaId,conversationLang)?.text'))
  assert.ok(ui.includes('introduction={introduction}'))
  assert.ok(ui.includes('onSessionStart={()=>setCloudAgreed(true)}'))
  assert.ok(loop.includes('(naturalVoice||voiceAgreed)&&voiceAvailable'))
@@ -483,7 +484,10 @@ test('iPhone buffered MP3 animates from decoded actual waveform without another 
   assert.equal(levels.at(-1),null,'Stop resets moving mouth')
   const page=source('components/my-coach-live-dialogue.jsx')
   const loop=source('components/my-coach-speech-loop.jsx')
-  assert.match(page,/onLevel:level=>\{if\(!controller\.signal\.aborted/)
+  // Real audio PCM is tested above, but approved photo/MP4 presentation must
+  // never reintroduce browser-side face/mouth morphs or fake amplitude effects.
+  assert.doesNotMatch(page,/onLevel:level=>\{if\(!controller\.signal\.aborted/)
+  assert.doesNotMatch(page,/setPortraitLevel|onVoiceLevel=\{setPortraitLevel\}/)
   assert.match(loop,/onLevel:level=>\{if\(live\(\)\)levelRef\.current\?\.\(level\)/)
 })
 

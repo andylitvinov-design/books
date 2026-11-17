@@ -154,6 +154,11 @@ export function MandalaAutomaticStoryboard({
  const statusText=guides.professional?
   (locale==="ru"?"Работа и развитие":locale==="es"?"Trabajo y desarrollo":"Work and growth"):
   (locale==="ru"?"По вашей теме":locale==="es"?"Según tu tema":"On your topic");
+ const cameraNames={
+  ru:{"medium":"Средний план","close-up":"Крупный план",detail:"Деталь",wide:"Общий план"},
+  en:{"medium":"Medium shot","close-up":"Close-up",detail:"Detail",wide:"Wide shot"},
+  es:{"medium":"Plano medio","close-up":"Primer plano",detail:"Detalle",wide:"Plano general"}
+ } as const;
  const paceText=pace==="dynamic"?
   (locale==="ru"?"Энергичный темп":locale==="es"?"Ritmo dinámico":"Dynamic pace"):
   (locale==="ru"?"Спокойный темп":locale==="es"?"Ritmo pausado":"Gentle pace");
@@ -180,8 +185,10 @@ export function MandalaAutomaticStoryboard({
   data-storyboard-aligned-to-settings={manualFiveReady||applied}
   data-storyboard-aligned-to-concept={v3RequiresActionProof}
   data-storyboard-media-ready={manualFiveReady||eligible}
-  data-storyboard-action-proof={v3RequiresActionProof?"editorial_unverified":"legacy"}>
+  data-storyboard-action-proof={v3RequiresActionProof?"editorial_unverified":"legacy"}
+  data-storyboard-selected-direction={concept.creativeDirectionId||undefined}>
   <div className={styles.storyAutoHead}>
+   {concept.creativeTitle?<strong data-video-story-selected-title>{concept.creativeTitle}</strong>:null}
    <p className={styles.storyAutoMeta}>
     <Film size={14} aria-hidden="true"/>{compactCards.length} {locale==="ru"?"сцен":locale==="es"?"escenas":"scenes"}
     <span aria-hidden="true">·</span>{manualFiveReady?20:durationSeconds}s
@@ -193,6 +200,9 @@ export function MandalaAutomaticStoryboard({
   <ol className={styles.storyAutoList} data-video-auto-storyboard-list>
    {compactCards.map((item,index)=>{
     const {guide,shot,from,to}=item;
+    const authored=concept.storyboard?.length===6?concept.storyboard[index]:null;
+    const camera=authored?.shotType&&Object.prototype.hasOwnProperty.call(cameraNames[locale],authored.shotType)?
+      cameraNames[locale][authored.shotType as keyof typeof cameraNames[typeof locale]]:null;
     const photo=shot?STORY_PHOTO_BY_ID.get(shot.sceneId):null;
     const media=photo?{poster:photo.src,title:photo.labels[locale]}:
       shot?resolveMedia(shot.sceneId):null;
@@ -202,7 +212,8 @@ export function MandalaAutomaticStoryboard({
     const title=generic?(emotion||media?.title||lead):guide.title;
     return <li key={index} className={styles.storyAutoCard}
       data-video-story-scene={index+1} data-video-story-media-matched={Boolean(shot)}
-      data-story-media-kind={photo?"photo":shot?"video":"missing"}>
+      data-story-media-kind={photo?"photo":shot?"video":"missing"}
+      data-storyboard-continuity={authored?.continuityKeys?.join(",")||undefined}>
      <div className={styles.storyAutoPoster}>
       {media?.poster? /* eslint-disable-next-line @next/next/no-img-element */
        <img src={media.poster} alt={media.title} loading="lazy"/>:
@@ -217,6 +228,9 @@ export function MandalaAutomaticStoryboard({
       <small data-storyboard-scene-time>{clock(from)}–{clock(to)}</small>
       <strong>{title}</strong>
       <p data-storyboard-scene-action>{guide.visual}</p>
+      {authored?<small data-storyboard-shot-direction>
+        {[camera,authored.emotion||emotion].filter(Boolean).join(" · ")}
+      </small>:null}
       {media?.title?<small data-storyboard-media-title>{media.title}
         {photo?" · "+(locale==="ru"?"Фото":locale==="es"?"Foto":"Photo"):null}</small>:null}
      </div>

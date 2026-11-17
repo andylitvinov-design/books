@@ -4,8 +4,8 @@
 .heroPhoto{z-index:-2;object-fit:cover;object-position:72% 37%}
 .heroTint{position:absolute;z-index:-1;inset:0;background:linear-gradient(91deg,#0b4c3fe8 0%,#0c4d3ccf 48%,#0c493949 100%)}
 .heroCopy{position:relative;z-index:1;max-width:100%}
-.heroCopy h2{margin:0;color:#fff;font:800 clamp(22px,5.8vw,27px)/1.08 Arial,Helvetica,sans-serif;letter-spacing:-.018em;text-shadow:0 1px 2px #123a3028}
-.heroCopy p{width:67%;min-width:198px;max-width:335px;margin:5px 0 4px;font:500 clamp(11px,3vw,13px)/1.27 Arial,Helvetica,sans-serif;color:#fffaf1}
+.heroCopy :is(h1,h2){margin:0;color:#fff;font:800 clamp(23px,6.2vw,29px)/1.08 Arial,Helvetica,sans-serif;letter-spacing:-.018em;text-shadow:0 1px 2px #123a3028}
+.heroCopy p{width:67%;min-width:198px;max-width:335px;margin:5px 0 4px;font:500 clamp(12px,3.3vw,15px)/1.27 Arial,Helvetica,sans-serif;color:#fffaf1}
 .progress{display:flex;justify-content:space-between;position:relative;width:234px;max-width:73%;height:35px;align-items:center}
 .progress:before{content:"";position:absolute;z-index:0;left:17px;right:17px;top:17px;height:2px;background:#d7e7d6}
 .progressStep{display:grid;place-items:center;position:relative;z-index:1;flex:0 0 34px;width:34px;height:34px;margin:0;border:2px solid #ecfff3;border-radius:50%;background:#ecf7ef;color:#144d3a;font:800 17px/1 Arial,Helvetica,sans-serif;cursor:pointer}
@@ -53,3 +53,5 @@
 @media(min-width:760px){.root{max-width:870px;margin:10px auto 20px}.heroTop{height:160px}.heroCopy p{font-size:14px}.quiz{padding:16px 22px 17px}.answer{min-height:58px}.courseCard{min-height:112px}.coursePhoto{min-height:112px}.courseContent{padding:12px 16px}.courseTitle{font-size:18px}.courseDescription{font-size:13px}}
 @media(max-width:355px){.heroTop{height:132px;padding:11px 11px 0}.heroCopy h2{font-size:21px}.heroCopy p{width:68%;font-size:11px}.quiz{padding:9px 8px 10px}.questionRow{gap:5px}.stepLabel{font-size:11px;min-width:72px;padding-inline:7px}.questionRow h3{font-size:14px}.answer{gap:3px;font-size:12px;padding-inline:3px}.answer>svg:not(.check){width:19px;height:19px}.categoryTab{font-size:11px}.courseContent{padding-left:7px}.courseTitle{font-size:13px}.courseDescription{font-size:10px}.headerCopy h2{font-size:19px}}
 @media(prefers-reduced-motion:reduce){.hero *, .root *{scroll-behavior:auto;transition:none!important}}
+
+.answer:disabled{opacity:1;cursor:default}

@@ -10,11 +10,15 @@ const styles = read("components/home-master-path.module.css");
 
 test("Master is the final immersion stage, not a repeated footer promotion", () => {
   const feature = read("components/home-featured-workspace.tsx");
-  for (const page of [home, spanish]) {
-    assert.equal((page.match(/<HomeFeaturedWorkspace\b/g) || []).length, 1);
-    assert.doesNotMatch(page, /<HomeMasterPath\b/);
-    assert.ok(page.indexOf("<HomeFeaturedWorkspace") < page.indexOf("<footer"));
+  const expanded=read("components/home-expanded-catalog.tsx");
+  for(const page of [home,spanish]){
+    assert.match(page,/<HomeDialogueEntry locale=/);
+    assert.match(page,/<HomeDeferredSections locale=/);
+    assert.doesNotMatch(page,/<HomeFeaturedWorkspace|<HomeMasterPath\b/);
+    assert.ok(page.indexOf("<HomeDialogueEntry")<page.indexOf("<footer"));
   }
+  assert.equal((expanded.match(/<HomeFeaturedWorkspace\b/g)||[]).length,1);
+  assert.match(expanded,/<HomeFeaturedWorkspace locale=\{locale\}\s*\/>/);
   assert.match(feature, /"courses",\s*"personality",\s*"situation",\s*"coaching",\s*"alchemy",\s*"energy",\s*"master"/);
   assert.match(feature, /data-home-module=\{id\}/);
   for (const action of ['"pro"', '"service"', '"course"']) assert.ok(feature.includes(action));

@@ -741,6 +741,31 @@ test('approved migration destinations contain the exact retired scope and the or
   }
 });
 
+test('retired optional workflow owners are explicitly reviewed without allowing arbitrary YAML deletion',()=>{
+  for(const [old,successor] of [
+    ['.github/workflows/hh-app-regression.yml','.github/workflows/hh-actionlint.yml'],
+    ['.github/workflows/hh-loose-release-ready-once.yml','.github/workflows/hh-actionlint.yml'],
+  ]){
+    assert.equal(APPROVED_SPECIALIST_REPLACEMENTS[old],successor);
+    const successorYaml=readFileSync(successor,'utf8');
+    const oldYaml='name: retired one-time check\non:\n  workflow_dispatch:\njobs:\n  legacy:\n    runs-on: ubuntu-latest\n';
+    const base=new Map([[old,oldYaml],[successor,successorYaml]]);
+    const current=new Map([[successor,successorYaml]]);
+    const changed=[old];
+    const expected=expectedWorkflows({base,current,changed});
+    assert.deepEqual(expected,[successor], 'approved successor must really trigger for removed YAML '+old);
+    assert.deepEqual(resolveExpectedSpecialists({base,current,changed,expected}).delegated,
+      [{retired:old,replacement:successor}]);
+    const tampered=new Map([[successor,successorYaml+'\n# not BASE approved']]);
+    assert.throws(()=>resolveExpectedSpecialists({base,current:tampered,changed,expected}),
+      /UNTRUSTED_SPECIALIST_REPLACEMENT/);
+  }
+  const unknown='.github/workflows/unknown-obsolete-check.yml';
+  const base=new Map([[unknown,'on:\n  workflow_dispatch:\n']]);
+  assert.throws(()=>resolveExpectedSpecialists({base,current:new Map(),changed:[unknown],expected:[]}),
+    /UNAPPROVED_WORKFLOW_DELETION/);
+});
+
 test('all workflow deletions, even push-only and files excluded from original PR trigger, require an approved replacement',()=>{
   const unrelated='.github/workflows/private-push-only-publisher.yml';
   const pushOnly='on:\n  push:\n    branches: [codex/public-book-library]\njobs:\n  publish:\n    runs-on: ubuntu-24.04\n';
@@ -1287,6 +1312,33 @@ test('missing HEAD-index row can be recovered by exact workflow then tracked unt
   assert.equal(probes,1,'only missing workflow gets a targeted index lookup');
   assert.ok(refreshes>=1,'pending recovered run must be refreshed until completed');
   assert.ok(clock.elapsed()>=180_000,'queued evidence is not accepted as passed');
+});
+
+test('late registered exact-HEAD actionlint is discovered without another Core wave', async () => {
+  const clock=virtualSpecialistClock();
+  let probes=0;
+  const api={
+    pr:async()=>pr(),
+    changed:async()=>[{filename:'lib/crm/a.js'}],
+    // The general HEAD index stays stale; only the scoped workflow index
+    // receives this real and completed run after GitHub propagation.
+    runs:async()=>[],
+    runsForWorkflow:async(sha,filename)=>{
+      assert.equal(sha,SHA);
+      assert.equal(filename,path);
+      probes++;
+      return clock.elapsed()<90_000 ? [] : [run()];
+    },
+    jobs:async()=>[{name:'specialist',status:'completed',conclusion:'success'}],
+  };
+  const result=await verify(api,{repo,number:27,head:SHA,base:BASE},
+    {base:new Map([[path,yaml]]),current:new Map([[path,yaml]])},
+    {maxWaitMs:180_000,pollMs:10_000,...clock});
+  assert.deepEqual(result.expected,[path]);
+  assert.equal(result.executed.length,1,'real successful job evidence remains mandatory');
+  assert.ok(probes>=3,'scoped workflow lookup must retry within the discovery window');
+  assert.ok(clock.elapsed()>=90_000 && clock.elapsed()<120_000,
+    'late registration must pass before the fail-closed deadline');
 });
 
 test('foreign direct workflow evidence never authorizes missing specialist', async () => {

@@ -15,6 +15,8 @@ import {suggestVideoConcept,reviseVideoConcept,videoConceptIsValid}
   from "@/lib/mandala/auto-video-concept.mjs";
 import type {PublicLocale} from "@/lib/public-locales";
 import {buildVideoConceptNarrative} from "@/lib/mandala/video-concept-narrative.mjs";
+import {storyReviewSignature,storyReviewRequired,validEditorialShotActions}
+  from "@/lib/mandala/video-story-review.mjs";
 import {getVideoCreativeDirections,applyVideoCreativeDirection} from "@/lib/mandala/video-creative-directions.mjs";
 import {reviewConceptQuality} from "@/lib/mandala/cinematic-concept-v3.mjs";
 import css from "./mandala-video-concept.module.css";
@@ -33,6 +35,7 @@ export type ApprovedVideoConcept={
   creativeReview?:{score:number;hardFailures:string[];status:"pass"|"revise"|"needs_input"};
   psychologicalBrief?:{family:string;[key:string]:unknown};
   userEditedFields?:string[];
+  storyReviewSignature?:string|null;
   storySource?:string;storyboard?:Array<{title:string;action:string;emotion:string;keywords:string[];
     startSeconds?:number;endSeconds?:number;visualSubject?:string;shotType?:string;
     continuityKeys?:string[];sourceStatus?:string}>;
@@ -137,6 +140,8 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
   const [ideaEditing,setIdeaEditing]=useState(false);
   const [ideaDraft,setIdeaDraft]=useState("");
   const [textEditing,setTextEditing]=useState(false);
+  const [shotEditing,setShotEditing]=useState(false);
+  const [shotDrafts,setShotDrafts]=useState<string[]>([]);
   const [textDraft,setTextDraft]=useState("");
   const [editing,setEditing]=useState(false);
   const [loginOpen,setLoginOpen]=useState(false);
@@ -184,7 +189,10 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
     concept.creativeReview?.status==="pass"&&concept.storyboard?.length===6&&
     (!editedReview||editedReview.status==="pass");
   const passCurated=concept.storySource==="curated_editorial"&&concept.storyboard?.length===6;
-  const creativeReady=!isStoryFilm||passV3||passCurated;
+  // If the author changes the plot, the old six shots are NOT silently
+  // treated as an approved illustration of the rewritten story.
+  const storyboardNeedsReview=storyReviewRequired(concept);
+  const creativeReady=(!isStoryFilm||passV3||passCurated)&&!storyboardNeedsReview;
   const taxonomy=getMyTubeTaxonomy();
   const categories=taxonomy.categories;
   const category=categories.find(c=>c.id===concept.categoryId)||categories[0];
@@ -232,7 +240,7 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
     const nextKey=next?.signature||null;
     if(next)onDraftChange?.(draftByDirection[next.signature]||next);
     setHasLocalEdits(Boolean(nextKey&&draftByDirection[nextKey]));
-    setTextEditing(false);setIdeaEditing(false);setEditing(false);
+    setTextEditing(false);setIdeaEditing(false);setShotEditing(false);setEditing(false);
   };
   const change=(patch:Partial<ApprovedVideoConcept>)=>{
     const next=reviseVideoConcept(concept,patch,locale) as ApprovedVideoConcept;
@@ -287,8 +295,34 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
     }
     setTextEditing(false);
   };
+  const startShotEdit=()=>{
+    if(!concept.storyboard?.length||concept.storyboard.length!==6)return;
+    setShotDrafts(concept.storyboard.map(shot=>shot.action));
+    setShotEditing(true);
+  };
+  const saveShotEdits=()=>{
+    if(!concept.storyboard||!validEditorialShotActions(shotDrafts))return;
+    const next:ApprovedVideoConcept={...concept,
+      storyboard:concept.storyboard.map((shot,index)=>({
+        ...shot,action:shotDrafts[index].trim(),
+        // An edited action must not inherit search tags for an older event.
+        keywords:shot.action.trim()===shotDrafts[index].trim()?[...shot.keywords]:[]
+      })),
+      userEditedFields:[...new Set([...(concept.userEditedFields||[]),"storyboard"])]};
+    setCustom(next);setDraftByDirection(rows=>({...rows,[next.signature]:next}));
+    setApprovedSignature(null);setHasLocalEdits(true);setShotEditing(false);
+    onDraftChange?.(next);
+  };
+  const confirmRevisedStory=()=>{
+    const review=storyReviewSignature(concept);
+    if(!review||!validEditorialShotActions(concept.storyboard?.map(shot=>shot.action)))return;
+    const next:ApprovedVideoConcept={...concept,storyReviewSignature:review};
+    setCustom(next);setDraftByDirection(rows=>({...rows,[next.signature]:next}));
+    setApprovedSignature(null);setHasLocalEdits(true);
+    onDraftChange?.(next);
+  };
   const submit=()=>{
-    if(textEditing||ideaEditing||!creativeReady||!videoConceptIsValid(concept))return;
+    if(textEditing||ideaEditing||shotEditing||!creativeReady||!videoConceptIsValid(concept))return;
     const approvedToSave={...concept,conceptText:narrativeText};
     setCustom(approvedToSave);
     setDraftByDirection(rows=>({...rows,[approvedToSave.signature]:approvedToSave}));
@@ -459,7 +493,7 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
         </div>
       </>:<p className={css.narrativeCopy} data-video-concept-paragraph>{narrativeText}</p>}
     </section>
-    {!creativeReady?<p className={css.example} role="status" data-video-concept-quality-needed>
+    {!creativeReady&&!storyboardNeedsReview?<p className={css.example} role="status" data-video-concept-quality-needed>
       {DIRECTION_UI[locale].quality} <button type="button" onClick={onOpenGoal}>{t.noGoal}</button>
     </p>:null}
     {editing&&signedIn ? <div className={css.editor} data-video-concept-editor>
@@ -517,6 +551,38 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
         "This is an editorial shot plan, not verified footage. Montage checks distinct source clips.",
         "Es un plan creativo, no metraje verificado. Montaje comprueba clips distintos."
       )}</p>
+      {concept.storyboard?.length===6?<div className={css.storyShotEditor} data-video-storyboard-editor>
+        {shotEditing?<>
+          {shotDrafts.map((action,index)=><label key={index}>
+            <strong>{word("Сцена","Scene","Escena")} {index+1} ·
+              {" "}{timecode(index*5)}–{timecode((index+1)*5)}</strong>
+            <textarea data-video-storyboard-action-edit={index+1} rows={2} maxLength={360}
+              disabled={disabled} value={action}
+              onChange={event=>setShotDrafts(items=>items.map((item,i)=>
+                i===index?event.target.value:item))}/>
+          </label>)}
+          <div className={css.storyEditorActions}>
+            <button type="button" data-video-storyboard-save disabled={disabled||!validEditorialShotActions(shotDrafts)}
+              onClick={saveShotEdits}>{word("Сохранить 6 сцен","Save 6 scenes","Guardar 6 escenas")}</button>
+            <button type="button" disabled={disabled} onClick={()=>setShotEditing(false)}>
+              {t.textCancel}</button>
+          </div>
+        </>:<button type="button" data-video-storyboard-edit disabled={disabled||ideaEditing||textEditing}
+          onClick={startShotEdit}>{word("Уточнить действия в сценах","Edit scene actions","Editar acciones de escenas")}</button>}
+        {storyboardNeedsReview&&!shotEditing?<div className={css.storyReviewNotice}
+          data-video-storyboard-review-required role="status">
+          <p>{word(
+            "Вы изменили историю. Проверьте шесть действий выше: они должны соответствовать новому тексту. При необходимости измените сцены.",
+            "You changed the story. Review the six actions above against your new text; edit any scenes that no longer fit.",
+            "Has cambiado la historia. Revisa las seis acciones con el nuevo texto y corrige las escenas que ya no encajen."
+          )}</p>
+          <button type="button" data-video-storyboard-confirm disabled={disabled||ideaEditing||textEditing}
+            onClick={confirmRevisedStory}>
+            <Check size={16}/>{word("Я проверил(а) соответствие сцен",
+              "I've reviewed the six scenes","He revisado las seis escenas")}
+          </button>
+        </div>:null}
+      </div>:null}
     </details>
     <details className={css.beats} data-video-concept-beats>
       <summary>{t.stages}<ChevronDown size={17} aria-hidden="true"/></summary>
@@ -557,7 +623,7 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
     </p>:null}
     <div className={css.actions} data-video-concept-action-rail>
       <button type="button" className={css.approve} data-video-concept-approve
-        disabled={disabled||textEditing||ideaEditing||!creativeReady||!videoConceptIsValid(concept)} onClick={submit}>
+        disabled={disabled||textEditing||ideaEditing||shotEditing||!creativeReady||!videoConceptIsValid(concept)} onClick={submit}>
         <Check size={21}/><span>{editing?t.save:t.approve}</span><ArrowRight size={18}/>
       </button>
       <button type="button" ref={editButtonRef} className={css.edit}

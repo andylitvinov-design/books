@@ -23,6 +23,36 @@ test("relationship film: Ideas' six approved actions become the six Montage guid
  assert.ok(guides.scenes.every(scene=>scene.requiresLiteralMatch===true));
 });
 
+test("owner screenshot: Making Room for Love remains one 30-second six-shot film in Montage",()=>{
+ const base=suggestVideoConcept({locale:"en",goal:"Ready for a Relationship",
+   theme:"relationships",selectedTopicId:"ready-relationship"});
+ const film=getVideoCreativeDirections(base,"en").find(d=>d.id==="space");
+ assert.ok(film,"The actual selected concept must exist");
+ assert.equal(film.title,"Making Room for Love");
+ const selected=applyVideoCreativeDirection(base,film);
+ const storyboard=buildAlignedStorySceneGuides({
+   locale:"en",goal:selected.goal,concept:selected,count:6,phrases:[],pace:"slow"
+ }).scenes;
+ assert.deepEqual(storyboard.map((shot,index)=>[shot.index,index*5,(index+1)*5]),
+   [[1,0,5],[2,5,10],[3,10,15],[4,15,20],[5,20,25],[6,25,30]]);
+ assert.deepEqual(storyboard.map(scene=>scene.title),[
+   "The long way home","The second chair","A gentle look back",
+   "A place for memories","An invitation","The door opens"
+ ]);
+ const visual=storyboard.map(scene=>scene.visual);
+ for(const [index,word] of ["suitcase","chair","photograph","shelf","invitation","morning"].entries())
+   assert.match(visual[index],new RegExp(word,"i"),"A shot must depict its own scripted action "+(index+1));
+ assert.deepEqual(visual,film.storyboard.map(shot=>shot.action));
+ assert.ok(storyboard.every(scene=>scene.requiresLiteralMatch===true));
+ const ui=source("components/mandala-automatic-storyboard.tsx");
+ assert.match(ui,/data-video-story-selected-title/);
+ assert.match(ui,/data-storyboard-selected-direction/);
+ assert.match(ui,/data-storyboard-scene-action/);
+ assert.match(ui,/const eligible=filmedProposalReady&&!v3RequiresActionProof/);
+ assert.match(ui,/const visibleCount=manualFiveReady\?5:guides\.scenes\.length/);
+ assert.doesNotMatch(ui,/Math\.min\(5,guides\.scenes\.length\)/);
+});
+
 test("Story UI displays the full authored screenplay and does not let stock titles replace script actions",()=>{
  const ui=source("components/mandala-automatic-storyboard.tsx");
  assert.match(ui,/const visibleCount=manualFiveReady\?5:guides\.scenes\.length/);

@@ -410,7 +410,10 @@ export async function verify(api,ctx,files,options={}) {
     return Math.max(minimum, Math.min(maximum, n));
   };
   const maxWait = boundedMs(options.maxWaitMs ?? 35*60_000, 40*60_000);
-  const missingGrace = Math.min(maxWait, boundedMs(options.missingGraceMs ?? 60_000, 120_000));
+  // A real exact-HEAD actionlint run can be registered after the first Core
+  // Specialist index read. Give GitHub a bounded second minute before
+  // declaring NOT_TRIGGERED; never infer PASS from absence.
+  const missingGrace = Math.min(maxWait, boundedMs(options.missingGraceMs ?? 120_000, 180_000));
   // An expected workflow can be created on GitHub but temporarily absent
   // from its HEAD-indexed Actions list while other specialists are queued.
   // Never certify a missing job; only postpone NOT_TRIGGERED for the bounded
@@ -605,10 +608,15 @@ export async function verify(api,ctx,files,options={}) {
       !isConcurrencyAdvisoryRun(run,pr,concurrencyAdvisory) &&
       !isConcurrencyAdvisoryRun(run,pr,selfTriggerAdvisory));
     state=inspectWorkflowRuns({expected,runs:eligibleRuns(allRuns),pr});
-    if (state.missing.length && now() - start >= missingGrace &&
+    // Probe the one missing workflow EARLY, then retry its authenticated
+    // exact-HEAD index. The old code first probed at its own missing deadline
+    // and immediately failed if GitHub indexing lagged: no chance to recover.
+    if (state.missing.length && now() - start >= Math.min(missingGrace, 20_000) &&
         typeof api.runsForWorkflow === 'function') {
       for (const filename of state.missing) {
-        if (now() - (probeTimes.get(filename) ?? -Infinity) < 120_000) continue;
+        // At most one lookup per missing workflow every 30 seconds, for
+        // a bounded 2-minute discovery window; no full Core rerun.
+        if (now() - (probeTimes.get(filename) ?? -Infinity) < 30_000) continue;
         const rows = await api.runsForWorkflow(ctx.head, filename);
         if (!Array.isArray(rows) || rows.length > 100)
           throw Error('INCOMPLETE_WORKFLOW_FALLBACK');

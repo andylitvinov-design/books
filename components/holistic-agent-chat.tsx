@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from "react"
 import {Mic, Paperclip, Plus, Send, X} from "lucide-react";
 import {MessengerAiLanding} from "@/components/app/messenger-ai-landing";
 import {MessengerSixProjects,messengerProject} from "@/components/app/messenger-six-projects";
+import { peekHomeAliHandoff, acknowledgeHomeAliHandoff } from "@/lib/home-ali-handoff.mjs";
+import type {HomeAliHandoff} from "@/lib/home-ali-handoff.mjs";
 import {sessionGoalChoices,sessionCopy,sessionGoalForText,sessionOfferIds,sessionOfferDescription} from "@/lib/holistic-support/session-goal-intake.mjs";
 import type {MessengerProjectId,MessengerProjectOption,MessengerTestFocus} from "@/components/app/messenger-six-projects";
 import { prepareNaturalDialogue, finishNaturalDialogue } from "@/lib/holistic-support/natural-dialogue.mjs";
@@ -386,6 +388,11 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   const nativeSession=useRef<{id:string;revision:number}|null>(null);
   useEffect(()=>{nativeSession.current=null;},[authenticated]);
   const composerRef=useRef<HTMLTextAreaElement|null>(null);
+  const homeHandoffConsumed=useRef(false);
+  const homeHandoffDispatching=useRef(false);
+  const homeHandoffPending=useRef<{payload:HomeAliHandoff;message:string;startIndex:number}|null>(null);
+  const [homeHandoffPhase,setHomeHandoffPhase]=useState<"idle"|"queued"|"sending"|"retry">("idle");
+  const [homeHandoffSettled,setHomeHandoffSettled]=useState(false);
   const threadRef=useRef<HTMLDivElement|null>(null);
   const followTail=useRef(true);
   const programmaticScrollTop=useRef<number|null>(null);
@@ -441,6 +448,60 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     // The user explicitly selected a rail action: prepare, never auto-send it.
     if(!compact)composerRef.current?.focus({preventScroll:true});
   },[quickPrompt,compact]);
+  useEffect(()=>{
+    // Display the original Home text immediately; never delete it while the
+    // account check, navigation or first Ali reply is unfinished.
+    if(!compact||!messengerView||homeHandoffConsumed.current||
+      homeHandoffPhase==="sending"||homeHandoffPhase==="retry")return;
+    if(!/^\/(?:en|ru|es)\/app\/messages\/?$/.test(window.location.pathname))return;
+    const transferred=peekHomeAliHandoff(window.sessionStorage,routeLocale);
+    if(!transferred)return;
+    const prefix=transferred.mode==="business"
+      ?(routeLocale==="ru"?"Для бизнеса: ":routeLocale==="es"?"Para mi negocio: ":"For business: "):"";
+    const message=(prefix+transferred.text).slice(0,2000);
+    if(homeHandoffPhase==="idle"){
+      setDraft(message);setEntryOpen(false);followTail.current=true;setNewBelow(false);
+      setHomeHandoffPhase("queued");return;
+    }
+    if(authStatus==="checking"||busy||homeHandoffDispatching.current)return;
+    homeHandoffDispatching.current=true;
+    homeHandoffPending.current={payload:transferred,message,startIndex:messages.length};
+    setHomeHandoffSettled(false);setHomeHandoffPhase("sending");
+    // The one existing Ali handler enforces public safety/private consent.
+    void sendTurn(message).catch(()=>{}).finally(()=>{
+      homeHandoffDispatching.current=false;setHomeHandoffSettled(true);
+    });
+  },[compact,messengerView,authStatus,routeLocale,homeHandoffPhase,busy,messages.length]);
+
+  useEffect(()=>{
+    const pending=homeHandoffPending.current;
+    if(!pending||homeHandoffPhase!=="sending")return;
+    const newTurns=messages.slice(pending.startIndex);
+    const userIndex=newTurns.findIndex(turn=>turn.role==="user");
+    const answered=userIndex>=0&&newTurns.slice(userIndex+1).some(turn=>turn.role==="assistant");
+    if(answered){
+      acknowledgeHomeAliHandoff(window.sessionStorage,pending.payload);
+      homeHandoffConsumed.current=true;homeHandoffPending.current=null;
+      setHomeHandoffSettled(false);setHomeHandoffPhase("idle");
+    }else if(homeHandoffSettled){
+      // Failed network call or rejected turn: keep choice and offer explicit retry.
+      setDraft(pending.message);setHomeHandoffPhase("retry");
+    }
+  },[messages,homeHandoffPhase,homeHandoffSettled]);
+
+  function retryHomeAliTurn() {
+    const pending=homeHandoffPending.current;
+    if(!pending||homeHandoffPhase!=="retry")return;
+    // Remove only an unpaired user bubble from the failed request.
+    setMessages(previous=>{
+      const tail=previous.slice(pending.startIndex);
+      return tail.length===1&&tail[0].role==="user"
+        ?previous.slice(0,pending.startIndex):previous;
+    });
+    homeHandoffPending.current=null;
+    setHomeHandoffSettled(false);setStatus("");setHomeHandoffPhase("queued");
+  }
+
   useEffect(()=>{
     if(!compact)return;
     // Only a public instrument key may travel in the URL; answers/results never do.
@@ -714,7 +775,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       {role:"assistant" as const,text:message}].slice(-30));
     if(option.kind==="ask")composerRef.current?.focus({preventScroll:true});
   }
-  function startContent(language:PublicLocale=locale) {
+  function startContent(language:PublicLocale=locale,initialText?:string) {
     if(busy)return;
     followTail.current=true;setNewBelow(false);setEntryOpen(false);
     setProjectFlow(null);setSessionStep(null);setSessionGoal(null);setSessionOffers([]);setTestFocus(null);
@@ -724,7 +785,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     setGuideLink(null);setTestChatOpen(false);setPageHelpLink(null);
     setShowVideoSignIn(false);setNeedsPrivateSignIn(false);
     setDraft("");setStatus("");setSource("");setChoices([]);
-    setMessages(prev=>[...prev,{role:"user" as const,text:messengerStarter[language].contentIntent},
+    setMessages(prev=>[...prev,{role:"user" as const,text:initialText||messengerStarter[language].contentIntent},
       {role:"assistant" as const,text:messengerStarter[language].contentQuestion}].slice(-30));
   }
   function chooseContentKind(kind:"video"|"audio"|"meditation"|"message",language:PublicLocale=locale) {
@@ -904,8 +965,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
           :turnLocale==="es"
           ?"Puedo ofrecer un cuestionario gratuito. Elige primero la prueba y acepta las condiciones. La IA no cambia las preguntas ni las puntuaciones."
           :"I can suggest an eligible free questionnaire. Choose the instrument and confirm consent first. AI never changes questions or scores.";
-        const safeIntent=turnLocale==="ru"?"Подобрать тест":turnLocale==="es"?"Elegir prueba":"Choose a test";
-        setMessages(prev=>[...prev,{role:"user" as const,text:safeIntent},
+        setMessages(prev=>[...prev,{role:"user" as const,text},
           {role:"assistant" as const,text:explanation}].slice(-30));
         return;
       }
@@ -921,7 +981,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
             /^(?:hola|buenas)/i.test(text)?messengerStarter.es.hello:turnStarter.hello)}].slice(-30));
       return;
     }
-    if(compact&&isContentCreationIntent(text)){setTestChatOpen(false);setTestChatTurn(null);setTestSuggestedKey("");startContent(turnLocale);return;}
+    if(compact&&isContentCreationIntent(text)){setTestChatOpen(false);setTestChatTurn(null);setTestSuggestedKey("");startContent(turnLocale,text);return;}
     if(compact&&contentStep==="kind"){
       const selected=(["video","audio","meditation","message"] as const).find(kind=>
         turnStarter.contentKinds[kind].toLocaleLowerCase()===text.toLocaleLowerCase());
@@ -1314,7 +1374,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         {messengerView&&<EmotionalAvatar messages={messages} busy={busy}
           status={status} locale={locale} compact={compact} iconOnly companionVoice={voiceEnabled?voice:undefined}/>}
         {!messengerView&&resetControl}
-        <button type="submit" disabled={busy||!draft.trim()||(mode==="owned"&&!agree&&!(compact&&(testChatOpen||testOfferFromText(draft))))}
+        <button type="submit" disabled={busy||homeHandoffPhase==="queued"||homeHandoffPhase==="sending"||!draft.trim()||(mode==="owned"&&!agree&&!(compact&&(testChatOpen||testOfferFromText(draft))))}
           aria-label={messengerView?(busy?t.loading:t.send):undefined}>{messengerView?<Send size={20} aria-hidden="true"/>:busy?t.loading:t.send}</button>
         {busy&&<button type="button" onClick={()=>{voice.stopDialogue();controller.current?.abort();}}
           aria-label={messengerView?t.cancel:undefined}>{messengerView?<X size={19} aria-hidden="true"/>:t.cancel}</button>}
@@ -1584,6 +1644,21 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         </details>:<small className={styles.muted}>{t.localFeedback}</small>}
       </div>}
     {status&&<p role="alert" className={styles.assistant}>{status}</p>}
+    {compact&&messengerView&&(homeHandoffPhase==="queued"||homeHandoffPhase==="sending")&&
+      <p className={styles.muted} role="status" data-home-handoff-pending>
+        {locale==="ru"?"Ваш запрос принят. Ali готовит ответ…":
+         locale==="es"?"Tu mensaje está listo. Ali prepara una respuesta…":
+         "Your message is ready. Ali is preparing a reply…"}
+      </p>}
+    {compact&&messengerView&&homeHandoffPhase==="retry"&&
+      <div className={styles.assistant} role="alert" data-home-handoff-retry>
+        <span>{locale==="ru"?"Ваш запрос сохранён, но ответ не получен.":
+          locale==="es"?"Tu mensaje se conservó, pero no llegó la respuesta.":
+          "Your message was kept, but no reply arrived."}</span>{" "}
+        <button type="button" onClick={retryHomeAliTurn}>
+          {locale==="ru"?"Повторить отправку":locale==="es"?"Reintentar envío":"Retry sending"}
+        </button>
+      </div>}
     {compact&&needsPrivateSignIn&&<MessengerSignIn locale={locale}/>}
     </div>
     {newBelow&&<button type="button" className={styles.jumpToLatest} onClick={()=>{

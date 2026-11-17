@@ -21,6 +21,8 @@ import { waveNativeTurn,WAVE_NATIVE_ROUTER_VERSION } from "@/lib/holistic-suppor
 import { resolveComplaintTurn } from "@/lib/holistic-support/complaint-mind.mjs";
 import { reviewPracticeBoundary } from "@/lib/holistic-support/practice-boundary.mjs";
 import { consultServiceQuestion, resolveConsultantSuggestion } from "@/lib/assist/consultant-mind.mjs";
+import { salesMindTurn } from "@/lib/holistic-support/sales-mind.mjs";
+import { routeMindRole } from "@/lib/holistic-support/mind-role-router.mjs";
 import { resolveWisdomRequest } from "@/lib/app/coaching-wisdom.js";
 import { resolveConversationFocus } from "@/lib/holistic-support/conversation-context.mjs";
 import { detectConversationLocale } from "@/lib/holistic-support/conversation-locale.mjs";
@@ -406,6 +408,30 @@ export async function POST(request) {
         });
       }
     }
+    // One shared Ali role decision for the website and Telegram. This is only
+    // editorial routing after existing auth/rate/safety; it grants no actions
+    // or permission to enter a deeper psychologist interview.
+    const aliMode=routeMindRole({message:body.message,locale:body.locale,
+      history:body.history,selectedGoal:body.selectedGoal});
+    // Sales Mind only handles genuine service exploration/objections; booking,
+    // factual price lookup and explicit selections stay with Secretary/Consultant.
+    // Keep the same upstream safety, auth, rate, user-context and STOP gates.
+    const salesConversation=safety.status==="clear"&&!recentUnsafe&&!judgmentPriority &&
+      body.judgmentContext==null && body.judgmentChoice==null &&
+      body.usePrivateProfile!==true && body.usePrivateHistory!==true &&
+      body.useAgentMemory!==true && body.preferredFormat==null &&
+      (!body.chosenAxes || body.chosenAxes.length===0) &&
+      ["rules","owned"].includes(body.mode) && aliMode.role==="sales"
+      ? salesMindTurn({message:body.message,locale:body.locale,history:body.history}) : null;
+    if(salesConversation)return await finish({
+      status:salesConversation.status,reply:salesConversation.reply,
+      mindRole:"sales",modelUsed:false,source:"sales-rules",
+      memorySaved:false,userAuthorized:true,suggestions:salesConversation.suggestions,
+      usedSavedTestEvidence:false,usedSavedVideoHistory:false,
+      browserModelAllowed:false,
+      decision:{status:salesConversation.status,message:salesConversation.reply,
+        question:null,suggestions:salesConversation.suggestions},
+    });
     // Preserve the production source-grounded consultant; Judgment and all
     // safety/consent gates remain authoritative before its factual reply.
     const consultation=safety.status==="clear"&&!recentUnsafe&&!judgmentPriority &&
@@ -418,7 +444,8 @@ export async function POST(request) {
       : null;
     if(consultation)return await finish({
       status:consultation.status,reply:consultation.reply,
-      mindRole:"consultant",modelUsed:false,source:"consultant-rules",
+      mindRole:["choose","quality","compare"].includes(consultation.intent)?"sales":"consultant",
+      modelUsed:false,source:"consultant-rules",
       memorySaved:false,userAuthorized:true,suggestions:consultation.suggestions,
       usedSavedTestEvidence:false,usedSavedVideoHistory:false,
       browserModelAllowed:false,
