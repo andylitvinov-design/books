@@ -75,9 +75,16 @@ function verifiedSourceGreen(checks){
 function verifiedSpecialistProductFailure(checks){
  if(classifyIndependentSpecialistChecks(checks)!=='PRODUCT_FAILURE'||
     !verifiedSourceGreen(checks))return false;
- const specialist=latestByName(checks.check_runs).get('hh-specialist');
- return specialist?.app?.id===15368&&specialist.status==='completed'&&
-   specialist.conclusion==='failure';
+ const latest=latestByName(checks.check_runs);
+ const specialist=latest.get('hh-specialist'),merge=latest.get('hh-merge-check');
+ // Modern Core runs the independent specialist validator inside hh-merge-check;
+ // the old separate hh-specialist job no longer exists. Never classify a
+ // product failure from a red Core alone: independent product QA must already
+ // be independently authenticated by classifyIndependentSpecialistChecks.
+ if(merge?.app?.id!==15368||merge.status!=='completed'||
+    merge.conclusion!=='failure')return false;
+ return !specialist||(specialist.app?.id===15368&&
+   specialist.status==='completed'&&specialist.conclusion==='failure');
 }
 // Red aggregate gates with green source and no failed independent QA are
 // policy/stale-base blockers, not a source-writing authorization.
@@ -87,9 +94,10 @@ function verifiedAggregatePolicyHold(checks){
     !verifiedSourceGreen(checks))return false;
  const latest=latestByName(checks.check_runs);
  const specialist=latest.get('hh-specialist'),merge=latest.get('hh-merge-check');
- if(specialist?.app?.id!==15368||specialist.status!=='completed'||
-    specialist.conclusion!=='failure'||merge?.app?.id!==15368||
-    merge.status!=='completed'||merge.conclusion!=='failure')return false;
+ if(merge?.app?.id!==15368||merge.status!=='completed'||
+    merge.conclusion!=='failure'||(specialist&&
+    (specialist.app?.id!==15368||specialist.status!=='completed'||
+     specialist.conclusion!=='failure')))return false;
  const inherited=new Set(['hh-specialist','hh-merge-check','hh-specialists-verified',
    'release-ready','hh-core-verified','classify-change','core-lint-types-build']);
  const trustedPolicyJobs=new Set(['guard-unit','actionlint-changed']);
