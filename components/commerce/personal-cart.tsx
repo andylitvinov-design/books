@@ -97,10 +97,11 @@ const copy = {
   },
 } as const;
 
-export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, squareApiEnabled, squareApiEnvironment, squareApiPrices, verifiedPayPalEnabled, hostedPayPalLinks, stripeLinks }: {
+export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, squareApiEnabled, squareApiEnvironment, squareApiPrices, verifiedPayPalEnabled, hostedPayPalLinks, stripeLinks, paidVideoTrackingEnabled=false }: {
   locale: ServiceLocale;
   paypalEnabled: boolean;
   verifiedPayPalEnabled: boolean;
+  paidVideoTrackingEnabled?: boolean;
   hostedPayPalLinks: Record<string, string>;
   stripeLinks: Record<string, string>;
   wiseEnabled: boolean;
@@ -322,7 +323,7 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
         <h1>{t.title}</h1><p>{t.subtitle}</p></div>
       <span className={styles.count} aria-live="polite">{chosen.length + videoCartCount}</span>
     </div>
-    <VideoCartPayment locale={locale} paypalEnabled={paypalEnabled} />
+    <VideoCartPayment locale={locale} paypalEnabled={paypalEnabled} trackingEnabled={paidVideoTrackingEnabled} />
     {!restored ? <div className={styles.loading} aria-live="polite">…</div> :
       !chosen.length && !videoCartCount ? <div className={styles.empty} data-cart-empty>
         <p role="status">{t.empty}</p><span className={styles.emptyHint}>{t.emptyHint}</span>
