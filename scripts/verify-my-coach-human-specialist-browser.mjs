@@ -33,6 +33,18 @@ export async function verifyHumanSpecialistMobile() {
         return route.fulfill({status:401,contentType:'application/json',
           body:JSON.stringify({error:'SIGN_IN_REQUIRED'})})
       })
+      // The browser tests an explicit server-grounded Ali response without
+      // sending a real request to the public API, a master or the CRM.
+      let aliRequests=0
+      await page.route('**/api/public/specialist-secretary',route=>{
+        aliRequests++
+        const input=JSON.parse(route.request().postData()||'{}')
+        assert.equal(input.slug,'andy-litvinov',label+': source-bound specialist slug')
+        assert.ok(['ru','en','es'].includes(input.locale),label+': locale preserved')
+        return route.fulfill({status:200,contentType:'application/json',
+          body:JSON.stringify({reply:'Published personal consultation: 30 min 50 EUR; 60 min 100 EUR.',
+            intent:'price',bookingConfirmed:false})})
+      })
       // Intentionally block remote thumbnails so local portrait recovery is
       // verified instead of relying on YouTube/third-party network access.
       await page.route('https://i.ytimg.com/**',route=>route.abort())
@@ -87,9 +99,12 @@ export async function verifyHumanSpecialistMobile() {
         label+': secretary is the initial conversation tab')
       const question=root.locator('#hh-human-specialist-question')
       await question.waitFor({state:'visible'})
-      await question.fill('Hello, I have a question about your services')
+      await question.fill('How much does a personal consultation cost?')
       await root.locator('button[type="submit"]').tap()
       await root.locator('[data-human-secretary-reply]').first().waitFor({state:'visible'})
+      assert.match(await root.locator('[data-human-secretary-reply]').first().innerText(),/50 EUR; 60 min 100 EUR/,
+        label+': published public FAQ response, not fabricated client rule')
+      assert.equal(aliRequests,1,label+': only one informational request')
       assert.equal(posted,0,label+': secretary never posts into the practitioner CRM thread')
       await root.locator('[data-human-channel="human"]').tap()
       await root.locator('a[href*="/app/messages?to=andy-litvinov"]').waitFor({state:'visible'})

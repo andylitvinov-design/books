@@ -60,6 +60,7 @@ const textByLocale = {
     secretaryIntro:'Hi, I’m Ali, the digital secretary. I can answer general questions about Holistic House and help you find your next step. To contact the specialist personally, switch to Specialist.',
     secretaryInfo:'Automatic replies · your question is not sent to the specialist',
     secretaryFallback:'I can help with services and practical information. For a personal question, open the Specialist tab.',
+    secretaryError:'Ali cannot verify this specialist’s details right now. No message was sent and no appointment was booked.',
     secretaryPlaceholder:'What would you like to ask?…', moreShort:'Videos', bookShort:'Book a session',
   },
   ru: {
@@ -88,6 +89,7 @@ const textByLocale = {
     secretaryIntro:'Здравствуйте! Я Ali, цифровой секретарь. Помогу с общими вопросами об услугах Holistic House. Чтобы написать специалисту лично, переключитесь на вкладку «Специалист».',
     secretaryInfo:'Автоответы · ваши вопросы не отправляются специалисту',
     secretaryFallback:'Могу помочь с информацией об услугах. Для личного вопроса выберите вкладку «Специалист».',
+    secretaryError:'Ali сейчас не может проверить данные специалиста. Сообщение не отправлено, запись не оформлена.',
     secretaryPlaceholder:'О чём хотите спросить?…', moreShort:'Видео', bookShort:'Консультация',
   },
   es: {
@@ -116,6 +118,7 @@ const textByLocale = {
     secretaryIntro:'¡Hola! Soy Ali, el secretario digital. Puedo responder preguntas generales sobre Holistic House. Para escribir al profesional, cambia a la pestaña Profesional.',
     secretaryInfo:'Respuestas automáticas · tu pregunta no se envía al profesional',
     secretaryFallback:'Puedo ayudarte con información general. Para escribir personalmente, usa la pestaña Profesional.',
+    secretaryError:'Ali no puede verificar ahora el perfil. No se envió ningún mensaje ni se reservó una cita.',
     secretaryPlaceholder:'¿Qué te gustaría preguntar?…', moreShort:'Vídeos', bookShort:'Consulta',
   },
 }
@@ -159,6 +162,8 @@ export default function HumanSpecialistDialogue({locale,slug,name,role,photo,vid
   const [channel,setChannel] = useState<'secretary'|'human'>('secretary')
   const [secretaryDraft,setSecretaryDraft] = useState('')
   const [secretaryMessages,setSecretaryMessages] = useState<SecretaryMessage[]>([])
+  const [secretaryBusy,setSecretaryBusy] = useState(false)
+  const secretaryFlight = useRef<AbortController|null>(null)
   const rootRef = useRef<HTMLElement>(null)
   const threadView = useRef<HTMLDivElement>(null)
   const [playing,setPlaying] = useState(false)
@@ -269,25 +274,70 @@ export default function HumanSpecialistDialogue({locale,slug,name,role,photo,vid
     if(!response.ok) throw new Error(typeof result.error==='string'?result.error:'MESSAGE_NOT_SENT')
     return result
   }
+  // Ali's informational transcript is local to this practitioner. Navigating
+  // to a different specialist aborts the in-flight public request.
+  useEffect(()=>{
+    secretaryFlight.current?.abort()
+    secretaryFlight.current=null
+    setSecretaryMessages([])
+    setSecretaryDraft('')
+    setSecretaryBusy(false)
+    return ()=>{secretaryFlight.current?.abort()}
+  },[slug,locale])
+
   async function submit(event:FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const text = (channel==='secretary'?secretaryDraft:draft).trim()
     if(!text || busy)return
     if(channel==='secretary') {
-      // Reuse the existing guest AI rule composer: no CRM send, paid model,
-      // private specialist thread, or implication that a human replied.
+      // Only public, server-verified practitioner data may describe this
+      // specialist's services, tariffs or booking. Do not touch the CRM thread.
+      if(secretaryFlight.current)return
+      const controller=new AbortController()
+      secretaryFlight.current=controller
+      setSecretaryBusy(true)
       const history: Array<{role:'user'|'assistant';text:string}> = secretaryMessages.slice(-6).map(row=>({
         role:row.mine?'user':'assistant',text:row.text,
       }))
+      // Keep the existing zero-provider rule engine for harmless greeting ONLY
+      // when the server is unavailable. Never use it to invent specialist facts.
       const reviewed = ruleConversationReply({message:text,locale,history})
-      const reply = typeof reviewed?.reply==='string' && reviewed.reply.trim()
-        ? reviewed.reply : t.secretaryFallback
-      const id = crypto.randomUUID()
+      let reply=t.secretaryError
+      let intent=''
+      try {
+        const response=await fetch('/api/public/specialist-secretary',{
+          method:'POST',credentials:'same-origin',cache:'no-store',
+          headers:{'content-type':'application/json'},
+          body:JSON.stringify({slug,locale,message:text,history}),
+          signal:controller.signal,
+        })
+        const body=await response.json().catch(()=>({}))
+        if(!response.ok||typeof body.reply!=='string'||!body.reply.trim()||body.bookingConfirmed!==false)
+          throw new Error('ALI_PUBLIC_SPECIALIST_UNAVAILABLE')
+        reply=body.reply.trim()
+        intent=typeof body.intent==='string'?body.intent:''
+      } catch {
+        if(controller.signal.aborted)return
+        if(/^(?:hi|hello|hey|hola|привет|здравствуйте|добрый день)[.!? ]*$/iu.test(text)
+          &&typeof reviewed?.reply==='string'&&reviewed.reply.trim())
+          reply=reviewed.reply.trim()
+      } finally {
+        if(secretaryFlight.current===controller){
+          secretaryFlight.current=null
+          setSecretaryBusy(false)
+        }
+      }
+      if(controller.signal.aborted)return
+      const id=crypto.randomUUID()
       setSecretaryMessages(previous=>[
         ...previous,{id:id+'-user',mine:true,text},
         {id:id+'-secretary',mine:false,text:reply},
       ].slice(-30))
       setSecretaryDraft('')
+      if(isOwner&&(intent==='booking_handoff'||intent==='availability_unknown')){
+        setMinBookingDay(localDay(new Date()))
+        setBookingOpen(true)
+      }
       return
     }
     if(mode==='guest'||mode==='verify'||mode==='unavailable'||mode==='restricted'||!accountId) {
@@ -489,9 +539,9 @@ export default function HumanSpecialistDialogue({locale,slug,name,role,photo,vid
               else {setDraft(event.target.value);operation.current=null}
               setNotice('')
             }}
-            placeholder={channel==='secretary'?t.secretaryPlaceholder:t.placeholder} disabled={busy} />
+            placeholder={channel==='secretary'?t.secretaryPlaceholder:t.placeholder} disabled={busy||secretaryBusy} />
           <button type="submit" className={styles.send}
-            disabled={busy||!(channel==='secretary'?secretaryDraft:draft).trim()}
+            disabled={busy||secretaryBusy||!(channel==='secretary'?secretaryDraft:draft).trim()}
             aria-label={busy?t.sending:t.send}><Send size={21} aria-hidden="true"/></button>
         </form>
         {channel==='secretary'?<p className={styles.secretaryInfo}>{t.secretaryInfo}</p>:<>

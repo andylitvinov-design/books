@@ -22,7 +22,7 @@ test("website-only intake UI shows Telegram and WhatsApp with honest Send disclo
  // while a selected-service request is routed only by its allowlisted code.
  assert.match(ui,/resolveTelegramFirstEntry/);
  assert.doesNotMatch(ui,/resolveTelegramServiceEntry/);
- assert.match(ui,/if\(!active\)\{setServiceBot\(null\);setBotKind\(null\);return;\}/);
+ assert.ok(ui.includes('if(!active||telegramUrl||!isOfficialFreeReviewWhatsAppDraft(whatsappUrl,locale))'));
  assert.match(ui,/api\/public\/telegram-diagnostic/);
  assert.doesNotMatch(ui,/mailto:|type="email"|\/api\/service-enquiries/);
  assert.ok(ui.includes("telegramEnquiryUrlFromWhatsApp(whatsappUrl)"));

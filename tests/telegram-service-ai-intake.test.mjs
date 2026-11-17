@@ -102,13 +102,14 @@ test('Only canonical free review gets the generic bot, other services stay manua
  assert.equal(isOfficialFreeReviewWhatsAppDraft('https://wa.me/1000?text=Page','en'),false);
 });
 
-test('Two-action Services cards do not enter the opt-in bot; only active free-review CTA can load it',()=>{
+test('Two-action Services cards keep hidden requests dormant and paid orders in human Telegram',()=>{
  const ui=source('components/mandatory-messenger-actions.tsx');
  const action=source('components/services-card-actions.tsx');
  assert.match(action,/active=\{expanded==="order"\}/);
- assert.match(ui,/if\(!active\|\|telegramUrl\|\|!isOfficialFreeReviewWhatsAppDraft\(whatsappUrl,locale\)\)/);
- assert.doesNotMatch(ui,/resolveTelegramServiceEntry\(payload,manual,locale\)/);
+ assert.ok(ui.includes('if(!active||telegramUrl||!isOfficialFreeReviewWhatsAppDraft(whatsappUrl,locale))'));
  assert.match(ui,/const entry=resolveTelegramFirstEntry\(payload,locale\)/);
+ assert.doesNotMatch(ui,/resolveTelegramServiceEntry\(payload,manual,locale\)/);
  assert.match(ui,/serviceBot\|\|telegramUrl\|\|telegramEnquiryUrlFromWhatsApp\(whatsappUrl\)/);
+ assert.match(ui,/All service orders remain in the human @holistichouse Business chat/);
  assert.doesNotMatch(ui,/createPublicServiceEnquiry|serviceRole|privateKey/);
 });
