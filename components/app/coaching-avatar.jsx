@@ -1,7 +1,7 @@
 'use client'
 import {useId} from 'react'
 import Image from 'next/image'
-import {COACH_PERSONAS,PUBLIC_COACH_PERSONA_IDS} from '@/lib/coaching/persona-registry.mjs'
+import {COACH_PERSONAS} from '@/lib/coaching/persona-registry.mjs'
 import MyCoachMotionMedia from '@/components/my-coach-motion-media'
 import {COACH_AVATAR_OPTIONS} from '@/lib/personal-coaching/coaching-avatar-state.mjs'
 import styles from './coaching-avatar.module.css'
@@ -24,7 +24,8 @@ export default function CoachingAvatar({locale='en',avatarId='warm',onAvatarChan
 
  // This component never requests microphone permission or starts speech.
  // An optional, already-authorized playback MediaStream can drive real RMS.
- const hasMotionVideo=Boolean(photoId)&&PUBLIC_COACH_PERSONA_IDS.includes(photoId)
+ const hasMotionVideo=Boolean(photoId)&&['mira','max','sofia','alex'].includes(photoId)
+ const posterPath=photoId?'/images/holistic-house/my-coach-motion/'+photoId+'-still.'+(photoId==='harry'?'svg':'webp'):null
 
  return <div className={styles.frame} data-coach-avatar="true" data-photo-motion="static" data-avatar-size={size==='large'?'large':'compact'} data-phase={state}
   data-avatar-id={profile.id} data-photo-persona={photoId||undefined}
@@ -54,10 +55,10 @@ export default function CoachingAvatar({locale='en',avatarId='warm',onAvatarChan
    </svg>
    {photoId&&<div className={styles.livingPortrait} aria-hidden="true">
      <picture className={styles.livingPortraitBase}>
-       <source media="(prefers-reduced-motion: reduce)" type="image/webp"
-         srcSet={'/images/holistic-house/my-coach-motion/'+photoId+'-still.webp'}/>
+       <source media="(prefers-reduced-motion: reduce)" type={photoId==='harry'?'image/svg+xml':'image/webp'}
+         srcSet={posterPath}/>
        <Image className={styles.livingPortraitImage}
-         src={'/images/holistic-house/my-coach-motion/'+photoId+'-still.webp'}
+         src={posterPath}
          width={370} height={697} unoptimized loading="eager" alt="" draggable={false}/>
      </picture>
      {hasMotionVideo&&<MyCoachMotionMedia personaId={photoId} phase={state} context="avatar" scene={scene} />}

@@ -823,7 +823,7 @@ try{
    "Approved Academy quiz starts at the first question");
  assert.equal(await academyQuiz.locator('[aria-current="step"]').count(),1,
    "The quiz exposes exactly one active step");
- assert.equal(await academyQuiz.locator('[role="group"] button[aria-pressed]').count(),4,
+ assert.equal(await academyQuiz.locator('section[aria-label] [role="group"] > button[aria-pressed]').count(),4,
    "The first quiz question offers four real choices");
  const nextStep=academyQuiz.locator('[data-study-next]');
  await academyQuiz.locator('[data-study-next]:not([disabled])').waitFor({state:"visible",timeout:30000});

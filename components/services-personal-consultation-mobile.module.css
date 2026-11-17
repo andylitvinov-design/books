@@ -136,3 +136,25 @@
 .card>.content{grid-column:2;grid-row:1}
 .card>:global([data-service-card-actions]){grid-column:1/-1;grid-row:2;padding:0 1px 1px;margin:2px 0 0}
 }
+
+/* Price or Free badge always anchors at the card's top-right, regardless of
+   Details/Order expansion. The photo and copy never disappear. */
+@media(max-width:760px){
+  .card{position:relative}
+  .priceTag{
+    position:absolute;z-index:1;right:9px;top:8px;
+    display:inline-flex;align-items:center;justify-content:center;
+    max-width:calc(100% - 102px);min-height:24px;
+    padding:4px 9px;border-radius:999px;background:#e4f2e7;color:#075840;
+    white-space:nowrap;font:750 clamp(10px,3vw,12px)/1.15 Arial,Helvetica,sans-serif
+  }
+  .priceTag[data-service-price-kind="paid"]{background:#fff0c8;color:#654613}
+  .priceTag[data-service-price-kind="quote"]{background:#f3ecdb;color:#6b5133}
+  .content{padding-top:27px}
+  .card>.photo{min-height:118px;height:118px}
+  .card>:global([data-service-card-actions]){grid-column:1/-1;grid-row:2;min-width:0}
+}
+@media(max-width:350px){
+  .priceTag{right:7px;top:7px;padding:4px 7px;font-size:10px}
+  .content{padding-top:25px}
+}

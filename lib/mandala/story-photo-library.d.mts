@@ -25,6 +25,8 @@ export declare const STORY_WIKIMEDIA_PHOTOS:readonly StoryPhoto[];
 export declare const STORY_PHOTOS:readonly StoryPhoto[];
 export declare const STORY_PHOTO_BY_ID:ReadonlyMap<string,StoryPhoto>;
 export declare function isTrustedStoryPhoto(photo:unknown):photo is StoryPhoto;
+/** Validates the actual final origin of a bounded trusted photo-source fetch. */
+export declare function isAllowedStoryPhotoResponseUrl(photo:unknown,responseUrl:string):boolean;
 export declare function chooseBusinessStoryPhoto(options?:{
  description?:string;stage?:number;shotIndex?:number;
  usedIds?:readonly string[];avoid?:string|string[];

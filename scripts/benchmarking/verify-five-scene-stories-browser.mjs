@@ -10,6 +10,7 @@ import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {installGuestVideoBlobCapture,readRealGuestVideo} from './real-guest-video-file.mjs';
+import {completeThreeStepGoalsQuiz} from './complete-three-step-goals-quiz.mjs';
 import {isReviewedFilmedStoryScene} from '../../lib/mandala/reviewed-filmed-story.mjs';
 import {verifiedCategorySource} from '../../lib/mandala/category-video-storyboard.mjs';
 
@@ -64,7 +65,8 @@ try{
    {waitUntil:'domcontentloaded',timeout:60000});
  assert.equal(response?.status(),200,'STORIES_LOCAL_APP_NOT_200');
  await page.locator('[data-video-studio-hydrated="true"]').waitFor({timeout:60000});
- await page.locator('[data-video-continue-scenarios]').click();
+ await completeThreeStepGoalsQuiz(page,{engine:'webkit'});
+ await page.locator('[data-video-continue-scenarios]').tap();
  await page.locator('[data-video-quick-control="editor"]').click();
  const storyTab=page.locator('[data-video-montage-tab="concept"]');
  await storyTab.waitFor({state:'visible',timeout:20000});
