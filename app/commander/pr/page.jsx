@@ -1,3 +1,4 @@
+import './pr-timeline.css';
 import PrCompletionClient from './PrCompletionClient';
 
 export const metadata={
