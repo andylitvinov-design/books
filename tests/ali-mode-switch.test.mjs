@@ -155,3 +155,29 @@ test('localized output guard protects Spanish and the separately consented psych
   }
   assert.equal(assessRoleReply({role:'sales',locale:'es',text:'Puedo explicarte el método. ¿Qué quieres saber?'}).ok,true);
 });
+
+test('consented psychologist state cannot be hijacked into Sales by old service context',()=>{
+ const consented={currentRole:'secretary_psychologist',
+   sessionRoleVerified:true,validatedPsychologistConsent:true};
+ const history=[user('Интересуюсь вашими услугами')];
+ for(const msg of ['Я подумаю','Мне страшно','Мне тревожно','Давайте продолжим'])
+  assert.equal(decide(msg,'ru',history,consented).role,'secretary_psychologist',msg);
+ const factual=decide('Расскажите про сеанс Рейки','ru',history,consented);
+ assert.equal(factual.role,'secretary');
+ assert.equal(factual.transition,'one_turn');
+ assert.equal(decide('А цена?','ru',history,consented).transition,'one_turn');
+ assert.equal(decide('Стоп','ru',history,consented).role,'secretary');
+});
+test('explicit sadness interrupts selling, and a fresh conversation cannot inherit the sales topic',()=>{
+ const hist=[user('Интересуюсь образной психотерапией')];
+ const mood=decide('Мне тревожно','ru',hist);
+ assert.equal(mood.role,'secretary');
+ assert.equal(mood.reason,'emotional_support_not_sales');
+ assert.equal(mood.transition,'reset');
+ assert.equal(decide('Да','ru',[...hist,user('Мне тревожно')]).role,'secretary');
+ const newIntent=decide('Расскажите о сеансе Рейки','ru',[...hist,user('Мне тревожно')]);
+ assert.equal(newIntent.role,'sales');
+ const trusted={currentRole:'sales',sessionRoleVerified:true};
+ assert.equal(decide('Мне грустно','ru',hist,trusted).role,'secretary');
+ assert.equal(decide('Я просто хочу поговорить','ru',hist,trusted).role,'secretary');
+});
