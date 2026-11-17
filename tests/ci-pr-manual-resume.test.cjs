@@ -13,7 +13,7 @@ const base={
 };
 const old={
  schema:'HH_PR_TASK_V1',pr_number:4737,head_sha:SHA,
- lane:'repair',state:'MANUAL',new_sha:null,source_published:false,
+ lane:'repair',task_key:'1'.repeat(32),state:'MANUAL',new_sha:null,source_published:false,
  detail_code:'FREE_AI_OPENROUTER_PATCH_RESPONSE_TRUNCATED',
  ai_execution:{model_response_confirmed:true,patch_received:false,source_published_sha:null},
  model_run:{model_call_started_at:'2026-11-16T00:03:00Z',
