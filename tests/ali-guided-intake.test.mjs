@@ -30,6 +30,29 @@ test('Ali uses exactly one goal -> obstacle -> current -> review question at a t
  assert.match(summary,/switching work/);
  assert.doesNotMatch(summary,/trauma|diagnosis|therapy recommended/i);
 });
+test('Meetup referral is remembered as the CLIENT source, never mistaken for their goal',()=>{
+ const scenarios=[
+  ['I got this link from meet up app','en','goal'],
+  ['Я пришёл по ссылке из Meetup','ru','goal'],
+  ['Recibí el enlace de Meetup','es','goal'],
+ ];
+ for(const [message,locale] of scenarios){
+   const a=step(message,'goal',{},locale);
+   assert.equal(a.stage,'goal');
+   assert.equal(a.slots.goal,undefined);
+   assert.equal(a.slots.source,message);
+   assert.equal(countQuestions(a.reply),1);
+   const b=step(locale==='en'?'I want direction':locale==='ru'?'Хочу найти направление':'Quiero tener claridad',
+     a.stage,a.slots,locale);
+   assert.equal(b.stage,'challenge');
+   const summary=aliGuidedIntakeSummary({locale,slots:b.slots});
+   assert.match(summary,/Meetup|meet up/i);
+ }
+ const generic=step('I need help');
+ assert.equal(generic.stage,'goal');
+ assert.equal(generic.slots.goal,undefined);
+ assert.equal(countQuestions(generic.reply),1);
+});
 test('An unclear, distressed or first-time visitor is not forced to invent a goal',()=>{
  for(const text of ['Currently I am going through lots of negative events in my life',
    'My happening life','Sorry it is my first time','Help please lol']){
@@ -107,10 +130,12 @@ test('Corrections received after ready are included in the client-reviewed draft
 test('Existing V3 ciphertext explicitly allowlists stage and bounded factual slots',()=>{
  const ctx=v3Context({turns:[],intakeStage:'challenge',
    intakeSlots:{goal:'x'.repeat(500),challenge:'what is difficult',
+     source:'Found your page through Meetup '+'.'.repeat(250),
      diagnosis:'unverified label'},photoFileId:'test-file-id'});
  assert.equal(ctx.intakeStage,'challenge');
  assert.equal(ctx.intakeSlots.goal.length,360);
  assert.equal(ctx.intakeSlots.challenge,'what is difficult');
+ assert.equal(ctx.intakeSlots.source.length,180);
  assert.equal(ctx.intakeSlots.diagnosis,undefined);
  assert.equal(ctx.photoFileId,undefined);
  assert.equal(v3Context({turns:[],intakeStage:'secretly_sent'}).intakeStage,undefined);
