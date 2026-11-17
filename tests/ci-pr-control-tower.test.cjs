@@ -1106,6 +1106,29 @@ test('source dispatch requires verified current mergeability before reservation'
  }
 });
 
+test('P1 repair retries an unresolved mergeability lookup ONCE and only with exact-HEAD proof',async()=>{
+ const initiallyUnknown=pr(4811,'repair',{title:'fix(my-coach): blocked source build',
+  mergeable:null,mergeable_state:'unknown'});
+ for(const kind of ['resolved','still-unknown','moved-head','dirty','held']){
+  const next=kind==='resolved'?{...initiallyUnknown,mergeable:true,mergeable_state:'blocked'}:
+   kind==='still-unknown'?initiallyUnknown:
+   kind==='moved-head'?{...initiallyUnknown,head:{...initiallyUnknown.head,sha:'b'.repeat(40)},
+    mergeable:true,mergeable_state:'clean'}:
+   kind==='dirty'?{...initiallyUnknown,mergeable:false,mergeable_state:'dirty'}:
+   {...initiallyUnknown,mergeable:true,mergeable_state:'clean',
+    labels:[...initiallyUnknown.labels,{name:'hh:hold'}]};
+  const f=fixture([initiallyUnknown],{comments:{4811:[proof()]}});
+  let lookups=0;
+  f.github.rest.pulls.get=async()=>({data:lookups++===0?initiallyUnknown:next});
+  const result=await run({github:f.github,core:core(),context,now:NOW,
+   capacityFn:f.capacityFn});
+  assert.equal(lookups,2,kind+' must not create unbounded GitHub polling');
+  assert.equal(result.repairDispatchAccepted,kind==='resolved'?1:0,kind);
+  assert.equal(f.calls.dispatched.length,kind==='resolved'?1:0,kind);
+  assert.equal(f.calls.reserved.filter(x=>x.body.includes('"state":"RESERVED"')).length,
+   kind==='resolved'?1:0,kind+' cannot take an unverified source lease');
+ }
+});
 test('source dispatch requires a complete nonempty worker-safe changed-file scope',async()=>{
  for(const files of [[],[{filename:'tests/only.test.js',status:'modified'}],
    Array.from({length:100},(_,i)=>({filename:'src/'+i+'.js',status:'modified'}))]){
