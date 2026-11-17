@@ -1098,10 +1098,11 @@ test('root classifier does not mislabel BASE_ADVANCED-like release failures as s
   // Specialist (PRODUCTION_BASE_CHANGED) and dependent merge gate.
   assert.equal(classifyCoreFailureJobs([success('core-lint-types-build'),
     fail('hh-specialist'),fail('hh-merge-check')]),'SPECIALIST_FAILED');
-  // Without an executed Specialist job the root cause is unknown.
-  // Keep this fail-closed instead of inventing a policy/base failure.
+  // The current embedded hh-merge-check is itself an executed gate: its
+  // underlying cause remains unknown until a verified log is read, but the
+  // green source job proves the failure is gate-only, not source code.
   assert.equal(classifyCoreFailureJobs([success('core-lint-types-build'),
-    fail('hh-merge-check')]),'UNVERIFIED');
+    fail('hh-merge-check')]),'RELEASE_GATE_ONLY');
   assert.equal(classifyCoreFailureJobs([...unified,fail('hh-merge-check')]),
     'RELEASE_GATE_ONLY','policy-only failure is not a source defect');
   assert.equal(classifyCoreFailureJobs([...unified,fail('core-lint-types-build','TypeScript check'),
@@ -1944,7 +1945,7 @@ test('every transient Core retry requires the shared classifier to authorize inf
 test('Watchdog classifies red Core jobs and records blocker diagnostics before bounded retry evaluation',()=>{
  const fs=require('node:fs');
  const source=fs.readFileSync('scripts/ci-pr-ten-minute-watchdog.cjs','utf8');
- const classify=source.indexOf('const diagnosis=classifyRedCiError({pr:live,jobs,coreRoot:root});');
+ const classify=source.indexOf('const diagnosis=classifyRedCiError({pr:live,jobs,coreRoot:root,');
  const retry=source.indexOf('shouldRetryTransientCoreFailure({diagnosis,run:latest,jobs,now,ciRoom,');
  const sourceRepair=source.indexOf('summary.verifiedSourceFailures++');
  assert.ok(classify>=0&&retry>classify&&sourceRepair>retry);

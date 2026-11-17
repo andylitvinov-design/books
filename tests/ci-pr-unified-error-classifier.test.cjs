@@ -140,7 +140,7 @@ test('legacy category contract remains compatible with watchdog consumers', () =
   const source = require('node:fs').readFileSync(
     require('node:path').join(__dirname, '../scripts/ci-pr-ten-minute-watchdog.cjs'), 'utf8'
   );
-  assert.match(source, /classifyRedCiError\(\{pr:live,jobs,coreRoot:root\}\)/);
+  assert.match(source, /classifyRedCiError\(\{pr:live,jobs,coreRoot:root,/);
   assert.match(source, /ciErrorByCategory/);
   assert.match(source, /noteConfirmedBlocker/);
   const watchdog = require('node:fs').readFileSync(
