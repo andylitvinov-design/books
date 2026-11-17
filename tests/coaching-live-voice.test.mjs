@@ -259,7 +259,7 @@ test('approved live-session visual hierarchy keeps a real voice pipeline, readab
   const ui=source('components/my-coach-live-dialogue.jsx')
   const css=source('components/my-coach-live-dialogue.module.css')
   for(const token of ['data-session-visual-v2','data-session-visual-v3','className={styles.heroSubtitle}',
-    'showCaptions&&','data-coach-language-control','onChange={event=>setSpeechLocale(event.target.value)}','setShowCaptions(value=>!value)',
+    'showCaptions&&','className={styles.captionMore}','data-coach-language-control','onChange={event=>setSpeechLocale(event.target.value)}','setShowCaptions(value=>!value)',
     'className={styles.endControl}','className={styles.liveTranscript}','className={styles.voiceControls}',
     'className={styles.textComposer} open','<details className={styles.quickGoals}>',
     'onTurn={(text,spoken)=>sendMessage(text,{voiceTurn:true,utteranceLocale:spoken?.locale})}','onTranscript={setSpeechPreview}']) assert.ok(ui.includes(token),token)
