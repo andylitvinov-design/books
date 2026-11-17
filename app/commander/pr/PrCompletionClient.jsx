@@ -131,8 +131,11 @@ export default function PrCompletionClient(){
     style={{borderTop:'1px solid #48435f',padding:'13px 0'}}>
     <a style={{...styles.link,fontSize:18,fontWeight:650}} href={'https://github.com/andylitvinov-design/books/pull/'+item.prNumber}
       target="_blank" rel="noopener noreferrer">PR #{item.prNumber}</a>
-    <p style={{fontWeight:600,margin:'6px 0'}}>{label[item.status]||item.status}</p>
-    <p style={{...styles.small,margin:'5px 0'}}>HEAD: {(item.headSha||'').slice(0,12)} · {item.reasonCode||'Нет подтверждения следующего этапа'}</p>
+    <p style={{fontWeight:600,margin:'6px 0'}}>
+     {journeys[item.requestId]?.stages?.some(step=>step.id==='merge'&&step.state==='done')
+      ?'GitHub смержен · Production LIVE проверяется':label[item.status]||item.status}
+    </p>
+    <p style={{...styles.small,margin:'5px 0'}}>HEAD: {(journeys[item.requestId]?.currentHeadSha||item.headSha||'').slice(0,12)} · {item.reasonCode||'Нет подтверждения следующего этапа'}</p>
     {item.mergeSha&&<p style={styles.small}>Merge SHA: {item.mergeSha.slice(0,12)} · Production LIVE не подтверждён</p>}
     <button className="hh-pr-details-toggle" type="button"
      aria-expanded={expandedId===item.requestId}
