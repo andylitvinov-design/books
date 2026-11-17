@@ -389,14 +389,14 @@ test('one signed runner drains several distinct owner requests, with hard cap',a
 });
 test('Core-failure wake only starts direct handoff, with sparse default-branch checkout',()=>{
  const workflow=require('node:fs').readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
- assert.match(workflow,/workflows:\\s*[\\s\\S]*'HH PR core release gate'/);
+ assert.ok(workflow.includes("      - 'HH PR core release gate'"));
  const reconciler=workflow.slice(workflow.indexOf('  reconcile:'),workflow.indexOf('  completion-wait:'));
  const direct=workflow.slice(workflow.indexOf('  direct-handoff:'),workflow.indexOf('  reactivate-schedules:'));
- assert.match(reconciler,/github\\.event_name != 'workflow_run'/);
- assert.match(direct,/github\\.event\\.workflow_run\\.name == 'HH PR core release gate'/);
- assert.match(direct,/github\\.event\\.workflow_run\\.conclusion == 'failure'/);
+ assert.match(reconciler,/github\.event_name != 'workflow_run'/);
+ assert.match(direct,/github\.event\.workflow_run\.name == 'HH PR core release gate'/);
+ assert.match(direct,/github\.event\.workflow_run\.conclusion == 'failure'/);
  assert.match(direct,/filter: blob:none/);
- assert.match(direct,/sparse-checkout: \\|[\\s\\S]*scripts[\\s\\S]*\\.github/);
- assert.equal((workflow.match(/const \\{drain\\}=require\\(process\\.env\\.GITHUB_WORKSPACE/g)||[]).length,2);
- assert.equal((workflow.match(/const outcome=await drain\\(/g)||[]).length,2);
+ assert.match(direct,/sparse-checkout: \|[\s\S]*scripts[\s\S]*\.github/);
+ assert.equal((workflow.match(/const \{drain\}=require\(process\.env\.GITHUB_WORKSPACE/g)||[]).length,2);
+ assert.equal((workflow.match(/const outcome=await drain\(/g)||[]).length,2);
 });
