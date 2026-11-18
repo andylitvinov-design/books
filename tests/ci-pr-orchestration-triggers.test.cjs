@@ -7,7 +7,7 @@ test('watchdog has independent cron; failed Core is delegated by one trusted eve
   const s=read('hh-pr-ten-minute-watchdog');
   const direct=read('hh-pr-direct-core-failure');
   const native=read('hh-native-auto-merge');
-  assert.ok(s.includes("cron: '7,27,47 * * * *'"));
+  assert.ok(s.includes("cron: '13,33,53 * * * *'"));
   for(const tag of ['HH watchdog / dry run','HH watchdog / completion wake',
     'HH watchdog / direct handoff','HH watchdog / reconcile'])
     assert.ok(s.includes(tag),'Watchdog must distinguish real reconcile from no-op dispatch '+tag);
@@ -446,7 +446,7 @@ test('four bounded Watchdog control jobs retain slim; conflict uses native PR-ta
   assert.equal((w.match(/    runs-on: ubuntu-slim/g)||[]).length,jobs.length);
   assert.doesNotMatch(w,/^  issue_comment:/m,
     'unrelated PR discussion must not start a new Watchdog Action');
-  assert.match(w,/^  schedule:\n    - cron: '7,27,47 \* \* \* \*'$/m);
+  assert.match(w,/^  schedule:\n    - cron: '13,33,53 \* \* \* \*'$/m);
   assert.match(w,/^  workflow_dispatch:/m);
   assert.match(w,/group: hh-control-tower-single-writer/);
   assert.match(w,/^  workflow_run:$/m);
