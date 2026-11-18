@@ -7,7 +7,7 @@ import {BookOpen, CalendarDays, ClipboardCheck, Clapperboard, Flower2,
 import type {PublicLocale} from "@/lib/public-locales";
 import css from "./messenger-ai-landing.module.css";
 import {useAliPersona} from "./use-ali-persona";
-import {playAliPersonaAudio,stopAliPersonaAudio} from "./ali-persona-audio";
+import {playAliPersonaAudio,stopAliPersonaAudio,prepareAliNaturalVoice} from "./ali-persona-audio";
 
 // Owner's original HeyGen exports, not a YouTube player and not time-limited
 // files2.heygen.ai signed downloads. Both captioned MP4s were checked as
@@ -83,7 +83,7 @@ export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,onSupp
   const t=COPY[locale];
   const {persona}=useAliPersona();
   const [speaking,setSpeaking]=useState(false);
-  useEffect(()=>()=>stopAliPersonaAudio(),[]);
+  useEffect(()=>{void prepareAliNaturalVoice();return ()=>stopAliPersonaAudio();},[]);
   const playGreeting=()=>{
     if(speaking){stopAliPersonaAudio();setSpeaking(false);return;}
     playAliPersonaAudio(persona.id,locale,setSpeaking);
