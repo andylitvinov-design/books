@@ -74,3 +74,13 @@ test("Selected canonical scenario feeds two RU options and the original approved
  assert.match(chosen.options[0].text,/Чужая карта успеха/);
  assert.match(chosen.options[1].text,/Свои ценности на горизонте/);
 });
+
+test("Therapy A/B requires the existing real macOS WebKit media acceptance",()=>{
+ const workflow=source(".github/workflows/holistic-support-mandala.yml");
+ const start=workflow.indexOf("  voice-webkit-macos:");
+ assert.ok(start>=0,"Existing WebKit job is retained");
+ const job=workflow.slice(start,start+2800);
+ assert.match(job,/startsWith\(github\.head_ref, 'feat\/therapy-'\)/);
+ assert.match(job,/runs-on: macos-15/);
+ assert.match(job,/needs: \[webkit_preflight\]/);
+});
