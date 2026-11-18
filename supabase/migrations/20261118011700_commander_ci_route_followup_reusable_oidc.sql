@@ -12,8 +12,8 @@ DECLARE
        'andylitvinov-design/books/.github/workflows/hh-pr-direct-core-failure.yml@refs/heads/codex/bootstrap-books'$old$;
   new_identity constant text := $new$
     OR coalesce(e.oidc_workflow_ref,'') NOT IN (
-       'andylitvinov-design/books/.github/workflows/hh-pr-direct-core-failure.yml@refs/heads/codex/bootstrap-books',
-       'andylitvinov-design/books/.github/workflows/hh-native-auto-merge.yml@refs/heads/codex/bootstrap-books')$new$;
+      'andylitvinov-design/books/.github/workflows/hh-pr-direct-core-failure.yml@refs/heads/codex/bootstrap-books',
+      'andylitvinov-design/books/.github/workflows/hh-native-auto-merge.yml@refs/heads/codex/bootstrap-books')$new$;
 BEGIN
   current_def := pg_get_functiondef(
     'business_brain.commander_ci_route_followup_record_v1(uuid)'::regprocedure);
