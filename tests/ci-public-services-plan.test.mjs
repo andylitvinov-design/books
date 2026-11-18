@@ -1758,7 +1758,7 @@ test('Practice SSR is owned by exact practitioner browser workflows, not the unr
     assert.equal(covers(owner,path),true,path+' must keep practitioner editor checks');
   }
   const browser=workflow('practice-visual-browser.yml');
-  assert.match(browser,/verify-practice-visual-browser\\.mjs/);
+  assert.match(browser,/verify-practice-visual-browser\.mjs/);
   assert.match(browser,/Chromium and WebKit/);
   assert.match(browser,/320, 354, 390 and 430 pixels/);
   for(const path of ['components/consultation-choice-capture.tsx',
