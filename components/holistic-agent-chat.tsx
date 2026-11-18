@@ -293,11 +293,12 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   const t=copy[locale];
   const starter=messengerStarter[locale];
   const {persona}=useAliPersona();
-  const voiceEnabled=messengerView||process.env.NEXT_PUBLIC_HH_VOICE_COMPANION_WEB==="true";
+  const voiceEnabled=process.env.NEXT_PUBLIC_HH_VOICE_COMPANION_WEB==="true";
   // Only the existing device speech controller handles the AI chat's spoken replies.
   const voice=useVoiceCompanion(locale,voiceEnabled);
   useEffect(()=>{
     if(!messengerView||!voiceEnabled)return;
+    if(voice.speechLocale!==locale)voice.setSpeechLocale(locale);
     const available=voice.voices.filter(item=>item.lang.toLowerCase().startsWith(locale));
     if(available.length){
       const ordered=[...available].sort((a,b)=>a.name.localeCompare(b.name));
@@ -305,7 +306,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       if(selected&&selected!==voice.voiceId)voice.setVoiceId(selected);
     }
     if(Math.abs(voice.rate-persona.voice.rate)>0.015)voice.setRate(persona.voice.rate);
-  },[messengerView,voiceEnabled,locale,persona.id,voice.voices,voice.voiceId,voice.rate,voice.setVoiceId,voice.setRate]);
+  },[messengerView,voiceEnabled,locale,persona.id,voice.voices,voice.voiceId,voice.rate,voice.setVoiceId,voice.setRate,voice.speechLocale,voice.setSpeechLocale]);
   const [mode,setMode]=useState<Mode>("rules");
   const [agree,setAgree]=useState(false);
   const [axisRef,setAxisRef]=useState("");
@@ -1330,7 +1331,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   </label>:null;
   const resetControl=<button type="button" onClick={resetConversation}>{t.reset}</button>;
   const voiceControls=voiceEnabled?<VoiceCompanionControls voice={voice} locale={locale}
-    privacyOnly={Boolean(pageHelp)}
+    privacyOnly={Boolean(pageHelp)||messengerView}
     greeting={pageHelp?.greeting??starter.welcome}
     latestReply={[...messages].reverse().find(item=>item.role==="assistant")?.text}
     onTranscript={text=>setDraft(prev=>((prev?prev+" ":"")+text).slice(0,2000))}
