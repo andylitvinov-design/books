@@ -1,3 +1,4 @@
+import {telegramSupportUnavailable} from '@/lib/crm/telegram-support-quiz.mjs'
 import { NextResponse,after } from 'next/server'
 import { getAppConfig } from '@/lib/app/config'
 import {channelTransportReady} from '@/lib/crm/messenger-policy'
@@ -15,6 +16,7 @@ import {finalizeTelegramV3Service,notifyOwnerTelegramV3Service} from '@/lib/crm/
 import {shouldBootstrapTelegramNativeMenu} from '@/lib/crm/telegram-companion-native-commands.mjs'
 import { receiveOwnerTelegramVideoCrmFallback } from '@/lib/practitioners/owner-telegram-video-crm-fallback'
 import {processTelegramBusinessConversation} from '@/lib/crm/telegram-business-service'
+import {captureTelegramBotLead,captureTelegramBusinessLead} from '@/lib/crm/telegram-lead-capture'
 import {telegramBusinessMessageFromUpdate} from '@/lib/assist/telegram-business-request.mjs'
 import {parseHiTelegramRating} from '@/lib/holistic-support/hi-learning-policy.mjs'
 import {insertHiLearningQuality} from '@/lib/holistic-support/hi-learning-store'
@@ -95,6 +97,10 @@ export async function POST(request,{params}){
       const stop=await gateTelegramBusinessSecretaryOptOut(body,config)
       if(stop.blocked)return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
     }
+    // A first verified Business contact becomes an unqualified CRM lead before
+    // optional service/FAQ dialogue; no unconsented message body is stored.
+    const businessLead=provider==='telegram'
+      ?await captureTelegramBusinessLead(body,config):null
     // Separate signed Business-chat service intake: only public service-code
     // messages and explicit short replies, never ordinary personal text or
     // diagnostic/Companion updates. Confirmation persists before acknowledgement.
@@ -170,6 +176,19 @@ export async function POST(request,{params}){
         }
         return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
       }
+      // Unknown first customer message should not disappear into a silent chat.
+      // Reply at most once, only after the first CRM contact commit.
+      if(businessLead?.created){
+        try{
+          const text=businessLead.locale==='ru'
+            ?'Здравствуйте! Я помощник Holistic House. Ваше обращение получено. Подскажите, какая помощь вам сейчас нужна?'
+            :businessLead.locale==='es'
+              ?'¡Hola! Soy el asistente de Holistic House. Recibimos tu mensaje. ¿En qué te podemos ayudar?'
+              :'Hello! I am the Holistic House assistant. We received your message. What would you like help with?'
+          await sendHolisticBusinessRequestReply({connectionId:businessLead.connectionId,
+            to:businessLead.chatId,text})
+        }catch{console.error('HH_TG_BUSINESS_FIRST_REPLY_NOT_CONFIRMED')}
+      }
     }
 
     const updates=normalizeMessengerUpdates(provider,body)
@@ -238,6 +257,10 @@ export async function POST(request,{params}){
             messageId:event.callbackMessageId})}catch{}
           continue
         }
+        // A signed first customer message is visible in CRM even when the
+        // voluntary diagnostic has not yet reached /agree. No raw text is stored.
+        if(event.type==='incoming'&&!event.callbackId)
+          await captureTelegramBotLead(event,config)
         const companion=await processTelegramCompanion(event,config)
         if(companion.handled){
           // Client-initiated bootstrap of native Telegram Menu. Never do this
@@ -281,9 +304,11 @@ export async function POST(request,{params}){
           }
           continue
         }
-        const diagnosticEvent=companion.reviewRequested
-          ?{...event,rawText:'/start hhreview_'+companion.reviewLocale,inlineAction:null}
-          :event
+        const diagnosticEvent=companion.supportStart
+          ?{...event,rawText:companion.supportStart,inlineAction:null}
+          :companion.reviewRequested
+            ?{...event,rawText:'/start hhreview_'+companion.reviewLocale,inlineAction:null}
+            :event
         // The V3 interviewer reuses this signed CRM bot and takes priority ONLY
         // for explicitly started or already active V3 diagnostic sessions.
         const aiIntake=await processTelegramAiV3(diagnosticEvent,config)
@@ -319,6 +344,7 @@ export async function POST(request,{params}){
               const delivered=await sendTelegramDiagnosticPrompt({
                 to:aiIntake.to,text:aiIntake.reply,keyboard:aiIntake.keyboard,
                 locale:aiIntake.locale,approvedPilotGuest:aiIntake.approvedPilotGuest,
+                serviceWelcome:aiIntake.serviceWelcome===true,
               })
               if(aiIntake.voiceOffer)await bindTelegramWaveVoiceOffer(
                 config,aiIntake.voiceOffer,delivered.providerId)
@@ -349,6 +375,21 @@ export async function POST(request,{params}){
               console.error('HH_CRM_TG_V3_AI_AFTER_FAILED')
             }
           })
+          continue
+        }
+        // A completed Support quiz must NEVER disappear into a fallback router.
+        // When V3 consented AI is disabled, show a safe public website route.
+        if(companion.supportStart){
+          if(event.callbackId){
+            try{await acknowledgeTelegramInlineCallback({
+              callbackId:event.callbackId,to:event.userId,
+              messageId:event.callbackMessageId})}catch{}
+          }
+          try{await sendTelegramCompanionMessage({
+            to:String(event.userId),text:telegramSupportUnavailable(
+              companion.supportLocale,companion.supportDigits),
+            locale:companion.supportLocale,
+          })}catch{console.error('HH_CRM_TG_SUPPORT_FALLBACK_NOT_CONFIRMED')}
           continue
         }
         const intake=await processTelegramDiagnostic(diagnosticEvent,config)

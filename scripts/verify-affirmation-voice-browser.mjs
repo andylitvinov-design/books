@@ -605,8 +605,10 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await durationSelect.selectOption("10");
       await expect(durationSelect).toHaveValue("10");
       const montageAudio=page.locator('[data-video-montage-open-audio]');
-      await montageAudio.click();
-      await expect(page.locator('[data-video-montage-audio]')).toBeVisible();
+      if(engine==="webkit")await montageAudio.tap();
+      else await montageAudio.click();
+      await expect(page.locator('[data-video-basic-editor]'))
+        .toHaveAttribute("data-montage-panel","audio",{timeout:15000});
       await expect(page.locator('[data-video-montage-audio]')).toBeVisible();
       const compactGrid=page.locator('[data-video-audio-compact-grid]');
       await expect(compactGrid).toBeVisible();
@@ -967,7 +969,9 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         // Montage Audio step, never in the intentionally hidden Style footer.
         await openMontageSettingsViaQuality(page);
         const ownAudioStep=page.locator('[data-video-montage-open-audio]');
-        await ownAudioStep.click();
+        if(engine==="webkit")await ownAudioStep.tap();
+        else await ownAudioStep.click();
+        await expect(page.locator('[data-video-basic-editor]')).toHaveAttribute("data-montage-panel","audio");
         await expect(page.locator('[data-video-montage-audio]')).toBeVisible();
         const ownCreate=page.locator("[data-video-quick-generate]");
         await expect(ownCreate).toBeEnabled({timeout:30000});
@@ -1277,7 +1281,9 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await openMontageSettingsViaQuality(page);
       const montageAudioTab=page.locator('[data-video-montage-open-audio]');
       await expect(montageAudioTab).toBeVisible();
-      await montageAudioTab.click();
+      if(engine==="webkit")await montageAudioTab.tap();
+      else await montageAudioTab.click();
+      await expect(page.locator('[data-video-basic-editor]')).toHaveAttribute("data-montage-panel","audio");
       await expect(page.locator('[data-video-montage-audio]')).toBeVisible();
       const generate=page.locator("[data-video-quick-generate]");
       await expect(generate).toBeVisible({timeout:30000});
@@ -1695,7 +1701,9 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await page.locator('[data-video-quick-control="editor"]').click();
       await openMontageSettingsViaQuality(page);
       const montageAudioAfterExport=page.locator('[data-video-montage-open-audio]');
-      await montageAudioAfterExport.click();
+      if(engine==="webkit")await montageAudioAfterExport.tap();
+      else await montageAudioAfterExport.click();
+      await expect(page.locator('[data-video-basic-editor]')).toHaveAttribute("data-montage-panel","audio");
       await expect(page.locator('[data-video-montage-audio]')).toBeVisible();
       // Leaving an attached stale voice invalidates export; selected music is independent.
       const soundtrackLabels=await page.locator("[data-video-live-audio]").allTextContents();

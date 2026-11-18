@@ -9020,7 +9020,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 {locale==="ru"?"Видеоконцепт и раскадровка":locale==="es"?"Concepto visual y guion":"Video concept & storyboard"}
               </button>
               <button type="button" data-video-montage-open-audio
-                disabled={recording||preparing} onClick={()=>{setMontagePanel("audio");setBasicPanelTab("music");}}>
+                disabled={recording||preparing}
+                // Safari can lose click as Settings unmounts; commit the same
+                // Audio tab on pointer release. Click remains for keyboard.
+                onPointerUp={()=>{setMontagePanel("audio");setBasicPanelTab("music");}}
+                onClick={()=>{setMontagePanel("audio");setBasicPanelTab("music");}}>
                 <Music2 size={17} aria-hidden="true"/>
                 {locale==="ru"?"Расширенные настройки аудио":locale==="es"?"Opciones de audio":"Advanced audio"}
               </button>

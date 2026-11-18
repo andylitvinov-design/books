@@ -40,6 +40,11 @@ on:
       - '!lib/practitioners/taoist-talisman-cart.js'
       - '!app/api/app/crm/messenger/webhook/**'
       - '!lib/app/client-telegram-transport.js'
+      # Commander signed PR completion is validated by Core and the focused Guard, not this unrelated heavy suite.
+      - '!app/api/app/commander/**'
+      # Public Ali greeting and support quiz: focused conversation owner; private Messenger/auth changes keep full tests.
+      - '!components/app/messenger-ai-landing.*'
+      - '!components/app/messenger-support-quiz.*'
   workflow_dispatch:
 permissions:
   contents: read

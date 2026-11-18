@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 
 const ready=readFileSync(new URL("../components/mandala-video-ready.tsx",import.meta.url),"utf8");
+const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
 const css=readFileSync(new URL("../components/mandala-video-ready.module.css",import.meta.url),"utf8");
 const studioCss=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
 const effectCss=readFileSync(new URL("../components/mandala-video-effect-journey.module.css",import.meta.url),"utf8");
@@ -76,4 +77,17 @@ test("Ready keeps the local Canvas compositor active but visually hidden",()=>{
   const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
   assert.match(browser,/const sourceCompositor=await readySourceStage.evaluate/);
   assert.match(browser,/assert.notEqual\(sourceCompositor.display,"none"/);
+});
+
+test("Montage Settings Audio works on a real iPhone touch and remains keyboard accessible",()=>{
+ const idx=studio.indexOf("data-video-montage-open-audio");
+ assert.ok(idx>0);
+ const button=studio.slice(idx,idx+460);
+ assert.ok(button.includes('onPointerUp={()=>{setMontagePanel("audio");setBasicPanelTab("music");}}'));
+ assert.ok(button.includes('onClick={()=>{setMontagePanel("audio");setBasicPanelTab("music");}}'));
+ const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
+ for(const name of ["montageAudio","ownAudioStep","montageAudioTab","montageAudioAfterExport"])
+   assert.ok(browser.includes('if(engine==="webkit")await '+name+'.tap();'),name+" requires actual WebKit touch");
+ assert.ok(browser.includes('toHaveAttribute("data-montage-panel","audio",{timeout:15000})'));
+ assert.ok(browser.includes("ready-real-encoded-mp4-auth-gate-verified"));
 });
