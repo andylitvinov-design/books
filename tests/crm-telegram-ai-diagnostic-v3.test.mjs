@@ -172,8 +172,9 @@ test('Consent is explained once; follow-up nudges do not repeat the privacy wall
     const messages=V3_COPY[locale];
     assert.ok(messages.intro.length<500);
     assert.ok(messages.nudge.length>30&&messages.nudge.length<180);
-    assert.ok(messages.intro.includes('OpenRouter'));
-    assert.ok(messages.intro.includes('/stop'));
+    assert.ok(messages.intro.length<165,'the first reply must fit a phone screen');
+    assert.match(messages.intro,/AI|IA/i);
+    assert.doesNotMatch(messages.intro,/\/stop|medical records|медицинские документы|documentos médicos/i);
     assert.doesNotMatch(messages.nudge,/OpenRouter|medical|медицинск|médic/i);
     assert.notEqual(messages.intro,messages.nudge);
   }
@@ -192,7 +193,7 @@ test('free Telegram conversation is consent gated and shares Secretary/Coach',()
   assert.deepEqual(v3ButtonsFor(locale,'chat_consent'),
     [[V3_LABELS[locale].chatagree,V3_LABELS[locale].chatlater]]);
   assert.match(V3_CHAT_COPY[locale].intro,/OpenRouter/);
-  assert.match(V3_CHAT_COPY[locale].intro,/\/stop/);
+  assert.ok(V3_CHAT_COPY[locale].intro.length<165);
  }
  assert.equal(v3WantsGeneralChat('Привет'),true);
  assert.equal(v3WantsGeneralChat('Поговорим?'),true);

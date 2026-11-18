@@ -98,12 +98,14 @@ test('Work Requests opens existing messenger enquiries instead of the legacy pra
   // Two Work navigation rows are rendered from shared data, not three copies
   // of the literal openAction('requests') handler in one JSX file.
   const workIntro=read('components/practice-work-profile-intro.jsx')
-  assert.ok(workIntro.includes("{ id:'requests', action:'requests', Icon:ClipboardList }"))
-  assert.ok(workIntro.includes("{ action:'requests', label:'requests', Icon:ClipboardList }"))
-  assert.match(workIntro,/TABS\.map/)
-  assert.match(workIntro,/ACTIONS\.map/)
-  assert.match(workIntro,/onClick=\{\(\) => onAction\(action\)\}/)
-  assert.ok(practice.includes("onClick={() => void openAction('requests')}"))
+  // The 2026 Work Profile uses one photographic card registry rather than
+  // the retired TABS/ACTIONS rows; preserve the real Requests-to-CRM action.
+  assert.ok(workIntro.includes("{key:'requests',label:'requests',hint:'requestsHint',Icon:ClipboardList"))
+  assert.match(workIntro,/CARDS\.map\(/)
+  assert.match(workIntro,/onClick=\{\(\)=>onAction\(key\)\}/)
+  assert.match(workIntro,/data-work-card=\{key\}/)
+  assert.match(practice,/<PracticeWorkProfileIntro locale=\{locale\} onAction=\{openAction\}/,
+    'Requests card uses the same authenticated route map through Work Profile');
   assert.ok(inbox.includes("const requestFocus=embedded&&tab==='requests'"))
   assert.ok(inbox.includes("!requestFocus||inMessagesTab(row,'requests')"))
   assert.ok(inbox.includes("{requestFocus&&<div className={styles.requestFocus}"))
