@@ -37,6 +37,7 @@ jobs:
         id: gate
         env:
           VERCEL_TOKEN: ${{ secrets.HH_VERCEL_RELEASE_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
           EMERGENCY: ${{ inputs.emergency }}
         shell: bash
         run: |
@@ -80,6 +81,28 @@ jobs:
               echo 'Production already requested this UTC hour; defer pending changes to next hourly run.'
               exit 0
             fi
+          # Prove that the whole LIVE-to-HEAD delta is CI-only before skipping.
+          # Never use the last READY build alone: a rollback may serve an older SHA.
+          if alias_json="$(curl -fsS --max-time 8 -H "Authorization: Bearer $VERCEL_TOKEN" 'https://api.vercel.com/v13/deployments/holistichouse.vercel.app?teamId=team_OSf690d0nxRHWVMXCElA8i95')" &&
+             live_record="$(jq -ce 'select(.readyState == "READY" and .target == "production" and (.alias | type == "array" and index("holistichouse.vercel.app") != null)) | {id, sha: .meta.githubCommitSha} | select((.id | test("^dpl_[A-Za-z0-9]+$")) and (.sha | test("^[a-f0-9]{40}$")))' <<< "$alias_json" 2>/dev/null)" &&
+             jq -e --argjson live "$live_record" '.deployments | any((.uid // .id) == $live.id and .target == "production" and (.readyState // .state) == "READY" and .meta.githubCommitSha == $live.sha)' <<< "$response" >/dev/null &&
+             live_sha="$(jq -er '.sha' <<< "$live_record")" &&
+             compare_json="$(curl -fsS --max-time 8 -H "Authorization: Bearer $GITHUB_TOKEN" -H 'Accept: application/vnd.github+json' "https://api.github.com/repos/andylitvinov-design/books/compare/$live_sha...$head_sha?per_page=100&page=1")" &&
+             jq -e --arg live "$live_sha" --arg head "$head_sha" '
+               .status == "ahead" and .behind_by == 0 and
+               .base_commit.sha == $live and .merge_base_commit.sha == $live and
+               (.ahead_by | type == "number" and floor == . and . >= 1 and . <= 100) and
+               .total_commits == .ahead_by and (.commits | type == "array") and
+               (.commits | length) == .ahead_by and .commits[-1].sha == $head and
+               (.files | type == "array" and length > 0 and length < 300 and all(
+                 (.status == "modified" or .status == "added" or .status == "removed") and
+                 .previous_filename == null and
+                 (.filename | type == "string" and test("^\\.github/workflows/[A-Za-z0-9_.-]+\\.ya?ml$"))))
+             ' <<< "$compare_json" >/dev/null 2>&1; then
+            echo 'Skip routine Vercel build: only GitHub workflow YAML changed from current LIVE.'
+            exit 0
+          fi
+          # Unavailable, ambiguous or mixed delta: fall through to existing release.
           fi
           echo "sha=$head_sha" >> "$GITHUB_OUTPUT"
           echo 'run=true' >> "$GITHUB_OUTPUT"
