@@ -1,11 +1,11 @@
 "use client";
 import {
  Armchair,ArrowRight,BookOpen,Box,BriefcaseBusiness,CalendarDays,Camera,Car,Check,
- Clock3,CloudSun,Coffee,DoorOpen,FileText,Film,Flower2,Footprints,Hand,
+ Clock3,Coffee,DoorOpen,FileText,Film,Flower2,Footprints,Hand,
  Handshake,Heart,House,Image as ImageIcon,KeyRound,Lamp,Landmark,Laptop,
- Lightbulb,Luggage,Mail,Map,MessageSquare,Mountain,Music2,NotebookPen,
- Pencil,Phone,Scissors,Shirt,Smartphone,StickyNote,Sunrise,Table2,Target,
- Train,TreePine,UserRound,UsersRound,Wallet,Waves,Window,Flower
+ Luggage,Mail,Map,MessageSquare,Mountain,Music2,NotebookPen,
+ Pencil,Scissors,Shirt,Smartphone,StickyNote,Sunrise,Table2,Target,
+ Train,TreePine,UserRound,UsersRound,Wallet,Waves,AppWindow,Flower
 } from "lucide-react";
 import {describeStoryboardSceneGraphic} from "@/lib/mandala/storyboard-scene-graphic.mjs";
 import css from "./mandala-storyboard-scene-sketch.module.css";
@@ -19,7 +19,7 @@ const ICONS={
  notebook:NotebookPen,pencil:Pencil,paper:FileText,drawing:ImageIcon,
  box:Box,notes:StickyNote,calendar:CalendarDays,clock:Clock3,
  money:Wallet,computer:Laptop,desk:BriefcaseBusiness,lamp:Lamp,
- light:Sunrise,door:DoorOpen,window:Window,house:House,bridge:Landmark,
+ light:Sunrise,door:DoorOpen,window:AppWindow,house:House,bridge:Landmark,
  train:Train,car:Car,street:Footprints,book:BookOpen,cup:Coffee,
  table:Table2,flower:Flower2,plant:Flower,tree:TreePine,
  water:Waves,mountain:Mountain,fabric:Shirt,scissors:Scissors,
