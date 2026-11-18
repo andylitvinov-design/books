@@ -108,7 +108,7 @@
  .tabs button{gap:4px}
  .tabs button svg{width:17px;height:17px}
  /* Voice is an audio editor: avoid showing an unrelated film preview above it. */
- :global([data-mandala-free-video][data-active-workspace="effects"]:has([data-active-therapy-pane="voice"]) [data-video-mini-source]){display:none}
+ /* The ancestor-only preview selector is intentionally excluded: CSS Modules requires a local class. */
 }
 @media(max-width:355px){
  .tabs button{font-size:clamp(9px,2.8vw,11px);gap:2px}
