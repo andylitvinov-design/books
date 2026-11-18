@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {aliServiceScenario,aliServiceFaq,routeAliEntry} from '../lib/assist/ali-service-scenario.mjs';
 import {aliGuidedIntakeTurn,aliGuidedIntakeSummary} from '../lib/assist/ali-guided-intake.mjs';
 import {v3ServiceStart,v3ServiceTitle,v3ServiceCopy,v3Context} from '../lib/crm/telegram-ai-diagnostic-v3.mjs';
