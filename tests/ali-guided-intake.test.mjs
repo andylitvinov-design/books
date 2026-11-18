@@ -22,7 +22,7 @@ test('Ali uses exactly one goal -> obstacle -> current -> review question at a t
  const c=step('Currently I am switching work and feeling lost',b.stage,b.slots);
  assert.equal(c.stage,'ready');
  assert.equal(countQuestions(c.reply),0);
- assert.match(c.reply,/Finish interview/);
+ assert.match(c.reply,/draft/i);
  assert.doesNotMatch(c.reply,/sent to|submitted to|diagnosed with/i);
  const summary=aliGuidedIntakeSummary({slots:c.slots});
  assert.match(summary,/career/);

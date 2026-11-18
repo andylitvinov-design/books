@@ -7,7 +7,7 @@ import {resolveTelegramServiceEntry} from '../lib/app/telegram-entry-url.mjs';
 import {telegramBusinessStrategyRequestUrl} from '../lib/assist/telegram-business-request.mjs';
 const questionCount=s=>(s.match(/[?？]/gu)||[]).length;
 for(const locale of ['ru','en','es'])for(const service of ['homeopathy','coaching','reiki','constellations','business','business_strategy']){
- test(locale+' '+service+' selected scenario survives the entire three-stage interview',()=>{
+ test(locale+' '+service+' collects only what is needed in a warm two-reply conversation',()=>{
   const m=aliServiceScenario(service,locale);
   assert.equal(v3ServiceTitle(service,locale),m.title);
   assert.deepEqual(v3ServiceStart('/start hhservice_'+service+'_'+locale),{service,locale});
@@ -19,14 +19,13 @@ for(const locale of ['ru','en','es'])for(const service of ['homeopathy','coachin
   assert.equal(questionCount(a.reply),1);
   const b=aliGuidedIntakeTurn({message:'I feel uncertain',locale,
    serviceRequest:service,stage:a.stage,slots:a.slots});
-  assert.equal(b.stage,'situation');
-  assert.ok(b.reply.includes(m.questions.situation));
-  const c=aliGuidedIntakeTurn({message:'It happens often',locale,
+  assert.equal(b.stage,'ready','do not demand an automatic third answer');
+  assert.equal(questionCount(b.reply),0);
+  assert.ok(b.reply.includes(m.title));
+  assert.match(aliGuidedIntakeSummary({slots:b.slots}),/I want help/);
+  const extra=aliGuidedIntakeTurn({message:'One more detail: It happens often',locale,
    serviceRequest:service,stage:b.stage,slots:b.slots});
-  assert.equal(c.stage,'ready');
-  assert.equal(questionCount(c.reply),0);
-  assert.ok(c.reply.includes(m.title));
-  assert.match(aliGuidedIntakeSummary({slots:c.slots}),/I want help/);
+  assert.equal(extra.stage,'ready','supplementary detail stays optional');
  });
 }
 test('exact Business Strategy website offer becomes correct V3 bot and CRM title',()=>{
@@ -55,8 +54,8 @@ test('STOP, safety, mode consent, bad payload, mid-intake FAQs, generic unchange
   const a=aliGuidedIntakeTurn({message,locale,serviceRequest:'reiki'});
   assert.equal(a.stage,'goal');
   assert.equal(a.slots.goal,undefined);
-  assert.equal(questionCount(a.reply),1);
-  assert.ok(a.reply.includes(aliServiceScenario('reiki',locale).questions.goal));
+  assert.equal(questionCount(a.reply),0,'answer the real price question without an unsolicited intake question');
+  assert.ok(a.reply.length<250);
   assert.ok(aliServiceFaq(message,locale,'reiki'));
  }
  const undecided=aliGuidedIntakeTurn({message:"I don't know",locale:'en',
@@ -65,6 +64,11 @@ test('STOP, safety, mode consent, bad payload, mid-intake FAQs, generic unchange
  assert.equal(undecided.stage,'situation');
  assert.ok(undecided.reply.includes(aliServiceScenario('reiki','en').questions.situation));
  assert.match(aliGuidedIntakeTurn({message:'I want clarity'}).reply,/difficult/);
+ const twoInOne=aliGuidedIntakeTurn({message:'Хочу помириться с сестрой, но мы уже год ссоримся',locale:'ru',serviceRequest:'coaching'});
+ assert.equal(twoInOne.stage,'ready','do not ask what was already shared');
+ assert.match(twoInOne.slots.goal,/Хочу помириться/);
+ assert.match(twoInOne.slots.challenge,/мы уже год ссоримся/);
+ assert.equal(questionCount(twoInOne.reply),0);
 });
 
 test('site private bot wins when ready regardless of independent human Business automation',()=>{
