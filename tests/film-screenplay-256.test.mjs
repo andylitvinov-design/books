@@ -89,6 +89,13 @@ test("four complete films per topic are ranked to two, and matching plot reaches
   const available=listCompleteFilmScreenplays(topic.id,locale,p);
   assert.equal(available.length,4,"four source-specific film candidates: "+topic.id);
   const selected=getVideoCreativeDirections(p,locale);
+  // A named breathing/relaxation exercise remains in the existing guided
+  // practice workflow; scripts are available in the library but not routed
+  // as ordinary fiction without an explicit film request.
+  if(["practice","presentation","celebration","audio_visual"].includes(p.semanticPurpose)){
+   assert.equal(selected.length,0,topic.id+":"+locale+": preserve direct practice");
+   continue;
+  }
   assert.equal(selected.length,2,topic.id+":"+locale);
   assert.equal(new Set(selected.map(x=>x.id)).size,2);
   for(const direction of selected){

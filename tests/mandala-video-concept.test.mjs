@@ -206,6 +206,10 @@ test("Video Studio mandatory gate: 256 film scenes × 3 languages, exactly 2 per
      energyStart:3,energyTarget:6}
    });
    const choices=getVideoCreativeDirections(base,locale);
+   if(["practice","presentation","celebration","audio_visual"].includes(base.semanticPurpose)){
+    assert.equal(choices.length,0,topic.id+":"+locale+": direct practice is not fiction");
+    continue;
+   }
    assert.equal(choices.length,2,topic.id+":"+locale+": two suitable stories");
    assert.equal(new Set(choices.map(x=>x.id)).size,2);
    for(const chosen of choices){
