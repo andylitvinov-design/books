@@ -83,5 +83,10 @@ test("An approved A/B narration is revoked when the goal or scenario changes",()
  assert.match(parent,/theme,wish,sceneName,caption,speed,brightness,meditationFocus,/);
  assert.match(parent,/if\(approvedScenarioRef\.current===meditationScenarioIdentity\)return/);
  assert.match(parent,/approvedScenarioRef\.current=meditationScenarioIdentity;\s*setApprovedMeditationText\(""\);/);
- assert.match(parent,/\(activeWorkspace==="effects"&&spoken===approvedMeditationText\)/);
+ assert.match(parent,/meditationApproved\?:true/);
+ assert.match(parent,/attachedAudio\?\.kind==="file"&&attachedAudio\.meditationApproved===true/);
+ assert.match(parent,/spoken===approvedMeditationText\)\|\|/);
+ assert.match(parent,/clip\.spokenText===approvedMeditationText\?\{meditationApproved:true as const\}/);
+ assert.match(parent,/effectSpokenText===approvedMeditationText\?\{meditationApproved:true as const\}/);
+ assert.match(parent,/isApprovedAffirmationNarration\(affirmationLines,spoken,affirmations\.enabled\)/);
 });

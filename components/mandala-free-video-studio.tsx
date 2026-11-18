@@ -162,7 +162,7 @@ type ImportedEditorDraft={
 };
 // A selected sound is only a preview; attaching it is a separate, explicit step.
 type PresetId = Exclude<AmbientMusic,"none">;
-type AttachedAudio = {kind:"preset";id:PresetId} | {kind:"presets";ids:PresetId[]} | {kind:"file";file:File;id:string;narration?:true;spokenText?:string;speechSeconds?:number;mixSeconds?:number;nonLoop?:true;voiceId?:string;language?:string;bed?:string};
+type AttachedAudio = {kind:"preset";id:PresetId} | {kind:"presets";ids:PresetId[]} | {kind:"file";file:File;id:string;narration?:true;spokenText?:string;speechSeconds?:number;mixSeconds?:number;nonLoop?:true;meditationApproved?:true;voiceId?:string;language?:string;bed?:string};
 type Job = {
   recorder: MediaRecorder;
   stream: MediaStream;
@@ -3106,7 +3106,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setApprovedMeditationText("");
   },[meditationScenarioIdentity]);
   const isCurrentNarrationApproved=(spoken:string|undefined|null)=>Boolean(spoken&&(
-    (activeWorkspace==="effects"&&spoken===approvedMeditationText)||
+    ((activeWorkspace==="effects"||
+      (attachedAudio?.kind==="file"&&attachedAudio.meditationApproved===true))&&
+      spoken===approvedMeditationText)||
     isApprovedAffirmationNarration(affirmationLines,spoken,affirmations.enabled)));
   // Phrase selection is part of the approved narration itself: removing a spoken
   // line invalidates its WAV immediately, even while the phrase editor is pending.
@@ -4652,6 +4654,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     // export at unity gain instead of silently reducing both by another 20%.
     setSoundVolume(100);
     setAttachedAudio({kind:"file",file:entry.file,id:entry.url,narration:true,
+      ...(activeWorkspace==="effects"&&Boolean(approvedMeditationText)&&
+        clip.spokenText===approvedMeditationText?{meditationApproved:true as const}:{}),
       spokenText:clip.spokenText,speechSeconds:clip.speechSeconds,mixSeconds:clip.mixSeconds,
       voiceId:clip.voiceId,language:clip.language,bed:clip.bed});
     // A new narration length must not throw away the chosen four-shot film.
@@ -4728,6 +4732,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       setAudioRights(true);setSoundVolume(100);
       setAttachedAudio({kind:"file",file:entry.file,id:entry.url,nonLoop:true,
         ...(includesNarration?{narration:true,spokenText:effectSpokenText,speechSeconds,
+          ...(baseAudio?.kind==="file"&&baseAudio.meditationApproved===true&&
+            effectSpokenText===approvedMeditationText?{meditationApproved:true as const}:{}),
           mixSeconds:duration,voiceId:voicePreferences.voiceId,language:voicePreferences.language,bed:voicePreferences.bed}:{} )});
       setHypnoWhisperEnabled(next.whisper);setHypnoBinauralEnabled(next.binaural);setHypnoBeatHz(next.beatHz);
       setNotice(locale==="ru"?"Аудиоэффекты добавлены в звуковую дорожку видео.":

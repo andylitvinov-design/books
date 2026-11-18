@@ -63,8 +63,10 @@ test("real button uses selected runtime affirmations and attaches WAV to existin
   assert.match(page,/narrationInvalid/);
   assert.match(page,/const narrationPhraseMismatch=attachedAudio\?\.kind==="file"&&attachedAudio\.narration&&[\s\S]*!isCurrentNarrationApproved\(attachedAudio\.spokenText\)/,
     "removing an actually spoken phrase invalidates its WAV immediately, even during pending edits");
-  assert.match(page,/\(activeWorkspace==="effects"&&spoken===approvedMeditationText\)\|\|/,
-    "a Therapy meditation may not authorize an Ideas narration");
+  assert.match(page,/attachedAudio\?\.kind==="file"&&attachedAudio\.meditationApproved===true/,
+    "only provenance-marked Therapy narration may remain valid in Ready");
+  assert.match(page,/spoken===approvedMeditationText\)\|\|/,
+    "a marked Therapy track still requires exact approved meditation text");
   assert.match(page,/isApprovedAffirmationNarration\(affirmationLines,spoken,affirmations\.enabled\)/,
     "Ideas narration must still be checked against approved phrase lines");
   assert.match(page,/phrasePending&&\(activeWorkspace!=="effects"\|\|!approvedMeditationText\)/,
