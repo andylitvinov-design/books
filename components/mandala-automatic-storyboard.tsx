@@ -4,6 +4,8 @@ import {ArrowRight,Film,Play} from "lucide-react";
 import {suggestVideoConcept} from "@/lib/mandala/auto-video-concept.mjs";
 import {getVideoCreativeDirections,applyVideoCreativeDirection} from "@/lib/mandala/video-creative-directions.mjs";
 import {buildAlignedStorySceneGuides} from "@/lib/mandala/storyboard-content-alignment.mjs";
+import {conceptSceneAlignment,storyReviewRequired} from "@/lib/mandala/video-story-review.mjs";
+import {MandalaStoryboardSceneSketch} from "./mandala-storyboard-scene-sketch";
 import {planReviewedFilmedStory,planReviewedStoryWithPhotos,isReviewedFilmedStorySequence,
  isReviewedStoryWithPhotosSequence,isReviewedFilmedStoryScene} from "@/lib/mandala/reviewed-filmed-story.mjs";
 import {STORY_PHOTO_BY_ID,isTrustedStoryPhoto} from "@/lib/mandala/story-photo-library.mjs";
@@ -88,6 +90,8 @@ export function MandalaAutomaticStoryboard({
   (candidate.signature===suggested.signature||candidate.baseSignature===suggested.signature));
  const concept=(sameIntent(draftConcept)?draftConcept:null)||
   (sameIntent(approvedConcept)?approvedConcept:null)||defaultFilm;
+ const scriptSceneAlignment=conceptSceneAlignment(concept);
+ const scriptNeedsReview=storyReviewRequired(concept);
  const guides=useMemo(()=>buildAlignedStorySceneGuides({
   locale,goal:concept.goal||goal,phrases:phraseKey?phraseKey.split("\u001f"):[],
   concept,count:concept.storyboard?.length||Math.max(4,Math.ceil(durationSeconds/5)),pace
@@ -127,6 +131,7 @@ export function MandalaAutomaticStoryboard({
  // Reviewed planner currently returns depictedEventVerified:false.
  // This also gates the curated six-shot scripts, not only the new v3 corpus.
  const eligible=filmedProposalReady&&!v3RequiresActionProof&&
+  scriptSceneAlignment.aligned&&!scriptNeedsReview&&
   proposal.shots.every(shot=>{
    const photo=STORY_PHOTO_BY_ID.get(shot.sceneId);
    return photo?isTrustedStoryPhoto(photo):
@@ -183,7 +188,11 @@ export function MandalaAutomaticStoryboard({
   data-reviewed-filmed-only={!proposalHasPhotos}
   data-reviewed-media-only="true" data-photo-fallback={proposalHasPhotos?"licensed":undefined}
   data-storyboard-aligned-to-settings={manualFiveReady||applied}
-  data-storyboard-aligned-to-concept={v3RequiresActionProof}
+  data-storyboard-aligned-to-concept={v3RequiresActionProof&&
+    scriptSceneAlignment.aligned&&!scriptNeedsReview}
+  data-storyboard-script-check={scriptSceneAlignment.checked?
+    scriptSceneAlignment.reason:"curated_editorial_review"}
+  data-storyboard-graphics-mode="screenplay-scene-sketch"
   data-storyboard-media-ready={manualFiveReady||eligible}
   data-storyboard-action-proof={v3RequiresActionProof?"editorial_unverified":"legacy"}
   data-storyboard-selected-direction={concept.creativeDirectionId||undefined}>
@@ -219,8 +228,11 @@ export function MandalaAutomaticStoryboard({
       {media?.poster? /* eslint-disable-next-line @next/next/no-img-element */
        <img src={media.poster} alt={media.title} loading="lazy"/>:
        <div className={styles.storyAutoNoPoster} data-video-story-media-missing={!shot}>
-        <Film size={19}/><small>{shot?t.noPoster:
-         (locale==="ru"?"Нужен кадр":locale==="es"?"Falta vídeo":"Footage needed")}</small>
+        <MandalaStoryboardSceneSketch locale={locale} action={guide.visual}
+          visualSubject={authored?.visualSubject}
+          keywords={authored?.keywords||guide.keywords} shotType={authored?.shotType}/>
+        <small className={styles.storyAutoNeedsFootage}>{shot?t.noPoster:
+         (locale==="ru"?"Нужен видеокадр":locale==="es"?"Falta vídeo":"Footage needed")}</small>
        </div>}
       <span>{index+1}</span>
      </div>
@@ -243,6 +255,12 @@ export function MandalaAutomaticStoryboard({
     </li>;
    })}
   </ol>
+  {scriptNeedsReview?<p className={styles.storyAutoEmpty} role="status"
+    data-storyboard-script-review-needed>
+    {locale==="ru"?"История и шесть кадров требуют сверки в «Идеях» перед выпуском.":
+      locale==="es"?"Revisa la historia y las seis escenas en Ideas antes de exportar.":
+      "Review the screenplay and all six shots in Ideas before export."}
+  </p>:null}
   {!manualFiveReady&&replacingGraphics?<p className={styles.storyAutoEmpty} role="status"
    data-video-story-graphics-detected>{t.replace}</p>:null}
   {!manualFiveReady&&!eligible?<p className={styles.storyAutoEmpty} role="status"

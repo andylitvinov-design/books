@@ -90,7 +90,8 @@ test("category Love yields original anonymous films; unknown intent and transcri
   assert.equal(unknownDirections.length,2,
     "An unfamiliar explicit goal still receives two clearly fictional film directions");
   assert.ok(unknownDirections.every(direction=>
-    direction.provenance==="v3_authored_composition"&&direction.review.status==="pass"&&
+    ["v3_authored_composition","256_screenplay_editorial"].includes(direction.provenance)&&
+    direction.review.status==="pass"&&
     direction.storyboard.length===direction.conceptScenes.length));
   const speaking=suggestVideoConcept({locale,goal:labels[locale],theme:"relationships",
    selectedTopicId:"ready-relationship",speechTranscript:{text:"Create a video from what I am saying"}});

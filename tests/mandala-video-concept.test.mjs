@@ -4,6 +4,9 @@ import {readFileSync} from "node:fs";
 import {suggestVideoConcept,reviseVideoConcept,videoConceptIsValid}
   from "../lib/mandala/auto-video-concept.mjs";
 import {getMyTubeTopic,listMyTubeScenarios} from "../lib/mandala/mytube-content-taxonomy.mjs";
+import {getMyTubeTaxonomy} from "../lib/mandala/mytube-content-taxonomy.mjs";
+import {auditCompleteFilmScreenplays,listCompleteFilmScreenplays} from "../lib/mandala/film-screenplay-256.mjs";
+import {getVideoCreativeDirections,applyVideoCreativeDirection} from "../lib/mandala/video-creative-directions.mjs";
 
 test("Auto Concept produces a real canonical taxonomy path in RU/EN/ES without any provider",()=>{
   for(const locale of ["ru","en","es"]){
@@ -184,4 +187,40 @@ test("Concept shows editable story first, followed by all parameters in one colu
  assert.match(semantic,/const audience=matched\(low,AUDIENCES\)/);
  assert.match(semantic,/const anxiety=ANXIETY_CONTEXT\.test\(low\)/);
  assert.match(panel,/if\(signedIn\)setEditing\(true\);else setLoginOpen\(true\)/);
+});
+
+
+test("Video Studio mandatory gate: 256 film scenes × 3 languages, exactly 2 personal directions",()=>{
+ const topics=getMyTubeTaxonomy().categories.flatMap(c=>c.subcategories.flatMap(s=>s.topics));
+ assert.equal(topics.length,64);
+ for(const locale of ["ru","en","es"]){
+  const inventory=auditCompleteFilmScreenplays(locale);
+  assert.equal(inventory.total,256);
+  assert.deepEqual(inventory.errors,[],locale+": source/scene audit");
+  for(const topic of topics){
+   assert.equal(listCompleteFilmScreenplays(topic.id,locale).length,4);
+   const base=suggestVideoConcept({
+    locale,goal:topic.label[locale],theme:"life",selectedTopicId:topic.id,
+    personalization:{currentState:"Tired",desiredState:"Calm",focus:"Growth",
+     currentIds:["fatigue"],desiredIds:["calm"],focusIds:["growth"],
+     energyStart:3,energyTarget:6}
+   });
+   const choices=getVideoCreativeDirections(base,locale);
+   if(["practice","presentation","celebration","audio_visual"].includes(base.semanticPurpose)){
+    assert.equal(choices.length,0,topic.id+":"+locale+": direct practice is not fiction");
+    continue;
+   }
+   assert.equal(choices.length,2,topic.id+":"+locale+": two suitable stories");
+   assert.equal(new Set(choices.map(x=>x.id)).size,2);
+   for(const chosen of choices){
+    assert.equal(chosen.storyboard.length,6);
+    assert.equal(new Set(chosen.storyboard.map(shot=>shot.action)).size,6);
+    const applied=applyVideoCreativeDirection(base,chosen);
+    assert.equal(applied.conceptText,chosen.story);
+    assert.deepEqual(applied.storyboard.map(x=>x.action),
+      chosen.storyboard.map(x=>x.action),"no secondary storyboard scriptwriter");
+    assert.equal(applied.mediaBindingStatus,"editorial_only_unverified");
+   }
+  }
+ }
 });
