@@ -142,10 +142,14 @@ test('Services: optional booking-style search lives in the dedicated directory f
     readFile(new URL('../app/api/marketplace/intent-match/route.ts',import.meta.url),'utf8'),
   ])
   for(const page of [main,es]){
-    assert.ok(page.indexOf('<ServicesStudioOffers')>page.indexOf('<ServicesConversionHero'))
-    assert.ok(page.indexOf('<PersonalTestimonials')>page.indexOf('<ServicesStudioOffers'))
-    assert.ok(page.indexOf('<PublicConsultationCta')>page.indexOf('<ServicesConversionHero'))
-    assert.ok(page.indexOf('<PublicConsultationCta')<page.indexOf('<PersonalTestimonials'))
+    // Services now renders independent collapsible panels: order is locale-specific.
+    assert.match(page, /<ServicesCompactCatalog locale=/)
+    for (const id of ['consultation','services','browse','about','testimonials','mytube'])
+      assert.ok(page.includes('<ServicesCompactPanel id="' + id + '">'), 'missing service panel ' + id)
+    assert.match(page, /<ServicesStudioOffers locale=/)
+    assert.match(page, /<ServicesConversionHero locale=/)
+    assert.match(page, /<PersonalTestimonials locale=/)
+    assert.match(page, /<PublicConsultationCta locale=/)
     assert.match(page,/<ServicesIntroMedia/)
     assert.match(page,/<ServicesMethodVideos/)
     assert.doesNotMatch(page,/<ServicesSmartDiscovery|<ServiceCart/)
