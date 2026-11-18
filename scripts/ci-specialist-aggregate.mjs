@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
-import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance, safeDisjointPublicSourceAdvance } from '../lib/ci/production-base-impact.mjs';
+import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance, safeDisjointPublicSourceAdvance, safeIndependentQaAdvance } from '../lib/ci/production-base-impact.mjs';
 import { classifyStaticUiText, scopedCssIsSafe } from '../lib/ci/fast-static-ui-text.mjs';
 import {
   TARGET, WORKFLOW_PREFIX, expectedWorkflows, classifyPackageImpact, resolveExpectedSpecialists,
@@ -521,14 +521,23 @@ export async function verify(api,ctx,files,options={}) {
       const disjointPublicSource = pinnedChangeRows &&
         live.mergeable !== false && live.mergeable_state !== 'dirty' &&
         safeDisjointPublicSourceAdvance(diff, ctx.base, liveBaseSha, changed);
+      // An unrelated public browser verifier is QA evidence, not runtime.
+      // Actual changed workflow/job scope, private tests and failed checks
+      // are still independently enforced above and by native merge rules.
+      const independentQa = pinnedChangeRows &&
+        live.mergeable !== false && live.mergeable_state !== 'dirty' &&
+        safeIndependentQaAdvance(diff, ctx.base, liveBaseSha, changed);
       if (!documentationOnly && !independentlyRevalidated &&
           !isolatedCiPolicy && !unrelatedCiMaintenance && !inertPublicImages &&
-          !independentPresentation && !disjointPublicSource) {
+          !independentPresentation && !disjointPublicSource && !independentQa) {
         throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
       }
       if (disjointPublicSource) {
         approvedDisjointBases.add(liveBaseSha);
         console.log('CI_BASE_ADVANCE_REUSED: verified disjoint public product source; preserve green exact-HEAD checks');
+      }
+      if (independentQa) {
+        console.log('CI_BASE_ADVANCE_REUSED: independent browser-only QA advance; exact-HEAD Core remains valid');
       }
       if (independentPresentation) {
         approvedPresentationBases.add(liveBaseSha);
