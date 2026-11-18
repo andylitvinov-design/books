@@ -123,10 +123,13 @@ test('real service-worker offline fallback is limited to anonymous Holistic Hous
          store.set(path,{url:path})
        }
      },
-     async match(path){return store.get(typeof path==='string'?path:path.url)},
+     async add(path){return this.addAll([path])},
+    async match(path){return store.get(typeof path==='string'?path:path.url)},
      async put(path,response){store.set(typeof path==='string'?path:path.url,response)}
    }
  }
+ let online=false
+ const pendingWaits=[]
  const scope={
    self:{
      location:{origin:'https://holistichouse.vercel.app'},
@@ -140,26 +143,37 @@ test('real service-worker offline fallback is limited to anonymous Holistic Hous
      keys:async()=>[...stores.keys()],
      delete:async name=>stores.delete(name)
    },
-   URL,Response,fetch:async()=>{throw Error('offline')}
+   URL,Response,fetch:async()=>{if(!online)throw Error('offline');return {ok:true}}
  }
  runInNewContext(source,scope)
  const install={waitUntil(promise){this.promise=promise}}
  handlers.get('install')(install)
  await install.promise
- assert.equal(stores.get('hh-public-offline-v1').size,3)
+ assert.equal(stores.get('hh-public-offline-v1').size,2)
+ assert.equal(stores.get('hh-public-offline-v1').has('/holistic-house-offline-es.html'),false)
  const navigation=(path,mode='navigate',method='GET')=>{
    let result=null
    handlers.get('fetch')({
      request:{url:'https://holistichouse.vercel.app'+path,mode,method},
-     respondWith(promise){result=promise}
+     respondWith(promise){result=promise},
+     waitUntil(promise){pendingWaits.push(promise)}
    })
    return result
  }
- for(const [path,locale] of [['/','en'],['/en','en'],['/ru','ru'],['/es/mytube','es']]){
+ for(const [path,locale] of [['/','en'],['/en','en'],['/ru','ru'],['/es/mytube','en']]){
    const response=navigation(path)
    assert.ok(response,'expected public offline fallback: '+path)
    assert.equal((await response).url,'/holistic-house-offline-'+locale+'.html')
  }
+ // Spanish offline material is fetched only after an explicit successful /es visit.
+ online=true
+ const spanishResponse=navigation('/es')
+ assert.equal((await spanishResponse).ok,true)
+ await Promise.all(pendingWaits)
+ assert.equal(stores.get('hh-public-offline-v1').has('/holistic-house-offline-es.html'),true)
+ online=false
+ assert.equal((await navigation('/es')).url,'/holistic-house-offline-es.html')
+
  for(const path of ['/en/app/messages','/ru/app/portrait','/es/app/tests',
    '/api/app/messages','/en/client/abc','/ru/prescriptions/id',
    '/en/homeopathy/remedies/arsenicum-album']){
