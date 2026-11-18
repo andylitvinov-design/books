@@ -1842,6 +1842,13 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // Once the voice has been encoded and the stale-phrase gate has been
       // verified, a new Therapy meditation may intentionally revoke that WAV.
       // Do this LAST so a new text cannot silently invalidate an in-flight MP4.
+      // The consented-voice test left the visitor in Therapy. Return by an
+      // actual visible Ready tab click before testing its next-step cards;
+      // never synthesize a Ready state or weaken native MP4/audio assertions.
+      await page.locator('[data-video-quick-control="ready"]').click();
+      await expect(page.locator('[data-mandala-free-video]'))
+        .toHaveAttribute("data-active-workspace","ready");
+      await expect(page.locator("[data-ready-meditation]")).toBeVisible();
         // Real mobile click contract: the two Ready cards switch to sixth
         // Therapy workspace and select its format, with no Ready expansion.
         await page.locator("[data-ready-meditation]").click();
