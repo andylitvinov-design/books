@@ -87,6 +87,27 @@ test('unreadable changed JavaScript fails closed instead of silently passing',()
   }
 });
 
+test('Core restores trusted Next/TypeScript cache before standalone preflight and retains real checks',()=>{
+  const workflow=readFileSync('.github/workflows/hh-pr-core-release.yml','utf8');
+  const source=readFileSync('scripts/ci-source-preflight.mjs','utf8');
+  const restore=workflow.indexOf('      - name: Restore production-owned Next compiler cache (read-only)');
+  const preflight=workflow.indexOf('      - name: Source Preflight — syntax and TypeScript before costly Next build');
+  const nextBuild=workflow.indexOf('      - name: Exact proposed release production build and TypeScript check');
+  assert.ok(restore>0&&restore<preflight&&preflight<nextBuild,
+    'trusted cache must be available before the standalone typecheck and required Next build');
+  const cache=workflow.slice(restore,preflight);
+  assert.match(cache,/id: ci_trusted_next_cache/);
+  assert.match(cache,/uses: actions\/cache\/restore@v4/);
+  assert.match(cache,/tsconfig\.tsbuildinfo/);
+  assert.match(cache,/hh-core-next-v2-/);
+  assert.ok(cache.includes("steps.diff.outputs.ci_only != 'true'"),'no untrusted CI-only cache promotion');
+  assert.doesNotMatch(workflow,/actions\/cache\/save@v4/,'PR never publishes compiler cache');
+  assert.match(source,/run\(tsc,\['--noEmit','--incremental','--tsBuildInfoFile','tsconfig\.tsbuildinfo','--pretty','false'\]\)/);
+  assert.match(workflow,/run: npm run build -- --no-lint/,'mandatory Next build still independently checks TypeScript');
+  assert.match(source,/const typechecked=fullTypes\|\|\(!typecheckDelegated&&impactsTypes\(paths\)\)/,
+    'privileged and unknown routes still get standalone tsc');
+});
+
 test('Core preflight skips only redundant CSS/data typing; Next and DOCK remain type-safe',()=>{
   const workflow=readFileSync('.github/workflows/hh-pr-core-release.yml','utf8');
   const source=readFileSync('scripts/ci-source-preflight.mjs','utf8');

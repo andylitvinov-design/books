@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {auditMyTubeTaxonomy} from "../lib/mandala/mytube-content-taxonomy.mjs";
-import {listAuthoredFilmPlots} from "../lib/mandala/film-story-atlas-v3.mjs";
+import {listAuthoredFilmPlots,selectVideoStoryFamily} from "../lib/mandala/film-story-atlas-v3.mjs";
 import {suggestVideoConcept} from "../lib/mandala/auto-video-concept.mjs";
 import {getVideoCreativeDirections,applyVideoCreativeDirection} from "../lib/mandala/video-creative-directions.mjs";
 import {
@@ -101,4 +101,21 @@ test("two results stay unique and sorted, without inventing a third when imagery
  assert.ok(content.every(x=>!/rain|river|lake|ocean|forest|woods/iu.test(x)));
  assert.deepEqual(rankFilmOptions([{id:"one"},{id:"two"},{id:"two"}],{}).map(x=>x.id),
   ["one","two"]);
+});
+
+
+test("64-topic audit routes everyday fatigue to gentle scenes, motivation to growth",()=>{
+ assert.equal(selectVideoStoryFamily({topicId:"motivation-drive",categoryId:"energy-confidence"}),"growth");
+ assert.equal(selectVideoStoryFamily({topicId:"morning-energy",categoryId:"energy-confidence"}),"growth");
+ for(const id of ["everyday-overload","evening-fatigue","mental-tiredness",
+  "recovery-after-load","low-energy","mental-clarity","body-awareness","calm-presence"]){
+  assert.equal(selectVideoStoryFamily({topicId:id,categoryId:"energy-confidence"}),"stress",id);
+ }
+ assert.equal(selectVideoStoryFamily({topicId:"chronic-stress",categoryId:"stress-anxiety"}),"stress");
+ const fatigue=topic("en","evening-fatigue","Evening Fatigue",
+  profile(["fatigue","drained"],["rested","calm"],["anchor"],2,4));
+ const options=getVideoCreativeDirections(fatigue,"en");
+ assert.equal(options.length,2);
+ assert.equal(options[0].id,"v3-between-tasks");
+ assert.ok(options.every(x=>x.storyboard.length===6));
 });
