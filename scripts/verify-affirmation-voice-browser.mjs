@@ -1348,12 +1348,20 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       else await montageAudioTab.click();
       await expect(page.locator('[data-video-basic-editor]')).toHaveAttribute("data-montage-panel","audio");
       await expect(page.locator('[data-video-montage-audio]')).toBeVisible();
+      // The approved Audio screen hides the old Create/Text footer.
+      // Tap its real Add Affirmations action and validate the Text editor,
+      // then use Ready's actual Generate for the native encoded movie.
+      await expect(page.locator('[data-video-stage-actions="montage"]')).toBeHidden();
+      const addAffirmations=page.locator("[data-video-audio-add-text]");
+      await expect(addAffirmations).toBeVisible();
+      await expect(addAffirmations).toBeEnabled({timeout:30000});
+      await addAffirmations.click();
+      await expect(page.locator('[data-video-basic-editor]'))
+        .toHaveAttribute("data-montage-panel","text",{timeout:15000});
       const generate=page.locator("[data-video-quick-generate]");
       await expect(generate).toBeVisible({timeout:30000});
       await expect(generate).not.toHaveAttribute("data-video-montage-next",/./);
       await expect(generate).toBeEnabled({timeout:30000});
-      assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),false,
-        "newly remixed WAV must automatically attach to local movie");
       // One Create tap decodes the idle MP4 and exports the actual voice video.
       if(engine==="chromium"||engine==="webkit") {
         const sourceVideo=page.locator("[data-mandala-master-mp4]");
