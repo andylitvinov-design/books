@@ -22,9 +22,11 @@ test("assign real idempotent read-only free worker without Github write token",(
  assert.ok(!section.includes("createWorkflowDispatch("));
  assert.ok(!section.includes("merge_pull_request("));
 });
-test("existing source repair route remains protected and unrelated",()=>{
- const router=readFileSync(new URL("../scripts/ci-pr-commander-strategy-router.cjs",import.meta.url),"utf8");
- assert.match(router,/REVIEW_ONLY=new Set/);
- assert.match(router,/if\(REVIEW_ONLY\.has\(c\.category\)&&!sourceTest\)/);
- assert.match(router,/NO_SAFE_AUTOMATIC_WRITER_FOR_CATEGORY/);
+test("source-write protections remain intact in signed route and diagnostic payload",()=>{
+ assert.ok(section.includes('c.source_write_authorized===false'));
+ assert.ok(section.includes('c.execution_authorized===false'));
+ assert.ok(section.includes('confirmGitHubWrite:false'));
+ assert.ok(section.includes('sourceWriteAuthorized:false'));
+ assert.ok(src.includes('p.dispatchAccepted>0&&!(p.category==="TYPESCRIPT"||p.category==="SOURCE_CODE")'));
+ assert.ok(src.includes('UNSAFE_CATEGORY_DISPATCH_REJECTED'));
 });
