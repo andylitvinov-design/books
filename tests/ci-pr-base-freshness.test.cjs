@@ -262,6 +262,46 @@ test('trusted production-base policy is loaded from the same pinned SHA and miss
  assert.ok(s.includes("throw Error('PROTECTED_BASE_ADVANCE_POLICY_UNAVAILABLE')"));
  assert.ok(workflow.includes("'SENSITIVE_COMPARE_UNSAFE'].includes(freshness.reason)"));
  for(const signal of ['INDEPENDENT_DOCS_BASE_REVALIDATED',
-   'INDEPENDENT_CI_MAINTENANCE_REVALIDATED'])
+   'INDEPENDENT_CI_MAINTENANCE_REVALIDATED',
+   'INDEPENDENT_PUBLIC_PRESENTATION_REVALIDATED'])
    assert.ok(workflow.includes('freshness.reason==="'+signal+'"'));
+});
+
+test('native AutoMerge reuses independent public-page checks only with trusted policy and true mergeability',async()=>{
+ const comparison={status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+   base_commit:{sha:old},merge_base_commit:{sha:old},
+   commits:[{sha:head}],files:[{filename:'app/[locale]/about/page.tsx',status:'modified'}]};
+ const github=api('lib/billing/stripe-provider.js');
+ github.rest.repos.compareCommits=async()=>({data:comparison});
+ let proofCalls=0;
+ const policy={
+   safeDocumentationAdvance:()=>false,
+   safeIndependentCiMaintenanceAdvance:()=>false,
+   verifiedIndependentPublicRasterAdvance:()=>false,
+   safeIndependentPublicPresentationAdvance:(diff,base,live,paths)=>{
+     proofCalls++;
+     return base===old&&live===head&&paths.length===1&&
+       paths[0]==='lib/billing/stripe-provider.js'&&diff.status==='ahead'&&
+       diff.base_commit?.sha===old&&diff.merge_base_commit?.sha===old&&
+       diff.behind_by===0&&diff.commits?.length===1&&
+       diff.commits[0].sha===head&&diff.files?.length===1&&
+       diff.files[0].status==='modified'&&
+       diff.files[0].filename==='app/[locale]/about/page.tsx';
+   },
+ };
+ const opts={github,owner:'o',repo:'r',pr:{...pr,mergeable:true},
+   verifiedRunBase:old,baseAdvancePolicy:policy};
+ const accepted=await assessBaseFreshness(opts);
+ assert.equal(accepted.ok,true);
+ assert.equal(accepted.reason,'INDEPENDENT_PUBLIC_PRESENTATION_REVALIDATED');
+ assert.equal(proofCalls,1);
+ for(const mergeable of [false,null])
+   assert.equal((await assessBaseFreshness({...opts,pr:{...pr,mergeable}})).reason,
+     'SENSITIVE_COMPARE_UNSAFE','conflict/unknown mergeability must block reuse');
+ assert.equal((await assessBaseFreshness({...opts,baseAdvancePolicy:{
+   safeDocumentationAdvance:()=>false,safeIndependentCiMaintenanceAdvance:()=>false,
+   verifiedIndependentPublicRasterAdvance:()=>false}})).reason,
+   'SENSITIVE_COMPARE_UNSAFE','old protected production without helper stays strict');
+ github.rest.repos.compareCommits=async()=>({data:{...comparison,status:'diverged'}});
+ assert.equal((await assessBaseFreshness(opts)).reason,'SENSITIVE_COMPARE_UNSAFE');
 });
