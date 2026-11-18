@@ -142,8 +142,13 @@ async function assessBaseFreshness({github,owner,repo,pr,verifiedRunBase,classif
     // Mirror that exact approval, never independently invent broader rules.
     const trustedPolicyAdvance=pr.mergeable===true&&
       approved('safeTrustedPolicyAdvance');
+    // Same protected, read-only browser QA path proof as Specialist. No
+    // waiving failed/queued real workflows or hosting rules.
+    const independentQaAdvance=pr.mergeable===true&&
+      approved('safeIndependentQaAdvance');
     if(!detachedCi&&!independentRaster&&!documentationOnly&&!independentMaintenance&&
-       !independentPresentation&&!disjointPublicSource&&!trustedPolicyAdvance)
+       !independentPresentation&&!disjointPublicSource&&!trustedPolicyAdvance&&
+       !independentQaAdvance)
       return fail('SENSITIVE_COMPARE_UNSAFE');
     revalidatedReason=detachedCi?'ISOLATED_CI_PUBLIC_MEDIA_REVALIDATED':
       independentRaster?'INDEPENDENT_PUBLIC_RASTER_REVALIDATED':
@@ -151,7 +156,8 @@ async function assessBaseFreshness({github,owner,repo,pr,verifiedRunBase,classif
       independentMaintenance?'INDEPENDENT_CI_MAINTENANCE_REVALIDATED':
       independentPresentation?'INDEPENDENT_PUBLIC_PRESENTATION_REVALIDATED':
       disjointPublicSource?'DISJOINT_PUBLIC_SOURCE_REVALIDATED':
-      'TRUSTED_POLICY_BASE_REVALIDATED';
+      trustedPolicyAdvance?'TRUSTED_POLICY_BASE_REVALIDATED':
+      'INDEPENDENT_QA_BASE_REVALIDATED';
    }
   }
   const finalBranch=(await github.rest.repos.getBranch({owner,repo,branch:'codex/public-book-library'})).data;
@@ -240,6 +246,10 @@ async function loadTrustedClassifier(workspace){
  // function accepts policy-only advances, never mixed unsafe code.
  if(typeof impact.safeTrustedPolicyAdvance==='function')
    names.push('safeTrustedPolicyAdvance');
+ // Only production versions with this reviewed helper can reuse QA-only
+ // target movement; old protected policies continue to HOLD instead.
+ if(typeof impact.safeIndependentQaAdvance==='function')
+   names.push('safeIndependentQaAdvance');
  const baseAdvancePolicy=Object.fromEntries(names.map(name=>[name,impact[name]]));
  return {classifierBase,decideRoute:mod.decideRoute,baseAdvancePolicy};
 }

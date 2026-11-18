@@ -265,7 +265,8 @@ test('trusted production-base policy is loaded from the same pinned SHA and miss
    'INDEPENDENT_CI_MAINTENANCE_REVALIDATED',
    'INDEPENDENT_PUBLIC_PRESENTATION_REVALIDATED',
    'DISJOINT_PUBLIC_SOURCE_REVALIDATED',
-   'TRUSTED_POLICY_BASE_REVALIDATED'])
+   'TRUSTED_POLICY_BASE_REVALIDATED',
+   'INDEPENDENT_QA_BASE_REVALIDATED'])
    assert.ok(workflow.includes('freshness.reason==="'+signal+'"'));
 });
 
@@ -435,4 +436,52 @@ test('native AutoMerge mirrors Specialist mixed protected-policy plus independen
  const absent={...policy,safeTrustedPolicyAdvance:undefined};
  assert.equal((await assessBaseFreshness({...options,baseAdvancePolicy:absent})).reason,
    'SENSITIVE_COMPARE_UNSAFE');
+});
+
+test('native AutoMerge accepts only production-proven isolated browser QA base advances',async()=>{
+ const file='scripts/verify-unified-six-dock-browser.mjs';
+ const diff=(filename,status='modified')=>({
+   status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+   base_commit:{sha:old},merge_base_commit:{sha:old},
+   commits:[{sha:head}],files:[{filename,status}],
+ });
+ let proof=diff(file),called=0;
+ const github=api('lib/billing/stripe-provider.js');
+ github.rest.repos.compareCommits=async()=>({data:proof});
+ const policy={
+   safeDocumentationAdvance:()=>false,
+   safeIndependentCiMaintenanceAdvance:()=>false,
+   verifiedIndependentPublicRasterAdvance:()=>false,
+   safeIndependentPublicPresentationAdvance:()=>false,
+   safeDisjointPublicSourceAdvance:()=>false,
+   safeTrustedPolicyAdvance:()=>false,
+   safeIndependentQaAdvance:(comparison,base,live,paths)=>{
+     called++;
+     return base===old&&live===head&&paths.length===1&&
+       paths[0]==='lib/billing/stripe-provider.js'&&
+       comparison.status==='ahead'&&comparison.base_commit?.sha===old&&
+       comparison.merge_base_commit?.sha===old&&comparison.commits?.at(-1)?.sha===head&&
+       comparison.files.length===1&&comparison.files[0].filename===file&&
+       comparison.files[0].status==='modified';
+   },
+ };
+ const options={github,owner:'o',repo:'r',pr:{...pr,mergeable:true},
+   verifiedRunBase:old,baseAdvancePolicy:policy};
+ const accepted=await assessBaseFreshness(options);
+ assert.equal(accepted.ok,true);
+ assert.equal(accepted.reason,'INDEPENDENT_QA_BASE_REVALIDATED');
+ assert.equal(called,1);
+ for(const mergeable of [false,null])
+   assert.equal((await assessBaseFreshness({...options,pr:{...pr,mergeable}})).reason,
+     'SENSITIVE_COMPARE_UNSAFE','native merge always requires explicit mergeability');
+ for(const bad of [
+   'scripts/verify-affirmation-voice-browser.mjs',
+   'scripts/verify-admin-auth-browser.mjs',
+   '.github/workflows/hh-pr-core-release.yml',
+ ]){
+   proof=diff(bad);
+   assert.equal((await assessBaseFreshness(options)).reason,'SENSITIVE_COMPARE_UNSAFE',bad);
+ }
+ proof={...diff(file),status:'diverged'};
+ assert.equal((await assessBaseFreshness(options)).reason,'SENSITIVE_COMPARE_UNSAFE');
 });
