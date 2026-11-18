@@ -40,7 +40,7 @@ const needFocus: Record<string, Focus> = {
   relationship_couple:"relationships", relationship_family:"relationships",
   esteem_confidence:"growth", relationship_boundaries:"relationships",
   growth_income:"growth", growth_career:"growth", growth_ideas:"growth", growth_direction:"growth",
-  business_strategy:"work", business_clients:"work", business_team:"work", business_change:"work",
+  business_strategy:"work", business_clients:"work", business_team:"work", business_change:"work", business_burnout:"work",
 };
 const copy: Record<PublicLocale, QuizCopy> = {
   "ru": {
@@ -202,6 +202,10 @@ const copy: Record<PublicLocale, QuizCopy> = {
           [
             "business_change",
             "Рост или перемены"
+          ],
+          [
+            "business_burnout",
+            "Стресс и выгорание"
           ]
         ]
       }
@@ -396,6 +400,10 @@ const copy: Record<PublicLocale, QuizCopy> = {
           [
             "business_change",
             "Growth or transition"
+          ],
+          [
+            "business_burnout",
+            "Stress and burnout"
           ]
         ]
       }
@@ -590,6 +598,10 @@ const copy: Record<PublicLocale, QuizCopy> = {
           [
             "business_change",
             "Crecer o cambiar"
+          ],
+          [
+            "business_burnout",
+            "Estrés y agotamiento"
           ]
         ]
       }
@@ -636,7 +648,7 @@ const needIcons: Record<string, LucideIcon> = {
   stress_tension:Flower2, energy_fatigue:BatteryCharging, stress_overload:HeartPulse, health_wellbeing:Leaf,
   relationship_couple:HeartHandshake, relationship_family:UsersRound, esteem_confidence:Compass, relationship_boundaries:HandHeart,
   growth_income:Wallet, growth_career:BriefcaseBusiness, growth_ideas:BookOpen, growth_direction:Compass,
-  business_strategy:Compass, business_clients:UsersRound, business_team:HeartHandshake, business_change:BriefcaseBusiness,
+  business_strategy:Compass, business_clients:UsersRound, business_team:HeartHandshake, business_change:BriefcaseBusiness, business_burnout:BatteryCharging,
 };
 
 const categories: readonly { key: Exclude<Category, "business">; image: string; Icon: LucideIcon }[] = [
@@ -648,10 +660,18 @@ const categories: readonly { key: Exclude<Category, "business">; image: string; 
   { key: "videos", image: "/images/holistic-house/assist-video-botanical.svg", Icon: MonitorPlay },
 ];
 
-export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
+export function ServicesAssistQuiz({ locale, initialTopic, initialNeed }: { locale: PublicLocale; initialTopic?: string; initialNeed?: string }) {
   const t = copy[locale];
-  const [answers, setAnswers] = useState<Partial<Record<QuestionKey, string>>>({});
-  const [step, setStep] = useState(0);
+  // Whitelist public option IDs before opening the next quiz question.
+  const topicFromUrl = t.questions.topic.options.some(([id]) => id === initialTopic)
+    ? initialTopic as QuizTopic : undefined;
+  const needFromUrl = topicFromUrl && t.needs[topicFromUrl].options.some(([id]) => id === initialNeed)
+    ? initialNeed : undefined;
+  const [answers, setAnswers] = useState<Partial<Record<QuestionKey, string>>>(() => ({
+    ...(topicFromUrl ? {topic: topicFromUrl} : {}),
+    ...(needFromUrl ? {need: needFromUrl} : {}),
+  }));
+  const [step, setStep] = useState(topicFromUrl ? 1 : 0);
   const [submitted, setSubmitted] = useState(false);
   const questionHeading = useRef<HTMLSpanElement>(null);
   const currentKey = questionKeys[step];
