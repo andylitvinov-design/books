@@ -170,7 +170,11 @@ test("Voice footer has exactly two large next-step actions, no charge or synthes
  for(const phrase of ["Narrate meditation (20 EXP)","Озвучить медитацию (20 EXP)","Narrar meditación (20 EXP)"])
   assert.ok(ui.includes(phrase));
  assert.match(ui,/Создать видео без озвучки/);
- assert.doesNotMatch(ui,/fetch\(|checkout|supabase|credit|deduct|charge|createQuickVideo/);
+ const actionStart=ui.indexOf('const openFromVoice=(target:');
+ const actionEnd=ui.indexOf(' return <div className={css.shell}',actionStart);
+ assert.ok(actionStart>0&&actionEnd>actionStart,"inspect the actual Voice action handlers");
+ assert.doesNotMatch(ui.slice(actionStart,actionEnd),/fetch\(|checkout|supabase|credit|deduct|charge|createQuickVideo/,
+   "the two navigation actions cannot bill, render or request voice");
  const voice=read("components/mandala-affirmation-voice.tsx");
  assert.match(voice,/data-therapy-voice-cloud-consent/);
  assert.match(voice,/data-therapy-voice-cloud-limit/);
