@@ -38,6 +38,8 @@ test('Samples use approved static phrases; custom user text requires consent and
  assert.throws(()=>validateFishRequest({...sample,voiceId:'fish-en'}));
  const own={...sample,mode:'custom',text:'Спокойно вдохните и расслабьтесь.',consent:true};
  assert.equal(validateFishRequest(own).text,own.text);
+ const paragraph={...own,text:'Почувствуйте опору.\n\nСделайте мягкий вдох.'};
+ assert.equal(validateFishRequest(paragraph).text,paragraph.text,'real meditation paragraphs must be narratable');
  for(const change of [{consent:false},{text:'A'.repeat(651)},{text:'<b>'},{text:'\u0000'},
   {language:'es',voiceId:'fish-es'},{provider:'studio'},{extra:1}])
    assert.throws(()=>validateFishRequest({...own,...change}));
