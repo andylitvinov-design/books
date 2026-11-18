@@ -85,11 +85,11 @@ const backgroundNames:Record<string,{ru:string;en:string;es:string}>={
 };
 
 export function MandalaAffirmationVoice({
-  locale,lines,enabled,durationSeconds,disabled,approvalPending=false,initialPreferences,onAttach,onGenerating,onInvalidate,onPreferencesChange,onDetachLocal,compact=false,ownVoiceOnly=false,extraActions,
+  locale,lines,enabled,durationSeconds,disabled,approvalPending=false,initialPreferences,onAttach,onGenerating,onInvalidate,onPreferencesChange,onDetachLocal,compact=false,therapyLayout=false,ownVoiceOnly=false,extraActions,
 }:{
   locale:PublicLocale;lines:string[];enabled:boolean;durationSeconds:number;disabled:boolean;approvalPending?:boolean;
   initialPreferences?:AffirmationVoicePreferences;
-  compact?:boolean;ownVoiceOnly?:boolean;extraActions?:ReactNode;
+  compact?:boolean;therapyLayout?:boolean;ownVoiceOnly?:boolean;extraActions?:ReactNode;
   onAttach:(result:AffirmationVoiceResult)=>void;
   onGenerating:(value:boolean)=>void;
   onInvalidate?:()=>void;
@@ -510,11 +510,11 @@ export function MandalaAffirmationVoice({
       <Volume2 size={16} aria-hidden="true"/>{t.deviceSample}
     </button><small className={css.sampleStatus}>{t.deviceNote}</small>
   </div>:null;
-  return <section className={css.panel} data-voice-layout={compact?"compact":"default"} data-own-voice-only={ownVoiceOnly?"true":"false"}
+  return <section className={css.panel} data-voice-layout={compact?"compact":"default"} data-therapy-voice-ui={therapyLayout?"true":"false"} data-own-voice-only={ownVoiceOnly?"true":"false"}
     id="video-affirmation-voice" data-video-affirmation-voice data-video-affirmation-phase={generationPhase} aria-labelledby="video-affirmation-voice-title">
     <div className={css.heading}>
       <AudioLines size={20} aria-hidden="true"/>
-      <div><h4 id="video-affirmation-voice-title">{ownVoiceOnly?t.own:t.title}</h4><p>{ownVoiceOnly?t.myVoiceLead:t.lead}</p></div>
+      <div><h4 id="video-affirmation-voice-title">{ownVoiceOnly?t.own:therapyLayout?(locale==="ru"?"Голос для ваших фраз":locale==="es"?"Voz para tus frases":"Voice for your phrases"):t.title}</h4><p>{ownVoiceOnly?t.myVoiceLead:therapyLayout?(locale==="ru"?"Выберите голос для выбранной фразы.":locale==="es"?"Elige una voz para tu frase.":"Choose a voice for your phrase."):t.lead}</p></div>
     </div>
     {!ownVoiceOnly&&voiceGender!=="own" && !compact ? <div className={css.selectedPhrase} data-video-affirmation-selection-summary>
       <small>{t.phrase} · {t.voice}: <strong data-video-affirmation-selected-voice>{VOICE_STUDIO_VOICES.find(v=>v.id===voiceId)?.name[locale]}</strong></small>
@@ -547,7 +547,7 @@ export function MandalaAffirmationVoice({
         {compact?<strong className={css.chooseVoice}>{t.chooseVoice}</strong>:null}
         <div className={css.genderTabs} role="group" aria-label={t.voice}>
         {(["female","male","own"] as const).map(id=><button type="button" key={id}
-          data-video-affirmation-gender={id} aria-pressed={voiceGender===id} hidden={compact&&id==="own"}
+          data-video-affirmation-gender={id} aria-pressed={voiceGender===id} hidden={compact&&id==="own"&&!therapyLayout}
           disabled={busy||disabled} onClick={()=>{
             // Commit the actual voice choice before Safari decoder teardown.
             setVoiceGender(id);
@@ -592,6 +592,14 @@ export function MandalaAffirmationVoice({
         compact={ownVoiceOnly} uploadAction={ownVoiceOnly?extraActions:null}
         disabled={disabled||busy} approvalPending={approvalPending} onAttach={onAttach} onDetach={onDetachLocal}/>
     </div>
+    {therapyLayout&&voiceGender!=="own"?<div className={css.therapyVoiceTools}>
+      {deviceSampleControl}
+      <button type="button" className={css.recordShortcut} data-video-therapy-own-voice
+        disabled={busy||disabled} onClick={()=>{setVoiceGender("own");setConsent(false);resetSample();}}>
+        <AudioLines size={16} aria-hidden="true"/>
+        {locale==="ru"?"Записать или загрузить голос":locale==="es"?"Grabar o subir mi voz":"Record or upload my voice"}
+      </button>
+    </div>:null}
     {!ownVoiceOnly&&voiceGender!=="own" ? <>
     <details ref={bindVoiceAdvanced} className={css.voiceAdvanced} data-video-affirmation-voice-advanced
       onToggle={event=>{
@@ -607,7 +615,7 @@ export function MandalaAffirmationVoice({
         if(node instanceof HTMLDetailsElement)
           voiceAdvancedOpenRef.current=!node.open;
       }}>{locale==="ru"?"Дополнительные настройки озвучки":locale==="es"?"Opciones de narración":"Voice options"}</summary>
-    {compact?deviceSampleControl:null}
+    {compact&&!therapyLayout?deviceSampleControl:null}
     <div className={css.controls}>
       <label>{t.language}
         <select data-video-affirmation-language value={language} disabled={busy||disabled}
@@ -669,7 +677,7 @@ export function MandalaAffirmationVoice({
           setConsent(previous=>!previous);
       }}>
       <span className={css.consentMark} aria-hidden="true">{consent?"✓":""}</span>
-      <span>{compact?t.consentBrief:t.consent}</span>
+      <span>{therapyLayout?(locale==="ru"?"Разрешить бесплатную озвучку выбранного текста":locale==="es"?"Permitir la narración gratuita del texto":"Allow free narration of selected text"):compact?t.consentBrief:t.consent}</span>
     </button>
     {compact?<details className={css.consentDetails}><summary>{t.privacyDetails}</summary>
       <p>{t.consent}</p></details>:null}</div>
@@ -717,7 +725,7 @@ export function MandalaAffirmationVoice({
         void createAudio();
       }}>
       {busy?<LoaderCircle size={18} aria-hidden="true"/>:<Volume2 size={18} aria-hidden="true"/>}
-      {busy?mixing?t.mixing:t.busy:compact?t.generateApply:t.generate}
+      {busy?mixing?t.mixing:t.busy:therapyLayout?t.generate:compact?t.generateApply:t.generate}
     </button>
     {!languageAvailable?<small className={css.warning} role="status">{t.unavailable}</small>:<small className={css.hint}>{t.limit}</small>}
     {audioUrl?<div className={css.result} data-video-affimations-audio-ready>

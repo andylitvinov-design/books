@@ -1,13 +1,13 @@
 "use client";
 import {useState, type ReactNode} from "react";
-import {AudioLines, BookOpen, ChevronDown, ChevronRight, Film, Heart, Leaf, Mic2, Sparkles} from "lucide-react";
+import {AudioLines, BookOpen, ChevronDown, ChevronRight, Film, Leaf, Mic2, Sparkles} from "lucide-react";
 import type {PublicLocale} from "@/lib/public-locales";
 import css from "./mandala-therapy-studio.module.css";
-type Pane="meditation"|"voice"|"practice";
+type Pane="meditation"|"voice"|"practice"|"course";
 type Props={locale:PublicLocale;disabled:boolean;initialFormat?:"single"|"course";editor:(course:boolean)=>ReactNode;voiceEditor:ReactNode;advancedEffects:ReactNode;onVideoPhrases:()=>void};
 const dict={
  en:{title:"Therapy Studio",tag:"PERSONAL PRACTICES",intro:"Create a guided meditation or an eight-session practice course.",
-  single:"Single practice",singleHint:"One meditation",course:"8-session course",courseHint:"Eight connected themes",
+  single:"Single practice",singleHint:"One meditation",course:"My Course",courseHint:"Eight connected themes",
   meditation:"Meditation",voice:"Voice",practice:"Practice",voiceTitle:"Voice for video phrases",voiceHint:"Choose or record a permitted voice for your phrases.",
   voiceEmpty:"To revise the meditation text or preferences, return to the Meditation tab.",voiceBack:"Edit meditation text",
   practiceTitle:"Create your practice",practiceHint:"Pick your next step. No narration or paid video starts automatically.",
@@ -16,7 +16,7 @@ const dict={
   effects:"Optional visual and audio effects",effectsHint:"Preserved original settings; no video is rendered when these are opened.",
   safety:"Gentle reflective practice, not medical treatment. Eight-session mode starts with a plan and one script; other scripts are created locally only on request."},
  ru:{title:"Therapy Studio",tag:"ЛИЧНЫЕ ПРАКТИКИ",intro:"Создайте медитацию или курс из восьми последовательных практик.",
-  single:"Одна практика",singleHint:"Одна медитация",course:"Курс из 8 сессий",courseHint:"Восемь связанных тем",
+  single:"Одна практика",singleHint:"Одна медитация",course:"Мой курс",courseHint:"Восемь связанных тем",
   meditation:"Медитация",voice:"Голос",practice:"Практика",voiceTitle:"Голос для видеофраз",voiceHint:"Выберите или запишите свой разрешённый голос.",
   voiceEmpty:"Текст медитации и фильтры можно изменить на вкладке «Медитация».",voiceBack:"Изменить текст медитации",
   practiceTitle:"Создайте практику",practiceHint:"Выберите дальнейшее действие. Платная генерация автоматически не начинается.",
@@ -25,7 +25,7 @@ const dict={
   effects:"Дополнительные видео- и аудиоэффекты",effectsHint:"Старые настройки сохранены; открытие не запускает рендер.",
   safety:"Мягкая практика для рефлексии, не лечение. Курс начинается с плана и первого текста; остальные создаются локально только по запросу."},
  es:{title:"Therapy Studio",tag:"PRÁCTICAS PERSONALES",intro:"Crea una meditación o un curso de ocho sesiones conectadas.",
-  single:"Una práctica",singleHint:"Una meditación",course:"Curso de 8 sesiones",courseHint:"Ocho temas relacionados",
+  single:"Una práctica",singleHint:"Una meditación",course:"Mi curso",courseHint:"Ocho temas relacionados",
   meditation:"Meditación",voice:"Voz",practice:"Práctica",voiceTitle:"Voz para frases de vídeo",voiceHint:"Elige o graba una voz con permiso.",
   voiceEmpty:"Para revisar el guion y los filtros, vuelve a Meditación.",voiceBack:"Editar texto de meditación",
   practiceTitle:"Crea tu práctica",practiceHint:"Elige el siguiente paso. No hay pagos ni generaciones automáticas.",
@@ -35,24 +35,18 @@ const dict={
   safety:"Práctica reflexiva, no tratamiento médico. El curso comienza con un plan y el primer guion; los demás se crean localmente solo si los solicitas."}
 } as const;
 export function MandalaTherapyStudio({locale,disabled,initialFormat="single",editor,voiceEditor,advancedEffects,onVideoPhrases}:Props){
- const [pane,setPane]=useState<Pane>("meditation");
+ const [pane,setPane]=useState<Pane>(initialFormat==="course"?"course":"meditation");
  const [isCourse,setIsCourse]=useState(initialFormat==="course");
  const [effectsOpen,setEffectsOpen]=useState(false);
  const t=dict[locale];
- return <div className={css.shell} data-therapy-studio data-therapy-course={isCourse?"true":"false"}>
+ return <div className={css.shell} data-therapy-studio data-therapy-course={isCourse?"true":"false"} data-active-therapy-pane={pane}>
   <header className={css.hero}><span className={css.eyebrow}><Leaf size={17}/>{t.tag}</span><h3>{t.title}</h3><p>{t.intro}</p></header>
-  <div className={css.format} data-therapy-format-switch role="group" aria-label="Practice format">
-   <button type="button" data-therapy-format="single" disabled={disabled} aria-pressed={!isCourse} onClick={()=>{setIsCourse(false);setPane("meditation");}}>
-    <Heart size={22}/><span><strong>{t.single}</strong><small>{t.singleHint}</small></span></button>
-   <button type="button" data-therapy-format="course" disabled={disabled} aria-pressed={isCourse} onClick={()=>{setIsCourse(true);setPane("meditation");}}>
-    <BookOpen size={22}/><span><strong>{t.course}</strong><small>{t.courseHint}</small></span></button>
-  </div>
   <div className={css.tabs} data-therapy-tabs role="tablist" aria-label="Therapy Studio">
-   {(["meditation","voice","practice"] as const).map((id,i)=>{
-    const Icon=[Leaf,Mic2,Film][i];
+   {(["meditation","voice","practice","course"] as const).map((id,i)=>{
+    const Icon=[Leaf,Mic2,Film,BookOpen][i];
     return <button key={id} type="button" role="tab" aria-selected={pane===id}
        id={"therapy-tab-"+id} aria-controls="therapy-tab-content" data-therapy-subtab={id}
-       disabled={disabled} onClick={()=>setPane(id)}><Icon size={20}/><span>{t[id]}</span></button>;
+       disabled={disabled} onClick={()=>{setPane(id);if(id==="course")setIsCourse(true);else if(id==="meditation")setIsCourse(false);}}><Icon size={20}/><span>{t[id]}</span></button>;
    })}
   </div>
   <div className={css.main} role="tabpanel" id="therapy-tab-content" aria-labelledby={"therapy-tab-"+pane}>
@@ -60,9 +54,9 @@ export function MandalaTherapyStudio({locale,disabled,initialFormat="single",edi
     {editor(isCourse)}
    </div>
    {pane==="voice"?<div className={css.voiceArea} data-therapy-voice>
-     <div className={css.voiceHint}><Mic2 size={20}/><div><strong>{t.voiceTitle}</strong><p>{t.voiceHint}</p></div></div>
+     
      {voiceEditor}
-     <p className={css.voiceEmpty} data-therapy-voice-empty>{t.voiceEmpty} <button type="button" onClick={()=>setPane("meditation")}>{t.voiceBack}</button></p>
+     <p className={css.voiceEmpty} data-therapy-voice-empty><button type="button" onClick={()=>setPane("meditation")}>{t.voiceBack}</button></p>
    </div>:null}
    {pane==="practice"?<section className={css.practice} data-therapy-practice>
     <h4>{t.practiceTitle}</h4><p>{t.practiceHint}</p>
@@ -76,6 +70,6 @@ export function MandalaTherapyStudio({locale,disabled,initialFormat="single",edi
     </details>
    </section>:null}
   </div>
-  <p className={css.safety}>{t.safety}</p>
+  {pane==="voice"?null:<p className={css.safety}>{t.safety}</p>}
  </div>;
 }
