@@ -2,6 +2,7 @@
 // Deterministic advisory task receipt on existing PR comments. Never grants execution.
 const crypto=require('node:crypto');
 const rules=require('./ci-pr-error-rules.v1.json');
+const {VERIFIED_CORE_SOURCE_CONTRACTS}=require('./ci-pr-core-source-contracts.cjs');
 const {trustedControlComment}=require('./ci-pr-task-state.cjs');
 const REPO='andylitvinov-design/books',PROD='codex/public-book-library';
 const SCHEMA='HH_CI_ERROR_TASK_V1',SHA=/^[a-f0-9]{40}$/i,KEY=/^[a-f0-9]{32}$/i;
@@ -19,11 +20,6 @@ const OWNER_EXECUTOR='github-owner:andylitvinov-design';
 // failed-Core, exact HEAD, changed-file allowlist, independent tests and
 // source publisher gates still apply. Specialist/browser and policy errors
 // remain review-only, never inferred into repair from their category alone.
-const VERIFIED_CORE_SOURCE_CONTRACTS=new Set([
-  'Mobile Dock Core geometry and iPhone keyboard contracts',
-  'Commander PR served-LIVE provenance contracts',
-  'Fast Mandala release contracts'
-]);
 function repairableCoreTestFailure(c){
   return !!(c&&c.category==='TEST_FAILURE'&&
     c.failed_job==='core-lint-types-build'&&

@@ -300,3 +300,21 @@ test('trusted Core source contracts receive guarded AI triage, never direct writ
   a.equal(repairableCoreTestFailure(classify(name)),false,name);
  }
 });
+
+
+test('current production Mandala Core contract has a real guarded source path',()=>{
+ const {repairableCoreTestFailure}=require('../scripts/ci-pr-error-task.cjs');
+ const step='Fast Mandala release contracts (HH_MANDALA_FAST_RELEASE_V1)';
+ const diagnosis=classify(step);
+ a.equal(diagnosis.category,'TEST_FAILURE');
+ a.equal(repairableCoreTestFailure(diagnosis),true);
+ const selected=task(step);
+ a.equal(selected.strategy_code,'GUARDED_SOURCE_REPAIR');
+ a.equal(selected.executor_id,'github-actions:hh-pr-repair-worker.yml');
+ a.equal(selected.source_write_authorized,false);
+ a.equal(selected.execution_authorized,false);
+ // A different specialist job must never inherit signed Core source authority.
+ const external=classifyRedCiError({pr,jobs:[{name:'hh-merge-check',conclusion:'failure',
+  steps:[{name:step,conclusion:'failure'}]}]});
+ a.equal(repairableCoreTestFailure(external),false);
+});

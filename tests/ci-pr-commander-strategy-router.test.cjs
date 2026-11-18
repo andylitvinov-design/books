@@ -236,3 +236,21 @@ test('exact trusted Core source contracts can handoff but never bypass signed Re
   assert.equal(dispatches,1);
  }
 });
+
+
+test('current production Mandala Core test triggers exactly one signed dispatch',async()=>{
+ const start=receipt('TEST_FAILURE');
+ const verified={...start,classification:{...start.classification,
+  reason_code:'FAILED_TEST_STEP_REQUIRES_TRIAGE',
+  evidence_code:'FAILED_TEST_STEP_REQUIRES_TRIAGE',
+  failed_job:'core-lint-types-build',
+  failed_step:'Fast Mandala release contracts (HH_MANDALA_FAST_RELEASE_V1)'}};
+ let calls=0;
+ const result=await route({receipt:verified,context:context(),
+  existingCoreHandoff:async()=>{calls++;return acceptedHandoff();}});
+ assert.equal(result.state,'DISPATCH_ACCEPTED_NOT_WORKER_STARTED');
+ assert.equal(result.dispatchAccepted,1);
+ assert.equal(result.workerStarted,false);
+ assert.equal(result.sourceWriteVerified,false);
+ assert.equal(calls,1);
+});

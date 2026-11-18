@@ -40,6 +40,7 @@ const {stageLine}=require('./ci-pr-stage-receipts.cjs');
 const {classifyRedCiError}=require('./ci-pr-red-ci-classifier.cjs');
 const {verifiedSpecialistTerminalEvidence}=require('./ci-pr-hermes-event-bridge.cjs');
 const {makeCoreTask,taskBody,taskStatus,taskLifecycle,reclassificationBody,reclassificationStatus}=require('./ci-pr-error-task.cjs');
+const {VERIFIED_CORE_SOURCE_CONTRACTS}=require('./ci-pr-core-source-contracts.cjs');
 const {isTrustedQualityFailureEvent,qualityEventMatchesPR}=require('./ci-pr-quality-event.cjs');
 
 
@@ -504,7 +505,8 @@ async function recordRepairHandoff(github, owner, repo, pr, run, jobs, dryRun, l
     'Source Preflight — syntax and TypeScript before costly Next build',
     'Mobile Dock Core geometry and iPhone keyboard contracts',
     'Exact proposed release production build and TypeScript check',
-    'TypeScript check','TypeScript build'
+    'TypeScript check','TypeScript build',
+    ...VERIFIED_CORE_SOURCE_CONTRACTS
   ]);
   const sourceJob=(jobs || []).find(j=>j.name==='core-lint-types-build'&&
     j.conclusion==='failure');
