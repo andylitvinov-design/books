@@ -16,7 +16,9 @@ test('15 approved Telegram service-deep links preserve exact service/locale',()=
   const entry=resolveTelegramServiceEntry(ready,telegramServiceRequestUrl(service,lang),lang);
   assert.equal(entry?.href,'https://t.me/holistichouse_bot?start=hhservice_'+service+'_'+lang);
   assert.deepEqual(v3ServiceStart('/start hhservice_'+service+'_'+lang),{service,locale:lang});
-  assert.ok(v3ServiceCopy(lang,service).intro.includes('OpenRouter'));
+  assert.ok(!v3ServiceCopy(lang,service).intro.includes('OpenRouter'));
+  assert.ok(v3ServiceCopy(lang,service).consent.includes('OpenRouter'));
+  assert.deepEqual(v3ButtonsFor(lang,'service_consent'),[[V3_LABELS[lang].serviceagree,V3_LABELS[lang].decline]]);
   assert.equal(isTelegramServiceDraft(telegramServiceRequestUrl(service,lang),lang),true);
   assert.equal(resolveTelegramServiceHandoffUrl(telegramServiceRequestUrl(service,lang),lang),
     '/api/public/telegram-service-entry?service='+service+'&locale='+lang);
@@ -41,6 +43,8 @@ test('Strict bot readiness and tamper rejection retain human fallback',()=>{
 test('Encrypted session only retains allowlisted service, model only sees public title',()=>{
  const ctx=v3Context({turns:[],serviceRequest:'reiki',chat_id:'forged'});
  assert.equal(ctx.serviceRequest,'reiki');
+ assert.equal(v3Context({turns:[],serviceRequest:'reiki',serviceDisclosureSeen:true}).serviceDisclosureSeen,true);
+ assert.equal(v3Context({turns:[],serviceDisclosureSeen:true}).serviceDisclosureSeen,undefined);
  assert.equal(Object.hasOwn(ctx,'chat_id'),false);
  assert.equal(v3Context({turns:[],serviceRequest:'fake'}).serviceRequest,undefined);
  assert.equal(v3Action({inlineAction:'v3:servicesend'}),'send');
