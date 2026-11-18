@@ -820,7 +820,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         assert.equal(shape.widths.length,3,"3 voice cards "+width);
         assert.ok(shape.widths.every(x=>x>=60),"readable cards "+width+" "+JSON.stringify(shape));
         assert.ok(shape.tops.every(x=>Math.abs(x-shape.tops[0])<3),"one card row "+width);
-        assert.ok(shape.genders.length===2&&Math.abs(shape.genders[0]-shape.genders[1])<3,"two gender tabs "+width);
+        assert.ok(shape.genders.length===3&&shape.genders.every(x=>Math.abs(x-shape.genders[0])<3),"female/male/Fish filters on one row "+width);
         assert.ok(shape.consentTop<shape.choiceTop,"explicit consent precedes voice cards "+width);
         assert.ok(shape.action>=shape.sampleBottom&&shape.action-shape.sampleBottom<32,
           "generation follows voice sample "+width);
@@ -829,6 +829,32 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           await page.screenshot({path:"artifacts/hypno-compact/ideas-voice-"+locale+"-"+width+".png",fullPage:true});}
       }
       await page.setViewportSize({width:390,height:840});
+      // Same original selector is mounted in Therapy -> Voice. Both real
+      // Fish reference IDs must appear even when the API is still on hold.
+      const fishTab=compactVoicePanel.locator('[data-video-affirmation-gender="fish"]');
+      await expect(fishTab).toBeVisible();
+      if(engine==="webkit")await fishTab.tap();
+      else await fishTab.click();
+      await expect(fishTab).toHaveAttribute("aria-pressed","true");
+      const rolePicker=compactVoicePanel.locator('[data-fish-voice-purpose]');
+      await expect(rolePicker).toBeVisible();
+      const coachingRole=rolePicker.locator('[data-fish-purpose="coaching"]');
+      const meditationRole=rolePicker.locator('[data-fish-purpose="meditation"]');
+      await expect(coachingRole).toBeVisible();
+      await expect(meditationRole).toBeVisible();
+      if(engine==="webkit")await coachingRole.tap(); else await coachingRole.click();
+      await expect(compactVoicePanel.locator('[data-video-affirmation-voice-card^="fish-"]')).toHaveCount(4);
+      await expect(compactVoicePanel.locator('[data-video-affirmation-voice-card="fish-igor"]')).toBeVisible();
+      if(engine==="webkit")await meditationRole.tap(); else await meditationRole.click();
+      await expect(compactVoicePanel.locator('[data-video-affirmation-voice-card^="fish-"]')).toHaveCount(2);
+      await expect(compactVoicePanel.locator('[data-video-affirmation-voice-card="fish-selene"]')).toBeVisible();
+      await expect(compactVoicePanel.locator('[data-video-affirmation-voice-card="fish-calm-meditation"]')).toBeDisabled();
+      await expect(compactVoicePanel.locator('[data-voice-fish-status]')).toBeVisible();
+      for(const item of await compactVoicePanel.locator('[data-video-affirmation-voice-preview^="fish-"]').all())
+        await expect(item).toBeDisabled();
+      await expect(compactVoicePanel.locator('[data-video-generate-affirmation-audio]')).toBeDisabled();
+      await compactVoicePanel.locator('[data-video-affirmation-gender="female"]').click();
+      await expect(compactVoicePanel.locator('[data-video-affirmation-voice-card="maya"]')).toBeVisible();
       await myVoiceModeButton.click();
       await expect(myVoiceModeButton).toHaveAttribute("aria-pressed","true");
       await expect(phrases.locator("[data-video-ideas-own-upload]")).toHaveCount(1);
