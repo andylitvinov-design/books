@@ -84,6 +84,20 @@ jobs:
             // Cron is a backstop only. Actual CI actions require the Control Tower's
             // signed exact-HEAD reservation; no unaddressed metadata edits.
             if(context.eventName==='schedule'){
+              // Existing hourly CI Worker is the no-PR-event backup when
+              // GitHub suppresses the three-per-hour Watchdog schedule.
+              // Reuse signed GitHub run-history and cooldown safeguards.
+              try{
+                const {wakeStaleWatchdog}=require(process.env.GITHUB_WORKSPACE+
+                  '/scripts/ci-pr-control-tower-wakeup.cjs');
+                const liveness=await wakeStaleWatchdog({github,context,
+                  summary:{production:1},dryRun:!Boolean(token),
+                  log:message=>core.info(message)});
+                core.info('HH_CI_SCHEDULE_WATCHDOG_LIVENESS '+JSON.stringify(liveness));
+              }catch(error){
+                core.warning('HH_CI_SCHEDULE_WATCHDOG_LIVENESS_UNAVAILABLE '+
+                  String(error?.message||'unknown').slice(0,100));
+              }
               const {run:scheduledBackstop}=require(process.env.GITHUB_WORKSPACE+
                 '/scripts/ci-pr-schedule-fallback.cjs');
               const result=await scheduledBackstop({
