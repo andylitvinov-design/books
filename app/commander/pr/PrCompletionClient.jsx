@@ -58,6 +58,7 @@ export default function PrCompletionClient(){
  const [value,setValue]=useState(''),[items,setItems]=useState([]),
   [busy,setBusy]=useState(false),[message,setMessage]=useState(''),
   [authNeeded,setAuthNeeded]=useState(false),[lastAt,setLastAt]=useState(''),
+  [watchdogHealth,setWatchdogHealth]=useState(null),
   [expandedId,setExpandedId]=useState(null),
   [journeys,setJourneys]=useState({}),[journeyLoading,setJourneyLoading]=useState({}),
   [journeyErrors,setJourneyErrors]=useState({});
@@ -68,6 +69,7 @@ export default function PrCompletionClient(){
    if(r.status===401){setAuthNeeded(true);return}
    if(!r.ok)throw Error(data.error||'OWNER_QUEUE_UNAVAILABLE');
    setAuthNeeded(false);setItems(Array.isArray(data.items)?data.items:[]);
+   setWatchdogHealth(data.watchdogHealth&&typeof data.watchdogHealth==='object'?data.watchdogHealth:null);
    setLastAt(new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}));
   }catch(err){setMessage('Статус пока не подтверждён: '+String(err.message||err))}
  },[]);
@@ -151,6 +153,19 @@ export default function PrCompletionClient(){
     <button type="button" onClick={()=>void load()} style={{...styles.button,fontSize:13,padding:'9px 12px',minHeight:38}}>Обновить</button>
    </div>
    {lastAt&&<p style={styles.small}>Последняя проверка статуса: {lastAt}</p>}
+   {watchdogHealth&&watchdogHealth.status!=='WATCHDOG_RECENT_VERIFY_CONSECUTIVE_RUNS'&&
+     <p role="alert" style={{fontSize:14,color:'#ffcbba',lineHeight:1.6}}>
+      GitHub Watchdog: {watchdogHealth.status==='GITHUB_WATCHDOG_STALE'?
+       'нет подтверждённого запуска по расписанию':
+       watchdogHealth.status==='MONITOR_STALE'?'мониторинг расписания устарел':
+       watchdogHealth.status==='GITHUB_API_NOT_VERIFIED'?
+       'ответ GitHub API не подтверждён':'состояние не подтверждено'}.
+      {Number.isSafeInteger(watchdogHealth.ageMinutes)&&
+        ' Последний запуск '+watchdogHealth.ageMinutes+' мин назад.'}
+      {' '}Очередь PR сохранена, но автоматическое продвижение может задержаться.
+      {' '}<a style={styles.link} href="https://github.com/andylitvinov-design/books/actions/workflows/hh-pr-ten-minute-watchdog.yml"
+         target="_blank" rel="noopener noreferrer">Проверить GitHub Actions</a>
+     </p>}
    {items.length===0&&<p style={styles.small}>Нет подтверждённых задач или требуется авторизация.</p>}
    {items.slice(0,12).map(item=><article key={item.requestId}
     style={{borderTop:'1px solid #48435f',padding:'13px 0'}}>
