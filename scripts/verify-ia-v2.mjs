@@ -269,7 +269,7 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
           const header=entry.locator('[data-home-dialogue-header]')
           await expect(entry).toHaveCount(1)
           await expect(header).toBeVisible()
-          await expect(header.locator('h1')).toHaveText('My Space')
+          await expect(header.locator('h1')).toHaveText('Holistic House')
           // The former top marketing ribbon, duplicate brand header and large
           // Profile dashboard must NEVER displace the first conversation.
           await expect(page.locator('header.house-header--services')).toHaveCount(0)
@@ -300,7 +300,7 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
               centerGap:Math.abs(title.top+title.height/2-actions.top-actions.height/2)}
           })
           assert.ok(geom.right<=width+1&&geom.overlap<=1&&geom.centerGap<=12,
-            label+': My Space title and tools must share ONE line')
+            label+': Holistic House title and tools must share ONE line')
           const self=entry.locator('[data-home-mode-button="self"]')
           const business=entry.locator('[data-home-mode-button="business"]')
           await expect(self).toHaveAttribute('aria-pressed','true')
@@ -313,12 +313,28 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
           const form=entry.locator('[data-home-intent-form]')
           const input=form.locator('[data-home-intent-composer]')
           const send=form.locator('[data-home-send-to-ali]')
+          await expect(entry.locator('[data-home-free-review]')).toHaveAttribute('href','/'+locale+'/services/free-situation-review')
+          // Measure both rectangles in ONE animation frame, BEFORE focusing the
+          // lower textarea. Separate boundingBox calls during mobile keyboard
+          // auto-scroll can use different scroll offsets and produce a false
+          // overlap even when layout order and spacing are correct.
+          const homeLayout=await entry.evaluate(root=>{
+            const review=root.querySelector('[data-home-free-review]')
+            const topics=root.querySelector('[data-home-focus-grid]')
+            if(!review||!topics)return null
+            const reviewBox=review.getBoundingClientRect()
+            const topicsBox=topics.getBoundingClientRect()
+            return {before:Boolean(review.compareDocumentPosition(topics)&Node.DOCUMENT_POSITION_FOLLOWING),
+              reviewBottom:reviewBox.bottom,topicsTop:topicsBox.top}
+          })
+          assert.ok(homeLayout?.before&&homeLayout.reviewBottom<=homeLayout.topicsTop+1,
+            label+': free review above four topic choices '+JSON.stringify(homeLayout))
+          await expect(entry.locator('[data-home-intent-option]')).toHaveCount(4)
           await expect(input).toBeVisible()
           await expect(send).toBeDisabled()
           await input.fill(locale==='ru'?'Хочу создать курс':locale==='es'?'Quiero crear un curso':'I want to create a course')
           await expect(send).toBeEnabled()
           await input.fill('')
-          await expect(entry.locator('[data-home-intent-option]')).toHaveCount(3)
           await expect(page.locator('[data-home-deferred-sections]')).toHaveCount(1)
           const hero=entry.locator('[data-home-dialogue-hero]')
           const rect=await hero.boundingBox()

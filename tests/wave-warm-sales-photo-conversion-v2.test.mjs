@@ -42,14 +42,15 @@ test('two meaningful answers suffice for review of a selected session',()=>{
  assert.equal(b.stage,'ready');
  assert.equal((b.reply.match(/[?]/g)||[]).length,0);
 });
-test('intro text is brief and retains real provider disclosure and stop command',()=>{
+test('greetings stay short; processing disclosure and stop are kept in their relevant flows',()=>{
  for(const locale of ['ru','en','es']){
   assert.ok(aliFreeDiagnosticIntro(locale).length<230);
   assert.ok(SECRETARY_PSYCHOLOGIST_COPY[locale].intro.length<290);
-  assert.ok(V3_COPY[locale].intro.length<230);
+  assert.ok(V3_COPY[locale].intro.length<165);
   assert.ok(V3_CHAT_COPY[locale].intro.length<160);
-  assert.ok(V3_COPY[locale].intro.includes('/stop'));
-  assert.ok(V3_CHAT_COPY[locale].intro.includes('/stop'));
+  assert.doesNotMatch(V3_COPY[locale].intro,/\/stop|medical records|медицинские документы|documentos médicos/);
+  assert.doesNotMatch(V3_CHAT_COPY[locale].intro,/\/stop|medical records|медицинские документы|documentos médicos/);
+  assert.match(SECRETARY_PSYCHOLOGIST_COPY[locale].intro,/\/stop/);
   for(const service of ['homeopathy','coaching','reiki','constellations','business','business_strategy']){
    const copy=v3ServiceCopy(locale,service);
    assert.ok(copy.intro.length<260);
@@ -66,15 +67,18 @@ test('first photo uses a fixed first-party key and optional CRM send remains exp
  const hook=source('app/api/app/crm/messenger/webhook/[provider]/route.js');
  assert.match(provider,/const V3_WELCOME_PHOTOS=Object\.freeze/);
  assert.match(provider,/Object\.hasOwn\(V3_WELCOME_PHOTOS,welcomePhotoKey\)/);
- assert.match(provider,/photo:photoUrl,caption:text/);
- assert.match(provider,/firstPhoto\?'sendPhoto':'sendMessage'/);
- assert.doesNotMatch(provider,/text\.includes\('OpenRouter'\)/);
+ assert.match(provider,/photo:topicPhoto\|\|TELEGRAM_EXPLORE_PHOTO,caption:text/);
+ assert.match(provider,/if\(freeWelcomePhoto\|\|\(!serviceWelcome&&topicPhoto\)\)/);
+ assert.match(provider,/serviceWelcome\?'sendPhoto':'sendMessage'/);
+ assert.match(provider,/text\.includes\('Ali'\)/);
+ assert.match(provider,/freeConsent=keyboard\.length===2/);
  for(const key of ['free_diagnostic','psychologist','support_stress_energy',
   'support_relationships_esteem','support_money_growth',
   'support_business_support','reiki','coaching','business'])
   assert.ok(provider.includes(key),key);
  assert.match(flow,/welcomePhotoKey=serviceStart\?\.service/);
  assert.match(flow,/welcomePhotoKey:'chat'/);
+ assert.match(flow,/if\(freeStart\)return \{\.\.\.greeting,freeWelcomePhoto:true\}/);
  assert.match(hook,/welcomePhotoKey:aiIntake\.welcomePhotoKey/);
  assert.match(flow,/const quickDraft=kind==='question'/);
  assert.match(flow,/const review=Boolean\(reviewText\)/);

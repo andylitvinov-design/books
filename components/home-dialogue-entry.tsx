@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { ArrowRight, ArrowUp, BriefcaseBusiness, ChevronDown, HeartHandshake, Mic, Route, Sparkles, WandSparkles, X } from "lucide-react";
+import { ArrowRight, ArrowUp, BriefcaseBusiness, ChevronDown, HeartHandshake, Mic, Route, Sparkles, Leaf, Heart, TrendingUp, X, CheckCircle2 } from "lucide-react";
 import { SiteNavigation } from "@/components/site-navigation";
 import { stageHomeAliHandoff } from "@/lib/home-ali-handoff.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -24,81 +24,76 @@ type SpeechWindow = Window & {
 const LOCALES = ["ru", "en", "es"] as const;
 const COPY = {
   ru: {
-    title:"Что вы хотите сделать сегодня?",
-    subtitle:"Спросите, исследуйте, обучайтесь или создавайте что-то своё.",
-    personal:"Для себя",business:"Для бизнеса",
-    placeholder:"Расскажите, что у вас на уме…",
-    send:"Начать разговор с Ali", mic:"Продиктовать запрос", stopMic:"Остановить диктовку",
+    title:"Что вам нужно сегодня?",
+    subtitle:"Выберите направление или расскажите Али о своей ситуации.",
+    businessSubtitle:"Обсудите задачу с Али — вместе определим следующий шаг.",
+    personal:"Для себя", business:"Для бизнеса",
+    placeholder:"Расскажите Али, что вам нужно…",
+    send:"Отправить сообщение Али", mic:"Продиктовать запрос", stopMic:"Остановить диктовку",
     unsupported:"Используйте микрофон клавиатуры или напишите запрос.",
     speechError:"Не удалось распознать речь. Можно написать запрос.",
-    speechRunning:"Слушаю. Скажите, что вы хотите сделать.",
-    speechPrivacy:"Диктовка может использовать службу распознавания вашего браузера.",
-    transferError:"Не удалось передать текст в Ali. Откройте чат через нижнее меню.",
-    transferPrivacy:"Ваш запрос переносится только в чат Ali в этой вкладке. Без регистрации можно начать с подсказки.",
-    personalHints:[
-      {id:"understand",label:"Разобраться в себе",prompt:"Хочу разобраться в своей ситуации"},
-      {id:"create",label:"Создать что-то",prompt:"Хочу создать что-то своё"},
-      {id:"support",label:"Найти поддержку",prompt:"Помоги подобрать поддержку для меня"},
+    speechRunning:"Слушаю. Скажите, что вас беспокоит.",
+    speechPrivacy:"Диктовка может использовать службу распознавания браузера.",
+    transferError:"Не удалось передать запрос. Попробуйте ещё раз или откройте AI/Chat.",
+    transferPrivacy:"Сообщение передаётся в чат Али. Начать можно без регистрации.",
+    freeReviewTitle:"Разобраться в своей ситуации", freeReviewDetail:"Бесплатный личный разбор",
+    focusTitle:"Что важно для вас сегодня?",
+    focusHints:[
+      {id:"stress",label:"Энергия и снятие стресса",detail:"Меньше тревоги, больше сил",prompt:"Мне нужна помощь со стрессом и энергией. Хочу спокойно понять, с чего начать."},
+      {id:"love",label:"Любовь и уверенность",detail:"Отношения и самооценка",prompt:"Хочу разобраться в отношениях или уверенности в себе. Помоги выбрать первый шаг."},
+      {id:"money",label:"Деньги и развитие",detail:"Цели, работа, личный рост",prompt:"Хочу разобраться с целями, деньгами и личным развитием. С чего мне начать?"},
+      {id:"business",label:"Поддержка бизнеса",detail:"Стратегия, команда, развитие",prompt:"Мне нужна бизнес-поддержка: стратегия, команда или рост. Помоги разобраться в задаче."},
     ],
-    businessHints:[
-      {id:"offer",label:"Предложить услугу",prompt:"Хочу опубликовать свою услугу"},
-      {id:"course",label:"Создать курс",prompt:"Хочу создать собственный обучающий курс"},
-      {id:"growth",label:"Развить бизнес",prompt:"Мне нужна помощь с развитием моего бизнеса"},
-    ],
-    path:"Продолжить мой путь",pathDetail:"Мои практики, курсы и прогресс",
-    more:"Смотреть направления ниже",
+    path:"Продолжить мой путь", pathDetail:"Мои практики, обучение и прогресс", benefits:["Личный взгляд","Практические шаги","Следующие возможности"], more:"Ещё возможности",
   },
   en: {
-    title:"What would you like to do today?",
-    subtitle:"Ask, explore, learn, or create something of your own.",
-    personal:"For myself",business:"For business",
-    placeholder:"Tell me what's on your mind…",
-    send:"Start a conversation with Ali", mic:"Dictate your request", stopMic:"Stop dictation",
+    title:"What do you need today?",
+    subtitle:"Choose a direction or describe what you need.",
+    businessSubtitle:"Tell Ali what you're working on and explore your options.",
+    personal:"For myself", business:"For business",
+    placeholder:"Tell Ali what you need…",
+    send:"Send a message to Ali", mic:"Dictate your request", stopMic:"Stop dictation",
     unsupported:"Use your keyboard microphone or type a message.",
     speechError:"Speech recognition did not work. You can type your request.",
-    speechRunning:"Listening. Tell me what you would like to do.",
+    speechRunning:"Listening. Tell me what is on your mind.",
     speechPrivacy:"Dictation may use your browser's speech service.",
-    transferError:"Couldn't pass your message to Ali. Open AI/Chat from the bottom bar.",
-    transferPrivacy:"Your request passes only to Ali's chat in this tab. You can begin without signing in.",
-    personalHints:[
-      {id:"understand",label:"Understand myself",prompt:"I want to understand my situation"},
-      {id:"create",label:"Create something",prompt:"I want to create something of my own"},
-      {id:"support",label:"Find support",prompt:"Help me find the right support"},
+    transferError:"Couldn't pass your message to Ali. Try again or open AI/Chat.",
+    transferPrivacy:"Your message goes to Ali’s chat. You can start without signing in.",
+    freeReviewTitle:"Understand my situation", freeReviewDetail:"Get a free personal review",
+    focusTitle:"What do you need today?",
+    focusHints:[
+      {id:"stress",label:"Energy & Stress Release",detail:"Calm stress and restore balance",prompt:"I'd like help with stress and low energy. Can we work out a gentle first step?"},
+      {id:"love",label:"Love & Confidence",detail:"Relationships and self-esteem",prompt:"I'd like to understand my relationships or self-confidence better. Where should I begin?"},
+      {id:"money",label:"Money & Growth",detail:"Goals, work and direction",prompt:"I'd like help with money, goals and personal growth. Can we explore my next step?"},
+      {id:"business",label:"Business Support",detail:"Work, strategy and growth",prompt:"I need business support with strategy, team or growth. Help me clarify the issue."},
     ],
-    businessHints:[
-      {id:"offer",label:"Offer a service",prompt:"I want to publish my own service"},
-      {id:"course",label:"Create a course",prompt:"I want to create a training course"},
-      {id:"growth",label:"Grow a business",prompt:"I need help growing my business"},
-    ],
-    path:"Continue my path",pathDetail:"My practices, learning and progress",
-    more:"Explore the options below",
+    path:"Continue my path", pathDetail:"My practices, learning and progress", benefits:["Personal insights","Practical steps","Next best options"], more:"More ways to explore",
   },
   es: {
-    title:"¿Qué te gustaría hacer hoy?",
-    subtitle:"Pregunta, explora, aprende o crea algo propio.",
-    personal:"Para mí",business:"Para mi negocio",
-    placeholder:"Cuéntame qué tienes en mente…",
-    send:"Iniciar conversación con Ali",mic:"Dictar tu mensaje",stopMic:"Detener dictado",
-    unsupported:"Usa el micrófono del teclado o escribe tu mensaje.",
-    speechError:"No se pudo reconocer tu voz. Puedes escribir el mensaje.",
-    speechRunning:"Te escucho. Cuéntame qué quieres hacer.",
-    speechPrivacy:"El dictado puede usar el servicio de voz de tu navegador.",
-    transferError:"No pudimos pasar el texto a Ali. Abre IA/Chat desde el menú inferior.",
-    transferPrivacy:"Tu mensaje pasa solo al chat de Ali en esta pestaña. Puedes empezar sin registrarte.",
-    personalHints:[
-      {id:"understand",label:"Conocerme",prompt:"Quiero comprender mi situación"},
-      {id:"create",label:"Crear algo",prompt:"Quiero crear algo propio"},
-      {id:"support",label:"Buscar apoyo",prompt:"Ayúdame a encontrar apoyo"},
+    title:"¿Qué necesitas hoy?",
+    subtitle:"Elige un tema o cuéntale a Ali qué necesitas.",
+    businessSubtitle:"Cuéntale a Ali tu reto y explora las opciones.",
+    personal:"Para mí", business:"Para mi negocio",
+    placeholder:"Cuéntale a Ali qué necesitas…",
+    send:"Enviar un mensaje a Ali", mic:"Dictar tu mensaje",stopMic:"Detener dictado",
+    unsupported:"Usa el micrófono del teclado o escribe un mensaje.",
+    speechError:"No se pudo reconocer tu voz. Puedes escribir tu mensaje.",
+    speechRunning:"Te escucho. Cuéntame qué necesitas.",
+    speechPrivacy:"El dictado puede usar el servicio de voz del navegador.",
+    transferError:"No pudimos pasar el mensaje a Ali. Inténtalo de nuevo o abre IA/Chat.",
+    transferPrivacy:"Tu mensaje llega al chat de Ali. Puedes empezar sin registrarte.",
+    freeReviewTitle:"Comprender mi situación", freeReviewDetail:"Recibir una revisión personal gratuita",
+    focusTitle:"¿Qué necesitas hoy?",
+    focusHints:[
+      {id:"stress",label:"Energía y alivio del estrés",detail:"Más calma y vitalidad",prompt:"Necesito apoyo para manejar el estrés y recuperar energía. ¿Por dónde empezar?"},
+      {id:"love",label:"Amor y confianza",detail:"Relaciones y autoestima",prompt:"Quiero entender mejor mis relaciones o mi confianza personal. ¿Cuál es el primer paso?"},
+      {id:"money",label:"Dinero y crecimiento",detail:"Metas, trabajo y rumbo",prompt:"Quiero mejorar mis metas, trabajo y crecimiento personal. ¿Por dónde empezar?"},
+      {id:"business",label:"Apoyo empresarial",detail:"Estrategia, equipo y progreso",prompt:"Necesito apoyo para mi negocio: estrategia, equipo o crecimiento. Ayúdame a aclararlo."},
     ],
-    businessHints:[
-      {id:"offer",label:"Ofrecer servicio",prompt:"Quiero publicar mi servicio"},
-      {id:"course",label:"Crear curso",prompt:"Quiero crear un curso"},
-      {id:"growth",label:"Crecer negocio",prompt:"Necesito ayuda para hacer crecer mi negocio"},
-    ],
-    path:"Continuar mi camino",pathDetail:"Mis prácticas, cursos y progreso",
-    more:"Explorar opciones más abajo",
+    path:"Continuar mi camino", pathDetail:"Mis prácticas, aprendizaje y progreso", benefits:["Ideas personales","Pasos prácticos","Próximas opciones"], more:"Más posibilidades",
   },
 } as const;
+const FOCUS_ICONS = [Leaf, Heart, TrendingUp, BriefcaseBusiness] as const;
 
 export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
   const router=useRouter();
@@ -116,14 +111,14 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
     return ()=>{speechRef.current?.abort();speechRef.current=null};
   },[]);
   const chatPath="/"+locale+"/app/messages?section=ai";
-  const hints=mode==="business"?t.businessHints:t.personalHints;
+  const hints=t.focusHints;
 
-  function startConversationWith(value:string) {
+  function startConversationWith(value:string, selectedMode:Mode=mode) {
     const prompt=value.trim();
     if(!prompt)return;
     // The explicit Send tap OR a starter choice carries the exact user's words.
     let passed=false;
-    try{passed=stageHomeAliHandoff(window.sessionStorage,{text:prompt,locale,mode})}
+    try{passed=stageHomeAliHandoff(window.sessionStorage,{text:prompt,locale,mode:selectedMode})}
     catch{/* Some private browsers prohibit sessionStorage; don't silently lose text. */}
     if(!passed){setDraft(prompt);setError(t.transferError);return}
     setError("");
@@ -155,7 +150,7 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
   return <section className={styles.root} data-home-dialogue-entry data-home-mode={mode}
     data-home-interactive={interactive?"true":"false"} lang={locale}>
     <header className={styles.header} data-home-dialogue-header>
-      <h1>My Space</h1>
+      <div className={styles.brand}><span className={styles.brandIcon} aria-hidden="true"><Leaf size={25}/></span><h1>Holistic House</h1></div>
       <div className={styles.headerActions}>
         <details className={styles.language} data-home-language-switch>
           <summary aria-label={locale==="ru"?"Выбрать язык":locale==="es"?"Elegir idioma":"Choose language"}>
@@ -189,41 +184,59 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
       <div className={styles.heroContent}>
         <div className={styles.kicker}><Sparkles size={18} aria-hidden="true"/> HOLISTIC HOUSE</div>
         <h2>{t.title}</h2>
-        <p className={styles.subtitle}>{t.subtitle}</p>
+        <p className={styles.subtitle}>{mode==="business"?t.businessSubtitle:t.subtitle}</p>
+        <Link href={"/"+locale+"/services/free-situation-review"} prefetch={false}
+          className={styles.reviewCta} data-home-free-review>
+          <span className={styles.reviewCtaIcon}><Sparkles size={27} aria-hidden="true"/></span>
+          <span className={styles.reviewCtaText}>
+            <strong>{t.freeReviewTitle}</strong>
+            <small>{t.freeReviewDetail}</small>
+          </span>
+          <ArrowRight size={23} className={styles.reviewCtaArrow} aria-hidden="true"/>
+        </Link>
+        <div className={styles.focusGrid} role="group" aria-label={t.focusTitle} data-home-focus-grid>
+          {hints.map((hint,index)=>{
+            const Icon=FOCUS_ICONS[index];
+            return <button type="button" key={hint.id} className={styles.focusCard}
+              data-home-intent-option={hint.id}
+              aria-label={hint.label+" · "+hint.detail+" · "+t.send}
+              onClick={()=>startConversationWith(hint.prompt,hint.id==="business"?"business":mode)}>
+              <Icon className={styles.focusIcon} size={29} aria-hidden="true"/>
+              <span className={styles.focusCopy}><strong>{hint.label}</strong></span>
+              <ArrowRight className={styles.focusArrow} size={19} aria-hidden="true"/>
+            </button>
+          })}
+        </div>
         <form className={styles.composer} onSubmit={startConversation} data-home-intent-form>
           <label className={styles.visuallyHidden} htmlFor={"home-intent-"+locale}>{t.placeholder}</label>
           <textarea id={"home-intent-"+locale} ref={inputRef} value={draft}
             onChange={event=>{setDraft(event.target.value);setError("")}}
-            maxLength={2000} rows={2} placeholder={t.placeholder}
+            maxLength={2000} rows={3} placeholder={t.placeholder}
             data-home-intent-composer autoComplete="off"/>
           <div className={styles.composerButtons}>
             {draft&&<button type="button" className={styles.clear} aria-label={locale==="ru"?"Очистить":locale==="es"?"Borrar":"Clear"}
               onClick={()=>{setDraft("");inputRef.current?.focus()}}><X size={18}/></button>}
             <button type="button" className={styles.microphone} aria-label={listening?t.stopMic:t.mic}
-              aria-pressed={listening} onClick={dictate}><Mic size={21} aria-hidden="true"/></button>
+              aria-pressed={listening} onClick={dictate}><Mic size={24} aria-hidden="true"/></button>
             <button type="submit" className={styles.send} disabled={!draft.trim()} data-home-send-to-ali
-              aria-label={t.send} title={t.send}><ArrowUp size={22} aria-hidden="true"/></button>
+              aria-label={t.send} title={t.send}><ArrowUp size={25} aria-hidden="true"/></button>
           </div>
         </form>
         {error&&<p className={styles.error} role="alert">{error}</p>}
         {voiceMessage&&<p className={styles.voiceStatus} role="status">{voiceMessage}</p>}
-        <div className={styles.starters} aria-label={t.title}>
-          {hints.map((hint,index)=><button type="button" key={hint.id} data-home-intent-option={hint.id}
-            aria-label={hint.label+" · "+t.send} onClick={()=>startConversationWith(hint.prompt)}>
-            {index===0?<HeartHandshake size={20} aria-hidden="true"/>:
-              index===1?<WandSparkles size={20} aria-hidden="true"/>:
-              <Sparkles size={20} aria-hidden="true"/>}
-            <span>{hint.label}</span>
-          </button>)}
+        <div className={styles.benefits} aria-label={t.benefits.join(", ")}>
+          <span><CheckCircle2 size={15} aria-hidden="true"/>{t.benefits[0]}</span>
+          <span><Leaf size={15} aria-hidden="true"/>{t.benefits[1]}</span>
+          <span><Sparkles size={15} aria-hidden="true"/>{t.benefits[2]}</span>
         </div>
-        <small className={styles.privacy}>{t.transferPrivacy} {t.speechPrivacy}</small>
+        <small className={styles.privacy}>{t.transferPrivacy}</small>
       </div>
     </div>
     <Link className={styles.continue} href={"/"+(locale==="es"?"en":locale)+"/app/portrait?space=path"}
       prefetch={false} data-home-continue-path>
-      <span className={styles.continueIcon}><Route size={22} aria-hidden="true"/></span>
-      <span><strong>{t.path}</strong><small>{t.pathDetail}</small></span>
-      <ArrowRight size={20} aria-hidden="true"/>
+      <span className={styles.continueIcon}><Route size={25} aria-hidden="true"/></span>
+      <span className={styles.continueCopy}><strong>{t.path}</strong><small>{t.pathDetail}</small></span>
+      <ArrowRight size={23} aria-hidden="true"/>
     </Link>
     <a href="#home-discover" className={styles.explore}>{t.more} <ChevronDown size={16} aria-hidden="true"/></a>
   </section>;
