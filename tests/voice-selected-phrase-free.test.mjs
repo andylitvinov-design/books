@@ -140,6 +140,14 @@ test("actual voice route never calls paid fallback for guest modes after free pr
     "@/lib/mandala/voice-studio.mjs":voice,
     "@/lib/mandala/voice-studio-provider.mjs":{requestStudioAudio:async()=>{calls.push("free");throw new AppError("FREE_UNAVAILABLE",503);}},
     "@/lib/mandala/voice-studio-openrouter-provider.mjs":{requestOpenRouterStudioAudio:async()=>{calls.push("paid");return new Uint8Array([1,2,3]);}},
+    // Preserve the real production imports in this VM route test. Fish is an
+    // independent free-only choice, never a reason to trigger paid fallback.
+    "@/lib/mandala/voice-studio-fish.mjs":{
+      fishStudioLanguages:e=>e.HH_VOICE_STUDIO_FISH_ENABLED==="true"?["en","ru"]:[],
+      fishStudioConfig:(e,locale)=>e.HH_VOICE_STUDIO_FISH_ENABLED==="true"&&["en","ru"].includes(locale)?
+        {model:"s2.1-pro-free",referenceId:"synthetic"}:null,
+      requestFishStudioAudio:async()=>{calls.push("fish-free");throw new AppError("FISH_UNAVAILABLE",503);},
+    },
   };
   const compiled=ts.transpileModule(read("app/api/holistic-support/voice/route.js"),{fileName:"route.js",compilerOptions:{allowJs:true,module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
   const exports={};
@@ -160,4 +168,14 @@ test("actual voice route never calls paid fallback for guest modes after free pr
   assert.equal(custom.status,200);
   assert.ok(calls.includes("paid"),"the explicitly authenticated optional custom path remains intact");
   assert.ok(rates.includes("voice-studio-openrouter-paid-day"));
+  // Fish provider failure must not invoke even the owner-enabled paid backup.
+  env.HH_VOICE_STUDIO_FISH_ENABLED="true";
+  calls.length=0;rates.length=0;
+  const fish=await exports.POST({syntheticBody:{mode:"short_text",voiceId:"maya",
+    language:"en",provider:"fish",text:"Anonymous safe synthetic phrase",consent:true},
+    headers:new Headers(),signal:new AbortController().signal});
+  assert.equal(fish.status,503);
+  assert.ok(calls.includes("fish-free"),"only Fish free was attempted");
+  assert.ok(!calls.includes("paid"),"Fish never falls through to xAI");
+  assert.ok(!rates.includes("voice-studio-openrouter-paid-day"));
 });
