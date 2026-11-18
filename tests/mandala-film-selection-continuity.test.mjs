@@ -83,8 +83,10 @@ test("scripted Being Real scenes produce their own objects, never an unrelated c
   const visuals=film.storyboard.map((shot,index)=>describeStoryboardSceneGraphic({
     action:shot.action,visualSubject:shot.visualSubject,keywords:shot.keywords
   }));
-  assert.ok(visuals[0].cueIds.includes("transit"),
-    "scene 1 must show transport, not generic people");
+  assert.ok(visuals[0].cueIds.includes("phone"),
+    "scene 1 must depict the phone vibrating by the kitchen window, not invented transport");
+  assert.doesNotMatch(film.storyboard[0].action,/transport|commut|транспорт|transporte/i,
+    "the screenplay opens by the kitchen window, not with an unrelated commute");
   assert.ok(visuals[1].cueIds.includes("phone"),
     "scene 2 must show the actual question on the phone");
   assert.ok(visuals[2].cueIds.includes("typing"),
