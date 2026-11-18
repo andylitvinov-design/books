@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { isTransientYouTubePosterTimeout } from '../scripts/public-poster-readiness.mjs';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { runInNewContext } from 'node:vm';
@@ -459,4 +460,43 @@ test('private public-test discovery keeps the current unified seven-destination 
   }
   assert.ok(verifier.includes("window.__cspViolations.includes('frame-src')"), 'Private media CSP denial remains a real browser gate');
   assert.ok(verifier.includes('assert.deepEqual(unexpectedErrors, []'), 'Browser error failures remain enforced');
+});
+
+
+test('a pending allowlisted YouTube thumbnail timeout is diagnostic, not a release defect', () => {
+  const thumbnail = { origin: 'https://i.ytimg.com', pathname: '/vi/m9RfDgK76PU/hqdefault.jpg', search: '', hash: '' };
+  const poster = { src: { ...thumbnail }, current: { ...thumbnail }, connected: true,
+    visibility: 'visible', complete: false, naturalWidth: 0, naturalHeight: 0 };
+  const message = 'Current poster must finish loading before strict decode\nTimeout 7000ms exceeded while waiting on the predicate';
+  const error = (overrides = {}, text = message) => Object.assign(new Error(text), {
+    posterDiagnostic: { ...poster, ...overrides },
+  });
+  assert.equal(isTransientYouTubePosterTimeout(error()), true);
+  assert.equal(isTransientYouTubePosterTimeout(error({ current: { ...thumbnail, origin: 'https://img.youtube.com' } })), true);
+  for (const diagnostic of [
+    { src: { ...thumbnail, origin: 'http://i.ytimg.com' } },
+    { current: { ...thumbnail, origin: 'https://i.ytimg.com.evil.invalid' } },
+    { current: { ...thumbnail, origin: 'http://127.0.0.1:3123' } },
+    { src: { ...thumbnail, pathname: '/private/video.mp4' } },
+    { current: { ...thumbnail, pathname: '/vi/not-a-video/hqdefault.jpg' } },
+    { current: { ...thumbnail, search: '?token=secret' } },
+    { complete: true },
+    { naturalWidth: 1 },
+    { connected: false },
+    { visibility: 'hidden' },
+  ]) assert.equal(isTransientYouTubePosterTimeout(error(diagnostic)), false, JSON.stringify(diagnostic));
+  assert.equal(isTransientYouTubePosterTimeout(error({}, 'Poster decode timed out after 7000ms')), false);
+  assert.equal(isTransientYouTubePosterTimeout(error({}, 'Poster source changed before decode')), false);
+  assert.equal(isTransientYouTubePosterTimeout(new Error(message)), false);
+});
+
+test('release WebKit warning does not bypass browser, local poster, CSP or build failure gates', () => {
+  const source = read('scripts/verify-release-reaudit.mjs');
+  assert.match(source, /if \(engine !== 'webkit' \|\| !isTransientYouTubePosterTimeout\(error\)\) throw error/);
+  assert.match(source, /await decodeReadyPoster\(image, expect\)/);
+  assert.match(source, /posterWarnings\.push\(warning\)/);
+  assert.match(source, /return \{ \.\.\.state, posterWarnings \}/);
+  assert.match(source, /warningCount: warnings\.length/);
+  assert.match(source, /assert\.deepEqual\(errors, \[\]/);
+  assert.match(source, /assert\.equal\(failed\.length, 0, 'Re-audit failed; inspect evidence'\)/);
 });
