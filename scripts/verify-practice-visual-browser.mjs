@@ -47,9 +47,8 @@ const measure=page=>page.evaluate(()=>{
     grid:rect(el('[data-work-primary-grid]')),
     cards:[...root.querySelectorAll('[data-work-primary-grid] [data-work-card]')].map(rect),
     reports:rect(el('[data-work-card="reports"]')),
-    presentation:rect(el('[data-work-presentation-disclosure]')),
-    identity:rect(el('[class*="identity"]')),
-    create:rect(el('[data-work-create-tools] > summary')),
+    account:rect(el('[data-work-account-actions]')),
+    create:rect(el('[data-work-create-buttons]')),
     dock:rect(dock),
     dockPosition:dock?getComputedStyle(dock).position:'missing'
   }
@@ -109,14 +108,14 @@ for(const browserType of [chromium,webkit]){
           for(const key of ['requests','clients','courseList','materials'])
             assert.equal(await root.locator('[data-work-card="'+key+'"]').count(),1,label+' '+key)
           assert.equal(await root.locator('[data-work-card="reports"]').count(),1,label+' reports action')
-          assert.equal(await root.locator('[data-work-create-tools] > summary').count(),1,
-            label+' creation accordion')
-          assert.equal(await root.locator('[data-work-create-tools]').getAttribute('open'),null,
-            label+' secondary creator hidden by default')
+          assert.equal(await root.locator('[data-work-create-buttons] > button').count(),4,
+            label+' four visible creation shortcuts')
+          assert.equal(await root.locator('[data-work-create-tools]').isVisible(),false,
+            label+' additional creation types initially hidden')
           assert.equal(await root.locator('[data-work-more-tools]').getAttribute('open'),null,
             label+' secondary tool grid hidden by default')
-          assert.equal(await root.locator('[data-work-create-tools] [class*="quickGrid"] > button').count(),
-            6,label+' existing six create actions retained')
+          assert.equal(await root.locator('[data-work-create-tools] > button').count(),
+            3,label+' three further creation types retained, six in total')
           assert.equal(await root.locator('[data-work-more-tools] [class*="offerRail"] > button').count(),
             6,label+' six category links retained')
           assert.equal(await root.locator('[data-work-my-page]').getAttribute('href'),
@@ -138,14 +137,14 @@ for(const browserType of [chromium,webkit]){
           for(const language of ['ru','en','es'])
             assert.equal(await localeNav.locator('a[lang="'+language+'"]').getAttribute('href'),
               '/'+language+'/practice',label+' language route')
-          for(const key of ['header','language','modes','hero','service','grid','reports','presentation','identity','create','dock'])
+          for(const key of ['header','language','modes','hero','service','grid','reports','account','create','dock'])
             assert.ok(g[key]&&g[key].width>0,label+' missing region '+key+': '+JSON.stringify(g))
           assert.ok(g.header.bottom<=g.modes.y+4&&g.modes.bottom<=g.hero.y+4,
             label+' header → mode → scenic hero')
           assert.ok(g.hero.bottom<=g.grid.y+4&&g.grid.bottom<=g.reports.y+4,
             label+' scenic hero → four cards → reports')
-          assert.ok(g.reports.bottom<=g.identity.y+80&&g.identity.bottom<=g.create.y+4,
-            label+' report and identity before creation')
+          assert.ok(g.reports.bottom<=g.account.y+80&&g.account.bottom<=g.create.y+4,
+            label+' reports → paired account cards → four creations')
           assert.ok(g.hero.height>=220&&g.hero.height<=370,label+' mobile hero size')
           assert.equal(g.cards.length,4,label+' measured cards')
           for(const item of g.cards)
@@ -156,6 +155,8 @@ for(const browserType of [chromium,webkit]){
           assert.equal(g.dockPosition,'fixed',label+' global dock fixed')
           assert.equal(await root.locator('[data-work-presentation-disclosure] [data-profile-video-hero]').count(),0,
             label+' no heavy player mounted on first paint')
+          assert.equal(await root.locator('[data-work-presentation-disclosure] > button').isVisible(),
+            false,label+' presentation stays inside collapsed secondary tools')
           if(item.width===390&&!item.ready){
             await page.screenshot({path:out+'/'+label+'.png',fullPage:false})
             await page.screenshot({path:out+'/'+label+'-full.png',fullPage:true})
@@ -164,8 +165,7 @@ for(const browserType of [chromium,webkit]){
             await page.waitForURL(url=>url.pathname==='/'+locale+'/practice'&&!url.search,{timeout:10000})
             assert.equal(await root.locator('[data-practice-after-google]').count(),0,
               label+' no post-OAuth displacement')
-            await root.locator('[data-work-create-tools] > summary').click()
-            await root.locator('[data-work-create-tools] [class*="quickGrid"] button').first().click()
+            await root.locator('[data-work-create-button="service"]').click()
             await page.waitForURL(url=>url.pathname==='/'+locale+'/app/practice'&&
               url.searchParams.get('panel')==='services'&&url.searchParams.get('create')==='1',
               {timeout:35000})
@@ -180,6 +180,7 @@ for(const browserType of [chromium,webkit]){
             await dialog.waitFor({state:'visible',timeout:5000})
             await page.keyboard.press('Escape')
             await dialog.waitFor({state:'hidden',timeout:5000})
+            await root.locator('[data-work-more-tools] > summary').click()
             const videoToggle=root.locator('[data-work-presentation-disclosure] > button')
             await videoToggle.click()
             const video=root.locator('[data-work-presentation-disclosure] [data-profile-video-hero]')
