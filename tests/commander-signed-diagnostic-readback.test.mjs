@@ -41,3 +41,18 @@ test('unverified model outcome cannot claim zero cost or model completion',()=>{
  const client=readFileSync(new URL('../app/commander/pr/PrCompletionClient.jsx',import.meta.url),'utf8');
  assert.match(client,/Кодовый патч и LIVE проверяются отдельно/);
 });
+
+test('owner-only queue reports actual GitHub scheduler freshness, not pg_cron success',()=>{
+ const edge=readFileSync(new URL('../supabase/functions/agent-commander-pr-completion-v1/index.ts',import.meta.url),'utf8');
+ const ui=readFileSync(new URL('../app/commander/pr/PrCompletionClient.jsx',import.meta.url),'utf8');
+ assert.match(edge,/from agent_ops\.github_scheduler_overview limit 1/);
+ assert.match(edge,/GITHUB_WATCHDOG_STALE/);
+ assert.match(edge,/MONITOR_STALE/);
+ assert.match(edge,/watchdogHealth:watchdog/);
+ assert.match(edge,/watchdog_scheduled_at/);
+ assert.match(edge,/if\(!owner\)return json\(401/);
+ assert.match(ui,/setWatchdogHealth\(data\.watchdogHealth/);
+ assert.match(ui,/role="alert"/);
+ assert.match(ui,/нет подтверждённого запуска по расписанию/);
+ assert.match(ui,/Последний запуск/);
+});
