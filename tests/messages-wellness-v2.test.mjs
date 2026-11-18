@@ -210,8 +210,9 @@ test('Messenger keeps the same header and tab shell across AI, Orders, Clients a
  const css=source('components/app/messages-orders-clients.module.css')
  for(const text of ['AI · Orders · Clients','ИИ · Заказы · Клиенты','IA · Pedidos · Clientes'])
    assert.ok(ui.includes(text),text)
- for(const label of ["AI Assistant","ИИ-ассистент","Asistente IA"])assert.ok(ui.includes(label),label);
- assert.match(ui,/data-hh-ai-chat-history/);
+ for(const label of ["Inner Alchemist","Внутренний алхимик","Alquimista interior"])assert.ok(ui.includes(label),label);
+ assert.match(ui,/data-hh-ali-persona-open/);
+ assert.match(source('components/app/ali-persona-picker.jsx'),/hh:messenger-open-history/);
  assert.match(ui,/data-hh-ai-new-chat/);
  assert.doesNotMatch(ui,/<p>\{section==='ai'\?/)
  const header=ui.indexOf('<header className={styles.head} data-hh-ai-assistant-header>')
