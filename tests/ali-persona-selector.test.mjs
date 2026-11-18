@@ -73,3 +73,23 @@ test('public natural voice route is fixed-content, rate-limited and does not acc
  assert.match(styles,/env\(safe-area-inset-top\)/)
  assert.match(styles,/max-height:100%/)
 })
+
+
+test('Home and existing Messenger share persona and natural greeting, not separate chat history',()=>{
+ const home=source('components/home-dialogue-entry.tsx')
+ const homeCss=source('components/home-dialogue-entry.module.css')
+ const messages=source('components/app/messages-orders-clients.jsx')
+ const picker=source('components/app/ali-persona-picker.jsx')
+ for(const component of [home,messages])assert.match(component,/useAliPersona/)
+ assert.match(home,/data-home-open-ali-persona/)
+ assert.match(home,/data-home-ali-persona=\{persona.id\}/)
+ assert.match(home,/data-home-ali-greeting-play/)
+ assert.match(home,/playAliPersonaAudio\(persona.id,locale/)
+ assert.match(home,/AliPersonaPicker open=\{personaOpen\}/)
+ assert.match(home,/stageHomeAliHandoff\(window.sessionStorage/)
+ assert.match(homeCss,/\.guideAudio\{/)
+ assert.match(homeCss,/@media\(max-width:355px\)/)
+ assert.match(picker,/hh:messenger-open-history/)
+ assert.match(messages,/data-hh-ali-active-persona=\{persona.id\}/)
+ assert.doesNotMatch(home,/<iframe|<video|fetch\(/)
+});
