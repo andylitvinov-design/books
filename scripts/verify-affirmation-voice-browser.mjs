@@ -168,8 +168,24 @@ async function verifyWorkspaceHydration(browser,locale){
     assert.equal(await automaticStoryboard.locator("textarea").count(),0,
       "the Story tab must render its proposal, not ask the user to fill it out");
     if(storyboardShotCount>0){
-      assert.ok(storyboardShotCount>0&&storyboardShotCount<=5,
-        "compact storyboard shows at most five verified scene summaries");
+      assert.ok(storyboardShotCount>=4&&storyboardShotCount<=12,
+        "storyboard must show every ordered shot, not fold six authored shots into five");
+      const authored=await automaticStoryboard.getAttribute('data-storyboard-aligned-to-concept')==='true';
+      if(authored){
+        assert.equal(storyboardShotCount,6,"a selected 30-second film retains six separate shots");
+        for(let i=0;i<6;i++){
+          const from=String(i*5).padStart(2,"0"),to=String((i+1)*5).padStart(2,"0");
+          await expect(cards.nth(i).locator('[data-storyboard-scene-time]'))
+            .toHaveText('00:'+from+'–00:'+to);
+          assert.ok((await cards.nth(i).locator('[data-storyboard-scene-action]').innerText()).trim().length>=10,
+            "authored physical action must survive the Ideas → Story transition in scene "+(i+1));
+        }
+        // Metadata relevance is not proof of a filmed action. Do not claim that
+        // unrelated stock frames depict the six authored physical events.
+        await expect(automaticStoryboard).toHaveAttribute("data-storyboard-action-proof","editorial_unverified");
+        await expect(automaticStoryboard).toHaveAttribute("data-storyboard-media-ready","false");
+        await expect(cards.locator('img')).toHaveCount(0);
+      }
       await expect(automaticStoryboard.locator('[data-video-auto-storyboard-list]')).toBeVisible();
       await expect(cards.first()).toContainText(
         locale==="ru"?"Сцена 1":locale==="es"?"Escena 1":"Scene 1");
@@ -180,8 +196,10 @@ async function verifyWorkspaceHydration(browser,locale){
         assert.ok((await firstPoster.getAttribute("alt"))?.trim(),
           "visible poster retains a meaningful source label");
       }else{
-        await expect(cards.first()).toContainText(
-          locale==="ru"?"Превью недоступно":locale==="es"?"Vista previa no disponible":"Preview unavailable");
+        const missing=await cards.first().getAttribute('data-story-media-kind')==='missing';
+        await expect(cards.first()).toContainText(missing?
+          (locale==="ru"?"Нужен кадр":locale==="es"?"Falta vídeo":"Footage needed"):
+          (locale==="ru"?"Превью недоступно":locale==="es"?"Vista previa no disponible":"Preview unavailable"));
       }
     }else{
       // No fictional clips: missing verified footage must fail closed with a
@@ -199,6 +217,36 @@ async function verifyWorkspaceHydration(browser,locale){
     await ideasConceptTab.tap();
     const concept=page.locator("[data-video-ideas-concept-panel]");
     await expect(concept).toBeVisible();
+    // Concept Intelligence: two personalized, touch-operable film choices,
+    // not a generic four-beat catalog summary.
+    const directionCards=concept.locator("[data-video-concept-direction]");
+    if(await directionCards.count()===2){
+      const ideaText=await directionCards.first().textContent();
+      assert.doesNotMatch(ideaText||"",/→|The story opens with/i);
+      const firstStory=await concept.locator("[data-video-concept-paragraph]").textContent();
+      await directionCards.nth(1).tap();
+      await expect(directionCards.nth(1)).toHaveAttribute("aria-pressed","true");
+      const alternative=await concept.locator("[data-video-concept-paragraph]").textContent();
+      assert.notEqual(firstStory,alternative,"switching a card changes the actual story");
+      await directionCards.first().tap();
+      await expect(directionCards.first()).toHaveAttribute("aria-pressed","true");
+    }
+    // One-screen responsive guard: fixed rail must remain reachable and above
+    // the bottom navigation/FAB without horizontal overflow on iPhone sizes.
+    for(const width of [320,375,390,430]){
+      await page.setViewportSize({width,height:840});
+      const measure=await concept.evaluate((element)=>{
+        const rail=element.querySelector("[data-video-concept-action-rail]");
+        const root=element.querySelector("[data-video-concept-auto]");
+        if(!rail||!root)return null;
+        const a=rail.getBoundingClientRect(),b=root.getBoundingClientRect();
+        return {left:a.left,right:a.right,bottom:a.bottom,bodyLeft:b.left,bodyRight:b.right};
+      });
+      assert.ok(measure&&measure.left>=-1&&measure.right<=width+1&&
+        measure.bodyRight<=width+1&&measure.bottom<810,
+        "Concept stays within mobile viewport at width "+width);
+    }
+    await page.setViewportSize({width:390,height:840});
     const headline=concept.locator("[data-video-concept-main-idea]");
     const narrative=concept.locator("[data-video-concept-paragraph]");
     await expect(headline).toBeVisible();

@@ -2078,6 +2078,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [hypnoEntryGroup,setHypnoEntryGroup] = useState<"visual"|"audio"|"effects">("visual");
   const [storyFormat,setStoryFormat] = useState<"visual"|"motion"|"talking_character"|"ai_cinematic">("visual");
   const [approvedVideoConcept,setApprovedVideoConcept] = useState<ApprovedVideoConcept|null>(null);
+  const [draftVideoConcept,setDraftVideoConcept] = useState<ApprovedVideoConcept|null>(null);
   const [selectedConceptTopic,setSelectedConceptTopic] = useState<{categoryId:string;subcategoryId:string;topicId:string;brief?:string}|null>(null);
   const [appliedStoryKey,setAppliedStoryKey]=useState<string|null>(null);
   const [audioLibraryOpen,setAudioLibraryOpen] = useState(false);
@@ -5248,6 +5249,16 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   };
   const createFiveSceneStory=()=>{
     if(recording||preparing)return;
+    if((draftVideoConcept||approvedVideoConcept)?.storyboard?.length===6&&
+       (draftVideoConcept||approvedVideoConcept)?.goal===wish){
+      setNotice(locale==="ru"
+        ?"Этот сюжет состоит из шести конкретных сцен. Не заменяем их пятью случайными пейзажами: откройте «Сюжет» и проверьте источники."
+        :locale==="es"
+          ?"Esta historia tiene seis escenas concretas. No la sustituimos por cinco paisajes: revisa los materiales en Guion."
+          :"This film has six specific shots. We won't replace them with five generic landscapes; review scene sources in Story.");
+      setMontagePanel("concept");
+      return;
+    }
     // An unavailable paid model must never silently produce a local film labelled AI.
     if(storyFormat==="ai_cinematic"){
       setNotice(locale==="ru"
@@ -7778,6 +7789,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <MandalaVideoConcept locale={locale} goal={wish} theme={theme} selectedTopic={selectedConceptTopic}
             profile={ideasProfileConfirmed?ideasProfile:null} durationSeconds={duration}
             speechTranscript={voiceTranscript} approvedConcept={approvedVideoConcept}
+            draftConcept={draftVideoConcept}
             ownerFields={{
               references:photoUrl?(locale==="ru"?"Фото добавлено":locale==="es"?"Foto adjuntada":"Photo attached"):null,
               delivery:`${aspect} · ${duration}s · ${locale.toUpperCase()}`,
@@ -7792,10 +7804,16 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             loginUnavailable={creditSession==="unavailable"}
             disabled={recording||preparing}
             onRefreshLogin={()=>void refreshCreditSession()}
+            onDraftChange={draft=>{
+              setDraftVideoConcept(draft);
+              setApprovedVideoConcept(null);
+              setAppliedStoryKey(null);
+            }}
             onOpenGoal={()=>{setActiveWorkspace("video");}}
             onOpenStyle={()=>{setActiveWorkspace("editor");setMontagePanel("effects");}}
             onApprove={approved=>{
               setApprovedVideoConcept(approved);
+              setDraftVideoConcept(approved);
               // Approval is local and free: only unedited storyboard overlays may change.
               // Existing manually edited text clips, voice, music and media are retained.
               if(!timelineTextClips?.length){
@@ -8774,7 +8792,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   durationSeconds:shot.durationSeconds
                 })):null}
               transcript={voiceTranscript} approvedConcept={approvedVideoConcept}
-              scenes={FREE_FILM_CATALOG}
+              draftConcept={draftVideoConcept} scenes={FREE_FILM_CATALOG}
               appliedShots={cinematicPlan?.shots.map(shot=>({
                 sceneId:shot.sceneId,startSeconds:shot.startSeconds,
                 durationSeconds:shot.durationSeconds
@@ -8814,6 +8832,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 return false;
               }}
               onChooseQuality={sourceReady=>{
+                if(!sourceReady){
+                  setNotice(locale==="ru"
+                    ?"Пока нет подтверждённых видеокадров для каждого действия этой истории. Сначала подберите соответствующие материалы; случайные пейзажи не используем."
+                    :locale==="es"
+                      ?"Faltan tomas verificadas para las acciones de esta historia. Primero elige imágenes adecuadas; no usamos paisajes al azar."
+                      :"This story still needs footage verified for each depicted action. Choose relevant sources first; unrelated landscapes are not used.");
+                  return;
+                }
                 // Commit the user-selected fifth step in this real touch event.
                 // Source approval remains independent and cannot trigger billing.
                 flushSync(()=>{

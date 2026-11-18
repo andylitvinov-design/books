@@ -71,6 +71,7 @@ import { ProfileCoursesSwitch, ProfileCoursesGuest } from '@/components/app/prof
 import CabinetGuestOverview from '@/components/app/cabinet-guest-overview'
 import ProfileGuestAuthDialog from '@/components/app/profile-guest-auth-dialog'
 import { ProfileHubTabs, ProfileResultsArchive } from '@/components/app/profile-hub-tabs'
+import { SavedSessionsPanel } from '@/components/app/saved-sessions-panel'
 import ProfileSettingsDisclosure from '@/components/app/profile-settings-disclosure'
 import CabinetToday from '@/components/app/cabinet-today'
 import MyCoachingPlan from '@/components/app/my-coaching-plan'
@@ -201,6 +202,7 @@ export default function AppWorkspace({ locale, path = [] }) {
   function interceptGuestProfileAction(event) {
     const target=event.target?.closest?.('button,a,[role="button"]')
     if (!target || target.closest('[data-profile-mode-switch]') ||
+      target.closest('[data-profile-space-life]') || target.closest('[data-profile-space-work]') ||
       target.closest('[data-profile-language-switch]') ||
       target.closest('[data-profile-chrome-navigation]') ||
       target.closest('[data-profile-auth-dialog]')) return
@@ -806,13 +808,13 @@ export default function AppWorkspace({ locale, path = [] }) {
         }} />
       ) : (
         <>
-          {['portrait','portfolio','tests','settings','monitoring','course','reports'].includes(page) && <ProfileHubTabs locale={locale} active={page === 'settings' ? 'settings' : page === 'portrait' ? (searchParams.get('space') === 'path' ? 'path' : searchParams.get('space') === 'reports' ? 'reports' : 'today') : page === 'portfolio' || page === 'reports' ? 'reports' : page === 'monitoring' ? 'state' : page === 'course' ? 'courses' : 'tests'} resultCount={page === 'portrait' && !searchParams.get('space') ? (data.results || []).length : null} account={page === 'settings' ? data.account : null} />}
+          {['portrait','portfolio','tests','settings','monitoring','course','reports'].includes(page) && <ProfileHubTabs locale={locale} active={page === 'settings' ? 'settings' : page === 'portrait' ? (searchParams.get('space') === 'path' ? 'path' : ['reports', 'sessions'].includes(searchParams.get('space')) ? searchParams.get('space') : 'today') : page === 'portfolio' || page === 'reports' ? 'reports' : page === 'monitoring' ? 'state' : page === 'course' ? 'courses' : 'tests'} resultCount={page === 'portrait' && !searchParams.get('space') ? (data.results || []).length : null} account={page === 'settings' ? data.account : null} />}
           {page === 'continue' && (
             <SaveContinuation data={data} locale={locale} reload={load} onComplete={completeSaveContinuation} />
           )}
           {page === 'portrait' && (
              <>
-               {!['path','reports'].includes(searchParams.get('space')) && <>
+               {!['path','reports','sessions'].includes(searchParams.get('space')) && <>
                  <CabinetToday locale={locale} practitioner={Boolean(data.practitioner || data.practice)} owner={Boolean(data.practitioner)} />
                  <AccountMessagingEntry key={'messaging:' + data.account.id} accountId={data.account.id} locale={locale} />
                </>}
@@ -824,6 +826,20 @@ export default function AppWorkspace({ locale, path = [] }) {
                  <ProfileResultsArchive locale={locale} results={data.results || []} />
                  <ProfileDomains locale={locale} mode="account" accountId={data.account.id} results={data.results || []} savedReports={data.savedReports || []} savedDocuments={data.savedDocuments || []} hideDevelopment
                    reportsContent={<><PersonalAnalysisPanel key={data.account.id} locale={locale} reports={reportTimeline(data.savedReports)} savedSessions={data.savedSessions || []} embedded /><ClientExpressReports locale={locale} accountId={data.account.id}/></>} />
+               </>}
+               {searchParams.get('space') === 'sessions' && <>
+                 <SavedSessionsPanel items={data.savedSessions || []} locale={locale} />
+                 {(!Array.isArray(data.savedSessions) || !data.savedSessions.length) && <section className="hh-panel" data-profile-sessions-empty>
+                   <h2>{locale === 'ru' ? 'Мои сохранённые консультации' : locale === 'es' ? 'Mis consultas guardadas' : 'My saved consultations'}</h2>
+                   <p>{locale === 'ru'
+                     ? 'В этом кабинете пока нет сохранённых консультаций. Можно выбрать новую консультацию в разделе поддержки.'
+                     : locale === 'es'
+                       ? 'Todavía no has guardado consultas en esta cuenta. Puedes explorar nuevas sesiones en Soporte.'
+                       : 'No consultations saved to this account yet. You can explore new sessions through Support.'}</p>
+                   <Link href={'/' + locale + '/holistic-support'} prefetch={false}>
+                     {locale === 'ru' ? 'Найти поддержку' : locale === 'es' ? 'Ver apoyo' : 'Explore Support'}
+                   </Link>
+                 </section>}
                </>}
              </>
            )}
