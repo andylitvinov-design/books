@@ -17,7 +17,7 @@ test('RU/EN canonical service names and Business Strategy are preserved in bot l
 test('website sends to readiness-checked V3 only, then requires consent and confirmation',()=>{
  const route=src('app/api/public/telegram-service-entry/route.js')
  assert.doesNotMatch(route,/if\(env\.HH_CRM_TG_CHAT_AUTOMATION_ENABLED!=='true'/)
- assert.match(route,/channelTransportReady\('telegram',env\)&&v3CanStart\(env\)/)
+ assert.match(route,/channelTransportReady\('telegram',env\)&&v3ServiceIntakeReady\(env\)/)
  assert.match(src('components/assist-top-recommendations.tsx'),/resolveTelegramServiceHandoffUrl\(draft,locale\)/)
  const engine=src('lib/crm/telegram-ai-diagnostic-v3-service.js')
  assert.match(engine,/stage='consent'/)

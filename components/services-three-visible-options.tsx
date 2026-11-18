@@ -4,6 +4,7 @@ import Image from "next/image";
 import type { PublicLocale } from "@/lib/public-locales";
 import type { ServicesPanelId } from "@/components/services-unified-catalog";
 import { ServicesCardActions } from "@/components/services-card-actions";
+import { telegramServiceOptionDirectBotUrl } from "@/lib/assist/telegram-service-options.mjs";
 import styles from "./services-three-visible-options.module.css";
 
 type ThreeGroup = Exclude<ServicesPanelId, "about" | "testimonials" | "mytube" | "directory">;
@@ -168,7 +169,9 @@ export function ServicesThreeVisibleOptions({id,locale}:{id:ThreeGroup;locale:Pu
         </div>
         <ServicesCardActions locale={locale} title={title} description={description}
           href={href} request={description} option={price}
-          trackingId={id+"-"+offer.id} telegramUrl={"/api/public/telegram-option-entry?offer="+id+"_"+offer.id+"&locale="+locale} className={styles.actions} />
+          trackingId={id+"-"+offer.id} telegramUrl={telegramServiceOptionDirectBotUrl(id+"_"+offer.id,locale)
+            ||"/api/public/telegram-option-entry?offer="+id+"_"+offer.id+"&locale="+locale}
+            className={styles.actions} />
       </article>;
     })}
  </div>;

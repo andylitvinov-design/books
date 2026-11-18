@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { channelTransportReady } from '@/lib/crm/messenger-policy'
 import { telegramDiagnosticPublicUrl } from '@/lib/crm/telegram-diagnostic.mjs'
 import {telegramDirectChatPublicUrl} from '@/lib/crm/telegram-direct-chat.mjs'
-import {v3CanStart} from '@/lib/crm/telegram-ai-diagnostic-v3.mjs'
+import {v3CanStart,v3ServiceIntakeReady} from '@/lib/crm/telegram-ai-diagnostic-v3.mjs'
 
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
@@ -26,6 +26,7 @@ export async function GET(){
   return NextResponse.json(available&&urls?.en&&urls?.ru&&urls?.es
     ? {available:true,url:urls.en.split('?')[0],urls,
        aiInterviewAvailable:env.HH_CRM_TG_AI_V3_SCHEMA_READY==='true'&&v3CanStart(env),
+       serviceInterviewAvailable:v3ServiceIntakeReady(env),
        businessAutoReplyAvailable,
        directAvailable:!!(directUrls?.en&&directUrls?.ru&&directUrls?.es),
        ...(directUrls?.en&&directUrls?.ru&&directUrls?.es?{directUrls}:{})}

@@ -16,10 +16,11 @@ test('first service response is only a warm short portrait caption; AI consent c
   assert.doesNotMatch(intro,/OpenRouter|medical records|медицинских документов|documentos médicos|\/stop|consent|соглас|aprobación|payment|оплат/i);
   assert.equal(countQuestions(intro),0);
   const consent=v3ServiceCopy(lang,service).consent;
-  assert.match(consent,/OpenRouter/);
-  assert.ok(consent.length<140,'separate opt-in should fit two brief lines');
-  assert.doesNotMatch(consent,/medical records|медицинских документов|documentos médicos/i);
-  assert.match(consent,/approve|подтвердите|apruebes/i);
+  assert.doesNotMatch(consent,/OpenRouter/);
+  assert.match(consent,/внешней AI-модели|modelo de IA externo|external AI model/i);
+  assert.ok(consent.length<270,'separate opt-in should remain compact on mobile');
+  assert.match(consent,/medical records|медицинских документов|documentos médicos/i);
+  assert.match(consent,/approve|одобрите|apruebes/i);
   assert.ok(consent.length<270);
   assert.ok(v3ServiceCopy(lang,service).first.length<95);
   assert.deepEqual(v3ButtonsFor(lang,'consent'),[[V3_LABELS[lang].agree,V3_LABELS[lang].decline]]);
