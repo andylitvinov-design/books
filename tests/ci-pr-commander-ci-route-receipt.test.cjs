@@ -297,6 +297,7 @@ test('verified reusable Core workflow OIDC persists follow-up without source wri
 test('signed historical CI HEAD stays visible without overwriting newer owner task',()=>{
  const sql=fs.readFileSync('supabase/migrations/20261118012500_commander_ci_historical_head_readback_v1.sql','utf8');
  a.match(sql,/HISTORICAL_HEAD_READBACK_PENDING/);
+ a.match(sql,/coalesce\(t\.payload->'ciIncident'->>'head_sha',''\) !~/);
  a.match(sql,/sourceTaskHeadSha/);
  a.match(sql,/NO_SIGNED_HISTORICAL_ROUTE/);
  a.match(sql,/DO_NOT_DISPATCH_OLD_HEAD/);
