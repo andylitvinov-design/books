@@ -323,18 +323,6 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   const [completedIds,setCompletedIds]=useState<string[]>([]);
   const [draft,setDraft]=useState("");
   const [voiceNoteRevision,setVoiceNoteRevision]=useState(0);
-  const localVoiceUrls=useRef<Set<string>>(new Set());
-  // Audio playback is local to this browser tab, not persisted in chat history.
-  useEffect(()=>{
-    const active=new Set(messages.map(message=>message.voiceNoteUrl).filter((url):url is string=>Boolean(url)));
-    for(const url of localVoiceUrls.current){
-      if(!active.has(url)){URL.revokeObjectURL(url);localVoiceUrls.current.delete(url);}
-    }
-  },[messages]);
-  useEffect(()=>()=>{
-    for(const url of localVoiceUrls.current)URL.revokeObjectURL(url);
-    localVoiceUrls.current.clear();
-  },[]);
   const [voiceFile,setVoiceFile]=useState<File|null>(null);
   const [voiceConsent,setVoiceConsent]=useState(false);
   const [voiceBusy,setVoiceBusy]=useState(false);
@@ -365,6 +353,18 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   const [showVideoSignIn,setShowVideoSignIn]=useState(false);
   const [needsPrivateSignIn,setNeedsPrivateSignIn]=useState(false);
   const [messages,setMessages]=useState<Message[]>([]);
+  const localVoiceUrls=useRef<Set<string>>(new Set());
+  // Audio playback is local to this browser tab, not persisted in chat history.
+  useEffect(()=>{
+    const active=new Set(messages.map(message=>message.voiceNoteUrl).filter((url):url is string=>Boolean(url)));
+    for(const url of localVoiceUrls.current){
+      if(!active.has(url)){URL.revokeObjectURL(url);localVoiceUrls.current.delete(url);}
+    }
+  },[messages]);
+  useEffect(()=>()=>{
+    for(const url of localVoiceUrls.current)URL.revokeObjectURL(url);
+    localVoiceUrls.current.clear();
+  },[]);
   const [ratedLearningReply,setRatedLearningReply]=useState<string|null>(null);
   const [qualityPending,setQualityPending]=useState(false);
   const [qualityFailure,setQualityFailure]=useState(false);
