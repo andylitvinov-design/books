@@ -1,6 +1,6 @@
 "use client";
 import {useEffect,useRef,useState,type ReactNode} from "react";
-import {AudioLines,BookOpen,ChevronDown,ChevronRight,Film,Leaf,Mic2,Sparkles} from "lucide-react";
+import {AudioLines,BookOpen,ChevronDown,ChevronRight,Film,Leaf,Mic2,Sparkles,Volume2} from "lucide-react";
 import type {PublicLocale} from "@/lib/public-locales";
 import type {VideoTheme} from "@/lib/mandala/holistic-video-themes";
 import type {GuidedMeditationFocus} from "./mandala-guided-course";
@@ -9,7 +9,7 @@ import {MandalaTherapyTextPicker} from "./mandala-therapy-text-picker";
 import css from "./mandala-therapy-studio.module.css";
 
 type Pane="meditation"|"voice"|"practice"|"course";
-type Props={locale:PublicLocale;disabled:boolean;theme:VideoTheme;wish:string;focus:GuidedMeditationFocus;
+type Props={locale:PublicLocale;disabled:boolean;theme:VideoTheme;wish:string;focus:GuidedMeditationFocus;scenarioId?:string|null;
  initialFormat?:"single"|"course";editor:(course:boolean)=>ReactNode;voiceEditor:ReactNode;
  advancedEffects:ReactNode;onVideoPhrases:()=>void;onNarrationReady?:(file:File)=>Promise<boolean>;
  onNarrationInvalidated?:()=>void};
@@ -55,12 +55,12 @@ const dict={
  }
 } as const;
 
-export function MandalaTherapyStudio({locale,disabled,theme,wish,focus,initialFormat="single",editor,voiceEditor,advancedEffects,onVideoPhrases,onNarrationReady,onNarrationInvalidated}:Props){
+export function MandalaTherapyStudio({locale,disabled,theme,wish,focus,scenarioId=null,initialFormat="single",editor,voiceEditor,advancedEffects,onVideoPhrases,onNarrationReady,onNarrationInvalidated}:Props){
  const [pane,setPane]=useState<Pane>(initialFormat==="course"?"course":"meditation");
  const [isCourse,setIsCourse]=useState(initialFormat==="course");
  const [effectsOpen,setEffectsOpen]=useState(false);
  const [approved,setApproved]=useState<{signature:string;text:string}|null>(null);
- const scenarioSignature=JSON.stringify([locale,theme,wish,focus.goal,focus.difficulty,focus.goals,focus.details]);
+ const scenarioSignature=JSON.stringify([locale,theme,wish,focus.goal,focus.difficulty,focus.goals,focus.details,scenarioId]);
  const approvedText=approved?.signature===scenarioSignature?approved.text:"";
  const lastScenario=useRef(scenarioSignature);
  const t=dict[locale];
@@ -74,7 +74,11 @@ export function MandalaTherapyStudio({locale,disabled,theme,wish,focus,initialFo
   setPane(id);
  };
  const invalidate=()=>{setApproved(null);onNarrationInvalidated?.();};
- return <div className={css.shell} data-therapy-studio data-therapy-course={isCourse?"true":"false"}>
+ const openFromVoice=(target:"practice"|"course")=>{
+  setPane(target);if(target==="course")setIsCourse(true);
+  window.requestAnimationFrame(()=>document.getElementById("therapy-tab-"+target)?.scrollIntoView({behavior:"auto",block:"start"}));
+ };
+ return <div className={css.shell} data-therapy-studio data-therapy-course={isCourse?"true":"false"} data-active-therapy-pane={pane} data-therapy-scenario-id={scenarioId||undefined}>
   <header className={css.hero}><h3>{t.title}</h3><p>{t.intro}</p></header>
   <div className={css.tabs} data-therapy-tabs role="tablist" aria-label="Therapy Studio">
    {(["meditation","voice","practice","course"] as const).map((id,i)=>{
@@ -89,7 +93,7 @@ export function MandalaTherapyStudio({locale,disabled,theme,wish,focus,initialFo
     {isCourse?editor(true):null}
    </div>
    {!isCourse?<div className={css.textHost} data-therapy-text-host hidden={pane!=="meditation"}>
-    <MandalaTherapyTextPicker locale={locale} theme={theme} request={wish||focus.goal||focus.difficulty||""}
+    <MandalaTherapyTextPicker key={(scenarioId||"personal")+"-"+locale} locale={locale} theme={theme} scenarioId={scenarioId} request={wish||focus.goal||focus.difficulty||""}
       disabled={disabled} onInvalidate={invalidate} onApprove={text=>{
        setApproved({signature:scenarioSignature,text});setPane("voice");
       }}/>
@@ -106,6 +110,14 @@ export function MandalaTherapyStudio({locale,disabled,theme,wish,focus,initialFo
       <summary>{t.phraseDetails}<ChevronDown size={17} aria-hidden="true"/></summary>
       {voiceEditor}
     </details>
+    <div className={css.voiceNextActions} data-therapy-voice-next role="group" aria-label={locale==="ru"?"Следующий шаг":locale==="es"?"Siguiente paso":"Next step"}>
+     <button type="button" className={css.voicePrimaryNext} data-therapy-voice-to-practice disabled={disabled} onClick={()=>openFromVoice("practice")}>
+      <Volume2 size={21} aria-hidden="true"/><span>{locale==="ru"?"Озвучить медитацию (20 EXP)":locale==="es"?"Narrar meditación (20 EXP)":"Narrate meditation (20 EXP)"}</span><ChevronRight size={21} aria-hidden="true"/>
+     </button>
+     <button type="button" className={css.voiceSecondaryNext} data-therapy-voice-to-course disabled={disabled} onClick={()=>openFromVoice("course")}>
+      <Film size={21} aria-hidden="true"/><span>{locale==="ru"?"Создать видео без озвучки":locale==="es"?"Crear vídeo sin narración":"Create video without narration"}</span><ChevronRight size={21} aria-hidden="true"/>
+     </button>
+    </div>
    </div>:null}
    {pane==="practice"?<section className={css.practice} data-therapy-practice>
     <h4>{t.practiceTitle}</h4><p>{t.practiceHint}</p>

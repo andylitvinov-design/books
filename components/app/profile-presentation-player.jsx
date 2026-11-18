@@ -69,8 +69,6 @@ export function ProfilePresentationPlayer({locale,presentation,poster}){
               ?'The full English YouTube presentation will play here once its upload is verified.'
               :'Checking the English YouTube presentation…'}
           </p>
-          <a className={styles.channelLink} href="https://www.youtube.com/@aatapro"
-            target="_blank" rel="noopener noreferrer">Open the English YouTube channel</a>
         </div>
       </div>
     </div>

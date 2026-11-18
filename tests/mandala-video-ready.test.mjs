@@ -483,3 +483,45 @@ test("Ready WhatsApp requires own verified link, never claims Meta MP4 delivery"
   assert.match(ready,/direct automated MP4 sending is not enabled/);
   assert.doesNotMatch(delivery,/channel:"whatsapp"/);
 });
+
+
+test("Ready catches the physical iPhone MP4 playback error and offers a safe retry",()=>{
+  const css=readFileSync(new URL("../components/mandala-video-ready.module.css",import.meta.url),"utf8");
+  assert.match(ready,/onError=\{event=>onPlaybackError\(event\.currentTarget\)\}/,
+    "the visible Ready video must report real native Safari decoding failures");
+  assert.match(ready,/data-ready-export-failed/);
+  assert.match(ready,/data-ready-retry-compatible/);
+  assert.match(ready,/role="alert" data-ready-export-failed/);
+  assert.match(ready,/onRetryExport\}/);
+  assert.match(ready,/retryCompatible:"Retry in compatibility mode"/);
+  assert.match(ready,/retryCompatible:"Повторить в совместимом режиме"/);
+  assert.match(ready,/retryCompatible:"Reintentar en modo compatible"/);
+  assert.match(css,/\.exportFailure\{display:grid/);
+  assert.match(studio,/video=\{!readyGenerationPending&&playbackStatus!=="failed"&&result/,
+    "rejected MP4 must become a real poster, not a black broken native player");
+  assert.match(studio,/onPlaybackError=\{handleNativeVideoPlaybackFailure\}/);
+  assert.match(studio,/onError=\{event=>handleNativeVideoPlaybackFailure\(event\.currentTarget\)\}/);
+  assert.match(studio,/if\(rejectedPlaybackUrlRef\.current===result\.url\)return/);
+  assert.match(studio,/if\(result\?\.url===rejectedPlaybackUrlRef\.current\)return/);
+  assert.match(studio,/if\(creditOpRef\.current\)return/);
+  assert.match(studio,/setPlaybackStatus\("failed"\)/);
+  assert.match(studio,/setPendingCompatibleRetry\(signature\)/,
+    "existing one-shot native WebM recovery remains connected");
+});
+
+test("client MP4 global quota is RLS-safe and expired signed upload reservations are reaped only after token expiry",()=>{
+  const personalVideos=readFileSync(new URL("../lib/app/personal-videos.js",import.meta.url),"utf8");
+  const migration=readFileSync(new URL("../supabase/migrations/20261118052326_hh_personal_video_global_quota_rls_guard.sql",import.meta.url),"utf8");
+  assert.match(personalVideos,/select pg_advisory_xact_lock\(598228614\)/);
+  assert.match(personalVideos,/select app_private\.personal_video_reserved_global_bytes\(\) total/);
+  assert.doesNotMatch(personalVideos,/select coalesce\(sum\(bytes\),0\)::bigint total from app_private\.personal_videos where status/);
+  assert.match(migration,/SECURITY DEFINER/);
+  assert.match(migration,/SET search_path = pg_catalog/);
+  assert.match(migration,/REVOKE ALL ON FUNCTION[\s\S]*FROM PUBLIC, anon, authenticated, hh_app_inbox/);
+  assert.match(migration,/GRANT EXECUTE ON FUNCTION[\s\S]*TO hh_app_backend/);
+  assert.match(personalVideos,/status='deleted' and released_at is null and created_at<now\(\)-interval '3 hours'/);
+  assert.match(personalVideos,/status='pending' and created_at<now\(\)-interval '3 hours'/);
+  assert.match(personalVideos,/created_at<now\(\)-interval '3 hours'/);
+  assert.match(personalVideos,/const \{error\}=await storage\.remove\(\[file\.object_key\]\)/);
+  assert.match(personalVideos,/if\(error\)continue/);
+});

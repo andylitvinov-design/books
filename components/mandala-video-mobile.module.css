@@ -5751,3 +5751,12 @@
  .studio[data-active-workspace="effects"] .previewStage .hypnoStageTitle{padding-right:74px!important}
  .studio[data-active-workspace="effects"] .previewStage .hypnoStageTitle h3{font-size:22px}
 }
+
+/* Scene-specific schematic, not filmed/verified footage. */
+.storyAutoNoPoster{position:relative;display:block;width:100%;height:100%;min-height:135px;overflow:hidden;background:#dae9e0}
+.storyAutoNoPoster>[data-storyboard-scene-sketch]{width:100%;height:100%}
+.storyAutoNeedsFootage{position:absolute;bottom:2px;right:3px;max-width:calc(100% - 7px);
+ border-radius:4px;padding:2px 3px;background:#fff9e6ed;color:#70572b;
+ font:750 9px/1.1 Arial,Helvetica,sans-serif;letter-spacing:0}
+.studio[data-active-workspace="editor"][data-montage-panel="concept"] .storyAutoNoPoster{height:66px;min-height:0}
+.studio[data-active-workspace="editor"][data-montage-panel="concept"] .storyAutoNeedsFootage{font-size:8px}

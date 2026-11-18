@@ -6,7 +6,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import {
   ArrowRight, BarChart3, BookOpen, ChevronRight, ClipboardList,
-  FileText, Heart, Home, Leaf, LockKeyhole, MessageCircle, Play,
+  FileText, Heart, Home, Leaf, LockKeyhole, MessageCircle, Play, Plus, Settings2,
   Sparkles, UserRound, Users
 } from 'lucide-react'
 import { appFetch } from '@/lib/app/client-fetch'
@@ -178,6 +178,7 @@ function destination(locale, key) {
     messages:'/' + appLocale + '/app/messages?section=clients&tab=chats',
     services:root + '?panel=services',
     materials:root + '?panel=materials',
+    reports:root + '?panel=express-reports',
     analytics:root + '?panel=analytics',
     profile:root + '?panel=profile',
     community:'/' + appLocale + '/masters',
@@ -189,7 +190,7 @@ const RESUMABLE_ACTIONS = new Set([
   'create','service','intro','workshop','diagnostic','energy','personal','session','meditation',
   'talisman','reiki','course','material','meditationList','talismanList',
   'reikiList','courseList','clients','requests','messages','services',
-  'materials','analytics','profile',
+  'materials','analytics','profile','reports',
 ])
 const PRO_STARTS = new Set(['diagnostic','energy','personal','meditation','profile'])
 const ACTION_NAMES = {
@@ -293,7 +294,8 @@ export default function PracticeShowcase({ locale = 'en' }) {
     const target=event.target?.closest?.('a[href]')
     if (!target || target.closest('[data-profile-mode-switch]') ||
       target.closest('[data-profile-language-switch]') ||
-      target.closest('[data-profile-chrome-navigation]')) return
+      target.closest('[data-profile-chrome-navigation]') ||
+      target.closest('[data-work-home-link]')) return
     // Public YouTube presentation links are readable without a login.
     // Keep every practitioner action and all other guest links auth-gated.
     if (target.closest('[data-profile-video-hero]') &&
@@ -410,7 +412,7 @@ export default function PracticeShowcase({ locale = 'en' }) {
 
   return <div className={styles.screen} data-practice-showcase onClickCapture={interceptGuestWorkLink} data-practice-design="unified-20261028" data-auth-state={session}>
     <div className={styles.shell}>
-      <PracticeWorkProfileIntro locale={locale} t={t} onAction={openAction} />
+      <PracticeWorkProfileIntro locale={locale} onAction={openAction} activeCount={metric} requestCount={requestMetric} />
 
       <section className={styles.identity} aria-label={t.yourProfile}>
         <span className={styles.avatar} aria-hidden="true">{signedIn
@@ -428,16 +430,14 @@ export default function PracticeShowcase({ locale = 'en' }) {
               <UserRound size={15} aria-hidden="true" />
               {locale === 'ru' ? 'Моя страница' : locale === 'es' ? 'Mi página' : 'My Page'}
             </Link>
+            <Link href={'/' + (locale === 'es' ? 'en' : locale) + '/app/settings'} prefetch={false}
+              className={styles.myPageAction} data-work-settings>
+              <Settings2 size={15} aria-hidden="true" />
+              {locale === 'ru' ? 'Настройки' : locale === 'es' ? 'Ajustes' : 'Settings'}
+            </Link>
           </div>
         </div>
-        <div className={styles.metrics}>
-          <button type="button" className={styles.metricMint} onClick={() => void openAction('services')}>
-            <Leaf size={22} aria-hidden="true"/><small>{t.active}</small><b>{metric}</b><span>{t.offers}</span>
-          </button>
-          <button type="button" className={styles.metricCream} onClick={() => void openAction('requests')}>
-            <ClipboardList size={22} aria-hidden="true"/><small>{t.requests}</small><b>{requestMetric}</b><span>{t.new}</span>
-          </button>
-        </div>
+
       </section>
 
       {signedIn && RESUMABLE_ACTIONS.has(nextAction) && <section
@@ -455,7 +455,10 @@ export default function PracticeShowcase({ locale = 'en' }) {
         </button>
       </section>}
 
-      <div className={styles.quickGrid} aria-label={t.creations}>
+      <details className={styles.createDisclosure} data-work-create-tools>
+        <summary><span className={styles.disclosureIcon}><Plus size={22} aria-hidden="true"/></span>
+          <span>{t.creations}</span><ChevronRight size={22} aria-hidden="true"/></summary>
+        <div className={styles.quickGrid} aria-label={t.creations}>
         {CREATE.map(({ key, label, Icon, tint }) =>
           <button key={key} type="button" className={styles.quickTile + ' ' + styles[tint]}
             onClick={() => void openAction(key)} aria-busy={busy === key}>
@@ -464,8 +467,12 @@ export default function PracticeShowcase({ locale = 'en' }) {
             <ChevronRight className={styles.tileArrow} size={15} aria-hidden="true"/>
           </button>
         )}
-      </div>
+        </div>
+      </details>
 
+      <details className={styles.moreDisclosure} data-work-more-tools>
+        <summary><span className={styles.disclosureIcon}><BriefcaseBusiness size={22} aria-hidden="true"/></span>
+          <span>{t.tools}</span><ChevronRight size={22} aria-hidden="true"/></summary>
       <section className={styles.offers}>
         <div className={styles.sectionTitle}>
           <h2>{t.myOffers}</h2>
@@ -497,6 +504,7 @@ export default function PracticeShowcase({ locale = 'en' }) {
           )}
         </div>
       </section>
+      </details>
 
       {notice && !pendingAction && <p className={styles.notice} role="status">{notice}</p>}
     </div>

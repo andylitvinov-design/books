@@ -17,7 +17,7 @@ import styles from './my-coach-live-dialogue.module.css'
 import MyCoachSpeechLoop from './my-coach-speech-loop'
 import {startCoachingMp3Playback,unlockCoachingAudioContext,shouldUseCoachingWebAudio} from '@/lib/personal-coaching/streamed-mp3-playback.mjs'
 import {coachSpokenText} from '@/lib/coaching/coach-spoken-text.mjs'
-import {detectedSpeechLocale,chooseDictationLanguage} from '@/lib/personal-coaching/my-coach-dictation.mjs'
+import {detectedSpeechLocale} from '@/lib/personal-coaching/my-coach-dictation.mjs'
 import {coachIntroAudioPath,startDirectCoachIntroAudio} from '@/lib/personal-coaching/direct-coach-intro-audio.mjs'
 import CoachingAvatar from '@/components/app/coaching-avatar'
 import MyCoachMotionMedia from '@/components/my-coach-motion-media'
@@ -156,18 +156,12 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [cloudAvailable,setCloudAvailable]=useState(false)
   const [cloudAgreed,setCloudAgreed]=useState(false)
   const [cloudProvider,setCloudProvider]=useState(null)
-  const [speechLocale,setSpeechLocale]=useState('auto')
-  const [deviceSpeechLocale,setDeviceSpeechLocale]=useState(lang)
-  // Auto follows the first supported device language for the opening voice,
-  // while Web Speech still uses its own last-utterance context per turn.
-  useEffect(()=>{
-    const browserLanguages=window.navigator.languages?.length
-      ?window.navigator.languages:[window.navigator.language]
-    const chosen=chooseDictationLanguage({locale:lang,browserLanguages})
-    setDeviceSpeechLocale(chosen.split('-')[0])
-  },[lang])
-  // Manual selection is authoritative for ASR, the reply and persona TTS.
-  const conversationLang=['en','ru','es'].includes(speechLocale)?speechLocale:deviceSpeechLocale
+  // Route language is authoritative on entry; the visitor may explicitly
+  // switch languages without changing the rest of the site's navigation.
+  // Never silently pick the iPhone's language over /en, /ru or /es.
+  const [speechLocale,setSpeechLocale]=useState(lang)
+  useEffect(()=>{setSpeechLocale(lang)},[lang])
+  const conversationLang=['en','ru','es'].includes(speechLocale)?speechLocale:lang
   const [showCaptions,setShowCaptions]=useState(false)
   const [turns,setTurns]=useState([])
   const [sessionClockStarted,setSessionClockStarted]=useState(false)
@@ -716,15 +710,16 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           }}>{({ru:'Подвести итог',en:'Reflect & close',es:'Resumir y cerrar'}[lang])}</button>
         </div>}
       <div className={styles.voiceControls}>
-        <label className={styles.languageControl} title={captions.languageLabel} data-coach-language-control>
+        <label className={styles.languageControl} title={captions.languageLabel+' · '+conversationLang.toUpperCase()} data-coach-language-control>
           <Languages size={21} aria-hidden="true"/>
-          <select aria-label={captions.languageLabel} value={speechLocale}
-            onChange={event=>setSpeechLocale(event.target.value)}>
-            <option value="auto">Auto</option>
-            <option value="ru">RU</option>
-            <option value="en">EN</option>
-            {lang==='es'&&<option value="es">ES</option>}
-          </select>
+          <span className={styles.languageChoice}>
+            <select aria-label={captions.languageLabel} value={speechLocale}
+              onChange={event=>setSpeechLocale(event.target.value)}>
+              <option value="en">EN</option>
+              <option value="ru">RU</option>
+              <option value="es">ES</option>
+            </select>
+          </span>
         </label>
         <button type="button" className={styles.keyboardControl} onClick={toggleComposer}
           aria-label={ui.type} title={ui.type}><Keyboard size={21} aria-hidden="true"/><span>{ui.keyboardShort}</span></button>

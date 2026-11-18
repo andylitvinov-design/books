@@ -59,3 +59,18 @@ test("Approved mobile screenshot uses one text editor, 4 subtabs and original vo
  for(const s of [picker,studio,source("lib/mandala/short-meditation-options.mjs")])
   assert.doesNotMatch(s,/\bfetch\s*\(|checkout\(|localStorage|window\.open\(/);
 });
+
+test("Selected canonical scenario feeds two RU options and the original approved cloud narrator",()=>{
+ const parent=source("components/mandala-free-video-studio.tsx");
+ const studio=source("components/mandala-therapy-studio.tsx");
+ const picker=source("components/mandala-therapy-text-picker.tsx");
+ assert.match(parent,/scenarioId=\{approvedVideoConcept\?\.scenarioId \?\? null\}/);
+ assert.match(studio,/scenarioId=\{scenarioId\}/);
+ assert.match(studio,/data-therapy-scenario-id=\{scenarioId\|\|undefined\}/);
+ assert.match(studio,/data-therapy-approved-voice/);
+ assert.match(picker,/buildShortMeditationOptions\(\{locale,theme,request,revision,scenarioId\}\)/);
+ const chosen=buildShortMeditationOptions({scenarioId:"life-purpose-s1",locale:"ru",theme:"goals"});
+ assert.equal(chosen.options.length,2);
+ assert.match(chosen.options[0].text,/Чужая карта успеха/);
+ assert.match(chosen.options[1].text,/Свои ценности на горизонте/);
+});

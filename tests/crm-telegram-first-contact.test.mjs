@@ -52,3 +52,33 @@ test('signed webhook, STOP gate, CRM commit and subsequent AI reply remain in or
   assert.doesNotMatch(capture,/marketing_opt_in_at|crm_consent_ledger|sendOneMessengerMessage/)
   assert.match(capture,/replyConsent:null,marketingConsent:false/)
 })
+
+
+test('optional first-contact CRM failure never suppresses an already signed bot response',async()=>{
+ const {captureTelegramLeadBestEffort}=await import('../lib/crm/telegram-lead-capture-policy.mjs');
+ const results=[];
+ const accepted=await captureTelegramLeadBestEffort(async()=>({created:true}),()=>results.push('unavailable'));
+ assert.deepEqual(accepted,{created:true});
+ assert.deepEqual(results,[]);
+ const unavailable=await captureTelegramLeadBestEffort(async()=>{throw new Error('do not log private database details')},
+   ()=>results.push('unavailable'));
+ assert.deepEqual(unavailable,{created:false,unavailable:true});
+ assert.deepEqual(results,['unavailable']);
+ assert.deepEqual(await captureTelegramLeadBestEffort(async()=>{throw new Error('permission denied')},
+   ()=>{throw new Error('logger failed')}),{created:false,unavailable:true});
+ const bot=route.indexOf('captureTelegramLeadBestEffort(\\n            ()=>captureTelegramBotLead');
+ assert.ok(bot>=0 || route.includes('()=>captureTelegramBotLead(event,config)'));
+ assert.match(route,/HH_TG_BOT_LEAD_CAPTURE_UNAVAILABLE/);
+ assert.match(route,/HH_TG_BUSINESS_LEAD_CAPTURE_UNAVAILABLE/);
+ assert.match(route,/HH_TG_INLINE_WEBHOOK_SYNC_UNAVAILABLE/);
+ assert.match(route,/HH_TG_SIGNED_WEBHOOK_PROCESSING_FAILED/);
+ // This is only a durability boundary: signed provider validation, STOP and
+ // explicit opt-in for intake/CRM order remain independent and mandatory.
+ assert.ok(route.indexOf('if(!verifyMessengerWebhook')<
+   route.indexOf('captureTelegramBusinessLead(body,config)'));
+ assert.ok(route.indexOf('gateTelegramBusinessSecretaryOptOut')<
+   route.indexOf('captureTelegramBusinessLead(body,config)'));
+ assert.ok(route.indexOf('captureTelegramBotLead(event,config)')<
+   route.indexOf('processTelegramCompanion(event,config)'));
+ assert.match(route,/processTelegramAiV3\(diagnosticEvent,config\)/);
+});

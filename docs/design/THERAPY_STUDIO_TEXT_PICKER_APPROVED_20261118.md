@@ -21,3 +21,10 @@ Reference: latest owner-approved mobile image in conversation, Nov 18. The inten
 
 ## Release guard
 Follow `AGENTS.md`, `GLOBAL_PR_ONE_PUBLISH_V1`, protected exact-HEAD Core/Specialist/browser/`hh-merge-check` and existing **hourly** Production Vercel publication. Do not create a separate deployment, paid generation, new API, migration, CI workflow or provider call. This source specification and mocked browser checks do not prove real narrated 30-second WAV, actual looping MP4, physical iPhone rendering, or live domain SHA. Verify those separately when possible.
+
+## Canonical MyTube 256 scenarios × 2 RU meditation drafts — 18 Nov 2026
+- `data/video-catalog/mytube-content-taxonomy-4x4x4-v2.json` supplies four categories × four subcategories × four topics × four scenarios = **256**, not the unrelated 120 Video Goal scripts.
+- The 512 RU editorial texts reside in `data/video-catalog/mytube-meditations-512-ru-v1.json` and are keyed by exact approved film scenario ID.
+- The selected scenario's two variants appear in Therapy Meditation. When no approved scenario exists or locale is EN/ES, existing localized, cost-free fallback texts remain. Never show RU on EN/ES.
+- Crisis checks always precede library selection; human choice/approval precedes optional cloud narration and real Video Studio audio attachment. The voice/navigation CTA is not a purchase, delivery or entitlement.
+- 30 seconds is a target, not an actual WAV measurement. No Fish bulk render, additional keys, new storage, provider charges, or deployment are created. Owner voice approvals, 30-second measured WAV, and physical iPhone MP4 sound E2E remain separate gates.

@@ -17,6 +17,7 @@ import {shouldBootstrapTelegramNativeMenu} from '@/lib/crm/telegram-companion-na
 import { receiveOwnerTelegramVideoCrmFallback } from '@/lib/practitioners/owner-telegram-video-crm-fallback'
 import {processTelegramBusinessConversation} from '@/lib/crm/telegram-business-service'
 import {captureTelegramBotLead,captureTelegramBusinessLead} from '@/lib/crm/telegram-lead-capture'
+import {captureTelegramLeadBestEffort} from '@/lib/crm/telegram-lead-capture-policy.mjs'
 import {telegramBusinessMessageFromUpdate} from '@/lib/assist/telegram-business-request.mjs'
 import {parseHiTelegramRating} from '@/lib/holistic-support/hi-learning-policy.mjs'
 import {insertHiLearningQuality} from '@/lib/holistic-support/hi-learning-store'
@@ -100,7 +101,9 @@ export async function POST(request,{params}){
     // A first verified Business contact becomes an unqualified CRM lead before
     // optional service/FAQ dialogue; no unconsented message body is stored.
     const businessLead=provider==='telegram'
-      ?await captureTelegramBusinessLead(body,config):null
+      ?await captureTelegramLeadBestEffort(
+        ()=>captureTelegramBusinessLead(body,config),
+        ()=>console.error('HH_TG_BUSINESS_LEAD_CAPTURE_UNAVAILABLE')):null
     // Separate signed Business-chat service intake: only public service-code
     // messages and explicit short replies, never ordinary personal text or
     // diagnostic/Companion updates. Confirmation persists before acknowledgement.
@@ -195,8 +198,10 @@ export async function POST(request,{params}){
     // A previously registered bot may subscribe to 'message' only. Upgrade
     // the SAME already-owned signed webhook before its next inline prompt.
     // Never replace a foreign webhook or drop Telegram's pending updates.
-    if(provider==='telegram'&&updates.some(event=>event.type==='incoming'&&!event.callbackId))
-      await ensureTelegramInlineWebhookUpdates()
+    if(provider==='telegram'&&updates.some(event=>event.type==='incoming'&&!event.callbackId)){
+      try{await ensureTelegramInlineWebhookUpdates()}
+      catch{console.error('HH_TG_INLINE_WEBHOOK_SYNC_UNAVAILABLE')}
+    }
     for(const event of updates){
       if(provider==='whatsapp'){
         const proof=await processWhatsAppAccountLink(event,config)
@@ -260,7 +265,9 @@ export async function POST(request,{params}){
         // A signed first customer message is visible in CRM even when the
         // voluntary diagnostic has not yet reached /agree. No raw text is stored.
         if(event.type==='incoming'&&!event.callbackId)
-          await captureTelegramBotLead(event,config)
+          await captureTelegramLeadBestEffort(
+            ()=>captureTelegramBotLead(event,config),
+            ()=>console.error('HH_TG_BOT_LEAD_CAPTURE_UNAVAILABLE'))
         const companion=await processTelegramCompanion(event,config)
         if(companion.handled){
           // Client-initiated bootstrap of native Telegram Menu. Never do this
@@ -345,6 +352,8 @@ export async function POST(request,{params}){
                 to:aiIntake.to,text:aiIntake.reply,keyboard:aiIntake.keyboard,
                 locale:aiIntake.locale,approvedPilotGuest:aiIntake.approvedPilotGuest,
                 serviceWelcome:aiIntake.serviceWelcome===true,
+                freeWelcomePhoto:aiIntake.freeWelcomePhoto===true,
+                welcomePhotoKey:aiIntake.welcomePhotoKey||null,
               })
               if(aiIntake.voiceOffer)await bindTelegramWaveVoiceOffer(
                 config,aiIntake.voiceOffer,delivered.providerId)
@@ -426,6 +435,9 @@ export async function POST(request,{params}){
     return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
   }catch(error){
     const safe=safeError(error)
+    if(provider==='telegram')console.error('HH_TG_SIGNED_WEBHOOK_PROCESSING_FAILED',{
+      code:/^[A-Z0-9_]{2,48}$/.test(String(safe.code||''))?safe.code:'UNKNOWN',
+    })
     return NextResponse.json({ok:false},{status:safe.status>=500?503:400,headers:PRIVATE_HEADERS})
   }
 }
