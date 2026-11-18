@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {
   TELEGRAM_AI_DIAGNOSTIC_V3,V3_LABELS,V3_COPY,V3_BUTTONS,v3StartLocale,
-  v3CanStart,v3CanChat,v3ModelKey,v3Context,v3ButtonsFor,v3IsStop,v3Action,v3CanCallModel,v3DailyReplyCount,v3WantsGeneralChat,V3_CHAT_COPY,v3ChatPreConsentSafetyReply,
+  v3CanStart,v3CanChat,v3ModelKey,v3Context,v3ButtonsFor,v3ConsentReminder,v3IsStop,v3Action,v3CanCallModel,v3DailyReplyCount,v3WantsGeneralChat,V3_CHAT_COPY,v3ChatPreConsentSafetyReply,
 } from '../lib/crm/telegram-ai-diagnostic-v3.mjs';
 import {v3Generate,v3ModelMessages} from '../lib/crm/telegram-ai-diagnostic-v3-model.mjs';
 import {waveTelegramLocalReply} from '../lib/crm/telegram-wave-local-reply.mjs';
@@ -179,7 +179,19 @@ test('Consent is explained once; follow-up nudges do not repeat the privacy wall
   }
   const service=source('lib/crm/telegram-ai-diagnostic-v3-service.js');
   assert.ok(service.includes("if(start&&active&&row?.stage==='consent')"));
-  assert.ok(service.includes("allowed?copy.nudge:copy.notReady"));
+  assert.ok(service.includes("v3ConsentReminder({general,chatAllowed,allowed,serviceCopy,chat,copy})"));
+  for(const locale of ['ru','en','es']){
+    const copy=V3_COPY[locale],chat=V3_CHAT_COPY[locale];
+    const consentNudge='Continue with consent';
+    assert.equal(v3ConsentReminder({general:true,chatAllowed:false,allowed:true,chat,copy}),copy.notReady);
+    assert.equal(v3ConsentReminder({general:true,chatAllowed:true,allowed:false,chat,copy}),chat.nudge);
+    assert.equal(v3ConsentReminder({general:false,allowed:false,copy,
+      serviceCopy:{consentNudge}}),copy.notReady);
+    assert.equal(v3ConsentReminder({general:false,allowed:true,copy}),copy.nudge);
+    assert.equal(v3ConsentReminder({general:false,allowed:true,copy,
+      serviceCopy:{consentNudge}}),consentNudge);
+    assert.doesNotMatch(chat.nudge,/OpenRouter|medical|медицинск|médic/i);
+  }
   assert.ok(service.includes("ai_consent_at=now()"));
   assert.ok(service.includes("row&&Number(row.last_update_id)>=updateId"));
 });
