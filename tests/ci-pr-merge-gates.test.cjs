@@ -7,9 +7,9 @@ test('migrated single mandatory status remains exact-head release gate',()=>{
  assert.ok(s.includes('need.filter(name => !passed(name))'));
  assert.ok(s.includes('core.setOutput("core_run", String(coreRun.id))'));
 });
-test('actual Specialist and unified gate pass in same workflow run',()=>{
+test('actual Core and unified Specialist gate pass in same workflow run',()=>{
  const s=workflow('hh-native-auto-merge');
- assert.ok(s.includes('!passed("hh-merge-check")||!passed("hh-specialist")'));
+ assert.ok(s.includes('!passed("core-lint-types-build")||!passed("hh-merge-check")'));
  assert.ok(s.includes('coreRunBase(run,pr,fullRepo,run.check_suite_id)'));
  assert.ok(s.includes("steps.freshness.outputs.eligible == 'true'"));
 });
@@ -52,7 +52,7 @@ test('successful exact-head Core event arms promptly without waiting for optiona
  assert.ok(s.includes('item.base?.ref === "codex/public-book-library"'));
  assert.ok(!s.includes('item.base?.sha === pr.base.sha'));
  assert.ok(!s.includes('const blocked = observed.find('));
- assert.ok(s.includes('!passed("hh-merge-check")||!passed("hh-specialist")'));
+ assert.ok(s.includes('!passed("core-lint-types-build")||!passed("hh-merge-check")'));
  assert.ok(s.includes("steps.freshness.outputs.eligible == 'true'"));
  assert.ok(s.includes('--match-head-commit "$PR_HEAD"'));
 });
@@ -84,7 +84,7 @@ test('Core event refreshes a moving protected classifier and tolerates unknown m
    actions:{getWorkflowRun:async()=>({data:{id:99}}),
      listJobsForWorkflowRun:async()=>({data:{total_count:2,jobs:[
        {name:'hh-merge-check',status:'completed',conclusion:'success'},
-       {name:'hh-specialist',status:'completed',conclusion:'success'}]}})},
+       {name:'core-lint-types-build',status:'completed',conclusion:'success'}]}})},
    repos:{getBranch:async()=>({data:{protected:true,commit:{sha:production}}})}
  }};
  const fakePolicy={
