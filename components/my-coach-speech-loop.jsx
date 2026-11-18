@@ -201,7 +201,11 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       cancelRef.current?.()
     }
     cancelOutgoingCoachSpeech()
-    if(recordedTurnRef.current?.continueAfterCoach?.()){
+    // Safari 27's native SpeechRecognition is unreliable; reuse the already
+    // captured mic. Desktop has working browser ASR: do not burn one of the
+    // shared, limited Whisper uploads on an ordinary manual interruption.
+    if(ios27NeedsSpeechRecovery(window.navigator)&&
+       recordedTurnRef.current?.continueAfterCoach?.()){
       changePhase('listening');setNotice('')
       return
     }
@@ -812,11 +816,16 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       if(result.mode==='safety'||result.mode==='boundary'){
         silence();changePhase('idle');return
       }
-      if(recordedTurnRef.current?.continueAfterCoach?.()){
+      // Preserve iOS 27's one-Play captured mic. Other browsers return to
+      // their built-in ASR after natural TTS, saving the global Whisper quota.
+      if(ios27NeedsSpeechRecovery(window.navigator)&&
+         recordedTurnRef.current?.continueAfterCoach?.()){
         changePhase('listening')
         setNotice('')
         return
       }
+      recordedTurnRef.current?.cancel()
+      recordedTurnRef.current=null
       startListening()
     }
 
