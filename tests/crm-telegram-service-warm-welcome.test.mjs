@@ -92,12 +92,16 @@ test('service welcome photo is limited to first signed consent message and uses 
  assert.match(sender,/telegramInlineMarkup\(keyboard,locale\)/);
  assert.match(v3,/if\(row\.stage==='consent'\)/);
  assert.equal(v3Action({inlineAction:'v3:agree'}),'agree');
- assert.match(v3,/serviceCopy&&ctx.serviceDisclosureSeen!==true/);
- assert.match(v3,/serviceDisclosureSeen:true/);
- assert.match(v3,/serviceCopy\.consent/);
- assert.match(v3,/v3ButtonsFor\(lang,'service_consent'\)/);
- assert.match(v3,/serviceCopy\?\(action==='serviceagree'/);
- assert.match(source('lib/crm/telegram-ai-diagnostic-v3.mjs'),/raw\.serviceDisclosureSeen===true/);
+ // One explicit consent starts local Secretary Mind: reject pre-consent
+ // danger/decline and require an enabled service before storing any interview.
+ assert.match(v3,/v3ChatPreConsentSafetyReply\(raw,lang\)/);
+ assert.match(v3,/const agrees=general\?action==='chatagree'/);
+ assert.match(v3,/serviceCopy\?\(action==='agree'\|\|action==='serviceagree'\|\|/);
+ assert.match(v3,/if\(!agrees\|\|!purposeReady\)/);
+ assert.match(v3,/serviceCopy&&ctx\.mode!==SECRETARY_MODES\.PSYCHOLOGIST\?serviceAllowed:allowed/);
+ assert.match(v3,/"stage='interview',locale=\$3,ai_consent_at=now\(\),last_update_id=\$4,"/);
+ assert.match(v3,/if\(!row\.ai_consent_at\|\|/);
+ assert.doesNotMatch(v3,/serviceDisclosureSeen:true/);
  assert.equal(v3Action({inlineAction:'v3:servicesend'}),'send');
 });
 
