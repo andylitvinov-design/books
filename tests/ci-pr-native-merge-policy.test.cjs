@@ -201,3 +201,15 @@ test('retired admin migration is gone and PR inventory no longer collides with w
       'full PR inventory must not start at the same minute as a write-capable Watchdog');
   }
 });
+
+test('event-driven native merge requires same-run Core plus unified Specialist gate, not retired hh-specialist',()=>{
+  const native=fs.readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
+  assert.ok(native.includes('if(!passed("core-lint-types-build")||!passed("hh-merge-check")){'));
+  assert.ok(!native.includes('if(!passed("hh-merge-check")||!passed("hh-specialist")){'));
+  assert.ok(native.includes('page.jobs.length!==page.total_count'),
+    'incomplete Core run job pagination must remain fail-closed');
+  assert.ok(native.includes('match.length===1&&match[0].status==="completed"&&match[0].conclusion==="success"'),
+    'required exact-run job proof must reject duplicate, skipped, pending and failed jobs');
+  assert.ok(native.includes("steps.freshness.outputs.eligible == 'true'"),
+    'merge must still require protected production-base freshness');
+});
