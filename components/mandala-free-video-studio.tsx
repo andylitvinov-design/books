@@ -2651,6 +2651,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // A nonempty MediaRecorder blob does NOT prove Safari can decode it.
   const [playbackStatus, setPlaybackStatus] = useState<"checking"|"ready"|"failed">("checking");
   const [result, setResult] = useState<Result | null>(null);
+  const rejectedPlaybackUrlRef=useRef<string|null>(null);
   // A new Ready generation choice must not discard the previously verified
   // local Blob. The old video is still available via the manual Ready tab.
   const [readyGenerationPending,setReadyGenerationPending]=useState(false);
@@ -3063,6 +3064,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const jobRef = useRef<Job | null>(null);
   // Same cancellation authority for the Safari H.264/AAC encoder.
   const webCodecJobRef = useRef<AbortController|null>(null);
+  const compatibilityExportRef=useRef(false);
   const firstVideoRequestRef=useRef(false);
   useEffect(()=>{
     if(!result||!firstVideoRequestRef.current)return;
@@ -3770,7 +3772,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       creditOpRef.current=null;creditValidRef.current=false;
       setCreditBalance(response.balance?.balanceCredits??null);
       setCreditConfirmed(true);
-      setNotice(t.ready);
+      setNotice(compatibilityExportRef.current
+        ?(locale==="ru"?"Видео готово · совместимый режим 540p":locale==="es"?"Vídeo listo · modo compatible 540p":"Video ready · 540p compatibility mode")
+        :t.ready);
+
     }catch{
       if(creditOpRef.current===id&&aliveRef.current)setCreditRetry(true);
     }finally{creditCompletingRef.current=false;}
@@ -3779,6 +3784,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     if (!canGenerate || !source || jobRef.current || webCodecJobRef.current || preparingRef.current) return;
     stopSoundPreview();
     stopMovieSound();
+    compatibilityExportRef.current=false;
     const snapshot=source;
     const snapshotKey=signature;
     // Safari 26+ WebCodecs avoids WebKit MediaRecorder's Canvas/audio muxer
@@ -4108,17 +4114,19 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             for(const id of ids)files.push({preset:id,loop:true,startSeconds:effectiveAudioStartSeconds});
           }
           if(sourceRef.current!==snapshotKey||!aliveRef.current)return;
-          const blob=await encodeLocalWebCodecsMp4({
-            // Safari WebKit 26 often falls behind H.264/AAC muxing at 20 fps on
-            // portrait Canvas. Keep real-time storyboard PTS and audible AAC,
-            // but bound encoder input to a smooth, device-safe 12 fps.
-            canvas,allowProceduralBrowser:procedural&&!safariWebKit,
-            seconds:duration,frameRate:Math.min(safeWebkitRetry?8:10,framesPerSecond),
-            audio:files.length?{files,volume:soundVolume}:undefined,
-            shouldContinue:()=>!controller.signal.aborted&&aliveRef.current&&sourceRef.current===snapshotKey,
-            onProgress:p=>{if(!controller.signal.aborted&&aliveRef.current&&sourceRef.current===snapshotKey)
-              setProgress(Math.min(99,p));},
-            renderFrame:time=>{
+          // One identical real frame painter for 720p and 540p; retaining
+          // the original in-line renderFrame ensures the required licensed
+          // four-shot/portrait/consent checks exercise actual encoder input.
+          const encodeCanvasMovie=async (lighter=false)=>{
+            const blob=await encodeLocalWebCodecsMp4({
+              canvas,allowProceduralBrowser:procedural&&!safariWebKit,
+              seconds:duration,frameRate:Math.min(safeWebkitRetry?8:10,framesPerSecond),
+              ...(lighter?{frameRate:8}:{}),
+              audio:files.length?{files,volume:soundVolume}:undefined,
+              shouldContinue:()=>!controller.signal.aborted&&aliveRef.current&&sourceRef.current===snapshotKey,
+              onProgress:(p:number)=>{if(!controller.signal.aborted&&aliveRef.current&&sourceRef.current===snapshotKey)
+                setProgress(Math.min(99,p));},
+              renderFrame:time=>{
               const frame=freeFilmVideoAt(time,true);
               // A verified decoded photograph is a legitimate scene frame.
               // Missing both real sources must still abort the MP4 encoder.
@@ -4132,8 +4140,39 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               paintSingleVideoTextOverlay(ctx,time,singleTextSource,affirmationLines,affirmations,duration,cinematicPlan,timelineTextClips);
               paintVideoBrandStamp(ctx,exportBrandVariant);
               return true;
-            },
-          });
+              }
+            });
+            return blob;
+          };
+          let blob:Blob;
+          try{
+            blob=await encodeCanvasMovie();
+          }catch(firstError){
+            const code=firstError instanceof Error?firstError.message:"";
+            const recoverable=["video_encoder_timeline_drift","video_encoder_too_slow",
+              "webcodecs_h264_unsupported","video_output_size_invalid"].includes(code);
+            if(!safariWebKit||safeWebkitRetry||!recoverable||
+              controller.signal.aborted||!aliveRef.current||sourceRef.current!==snapshotKey)
+              throw firstError;
+            // A slower physical iPhone can exceed the 720p encoder budget.
+            // Keep all four source shots, approved captions and selected AAC.
+            // A retry never silently substitutes a catalog clip or an unpaid AI call.
+            setNotice(locale==="ru"?"Safari не успевает — автоматически повторяем локальную сборку в 540p. Дополнительных кредитов нет.":
+              locale==="es"?"Safari va lento: reintentamos localmente a 540p, sin créditos adicionales.":
+              "Safari needs a lighter export. Retrying locally at 540p without extra credits.");
+            setProgress(0);
+            const scale=540/(quality==="fullhd"?1080:720);
+            canvas.width=Math.round(outputWidth*scale/2)*2;
+            canvas.height=Math.round(outputHeight*scale/2)*2;
+            try{
+              blob=await encodeCanvasMovie(true);
+              compatibilityExportRef.current=true;
+            }finally{
+              // Restore the ordinary editor's actual HD Canvas after the
+              // second encoder has finished using its original element.
+              canvas.width=outputWidth;canvas.height=outputHeight;
+            }
+          }
           if(sourceRef.current!==snapshotKey||!aliveRef.current)return;
           creditValidRef.current=Boolean(creditOpRef.current);
           setResult({url:URL.createObjectURL(blob),extension:"mp4",bytes:blob.size,
@@ -4873,7 +4912,43 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       setMusicWarning(audioUi.recordFailed);
     }
   }
+  function handleNativeVideoPlaybackFailure(video:HTMLVideoElement){
+    if(!result)return;
+    // Two native players can observe the same failing Blob. A stale event
+    // must not corrupt a newer successful movie or trigger a second retry.
+    if(video.currentSrc&&video.currentSrc!==result.url)return;
+    if(rejectedPlaybackUrlRef.current===result.url)return;
+    rejectedPlaybackUrlRef.current=result.url;
+    const errorCode=video.error?.code||0;
+    const ua=typeof navigator==="undefined"?"":navigator.userAgent;
+    const safariWebKit=/AppleWebKit/i.test(ua)&&!/Chrome|Chromium|Edg|OPR/i.test(ua);
+    const nativeWebm=recordingMimes(Boolean(attachedAudio),true)
+      .some(mime=>mime.startsWith("video/webm"));
+    const autoRetry=shouldAutoRecoverSafariPlayback({
+      safariWebKit,format:result.extension,errorCode,nativeWebm,
+      alreadyAttempted:autoWebmRetryForRef.current===signature,
+      catalog:result.mode==="catalog"
+    });
+    if(autoRetry){
+      autoWebmRetryForRef.current=signature;
+      autoWebmRetryUrlRef.current=result.url;
+    }
+    // Error codes only — never upload or log any private frames, test
+    // responses, narration, file names or customer profile.
+    console.warn("HH_SAFARI_FINAL_PLAYBACK:"+
+      (errorCode===4?"MEDIA_ERR_SRC_NOT_SUPPORTED":errorCode===3?"MEDIA_ERR_DECODE":"MEDIA_ERR_OTHER"));
+    setPlaybackStatus("failed");
+    setNotice(autoRetry
+      ?locale==="ru"?"Safari отклонил MP4. Повторяем в совместимом WebM без списания за нерабочее видео."
+        :locale==="es"?"Safari rechazó el MP4. Reintentando WebM sin cobrar por el vídeo fallido."
+        :"Safari rejected the MP4. Retrying in compatible WebM without charging for the failed movie."
+      :locale==="ru"?"iPhone не воспроизводит этот "+result.extension.toUpperCase()+" (ошибка "+errorCode+"). Кредиты возвращаются. Выберите совместимый повтор."
+        :locale==="es"?"El iPhone no puede reproducir "+result.extension.toUpperCase()+" (error "+errorCode+"). Los créditos se devuelven."
+        :"iPhone cannot play this "+result.extension.toUpperCase()+" (error "+errorCode+"). Your credits are released; try compatibility mode.");
+  }
   function confirmVideoPlayback(video:HTMLVideoElement){
+    if(result?.url===rejectedPlaybackUrlRef.current)return;
+    if(result?.url&&video.currentSrc&&video.currentSrc!==result.url)return;
     if(video.videoWidth>0 && video.videoHeight>0 && video.readyState>=2 && !video.error){
       setPlaybackStatus("ready");
       if(result?.mode!=="catalog")setNotice(creditConfirmed?t.ready:
@@ -7532,7 +7607,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       
       {activeWorkspace==="ready"?<MandalaVideoReady
         courseFlow={readyCourseFlow} locale={locale} theme={theme} wish={wish} focus={meditationFocus} aspect={aspect}
-        video={!readyGenerationPending&&result&&result.mode!=="catalog"?{
+        video={!readyGenerationPending&&playbackStatus!=="failed"&&result&&result.mode!=="catalog"?{
           url:result.url,extension:result.extension,bytes:result.bytes,duration
         }:null}
         verified={Boolean(!readyGenerationPending&&result&&result.mode!=="catalog"&&playbackStatus==="ready"&&creditConfirmed)}
@@ -7540,6 +7615,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         rendering={recording||preparing} renderProgress={progress}
         progressQuestionnaire={renderCheckIn("ready-assessment-heading")}
         generationNotice={notice}
+        exportFailed={Boolean(exportUnavailable||playbackStatus==="failed")}
+        canRetryExport={Boolean(canGenerate&&!creditOpRef.current&&!recording&&!preparing)}
+        onRetryExport={()=>{
+          // A new local attempt reserves a new idempotent hold only after the
+          // rejected one has been released. Never publish a catalog substitute.
+          if(creditOpRef.current)return;
+          const webm=recordingMimes(Boolean(attachedAudio),true)
+            .some(mime=>mime.startsWith("video/webm"));
+          if(result?.extension==="mp4"&&webm)void createVideo(true);
+          else void createVideo(false,false,true);
+        }}
+        onPlaybackError={handleNativeVideoPlaybackFailure}
         signedIn={creditSession==="signed_in"}
         loginUnavailable={creditSession==="unavailable"}
         disabled={recording||preparing}
@@ -8167,35 +8254,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               onLoadedData={event=>confirmVideoPlayback(event.currentTarget)}
               onCanPlay={event=>confirmVideoPlayback(event.currentTarget)}
               onPlaying={event=>confirmVideoPlayback(event.currentTarget)}
-              onError={event=>{
-                const errorCode=event.currentTarget.error?.code||0;
-                const ua=typeof navigator==="undefined"?"":navigator.userAgent;
-                const safariWebKit=/AppleWebKit/i.test(ua)&&!/Chrome|Chromium|Edg|OPR/i.test(ua);
-                const nativeWebm=recordingMimes(Boolean(attachedAudio),true)
-                  .some(mime=>mime.startsWith("video/webm"));
-                const autoRetry=shouldAutoRecoverSafariPlayback({
-                  safariWebKit,format:result.extension,errorCode,nativeWebm,
-                  alreadyAttempted:autoWebmRetryForRef.current===signature,
-                  catalog:result.mode==="catalog"
-                });
-                if(autoRetry){
-                  autoWebmRetryForRef.current=signature;
-                  autoWebmRetryUrlRef.current=result.url;
-                }
-                // Fixed codes only. Never log the private movie, sound or text.
-                console.warn("HH_SAFARI_FINAL_PLAYBACK:"+(
-                  errorCode===4?"MEDIA_ERR_SRC_NOT_SUPPORTED":"MEDIA_ERR_OTHER"));
-                setPlaybackStatus("failed");
-                setNotice(autoRetry
-                  ?locale==="ru"?"Safari отклонил MP4. Автоматически повторяем запись в WebM, без списания за нерабочий файл."
-                    :locale==="es"?"Safari rechazó el MP4. Reintentando WebM sin cobrar por el archivo fallido."
-                    :"Safari rejected MP4. Retrying in WebM automatically; the failed file is not charged."
-                  :locale==="ru"
-                  ?"Safari не воспроизводит этот "+result.extension.toUpperCase()+" (ошибка "+errorCode+"). Попробуйте другой формат ниже."
-                  :locale==="es"
-                  ?"Safari no reproduce este "+result.extension.toUpperCase()+" (error "+errorCode+"). Prueba otro formato."
-                  :"Safari cannot play this "+result.extension.toUpperCase()+" (error "+errorCode+"). Try the alternative format.");
-              }}/>
+              onError={event=>handleNativeVideoPlaybackFailure(event.currentTarget)}/>
             {playbackStatus!=="failed"&&result.mode!=="catalog"&&creditCatalog?.chargeRequired&&creditSession!=="signed_in"
               ?<div className={videoStyles.guestPreviewActions} data-video-guest-preview-actions>
                 <button type="button" data-video-guest-play onClick={()=>{
