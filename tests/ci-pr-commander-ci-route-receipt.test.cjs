@@ -305,7 +305,7 @@ test('signed historical CI HEAD stays visible without overwriting newer owner ta
  a.match(sql,/taskSourceMatches',false/);
  a.match(sql,/sourceFixVerified',false/);
  a.match(sql,/liveVerified',false/);
- a.match(sql,/NO UPDATE to commander_tasks/);
+ a.match(sql,/No commander_tasks mutation or new worker grant/);
  a.doesNotMatch(sql,/EXECUTE\s+.*(?:workflow_dispatch|model|worker)/i);
 });
 
