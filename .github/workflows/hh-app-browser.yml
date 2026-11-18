@@ -17,6 +17,7 @@ on:
       - 'app/**/app/**'
       - 'app/**/client/**'
       - 'app/api/app/**'
+      - '!app/api/app/commander/**'
       - 'app/api/client/**'
       - 'components/app/**'
       - 'components/academy-video-library-client*'

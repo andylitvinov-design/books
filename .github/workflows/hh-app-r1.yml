@@ -60,6 +60,7 @@ on:
       - 'scripts/ci-heavy-impact.mjs'
       - '.github/workflows/hh-app-r1.yml'
       - '!app/api/app/crm/messenger/webhook/**'
+      - '!app/api/app/commander/**'
       - '!lib/app/client-telegram-transport.js'
 permissions:
   contents: read

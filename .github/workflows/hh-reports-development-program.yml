@@ -10,6 +10,7 @@ on:
       - 'lib/profile/development-program.js'
       - 'lib/app/development-goals.js'
       - 'app/api/app/**'
+      - '!app/api/app/commander/**'
       - 'tests/reports-development-program.test.mjs'
       - 'tests/profile-portrait-test-suggestions.test.mjs'
       - 'tests/goal-profile-journey.test.mjs'

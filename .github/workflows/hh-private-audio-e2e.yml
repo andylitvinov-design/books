@@ -34,6 +34,7 @@ on:
       - 'lib/app/repository.js'
       - 'middleware.ts'
       - 'app/api/app/**'
+      - '!app/api/app/commander/**'
       # Provider-signed CRM webhook requests never read/write session audio
       # or guest recordings. Existing CRM/App Core checks validate ingress;
       # preserve ALL private media/auth/session paths and postmerge push audit.
@@ -80,6 +81,7 @@ on:
       - 'lib/app/repository.js'
       - 'middleware.ts'
       - 'app/api/app/**'
+      - '!app/api/app/commander/**'
       - 'app/admin/api/recorder-auth/**'
       - 'tests/admin-*.test.mjs'
       - 'tests/practitioner-bridge.test.mjs'

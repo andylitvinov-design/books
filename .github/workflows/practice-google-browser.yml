@@ -9,6 +9,7 @@ on:
       # security and required Core; they cannot affect Google Practice return.
       # Keep the shared catch-all dispatcher and every other API route.
       - '!app/api/app/crm/messenger/webhook/**'
+      - '!app/api/app/commander/**'
       - 'components/app/app-workspace.jsx'
       - 'components/app/my-services-dashboard.jsx'
       - 'components/app/practice-inner-navigation.jsx'

@@ -39,6 +39,7 @@ on:
       - '!lib/practitioners/public-*'
       - '!lib/practitioners/taoist-talisman-cart.js'
       - '!app/api/app/crm/messenger/webhook/**'
+      - '!app/api/app/commander/**'
       - '!lib/app/client-telegram-transport.js'
   workflow_dispatch:
 permissions:

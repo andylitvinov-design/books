@@ -54,3 +54,29 @@ test('course and cabinet use owning API paths, not the shared Messenger catch-al
     assert.doesNotMatch(source, /continue-on-error:\s*true/);
   }
 });
+ 
+// Commander runs under Core's exact-HEAD contracts. Editing its isolated
+// completion API must not launch legacy app, IA, profile, audio or Practice
+// browser matrices, but those suites still own their respective app routes.
+test('Commander-only PRs must not trigger unrelated specialist suites', async () => {
+  const {parsePrTrigger, matchesTrigger} = await import('../lib/ci/specialist-aggregate.mjs')
+  const commander = 'app/api/app/commander/pr-completion/route.js'
+  const owners = [
+    ['hh-app-browser', 'app/api/app/session/route.js'],
+    ['hh-app-r1', 'app/api/app/session/route.js'],
+    ['ia-v2', 'app/api/app/session/route.js'],
+    ['hh-profile-axis-matching', 'app/api/app/meditation/route.js'],
+    ['hh-private-audio-e2e', 'app/api/app/session/route.js'],
+    ['practice-google-browser', 'app/api/app/practice/route.js'],
+  ]
+  for (const [name, ownedRoute] of owners) {
+    const source = read(name)
+    const trigger = parsePrTrigger(source, name)
+    assert.equal(matchesTrigger(trigger, [commander]), false, name + ' must ignore Commander route')
+    assert.equal(matchesTrigger(trigger, [ownedRoute]), true, name + ' retains real domain checks')
+    assert.equal(matchesTrigger(trigger, [commander, ownedRoute]), true, name + ' still covers mixed PRs')
+  }
+  const reportPush = read('hh-reports-development-program').split('\n  pull_request:')[0]
+  assert.ok(reportPush.includes("      - '!app/api/app/commander/**'"), 'skip unrelated postmerge report job')
+  assert.ok(reportPush.includes("      - 'app/api/app/**'"), 'keep existing postmerge report API coverage')
+})
