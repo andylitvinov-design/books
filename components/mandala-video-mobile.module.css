@@ -5594,6 +5594,40 @@
    grid-auto-columns:84px}
 }
 
+/* 18 Nov approved one-screen Montage Audio: two native actions and one next step.
+   The full verified library opens on demand; uploads retain native iPhone input. */
+.audioCompactActions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;min-width:0}
+.audioCompactActions>button,.audioCompactUploadAction{position:relative;display:flex;align-items:center;justify-content:center;
+  gap:6px;min-width:0;width:100%;min-height:46px;padding:8px 7px;border:1px solid #a9d2bf;
+  border-radius:13px;background:#eaf9f2;color:#086c52;
+  font:800 clamp(11px,3.2vw,14px)/1.16 Arial,Helvetica,sans-serif;text-align:center;cursor:pointer}
+.audioCompactActions>button:disabled{opacity:.55;cursor:not-allowed}
+.audioCompactActions>button>svg,.audioCompactUploadAction>svg{flex:none}
+.audioCompactUploadAction{border-color:#078567;background:linear-gradient(110deg,#087e64,#069d80);
+  color:white;box-shadow:0 4px 10px #08745d1b}
+.audioCompactUploadAction input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.audioCompactUploadAction:focus-within,.audioCompactActions>button:focus-visible{
+  outline:3px solid #d3a95e;outline-offset:2px}
+.studio[data-montage-panel="audio"] .audioCompactAffirmations{display:flex;justify-content:center;
+  gap:9px;min-height:51px;border-color:#078067;background:linear-gradient(110deg,#0b9e83,#04775d);
+  color:#fff;box-shadow:0 4px 12px #08745d26}
+.studio[data-montage-panel="audio"] .audioCompactAffirmations>svg:first-child{color:#fff}
+.studio[data-montage-panel="audio"] .audioCompactAffirmations strong{font-size:clamp(13px,3.6vw,17px)}
+@media(max-width:759px){
+  /* First two music previews + native upload tile remain visible without scrolling. */
+  .studio[data-montage-panel="audio"] .audioCompactGrid>*{order:4}
+  /* Hidden audio transport is sibling #1: count visible article cards. */
+  .studio[data-montage-panel="audio"] .audioCompactGrid>.audioCompactTile:nth-of-type(1){order:0}
+  .studio[data-montage-panel="audio"] .audioCompactGrid>.audioCompactTile:nth-of-type(2){order:1}
+  .studio[data-montage-panel="audio"] .audioCompactGrid>.audioCompactUpload{order:2}
+  /* Add Affirmations is the only bottom CTA in this Audio step.
+     The original Ready/Generate workflow stays available in its own top tab. */
+  .studio[data-active-workspace="editor"][data-montage-panel="audio"] [data-video-stage-actions="montage"]{
+    display:none!important}
+}
+@media(max-width:359px){.audioCompactActions{gap:6px}
+  .audioCompactActions>button,.audioCompactUploadAction{font-size:11px;padding:7px 4px}}
+
 /* Compact verified credit balance: retain the approved Audio/Montage layout. */
 @media(max-width:759px){
  .studio[data-active-workspace] .quickBuilder>.quickBrandBar{gap:4px!important}

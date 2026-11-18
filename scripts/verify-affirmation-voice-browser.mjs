@@ -686,37 +686,47 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(choices.nth(0)).toHaveAttribute("aria-pressed","true");
       await expect(choices.nth(1)).toHaveAttribute("aria-pressed","true");
       await expect(page.locator('[data-video-audio-compact-selected]')).toContainText("2/3");
-      await expect(page.locator('[data-video-stage-actions="montage"] [data-video-quick-generate]')).toBeVisible();
-      // Real DOM geometry of the owner-approved Audio first-fold layout.
-      // Two actions share one row, Create is the outlined LEFT choice, Text the
-      // emerald RIGHT choice. A short horizontal music rail must never push
-      // the footer into a second tall section or cause page-wide x-overflow.
+      // The approved iPhone Audio layout intentionally hides the legacy
+      // Montage Create/Text footer. The two music controls and the new
+      // Add Affirmations CTA are the visible, touch-safe navigation.
+      await expect(page.locator('[data-video-stage-actions="montage"]')).toBeHidden();
+      await expect(page.locator('[data-video-audio-primary-actions]')).toBeVisible();
+      await expect(page.locator('[data-video-audio-all-music]')).toBeVisible();
+      await expect(page.locator('[data-video-audio-upload-my-audio]')).toBeVisible();
+      await expect(page.locator('[data-video-audio-add-text]')).toBeVisible();
+      // Actual rendered geometry for the new first-fold layout, not the
+      // superseded hidden footer. All three actions must remain usable.
       for(const width of [320,354,390,430]){
         await page.setViewportSize({width,height:840});
         const audioLayout=await page.evaluate(()=>{
           const audio=document.querySelector('[data-video-montage-audio]');
-          const actions=document.querySelector('[data-video-stage-actions="montage"]');
-          const create=actions?.querySelector('[data-video-quick-generate]');
-          const next=actions?.querySelector('[data-video-montage-next="text"]');
+          const actions=document.querySelector('[data-video-audio-primary-actions]');
+          const music=actions?.querySelector('[data-video-audio-all-music]');
+          const upload=actions?.querySelector('[data-video-audio-upload-my-audio]');
+          const next=audio?.querySelector('[data-video-audio-add-text]');
           const tile=audio?.querySelector('[data-video-audio-compact-track]');
-          if(!audio||!actions||!create||!next||!tile)return null;
-          const a=audio.getBoundingClientRect(),f=actions.getBoundingClientRect();
-          const c=create.getBoundingClientRect(),n=next.getBoundingClientRect();
-          const t=tile.getBoundingClientRect();
-          return {span:f.bottom-a.top,tileHeight:t.height,
-            createLeft:c.left,createTop:c.top,createWidth:c.width,
-            nextLeft:n.left,nextTop:n.top,nextWidth:n.width,
+          if(!audio||!actions||!music||!upload||!next||!tile)return null;
+          const a=audio.getBoundingClientRect();
+          const m=music.getBoundingClientRect(),u=upload.getBoundingClientRect();
+          const n=next.getBoundingClientRect(),t=tile.getBoundingClientRect();
+          return {span:n.bottom-a.top,tileHeight:t.height,
+            musicLeft:m.left,musicTop:m.top,musicWidth:m.width,musicBottom:m.bottom,
+            uploadLeft:u.left,uploadTop:u.top,uploadWidth:u.width,
+            nextTop:n.top,nextHeight:n.height,
             documentWidth:document.documentElement.scrollWidth,
             viewportWidth:document.documentElement.clientWidth};
         });
-        assert.ok(audioLayout&&audioLayout.span<570,
+        assert.ok(audioLayout&&audioLayout.span<630,
           'AUDIO_COMPACT_FIRST_FOLD_SPAN_'+width+' '+JSON.stringify(audioLayout));
         assert.ok(audioLayout.tileHeight<=86&&audioLayout.tileHeight>=70,
           'AUDIO_COMPACT_TRACK_HEIGHT_'+width+' '+JSON.stringify(audioLayout));
-        assert.ok(audioLayout.createLeft<audioLayout.nextLeft&&
-          Math.abs(audioLayout.createTop-audioLayout.nextTop)<=3&&
-          audioLayout.createWidth>=90&&audioLayout.nextWidth>=90,
-          'AUDIO_TWO_ACTIONS_CREATE_LEFT_TEXT_RIGHT_'+width+' '+JSON.stringify(audioLayout));
+        assert.ok(audioLayout.musicLeft<audioLayout.uploadLeft&&
+          Math.abs(audioLayout.musicTop-audioLayout.uploadTop)<=3&&
+          audioLayout.musicWidth>=90&&audioLayout.uploadWidth>=90,
+          'AUDIO_TWO_ACTIONS_MUSIC_LEFT_UPLOAD_RIGHT_'+width+' '+JSON.stringify(audioLayout));
+        assert.ok(audioLayout.nextTop>=audioLayout.musicBottom-2&&
+          audioLayout.nextHeight>=48,
+          'AUDIO_AFFIRMATIONS_BELOW_MUSIC_'+width+' '+JSON.stringify(audioLayout));
         assert.ok(audioLayout.documentWidth<=audioLayout.viewportWidth+2,
           'AUDIO_NO_PAGE_OVERFLOW_'+width+' '+JSON.stringify(audioLayout));
       }
