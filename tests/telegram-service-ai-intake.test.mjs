@@ -17,7 +17,7 @@ test('15 approved Telegram service-deep links preserve exact service/locale',()=
   assert.equal(entry?.href,'https://t.me/holistichouse_bot?start=hhservice_'+service+'_'+lang);
   assert.deepEqual(v3ServiceStart('/start hhservice_'+service+'_'+lang),{service,locale:lang});
   assert.ok(!v3ServiceCopy(lang,service).intro.includes('OpenRouter'));
-  assert.ok(v3ServiceCopy(lang,service).consent.includes('OpenRouter'));
+  assert.doesNotMatch(v3ServiceCopy(lang,service).consent,/OpenRouter/);
   assert.deepEqual(v3ButtonsFor(lang,'service_consent'),[[V3_LABELS[lang].serviceagree,V3_LABELS[lang].decline]]);
   assert.equal(isTelegramServiceDraft(telegramServiceRequestUrl(service,lang),lang),true);
   assert.equal(resolveTelegramServiceHandoffUrl(telegramServiceRequestUrl(service,lang),lang),
@@ -123,7 +123,7 @@ test('Service cards prefer signed, ready V3 bot regardless of independent Busine
  assert.match(router,/telegramBusinessStrategyRequestUrl\(locale\)/);
  assert.doesNotMatch(router,/if\(env\.HH_CRM_TG_CHAT_AUTOMATION_ENABLED!=='true'/);
  assert.match(router,/channelTransportReady\('telegram',env\)/);
- assert.match(router,/v3CanStart\(env\)/);
+ assert.match(router,/v3ServiceIntakeReady\(env\)/);
  assert.match(router,/resolveTelegramServiceEntry/);
  assert.match(router,/NextResponse.redirect\(target/);
  assert.doesNotMatch(ui,/resolveTelegramServiceEntry\(payload,manual,locale\)/);
@@ -188,7 +188,7 @@ test('all 15 public service handoffs use READY bot even with Business automation
    NextResponse:Reply,URL,process:{env},
    telegramServiceRequestUrl,telegramBusinessStrategyRequestUrl,isTelegramServiceDraft,
    channelTransportReady:(channel,e)=>channel==='telegram'&&e.transportReady===true,
-   v3CanStart:e=>e.v3Ready===true,
+   v3ServiceIntakeReady:e=>e.v3Ready===true,
    telegramDiagnosticPublicUrl:(lang,e)=>e.botReady===true
     ?'https://t.me/holistichouse_bot?start=hhreview_'+lang:null,
    resolveTelegramServiceEntry,
