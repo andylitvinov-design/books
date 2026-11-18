@@ -186,6 +186,7 @@ export async function prune(api, ctx, { limit = 300, dryRun = false,
   }
   const summary = { scanned: found.length, candidates: 0, closedCandidates: 0,
     cancelled: [], cancelledRunning: [], forced: [], confirmed: [], dryRun: [], errors: [], jobless409: [],
+    staleRunningMetadata: [],
     partial: truncated || closedScanPartial };
   const accepted = new Map();
   const baseWorkflows = new Map();
@@ -268,6 +269,32 @@ export async function prune(api, ctx, { limit = 300, dryRun = false,
         verifiedRun.head_sha !== freshRun.head_sha ||
         verifiedRun.path !== freshRun.path || verifiedPR.head.sha !== freshPR.head.sha) continue;
     if (historical) orphanAncestors++;
+    // GitHub sometimes marks a run in_progress for days even though EVERY
+    // actual job has completed. Cancel returns 409; this is an API ghost,
+    // not active runner capacity. Require complete live job evidence before
+    // acting on an old, merged PR's allegedly running workflow.
+    if (historical && verifiedRun.status === 'in_progress') {
+      let page;
+      try { page = await api.jobs(run.id); } catch { summary.partial = true; continue; }
+      if (!Number.isSafeInteger(page?.total_count) || page.total_count < 1 ||
+          page.total_count > 100 || !Array.isArray(page.jobs) ||
+          page.jobs.length !== page.total_count) {
+        summary.partial = true;
+        continue;
+      }
+      if (page.jobs.every(job => job?.status === 'completed')) {
+        summary.staleRunningMetadata.push({id:run.id,
+          reason:'RUN_IN_PROGRESS_ALL_JOBS_COMPLETED',
+          url:'https://github.com/' + ctx.repo + '/actions/runs/' + run.id});
+        summary.partial = true; // Never count this as successfully cancelled.
+        continue;
+      }
+      // Unknown/unindexed terminal states must also never authorize cancel.
+      if (!page.jobs.some(job => ['queued','in_progress','waiting','pending','requested'].includes(job?.status))) {
+        summary.partial = true;
+        continue;
+      }
+    }
     if (dryRun) { summary.dryRun.push(run.id); continue; }
     try {
       await api.cancel(run.id);
@@ -288,6 +315,22 @@ export async function prune(api, ctx, { limit = 300, dryRun = false,
           if (jobs?.total_count === 0 && Array.isArray(jobs.jobs) && jobs.jobs.length === 0) {
             summary.jobless409.push({ id: run.id, reason: 'GITHUB_QUEUED_ZERO_JOBS_CANCEL_409',
               url: 'https://github.com/' + ctx.repo + '/actions/runs/' + run.id });
+            summary.partial = true;
+            continue;
+          }
+        }
+        // Jobs can finish between the preflight and POST. A real GitHub 409
+        // with an immutable run status and complete terminal job listing is
+        // another metadata ghost, never grounds for force cancellation.
+        if (after.status === 'in_progress' && /HTTP 409\b/.test(message)) {
+          const page = await api.jobs(run.id).catch(() => null);
+          if (Number.isSafeInteger(page?.total_count) && page.total_count > 0 &&
+              page.total_count <= 100 && Array.isArray(page.jobs) &&
+              page.jobs.length === page.total_count &&
+              page.jobs.every(job => job?.status === 'completed')) {
+            summary.staleRunningMetadata.push({id:run.id,
+              reason:'GITHUB_IN_PROGRESS_TERMINAL_JOBS_CANCEL_409',
+              url:'https://github.com/' + ctx.repo + '/actions/runs/' + run.id});
             summary.partial = true;
             continue;
           }
@@ -477,10 +520,12 @@ async function main() {
     'scanned=' + s.scanned + ' eligible=' + s.candidates + ' closed_PR_eligible=' + s.closedCandidates +
     ' cancelled=' + s.cancelled.length + ' old_running_cancelled=' + s.cancelledRunning.length + ' dry_run=' + s.dryRun.length +
     ' orphan_proofs=' + s.orphanAncestorCandidates + ' orphan_lookups=' + s.orphanLookups +
-    ' jobless_409=' + s.jobless409.length + ' errors=' + s.errors.length +
+    ' jobless_409=' + s.jobless409.length + ' running_metadata_ghosts=' + s.staleRunningMetadata.length + ' errors=' + s.errors.length +
     '\nCancellation accepted IDs: ' + (s.cancelled.join(',') || 'none') +
     '\nGitHub queued/jobless 409 (unresolved, not cancelled): ' +
     (s.jobless409.slice(0, 8).map(x => x.url).join(', ') || 'none') + '\n' +
+    'GitHub in-progress runs with all jobs terminal (unresolved): ' +
+    (s.staleRunningMetadata.slice(0, 8).map(x => x.url).join(', ') || 'none') + '\n' +
     '\n## CI queue monitoring\n\n| Metric | Observation |\n| --- | --- |\n' +
     '| New PR workflow checks (last 60 min) | ' + (m ? m.newChecks + (m.truncated ? ' (PARTIAL)' : '') : 'n/a') + ' |\n' +
     '| Queued / running checks (last 60 min) | ' + (m ? m.queuedChecks + ' / ' + m.runningChecks : 'n/a') + ' |\n' +
@@ -497,6 +542,7 @@ async function main() {
     orphanAncestorCandidates: s.orphanAncestorCandidates,
     cancelAccepted: s.cancelled.length, forceAccepted: s.forced.length, cancelConfirmed: s.confirmed.length,
     partial: s.partial, errors: s.errors.length, jobless409: s.jobless409.length,
+    runningMetadataGhosts: s.staleRunningMetadata.length,
     jobless409RunIds: s.jobless409.slice(0, 8).map(x => x.id), snapshot: m, metricError }));
   if (env.GITHUB_STEP_SUMMARY) appendFileSync(env.GITHUB_STEP_SUMMARY, msg);
   if (s.errors.length) { console.error(s.errors); process.exitCode = 1; }
