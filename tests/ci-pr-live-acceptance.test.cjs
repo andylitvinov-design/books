@@ -45,7 +45,7 @@ test('sweep is read-only for non-scheduled events and never opens another CI wav
 });
 
 test('one unverified LIVE does not starve another verified merged production PR',async()=>{
- const mergeA='c'.repeat(40),mergeB='d'.repeat(40),now=Date.parse('2026-11-18T01:00:00Z');
+ const mergeA='c'.repeat(40),mergeB='d'.repeat(40),now=Date.parse('2026-11-18T01:20:00Z');
  const shape=n=>({...pr,number:n,merge_commit_sha:n===5001?mergeA:mergeB,
   merged_at:'2026-11-18T00:45:00Z'});
  const events=[];
