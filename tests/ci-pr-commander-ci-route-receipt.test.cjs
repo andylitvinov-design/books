@@ -308,3 +308,17 @@ test('signed historical CI HEAD stays visible without overwriting newer owner ta
  a.match(sql,/NO UPDATE to commander_tasks/);
  a.doesNotMatch(sql,/EXECUTE\s+.*(?:workflow_dispatch|model|worker)/i);
 });
+
+
+test('an existing owner task gains historical CI route without a fabricated repair',()=>{
+ const source=fs.readFileSync('supabase/migrations/20261118013500_commander_existing_owner_ci_route_readback_v1.sql','utf8');
+ a.match(source,/EXISTING_OWNER_TASK_CI_ROUTE_READONLY/);
+ a.match(source,/MATCHED_CHAT_EVENT_RECORDED/);
+ a.match(source,/NO_SIGNED_EXISTING_OWNER_ROUTE/);
+ a.match(source,/NO_AUTOMATIC_SOURCE_DISPATCH/);
+ a.match(source,/sourceFixVerified',false/);
+ a.match(source,/liveVerified',false/);
+ a.match(source,/Never mutate existing owner task/);
+ a.match(source,/t\.payload->'ciIncident' IS NULL/);
+ a.match(source,/UNRECOGNIZED_FUNCTION/);
+});
