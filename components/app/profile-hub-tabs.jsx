@@ -2,8 +2,12 @@ import Link from 'next/link'
 import { SiteNavigation } from '@/components/site-navigation'
 import InstantCabinetLink from './instant-cabinet-link'
 import { ProfileModeSwitch } from '../master-mode-switch'
-import { Activity, BookOpen, ClipboardList, FileClock, FileText, House, LockKeyhole, ListChecks, Route, UserRound, Settings2, ChevronDown } from 'lucide-react'
+import { Activity, BookOpen, ClipboardList, FileClock, ArrowRight, FileText, House, LockKeyhole, ListChecks, Route, UserRound, Settings2, ChevronDown } from 'lucide-react'
 import { assessmentHistoryTitle } from '@/lib/assessments/personal-guidance'
+import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
+import { isProfessionalProfileTest } from '@/lib/profile/profile-assessment-view'
+import { coverageForFocus } from '@/lib/assessments/test-explorer'
+import { TestExplorerVisual } from './test-explorer-visual'
 import styles from './profile-hub-tabs.module.css'
 import { ProfilePresentationPlayer } from './profile-presentation-player'
 import { profilePresentationForLocale } from '@/lib/profile-presentation.mjs'
@@ -43,6 +47,43 @@ const COPY = {
     private: 'Solo para ti. Abrir tu perfil no envía resultados a profesionales, CRM ni mensajería.',
   },
 }
+
+const REPORTS_PORTRAIT_COPY = {
+  en: {
+    kicker: 'YOUR PERSONAL PORTRAIT',
+    title: 'See your inner landscape',
+    intro: 'A visual map of your measured test scales. Explore each area at your own pace.',
+    empty: 'Your portrait will take shape as you complete professional tests.',
+    sectorsLabel: 'Four areas of your portrait',
+    sectors: ['Body & energy', 'Work & goals', 'Relationships', 'Growth & meaning'],
+    measured: 'measured scales', unmeasured: 'No verified scales yet',
+    detail: 'Explore my portrait', next: 'Take a new test',
+    caption: 'Only saved, verified test scales appear as measured rays.',
+  },
+  ru: {
+    kicker: 'ВАШ ЛИЧНЫЙ ПОРТРЕТ',
+    title: 'Карта внутреннего мира',
+    intro: 'Наглядная карта измеренных показателей. Изучайте каждую сферу в своём темпе.',
+    empty: 'Портрет будет заполняться по мере прохождения профессиональных тестов.',
+    sectorsLabel: 'Четыре сферы личного портрета',
+    sectors: ['Тело и энергия', 'Дело и цели', 'Отношения', 'Развитие и смысл'],
+    measured: 'измеренных шкал', unmeasured: 'Пока нет подтверждённых шкал',
+    detail: 'Открыть мой портрет', next: 'Пройти новый тест',
+    caption: 'Цветные лучи основаны только на сохранённых проверенных результатах.',
+  },
+  es: {
+    kicker: 'TU RETRATO PERSONAL',
+    title: 'Tu paisaje interior',
+    intro: 'Un mapa visual de las escalas medidas. Explora cada área a tu ritmo.',
+    empty: 'Tu retrato se completará con las pruebas profesionales realizadas.',
+    sectorsLabel: 'Las cuatro áreas de tu retrato',
+    sectors: ['Cuerpo y energía', 'Trabajo y metas', 'Relaciones', 'Crecimiento y sentido'],
+    measured: 'escalas medidas', unmeasured: 'Aún no hay escalas verificadas',
+    detail: 'Ver mi retrato', next: 'Hacer otro test',
+    caption: 'Los rayos medidos utilizan solo resultados guardados y verificados.',
+  },
+}
+
 const TABS = [
   { id: 'today', icon: House }, { id: 'tests', icon: ClipboardList },
   { id: 'state', icon: Activity }, { id: 'path', icon: Route },
@@ -262,7 +303,7 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
         <p className={styles.packageFinePrint}>{s.note}</p>
       </div>
     </section>}
-    {current !== 'today' && current !== 'create' && !settingsMode && !publicEntry && <div className={styles.sectionIntro}>
+    {current !== 'today' && current !== 'create' && current !== 'reports' && !settingsMode && !publicEntry && <div className={styles.sectionIntro}>
       <h1>{t.tabs[current] || t.title}</h1><p>{t.details[current] || t.privacy}</p>
     </div>}
     {current === 'create' && <p className={styles.hint}>{COPY[selected].creationHint}</p>}
@@ -272,22 +313,54 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
 export function ProfileResultsArchive({ locale = 'en', results = [] }) {
   const selected = COPY[locale] ? locale : 'en'
   const t = COPY[selected]
+  const p = REPORTS_PORTRAIT_COPY[selected]
   const accountLocale = selected === 'es' ? 'en' : selected
-  // Bootstrap 'portrait' is a verified owner-scoped query of ALL assessment_results.
-  // Do not group away retakes, persist a second profile, or request other users' data.
+  // Use the owner-scoped history, never mix accounts or discard retakes.
   const ordered = (Array.isArray(results) ? results : [])
     .filter(item => item && typeof item.id === 'string' && item.id.length > 0)
     .sort((a, b) => (Date.parse(b.measurementAt || '') || 0) - (Date.parse(a.measurementAt || '') || 0))
   const recent = ordered.slice(0, 5)
+  // Informal check-ins remain in history; the rays only use eligible verified
+  // professional tests. Missing scales never become fabricated percentages.
+  const portrait = buildPsychPortrait(ordered.filter(isProfessionalProfileTest))
+  const measuredCount = Number.isFinite(portrait?.measuredCount) ? portrait.measuredCount : 0
   const root = '/' + accountLocale + '/app'
   return <section className={styles.archive} data-profile-results-archive data-saved-result-count={ordered.length}>
-    <div className={styles.archiveHeading}>
-      <div><h2><ClipboardList size={20} aria-hidden="true" />{t.archiveTitle}</h2><p>{t.archiveIntro}</p></div>
-      <strong className={styles.total}>{ordered.length}</strong>
-    </div>
+    <header className={styles.archiveHeading}>
+      <div>
+        <h2><ClipboardList size={21} aria-hidden="true" />{t.archiveTitle}</h2>
+      </div>
+      <strong className={styles.total} aria-label={ordered.length + ' ' + t.count}>{ordered.length}</strong>
+    </header>
+
+    <article className={styles.reportPortrait} data-reports-portrait-hero data-measured-axis-count={measuredCount}>
+      <div className={styles.reportPortraitText}>
+        <p className={styles.reportPortraitKicker}>{p.kicker}</p>
+        <h3>{p.title}</h3>
+        <p className={styles.reportPortraitIntro}>{measuredCount ? p.intro : p.empty}</p>
+        <div className={styles.reportPortraitSectors} aria-label={p.sectorsLabel}>
+          {p.sectors.map(area => <span key={area}>{area}</span>)}
+        </div>
+        <Link href={root + '/portfolio'} prefetch={false} className={styles.reportPortraitLink}>
+          {p.detail}<ArrowRight size={17} aria-hidden="true" />
+        </Link>
+      </div>
+      <div className={styles.reportPortraitArt} data-profile-head>
+        <TestExplorerVisual compact locale={selected} portrait={portrait} coverage={coverageForFocus([])} />
+        <div className={styles.reportPortraitMeasured} aria-live="polite">
+          <span aria-hidden="true" className={styles.reportMeasuredDot} />
+          {measuredCount ? measuredCount + ' ' + p.measured : p.unmeasured}
+        </div>
+      </div>
+      <p className={styles.reportPortraitCaption}>{p.caption}</p>
+    </article>
+
     {recent.length ? <div className={styles.recent}>
-      <p className={styles.recentLabel}>{t.recent}</p>
-      <ul>{recent.map(item => {
+      <div className={styles.reportRecentHeading}>
+        <p className={styles.recentLabel}>{t.recent}</p>
+        <Link href={root + '/history'} prefetch={false}>{t.history}<ArrowRight size={15} aria-hidden="true" /></Link>
+      </div>
+      <ul>{recent.slice(0, 3).map(item => {
         const when = Date.parse(item.measurementAt || '')
         const date = Number.isFinite(when) ? new Intl.DateTimeFormat(
           selected === 'ru' ? 'ru-RU' : selected === 'es' ? 'es-ES' : 'en-CA',
@@ -296,14 +369,19 @@ export function ProfileResultsArchive({ locale = 'en', results = [] }) {
           <Link href={root + '/results/' + encodeURIComponent(item.id)} prefetch={false}>
             <span>{assessmentHistoryTitle(item, accountLocale) || item.definitionKey || t.archiveTitle}</span>
             {date && <time dateTime={item.measurementAt}>{date}</time>}
+            <ChevronDown size={16} className={styles.reportResultArrow} aria-hidden="true" />
           </Link>
         </li>
       })}</ul>
     </div> : <p className={styles.empty}>{t.empty}</p>}
+
     <div className={styles.actions}>
-      <Link href={root + '/portfolio'} prefetch={false}><BookOpen size={17} aria-hidden="true" />{t.all}</Link>
-      <Link href={root + '/history'} prefetch={false}><FileClock size={17} aria-hidden="true" />{t.history}</Link>
-      <Link href={root + '/tests?filter=completed'} prefetch={false}><ListChecks size={17} aria-hidden="true" />{t.choose}</Link>
+      <Link href={root + '/tests?explore=1&filters=topics'} className={styles.reportStartTest} prefetch={false}>
+        <ClipboardList size={18} aria-hidden="true" />{p.next}
+      </Link>
+      <Link href={root + '/tests?filter=completed'} prefetch={false}>
+        <ListChecks size={18} aria-hidden="true" />{t.choose}
+      </Link>
     </div>
     <p className={styles.privacy}><LockKeyhole size={15} aria-hidden="true" />{t.private}</p>
   </section>
