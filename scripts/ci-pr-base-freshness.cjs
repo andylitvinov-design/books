@@ -129,14 +129,19 @@ async function assessBaseFreshness({github,owner,repo,pr,verifiedRunBase,classif
     // public-page advances. No filename-only control-plane waiver.
     const independentPresentation=pr.mergeable===true&&
       approved('safeIndependentPublicPresentationAdvance');
+    // Specialist on the unchanged PR HEAD already verified ALL applicable
+    // checks. Import the same protected policy, never a PR-authored bypass.
+    const disjointPublicSource=pr.mergeable===true&&
+      approved('safeDisjointPublicSourceAdvance');
     if(!detachedCi&&!independentRaster&&!documentationOnly&&!independentMaintenance&&
-       !independentPresentation)
+       !independentPresentation&&!disjointPublicSource)
       return fail('SENSITIVE_COMPARE_UNSAFE');
     revalidatedReason=detachedCi?'ISOLATED_CI_PUBLIC_MEDIA_REVALIDATED':
       independentRaster?'INDEPENDENT_PUBLIC_RASTER_REVALIDATED':
       documentationOnly?'INDEPENDENT_DOCS_BASE_REVALIDATED':
       independentMaintenance?'INDEPENDENT_CI_MAINTENANCE_REVALIDATED':
-      'INDEPENDENT_PUBLIC_PRESENTATION_REVALIDATED';
+      independentPresentation?'INDEPENDENT_PUBLIC_PRESENTATION_REVALIDATED':
+      'DISJOINT_PUBLIC_SOURCE_REVALIDATED';
    }
   }
   const finalBranch=(await github.rest.repos.getBranch({owner,repo,branch:'codex/public-book-library'})).data;
@@ -217,6 +222,10 @@ async function loadTrustedClassifier(workspace){
  // policy, absence means HOLD on presentation drift, never a spurious PASS.
  if(typeof impact.safeIndependentPublicPresentationAdvance==='function')
    names.push('safeIndependentPublicPresentationAdvance');
+ // Safe two-branch rollout: old production lacks this helper and rejects
+ // disjoint runtime drift until the protected Specialist patch is published.
+ if(typeof impact.safeDisjointPublicSourceAdvance==='function')
+   names.push('safeDisjointPublicSourceAdvance');
  const baseAdvancePolicy=Object.fromEntries(names.map(name=>[name,impact[name]]));
  return {classifierBase,decideRoute:mod.decideRoute,baseAdvancePolicy};
 }

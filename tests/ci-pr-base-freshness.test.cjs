@@ -263,7 +263,8 @@ test('trusted production-base policy is loaded from the same pinned SHA and miss
  assert.ok(workflow.includes("'SENSITIVE_COMPARE_UNSAFE'].includes(freshness.reason)"));
  for(const signal of ['INDEPENDENT_DOCS_BASE_REVALIDATED',
    'INDEPENDENT_CI_MAINTENANCE_REVALIDATED',
-   'INDEPENDENT_PUBLIC_PRESENTATION_REVALIDATED'])
+   'INDEPENDENT_PUBLIC_PRESENTATION_REVALIDATED',
+   'DISJOINT_PUBLIC_SOURCE_REVALIDATED'])
    assert.ok(workflow.includes('freshness.reason==="'+signal+'"'));
 });
 
@@ -304,4 +305,46 @@ test('native AutoMerge reuses independent public-page checks only with trusted p
    'SENSITIVE_COMPARE_UNSAFE','old protected production without helper stays strict');
  github.rest.repos.compareCommits=async()=>({data:{...comparison,status:'diverged'}});
  assert.equal((await assessBaseFreshness(opts)).reason,'SENSITIVE_COMPARE_UNSAFE');
+});
+
+test('native AutoMerge reuses successful Specialist proof on disjoint production product advance',async()=>{
+ const changes=['app/[locale]/shamanica/page.tsx','components/unified-mobile-dock.tsx',
+   'lib/shamanica-recommendations.mjs','tests/shamanica-mobile.test.mjs'];
+ const diff=(paths,other={})=>({status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+   base_commit:{sha:old},merge_base_commit:{sha:old},commits:[{sha:head}],
+   files:paths.map(filename=>({filename,status:'modified'})),...other});
+ const github=api('lib/billing/stripe-provider.js');
+ let active=diff(changes),proofs=0;
+ github.rest.repos.compareCommits=async()=>({data:active});
+ const helper=(comparison,base,live,paths)=>{
+   proofs++;
+   return comparison.status==='ahead' && comparison.base_commit?.sha===old &&
+     comparison.merge_base_commit?.sha===old && comparison.commits?.at(-1)?.sha===head &&
+     base===old&&live===head&&paths.length===1&&
+     paths[0]==='lib/billing/stripe-provider.js'&&
+     comparison.files.every(file=>changes.includes(file.filename));
+ };
+ const policy={
+   safeDocumentationAdvance:()=>false,
+   safeIndependentCiMaintenanceAdvance:()=>false,
+   verifiedIndependentPublicRasterAdvance:()=>false,
+   safeIndependentPublicPresentationAdvance:()=>false,
+   safeDisjointPublicSourceAdvance:helper,
+ };
+ const args={github,owner:'o',repo:'r',pr:{...pr,mergeable:true},
+   verifiedRunBase:old,baseAdvancePolicy:policy};
+ const ok=await assessBaseFreshness(args);
+ assert.equal(ok.ok,true);
+ assert.equal(ok.reason,'DISJOINT_PUBLIC_SOURCE_REVALIDATED');
+ assert.equal(proofs,1);
+ for(const mergeable of [null,false])
+   assert.equal((await assessBaseFreshness({...args,pr:{...pr,mergeable}})).reason,
+     'SENSITIVE_COMPARE_UNSAFE','no affirmative mergeability');
+ assert.equal((await assessBaseFreshness({...args,baseAdvancePolicy:{
+   ...policy,safeDisjointPublicSourceAdvance:undefined}})).reason,
+   'SENSITIVE_COMPARE_UNSAFE','no missing-policy authorization');
+ active=diff(['app/api/auth/route.js']);
+ assert.equal((await assessBaseFreshness(args)).reason,'SENSITIVE_COMPARE_UNSAFE');
+ active=diff(changes,{status:'diverged'});
+ assert.equal((await assessBaseFreshness(args)).reason,'SENSITIVE_COMPARE_UNSAFE');
 });
