@@ -142,6 +142,10 @@ test('master link uses only a verified approved practitioner, never a name guess
   assert.match(middleware,/directMessageStorageOrigin/)
   assert.match(middleware,/directMessageStorageOrigin = \(\(\) => \{\s*if \(!ownerMessengerImages\) return ''/)
   assert.match(middleware,/const personalVideoStorage = personalVideoStorageCsp\(pathname,process\.env\)/);
-  assert.match(middleware,/\+ directMessageStorageOrigin \+ personalVideoStorage\.connect \+ externalVideoUploadOrigin/)
+  assert.match(middleware,/\+ directMessageStorageOrigin \+ personalVideoStorage\.connect \+ studioMusicStorageOrigin \+ externalVideoUploadOrigin/)
+  // The music origin is from a configured HTTPS Supabase host and is empty
+  // off the exact public Mandala editor; private Messages never inherit it.
+  assert.match(middleware,/const studioMusicStorageOrigin = \(\(\) => \{/)
+  assert.match(middleware,/if \(!publicMandalaLocalImages\) return ''/)
   assert.doesNotMatch(store,/master\.display_name=t\.sender_display_name/)
 })

@@ -494,7 +494,8 @@ test("client MP4 global quota is RLS-safe and expired signed upload reservations
   assert.match(migration,/SET search_path = pg_catalog/);
   assert.match(migration,/REVOKE ALL ON FUNCTION[\s\S]*FROM PUBLIC, anon, authenticated, hh_app_inbox/);
   assert.match(migration,/GRANT EXECUTE ON FUNCTION[\s\S]*TO hh_app_backend/);
-  assert.match(personalVideos,/status='pending'\) order by created_at limit 5/);
+  assert.match(personalVideos,/status='deleted' and released_at is null and created_at<now\(\)-interval '3 hours'/);
+  assert.match(personalVideos,/status='pending' and created_at<now\(\)-interval '3 hours'/);
   assert.match(personalVideos,/created_at<now\(\)-interval '3 hours'/);
   assert.match(personalVideos,/const \{error\}=await storage\.remove\(\[file\.object_key\]\)/);
   assert.match(personalVideos,/if\(error\)continue/);

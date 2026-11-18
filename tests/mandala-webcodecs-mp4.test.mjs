@@ -218,7 +218,13 @@ test("physical voice WebKit checks real Settings and Audio, exclusive Hypno tabs
  assert.match(firstVideo,/const concept=page\.locator\('\[data-video-ideas-concept-panel\]'\)/);
  assert.match(firstVideo,/await concept\.waitFor\(\{state:'visible',timeout:15000\}\)/,
    "the actual Concept panel is visible before explicit guest approval");
- assert.match(firstVideo,/await concept\.locator\('\[data-video-concept-approve\]'\)\.click\(\)/,
+ // The current visitor path verifies native guest Approve is enabled before
+ // using the platform-specific real tap/click. Preserve all three checks.
+ assert.match(firstVideo,/const conceptApprove=concept\.locator\('\[data-video-concept-approve\]'\)/,
+   "the button belongs to the reviewed Ideas Concept");
+ assert.match(firstVideo,/await conceptApprove\.isEnabled\(\)/,
+   "a guest can genuinely approve their preview, not just see an inert control");
+ assert.match(firstVideo,/else await conceptApprove\.click\(\)/,
    "guest explicitly approves Concept before timeline editing");
  assert.match(firstVideo,/const textTools=page\.locator\('\[data-video-concept-text-tools\]'\)/,
    "original timeline is reachable through the Concept disclosure");

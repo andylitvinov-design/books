@@ -1,6 +1,7 @@
 'use server';
 
 import { requireAdminRequest } from '@/lib/prescriptions/admin';
+import { planThirtySecondVideoBudget } from '@/lib/mandala/paid-video-budget.mjs';
 import {
   VeoInputError, normalizeVeoScene, quoteVeoScene,
   queryVeoScene, submitVeoScene,
@@ -53,5 +54,16 @@ export async function checkVeoSceneAction(input) {
     return { ok: true, result: await queryVeoScene(input?.operationName, config) };
   } catch (error) {
     return { ok: false, error: safeCode(error) };
+  }
+}
+
+
+// Read-only owner budget estimate. No prompt, client data, secret, payment or paid API call.
+export async function quoteThirtySecondVideoAction(input) {
+  if (!await requireAdminRequest()) return { ok: false, error: 'unauthorized' };
+  try {
+    return { ok: true, result: planThirtySecondVideoBudget(input) };
+  } catch {
+    return { ok: false, error: 'validation' };
   }
 }

@@ -78,7 +78,11 @@ test('public cart exposes card and Interac without pretending a completed paymen
   const payments = read('app/[locale]/payments/page.tsx')
   assert.match(page, /configuredSquarePaymentLinks/)
   assert.match(cart, /buildSquarePaymentForServices/)
-  assert.match(cart, /wiseEnabled, squareLinks, squareApiEnabled, squareApiEnvironment, squareApiPrices, verifiedPayPalEnabled, hostedPayPalLinks, stripeLinks \}: \{/)
+  // Keep all original payment props; allow the separately gated video-order tracking prop.
+  assert.match(cart, /wiseEnabled, squareLinks, squareApiEnabled, squareApiEnvironment, squareApiPrices, verifiedPayPalEnabled, hostedPayPalLinks, stripeLinks, paidVideoTrackingEnabled=false \}: \{/)
+  assert.match(cart, /paidVideoTrackingEnabled\?: boolean/)
+  assert.match(read('app/[locale]/cart/page.tsx'), /paidVideoTrackingEnabled=\{process\.env\.HH_VIDEO_PAID_ORDERS_SCHEMA_APPROVED/)
+  assert.match(cart, /<VideoCartPayment locale=\{locale\} paypalEnabled=\{paypalEnabled\} trackingEnabled=\{paidVideoTrackingEnabled\}/)
   assert.match(page, /configuredPayPalHostedLinks\(\)/)
   assert.match(cart, /buildPayPalHostedCartUrl\(/)
   assert.match(cart, /buildInteracTransferInquiry/)

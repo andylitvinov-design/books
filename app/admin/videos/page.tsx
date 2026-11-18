@@ -7,6 +7,7 @@ import { PrescriptionAdminHeader } from "@/components/prescription-admin-header"
 import { SiteVideoManager } from "@/components/site-video-manager";
 import { KlingSceneStudio } from "@/components/kling-scene-studio";
 import { VeoSceneStudio } from "@/components/veo-scene-studio";
+import { PaidVideoOrderAdmin } from "@/components/paid-video-order-admin";
 import { KlingAvatarStudio } from "@/components/kling-avatar-studio";
 import { books } from "@/data/library";
 import { localizedBookText } from "@/data/library-localization";
@@ -74,6 +75,7 @@ export default async function SiteVideosPage() {
           <p>{klingLocale === "ru" ? "Просмотрите 48 локальных MP4-композиций, подберите четыре кадра и сохраните черновик без публикации." : "Inspect the 48 approved local MP4 compositions and save private storyboard notes without publishing."}</p></div>
         <Link href="/admin/videos/scenario-review">{klingLocale === "ru" ? "Открыть проверку сцен" : "Open scene review"}</Link>
       </section>
+      <PaidVideoOrderAdmin enabled={process.env.HH_VIDEO_PAID_ORDERS_SCHEMA_APPROVED === "true" && process.env.HH_VIDEO_PAID_ORDERS_ENABLED === "true"} />
       <VeoSceneStudio
         initialLocale={klingLocale}
         configured={Boolean(process.env.HH_VEO_GCP_PROJECT_ID && process.env.HH_VEO_GCS_OUTPUT_URI && process.env.HH_VEO_SERVICE_ACCOUNT_JSON)}
