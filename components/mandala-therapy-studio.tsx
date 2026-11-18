@@ -6,7 +6,7 @@ import css from "./mandala-therapy-studio.module.css";
 type Pane="meditation"|"voice"|"practice";
 type Props={locale:PublicLocale;disabled:boolean;initialFormat?:"single"|"course";editor:(course:boolean)=>ReactNode;voiceEditor:ReactNode;advancedEffects:ReactNode;onVideoPhrases:()=>void};
 const dict={
- en:{title:"Therapy Studio",tag:"PERSONAL PRACTICES",intro:"Create a guided meditation or an eight-session practice course.",
+ en:{title:"Therapy Studio",tag:"PERSONAL PRACTICES",formatA11y:"Practice format",stepsA11y:"Therapy Studio steps",intro:"Create a guided meditation or an eight-session practice course.",
   single:"Single practice",singleHint:"One meditation",course:"8-session course",courseHint:"Eight connected themes",
   meditation:"Meditation",voice:"Voice",practice:"Practice",voiceTitle:"Voice for video phrases",voiceHint:"Choose or record a permitted voice for your phrases.",
   voiceEmpty:"To revise the meditation text or preferences, return to the Meditation tab.",voiceBack:"Edit meditation text",
@@ -15,7 +15,7 @@ const dict={
   phrases:"Phrases for video",phrasesHint:"Prepare short, meaningful phrases in the existing Ideas editor.",phrasesButton:"Create video phrases",
   effects:"Optional visual and audio effects",effectsHint:"Preserved original settings; no video is rendered when these are opened.",
   safety:"Gentle reflective practice, not medical treatment. Eight-session mode starts with a plan and one script; other scripts are created locally only on request."},
- ru:{title:"Therapy Studio",tag:"ЛИЧНЫЕ ПРАКТИКИ",intro:"Создайте медитацию или курс из восьми последовательных практик.",
+ ru:{title:"Therapy Studio",tag:"ЛИЧНЫЕ ПРАКТИКИ",formatA11y:"Формат практики",stepsA11y:"Этапы Therapy Studio",intro:"Создайте медитацию или курс из восьми последовательных практик.",
   single:"Одна практика",singleHint:"Одна медитация",course:"Курс из 8 сессий",courseHint:"Восемь связанных тем",
   meditation:"Медитация",voice:"Голос",practice:"Практика",voiceTitle:"Голос для видеофраз",voiceHint:"Выберите или запишите свой разрешённый голос.",
   voiceEmpty:"Текст медитации и фильтры можно изменить на вкладке «Медитация».",voiceBack:"Изменить текст медитации",
@@ -24,7 +24,7 @@ const dict={
   phrases:"Фразы для видео",phrasesHint:"Подготовьте фразы в существующем редакторе Ideas.",phrasesButton:"Создать фразы для видео",
   effects:"Дополнительные видео- и аудиоэффекты",effectsHint:"Старые настройки сохранены; открытие не запускает рендер.",
   safety:"Мягкая практика для рефлексии, не лечение. Курс начинается с плана и первого текста; остальные создаются локально только по запросу."},
- es:{title:"Therapy Studio",tag:"PRÁCTICAS PERSONALES",intro:"Crea una meditación o un curso de ocho sesiones conectadas.",
+ es:{title:"Therapy Studio",tag:"PRÁCTICAS PERSONALES",formatA11y:"Formato de práctica",stepsA11y:"Pasos de Therapy Studio",intro:"Crea una meditación o un curso de ocho sesiones conectadas.",
   single:"Una práctica",singleHint:"Una meditación",course:"Curso de 8 sesiones",courseHint:"Ocho temas relacionados",
   meditation:"Meditación",voice:"Voz",practice:"Práctica",voiceTitle:"Voz para frases de vídeo",voiceHint:"Elige o graba una voz con permiso.",
   voiceEmpty:"Para revisar el guion y los filtros, vuelve a Meditación.",voiceBack:"Editar texto de meditación",
@@ -41,13 +41,13 @@ export function MandalaTherapyStudio({locale,disabled,initialFormat="single",edi
  const t=dict[locale];
  return <div className={css.shell} data-therapy-studio data-therapy-course={isCourse?"true":"false"}>
   <header className={css.hero}><span className={css.eyebrow}><Leaf size={17}/>{t.tag}</span><h3>{t.title}</h3><p>{t.intro}</p></header>
-  <div className={css.format} data-therapy-format-switch role="group" aria-label="Practice format">
+  <div className={css.format} data-therapy-format-switch role="group" aria-label={t.formatA11y}>
    <button type="button" data-therapy-format="single" disabled={disabled} aria-pressed={!isCourse} onClick={()=>{setIsCourse(false);setPane("meditation");}}>
     <Heart size={22}/><span><strong>{t.single}</strong><small>{t.singleHint}</small></span></button>
    <button type="button" data-therapy-format="course" disabled={disabled} aria-pressed={isCourse} onClick={()=>{setIsCourse(true);setPane("meditation");}}>
     <BookOpen size={22}/><span><strong>{t.course}</strong><small>{t.courseHint}</small></span></button>
   </div>
-  <div className={css.tabs} data-therapy-tabs role="tablist" aria-label="Therapy Studio">
+  <div className={css.tabs} data-therapy-tabs role="tablist" aria-label={t.stepsA11y}>
    {(["meditation","voice","practice"] as const).map((id,i)=>{
     const Icon=[Leaf,Mic2,Film][i];
     return <button key={id} type="button" role="tab" aria-selected={pane===id}
@@ -67,9 +67,9 @@ export function MandalaTherapyStudio({locale,disabled,initialFormat="single",edi
    {pane==="practice"?<section className={css.practice} data-therapy-practice>
     <h4>{t.practiceTitle}</h4><p>{t.practiceHint}</p>
     <div className={css.option}><span><AudioLines size={23}/></span><div><strong>{t.speak}</strong><p>{t.speakHint}</p></div>
-      <button type="button" disabled={disabled} onClick={()=>setPane("voice")}>{t.speakButton}<ChevronRight size={18}/></button></div>
+      <button type="button" data-therapy-action="voice" disabled={disabled} onClick={()=>setPane("voice")}>{t.speakButton}<ChevronRight size={18}/></button></div>
     <div className={css.option}><span><Film size={23}/></span><div><strong>{t.phrases}</strong><p>{t.phrasesHint}</p></div>
-      <button type="button" disabled={disabled} onClick={onVideoPhrases}>{t.phrasesButton}<ChevronRight size={18}/></button></div>
+      <button type="button" data-therapy-action="phrases" disabled={disabled} onClick={onVideoPhrases}>{t.phrasesButton}<ChevronRight size={18}/></button></div>
     <details className={css.advanced} data-therapy-advanced-effects onToggle={event=>setEffectsOpen(event.currentTarget.open)}>
       <summary data-therapy-effects-toggle><Sparkles size={19}/>{t.effects}<ChevronDown size={17}/></summary>
       <p>{t.effectsHint}</p>{effectsOpen?advancedEffects:null}

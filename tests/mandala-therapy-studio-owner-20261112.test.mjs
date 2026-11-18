@@ -124,3 +124,51 @@ test("Owner Therapy mobile: one introduction and compact controls, no feature re
  assert.match(css,/\[data-meditation-generate\]\{min-height:52px/);
  assert.match(ui,/data-therapy-advanced-effects/);
 });
+
+test("Therapy mobile guest path is tested in the existing WebKit release gate",()=>{
+ const browser=read("scripts/verify-therapy-studio-mobile-browser.mjs");
+ const ci=read(".github/workflows/holistic-support-mandala.yml");
+ assert.match(browser,/\['en','ru','es'\]/);
+ assert.match(browser,/\[320,354,390,430\]/);
+ assert.match(browser,/data-video-studio-hydrated/);
+ assert.match(browser,/data-therapy-format="course"/);
+ assert.match(browser,/data-meditation-eight-day-plan/);
+ assert.match(browser,/data-therapy-subtab="voice"/);
+ assert.match(browser,/data-video-hypnocorrection-panel/);
+ assert.match(browser,/No external provider or video renderer POST/);
+ assert.match(browser,/No iPhone horizontal overflow/);
+ assert.match(ci,/node --check scripts\/verify-therapy-studio-mobile-browser\.mjs/);
+ assert.match(ci,/HH_THERAPY_BROWSER_ENGINE=webkit/);
+ assert.match(ci,/artifacts\/therapy-mobile\/\*\.png/);
+ assert.match(ui,/aria-label=\{t\.formatA11y\}/);
+ assert.match(ui,/aria-label=\{t\.stepsA11y\}/);
+ assert.match(css,/\[data-meditation-context\] summary::after/);
+});
+
+// CSS Modules hash class names at runtime; use a semantic structure selector.
+// A raw '.chips' lookup would fail a real Safari run even with all context data present.
+test("Therapy WebKit uses robust native context chip selectors",()=>{
+ const browser=read("scripts/verify-therapy-studio-mobile-browser.mjs");
+ assert.match(browser,/contextPanel\.locator\('div > span'\)/);
+ assert.doesNotMatch(browser,/contextPanel\.locator\('\.chips span'\)/);
+});
+
+// macOS WebKit E2E proved Safari's native <select> ignores min-height alone:
+// real 320px Therapy controls measured 23px before the explicit height fix.
+test("Therapy main selects have physical 44px height for iPhone WebKit, not just min-height",()=>{
+ const cssText=read("components/mandala-therapy-studio.module.css");
+ assert.match(cssText,/\[data-meditation-main-filters\] select\{height:44px;min-height:44px;box-sizing:border-box/);
+ const browser=read("scripts/verify-therapy-studio-mobile-browser.mjs");
+ assert.match(browser,/targets\.every\(\(\[w,h\]\)=>w>=44&&h>=44\)/);
+});
+
+// WebKit must target the two visible top-level Practice actions by stable ID:
+// the old last() selected a hidden optional Hypno-effects descendant.
+test("Therapy Practice browser targets only visible explicit voice and phrase actions",()=>{
+ const browser=read("scripts/verify-therapy-studio-mobile-browser.mjs");
+ assert.match(ui,/data-therapy-action="voice"/);
+ assert.match(ui,/data-therapy-action="phrases"/);
+ assert.match(browser,/shell\.locator\('\[data-therapy-action="voice"\]'\)\.tap\(\)/);
+ assert.match(browser,/shell\.locator\('\[data-therapy-action="phrases"\]'\)\.tap\(\)/);
+ assert.doesNotMatch(browser,/\[data-therapy-practice\] button'\)\.last\(\)/);
+});
