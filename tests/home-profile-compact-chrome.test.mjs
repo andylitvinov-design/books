@@ -65,3 +65,12 @@ test('Work mirrors Life and Home visual design without duplicate primary navigat
   assert.match(screen,/onClickCapture=\{interceptGuestWorkLink\}/)
   assert.match(screen,/data-work-settings/)
 });
+
+test('Work does not crash SSR when expandable practitioner tools render', () => {
+  const screen=read('components/practice-showcase.jsx')
+  const lucideImports=screen.match(/import\s*\{([\s\S]*?)\}\s*from 'lucide-react'/)?.[1] || ''
+  assert.match(screen, /<BriefcaseBusiness\s+size=/)
+  assert.match(lucideImports, /\bBriefcaseBusiness\b/, 'missing lucide icon caused /en/practice HTTP 500')
+  assert.match(screen, /data-work-more-tools/)
+  assert.match(screen, /data-work-create-tools/)
+})
