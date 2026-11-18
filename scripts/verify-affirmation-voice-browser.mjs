@@ -1353,6 +1353,20 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         await expect(page.locator('[data-therapy-subtab="meditation"]'))
           .toHaveAttribute("aria-selected","true");
         await expect(page.locator("[data-ready-offer-panel]")).toHaveCount(0);
+        // Owner-approved Therapy: switch the actual short texts, then approve one
+        // to the original consent-gated Voice flow; no 2-format switch or video.
+        await expect(page.locator("[data-therapy-format-switch]")).toHaveCount(0);
+        await expect(page.locator("[data-therapy-subtab]")).toHaveCount(4);
+        await expect(page.locator('[data-therapy-text-option="a"]')).toHaveAttribute("aria-selected","true");
+        const therapyTextA=await page.locator("[data-therapy-full-script]").innerText();
+        await page.locator('[data-therapy-text-option="b"]').click();
+        const therapyTextB=await page.locator("[data-therapy-full-script]").innerText();
+        assert.notEqual(therapyTextA,therapyTextB,"A/B must switch the complete text");
+        await expect(page.locator('[data-therapy-approve-text]')).toBeEnabled();
+        await page.locator('[data-therapy-approve-text]').click();
+        await expect(page.locator('[data-therapy-subtab="voice"]')).toHaveAttribute("aria-selected","true");
+        await expect(page.locator('[data-therapy-approved-voice]')).toBeVisible();
+        phase(engine,"therapy-approved-short-text-to-voice");
         await page.locator('[data-video-quick-control="ready"]').click();
         await page.locator("[data-ready-journey]").click();
         await expect(page.locator("[data-mandala-free-video]"))
