@@ -175,6 +175,26 @@ async function eventFor(sql,row){
  await sql.unsafe('update business_brain.commander_chats set updated_at=now() where chat_id=$1::uuid and owner_id=$2::uuid',
   [row.chat_id,row.owner_id]);
 }
+// Owner-only public control heartbeat; successful pg_cron polling is NOT
+// proof that GitHub Actions actually scheduled the trusted Watchdog.
+async function watchdogHealth(sql){
+ try{
+  const rows=await sql.unsafe(
+   "select checked_at,last_request_at,last_http_200_at,"+
+   " watchdog_scheduled_at,status,"+
+   " round(extract(epoch from (checked_at-watchdog_scheduled_at))/60)::integer as age_minutes"+
+   " from agent_ops.github_scheduler_overview limit 1");
+  const r=rows[0];
+  if(!r||!['MONITOR_STALE','GITHUB_API_NOT_VERIFIED','GITHUB_WATCHDOG_STALE',
+     'WATCHDOG_RECENT_VERIFY_CONSECUTIVE_RUNS'].includes(r.status))
+   return {status:'HEALTH_UNAVAILABLE',watchdogLastRun:null,ageMinutes:null};
+  return {status:r.status,
+   watchdogLastRun:r.watchdog_scheduled_at||null,
+   monitorLastPoll:r.last_request_at||null,
+   lastGithubApi200:r.last_http_200_at||null,
+   ageMinutes:Number.isSafeInteger(Number(r.age_minutes))?Number(r.age_minutes):null};
+ }catch{return {status:'HEALTH_UNAVAILABLE',watchdogLastRun:null,ageMinutes:null}}
+}
 async function ownerAction(sql,req,body,action,origin){
  const owner=await authenticatedOwner(req);
  if(!owner)return json(401,{error:'OWNER_SESSION_REQUIRED'},origin);
@@ -220,7 +240,9 @@ async function ownerAction(sql,req,body,action,origin){
   const rows=pr===null
    ?await sql.unsafe('select * from '+T+' where owner_id=$1::uuid order by created_at desc limit 20',[owner])
    :await sql.unsafe('select * from '+T+' where owner_id=$1::uuid and pr_number=$2 order by created_at desc limit 5',[owner,pr]);
-  return json(200,{schema:FUNCTION,items:rows.map(publicRow),ownerOnly:true},origin);
+  const watchdog=await watchdogHealth(sql);
+  return json(200,{schema:FUNCTION,items:rows.map(publicRow),ownerOnly:true,
+   watchdogHealth:watchdog},origin);
  }
  const n=Number(body.prNumber),id=body.requestId,chatNumber=body.chatNumber===undefined?null:Number(body.chatNumber);
  if(!validNum(n)||!UUID.test(id||'')||chatNumber!==null&&(!Number.isSafeInteger(chatNumber)||chatNumber<1))
