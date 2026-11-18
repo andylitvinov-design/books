@@ -292,3 +292,18 @@ test('verified reusable Core workflow OIDC persists follow-up without source wri
  a.match(wrapper,/uses: \.\/\.github\/workflows\/hh-pr-direct-core-failure\.yml/);
  a.doesNotMatch(migration,/GRANT.*(?:public|anon|authenticated)/i);
 });
+
+
+test('signed historical CI HEAD stays visible without overwriting newer owner task',()=>{
+ const sql=fs.readFileSync('supabase/migrations/20261118012500_commander_ci_historical_head_readback_v1.sql','utf8');
+ a.match(sql,/HISTORICAL_HEAD_READBACK_PENDING/);
+ a.match(sql,/sourceTaskHeadSha/);
+ a.match(sql,/NO_SIGNED_HISTORICAL_ROUTE/);
+ a.match(sql,/DO_NOT_DISPATCH_OLD_HEAD/);
+ a.match(sql,/route_followup_receipt=v_receipt/);
+ a.match(sql,/taskSourceMatches',false/);
+ a.match(sql,/sourceFixVerified',false/);
+ a.match(sql,/liveVerified',false/);
+ a.match(sql,/NO UPDATE to commander_tasks/);
+ a.doesNotMatch(sql,/EXECUTE\s+.*(?:workflow_dispatch|model|worker)/i);
+});
