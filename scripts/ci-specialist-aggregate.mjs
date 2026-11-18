@@ -465,9 +465,13 @@ export async function verify(api,ctx,files,options={}) {
     if (!pinnedChangeRows || typeof api.compare !== 'function') {
       throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
     }
+    // GitHub temporarily returns mergeable=null while it recomputes an exact
+    // merge after a production update. That is NOT a confirmed conflict.
+    // Safe-base reuse still requires complete protected Compare proof; the
+    // native merge gate separately requires affirmative mergeable=true.
     if ((approvedPresentationBases.has(liveBaseSha) || approvedDisjointBases.has(liveBaseSha)) &&
-        live.mergeable !== true)
-      throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
+        (live.mergeable === false || live.mergeable_state === 'dirty'))
+      throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:MERGE_CONFLICT');
     if (!approvedBaseChanges.has(liveBaseSha)) {
       // Only a complete, ancestry-proven, documentation-only target advance
       // may pass. Security, runtime, CI, unknown and incomplete diffs stay blocked.
@@ -498,19 +502,24 @@ export async function verify(api,ctx,files,options={}) {
       // Reuse unchanged source checks if the newer protected BASE contains
       // nothing but independently proven public raster assets. GitHub must
       // report this PR as actually mergeable: no guessed/null conflict state.
-      const inertPublicImages = pinnedChangeRows && live.mergeable === true &&
-        changedRows.every(row => ['A','M','added','modified'].includes(row.status)) &&
+      // A deleted/renamed CANDIDATE file cannot change an unrelated protected
+      // image advance. The complete pinned source path inventory is the proof,
+      // not the candidate's status code. The policy rejects target deletions.
+      const inertPublicImages = pinnedChangeRows &&
+        live.mergeable !== false && live.mergeable_state !== 'dirty' &&
         verifiedIndependentPublicRasterAdvance(diff, ctx.base, liveBaseSha, changed);
       // If a protected PR shipped an independent public page/feature component,
       // its successful tests remain usable for a genuinely disjoint candidate.
       // A positive GitHub mergeable result and complete ancestry proof are required.
-      const independentPresentation = pinnedChangeRows && live.mergeable === true &&
+      const independentPresentation = pinnedChangeRows &&
+        live.mergeable !== false && live.mergeable_state !== 'dirty' &&
         safeIndependentPublicPresentationAdvance(diff, ctx.base, liveBaseSha, changed);
       // A real protected production promotion may change unrelated public
       // product files while this PR's Core and specialists are still running.
       // Do not discard those successful results merely because BASE moved.
       // Require GitHub's affirmative mergeability and complete source proof.
-      const disjointPublicSource = pinnedChangeRows && live.mergeable === true &&
+      const disjointPublicSource = pinnedChangeRows &&
+        live.mergeable !== false && live.mergeable_state !== 'dirty' &&
         safeDisjointPublicSourceAdvance(diff, ctx.base, liveBaseSha, changed);
       if (!documentationOnly && !independentlyRevalidated &&
           !isolatedCiPolicy && !unrelatedCiMaintenance && !inertPublicImages &&
