@@ -77,7 +77,13 @@ test("Curated and v3 six-shot fiction are not auto-bound to clips based on vague
  assert.match(ui,/data-storyboard-clips=\{manualFiveReady\?fiveSceneShots/);
  assert.match(ui,/onChooseQuality\(sourceReady\)/);
  const studio=source("components/mandala-free-video-studio.tsx");
- assert.match(studio,/if\(!sourceReady\)\{/);
+ const qualityStart=studio.indexOf("onChooseQuality={sourceReady=>{");
+ const qualitySection=studio.slice(qualityStart,studio.indexOf("onOpenIdeas={()=>",qualityStart));
+ assert.ok(qualityStart>0,"real Story-to-quality handler exists");
+ assert.match(qualitySection,/setMontagePanel\("promo"\)/);
+ assert.match(qualitySection,/setNotice\(sourceReady\?""/);
+ assert.doesNotMatch(qualitySection,/if\(!sourceReady\)\{[\s\S]*?return;/,
+   "missing physical footage cannot block non-billable quality navigation");
  assert.match(studio,/setMontagePanel\("concept"\)/);
  assert.match(studio,/draftConcept=\{draftVideoConcept\}/);
  assert.match(studio,/setAppliedStoryKey\(null\)/);

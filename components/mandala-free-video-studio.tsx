@@ -2079,6 +2079,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [storyFormat,setStoryFormat] = useState<"visual"|"motion"|"talking_character"|"ai_cinematic">("visual");
   const [approvedVideoConcept,setApprovedVideoConcept] = useState<ApprovedVideoConcept|null>(null);
   const [draftVideoConcept,setDraftVideoConcept] = useState<ApprovedVideoConcept|null>(null);
+  // The user's creative choice belongs to Video Studio, not to either tab.
+  // Scope it to the confirmed input signature to invalidate old selections.
+  const [chosenFilm,setChosenFilm] = useState<{intentSignature:string;directionId:string}|null>(null);
   const [selectedConceptTopic,setSelectedConceptTopic] = useState<{categoryId:string;subcategoryId:string;topicId:string;brief?:string}|null>(null);
   const [appliedStoryKey,setAppliedStoryKey]=useState<string|null>(null);
   const [audioLibraryOpen,setAudioLibraryOpen] = useState(false);
@@ -3091,6 +3094,25 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const caption = captionMode==="none" ? "" :
     captionMode==="custom" ? customCaption.trim() : sceneName;
   const affirmationLines = linesForVideoAffirmations(locale,theme,affirmations);
+  // One canonical creative brief for BOTH Ideas and Montage. Previously Story
+  // generated another brief, and could silently fall back to an unrelated film.
+  const filmPhraseSignature=affirmationLines.join("\u001f");
+  const confirmedFilmPersonalization=useMemo(
+    ()=>ideasProfileConfirmed?summarizeVideoGoalProfile(ideasProfile,locale):null,
+    [ideasProfileConfirmed,ideasProfile,locale]
+  );
+  const sharedFilmBrief=useMemo(()=>suggestVideoConcept({
+    locale,goal:wish,theme,styleIndex:quickStyleIndex,
+    phrases:filmPhraseSignature?filmPhraseSignature.split("\u001f"):[],
+    speechTranscript:voiceTranscript,personalization:confirmedFilmPersonalization,
+    selectedTopicId:selectedConceptTopic?.topicId||null,
+    creativeBrief:selectedConceptTopic?.brief||null
+  }) as unknown as ApprovedVideoConcept,[
+    locale,wish,theme,quickStyleIndex,filmPhraseSignature,voiceTranscript,
+    confirmedFilmPersonalization,selectedConceptTopic?.topicId,selectedConceptTopic?.brief
+  ]);
+  const activeFilmDirectionId=chosenFilm?.intentSignature===sharedFilmBrief.signature
+    ?chosenFilm.directionId:null;
   // Authored setup clips suppress the original transient duplicate overlays.
   const currentAffirmationSpeech=affirmations.enabled?affirmationNarrationText(affirmationLines):"";
   // Phrase selection is part of the approved narration itself: removing a spoken
@@ -7874,6 +7896,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <div className={videoStyles.ideasConceptPane} id="video-ideas-concept-panel"
           data-video-ideas-concept-panel hidden={ideasSubtab!=="concept"}>
           <MandalaVideoConcept locale={locale} goal={wish} theme={theme} selectedTopic={selectedConceptTopic}
+            suggestedConcept={sharedFilmBrief} selectedDirectionId={activeFilmDirectionId}
             profile={ideasProfileConfirmed?ideasProfile:null} durationSeconds={duration}
             speechTranscript={voiceTranscript} approvedConcept={approvedVideoConcept}
             draftConcept={draftVideoConcept}
@@ -7893,6 +7916,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             onRefreshLogin={()=>void refreshCreditSession()}
             onDraftChange={draft=>{
               setDraftVideoConcept(draft);
+              setChosenFilm(draft.creativeDirectionId?{
+                intentSignature:draft.baseSignature||draft.signature,
+                directionId:draft.creativeDirectionId
+              }:null);
               setApprovedVideoConcept(null);
               setAppliedStoryKey(null);
             }}
@@ -7901,6 +7928,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             onApprove={approved=>{
               setApprovedVideoConcept(approved);
               setDraftVideoConcept(approved);
+              setChosenFilm(approved.creativeDirectionId?{
+                intentSignature:approved.baseSignature||approved.signature,
+                directionId:approved.creativeDirectionId
+              }:null);
               // Approval is local and free: only unedited storyboard overlays may change.
               // Existing manually edited text clips, voice, music and media are retained.
               if(!timelineTextClips?.length){
@@ -8839,14 +8870,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             </div>:null}
             <MandalaAutomaticStoryboard
               locale={locale} goal={wish} theme={theme} durationSeconds={duration}
+              suggestedConcept={sharedFilmBrief} selectedDirectionId={activeFilmDirectionId}
               aspect={aspect} styleIndex={quickStyleIndex} pace={speed}
-              personalization={ideasProfileConfirmed?summarizeVideoGoalProfile(ideasProfile,locale):null}
-              selectedTopic={musicMvCreative?.selected?{
-                topicId:selectedConceptTopic?.topicId||"",
-                brief:[selectedConceptTopic?.brief,
-                  musicMvCreative.directions.find(item=>item.id===musicMvCreative.selected)?.storyPitch]
-                  .filter(Boolean).join(" ").slice(0,550)
-              }:selectedConceptTopic}
+              personalization={confirmedFilmPersonalization}
+              selectedTopic={selectedConceptTopic}
               appliedStoryKey={appliedStoryKey} phrases={affirmationLines}
               fiveSceneShots={cinematicPlan?.version===FREE_FILM_PLAN_VERSION?
                 cinematicPlan.shots.map(shot=>({
@@ -8894,24 +8921,16 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 return false;
               }}
               onChooseQuality={sourceReady=>{
-                if(!sourceReady){
-                  setNotice(locale==="ru"
-                    ?"Пока нет подтверждённых видеокадров для каждого действия этой истории. Сначала подберите соответствующие материалы; случайные пейзажи не используем."
-                    :locale==="es"
-                      ?"Faltan tomas verificadas para las acciones de esta historia. Primero elige imágenes adecuadas; no usamos paisajes al azar."
-                      :"This story still needs footage verified for each depicted action. Choose relevant sources first; unrelated landscapes are not used.");
-                  return;
-                }
-                // Commit the user-selected fifth step in this real touch event.
-                // Source approval remains independent and cannot trigger billing.
+                // Selecting a video type is navigation, not source approval,
+                // a media licence, a render or a credit transaction.
                 flushSync(()=>{
                   setActiveWorkspace("editor");
                   setMontagePanel("promo");
                 });
                 setNotice(sourceReady?"":locale==="ru"?
-                  "Раскадровка пока не применена. Проверьте исходные сцены в дополнительных настройках монтажа перед созданием.":
-                  locale==="es"?"El guion visual aún no se ha aplicado. Revisa las escenas en las opciones avanzadas antes de crear el vídeo.":
-                  "Storyboard not yet applied. Review the source scenes in advanced Montage options before creating the video.");
+                  "Формат выбрать можно, но для создания видео пока не хватает подходящих кадров. Добавьте их в Сюжет → Настройки видео.":
+                  locale==="es"?"Puedes elegir el formato, pero aún falta material acorde al guion. Añádelo en Guion → Ajustes de vídeo.":
+                  "You can choose a video type, but matching footage is still missing. Add relevant media in Story → Video settings.");
                 window.requestAnimationFrame(()=>
                   document.querySelector('[data-video-montage-tools]')?.scrollIntoView({behavior:"smooth",block:"start"}));
               }}
