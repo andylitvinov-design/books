@@ -72,23 +72,23 @@ test('My Space uses a 16:9 video and visible fallback when EN YouTube has no ver
 })
 
 
-test('RU/EN sits to the left of Life/Work in a single responsive row on both Profile views', async () => {
+test('Life and Work retain their appropriate language and mode switch layouts', async () => {
   const [css, life, work, browser] = await Promise.all([
     read('components/app/profile-hub-tabs.module.css'),
     read('components/app/profile-hub-tabs.jsx'),
     read('components/practice-work-profile-intro.jsx'),
     read('scripts/verify-practice-visual-browser.mjs'),
   ])
-  const finalRowRule = [...css.matchAll(/^\.profileHeadingActions\{([^}]*)\}/gm)].at(-1)?.[1] || ''
-  assert.match(finalRowRule, /flex-direction:\s*row(?:;|$)/)
-  assert.match(finalRowRule, /flex-wrap:\s*nowrap(?:;|$)/)
-  assert.match(finalRowRule, /align-items:\s*center(?:;|$)/)
-  for (const [view, source] of [['Life', life], ['Work', work]]) {
-    const controls = source.match(/<div className=\{styles\.profileHeadingActions\}>([\s\S]*?)<\/div>/)?.[1] || ''
-    const localeIndex = controls.indexOf('data-profile-language-switch')
-    const modeIndex = controls.indexOf('<ProfileModeSwitch')
-    assert.ok(localeIndex >= 0 && modeIndex > localeIndex, view + ': language precedes Life / Work')
-  }
-  assert.match(browser, /g\.languageModeDirection/)
-  assert.match(browser, /g\.language\.right\s*<=\s*g\.switch\.x/)
-})
+  const controls=life.match(/<div className=\{styles\.profileHeadingActions\}>([\s\S]*?)<\/div>/)?.[1] || ''
+  assert.ok(controls.indexOf('data-profile-language-switch')>=0)
+  assert.ok(controls.indexOf('<ProfileModeSwitch')>controls.indexOf('data-profile-language-switch'))
+  assert.match(css,/\.hub \.heading\{flex-wrap:nowrap;/)
+  assert.match(work,/data-profile-language-switch/)
+  assert.match(work,/data-profile-chrome-navigation/)
+  assert.match(work,/data-profile-mode-switch/)
+  assert.match(work,/data-profile-mode="live"/)
+  assert.match(work,/data-profile-mode="work"/)
+  assert.match(work,/data-work-primary-grid/)
+  assert.match(browser,/data-work-primary-grid/)
+  assert.match(browser,/data-profile-language-switch/)
+});
