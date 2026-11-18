@@ -15,7 +15,7 @@ test('two-step barge gate ducks on voice candidate then interrupts only on susta
 test('speaker echo that vanishes during duck restores audio without a turn',()=>{
  const gate=createCoachBargeGate()
  gate.update(.09); assert.equal(gate.update(.09),'candidate')
- assert.equal(gate.update(.002),'candidate')
+ assert.equal(gate.update(.002),'pending')
  assert.equal(gate.update(.002),'restore')
  assert.equal(gate.update(.002),'idle')
 })
