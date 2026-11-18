@@ -146,6 +146,22 @@ async function verifiedStudioMusicUrl(row){
 /** Inline signed recordings in the SAME carousel as the original local choices.
  * No autoplay, no file upload, no new storage. Picking is a deliberate action.
  */
+/**
+ * Explicit cross-file JSX contract: default null and [] alone narrow inferred
+ * props to null/never[] and reject the real string filename and poster list.
+ * This is the existing client-side player; it preserves signed URL checks.
+ * @param {{
+ *   locale?: string,
+ *   category?: string,
+ *   disabled?: boolean,
+ *   selectedFilename?: string | null,
+ *   posters?: string[],
+ *   onSelect?: (file: File) => void,
+ *   onDeselect?: () => void,
+ *   onPreviewStart?: () => void,
+ *   onError?: (message: string) => void
+ * }} props
+ */
 export function StudioMusicFeatured({locale="en",category="all",disabled=false,
  selectedFilename=null,posters=[],onSelect,onDeselect,onPreviewStart,onError}){
  const t=featuredText[locale]||featuredText.en;
