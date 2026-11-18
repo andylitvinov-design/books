@@ -276,3 +276,19 @@ test('accepted dispatch upgrades one row under row lock, archives previous state
  a.match(list,/assignment_receipt,route_receipt,route_recorded_at/);
  a.match(list,/where inbox_owner_id=\$3::uuid/);
 });
+
+
+test('verified reusable Core workflow OIDC persists follow-up without source write',()=>{
+ const migration=fs.readFileSync('supabase/migrations/20261118011700_commander_ci_route_followup_reusable_oidc.sql','utf8');
+ const edge=fs.readFileSync('supabase/functions/agent-commander-private-store-v1/index.ts','utf8');
+ const wrapper=fs.readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
+ a.match(migration,/commander_ci_route_followup_record_v1\(uuid\)/);
+ a.match(migration,/hh-pr-direct-core-failure\.yml@refs\/heads\/codex\/bootstrap-books/);
+ a.match(migration,/hh-native-auto-merge\.yml@refs\/heads\/codex\/bootstrap-books/);
+ a.match(migration,/position\(new_identity IN current_def\)/);
+ a.match(migration,/position\(old_identity IN current_def\)/);
+ a.match(migration,/UNRECOGNIZED_IDENTITY_RULE/);
+ a.match(edge,/claims\.job_workflow_ref === "andylitvinov-design\/books\/\.github\/workflows\/hh-pr-direct-core-failure\.yml@refs\/heads\/codex\/bootstrap-books"/);
+ a.match(wrapper,/uses: \.\/\.github\/workflows\/hh-pr-direct-core-failure\.yml/);
+ a.doesNotMatch(migration,/GRANT.*(?:public|anon|authenticated)/i);
+});
