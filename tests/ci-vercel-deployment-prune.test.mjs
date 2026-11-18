@@ -98,3 +98,18 @@ test('v6 uid and v13 id are recognized; mismatched identity and LIVE remain fail
  assert.equal(page.readyCount,0,'ambiguous v6 ID cannot satisfy rollback evidence');
  assert.equal(collected.recentDeployments.length,0);
 });
+
+// Scheduled daily storage prune must never trigger the production publisher.
+
+test('daily scheduled storage prune is isolated from hourly deployment and preserves manual off/dry-run', async () => {
+ const { readFileSync } = await import('node:fs');
+ const workflow=readFileSync(new URL('../.github/workflows/hh-hourly-vercel-production.yml',import.meta.url),'utf8');
+ assert.match(workflow,/cron: '37 \* \* \* \*'/);
+ assert.match(workflow,/cron: '11 05 \* \* \*'/);
+ assert.match(workflow,/github\.event\.schedule == '37 \* \* \* \*'/);
+ assert.match(workflow,/github\.event\.schedule == '11 05 \* \* \*'/);
+ assert.match(workflow,/CLEANUP_MODE: \$\{\{ github\.event_name == 'schedule' && 'apply' \|\| inputs\.cleanup_mode \}\}/);
+ assert.match(workflow,/inputs\.emergency == true && inputs\.cleanup_mode == 'off'/);
+ assert.match(workflow,/if: >-\s+[\s\S]*?github\.event\.schedule == '37 \* \* \* \*'[\s\S]*?jobs:/);
+ assert.match(workflow,/node scripts\/ci-vercel-deployment-prune\.mjs "\$CLEANUP_MODE"/);
+});
