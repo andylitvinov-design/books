@@ -43,11 +43,12 @@ type Props = {
   className?: string;
   trackingId?: string;
   telegramUrl?: string;
+  actionTrackingId?: string;
 };
 
 /** One source of truth for the two actions on every public Services card. */
 export function ServicesCardActions({
-  locale, title, description, href, request, option, whatsappUrl, className, trackingId, telegramUrl,
+  locale, title, description, href, request, option, whatsappUrl, className, trackingId, telegramUrl, actionTrackingId,
 }: Props) {
   const [expanded, setExpanded] = useState<"details" | "order" | null>(null);
   const id = useId().replace(/:/g, "");
@@ -62,13 +63,13 @@ export function ServicesCardActions({
   return (
     <div className={[styles.root, className].filter(Boolean).join(" ")}
       data-service-card-actions data-service-card-tracking={trackingId} lang={locale}>
-      <div className={styles.controls} role="group" aria-label={title}>
+      <div className={styles.controls} data-service-card-controls role="group" aria-label={title}>
         <button type="button" className={styles.detailsButton}
           aria-expanded={expanded === "details"} aria-controls={id + "-details"}
           onClick={() => toggle("details")}>
           {t.details}<ChevronDown size={16} aria-hidden="true" />
         </button>
-        <button type="button" className={styles.orderButton}
+        <button type="button" className={styles.orderButton} data-assist-best-action={actionTrackingId}
           aria-expanded={expanded === "order"} aria-controls={id + "-order"}
           onClick={() => toggle("order")}>
           {t.order}<ChevronDown size={16} aria-hidden="true" />
