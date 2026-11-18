@@ -135,16 +135,17 @@ test('first private Telegram text invokes deduped lead capture; callbacks never 
   assert.equal(clicked.calls.botCapture,0);
 });
 
-test('signed /start reaches its reply even when CRM role and inline sync are unavailable',async()=>{
+test('signed /start retries on CRM failure; optional inline sync never blocks a durable reply',async()=>{
  const payload={update_id:114,message:{message_id:11,date:1,chat:{id:123456789,type:'private'},
    from:{first_name:'Fictional',is_bot:false},text:'/start'}};
  for(const flags of [{leadFailure:true},{syncFailure:true},{leadFailure:true,syncFailure:true}]){
   const result=await routeRun({payload,diagnostic:'handled',...flags});
-  assert.equal(result.response.status,200);
+  // A failed first-contact commit must be retried by Telegram, not acknowledged.
+  assert.equal(result.response.status,flags.leadFailure?503:200);
   assert.equal(result.calls.botCapture,1);
-  assert.equal(result.calls.aiV3,1);
-  assert.equal(result.calls.intake,1);
-  assert.equal(result.calls.send,1);
+  assert.equal(result.calls.aiV3,flags.leadFailure?0:1);
+  assert.equal(result.calls.intake,flags.leadFailure?0:1);
+  assert.equal(result.calls.send,flags.leadFailure?0:1);
   assert.equal(result.calls.ensure,1);
   assert.equal(result.calls.ingest,0);
  }
