@@ -26,10 +26,15 @@ test("one production Goal audio flow is enriched, not replaced by a second edito
  assert.match(styles,/\.recipientAudioFields\{/);
  assert.doesNotMatch(studio,/MandalaRecipientAudioEntry/);
 });
-test("transcript stays in memory, candidate shots remain preview-only until manual approval",()=>{
+test("candidate shots stay local and Continue validates them without a second Match button",()=>{
  assert.match(studio,/setVoiceVisualPlan\(planAudioVisualStoryboard\(\{/);
- assert.match(studio,/onClick=\{\(\)=>applyTranscriptVideo\(\)\}/);
- assert.match(studio,/disabled=\{!audioPlanApplied\|\|!voiceVisualPlan\?\.canExport\|\|!audioRights\}/);
+ const recipient=studio.slice(studio.indexOf("const recipientAudioPanel="),
+   studio.indexOf("const activateQuickWorkspace="));
+ assert.doesNotMatch(recipient,/data-video-recipient-audio-plan\b|Match footage|Подобрать видеоряд/);
+ assert.match(recipient,/disabled=\{!uploadedAudio\|\|!voiceTranscript\|\|!audioRights\|\|sttBusy\|\|recording\|\|preparing\|\|micRecording\}/);
+ assert.match(studio,/applyTranscriptVideo\(voiceTranscript\)/);
+ assert.match(studio,/if\(!ready\)\{\s*goRecipientAudioToManualMontage\(\)/);
+ assert.match(studio,/if\(!recipientAudioSelected\)\{setActiveWorkspace\("phrases"\)/);
  assert.match(studio,/setAttachedAudio\(\{kind:"file",file:entry\.file,id:entry\.url,nonLoop:true\}\)/);
  assert.match(studio,/data-video-recipient-audio-stt-notice/);
  assert.match(studio,/data-video-recipient-audio-rights-notice/);

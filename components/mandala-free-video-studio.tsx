@@ -5473,8 +5473,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       if(sttAbortRef.current!==controller||
         uploadedAudioRef.current?.file!==entry.file)return;
       setVoiceTranscript(transcript);
-      // A source-bound PREVIEW only; the existing consented "Match footage"
-      // button still validates and applies the real montage explicitly.
+      // A source-bound preview only. The single Continue action validates
+      // licensed sources, applies a film if available and opens Montage.
       setVoiceVisualPlan(planAudioVisualStoryboard({
         transcript,scenes:FREE_FILM_CATALOG,aspect,theme:"",locale
       }));
@@ -5504,22 +5504,22 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       }
     }
   }
-  function applyTranscriptVideo(providedTranscript?:TimedSpeechTranscript,automatic=false){
+  function applyTranscriptVideo(providedTranscript?:TimedSpeechTranscript,automatic=false):boolean{
     const entry=uploadedAudioRef.current;
     const transcript=providedTranscript??voiceTranscript;
-    if(!entry||!transcript||recording||preparing||!audioRights)return;
+    if(!entry||!transcript||recording||preparing||!audioRights)return false;
     const speechConcept=suggestVideoConcept({locale,goal:wish,theme,styleIndex:quickStyleIndex,
       phrases:affirmationLines,speechTranscript:transcript});
     const plan=planAudioVisualStoryboard({
       transcript,scenes:FREE_FILM_CATALOG,concept:speechConcept,
       // For recorded speech do not bias every story toward the default
       // Energy category. Real spoken concepts determine each scene.
-      aspect,theme:automatic?"":theme,locale
+      aspect,theme:(automatic||recipientAudioSelected)?"":theme,locale
     });
     setVoiceVisualPlan(plan);setAudioPlanApplied(false);
     if(!plan.canExport||!plan.edit){
       // Editorial Concept can be reviewed even before licensed media is available.
-      setActiveWorkspace("phrases");setIdeasSubtab("concept");
+      if(!recipientAudioSelected){setActiveWorkspace("phrases");setIdeasSubtab("concept");}
       setNotice(locale==="ru"?"Концепция речи готова; видеосцены ещё требуют проверки.":
         locale==="es"?"Concepto listo; las escenas aún requieren verificación.":
         "Speech concept ready; footage still requires verification.");
@@ -5529,7 +5529,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         (locale==="ru"?"Не найдено достаточно проверенных видео нужного формата и длительности. Попробуйте другую ориентацию.":
           locale==="es"?"No hay suficientes vídeos verificados de este formato. Cambia la orientación.":
             "Not enough approved footage for this aspect/duration. Try another orientation."));
-      return;
+      return false;
     }
     const preset=FREE_FILM_PRESETS.find(item=>item.theme===theme)||FREE_FILM_PRESETS[0];
     const accepted=applyAutoFilm(preset.id,
@@ -5538,7 +5538,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       setSttError(locale==="ru"?"Монтаж не прошёл проверку видеоисточников. Выберите другой формат.":
         locale==="es"?"Las fuentes no pasaron la validación. Prueba otro formato.":
           "Footage validation failed. Try another format.");
-      return;
+      return false;
     }
     // Preserve original speech once, never loop a personal message.
     setAudioPlanApplied(true);
@@ -5553,6 +5553,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setNotice(locale==="ru"?"Видеоряд автоматически синхронизирован с речью. Проверьте монтаж и нажмите «Создать видео».":
       locale==="es"?"Escenas sincronizadas automáticamente con la voz. Revisa y pulsa Crear vídeo.":
         "Footage automatically matched to your voice. Review the edit and choose Create video.");
+    return true;
   }
   // Same-tab Messenger transcription is applied ONCE, after the audio file,
   // rights and Studio hydration are committed. No Goal/category prompts.
@@ -6690,33 +6691,48 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   );
 
   const goRecipientAudioToMontage=()=>{
-    if(!audioPlanApplied||!voiceVisualPlan?.canExport||!audioRights)return;
-    setActiveWorkspace("editor");setMontagePanel("effects");setShowAdvancedVideo(true);setVideoScenarioOpen(true);
-    setStudioMode("pump");
+    const entry=uploadedAudioRef.current;
+    if(!entry||!voiceTranscript||!audioRights||
+      sttBusy||recording||preparing||micRecording)return;
+    // One explicit action matches source-verified footage and opens the Story
+    // editor without waiting for React state to update. No render or charge.
+    const ready=(audioPlanApplied&&Boolean(voiceVisualPlan?.canExport))||
+      applyTranscriptVideo(voiceTranscript);
+    if(!ready){
+      goRecipientAudioToManualMontage();
+      return;
+    }
+    setMusicWarning("");
+    setActiveWorkspace("editor");setMontagePanel("concept");
+    setShowAdvancedVideo(true);setVideoScenarioOpen(true);setStudioMode("pump");
+    window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+      document.querySelector("[data-video-montage-concept]")?.scrollIntoView({
+        block:"start",behavior:"smooth"
+      })));
   };
   function goRecipientAudioToManualMontage(){
     const entry=uploadedAudioRef.current;
-    const suppliedText=manualTranscript.trim().slice(0,800);
+    const suppliedText=(voiceTranscript?.text||manualTranscript).trim().slice(0,800);
     if(!entry||!audioRights||sttBusy||recording||preparing)return;
     // Local-only recovery: no fabricated transcript/timestamps or provider call.
     // Keep the original authorized recording and never loop it.
     setAttachedAudio({kind:"file",file:entry.file,id:entry.url,nonLoop:true});
     if(suppliedText)setWish(suppliedText);
-    setAudioAuto(false);setMusic("none");
-    setActiveWorkspace("editor");setMontagePanel("audio");
+    setAudioAuto(false);setMusic("none");setMusicWarning("");
+    setActiveWorkspace("editor");setMontagePanel("concept");
     setShowAdvancedVideo(true);setVideoScenarioOpen(true);setStudioMode("pump");
-    setNotice(locale==="ru"
-      ?(suppliedText?"Текст перенесён в описание. Таймкоды неизвестны: выберите кадры вручную.":"Запись добавлена в монтаж без расшифровки. Выберите видеоряд вручную.")
-      :locale==="es"
-        ?"Audio añadido sin transcripción. Elige las escenas manualmente."
+    setNotice(voiceTranscript
+      ?(locale==="ru"?"Голос и расшифровка перенесены. Подходящих кадров недостаточно — выберите их в «Сюжет».":locale==="es"
+        ?"Audio y texto conservados. Faltan clips aprobados: elígelos en Guion."
+        :"Audio and transcript preserved. Choose approved footage manually in Story.")
+      :locale==="ru"
+        ?(suppliedText?"Текст перенесён в монтаж без таймкодов. Выберите кадры вручную.":"Запись добавлена без расшифровки. Выберите кадры вручную.")
+        :locale==="es"?"Audio añadido sin transcripción. Elige las escenas manualmente."
         :"Audio attached without transcription. Choose footage manually.");
-    window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>{
-      const details=document.querySelector<HTMLDetailsElement>("[data-video-audio-details]");
-      if(details)details.open=true;
-      document.querySelector("[data-video-audio-storyboard]")?.scrollIntoView({
-        block:"nearest",behavior:"smooth"
-      });
-    }));
+    window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+      document.querySelector("[data-video-montage-concept]")?.scrollIntoView({
+        block:"start",behavior:"smooth"
+      })));
   }
   // Existing recorder, STT API, shot matcher and Canvas; only a new Goal entry UI.
   const recipientAudioPanel=<section className={videoStyles.recipientAudioSteps} data-video-recipient-audio-panel>
@@ -6799,11 +6815,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     </div>
     <div className={videoStyles.recipientAudioStep}>
       <b>3</b><div><strong>{locale==="ru"?"Ключевые слова и концепт":locale==="es"?"Temas y concepto":"Keywords and concept"}</strong>
-      <small>{locale==="ru"?"Подберём видеоряд по смысловым фрагментам речи и времени.":
-        locale==="es"?"Escenas verificadas según los momentos de voz.":"Approved footage matched to speech moments."}</small>
-      <button type="button" data-video-recipient-audio-plan
-        disabled={!voiceTranscript||!audioRights||sttBusy||recording||preparing} onClick={()=>applyTranscriptVideo()}>
-        <Film size={17}/>{locale==="ru"?"Подобрать видеоряд":locale==="es"?"Elegir escenas":"Match footage"}</button>
+      <small>{locale==="ru"?"Предварительные сцены ниже. При переходе к монтажу система проверит видеоряд и откроет сюжет.":
+        locale==="es"?"Escenas preliminares abajo. Continuar verifica los clips y abre el montaje.":
+        "Preview scenes below. Continue checks the footage and opens the Story editor."}</small>
       {voiceConcept?<div className={videoStyles.recipientAudioConcept}
         data-video-recipient-audio-concept-preview data-plan-status={voiceVisualPlan?.status||"TRANSCRIPT_ONLY"}>
         <strong>{locale==="ru"?"Концепт по смыслу речи":locale==="es"?"Concepto a partir de la voz":"Concept from your speech"}</strong>
@@ -6848,18 +6862,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             "Keyword-based suggestion, not proof of literal scene content. Review before editing."}
         </small>
       </div>:null}
-      {voiceVisualPlan?.canExport&&audioPlanApplied?<div className={videoStyles.recipientAudioConcept}
-        data-video-recipient-audio-concept><strong>{locale==="ru"?"Ваш концепт":locale==="es"?"Tu concepto":"Your concept"}</strong>
-        <div className={videoStyles.recipientAudioKeywords}>
-          {[...new Set(voiceVisualPlan.shots.flatMap(shot=>shot.concepts))].slice(0,8).map(word=><span key={word}>{word}</span>)}
-        </div><ol>{voiceVisualPlan.shots.map((shot,i)=><li key={i}>
-          {shot.startSeconds}–{shot.endSeconds} s · {shot.visualLabel}{shot.needsReview?" ⚠":""}</li>)}</ol>
-        </div>:null}
       </div>
     </div>
     {musicWarning?<p role="status">{musicWarning}</p>:null}
     <button type="button" className={videoStyles.recipientAudioNext} data-video-recipient-audio-next
-      disabled={!audioPlanApplied||!voiceVisualPlan?.canExport||!audioRights} onClick={goRecipientAudioToMontage}>
+      disabled={!uploadedAudio||!voiceTranscript||!audioRights||sttBusy||recording||preparing||micRecording} onClick={goRecipientAudioToMontage}>
       <Film size={20}/>{locale==="ru"?"Перейти к монтажу":locale==="es"?"Ir al montaje":"Continue to montage"}<ArrowRight size={20}/>
     </button>
     <small>{locale==="ru"?"Это подготовка концепта, а не автоматический рендер или оплата.":

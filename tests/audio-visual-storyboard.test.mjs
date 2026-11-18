@@ -101,7 +101,7 @@ test("recipient audio shows STT failure at step 2 and preserves local manual pro
  assert.ok(recipient.indexOf("data-video-recipient-audio-error")>
    recipient.indexOf("data-video-recipient-audio-transcribe"));
  assert.ok(recipient.indexOf("data-video-recipient-audio-error")<
-   recipient.indexOf("data-video-recipient-audio-plan"));
+   recipient.indexOf("data-video-recipient-audio-concept-preview"));
  assert.equal(recipient.split("data-video-recipient-audio-error").length-1,1);
  assert.match(recipient,/data-video-recipient-audio-manual/);
  assert.match(recipient,/data-video-recipient-audio-transcript/);
