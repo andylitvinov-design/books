@@ -18,7 +18,7 @@ export const metadata = { title: 'Client reports · Holistic House', robots: { i
 const COPY = {
   en: {
     title: 'Client reports', intro: 'Review and edit saved client reports.',
-    back: 'My Practice', create: '+ New report', search: 'Search by client', placeholder: 'Client name',
+    back: 'My Practice', create: '+ Classical homeopathic report', createGeneral: '+ Consultation report (no remedies)', search: 'Search by client', placeholder: 'Client name',
     submit: 'Search', clear: 'Clear', list: 'Saved reports', found: 'Reports on page', clients: 'Clients found',
     unavailable: 'Private report storage is temporarily unavailable.',
     empty: 'No saved reports for these clients yet.', emptyHint: 'Search for another client or create a report.',
@@ -31,7 +31,7 @@ const COPY = {
   },
   ru: {
     title: 'Отчёты клиентов', intro: 'Просмотр и редактирование сохранённых отчётов.',
-    back: 'Моя практика', create: '+ Новый отчёт', search: 'Поиск по клиенту', placeholder: 'Имя клиента',
+    back: 'Моя практика', create: '+ Классический гомеопатический', createGeneral: '+ Отчёт без препаратов', search: 'Поиск по клиенту', placeholder: 'Имя клиента',
     submit: 'Найти', clear: 'Очистить', list: 'Сохранённые отчёты', found: 'Отчётов на странице', clients: 'Найдено клиентов',
     unavailable: 'Хранилище приватных отчётов временно недоступно.',
     empty: 'У этих клиентов пока нет сохранённых отчётов.', emptyHint: 'Найдите другого клиента или создайте отчёт.',
@@ -64,6 +64,7 @@ export default async function ClientReports({ searchParams }) {
     <div className={styles.top}>
       <Link href={'/' + locale + '/app/practice'} className={styles.back} prefetch={false}>← {t.back}</Link>
       <Link href="/admin/reports/new" className={styles.primary} prefetch={false}>{t.create}</Link>
+      <Link href="/admin/reports/general/new" className={styles.primary} prefetch={false}>{t.createGeneral}</Link>
     </div>
     <section className={styles.sheet} aria-label={t.list}>
       <div className={styles.heading}>
@@ -96,6 +97,7 @@ export default async function ClientReports({ searchParams }) {
               <div className={styles.meta}>
                 <time dateTime={row.dateIssued || undefined} title={t.date}>{dateLabel(row.dateIssued, locale)}</time>
                 <span className={styles.localeTag} aria-label={row.reportLocale === 'ru' ? 'Russian report' : 'English report'}>{row.reportLocale.toUpperCase()}</span>
+                {row.reportType === 'general' && <span className={styles.localeTag}>{locale === 'ru' ? 'Без препаратов' : 'No remedies'}</span>}
                 {row.status !== 'active' && <span className={styles.status}>{t.inactive}</span>}
               </div>
               <Link href={'/admin/clients/' + encodeURIComponent(row.clientId)} prefetch={false}>{t.file} ↗</Link>
