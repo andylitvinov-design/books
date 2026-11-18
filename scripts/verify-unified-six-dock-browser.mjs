@@ -920,20 +920,27 @@ try{
  // #4301 restored My Space / Today as the canonical Profile landing.
  // A signed-out visitor sees the public Cabinet overview and may deliberately
  // open guest Tests; the old auto-opened Tests-first page is no longer mounted.
- assert.equal(await page.locator('[data-profile-tab="today"][aria-current="page"]').count(),1,
-   "guest Profile opens the current My Space Today tab, not the retired Tests-first view");
+ assert.equal(await page.locator('[data-profile-hub-tabs][data-profile-active="today"]').count(),1,
+   "guest Profile opens the current My Space Today dashboard, not the retired Tests-first view");
+ await page.locator('[data-profile-space-dashboard]').waitFor({state:"visible",timeout:30000});
+ assert.equal(await page.locator('[data-profile-space-life][aria-current="page"]').count(),1,
+   "My Life is the current guest dashboard mode");
  const guestOverview=page.locator('[data-cabinet-guest-overview="true"]');
  await guestOverview.waitFor({state:"visible",timeout:45000});
  const publicTests=guestOverview.locator('a[href="/ru/client/tests"]');
  await publicTests.waitFor({state:"visible",timeout:15000});
  assert.equal(await page.locator('[data-profile-tests-first]').count(),0,
    "retired standalone test-first component must not replace the My Space overview");
- // The same six canonical tabs remain visible, but private tabs are explicit
- // account routes rather than in-page guest anchors.
- assert.deepEqual(await page.locator('[data-profile-hub-tabs] [data-profile-tab]').evaluateAll(
-   links=>links.map(link=>link.dataset.profileTab)),
-   ["today","tests","state","path","courses","reports"],
-   "My Space retains six canonical sections for guest and signed-in users");
+ // Today's approved layout uses the scenic My Space dashboard, not the
+ // retired horizontal tab bar. Assert its exact routes and four real cards.
+ assert.equal(await page.locator('[data-profile-hub-tabs] [data-profile-tab]').count(),0,
+   "Today uses the photographic dashboard instead of duplicate tabs");
+ assert.deepEqual(await page.locator('[data-profile-space-card]').evaluateAll(
+   links=>links.map(link=>link.dataset.profileSpaceCard)),
+   ["state","courses","reports","sessions"],
+   "The four signed-in-capable sections remain visible as honest guest entries");
+ assert.equal(await page.locator('[data-profile-space-path]').getAttribute("href"),"/ru/app/portrait?space=path");
+ assert.equal(await page.locator('[data-profile-space-work]').getAttribute("href"),"/ru/practice");
  assert.equal(await page.locator('[data-hh-unified-dock] [data-unified-dock-item="profile"][aria-current="page"]').count(),1);
  assert.equal(await page.locator('.mobile-bottom-navigation:visible').count(),0);
  // In Profile, every account action is gated on an explicit guest click.
