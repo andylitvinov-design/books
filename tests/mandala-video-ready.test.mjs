@@ -508,3 +508,20 @@ test("Ready catches the physical iPhone MP4 playback error and offers a safe ret
   assert.match(studio,/setPendingCompatibleRetry\(signature\)/,
     "existing one-shot native WebM recovery remains connected");
 });
+
+test("client MP4 global quota is RLS-safe and expired signed upload reservations are reaped only after token expiry",()=>{
+  const personalVideos=readFileSync(new URL("../lib/app/personal-videos.js",import.meta.url),"utf8");
+  const migration=readFileSync(new URL("../supabase/migrations/20261118052326_hh_personal_video_global_quota_rls_guard.sql",import.meta.url),"utf8");
+  assert.match(personalVideos,/select pg_advisory_xact_lock\(598228614\)/);
+  assert.match(personalVideos,/select app_private\.personal_video_reserved_global_bytes\(\) total/);
+  assert.doesNotMatch(personalVideos,/select coalesce\(sum\(bytes\),0\)::bigint total from app_private\.personal_videos where status/);
+  assert.match(migration,/SECURITY DEFINER/);
+  assert.match(migration,/SET search_path = pg_catalog/);
+  assert.match(migration,/REVOKE ALL ON FUNCTION[\s\S]*FROM PUBLIC, anon, authenticated, hh_app_inbox/);
+  assert.match(migration,/GRANT EXECUTE ON FUNCTION[\s\S]*TO hh_app_backend/);
+  assert.match(personalVideos,/status='deleted' and released_at is null and created_at<now\(\)-interval '3 hours'/);
+  assert.match(personalVideos,/status='pending' and created_at<now\(\)-interval '3 hours'/);
+  assert.match(personalVideos,/created_at<now\(\)-interval '3 hours'/);
+  assert.match(personalVideos,/const \{error\}=await storage\.remove\(\[file\.object_key\]\)/);
+  assert.match(personalVideos,/if\(error\)continue/);
+});
