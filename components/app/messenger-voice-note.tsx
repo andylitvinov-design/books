@@ -51,7 +51,7 @@ function stopTracks(stream:MediaStream|null) {
   stream?.getTracks().forEach(track => track.stop());
 }
 function supportedType() {
-  if (typeof MediaRecorder === "undefined") return "";
+  if (typeof MediaRecorder === "undefined" || typeof MediaRecorder.isTypeSupported !== "function") return "";
   return ["audio/mp4", "audio/webm;codecs=opus", "audio/webm", "audio/ogg;codecs=opus"]
     .find(type => MediaRecorder.isTypeSupported(type)) || "";
 }
@@ -60,12 +60,13 @@ function fileExtension(mime:string) {
 }
 
 export function MessengerVoiceNote({
-  locale, disabled = false, resetRevision = 0, onSendTranscript,
+  locale, disabled = false, resetRevision = 0, onSendTranscript, onBegin,
 }:{
   locale:Locale;
   disabled?:boolean;
   resetRevision?:number;
   onSendTranscript:(text:string,file:File,seconds:number)=>boolean;
+  onBegin?:()=>void;
 }) {
   const t = COPY[locale] || COPY.en;
   const [phase,setPhase] = useState<Phase>("idle");
@@ -162,6 +163,7 @@ export function MessengerVoiceNote({
     const generation = ++generationRef.current;
     let stream:MediaStream|null = null;
     try {
+      onBegin?.();
       stream = await navigator.mediaDevices.getUserMedia({
         audio:{echoCancellation:true,noiseSuppression:true},video:false,
       });
@@ -175,6 +177,7 @@ export function MessengerVoiceNote({
       recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
       recorder.onerror = () => {
         if (generation !== generationRef.current) return;
+        cancelledRef.current = true;
         release(); recorderRef.current = null;
         setPhase("idle"); setError(t.failed);
       };
@@ -213,6 +216,7 @@ export function MessengerVoiceNote({
   };
   const send = async () => {
     if (disabled || !file || phase !== "ready") return;
+    if (seconds > LIMIT_SECONDS) { setError(t.tooLarge); return; }
     const generation = ++generationRef.current;
     const abort = new AbortController();
     abortRef.current = abort;
@@ -260,14 +264,22 @@ export function MessengerVoiceNote({
         <button type="button" onClick={discard} className={styles.small} aria-label={t.cancel}><X size={17}/></button>
       </div> : file && preview ? <>
         <div className={styles.row}>
-          <span className={styles.label}>{t.review} · {durationLabel(seconds)}</span>
+          <span className={styles.label}>{t.review} · {seconds ? durationLabel(seconds) : "—"}</span>
           <button type="button" onClick={discard} className={styles.small}
             disabled={phase === "sending"} aria-label={t.cancel}><X size={17}/></button>
         </div>
-        <audio controls preload="metadata" src={preview} className={styles.player} aria-label={t.review}/>
+        <audio controls preload="metadata" src={preview} className={styles.player}
+          aria-label={t.review} onLoadedMetadata={event=>{
+            if(seconds>0)return;
+            const length=event.currentTarget.duration;
+            if(!Number.isFinite(length)||length<=0)return;
+            const rounded=Math.ceil(length);
+            setSeconds(rounded);
+            if(rounded>LIMIT_SECONDS)setError(t.tooLarge);
+          }}/>
         <div className={styles.row}>
           <span className={styles.consent}>{t.consent}</span>
-          <button type="button" onClick={() => void send()} disabled={disabled || phase === "sending"}
+          <button type="button" onClick={() => void send()} disabled={disabled || phase === "sending" || seconds > LIMIT_SECONDS}
             className={styles.send} data-hh-voice-note-send aria-label={t.send}>
             {phase === "sending" ? <LoaderCircle size={18} className={styles.spinner}/> : <Send size={18}/>}
             <span>{phase === "sending" ? t.sending : t.send}</span>
@@ -282,7 +294,7 @@ export function MessengerVoiceNote({
             const recording = event.currentTarget.files?.[0];
             event.currentTarget.value = "";
             if (!recording) return;
-            showFile(recording,Math.min(LIMIT_SECONDS,30));
+            showFile(recording,0);
           }}/>
       </label>}
     </div>}
