@@ -269,29 +269,26 @@ export function ServicesCompactPanel({ id, children }: { id: ServicesPanelId; ch
   }[context.locale];
   return (
     <article id={serviceGroupAnchor(id)} tabIndex={-1}
-      className={styles.panel} data-services-unified-panel={id}
+      className={styles.panel} data-support-uniform-card data-services-unified-panel={id}
       data-services-has-three={hasVariants} data-expanded={expanded}>
-      <button type="button" className={styles.preview}
+      <button type="button" className={styles.preview} data-support-uniform-preview
         aria-expanded={expanded} aria-controls={regionId} onClick={() => context.toggle(id)}>
-        <span className={styles.icon} aria-hidden="true">
-          <Image src={panelMedia[id]} alt="" fill loading="lazy" sizes="(max-width: 760px) 96px, 120px" />
+        <span className={styles.icon} data-support-uniform-photo aria-hidden="true">
+          <Image src={panelMedia[id]} alt="" fill loading="lazy" sizes="(max-width: 760px) 34vw, 120px" />
           <span className={styles.iconOverlay}><Icon size={19} strokeWidth={1.8} /></span>
         </span>
-        <span className={styles.previewText}><strong>{title}</strong><small>{description}</small></span>
-        <span className={styles.priceBadge} data-service-price-kind={panelPriceKind[id]}>
+        <span className={styles.previewText} data-support-uniform-copy><strong>{title}</strong><small>{description}</small></span>
+        <span className={styles.priceBadge} data-support-uniform-price data-service-price-kind={panelPriceKind[id]}>
           {priceWords[context.locale][panelPriceKind[id]]}
         </span>
-        <ChevronDown className={styles.chevron} size={17} aria-hidden="true" />
+        <ChevronDown className={styles.chevron} data-support-uniform-chevron size={17} aria-hidden="true" />
       </button>
-      {hasVariants ? (
-        <ServicesThreeVisibleOptions locale={context.locale} id={id} />
-      ) : (
-        <ServicesCardActions locale={context.locale} title={title}
-          description={panelDescriptions[context.locale][id]}
-          href={"/" + context.locale + panelDestinations[id]}
-          trackingId={id} className={styles.panelActions} />
-      )}
-      {hasVariants ? <button type="button" className={styles.moreFormats}
+      <ServicesCardActions locale={context.locale} title={title}
+        description={panelDescriptions[context.locale][id]}
+        href={"/" + context.locale + panelDestinations[id]}
+        trackingId={id} className={styles.panelActions} />
+      {hasVariants ? <ServicesThreeVisibleOptions locale={context.locale} id={id} /> : null}
+      {hasVariants ? <button type="button" className={styles.moreFormats} data-support-more-formats
         aria-expanded={expanded} aria-controls={regionId} onClick={() => context.toggle(id)}>
         {expanded ? more[1] : more[0]} <ArrowRight size={16} aria-hidden="true" />
       </button> : null}

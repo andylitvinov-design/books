@@ -184,26 +184,37 @@ try {
     await quiz.locator("[data-services-business-link]").click();
     assert.equal(new URL(page.url()).pathname, "/" + locale + "/services", "Business category must stay on Services");
     assert.equal(new URL(page.url()).hash, "#service-group-services");
-    await quiz.locator("[data-services-more-topics]").click();
-    await expect(quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice]')).toHaveCount(6);
-    await quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice="work"]').click();
+    // Business has its own topic, need and start-format branching.
+    await quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice="business_support"]').click();
     await expect(quiz).toHaveAttribute("data-services-quiz-step", "2");
-    await quiz.locator('[data-services-quiz-question="mode"] [data-services-quiz-choice="human"]').click();
+    await expect(quiz.locator('[data-services-quiz-question="need"] [data-services-quiz-choice]')).toHaveCount(4);
+    await quiz.locator('[data-services-quiz-question="need"] [data-services-quiz-choice="business_strategy"]').click();
     await expect(quiz).toHaveAttribute("data-services-quiz-step", "3");
-    await quiz.locator('[data-services-quiz-question="channel"] [data-services-quiz-choice="online"]').click();
+    await quiz.locator('[data-services-quiz-question="mode"] [data-services-quiz-choice="consultation"]').click();
     await expect(quiz).toHaveAttribute("data-services-quiz-step", "4");
     const submitQuiz = quiz.locator("[data-services-quiz-submit]");
     await expect(submitQuiz).toBeDisabled();
     await quiz.locator('[data-services-quiz-question="budget"] [data-services-quiz-choice="flexible"]').click();
     await expect(submitQuiz).toBeEnabled();
-    // A completed step remains revisitable; changing an answer does not send data.
     await quiz.locator('[data-quiz-dot="3"]').click();
     await expect(quiz).toHaveAttribute("data-services-quiz-step", "3");
-    await quiz.locator('[data-services-quiz-choice="online"]').click();
-    await expect(quiz).toHaveAttribute("data-services-quiz-step", "4");
+    await quiz.locator('[data-services-quiz-choice="consultation"]').click();
     await submitQuiz.click();
     await visible(page.locator("[data-services-quiz-results]"));
+    await visible(quiz.locator("[data-services-quiz-summary]"));
     await expect(page.locator('[data-services-quiz-results] [data-assist-best-card="business"]')).toHaveCount(1);
+    if (width === 390) {
+      await quiz.locator('[data-quiz-dot="1"]').click();
+      await quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice="money_growth"]').click();
+      await expect(quiz).toHaveAttribute("data-services-quiz-step", "2");
+      await expect(quiz.locator('[data-quiz-dot="4"]')).toBeDisabled();
+      await quiz.locator('[data-services-quiz-question="need"] [data-services-quiz-choice="growth_ideas"]').click();
+      await quiz.locator('[data-services-quiz-question="mode"] [data-services-quiz-choice="any"]').click();
+      await quiz.locator('[data-services-quiz-question="budget"] [data-services-quiz-choice="flexible"]').click();
+      await submitQuiz.click();
+      await visible(page.locator("[data-services-quiz-results]"));
+      await expect(page.locator('[data-services-quiz-results] [data-assist-best-card="business"]')).toHaveCount(0);
+    }
     await assertViewport(page, locale + "/services/quiz/" + width);
     // The original locally-scoped Ali messenger remains reachable by an
     // explicit guest action, preserving all existing messenger regression tests.
@@ -468,35 +479,55 @@ try {
     // now mapping concrete offered products onto the existing service codes.
     const requestIds = {therapy:"coaching",constellation:"constellations",business:"business",reiki:"reiki"};
     for(const key of expectedStress){
+      const code=requestIds[key];
       const detail=shelf.locator('[data-assist-product-link="'+key+'"]');
       await expect(detail).toHaveAttribute("href",new RegExp("^/"+locale+"/[a-z0-9/-]+$"));
-      const action=shelf.locator('[data-assist-best-action="'+key+'"]');
-      const code=requestIds[key];
+      const action=shelf.locator('[data-assist-best-card="'+key+'"] [data-assist-best-action="'+key+'"]');
+      await expect(action).toHaveAttribute("aria-expanded","false");
+      const box=await action.boundingBox();
+      assert.ok(box&&box.height>=44,"Mobile product touch target: "+locale+"/"+width+"/"+key);
+      await action.click();
+      await expect(action).toHaveAttribute("aria-expanded","true");
+      const card=shelf.locator('[data-assist-best-card="'+key+'"]');
+      const whatsapp=card.locator('[data-service-card-order] [data-messenger-only-channel="whatsapp"]');
+      const telegram=card.locator('[data-service-card-order] [data-messenger-only-channel="telegram"]');
+      await visible(whatsapp);
+      await visible(telegram);
       if(code){
         const url=telegramServiceRequestUrl(code,locale);
         assert.ok(url,"No unapproved Telegram request: "+key);
-        await expect(action).toHaveAttribute("href",resolveTelegramServiceHandoffUrl(url,locale));
-        await expect(action).toHaveAttribute("target","_blank");
+        await expect(telegram).toHaveAttribute("href",resolveTelegramServiceHandoffUrl(url,locale));
         assert.equal(new URL(url).searchParams.get("text")?.split(String.fromCharCode(10)).at(-1),
           "[HH-REQ:"+code+":"+locale+"]","Deep link contains no private problem text");
-      }else{
-        await expect(action).toHaveAttribute("href",new RegExp("^/"+locale+"/[a-z0-9/-]+$"));
       }
-      const box=await action.boundingBox();
-      assert.ok(box&&box.height>=44,"Mobile product touch target: "+locale+"/"+width+"/"+key);
+      const photoBounds=await card.locator('[data-support-uniform-photo]').boundingBox();
+      const expandedBounds=await card.locator('[data-service-card-order]').boundingBox();
+      assert.ok(photoBounds&&expandedBounds&&expandedBounds.x <= photoBounds.x+8,
+        "Inline messenger choices span the full card, under the photo: "+key);
+      await action.click();
+      await expect(action).toHaveAttribute("aria-expanded","false");
     }
 
     // A reply stays in the chat and reranks the service cards without a page jump.
     await log.locator('[data-assist-question="mode"] div button').nth(2).click();
     await expect(log.locator('[data-assist-message="user"]')).toHaveCount(2);
     await expect(log.locator('[data-assist-question="budget"]')).toHaveCount(1);
-    // Video-only preferences are not a saleable product.
-    await expect(bestCards).toHaveCount(0);
-    await expect(shelf.locator('[role="status"]')).toBeVisible();
+    // An explicit video-only choice may suggest ONLY actually matching
+    // self/video materials: a symbolic video and free MyTube, not paid sessions.
+    const videoIds=await bestCards.evaluateAll(nodes=>
+      nodes.map(node=>node.getAttribute("data-assist-best-card")));
+    assert.deepEqual(videoIds,rankAssistProducts("stress",{mode:"video"}));
+    assert.deepEqual(videoIds,["mandala","mytube"],
+      "Video mode offers actual video routes, never human session sales");
+    await expect(shelf.locator('[data-assist-best-card="therapy"],[data-assist-best-card="business"],[data-assist-best-card="constellation"]')).toHaveCount(0);
     await log.locator('[data-assist-question="budget"] div button').first().click();
     await expect(log.locator('[data-assist-message="user"]')).toHaveCount(3);
     await expect(log.locator('[data-assist-question]')).toHaveCount(0);
-    await expect(bestCards).toHaveCount(0);
+    const freeVideoIds=await bestCards.evaluateAll(nodes=>
+      nodes.map(node=>node.getAttribute("data-assist-best-card")));
+    assert.deepEqual(freeVideoIds,rankAssistProducts("stress",{mode:"video",budget:"free"}));
+    assert.deepEqual(freeVideoIds,["mytube"],
+      "Explicit free budget excludes unpriced video generators");
 
     // Switching intent resets only the conversation, never opens another page.
     const reset = conversation.locator("button[data-assist-reset]");
@@ -511,8 +542,22 @@ try {
     const expectedWork=rankAssistProducts("work",{});
     assert.deepEqual(actualWork,expectedWork,"Work cards rerank without appending the prior intent");
     if (expectedWork.includes("business")) {
-      await expect(shelf.locator('[data-assist-best-action="business"]'))
-        .toHaveAttribute("href", /^\/api\/public\/telegram-service-entry\?service=business&locale=/);
+      // Order is now a disclosure button, NOT an anchor: the verified
+      // Telegram link appears inside the opened full-width messenger panel.
+      const businessCard=shelf.locator('[data-assist-best-card="business"]');
+      const orderButton=businessCard.locator('[data-assist-best-action="business"]');
+      await expect(orderButton).toHaveAttribute("aria-expanded","false");
+      await orderButton.click();
+      await expect(orderButton).toHaveAttribute("aria-expanded","true");
+      const telegram=businessCard.locator(
+        '[data-service-card-order] [data-messenger-only-channel="telegram"]');
+      await visible(telegram);
+      const businessUrl=telegramServiceRequestUrl("business",locale);
+      assert.ok(businessUrl,"Business link must use the approved public service code");
+      await expect(telegram).toHaveAttribute("href",
+        resolveTelegramServiceHandoffUrl(businessUrl,locale));
+      await orderButton.click();
+      await expect(orderButton).toHaveAttribute("aria-expanded","false");
     }
     await reset.click();
     await expect(topics).toHaveCount(6);
