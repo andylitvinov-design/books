@@ -3,7 +3,7 @@
 import {useEffect,useRef,useState,type ReactNode} from "react";
 import Link from "next/link";
 import {BookOpen, CalendarDays, ClipboardCheck, Clapperboard, Flower2,
-  MessageCircle, Play, X} from "lucide-react";
+  HandHeart, MessageCircle, Play, X} from "lucide-react";
 import type {PublicLocale} from "@/lib/public-locales";
 import css from "./messenger-ai-landing.module.css";
 
@@ -35,7 +35,7 @@ const COPY={
     retry:"Try again",openOriginal:"Open original video",
     choices:"Choose how to begin",
     test:"Take a test",video:"Create a video",practice:"Do a practice",
-    session:"Request a session",course:"Learn a course",ask:"Ask a question",
+    session:"Request a session",course:"Learn a course",ask:"Ask a question",support:"Get support",
   },
   ru:{
     hi:"Привет!",title:"Я Ali — ИИ-помощник Holistic House",
@@ -48,7 +48,7 @@ const COPY={
     retry:"Повторить",openOriginal:"Открыть исходное видео",
     choices:"Выберите, с чего начать",
     test:"Пройти тест",video:"Создать видео",practice:"Выбрать практику",
-    session:"Запросить сессию",course:"Изучить курс",ask:"Задать вопрос",
+    session:"Запросить сессию",course:"Изучить курс",ask:"Задать вопрос",support:"Get support",
   },
   es:{
     hi:"¡Hola!",title:"Soy Ali, tu guía de IA Holistic House",
@@ -61,11 +61,12 @@ const COPY={
     retry:"Reintentar",openOriginal:"Abrir el vídeo original",
     choices:"Elige cómo empezar",
     test:"Hacer un test",video:"Crear un vídeo",practice:"Hacer una práctica",
-    session:"Solicitar sesión",course:"Elegir un curso",ask:"Hacer una pregunta",
+    session:"Solicitar sesión",course:"Elegir un curso",ask:"Hacer una pregunta",support:"Get support",
   },
 } as const;
 
 const ACTIONS=[
+  {id:"support",icon:HandHeart},
   {id:"test",icon:ClipboardCheck,href:"tests"},
   {id:"video",icon:Clapperboard},
   {id:"practice",icon:Flower2},
@@ -74,8 +75,8 @@ const ACTIONS=[
   {id:"ask",icon:MessageCircle},
 ] as const;
 
-export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,composer}:{
-  locale:PublicLocale;onCreateVideo:()=>void;onPractice:()=>void;onAsk:()=>void;composer?:ReactNode
+export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,onSupport,composer}:{
+  locale:PublicLocale;onCreateVideo:()=>void;onPractice:()=>void;onAsk:()=>void;onSupport:()=>void;composer?:ReactNode
 }){
   const t=COPY[locale];
   // Spanish has no recorded master; use the existing English version with
@@ -187,7 +188,7 @@ export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,compos
           <Link key={item.id} data-hh-ai-choice={item.id}
             href={"/"+locale+"/"+item.href} className={css.card}>{content}</Link>:
           <button type="button" key={item.id} data-hh-ai-choice={item.id}
-            className={css.card} onClick={item.id==="video"?onCreateVideo:
+            className={css.card} onClick={item.id==="support"?onSupport:item.id==="video"?onCreateVideo:
               item.id==="practice"?onPractice:onAsk}>{content}</button>;
       })}
     </div>
