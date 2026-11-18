@@ -87,3 +87,36 @@ test('bounded sweep fails closed and rotates even with always unreadable proof',
  assert.ok(reads<=20,'max 10 PR reads each sweep');
  assert.notEqual(a.unresolved[0]?.pr,b.unresolved[0]?.pr,'fair rotation across ticks');
 });
+
+test('trusted non-dry workflow_dispatch can prove LIVE after native cron outage',async()=>{
+ const comments=[];
+ const context={repo:{owner:'andylitvinov-design',repo:'books'},
+  ref:'refs/heads/codex/bootstrap-books',eventName:'workflow_dispatch',
+  payload:{inputs:{dry_run:'false'}}};
+ const github={rest:{pulls:{list:async()=>({data:[pr]}),get:async()=>({data:pr})},
+  issues:{listComments:async()=>({data:[]}),createComment:async row=>{comments.push(row);return {data:{id:1}}}}}};
+ const outcome=await sweep({github,context,now:Date.parse('2026-11-18T03:00:00Z'),fetcher:()=>{},
+  proofImpl:async()=>({verified:true,mergeSha:merge,productionSha:served,deploymentId:id})});
+ assert.equal(outcome.status,'LIVE_VERIFIED_NOTICE_SENT');
+ assert.equal(comments.length,1);
+ assert.match(comments[0].body,/Production LIVE independently verified/);
+});
+test('dry-run, targeted wake, owner PR and foreign dispatch cannot claim LIVE',async()=>{
+ const base={repo:{owner:'andylitvinov-design',repo:'books'},
+  ref:'refs/heads/codex/bootstrap-books',eventName:'workflow_dispatch'};
+ let reads=0;
+ const gh={rest:{pulls:{list:async()=>{reads++;return {data:[]}}}}};
+ for(const inputs of [
+  {dry_run:'true'}, {dry_run:'false',direct_dispatch:'true'},
+  {dry_run:'false',completion_wake:'true'},
+  {dry_run:'false',pm_pr_number:'4925'}]){
+  const state=await sweep({github:gh,context:{...base,payload:{inputs}}});
+  assert.equal(state.status,'SKIPPED_NOT_SCHEDULE');
+ }
+ assert.equal((await sweep({github:gh,context:{...base,repo:{owner:'other',repo:'books'},payload:{inputs:{dry_run:'false'}}}})).status,'SKIPPED_NOT_SCHEDULE');
+ assert.equal(reads,0);
+ const flow=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
+ assert.match(flow,/const liveEligible=context.eventName==='schedule'/);
+ assert.match(flow,/if\(liveEligible\)/);
+ assert.match(flow,/!inputs.pm_pr_number/);
+});

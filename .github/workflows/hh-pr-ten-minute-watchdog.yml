@@ -174,8 +174,16 @@ jobs:
                 dispatchDirect:target=>inbox.dispatchOwnerQueue(gh,core,context,{
                   ...target,ownerProof:opts.ownerProof})})});
             core.info('HH_OWNER_PR_COMPLETION_GATEWAY '+JSON.stringify(outcome));
-            // Existing scheduled runner only. No extra build, cron or deploy.
-            if(context.eventName==='schedule'){
+            // Reuse this signed scheduled OR non-dry fallback reconcile run.
+            // No second Actions job, extra cron, CI wave or deployment.
+            const inputs=context.payload?.inputs||{};
+            const liveEligible=context.eventName==='schedule'||(
+              context.eventName==='workflow_dispatch'&&
+              String(inputs.dry_run||'false')==='false'&&
+              String(inputs.direct_dispatch||'false')!=='true'&&
+              String(inputs.completion_wake||'false')!=='true'&&
+              !inputs.pm_pr_number);
+            if(liveEligible){
               const {sweep}=require(process.env.GITHUB_WORKSPACE+
                 '/scripts/ci-pr-live-acceptance.cjs');
               try{
