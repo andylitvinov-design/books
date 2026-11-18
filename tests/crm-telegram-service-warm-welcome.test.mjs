@@ -8,17 +8,23 @@ import {TELEGRAM_SERVICE_OPTIONS} from '../lib/assist/telegram-service-options.m
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const countQuestions=text=>(text.match(/[?？]/gu)||[]).length;
 
-test('first service response is a short warm portrait caption with honest consent, not an interrogation',()=>{
+test('first service response is only a warm short portrait caption; AI consent comes after it',()=>{
  for(const lang of ['ru','en','es'])for(const service of ['general','coaching','homeopathy','reiki','constellations','business','business_strategy']){
   const intro=v3ServiceCopy(lang,service).intro;
-  assert.ok(intro.length<340,lang+' '+service+' should fit a single Telegram photo caption');
+  assert.ok(intro.length<260,lang+' '+service+' should fit one light Telegram photo caption');
   assert.match(intro,/Ali/);
-  assert.match(intro,/OpenRouter/);
-  assert.match(intro,/photo|foto|фото/i);
-  assert.doesNotMatch(intro,/Finish interview|Завершить интервью|Terminar entrevista|questionnaire|анкета|опросник/i);
+  assert.doesNotMatch(intro,/OpenRouter|medical records|медицинских документов|documentos médicos|\/stop|consent|соглас|aprobación|payment|оплат/i);
   assert.equal(countQuestions(intro),0);
+  const consent=v3ServiceCopy(lang,service).consent;
+  assert.match(consent,/OpenRouter/);
+  assert.match(consent,/medical records|медицинских документов|documentos médicos/i);
+  assert.match(consent,/approve|одобрите|apruebes/i);
+  assert.ok(consent.length<270);
   assert.ok(v3ServiceCopy(lang,service).first.length<95);
   assert.deepEqual(v3ButtonsFor(lang,'consent'),[[V3_LABELS[lang].agree,V3_LABELS[lang].decline]]);
+  assert.deepEqual(v3ButtonsFor(lang,'service_consent'),[[V3_LABELS[lang].serviceagree,V3_LABELS[lang].decline]]);
+  assert.equal(v3Action({inlineAction:'v3:serviceagree'}),'serviceagree');
+  assert.equal(v3Action({rawText:V3_LABELS[lang].serviceagree}),'serviceagree');
  }
 });
 test('all published options, in RU/EN/ES, receive exactly their selected title in the greeting',()=>{
@@ -27,7 +33,7 @@ test('all published options, in RU/EN/ES, receive exactly their selected title i
   assert.equal(v3ServiceStart(deep).offerId,id);
   const greeting=v3ServiceCopy(lang,entry.service,id);
   assert.ok(greeting.intro.includes(entry.titles[lang]),deep);
-  assert.ok(greeting.intro.length<400,deep);
+  assert.ok(greeting.intro.length<260,deep);
  }
 });
 test('warm service dialogue takes at most two substantive replies and preserves the visitor words',()=>{
@@ -69,6 +75,12 @@ test('service welcome photo is limited to first signed consent message and uses 
  assert.match(sender,/telegramInlineMarkup\(keyboard,locale\)/);
  assert.match(v3,/if\(row\.stage==='consent'\)/);
  assert.equal(v3Action({inlineAction:'v3:agree'}),'agree');
+ assert.match(v3,/serviceCopy&&ctx.serviceDisclosureSeen!==true/);
+ assert.match(v3,/serviceDisclosureSeen:true/);
+ assert.match(v3,/serviceCopy\.consent/);
+ assert.match(v3,/v3ButtonsFor\(lang,'service_consent'\)/);
+ assert.match(v3,/serviceCopy\?\(action==='serviceagree'/);
+ assert.match(source('lib/crm/telegram-ai-diagnostic-v3.mjs'),/raw\.serviceDisclosureSeen===true/);
  assert.equal(v3Action({inlineAction:'v3:servicesend'}),'send');
 });
 
