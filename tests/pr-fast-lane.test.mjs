@@ -610,7 +610,10 @@ test('video About and Library cancel only superseded PR checks, preserving speci
   const lib=workflow('library-public-feed.yml');
   assert.match(lib,/^  workflow_dispatch:/m);
   assert.match(lib,/run: npm run build/);
-  assert.match(lib,/playwright install --with-deps chromium webkit/);
+  assert.match(lib,/image: mcr\.microsoft\.com\/playwright:v1\.63\.0-noble/);
+  assert.match(lib,/const \{chromium, webkit\} = require\('/);
+  assert.match(lib,/await engine\.launch\(\{headless:true, timeout:15000\}\)/);
+  assert.doesNotMatch(lib,/playwright install --with-deps/);
   assert.match(lib,/node scripts\/verify-ideas-mobile-browser\.mjs/);
   // A BASE-trusted two-PR migration may retire the duplicate About source-only
   // workflow only after an unchanged Site Video successor covers the same paths.
