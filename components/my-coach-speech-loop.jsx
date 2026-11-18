@@ -6,6 +6,7 @@ import styles from './my-coach-speech-loop.module.css'
 import {appendSpokenAnswer} from '@/lib/personal-coaching/speech-text.js'
 import {startCoachRecordedTurn,coachRecordedSupported} from '@/lib/personal-coaching/coach-recorded-turn.mjs'
 import {coachVoiceFragmentNeedsReview,coachDraftWithoutUncertainSpeech} from '@/lib/personal-coaching/coach-voice-turn-quality.mjs'
+import {isCoachBargeEcho} from '@/lib/personal-coaching/coach-barge-in.mjs'
 import {chooseDictationLanguage,coachSpokenTurnLocale,readDictationResults,detectedSpeechLocale,ios27NeedsSpeechRecovery,hasCoachSpokenAnswer} from '@/lib/personal-coaching/my-coach-dictation.mjs'
 import {startCoachingMp3Playback,primeCoachingAudioGesture,unlockCoachingAudioContext,shouldUseCoachingWebAudio} from '@/lib/personal-coaching/streamed-mp3-playback.mjs'
 import {coachSpokenText} from '@/lib/coaching/coach-spoken-text.mjs'
@@ -65,6 +66,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   const recordedSttUnavailableRef=useRef(false),uncertainSpeechDraftRef=useRef(null)
   const cloudControllerRef=useRef(null)
   const cloudPlayerRef=useRef(null)
+  const lastSpokenCoachRef=useRef('')
   const introControllerRef=useRef(null),introPlayerRef=useRef(null)
   const microphonePermissionRef=useRef(null)
   const microphonePermissionStateRef=useRef('unknown'),captureFailureRef=useRef(false)
@@ -158,6 +160,122 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     changePhase('idle')
   }
   stopRef.current=stopVoice
+
+  function restoreCoachVolume(){
+    try{cloudPlayerRef.current?.setVolume?.(1)}catch{}
+    try{if(introPlayerRef.current?.audio)introPlayerRef.current.audio.volume=1}catch{}
+  }
+  function duckCoachVolume(){
+    try{cloudPlayerRef.current?.setVolume?.(0.08)}catch{}
+    try{if(introPlayerRef.current?.audio)introPlayerRef.current.audio.volume=0.08}catch{}
+  }
+  function cancelOutgoingCoachSpeech(){
+    // Cancel ONLY the outgoing player and vendor fetch: never release the
+    // already-capturing client microphone or the original Play audio context.
+    providerUnavailableRef.current=null
+    cloudControllerRef.current?.abort()
+    cloudControllerRef.current=null
+    cloudPlayerRef.current?.cancel()
+    cloudPlayerRef.current=null
+    introControllerRef.current?.abort()
+    introControllerRef.current=null
+    introPlayerRef.current?.cancel()
+    introPlayerRef.current=null
+    blockedResumeRef.current=null
+    if(speechTimerRef.current){clearTimeout(speechTimerRef.current);speechTimerRef.current=null}
+    const voice=utteranceRef.current
+    utteranceRef.current=null
+    if(voice){voice.onstart=null;voice.onend=null;voice.onerror=null}
+    if(speakingRef.current){
+      speakingRef.current=false
+      try{window.speechSynthesis?.cancel()}catch{}
+    }
+  }
+  function interruptCoachToListen(){
+    if(!activeRef.current)return
+    const computing=phaseRef.current==='thinking'
+    if(computing){
+      // Aborting the old model reply must never allow it to start speaking
+      // after the client's next utterance has already begun.
+      generationRef.current+=1
+      cancelRef.current?.()
+    }
+    cancelOutgoingCoachSpeech()
+    if(recordedTurnRef.current?.continueAfterCoach?.()){
+      changePhase('listening');setNotice('')
+      return
+    }
+    recordedTurnRef.current?.cancel()
+    recordedTurnRef.current=null
+    startListening()
+  }
+  function beginVoiceBargeMonitor(generation){
+    // One captured track with browser echoCancellation=true is sampled only
+    // locally while the coach speaks. A short duck confirms user voice rather
+    // than the loudspeaker echo. Unsupported Safari stays on the manual Mic.
+    if(!activeRef.current||generationRef.current!==generation||
+       recordedTurnRef.current||!coachRecordedSupported(window)||
+       microphonePermissionStateRef.current==='denied')return
+    const begin=()=>{
+      if(!activeRef.current||generationRef.current!==generation||
+         phaseRef.current!=='speaking'||recordedTurnRef.current)return
+      const selected=chooseDictationLanguage({locale:lang,selection:speechLocaleRef.current,
+        browserLanguages:window.navigator.languages?.length?window.navigator.languages:[window.navigator.language],
+        lastTranscript:lastHeardRef.current})
+      selectionAtRecognitionRef.current=speechLocaleRef.current
+      recognizedLanguageRef.current=selected
+      const transcriptionLocale=selected.slice(0,2)
+      draftAtStartRef.current=coachDraftWithoutUncertainSpeech(currentDraftRef.current,uncertainSpeechDraftRef.current)
+      let interrupted=false
+      const monitor=startCoachRecordedTurn({
+        locale:transcriptionLocale,environment:window,
+        audioContext:audioContextRef.current,monitorPlayback:true,
+        onLevel:value=>{if(activeRef.current&&generationRef.current===generation)micLevelRef.current?.(value)},
+        onState:state=>{
+          if(!activeRef.current||generationRef.current!==generation)return
+          if(state==='transcribing'){changePhase('thinking');setNotice(t.audioTranscribing)}
+          else if(state==='hearing'){setNotice(t.audioHearing)}
+        },
+        onCandidate:()=>{if(phaseRef.current==='speaking')duckCoachVolume()},
+        onCandidateExpired:()=>{if(phaseRef.current==='speaking')restoreCoachVolume()},
+        onSpeechDetected:()=>{
+          if(!activeRef.current||generationRef.current!==generation)return
+          interrupted=true
+          cancelOutgoingCoachSpeech()
+          changePhase('listening')
+          setNotice(t.audioHearing)
+        },
+        onResult:value=>{
+          if(!activeRef.current||generationRef.current!==generation)return
+          recordedTurnRef.current=null
+          if(interrupted&&isCoachBargeEcho(value,lastSpokenCoachRef.current)){
+            // A false interruption must not create a duplicate model request.
+            startListening();setNotice(t.listening);return
+          }
+          if(!hasCoachSpokenAnswer(value)){startListening();return}
+          lastHeardRef.current=value
+          heardRef.current=value
+          transcriptRef.current?.(value)
+          void deliver(appendSpokenAnswer(draftAtStartRef.current,value,1200))
+        },
+        onFailure:code=>{
+          if(!activeRef.current||generationRef.current!==generation)return
+          recordedTurnRef.current=null
+          // A monitor failure must NEVER cut off the existing coach audio.
+          if(!interrupted&&phaseRef.current==='speaking')return
+          if(['STT_UNAVAILABLE','MIC_CAPTURE'].includes(code))
+            recordedSttUnavailableRef.current=true
+          startListening()
+          setNotice(t.audioUnavailable)
+        },
+      })
+      if(monitor)recordedTurnRef.current=monitor
+    }
+    // Never race the first Play's getUserMedia permission/track cleanup.
+    if(microphonePermissionRef.current)
+      void microphonePermissionRef.current.then(begin,begin)
+    else begin()
+  }
 
   // Request iPhone mic permission in the very SAME Play gesture, without
   // recording or uploading audio. Immediately release the temporary stream;
@@ -681,6 +799,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
 
   async function speakCoachReply(result,text,generation,naturalVoice=false){
     const reply=String(result.reply).slice(0,900)
+    lastSpokenCoachRef.current=reply
     // An audible reply must include the answer/acknowledgement, not only its last question.
     // The Google excerpt only applies to its separately-consented 500-char path.
     const speakable=coachSpokenText(reply).text
@@ -692,6 +811,11 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       if(!live())return
       if(result.mode==='safety'||result.mode==='boundary'){
         silence();changePhase('idle');return
+      }
+      if(recordedTurnRef.current?.continueAfterCoach?.()){
+        changePhase('listening')
+        setNotice('')
+        return
       }
       startListening()
     }
@@ -848,6 +972,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
               try{performance.measure?.('hh-coach-tts-first-play',{start:synthesisStartedAt,end:performance.now()})}
               catch{/* Never break streaming and recognizer re-arm. */}
             blockedResumeRef.current=null;setNotice('');changePhase('speaking')
+            beginVoiceBargeMonitor(generation)
           },
           onBlocked:()=>{
             if(!live())return
@@ -890,6 +1015,10 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       startListening()
       return
     }
+    if(activeRef.current&&['speaking','loading','thinking'].includes(phaseRef.current)){
+      interruptCoachToListen()
+      return
+    }
     if(activeRef.current){stopVoice();return}
     if(!canStart)return
     if(!enabled){onRequestConsent?.();return}
@@ -915,14 +1044,16 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   }
 
   const active=phase!=='idle',ready=phase==='ready'
+  const interrupting=['speaking','loading','thinking'].includes(phase)
+  const interruptLabel={ru:'Перебить коуча',en:'Interrupt coach',es:'Interrumpir al coach'}[lang]
   return <div className={styles.root} data-my-coach-voice={phase}>
     <button type="button" className={styles.button}
       onClick={toggle} disabled={!active&&!canStart}
-      aria-pressed={active&&!ready} aria-label={ready?(blockedResumeRef.current?t.tapToHear:t.retryMic):active?t.stop:!introStartedRef.current?({en:'Start session with coach introduction',ru:'Начать сессию с аудиоприветствия',es:'Iniciar con la presentación en audio'}[lang]):t.start}>
+      aria-pressed={active&&!ready} aria-label={ready?(blockedResumeRef.current?t.tapToHear:t.retryMic):interrupting?interruptLabel:active?t.stop:!introStartedRef.current?({en:'Start session with coach introduction',ru:'Начать сессию с аудиоприветствия',es:'Iniciar con la presentación en audio'}[lang]):t.start}>
       {!active&&!introStartedRef.current?
         <Play size={19} fill="currentColor" aria-hidden="true"/>:
         <Mic size={19} aria-hidden="true" data-coach-microphone-icon/>}
-      <span>{ready?(blockedResumeRef.current?t.tapToHear:t.retryMic):active?t.stop:t.start}</span>
+      <span>{ready?(blockedResumeRef.current?t.tapToHear:t.retryMic):interrupting?interruptLabel:active?t.stop:t.start}</span>
       {phase==='speaking'&&<Volume2 size={15} aria-hidden="true" data-coach-speaker-indicator/>}
     </button>
     {supported===false&&!notice&&<p className={styles.note} role="status">{t.unsupported}</p>}
