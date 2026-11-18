@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect,useMemo,useRef,useState} from "react";
+import {useCallback,useEffect,useMemo,useRef,useState} from "react";
 import type {ReactNode} from "react";
 import Link from "next/link";
 import {ArrowRight,BookOpen,CheckCircle2,Clock3,Download,Flower2,FolderOpen,Headphones,Play,RefreshCw,Send,MessageCircle,ShieldCheck,Sparkles,UserRound} from "lucide-react";
@@ -14,6 +14,7 @@ import {buildPersonalImageryCourse} from "@/lib/mandala/personal-guided-course.m
 import {appFetch} from "@/lib/app/client-fetch";
 import css from "./mandala-video-ready.module.css";
 import {ReadyGenerationCheckIn} from "./mandala-video-ready-checkin";
+import {MandalaTherapyWalletDialog} from "./mandala-therapy-wallet-dialog";
 
 type VideoFile={url:string;extension:"mp4"|"webm";bytes:number;duration:number};
 type View="home"|"login";
@@ -30,7 +31,7 @@ type Props={
   onGenerateBasicVideo:()=>boolean;onStartNewVideo:()=>void;onVerifyPlayback:(player:HTMLVideoElement)=>void;
   onSaveDirect:()=>void;onSendTelegramDirect:()=>void;onShareWhatsApp:(consentApproved?:boolean)=>void;
   saveStatus:VideoDeliveryStatus;basicFreeAvailable:boolean;
-  basicFreeIssue:"checking"|"unavailable"|"guest_used"|"insufficient"|null;basicCreditCost:number;
+  basicFreeIssue:"checking"|"unavailable"|"guest_used"|"insufficient"|null;basicCreditCost:number;courseFlow?:boolean;
 };
 const COPY={
   en:{
@@ -164,6 +165,15 @@ const COPY={
   },
 } as const;
 
+const courseActionCopy={
+ en:{free:"Generate 1 video free",paid:"Create my personal video therapy course · 8 videos",
+  note:"Eight videos need a confirmed quote and verified payment. Funding the wallet is a separate step."},
+ ru:{free:"Сгенерировать 1 видео бесплатно",paid:"Создать личный курс видеотерапии · 8 видео",
+  note:"Цена полного курса подтверждается отдельно. Пополнение кошелька не является заказом."},
+ es:{free:"Generar 1 vídeo gratis",paid:"Crear mi curso personal · 8 vídeos",
+  note:"El curso requiere precio y pago verificados. Recargar el monedero no equivale a un pedido."}
+} as const;
+
 export function MandalaVideoReady({
   locale,theme,wish,focus,aspect,video,verified,checking,rendering,renderProgress,
   generationNotice,exportFailed,canRetryExport,onRetryExport,onPlaybackError,
@@ -171,10 +181,13 @@ export function MandalaVideoReady({
   meditationEditor,onOpenDelivery,onRefreshLogin,onOpenCourse,onOpenTherapy,onReturnToPro,
   onGenerateBasicVideo,onStartNewVideo,onVerifyPlayback,onSaveDirect,
   onSendTelegramDirect,onShareWhatsApp,saveStatus,
-  basicFreeAvailable,basicFreeIssue,basicCreditCost
+  basicFreeAvailable,basicFreeIssue,basicCreditCost,courseFlow=false
 }:Props){
   const t=COPY[locale];
+  const courseActions=courseActionCopy[locale];
   const [view,setView]=useState<View>("home");
+  const [walletOpen,setWalletOpen]=useState(false);
+  const closeWallet=useCallback(()=>setWalletOpen(false),[]);
   const [videoGenerationNotice,setVideoGenerationNotice]=useState("");
   const [checkinEngaged,setCheckinEngaged]=useState(false);
   const [checkinDismissed,setCheckinDismissed]=useState(false);
@@ -382,10 +395,19 @@ export function MandalaVideoReady({
           data-ready-retry-compatible>{t.retryCompatible}<ArrowRight size={17} aria-hidden="true"/></button>:null}
       </div>:null}
       {header}
-      {!completed&&!waiting?<button type="button" className={css.primary}
+      {!completed&&!waiting&&!courseFlow?<button type="button" className={css.primary}
         disabled={disabled||checking} onClick={generateSelectedVideo} data-ready-generate>
         <Play size={19} aria-hidden="true"/>{t.videoGenerate}<ArrowRight size={18} aria-hidden="true"/>
       </button>:null}
+      {courseFlow&&!waiting?<div className={css.courseChoices} data-ready-course-choices>
+        <button type="button" className={css.courseFree} data-ready-course-free
+          disabled={disabled||checking} onClick={generateSelectedVideo}>
+          <Play size={19} aria-hidden="true"/>{courseActions.free}</button>
+        <button type="button" className={css.coursePaid} data-ready-course-paid
+          disabled={disabled} onClick={()=>setWalletOpen(true)}>
+          <BookOpen size={19} aria-hidden="true"/>{courseActions.paid}</button>
+        <p>{courseActions.note}</p>
+      </div>:null}
       {!completed&&basicFreeAvailable&&basicCreditCost>0&&!waiting?
         <p className={css.note} data-ready-video-credit-cost>
           <ShieldCheck size={17} aria-hidden="true"/>{basicCreditCost} {t.videoIncludedCredit}
@@ -636,5 +658,7 @@ export function MandalaVideoReady({
         <p className={css.gatePrivacy}><ShieldCheck size={18} aria-hidden="true"/>{t.saveGatePrivacy}</p>
       </section>
     </div>:null}
+    {walletOpen?<MandalaTherapyWalletDialog locale={locale} signedIn={signedIn}
+      onClose={closeWallet} onRefreshLogin={onRefreshLogin}/>:null}
   </section>;
 }

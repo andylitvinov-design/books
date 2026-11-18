@@ -2184,6 +2184,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [hypnoLight,setHypnoLight] = useState<HypnoLightSettings>({enabled:false,cyclesPerMinute:6,opacity:.18});
   const [therapyJumpRequested,setTherapyJumpRequested] = useState(false);
   const [therapyInitialFormat,setTherapyInitialFormat]=useState<"single"|"course">("single");
+  const [readyCourseFlow,setReadyCourseFlow]=useState(false);
   const [scores,setScores] = useState<Record<(typeof checkOrder)[number],number>>({energy:5,money:5,relationships:5,goals:5});
   const [touchedScores,setTouchedScores] = useState<Partial<Record<(typeof checkOrder)[number],number>>>({});
   const [theme, setTheme] = useState<VideoTheme>("energy");
@@ -7594,7 +7595,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       </header> : <span id="video-workspace-panel" className={videoStyles.srOnly}/>}
       
       {activeWorkspace==="ready"?<MandalaVideoReady
-        locale={locale} theme={theme} wish={wish} focus={meditationFocus} aspect={aspect}
+        courseFlow={readyCourseFlow} locale={locale} theme={theme} wish={wish} focus={meditationFocus} aspect={aspect}
         video={!readyGenerationPending&&playbackStatus!=="failed"&&result&&result.mode!=="catalog"?{
           url:result.url,extension:result.extension,bytes:result.bytes,duration
         }:null}
@@ -7930,6 +7931,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           disabled={recording||preparing||hypnoAudioBusy}
           editor={isCourse=><MandalaPersonalMeditation key={isCourse?"course":"single"}
             coursePreview={isCourse} compactTherapy approvedVideoConcept={approvedVideoConcept}
+            onCourseStart={()=>{
+              setReadyCourseFlow(true);setStudioMode("pump");setActiveWorkspace("ready");
+              window.requestAnimationFrame(()=>document.querySelector("[data-video-ready]")
+                ?.scrollIntoView({block:"start",behavior:"auto"}));
+            }}
             locale={locale} theme={theme} wish={wish}
             scene={sceneName} caption={caption} sound={attachedAudio?appliedAudioName:""}
             audioSrc={attachedAudio?.kind==="file"?(audioRights?uploadedAudio?.url||null:null):
