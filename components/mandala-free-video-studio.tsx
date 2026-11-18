@@ -1305,7 +1305,8 @@ function recordingMimes(withAudio: boolean, preferWebm = false, forceMp4ForRetry
   // MediaRecorder support does not prove final native playback. Choose a
   // Safari native MP4 first on iPhone, then expose an explicit alternate retry.
   const isApplePhone=typeof navigator!=="undefined" &&
-    /iPhone|iPad|iPod/.test(navigator.userAgent);
+    (/iPhone|iPad|iPod/i.test(navigator.userAgent)||
+      (/Macintosh/i.test(navigator.userAgent)&&navigator.maxTouchPoints>1));
   // The reported iPhone fails to decode a finalized WebM. Try an explicitly
   // AVC/AAC-capable MP4 recorder first there; keep the alternate format for
   // a real playback failure, without claiming that MIME support guarantees it.
@@ -3813,6 +3814,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     // deadlock. Chromium retains its tested native recorder implementation.
     const ua=typeof navigator==="undefined"?"":navigator.userAgent;
     const safariWebKit=/AppleWebKit/i.test(ua)&&!/Chrome|Chromium|Edg|OPR/i.test(ua);
+    const isApplePhone=/iPhone|iPad|iPod/i.test(ua)||
+      (/Macintosh/i.test(ua)&&navigator.maxTouchPoints>1);
     const hasWebCodecs=typeof VideoEncoder!=="undefined"&&
       typeof VideoEncoder.isConfigSupported==="function"&&typeof VideoFrame!=="undefined"&&
       (!attachedAudio || (typeof AudioEncoder!=="undefined"&&
@@ -4077,8 +4080,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       }
       const [outputWidth, outputHeight] = formatDimensions(aspect, quality);
       // A deliberate retry reduces only encoder dimensions, not audio or shots.
-      const safariRetryScale=useWebCodecsMp4&&safeWebkitRetry
+      // On physical iPhone choose conservative, native-decodable MP4 on the FIRST
+      // attempt. Do not encode 720p first and retry automatically at 540p.
+      const safariRetryScale=useWebCodecsMp4&&(safeWebkitRetry||isApplePhone)
         ? 540/(quality==="fullhd"?1080:720):1;
+      if(useWebCodecsMp4&&isApplePhone)compatibilityExportRef.current=true;
       canvas.width=Math.round(outputWidth*safariRetryScale/2)*2;
       canvas.height=Math.round(outputHeight*safariRetryScale/2)*2;
       const ctx = canvas.getContext("2d", { alpha: false });
@@ -4142,7 +4148,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           const encodeCanvasMovie=async (lighter=false)=>{
             const blob=await encodeLocalWebCodecsMp4({
               canvas,allowProceduralBrowser:procedural&&!safariWebKit,
-              seconds:duration,frameRate:Math.min(safeWebkitRetry?8:10,framesPerSecond),
+              seconds:duration,frameRate:Math.min((safeWebkitRetry||isApplePhone)?8:10,framesPerSecond),
               ...(lighter?{frameRate:8}:{}),
               audio:files.length?{files,volume:soundVolume}:undefined,
               shouldContinue:()=>!controller.signal.aborted&&aliveRef.current&&sourceRef.current===snapshotKey,
@@ -4173,7 +4179,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             const code=firstError instanceof Error?firstError.message:"";
             const recoverable=["video_encoder_timeline_drift","video_encoder_too_slow",
               "webcodecs_h264_unsupported","video_output_size_invalid"].includes(code);
-            if(!safariWebKit||safeWebkitRetry||!recoverable||
+            if(!safariWebKit||isApplePhone||safeWebkitRetry||!recoverable||
               controller.signal.aborted||!aliveRef.current||sourceRef.current!==snapshotKey)
               throw firstError;
             // A slower physical iPhone can exceed the 720p encoder budget.
@@ -4225,7 +4231,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             const code=safeReasons.includes(reason)?reason:"unexpected_encoder_failure";
             // Fixed diagnostic code only: no media, storyboard, voice or text.
             console.warn("HH_WEBKIT_MP4_EXPORT_FAILURE:"+code);
-            const canRetry=!safeWebkitRetry&&[
+            const canRetry=!isApplePhone&&!safeWebkitRetry&&[
               "video_encoder_timeline_drift","video_encoder_too_slow",
               "webcodecs_h264_unsupported","unexpected_encoder_failure",
             ].includes(code);
@@ -4359,7 +4365,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         const extension=isWebm?"webm":"mp4";
         const type=isWebm?"video/webm":"video/mp4";
         const blob=new Blob(chunks,{type});
-        if(!isMp4&&!isWebm){
+        if((isApplePhone&&isWebm)||(!isMp4&&!isWebm)){
           if(creditOpRef.current)void releaseCredit(creditOpRef.current);
           setPlaybackStatus("failed");
           setNotice(locale==="ru"
@@ -4948,6 +4954,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       .some(mime=>mime.startsWith("video/webm"));
     const autoRetry=shouldAutoRecoverSafariPlayback({
       safariWebKit,format:result.extension,errorCode,nativeWebm,
+      userAgent:ua,maxTouchPoints:navigator.maxTouchPoints,
       alreadyAttempted:autoWebmRetryForRef.current===signature,
       catalog:result.mode==="catalog"
     });
@@ -4964,9 +4971,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       ?locale==="ru"?"Safari отклонил MP4. Повторяем в совместимом WebM без списания за нерабочее видео."
         :locale==="es"?"Safari rechazó el MP4. Reintentando WebM sin cobrar por el vídeo fallido."
         :"Safari rejected the MP4. Retrying in compatible WebM without charging for the failed movie."
-      :locale==="ru"?"iPhone не воспроизводит этот "+result.extension.toUpperCase()+" (ошибка "+errorCode+"). Кредиты возвращаются. Выберите совместимый повтор."
-        :locale==="es"?"El iPhone no puede reproducir "+result.extension.toUpperCase()+" (error "+errorCode+"). Los créditos se devuelven."
-        :"iPhone cannot play this "+result.extension.toUpperCase()+" (error "+errorCode+"). Your credits are released; try compatibility mode.");
+      :locale==="ru"?"iPhone не воспроизводит "+result.extension.toUpperCase()+" (ошибка "+errorCode+"). Повтор автоматически не запускается; кредиты возвращены."
+        :locale==="es"?"Este iPhone no reproduce "+result.extension.toUpperCase()+" (error "+errorCode+"). Sin reintento automático; créditos devueltos."
+        :"iPhone cannot play "+result.extension.toUpperCase()+" (error "+errorCode+"). No automatic retry; your credits are released.");
   }
   function confirmVideoPlayback(video:HTMLVideoElement){
     if(result?.url===rejectedPlaybackUrlRef.current)return;
