@@ -4,6 +4,7 @@ import Link from "next/link";
 import styles from "./studio-music-picker.module.css";
 import {Check,Play,Pause} from "lucide-react";
 import videoStyles from "./mandala-video-mobile.module.css";
+import {createStudioMusicPreviewUrlCache} from "@/lib/mandala/studio-music-preview-cache.mjs";
 import {PUBLIC_MUSIC_TAG_LABELS,musicTagLabel,safeStudioMusicTags,studioMusicFilter,studioMusicFeaturedTracks,studioMusicAttachmentName} from "@/lib/mandala/studio-music-catalog.mjs";
 
 const text={
@@ -183,9 +184,9 @@ export function StudioMusicPicker({locale="en",disabled=false,onSelect,initialOp
  </section>;
 }
 const featuredText={
- ru:{verified:"Источник проверен · ещё без оценки звучания",add:"Выбрать запись",remove:"Убрать запись",listen:"Прослушать",pause:"Пауза",unavailable:"Запись временно недоступна",again:"Нажмите воспроизведение ещё раз"},
- en:{verified:"Verified source · not yet listening-rated",add:"Choose recording",remove:"Remove recording",listen:"Listen",pause:"Pause",unavailable:"Recording unavailable",again:"Tap play again"},
- es:{verified:"Origen verificado · sin valoración auditiva",add:"Elegir grabación",remove:"Quitar grabación",listen:"Escuchar",pause:"Pausa",unavailable:"Grabación no disponible",again:"Pulsa reproducir otra vez"}
+ ru:{loading:"Загрузка звука",verified:"Источник проверен · ещё без оценки звучания",add:"Выбрать запись",remove:"Убрать запись",listen:"Прослушать",pause:"Пауза",unavailable:"Запись временно недоступна",again:"Нажмите воспроизведение ещё раз"},
+ en:{loading:"Loading audio",verified:"Verified source · not yet listening-rated",add:"Choose recording",remove:"Remove recording",listen:"Listen",pause:"Pause",unavailable:"Recording unavailable",again:"Tap play again"},
+ es:{loading:"Cargando audio",verified:"Origen verificado · sin valoración auditiva",add:"Elegir grabación",remove:"Quitar grabación",listen:"Escuchar",pause:"Pausa",unavailable:"Grabación no disponible",again:"Pulsa reproducir otra vez"}
 };
 const validSiteRecording=row=>row?.mime==="audio/mpeg"&&
  Number.isSafeInteger(row.bytes)&&row.bytes>0&&row.bytes<=15*1024*1024;
@@ -203,7 +204,8 @@ async function verifiedStudioMusicUrl(row){
     !url.hostname.endsWith(".supabase.co")||
     !url.pathname.startsWith("/storage/v1/object/sign/hh-studio-music-library/"))
    throw Error("MUSIC_URL_UNTRUSTED");
- return url.href;
+ const seconds=Number.isSafeInteger(data.expiresSeconds)?data.expiresSeconds:180;
+ return {url:url.href,expiresAt:Date.now()+Math.max(0,Math.min(seconds,180)-20)*1000};
 }
 /** Inline signed recordings in the SAME carousel as the original local choices.
  * No autoplay, no file upload, no new storage. Picking is a deliberate action.
@@ -233,6 +235,11 @@ export function StudioMusicFeatured({locale="en",category="all",disabled=false,
  const [preview,setPreview]=useState(null);
  const [playing,setPlaying]=useState(false);
  const audioRef=useRef(null);
+ const [bufferingId,setBufferingId]=useState(null);
+ const playSequence=useRef(0);
+ const cacheRef=useRef(null);
+ if(!cacheRef.current)cacheRef.current=createStudioMusicPreviewUrlCache(verifiedStudioMusicUrl);
+ const signedUrlCache=cacheRef.current;
  useEffect(()=>{
   const controller=new AbortController();let live=true;
   void fetch("/api/app/studio-music",{credentials:"same-origin",cache:"no-store",
@@ -249,23 +256,61 @@ export function StudioMusicFeatured({locale="en",category="all",disabled=false,
  // eslint-disable-next-line react-hooks/exhaustive-deps
  },[retry]);
  const picked=useMemo(()=>studioMusicFeaturedTracks(tracks,category,5),[tracks,category]);
+ useEffect(()=>{
+  if(loadState!=="ready"||disabled)return;
+  // Only sign three visible music URLs after paint. Audio bytes are never prefetched.
+  const timer=setTimeout(()=>signedUrlCache.prime(picked,3),150);
+  return ()=>clearTimeout(timer);
+ },[loadState,disabled,picked,signedUrlCache]);
+ useEffect(()=>()=>{playSequence.current+=1;signedUrlCache.clear()},[signedUrlCache]);
  const notice=message=>onError?.(message);
+ const playFromUrl=(row,url,sequence)=>{
+  const audio=audioRef.current;
+  if(!audio||sequence!==playSequence.current)return;
+  audio.pause();audio.src=url;audio.load();
+  setPreview({id:row.id,url});setPlaying(false);setBufferingId(row.id);
+  void audio.play().then(()=>{
+   if(sequence===playSequence.current){setPlaying(true);setBufferingId(null)}
+  }).catch(error=>{
+   if(sequence===playSequence.current){
+    setPlaying(false);setBufferingId(null);
+    notice(error?.name==="NotAllowedError"?t.again:t.unavailable);
+   }
+  });
+ };
  async function audition(row){
   if(disabled||busyId)return;
   const audio=audioRef.current;
-  if(preview?.id===row.id&&audio){
-   if(!audio.paused){audio.pause();setPlaying(false);return;}
-   try{await audio.play();setPlaying(true);}catch{notice(t.again);}
+  if(preview?.id===row.id&&audio&&!audio.paused){
+   playSequence.current+=1;audio.pause();setPlaying(false);setBufferingId(null);return;
+  }
+  const sequence=++playSequence.current;
+  onPreviewStart?.();
+  const readyUrl=signedUrlCache.peek(row.id);
+  if(readyUrl){
+   // Synchronous within original iOS user gesture: no await before play().
+   if(preview?.id===row.id&&audio?.src===readyUrl){
+    setBufferingId(row.id);
+    void audio.play().then(()=>{
+     if(sequence===playSequence.current){setPlaying(true);setBufferingId(null)}
+    }).catch(error=>{
+     if(sequence===playSequence.current){
+      setPlaying(false);setBufferingId(null);
+      notice(error?.name==="NotAllowedError"?t.again:t.unavailable);
+     }
+    });
+   }else playFromUrl(row,readyUrl,sequence);
    return;
   }
   if(audio){audio.pause();audio.removeAttribute("src");audio.load();}
-  setPlaying(false);onPreviewStart?.();setBusyId(row.id);
+  setPlaying(false);setPreview({id:row.id,url:""});
+  setBufferingId(row.id);setBusyId(row.id);
   try{
-   const url=await verifiedStudioMusicUrl(row);
-   if(audio){audio.src=url;audio.load();}
-   setPreview({id:row.id,url});
-   try{await audio?.play();setPlaying(Boolean(audio));}catch{notice(t.again);}
-  }catch{notice(t.unavailable);}finally{setBusyId(null);}
+   const url=await signedUrlCache.get(row);
+   if(sequence===playSequence.current)playFromUrl(row,url,sequence);
+  }catch{
+   if(sequence===playSequence.current){setBufferingId(null);notice(t.unavailable)}
+  }finally{setBusyId(null)}
  }
  async function choose(row){
   if(disabled||busyId)return;
@@ -273,7 +318,7 @@ export function StudioMusicFeatured({locale="en",category="all",disabled=false,
   if(selectedFilename===name){onDeselect?.();return;}
   setBusyId(row.id);
   try{
-   const url=await verifiedStudioMusicUrl(row);
+   const url=await signedUrlCache.get(row);
    const response=await fetch(url,{cache:"no-store"});
    if(!response.ok)throw Error("MUSIC_FILE_UNAVAILABLE");
    const blob=await response.blob();
@@ -285,7 +330,12 @@ export function StudioMusicFeatured({locale="en",category="all",disabled=false,
  }
  return <>
   <audio ref={audioRef} preload="none" style={{display:"none"}}
-   onEnded={()=>setPlaying(false)} onError={()=>setPlaying(false)}/>
+   onPlaying={()=>{setPlaying(true);setBufferingId(null)}}
+    onWaiting={()=>{if(preview?.id)setBufferingId(preview.id)}}
+    onStalled={()=>{if(preview?.id)setBufferingId(preview.id)}}
+    onPause={()=>setPlaying(false)}
+    onEnded={()=>{setPlaying(false);setBufferingId(null)}}
+    onError={()=>{setPlaying(false);setBufferingId(null)}}/>
   {loadState==="loading"&&<div data-video-studio-featured-loading
     className={videoStyles.audioCompactUpload} role="status">
     <strong>♫</strong><small>{locale==="ru"?"Загружаем записи…":
@@ -299,12 +349,13 @@ export function StudioMusicFeatured({locale="en",category="all",disabled=false,
   {picked.map((row,index)=>{
    const selected=selectedFilename===studioMusicAttachmentName(row);
    const current=preview?.id===row.id&&playing;
+    const buffering=busyId===row.id||bufferingId===row.id;
    const poster=Array.isArray(posters)?posters[index%Math.max(1,posters.length)]:null;
    const parts=row.title.split(" · ");
    const short=parts.length>=2?(parts.slice(1,-1).join(" · ")||parts[1]):row.title;
    return <article key={row.id} className={videoStyles.audioCompactTile}
      data-video-audio-compact-track={"library:"+row.id}
-     data-video-studio-featured-recording={row.id} data-selected={selected}
+     data-video-studio-featured-recording={row.id} data-selected={selected} data-audio-buffering={buffering}
      data-audio-quality={row.reviewStage==="published"?"listening-reviewed":"source-verified"}
      style={!poster?{background:"linear-gradient(145deg,#35645b,#19433e 56%,#7c9a89)"}:undefined}>
     {poster&&<>
@@ -324,10 +375,13 @@ export function StudioMusicFeatured({locale="en",category="all",disabled=false,
     </button>
     <button type="button" className={videoStyles.audioCompactPlay}
      data-video-studio-featured-play={row.id}
-     aria-label={(current?t.pause:t.listen)+" — "+row.title}
-     aria-pressed={current} disabled={disabled||Boolean(busyId)}
-     onClick={()=>void audition(row)}>
-     {current?<Pause size={17} fill="currentColor"/>:<Play size={17} fill="currentColor"/>}
+     aria-label={(buffering?t.loading:current?t.pause:t.listen)+" — "+row.title}
+     aria-busy={buffering} aria-pressed={current} disabled={disabled||Boolean(busyId)}
+     onPointerEnter={()=>{if(!disabled)void signedUrlCache.get(row).catch(()=>{})}}
+      onFocus={()=>{if(!disabled)void signedUrlCache.get(row).catch(()=>{})}}
+      onTouchStart={()=>{if(!disabled)void signedUrlCache.get(row).catch(()=>{})}}
+      onClick={()=>void audition(row)}>
+     {buffering?<span aria-hidden="true">…</span>:current?<Pause size={17} fill="currentColor"/>:<Play size={17} fill="currentColor"/>}
     </button>
    </article>;
   })}

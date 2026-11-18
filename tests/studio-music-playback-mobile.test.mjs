@@ -52,3 +52,34 @@ test("merged audio UI retains both featured carousel and signed searchable playe
  assert.match(picker,/studioMusicFeaturedTracks/);
  assert.match(picker,/data-video-studio-music-library/);
 });
+
+test("signed preview cache expires safely and deduplicates preload",async()=>{
+ const {createStudioMusicPreviewUrlCache}=await import("../lib/mandala/studio-music-preview-cache.mjs");
+ let now=100000,calls=0;
+ const cache=createStudioMusicPreviewUrlCache(async row=>{
+  calls++;return {url:"https://example.supabase.co/"+row.id,expiresAt:now+60000};
+ },{now:()=>now,minValidityMs:15000});
+ const rows=Array.from({length:5},(_,id)=>({id:"track-"+id}));
+ cache.prime(rows,3);
+ const [a,b]=await Promise.all([cache.get(rows[0]),cache.get(rows[0])]);
+ assert.equal(a,b);
+ await Promise.all(rows.slice(0,3).map(row=>cache.get(row)));
+ assert.equal(calls,3);
+ assert.equal(cache.peek(rows[0].id),a);
+ assert.equal(cache.peek(rows[4].id),null);
+ now+=46000;assert.equal(cache.peek(rows[0].id),null);
+ await cache.get(rows[0]);assert.equal(calls,4);
+ cache.clear();assert.equal(cache.peek(rows[0].id),null);
+});
+
+test("iOS fast music preview keeps play() in the original click and never predownloads whole MP3",()=>{
+ assert.match(picker,/createStudioMusicPreviewUrlCache\(verifiedStudioMusicUrl\)/);
+ assert.match(picker,/signedUrlCache\.prime\(picked,3\)/);
+ assert.match(picker,/const readyUrl=signedUrlCache\.peek\(row\.id\)/);
+ assert.match(picker,/if\(readyUrl\)\{/);
+ assert.match(picker,/playFromUrl\(row,readyUrl,sequence\)/);
+ assert.match(picker,/audio\.play\(\)/);
+ assert.match(picker,/onTouchStart=/);
+ assert.match(picker,/data-audio-buffering=\{buffering\}/);
+ assert.doesNotMatch(picker,/<audio[^>]*autoPlay/);
+});
