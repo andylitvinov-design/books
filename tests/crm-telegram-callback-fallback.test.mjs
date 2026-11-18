@@ -6,6 +6,7 @@ import './telegram-secretary-business.test.mjs';
 import './crm-telegram-first-contact.test.mjs';
 import vm from 'node:vm';
 import {parseTelegramHomeCallback} from '../lib/crm/telegram-companion-menu.mjs';
+import {captureTelegramLeadBestEffort} from '../lib/crm/telegram-lead-capture-policy.mjs';
 import {readFileSync} from 'node:fs';
 // Closed VM: actual repository route, callback codec and normalizer; mocked external boundaries only.
 const read=p=>readFileSync(new URL(p,import.meta.url),'utf8');
@@ -32,10 +33,10 @@ function normalizer(){
  vm.runInContext(safe+normal,context,{timeout:1000});
  return context;
 }
-async function routeRun({source=candidate,payload=callback(),diagnostic='off',companion='off',provider='telegram',authorized=true}={}){
+async function routeRun({source=candidate,payload=callback(),diagnostic='off',companion='off',provider='telegram',authorized=true,leadFailure=false,syncFailure=false}={}){
  const context=normalizer(),calls={ingest:0,ack:0,send:0,ensure:0,intake:0,aiV3:0,companion:0,companionSend:0,waProof:0,waIntake:0,waSend:0,botCapture:0,businessCapture:0};
  class Response{constructor(body,{status=200}={}){this.body=body;this.status=status}static json(body,opts){return new Response(body,opts)}}
- Object.assign(context,{Buffer,NextResponse:Response,MESSENGER_CHANNELS:['telegram','whatsapp'],PRIVATE_HEADERS:{},getAppConfig:()=>({}),verifyMessengerWebhook:()=>authorized,verifyMessengerChallenge:()=>null,
+ Object.assign(context,{Buffer,NextResponse:Response,MESSENGER_CHANNELS:['telegram','whatsapp'],PRIVATE_HEADERS:{},console:{error:()=>{}},captureTelegramLeadBestEffort,getAppConfig:()=>({}),verifyMessengerWebhook:()=>authorized,verifyMessengerChallenge:()=>null,
    safeError:()=>({status:503}),telegramDiagnosticReady:()=>false,channelTransportReady:()=>true,
    processWhatsAppAccountLink:async()=>{calls.waProof++;return {handled:false}},
    processWhatsAppDiagnostic:async()=>{calls.waIntake++;return {handled:false}},
@@ -49,8 +50,8 @@ async function routeRun({source=candidate,payload=callback(),diagnostic='off',co
    processTelegramBusinessSecretary:async()=>({handled:false}),
    gateTelegramBusinessSecretaryOptOut:async()=>({blocked:false}),
    // Mock the new, owner-scoped lead persistence boundary without real DB writes.
-   captureTelegramBusinessLead:async()=>{calls.businessCapture++;return {created:false}},
-   captureTelegramBotLead:async()=>{calls.botCapture++;return {created:false}},
+   captureTelegramBusinessLead:async()=>{calls.businessCapture++;if(leadFailure)throw new Error('synthetic role 42501');return {created:false}},
+   captureTelegramBotLead:async()=>{calls.botCapture++;if(leadFailure)throw new Error('synthetic role 42501');return {created:false}},
    // WhatsApp locale marker helper belongs to the production normalizer, not this VM.
    whatsappExpressReviewLocale:()=>null,
    processTelegramCompanion:async()=>{calls.companion++;return companion==='handled'?{handled:true,to:'123456789',locale:'ru',text:'test companion welcome',markup:null}:{handled:false}},
@@ -61,7 +62,7 @@ async function routeRun({source=candidate,payload=callback(),diagnostic='off',co
    finishTelegramAiV3:forbidden,
    shouldBootstrapTelegramNativeMenu:()=>false,
    sendTelegramCompanionMessage:async()=>{calls.companionSend++},
-   ingestMessengerUpdate:async()=>{calls.ingest++},acknowledgeTelegramInlineCallback:async()=>{calls.ack++},sendTelegramDiagnosticPrompt:async()=>{calls.send++},ensureTelegramInlineWebhookUpdates:async()=>{calls.ensure++}});
+   ingestMessengerUpdate:async()=>{calls.ingest++},acknowledgeTelegramInlineCallback:async()=>{calls.ack++},sendTelegramDiagnosticPrompt:async()=>{calls.send++},ensureTelegramInlineWebhookUpdates:async()=>{calls.ensure++;if(syncFailure)throw new Error('synthetic provider outage')}});
  if(diagnostic==='off'){
   const begin=sources.hook.indexOf('export async function processTelegramDiagnostic'),end=sources.hook.indexOf('  if(!/^',begin);
   vm.runInContext(sources.hook.slice(begin,end).replace('export ','')+"throw new Error('UNEXPECTED_DIAGNOSTIC_BODY');}",context,{timeout:1000});
@@ -132,4 +133,29 @@ test('first private Telegram text invokes deduped lead capture; callbacks never 
   const clicked=await routeRun({payload:callback('hhv2:ru:yes')});
   assert.equal(clicked.response.status,200);
   assert.equal(clicked.calls.botCapture,0);
+});
+
+test('signed /start reaches its reply even when CRM role and inline sync are unavailable',async()=>{
+ const payload={update_id:114,message:{message_id:11,date:1,chat:{id:123456789,type:'private'},
+   from:{first_name:'Fictional',is_bot:false},text:'/start'}};
+ for(const flags of [{leadFailure:true},{syncFailure:true},{leadFailure:true,syncFailure:true}]){
+  const result=await routeRun({payload,diagnostic:'handled',...flags});
+  assert.equal(result.response.status,200);
+  assert.equal(result.calls.botCapture,1);
+  assert.equal(result.calls.aiV3,1);
+  assert.equal(result.calls.intake,1);
+  assert.equal(result.calls.send,1);
+  assert.equal(result.calls.ensure,1);
+  assert.equal(result.calls.ingest,0);
+ }
+});
+test('signed Business message survives optional lead-capture denial without a fake CRM receipt',async()=>{
+ const payload={update_id:115,business_message:{business_connection_id:'test-connection',
+    message_id:12,date:1,chat:{id:123456789,type:'private'},
+    from:{id:123456789,is_bot:false},text:'Hello, service enquiry'}};
+ const result=await routeRun({payload,leadFailure:true});
+ assert.equal(result.response.status,200);
+ assert.equal(result.calls.businessCapture,1);
+ assert.equal(result.calls.botCapture,0);
+ assert.equal(result.calls.ingest,0);
 });

@@ -3,90 +3,73 @@ import {useState, type ReactNode} from "react";
 import {AudioLines, BookOpen, ChevronDown, ChevronRight, Film, Leaf, Mic2, Sparkles} from "lucide-react";
 import type {PublicLocale} from "@/lib/public-locales";
 import css from "./mandala-therapy-studio.module.css";
-
 type Pane="meditation"|"voice"|"practice"|"course";
-type Props={locale:PublicLocale;disabled:boolean;initialFormat?:"single"|"course";editor:(course:boolean,onApproved:()=>void)=>ReactNode;voiceEditor:ReactNode;advancedEffects:ReactNode;onVideoPhrases:()=>void};
+type Props={locale:PublicLocale;disabled:boolean;initialFormat?:"single"|"course";editor:(course:boolean,onApproved:(text:string)=>void)=>ReactNode;onMeditationApproved?:(text:string)=>void;voiceEditor:ReactNode;advancedEffects:ReactNode;onVideoPhrases:()=>void};
 const dict={
  en:{title:"Therapy Studio",tag:"PERSONAL PRACTICES",intro:"Meditation, voice and guided practice.",
-  meditation:"Meditation",voice:"Voice",practice:"Practice",course:"My Course",
-  voiceTitle:"Voice for video phrases",voiceHint:"Choose or record a permitted voice for your phrases.",
-  voiceEmpty:"To revise your meditation, return to the Meditation tab.",voiceBack:"Edit meditation text",
-  practiceTitle:"Create your practice",practiceHint:"Pick your next step. Nothing is rendered or purchased automatically.",
-  speak:"Spoken meditation",speakHint:"Approve your text in Meditation, then choose a voice.",
-  speakButton:"Choose voice & narrate",phrases:"Phrases for video",phrasesHint:"Prepare short phrases in the existing Ideas editor.",
-  phrasesButton:"Create video phrases",effects:"Optional visual and audio effects",
-  effectsHint:"Original optional effects are preserved; opening them does not render a video.",
-  safety:"A gentle reflective practice, not medical treatment. My Course keeps the existing eight-session plan; further scripts are created only on request."},
+  single:"Single practice",singleHint:"One meditation",course:"My Course",courseHint:"Eight connected themes",
+  meditation:"Meditation",voice:"Voice",practice:"Practice",voiceTitle:"Voice for video phrases",voiceHint:"Choose or record a permitted voice for your phrases.",
+  voiceEmpty:"To revise the meditation text or preferences, return to the Meditation tab.",voiceBack:"Edit meditation text",
+  practiceTitle:"Create your practice",practiceHint:"Pick your next step. No narration or paid video starts automatically.",
+  speak:"Spoken meditation",speakHint:"Preview your text and choose a voice before creating audio.",speakButton:"Choose voice & narrate",
+  phrases:"Phrases for video",phrasesHint:"Prepare short, meaningful phrases in the existing Ideas editor.",phrasesButton:"Create video phrases",
+  effects:"Optional visual and audio effects",effectsHint:"Preserved original settings; no video is rendered when these are opened.",
+  safety:"Gentle reflective practice, not medical treatment. Eight-session mode starts with a plan and one script; other scripts are created locally only on request."},
  ru:{title:"Therapy Studio",tag:"ЛИЧНЫЕ ПРАКТИКИ",intro:"Медитация, голос и практика.",
-  meditation:"Медитация",voice:"Голос",practice:"Практика",course:"Мой курс",
-  voiceTitle:"Голос для видеофраз",voiceHint:"Выберите или запишите голос с необходимыми правами.",
-  voiceEmpty:"Изменить сценарий можно на вкладке «Медитация».",voiceBack:"Изменить текст",
-  practiceTitle:"Создайте практику",practiceHint:"Выберите следующий шаг. Рендер и оплата автоматически не запускаются.",
-  speak:"Озвученная медитация",speakHint:"Утвердите текст и выберите голос.",
-  speakButton:"Выбрать голос и озвучить",phrases:"Фразы для видео",phrasesHint:"Подготовьте короткие фразы в существующем редакторе Ideas.",
-  phrasesButton:"Создать видеофразы",effects:"Дополнительные видео- и аудиоэффекты",
-  effectsHint:"Прежние настройки сохранены; их открытие не запускает рендер.",
-  safety:"Бережная практика для рефлексии, не лечение. «Мой курс» сохраняет план восьми сессий; следующие тексты создаются только по запросу."},
+  single:"Одна практика",singleHint:"Одна медитация",course:"Мой курс",courseHint:"Восемь связанных тем",
+  meditation:"Медитация",voice:"Голос",practice:"Практика",voiceTitle:"Голос для видеофраз",voiceHint:"Выберите или запишите свой разрешённый голос.",
+  voiceEmpty:"Текст медитации и фильтры можно изменить на вкладке «Медитация».",voiceBack:"Изменить текст медитации",
+  practiceTitle:"Создайте практику",practiceHint:"Выберите дальнейшее действие. Платная генерация автоматически не начинается.",
+  speak:"Озвученная медитация",speakHint:"Проверьте текст и выберите голос перед озвучкой.",speakButton:"Выбрать голос и озвучить",
+  phrases:"Фразы для видео",phrasesHint:"Подготовьте фразы в существующем редакторе Ideas.",phrasesButton:"Создать фразы для видео",
+  effects:"Дополнительные видео- и аудиоэффекты",effectsHint:"Старые настройки сохранены; открытие не запускает рендер.",
+  safety:"Мягкая практика для рефлексии, не лечение. Курс начинается с плана и первого текста; остальные создаются локально только по запросу."},
  es:{title:"Therapy Studio",tag:"PRÁCTICAS PERSONALES",intro:"Meditación, voz y práctica guiada.",
-  meditation:"Meditación",voice:"Voz",practice:"Práctica",course:"Mi curso",
-  voiceTitle:"Voz para frases de vídeo",voiceHint:"Elige o graba una voz con permiso.",
-  voiceEmpty:"Para cambiar el guion, vuelve a Meditación.",voiceBack:"Editar texto",
-  practiceTitle:"Crea tu práctica",practiceHint:"Elige el siguiente paso. No hay pagos ni renders automáticos.",
-  speak:"Meditación narrada",speakHint:"Aprueba tu texto y elige una voz.",
-  speakButton:"Elegir voz y narrar",phrases:"Frases para vídeo",phrasesHint:"Prepara frases breves en el editor Ideas.",
-  phrasesButton:"Crear frases",effects:"Efectos opcionales de audio y vídeo",
-  effectsHint:"Se mantienen los controles originales y no se renderiza nada al abrirlos.",
-  safety:"Práctica reflexiva, no tratamiento médico. Mi curso mantiene ocho sesiones y los próximos guiones se crean solo a petición."}
+  single:"Una práctica",singleHint:"Una meditación",course:"Mi curso",courseHint:"Ocho temas relacionados",
+  meditation:"Meditación",voice:"Voz",practice:"Práctica",voiceTitle:"Voz para frases de vídeo",voiceHint:"Elige o graba una voz con permiso.",
+  voiceEmpty:"Para revisar el guion y los filtros, vuelve a Meditación.",voiceBack:"Editar texto de meditación",
+  practiceTitle:"Crea tu práctica",practiceHint:"Elige el siguiente paso. No hay pagos ni generaciones automáticas.",
+  speak:"Meditación narrada",speakHint:"Revisa tu texto y elige una voz antes de narrar.",speakButton:"Elegir voz y narrar",
+  phrases:"Frases para vídeo",phrasesHint:"Prepara frases cortas en el editor Ideas existente.",phrasesButton:"Crear frases para vídeo",
+  effects:"Efectos opcionales de audio y vídeo",effectsHint:"Controles originales conservados, sin render automático.",
+  safety:"Práctica reflexiva, no tratamiento médico. El curso comienza con un plan y el primer guion; los demás se crean localmente solo si los solicitas."}
 } as const;
-
-export function MandalaTherapyStudio({locale,disabled,initialFormat="single",editor,voiceEditor,advancedEffects,onVideoPhrases}:Props){
+export function MandalaTherapyStudio({locale,disabled,initialFormat="single",editor,onMeditationApproved,voiceEditor,advancedEffects,onVideoPhrases}:Props){
  const [pane,setPane]=useState<Pane>(initialFormat==="course"?"course":"meditation");
  const [isCourse,setIsCourse]=useState(initialFormat==="course");
  const [effectsOpen,setEffectsOpen]=useState(false);
  const t=dict[locale];
- const navigate=(next:Pane)=>{
-  if(next==="meditation")setIsCourse(false);
-  if(next==="course")setIsCourse(true);
-  setPane(next);
- };
- return <div className={css.shell} data-therapy-studio data-therapy-course={isCourse?"true":"false"}>
-  <header className={css.hero}>
-   <span className={css.eyebrow}><Leaf size={17} aria-hidden="true"/>{t.tag}</span>
-   <h3>{t.title}</h3><p>{t.intro}</p>
-  </header>
+ return <div className={css.shell} data-therapy-studio data-therapy-course={isCourse?"true":"false"} data-active-therapy-pane={pane}>
+  <header className={css.hero}><span className={css.eyebrow}><Leaf size={17}/>{t.tag}</span><h3>{t.title}</h3><p>{t.intro}</p></header>
   <div className={css.tabs} data-therapy-tabs role="tablist" aria-label="Therapy Studio">
    {(["meditation","voice","practice","course"] as const).map((id,i)=>{
     const Icon=[Leaf,Mic2,Film,BookOpen][i];
     return <button key={id} type="button" role="tab" aria-selected={pane===id}
-     id={"therapy-tab-"+id} aria-controls="therapy-tab-content" data-therapy-subtab={id}
-     disabled={disabled} onClick={()=>navigate(id)}>
-     <Icon size={19} aria-hidden="true"/><span>{t[id]}</span>
-    </button>;
+       id={"therapy-tab-"+id} aria-controls="therapy-tab-content" data-therapy-subtab={id}
+       disabled={disabled} onClick={()=>{setPane(id);if(id==="course")setIsCourse(true);else if(id==="meditation")setIsCourse(false);}}><Icon size={20}/><span>{t[id]}</span></button>;
    })}
   </div>
   <div className={css.main} role="tabpanel" id="therapy-tab-content" aria-labelledby={"therapy-tab-"+pane}>
    <div className={css.scriptHost} data-therapy-script-host data-pane={pane}>
-    {editor(isCourse,()=>navigate("voice"))}
+    {editor(isCourse,text=>{onMeditationApproved?.(text);setPane("voice");})}
    </div>
    {pane==="voice"?<div className={css.voiceArea} data-therapy-voice>
-    <details className={css.advanced}>
-     <summary><Mic2 size={18} aria-hidden="true"/>{t.voiceTitle}<ChevronDown size={16} aria-hidden="true"/></summary>
-     <p>{t.voiceHint}</p>{voiceEditor}
-    </details>
-    <p className={css.voiceEmpty}>{t.voiceEmpty} <button type="button" onClick={()=>navigate("meditation")}>{t.voiceBack}</button></p>
+     
+     {voiceEditor}
+     <p className={css.voiceEmpty} data-therapy-voice-empty><button type="button" onClick={()=>setPane("meditation")}>{t.voiceBack}</button></p>
    </div>:null}
    {pane==="practice"?<section className={css.practice} data-therapy-practice>
     <h4>{t.practiceTitle}</h4><p>{t.practiceHint}</p>
     <div className={css.option}><span><AudioLines size={23}/></span><div><strong>{t.speak}</strong><p>{t.speakHint}</p></div>
-     <button type="button" disabled={disabled} onClick={()=>navigate("voice")}>{t.speakButton}<ChevronRight size={18}/></button></div>
+      <button type="button" disabled={disabled} onClick={()=>setPane("voice")}>{t.speakButton}<ChevronRight size={18}/></button></div>
     <div className={css.option}><span><Film size={23}/></span><div><strong>{t.phrases}</strong><p>{t.phrasesHint}</p></div>
-     <button type="button" disabled={disabled} onClick={onVideoPhrases}>{t.phrasesButton}<ChevronRight size={18}/></button></div>
+      <button type="button" disabled={disabled} onClick={onVideoPhrases}>{t.phrasesButton}<ChevronRight size={18}/></button></div>
     <details className={css.advanced} data-therapy-advanced-effects onToggle={event=>setEffectsOpen(event.currentTarget.open)}>
-     <summary data-therapy-effects-toggle><Sparkles size={19}/>{t.effects}<ChevronDown size={17}/></summary>
-     <p>{t.effectsHint}</p>{effectsOpen?advancedEffects:null}
+      <summary data-therapy-effects-toggle><Sparkles size={19}/>{t.effects}<ChevronDown size={17}/></summary>
+      <p>{t.effectsHint}</p>{effectsOpen?advancedEffects:null}
     </details>
    </section>:null}
   </div>
-  <p className={css.safety}>{t.safety}</p>
+  {pane==="voice"?null:<p className={css.safety}>{t.safety}</p>}
  </div>;
 }

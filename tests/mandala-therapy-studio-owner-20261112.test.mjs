@@ -16,14 +16,13 @@ test("Therapy is sixth, after Ready; six original destinations remain intact",()
  assert.match(parent,/data-video-quick-control=\{item\.id\}/);
  assert.equal((parent.match(/<MandalaTherapyStudio /g)||[]).length,1);
 });
-test("Approved four Therapy tabs replace the format switch; My Course retains eight-session mode",()=>{
- assert.doesNotMatch(ui,/data-therapy-format-switch|data-therapy-format="/);
- assert.match(ui,/data-therapy-tabs/);
- for(const tab of ["meditation","voice","practice","course"])assert.ok(ui.includes('"'+tab+'"'));
- assert.match(ui,/data-therapy-subtab=\{id\}/);
- assert.match(ui,/editor\(isCourse,\(\)=>navigate\("voice"\)\)/);
- assert.match(ui,/if\(next==="course"\)setIsCourse\(true\)/);
- assert.match(ui,/if\(next==="meditation"\)setIsCourse\(false\)/);
+test("Approved four Therapy tabs replace the format switch",()=>{
+ assert.doesNotMatch(ui,/data-therapy-format-switch|data-therapy-format="(?:single|course)"/);
+ assert.match(ui,/\["meditation","voice","practice","course"\] as const/);
+ assert.match(ui,/if\(id==="course"\)setIsCourse\(true\)/);
+ assert.match(ui,/else if\(id==="meditation"\)setIsCourse\(false\)/);
+ assert.match(ui,/editor\(isCourse,text=>/);
+ assert.match(ui,/onMeditationApproved\?\.\(text\)/);
  assert.match(parent,/coursePreview=\{isCourse\}/);
  assert.match(ui,/role="tablist"/);
  assert.match(ui,/role="tabpanel"/);
@@ -55,15 +54,12 @@ test("Existing visual, quiet and binaural effects remain optional with no automa
  assert.match(browser,/data-therapy-subtab="practice"/);
  assert.match(browser,/data-therapy-effects-toggle/);
 });
-test("Compact warm mobile tabs have accessible targets and honest on-demand eight-session disclosure",()=>{
+test("Mobile visuals have roomy touch targets and correct eight-draft disclosure",()=>{
  assert.match(css,/grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
  assert.match(css,/min-height:50px/);
  assert.match(css,/@media\(max-width:355px\)/);
- assert.match(ui,/My Course keeps the existing eight-session plan/);
- assert.match(ui,/следующие тексты создаются только по запросу/);
- const mobile=read("components/mandala-personal-meditation.module.css");
- assert.match(mobile,/\.shortApprove\{[^}]*min-height:51px/);
- assert.match(mobile,/\.shortSecondary button\{[^}]*min-height:44px/);
+ assert.match(ui,/Eight-session mode starts with a plan and one script/);
+ assert.match(ui,/Курс начинается с плана и первого текста/);
 });
 
 test("Therapy WebKit preserves voice and reviewed recording rights",()=>{
@@ -130,4 +126,36 @@ test("Owner Therapy mobile: one introduction and compact controls, no feature re
  assert.match(css,/\[data-meditation-main-filters\] label:nth-child\(2\)\{grid-column:1\/-1/);
  assert.match(css,/\[data-meditation-generate\]\{min-height:52px/);
  assert.match(ui,/data-therapy-advanced-effects/);
+});
+
+test("Voice one-screen retains explicit cloud consent and existing real WAV path",()=>{
+ const voice=read("components/mandala-affirmation-voice.tsx");
+ const styles=read("components/mandala-affirmation-voice.module.css");
+ assert.match(parent,/therapyLayout=\{activeWorkspace==="effects"\}/);
+ assert.match(ui,/data-active-therapy-pane=\{pane\}/);
+ assert.match(voice,/data-therapy-voice-ui=\{therapyLayout\?"true":"false"\}/);
+ assert.match(voice,/data-video-therapy-own-voice/);
+ assert.match(voice,/role="checkbox" aria-checked=\{consent\}/);
+ assert.match(voice,/mode:"affirmations",voiceId,language,text:speechText,consent:true/);
+ assert.match(styles,/data-therapy-voice-ui="true"/);
+ assert.match(css,/\.scriptHost\[data-pane="practice"\],\.scriptHost\[data-pane="voice"\]\{display:none\}/);
+});
+
+test("Owner-approved A/B script reaches the single Voice editor with explicit consent",()=>{
+ const chosen=read("lib/mandala/short-meditation-choices.mjs");
+ const voice=read("components/mandala-affirmation-voice.tsx");
+ const stage=read("components/mandala-video-mobile.module.css");
+ assert.match(chosen,/buildShortMeditationChoices/);
+ assert.match(writer,/data-meditation-short-picker/);
+ assert.match(writer,/data-meditation-choice=\{index\}/);
+ assert.match(writer,/onApproved\?\.\(currentText\)/);
+ assert.match(parent,/onMeditationApproved=\{setApprovedMeditationText\}/);
+ assert.match(parent,/approvedMeditationText=\{activeWorkspace==="effects"\?approvedMeditationText:""\}/);
+ assert.match(parent,/isCurrentNarrationApproved\(attachedAudio\.spokenText\)/);
+ assert.match(voice,/const speechText=therapyLayout&&approvedMeditationText\?approvedShort:/);
+ assert.match(voice,/data-video-therapy-approved-meditation/);
+ assert.match(voice,/data-video-affirmation-voice-consent/);
+ assert.match(voice,/mode:"affirmations",voiceId,language,text:speechText,consent:true/);
+ assert.match(stage,/\[data-active-workspace="effects"\] \[data-video-live-stage\]\{display:none!important\}/);
+ assert.doesNotMatch(ui,/data-therapy-format-switch|data-therapy-format="/);
 });

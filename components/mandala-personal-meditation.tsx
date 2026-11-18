@@ -41,7 +41,7 @@ type Props = {
   seedScript?:string;
   onNarrationReady?:(file:File)=>Promise<boolean>;
   onNarrationInvalidated?:()=>void;
-  onApproved?:()=>void;
+  onApproved?:(approvedText:string)=>void;
 };
 type CourseDay={id:string;number:number;title:string;motif:string};
 type WriterOrigin="local"|"gemini_free"|"openrouter_free"|"edited"|null;
@@ -131,21 +131,21 @@ const shortCopy={
   option:"Option",duration:"≈ 0:30",text:"Meditation text",
   choose:"Choose this meditation",regenerate:"Generate 2 new options",
   customize:"Customize text",finishEdit:"Done editing",approved:"Text approved. Choose a voice next.",
-  voiceReady:"Approved meditation text",empty:"Please add meditation text first.",
+  voiceReady:"Approved meditation text",empty:"Please add meditation text first.",tooLong:"Keep the short text within 650 characters.",
   local:"Locally composed · no AI or paid render",safety:"A reflective exercise, not medical treatment."},
  ru:{eyebrow:"ВАШИ МЕДИТАЦИИ ГОТОВЫ",title:"Выберите медитацию",
   intro:"Два коротких текста по вашему сценарию, подготовленных локально. Выберите подходящий.",
   option:"Вариант",duration:"≈ 0:30",text:"Текст медитации",
   choose:"Утвердить эту медитацию",regenerate:"Предложить 2 новых варианта",
   customize:"Изменить текст",finishEdit:"Завершить правку",approved:"Текст утверждён. Теперь выберите голос.",
-  voiceReady:"Утверждённый текст",empty:"Сначала добавьте текст медитации.",
+  voiceReady:"Утверждённый текст",empty:"Сначала добавьте текст медитации.",tooLong:"Сократите текст до 650 символов.",
   local:"Создано локально · без AI и платного рендера",safety:"Практика для рефлексии, не медицинское лечение."},
  es:{eyebrow:"TUS MEDITACIONES ESTÁN LISTAS",title:"Elige tu meditación",
   intro:"Dos textos breves preparados localmente a partir de tu escenario. Elige uno.",
   option:"Opción",duration:"≈ 0:30",text:"Texto de meditación",
   choose:"Aprobar esta meditación",regenerate:"Generar otras 2 opciones",
   customize:"Editar texto",finishEdit:"Terminar edición",approved:"Texto aprobado. Ahora elige una voz.",
-  voiceReady:"Texto aprobado",empty:"Primero añade un texto de meditación.",
+  voiceReady:"Texto aprobado",empty:"Primero añade un texto de meditación.",tooLong:"Reduce el texto a 650 caracteres.",
   local:"Creado localmente · sin IA ni render de pago",safety:"Práctica reflexiva, no tratamiento médico."}
 } as const;
 const themeLabels = {
@@ -534,6 +534,10 @@ export function MandalaPersonalMeditation({
       if(disabled||!choices.safe||!currentText.trim()){
         setNotice(st.empty);return;
       }
+      if(Array.from(currentText).length>650){setNotice(st.tooLong);return;}
+      if(isMeditationSafetyResponse(buildPersonalMeditationScript({locale,wish:currentText,length:3}),locale)){
+        setNotice(t.safety);return;
+      }
       stopNarration();
       setScript(currentText);
       setWriterOrigin(shortDrafts?.key===shortKey?"edited":"local");
@@ -541,7 +545,7 @@ export function MandalaPersonalMeditation({
       setShortApproval({key:shortKey,index:shortTab,text:currentText});
       setNotice(st.approved);
       onNarrationInvalidated?.();
-      onApproved?.();
+      onApproved?.(currentText);
     };
     const refresh=()=>{
       if(disabled)return;
@@ -565,7 +569,10 @@ export function MandalaPersonalMeditation({
         {([0,1] as const).map(index=><button type="button" key={index}
           id={"meditation-choice-"+index} role="tab" aria-selected={shortTab===index}
           aria-controls="meditation-short-body" data-meditation-choice={index}
-          disabled={disabled} onClick={()=>{setShortTab(index);setShortEditing(false);}}>
+          disabled={disabled} onClick={()=>{
+            if(index!==shortTab){stopNarration();onNarrationInvalidated?.();}
+            setShortTab(index);setShortEditing(false);
+          }}>
           <span>{st.option} {index===0?"A":"B"}</span>
           <strong>{choices.items[index]?.title}</strong>
         </button>)}
@@ -577,13 +584,13 @@ export function MandalaPersonalMeditation({
           <span className={css.shortPill}><Leaf size={15} aria-hidden="true"/>{st.text}</span>
         </div>
         {shortEditing?<textarea className={css.shortTextarea} data-meditation-script
-          aria-label={st.text} maxLength={12000} rows={9} value={currentText}
+          aria-label={st.text} maxLength={650} rows={9} value={currentText}
           onChange={event=>customize(event.currentTarget.value)}/>:
           <div className={css.shortText} role="document" data-meditation-script
             aria-label={st.text}>{currentText}</div>}
       </section>:<p className={css.safety} role="alert">{choices.warning}</p>}
       {choices.safe?<button type="button" className={css.shortApprove}
-        data-meditation-approve disabled={disabled||!currentText.trim()}
+        data-meditation-approve disabled={disabled||!currentText.trim()||Array.from(currentText).length>650}
         onClick={accept}><Check size={21} aria-hidden="true"/>{st.choose}</button>:null}
       {choices.safe?<div className={css.shortSecondary}>
         <button type="button" data-meditation-generate disabled={disabled}
@@ -592,27 +599,7 @@ export function MandalaPersonalMeditation({
           aria-expanded={shortEditing} onClick={()=>setShortEditing(value=>!value)}>
           <Sparkles size={17} aria-hidden="true"/>{shortEditing?st.finishEdit:st.customize}</button>
       </div>:null}
-      {approved&&shortApproval?<div className={css.shortVoice} data-meditation-result
-        data-meditation-generation-source={writerOrigin||"local"}>
-        <strong><Headphones size={19} aria-hidden="true"/>{st.voiceReady}</strong>
-        <p className={css.shortVoiceText}>{shortApproval.text}</p>
-        <p className={css.writerOrigin}>{st.local}</p>
-        <button type="button" className={css.listen} data-meditation-listen
-          aria-pressed={listening} onClick={toggleNarration}>
-          {listening?<Square size={17}/>:<Headphones size={17}/>}
-          {listening?t.stopListening:t.listen}
-        </button>
-        {!voices.length?<p className={css.voiceHint} role="note">{t.noVoice}</p>:null}
-        <MandalaCloudVoiceStudio locale={locale} sourceText={shortApproval.text}
-          ambientSrc={audioSrc} onAudioReady={onNarrationReady}
-          onAudioInvalidated={onNarrationInvalidated}/>
-        <div className={css.actions}>
-          <button type="button" data-meditation-copy onClick={()=>void copyScript()}>
-            <Clipboard size={16} aria-hidden="true"/>{t.copy}</button>
-          <button type="button" data-meditation-download onClick={download}>
-            <Download size={16} aria-hidden="true"/>{t.download}</button>
-        </div>
-      </div>:null}
+      {approved?<p className={css.notice} data-meditation-approved role="status">{st.approved}</p>:null}
       {notice?<p className={css.notice} role="status" aria-live="polite">{notice}</p>:null}
       <small className={css.shortPrivacy}>{st.safety}</small>
     </section>;

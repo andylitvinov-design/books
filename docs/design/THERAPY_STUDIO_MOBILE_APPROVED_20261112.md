@@ -24,6 +24,13 @@ Node unit and targeted tests; lint, typecheck, build; macOS WebKit video/audio/e
 - Require exact-HEAD tests plus real authenticated provider request before claiming free AI LIVE. Vercel BRIEF + PRODUCTION_APPROVED flags must remain OFF until confirmed free quota/credentials, privacy and server acceptance. Running with unavailable flags visibly falls back to local authoring.
 - Tests must cover guest local authoring, no pre-consent requests, real 7-segment provider provenance, 401/403/422/429/503/fallback, concurrent edits and cancelled requests, 8 individual local scripts, no duplicate editor, and unchanged WebKit voice/Hypno consent and real MP4 gates.
 
+## Superseding owner design decision · 18 November 2026: compact Therapy Voice
+Owner approved a warmer large-type Voice card based on the provided lotus screenshot, keeping the classical sitewide header and fixed dock. Exact route/state: public Video Studio /en|ru|es/holistic-support/mandala, top Therapy, internal Voice. This is a visual specification, not a screenshot pasted as a static fake UI.
+
+Four real tabs: Meditation / Voice / Practice / My Course. Remove Single practice / 8-session format switch. My Course reuses the eight-day plan plus local on-demand script writer; it is NOT eight finished video therapies. Ready single/course deep-link targets actual new tab. Voice shows only one actual phrase/voice narrator, 3 voices per gender with separate real Listen samples, record/upload my voice, device-voice demo, real free narration CTA, optional settings and edit text. No duplicated script panel or repetitive introduction. EN/RU/ES controls at 320/354/390/430 and 44px minimum tap sizes; warm ivory #FBF5E9, card #FFFCF7, text #143D3A, emerald #087E61.
+
+Short **explicit and revocable** cloud provider consent remains required before any selected-text POST (details are expandable), even though long “I agree” copy is removed. Existing provider constraints, health/test-text privacy, voice generation, WAV mixing and attachment unchanged. No unapproved costs. Visual overlay, provider sound, exact protected CI and live alias/SHA are separately required acceptance evidence.
+
 
 ## 18 Nov 2026 · owner-approved A/B script review (supersedes the mobile first-screen layout above)
 
@@ -37,3 +44,6 @@ Approved owner screenshot: Therapy Studio on the existing `/{en,ru,es}/holistic-
 6. Acceptance: script options differ in EN/RU/ES; theme and short user goal affect text, crisis instructions block selecting a practice; choose B then Voice passes the actual approved B text to existing local/cloud voice (with opt-in), edits invalidate stale narration. Verify 320/354/390/430 iPhone/WebKit, button states, no horizontal overflow, no overlays, root browser errors, and existing course/Ready audio gates. A page screenshot or HTTP 200 is not E2E proof.
 
 **Status at design approval:** implementation/CI/deployment are separate release gates; do not mark LIVE until Vercel READY/production SHA/canonical alias and the meaningful browser flow have been checked.
+
+### Release repair and preserved Voice design
+The 18 November production Voice redesign remains the single narrator. A/B approval passes the **exact** chosen text in client memory to the existing consent-gated voice editor. Phrase-only 40-character validation is retained for Ideas; a distinct approved meditation transcript of at most 650 characters is used for the Therapy Voice mode. A changed/rejected meditation invalidates previously attached audio. The mandatory macOS WebKit acceptance must run for the existing `feat/therapy-*` PR branch rather than be skipped by job filters. No new job, voice provider, payment, app route or release trigger is added.

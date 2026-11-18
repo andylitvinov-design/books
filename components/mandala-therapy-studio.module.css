@@ -18,7 +18,7 @@
 .tabs button[aria-selected=true]{background:#e2f5eb;border-color:#c7e6d5;color:#08735b;box-shadow:inset 0 -3px 0 #128467}
 .main{min-width:0;padding:clamp(9px,3vw,16px);border:1px solid #eee4d8;border-radius:22px;background:#fffdf9;box-shadow:0 5px 19px #574a3511}
 .scriptHost [data-video-personal-meditation]{margin:0;padding:12px;background:#fffefa;border-color:#ebdfd1;box-shadow:none}
-.scriptHost[data-pane="practice"]{display:none}
+.scriptHost[data-pane="practice"],.scriptHost[data-pane="voice"]{display:none}
 .scriptHost[data-pane="voice"] [data-video-personal-meditation]>:not([data-meditation-result]){display:none!important}
 .scriptHost[data-pane="voice"] [data-meditation-result] > textarea,.scriptHost[data-pane="voice"] [data-meditation-result] > div:first-child{display:none!important}
 .scriptHost[data-pane="voice"] [data-video-personal-meditation]:has([data-meditation-result]){display:block}
@@ -49,7 +49,7 @@
  .format button small{font-size:10px;line-height:1.2}
  .format button svg{width:19px;height:19px}
  .tabs{gap:5px;margin-bottom:8px}
- .tabs button{min-height:45px;padding:7px 3px;border-radius:13px;font-size:clamp(11px,3.3vw,14px)}
+ .tabs button{min-height:46px;padding:7px 2px;border-radius:13px;font-size:clamp(10px,2.95vw,13px)}
  .tabs button svg{width:17px;height:17px}
  .main{padding:0;border:0;border-radius:0;background:transparent;box-shadow:none}
  .scriptHost [data-video-personal-meditation]{
@@ -60,7 +60,7 @@
  .scriptHost [data-video-personal-meditation]>header>span{width:35px;height:35px;border-radius:11px}
  .scriptHost [data-video-personal-meditation]>header h3{font-size:18px;line-height:1.15;margin-top:2px}
  .scriptHost [data-video-personal-meditation]>header small{font-size:9px;letter-spacing:.035em}
- .scriptHost[data-pane="meditation"] [data-meditation-result]{display:none}
+ .shell[data-therapy-course="false"] .scriptHost [data-video-personal-meditation]>p:first-of-type{display:none}
  .shell[data-therapy-course="true"] .scriptHost [data-video-personal-meditation]>p:first-of-type{margin:7px 0;font-size:11px;line-height:1.35}
  .scriptHost [data-meditation-context]{padding:0;margin:9px 0 0;background:#fbfaf6;border-color:#dce6dd}
  .scriptHost [data-meditation-context] summary{
@@ -94,13 +94,34 @@
  .scriptHost [data-meditation-main-filters] select{font-size:12px}
 }
 
-/* 18 Nov approved: short meditation review first, no two-format row. */
+/* Approved 18 Nov Voice redesign: leave shared header and other tabs untouched. */
+.shell[data-active-therapy-pane="voice"] .main{padding:0;border:0;background:transparent;box-shadow:none}
+.voiceArea{margin-top:0;padding:13px;border:1px solid #e9dfd1;border-radius:23px;background:#fffcf7;box-shadow:0 5px 16px #59452b12}
+.voiceArea :global([data-hypno-voice]) > :first-child{display:none}
+.voiceArea :global([data-video-affirmation-voice]){margin:0;padding:0;border:0;background:transparent;box-shadow:none}
+.voiceEmpty{display:flex;justify-content:center;align-items:center;margin:5px 0 0;padding:1px 0;min-height:28px;text-align:center}
+.voiceEmpty button{font-size:12px;min-height:28px}
+@media(max-width:759px){
+ .shell[data-active-therapy-pane="voice"]{margin-top:2px}
+ .voiceArea{padding:clamp(9px,2.7vw,13px);border-radius:20px}
+ .tabs{gap:5px;margin-bottom:9px}
+ .tabs button{gap:4px}
+ .tabs button svg{width:17px;height:17px}
+ /* Voice is an audio editor: avoid showing an unrelated film preview above it. */
+ /* The ancestor-only preview selector is intentionally excluded: CSS Modules requires a local class. */
+}
+@media(max-width:355px){
+ .tabs button{font-size:clamp(9px,2.8vw,11px);gap:2px}
+ .tabs button svg{width:15px;height:15px}
+ .voiceArea{padding:8px}
+}
+
+/* 18 Nov owner-approved review: single compact text panel, full Voice UI retained. */
 @media(max-width:759px){
  .hero .eyebrow{display:none}
  .hero h3{font-size:clamp(24px,6vw,30px)}
  .hero p{max-width:67%;font-size:clamp(11px,3vw,13px)}
- .tabs button{min-height:47px;gap:3px;padding:6px 2px;font-size:clamp(10px,2.75vw,13px);white-space:normal;text-align:center}
- .tabs button svg{width:16px;height:16px;flex:none}
+ .tabs button{gap:3px;padding:6px 2px;font-size:clamp(10px,2.75vw,13px);white-space:normal;text-align:center}
  .main{padding:0;border:0;background:transparent;box-shadow:none}
  .scriptHost [data-video-personal-meditation][data-meditation-short-picker]{padding:11px}
 }

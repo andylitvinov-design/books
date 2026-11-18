@@ -1,6 +1,7 @@
 "use client";
 import {useCallback,useEffect,useMemo,useRef,useState} from "react";
 import Link from "next/link";
+import styles from "./studio-music-picker.module.css";
 import {Check,Play,Pause} from "lucide-react";
 import videoStyles from "./mandala-video-mobile.module.css";
 import {PUBLIC_MUSIC_TAG_LABELS,musicTagLabel,safeStudioMusicTags,studioMusicFilter,studioMusicFeaturedTracks,studioMusicAttachmentName} from "@/lib/mandala/studio-music-catalog.mjs";
@@ -11,12 +12,57 @@ en:{title:"♫ My music library",hide:"Hide library",upload:"Upload music",refre
 es:{title:"♫ Mi biblioteca musical",hide:"Ocultar biblioteca",upload:"Subir música",refresh:"Actualizar",listen:"Escuchar",use:"Usar en vídeo",empty:"Aún no hay grabaciones disponibles",error:"Audio no disponible",loading:"Cargando...",all:"Todas",wellbeing:"Bienestar",focus:"Concentración",calm:"Calma",energy:"Energía",love:"Amor"}
 };
 const extra={
- ru:{find:"Найти музыку или композитора...",tags:"Теги",preview:"Источник и файл проверены · прослушивание не оценено",approved:"Проверено на слух"},
- en:{find:"Find music or composer...",tags:"Tags",preview:"Source and file verified · listening not yet reviewed",approved:"Audition approved"},
- es:{find:"Buscar música o compositor...",tags:"Etiquetas",preview:"Origen y archivo verificados · pendiente de escucha",approved:"Aprobado tras escuchar"}
+ ru:{find:"Найти музыку или композитора...",tags:"Теги",preview:"Источник и файл проверены · прослушивание не оценено",approved:"Проверено на слух",previewShort:"Файл проверен",approvedShort:"Одобрено",play:"Воспроизвести",pause:"Пауза",seek:"Перемотка",retry:"Обновить ссылку",playError:"Аудио не открылось. Обновите ссылку и попробуйте снова.",more:"Показать ещё",of:"из"},
+ en:{find:"Find music or composer...",tags:"Tags",preview:"Source and file verified · listening not yet reviewed",approved:"Audition approved",previewShort:"File verified",approvedShort:"Reviewed",play:"Play",pause:"Pause",seek:"Seek audio",retry:"Refresh link",playError:"Audio could not play. Refresh its link and try again.",more:"Show more",of:"of"},
+ es:{find:"Buscar música o compositor...",tags:"Etiquetas",preview:"Origen y archivo verificados · pendiente de escucha",approved:"Aprobado tras escuchar",previewShort:"Archivo verificado",approvedShort:"Revisado",play:"Reproducir",pause:"Pausar",seek:"Buscar posición",retry:"Renovar enlace",playError:"No se pudo reproducir el audio. Renueva el enlace e inténtalo otra vez.",more:"Mostrar más",of:"de"}
 };
 const SAFE_MIME=new Set(["audio/mpeg","audio/mp4","audio/wav"]);
 const MAX_SIZE=15*1024*1024;
+const PAGE_SIZE=12;
+const clock=(seconds)=>{
+ if(!Number.isFinite(seconds)||seconds<0)return "0:00";
+ const s=Math.floor(seconds);
+ return Math.floor(s/60)+":"+String(s%60).padStart(2,"0");
+};
+function AudioTransport({src,expiresAt,title,e,onRetry}){
+ const element=useRef(null);
+ const [playing,setPlaying]=useState(false);
+ const [position,setPosition]=useState(0);
+ const [duration,setDuration]=useState(0);
+ const [failed,setFailed]=useState(false);
+ const toggle=()=>{
+  const audio=element.current;
+  if(!audio||failed)return;
+  if(Date.now()>=expiresAt){onRetry();return}
+  if(audio.paused){
+   void audio.play().then(()=>setPlaying(true)).catch(()=>{setFailed(true);setPlaying(false)});
+  }else{audio.pause();setPlaying(false)}
+ };
+ const seek=event=>{
+  if(!element.current||!duration)return;
+  element.current.currentTime=Number(event.target.value);
+ };
+ return <div className={styles.player} role="group" aria-label={title}>
+  <audio ref={element} src={src} preload="none"
+   onLoadedMetadata={event=>setDuration(Number.isFinite(event.currentTarget.duration)?event.currentTarget.duration:0)}
+   onTimeUpdate={event=>setPosition(event.currentTarget.currentTime)}
+   onPlay={()=>setPlaying(true)} onPause={()=>setPlaying(false)}
+   onEnded={()=>{setPlaying(false);setPosition(0)}}
+   onError={()=>{setFailed(true);setPlaying(false)}}/>
+  {failed?<div className={styles.error} style={{gridColumn:"1 / -1"}}>
+   {e.playError} <button type="button" className={styles.retry} onClick={onRetry}>{e.retry}</button>
+  </div>:<>
+   <button type="button" className={styles.playButton} onClick={toggle}
+    aria-label={playing?e.pause:e.play} title={playing?e.pause:e.play}>
+    {playing?"❚❚":"▶"}
+   </button>
+   <input className={styles.seek} type="range" min="0" max={duration||1}
+    step="0.1" value={Math.min(position,duration||1)} onChange={seek}
+    disabled={!duration} aria-label={e.seek}/>
+   <span className={styles.time}>{clock(position)} / {duration?clock(duration):"–:––"}</span>
+  </>}
+ </div>;
+}
 export function StudioMusicPicker({locale="en",disabled=false,onSelect,initialOpen=false}){
  const t=text[locale]||text.en;
  const e=extra[locale]||extra.en;
@@ -26,6 +72,7 @@ export function StudioMusicPicker({locale="en",disabled=false,onSelect,initialOp
  const [tag,setTag]=useState("all"),[query,setQuery]=useState("");
  const [tracks,setTracks]=useState([]);
  const [preview,setPreview]=useState(null);
+ const [visibleCount,setVisibleCount]=useState(PAGE_SIZE);
  const [error,setError]=useState("");
  const refresh=useCallback(async()=>{
   setLoading(true);setError("");
@@ -55,7 +102,11 @@ export function StudioMusicPicker({locale="en",disabled=false,onSelect,initialOp
     typeof json.url!=="string")throw Error("MUSIC_INVALID");
    const url=new URL(json.url);
    if(url.protocol!=="https:"||url.username||url.password)throw Error("MUSIC_URL_INVALID");
-   if(!attach){setPreview({id:row.id,url:url.href});return}
+   if(!attach){
+    const seconds=Number.isSafeInteger(json.expiresSeconds)?json.expiresSeconds:180;
+    setPreview({id:row.id,url:url.href,expiresAt:Date.now()+Math.max(0,seconds-15)*1000});
+    return;
+   }
    const fetched=await fetch(url.href,{cache:"no-store"});
    if(!fetched.ok)throw Error("MUSIC_DOWNLOAD_FAILED");
    const buffer=await fetched.blob();
@@ -70,56 +121,67 @@ export function StudioMusicPicker({locale="en",disabled=false,onSelect,initialOp
  const availableTags=useMemo(()=>Object.keys(PUBLIC_MUSIC_TAG_LABELS)
   .filter(k=>tracks.some(v=>v.tags?.includes(k))),[tracks]);
  const items=useMemo(()=>studioMusicFilter(tracks,{category,tag,query}),[tracks,category,tag,query]);
- return <section data-video-studio-music-library
-  style={{margin:"10px 0",border:"1px solid #d6ded2",borderRadius:15,padding:"10px 12px",background:"#fbfff9"}}>
-  <div style={{display:"flex",justifyContent:"space-between",gap:8,flexWrap:"wrap",alignItems:"center"}}>
-   <button type="button" data-video-studio-music-open disabled={disabled}
-    onClick={()=>setOpen(x=>!x)}
-    style={{border:"1px solid #80c3ae",borderRadius:12,padding:"9px 13px",background:"#e9fff5",color:"#08735d",fontWeight:700}}>
-    {open?t.hide:t.title}
-   </button>
-   <Link href="/admin/music-library" style={{color:"#08735d",textDecoration:"underline",fontSize:12}}>{t.upload}</Link>
+ return <section data-video-studio-music-library className={styles.library}>
+  <div className={styles.head}>
+   <button type="button" data-video-studio-music-open disabled={disabled} className={styles.toggle}
+    onClick={()=>setOpen(x=>!x)}>{open?t.hide:t.title}</button>
+   <Link href="/admin/music-library" className={styles.upload}>{t.upload}</Link>
   </div>
-  {open&&<div style={{display:"grid",gap:9,marginTop:10}}>
-   <input aria-label={e.find} value={query} placeholder={e.find} maxLength={100}
-     onChange={v=>setQuery(v.target.value)}
-     style={{border:"1px solid #cbd8cc",padding:9,borderRadius:10,background:"white",width:"100%",boxSizing:"border-box"}}/>
-   <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
-    <select aria-label={t.all} value={category} onChange={event=>setCategory(event.target.value)}
-      style={{border:"1px solid #cbd8cc",padding:9,borderRadius:10,background:"white"}}>
+  {open&&<div className={styles.content}>
+   <input className={styles.search} aria-label={e.find} value={query}
+    placeholder={e.find} maxLength={100}
+    onChange={event=>{setQuery(event.target.value);setVisibleCount(PAGE_SIZE)}}/>
+   <div className={styles.filters}>
+    <select className={styles.select} aria-label={t.all} value={category}
+     onChange={event=>{setCategory(event.target.value);setVisibleCount(PAGE_SIZE)}}>
      {["all","wellbeing","focus","calm","energy","love"].map(k=><option key={k} value={k}>{t[k]}</option>)}
     </select>
-    <select aria-label={e.tags} value={tag} onChange={v=>setTag(v.target.value)}
-      style={{border:"1px solid #cbd8cc",padding:9,borderRadius:10,background:"white",maxWidth:"100%"}}>
+    <select className={styles.select} aria-label={e.tags} value={tag}
+     onChange={event=>{setTag(event.target.value);setVisibleCount(PAGE_SIZE)}}>
      <option value="all">{e.tags}</option>
      {availableTags.map(k=><option key={k} value={k}>{musicTagLabel(k,locale)}</option>)}
     </select>
-    <button type="button" onClick={()=>void refresh()} disabled={loading}>{t.refresh}</button>
-    <small>{loading?t.loading:items.length}</small>
    </div>
-   {error&&<p role="alert">{error}</p>}
-   {!loading&&items.length===0&&<small role="status">{t.empty}</small>}
-   <div style={{maxHeight:330,overflowY:"auto",display:"grid",gap:7}}>
-   {items.map(row=><div key={row.id} style={{border:"1px solid #dbe3dd",padding:9,borderRadius:10,display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
-    <div style={{flex:"1 1 160px",minWidth:0,display:"grid",gap:4}}>
-      <strong style={{fontSize:13,overflowWrap:"anywhere"}}>{row.title}</strong>
-      <small>{[row.composer,row.performer].filter(Boolean).join(" · ")}</small>
-      <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-       {row.tags?.filter(k=>PUBLIC_MUSIC_TAG_LABELS[k]).slice(0,4).map(k=>
-         <small key={k} style={{background:"#eaf7ef",padding:"2px 5px",borderRadius:6}}>
-          {musicTagLabel(k,locale)}</small>)}
+   <div className={styles.filterFoot}>
+    <span className={styles.count}>{loading?t.loading:items.length+" "+e.of+" "+tracks.length}</span>
+    <button type="button" className={styles.refresh} onClick={()=>void refresh()} disabled={loading}>{t.refresh}</button>
+   </div>
+   {error&&<p className={styles.error} role="alert">{error}</p>}
+   {!loading&&items.length===0&&<p className={styles.notice} role="status">{t.empty}</p>}
+   <div className={styles.list}>
+    {items.slice(0,visibleCount).map(row=><article key={row.id} className={styles.card}>
+     <div className={styles.cardHeader}>
+      <span aria-hidden="true" className={styles.cover}>♫</span>
+      <div className={styles.description}>
+       <strong className={styles.title}>{row.title}</strong>
+       {(row.composer||row.performer)&&<span className={styles.author}>
+        {[row.composer,row.performer].filter(Boolean).join(" · ")}</span>}
       </div>
-      <small>{row.reviewStage==="technical_preview"&&row.sourceVerified?e.preview:e.approved}</small>
-    </div>
-    <button type="button" disabled={loading||disabled} onClick={()=>void getRecording(row,false)}>{t.listen}</button>
-    <button type="button" disabled={loading||disabled} onClick={()=>void getRecording(row,true)}>{t.use}</button>
-    {preview?.id===row.id&&<audio src={preview.url} controls preload="none" style={{maxWidth:"100%",width:280}}/>}
-   </div>)}
+     </div>
+     {row.tags?.length>0&&<div className={styles.tags}>
+      {row.tags.filter(k=>PUBLIC_MUSIC_TAG_LABELS[k]).slice(0,4).map(k=>
+       <span key={k} className={styles.tag}>{musicTagLabel(k,locale)}</span>)}
+     </div>}
+     <span className={styles.quality}
+      title={row.reviewStage==="technical_preview"&&row.sourceVerified?e.preview:e.approved}>
+      {row.reviewStage==="technical_preview"&&row.sourceVerified?e.previewShort:e.approvedShort}
+     </span>
+     <div className={styles.actions}>
+      <button type="button" className={styles.listen} disabled={loading||disabled}
+       onClick={()=>void getRecording(row,false)}>▶ {t.listen}</button>
+      <button type="button" className={styles.use} disabled={loading||disabled}
+       onClick={()=>void getRecording(row,true)}>{t.use}</button>
+     </div>
+     {preview?.id===row.id&&
+      <AudioTransport key={preview.url} src={preview.url} expiresAt={preview.expiresAt}
+       title={row.title} e={e} onRetry={()=>void getRecording(row,false)}/>}
+    </article>)}
    </div>
+   {items.length>visibleCount&&<button type="button" className={styles.more}
+    onClick={()=>setVisibleCount(count=>count+PAGE_SIZE)}>{e.more} ({items.length-visibleCount})</button>}
   </div>}
- </section>
+ </section>;
 }
-
 const featuredText={
  ru:{verified:"Источник проверен · ещё без оценки звучания",add:"Выбрать запись",remove:"Убрать запись",listen:"Прослушать",pause:"Пауза",unavailable:"Запись временно недоступна",again:"Нажмите воспроизведение ещё раз"},
  en:{verified:"Verified source · not yet listening-rated",add:"Choose recording",remove:"Remove recording",listen:"Listen",pause:"Pause",unavailable:"Recording unavailable",again:"Tap play again"},
@@ -271,3 +333,4 @@ export function StudioMusicFeatured({locale="en",category="all",disabled=false,
   })}
  </>;
 }
+

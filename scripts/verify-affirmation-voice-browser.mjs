@@ -1368,10 +1368,21 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         await shortPicker.locator('[data-meditation-approve]').click();
         await expect(page.locator('[data-therapy-subtab="voice"]'))
           .toHaveAttribute("aria-selected","true");
-        await expect(page.locator('[data-therapy-script-host] [data-meditation-result]'))
-          .toBeVisible();
-        await expect(page.locator('[data-therapy-script-host] [data-meditation-generation-source="local"]'))
-          .toBeVisible();
+        // Voice keeps the current one-screen editor, not a second cloud narrator.
+        // The approved B text must be the actual transcript used by the existing
+        // consent-gated voice API (not the unrelated Ideas affirmations).
+        const voiceReview=page.locator('[data-therapy-voice] [data-video-affirmation-voice]');
+        await expect(voiceReview).toBeVisible();
+        const approvedDisclosure=voiceReview.locator('[data-video-therapy-approved-meditation]');
+        await expect(approvedDisclosure).toBeVisible();
+        await approvedDisclosure.locator('summary').click();
+        const approvedSpoken=await approvedDisclosure.locator('[data-therapy-approved-spoken-text]').textContent();
+        assert.equal(approvedSpoken?.trim(),alternateShortText?.trim(),
+          "Voice editor must receive exactly the selected and approved meditation B text");
+        await expect(voiceReview.locator('[data-video-affirmation-voice-consent]'))
+          .toHaveAttribute("aria-checked","false");
+        await expect(voiceReview.locator('[data-video-generate-affirmation-audio]'))
+          .toBeDisabled();
         phase(engine,"therapy-two-local-scripts-approval-and-voice-routing-verified");
         await expect(page.locator("[data-ready-offer-panel]")).toHaveCount(0);
         await page.locator('[data-video-quick-control="ready"]').click();
