@@ -1,6 +1,7 @@
 import {telegramSupportUnavailable} from '@/lib/crm/telegram-support-quiz.mjs'
 import { NextResponse,after } from 'next/server'
 import { getAppConfig } from '@/lib/app/config'
+import {AppError} from '@/lib/assessments/contracts'
 import {channelTransportReady} from '@/lib/crm/messenger-policy'
 import {consumeRate} from '@/lib/app/database'
 import { PRIVATE_HEADERS, safeError } from '@/lib/app/http'
@@ -264,10 +265,16 @@ export async function POST(request,{params}){
         }
         // A signed first customer message is visible in CRM even when the
         // voluntary diagnostic has not yet reached /agree. No raw text is stored.
-        if(event.type==='incoming'&&!event.callbackId)
-          await captureTelegramLeadBestEffort(
-            ()=>captureTelegramBotLead(event,config),
-            ()=>console.error('HH_TG_BOT_LEAD_CAPTURE_UNAVAILABLE'))
+        // The customer must appear in the CRM inbox before any bot reply.
+        // On a transient persistence failure Telegram retries the signed
+        // update; do not return a false 200 success and silently lose a lead.
+        if(event.type==='incoming'&&!event.callbackId){
+          try{await captureTelegramBotLead(event,config)}
+          catch{
+            console.error('HH_TG_BOT_LEAD_CAPTURE_UNAVAILABLE')
+            throw new AppError('TELEGRAM_CRM_CONTACT_UNCONFIRMED',503)
+          }
+        }
         const companion=await processTelegramCompanion(event,config)
         if(companion.handled){
           // Client-initiated bootstrap of native Telegram Menu. Never do this
