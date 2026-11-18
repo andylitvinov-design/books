@@ -99,9 +99,17 @@ async function hasPriorLiveReceipt(github,pr,marker){
  return null; // incomplete history cannot permit duplicate notice
 }
 async function sweep({github,context,fetcher=global.fetch,core,proofImpl=proofFor,now=Date.now()}={}){
+ // A verified non-dry backlog-reconcile dispatch is an existing protected
+ // Watchdog runner, needed when native GitHub schedule ticks disappear.
+ const inputs=context?.payload?.inputs||{};
+ const partial=String(inputs.direct_dispatch||'false')==='true'||
+   String(inputs.completion_wake||'false')==='true'||
+   (typeof inputs.pm_pr_number==='string'&&inputs.pm_pr_number!=='');
+ const fallback=context?.eventName==='workflow_dispatch'&&!partial&&
+   String(inputs.dry_run||'false')==='false';
  if(context?.repo?.owner+'/'+context?.repo?.repo!==REPO||
    context?.ref!=='refs/heads/codex/bootstrap-books'||
-   context.eventName!=='schedule')
+   !(context.eventName==='schedule'||fallback))
   return {status:'SKIPPED_NOT_SCHEDULE'};
  // One already scheduled runner, bounded GitHub API cost. Fair rotation avoids
  // one unresolved deployment or Supabase-only PR starving every other merge.
