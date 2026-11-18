@@ -1,8 +1,5 @@
 name: HH one-shot owner cron registration recovery
 on:
-  push:
-    branches: ['codex/bootstrap-books']
-    paths: ['.github/workflows/hh-pr-cron-owner-repair.yml']
   workflow_dispatch:
     inputs:
       dry_run:

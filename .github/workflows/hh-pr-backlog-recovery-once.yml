@@ -6,12 +6,6 @@ on:
       - '.github/workflows/hh-pr-backlog-recovery-once.yml'
       - 'scripts/ci-pr-backlog-recovery.cjs'
       - 'tests/ci-pr-backlog-recovery.test.cjs'
-  push:
-    branches: ['codex/bootstrap-books']
-    paths:
-      - '.github/workflows/hh-pr-backlog-recovery-once.yml'
-      - 'scripts/ci-pr-backlog-recovery.cjs'
-      - 'tests/ci-pr-backlog-recovery.test.cjs'
   workflow_dispatch:
     inputs:
       apply:
@@ -45,7 +39,7 @@ jobs:
     if: >-
       github.repository == 'andylitvinov-design/books' &&
       github.ref == 'refs/heads/codex/bootstrap-books' &&
-      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+      github.event_name == 'workflow_dispatch'
     concurrency:
       group: hh-control-tower-single-writer
       cancel-in-progress: false
