@@ -40,7 +40,6 @@ on:
       - 'tests/holistic-house-pwa.test.mjs'
       - 'tests/workflow-next-route-filters.test.mjs'
       - 'tests/holistic-house-install-push-regression.test.mjs'
-      - '.github/workflows/holistic-house-mobile-install.yml'
   push:
     branches:
       - codex/public-book-library

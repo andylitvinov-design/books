@@ -29,7 +29,6 @@ on:
       - 'tests/home-locale-menu-state.test.mjs'
       - 'app/page.tsx'
       - 'scripts/verify-home-locale-switch.mjs'
-      - '.github/workflows/home-locale-switch.yml'
   push:
     branches: ['codex/public-book-library']
     paths:
