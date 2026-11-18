@@ -478,7 +478,7 @@ test('a pending allowlisted YouTube thumbnail timeout is diagnostic, not a relea
     { current: { ...thumbnail, origin: 'https://i.ytimg.com.evil.invalid' } },
     { current: { ...thumbnail, origin: 'http://127.0.0.1:3123' } },
     { src: { ...thumbnail, pathname: '/private/video.mp4' } },
-    { current: { ...thumbnail, pathname: '/vi/not-a-video/hqdefault.jpg' } },
+    { current: { ...thumbnail, pathname: '/vi/invalid/hqdefault.jpg' } },
     { current: { ...thumbnail, search: '?token=secret' } },
     { complete: true },
     { naturalWidth: 1 },

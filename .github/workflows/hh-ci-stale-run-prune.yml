@@ -16,6 +16,10 @@ on:
       - 'scripts/ci-pr-repair-start.mjs'
       - 'tests/ci-pr-loss-metrics.test.mjs'
       - 'tests/ci-pr-repair-start.test.mjs'
+  # 2026-11-17 stale-queue owner cleanup: this exact trusted policy update
+  # permits ONE bounded production-push sweep of old merged/closed PR checks.
+  # Only independently GitHub-proven obsolete HEADs may be cancelled;
+  # open/current PR, task/issue_comment and release workflows stay untouched.
   # Run the full orphan scan only after trusted janitor source changes;
   # the existing scheduled Watchdog retains its >100 queued fallback.
   push:

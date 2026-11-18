@@ -9,7 +9,6 @@ on:
       - 'scripts/indexnow-client.mjs'
       - 'scripts/submit-indexnow.mjs'
       - 'tests/indexnow-submission.test.mjs'
-      - '.github/workflows/hh-indexnow.yml'
   push:
     branches: ['codex/public-book-library']
     paths:

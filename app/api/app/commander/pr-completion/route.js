@@ -182,7 +182,9 @@ async function route(request,method){
      await verifyPrLiveReadback(evidence.pr):
      {verified_live:false,reason:historyEvidence.siteRuntimeOnly===true?
       'PR_NOT_MERGED':'NON_SITE_RUNTIME_SCOPE_UNVERIFIED'};
-   const journey=buildPrCompletionJourney({item,github:evidence,production,observedAt});
+   const journey=buildPrCompletionJourney({item,github:evidence,production,observedAt,
+    verifiedCommitShas:historyEvidence.commitHistoryComplete?
+     historyEvidence.commits.map(c=>c.sha):[]});
    const history=evidence.pr?buildPrHeadHistory({
     pr:evidence.pr,item,ciEvents,observedAt,...historyEvidence,
     ciHistoryAvailable:data.ciHistoryAvailable===true,
