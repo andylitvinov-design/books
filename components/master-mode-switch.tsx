@@ -64,30 +64,31 @@ export function MasterModeSwitch({
  * public practitioner overview; publishing still requires its protected editor.
  */
 const PROFILE_MODE_COPY = {
-  en: { label: "Profile mode: Live or Work", live: "Live — My Space", work: "Work — I'm a Master: publish services" },
-  ru: { label: "Режим профиля: Live или Work", live: "Live — Моё пространство", work: "Work — Я мастер: разместить услуги" },
-  es: { label: "Modo de perfil: Live o Work", live: "Live — Mi espacio", work: "Work — Soy maestro: publicar servicios" },
+  en: { label: "Profile mode: My Life or My Work", live: "My Life — My Space", work: "My Work — I'm a Master: publish services", life: "My Life", myWork: "My Work" },
+  ru: { label: "Режим профиля: Моя жизнь или Работа", live: "Моя жизнь — Моё пространство", work: "Моя работа — кабинет мастера", life: "Моя жизнь", myWork: "Моя работа" },
+  es: { label: "Modo de perfil: Mi vida o Mi trabajo", live: "Mi vida — Mi espacio", work: "Mi trabajo — perfil profesional", life: "Mi vida", myWork: "Mi trabajo" },
 } as const;
 
-export function ProfileModeSwitch({ locale, active }: {
+export function ProfileModeSwitch({ locale, active, wide = false }: {
   locale: string;
   active: "live" | "work";
+  wide?: boolean;
 }) {
   const language = locale === "ru" || locale === "es" ? locale : "en";
   const profileLocale = language === "es" ? "en" : language;
   const t = PROFILE_MODE_COPY[language];
   return (
     <nav className={styles.profileSwitch} aria-label={t.label}
-      data-profile-mode-switch data-profile-mode-active={active}>
+      data-profile-mode-switch data-profile-mode-active={active} data-profile-mode-wide={wide ? 'true' : undefined}>
       <Link href={"/" + profileLocale + "/app/portrait"} prefetch={false}
         data-profile-mode="live" aria-label={t.live} aria-current={active === "live" ? "page" : undefined}>
         <House size={16} strokeWidth={2} aria-hidden="true" />
-        <span>Live</span>
+        <span>{wide ? t.life : 'Live'}</span>
       </Link>
       <Link href={"/" + language + "/practice"} prefetch={false}
         data-profile-mode="work" aria-label={t.work} aria-current={active === "work" ? "page" : undefined}>
         <BriefcaseBusiness size={16} strokeWidth={2} aria-hidden="true" />
-        <span>Work</span>
+        <span>{wide ? t.myWork : 'Work'}</span>
       </Link>
     </nav>
   );

@@ -2,10 +2,11 @@ import Link from 'next/link'
 import { SiteNavigation } from '@/components/site-navigation'
 import InstantCabinetLink from './instant-cabinet-link'
 import { ProfileModeSwitch } from '../master-mode-switch'
-import { Activity, BookOpen, ClipboardList, FileClock, FileText, House, LockKeyhole, ListChecks, Route, UserRound, Settings2, ChevronDown } from 'lucide-react'
+import { Activity, BookOpen, CalendarDays, ClipboardList, FileClock, FileText, House, LockKeyhole, ListChecks, Route, UserRound, Settings2, ChevronDown } from 'lucide-react'
 import { assessmentHistoryTitle } from '@/lib/assessments/personal-guidance'
 import styles from './profile-hub-tabs.module.css'
 import { ProfilePresentationPlayer } from './profile-presentation-player'
+import { ProfileLifeDashboard } from './profile-life-dashboard'
 import { profilePresentationForLocale } from '@/lib/profile-presentation.mjs'
 
 const COPY = {
@@ -44,40 +45,40 @@ const COPY = {
   },
 }
 const TABS = [
-  { id: 'today', icon: House }, { id: 'tests', icon: ClipboardList },
-  { id: 'state', icon: Activity }, { id: 'path', icon: Route },
+  { id: 'path', icon: Route }, { id: 'state', icon: Activity },
   { id: 'courses', icon: BookOpen }, { id: 'reports', icon: FileText },
+  { id: 'sessions', icon: CalendarDays },
 ]
 const STUDIO_COPY = {
   en: {
     title: 'My Space', label: 'MY SPACE · PERSONAL GROWTH', settings: 'Settings',
-    tabs: { today: 'Today', tests: 'Tests', state: 'State', path: 'My Path', courses: 'Courses', reports: 'Reports' },
+    tabs: { today: 'Today', tests: 'Tests', state: 'My State', path: 'My Path', courses: 'My Courses', reports: 'My Reports', sessions: 'My Sessions' },
     hero: 'Your path of growth',
     intro: 'Discover yourself, notice changes and choose a meaningful next step — at your own pace.',
     video: 'Scenic introduction to My Space', film: 'Nature film · no narration', route: 'My route',
     actions: ['Take a test', 'Check my state', 'Continue learning'],
     privacy: 'Saved results stay in your protected account.',
-    details: { tests: 'Your assessments and chosen tests.', state: 'State check-ins and real saved measurements.', path: 'Verified milestones, goals and personalised learning.', courses: 'Continue your real courses and practices.', reports: 'Saved test attempts and private practitioner reports.' },
+    details: { tests: 'Your assessments and chosen tests.', state: 'State check-ins and real saved measurements.', path: 'Verified milestones, goals and personalised learning.', courses: 'Continue your real courses and practices.', reports: 'Saved test attempts and private practitioner reports.', sessions: 'Saved consultations and their history.' },
   },
   ru: {
     title: 'Моё пространство', label: 'МОЁ ПРОСТРАНСТВО · ЛИЧНОСТНЫЙ РОСТ', settings: 'Настройки',
-    tabs: { today: 'Сегодня', tests: 'Тесты', state: 'Замер', path: 'Мой путь', courses: 'Курсы', reports: 'Отчёты' },
+    tabs: { today: 'Сегодня', tests: 'Тесты', state: 'Моё состояние', path: 'Мой путь', courses: 'Мои курсы', reports: 'Мои отчёты', sessions: 'Мои сессии' },
     hero: 'Мой путь развития',
     intro: 'Узнавайте себя, замечайте изменения и выбирайте следующий шаг в своём темпе.',
     video: 'Природное вступление в Моё пространство', film: 'Видео о природе · без озвучивания', route: 'Мой маршрут',
     actions: ['Пройти тест', 'Оценить состояние', 'Продолжить курс'],
     privacy: 'Сохранённые результаты остаются в защищённом кабинете.',
-    details: { tests: 'Ваши тесты и выбранные опросники.', state: 'Самонаблюдение и реальные сохранённые замеры.', path: 'Подтверждённые шаги, цели и программа развития.', courses: 'Ваши настоящие курсы и практики.', reports: 'Сохранённые попытки и приватные отчёты специалиста.' },
+    details: { tests: 'Ваши тесты и выбранные опросники.', state: 'Самонаблюдение и реальные сохранённые замеры.', path: 'Подтверждённые шаги, цели и программа развития.', courses: 'Ваши настоящие курсы и практики.', reports: 'Сохранённые попытки и приватные отчёты специалиста.', sessions: 'Сохранённые консультации и история встреч.' },
   },
   es: {
     title: 'Mi espacio', label: 'MI ESPACIO · CRECIMIENTO PERSONAL', settings: 'Ajustes',
-    tabs: { today: 'Hoy', tests: 'Tests', state: 'Estado', path: 'Mi ruta', courses: 'Cursos', reports: 'Informes' },
+    tabs: { today: 'Hoy', tests: 'Tests', state: 'Mi estado', path: 'Mi ruta', courses: 'Mis cursos', reports: 'Mis informes', sessions: 'Mis sesiones' },
     hero: 'Mi camino de crecimiento',
     intro: 'Conócete, observa tus cambios y elige tu próximo paso a tu ritmo.',
     video: 'Introducción visual de naturaleza a Mi espacio', film: 'Vídeo de naturaleza · sin narración', route: 'Mi ruta',
     actions: ['Hacer un test', 'Ver mi estado', 'Seguir aprendiendo'],
     privacy: 'Tus resultados permanecen en tu cuenta privada.',
-    details: { tests: 'Tus pruebas y cuestionarios.', state: 'Registro personal y mediciones reales.', path: 'Etapas verificadas, metas y desarrollo.', courses: 'Tus cursos y prácticas.', reports: 'Intentos guardados e informes privados.' },
+    details: { tests: 'Tus pruebas y cuestionarios.', state: 'Registro personal y mediciones reales.', path: 'Etapas verificadas, metas y desarrollo.', courses: 'Tus cursos y prácticas.', reports: 'Intentos guardados e informes privados.', sessions: 'Consultas guardadas e historial.' },
   },
 }
 // Announced packages are informative until server-authoritative billing verifies prices.
@@ -117,10 +118,11 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
   const privatePaths = {
     today: root + '/portrait?space=today',
     tests: root + '/tests',
-    state: root + '/monitoring',
+    state: root + '/portfolio',
     path: root + '/portrait?space=path',
     courses: root + '/course?view=courses',
     reports: root + '/portrait?space=reports',
+    sessions: root + '/portrait?space=sessions',
   }
   // Guest Profile never initiates account reads just by visiting or changing tabs.
   const paths = publicEntry ? { ...privatePaths,
@@ -141,19 +143,20 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
     const targetRoot = '/' + language + '/app'
     if (settingsMode) return targetRoot + '/settings'
     if (current === 'tests') return targetRoot + '/tests'
-    if (current === 'state') return targetRoot + '/monitoring'
+    if (current === 'state') return targetRoot + '/portfolio'
     if (current === 'path') return targetRoot + '/portrait?space=path'
     if (current === 'courses') return targetRoot + '/course?view=courses'
     if (current === 'reports') return targetRoot + '/portrait?space=reports'
+    if (current === 'sessions') return targetRoot + '/portrait?space=sessions'
     return targetRoot + '/portrait'
   }
   const presentation = profilePresentationForLocale(selected)
   return <section className={styles.hub} data-profile-hub-tabs data-profile-active={current}>
     <header className={styles.heading}>
       <div className={styles.headingTitle}>
-        <h2 aria-label={settingsMode ? s.pageTitle : t.title}>
-          <span className={styles.titleFull}>{settingsMode ? s.pageTitle : t.title}</span>
-          <span className={styles.titleCompact}>{settingsMode ? (selected === 'ru' ? 'Профиль' : selected === 'es' ? 'Perfil' : 'Profile') : 'My Space'}</span>
+        <h2 aria-label={settingsMode ? s.pageTitle : current === 'today' ? 'Holistic House' : t.title}>
+          <span className={styles.titleFull}>{settingsMode ? s.pageTitle : current === 'today' ? 'Holistic House' : t.title}</span>
+          <span className={styles.titleCompact}>{settingsMode ? (selected === 'ru' ? 'Профиль' : selected === 'es' ? 'Perfil' : 'Profile') : current === 'today' ? 'Holistic House' : 'My Space'}</span>
         </h2>
       </div>
       <div className={styles.profileHeadingActions}>
@@ -168,13 +171,13 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
                 data-profile-language={language}>{language.toUpperCase()}</Link>)}
           </div>
         </details>
-        {!settingsMode && <ProfileModeSwitch locale={selected} active="live" />}
+        {!settingsMode && current !== 'today' && <ProfileModeSwitch locale={selected} active="live" />}
         <div className={styles.headingNav} data-profile-chrome-navigation>
           <SiteNavigation locale={selected} compact />
         </div>
       </div>
     </header>
-    <nav className={settingsMode ? styles.settingsTabs : styles.tabs} aria-label={settingsMode ? s.menu : COPY[selected].navigation}>
+    {current !== 'today' && <nav className={settingsMode ? styles.settingsTabs : styles.tabs} aria-label={settingsMode ? s.menu : COPY[selected].navigation}>
       {settingsMode ? [
         { id: 'create', href: '/' + selected + '/personality-profiles' },
         { id: 'view', href: paths.today },
@@ -184,13 +187,13 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
         aria-current={item.id === 'settings' ? 'page' : undefined} className={item.id === 'settings' ? styles.current : styles.tab}>
         {s.top[item.id]}
       </InstantCabinetLink>) : TABS.map(({ id, icon: Icon }) => <InstantCabinetLink key={id} href={paths[id]} prefetch={false}
-        data-profile-tab={id} aria-current={current === id ? 'page' : undefined}
+        data-profile-tab={id} aria-current={current === id || (id === 'state' && current === 'tests') ? 'page' : undefined}
         className={current === id ? styles.current : styles.tab}>
         <Icon size={20} strokeWidth={1.9} aria-hidden="true" /><span>{t.tabs[id]}</span>
         {id === 'tests' && Number.isInteger(resultCount) && resultCount > 0 &&
           <span className={styles.resultBadge} aria-label={resultCount + ' ' + COPY[selected].count}>{resultCount}</span>}
       </InstantCabinetLink>)}
-    </nav>
+    </nav>}
     {current !== 'today' && !settingsMode && <div className={styles.myPageSubnav} data-profile-my-page-placement="below-tabs">
       <Link href={'/' + selected + '/my-page'} prefetch={false} className={styles.myPageLink} data-profile-my-page>
         <UserRound size={15} aria-hidden="true" />
@@ -201,7 +204,8 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
         {selected==='ru'?'Настройки':selected==='es'?'Ajustes':'Settings'}
       </Link>
     </div>}
-    {(current === 'today' || settingsMode) && <>
+    {current === 'today' && <ProfileLifeDashboard locale={selected} root={root} paths={paths} resultCount={resultCount} />}
+    {settingsMode && <>
       <div className={styles.hero} data-profile-video-hero>
         <h1 className={styles.srOnly}>{t.hero}</h1>
         <div className={styles.videoFrame}>

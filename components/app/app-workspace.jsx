@@ -71,6 +71,7 @@ import { ProfileCoursesSwitch, ProfileCoursesGuest } from '@/components/app/prof
 import CabinetGuestOverview from '@/components/app/cabinet-guest-overview'
 import ProfileGuestAuthDialog from '@/components/app/profile-guest-auth-dialog'
 import { ProfileHubTabs, ProfileResultsArchive } from '@/components/app/profile-hub-tabs'
+import { SavedSessionsPanel } from '@/components/app/saved-sessions-panel'
 import ProfileSettingsDisclosure from '@/components/app/profile-settings-disclosure'
 import CabinetToday from '@/components/app/cabinet-today'
 import MyCoachingPlan from '@/components/app/my-coaching-plan'
@@ -600,7 +601,7 @@ export default function AppWorkspace({ locale, path = [] }) {
         <ProfileHubTabs locale={locale} active={page === 'tests' ? 'tests'
           : page === 'monitoring' ? 'state' : page === 'course' ? 'courses'
             : page === 'settings' ? 'settings'
-              : ['portfolio', 'reports'].includes(page) ? 'reports' : 'today'} />
+              : page === 'portfolio' ? 'state' : page === 'reports' ? 'reports' : 'today'} />
         <section className="hh-panel" role="status" aria-live="polite">
           <p className="hh-kicker">Holistic House</p>
           <p>{c.loading}</p>
@@ -660,7 +661,7 @@ export default function AppWorkspace({ locale, path = [] }) {
   if (state !== 'ready')
     return (
       <main className="hh-app">
-        {['portfolio','tests','settings','monitoring'].includes(page) && <ProfileHubTabs locale={locale} active={page === 'settings' ? 'settings' : page === 'monitoring' ? 'state' : page === 'tests' ? 'tests' : 'reports'} />}
+        {['portfolio','tests','settings','monitoring'].includes(page) && <ProfileHubTabs locale={locale} active={page === 'settings' ? 'settings' : page === 'monitoring' || page === 'portfolio' ? 'state' : page === 'tests' ? 'tests' : 'reports'} />}
         <section className="hh-entry hh-panel">
           <p className="hh-kicker">Holistic House · {c.portrait}</p>
           <h1>{state === 'unavailable' ? c.unavailable : stressSignup
@@ -806,21 +807,41 @@ export default function AppWorkspace({ locale, path = [] }) {
         }} />
       ) : (
         <>
-          {['portrait','portfolio','tests','settings','monitoring','course','reports'].includes(page) && <ProfileHubTabs locale={locale} active={page === 'settings' ? 'settings' : page === 'portrait' ? (searchParams.get('space') === 'path' ? 'path' : searchParams.get('space') === 'reports' ? 'reports' : 'today') : page === 'portfolio' || page === 'reports' ? 'reports' : page === 'monitoring' ? 'state' : page === 'course' ? 'courses' : 'tests'} resultCount={page === 'portrait' && !searchParams.get('space') ? (data.results || []).length : null} account={page === 'settings' ? data.account : null} />}
+          {['portrait','portfolio','tests','settings','monitoring','course','reports'].includes(page) && <ProfileHubTabs locale={locale} active={page === 'settings' ? 'settings' : page === 'portrait' ? (searchParams.get('space') === 'path' ? 'path' : searchParams.get('space') === 'reports' ? 'reports' : searchParams.get('space') === 'sessions' ? 'sessions' : 'today') : page === 'portfolio' ? 'state' : page === 'reports' ? 'reports' : page === 'monitoring' ? 'state' : page === 'course' ? 'courses' : 'tests'} resultCount={page === 'portrait' && !searchParams.get('space') ? (data.results || []).length : null} account={page === 'settings' ? data.account : null} />}
           {page === 'continue' && (
             <SaveContinuation data={data} locale={locale} reload={load} onComplete={completeSaveContinuation} />
           )}
           {page === 'portrait' && (
              <>
-               {!['path','reports'].includes(searchParams.get('space')) && <>
-                 <CabinetToday locale={locale} practitioner={Boolean(data.practitioner || data.practice)} owner={Boolean(data.practitioner)} />
+               {!['path','reports','sessions'].includes(searchParams.get('space')) && <>
+                 <details className="hh-panel" data-profile-extra-actions>
+                    <summary>{locale === 'ru' ? 'Дополнительные возможности' : locale === 'es' ? 'Más posibilidades' : 'More things I can do'}</summary>
+                    <CabinetToday locale={locale} practitioner={Boolean(data.practitioner || data.practice)} owner={Boolean(data.practitioner)} />
+                  </details>
                  <AccountMessagingEntry key={'messaging:' + data.account.id} accountId={data.account.id} locale={locale} />
                </>}
                {searchParams.get('space') === 'path' && <>
                  <CabinetJourney key={'journey:' + data.account.id} accountId={data.account.id} locale={locale} />
                  <DevelopmentProgram key={'development:' + data.account.id} accountId={data.account.id} locale={locale} results={data.results || []} hideBottomNotes />
                </>}
-               {searchParams.get('space') === 'reports' && <>
+               {searchParams.get('space') === 'sessions' && <section className="hh-panel" data-profile-sessions>
+                  <h2>{locale === 'ru' ? 'Мои сессии' : locale === 'es' ? 'Mis sesiones' : 'My Sessions'}</h2>
+                  <p>{locale === 'ru'
+                    ? 'Сохранённые консультации и их история. Новые записи оформляются через Support.'
+                    : locale === 'es'
+                      ? 'Consultas guardadas e historial. Para reservar otra sesión, abre Support.'
+                      : 'Saved consultations and their history. New appointments are arranged through Support.'}</p>
+                  <SavedSessionsPanel items={data.savedSessions || []} locale={locale} />
+                  {!(data.savedSessions || []).length && <p role="status">
+                    {locale === 'ru' ? 'Пока нет сохранённых консультаций.' : locale === 'es'
+                      ? 'Todavía no hay consultas guardadas.' : 'No saved consultations yet.'}
+                  </p>}
+                  <Link href={'/' + locale + '/services'} prefetch={false}>
+                    {locale === 'ru' ? 'Выбрать консультацию' : locale === 'es'
+                      ? 'Explorar consultas' : 'Explore consultations'}
+                  </Link>
+                </section>}
+                {searchParams.get('space') === 'reports' && <>
                  <ProfileResultsArchive locale={locale} results={data.results || []} />
                  <ProfileDomains locale={locale} mode="account" accountId={data.account.id} results={data.results || []} savedReports={data.savedReports || []} savedDocuments={data.savedDocuments || []} hideDevelopment
                    reportsContent={<><PersonalAnalysisPanel key={data.account.id} locale={locale} reports={reportTimeline(data.savedReports)} savedSessions={data.savedSessions || []} embedded /><ClientExpressReports locale={locale} accountId={data.account.id}/></>} />

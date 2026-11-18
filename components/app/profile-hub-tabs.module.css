@@ -206,3 +206,8 @@
   .hub .headingNav :global([data-site-search-trigger]){width:44px;min-width:44px;height:44px}
   .hub .headingNav :global(.site-main-menu-trigger){width:44px;min-width:44px;min-height:44px}
 }
+
+/* My Space uses the same branded chrome as the new Home. */
+.hub[data-profile-active="today"] .heading{border:0;border-radius:0;background:transparent;box-shadow:none;margin:0 0 5px;padding:6px 2px}
+.hub[data-profile-active="today"] .heading h2{display:flex;align-items:center;gap:7px;color:#0b3c35;font:700 clamp(18px,4.6vw,25px)/1.12 Georgia,serif}
+.hub[data-profile-active="today"] .heading h2::before{content:"";display:block;flex:none;width:clamp(25px,6vw,34px);height:clamp(25px,6vw,34px);background:url("/icons/holistic-house-teal.svg") center/contain no-repeat}
