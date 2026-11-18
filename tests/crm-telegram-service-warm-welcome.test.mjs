@@ -64,7 +64,7 @@ test('service welcome photo is limited to first signed consent message and uses 
  assert.match(sender,/serviceConsent=keyboard\.length===1/);
  assert.match(sender,/text\.length>900/);
  assert.match(sender,/telegramInlineMarkup\(keyboard,locale\)/);
- assert.doesNotMatch(v3,/serviceWelcome:true[\s\S]*?consent_at=now\(\)/);
+ assert.match(v3,/if\(row\.stage==='consent'\)/);
  assert.equal(v3Action({inlineAction:'v3:agree'}),'agree');
  assert.equal(v3Action({inlineAction:'v3:servicesend'}),'send');
 });
