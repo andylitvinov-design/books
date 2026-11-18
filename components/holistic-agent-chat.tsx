@@ -1097,9 +1097,12 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     // A fresh topic or stop request must not inherit the old goal.
     const leaveSupport=/^(?:стоп|сменим тему|сменить тему|новая тема|другая тема|stop|cancel|switch topics|new topic|change topic|cambiar de tema|otro tema)[.!?\\s]*$/iu.test(text);
     if(leaveSupport)setSupportSelection(null);
+    // Preserve five-stage first-contact context without exposing additional
+    // history to optional owned/browser inference modes.
+    const historyLimit=mode==="rules"?12:6;
     const previousTurns=(!leaveSupport&&supportSelection)
-      ?[{role:"user" as const,text:supportSummary(supportSelection,turnLocale)},...messages.slice(-5)]
-      :messages.slice(-6);
+      ?[{role:"user" as const,text:supportSummary(supportSelection,turnLocale)},...messages.slice(-(historyLimit-1))]
+      :messages.slice(-historyLimit);
     const prior=previousTurns.map(row=>({
       role:row.role,text:row.role==="user"?row.text:row.text.slice(0,4000),
     })),abort=new AbortController();
