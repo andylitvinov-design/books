@@ -1,0 +1,31 @@
+'use strict';
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const root=path.resolve(__dirname,'..','supabase','migrations');
+const v3=fs.readFileSync(path.join(root,'20261117000000_commander_ci_route_followup_truth_v3.sql'),'utf8');
+const v4=fs.readFileSync(path.join(root,'20261117000100_commander_ci_native_oidc_two_step_provenance_v4.sql'),'utf8');
+test('route receipt persists after prior nonexecuted diagnostic triage without false worker claim',()=>{
+ assert.match(v3,/HH_CI_TEST_TRIAGE_ASSIGNMENT_V1/);
+ assert.match(v3,/v_triage_state/);
+ assert.match(v3,/v_executor_confirmed/);
+ assert.match(v3,/v_executor_confirmed::text/);
+ assert.match(v3,/'workerStarted',false/);
+ assert.match(v3,/'sourceFixVerified',false/);
+ assert.match(v3,/'liveVerified',false/);
+ assert.match(v3,/taskSourceMatches/);
+ assert.match(v3,/\(payload->>'source'\) IS NOT DISTINCT FROM e\.run_url/);
+ assert.doesNotMatch(v3,/IF e\.assignment_receipt IS NOT NULL THEN\s+IF e\.route_followup_receipt IS NOT NULL/);
+});
+test('only Edge-verified direct or native reusable workflow scopes may enter SQL receipt and diagnostic executor',()=>{
+ const direct='hh-pr-direct-core-failure.yml@refs/heads/codex/bootstrap-books';
+ const native='hh-native-auto-merge.yml@refs/heads/codex/bootstrap-books';
+ assert.equal(v4.split(direct).length-1,3);
+ assert.equal(v4.split(native).length-1,3);
+ assert.match(v4,/coalesce\(NEW\.oidc_workflow_ref,''\) NOT IN/);
+ assert.match(v4,/coalesce\(e\.oidc_workflow_ref,''\) NOT IN/);
+ assert.match(v4,/t\.payload->'ciIncident'->>'head_sha'=e\.head_sha/);
+ assert.match(v4,/t\.payload->>'source'=e\.run_url/);
+ assert.doesNotMatch(v4,/createWorkflowDispatch|source_write_authorized.*true/);
+});
