@@ -23,7 +23,8 @@ test('all 30 published service offers use exact localized title and truthful pri
    const copy=v3ServiceCopy(locale,service);
    assert.ok(copy?.title&&copy.intro.includes(copy.title));
    assert.doesNotMatch(copy.intro,/OpenRouter/);
-   assert.match(copy.consent,/внешней AI-модели|modelo de IA externo|external AI model/i);
+   assert.ok(copy.consent.length<130,'no second technical speech');
+   assert.doesNotMatch(copy.consent,/OpenRouter|external AI model|медицинских документов|documentos médicos/i);
    assert.doesNotMatch(copy.consent,/OpenRouter/);
   }
   for(const [id,item] of Object.entries(TELEGRAM_SERVICE_OPTIONS)){
