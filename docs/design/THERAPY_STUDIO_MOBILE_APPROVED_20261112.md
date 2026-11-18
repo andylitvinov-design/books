@@ -23,3 +23,17 @@ Node unit and targeted tests; lint, typecheck, build; macOS WebKit video/audio/e
 ## AI LIVE verification (separate from local script acceptance)
 - Require exact-HEAD tests plus real authenticated provider request before claiming free AI LIVE. Vercel BRIEF + PRODUCTION_APPROVED flags must remain OFF until confirmed free quota/credentials, privacy and server acceptance. Running with unavailable flags visibly falls back to local authoring.
 - Tests must cover guest local authoring, no pre-consent requests, real 7-segment provider provenance, 401/403/422/429/503/fallback, concurrent edits and cancelled requests, 8 individual local scripts, no duplicate editor, and unchanged WebKit voice/Hypno consent and real MP4 gates.
+
+
+## 18 Nov 2026 · owner-approved A/B script review (supersedes the mobile first-screen layout above)
+
+Approved owner screenshot: Therapy Studio on the existing `/{en,ru,es}/holistic-support/mandala` route in the sixth `Therapy` workspace. This **replaces** the previous default `Single practice / 8-session course` format switch and long filter form; it does not create a second editor or remove the legacy eight-day course engine.
+
+1. Four compact tabs in one row: **Meditation / Voice / Practice / My Course** (RU/ES translated); the previous two-option format switch is removed. My Course opens the existing on-demand eight-session editor. Ready → meditation/course deep links must still open the correct tab.
+2. The default Meditation tab immediately shows **two distinct locally prepared, scenario-aware scripts**, A and B. The tab switch changes the **full text in one readable panel**; no video thumbnails or repeated cards. Script source must be accurately labelled locally composed, not AI/provider-created.
+3. Initial scripts aim for **approximately 30 seconds of narration**, not 3–12 minutes. The reviewer can approve either script and move to Voice, edit the currently selected script, or request two different local variants. No AI provider call, paid render, audio charge, subscription, storage or export occurs on initial screen load or choice change. Explicit voice-provider consent remains mandatory.
+4. The previously proposed **60-second video repeating a 30-second clip** is not approved as working until the actual timeline/export repeat, voice continuity and video/sound E2E are independently implemented and verified. This release therefore uses 30-second scripts only; do not show a fake 60-second media state.
+5. Keep the original video Canvas/editor under Goal/Montage/Ready. Hide it from the Therapy text-acceptance view to maximize space. Keep the existing page header, navigation, protected consent and optional audio-effect controls.
+6. Acceptance: script options differ in EN/RU/ES; theme and short user goal affect text, crisis instructions block selecting a practice; choose B then Voice passes the actual approved B text to existing local/cloud voice (with opt-in), edits invalidate stale narration. Verify 320/354/390/430 iPhone/WebKit, button states, no horizontal overflow, no overlays, root browser errors, and existing course/Ready audio gates. A page screenshot or HTTP 200 is not E2E proof.
+
+**Status at design approval:** implementation/CI/deployment are separate release gates; do not mark LIVE until Vercel READY/production SHA/canonical alias and the meaningful browser flow have been checked.

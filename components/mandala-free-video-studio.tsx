@@ -7840,7 +7840,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         data-video-effects-panel aria-label={workspaceCopy[locale].effects.title}>
         {activeWorkspace==="effects" ? <MandalaTherapyStudio locale={locale} initialFormat={therapyInitialFormat}
           disabled={recording||preparing||hypnoAudioBusy}
-          editor={isCourse=><MandalaPersonalMeditation key={isCourse?"course":"single"}
+          editor={(isCourse,onApproved)=><MandalaPersonalMeditation key={isCourse?"course":"single"}
             coursePreview={isCourse} compactTherapy approvedVideoConcept={approvedVideoConcept}
             locale={locale} theme={theme} wish={wish}
             scene={sceneName} caption={caption} sound={attachedAudio?appliedAudioName:""}
@@ -7850,6 +7850,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             pace={speed} brightness={brightness}
             affirmations={affirmationLines} affirmationsEnabled={affirmations.enabled}
             focus={meditationFocus} disabled={recording||preparing}
+            onApproved={onApproved}
             onNarrationReady={attachMeditationNarration}
             onNarrationInvalidated={()=>setAttachedAudio(current=>
               current?.kind==="file"&&current.nonLoop?null:current)}/>}

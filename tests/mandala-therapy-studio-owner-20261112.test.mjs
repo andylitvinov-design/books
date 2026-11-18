@@ -16,17 +16,21 @@ test("Therapy is sixth, after Ready; six original destinations remain intact",()
  assert.match(parent,/data-video-quick-control=\{item\.id\}/);
  assert.equal((parent.match(/<MandalaTherapyStudio /g)||[]).length,1);
 });
-test("Single and eight sessions selector appears BEFORE Meditation Voice Practice subtabs",()=>{
- assert.ok(ui.indexOf("data-therapy-format-switch")<ui.indexOf("data-therapy-tabs"));
- for(const format of ["single","course"])assert.match(ui,new RegExp('data-therapy-format="'+format+'"'));
- for(const tab of ["meditation","voice","practice"])assert.ok(ui.includes('data-therapy-subtab={id}'));
- assert.match(ui,/editor\(isCourse\)/);
+test("Approved four Therapy tabs replace the format switch; My Course retains eight-session mode",()=>{
+ assert.doesNotMatch(ui,/data-therapy-format-switch|data-therapy-format="/);
+ assert.match(ui,/data-therapy-tabs/);
+ for(const tab of ["meditation","voice","practice","course"])assert.ok(ui.includes('"'+tab+'"'));
+ assert.match(ui,/data-therapy-subtab=\{id\}/);
+ assert.match(ui,/editor\(isCourse,\(\)=>navigate\("voice"\)\)/);
+ assert.match(ui,/if\(next==="course"\)setIsCourse\(true\)/);
+ assert.match(ui,/if\(next==="meditation"\)setIsCourse\(false\)/);
  assert.match(parent,/coursePreview=\{isCourse\}/);
  assert.match(ui,/role="tablist"/);
  assert.match(ui,/role="tabpanel"/);
 });
 test("Source stays one existing private local meditation generator and one real phrase narrator",()=>{
- assert.match(parent,/editor=\{isCourse=><MandalaPersonalMeditation/);
+ assert.match(parent,/editor=\{\(isCourse,onApproved\)=><MandalaPersonalMeditation/);
+ assert.match(parent,/onApproved=\{onApproved\}/);
  assert.match(parent,/voiceEditor=\{hypnoVoiceEditor\}/);
  assert.match(parent,/onVideoPhrases=\{\(\)=>\{/);
  assert.match(writer,/buildPersonalMeditationScript/);
@@ -51,12 +55,15 @@ test("Existing visual, quiet and binaural effects remain optional with no automa
  assert.match(browser,/data-therapy-subtab="practice"/);
  assert.match(browser,/data-therapy-effects-toggle/);
 });
-test("Mobile visuals have roomy touch targets and correct eight-draft disclosure",()=>{
- assert.match(css,/min-height:74px/);
+test("Compact warm mobile tabs have accessible targets and honest on-demand eight-session disclosure",()=>{
+ assert.match(css,/grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
  assert.match(css,/min-height:50px/);
  assert.match(css,/@media\(max-width:355px\)/);
- assert.match(ui,/Eight-session mode starts with a plan and one script/);
- assert.match(ui,/Курс начинается с плана и первого текста/);
+ assert.match(ui,/My Course keeps the existing eight-session plan/);
+ assert.match(ui,/следующие тексты создаются только по запросу/);
+ const mobile=read("components/mandala-personal-meditation.module.css");
+ assert.match(mobile,/\.shortApprove\{[^}]*min-height:51px/);
+ assert.match(mobile,/\.shortSecondary button\{[^}]*min-height:44px/);
 });
 
 test("Therapy WebKit preserves voice and reviewed recording rights",()=>{
@@ -118,7 +125,7 @@ test("Owner Therapy mobile: one introduction and compact controls, no feature re
  assert.match(writer,/compactTherapy\?extraField:null/);
  assert.match(writer,/!compactTherapy\?extraField:null/);
  assert.match(writer,/<details className=\{css\.context\} data-meditation-context/);
- assert.match(css,/\.hero\{display:none\}/);
+ assert.match(css,/\.hero\{min-height:78px/);
  assert.match(css,/\.main\{padding:0;border:0/);
  assert.match(css,/\[data-meditation-main-filters\] label:nth-child\(2\)\{grid-column:1\/-1/);
  assert.match(css,/\[data-meditation-generate\]\{min-height:52px/);

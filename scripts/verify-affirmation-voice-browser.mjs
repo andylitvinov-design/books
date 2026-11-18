@@ -1352,6 +1352,27 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           .toHaveAttribute("data-therapy-course","false");
         await expect(page.locator('[data-therapy-subtab="meditation"]'))
           .toHaveAttribute("aria-selected","true");
+        // Approved mobile therapy review: two real local 30s scripts. No
+        // provider POST or film render is triggered by switching choices.
+        const shortPicker=page.locator('[data-therapy-script-host] [data-meditation-short-picker]');
+        await expect(shortPicker).toBeVisible();
+        await expect(shortPicker.locator('[data-meditation-choice]')).toHaveCount(2);
+        await expect(shortPicker).toHaveAttribute("data-meditation-length-seconds","30");
+        const firstShortText=await shortPicker.locator('[data-meditation-script]').textContent();
+        await shortPicker.locator('[data-meditation-choice="1"]').click();
+        await expect(shortPicker.locator('[data-meditation-choice="1"]'))
+          .toHaveAttribute("aria-selected","true");
+        const alternateShortText=await shortPicker.locator('[data-meditation-script]').textContent();
+        assert.ok(firstShortText&&alternateShortText&&firstShortText!==alternateShortText,
+          "A/B tabs must switch two complete, different meditation scripts");
+        await shortPicker.locator('[data-meditation-approve]').click();
+        await expect(page.locator('[data-therapy-subtab="voice"]'))
+          .toHaveAttribute("aria-selected","true");
+        await expect(page.locator('[data-therapy-script-host] [data-meditation-result]'))
+          .toBeVisible();
+        await expect(page.locator('[data-therapy-script-host] [data-meditation-generation-source="local"]'))
+          .toBeVisible();
+        phase(engine,"therapy-two-local-scripts-approval-and-voice-routing-verified");
         await expect(page.locator("[data-ready-offer-panel]")).toHaveCount(0);
         await page.locator('[data-video-quick-control="ready"]').click();
         await page.locator("[data-ready-journey]").click();
