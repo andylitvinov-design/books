@@ -1199,3 +1199,190 @@
 
 .sessionPortrait[data-persona=merlin]{background-image:url('/images/holistic-house/my-coach-motion/merlin-still.webp'),linear-gradient(110deg,#273b3b,#9c8b82);background-size:auto 140%,cover;background-position:right 32%,center;background-repeat:no-repeat}
 .sessionPortrait[data-persona=harry]{background-image:url('/images/holistic-house/my-coach-motion/harry-still.svg'),linear-gradient(110deg,#273b3b,#9c8b82);background-size:auto 140%,cover;background-position:right 32%,center;background-repeat:no-repeat}
+
+/* Approved single-row My Coach mobile voice surface (18 Nov 2026).
+   Waveform is driven by live input RMS, never a fake CSS animation. */
+.root[data-session-visual-v4] .sessionTopbarActions{
+  display:flex;align-items:center;justify-content:flex-end;gap:7px;min-width:0;
+}
+.root[data-session-visual-v4] .sessionTopbarActions .languageControl{
+  box-sizing:border-box;flex:none;display:inline-flex;flex-direction:row;
+  align-items:center;justify-content:center;gap:4px;
+  min-width:62px;max-width:none;min-height:43px;height:43px;
+  padding:4px 8px;border:1px solid #d4e0d5;border-radius:999px;
+  background:#fffdf8;box-shadow:0 3px 11px #2c4c3b0d;color:#126d58;
+}
+.root[data-session-visual-v4] .chooseCoachShort{display:none}
+.root[data-session-visual-v4] .microphoneWave{
+  --coach-mic-level:0;
+  box-sizing:border-box;display:flex;align-items:center;justify-content:center;
+  flex:1 1 auto;min-width:0;max-width:100%;height:58px;overflow:hidden;
+  border-left:1px solid #dfe9dd;border-right:1px solid #dfe9dd;
+}
+.root[data-session-visual-v4] .waveBars{
+  display:flex;align-items:center;justify-content:center;
+  width:100%;height:38px;gap:clamp(1px,.4vw,3px);overflow:hidden;
+}
+.root[data-session-visual-v4] .waveBars i{
+  display:block;flex:0 1 3px;width:clamp(2px,.58vw,3px);min-width:2px;
+  height:36px;min-height:0;border-radius:99px;
+  background:linear-gradient(180deg,#0ac68c,#008565);
+  opacity:.28;transform-origin:center;
+  transform:scaleY(calc(.105 + var(--coach-mic-level,0) * var(--wave-gain,1)));
+  transition:transform 90ms ease-out,opacity 140ms ease-out;
+}
+.root[data-session-visual-v4] .microphoneWave[data-voice-detected='true'] .waveBars i{opacity:.85}
+.root[data-session-visual-v4] .voiceControls[data-coach-inline-voice]{
+  display:grid;grid-template-columns:76px minmax(0,1fr) 64px 64px;
+  align-items:center;gap:9px;min-width:0;min-height:90px;
+  padding:7px 13px;border:1px solid #e0e7db;border-radius:27px;
+  background:linear-gradient(120deg,#fffef9,#f8fbf3 50%,#fffdf9);
+  box-shadow:0 6px 20px #24493413;
+}
+.root[data-session-visual-v4] .voiceControls .voiceCenter{
+  box-sizing:border-box;flex:0 0 auto;width:74px;min-width:0;max-width:74px;
+  height:70px;min-height:70px;overflow:visible;align-self:center;
+}
+.root[data-session-visual-v4] .voiceControls .voiceCenter :global([data-my-coach-voice]){
+  box-sizing:border-box;display:flex;align-items:center;justify-content:center;
+  width:74px;min-width:0;max-width:74px;height:70px;min-height:70px;
+}
+.root[data-session-visual-v4] .voiceControls .voiceCenter :global([data-my-coach-voice] button){
+  width:68px;min-width:68px;max-width:68px;height:68px;min-height:68px;max-height:68px;
+  border:2px solid #acedd3;border-radius:50%;
+  background:linear-gradient(140deg,#03bc87,#007652);
+  box-shadow:0 0 0 5px #66d5ac24,0 5px 14px #0967462b;
+}
+.root[data-session-visual-v4] .voiceControls .voiceCenter :global([data-my-coach-voice] [data-coach-voice-status]){
+  position:absolute;z-index:4;left:calc(100% + 8px);top:calc(50% + 19px);
+  bottom:auto;transform:none;box-sizing:border-box;
+  width:max-content;max-width:calc(100vw - 220px);height:16px;max-height:16px;
+  padding:0;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font:700 11px/16px system-ui;text-align:left;color:#217960;pointer-events:none;
+}
+.root[data-session-visual-v4] .voiceControls .keyboardControl,
+.root[data-session-visual-v4] .voiceControls .endControl{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  justify-self:stretch;gap:3px;box-sizing:border-box;
+  width:auto;max-width:none;min-height:46px;height:46px;
+  padding:5px 3px;border:1px solid #dce8dd;border-radius:14px;
+  background:#fffdf9;color:#185f4f;font:750 10px/1.1 system-ui;
+  text-decoration:none;box-shadow:0 3px 10px #2247330c;
+}
+.root[data-session-visual-v4] .voiceControls .endControl{
+  border-color:#f0cdc7;background:#fff3f0;color:#bd4c48;
+}
+.root[data-session-visual-v4] .voiceControls :is(.keyboardControl,.endControl):focus-visible{
+  outline:3px solid #08836d;outline-offset:3px;
+}
+@media(max-width:699px){
+  .root[data-session-visual-v4] .sessionTopbar{
+    box-sizing:border-box;width:100%;min-height:53px;max-height:60px;
+    padding:5px 10px;gap:6px;
+  }
+  .root[data-session-visual-v4] .sessionBrand{
+    flex:0 1 auto;min-width:0;gap:5px;
+    font:750 clamp(14px,3.8vw,19px)/1.1 Georgia,serif;
+    letter-spacing:-.035em;white-space:nowrap;
+  }
+  .root[data-session-visual-v4] .sessionBrandMark{flex:none;width:31px;height:31px}
+  .root[data-session-visual-v4] .sessionTopbarActions{flex:0 0 auto;gap:5px}
+  .root[data-session-visual-v4] .sessionTopbarActions .languageControl{
+    min-width:55px;height:42px;min-height:42px;padding:4px 5px;gap:1px;
+  }
+  .root[data-session-visual-v4] .sessionTopbarActions .languageControl svg{width:15px;height:15px}
+  .root[data-session-visual-v4] .sessionTopbarActions .languageControl select{
+    font-size:11px;width:25px;max-width:25px;
+  }
+  .root[data-session-visual-v4] .chooseCoach{
+    flex:0 1 auto;min-width:0;min-height:42px;
+    padding:4px 7px;gap:3px;white-space:nowrap;
+    font-size:clamp(9px,2.4vw,11px);
+  }
+  .root[data-session-visual-v4] .chooseCoach svg{width:14px;height:14px;flex:none}
+  .root[data-session-visual-v4] .sessionHero{
+    height:clamp(255px,40dvh,365px);min-height:0;max-height:none;
+    border-radius:25px;box-shadow:0 9px 27px #314b3027;
+  }
+  .root[data-session-visual-v4][data-coach-showcase='true'] .sessionHero{
+    height:clamp(275px,43dvh,400px);min-height:0;
+  }
+  .root[data-session-visual-v4] .sessionHeroShade{
+    background:linear-gradient(90deg,#0e3026db 0%,#0c352688 39%,transparent 74%),
+      linear-gradient(0deg,#0b2e2250,transparent 64%);
+  }
+  .root[data-session-visual-v4] .sessionHeroCopy{left:15px;top:19px;gap:5px;width:58%}
+  .root[data-session-visual-v4] .sessionHeroBadge{
+    padding:7px 9px;border-color:#dcd9aa;
+    background:linear-gradient(100deg,#086149ee,#007d5be8);font-size:9px;
+  }
+  .root[data-session-visual-v4] .sessionHeroCopy h1{
+    font-size:clamp(40px,11vw,56px);margin-top:16px;
+    line-height:1.08;letter-spacing:-.04em;
+  }
+  .root[data-session-visual-v4] .sessionAvatar{display:none}
+  .root[data-session-visual-v4] .voiceWorkspace{gap:5px;overflow:hidden}
+  .root[data-session-visual-v4] .voiceControls[data-coach-inline-voice]{
+    order:0;position:relative;z-index:5;flex:0 0 74px;
+    display:grid;grid-template-columns:62px minmax(0,1fr) 50px 50px;
+    grid-template-rows:62px;align-items:center;
+    box-sizing:border-box;width:100%;max-width:100%;
+    height:74px;min-height:74px;max-height:74px;
+    margin:0 auto;padding:5px 7px;gap:5px;
+    border-radius:22px;overflow:visible;
+  }
+  .root[data-session-visual-v4] .voiceControls .voiceCenter,
+  .root[data-session-visual-v4] .voiceControls .voiceCenter :global([data-my-coach-voice]){
+    position:relative;box-sizing:border-box;flex:0 0 62px;
+    width:62px;min-width:62px;max-width:62px;
+    height:62px;min-height:62px;max-height:62px;
+    margin:0;padding:0;overflow:visible;
+  }
+  .root[data-session-visual-v4] .voiceControls .voiceCenter :global([data-my-coach-voice] button){
+    width:58px;min-width:58px;max-width:58px;
+    height:58px;min-height:58px;max-height:58px;
+  }
+  .root[data-session-visual-v4] .microphoneWave{
+    height:54px;border-left:0;border-right:1px solid #deeadf;
+  }
+  .root[data-session-visual-v4] .waveBars{height:32px}
+  .root[data-session-visual-v4] .waveBars i{height:31px;flex-basis:2.6px}
+  .root[data-session-visual-v4] .voiceControls .voiceCenter :global([data-my-coach-voice] [data-coach-voice-status]){
+    left:calc(100% + 4px);top:calc(50% + 14px);
+    width:max-content;max-width:calc(100vw - 204px);
+    font-size:10px;line-height:12px;
+  }
+  .root[data-session-visual-v4] .voiceControls .keyboardControl,
+  .root[data-session-visual-v4] .voiceControls .endControl{
+    width:50px;max-width:50px;min-height:43px;height:43px;
+    padding:4px 2px;gap:2px;border-radius:13px;font-size:10px;
+  }
+  .root[data-session-visual-v4] .voicePlayNotice{display:none}
+  .root[data-session-visual-v4] .voiceWorkspace>.sessionProgress{
+    order:1;min-height:36px;max-height:42px;border-radius:16px;
+  }
+  .root[data-session-visual-v4] .voicePrivacyDetails{order:2}
+  .root[data-session-visual-v4] .conversationPanel{order:3}
+}
+@media(max-width:410px){
+  .root[data-session-visual-v4] .chooseCoachFull{display:none}
+  .root[data-session-visual-v4] .chooseCoachShort{display:inline}
+}
+@media(max-width:699px) and (max-height:690px){
+  .root[data-session-visual-v4] .sessionHero{height:clamp(194px,33dvh,240px)}
+  .root[data-session-visual-v4][data-coach-showcase='true'] .sessionHero{
+    height:clamp(214px,37dvh,260px)
+  }
+}
+@media(max-width:699px) and (max-height:560px){
+  .root[data-session-visual-v4] .sessionHero{height:clamp(145px,28dvh,190px)}
+  .root[data-session-visual-v4][data-coach-showcase='true'] .sessionHero{
+    height:clamp(155px,31dvh,205px)
+  }
+  .root[data-session-visual-v4] .sessionHeroCopy h1{
+    font-size:clamp(30px,8vw,43px);margin-top:3px;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .root[data-session-visual-v4] .waveBars i{transition:none}
+}

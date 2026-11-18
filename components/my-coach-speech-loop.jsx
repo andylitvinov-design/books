@@ -40,7 +40,7 @@ const words={
     iosCue:'Sí.',iosPreparing:'Restableciendo el reconocimiento del iPhone…',iosAwaitSpeech:'Micrófono iniciado; esperando tu voz…',iosSilent:'Safari en iPhone dejó de entregar voz. Puedes escribir o cerrar completamente Safari y volver a abrirlo para restablecer el audio.',iosCueFailed:'Safari no pudo restablecer el reconocimiento. Escribe o reinicia Safari antes de volver a tocar el micrófono.',iosAwaitEnd:'Texto listo. Esperando el final de Safari…',audioHearing:'Voz detectada…',audioTranscribing:'Transcribiendo tu voz…',audioQuiet:'Micrófono activo, aún no detecto voz.',deviceFallback:'Voz temporal del dispositivo: voz natural no disponible.',audioUnavailable:'El reconocimiento está temporalmente no disponible. Puedes escribir.'},
 }
 
-const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speechLocale='auto',initialDraft='',enabled=false,canStart=true,cloudAvailable=false,cloudAgreed=false,cloudProvider=null,personaId='mira',introduction='',onSessionStart,onTurn,onCancelTurn,onVoiceStateChange,onVoiceLevel,onRequestConsent,onTranscript,onDraft},ref){
+const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speechLocale='auto',initialDraft='',enabled=false,canStart=true,cloudAvailable=false,cloudAgreed=false,cloudProvider=null,personaId='mira',introduction='',onSessionStart,onTurn,onCancelTurn,onVoiceStateChange,onVoiceLevel,onMicLevel,onRequestConsent,onTranscript,onDraft},ref){
   const lang=words[locale]?locale:'en',t=words[lang]
   const [phase,setPhase]=useState('idle')
   const [notice,setNotice]=useState('')
@@ -78,6 +78,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   const generationRef=useRef(0)
   const turnRef=useRef(onTurn),cancelRef=useRef(onCancelTurn),stopRef=useRef(null),sessionStartRef=useRef(onSessionStart)
   const voiceStateRef=useRef(onVoiceStateChange),levelRef=useRef(onVoiceLevel)
+  const micLevelRef=useRef(onMicLevel)
   const beatRef=useRef(0)
   const heardRef=useRef('')
   const lastHeardRef=useRef('')
@@ -92,10 +93,12 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   cancelRef.current=onCancelTurn
   voiceStateRef.current=onVoiceStateChange
   levelRef.current=onVoiceLevel
+  micLevelRef.current=onMicLevel
 
   function changePhase(next){
     phaseRef.current=next
     if(next!=='speaking'){beatRef.current=0;levelRef.current?.(null)}
+    if(next!=='listening')micLevelRef.current?.(0)
     setPhase(next)
     voiceStateRef.current?.({phase:next,beat:beatRef.current})
   }
@@ -127,6 +130,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     if(audioContext)try{void audioContext.close?.().catch?.(()=>{})}catch{}
     primedAudioRef.current=null
     activeRef.current=false
+    micLevelRef.current?.(0)
     recordedTurnRef.current?.cancel()
     recordedTurnRef.current=null
     generationRef.current+=1
@@ -363,6 +367,9 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
         if(!activeRef.current||generationRef.current!==generation)return
         const capture=startCoachRecordedTurn({locale:transcriptLocale,environment:window,
           audioContext:audioContextRef.current,
+          onLevel:value=>{
+            if(activeRef.current&&generationRef.current===generation)micLevelRef.current?.(value)
+          },
           onState:status=>{
             if(!activeRef.current||generationRef.current!==generation)return
             if(status==='listening'){changePhase('listening');setNotice('')}
