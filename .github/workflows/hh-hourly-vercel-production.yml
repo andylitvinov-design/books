@@ -2,6 +2,7 @@ name: HH hourly Vercel production batch
 on:
   schedule:
     - cron: '37 * * * *' # only routine production release trigger; no merge event build
+    - cron: '11 05 * * *' # one daily safe storage prune; NEVER run a production build
   # Trusted default-branch release; protected PR merge never triggers a new build.
   workflow_dispatch:
     inputs:
@@ -27,7 +28,8 @@ jobs:
     # Manual dry-run/apply cleanup remains separate and never starts a build.
     # Exact HEAD, last-60-minutes and UTC-hour guards remain unchanged.
     if: >-
-      (github.event_name == 'schedule' && vars.HH_VERCEL_HOURLY_ENABLED == 'true') ||
+      (github.event_name == 'schedule' && github.event.schedule == '37 * * * *' &&
+       vars.HH_VERCEL_HOURLY_ENABLED == 'true') ||
       (github.event_name == 'workflow_dispatch' &&
        inputs.emergency == true && inputs.cleanup_mode == 'off')
     runs-on: ubuntu-latest
@@ -152,8 +154,12 @@ jobs:
             { echo 'Vercel did not return a deployment ID'; exit 1; }
           echo 'One exact-SHA production build requested; READY/LIVE must be checked separately.'
   cleanup:
-    # Owner-dispatched cleanup only. Scheduled runs never delete deployments.
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.cleanup_mode != 'off' }}
+    # Daily bounded cleanup uses the already validated owner cleanup code.
+    # Dedicated daily cron NEVER activates the publish job or a paid Vercel build.
+    # Preserve LIVE, active aliases, and at least 30 READY rollback deployments.
+    if: >-
+      (github.event_name == 'workflow_dispatch' && inputs.cleanup_mode != 'off') ||
+      (github.event_name == 'schedule' && github.event.schedule == '11 05 * * *')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -164,5 +170,5 @@ jobs:
       - name: Inspect and optionally prune old unaliased deployments
         env:
           HH_VERCEL_RELEASE_TOKEN: ${{ secrets.HH_VERCEL_RELEASE_TOKEN }}
-          CLEANUP_MODE: ${{ inputs.cleanup_mode }}
+          CLEANUP_MODE: ${{ github.event_name == 'schedule' && 'apply' || inputs.cleanup_mode }}
         run: node scripts/ci-vercel-deployment-prune.mjs "$CLEANUP_MODE"
