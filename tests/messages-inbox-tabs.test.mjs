@@ -104,7 +104,8 @@ test('Work Requests opens existing messenger enquiries instead of the legacy pra
   assert.match(workIntro,/CARDS\.map\(/)
   assert.match(workIntro,/onClick=\{\(\)=>onAction\(key\)\}/)
   assert.match(workIntro,/data-work-card=\{key\}/)
-  assert.ok(practice.includes("onClick={() => void openAction('requests')}"))
+  assert.match(practice,/<PracticeWorkProfileIntro locale=\{locale\} onAction=\{openAction\}/,
+    'Requests card uses the same authenticated route map through Work Profile');
   assert.ok(inbox.includes("const requestFocus=embedded&&tab==='requests'"))
   assert.ok(inbox.includes("!requestFocus||inMessagesTab(row,'requests')"))
   assert.ok(inbox.includes("{requestFocus&&<div className={styles.requestFocus}"))
